@@ -20069,6 +20069,12 @@ def start_server(
             "Tailscale.", host,
         )
 
+    try:
+        from hermes_cli.plugins import discover_plugins
+        discover_plugins()
+    except Exception as exc:
+        _log.debug("Plugin discovery at start_server failed: %s", exc)
+
     if app.state.auth_required:
         # The gate engages on every non-loopback bind. Require at least one
         # provider to be registered, else fail closed — there is no longer an
