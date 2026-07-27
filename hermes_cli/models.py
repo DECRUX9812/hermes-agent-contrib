@@ -67,6 +67,7 @@ OPENROUTER_MODELS: list[tuple[str, str]] = [
     ("deepseek/deepseek-v4-pro",               ""),
     ("deepseek/deepseek-v4-flash",             ""),
     # Qwen
+    ("qwen/qwen3.8-max-preview",               ""),
     ("qwen/qwen3.7-max",                       ""),
     ("qwen/qwen3.7-plus",                      ""),
     ("qwen/qwen3.6-35b-a3b",                   ""),
@@ -218,6 +219,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "deepseek/deepseek-v4-pro",
         "deepseek/deepseek-v4-flash",
         # Qwen
+        "qwen/qwen3.8-max-preview",
         "qwen/qwen3.7-max",
         "qwen/qwen3.7-plus",
         "qwen/qwen3.6-35b-a3b",
@@ -485,6 +487,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "minimax-m2.5",
         "deepseek-v4-pro",
         "deepseek-v4-flash",
+        "qwen3.8-max-preview",
         "qwen3.7-max",
         "qwen3.7-plus",
         "qwen3.6-plus",
@@ -503,6 +506,7 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
     # to https://dashscope-intl.aliyuncs.com/compatible-mode/v1 (OpenAI-compat)
     # or https://dashscope-intl.aliyuncs.com/apps/anthropic (Anthropic-compat).
     "alibaba": [
+        "qwen3.8-max-preview",
         "qwen3.7-max",
         "qwen3.7-plus",
         "qwen3.6-plus",

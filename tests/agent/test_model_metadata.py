@@ -982,6 +982,18 @@ class TestGetModelContextLength:
         assert get_model_context_length("dashscope/qwen3.6-plus") == 1048576
 
     @patch("agent.model_metadata.fetch_model_metadata")
+    def test_qwen3_8_max_context_length(self, mock_fetch):
+        """qwen3.8-max has a 1M context window, not the generic 128K Qwen default."""
+        mock_fetch.return_value = {}
+        assert get_model_context_length("qwen3.8-max") == 1048576
+        # The "-preview" snapshot and provider-prefixed variants must resolve
+        # to the explicit 1M entry via the longest-substring fallback rather
+        # than probing down to the generic "qwen" 128K catch-all.
+        assert get_model_context_length("qwen3.8-max-preview") == 1048576
+        assert get_model_context_length("qwen/qwen3.8-max-preview") == 1048576
+        assert get_model_context_length("dashscope/qwen3.8-max") == 1048576
+
+    @patch("agent.model_metadata.fetch_model_metadata")
     def test_qwen_generic_context_length(self, mock_fetch):
         """Generic qwen models still get the 128K default."""
         mock_fetch.return_value = {}
