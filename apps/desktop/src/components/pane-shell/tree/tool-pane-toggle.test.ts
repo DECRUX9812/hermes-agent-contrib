@@ -1,6 +1,7 @@
 import { atom } from 'nanostores'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { $terminalTakeover, setTerminalTakeover } from '@/app/right-sidebar/store'
 import { registry } from '@/contrib/registry'
 
 import { allPaneIds, group, split } from './model'
@@ -44,6 +45,8 @@ beforeEach(() => {
 
   for (const [id, data] of [
     ['workspace', { placement: 'main', uncloseable: true }],
+    ['files', { placement: 'right' }],
+    ['review', { placement: 'right' }],
     ['terminal', { placement: 'bottom' }],
     ['logs', { placement: 'bottom' }]
   ] as const) {
@@ -167,6 +170,55 @@ describe('toggling the terminal while it is stacked with logs', () => {
 
     expect(allPaneIds($layoutTree.get()!)).toContain('terminal')
     expect(isPaneVisible('terminal')).toBe(true)
+  })
+})
+
+describe('collapsing the active terminal in a shared group with the workspace', () => {
+  // Ground truth for PR #79864's second act: New Session from a Focus-layout
+  // group [workspace, files, review, terminal] with the terminal active used to
+  // land on 'review' (`panes[at - 1]`) — an arbitrary adjacent sibling — so
+  // after the takeover atom cleared, the wrong pane held the slot: blank pane
+  // with the terminal overlay hidden. Collapsing an active tool pane must hand
+  // the slot to the uncloseable workspace pane, not a strip neighbour.
+
+  function focusGroup() {
+    $layoutTree.set(
+      group(['workspace', 'files', 'review', 'terminal'], { active: 'terminal', id: 'g-focus' })
+    )
+  }
+
+  const focusActive = () => {
+    const tree = $layoutTree.get()
+
+    return tree?.type === 'group' ? tree.active : undefined
+  }
+
+  it('startFreshSessionDraft: clearing takeover lands on workspace, not review', () => {
+    focusGroup()
+
+    // Production wiring (controller.tsx): the takeover atom IS the terminal's
+    // toggle store; the closer/opener write it back.
+    bindToolPaneCollapse(
+      'terminal',
+      $terminalTakeover,
+      () => setTerminalTakeover(false),
+      () => setTerminalTakeover(true)
+    )
+
+    // User had the terminal open and active.
+    setTerminalTakeover(true)
+    expect($terminalTakeover.get()).toBe(true)
+    expect(focusActive()).toBe('terminal')
+    expect(isPaneVisible('terminal')).toBe(true)
+
+    // Exactly what startFreshSessionDraft does on ⌘N / the sidebar button.
+    setTerminalTakeover(false)
+
+    expect($terminalTakeover.get()).toBe(false)
+    expect(isPaneVisible('terminal')).toBe(false)
+    // THE regression: used to be 'review' (group.panes[at - 1]).
+    expect(focusActive()).toBe('workspace')
+    expect(isPaneVisible('workspace')).toBe(true)
   })
 })
 
