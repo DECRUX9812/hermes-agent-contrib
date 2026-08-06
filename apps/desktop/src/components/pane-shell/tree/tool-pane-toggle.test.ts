@@ -12,6 +12,7 @@ import {
   bindToolPaneCollapse,
   closeToolPane,
   isPaneVisible,
+  revealTreePane,
   setTreeGroupHeaderHidden,
   togglePaneVisible
 } from './store'
@@ -219,6 +220,48 @@ describe('collapsing the active terminal in a shared group with the workspace', 
     // THE regression: used to be 'review' (group.panes[at - 1]).
     expect(focusActive()).toBe('workspace')
     expect(isPaneVisible('workspace')).toBe(true)
+  })
+
+  it('openNewSessionTile (+ / ⌘T): the new session tab fronts and the terminal tab goes hidden', () => {
+    const stored = 'stored-1'
+    const tilePaneId = `session-tile:${stored}`
+    const dispose = registry.register({
+      area: 'panes',
+      data: { placement: 'main' },
+      id: tilePaneId,
+      render: () => null,
+      title: 'new session'
+    })
+    disposers.push(dispose)
+
+    // The tile lands in the same shared zone as the workspace + terminal
+    // (Focus preset: docked 'center' into the focused chat zone).
+    $layoutTree.set(
+      group(['workspace', 'files', 'review', 'terminal', tilePaneId], { active: 'terminal', id: 'g-focus' })
+    )
+
+    bindToolPaneCollapse(
+      'terminal',
+      $terminalTakeover,
+      () => setTerminalTakeover(false),
+      () => setTerminalTakeover(true)
+    )
+
+    setTerminalTakeover(true)
+    expect(focusActive()).toBe('terminal')
+    expect(isPaneVisible('terminal')).toBe(true)
+
+    // Exactly what openNewSessionTile does after openSessionTile + patch:
+    // `revealTreePane(`session-tile:${stored}`)` (use-session-actions:521).
+    revealTreePane(tilePaneId)
+
+    expect(focusActive()).toBe(tilePaneId)
+    expect(isPaneVisible('terminal')).toBe(false)
+    // The terminal layer gets data-pane-hidden (tree-group spreads
+    // hiddenPaneProps(!isActive)), which the PersistentTerminal overlay now
+    // measures — so the terminal surface stops covering the new session tab.
+    expect(isPaneVisible(tilePaneId)).toBe(true)
+    expect($terminalTakeover.get()).toBe(true) // toggle store stays truthful
   })
 })
 
