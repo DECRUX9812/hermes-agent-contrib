@@ -31,11 +31,16 @@ class CustomProfile(ProviderProfile):
         extra_body: dict[str, Any] = {}
         top_level: dict[str, Any] = {}
 
-        # Ollama context window
+        # Ollama context window — Ollama-only concept. num_ctx is injected
+        # ONLY for local endpoints (Ollama/llama.cpp); remote OpenAI-compatible
+        # providers (Meta Model API, GLM ARK, vLLM clouds) reject unknown
+        # `options` params with a 400.
         if ollama_num_ctx:
-            options = extra_body.get("options", {})
-            options["num_ctx"] = ollama_num_ctx
-            extra_body["options"] = options
+            _base = (ctx.get("base_url") or self.base_url or "").lower()
+            if _base.startswith(("http://localhost", "http://127.0.0.1", "http://0.0.0.0", "http://[::1]")):
+                options = extra_body.get("options", {})
+                options["num_ctx"] = ollama_num_ctx
+                extra_body["options"] = options
 
         # Reasoning / thinking control for custom OpenAI-compatible endpoints
         # (GLM-5.2 on Volcengine ARK, vLLM, Ollama, llama.cpp, …).
