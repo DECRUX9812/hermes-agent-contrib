@@ -1,0 +1,113 @@
+/* Hermes Fleet — Production AI Interface (ChatGPT / Grok 3 / Claude 3.7 Inspired)
+ * High-contrast dark minimalism, unboxed conversation stream, hairline floating composer
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --hf-bg-canvas: #0d0e12;
+  --hf-bg-sidebar: #13151b;
+  --hf-bg-surface: #181a22;
+  --hf-bg-surface-elevated: #21232d;
+  --hf-border-subtle: rgba(255, 255, 255, 0.08);
+  --hf-border-medium: rgba(255, 255, 255, 0.14);
+  --hf-border-focus: rgba(255, 255, 255, 0.35);
+  
+  --hf-text-primary: #FFFFFF;
+  --hf-text-secondary: #9496a1;
+  --hf-text-muted: #5e606e;
+  
+  --hf-accent-gold: #FFBF00;
+  --hf-accent-cyan: #06B6D4;
+  --hf-accent-purple: #A855F7;
+  --hf-accent-emerald: #10B981;
+  --hf-accent-ruby: #EF4444;
+}
+
+.hermes-gpt-root {
+  background-color: var(--hf-bg-canvas);
+  color: var(--hf-text-primary);
+  font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-mono-code {
+  font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+}
+
+/* User Bubble (ChatGPT/Grok style) */
+.user-msg-bubble {
+  background-color: var(--hf-bg-surface-elevated);
+  color: #FFFFFF;
+  border-radius: 20px 20px 4px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Tool execution callout (Claude/Grok style) */
+.tool-call-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--hf-border-subtle);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.tool-call-card:hover {
+  border-color: var(--hf-border-medium);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Floating Hairline Composer (Grok/ChatGPT) */
+.floating-composer {
+  background: #181a22;
+  border: 1px solid var(--hf-border-subtle);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  border-radius: 24px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.floating-composer:focus-within {
+  border-color: var(--hf-border-focus);
+  box-shadow: 0 12px 36px -8px rgba(0, 0, 0, 0.7);
+}
+
+/* Suggestion Pills */
+.prompt-pill {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--hf-border-subtle);
+  border-radius: 999px;
+  color: var(--hf-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.prompt-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--hf-border-medium);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+/* Clean Scrollbar */
+.clean-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.clean-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.clean-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+.clean-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Pulse Beacon */
+@keyframes beaconLive {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.9); }
+}
+
+.beacon-live {
+  animation: beaconLive 1.4s ease-in-out infinite;
+}

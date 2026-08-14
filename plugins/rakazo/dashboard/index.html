@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#050506] text-[#DFDFE2]">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#050506">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Rakazo · Hermes Autonomous Bots</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .rk-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .rk-scroll::-webkit-scrollbar-track { background: transparent; }
+    .rk-scroll::-webkit-scrollbar-thumb { background: #222226; border-radius: 4px; }
+    @keyframes rkPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .rk-pulse { animation: rkPulse 1.4s ease-in-out infinite; }
+  </style>
+</head>
+<body class="h-full w-full overflow-hidden select-none bg-[#050506]">
+  <div id="app" class="flex h-full w-full flex-col md:flex-row"></div>
+
+  <script type="module">
+    import { h, render } from 'https://esm.sh/preact@10.20.1';
+    import { useState, useEffect, useMemo } from 'https://esm.sh/preact@10.20.1/hooks';
+    import htm from 'https://esm.sh/htm@3.1.1';
+
+    const html = htm.bind(h);
+
+    const DEFAULT_BOTS = [
+      {
+        id: 'bot_cos_981a',
+        name: 'Chief of Staff',
+        title: 'Executive Briefing & Triage',
+        description: 'Runs weekly briefings, email sweeps, and meeting notes.',
+        instructions: 'You are Chief of Staff. You assist with prioritization, executive briefings, and inbox triage.',
+        color: '#8B5CF6',
+        status: 'idle',
+        approval_mode: 'auto',
+        workspace_path: '~/.hermes/rakazo/bots/bot_cos_981a/workspace',
+        run_count: 14,
+        time_label: 'Yesterday',
+        preview: 'venue booked, contract sent for signature'
+      },
+      {
+        id: 'bot_scout_10b9',
+        name: 'Scout',
+        title: 'Autonomous Research Scout',
+        description: 'Autonomous research scout — scans tech intel, news, and market data.',
+        instructions: 'You are Scout. Research topics in depth, gather facts, and return concise, bulleted summaries.',
+        color: '#10B981',
+        status: 'idle',
+        approval_mode: 'auto',
+        workspace_path: '~/.hermes/rakazo/bots/bot_scout_10b9/workspace',
+        run_count: 28,
+        time_label: '3:10 AM',
+        preview: '40 accounts researched, 18 drafts queued'
+      },
+      {
+        id: 'bot_mon_7c3a',
+        name: 'Monitor',
+        title: 'System Health & Diagnostics',
+        description: 'System health monitor & backup diagnostics in strict approval mode.',
+        instructions: 'You are Monitor. Run health audits, check disks, services, and backups.',
+        color: '#06B6D4',
+        status: 'idle',
+        approval_mode: 'strict',
+        workspace_path: '~/.hermes/rakazo/bots/bot_mon_7c3a/workspace',
+        run_count: 8,
+        time_label: 'Monday',
+        preview: 'all 6 host services healthy, memory at 24%'
+      }
+    ];
+
+    function BotAvatar({ color = '#8B5CF6', size = 38 }) {
+      const visorW = Math.round(size * 0.68);
+      const visorH = Math.round(size * 0.4);
+      const dot = Math.max(3, Math.round(size * 0.09));
+      const gap = Math.max(3, Math.round(size * 0.12));
+
+      return html`
+        <div class="flex flex-none items-center justify-center rounded-full shadow-inner"
+             style="width: ${size}px; height: ${size}px; background-color: ${color}; box-shadow: inset 0 1px 2px rgba(255,255,255,0.25), 0 2px 6px rgba(0,0,0,0.3)">
+          <div class="flex items-center justify-center"
+               style="width: ${visorW}px; height: ${visorH}px; border-radius: ${Math.round(visorH * 0.55)}px; background-color: rgba(12,12,14,0.82); gap: ${gap}px">
+            <span class="rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]" style="width: ${dot}px; height: ${dot}px"></span>
+            <span class="rounded-full bg-white shadow-[0_0_4px_rgba(255,255,255,0.8)]" style="width: ${dot}px; height: ${dot}px"></span>
+          </div>
+        </div>
+      `;
+    }
+
+    function App() {
+      const [bots, setBots] = useState(DEFAULT_BOTS);
+      const [activeId, setActiveId] = useState('bot_cos_981a');
+      const [panel, setPanel] = useState(null); // 'computer' | 'settings' | 'create'
+      const [search, setSearch] = useState('');
+      const [draft, setDraft] = useState('');
+      const [isSending, setIsSending] = useState(false);
+      const [tab, setTab] = useState('chat'); // mobile tab: 'roster' | 'chat' | 'sandbox'
+
+      // New Bot Form
+      const [name, setName] = useState('');
+      const [desc, setDesc] = useState('');
+      const [inst, setInst] = useState('');
+      const [color, setColor] = useState('#8B5CF6');
+      const [approval, setApproval] = useState('auto');
+
+      const [messages, setMessages] = useState({
+        bot_cos_981a: [
+          { role: 'user', text: 'Sweep the inbox and draft replies for anything held. Keep Nora’s contract renewal at top of the queue.' },
+          { role: 'bot', text: 'On it. 41 unread since Friday. Archiving noise, drafting replies in your voice.',
+            card: [
+              { k: 'Archived', v: '26 newsletters + receipts' },
+              { k: 'Replied', v: '9 routine scheduling threads' },
+              { k: 'Drafted', v: '6 in your voice · held for review' },
+              { k: 'Flagged', v: '1 from Nora · renewal quote' }
+            ],
+            ask: {
+              text: 'Nora’s renewal quote is drafted with the 12% multi-year discount applied. Ready to send?',
+              detail: 'To: nora@acme.corp\nSubject: Re: Enterprise Renewal 2026-2027\nAttachment: contract-v2.pdf'
+            }
+          }
+        ],
+        bot_scout_10b9: [
+          { role: 'user', text: 'Run autonomous scan on high-bandwidth optical interconnects & EUV pellicle startups.' },
+          { role: 'bot', text: 'Scanned 14 arXiv papers and patents. Full dossier saved to workspace/euv_brief.md.',
+            card: [
+              { k: 'Synthesized', v: '40 accounts & startups analyzed' },
+              { k: 'Queued', v: '18 briefing cards stored in memory/' }
+            ]
+          }
+        ],
+        bot_mon_7c3a: [
+          { role: 'user', text: 'Verify all 6 homelab host services, ZFS pool, and backup snapshots.' },
+          { role: 'bot', text: 'Diagnostics complete. All systems operational.',
+            card: [
+              { k: 'NVMe Drive', v: 'Healthy · 24% used · 340GB free' },
+              { k: 'ZFS Pool', v: 'ONLINE · 0 errors · scrubbed 2d ago' },
+              { k: 'Backups', v: 'Nightly vzdump verified at 02:30 CT' }
+            ]
+          }
+        ]
+      });
+
+      const activeBot = bots.find(b => b.id === activeId) || bots[0];
+      const botMessages = messages[activeBot.id] || [];
+
+      const handleSend = () => {
+        if (!draft.trim()) return;
+        const text = draft;
+        setDraft('');
+        setIsSending(true);
+
+        setMessages(prev => ({
+          ...prev,
+          [activeBot.id]: [...(prev[activeBot.id] || []), { role: 'user', text }]
+        }));
+
+        setTimeout(() => {
+          setMessages(prev => ({
+            ...prev,
+            [activeBot.id]: [
+              ...(prev[activeBot.id] || []),
+              {
+                role: 'bot',
+                text: `Acknowledged. ${activeBot.name} is running autonomous turn on "${text}".`,
+                card: [
+                  { k: 'Sandbox', v: activeBot.workspace_path },
+                  { k: 'Status', v: 'Turn complete · Output verified' }
+                ]
+              }
+            ]
+          }));
+          setIsSending(false);
+        }, 1100);
+      };
+
+      const handleCreate = (e) => {
+        e.preventDefault();
+        if (!name.trim()) return;
+        const newBot = {
+          id: 'bot_' + Date.now().toString(36),
+          name,
+          title: desc || 'Autonomous Assistant',
+          description: desc,
+          instructions: inst,
+          color,
+          status: 'idle',
+          approval_mode: approval,
+          workspace_path: `~/.hermes/rakazo/bots/${name.toLowerCase().replace(/\\s+/g, '_')}/workspace`,
+          run_count: 0,
+          time_label: 'Just now',
+          preview: 'Newly created bot ready for tasks'
+        };
+        setBots([newBot, ...bots]);
+        setActiveId(newBot.id);
+        setPanel(null);
+        setName('');
+        setDesc('');
+        setInst('');
+      };
+
+      return html`
+        <div class="flex h-full w-full overflow-hidden text-[#DFDFE2] bg-[#050506]">
+          
+          <!-- 1. LEFT ROSTER SIDEBAR (Hidden on mobile unless in roster tab) -->
+          <aside class="flex w-full md:w-[316px] shrink-0 flex-col border-r border-[#171719] bg-[#0B0B0C] ${tab !== 'roster' ? 'hidden md:flex' : 'flex'}">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-[18px] pb-3 pt-4">
+              <div class="flex items-center gap-2.5">
+                <div class="flex h-7 w-7 items-center justify-center rounded-full bg-[#1A1A1E]">
+                  <span class="h-2.5 w-1 rounded-full bg-[#F7F7F4]"></span>
+                  <span class="ml-1 h-2.5 w-1 rounded-full bg-[#F7F7F4]"></span>
+                </div>
+                <span class="font-semibold text-[17px] tracking-tight text-[#ECECEE]">Rakazo</span>
+                <span class="rounded bg-[#1E1E24] px-1.5 py-0.5 text-[10px] font-mono text-[#8B5CF6]">HERMES</span>
+              </div>
+              <button onClick=${() => setPanel('create')}
+                      class="flex h-7 w-7 items-center justify-center rounded-lg bg-[#18181B] text-[20px] text-[#A8A8AD] hover:bg-[#24242A] hover:text-[#ECECEE]">
+                +
+              </button>
+            </div>
+
+            <!-- Search -->
+            <div class="mx-3.5 mb-3 flex items-center gap-2.5 rounded-xl border border-[#202023] bg-[#141416] px-3 py-2 text-[14px] text-[#6C6C70]">
+              <span>⌕</span>
+              <input value=${search} onInput=${e => setSearch(e.target.value)}
+                     placeholder="Search bots..."
+                     class="w-full bg-transparent text-[13.5px] text-[#ECECEE] outline-none placeholder-[#5A5A60]" />
+            </div>
+
+            <!-- Bot List -->
+            <div class="rk-scroll flex flex-1 flex-col gap-1 overflow-y-auto px-2.5 pb-2.5">
+              ${bots
+                .filter(b => b.name.toLowerCase().includes(search.toLowerCase()))
+                .map(bot => {
+                  const isSelected = activeBot.id === bot.id;
+                  return html`
+                    <button key=${bot.id} onClick=${() => { setActiveId(bot.id); setTab('chat'); }}
+                            class="flex w-full gap-3 rounded-xl px-2.5 py-[11px] text-left transition-colors"
+                            style="background: ${isSelected ? '#161618' : 'transparent'}">
+                      <${BotAvatar} color=${bot.color} size=${38} />
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-baseline justify-between gap-2">
+                          <span class="truncate text-[14.5px] font-medium text-[#ECECEE]">${bot.name}</span>
+                          <span class="shrink-0 text-[11.5px] font-medium text-[#6C6C70]">
+                            ${bot.approval_mode === 'strict' ? 'strict' : bot.time_label}
+                          </span>
+                        </div>
+                        <div class="mt-0.5 truncate text-[12.5px] text-[#85858A]">
+                          ${bot.preview}
+                        </div>
+                      </div>
+                    </button>
+                  `;
+                })}
+            </div>
+
+            <!-- Bottom Profile -->
+            <div class="border-t border-[#171719] p-3">
+              <div class="flex items-center gap-2.5 rounded-xl bg-[#141416] p-2">
+                <span class="grid h-8 w-8 place-items-center rounded-full bg-[#232326] text-[12px] font-bold text-[#A8A8AD]">RP</span>
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-[13.5px] font-semibold text-[#ECECEE]">Ritesh Patel</div>
+                  <div class="truncate text-[11.5px] text-[#4ECB71]">● Universal Web & Mobile Active</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- 2. CENTER CHAT VIEW -->
+          <main class="flex min-w-0 flex-1 flex-col bg-[#0D0D0E] ${tab !== 'chat' ? 'hidden md:flex' : 'flex'}">
+            <!-- Topbar -->
+            <div class="flex items-center justify-between border-b border-[#141416] px-[22px] py-[15px]">
+              <div class="flex items-center gap-3">
+                <button onClick=${() => setTab('roster')} class="md:hidden text-[#85858A] mr-1 text-lg">←</button>
+                <${BotAvatar} color=${activeBot.color} size=${28} />
+                <div>
+                  <span class="block truncate text-[15.5px] font-medium text-[#ECECEE]">${activeBot.name}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onClick=${() => setPanel(p => p === 'computer' ? null : 'computer')}
+                        class="grid h-[32px] w-[36px] place-items-center rounded-[9px] text-[#85858A] hover:bg-[#1B1B1E] hover:text-[#ECECEE]"
+                        style="background: ${panel === 'computer' ? '#1B1B1E' : 'transparent'}">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
+                    <rect x="2" y="4" width="20" height="13" rx="2" />
+                    <path d="M8 21h8M12 17v4" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Messages Stream -->
+            <div class="rk-scroll flex flex-1 flex-col gap-[14px] overflow-y-auto px-4 md:px-8 py-6">
+              ${botMessages.map((msg, i) => html`
+                <div key=${i} class="flex flex-col gap-2">
+                  ${msg.role === 'user'
+                    ? html`
+                      <div class="flex justify-end">
+                        <div class="max-w-[85%] md:max-w-[70%] rounded-[20px] bg-[#F1F1EF] px-[18px] py-3 text-[15px] leading-[1.45] text-[#1A1A1A]">
+                          ${msg.text}
+                        </div>
+                      </div>
+                    `
+                    : html`
+                      <div class="flex justify-start">
+                        <div class="max-w-[90%] md:max-w-[74%] rounded-[20px] bg-[#1A1A1D] px-[18px] py-3 text-[15px] leading-[1.5] text-[#DFDFE2]">
+                          ${msg.text}
+                        </div>
+                      </div>
+                    `}
+
+                  ${msg.card && html`
+                    <div class="flex justify-start">
+                      <div class="flex flex-col gap-2.5 rounded-[20px] bg-[#1A1A1D] px-5 py-4 shadow-lg border border-[#24242A]">
+                        ${msg.card.map(line => html`
+                          <div key=${line.k} class="flex items-baseline gap-2.5 text-[14px]">
+                            <span class="font-bold text-[#30A24B]">✓</span>
+                            <span class="font-semibold text-white">${line.k}</span>
+                            <span class="text-[#85858A]">→</span>
+                            <span class="text-[#DFDFE2]">${line.v}</span>
+                          </div>
+                        `)}
+                      </div>
+                    </div>
+                  `}
+
+                  ${msg.ask && html`
+                    <div class="max-w-[90%] md:max-w-[74%] rounded-[20px] border border-[#2E2E36] bg-[#141417] px-5 py-[17px] shadow-xl">
+                      <div class="text-[15px] leading-[1.5] text-[#ECECEE]">${msg.ask.text}</div>
+                      ${msg.ask.detail && html`
+                        <pre class="mt-3 rounded-xl bg-[#0E0E10] px-3.5 py-3 font-mono text-[12px] leading-[1.7] text-[#85858A] whitespace-pre-wrap">${msg.ask.detail}</pre>
+                      `}
+                      <div class="mt-3.5 flex gap-2">
+                        <button class="rounded-[11px] bg-[#F1F1EF] px-[17px] py-2 text-[14px] font-semibold text-[#17171A]">Send it</button>
+                        <button class="rounded-[11px] border border-[#26262A] px-[17px] py-2 text-[14px] text-[#C9C9CE]">Edit first</button>
+                      </div>
+                    </div>
+                  `}
+                </div>
+              `)}
+
+              ${isSending && html`
+                <div class="flex justify-start">
+                  <div class="rk-pulse rounded-[20px] bg-[#1A1A1D] px-[18px] py-[12px] text-[14.5px] text-[#85858A]">working…</div>
+                </div>
+              `}
+            </div>
+
+            <!-- Composer -->
+            <div class="px-4 md:px-6 pb-6 pt-3">
+              <div class="flex items-center gap-3.5 rounded-full border border-[#202023] bg-[#131315] py-[9px] pr-2.5 pl-3 shadow-2xl">
+                <span class="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-full border border-[#26262A] text-[18px] text-[#9A9AA0]">+</span>
+                <input value=${draft} onInput=${e => setDraft(e.target.value)}
+                       onKeyDown=${e => { if (e.key === 'Enter') handleSend(); }}
+                       placeholder="Message ${activeBot.name}..."
+                       class="flex-1 bg-transparent text-[15px] text-[#E9E9EA] outline-none placeholder-[#5A5A60]" />
+                <button onClick=${handleSend} disabled=${!draft.trim() || isSending}
+                        class="grid h-9 w-9 place-items-center rounded-full bg-[#F1F1EF] text-[16px] font-bold text-[#17171A] disabled:opacity-40">
+                  ↑
+                </button>
+              </div>
+            </div>
+          </main>
+
+          <!-- 3. RIGHT PANEL (Sandbox Computer & Routines) -->
+          <aside class="flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-[#0A0A0B] transition-[width] duration-200 ease-out ${panel && activeBot ? 'w-full md:w-[384px] border-l border-[#141416]' : 'w-0 hidden md:block'}">
+            ${panel && activeBot && html`
+              <div class="rk-scroll h-full w-full md:w-[384px] overflow-y-auto px-5 py-[17px]">
+                <div class="mb-4 flex items-center justify-between">
+                  <span class="text-[13.5px] font-medium text-[#85858A]">${activeBot.name}’s sandbox</span>
+                  <button onClick=${() => setPanel(null)} class="text-[#85858A] hover:text-white">✕</button>
+                </div>
+
+                <!-- Virtual Screen -->
+                <div class="relative aspect-[16/10] overflow-hidden rounded-[14px] border border-[#202024] bg-[#0E0E10] p-3 font-mono text-[11px] text-[#A8A8AD]">
+                  <div class="flex items-center justify-between border-b border-[#1E1E22] pb-2 text-[#5E5E66]">
+                    <span>workspace: ${activeBot.workspace_path}</span>
+                    <span class="flex h-2 w-2 rounded-full bg-[#4ECB71]"></span>
+                  </div>
+                  <div class="mt-3 space-y-1 text-emerald-400">
+                    <div>$ hermes kanban list</div>
+                    <div class="text-[#85858A]">● [RUNNING] 41 threads processed</div>
+                    <div class="text-cyan-400">$ hermes memory ${activeBot.name} read</div>
+                    <div class="text-[#85858A]">Loaded 2 persistent docs</div>
+                  </div>
+                </div>
+
+                <div class="mt-6 mb-3 text-[14px] font-semibold text-[#85858A]">Automated Routines</div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between rounded-[11px] border border-[#1A1A1E] bg-[#121214] p-3">
+                    <div class="flex items-center gap-2.5">
+                      <span class="text-[#E65707]">◷</span>
+                      <div>
+                        <div class="text-[14px] font-medium text-[#ECECEE]">Morning Intel Sweep</div>
+                        <div class="text-[12px] text-[#6C6C70]">Weekdays 8:00 AM</div>
+                      </div>
+                    </div>
+                    <span class="text-[11px] text-[#4ECB71]">Active</span>
+                  </div>
+                </div>
+              </div>
+            `}
+          </aside>
+
+          <!-- CREATE BOT MODAL -->
+          ${panel === 'create' && html`
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+              <form onSubmit=${handleCreate} class="w-full max-w-[420px] rounded-2xl border border-[#26262C] bg-[#121214] p-6 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-[16px] font-bold text-white">Create AI Bot</h3>
+                  <button type="button" onClick=${() => setPanel(null)} class="text-[#85858A]">✕</button>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-[#85858A]">Bot Name</label>
+                  <input required value=${name} onInput=${e => setName(e.target.value)} placeholder="e.g. Sales Outbound"
+                         class="mt-1.5 w-full rounded-xl border border-[#222226] bg-[#18181B] px-3.5 py-2.5 text-xs text-white outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-[#85858A]">Description</label>
+                  <input value=${desc} onInput=${e => setDesc(e.target.value)} placeholder="What does this bot own?"
+                         class="mt-1.5 w-full rounded-xl border border-[#222226] bg-[#18181B] px-3.5 py-2.5 text-xs text-white outline-none" />
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-[#85858A]">System Persona</label>
+                  <textarea rows="3" value=${inst} onInput=${e => setInst(e.target.value)} placeholder="Guidelines and voice..."
+                            class="mt-1.5 w-full rounded-xl border border-[#222226] bg-[#18181B] px-3.5 py-2.5 text-xs text-white outline-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t border-[#1C1C22]">
+                  <button type="button" onClick=${() => setPanel(null)} class="rounded-xl px-4 py-2 text-xs font-medium text-[#85858A]">Cancel</button>
+                  <button type="submit" class="rounded-xl bg-[#F1F1EF] px-4 py-2 text-xs font-bold text-[#17171A]">Create Bot</button>
+                </div>
+              </form>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    render(html`<${App} />`, document.getElementById('app'));
+  </script>
+</body>
+</html>

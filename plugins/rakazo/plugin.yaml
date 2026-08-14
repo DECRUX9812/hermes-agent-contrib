@@ -1,0 +1,21 @@
+name: rakazo
+version: "1.0.0"
+description: >-
+  Persistent autonomous bots — each bot has its own thread, sandboxed workspace,
+  cron routines, persistent memory, and a full audit log. Inspired by Rakazo.
+  Bridges to Hermes cron (routines), kanban (workspace), memory (bot brain),
+  and terminal (sandbox) instead of reimplementing them.
+author: "Ritesh Patel (@DECRUX9812), NousResearch (plugin)"
+kind: backend
+api: dashboard/plugin_api.py
+hooks:
+  - pre_tool_call
+  - post_tool_call
+  - on_session_end
+provides_tools:
+  - bot_send
+  - bot_list
+  - bot_status
+  - bot_routines
+  - bot_memory
+  - bot_audit
