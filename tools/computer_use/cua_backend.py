@@ -2068,6 +2068,18 @@ class CuaDriverBackend(ComputerUseBackend):
             return False
         return cua_driver_binary_available()
 
+    def is_alive(self) -> bool:
+        """Return True only if the embedded daemon subprocess is still alive.
+
+        Returns False when there's no embedded daemon (standard permission
+        mode) so the cache path stays unaffected — the tool still requires a
+        binary.
+        """
+        if self._embedded_daemon is None:
+            return True
+        process = self._embedded_daemon._process
+        return process is not None and process.poll() is None
+
     def _clear_active_target(self) -> None:
         """Forget a capture/focus target so a failed lookup cannot misroute input."""
         self._active_pid = None

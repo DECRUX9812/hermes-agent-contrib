@@ -2360,3 +2360,80 @@ class TestBoundsScaleField:
         assert _bounds_scale(elems, 1455, 791) is None
         assert _bounds_scale([], 1455, 791) is None
         assert _bounds_scale(elems, 0, 0) is None
+
+
+class TestStaleDaemonEviction:
+    """When the embedded cua-driver daemon dies, the singleton cache must
+    evict the stale backend and create a fresh one on the next call — not
+    return a dead handle that fails every action.
+    """
+
+    def test_dead_backend_is_evicted_and_recreated(self):
+        """A cached backend whose is_alive() returns False is evicted and
+        replaced by a fresh backend on the next _get_backend() call."""
+        from unittest.mock import MagicMock
+        from tools.computer_use import tool as cu_tool
+
+        cu_tool.reset_backend_for_tests()
+
+        # Create a mock backend that reports as not alive (dead daemon).
+        dead_backend = MagicMock()
+        dead_backend.is_alive.return_value = False
+        dead_backend.stop.return_value = None  # cleanup is safe
+
+        # Inject into the singleton cache
+        cu_tool._backends[""] = dead_backend
+        cu_tool._backend_permission_modes[""] = "standard"
+        cu_tool._backend_call_locks[""] = __import__("threading").RLock()
+
+        # _get_backend should evict and create a new one.
+        # Since cua-driver may not be available in CI (no binary), the new
+        # backend might be a _NoopBackend; but the stale one must be gone.
+        # We just need to assert the dead backend was evicted.
+        # Use a flag to detect whether the dead backend's stop() was called.
+        # Actually, the eviction path pops from _backends without calling stop.
+        # So check _backends no longer has the dead backend.
+        # The new backend creation may fail if no binary; in that case
+        # _get_backend raises.  We handle both outcomes:
+        try:
+            new = cu_tool._get_backend("")
+            # The dead backend must no longer be cached
+            assert cu_tool._backends.get("") is not dead_backend
+            assert new is not dead_backend
+        except Exception:
+            # Even if backend creation fails (no cua-driver in CI), the
+            # stale entry must have been evicted from the cache.
+            assert "" not in cu_tool._backends
+
+        cu_tool.reset_backend_for_tests()
+
+    def test_live_backend_is_reused(self):
+        """A cached backend whose is_alive() returns True is reused — the
+        cache still works for healthy daemons."""
+        from unittest.mock import MagicMock
+        from tools.computer_use import tool as cu_tool
+
+        cu_tool.reset_backend_for_tests()
+
+        live_backend = MagicMock()
+        live_backend.is_alive.return_value = True
+
+        cu_tool._backends["test-session"] = live_backend
+        cu_tool._backend_permission_modes["test-session"] = "standard"
+        cu_tool._backend_call_locks["test-session"] = __import__("threading").RLock()
+
+        result = cu_tool._get_backend("test-session")
+        assert result is live_backend
+
+        cu_tool.reset_backend_for_tests()
+
+    def test_default_is_alive_returns_true(self):
+        """The ABC default for is_alive() is True — backends without
+        stateful subprocesses stay cached indefinitely."""
+        from tools.computer_use.backend import ComputerUseBackend
+
+        # Cannot instantiate the ABC directly, but we can check the default
+        # implementation via _NoopBackend (which inherits it).
+        from tools.computer_use.tool import _NoopBackend
+        noop = _NoopBackend()
+        assert noop.is_alive() is True

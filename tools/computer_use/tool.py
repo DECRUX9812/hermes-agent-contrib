@@ -219,7 +219,21 @@ def _get_backend(session_id: str = "") -> ComputerUseBackend:
             cached = _backends.get(sid)
             if cached is not None:
                 if _backend_permission_modes.get(sid, "standard") == permission_mode:
-                    return cached
+                    # A dead embedded daemon is indistinguishable from
+                    # "never started" to the caller — every action fails.
+                    # Evict the stale handle and fall through to create a
+                    # fresh backend, same as the permission-mode-mismatch
+                    # path below.
+                    # getattr: backward-compat for test stubs that don't
+                    # inherit is_alive() from the ABC.
+                    if not getattr(cached, "is_alive", lambda: True)():
+                        stale_backend = _backends.pop(sid)
+                        stale_lock = _backend_call_locks.pop(sid, None)
+                        _backend_permission_modes.pop(sid, None)
+                        if sid == "":
+                            _backend = None
+                    else:
+                        return cached
                 # Cua's permission mode cannot change after daemon startup. A
                 # /yolo toggle replaces only this session's backend.
                 stale_backend = _backends.pop(sid)

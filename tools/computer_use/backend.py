@@ -117,6 +117,18 @@ class ComputerUseBackend(ABC):
     @abstractmethod
     def stop(self) -> None: ...
 
+    def is_alive(self) -> bool:
+        """Return True if the backend's underlying driver/process is still
+        alive and capable of serving requests.
+
+        Default True — backends without stateful subprocesses stay cached.
+        Backends that own a long-lived subprocess (cua-driver's embedded
+        daemon, etc.) MUST override this so the singleton cache can detect a
+        dead driver and transparently respawn it on the next call, instead of
+        returning a stale handle that fails every action.
+        """
+        return True
+
     @abstractmethod
     def is_available(self) -> bool:
         """Return True if the backend can be used on this host right now.

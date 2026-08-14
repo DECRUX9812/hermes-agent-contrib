@@ -111,7 +111,20 @@ TOOLSETS = {
         "tools": ["web_search", "web_extract"],
         "includes": []  # No other toolsets included
     },
-    
+
+    "rakazo": {
+        "description": (
+            "Persistent autonomous bots — each bot has its own thread, workspace, "
+            "memory, cron routines, and full audit log. Inspired by Rakazo. "
+            "Use bots to delegate ongoing work that needs its own session."
+        ),
+        "tools": [
+            "bot_send", "bot_list", "bot_status", "bot_routines",
+            "bot_memory", "bot_audit",
+        ],
+        "includes": [],
+    },
+
     "search": {
         "description": "Web search only (no content extraction/scraping)",
         "tools": ["web_search"],
