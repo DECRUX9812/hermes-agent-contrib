@@ -2874,6 +2874,14 @@ export const en: Translations = {
       address: 'Preview URL',
       navigate: 'Navigate preview',
       go: 'Go to address'
+      viewport: 'Preview viewport',
+      viewportFree: 'Free size',
+      viewportDesktop: 'Desktop',
+      viewportLaptop: 'Laptop',
+      viewportMobile: 'Mobile',
+      viewportWidth: 'Viewport width',
+      viewportHeight: 'Viewport height',
+      viewportApply: 'Apply'
     }
   },
 

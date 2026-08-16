@@ -2297,6 +2297,14 @@ export const ar = defineLocale({
       address: 'رابط المعاينة',
       navigate: 'التنقل في المعاينة',
       go: 'الانتقال إلى العنوان'
+      viewport: 'حجم المعاينة',
+      viewportFree: 'حجم حر',
+      viewportDesktop: 'سطح المكتب',
+      viewportLaptop: 'حاسوب محمول',
+      viewportMobile: 'جوال',
+      viewportWidth: 'العرض',
+      viewportHeight: 'الارتفاع',
+      viewportApply: 'تطبيق'
     }
   },
   zones: {

@@ -2586,6 +2586,14 @@ export const ja = defineLocale({
       address: 'プレビュー URL',
       navigate: 'プレビューをナビゲート',
       go: 'このアドレスへ移動'
+      viewport: 'プレビューの表示サイズ',
+      viewportFree: 'フリーサイズ',
+      viewportDesktop: 'デスクトップ',
+      viewportLaptop: 'ノートPC',
+      viewportMobile: 'モバイル',
+      viewportWidth: '幅',
+      viewportHeight: '高さ',
+      viewportApply: '適用'
     }
   },
 

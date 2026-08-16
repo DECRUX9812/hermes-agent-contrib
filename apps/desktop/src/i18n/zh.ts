@@ -3043,6 +3043,14 @@ export const zh: Translations = {
       address: '预览网址',
       navigate: '浏览预览',
       go: '转到地址'
+      viewport: '预览视口',
+      viewportFree: '自由尺寸',
+      viewportDesktop: '桌面',
+      viewportLaptop: '笔记本',
+      viewportMobile: '手机',
+      viewportWidth: '宽度',
+      viewportHeight: '高度',
+      viewportApply: '应用'
     }
   },
 

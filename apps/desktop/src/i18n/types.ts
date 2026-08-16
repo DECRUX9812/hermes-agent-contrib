@@ -2453,6 +2453,14 @@ export interface Translations {
       address: string
       navigate: string
       go: string
+      viewport: string
+      viewportFree: string
+      viewportDesktop: string
+      viewportLaptop: string
+      viewportMobile: string
+      viewportWidth: string
+      viewportHeight: string
+      viewportApply: string
     }
   }
 
