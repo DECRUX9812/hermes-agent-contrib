@@ -2446,6 +2446,7 @@ export interface Translations {
       loadFailedConsole: (code: number | undefined, message: string) => string
       unreachableDescription: string
       openTarget: (url: string) => string
+      openExternal: string
       fallbackTitle: string
       goBack: string
       goForward: string

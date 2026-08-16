@@ -2867,6 +2867,7 @@ export const en: Translations = {
       loadFailedConsole: (code, message) => `Load failed${code ? ` (${code})` : ''}: ${message}`,
       unreachableDescription: 'The preview page could not be reached.',
       openTarget: url => `Open ${url}`,
+      openExternal: 'Open in default browser',
       fallbackTitle: 'Preview',
       goBack: 'Go back',
       goForward: 'Go forward',
