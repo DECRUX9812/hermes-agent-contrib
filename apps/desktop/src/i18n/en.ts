@@ -2881,7 +2881,11 @@ export const en: Translations = {
       viewportMobile: 'Mobile',
       viewportWidth: 'Viewport width',
       viewportHeight: 'Viewport height',
-      viewportApply: 'Apply'
+      viewportApply: 'Apply',
+      pick: 'Select page element for chat',
+      pickCancel: 'Cancel element selection',
+      pickFailed: 'Failed to select page element',
+      pickUnavailable: 'The preview page is not ready yet.'
     }
   },
 
