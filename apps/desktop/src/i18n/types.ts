@@ -2603,6 +2603,8 @@ export interface Translations {
     }
     tool: {
       copyCode: string
+      wordWrap: string
+      toggleWordWrap: string
       renderingImage: string
       copyOutput: string
       copyCommand: string
