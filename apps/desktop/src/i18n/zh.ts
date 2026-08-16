@@ -3043,7 +3043,7 @@ export const zh: Translations = {
       reload: '重新加载预览',
       address: '预览网址',
       navigate: '浏览预览',
-      go: '转到地址'
+      go: '转到地址',
       viewport: '预览视口',
       viewportFree: '自由尺寸',
       viewportDesktop: '桌面',

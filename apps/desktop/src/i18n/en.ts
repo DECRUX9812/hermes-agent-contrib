@@ -2874,7 +2874,7 @@ export const en: Translations = {
       reload: 'Reload preview',
       address: 'Preview URL',
       navigate: 'Navigate preview',
-      go: 'Go to address'
+      go: 'Go to address',
       viewport: 'Preview viewport',
       viewportFree: 'Free size',
       viewportDesktop: 'Desktop',

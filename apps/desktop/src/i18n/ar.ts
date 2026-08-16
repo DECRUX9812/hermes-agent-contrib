@@ -2297,7 +2297,7 @@ export const ar = defineLocale({
       reload: 'إعادة تحميل المعاينة',
       address: 'رابط المعاينة',
       navigate: 'التنقل في المعاينة',
-      go: 'الانتقال إلى العنوان'
+      go: 'الانتقال إلى العنوان',
       viewport: 'حجم المعاينة',
       viewportFree: 'حجم حر',
       viewportDesktop: 'سطح المكتب',

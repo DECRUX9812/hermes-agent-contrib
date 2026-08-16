@@ -2586,7 +2586,7 @@ export const ja = defineLocale({
       reload: 'プレビューを再読み込み',
       address: 'プレビュー URL',
       navigate: 'プレビューをナビゲート',
-      go: 'このアドレスへ移動'
+      go: 'このアドレスへ移動',
       viewport: 'プレビューの表示サイズ',
       viewportFree: 'フリーサイズ',
       viewportDesktop: 'デスクトップ',

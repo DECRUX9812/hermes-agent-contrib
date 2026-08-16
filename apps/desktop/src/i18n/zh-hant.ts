@@ -2500,7 +2500,7 @@ export const zhHant = defineLocale({
       reload: '重新載入預覽',
       address: '預覽網址',
       navigate: '瀏覽預覽',
-      go: '前往網址'
+      go: '前往網址',
       viewport: '預覽檢視區',
       viewportFree: '自由尺寸',
       viewportDesktop: '桌面',
