@@ -2290,7 +2290,12 @@ export const ar = defineLocale({
       loadFailedConsole: (code, message) => `فشل التحميل${code ? ` (${code})` : ''}: ${message}`,
       unreachableDescription: 'تعذّر الوصول إلى صفحة المعاينة.',
       openTarget: url => `فتح ${url}`,
-      fallbackTitle: 'معاينة'
+      fallbackTitle: 'معاينة',
+      goBack: 'رجوع',
+      goForward: 'تقدم',
+      reload: 'إعادة تحميل المعاينة',
+      address: 'رابط المعاينة',
+      navigate: 'التنقل في المعاينة'
     }
   },
   zones: {
