@@ -467,6 +467,8 @@ from hermes_cli.subcommands.skin import build_skin_parser
 from hermes_cli.subcommands.console import build_console_parser
 from hermes_cli.subcommands.version import build_version_parser
 from hermes_cli.subcommands.update import build_update_parser
+from hermes_cli.subcommands.health import build_health_parser
+from hermes_cli.subcommands.install import build_install_parser
 from hermes_cli.subcommands.uninstall import build_uninstall_parser
 from hermes_cli.subcommands.dashboard import build_dashboard_parser
 from hermes_cli.subcommands.gui import build_gui_parser
@@ -5570,6 +5572,18 @@ def cmd_verify(args):
     from hermes_cli.verify_cmd import run_verify_command
 
     sys.exit(run_verify_command(args))
+
+
+def cmd_health(args):
+    """Check Hermes runtime health and first-run readiness."""
+    from hermes_cli.health import cmd_health as _cmd_health
+    sys.exit(_cmd_health(args))
+
+
+def cmd_install_verify(args):
+    """Verify installation is functional."""
+    from hermes_cli.verify_install import cmd_install_verify as _cmd_install_verify
+    sys.exit(_cmd_install_verify(args))
 
 
 def cmd_security(args):
@@ -12562,6 +12576,16 @@ def main():
     # doctor command  (parser built in hermes_cli/subcommands/doctor.py)
     # =========================================================================
     build_doctor_parser(subparsers, cmd_doctor=cmd_doctor)
+
+    # =========================================================================
+    # health command  (parser built in hermes_cli/subcommands/health.py)
+    # =========================================================================
+    build_health_parser(subparsers, cmd_health=cmd_health)
+
+    # =========================================================================
+    # install command  (parser built in hermes_cli/subcommands/install.py)
+    # =========================================================================
+    build_install_parser(subparsers, cmd_install_verify=cmd_install_verify)
 
     # =========================================================================
     # verify command  (parser built in hermes_cli/subcommands/verify.py)

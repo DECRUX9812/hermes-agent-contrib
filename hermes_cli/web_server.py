@@ -4008,6 +4008,23 @@ def _display_system_platform(
     }
 
 
+@app.get("/api/runtime/status")
+async def get_runtime_status():
+    """Authenticated runtime status — consolidated health from `hermes health`.
+
+    Returns the full health payload: runtime, database, model, providers,
+    tools, plugins, MCP servers, skills, and the capabilities health card.
+    Unlike the public /api/status, this endpoint includes capability-level
+    detail (provider auth status, tool check_fn results, etc.) and requires
+    authentication (it is NOT in PUBLIC_API_PATHS).
+
+    Maps to the contract in FIRST_RUN_CONTRACT.md §5.
+    """
+    from hermes_cli.health import run_health_checks
+
+    return await run_in_threadpool(run_health_checks)
+
+
 @app.get("/api/system/stats")
 async def get_system_stats():
     """Host + process system stats for the System page.
