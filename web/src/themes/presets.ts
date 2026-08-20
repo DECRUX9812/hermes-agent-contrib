@@ -40,18 +40,31 @@ const DEFAULT_LAYOUT: ThemeLayout = {
 
 export const defaultTheme: DashboardTheme = {
   name: "default",
-  label: "Hermes Teal",
-  description: "Classic dark teal — the canonical Hermes look",
+  label: "Hermes Slate",
+  description: "Modern calm obsidian canvas — easy on the eyes",
   palette: {
-    background: { hex: "#041c1c", alpha: 1 },
-    midground: { hex: "#ffe6cb", alpha: 1 },
+    background: { hex: "#0b0f17", alpha: 1 },
+    midground: { hex: "#f1f5f9", alpha: 1 },
     foreground: { hex: "#ffffff", alpha: 0 },
-    warmGlow: "rgba(255, 189, 56, 0.35)",
-    noiseOpacity: 1,
+    warmGlow: "rgba(56, 189, 248, 0.15)",
+    noiseOpacity: 0.2,
   },
-  typography: DEFAULT_TYPOGRAPHY,
-  layout: DEFAULT_LAYOUT,
-  terminalBackground: "#000000",
+  typography: {
+    ...DEFAULT_TYPOGRAPHY,
+    fontSans: `"Inter", ${SYSTEM_SANS}`,
+    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`,
+    fontUrl:
+      "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap",
+    letterSpacing: "-0.01em",
+  },
+  layout: {
+    ...DEFAULT_LAYOUT,
+    radius: "0.75rem",
+    density: "comfortable",
+  },
+  terminalBackground: "#10141f",
+  terminalForeground: "#e2e8f0",
+  swatchColors: ["#0b0f17", "#38bdf8", "#818cf8"],
 };
 
 export const midnightTheme: DashboardTheme = {
@@ -228,8 +241,51 @@ export const defaultLargeTheme: DashboardTheme = {
   },
 };
 
+/**
+ * Nexus Modern — High-end ChatGPT + Claude + Perplexity dark workspace.
+ * Deep obsidian stage, electric cyan & sky glow, crisp typography.
+ */
+export const nexusTheme: DashboardTheme = {
+  name: "nexus",
+  label: "Nexus Modern",
+  description: "Deep obsidian canvas with cyan/indigo accents — ChatGPT & Perplexity feel",
+  palette: {
+    background: { hex: "#0b0f17", alpha: 1 },
+    midground: { hex: "#e2e8f0", alpha: 1 },
+    foreground: { hex: "#ffffff", alpha: 0 },
+    warmGlow: "rgba(56, 189, 248, 0.25)",
+    noiseOpacity: 0.4,
+  },
+  typography: {
+    ...DEFAULT_TYPOGRAPHY,
+    fontSans: `"Inter", ${SYSTEM_SANS}`,
+    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`,
+    fontUrl:
+      "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap",
+    letterSpacing: "-0.01em",
+  },
+  layout: {
+    ...DEFAULT_LAYOUT,
+    radius: "0.75rem",
+    density: "comfortable",
+  },
+  colorOverrides: {
+    success: "#10b981",
+    warning: "#f59e0b",
+    destructive: "#ef4444",
+  },
+  terminalBackground: "#070a0f",
+  terminalForeground: "#e2e8f0",
+  seriesColors: {
+    inputTokenAccent: "#38bdf8",
+    outputTokenAccent: "#818cf8",
+  },
+  swatchColors: ["#0b0f17", "#38bdf8", "#818cf8"],
+};
+
 export const BUILTIN_THEMES: Record<string, DashboardTheme> = {
   default: defaultTheme,
+  nexus: nexusTheme,
   "default-large": defaultLargeTheme,
   "nous-blue": nousBlueTheme,
   midnight: midnightTheme,

@@ -1784,12 +1784,12 @@ export default function ChatPage({ isActive = true }: { isActive?: boolean }) {
         <div
           ref={termWrapRef}
           className={cn(
-            "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg",
-            "p-2 sm:p-3",
+            "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 shadow-2xl",
+            "p-3 sm:p-4",
           )}
           style={{
             backgroundColor: terminalBg,
-            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+            boxShadow: "0 12px 40px rgba(0, 0, 0, 0.45)",
           }}
         >
           <div
