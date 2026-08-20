@@ -228,6 +228,52 @@ export const defaultLargeTheme: DashboardTheme = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// Nexus — premium ChatGPT-grade skin (Decrux build).
+// Near-black canvas, calm violet/teal accent glow, Inter typography,
+// tighter corner radius and comfortable density. Functionally identical to
+// the other themes; only palette/typography/layout differ.
+// ---------------------------------------------------------------------------
+export const nexusTheme: DashboardTheme = {
+  name: "nexus",
+  label: "Nexus",
+  description: "Premium near-black canvas with calm violet/teal accents",
+  palette: {
+    background: { hex: "#0a0a0c", alpha: 1 },
+    midground: { hex: "#c9c5ff", alpha: 1 },
+    foreground: { hex: "#ffffff", alpha: 0 },
+    warmGlow: "rgba(139, 122, 255, 0.30)",
+    noiseOpacity: 0.35,
+  },
+  typography: {
+    ...DEFAULT_TYPOGRAPHY,
+    fontSans: `"Inter", ${SYSTEM_SANS}`,
+    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`,
+    fontUrl:
+      "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap",
+    baseSize: "15px",
+    lineHeight: "1.6",
+    letterSpacing: "-0.006em",
+  },
+  layout: {
+    ...DEFAULT_LAYOUT,
+    radius: "0.7rem",
+    density: "comfortable",
+  },
+  terminalBackground: "#0d0d10",
+  terminalForeground: "#e7e7ea",
+  seriesColors: {
+    inputTokenAccent: "#8b7aff",
+    outputTokenAccent: "#5ed7c4",
+  },
+  swatchColors: ["#0a0a0c", "#8b7aff", "#5ed7c4"],
+  colorOverrides: {
+    success: "#5ed7c4",
+    warning: "#ffb454",
+    destructive: "#ff6b6b",
+  },
+};
+
 export const BUILTIN_THEMES: Record<string, DashboardTheme> = {
   default: defaultTheme,
   "default-large": defaultLargeTheme,
@@ -237,4 +283,5 @@ export const BUILTIN_THEMES: Record<string, DashboardTheme> = {
   mono: monoTheme,
   cyberpunk: cyberpunkTheme,
   rose: roseTheme,
+  nexus: nexusTheme,
 };

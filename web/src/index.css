@@ -253,3 +253,75 @@ html[dir="rtl"] {
   direction: rtl;
 }
 
+/* ================================================================== */
+/* Nexus premium skin — polish layer (Decrux build).                 */
+/* Non-destructive: enhances the Nexus theme tokens with glass, a     */
+/* calm aurora glow, refined scrollbars and focus rings.             */
+/* ================================================================== */
+:root {
+  --nexus-accent: #8b7aff;
+  --nexus-accent-2: #5ed7c4;
+}
+
+/* Calm aurora wash behind the app shell (very subtle, respects theme). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60% 50% at 18% 0%, rgba(139, 122, 255, 0.10), transparent 70%),
+    radial-gradient(50% 45% at 100% 8%, rgba(94, 215, 196, 0.07), transparent 70%);
+}
+
+/* Glass surfaces — sidebar + header + cards feel airy, not flat. */
+.bg-background-base,
+[data-theme] .bg-background-base {
+  background-color: color-mix(in srgb, var(--background-base) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+/* Refined scrollbars (theme-aware). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--foreground-base) 22%, transparent) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--foreground-base) 20%, transparent);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--foreground-base) 34%, transparent);
+  background-clip: content-box;
+}
+
+/* Softer, premium focus ring. */
+:where(button, a, input, textarea, [tabindex]):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--nexus-accent) 70%, transparent);
+  outline-offset: 2px;
+  border-radius: var(--theme-radius, 0.5rem);
+}
+
+/* Gentle entrance for routed surfaces. */
+@keyframes nexus-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+main, [data-route-animate] {
+  animation: nexus-fade 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
