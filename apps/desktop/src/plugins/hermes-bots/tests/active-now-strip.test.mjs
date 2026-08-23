@@ -15,7 +15,7 @@ function loadActiveBotsSlice() {
 
   const context = {}
   vm.runInNewContext(
-    `${source.slice(start, end)}\nglobalThis.__activeBots = activeBots;\nglobalThis.__botActivitySession = botActivitySession;`,
+    `${source.slice(start, end)}\nglobalThis.__activeBots = activeBots;\nglobalThis.__botActivitySession = botActivitySession;\nglobalThis.__botSessionBusy = botSessionBusy;`,
     context
   )
 
@@ -30,40 +30,54 @@ function loadBotActivitySession() {
   return loadActiveBotsSlice().__botActivitySession
 }
 
+function loadBotSessionBusy() {
+  return loadActiveBotsSlice().__botSessionBusy
+}
+
 // Fixed clock so "inside the window" vs "stale" is deterministic.
 const NOW = 1_000_000_000_000
 
 const roster = [
-  { name: 'researcher', last_session: { last_active: (NOW / 1000) - 10 } },
-  { name: 'scribe', last_session: { last_active: (NOW / 1000) - 400 } },
-  { name: 'analyst', last_session: null }
+  {
+    name: 'researcher',
+    canonical_session: { id: 'research-chat', resolved_id: 'research-runtime' },
+    last_session: { last_active: (NOW / 1000) - 10 }
+  },
+  {
+    name: 'scribe',
+    canonical_session: { id: 'scribe-chat', resolved_id: 'scribe-runtime' },
+    last_session: { last_active: (NOW / 1000) - 400 }
+  },
+  { name: 'analyst', canonical_session: { id: 'analyst-chat', resolved_id: 'analyst-runtime' }, last_session: null }
 ]
 
-test('activeBots includes the gateway-busy selected profile before its first response lands', () => {
+test('activeBots includes a canonical Bot Chat whose runtime session is busy', () => {
   const activeBots = loadActiveBots()
-  // analyst has no last_session at all — a busy turn must still show it.
-  const names = activeBots(roster, 'analyst', 'busy', NOW).map(bot => bot.name)
+  const names = activeBots(roster, { 'analyst-runtime': true }, NOW).map(bot => bot.name)
   assert.ok(names.includes('analyst'))
 })
 
-test('activeBots includes bots whose last message is inside the liveness window', () => {
+test('activeBots does not mislabel a recently completed chat as working', () => {
   const activeBots = loadActiveBots()
-  const names = activeBots(roster, 'default', 'open', NOW).map(bot => bot.name)
-  assert.ok(names.includes('researcher'))
+  const names = activeBots(roster, {}, NOW).map(bot => bot.name)
+  assert.ok(!names.includes('researcher'))
 })
 
 test('activeBots excludes stale activity outside the window', () => {
   const activeBots = loadActiveBots()
-  const names = activeBots(roster, 'default', 'open', NOW).map(bot => bot.name)
+  const names = activeBots(roster, {}, NOW).map(bot => bot.name)
   assert.ok(!names.includes('scribe'))
 })
 
-test('activeBots preserves roster order and never hides other bots', () => {
+test('activeBots preserves roster order for real working signals', () => {
   const activeBots = loadActiveBots()
-  // Mixed window: only researcher qualifies, but the output stays in input
-  // order and the full roster object is untouched.
-  const active = activeBots(roster, 'default', 'open', NOW)
-  assert.deepEqual(active.map(bot => bot.name), ['researcher'])
+  const busyRoster = roster.map(bot =>
+    bot.name === 'scribe'
+      ? { ...bot, worker_session: { id: 'worker', last_active: NOW / 1000 - 10 } }
+      : bot
+  )
+  const active = activeBots(busyRoster, { 'analyst-runtime': true }, NOW)
+  assert.deepEqual(active.map(bot => bot.name), ['scribe', 'analyst'])
   assert.equal(roster.length, 3)
 })
 
@@ -73,13 +87,13 @@ test('activeBots returns an empty list when nothing is active', () => {
     { name: 'scribe', last_session: { last_active: (NOW / 1000) - 400 } },
     { name: 'analyst', last_session: null }
   ]
-  assert.deepEqual(activeBots(quiet, 'default', 'open', NOW), [])
+  assert.deepEqual(activeBots(quiet, {}, NOW), [])
 })
 
 test('roster without profiles never throws', () => {
   const activeBots = loadActiveBots()
-  assert.equal(activeBots(null, 'default', 'open', NOW).length, 0)
-  assert.equal(activeBots([], 'default', 'open', NOW).length, 0)
+  assert.equal(activeBots(null, {}, NOW).length, 0)
+  assert.equal(activeBots([], {}, NOW).length, 0)
 })
 
 // ── botActivitySession: canonical Bot Chat activity counts (hermes-agent "6d ago" bug) ──
@@ -112,7 +126,7 @@ test('botActivitySession degrades to whichever side exists (older gateways / no 
   assert.equal(botActivitySession(null), null)
 })
 
-test('activeBots counts Bot Chat activity that last_session cannot see', () => {
+test('activeBots keeps recent canonical Bot Chat activity out of Working now', () => {
   const activeBots = loadActiveBots()
   const bots = [
     {
@@ -121,8 +135,8 @@ test('activeBots counts Bot Chat activity that last_session cannot see', () => {
       last_session: { last_active: NOW / 1000 - 6 * 86400 }
     }
   ]
-  const names = activeBots(bots, 'other', 'open', NOW).map(bot => bot.name)
-  assert.ok(names.includes('default'), 'fresh canonical-chat activity must light the pulse dot')
+  const names = activeBots(bots, {}, NOW).map(bot => bot.name)
+  assert.ok(!names.includes('default'), 'a completed canonical-chat reply is recent, not proof of work')
 })
 
 test('row age label and recency sort key off botActivitySession, not last_session', () => {
@@ -145,7 +159,7 @@ test('activeBots includes a bot whose kanban worker heartbeat is fresh', () => {
       worker_session: { id: 'w1', source: 'kanban', last_active: NOW / 1000 - 30 }
     }
   ]
-  const names = activeBots(bots, 'other', 'open', NOW).map(bot => bot.name)
+  const names = activeBots(bots, {}, NOW).map(bot => bot.name)
   assert.ok(names.includes('coding'), 'live worker heartbeat must light ACTIVE NOW')
 })
 
@@ -158,10 +172,19 @@ test('activeBots ignores a finished worker outside the liveness window', () => {
       worker_session: { id: 'w1', source: 'kanban', last_active: NOW / 1000 - 3600 }
     }
   ]
-  assert.deepEqual(activeBots(bots, 'other', 'open', NOW), [])
+  assert.deepEqual(activeBots(bots, {}, NOW), [])
 })
 
-test('ActiveNowStrip renders above the roster, is a live region, and is click-accessible', () => {
+test('botSessionBusy matches the canonical durable id or live lineage tip', () => {
+  const botSessionBusy = loadBotSessionBusy()
+  const bot = { canonical_session: { id: 'chat', resolved_id: 'tip' } }
+
+  assert.equal(botSessionBusy(bot, { chat: true }), true)
+  assert.equal(botSessionBusy(bot, { tip: true }), true)
+  assert.equal(botSessionBusy(bot, { side: true }), false)
+})
+
+test('Working-now strip renders above the roster, is live, and is click-accessible', () => {
   // Strip is placed between the pane header and the search field.
   const headerEnd = source.indexOf("children: 'Bots'")
   const searchField = source.indexOf("placeholder: 'Search bots…'")
@@ -174,11 +197,15 @@ test('ActiveNowStrip renders above the roster, is a live region, and is click-ac
   assert.match(source, /'aria-live': 'polite'/)
   // Chips are real buttons (keyboard/click accessible), reuse BotFace, and
   // open the canonical chat via the same path as roster rows.
-  assert.match(source, /jsx\('button', \{\s*type: 'button',\s*title: `Open \$\{label\}'s chat`/)
+  assert.match(source, /jsx\('button', \{\s*type: 'button',\s*'aria-label': `Open \$\{label\}'s chat — working now`/)
   // The key rides as jsx()'s third argument — the ONLY form React treats as
   // a list key; a `key:` prop leaves chips unkeyed (index identity).
   assert.match(source, /\}, botRosterKey\(bot\)\)\s*\}\)\s*\]\s*\}\)\s*\}\s*\/\*\* Assign a bot to a group/s)
   assert.match(source, /jsx\(BotFace,\s*\{[\s\S]*?mood: 'work'/)
-    assert.match(source, /await prepareBotSource\(bot\)/)
+  assert.match(source, /children: 'Working now'/)
+  assert.match(source, /const \$busyBySession = host\?\.state\?\.busyBySession \|\| atom\(\{\}\)/)
+  assert.match(source, /const busyBySession = useValue\(\$busyBySession\)/)
+  assert.match(source, /await prepareBotSource\(bot\)/)
   assert.match(source, /bot\.canonical_session \|\| last/)
+  assert.match(source, /const botMood = turnBusy \|\| workerActive \? 'work' : 'idle'/)
 })
