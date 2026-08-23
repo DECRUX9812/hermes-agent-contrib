@@ -94,6 +94,67 @@ def test_roster_lines_carry_roles(tmp_path):
     assert "Deep research and literature review" in section
 
 
+def test_roster_lines_carry_capabilities_and_fingerprint_tracks_them(tmp_path):
+    """Fleet registry: declared capabilities ride the roster line, and editing
+    them is a capability-surface change (one-time prompt refresh), never a
+    per-turn rebuild."""
+    import textwrap as _tw
+
+    home = tmp_path / ".hermes"
+    home.mkdir()
+    d = home / "profiles" / "researcher"
+    d.mkdir(parents=True)
+    (d / "profile.yaml").write_text(
+        _tw.dedent(
+            """\
+            description: Deep research and literature review
+            ui_meta:
+              hermes-bots:
+                title: Research Buddy
+            capabilities:
+              - web research
+              - source analysis
+            """
+        ),
+        encoding="utf-8",
+    )
+    _make_bot_profile(home, "coder", managed=True)
+
+    section = bot_mode_probe.get_bot_mode_protocol_section(home)
+    researcher_line = next(
+        ln for ln in section.splitlines() if "`@researcher`" in ln
+    )
+    assert "web research" in researcher_line
+    assert "source analysis" in researcher_line
+    # A bot with no capabilities block stays clean — no empty parens.
+    coder_line = next(ln for ln in section.splitlines() if "`@coder`" in ln)
+    assert "(" not in coder_line
+
+    base = bot_mode_probe.capability_fingerprint(home)
+    (d / "profile.yaml").write_text(
+        _tw.dedent(
+            """\
+            description: Deep research and literature review
+            ui_meta:
+              hermes-bots:
+                title: Research Buddy
+            capabilities:
+              - web research
+              - synthesis
+            """
+        ),
+        encoding="utf-8",
+    )
+    assert bot_mode_probe.capability_fingerprint(home) != base
+    # Ordinary read stays byte-stable; only force_refresh adopts the change.
+    assert bot_mode_probe.get_bot_mode_protocol_section(home) == section
+    refreshed = bot_mode_probe.get_bot_mode_protocol_section(home, force_refresh=True)
+    refreshed_line = next(
+        ln for ln in refreshed.splitlines() if "`@researcher`" in ln
+    )
+    assert "synthesis" in refreshed_line and "source analysis" not in refreshed_line
+
+
 def test_silent_when_soul_already_carries_protocol(tmp_path):
     """Legacy plugin-side append — never double the section."""
     home = tmp_path / ".hermes"
@@ -174,6 +235,42 @@ def test_fingerprint_changes_on_each_capability_axis(tmp_path):
     # teammate added to the roster
     _make_bot_profile(home, "coder", managed=True)
     assert bot_mode_probe.capability_fingerprint(home) != after_soul
+
+
+def test_protocol_force_refresh_rebuilds_the_live_teammate_roster(tmp_path):
+    home = tmp_path / ".hermes"
+    home.mkdir()
+    _make_bot_profile(home, "researcher", managed=True)
+
+    first = bot_mode_probe.get_bot_mode_protocol_section(home)
+    assert "@researcher" in first
+    assert "@coder" not in first
+
+    _make_bot_profile(home, "coder", managed=True)
+    # Ordinary reads remain byte-stable for the prompt cache.
+    assert bot_mode_probe.get_bot_mode_protocol_section(home) == first
+
+    refreshed = bot_mode_probe.get_bot_mode_protocol_section(home, force_refresh=True)
+    assert "@researcher" in refreshed
+    assert "@coder" in refreshed
+
+
+def test_protocol_keeps_roster_and_receive_rules_without_duplicating_the_tool_schema(tmp_path):
+    from tools.bot_mode_dm import message_agent_tool_schema
+
+    home = tmp_path / ".hermes"
+    home.mkdir()
+    _make_bot_profile(home, "researcher", managed=True)
+
+    section = bot_mode_probe.get_bot_mode_protocol_section(home)
+    tool_description = message_agent_tool_schema()["function"]["description"]
+
+    assert "@researcher" in section
+    assert 'When YOU receive a "Message from' in section
+    assert "FIRE-AND-FORGET" in tool_description
+    assert "COMPOSE the message yourself" in tool_description
+    assert "FIRE-AND-FORGET" not in section
+    assert "Never paste the user's words verbatim" not in section
 
 
 def test_stored_prompt_staleness(tmp_path):

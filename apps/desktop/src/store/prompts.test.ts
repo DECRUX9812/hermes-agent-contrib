@@ -4,6 +4,7 @@ import { clearClarifyRequest, setClarifyRequest } from './clarify'
 import {
   $activeSessionAwaitingInput,
   $approvalRequest,
+  $awaitingInputSessionIds,
   $secretRequest,
   $sudoRequest,
   clearAllPrompts,
@@ -216,5 +217,21 @@ describe('$activeSessionAwaitingInput', () => {
 
     $activeSessionId.set('s2')
     expect($activeSessionAwaitingInput.get()).toBe(true)
+  })
+})
+
+describe('$awaitingInputSessionIds', () => {
+  it('unions every session parked on clarify, approval, sudo, or secret input', () => {
+    setApprovalRequest({ command: 'x', description: 'd', sessionId: 's3' })
+    setClarifyRequest({ choices: null, multiSelect: false, question: 'q', requestId: 'c1', sessionId: 's1' })
+    setSecretRequest({ envVar: 'E', prompt: 'p', requestId: 'secret', sessionId: 's2' })
+    setSudoRequest({ requestId: 'sudo', sessionId: 's1' })
+
+    expect($awaitingInputSessionIds.get()).toEqual(['s1', 's2', 's3'])
+
+    clearAllPrompts('s3')
+    clearClarifyRequest('c1', 's1')
+    clearSudoRequest('s1')
+    expect($awaitingInputSessionIds.get()).toEqual(['s2'])
   })
 })
