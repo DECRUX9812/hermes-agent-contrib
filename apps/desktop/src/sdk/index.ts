@@ -58,6 +58,7 @@ import {
   setActiveProfile,
   setShowAllProfiles
 } from '@/store/profile'
+import { $awaitingInputSessionIds } from '@/store/prompts'
 import {
   $activeSessionId,
   $connection,
@@ -445,6 +446,11 @@ export const host = {
   state: {
     /** Runtime id of the active chat session (null on a fresh draft). */
     activeSessionId: readonlyAtom<null | string>($activeSessionId),
+    /** Runtime session ids currently blocked on clarify/approval/sudo/secret
+     *  input. Content-free and global across background sessions so contributed
+     *  roster surfaces can point the user at real attention, not infer it from
+     *  unread text. */
+    awaitingInputSessionIds: readonlyAtom<string[]>($awaitingInputSessionIds),
     /** True from send until the first assistant payload on the focused chat. */
     awaitingResponse: readonlyAtom<boolean>($focusedAwaitingResponse),
     /**

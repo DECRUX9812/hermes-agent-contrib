@@ -201,6 +201,18 @@ export const $activeSessionAwaitingInput = computed(
   (clarify, approval, sudo, secret) => Boolean(clarify || approval || sudo || secret)
 )
 
+/** Every runtime session currently parked on user input, regardless of which
+ *  conversation is focused. This is a narrow, content-free attention index for
+ *  session tiles and contributed roster surfaces: it exposes IDs only, never
+ *  approval commands, secrets, or question text. */
+export const $awaitingInputSessionIds = computed(
+  [$clarifyRequests, approval.$all, sudo.$all, secret.$all],
+  (clarify, approvals, sudos, secrets) =>
+    [...new Set([...Object.keys(clarify), ...Object.keys(approvals), ...Object.keys(sudos), ...Object.keys(secrets)])]
+      .filter(Boolean)
+      .sort()
+)
+
 /** True when `sessionId` is parked on a blocking prompt that typing cannot
  *  answer (approval / sudo / secret). Clarify is deliberately excluded: typing
  *  a real message IS an answer to a clarify ("none of these" — the composer
