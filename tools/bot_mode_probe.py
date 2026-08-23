@@ -156,15 +156,57 @@ def _profile_role(profile_dir: Path) -> str:
         return ""
 
 
+def _profile_capabilities(profile_dir: Path) -> list[str]:
+    """A teammate's declared capabilities from profile.yaml (fleet registry).
+
+    Static identity — safe for cached prompts, refreshed only via the
+    capability epoch. Bounded to 6 entries / 24 chars each; never raises.
+    """
+    meta = profile_dir / "profile.yaml"
+    try:
+        if not meta.is_file():
+            return []
+        raw = meta.read_text(encoding="utf-8", errors="replace")
+        import yaml
+
+        data = yaml.safe_load(raw)
+        if not isinstance(data, dict):
+            return []
+        caps = data.get("capabilities")
+        if not isinstance(caps, list):
+            return []
+        out = []
+        for cap in caps:
+            text = " ".join(str(cap).split())[:24]
+            if text:
+                out.append(text)
+            if len(out) == 6:
+                break
+        return out
+    except Exception:
+        return []
+
+
 def _roster_lines(root: Path, me: str) -> list[str]:
-    """One '- `@handle` — role' line per teammate (excluding ``me``)."""
+    """One '- `@handle` — role (caps)' line per teammate (excluding ``me``).
+
+    Declared ``capabilities`` from a teammate's profile.yaml ride the same
+    line so routing decisions stay one glance cheap — the fleet registry is
+    the roster, not a second document to keep in sync.
+    """
     lines = []
     for name, profile_dir in _roster(root):
         if name == me:
             continue
         role = _profile_role(profile_dir)
         handle = _handle(name)
-        lines.append(f"- `@{handle}`" + (f" — {role}" if role else ""))
+        line = f"- `@{handle}`"
+        if role:
+            line += f" — {role}"
+        capabilities = _profile_capabilities(profile_dir)
+        if capabilities:
+            line += " (" + " · ".join(capabilities) + ")"
+        lines.append(line)
     return lines
 
 
@@ -260,18 +302,11 @@ def _build_section(home: Path) -> str:
         f"{_PROTOCOL_HEADING}\n"
         "This install runs Bot Mode: each Hermes profile is an agent teammate with "
         'one canonical "Bot Chat" conversation, and you have the `message_agent` '
-        "tool to DM any of them. It is FIRE-AND-FORGET: it delivers your message "
-        "with your attribution prefixed automatically and returns an acknowledgement "
-        "immediately — it never returns the reply. Send it, finish your turn, and "
-        "the reply arrives later as a background-process completion notification "
-        "that wakes you; relay it to the user then, attributed to that agent. "
-        "COMPOSE every message yourself — say what YOU need from that agent; never "
-        "forward the user's words verbatim, and never reveal private 1:1 chat "
-        "content. When the user says \"ask <name>\" or \"tell <name> ...\", that is "
+        "tool to DM any of them. Its tool schema carries the send, delivery, and "
+        "privacy contract. When the user says \"ask <name>\" or \"tell <name> ...\", that is "
         "a handoff: pick the right teammate from the roster below, message them "
         "with message_agent, and report back naming which agent replied. Message "
-        "ONE clearly relevant teammate; don't fan out to several unless the user "
-        "explicitly asked.\n"
+        "the clearly relevant teammate instead of involving the whole roster.\n"
         f'When YOU receive a "Message from 🤖 <name> (@<handle>):" message, a '
         "teammate agent is talking to you (not the user): address them, reply "
         "concisely via message_agent to their handle, and if it is a pure FYI "
@@ -378,12 +413,18 @@ def capability_fingerprint(home: str | os.PathLike | None = None) -> str:
         surface["roster_roles"] = sorted(
             f"{n}:{_profile_role(d)}" for n, d in _roster(root)
         )
+        # Declared capabilities are part of the messaging surface too:
+        # teaching a bot a new specialty must refresh eternal Bot Chat
+        # prompts so teammates route work by current abilities.
+        surface["roster_capabilities"] = sorted(
+            f"{n}:{','.join(_profile_capabilities(d))}" for n, d in _roster(root)
+        )
     except Exception:
         surface["roster"] = []
     # Protocol-text version salt: bumping this refreshes every eternal Bot
-    # Chat prompt ONCE so existing bots adopt a new protocol section (e.g.
-    # the v2 message_agent tool replacing the shellout instructions).
-    surface["protocol_version"] = 2
+    # Chat prompt ONCE so existing bots adopt a new protocol section (v4:
+    # roster lines now carry declared fleet capabilities for routing).
+    surface["protocol_version"] = 4
     try:
         # Peer gateways are part of the messaging surface: registering one
         # must refresh eternal Bot Chat prompts so the cross-machine DM

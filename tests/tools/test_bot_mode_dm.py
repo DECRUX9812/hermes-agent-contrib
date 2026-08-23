@@ -195,6 +195,90 @@ def test_unregistered_peer_rejected(tmp_path):
     assert result["peers"] == ["spark"]
 
 
+# ── structured handoff envelope (Team OS slice 3) ────────────────────────────
+
+
+def test_handoff_fields_accepted_and_wrapped(tmp_path, monkeypatch):
+    """Optional handoff metadata rides the message as a machine-readable
+    trailer; plain messages stay byte-identical to the legacy format."""
+    calls = _capture_spawn(monkeypatch)
+    home = _managed_home(tmp_path, teammates=("researcher",))
+    agent = _FakeAgent(home, title="Bot Chat")
+
+    result = json.loads(
+        bot_mode_dm.message_agent_tool(
+            target="researcher",
+            message="Competitive UX research for the landing page.",
+            agent=agent,
+            handoff={
+                "handoffId": "h_abc123",
+                "parentMission": "m_website",
+                "parentTask": "t1",
+                "expectedOutput": "research-report.md + 8-line summary",
+                "returnTo": "frontend",
+            },
+        )
+    )
+    assert result["status"] == "sent"
+    assert result.get("handoff", {}).get("handoffId") == "h_abc123"
+
+    content = Path(_runner_parts(calls[0]["command"])[1]).read_text(encoding="utf-8")
+    # Human-readable body first, envelope trailer after a blank line.
+    assert content.startswith("Message from 🤖 hermes (@hermes): ")
+    assert "Competitive UX research" in content.split("\n\n[hermes.handoff]")[0]
+    trailer = json.loads(content.split("\n\n[hermes.handoff]")[1])
+    assert trailer["type"] == "hermes.handoff"
+    assert trailer["handoffId"] == "h_abc123"
+    assert trailer["parentMission"] == "m_website"
+    assert trailer["parentTask"] == "t1"
+    assert trailer["expectedOutput"].startswith("research-report.md")
+    assert trailer["returnTo"] == "frontend"
+
+
+def test_handoff_without_metadata_is_rejected_when_partial(tmp_path, monkeypatch):
+    """A handoff block with no recognizable fields is an authoring mistake —
+    refuse it instead of silently degrading to a plain message."""
+    home = _managed_home(tmp_path, teammates=("researcher",))
+    agent = _FakeAgent(home, title="Bot Chat")
+    result = json.loads(
+        bot_mode_dm.message_agent_tool(
+            target="researcher", message="hi", agent=agent, handoff={"bogus": True}
+        )
+    )
+    assert "error" in result
+    assert "handoff" in result["error"]
+
+
+def test_plain_message_has_no_envelope_trailer(tmp_path, monkeypatch):
+    """Backward compatibility: no handoff arg → exactly the legacy payload."""
+    calls = _capture_spawn(monkeypatch)
+    home = _managed_home(tmp_path, teammates=("researcher",))
+    agent = _FakeAgent(home, title="Bot Chat")
+
+    bot_mode_dm.message_agent_tool(target="researcher", message="status?", agent=agent)
+
+    content = Path(_runner_parts(calls[0]["command"])[1]).read_text(encoding="utf-8")
+    assert "[hermes.handoff]" not in content
+    assert "\n\n" not in content.removeprefix("Message from 🤖 hermes (@hermes): ")
+
+
+def test_handoff_trailer_respects_message_cap(tmp_path):
+    home = _managed_home(tmp_path, teammates=("researcher",))
+    agent = _FakeAgent(home, title="Bot Chat")
+    big = "x" * (bot_mode_dm.MESSAGE_MAX_CHARS - 10)
+    result = json.loads(
+        bot_mode_dm.message_agent_tool(
+            target="researcher",
+            message=big,
+            agent=agent,
+            handoff={"handoffId": "h_big"},
+        )
+    )
+    # The combined wire payload must not blow past the cap either.
+    assert "error" in result
+    assert "too long" in result["error"]
+
+
 # ── delivery command shape ───────────────────────────────────────────────────
 
 

@@ -82,6 +82,13 @@ const blobatarSvg = typeof sdk === 'undefined' ? undefined : sdk.blobatarSvg
 // Budgeted render loop (fps cap + observability pause + dormancy + teardown).
 // Feature-detected: older desktops fall back to the hand-rolled clock below.
 const createBudgetedLoop = typeof sdk === 'undefined' ? undefined : sdk.createBudgetedLoop
+// Content-free global attention index from the core prompt stores. Runtime
+// plugins on older Desktop builds feature-detect it and keep the roster usable,
+// but cannot claim "Needs you" without authoritative session state.
+const $awaitingInputSessionIds = host?.state?.awaitingInputSessionIds || atom([])
+// Per-session turn truth arrived after the earliest plugin SDK builds. Older
+// Desktop hosts keep loading Bot Mode, but Working now stays worker-only.
+const $busyBySession = host?.state?.busyBySession || atom({})
 
 const ID = 'hermes-bots'
 /** Tree pane id of the Bots home workspace tab (openWorkspace prefixes
@@ -1534,6 +1541,219 @@ function commitBotMetaV2(storage, snapshot) {
   return commit
 }
 
+// ── missions (Team OS slice 2) ───────────────────────────────────────────────
+// Desktop-owned mission state, persisted via ctx.storage. The task graph is
+// DERIVED data for humans — bots coordinate through normal messages; the pane
+// only renders what the event log proves. Unknown stays unknown: statuses
+// change only through explicit transitions below.
+
+const MISSIONS_KEY = 'missions-v1'
+const $missions = atom([])
+const $missionsHydrated = atom(false)
+
+/** Validate one stored mission; anything malformed is dropped, never guessed. */
+function normalizeMission(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return null
+  }
+
+  const id = typeof raw.id === 'string' ? raw.id.trim() : ''
+
+  if (!id || !/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(id)) {
+    return null
+  }
+
+  const tasks = Array.isArray(raw.tasks)
+    ? raw.tasks.flatMap(task => {
+        const taskId = typeof task?.id === 'string' ? task.id.trim() : ''
+
+        if (!taskId || typeof task.title !== 'string' || !task.title.trim()) {
+          return []
+        }
+
+        const status = ['todo', 'working', 'waiting', 'done', 'failed', 'blocked'].includes(
+          task.status
+        )
+          ? task.status
+          : 'todo'
+        const assignee = typeof task.assignee === 'string' ? task.assignee.trim() : ''
+        const dependsOn = Array.isArray(task.dependsOn)
+          ? task.dependsOn.filter(dep => typeof dep === 'string' && dep.trim())
+          : []
+
+        return [
+          {
+            id: taskId,
+            title: task.title.trim(),
+            status,
+            assignee,
+            dependsOn,
+            artifact: typeof task.artifact === 'string' ? task.artifact : '',
+            outcome: typeof task.outcome === 'string' ? task.outcome.slice(0, 280) : ''
+          }
+        ]
+      })
+    : []
+
+  return {
+    id,
+    title: typeof raw.title === 'string' && raw.title.trim() ? raw.title.trim() : id,
+    goal: typeof raw.goal === 'string' ? raw.goal.slice(0, 400) : '',
+    status: ['active', 'done', 'cancelled'].includes(raw.status) ? raw.status : 'active',
+    autonomy: ['guided', 'balanced', 'autonomous'].includes(raw.autonomy)
+      ? raw.autonomy
+      : 'balanced',
+    createdAt: Number.isFinite(raw.createdAt) ? raw.createdAt : Date.now(),
+    updatedAt: Number.isFinite(raw.updatedAt) ? raw.updatedAt : Date.now(),
+    tasks,
+    events: Array.isArray(raw.events)
+      ? raw.events
+          .filter(event => event && typeof event.kind === 'string' && Number.isFinite(event.at))
+          .slice(-200)
+      : []
+  }
+}
+
+function normalizeMissions(raw) {
+  const list = Array.isArray(raw) ? raw : []
+
+  return list.map(normalizeMission).filter(Boolean)
+}
+
+/** Pure reducer: recompute a task's status from an incoming event. */
+function applyMissionEvent(mission, event) {
+  if (!mission || !event || event.missionId !== mission.id) {
+    return mission
+  }
+
+  const taskIndex = mission.tasks.findIndex(task => task.id === event.taskId)
+
+  if (taskIndex < 0) {
+    return mission
+  }
+
+  const task = mission.tasks[taskIndex]
+  let nextTask = task
+
+  if (event.kind === 'TASK_STARTED') {
+    nextTask = { ...task, status: 'working' }
+  } else if (event.kind === 'TASK_COMPLETED') {
+    nextTask = { ...task, status: 'done', outcome: String(event.summary || task.outcome).slice(0, 280) }
+  } else if (event.kind === 'TASK_FAILED') {
+    nextTask = { ...task, status: 'failed' }
+  } else if (event.kind === 'TASK_ASSIGNED' && !task.assignee && event.assignee) {
+    nextTask = { ...task, assignee: event.assignee }
+  } else if (event.kind === 'ARTIFACT_CREATED' && typeof event.artifact === 'string' && event.artifact.trim()) {
+    // Artifact bus (slice 4): the reference replaces transcript dumps — the
+    // task keeps a pointer, never a pasted payload.
+    nextTask = { ...task, artifact: event.artifact.trim().slice(0, 200) }
+  }
+
+  if (
+    nextTask === task &&
+    event.kind !== 'HANDOFF_CREATED' &&
+    event.kind !== 'HANDOFF_ACCEPTED'
+  ) {
+    return mission
+  }
+
+  const tasks = mission.tasks.map((entry, index) => (index === taskIndex ? nextTask : entry))
+  const events = [...mission.events, { kind: event.kind, at: event.at, taskId: event.taskId }]
+  const allDone = tasks.length > 0 && tasks.every(entry => entry.status === 'done')
+  const anyFailed = tasks.some(entry => entry.status === 'failed')
+
+  return {
+    ...mission,
+    tasks,
+    events,
+    updatedAt: event.at,
+    status: mission.status === 'active' && allDone ? 'done' : mission.status,
+    tasksFailed: anyFailed
+  }
+}
+
+async function persistMissions(storage = pluginCtx?.storage) {
+  try {
+    await storage?.set?.(MISSIONS_KEY, $missions.get())
+  } catch {
+    /* storage unavailable — missions persist for this window only */
+  }
+}
+
+async function hydrateMissions(storage = pluginCtx?.storage) {
+  try {
+    const stored = await Promise.resolve(storage?.get?.(MISSIONS_KEY))
+
+    if (stored !== null && stored !== undefined) {
+      $missions.set(normalizeMissions(stored))
+    }
+  } catch {
+    /* corrupt storage → start honest and empty */
+  } finally {
+    $missionsHydrated.set(true)
+  }
+}
+
+/** Public seam for later slices (handoff envelopes, timeline actions). */
+function recordMissionEvent(event) {
+  const current = $missions.get()
+  const index = current.findIndex(mission => mission.id === event?.missionId)
+
+  if (index < 0) {
+    return null
+  }
+
+  const next = current.map((mission, i) =>
+    i === index ? applyMissionEvent(mission, { ...event, at: Date.now() }) : mission
+  )
+
+  $missions.set(next)
+  void persistMissions()
+
+  return next[index] || null
+}
+
+function createMission(draft) {
+  const mission = normalizeMission({
+    ...draft,
+    id: draft?.id || `m_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+  })
+
+  if (!mission) {
+    return null
+  }
+
+  $missions.set([...$missions.get(), mission])
+  void persistMissions()
+
+  return mission
+}
+
+/** Derived view: dependency-aware task ordering for the timeline. */
+function missionTimeline(mission) {
+  if (!mission) {
+    return []
+  }
+
+  const byId = new Map(mission.tasks.map(task => [task.id, task]))
+  const seen = new Set()
+  const ordered = []
+
+  const visit = task => {
+    if (!task || seen.has(task.id)) {
+      return
+    }
+
+    seen.add(task.id)
+    task.dependsOn.forEach(dep => visit(byId.get(dep)))
+    ordered.push(task)
+  }
+
+  mission.tasks.forEach(visit)
+
+  return ordered
+}
+
 function botOwner(owner) {
   if (typeof owner === 'string') {
     const name = owner.trim()
@@ -2316,7 +2536,11 @@ if (typeof document !== 'undefined' && !document.getElementById('hermes-bots-ros
     ' display: block !important; width: 100%; min-width: 0; }' +
     '.hermes-scroll-cap > [data-radix-scroll-area-viewport] { max-height: inherit; }' +
     '@keyframes hermes-bots-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }' +
-    '.hermes-bots-pulse { animation: hermes-bots-pulse 1.2s ease-in-out infinite; }'
+    '.hermes-bots-pulse { animation: hermes-bots-pulse 1.2s ease-in-out infinite; }' +
+    '@media (prefers-reduced-motion: reduce) {' +
+    ' .hermes-bots-pulse { animation: none; }' +
+    ' .hermes-bots-bob { animation: none !important; transform: none !important; }' +
+    '}'
   document.head.appendChild(style)
 }
 
@@ -5087,6 +5311,30 @@ async function openStoredBotChat(owner, storedId, summary) {
   return storedId
 }
 
+/** Seat a just-created, still-empty canonical chat in the same Bot workspace
+ *  as every later reopen. Unlike openStoredBotChat this deliberately skips
+ *  transcript hydration: session.create is lazy and the kickoff below is what
+ *  persists the first message. */
+async function openCreatedBotChat(owner, storedId) {
+  if (!storedId || typeof host.openSession !== 'function') {
+    throw new Error('This Hermes Desktop version cannot open stored sessions')
+  }
+
+  const { bot, name, route } = botOwner(owner)
+
+  await host.openSession(storedId, {
+    ...(route ? { route } : {}),
+    profile: name,
+    intent: 'tab',
+    keepAllProfilesScope: true,
+    workspaceMode: 'bots',
+    workspaceOwnerKey: botWorkspaceOwnerKey(bot),
+    tabTitle: CANONICAL_CHAT_TITLE
+  })
+
+  return storedId
+}
+
 /** True when a session summary IS the canonical registry row. root_title is
  *  the durable lineage-root title reported by exact-lookup gateways; plain
  *  title covers windowed listings. */
@@ -5225,12 +5473,7 @@ function createCanonicalChat(owner) {
 
     if (sid && typeof host.openSession === 'function') {
       try {
-        await host.openSession(sid, {
-          ...(route ? { route } : {}),
-          profile: name,
-          intent: 'main',
-          keepAllProfilesScope: route ? true : false
-        })
+        await openCreatedBotChat(owner, sid)
         opened = true
       } catch {
         // The stored row may not exist until the kickoff persists it. Retry
@@ -5245,12 +5488,7 @@ function createCanonicalChat(owner) {
         await requestForBot(bot, 'prompt.submit', { session_id: runtime, text: 'Hey, tell me about yourself!' })
 
         if (!opened && sid && typeof host.openSession === 'function') {
-          await host.openSession(sid, {
-            ...(route ? { route } : {}),
-            profile: name,
-            intent: 'main',
-            keepAllProfilesScope: route ? true : false
-          })
+          await openCreatedBotChat(owner, sid)
         }
       } catch {
         // The chat already exists under the canonical title — the next click
@@ -7337,19 +7575,45 @@ function workerActiveAt(bot, now = Date.now()) {
   return Boolean(ts && now / 1000 - ts < WORKER_ACTIVE_WINDOW_S)
 }
 
-/** Bots that are working right now: the profile the gateway is running a
- *  turn for (busy), any bot whose last message landed inside the liveness
- *  window, plus any bot with a live kanban/tool worker. Pure — output
- *  follows the input roster's order, so presence never reorders or hides
- *  the normal list. */
-function activeBots(roster, activeProfile, gatewayState, now = Date.now()) {
-  return (roster || []).filter(bot => {
-    const busyTurn = !bot.remoteSource && bot.name === activeProfile && gatewayState === 'busy'
-    const last = botActivitySession(bot)?.last_active || 0
-    const inWindow = Boolean(last && now / 1000 - last < ACTIVE_WINDOW_S)
+/** True only when the core renderer has a real blocking prompt parked on this
+ * bot's canonical forever-chat. Side chats deliberately stay in the Sessions
+ * sidebar: the bot row must always open the named Bot Chat registry row. */
+function botNeedsInput(bot, awaitingInputSessionIds) {
+  const session = bot?.canonical_session
 
-    return busyTurn || inWindow || workerActiveAt(bot, now)
-  })
+  if (!session || !Array.isArray(awaitingInputSessionIds) || !awaitingInputSessionIds.length) {
+    return false
+  }
+
+  const ids = new Set(awaitingInputSessionIds)
+
+  return Boolean(
+    (session.id && ids.has(session.id)) ||
+    (session.resolved_id && ids.has(session.resolved_id))
+  )
+}
+
+/** True while the canonical Bot Chat's durable row or live lineage tip is
+ * actually mid-turn in the renderer's per-session state cache. */
+function botSessionBusy(bot, busyBySession) {
+  const session = bot?.canonical_session
+
+  if (!session || !busyBySession || typeof busyBySession !== 'object') {
+    return false
+  }
+
+  return Boolean(
+    (session.id && busyBySession[session.id]) ||
+    (session.resolved_id && busyBySession[session.resolved_id])
+  )
+}
+
+/** Bots that are working right now: canonical Bot Chats with a live turn plus
+ * profiles with a live kanban/tool worker heartbeat. A recently completed
+ * message is "recent activity", not proof that work is still in flight. Pure
+ * — output follows roster order and never mutates it. */
+function activeBots(roster, busyBySession, now = Date.now()) {
+  return (roster || []).filter(bot => botSessionBusy(bot, busyBySession) || workerActiveAt(bot, now))
 }
 
 function rosterActivityMatches(row, filter, now = Date.now()) {
@@ -7388,8 +7652,7 @@ function botRowOwnsWorkspace(
 
 // ── bot row ──────────────────────────────────────────────────────────────────
 
-function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
-  const activeProfile = useValue(host.state.profile)
+function BotRow({ bot, onDelete, onEdit, onGroup, showHandle, awaitingInputSessionIds = [], busyBySession = {} }) {
   const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
   const selectedRosterKey = useValue($selectedRosterKey)
   const botChatFocused = useValue($botChatFocused)
@@ -7407,7 +7670,6 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
   // old keying the wrong bot stayed highlighted while you read another's chat.
   // A selected group chat suppresses every bot-row highlight: the group row
   // owns the selection then (#88979).
-  const activeConnectionId = String(host.state.connectionId?.get?.() || 'local').trim()
   // The highlight follows whoever owns the MAIN workspace. While a chat owns
   // it, that chat's profile wins (a stale roster click must not key the
   // highlight to a bot you are not reading). While the Bots home owns it, the
@@ -7421,13 +7683,10 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
     focusedOwner,
     selectedRosterKey
   )
-  // Turn-busy is a SOCKET fact: only the gateway-home profile can be mid-turn.
-  const isGatewayHome = !bot.remoteSource && bot.name === activeProfile &&
-    isActiveRosterBot(bot, { name: activeProfile, connectionId: activeConnectionId })
+  const turnBusy = botSessionBusy(bot, busyBySession)
   const { shape, color, image } = botAppearance(bot.name, meta)
   // Keep user photos/pets. Drop the 160px SVG backfill so the math face can move.
   const photo = Boolean(image && !isBackfilledFacePng(image))
-  const gatewayState = useValue(host.state.gateway)
   // Preview identity must match click identity (#88200): when the backend
   // resolved the pinned canonical chat, preview THAT session — not the
   // profile's most recent (but unrelated) activity. Activity signals
@@ -7442,11 +7701,12 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
   const rowAgeTs = workerActive
     ? Math.max(activitySession?.last_active || 0, bot.worker_session?.last_active || 0)
     : activitySession?.last_active || 0
-  const botMood = workerActive || (isGatewayHome && gatewayState === 'busy') ? 'work' : 'idle'
+  const botMood = turnBusy || workerActive ? 'work' : 'idle'
   // Subscribe on every render. A source switch turns the same keyed row from
   // thin to rich; conditionally calling useValue here breaks React hook order.
   const unreadByName = useValue($botUnread)
   const unread = Boolean(unreadByName[botSelectionKey(bot)])
+  const needsYou = botNeedsInput(bot, awaitingInputSessionIds)
   // WHO sent the last message (bot-to-bot DM vs human) — the full stored
   // history lives in the canonical chat, not inline.
   // Preview identity must match click identity (#88200): when the backend
@@ -7463,7 +7723,13 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
   const handle = botHandle(bot.name, bot)
   const gatewayLabel = bot.connectionLabel || (bot.connectionId === 'local' ? 'This device' : '')
   const showDetailsRow = Boolean(showHandle || displayPreview || fromBot)
-  const rowTooltip = [displayName(bot, meta), `@${handle}`, gatewayLabel, sourceStatus.label]
+  const rowTooltip = [
+    displayName(bot, meta),
+    `@${handle}`,
+    gatewayLabel,
+    sourceStatus.label,
+    needsYou ? 'Needs your input' : ''
+  ]
     .filter(Boolean)
     .join(' · ')
 
@@ -7501,6 +7767,7 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
     className: cn(
       'flex w-full min-w-0 max-w-full items-center gap-2.5 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
       'hover:bg-(--chrome-action-hover)',
+      'focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--ui-accent)',
       isActive && 'bg-(--ui-row-active-background)'
     ),
     'aria-label': rowTooltip,
@@ -7552,10 +7819,34 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
                   }),
                 ]
               }),
+              needsYou
+                ? jsx('span', {
+                    className:
+                      'shrink-0 rounded bg-(--ui-bg-quaternary) px-1.5 py-px text-[0.625rem] font-semibold text-(--ui-text-primary)',
+                    children: 'Needs you'
+                  })
+                : null,
+              turnBusy || workerActive
+                ? jsx('span', {
+                    className:
+                      'shrink-0 text-[0.625rem] font-semibold uppercase tracking-wide text-(--ui-text-tertiary)',
+                    children: 'Working'
+                  })
+                : null,
               unread
                 ? jsx('span', {
-                    className: 'size-2 shrink-0 rounded-full bg-(--ui-accent)',
-                    'aria-label': 'unread'
+                    className:
+                      'flex items-center gap-1',
+                    role: 'status',
+                    children: [
+                      jsx('span', {
+                        className: 'size-2 shrink-0 rounded-full bg-(--ui-accent)'
+                      }),
+                      jsx('span', {
+                        className: 'sr-only',
+                        children: 'unread'
+                      })
+                    ]
                   })
                 : null,
               rowAgeTs
@@ -10431,15 +10722,557 @@ function RoutinesPane() {
   })
 }
 
+// ── universal Needs You (slice 5) ────────────────────────────────────────────
+// The single human-intervention surface. Items are DERIVED from real state —
+// live interactive prompts (existing authoritative atoms) plus mission events
+// (failed handoff, blocked task, artifact review) — never inferred from
+// unread/activity/focus. Every card answers: who, why, mission/task,
+// consequence of no action.
+
+/** Derive the universal Needs You list from real state only.
+ *  Pure function so contracts stay testable without a renderer. */
+function deriveNeedsYou({ roster = [], awaitingInputSessionIds = [], missions = [], groupNeedsYou = {} } = {}) {
+  const items = []
+
+  // 1) Live interactive prompts (clarify/approval/sudo/secret): one per bot.
+  for (const bot of roster) {
+    if (botNeedsInput(bot, awaitingInputSessionIds)) {
+      const label = String(bot?.name || '').trim() || 'bot'
+      items.push({
+        key: `prompt:${botRosterKey(bot)}`,
+        category: 'input',
+        who: label,
+        why: 'Waiting on your reply to an interactive prompt',
+        missionId: '',
+        taskId: '',
+        choicesLabel: 'Open chat and respond',
+        noActionConsequence: 'That bot stays blocked until you answer',
+        openBotKey: botRosterKey(bot)
+      })
+    }
+  }
+
+  // 2) Mission-derived states (real event-log facts only).
+  for (const mission of missions || []) {
+    for (const task of mission.tasks || []) {
+      const assignee = task.assignee ? `@${task.assignee}` : 'unassigned'
+      const base = {
+        who: assignee,
+        missionId: mission.id,
+        missionTitle: mission.title,
+        taskId: task.id
+      }
+
+      if (task.status === 'failed') {
+        items.push({
+          key: `task-failed:${mission.id}:${task.id}`,
+          category: 'failed',
+          ...base,
+          why: `Task failed — ${task.title}`,
+          choicesLabel: 'Open mission to retry or reassign',
+          noActionConsequence: 'The mission stays stuck at this step'
+        })
+      } else if (task.status === 'blocked') {
+        items.push({
+          key: `task-blocked:${mission.id}:${task.id}`,
+          category: 'blocked',
+          ...base,
+          why: `Task blocked — ${task.title}`,
+          choicesLabel: 'Open mission to unblock',
+          noActionConsequence: 'Downstream tasks cannot start'
+        })
+      }
+    }
+
+    // Artifact ready for review: produced by someone else, awaiting judgment.
+    for (const task of mission.tasks || []) {
+      if (task.artifact && task.status === 'done' && !mission.reviewedBy?.[task.id]) {
+        items.push({
+          key: `review:${mission.id}:${task.id}`,
+          category: 'review',
+          who: task.assignee ? `@${task.assignee}` : 'teammate',
+          missionId: mission.id,
+          missionTitle: mission.title,
+          taskId: task.id,
+          why: `Artifact ready for review — ${task.artifact}`,
+          choicesLabel: 'Open mission to review',
+          noActionConsequence: 'Review gate stays open; nothing merges'
+        })
+      }
+    }
+
+    // Decision/conflict: two failed attempts on sibling tasks of one mission
+    // is a REAL recorded fact (event log), not a heuristic vibe.
+    const failures = (mission.events || []).filter(event => event.kind === 'TASK_FAILED')
+    const failedTaskIds = new Set(failures.map(event => event.taskId))
+    const retried = new Set()
+    for (const event of failures) {
+      const dedupeKey = `${event.taskId}`
+      if (retried.has(dedupeKey)) {
+        items.push({
+          key: `decision:${mission.id}:${dedupeKey}`,
+          category: 'decision',
+          who: '@you',
+          missionId: mission.id,
+          missionTitle: mission.title,
+          taskId: event.taskId,
+          why: `Repeated failure needs a decision — ${event.taskId}`,
+          choicesLabel: 'Open mission to decide next step',
+          noActionConsequence: 'Bots keep hitting the same wall'
+        })
+      }
+      retried.add(dedupeKey)
+    }
+    void failedTaskIds
+  }
+
+  // 3) Group rooms asking for input keep their existing channel card.
+  for (const [room, pending] of Object.entries(groupNeedsYou || {})) {
+    if (!pending) {
+      continue
+    }
+    items.push({
+      key: `group:${room}`,
+      category: 'group',
+      who: room,
+      why: `Group “${room}” needs your input`,
+      missionId: '',
+      taskId: '',
+      choicesLabel: 'Open the group',
+      noActionConsequence: 'The conversation pauses mid-round'
+    })
+  }
+
+  // Dedupe by key (last write wins is irrelevant — keys are unique by build).
+  const byKey = new Map()
+  for (const item of items) {
+    byKey.set(item.key, item)
+  }
+
+  // Stable, understandable ordering: interactive prompts first, then failed,
+  // blocked, decision, review, group; ties broken by key.
+  const rank = { prompt: 0, failed: 1, blocked: 2, decision: 3, review: 4, group: 5 }
+  return [...byKey.values()].sort(
+    (a, b) => (rank[a.category] ?? 9) - (rank[b.category] ?? 9) || a.key.localeCompare(b.key)
+  )
+}
+
+/** Cap what renders inline so 10+ simultaneous requests stay scannable;
+ *  everything else collapses into a calm "+N more" summary chip. */
+const NEEDS_YOU_INLINE_MAX = 6
+
+function UniversalNeedsYouPanel({ items, onOpen }) {
+  if (!items.length) {
+    return null
+  }
+
+  const inline = items.slice(0, NEEDS_YOU_INLINE_MAX)
+  const overflow = items.length - inline.length
+
+  return jsxs('div', {
+    role: 'status',
+    'aria-live': 'polite',
+    'aria-label': 'Universal needs you',
+    className: 'flex flex-col gap-1 px-2.5 pb-1.5',
+    children: [
+      jsx('span', {
+        className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-secondary)',
+        children: `Needs you${items.length > 1 ? ` · ${items.length}` : ''}`
+      }),
+      ...inline.map(item =>
+        jsx('button', {
+          type: 'button',
+          'aria-label': `${item.why}. ${item.choicesLabel}. If ignored: ${item.noActionConsequence}`,
+          className:
+            'flex w-full min-w-0 flex-col gap-0.5 rounded-md bg-(--ui-bg-quaternary) px-2 py-1 text-left text-(--ui-text-primary) transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--ui-accent) hover:bg-(--chrome-action-hover)',
+          onClick: () => onOpen?.(item),
+          children: [
+            jsx('span', { className: 'truncate text-xs font-medium', children: item.why }),
+            jsx('span', { className: 'truncate text-[0.6875rem] text-(--ui-text-secondary)', children:
+              [
+                item.missionTitle ? `Mission: ${item.missionTitle}` : '',
+                item.noActionConsequence
+              ]
+                .filter(Boolean)
+                .join(' · ') })
+          ]
+        }, item.key)
+      ),
+      overflow > 0
+        ? jsx('span', {
+            className: 'px-2 text-[0.6875rem] text-(--ui-text-tertiary)',
+            children: `+${overflow} more waiting`
+          })
+        : null
+    ]
+  })
+}
+
+// ── slice 6: Team IA — one presence vocabulary + derived team rows ───────────
+// Direction A (roster-first) won the 3-way design review. The rail must
+// answer in ~5s: coworkers / working / mission / waiting-blocked / needs-you /
+// artifacts. One vocabulary for every surface — never inferred from focus,
+// socket, or unread.
+
+/** Presence kernel vocabulary (fixed order = sort priority). */
+const TEAM_PRESENCE_ORDER = ['needs-you', 'working', 'waiting', 'blocked', 'idle', 'unknown']
+
+/**
+ * Derive ONE truthful presence word for a roster bot from real state only.
+ * Precedence: genuine pending input > live work > explicit task states >
+ * unknown. Recent activity and unread NEVER map to working.
+ */
+function teamPresence(bot, { awaitingInputSessionIds = [], busyBySession = {}, missions = [] } = {}) {
+  if (!bot) {
+    return 'unknown'
+  }
+  if (botNeedsInput(bot, awaitingInputSessionIds)) {
+    return 'needs-you'
+  }
+  if (botSessionBusy(bot, busyBySession) || Boolean(workerActiveAt(bot))) {
+    return 'working'
+  }
+
+  // Mission facts (real event log): a bot whose assigned task is blocked/waiting
+  // shows that state even when its chat is quiet.
+  const name = String(bot?.name || '').trim().toLowerCase()
+  let hasWaiting = false
+  for (const mission of missions || []) {
+    if (mission.status !== 'active') {
+      continue
+    }
+    for (const task of mission.tasks || []) {
+      const assignee = String(task.assignee || '').trim().toLowerCase()
+      if (assignee && assignee !== name) {
+        continue
+      }
+      if (task.status === 'failed' || task.status === 'blocked') {
+        return 'blocked'
+      }
+      if (task.status === 'waiting') {
+        hasWaiting = true
+      }
+    }
+  }
+
+  return hasWaiting ? 'waiting' : 'unknown'
+}
+
+/** Current-mission title for a bot: the active mission owning one of its
+ *  non-done tasks. Empty string when none — honest absence, no invention. */
+function botCurrentMission(bot, missions = []) {
+  const name = String(bot?.name || '').trim().toLowerCase()
+
+  for (const mission of missions || []) {
+    if (mission.status !== 'active') {
+      continue
+    }
+    for (const task of mission.tasks || []) {
+      const assignee = String(task.assignee || '').trim().toLowerCase()
+      if ((!assignee || assignee === name) && task.status !== 'done') {
+        return mission.title
+      }
+    }
+  }
+
+  return ''
+}
+
+/** Compress a large roster section into a swarm summary line. */
+function swarmSummary(rows) {
+  const total = rows.length
+
+  if (total < 9) {
+    return null
+  }
+
+  const done = rows.filter(row => row.presence === 'idle' || row.presence === 'unknown').length
+  const working = rows.filter(
+    row => row.presence === 'working' || row.presence === 'needs-you' || row.presence === 'waiting'
+  ).length
+
+  return { total, done, working, blocked: Math.max(0, total - done - working) }
+}
+
+// ── slice 7: mission autonomy + bounded consensus ────────────────────────────
+// Autonomy is a MISSION-SCOPED policy over the existing approval plane — it
+// never bypasses hard stops (secrets/sudo/production deploys always ask).
+
+const AUTONOMY_LEVELS = ['guided', 'balanced', 'autonomous']
+
+/** What a level permits. `maxRounds` bounds collaboration; `externalApproval`
+ *  gates side effects that reach outside the machine (deploys, sends). */
+const AUTONOMY_POLICY = {
+  guided: { maxRounds: 1, maxAgents: 2, externalApproval: true, toolEscalation: false },
+  balanced: { maxRounds: 3, maxAgents: 5, externalApproval: true, toolEscalation: true },
+  autonomous: { maxRounds: 6, maxAgents: 12, externalApproval: false, toolEscalation: true }
+}
+
+function autonomyPolicy(level) {
+  return AUTONOMY_POLICY[AUTONOMY_LEVELS.includes(level) ? level : 'balanced']
+}
+
+/** Hard stops are NOT policy-configurable — secrets and sudo ask regardless. */
+function requiresHumanApproval(item, level = 'balanced') {
+  const policy = autonomyPolicy(level)
+
+  if (!item || typeof item !== 'object') {
+    return true
+  }
+
+  if (item.kind === 'secret' || item.kind === 'sudo') {
+    return true
+  }
+  if (item.kind === 'external') {
+    return policy.externalApproval
+  }
+
+  return true
+}
+
+// ── consensus (bounded evaluator pattern) ────────────────────────────────────
+// Parallel independent proposals → judge compares → decision recorded.
+// Round-capped at creation time; late proposals after a decision are ignored.
+
+const CONSENSUS_MAX_PROPOSALS = 4
+
+/**
+ * Create a consensus request bound to one task. Returns the frame stored on
+ * the mission (caller persists). Bounded by construction.
+ */
+function createConsensus(mission, taskId, proposalTargets, question) {
+  if (!mission || !taskId || !Array.isArray(proposalTargets)) {
+    return null
+  }
+
+  const targets = [...new Set(proposalTargets.filter(target => typeof target === 'string' && target.trim()))]
+    .slice(0, CONSENSUS_MAX_PROPOSALS)
+
+  if (!targets.length || typeof question !== 'string' || !question.trim()) {
+    return null
+  }
+
+  return {
+    id: `cons_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    missionId: mission.id,
+    taskId,
+    question: question.trim().slice(0, 300),
+    targets,
+    proposals: [],
+    decision: null,
+    status: 'open',
+    createdAt: Date.now()
+  }
+}
+
+/** Record one independent proposal. Idempotent per author; capped. */
+function addConsensusProposal(consensus, author, content) {
+  if (!consensus || consensus.status !== 'open') {
+    return consensus
+  }
+
+  const who = String(author || '').trim()
+
+  if (!who || typeof content !== 'string' || !content.trim()) {
+    return consensus
+  }
+  if (consensus.proposals.some(entry => entry.author === who)) {
+    return consensus
+  }
+  if (consensus.proposals.length >= CONSENSUS_MAX_PROPOSALS) {
+    return consensus
+  }
+
+  consensus.proposals.push({ author: who, content: content.trim().slice(0, 2000), at: Date.now() })
+
+  return consensus
+}
+
+/** Judge decides. Closes the consensus; later proposals are rejected by
+ *  `addConsensusProposal` because status is no longer open. */
+function decideConsensus(consensus, judge, winningAuthor, rationale) {
+  if (!consensus || consensus.status !== 'open') {
+    return consensus
+  }
+
+  const winner = consensus.proposals.find(entry => entry.author === winningAuthor)
+
+  consensus.status = 'decided'
+  consensus.decision = {
+    judge: String(judge || '').trim() || 'judge',
+    winner: winner ? winner.author : null,
+    rationale: String(rationale || '').trim().slice(0, 300),
+    decidedAt: Date.now()
+  }
+
+  return consensus
+}
+
 // ── roster pane ──────────────────────────────────────────────────────────────
 
-/** "Active now" presence strip above the roster: chips for every bot that is
- *  working right now (the gateway-busy selected profile + bots whose last
- *  message landed inside the liveness window). Reuses the row avatar; each
- *  chip opens that bot's canonical Bot Chat. Omitted entirely when nothing
- *  is active, and never reorders the roster below it. */
-function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpen }) {
-  const active = activeBots(roster, activeProfile, gatewayState)
+function NeedsYouStrip({ roster, awaitingInputSessionIds, metaByName, onOpen }) {
+  const waiting = (roster || []).filter(bot => botNeedsInput(bot, awaitingInputSessionIds))
+
+  if (!waiting.length) {
+    return null
+  }
+
+  return jsxs('div', {
+    role: 'status',
+    'aria-live': 'polite',
+    'aria-label': 'Bots needing input',
+    className: 'flex flex-wrap items-center gap-1.5 px-2.5 pb-1.5',
+    children: [
+      jsx('span', {
+        className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-secondary)',
+        children: 'Needs you'
+      }),
+      ...waiting.map(bot => {
+        const meta = botRosterMeta(bot, metaByName)
+        const { shape, color, image } = botAppearance(bot.name, meta)
+        const photo = Boolean(image && !isBackfilledFacePng(image))
+        const label = displayName(bot, meta)
+
+        return jsx('button', {
+          type: 'button',
+          'aria-label': `Open ${label}'s chat — needs your input`,
+          className:
+            'flex items-center gap-1.5 rounded-md bg-(--ui-bg-quaternary) px-1.5 py-1 text-left text-(--ui-text-primary) transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--ui-accent) hover:bg-(--chrome-action-hover)',
+          onClick: () => onOpen(bot),
+          children: [
+            jsx(BotFace, {
+              shape,
+              color,
+              image: photo ? image : null,
+              size: 24,
+              name: bot.name,
+              mood: 'idle'
+            }),
+            jsx('span', {
+              className: 'max-w-28 truncate text-xs font-medium',
+              children: label
+            })
+          ]
+        }, botRosterKey(bot))
+      })
+    ]
+  })
+}
+
+/** One-glance team summary (jury carry-over from E): a single sentence that
+ *  answers "who is working · who waits · what needs me". Derived only from
+ *  real presence; renders nothing when the team is quiet. */
+function TeamSummaryLine({ roster, awaitingInputSessionIds, busyBySession, missions }) {
+  const working = []
+  const waiting = []
+  let needsYou = 0
+
+  for (const bot of roster || []) {
+    const label = displayName(bot, $botMeta.get()[botRosterKey(bot)])
+    if (botNeedsInput(bot, awaitingInputSessionIds)) {
+      needsYou += 1
+      continue
+    }
+    if (botSessionBusy(bot, busyBySession) || Boolean(workerActiveAt(bot))) {
+      working.push(label)
+      continue
+    }
+    const name = String(bot?.name || '').trim().toLowerCase()
+    for (const mission of missions || []) {
+      if (mission.status !== 'active') continue
+      for (const task of mission.tasks || []) {
+        const assignee = String(task.assignee || '').trim().toLowerCase()
+        if (assignee === name && task.status === 'waiting') {
+          waiting.push(label)
+        }
+      }
+    }
+  }
+
+  const parts = []
+  if (working.length) parts.push(`${working.join(' and ')} working`)
+  if (waiting.length) parts.push(`${waiting.join(' and ')} waiting`)
+  if (needsYou) parts.push(`${needsYou} decision${needsYou > 1 ? 's' : ''} yours`)
+
+  if (!parts.length) {
+    return null
+  }
+
+  return jsx('div', {
+    role: 'status',
+    'aria-live': 'polite',
+    className: 'truncate px-2.5 pb-1 text-[0.6875rem] text-(--ui-text-tertiary)',
+    children: parts.join(' · ')
+  })
+}
+
+/** "Missions" strip: active missions with derived, dependency-aware progress.
+ *  Renders only what the event log proves — never inferred presence. */
+function MissionsStrip({ onOpen }) {
+  const missions = useValue($missions)
+  const hydrated = useValue($missionsHydrated)
+  const active = missions.filter(mission => mission.status === 'active')
+
+  if (!hydrated || !active.length) {
+    return null
+  }
+
+  return jsxs('div', {
+    role: 'status',
+    'aria-live': 'polite',
+    'aria-label': 'Active missions',
+    className: 'flex min-w-0 flex-col gap-1 px-2.5 pb-1.5',
+    children: [
+      jsx('span', {
+        className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)',
+        children: 'Missions'
+      }),
+      ...active.map(mission => {
+        const tasks = missionTimeline(mission)
+        const done = tasks.filter(task => task.status === 'done').length
+        const working = tasks.find(task => task.status === 'working')
+        const failed = tasks.some(task => task.status === 'failed')
+        const blocked = tasks.some(task => task.status === 'blocked')
+        const policy = autonomyPolicy(mission.autonomy)
+
+        return jsx(
+          Tip,
+          {
+            label: `${mission.title} — ${done}/${tasks.length} done · ${mission.autonomy} (rounds ≤ ${policy.maxRounds}, agents ≤ ${policy.maxAgents}). Click to open the mission.`,
+            children: jsx('button', {
+              type: 'button',
+              'aria-label': `Open mission ${mission.title} — ${done} of ${tasks.length} tasks complete, ${mission.autonomy} autonomy`,
+              className:
+                'flex w-full min-w-0 items-center gap-2 rounded-md bg-(--ui-bg-quaternary) px-2 py-1 text-left text-(--ui-text-primary) transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--ui-accent) hover:bg-(--chrome-action-hover)',
+              onClick: () => onOpen?.(mission),
+              children: [
+                jsx(Codicon, {
+                  name: failed ? 'error' : blocked ? 'circle-slash' : working ? 'sync' : 'checklist',
+                  className: failed
+                    ? 'shrink-0 text-[var(--ui-text-danger)]'
+                    : 'shrink-0 text-(--ui-text-secondary)'
+                }),
+                jsx('span', { className: 'min-w-0 flex-1 truncate text-xs font-medium', children: mission.title }),
+                jsx('span', {
+                  className: 'shrink-0 rounded px-1 text-[0.625rem] uppercase tracking-wide text-(--ui-text-tertiary)',
+                  children: mission.autonomy === 'balanced' ? '' : mission.autonomy === 'autonomous' ? 'AUTO' : 'GUIDED'
+                }),
+                jsx('span', { className: 'shrink-0 text-xs tabular-nums text-(--ui-text-tertiary)', children: `${done}/${tasks.length}` })
+              ]
+            })
+          },
+          mission.id
+        )
+      })
+    ]
+  })
+}
+
+/** "Working now" strip above the roster: chips only for a canonical Bot Chat
+ * with a live turn or a profile with a live worker heartbeat. Recent-but-
+ * complete conversations keep their timestamp in the row below. */
+function ActiveNowStrip({ roster, busyBySession, metaByName, onOpen }) {
+  const active = activeBots(roster, busyBySession)
 
   if (!active.length) {
     return null
@@ -10448,12 +11281,12 @@ function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpe
   return jsxs('div', {
     role: 'status',
     'aria-live': 'polite',
-    'aria-label': 'Active now',
+    'aria-label': 'Working now',
     className: 'flex flex-wrap items-center gap-1.5 px-2.5 pb-1.5',
     children: [
       jsx('span', {
         className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)',
-        children: 'Active now'
+        children: 'Working now'
       }),
       ...active.map(bot => {
         const meta = botRosterMeta(bot, metaByName)
@@ -10464,12 +11297,13 @@ function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpe
         return jsx(
           Tip,
           {
-            label: `Open ${label}'s chat`,
+            label: `Open ${label}'s chat — working now`,
             children: jsx('button', {
               type: 'button',
-              'aria-label': `Open ${label}'s chat`,
+              'aria-label': `Open ${label}'s chat — working now`,
               className: cn(
                 'flex items-center gap-1.5 rounded-md bg-(--chrome-action-hover) px-1.5 py-1 text-left transition-colors',
+                'focus-visible:outline focus-visible:outline-2 focus-visible:outline-(--ui-accent)',
                 'hover:bg-(--chrome-action-hover) hover:text-foreground'
               ),
               onClick: () => onOpen(bot),
@@ -12959,7 +13793,6 @@ function BotsPane() {
   const { data, error, isLoading, refetch } = useRoster()
   const gatewayState = useValue(host.state.gateway)
   const gatewayUp = gatewayState === 'open'
-  const activeProfile = (useValue(host.state.profile) || 'default').trim() || 'default'
   const [createOpen, setCreateOpen] = useState(false)
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -12980,11 +13813,14 @@ function BotsPane() {
   // room beside a live main tab and stick).
   useValue($groupMainTabsRev)
   const groupNeedsYou = useValue($groupNeedsYou)
+  const missions = useValue($missions)
   const groupRooms = useValue($groupChats)
   const rememberedSources = useValue($lastSources)
   const rosterHydrated = useValue($rosterHydrated)
   const selectionHydrated = useValue($selectedRosterHydrated)
   const selectedRosterKey = useValue($selectedRosterKey)
+  const awaitingInputSessionIds = useValue($awaitingInputSessionIds)
+  const busyBySession = useValue($busyBySession)
 
   // The socket opening (boot, SSH reconnect, sleep/wake) is the signal to
   // retry immediately instead of waiting out the poll interval.
@@ -13030,7 +13866,7 @@ function BotsPane() {
   // and the persisted connection registry hydrate. Keep that transition in a
   // neutral loading state instead of flashing the first-run "No bots" copy.
   const initialRosterLoading = !data && !error && roster.length === 0
-  const activeRosterKeys = new Set(activeBots(roster, activeProfile, gatewayState).map(botRosterKey))
+  const activeRosterKeys = new Set(activeBots(roster, busyBySession).map(botRosterKey))
   const gatewayOptions = rosterGatewayOptions(sourceSnapshot, roster)
   const selectedGateway = gatewayOptions.find(option => option.connectionId === gatewayFilter)
   const gatewayFilterExists = gatewayFilter === 'all' || Boolean(selectedGateway)
@@ -13208,7 +14044,9 @@ function BotsPane() {
     jsx(
       BotRow,
       {
+        awaitingInputSessionIds,
         bot,
+        busyBySession,
         onDelete: setDeleting,
         onEdit: setEditing,
         onGroup: setGrouping,
@@ -13369,12 +14207,40 @@ function BotsPane() {
           })
         ]
       }),
+      jsx(TeamSummaryLine, {
+        roster,
+        awaitingInputSessionIds,
+        busyBySession,
+        missions
+      }),
+      jsx(MissionsStrip, {}),
+      jsx(UniversalNeedsYouPanel, {
+        items: deriveNeedsYou({
+          roster,
+          awaitingInputSessionIds,
+          missions,
+          groupNeedsYou
+        }),
+        onOpen: item => {
+          const bot = item.openBotKey
+            ? roster.find(candidate => botRosterKey(candidate) === item.openBotKey)
+            : null
+          if (bot) {
+            void openRosterBot(bot)
+          }
+        }
+      }),
+      jsx(NeedsYouStrip, {
+        roster,
+        awaitingInputSessionIds,
+        metaByName: allMeta,
+        onOpen: bot => void openRosterBot(bot)
+      }),
       jsx(ActiveNowStrip, {
         roster: visibleRoster,
-        activeProfile,
-        gatewayState,
+        busyBySession,
         metaByName: allMeta,
-        // Keep the Active Now strip and sidebar rows on the same exact-owner
+        // Keep the Working now strip and sidebar rows on the same exact-owner
         // route: source activation first, then canonical name-registry open.
         onOpen: bot => void openRosterBot(bot)
       }),
@@ -13443,7 +14309,7 @@ function BotsPane() {
                           jsx(DropdownMenuSeparator, {}),
                           ...[
                             ['all', 'Any activity'],
-                            ['active', 'Active now'],
+                            ['active', 'Working now'],
                             ['recent', 'Recently active'],
                             ['older', 'Older']
                           ].map(([value, label]) =>
@@ -13828,6 +14694,7 @@ export default {
     // provable sole-local topology and deliberately leaves v1 untouched for
     // one-version rollback.
     void migrateBotMeta(ctx.storage).catch(() => undefined)
+    void hydrateMissions(ctx.storage).catch(() => undefined)
 
     // The last selected bot, source-qualified. Restoring it is PRESENTATION
     // ONLY: it paints the Bots home and the roster highlight, and never

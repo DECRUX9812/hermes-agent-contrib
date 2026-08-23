@@ -67,8 +67,44 @@ MESSAGE_MAX_CHARS = 16000
 _DM_DIR_NAME = "hermes-dm"
 _DM_STALE_SECONDS = 24 * 60 * 60
 
+# Structured handoff envelope (Team OS): recognized metadata keys. Anything
+# outside this set makes the block unrecognizable → rejected, not guessed.
+_HANDOFF_KEYS = ("handoffId", "parentMission", "parentTask", "expectedOutput", "returnTo")
+_HANDOFF_TEXT_MAX = 200
+
 _PEER_TARGET_RE = re.compile(r"^([a-z0-9][a-z0-9_-]{0,63})/([a-zA-Z0-9][a-zA-Z0-9_-]{0,63})$")
 _LOCAL_TARGET_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$")
+
+
+def _handoff_trailer(handoff: Any) -> tuple[str, dict[str, str]]:
+    """Build the ``[hermes.handoff]`` trailer for a structured handoff.
+
+    Returns ``(trailer_text, echo_fields)``. ``trailer_text`` is empty when
+    ``handoff`` is empty/None; a non-empty block with NO recognizable field is
+    an authoring mistake and raises ``ValueError`` so the caller refuses the
+    send instead of silently degrading to a plain message. Recognized values
+    are bounded strings — the envelope can never smuggle oversized payloads
+    past MESSAGE_MAX_CHARS accounting.
+    """
+    if not isinstance(handoff, dict):
+        if handoff in (None, "", {}):
+            return "", {}
+        raise ValueError("handoff must be an object of string fields")
+
+    fields: dict[str, str] = {}
+    for key in _HANDOFF_KEYS:
+        value = str(handoff.get(key) or "").strip()
+        if value:
+            fields[key] = " ".join(value.split())[:_HANDOFF_TEXT_MAX]
+    if not fields:
+        raise ValueError(
+            "handoff carried no known fields "
+            f"({'/'.join(_HANDOFF_KEYS)}) — drop it or fill it in"
+        )
+
+    payload = {"type": "hermes.handoff", **fields}
+    trailer = "\n\n[hermes.handoff]" + json.dumps(payload, ensure_ascii=False)
+    return trailer, fields
 
 
 def message_agent_tool_schema() -> dict:
@@ -117,6 +153,39 @@ def message_agent_tool_schema() -> dict:
                             f"{MESSAGE_MAX_CHARS} chars). Do not include the "
                             "'Message from …' prefix — it is added automatically."
                         ),
+                    },
+                    "handoff": {
+                        "type": "object",
+                        "description": (
+                            "OPTIONAL structured handoff envelope for delegated work. "
+                            "Include it when this message hands off a mission task; "
+                            "omit it for ordinary chatter. Recognized string fields: "
+                            "handoffId, parentMission, parentTask, expectedOutput, "
+                            "returnTo."
+                        ),
+                        "properties": {
+                            "handoffId": {
+                                "type": "string",
+                                "description": "Stable id for THIS handoff — lets the receiver acknowledge/dedupe it.",
+                            },
+                            "parentMission": {
+                                "type": "string",
+                                "description": "Mission id this work belongs to, if any.",
+                            },
+                            "parentTask": {
+                                "type": "string",
+                                "description": "Task id within that mission, if any.",
+                            },
+                            "expectedOutput": {
+                                "type": "string",
+                                "description": "What the finished work should produce (artifact names or a one-line spec).",
+                            },
+                            "returnTo": {
+                                "type": "string",
+                                "description": "Handle to send the result back to when it is not you.",
+                            },
+                        },
+                        "additionalProperties": False,
                     },
                 },
                 "required": ["target", "message"],
@@ -240,12 +309,17 @@ def message_agent_tool(
     message: str = "",
     task_id: Optional[str] = None,
     agent: Any = None,
+    handoff: Any = None,
 ) -> str:
     """Deliver ``message`` to ``target``'s Bot Chat. Returns a JSON ack/error.
 
     ``agent`` is the calling AIAgent (threaded by the executor) — used for
     the Bot Chat gate, the sender identity, and the session key so the
-    spawned transport is tracked against the right session.
+    spawned transport is tracked against the right session. ``handoff`` is an
+    optional structured envelope (Team OS slice 3): recognized metadata rides
+    the message as a machine-readable ``[hermes.handoff]`` trailer so missions
+    can track delegated work without parsing prose. Plain messages are
+    byte-identical to the legacy format.
     """
     # ── defense-in-depth gate: only a canonical Bot Chat may deliver ──
     home = _agent_home(agent)
@@ -275,6 +349,19 @@ def message_agent_tool(
     body = str(message or "").strip()
     if not body:
         return _err("message is required — compose what you want to say to that agent.")
+
+    # ── structured handoff envelope (optional) ──
+    try:
+        trailer, handoff_echo = _handoff_trailer(handoff)
+    except ValueError as exc:
+        return _err(f"Invalid handoff: {exc}")
+    if trailer and len(body) + len(trailer) > MESSAGE_MAX_CHARS:
+        return _err(
+            f"message plus handoff envelope too long ({len(body) + len(trailer)} "
+            f"chars > {MESSAGE_MAX_CHARS}). Send the essentials; share large "
+            "content as a file path instead."
+        )
+
     if len(body) > MESSAGE_MAX_CHARS:
         return _err(
             f"message too long ({len(body)} chars > {MESSAGE_MAX_CHARS}). "
@@ -287,6 +374,8 @@ def message_agent_tool(
 
     sender_handle = _handle(me)
     prefix = f"Message from 🤖 {sender_handle} (@{sender_handle}): "
+    # Wire payload: human prose first, machine-readable envelope last.
+    wire_body = body + trailer
 
     # ── peer target: '<peer>/<agent>' or a bare registered peer name ──
     peer_match = _PEER_TARGET_RE.match(raw_target)
@@ -302,11 +391,12 @@ def message_agent_tool(
         label = f"@{peer_profile or peer_name} on peer '{peer_name}'"
         return _start_delivery(
             ["hermes", "peer", "dm", dm_target],
-            prefix + body,
+            prefix + wire_body,
             label,
             stdin_file=True,
             task_id=task_id,
             agent=agent,
+            handoff_echo=handoff_echo,
         )
 
     # ── local teammate ──
@@ -319,7 +409,14 @@ def message_agent_tool(
         # relay roster lists agents on the other connections; delivery rides
         # the Desktop's own persistent socket to that gateway.
         relayed = _try_relay_delivery(
-            root, raw_target, body, me, sender_handle, task_id=task_id, agent=agent
+            root,
+            raw_target,
+            wire_body,
+            me,
+            sender_handle,
+            task_id=task_id,
+            agent=agent,
+            handoff_echo=handoff_echo,
         )
         if relayed is not None:
             return relayed
@@ -335,7 +432,14 @@ def message_agent_tool(
         # 'default' messaging the cloud 'default') — try the relay before
         # calling it a self-message.
         relayed = _try_relay_delivery(
-            root, raw_target, body, me, sender_handle, task_id=task_id, agent=agent
+            root,
+            raw_target,
+            wire_body,
+            me,
+            sender_handle,
+            task_id=task_id,
+            agent=agent,
+            handoff_echo=handoff_echo,
         )
         if relayed is not None:
             return relayed
@@ -354,11 +458,12 @@ def message_agent_tool(
             "--create-if-missing",
             "-Q",
         ],
-        prefix + body,
+        prefix + wire_body,
         f"@{_handle(resolved)}",
         stdin_file=False,
         task_id=task_id,
         agent=agent,
+        handoff_echo=handoff_echo,
     )
 
 
@@ -371,6 +476,7 @@ def _try_relay_delivery(
     *,
     task_id: Optional[str],
     agent: Any,
+    handoff_echo: Optional[dict[str, str]] = None,
 ) -> Optional[str]:
     """Cross-connection delivery via the Desktop relay, or None if the
     target doesn't resolve against the relay roster.
@@ -407,13 +513,17 @@ def _try_relay_delivery(
         envelope = enqueue_envelope(
             root,
             target=match,
-            message=f"Message from 🤖 {sender_handle} (@{sender_handle}): {body}",
+            message=f"Message from 🤖 {sender_handle} (@{sender_handle}): {wire_body}",
             sender_profile=me,
             sender_handle=sender_handle,
         )
         label = f"@{match['handle']} on {match['connection_label'] or match['connection_id']}"
         return _spawn_delivery(
-            waiter_command(root, envelope), label, task_id=task_id, agent=agent
+            waiter_command(root, envelope),
+            label,
+            task_id=task_id,
+            agent=agent,
+            handoff_echo=handoff_echo,
         )
     except Exception:
         logger.debug("relay delivery attempt failed", exc_info=True)
@@ -543,8 +653,9 @@ def _start_delivery(
     label: str,
     *,
     stdin_file: bool,
-    task_id: Optional[str],
-    agent: Any,
+    task_id: Optional[str] = None,
+    agent: Any = None,
+    handoff_echo: Optional[dict[str, str]] = None,
 ) -> str:
     """Create a DM file and transfer its cleanup ownership to the runner."""
     dm_file = _write_dm_file(content)
@@ -559,6 +670,7 @@ def _start_delivery(
         dm_file=dm_file,
         task_id=task_id,
         agent=agent,
+        handoff_echo=handoff_echo,
     )
 
 
@@ -567,8 +679,9 @@ def _spawn_delivery(
     label: str,
     *,
     dm_file: Optional[str] = None,
-    task_id: Optional[str],
-    agent: Any,
+    task_id: Optional[str] = None,
+    agent: Any = None,
+    handoff_echo: Optional[dict[str, str]] = None,
 ) -> str:
     """Launch the cleanup-owning runner and transfer file ownership on ack.
 
@@ -608,6 +721,7 @@ def _spawn_delivery(
                     "notification carries the reply — relay it then, attributed to "
                     "that agent."
                 ),
+                **({"handoff": handoff_echo} if handoff_echo else {}),
                 **({"process_id": proc_id} if proc_id else {}),
                 "sent_at": int(time.time()),
             }

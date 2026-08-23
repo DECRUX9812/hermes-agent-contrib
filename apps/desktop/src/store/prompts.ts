@@ -201,6 +201,18 @@ export const $activeSessionAwaitingInput = computed(
   (clarify, approval, sudo, secret) => Boolean(clarify || approval || sudo || secret)
 )
 
+/** Runtime session ids currently blocked on explicit human input. This is a
+ * content-free attention index for secondary surfaces (session lists, Bot
+ * Mode): consumers learn WHICH session needs input, never the prompt text,
+ * secret name, command, or choices. */
+export const $awaitingInputSessionIds = computed(
+  [$clarifyRequests, approval.$all, sudo.$all, secret.$all],
+  (clarify, approvals, sudos, secrets) =>
+    [...new Set([...Object.keys(clarify), ...Object.keys(approvals), ...Object.keys(sudos), ...Object.keys(secrets)])]
+      .filter(Boolean)
+      .sort()
+)
+
 /** True when `sessionId` is parked on a blocking prompt that typing cannot
  *  answer (approval / sudo / secret). Clarify is deliberately excluded: typing
  *  a real message IS an answer to a clarify ("none of these" — the composer
