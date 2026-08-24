@@ -75,6 +75,12 @@ def _post_setup_no_window_flags(*, streams_to_console: bool = False) -> int:
 # every tool resolution for a persistently-corrupt config (#38798).
 _warned_invalid_platform_toolsets: Set[str] = set()
 
+# Platforms already warned about the phantom synthesized-toolset fallthrough —
+# an unregistered surface (no PLATFORMS row, no gateway registry entry) whose
+# derived ``hermes-<platform>`` composite does not exist. Warn-once keeps a
+# per-turn resolver from spamming while still surfacing dead config (#88857).
+_warned_phantom_platform_toolsets: Set[str] = set()
+
 PROJECT_ROOT = Path(__file__).parent.parent.resolve()
 
 
@@ -2704,6 +2710,45 @@ def _get_platform_tools(
                 platform,
                 ", ".join(_named),
             )
+
+    # Unregistered surfaces have no PLATFORMS row, so the synthesis at the top
+    # derives ``hermes-<platform>`` — a composite nothing ever registers for
+    # client-surface tags like desktop/tui (session sources, not gateway
+    # platforms; the GUI surface toolsets fold in via tui_gateway's resolver,
+    # not here). The phantom name survives explicit_passthrough and comes back
+    # as an "enabled toolset" resolving to zero tools, silently (#88857).
+    # Plugin platforms stay quiet: their composite either validates or the
+    # platform is registered in the gateway registry. Warn once per platform
+    # so the dead configuration surfaces at resolve time (#38798 pattern).
+    if (
+        _plat_info is None
+        and _default_ts == f"hermes-{platform}"
+        and platform not in _warned_phantom_platform_toolsets
+    ):
+        try:
+            from toolsets import validate_toolset as _validate_ts
+
+            _composite_exists = _validate_ts(_default_ts)
+        except Exception:
+            _composite_exists = False
+        if not _composite_exists:
+            try:
+                from gateway.platform_registry import platform_registry
+
+                _gateway_registered = platform_registry.get(platform) is not None
+            except Exception:
+                _gateway_registered = False
+            if not _gateway_registered:
+                _warned_phantom_platform_toolsets.add(platform)
+                logger.warning(
+                    "platform '%s' is not a registered Hermes platform, so "
+                    "per-platform toolset configuration cannot resolve (derived "
+                    "toolset '%s' does not exist). Restrict tools with "
+                    "agent.disabled_toolsets or an explicit platform_toolsets "
+                    "entry for a registered platform instead. See issue #88857.",
+                    platform,
+                    _default_ts,
+                )
 
     return enabled_toolsets
 

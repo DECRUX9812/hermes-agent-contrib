@@ -74,6 +74,54 @@ def test_partially_valid_platform_toolsets_no_runtime_warning(caplog):
     assert not any("#38798" in r.getMessage() for r in caplog.records)
 
 
+def test_unregistered_surface_phantom_toolset_warns_once(caplog):
+    """#88857: a session-source platform tag with no PLATFORMS row (desktop,
+    tui) synthesizes ``hermes-<platform>``, a composite nothing registers. The
+    phantom survives explicit_passthrough and returns as an 'enabled toolset'
+    resolving to zero tools — silently. The resolver must warn once so the
+    dead per-platform configuration surfaces instead of failing open quietly."""
+    import hermes_cli.tools_config as _tc
+
+    _tc._warned_phantom_platform_toolsets.discard("desktop")
+    config: dict = {}
+
+    with caplog.at_level(logging.WARNING, logger="hermes_cli.tools_config"):
+        first = _get_platform_tools(config, "desktop", include_default_mcp_servers=False)
+        second = _get_platform_tools(config, "desktop", include_default_mcp_servers=False)
+
+    warnings = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+    assert any("#88857" in m and "hermes-desktop" in m for m in warnings), warnings
+    # Warn-once per platform, mirroring the #38798 guard.
+    assert len([m for m in warnings if "#88857" in m]) == 1
+    # Behavior is unchanged — the warning is diagnostic-only.
+    assert first == {"hermes-desktop"}
+    assert second == {"hermes-desktop"}
+
+
+def test_registered_plugin_platform_phantom_check_stays_silent(caplog):
+    """Plugin gateway platforms (irc, sms, ...) legitimately derive
+    ``hermes-<platform>`` without a PLATFORMS row; when the platform IS
+    registered in the gateway registry, no phantom warning may fire."""
+    import hermes_cli.tools_config as _tc
+    from unittest.mock import patch as _patch
+
+    _tc._warned_phantom_platform_toolsets.discard("irc")
+    config: dict = {}
+
+    class _FakeEntry:
+        pass
+
+    class _FakeRegistry:
+        def get(self, name):
+            return _FakeEntry() if name == "irc" else None
+
+    with _patch("gateway.platform_registry.platform_registry", _FakeRegistry()):
+        with caplog.at_level(logging.WARNING, logger="hermes_cli.tools_config"):
+            _get_platform_tools(config, "irc", include_default_mcp_servers=False)
+
+    assert not any("#88857" in r.getMessage() for r in caplog.records)
+
+
 
 
 
