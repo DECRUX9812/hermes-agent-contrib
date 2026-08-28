@@ -1,0 +1,10 @@
+{
+  "tree": "/tmp/hermes-context-diet-diet",
+  "commit": "790e1eb6bd576261e6b9e70fcfe4fbdf17f866bb",
+  "model": "anthropic/claude-fable-5",
+  "context_length": 1000000,
+  "threshold_tokens": 500000,
+  "tail_mode": "lean",
+  "tail_token_budget": 25000,
+  "protect_last_n": 20
+}

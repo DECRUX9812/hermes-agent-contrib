@@ -1,0 +1,54 @@
+{
+  "tree": "/tmp/hermes-context-diet-browser",
+  "commit": "b03b3a69342c2da5303f90159d59c5fcf1c5f7ad",
+  "tokenizer": "o200k_base",
+  "schema_rows": [
+    {
+      "name": "cronjob",
+      "tokens": 1148,
+      "chars": 5035
+    },
+    {
+      "name": "computer_use",
+      "tokens": 1334,
+      "chars": 6002
+    },
+    {
+      "name": "session_search",
+      "tokens": 702,
+      "chars": 3117
+    },
+    {
+      "name": "skill_manage",
+      "tokens": 520,
+      "chars": 2389
+    },
+    {
+      "name": "clarify",
+      "tokens": 887,
+      "chars": 4033
+    },
+    {
+      "name": "tool_search",
+      "tokens": 215,
+      "chars": 1044
+    },
+    {
+      "name": "tool_describe",
+      "tokens": 103,
+      "chars": 476
+    },
+    {
+      "name": "tool_call",
+      "tokens": 104,
+      "chars": 499
+    }
+  ],
+  "schema_total_tokens": 5013,
+  "bridge_schema_tokens": 422,
+  "campaign_schema_tokens": 4591,
+  "system_prompt_component": "absent",
+  "system_prompt_component_tokens": 0,
+  "system_prompt_component_chars": 0,
+  "conditional_nous_subscription_block": "not measured; entitlement requires a live account"
+}

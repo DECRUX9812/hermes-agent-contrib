@@ -1,0 +1,12 @@
+{
+  "provider": "openrouter",
+  "model": "qwen/qwen3-coder-30b-a3b-instruct",
+  "requested_repetitions": 5,
+  "requested_cells": 60,
+  "written_rows": 47,
+  "usable_rows": 19,
+  "excluded_rows": 28,
+  "failure": "HTTP 402 Insufficient credits",
+  "excluded_reason": "empty/provider-noise rows after the credit failure; not model-quality evidence",
+  "source": "/tmp/hermes-context-diet-diet/evals/session_search_schema/results/decrux_session_5/qwen_qwen3-coder-30b-a3b-instruct.jsonl"
+}

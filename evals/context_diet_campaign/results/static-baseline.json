@@ -1,0 +1,84 @@
+{
+  "tree": "/tmp/hermes-context-diet-baseline",
+  "commit": "4c1f53be10d0fce1d25aee1975e5149b6c54f25a",
+  "tokenizer": "o200k_base",
+  "schema_rows": [
+    {
+      "name": "cronjob",
+      "tokens": 2231,
+      "chars": 9989
+    },
+    {
+      "name": "computer_use",
+      "tokens": 2227,
+      "chars": 10308
+    },
+    {
+      "name": "session_search",
+      "tokens": 1577,
+      "chars": 6909
+    },
+    {
+      "name": "skill_manage",
+      "tokens": 926,
+      "chars": 4330
+    },
+    {
+      "name": "clarify",
+      "tokens": 887,
+      "chars": 4033
+    },
+    {
+      "name": "tool_search",
+      "tokens": 141,
+      "chars": 655
+    },
+    {
+      "name": "tool_describe",
+      "tokens": 77,
+      "chars": 356
+    },
+    {
+      "name": "tool_call",
+      "tokens": 104,
+      "chars": 499
+    },
+    {
+      "name": "bfl_flux3_text_to_video",
+      "tokens": 417,
+      "chars": 1832
+    },
+    {
+      "name": "bfl_flux3_image_to_video",
+      "tokens": 458,
+      "chars": 1972
+    },
+    {
+      "name": "bfl_flux3_keyframes_to_video",
+      "tokens": 597,
+      "chars": 2532
+    },
+    {
+      "name": "bfl_flux3_video_continuation",
+      "tokens": 527,
+      "chars": 2285
+    },
+    {
+      "name": "bfl_flux3_get_result",
+      "tokens": 209,
+      "chars": 954
+    },
+    {
+      "name": "bfl_flux3_prompting_guide",
+      "tokens": 94,
+      "chars": 443
+    }
+  ],
+  "schema_total_tokens": 10472,
+  "bridge_schema_tokens": 322,
+  "campaign_schema_tokens": 10150,
+  "system_prompt_component": "computer_use_guidance",
+  "system_prompt_component_tokens": 1199,
+  "system_prompt_component_chars": 5560,
+  "conditional_nous_subscription_block": "not measured; entitlement requires a live account"
+}

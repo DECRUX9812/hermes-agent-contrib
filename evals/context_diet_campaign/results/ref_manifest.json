@@ -1,0 +1,25 @@
+{
+  "repository": "NousResearch/hermes-agent",
+  "issue": 95681,
+  "arms": {
+    "baseline": "4c1f53be10d0fce1d25aee1975e5149b6c54f25a",
+    "diet": "790e1eb6bd576261e6b9e70fcfe4fbdf17f866bb",
+    "browser": "b03b3a69342c2da5303f90159d59c5fcf1c5f7ad"
+  },
+  "latest_upstream_after_run": "791e2ae3257e211d14ca77e654dfe10ee1976a1c",
+  "latest_upstream_after_run_note": "Advanced after the frozen DIET run; not included in measured results.",
+  "referenced_prs": [
+    {"number": 94599, "base": "4c1f53be10d0fce1d25aee1975e5149b6c54f25a", "head": "59b0b3893a610ac50d7d9764fa69c57b576924a9", "merge": "76e306c45843607e6dc135d23c13d3654417ebd5"},
+    {"number": 95005, "base": "52bcfb47de332bb667f18f553d9424d148539e0b", "head": "6f5a7b4fb54f8c1f1646181e17d849ab4dc16316", "merge": "4032a15ad0d5f55f5c97f3fa59709ca28a992543"},
+    {"number": 95050, "base": "a87e8831f775c949ca63c70ab6e2e83cac00fd1e", "head": "10b65d35ae877daf29d35406476489f2b382d2c6", "merge": "62b2d78025c349996e753c6f7c748de035eb8048"},
+    {"number": 95119, "base": "1a5ca62233e5cc5db56de813be8a8c4e00de7bfc", "head": "448bab2a95fc28e5c95961d45f2a88fc3c8ca74d", "merge": "a9351543789baabdd2897ee2ed73087d488f9b6c"},
+    {"number": 95287, "base": "dce4abe9172d6478bed73525efdd49e6d10bed03", "head": "a8c7880ef15fd89c4677c1d54b03140ef9ad381d", "merge": "3e5c49643cead9c7504c0926b5c9246adea33360"},
+    {"number": 95384, "base": "f0c0c986c4cbca01ff3550126ecdee5a6b5a7e13", "head": "7caee9b0a661a12655638d39d5a248f8eb1b5213", "merge": "bd134d0f303c97032f497fb9c66e7404761433ed"},
+    {"number": 95570, "base": "2b8b4542e9d0f13e006b8f5823b60506ea3ae481", "head": "d8a78a4dc0b29c8077290123ead3399dafe12af4", "merge": "f6d3a1ca4952927dc5b98613191ec85c819d6adb"},
+    {"number": 95571, "base": "03c97d984b7259154545314d04d1c6093b6fcbe4", "head": "bf35536c7f9648a3a2a6deb4ab842b2943208c8f", "merge": "f4df86fe1a3285d88107c89b0d56f98c674751d0"},
+    {"number": 95620, "base": "7a7a371c593b8956f8d6f0bb588d2d6afdc8d428", "head": "b03b3a69342c2da5303f90159d59c5fcf1c5f7ad", "merge": "61cb2c2323361253d0ccba07bbc7c8c42ff174ce"},
+    {"number": 95650, "base": "b3a2065ff345f849b29178da67b5ed70172dc525", "head": "74b2fa2577c7e0a46a5e3e46c19e31c862cb01a4", "merge": "b2bd1ac63ff137a6287ce989d65dccee6b9155e2"},
+    {"number": 95697, "base": "9aa7530f7b53699e2c6d648ded8f6300503b3dc7", "head": "a318bf7b107d9d3045cd8494cac9e73d947b5c1e", "merge": "3fd70ad1c9f33b6346638944339ff9bd3c113841"},
+    {"number": 95907, "base": "b0563d5ad3fd48f04cbe1d5a92e277e8408c461e", "head": "6a7b7cd49cb9945a040846bf75eafb9068be5097", "merge": "7d6c6ae4aedfd932533b8638e1d51db07654d792"}
+  ]
+}
