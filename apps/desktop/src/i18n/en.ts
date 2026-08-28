@@ -2804,6 +2804,7 @@ export const en: Translations = {
     free: 'Free',
     freeTier: 'Free tier',
     priceTitle: 'Input / Output price per million tokens',
+    priceCache: 'cached input:',
     wasPrice: 'was'
   },
 

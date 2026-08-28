@@ -2446,6 +2446,7 @@ export const ja = defineLocale({
     free: '無料',
     freeTier: '無料プラン',
     priceTitle: '100 万トークンあたりの入力/出力価格',
+    priceCache: 'キャッシュ入力:',
     wasPrice: '旧価格'
   },
 

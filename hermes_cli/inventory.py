@@ -273,7 +273,9 @@ def build_models_payload(
     if canonical_order:
         rows = _reorder_canonical(rows)
     if pricing:
-        _apply_pricing(rows, force_fresh_nous_tier=force_fresh_nous_tier)
+        _apply_pricing(
+            rows, force_fresh_nous_tier=force_fresh_nous_tier, refresh=refresh
+        )
     if capabilities:
         _apply_capabilities(rows)
     if featured:
@@ -876,10 +878,31 @@ def _reorder_canonical(rows: list[dict]) -> list[dict]:
     return canon + extras
 
 
+# Custom-provider endpoints whose catalog IS a known priced one, keyed by the
+# api_url with any trailing "/v1" stripped. Lets a user-configured OpenRouter
+# entry ("custom:openrouter") show the same live prices + Free badges as the
+# built-in row instead of silently going unpriced.
+_CUSTOM_PRICED_ENDPOINTS = {
+    "https://openrouter.ai/api": "openrouter",
+}
+
+
+def _pricing_slug_for_custom_row(row: dict) -> Optional[str]:
+    """Canonical priced-provider slug when *row* is a custom entry pointing at
+    a known priced catalog, else ``None``."""
+    if not str(row.get("slug", "")).lower().startswith("custom:"):
+        return None
+    base = str(row.get("api_url") or "").strip().rstrip("/")
+    if base.lower().endswith("/v1"):
+        base = base[:-3]
+    return _CUSTOM_PRICED_ENDPOINTS.get(base.lower())
+
+
 def _apply_pricing(
     rows: list[dict],
     *,
     force_fresh_nous_tier: bool = False,
+    refresh: bool = False,
 ) -> None:
     """Enrich each provider row with per-model pricing + Nous tier gating.
 
@@ -897,6 +920,10 @@ def _apply_pricing(
     Prices are pre-formatted via ``_format_price_per_mtok`` so the GUI just
     renders strings — identical formatting to the CLI picker. All failures
     are swallowed (best-effort): a row simply gets no ``pricing`` key.
+
+    ``refresh`` (explicit user "Refresh Models") bypasses the pricing cache
+    too, so refreshed rows carry re-fetched live prices, not just fresh model
+    lists — otherwise a price change wouldn't show until the cache TTL lapsed.
     """
     from hermes_cli.models import (
         _format_price_per_mtok,
@@ -915,7 +942,14 @@ def _apply_pricing(
         if not models:
             continue
         try:
-            raw_pricing = get_pricing_for_provider(slug) or {}
+            # A custom entry pointed at a known priced catalog (e.g. a
+            # user-configured OpenRouter endpoint) prices from that catalog.
+            raw_pricing = (
+                get_pricing_for_provider(
+                    _pricing_slug_for_custom_row(row) or slug, force_refresh=refresh
+                )
+                or {}
+            )
         except Exception:
             raw_pricing = {}
         if not raw_pricing:

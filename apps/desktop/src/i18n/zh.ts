@@ -2968,6 +2968,7 @@ export const zh: Translations = {
     free: '免费',
     freeTier: '免费层',
     priceTitle: '每百万 token 的输入/输出价格',
+    priceCache: '缓存输入：',
     wasPrice: '原价'
   },
 

@@ -2369,6 +2369,8 @@ export interface Translations {
     freeTier: string
     priceTitle: string
     wasPrice: string
+    /** Hover tooltip label for the cached-input $/Mtok price (model picker). */
+    priceCache: string
   }
 
   modelVisibility: {

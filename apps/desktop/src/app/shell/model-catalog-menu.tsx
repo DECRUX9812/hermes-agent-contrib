@@ -36,7 +36,7 @@ import {
 } from '@/store/model-visibility'
 import { $collapsedProviders, toggleCollapsedProvider } from '@/store/provider-collapse'
 import { $defaultReasoningEffort } from '@/store/session'
-import type { ModelOptionProvider, ModelOptionsResponse } from '@/types/hermes'
+import type { ModelOptionProvider, ModelOptionsResponse, ModelPricing } from '@/types/hermes'
 
 import { type FastControl, ModelEditSubmenu, resolveFastControl } from './model-edit-submenu'
 
@@ -457,6 +457,10 @@ export function ModelCatalogMenu({
                             <HighlightMatches query={search} text={name} />
                             {meta ? <span className="text-(--ui-text-tertiary)"> {meta}</span> : null}
                           </span>
+                          <ModelPriceTag
+                            isCurrent={isCurrent}
+                            price={group.provider.pricing?.[activeId ?? family.id]}
+                          />
                           {isCurrent ? (
                             <Codicon className="ml-auto text-foreground" name="check" size="0.75rem" />
                           ) : null}
@@ -603,4 +607,60 @@ function useStoreCollapsed(): string[] {
 
 function useDefaultEffort(): string {
   return useStore($defaultReasoningEffort) || DEFAULT_REASONING_EFFORT
+}
+
+// Compact price tag for one catalog row, fed from the same
+// `provider.pricing[model]` payload the ⌘M Switch-model dialog renders —
+// live $/Mtok from providers that publish it (OpenRouter, Nous Portal,
+// Novita, …). Renders nothing when pricing is unavailable so local /
+// custom providers keep their clean rows.
+function ModelPriceTag({ price, isCurrent }: { isCurrent: boolean; price?: ModelPricing }) {
+  const { t } = useI18n()
+  const copy = t.modelPicker
+
+  if (!price || (!price.input && !price.output)) {
+    return null
+  }
+
+  if (price.free) {
+    return (
+      <span className="shrink-0 pl-1.5">
+        <span
+          className={cn(
+            'rounded-sm px-1 py-0.5 text-[0.5625rem] font-semibold uppercase tracking-wide',
+            isCurrent ? 'bg-primary-foreground/20' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+          )}
+        >
+          {copy.free}
+        </span>
+      </span>
+    )
+  }
+
+  const onSale = typeof price.discount_percent === 'number' && Boolean(price.was_input || price.was_output)
+  const title = [copy.priceTitle, price.cache ? `${copy.priceCache} ${price.cache}` : null].filter(Boolean).join(' · ')
+
+  return (
+    <span
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1 pl-1.5 text-[0.59375rem] tabular-nums',
+        isCurrent ? 'text-primary-foreground/80' : 'text-(--ui-text-secondary)'
+      )}
+      title={title}
+    >
+      {onSale ? (
+        <span
+          className={cn(
+            'rounded-sm px-1 py-0.5 font-semibold',
+            isCurrent ? 'bg-primary-foreground/20' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+          )}
+        >
+          -{price.discount_percent}%
+        </span>
+      ) : null}
+      <span>
+        {price.input || '?'} / {price.output || '?'}
+      </span>
+    </span>
+  )
 }

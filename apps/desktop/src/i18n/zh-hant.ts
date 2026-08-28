@@ -2357,6 +2357,7 @@ export const zhHant = defineLocale({
     free: '免費',
     freeTier: '免費層',
     priceTitle: '每百萬 Token 的輸入/輸出價格',
+    priceCache: '快取輸入：',
     wasPrice: '原價'
   },
 
