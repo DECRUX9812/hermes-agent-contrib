@@ -3075,15 +3075,32 @@ def init_agent(
     # If model.context_length is set, it caps num_ctx so the user's VRAM
     # budget is respected even when GGUF metadata advertises a larger window.
     agent._ollama_num_ctx: int | None = None
+    _prov = (getattr(agent, "provider", "") or "").lower()
+    _url = getattr(agent, "base_url", "") or ""
+    _is_ollama_server = False
+    if _prov in ("ollama", "ollama-local", "ollama-cloud") or "ollama" in _url.lower() or ":11434" in _url:
+        _is_ollama_server = True
+    elif _url and is_local_endpoint(_url):
+        try:
+            _k = agent.api_key if isinstance(agent.api_key, str) else ""
+            _is_ollama_server = (detect_local_server_type(_url, api_key=_k or "") == "ollama")
+        except Exception:
+            _is_ollama_server = False
+
     _ollama_num_ctx_override = None
-    if isinstance(_model_cfg, dict):
-        _ollama_num_ctx_override = _model_cfg.get("ollama_num_ctx")
+    if _is_ollama_server:
+        if isinstance(_model_cfg, dict):
+            _ollama_num_ctx_override = _model_cfg.get("ollama_num_ctx")
+        if _ollama_num_ctx_override is None and isinstance(_agent_cfg.get("providers"), dict):
+            _p_cfg = _agent_cfg["providers"].get(agent.provider or "")
+            if isinstance(_p_cfg, dict):
+                _ollama_num_ctx_override = _p_cfg.get("ollama_num_ctx")
     if _ollama_num_ctx_override is not None:
         try:
             agent._ollama_num_ctx = int(_ollama_num_ctx_override)
         except (TypeError, ValueError):
             _ra().logger.debug("Invalid ollama_num_ctx config value: %r", _ollama_num_ctx_override)
-    if agent._ollama_num_ctx is None and agent.base_url and is_local_endpoint(agent.base_url):
+    if _is_ollama_server and agent._ollama_num_ctx is None and agent.base_url and is_local_endpoint(agent.base_url):
         try:
             # ``agent.api_key`` may be a callable (Entra token provider).
             # Ollama detection makes a manual HTTP request and expects a
