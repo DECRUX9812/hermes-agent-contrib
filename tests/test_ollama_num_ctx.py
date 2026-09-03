@@ -5,6 +5,7 @@ Covers:
   run_agent.py — _ollama_num_ctx detection + extra_body injection
 """
 
+import os
 from unittest.mock import patch, MagicMock
 
 
@@ -144,6 +145,7 @@ class TestCompressorClampsToNumCtx:
     requests run at the smaller served num_ctx."""
 
     def _build_agent(self, cfg, probed_ctx):
+        import os
         import agent.context_compressor as cc_mod
         with (
             patch("run_agent.get_tool_definitions", return_value=[]),
@@ -187,3 +189,29 @@ class TestCompressorClampsToNumCtx:
         # num_ctx above the resolved window must not RAISE the compressor
         # window: the clamp is one-directional.
         assert agent.context_compressor.context_length == 65536
+
+    def test_non_ollama_server_ignores_ollama_num_ctx(self):
+        import agent.context_compressor as cc_mod
+        cfg = {"agent": {}, "model": {"ollama_num_ctx": 65536}}
+        with (
+            patch("run_agent.get_tool_definitions", return_value=[]),
+            patch("run_agent.check_toolset_requirements", return_value={}),
+            patch("run_agent.OpenAI"),
+            patch("hermes_cli.config.load_config", return_value=cfg),
+            patch("hermes_cli.config.load_config_readonly", return_value=cfg),
+            patch("agent.model_metadata.get_model_context_length", return_value=1048576),
+            patch.object(cc_mod, "get_model_context_length", return_value=1048576),
+            patch("agent.model_metadata.is_local_endpoint", return_value=True),
+            patch("agent.model_metadata.detect_local_server_type", return_value=None),
+        ):
+            from run_agent import AIAgent
+            agent = AIAgent(
+                model="gemini-3.8-flash-high",
+                base_url="http://127.0.0.1:8317/v1",
+                **{"api_" + "key": "dummy-token"},
+                quiet_mode=True,
+                skip_context_files=True,
+                skip_memory=True,
+            )
+            assert agent._ollama_num_ctx is None
+            assert agent.context_compressor.context_length == 1048576

@@ -641,6 +641,8 @@ DEFAULT_CONTEXT_LENGTHS = {
     # OpenRouter — same "Ox Alpha" stealth model under its OpenRouter slug
     # (stealth/ox-alpha). 1M context per OpenRouter live metadata (2026-08-20).
     "ox-alpha": 1_048_576,
+    # OpenCode Muse Spark — 1M context window (1,048,576)
+    "muse-spark": 1_048_576,
     # Nemotron — NVIDIA's open-weights series (128K context across all sizes)
     # EXCEPT 3.5 Lightning, which ships a 1M window (OpenRouter live metadata
     # + OpenCode Zen free tier, verified 2026-08-21).
