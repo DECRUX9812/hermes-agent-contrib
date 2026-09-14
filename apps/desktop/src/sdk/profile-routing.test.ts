@@ -40,11 +40,13 @@ vi.mock('@/store/session-states', async () => {
   const { atom } = await import('nanostores')
 
   return {
+    $attentionSessionIds: atom([]),
     $focusedRuntimeId: atom(null),
     $focusedSessionState: atom(null),
     $focusedStoredSessionId: atom(null),
     $sessionTiles: atom([]),
-    $sessionStates: atom({})
+    $sessionStates: atom({}),
+    $workingSessionIds: atom([])
   }
 })
 vi.mock('@/store/profile', async () => {

@@ -82,6 +82,13 @@ const blobatarSvg = typeof sdk === 'undefined' ? undefined : sdk.blobatarSvg
 // Budgeted render loop (fps cap + observability pause + dormancy + teardown).
 // Feature-detected: older desktops fall back to the hand-rolled clock below.
 const createBudgetedLoop = typeof sdk === 'undefined' ? undefined : sdk.createBudgetedLoop
+// Content-free attention index from the core session stores. Runtime plugins
+// on older Desktop builds feature-detect it and keep the roster usable, but
+// cannot claim "Needs you" without authoritative session state.
+const $attentionSessionIds = host?.state?.attentionSessionIds || atom([])
+// Turn truth from the same store the sidebar's running arc reads. Older
+// Desktop hosts keep loading Bot Mode, but Working now stays worker-only.
+const $workingSessionIds = host?.state?.workingSessionIds || atom([])
 
 const ID = 'hermes-bots'
 /** Tree pane id of the Bots home workspace tab (openWorkspace prefixes
@@ -7276,8 +7283,9 @@ function generatedSessionTitle(session, preview) {
   return words.length > 34 ? `${words.slice(0, 33)}…` : words
 }
 
-/** Roster liveness window: a bot whose last message landed within this many
- *  seconds is treated as "active now" (pulsing dot in its row). */
+/** Roster liveness window: a group room whose last message landed within this
+ *  many seconds counts as active. Bots no longer use it — a bot is "working"
+ *  only on a live turn or a live worker heartbeat (see `activeBots`). */
 const ACTIVE_WINDOW_S = 90
 const RECENT_ACTIVITY_WINDOW_S = 7 * 24 * 60 * 60
 const BOT_ROSTER_SEARCH_THRESHOLD = 8
@@ -7319,19 +7327,56 @@ function workerActiveAt(bot, now = Date.now()) {
   return Boolean(ts && now / 1000 - ts < WORKER_ACTIVE_WINDOW_S)
 }
 
-/** Bots that are working right now: the profile the gateway is running a
- *  turn for (busy), any bot whose last message landed inside the liveness
- *  window, plus any bot with a live kanban/tool worker. Pure — output
- *  follows the input roster's order, so presence never reorders or hides
- *  the normal list. */
-function activeBots(roster, activeProfile, gatewayState, now = Date.now()) {
-  return (roster || []).filter(bot => {
-    const busyTurn = !bot.remoteSource && bot.name === activeProfile && gatewayState === 'busy'
-    const last = botActivitySession(bot)?.last_active || 0
-    const inWindow = Boolean(last && now / 1000 - last < ACTIVE_WINDOW_S)
+/** True only when the core renderer has a real blocking prompt parked on this
+ * bot's canonical forever-chat. `attentionSessionIds` is the shell's attention
+ * truth — it carries every id a conversation answers to, so a compression tip
+ * rotation cannot hide the prompt. Side chats deliberately stay in the
+ * Sessions sidebar: the bot row must always open the named Bot Chat registry
+ * row. */
+function botNeedsInput(bot, attentionSessionIds) {
+  const session = bot?.canonical_session
 
-    return busyTurn || inWindow || workerActiveAt(bot, now)
-  })
+  if (!session || !Array.isArray(attentionSessionIds) || !attentionSessionIds.length) {
+    return false
+  }
+
+  const ids = new Set(attentionSessionIds)
+
+  return Boolean(
+    (session.id && ids.has(session.id)) || (session.resolved_id && ids.has(session.resolved_id))
+  )
+}
+
+/** Roster rows parked on input, in roster order. The Needs you strip's filter,
+ *  kept pure so the attention contract stays testable. */
+function needsInputBots(roster, attentionSessionIds) {
+  return (roster || []).filter(bot => botNeedsInput(bot, attentionSessionIds))
+}
+
+/** True while the canonical Bot Chat has a turn actually in flight.
+ *  `workingSessionIds` is the shell's working truth and carries lineage
+ *  aliases, so the row agrees with the sidebar's running arc instead of
+ *  re-deriving "busy" from a socket-wide flag. */
+function botSessionBusy(bot, workingSessionIds) {
+  const session = bot?.canonical_session
+
+  if (!session || !Array.isArray(workingSessionIds) || !workingSessionIds.length) {
+    return false
+  }
+
+  const ids = new Set(workingSessionIds)
+
+  return Boolean(
+    (session.id && ids.has(session.id)) || (session.resolved_id && ids.has(session.resolved_id))
+  )
+}
+
+/** Bots that are working right now: canonical Bot Chats with a live turn plus
+ * profiles with a live kanban/tool worker heartbeat. A recently completed
+ * message is "recent activity", not proof that work is still in flight. Pure
+ * — output follows roster order and never mutates it. */
+function activeBots(roster, workingSessionIds, now = Date.now()) {
+  return (roster || []).filter(bot => botSessionBusy(bot, workingSessionIds) || workerActiveAt(bot, now))
 }
 
 function rosterActivityMatches(row, filter, now = Date.now()) {
@@ -7370,8 +7415,15 @@ function botRowOwnsWorkspace(
 
 // ── bot row ──────────────────────────────────────────────────────────────────
 
-function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
-  const activeProfile = useValue(host.state.profile)
+function BotRow({
+  bot,
+  onDelete,
+  onEdit,
+  onGroup,
+  showHandle,
+  attentionSessionIds = [],
+  workingSessionIds = []
+}) {
   const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
   const selectedRosterKey = useValue($selectedRosterKey)
   const botChatFocused = useValue($botChatFocused)
@@ -7389,7 +7441,6 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
   // old keying the wrong bot stayed highlighted while you read another's chat.
   // A selected group chat suppresses every bot-row highlight: the group row
   // owns the selection then (#88979).
-  const activeConnectionId = String(host.state.connectionId?.get?.() || 'local').trim()
   // The highlight follows whoever owns the MAIN workspace. While a chat owns
   // it, that chat's profile wins (a stale roster click must not key the
   // highlight to a bot you are not reading). While the Bots home owns it, the
@@ -7403,13 +7454,10 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
     focusedOwner,
     selectedRosterKey
   )
-  // Turn-busy is a SOCKET fact: only the gateway-home profile can be mid-turn.
-  const isGatewayHome = !bot.remoteSource && bot.name === activeProfile &&
-    isActiveRosterBot(bot, { name: activeProfile, connectionId: activeConnectionId })
+  const turnBusy = botSessionBusy(bot, workingSessionIds)
   const { shape, color, image } = botAppearance(bot.name, meta)
   // Keep user photos/pets. Drop the 160px SVG backfill so the math face can move.
   const photo = Boolean(image && !isBackfilledFacePng(image))
-  const gatewayState = useValue(host.state.gateway)
   // Preview identity must match click identity (#88200): when the backend
   // resolved the pinned canonical chat, preview THAT session — not the
   // profile's most recent (but unrelated) activity. Activity signals
@@ -7424,11 +7472,12 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
   const rowAgeTs = workerActive
     ? Math.max(activitySession?.last_active || 0, bot.worker_session?.last_active || 0)
     : activitySession?.last_active || 0
-  const botMood = workerActive || (isGatewayHome && gatewayState === 'busy') ? 'work' : 'idle'
+  const botMood = turnBusy || workerActive ? 'work' : 'idle'
   // Subscribe on every render. A source switch turns the same keyed row from
   // thin to rich; conditionally calling useValue here breaks React hook order.
   const unreadByName = useValue($botUnread)
   const unread = Boolean(unreadByName[botSelectionKey(bot)])
+  const needsYou = botNeedsInput(bot, attentionSessionIds)
   // WHO sent the last message (bot-to-bot DM vs human) — the full stored
   // history lives in the canonical chat, not inline.
   // Preview identity must match click identity (#88200): when the backend
@@ -7445,7 +7494,13 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
   const handle = botHandle(bot.name, bot)
   const gatewayLabel = bot.connectionLabel || (bot.connectionId === 'local' ? 'This device' : '')
   const showDetailsRow = Boolean(showHandle || displayPreview || fromBot)
-  const rowTooltip = [displayName(bot, meta), `@${handle}`, gatewayLabel, sourceStatus.label]
+  const rowTooltip = [
+    displayName(bot, meta),
+    `@${handle}`,
+    gatewayLabel,
+    sourceStatus.label,
+    needsYou ? 'Needs your input' : ''
+  ]
     .filter(Boolean)
     .join(' · ')
 
@@ -7534,6 +7589,14 @@ function BotRow({ bot, onDelete, onEdit, onGroup, showHandle }) {
                   }),
                 ]
               }),
+              needsYou
+                ? jsx('span', {
+                    className:
+                      'shrink-0 rounded bg-(--ui-bg-quaternary) px-1.5 py-px text-[0.625rem] font-semibold text-(--ui-text-primary)',
+                    'aria-label': 'Needs your input',
+                    children: 'Needs you'
+                  })
+                : null,
               unread
                 ? jsx('span', {
                     className: 'size-2 shrink-0 rounded-full bg-(--ui-accent)',
@@ -10415,13 +10478,67 @@ function RoutinesPane() {
 
 // ── roster pane ──────────────────────────────────────────────────────────────
 
-/** "Active now" presence strip above the roster: chips for every bot that is
- *  working right now (the gateway-busy selected profile + bots whose last
- *  message landed inside the liveness window). Reuses the row avatar; each
- *  chip opens that bot's canonical Bot Chat. Omitted entirely when nothing
- *  is active, and never reorders the roster below it. */
-function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpen }) {
-  const active = activeBots(roster, activeProfile, gatewayState)
+/** "Needs you" strip above the roster: chips for bots whose canonical Bot Chat
+ *  is parked on a blocking prompt (clarify / approval / sudo / secret). Fed by
+ *  the shell's attention index, so the strip and the sidebar's attention dot
+ *  agree by construction. Rendered from the FULL roster, not the filtered view:
+ *  a bot waiting on an answer must never be hidden by a search/filter. Reuses
+ *  the row avatar; each chip opens that bot's canonical Bot Chat. Omitted
+ *  entirely when nothing is waiting, and never reorders the roster below it. */
+function NeedsYouStrip({ roster, attentionSessionIds, metaByName, onOpen }) {
+  const waiting = needsInputBots(roster, attentionSessionIds)
+
+  if (!waiting.length) {
+    return null
+  }
+
+  return jsxs('div', {
+    role: 'status',
+    'aria-live': 'polite',
+    'aria-label': 'Bots needing input',
+    className: 'flex flex-wrap items-center gap-1.5 px-2.5 pb-1.5',
+    children: [
+      jsx('span', {
+        className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-secondary)',
+        children: 'Needs you'
+      }),
+      ...waiting.map(bot => {
+        const meta = botRosterMeta(bot, metaByName)
+        const { shape, color, image } = botAppearance(bot.name, meta)
+        const photo = Boolean(image && !isBackfilledFacePng(image))
+        const label = displayName(bot, meta)
+
+        return jsx('button', {
+          type: 'button',
+          'aria-label': `Open ${label}'s chat — needs your input`,
+          className:
+            'flex items-center gap-1.5 rounded-md bg-(--ui-bg-quaternary) px-1.5 py-1 text-left text-(--ui-text-primary) transition-colors hover:bg-(--chrome-action-hover)',
+          onClick: () => onOpen(bot),
+          children: [
+            jsx(BotFace, {
+              shape,
+              color,
+              image: photo ? image : null,
+              size: 24,
+              name: bot.name,
+              mood: 'idle'
+            }),
+            jsx('span', {
+              className: 'max-w-28 truncate text-xs font-medium',
+              children: label
+            })
+          ]
+        }, botRosterKey(bot))
+      })
+    ]
+  })
+}
+
+/** "Working now" strip above the roster: chips only for a canonical Bot Chat
+ * with a live turn or a profile with a live worker heartbeat. Recent-but-
+ * complete conversations keep their timestamp in the row below. */
+function ActiveNowStrip({ roster, workingSessionIds, metaByName, onOpen }) {
+  const active = activeBots(roster, workingSessionIds)
 
   if (!active.length) {
     return null
@@ -10430,12 +10547,12 @@ function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpe
   return jsxs('div', {
     role: 'status',
     'aria-live': 'polite',
-    'aria-label': 'Active now',
+    'aria-label': 'Working now',
     className: 'flex flex-wrap items-center gap-1.5 px-2.5 pb-1.5',
     children: [
       jsx('span', {
         className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)',
-        children: 'Active now'
+        children: 'Working now'
       }),
       ...active.map(bot => {
         const meta = botRosterMeta(bot, metaByName)
@@ -10446,10 +10563,10 @@ function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpe
         return jsx(
           Tip,
           {
-            label: `Open ${label}'s chat`,
+            label: `Open ${label}'s chat — working now`,
             children: jsx('button', {
               type: 'button',
-              'aria-label': `Open ${label}'s chat`,
+              'aria-label': `Open ${label}'s chat — working now`,
               className: cn(
                 'flex items-center gap-1.5 rounded-md bg-(--chrome-action-hover) px-1.5 py-1 text-left transition-colors',
                 'hover:bg-(--chrome-action-hover) hover:text-foreground'
@@ -12941,7 +13058,6 @@ function BotsPane() {
   const { data, error, isLoading, refetch } = useRoster()
   const gatewayState = useValue(host.state.gateway)
   const gatewayUp = gatewayState === 'open'
-  const activeProfile = (useValue(host.state.profile) || 'default').trim() || 'default'
   const [createOpen, setCreateOpen] = useState(false)
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -12967,6 +13083,8 @@ function BotsPane() {
   const rosterHydrated = useValue($rosterHydrated)
   const selectionHydrated = useValue($selectedRosterHydrated)
   const selectedRosterKey = useValue($selectedRosterKey)
+  const attentionSessionIds = useValue($attentionSessionIds)
+  const workingSessionIds = useValue($workingSessionIds)
 
   // The socket opening (boot, SSH reconnect, sleep/wake) is the signal to
   // retry immediately instead of waiting out the poll interval.
@@ -13012,7 +13130,7 @@ function BotsPane() {
   // and the persisted connection registry hydrate. Keep that transition in a
   // neutral loading state instead of flashing the first-run "No bots" copy.
   const initialRosterLoading = !data && !error && roster.length === 0
-  const activeRosterKeys = new Set(activeBots(roster, activeProfile, gatewayState).map(botRosterKey))
+  const activeRosterKeys = new Set(activeBots(roster, workingSessionIds).map(botRosterKey))
   const gatewayOptions = rosterGatewayOptions(sourceSnapshot, roster)
   const selectedGateway = gatewayOptions.find(option => option.connectionId === gatewayFilter)
   const gatewayFilterExists = gatewayFilter === 'all' || Boolean(selectedGateway)
@@ -13190,7 +13308,9 @@ function BotsPane() {
     jsx(
       BotRow,
       {
+        attentionSessionIds,
         bot,
+        workingSessionIds,
         onDelete: setDeleting,
         onEdit: setEditing,
         onGroup: setGrouping,
@@ -13351,12 +13471,17 @@ function BotsPane() {
           })
         ]
       }),
+      jsx(NeedsYouStrip, {
+        roster,
+        attentionSessionIds,
+        metaByName: allMeta,
+        onOpen: bot => void openRosterBot(bot)
+      }),
       jsx(ActiveNowStrip, {
         roster: visibleRoster,
-        activeProfile,
-        gatewayState,
+        workingSessionIds,
         metaByName: allMeta,
-        // Keep the Active Now strip and sidebar rows on the same exact-owner
+        // Keep the Working now strip and sidebar rows on the same exact-owner
         // route: source activation first, then canonical name-registry open.
         onOpen: bot => void openRosterBot(bot)
       }),
