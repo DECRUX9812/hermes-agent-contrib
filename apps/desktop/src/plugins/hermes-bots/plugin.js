@@ -5087,6 +5087,30 @@ async function openStoredBotChat(owner, storedId, summary) {
   return storedId
 }
 
+/** Seat a just-created, still-empty canonical chat in the same Bot workspace
+ *  as every later reopen. Unlike openStoredBotChat this deliberately skips
+ *  transcript hydration: session.create is lazy and the kickoff below is what
+ *  persists the first message. */
+async function openCreatedBotChat(owner, storedId) {
+  if (!storedId || typeof host.openSession !== 'function') {
+    throw new Error('This Hermes Desktop version cannot open stored sessions')
+  }
+
+  const { bot, name, route } = botOwner(owner)
+
+  await host.openSession(storedId, {
+    ...(route ? { route } : {}),
+    profile: name,
+    intent: 'tab',
+    keepAllProfilesScope: true,
+    workspaceMode: 'bots',
+    workspaceOwnerKey: botWorkspaceOwnerKey(bot),
+    tabTitle: CANONICAL_CHAT_TITLE
+  })
+
+  return storedId
+}
+
 /** True when a session summary IS the canonical registry row. root_title is
  *  the durable lineage-root title reported by exact-lookup gateways; plain
  *  title covers windowed listings. */
@@ -5225,12 +5249,7 @@ function createCanonicalChat(owner) {
 
     if (sid && typeof host.openSession === 'function') {
       try {
-        await host.openSession(sid, {
-          ...(route ? { route } : {}),
-          profile: name,
-          intent: 'main',
-          keepAllProfilesScope: route ? true : false
-        })
+        await openCreatedBotChat(owner, sid)
         opened = true
       } catch {
         // The stored row may not exist until the kickoff persists it. Retry
@@ -5245,12 +5264,7 @@ function createCanonicalChat(owner) {
         await requestForBot(bot, 'prompt.submit', { session_id: runtime, text: 'Hey, tell me about yourself!' })
 
         if (!opened && sid && typeof host.openSession === 'function') {
-          await host.openSession(sid, {
-            ...(route ? { route } : {}),
-            profile: name,
-            intent: 'main',
-            keepAllProfilesScope: route ? true : false
-          })
+          await openCreatedBotChat(owner, sid)
         }
       } catch {
         // The chat already exists under the canonical title — the next click
