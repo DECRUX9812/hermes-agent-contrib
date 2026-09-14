@@ -915,6 +915,17 @@ def _restore_or_build_system_prompt(agent, system_message, conversation_history)
                 clear_skills_system_prompt_cache(clear_snapshot=True)
             except Exception:
                 pass
+            # The Bot Mode protocol section is cached separately so ordinary
+            # turns stay byte-stable. The epoch mismatch is the one authorized
+            # rebuild boundary: refresh that cache now or a teammate/role/relay
+            # change can be detected, rebuilt with OLD roster text, and then
+            # stamped as current until the process restarts.
+            try:
+                from tools.bot_mode_probe import get_bot_mode_protocol_section
+
+                get_bot_mode_protocol_section(_home_for_epoch, force_refresh=True)
+            except Exception:
+                pass
             agent._cached_system_prompt = agent._build_system_prompt(system_message)
             agent._bot_capability_refreshed = True
             # Persist the refreshed prompt so the NEXT turn restores the new

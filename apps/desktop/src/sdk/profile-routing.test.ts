@@ -40,6 +40,7 @@ vi.mock('@/store/session-states', async () => {
   const { atom } = await import('nanostores')
 
   return {
+    $attentionSessionIds: atom([]),
     $focusedRuntimeId: atom(null),
     $focusedSessionState: atom(null),
     $focusedStoredSessionId: atom(null),
