@@ -14,6 +14,7 @@ function loadCanonicalCreation({ openSession, request }) {
     botOwner: name => (typeof name === 'string'
       ? { bot: { name }, key: name, name, route: null }
       : { bot: name, key: name?.name, name: name?.name, route: name?.route || null }),
+    botWorkspaceOwnerKey: bot => `bot:${bot?.name || 'default'}`,
     requestForBot: (_bot, method, params) => context.host.request(method, params),
     window: { setTimeout: callback => callback() }
   }

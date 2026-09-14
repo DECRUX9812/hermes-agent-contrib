@@ -150,6 +150,14 @@ test('no registry row mints a hidden "Bot Chat" session with the intro kickoff',
   assert.equal(create?.params?.hidden, true)
   const kickoff = runtime.requests.find(r => r.method === 'prompt.submit')
   assert.equal(kickoff?.params?.session_id, 'rt-1')
+  assert.equal(runtime.opened.length, 1)
+  assert.equal(runtime.opened[0].id, 'fresh-1')
+  assert.equal(runtime.opened[0].options.keepAllProfilesScope, true,
+    'creating a bot chat leaves Sessions chrome on the current gateway')
+  assert.equal(runtime.opened[0].options.intent, 'tab')
+  assert.equal(runtime.opened[0].options.workspaceMode, 'bots')
+  assert.equal(runtime.opened[0].options.workspaceOwnerKey, 'bot:newbie')
+  assert.equal(runtime.opened[0].options.tabTitle, 'Bot Chat')
 })
 
 test('a failed open of the registry row surfaces instead of forking a replacement', async () => {
