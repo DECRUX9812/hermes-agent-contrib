@@ -42,6 +42,7 @@ import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
 import { deleteProfile, getLogs, getStatus, type HermesGateway } from '@/hermes'
+import { stableRecord } from '@/lib/stable-array'
 import {
   $gateway,
   activeGatewayConnectionId,
@@ -83,6 +84,7 @@ import {
   setSessionOwnerHint
 } from '@/store/session'
 import {
+  $attentionSessionIds,
   $focusedRuntimeId,
   $focusedSessionState,
   $focusedStoredSessionId,
@@ -209,7 +211,12 @@ const readViewport = (): ViewportRect => ({
   narrow: $narrowViewport.get()
 })
 
-/** Runtime session id → mid-turn. Not gateway socket state. */
+/** Runtime session id → mid-turn. Not gateway socket state.
+ *
+ *  Reference-stable: `$sessionStates` republishes on every streamed message
+ *  delta, so an unstabilized projection would hand every consumer a fresh
+ *  object tens of times a second and re-render whole panes per token. */
+let busyBySession: Readonly<Record<string, boolean>> = {}
 const $busyBySession = computed($sessionStates, states => {
   const map: Record<string, boolean> = {}
 
@@ -217,7 +224,7 @@ const $busyBySession = computed($sessionStates, states => {
     map[id] = Boolean(state.busy)
   }
 
-  return map
+  return (busyBySession = stableRecord(busyBySession, map))
 })
 
 const $viewport = atom<ViewportRect>(readViewport())
@@ -509,6 +516,15 @@ export const host = {
   state: {
     /** Runtime id of the active chat session (null on a fresh draft). */
     activeSessionId: readonlyAtom<null | string>($activeSessionId),
+    /** Stored session ids parked on a blocking prompt (clarify, approval,
+     * sudo, or secret). This is the shell's attention truth — the same index
+     * the sidebar dot reads — published under every id a conversation answers
+     * to, so a compression tip rotation cannot hide the prompt. Content-free:
+     * ids only, never the prompt text, secret name, command, or choices. The
+     * door keeps its shipped name; the SOURCE moved from the focused client's
+     * prompt stores to the shared index, which also sees a session the backend
+     * reports as waiting even after a renderer reload. */
+    awaitingInputSessionIds: readonlyAtom<readonly string[]>($attentionSessionIds),
     /** True from send until the first assistant payload on the focused chat. */
     awaitingResponse: readonlyAtom<boolean>($focusedAwaitingResponse),
     /**
@@ -519,7 +535,7 @@ export const host = {
      */
     busy: readonlyAtom<boolean>($focusedBusy),
     /** Runtime session id → mid-turn. Not socket state; see `gateway`. */
-    busyBySession: readonlyAtom<Record<string, boolean>>($busyBySession),
+    busyBySession: readonlyAtom<Readonly<Record<string, boolean>>>($busyBySession),
     /** Registry source that owns the active gateway, when source-scoped. */
     connectionId: readonlyAtom<null | string>($activeConnectionId),
     /** Active workspace cwd ('' when detached). */
