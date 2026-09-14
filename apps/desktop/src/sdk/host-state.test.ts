@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createClientSessionState } from '@/lib/chat-runtime'
-import { $gatewayState } from '@/store/session'
+import { $gatewayState, $sessions } from '@/store/session'
 import { $sessionStates, dropSessionState, publishSessionState } from '@/store/session-states'
 
 import { host } from './index'
@@ -277,5 +277,68 @@ describe('host.state busy vs gateway', () => {
     dropSessionState('runtime-a')
     expect(host.state.busyBySession.get()['runtime-a']).toBeUndefined()
     expect(host.state.gateway.get()).toBe('open')
+  })
+
+  it('keeps busyBySession reference-stable across message deltas', () => {
+    const running = { ...createClientSessionState('stored-a'), busy: true }
+
+    publishSessionState('runtime-a', running)
+    const first = host.state.busyBySession.get()
+
+    // Streaming republishes the whole per-session state tens of times a second.
+    // A fresh record each time re-renders every subscriber (the Bots pane and
+    // each roster row) per token, so identity must survive a same-values tick.
+    publishSessionState('runtime-a', { ...running, messages: [...running.messages] })
+    expect(host.state.busyBySession.get()).toBe(first)
+
+    // A real transition still produces a new record.
+    publishSessionState('runtime-a', { ...running, busy: false })
+    expect(host.state.busyBySession.get()).not.toBe(first)
+    expect(host.state.busyBySession.get()).toEqual({ 'runtime-a': false })
+
+    dropSessionState('runtime-a')
+  })
+})
+
+describe('host.state attention and working indexes', () => {
+  afterEach(() => {
+    $sessionStates.set({})
+    $sessions.set([])
+  })
+
+  it('exposes the shell indexes a plugin roster must agree with', () => {
+    const parked = { ...createClientSessionState('stored-parked'), needsInput: true }
+    const running = { ...createClientSessionState('stored-running'), busy: true }
+
+    publishSessionState('runtime-parked', parked)
+    publishSessionState('runtime-running', running)
+
+    // Both are stored-id keyed (the roster's canonical_session.id space), and
+    // each answers one question: parked-on-input vs turn-in-flight.
+    expect(host.state.attentionSessionIds.get()).toContain('stored-parked')
+    expect(host.state.workingSessionIds.get()).toContain('stored-running')
+    expect(host.state.workingSessionIds.get()).not.toContain('stored-parked')
+    expect(host.state.attentionSessionIds.get()).not.toContain('stored-running')
+
+    dropSessionState('runtime-parked')
+    dropSessionState('runtime-running')
+  })
+
+  it('carries lineage aliases so a compression tip rotation cannot hide a prompt', () => {
+    $sessions.set([
+      { id: 'tip-2', _lineage_root_id: 'root-1', session_key: 'tip-2' } as never,
+      { id: 'root-1', _lineage_root_id: 'root-1', session_key: 'root-1' } as never
+    ])
+    publishSessionState('runtime-2', {
+      ...createClientSessionState('tip-2'),
+      needsInput: true
+    })
+
+    const aliases = host.state.attentionSessionIds.get()
+    expect(aliases).toContain('tip-2')
+    expect(aliases).toContain('root-1')
+
+    dropSessionState('runtime-2')
+    $sessions.set([])
   })
 })
