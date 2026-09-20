@@ -3712,6 +3712,11 @@ export const en: Translations = {
       openWebhooks: 'Open webhooks',
       starmap: 'Memory Graph',
       openStarmap: 'Open memory graph',
+      artifacts: 'Artifacts',
+      artifactsTitle: 'Deliverables generated in this chat — pick one to open it beside the thread',
+      artifactsCount: count => `${count} artifact${count === 1 ? '' : 's'}`,
+      browseAllArtifacts: 'Browse all artifacts',
+      toggleArtifacts: 'Artifacts',
       turnRunning: 'Running',
       contextUsage: 'Context usage',
       systemResources: {

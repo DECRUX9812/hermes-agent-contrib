@@ -3231,6 +3231,11 @@ export interface Translations {
       openWebhooks: string
       starmap: string
       openStarmap: string
+      artifacts: string
+      artifactsTitle: string
+      artifactsCount: (count: number) => string
+      browseAllArtifacts: string
+      toggleArtifacts: string
       turnRunning: string
       contextUsage: string
       systemResources: {
