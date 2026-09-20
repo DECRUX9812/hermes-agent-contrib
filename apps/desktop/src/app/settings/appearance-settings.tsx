@@ -14,6 +14,7 @@ import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
 import { $backdrop, setBackdrop } from '@/store/backdrop'
 import { $embedAllowed, $embedMode, clearEmbedAllowed, type EmbedMode, setEmbedMode } from '@/store/embed-consent'
+import { $simpleMode, setInterfaceMode } from '@/store/interface-mode'
 import { $activeGatewayProfile, $profiles, normalizeProfileKey } from '@/store/profile'
 import { $reactionsEnabled, setReactionsEnabled } from '@/store/reactions-enabled'
 import { $toolViewMode, setToolViewMode } from '@/store/tool-view'
@@ -26,7 +27,7 @@ import { $marketplaceInstalls, isUserTheme, removeUserTheme } from '@/themes/use
 
 import { MODE_OPTIONS } from './constants'
 import { PetSettings } from './pet-settings'
-import { ListRow, SectionHeading, SettingsContent } from './primitives'
+import { ListRow, SectionHeading, SettingsContent, ToggleRow } from './primitives'
 import { TerminalFontSetting } from './terminal-font-setting'
 
 function ThemePreview({ name, mode }: { name: string; mode: 'light' | 'dark' }) {
@@ -300,6 +301,7 @@ export function AppearanceSettings() {
   const uiScaleOptions = UI_SCALE_PRESETS.map(preset => ({ id: preset, label: `${preset}%` }))
 
   const matchedScalePreset = matchUiScalePreset(zoomPercent)
+  const simpleMode = useStore($simpleMode)
 
   return (
     <SettingsContent>
@@ -310,6 +312,13 @@ export function AppearanceSettings() {
         </p>
 
         <div className="mt-2">
+          <ToggleRow
+            checked={simpleMode}
+            description={a.simpleModeDesc}
+            label={a.simpleModeTitle}
+            onChange={on => setInterfaceMode(on ? 'simple' : 'full')}
+          />
+
           <ListRow
             action={<LanguageSwitcher />}
             description={isSavingLocale ? t.language.saving : t.language.description}
