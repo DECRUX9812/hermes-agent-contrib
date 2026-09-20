@@ -732,6 +732,43 @@ const ChatViewContent = memo(function ChatViewContent({
 
   const overlayKind: DragKind = dragKind === 'files' ? 'files' : sessionDragging && !sessionEdgeHover ? 'session' : null
 
+  // One prompt surface on the empty canvas: while the intro is up the real
+  // composer renders inside the intro column and the dock below stays empty, so
+  // the landing has a single input that carries the composer's own controls
+  // (model, attachments, approval mode, schedule) instead of a look-alike.
+  const composerDock = (
+    <FloatingComposerSurface>
+      <Suspense fallback={<ChatBarFallback />}>
+        <ChatBar
+          busy={busy}
+          cwd={currentCwd}
+          disabled={!gatewayOpen}
+          focusKey={activeSessionId}
+          gateway={gateway}
+          maxRecordingSeconds={maxVoiceRecordingSeconds}
+          onAddContextRef={onAddContextRef}
+          onAddUrl={onAddUrl}
+          onAttachDroppedItems={onAttachDroppedItems}
+          onAttachImageBlob={onAttachImageBlob}
+          onAttachPastedText={onAttachPastedText}
+          onCancel={onCancel}
+          onPasteClipboardImage={onPasteClipboardImage}
+          onPickFiles={onPickFiles}
+          onPickFolders={onPickFolders}
+          onPickImages={onPickImages}
+          onRemoveAttachment={onRemoveAttachment}
+          onSteer={onSteer}
+          onSteerHidden={onSteerHidden}
+          onSubmit={onSubmit}
+          onTranscribeAudio={onTranscribeAudio}
+          queueSessionKey={queueSessionKey}
+          sessionId={activeSessionId}
+          state={chatBarState}
+        />
+      </Suspense>
+    </FloatingComposerSurface>
+  )
+
   return (
     <div
       className={cn(
@@ -779,7 +816,7 @@ const ChatViewContent = memo(function ChatViewContent({
             clampToComposer={showChatBar}
             cwd={currentCwd}
             gateway={gateway}
-            intro={showIntro ? { personality: introPersonality, seed: introSeed } : undefined}
+            intro={showIntro ? { composer: composerDock, personality: introPersonality, seed: introSeed } : undefined}
             loading={threadLoading}
             onBranchInNewChat={onBranchInNewChat}
             onCancel={haltRun}
@@ -815,38 +852,7 @@ const ChatViewContent = memo(function ChatViewContent({
         </div>
         {/* Docked composers overlay their pane; the shared float escapes pane
             clipping through a stable portal host without remounting its editor. */}
-        {showChatBar && (
-          <FloatingComposerSurface>
-            <Suspense fallback={<ChatBarFallback />}>
-              <ChatBar
-                busy={busy}
-                cwd={currentCwd}
-                disabled={!gatewayOpen}
-                focusKey={activeSessionId}
-                gateway={gateway}
-                maxRecordingSeconds={maxVoiceRecordingSeconds}
-                onAddContextRef={onAddContextRef}
-                onAddUrl={onAddUrl}
-                onAttachDroppedItems={onAttachDroppedItems}
-                onAttachImageBlob={onAttachImageBlob}
-                onAttachPastedText={onAttachPastedText}
-                onCancel={onCancel}
-                onPasteClipboardImage={onPasteClipboardImage}
-                onPickFiles={onPickFiles}
-                onPickFolders={onPickFolders}
-                onPickImages={onPickImages}
-                onRemoveAttachment={onRemoveAttachment}
-                onSteer={onSteer}
-                onSteerHidden={onSteerHidden}
-                onSubmit={onSubmit}
-                onTranscribeAudio={onTranscribeAudio}
-                queueSessionKey={queueSessionKey}
-                sessionId={activeSessionId}
-                state={chatBarState}
-              />
-            </Suspense>
-          </FloatingComposerSurface>
-        )}
+        {showChatBar && !showIntro && composerDock}
       </ChatRuntimeBoundary>
     </div>
   )

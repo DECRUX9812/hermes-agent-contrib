@@ -1,10 +1,8 @@
 import { useStore } from '@nanostores/react'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useInRouterContext, useNavigate } from 'react-router'
 
-import { PRIMARY_ICON_BTN } from '@/app/chat/composer/control-classes'
-import { requestComposerFocus, requestComposerInsert, requestComposerSubmit } from '@/app/chat/composer/focus'
-import { RICH_INPUT_SLOT } from '@/app/chat/composer/rich-editor'
+import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
 import { openSession } from '@/app/open-session'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
@@ -28,6 +26,9 @@ type IntroCopyRecord = IntroCopy & {
 }
 
 export type IntroProps = {
+  /** The live composer, rendered in the hero slot while the intro is up so the
+   *  empty canvas has exactly one prompt surface (the dock stays empty). */
+  composer?: ReactNode
   personality?: string
   seed?: number
 }
@@ -241,7 +242,7 @@ function sessionRecencyMs(session: SessionInfo): number {
   return (session.last_active || session.started_at || 0) * 1000
 }
 
-export function Intro({ personality, seed }: IntroProps) {
+export function Intro({ composer, personality, seed }: IntroProps) {
   const { t } = useI18n()
   // Intro is mounted inside a Router in the app, but tests and other hosts
   // render it bare — the resume rows (which need `useNavigate`) mount only
@@ -282,115 +283,40 @@ export function Intro({ personality, seed }: IntroProps) {
         </p>
       </div>
 
-      {/* One column for everything actionable: the hero input, the starter
-          chips, and the recency rows share a single width, so the empty canvas
-          reads as one centered block. The cap has to sit one level below the
-          intro's direct child — `[data-slot='aui_intro'] > div` in styles.css
-          pins direct children to the composer width, which is what silently
-          flattened the per-element `max-w-*` caps before. */}
+      {/* Everything actionable — the composer, the starter chips, the recency
+          rows — sits on the composer's own width, so the empty canvas and the
+          dock below it share one grid. The wrapper is deliberate:
+          `[data-slot='aui_intro'] > div` in styles.css pins direct children to
+          the composer width, which is what silently flattened the per-element
+          `max-w-*` caps the stack used to carry. */}
       <div className="pointer-events-auto flex w-full min-w-0 flex-col items-center">
-        <div className="flex w-full min-w-0 max-w-xl flex-col items-center">
-          <HeroPrompt seed={mountSeed + (seed ?? 0)} />
+        {composer}
 
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
-              suggestion => (
-                <Button
-                  className="rounded-full"
-                  key={suggestion.label}
-                  onClick={() => {
-                    triggerHaptic('selection')
-                    requestComposerInsert(suggestion.prompt)
-                    requestComposerFocus()
-                  }}
-                  size="sm"
-                  type="button"
-                  variant="secondary"
-                >
-                  <Codicon className="opacity-70" name={suggestion.icon} />
-                  {suggestion.label}
-                </Button>
-              )
-            )}
-          </div>
-
-          {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
+            suggestion => (
+              <Button
+                className="rounded-full"
+                key={suggestion.label}
+                onClick={() => {
+                  triggerHaptic('selection')
+                  requestComposerInsert(suggestion.prompt)
+                  requestComposerFocus()
+                }}
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                <Codicon className="opacity-70" name={suggestion.icon} />
+                {suggestion.label}
+              </Button>
+            )
+          )}
         </div>
+
+        {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
       </div>
     </div>
-  )
-}
-
-// The empty canvas's primary action is typing, so the intro carries a real
-// prompt field instead of only gesturing at the bottom composer. Enter submits
-// through the same bus the composer owns (the draft becomes a session exactly
-// as if typed there); if no composer surface can claim the submit — a hidden
-// pane, an unmounted surface — the text is moved into the composer instead.
-function HeroPrompt({ seed }: { seed: number }) {
-  const { t } = useI18n()
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [value, setValue] = useState('')
-  const placeholders = t.composer.newSessionPlaceholders
-  const placeholder = placeholders[Math.abs(seed) % placeholders.length] ?? placeholders[0] ?? ''
-
-  // Take the caret when nothing else owns it — or when the owner's just the
-  // composer's own mount autofocus (same empty draft, different affordance).
-  // Never yank focus the user placed anywhere else.
-  useEffect(() => {
-    const el = inputRef.current
-    const active = document.activeElement
-    const composerHasCaret = active instanceof Element && Boolean(active.closest(`[data-slot="${RICH_INPUT_SLOT}"]`))
-
-    if (el && (!active || active === document.body || composerHasCaret)) {
-      el.focus()
-    }
-  }, [])
-
-  const submit = () => {
-    const text = value.trim()
-
-    if (!text) {
-      return
-    }
-
-    triggerHaptic('submit')
-
-    if (!requestComposerSubmit(text)) {
-      requestComposerInsert(text)
-      requestComposerFocus()
-    }
-
-    setValue('')
-  }
-
-  return (
-    <form
-      className="pointer-events-auto mt-6 w-full"
-      onSubmit={event => {
-        event.preventDefault()
-        submit()
-      }}
-    >
-      <div className="flex items-center gap-2 rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) px-3.5 py-2.5 shadow-nous transition-colors duration-150 focus-within:border-(--ui-stroke-secondary)">
-        <input
-          aria-label={t.composer.message}
-          className="min-w-0 flex-1 bg-transparent text-[0.9375rem] text-foreground outline-none placeholder:text-(--ui-text-quaternary)"
-          onChange={event => setValue(event.target.value)}
-          onKeyDown={event => {
-            if (event.key === 'Escape') {
-              event.currentTarget.blur()
-            }
-          }}
-          placeholder={placeholder}
-          ref={inputRef}
-          type="text"
-          value={value}
-        />
-        <Button aria-label={t.composer.send} className={PRIMARY_ICON_BTN} disabled={!value.trim()} type="submit">
-          <Codicon name="arrow-up" size="0.875rem" />
-        </Button>
-      </div>
-    </form>
   )
 }
 

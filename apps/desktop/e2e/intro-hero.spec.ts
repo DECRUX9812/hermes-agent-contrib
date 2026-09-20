@@ -1,15 +1,11 @@
 /**
- * E2E: the empty-chat hero prompt.
+ * E2E: the empty-chat prompt surface.
  *
- * The intro splash's primary affordance is a real prompt field: it takes the
- * caret on a fresh draft, submits through the composer's own bus (the draft
- * becomes a session exactly as if typed into the composer), releases the caret
- * on Escape, and never yanks focus the user placed elsewhere.
- *
- * The hero, the starter chips and the recency rows also share one column:
- * `[data-slot='aui_intro'] > div` in styles.css pins direct children to the
- * composer width, so a `max-w-*` on a direct child silently resolves to 100%.
- * The column wrapper keeps them equal — checked below so it cannot regress.
+ * The intro used to carry a look-alike prompt field next to the real composer —
+ * two inputs on one screen, only one of them real. The hero is gone: the intro
+ * keeps its wordmark, copy, starter chips and recency rows, and the composer is
+ * the single prompt surface (docked at the pane's bottom, where its own
+ * absolute positioning anchors it, with all of its controls intact).
  *
  * Prerequisite: `npm run build` must have been run so dist/ exists.
  */
@@ -18,9 +14,9 @@ import { expect, test } from './test'
 import { type MockBackendFixture, setupMockBackend, waitForAppReady } from './fixtures'
 import { expectVisualSnapshot } from './visual-snapshot'
 
-const HERO_INPUT = '[data-slot="aui_intro"] input[type="text"]'
-const HERO_SEND = '[data-slot="aui_intro"] form button[type="submit"]'
 const INTRO = '[data-slot="aui_intro"]'
+const COMPOSER = '[data-slot="composer-root"]'
+const COMPOSER_EDITOR = '[data-slot="composer-rich-input"]'
 const SEARCH = 'input[aria-label="Search sessions"]'
 
 let fixture: MockBackendFixture | null = null
@@ -35,48 +31,46 @@ test.afterAll(async () => {
   fixture = null
 })
 
-test.describe('empty-chat hero prompt', () => {
-  test('lands in one column with the caret already in the field', async () => {
+test.describe('empty-chat prompt surface', () => {
+  test('the empty canvas has exactly one prompt surface', async () => {
     const page = fixture!.page
-    const hero = page.locator(HERO_INPUT)
 
-    await expect(hero).toBeVisible()
-    await expect(hero).toBeFocused()
+    await expect(page.locator(INTRO)).toBeVisible()
+    // No look-alike input in the intro any more: the composer is the only one,
+    // and it is the very same node that docks under the transcript later.
+    await expect(page.locator(`${INTRO} input[type="text"]`)).toHaveCount(0)
+    await expect(page.locator(`${INTRO} ${COMPOSER}`)).toHaveCount(1)
+    await expect(page.locator(COMPOSER)).toHaveCount(1)
 
-    const widths = await page.evaluate(() => {
-      const form = document.querySelector('[data-slot="aui_intro"] form')
-      const column = form?.parentElement
-      const width = (el: Element | null | undefined) => (el ? Math.round(el.getBoundingClientRect().width) : -1)
+    const geometry = await page.evaluate(() => {
+      const intro = document.querySelector('[data-slot="aui_intro"]')!
+      const composer = document.querySelector('[data-slot="composer-root"]')!
+      const pane = intro.closest('[data-slot="composer-bounds"]') ?? intro.parentElement!
+      const composerBox = composer.getBoundingClientRect()
+      const paneBox = pane.getBoundingClientRect()
+      const chips = intro.querySelectorAll('button')
 
-      return { column: width(column), form: width(form) }
+      return {
+        centerDelta: Math.round(
+          Math.abs(composerBox.left + composerBox.width / 2 - (paneBox.left + paneBox.width / 2))
+        ),
+        chips: chips.length,
+        composerTop: Math.round(composerBox.top),
+        introBottom: Math.round(intro.getBoundingClientRect().bottom),
+        paneHeight: Math.round(paneBox.height)
+      }
     })
 
-    // The form fills the column, and the column itself is a bounded column
-    // rather than the full composer width.
-    expect(widths.form).toBe(widths.column)
-    expect(widths.column).toBeGreaterThan(420)
-    expect(widths.column).toBeLessThanOrEqual(600)
+    // The composer is centred horizontally in the pane, and the intro still
+    // offers its starter chips. (Vertical placement is verified visually: the
+    // intro's box includes its own padding, so a geometric overlap check here
+    // would flag the padding rather than the content.)
+    expect(geometry.centerDelta).toBeLessThan(8)
+    expect(geometry.chips).toBeGreaterThanOrEqual(3)
   })
 
-  test('send stays disabled until there is something to send', async () => {
-    const page = fixture!.page
-    const hero = page.locator(HERO_INPUT)
-    const send = page.locator(HERO_SEND)
-
-    await expect(send).toBeDisabled()
-    await hero.fill('draft text')
-    await expect(send).toBeEnabled()
-    await hero.fill('')
-  })
-
-  test('Escape releases the caret', async () => {
-    const page = fixture!.page
-    const hero = page.locator(HERO_INPUT)
-
-    await hero.click()
-    await expect(hero).toBeFocused()
-    await hero.press('Escape')
-    await expect(hero).not.toBeFocused()
+  test('the caret is already in the composer on a fresh draft', async () => {
+    await expect(fixture!.page.locator(COMPOSER_EDITOR)).toBeFocused()
   })
 
   test('typing elsewhere is never interrupted', async () => {
@@ -95,27 +89,30 @@ test.describe('empty-chat hero prompt', () => {
   test('a starter chip drops its prompt into the composer', async () => {
     const page = fixture!.page
 
-    await page.locator(`${INTRO} button:not(form button)`).first().click()
-    await expect(page.locator('[data-slot="composer-rich-input"]')).not.toBeEmpty()
+    await page.locator(`${INTRO} button:not(${COMPOSER} button)`).first().click()
+    await expect(page.locator(COMPOSER_EDITOR)).not.toBeEmpty()
+    await page.locator(COMPOSER_EDITOR).fill('')
   })
 
   test('visual snapshot of the empty chat', async () => {
-    await expectVisualSnapshot(fixture!.page, { app: fixture!.app, name: 'intro-hero' })
+    await expectVisualSnapshot(fixture!.page, { app: fixture!.app, name: 'intro-composer' })
   })
 
   test('Enter submits through the composer and starts the session', async () => {
     const page = fixture!.page
-    const composer = page.locator('[data-slot="composer-rich-input"]')
+    const editor = page.locator(COMPOSER_EDITOR)
 
-    await composer.fill('')
-    await page.locator(HERO_INPUT).fill('hero prompt e2e')
-    await page.locator(HERO_INPUT).press('Enter')
+    await editor.click()
+    await editor.fill('hero prompt e2e')
+    await editor.press('Enter')
 
     // The draft becomes a real session: the splash gives way to the transcript
-    // carrying the prompt text.
-    await expect(page.locator(INTRO)).toHaveCount(0)
+    // carrying the prompt text, and the composer docks below — still exactly one.
+    await expect(page.locator(INTRO)).toHaveCount(0, { timeout: 60_000 })
     await expect(page.locator('[data-slot="aui_thread-viewport"]')).toContainText('hero prompt e2e', {
-      timeout: 60_000,
+      timeout: 60_000
     })
+    await expect(page.locator(COMPOSER)).toHaveCount(1)
+    await expect(page.locator(`${INTRO} ${COMPOSER}`)).toHaveCount(0)
   })
 })
