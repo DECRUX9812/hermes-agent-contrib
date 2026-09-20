@@ -38,10 +38,11 @@ import {
 } from '@hermes/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 
-import { avatarColor, blobatarSvg, botAppearance, BotFace } from './avatar'
+import { avatarColor, blobatarSvg, blobShapeString, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { AvatarPicker } from './avatar-picker'
 import { $selectedBot } from './bot-state'
+import { BOT_TEMPLATES, type BotDraft, type BotTemplate, draftFromDescription, templateDraft } from './bot-templates'
 import { createCanonicalChat } from './canonical-chat'
 import { $botMeta, botHandle, botRosterKey, filterBots, ROSTER_KEY, saveBotMeta } from './data'
 import { labeled, ResizableFrame } from './dialog-parts'
@@ -114,13 +115,29 @@ interface CreateAgentDialogProps {
   /** Opens the editor for a just-created local bot whose model is not ready. */
   onConfigureModel?: (bot: RosterRow) => void
   open: boolean
+  /** A starter-preset pick made upstream (the empty roster's shortcut chips):
+   *  the gallery step is skipped and the form arrives pre-filled. The caller
+   *  remounts this dialog per open, so preset is read once, on mount. */
+  preset?: BotTemplate | null
   roster: RosterRow[]
 }
 
-export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: CreateAgentDialogProps) {
+export function CreateAgentDialog({ open, onClose, onConfigureModel, preset, roster }: CreateAgentDialogProps) {
   const { t } = useI18n()
   const b = useBots()
-  const [name, setName] = useState('')
+  const initialDraft = preset ? templateDraft(preset) : null
+  // 'pick' = the starter gallery / describe-your-bot step; 'form' = the actual
+  // create form. A preset skips the gallery; otherwise it leads — the whole
+  // point of Bot Mode's first-run UX is never facing a blank form.
+  const [view, setView] = useState<'form' | 'pick'>(preset ? 'form' : 'pick')
+  const [describe, setDescribe] = useState('')
+  const [name, setName] = useState(initialDraft?.name || '')
+  // Persona + starters + template id ride along silently: a gallery pick fills
+  // them, the form never shows them (the persona lands in the SOUL the form's
+  // Advanced editor can still override wholesale).
+  const [persona, setPersona] = useState(initialDraft?.persona || '')
+  const [starters, setStarters] = useState<null | string[]>(initialDraft?.starters || null)
+  const [templateId, setTemplateId] = useState<null | string>(initialDraft?.templateId || null)
   // Create mode: the profile is created LAZILY. Capability toggles are staged in
   // component state; the profile is materialized either on Create (submit) or on
   // the first MCP credential setup (ensureAgentCreated), whichever comes first —
@@ -130,11 +147,12 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
   // button + MCP setup buttons). Distinct from createdRef on purpose:
   // createdRef must stay a slug string for its sibling consumers.
   const flightRef = useRef<Promise<null | string> | null>(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [title, setTitle] = useState(initialDraft?.title || '')
+  const [description, setDescription] = useState(initialDraft?.description || '')
   // Default shapes mode: deterministic blob face drawn from the agent's name
-  // (falls back to the legacy shape vocabulary on older SDKs).
-  const [shape, setShape] = useState(blobatarSvg ? 'blobatar' : 'circle')
+  // (falls back to the legacy shape vocabulary on older SDKs). A preset's
+  // pinned silhouette still follows the name — its seed segment stays empty.
+  const [shape, setShape] = useState(initialDraft?.shape || (blobatarSvg ? 'blobatar' : 'circle'))
   const [color, setColor] = useState<null | string>(null)
   const [image, setImage] = useState<null | string>(null)
   const [advanced, setAdvanced] = useState(false)
@@ -262,6 +280,11 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
   }
 
   const reset = () => {
+    setView('pick')
+    setDescribe('')
+    setPersona('')
+    setStarters(null)
+    setTemplateId(null)
     setName('')
     setTitle('')
     setDescription('')
@@ -402,6 +425,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           name: slug,
           title: botTitle,
           description,
+          persona,
           roster,
           customSoul: soul
         }),
@@ -456,6 +480,8 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           image,
           imageKind: image ? 'photo' : 'shape',
           title: botTitle,
+          ...(templateId ? { template: templateId } : {}),
+          ...(starters?.length ? { starters } : {}),
           created: Date.now()
         }
 
@@ -484,6 +510,8 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           image,
           imageKind: image ? 'photo' : 'shape',
           title: botTitle,
+          template: templateId ?? undefined,
+          starters: starters ?? undefined,
           created: Date.now()
         })
       }
@@ -590,6 +618,121 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
     }
   }
 
+  /** Fold a gallery pick (template card or describe-box draft) into the form
+   *  and step into it — every field stays editable before anything is created. */
+  const applyDraft = (draft: BotDraft) => {
+    setName(draft.name)
+    setTitle(draft.title)
+    setDescription(draft.description)
+    setPersona(draft.persona)
+    setStarters(draft.starters)
+    setTemplateId(draft.templateId || null)
+    setShape(draft.shape)
+    setView('form')
+  }
+
+  const dismiss = () => {
+    discardDraft()
+    reset()
+    onClose()
+  }
+
+  if (view === 'pick') {
+    return (
+      <Dialog
+        onOpenChange={value => {
+          if (!value) {
+            dismiss()
+          }
+        }}
+        open={open}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{b.bot.newTitle}</DialogTitle>
+            <DialogDescription>{b.gallery.desc}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Textarea
+                autoFocus
+                className="min-h-16"
+                onChange={event => setDescribe(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                    const draft = draftFromDescription(describe)
+
+                    if (draft) {
+                      applyDraft(draft)
+                    }
+                  }
+                }}
+                placeholder={b.gallery.describePlaceholder}
+                value={describe}
+              />
+              <Button
+                className="w-full justify-center"
+                disabled={!describe.trim()}
+                onClick={() => {
+                  const draft = draftFromDescription(describe)
+
+                  if (draft) {
+                    applyDraft(draft)
+                  }
+                }}
+              >
+                <Codicon className="mr-1 text-[0.8rem]" name="sparkle" />
+                {b.gallery.describeAction}
+              </Button>
+            </div>
+            <div className="text-[0.65rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)">
+              {b.gallery.startersLabel}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {BOT_TEMPLATES.map(template => (
+                <RowButton
+                  className="flex items-center gap-2.5 rounded-lg border border-(--ui-stroke-secondary) px-2.5 py-2 text-left transition-colors hover:bg-(--chrome-action-hover)"
+                  key={template.id}
+                  onClick={() => applyDraft(templateDraft(template))}
+                >
+                  <BotFace
+                    color={avatarColor(null, template.name)}
+                    name={template.name}
+                    shape={blobShapeString('', template.blob)}
+                    size={34}
+                  />
+                  <span className="min-w-0">
+                    <span className="block truncate text-xs font-medium text-foreground">{template.name}</span>
+                    <span className="block truncate text-[0.65rem] text-(--ui-text-tertiary)">{template.tagline}</span>
+                  </span>
+                </RowButton>
+              ))}
+              <RowButton
+                className="flex items-center gap-2.5 rounded-lg border border-dashed border-(--ui-stroke-secondary) px-2.5 py-2 text-left transition-colors hover:bg-(--chrome-action-hover)"
+                onClick={() => setView('form')}
+              >
+                <span className="flex size-[34px] items-center justify-center text-(--ui-text-tertiary)">
+                  <Codicon name="add" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-medium text-foreground">{b.gallery.blankTitle}</span>
+                  <span className="block truncate text-[0.65rem] text-(--ui-text-tertiary)">
+                    {b.gallery.blankDesc}
+                  </span>
+                </span>
+              </RowButton>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={dismiss} variant="ghost">
+              {t.common.cancel}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
   return (
     <Dialog
       onOpenChange={value => {
@@ -625,6 +768,20 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           <DialogDescription>{b.editor.newDescription}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3.5">
+          <div className="flex items-center justify-between">
+            <Button
+              className="flex items-center gap-1 text-xs font-medium text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)"
+              onClick={() => setView('pick')}
+              size="inline"
+              variant="text"
+            >
+              <Codicon className="text-[0.7rem]" name="chevron-left" />
+              {b.gallery.backToStarters}
+            </Button>
+            {templateId ? (
+              <span className="text-[0.65rem] text-(--ui-text-quaternary)">{b.gallery.fromTemplate(templateId)}</span>
+            ) : null}
+          </div>
           <div className="flex justify-center py-1">
             <BotFace
               color={avatarColor(color, slug || 'agent')}
@@ -649,7 +806,18 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           />
           {labeled(
             b.editor.name,
-            <Input autoFocus onChange={event => setName(event.target.value)} placeholder="inbox-triage" value={name} />
+            <>
+              <Input
+                aria-label="Bot name"
+                autoFocus
+                onChange={event => setName(event.target.value)}
+                placeholder="Sage"
+                value={name}
+              />
+              {slug ? (
+                <div className="pt-1 text-[0.65rem] text-(--ui-text-quaternary)">{b.editor.savedAs(slug)}</div>
+              ) : null}
+            </>
           )}
           {taken ? (
             <div className="text-xs text-(--ui-accent)">
@@ -695,7 +863,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           ) : null}
           {labeled(
             b.editor.title,
-            <Input onChange={event => setTitle(event.target.value)} placeholder="Inbox Triage" value={title} />
+            <Input onChange={event => setTitle(event.target.value)} placeholder="Research assistant" value={title} />
           )}
           {labeled(
             b.editor.description,

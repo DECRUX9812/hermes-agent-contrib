@@ -15,6 +15,7 @@ import {
   parseRosterKey,
   saveSelectedRosterBot
 } from './bot-state'
+import type { BotTemplate } from './bot-templates'
 /**
  * The Bots pane itself: the roster's selection reconciliation, the
  * workspace-ownership reads its lifecycle keys off, and the pane that lists
@@ -241,6 +242,15 @@ export function BotsPane() {
   const workingOwner = focusedRosterOwner(useValue($focusedBotOwner))
   const activeConnectionId = host.state.connectionId?.get?.() || 'local'
   const [createOpen, setCreateOpen] = useState(false)
+  // A starter card picked from the gallery/empty state — the dialog mounts
+  // pre-filled on it (remount keyed below, so state is read once per open).
+  const [createPreset, setCreatePreset] = useState<BotTemplate | null>(null)
+
+  const openCreate = (preset?: BotTemplate) => {
+    setCreatePreset(preset || null)
+    setCreateOpen(true)
+  }
+
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
   const [editing, setEditing] = useState<null | RosterRow>(null)
   // `path` is the profile directory the gateway reports on a profiles.list row;
@@ -483,7 +493,11 @@ export function BotsPane() {
         activityToasts,
         activeSourceRoster,
         roster,
-        setCreateOpen,
+        setCreateOpen: (value: boolean) => {
+          if (value) {
+            openCreate()
+          }
+        },
         setGroupCreateOpen,
         setSectionDialog,
         showRosterTools,
@@ -502,6 +516,7 @@ export function BotsPane() {
       })}
       {renderRosterContent({
         b,
+        onNewBot: openCreate,
         staleNotice,
         isLoading,
         initialRosterLoading,
@@ -539,6 +554,8 @@ export function BotsPane() {
         t,
         createOpen,
         setCreateOpen,
+        createPreset,
+        setCreatePreset,
         groupCreateOpen,
         setGroupCreateOpen,
         editing,

@@ -113,7 +113,10 @@ async function renderDialog(hasCapabilitiesView: boolean, onConfigureModel?: (bo
     )
   )
 
-  fireEvent.change(screen.getByPlaceholderText('inbox-triage'), { target: { value: 'inbox-triage' } })
+  // The gallery step leads — these tests exercise the form, so take the
+  // blank-slate card through it.
+  fireEvent.click(screen.getByText('Blank bot'))
+  fireEvent.change(screen.getByLabelText('Bot name'), { target: { value: 'inbox-triage' } })
   fireEvent.click(screen.getByRole('button', { name: /Advanced/ }))
 
   return view
@@ -172,7 +175,7 @@ describe('materializing the draft profile', () => {
   ])('creates %s with an ASCII profile id and retains the display name', async (enteredName, profileName) => {
     await renderDialog(true)
 
-    fireEvent.change(screen.getByPlaceholderText('inbox-triage'), {
+    fireEvent.change(screen.getByLabelText('Bot name'), {
       target: { value: enteredName }
     })
 
@@ -364,6 +367,53 @@ describe('provider readiness before the intro turn', () => {
   })
 })
 
+describe('the starter gallery', () => {
+  it('leads the dialog and a template card pre-fills the form', async () => {
+    mocks.hasCapabilitiesView.value = true
+    vi.resetModules()
+
+    const { CreateAgentDialog } = await import('./create-dialog')
+
+    render(withQueryClient(<CreateAgentDialog onClose={() => undefined} open roster={roster} />))
+
+    // The gallery leads — no bare form fields on first paint.
+    expect(screen.queryByLabelText('Bot name')).toBeNull()
+
+    fireEvent.click(screen.getByText('Scout'))
+
+    // The form arrives pre-filled; every field still editable.
+    const nameInput = screen.getByLabelText('Bot name') as HTMLInputElement
+    expect(nameInput.value).toBe('Scout')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create Bot' }))
+    await waitFor(() => expect(createCalls()).toHaveLength(1))
+    expect(createCalls()[0][1]).toMatchObject({ name: 'scout' })
+    // The pick is recorded on the bot's meta so the empty chat can offer
+    // the template's starters again.
+    expect(mocks.saveBotMeta).toHaveBeenCalledWith(
+      'scout',
+      expect.objectContaining({ starters: expect.any(Array), template: 'scout' })
+    )
+  })
+
+  it('drafts a bot from a free-text description', async () => {
+    mocks.hasCapabilitiesView.value = true
+    vi.resetModules()
+
+    const { CreateAgentDialog } = await import('./create-dialog')
+
+    render(withQueryClient(<CreateAgentDialog onClose={() => undefined} open roster={roster} />))
+
+    fireEvent.change(screen.getByPlaceholderText(/Describe the bot you want/), {
+      target: { value: 'a skeptical code reviewer named Ada' }
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Draft my bot' }))
+
+    const nameInput = screen.getByLabelText('Bot name') as HTMLInputElement
+    expect(nameInput.value).toBe('Ada')
+  })
+})
+
 describe('the clone-from default', () => {
   it('regression: reset restores the mounted default, not "fresh profile"', async () => {
     await renderDialog(true)
@@ -381,8 +431,10 @@ describe('the clone-from default', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create Bot' }))
     await waitFor(() => expect(mocks.createCanonicalChat).toHaveBeenCalled())
 
-    // Second open: the picker must read `default` again, or every agent after
-    // the first silently starts from a bare profile.
+    // Second open: the gallery leads again — the blank-slate card re-enters
+    // the form — and the picker must read `default` again, or every agent
+    // after the first silently starts from a bare profile.
+    fireEvent.click(screen.getByText('Blank bot'))
     fireEvent.click(screen.getByRole('button', { name: /Advanced/ }))
     expect(cloneFrom().textContent).toBe('default')
   })
