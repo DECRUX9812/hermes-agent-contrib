@@ -11,6 +11,7 @@ import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 import { $hapticsMuted, toggleHapticsMuted } from '@/store/haptics'
+import { $simpleMode } from '@/store/interface-mode'
 import {
   $fileBrowserOpen,
   $sidebarOpen,
@@ -26,6 +27,9 @@ import { titlebarButtonClass } from './titlebar'
 export interface TitlebarTool {
   id: string
   label: string
+  /** Power tools hidden in simple interface mode (their keybinds and surfaces
+   *  keep working — only the always-visible button is removed). */
+  advanced?: boolean
   active?: boolean
   className?: string
   disabled?: boolean
@@ -102,6 +106,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   const hapticsMuted = useStore($hapticsMuted)
   const fileBrowserOpen = useStore($fileBrowserOpen)
   const sidebarOpen = useStore($sidebarOpen)
+  const simpleMode = useStore($simpleMode)
 
   const toggleHaptics = () => {
     if (!hapticsMuted) {
@@ -136,6 +141,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     },
     {
       actionId: 'view.flipPanes',
+      advanced: true,
       icon: <Codicon name="arrow-swap" />,
       id: 'flip-panes',
       label: t.titlebar.swapSidebarSides,
@@ -164,6 +170,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       className: 'group/tool',
       // Hover + held ⌘/Ctrl morphs the glyph into its reset form (see
       // LayoutGlyph) — the mod-click telegraphs itself before it happens.
+      advanced: true,
       icon: <LayoutGlyph modHeld={modHeld} />,
       id: 'layout',
       label: t.titlebar.layoutEditor,
@@ -182,6 +189,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     },
     {
       active: hapticsMuted,
+      advanced: true,
       icon: <Codicon name={hapticsMuted ? 'mute' : 'unmute'} />,
       id: 'haptics',
       label: hapticsMuted ? t.titlebar.unmuteHaptics : t.titlebar.muteHaptics,
@@ -189,6 +197,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     },
     {
       actionId: 'keybinds.openPanel',
+      advanced: true,
       icon: <Codicon name="keyboard" />,
       id: 'keybinds',
       label: t.titlebar.openKeybinds,
@@ -217,8 +226,10 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     return null
   }
 
-  const visibleSystemTools = systemTools.filter(tool => !tool.hidden)
-  const visiblePaneTools = tools.filter(tool => !tool.hidden)
+  const showsAll = (tool: TitlebarTool) => !tool.hidden && (!simpleMode || !tool.advanced)
+  const visibleSystemTools = systemTools.filter(showsAll)
+  const visiblePaneTools = tools.filter(showsAll)
+  const visibleLeftTools = leftToolbarTools.filter(showsAll)
 
   return (
     <>
@@ -226,9 +237,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         aria-label={t.shell.windowControls}
         className="fixed left-(--titlebar-controls-left) top-(--titlebar-controls-top) z-70 flex translate-y-0.5 flex-row items-center gap-x-1 pointer-events-auto select-none [-webkit-app-region:no-drag]"
       >
-        {leftToolbarTools
-          .filter(tool => !tool.hidden)
-          .map(tool => (
+        {visibleLeftTools.map(tool => (
             <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
           ))}
       </div>

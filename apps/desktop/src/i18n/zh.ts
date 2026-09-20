@@ -428,6 +428,8 @@ export const zh: Translations = {
     appearance: {
       title: '外观',
       intro: '这些是仅桌面端的显示偏好。模式控制明暗；主题控制强调色与对话界面样式。',
+      simpleModeTitle: '简洁模式',
+      simpleModeDesc: '更清爽、以聊天为主的界面：隐藏高级面板、工具和状态项。所有功能仍可随时通过“设置”和 ⌘K 访问，可随时切换回来。',
       colorMode: '颜色模式',
       colorModeDesc: '选择固定模式，或让 Hermes 跟随系统设置。',
       toolViewTitle: '工具调用显示',
@@ -2029,6 +2031,13 @@ export const zh: Translations = {
       skills: '技能与工具',
       messaging: '消息平台',
       artifacts: '产物'
+    },
+    interfaceMode: {
+      label: '界面',
+      simple: '简洁',
+      full: '完整',
+      toFull: '简洁模式会隐藏高级面板和控件。点击切换到完整界面。',
+      toSimple: '返回清爽的聊天优先界面。'
     },
     searchAria: '搜索会话',
     searchPlaceholder: '搜索会话…',
