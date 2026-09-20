@@ -17,3 +17,10 @@ export const updateCronJobs = (fn: (jobs: CronJob[]) => CronJob[]) => $cronJobs.
 // after consumption so re-opening cron normally doesn't re-focus a stale job.
 export const $cronFocusJobId = atom<null | string>(null)
 export const setCronFocusJobId = (id: null | string) => $cronFocusJobId.set(id)
+
+// One-shot create-draft seed: the composer's "Run on a schedule" item stashes
+// the current draft here and routes to the cron overlay, which reads it once
+// to open the create dialog prefilled. Cleared after consumption so a plain
+// /cron visit doesn't resurrect an old prompt.
+export const $cronCreateDraft = atom<null | { prompt: string }>(null)
+export const setCronCreateDraft = (draft: null | { prompt: string }) => $cronCreateDraft.set(draft)
