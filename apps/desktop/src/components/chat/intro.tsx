@@ -1,6 +1,14 @@
+import { useStore } from '@nanostores/react'
 import { type CSSProperties, useState } from 'react'
+import { useNavigate } from 'react-router'
 
+import { openSession } from '@/app/open-session'
+import { useI18n } from '@/i18n'
+import { triggerHaptic } from '@/lib/haptics'
 import { capitalize, normalize } from '@/lib/text'
+import { relativeTime } from '@/lib/time'
+import { $sessions } from '@/store/session'
+import type { SessionInfo } from '@/types/hermes'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
 
@@ -156,9 +164,25 @@ function resolveCopy(personality?: string, seed?: number): IntroCopy {
   return pickCopy(copies, seed)
 }
 
+const RECENT_SESSION_LIMIT = 3
+
+// Backend timestamps arrive in seconds; relativeTime wants ms.
+function sessionRecencyMs(session: SessionInfo): number {
+  return (session.last_active || session.started_at || 0) * 1000
+}
+
 export function Intro({ personality, seed }: IntroProps) {
+  const { t } = useI18n()
+  const navigate = useNavigate()
+  const sessions = useStore($sessions)
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
   const copy = resolveCopy(personality, mountSeed + (seed ?? 0))
+
+  // "Pick up where you left off" — recency-sorted, most recent first.
+  const recentSessions = sessions
+    .filter(session => !session.archived)
+    .sort((a, b) => sessionRecencyMs(b) - sessionRecencyMs(a))
+    .slice(0, RECENT_SESSION_LIMIT)
 
   return (
     <div
@@ -179,6 +203,34 @@ export function Intro({ personality, seed }: IntroProps) {
 
         <p className="m-0 text-center leading-normal tracking-tight">{copy.body}</p>
       </div>
+
+      {recentSessions.length > 0 && (
+        <div className="pointer-events-auto mt-5 w-full max-w-md">
+          <p className="mb-1 text-center text-[0.6875rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)">
+            {t.intro.recentSessions}
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {recentSessions.map(session => (
+              <button
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors duration-100 hover:bg-(--ui-control-hover-background) hover:text-(--ui-text-secondary)"
+                key={session.id}
+                onClick={() => {
+                  triggerHaptic('selection')
+                  openSession(session.id, navigate, 'in-place')
+                }}
+                type="button"
+              >
+                <span className="min-w-0 flex-1 truncate">
+                  {session.title || session.preview || t.sidebar.row.untitledChat(session.id.slice(0, 8))}
+                </span>
+                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+                  {relativeTime(sessionRecencyMs(session))}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

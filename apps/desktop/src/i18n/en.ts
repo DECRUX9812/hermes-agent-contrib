@@ -1974,6 +1974,10 @@ export const en: Translations = {
     }
   },
 
+  intro: {
+    recentSessions: 'Pick up where you left off'
+  },
+
   composer: {
     message: 'Message',
     wakingProfile: profile => `Waking up ${profile}…`,

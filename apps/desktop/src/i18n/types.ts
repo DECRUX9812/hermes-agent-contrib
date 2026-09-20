@@ -1668,6 +1668,10 @@ export interface Translations {
     }
   }
 
+  intro: {
+    recentSessions: string
+  }
+
   composer: {
     message: string
     wakingProfile: (profile: string) => string

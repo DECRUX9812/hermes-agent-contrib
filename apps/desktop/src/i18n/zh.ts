@@ -2167,6 +2167,10 @@ export const zh: Translations = {
     }
   },
 
+  intro: {
+    recentSessions: '从上次继续'
+  },
+
   composer: {
     message: '消息',
     wakingProfile: profile => `正在唤醒 ${profile}…`,
