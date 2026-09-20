@@ -1,8 +1,9 @@
 import { useStore } from '@nanostores/react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useInRouterContext, useNavigate } from 'react-router'
 
-import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
+import { PRIMARY_ICON_BTN } from '@/app/chat/composer/control-classes'
+import { requestComposerFocus, requestComposerInsert, requestComposerSubmit } from '@/app/chat/composer/focus'
 import { openSession } from '@/app/open-session'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
@@ -280,6 +281,8 @@ export function Intro({ personality, seed }: IntroProps) {
         </p>
       </div>
 
+      <HeroPrompt seed={mountSeed + (seed ?? 0)} />
+
       <div className="pointer-events-auto mt-4 flex max-w-xl flex-wrap items-center justify-center gap-2">
         {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
           suggestion => (
@@ -304,6 +307,76 @@ export function Intro({ personality, seed }: IntroProps) {
 
       {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
     </div>
+  )
+}
+
+// The empty canvas's primary action is typing, so the intro carries a real
+// prompt field instead of only gesturing at the bottom composer. Enter submits
+// through the same bus the composer owns (the draft becomes a session exactly
+// as if typed there); if no composer surface can claim the submit — a hidden
+// pane, an unmounted surface — the text is moved into the composer instead.
+function HeroPrompt({ seed }: { seed: number }) {
+  const { t } = useI18n()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [value, setValue] = useState('')
+  const placeholders = t.composer.newSessionPlaceholders
+  const placeholder = placeholders[Math.abs(seed) % placeholders.length] ?? placeholders[0] ?? ''
+
+  // Take the caret only when nothing else owns it — an empty intro mounted in a
+  // second tile must not steal focus from wherever the user was typing.
+  useEffect(() => {
+    const el = inputRef.current
+
+    if (el && (!document.activeElement || document.activeElement === document.body)) {
+      el.focus()
+    }
+  }, [])
+
+  const submit = () => {
+    const text = value.trim()
+
+    if (!text) {
+      return
+    }
+
+    triggerHaptic('submit')
+
+    if (!requestComposerSubmit(text)) {
+      requestComposerInsert(text)
+      requestComposerFocus()
+    }
+
+    setValue('')
+  }
+
+  return (
+    <form
+      className="pointer-events-auto mt-6 w-full max-w-lg"
+      onSubmit={event => {
+        event.preventDefault()
+        submit()
+      }}
+    >
+      <div className="flex items-center gap-2 rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) px-3.5 py-2.5 shadow-nous transition-colors duration-150 focus-within:border-(--ui-stroke-secondary)">
+        <input
+          aria-label={t.composer.message}
+          className="min-w-0 flex-1 bg-transparent text-[0.9375rem] text-foreground outline-none placeholder:text-(--ui-text-quaternary)"
+          onChange={event => setValue(event.target.value)}
+          onKeyDown={event => {
+            if (event.key === 'Escape') {
+              event.currentTarget.blur()
+            }
+          }}
+          placeholder={placeholder}
+          ref={inputRef}
+          type="text"
+          value={value}
+        />
+        <Button aria-label={t.composer.send} className={PRIMARY_ICON_BTN} disabled={!value.trim()} type="submit">
+          <Codicon name="arrow-up" size="0.875rem" />
+        </Button>
+      </div>
+    </form>
   )
 }
 
