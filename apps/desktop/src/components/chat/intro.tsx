@@ -5,6 +5,7 @@ import { useInRouterContext, useNavigate } from 'react-router'
 import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
 import { openSession } from '@/app/open-session'
 import { Button } from '@/components/ui/button'
+import { Codicon } from '@/components/ui/codicon'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { capitalize, normalize } from '@/lib/text'
@@ -157,36 +158,42 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
 
 const WORDMARK = 'HERMES AGENT'
 
-type IntroSuggestion = { label: string; prompt: string }
+type IntroSuggestion = { icon: string; label: string; prompt: string }
 
 const SUGGESTION_WHAT_CAN_YOU_DO: IntroSuggestion = {
+  icon: 'sparkle',
   label: 'What can you do?',
   prompt: 'What can you do? Give me a quick tour of your capabilities and the kinds of tasks you can take on.'
 }
 
 const SUGGESTION_EXPLAIN_CODEBASE: IntroSuggestion = {
+  icon: 'code',
   label: 'Explain this codebase',
   prompt:
     'Explore this codebase and explain what it does, how it is organized, and where a new contributor should start.'
 }
 
 const SUGGESTION_FIND_BUG: IntroSuggestion = {
+  icon: 'bug',
   label: 'Find and fix a bug',
   prompt: 'Look through this project for a likely bug, explain what is wrong, and fix it.'
 }
 
 const SUGGESTION_PLAN_FEATURE: IntroSuggestion = {
+  icon: 'lightbulb',
   label: 'Plan a new feature',
   prompt:
     'Help me plan a new feature for this project. Ask me what I want, then propose a concrete step-by-step plan.'
 }
 
 const SUGGESTION_LOOSE_ENDS: IntroSuggestion = {
+  icon: 'history',
   label: 'Pick up loose ends',
   prompt: 'Review my recent sessions and tell me what is unfinished or needs a follow-up.'
 }
 
 const SUGGESTION_RECENT_RECAP: IntroSuggestion = {
+  icon: 'notebook',
   label: 'Recap recent work',
   prompt: 'Summarize what we accomplished in my recent sessions and what is still open.'
 }
@@ -251,13 +258,26 @@ export function Intro({ personality, seed }: IntroProps) {
 
   return (
     <div
-      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
+      className="pointer-events-none relative isolate flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
       data-slot="aui_intro"
     >
+      {/* Ambient brand wash — a soft radial fade that gives the empty canvas
+          depth without any painted surface. Theme-token derived, so it follows
+          accent + appearance changes for free. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 -top-8 -z-10 h-72 bg-[radial-gradient(ellipse_58%_100%_at_50%_0%,color-mix(in_srgb,var(--theme-midground)_10%,transparent),transparent_72%)]"
+      />
       <div className="w-full min-w-0">
-        <Wordmark className="mb-1" text={WORDMARK} />
+        <Wordmark
+          className="mb-1 bg-gradient-to-b from-(--theme-midground) to-[color-mix(in_srgb,var(--theme-midground)_58%,var(--ui-bg-chrome))] bg-clip-text text-transparent dark:text-transparent"
+          text={WORDMARK}
+          width="min(36rem, 82%)"
+        />
 
-        <p className="m-0 text-center leading-normal tracking-tight">{copy.body}</p>
+        <p className="m-0 text-center text-[0.9375rem] leading-normal tracking-tight text-(--ui-text-secondary)">
+          {copy.body}
+        </p>
       </div>
 
       <div className="pointer-events-auto mt-4 flex max-w-xl flex-wrap items-center justify-center gap-2">
@@ -275,6 +295,7 @@ export function Intro({ personality, seed }: IntroProps) {
               type="button"
               variant="secondary"
             >
+              <Codicon className="opacity-70" name={suggestion.icon} />
               {suggestion.label}
             </Button>
           )
