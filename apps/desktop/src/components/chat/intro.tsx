@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react'
 import { useState } from 'react'
-import { useInRouterContext, useNavigate } from 'react-router' 
+import { useInRouterContext, useNavigate } from 'react-router'
 
 import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
 import { openSession } from '@/app/open-session'
