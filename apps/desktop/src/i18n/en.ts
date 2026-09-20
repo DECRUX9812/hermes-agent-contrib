@@ -2915,6 +2915,10 @@ export const en: Translations = {
     markAllRead: 'Mark all as read'
   },
 
+  intro: {
+    recentSessions: 'Pick up where you left off'
+  },
+
   composer: {
     message: 'Message',
     wakingProfile: profile => `Waking up ${profile}…`,
