@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registry } from '@/contrib/registry'
 import { I18nProvider } from '@/i18n'
+import { setInterfaceMode } from '@/store/interface-mode'
 import { setTitlebarAppActionsSide } from '@/store/titlebar-app-actions'
 
 import { ROUTES_AREA } from '../routes'
@@ -209,7 +210,14 @@ describe('TitlebarControls fixed clusters', () => {
 })
 
 describe('titlebar app-action cluster', () => {
+  // These assert the full chrome's tool placement; simple mode (the default)
+  // hides the power toggles they look for.
+  beforeEach(() => {
+    setInterfaceMode('full')
+  })
+
   afterEach(() => {
+    setInterfaceMode('simple')
     setTitlebarAppActionsSide('right')
     cleanup()
   })
