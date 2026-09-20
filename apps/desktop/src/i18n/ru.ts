@@ -553,6 +553,9 @@ export const ru = defineLocale({
     appearance: {
       title: 'Внешний вид',
       intro: 'Только для приложения. Режим — это яркость, тема — палитра и оформление чата.',
+      simpleModeTitle: 'Простой режим',
+      simpleModeDesc:
+        'Более чистый интерфейс с упором на чат: скрывает расширенные панели, инструменты и элементы статуса. Всё остаётся доступным из настроек и по ⌘K — вернуться можно в любой момент.',
       colorMode: 'Цветовой режим',
       colorModeDesc: 'Выберите фиксированный режим или позвольте Hermes следовать настройкам системы.',
       toolViewTitle: 'Отображение вызовов инструментов',
@@ -2516,6 +2519,13 @@ export const ru = defineLocale({
       artifacts: 'Артефакты',
       cron: 'Запланированные задачи'
     },
+    interfaceMode: {
+      label: 'Интерфейс',
+      simple: 'Простой',
+      full: 'Полный',
+      toFull: 'Простой режим скрывает расширенные панели и элементы управления. Нажмите, чтобы вернуть полный интерфейс.',
+      toSimple: 'Вернуться к простому интерфейсу с упором на чат.'
+    },
     searchAria: 'Поиск сеансов',
     searchPlaceholder: 'Поиск сеансов…',
     clearSearch: 'Очистить поиск',
@@ -2678,6 +2688,10 @@ export const ru = defineLocale({
     },
     markAllRead: 'Отметить все как прочитанные'
   },
+  intro: {
+    recentSessions: 'Продолжите с того места, где остановились'
+  },
+
   composer: {
     message: 'Сообщение',
     wakingProfile: profile => `Пробуждаем ${profile}…`,
@@ -2797,6 +2811,7 @@ export const ru = defineLocale({
     pasteImage: 'Вставить изображение',
     url: 'URL…',
     promptSnippets: 'Фрагменты промптов…',
+    scheduleJob: 'Запускать по расписанию…',
     tipPre: 'Подсказка: введите ',
     tipPost: ' чтобы ссылаться на файлы inline.',
     snippetsTitle: 'Фрагменты промптов',
@@ -3380,6 +3395,11 @@ export const ru = defineLocale({
       openWebhooks: 'Открыть вебхуки',
       starmap: 'Граф памяти',
       openStarmap: 'Открыть граф памяти',
+      artifacts: 'Артефакты',
+      artifactsTitle: 'Материалы, созданные в этом чате — выберите, чтобы открыть рядом с диалогом',
+      artifactsCount: count => `${count} ${RU_NOUN(count, 'артефакт', 'артефакта', 'артефактов')}`,
+      browseAllArtifacts: 'Все артефакты',
+      toggleArtifacts: 'Артефакты',
       turnRunning: 'Выполняется',
       contextUsage: 'Использование контекста',
       contextUsagePanel: {
