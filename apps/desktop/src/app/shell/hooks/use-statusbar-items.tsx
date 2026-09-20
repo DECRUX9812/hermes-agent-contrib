@@ -407,6 +407,7 @@ export function useStatusbarItems({
     })
 
     return {
+      advanced: true,
       className: status.hasUpdate ? 'text-primary hover:text-primary' : undefined,
       hidden: status.unknown,
       icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
@@ -506,6 +507,7 @@ export function useStatusbarItems({
         variant: 'action'
       },
       {
+        advanced: true,
         hidden: !currentCwd,
         icon: <FolderOpen className="size-3" />,
         id: 'workspace-cwd',
@@ -558,6 +560,7 @@ export function useStatusbarItems({
           ) : (
             <Codicon name="hubot" size="0.75rem" />
           ),
+        advanced: true,
         id: 'agents',
         label: copy.agents,
         onSelect: openAgents,
@@ -566,6 +569,7 @@ export function useStatusbarItems({
         variant: 'action'
       },
       {
+        advanced: true,
         icon: <Clock className="size-3" />,
         id: 'cron',
         label: copy.cron,
@@ -574,6 +578,7 @@ export function useStatusbarItems({
         variant: 'action'
       },
       {
+        advanced: true,
         icon: <Globe className="size-3" />,
         id: 'webhooks',
         label: copy.webhooks,
@@ -623,6 +628,7 @@ export function useStatusbarItems({
         variant: 'text'
       },
       {
+        advanced: true,
         detail: contextBar || undefined,
         // Never self-hide: the user opted this item in (it's hidden-by-
         // default), so an empty label must render as a waiting placeholder,
@@ -674,6 +680,7 @@ export function useStatusbarItems({
         actionId: 'view.showTerminal',
         className: `w-7 justify-center px-0${terminalShowing ? ' bg-accent/55 text-foreground' : ''}`,
         hidden: !chatOpen,
+        advanced: true,
         icon: <Terminal className="size-3.5" />,
         id: 'terminal',
         onSelect: () => togglePaneVisible('terminal'),

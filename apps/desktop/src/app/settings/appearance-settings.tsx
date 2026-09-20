@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils'
 import { $backdrop, setBackdrop } from '@/store/backdrop'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
 import { $embedAllowed, $embedMode, clearEmbedAllowed, type EmbedMode, setEmbedMode } from '@/store/embed-consent'
+import { $simpleMode, setInterfaceMode } from '@/store/interface-mode'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
 import { notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, $profiles, normalizeProfileKey } from '@/store/profile'
@@ -510,6 +511,7 @@ export function AppearanceSettings() {
   const uiScaleOptions = UI_SCALE_PRESETS.map(preset => ({ id: preset, label: `${preset}%` }))
 
   const matchedScalePreset = matchUiScalePreset(zoomPercent)
+  const simpleMode = useStore($simpleMode)
 
   return (
     <SettingsContent>
@@ -520,6 +522,13 @@ export function AppearanceSettings() {
         </p>
 
         <div className="mt-2">
+          <ToggleRow
+            checked={simpleMode}
+            description={a.simpleModeDesc}
+            label={a.simpleModeTitle}
+            onChange={on => setInterfaceMode(on ? 'simple' : 'full')}
+          />
+
           <ListRow
             action={<LanguageSwitcher />}
             description={isSavingLocale ? t.language.saving : t.language.description}

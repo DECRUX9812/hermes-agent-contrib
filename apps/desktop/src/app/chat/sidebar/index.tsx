@@ -25,12 +25,14 @@ import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { triggerHaptic } from '@/lib/haptics'
 import { comboTokens } from '@/lib/keybinds/combo'
 import { sessionMatchesSearch } from '@/lib/session-search'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
 import { $activeConnectionId } from '@/store/connections'
 import { $cronJobs } from '@/store/cron'
+import { $simpleMode, toggleInterfaceMode } from '@/store/interface-mode'
 import { $bindings } from '@/store/keybinds'
 import {
   $dismissedAutoProjectIds,
@@ -211,28 +213,32 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     label: '',
     icon: props => <Codicon name="symbol-misc" {...props} />,
     route: CAPABILITIES_ROUTE,
-    keybindActionId: 'nav.capabilities'
+    keybindActionId: 'nav.capabilities',
+    advanced: true
   },
   {
     id: 'messaging',
     label: '',
     icon: props => <Codicon name="comment" {...props} />,
     route: MESSAGING_ROUTE,
-    keybindActionId: 'nav.messaging'
+    keybindActionId: 'nav.messaging',
+    advanced: true
   },
   {
     id: 'artifacts',
     label: '',
     icon: props => <Codicon name="files" {...props} />,
     route: ARTIFACTS_ROUTE,
-    keybindActionId: 'nav.artifacts'
+    keybindActionId: 'nav.artifacts',
+    advanced: true
   },
   {
     id: 'cron',
     label: '',
     icon: props => <Codicon name="watch" {...props} />,
     route: CRON_ROUTE,
-    keybindActionId: 'nav.cron'
+    keybindActionId: 'nav.cron',
+    advanced: true
   }
 ]
 
@@ -341,6 +347,7 @@ export function ChatSidebar({
   const { t } = useI18n()
   const s = t.sidebar
   const { pathname } = useLocation()
+  const simpleMode = useStore($simpleMode)
   // Contributed nav rows (plugins pairing a page with a sidebar entry) render
   // below the built-ins with the same chrome; active = at their route.
   const navContributions = useContributions(SIDEBAR_NAV_AREA)
@@ -1513,7 +1520,9 @@ export function ChatSidebar({
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
-              {[...SIDEBAR_NAV, ...contributedNav].map(item => {
+              {[...SIDEBAR_NAV, ...contributedNav]
+                .filter(item => !simpleMode || !item.advanced)
+                .map(item => {
                 const isInteractive = Boolean(item.action) || Boolean(item.route)
 
                 const active =
@@ -1977,6 +1986,27 @@ export function ChatSidebar({
             <ProfileRail />
           </div>
         )}
+
+        {/* Simple-mode indicator + way back to the full interface. The same
+            store drives Settings → Appearance, so both flip together. */}
+        <div className="shrink-0 px-1 pb-1">
+          <Tip label={simpleMode ? s.interfaceMode.toFull : s.interfaceMode.toSimple}>
+            <button
+              className="flex h-6.5 w-full items-center gap-1.5 rounded-md px-2 text-left text-[0.6875rem] font-medium text-(--ui-text-quaternary) transition-colors duration-100 hover:bg-(--ui-control-hover-background) hover:text-(--ui-text-secondary)"
+              onClick={() => {
+                triggerHaptic('selection')
+                toggleInterfaceMode()
+              }}
+              type="button"
+            >
+              <Codicon className="size-3 shrink-0" name="sparkle" />
+              <span className="min-w-0 flex-1 truncate">{s.interfaceMode.label}</span>
+              <span className="shrink-0 text-(--ui-text-quaternary)">
+                {simpleMode ? s.interfaceMode.simple : s.interfaceMode.full}
+              </span>
+            </button>
+          </Tip>
+        </div>
       </SidebarContent>
       <ProjectDialog />
       {/* One mount for the whole app. The header of WorktreeDialog tells why. */}

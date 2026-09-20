@@ -140,6 +140,9 @@ export interface SidebarNavItem {
   action?: 'new-session'
   /** Keybind action id — when set, the tooltip shows the keybind hint. */
   keybindActionId?: string
+  /** Power-surface row hidden in simple interface mode. The route itself stays
+   *  reachable — this only removes the always-visible nav entry. */
+  advanced?: boolean
 }
 
 export interface PersistedDisplayTranscriptProvenance {

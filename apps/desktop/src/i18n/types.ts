@@ -614,6 +614,8 @@ export interface Translations {
     appearance: {
       title: string
       intro: string
+      simpleModeTitle: string
+      simpleModeDesc: string
       colorMode: string
       colorModeDesc: string
       toolViewTitle: string
@@ -2357,6 +2359,13 @@ export interface Translations {
     }
     profileRail: string
     nav: Record<string, string>
+    interfaceMode: {
+      label: string
+      simple: string
+      full: string
+      toFull: string
+      toSimple: string
+    }
     searchAria: string
     searchPlaceholder: string
     clearSearch: string

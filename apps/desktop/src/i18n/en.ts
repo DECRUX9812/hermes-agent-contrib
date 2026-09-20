@@ -726,6 +726,9 @@ export const en: Translations = {
     appearance: {
       title: 'Appearance',
       intro: 'Desktop-only. Mode is brightness; theme is palette and chat chrome.',
+      simpleModeTitle: 'Simple mode',
+      simpleModeDesc:
+        'A cleaner, chat-first interface: hides advanced panes, tools, and status items. Everything stays reachable from Settings and ⌘K — switch back any time.',
       colorMode: 'Color Mode',
       colorModeDesc: 'Pick a fixed mode or let Hermes follow your system setting.',
       toolViewTitle: 'Tool Call Display',
@@ -2741,6 +2744,13 @@ export const en: Translations = {
       messaging: 'Messaging',
       artifacts: 'Artifacts',
       cron: 'Scheduled jobs'
+    },
+    interfaceMode: {
+      label: 'Interface',
+      simple: 'Simple',
+      full: 'Full',
+      toFull: 'Simple mode hides advanced panes and controls. Click for the full interface.',
+      toSimple: 'Back to the clean, chat-first interface.'
     },
     searchAria: 'Search sessions',
     searchPlaceholder: 'Search sessions…',

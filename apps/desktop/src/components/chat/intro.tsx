@@ -1,5 +1,8 @@
 import { useState } from 'react'
 
+import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
+import { Button } from '@/components/ui/button'
+import { triggerHaptic } from '@/lib/haptics'
 import { capitalize, normalize } from '@/lib/text'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
@@ -147,6 +150,28 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
 
 const WORDMARK = 'HERMES AGENT'
 
+// One-click starters under the empty-state wordmark. Labels stay short; the
+// inserted prompt carries the intent. Chips prefill the composer rather than
+// sending — the user always sees and edits the ask before it runs.
+const INTRO_SUGGESTIONS: readonly { label: string; prompt: string }[] = [
+  {
+    label: 'What can you do?',
+    prompt: 'What can you do? Give me a quick tour of your capabilities and the kinds of tasks you can take on.'
+  },
+  {
+    label: 'Explain this codebase',
+    prompt: 'Explore this codebase and explain what it does, how it is organized, and where a new contributor should start.'
+  },
+  {
+    label: 'Find and fix a bug',
+    prompt: 'Look through this project for a likely bug, explain what is wrong, and fix it.'
+  },
+  {
+    label: 'Plan a new feature',
+    prompt: 'Help me plan a new feature for this project. Ask me what I want, then propose a concrete step-by-step plan.'
+  }
+]
+
 function resolveCopy(personality?: string, seed?: number): IntroCopy {
   const personalityKey = normalizeKey(personality)
 
@@ -170,6 +195,25 @@ export function Intro({ personality, seed }: IntroProps) {
         <Wordmark className="mb-1" text={WORDMARK} />
 
         <p className="m-0 text-center leading-normal tracking-tight">{copy.body}</p>
+      </div>
+
+      <div className="pointer-events-auto mt-4 flex max-w-xl flex-wrap items-center justify-center gap-2">
+        {INTRO_SUGGESTIONS.map(suggestion => (
+          <Button
+            className="rounded-full"
+            key={suggestion.label}
+            onClick={() => {
+              triggerHaptic('selection')
+              requestComposerInsert(suggestion.prompt)
+              requestComposerFocus()
+            }}
+            size="sm"
+            type="button"
+            variant="secondary"
+          >
+            {suggestion.label}
+          </Button>
+        ))}
       </div>
     </div>
   )

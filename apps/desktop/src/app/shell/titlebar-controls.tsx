@@ -16,6 +16,7 @@ import { triggerHaptic } from '@/lib/haptics'
 import { formatModifierToken } from '@/lib/keybinds/combo'
 import { cn } from '@/lib/utils'
 import { toggleHud } from '@/store/hud'
+import { $simpleMode } from '@/store/interface-mode'
 import {
   $fileBrowserOpen,
   $panesFlipped,
@@ -42,6 +43,9 @@ export interface TitlebarTool {
   id: string
   label: string
   active?: boolean
+  /** Power-surface toggle hidden in simple interface mode — the action stays
+   *  reachable via ⌘K / Settings, only the always-visible button is removed. */
+  advanced?: boolean
   className?: string
   disabled?: boolean
   hidden?: boolean
@@ -142,6 +146,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   const sidebarOpen = useStore($sidebarOpen)
   const unreadCount = useStore($unreadSessionCount)
   const appActionsSide = useStore($titlebarAppActionsSide)
+  const simpleMode = useStore($simpleMode)
   const unreadBadge = unreadCount > 0 ? unreadCount : undefined
   const unreadHint = unreadBadge ? ` · ${t.titlebar.unreadSessions(unreadBadge)}` : ''
 
@@ -176,6 +181,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
 
   const flipTool: TitlebarTool = {
     actionId: 'view.flipPanes',
+    advanced: true,
     icon: <TitlebarIcon name="arrow-swap" />,
     id: 'flip-panes',
     label: t.titlebar.swapSidebarSides,
@@ -215,6 +221,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       className: 'group/tool',
       // Hover + held ⌘/Ctrl morphs the glyph into its reset form (see
       // LayoutGlyph) — the mod-click telegraphs itself before it happens.
+      advanced: true,
       icon: <LayoutGlyph modHeld={modHeld} />,
       id: 'layout',
       label: t.titlebar.layoutEditor,
@@ -273,7 +280,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   // route. Contributed `titleBar.tools` items keep rendering here too, so a
   // chrome-owning page never silently drops a registered item.
   if (hidesFixedTitlebarClusters(view) && pageOwnsTitlebar) {
-    const pageTools = [...leftTools, ...tools].filter(tool => !tool.hidden)
+    const pageTools = [...leftTools, ...tools].filter(tool => !tool.hidden && (!simpleMode || !tool.advanced))
 
     // Both markers are required even when a page contributes to only one side.
     return (
@@ -294,12 +301,16 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     )
   }
 
+  // Simple mode hides the power toggles (flip panes, layout editor); the
+  // same surface stays reachable through ⌘K and Settings.
+  const showsAll = (tool: TitlebarTool) => !tool.hidden && (!simpleMode || !tool.advanced)
+
   const visibleLeftTools = (
     appActionsSide === 'left' ? [sidebarTool, ...systemTools, ...leftTools] : [sidebarTool, ...leftTools]
-  ).filter(tool => !tool.hidden)
+  ).filter(showsAll)
 
-  const visibleSystemTools = appActionsSide === 'right' ? systemTools.filter(tool => !tool.hidden) : []
-  const visiblePaneTools = tools.filter(tool => !tool.hidden)
+  const visibleSystemTools = appActionsSide === 'right' ? systemTools.filter(showsAll) : []
+  const visiblePaneTools = tools.filter(showsAll)
 
   return (
     <>
@@ -333,7 +344,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         {visibleSystemTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
-        <TitlebarToolButton navigate={navigate} tool={flipTool} />
+        {(!simpleMode || !flipTool.advanced) && <TitlebarToolButton navigate={navigate} tool={flipTool} />}
         <TitlebarToolButton navigate={navigate} tool={rightSidebarTool} />
         <Slot area="titleBar.right" />
       </div>
