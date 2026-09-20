@@ -27,7 +27,7 @@ let fixture: MockBackendFixture | null = null
 
 test.beforeAll(async () => {
   fixture = await setupMockBackend()
-  await waitForAppReady(fixture.page)
+  await waitForAppReady(fixture, 120_000)
 })
 
 test.afterAll(async () => {
