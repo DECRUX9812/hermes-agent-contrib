@@ -4,6 +4,7 @@ import { useInRouterContext, useNavigate } from 'react-router'
 
 import { PRIMARY_ICON_BTN } from '@/app/chat/composer/control-classes'
 import { requestComposerFocus, requestComposerInsert, requestComposerSubmit } from '@/app/chat/composer/focus'
+import { RICH_INPUT_SLOT } from '@/app/chat/composer/rich-editor'
 import { openSession } from '@/app/open-session'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
@@ -322,12 +323,15 @@ function HeroPrompt({ seed }: { seed: number }) {
   const placeholders = t.composer.newSessionPlaceholders
   const placeholder = placeholders[Math.abs(seed) % placeholders.length] ?? placeholders[0] ?? ''
 
-  // Take the caret only when nothing else owns it — an empty intro mounted in a
-  // second tile must not steal focus from wherever the user was typing.
+  // Take the caret when nothing else owns it — or when the owner's just the
+  // composer's own mount autofocus (same empty draft, different affordance).
+  // Never yank focus the user placed anywhere else.
   useEffect(() => {
     const el = inputRef.current
+    const active = document.activeElement
+    const composerHasCaret = active instanceof Element && Boolean(active.closest(`[data-slot="${RICH_INPUT_SLOT}"]`))
 
-    if (el && (!document.activeElement || document.activeElement === document.body)) {
+    if (el && (!active || active === document.body || composerHasCaret)) {
       el.focus()
     }
   }, [])
