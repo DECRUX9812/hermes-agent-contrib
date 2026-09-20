@@ -1,10 +1,13 @@
 import { useStore } from '@nanostores/react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useInRouterContext, useNavigate } from 'react-router'
 
-import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
+import { PRIMARY_ICON_BTN } from '@/app/chat/composer/control-classes'
+import { requestComposerFocus, requestComposerInsert, requestComposerSubmit } from '@/app/chat/composer/focus'
+import { RICH_INPUT_SLOT } from '@/app/chat/composer/rich-editor'
 import { openSession } from '@/app/open-session'
 import { Button } from '@/components/ui/button'
+import { Codicon } from '@/components/ui/codicon'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { capitalize, normalize } from '@/lib/text'
@@ -157,36 +160,42 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
 
 const WORDMARK = 'HERMES AGENT'
 
-type IntroSuggestion = { label: string; prompt: string }
+type IntroSuggestion = { icon: string; label: string; prompt: string }
 
 const SUGGESTION_WHAT_CAN_YOU_DO: IntroSuggestion = {
+  icon: 'sparkle',
   label: 'What can you do?',
   prompt: 'What can you do? Give me a quick tour of your capabilities and the kinds of tasks you can take on.'
 }
 
 const SUGGESTION_EXPLAIN_CODEBASE: IntroSuggestion = {
+  icon: 'code',
   label: 'Explain this codebase',
   prompt:
     'Explore this codebase and explain what it does, how it is organized, and where a new contributor should start.'
 }
 
 const SUGGESTION_FIND_BUG: IntroSuggestion = {
+  icon: 'bug',
   label: 'Find and fix a bug',
   prompt: 'Look through this project for a likely bug, explain what is wrong, and fix it.'
 }
 
 const SUGGESTION_PLAN_FEATURE: IntroSuggestion = {
+  icon: 'lightbulb',
   label: 'Plan a new feature',
   prompt:
     'Help me plan a new feature for this project. Ask me what I want, then propose a concrete step-by-step plan.'
 }
 
 const SUGGESTION_LOOSE_ENDS: IntroSuggestion = {
+  icon: 'history',
   label: 'Pick up loose ends',
   prompt: 'Review my recent sessions and tell me what is unfinished or needs a follow-up.'
 }
 
 const SUGGESTION_RECENT_RECAP: IntroSuggestion = {
+  icon: 'notebook',
   label: 'Recap recent work',
   prompt: 'Summarize what we accomplished in my recent sessions and what is still open.'
 }
@@ -251,38 +260,137 @@ export function Intro({ personality, seed }: IntroProps) {
 
   return (
     <div
-      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
+      className="pointer-events-none relative isolate flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
       data-slot="aui_intro"
     >
+      {/* Ambient brand wash — a soft radial fade that gives the empty canvas
+          depth without any painted surface. Theme-token derived, so it follows
+          accent + appearance changes for free. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 -top-8 -z-10 h-72 bg-[radial-gradient(ellipse_58%_100%_at_50%_0%,color-mix(in_srgb,var(--theme-midground)_10%,transparent),transparent_72%)]"
+      />
       <div className="w-full min-w-0">
-        <Wordmark className="mb-1" text={WORDMARK} />
+        <Wordmark
+          className="mb-1 bg-gradient-to-b from-(--theme-midground) to-[color-mix(in_srgb,var(--theme-midground)_58%,var(--ui-bg-chrome))] bg-clip-text text-transparent dark:text-transparent"
+          text={WORDMARK}
+          width="min(36rem, 82%)"
+        />
 
-        <p className="m-0 text-center leading-normal tracking-tight">{copy.body}</p>
+        <p className="m-0 text-center text-[0.9375rem] leading-normal tracking-tight text-(--ui-text-secondary)">
+          {copy.body}
+        </p>
       </div>
 
-      <div className="pointer-events-auto mt-4 flex max-w-xl flex-wrap items-center justify-center gap-2">
-        {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
-          suggestion => (
-            <Button
-              className="rounded-full"
-              key={suggestion.label}
-              onClick={() => {
-                triggerHaptic('selection')
-                requestComposerInsert(suggestion.prompt)
-                requestComposerFocus()
-              }}
-              size="sm"
-              type="button"
-              variant="secondary"
-            >
-              {suggestion.label}
-            </Button>
-          )
-        )}
-      </div>
+      {/* One column for everything actionable: the hero input, the starter
+          chips, and the recency rows share a single width, so the empty canvas
+          reads as one centered block. The cap has to sit one level below the
+          intro's direct child — `[data-slot='aui_intro'] > div` in styles.css
+          pins direct children to the composer width, which is what silently
+          flattened the per-element `max-w-*` caps before. */}
+      <div className="pointer-events-auto flex w-full min-w-0 flex-col items-center">
+        <div className="flex w-full min-w-0 max-w-xl flex-col items-center">
+          <HeroPrompt seed={mountSeed + (seed ?? 0)} />
 
-      {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
+              suggestion => (
+                <Button
+                  className="rounded-full"
+                  key={suggestion.label}
+                  onClick={() => {
+                    triggerHaptic('selection')
+                    requestComposerInsert(suggestion.prompt)
+                    requestComposerFocus()
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  <Codicon className="opacity-70" name={suggestion.icon} />
+                  {suggestion.label}
+                </Button>
+              )
+            )}
+          </div>
+
+          {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
+        </div>
+      </div>
     </div>
+  )
+}
+
+// The empty canvas's primary action is typing, so the intro carries a real
+// prompt field instead of only gesturing at the bottom composer. Enter submits
+// through the same bus the composer owns (the draft becomes a session exactly
+// as if typed there); if no composer surface can claim the submit — a hidden
+// pane, an unmounted surface — the text is moved into the composer instead.
+function HeroPrompt({ seed }: { seed: number }) {
+  const { t } = useI18n()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [value, setValue] = useState('')
+  const placeholders = t.composer.newSessionPlaceholders
+  const placeholder = placeholders[Math.abs(seed) % placeholders.length] ?? placeholders[0] ?? ''
+
+  // Take the caret when nothing else owns it — or when the owner's just the
+  // composer's own mount autofocus (same empty draft, different affordance).
+  // Never yank focus the user placed anywhere else.
+  useEffect(() => {
+    const el = inputRef.current
+    const active = document.activeElement
+    const composerHasCaret = active instanceof Element && Boolean(active.closest(`[data-slot="${RICH_INPUT_SLOT}"]`))
+
+    if (el && (!active || active === document.body || composerHasCaret)) {
+      el.focus()
+    }
+  }, [])
+
+  const submit = () => {
+    const text = value.trim()
+
+    if (!text) {
+      return
+    }
+
+    triggerHaptic('submit')
+
+    if (!requestComposerSubmit(text)) {
+      requestComposerInsert(text)
+      requestComposerFocus()
+    }
+
+    setValue('')
+  }
+
+  return (
+    <form
+      className="pointer-events-auto mt-6 w-full"
+      onSubmit={event => {
+        event.preventDefault()
+        submit()
+      }}
+    >
+      <div className="flex items-center gap-2 rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) px-3.5 py-2.5 shadow-nous transition-colors duration-150 focus-within:border-(--ui-stroke-secondary)">
+        <input
+          aria-label={t.composer.message}
+          className="min-w-0 flex-1 bg-transparent text-[0.9375rem] text-foreground outline-none placeholder:text-(--ui-text-quaternary)"
+          onChange={event => setValue(event.target.value)}
+          onKeyDown={event => {
+            if (event.key === 'Escape') {
+              event.currentTarget.blur()
+            }
+          }}
+          placeholder={placeholder}
+          ref={inputRef}
+          type="text"
+          value={value}
+        />
+        <Button aria-label={t.composer.send} className={PRIMARY_ICON_BTN} disabled={!value.trim()} type="submit">
+          <Codicon name="arrow-up" size="0.875rem" />
+        </Button>
+      </div>
+    </form>
   )
 }
 
@@ -291,8 +399,8 @@ function RecentSessionRows({ sessions }: { sessions: SessionInfo[] }) {
   const navigate = useNavigate()
 
   return (
-    <div className="pointer-events-auto mt-5 w-full max-w-md">
-      <p className="mb-1 text-center text-[0.6875rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)">
+    <div className="mt-5 w-full">
+      <p className="mb-1 w-full px-2.5 text-left text-[0.6875rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)">
         {t.intro.recentSessions}
       </p>
       <div className="flex flex-col gap-0.5">
