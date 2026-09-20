@@ -2525,6 +2525,10 @@ export interface Translations {
     markAllRead: string
   }
 
+  intro: {
+    recentSessions: string
+  }
+
   composer: {
     message: string
     wakingProfile: (profile: string) => string
