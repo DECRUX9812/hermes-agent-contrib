@@ -3812,6 +3812,11 @@ export const zh = defineLocale({
       openWebhooks: '打开 Webhook',
       starmap: '记忆图谱',
       openStarmap: '打开记忆图谱',
+      artifacts: '产物',
+      artifactsTitle: '本会话生成的交付物 — 选择一个在对话旁打开',
+      artifactsCount: count => `${count} 个产物`,
+      browseAllArtifacts: '浏览全部产物',
+      toggleArtifacts: '产物',
       turnRunning: '运行中',
       contextUsage: '上下文用量',
       systemResources: {
