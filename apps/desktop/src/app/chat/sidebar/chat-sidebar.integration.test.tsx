@@ -7,6 +7,7 @@ import { group, split } from '@/components/pane-shell/tree/model'
 import { $layoutTree, noteActiveTreeGroup } from '@/components/pane-shell/tree/store'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { registry } from '@/contrib/registry'
+import { setInterfaceMode } from '@/store/interface-mode'
 import { $selectedStoredSessionId, $sessions } from '@/store/session'
 import { $removedSessionIds } from '@/store/session-removal'
 import { makeSessionInfo } from '@/test/session-info'
@@ -77,6 +78,7 @@ describe('ChatSidebar navigation activity', () => {
       { area: SIDEBAR_NAV_AREA, id: 'kanban-nav', data: { codicon: 'project', label: 'Kanban', path: '/kanban' } },
       { area: SIDEBAR_NAV_AREA, id: 'reports-nav', data: { codicon: 'graph', label: 'Reports', path: '/reports' } }
     ])
+    setInterfaceMode('full')
     $selectedStoredSessionId.set('tile-one')
     $sessions.set(sessionRows)
     $removedSessionIds.set(new Set())
@@ -92,6 +94,7 @@ describe('ChatSidebar navigation activity', () => {
 
   afterEach(() => {
     cleanup()
+    setInterfaceMode('simple')
     disposeContributions()
     $selectedStoredSessionId.set(null)
     $sessions.set([])
@@ -153,6 +156,7 @@ describe('ChatSidebar navigation activity', () => {
     expectOnlyCurrent('Reports')
 
     cleanup()
+    setInterfaceMode('simple')
     disposeContributions()
     disposeContributions = noop
     focus('workspace-group')
