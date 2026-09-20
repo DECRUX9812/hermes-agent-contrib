@@ -3184,6 +3184,7 @@ export const zh = defineLocale({
     pasteImage: '粘贴图片',
     url: 'URL…',
     promptSnippets: '提示词片段…',
+    scheduleJob: '定时运行…',
     tipPre: '提示：输入 ',
     tipPost: ' 以内联引用文件。',
     snippetsTitle: '提示词片段',

@@ -1,9 +1,11 @@
 import { ComposerPrimitive } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
 import { type ClipboardEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef } from 'react'
+import { useNavigate } from 'react-router'
 
 import { useTourMarker } from '@/app/chat/tour-marker'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
+import { CRON_ROUTE } from '@/app/routes' 
 import { composerFill, composerFloatingStrip, composerSurfaceGlass } from '@/components/chat/composer-dock'
 import { $chatOnboardingSolo, $chatOnboardingThreadIds } from '@/components/onboarding-chat/assembly'
 import { OnboardingSkip } from '@/components/onboarding-chat/skip'
@@ -23,8 +25,9 @@ import { sessionCompacting } from '@/store/compaction'
 import { browseBackward, browseForward, deriveUserHistory, isBrowsingHistory } from '@/store/composer-input-history'
 import { POPOUT_WIDTH_REM } from '@/store/composer-popout'
 import { parkQueuedPrompts, removeQueuedPrompt, unparkQueuedPrompts } from '@/store/composer-queue'
+import { setCronCreateDraft } from '@/store/cron'
 import { $hudMode } from '@/store/hud'
-import { sessionBlockingPrompt } from '@/store/prompts'
+import { sessionBlockingPrompt } from '@/store/prompts' 
 import { toggleReview } from '@/store/review'
 import { $gatewayState } from '@/store/session'
 import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
@@ -1077,6 +1080,16 @@ export function ChatBar({
   // dispatchSubmitRef — no effect needed for a plain mirror.
   voiceStopRef.current = { active: voiceConversationActive, end: endConversation }
 
+  const navigate = useNavigate()
+
+  // "Run on a schedule" hands the live draft to the cron overlay's create
+  // dialog via a one-shot atom, then routes there. An empty draft still opens
+  // the create form — the entry point doubles as a "new scheduled job" path.
+  const scheduleDraftAsJob = useCallback(() => {
+    setCronCreateDraft({ prompt: draftRef.current.trim() })
+    navigate(CRON_ROUTE)
+  }, [draftRef, navigate])
+
   const contextMenu = (
     <ContextMenu
       onInsertText={insertText}
@@ -1085,6 +1098,7 @@ export function ChatBar({
       onPickFiles={onPickFiles}
       onPickFolders={onPickFolders}
       onPickImages={onPickImages}
+      onScheduleDraft={scheduleDraftAsJob}
       state={state}
     />
   )
@@ -1149,6 +1163,7 @@ export function ChatBar({
           // guard forever (#44135). Clear unconditionally: by the time blur
           // runs there is nothing left composing in this editor.
           composingRef.current = false
+
           if (blurCloseTimer.current !== null) {
             window.clearTimeout(blurCloseTimer.current)
           }

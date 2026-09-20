@@ -48,7 +48,7 @@ import { type Translations, useI18n } from '@/i18n'
 import { AlertTriangle } from '@/lib/icons'
 import { requestModelOptions } from '@/lib/model-options'
 import { asText } from '@/lib/text'
-import { $cronFocusJobId, $cronJobs, invalidateCronJobsRequests, setCronFocusJobId } from '@/store/cron'
+import { $cronCreateDraft, $cronFocusJobId, $cronJobs, invalidateCronJobsRequests, setCronCreateDraft, setCronFocusJobId } from '@/store/cron' 
 import { $changeEventsAvailable, $cronChangeTick } from '@/store/live-sync'
 import { notify, notifyError } from '@/store/notifications'
 import { $profileScope, ALL_PROFILES } from '@/store/profile'
@@ -375,6 +375,20 @@ export function CronView({ onClose, onOpenSession, setStatusbarItemGroup: _setSt
 
     return () => invalidateCronJobsRequests()
   }, [refresh])
+
+  // Composer "Run on a schedule" lands here: consume the one-shot draft atom
+  // into the create dialog's seed prompt so a plain /cron visit afterwards
+  // starts blank again.
+  const createDraft = useStore($cronCreateDraft)
+
+  useEffect(() => {
+    if (!createDraft) {
+      return
+    }
+
+    setEditor({ draft: createDraft, mode: 'create' })
+    setCronCreateDraft(null)
+  }, [createDraft])
 
   // Sidebar → "open this job": resolve the focus id (or name) to a job, select
   // it, queue a scroll, then clear the one-shot focus so re-opening cron
@@ -1096,13 +1110,16 @@ function CronEditorDialog({
     enabled: open
   })
 
+  // Create mode may arrive with a seed prompt (composer "Run on a schedule").
+  const draftPrompt = editor.mode === 'create' ? (editor.draft?.prompt ?? '') : ''
+
   useEffect(() => {
     if (!open) {
       return
     }
 
     setName(initial ? jobName(initial) : '')
-    setPrompt(initial ? jobPrompt(initial) : '')
+    setPrompt(initial ? jobPrompt(initial) : draftPrompt)
     setSchedule(initial ? jobScheduleExpr(initial) : (SCHEDULE_OPTIONS[0].expr ?? ''))
     setSchedulePreset(initial ? scheduleOptionForExpr(jobScheduleExpr(initial)).value : 'daily')
     setDeliver(initial ? jobDeliver(initial) : DEFAULT_DELIVER)
@@ -1425,8 +1442,9 @@ type EditorState =
   | { job: CronJob; mode: 'edit' }
   | { mode: 'closed' }
   // `blueprintKey` pre-selects a blueprint in the create dialog's "Start from"
-  // dropdown (set when a recipe row in the list rail is clicked).
-  | { blueprintKey?: string; mode: 'create' }
+  // dropdown (set when a recipe row in the list rail is clicked); `draft` seeds
+  // the prompt field (composer "Run on a schedule").
+  | { blueprintKey?: string; draft?: { prompt: string }; mode: 'create' }
 
 interface EditorValues {
   deliver: string

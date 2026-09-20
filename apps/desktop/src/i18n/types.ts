@@ -2619,6 +2619,7 @@ export interface Translations {
     pasteImage: string
     url: string
     promptSnippets: string
+    scheduleJob: string
     tipPre: string
     tipPost: string
     snippetsTitle: string
