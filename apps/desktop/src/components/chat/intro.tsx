@@ -6,10 +6,10 @@ import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer
 import { openSession } from '@/app/open-session'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
-import { triggerHaptic } from '@/lib/haptics' 
+import { triggerHaptic } from '@/lib/haptics'
 import { capitalize, normalize } from '@/lib/text'
 import { relativeTime } from '@/lib/time'
-import { $sessions } from '@/store/session'
+import { $currentCwd, $sessions } from '@/store/session'
 import type { SessionInfo } from '@/types/hermes'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
@@ -157,27 +157,63 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
 
 const WORDMARK = 'HERMES AGENT'
 
-// One-click starters under the empty-state wordmark. Labels stay short; the
-// inserted prompt carries the intent. Chips prefill the composer rather than
-// sending — the user always sees and edits the ask before it runs.
-const INTRO_SUGGESTIONS: readonly { label: string; prompt: string }[] = [
-  {
-    label: 'What can you do?',
-    prompt: 'What can you do? Give me a quick tour of your capabilities and the kinds of tasks you can take on.'
-  },
-  {
-    label: 'Explain this codebase',
-    prompt: 'Explore this codebase and explain what it does, how it is organized, and where a new contributor should start.'
-  },
-  {
-    label: 'Find and fix a bug',
-    prompt: 'Look through this project for a likely bug, explain what is wrong, and fix it.'
-  },
-  {
-    label: 'Plan a new feature',
-    prompt: 'Help me plan a new feature for this project. Ask me what I want, then propose a concrete step-by-step plan.'
+type IntroSuggestion = { label: string; prompt: string }
+
+const SUGGESTION_WHAT_CAN_YOU_DO: IntroSuggestion = {
+  label: 'What can you do?',
+  prompt: 'What can you do? Give me a quick tour of your capabilities and the kinds of tasks you can take on.'
+}
+
+const SUGGESTION_EXPLAIN_CODEBASE: IntroSuggestion = {
+  label: 'Explain this codebase',
+  prompt:
+    'Explore this codebase and explain what it does, how it is organized, and where a new contributor should start.'
+}
+
+const SUGGESTION_FIND_BUG: IntroSuggestion = {
+  label: 'Find and fix a bug',
+  prompt: 'Look through this project for a likely bug, explain what is wrong, and fix it.'
+}
+
+const SUGGESTION_PLAN_FEATURE: IntroSuggestion = {
+  label: 'Plan a new feature',
+  prompt:
+    'Help me plan a new feature for this project. Ask me what I want, then propose a concrete step-by-step plan.'
+}
+
+const SUGGESTION_LOOSE_ENDS: IntroSuggestion = {
+  label: 'Pick up loose ends',
+  prompt: 'Review my recent sessions and tell me what is unfinished or needs a follow-up.'
+}
+
+const SUGGESTION_RECENT_RECAP: IntroSuggestion = {
+  label: 'Recap recent work',
+  prompt: 'Summarize what we accomplished in my recent sessions and what is still open.'
+}
+
+const SUGGESTION_LIMIT = 4
+
+// Chips adapt to what the app already knows: a picked workspace earns the
+// codebase-oriented prompts, prior sessions earn the follow-up prompts, and a
+// fresh install falls back to the tour + planning starters. Chips prefill the
+// composer rather than sending — the user always sees and edits the ask first.
+function introSuggestions({ hasSessions, hasWorkspace }: { hasSessions: boolean; hasWorkspace: boolean }): IntroSuggestion[] {
+  const suggestions: IntroSuggestion[] = []
+
+  if (hasWorkspace) {
+    suggestions.push(SUGGESTION_EXPLAIN_CODEBASE, SUGGESTION_FIND_BUG)
   }
-]
+
+  if (hasSessions) {
+    suggestions.push(SUGGESTION_LOOSE_ENDS, SUGGESTION_RECENT_RECAP)
+  } else {
+    suggestions.push(SUGGESTION_WHAT_CAN_YOU_DO)
+  }
+
+  suggestions.push(SUGGESTION_PLAN_FEATURE)
+
+  return suggestions.slice(0, SUGGESTION_LIMIT)
+}
 
 function resolveCopy(personality?: string, seed?: number): IntroCopy {
   const personalityKey = normalizeKey(personality)
@@ -203,6 +239,7 @@ export function Intro({ personality, seed }: IntroProps) {
   // when a router actually exists.
   const inRouter = useInRouterContext()
   const sessions = useStore($sessions)
+  const currentCwd = useStore($currentCwd)
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
   const copy = resolveCopy(personality, mountSeed + (seed ?? 0))
 
@@ -224,22 +261,24 @@ export function Intro({ personality, seed }: IntroProps) {
       </div>
 
       <div className="pointer-events-auto mt-4 flex max-w-xl flex-wrap items-center justify-center gap-2">
-        {INTRO_SUGGESTIONS.map(suggestion => (
-          <Button
-            className="rounded-full"
-            key={suggestion.label}
-            onClick={() => {
-              triggerHaptic('selection')
-              requestComposerInsert(suggestion.prompt)
-              requestComposerFocus()
-            }}
-            size="sm"
-            type="button"
-            variant="secondary"
-          >
-            {suggestion.label}
-          </Button>
-        ))}
+        {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
+          suggestion => (
+            <Button
+              className="rounded-full"
+              key={suggestion.label}
+              onClick={() => {
+                triggerHaptic('selection')
+                requestComposerInsert(suggestion.prompt)
+                requestComposerFocus()
+              }}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              {suggestion.label}
+            </Button>
+          )
+        )}
       </div>
 
       {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
