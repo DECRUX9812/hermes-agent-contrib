@@ -185,8 +185,7 @@ const SUGGESTION_FIND_BUG: IntroSuggestion = {
 const SUGGESTION_PLAN_FEATURE: IntroSuggestion = {
   icon: 'lightbulb',
   label: 'Plan a new feature',
-  prompt:
-    'Help me plan a new feature for this project. Ask me what I want, then propose a concrete step-by-step plan.'
+  prompt: 'Help me plan a new feature for this project. Ask me what I want, then propose a concrete step-by-step plan.'
 }
 
 const SUGGESTION_LOOSE_ENDS: IntroSuggestion = {
@@ -207,7 +206,13 @@ const SUGGESTION_LIMIT = 4
 // codebase-oriented prompts, prior sessions earn the follow-up prompts, and a
 // fresh install falls back to the tour + planning starters. Chips prefill the
 // composer rather than sending — the user always sees and edits the ask first.
-function introSuggestions({ hasSessions, hasWorkspace }: { hasSessions: boolean; hasWorkspace: boolean }): IntroSuggestion[] {
+function introSuggestions({
+  hasSessions,
+  hasWorkspace
+}: {
+  hasSessions: boolean
+  hasWorkspace: boolean
+}): IntroSuggestion[] {
   const suggestions: IntroSuggestion[] = []
 
   if (hasWorkspace) {

@@ -24,7 +24,7 @@ import {
   resetStatusbarLayout,
   setStatusbarItemVisible,
   toggleStatusbarVisible
-} from '@/store/statusbar-prefs' 
+} from '@/store/statusbar-prefs'
 
 // Shared chrome styling for interactive statusbar items (button / link / menu
 // trigger). The 'text' variant intentionally omits hover/transition/disabled.

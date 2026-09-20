@@ -27,7 +27,7 @@ import { POPOUT_WIDTH_REM } from '@/store/composer-popout'
 import { parkQueuedPrompts, removeQueuedPrompt, unparkQueuedPrompts } from '@/store/composer-queue'
 import { setCronCreateDraft } from '@/store/cron'
 import { $hudMode } from '@/store/hud'
-import { sessionBlockingPrompt } from '@/store/prompts' 
+import { sessionBlockingPrompt } from '@/store/prompts'
 import { toggleReview } from '@/store/review'
 import { $gatewayState } from '@/store/session'
 import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
@@ -1430,10 +1430,7 @@ export function ChatBar({
                 data-slot="composer-surface"
                 ref={composerSurfaceRef}
               >
-                <div
-                  aria-hidden
-                  className={composerInputBacking}
-                />
+                <div aria-hidden className={composerInputBacking} />
                 {!guidedChat && (
                   <CodingStatusRow
                     onBranchOff={handleBranchOff}
@@ -1556,10 +1553,7 @@ export function ChatBarFallback() {
       data-slot="composer-root"
     >
       <div className="composer-fallback-surface relative isolate h-(--composer-fallback-height) w-full rounded-[inherit] border border-[color-mix(in_srgb,var(--dt-composer-ring)_calc(18%*var(--composer-ring-strength)),var(--dt-input))]">
-        <div
-          aria-hidden
-          className={composerInputBacking}
-        />
+        <div aria-hidden className={composerInputBacking} />
       </div>
     </div>
   )
