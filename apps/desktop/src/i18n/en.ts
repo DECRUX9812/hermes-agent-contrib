@@ -3045,6 +3045,7 @@ export const en: Translations = {
     pasteImage: 'Paste image',
     url: 'URL…',
     promptSnippets: 'Prompt snippets…',
+    scheduleJob: 'Run on a schedule…',
     tipPre: 'Tip: type ',
     tipPost: ' to reference files inline.',
     snippetsTitle: 'Prompt snippets',
