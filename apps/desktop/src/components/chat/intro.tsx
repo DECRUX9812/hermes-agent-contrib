@@ -282,31 +282,39 @@ export function Intro({ personality, seed }: IntroProps) {
         </p>
       </div>
 
-      <HeroPrompt seed={mountSeed + (seed ?? 0)} />
+      {/* One column for everything actionable: the hero input, the starter
+          chips, and the recency rows share a single width, so the empty canvas
+          reads as one centered block. The wrapper is deliberate —
+          `[data-slot='aui_intro'] > div` in styles.css pins direct children to
+          the composer width, so a `max-w-*` on a direct child would silently
+          resolve to 100%. */}
+      <div className="pointer-events-auto flex w-full min-w-0 max-w-xl flex-col items-center">
+        <HeroPrompt seed={mountSeed + (seed ?? 0)} />
 
-      <div className="pointer-events-auto mt-4 flex max-w-xl flex-wrap items-center justify-center gap-2">
-        {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
-          suggestion => (
-            <Button
-              className="rounded-full"
-              key={suggestion.label}
-              onClick={() => {
-                triggerHaptic('selection')
-                requestComposerInsert(suggestion.prompt)
-                requestComposerFocus()
-              }}
-              size="sm"
-              type="button"
-              variant="secondary"
-            >
-              <Codicon className="opacity-70" name={suggestion.icon} />
-              {suggestion.label}
-            </Button>
-          )
-        )}
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
+            suggestion => (
+              <Button
+                className="rounded-full"
+                key={suggestion.label}
+                onClick={() => {
+                  triggerHaptic('selection')
+                  requestComposerInsert(suggestion.prompt)
+                  requestComposerFocus()
+                }}
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                <Codicon className="opacity-70" name={suggestion.icon} />
+                {suggestion.label}
+              </Button>
+            )
+          )}
+        </div>
+
+        {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
       </div>
-
-      {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
     </div>
   )
 }
@@ -355,7 +363,7 @@ function HeroPrompt({ seed }: { seed: number }) {
 
   return (
     <form
-      className="pointer-events-auto mt-6 w-full max-w-lg"
+      className="pointer-events-auto mt-6 w-full"
       onSubmit={event => {
         event.preventDefault()
         submit()
@@ -389,7 +397,7 @@ function RecentSessionRows({ sessions }: { sessions: SessionInfo[] }) {
   const navigate = useNavigate()
 
   return (
-    <div className="pointer-events-auto mt-5 w-full max-w-md">
+    <div className="mt-5 w-full">
       <p className="mb-1 text-center text-[0.6875rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)">
         {t.intro.recentSessions}
       </p>

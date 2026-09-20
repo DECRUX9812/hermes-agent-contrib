@@ -469,6 +469,9 @@ export const zhHant = defineLocale({
     appearance: {
       title: '外觀',
       intro: '這些是僅限桌面端的顯示偏好。模式控制亮度；主題控制強調色與聊天介面樣式。',
+      simpleModeTitle: '簡潔模式',
+      simpleModeDesc:
+        '更清爽、以聊天為主的介面：隱藏進階面板、工具和狀態項目。所有功能仍可隨時透過「設定」和 ⌘K 存取，可隨時切換回來。',
       colorMode: '色彩模式',
       colorModeDesc: '選擇固定模式，或讓 Hermes 跟隨系統設定。',
       toolViewTitle: '工具呼叫顯示',
@@ -2241,6 +2244,13 @@ export const zhHant = defineLocale({
       artifacts: '成品',
       cron: '排程工作'
     },
+    interfaceMode: {
+      label: '介面',
+      simple: '簡潔',
+      full: '完整',
+      toFull: '簡潔模式會隱藏進階面板和控制項。點擊切換到完整介面。',
+      toSimple: '返回清爽的聊天優先介面。'
+    },
     searchAria: '搜尋工作階段',
     searchPlaceholder: '搜尋工作階段…',
     clearSearch: '清除搜尋',
@@ -2388,6 +2398,10 @@ export const zhHant = defineLocale({
     }
   },
 
+  intro: {
+    recentSessions: '從上次繼續'
+  },
+
   composer: {
     message: '訊息',
     wakingProfile: profile => `正在喚醒 ${profile}…`,
@@ -2505,6 +2519,7 @@ export const zhHant = defineLocale({
     pasteImage: '貼上圖片',
     url: 'URL…',
     promptSnippets: '提示詞片段…',
+    scheduleJob: '定時執行…',
     tipPre: '提示：輸入 ',
     tipPost: ' 以行內參照檔案。',
     snippetsTitle: '提示詞片段',
@@ -3026,6 +3041,11 @@ export const zhHant = defineLocale({
       openCron: '開啟排程工作',
       starmap: '記憶圖譜',
       openStarmap: '開啟記憶圖譜',
+      artifacts: '成品',
+      artifactsTitle: '本工作階段產生的交付物 — 選擇一個在對話旁開啟',
+      artifactsCount: count => `${count} 個成品`,
+      browseAllArtifacts: '瀏覽全部成品',
+      toggleArtifacts: '成品',
       turnRunning: '執行中',
       contextUsage: '上下文使用量',
       systemResources: {
