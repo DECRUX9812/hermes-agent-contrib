@@ -848,7 +848,11 @@ export function useMessageStream({
           // locally, so the user-tail guard keeps applying there.
           (!unresolvedUserTail || !finalText) &&
           !(localVisibleText && !finalText) &&
-          (state.adoptedRunningTurn || !state.sawAssistantPayload || !finalText)
+          // sawAssistantPayload covers reasoning deltas too — a reasoning-only
+          // model can answer entirely in reasoning_content, leaving finalText
+          // empty. Re-hydrating there replaces the streamed bubble with the
+          // stored empty-content row and the answer vanishes (#118755).
+          (state.adoptedRunningTurn || !state.sawAssistantPayload)
 
         return {
           ...state,

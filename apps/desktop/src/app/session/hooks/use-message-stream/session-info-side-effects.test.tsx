@@ -365,6 +365,34 @@ describe('empty message.complete after streamed text (#95514)', () => {
   })
 })
 
+describe('reasoning-only turn with empty message.complete (#118755)', () => {
+  // A reasoning-only model (local Qwen with thinking on, behind a custom
+  // OpenAI-compatible provider) puts the whole answer in reasoning_content —
+  // the terminal frame's text is empty. The window demonstrably rendered the
+  // reasoning deltas all turn, so the settle must not re-hydrate over them:
+  // hydration swaps the live bubble for the stored row whose content is empty
+  // and the streamed answer vanishes.
+  it('does not hydrate over streamed reasoning when the final text is empty', () => {
+    mountStream()
+
+    act(() => stream.handleEvent({ payload: {}, session_id: ACTIVE_SID, type: 'message.start' }))
+    act(() =>
+      stream.handleEvent({
+        payload: { text: 'The answer streams as reasoning.' },
+        session_id: ACTIVE_SID,
+        type: 'reasoning.delta'
+      })
+    )
+    act(() => stream.handleEvent({ payload: { text: '' }, session_id: ACTIVE_SID, type: 'message.complete' }))
+
+    const assistant = stream.state(ACTIVE_SID).messages.find(message => message.role === 'assistant')
+    expect(assistant?.parts.filter(part => part.type === 'reasoning').map(part => part.text)).toEqual([
+      'The answer streams as reasoning.'
+    ])
+    expect(hydrateFromStoredSession).not.toHaveBeenCalled()
+  })
+})
+
 describe('message.complete sidebar refresh coalescing', () => {
   it('collapses near-simultaneous completions into one refresh', async () => {
     mountStream()
