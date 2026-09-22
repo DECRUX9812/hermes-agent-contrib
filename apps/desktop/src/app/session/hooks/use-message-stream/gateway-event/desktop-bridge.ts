@@ -87,7 +87,13 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
     // keyed by ChatMessage identity.
     const reactedRowId = payload?.row_id
 
-    if (typeof reactedRowId === 'number') {
+    // Active session only — the same contract tip.show / pane.reveal /
+    // layout.apply honor above. A background session's row_id comes from a
+    // DIFFERENT state.db: let through, it either repaints a coincidental
+    // same-rowid message or, via the optimistic fallback, stamps that foreign
+    // row id onto the foreground's in-flight bubble — which then claims it
+    // through every future resume (#118748).
+    if (isActiveEvent && typeof reactedRowId === 'number') {
       const nextReactions = Array.isArray(payload?.reactions) ? payload.reactions : []
       const reactedRole = payload?.role === 'assistant' ? 'assistant' : 'user'
 

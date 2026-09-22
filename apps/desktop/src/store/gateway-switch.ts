@@ -8,6 +8,7 @@ import { invalidateCronJobsRequests, setCronJobs } from '@/store/cron'
 import { resetSessionsLimit } from '@/store/layout'
 import { resetLiveSync } from '@/store/live-sync'
 import { invalidateProfileListFetches } from '@/store/profile'
+import { clearLiveReactions } from '@/store/reactions-local'
 import {
   $unreadFinishedSessionIds,
   setActiveSessionId,
@@ -245,6 +246,11 @@ export function wipeSessionListsForGatewaySwitch(): void {
   // fail the unique-match lookup that shows "Show earlier".
   clearTranscriptTails()
   clearTranscriptTailPaging()
+
+  // Same recycled-id class for the live reaction overlays: $agentReactions is
+  // keyed by state.db row id and $localReactions by renderer message id —
+  // both meaningful only inside the outgoing backend's id space (#118748).
+  clearLiveReactions()
 
   // Narrowed: account/marketplace/onboarding caches are global, not gateway-
   // scoped, so a mode swap must not refetch them.

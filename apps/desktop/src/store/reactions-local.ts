@@ -1,5 +1,7 @@
 import { atom } from 'nanostores'
 
+import { onConnectionScopeChange } from '@/lib/connection-scoped'
+import { $activeGatewayProfile } from '@/store/profile'
 import { applyReaction } from '@/store/reactions'
 import type { MessageReaction } from '@/types/hermes'
 
@@ -65,3 +67,22 @@ export function setLocalReaction(messageId: string, emoji: null | string): Messa
 
   return next
 }
+
+/**
+ * Drop both overlays. Their keys — durable row ids for the agent's, renderer
+ * message ids for the user's — describe messages in ONE backend's state.db.
+ * After a connection switch or profile swap the foreground transcript comes
+ * from a different database whose coincidental ids stale entries would
+ * repaint onto (#118748).
+ */
+export function clearLiveReactions(): void {
+  $agentReactions.set({})
+  $localReactions.set({})
+}
+
+// A live profile swap re-homes the foreground transcript to another state.db
+// without running the connection-switch wipe, and a republished descriptor
+// marks a registry-source move whose bare profile never changed. The
+// gateway-switch wipe covers the remaining doors by calling this directly.
+$activeGatewayProfile.listen(clearLiveReactions)
+onConnectionScopeChange(clearLiveReactions)

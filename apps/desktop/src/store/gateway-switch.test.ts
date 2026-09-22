@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { $sessionsLimit, resetSessionsLimit, SIDEBAR_SESSIONS_PAGE_SIZE } from '@/store/layout'
+import { $agentReactions, $localReactions, recordAgentReaction, setLocalReaction } from '@/store/reactions-local'
 import {
   $activeSessionId,
   $cronSessions,
@@ -119,6 +120,16 @@ describe('wipeSessionListsForGatewaySwitch', () => {
     recordTranscriptTail('recycled-id', page, { connectionId: 'remote-1', profile: 'default' })
     expect(Object.keys($transcriptTailBySessionId.get())).toHaveLength(1)
     expect(transcriptTailState('recycled-id')?.possiblyTruncated).toBe(true)
+  })
+
+  it("drops live reaction overlays — their row/message ids belong to the outgoing backend's state.db (#118748)", () => {
+    recordAgentReaction(42, [{ at: 1, author: 'agent', emoji: '👍' }])
+    setLocalReaction('1700000000-0-assistant', '❤️')
+
+    wipeSessionListsForGatewaySwitch()
+
+    expect($agentReactions.get()).toEqual({})
+    expect($localReactions.get()).toEqual({})
   })
 
   it('strands in-flight profile-list fetches so the old backend cannot repaint the rail (#85731)', () => {
