@@ -606,18 +606,70 @@ export function useMessageStream({
       text: string,
       responsePreviewed?: boolean,
       failure?: { error: string; partial: boolean; surface?: ErrorSurface | null },
-      occurredAt = Date.now() / 1000
+      occurredAt = Date.now() / 1000,
+      interruptedCompletion = false
     ) => {
       let shouldHydrate = false
 
       const completedState = updateSessionState(sessionId, state => {
         // Late completion from an already-cancelled turn: cancelRun has
         // already finalized the bubble (kept the partial text, dropped it if
-        // empty). Re-running the dedupe below would replace the partial with
-        // the just-cancelled full text, so we settle and bail instead.
+        // empty). A raced 'complete' frame would carry the full reply the
+        // user asked to cut, so its text is still dropped — but an
+        // 'interrupted' frame's text IS the partial the backend persisted
+        // (the streamed prefix plus whatever was still queued when Stop
+        // landed). Merge it onto the sealed bubble — or append it when the
+        // empty placeholder was dropped — so the rendered transcript matches
+        // state.db (#118628).
         if (state.interrupted) {
+          let nextMessages = state.messages
+          const retainedText = interruptedCompletion ? renderMediaTags(text).trim() : ''
+          const lastUserIndex = nextMessages.findLastIndex(m => m.role === 'user')
+
+          const targetIndex = retainedText
+            ? nextMessages.findLastIndex((m, i) => i > lastUserIndex && m.role === 'assistant' && !m.hidden)
+            : -1
+
+          const target = targetIndex >= 0 ? nextMessages[targetIndex] : undefined
+          const targetText = target ? chatMessageText(target).trim() : ''
+
+          if (target && retainedText.startsWith(targetText)) {
+            // Same reply, local copy a truncation (or a pure tool bubble the
+            // partial belongs below): the durable text extends it.
+            const visibleText = stripGeneratedImageEchoes(
+              retainedText,
+              generatedImageEchoSources(target.parts)
+            ).trim()
+
+            nextMessages = nextMessages.map((m, i) =>
+              i === targetIndex
+                ? {
+                    ...m,
+                    parts: completeOpenTimelineParts(
+                      mergeFinalAssistantText(m.parts, visibleText, occurredAt),
+                      occurredAt
+                    )
+                  }
+                : m
+            )
+          } else if (retainedText && !(target && targetText.startsWith(retainedText))) {
+            // Unrelated last bubble (sealed interim commentary), or the empty
+            // placeholder was dropped: the partial is its own reply.
+            nextMessages = [
+              ...nextMessages,
+              {
+                id: `assistant-${Date.now()}`,
+                role: 'assistant' as const,
+                parts: [{ ...assistantTextPart(retainedText, occurredAt), completedAt: occurredAt }],
+                timestamp: occurredAt,
+                completedAt: occurredAt
+              }
+            ]
+          }
+
           return {
             ...state,
+            messages: nextMessages,
             awaitingResponse: false,
             busy: false,
             needsInput: false,
