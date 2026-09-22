@@ -8,12 +8,24 @@ side moved on; the Electron app stayed on the previous build.
 attempted and failed. The final banner then prints ``⚠ Update partially
 complete`` instead of the success line, and gateway mode writes ``1`` to
 ``.update_exit_code``.
+
+#44580: the same contract for a rebuild that cannot run at all — an installed
+Desktop whose rebuild is needed but un-runnable (no resolvable npm) must set
+the failure flag too — and a partial verdict must reach the process exit code
+on the pulled-update paths, matching the ``--no-gateway-restart`` and
+already-up-to-date repair paths that already exit 1.
 """
+
+import contextlib
+import io
+from types import SimpleNamespace
 
 import pytest
 
 from hermes_cli import update_cmd
+import hermes_cli.update_cmd_fleet as update_cmd_fleet
 import hermes_cli.update_cmd_maint as update_cmd_maint
+import hermes_cli.update_receipt as update_receipt
 from hermes_cli.update_cmd import (
     _print_update_summary,
     _rebuild_desktop_after_update,
@@ -213,3 +225,141 @@ def test_gateway_exit_code_file_tracks_desktop_rebuild(tmp_path, monkeypatch):
     assert (tmp_path / ".update_exit_code").read_text(encoding="utf-8") == "0"
     _write_gateway_update_exit_code(False)
     assert (tmp_path / ".update_exit_code").read_text(encoding="utf-8") == "1"
+
+
+# ─── #44580: a rebuild that cannot run is a failed rebuild ──────────────────
+
+
+def test_unresolvable_npm_with_stale_desktop_is_a_failed_rebuild(
+    desktop_env, monkeypatch, capsys
+):
+    """Desktop installed + rebuild needed + no usable npm: the old early-return
+    reported success over an app that can never be rebuilt here."""
+    desktop_dir, calls = desktop_env
+    monkeypatch.setattr(
+        update_cmd._m(), "_resolve_node_runtime_npm", staticmethod(lambda: None)
+    )
+    assert _run(desktop_dir) is False
+    assert calls["builds"] == 0  # spawning the build cannot help — npm is gone
+    out = capsys.readouterr().out
+    assert "npm" in out
+    assert "Update complete" not in out
+
+
+def test_unresolvable_npm_with_current_desktop_is_not_a_failure(
+    desktop_env, monkeypatch
+):
+    """No npm but nothing to rebuild (stamp current) stays a clean True — a
+    missing toolchain must not fail an update that owed no rebuild."""
+    desktop_dir, calls = desktop_env
+    calls["build_needed"] = False
+    monkeypatch.setattr(
+        update_cmd._m(), "_resolve_node_runtime_npm", staticmethod(lambda: None)
+    )
+    assert _run(desktop_dir) is True
+    assert calls["builds"] == 0
+
+
+# ─── #44580: a partial verdict reaches the process exit code ────────────────
+
+
+def _healthy_fleet_restart():
+    return SimpleNamespace(
+        incomplete=False,
+        phase_errors=[],
+        pre_restart_gateway_pids=[],
+        restarted_services=[],
+        failed_or_stale_units=[],
+        relaunched_profiles=[],
+        externally_supervised_profiles=[],
+        killed_pids=set(),
+        fleet_probe_signals=lambda: ([], set()),
+    )
+
+
+def _stub_fleet_verify_externals(monkeypatch):
+    """Everything _verify_fleet_after_update touches, faked healthy."""
+    monkeypatch.setattr(update_cmd_fleet, "_print_legacy_units_warning", lambda: None)
+    monkeypatch.setattr(
+        update_cmd, "_finish_dashboard_update_cleanup", lambda *a, **k: None
+    )
+    monkeypatch.setattr(
+        update_cmd, "_surviving_pre_update_serve_runtimes", lambda _plan: []
+    )
+    monkeypatch.setattr(update_cmd, "_warn_stale_serve_runtimes", lambda _rows: None)
+    monkeypatch.setattr(
+        update_cmd,
+        "_m",
+        lambda: SimpleNamespace(_fleet_probe_expected_runtimes=lambda *a: False),
+    )
+    monkeypatch.setattr(update_cmd_fleet, "_collect_fleet_snapshot", lambda *a: [])
+    monkeypatch.setattr(update_receipt, "print_fleet_version_matrix", lambda _f: False)
+    monkeypatch.setattr(
+        update_receipt, "finalize_update_receipt", lambda *a, **k: None
+    )
+    monkeypatch.setattr(
+        update_cmd_fleet, "_clear_fleet_restart_pending_marker", lambda: None
+    )
+    monkeypatch.setattr(
+        "hermes_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None
+    )
+
+
+def test_partial_update_exits_nonzero_when_fleet_is_healthy(monkeypatch):
+    """A failed Desktop rebuild makes the run partial; the banner, receipt and
+    gateway file already said so — the process exit code must agree (#44580)."""
+    _stub_fleet_verify_externals(monkeypatch)
+    with contextlib.redirect_stdout(io.StringIO()), pytest.raises(SystemExit) as exc:
+        update_cmd_fleet._verify_fleet_after_update(
+            _healthy_fleet_restart(),
+            _pre_update_plan=None,
+            _windows_gateway_resume=None,
+            node_failures=[],
+            update_complete=False,
+        )
+    assert exc.value.code == 1
+
+
+def test_complete_update_still_exits_clean_when_fleet_is_healthy(monkeypatch):
+    """Control: a fully-completed update keeps returning normally."""
+    _stub_fleet_verify_externals(monkeypatch)
+    with contextlib.redirect_stdout(io.StringIO()):
+        update_cmd_fleet._verify_fleet_after_update(
+            _healthy_fleet_restart(),
+            _pre_update_plan=None,
+            _windows_gateway_resume=None,
+            node_failures=[],
+            update_complete=True,
+        )
+
+
+def _zip_post_swap_payload():
+    return {
+        "swap": "zip",
+        "plan": None,
+        "windows_gateway_resume": None,
+        "had_desktop_app_before_update": True,
+        "sibling_snapshots": {},
+        "pre_update_version": "0.20.0",
+        "active_lazy_features": (),
+        "active_tool_dependencies": (),
+        "receipt": None,
+    }
+
+
+def test_zip_post_swap_partial_update_exits_nonzero(monkeypatch):
+    """The ZIP post-swap child must relay a partial outcome as exit 1 so the
+    parent (which relays the child's code) does not report success (#44580)."""
+    monkeypatch.setattr(update_cmd, "_finish_zip_update", lambda **kw: False)
+    with pytest.raises(SystemExit) as exc:
+        update_cmd._execute_post_swap(
+            _zip_post_swap_payload(), SimpleNamespace(), gateway_mode=False
+        )
+    assert exc.value.code == 1
+
+
+def test_zip_post_swap_complete_update_returns_normally(monkeypatch):
+    monkeypatch.setattr(update_cmd, "_finish_zip_update", lambda **kw: True)
+    update_cmd._execute_post_swap(
+        _zip_post_swap_payload(), SimpleNamespace(), gateway_mode=False
+    )

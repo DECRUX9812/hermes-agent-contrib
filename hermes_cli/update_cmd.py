@@ -1462,6 +1462,11 @@ def _execute_post_swap(payload: dict, args, gateway_mode: bool) -> None:
                 _windows_gateway_resume=_windows_gateway_resume)
             if gateway_mode:
                 _write_gateway_update_exit_code(desktop_build_ok)
+            if not desktop_build_ok:
+                # The parent relays this child's code: a partial outcome (e.g. a
+                # failed Desktop rebuild, #44580) must exit nonzero like the git
+                # tail's fleet-verify gate, not return 0 behind a partial banner.
+                sys.exit(1)
             return
         # The parent already ran the checkout preflight (fork banner, lockfile churn, EOL); the
         # child only needs a working git.

@@ -1878,7 +1878,9 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     probe, fleet version matrix, plan-vs-execution reconciliation, receipt finalize.
 
     Exits 1 (leaving ``fleet_restart_pending`` for the next catch-up) when any gateway
-    may still be stale; otherwise clears the marker.
+    may still be stale; otherwise clears the marker. Also exits 1 when the update's own
+    verdict was partial (``update_complete`` False, e.g. a failed Desktop rebuild) —
+    the marker is cleared first since no fleet restart is owed.
     """
     from hermes_cli.update_cmd import (
         _finish_dashboard_update_cleanup, _m, _surviving_pre_update_serve_runtimes, _warn_stale_serve_runtimes,
@@ -2005,6 +2007,12 @@ def _verify_fleet_after_update(restart, *, _pre_update_plan, _windows_gateway_re
     with _best_effort('Multiplex auto-migration after update failed: %s'):
         from hermes_cli.gateway_migrate import maybe_auto_migrate_after_update
         maybe_auto_migrate_after_update()
+    if not update_complete:
+        # The run's own verdict was partial (e.g. a failed or un-runnable Desktop
+        # rebuild, #44580): the banner, receipt and gateway exit-code file already
+        # say so — the process exit code must agree, matching the
+        # --no-gateway-restart and current-checkout repair exits.
+        sys.exit(1)
 
 
 def _restart_phase_failure_is_incomplete(surviving, pre_restart_pids) -> bool:

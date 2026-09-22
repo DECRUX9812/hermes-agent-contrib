@@ -948,10 +948,11 @@ def _report_installed_desktop_app(desktop_dir: Path) -> None:
 def _rebuild_desktop_after_update(
     desktop_dir: Path, *, had_desktop_app_before_update: bool) -> bool:
     """Rebuild an installed Desktop app when its source or artifact changed. Returns ``False``
-    only when a rebuild was attempted and failed (caller withholds ``✓ Update complete!`` and
+    only when the installed app needed a rebuild the update could not deliver — the build ran
+    and failed, or no usable npm exists to run it (caller withholds ``✓ Update complete!`` and
     writes a failing ``.update_exit_code`` in gateway mode); every other outcome is ``True``.
 
-    See #88251.
+    See #88251, #44580.
     """
     from hermes_cli.update_cmd import _m
     # The release tree is git-ignored and can vanish mid-update; pre-update presence suffices. So does the
@@ -962,8 +963,7 @@ def _rebuild_desktop_after_update(
         had_desktop_app_before_update
         or _desktop_app_present(desktop_dir)
         or _m()._desktop_stamp_path().is_file())
-    if not (
-        (desktop_dir / "package.json").exists() and _m()._resolve_node_runtime_npm() and has_desktop_app):
+    if not ((desktop_dir / "package.json").exists() and has_desktop_app):
         return True
 
     print("→ Checking if desktop app needs rebuilding...")
@@ -980,6 +980,15 @@ def _rebuild_desktop_after_update(
         # rebuilt but never installed); healing it must not wait for the next source change.
         _report_installed_desktop_app(desktop_dir)
         return True
+
+    if not _m()._resolve_node_runtime_npm():
+        # A needed rebuild that cannot run (no usable npm — none on PATH, or a broken
+        # Hermes-managed Node tree that refused to heal) is a failed rebuild for
+        # reporting purposes: skipping it silently left a stale app behind
+        # "✓ Update complete!" (#44580).
+        print("  ⚠ Desktop app needs a rebuild, but no usable Node.js/npm runtime was found.")
+        print("    Install Node.js, then run `hermes desktop` to rebuild the app.")
+        return False
 
     desktop_build_cmd = [sys.executable, "-m", "hermes_cli.main", "desktop", "--build-only"]
     # Capture the loud build output into update.log; retry once on failure (still-settling
