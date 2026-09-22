@@ -460,6 +460,7 @@ import {
   resolveBehindLocally
 } from './update-api-check'
 import { updateCheckAgent } from './update-api-proxy'
+import { decideHealedBranch, gatherBranchHealFacts } from './update-branch-heal'
 import { waitForUpdateClearance } from './update-gate'
 import { readLiveUpdateMarker, updateHandoffConflict, writeUpdateMarker } from './update-marker'
 import { isOfficialSshRemote, OFFICIAL_REPO_HTTPS_URL } from './update-remote'
@@ -3303,6 +3304,13 @@ function emitUpdateProgress(payload) {
 // installed clients. Read-only ls-remote probe; only flips on a definitive
 // "ref absent" (exit 2), never on a transient network error, so a flaky
 // connection can't strand a user on the wrong branch.
+//
+// Exit 2 alone does NOT prove "merged, gone" — it is equally true of a
+// branch that was never pushed. Before healing we check the local graph
+// (update-branch-heal.ts): only a branch that demonstrably published AND
+// carries no commits origin/main lacks may re-pin, so a never-pushed or
+// unmerged branch keeps the pin instead of silently moving the running code
+// off the user's local commits (#105042).
 async function resolveHealedBranch(updateRoot, branch) {
   if (!branch || branch === 'main') {
     return branch || 'main'
@@ -3310,20 +3318,25 @@ async function resolveHealedBranch(updateRoot, branch) {
 
   const originUrl = await getOriginUrl(updateRoot)
   const remote = isOfficialSshRemote(originUrl) ? OFFICIAL_REPO_HTTPS_URL : 'origin'
-  const probe = await runGit(['ls-remote', '--exit-code', '--heads', remote, branch], { cwd: updateRoot })
 
-  if (probe.code !== 2) {
-    return branch
+  const decision = decideHealedBranch(
+    branch,
+    await gatherBranchHealFacts(runGit, { cwd: updateRoot, remote, branch })
+  )
+
+  if (decision.reason) {
+    rememberLog(`[updates] ${decision.reason}`)
   }
 
-  rememberLog(`[updates] origin/${branch} is gone (merged?); falling back to main`)
-  const config = readDesktopUpdateConfig()
+  if (decision.branch === 'main') {
+    const config = readDesktopUpdateConfig()
 
-  if (config.branch !== 'main') {
-    writeDesktopUpdateConfig({ ...config, branch: 'main' })
+    if (config.branch !== 'main') {
+      writeDesktopUpdateConfig({ ...config, branch: 'main' })
+    }
   }
 
-  return 'main'
+  return decision.branch
 }
 
 // Passive checks never touch git's network side. Every client used to `git
