@@ -1182,7 +1182,7 @@ def _normalize_codex_response(
         final_text = ""
     # xAI grok-4.x sometimes puts the final answer inside the reasoning item after a ``<response>`` delimiter; without
     # salvage the reasoning-only rule marks the turn incomplete and every continuation is byte-identical. Promote the tail.
-    if issuer_kind == "xai_responses" and not final_text and not tool_calls and reasoning_parts:
+    if issuer_kind == "xai_responses" and not final_text and reasoning_parts:
         joined_reasoning = "\n\n".join(reasoning_parts)
         marker = joined_reasoning.rfind("<response>")
         salvaged = joined_reasoning[marker + len("<response>"):].split("</response>", 1)[0].strip() if marker != -1 else ""
@@ -1194,6 +1194,20 @@ def _normalize_codex_response(
             final_text = salvaged
             reasoning_prefix = joined_reasoning[:marker].strip()
             reasoning_parts = [reasoning_prefix] if reasoning_prefix else []
+        elif tool_calls:
+            # grok tool-call turns carry the user-visible narration only in the reasoning summary, with no
+            # ``<response>`` delimiter: the row settles with empty content and clients that hide reasoning
+            # (display.show_reasoning: false) drop the streamed reply entirely (#118738). Promote the
+            # summary (or the pre-marker prefix when a dangling tag left an empty tail) so the persisted
+            # message keeps a visible text part. Moved, not copied — reasoning-on must not paint it twice.
+            narration = (joined_reasoning[:marker] if marker != -1 else joined_reasoning).strip()
+            if narration:
+                logger.warning(
+                    "xAI tool-call response left its narration only in the reasoning channel; "
+                    "promoting %d chars to assistant content.", len(narration),
+                )
+                final_text = narration
+                reasoning_parts = []
     assistant_message = SimpleNamespace(
         content=final_text, tool_calls=tool_calls,
         reasoning="\n\n".join(reasoning_parts).strip() if reasoning_parts else None,
