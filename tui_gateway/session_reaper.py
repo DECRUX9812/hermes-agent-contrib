@@ -355,8 +355,10 @@ def _sweep_orphaned_session_rows() -> list[str]:
     """End orphaned tui/desktop/subagent rows left by a dead process. "Provably orphaned" is inferred
     conservatively: the row must have been created AND last messaged at least the session TTL ago (a fresh row
     that copied an old transcript is protected by its own ``started_at``). Rows held in memory (e.g. a
-    ``session.resume`` in the startup grace window) are excluded. Cross-backend: the sweep refuses to close a
-    row any live backend (heartbeat within ``2 * TTL``) could own — see ``SessionDB.sweep_orphaned_sessions``."""
+    ``session.resume`` in the startup grace window) are excluded. Pinned rows are spared too — a pin is a
+    deliberate keep, and a plain backend restart must not undo it (#118161). Cross-backend: the sweep refuses
+    to close a row any live backend (heartbeat within ``2 * TTL``) could own — see
+    ``SessionDB.sweep_orphaned_sessions``."""
     db = _get_db()
     if db is None or _SESSION_TTL_S <= 0:
         return []
@@ -368,7 +370,8 @@ def _sweep_orphaned_session_rows() -> list[str]:
                 candidates += [getattr(session.get("agent"), "session_id", None), session.get("session_key")]
             live_ids.update(str(c) for c in candidates if c)
     swept = db.sweep_orphaned_sessions(
-        max_idle_seconds=_SESSION_TTL_S, sources=_ORPHAN_SWEEP_SOURCES, exclude_ids=tuple(sorted(live_ids)))
+        max_idle_seconds=_SESSION_TTL_S, sources=_ORPHAN_SWEEP_SOURCES, exclude_ids=tuple(sorted(live_ids)),
+        exclude_pinned=True)
     if swept:
         logger.info(
             "Closed %d orphaned session row(s) from a previous gateway process (startup_orphan_reap): %s",

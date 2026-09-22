@@ -57,6 +57,23 @@ class TestSweepOrphanedSessionRows:
             assert row["ended_at"] is not None
             assert row["end_reason"] == "startup_orphan_reap"
 
+    def test_pinned_row_survives_sweep(self, monkeypatch, tmp_path):
+        """#118161: a pinned row is a deliberate "keep" — the startup sweep
+        is a broad automatic sweep and must spare it (the auto-prune path
+        already passes ``exclude_pinned=True``)."""
+        db = SessionDB(tmp_path / "state.db")
+        stale = time.time() - 8 * 3600
+        _seed_session(db, "pinned-tui", source="tui", last_active=stale)
+        _seed_session(db, "plain-tui", source="tui", last_active=stale)
+        db.set_session_pinned("pinned-tui", True)
+        monkeypatch.setattr(server, "_get_db", lambda: db)
+        monkeypatch.setattr(server, "_SESSION_TTL_S", float(IDLE_S))
+        monkeypatch.setattr(server, "_sessions", {})
+
+        assert server._sweep_orphaned_session_rows() == ["plain-tui"]
+        assert db.get_session("pinned-tui")["ended_at"] is None
+        assert db.get_session("plain-tui")["end_reason"] == "startup_orphan_reap"
+
     def test_swept_row_stays_resumable(self, monkeypatch, tmp_path):
         """A stranded 'active' row (ended_at NULL, no live runtime) is swept
         AND still resumable afterward (#65194 salvage requirement).
