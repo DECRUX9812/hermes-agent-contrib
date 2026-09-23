@@ -131,9 +131,28 @@ _FAKE_IP_UNDECLARABLE_NETWORKS = tuple(ipaddress.ip_network(n) for n in (
     "::/128", "::1/128", "fc00::/7", "fe80::/10",  # unspecified, loopback, ULA, link-local
 ))
 
-# Global toggle cache (process lifetime; see _global_allow_private_urls).
-_allow_private_resolved, _cached_allow_private = False, False
-_fake_ip_resolved, _cached_fake_ip_ranges = False, ()
+# Global toggle caches keyed on the config.yaml file signature, so a ``config set`` (or any
+# config.yaml write) inside a long-lived process takes effect without a restart; profile-scoped
+# turns bypass the process-global cache entirely (see _global_allow_private_urls).
+_SIG_UNRESOLVED = object()
+_allow_private_sig: Any = _SIG_UNRESOLVED
+_cached_allow_private = False
+_fake_ip_sig: Any = _SIG_UNRESOLVED
+_cached_fake_ip_ranges: tuple = ()
+
+
+def _config_file_signature():
+    """Stat signature of the active ``config.yaml`` — the invalidation key for the process-global
+    config toggles. ``None`` while no config file exists; a fresh sentinel when the stat itself
+    fails (config layer unimportable, transient OS error), so a failed probe never caches."""
+    try:
+        from hermes_cli.config import get_config_path
+        from utils import file_signature
+        return file_signature(get_config_path().stat())
+    except FileNotFoundError:
+        return None
+    except Exception:
+        return object()
 
 
 def _global_allow_private_urls() -> bool:
@@ -141,11 +160,12 @@ def _global_allow_private_urls() -> bool:
     env, ``security.allow_private_urls``, legacy ``browser.allow_private_urls``. Profile-scoped turns
     (``get_hermes_home_override()`` set) bypass the process-global cache — a multiplex gateway serves
     several profiles in one process; the first profile's opt-out must not disable blocking for later ones."""
-    global _allow_private_resolved, _cached_allow_private
+    global _allow_private_sig, _cached_allow_private
     if get_hermes_home_override() is not None:
         return _resolve_allow_private_urls()
-    if not _allow_private_resolved:
-        _allow_private_resolved, _cached_allow_private = True, _resolve_allow_private_urls()
+    sig = _config_file_signature()
+    if sig != _allow_private_sig:
+        _allow_private_sig, _cached_allow_private = sig, _resolve_allow_private_urls()
     return _cached_allow_private
 
 
@@ -170,8 +190,9 @@ def _resolve_allow_private_urls() -> bool:
 
 def _reset_allow_private_cache() -> None:
     """Reset the cached toggle and the cached fake-ip ranges — only for tests."""
-    global _allow_private_resolved, _cached_allow_private, _fake_ip_resolved, _cached_fake_ip_ranges
-    _allow_private_resolved = _cached_allow_private = _fake_ip_resolved = False
+    global _allow_private_sig, _cached_allow_private, _fake_ip_sig, _cached_fake_ip_ranges
+    _allow_private_sig = _fake_ip_sig = _SIG_UNRESOLVED
+    _cached_allow_private = False
     _cached_fake_ip_ranges = ()
 
 
@@ -209,11 +230,12 @@ def _resolve_fake_ip_ranges() -> tuple:
 def _global_fake_ip_ranges() -> tuple:
     """Process-lifetime cache with the same profile-scope bypass as ``_global_allow_private_urls``:
     a multiplex gateway must not apply the first profile's declaration to later ones."""
-    global _fake_ip_resolved, _cached_fake_ip_ranges
+    global _fake_ip_sig, _cached_fake_ip_ranges
     if get_hermes_home_override() is not None:
         return _resolve_fake_ip_ranges()
-    if not _fake_ip_resolved:
-        _fake_ip_resolved, _cached_fake_ip_ranges = True, _resolve_fake_ip_ranges()
+    sig = _config_file_signature()
+    if sig != _fake_ip_sig:
+        _fake_ip_sig, _cached_fake_ip_ranges = sig, _resolve_fake_ip_ranges()
     return _cached_fake_ip_ranges
 
 

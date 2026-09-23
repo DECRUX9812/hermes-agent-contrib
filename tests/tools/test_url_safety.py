@@ -286,6 +286,19 @@ class TestGlobalAllowPrivateUrls:
             assert _global_allow_private_urls() is False
 
 
+    def test_config_set_during_process_lifetime_takes_effect(self, monkeypatch):
+        """``config set security.allow_private_urls true`` inside a long-lived process must take
+        effect without a restart: the process-global cache tracks config.yaml writes."""
+        from hermes_cli.config import get_config_path, set_config_value
+
+        monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
+        get_config_path().write_text(
+            "security:\n  allow_private_urls: false\n", encoding="utf-8"
+        )
+        assert _global_allow_private_urls() is False
+        set_config_value("security.allow_private_urls", "true")
+        assert _global_allow_private_urls() is True
+
     def test_config_security_string_false_stays_disabled(self, monkeypatch):
         """Quoted false must not opt out of SSRF protection."""
         monkeypatch.delenv("HERMES_ALLOW_PRIVATE_URLS", raising=False)
