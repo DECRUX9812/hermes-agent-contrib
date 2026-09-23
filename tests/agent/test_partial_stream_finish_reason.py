@@ -165,16 +165,29 @@ class TestTerminalChunkFenceException:
     def test_genuine_truncation_without_finish_still_drops(
         self, _mock_close, mock_create, monkeypatch,
     ):
+        """A stream cut short by the consumer-side fence (superseded writer)
+        is an abnormal end: still classified as a drop. (A cleanly-exhausted
+        iterator with delivered text is now 'stop', per #75801 — see
+        TestCleanStreamEndWithoutFinishReason.)"""
         monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+        agent_box = {}
 
-        def _truncated():
-            yield _make_stream_chunk(content="cut off with no terminal chunk")
+        class SupersededBeforeTerminal:
+            response = SimpleNamespace(headers={})
+
+            def __iter__(self):
+                yield _make_stream_chunk(content="cut off with no terminal chunk")
+                # A newer stream claims the writer: the fence rejects every
+                # later chunk, so the iterator is cut short abnormally.
+                agent_box["agent"]._claim_stream_writer()
+                yield _make_stream_chunk(content="never-delivered")
 
         mock_client = MagicMock()
-        mock_client.chat.completions.create.side_effect = lambda *a, **kw: _truncated()
+        mock_client.chat.completions.create.return_value = SupersededBeforeTerminal()
         mock_create.return_value = mock_client
 
         agent = _make_agent()
+        agent_box["agent"] = agent
         response = agent._interruptible_streaming_api_call({})
 
         assert response.id == PARTIAL_STREAM_STUB_ID
@@ -472,6 +485,69 @@ class TestConversationLoopPartialStreamContinuation:
         # And the final response stitches both halves together.
         assert "first half of" in result["final_response"]
         assert "forty-two" in result["final_response"]
+
+
+class TestCleanStreamEndWithoutFinishReason:
+    """#75801: a provider that omits ``finish_reason`` on a clean stream end.
+
+    When the endpoint rejected ``stream_options`` (#9705 sets
+    ``agent._stream_options_unsupported``) the terminal usage chunk never
+    arrives, so a clean text-only end carried no completion signal at all and
+    was misclassified as a mid-stream drop: the delivered answer was stripped
+    into a "network error mid-stream" continuation stub. A cleanly-exhausted
+    iterator must instead stamp ``stop``; only abnormal termination (the
+    iterator raising, or consumption being fenced) routes to the stub.
+    """
+
+    @patch("run_agent.AIAgent._create_request_openai_client")
+    @patch("run_agent.AIAgent._close_request_openai_client")
+    def test_clean_end_text_only_stamps_stop(self, _mock_close, mock_create, monkeypatch):
+        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+
+        def _clean_ending_stream():
+            yield _make_stream_chunk(content="The complete answer.")
+            # falls off the end — clean close, no finish_reason, no usage chunk
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.side_effect = lambda *a, **kw: _clean_ending_stream()
+        mock_create.return_value = mock_client
+
+        agent = _make_agent()
+        agent._stream_options_unsupported = True  # usage chunk never arrives (#9705)
+
+        response = agent._interruptible_streaming_api_call({})
+
+        assert response.id != PARTIAL_STREAM_STUB_ID, (
+            "A cleanly-ended text-only stream is not a mid-stream drop — the "
+            "delivered answer must not be stripped into a continuation stub "
+            "(#75801)."
+        )
+        assert response.choices[0].finish_reason == "stop"
+        assert response.choices[0].message.content == "The complete answer."
+
+    @patch("run_agent.AIAgent._create_request_openai_client")
+    @patch("run_agent.AIAgent._close_request_openai_client")
+    def test_abnormal_end_text_only_still_returns_stub(self, _mock_close, mock_create, monkeypatch):
+        """The stub path still fires when the iterator dies mid-stream."""
+        monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
+
+        def _dying_stream():
+            yield _make_stream_chunk(content="partial answer ")
+            raise ConnectionError("connection dropped mid-stream")
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.side_effect = lambda *a, **kw: _dying_stream()
+        mock_create.return_value = mock_client
+
+        agent = _make_agent()
+        agent._stream_options_unsupported = True
+        agent._current_streamed_assistant_text = "partial answer "
+        agent.stream_delta_callback = lambda _text: None
+
+        response = agent._interruptible_streaming_api_call({})
+
+        assert response.id == PARTIAL_STREAM_STUB_ID
+        assert response.choices[0].finish_reason == FINISH_REASON_LENGTH
 
 
 class TestContentFilterStallActivatesFallback:
@@ -955,18 +1031,28 @@ class TestStreamIncludeUsageFinalChunk:
     def test_text_stream_abrupt_drop_without_usage_still_returns_stub(
         self, _mock_close, mock_create, monkeypatch,
     ):
-        """When text is streamed but the connection is severed before any usage
-        chunk arrives (usage is None and finish_reason is None), it remains
-        correctly classified as a partial stream stub."""
-        def _dropped_stream():
-            yield _make_stream_chunk(content="Partial text before drop")
-            # Stream ends abruptly without finish_reason and without usage
+        """When text is streamed but the stream is cut short abnormally — here
+        via the single-writer fence, which rejects all further chunks — before
+        any usage chunk arrives (usage is None and finish_reason is None), it
+        remains correctly classified as a partial stream stub. (A cleanly-
+        exhausted iterator with delivered text is 'stop' per #75801.)"""
+        agent_box = {}
+
+        class SeveredStream:
+            response = SimpleNamespace(headers={})
+
+            def __iter__(self):
+                yield _make_stream_chunk(content="Partial text before drop")
+                # Stream severed: a superseding writer fences the rest off.
+                agent_box["agent"]._claim_stream_writer()
+                yield _make_stream_chunk(content="never-delivered")
 
         mock_client = MagicMock()
-        mock_client.chat.completions.create.side_effect = lambda *a, **kw: _dropped_stream()
+        mock_client.chat.completions.create.return_value = SeveredStream()
         mock_create.return_value = mock_client
 
         agent = _make_agent()
+        agent_box["agent"] = agent
         agent._current_streamed_assistant_text = "Partial text before drop"
         monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
@@ -983,18 +1069,28 @@ class TestStreamIncludeUsageFinalChunk:
         """A stream severed while still reasoning (only ``delta.reasoning`` frames,
         no finish_reason, no usage) is a drop, not a clean stop: stamping "stop"
         would let the reasoning-only clean-stop promotion surface the truncated
-        thought as the final answer instead of entering the continuation ladder."""
-        def _dropped_stream():
-            for text in ("Let me think about", " the question carefully, first"):
-                chunk = _make_stream_chunk()
-                chunk.choices[0].delta.reasoning = text
-                yield chunk
+        thought as the final answer instead of entering the continuation ladder.
+        The severance is modelled by the single-writer fence rejecting further
+        chunks — an abnormal end, unlike clean iterator exhaustion (#75801)."""
+        agent_box = {}
+
+        class SeveredReasoningStream:
+            response = SimpleNamespace(headers={})
+
+            def __iter__(self):
+                for text in ("Let me think about", " the question carefully, first"):
+                    chunk = _make_stream_chunk()
+                    chunk.choices[0].delta.reasoning = text
+                    yield chunk
+                agent_box["agent"]._claim_stream_writer()
+                yield _make_stream_chunk(content="never-delivered")
 
         mock_client = MagicMock()
-        mock_client.chat.completions.create.side_effect = lambda *a, **kw: _dropped_stream()
+        mock_client.chat.completions.create.return_value = SeveredReasoningStream()
         mock_create.return_value = mock_client
 
         agent = _make_agent()
+        agent_box["agent"] = agent
         monkeypatch.setenv("HERMES_STREAM_RETRIES", "0")
         response = agent._interruptible_streaming_api_call({})
 
