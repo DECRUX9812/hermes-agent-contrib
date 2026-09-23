@@ -47,7 +47,7 @@ const item = (command: string, group = 'Skills'): Unstable_TriggerItem => ({
   metadata: { command, display: command, meta: '', group, action: '', rawText: command }
 })
 
-function mountTrigger(editor: HTMLDivElement, items: Unstable_TriggerItem[]) {
+function mountTrigger(editor: HTMLDivElement, items: Unstable_TriggerItem[], atItems?: Unstable_TriggerItem[]) {
   const editorRef = createRef<HTMLDivElement>() as { current: HTMLDivElement | null }
   editorRef.current = editor
 
@@ -59,11 +59,15 @@ function mountTrigger(editor: HTMLDivElement, items: Unstable_TriggerItem[]) {
     search: () => items
   }
 
+  const atAdapter: Unstable_TriggerAdapter | null = atItems
+    ? { categories: () => [], categoryItems: () => [], search: () => atItems }
+    : null
+
   const setComposerText = vi.fn()
 
   const hook = renderHook(() =>
     useComposerTrigger({
-      at: { adapter: null, loading: false },
+      at: { adapter: atAdapter, loading: false },
       draftRef,
       editorRef,
       requestMainFocus: vi.fn(),
@@ -157,6 +161,40 @@ describe('useComposerTrigger — slash anywhere in the prompt', () => {
     act(() => hook.result.current.replaceTriggerWithChip(item('/clean')))
 
     expect(composerPlainText(editor)).toBe('/work rewrite the composer /clean ')
+  })
+})
+
+describe('useComposerTrigger — empty @-mention suppression', () => {
+  const ref = (id: string): Unstable_TriggerItem => ({
+    id,
+    type: 'file',
+    label: id,
+    metadata: { rawText: `@${id}` }
+  })
+
+  it('suppresses the popover when the @ adapter settled with zero items', () => {
+    // Typing `@johndoe` with no matching refs used to dead-end on an empty
+    // popover until Escape — the same state argStageEmpty already suppresses
+    // for slash args.
+    const editor = mountEditor('@johndoe')
+    const { hook } = mountTrigger(editor, [], [])
+
+    act(() => hook.result.current.refreshTrigger())
+
+    expect(hook.result.current.trigger).toMatchObject({ kind: '@', query: 'johndoe' })
+    expect(hook.result.current.triggerItems).toHaveLength(0)
+    expect(hook.result.current.argStageEmpty).toBe(true)
+  })
+
+  it('still renders the popover when the @ adapter returns items', () => {
+    const editor = mountEditor('@john')
+    const { hook } = mountTrigger(editor, [], [ref('johndoe')])
+
+    act(() => hook.result.current.refreshTrigger())
+
+    expect(hook.result.current.trigger).toMatchObject({ kind: '@' })
+    expect(hook.result.current.triggerItems).toHaveLength(1)
+    expect(hook.result.current.argStageEmpty).toBe(false)
   })
 })
 

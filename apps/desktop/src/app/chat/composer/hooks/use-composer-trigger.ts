@@ -230,8 +230,12 @@ export function useComposerTrigger({
 
   // Suppress the "No matches" empty state once a slash command is past its name:
   // a no-arg command has nothing to offer, and a fully-typed arg commits on
-  // Space/Tab — neither should dead-end on a popover.
-  const argStageEmpty = trigger?.kind === '/' && slashArgStage(trigger.query) && !triggerLoading && !triggerItems.length
+  // Space/Tab — neither should dead-end on a popover. An `@` mention whose
+  // adapter settled on zero items dead-ends the same way.
+  const argStageEmpty =
+    !triggerLoading &&
+    !triggerItems.length &&
+    (trigger?.kind === '@' || (trigger?.kind === '/' && slashArgStage(trigger.query)))
 
   const slashArgumentMode =
     trigger?.kind === '/' && slashArgStage(trigger.query)
