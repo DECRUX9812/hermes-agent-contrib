@@ -3,6 +3,7 @@ import { type MutableRefObject, useLayoutEffect } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChatMessage } from '@/lib/chat-messages'
+import { createClientSessionState } from '@/lib/chat-runtime'
 import {
   $activeSessionStoredIdRotation,
   $currentFastMode,
@@ -688,5 +689,68 @@ describe('useSessionStateCache — reconnect busy reconcile (#93059)', () => {
     expect(cache.sessionStateByRuntimeIdRef.current.get('runtime-1')?.busy).toBe(false)
     expect(cache.sessionStateByRuntimeIdRef.current.get('runtime-1')?.awaitingResponse).toBe(false)
     expect($sessionStates.get()['runtime-1']?.busy).toBe(false)
+  })
+})
+
+// #117867: the warm-resume transcript gate exists to keep ONE unproven
+// warm-cache paint off the view while session.activate + REST authority
+// resolve. It must not blank states staged later in the same hold window —
+// a turn completing inside the activate await flushes synchronously and was
+// painting messages:[] over the finished transcript.
+describe('useSessionStateCache — held transcript gate scopes to the initial warm publish (#117867)', () => {
+  const runtime = 'gate-runtime'
+
+  const stateWith = (messages: ChatMessage[], busy: boolean) => ({
+    ...createClientSessionState('gate-stored'),
+    busy,
+    messages
+  })
+
+  beforeEach(() => {
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: FrameRequestCallback) => {
+      cb(0)
+
+      return null as unknown as number
+    })
+    $messages.set([])
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.restoreAllMocks()
+    $messages.set([])
+    clearAllSessionStates()
+    setActiveSessionId(null)
+  })
+
+  it('suppresses the warm publish but lets a held-window completion land', () => {
+    let cache!: Cache
+    render(<ViewHarness activeSessionId={runtime} onReady={c => (cache = c)} />)
+
+    const release = cache.holdSessionTranscriptView(runtime)
+
+    const warm = [userMessage('warm-u', 'earlier turn'), assistantText('warm-a', 'earlier reply')]
+
+    act(() => {
+      cache.syncSessionStateToView(runtime, stateWith(warm, true))
+    })
+
+    expect($messages.get()).toEqual([])
+
+    const streamed = [...warm, userMessage('new-u', 'next turn'), assistantText('new-a', 'partial')]
+
+    act(() => {
+      cache.syncSessionStateToView(runtime, stateWith(streamed, true))
+    })
+
+    const done = [...warm, userMessage('new-u', 'next turn'), assistantText('new-a', 'finished reply')]
+
+    act(() => {
+      cache.syncSessionStateToView(runtime, stateWith(done, false))
+    })
+
+    expect($messages.get().map(message => message.id)).toEqual(done.map(message => message.id))
+
+    release()
   })
 })

@@ -283,7 +283,18 @@ export function useSessionStateCache({
         return
       }
 
-      const viewState = suppressTranscriptForView(state, transcriptViewGateByRuntimeIdRef.current.has(sessionId))
+      // The transcript gate suppresses exactly ONE staged publish: the initial
+      // warm-cache paint the resume flow performs while session.activate and
+      // the persisted REST read are still in flight. Consuming it on the first
+      // stage keeps later updates in the same hold window — stream deltas and,
+      // critically, a turn completing inside the activate await, which the
+      // critical-transition branch flushes synchronously — from being blanked
+      // to messages:[] over the finished transcript (#117867). The warm paints
+      // that must stay hidden until REST authority lands are suppressed
+      // explicitly at their call sites in use-session-actions.
+      const suppressWarmPublish = transcriptViewGateByRuntimeIdRef.current.delete(sessionId)
+
+      const viewState = suppressTranscriptForView(state, suppressWarmPublish)
 
       syncRuntimeMetadataToView(viewState)
       pendingViewStateRef.current = { sessionId, state: viewState }
