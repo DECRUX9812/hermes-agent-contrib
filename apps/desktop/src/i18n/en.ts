@@ -3663,7 +3663,9 @@ export const en: Translations = {
     free: 'Free',
     freeTier: 'Free tier',
     priceTitle: 'Input / Output price per million tokens',
-    wasPrice: 'was'
+    wasPrice: 'was',
+    tagContextWindow: size => `${size}-token context window`,
+    tagVariant: tag => `${tag} variant`
   },
 
   modelVisibility: {

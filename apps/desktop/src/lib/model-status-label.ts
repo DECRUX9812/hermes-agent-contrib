@@ -119,6 +119,21 @@ export function displayModelName(model: string): string {
   return modelDisplayParts(model).name
 }
 
+/** One-line explanation for a display tag, used as the tooltip/accessible
+ *  description wherever the bare tag renders — a lone "1M" never says it is a
+ *  context-window size. Context-window parts get the size copy; any other
+ *  variant tag (Fast, Q4, …) falls back to the generic variant copy. One
+ *  helper feeds every render site so the copy cannot drift. */
+export function modelTagDescription(
+  tag: string,
+  copy: { tagContextWindow: (size: string) => string; tagVariant: (tag: string) => string }
+): string {
+  return tag
+    .split(/\s+/)
+    .map(part => (/^\d+[mk]$/i.test(part) ? copy.tagContextWindow(part.toUpperCase()) : copy.tagVariant(part)))
+    .join(' · ')
+}
+
 /** Composer model-pill label — model name plus Fast when it applies. The
  *  reasoning level is NOT here: it has its own pill (`ReasoningPill`), so a
  *  long model name can no longer push the effort out of the truncating span. */

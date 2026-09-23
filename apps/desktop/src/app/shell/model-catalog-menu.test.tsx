@@ -132,6 +132,17 @@ describe('the catalog owns model curation', () => {
 
     expect($modelVisibilityOpen.get()).toBe(true)
   })
+
+  it('gives the context-window tag an accessible explanation — bare "1M" says nothing', async () => {
+    getGlobalModelOptions.mockResolvedValue({
+      providers: [{ models: ['claude-sonnet-5[1m]'], name: 'Anthropic', slug: 'anthropic' }]
+    })
+
+    renderMenu()
+
+    const tag = await screen.findByText('1M')
+    expect(tag.getAttribute('title')).toContain('context')
+  })
 })
 
 describe('in-flight local downloads', () => {

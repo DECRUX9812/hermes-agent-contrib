@@ -25,7 +25,7 @@ import { getLocalModelsStatus } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { isSubmitEnter } from '@/lib/ime'
 import { catalogProviderMatches, modelOptionsQueryKey, requestModelOptions } from '@/lib/model-options'
-import { displayModelName, modelDisplayParts } from '@/lib/model-status-label'
+import { displayModelName, modelDisplayParts, modelTagDescription } from '@/lib/model-status-label'
 import { reasoningEffortLabel } from '@/lib/reasoning-effort'
 import { foldIncludes, normalize } from '@/lib/text'
 import { useStoreSelector } from '@/lib/use-session-slice'
@@ -517,7 +517,6 @@ export function ModelCatalogMenu({
                     )
 
                     const meta = [
-                      tag || null,
                       fastControl.kind !== 'none' && fastControl.on ? copy.fast : null,
                       (caps?.reasoning ?? true)
                         ? reasoningEffortLabel(effEffort || defaultEffort, isCurrent ? current.effortWire : undefined)
@@ -551,6 +550,15 @@ export function ModelCatalogMenu({
                         >
                           <span className="min-w-0 flex-1 truncate">
                             <HighlightMatches foldSeparators query={search} text={name} />
+                            {tag ? (
+                              <span
+                                className="text-(--ui-text-tertiary)"
+                                title={modelTagDescription(tag, copyPicker)}
+                              >
+                                {' '}
+                                {tag}
+                              </span>
+                            ) : null}
                             {meta ? <span className="text-(--ui-text-tertiary)"> {meta}</span> : null}
                           </span>
                           {loadProgress ? (

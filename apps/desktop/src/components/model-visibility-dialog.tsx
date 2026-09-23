@@ -14,7 +14,7 @@ import type { HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { Search } from '@/lib/icons'
 import { modelOptionsQueryKey, requestModelOptions } from '@/lib/model-options'
-import { displayModelName, modelDisplayParts } from '@/lib/model-status-label'
+import { displayModelName, modelDisplayParts, modelTagDescription } from '@/lib/model-status-label'
 import { foldIncludes, normalize } from '@/lib/text'
 import {
   $visibleModels,
@@ -154,7 +154,15 @@ export function ModelVisibilityDialog({
                         >
                           <span className="min-w-0 flex-1 truncate">
                             <HighlightMatches foldSeparators query={search} text={name} />
-                            {tag ? <span className="text-(--ui-text-tertiary)"> {tag}</span> : null}
+                            {tag ? (
+                              <span
+                                className="text-(--ui-text-tertiary)"
+                                title={modelTagDescription(tag, t.modelPicker)}
+                              >
+                                {' '}
+                                {tag}
+                              </span>
+                            ) : null}
                           </span>
                           <Switch
                             checked={visible.has(key)}

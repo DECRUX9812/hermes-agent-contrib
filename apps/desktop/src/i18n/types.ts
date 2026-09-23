@@ -3132,6 +3132,10 @@ export interface Translations {
     freeTier: string
     priceTitle: string
     wasPrice: string
+    /** Tooltip for a context-window tag like "1M" — the bare size never says what it means. */
+    tagContextWindow: (size: string) => string
+    /** Tooltip for non-size variant tags (Fast, Q4, …). */
+    tagVariant: (tag: string) => string
   }
 
   modelVisibility: {
