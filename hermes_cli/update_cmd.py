@@ -775,7 +775,8 @@ def _repair_current_checkout(
 
 def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha) -> None:
     """Fast-forward failed: merge on a custom branch (local commits survive) or reset --hard on the
-    same branch (rescue ref first when histories share no ancestor). ``sys.exit(1)`` on failure."""
+    same branch (rescue ref first whenever pre-pull HEAD is not contained in origin/<branch>).
+    ``sys.exit(1)`` on failure."""
     # A custom branch (local commits atop origin/<branch>) also can't ff, and reset --hard
     # would discard that work: merge instead, stop on conflict.
     _cur_branch = (_git_run(git_cmd, ["branch", "--show-current"]).stdout or "").strip()
@@ -792,18 +793,24 @@ def _reconcile_diverged_checkout(git_cmd, branch: str, pre_pull_sha) -> None:
             print("  Then re-run the update. Local work is untouched.")
             sys.exit(1)
         return
-    # Same branch: a true upstream force-push/rebase; local changes are stashed, so reset.
-    # Orphan divergence (no common ancestor: corrupted HEAD, re-init) would lose the whole
-    # local graph, so park pre_pull_sha behind a rescue ref first.
-    merge_base_result = _git_run(git_cmd, ["merge-base", "HEAD", f"origin/{branch}"])
-    has_common_ancestor = merge_base_result.returncode == 0 and merge_base_result.stdout.strip()
-    if not has_common_ancestor and pre_pull_sha:
+    # Same branch: a true upstream force-push/rebase or unpushed local commits on the
+    # tracked branch; local changes are stashed, so reset. reset --hard discards every
+    # commit on HEAD that is not also on origin/<branch> — a shared merge-base does NOT
+    # prove there is nothing local to lose (#74885) — so park pre_pull_sha behind a
+    # rescue ref whenever it is not already contained in origin/<branch> (an orphan
+    # history fails the ancestor probe too, #87694).
+    head_contained = bool(pre_pull_sha) and _git_run(
+        git_cmd, ["merge-base", "--is-ancestor", pre_pull_sha, f"origin/{branch}"]
+    ).returncode == 0
+    if not head_contained and pre_pull_sha:
         from datetime import datetime as _dt, timezone
         # SHA suffix so two updates in the same second get distinct refs.
         rescue_ref = (
             f"refs/hermes-update-backups/orphan-{branch}-"
             f"{_dt.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{pre_pull_sha[:12]}")
-        head = f"  ⚠ Local history shares no common ancestor with origin/{branch} (orphan divergence) — "
+        head = (
+            f"  ⚠ Local HEAD has commits not on origin/{branch} "
+            "(unpushed local work or orphan divergence) — ")
         if _git_run(git_cmd, ["update-ref", rescue_ref, pre_pull_sha]).returncode == 0:
             print(
                 f"{head}backed up current HEAD to {rescue_ref} before resetting. "

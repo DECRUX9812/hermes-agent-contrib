@@ -126,6 +126,7 @@ def _make_update_side_effect(
     fetch_fails=False,
     fetch_stderr="",
     merge_base_exists=True,
+    pre_pull_contained_in_origin=False,
     update_ref_fails=False,
     pre_pull_sha_unavailable=False,
     existing_rescue_refs=None,
@@ -182,6 +183,15 @@ def _make_update_side_effect(
             return SimpleNamespace(stdout="", stderr="", returncode=0)
         if "rev-list" in joined:
             return SimpleNamespace(stdout=f"{commit_count}\n", stderr="", returncode=0)
+        if "--is-ancestor" in joined:
+            # ``git merge-base --is-ancestor <pre_pull_sha> origin/<branch>``:
+            # rc 0 means the pre-pull HEAD is already contained upstream
+            # (nothing local for reset --hard to lose); nonzero means HEAD
+            # carries commits the reset would discard (#74885).
+            return SimpleNamespace(
+                stdout="", stderr="",
+                returncode=0 if pre_pull_contained_in_origin else 1,
+            )
         if "merge-base" in joined:
             if merge_base_exists:
                 return SimpleNamespace(stdout="abc123deadbeef\n", stderr="", returncode=0)
@@ -400,13 +410,52 @@ def test_prune_orphan_rescue_refs_leaves_unparseable_names_alone():
     assert delete_calls == []
 
 
-def test_cmd_update_ordinary_divergence_skips_rescue_ref(monkeypatch, tmp_path, capsys):
-    """Common ancestor still exists (e.g. upstream force-push) → no rescue
-    ref, no orphan messaging, behavior identical to before #87694."""
+def test_cmd_update_same_branch_local_commits_backed_up_before_reset(
+    monkeypatch, tmp_path, capsys
+):
+    """#74885: HEAD on the tracked branch with unpushed local commits still
+    shares a merge-base with origin/<branch>, but ``reset --hard`` would
+    discard them. The rescue ref must be written whenever the pre-pull HEAD
+    is not already contained in origin/<branch> — shared ancestry is not
+    proof there is nothing local to lose."""
     _setup_update_mocks(monkeypatch, tmp_path)
 
     side_effect, recorded = _make_update_side_effect(
         ff_only_fails=True, merge_base_exists=True,
+        pre_pull_contained_in_origin=False,
+    )
+    monkeypatch.setattr(hermes_main.subprocess, "run", side_effect)
+
+    hermes_main.cmd_update(SimpleNamespace())
+
+    update_ref_calls = [
+        c for c in recorded
+        if "update-ref" in " ".join(str(x) for x in c) and "-d" not in c
+    ]
+    assert len(update_ref_calls) == 1
+    ref_name = update_ref_calls[0][update_ref_calls[0].index("update-ref") + 1]
+    assert ref_name.startswith("refs/hermes-update-backups/")
+    assert update_ref_calls[0][update_ref_calls[0].index("update-ref") + 2] == (
+        "1111111111111111111111111111111111111beef"
+    )
+
+    # The backup must land before the destructive reset, not after.
+    backup_idx = recorded.index(update_ref_calls[0])
+    reset_idx = next(
+        i for i, c in enumerate(recorded)
+        if "reset" in " ".join(str(x) for x in c) and "--hard" in c
+    )
+    assert backup_idx < reset_idx
+
+
+def test_cmd_update_head_contained_in_origin_skips_rescue_ref(monkeypatch, tmp_path, capsys):
+    """Pre-pull HEAD already contained in origin/<branch> → reset --hard
+    loses nothing, so no rescue ref and no backup messaging."""
+    _setup_update_mocks(monkeypatch, tmp_path)
+
+    side_effect, recorded = _make_update_side_effect(
+        ff_only_fails=True, merge_base_exists=True,
+        pre_pull_contained_in_origin=True,
     )
     monkeypatch.setattr(hermes_main.subprocess, "run", side_effect)
 
