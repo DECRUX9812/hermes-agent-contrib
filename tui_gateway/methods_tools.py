@@ -724,7 +724,7 @@ def _cmd_steer(rid, params, session, name, arg):
     if not arg:
         return _err(rid, 4004, "usage: /steer <prompt>")
     agent = session.get("agent") if session else None
-    if agent and hasattr(agent, "steer"):
+    if agent and session.get("running") and hasattr(agent, "steer"):
         with contextlib.suppress(Exception):
             if agent.steer(arg):
                 shown = f"{arg[:80]}{'...' if len(arg) > 80 else ''}"
