@@ -668,6 +668,31 @@ test('sensitiveFileBlockReason blocks obvious secret file patterns', () => {
   assert.match(String(sensitiveFileBlockReason('/tmp/server-cert.pem')), /\.pem/)
 })
 
+test('sensitiveFileBlockReason blocks Hermes credential stores', () => {
+  const blocked = [
+    '/home/me/.hermes/auth.json',
+    '/home/me/.hermes/auth.lock',
+    '/home/me/.hermes/.anthropic_oauth.json',
+    '/home/me/.hermes/google_oauth.json',
+    '/home/me/.hermes/auth/google_oauth.json',
+    '/home/me/.hermes/google_token.json',
+    '/home/me/.hermes/google_oauth_pending.json',
+    '/home/me/.hermes/webhook_subscriptions.json',
+    '/home/me/.hermes/bws_cache.json',
+    '/home/me/.hermes/bws_cache.enc.json',
+    '/home/me/.hermes/mcp-tokens/github.json',
+    '/home/me/.hermes/profiles/work/mcp-tokens/slack.json',
+    '/home/me/.hermes/pairing/abc.json'
+  ]
+
+  for (const filePath of blocked) {
+    assert.notEqual(sensitiveFileBlockReason(filePath), null, `expected ${filePath} to be blocked`)
+  }
+
+  assert.equal(sensitiveFileBlockReason('/home/me/.hermes/notes.md'), null)
+  assert.equal(sensitiveFileBlockReason('/home/me/project/auth_helper.json'), null)
+})
+
 test('path helpers reject blank non-string NUL and Windows device syntax', async () => {
   await rejectsWithCode(resolveReadableFileForIpc('', { purpose: 'File preview' }), 'invalid-path')
   await rejectsWithCode(resolveReadableFileForIpc('   ', { purpose: 'File preview' }), 'invalid-path')

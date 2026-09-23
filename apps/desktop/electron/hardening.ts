@@ -27,6 +27,26 @@ function dataUrlReadMaxBytesFromMb(maxMb) {
 const SAFE_ENV_SUFFIXES = new Set(['dist', 'example', 'sample', 'template'])
 const SENSITIVE_EXTENSIONS = new Set(['.kdbx', '.p12', '.pem', '.pfx'])
 
+// Hermes credential stores. Mirrors _SENSITIVE_MANAGED_FILE_BASENAMES /
+// _SENSITIVE_MANAGED_DIR_NAMES in hermes_cli/web_routers/files.py — keep the
+// two lists in sync so the file-preview IPC never exposes what the dashboard
+// file browser already refuses to list.
+const HERMES_CREDENTIAL_FILE_BASENAMES = new Set([
+  'auth.json',
+  'auth.lock',
+  'credentials',
+  'config.yaml',
+  '.anthropic_oauth.json',
+  'google_token.json',
+  'google_oauth_pending.json',
+  'google_oauth.json',
+  'webhook_subscriptions.json',
+  'bws_cache.json',
+  'bws_cache.enc.json',
+  '.git-credentials'
+])
+const HERMES_CREDENTIAL_DIR_NAMES = new Set(['mcp-tokens', 'pairing'])
+
 // Owner-only mode for userData files that carry credentials (the encrypted
 // gateway token in connection.json, and the URL/SSH fields alongside it).
 // connection.json was the odd one out: its two credential-bearing neighbours
@@ -312,6 +332,14 @@ function sensitiveFileBlockReason(filePath) {
 
   if (basename === '.npmrc' || basename === '.netrc' || basename === '.pypirc') {
     return `${basename} is blocked because it may include auth credentials.`
+  }
+
+  if (HERMES_CREDENTIAL_FILE_BASENAMES.has(basename) || basename.endsWith('_oauth.json')) {
+    return 'Hermes credential store files are blocked.'
+  }
+
+  if (normalized.split('/').some((part) => HERMES_CREDENTIAL_DIR_NAMES.has(part))) {
+    return 'Hermes credential store files are blocked.'
   }
 
   return null
