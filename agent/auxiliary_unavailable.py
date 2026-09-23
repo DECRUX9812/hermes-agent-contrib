@@ -78,7 +78,8 @@ def pool_cooldown_message(provider_id: str) -> Optional[str]:
               if until is not None and until > now]
     if len(resets) != len(live):
         return None
-    when = time.strftime("%Y-%m-%d %H:%M %Z", time.localtime(min(resets)))
+    from agent.message_sanitization import _sanitize_surrogates
+    when = _sanitize_surrogates(time.strftime("%Y-%m-%d %H:%M %Z", time.localtime(min(resets))))
     which = ("its only credential is" if len(live) == 1
              else f"all {len(live)} credentials are")
     return (f"Provider '{provider_id}' is set in config.yaml but {which} cooling down after a "

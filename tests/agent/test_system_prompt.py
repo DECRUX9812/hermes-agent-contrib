@@ -883,3 +883,29 @@ class TestConversationStartedTwoLine:
         vol = self._volatile(agent)
         assert "Conversation started:" not in vol
         assert "as of the last context rebuild" not in vol
+
+
+class TestZoneBitsSurrogateTzname:
+    """fr-FR Windows can hand strftime('%Z') a name with lone surrogates; the
+    byte-stable date line must degrade to U+FFFD, not crash prompt assembly."""
+
+    class _SurrogateNow:
+        def strftime(self, fmt):
+            return {"%Z": "Paris\udcff", "%z": "+0200"}[fmt]
+
+    def test_abbrev_surrogate_replaced_and_encodable(self):
+        from agent.system_prompt import _zone_bits
+        bits = _zone_bits(self._SurrogateNow(), ZoneInfo("Europe/Paris"))
+        joined = ", ".join(bits)
+        assert "Paris\udcff" not in joined
+        joined.encode("utf-8")  # must not raise UnicodeEncodeError
+
+    def test_clean_abbrev_unchanged(self):
+        from agent.system_prompt import _zone_bits
+
+        class _Now:
+            def strftime(self, fmt):
+                return {"%Z": "CEST", "%z": "+0200"}[fmt]
+
+        bits = _zone_bits(_Now(), ZoneInfo("Europe/Paris"))
+        assert "CEST" in bits

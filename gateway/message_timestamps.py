@@ -82,7 +82,8 @@ def format_message_timestamp(ts_value: Any, tz=None) -> str:
     if epoch is None:
         return ""
     dt = datetime.fromtimestamp(epoch, tz=tz) if tz is not None else datetime.fromtimestamp(epoch).astimezone()
-    return f"[{dt.strftime('%a %Y-%m-%d %H:%M:%S %Z')}]"
+    from agent.message_sanitization import _sanitize_surrogates
+    return f"[{_sanitize_surrogates(dt.strftime('%a %Y-%m-%d %H:%M:%S %Z'))}]"
 
 
 def strip_leading_message_timestamps(content: str, tz=None) -> Tuple[str, Optional[float]]:
