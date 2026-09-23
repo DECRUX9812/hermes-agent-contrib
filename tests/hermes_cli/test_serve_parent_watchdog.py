@@ -174,6 +174,35 @@ def test_parent_watchdog_warns_when_disarmed_by_unusable_marker(monkeypatch, cap
     assert any("watchdog disabled" in r.getMessage() for r in caplog.records)
 
 
+def test_parent_watchdog_flushes_sessions_before_exit(monkeypatch):
+    """#108601: orphan-kill must persist in-memory transcripts via the exit-flush
+    path instead of a bare ``os._exit`` that skips it."""
+    import tui_gateway.server as tui_server
+
+    from hermes_cli import web_server_lifecycle
+
+    monkeypatch.setenv("HERMES_PARENT_PID", "4242")
+    monkeypatch.delenv("HERMES_PARENT_START_MARKER", raising=False)
+    monkeypatch.delenv("HERMES_PARENT_NONCE", raising=False)
+    monkeypatch.setattr(web_server_lifecycle, "_is_serve_orphaned", lambda _pid, _marker: True)
+
+    calls = []
+    monkeypatch.setattr(tui_server, "_flush_sessions_before_exit", lambda: calls.append("flush"))
+    monkeypatch.setattr(web_server_lifecycle.os, "_exit", lambda code: calls.append(("exit", code)))
+
+    class _Thread:
+        def __init__(self, target, **_kw):
+            self.target = target
+
+        def start(self):
+            self.target()
+
+    monkeypatch.setattr(web_server_lifecycle.threading, "Thread", _Thread)
+    web_server_lifecycle._start_parent_death_watchdog()
+
+    assert calls == ["flush", ("exit", 0)]
+
+
 class _NoThread:
     def start(self):
         raise AssertionError("watchdog thread must not start")
