@@ -14,28 +14,89 @@
  */
 
 const _inFlightResumeByStoredSessionId = new Map<string, Promise<unknown>>()
+const _resumeDeadlineTimers = new Set<ReturnType<typeof setTimeout>>()
 
-export function singleFlightSessionResume<T>(storedSessionId: string, run: () => Promise<T>): Promise<T> {
+// Bound on one shared resume flight. A session.resume that never settles
+// (wedged backend event loop, a dial that hangs before the RPC is even sent)
+// would otherwise hold the slot forever and force-break callers into minting
+// orphans. Generous on purpose: a cold resume builds the agent (MCP discovery,
+// prompt build) before answering, and the gateway channel applies its own
+// tighter per-request timeout underneath.
+export const SESSION_RESUME_DEADLINE_MS = 120_000
+
+export function singleFlightSessionResume<T>(
+  storedSessionId: string,
+  run: (signal: AbortSignal) => Promise<T>,
+  options?: { deadlineMs?: number }
+): Promise<T> {
   const existing = _inFlightResumeByStoredSessionId.get(storedSessionId)
 
   if (existing) {
     return existing as Promise<T>
   }
 
+  const deadlineMs = options?.deadlineMs ?? SESSION_RESUME_DEADLINE_MS
+  const controller = new AbortController()
+  let expired = false
+
   // Promise.resolve().then(run) tolerates run() being synchronous, returning a
   // bare value, or throwing synchronously (test doubles and legacy callers do
   // all three) — a raw run().finally() would crash on a non-promise return.
-  const flight = Promise.resolve()
-    .then(run)
-    .finally(() => {
-      if (_inFlightResumeByStoredSessionId.get(storedSessionId) === flight) {
-        _inFlightResumeByStoredSessionId.delete(storedSessionId)
+  const outcome = Promise.resolve().then(() => run(controller.signal))
+
+  let timer!: ReturnType<typeof setTimeout>
+
+  const flight = new Promise<T>((resolve, reject) => {
+    timer = setTimeout(() => {
+      _resumeDeadlineTimers.delete(timer)
+      expired = true
+      // Cancel the in-flight resume: the abort drops the pending gateway
+      // request, and rejecting the flight frees the slot so the next caller
+      // is admitted instead of joining a dead one.
+      controller.abort()
+      reject(new Error(`request timed out after ${Math.round(deadlineMs / 1000)}s: session.resume`))
+    }, deadlineMs)
+
+    _resumeDeadlineTimers.add(timer)
+
+    outcome.then(
+      value => {
+        if (expired) {
+          // The cancelled resume still minted a real runtime on the gateway.
+          // Park it in the recovered-runtime cache so the next resume-shaped
+          // action adopts it instead of stranding it for the reaper.
+          const runtimeId =
+            typeof value === 'object' && value !== null ? (value as { session_id?: unknown }).session_id : undefined
+
+          if (typeof runtimeId === 'string' && runtimeId) {
+            registerRecoveredRuntime(storedSessionId, runtimeId)
+          }
+
+          return
+        }
+
+        resolve(value)
+      },
+      error => {
+        if (!expired) {
+          reject(error instanceof Error ? error : new Error(String(error)))
+        }
       }
-    })
+    )
+  })
 
-  _inFlightResumeByStoredSessionId.set(storedSessionId, flight)
+  const tracked = flight.finally(() => {
+    _resumeDeadlineTimers.delete(timer)
+    clearTimeout(timer)
 
-  return flight
+    if (_inFlightResumeByStoredSessionId.get(storedSessionId) === tracked) {
+      _inFlightResumeByStoredSessionId.delete(storedSessionId)
+    }
+  })
+
+  _inFlightResumeByStoredSessionId.set(storedSessionId, tracked)
+
+  return tracked
 }
 
 /**
@@ -77,6 +138,11 @@ export function takeRecoveredRuntime(storedSessionId: string, deadRuntimeId?: nu
 
 /** Test seam: reset all module-level single-flight/recovery state. */
 export function clearSingleFlightSessionResumeState(): void {
+  for (const timer of _resumeDeadlineTimers) {
+    clearTimeout(timer)
+  }
+
+  _resumeDeadlineTimers.clear()
   _inFlightResumeByStoredSessionId.clear()
   _recoveredRuntimeByStoredSessionId.clear()
 }

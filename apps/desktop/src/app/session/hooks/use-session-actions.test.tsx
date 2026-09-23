@@ -1522,7 +1522,9 @@ describe('resumeSession failure recovery', () => {
 
     const resumePromise = resume!('stored-1', true)
 
-    await waitFor(() => expect(requestGateway).toHaveBeenCalledWith('session.resume', expect.anything()))
+    await waitFor(() =>
+      expect(requestGateway).toHaveBeenCalledWith('session.resume', expect.anything(), undefined, expect.any(AbortSignal))
+    )
 
     const runtimeState = clientState('stored-1')
     runtimeState.messages = [
@@ -2774,7 +2776,9 @@ describe('resumeSession warm-cache mapping integrity', () => {
       'hermes01',
       'default',
       'session.resume',
-      expect.objectContaining({ session_id: 'remote-stored' })
+      expect.objectContaining({ session_id: 'remote-stored' }),
+      undefined,
+      expect.any(AbortSignal)
     )
     expect(requestGatewayForProfile).not.toHaveBeenCalled()
     expect(ambientRequest).not.toHaveBeenCalled()
@@ -2896,7 +2900,9 @@ describe('resumeSession warm-cache mapping integrity', () => {
       'source-a',
       'default',
       'session.resume',
-      expect.objectContaining({ session_id: 'stored-cold' })
+      expect.objectContaining({ session_id: 'stored-cold' }),
+      undefined,
+      expect.any(AbortSignal)
     )
     expect(ambientRequest).not.toHaveBeenCalled()
   })
@@ -2939,7 +2945,9 @@ describe('resumeSession warm-cache mapping integrity', () => {
       'test-amnezia',
       'default',
       'session.resume',
-      expect.objectContaining({ session_id: 'stored-registry' })
+      expect.objectContaining({ session_id: 'stored-registry' }),
+      undefined,
+      expect.any(AbortSignal)
     )
     expect(ambientRequest).not.toHaveBeenCalled()
   })

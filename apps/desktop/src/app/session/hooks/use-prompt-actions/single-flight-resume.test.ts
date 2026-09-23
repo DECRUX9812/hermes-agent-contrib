@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   clearSingleFlightSessionResumeState,
   registerRecoveredRuntime,
+  SESSION_RESUME_DEADLINE_MS,
   singleFlightSessionResume,
   takeRecoveredRuntime
 } from './single-flight-resume'
@@ -11,6 +12,7 @@ import { resumeStoredRuntimeSession, SessionRecoveryAborted, withSessionNotFound
 afterEach(() => {
   clearSingleFlightSessionResumeState()
   vi.restoreAllMocks()
+  vi.useRealTimers()
 })
 
 describe('singleFlightSessionResume', () => {
@@ -63,6 +65,64 @@ describe('singleFlightSessionResume', () => {
     await expect(singleFlightSessionResume('stored-a', run)).rejects.toThrow('boom')
     await expect(singleFlightSessionResume('stored-a', run)).resolves.toEqual({ session_id: 'rt-second' })
     expect(run).toHaveBeenCalledTimes(2)
+  })
+
+  it('an unsettled resume is cancelled at the deadline and the slot is released', async () => {
+    vi.useFakeTimers()
+
+    const signals: (AbortSignal | undefined)[] = []
+    const requestGateway = vi.fn(
+      (_method: string, _params?: Record<string, unknown>, _timeoutMs?: number, signal?: AbortSignal) => {
+        signals.push(signal)
+
+        // Never settles — the wedged-flight case.
+        return new Promise<never>(() => {})
+      }
+    )
+
+    const deps = { requestGateway: requestGateway as never, resolveProfile: async () => undefined }
+
+    const wedged = resumeStoredRuntimeSession('stored-a', deps)
+    const wedgedRejection = expect(wedged).rejects.toThrow(/timed out/i)
+
+    await vi.advanceTimersByTimeAsync(SESSION_RESUME_DEADLINE_MS + 1)
+    await wedgedRejection
+
+    // A cancellation reached the in-flight resume's gateway request.
+    expect(signals[0]?.aborted).toBe(true)
+
+    // The slot is released: a subsequent resume for the same stored id is admitted.
+    requestGateway.mockImplementation(async () => ({ session_id: 'rt-after' }) as never)
+
+    await expect(resumeStoredRuntimeSession('stored-a', deps)).resolves.toBe('rt-after')
+    expect(requestGateway).toHaveBeenCalledTimes(2)
+  })
+
+  it('a resume that settles after its deadline registers the minted runtime as adoptable', async () => {
+    vi.useFakeTimers()
+
+    let resolveResume: ((value: { session_id: string }) => void) | undefined
+    const requestGateway = vi.fn(
+      () =>
+        new Promise<{ session_id: string }>(resolve => {
+          resolveResume = resolve
+        })
+    )
+
+    const deps = { requestGateway: requestGateway as never, resolveProfile: async () => undefined }
+
+    const late = resumeStoredRuntimeSession('stored-a', deps)
+    const lateRejection = expect(late).rejects.toThrow(/timed out/i)
+
+    await vi.advanceTimersByTimeAsync(SESSION_RESUME_DEADLINE_MS + 1)
+    await lateRejection
+
+    // The gateway still finishes the resume and mints a real runtime; it must
+    // land in the recovered-runtime cache, not strand for the orphan reaper.
+    resolveResume?.({ session_id: 'rt-late' })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(takeRecoveredRuntime('stored-a')).toBe('rt-late')
   })
 })
 

@@ -67,8 +67,8 @@ export function captureSteeringSession(deps: SteeringSessionDeps) {
   const owner = knownOwnerForSession(sessionId) ?? knownOwnerForSession(storedSessionId)
   let adoptedSessionId = sessionId
 
-  const requestGateway: GatewayRequest = (method, params, timeoutMs) =>
-    requestForSessionProfile(owner, deps.requestGateway, method, params, timeoutMs)
+  const requestGateway: GatewayRequest = (method, params, timeoutMs, signal) =>
+    requestForSessionProfile(owner, deps.requestGateway, method, params, timeoutMs, signal)
 
   return {
     sessionId,

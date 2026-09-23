@@ -261,7 +261,9 @@ it.each(recoveryCases)(
         'connection-B',
         'default',
         'session.resume',
-        expect.objectContaining({ session_id: 'stored-B' })
+        expect.objectContaining({ session_id: 'stored-B' }),
+        undefined,
+        expect.any(AbortSignal)
       )
     )
 
@@ -409,7 +411,9 @@ it.each(rebuiltRuntimeCases)(
         'connection-B',
         'default',
         'session.resume',
-        expect.objectContaining({ session_id: 'stored-B-tip' })
+        expect.objectContaining({ session_id: 'stored-B-tip' }),
+        undefined,
+        expect.any(AbortSignal)
       )
     }
 
