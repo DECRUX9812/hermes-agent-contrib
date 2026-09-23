@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $connection, $currentCwd, $selectedStoredSessionId, $sessions } from '@/store/session'
 import { $focusedTreePaneId as $focusedTreePaneIdMock } from '@/store/session-focus'
 import { $sessionTiles } from '@/store/session-states'
@@ -23,7 +24,7 @@ vi.mock('@/store/session-focus', async () => {
 
 const wrapper = ({ children }: { children: ReactNode }) => <MemoryRouter>{children}</MemoryRouter>
 
-function workspaceMenuIds(): string[] {
+function renderStatusbarItems() {
   const { result } = renderHook(
     () =>
       useStatusbarItems({
@@ -44,13 +45,18 @@ function workspaceMenuIds(): string[] {
     { wrapper }
   )
 
-  const workspace = result.current.leftStatusbarItems.find(item => item.id === 'workspace-cwd')
+  return result.current
+}
+
+function workspaceMenuIds(): string[] {
+  const workspace = renderStatusbarItems().leftStatusbarItems.find(item => item.id === 'workspace-cwd')
 
   return (workspace?.menuItems ?? []).map(item => item.id)
 }
 
 afterEach(() => {
   $connection.set(null)
+  $connectionsRegistry.set(null)
   $currentCwd.set('')
   $sessionTiles.set([])
   $focusedTreePaneId.set(null)
@@ -86,5 +92,43 @@ describe('statusbar workspace menu — "Open containing folder"', () => {
 
     expect(workspaceMenuIds()).toContain('copy-workspace-path')
     expect(workspaceMenuIds()).not.toContain('reveal-workspace-finder')
+  })
+})
+
+describe('statusbar gateway pill — names the real connection target', () => {
+  const registry = {
+    connections: [
+      { id: 'cloud-1', kind: 'cloud', label: 'Nous Cloud', tokenPreview: null, tokenSet: true },
+      { id: 'remote-1', kind: 'remote', label: 'Homelab', tokenPreview: null, tokenSet: true }
+    ],
+    primary: 'cloud-1',
+    secureTokenStorage: true,
+    version: 2
+  } as never
+
+  it('names a Nous Cloud connection instead of the bare "Gateway" label', () => {
+    $connectionsRegistry.set(registry)
+    $connection.set({ connectionId: 'cloud-1', mode: 'remote', registryScoped: true, remoteKind: 'cloud' } as never)
+
+    const pill = renderStatusbarItems().leftStatusbarItems.find(item => item.id === 'gateway-health')
+
+    expect(pill?.label).toBe('Nous Cloud')
+  })
+
+  it('names a registry remote by its connection label', () => {
+    $connectionsRegistry.set(registry)
+    $connection.set({ connectionId: 'remote-1', mode: 'remote', registryScoped: true, remoteKind: 'url' } as never)
+
+    const pill = renderStatusbarItems().leftStatusbarItems.find(item => item.id === 'gateway-health')
+
+    expect(pill?.label).toBe('Homelab')
+  })
+
+  it('falls back to "Nous Cloud" for a cloud connection with no registry match', () => {
+    $connection.set({ mode: 'remote', remoteKind: 'cloud' } as never)
+
+    const pill = renderStatusbarItems().leftStatusbarItems.find(item => item.id === 'gateway-health')
+
+    expect(pill?.label).toBe('Nous Cloud')
   })
 })

@@ -36,6 +36,7 @@ import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
 import { $artifactRegistry, type ArtifactRecord, openArtifact } from '@/store/artifacts'
+import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { copyFilePath, revealFile, shouldOfferLocalReveal } from '@/store/file-actions'
 import { $freeTierStatus, FREE_TIER_MODEL } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
@@ -166,6 +167,7 @@ export function useStatusbarItems({
   const backendUpdateApply = useStore($backendUpdateApply)
   const desktopVersion = useStore($desktopVersion)
   const connection = useStore($connection)
+  const connectionsRegistry = useStore($connectionsRegistry)
 
   // The FOCUSED session (interacted tile, else the primary — the same
   // derivation the titlebar title follows): every session-scoped readout
@@ -373,6 +375,17 @@ export function useStatusbarItems({
       ? copy.gatewayConnecting
       : copy.gatewayOffline
 
+  // The pill names the real connection target (#102975): the registry label for
+  // the active source, 'Nous Cloud' for a cloud connection, else 'Gateway'.
+  const activeRegistryConnection = connectionsRegistry?.connections.find(
+    entry => entry.id === connection?.connectionId
+  )
+
+  const gatewayLabel =
+    activeRegistryConnection?.kind === 'cloud' || connection?.remoteKind === 'cloud'
+      ? copy.gatewayNousCloud
+      : (activeRegistryConnection?.label ?? copy.gateway)
+
   const gatewayClassName = inferenceReady
     ? undefined
     : gatewayDegraded
@@ -507,7 +520,7 @@ export function useStatusbarItems({
           <AlertCircle className="size-3" />
         ),
         id: 'gateway-health',
-        label: copy.gateway,
+        label: gatewayLabel,
         menuClassName: 'w-72',
         menuContent: gatewayMenuContent,
         // Tip only when there's a real status reason — not "gateway status" restating the label.
@@ -682,6 +695,7 @@ export function useStatusbarItems({
       gatewayMenuContent,
       gatewayClassName,
       gatewayDetail,
+      gatewayLabel,
       gatewayRestarting,
       inferenceReady,
       inferenceStatus?.reason,

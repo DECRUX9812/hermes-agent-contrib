@@ -3078,6 +3078,7 @@ export const zhHant = defineLocale({
       showTerminal: '顯示終端機',
       hideTerminal: '隱藏終端機',
       gateway: '閘道',
+      gatewayNousCloud: 'Nous Cloud',
       gatewayReady: '就緒',
       gatewayNeedsSetup: '需要設定',
       gatewayUnavailable: '推論不可用',

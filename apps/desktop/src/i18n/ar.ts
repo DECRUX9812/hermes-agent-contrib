@@ -2680,6 +2680,7 @@ export const ar = defineLocale({
       showTerminal: 'إظهار الطرفية',
       hideTerminal: 'إخفاء الطرفية',
       gateway: 'البوابة',
+      gatewayNousCloud: 'Nous Cloud',
       gatewayReady: 'البوابة جاهزة',
       gatewayNeedsSetup: 'البوابة تحتاج إعدادا',
       gatewayUnavailable: 'الاستدلال غير متاح',

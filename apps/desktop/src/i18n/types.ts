@@ -3219,6 +3219,7 @@ export interface Translations {
       showTerminal: string
       hideTerminal: string
       gateway: string
+      gatewayNousCloud: string
       gatewayReady: string
       gatewayNeedsSetup: string
       gatewayUnavailable: string
