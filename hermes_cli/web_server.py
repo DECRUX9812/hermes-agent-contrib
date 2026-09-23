@@ -1380,6 +1380,7 @@ def start_server(
     allow_public: bool = False,
     initial_profile: str = "",
     headless: bool = False,
+    serving_profile: str = "",
     ssh_session_token: Optional[str] = None,
     ssh_owner_nonce: Optional[str] = None,
     start_mcp_discovery_after_bind: bool = False,
@@ -1389,6 +1390,8 @@ def start_server(
     ``initial_profile`` is appended to the auto-opened URL as ``?profile=<name>``
     (profile alias ``<profile> dashboard``). ``headless`` is the ``serve`` path:
     JSON-RPC/WS backend, no UI build, no SPA mount (``HERMES_SERVE_HEADLESS``).
+    ``serving_profile`` is the dedicated launch profile recorded by
+    ``--isolated`` (empty on a multiplex/default serve).
     ``ssh_session_token``/``ssh_owner_nonce`` are process-local Desktop SSH
     bootstrap state, never persisted or exported to children.
     ``start_mcp_discovery_after_bind`` (Desktop ``serve``) defers MCP discovery
@@ -1421,6 +1424,9 @@ def start_server(
     # The SPA bootstrap reads this so profile-less deep links (/chat?resume=<id>) inherit the
     # launcher's preselected profile instead of silently running in the launch scope (#73085).
     app.state.initial_profile = str(initial_profile or "")
+    # ``hermes -p X serve --isolated``: this server serves X's home only —
+    # profile-scoped endpoints reject other profiles via ?profile= (#76932).
+    app.state.serving_profile = str(serving_profile or "")
 
     config, server = _build_uvicorn_server(host, port, ssh_isolated=bool(ssh_session_token))
 

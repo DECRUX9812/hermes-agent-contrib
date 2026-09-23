@@ -2704,6 +2704,20 @@ def cmd_dashboard(args):
     # fail-closed SystemExit unchanged.
     _maybe_setup_dashboard_auth_interactively(args)
 
+    # `--isolated` on a named-profile launch means a dedicated server: record
+    # the launch profile so profile-scoped endpoints refuse other profiles'
+    # homes (#76932). Default/custom launches keep multiplex ?profile= scope.
+    _serving_profile = ""
+    if getattr(args, "isolated", False):
+        try:
+            from hermes_cli.profiles import get_active_profile_name
+
+            _launch_profile = get_active_profile_name()
+        except Exception:
+            _launch_profile = "default"
+        if _launch_profile not in ("default", "custom"):
+            _serving_profile = _launch_profile
+
     # The in-browser Chat tab (embedded TUI over PTY/WebSocket) is always
     # available — desktop and dashboard both rely on `/api/ws` + `/api/pty`.
     start_server(
@@ -2713,6 +2727,7 @@ def cmd_dashboard(args):
         allow_public=getattr(args, "insecure", False),
         initial_profile=getattr(args, "open_profile", "") or "",
         headless=_headless_backend,
+        serving_profile=_serving_profile,
         ssh_session_token=_ssh_session_token,
         ssh_owner_nonce=_ssh_owner_nonce,
         start_mcp_discovery_after_bind=_mcp_discovery_after_bind,

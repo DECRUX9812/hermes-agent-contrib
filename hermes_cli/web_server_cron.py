@@ -109,6 +109,28 @@ def _cron_default_profile() -> str:
     return "default" if name in ("default", "custom") else name
 
 
+def _dedicated_serving_profile() -> Optional[Tuple[str, Path]]:
+    """(name, home) when this server is dedicated to one launch profile, else None.
+
+    ``hermes -p X serve --isolated`` records ``app.state.serving_profile = "X"``;
+    a multiplex/default serve leaves it unset and every profile stays reachable
+    per-request. Resolved through ``get_profile_dir`` so an alias resolving to the
+    serving home still counts as the serving profile.
+    """
+    try:
+        from hermes_cli import web_server
+        name = (getattr(web_server.app.state, "serving_profile", "") or "").strip()
+    except Exception:
+        return None
+    if not name:
+        return None
+    try:
+        from hermes_cli import profiles as profiles_mod
+        return name, profiles_mod.get_profile_dir(name)
+    except Exception:
+        return None
+
+
 def _cron_profile_home(profile: Optional[str]) -> Tuple[str, Path]:
     """Resolve a profile query value to (profile_name, HERMES_HOME)."""
     from hermes_cli import profiles as profiles_mod
@@ -120,7 +142,13 @@ def _cron_profile_home(profile: Optional[str]) -> Tuple[str, Path]:
         raise HTTPException(status_code=400, detail=str(e))
     if not profiles_mod.profile_exists(canon):
         raise HTTPException(status_code=404, detail=f"Profile '{canon}' does not exist.")
-    return canon, profiles_mod.get_profile_dir(canon)
+    home = profiles_mod.get_profile_dir(canon)
+    dedicated = _dedicated_serving_profile()
+    if dedicated is not None and home != dedicated[1]:
+        raise HTTPException(
+            status_code=403,
+            detail=f"This server is dedicated to profile '{dedicated[0]}' (--isolated).")
+    return canon, home
 
 
 def _annotate_cron_job(
