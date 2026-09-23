@@ -78,7 +78,7 @@ def _rich_select(select_cols: str, where: str, tail: str = "", prompt_select: Op
         """
 
 
-_PROMPT_RESOLVED_SQL = "COALESCE(sp.prompt, s.system_prompt) AS _system_prompt_resolved"
+_PROMPT_RESOLVED_SQL = "CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB) AS _system_prompt_resolved"
 
 
 def _export_timings(messages: List[Dict[str, Any]], session_id: Optional[str] = None) -> Dict[str, Any]:

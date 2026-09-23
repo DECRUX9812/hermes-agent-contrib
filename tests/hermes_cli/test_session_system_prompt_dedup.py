@@ -59,6 +59,24 @@ def test_prompt_snapshots_are_deduplicated_and_hydrated_for_readers(db):
     assert db.list_pending_handoffs()[0]["system_prompt"] == prompt
 
 
+def test_undecodable_prompt_row_degrades_instead_of_failing_list_queries(db):
+    good_prompt = "You are Hermes.\nFollow the profile policy."
+    db.create_session("good", "cli", system_prompt=good_prompt)
+    db.create_session("corrupt", "cli", system_prompt="prompt that will be corrupted")
+
+    db._conn.execute(
+        "UPDATE system_prompts SET prompt = CAST(x'fffe' AS TEXT) "
+        "WHERE hash = (SELECT system_prompt_hash FROM sessions WHERE id = 'corrupt')"
+    )
+    db._conn.commit()
+
+    sessions = {s["id"]: s for s in db.list_sessions_rich()}
+    assert sessions["good"]["system_prompt"] == good_prompt
+    assert sessions["corrupt"]["system_prompt"] is None
+    assert db.get_session("corrupt")["system_prompt"] is None
+    assert db.get_session("good")["system_prompt"] == good_prompt
+
+
 def test_prompt_replacement_and_route_changes_collect_only_orphans(db):
     shared_prompt = "Model: x-ai/grok-4.5\nProvider: nous"
     db.create_session(

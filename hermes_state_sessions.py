@@ -774,7 +774,7 @@ class SessionSessionsMixin:
         """Get a session by ID (drains queued token deltas first so cost readers see exact totals)."""
         self.flush_token_counts()
         row = self._read_one(
-            "SELECT s.*, COALESCE(sp.prompt, s.system_prompt) AS _system_prompt_resolved "
+            "SELECT s.*, CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB) AS _system_prompt_resolved "
             "FROM sessions s LEFT JOIN system_prompts sp ON sp.hash = s.system_prompt_hash WHERE s.id = ?",
             (session_id,),
         )
@@ -1270,7 +1270,7 @@ class SessionSessionsMixin:
         # Shared projection head of the three list queries (whitespace is part of the SQL text).
         select_head = (
             f"SELECT {self._compact_session_cols() if compact_rows else 's.*'}"
-            + ("" if compact_rows else ", COALESCE(sp.prompt, s.system_prompt) AS _system_prompt_resolved")
+            + ("" if compact_rows else ", CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB) AS _system_prompt_resolved")
             + f",\n                    {_PREVIEW_COL_SQL},\n                    "
         )
         prompt_join = (
@@ -1436,7 +1436,7 @@ class SessionSessionsMixin:
             where_clauses.append(ws_clause)
             params.extend(ws_params)
         return [self._session_row_dict(row) for row in self._read_all(
-            "SELECT s.*, COALESCE(sp.prompt, s.system_prompt) AS _system_prompt_resolved, "
+            "SELECT s.*, CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB) AS _system_prompt_resolved, "
             f"{_sql_session_last_active('s')} AS last_active "
             "FROM sessions s LEFT JOIN system_prompts sp ON sp.hash = s.system_prompt_hash "
             f"{_where_sql(where_clauses, ' ')} "
