@@ -404,6 +404,7 @@ import {
   SESSION_WINDOW_MIN_WIDTH
 } from './session-windows'
 import { ensureLoginShellPath } from './shell-path'
+import { resolveSshBinary } from './ssh-binary'
 import { createBootstrapCoordinator, sshConfigFingerprint } from './ssh-bootstrap-coordinator'
 import { collectSshConfigHosts, parseSshGOutput } from './ssh-config'
 import { createSshProbeConnection, pickLocalPort, redactSecrets, SshConnection } from './ssh-connection'
@@ -10404,10 +10405,7 @@ async function reachablePreviewUrl(webContentsId: number, rawUrl: string): Promi
 }
 
 async function effectiveSshConfigFingerprint(sshConfig) {
-  const ssh =
-    process.platform === 'win32'
-      ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'OpenSSH', 'ssh.exe')
-      : 'ssh'
+  const ssh = await resolveSshBinary()
 
   const args = ['-G']
 
@@ -15493,10 +15491,7 @@ ipcMain.handle('hermes:ssh-config:resolve', async (_event, host) => {
     throw new Error('SSH host is required.')
   }
 
-  const ssh =
-    process.platform === 'win32'
-      ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'OpenSSH', 'ssh.exe')
-      : 'ssh'
+  const ssh = await resolveSshBinary()
 
   return new Promise((resolve, reject) => {
     const child = spawn(ssh, ['-G', '--', value], hiddenWindowsChildOptions({ stdio: ['ignore', 'pipe', 'pipe'] }))
