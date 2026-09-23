@@ -6,7 +6,10 @@ from typing import Any
 
 from hermes_cli.config import load_config, save_config
 from hermes_cli.inventory import build_models_payload, load_picker_context
-from hermes_cli.moa_config import DEFAULT_MOA_PRESET_NAME, normalize_moa_config
+from hermes_cli.moa_config import (
+    DEFAULT_MOA_PRESET_NAME,
+    normalize_moa_config,
+    repoint_moa_preset_references)
 
 
 def _prompt_choice(title: str, rows: list[str], default: int = 0) -> int:
@@ -169,8 +172,11 @@ def _cmd_delete(cfg: dict, args) -> None:
         moa["default_preset"] = next(iter(moa["presets"]))
     if moa.get("active_preset") == preset_name:
         moa["active_preset"] = ""
+    reassigned = repoint_moa_preset_references(cfg, preset_name, moa["default_preset"])
     _save(cfg, moa)
     print(f"Deleted MoA preset: {preset_name}")
+    for label in reassigned:
+        print(f"  note: {label} referenced '{preset_name}'; reassigned to '{moa['default_preset']}'")
 
 
 _SUBCOMMANDS = {

@@ -233,7 +233,8 @@ def _preset_dict(preset) -> dict:
 def set_moa_models(body: MoaConfigPayload, profile: Optional[str] = None):
     """Persist the Mixture-of-Agents provider/model slots."""
     with http_failure("PUT /api/model/moa failed", 500, detail="Failed to save MoA config"):
-        from hermes_cli.moa_config import normalize_moa_config, validate_moa_payload
+        from hermes_cli.moa_config import (
+            normalize_moa_config, repoint_moa_preset_references, validate_moa_payload)
 
         # load→mutate→save runs on a worker thread (sync-def endpoint); the
         # desktop's debounced PUT /api/config autosave races it, so the whole
@@ -264,8 +265,19 @@ def set_moa_models(body: MoaConfigPayload, profile: Optional[str] = None):
             # every other section too, so a Desktop MoA autosave could wipe a chain another
             # surface wrote meanwhile (#89184, ``fallback_providers: []``).
             moa_section = dict(cfg.get("moa") or {})
+            # Presets dropped by this save must not leave model/auxiliary slots dangling —
+            # session start resolves them through resolve_moa_preset (#82613).
+            removed = set(moa_section.get("presets") or {}) - set(normalized["presets"])
             moa_section.update(normalized)
-            save_config({"moa": moa_section}, merge_existing=True)
+            save_payload: dict = {"moa": moa_section}
+            if removed:
+                reassigned = repoint_moa_preset_references(cfg, removed, normalized["default_preset"])
+                if reassigned:
+                    if isinstance(cfg.get("model"), dict):
+                        save_payload["model"] = cfg["model"]
+                    if isinstance(cfg.get("auxiliary"), dict):
+                        save_payload["auxiliary"] = cfg["auxiliary"]
+            save_config(save_payload, merge_existing=True)
             return {"ok": True, **normalized}
 
 

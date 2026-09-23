@@ -291,6 +291,41 @@ def resolve_moa_preset(config: Any, name: str | None = None) -> dict[str, Any]:
     return deepcopy(preset)
 
 
+def repoint_moa_preset_references(config: Any, removed: Any, replacement: str) -> list[str]:
+    """Repoint ``model``/``auxiliary.*`` slots still naming a deleted preset.
+
+    A slot references a preset only through ``provider: moa`` (the model field then
+    holds the preset name); deleting the preset without repointing leaves the next
+    session start crashing in ``resolve_moa_preset`` (#82613). Mutates ``config``
+    in place; returns labels (e.g. ``model.default``, ``auxiliary.title.model``) of
+    the slots reassigned to ``replacement`` (the surviving default preset).
+    """
+    names = {str(removed).strip()} if isinstance(removed, str) else {
+        str(name or "").strip() for name in (removed or ())}
+    names.discard("")
+    replacement = str(replacement or "").strip()
+    changed: list[str] = []
+    if not isinstance(config, dict) or not names or not replacement:
+        return changed
+    model = config.get("model")
+    if isinstance(model, dict) and str(model.get("provider") or "").strip().lower() == "moa":
+        for key in ("default", "model", "name"):
+            if str(model.get(key) or "").strip() in names:
+                model[key] = replacement
+                changed.append(f"model.{key}")
+    auxiliary = config.get("auxiliary")
+    if isinstance(auxiliary, dict):
+        for task, slot in auxiliary.items():
+            if (
+                isinstance(slot, dict)
+                and str(slot.get("provider") or "").strip().lower() == "moa"
+                and str(slot.get("model") or "").strip() in names
+            ):
+                slot["model"] = replacement
+                changed.append(f"auxiliary.{task}.model")
+    return changed
+
+
 def exact_moa_preset_name(config: Any, text: str) -> str | None:
     """Return the preset name iff ``text`` exactly matches an *enabled* preset.
 
