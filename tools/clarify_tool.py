@@ -128,6 +128,9 @@ def _normalize_questions(questions) -> tuple:
             if not isinstance(choices, list):
                 return None, f"questions[{index}].choices must be a list."
             choices = _clean_choices(choices)
+            if choices is None:
+                return None, (f"questions[{index}].choices were provided but all blank — "
+                              "resubmit with non-empty options.")
         normalized.append({
             "qid": f"q{index}", "id": str(item.get("id") or "").strip() or None, "question": text,
             "choices": mark_recommended(list(choices)) if choices else None,
@@ -223,6 +226,9 @@ def clarify_tool(question: str, choices: Optional[List[str]] = None, multi_selec
         if not isinstance(choices, list):
             return tool_error("choices must be a list of strings.")
         choices = _clean_choices(choices)
+        if choices is None:
+            return tool_error("choices were provided but all blank — "
+                              "resubmit with non-empty options.")
     if callback is None:
         return tool_error(_UNAVAILABLE)
     # The bare list goes back to the agent; the "(Recommended)" label is presentation only.

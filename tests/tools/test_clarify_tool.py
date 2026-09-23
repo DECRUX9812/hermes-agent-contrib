@@ -54,6 +54,17 @@ class TestClarifyToolChoicesValidation:
         assert len(choices_passed) == MAX_CHOICES
 
 
+    def test_all_blank_choices_return_error(self):
+        """A choices list that cleans to empty is a caller defect, not an
+        open-ended question — surfaces expecting a choice list would strand."""
+        def cb(question, choices):  # must never be reached
+            raise AssertionError("callback invoked on all-blank choices")
+
+        result = json.loads(clarify_tool("Pick", choices=["", "  "], callback=cb))
+        assert "error" in result
+        assert "non-empty" in result["error"]
+
+
     def test_choices_converted_to_strings(self):
         """Non-string choices should be converted to strings."""
         choices_received = []
@@ -442,6 +453,17 @@ class TestClarifyBatchValidation:
         result = json.loads(clarify_tool("Single?", questions=[], callback=cb))
         assert result["user_response"] == "yes"
         assert "responses" not in result
+
+    def test_batch_rejects_all_blank_choices(self):
+        """All-blank choices in a batch question are a caller defect, not an
+        open-ended downgrade."""
+        result = json.loads(clarify_tool(
+            "",
+            questions=[{"question": "Pick", "choices": ["", "  "]}],
+            callback=lambda *a, **k: "",
+        ))
+        assert "error" in result
+        assert "non-empty" in result["error"]
 
     def test_batch_choices_flattened_capped_and_labelled_per_question(self):
         """Each question gets the full choice pipeline: flatten, cap, label."""
