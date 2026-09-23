@@ -1635,6 +1635,19 @@ def _normalize_reasoning_effort(value: Any) -> Optional[str]:
     return text
 
 
+def _normalize_max_duration_seconds(value: Any) -> Optional[float]:
+    """Positive seconds -> float; unset/blank/<=0 -> None (no wall-clock cap). Non-numeric
+    raises so a typo never silently stores an uncapped job."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return None
+    try:
+        seconds = float(value)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"Invalid max_duration_seconds {value!r} — must be a positive number of seconds.")
+    return seconds if seconds > 0 else None
+
+
 # Normalizers for create_job (all fields) / update_job (present fields). Invalid values raise BEFORE
 # storing.
 _CREATE_FIELD_NORMALIZERS: Dict[str, Callable[[Any], Any]] = {
@@ -1649,12 +1662,14 @@ _CREATE_FIELD_NORMALIZERS: Dict[str, Callable[[Any], Any]] = {
     "no_agent": bool,
     "context_from": _normalize_context_from,
     "failure_deliver": _normalize_failure_deliver,
+    "max_duration_seconds": _normalize_max_duration_seconds,
 }
 _UPDATE_FIELD_NORMALIZERS: Dict[str, Callable[[Any], Any]] = {
     "workdir": lambda v: None if v in {None, "", False} else _normalize_workdir(v),
     "monitor_script": _normalize_job_optional_text,
     "monitor_url": _normalize_job_optional_text,
     "reasoning_effort": _normalize_reasoning_effort,
+    "max_duration_seconds": _normalize_max_duration_seconds,
 }
 
 
@@ -1722,6 +1737,7 @@ def create_job(
     monitor_url: Optional[str] = None,
     reasoning_effort: Optional[str] = None,
     failure_deliver: Optional[str] = None,
+    max_duration_seconds: Optional[float] = None,
     paused: bool = False,
     paused_reason: Optional[str] = None,
     pinned: bool = False,
@@ -1819,6 +1835,7 @@ def create_job(
     for key, value in (
         ("attach_to_session", normalized_attach), ("reasoning_effort", normalized_reasoning_effort),
         ("failure_deliver", f["failure_deliver"]),
+        ("max_duration_seconds", f["max_duration_seconds"]),
     ):
         if value is not None:
             job[key] = value

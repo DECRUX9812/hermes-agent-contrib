@@ -1719,14 +1719,41 @@ def _raise_inactivity_timeout(agent, job_name: str, limit_s: float) -> None:
         f"— last activity: {_last_desc}")
 
 
+def _job_max_duration_seconds(job: dict) -> Optional[float]:
+    """Per-job wall-clock run budget (``max_duration_seconds``). Unset/invalid/<=0 = no cap —
+    the inactivity watchdog alone bounds the run, as before."""
+    try:
+        seconds = float((job or {}).get("max_duration_seconds") or 0)
+    except (TypeError, ValueError):
+        return None
+    return seconds if seconds > 0 else None
+
+
+def _raise_max_duration_timeout(agent, job_name: str, limit_s: float) -> None:
+    """Hard-interrupt a still-active run that hit its per-job wall-clock budget and raise
+    TimeoutError. Kept textually distinct from the inactivity shape (``idle for Ns (limit
+    Ns)``) so the run row and the failure-notice classifier never confuse the two."""
+    logger.error(
+        "Job '%s' exceeded max duration %.0fs — interrupting a still-active run",
+        job_name, limit_s)
+    request_hard_interrupt(
+        agent, "Cron job stopped (max duration)", tool_reason="cron max duration watchdog")
+    raise TimeoutError(
+        f"Cron job '{job_name}' exceeded max duration of {int(limit_s)}s (wall-clock)")
+
+
 def _run_agent_with_watchdog(
     agent, prompt: str, job: dict, job_id: str, job_name: str, task_id: str, cancel_event,
     worker_state: Optional[dict] = None,
 ) -> dict:
-    """Run ``agent.run_conversation`` on a worker thread under the inactivity (not wall-clock)
-    watchdog: default 600s, override HERMES_CRON_TIMEOUT, 0 = unlimited."""
+    """Run ``agent.run_conversation`` on a worker thread under the inactivity watchdog
+    (default 600s, override HERMES_CRON_TIMEOUT, 0 = unlimited) plus, when the job carries
+    ``max_duration_seconds``, a hard wall-clock deadline that interrupts even an active run."""
     _cron_timeout = _cron_inactivity_seconds()
     _cron_inactivity_limit = _cron_timeout if _cron_timeout > 0 else None
+    _max_duration_limit = _job_max_duration_seconds(job)
+    _deadline = (
+        time.monotonic() + _max_duration_limit if _max_duration_limit is not None else None)
     _POLL_INTERVAL = 5.0
     # Heartbeat the one-shot run_claim while alive: without it a long run looks like a dead owner
     # and gets re-dispatched / stale-removed out from under the live run.
@@ -1769,6 +1796,7 @@ def _run_agent_with_watchdog(
     if worker_state is not None:
         worker_state["future"] = _cron_future
     _inactivity_timeout = False
+    _max_duration_timeout = False
     _watch_stop = threading.Event()
 
     def _idle_seconds() -> float:
@@ -1798,15 +1826,23 @@ def _run_agent_with_watchdog(
             # loop / hung ``get_activity_summary`` on this thread can no longer keep the 600s inactivity
             # limit from firing (#94285).
             _watch_thread.start()
-        if _cron_inactivity_limit is None and not _is_oneshot and cancel_event is None:
+        if (_cron_inactivity_limit is None and _deadline is None
+                and not _is_oneshot and cancel_event is None):
             result = _cron_future.result()
         else:
             result = None
             while True:
-                done, _ = concurrent.futures.wait({_cron_future}, timeout=_POLL_INTERVAL)
+                _wait_s = _POLL_INTERVAL
+                if _deadline is not None:
+                    # Wake AT the deadline, not up to a full poll interval late.
+                    _wait_s = min(_wait_s, max(0.0, _deadline - time.monotonic()))
+                done, _ = concurrent.futures.wait({_cron_future}, timeout=_wait_s)
                 if done:
                     _abort_if_fire_claim_lost()
                     result = _cron_future.result()
+                    break
+                if _deadline is not None and time.monotonic() >= _deadline:
+                    _max_duration_timeout = True
                     break
                 if _inactivity_timeout:
                     break
@@ -1819,6 +1855,8 @@ def _run_agent_with_watchdog(
         _watch_stop.set()
         _cron_pool.shutdown(wait=False, cancel_futures=True)
 
+    if _max_duration_timeout:
+        _raise_max_duration_timeout(agent, job_name, _max_duration_limit)
     if _inactivity_timeout:
         _raise_inactivity_timeout(agent, job_name, _cron_inactivity_limit)
 

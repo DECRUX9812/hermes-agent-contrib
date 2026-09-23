@@ -77,6 +77,10 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
             "medium, high, xhigh, max, or ultra. Overrides agent.reasoning_effort "
             "and agent.reasoning_overrides for this job; unsupported levels are "
             "clamped by the provider at request time. Omit to follow config.")
+    cron_create.add_argument("--max-duration", dest="max_duration_seconds", type=float,
+        help="Hard wall-clock cap (seconds) on each agent run: the run is interrupted at "
+            "the deadline even while still active (the inactivity watchdog only fires on "
+            "idle). Omit for no cap.")
     cron_create.add_argument(
         "--continuity", dest="continuity", action="store_const", const=True, default=None,
         help="Each run wakes up with the job's own previous output injected "
@@ -144,6 +148,9 @@ def build_cron_parser(subparsers, *, cmd_cron: Callable) -> None:
         help="Pin this job's reasoning (thinking) effort: none, minimal, low, "
             "medium, high, xhigh, max, or ultra. Pass empty string to clear "
             "the pin and follow config resolution.")
+    cron_edit.add_argument("--max-duration", dest="max_duration_seconds", type=float,
+        help="Hard wall-clock cap (seconds) on each agent run: interrupted at the "
+            "deadline even while still active. Pass 0 to clear the cap.")
 
     # lifecycle actions
     cron_pause = cron_subparsers.add_parser("pause", help="Pause a scheduled job")
