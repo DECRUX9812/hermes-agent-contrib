@@ -6,7 +6,16 @@ import path from 'node:path'
 
 import { afterEach, test } from 'vitest'
 
-import { gitFor, repoStatus, resolveRenamePath, REVIEW_FILE_CAP, reviewList } from './git-review-ops'
+import {
+  gitFor,
+  repoStatus,
+  resolveRenamePath,
+  REVIEW_FILE_CAP,
+  reviewList,
+  reviewRevert,
+  reviewStage,
+  reviewUnstage
+} from './git-review-ops'
 
 const tempDirs: string[] = []
 
@@ -104,6 +113,81 @@ test('reviewList reports an untracked directory without recursively listing its 
     result.files.map(file => file.path),
     ['browser-profile/']
   )
+})
+
+test('reviewStage treats a file path as a literal pathspec, not a glob', async () => {
+  const dir = makeRepo()
+
+  fs.writeFileSync(path.join(dir, 'a[bc].txt'), 'literal\n')
+  fs.writeFileSync(path.join(dir, 'ab.txt'), 'glob-match\n')
+
+  await reviewStage(dir, 'a[bc].txt', 'git')
+
+  const status = await gitFor(dir, 'git').status()
+
+  assert.deepEqual(status.staged, ['a[bc].txt'])
+})
+
+test('reviewUnstage treats a file path as a literal pathspec, not a glob', async () => {
+  const dir = makeRepo()
+
+  fs.writeFileSync(path.join(dir, 'a[bc].txt'), 'literal\n')
+  fs.writeFileSync(path.join(dir, 'ab.txt'), 'glob-match\n')
+  execFileSync('git', ['add', '-A'], { cwd: dir })
+
+  await reviewUnstage(dir, 'a[bc].txt', 'git')
+
+  const status = await gitFor(dir, 'git').status()
+
+  assert.deepEqual(status.staged, ['ab.txt'])
+})
+
+test('reviewRevert restores only the literal file, not its glob matches', async () => {
+  const dir = makeRepo()
+
+  fs.writeFileSync(path.join(dir, 'a[bc].txt'), 'committed\n')
+  fs.writeFileSync(path.join(dir, 'ab.txt'), 'committed\n')
+  execFileSync('git', ['add', '-A'], { cwd: dir })
+  execFileSync('git', ['commit', '-qm', 'add both'], { cwd: dir })
+  fs.writeFileSync(path.join(dir, 'a[bc].txt'), 'dirty\n')
+  fs.writeFileSync(path.join(dir, 'ab.txt'), 'dirty\n')
+
+  await reviewRevert(dir, 'a[bc].txt', 'git')
+
+  assert.equal(fs.readFileSync(path.join(dir, 'a[bc].txt'), 'utf8'), 'committed\n')
+  assert.equal(fs.readFileSync(path.join(dir, 'ab.txt'), 'utf8'), 'dirty\n')
+})
+
+test('reviewRevert removes an untracked literal-path file', async () => {
+  const dir = makeRepo()
+
+  fs.writeFileSync(path.join(dir, 'a[bc].txt'), 'untracked\n')
+  fs.writeFileSync(path.join(dir, 'ab.txt'), 'keep\n')
+
+  await reviewRevert(dir, 'a[bc].txt', 'git')
+
+  assert.equal(fs.existsSync(path.join(dir, 'a[bc].txt')), false)
+  assert.equal(fs.existsSync(path.join(dir, 'ab.txt')), true)
+})
+
+test('reviewRevert surfaces a checkout failure instead of swallowing it', async () => {
+  const dir = makeRepo()
+
+  fs.writeFileSync(path.join(dir, 'tracked.txt'), 'dirty\n')
+
+  // A git wrapper that fails `checkout` but delegates everything else, so the
+  // revert hits a real checkout failure on a tracked file.
+  const fakeGit = path.join(dir, 'failing-git')
+
+  // simple-git may prepend `-c` flags, so match the subcommand anywhere — and
+  // write to stderr: simple-git only rejects when the child reports an error.
+  fs.writeFileSync(
+    fakeGit,
+    '#!/bin/sh\ncase " $* " in *" checkout "*) echo "fatal: checkout failed" >&2; exit 128;; esac\nexec git "$@"\n'
+  )
+  fs.chmodSync(fakeGit, 0o755)
+
+  await assert.rejects(() => reviewRevert(dir, 'tracked.txt', fakeGit))
 })
 
 test('reviewList caps the file payload returned to the renderer', async () => {

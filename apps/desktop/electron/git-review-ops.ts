@@ -80,6 +80,11 @@ function resolveRenamePath(raw) {
   return path.split(' => ').pop().trim()
 }
 
+// A renderer-supplied file path is always a literal name, never a glob — wrap
+// it in the `:(literal)` pathspec magic so names containing [*?[] can't match
+// (or delete) sibling files.
+const lit = filePath => `:(literal)${filePath}`
+
 // DiffResult.files → Map<path, {added, removed}> (binary files carry no line
 // delta).
 function countsByPath(summary) {
@@ -340,18 +345,18 @@ async function reviewDiff(repoPath, filePath, scope, baseRef, staged, gitBin) {
   if (scope === 'branch') {
     const base = await branchBase(git)
 
-    return base ? safe([`${base}...HEAD`, '--', filePath]) : ''
+    return base ? safe([`${base}...HEAD`, '--', lit(filePath)]) : ''
   }
 
   if (scope === 'lastTurn') {
-    return baseRef ? safe([baseRef, '--', filePath]) : ''
+    return baseRef ? safe([baseRef, '--', lit(filePath)]) : ''
   }
 
   if (staged) {
-    return safe(['--cached', '--', filePath])
+    return safe(['--cached', '--', lit(filePath)])
   }
 
-  const worktree = await safe(['--', filePath])
+  const worktree = await safe(['--', lit(filePath)])
 
   if (worktree.trim()) {
     return worktree
@@ -384,7 +389,7 @@ async function fileDiffVsHead(repoPath, filePath, gitBin) {
   }
 
   const git = gitFor(cwd, gitBin)
-  const head = await git.diff(['HEAD', '--', filePath]).catch(() => '')
+  const head = await git.diff(['HEAD', '--', lit(filePath)]).catch(() => '')
 
   if (head.trim()) {
     return head
@@ -392,7 +397,7 @@ async function fileDiffVsHead(repoPath, filePath, gitBin) {
 
   // No tracked changes vs HEAD. Only synthesize an all-add diff for a file git
   // doesn't know yet; a clean tracked file must return empty.
-  const status = await git.raw(['status', '--porcelain', '--', filePath]).catch(() => '')
+  const status = await git.raw(['status', '--porcelain', '--', lit(filePath)]).catch(() => '')
 
   if (!status.trim().startsWith('??')) {
     return ''
@@ -411,7 +416,7 @@ async function fileDiffVsHead(repoPath, filePath, gitBin) {
 async function reviewStage(repoPath, filePath, gitBin) {
   const cwd = resolveRequestedPathForIpc(repoPath, { purpose: 'Review stage' })
 
-  await gitFor(cwd, gitBin).raw(filePath ? ['add', '--', filePath] : ['add', '-A'])
+  await gitFor(cwd, gitBin).raw(filePath ? ['add', '--', lit(filePath)] : ['add', '-A'])
 
   return { ok: true }
 }
@@ -419,7 +424,9 @@ async function reviewStage(repoPath, filePath, gitBin) {
 async function reviewUnstage(repoPath, filePath, gitBin) {
   const cwd = resolveRequestedPathForIpc(repoPath, { purpose: 'Review unstage' })
 
-  await gitFor(cwd, gitBin).raw(filePath ? ['reset', '-q', 'HEAD', '--', filePath] : ['reset', '-q', 'HEAD'])
+  await gitFor(cwd, gitBin).raw(
+    filePath ? ['reset', '-q', 'HEAD', '--', lit(filePath)] : ['reset', '-q', 'HEAD']
+  )
 
   return { ok: true }
 }
@@ -431,11 +438,32 @@ async function reviewRevert(repoPath, filePath, gitBin) {
   const git = gitFor(cwd, gitBin)
 
   if (filePath) {
-    await git.raw(['checkout', 'HEAD', '--', filePath]).catch(() => undefined)
-    await git.raw(['clean', '-fd', '--', filePath]).catch(() => undefined)
+    // Tracked → restore from HEAD. Untracked or newly-staged files have nothing
+    // in HEAD to restore — `git checkout` fails on them — so delete via clean
+    // instead. Any other checkout failure propagates to the renderer.
+    try {
+      await git.raw(['checkout', 'HEAD', '--', lit(filePath)])
+    } catch (err) {
+      const inHead = await git.raw(['ls-tree', 'HEAD', '--', lit(filePath)])
+
+      if (inHead.trim()) {
+        throw err
+      }
+
+      await git.raw(['clean', '-fd', '--', lit(filePath)])
+    }
   } else {
-    await git.raw(['checkout', 'HEAD', '--', '.']).catch(() => undefined)
-    await git.raw(['clean', '-fd']).catch(() => undefined)
+    // No HEAD (unborn branch) leaves nothing to restore; clean still applies.
+    const hasHead = await git.raw(['rev-parse', '--verify', '-q', 'HEAD']).then(
+      () => true,
+      () => false
+    )
+
+    if (hasHead) {
+      await git.raw(['checkout', 'HEAD', '--', '.'])
+    }
+
+    await git.raw(['clean', '-fd'])
   }
 
   return { ok: true }
