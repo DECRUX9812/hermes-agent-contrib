@@ -437,8 +437,8 @@ import {
   resolveBehindLocally
 } from './update-api-check'
 import { waitForUpdateClearance } from './update-gate'
+import { resolveHealedBranch as resolveHealedBranchDecision } from './update-heal'
 import { readLiveUpdateMarker, updateHandoffConflict, writeUpdateMarker } from './update-marker'
-import { isOfficialSshRemote, OFFICIAL_REPO_HTTPS_URL } from './update-remote'
 import {
   collectRelaunchArgs,
   describeUpdaterHandoffFailure,
@@ -3251,28 +3251,19 @@ function emitUpdateProgress(payload) {
 // every later check/apply follows main — no manual flip, even for already-
 // installed clients. Read-only ls-remote probe; only flips on a definitive
 // "ref absent" (exit 2), never on a transient network error, so a flaky
-// connection can't strand a user on the wrong branch.
-async function resolveHealedBranch(updateRoot, branch) {
-  if (!branch || branch === 'main') {
-    return branch || 'main'
-  }
-
-  const originUrl = await getOriginUrl(updateRoot)
-  const remote = isOfficialSshRemote(originUrl) ? OFFICIAL_REPO_HTTPS_URL : 'origin'
-  const probe = await runGit(['ls-remote', '--exit-code', '--heads', remote, branch], { cwd: updateRoot })
-
-  if (probe.code !== 2) {
-    return branch
-  }
-
-  rememberLog(`[updates] origin/${branch} is gone (merged?); falling back to main`)
-  const config = readDesktopUpdateConfig()
-
-  if (config.branch !== 'main') {
-    writeDesktopUpdateConfig({ ...config, branch: 'main' })
-  }
-
-  return 'main'
+// connection can't strand a user on the wrong branch. Decision lives in
+// update-heal.ts so it is unit testable without booting Electron.
+function resolveHealedBranch(updateRoot, branch) {
+  return resolveHealedBranchDecision(
+    {
+      runGit,
+      readConfig: readDesktopUpdateConfig,
+      writeConfig: writeDesktopUpdateConfig,
+      log: rememberLog
+    },
+    updateRoot,
+    branch
+  )
 }
 
 // Passive checks never touch git's network side. Every client used to `git
