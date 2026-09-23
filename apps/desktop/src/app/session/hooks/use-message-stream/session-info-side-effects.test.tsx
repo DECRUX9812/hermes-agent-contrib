@@ -363,6 +363,30 @@ describe('empty message.complete after streamed text (#95514)', () => {
 
     expect(hydrateFromStoredSession).toHaveBeenCalled()
   })
+
+  // #118755: a reasoning-only turn DID render — reasoning deltas flow through
+  // the same stream path and set sawAssistantPayload. An empty terminal frame
+  // must not be read as "never rendered": hydrating would swap the live
+  // reasoning bubble for a stored row that carries no visible text.
+  it('keeps a reasoning-only turn visible and does not re-hydrate on empty complete', () => {
+    mountStream()
+
+    act(() => stream.handleEvent({ payload: {}, session_id: ACTIVE_SID, type: 'message.start' }))
+    act(() =>
+      stream.handleEvent({
+        payload: { text: 'Reasoning through the problem.' },
+        session_id: ACTIVE_SID,
+        type: 'reasoning.delta'
+      })
+    )
+    act(() => stream.handleEvent({ payload: { text: '' }, session_id: ACTIVE_SID, type: 'message.complete' }))
+
+    const assistant = stream.state(ACTIVE_SID).messages.find(message => message.role === 'assistant')
+    expect(assistant?.parts.filter(part => part.type === 'reasoning').map(part => part.text)).toEqual([
+      'Reasoning through the problem.'
+    ])
+    expect(hydrateFromStoredSession).not.toHaveBeenCalled()
+  })
 })
 
 describe('message.complete sidebar refresh coalescing', () => {

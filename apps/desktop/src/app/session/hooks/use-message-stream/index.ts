@@ -788,6 +788,11 @@ export function useMessageStream({
         // visible assistant text and the terminal frame is empty. In that
         // case hydrate would replace the live bubble with a stored empty
         // row (#95514; adoptedRunningTurn must not short-circuit).
+        // sawAssistantPayload is the "this window rendered the turn" bit —
+        // reasoning-only streams set it through the same mutateStream path,
+        // so an empty terminal frame after one is NOT "never rendered":
+        // hydrating would swap the live reasoning bubble for a stored row
+        // that carries no visible text (#118755).
         shouldHydrate =
           !completionError &&
           !hasInlineError &&
@@ -799,7 +804,7 @@ export function useMessageStream({
           // locally, so the user-tail guard keeps applying there.
           (!unresolvedUserTail || !finalText) &&
           !(localVisibleText && !finalText) &&
-          (state.adoptedRunningTurn || !state.sawAssistantPayload || !finalText)
+          (state.adoptedRunningTurn || !state.sawAssistantPayload)
 
         return {
           ...state,
