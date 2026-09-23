@@ -157,6 +157,7 @@ function HeroChat({ frame, viewportRef }: HeroChatProps) {
               }}
             >
               <span
+                aria-hidden
                 className={cn('w-4 text-center font-mono text-[0.95rem]', !done && 'text-white/55')}
                 style={{ color: done ? BLUE : undefined, fontFamily: "'JetBrains Mono', monospace" }}
               >

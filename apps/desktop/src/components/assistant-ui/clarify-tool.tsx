@@ -896,7 +896,8 @@ function BatchQuestionBlock({
         </span>
         {locked ? (
           <span className="shrink-0 rounded-sm bg-(--chrome-action-hover) px-1 py-px text-[0.625rem] text-(--ui-text-tertiary)">
-            ✓ {copy.answeredBadge}
+            <span aria-hidden>✓ </span>
+            {copy.answeredBadge}
           </span>
         ) : null}
       </div>

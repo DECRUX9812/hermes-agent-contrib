@@ -78,7 +78,13 @@ export function CardFrame({
           onClick={onContinue}
           size="sm"
         >
-          {done ? '✓ Done' : continueLabel}
+          {done ? (
+            <>
+              <span aria-hidden>✓ </span>Done
+            </>
+          ) : (
+            continueLabel
+          )}
         </Button>
       </div>
     </div>

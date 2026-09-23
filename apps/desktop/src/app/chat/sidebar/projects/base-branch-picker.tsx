@@ -141,7 +141,9 @@ export function BaseBranchPicker({
                         size="0.8rem"
                       />
                       {branch.isDefault && (
-                        <span className="ml-auto shrink-0 text-[0.625rem] text-(--ui-text-tertiary)">★</span>
+                        <span aria-hidden className="ml-auto shrink-0 text-[0.625rem] text-(--ui-text-tertiary)">
+                          ★
+                        </span>
                       )}
                       <span className="truncate">{branch.name}</span>
                       {value === branch.name && (

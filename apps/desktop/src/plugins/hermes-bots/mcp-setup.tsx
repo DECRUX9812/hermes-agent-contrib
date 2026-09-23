@@ -303,7 +303,11 @@ export function McpSetupButton({ profile, entry, onDone, ensureProfile }: McpSet
   }
 
   if (phase === 'done') {
-    return <span className="ml-1.5 text-[0.65rem] text-(--ui-success)">set up ✓</span>
+    return (
+      <span className="ml-1.5 text-[0.65rem] text-(--ui-success)">
+        set up<span aria-hidden> ✓</span>
+      </span>
+    )
   }
 
   if (phase === 'keys') {
