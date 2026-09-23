@@ -1788,6 +1788,20 @@ def _load_service_tier() -> str | None:
     return _SERVICE_TIER_ALIASES.get(raw)
 
 
+def _checkpoints_enabled(cfg: dict) -> bool:
+    """Env var wins as the override/bridge; else the profile-scoped ``checkpoints.enabled``
+    (legacy ``checkpoints: true`` bool form works, matching the messaging gateway)."""
+    env = os.environ.get("HERMES_TUI_CHECKPOINTS")
+    if env is not None:
+        return is_truthy_value(env)
+    cp_cfg = cfg.get("checkpoints", {})
+    if isinstance(cp_cfg, bool):
+        return cp_cfg
+    if not isinstance(cp_cfg, dict):
+        return False
+    return bool(cp_cfg.get("enabled", False))
+
+
 def _load_provider_routing() -> dict:
     """OpenRouter ``provider_routing`` prefs (gateway/CLI parity — without them OpenRouter picks an effectively random provider)."""
     with contextlib.suppress(Exception):
@@ -2420,7 +2434,7 @@ def _make_agent(
         # Builds that run before the record exists (branch, eager resume, compute host) pass it explicitly.
         user_id=auth_user_id if auth_user_id is not None else _session_auth_user_id(session),
         session_db=session_db if session_db is not None else _get_db(), ephemeral_system_prompt=system_prompt or None,
-        checkpoints_enabled=is_truthy_value(os.environ.get("HERMES_TUI_CHECKPOINTS")),
+        checkpoints_enabled=_checkpoints_enabled(cfg),
         pass_session_id=is_truthy_value(os.environ.get("HERMES_TUI_PASS_SESSION_ID")),
         skip_context_files=ignore_rules, skip_memory=ignore_rules, fallback_model=_load_fallback_model(),
         **_agent_cbs(sid))
