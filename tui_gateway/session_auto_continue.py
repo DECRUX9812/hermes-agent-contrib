@@ -67,6 +67,13 @@ def _maybe_schedule_auto_continue(sid: str, session: dict, session_key: str) -> 
         return None
     if not marker.get("auto_continue", True):
         return None  # The mailbox owns recovery and receipt identity for imported turns.
+    # A marker whose writer is a different backend process still alive on this host is a turn in
+    # progress, not a crash — auto-continuing would run it twice. Leave the marker: the writer's
+    # own turn conclusion clears it. See #94778.
+    if turn_marker_writer_alive(marker.get("writer")):
+        logger.info("auto-continue for %s skipped: writer backend still alive (pid %s)",
+                    session_key, marker["writer"].get("pid"))
+        return None
     enabled, freshness_secs, max_attempts = _auto_continue_config()
     age = time.time() - marker["started_at"]
     if not enabled or age > freshness_secs or marker["attempts"] >= max_attempts:
