@@ -227,7 +227,7 @@ def _prepend_tool_paths(env: dict[str, str]) -> dict[str, str]:
 class _SlashWorker:
     """Persistent HermesCLI subprocess for slash commands."""
 
-    def __init__(self, session_key: str, model: str, profile_home: str | None = None):
+    def __init__(self, session_key: str, model: str, profile_home: str | None = None, cwd: str | None = None):
         self._lock = threading.Lock()
         self._seq = 0
         self.stderr_tail: list[str] = []
@@ -264,7 +264,7 @@ class _SlashWorker:
         # a minimal PATH (e.g. by the Desktop/Dashboard app). See #83845.
         self.proc = subprocess.Popen(
             argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-            encoding="utf-8", errors="replace", bufsize=1, cwd=os.getcwd(), env=env,
+            encoding="utf-8", errors="replace", bufsize=1, cwd=cwd or os.getcwd(), env=env,
             creationflags=windows_hide_flags(), start_new_session=True)
         threading.Thread(target=self._drain_stdout, daemon=True).start()
         threading.Thread(target=self._drain_stderr, daemon=True).start()
@@ -1948,7 +1948,7 @@ def _restart_slash_worker(sid: str, session: dict):
         worker.close()
     try:
         new_worker = _SlashWorker(session["session_key"], getattr(session.get("agent"), "model", _resolve_model()),
-                                  profile_home=session.get("profile_home"))
+                                  profile_home=session.get("profile_home"), cwd=_session_cwd(session))
     except Exception:
         session["slash_worker"] = None
         return
