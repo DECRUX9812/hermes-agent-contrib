@@ -720,7 +720,8 @@ class GatewayAdapterLifecycleMixin:
         logger.info("Reconnecting %s (attempt %d)...", platform.value, attempt)
         adapter = None
         try:
-            adapter = self._create_adapter(platform, platform_config)
+            # Off-loop: ensure_deps_fn may run a blocking pip install (#51203).
+            adapter = await asyncio.to_thread(self._create_adapter, platform, platform_config)
             if not adapter:
                 self._drop_from_reconnect_queue(platform, "adapter creation returned None")
                 return
@@ -1054,7 +1055,9 @@ class GatewayAdapterLifecycleMixin:
                 platform.value, exc_info=True,
             ):
                 with _profile_runtime_scope(profile_home, hydrate_secrets=False):
-                    adapter = self._create_adapter(platform, platform_config)
+                    # Off-loop: ensure_deps_fn may run a blocking pip install (#51203).
+                    # to_thread propagates contextvars, so the profile scope reaches the worker.
+                    adapter = await asyncio.to_thread(self._create_adapter, platform, platform_config)
                 if not adapter:
                     logger.warning(
                         "[MULTIPLEX] Profile '%s': skipping platform '%s' - adapter creation returned None",
@@ -1177,7 +1180,8 @@ class GatewayAdapterLifecycleMixin:
                     platform.value, profile_name,
                 )
                 return None, None
-            adapter = self._create_adapter(platform, profile_config)
+            # Off-loop: ensure_deps_fn may run a blocking pip install (#51203).
+            adapter = await asyncio.to_thread(self._create_adapter, platform, profile_config)
             if adapter is None:
                 logger.warning(
                     "Secondary %s reconnect skipped: adapter unavailable (profile: %s)",
