@@ -514,6 +514,11 @@ class SessionDB(
         if "_system_prompt_resolved" in data:
             resolved = data.pop("_system_prompt_resolved")
             if "system_prompt" in data:
+                if isinstance(resolved, (bytes, bytearray, memoryview)):
+                    try:
+                        resolved = bytes(resolved).decode("utf-8")
+                    except UnicodeDecodeError:
+                        resolved = None
                 data["system_prompt"] = resolved
         return data
 

@@ -41,7 +41,7 @@ _COMPRESSION_LINEAGE_CTE = f"""
 # Projection shared by both peer-recovery queries (exact key, then peer tuple).
 _PEER_SELECT_HEAD = """
                 SELECT s.*,
-                       COALESCE(sp.prompt, s.system_prompt)
+                       CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB)
                            AS _system_prompt_resolved,
                        (COALESCE(s.message_count, 0) > 0 OR EXISTS (
                            SELECT 1 FROM messages WHERE messages.session_id = s.id LIMIT 1
@@ -399,7 +399,7 @@ class SessionGatewayMixin:
         self.flush_token_counts()
         query = f"""
             SELECT sessions.*,
-                   COALESCE(sp.prompt, sessions.system_prompt)
+                   CAST(COALESCE(sp.prompt, sessions.system_prompt) AS BLOB)
                        AS _system_prompt_resolved,
                    {_sql_session_last_active("sessions")} AS last_active
             FROM sessions
@@ -866,7 +866,7 @@ class SessionGatewayMixin:
         """All sessions in handoff_state='pending', oldest first (gateway handoff watcher)."""
         try:
             rows = self._read_all(
-                "SELECT s.*, COALESCE(sp.prompt, s.system_prompt) AS _system_prompt_resolved FROM sessions s "
+                "SELECT s.*, CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB) AS _system_prompt_resolved FROM sessions s "
                 "LEFT JOIN system_prompts sp ON sp.hash = s.system_prompt_hash "
                 "WHERE s.handoff_state = 'pending' "
                 "ORDER BY s.started_at ASC")

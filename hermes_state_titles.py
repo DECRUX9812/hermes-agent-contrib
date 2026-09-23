@@ -159,7 +159,7 @@ class SessionTitlesMixin:
     def get_session_by_title(self, title: str) -> Optional[Dict[str, Any]]:
         """Look up a session by exact title. Returns session dict or None."""
         row = self._read_one(
-            "SELECT s.*, COALESCE(sp.prompt, s.system_prompt) AS _system_prompt_resolved "
+            "SELECT s.*, CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB) AS _system_prompt_resolved "
             "FROM sessions s LEFT JOIN system_prompts sp ON sp.hash = s.system_prompt_hash "
             "WHERE s.title = ?", (title,))
         return self._session_row_dict(row) if row else None

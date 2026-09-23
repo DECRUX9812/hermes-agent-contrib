@@ -129,7 +129,7 @@ class SessionCompressionMixin:
             rows = conn.execute(
                 """
                 SELECT s.*,
-                       COALESCE(sp.prompt, s.system_prompt)
+                       CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB)
                            AS _system_prompt_resolved
                 FROM sessions s
                 LEFT JOIN system_prompts sp ON sp.hash = s.system_prompt_hash

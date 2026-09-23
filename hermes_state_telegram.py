@@ -67,7 +67,7 @@ _TOPIC_TABLES = (
 # spliced in only when the bindings table exists.
 _UNLINKED_SELECT_HEAD = f"""
                     SELECT s.*,
-                        COALESCE(sp.prompt, s.system_prompt)
+                        CAST(COALESCE(sp.prompt, s.system_prompt) AS BLOB)
                             AS _system_prompt_resolved,
                         COALESCE(
                             (SELECT {_PREVIEW_RAW_SELECT}
