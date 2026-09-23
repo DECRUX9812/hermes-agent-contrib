@@ -19,6 +19,10 @@ const URL_RE = /https?:\/\/[^\s<>[\]{}"'`]+/gi
 // handler would start scanning after the link and chip nothing.
 const EXACT_URL_RE = /^https?:\/\/[^\s<>[\]{}"'`]+$/i
 const TYPED_URL_RE = /(?:^|\s)(https?:\/\/[^\s<>[\]{}"'`]+)$/i
+// Code is verbatim text, not prose: fenced blocks (``` or ~~~, closed or
+// running to the end) and inline `code` spans. The fence alternative is
+// tried first so a "```" run is never split into empty inline spans.
+const CODE_RE = /`{3,}[\s\S]*?(?:`{3,}|$)|~{3,}[\s\S]*?(?:~{3,}|$)|`+[^`\n]+`+/g
 
 /** A URL at the end of a sentence carries the punctuation that ended it. */
 function splitUrlTail(raw: string) {
@@ -45,6 +49,14 @@ export function linkifyUrls(text: string) {
 
     return { end: start + match[0].length, start }
   })
+
+  CODE_RE.lastIndex = 0
+
+  for (const match of text.matchAll(CODE_RE)) {
+    const start = match.index ?? 0
+
+    fenced.push({ end: start + match[0].length, start })
+  }
 
   let out = ''
   let cursor = 0

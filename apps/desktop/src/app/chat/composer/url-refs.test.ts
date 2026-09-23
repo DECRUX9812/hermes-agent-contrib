@@ -52,6 +52,14 @@ describe('linkifyUrls', () => {
     expect(linkifyUrls('@url:`https://example.dev`')).toBe('@url:`https://example.dev`')
   })
 
+  it('leaves links inside fenced code blocks and inline code alone', () => {
+    expect(linkifyUrls('```\nhttps://example.dev/a\n```')).toBe('```\nhttps://example.dev/a\n```')
+    expect(linkifyUrls('run `curl https://example.dev` now')).toBe('run `curl https://example.dev` now')
+    expect(linkifyUrls('```sh\nopen https://a.dev\n```\nbut https://b.dev is fine')).toBe(
+      '```sh\nopen https://a.dev\n```\nbut @url:`https://b.dev` is fine'
+    )
+  })
+
   it('leaves text without a scheme alone', () => {
     expect(linkifyUrls('example.dev/a and src/foo.ts')).toBe('example.dev/a and src/foo.ts')
   })
