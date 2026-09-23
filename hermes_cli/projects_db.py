@@ -12,6 +12,7 @@ import re
 import secrets
 import sqlite3
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -79,6 +80,15 @@ _OPTIONAL_PROJECT_COLUMNS = ("board_slug", "primary_path", "icon", "color")
 _OPTIONAL_ROW_FIELDS = ("description", "icon", "color", "board_slug", "primary_path")
 _ACTIVE_META_KEY = "active_id"
 _DISCOVERY_POLICY_META_KEY = "repo_discovery_policy"
+
+
+def _visible_name(name) -> str:
+    """Strip whitespace and Unicode format characters (Cf: ZWSP, ZWNJ, BOM, ...) and reject when
+    nothing visible remains — ``str.strip()`` leaves zero-width chars that render as invisible rows."""
+    cleaned = "".join(ch for ch in str(name or "") if unicodedata.category(ch) != "Cf").strip()
+    if not cleaned:
+        raise ValueError("project name must not be empty")
+    return cleaned
 
 
 def _slugify(name: str) -> str:
@@ -224,9 +234,7 @@ def create_project(
 ) -> str:
     """Create a project and return its id. ``folders`` are normalized to absolute paths; ``primary_path``
     is added to the folder set (if absent) and marked primary, else the first folder becomes primary."""
-    name = str(name or "").strip()
-    if not name:
-        raise ValueError("project name must not be empty")
+    name = _visible_name(name)
     slug_candidate = normalize_slug(slug) if slug else _slugify(name)
     pid = "p_" + secrets.token_hex(4)
     now = _now()
@@ -277,9 +285,7 @@ def update_project(
     """Patch top-level project fields; only provided (non-None) fields change. ``icon``, ``color`` and
     ``board_slug`` take ``""`` to clear (store NULL) — ``None`` leaves the field untouched."""
     if name is not None:
-        name = str(name).strip()
-        if not name:
-            raise ValueError("project name must not be empty")
+        name = _visible_name(name)
     if board_slug is not None:
         board_slug = normalize_slug(board_slug) if board_slug.strip() else ""
     # (column, provided value, stored value) — "" clears icon/color/board_slug to NULL.

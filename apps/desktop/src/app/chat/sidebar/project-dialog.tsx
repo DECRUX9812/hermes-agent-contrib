@@ -36,6 +36,10 @@ import {
 
 import { baseName } from './projects/workspace-groups'
 
+// Mirror of projects_db._visible_name: Unicode format chars (ZWSP, ZWNJ, BOM)
+// are invisible yet survive String.trim(), so strip them before emptiness checks.
+const visibleProjectName = (value: string) => value.replace(/\p{Cf}/gu, '').trim()
+
 // Single dialog mounted once in the sidebar; it renders create / rename /
 // add-folder flows driven by the $projectDialog atom. Folders are chosen via
 // the native directory picker (reused from the default-project-dir setting).
@@ -136,7 +140,7 @@ export function ProjectDialog() {
       // (the ⌘O "Open folder…" naming), so one pick + Create is enough. The name
       // lands in the input, never in a hidden fallback the user cannot see.
       if (mode === 'create') {
-        setName(prev => prev.trim() || baseName(dir) || prev)
+        setName(prev => visibleProjectName(prev) || baseName(dir) || prev)
       }
     } catch (err) {
       notifyError(err, p.createFailed)
@@ -144,7 +148,7 @@ export function ProjectDialog() {
   }
 
   const submit = async () => {
-    const trimmed = name.trim()
+    const trimmed = visibleProjectName(name)
     const projectId = state?.projectId
 
     if (mode === 'rename' && projectId) {
@@ -340,7 +344,7 @@ export function ProjectDialog() {
               {t.common.cancel}
             </Button>
             <Button
-              disabled={submitting || !name.trim() || (mode === 'create' && folders.length === 0)}
+              disabled={submitting || !visibleProjectName(name) || (mode === 'create' && folders.length === 0)}
               onClick={() => void submit()}
               type="button"
             >
