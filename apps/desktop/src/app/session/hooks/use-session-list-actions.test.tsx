@@ -18,6 +18,7 @@ import {
   $sessionProfilesTruncated,
   $sessionProfilesUsage,
   $sessions,
+  $sessionsLoadFailed,
   $sessionsLoading,
   setCronSessions,
   setMessagingPlatformTotals,
@@ -26,6 +27,7 @@ import {
   setSessionProfilesTruncated,
   setSessionProfilesUsage,
   setSessions,
+  setSessionsLoadFailed,
   setSessionsLoading
 } from '@/store/session'
 
@@ -119,6 +121,7 @@ beforeEach(() => {
   setSessionProfilesTruncated({})
   setSessionProfilesUsage({})
   setSessionsLoading(false)
+  setSessionsLoadFailed(false)
 })
 
 afterEach(() => {
@@ -131,6 +134,7 @@ afterEach(() => {
   setSessionProfilesTruncated({})
   setSessionProfilesUsage({})
   setSessionsLoading(false)
+  setSessionsLoadFailed(false)
 })
 
 describe('refreshSessions identity + loading hygiene', () => {
@@ -438,6 +442,72 @@ describe('refreshSessions identity + loading hygiene', () => {
 
     expect($sessions.get()).toEqual([])
     expect($sessionsLoading.get()).toBe(false)
+  })
+
+  it('records a load failure and keeps the existing rows when the fetch rejects', async () => {
+    // A rejected listSidebarSessions must surface as an explicit error state —
+    // not an unhandled rejection — and must never clobber the rows already on
+    // screen (an empty list reads as "no sessions", which is data loss).
+    listSidebarSessions.mockResolvedValue(sidebar({ sessions: [row('a'), row('b')] }))
+
+    const { result } = renderHook(() => useSessionListActions({ profileScope: 'default' }))
+
+    await act(async () => {
+      await result.current.refreshSessions()
+    })
+
+    listSidebarSessions.mockRejectedValue(new Error('gateway gone'))
+
+    await act(async () => {
+      await result.current.refreshSessions()
+    })
+
+    expect($sessionsLoadFailed.get()).toBe(true)
+    expect($sessions.get().map(s => s.id)).toEqual(['a', 'b'])
+    expect($sessionsLoading.get()).toBe(false)
+  })
+
+  it('clears the failure flag when a retry succeeds', async () => {
+    listSidebarSessions.mockRejectedValue(new Error('gateway gone'))
+
+    const { result } = renderHook(() => useSessionListActions({ profileScope: 'default' }))
+
+    await act(async () => {
+      await result.current.refreshSessions()
+    })
+
+    expect($sessionsLoadFailed.get()).toBe(true)
+
+    // The retry control calls refreshSessions again.
+    listSidebarSessions.mockResolvedValue(sidebar({ sessions: [row('b')] }))
+
+    await act(async () => {
+      await result.current.refreshSessions()
+    })
+
+    expect($sessionsLoadFailed.get()).toBe(false)
+    expect($sessions.get().map(s => s.id)).toEqual(['b'])
+  })
+
+  it('does not let a superseded request publish the failure flag', async () => {
+    const pending = deferred<SidebarSessionsResponse>()
+
+    listSidebarSessions.mockReturnValue(pending.promise)
+
+    const { rerender, result } = renderHook(({ profileScope }) => useSessionListActions({ profileScope }), {
+      initialProps: { profileScope: 'work' }
+    })
+
+    const staleRefresh = result.current.refreshSessions()
+
+    rerender({ profileScope: 'personal' })
+
+    await act(async () => {
+      pending.reject(new Error('gateway gone'))
+      await staleRefresh
+    })
+
+    expect($sessionsLoadFailed.get()).toBe(false)
   })
 })
 

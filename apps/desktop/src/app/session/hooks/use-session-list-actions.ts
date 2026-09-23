@@ -35,6 +35,7 @@ import {
   setSessionProfilesTruncated,
   setSessionProfilesUsage,
   setSessions,
+  setSessionsLoadFailed,
   setSessionsLoading
 } from '@/store/session'
 import { $removedSessionIds } from '@/store/session-removal'
@@ -294,6 +295,11 @@ export function useSessionListActions({ profileScope }: UseSessionListActionsArg
         ) {
           const recents = result.recents
 
+          // A published page — even an empty one — is proof the backend
+          // answered; clear any earlier fetch failure so the error row
+          // resolves into the rows it replaced.
+          setSessionsLoadFailed(false)
+
           // Drop rows the user just deleted/archived: a refresh can race an
           // in-flight mutation and the backend page still carries the doomed row.
           // Honoring the optimistic tombstone keeps the removal from flashing back
@@ -370,6 +376,21 @@ export function useSessionListActions({ profileScope }: UseSessionListActionsArg
           setMessagingTruncated(prev =>
             messagingErrors?.length ? prev : result.messaging.sessions.length >= MESSAGING_SECTION_LIMIT
           )
+        }
+      } catch {
+        // A rejected fetch used to escape as an unhandled rejection and leave
+        // the sidebar indistinguishable from "no sessions yet". Publish an
+        // explicit failure instead — never touching the rows already on
+        // screen — so the sidebar can render an error+retry row. Only the
+        // still-current request may set it; a stale response belongs to a
+        // switch the newer owner already wiped.
+        if (
+          shouldPublish() &&
+          refreshSessionsRequestRef.current === requestId &&
+          sidebarProfileForScope(profileScopeRef.current) === sessionProfile &&
+          gatewayActivationEpoch() === activationEpoch
+        ) {
+          setSessionsLoadFailed(true)
         }
       } finally {
         // Request identity preserves the zero-argument refresh contract across a

@@ -934,6 +934,11 @@ export interface ProfileUsage {
 
 export const $sessionProfilesUsage = atom<Record<string, ProfileUsage>>({})
 export const $sessionsLoading = atom(true)
+// Set when the sidebar's batched session refresh REJECTS — distinct from
+// $sessionsLoading=false + an empty list, which reads as "no sessions yet".
+// The sidebar renders an error+retry row off this; cleared by the next
+// successful publish and by gateway-switch wipes.
+export const $sessionsLoadFailed = atom(false)
 export const $activeSessionId = atom<string | null>(null)
 export const $selectedStoredSessionId = atom<string | null>(null)
 export interface ActiveSessionStoredIdRotation {
@@ -1299,6 +1304,7 @@ export const setSessionProfilesTruncated = (next: Updater<Record<string, boolean
   updateAtom($sessionProfilesTruncated, next)
 export const setSessionProfilesUsage = (next: Updater<Record<string, ProfileUsage>>) =>
   updateAtom($sessionProfilesUsage, next)
+export const setSessionsLoadFailed = (next: Updater<boolean>) => updateAtom($sessionsLoadFailed, next)
 export const setSessionsLoading = (next: Updater<boolean>) => updateAtom($sessionsLoading, next)
 export const setActiveSessionId = (next: Updater<string | null>) => updateAtom($activeSessionId, next)
 export const setActiveSessionStoredIdRotation = (next: Updater<ActiveSessionStoredIdRotation | null>) =>

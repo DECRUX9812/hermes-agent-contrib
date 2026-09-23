@@ -23,6 +23,7 @@ import {
   setSessionProfilesTruncated,
   setSessionProfilesUsage,
   setSessions,
+  setSessionsLoadFailed,
   setSessionsLoading
 } from '@/store/session'
 import { clearAllSessionControl } from '@/store/session-control'
@@ -216,6 +217,9 @@ export function wipeSessionListsForGatewaySwitch(): void {
   resetLiveRuntimeTracking()
   resetLiveSync()
   $unreadFinishedSessionIds.set([])
+  // A fetch failure belongs to the outgoing backend; the next gateway starts
+  // with skeletons, not a stale error row.
+  setSessionsLoadFailed(false)
   setSessionsLoading(true)
   resetSessionsLimit()
 

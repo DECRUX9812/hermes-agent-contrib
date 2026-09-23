@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { group, split } from '@/components/pane-shell/tree/model'
 import { $layoutTree, noteActiveTreeGroup } from '@/components/pane-shell/tree/store'
@@ -9,7 +9,7 @@ import { SidebarProvider } from '@/components/ui/sidebar'
 import { registry } from '@/contrib/registry'
 import { setInterfaceMode } from '@/store/interface-mode'
 import { $pinnedSessionIds, $sidebarCardRows } from '@/store/layout'
-import { $selectedStoredSessionId, $sessions } from '@/store/session'
+import { $selectedStoredSessionId, $sessions, $sessionsLoadFailed, $sessionsLoading } from '@/store/session'
 import { $removedSessionIds } from '@/store/session-removal'
 import { makeSessionInfo } from '@/test/session-info'
 
@@ -28,7 +28,7 @@ const sessionRows = [
   makeSessionInfo({ id: 'tile-two', last_active: 2, profile: 'default', started_at: 1, title: 'Tile two' })
 ]
 
-const renderSidebar = (pathname: string, currentView: AppView) =>
+const renderSidebar = (pathname: string, currentView: AppView, extra: { onRefreshSessions?: () => void } = {}) =>
   render(
     <MemoryRouter initialEntries={[pathname]}>
       <SidebarProvider>
@@ -44,6 +44,7 @@ const renderSidebar = (pathname: string, currentView: AppView) =>
           onNewSessionSplit={noop}
           onResumeSession={noop}
           onTriggerCronJob={noopAsync}
+          {...extra}
         />
       </SidebarProvider>
     </MemoryRouter>
@@ -210,5 +211,46 @@ describe('ChatSidebar inbox style geometry', () => {
 
     expect(row('Tile two').className).not.toContain(SIDEBAR_ROW_CARD_MIN_H)
     expect(row('Tile one').className).not.toContain(SIDEBAR_ROW_CARD_MIN_H)
+  })
+})
+
+// A rejected session-list fetch must surface an explicit error+retry row —
+// the bare "No sessions yet" empty state reads as data loss (#64157).
+describe('ChatSidebar session-list load failure', () => {
+  let disposeContributions: () => void
+
+  beforeEach(() => {
+    disposeContributions = registry.registerMany([])
+    $sessions.set([])
+    $sessionsLoading.set(false)
+    $sessionsLoadFailed.set(true)
+  })
+
+  afterEach(() => {
+    cleanup()
+    disposeContributions()
+    $sessions.set([])
+    $sessionsLoading.set(false)
+    $sessionsLoadFailed.set(false)
+  })
+
+  it('renders the error row instead of the empty state and retries via onRefreshSessions', () => {
+    const onRefreshSessions = vi.fn()
+
+    renderSidebar('/', 'chat', { onRefreshSessions })
+
+    expect(screen.getByText('Could not load sessions')).toBeTruthy()
+    expect(screen.queryByText('No sessions yet')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(onRefreshSessions).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the loaded rows visible alongside the error row', () => {
+    $sessions.set(sessionRows)
+    renderSidebar('/', 'chat')
+
+    expect(screen.getByText('Could not load sessions')).toBeTruthy()
+    expect(screen.getByText('Tile one')).toBeTruthy()
   })
 })
