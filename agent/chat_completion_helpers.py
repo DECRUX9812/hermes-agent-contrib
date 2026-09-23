@@ -2702,6 +2702,9 @@ class _StreamingCall(StreamingWaitMonitor):
         self.managed_stream_holder = {"stream": None}
         # Per-attempt: single-writer token, request-local client, raw HTTP response (chat wire).
         self._writer_token = self._attempt_request_client = self._attempt_stream_response = None
+        # Set when the chunk iterator was cut short (fenced/superseded/interrupted) rather than
+        # exhausting normally: only an abnormal end may be a mid-stream drop (#75801).
+        self._stream_end_abnormal = {"yes": False}
         # The route ``api_kwargs`` was assembled for; a retry must not replay it on another one.
         self._request_route = self._live_route()
 
@@ -2754,6 +2757,7 @@ class _StreamingCall(StreamingWaitMonitor):
         # Attempt-local like provider_tool_in_flight: a tool name from a stream that died
         # before any text must not label a later attempt's partial stub or its retry decision.
         self.result["partial_tool_names"] = []
+        self._stream_end_abnormal["yes"] = False
         return attempt_id
 
     def _cancel_current_stream_attempt(self, reason: str) -> None:
@@ -2945,8 +2949,10 @@ class _StreamingCall(StreamingWaitMonitor):
                 getattr(delta, attr, None) for attr in ("content", "tool_calls", "reasoning_content", "reasoning")):
                 return True
         if not self._stream_attempt_is_active(stream_attempt_id):
+            self._stream_end_abnormal["yes"] = True
             return False
         if not self._writer_still_current("Streaming"):
+            self._stream_end_abnormal["yes"] = True
             return False
         # Stamp BEFORE Relay processes the chunk so the watchdog can't cancel
         # a live stream mid-interceptor.
@@ -3018,6 +3024,7 @@ class _StreamingCall(StreamingWaitMonitor):
                     if self._attempt_request_client is not None:
                         self.agent._abort_request_openai_client(
                             self._attempt_request_client, reason="interrupt_stream_close_failed")
+                self._stream_end_abnormal["yes"] = True
                 break
             if not self._stream_attempt_is_active(stream_attempt_id):
                 self._discard_stale_stream_chunk(stream_attempt_id, chunk)
@@ -3108,7 +3115,7 @@ class _StreamingCall(StreamingWaitMonitor):
         return self._finish_chat_stream(stream, role, content_parts, reasoning_parts, tool_calls_acc,
             finish_reason, model_name, usage_obj, flush_pending=_flush_pending_stream_text,
             response_id=response_id, upstream_provider=upstream_provider, reasoning_details=reasoning_details,
-            refusal_parts=refusal_parts)
+            refusal_parts=refusal_parts, stream_clean_end=not self._stream_end_abnormal["yes"])
 
     def _adopt_final_response(self, final_response):
         """Adapter returned a completed response for ``stream=True``: switch the
@@ -3160,11 +3167,15 @@ class _StreamingCall(StreamingWaitMonitor):
 
     def _finish_chat_stream(self, stream, role, content_parts, reasoning_parts, tool_calls_acc, finish_reason,
         model_name, usage_obj, *, flush_pending, response_id=None, upstream_provider=None, reasoning_details=None,
-        refusal_parts=None):
-        """Assemble the non-streaming-shaped response after the chunk loop. A
-        stream ending with no finish_reason is a drop, not a completion: return a
-        partial-stream stub so the loop fails fast instead of executing empty
-        args or stamping "stop"."""
+        refusal_parts=None, stream_clean_end=False):
+        """Assemble the non-streaming-shaped response after the chunk loop. An
+        ABNORMALLY-ending stream (fenced, superseded, interrupted) with no
+        finish_reason is a drop, not a completion: return a partial-stream stub
+        so the loop fails fast instead of executing empty args or stamping
+        "stop". A CLEANLY-exhausted iterator means the provider closed the SSE
+        normally — with text delivered and no finish_reason that is a completed
+        answer, not a drop (#75801: endpoints that rejected stream_options send
+        no terminal usage chunk, so a clean end carried no signal at all)."""
         full_content = "".join(content_parts) or None
         full_reasoning = "".join(reasoning_parts) or None
         mock_tool_calls, has_truncated_tool_args = self._assemble_tool_calls(tool_calls_acc, finish_reason)
@@ -3182,13 +3193,15 @@ class _StreamingCall(StreamingWaitMonitor):
                 _dropped_names)
             return _build_partial_stream_stub(
                 role, full_content, full_reasoning, model_name, usage_obj, dropped_tool_names=_dropped_names or None)
-        if finish_reason is None and (content_parts or reasoning_parts) and not tool_calls_acc and usage_obj is None:
+        if (finish_reason is None and (content_parts or reasoning_parts) and not tool_calls_acc
+                and usage_obj is None and not stream_clean_end):
             # Text-only (or reasoning-only) drop: otherwise the partial text is stamped "stop"
             # and the next step is lost — for reasoning-only, the clean-stop promotion in
             # finish_text_response would then surface a truncated thought as the answer.
             # A usage object proves the provider finished (include_usage's final chunk).
             logger.warning(
-                "Stream ended with no finish_reason after delivering text with no tool calls; treating as a mid-stream drop.")
+                "Stream ended abnormally with no finish_reason after delivering text with no tool calls; "
+                "treating as a mid-stream drop.")
             return _build_partial_stream_stub(role, full_content, full_reasoning, model_name, usage_obj)
         effective_finish_reason = "length" if has_truncated_tool_args else (finish_reason or "stop")
         provider_stream_error = _provider_stream_error_from_text(
