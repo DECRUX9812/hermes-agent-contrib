@@ -481,6 +481,7 @@ class CompressionSummary(OpenModel):
 
 class SessionCompressParams(SessionParams):
     focus_topic: str | None = None
+    preview: bool = False  # report what would be compressed; never mutates history
 
 
 class SessionCompressResult(Result):
@@ -498,6 +499,7 @@ class SessionCompressResult(Result):
     info: SessionLiveInfo | None = None
     messages: list[TranscriptMessage] | None = None
     compressed: bool | None = None
+    preview: dict[str, JsonValue] | None = None  # ``summarize_compress_preview`` report (status="preview")
     lock_held: bool | None = None
     message: str | None = None
     turn_isolation: bool | None = None

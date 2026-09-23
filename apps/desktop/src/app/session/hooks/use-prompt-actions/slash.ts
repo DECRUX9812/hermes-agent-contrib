@@ -619,7 +619,16 @@ export function useSlashCommand(deps: SlashCommandDeps) {
 
           const { render: renderSlashOutput, sessionId: initialSessionId, storedSessionId } = resolved
           let sessionId = initialSessionId
-          const focusTopic = ctx.arg.trim()
+          // /compress --preview (or --dry-run) is read-only: strip the flag out
+          // of the focus arg and send it as the typed `preview` param so the
+          // backend answers the report instead of compressing (#92570).
+          const compressArgTokens = ctx.arg.trim().split(/\s+/).filter(Boolean)
+
+          const isPreviewFlag = (token: string) =>
+            ['--preview', '--dry-run', '--dryrun'].includes(token.toLowerCase())
+
+          const preview = compressArgTokens.some(isPreviewFlag)
+          const focusTopic = compressArgTokens.filter(token => !isPreviewFlag(token)).join(' ')
           const noticeId = `session-compress:${sessionId}`
 
           // Coalesce concurrent compress requests for the same session so a
@@ -633,7 +642,11 @@ export function useSlashCommand(deps: SlashCommandDeps) {
             durationMs: 0,
             id: noticeId,
             kind: 'info',
-            message: focusTopic ? `compressing context for: ${focusTopic}` : 'compressing context...'
+            message: preview
+              ? 'building compress preview...'
+              : focusTopic
+                ? `compressing context for: ${focusTopic}`
+                : 'compressing context...'
           })
 
           try {
@@ -650,7 +663,8 @@ export function useSlashCommand(deps: SlashCommandDeps) {
                   'session.compress',
                   {
                     session_id: liveId,
-                    ...(focusTopic ? { focus_topic: focusTopic } : {})
+                    ...(focusTopic ? { focus_topic: focusTopic } : {}),
+                    ...(preview ? { preview: true } : {})
                   },
                   SESSION_COMPRESS_TIMEOUT_MS
                 ),
@@ -671,6 +685,18 @@ export function useSlashCommand(deps: SlashCommandDeps) {
             )
 
             sessionId = liveSessionId
+
+            // /compress --preview: the backend answered the read-only report;
+            // the transcript is untouched, so render the lines as-is.
+            if (result?.status === 'preview') {
+              const previewText =
+                result.preview?.lines?.join('\n') || result.message || 'preview unavailable'
+
+              renderSlashOutput(previewText)
+              notify({ durationMs: 8_000, id: noticeId, kind: 'info', message: previewText })
+
+              return
+            }
 
             // The gateway's compute-host wait expired but compression is still
             // running there; it pushes session.info + a `compacted` status edge
