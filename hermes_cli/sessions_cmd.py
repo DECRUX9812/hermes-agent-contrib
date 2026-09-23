@@ -837,6 +837,20 @@ def _print_size_change(db, before_mb, prefix=""):
 
 
 def _cmd_optimize(db, args):
+    # VACUUM's contract (SessionDB.vacuum) requires no other writers: against a live gateway the
+    # exclusive rewrite/checkpoint is refused and leaves stale WAL/SHM handles (#84525). Preflight
+    # with the same fail-closed holder scan repair uses; unknown/uninspectable holders refuse too.
+    from hermes_state_holders import describe_holder_pid, foreign_state_db_holders
+    holders = foreign_state_db_holders(db.db_path)
+    if holders:
+        print("Error: `hermes sessions optimize` needs exclusive access to state.db; "
+              "another process still holds it:")
+        for pid, target in holders:
+            who = describe_holder_pid(pid) if pid > 0 else target
+            print(f"  {who}" + (f": {Path(target).name}" if pid > 0 else ""))
+        print("Stop the gateway (hermes gateway stop) and any other Hermes processes for this "
+              "profile, then re-run `hermes sessions optimize`.")
+        return 1
     before_mb = _size_mb(db.db_path)
     print("Optimizing session store (FTS merge + VACUUM)…")
     try:
