@@ -99,7 +99,7 @@ describe('useSessionTileDelegate resumeTile', () => {
         omit_messages: true
       },
       undefined,
-      undefined
+      expect.any(AbortSignal)
     )
     expect(requestGateway).not.toHaveBeenCalled()
   })
@@ -127,7 +127,7 @@ describe('useSessionTileDelegate resumeTile', () => {
         omit_messages: true
       },
       undefined,
-      undefined
+      expect.any(AbortSignal)
     )
     expect(requestGateway).not.toHaveBeenCalled()
   })
@@ -142,12 +142,19 @@ describe('useSessionTileDelegate resumeTile', () => {
     const runtimeId = await sessionTileDelegate()!.resumeTile('stored-shared')
 
     expect(runtimeId).toBe('runtime-shared')
-    expect(requestGatewayForAgent).toHaveBeenCalledWith('source-b', 'default', 'session.resume', {
-      session_id: 'stored-shared',
-      cols: 96,
-      omit_messages: true,
-      profile: 'default'
-    })
+    expect(requestGatewayForAgent).toHaveBeenCalledWith(
+      'source-b',
+      'default',
+      'session.resume',
+      {
+        session_id: 'stored-shared',
+        cols: 96,
+        omit_messages: true,
+        profile: 'default'
+      },
+      undefined,
+      expect.any(AbortSignal)
+    )
     expect(ambientRequest).not.toHaveBeenCalled()
   })
 
@@ -171,12 +178,19 @@ describe('useSessionTileDelegate resumeTile', () => {
       connectionId: 'barry',
       profile: 'backend-oxcoder'
     })
-    expect(requestGatewayForAgent).toHaveBeenCalledWith('barry', 'oxcoder', 'session.resume', {
-      session_id: 'stored-remote',
-      cols: 96,
-      omit_messages: true,
-      profile: 'backend-oxcoder'
-    })
+    expect(requestGatewayForAgent).toHaveBeenCalledWith(
+      'barry',
+      'oxcoder',
+      'session.resume',
+      {
+        session_id: 'stored-remote',
+        cols: 96,
+        omit_messages: true,
+        profile: 'backend-oxcoder'
+      },
+      undefined,
+      expect.any(AbortSignal)
+    )
     expect(ambientRequest).not.toHaveBeenCalled()
   })
 
@@ -415,7 +429,7 @@ describe('useSessionTileDelegate resumeTile', () => {
         omit_messages: true
       },
       undefined,
-      undefined
+      expect.any(AbortSignal)
     )
   })
 

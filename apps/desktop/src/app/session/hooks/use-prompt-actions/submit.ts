@@ -603,15 +603,20 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
 
           const resumed = cachedRuntimeId
             ? { session_id: cachedRuntimeId }
-            : await singleFlightSessionResume(targetStoredSessionId, async () => {
+            : await singleFlightSessionResume(targetStoredSessionId, async signal => {
                 const resumeProfile = await resolveSessionProfile(targetStoredSessionId)
 
-                return requestGateway<{ session_id: string }>('session.resume', {
-                  session_id: targetStoredSessionId,
-                  source: 'desktop',
-                  omit_messages: true,
-                  ...(resumeProfile ? { profile: resumeProfile } : {})
-                })
+                return requestGateway<{ session_id: string }>(
+                  'session.resume',
+                  {
+                    session_id: targetStoredSessionId,
+                    source: 'desktop',
+                    omit_messages: true,
+                    ...(resumeProfile ? { profile: resumeProfile } : {})
+                  },
+                  undefined,
+                  signal
+                )
               })
 
           const resumeDrift = sessionDriftReason()

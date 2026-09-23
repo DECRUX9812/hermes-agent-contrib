@@ -98,14 +98,19 @@ export async function resolveTargetSessionId(deps: ResolveTargetSessionDeps): Pr
         return cachedRuntimeId
       }
 
-      const resumed = await singleFlightSessionResume(storedTarget, async () => {
+      const resumed = await singleFlightSessionResume(storedTarget, async signal => {
         const profile = await resolveSessionProfile(storedTarget)
 
-        return requestGateway<{ session_id?: string }>('session.resume', {
-          session_id: storedTarget,
-          source: 'desktop',
-          ...(profile ? { profile } : {})
-        })
+        return requestGateway<{ session_id?: string }>(
+          'session.resume',
+          {
+            session_id: storedTarget,
+            source: 'desktop',
+            ...(profile ? { profile } : {})
+          },
+          undefined,
+          signal
+        )
       })
 
       return resumed?.session_id || null

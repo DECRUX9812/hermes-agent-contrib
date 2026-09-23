@@ -35,11 +35,16 @@ describe('resolveTargetSessionId', () => {
 
     expect(resolved).toBe(RECOVERED)
     expect(createSession).not.toHaveBeenCalled()
-    expect(requestGateway).toHaveBeenCalledWith('session.resume', {
-      session_id: STORED,
-      source: 'desktop',
-      profile: 'work'
-    })
+    expect(requestGateway).toHaveBeenCalledWith(
+      'session.resume',
+      {
+        session_id: STORED,
+        source: 'desktop',
+        profile: 'work'
+      },
+      undefined,
+      expect.any(AbortSignal)
+    )
   })
 
   it('reuses the live runtime id when the cache confirms it owns the targeted stored session', async () => {
@@ -139,6 +144,11 @@ describe('resolveTargetSessionId', () => {
       })
     )
 
-    expect(requestGateway).toHaveBeenCalledWith('session.resume', expect.objectContaining({ session_id: STORED }))
+    expect(requestGateway).toHaveBeenCalledWith(
+      'session.resume',
+      expect.objectContaining({ session_id: STORED }),
+      undefined,
+      expect.any(AbortSignal)
+    )
   })
 })

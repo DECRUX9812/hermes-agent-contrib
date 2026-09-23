@@ -9,7 +9,12 @@ import type { ComposerAttachment } from '@/store/composer'
 
 import { registerRecoveredRuntime, singleFlightSessionResume, takeRecoveredRuntime } from './single-flight-resume'
 
-export type GatewayRequest = <T>(method: string, params?: Record<string, unknown>, timeoutMs?: number) => Promise<T>
+export type GatewayRequest = <T>(
+  method: string,
+  params?: Record<string, unknown>,
+  timeoutMs?: number,
+  signal?: AbortSignal
+) => Promise<T>
 
 export function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -120,16 +125,21 @@ export async function resumeStoredRuntimeSession(
   // same dead runtime at once, and each independent session.resume mints a new
   // runtime — every loser is an orphan for the reaper. Sharing one in-flight
   // promise makes concurrent recoveries converge on ONE runtime.
-  const resumed = await singleFlightSessionResume(storedSessionId, async () => {
+  const resumed = await singleFlightSessionResume(storedSessionId, async signal => {
     const resolveProfile = deps.resolveProfile ?? defaultResolveProfile
     const profile = await resolveProfile(storedSessionId)
 
-    return deps.requestGateway<{ session_id: string }>('session.resume', {
-      session_id: storedSessionId,
-      source: 'desktop',
-      omit_messages: true,
-      ...(profile ? { profile } : {})
-    })
+    return deps.requestGateway<{ session_id: string }>(
+      'session.resume',
+      {
+        session_id: storedSessionId,
+        source: 'desktop',
+        omit_messages: true,
+        ...(profile ? { profile } : {})
+      },
+      undefined,
+      signal
+    )
   })
 
   return resumed?.session_id ?? null

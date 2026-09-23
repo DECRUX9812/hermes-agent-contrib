@@ -2191,11 +2191,16 @@ describe('usePromptActions submit / queue drain semantics', () => {
     })
 
     expect(accepted).toBe(true)
-    expect(requestGateway).toHaveBeenCalledWith('session.resume', {
-      session_id: 'stored-session-b',
-      source: 'desktop',
-      omit_messages: true
-    })
+    expect(requestGateway).toHaveBeenCalledWith(
+      'session.resume',
+      {
+        session_id: 'stored-session-b',
+        source: 'desktop',
+        omit_messages: true
+      },
+      undefined,
+      expect.any(AbortSignal)
+    )
     expect(requestGateway).toHaveBeenCalledWith(
       'prompt.submit',
       {
@@ -2415,11 +2420,16 @@ describe('usePromptActions submit / queue drain semantics', () => {
 
     expect(accepted).toBe(true)
     // Must resume the correct stored session to get the right runtime id.
-    expect(requestGateway).toHaveBeenCalledWith('session.resume', {
-      session_id: 'stored-session-a',
-      source: 'desktop',
-      omit_messages: true
-    })
+    expect(requestGateway).toHaveBeenCalledWith(
+      'session.resume',
+      {
+        session_id: 'stored-session-a',
+        source: 'desktop',
+        omit_messages: true
+      },
+      undefined,
+      expect.any(AbortSignal)
+    )
     // The prompt must land in the resumed session, NOT the foreground.
     expect(requestGateway).toHaveBeenCalledWith(
       'prompt.submit',

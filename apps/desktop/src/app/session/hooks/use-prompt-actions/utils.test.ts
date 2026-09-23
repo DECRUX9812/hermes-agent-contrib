@@ -232,7 +232,9 @@ describe('withSessionNotFoundResume', () => {
 
     expect(d.requestGateway).toHaveBeenCalledWith(
       'session.resume',
-      expect.objectContaining({ session_id: STORED, source: 'desktop', omit_messages: true, profile: 'work' })
+      expect.objectContaining({ session_id: STORED, source: 'desktop', omit_messages: true, profile: 'work' }),
+      undefined,
+      expect.any(AbortSignal)
     )
   })
 

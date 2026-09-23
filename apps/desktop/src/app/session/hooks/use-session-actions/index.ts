@@ -1164,8 +1164,12 @@ export function useSessionActions({
       // its bounded retries into the "retries gave up" screen while the bot's
       // own backend is healthy one port over (#89206: local pool AND SSH).
       // requestForSessionProfile re-resolves the route at each call.
-      const requestForSession = <T>(method: string, params: Record<string, unknown> = {}): Promise<T> =>
-        requestForSessionProfile<T>(sessionOwner, requestGateway, method, params)
+      const requestForSession = <T>(
+        method: string,
+        params: Record<string, unknown> = {},
+        timeoutMs?: number,
+        signal?: AbortSignal
+      ): Promise<T> => requestForSessionProfile<T>(sessionOwner, requestGateway, method, params, timeoutMs, signal)
 
       if (!isCurrentResume()) {
         return
@@ -1705,22 +1709,27 @@ export function useSessionActions({
         let resumeRuntimeBaselineMessages: ChatMessage[] = []
         const resumeStartedAt = Date.now() / 1000
 
-        const resumePromise = singleFlightSessionResume(storedSessionId, () =>
-          requestForSession<SessionResumeResult>('session.resume', {
-            session_id: storedSessionId,
-            cols: 96,
-            source: 'desktop',
-            defer_history: !watchWindow,
-            // REST is the transcript authority for Desktop. Avoid duplicating a
-            // potentially huge compression lineage in the WebSocket response.
-            // Watch windows attach lazily (live mirror). Every other cold resume
-            // gets the gateway's default deferred build: the RPC returns the
-            // transcript immediately instead of blocking the switch on _make_agent
-            // (MCP discovery / prompt build), and the agent pre-warms in the
-            // background while the prefetch above paints the transcript.
-            ...(watchWindow ? { lazy: true } : { omit_messages: true }),
-            ...(sessionProfile ? { profile: sessionProfile } : {})
-          })
+        const resumePromise = singleFlightSessionResume(storedSessionId, signal =>
+          requestForSession<SessionResumeResult>(
+            'session.resume',
+            {
+              session_id: storedSessionId,
+              cols: 96,
+              source: 'desktop',
+              defer_history: !watchWindow,
+              // REST is the transcript authority for Desktop. Avoid duplicating a
+              // potentially huge compression lineage in the WebSocket response.
+              // Watch windows attach lazily (live mirror). Every other cold resume
+              // gets the gateway's default deferred build: the RPC returns the
+              // transcript immediately instead of blocking the switch on _make_agent
+              // (MCP discovery / prompt build), and the agent pre-warms in the
+              // background while the prefetch above paints the transcript.
+              ...(watchWindow ? { lazy: true } : { omit_messages: true }),
+              ...(sessionProfile ? { profile: sessionProfile } : {})
+            },
+            undefined,
+            signal
+          )
         ).then(resumed => {
           resumeRuntimeBaselineMessages =
             sessionStateByRuntimeIdRef.current.get(resumed.session_id)?.messages ?? resumeRuntimeBaselineMessages
