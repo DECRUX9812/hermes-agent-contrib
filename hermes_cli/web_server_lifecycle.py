@@ -340,6 +340,16 @@ def _start_parent_death_watchdog() -> None:
             )
         except Exception:
             pass
+        # os._exit skips the chaining SIGTERM/SIGINT flush handlers
+        # (tui_gateway.server.install_exit_flush_signal_handlers) and atexit,
+        # so run the bounded transcript flush here or the orphan-kill loses
+        # partial assistant output (#108601).
+        try:
+            from tui_gateway.server import _flush_sessions_before_exit
+
+            _flush_sessions_before_exit()
+        except Exception:
+            pass
         os._exit(0)
 
     threading.Thread(target=_loop, daemon=True, name="serve-parent-watchdog").start()
