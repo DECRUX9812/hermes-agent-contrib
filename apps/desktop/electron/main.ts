@@ -410,6 +410,7 @@ import { createSshProbeConnection, pickLocalPort, redactSecrets, SshConnection }
 import { createSshIsolatedKeepaliveRegistry } from './ssh-isolated-keepalive'
 import { createSshTeardownTracker } from './ssh-teardown'
 import { createStreamThrottle } from './stream-throttle'
+import { findPosixSystemPython } from './system-python'
 import { registerTerminalIpc } from './terminal-ipc'
 import { nativeOverlayWidth as computeNativeOverlayWidth, titleBarOverlayOptions } from './titlebar-overlay-width'
 import {
@@ -2751,16 +2752,11 @@ async function findPythonForRoot(root) {
 
 async function findSystemPython() {
   if (!IS_WINDOWS) {
-    // POSIX systems: PATH lookup is safe.
-    for (const command of ['python3', 'python']) {
-      const candidate = findOnPath(command)
-
-      if (candidate) {
-        return candidate
-      }
-    }
-
-    return null
+    // POSIX systems: PATH lookup is safe, but each candidate's version
+    // must be probed — stock macOS ships /usr/bin/python3 at 3.9, which
+    // can't run the backend (PEP 604 unions). Mirrors the Windows
+    // SUPPORTED_VERSIONS gate below.
+    return findPosixSystemPython({ findOnPath, execText, timeoutMs: PROBE_TIMEOUT_MS })
   }
 
   // Windows: PATH-based detection has TWO landmines we have to dodge.
