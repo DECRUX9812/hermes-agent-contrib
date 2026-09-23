@@ -13,6 +13,7 @@ import { host } from '@hermes/plugin-sdk'
 
 import { $botMeta, botMetaKey, botOwner, persistBotMetaSnapshot } from './data'
 import { botsText } from './i18n'
+import { displayName } from './labels'
 import { backendTargetProfile, botConnectionRoute, botRosterMeta, botWorkspaceOwnerKey, requestForBot } from './routing'
 import type { RpcErrorLike } from './routing'
 import { getPluginCtx } from './shared'
@@ -47,6 +48,17 @@ export const PROFILE_SESSION_LIST_LIMIT = 200
  *  click path's tile-staleness probe (hermes-agent#90102), which must
  *  recognize canonical-titled tabs without restating the literal. */
 export const CANONICAL_CHAT_TITLE = 'Bot Chat'
+
+/** The tab-strip label for a bot's forever-chat. The stored session title
+ *  stays exactly CANONICAL_CHAT_TITLE — (profile, title) IS the identity — so
+ *  every bot's chat stored the same string, and the tab caption's fallback
+ *  (workspaceTabTitle, the only title these hidden, unlisted rows carry) read
+ *  "Bot Chat" on every bot's tab. The tab carries the bot's display name
+ *  instead; workspaceOwnerTitle's owner-label lookup is unaffected because
+ *  the registered title IS this string. */
+function canonicalChatTabTitle(bot: Partial<RosterRow> | null | undefined): string {
+  return displayName(bot || {}, bot ? botRosterMeta(bot as RosterRow, $botMeta.get()) || {} : {})
+}
 
 /** A `session.list` row as the registry lookup reads it. CanonicalSession
  *  models the roster's `canonical_session` field, which carries no
@@ -136,7 +148,7 @@ async function openStoredBotChat(
     workspaceMode: 'bots',
     workspaceOwnerKey: ownerKey,
     retryHydrationTimeoutOnce: true,
-    tabTitle: CANONICAL_CHAT_TITLE
+    tabTitle: canonicalChatTabTitle(bot)
   })
 
   return storedId
@@ -364,7 +376,7 @@ export function createCanonicalChat(
       keepAllProfilesScope: route ? true : false,
       workspaceMode: 'bots',
       workspaceOwnerKey: botWorkspaceOwnerKey(bot),
-      tabTitle: CANONICAL_CHAT_TITLE
+      tabTitle: canonicalChatTabTitle(bot)
     })
 
   if (inflight) {

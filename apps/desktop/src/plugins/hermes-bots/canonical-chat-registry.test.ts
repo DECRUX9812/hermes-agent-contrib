@@ -43,6 +43,7 @@ vi.mock('@hermes/plugin-sdk', () => ({
 }))
 
 vi.mock('./routing', () => ({
+  aliasIdentityFor: () => null,
   backendTargetProfile: (route: { targetProfile?: string } | null, name: string) => route?.targetProfile ?? name,
   botConnectionRoute: () => null,
   botRosterMeta: () => ({}),
@@ -119,7 +120,8 @@ describe('the registry row wins, always', () => {
       profile: 'ops',
       // Opening a bot leaves the Sessions workspace on its current gateway.
       keepAllProfilesScope: true,
-      tabTitle: 'Bot Chat',
+      // The tab names the BOT — the stored title stays 'Bot Chat'.
+      tabTitle: 'Ops',
       workspaceMode: 'bots',
       workspaceOwnerKey: 'bot:ops'
     })
