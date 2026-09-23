@@ -12,6 +12,7 @@ import re
 import secrets
 import sqlite3
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Optional
@@ -217,6 +218,18 @@ def find_by_primary_path(conn: sqlite3.Connection, path: str, *, include_archive
     return None
 
 
+_INVISIBLE_CHARS = "".join(
+    chr(c) for c in range(0x110000) if unicodedata.category(chr(c)) == "Cf"
+)
+
+
+def _clean_project_name(name: object) -> str:
+    """Normalize a project name for validation: whitespace plus zero-width/invisible
+    format codepoints (``Cf`` — U+200B, U+FEFF, ...) are stripped from both ends so a
+    name that would render as nothing is caught by the empty check."""
+    return str(name or "").strip().strip(_INVISIBLE_CHARS).strip()
+
+
 def create_project(
     conn: sqlite3.Connection, *, name: str, slug: Optional[str] = None, folders: Optional[Iterable[str]] = None,
     primary_path: Optional[str] = None, description: Optional[str] = None, icon: Optional[str] = None,
@@ -224,7 +237,7 @@ def create_project(
 ) -> str:
     """Create a project and return its id. ``folders`` are normalized to absolute paths; ``primary_path``
     is added to the folder set (if absent) and marked primary, else the first folder becomes primary."""
-    name = str(name or "").strip()
+    name = _clean_project_name(name)
     if not name:
         raise ValueError("project name must not be empty")
     slug_candidate = normalize_slug(slug) if slug else _slugify(name)
@@ -277,7 +290,7 @@ def update_project(
     """Patch top-level project fields; only provided (non-None) fields change. ``icon``, ``color`` and
     ``board_slug`` take ``""`` to clear (store NULL) — ``None`` leaves the field untouched."""
     if name is not None:
-        name = str(name).strip()
+        name = _clean_project_name(name)
         if not name:
             raise ValueError("project name must not be empty")
     if board_slug is not None:

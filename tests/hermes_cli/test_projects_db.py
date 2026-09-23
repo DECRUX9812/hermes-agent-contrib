@@ -125,6 +125,20 @@ def test_find_by_primary_path(conn):
 
 
 
+def test_invisible_only_name_rejected(conn):
+    # Zero-width/invisible codepoints survive str.strip() — a name made only of
+    # them renders as nothing and must be refused on both create and rename.
+    for bad in ("\u200b\u200b", "\ufeff", " \u200b "):
+        with pytest.raises(ValueError, match="must not be empty"):
+            pdb.create_project(conn, name=bad)
+
+    pid = pdb.create_project(conn, name="Real")
+    with pytest.raises(ValueError, match="must not be empty"):
+        pdb.update_project(conn, pid, name="\ufeff")
+    # Untouched by the failed rename.
+    assert pdb.get_project(conn, pid).name == "Real"
+
+
 def test_per_profile_isolation(tmp_path):
     # Two distinct DB paths stand in for two profiles' HERMES_HOME.
     a = pdb.connect(db_path=tmp_path / "a" / "projects.db")
