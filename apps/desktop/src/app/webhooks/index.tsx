@@ -208,6 +208,18 @@ export function WebhooksView({ onClose }: WebhooksViewProps) {
     setCreated(null)
   }, [creating])
 
+  // Pending mutations are armed against the profile scope they were opened
+  // under, but the REST helpers resolve the CURRENT scope at call time
+  // (profileScoped()). A scope switch would fire them at the new profile's
+  // backend — a same-named webhook there deleted, a shown secret belonging to
+  // the wrong profile (#71352). Drop them with the scope instead.
+  useEffect(() => {
+    setPendingDelete(null)
+    setCreateOpen(false)
+    setCreated(null)
+    resetForm()
+  }, [profileScope, resetForm])
+
   const handleCreate = useCallback(async () => {
     if (!name.trim()) {
       notify({ kind: 'error', message: w.nameRequired })
