@@ -242,3 +242,41 @@ class TestMessagesEndpointProjection:
         rendered = " ".join(str(message.get("content") or "") for message in messages)
         assert "PRIOR CONTEXT" not in rendered
         assert "CONTEXT COMPACTION" not in rendered
+
+    @pytest.mark.asyncio
+    async def test_include_compacted_flag_surfaces_archived_turns(self, adapter, session_db):
+        session_id = session_db.create_session("compacted-history", "api_server")
+        session_db.replace_messages(
+            session_id,
+            [
+                _row("user", "archived question"),
+                _row("assistant", "archived answer"),
+            ],
+        )
+        session_db.archive_and_compact(
+            session_id,
+            [
+                _row("user", "compressed handoff summary"),
+                _row("assistant", "post-compaction answer"),
+            ],
+        )
+
+        async with TestClient(TestServer(_messages_app(adapter))) as client:
+            default_response = await client.get(f"/api/sessions/{session_id}/messages")
+            assert default_response.status == 200
+            default_payload = await default_response.json()
+            flagged_response = await client.get(
+                f"/api/sessions/{session_id}/messages?include_compacted=true&order=oldest"
+            )
+            assert flagged_response.status == 200
+            flagged_payload = await flagged_response.json()
+
+        default_contents = [m["content"] for m in default_payload["data"]]
+        assert default_contents == ["compressed handoff summary", "post-compaction answer"]
+        flagged_contents = [m["content"] for m in flagged_payload["data"]]
+        assert flagged_contents == [
+            "archived question",
+            "archived answer",
+            "compressed handoff summary",
+            "post-compaction answer",
+        ]
