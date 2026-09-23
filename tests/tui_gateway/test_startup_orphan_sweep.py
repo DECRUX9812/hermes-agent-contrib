@@ -168,6 +168,23 @@ class TestSweepOrphanedSessionRows:
         assert server._sweep_orphaned_session_rows() == []
         assert db.get_session("stale-tui")["ended_at"] is None
 
+    def test_pinned_row_spared_unpinned_orphan_swept(self, monkeypatch, tmp_path):
+        """A pin is a durable "keep" marker: this broad automatic sweep must
+        spare pinned rows (``exclude_pinned``) while still reaping unpinned
+        orphans — same contract as the auto-prune sweep."""
+        db = SessionDB(tmp_path / "state.db")
+        stale = time.time() - 8 * 3600
+        _seed_session(db, "pinned-tui", source="tui", last_active=stale)
+        _seed_session(db, "unpinned-tui", source="tui", last_active=stale)
+        db.set_session_pinned("pinned-tui", True)
+        monkeypatch.setattr(server, "_get_db", lambda: db)
+        monkeypatch.setattr(server, "_SESSION_TTL_S", float(IDLE_S))
+        monkeypatch.setattr(server, "_sessions", {})
+
+        assert server._sweep_orphaned_session_rows() == ["unpinned-tui"]
+        assert db.get_session("pinned-tui")["ended_at"] is None
+        assert db.get_session("unpinned-tui")["end_reason"] == "startup_orphan_reap"
+
 
 class TestScheduleStartupOrphanSweep:
     def test_once_per_process_and_config_and_ttl_gates(self, monkeypatch):
