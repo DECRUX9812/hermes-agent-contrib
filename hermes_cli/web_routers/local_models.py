@@ -331,7 +331,9 @@ def _probe_range_support(url: str) -> int:
 
 def download_file(url: str, dest: Path, job: Dict[str, Any], *, base_done: int = 0, keep_totals: bool = False) -> None:
     """Download url -> dest with byte progress on ``job``; ranged-parallel when the server supports it,
-    single-stream otherwise. Never leaves a .part. Completeness is checked only against what the SERVER
+    single-stream otherwise. A leftover .part smaller than the probed total is resumed with one
+    ``Range: bytes=N-`` stream; a failed attempt keeps its .part so a retry can resume. Completeness
+    is checked only against what the SERVER
     declared (range-probe total / Content-Length), never the CATALOG (its sizes may lag a re-upload), so a
     dropped connection still errors instead of staging a truncated file. Multi-file variants: ``base_done``
     offsets progress onto earlier files; ``keep_totals=True`` keeps the per-file size from overwriting the
@@ -362,7 +364,19 @@ def download_file(url: str, dest: Path, job: Dict[str, Any], *, base_done: int =
         # Probe and preallocation take real seconds on a 20+ GB file — narrate them, or the pane shows a dead '— of X GB'.
         job["detail"] = "Connecting"
         total = _probe_range_support(url)
-        if total:
+        existing = tmp.stat().st_size if tmp.exists() else 0
+        if total and 0 < existing < total:
+            # Resume an interrupted download: append the tail in a single Range stream.
+            if not keep_totals:
+                job["total_bytes"] = total
+            file_done[0] = existing
+            job["detail"] = f"Resuming at {_human_gb(existing)} of {_human_gb(total)}"
+            req = urllib.request.Request(url, headers={"Range": f"bytes={existing}-"})
+            with urllib.request.urlopen(req, timeout=120) as r, open(tmp, "ab") as f:
+                pump(r, f)
+            if file_done[0] != total:
+                raise RuntimeError(f"download incomplete ({file_done[0]} of {total} bytes)")
+        elif total:
             if not keep_totals:
                 job["total_bytes"] = total
             # Preallocate so each worker writes at its own offset.
@@ -394,7 +408,7 @@ def download_file(url: str, dest: Path, job: Dict[str, Any], *, base_done: int =
                                    f"said {length:,} — connection dropped? Removed; try again")
         shutil.move(str(tmp), str(dest))
     except Exception:
-        tmp.unlink(missing_ok=True)
+        # Keep the .part: a retry resumes it via Range when the server allows.
         raise
 
 
