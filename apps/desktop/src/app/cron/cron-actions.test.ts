@@ -33,7 +33,22 @@ describe('triggerAndRefreshCronJobs', () => {
 
     expect(triggerCronJob).toHaveBeenCalledWith('deleted-one-shot')
     expect(getCronJobs).toHaveBeenCalledWith('work')
-    expect(result).toEqual({ jobs: authoritative, refreshError: null, stale: false })
+    expect(result).toEqual({
+      jobs: authoritative,
+      refreshError: null,
+      stale: false,
+      value: { id: 'deleted-one-shot', state: 'completed' }
+    })
+  })
+
+  it('carries the post-run job so the caller can surface the run outcome', async () => {
+    const postRun = { id: 'job-1', last_error: 'boom', last_status: 'error', state: 'scheduled' }
+    triggerCronJob.mockResolvedValue(postRun)
+    getCronJobs.mockResolvedValue([postRun])
+
+    const result = await triggerAndRefreshCronJobs('job-1', 'all')
+
+    expect(result.value).toEqual(postRun)
   })
 
   it('reports refresh failure separately after a successful trigger', async () => {
@@ -43,7 +58,7 @@ describe('triggerAndRefreshCronJobs', () => {
 
     const result = await triggerAndRefreshCronJobs('job-1', 'all')
 
-    expect(result).toEqual({ jobs: null, refreshError, stale: false })
+    expect(result).toEqual({ jobs: null, refreshError, stale: false, value: { id: 'job-1', state: 'scheduled' } })
   })
 
   it('still rejects when the trigger itself fails', async () => {
@@ -62,7 +77,7 @@ describe('triggerAndRefreshCronJobs', () => {
     beginCronJobsRequest('personal')
     trigger.resolve(Promise.reject(new Error('old profile failed')) as never)
 
-    await expect(resultPromise).resolves.toEqual({ jobs: null, refreshError: null, stale: true })
+    await expect(resultPromise).resolves.toEqual({ jobs: null, refreshError: null, stale: true, value: null })
     expect(getCronJobs).not.toHaveBeenCalled()
   })
 
@@ -77,7 +92,7 @@ describe('triggerAndRefreshCronJobs', () => {
     beginCronJobsRequest('personal')
     refresh.resolve([{ id: 'work-job' }])
 
-    await expect(resultPromise).resolves.toEqual({ jobs: null, refreshError: null, stale: true })
+    await expect(resultPromise).resolves.toEqual({ jobs: null, refreshError: null, stale: true, value: null })
   })
 
   it('discards an older ordinary refresh that completes after a trigger refresh', async () => {
@@ -94,7 +109,8 @@ describe('triggerAndRefreshCronJobs', () => {
     await expect(newerPromise).resolves.toEqual({
       jobs: [{ id: 'newer' }],
       refreshError: null,
-      stale: false
+      stale: false,
+      value: { id: 'job-1', state: 'scheduled' }
     })
     await expect(olderPromise).resolves.toEqual({ jobs: null, refreshError: null, stale: true })
   })

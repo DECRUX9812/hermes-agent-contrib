@@ -92,6 +92,30 @@ export function lastErrorSummary(lastError: string | null | undefined): string {
   return sentence.length > ERROR_SUMMARY_MAX ? `${sentence.slice(0, ERROR_SUMMARY_MAX - 1).trimEnd()}…` : sentence
 }
 
+/**
+ * Failure summary for the post-run job the trigger endpoint returns, or null
+ * when the run reported no failure. The scheduler's `last_status` is a closed
+ * set ('ok' plus failure literals like 'error', 'delivery_failed',
+ * 'blocked_config'); only 'ok' or absent is a success. Delivery failures keep
+ * their detail in `last_delivery_error` (`last_error` stays null for them).
+ */
+export function cronTriggerFailureSummary(
+  job: Pick<CronJob, 'last_delivery_error' | 'last_error' | 'last_status'>
+): null | string {
+  const status = asText(job.last_status).trim()
+
+  if (!status || status === 'ok') {
+    return null
+  }
+
+  const raw =
+    status === 'delivery_failed'
+      ? asText(job.last_delivery_error).trim() || asText(job.last_error).trim()
+      : asText(job.last_error).trim() || asText(job.last_delivery_error).trim()
+
+  return lastErrorSummary(raw) || status
+}
+
 /** Build the API update payload, preserving an empty prompt on script-only jobs. */
 export function cronEditorUpdates(values: CronEditorSaveValues, options: { scriptOnlyJob: boolean }): CronJobUpdates {
   const updates: CronJobUpdates = {

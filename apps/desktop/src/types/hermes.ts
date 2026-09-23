@@ -932,8 +932,10 @@ export interface CronJob {
   deliver?: null | string
   enabled: boolean
   id: string
+  last_delivery_error?: null | string
   last_error?: null | string
   last_run_at?: null | string
+  last_status?: null | string
   model?: null | string
   name?: null | string
   next_run_at?: null | string

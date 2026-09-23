@@ -77,6 +77,7 @@ import { BlueprintSlotControl, blueprintSlotHelp, cleanBlueprintFieldError, init
 import { mutateAndRefreshCronJobs, refreshCronJobs, triggerAndRefreshCronJobs } from './cron-actions'
 import {
   cronEditorUpdates,
+  cronTriggerFailureSummary,
   jobIsScriptOnly,
   lastErrorSummary,
   parseCronDeliveryTargets,
@@ -530,7 +531,7 @@ export function CronView({ onClose, onOpenSession, setStatusbarItemGroup: _setSt
         return
       }
 
-      const { refreshError, stale } = run.value
+      const { refreshError, stale, value: triggeredJob } = run.value
 
       if (stale) {
         return
@@ -540,7 +541,25 @@ export function CronView({ onClose, onOpenSession, setStatusbarItemGroup: _setSt
         notifyError(refreshError, c.failedLoad)
       }
 
-      notify({ kind: 'success', title: c.triggered, message: truncate(jobTitle(job), 60) })
+      // The endpoint returns the post-run job — except for a one-shot that
+      // deleted itself, where it echoes the pre-run row. Only read the outcome
+      // off fields that actually changed, so a stale last_status can't toast
+      // a failure this run did not produce.
+      const outcomeChanged =
+        triggeredJob !== null &&
+        (triggeredJob.last_run_at !== job.last_run_at || triggeredJob.last_status !== job.last_status)
+
+      const failure = outcomeChanged ? cronTriggerFailureSummary(triggeredJob) : null
+
+      if (failure) {
+        notify({
+          kind: 'error',
+          title: c.lastRunFailed,
+          message: `${truncate(jobTitle(job), 60)} — ${failure}`
+        })
+      } else {
+        notify({ kind: 'success', title: c.triggered, message: truncate(jobTitle(job), 60) })
+      }
     } catch (err) {
       if (triggerControllerRef.current === controller && cronProfileForScope($profileScope.get()) === viewProfile) {
         notifyError(err, c.failedTrigger)

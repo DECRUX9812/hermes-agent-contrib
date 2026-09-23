@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   cronEditorUpdates,
+  cronTriggerFailureSummary,
   jobIsScriptOnly,
   lastErrorSummary,
   parseCronDeliveryTargets,
@@ -81,6 +82,33 @@ describe('lastErrorSummary', () => {
     expect(lastErrorSummary(null)).toBe('')
     expect(lastErrorSummary(undefined)).toBe('')
     expect(lastErrorSummary('   ')).toBe('')
+  })
+})
+
+describe('cronTriggerFailureSummary', () => {
+  it('is null when the run reported success or no outcome', () => {
+    expect(cronTriggerFailureSummary({ last_status: 'ok' })).toBeNull()
+    expect(cronTriggerFailureSummary({})).toBeNull()
+    expect(cronTriggerFailureSummary({ last_status: null })).toBeNull()
+  })
+
+  it('summarizes last_error for a failed run', () => {
+    expect(
+      cronTriggerFailureSummary({
+        last_error: "RuntimeError: Cron job 'x' has no model configured. Set one via edit.",
+        last_status: 'error'
+      })
+    ).toBe("Cron job 'x' has no model configured.")
+  })
+
+  it('prefers last_delivery_error for a delivery_failed run', () => {
+    expect(
+      cronTriggerFailureSummary({ last_delivery_error: 'telegram unreachable', last_status: 'delivery_failed' })
+    ).toBe('telegram unreachable')
+  })
+
+  it('falls back to the status literal when no detail is stored', () => {
+    expect(cronTriggerFailureSummary({ last_status: 'blocked_config' })).toBe('blocked_config')
   })
 })
 

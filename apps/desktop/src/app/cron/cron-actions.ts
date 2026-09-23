@@ -84,14 +84,14 @@ export async function mutateAndRefreshCronJobs<T>(
 /**
  * Trigger a job synchronously, then replace the local view from the backend.
  * A completed one-shot may have been deleted, so the trigger response alone is
- * not an authoritative list update. Refresh failure is reported separately:
- * the trigger already succeeded and must not be shown as failed.
+ * not an authoritative list update — but it IS the run outcome, so `value`
+ * carries the post-run job for the caller to toast success/failure from.
+ * Refresh failure is reported separately: the trigger already succeeded and
+ * must not be shown as failed.
  */
-export async function triggerAndRefreshCronJobs(
+export function triggerAndRefreshCronJobs(
   jobId: string,
   profile: 'all' | string
-): Promise<CronTriggerRefreshResult> {
-  const { value: _value, ...result } = await mutateAndRefreshCronJobs(profile, () => triggerCronJob(jobId))
-
-  return result
+): Promise<CronMutationRefreshResult<CronJob>> {
+  return mutateAndRefreshCronJobs(profile, () => triggerCronJob(jobId))
 }
