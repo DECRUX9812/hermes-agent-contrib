@@ -1826,7 +1826,7 @@ def _save_via_compute_host(rid, params: dict) -> dict:
     return _ok(rid, result)
 
 
-def _compress_via_compute_host(rid, params: dict, session: dict) -> dict:
+def _compress_via_compute_host(rid, params: dict, session: dict, *, force_preview: bool = False) -> dict:
     """``session.compress`` for a turn-isolated session: forward ``/compress`` to the host."""
     sid = str(params.get("session_id") or "")
     focus_topic = _str_param(params, "focus_topic")
@@ -1835,7 +1835,9 @@ def _compress_via_compute_host(rid, params: dict, session: dict) -> dict:
         _adopt_late_compute_host_compress_ack(_sid, session, late, route_name="session.compress")
     try:
         ack = _send_compute_host_control(
-            sid, route_name="session.compress", command="/compress" + (f" {focus_topic}" if focus_topic else ""),
+            sid, route_name="session.compress",
+            command=("/compress" + (f" {focus_topic}" if focus_topic else "")
+                     + (" --preview" if force_preview else "")),
             # compression.context_total_ceiling_seconds: the host legitimately runs that long.
             wait=True, timeout=_compute_host_compress_wait_seconds(), on_late_ack=_on_late_ack)
     except queue.Empty:
@@ -1908,14 +1910,34 @@ def _compress_live(rid, sid: str, session: dict, focus_topic: str) -> dict:
         _status_update(sid, "ready")
 
 
+def _compress_preview(rid, session: dict, request) -> dict:
+    """Read-only ``/compress --preview``: the same report ``compress_now`` builds, without
+    touching history (or the agent beyond a token estimate)."""
+    from agent.conversation_compression_manual import estimate_request_tokens
+    from hermes_cli.partial_compress import summarize_compress_preview
+    with session["history_lock"]:
+        before = list(session.get("history", []))
+    before_tokens = estimate_request_tokens(session["agent"], before)
+    report = summarize_compress_preview(
+        before, request.partial, request.keep_last, request.focus_topic, before_tokens)
+    return _ok(rid, {
+        "status": "preview", "preview": report, "message": "\n".join(report["lines"]),
+        "before_messages": len(before), "before_tokens": before_tokens})
+
+
 @method("session.compress")
 @_profile_scoped
 def _(rid, params: dict) -> dict:
+    from agent.conversation_compression_manual import parse_compress_args
     session, err = _sess_nowait(params, rid)
     if err:
         return err
+    focus_topic = _str_param(params, "focus_topic")
+    request = parse_compress_args(focus_topic)
+    preview = _flag(params, "preview") or request.preview
     if _session_uses_compute_host(session):
-        return _compress_via_compute_host(rid, params, session)
+        return _compress_via_compute_host(rid, params, session,
+                                          force_preview=preview and not request.preview)
     session, err = _sess(params, rid)
     if err:
         return err
@@ -1923,7 +1945,9 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4009, busy_message("compress"))
     sid = params.get("session_id", "")
     try:
-        return _compress_live(rid, sid, session, _str_param(params, "focus_topic"))
+        if preview:
+            return _compress_preview(rid, session, request)
+        return _compress_live(rid, sid, session, focus_topic)
     except CompressionLockHeld as e:
         _status_update(sid, "ready")
         from agent.manual_compression_feedback import describe_compression_lock_skip

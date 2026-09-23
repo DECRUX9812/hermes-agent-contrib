@@ -24405,6 +24405,11 @@
             ],
             "default": null,
             "title": "Focus Topic"
+          },
+          "preview": {
+            "default": false,
+            "title": "Preview",
+            "type": "boolean"
           }
         },
         "required": [
@@ -24548,6 +24553,19 @@
             ],
             "default": null,
             "title": "Compressed"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Preview"
           },
           "lock_held": {
             "anyOf": [

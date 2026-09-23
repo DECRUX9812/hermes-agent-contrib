@@ -70,6 +70,14 @@ export interface SessionCompressResponse {
    *  while compression is still running; the transcript refreshes from the
    *  pushed session.info / `compacted` status edge (#97948). */
   message?: string
+  /** `/compress --preview` report (`status: 'preview'`); history is untouched. */
+  preview?: {
+    head_count?: number
+    lines?: string[]
+    partial?: boolean
+    tail_count?: number
+    total?: number
+  }
   removed?: number
   status?: string
   summary?: {

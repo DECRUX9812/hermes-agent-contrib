@@ -2843,6 +2843,7 @@ export interface SessionCompressParams {
   session_id: string
   profile?: string | null
   focus_topic?: string | null
+  preview?: boolean
 }
 /** In-process: the before/after summary + replacement transcript. Compute host: its result passes through (hence open) with ``turn_isolation``; a lock held elsewhere answers ``compressed: false``. */
 export interface SessionCompressResult {
@@ -2857,6 +2858,7 @@ export interface SessionCompressResult {
   info?: SessionLiveInfo | null
   messages?: TranscriptMessage[] | null
   compressed?: boolean | null
+  preview?: Record<string, unknown> | null
   lock_held?: boolean | null
   message?: string | null
   turn_isolation?: boolean | null
