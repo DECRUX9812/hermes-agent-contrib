@@ -358,7 +358,11 @@ class SessionSessionsMixin:
                                     sessions.model_config, '$._reset_from'
                                 ) = '{}'
                            THEN json_set(
-                               excluded.model_config,
+                               json_remove(
+                                   excluded.model_config,
+                                   '$._delegate_from',
+                                   '$._branched_from'
+                               ),
                                '$._reset_from',
                                json_extract(
                                    sessions.model_config, '$._reset_from'
