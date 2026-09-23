@@ -21,7 +21,16 @@ from hermes_constants import get_hermes_home
 
 
 def projects_db_path() -> Path:
-    """The per-profile projects DB path (``$HERMES_HOME/projects.db``)."""
+    """The per-profile projects DB path (``$HERMES_HOME/projects.db``).
+
+    Intentionally per-profile, not global: each profile owns its own project set, and the
+    multiplex/desktop ``projects.*`` RPCs deliberately rebind ``get_hermes_home()`` to the
+    focused profile so ``projects.tree``/``projects.list`` describe that profile's store
+    (see ``tui_gateway/methods_projects.py`` and
+    ``tests/hermes_cli/test_profiles_sidebar_scope.py`` — the profile sidebar merges each
+    profile's own tree). Do not "fix" this to ``get_default_hermes_root()``; that would make
+    a secondary profile read the default profile's projects.
+    """
     return get_hermes_home() / "projects.db"
 
 
