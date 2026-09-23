@@ -573,7 +573,7 @@ def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
         "refresh_nous_oauth_from_state",
         fake_refresh_nous_oauth_from_state,
     )
-    monkeypatch.setattr(auth_mod, "persist_nous_credentials", lambda state: None)
+    monkeypatch.setattr(auth_mod, "persist_nous_credentials", lambda *a, **kw: None)
 
     try:
         _web_server_oauth._nous_plain_poller(session_id)
@@ -583,6 +583,114 @@ def test_nous_dashboard_poller_preserves_effective_scope_when_token_omits_scope(
         _web_server_oauth._oauth_sessions.pop(session_id, None)
 
 
+
+
+def test_nous_dashboard_poller_keeps_existing_active_provider(tmp_path, monkeypatch):
+    """A dashboard "connect another Nous account" must not hijack the chat provider.
+
+    The REST connect path persists credentials only — matching `hermes auth add nous`,
+    which keeps the previous provider unless the user picks Nous. The first-ever
+    credential may still become active (mark_provider_active_if_unset), but an
+    existing choice is never overwritten.
+    """
+    from hermes_cli import auth as auth_mod
+
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    auth_path = tmp_path / "auth.json"
+    auth_path.write_text(
+        json.dumps({"version": 1, "active_provider": "openrouter", "providers": {}}),
+        encoding="utf-8",
+    )
+
+    session_id = "nous-plain-provider-flip-test"
+    _web_server_oauth._oauth_sessions[session_id] = {
+        "session_id": session_id,
+        "provider": "nous",
+        "flow": "device_code",
+        "created_at": time.time(),
+        "status": "pending",
+        "error_message": None,
+        "portal_base_url": "https://portal.nousresearch.com",
+        "client_id": "hermes-cli",
+        "device_code": "device-code",
+        "interval": 5,
+        "expires_at": time.time() + 600,
+        "scope": auth_mod.DEFAULT_NOUS_SCOPE,
+    }
+    monkeypatch.setattr(
+        auth_mod,
+        "_poll_for_token",
+        lambda **kwargs: {
+            "access_token": "access-token",
+            "refresh_token": "refresh-token",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+            "inference_base_url": "https://inference.nousresearch.com",
+        },
+    )
+    monkeypatch.setattr(
+        auth_mod,
+        "refresh_nous_oauth_from_state",
+        lambda state, **kwargs: dict(state),
+    )
+
+    try:
+        _web_server_oauth._nous_plain_poller(session_id)
+        assert _web_server_oauth._oauth_sessions[session_id]["status"] == "approved"
+    finally:
+        _web_server_oauth._oauth_sessions.pop(session_id, None)
+
+    after = json.loads(auth_path.read_text(encoding="utf-8"))
+    assert after["active_provider"] == "openrouter"
+    assert after["providers"]["nous"]["access_token"] == "access-token"
+
+
+def test_nous_dashboard_poller_activates_when_no_provider_set(tmp_path, monkeypatch):
+    """The first-ever credential still becomes active — mirror of
+    `hermes auth add` semantics (mark_provider_active_if_unset)."""
+    from hermes_cli import auth as auth_mod
+
+    monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    session_id = "nous-plain-first-provider-test"
+    _web_server_oauth._oauth_sessions[session_id] = {
+        "session_id": session_id,
+        "provider": "nous",
+        "flow": "device_code",
+        "created_at": time.time(),
+        "status": "pending",
+        "error_message": None,
+        "portal_base_url": "https://portal.nousresearch.com",
+        "client_id": "hermes-cli",
+        "device_code": "device-code",
+        "interval": 5,
+        "expires_at": time.time() + 600,
+        "scope": auth_mod.DEFAULT_NOUS_SCOPE,
+    }
+    monkeypatch.setattr(
+        auth_mod,
+        "_poll_for_token",
+        lambda **kwargs: {
+            "access_token": "access-token",
+            "refresh_token": "refresh-token",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+            "inference_base_url": "https://inference.nousresearch.com",
+        },
+    )
+    monkeypatch.setattr(
+        auth_mod,
+        "refresh_nous_oauth_from_state",
+        lambda state, **kwargs: dict(state),
+    )
+
+    try:
+        _web_server_oauth._nous_plain_poller(session_id)
+        assert _web_server_oauth._oauth_sessions[session_id]["status"] == "approved"
+    finally:
+        _web_server_oauth._oauth_sessions.pop(session_id, None)
+
+    after = json.loads((tmp_path / "auth.json").read_text(encoding="utf-8"))
+    assert after["active_provider"] == "nous"
 
 
 def test_xai_oauth_listed_as_device_code_flow():

@@ -807,21 +807,31 @@ def refresh_nous_oauth_from_state(
     return state
 
 
-def persist_nous_credentials(creds: Dict[str, Any], *, label: Optional[str] = None):
+def persist_nous_credentials(
+    creds: Dict[str, Any], *, label: Optional[str] = None, set_active: bool = True):
     """Persist Nous OAuth credentials as the singleton provider state.
 
     Nous credentials are read from ``providers.nous`` (401 recovery, pool seeding) AND
     ``credential_pool.nous`` (runtime ``pool.select()``); a pool-only write broke expiry recovery.
     So: write the singleton, mirror to the shared store, then ``load_pool("nous")`` upserts the
     canonical ``device_code`` entry in place. ``label`` rides in the singleton so re-seeding keeps
-    it.
+    it. ``set_active=False`` stores the credential without hijacking the caller's existing
+    ``active_provider`` (the dashboard "connect another account" path).
     """
-    from hermes_cli.auth import _save_active_provider_state, _write_shared_nous_state
+    from hermes_cli.auth import (
+        _auth_store_lock, _load_auth_store, _save_active_provider_state, _save_auth_store,
+        _store_provider_state, _write_shared_nous_state)
     from agent.credential_pool import load_pool
     state = dict(creds)
     if label and str(label).strip():
         state["label"] = str(label).strip()
-    _save_active_provider_state("nous", state)
+    if set_active:
+        _save_active_provider_state("nous", state)
+    else:
+        with _auth_store_lock():
+            auth_store = _load_auth_store()
+            _store_provider_state(auth_store, "nous", state, set_active=False)
+            _save_auth_store(auth_store)
     _write_shared_nous_state(state)
     pool = load_pool("nous")
     return next((e for e in pool.entries() if e.source == NOUS_DEVICE_CODE_SOURCE), None)

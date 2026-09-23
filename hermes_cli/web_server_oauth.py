@@ -300,7 +300,9 @@ def _nous_plain_poller(session_id: str, sess: Dict[str, Any]) -> None:
     ``_nous_promotion_poller`` instead; this is the "connect another Nous account" path.
     """
     from hermes_cli.web_server_profiles import _profile_scope
-    from hermes_cli.auth import _poll_for_token, persist_nous_credentials, refresh_nous_oauth_from_state
+    from hermes_cli.auth import (
+        _poll_for_token, mark_provider_active_if_unset, persist_nous_credentials,
+        refresh_nous_oauth_from_state)
     from hermes_cli import anon_auth
     import httpx
     portal_base_url, client_id = sess["portal_base_url"], sess["client_id"]
@@ -348,7 +350,12 @@ def _nous_plain_poller(session_id: str, sess: Dict[str, Any]) -> None:
             if sess.get("cancelled"):
                 sess["status"] = "cancelled"
                 return
-            persist_nous_credentials(full_state)
+            # set_active=False: "connect another Nous account" stores the credential without
+            # flipping the user's chat provider — same contract as `hermes auth add nous`.
+            persist_nous_credentials(full_state, set_active=False)
+            # Mirror `hermes auth add`: the first-ever credential becomes active; an existing
+            # choice is never overwritten.
+            mark_provider_active_if_unset("nous")
         # A config left on the free tier's route by a retired identity still has to move.
         settled = anon_auth.settle_after_upgrade(full_state)
     with _oauth_sessions_lock:
