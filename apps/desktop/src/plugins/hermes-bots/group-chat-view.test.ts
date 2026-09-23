@@ -271,6 +271,39 @@ describe('disband', () => {
     expect(room.chat.uniqueGroupChatName('Live', new Set(room.membership.liveGroupChatNames()))).toBe('Live')
   })
 
+  it('interrupts the member on turn while tombstoning a live room', async () => {
+    const room = await loadRoom()
+    const onTurn = { name: 'research', title: '' }
+
+    room.chat.$groupChats.set({
+      Live: {
+        epoch: 3,
+        log: [{ at: 1, from: { kind: 'user', name: 'You' }, id: 'l1', text: 'kick off' }],
+        running: true,
+        sessions: { 'thread:t1::research': 'live-thread-sid', research: 'legacy-sid' },
+        stranded: { research: { before: 0, thread: 't1', turn: 'turn-1' } },
+        turn: onTurn,
+        watermarks: {}
+      }
+    } as unknown as Record<string, GroupChat>)
+
+    await room.view.disbandGroupChat('Live', [{ name: 'research' }])
+
+    // Exactly one — the serial drive has one member mid-turn, on ITS session.
+    const interrupts = room.gateway.rpcFor('session.interrupt')
+
+    expect(interrupts).toHaveLength(1)
+    expect(interrupts[0].params.session_id).toBe('live-thread-sid')
+
+    // Tombstone fencing is unchanged.
+    const tomb = room.chat.$groupChats.get().Live
+
+    expect(tomb.tombstone).toBe(true)
+    expect(tomb.epoch).toBe(4)
+    expect(tomb.running).toBe(false)
+    expect('Live' in durable(room)).toBe(false)
+  })
+
   it('drops the disbanded room from the gateway mirror', async () => {
     const room = await loadRoom()
     room.chat.$groupChats.set({

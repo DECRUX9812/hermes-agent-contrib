@@ -81,7 +81,9 @@ import {
   groupChatMemberBots,
   groupDisbandMetadataPlan,
   groupMemberKey,
+  groupSessionKey,
   groupWorkspaceOwnerKey,
+  hasThreadScopedGroupSession,
   liveGroupChatNames
 } from './group-membership'
 import { groupMentionComponents, groupMentionText } from './group-mention-text'
@@ -102,7 +104,7 @@ import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
-import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
+import { botRosterMeta, groupTranscriptSpeakerMeta, requestForBot, setBotsWorkspaceOwner } from './routing'
 import { bumpBotOpenGeneration, getPluginCtx, ID } from './shared'
 import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage, RosterRow } from './types'
 
@@ -168,6 +170,26 @@ export async function disbandGroupChat(group: string, members: RosterRow[]) {
   // updateGroupChat writes the WHOLE atom map, so an unflagged tombstone
   // would be persisted by the next unrelated room write and its name would
   // count as taken, suffixing a same-name recreate to "<name> 2" forever.
+  // Resolve the on-turn member's session NOW, before any await: the
+  // interrupt below must target the turn captured at disband time, and the
+  // tombstone write must stay synchronous with the delete above — awaiting
+  // in between lets the gateway-mirror merge re-materialize the room's log
+  // over the tombstone.
+  const onTurn = prior.running ? prior.turn || null : null
+  const onTurnKey = onTurn ? groupMemberKey(onTurn) : ''
+  const onTurnSessions = prior.sessions || {}
+  const onTurnMarker = onTurnKey ? (prior.stranded || {})[onTurnKey] : null
+
+  const onTurnThread =
+    onTurnMarker && typeof onTurnMarker === 'object' && typeof onTurnMarker.thread === 'string' && onTurnMarker.thread
+      ? onTurnMarker.thread
+      : 'legacy'
+
+  const onTurnSessionId = onTurn
+    ? onTurnSessions[groupSessionKey(onTurnThread, onTurn)] ||
+      (hasThreadScopedGroupSession(onTurnSessions, onTurnKey) ? null : onTurnSessions[onTurnKey])
+    : null
+
   if (prior.running) {
     all[group] = {
       log: [],
@@ -235,6 +257,20 @@ export async function disbandGroupChat(group: string, members: RosterRow[]) {
 
     if (patch) {
       await saveBotMeta(owner, patch)
+    }
+  }
+
+  // The epoch bump only stops the drive at its NEXT member boundary; the
+  // member whose model call is in flight right now keeps grinding unless it
+  // is interrupted directly — the same best-effort leg stopGroupThread runs,
+  // sent only after the tombstone fences the drive off.
+  if (onTurn && onTurnSessionId) {
+    try {
+      await requestForBot(onTurn, 'session.interrupt', {
+        session_id: onTurnSessionId
+      })
+    } catch {
+      /* best-effort — the tombstone above already fences the drive off */
     }
   }
 
