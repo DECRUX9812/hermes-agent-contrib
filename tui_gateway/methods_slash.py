@@ -55,6 +55,41 @@ def _format_live_review_output(sid: str, session: Optional[dict], arg: str) -> s
     return format_dispatch_note(result, arg or "")
 
 
+def _format_live_refine_output(sid: str, session: Optional[dict], arg: str) -> str:
+    """Dispatch /refine against the live session's agent: the same on-demand memory/skill review
+    fork the CLI runs (``_spawn_background_review``), on a snapshot of this session's history.
+    Without a live entry slash.exec falls to the slash worker, whose fresh HermesCLI has an empty
+    conversation_history and always answers "Nothing to refine yet" (#93918)."""
+    if session is None or (agent := session.get("agent")) is None:
+        return "Nothing to refine yet — send a message first."
+    if _session_uses_compute_host(session):
+        return "/refine runs on the local agent only for now — this session's agent lives on a remote compute host."
+    if session.get("running"):
+        return "session busy — wait for the current turn to finish, then /refine"
+    with session.get("history_lock") or contextlib.nullcontext():
+        snapshot = list(session.get("history", []))
+    snapshot = snapshot or list(getattr(agent, "_session_messages", None) or [])
+    if not snapshot:
+        return "Nothing to refine yet — the conversation is empty."
+    # Same binding as /review: slash.exec runs on the RPC pool outside a turn, so bind the session
+    # identity or the review fork's completion carries no owner back into this chat.
+    tokens = _set_session_context(session["session_key"], ui_session_id=sid)
+    runtime_token = _current_runtime_session_record.set(session)
+    try:
+        agent._spawn_background_review(
+            messages_snapshot=snapshot, review_memory=True,
+            review_skills="skill_manage" in getattr(agent, "valid_tool_names", set()),
+            focus=arg or None, explicit=True)
+    except Exception as exc:
+        return f"/refine failed to start: {exc}"
+    finally:
+        _current_runtime_session_record.reset(runtime_token)
+        _clear_session_context(tokens)
+    tail = f" (focus: {arg})" if arg else ""
+    return (f"⚗ Reviewing this conversation in the background{tail} — "
+            f"any memory/skill updates will be reported when done.")
+
+
 def _format_live_usage_output(sid: str, session: dict, arg: str) -> str:
     agent = session.get("agent")
     usage = _session_usage_snapshot(session)
@@ -211,6 +246,7 @@ _LIVE_SLASH_OUTPUT = {
                  lambda sid, session, arg: _mirror_slash_side_effects(sid, session, f"/compress {arg}".strip())),
     "usage": (_NO_AGENT_USAGE, _format_live_usage_output),
     "review": (None, _format_live_review_output),
+    "refine": (None, _format_live_refine_output),
     "history": ("No conversation history yet.", _format_live_history_output),
     "prompt": (_NO_AGENT, _format_live_prompt_output),
     "status": (None, _format_live_status_output),
