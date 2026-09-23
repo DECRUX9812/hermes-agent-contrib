@@ -553,10 +553,75 @@ def _export_markdown_single(db, args, export_one, output_dir, lineage_is_logical
 
 # -- delete / prune / archive -------------------------------------------------
 
+# Grace for a force-signalled owner to release its lease before the delete gives up.
+_FORCE_RELEASE_WAIT_SECONDS = 15.0
+
+
+def _live_session_owners(session_id):
+    """Live active-session leases for ``session_id``; None when the registry cannot be read
+    (a live owner may exist but cannot be proven — callers fail closed without --force)."""
+    from hermes_cli.active_sessions import active_session_registry_snapshot
+    try:
+        entries = active_session_registry_snapshot(get_hermes_home())
+    except Exception:
+        return None
+    return [e for e in entries if str(e.get("session_id") or "") == str(session_id)]
+
+
+def _delete_live_owner_guard(session_id, *, force) -> bool:
+    """Coordinate the delete with the active-session lease registry.
+
+    Returns True when the delete may proceed. A live owner refuses the delete
+    outright: removing the row mid-turn leaves the owner's worker writing a
+    session that no longer exists (#102895). ``--force`` SIGTERMs each foreign
+    owning process and waits for the lease to drop before deleting.
+    """
+    from hermes_cli.active_sessions import session_already_owned_message
+
+    owners = _live_session_owners(session_id)
+    if owners is None:
+        if force:
+            print("Warning: could not read the active-session registry; deleting without "
+                  "checking for a live owner.")
+            return True
+        print("Cannot verify that this session has no live owner (active-session registry "
+              "unreadable). Fix or remove it, or re-run with --force.")
+        return False
+    if not owners:
+        return True
+    if not force:
+        print(session_already_owned_message(session_id, owners[0]))
+        print(f"Refusing to delete '{session_id}' while a live owner holds it. "
+              "Close it there, or re-run with --force to terminate the owner first.")
+        return False
+    import signal as _signal
+    import time as _time
+
+    pids = {int(e["pid"]) for e in owners if str(e.get("pid") or "").isdigit()} - {os.getpid()}
+    for pid in pids:
+        try:
+            os.kill(pid, _signal.SIGTERM)
+        except OSError:
+            pass
+    if pids:
+        deadline = _time.monotonic() + _FORCE_RELEASE_WAIT_SECONDS
+        remaining = _live_session_owners(session_id)
+        while remaining and _time.monotonic() < deadline:
+            _time.sleep(0.25)
+            remaining = _live_session_owners(session_id)
+        if remaining is None or remaining:
+            print(f"Session owner process(es) still alive after SIGTERM; "
+                  f"refusing to delete '{session_id}'.")
+            return False
+    return True
+
+
 def _cmd_delete(db, args):
     resolved_session_id = db.resolve_session_id(args.session_id)
     if not resolved_session_id:
         return _not_found(args.session_id)
+    if not _delete_live_owner_guard(resolved_session_id, force=getattr(args, "force", False)):
+        return
     # The delete is honored (explicit id), but a pin is a "keep" flag: say so instead of silently destroying it.
     _pinned_note = " (this session is PINNED)" if (db.get_session(resolved_session_id) or {}).get("pinned") else ""
     if not args.yes:

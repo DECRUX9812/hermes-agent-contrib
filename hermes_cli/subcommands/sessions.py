@@ -101,6 +101,8 @@ def build_sessions_parser(subparsers, *, cmd_sessions: Callable) -> None:
     sessions_delete = sessions_subparsers.add_parser("delete", help="Delete a specific session")
     sessions_delete.add_argument("session_id", help="Session ID to delete")
     add_yes_flag(sessions_delete, "Skip confirmation")
+    _flag(sessions_delete, "--force",
+        help="Terminate the live owner first when the session is open in another Hermes process")
 
     sessions_prune = sessions_subparsers.add_parser(
         "prune", help="Delete old sessions (filterable by time window, source, title, ...)")
