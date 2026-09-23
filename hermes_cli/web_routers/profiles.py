@@ -68,6 +68,7 @@ router = APIRouter()
 
 # Late-bound web_server helpers (resolved at call time; cycle-safe, monkeypatch-transparent).
 _cron_profile_home = late("_cron_profile_home", "hermes_cli.web_server_cron")
+_dedicated_serving_profile = late("_dedicated_serving_profile", "hermes_cli.web_server_cron")
 _resolve_profile_dir = late("_resolve_profile_dir", "hermes_cli.web_server_profiles")
 _spawn_hermes_action = late("_spawn_hermes_action", "hermes_cli.web_server_gateway")
 
@@ -211,8 +212,12 @@ def _profile_targets(log_label: str) -> List[Tuple[str, Path]]:
     """(name, home) for every profile, falling back to ``default`` alone. Uses
     ``profiles_to_serve`` (pure directory read) instead of ``list_profiles``, which parses
     config/meta and probes gateways per profile — every caller here is a polled sidebar
-    fan-out that only needs name/path (#114041)."""
+    fan-out that only needs name/path (#114041). A dedicated ``--isolated`` server is
+    scoped to its launch profile alone (#76932)."""
     from hermes_cli import profiles as profiles_mod
+    dedicated = _dedicated_serving_profile()
+    if dedicated is not None:
+        return [dedicated]
     try:
         targets = list(profiles_mod.profiles_to_serve(multiplex=True))
     except Exception:
