@@ -3030,8 +3030,10 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         default_page = requested_limit is None
         latest_page = order == "latest" or (order is None and default_page)
         limit = 500 if default_page else min(requested_limit, 500)
+        include_compacted = _coerce_request_bool(request.query.get("include_compacted"), default=False)
         messages = await asyncio.to_thread(
-            db.get_messages, resolved_id, limit=limit, offset=offset, latest=latest_page)
+            db.get_messages, resolved_id, limit=limit, offset=offset, latest=latest_page,
+            include_compacted=include_compacted)
         return web.json_response({
             "object": "list", "session_id": resolved_id,
             "data": [self._message_response(m) for m in messages],
