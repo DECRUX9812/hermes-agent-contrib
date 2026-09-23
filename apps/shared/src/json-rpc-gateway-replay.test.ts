@@ -334,6 +334,57 @@ describe('JsonRpcGatewayClient event-seq tracking + replay resume', () => {
     client.close()
   })
 
+  it('treats a truncated replay as lossy: no partial tail, watermark cleared, refetch signaled', async () => {
+    const client = makeClient()
+    const seen: number[] = []
+    const refetches: Array<string | undefined> = []
+    client.on('message.delta', e => seen.push((e as unknown as { seq: number }).seq))
+    client.on('sessions.changed', e => refetches.push(e.session_id))
+
+    const first = client.connect('ws://x')
+    let sock = sockets[sockets.length - 1]
+    sock.open()
+    await first
+    sock.serverFrame({ jsonrpc: '2.0', method: 'event', params: { type: 'message.delta', session_id: 's1', seq: 2 } })
+    expect(seen).toEqual([2])
+
+    client.invalidate('drop')
+    const second = client.connect('ws://x')
+    sock = sockets[sockets.length - 1]
+    sock.open()
+    await second
+
+    await vi.waitFor(() => {
+      expect(sock.lastRequest().method).toBe('session.events.since')
+    })
+
+    // A live frame racing the truncated replay is parked; the gap it follows is
+    // gone from the ring, so neither it nor the partial tail may dispatch.
+    sock.serverFrame({ jsonrpc: '2.0', method: 'event', params: { type: 'message.delta', session_id: 's1', seq: 9 } })
+
+    const req = sock.lastRequest()
+    sock.serverFrame({
+      jsonrpc: '2.0',
+      id: req.id,
+      result: {
+        events: [
+          { type: 'message.delta', session_id: 's1', seq: 7 },
+          { type: 'message.delta', session_id: 's1', seq: 8 }
+        ],
+        latest_seq: 8,
+        truncated: true,
+        count: 2
+      }
+    })
+
+    await vi.waitFor(() => {
+      expect(refetches).toEqual(['s1'])
+    })
+    expect(seen).toEqual([2])
+    expect(client.getSeqWatermarks()).toEqual({})
+    client.close()
+  })
+
   it('clears stale watermarks when the backend epoch changes (restart poisoning)', async () => {
     const client = makeClient()
 

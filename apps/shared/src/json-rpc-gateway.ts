@@ -483,7 +483,10 @@ export class JsonRpcGatewayClient {
       const results = await Promise.allSettled(
         entries.map(([sid, lastSeen]) =>
           // `open_requests` on the answer are re-delivered by the channel itself.
-          this.request<{ events?: Array<{ type: string; session_id?: string; seq?: number; payload?: unknown }> }>(
+          this.request<{
+            events?: Array<{ type: string; session_id?: string; seq?: number; payload?: unknown }>
+            truncated?: boolean
+          }>(
             'session.events.since',
             { session_id: sid, last_seen: lastSeen },
             REPLAY_REQUEST_TIMEOUT_MS
@@ -498,7 +501,7 @@ export class JsonRpcGatewayClient {
         return
       }
 
-      for (const result of results) {
+      for (const [index, result] of results.entries()) {
         if (result.status !== 'fulfilled' || !Array.isArray(result.value?.events)) {
           continue
         }
@@ -516,6 +519,30 @@ export class JsonRpcGatewayClient {
 
         if (typeof epoch === 'string' && epoch && !this.replayEpoch) {
           this.replayEpoch = epoch
+        }
+
+        if (result.value.truncated === true) {
+          // The ring evicted frames between our watermark and the retained
+          // tail: dispatching it would present a lossy replay as gap-free and
+          // advance the watermark over events we never saw. Drop the session's
+          // parked frames and watermark — the seq chain is broken, so the
+          // session is stale and consumers must refetch the authoritative
+          // transcript (the `sessions.changed` signal they already handle).
+          const truncatedSid = entries[index]?.[0]
+
+          if (truncatedSid) {
+            this.lastSeenSeq.delete(truncatedSid)
+            hold.delete(truncatedSid)
+          }
+
+          this.dispatchEvent({
+            type: 'sessions.changed',
+            session_id: truncatedSid,
+            payload: {},
+            replayed: true
+          } as GatewayEvent)
+
+          continue
         }
 
         for (const event of result.value.events) {
