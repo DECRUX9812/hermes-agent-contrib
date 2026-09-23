@@ -83,10 +83,14 @@ export function handleDesktopBridgeEvent(ctx: GatewayEventContext): boolean {
     // react_to_message tool. Already persisted — this only paints it now
     // instead of at the next resume. Fresh ChatMessage object per change:
     // the runtime repository caches normalized ThreadMessages in a WeakMap
-    // keyed by ChatMessage identity.
+    // keyed by ChatMessage identity. Active session only — the row ids below
+    // belong to the reacting session's transcript: a background turn's event
+    // could numerically collide with a foreground rowId (per-profile DBs mint
+    // their own) or stamp a foreign id onto an optimistic foreground bubble
+    // via the role fallback.
     const reactedRowId = payload?.row_id
 
-    if (typeof reactedRowId === 'number') {
+    if (isActiveEvent && typeof reactedRowId === 'number') {
       const nextReactions = Array.isArray(payload?.reactions) ? payload.reactions : []
       const reactedRole = payload?.role === 'assistant' ? 'assistant' : 'user'
 
