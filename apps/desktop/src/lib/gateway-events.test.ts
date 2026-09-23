@@ -90,7 +90,54 @@ describe('gateway event routing', () => {
     })
   })
 
+  it('keeps the pin on the live turn when a second unscoped turn starts elsewhere', () => {
+    // Two concurrent unscoped turns: B's message.start must not steal A's
+    // pin — unscoped deltas carry no turn key, so overwriting the single slot
+    // re-attributes A's remaining stream to B (#108045).
+    const startA = resolveGatewayEventSessionId({
+      activeSessionId: 'session-a',
+      eventType: 'message.start',
+      explicitSessionId: '',
+      unscopedStreamSessionId: null
+    })
+
+    const startB = resolveGatewayEventSessionId({
+      activeSessionId: 'session-b',
+      eventType: 'message.start',
+      explicitSessionId: '',
+      unscopedStreamSessionId: startA.nextUnscopedStreamSessionId
+    })
+
+    // The start itself still routes to the session that began the turn, but
+    // the pin stays with A while A's turn is live.
+    expect(startB.sessionId).toBe('session-b')
+    expect(startB.nextUnscopedStreamSessionId).toBe('session-a')
+
+    const deltaA = resolveGatewayEventSessionId({
+      activeSessionId: 'session-b',
+      eventType: 'message.delta',
+      explicitSessionId: '',
+      unscopedStreamSessionId: startB.nextUnscopedStreamSessionId
+    })
+
+    expect(deltaA.sessionId).toBe('session-a')
+
+    // An unscoped end event attributes through the pin and retires it — the
+    // pin never outlives the turn it tracks.
+    const end = resolveGatewayEventSessionId({
+      activeSessionId: 'session-b',
+      eventType: 'message.complete',
+      explicitSessionId: '',
+      unscopedStreamSessionId: deltaA.nextUnscopedStreamSessionId
+    })
+
+    expect(end.nextUnscopedStreamSessionId).toBeNull()
+  })
+
   it('routes a new unscoped stream start to the currently active session', () => {
+    // The start event itself still lands on the session that began the turn,
+    // but a live pin is not stolen: the pinned session's stream would
+    // otherwise be re-attributed to the new turn (#108045).
     const routed = resolveGatewayEventSessionId({
       activeSessionId: 'session-b',
       eventType: 'message.start',
@@ -100,7 +147,7 @@ describe('gateway event routing', () => {
 
     expect(routed).toEqual({
       drop: false,
-      nextUnscopedStreamSessionId: 'session-b',
+      nextUnscopedStreamSessionId: 'session-a',
       pinned: false,
       sessionId: 'session-b'
     })

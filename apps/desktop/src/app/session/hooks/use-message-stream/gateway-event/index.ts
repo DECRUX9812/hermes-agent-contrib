@@ -152,11 +152,21 @@ export function useGatewayEventHandler(deps: GatewayEventDeps) {
 
       const explicitSid = event.session_id || ''
 
+      // The pin is a single slot and unscoped events carry no turn key, so a
+      // second concurrent turn's message.start must not overwrite it
+      // (#108045). A pin is only honored while the pinned session's turn is
+      // still live: a pin whose end event was lost (crash, reconnect gap —
+      // session.info running=false is the settle backstop) is stale and must
+      // not block re-pinning for the rest of the session.
+      const pinnedSid = unscopedStreamSessionIdRef.current
+      const pinnedState = pinnedSid ? sessionStateByRuntimeIdRef.current.get(pinnedSid) : undefined
+      const livePinnedSid = pinnedSid && (!pinnedState || pinnedState.turnLive) ? pinnedSid : null
+
       const route = resolveGatewayEventSessionId({
         activeSessionId: activeSessionIdRef.current,
         eventType: event.type,
         explicitSessionId: explicitSid,
-        unscopedStreamSessionId: unscopedStreamSessionIdRef.current
+        unscopedStreamSessionId: livePinnedSid
       })
 
       unscopedStreamSessionIdRef.current = route.nextUnscopedStreamSessionId
