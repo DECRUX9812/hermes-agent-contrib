@@ -329,6 +329,46 @@ def _preflight_check_skills(job: dict) -> Optional[str]:
     return None
 
 
+def _preflight_check_state_db(job: dict) -> Optional[str]:
+    """Write-probe the job home's ``state.db`` before dispatch (#97635).
+
+    Every agent run opens the profile's session store (``_open_cron_session_db``) and loads
+    persistent memory; a home DB held write-locked by another process fails or silently loses
+    its session store only at run time — after the spend. Probe with a bounded
+    ``BEGIN IMMEDIATE``/``ROLLBACK`` (takes and releases the WAL write lock, writes nothing)
+    so a held lock blocks BEFORE the machinery is built. ``no_agent`` jobs never open
+    ``state.db`` and are skipped; non-lock errors fail open like every other check.
+    """
+    if job.get("no_agent"):
+        return None
+    db_path = _sched._get_hermes_home() / "state.db"
+    if not db_path.is_file():
+        return None  # nothing to probe; the run path creates it (or reports the real error)
+    import sqlite3
+    try:
+        conn = sqlite3.connect(
+            f"file:{db_path}?mode=rw", uri=True, timeout=_STATE_DB_PROBE_TIMEOUT_S)
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("ROLLBACK")
+        finally:
+            conn.close()
+    except sqlite3.OperationalError as exc:
+        if "locked" not in str(exc).lower():
+            return None  # malformed header etc. — the real open reports it better than we can
+        return (
+            f"state.db at {db_path} is locked by another process (SQLite write lock held; "
+            "e.g. a desktop or CLI session holding state.db-wal). Close the process holding "
+            "the database or wait for it to release the lock — the job is blocked to avoid "
+            "spending on a run that cannot persist its session.")
+    return None
+
+
+# Zero-wait probe: a momentary commit elsewhere must not block a tick, but the check cannot
+# stall dispatch either. Anything still locked after this is a real holder, not a blip.
+_STATE_DB_PROBE_TIMEOUT_S = 1.0
+
+
 # (job id, server name) pairs already warned about as reconnecting; see _empty_requested_mcp_toolsets.
 _RECONNECTING_WARNED: set = set()
 
@@ -394,7 +434,8 @@ def _preflight_job_config(job: dict, cfg: dict) -> Optional[str]:
     for name, check in (
         ("provider_key", lambda: _preflight_check_provider_key(job, cfg)),
         ("skills", lambda: _preflight_check_skills(job)),
-        ("delivery", lambda: _preflight_check_delivery(job))):
+        ("delivery", lambda: _preflight_check_delivery(job)),
+        ("state_db", lambda: _preflight_check_state_db(job))):
         try:
             reason = check()
         except Exception:
