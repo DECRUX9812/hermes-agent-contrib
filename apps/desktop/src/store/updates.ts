@@ -448,7 +448,21 @@ export async function checkUpdates({ force = false }: UpdateCheckOptions = {}): 
   $updateChecking.set(true)
 
   try {
-    const status = await bridge.check({ force })
+    const resolved = await bridge.check({ force })
+    const previous = $updateStatus.get()
+    // The main process resolves transient check failures as a bare
+    // `{error: 'check-failed'}` object with no update fields. Writing it
+    // verbatim would erase a previously known available-update status — the
+    // toast and behind-count disappear on a network blip (#107762). Merge it
+    // over the previous status instead, recording the error + fetchedAt while
+    // preserving available/behind/commits/version.
+    const hasUpdatePayload =
+      Boolean(resolved?.updateAvailable) ||
+      resolved?.behind != null ||
+      Boolean(resolved?.targetSha) ||
+      Boolean(resolved?.commits)
+    const status =
+      resolved?.error && previous && !hasUpdatePayload ? { ...previous, ...resolved } : resolved
     $updateStatus.set(status)
     maybeNotifyUpdateAvailable(status, 'client')
     void refreshDesktopVersion()

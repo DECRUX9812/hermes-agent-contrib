@@ -82,6 +82,7 @@ vi.mock('@/store/gateway-reconnect', () => ({
 const {
   maybeNotifyUpdateAvailable,
   checkBackendUpdates,
+  checkUpdates,
   $backendUpdateStatus,
   applyBackendUpdate,
   $backendUpdateApply,
@@ -314,6 +315,47 @@ describe('checkBackendUpdates', () => {
     setRemote(false)
     await checkBackendUpdates()
     expect(checkHermesUpdateSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('checkUpdates', () => {
+  const checkClientMock = vi.fn()
+
+  beforeEach(() => {
+    storage.clear()
+    notifySpy.mockClear()
+    dismissSpy.mockClear()
+    checkClientMock.mockReset()
+    resetUpdateApplyState()
+    $updateStatus.set(null)
+    setRemote(false)
+    ;(globalThis as unknown as { window: unknown }).window = {
+      hermesDesktop: { updates: { check: checkClientMock } }
+    }
+    vi.useRealTimers()
+  })
+
+  afterEach(() => {
+    delete (globalThis as unknown as { window?: unknown }).window
+  })
+
+  // A manual "Check now" that hits a transient failure resolves (not rejects)
+  // with `{error:'check-failed'}` and no update payload — it must not erase a
+  // previously known available-update status (#107762).
+  it('keeps a known update-available status when the resolved check is a bare failure', async () => {
+    const known = status({ behind: 3, updateAvailable: true, targetSha: 'sha-b', branch: 'main' })
+    $updateStatus.set(known)
+    checkClientMock.mockResolvedValue({ supported: true, error: 'check-failed', message: 'boom' })
+
+    const result = await checkUpdates({ force: true })
+
+    const stored = $updateStatus.get()
+    expect(stored?.updateAvailable).toBe(true)
+    expect(stored?.behind).toBe(3)
+    expect(stored?.targetSha).toBe('sha-b')
+    expect(stored?.error).toBe('check-failed')
+    expect(stored?.message).toBe('boom')
+    expect(result?.updateAvailable).toBe(true)
   })
 })
 
