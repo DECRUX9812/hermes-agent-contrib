@@ -1,4 +1,7 @@
+import signal
+import subprocess
 import sys
+import time
 
 import pytest
 
@@ -40,6 +43,97 @@ def test_sessions_delete_accepts_unique_id_prefix(monkeypatch, capsys):
         "closed": True,
     }
     assert "Deleted session '20260315_092437_c9a6ff'." in output
+
+
+_SESSION_ID = "20260315_092437_c9a6ff"
+
+
+class _DeleteFakeDB:
+    def __init__(self, captured):
+        self._captured = captured
+
+    def resolve_session_id(self, session_id):
+        return _SESSION_ID
+
+    def get_session(self, session_id):
+        return {"id": session_id, "pinned": 0}
+
+    def delete_session(self, session_id, **kwargs):
+        self._captured["deleted"] = session_id
+        return True
+
+    def close(self):
+        pass
+
+
+def _run_delete(monkeypatch, argv_tail):
+    import hermes_cli.main as main_mod
+    import hermes_state
+
+    captured = {}
+    monkeypatch.setattr(
+        hermes_state, "SessionDB", lambda *a, **k: _DeleteFakeDB(captured)
+    )
+    monkeypatch.setattr(sys, "argv", ["hermes", "sessions", "delete", _SESSION_ID, *argv_tail])
+    main_mod.main()
+    return captured
+
+
+def _write_foreign_lease(tmp_path, pid):
+    """A live lease owned by another (real) process."""
+    from hermes_cli import active_sessions as acts
+
+    registry_dir = tmp_path / "runtime"
+    registry_dir.mkdir(parents=True, exist_ok=True)
+    acts._write_entries(
+        acts._state_path(tmp_path),
+        [{
+            "lease_id": "foreignlease1",
+            "session_id": _SESSION_ID,
+            "surface": "gateway",
+            "pid": pid,
+            "process_start_time": acts._process_start_time(pid),
+            "started_at": time.time(),
+            "updated_at": time.time(),
+        }],
+    )
+
+
+def test_sessions_delete_refuses_live_owned_session(monkeypatch, capsys, tmp_path):
+    """A live active-session lease must block `sessions delete` (#102895)."""
+    import hermes_cli.main as main_mod
+    from hermes_cli.active_sessions import try_acquire_active_session
+
+    monkeypatch.setattr(main_mod, "get_hermes_home", lambda: tmp_path)
+    lease, refusal = try_acquire_active_session(
+        session_id=_SESSION_ID, surface="gateway", config={}, registry_home=tmp_path
+    )
+    assert refusal is None and lease is not None
+    try:
+        captured = _run_delete(monkeypatch, ["--yes"])
+        out = capsys.readouterr().out
+        assert "deleted" not in captured
+        assert "gateway" in out  # refusal names the owning surface
+    finally:
+        lease.release()
+
+
+def test_sessions_delete_force_terminates_owner_first(monkeypatch, capsys, tmp_path):
+    """--force signals the live owner, waits for the lease to drop, then deletes."""
+    import hermes_cli.main as main_mod
+
+    owner = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(300)"])
+    try:
+        _write_foreign_lease(tmp_path, owner.pid)
+        monkeypatch.setattr(main_mod, "get_hermes_home", lambda: tmp_path)
+
+        captured = _run_delete(monkeypatch, ["--yes", "--force"])
+        assert captured.get("deleted") == _SESSION_ID
+        owner.wait(timeout=10)
+        assert owner.returncode == -signal.SIGTERM
+    finally:
+        if owner.poll() is None:
+            owner.kill()
 
 
 def _run_prune(monkeypatch, capsys, argv_tail, candidates=None, skipped_open=0):
