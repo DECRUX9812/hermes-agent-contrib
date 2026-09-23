@@ -119,7 +119,11 @@ export function approvalReplaySessionId(
  *
  * Explicit ``session_id`` always wins. Unscoped stream events pin to the
  * session that received ``message.start`` so a mid-turn chat switch cannot
- * steal live deltas / tool events onto the newly focused transcript.
+ * steal live deltas / tool events onto the newly focused transcript. The pin
+ * is a single slot and unscoped deltas carry no turn key, so a second
+ * unscoped ``message.start`` while a pin is live does NOT re-pin — doing so
+ * would re-attribute the first turn's remaining stream to the new session
+ * (#108045). End events clear the pin they resolved through.
  */
 export function resolveGatewayEventSessionId({
   activeSessionId,
@@ -161,7 +165,7 @@ export function resolveGatewayEventSessionId({
 
   let nextUnscopedStreamSessionId = unscopedStreamSessionId
 
-  if (eventType === 'message.start' && activeSessionId) {
+  if (eventType === 'message.start' && activeSessionId && !unscopedStreamSessionId) {
     nextUnscopedStreamSessionId = activeSessionId
   } else if (eventType && UNSCOPED_STREAM_END_EVENT_TYPES.has(eventType)) {
     nextUnscopedStreamSessionId = null
