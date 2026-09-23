@@ -268,7 +268,44 @@ function isSchemeOrSlashRedirect(requestUrl: string, location: null | string): b
   }
 }
 
+/**
+ * URL a credentialed request may target. `path` is renderer-controlled — the
+ * `hermes:api` IPC passes it through the profile/registry scopers to
+ * fetchJsonForBackend, which concatenates it onto `baseUrl` and attaches the
+ * bearer/session token. A path without a leading '/' merges into the base
+ * authority instead: 'https://gw.com' + '@evil.example/x' parses as userinfo
+ * and ships the credential to evil.example. Require the leading slash AND
+ * re-verify the joined origin matches the backend's before any header is
+ * attached. Returns the concatenated string unchanged so callers keep the
+ * exact path bytes they already send.
+ */
+function credentialedRequestUrl(baseUrl, path) {
+  const rawPath = String(path || '')
+
+  if (!rawPath.startsWith('/')) {
+    throw new Error(`Refusing credentialed backend request: path must start with '/', got ${JSON.stringify(rawPath)}`)
+  }
+
+  const url = `${baseUrl}${rawPath}`
+  let joined
+  let base
+
+  try {
+    joined = new URL(url)
+    base = new URL(String(baseUrl))
+  } catch {
+    throw new Error('Refusing credentialed backend request: base URL or path produced an invalid URL')
+  }
+
+  if (joined.origin !== base.origin) {
+    throw new Error(`Refusing credentialed backend request: ${JSON.stringify(rawPath)} escapes the backend origin`)
+  }
+
+  return url
+}
+
 export {
+  credentialedRequestUrl,
   destroyKeepaliveAgents,
   downloadAgentFor,
   htmlResponseError,

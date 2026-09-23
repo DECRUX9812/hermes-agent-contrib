@@ -17,6 +17,7 @@ import type { AddressInfo } from 'node:net'
 import { afterAll, describe, expect, it } from 'vitest'
 
 import {
+  credentialedRequestUrl,
   destroyKeepaliveAgents,
   downloadAgentFor,
   htmlResponseError,
@@ -70,6 +71,32 @@ describe('isIdempotentMethod', () => {
     [undefined, true] // node http defaults omitted method to GET
   ])('%s -> %s', (method, expected) => {
     expect(isIdempotentMethod(method)).toBe(expected)
+  })
+})
+
+describe('credentialedRequestUrl', () => {
+  const base = 'https://gw.example.com'
+
+  it('joins a leading-slash path onto the backend base URL', () => {
+    expect(credentialedRequestUrl(base, '/api/sessions')).toBe('https://gw.example.com/api/sessions')
+    expect(credentialedRequestUrl(`${base}/`, '/api/sessions?profile=x')).toBe(
+      'https://gw.example.com//api/sessions?profile=x'
+    )
+  })
+
+  it.each([
+    ['@evil.example/x', 'userinfo re-target'],
+    ['x', 'bare relative segment'],
+    ['', 'empty path'],
+    ['https://evil.example/x', 'absolute URL']
+  ])('rejects %s (%s) before any credential is attached', path => {
+    expect(() => credentialedRequestUrl(base, path)).toThrow()
+  })
+
+  it('rejects a joined URL whose origin differs from the backend', () => {
+    expect(() => credentialedRequestUrl('not a url', '/api/x')).toThrow()
+    // A path that stays on the backend host is fine even when it looks odd.
+    expect(credentialedRequestUrl(base, '//evil.example/x')).toBe('https://gw.example.com//evil.example/x')
   })
 })
 

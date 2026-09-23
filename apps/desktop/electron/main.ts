@@ -32,6 +32,7 @@ import {
 
 import { classifyActiveRuntime } from './active-runtime-state'
 import {
+  credentialedRequestUrl,
   destroyKeepaliveAgents,
   downloadAgentFor,
   htmlResponseError,
@@ -8422,7 +8423,7 @@ async function saveGatewayFile(payload: GatewayFileSavePayload = {}) {
     payload.sessionId
   )
 
-  const url = `${connection.baseUrl}${requestPaths.download}`
+  const url = credentialedRequestUrl(connection.baseUrl, requestPaths.download)
 
   try {
     if (connection.authMode === 'oauth') {
@@ -16116,7 +16117,7 @@ async function fetchJsonForBackend(
   path,
   opts: { method?: string; body?: unknown; upload?: unknown; timeoutMs?: number } = {}
 ) {
-  const url = `${descriptor.baseUrl}${path}`
+  const url = credentialedRequestUrl(descriptor.baseUrl, path)
 
   if (descriptor.authMode === 'oauth') {
     // The OAuth cookie path rides electron.net with JSON headers; multipart
