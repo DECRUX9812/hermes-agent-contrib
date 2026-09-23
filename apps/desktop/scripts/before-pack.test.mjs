@@ -138,7 +138,44 @@ test('beforePack on win32 preserves the previous build instead of wiping it', as
   }
 })
 
-test('beforePack on linux keeps the plain wipe (no .bak)', async () => {
+test('beforePack on linux preserves the previous build instead of wiping it', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  try {
+    const appOutDir = path.join(tempRoot, 'linux-unpacked')
+    fs.mkdirSync(appOutDir, { recursive: true })
+    // A previously-working linux build: the product binary is the
+    // extension-less productFilename, not Hermes.exe.
+    fs.writeFileSync(path.join(appOutDir, 'Hermes'), 'elf-working', 'utf8')
+
+    await beforePack({ appOutDir, electronPlatformName: 'linux' })
+
+    assert.equal(fs.existsSync(appOutDir), false)
+    assert.equal(
+      fs.readFileSync(path.join(`${appOutDir}.bak`, 'Hermes'), 'utf8'),
+      'elf-working'
+    )
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
+})
+
+test('beforePack on darwin preserves a populated .app bundle tree', async () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
+  try {
+    const appOutDir = path.join(tempRoot, 'mac-unpacked')
+    fs.mkdirSync(path.join(appOutDir, 'Hermes.app', 'Contents', 'MacOS'), { recursive: true })
+    fs.writeFileSync(path.join(appOutDir, 'Hermes.app', 'Contents', 'MacOS', 'Hermes'), 'macho', 'utf8')
+
+    await beforePack({ appOutDir, electronPlatformName: 'darwin' })
+
+    assert.equal(fs.existsSync(appOutDir), false)
+    assert.equal(fs.existsSync(path.join(`${appOutDir}.bak`, 'Hermes.app')), true)
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true })
+  }
+})
+
+test('beforePack on linux still wipes a partial tree missing the product binary', async () => {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hermes-before-pack-'))
   try {
     const appOutDir = path.join(tempRoot, 'linux-unpacked')

@@ -84,11 +84,11 @@ export function cleanStaleAppOutDir(appOutDir) {
 }
 
 /**
- * Windows rollback material (#69179): before wiping the previous unpacked
- * tree, preserve it as `<appOutDir>.bak` — but ONLY when it holds the product
- * exe (i.e. it is a previously-working build, not the corrupted partial state
- * cleanStaleAppOutDir exists to remove). If the fresh pack then produces a
- * Hermes.exe that Windows can't load (truncated PE from a corrupt cached
+ * Rollback material (#69179): before wiping the previous unpacked tree,
+ * preserve it as `<appOutDir>.bak` — but ONLY when it holds the platform's
+ * product binary (i.e. it is a previously-working build, not the corrupted
+ * partial state cleanStaleAppOutDir exists to remove). If the fresh pack then
+ * produces a binary the OS can't load (truncated PE from a corrupt cached
  * Electron zip, wrong arch), the updater's integrity gate in
  * `hermes desktop --build-only` (hermes_cli/main.py
  * `_ensure_desktop_exe_launchable`) restores this .bak instead of leaving the
@@ -99,11 +99,11 @@ export function cleanStaleAppOutDir(appOutDir) {
  * A rename failure (AV holding a handle) also returns false — the wipe is the
  * safe fallback and matches pre-#69179 behavior exactly.
  */
-export function preserveRollbackBackup(appOutDir, productExeName = 'Hermes.exe') {
+export function preserveRollbackBackup(appOutDir, productBinaryName = 'Hermes.exe') {
   if (!appOutDir || typeof appOutDir !== 'string' || !existsSync(appOutDir)) {
     return false
   }
-  if (!existsSync(path.join(appOutDir, productExeName))) {
+  if (!existsSync(path.join(appOutDir, productBinaryName))) {
     // Partial/corrupt tree (interrupted prior pack) — not rollback material.
     return false
   }
@@ -126,12 +126,19 @@ export default async function beforePack(context) {
   const appOutDir = context && context.appOutDir
   const platformName = context && context.electronPlatformName
   try {
-    // Windows: keep the previous working build as rollback material for the
-    // post-build integrity gate (#69179) instead of destroying it. Falls
-    // through to the plain wipe when the old tree is partial/corrupt or the
-    // rename fails.
-    const productExe = `${(context && context.packager?.appInfo?.productFilename) || 'Hermes'}.exe`
-    if (platformName === 'win32' && preserveRollbackBackup(appOutDir, productExe)) {
+    // Keep the previous working build as rollback material for the post-build
+    // integrity gate (#69179) instead of destroying it — on every platform,
+    // keyed on that platform's product binary marker (win32: Hermes.exe,
+    // darwin: Hermes.app, linux: Hermes). Falls through to the plain wipe
+    // when the old tree is partial/corrupt or the rename fails.
+    const productName = (context && context.packager?.appInfo?.productFilename) || 'Hermes'
+    const productBinary =
+      platformName === 'win32'
+        ? `${productName}.exe`
+        : platformName === 'darwin'
+          ? `${productName}.app`
+          : productName
+    if (preserveRollbackBackup(appOutDir, productBinary)) {
       console.log(`[before-pack] preserved previous unpacked dir for rollback: ${appOutDir}.bak`)
     } else if (cleanStaleAppOutDir(appOutDir)) {
       console.log(`[before-pack] removed stale unpacked dir before staging: ${appOutDir}`)
