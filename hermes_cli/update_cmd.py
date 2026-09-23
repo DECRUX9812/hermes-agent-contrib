@@ -1462,6 +1462,11 @@ def _execute_post_swap(payload: dict, args, gateway_mode: bool) -> None:
                 _windows_gateway_resume=_windows_gateway_resume)
             if gateway_mode:
                 _write_gateway_update_exit_code(desktop_build_ok)
+            if not desktop_build_ok and not gateway_mode:
+                # Same partial-update exit contract as the git tail: a failed Desktop
+                # rebuild (or unsafe post-update runtime) finalized a "partial" receipt —
+                # do not let the process exit claim success.
+                sys.exit(1)
             return
         # The parent already ran the checkout preflight (fork banner, lockfile churn, EOL); the
         # child only needs a working git.
@@ -1544,6 +1549,15 @@ def _finish_pulled_update(
     _verify_fleet_after_update(
         _restart, _pre_update_plan=_pre_update_plan, _windows_gateway_resume=_windows_gateway_resume,
         node_failures=node_failures, update_complete=update_complete)
+
+    if not update_complete and not gateway_mode:
+        # A partial update (e.g. the Desktop rebuild failed) already printed the partial
+        # banner and finalized a "partial" receipt; the process exit code must not claim
+        # success — the already-current and deferred-restart paths exit 1 for the same
+        # verdict. Under --gateway the verdict rides in ``.update_exit_code`` (this process
+        # can be SIGKILLed by its own fleet restart) and the desktop updater scripts read
+        # the failure from the output, so the exit code is not the report channel there.
+        sys.exit(1)
 
 
 def _cmd_update_impl(args, gateway_mode: bool):
