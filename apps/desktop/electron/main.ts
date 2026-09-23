@@ -256,6 +256,7 @@ import { applyHudElectronOverlay, promoteHudOverlay } from './hud-overlay'
 import { snapHudBounds } from './hud-snap'
 import { createHudSnapShortcut } from './hud-snap-shortcut'
 import { buildHudWindowUrl } from './hud-url'
+import { installDevToolsShortcut, installPreviewShortcut } from './window-shortcuts'
 import { resolveHudWindowing } from './hud-windowing'
 import { createIntroRevealWindowController } from './intro-reveal-window'
 import { createLinkTitleWindow, guardLinkTitleSession, readLinkTitleWindowTitle } from './link-title-window'
@@ -7301,73 +7302,17 @@ function toggleDevTools(window) {
   }
 }
 
-function installDevToolsShortcut(window) {
-  // Only Ctrl+Shift+I (or Cmd+Opt+I on Mac) opens DevTools.
-  // F12 is explicitly blocked so Chromium's built-in handler doesn't open it.
-  window.webContents.on('before-input-event', (event, input) => {
-    const key = input.key.toLowerCase()
-
-    // F12 opens DevTools by default; block only when the user disabled it.
-    if (input.key === 'F12') {
-      if (f12Blocked) {
-        event.preventDefault()
-
-        return
-      }
-      // Not blocked — fall through to open DevTools.
-    }
-
-    const isInspectShortcut =
-      input.key === 'F12' ||
-      (IS_MAC && input.meta && input.alt && key === 'i') ||
-      (!IS_MAC && input.control && input.shift && key === 'i')
-
-    if (!isInspectShortcut) {
-      return
-    }
-
-    event.preventDefault()
-    toggleDevTools(window)
-  })
-}
-
-function installPreviewShortcut(window) {
-  window.webContents.on('before-input-event', (event, input) => {
-    const key = String(input.key || '').toLowerCase()
-    const accel = (IS_MAC ? input.meta : input.control) && !input.alt
-    const isCloseTabShortcut = key === 'w' && accel && !input.shift
-
-    // Always claim ⌘W here (the File>Close item deliberately has no
-    // accelerator, so nothing else does). The renderer decides tab-vs-window
-    // — no `previewShortcutActive` gate, so it works for every closeable tab.
-    if (isCloseTabShortcut) {
-      event.preventDefault()
-
-      // ⌘W in the HUD is "leave HUD mode", not "close a tab in the app
-      // window". Routing it to the main renderer closed the app's tab out
-      // from under the user while the HUD stayed put; routing it through the
-      // HUD's own close path hands the session back like the exit button.
-      if (hudWindow && !hudWindow.isDestroyed() && window === hudWindow) {
-        closeHudWindow()
-
-        return
-      }
-
-      sendClosePreviewRequested()
-
-      return
-    }
-
-    // ⌘R rides here rather than on the View menu item for the same reason:
-    // the application menu only exists on macOS (it is set to null elsewhere,
-    // see #77845), so a menu accelerator would leave Windows and Linux with no
-    // way to reload a page at all. ⇧⌘R is left alone — that is `forceReload`,
-    // the unconditional whole-window escape hatch.
-    if (key === 'r' && accel && !input.shift) {
-      event.preventDefault()
-      sendPreviewNavCommand('reload')
-    }
-  })
+// Deps for the extracted window-shortcuts installers (electron/
+// window-shortcuts.ts). Closures read the live `f12Blocked` / `hudWindow`
+// bindings so a setting flip or HUD teardown mid-session is honored.
+const windowShortcutDeps = {
+  isMac: IS_MAC,
+  isF12Blocked: () => f12Blocked,
+  toggleDevTools,
+  getHudWindow: () => hudWindow,
+  closeHudWindow,
+  sendClosePreviewRequested,
+  sendPreviewNavCommand
 }
 
 // Zoom level is persisted in the renderer's own localStorage (per-origin,
@@ -13400,8 +13345,8 @@ async function runHermesStart() {
 // Alt+wheel scale, so inheriting the global UI zoom would render the mascot
 // larger than its window and crop it. Chat windows keep zoom on.
 function wireCommonWindowHandlers(win, { zoom = true }: { zoom?: boolean } = {}) {
-  installPreviewShortcut(win)
-  installDevToolsShortcut(win)
+  installPreviewShortcut(win, windowShortcutDeps)
+  installDevToolsShortcut(win, windowShortcutDeps)
   installBrowserNavGestures(win)
 
   // Claim Ctrl/Cmd+F in the main process — on Pop!_OS / GNOME-based Linux
