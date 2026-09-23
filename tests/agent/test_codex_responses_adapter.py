@@ -985,6 +985,82 @@ def _xai_reasoning_only_response(reasoning_text):
         ],
     )
 
+
+def _xai_reasoning_tool_call_response(reasoning_text):
+    """grok-4.x tool-call turn: the user-visible narration lives in the reasoning
+    summary, ``content`` settles empty, no ``<response>`` delimiter (#118738)."""
+    return SimpleNamespace(
+        status="completed",
+        output=[
+            SimpleNamespace(
+                type="reasoning",
+                id="rs_1",
+                encrypted_content=None,
+                summary=[SimpleNamespace(text=reasoning_text)],
+            ),
+            SimpleNamespace(
+                type="function_call",
+                id="fc_1",
+                call_id="call_1",
+                name="read_file",
+                arguments='{"path": "a.txt"}',
+                status="completed",
+            ),
+        ],
+    )
+
+
+def test_xai_tool_call_turn_promotes_reasoning_narration_to_content():
+    """#118738: on xAI tool-call turns the only copy of the visible reply sits in
+    ``reasoning``; surfaces with ``display.show_reasoning: false`` paint nothing
+    once the turn settles. The narration must land in ``content``."""
+    msg, finish = _normalize_codex_response(
+        _xai_reasoning_tool_call_response("I'll check the config file first."),
+        issuer_kind="xai_responses",
+    )
+    assert finish == "tool_calls"
+    assert msg.content == "I'll check the config file first."
+    assert len(msg.tool_calls) == 1
+    # Moved, not duplicated: show_reasoning on must not paint the text twice.
+    assert msg.reasoning is None
+
+
+def test_xai_tool_call_turn_response_tag_promotes_only_tail():
+    """A ``<response>`` delimiter on a tool-call turn still promotes only the
+    delimited tail; the untagged prefix stays reasoning."""
+    msg, finish = _normalize_codex_response(
+        _xai_reasoning_tool_call_response("thinking out loud <response>The file is clean.</response>"),
+        issuer_kind="xai_responses",
+    )
+    assert finish == "tool_calls"
+    assert msg.content == "The file is clean."
+    assert msg.reasoning == "thinking out loud"
+
+
+def test_xai_reasoning_only_without_response_tag_stays_incomplete():
+    """No delimiter and no tool calls: nothing marks the summary as the answer,
+    so the turn still classifies incomplete and the continuation path retries."""
+    msg, finish = _normalize_codex_response(
+        _xai_reasoning_only_response("still deliberating, no answer yet"),
+        issuer_kind="xai_responses",
+    )
+    assert msg.content == ""
+    assert msg.reasoning == "still deliberating, no answer yet"
+    assert finish == "incomplete"
+
+
+def test_non_xai_tool_call_turn_keeps_reasoning_channel():
+    """The promotion is xAI-scoped: other Responses issuers keep reasoning-only
+    tool-call narration in the reasoning channel."""
+    msg, finish = _normalize_codex_response(
+        _xai_reasoning_tool_call_response("checking the file"),
+        issuer_kind="codex_backend",
+    )
+    assert finish == "tool_calls"
+    assert msg.content == ""
+    assert msg.reasoning == "checking the file"
+
+
 def test_codex_preflight_passes_text_verbosity_through():
     """The preflight whitelist must let the Responses ``text`` block reach the wire (#20203).
 
