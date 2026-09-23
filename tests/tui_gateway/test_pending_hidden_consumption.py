@@ -15,20 +15,23 @@ def test_unhide_survives_next_session_row_persist(tmp_path, monkeypatch, first_a
         monkeypatch.setattr(srv, "_get_db", lambda: db)
         monkeypatch.setattr(srv, "_schedule_agent_build", lambda sid: None)
         monkeypatch.setattr(srv, "_schedule_session_cap_enforcement", lambda: None)
-        created = srv._methods["session.create"](1, {"hidden": True})
+        if first_apply_fails:
+            # A transient write failure at create keeps the intent pending: the draft row
+            # exists (#96793) but hidden was not applied; the next persist still applies it.
+            def fail_hide(*args):
+                raise OSError("temporary write failure")
+
+            with monkeypatch.context() as failure:
+                failure.setattr(db, "set_session_hidden", fail_hide)
+                created = srv._methods["session.create"](1, {"hidden": True})
+        else:
+            created = srv._methods["session.create"](1, {"hidden": True})
         assert "error" not in created, created
         sid = created["result"]["session_id"]
         session = srv._sessions[sid]
         key = session["session_key"]
         try:
             if first_apply_fails:
-                # A transient write failure keeps the intent pending: the next persist still applies it.
-                def fail_hide(*args):
-                    raise OSError("temporary write failure")
-
-                with monkeypatch.context() as failure:
-                    failure.setattr(db, "set_session_hidden", fail_hide)
-                    assert srv._ensure_session_db_row(session)
                 assert db.get_session(key)["hidden"] == 0
             assert srv._ensure_session_db_row(session)
             assert db.get_session(key)["hidden"] == 1

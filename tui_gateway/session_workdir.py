@@ -298,6 +298,14 @@ def _ensure_session_db_row(session: dict) -> bool:
             # Disk-full is not a soft failure: swallowed here, prompt.submit returns {"status":"streaming"} and the
             # message vanishes silently.
             _workdir_reraise_disk_full(exc, "failed to persist desktop session row")
+        try:
+            # Adopt a create-time draft placeholder (#96793): the ``_draft`` marker means hidden=1 is ours,
+            # not user intent, so the first real activity clears the marker and unhides the row into listings.
+            if db.get_session_model_config_value(key, "_draft"):
+                db.patch_session_model_config(key, {"_draft": None})
+                db.set_session_hidden(key, False)
+        except Exception as exc:
+            _workdir_reraise_disk_full(exc, "failed to adopt draft session row")
     return True
 
 

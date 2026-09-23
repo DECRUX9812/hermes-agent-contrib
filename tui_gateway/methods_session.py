@@ -278,6 +278,27 @@ def _seed_branch_row(record: dict, key: str, parent_session_id: str, history: li
                        exc_info=True)
 
 
+def _persist_draft_row(record: dict) -> None:
+    """Persist a never-prompted session NOW as a hidden draft placeholder (#96793), for the same reason the
+    seeded-row exceptions exist: a restart before the first prompt orphans the id otherwise. ``hidden`` keeps
+    the placeholder out of listings — the "Untitled" litter the old lazy row avoided — and the ``_draft``
+    model_config marker lets the first real activity (``_ensure_session_db_row``) unhide exactly the rows this
+    path minted, so a ``hidden=true`` draft (user intent, not a marker) stays hidden past its first prompt.
+    Best-effort — a store failure falls back to lazy first-prompt row creation."""
+    key = record.get("session_key")
+    try:
+        born_hidden = bool(record.get("pending_hidden"))
+        if _ensure_session_db_row(record) is False or born_hidden:
+            return
+        with _session_db(record) as db:
+            if db is not None:
+                db.patch_session_model_config(key, {"_draft": True})
+                db.set_session_hidden(key, True)
+    except Exception:
+        logger.warning("draft-session persistence failed for %s; falling back to lazy row creation", key,
+                       exc_info=True)
+
+
 def _seed_row(record: dict) -> None:
     """Persist a parentless seeded session NOW, for the reason ``_seed_branch_row`` gives: seeded content is
     intent, not an abandoned draft, and the renderer's post-create hydration reads the DB. The client's title
@@ -366,12 +387,15 @@ def _(rid, params: dict) -> dict:
             "transport": current_transport() or _stdio_transport,
             "auth_user_id": _transport_auth_user_id(current_transport())}
         _register_session_cwd(_sessions[sid])
-    # No DB row here (drafts left "Untitled" litter): created on the first prompt — except seeded sessions.
-    # NOTE: we intentionally do NOT persist a DB row here. Every TUI/desktop launch (and every "New agent" /
-    # draft) opens a session here just to paint the composer, so eagerly creating a row left an "Untitled"
-    # empty session behind for every launch the user never typed into. The row is now created lazily on the
-    # first prompt (see _ensure_session_db_row + prompt.submit), and the AIAgent's own INSERT-OR-IGNORE
-    # persists it on the first turn too. EXCEPTION — seeded branch children (#93959): a desktop branch
+    # Drafts persist a HIDDEN placeholder row now (#96793): a backend restart before the first prompt used to
+    # orphan the session id (it lived only in renderer memory), leaving the session permanently unresumable.
+    # Every TUI/desktop launch (and every "New agent" / draft) opens a session here just to paint the composer,
+    # so a visible eager row left an "Untitled" empty session behind for every launch the user never typed into.
+    # The placeholder therefore carries hidden=1 + a ``_draft`` model_config marker: hidden keeps it out of
+    # session.list (the same exclusion the old no-row draft had), and the marker lets the first real activity
+    # (_ensure_session_db_row + prompt.submit; the AIAgent's own INSERT-OR-IGNORE persists on the first turn
+    # too) adopt the row — clear the marker, unhide — so it joins listings exactly when its first message lands.
+    # Seeded sessions are the exception that stays eagerly persisted AND visible: a desktop branch
     # carries parent_session_id AND a seeded transcript, which is explicit user intent, not an abandoned
     # draft. The row MUST exist immediately: the renderer's post-create resume re-fetches the child through
     # REST + defer_history hydration, both of which read the DB — an unpersisted child 404s, the fail-latch
@@ -381,11 +405,13 @@ def _(rid, params: dict) -> dict:
     # message-preview name. Title mirrors the TUI /branch naming.
     # The same holds for a seeded session WITHOUT a parent (a client opening a chat with its first turns
     # already written): the transcript exists only in memory, so a restart before the first prompt lost it
-    # and the post-create resume 404'd. Persist it up front too; only empty drafts stay lazy.
+    # and the post-create resume 404'd. Persist it up front too.
     if parent_session_id and history:
         _seed_branch_row(_sessions[sid], key, parent_session_id, history, source, profile_home)
     elif history:
         _seed_row(_sessions[sid])
+    else:
+        _persist_draft_row(_sessions[sid])
     # Return immediately so Ink can paint; the AIAgent builds right after the flush.
     _schedule_agent_build(sid)
     _schedule_session_cap_enforcement()  # trim detached idle sessions over the cap
