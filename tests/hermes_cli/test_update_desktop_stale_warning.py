@@ -10,10 +10,14 @@ complete`` instead of the success line, and gateway mode writes ``1`` to
 ``.update_exit_code``.
 """
 
+from types import SimpleNamespace
+
 import pytest
 
 from hermes_cli import update_cmd
+import hermes_cli.update_cmd_fleet as update_cmd_fleet
 import hermes_cli.update_cmd_maint as update_cmd_maint
+import hermes_cli.update_receipt as update_receipt
 from hermes_cli.update_cmd import (
     _print_update_summary,
     _rebuild_desktop_after_update,
@@ -213,3 +217,148 @@ def test_gateway_exit_code_file_tracks_desktop_rebuild(tmp_path, monkeypatch):
     assert (tmp_path / ".update_exit_code").read_text(encoding="utf-8") == "0"
     _write_gateway_update_exit_code(False)
     assert (tmp_path / ".update_exit_code").read_text(encoding="utf-8") == "1"
+
+
+def _post_swap_opts(**overrides):
+    base = dict(
+        assume_yes=True, gw_input_fn=None, active_lazy_features=[],
+        active_tool_dependencies=[], pre_update_version="0.20.1",
+        discard_local_changes=False, keep_stash=False, switch_branch=False,
+        no_gateway_restart=False,
+    )
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+def _clean_restart():
+    return SimpleNamespace(
+        incomplete=False, phase_errors=[], pre_restart_gateway_pids=[],
+        restarted_services=[], failed_or_stale_units=[], relaunched_profiles=[],
+        externally_supervised_profiles=[], killed_pids=set(),
+        fleet_probe_signals=lambda: ([], set()),
+    )
+
+
+def _stub_fleet_verify_internals(tmp_path, monkeypatch):
+    """Let the real ``_verify_fleet_after_update`` run without touching the host fleet."""
+    monkeypatch.setattr(update_cmd_fleet, "_print_legacy_units_warning", lambda: None)
+    monkeypatch.setattr(update_cmd, "_finish_dashboard_update_cleanup", lambda *a, **k: None)
+    monkeypatch.setattr(update_cmd, "_surviving_pre_update_serve_runtimes", lambda *a, **k: [])
+    monkeypatch.setattr(update_cmd, "_warn_stale_serve_runtimes", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "hermes_cli.update_receipt.collect_fleet_versions", lambda **k: [])
+    monkeypatch.setattr(
+        "hermes_cli.gateway_migrate.maybe_auto_migrate_after_update", lambda: None,
+        raising=False)
+    monkeypatch.setattr(update_cmd_fleet, "_clear_fleet_restart_pending_marker", lambda: None)
+
+
+def _stub_maintenance_internals(monkeypatch):
+    """Let the real ``_run_post_update_maintenance``/``_print_update_summary`` run."""
+    monkeypatch.setattr(
+        "hermes_cli.macos_tcc_anchor.ensure_tcc_anchor", lambda: None, raising=False)
+    monkeypatch.setattr(
+        update_cmd_maint, "_verify_and_restore_state_dbs_post_update", lambda: None)
+    monkeypatch.setattr(
+        "hermes_cli.model_catalog.seed_cache_from_checkout", lambda *a, **k: False,
+        raising=False)
+    monkeypatch.setattr(update_cmd_maint, "_print_bundled_skills_sync_report", lambda: None)
+    monkeypatch.setattr(update_cmd_maint, "_sync_profiles_after_update", lambda: None)
+    monkeypatch.setattr(
+        update_cmd, "_check_and_apply_config_migration", lambda *a, **k: None)
+    monkeypatch.setattr(
+        update_cmd_maint, "_print_post_update_notices_and_self_heals", lambda: None)
+    monkeypatch.setattr(
+        update_cmd, "_post_update_sqlite_runtime_status", lambda: (True, None))
+
+
+def test_pulled_update_exits_nonzero_when_desktop_rebuild_fails(tmp_path, monkeypatch, capsys):
+    """#88251 follow-up: a partial update must not exit 0 — automation reads the exit code.
+
+    The already-current and ``--no-gateway-restart`` paths exit 1 on a partial update;
+    the pulled post-swap tail must too.
+    """
+    monkeypatch.setattr(update_cmd, "_m", lambda: SimpleNamespace(
+        PROJECT_ROOT=tmp_path,
+        _build_web_ui=lambda *a, **k: None,
+        _fleet_probe_expected_runtimes=lambda *a, **k: False,
+    ))
+    monkeypatch.setattr(update_cmd, "_sync_python_dependencies_after_pull", lambda *a, **k: None)
+    monkeypatch.setattr(update_cmd, "_update_node_dependencies", lambda: [])
+    monkeypatch.setattr(update_cmd, "_rebuild_desktop_after_update", lambda *a, **k: False)
+    monkeypatch.setattr(update_cmd, "_branch_head_suffix", lambda *a, **k: "")
+    monkeypatch.setattr(
+        update_cmd, "_restart_gateway_fleet_after_update", lambda *a, **k: _clean_restart())
+    monkeypatch.setattr(
+        update_cmd, "_resume_windows_gateways_and_merge_outcome", lambda *a, **k: None)
+    _stub_maintenance_internals(monkeypatch)
+    _stub_fleet_verify_internals(tmp_path, monkeypatch)
+    update_receipt._current = None
+
+    with pytest.raises(SystemExit) as excinfo:
+        update_cmd._finish_pulled_update(
+            ["git"], "main", "oldsha", _post_swap_opts(), gateway_mode=False,
+            is_fork=False, desktop_dir=tmp_path / "apps" / "desktop",
+            had_desktop_app_before_update=True, pre_update_snapshot_id=None,
+            _pre_update_plan=None, _windows_gateway_resume=None)
+
+    assert excinfo.value.code == 1
+    out = capsys.readouterr().out
+    assert "partially complete" in out
+    assert "Update complete!" not in out
+
+
+def test_pulled_update_partial_in_gateway_mode_writes_exit_code_not_exit(
+        tmp_path, monkeypatch, capsys):
+    """Under --gateway the verdict rides in ``.update_exit_code`` (the process can be
+    SIGKILLed by its own fleet restart); the desktop updater scripts read the output."""
+    exit_codes = []
+    monkeypatch.setattr(update_cmd, "_m", lambda: SimpleNamespace(
+        PROJECT_ROOT=tmp_path,
+        _build_web_ui=lambda *a, **k: None,
+        _fleet_probe_expected_runtimes=lambda *a, **k: False,
+    ))
+    monkeypatch.setattr(update_cmd, "_sync_python_dependencies_after_pull", lambda *a, **k: None)
+    monkeypatch.setattr(update_cmd, "_update_node_dependencies", lambda: [])
+    monkeypatch.setattr(update_cmd, "_rebuild_desktop_after_update", lambda *a, **k: False)
+    monkeypatch.setattr(update_cmd, "_branch_head_suffix", lambda *a, **k: "")
+    monkeypatch.setattr(
+        update_cmd, "_restart_gateway_fleet_after_update", lambda *a, **k: _clean_restart())
+    monkeypatch.setattr(
+        update_cmd, "_resume_windows_gateways_and_merge_outcome", lambda *a, **k: None)
+    monkeypatch.setattr(
+        update_cmd, "_write_gateway_update_exit_code", lambda ok: exit_codes.append(ok))
+    _stub_maintenance_internals(monkeypatch)
+    _stub_fleet_verify_internals(tmp_path, monkeypatch)
+    update_receipt._current = None
+
+    update_cmd._finish_pulled_update(
+        ["git"], "main", "oldsha", _post_swap_opts(), gateway_mode=True,
+        is_fork=False, desktop_dir=tmp_path / "apps" / "desktop",
+        had_desktop_app_before_update=True, pre_update_snapshot_id=None,
+        _pre_update_plan=None, _windows_gateway_resume=None)
+
+    assert exit_codes == [False]
+    assert "Update complete!" not in capsys.readouterr().out
+
+
+def test_zip_post_swap_exits_nonzero_when_desktop_rebuild_fails(tmp_path, monkeypatch):
+    """The ZIP post-swap tail must fail the process on a partial update, same as git."""
+    monkeypatch.setattr(update_cmd, "_m", lambda: SimpleNamespace(PROJECT_ROOT=tmp_path))
+    monkeypatch.setattr(
+        update_cmd, "_resolve_update_options",
+        lambda *a: update_cmd._UpdateOptions(
+            active_lazy_features=[], active_tool_dependencies=[], pre_update_version="0.20.1",
+            gw_input_fn=None, assume_yes=True, keep_stash=False, switch_branch=False,
+            discard_local_changes=False))
+    monkeypatch.setattr(update_cmd, "_finish_zip_update", lambda **k: False)
+
+    payload = {
+        "swap": "zip", "branch": "main", "plan": None, "windows_gateway_resume": None,
+        "sibling_snapshots": {}, "pre_update_version": "0.20.1",
+        "had_desktop_app_before_update": True,
+    }
+    with pytest.raises(SystemExit) as excinfo:
+        update_cmd._execute_post_swap(payload, SimpleNamespace(), gateway_mode=False)
+
+    assert excinfo.value.code == 1
