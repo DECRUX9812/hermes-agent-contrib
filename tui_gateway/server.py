@@ -1698,10 +1698,23 @@ def _append_model_switch_marker(session: dict | None, *, model: str, provider: s
     # A user message, not system: strict OpenAI-compatible providers (vLLM, Qwen) reject non-leading system messages.
     # See #48338.
     entry = {"role": "user", "content": marker, "display_kind": "model_switch"}
+    merged_into = None
     with session.get("history_lock") or contextlib.nullcontext():
         history = session.setdefault("history", [])
         history[:] = [h for h in history if not _is_model_switch_marker(h)]
-        history.append(entry)
+        tail = history[-1] if history else None
+        if isinstance(tail, dict) and tail.get("role") == "user" and isinstance(tail.get("content"), str):
+            # An unanswered user turn at the tail can't take a second user-role row: strict
+            # alternation is a root invariant and a user;user pair kills the next prompt in the
+            # durable repair path (#94486). Fold the marker into the pending user turn instead —
+            # the model still reads it ahead of its reply. A previously merged marker is stripped
+            # first so repeated switches keep only the newest (the self-replacing contract above).
+            content = tail["content"]
+            cut = content.rfind(f"\n\n{_MODEL_SWITCH_MARKER_PREFIX}")
+            tail["content"] = f"{content[:cut] if cut >= 0 else content}\n\n{marker}"
+            merged_into = tail
+        else:
+            history.append(entry)
         session["history_version"] = int(session.get("history_version", 0)) + 1
     try:
         agent = session.get("agent")
@@ -1710,7 +1723,21 @@ def _append_model_switch_marker(session: dict | None, *, model: str, provider: s
             _ensure_session_db_row(session)
         with (contextlib.nullcontext(db) if db is not None else _session_db(session)) as db:
             if db is not None:
-                db.append_message(session_id=session_key, role="user", content=marker, display_kind="model_switch")
+                if merged_into is not None:
+                    # Durable twin of the merge: rewrite the tail user row rather than append a
+                    # second user row after it. An unaddressable tail keeps its pre-merge durable
+                    # content — the live history still carries the marker for this session.
+                    with contextlib.suppress(TypeError, ValueError):
+                        row_id = int(merged_into.get("_row_id") or merged_into.get("row_id"))
+                        if row_id:
+                            db.set_user_message_content(session_key, row_id, merged_into["content"])
+                elif (tail_role := getattr(db, "latest_conversation_role", None)) is None \
+                        or tail_role(session_key) != "user":
+                    # The durable tail can be a user row the live history doesn't show yet (the
+                    # submit-time row, #111868): appending here would persist the same user;user
+                    # pair the merge above avoids. The in-memory marker covers this session; the
+                    # next switch re-persists onto a safe tail.
+                    db.append_message(session_id=session_key, role="user", content=marker, display_kind="model_switch")
     except Exception:
         logger.debug("failed to persist model switch marker", exc_info=True)
 

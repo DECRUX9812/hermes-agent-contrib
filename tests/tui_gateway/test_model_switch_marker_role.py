@@ -107,6 +107,61 @@ class TestModelSwitchMarkerDedup:
         assert session["history_version"] == 2  # one increment per switch
 
 
+class TestModelSwitchMarkerAlternation:
+    """#94486: a switch issued before the assistant replies must not leave a
+    user;user pair — strict alternation is a root invariant and the next prompt
+    dies in the repair path (row_id not found / dropped prompt)."""
+
+    @staticmethod
+    def _no_consecutive_users(session: dict) -> None:
+        roles = [h.get("role") for h in session["history"]]
+        assert not any(a == b == "user" for a, b in zip(roles, roles[1:])), (
+            f"consecutive role=user entries: {roles}")
+
+    def test_marker_on_user_tail_keeps_alternation(self) -> None:
+        session: dict = {
+            "session_key": "s",
+            "history": [
+                {"role": "user", "content": "q1"},
+                {"role": "assistant", "content": "a1"},
+                {"role": "user", "content": "still waiting"},
+            ],
+        }
+        _append_model_switch_marker(session, model="model-a", provider="p")
+        self._no_consecutive_users(session)
+        # The marker survives, riding the pending user turn it precedes.
+        tail = session["history"][-1]
+        assert tail["role"] == "user"
+        assert "still waiting" in tail["content"]
+        assert "model-a" in tail["content"]
+
+    def test_second_switch_on_user_tail_leaves_one_marker(self) -> None:
+        session: dict = {
+            "session_key": "s",
+            "history": [{"role": "user", "content": "still waiting"}],
+        }
+        _append_model_switch_marker(session, model="model-a", provider="p")
+        _append_model_switch_marker(session, model="model-b", provider="p")
+        self._no_consecutive_users(session)
+        tail = session["history"][-1]
+        assert tail["content"].count("The active model for this chat has changed to") == 1
+        assert "model-b" in tail["content"]
+        assert "model-a" not in tail["content"]
+
+    def test_marker_on_assistant_tail_still_appends(self) -> None:
+        session: dict = {
+            "session_key": "s",
+            "history": [
+                {"role": "user", "content": "q1"},
+                {"role": "assistant", "content": "a1"},
+            ],
+        }
+        _append_model_switch_marker(session, model="model-a", provider="p")
+        self._no_consecutive_users(session)
+        assert len(session["history"]) == 3
+        assert session["history"][-1].get("display_kind") == "model_switch"
+
+
 def _make_marker_entry(model: str) -> dict:
     from tui_gateway.server import _MODEL_SWITCH_MARKER_PREFIX
 
