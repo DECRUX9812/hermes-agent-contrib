@@ -934,6 +934,10 @@ export interface ProfileUsage {
 
 export const $sessionProfilesUsage = atom<Record<string, ProfileUsage>>({})
 export const $sessionsLoading = atom(true)
+// The last sidebar sessions fetch rejected (transient gateway/DB failure).
+// The list keeps its previous rows; the sidebar paints an error + retry row
+// instead of staying silently empty (#64157). Cleared by the next refresh.
+export const $sessionsFetchError = atom(false)
 export const $activeSessionId = atom<string | null>(null)
 export const $selectedStoredSessionId = atom<string | null>(null)
 export interface ActiveSessionStoredIdRotation {
@@ -1300,6 +1304,7 @@ export const setSessionProfilesTruncated = (next: Updater<Record<string, boolean
 export const setSessionProfilesUsage = (next: Updater<Record<string, ProfileUsage>>) =>
   updateAtom($sessionProfilesUsage, next)
 export const setSessionsLoading = (next: Updater<boolean>) => updateAtom($sessionsLoading, next)
+export const setSessionsFetchError = (next: Updater<boolean>) => updateAtom($sessionsFetchError, next)
 export const setActiveSessionId = (next: Updater<string | null>) => updateAtom($activeSessionId, next)
 export const setActiveSessionStoredIdRotation = (next: Updater<ActiveSessionStoredIdRotation | null>) =>
   updateAtom($activeSessionStoredIdRotation, next)

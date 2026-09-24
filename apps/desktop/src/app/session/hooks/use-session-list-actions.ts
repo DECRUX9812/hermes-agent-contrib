@@ -35,6 +35,7 @@ import {
   setSessionProfilesTruncated,
   setSessionProfilesUsage,
   setSessions,
+  setSessionsFetchError,
   setSessionsLoading
 } from '@/store/session'
 import { $removedSessionIds } from '@/store/session-removal'
@@ -292,6 +293,8 @@ export function useSessionListActions({ profileScope }: UseSessionListActionsArg
           sidebarProfileForScope(profileScopeRef.current) === sessionProfile &&
           gatewayActivationEpoch() === activationEpoch
         ) {
+          setSessionsFetchError(false)
+
           const recents = result.recents
 
           // Drop rows the user just deleted/archived: a refresh can race an
@@ -370,6 +373,21 @@ export function useSessionListActions({ profileScope }: UseSessionListActionsArg
           setMessagingTruncated(prev =>
             messagingErrors?.length ? prev : result.messaging.sessions.length >= MESSAGING_SECTION_LIMIT
           )
+        }
+      } catch {
+        // Transient failure (gateway bounce, locked profile DB): the rejection
+        // must not escape as an unhandled rejection (#64157) — keep the rows
+        // already on screen and flag the error so the sidebar can paint a
+        // retryable error row instead of staying silently empty. Same publish
+        // guards as the success path: a superseded request must not flag an
+        // error against a scope it no longer owns.
+        if (
+          shouldPublish() &&
+          refreshSessionsRequestRef.current === requestId &&
+          sidebarProfileForScope(profileScopeRef.current) === sessionProfile &&
+          gatewayActivationEpoch() === activationEpoch
+        ) {
+          setSessionsFetchError(true)
         }
       } finally {
         // Request identity preserves the zero-argument refresh contract across a

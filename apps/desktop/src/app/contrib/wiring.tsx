@@ -1167,6 +1167,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     onPickFiles: () => void composer.pickContextPaths('file'),
     onPickFolders: () => void composer.pickContextPaths('folder'),
     onPickImages: () => void composer.pickImages(),
+    onRefreshSessions: () => void refreshSessions(),
     onReload: reloadFromMessage,
     onRemoveAttachment: id => void composer.removeAttachment(id),
     onRestoreToMessage: restoreToMessage,

@@ -121,6 +121,7 @@ import {
   $messagingTruncated,
   $sessionProfilesTruncated,
   $sessions,
+  $sessionsFetchError,
   $sessionsLoading,
   $unreadFinishedSessionIds,
   markAllSessionsRead,
@@ -363,6 +364,9 @@ interface ChatSidebarProps extends React.ComponentProps<typeof Sidebar> {
   currentView: AppView
   onNavigate: (item: SidebarNavItem) => void
   onLoadMoreSessions: () => Promise<void> | void
+  /** Re-run the sidebar sessions fetch after a transient failure — the error
+   *  row's retry. Optional so test harnesses can omit it. */
+  onRefreshSessions?: () => Promise<void> | void
   onLoadMoreMessaging?: (platform: string) => Promise<void> | void
   onResumeSession: (sessionId: string, session?: SessionInfo) => void
   onDeleteSession: (sessionId: string) => void
@@ -385,6 +389,7 @@ export function ChatSidebar({
   onNavigate,
   onLoadMoreSessions,
   onLoadMoreMessaging,
+  onRefreshSessions,
   onResumeSession,
   onDeleteSession,
   onArchiveSession,
@@ -462,6 +467,7 @@ export function ChatSidebar({
   const messagingPlatformTotals = useStore($messagingPlatformTotals)
   const messagingTruncated = useStore($messagingTruncated)
   const sessionsLoading = useStore($sessionsLoading)
+  const sessionsFetchError = useStore($sessionsFetchError)
   const sessionProfilesTruncated = useStore($sessionProfilesTruncated)
   const unreadCount = useStore($unreadFinishedSessionIds).length
   const profiles = useStore($profiles)
@@ -1494,7 +1500,11 @@ export function ChatSidebar({
   // Filtered down to nothing still renders the section: the empty state is what
   // tells you the filter — not an empty account — is why the list is bare.
   const showSessionSections =
-    showSessionSkeletons || filtersActive || sortedSessions.length > 0 || projectModel.length > 0
+    showSessionSkeletons ||
+    sessionsFetchError ||
+    filtersActive ||
+    sortedSessions.length > 0 ||
+    projectModel.length > 0
 
   // The sidebar's session-area mode — exposed as data-attributes so custom
   // skins can target project mode (overview vs. entered), archived, or search
@@ -1757,6 +1767,12 @@ export function ChatSidebar({
             )}
 
             {!trimmedQuery && inProject && projectLoadFailed && <SidebarLoadErrorState onRetry={retryProject} />}
+            {/* A rejected sessions fetch keeps the previous rows and flags the
+                error — offer a retry instead of a silently empty list (#64157).
+                While the retry is in flight the skeletons own the empty list. */}
+            {!trimmedQuery && sessionsFetchError && !showSessionSkeletons && (
+              <SidebarLoadErrorState onRetry={() => void (onRefreshSessions ?? onLoadMoreSessions)()} />
+            )}
             {!trimmedQuery && (
               <SidebarSessionsSection
                 activeProjectId={activeProjectId}
@@ -1784,7 +1800,7 @@ export function ChatSidebar({
                 emptyState={
                   inProject && projectLoadFailed ? null : showSessionSkeletons || (inProject && projectLoading) ? (
                     <SidebarSessionSkeletons />
-                  ) : (
+                  ) : sessionsFetchError ? null : (
                     <div className="grid min-h-16 place-items-center rounded-lg px-2 text-center text-xs text-(--ui-text-tertiary)">
                       {inProject
                         ? s.projectEmpty

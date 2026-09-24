@@ -18,6 +18,7 @@ import {
   $sessionProfilesTruncated,
   $sessionProfilesUsage,
   $sessions,
+  $sessionsFetchError,
   $sessionsLoading,
   setCronSessions,
   setMessagingPlatformTotals,
@@ -26,6 +27,7 @@ import {
   setSessionProfilesTruncated,
   setSessionProfilesUsage,
   setSessions,
+  setSessionsFetchError,
   setSessionsLoading
 } from '@/store/session'
 
@@ -118,6 +120,7 @@ beforeEach(() => {
   setMessagingTruncated(false)
   setSessionProfilesTruncated({})
   setSessionProfilesUsage({})
+  setSessionsFetchError(false)
   setSessionsLoading(false)
 })
 
@@ -130,6 +133,7 @@ afterEach(() => {
   setMessagingTruncated(false)
   setSessionProfilesTruncated({})
   setSessionProfilesUsage({})
+  setSessionsFetchError(false)
   setSessionsLoading(false)
 })
 
@@ -411,6 +415,43 @@ describe('refreshSessions identity + loading hygiene', () => {
       endGatewaySwitch(newer)
       off()
     }
+  })
+
+  it('keeps previous rows and flags a fetch error when the sidebar call rejects (#64157)', async () => {
+    // A transient rejection (gateway hiccup, locked profile DB) must not
+    // propagate as an unhandled rejection, must not clobber the rows already
+    // on screen, and must surface a retryable error instead of a silently
+    // empty sidebar.
+    listSidebarSessions.mockResolvedValue(sidebar({ sessions: [row('a'), row('b')] }))
+
+    const { result } = renderHook(() => useSessionListActions({ profileScope: 'default' }))
+
+    await act(async () => {
+      await result.current.refreshSessions()
+    })
+
+    expect($sessions.get().map(s => s.id)).toEqual(['a', 'b'])
+
+    listSidebarSessions.mockRejectedValueOnce(new Error('gateway gone'))
+
+    await act(async () => {
+      await result.current.refreshSessions()
+    })
+
+    expect($sessions.get().map(s => s.id)).toEqual(['a', 'b'])
+    expect($sessionsFetchError.get()).toBe(true)
+    expect($sessionsLoading.get()).toBe(false)
+
+    // The retry path (the sidebar error row re-invokes refreshSessions) clears
+    // the flag once a fetch lands again.
+    listSidebarSessions.mockResolvedValue(sidebar({ sessions: [row('a'), row('b'), row('c')] }))
+
+    await act(async () => {
+      await result.current.refreshSessions()
+    })
+
+    expect($sessionsFetchError.get()).toBe(false)
+    expect($sessions.get().map(s => s.id)).toEqual(['a', 'b', 'c'])
   })
 
   it('clears initial loading after a failed source activation advances the gateway epoch', async () => {
