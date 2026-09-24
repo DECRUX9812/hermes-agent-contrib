@@ -3290,6 +3290,7 @@ export const zh = defineLocale({
     noMatch: query => `没有会话匹配"${query}"。`,
     results: '结果',
     pinned: '已置顶',
+    needsAttention: '需要注意',
     sessions: '会话',
     terminal: '终端',
     files: '文件',

@@ -2431,6 +2431,7 @@ export const ja = defineLocale({
     noMatch: query => `"${query}" に一致するセッションがありません。`,
     results: '結果',
     pinned: 'ピン留め',
+    needsAttention: '要対応',
     sessions: 'セッション',
     terminal: 'ターミナル',
     files: 'ファイル',

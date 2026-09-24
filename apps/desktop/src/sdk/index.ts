@@ -60,6 +60,7 @@ import {
   retireLocalProfileGateways,
   type SpawnPriority
 } from '@/store/gateway'
+import { $sidebarSearchQuery } from '@/store/layout'
 import { notify, notifyError } from '@/store/notifications'
 import {
   $activeGatewayProfile,
@@ -694,6 +695,9 @@ export const host = {
     model: readonlyAtom<string>($currentModel),
     /** Profile the live gateway is routed to. */
     profile: readonlyAtom<string>($activeGatewayProfile),
+    /** The sessions rail's live search text ('' when idle). A `sidebar.listTop`
+     *  contribution marked `searchable` filters its own rows by this. */
+    sidebarSearchQuery: readonlyAtom<string>($sidebarSearchQuery),
     /** Window geometry ({ width, height, narrow }). */
     viewport: readonlyAtom<ViewportRect>($viewport)
   },

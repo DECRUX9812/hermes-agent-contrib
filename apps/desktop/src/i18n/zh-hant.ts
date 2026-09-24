@@ -2655,6 +2655,7 @@ export const zhHant = defineLocale({
     noMatch: query => `沒有工作階段符合「${query}」。`,
     results: '結果',
     pinned: '已釘選',
+    needsAttention: '需要注意',
     sessions: '工作階段',
     terminal: '終端機',
     files: '檔案',

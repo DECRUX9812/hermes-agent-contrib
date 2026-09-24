@@ -3925,6 +3925,7 @@ export const es = defineLocale({
     noMatch: query => `Ninguna sesión coincide con “${query}”.`,
     results: 'Resultados',
     pinned: 'Fijadas',
+    needsAttention: 'Necesita atención',
     sessions: 'Sesiones',
     terminal: 'Terminal',
     files: 'Archivos',

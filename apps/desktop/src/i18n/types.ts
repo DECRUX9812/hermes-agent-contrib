@@ -2917,6 +2917,7 @@ export interface Translations {
     noMatch: (query: string) => string
     results: string
     pinned: string
+    needsAttention: string
     sessions: string
     terminal: string
     files: string

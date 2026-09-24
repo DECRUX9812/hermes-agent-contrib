@@ -214,6 +214,28 @@ function SidebarSessionRowImpl({
 
   const showAge = pinnedAge || card
 
+  // Live plan progress ("3/7") — the footer figure on cards, a trailing chip
+  // on one-line rows. A selector keyed to this row: only rows whose own
+  // fraction changes repaint on todo events.
+  const todoProgress = useStoreSelector($todoProgressBySession, progress => progress[session.id])
+
+  // The one-line row's progress chip sits in the trailing slot so a working
+  // row reads its plan without opening the chat. (todoProgress is only set
+  // while a plan exists, so it self-clears when the last item lands.)
+  if (!card && todoProgress) {
+    trailing.push({
+      key: 'progress',
+      node: (
+        <span
+          className="pointer-events-none whitespace-nowrap tabular-nums text-[0.625rem] leading-none text-(--ui-text-tertiary)"
+          title={r.todoProgress}
+        >
+          {todoProgress}
+        </span>
+      )
+    })
+  }
+
   if (figures.length || showAge) {
     // The card's meta lines separate by spacing alone, so its header figures
     // match (non-breaking pair — plain spaces collapse to one); the one-line
@@ -281,9 +303,6 @@ function SidebarSessionRowImpl({
   // between them (HTML collapses runs of whitespace to one).
   const model = card && session.model ? displayModelName(session.model) : ''
   const size = card && session.message_count > 0 ? r.messageCount(session.message_count) : ''
-  // Live plan progress ("3/7"), far right of the footer. A selector keyed to
-  // this row: only rows whose own fraction changes repaint on todo events.
-  const todoProgress = useStoreSelector($todoProgressBySession, progress => (card ? progress[session.id] : undefined))
 
   // An archived session has no live status to paint, so the archive glyph takes
   // the lead slot the dot would occupy instead of adding a column of its own.

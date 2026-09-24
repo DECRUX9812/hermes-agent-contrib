@@ -45,10 +45,12 @@ export type TipId =
 // to stand alone, because that is how they arrive.
 export const TIP_CATALOG: readonly TipDef[] = [
   { id: 'new-session', keybind: 'session.new', side: 'right', targets: ['[data-tour="sidebar-nav-new-session"]'] },
-  { id: 'skills', keybind: 'nav.capabilities', side: 'right', targets: ['[data-tour="sidebar-nav-capabilities"]'] },
-  { id: 'messaging', keybind: 'nav.messaging', side: 'right', targets: ['[data-tour="sidebar-nav-messaging"]'] },
-  { id: 'artifacts', keybind: 'nav.artifacts', side: 'right', targets: ['[data-tour="sidebar-nav-artifacts"]'] },
-  { id: 'cron', keybind: 'nav.cron', side: 'right', targets: ['[data-tour="sidebar-nav-cron"]'] },
+  // Folded destinations fall back to the Browse disclosure — pointing at the
+  // caret teaches where the row lives instead of silently skipping the tip.
+  { id: 'skills', keybind: 'nav.capabilities', side: 'right', targets: ['[data-tour="sidebar-nav-capabilities"]', '[data-tour="sidebar-browse"]'] },
+  { id: 'messaging', keybind: 'nav.messaging', side: 'right', targets: ['[data-tour="sidebar-nav-messaging"]', '[data-tour="sidebar-browse"]'] },
+  { id: 'artifacts', keybind: 'nav.artifacts', side: 'right', targets: ['[data-tour="sidebar-nav-artifacts"]', '[data-tour="sidebar-browse"]'] },
+  { id: 'cron', keybind: 'nav.cron', side: 'right', targets: ['[data-tour="sidebar-nav-cron"]', '[data-tour="sidebar-browse"]'] },
   { id: 'command-palette', keybind: 'nav.commandPalette', side: 'right', targets: ['[data-tour="sessions-sidebar"]'] },
   { id: 'profiles', keybind: 'profile.next', side: 'right', targets: ['[data-tour="profile-rail"]'] },
   { id: 'composer-mentions', side: 'top', targets: ['[data-tour="composer"]'] },
