@@ -2184,8 +2184,30 @@ def rearm_oneshot(job_id: str, run_at: Any) -> Optional[Dict[str, Any]]:
     return _with_job(job_ref["id"], apply)
 
 
-def remove_job(job_id: str) -> bool:
-    """Remove a job by ID or name."""
+def _delete_cron_run_sessions(job_id: str) -> int:
+    """Delete a removed job's ``cron_{job_id}_{ts}`` run sessions from the SessionDB;
+    returns rows deleted (0 when the session store is unavailable — a wedged or absent
+    state.db never blocks removal, same best-effort class as the notepad clear)."""
+    try:
+        from hermes_state_registry import acquire, release_or_close
+        db = acquire()
+    except Exception:
+        logger.debug("Failed to open session store while removing job %s", job_id, exc_info=True)
+        return 0
+    try:
+        return db.delete_cron_job_runs(job_id, sessions_dir=get_hermes_home() / "sessions")
+    except Exception:
+        logger.debug("Failed to delete run sessions for removed job %s", job_id, exc_info=True)
+        return 0
+    finally:
+        release_or_close(db)
+
+
+def remove_job(job_id: str, details: Optional[Dict[str, Any]] = None) -> bool:
+    """Remove a job by ID or name.
+
+    *details*: optional dict updated with ``run_sessions_deleted`` — the count of the job's
+    cron run sessions pruned alongside it (pinned sessions are spared)."""
     job = resolve_job_ref(job_id)
     if not job:
         return False
@@ -2213,6 +2235,11 @@ def remove_job(job_id: str) -> bool:
         _fence_key = f"{_current_cron_store().cron_dir.resolve()}::{canonical_id}"
         with _fire_fence_locks_guard:
             _fire_fence_locks.pop(_fence_key, None)
+        run_sessions_deleted = _delete_cron_run_sessions(canonical_id)
+        if details is not None:
+            details["run_sessions_deleted"] = run_sessions_deleted
+        if run_sessions_deleted:
+            logger.info("Removed job %s: deleted %d run session(s)", canonical_id, run_sessions_deleted)
         return True
 
 

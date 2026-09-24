@@ -1786,7 +1786,11 @@ class CLICommandsMixin:
             return print(f"(x_x) Failed to {action} job: {result.get('error')}")
         if action == "remove":
             removed = result.get("removed_job", {})
-            return print(f"(^_^)b Removed job: {removed.get('name', job_id)} ({job_id})")
+            print(f"(^_^)b Removed job: {removed.get('name', job_id)} ({job_id})")
+            n = result.get("run_sessions_deleted")
+            if n:
+                print(f"  Cleared {n} run session{'s' if n != 1 else ''}.")
+            return
         job = result["job"]
         if action == "run" and job.get("execution_skipped"):
             # A refused run-now (claim lost, paused, gone) must not read as accepted.

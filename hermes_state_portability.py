@@ -9,6 +9,7 @@ import json
 import time
 from collections import Counter
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from agent.skill_commands import SKILL_SCAFFOLD_SQL_LIKE
@@ -224,6 +225,18 @@ class SessionPortabilityMixin:
             prompt_select=f",\n                {_PROMPT_RESOLVED_SQL}",
         )
         return [self._rich_row(row) for row in self._read_rows(query, (prefix, prefix_hi, limit, offset))]
+
+    def delete_cron_job_runs(self, job_id: str, sessions_dir: Optional[Path] = None) -> int:
+        """Delete one removed job's run sessions; returns rows deleted. Same ``cron_{job_id}_``
+        id-range + ``source='cron'`` binding as :meth:`list_cron_job_runs`; pinned rows are
+        spared (a pin means "keep this")."""
+        prefix = f"cron_{job_id}_"
+        prefix_hi = prefix[:-1] + chr(ord(prefix[-1]) + 1)
+        ids = [row["id"] for row in self._read_rows(
+            "SELECT s.id FROM sessions s "
+            "WHERE s.source = 'cron' AND s.pinned = 0 AND s.id >= ? AND s.id < ?",
+            (prefix, prefix_hi))]
+        return self.delete_sessions(ids, sessions_dir=sessions_dir)
 
     def _get_session_rich_row(self, session_id: str, compact_rows: bool = False) -> Optional[Dict[str, Any]]:
         """One session with the ``list_sessions_rich`` enriched columns, or None.
