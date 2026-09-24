@@ -251,7 +251,14 @@ export function Intro({ composer, personality, seed }: IntroProps) {
   const sessions = useStore($sessions)
   const currentCwd = useStore($currentCwd)
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
-  const copy = resolveCopy(personality, mountSeed + (seed ?? 0))
+  const rotationSeed = mountSeed + (seed ?? 0)
+  const copy = resolveCopy(personality, rotationSeed)
+  const key = normalizeKey(personality)
+
+  const bodies =
+    t.intro.stock[key] ?? (NEUTRAL_PERSONALITIES.has(key) ? t.intro.stock.none : t.intro.custom(personality || ''))
+
+  const body = bodies?.[Math.abs(rotationSeed) % bodies.length] ?? copy.body
 
   // "Pick up where you left off" — recency-sorted, most recent first.
   const recentSessions = sessions
@@ -279,7 +286,7 @@ export function Intro({ composer, personality, seed }: IntroProps) {
         />
 
         <p className="m-0 text-center text-[0.9375rem] leading-normal tracking-tight text-(--ui-text-secondary)">
-          {copy.body}
+          {body}
         </p>
       </div>
 

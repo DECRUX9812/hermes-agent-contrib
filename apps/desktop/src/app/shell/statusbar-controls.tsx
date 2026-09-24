@@ -17,7 +17,6 @@ import { ContribRender } from '@/contrib/react/boundary'
 import { useI18n } from '@/i18n'
 import { useKeybindHint } from '@/lib/keybinds/use-keybind-hint'
 import { cn } from '@/lib/utils'
-import { $simpleMode } from '@/store/interface-mode'
 import {
   $statusbarHiddenIds,
   isStatusbarLayoutDefault,
@@ -68,9 +67,6 @@ export interface StatusbarItem {
   title?: string
   to?: string
   variant?: 'action' | 'link' | 'menu' | 'text'
-  /** Power items hidden in simple interface mode (their surfaces and keybinds
-   *  keep working — only the statusbar entry is removed). */
-  advanced?: boolean
   /** Plain-text name for the bar's right-click show/hide menu. An item without
    *  one is never listed there and always shows — the safe default for plugin
    *  contributions that don't opt in. */
@@ -96,15 +92,8 @@ interface StatusbarControlsProps extends ComponentProps<'footer'> {
 export function StatusbarControls({ className, leftItems = [], items = [], ...props }: StatusbarControlsProps) {
   const navigate = useNavigate()
   const hiddenIds = useStore($statusbarHiddenIds)
-  const simpleMode = useStore($simpleMode)
-
-  const inMode = (item: StatusbarItem) => !simpleMode || !item.advanced
-
   const visible = (item: StatusbarItem) =>
-    inMode(item) && !item.hidden && (item.lockedVisible || !item.toggleLabel || !hiddenIds.includes(item.id))
-
-  const menuItems = items.filter(inMode)
-  const menuLeftItems = leftItems.filter(inMode)
+    !item.hidden && (item.lockedVisible || !item.toggleLabel || !hiddenIds.includes(item.id))
 
   return (
     <ContextMenu>
@@ -133,7 +122,7 @@ export function StatusbarControls({ className, leftItems = [], items = [], ...pr
           </div>
         </footer>
       </ContextMenuTrigger>
-      <StatusbarVisibilityMenu hiddenIds={hiddenIds} items={menuItems} leftItems={menuLeftItems} />
+      <StatusbarVisibilityMenu hiddenIds={hiddenIds} items={items} leftItems={leftItems} />
     </ContextMenu>
   )
 }

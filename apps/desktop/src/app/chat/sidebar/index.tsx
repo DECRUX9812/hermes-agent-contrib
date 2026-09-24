@@ -30,9 +30,10 @@ import { comboTokens } from '@/lib/keybinds/combo'
 import { sessionMatchesSearch } from '@/lib/session-search'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
+import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $activeConnectionId } from '@/store/connections'
 import { $cronJobs } from '@/store/cron'
-import { $simpleMode, toggleInterfaceMode } from '@/store/interface-mode'
+import { $interfaceMode, $showsAdvancedChrome, shownInMode } from '@/store/interface-mode'
 import { $bindings } from '@/store/keybinds'
 import {
   $dismissedAutoProjectIds,
@@ -77,6 +78,7 @@ import {
 import { notifyError } from '@/store/notifications'
 import {
   $newChatProfile,
+  $profileColors,
   $profiles,
   $profileScope,
   ALL_PROFILES,
@@ -97,6 +99,7 @@ import {
   ALL_PROJECTS,
   enterProject,
   exitProjectScope,
+  followEnteredProjectCwd,
   openProjectCreate,
   refreshProjects,
   refreshProjectTree,
@@ -114,18 +117,17 @@ import {
 import { openRouteTile } from '@/store/route-tiles'
 import {
   $cronSessions,
-  $currentCwd,
   $gatewayState,
   $messagingPlatformTotals,
   $messagingSessions,
   $messagingTruncated,
   $sessionProfilesTruncated,
   $sessions,
+  $sessionsLoadError,
   $sessionsLoading,
   $unreadFinishedSessionIds,
   markAllSessionsRead,
-  sessionPinId,
-  setCurrentCwd
+  sessionPinId
 } from '@/store/session'
 import { $sessionDotStateById, sessionStatusBucket } from '@/store/session-dot-state'
 import { $unconfirmedPinWrites } from '@/store/session-pin-sync'
@@ -134,6 +136,7 @@ import { $focusedSessionIsTile, $focusedStoredSessionId, $workingSessionIds } fr
 import { ackAllSessionsRead } from '@/store/session-unread'
 import { markSessionUnread } from '@/store/session-unread-remote'
 import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive'
+import { applySidebarNavPrefs, SIDEBAR_NAV_PREFS_AREA } from '@/store/sidebar-nav'
 import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
 
 import {
@@ -151,7 +154,7 @@ import { type NewSessionSplitHandler, startNewSessionDrag } from '../new-session
 import { SidebarSectionAddButton } from './chrome'
 import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarFilterMenu } from './filter-menu'
-import { useGatewaySessionGroups } from './gateway-group-model'
+import { buildGatewaySessionGroups, scopeGatewaySessionGroups, useGatewaySessionGroups } from './gateway-group-model'
 import { SidebarLoadMoreRow } from './load-more-row'
 import { orderByIds, reconcileOrderIds, resolveManualSessionOrderIds, sameIds } from './order'
 import { filterSessionsByProfileScope } from './profile-scope'
@@ -182,7 +185,8 @@ import {
   SidebarBlankState,
   SidebarLoadErrorState,
   SidebarPinnedEmptyState,
-  SidebarSessionSkeletons
+  SidebarSessionSkeletons,
+  SidebarStorageCorruptNotice
 } from './section-states'
 import { buildSessionByAnyId, resolvePinnedSessions } from './session-index'
 import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
@@ -200,6 +204,8 @@ const NON_SESSION_LOAD_STEP = 10
 // screen — has the connection to itself first.
 const PROJECT_TREE_WARM_MS = 2_000
 
+// A row's `tier` is the one mode it belongs to (Simple keeps the setup rows,
+// Advanced adds the readouts); the list filters once, nothing is passed down.
 const SIDEBAR_NAV: SidebarNavItem[] = [
   {
     id: 'new-session',
@@ -214,7 +220,7 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="symbol-misc" {...props} />,
     route: CAPABILITIES_ROUTE,
     keybindActionId: 'nav.capabilities',
-    advanced: true
+    tier: 'advanced'
   },
   {
     id: 'messaging',
@@ -222,15 +228,17 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="comment" {...props} />,
     route: MESSAGING_ROUTE,
     keybindActionId: 'nav.messaging',
-    advanced: true
+    tier: 'advanced'
   },
+  // Artifacts and Scheduled jobs are outputs of running Hermes the developer
+  // way; Capabilities and Messaging are how anyone sets it up.
   {
     id: 'artifacts',
     label: '',
     icon: props => <Codicon name="files" {...props} />,
     route: ARTIFACTS_ROUTE,
     keybindActionId: 'nav.artifacts',
-    advanced: true
+    tier: 'advanced'
   },
   {
     id: 'cron',
@@ -238,7 +246,7 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="watch" {...props} />,
     route: CRON_ROUTE,
     keybindActionId: 'nav.cron',
-    advanced: true
+    tier: 'advanced'
   }
 ]
 
@@ -363,6 +371,7 @@ interface ChatSidebarProps extends React.ComponentProps<typeof Sidebar> {
   currentView: AppView
   onNavigate: (item: SidebarNavItem) => void
   onLoadMoreSessions: () => Promise<void> | void
+  onRetrySessions: () => Promise<void> | void
   onLoadMoreMessaging?: (platform: string) => Promise<void> | void
   onResumeSession: (sessionId: string, session?: SessionInfo) => void
   onDeleteSession: (sessionId: string) => void
@@ -384,6 +393,7 @@ export function ChatSidebar({
   currentView: routeView,
   onNavigate,
   onLoadMoreSessions,
+  onRetrySessions,
   onLoadMoreMessaging,
   onResumeSession,
   onDeleteSession,
@@ -397,7 +407,6 @@ export function ChatSidebar({
   const { t } = useI18n()
   const s = t.sidebar
   const { pathname } = useLocation()
-  const simpleMode = useStore($simpleMode)
   // Contributed nav rows (plugins pairing a page with a sidebar entry) render
   // below the built-ins with the same chrome; active = at their route.
   const navContributions = useContributions(SIDEBAR_NAV_AREA)
@@ -418,11 +427,26 @@ export function ChatSidebar({
             id: c.id,
             label: data.label,
             icon: (props: { className?: string }) => <Codicon name={codicon} {...props} />,
-            route: data.path
+            route: data.path,
+            tier: data.tier
           }
         ]
       }),
     [navContributions]
+  )
+
+  const interfaceMode = useStore($interfaceMode)
+  const showsAdvancedChrome = useStore($showsAdvancedChrome)
+
+  // Nav preferences (`sidebarNav.prefs` contributions): a plugin may hide rows
+  // or re-order them. Merged here, at render, from the registry — so the
+  // preference never mutates the default list, and a plugin's disable/reload
+  // disposes its contribution and the rows come straight back.
+  const navPrefs = useContributions(SIDEBAR_NAV_PREFS_AREA)
+
+  const navItems = useMemo(
+    () => applySidebarNavPrefs([...SIDEBAR_NAV, ...contributedNav].filter(shownInMode(interfaceMode)), navPrefs),
+    [contributedNav, interfaceMode, navPrefs]
   )
 
   const panesFlipped = useStore($panesFlipped)
@@ -462,6 +486,7 @@ export function ChatSidebar({
   const messagingPlatformTotals = useStore($messagingPlatformTotals)
   const messagingTruncated = useStore($messagingTruncated)
   const sessionsLoading = useStore($sessionsLoading)
+  const sessionsLoadError = useStore($sessionsLoadError)
   const sessionProfilesTruncated = useStore($sessionProfilesTruncated)
   const unreadCount = useStore($unreadFinishedSessionIds).length
   const profiles = useStore($profiles)
@@ -512,7 +537,6 @@ export function ChatSidebar({
   const reposScanning = useStore($reposScanning)
   const activeProjectId = useStore($activeProjectId)
   const projectScope = useStore($projectScope)
-  const currentCwd = useStore($currentCwd)
   const gatewayState = useStore($gatewayState)
   const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const newSessionCombo = useStore($bindings)['session.new']?.[0]
@@ -1156,16 +1180,13 @@ export function ChatSidebar({
 
   const lastProjectCwdSyncRef = useRef<null | string>(null)
 
-  const syncProjectCwd = useCallback(
-    (project: SidebarProjectTree) => {
-      const target = projectTreeCwd(project)
+  const syncProjectCwd = useCallback((project: SidebarProjectTree) => {
+    const target = projectTreeCwd(project)
 
-      if (target && target !== currentCwd) {
-        setCurrentCwd(target)
-      }
-    },
-    [currentCwd]
-  )
+    if (target) {
+      followEnteredProjectCwd(target)
+    }
+  }, [])
 
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
@@ -1354,7 +1375,12 @@ export function ChatSidebar({
       .sort((a, b) => sessionTime(b.sessions[0]) - sessionTime(a.sessions[0]))
   }, [visibleMessagingSessions, messagingPlatformTotals, messagingTruncated, isPinnedSession, messagingProfile])
 
-  const profileGroups = useGatewaySessionGroups(agentSessions, profileScope === ALL_PROFILES && grouping === 'profile')
+  // Recents and every messaging platform resolve owner groups the same way
+  // ([connectionId, profile]), so a platform's groups line up with recents.
+  const ownerGrouped = profileScope === ALL_PROFILES && grouping === 'profile'
+  const profileGroups = useGatewaySessionGroups(agentSessions, ownerGrouped)
+  const connectionsRegistry = useStore($connectionsRegistry)
+  const profileColors = useStore($profileColors)
 
   // The flat Sessions list always shows ALL recent sessions; Projects is a
   // parallel grouped view, not a filter on this one — nothing is hidden here.
@@ -1494,7 +1520,7 @@ export function ChatSidebar({
   // Filtered down to nothing still renders the section: the empty state is what
   // tells you the filter — not an empty account — is why the list is bare.
   const showSessionSections =
-    showSessionSkeletons || filtersActive || sortedSessions.length > 0 || projectModel.length > 0
+    showSessionSkeletons || sessionsLoadError || filtersActive || sortedSessions.length > 0 || projectModel.length > 0
 
   // The sidebar's session-area mode — exposed as data-attributes so custom
   // skins can target project mode (overview vs. entered), archived, or search
@@ -1550,9 +1576,7 @@ export function ChatSidebar({
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
-              {[...SIDEBAR_NAV, ...contributedNav]
-                .filter(item => !simpleMode || !item.advanced)
-                .map(item => {
+              {navItems.map(item => {
                 const isInteractive = Boolean(item.action) || Boolean(item.route)
 
                 const active =
@@ -1680,6 +1704,8 @@ export function ChatSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
+        <SidebarStorageCorruptNotice />
+
         {showSessionSections && (
           <div className="shrink-0 px-2 pb-1 pt-1">
             <SearchField
@@ -1784,6 +1810,8 @@ export function ChatSidebar({
                 emptyState={
                   inProject && projectLoadFailed ? null : showSessionSkeletons || (inProject && projectLoading) ? (
                     <SidebarSessionSkeletons />
+                  ) : !inProject && sessionsLoadError ? (
+                    <SidebarLoadErrorState onRetry={() => void onRetrySessions()} />
                   ) : (
                     <div className="grid min-h-16 place-items-center rounded-lg px-2 text-center text-xs text-(--ui-text-tertiary)">
                       {inProject
@@ -1961,10 +1989,20 @@ export function ChatSidebar({
                 // still has older threads on disk.
                 const canRevealMore = visible < group.sessions.length || group.hasMore
 
+                // Group only what the cap lets through, so the footer's count
+                // and load-more stay about the platform, not one of its groups.
+                const ownerGroups = ownerGrouped
+                  ? scopeGatewaySessionGroups(
+                      buildGatewaySessionGroups(shownSessions, connectionsRegistry, profileColors),
+                      `messaging:${group.sourceId}`
+                    )
+                  : undefined
+
                 return (
                   <SidebarSessionsSection
                     activeSessionId={activeSidebarSessionId}
                     contentClassName={cn('flex max-h-56 flex-col gap-px pb-1.75', GROUP_BODY)}
+                    embeddedGroups
                     emptyState={null}
                     footer={
                       canRevealMore ? (
@@ -1975,6 +2013,7 @@ export function ChatSidebar({
                         />
                       ) : null
                     }
+                    groups={ownerGroups}
                     key={group.sourceId}
                     label={group.label}
                     labelIcon={
@@ -1994,11 +2033,12 @@ export function ChatSidebar({
                     pinned={false}
                     rootClassName="shrink-0 p-0"
                     sessions={shownSessions}
+                    showProfileTags={showAllProfiles && !ownerGrouped}
                   />
                 )
               })}
 
-            {!trimmedQuery && !worktreeGroupingActive && cronJobs.length > 0 && (
+            {!trimmedQuery && !worktreeGroupingActive && showsAdvancedChrome && cronJobs.length > 0 && (
               <SidebarCronJobsSection
                 jobs={cronJobs}
                 label={s.cronJobs}
@@ -2022,26 +2062,6 @@ export function ChatSidebar({
           </div>
         )}
 
-        {/* Simple-mode indicator + way back to the full interface. The same
-            store drives Settings → Appearance, so both flip together. */}
-        <div className="shrink-0 px-1 pb-1">
-          <Tip label={simpleMode ? s.interfaceMode.toFull : s.interfaceMode.toSimple}>
-            <button
-              className="flex h-6.5 w-full items-center gap-1.5 rounded-md px-2 text-left text-[0.6875rem] font-medium text-(--ui-text-quaternary) transition-colors duration-100 hover:bg-(--ui-control-hover-background) hover:text-(--ui-text-secondary)"
-              onClick={() => {
-                triggerHaptic('selection')
-                toggleInterfaceMode()
-              }}
-              type="button"
-            >
-              <Codicon className="size-3 shrink-0" name="sparkle" />
-              <span className="min-w-0 flex-1 truncate">{s.interfaceMode.label}</span>
-              <span className="shrink-0 text-(--ui-text-quaternary)">
-                {simpleMode ? s.interfaceMode.simple : s.interfaceMode.full}
-              </span>
-            </button>
-          </Tip>
-        </div>
       </SidebarContent>
       <ProjectDialog />
       {/* One mount for the whole app. The header of WorktreeDialog tells why. */}
