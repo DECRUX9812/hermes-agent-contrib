@@ -1182,7 +1182,7 @@ def _normalize_codex_response(
         final_text = ""
     # xAI grok-4.x sometimes puts the final answer inside the reasoning item after a ``<response>`` delimiter; without
     # salvage the reasoning-only rule marks the turn incomplete and every continuation is byte-identical. Promote the tail.
-    if issuer_kind == "xai_responses" and not final_text and not tool_calls and reasoning_parts:
+    if issuer_kind == "xai_responses" and not final_text and reasoning_parts:
         joined_reasoning = "\n\n".join(reasoning_parts)
         marker = joined_reasoning.rfind("<response>")
         salvaged = joined_reasoning[marker + len("<response>"):].split("</response>", 1)[0].strip() if marker != -1 else ""
