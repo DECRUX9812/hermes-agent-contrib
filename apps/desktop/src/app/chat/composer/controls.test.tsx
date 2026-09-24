@@ -141,10 +141,10 @@ describe('narrow tiles', () => {
 })
 
 describe('ComposerControls shortcut tooltips', () => {
-  it('keeps Send (not Steer) while a turn is running if there is a payload', async () => {
+  it('labels the send control Steer turn while a turn is running if there is a payload', async () => {
     renderControls({ busy: true, busyAction: 'steer' })
 
-    await expectShortcutTooltip('Send', '↵')
+    await expectShortcutTooltip('Steer turn', '↵')
   })
 
   it('shows Stop only when the composer is empty mid-turn', async () => {
