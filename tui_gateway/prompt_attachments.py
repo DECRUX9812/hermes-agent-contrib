@@ -98,7 +98,7 @@ def _queue_attached_image(session: dict, img_bytes: bytes, ext: str, *, prefix: 
     img_dir = _session_images_dir(session)
     img_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    img_path = img_dir / f"{prefix}_{ts}_{session['image_counter']}{ext}"
+    img_path = img_dir / f"{prefix}_{ts}_{session['image_counter']}_{uuid.uuid4().hex[:8]}{ext}"
     try:
         img_path.write_bytes(img_bytes)
     except Exception:

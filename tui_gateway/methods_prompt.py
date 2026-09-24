@@ -718,7 +718,7 @@ def _(rid, params: dict) -> dict:
     img_dir = _session_images_dir(session)
     img_dir.mkdir(parents=True, exist_ok=True)
     img_path = (
-        img_dir / f"clip_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{session['image_counter']}.png")
+        img_dir / f"clip_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{session['image_counter']}_{uuid.uuid4().hex[:8]}.png")
     # Save-first (CLI keybinding parity): more robust than a has_image() precheck.
     if not save_clipboard_image(img_path):
         session["image_counter"] = max(0, session["image_counter"] - 1)
