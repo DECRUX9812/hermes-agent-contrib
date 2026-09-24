@@ -19,7 +19,7 @@ import { onReleaseTypingFocus } from '@/components/ui/keyboard-first'
 import { findBarClaimsCombo } from '@/lib/find-in-page'
 import { contributedKeybindHandler, PROFILE_SLOT_COUNT, SESSION_SLOT_COUNT } from '@/lib/keybinds/actions'
 import { handleApprovalKey, releaseApprovalKey } from '@/lib/keybinds/approval-keys'
-import { actionAllowedInInput, comboFromEvent, isEditableTarget } from '@/lib/keybinds/combo'
+import { actionAllowedInInput, comboFromEvent, isEditableTarget, isFocusWithin } from '@/lib/keybinds/combo'
 import { composerFocusKeysAllowed, isComposerFocusSoftCombo, typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
 import { openWorktreeDialog } from '@/store/coding-status'
 import { $commandPaletteOpen, openCommandPalettePage, toggleCommandPalette } from '@/store/command-palette'
@@ -402,6 +402,16 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
           requestComposerFocus('active', { typeChar })
         }
 
+        return
+      }
+
+      // A focused terminal owns Ctrl+W: off macOS `mod` IS Control, so the
+      // close-tab binding collides with the readline word-erase chord — and
+      // closeActiveTab's terminal rung would destroy the pane (#65457). Yield
+      // before preventDefault so the press reaches the PTY; the dedicated
+      // view.closeTerminal chord still closes it, and on macOS ⌘W is a menu
+      // accelerator that bypasses this dispatcher entirely.
+      if (actionId === 'view.closeTab' && isFocusWithin('[data-terminal]')) {
         return
       }
 
