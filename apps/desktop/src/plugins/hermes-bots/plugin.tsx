@@ -21,13 +21,16 @@ import {
   host,
   LocalizedTabTitle,
   PALETTE_AREA,
+  SIDEBAR_LIST_TOP_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
 import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@hermes/plugin-sdk'
 
+import { AgentsSection } from './agents-section'
 import { startFaceClock, stopFaceClock } from './avatar'
 import {
+  $agentsSectionOpen,
   $botChatFocused,
   $botsPaneVisible,
   $focusedBotOwner,
@@ -244,6 +247,20 @@ export default {
       /* no storage — default (silent) stays */
     }
 
+    // Hydrate the Sessions-rail Agents fold (default open).
+    try {
+      // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
+      Promise.resolve(ctx.storage?.get?.('agents-section-open'))
+        .then(value => {
+          if (typeof value === 'boolean') {
+            $agentsSectionOpen.set(value)
+          }
+        })
+        .catch(() => undefined)
+    } catch {
+      /* no storage — the rail section stays open */
+    }
+
     // Hydrate persisted group-chat room logs (epoch/running are runtime-only
     // and always reset — a loop can't survive a window reload anyway).
     // Disband memory must be in place before the first gateway pull merges
@@ -428,6 +445,16 @@ export default {
       id: 'screen-portal',
       area: SIDEBAR_PROFILE_GROUP_HEADER_AREA,
       data: { render: (route: ProfileGroupRoute) => <ProfileGroupScreenPortal route={route} /> }
+    })
+
+    // Sessions rail, above Pinned: the compact Agents fold — the roster's
+    // one-click form inside the same column the sessions live in, so a bot
+    // never needs a tab switch to open. The BOTS pane stays the management
+    // surface (the fold's header gear / "All bots" row front it).
+    ctx.register({
+      id: 'agents-section',
+      area: SIDEBAR_LIST_TOP_AREA,
+      data: { render: () => <AgentsSection /> }
     })
     ctx.register({
       id: 'pane',

@@ -157,6 +157,22 @@ export interface ProfileGroupHeaderContribution {
   render: (route: ProfileGroupRoute) => ReactNode
 }
 
+// ── Contributed list-top section — the `sidebar.listTop` registry area ───────
+// A RENDER contribution mounted at the top of the Sessions sidebar's scroll
+// column, above Pinned, while the flat list is on screen. It unmounts while a
+// search query runs — the results column owns the space then. The contribution
+// renders its own section chrome (label, collapse, actions) so it composes
+// with the lists it sits above without core knowing what it contains.
+// First consumer: the Bots plugin's compact agent section, which folds the
+// roster into the one nav column so reaching a bot never takes a tab switch.
+
+export const SIDEBAR_LIST_TOP_AREA = 'sidebar.listTop'
+
+/** Payload of a `sidebar.listTop` data contribution. */
+export interface SidebarListTopContribution {
+  render: () => ReactNode
+}
+
 // Views that render as a full-screen modal card (OverlayView) over the shell.
 // While one is open the app's titlebar control clusters must hide so they don't
 // bleed over the overlay (they sit at a higher z-index than the overlay card).
