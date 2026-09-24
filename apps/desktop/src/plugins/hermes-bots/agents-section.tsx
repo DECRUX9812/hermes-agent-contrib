@@ -82,6 +82,7 @@ export function AgentsSection() {
   const open = useValue($agentsSectionOpen)
   const { data, error, refetch } = useRoster()
   const allMeta = useValue($botMeta)
+  const gatewayUp = useValue(host.state.gateway) === 'open'
   const [createOpen, setCreateOpen] = useState(false)
 
   // Same resilience rule the pane applies: a failed refresh renders the last
@@ -158,7 +159,25 @@ export function AgentsSection() {
           {shown.map(bot => (
             <AgentRow bot={bot} key={botRosterKey(bot)} />
           ))}
-          {!loading && visible.length === 0 && (
+          {/* A failed first read is not an empty account — say so and offer
+              the same retry the pane does rather than "Create your first". */}
+          {!loading && visible.length === 0 && error && (
+            <div className="grid gap-1 px-2 py-1.5">
+              <span className="text-[0.8125rem] leading-snug text-(--ui-text-tertiary)">
+                {gatewayUp
+                  ? b.roster.rosterUnavailable(error instanceof Error ? error.message : 'gateway error')
+                  : b.roster.waitingForGateway}
+              </span>
+              <RowButton
+                className="flex w-fit min-w-0 items-center gap-1.5 rounded-md px-2 py-1 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--ui-control-hover-background) hover:text-foreground"
+                onClick={() => void refetch()}
+              >
+                <Codicon className="shrink-0 text-[0.75rem]" name="refresh" />
+                <span className="min-w-0 truncate">{b.roster.retryNow}</span>
+              </RowButton>
+            </div>
+          )}
+          {!loading && !error && visible.length === 0 && (
             <RowButton
               className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--ui-control-hover-background) hover:text-foreground"
               onClick={() => setCreateOpen(true)}

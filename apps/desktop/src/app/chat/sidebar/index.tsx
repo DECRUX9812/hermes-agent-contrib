@@ -24,7 +24,7 @@ import {
   SidebarMenuItem
 } from '@/components/ui/sidebar'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
-import { ContribBoundary } from '@/contrib/react/boundary'
+import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/hermes'
 import { useI18n } from '@/i18n'
@@ -1758,15 +1758,17 @@ export function ChatSidebar({
         {/* Contributed list-top sections (`sidebar.listTop`) pin above the
             sessions list — including on an empty account, since
             showSessionSections gates only the list itself. Unmounted while a
-            search query runs: the results column owns the space then. */}
+            search query runs: the results column owns the space then.
+            The area is bounded and scrolls its own rows: a tall section can
+            never starve the sessions column of a usable viewport. */}
         {!trimmedQuery && listTopContribs.length > 0 && (
-          <div className="shrink-0 pb-1">
+          <div className="max-h-[45%] shrink-0 overflow-y-auto pb-1">
             {listTopContribs.map(c => {
               const render = (c.data as SidebarListTopContribution | undefined)?.render
 
               return (
                 <ContribBoundary id={c.id} key={c.id} variant="chip">
-                  {typeof render === 'function' ? render() : null}
+                  {typeof render === 'function' ? <ContribRender render={render} /> : null}
                 </ContribBoundary>
               )
             })}
