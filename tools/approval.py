@@ -117,6 +117,13 @@ def _denial_breaker_addendum(session_key: str) -> str:
 # instead of only hearing "denied". Ported from qwibitai/nanoclaw#2832.
 _gateway_queues: dict[str, list] = {}        # session_key → [_ApprovalEntry, …]
 _gateway_notify_cbs: dict[str, object] = {}  # session_key → callable(approval_data)
+# session_key → entries detached by a session RECLAIM (ws_orphan_reap / idle_timeout / lru_evict).
+# The client never answered, so the prompts must outlive the dead session for the resume replay
+# (``get_pending_gateway_approval`` → ``pending_approval`` payload → ``approval.respond``) instead of
+# being silently denied. Waiters unwind via their own interrupt; parked entries are invisible to
+# ``_drop_entry``'s live-queue removal, so the dying turn can't destroy the copy a reconnecting
+# client re-renders. ``register_gateway_notify`` re-adopts them into the live queue.
+_parked_gateway_queues: dict[str, list] = {}
 
 
 def register_gateway_notify(session_key: str, cb) -> None:
@@ -124,6 +131,22 @@ def register_gateway_notify(session_key: str, cb) -> None:
     bridges sync→async: it runs in the agent thread and must schedule the send on the loop."""
     with _lock:
         _gateway_notify_cbs[session_key] = cb
+        # A resumed session re-adopts approvals a reclaim parked (they are the oldest — front).
+        if parked := _parked_gateway_queues.pop(session_key, []):
+            _gateway_queues.setdefault(session_key, [])[:0] = parked
+
+
+def park_gateway_approvals(session_key: str) -> int:
+    """Move a session's unresolved approvals out of the live queue WITHOUT waking or resolving their
+    waiters — the reclaim complement of ``unregister_gateway_notify``. The prompts stay answerable via
+    ``resolve_gateway_approval`` and visible to ``list_gateway_approvals`` /
+    ``get_pending_gateway_approval`` so a resuming session re-delivers them."""
+    with _lock:
+        queue = _gateway_queues.pop(session_key, [])
+        if not queue:
+            return 0
+        _parked_gateway_queues.setdefault(session_key, []).extend(queue)
+        return len(queue)
 
 
 def unregister_gateway_notify(session_key: str) -> None:
@@ -142,25 +165,32 @@ def resolve_gateway_approval(session_key: str, choice: str,
     """Unblock waiting agent thread(s) from the gateway's /approve or /deny handler.
 
     *resolve_all* resolves every pending approval (``/approve all``); otherwise the oldest
-    (FIFO) or the one matching *request_id*. *reason* is the ``/deny <reason>`` free text,
-    relayed to the agent in the BLOCKED message. Returns the number resolved.
+    (FIFO — parked entries precede live ones, they are older) or the one matching *request_id*.
+    *reason* is the ``/deny <reason>`` free text, relayed to the agent in the BLOCKED message.
+    Returns the number resolved.
     """
     with _lock:
-        queue = _gateway_queues.get(session_key)
-        if not queue:
-            return 0
+        parked = _parked_gateway_queues.get(session_key, [])
+        queue = _gateway_queues.get(session_key, [])
         if request_id:
-            targets = [entry for entry in queue if entry.data.get("request_id") == request_id]
-            if not targets:
-                return 0
-            queue[:] = [entry for entry in queue if entry not in targets]
+            targets = [entry for entry in parked + queue
+                       if entry.data.get("request_id") == request_id]
         elif resolve_all:
-            targets = list(queue)
-            queue.clear()
+            targets = list(parked) + list(queue)
+        elif parked or queue:
+            targets = [parked[0] if parked else queue[0]]
         else:
-            targets = [queue.pop(0)]
+            return 0
+        if not targets:
+            return 0
+        for entry in targets:
+            for entries in (parked, queue):
+                if entry in entries:
+                    entries.remove(entry)
         if not queue:
             _gateway_queues.pop(session_key, None)
+        if not parked:
+            _parked_gateway_queues.pop(session_key, None)
         # Popping the entry and committing its outcome are ONE critical section: the waiter's
         # ``_drop_entry`` reads ``entry.result`` under this same lock after its deadline check, so a
         # choice acked to the client here can never be popped-and-lost as a timeout (#112548).
@@ -190,9 +220,10 @@ def withdraw_gateway_approval(session_key: str, request_id: str, cause: str) -> 
 
 
 def list_gateway_approvals(session_key: str) -> list[dict]:
-    """Return replay-safe snapshots of unresolved approvals for one session."""
+    """Return replay-safe snapshots of unresolved approvals for one session (parked first — oldest)."""
     with _lock:
-        return [dict(entry.data) for entry in _gateway_queues.get(session_key, [])]
+        entries = _parked_gateway_queues.get(session_key, []) + _gateway_queues.get(session_key, [])
+        return [dict(entry.data) for entry in entries]
 
 
 def register_gateway_settle(session_key: str, request_id: str, settle) -> bool:
@@ -219,13 +250,14 @@ def ack_gateway_approval(session_key: str, request_id: str) -> bool:
 def has_blocking_approval(session_key: str) -> bool:
     """Check if a session has one or more blocking gateway approvals waiting."""
     with _lock:
-        return bool(_gateway_queues.get(session_key))
+        return bool(_gateway_queues.get(session_key) or _parked_gateway_queues.get(session_key))
 
 
 def pending_gateway_approval_count() -> int:
     """Unresolved gateway approvals across every session — a backend blocked on one is not idle."""
     with _lock:
-        return sum(len(queue) for queue in _gateway_queues.values())
+        return (sum(len(queue) for queue in _gateway_queues.values())
+                + sum(len(queue) for queue in _parked_gateway_queues.values()))
 
 
 def get_pending_gateway_approval(session_key: str) -> dict | None:
@@ -234,10 +266,11 @@ def get_pending_gateway_approval(session_key: str) -> dict | None:
     if not session_key:
         return None
     with _lock:
-        queue = _gateway_queues.get(session_key)
-        if not queue:
+        parked = _parked_gateway_queues.get(session_key, [])
+        queue = _gateway_queues.get(session_key, [])
+        if not parked and not queue:
             return None
-        return dict(queue[0].data)
+        return dict((parked[0] if parked else queue[0]).data)
 
 
 def submit_pending(session_key: str, approval: dict):
@@ -290,6 +323,7 @@ def clear_session(session_key: str) -> None:
         _session_approved.pop(session_key, None)
         _session_yolo.discard(session_key)
         _pending.pop(session_key, None)
+        _parked_gateway_queues.pop(session_key, None)
         for entry in _gateway_queues.pop(session_key, []):
             # Cancel blocked waits now so the old run unwinds instead of idling until timeout;
             # the prompt was withdrawn, nobody denied it.

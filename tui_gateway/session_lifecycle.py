@@ -466,9 +466,13 @@ def _teardown_session(session: dict | None, *, end_reason: str = "tui_close") ->
     _finalize_session(session, end_reason=end_reason)
     _announce_session_reclaimed(session, end_reason)
     with contextlib.suppress(Exception):
-        from tools.approval import unregister_gateway_notify
+        from tools.approval import park_gateway_approvals, unregister_gateway_notify
         # One approval callback per key: after a takeover it is the new runtime's registration.
         if (key := session.get("session_key")) and not session.get("_lease_taken_over"):
+            if end_reason in _RECLAIM_END_REASONS:
+                # A reclaim is not an answer: park the unresolved approvals so a resuming session
+                # re-delivers them (``pending_approval`` / ``approval.respond``), then unregister.
+                park_gateway_approvals(key)
             unregister_gateway_notify(key)
     # agent.close() → shutdown_memory_provider reads the provider's config/credentials at call time; same
     # scope rule as _finalize_session (every caller here is an unscoped reaper/atexit/pool thread).
@@ -521,7 +525,7 @@ def _teardown_popped_session(session: dict | None, *, end_reason: str = "tui_clo
         except Exception:
             logger.debug("failed waiting for session turn thread", exc_info=True)
     if end_reason != "tui_shutdown":
-        _settle_isolated_turn_before_close(session)
+        _settle_isolated_turn_before_close(session, end_reason)
     _teardown_session(session, end_reason=end_reason)
     return True
 
@@ -531,7 +535,7 @@ def _teardown_popped_session(session: dict | None, *, end_reason: str = "tui_clo
 _deferred_active_session_leases: dict[str, Any] = {}
 
 
-def _settle_isolated_turn_before_close(session: dict) -> None:
+def _settle_isolated_turn_before_close(session: dict, end_reason: str = "tui_close") -> None:
     """An isolated turn runs in the compute-host child, not on ``_run_thread``: interrupt it and give it the
     same close grace, and if it still has not settled keep the REAL lease out of finalize's release — the
     completion callback releases it on the correlated turn.end/turn.error (child death fails pending turns
@@ -540,7 +544,8 @@ def _settle_isolated_turn_before_close(session: dict) -> None:
     if not session.get("_compute_host_turn_id") or not _session_uses_compute_host(session):
         return
     with contextlib.suppress(Exception):
-        _interrupt_session_turn(_lifecycle_own_sid(session), session)
+        _interrupt_session_turn(_lifecycle_own_sid(session), session,
+                                preserve_prompts=end_reason in _RECLAIM_END_REASONS)
     deadline = time.monotonic() + _TURN_SETTLE_BEFORE_CLOSE_SECONDS
     while session.get("_compute_host_turn_id") and time.monotonic() < deadline:
         time.sleep(0.05)
@@ -587,9 +592,20 @@ def _ws_session_is_orphaned(session: dict | None) -> bool:
     return bool(_ws_session_is_detached(session) and not session.get("running"))
 
 
-def _interrupt_session_turn(sid: str, session: dict, *, request_id: str | None = None) -> bool:
+def _interrupt_session_turn(sid: str, session: dict, *, request_id: str | None = None,
+                            preserve_prompts: bool = False) -> bool:
     """Apply the shared ``session.interrupt`` contract to one claimed session; returns whether the compute-host control
-    channel was used. The WS orphan reaper reuses this so a dead client gets the same partial-history/queue semantics."""
+    channel was used. The WS orphan reaper reuses this so a dead client gets the same partial-history/queue semantics.
+
+    ``preserve_prompts`` is for backend RECLAIMS (``_RECLAIM_END_REASONS``): the client never answered, so open
+    server→client requests stay open for the resume replay and pending approvals are parked instead of being
+    deny-resolved. User-stop paths leave it False — an interrupt withdraws prompts and denies the queue."""
+    if preserve_prompts:
+        # Park BEFORE requesting the interrupt so the waking waiter's ``_drop_entry`` cannot remove its
+        # entry first: parked entries are invisible to live-queue removal.
+        with contextlib.suppress(Exception):
+            from tools.approval import park_gateway_approvals
+            park_gateway_approvals(str(session.get("session_key") or ""))
     use_compute_host = _session_uses_compute_host(session)
     should_interrupt = bool(session.get("running"))
     run_thread_alive = False
@@ -634,10 +650,11 @@ def _interrupt_session_turn(sid: str, session: dict, *, request_id: str | None =
                 if session.get("running"):
                     session["running"] = False
                     _clear_inflight_turn(session)
-    _clear_pending(sid)
-    with contextlib.suppress(Exception):
-        from tools.approval import resolve_gateway_approval
-        resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
+    if not preserve_prompts:
+        _clear_pending(sid)
+        with contextlib.suppress(Exception):
+            from tools.approval import resolve_gateway_approval
+            resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
     return use_compute_host
 
 
@@ -806,7 +823,8 @@ def _schedule_ws_orphan_reap(
                 _pending_ws_reaps.pop(sid, None)
         if interrupt_session is not None:
             try:
-                isolated = _interrupt_session_turn(sid, interrupt_session, request_id=f"client-gone-{sid}")
+                isolated = _interrupt_session_turn(sid, interrupt_session, request_id=f"client-gone-{sid}",
+                                                   preserve_prompts=True)
                 logger.info("client_gone sid=%s action=interrupt turn_isolation=%s", sid, isolated)
             except Exception:
                 logger.exception("client_gone interrupt failed sid=%s", sid)
