@@ -234,7 +234,11 @@ function baseSshOptions(controlPath, connectTimeoutMs?) {
     '-o',
     'ExitOnForwardFailure=yes',
     '-o',
-    `ConnectTimeout=${connectSecs}`
+    `ConnectTimeout=${connectSecs}`,
+    '-o',
+    'ServerAliveInterval=30',
+    '-o',
+    'ServerAliveCountMax=3'
   ]
 }
 

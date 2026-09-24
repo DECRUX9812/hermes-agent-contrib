@@ -123,6 +123,18 @@ test('baseSshOptions carries the house ControlMaster/BatchMode/accept-new policy
   assert.ok(!joined.includes('StrictHostKeyChecking=no'), 'never disables host-key checking')
 })
 
+test('baseSshOptions carries SSH keepalive so idle tunnels die loudly', () => {
+  // NAT-dropped idle connections otherwise black-hole silently; keepalive must
+  // be inherited by master, exec, and every no-mux `ssh -N -L` tunnel child.
+  for (const opts of [baseSshOptions('/tmp/x.sock', 15000), baseSshOptions('', 15000)]) {
+    const joined = opts.join(' ')
+    const interval = joined.match(/ServerAliveInterval=(\d+)/)
+    const countMax = joined.match(/ServerAliveCountMax=(\d+)/)
+    assert.ok(interval && Number(interval[1]) > 0, `ServerAliveInterval>0 required (got ${joined})`)
+    assert.ok(countMax && Number(countMax[1]) > 0, `ServerAliveCountMax>0 required (got ${joined})`)
+  }
+})
+
 test('hostArgs adds -p only for non-default port and -i only with a key', () => {
   assert.deepEqual(hostArgs({ port: 22 }), [])
   assert.deepEqual(hostArgs({ port: 2222 }), ['-p', '2222'])
@@ -571,6 +583,60 @@ test('no-mux: forward spawns a persistent -N -L child; cancel + close kill it', 
 
   conn._opened = true
   await conn.close() // no-mux close never runs ssh -O exit; must not throw
+  srv.close()
+})
+
+test('keepalive options reach the spawned master and no-mux -N -L tunnel argv', async () => {
+  const net = await import('node:net')
+  const srv = net.createServer()
+  await new Promise<void>(r => srv.listen(0, '127.0.0.1', () => r()))
+  const localPort = (srv.address() as any).port
+  const tunnelArgs: string[][] = []
+
+  const hasKeepalive = (args: string[]) => {
+    const joined = args.join(' ')
+    assert.match(joined, /ServerAliveInterval=\d+/, `tunnel argv missing ServerAliveInterval: ${joined}`)
+    assert.match(joined, /ServerAliveCountMax=\d+/, `tunnel argv missing ServerAliveCountMax: ${joined}`)
+  }
+
+  // Mux master spawn.
+  const muxSpawn = scriptedSpawn(args => (args.includes('check') ? { code: 255 } : { code: 0 }))
+  const muxConn = new SshConnection({ host: 'box', user: 'me' }, { spawnFn: muxSpawn, controlDir: '/tmp/d' })
+  await muxConn.open()
+  const masterArgs = muxSpawn.calls.find(args => args.includes('-M'))
+  assert.ok(masterArgs, 'expected a ControlMaster spawn')
+  hasKeepalive(masterArgs)
+
+  // No-mux `ssh -N -L` tunnel child.
+  const spawnFn: any = (_cmd, args) => {
+    const child: any = new EventEmitter()
+    child.stderr = new EventEmitter()
+    child.exitCode = null
+    child.kill = () => {
+      child.exitCode = 0
+      process.nextTick(() => child.emit('exit', 0))
+      return true
+    }
+
+    if (args.includes('-N')) {
+      tunnelArgs.push(args)
+      process.nextTick(() =>
+        child.stderr.emit('data', Buffer.from(`Local forwarding listening on 127.0.0.1 port ${localPort}.`))
+      )
+    } else {
+      child.stdout = new EventEmitter()
+      process.nextTick(() => child.emit('close', 0))
+    }
+
+    return child
+  }
+
+  const conn = new SshConnection({ host: 'box', user: 'me' }, { spawnFn, mux: false })
+  await conn.forward(localPort, 9119)
+  assert.equal(tunnelArgs.length, 1, 'one persistent tunnel child')
+  hasKeepalive(tunnelArgs[0])
+
+  await conn.cancelForward(localPort, 9119)
   srv.close()
 })
 
