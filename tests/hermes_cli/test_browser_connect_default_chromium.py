@@ -176,3 +176,17 @@ class TestLinuxProfileDir:
         monkeypatch.setenv("HOME", str(tmp_path))
         monkeypatch.setenv("XDG_CONFIG_HOME", "/home/t/.config")
         assert bc.real_profile_data_dir("edge", "Linux") == "/home/t/.config/microsoft-edge"
+
+    def test_resolves_under_real_home_not_profile_home(self, tmp_path, monkeypatch):
+        hermes_home = tmp_path / "hermes"
+        profile_home = hermes_home / "home"
+        profile_home.mkdir(parents=True)
+        real_home = tmp_path / "realuser"
+        real_home.mkdir()
+        monkeypatch.setenv("HERMES_HOME", str(hermes_home))
+        monkeypatch.setenv("HOME", str(profile_home))
+        monkeypatch.setenv("HERMES_REAL_HOME", str(real_home))
+        monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+        result = bc.real_profile_data_dir("chromium", "Linux")
+        assert result == str(real_home / ".config" / "chromium")
+        assert not result.startswith(str(profile_home))
