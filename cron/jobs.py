@@ -2184,8 +2184,32 @@ def rearm_oneshot(job_id: str, run_at: Any) -> Optional[Dict[str, Any]]:
     return _with_job(job_ref["id"], apply)
 
 
-def remove_job(job_id: str) -> bool:
-    """Remove a job by ID or name."""
+def _archive_job_run_sessions(job_id: str) -> int:
+    """Soft-hide the removed job's ``source='cron'`` run sessions in state.db so they do not
+    persist as orphan sidebar entries (#43965). Best-effort caller of the shared SessionDB;
+    returns the count newly archived. Cron run ids are flat ``cron_{job_id}_{ts}`` rows that
+    never compress, so ``list_cron_job_runs``' id-range scan covers exactly this job and the
+    pages stay stable while rows are archived underneath the pagination."""
+    from hermes_state_registry import acquire, release_or_close
+    db = acquire()
+    try:
+        archived = 0
+        offset = 0
+        while True:
+            runs = db.list_cron_job_runs(job_id, limit=500, offset=offset)
+            if not runs:
+                return archived
+            offset += len(runs)
+            for row in runs:
+                if not row.get("archived") and db.set_session_archived(row["id"], True):
+                    archived += 1
+    finally:
+        release_or_close(db)
+
+
+def remove_job(job_id: str, out: Optional[Dict[str, Any]] = None) -> bool:
+    """Remove a job by ID or name. When ``out`` is a dict it is populated with removal
+    side-effects (``sessions_archived``) so callers can surface them."""
     job = resolve_job_ref(job_id)
     if not job:
         return False
@@ -2209,6 +2233,13 @@ def remove_job(job_id: str) -> bool:
             clear_notepad(canonical_id)
         except Exception:
             logger.debug("Failed to clear notepad for removed job %s", canonical_id, exc_info=True)
+        try:
+            sessions_archived = _archive_job_run_sessions(canonical_id)
+        except Exception:
+            sessions_archived = 0
+            logger.debug("Failed to archive run sessions for removed job %s", canonical_id, exc_info=True)
+        if out is not None:
+            out["sessions_archived"] = sessions_archived
         # Prune the fire-fence lock entry so the registry doesn't grow monotonically.
         _fence_key = f"{_current_cron_store().cron_dir.resolve()}::{canonical_id}"
         with _fire_fence_locks_guard:

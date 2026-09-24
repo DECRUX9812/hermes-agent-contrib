@@ -214,13 +214,14 @@ def _trigger_cron_job_sync(job_id: str, profile: Optional[str] = None):
 
 def _delete_cron_job_sync(job_id: str, profile: Optional[str] = None):
     selected = _job_profile(job_id, profile)
+    removal: Dict[str, Any] = {}
     try:
-        removed = _mutate_cron_for_profile(selected, "remove_job", job_id)
+        removed = _mutate_cron_for_profile(selected, "remove_job", job_id, out=removal)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not removed:
         raise _job_not_found()
-    return {"ok": True}
+    return {"ok": True, "sessions_archived": removal.get("sessions_archived", 0)}
 
 
 # Retry-After (seconds) on retryable cron-fire 503s: sized to clear a

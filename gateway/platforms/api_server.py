@@ -3668,10 +3668,11 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         if err:
             return err
         try:
-            if not _cron_remove(job_id):
+            removal: Dict[str, Any] = {}
+            if not _cron_remove(job_id, out=removal):
                 return web.json_response({"error": "Job not found"}, status=404)
             _notify_cron_provider_jobs_changed()
-            return web.json_response({"ok": True})
+            return web.json_response({"ok": True, "sessions_archived": removal.get("sessions_archived", 0)})
         except Exception as e:
             return self._cron_error_response(e)
 

@@ -12,7 +12,7 @@ Covers:
 
 import logging
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from aiohttp import web
@@ -262,7 +262,7 @@ class TestDeleteJob:
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["ok"] is True
-                mock_remove.assert_called_once_with(VALID_JOB_ID)
+                mock_remove.assert_called_once_with(VALID_JOB_ID, out=ANY)
 
 
 # ---------------------------------------------------------------------------

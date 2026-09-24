@@ -1028,7 +1028,7 @@ async def test_cron_delete_with_profile_deletes_only_target_profile(isolated_pro
     )
 
     deleted = await _rt_cron.delete_cron_job(worker_job["id"], profile="worker_alpha")
-    assert deleted == {"ok": True}
+    assert deleted == {"ok": True, "sessions_archived": 0}
 
     remaining_default = await _rt_cron.list_cron_jobs(profile="default")
     remaining_worker = await _rt_cron.list_cron_jobs(profile="worker_alpha")

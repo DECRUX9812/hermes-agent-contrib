@@ -644,13 +644,15 @@ def _action_list(a: Dict[str, Any]) -> str:
 
 def _action_remove(job: Dict[str, Any], a: Dict[str, Any]) -> str:
     job_id = job["id"]
-    if not remove_job(job_id):
+    removal: Dict[str, Any] = {}
+    if not remove_job(job_id, out=removal):
         return tool_error(f"Failed to remove job '{job_id}'", success=False)
     _notify_provider_jobs_changed_safe()
     return _dumps({
         "success": True,
         "message": f"Cron job '{job['name']}' removed.",
         "removed_job": {"id": job_id, "name": job["name"], "schedule": job.get("schedule_display")},
+        "sessions_archived": removal.get("sessions_archived", 0),
     })
 
 
