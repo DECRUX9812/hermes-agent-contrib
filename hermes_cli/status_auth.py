@@ -4,6 +4,7 @@ module object so tests that monkeypatch that module keep working."""
 
 from datetime import datetime, timezone
 
+from agent.message_sanitization import _sanitize_surrogates
 from hermes_cli.auth import AuthError
 from hermes_cli.nous_account import (
     format_nous_portal_entitlement_message, get_nous_portal_account_info)
@@ -23,7 +24,7 @@ def _format_iso_timestamp(value) -> str:
         return value
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+    return _sanitize_surrogates(parsed.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z"))
 
 
 def _qwen_expiry(expires_at_ms) -> str:

@@ -19,6 +19,7 @@ import re
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
+from agent.message_sanitization import _sanitize_surrogates
 from hermes_time import now as _hermes_now
 
 logger = logging.getLogger("cron.scheduler")
@@ -104,6 +105,6 @@ def hold_notice(job: Dict[str, Any], hold_seconds: Optional[float]) -> str:
     hours = float(hold_seconds) / 3600.0
     return (
         f"\nThe provider's usage window is closed for about {hours:.1f}h. This job is held "
-        f"until its first scheduled run after {window_end.strftime('%Y-%m-%d %H:%M %Z')} — "
+        f"until its first scheduled run after {_sanitize_surrogates(window_end.strftime('%Y-%m-%d %H:%M %Z'))} — "
         "no further alerts until then."
     )
