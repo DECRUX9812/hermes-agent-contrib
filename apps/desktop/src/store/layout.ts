@@ -13,7 +13,7 @@ import { type Codec, Codecs, persistentAtom } from '@/lib/persisted'
 import { arraysEqual, insertUniqueId, readKey } from '@/lib/storage'
 
 import { $paneStates, ensurePaneRegistered, setPaneOpen, setPaneWidthOverride } from './panes'
-import { $showAllProfiles, setShowAllProfiles } from './profile'
+import { $profiles, $showAllProfiles, setShowAllProfiles } from './profile'
 import type { PullRequestBucket } from './pull-requests'
 import type { SessionStatusBucket } from './session-dot-state'
 
@@ -384,6 +384,18 @@ export const $sidebarGrouping: ReadableAtom<SidebarGrouping> = computed(
   [$sidebarAgentsGrouped, $sidebarFlatGrouping, $sidebarAllProfilesGrouping, $showAllProfiles],
   (grouped, flat, allProfiles, showAll) => (grouped ? 'project' : showAll ? allProfiles : flat)
 )
+
+// A persisted "All profiles" flag on a roster that resolves to exactly one
+// profile is a latch with no switcher door — the toggle only renders for
+// multi-profile rosters (#101642). Clear it when the roster lands. The one
+// deliberate single-profile use is Grouping → Profile (it sets the flag
+// itself, and groups by gateway), so it is exempt. An empty roster means the
+// list hasn't loaded — never clear on a transient empty.
+$profiles.subscribe(profiles => {
+  if (profiles.length === 1 && $showAllProfiles.get() && $sidebarAllProfilesGrouping.get() !== 'profile') {
+    setShowAllProfiles(false)
+  }
+})
 
 // A hand-dragged order outranks any sort key — dragging IS how you pick manual,
 // so the menu reflects that rather than offering a fourth way to say it.

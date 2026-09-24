@@ -42,10 +42,13 @@ vi.mock('@/store/starmap', () => ({ resetStarmapGraph }))
 const {
   $activeGatewayProfile,
   $profiles,
+  $profileScope,
+  ALL_PROFILES,
   ensureGatewayProfile,
   invalidateProfileListFetches,
   prewarmProfileBackend,
-  refreshProfiles
+  refreshProfiles,
+  setShowAllProfiles
 } = await import('./profile')
 
 const { $poolLimits } = await import('@/store/pool-limits')
@@ -381,5 +384,40 @@ describe('stale profile-list fetches across a backend switch (#85731)', () => {
     await oldFetch
 
     expect($profiles.get().map(profile => profile.name)).toEqual(['default', 'coder'])
+  })
+})
+
+describe('$profileScope all-profiles latch (#101642)', () => {
+  beforeEach(() => {
+    // The latch reconciliation lives in layout.ts — import it for its
+    // $profiles subscriber side effect.
+    return import('./layout').then(() => undefined)
+  })
+
+  afterEach(() => {
+    setShowAllProfiles(false)
+    $profiles.set([])
+    $activeGatewayProfile.set('default')
+  })
+
+  it('clears the persisted all-profiles flag when the roster resolves to a single profile', () => {
+    // The "All profiles" toggle is only rendered for multiProfile rosters, so
+    // a persisted showAllProfiles flag on a single-profile install is a latch
+    // with no UI door out — resolving the roster must drop it.
+    setShowAllProfiles(true)
+    $activeGatewayProfile.set('default')
+
+    $profiles.set([profile('default', true)])
+
+    expect($profileScope.get()).toBe('default')
+  })
+
+  it('honors the all-profiles scope when the roster resolves to multiple profiles', () => {
+    setShowAllProfiles(true)
+    $activeGatewayProfile.set('default')
+
+    $profiles.set([profile('default', true), profile('work')])
+
+    expect($profileScope.get()).toBe(ALL_PROFILES)
   })
 })
