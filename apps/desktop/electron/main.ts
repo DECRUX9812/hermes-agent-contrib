@@ -361,7 +361,7 @@ import {
 } from './profile-session-routing'
 import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
 import { createQuitFinalization } from './quit-finalization'
-import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
+import { type ActiveWork, mergeActiveWork, normalizeActiveWork, quitHoldFor } from './quit-guard'
 import { backendQuitNeedsWait, createQuitTeardownCoordinator } from './quit-teardown'
 import * as remoteLifecycle from './remote-lifecycle'
 import {
@@ -18343,28 +18343,32 @@ function heldQuitForActiveWork(event: Electron.Event): boolean {
     return false
   }
 
-  const prompt = quitPromptFor(mergeActiveWork(activeWorkByWebContents.values()), isQuittingForHandoff)
-  // A hidden aux window must never parent the quit prompt: the dialog would
-  // be invisible and the held quit unanswerable (#116376 §E).
-  const parent =
-    BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows().find(window => window.isVisible())
+  const hold = quitHoldFor(
+    mergeActiveWork(activeWorkByWebContents.values()),
+    isQuittingForHandoff,
+    BrowserWindow.getFocusedWindow(),
+    BrowserWindow.getAllWindows()
+  )
 
-  if (!prompt || !parent || parent.isDestroyed()) {
+  if (!hold) {
     return false
   }
 
   event.preventDefault()
   quitPromptOpen = true
 
-  void dialog
-    .showMessageBox(parent, {
-      buttons: ['Keep Running', 'Quit Anyway'],
-      cancelId: 0,
-      defaultId: 0,
-      detail: prompt.detail,
-      message: prompt.message,
-      type: 'question'
-    })
+  const options: Electron.MessageBoxOptions = {
+    buttons: ['Keep Running', 'Quit Anyway'],
+    cancelId: 0,
+    defaultId: 0,
+    detail: hold.prompt.detail,
+    message: hold.prompt.message,
+    type: 'question'
+  }
+
+  // The last-window-closed quit has no living window to parent to; show the
+  // confirmation unparented rather than skipping it (#96139).
+  void (hold.parent ? dialog.showMessageBox(hold.parent, options) : dialog.showMessageBox(options))
     .then(({ response }) => {
       quitPromptOpen = false
 

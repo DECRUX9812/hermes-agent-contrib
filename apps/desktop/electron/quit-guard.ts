@@ -90,3 +90,42 @@ export function quitPromptFor(work: ActiveWork, quittingForHandoff: boolean): nu
     message: work.count === 1 ? 'Hermes is still working on 1 chat.' : `Hermes is still working on ${work.count} chats.`
   }
 }
+
+/** The slice of BrowserWindow the quit guard needs. */
+export interface QuitPromptWindow {
+  isDestroyed(): boolean
+  isVisible(): boolean
+}
+
+export interface QuitHold<Window> {
+  /** Window to parent the dialog to, or null to show it unparented. */
+  parent: Window | null
+  prompt: QuitPrompt
+}
+
+/**
+ * The held quit to run, or null when quitting should just proceed.
+ *
+ * A missing parent must NOT drop the prompt: closing the last window reaches
+ * before-quit via window-all-closed with every window already destroyed, and
+ * skipping the confirmation there silently kills a turn in flight. The dialog
+ * is simply shown unparented (#96139).
+ */
+export function quitHoldFor<Window extends QuitPromptWindow>(
+  work: ActiveWork,
+  quittingForHandoff: boolean,
+  focused: Window | null,
+  windows: readonly Window[]
+): null | QuitHold<Window> {
+  const prompt = quitPromptFor(work, quittingForHandoff)
+
+  if (!prompt) {
+    return null
+  }
+
+  // A hidden aux window must never parent the quit prompt: the dialog would
+  // be invisible and the held quit unanswerable (#116376 §E).
+  const candidate = focused ?? windows.find(window => window.isVisible()) ?? null
+
+  return { parent: candidate && !candidate.isDestroyed() ? candidate : null, prompt }
+}
