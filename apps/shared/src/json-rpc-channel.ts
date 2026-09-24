@@ -93,6 +93,14 @@ export interface JsonRpcTransport {
 
 export interface JsonRpcRequestChannelOptions {
   createRequestId?: (nextId: number) => GatewayRequestId
+  /**
+   * `'any-inbound'` liveness only: a turn-scoped frame (status/tool/delta
+   * traffic or a server→client request) proves the backend is mid-turn, so
+   * the deadline slides out to this window measured from the last busy
+   * signal — a long compaction on a starved loop emits nothing yet is alive.
+   * Bounded: past the window with zero frames the transport still fails.
+   */
+  heartbeatBusyMs?: number
   heartbeatDeadlineMs?: number
   heartbeatIntervalMs?: number
   /** Called when the heartbeat deadline passes or a heartbeat send throws; the owner drops the transport. */
@@ -142,7 +150,33 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 120_000
 // heartbeat that the TUI gateway explicitly answers.
 export const DEFAULT_HEARTBEAT_INTERVAL_MS = 15_000
 export const DEFAULT_HEARTBEAT_DEADLINE_MS = 45_000
+export const DEFAULT_HEARTBEAT_BUSY_MS = 300_000
 const MAX_OUTSTANDING_PINGS = 8
+
+// Event types that only exist while a turn (or a delegated child turn) is in
+// flight; the last one seen marks `lastBusyAt` for the heartbeat busy window.
+const BUSY_EVENT_TYPES = new Set<string>([
+  'message.start',
+  'message.delta',
+  'message.interim',
+  'reasoning.delta',
+  'thinking.delta',
+  'tool.start',
+  'tool.generating',
+  'tool.complete',
+  'status.update',
+  'session.usage',
+  'todo.updated',
+  'moa.aggregating',
+  'moa.phase',
+  'moa.progress',
+  'subagent.start',
+  'subagent.progress',
+  'subagent.thinking',
+  'subagent.tool',
+  'subagent.complete',
+  'subagent.spawn_requested'
+])
 
 // Hoisted decoder: attach mode can drive high-frequency binary frames (tool
 // deltas, reasoning streams) and a fresh TextDecoder per message is avoidable
@@ -182,6 +216,7 @@ export class JsonRpcRequestChannel {
   private heartbeatSequence = 0
   private readonly outstandingPings = new Set<string>()
   private lastLivenessAt = 0
+  private lastBusyAt = 0
   private readonly requestHandlers: ServerRequestHandler[] = []
   private readonly options: Required<
     Omit<JsonRpcRequestChannelOptions, 'onEvent' | 'onHeartbeatFailure' | 'onRequestHandlerError' | 'onUnhandledRequest'>
@@ -191,6 +226,7 @@ export class JsonRpcRequestChannel {
   constructor(options: JsonRpcRequestChannelOptions = {}) {
     this.options = {
       createRequestId: options.createRequestId ?? ((nextId: number) => `${options.requestIdPrefix ?? 'r'}${nextId}`),
+      heartbeatBusyMs: options.heartbeatBusyMs ?? DEFAULT_HEARTBEAT_BUSY_MS,
       heartbeatDeadlineMs: options.heartbeatDeadlineMs ?? DEFAULT_HEARTBEAT_DEADLINE_MS,
       heartbeatIntervalMs: options.heartbeatIntervalMs ?? DEFAULT_HEARTBEAT_INTERVAL_MS,
       heartbeatLiveness: options.heartbeatLiveness ?? 'response',
@@ -217,6 +253,7 @@ export class JsonRpcRequestChannel {
     this.stopHeartbeat()
     this.transport = transport
     this.lastLivenessAt = Date.now()
+    this.lastBusyAt = 0
   }
 
   /** Drop the transport and fail every in-flight call with `error`. */
@@ -431,6 +468,8 @@ export class JsonRpcRequestChannel {
     }
 
     if (isServerRequestFrame(frame)) {
+      // The backend asking a question is mid-turn by definition.
+      this.lastBusyAt = Date.now()
       const params = frame.params && typeof frame.params === 'object' ? (frame.params as ServerRequestParams) : {}
       this.deliverRequest(frame.id, frame.method, params)
 
@@ -468,6 +507,10 @@ export class JsonRpcRequestChannel {
     }
 
     if (frame.method === 'event' && frame.params && typeof (frame.params as GatewayEvent).type === 'string') {
+      if (BUSY_EVENT_TYPES.has((frame.params as GatewayEvent).type)) {
+        this.lastBusyAt = Date.now()
+      }
+
       if ((frame.params as GatewayEvent).type === 'gateway.ready') {
         this.advertiseCapabilities()
       }
@@ -499,6 +542,7 @@ export class JsonRpcRequestChannel {
   startHeartbeat(): void {
     this.stopHeartbeat()
     this.lastLivenessAt = Date.now()
+    this.lastBusyAt = 0
 
     const transport = this.transport
 
@@ -511,10 +555,21 @@ export class JsonRpcRequestChannel {
         return
       }
 
-      if (Date.now() - this.lastLivenessAt >= this.options.heartbeatDeadlineMs) {
-        this.failHeartbeat(new Error('WebSocket heartbeat acknowledgement timed out'))
+      const now = Date.now()
 
-        return
+      if (now - this.lastLivenessAt >= this.options.heartbeatDeadlineMs) {
+        // 'any-inbound' grace: a recent turn-scoped frame means the backend is
+        // busy but silent (long compaction on a starved loop); the deadline
+        // slides to the busy window. 'response' mode keeps its strict
+        // contract — streamed frames never counted as liveness there.
+        const busyAlive =
+          this.options.heartbeatLiveness === 'any-inbound' && now - this.lastBusyAt < this.options.heartbeatBusyMs
+
+        if (!busyAlive) {
+          this.failHeartbeat(new Error('WebSocket heartbeat acknowledgement timed out'))
+
+          return
+        }
       }
 
       const id = `heartbeat-${++this.heartbeatSequence}`

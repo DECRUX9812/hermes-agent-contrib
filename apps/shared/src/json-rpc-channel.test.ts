@@ -88,6 +88,9 @@ describe('JsonRpcRequestChannel', () => {
       const failures: string[] = []
 
       const channel = new JsonRpcRequestChannel({
+        // status.update is a busy signal; pinning the busy window to the
+        // deadline keeps this test about plain silence, not the busy grace.
+        heartbeatBusyMs: 300,
         heartbeatDeadlineMs: 300,
         heartbeatIntervalMs: 100,
         heartbeatLiveness: 'any-inbound',
@@ -113,6 +116,49 @@ describe('JsonRpcRequestChannel', () => {
       const pings = sent.length
       await vi.advanceTimersByTimeAsync(500)
       expect(sent.length).toBe(pings)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // #108325: a turn-scoped frame (status.update / tool / delta traffic) means
+  // the backend is mid-turn. When the loop then goes quiet for a long
+  // compaction the transport must survive past the fixed deadline inside the
+  // busy window — and still die once even the busy window goes silent.
+  it("'any-inbound' liveness: a busy signal extends the deadline inside its window; true silence still fails", async () => {
+    vi.useFakeTimers()
+
+    try {
+      const failures: string[] = []
+
+      const channel = new JsonRpcRequestChannel({
+        heartbeatBusyMs: 900,
+        heartbeatDeadlineMs: 300,
+        heartbeatIntervalMs: 100,
+        heartbeatLiveness: 'any-inbound',
+        onHeartbeatFailure: e => void failures.push(e.message)
+      })
+
+      const { transport } = spyTransport()
+
+      channel.attach(transport)
+      channel.startHeartbeat()
+
+      channel.handleFrame(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'event',
+          params: { payload: { kind: 'compacting', text: 'Compacting…' }, type: 'status.update' }
+        })
+      )
+
+      // Past the fixed 300ms deadline with the backend busy-but-silent: alive.
+      await vi.advanceTimersByTimeAsync(400)
+      expect(failures).toEqual([])
+
+      // Past the 900ms busy window with nothing at all: genuinely dead.
+      await vi.advanceTimersByTimeAsync(600)
+      expect(failures).toEqual(['WebSocket heartbeat acknowledgement timed out'])
     } finally {
       vi.useRealTimers()
     }
