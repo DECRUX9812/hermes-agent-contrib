@@ -8013,11 +8013,12 @@ def test_run_prompt_submit_prefers_origin_ui_session_id(monkeypatch, tmp_path):
 
 
 
-    """session.create must NOT eagerly write a DB row.
+    """session.create writes ONE hidden draft placeholder row, never a visible litter row.
 
-    Every TUI/desktop launch opens a session here just to paint the composer;
-    eagerly creating a row left an empty "Untitled" session behind for every
-    launch the user never typed into. The row is created lazily on first prompt.
+    Every TUI/desktop launch opens a session here just to paint the composer; a
+    visible eager row left an empty "Untitled" session behind for every launch
+    the user never typed into. #96793 persists a hidden placeholder so a restart
+    before the first prompt no longer orphans the id; first prompt adopts it.
     """
     created = []
 
@@ -8039,7 +8040,7 @@ def test_run_prompt_submit_prefers_origin_ui_session_id(monkeypatch, tmp_path):
     sid = resp["result"]["session_id"]
     try:
         assert resp["result"]["stored_session_id"]
-        assert created == [], "session.create should not persist an empty DB row"
+        assert len(created) == 1, "session.create persists exactly one draft placeholder row"
     finally:
         server._sessions.pop(sid, None)
 
@@ -16421,9 +16422,10 @@ def test_session_create_seed_disk_full_keeps_row_for_retry(monkeypatch):
     server._sessions.pop(resp["result"]["stored_session_id"], None)
 
 
-def test_session_create_without_parent_still_defers_row(monkeypatch):
-    """Plain drafts keep the lazy-row contract: no parent + no explicit branch
-    intent means no eager persistence (the original draft-hygiene invariant)."""
+def test_session_create_without_parent_persists_one_draft_row(monkeypatch):
+    """Plain drafts persist exactly one hidden placeholder row (#96793): a restart
+    before the first prompt must not orphan the id, and prompt.submit's
+    INSERT-OR-IGNORE adopts it instead of inserting a second row."""
 
     class _FakeAgent:
         def __init__(self):
@@ -16454,7 +16456,7 @@ def test_session_create_without_parent_still_defers_row(monkeypatch):
     sid = resp["result"]["session_id"]
     server._sessions[sid]["agent_ready"].wait(timeout=2.0)
 
-    assert calls["create"] == 0, "plain drafts must not persist eagerly"
+    assert calls["create"] == 1, "plain drafts persist exactly one hidden draft row"
 
     server._sessions.pop(sid, None)
 
