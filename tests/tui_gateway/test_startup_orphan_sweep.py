@@ -157,6 +157,24 @@ class TestSweepOrphanedSessionRows:
         assert after["end_reason"] == "ws_orphan_reap"
         assert after["ended_at"] == before["ended_at"]
 
+    def test_spares_pinned_orphan_row(self, monkeypatch, tmp_path):
+        """A restart sweep must not close a user-pinned row — pinned is a durable
+        keep flag, same as the auto-prune path (``exclude_pinned=True``)."""
+        db = SessionDB(tmp_path / "state.db")
+        stale = time.time() - 8 * 3600
+        _seed_session(db, "pinned-tui", source="tui", last_active=stale)
+        _seed_session(db, "unpinned-tui", source="tui", last_active=stale)
+        db.set_session_pinned("pinned-tui", True)
+        monkeypatch.setattr(server, "_get_db", lambda: db)
+        monkeypatch.setattr(server, "_SESSION_TTL_S", float(IDLE_S))
+        monkeypatch.setattr(server, "_sessions", {})
+
+        assert server._sweep_orphaned_session_rows() == ["unpinned-tui"]
+        pinned_row = db.get_session("pinned-tui")
+        assert pinned_row["ended_at"] is None
+        assert pinned_row["end_reason"] is None
+        assert db.get_session("unpinned-tui")["end_reason"] == "startup_orphan_reap"
+
     def test_zero_ttl_skips_sweep(self, monkeypatch, tmp_path):
         db = SessionDB(tmp_path / "state.db")
         stale = time.time() - 8 * 3600
