@@ -115,5 +115,6 @@ export const introZhHant: Translations['intro'] = {
     '傳送問題、檔案或想法。我會遵循你設定的人格。',
     '把工作放在這裡。我會根據儲存庫的實際情況展開工作。',
     `給我背景資訊，我會以 ${label} 模式回答。`
-  ]
+  ],
+  recentSessions: '從上次繼續'
 }

@@ -4,7 +4,7 @@ import type { Translations } from './types'
 
 export const en: Translations = {
   // English editorial copy stays in the shipped JSONL; other locales override it.
-  intro: { stock: {}, custom: () => [] },
+  intro: { stock: {}, custom: () => [], recentSessions: 'Pick up where you left off' },
   connectors: {
     title: 'Connect your apps',
     connect: 'Connect',
@@ -641,6 +641,8 @@ export const en: Translations = {
       'nav.artifacts': 'Open artifacts',
       'nav.cron': 'Open scheduled jobs',
       'nav.agents': 'Open agents',
+      'nav.starmap': 'Open memory graph',
+      'nav.webhooks': 'Open webhooks',
       'session.new': 'New session',
       'session.newTab': 'New session tab',
       'session.newWindow': 'New window',
@@ -3643,10 +3645,6 @@ export const en: Translations = {
     markAllRead: 'Mark all as read'
   },
 
-  intro: {
-    recentSessions: 'Pick up where you left off'
-  },
-
   composer: {
     message: 'Message',
     wakingProfile: profile => `Waking up ${profile}…`,
@@ -4742,6 +4740,8 @@ export const en: Translations = {
     title: 'Interface mode',
     hint: 'Changes what is shown, not what Hermes can do.',
     sessionNote: 'Set by Simple mode. A change here lasts for this session; switch to Advanced to make it yours.',
+    simpleNotice: 'Simple mode — panes and extra tools are hidden.',
+    showAdvanced: 'Show Advanced',
     simple: {
       label: 'Simple',
       description: 'For talking to Hermes. Sidebar and chat; no terminal, file or diff panes.'
@@ -5424,6 +5424,10 @@ export const en: Translations = {
       'right-pane': {
         title: 'The working pane',
         text: 'Files, terminal, review and the in-app browser share the right side.'
+      },
+      'advanced-mode': {
+        title: 'More behind Advanced',
+        text: 'Panes, cron, capabilities and the statusbar rest in Advanced mode — Settings › Appearance › Window layout switches.'
       }
     }
   },

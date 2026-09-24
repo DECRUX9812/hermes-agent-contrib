@@ -218,7 +218,8 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       onSelect: () => {
         triggerHaptic('open')
         onOpenSettings()
-      }
+      },
+      tour: 'titlebar-settings'
     },
     {
       ...TITLEBAR_FIXED_TOOLS.layout,
@@ -239,7 +240,8 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         triggerHaptic('open')
         toggleLayoutEditMode()
       },
-      title: t.titlebar.layoutEditorTitle(formatModifierToken('mod'))
+      title: t.titlebar.layoutEditorTitle(formatModifierToken('mod')),
+      tour: 'titlebar-layout'
     },
     {
       ...TITLEBAR_FIXED_TOOLS.hud,

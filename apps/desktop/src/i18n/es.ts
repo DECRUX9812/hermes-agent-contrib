@@ -659,6 +659,8 @@ export const es = defineLocale({
       'nav.artifacts': 'Abrir artefactos',
       'nav.cron': 'Abrir tareas programadas',
       'nav.agents': 'Abrir agentes',
+      'nav.starmap': 'Abrir grafo de memoria',
+      'nav.webhooks': 'Abrir webhooks',
       'session.new': 'Nueva sesión',
       'session.newTab': 'Nueva pestaña de sesión',
       'session.newWindow': 'Nueva ventana',
@@ -5202,6 +5204,8 @@ export const es = defineLocale({
     hint: 'Cambia lo que se muestra, no lo que Hermes puede hacer.',
     sessionNote:
       'Definido por el modo Simple. Un cambio aquí dura esta sesión; cambia a Avanzado para que sea permanente.',
+    simpleNotice: 'Modo Simple — los paneles y las herramientas extra están ocultos.',
+    showAdvanced: 'Mostrar Avanzado',
     simple: {
       label: 'Simple',
       description: 'Para hablar con Hermes. Barra lateral y chat; sin paneles de terminal, archivos ni diferencias.'
@@ -5978,6 +5982,10 @@ export const es = defineLocale({
       'right-pane': {
         title: 'El panel de trabajo',
         text: 'Archivos, terminal, revisión y el navegador integrado comparten el lado derecho.'
+      },
+      'advanced-mode': {
+        title: 'Más detrás de Avanzado',
+        text: 'Los paneles, las tareas programadas, las capacidades y la barra de estado descansan en el modo Avanzado — Configuración › Apariencia › Ventana y diseño cambia de modo.'
       }
     }
   },

@@ -62,6 +62,7 @@ export interface Translations {
   intro: {
     stock: Record<string, string[]>
     custom: (label: string) => string[]
+    recentSessions: string
   }
   connectors: {
     title: string
@@ -3079,10 +3080,6 @@ export interface Translations {
     markAllRead: string
   }
 
-  intro: {
-    recentSessions: string
-  }
-
   composer: {
     message: string
     wakingProfile: (profile: string) => string
@@ -4014,6 +4011,10 @@ export interface Translations {
     title: string
     hint: string
     sessionNote: string
+    /** Toast shown right after the interface switches to Simple — where the
+     *  panes went plus the door back. */
+    simpleNotice: string
+    showAdvanced: string
     simple: { label: string; description: string }
     advanced: { label: string; description: string }
   }
