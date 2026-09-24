@@ -460,7 +460,7 @@ export default {
     ctx.register({
       id: 'agents-section',
       area: SIDEBAR_LIST_TOP_AREA,
-      data: { render: () => <AgentsSection /> }
+      data: { render: () => <AgentsSection />, searchable: true }
     })
     ctx.register({
       id: 'pane',
