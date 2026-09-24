@@ -4,7 +4,7 @@ import type { Translations } from './types'
 
 export const en: Translations = {
   // English editorial copy stays in the shipped JSONL; other locales override it.
-  intro: { stock: {}, custom: () => [] },
+  intro: { stock: {}, custom: () => [], recentSessions: 'Pick up where you left off' },
   connectors: {
     title: 'Connect your apps',
     connect: 'Connect',
@@ -3643,10 +3643,6 @@ export const en: Translations = {
     markAllRead: 'Mark all as read'
   },
 
-  intro: {
-    recentSessions: 'Pick up where you left off'
-  },
-
   composer: {
     message: 'Message',
     wakingProfile: profile => `Waking up ${profile}…`,
@@ -3675,6 +3671,7 @@ export const en: Translations = {
     openDirective: 'Open',
     queueMessage: 'Queue message',
     steer: 'Steer the current run',
+    steerTurn: 'Steer turn',
     stop: 'Stop',
     send: 'Send',
     speaking: 'Speaking',
@@ -3792,6 +3789,7 @@ export const en: Translations = {
       'composer.help': 'this quick help (delete to dismiss)',
       'composer.sendNewline': 'send · Shift+Enter for newline',
       'composer.sendQueued': 'send next queued turn',
+      'composer.modelPicker': 'model picker',
       'keybinds.openPanel': 'all keyboard shortcuts',
       'composer.cancel': 'close popover · cancel run',
       'composer.history': 'cycle popover / history'
@@ -3840,6 +3838,7 @@ export const en: Translations = {
     url: 'URL…',
     promptSnippets: 'Prompt snippets…',
     scheduleJob: 'Run on a schedule…',
+    slashCommands: 'Slash commands…',
     tipPre: 'Tip: type ',
     tipPost: ' to reference files inline.',
     snippetsTitle: 'Prompt snippets',
@@ -5358,6 +5357,7 @@ export const en: Translations = {
     imageAttach: 'Image attach',
     imageWriteFailed: 'Failed to write image to disk.',
     imageAttachFailed: 'Image attach failed',
+    pastedAsFile: 'Pasted as file',
     pastedContent: 'Pasted content',
     pasteAttachFailed: 'Could not attach pasted text',
     attachImages: 'Attach images',

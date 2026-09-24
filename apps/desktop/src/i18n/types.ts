@@ -62,6 +62,7 @@ export interface Translations {
   intro: {
     stock: Record<string, string[]>
     custom: (label: string) => string[]
+    recentSessions: string
   }
   connectors: {
     title: string
@@ -3079,10 +3080,6 @@ export interface Translations {
     markAllRead: string
   }
 
-  intro: {
-    recentSessions: string
-  }
-
   composer: {
     message: string
     wakingProfile: (profile: string) => string
@@ -3095,6 +3092,7 @@ export interface Translations {
     openDirective: string
     queueMessage: string
     steer: string
+    steerTurn: string
     stop: string
     send: string
     speaking: string
@@ -3178,6 +3176,7 @@ export interface Translations {
     url: string
     promptSnippets: string
     scheduleJob: string
+    slashCommands: string
     tipPre: string
     tipPost: string
     snippetsTitle: string
@@ -4448,6 +4447,7 @@ export interface Translations {
     imageAttach: string
     imageWriteFailed: string
     imageAttachFailed: string
+    pastedAsFile: string
     pastedContent: string
     pasteAttachFailed: string
     attachImages: string

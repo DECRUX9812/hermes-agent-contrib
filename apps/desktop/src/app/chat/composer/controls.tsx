@@ -82,6 +82,7 @@ export function ComposerControls({
   // Steer is just send: a payload keeps the Send affordance mid-turn. Stop
   // only when the composer is empty and a turn is running.
   const showStop = busy && !hasComposerPayload
+  const sendLabel = showStop ? c.stop : busyAction === 'steer' ? c.steerTurn : c.send
   const showQueueButton = busyAction !== 'stop' && hasComposerPayload
   // The HUD is a Spotlight bar a few hundred pixels wide, so the four separate
   // voice toggles fold into one menu there and leave the row to the input. A
@@ -145,18 +146,9 @@ export function ComposerControls({
       {showVoicePrimary ? (
         <StartVoiceButton disabled={disabled} label={c.startVoice} onStart={conversation.onStart} />
       ) : (
-        <Tip
-          label={
-            showStop ? (
-              <TipKeybindLabel actionId="composer.send" text={c.stop} />
-            ) : (
-              <TipKeybindLabel actionId="composer.send" text={c.send} />
-            )
-          }
-          placement="control"
-        >
+        <Tip label={<TipKeybindLabel actionId="composer.send" text={sendLabel} />} placement="control">
           <Button
-            aria-label={showStop ? c.stop : c.send}
+            aria-label={sendLabel}
             className={PRIMARY_ICON_BTN}
             disabled={disabled || !canSubmit}
             type="submit"
