@@ -985,6 +985,47 @@ def _xai_reasoning_only_response(reasoning_text):
         ],
     )
 
+
+def _xai_tool_call_response_with_reasoning_answer(reasoning_text):
+    """grok turn that emits a real ``function_call`` AND parks its reply text
+    inside the reasoning item after ``<response>``."""
+    return SimpleNamespace(
+        status="completed",
+        output=[
+            SimpleNamespace(
+                type="reasoning",
+                id="rs_1",
+                encrypted_content=None,
+                summary=[SimpleNamespace(text=reasoning_text)],
+            ),
+            SimpleNamespace(
+                type="function_call",
+                status="completed",
+                id="fc_1",
+                call_id="call_1",
+                name="terminal",
+                arguments='{"command": "ls"}',
+            ),
+        ],
+    )
+
+
+def test_xai_tool_call_turn_salvages_reasoning_response_delimited_text():
+    """Regression: the ``<response>`` salvage was gated on ``not tool_calls``,
+    so a grok tool-call turn kept its reply text only in reasoning — dropped
+    whenever reasoning display is off. The delimited tail must be promoted
+    into assistant content alongside the tool calls."""
+    response = _xai_tool_call_response_with_reasoning_answer(
+        "I should list the directory first.\n<response>answer</response>"
+    )
+    assistant_message, finish_reason = _normalize_codex_response(
+        response, issuer_kind="xai_responses"
+    )
+    assert finish_reason == "tool_calls"
+    assert assistant_message.tool_calls
+    assert "answer" in assistant_message.content
+    assert assistant_message.reasoning == "I should list the directory first."
+
 def test_codex_preflight_passes_text_verbosity_through():
     """The preflight whitelist must let the Responses ``text`` block reach the wire (#20203).
 
