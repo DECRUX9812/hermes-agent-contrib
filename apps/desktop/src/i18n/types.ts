@@ -62,6 +62,7 @@ export interface Translations {
   intro: {
     stock: Record<string, string[]>
     custom: (label: string) => string[]
+    recentSessions: string
   }
   connectors: {
     title: string
@@ -3077,10 +3078,6 @@ export interface Translations {
       done: string
     }
     markAllRead: string
-  }
-
-  intro: {
-    recentSessions: string
   }
 
   composer: {

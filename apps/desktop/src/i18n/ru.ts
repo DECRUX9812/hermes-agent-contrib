@@ -2617,7 +2617,8 @@ export const ru = defineLocale({
       capabilities: 'Возможности',
       messaging: 'Сообщения',
       artifacts: 'Артефакты',
-      cron: 'Запланированные задачи'
+      cron: 'Запланированные задачи',
+      browse: 'Обзор'
     },
     interfaceMode: {
       label: 'Интерфейс',

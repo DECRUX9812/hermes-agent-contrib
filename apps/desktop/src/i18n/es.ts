@@ -3916,7 +3916,8 @@ export const es = defineLocale({
       capabilities: 'Capacidades',
       messaging: 'Mensajería',
       artifacts: 'Artefactos',
-      cron: 'Tareas programadas'
+      cron: 'Tareas programadas',
+      browse: 'Explorar'
     },
     searchAria: 'Buscar sesiones',
     searchPlaceholder: 'Buscar sesiones…',
