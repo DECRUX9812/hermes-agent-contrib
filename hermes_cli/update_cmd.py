@@ -1107,6 +1107,18 @@ def _begin_update_receipt_and_plan(args):
             _profiles = ", ".join(sorted({r.profile for r in _pre_update_plan.runtimes}))
             print(f"→ Fleet: {_n} running service(s) across profiles: {_profiles}")
 
+    # Active-work gate (#53480): the restart-per-kind phase restarts/SIGTERMs every planned
+    # runtime; a gateway reporting in-flight turns (active_agents > 0) would lose that work.
+    # Refuse before any mutation; --force overrides for operators who accept the interruption.
+    if _pre_update_plan is not None and not getattr(args, "force", False):
+        busy = [r for r in _pre_update_plan.runtimes if getattr(r, "active_agents", 0) > 0]
+        if busy:
+            print("✗ Update refused: running Hermes services have work in flight:")
+            for r in busy:
+                print(f"    • {r.kind} [{r.profile}] pid {r.pid} — {r.active_agents} active agent(s)")
+            print("  Wait for the turn(s) to finish, or override with `hermes update --force`.")
+            sys.exit(2)
+
     # Windows: another hermes.exe holding the venv shim means WinError 32 spam and a
     # deferred-rename leftover or silent ZIP fallback. Positively identified gateways are
     # paused/restarted by the update instead; anything else still aborts.

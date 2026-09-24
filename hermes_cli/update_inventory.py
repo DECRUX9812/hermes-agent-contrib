@@ -28,6 +28,7 @@ class RuntimeRecord:
     code_sha: Optional[str] = None       # stamped running-code sha
     # See #91283.
     code_version: Optional[str] = None
+    active_agents: int = 0        # in-flight turns/cron the restart would kill (#53480)
     restart_via: str = ""         # mechanism id, see _RESTART_MECHANISMS
     detail: dict = field(default_factory=dict)
 
@@ -180,6 +181,30 @@ def _supervisor_classifier() -> Callable[[int], str]:
     return lambda pid: _detect_supervisor_for_pid(pid, service_pids, windows_service_pids)
 
 
+def _active_agents_probe(home, record: Optional[dict]) -> int:
+    """Live-work count for one gateway home — the in-flight-turn signal the restart phase needs.
+
+    The gateway re-stamps ``active_agents`` into ``gateway_state.json`` on every change
+    (``_persist_active_agents``) and answers it live over the control socket's ``status`` verb.
+    Live socket first (authoritative for THIS instant), then the already-read record, then the
+    state file. Never raises; 0 = no known active work. See #53480.
+    """
+    from gateway.status import parse_active_agents, read_runtime_status
+
+    count = 0
+    with suppress(Exception):
+        from gateway.control_socket import query_gateway_control
+
+        count = parse_active_agents((query_gateway_control(home, "status") or {}).get("active_agents"))
+    if not count:
+        count = parse_active_agents((record or {}).get("active_agents"))
+    if not count:
+        with suppress(Exception):
+            count = parse_active_agents(
+                (read_runtime_status(home / "gateway_state.json") or {}).get("active_agents"))
+    return count
+
+
 def _collect_gateway_runtimes(plan: UpdatePlan, profile_homes: list, seen: set[int]) -> None:
     """Per-profile gateways: control-socket identity first (declared by the process itself, including
     supervisor provenance — no argv/PID inference), ``gateway_state.json`` fallback, then PID-file
@@ -208,14 +233,18 @@ def _collect_gateway_runtimes(plan: UpdatePlan, profile_homes: list, seen: set[i
                 record = read_runtime_status(home / "gateway_state.json") or {}
                 seen.add(pid)
                 sup = supervisor(pid)
-            plan.runtimes.append(_runtime("gateway", profile, pid, sup, record.get("code_sha"), record.get("code_version")))
+            plan.runtimes.append(_runtime(
+                "gateway", profile, pid, sup, record.get("code_sha"), record.get("code_version"),
+                active_agents=_active_agents_probe(home, record)))
     with _probe("PID-file gateway inventory"):
         from hermes_cli.gateway import find_profile_gateway_processes
 
         for proc in find_profile_gateway_processes():
             if proc.pid not in seen:
                 seen.add(proc.pid)
-                plan.runtimes.append(_runtime("gateway", proc.profile, proc.pid, supervisor(proc.pid)))
+                plan.runtimes.append(_runtime(
+                    "gateway", proc.profile, proc.pid, supervisor(proc.pid),
+                    active_agents=_active_agents_probe(proc.path, None)))
 
 
 def _loaded_backend_launchd_jobs() -> list:
@@ -324,7 +353,8 @@ def print_update_plan(plan: UpdatePlan) -> None:
     print(f"  Running services to restart ({len(plan.runtimes)}):")
     for runtime in plan.runtimes:
         sha = f" @ {runtime.code_sha[:8]}" if runtime.code_sha else ""
-        print(f"    • {runtime.kind} [{runtime.profile}] pid {runtime.pid} — {runtime.supervisor}{sha}")
+        busy = f" — BUSY: {runtime.active_agents} active agent(s)" if runtime.active_agents else ""
+        print(f"    • {runtime.kind} [{runtime.profile}] pid {runtime.pid} — {runtime.supervisor}{sha}{busy}")
         print(f"      restart: {describe_restart_mechanism(runtime.restart_via, runtime.profile)}")
 
 

@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -188,3 +189,57 @@ class TestReceiptIntegration:
 
         ur._current = None
         ui.record_plan_in_receipt(ui.collect_runtime_inventory())  # must not raise
+
+
+class TestActiveWorkGate:
+    """#53480: the update preflight must refuse to restart a runtime hosting in-flight turns.
+
+    The runtime-status probe (``active_agents``, re-stamped on every change by the gateway) is the
+    fleet-wide in-flight-turn signal. Before this gate the restart-per-kind phase could SIGTERM a
+    backend mid-turn."""
+
+    def _mark_busy(self, home: Path, count: int) -> None:
+        state_path = home / "gateway_state.json"
+        state = json.loads(state_path.read_text(encoding="utf-8"))
+        state["active_agents"] = count
+        state_path.write_text(json.dumps(state), encoding="utf-8")
+
+    def test_inventory_records_active_agents(self, fleet):
+        work_home = fleet / "home" / "profiles" / "work"
+        self._mark_busy(work_home, 2)
+        plan = ui.collect_runtime_inventory()
+        by_profile = {r.profile: r for r in plan.runtimes}
+        assert by_profile["work"].active_agents == 2
+        assert by_profile["default"].active_agents == 0
+
+    def test_preflight_refuses_busy_gateway(self, fleet, monkeypatch, capsys):
+        import hermes_cli.update_cmd as uc
+        import hermes_cli.update_receipt as ur
+
+        monkeypatch.setattr(ur, "begin_update_receipt", lambda: None)
+        work_home = fleet / "home" / "profiles" / "work"
+        self._mark_busy(work_home, 1)
+        with pytest.raises(SystemExit) as exc:
+            uc._begin_update_receipt_and_plan(SimpleNamespace(force=False))
+        assert exc.value.code != 0
+        out = capsys.readouterr().out
+        assert "work" in out          # names the busy runtime's profile
+        assert "--force" in out       # and the override
+
+    def test_preflight_force_overrides_busy_gateway(self, fleet, monkeypatch):
+        import hermes_cli.update_cmd as uc
+        import hermes_cli.update_receipt as ur
+
+        monkeypatch.setattr(ur, "begin_update_receipt", lambda: None)
+        work_home = fleet / "home" / "profiles" / "work"
+        self._mark_busy(work_home, 1)
+        plan = uc._begin_update_receipt_and_plan(SimpleNamespace(force=True))
+        assert plan is not None
+
+    def test_preflight_passes_idle_fleet(self, fleet, monkeypatch):
+        import hermes_cli.update_cmd as uc
+        import hermes_cli.update_receipt as ur
+
+        monkeypatch.setattr(ur, "begin_update_receipt", lambda: None)
+        plan = uc._begin_update_receipt_and_plan(SimpleNamespace(force=False))
+        assert plan is not None and len(plan.runtimes) == 2
