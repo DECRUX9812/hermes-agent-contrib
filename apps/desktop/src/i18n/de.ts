@@ -5567,6 +5567,8 @@ export const deOverrides = {
       preparingAudio: 'Bereitet Audio vor...',
       stopReading: 'Vorlesen stoppen',
       readAloud: 'Vorlesen',
+      copyFullResponse: 'Vollständige Antwort kopieren',
+      readAloudFullResponseHint: 'Umschalt-Klick: vollständige Antwort vorlesen',
       editMessage: 'Nachricht bearbeiten',
       expandMessage: 'Nachricht aufklappen',
       scrollToBottom: 'Nach unten scrollen',
