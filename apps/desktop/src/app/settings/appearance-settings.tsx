@@ -476,16 +476,16 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   // backend) for anything not already installed.
   const needle = normalize(query)
 
-  const filteredThemes = availableThemes
-    .filter(
-      theme =>
-        !needle ||
-        theme.label.toLowerCase().includes(needle) ||
-        theme.name.toLowerCase().includes(needle) ||
-        theme.description.toLowerCase().includes(needle)
-    )
-    // Active theme first; stable sort keeps the rest in their original order.
-    .sort((a, b) => Number(b.name === themeName) - Number(a.name === themeName))
+  // Order stays stable as the active theme changes — picking a card must not
+  // move it out from under the pointer; the ring marks the active card in
+  // place.
+  const filteredThemes = availableThemes.filter(
+    theme =>
+      !needle ||
+      theme.label.toLowerCase().includes(needle) ||
+      theme.name.toLowerCase().includes(needle) ||
+      theme.description.toLowerCase().includes(needle)
+  )
 
   // Themes save per profile. Surface that only when the user actually has more
   // than one profile (single-profile installs never see the distinction).
