@@ -1171,7 +1171,7 @@ export const deOverrides = {
         'Lassen Sie sich von Hermes durch die App führen – der Bildschirm wird abgedunkelt und jeder Schritt hervorgehoben.',
       composerPopoutTitle: 'Schwebender Composer',
       composerPopoutDesc:
-        'Erlaubt, den Composer aus seiner Ablage herauszuziehen. Schalten Sie das aus, um ihn unten fixiert zu halten.',
+        'Erlaubt, den Composer aus seiner Ablage herauszuziehen. Wenn aus, bleibt er unten angedockt.',
       vibeHeartsTitle: 'Vibe-Herzen',
       vibeHeartsDesc:
         'Schwebende Herzen, wenn Sie danke, ilu, guter Bot sagen oder ein Herz senden. Unabhängig von den Nachrichten-Reaktionen oben.',

@@ -671,7 +671,8 @@ export const ja = defineLocale({
       toursDesc:
         '各ステップを強調しながら、Hermes がアプリを案内します。利用開始から30日後に自動でオフになりますが、再びオンにできます。',
       composerPopoutTitle: 'フローティング入力欄',
-      composerPopoutDesc: '入力欄をドックからドラッグして外せるようにします。オフにすると画面下部に固定されます。',
+      composerPopoutDesc:
+        '入力欄をドックからドラッグして外せるようにします。オフの間は画面下部にドッキングされたままです。',
       vibeHeartsTitle: 'バイブハート',
       vibeHeartsDesc:
         'ありがとう・愛してる・good bot・ハート絵文字のときに浮かぶハート。上のメッセージリアクションとは別です。',
