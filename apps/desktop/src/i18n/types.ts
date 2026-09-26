@@ -2252,6 +2252,10 @@ export interface Translations {
     importSuccess: (nodes: number) => string
     importedBadge: string
     resetToMine: string
+    live: string
+    liveHint: string
+    liveOff: string
+    openSession: string
   }
   agents: {
     extendedTranscript: string

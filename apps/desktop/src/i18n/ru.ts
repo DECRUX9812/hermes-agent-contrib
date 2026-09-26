@@ -1827,7 +1827,11 @@ export const ru = defineLocale({
     importEmpty: 'Вставьте код карты для загрузки.',
     importSuccess: nodes => `Загружена карта с ${nodes} ${RU_NOUN(nodes, 'узлом', 'узла', 'узлов')}.`,
     importedBadge: 'импортированная карта',
-    resetToMine: 'Вернуться к моей карте'
+    resetToMine: 'Вернуться к моей карте',
+    live: 'Live',
+    liveHint: 'Следить вживую: навыки пульсируют, пока сессия их использует, и вспыхивают при завершении',
+    liveOff: 'Остановить live-обновления',
+    openSession: 'Открыть сессию'
   },
   agents: {
     extendedTranscript: 'Подробный журнал',

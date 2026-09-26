@@ -2945,7 +2945,11 @@ export const deOverrides = {
     importEmpty: 'Fügen Sie einen Map-Code ein, um ihn zu laden.',
     importSuccess: nodes => `Eine Map mit ${nodes} ${nodes === 1 ? 'Knoten' : 'Knoten'} geladen.`,
     importedBadge: 'importierte Map',
-    resetToMine: 'Zurück zu meiner Map'
+    resetToMine: 'Zurück zu meiner Map',
+    live: 'Live',
+    liveHint: 'Live ansehen: Skills pulsieren, solange eine Session sie nutzt, und blitzen beim Abschluss',
+    liveOff: 'Live-Updates stoppen',
+    openSession: 'Session öffnen'
   },
   agents: {
     extendedTranscript: 'Extended Transcript',

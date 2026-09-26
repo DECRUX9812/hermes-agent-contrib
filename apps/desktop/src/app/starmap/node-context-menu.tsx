@@ -1,4 +1,6 @@
+import { useStore } from '@nanostores/react'
 import { useRef, useState } from 'react'
+import { useNavigate } from 'react-router'
 
 import { ArchiveSkillConfirmDialog, fireOptimistic } from '@/app/learning/archive-skill-confirm-dialog'
 import { CodeEditor } from '@/components/chat/code-editor'
@@ -13,10 +15,13 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { deleteLearningNode, editLearningNode, getLearningNode } from '@/hermes'
+import { useI18n } from '@/i18n'
 import { notifyError } from '@/store/notifications'
 import { evictStarmapNode, loadStarmapGraph } from '@/store/starmap'
+import { $starmapLiveSessions } from '@/store/starmap-live'
 
 import { useOnProfileSwitch } from '../hooks/use-on-profile-switch'
+import { openSessionFromPicker } from '../open-session'
 
 export interface NodeMenuTarget {
   id: string
@@ -40,11 +45,18 @@ interface EditState {
 
 /** Right-click actions for a star-map node: edit (modal) or delete (confirm). */
 export function NodeContextMenu({ onClose, onNodeRemoved, target }: NodeContextMenuProps) {
+  const { t } = useI18n()
+  const navigate = useNavigate()
   const [editing, setEditing] = useState<EditState | null>(null)
   const [deleting, setDeleting] = useState<Omit<NodeMenuTarget, 'x' | 'y'> | null>(null)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<null | string>(null)
+
+  // Click-through: a skill node opens the session currently bound to it —
+  // the same live-binding map the pulse overlay reads (skill id = skill name).
+  const liveSessions = useStore($starmapLiveSessions)
+  const sessionRef = target?.kind === 'skill' ? liveSessions.get(target.id) : undefined
 
   // Bumped on profile switch so an in-flight openEdit fetch from profile A can't
   // reopen the editor with A's node content after switching to B.
@@ -128,6 +140,16 @@ export function NodeContextMenu({ onClose, onNodeRemoved, target }: NodeContextM
             <DropdownMenuLabel className="truncate text-[0.68rem] font-normal text-muted-foreground">
               {target.label}
             </DropdownMenuLabel>
+            {sessionRef && (
+              <DropdownMenuItem
+                onSelect={() => {
+                  onClose()
+                  openSessionFromPicker(sessionRef.storedId, navigate, 'stack')
+                }}
+              >
+                {t.starmap.openSession}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               disabled={loading}
               onSelect={e => {

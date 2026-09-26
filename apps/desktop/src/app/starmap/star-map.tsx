@@ -1,15 +1,30 @@
+import { useStore } from '@nanostores/react'
 import { type Simulation } from 'd3-force'
 import { atom, type WritableAtom } from 'nanostores'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
+import { Tip } from '@/components/ui/tooltip'
 import { useThemeEpoch } from '@/hooks/use-theme-epoch'
+import { useI18n } from '@/i18n'
+import { Activity } from '@/lib/icons'
 import { createRendererLoopPauseController } from '@/lib/renderer-loop-pause'
 import { createDoubleTapDetector, isSmartZoomWheel } from '@/lib/trackpad-gestures'
+import { cn } from '@/lib/utils'
+import {
+  $starmapLive,
+  $starmapLiveSessions,
+  $starmapSettles,
+  diffStarmapGraphs,
+  startStarmapLive,
+  stopStarmapLive
+} from '@/store/starmap-live'
 import type { StarmapGraph } from '@/types/hermes'
 
 import { computePalette, memoryInkFor, resolveRgb, rgba } from './color'
 import { RING_OUTER, TILT, ZOOM_MAX, ZOOM_MIN } from './constants'
 import { clamp, distToSegmentSq, fitScale, fitViewport, nodeRadius } from './geometry'
+import { drawLiveOverlay } from './live'
 import { NodeContextMenu, type NodeMenuTarget } from './node-context-menu'
 import { shouldIgnorePlaybackHotkey } from './playback-hotkey'
 import { drawScene, drawScramble } from './render'
@@ -108,6 +123,7 @@ export function StarMap({
   onImport?: (graph: StarmapGraph) => void
   onResetMap?: () => void
 }) {
+  const { t } = useI18n()
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const wrapRef = useRef<HTMLDivElement | null>(null)
 
@@ -158,6 +174,19 @@ export function StarMap({
   const [selectedId, setSelectedId] = useState<null | string>(null)
   const [menuTarget, setMenuTarget] = useState<NodeMenuTarget | null>(null)
   const [size, setSize] = useState({ h: 0, w: 0 })
+
+  // Live mode: the toggle is React state (drives the button's pressed look);
+  // everything else lives in refs/atoms the frame loop reads directly — the
+  // pulse overlay is part of the per-frame composite, so a session flipping
+  // busy never dirties the cached static scene.
+  const live = useStore($starmapLive)
+  const liveRef = useRef(live)
+  const prevGraphRef = useRef<null | StarmapGraph>(null)
+  // Set by the rebuild effect when a graph change was a live delta — the
+  // scrubber reset below reads it to keep the user's reveal position.
+  const liveRefreshRef = useRef(false)
+  const settleSeenRef = useRef(new Map<string, number>())
+  const settleFxRef = useRef(new Map<string, number>())
   // Increments on every theme repaint (shared hook) so the legend swatch and the
   // canvas palette re-resolve against the freshly-painted CSS custom properties.
   const themeEpoch = useThemeEpoch()
@@ -274,6 +303,11 @@ export function StarMap({
     return () => ro.disconnect()
   }, [])
 
+  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
+  useEffect(() => {
+    liveRef.current = live
+  }, [live])
+
   // (Re)build the radial simulation whenever the graph or size changes.
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
@@ -283,7 +317,25 @@ export function StarMap({
       return
     }
 
-    const { byId, links, nodes, rings, sim } = buildSimulation(graph, invalidate)
+    // A live poll delivers graph deltas: seed surviving nodes at their previous
+    // positions so the map doesn't re-scatter every refresh, and ease in ONLY
+    // the new nodes/links instead of replaying the whole build.
+    const priorGraph = liveRef.current ? prevGraphRef.current : null
+    const delta = diffStarmapGraphs(priorGraph, graph)
+
+    const { byId, links, nodes, rings, sim } = buildSimulation(
+      graph,
+      invalidate,
+      delta.structural ? undefined : byIdRef.current
+    )
+
+    // Ring buckets can shift even when the node diff looks clean (a new date
+    // bucket re-indexes every ring) — treat that as structural too.
+    const structural =
+      delta.structural ||
+      rings.length !== ringsRef.current.length ||
+      rings.some((rg, i) => rg.label !== ringsRef.current[i]?.label || rg.r !== ringsRef.current[i]?.r)
+
     simRef.current = sim
     nodesRef.current = nodes
     linksRef.current = links
@@ -291,10 +343,28 @@ export function StarMap({
     ringsRef.current = rings
     // Markers fire when a ring spawns: ringSeen(i) flips at rings[i-1].ratio.
     setRingStops(rings.map((rg, i) => (rg.label != null ? (rings[i - 1]?.ratio ?? 0) : -1)).filter(v => v >= 0))
-    resetFades()
-    // Fit the actual disk (outermost ring), so a 3-ring map frames like a 12-ring
-    // one — count changes the disk size, not the framing.
-    viewportRef.current = fitViewport(size.w, size.h, rings[rings.length - 1]?.r ?? RING_OUTER)
+
+    if (structural) {
+      resetFades()
+      // Fit the actual disk (outermost ring), so a 3-ring map frames like a
+      // 12-ring one — count changes the disk size, not the framing.
+      viewportRef.current = fitViewport(size.w, size.h, rings[rings.length - 1]?.r ?? RING_OUTER)
+    } else {
+      // Delta birth: seed the fresh elements at 0 so their fade buckets ease
+      // them in (a missing bucket snaps instantly). Rings unchanged here — a
+      // ring shift was already caught by `structural`.
+      for (const id of delta.nodeIds) {
+        fadeRef.current.appear.set(id, 0)
+        fadeRef.current.nodes.set(id, 0)
+      }
+
+      for (const key of delta.linkKeys) {
+        fadeRef.current.links.set(key, 0)
+      }
+    }
+
+    liveRefreshRef.current = !structural && priorGraph !== null
+    prevGraphRef.current = graph
     invalidate()
 
     if (selectedIdRef.current && !byId.has(selectedIdRef.current)) {
@@ -330,9 +400,14 @@ export function StarMap({
     invalidate()
   }, [invalidate, selectedId])
 
-  // A fresh graph resets the scrubber to "fully built" (the idle default).
+  // A fresh graph resets the scrubber to "fully built" (the idle default) —
+  // but a live delta keeps the user's reveal position and playing state.
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
+    if (liveRefreshRef.current) {
+      return
+    }
+
     camRadiusRef.current = RING_OUTER
     snapMotionRef.current = false
     setRevealValue(1)
@@ -612,6 +687,25 @@ export function StarMap({
       } else {
         ctx.drawImage(staticCanvas, 0, 0)
         drawScramble({ ctx, dpr: dprRef.current, palette, rings: ringsRef.current, vp: viewportRef.current })
+      }
+
+      // Live overlay rides the composite pass — continuous pulses and settle
+      // flashes on top of the (cached) scene, never re-rendering it.
+      if (liveRef.current) {
+        drawLiveOverlay({
+          ctx,
+          dpr: dprRef.current,
+          fx: settleFxRef.current,
+          live: $starmapLiveSessions.get(),
+          nodes: nodesRef.current,
+          palette,
+          reveal: revealRef.current,
+          rings: ringsRef.current,
+          settleSeen: settleSeenRef.current,
+          settles: $starmapSettles.get(),
+          size: sizeRef.current,
+          vp: viewportRef.current
+        })
       }
     }
 
@@ -953,8 +1047,24 @@ export function StarMap({
         />
       </div>
 
-      {/* Share / import (WoW-talent-style code) — bottom-right, mirroring the legend. */}
-      <div className="pointer-events-auto absolute bottom-2 right-2 z-20 [-webkit-app-region:no-drag]">
+      {/* Share / import (WoW-talent-style code) + live toggle — bottom-right,
+          mirroring the legend. Live is hidden for imported maps: a pasted map
+          isn't this profile's sessions, so it has nothing live to show. */}
+      <div className="pointer-events-auto absolute bottom-2 right-2 z-20 flex items-center gap-1 [-webkit-app-region:no-drag]">
+        {!imported && (
+          <Tip label={live ? t.starmap.liveOff : t.starmap.liveHint}>
+            <Button
+              aria-label={t.starmap.live}
+              aria-pressed={live}
+              className={cn('text-muted-foreground hover:text-foreground', live && 'text-foreground')}
+              onClick={() => (live ? stopStarmapLive() : startStarmapLive())}
+              size="icon"
+              variant="ghost"
+            >
+              <Activity className={cn('size-3.5', live && 'animate-pulse text-(--theme-primary)')} />
+            </Button>
+          </Tip>
+        )}
         <ShareControls imported={imported} onImport={importCode} onResetMap={onResetMap} shareCode={shareCode} />
       </div>
 

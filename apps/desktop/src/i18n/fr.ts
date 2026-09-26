@@ -2955,7 +2955,11 @@ export const frOverrides = {
     importEmpty: 'Collez un code de carte pour le charger.',
     importSuccess: nodes => `Carte chargée avec ${nodes} ${nodes === 1 ? 'nœud' : 'nœuds'}.`,
     importedBadge: 'carte importée',
-    resetToMine: 'Retour à ma carte'
+    resetToMine: 'Retour à ma carte',
+    live: 'Live',
+    liveHint: "Suivre en direct : les skills pulsent tant qu'une session les utilise et flashent à la fin",
+    liveOff: 'Arrêter le direct',
+    openSession: 'Ouvrir la session'
   },
   agents: {
     extendedTranscript: 'Transcription étendue',

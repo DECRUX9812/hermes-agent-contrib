@@ -2462,7 +2462,11 @@ export const zh = defineLocale({
     importEmpty: '粘贴图谱代码以加载。',
     importSuccess: nodes => `已加载包含 ${nodes} 个节点的图谱。`,
     importedBadge: '导入的图谱',
-    resetToMine: '返回我的图谱'
+    resetToMine: '返回我的图谱',
+    live: '实时',
+    liveHint: '实时查看：技能在会话使用中会脉动，结束时闪烁',
+    liveOff: '停止实时更新',
+    openSession: '打开会话'
   },
   agents: {
     extendedTranscript: '扩展记录',
