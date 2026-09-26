@@ -3139,6 +3139,9 @@ export interface Translations {
       untitledChat: (id: string) => string
       messageCount: (count: number) => string
       todoProgress: string
+      prCiPassing: string
+      prCiFailing: string
+      prCiPending: string
       ageNow: string
       ageDay: string
       ageHour: string

@@ -603,7 +603,9 @@ async function reviewShipInfo(repoPath, ghBin) {
 const PR_QUERY_BRANCH_CHUNK = 50
 const PR_QUERY_BRANCH_CAP = 300
 
-const PR_NODE_FIELDS = 'number state isDraft isCrossRepository title url headRefName'
+const PR_NODE_FIELDS =
+  'number state isDraft isCrossRepository title url headRefName ' +
+  'commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }'
 
 function prQueryFor(owner, name, branches, numbers) {
   const fields = [
@@ -622,8 +624,34 @@ function prQueryFor(owner, name, branches, numbers) {
   return `query { repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) {\n${fields}\n} }`
 }
 
+// GitHub folds a commit's checks into one rollup state; we keep the three
+// buckets a row chip can show and leave the field absent when the head commit
+// has no checks at all.
+function prCheckState(pr) {
+  const rollup = pr?.commits?.nodes?.[0]?.commit?.statusCheckRollup?.state
+
+  switch (rollup) {
+    case 'SUCCESS':
+      return 'success'
+
+    case 'FAILURE':
+
+    case 'ERROR':
+      return 'failure'
+
+    case 'EXPECTED':
+
+    case 'PENDING':
+      return 'pending'
+
+    default:
+      return undefined
+  }
+}
+
 const prPayload = pr => ({
   branch: String(pr.headRefName),
+  ...(prCheckState(pr) ? { checks: prCheckState(pr) } : {}),
   draft: Boolean(pr.isDraft),
   number: Number(pr.number) || 0,
   state: String(pr.state || '').toLowerCase(),
