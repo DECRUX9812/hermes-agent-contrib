@@ -1419,6 +1419,7 @@ export interface Translations {
       sshPortDesc: string
       sshKeyTitle: string
       sshKeyDesc: string
+      sshKeyPlaceholder: string
       sshHermesPathTitle: string
       sshHermesPathDesc: string
       sshHermesPathPlaceholder: string
