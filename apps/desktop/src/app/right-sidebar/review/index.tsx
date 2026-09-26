@@ -12,7 +12,7 @@ import { useI18n } from '@/i18n'
 import { displayPath } from '@/lib/display-path'
 import { cn } from '@/lib/utils'
 import { $panesFlipped } from '@/store/layout'
-import { notifyError } from '@/store/notifications'
+import { notify, notifyError } from '@/store/notifications'
 import {
   $reviewDiff,
   $reviewDiffLoading,
@@ -32,6 +32,13 @@ import {
   toggleReviewTreeMode,
   unstageReviewFile
 } from '@/store/review'
+import {
+  $selfReview,
+  $selfReviewRunning,
+  clearSelfReview,
+  runSelfReview,
+  selfReviewForFile
+} from '@/store/self-review'
 
 import { SidebarPanelLabel } from '../../shell/sidebar-label'
 import { PaneEmptyState, RightSidebarSectionHeader } from '../index'
@@ -56,8 +63,17 @@ export function ReviewPane() {
   const diffLoading = useStore($reviewDiffLoading)
   const revertTarget = useStore($reviewRevertTarget)
   const treeMode = useStore($reviewTreeMode)
+  const selfReview = useStore($selfReview)
+  const selfReviewRunning = useStore($selfReviewRunning)
 
   const selectedFile = files.find(file => file.path === selectedPath)
+  const selectedComments = selectedFile ? selfReviewForFile(selectedFile.path, diff) : []
+
+  const selfReviewTotal = Object.values(selfReview.files).reduce(
+    (total, entry) => total + entry.comments.length,
+    0
+  )
+
   const hasFiles = files.length > 0
   // `{ path: null }` → revert all; `{ path: '…' }` → revert one file.
   const revertingAll = revertTarget?.path == null
@@ -93,6 +109,36 @@ export function ReviewPane() {
               variant="ghost"
             >
               <Codicon name={treeMode === 'tree' ? 'list-flat' : 'list-tree'} size="0.8125rem" />
+            </Button>
+          </Tip>
+          {/* Self-review: a one-shot utility-model pass over the working-tree
+              diff that lands comments inline on the diff below — a different
+              surface than AgentReviewMenu, which seeds a full agent session. */}
+          <Tip label={selfReviewRunning ? c.selfReviewRunning : c.selfReview}>
+            <Button
+              aria-label={c.selfReview}
+              className={ACTION_BTN}
+              disabled={!hasFiles || loading || selfReviewRunning}
+              onClick={() =>
+                void runSelfReview()
+                  .then(() => {
+                    const reviewed = $selfReview.get()
+
+                    const total = Object.values(reviewed.files).reduce(
+                      (count, entry) => count + entry.comments.length,
+                      0
+                    )
+
+                    if (total === 0) {
+                      notify({ kind: 'info', message: c.selfReviewClean })
+                    }
+                  })
+                  .catch(error => notifyError(error, c.selfReview))
+              }
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name="sparkle" size="0.8125rem" spinning={selfReviewRunning} />
             </Button>
           </Tip>
           <AgentReviewMenu />
@@ -168,6 +214,19 @@ export function ReviewPane() {
             >
               {displayPath(selectedFile.path)}
             </span>
+            {(selectedComments.length > 0 || selfReviewTotal > 0) && (
+              <Tip label={c.selfReviewClear}>
+                <button
+                  aria-label={c.selfReviewClear}
+                  className="flex h-4 items-center gap-1 rounded-sm px-1 text-[0.62rem] text-(--ui-accent-secondary) hover:bg-(--ui-control-hover-background)"
+                  onClick={clearSelfReview}
+                  type="button"
+                >
+                  <Codicon name="comment" size="0.6875rem" />
+                  {c.selfReviewComments(selectedComments.length || selfReviewTotal)}
+                </button>
+              </Tip>
+            )}
             <DiffCount added={selectedFile.added} className="text-[0.64rem] leading-4" removed={selectedFile.removed} />
             <Tip label={selectedFile.staged ? c.unstage : c.stage}>
               <Button
@@ -200,7 +259,13 @@ export function ReviewPane() {
                 <DiffSkeleton />
               ) : null
             ) : diff ? (
-              <FileDiffPanel className="mx-0 mb-0 h-full max-h-none" diff={diff} path={selectedFile.path} virtualized />
+              <FileDiffPanel
+                className="mx-0 mb-0 h-full max-h-none"
+                comments={selectedComments}
+                diff={diff}
+                path={selectedFile.path}
+                virtualized
+              />
             ) : (
               <div className="py-6 text-center text-[0.66rem] text-muted-foreground/60">{c.noDiff}</div>
             )}

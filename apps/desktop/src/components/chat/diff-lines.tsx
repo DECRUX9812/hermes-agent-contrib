@@ -6,6 +6,7 @@ import type { BundledLanguage, ShikiTransformer, ThemedToken } from 'shiki'
 import { chunkLines, type LineChunk, useFixedRowWindow } from '@/components/chat/fixed-row-window'
 import { exceedsHighlightBudget, SHIKI_THEME } from '@/components/chat/shiki-highlighter'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { Codicon } from '@/components/ui/codicon'
 import { shikiLanguageForFilename } from '@/lib/markdown-code'
 import { cn } from '@/lib/utils'
 
@@ -18,7 +19,7 @@ import { cn } from '@/lib/utils'
  * Both drop git file-headers + `@@` hunk noise and the `+/-` gutter so changes
  * read by color + a 2px gutter accent, the way Cursor does.
  */
-type DiffKind = 'add' | 'context' | 'remove'
+type DiffKind = 'add' | 'comment' | 'context' | 'remove'
 
 export interface DiffLine {
   kind: DiffKind
@@ -38,15 +39,18 @@ interface ParsedHunk {
 
 // Tint + 2px gutter accent per change kind. Text color is included for the
 // plain renderer; the Shiki path omits it so syntax colors win, layering only
-// the background + border.
+// the background + border. 'comment' rows are self-review findings anchored
+// under the line they name.
 const DIFF_KIND_TINT: Record<DiffKind, string> = {
   add: 'border-(--ui-diff-add-border) bg-(--ui-diff-add-background)',
+  comment: 'border-(--ui-accent-secondary) bg-(--ui-sash-hover-background)',
   context: 'border-transparent',
   remove: 'border-(--ui-diff-remove-border) bg-(--ui-diff-remove-background)'
 }
 
 const DIFF_KIND_TEXT: Record<DiffKind, string> = {
   add: 'text-(--ui-diff-add-foreground)',
+  comment: 'text-(--ui-text-secondary) italic',
   context: '',
   remove: 'text-(--ui-diff-remove-foreground)'
 }
@@ -166,7 +170,8 @@ function parseHunks(diff: string): ParsedHunk[] {
 // separator kept between hunks), markers stripped, kind recorded. Old/new line
 // numbers are tracked from each `@@ -a,b +c,d @@` header so a caller that wants
 // a gutter (the preview) can render them; the blank separator carries none.
-function parseDiff(diff: string): DiffLine[] {
+/** Exported for tests. */
+export function parseDiff(diff: string): DiffLine[] {
   const hunks = parseHunks(diff)
 
   if (hunks.length === 0) {
@@ -276,17 +281,124 @@ function parseFullFileDiff(diff: string, fullText: string): DiffLine[] {
 }
 
 /** Exported for the lazily-loaded SyntaxDiff (syntax-diff.tsx). */
+/** One review comment row — fixed 20px like its neighbours so windowed diffs
+ *  keep their scroll math; long bodies ellipsize inside `max-w-[80ch]`. */
+function CommentRow({ line }: { line: DiffLine }) {
+  return (
+    <span
+      className={cn(
+        'block h-5 max-w-[80ch] truncate whitespace-nowrap px-2.5 leading-5',
+        DIFF_KIND_TINT.comment,
+        DIFF_KIND_TEXT.comment
+      )}
+      title={line.text}
+    >
+      <Codicon className="mr-1.5 opacity-60" name="comment" size="0.75rem" />
+      {line.text}
+    </span>
+  )
+}
+
+/** A review comment to splice under the diff line it names (`line` is the
+ *  1-based NEW-file line number). */
+export interface DiffComment {
+  body: string
+  line: number
+}
+
+/**
+ * Interleave self-review comments into parsed diff rows as 'comment' lines,
+ * each anchored directly below the deepest-parsed row carrying its new-file
+ * line number. Comments naming a removed line fall back to the removed row
+ * (`oldNo`); anything else unanchored is dropped. Returns `lines` unchanged
+ * when there is nothing to splice.
+ */
+export function insertDiffComments(lines: DiffLine[], comments: readonly DiffComment[]): DiffLine[] {
+  if (comments.length === 0 || lines.length === 0) {
+    return lines
+  }
+
+  const byNewLine = new Map<number, string[]>()
+
+  for (const comment of comments) {
+    const body = comment.body.replace(/\s+/g, ' ').trim()
+
+    if (!body || !Number.isFinite(comment.line) || comment.line < 1) {
+      continue
+    }
+
+    const bucket = byNewLine.get(comment.line)
+
+    if (bucket) {
+      bucket.push(body)
+    } else {
+      byNewLine.set(comment.line, [body])
+    }
+  }
+
+  if (byNewLine.size === 0) {
+    return lines
+  }
+
+  const out: DiffLine[] = []
+
+  for (const line of lines) {
+    out.push(line)
+
+    const anchor = line.newNo
+    const bodies = anchor === undefined ? undefined : byNewLine.get(anchor)
+
+    if (anchor !== undefined && bodies) {
+      for (const body of bodies) {
+        out.push({ kind: 'comment', text: body })
+      }
+
+      byNewLine.delete(anchor)
+    }
+  }
+
+  // Leftovers target lines the new file no longer shows in this diff (removed
+  // regions): anchor them under the removed row they name instead of dropping.
+  if (byNewLine.size > 0) {
+    for (let i = 0; i < out.length; i += 1) {
+      const line = out[i]
+
+      if (line.kind !== 'remove' || line.oldNo === undefined) {
+        continue
+      }
+
+      const bodies = byNewLine.get(line.oldNo)
+
+      if (!bodies) {
+        continue
+      }
+
+      const rows: DiffLine[] = bodies.map(body => ({ kind: 'comment', text: body }))
+
+      out.splice(i + 1, 0, ...rows)
+      byNewLine.delete(line.oldNo)
+      i += rows.length
+    }
+  }
+
+  return out
+}
+
 export function DiffBody({ lines, syntax }: { lines: DiffLine[]; syntax?: boolean }) {
   return (
     <>
-      {lines.map((line, index) => (
-        <span
-          className={cn(DIFF_LINE_BASE, DIFF_KIND_TINT[line.kind], !syntax && DIFF_KIND_TEXT[line.kind])}
-          key={`${index}-${line.text}`}
-        >
-          {line.text || ' '}
-        </span>
-      ))}
+      {lines.map((line, index) =>
+        line.kind === 'comment' ? (
+          <CommentRow key={`${index}-${line.text}`} line={line} />
+        ) : (
+          <span
+            className={cn(DIFF_LINE_BASE, DIFF_KIND_TINT[line.kind], !syntax && DIFF_KIND_TEXT[line.kind])}
+            key={`${index}-${line.text}`}
+          >
+            {line.text || ' '}
+          </span>
+        )
+      )}
     </>
   )
 }
@@ -340,6 +452,10 @@ function PreviewDiffRows({
           {chunk.lines.map((line, offset) => {
             const index = chunk.start + offset
             const rowTokens = tokens?.[index] ?? []
+
+            if (line.kind === 'comment') {
+              return <CommentRow key={`${index}-${line.text}`} line={line} />
+            }
 
             return (
               <span className={cn(PREVIEW_DIFF_LINE_BASE, DIFF_KIND_TINT[line.kind])} key={`${index}-${line.text}`}>
@@ -429,6 +545,10 @@ function TokenizedDiffBody({
   return (
     <>
       {lines.map((line, index) => {
+        if (line.kind === 'comment') {
+          return <CommentRow key={`${index}-${line.text}`} line={line} />
+        }
+
         const rowTokens = tokens[index] ?? []
 
         return (
@@ -510,7 +630,7 @@ function overviewRuns(lines: DiffLine[]): { kind: 'add' | 'remove'; sizePct: num
   for (let i = 0; i < lines.length;) {
     const kind = lines[i].kind
 
-    if (kind === 'context') {
+    if (kind !== 'add' && kind !== 'remove') {
       i += 1
 
       continue
@@ -566,6 +686,8 @@ interface FileDiffPanelProps {
   /** Override the default (tool-card) box styling — the full-height preview
    *  cancels the bleed/clamp so the diff fills its pane. */
   className?: string
+  /** Self-review comments to splice under the lines they name. */
+  comments?: readonly DiffComment[]
   diff: string
   /** Current file text. When provided, the panel expands hunked diffs into a
    *  full-file view so unchanged lines are preserved between hunks. */
@@ -582,6 +704,7 @@ interface FileDiffPanelProps {
 
 export function FileDiffPanel({
   className,
+  comments,
   diff,
   fullText,
   path,
@@ -589,8 +712,9 @@ export function FileDiffPanel({
   virtualized = false
 }: FileDiffPanelProps) {
   const lines = React.useMemo(
-    () => (fullText != null ? parseFullFileDiff(diff, fullText) : parseDiff(diff)),
-    [diff, fullText]
+    () =>
+      insertDiffComments(fullText != null ? parseFullFileDiff(diff, fullText) : parseDiff(diff), comments ?? []),
+    [comments, diff, fullText]
   )
 
   const lineChunks = React.useMemo(() => chunkLines(lines, PREVIEW_CHUNK_LINES), [lines])

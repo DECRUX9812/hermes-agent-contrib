@@ -24,7 +24,7 @@ vi.mock('./syntax-diff', () => ({
 
 import { ErrorBoundary } from '@/components/error-boundary'
 
-import { FileDiffPanel } from './diff-lines'
+import { FileDiffPanel, insertDiffComments, parseDiff } from './diff-lines'
 
 afterEach(cleanup)
 
@@ -68,5 +68,38 @@ describe('FileDiffPanel survives a failed lazy syntax-diff chunk', () => {
     expect(container.textContent).toContain('const b = 2')
     expect(container.textContent).toContain('const b = 3')
     expect(container.textContent).not.toContain(WORKSPACE_FALLBACK_TEXT)
+  })
+})
+
+describe('insertDiffComments', () => {
+  // DIFF: context a=1 (new 1), removed b=2 (old 2), added b=3 (new 2).
+  const LINES = parseDiff(DIFF)
+
+  it('splices a comment below the row carrying its new-file line number', () => {
+    const out = insertDiffComments(LINES, [{ body: 'rename is fine here', line: 2 }])
+    const at = out.findIndex(line => line.kind === 'comment')
+
+    expect(at).toBeGreaterThan(0)
+    expect(out[at - 1].newNo).toBe(2)
+    expect(out[at].text).toBe('rename is fine here')
+  })
+
+  it('anchors a comment for a removed line under the remove row (oldNo)', () => {
+    // Pure removal: old line 2 exists only on the `-` side, so a comment naming
+    // it survives via the oldNo sweep instead of being dropped.
+    const removal = parseDiff(['@@ -1,2 +1,1 @@', ' const a = 1', '-const b = 2'].join('\n'))
+    const out = insertDiffComments(removal, [{ body: 'this line is gone', line: 2 }])
+    const removed = out.findIndex(line => line.kind === 'remove' && line.oldNo === 2)
+
+    expect(removed).toBeGreaterThanOrEqual(0)
+    expect(out[removed + 1]?.kind).toBe('comment')
+
+    const orphan = insertDiffComments(LINES, [{ body: 'orphan', line: 99 }])
+    expect(orphan.some(line => line.kind === 'comment')).toBe(false)
+  })
+
+  it('returns the input untouched when there is nothing to splice', () => {
+    expect(insertDiffComments(LINES, [])).toBe(LINES)
+    expect(insertDiffComments(LINES, [{ body: ' ', line: 1 }])).toBe(LINES)
   })
 })
