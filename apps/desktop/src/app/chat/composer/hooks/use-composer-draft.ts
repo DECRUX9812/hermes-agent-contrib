@@ -3,6 +3,7 @@
 // event-driven and registers through the gateway stream instead.
 import '@/store/suggestion-providers/cron'
 import '@/store/suggestion-providers/github'
+import '@/store/suggestion-providers/goal'
 import '@/store/suggestion-providers/mcp'
 import '@/store/suggestion-providers/skill'
 
@@ -547,6 +548,9 @@ export function useComposerDraft({
 
     const { attachments, text } = takeSessionDraft(activeQueueSessionKey)
     loadIntoComposer(text, attachments)
+    // Sample the restored draft so context-shaped offers (the goal chips on
+    // an empty new-session box) don't wait for the first keystroke.
+    sampleComposerDraft(sessionIdRef.current ?? null, text)
 
     return () => {
       resumingSessionRef.current = false

@@ -3853,7 +3853,7 @@ export const en: Translations = {
       'Describe what you need',
       'What should we tackle?',
       'Ask anything',
-      'Start with a goal'
+      'State the outcome you want'
     ],
     followUpPlaceholders: [
       'Send a follow-up',
@@ -4062,6 +4062,16 @@ export const en: Translations = {
       tip: skill => `You mentioned “${skill}” — click to lead with that skill`,
       done: skill => `Added /${skill}`,
       doneTip: 'The skill loads when you send'
+    },
+    goalChips: {
+      planLabel: 'Plan it first',
+      planTip: 'Turns this into /plan — a step-by-step plan written to .hermes/plans/ before any work starts',
+      planDone: 'Plan ready',
+      planDoneTip: 'The plan runs when you send',
+      goalLabel: 'Make it a goal',
+      goalTip: 'Turns this into /goal — a standing outcome Hermes works toward until achieved',
+      goalDone: 'Goal ready',
+      goalDoneTip: 'The goal takes effect when you send'
     },
     githubSuggestions: {
       label: 'Set up GitHub',

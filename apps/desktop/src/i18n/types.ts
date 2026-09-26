@@ -3394,6 +3394,16 @@ export interface Translations {
       done: (skill: string) => string
       doneTip: string
     }
+    goalChips: {
+      planLabel: string
+      planTip: string
+      planDone: string
+      planDoneTip: string
+      goalLabel: string
+      goalTip: string
+      goalDone: string
+      goalDoneTip: string
+    }
     githubSuggestions: {
       label: string
       tip: string

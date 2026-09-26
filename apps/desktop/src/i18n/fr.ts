@@ -4227,7 +4227,7 @@ export const frOverrides = {
       'Décrivez ce dont vous avez besoin',
       "Qu'est-ce qu'on attaque ?",
       "Posez n'importe quelle question",
-      'Commencez par un objectif'
+      'Énoncez le résultat voulu'
     ],
     followUpPlaceholders: [
       'Envoyez un suivi',
@@ -4441,6 +4441,16 @@ export const frOverrides = {
       tip: skill => `Vous avez mentionné « ${skill} » — cliquez pour commencer avec ce skill`,
       done: skill => `/${skill} ajouté`,
       doneTip: "Le skill se charge lors de l'envoi"
+    },
+    goalChips: {
+      planLabel: 'Planifier d’abord',
+      planTip: 'Transforme en /plan — un plan pas à pas écrit dans .hermes/plans/ avant tout travail',
+      planDone: 'Plan prêt',
+      planDoneTip: 'Le plan s’exécute à l’envoi',
+      goalLabel: 'En faire un objectif',
+      goalTip: 'Transforme en /goal — un résultat durable vers lequel Hermes travaille',
+      goalDone: 'Objectif prêt',
+      goalDoneTip: 'L’objectif s’applique à l’envoi'
     },
     githubSuggestions: {
       label: 'Configurer GitHub',
