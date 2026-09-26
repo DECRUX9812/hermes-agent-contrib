@@ -3495,6 +3495,24 @@ export interface Translations {
     unavailable: string
     undo: string
   }
+  /** Spoken "what's it doing?" replies — composed from the session stores, no
+   *  model call. Concatenated by `composeSessionStatusSpeech`. */
+  voiceStatus: {
+    /** No turn is running. */
+    idle: string
+    /** A turn or background job is running, nothing worth naming. */
+    working: string
+    /** A turn is running; `detail` names the in-progress todo or running tool. */
+    workingOn: (detail: string) => string
+    /** A turn is running but has been quiet a while. */
+    stalled: string
+    /** A blocking prompt needs the user's answer. */
+    needsInput: string
+    /** The last turn finished and the reply is unread. */
+    finished: string
+    /** Task progress tail: "{done} of {total} tasks done." */
+    progress: (done: number, total: number) => string
+  }
   statusStack: {
     hideStack: string
     showStack: string

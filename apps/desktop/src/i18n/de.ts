@@ -4544,6 +4544,15 @@ export const deOverrides = {
     unavailable: 'Bildschirmaufnahme ist hier nicht verfügbar.',
     undo: 'Rückgängig',
   },
+  voiceStatus: {
+    idle: 'Hermes ist bereit — gerade läuft nichts.',
+    working: 'Hermes arbeitet noch daran.',
+    workingOn: detail => `Hermes arbeitet — gerade an ${detail}.`,
+    stalled: 'Hermes scheint zu hängen — es war schon eine Weile still.',
+    needsInput: 'Hermes wartet auf deine Eingabe.',
+    finished: 'Die letzte Runde ist fertig — die Antwort wartet auf dich.',
+    progress: (done, total) => `${done} von ${total} Aufgaben erledigt.`,
+  },
   statusStack: {
     hideStack: 'Statusstapel ausblenden',
     showStack: 'Statusstapel anzeigen',

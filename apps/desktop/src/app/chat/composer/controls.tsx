@@ -114,8 +114,10 @@ export function ComposerControls({
     // One mic in the row; hovering it fans the other voice toggles out of it.
     <VoiceFan
       autoSpeak={autoSpeak}
+      busy={busy}
       disabled={disabled}
       onDictate={onDictate}
+      onStartConversation={conversation.onStart}
       onToggleAutoSpeak={onToggleAutoSpeak}
       state={state}
       voiceStatus={voiceStatus}

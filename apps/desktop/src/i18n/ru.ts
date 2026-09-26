@@ -3283,6 +3283,15 @@ export const ru = defineLocale({
     unavailable: 'Снимок экрана здесь недоступен.',
     undo: 'Отменить',
   },
+  voiceStatus: {
+    idle: 'Hermes простаивает — ничего не выполняется.',
+    working: 'Hermes ещё работает над этим.',
+    workingOn: detail => `Hermes работает — сейчас над ${detail}.`,
+    stalled: 'Hermes, похоже, завис — уже давно ничего не выдаёт.',
+    needsInput: 'Hermes ждёт твоего ответа.',
+    finished: 'Последний ход завершён — ответ ждёт тебя.',
+    progress: (done, total) => `Выполнено ${done} ${RU_PLURAL(done, 'задача', 'задачи', 'задач')} из ${total}.`,
+  },
   statusStack: {
     hideStack: 'Скрыть панель состояния',
     showStack: 'Показать панель состояния',

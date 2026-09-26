@@ -11,6 +11,7 @@ import {
   startSpeechStream,
   stopVoicePlayback
 } from '@/lib/voice-playback'
+import { isVoiceStatusQuestion } from '@/lib/voice-status'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
 import { notify, notifyError } from '@/store/notifications'
 import { $voicePlayback } from '@/store/voice-playback'
@@ -35,6 +36,10 @@ interface VoiceConversationOptions {
   /** Interrupt the in-flight agent turn (the same seam as the Stop button).
    *  Fired when the user speaks while the model is still generating. */
   onInterrupt?: () => Promise<void> | void
+  /** A whole-utterance "what's it doing?" is answered here — composed from
+   *  the session stores, never submitted as a turn. Return null to let the
+   *  utterance submit normally. */
+  onStatusQuestion?: () => null | string
   onStopWord?: () => void
   onSubmit: (text: string) => Promise<void> | void
   onTranscribeAudio?: (audio: Blob) => Promise<string>
@@ -62,6 +67,7 @@ export function useVoiceConversation({
   enabled,
   onFatalError,
   onInterrupt,
+  onStatusQuestion,
   onStopWord,
   onSubmit,
   onTranscribeAudio,
@@ -99,6 +105,10 @@ export function useVoiceConversation({
   const wasEnabledRef = useRef(enabled)
   const onStopWordRef = useRef(onStopWord)
   const onInterruptRef = useRef(onInterrupt)
+  const onStatusQuestionRef = useRef(onStatusQuestion)
+  // Declared below its target (a useCallback after this point) so the status
+  // reply can re-arm steering mid-turn without a deps-array TDZ.
+  const ensureBargeMonitorRef = useRef<() => void>(() => {})
 
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
@@ -109,6 +119,11 @@ export function useVoiceConversation({
   useEffect(() => {
     onStopWordRef.current = onStopWord
   }, [onStopWord])
+
+  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
+  useEffect(() => {
+    onStatusQuestionRef.current = onStatusQuestion
+  }, [onStatusQuestion])
 
   const beforeMicOpenRef = useRef(beforeMicOpen)
 
@@ -161,6 +176,34 @@ export function useVoiceConversation({
     responseIdRef.current = null
     spokenSourceLengthRef.current = 0
   }
+
+  /** Speak a store-composed status answer over the conversation — no turn is
+   *  submitted, so a mid-run "what's it doing?" never touches the in-flight
+   *  work. While a turn runs, re-arm the barge monitor after the answer so
+   *  steering stays live. */
+  const speakStatusReply = useCallback(async (text: string) => {
+    dropSpeechSession()
+    setStatus('speaking')
+
+    try {
+      await playSpeechText(text, { ...ownerRef.current, source: 'voice-conversation', syncOnly: true })
+    } catch {
+      // A playback failure is non-fatal — fall through to re-listen.
+    }
+
+    if (busyRef.current) {
+      ensureBargeMonitorRef.current()
+      setStatus('thinking')
+
+      return
+    }
+
+    if (enabledRef.current) {
+      pendingStartRef.current = true
+    }
+
+    setStatus('idle')
+  }, [])
 
   const handleTurn = useCallback(
     async (forceTranscribe = false) => {
@@ -231,6 +274,18 @@ export function useVoiceConversation({
             return
           }
 
+          // A whole-utterance status ask is answered from the stores — the
+          // in-flight turn (if any) keeps running.
+          if (isVoiceStatusQuestion(transcript)) {
+            const reply = onStatusQuestionRef.current?.()
+
+            if (reply != null) {
+              void speakStatusReply(reply)
+
+              return
+            }
+          }
+
           awaitingSpokenResponseRef.current = true
           dropSpeechSession()
           await onSubmit(transcript)
@@ -253,6 +308,7 @@ export function useVoiceConversation({
       onFatalError,
       onSubmit,
       onTranscribeAudio,
+      speakStatusReply,
       voiceCopy.microphoneFailed,
       voiceCopy.recordingFailed,
       voiceCopy.transcriptionFailed
@@ -400,6 +456,25 @@ export function useVoiceConversation({
           return
         }
 
+        // A whole-utterance status ask is answered from the stores and never
+        // interrupts the run — "what's it doing?" must not kill the turn.
+        if (isVoiceStatusQuestion(transcript)) {
+          const reply = onStatusQuestionRef.current?.()
+
+          if (reply != null) {
+            void speakStatusReply(reply)
+
+            return
+          }
+        }
+
+        // The interrupt is deferred until the utterance is known not to be a
+        // status ask — a barge during generation still halts the turn (same
+        // seam as Stop), just once the transcript says the user meant it.
+        if (busyRef.current) {
+          void onInterruptRef.current?.()
+        }
+
         // A generation-phase barge interrupted the in-flight turn; the submit
         // path refuses while `busy`, so wait for the interrupt to settle.
         const deadline = Date.now() + INTERRUPT_SETTLE_TIMEOUT_MS
@@ -418,7 +493,7 @@ export function useVoiceConversation({
         resumeListening()
       }
     },
-    [consumePendingResponse, onSubmit, onTranscribeAudio, voiceCopy.transcriptionFailed]
+    [consumePendingResponse, onSubmit, onTranscribeAudio, speakStatusReply, voiceCopy.transcriptionFailed]
   )
 
   /**
@@ -448,12 +523,8 @@ export function useVoiceConversation({
         bargedRef.current = true
         markVoicePlaybackInterrupted()
         stopVoicePlayback()
-
-        if (busyRef.current) {
-          // Mid-generation: stop the in-flight turn so the captured utterance
-          // becomes the next one instead of queueing behind a stale reply.
-          void onInterruptRef.current?.()
-        }
+        // The turn interrupt waits for the transcript in
+        // `submitCapturedUtterance` — a status ask must not halt the run.
       },
       onUtterance: audio => {
         bargeCapturePendingRef.current = false
@@ -462,6 +533,11 @@ export function useVoiceConversation({
       }
     })
   }, [submitCapturedUtterance])
+
+  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
+  useEffect(() => {
+    ensureBargeMonitorRef.current = ensureBargeMonitor
+  }, [ensureBargeMonitor])
 
   /** Push any new reply text into the live session; finish when complete. */
   const feedSpeechSession = useCallback(

@@ -82,6 +82,7 @@ interface HookProps {
 function renderConversation(
   overrides: {
     onInterrupt?: () => void
+    onStatusQuestion?: () => null | string
     pendingResponse?: () => { id: string; pending: boolean; text: string } | null
     transcript?: string
   } = {}
@@ -115,6 +116,7 @@ function renderConversation(
         consumePendingResponse: vi.fn(),
         enabled: true,
         onInterrupt,
+        onStatusQuestion: overrides.onStatusQuestion,
         onStopWord,
         onSubmit,
         onTranscribeAudio,
@@ -170,7 +172,7 @@ describe('useVoiceConversation full-duplex barge-in', () => {
     await waitFor(() => expect(monitorCalls.length).toBeGreaterThan(0))
   })
 
-  it('interrupts the in-flight turn when speech trips mid-generation', async () => {
+  it('interrupts the in-flight turn once the captured speech is known not to be a status ask', async () => {
     const { hook, onInterrupt } = renderConversation()
 
     await act(async () => {
@@ -179,13 +181,55 @@ describe('useVoiceConversation full-duplex barge-in', () => {
     await enterThinking(hook)
     await waitFor(() => expect(monitorCalls.length).toBeGreaterThan(0))
 
+    const monitor = monitorCalls.at(-1)
+
     act(() => {
-      monitorCalls.at(-1)?.onSpeech()
+      monitor?.onSpeech()
     })
 
-    expect(onInterrupt).toHaveBeenCalledTimes(1)
+    // The trip cuts playback immediately, but the turn interrupt waits for
+    // the transcript — "what's it doing?" must not kill the run.
+    expect(onInterrupt).not.toHaveBeenCalled()
     expect(markVoicePlaybackInterrupted).toHaveBeenCalled()
     expect(stopVoicePlayback).toHaveBeenCalled()
+
+    await act(async () => {
+      monitor?.onUtterance?.(new Blob(['x'], { type: 'audio/webm' }))
+    })
+
+    await waitFor(() => expect(onInterrupt).toHaveBeenCalledTimes(1))
+  })
+
+  it('answers a spoken status question from stores without interrupting or submitting', async () => {
+    const { hook, onInterrupt, onSubmit } = renderConversation({
+      onStatusQuestion: () => 'still working on it',
+      transcript: "what's it doing"
+    })
+
+    await act(async () => {
+      await hook.result.current.start()
+    })
+    await enterThinking(hook)
+    await waitFor(() => expect(monitorCalls.length).toBeGreaterThan(0))
+
+    const monitor = monitorCalls.at(-1)
+    const armed = monitorCalls.length
+
+    act(() => {
+      monitor?.onSpeech()
+    })
+    await act(async () => {
+      monitor?.onUtterance?.(new Blob(['x'], { type: 'audio/webm' }))
+    })
+
+    // The answer is spoken straight from the stores: the turn keeps running
+    // (no interrupt), nothing is submitted, and the barge monitor re-arms so
+    // steering stays live mid-turn.
+    await waitFor(() => expect(playSpeechTextMock).toHaveBeenCalledWith('still working on it', expect.anything()))
+    expect(onInterrupt).not.toHaveBeenCalled()
+    expect(onSubmit).not.toHaveBeenCalledWith("what's it doing")
+    await waitFor(() => expect(monitorCalls.length).toBeGreaterThan(armed))
+    await waitFor(() => expect(hook.result.current.status).toBe('thinking'))
   })
 
   it('submits the captured interruption once the interrupt settles (busy clears)', async () => {
