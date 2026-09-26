@@ -5581,16 +5581,14 @@ describe('uploadComposerAttachment remote read failures', () => {
   })
 })
 
-describe('uploadComposerAttachment image cache contract', () => {
+describe('uploadComposerAttachment preview reuse', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('always re-reads the image from disk, even when a stale previewUrl is cached', async () => {
-    // attachImagePath drops `previewUrl` as soon as a thumbnail exists, so a
-    // populated `previewUrl` here does not mean it holds full-resolution
-    // bytes (#93324) — the upload must never trust it and must always read
-    // the on-disk file for the bytes the model receives.
+  it('reuses the chip previewUrl instead of re-reading the image off disk', async () => {
+    // attachImagePath already read the full file for the thumbnail; submit
+    // must not pay the disk read + IPC round-trip a second time.
     const readFileDataUrl = vi.fn(async () => 'data:image/png;base64,ZnJvbS1kaXNr')
     Object.defineProperty(window, 'hermesDesktop', {
       configurable: true,
@@ -5611,7 +5609,44 @@ describe('uploadComposerAttachment image cache contract', () => {
         kind: 'image',
         label: 'shot.png',
         path: '/local/shot.png',
-        previewUrl: 'data:image/png;base64,c3RhbGUtY2FjaGVk'
+        previewUrl: 'data:image/png;base64,ZnJvbS1wcmV2aWV3'
+      },
+      { remote: true, requestGateway, sessionId: RUNTIME_SESSION_ID }
+    )
+
+    expect(readFileDataUrl).not.toHaveBeenCalled()
+    expect(requestGateway).toHaveBeenCalledWith('image.attach_bytes', {
+      content_base64: 'ZnJvbS1wcmV2aWV3',
+      filename: 'shot.png',
+      session_id: RUNTIME_SESSION_ID
+    })
+    expect(uploaded.path).toBe('/gw/images/shot.png')
+  })
+
+  it('falls back to the disk read when previewUrl is not a base64 data URL', async () => {
+    // A non-data previewUrl (e.g. a gateway media URL) carries no bytes —
+    // the upload must still read the real file.
+    const readFileDataUrl = vi.fn(async () => 'data:image/png;base64,ZnJvbS1kaXNr')
+    Object.defineProperty(window, 'hermesDesktop', {
+      configurable: true,
+      value: { readFileDataUrl }
+    })
+
+    const requestGateway = vi.fn(async (method: string) => {
+      if (method === 'image.attach_bytes') {
+        return { attached: true, path: '/gw/images/shot.png' } as never
+      }
+
+      return {} as never
+    })
+
+    await uploadComposerAttachment(
+      {
+        id: 'image:shot.png',
+        kind: 'image',
+        label: 'shot.png',
+        path: '/local/shot.png',
+        previewUrl: 'https://gateway.example/media/shot.png'
       },
       { remote: true, requestGateway, sessionId: RUNTIME_SESSION_ID }
     )
@@ -5622,7 +5657,6 @@ describe('uploadComposerAttachment image cache contract', () => {
       filename: 'shot.png',
       session_id: RUNTIME_SESSION_ID
     })
-    expect(uploaded.path).toBe('/gw/images/shot.png')
   })
 })
 
