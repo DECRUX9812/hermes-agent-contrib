@@ -18,6 +18,7 @@ import { useI18n } from '@/i18n'
 import {
   Clipboard,
   Clock,
+  Command,
   FileText,
   FolderOpen,
   type IconComponent,
@@ -29,6 +30,7 @@ import { cn } from '@/lib/utils'
 
 import { useComposerAttachmentProviders } from './contrib'
 import { GHOST_ICON_BTN } from './controls'
+import { requestComposerFocus, requestComposerInsert } from './focus'
 import type { ChatBarState } from './types'
 
 const SNIPPET_KEYS = ['codeReview', 'implementationPlan', 'explainThis']
@@ -105,6 +107,15 @@ export function ContextMenu({
           </ContextMenuItem>
           <ContextMenuItem icon={Clock} onSelect={onScheduleDraft}>
             {c.scheduleJob}
+          </ContextMenuItem>
+          <ContextMenuItem
+            icon={Command}
+            onSelect={() => {
+              requestComposerInsert('/')
+              requestComposerFocus()
+            }}
+          >
+            {c.slashCommands}
           </ContextMenuItem>
 
           {attachmentProviders.length > 0 && <DropdownMenuSeparator />}
