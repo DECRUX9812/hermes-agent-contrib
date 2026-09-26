@@ -249,11 +249,7 @@ describe('useSessionStateCache — stored-id rotation provenance', () => {
 
       setActiveSessionId('runtime-visible-b')
       render(
-        <Harness
-          activeSessionId="runtime-visible-b"
-          onReady={value => (cache = value)}
-          selectedStoredSessionId={null}
-        />
+        <Harness activeSessionId="runtime-visible-b" onReady={value => (cache = value)} selectedStoredSessionId={null} />
       )
 
       act(() => {
