@@ -49,6 +49,7 @@ import {
   Pin,
   Plus,
   RefreshCw,
+  Search,
   Settings,
   Settings2,
   SlidersHorizontal,
@@ -71,7 +72,12 @@ import {
 } from '@/store/command-palette'
 import { $paletteFrecency, paletteSessionKey, recordPaletteUse } from '@/store/command-palette-frecency'
 import { $bindings, bindingsFor } from '@/store/keybinds'
-import { $dismissedAutoProjectIds, $pinnedSessionIds, filterVisibleProjects } from '@/store/layout'
+import {
+  $dismissedAutoProjectIds,
+  $pinnedSessionIds,
+  filterVisibleProjects,
+  requestSessionSearchFocus
+} from '@/store/layout'
 import { openPetGenerate } from '@/store/pet-generate'
 import { openBrowserTab } from '@/store/preview'
 import { $projectTree, goToProject, openFolderAsProject, requestStartWorkSession } from '@/store/projects'
@@ -737,6 +743,14 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
                 }
               ]
             : []),
+          {
+            action: 'session.focusSearch',
+            icon: Search,
+            id: 'nav-search-sessions',
+            keywords: ['search', 'find', 'history', 'transcript'],
+            label: t.keybinds.actions['session.focusSearch'],
+            run: requestSessionSearchFocus
+          },
           {
             action: 'nav.settings',
             icon: Settings,

@@ -9,7 +9,13 @@
  * materialization and scrolling stay with the reveal machinery
  * (TIMELINE_REVEAL_EVENT → history.revealRow) so the render budget and
  * use-stick-to-bottom keep sole ownership of the transcript.
+ *
+ * It also owns the sidebar FTS jump: a search-result click arms a pending
+ * jump keyed by the session's stored id; whichever transcript surface opens
+ * that session consumes it (see use-transcript-search-jump.ts).
  */
+
+import { atom } from 'nanostores'
 
 import type { ProfileScope } from '@/api/client'
 import { getSessionMessages } from '@/api/sessions'
@@ -23,6 +29,9 @@ import { transcriptTailState } from '@/store/transcript-tail'
 export interface TranscriptFindRow {
   rowId: number
   text: string
+  /** Message role — the reveal endpoint anchors only on user prompts, so a
+   *  hit on any other role resolves the enclosing prompt first. */
+  role?: string
 }
 
 export interface TranscriptFindTarget {
@@ -147,7 +156,7 @@ export function loadTranscriptFindCorpus(
         const text = messageContentText(message.parts)
 
         if (text) {
-          rows.push({ rowId: message.rowId, text })
+          rows.push({ rowId: message.rowId, role: message.role, text })
         }
       }
 
@@ -220,7 +229,101 @@ export function searchTranscriptRows(
   return { capped: false, matches }
 }
 
+/**
+ * A sidebar FTS-result click arms a jump: the transcript surface that opens
+ * (or already shows) that session consumes the entry and scrolls to the hit
+ * row. Keyed by the stored id the resume targets so the click and whichever
+ * surface renders the transcript agree on the session.
+ */
+export interface TranscriptSearchJump {
+  query: string
+  snippet: string
+  issuedAt: number
+}
+
+export const $transcriptSearchJumps = atom<Record<string, TranscriptSearchJump>>({})
+
+export function armTranscriptSearchJump(storedId: string, jump: { query: string; snippet: string }): void {
+  $transcriptSearchJumps.set({
+    ...$transcriptSearchJumps.get(),
+    [storedId]: { ...jump, issuedAt: Date.now() }
+  })
+}
+
+export function takeTranscriptSearchJump(storedId: string): TranscriptSearchJump | null {
+  const jump = $transcriptSearchJumps.get()[storedId]
+
+  if (!jump) {
+    return null
+  }
+
+  const next = { ...$transcriptSearchJumps.get() }
+  delete next[storedId]
+  $transcriptSearchJumps.set(next)
+
+  return jump
+}
+
+/**
+ * Locate the stored row a server FTS hit came from. Backend snippets wrap
+ * matched terms in literal '>>>'/'<<<' markers (sqlite snippet() delimiters —
+ * see hermes_state_search.py), so the row the snippet describes is the one
+ * holding the most marked terms; first row wins a tie since corpus order is
+ * chronological and the backend ranks its best hit per session. Falls back to
+ * a plain query substring when the snippet carries no markers.
+ */
+export function locateTranscriptSearchHit(
+  rows: readonly TranscriptFindRow[],
+  jump: { query: string; snippet: string }
+): TranscriptFindRow | null {
+  const terms = new Set<string>()
+
+  for (const match of jump.snippet.matchAll(/>>>(.*?)<<</gs)) {
+    if (match[1]) {
+      terms.add(match[1].toLowerCase())
+    }
+  }
+
+  if (terms.size) {
+    let best: TranscriptFindRow | null = null
+    let bestScore = 0
+
+    for (const row of rows) {
+      const text = row.text.toLowerCase()
+      let score = 0
+
+      for (const term of terms) {
+        if (term && text.includes(term)) {
+          score += 1
+        }
+      }
+
+      if (score > bestScore) {
+        bestScore = score
+        best = row
+      }
+    }
+
+    if (best) {
+      return best
+    }
+  }
+
+  const needle = jump.query.trim().toLowerCase()
+
+  if (needle) {
+    for (const row of rows) {
+      if (row.text.toLowerCase().includes(needle)) {
+        return row
+      }
+    }
+  }
+
+  return null
+}
+
 /** Test seam: drop every cached corpus so one case's read can't bleed over. */
 export function resetTranscriptFindForTest(): void {
   corpusCache.clear()
+  $transcriptSearchJumps.set({})
 }

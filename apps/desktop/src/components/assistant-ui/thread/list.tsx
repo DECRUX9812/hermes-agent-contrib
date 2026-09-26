@@ -51,6 +51,7 @@ import { resolveShowEarlierAction, shouldAutoShowEarlier, useTranscriptWindow } 
 import { useMessagesBelow } from './use-messages-below'
 import { useStickyPromptClip } from './use-sticky-prompt-clip'
 import { useTimelineReveal } from './use-timeline-reveal'
+import { useTranscriptSearchJump } from './use-transcript-search-jump'
 
 type ThreadMessageComponents = ComponentProps<typeof ThreadPrimitive.MessageByIndex>['components']
 
@@ -1337,6 +1338,10 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
       stopScroll()
     }
   })
+
+  // Sidebar FTS hits arm a jump before the session resumes; consume it through
+  // the same reveal machinery once this surface binds that transcript.
+  useTranscriptSearchJump({ sessionKey, viewport: scrollRef })
 
   // Page the focused transcript explicitly. Browser-default PageUp/PageDown
   // targets whichever ancestor happens to own focus, which is unreliable in
