@@ -1649,6 +1649,9 @@ export const deOverrides = {
       keepAwakeTitle: 'Computer wach halten',
       keepAwakeDesc:
         'Verhindert, dass dieser Rechner in den Ruhezustand wechselt, damit Läufe über Nacht oder länger weiterlaufen. Der Bildschirm kann trotzdem abdunkeln.',
+      proactiveNudgesTitle: 'Proaktive Hinweise',
+      proactiveNudgesDesc:
+        'Bietet nach Abschluss einer Runde nächste Schritte als Chips über dem Composer an — etwa einen PR öffnen oder eine Nachverfolgung einplanen. Sie schreiben nur Entwürfe; nichts wird automatisch gesendet.',
       disableF12Title: 'F12-DevTools deaktivieren',
       disableF12Desc:
         'Verhindert, dass F12 die Entwicklertools öffnet. Strg+Umschalt+I (bzw. Cmd+Opt+I auf dem Mac) funktioniert weiterhin.',
@@ -4529,6 +4532,19 @@ export const deOverrides = {
       prefix: 'Als geplanten Job einrichten:',
       done: 'Für Planung markiert',
       doneTip: 'Senden Sie die Nachricht, und der Agent erstellt den Job'
+    },
+    nudges: {
+      prLabel: 'PR öffnen',
+      prTip: 'Die letzte Antwort klingt nach fertiger Code-Arbeit — Anfrage entwerfen',
+      prDraft: 'Öffnen Sie einen Pull Request für die eben vorgenommenen Änderungen.',
+      prDone: 'PR-Anfrage entworfen',
+      prDoneTip: 'Prüfen Sie den Entwurf und senden Sie ihn, damit der Agent den PR öffnet',
+      followupLabel: 'Nachverfolgung einplanen',
+      followupTip: 'Einen Check-in für diese Arbeit einrichten — entwirft die Anfrage für Sie',
+      followupDraft:
+        'Als geplanten Job einrichten: Prüfen Sie diese Arbeit in einer Stunde nach und berichten Sie, was sich geändert hat.',
+      followupDone: 'Nachverfolgung entworfen',
+      followupDoneTip: 'Passen Sie den Zeitpunkt im Entwurf an und senden Sie ihn dann'
     },
     snippets: {
       codeReview: {

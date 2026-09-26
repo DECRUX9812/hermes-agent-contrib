@@ -1653,6 +1653,9 @@ export const frOverrides = {
       keepAwakeTitle: "Garder l'ordinateur éveillé",
       keepAwakeDesc:
         "Empêcher cette machine de se mettre en veille pendant les exécutions longues ou nocturnes. L'écran peut toujours s'obscurcir.",
+      proactiveNudgesTitle: 'Suggestions proactives',
+      proactiveNudgesDesc:
+        "À la fin d'un tour, propose des puces d'étapes suivantes au-dessus du compositeur — ouvrir une PR, planifier un suivi. Elles ne rédigent que des brouillons ; rien ne part tout seul.",
       disableF12Title: 'Désactiver les outils de développement avec F12',
       disableF12Desc:
         "Empêcher F12 d'ouvrir les outils de développement. Ctrl+Maj+I (ou Cmd+Option+I sur Mac) continue de fonctionner.",
@@ -4539,6 +4542,18 @@ export const frOverrides = {
       prefix: 'Configurer ceci comme tâche planifiée :',
       done: 'Marqué pour planification',
       doneTip: "Envoyez-le pour que l'agent crée la tâche"
+    },
+    nudges: {
+      prLabel: 'Ouvrir une PR',
+      prTip: 'La dernière réponse ressemble à du travail de code terminé — rédiger la demande',
+      prDraft: 'Ouvre une pull request pour les changements qu’on vient de faire.',
+      prDone: 'Demande de PR rédigée',
+      prDoneTip: 'Relisez le brouillon puis envoyez-le pour que l’agent ouvre la PR',
+      followupLabel: 'Planifier un suivi',
+      followupTip: 'Programme un point sur ce travail — rédige la demande pour vous',
+      followupDraft: 'Configure ça comme une tâche planifiée : reviens sur ce travail dans une heure et dis-moi ce qui a changé.',
+      followupDone: 'Suivi rédigé',
+      followupDoneTip: 'Ajustez l’horaire dans le brouillon puis envoyez-le'
     },
     snippets: {
       codeReview: {

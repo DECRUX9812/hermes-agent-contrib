@@ -144,6 +144,11 @@ export const SETTINGS_MANIFEST = {
     }
   },
   chat: {
+    proactiveNudges: {
+      subpage: 'behavior',
+      keywords: ['nudge', 'proactive', 'suggestion', 'next step', 'chips', 'follow up', 'settle'],
+      copy: t => ({ label: t.settings.config.proactiveNudgesTitle, description: t.settings.config.proactiveNudgesDesc })
+    },
     attachmentSize: {
       subpage: 'attachments',
       keywords: ['attachment', 'image', 'preview', 'upload', 'file size', 'limit', 'MB'],

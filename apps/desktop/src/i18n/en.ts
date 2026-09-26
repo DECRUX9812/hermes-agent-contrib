@@ -1395,6 +1395,9 @@ export const en: Translations = {
         'Remove all enabled toolsets? This disables memory, terminal, web search, delegation, and most other tools until you re-enable them.',
       keepAwakeTitle: 'Keep computer awake',
       keepAwakeDesc: 'Stop this machine from sleeping so long or overnight runs keep going. The display can still dim.',
+      proactiveNudgesTitle: 'Proactive nudges',
+      proactiveNudgesDesc:
+        'When a chat finishes a turn, offer next-step chips above the composer — open a PR, schedule a follow-up. They only draft text; nothing sends itself.',
       disableF12Title: 'Disable F12 DevTools',
       disableF12Desc: 'Block F12 from opening Developer Tools. Ctrl+Shift+I (or Cmd+Opt+I on Mac) still works.',
       alwaysExternalLinksTitle: 'Always open links in external browser',
@@ -4160,6 +4163,18 @@ export const en: Translations = {
       prefix: 'Set this up as a scheduled job:',
       done: 'Marked for scheduling',
       doneTip: 'Send it and the agent creates the job'
+    },
+    nudges: {
+      prLabel: 'Open a PR',
+      prTip: 'The last reply reads like finished code work — draft the request',
+      prDraft: 'Open a pull request for the changes we just made.',
+      prDone: 'PR request drafted',
+      prDoneTip: 'Review the draft and send it to have the agent open the PR',
+      followupLabel: 'Schedule a follow-up',
+      followupTip: 'Set a check-in on this work — drafts the request for you',
+      followupDraft: 'Set this up as a scheduled job: check back on this work in an hour and tell me what changed.',
+      followupDone: 'Follow-up drafted',
+      followupDoneTip: 'Adjust the timing in the draft, then send it'
     },
     snippets: {
       codeReview: {
