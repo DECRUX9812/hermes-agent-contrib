@@ -144,6 +144,7 @@ import { markSessionUnread } from '@/store/session-unread-remote'
 import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive'
 import { applySidebarNavPrefs, SIDEBAR_NAV_PREFS_AREA } from '@/store/sidebar-nav'
 import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
+import { armTranscriptSearchJump } from '@/store/transcript-find'
 
 import {
   type AppView,
@@ -849,6 +850,22 @@ export function ChatSidebar({
   const searchResults = useMemo(
     () => mergeSearchResults(sortedSessions, trimmedQuery, serverMatches, sessionByAnyId, searchPending),
     [sortedSessions, trimmedQuery, serverMatches, sessionByAnyId, searchPending]
+  )
+
+  // FTS hits carry the '>>>'-marked snippet that proves the match came from
+  // message content (id matches synthesize a plain preview snippet instead) —
+  // arm the transcript jump so the opened session scrolls to the hit row.
+  const resumeSearchedSession = useCallback(
+    (sessionId: string, session?: SessionInfo) => {
+      const match = serverMatches.find(m => m.session_id === sessionId)
+
+      if (match?.snippet.includes('>>>')) {
+        armTranscriptSearchJump(sessionId, { query: trimmedQuery, snippet: match.snippet })
+      }
+
+      onResumeSession(sessionId, session)
+    },
+    [serverMatches, trimmedQuery, onResumeSession]
   )
 
   const unpinnedAgentSessions = useMemo(
@@ -1978,7 +1995,7 @@ export function ChatSidebar({
                 onArchiveSession={onArchiveSession}
                 onBranchSession={onBranchSession}
                 onDeleteSession={onDeleteSession}
-                onResumeSession={onResumeSession}
+                onResumeSession={resumeSearchedSession}
                 onToggle={() => undefined}
                 onTogglePin={pinSession}
                 onToggleUnread={toggleUnread}
