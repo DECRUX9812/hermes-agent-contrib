@@ -4136,6 +4136,7 @@ export const frOverrides = {
       untitledChat: id => `Conversation ${id}`,
       messageCount: count => `${count} message${count === 1 ? '' : 's'}`,
       todoProgress: 'Tâches terminées',
+      attachmentCount: count => `${count} joint${count === 1 ? '' : 's'}`,
       digest: {
         agents: count => (count === 1 ? 'Un agent en cours' : `${count} agents en cours`),
         approve: command => `Approuver : ${command}`,

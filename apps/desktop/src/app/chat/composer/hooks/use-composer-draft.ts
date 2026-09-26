@@ -20,6 +20,7 @@ import {
   type ComposerDraftSyncMode,
   NEW_SESSION_DRAFT_KEY,
   onComposerDraftSyncRequest,
+  registerComposerAttachmentScope,
   reloadPersistedDrafts,
   stashSessionDraft,
   takeSessionDraft
@@ -565,6 +566,16 @@ export function useComposerDraft({
       clearDraftSuggestions(sessionIdRef.current)
     }
   }, [activeQueueSessionKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Publish this composer's live attachment set under its draft scope so a
+  // file dropped on the session's sidebar row stages chips straight into it.
+  // Passive effect: its cleanup runs after the swap's layout cleanup has
+  // stashed the outgoing scope, so unregistering republishes the stash's
+  // count — not a pre-stash snapshot.
+  useEffect(
+    () => registerComposerAttachmentScope(activeQueueSessionKey, attachmentScope),
+    [activeQueueSessionKey, attachmentScope]
+  )
 
   // The HUD handoff's two verbs. Entering HUD mode flushes this editor's text
   // into the shared stash so the HUD's composer boots with it; leaving repaints

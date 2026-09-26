@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   $composerAttachments,
+  $draftAttachmentCounts,
   $restoredDraftNotice,
   $voiceConversationStartRequest,
   addComposerAttachment,
@@ -13,15 +14,18 @@ import {
   type ComposerAttachment,
   createComposerAttachmentOccurrenceId,
   createComposerAttachmentScope,
+  draftAttachmentCountIn,
   dropComposerDraftsForProfile,
   mainComposerScope,
   migrateComposerDraftsForProfile,
   migrateSessionDraft,
+  registerComposerAttachmentScope,
   registerComposerNewDraftProfileResolver,
   removeComposerAttachment,
   requestVoiceConversationStart,
   revokeAttachmentPreviewUrls,
   SESSION_DRAFTS_STORAGE_KEY,
+  stageSessionDraftAttachments,
   stashSessionDraft,
   takeSessionDraft,
   takeVoiceConversationStart,
@@ -468,5 +472,61 @@ describe('session drafts', () => {
 
     dropComposerDraftsForProfile('beta')
     expect(takeSessionDraft('__new__:beta').text).toBe('')
+  })
+})
+
+describe('row-drop attachment staging', () => {
+  afterEach(() => {
+    for (const scope of ['session-a', 'session-b', null]) {
+      clearSessionDraft(scope)
+    }
+
+    window.localStorage.clear()
+  })
+
+  it('stages chips into an unmounted session draft and publishes the badge count', () => {
+    expect(stageSessionDraftAttachments('session-a', [attachment({ id: 'file:a' })])).toBe(1)
+
+    expect(takeSessionDraft('session-a').attachments.map(a => a.id)).toEqual(['file:a'])
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(1)
+
+    // A second drop merges instead of replacing; the badge tracks the total.
+    expect(stageSessionDraftAttachments('session-a', [attachment({ id: 'file:b' })])).toBe(2)
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(2)
+    expect(takeSessionDraft('session-a').attachments.map(a => a.id)).toEqual(['file:a', 'file:b'])
+  })
+
+  it('dedupes a repeat drop of the same path under the same attachment id', () => {
+    stageSessionDraftAttachments('session-a', [attachment({ id: 'file:a' })])
+    expect(stageSessionDraftAttachments('session-a', [attachment({ id: 'file:a' })])).toBe(1)
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(1)
+  })
+
+  it('writes into a mounted composer scope so its next stash keeps the dropped chips', () => {
+    const scope = createComposerAttachmentScope()
+    scope.$attachments.set([attachment({ id: 'file:existing' })])
+    const unregister = registerComposerAttachmentScope('session-a', scope)
+
+    // The live set publishes its count without waiting for a stash debounce.
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(1)
+
+    stageSessionDraftAttachments('session-a', [attachment({ id: 'file:dropped' })])
+
+    expect(scope.$attachments.get().map(a => a.id)).toEqual(['file:existing', 'file:dropped'])
+    expect(takeSessionDraft('session-a').attachments.map(a => a.id)).toEqual(['file:existing', 'file:dropped'])
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(2)
+
+    unregister()
+
+    // After the composer swaps away the badge falls back to the stash count.
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(2)
+  })
+
+  it('clears the badge count when the staged draft is emptied', () => {
+    stageSessionDraftAttachments('session-a', [attachment({ id: 'file:a' })])
+    clearSessionDraft('session-a')
+
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(0)
+    expect($draftAttachmentCounts.get()['session-a']).toBeUndefined()
   })
 })

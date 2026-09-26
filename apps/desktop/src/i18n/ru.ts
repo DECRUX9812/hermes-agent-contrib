@@ -2874,6 +2874,7 @@ export const ru = defineLocale({
       untitledChat: id => `Чат ${id}`,
       messageCount: count => `${count} ${RU_PLURAL(count, 'сообщение', 'сообщения', 'сообщений')}`,
       todoProgress: 'Задачи выполнены',
+      attachmentCount: count => `Вложено: ${count}`,
       digest: {
         agents: count => `Запущено агентов: ${count}`,
         approve: command => `Подтвердить: ${command}`,

@@ -1,11 +1,14 @@
 import { compactNumber } from '@hermes/shared'
 import { useStore } from '@nanostores/react'
-import { memo, useState } from 'react'
+import { memo, useCallback, useState } from 'react'
 import type * as React from 'react'
 
+import { type DroppedFile } from '@/app/chat/hooks/use-composer-actions'
+import { useFileDropZone } from '@/app/chat/hooks/use-file-drop-zone'
 import { PrTag } from '@/app/chat/pr-tag'
 import { ProfileTag } from '@/app/chat/profile-tag'
 import { startSessionDrag } from '@/app/chat/session-drag'
+import { stageDroppedFilesForSession } from '@/app/chat/session-drop-attach'
 import { SessionTagChips } from '@/app/chat/session-tag'
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { openSession } from '@/app/open-session'
@@ -26,6 +29,7 @@ import { handoffOriginSource, sessionSourceLabel } from '@/lib/session-source'
 import { coarseElapsed } from '@/lib/time'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
+import { $draftAttachmentCounts, draftAttachmentCountIn } from '@/store/composer'
 import { $sidebarRowMeta } from '@/store/layout'
 import { normalizeProfileKey } from '@/store/profile'
 import { $projects } from '@/store/projects'
@@ -156,6 +160,24 @@ function SidebarSessionRowImpl({
   // closes. Open state lives here so every tip in the row shares the answer.
   const [peekOpen, setPeekOpen] = useState(false)
   const { cancelPrewarm, notePointerMove, startPrewarm } = useProfilePrewarm(session.profile)
+  // Dropping files on the row stages attachment chips into THIS session's
+  // composer draft — without opening it or moving focus; the attach count
+  // below is the badge. Row reorder/move drags are pointer gestures (never
+  // native DnD), so no arbitration against them is needed.
+  const pinKey = sessionPinId(session)
+
+  const onDropSessionFiles = useCallback(
+    (candidates: DroppedFile[]) => {
+      void stageDroppedFilesForSession(pinKey, candidates, session.cwd)
+    },
+    [pinKey, session.cwd]
+  )
+
+  const { dragKind: rowFileDrag, dropHandlers: fileDropHandlers } = useFileDropZone({
+    enabled: !dragging,
+    onDropFiles: onDropSessionFiles
+  })
+
   const title = sessionTitle(session)
   const density = useStore($sessionListDensity)
   // Condensed is a one-line variant taken further: dot + title, nothing else.
@@ -237,6 +259,25 @@ function SidebarSessionRowImpl({
   // on one-line rows. A selector keyed to this row: only rows whose own
   // fraction changes repaint on todo events.
   const todoProgress = useStoreSelector($todoProgressBySession, progress => progress[session.id])
+
+  // Chips staged into this session's composer via a file drop on the row —
+  // a paperclip count, offered next to the plan progress. Keyed on the pin id
+  // (the draft scope), so a compression lineage never un-counts a row.
+  const attachedCount = useStoreSelector($draftAttachmentCounts, counts => draftAttachmentCountIn(counts, pinKey))
+
+  if (!condensed && attachedCount > 0) {
+    trailing.push({
+      key: 'attached',
+      node: (
+        <Tip label={peekOpen ? '' : r.attachmentCount(attachedCount)} side="top">
+          <span className="inline-flex items-center gap-0.5 whitespace-nowrap tabular-nums text-[0.625rem] leading-none text-(--ui-text-tertiary)">
+            <Codicon name="attach" size="0.625rem" />
+            {attachedCount}
+          </span>
+        </Tip>
+      )
+    })
+  }
 
   // The one-line row's progress chip sits in the trailing slot so a working
   // row reads its plan without opening the chat. (todoProgress is only set
@@ -338,6 +379,7 @@ function SidebarSessionRowImpl({
         handoffLabel ? r.handoffOrigin(handoffLabel) : null,
         session.continuation_kind === 'compression' ? r.continuationOrigin : null,
         todoProgress ? `${r.todoProgress}: ${todoProgress}` : null,
+        attachedCount > 0 ? r.attachmentCount(attachedCount) : null,
         ...figures,
         showAge ? absoluteAge : null
       ].filter(Boolean) as string[])
@@ -458,6 +500,8 @@ function SidebarSessionRowImpl({
           // it (translucency let the rows below bleed through). data-glass-opaque
           // keeps that true when window glass thins the field.
           dragging && 'z-10 cursor-grabbing bg-(--ui-sidebar-surface-background)',
+          rowFileDrag === 'files' &&
+            'bg-(--ui-row-active-background) shadow-[inset_0_0_0_1px_var(--dt-composer-ring)]',
           className
         )}
         data-glass-opaque={dragging ? '' : undefined}
@@ -498,6 +542,7 @@ function SidebarSessionRowImpl({
         onPointerMove={notePointerMove}
         ref={ref}
         style={style}
+        {...fileDropHandlers}
         {...rest}
       >
         {showsRunningArc(dotState) && <span aria-hidden="true" className="arc-border arc-row" />}

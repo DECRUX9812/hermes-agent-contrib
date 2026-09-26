@@ -402,6 +402,101 @@ function loadPersistedDraftTexts(): [string, SessionDraft][] {
 
 const draftsBySession = new Map<string, SessionDraft>(loadPersistedDraftTexts())
 
+// ---------------------------------------------------------------------------
+// Row-drop staging — a file dropped on a session's sidebar ROW lands in that
+// session's composer as chips without opening it. Two halves:
+//   - `liveAttachmentScopes`: each mounted composer registers its attachment
+//     scope under its draft key, so staging writes straight into the live set
+//     (writing only the stash would be clobbered by that scope's next stash).
+//   - `$draftAttachmentCounts`: staged count per draft key — backs the row's
+//     "N attached" badge. Published by `stashSessionDraft` (the one funnel
+//     every persist goes through) and by the live-scope listener so chip
+//     edits repaint the badge between stash debounces.
+// ---------------------------------------------------------------------------
+
+const liveAttachmentScopes = new Map<string, ComposerAttachmentScope>()
+
+export const $draftAttachmentCounts = atom<Record<string, number>>(
+  Object.fromEntries(
+    [...draftsBySession]
+      .map(([key, draft]) => [key, draft.attachments.length] as const)
+      .filter(([, count]) => count > 0)
+  )
+)
+
+function publishDraftAttachmentCount(key: string, count: number): void {
+  const current = $draftAttachmentCounts.get()
+
+  if ((current[key] ?? 0) === count) {
+    return
+  }
+
+  const next = { ...current }
+
+  if (count > 0) {
+    next[key] = count
+  } else {
+    delete next[key]
+  }
+
+  $draftAttachmentCounts.set(next)
+}
+
+/** Staged count for one draft scope — the session row badge's selector. */
+export const draftAttachmentCountIn = (
+  counts: Record<string, number>,
+  scope: string | null | undefined
+): number => counts[draftKey(scope)] ?? 0
+
+/**
+ * Publish a mounted composer's live attachment set under its draft scope.
+ * Returns the unregister. On unregister the stash count is republished — the
+ * composer's own layout cleanup stashes before this passive cleanup runs, so
+ * the count cannot bounce back to a pre-stash value.
+ */
+export function registerComposerAttachmentScope(
+  scope: string | null | undefined,
+  attachments: ComposerAttachmentScope
+): () => void {
+  const key = draftKey(scope)
+  liveAttachmentScopes.set(key, attachments)
+  publishDraftAttachmentCount(key, attachments.$attachments.get().length)
+
+  const unlisten = attachments.$attachments.listen(list => publishDraftAttachmentCount(key, list.length))
+
+  return () => {
+    unlisten()
+
+    if (liveAttachmentScopes.get(key) === attachments) {
+      liveAttachmentScopes.delete(key)
+    }
+
+    publishDraftAttachmentCount(key, draftsBySession.get(key)?.attachments.length ?? 0)
+  }
+}
+
+/**
+ * Stage attachment chips into a session's draft without opening it. When a
+ * composer is mounted for the key the chips land in its live set (its normal
+ * stash keeps them); the stash merge always runs too, covering both the
+ * unmounted case and a mounted composer between stash beats. Returns the
+ * merged count.
+ */
+export function stageSessionDraftAttachments(
+  scope: string | null | undefined,
+  additions: readonly ComposerAttachment[]
+): number {
+  const key = draftKey(scope)
+  const live = liveAttachmentScopes.get(key)
+  const base = live?.$attachments.get() ?? draftsBySession.get(key)?.attachments ?? []
+  const merged = additions.reduce((list, attachment) => upsertAttachment(list, { ...attachment }), base)
+
+  live?.$attachments.set(merged)
+  stashSessionDraft(key, draftsBySession.get(key)?.text ?? '', merged)
+
+  return merged.length
+}
+
 /**
  * Patch one asynchronous attachment occurrence wherever the main composer owns
  * it. During a session switch the occurrence moves from the live atom into the
@@ -494,6 +589,7 @@ export function reloadPersistedDrafts(): void {
     const local = draftsBySession.get(key)
     draftsBySession.set(key, local?.attachments.length ? { ...local, text: draft.text } : draft)
     publishDraftTitle(key, deriveDraftTitle(draft.text))
+    publishDraftAttachmentCount(key, draftsBySession.get(key)?.attachments.length ?? 0)
   }
 
   // A key that vanished from storage was cleared (sent) in the other window.
@@ -501,6 +597,7 @@ export function reloadPersistedDrafts(): void {
     if (!incoming.has(key)) {
       draftsBySession.delete(key)
       publishDraftTitle(key, '')
+      publishDraftAttachmentCount(key, 0)
     }
   }
 }
@@ -594,6 +691,7 @@ export function stashSessionDraft(scope: string | null | undefined, text: string
 
   persistDraftTexts()
   publishDraftTitle(key, deriveDraftTitle(text))
+  publishDraftAttachmentCount(key, draftsBySession.get(key)?.attachments.length ?? 0)
 }
 
 export function takeSessionDraft(scope: string | null | undefined): SessionDraft {
@@ -654,6 +752,7 @@ export function migrateComposerDraftsForProfile(from: string, to: string): void 
 
   if (draftsBySession.delete(oldKey)) {
     publishDraftTitle(oldKey, '')
+    publishDraftAttachmentCount(oldKey, 0)
     persistDraftTexts()
   }
 }
@@ -678,6 +777,7 @@ export function dropComposerDraftsForProfile(
   }
 
   publishDraftTitle(key, '')
+  publishDraftAttachmentCount(key, 0)
   persistDraftTexts()
 }
 

@@ -4128,6 +4128,7 @@ export const deOverrides = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'Nachricht' : 'Nachrichten'}`,
       todoProgress: 'Aufgaben abgeschlossen',
+      attachmentCount: count => `${count} angehängt`,
       digest: {
         agents: count => (count === 1 ? 'Ein Agent läuft' : `${count} Agents laufen`),
         approve: command => `Genehmigen: ${command}`,

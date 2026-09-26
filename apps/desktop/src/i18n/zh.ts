@@ -3538,6 +3538,7 @@ export const zh = defineLocale({
       untitledChat: id => `会话 ${id}`,
       messageCount: count => `${count} 条消息`,
       todoProgress: '任务完成度',
+      attachmentCount: count => `${count} 个附件`,
       digest: {
         agents: count => `${count} 个子代理正在运行`,
         approve: command => `批准：${command}`,
