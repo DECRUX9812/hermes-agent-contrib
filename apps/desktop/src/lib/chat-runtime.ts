@@ -34,6 +34,7 @@ export function createClientSessionState(
     fast: false,
     yolo: false,
     personality: '',
+    skills: {},
     busy: false,
     awaitingResponse: false,
     streamId: null,
@@ -59,6 +60,54 @@ export function createClientSessionState(
  */
 export function markReasoningEffortPending(state: ClientSessionState): ClientSessionState {
   return state.reasoningEffortPending === false ? state : { ...state, reasoningEffortPending: true }
+}
+
+/** Normalize the `skills` field of session info payloads into the category →
+ *  names map the header chip renders. The wire shape is `Record<category,
+ *  names[]>`; a flat names array (older backends) groups under ''. */
+export function normalizeSessionSkills(value: unknown): Record<string, string[]> {
+  if (Array.isArray(value)) {
+    const names = value.filter((n): n is string => typeof n === 'string' && n.length > 0)
+
+    return names.length ? { '': names } : {}
+  }
+
+  if (!value || typeof value !== 'object') {
+    return {}
+  }
+
+  const skills: Record<string, string[]> = {}
+
+  for (const [category, names] of Object.entries(value as Record<string, unknown>)) {
+    const list = Array.isArray(names)
+      ? names.filter((n): n is string => typeof n === 'string' && n.length > 0)
+      : []
+
+    if (list.length) {
+      skills[category] = list
+    }
+  }
+
+  return skills
+}
+
+/** Structural equality for two skills maps — used to keep the session-state
+ *  object's reference identity when a heartbeat restates the same set. */
+export function sameSessionSkills(a: Record<string, string[]>, b: Record<string, string[]>): boolean {
+  const aKeys = Object.keys(a)
+
+  if (aKeys.length !== Object.keys(b).length) {
+    return false
+  }
+
+  return aKeys.every(key => {
+    const names = a[key]
+    const other = b[key]
+
+    return (
+      Array.isArray(other) && names.length === other.length && names.every((n, i) => n === other[i])
+    )
+  })
 }
 
 export function sessionTitle(session: SessionInfo): string {

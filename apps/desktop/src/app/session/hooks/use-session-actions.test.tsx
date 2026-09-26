@@ -1857,6 +1857,7 @@ describe('resumeSession failure recovery', () => {
             pendingBranchGroup: null,
             personality: '',
             provider: '',
+            skills: {},
             reasoningEffort: '',
             runtimeStartedAt: 0,
             sawAssistantPayload: false,

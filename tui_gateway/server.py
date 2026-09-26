@@ -2293,8 +2293,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
                 name = t["function"]["name"]
                 info["tools"].setdefault(get_toolset_for_tool(name) or "other", []).append(name)
         with contextlib.suppress(Exception):
-            from hermes_cli.banner import get_available_skills
-            info["skills"] = get_available_skills()
+            info["skills"] = _session_skills(session_key, sess)
     info["mcp_servers"] = []
     with contextlib.suppress(Exception):
         from tools.mcp_tool_discovery import get_mcp_status
@@ -2312,6 +2311,40 @@ def _session_info(agent, session: dict | None = None) -> dict:
     if live_agent and (warn := _probe_credentials(agent)):
         info["credential_warning"] = warn
     return info
+
+
+# Per-session memo TTL for the skills map, mirroring tools.skills_tool._SKILLS_CACHE_TTL_SECONDS:
+# _find_all_skills' single signature slot thrashes between multiplexed sessions, so without a
+# per-session memo each broadcast would pay a full tree walk.
+_SESSION_SKILLS_TTL_SECONDS = 30.0
+
+
+def _session_skills(session_key: str, session: dict) -> dict:
+    """The session's skill set grouped by category, resolved under THIS session's cwd + profile
+    home — the same pin the agent build and _persist_live_session_system_prompt apply — so
+    broadcast/off-turn callers never leak the caller's context onto another session (#114359
+    pinned the same context for commands.catalog / complete.slash / skills.reload). Memoized on
+    the session record.
+
+    Scans _find_all_skills directly rather than banner.get_available_skills: the banner memo is
+    per-process, so under the launch profile the first session's (or the startup prefetch's)
+    result would answer every session — project skills would never differ by cwd."""
+    now = time.monotonic()
+    cached = session.get("_skills_info_cache")
+    if isinstance(cached, tuple) and now - cached[0] < _SESSION_SKILLS_TTL_SECONDS:
+        return dict(cached[1])
+    tokens = _set_session_context(session_key, cwd=_session_cwd(session))
+    try:
+        with _session_profile_runtime_scope(session, hydrate_secrets=False):
+            from tools.skills_tool import _find_all_skills
+            skills: dict = {}
+            for skill in _find_all_skills():
+                skills.setdefault(skill.get("category") or "general", []).append(skill["name"])
+    finally:
+        _clear_session_context(tokens)
+    if session:
+        session["_skills_info_cache"] = (now, skills)
+    return dict(skills)
 
 
 def _tool_ctx(name: str, args: dict) -> str:

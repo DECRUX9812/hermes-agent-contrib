@@ -102,6 +102,11 @@ interface PaneChrome extends PaneSizing {
    *  the tab and the sidebar row render status/color from the ONE primitive
    *  (self-subscribing — it updates without the strip re-registering). */
   tabLead?: () => React.ReactNode
+  /** A node the ACTIVE pane contributes to its zone strip's pinned trailing
+   *  edge — a per-pane affordance that answers "what is this surface" at a
+   *  glance (a session's skill chip). Read only for the zone's active pane,
+   *  self-subscribing like `tabLead`; absent/empty renders nothing. */
+  stripTrail?: () => React.ReactNode
   /** Mint another tab of THIS pane's kind — the strip's "+" while this pane is
    *  active. A Browser tab makes another Browser tab; a pane that is one of a
    *  kind (a file peek) leaves it absent and the strip falls back to the chat

@@ -297,6 +297,9 @@ export function TreeGroup({
   const tabsBelowControls = topEdge && (sidebarGroup || measuredBelowControls)
   const tabsInTitlebar = topEdge && !tabsBelowControls
   const pageHeader = paneChrome(active).headerContent
+  // The active pane's strip-trailing affordance (a session's skill chip) —
+  // pinned right of the tab list, never scrolled away.
+  const stripTrail = paneChrome(active).stripTrail
 
   // What the strip's "+" makes. The pane you are LOOKING AT answers first (a
   // Browser tab makes another Browser, even stacked into the chat strip), then
@@ -589,6 +592,16 @@ export function TreeGroup({
                 titlebar={tabsInTitlebar}
                 trailing={
                   <>
+                    {stripTrail && (
+                      // Pointerdown is claimed so the chip's click can't also
+                      // activate/drag a tab or move the window behind the strip.
+                      <span
+                        className="flex shrink-0 items-center self-center [-webkit-app-region:no-drag]"
+                        onPointerDown={event => event.stopPropagation()}
+                      >
+                        {stripTrail()}
+                      </span>
+                    )}
                     {minimizable && (
                       <button
                         aria-label={node.minimized ? t.zones.restore : minimizeLabel}

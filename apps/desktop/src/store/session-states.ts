@@ -35,7 +35,7 @@ import type { WorkspaceMode } from '@/contrib/types'
 import type { ChatMessage } from '@/lib/chat-messages'
 import type { ErrorSurface } from '@/lib/error-surface'
 import { tileFocusStampOnFocusChange } from '@/lib/session-timer-since'
-import { stableArray } from '@/lib/stable-array'
+import { stableArray, stableRecord } from '@/lib/stable-array'
 import { readJson, writeJson } from '@/lib/storage'
 import type { SessionInfo } from '@/types/hermes'
 
@@ -87,6 +87,28 @@ import { isBrowserWindow, isSecondaryWindow } from './windows'
 // ---------------------------------------------------------------------------
 
 export const $sessionStates = atom<Record<string, ClientSessionState>>({})
+
+// A session's reported skill set by STORED id — the zone-strip skill chip's
+// lookup. `state.skills` is already reference-stable per session (the ingest
+// path swaps it only on change), so the `stableRecord` projection emits only
+// when a set actually flips — not per message delta. Claimed under every
+// lineage alias so a surface holding a pre-compression tip still resolves.
+let skillsByStoredId: Readonly<Record<string, Record<string, string[]>>> = {}
+export const $skillsByStoredId = computed([$sessionStates, $sessions], (states, sessions) => {
+  const next: Record<string, Record<string, string[]>> = {}
+
+  for (const state of Object.values(states)) {
+    if (!state?.storedSessionId) {
+      continue
+    }
+
+    for (const alias of lineageAliases(state.storedSessionId, sessions)) {
+      next[alias] = state.skills
+    }
+  }
+
+  return (skillsByStoredId = stableRecord(skillsByStoredId, next))
+})
 
 // ---------------------------------------------------------------------------
 // Event-source scopes: which registry connection's socket delivered a runtime

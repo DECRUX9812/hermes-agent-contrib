@@ -4,6 +4,7 @@ import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } f
 
 import { SessionDraftTitle } from '@/app/chat/session-draft-title'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
+import { SkillTag } from '@/app/chat/skill-tag'
 import { PALETTE_AREA, type PaletteContribution, paletteToggle } from '@/app/command-palette/contrib'
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
 import { AskDirective } from '@/components/assistant-ui/ask-directive'
@@ -524,6 +525,9 @@ const syncWorkspaceTitle = () => {
       // label subscribes to it directly — typing renames the tab without
       // re-registering the pane.
       tabTitle: stored ? undefined : () => <SessionDraftTitle scope={selected} />,
+      // The focused conversation's skill count, pinned to the zone strip's
+      // trailing edge (the pane strip is the conversation's header here).
+      stripTrail: () => <SkillTag storedSessionId={selected} />,
       // Pages aren't tab-able: the main zone's bar stands down while one shows.
       headerVeto: $workspaceIsPage.get(),
       // Page-owned controls take the vetoed tab row. Deliberately NOT the

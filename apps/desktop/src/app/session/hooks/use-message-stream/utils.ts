@@ -1,5 +1,5 @@
 import type { GatewayEventPayload } from '@/lib/chat-messages'
-import { normalizePersonalityValue } from '@/lib/chat-runtime'
+import { normalizePersonalityValue, normalizeSessionSkills, sameSessionSkills } from '@/lib/chat-runtime'
 import { isTodoToolName } from '@/lib/todos'
 
 import type { ClientSessionState } from '../../../types'
@@ -17,6 +17,7 @@ type SessionRuntimeStatePatch = Partial<
     | 'reasoningEffortPending'
     | 'reasoningEffortWire'
     | 'serviceTier'
+    | 'skills'
     | 'yolo'
   >
 >
@@ -65,6 +66,10 @@ export function sessionInfoStatePatch(payload: GatewayEventPayload | undefined):
     patch.yolo = payload.yolo
   }
 
+  if (payload?.skills !== undefined) {
+    patch.skills = normalizeSessionSkills(payload.skills)
+  }
+
   return patch
 }
 
@@ -90,6 +95,7 @@ export function applySessionInfoStatePatch(
     (patch.reasoningEffortPending === undefined ||
       patch.reasoningEffortPending === Boolean(state.reasoningEffortPending)) &&
     (patch.serviceTier === undefined || patch.serviceTier === state.serviceTier) &&
+    (patch.skills === undefined || sameSessionSkills(patch.skills, state.skills)) &&
     (patch.yolo === undefined || patch.yolo === state.yolo)
   ) {
     return state
