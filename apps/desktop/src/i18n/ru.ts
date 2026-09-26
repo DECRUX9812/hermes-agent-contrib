@@ -4451,6 +4451,11 @@ export const ru = defineLocale({
       timedOut: 'Превышено время ожидания шлюза. Выполняется ли `hermes gateway`?'
     }
   },
+  quickEntry: {
+    contextLabel: 'Контекст',
+    contextRemove: 'Убрать контекст'
+  },
+
   tips: {
     items: {
       'advanced-mode': {

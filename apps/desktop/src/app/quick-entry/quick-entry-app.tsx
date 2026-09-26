@@ -60,8 +60,15 @@ export function QuickEntryApp() {
       dispatch({
         connected: payload?.connected === true,
         sessions: Array.isArray(payload?.sessions) ? payload.sessions : [],
+        strings: payload?.strings,
         type: 'state'
       })
+    })
+
+    // Main's summon-time frontmost-app capture resolves asynchronously — the
+    // chip can pop in a beat after the window paints.
+    const offContext = api?.onContext(context => {
+      dispatch({ context: context ?? null, type: 'context' })
     })
 
     inputRef.current?.focus()
@@ -69,6 +76,7 @@ export function QuickEntryApp() {
     return () => {
       offShown?.()
       offState?.()
+      offContext?.()
     }
   }, [])
 
@@ -153,6 +161,54 @@ export function QuickEntryApp() {
             value={state.draft}
           />
         </div>
+        {state.context ? (
+          <div style={{ alignItems: 'center', display: 'flex', gap: 6 }}>
+            <span
+              style={{
+                alignItems: 'center',
+                border: '1px solid var(--ui-stroke-secondary, rgba(127,127,127,0.35))',
+                borderRadius: 6,
+                color: 'var(--muted-foreground, #8a8a8a)',
+                display: 'inline-flex',
+                fontSize: 11,
+                gap: 5,
+                maxWidth: '100%',
+                minWidth: 0,
+                padding: '2px 6px',
+                userSelect: 'none'
+              }}
+            >
+              <span style={{ flexShrink: 0 }}>{state.strings.contextLabel}:</span>
+              <span
+                style={{
+                  color: 'var(--foreground, #eee)',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {state.context.title ? `${state.context.app} · ${state.context.title}` : state.context.app}
+              </span>
+              <button
+                aria-label={state.strings.contextRemove}
+                onClick={() => dispatch({ type: 'drop-context' })}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--muted-foreground, #8a8a8a)',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                  fontSize: 11,
+                  lineHeight: 1,
+                  padding: '0 1px'
+                }}
+                type="button"
+              >
+                ×
+              </button>
+            </span>
+          </div>
+        ) : null}
         <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
           <label
             htmlFor="quick-entry-target"

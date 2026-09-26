@@ -181,4 +181,58 @@ describe('quickComposerReducer', () => {
     expect(first.sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'one' }])
     expect(second.sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'two' }])
   })
+
+  const context = { app: 'Safari', title: 'Pull Request #37' }
+
+  it('a captured context rides the submit payload while the chip is up', () => {
+    const { sent, state } = run([
+      connect,
+      { context, type: 'context' },
+      { draft: 'review this', type: 'edit' },
+      { type: 'submit' }
+    ])
+
+    expect(sent).toEqual([{ context, target: QUICK_TARGET_CURRENT, text: 'review this' }])
+    expect(state.context).toBeNull()
+  })
+
+  it('dropping the chip keeps the draft but submits without context', () => {
+    const { sent } = run([
+      connect,
+      { context, type: 'context' },
+      { type: 'drop-context' },
+      { draft: 'no thanks', type: 'edit' },
+      { type: 'submit' }
+    ])
+
+    expect(sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'no thanks' }])
+  })
+
+  it('a late context arriving into a dismissed window is dropped', () => {
+    const { state } = run([connect, { type: 'dismiss' }, { context, type: 'context' }])
+
+    expect(state.context).toBeNull()
+  })
+
+  it('re-summoning clears last summon’s chip before the fresh capture lands', () => {
+    const shown = run([connect, { context, type: 'context' }])
+    const { sent, state } = run([{ type: 'shown' }, { draft: 'x', type: 'edit' }, { type: 'submit' }], shown.state)
+
+    expect(state.context).toBeNull()
+    expect(sent).toEqual([{ target: QUICK_TARGET_CURRENT, text: 'x' }])
+  })
+
+  it('a state push refreshes the pushed chip strings', () => {
+    const { state } = run([
+      {
+        connected: true,
+        sessions: [],
+        strings: { contextLabel: 'Kontext', contextRemove: 'Kontext entfernen' },
+        type: 'state'
+      }
+    ])
+
+    expect(state.strings.contextLabel).toBe('Kontext')
+    expect(state.strings.contextRemove).toBe('Kontext entfernen')
+  })
 })

@@ -5,7 +5,9 @@ import {
   DEFAULT_QUICK_ENTRY_SHORTCUT,
   type GlobalShortcutLike,
   parseQuickEntryShortcut,
+  pickQuickEntryContext,
   quickEntryWindowBounds,
+  sanitizeQuickEntryContext,
   sanitizeQuickEntrySettings
 } from './quick-entry'
 
@@ -236,5 +238,63 @@ describe('quickEntryWindowBounds', () => {
 
   it('falls back to the origin without a work area', () => {
     expect(quickEntryWindowBounds()).toEqual({ height: 168, width: 640, x: 0, y: 0 })
+  })
+})
+
+describe('pickQuickEntryContext', () => {
+  const selfPid = 100
+
+  it('returns the first window belonging to another process', () => {
+    const windows = [
+      { app: 'Hermes', pid: selfPid, title: 'Hermes' },
+      { app: 'Safari', pid: 200, title: 'Pull Request #37' },
+      { app: 'Code', pid: 300, title: 'main.ts' }
+    ]
+
+    expect(pickQuickEntryContext(windows, selfPid)).toEqual({ app: 'Safari', title: 'Pull Request #37' })
+  })
+
+  it('skips own-process windows wherever they sit in z-order', () => {
+    const windows = [
+      { app: 'Hermes', pid: selfPid, title: 'Hermes' },
+      { app: 'Hermes', pid: selfPid, title: 'Quick Entry' },
+      { app: 'Code', pid: 300, title: 'main.ts' }
+    ]
+
+    expect(pickQuickEntryContext(windows, selfPid)).toEqual({ app: 'Code', title: 'main.ts' })
+  })
+
+  it('yields nothing when nothing but our own windows are up', () => {
+    expect(pickQuickEntryContext([{ app: 'Hermes', pid: selfPid, title: 'Hermes' }], selfPid)).toBeNull()
+    expect(pickQuickEntryContext([], selfPid)).toBeNull()
+    expect(pickQuickEntryContext(null, selfPid)).toBeNull()
+    expect(pickQuickEntryContext(undefined, selfPid)).toBeNull()
+  })
+
+  it('skips unnamed windows so an app-less row cannot mint a blank chip', () => {
+    const windows = [
+      { app: '  ', pid: 200, title: 'something' },
+      { app: 'Code', pid: 300, title: 'main.ts' }
+    ]
+
+    expect(pickQuickEntryContext(windows, selfPid)).toEqual({ app: 'Code', title: 'main.ts' })
+  })
+})
+
+describe('sanitizeQuickEntryContext', () => {
+  it('accepts a well-formed payload and trims the app name', () => {
+    expect(sanitizeQuickEntryContext({ app: '  Safari ', title: 'Docs' })).toEqual({ app: 'Safari', title: 'Docs' })
+  })
+
+  it('defaults a missing or non-string title to empty', () => {
+    expect(sanitizeQuickEntryContext({ app: 'Code' })).toEqual({ app: 'Code', title: '' })
+    expect(sanitizeQuickEntryContext({ app: 'Code', title: 42 })).toEqual({ app: 'Code', title: '' })
+  })
+
+  it('rejects everything without a usable app name', () => {
+    expect(sanitizeQuickEntryContext(null)).toBeNull()
+    expect(sanitizeQuickEntryContext('Safari')).toBeNull()
+    expect(sanitizeQuickEntryContext({ app: '   ', title: 'x' })).toBeNull()
+    expect(sanitizeQuickEntryContext({ title: 'x' })).toBeNull()
   })
 })

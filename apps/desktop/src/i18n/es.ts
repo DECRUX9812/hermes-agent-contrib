@@ -6184,6 +6184,11 @@ export const esOverrides = {
       startMessaging: 'Iniciar mensajería'
     }
   },
+  quickEntry: {
+    contextLabel: 'Contexto',
+    contextRemove: 'Quitar contexto'
+  },
+
   tips: {
     close: 'No volver a mostrar este consejo',
     items: {

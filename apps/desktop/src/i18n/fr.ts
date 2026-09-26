@@ -6205,6 +6205,11 @@ export const frOverrides = {
       startMessaging: 'Démarrer la messagerie'
     }
   },
+  quickEntry: {
+    contextLabel: 'Contexte',
+    contextRemove: 'Retirer le contexte'
+  },
+
   tips: {
     close: 'Ne plus afficher cette astuce',
     items: {
