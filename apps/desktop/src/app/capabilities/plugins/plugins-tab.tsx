@@ -652,6 +652,7 @@ export const PluginsTab = memo(function PluginsTab({
     (entry: CatalogEntry) => installedByCatalogName.get(entry.name),
     [installedByCatalogName]
   )
+
   const isInstalled = (entry: CatalogEntry) => packageById.has(entry.id)
 
   const handleAgentRemove = useCallback(
