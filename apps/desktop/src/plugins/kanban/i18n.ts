@@ -50,6 +50,8 @@ type KanbanMessages = {
   allTenants: string
   showArchived: string
   groupRunning: string
+  teamLanes: string
+  teamLaneEmpty: string
   nSelected: (n: number) => string
   moveToShort: string
   assign: string
@@ -268,6 +270,8 @@ export const en: KanbanMessages = {
   allTenants: 'All tenants',
   showArchived: 'Show archived',
   groupRunning: 'Group Running by profile',
+  teamLanes: 'Team lanes',
+  teamLaneEmpty: 'Drop a card here to delegate',
   nSelected: n => `${n} selected`,
   moveToShort: 'Move to',
   assign: 'Assign',
@@ -482,6 +486,8 @@ const ja: KanbanMessages = {
   allTenants: 'すべてのテナント',
   showArchived: 'アーカイブを表示',
   groupRunning: '実行中をプロフィールでグループ化',
+  teamLanes: 'チームレーン',
+  teamLaneEmpty: 'ここにカードをドロップして委任',
   nSelected: n => `${n} 件選択中`,
   moveToShort: '移動',
   assign: '割り当て',
@@ -694,6 +700,8 @@ const zh: KanbanMessages = {
   allTenants: '所有租户',
   showArchived: '显示已归档',
   groupRunning: '按配置档分组运行中',
+  teamLanes: '团队泳道',
+  teamLaneEmpty: '将卡片拖到此处以委派',
   nSelected: n => `已选择 ${n} 个`,
   moveToShort: '移动到',
   assign: '分配',
@@ -904,6 +912,8 @@ const zhHant: KanbanMessages = {
   allTenants: '所有租戶',
   showArchived: '顯示已封存',
   groupRunning: '依設定檔分組執行中',
+  teamLanes: '團隊泳道',
+  teamLaneEmpty: '將卡片拖到此處以委派',
   nSelected: n => `已選取 ${n} 個`,
   moveToShort: '移至',
   assign: '指派',
@@ -1115,6 +1125,8 @@ const fr: KanbanMessages = {
   allTenants: 'Tous les tenants',
   showArchived: 'Afficher les archives',
   groupRunning: 'Grouper En cours par profil',
+  teamLanes: 'Couloirs par agent',
+  teamLaneEmpty: 'Déposez une carte ici pour la déléguer',
   nSelected: n => `${n} sélectionnée(s)`,
   moveToShort: 'Déplacer vers',
   assign: 'Assigner',
@@ -1329,6 +1341,8 @@ const de: KanbanMessages = {
   allTenants: 'Alle Tenants',
   showArchived: 'Archivierte anzeigen',
   groupRunning: 'Läuft nach Profil gruppieren',
+  teamLanes: 'Team-Lanes',
+  teamLaneEmpty: 'Karte hier ablegen, um zu delegieren',
   nSelected: n => `${n} ausgewählt`,
   moveToShort: 'Verschieben nach',
   assign: 'Zuweisen',
@@ -1543,6 +1557,8 @@ const es: KanbanMessages = {
   allTenants: 'Todos los tenants',
   showArchived: 'Mostrar archivadas',
   groupRunning: 'Agrupar En curso por perfil',
+  teamLanes: 'Carriles por agente',
+  teamLaneEmpty: 'Suelta una tarjeta aquí para delegarla',
   nSelected: n => `${n} seleccionadas`,
   moveToShort: 'Mover a',
   assign: 'Asignar',
@@ -1757,6 +1773,8 @@ const ru: KanbanMessages = {
   allTenants: 'Все тенанты',
   showArchived: 'Показать архив',
   groupRunning: 'Группировать «Выполняется» по профилям',
+  teamLanes: 'Дорожки по агентам',
+  teamLaneEmpty: 'Перетащите карточку сюда, чтобы делегировать',
   nSelected: n => `Выбрано: ${n}`,
   moveToShort: 'Переместить в',
   assign: 'Назначить',
@@ -1971,6 +1989,8 @@ const ar: KanbanMessages = {
   allTenants: 'كل المستأجرين',
   showArchived: 'إظهار المؤرشفة',
   groupRunning: 'تجميع «قيد التشغيل» حسب الملف',
+  teamLanes: 'مسارات الفريق',
+  teamLaneEmpty: 'أفلت بطاقة هنا لتفويضها',
   nSelected: n => `${n} محددة`,
   moveToShort: 'نقل إلى',
   assign: 'إسناد',

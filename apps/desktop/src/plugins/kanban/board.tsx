@@ -66,6 +66,7 @@ import {
   $collapsedLanes,
   $introDismissed,
   $lanesByProfile,
+  $teamLanes,
   boardKey,
   boardKeyPrefix,
   boardsKey,
@@ -78,6 +79,7 @@ import {
   fetchProfiles,
   patchTask,
   profilesKey,
+  reassignTask,
   taskKey,
   useKanbanScope
 } from './api'
@@ -85,6 +87,7 @@ import { BoardSwitcher } from './board-switcher'
 import { TaskDrawer } from './drawer'
 import { EMPTY_OVERRIDE, ModelOverrideField, overrideCreateFields, type TaskModelOverride } from './model-override'
 import { OrchestrationPanel } from './orchestration'
+import { assignCard, laneTasks, teamLaneNames, UNASSIGNED_LANE } from './team-lanes'
 import { columnMeta, type KanbanBoard, type KanbanTask, type TaskEstimate } from './types'
 import {
   $newTaskLane,
@@ -519,6 +522,136 @@ function Column({
   )
 }
 
+// ── team lane ────────────────────────────────────────────────────────────────
+
+// Team view: one lane per profile (plus unassigned). Dropping a card on a lane
+// DELEGATES it — POST /tasks/:id/reassign — rather than moving its status;
+// status moves stay on the card's context menu. Unlike status columns, empty
+// lanes are the feature (they're the delegation targets), so they never
+// auto-collapse — manual collapse only, keyed `team:<name>` so the overrides
+// never collide with a status lane's.
+function TeamLane({
+  collapsed,
+  columns,
+  lane,
+  onDelegate,
+  onDelete,
+  onMove,
+  onOpen,
+  onToggle,
+  onToggleSelect,
+  selected,
+  tasks
+}: {
+  collapsed: boolean
+  columns: string[]
+  lane: string
+  onDelegate: (id: string, profile: string) => void
+  onDelete: (id: string) => void
+  onMove: (id: string, status: string) => void
+  onOpen: (id: string) => void
+  onToggle: () => void
+  onToggleSelect: (id: string) => void
+  selected: ReadonlySet<string>
+  tasks: KanbanTask[]
+}) {
+  const k = useKanban()
+  const [over, setOver] = useState(false)
+  const unassigned = lane === UNASSIGNED_LANE
+  const label = unassigned ? k.unassigned : lane
+
+  const dragHandlers = {
+    onDragLeave: () => setOver(false),
+    onDragOver: (event: ReactDragEvent<HTMLElement>) => {
+      event.preventDefault()
+      event.dataTransfer.dropEffect = 'move'
+      setOver(true)
+    },
+    onDrop: (event: ReactDragEvent<HTMLElement>) => {
+      event.preventDefault()
+      setOver(false)
+      const id = event.dataTransfer.getData('text/plain')
+
+      if (id) {
+        onDelegate(id, unassigned ? '' : lane)
+      }
+    }
+  }
+
+  const wash = over ? 'bg-(--ui-bg-quinary)' : 'bg-[color-mix(in_srgb,var(--ui-bg-quinary)_50%,transparent)]'
+
+  if (collapsed) {
+    return (
+      <button
+        {...dragHandlers}
+        aria-label={k.expand(label)}
+        className={cn(
+          'flex h-full w-8 shrink-0 flex-col items-center gap-1.5 rounded-lg p-2 transition-colors hover:bg-(--ui-bg-quinary)',
+          wash
+        )}
+        onClick={onToggle}
+        type="button"
+      >
+        <span className="grid h-5 shrink-0 place-items-center">
+          {unassigned ? <Codicon name="inbox" size="0.75rem" /> : <Avatar name={lane} size="1rem" />}
+        </span>
+        <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary) [writing-mode:vertical-rl]">
+          {label}
+        </span>
+        {tasks.length > 0 && (
+          <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{tasks.length}</span>
+        )}
+      </button>
+    )
+  }
+
+  return (
+    <div
+      {...dragHandlers}
+      className={cn('group/col flex h-full w-64 shrink-0 flex-col rounded-lg p-2 transition-colors', wash)}
+    >
+      <header className="mb-1.5 flex h-5 items-center gap-1.5 px-1">
+        {unassigned ? (
+          <Codicon className="text-(--ui-text-quaternary)" name="inbox" size="0.75rem" />
+        ) : (
+          <Avatar name={lane} size="1rem" />
+        )}
+        <span className="truncate text-[0.6875rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary)">
+          {label}
+        </span>
+        <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{tasks.length}</span>
+        <button
+          aria-label={k.collapse(label)}
+          className="ml-auto grid size-5 place-items-center rounded text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--chrome-action-hover) hover:text-foreground focus-visible:opacity-100 group-hover/col:opacity-100"
+          onClick={onToggle}
+          type="button"
+        >
+          <Codicon name="chevron-left" size="0.75rem" />
+        </button>
+      </header>
+      <div className="relative flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+        {tasks.map(task => (
+          <Card
+            columns={columns}
+            key={task.id}
+            onDelete={onDelete}
+            onMove={onMove}
+            onOpen={onOpen}
+            onToggleSelect={onToggleSelect}
+            selected={selected.has(task.id)}
+            task={task}
+          />
+        ))}
+        {tasks.length === 0 && (
+          <div className="pointer-events-none absolute inset-0 grid place-items-center text-[0.6875rem] text-(--ui-text-quaternary)">
+            {k.teamLaneEmpty}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── dialogs ──────────────────────────────────────────────────────────────────
 
 const NO_PARENT = '__none__'
@@ -863,8 +996,6 @@ function Intro() {
   )
 }
 
-const UNASSIGNED_LANE = 'unassigned'
-
 // ── filter kebab ─────────────────────────────────────────────────────────────
 
 function FilterMenu({
@@ -887,6 +1018,7 @@ function FilterMenu({
   const k = useKanban()
   const active = Boolean(assignee || tenant || archived)
   const lanesByProfile = useValue($lanesByProfile)
+  const teamLanes = useValue($teamLanes)
 
   const check = (on: boolean) => (on ? <Codicon className="ml-auto" name="check" size="0.8rem" /> : null)
 
@@ -937,6 +1069,10 @@ function FilterMenu({
         <DropdownMenuItem onSelect={() => $lanesByProfile.set(!lanesByProfile)}>
           {k.groupRunning}
           {check(lanesByProfile)}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => $teamLanes.set(!teamLanes)}>
+          {k.teamLanes}
+          {check(teamLanes)}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -1103,6 +1239,8 @@ export function KanbanBoardPage() {
   const [tenant, setTenant] = useState('')
   const [assignee, setAssignee] = useState('')
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const teamLanes = useValue($teamLanes)
+  const { data: roster } = useQuery({ queryKey: profilesKey(scope), queryFn: fetchProfiles, staleTime: 60_000 })
 
   // A new-task request raised from outside the page (⌘⌥N, the palette row).
   // The command navigates here and parks the lane; the page picks it up on
@@ -1235,6 +1373,31 @@ export function KanbanBoardPage() {
     onSettled: () => void qc.invalidateQueries({ queryKey: boardKeyPrefix(scope) })
   })
 
+  const delegateMut = useMutation({
+    mutationFn: ({ id, profile }: { id: string; profile: string }) => reassignTask(id, profile),
+    onMutate: async ({ id, profile }) => {
+      await qc.cancelQueries({ queryKey: boardKey(scope, slug, archived) })
+      const previous = qc.getQueryData<KanbanBoard>(boardKey(scope, slug, archived))
+
+      if (previous) {
+        qc.setQueryData(boardKey(scope, slug, archived), assignCard(previous, id, profile || null))
+      }
+
+      return { previous }
+    },
+    onError: (err, _vars, context) => {
+      if (context?.previous) {
+        qc.setQueryData(boardKey(scope, slug, archived), context.previous)
+      }
+
+      host.notify({ kind: 'error', message: errText(err) })
+    },
+    onSettled: (_data, _err, vars) => {
+      void qc.invalidateQueries({ queryKey: boardKeyPrefix(scope) })
+      void qc.invalidateQueries({ queryKey: taskKey(scope, slug, vars.id) })
+    }
+  })
+
   const onMove = (id: string, status: string) => {
     const task = board?.columns.flatMap(col => col.tasks).find(candidate => candidate.id === id)
 
@@ -1250,6 +1413,31 @@ export function KanbanBoardPage() {
 
     moveMut.mutate({ id, status })
   }
+
+  // Team-lane drop = delegate. '' targets the unassigned lane (unassign).
+  const onDelegate = (id: string, profile: string) => {
+    const task = board?.columns.flatMap(col => col.tasks).find(candidate => candidate.id === id)
+
+    if (!task || (task.assignee ?? '') === profile) {
+      return
+    }
+
+    delegateMut.mutate({ id, profile })
+  }
+
+  // Lane membership: the roster (ordered), then stray assignees the board
+  // still references, then unassigned — empty lanes render as drop targets.
+  const lanes = useMemo(
+    () =>
+      teamLanes && filtered
+        ? teamLaneNames(
+            (roster?.profiles ?? []).map(profile => profile.name),
+            board?.assignees ?? [],
+            filtered.columns
+          )
+        : [],
+    [teamLanes, filtered, roster, board]
+  )
 
   const errorMessage = error ? errText(error) : null
 
@@ -1378,7 +1566,7 @@ export function KanbanBoardPage() {
         <div className="grid flex-1 place-items-center">
           <Loader type="lemniscate-bloom" />
         </div>
-      ) : total === 0 ? (
+      ) : total === 0 && !teamLanes ? (
         <div className="grid flex-1 place-items-center px-4 text-center">
           <div className="flex flex-col items-center gap-2">
             <Codicon className="text-(--ui-text-quaternary)" name="project" size="1.25rem" />
@@ -1395,26 +1583,43 @@ export function KanbanBoardPage() {
           onMouseDown={onMouseDown}
           ref={lanesRef}
         >
-          {filtered.columns.map(col => {
-            const auto = boardHasWork && col.tasks.length === 0
+          {teamLanes
+            ? lanes.map(lane => (
+                <TeamLane
+                  collapsed={laneOverrides[`team:${lane}`] ?? false}
+                  columns={columnNames}
+                  key={lane}
+                  lane={lane}
+                  onDelegate={onDelegate}
+                  onDelete={id => deleteMut.mutate(id)}
+                  onMove={onMove}
+                  onOpen={setOpenId}
+                  onToggle={() => toggleLane(`team:${lane}`, false)}
+                  onToggleSelect={toggleSelect}
+                  selected={selected}
+                  tasks={laneTasks(filtered.columns, lane)}
+                />
+              ))
+            : filtered.columns.map(col => {
+                const auto = boardHasWork && col.tasks.length === 0
 
-            return (
-              <Column
-                collapsed={laneOverrides[col.name] ?? auto}
-                column={col}
-                columns={columnNames}
-                key={col.name}
-                onAdd={setAddStatus}
-                onDelete={id => deleteMut.mutate(id)}
-                onDropTask={onMove}
-                onMove={onMove}
-                onOpen={setOpenId}
-                onToggle={() => toggleLane(col.name, auto)}
-                onToggleSelect={toggleSelect}
-                selected={selected}
-              />
-            )
-          })}
+                return (
+                  <Column
+                    collapsed={laneOverrides[col.name] ?? auto}
+                    column={col}
+                    columns={columnNames}
+                    key={col.name}
+                    onAdd={setAddStatus}
+                    onDelete={id => deleteMut.mutate(id)}
+                    onDropTask={onMove}
+                    onMove={onMove}
+                    onOpen={setOpenId}
+                    onToggle={() => toggleLane(col.name, auto)}
+                    onToggleSelect={toggleSelect}
+                    selected={selected}
+                  />
+                )
+              })}
         </div>
       )}
 
