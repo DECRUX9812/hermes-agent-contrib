@@ -4234,6 +4234,22 @@ export const frOverrides = {
       backgroundRunning: 'Tâche en arrière-plan en cours',
       draftSession: 'Brouillon — aucun message envoyé',
       continueOnPhone: 'Continuer sur le téléphone',
+      openOnDevice: 'Ouvrir sur un autre appareil',
+      openDeviceTitle: 'Ouvrir sur un autre appareil',
+      openDeviceDesc: home =>
+        `Scannez le code ou envoyez le lien vers un autre appareil Hermes dont les connexions atteignent ${home}. La session reste en place — seule la vue se déplace.`,
+      openDeviceHomeFallback: 'son backend d’origine',
+      openDeviceIncomingTitle: 'Ouvrir la session sur cet appareil ?',
+      openDeviceIncomingDesc: (title, label) =>
+        `« ${title} » réside sur ${label}. L’ouvrir bascule cette fenêtre sur cette connexion — la session ne quitte pas son emplacement.`,
+      openDeviceSwitchAndOpen: 'Basculer et ouvrir',
+      openDeviceSwitching: 'Bascule…',
+      openDeviceIncomingMissingTitle: 'Connexion introuvable',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `« ${id} » réside sur ${endpoint}, qui n’est pas une connexion enregistrée sur cet appareil. Ajoutez-la dans Réglages → Gateways, puis rouvrez le lien.`
+          : `« ${id} » réside sur un backend inaccessible à cet appareil. Enregistrez cette connexion dans Réglages → Gateways, puis rouvrez le lien.`,
+      openDeviceOpenConnections: 'Ouvrir Gateways',
       handoffNone: "Aucune plateforme de messagerie n'est prête pour le transfert",
       handoffOrigin: platform => `Transférée depuis ${platform}`,
       continuationOrigin: "Continuation automatique — cette conversation a été compressée puis poursuivie",

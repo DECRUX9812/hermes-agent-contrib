@@ -10,8 +10,10 @@ import { $diskPluginsScanPending } from '@/contrib/runtime-loader'
 import { getSession } from '@/hermes'
 import { resolveDeepLinkAction } from '@/lib/deeplink-routes'
 import { pathFromHermesDeepLink, resolveHermesOpenPath } from '@/lib/hermes-open-target'
+import { resolveSessionOpenLinkConnection } from '@/lib/session-device-link'
 import { storedSessionIdForNotification } from '@/lib/session-ids'
 import { announceNewSessionDraftKey } from '@/store/composer'
+import { $activeConnectionId, $connectionsRegistry } from '@/store/connections'
 import { requestMcpInstallFromDeepLink } from '@/store/mcp-deeplink-install'
 import { startMcpHealthChecker, stopMcpHealthChecker } from '@/store/mcp-health'
 import {
@@ -22,7 +24,7 @@ import {
 } from '@/store/native-notifications'
 import { requestPluginCatalogInstallFromDeepLink } from '@/store/plugin-catalog-install'
 import { openPluginInstallRequest } from '@/store/plugin-install-request'
-import { requestFreshSession } from '@/store/profile'
+import { $activeGatewayProfile, normalizeProfileKey, requestFreshSession } from '@/store/profile'
 import { openFolderAsProject } from '@/store/projects'
 import {
   $selectedStoredSessionId,
@@ -34,6 +36,7 @@ import {
   setRememberedRoute,
   setRememberedSessionId
 } from '@/store/session'
+import { requestSessionOpen } from '@/store/session-open-request'
 import { $botChatScopes, $sessionTiles, storedSessionIdForRuntimeId } from '@/store/session-states'
 import { onSessionsChanged } from '@/store/session-sync'
 import { requestSkillInstallFromDeepLink } from '@/store/skill-deeplink-install'
@@ -456,6 +459,33 @@ export function useDesktopIntegrations({
 
       if (action.type === 'skill-install') {
         void requestSkillInstallFromDeepLink(action.identifier)
+
+        return
+      }
+
+      // Cross-device handoff (#50): the link names a session + the backend it
+      // lives on (install_id / endpoint fingerprint). Already on that source
+      // and profile → open straight away, same as a sidebar click. Otherwise
+      // the target is a whole-window switch or an unknown backend — both wait
+      // for the dialog's explicit confirm (offer, don't hijack).
+      if (action.type === 'session-open') {
+        const connection = resolveSessionOpenLinkConnection($connectionsRegistry.get(), action)
+        const sameConnection = Boolean(connection && connection.id === $activeConnectionId.get())
+
+        const sameProfile =
+          !action.profile || normalizeProfileKey(action.profile) === normalizeProfileKey($activeGatewayProfile.get())
+
+        if (sameConnection && sameProfile) {
+          navigate(sessionRoute(action.id))
+        } else {
+          requestSessionOpen({
+            sessionId: action.id,
+            profile: action.profile,
+            title: action.title,
+            connection,
+            endpoint: action.addr
+          })
+        }
 
         return
       }

@@ -3857,6 +3857,22 @@ export const en: Translations = {
       backgroundRunning: 'Background task running',
       draftSession: 'Draft — nothing sent yet',
       continueOnPhone: 'Continue on phone',
+      openOnDevice: 'Open on another device',
+      openDeviceTitle: 'Open on another device',
+      openDeviceDesc: home =>
+        `Scan the code or send the link to another Hermes device whose connections reach ${home}. The session stays where it is — only the view moves.`,
+      openDeviceHomeFallback: 'its home backend',
+      openDeviceIncomingTitle: 'Open session on this device?',
+      openDeviceIncomingDesc: (title, label) =>
+        `“${title}” lives on ${label}. Opening it switches this window to that connection — the session's home doesn't move.`,
+      openDeviceSwitchAndOpen: 'Switch and open',
+      openDeviceSwitching: 'Switching…',
+      openDeviceIncomingMissingTitle: 'Connection not found',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `“${id}” lives on ${endpoint}, which isn't one of this device's registered connections. Add it under Settings → Gateways, then open the link again.`
+          : `“${id}” lives on a backend this device can't reach. Register that connection under Settings → Gateways, then open the link again.`,
+      openDeviceOpenConnections: 'Open Gateways',
       handoffNone: 'No messaging platform is ready for a handoff',
       handoffOrigin: platform => `Handed off from ${platform}`,
       continuationOrigin: 'Automatic continuation — this conversation was compressed and continued',

@@ -3287,6 +3287,28 @@ export interface Translations {
        *  platform (Telegram/Slack) via handoff.request; the phone-parity card
        *  in Messaging carries the link/QR. */
       continueOnPhone: string
+      /** "Open on another device" (#50) — emit a `hermes://session/open` deep
+       *  link / QR that re-homes a session VIEW to another Hermes device whose
+       *  connections reach the session's home backend. The session never moves. */
+      openOnDevice: string
+      openDeviceTitle: string
+      /** @param home — "<label> (<endpoint>)" of the session's home connection. */
+      openDeviceDesc: (home: string) => string
+      /** Home description fallback when the connection can't be resolved. */
+      openDeviceHomeFallback: string
+      /** Inbound link on a known-but-inactive connection: whole-window switch
+       *  confirm. @param title — the session's title; @param label — the
+       *  target connection label (suffixed with the profile when non-default). */
+      openDeviceIncomingTitle: string
+      openDeviceIncomingDesc: (title: string, label: string) => string
+      openDeviceSwitchAndOpen: string
+      openDeviceSwitching: string
+      /** Inbound link whose home backend matches no registered connection. */
+      openDeviceIncomingMissingTitle: string
+      /** @param id — session title or id; @param endpoint — the link's claimed
+       *  endpoint (may be empty). */
+      openDeviceIncomingMissingDesc: (id: string, endpoint: string) => string
+      openDeviceOpenConnections: string
       /** Empty state inside the submenu when no platform can take a handoff. */
       handoffNone: string
       handoffOrigin: (platform: string) => string

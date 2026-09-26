@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { SessionTagChip } from '@/app/chat/session-tag'
 import { SessionAskDialog } from '@/app/chat/sidebar/session-ask-dialog'
+import { SessionDeviceDialog } from '@/app/chat/sidebar/session-device-dialog'
 import { openSession } from '@/app/open-session'
 import {
   closeAllTreeTabs,
@@ -287,6 +288,7 @@ function useSessionActions({
   const [renameOpen, setRenameOpen] = useState(false)
   const [tagsOpen, setTagsOpen] = useState(false)
   const [askOpen, setAskOpen] = useState(false)
+  const [deviceOpen, setDeviceOpen] = useState(false)
   // The rename item opens a Dialog. When a menu closes, Radix restores focus to
   // its trigger — for a sidebar row that trigger is the row's own <button>, so
   // focus lands there instead of the dialog's input: Space then activates the
@@ -373,7 +375,21 @@ function useSessionActions({
             }
           })
         ]
-      : [])
+      : []),
+    // Cross-device handoff (#50): a hermes://session/open deep link + QR that
+    // another Hermes device opens as a VIEW — the session's home never moves.
+    spec({
+      disabled: !sessionId,
+      icon: 'device-desktop',
+      label: r.openOnDevice,
+      onSelect: () => {
+        triggerHaptic('selection')
+        // Same dialog-open focus dance as rename: the row's trigger must not
+        // steal the focus back when the menu closes.
+        suppressCloseFocusRef.current = true
+        setDeviceOpen(true)
+      }
+    })
   ]
 
   // IDENTITY — name/mark/reference the session.
@@ -761,7 +777,9 @@ function useSessionActions({
     />
   )
 
-  return { askDialog, deleteDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog }
+  const deviceDialog = <SessionDeviceDialog onOpenChange={setDeviceOpen} open={deviceOpen} sessionId={sessionId} title={title} />
+
+  return { askDialog, deleteDialog, deviceDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog }
 }
 
 interface DeleteSessionDialogProps {
@@ -802,7 +820,9 @@ interface SessionActionsMenuProps
 
 export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ...actions }: SessionActionsMenuProps) {
   const { t } = useI18n()
-  const { askDialog, deleteDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } = useSessionActions(actions)
+
+  const { askDialog, deleteDialog, deviceDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } =
+    useSessionActions(actions)
 
   return (
     <>
@@ -819,6 +839,7 @@ export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ..
       {renameDialog}
       {tagsDialog}
       {askDialog}
+      {deviceDialog}
       {deleteDialog}
     </>
   )
@@ -830,7 +851,9 @@ interface SessionContextMenuProps extends SessionActions {
 
 export function SessionContextMenu({ children, ...actions }: SessionContextMenuProps) {
   const { t } = useI18n()
-  const { askDialog, deleteDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } = useSessionActions(actions)
+
+  const { askDialog, deleteDialog, deviceDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } =
+    useSessionActions(actions)
 
   return (
     <>
@@ -845,6 +868,7 @@ export function SessionContextMenu({ children, ...actions }: SessionContextMenuP
       {renameDialog}
       {tagsDialog}
       {askDialog}
+      {deviceDialog}
       {deleteDialog}
     </>
   )
