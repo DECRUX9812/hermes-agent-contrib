@@ -68,6 +68,7 @@ import {
   setSessions,
   setTileSessionFocusStartedAt
 } from './session'
+import { dropSessionAskForProfile, migrateSessionAskForProfile } from './session-ask'
 import { secondaryProfileOwnerForEvent } from './session-event-provenance'
 import { $focusedTreePaneId } from './session-focus'
 import { assertSessionOwnerResolved } from './session-owner-resolution'
@@ -2554,6 +2555,7 @@ export function dropTilesForProfile(
   // later same-name profile must not inherit its unsent text.
   dropComposerDraftsForProfile(name, route)
   dropSessionTagsForProfile(name, route)
+  dropSessionAskForProfile(name, route)
   dropWatchedSessionsForProfile(name, route)
   // Route fields go through the SAME canonicalization as `name` below — a
   // source-scoped delete must not be defeated by stray whitespace around a
@@ -2700,6 +2702,7 @@ export function migrateTilesForProfile(oldProfile: string, newProfile: string): 
   migrateStatusDrawersForProfile(from, to)
   migrateComposerDraftsForProfile(from, to)
   migrateSessionTagsForProfile(from, to)
+  migrateSessionAskForProfile(from, to)
   migrateWatchedSessionsForProfile(from, to)
   // Sibling family: the rail's profile-keyed buckets move with the rename, or
   // the renamed profile opens with an empty rail and the old name keeps them.

@@ -4174,6 +4174,18 @@ export const esOverrides = {
       tagsAddPlaceholder: 'Nueva etiqueta',
       tagsAdd: 'Añadir',
       tagsRemoveLabel: label => `Quitar etiqueta ${label}`,
+      askAbout: 'Preguntar sobre esta sesión',
+      ask: {
+        clear: 'Borrar hilo',
+        dialogDesc: title => `Las preguntas sobre ${title} se responden desde su transcripción guardada — nunca desde la conversación activa.`,
+        dialogTitle: 'Preguntar sobre esta sesión',
+        empty: 'Pregunta qué hizo, decidió o escribió esta sesión.',
+        failed: 'No se pudo obtener una respuesta',
+        placeholder: 'Pregunta sobre esta sesión…',
+        send: 'Preguntar',
+        thinking: 'Leyendo la transcripción…',
+        truncatedNote: 'Respondida desde el principio y el final de una transcripción larga.'
+      },
       deleteTitle: '¿Eliminar la sesión?',
       deleteDesc: (title: string) => `Se eliminará “${title}” de forma permanente. No se puede deshacer.`,
       deleting: 'Eliminando…',

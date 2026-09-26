@@ -4184,6 +4184,18 @@ export const deOverrides = {
       tagsAddPlaceholder: 'Neues Tag-Label',
       tagsAdd: 'Hinzufügen',
       tagsRemoveLabel: label => `Tag ${label} entfernen`,
+      askAbout: 'Zu dieser Session fragen',
+      ask: {
+        clear: 'Verlauf löschen',
+        dialogDesc: title => `Fragen zu ${title} werden aus dem gespeicherten Transkript beantwortet — niemals aus der laufenden Unterhaltung.`,
+        dialogTitle: 'Zu dieser Session fragen',
+        empty: 'Stelle eine Frage dazu, was diese Session getan, entschieden oder geschrieben hat.',
+        failed: 'Antwort konnte nicht abgerufen werden',
+        placeholder: 'Frage zu dieser Session…',
+        send: 'Fragen',
+        thinking: 'Transkript wird gelesen…',
+        truncatedNote: 'Beantwortet aus Anfang und Ende eines langen Transkripts.'
+      },
       deleteTitle: 'Session löschen?',
       deleteDesc: title => `Das löscht “${title}” dauerhaft. Das kann nicht rückgängig gemacht werden.`,
       deleting: 'Wird gelöscht…',

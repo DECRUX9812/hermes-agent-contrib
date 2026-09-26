@@ -3247,6 +3247,18 @@ export interface Translations {
       tagsAddPlaceholder: string
       tagsAdd: string
       tagsRemoveLabel: (label: string) => string
+      askAbout: string
+      ask: {
+        clear: string
+        dialogDesc: (title: string) => string
+        dialogTitle: string
+        empty: string
+        failed: string
+        placeholder: string
+        send: string
+        thinking: string
+        truncatedNote: string
+      }
       deleteTitle: string
       deleteDesc: (title: string) => string
       deleting: string

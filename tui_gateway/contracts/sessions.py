@@ -453,6 +453,34 @@ method("session.history", params=SessionHistoryParams, result=SessionHistoryResu
        doc="The durable display transcript (ancestors included, row ids attached).")
 
 
+class SessionAskExchange(Params):
+    """One prior companion Q/A the client holds, replayed for thread continuity."""
+
+    question: str
+    answer: str
+
+
+class SessionAskParams(ProfileParams):
+    """``session_id`` takes a stored id/prefix OR a live runtime id; ``history`` is the
+    client's companion thread so far (bounded server-side)."""
+
+    session_id: str = Field(min_length=1)
+    question: str = Field(min_length=1)
+    history: list[SessionAskExchange] | None = None
+
+
+class SessionAskResult(Result):
+    answer: str
+    resolved_id: str
+    messages_considered: int
+    truncated: bool
+
+
+method("session.ask", params=SessionAskParams, result=SessionAskResult,
+       doc="One-shot utility-model answer about a session's transcript (companion thread); "
+           "read-only, never touches the live conversation's context.")
+
+
 class SessionUsageParams(SessionParams):
     pass
 
