@@ -4277,6 +4277,17 @@ export const deOverrides = {
       messageCount: count => `${count} ${count === 1 ? 'Nachricht' : 'Nachrichten'}`,
       todoProgress: 'Aufgaben abgeschlossen',
       attachmentCount: count => `${count} angehängt`,
+      isolateWorktree: 'In Worktree isolieren',
+      isolateWorktreeDone: name => `In Worktree ${name} isoliert`,
+      mergeWorktree: 'Worktree zurückmergen',
+      mergeWorktreeTitle: 'Worktree zurückmergen',
+      mergeWorktreeDesc: (branch, repo) =>
+        `Branch ${branch} zurück in den ${repo}-Checkout mergen? Er muss sauber sein.`,
+      mergingWorktree: 'Merge läuft…',
+      mergedWorktree: into => `Nach ${into} gemergt`,
+      mergeWorktreeFailed: 'Worktree konnte nicht gemergt werden',
+      worktreeTag: branch => `Isolierter Worktree · ${branch}`,
+      worktreeUnavailable: 'Git-Worktrees sind hier nicht verfügbar',
       digest: {
         agents: count => (count === 1 ? 'Ein Agent läuft' : `${count} Agents laufen`),
         approve: command => `Genehmigen: ${command}`,

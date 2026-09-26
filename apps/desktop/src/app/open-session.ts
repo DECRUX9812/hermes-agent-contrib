@@ -16,7 +16,13 @@
  */
 import type { WorkspaceMode } from '@/contrib/types'
 import { paletteSessionKey, recordPaletteUse } from '@/store/command-palette-frecency'
-import { $activeSessionId, $selectedStoredSessionId, markSessionRead } from '@/store/session'
+import {
+  $activeSessionId,
+  $selectedStoredSessionId,
+  $sessions,
+  markSessionRead,
+  sessionMatchesStoredId
+} from '@/store/session'
 import type { SessionProfileRoute } from '@/store/session-request-router'
 import {
   focusedSessionNeedsRoute,
@@ -26,6 +32,7 @@ import {
   reuseBlankDraftTile,
   setSessionTileWorkspaceScope
 } from '@/store/session-states'
+import { restoreSessionWorktree } from '@/store/session-worktree'
 import { canOpenSessionWindow, openSessionInNewWindow } from '@/store/windows'
 
 import { $workspaceIsPage, sessionRoute } from './routes'
@@ -113,6 +120,16 @@ export function openSession(
   // already on screen (open tile, or the main session) would otherwise return
   // at focusOpenSession and never clear its unread dot.
   markSessionRead(storedSessionId)
+  // Worktree-per-session (#47): if this session's stored cwd is a worktree
+  // path whose dir was deleted out from under it, recreate it — the "restore
+  // recreates missing worktrees" half. Fire-and-forget: a restore failure
+  // must never block the chat open.
+  const openingSession = $sessions.get().find(session => sessionMatchesStoredId(session, storedSessionId))
+
+  if (openingSession) {
+    void restoreSessionWorktree(openingSession)
+  }
+
   // Seed ⌘K ranking from the same door: an open counts as a use whether it
   // came through the palette, the sidebar, or a notification.
   recordPaletteUse(paletteSessionKey(storedSessionId))

@@ -3345,6 +3345,18 @@ export interface Translations {
       messageCount: (count: number) => string
       todoProgress: string
       attachmentCount: (count: number) => string
+      /** #47 worktree-per-session: the row's worktree chip plus the ⋯ menu
+       *  verbs — opt-in isolate, merge-back (with its confirm dialog). */
+      isolateWorktree: string
+      isolateWorktreeDone: (name: string) => string
+      mergeWorktree: string
+      mergeWorktreeTitle: string
+      mergeWorktreeDesc: (branch: string, repo: string) => string
+      mergingWorktree: string
+      mergedWorktree: (into: string) => string
+      mergeWorktreeFailed: string
+      worktreeTag: (branch: string) => string
+      worktreeUnavailable: string
       digest: {
         agents: (count: number) => string
         approve: (command: string) => string

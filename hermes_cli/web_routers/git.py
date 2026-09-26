@@ -24,6 +24,8 @@ from hermes_cli.web_models import (
     GitPathBody,
     GitPrListBody,
     GitWorktreeAddBody,
+    GitWorktreeEnsureBody,
+    GitWorktreeMergeBody,
     GitWorktreeRemoveBody,
 )
 
@@ -202,6 +204,23 @@ async def git_worktree_remove_route(body: GitWorktreeRemoveBody):
     return await _git_op(
         _web_git.worktree_remove, _git_path(body.path), _git_path(body.worktreePath), body.force
     )
+
+
+# Session-worktree affordances (roadmap #47): recreate a session's worktree dir
+# when restore finds it missing, and merge its branch back into the main checkout.
+@router.post("/api/git/worktree/ensure")
+async def git_worktree_ensure_route(body: GitWorktreeEnsureBody):
+    return await _git_op(
+        _web_git.worktree_ensure,
+        _git_path(body.path),
+        _git_path(body.worktreePath),
+        body.branch or "",
+    )
+
+
+@router.post("/api/git/worktree/merge")
+async def git_worktree_merge_route(body: GitWorktreeMergeBody):
+    return await _git_op(_web_git.worktree_merge, _git_path(body.path), _git_path(body.worktreePath))
 
 
 @router.post("/api/git/branch/switch")

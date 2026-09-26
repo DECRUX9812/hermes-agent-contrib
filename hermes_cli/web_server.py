@@ -1848,6 +1848,8 @@ _PLUGIN_COMPAT_LAZY = {
     'git_status_route': ('hermes_cli.web_routers.git', 'git_status_route'),
     'git_unstage_route': ('hermes_cli.web_routers.git', 'git_unstage_route'),
     'git_worktree_add_route': ('hermes_cli.web_routers.git', 'git_worktree_add_route'),
+    'git_worktree_ensure_route': ('hermes_cli.web_routers.git', 'git_worktree_ensure_route'),
+    'git_worktree_merge_route': ('hermes_cli.web_routers.git', 'git_worktree_merge_route'),
     'git_worktree_remove_route': ('hermes_cli.web_routers.git', 'git_worktree_remove_route'),
     'git_worktrees_route': ('hermes_cli.web_routers.git', 'git_worktrees_route'),
     'grant_computer_use_permissions': ('hermes_cli.web_routers.tools', 'grant_computer_use_permissions'),

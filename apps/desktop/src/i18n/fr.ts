@@ -4285,6 +4285,17 @@ export const frOverrides = {
       messageCount: count => `${count} message${count === 1 ? '' : 's'}`,
       todoProgress: 'Tâches terminées',
       attachmentCount: count => `${count} joint${count === 1 ? '' : 's'}`,
+      isolateWorktree: 'Isoler dans un worktree',
+      isolateWorktreeDone: name => `Isolé dans le worktree ${name}`,
+      mergeWorktree: 'Fusionner le worktree',
+      mergeWorktreeTitle: 'Fusionner le worktree',
+      mergeWorktreeDesc: (branch, repo) =>
+        `Fusionner la branche ${branch} dans la copie de ${repo} ? Elle doit être propre.`,
+      mergingWorktree: 'Fusion en cours…',
+      mergedWorktree: into => `Fusionné dans ${into}`,
+      mergeWorktreeFailed: 'Échec de la fusion du worktree',
+      worktreeTag: branch => `Worktree isolé · ${branch}`,
+      worktreeUnavailable: 'Les worktrees git ne sont pas disponibles ici',
       digest: {
         agents: count => (count === 1 ? 'Un agent en cours' : `${count} agents en cours`),
         approve: command => `Approuver : ${command}`,

@@ -356,6 +356,58 @@ async function removeWorktree(repoPath, worktreePath, options, gitBin) {
   return { removed: resolvedTree }
 }
 
+// Recreate a session worktree whose directory is gone (roadmap #47 — "restore
+// recreates missing worktrees"). Idempotent: an existing dir is a no-op.
+// `git worktree prune` clears the stale registration a deleted dir leaves
+// behind; a branch deleted along with its dir re-seeds from HEAD so the
+// session's cwd exists either way.
+async function ensureWorktree(repoPath, worktreePath, branch, gitBin) {
+  const resolvedRepo = resolveRequestedPathForIpc(repoPath, { purpose: 'Worktree ensure (repo)' })
+  const resolvedTree = resolveRequestedPathForIpc(worktreePath, { purpose: 'Worktree ensure (tree)' })
+  const root = await mainRoot(gitBin, resolvedRepo)
+
+  if (fs.existsSync(resolvedTree)) {
+    return { branch: sanitizeBranch(branch) || null, path: resolvedTree, repoRoot: root, restored: false }
+  }
+
+  await gitOk(gitBin, ['worktree', 'prune'], root)
+  const name = sanitizeBranch(branch) || slugify(path.basename(resolvedTree))
+
+  if (!name) {
+    throw new Error('Worktree path has no usable branch name.')
+  }
+
+  try {
+    await runGit(gitBin, ['worktree', 'add', resolvedTree, name], root)
+  } catch {
+    await runGit(gitBin, ['worktree', 'add', '-b', name, resolvedTree], root)
+  }
+
+  return { branch: name, path: resolvedTree, repoRoot: root, restored: true }
+}
+
+// Merge a session worktree's branch back into the repo's MAIN checkout
+// (roadmap #47 "merge back"). Asks git for the worktree's live branch — the
+// stored session value goes stale when the user switched inside it. A dirty
+// main checkout fails the merge exactly as `git merge` does; stderr reaches
+// the renderer's toast unchanged.
+async function mergeWorktreeBack(repoPath, worktreePath, gitBin) {
+  const resolvedRepo = resolveRequestedPathForIpc(repoPath, { purpose: 'Worktree merge (repo)' })
+  const resolvedTree = resolveRequestedPathForIpc(worktreePath, { purpose: 'Worktree merge (tree)' })
+  const root = await mainRoot(gitBin, resolvedRepo)
+  const branch = (await runGit(gitBin, ['rev-parse', '--abbrev-ref', 'HEAD'], resolvedTree)).trim()
+
+  if (!branch || branch === 'HEAD') {
+    throw new Error(`No branch checked out in ${resolvedTree}`)
+  }
+
+  const into = (await runGit(gitBin, ['rev-parse', '--abbrev-ref', 'HEAD'], root)).trim()
+
+  await runGit(gitBin, ['merge', '--no-edit', branch], root)
+
+  return { branch, into, merged: true, repoRoot: root }
+}
+
 // List the branches for the "convert a branch into a worktree" picker, most
 // recently committed first. The local heads come first. Then come the
 // remote-tracking refs that have no local branch yet. This is the same set that
@@ -530,9 +582,11 @@ async function listBaseBranches(repoPath, gitBin) {
 export {
   addWorktree,
   ensureGitRepo,
+  ensureWorktree,
   listBaseBranches,
   listBranches,
   listWorktrees,
+  mergeWorktreeBack,
   parseWorktrees,
   removeWorktree,
   sanitizeBranch,

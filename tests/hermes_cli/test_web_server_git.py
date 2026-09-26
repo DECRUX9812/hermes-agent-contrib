@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 import subprocess
 import threading
 from pathlib import Path
@@ -267,3 +268,102 @@ def test_worktree_add_from_origin_base_does_not_track(client, repo_with_remote):
         cwd=repo_with_remote, capture_output=True, text=True,
     )
     assert probe.returncode != 0
+
+
+# ── session worktree affordances (#47) ─────────────────────────────────────
+# The desktop's opt-in per-session worktree rides these two endpoints: restore
+# (recreate a deleted worktree dir) and merge-back (fold the worktree's branch
+# into the repo's main checkout).
+
+
+def _add_session_worktree(client, repo: Path, name: str = "sess", branch: str = "sess/x") -> dict:
+    return client.post(
+        "/api/git/worktree/add", json={"branch": branch, "name": name, "path": str(repo)}
+    ).json()
+
+
+def test_worktree_ensure_is_noop_for_existing_dir(client, repo):
+    added = _add_session_worktree(client, repo)
+
+    res = client.post(
+        "/api/git/worktree/ensure",
+        json={"branch": added["branch"], "path": str(repo), "worktreePath": added["path"]},
+    ).json()
+
+    assert res["restored"] is False
+    assert res["branch"] == added["branch"]
+
+
+def test_worktree_ensure_recreates_deleted_dir_on_its_branch(client, repo):
+    added = _add_session_worktree(client, repo)
+    worktree = Path(added["path"])
+    # The user deleted the worktree dir out-of-band (Finder, rm -rf). Its branch
+    # ref survives in the repo, so restore re-checks it out at the same path.
+    shutil.rmtree(worktree)
+
+    res = client.post(
+        "/api/git/worktree/ensure",
+        json={"branch": added["branch"], "path": str(repo), "worktreePath": added["path"]},
+    ).json()
+
+    assert res["restored"] is True
+    assert worktree.is_dir()
+    assert (
+        subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=worktree, check=True, capture_output=True, text=True,
+        ).stdout.strip()
+        == added["branch"]
+    )
+
+
+def test_worktree_ensure_reseeds_a_deleted_branch_from_head(client, repo):
+    added = _add_session_worktree(client, repo)
+    worktree = Path(added["path"])
+    shutil.rmtree(worktree)
+    _git(repo, "worktree", "prune")
+    _git(repo, "branch", "-D", added["branch"])
+
+    res = client.post(
+        "/api/git/worktree/ensure",
+        json={"branch": added["branch"], "path": str(repo), "worktreePath": added["path"]},
+    ).json()
+
+    # Branch AND dir are gone — the endpoint still has to leave the session's
+    # cwd existing, so it re-seeds the same name from the repo's HEAD.
+    assert res["restored"] is True
+    assert worktree.is_dir()
+    _git(repo, "show-ref", "--verify", f"refs/heads/{added['branch']}")
+
+
+def test_worktree_merge_folds_branch_into_main_checkout(client, repo):
+    added = _add_session_worktree(client, repo)
+    worktree = Path(added["path"])
+    (worktree / "worktree-only.txt").write_text("made in the worktree\n", encoding="utf-8")
+    _git(worktree, "add", "-A")
+    _git(worktree, "commit", "-qm", "worktree change")
+
+    res = client.post(
+        "/api/git/worktree/merge", json={"path": str(repo), "worktreePath": added["path"]}
+    ).json()
+
+    assert res["merged"] is True
+    assert res["branch"] == added["branch"]
+    assert (repo / "worktree-only.txt").read_text(encoding="utf-8") == "made in the worktree\n"
+
+
+def test_worktree_merge_reports_dirty_main_conflict(client, repo):
+    added = _add_session_worktree(client, repo)
+    worktree = Path(added["path"])
+    # The repo fixture leaves a.txt modified-but-uncommitted in the main
+    # checkout; a merge touching that file must fail with git's error, not
+    # clobber the user's uncommitted work.
+    (worktree / "a.txt").write_text("worktree side\n", encoding="utf-8")
+    _git(worktree, "add", "-A")
+    _git(worktree, "commit", "-qm", "conflicting change")
+
+    res = client.post(
+        "/api/git/worktree/merge", json={"path": str(repo), "worktreePath": added["path"]}
+    )
+
+    assert res.status_code == 400
