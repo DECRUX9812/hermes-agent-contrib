@@ -59,7 +59,6 @@ import {
   Zap
 } from '@/lib/icons'
 import { getServers } from '@/lib/mcp-servers'
-import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
 import { $repoWorktrees } from '@/store/coding-status'
@@ -70,6 +69,7 @@ import {
   closeCommandPalette,
   setCommandPaletteOpen
 } from '@/store/command-palette'
+import { $paletteFrecency, paletteSessionKey, recordPaletteUse } from '@/store/command-palette-frecency'
 import { $bindings, bindingsFor } from '@/store/keybinds'
 import { $dismissedAutoProjectIds, $pinnedSessionIds, filterVisibleProjects } from '@/store/layout'
 import { openPetGenerate } from '@/store/pet-generate'
@@ -115,49 +115,7 @@ import { usePaletteContributions } from './contrib'
 import { HighlightWatcher } from './highlight-watcher'
 import { MarketplaceThemePage } from './marketplace-theme-page'
 import { PetInlineToggle, PetPalettePage } from './pet-palette-page'
-
-interface PaletteItem {
-  /** Keybind action id — its live combo renders as a hotkey hint. */
-  action?: string
-  /** Renders a trailing check: this row IS the current setting (theme, mode). */
-  active?: boolean
-  /** Static trailing combo hint for a modifier-variant select (e.g. `mod+enter`). */
-  comboHint?: string
-  /** Short note beside the label — state the row acts on (a version, a count). */
-  detail?: string
-  /** `state` when the row will change what `detail` says (a toggle's on/off). */
-  detailVariant?: keyof typeof HUD_NOTE_VARIANT
-  icon: IconComponent
-  id: string
-  /** Keep the palette open after running (live-preview pickers like theme/mode). */
-  keepOpen?: boolean
-  keywords?: string[]
-  label: string
-  /** Label shown while ⌘/⌃ is held — previews the modifier-variant action. */
-  modLabel?: string
-  /**
-   * Runs when the row becomes the cmdk highlight (arrow keys or hover). When
-   * a row has no onHighlight, a highlight on it clears the live preview.
-   */
-  onHighlight?: () => void
-  /**
-   * When set, ⌘/⌃-select (or ⌘-Enter) opens a new tab and ⇧⌘-select pops a
-   * window — matching sidebar session rows. Plain select stays in-place.
-   * Receives the last selector event so the modifiers can be read.
-   */
-  runWithEvent?: (event?: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean }) => void
-  /** Action to run when selected. Mutually exclusive with `to`. */
-  run?: () => void
-  /** Open a nested palette page (VS Code-style "choose X → options"). */
-  to?: string
-}
-
-interface PaletteGroup {
-  /** Optional: a headingless group renders as a bare action row (e.g. the
-   *  "Install theme…" entry pinned atop the theme picker). */
-  heading?: string
-  items: PaletteItem[]
-}
+import { type PaletteGroup, type PaletteItem, rankGroups } from './rank'
 
 // Nested page → its parent, so Back / Esc step up one level instead of closing
 // the palette. Pages absent here go straight back to the root list.
@@ -175,84 +133,6 @@ interface SessionEntry {
   id: string
   preview?: string
   title: string
-}
-
-// Ranking happens in React, not cmdk. We score, sort, and prune the groups
-// ourselves and hand cmdk an already-ordered list with `shouldFilter={false}`,
-// leaving it as pure keyboard/selection machinery. (cmdk's own group
-// re-sorting silently no-ops: its sort() queries groups by an internal id that
-// never matches the heading text it writes into `data-value`, so groups always
-// keep source order — which put a generic keyword match like "Capabilities" on
-// top and the auto-highlight on it while an exact "Tools" row sat below.)
-//
-// cmdk still auto-selects the first DOM item whenever the search changes, so
-// rendering best-match-first is what puts the highlight on the best match.
-//
-// AND semantics: every typed word must appear in the label or keywords. The
-// grade rewards matches on the visible label — exact > prefix > whole word >
-// word prefix > substring > scattered terms > keyword-only — so typing "tools"
-// selects the row that says Tools, not a row that hides it in keywords.
-const scoreItem = (item: PaletteItem, needle: string): number => {
-  const label = item.label.toLowerCase()
-  const keys = (item.keywords ?? []).join(' ').toLowerCase()
-  const terms = needle.split(/\s+/).filter(Boolean)
-
-  if (terms.some(term => !label.includes(term) && !keys.includes(term))) {
-    return 0
-  }
-
-  if (label === needle) {
-    return 1
-  }
-
-  if (label.startsWith(needle)) {
-    return 0.9
-  }
-
-  const words = label.split(/[^\p{L}\p{N}]+/u).filter(Boolean)
-
-  if (words.includes(needle)) {
-    return 0.85
-  }
-
-  if (words.some(word => word.startsWith(needle))) {
-    return 0.8
-  }
-
-  if (label.includes(needle)) {
-    return 0.7
-  }
-
-  if (terms.every(term => label.includes(term))) {
-    return 0.6
-  }
-
-  // Matched only via keywords — the weakest, generic-row signal.
-  return 0.4
-}
-
-// Order items within each group by score, order groups by their best item, and
-// drop everything that doesn't match. Ties keep their original order (stable
-// sort), so curated group/item ordering still breaks even scores.
-const rankGroups = (groups: PaletteGroup[], search: string): PaletteGroup[] => {
-  const needle = normalize(search)
-
-  if (!needle) {
-    return groups
-  }
-
-  return groups
-    .map(group => {
-      const scored = group.items
-        .map(item => ({ item, score: scoreItem(item, needle) }))
-        .filter(entry => entry.score > 0)
-        .sort((a, b) => b.score - a.score)
-
-      return { group: { ...group, items: scored.map(entry => entry.item) }, max: scored[0]?.score ?? 0 }
-    })
-    .filter(entry => entry.max > 0)
-    .sort((a, b) => b.max - a.max)
-    .map(entry => entry.group)
 }
 
 // cmdk selection values must be unique; labels alone can repeat (a settings
@@ -1032,6 +912,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
         items: [
           ...SECTIONS.map(section => ({
             icon: section.icon,
+            frecencyKey: `settings:${section.id}`,
             id: `set-config-${section.id}`,
             keywords: ['settings', section.label, settingsSectionLabel(section)],
             label: settingsSectionLabel(section),
@@ -1039,6 +920,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
           })),
           ...NON_CONFIG_SETTINGS.map(entry => ({
             icon: entry.icon,
+            frecencyKey: `settings:${entry.tab}`,
             id: `set-${entry.tab}`,
             keywords: ['settings', ...(entry.keywords ?? [])],
             label: t.settings.nav[entry.labelKey],
@@ -1100,6 +982,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       result.push({
         items: [
           {
+            frecencyKey: paletteSessionKey(directId),
             icon: MessageCircle,
             id: `goto-${directId}`,
             keywords: ['session', 'id', 'go to', directId],
@@ -1183,6 +1066,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
         return {
           active: themeName === theme.name,
           icon: Palette,
+          frecencyKey: `theme:${theme.name}`,
           id: `search-theme-${theme.name}`,
           keepOpen: true,
           keywords: ['theme', 'appearance', 'color', 'skin', theme.name, theme.description],
@@ -1206,6 +1090,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       items: THEME_MODES.map(entry => ({
         active: mode === entry.mode,
         icon: entry.icon,
+        frecencyKey: `mode:${entry.mode}`,
         id: `search-mode-${entry.mode}`,
         keepOpen: true,
         keywords: ['appearance', 'color mode', 'brightness', entry.mode, t.settings.modeOptions[entry.mode].label],
@@ -1221,6 +1106,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       result.push({
         heading: t.sidebar.pinned,
         items: pinnedSessions.map(session => ({
+          frecencyKey: paletteSessionKey(session.id),
           icon: Pin,
           id: `pinned-${session.id}`,
           keywords: sessionKeywords(session, 'pinned'),
@@ -1234,6 +1120,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       result.push({
         heading: t.commandCenter.sections.sessions,
         items: sessions.map(session => ({
+          frecencyKey: paletteSessionKey(session.id),
           icon: MessageCircle,
           id: `session-${session.id}`,
           keywords: sessionKeywords(session),
@@ -1291,6 +1178,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       result.push({
         heading: t.commandCenter.archivedChats,
         items: archivedSessions.map(session => ({
+          frecencyKey: paletteSessionKey(session.id),
           icon: Archive,
           id: `archived-${session.id}`,
           keywords: sessionKeywords(session, 'archived'),
@@ -1345,13 +1233,15 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
         items: [
           ...SECTIONS.map(section => ({
             icon: section.icon,
-            id: `sp-config-${section.id}`,
+            frecencyKey: `settings:${section.id}`,
+          id: `sp-config-${section.id}`,
             keywords: ['settings', section.label, settingsSectionLabel(section)],
             label: settingsSectionLabel(section),
             run: go(settingsTab(`config:${section.id}`))
           })),
           ...NON_CONFIG_SETTINGS.map(entry => ({
             icon: entry.icon,
+            frecencyKey: `settings:${entry.tab}`,
             id: `sp-${entry.tab}`,
             keywords: ['settings', ...(entry.keywords ?? [])],
             label: t.settings.nav[entry.labelKey],
@@ -1409,6 +1299,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             items: THEME_MODES.map(entry => ({
               active: mode === entry.mode,
               icon: entry.icon,
+              frecencyKey: `mode:${entry.mode}`,
               id: `theme-mode-${entry.mode}`,
               keepOpen: true,
               keywords: ['appearance', 'brightness', 'color mode', t.settings.modeOptions[entry.mode].label],
@@ -1432,7 +1323,8 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
               return {
                 active: themeName === theme.name,
                 icon: Palette,
-                id: `theme-${theme.name}`,
+                frecencyKey: `theme:${theme.name}`,
+              id: `theme-${theme.name}`,
                 keepOpen: true,
                 keywords: ['theme', 'appearance', 'palette', theme.label, theme.description ?? ''],
                 label: theme.label,
@@ -1458,6 +1350,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             items: THEME_MODES.map(entry => ({
               active: mode === entry.mode,
               icon: entry.icon,
+              frecencyKey: `mode:${entry.mode}`,
               id: `mode-${entry.mode}`,
               keepOpen: true,
               keywords: ['appearance', 'brightness', t.settings.modeOptions[entry.mode].label],
@@ -1505,7 +1398,15 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
 
   const activePage = page ? subPages[page] : null
   const unrankedGroups = activePage ? activePage.groups : groups
-  const visibleGroups = useMemo(() => rankGroups(unrankedGroups, search), [unrankedGroups, search])
+  // Selection history nudges ranking — a refresh while the palette sits open
+  // (a keepOpen toggle) reorders, so this subscribes rather than snapshotting.
+  const frecency = useStore($paletteFrecency)
+
+  const visibleGroups = useMemo(
+    () => rankGroups(unrankedGroups, search, frecency, Date.now()),
+    [frecency, unrankedGroups, search]
+  )
+
   const placeholder = activePage ? activePage.placeholder : t.commandCenter.searchPlaceholder
 
   // The HighlightWatcher inside <Command> reports the highlighted row (arrows
@@ -1558,6 +1459,8 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   useEffect(() => clearThemePreview, [clearThemePreview])
 
   const handleSelect = (item: PaletteItem) => {
+    recordPaletteUse(item.frecencyKey ?? item.id)
+
     if (item.to) {
       setPage(item.to)
       setSearch('')
