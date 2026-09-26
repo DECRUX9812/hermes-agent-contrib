@@ -6153,6 +6153,10 @@ export const frOverrides = {
     secretTitle: 'Secret requis',
     secretDesc: "Hermes a besoin d'un identifiant pour continuer.",
     secretPlaceholder: 'valeur du secret',
+    secretCardSkip: 'Ignorer',
+    secretCardSave: 'Enregistrer',
+    secretCardFootnote:
+      "Enregistrée dans les secrets de ce profil — la valeur part directement vers le backend et n'entre jamais dans la conversation.",
     vaultUnlockSendFailed: "Impossible d'envoyer le mot de passe principal",
     vaultUnlockTitle: name => `Déverrouiller ${name}`,
     vaultUnlockDesc: name =>

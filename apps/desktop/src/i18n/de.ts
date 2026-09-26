@@ -6142,6 +6142,10 @@ export const deOverrides = {
     secretTitle: 'Geheimnis erforderlich',
     secretDesc: 'Hermes benötigt eine Zugangsdaten, um fortzufahren.',
     secretPlaceholder: 'Geheimnis-Wert',
+    secretCardSkip: 'Überspringen',
+    secretCardSave: 'Speichern',
+    secretCardFootnote:
+      'Wird in den Secrets dieses Profils gespeichert — der Wert geht direkt an das Backend und landet nie in der Unterhaltung.',
     vaultUnlockSendFailed: 'Master-Passwort konnte nicht gesendet werden',
     vaultUnlockTitle: name => `${name} entsperren`,
     vaultUnlockDesc: name =>

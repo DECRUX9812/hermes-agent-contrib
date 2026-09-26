@@ -46,6 +46,7 @@ import { isSecondaryWindow } from '@/store/windows'
 
 import { MessageRenderBoundary } from '../message-render-boundary'
 import { PendingApprovalStack } from '../tool/approval'
+import { PendingSecretCard } from '../tool/secret-request'
 
 import { responseMessageRole, ResponseMessages } from './response-group'
 import { resolveShowEarlierAction, shouldAutoShowEarlier, useTranscriptWindow } from './transcript-window'
@@ -1606,6 +1607,7 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
             rows
           )}
           <PendingApprovalStack />
+          <PendingSecretCard />
           {!renderEmpty && loadingIndicator}
           {!renderEmpty && clampToComposer && (
             <div

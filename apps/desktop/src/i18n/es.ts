@@ -6132,6 +6132,10 @@ export const esOverrides = {
     secretTitle: 'Se requiere un secreto',
     secretDesc: 'Hermes necesita una credencial para continuar.',
     secretPlaceholder: 'valor secreto',
+    secretCardSkip: 'Omitir',
+    secretCardSave: 'Guardar',
+    secretCardFootnote:
+      'Se guarda en los secretos de este perfil: el valor va directo al backend y nunca entra en la conversación.',
     vaultUnlockSendFailed: 'No se pudo enviar la contraseña maestra',
     vaultUnlockTitle: (name: string) => `Desbloquear ${name}`,
     vaultUnlockDesc: (name: string) =>

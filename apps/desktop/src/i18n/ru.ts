@@ -4433,7 +4433,11 @@ export const ru = defineLocale({
     sudoPlaceholder: 'пароль sudo',
     secretTitle: 'Требуется секрет',
     secretDesc: 'Hermes нужны учётные данные, чтобы продолжить.',
-    secretPlaceholder: 'значение секрета'
+    secretPlaceholder: 'значение секрета',
+    secretCardSkip: 'Пропустить',
+    secretCardSave: 'Сохранить',
+    secretCardFootnote:
+      'Сохраняется в секретах этого профиля — значение уходит прямо в backend и никогда не попадает в переписку.'
   },
   desktop: {
     audioReadFailed: 'Не удалось прочитать записанное аудио',

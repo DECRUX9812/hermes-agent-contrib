@@ -5241,6 +5241,9 @@ export const zh = defineLocale({
     secretTitle: '需要密钥',
     secretDesc: 'Hermes 需要一个凭据才能继续。',
     secretPlaceholder: '密钥值',
+    secretCardSkip: '跳过',
+    secretCardSave: '保存',
+    secretCardFootnote: '存储在此配置文件的密钥中 — 值会直接发送到后端，绝不会进入会话内容。',
     vaultUnlockSendFailed: '无法发送主密码',
     vaultUnlockTitle: name => `解锁 ${name}`,
     vaultUnlockDesc: name =>
