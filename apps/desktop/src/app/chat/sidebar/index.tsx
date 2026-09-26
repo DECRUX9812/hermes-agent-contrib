@@ -64,6 +64,7 @@ import {
   $sidebarShowAllSessions,
   $sidebarShowArchived,
   $sidebarStatusFilter,
+  $sidebarTagFilter,
   $sidebarWorkspaceOrderIds,
   $sidebarWorkspaceParentOrderIds,
   filterVisibleProjects,
@@ -141,6 +142,7 @@ import { $sessionDotStateById, sessionStatusBucket, sessionStatusRank } from '@/
 import { $unconfirmedPinWrites } from '@/store/session-pin-sync'
 import { $removedSessionIds } from '@/store/session-removal'
 import { $focusedSessionIsTile, $focusedStoredSessionId, $workingSessionIds } from '@/store/session-states'
+import { $sessionTags, sessionTagsFor } from '@/store/session-tags'
 import { ackAllSessionsRead } from '@/store/session-unread'
 import { markSessionUnread } from '@/store/session-unread-remote'
 import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive'
@@ -475,6 +477,8 @@ export function ChatSidebar({
   const persistedProjectFilter = useStore($sidebarProjectFilter)
   const profileFilter = useStore($sidebarProfileFilter)
   const prFilter = useStore($sidebarPrFilter)
+  const tagFilter = useStore($sidebarTagFilter)
+  const sessionTags = useStore($sessionTags)
   const prDataWanted = useStore($sidebarPrDataWanted)
   const prBranchOverrides = useStore($prBranchBySession)
   const pullRequests = useStore($pullRequestsByBranch)
@@ -652,6 +656,16 @@ export function ChatSidebar({
         }
       }
 
+      // Tag chips key on the durable lineage id — same id the row renders
+      // them under — so a compressed session keeps matching its filter.
+      if (tagFilter.length) {
+        const tags = sessionTagsFor(sessionTags, session.profile, sessionPinId(session))
+
+        if (!tags.some(tag => tagFilter.includes(tag.label))) {
+          return false
+        }
+      }
+
       // Same membership the sidebar groups and colors by (backend owner first,
       // cwd walk otherwise), so a filtered row lands in the lane the user
       // picked it from.
@@ -663,6 +677,8 @@ export function ChatSidebar({
       profileFilter,
       showAllProfiles,
       prFilter,
+      tagFilter,
+      sessionTags,
       pullRequests,
       projects,
       projectOwners,
@@ -674,6 +690,7 @@ export function ChatSidebar({
     statusFilter.length > 0 ||
     projectFilter.length > 0 ||
     prFilter.length > 0 ||
+    tagFilter.length > 0 ||
     (showAllProfiles && profileFilter.length > 0)
 
   const visibleSessions = useMemo(

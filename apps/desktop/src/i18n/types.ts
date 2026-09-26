@@ -2964,6 +2964,7 @@ export interface Translations {
       filters: string
       status: string
       pullRequest: string
+      tags: string
       profile: string
       project: string
       archived: string
@@ -3167,6 +3168,12 @@ export interface Translations {
       renameTitle: string
       renameDesc: string
       untitledPlaceholder: string
+      tags: string
+      tagsDialogTitle: string
+      tagsDialogDesc: string
+      tagsAddPlaceholder: string
+      tagsAdd: string
+      tagsRemoveLabel: (label: string) => string
       deleteTitle: string
       deleteDesc: (title: string) => string
       deleting: string
