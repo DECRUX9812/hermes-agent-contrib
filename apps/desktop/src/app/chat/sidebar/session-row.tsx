@@ -30,6 +30,7 @@ import { normalizeProfileKey } from '@/store/profile'
 import { $projects } from '@/store/projects'
 import { $pullRequestsByBranch, sessionPrKey } from '@/store/pull-requests'
 import { sessionPinId } from '@/store/session'
+import { $sessionDigestById } from '@/store/session-digest'
 import { $sessionDotStateById, hasLiveTurn, showsRunningArc } from '@/store/session-dot-state'
 import { $sessionListDensity } from '@/store/session-list-density'
 import { $openStoredSessionIds } from '@/store/session-states'
@@ -288,6 +289,10 @@ function SidebarSessionRowImpl({
   // whenever any session's status changes, but a row only repaints on its own.
   const dotState = useStoreSelector($sessionDotStateById, states => states[session.id] ?? 'idle')
   const liveTurn = hasLiveTurn(dotState)
+  // The "what it's doing now" line — a selector so only the row whose own
+  // digest moved repaints on a stream tick. `null` for rows with nothing to
+  // say, which keep their usual metadata/preview line instead.
+  const digest = useStoreSelector($sessionDigestById, digests => digests[session.id] ?? null)
 
   // Card header line: the workspace this belongs to — the project when it
   // resolves (same function the session color reads, so name and tint agree;
@@ -577,15 +582,18 @@ function SidebarSessionRowImpl({
                     </OverflowTip>
                     {/* Session-list density (#68119): comfortable adds one
                         deterministic metadata line; detailed adds the initial
-                        request preview. Compact keeps today's one-line row. */}
-                    {density !== 'compact' && details.metadata && (
+                        request preview. Compact keeps today's one-line row. The
+                        live digest claims the line under the title while the
+                        session has something to say — the static text returns
+                        the moment it doesn't. */}
+                    {density !== 'compact' && (digest ?? details.metadata) && (
                       <span
                         className={cn(
                           'mt-0.5 block truncate text-[0.625rem] text-(--ui-text-tertiary)',
                           SIDEBAR_TRUNCATED_LEADING
                         )}
                       >
-                        {details.metadata}
+                        {digest ?? details.metadata}
                       </span>
                     )}
                     {density === 'detailed' && details.preview && (
@@ -642,14 +650,14 @@ function SidebarSessionRowImpl({
                       <span className="hover-marquee-inner">{title}</span>
                     </SidebarRowLabel>
                   </OverflowTip>
-                  {session.preview && rowMeta.includes('preview') ? (
+                  {rowMeta.includes('preview') && (digest ?? session.preview) ? (
                     <span
                       className={cn(
                         'min-w-0 truncate text-[0.625rem] text-(--ui-text-quaternary)',
                         SIDEBAR_TRUNCATED_LEADING
                       )}
                     >
-                      {session.preview}
+                      {digest ?? session.preview}
                     </span>
                   ) : null}
                 </div>

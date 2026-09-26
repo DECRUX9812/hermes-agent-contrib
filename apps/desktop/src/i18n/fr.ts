@@ -4105,6 +4105,14 @@ export const frOverrides = {
       untitledChat: id => `Conversation ${id}`,
       messageCount: count => `${count} message${count === 1 ? '' : 's'}`,
       todoProgress: 'Tâches terminées',
+      digest: {
+        agents: count => (count === 1 ? 'Un agent en cours' : `${count} agents en cours`),
+        approve: command => `Approuver : ${command}`,
+        compacting: 'Résumé de la conversation',
+        replying: "Rédaction d'une réponse",
+        stalled: 'Toujours en cours — silencieuse depuis un moment',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: 'maintenant',
       ageDay: 'j',
       ageHour: 'h',

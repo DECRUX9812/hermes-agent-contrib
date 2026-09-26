@@ -2280,6 +2280,14 @@ export const ar = defineLocale({
       deleteDesc: title => `سيتم حذف «${title}» نهائيًا. لا يمكن التراجع عن هذا الإجراء.`,
       deleting: 'جارٍ الحذف…',
       deleted: 'تم حذف الجلسة',
+      digest: {
+        agents: count => `${count} وكلاء قيد التشغيل`,
+        approve: command => `الموافقة: ${command}`,
+        compacting: 'جارٍ تلخيص المحادثة',
+        replying: 'جارٍ كتابة الرد',
+        stalled: 'ما يزال قيد التشغيل — هادئ منذ فترة',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: 'الآن',
       ageDay: 'يوم',
       ageHour: 'ساعة',

@@ -4096,6 +4096,14 @@ export const deOverrides = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'Nachricht' : 'Nachrichten'}`,
       todoProgress: 'Aufgaben abgeschlossen',
+      digest: {
+        agents: count => (count === 1 ? 'Ein Agent läuft' : `${count} Agents laufen`),
+        approve: command => `Genehmigen: ${command}`,
+        compacting: 'Konversation wird zusammengefasst',
+        replying: 'Antwort wird geschrieben',
+        stalled: 'Läuft noch — seit einer Weile ruhig',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: 'jetzt',
       ageDay: 'T',
       ageHour: 'h',

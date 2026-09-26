@@ -3507,6 +3507,14 @@ export const zh = defineLocale({
       untitledChat: id => `会话 ${id}`,
       messageCount: count => `${count} 条消息`,
       todoProgress: '任务完成度',
+      digest: {
+        agents: count => `${count} 个子代理正在运行`,
+        approve: command => `批准：${command}`,
+        compacting: '正在总结会话',
+        replying: '正在撰写回复',
+        stalled: '仍在运行 — 已有一段时间没有输出',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: '刚刚',
       ageDay: '天',
       ageHour: '时',
