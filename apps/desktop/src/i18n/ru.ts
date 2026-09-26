@@ -4133,7 +4133,27 @@ export const ru = defineLocale({
       loadFailedConsole: (code, message) => `Не удалось загрузить${code ? ` (${code})` : ''}: ${message}`,
       unreachableDescription: 'Страница предпросмотра недоступна.',
       openTarget: url => `Открыть ${url}`,
-      fallbackTitle: 'Предпросмотр'
+      fallbackTitle: 'Предпросмотр',
+      record: 'Записать задачу',
+      recordStop: 'Остановить запись',
+      recording: count => `Запись · ${count}`,
+      recordNeedPage: 'Сначала откройте страницу во встроенном браузере.',
+      recordFailed: 'Не удалось начать запись на этой странице.',
+      recordTitle: 'Сохранить запись как навык',
+      recordDesc:
+        'Проверьте записанные шаги, назовите навык и сохраните черновик. Агент сможет воспроизвести его из ваших навыков.',
+      recordName: 'Название',
+      recordNamePlaceholder: 'Заказать продукты',
+      recordNameHint: slug => `Будет сохранено как «${slug}» в ~/.hermes/skills/`,
+      recordDescLabel: 'Описание (необязательно)',
+      recordDescPlaceholder: 'Когда использовать этот сценарий…',
+      recordDescHint: 'Одно предложение, не более 60 символов.',
+      recordSteps: count => `Записанные шаги (${count})`,
+      recordEmpty: 'Шаги не записаны — запись была пустой.',
+      recordSave: 'Сохранить навык',
+      recordSaving: 'Сохранение…',
+      recordSaved: name => `«${name}» сохранён в ваши навыки.`,
+      recordSaveFailed: 'Не удалось сохранить навык.'
     }
   },
   interfaceMode: {

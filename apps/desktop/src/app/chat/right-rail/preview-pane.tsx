@@ -28,6 +28,7 @@ import {
 } from '@/lib/preview-annotate'
 import { admitPreviewExternalUrl, PREVIEW_EXTERNAL_CHANNEL } from '@/lib/preview-external'
 import { reachablePreviewUrl } from '@/lib/preview-reach'
+import type { RecordedStep } from '@/lib/preview-record/in-page'
 import { rafCoalesce } from '@/lib/raf-coalesce'
 import { cn } from '@/lib/utils'
 import { notify, notifyError } from '@/store/notifications'
@@ -72,6 +73,13 @@ import { LocalFilePreview, PreviewEmptyState, PreviewModeSwitcher } from './prev
 import { type PreviewInputEvent, registerPreviewInput, toWebviewInputSpace } from './preview-input'
 import { PREVIEW_BROWSER_ATTR, registerPreviewNav } from './preview-nav'
 import { registerPreviewPageReader } from './preview-reader'
+import {
+  drainRecorderSteps,
+  installRecorder,
+  RECORD_POLL_MS,
+  teardownRecorder
+} from './preview-record'
+import { PreviewRecordDialog } from './preview-record-dialog'
 import { registerPreviewScriptRunner } from './preview-script-runner'
 import { RealProfileConsentDialog } from './real-profile-consent-dialog'
 
@@ -292,6 +300,16 @@ export function PreviewPane({
   const annotateLoopRef = useRef(0)
   const annotateConversationRef = useRef(selectedStoredSessionId)
   annotateRef.current = annotate
+
+  // Record-a-task (roadmap #46): a flag the webview listeners read plus the
+  // accumulated step list (ref — survives drains, navigations, and re-renders
+  // without painting). `recordCount` mirrors its length for the bar's chip.
+  const [recording, setRecording] = useState(false)
+  const recordingRef = useRef(recording)
+  recordingRef.current = recording
+  const recordingStepsRef = useRef<RecordedStep[]>([])
+  const [recordCount, setRecordCount] = useState(0)
+  const [recordDialog, setRecordDialog] = useState<null | RecordedStep[]>(null)
 
   const renderMode = target.renderMode
 
@@ -661,6 +679,82 @@ export function PreviewPane({
       void startAnnotate()
     }
   }, [startAnnotate, stopAnnotate])
+
+  const drainRecording = useCallback(async () => {
+    const guest = annotateGuest()
+
+    if (!guest) {
+      return
+    }
+
+    try {
+      const steps = await drainRecorderSteps(guest)
+
+      if (steps.length) {
+        recordingStepsRef.current.push(...steps)
+        setRecordCount(recordingStepsRef.current.length)
+      }
+    } catch {
+      // The document tore down mid-drain (a navigation) — `dom-ready`
+      // reinstalls the recorder and the next tick drains what it captured.
+    }
+  }, [annotateGuest])
+
+  const startRecording = useCallback(async () => {
+    const guest = annotateGuest()
+
+    if (!guest) {
+      notify({ kind: 'warning', title: copy.record, message: copy.recordNeedPage })
+
+      return
+    }
+
+    try {
+      await installRecorder(guest)
+    } catch (error) {
+      notifyError(error, copy.recordFailed)
+
+      return
+    }
+
+    recordingStepsRef.current = []
+    setRecordCount(0)
+    setRecording(true)
+  }, [annotateGuest, copy.record, copy.recordFailed, copy.recordNeedPage])
+
+  const stopRecording = useCallback(async () => {
+    setRecording(false)
+    await drainRecording()
+
+    const guest = annotateGuest()
+
+    if (guest) {
+      await teardownRecorder(guest).catch(() => undefined)
+    }
+
+    setRecordDialog(recordingStepsRef.current)
+    recordingStepsRef.current = []
+  }, [annotateGuest, drainRecording])
+
+  const toggleRecord = useCallback(() => {
+    if (recordingRef.current) {
+      void stopRecording()
+    } else {
+      void startRecording()
+    }
+  }, [startRecording, stopRecording])
+
+  // While recording, the poll keeps step loss on a navigation bounded to one
+  // tick — the in-page listener dies with the document.
+  useEffect(() => {
+    if (!recording) {
+      return
+    }
+
+    const timer = window.setInterval(() => void drainRecording(), RECORD_POLL_MS)
+
+    return () => window.clearInterval(timer)
+  }, [drainRecording, recording])
 
   const appendConsoleEntry = useCallback(
     (entry: Omit<ConsoleEntry, 'id'>) => {
@@ -1142,6 +1236,14 @@ export function PreviewPane({
       if (detail.url) {
         setLoadError(null)
         setCurrentUrl(detail.url)
+
+        // The guest recorder died with the document it was on (or an SPA
+        // changed routes under it) — the navigation IS a recorded step, and
+        // `dom-ready` re-arms the listener on the new page.
+        if (recordingRef.current) {
+          recordingStepsRef.current.push({ kind: 'navigate', url: detail.url })
+          setRecordCount(recordingStepsRef.current.length)
+        }
       }
 
       notePage()
@@ -1196,6 +1298,13 @@ export function PreviewPane({
         // Guest tore down mid-arm (a navigation raced the injection) — the
         // next dom-ready arms it again.
       })
+
+      // A fresh document dropped the guest recorder; re-arm while recording.
+      if (recordingRef.current) {
+        void installRecorder({ executeJavaScript: bindPreviewExecuteJavaScript(webview) }).catch(
+          () => undefined
+        )
+      }
     }
 
     // The WEBVIEW is the source of truth for DevTools, not our click handler:
@@ -1298,6 +1407,9 @@ export function PreviewPane({
 
     return () => {
       annotateLoopRef.current += 1
+      // The guest the recorder was bound to is gone — end the take quietly.
+      recordingRef.current = false
+      setRecording(false)
       webview.removeEventListener('console-message', onConsole)
       webview.removeEventListener('ipc-message', onGuestExternal)
       webview.removeEventListener('context-menu', onGuestContextMenu)
@@ -1394,12 +1506,25 @@ export function PreviewPane({
                 : () => popOutBrowserTab(tabId)
             }
             onReload={reloadPreview}
-            onToggleAnnotate={toggleAnnotate}
+            onToggleAnnotate={recording ? undefined : toggleAnnotate}
             onToggleConsole={() => consoleState.setOpen(open => !open)}
             onToggleDevTools={toggleDevTools}
+            onToggleRecord={annotate.mode ? undefined : toggleRecord}
+            recordCount={recordCount}
+            recording={recording}
             url={currentUrl}
           />
         )}
+
+        {recordDialog ? (
+          <PreviewRecordDialog
+            onOpenChange={() => setRecordDialog(null)}
+            open
+            pageTitle={guestPage(webviewRef.current, liveUrlRef.current).title}
+            pageUrl={currentUrl}
+            steps={recordDialog}
+          />
+        ) : null}
 
         {/* First-open real-profile consent offer — Browser tabs only (URL
             vessels the user browses with), never file/HTML previews. */}

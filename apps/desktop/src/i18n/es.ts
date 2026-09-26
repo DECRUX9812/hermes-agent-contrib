@@ -5549,7 +5549,27 @@ export const esOverrides = {
       commentPlaceholder: 'Añade un comentario...',
       commentTitle: (n: number) => `Comentario ${n}`,
       saveComment: 'Guardar',
-      cancelComment: 'Cancelar comentario'
+      cancelComment: 'Cancelar comentario',
+      record: 'Grabar tarea',
+      recordStop: 'Detener grabación',
+      recording: count => `Grabando · ${count}`,
+      recordNeedPage: 'Abre primero una página en el navegador integrado.',
+      recordFailed: 'No se pudo iniciar la grabación en esta página.',
+      recordTitle: 'Guardar grabación como skill',
+      recordDesc:
+        'Revisa los pasos capturados, pon nombre al skill y guárdalo como borrador. El agente podrá reproducirlo desde tus skills.',
+      recordName: 'Nombre',
+      recordNamePlaceholder: 'Pedir la compra',
+      recordNameHint: slug => `Se guardará como «${slug}» en ~/.hermes/skills/`,
+      recordDescLabel: 'Descripción (opcional)',
+      recordDescPlaceholder: 'Cuándo usar este flujo…',
+      recordDescHint: 'Una frase, 60 caracteres como máximo.',
+      recordSteps: count => `Pasos grabados (${count})`,
+      recordEmpty: 'No se capturaron pasos: la grabación estaba vacía.',
+      recordSave: 'Guardar skill',
+      recordSaving: 'Guardando…',
+      recordSaved: name => `«${name}» se guardó en tus skills.`,
+      recordSaveFailed: 'No se pudo guardar el skill.'
     }
   },
   interfaceMode: {

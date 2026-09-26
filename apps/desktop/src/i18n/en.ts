@@ -5178,7 +5178,27 @@ export const en: Translations = {
       commentPlaceholder: 'Add a comment...',
       commentTitle: n => `Comment ${n}`,
       saveComment: 'Save',
-      cancelComment: 'Cancel comment'
+      cancelComment: 'Cancel comment',
+      record: 'Record task',
+      recordStop: 'Stop recording',
+      recording: count => `Recording · ${count}`,
+      recordNeedPage: 'Open a page in the in-app browser first.',
+      recordFailed: 'Could not start recording on this page.',
+      recordTitle: 'Save recording as a skill',
+      recordDesc:
+        'Review the captured steps, name the skill, and save it as a draft. The agent can then replay it from your skills.',
+      recordName: 'Name',
+      recordNamePlaceholder: 'Order groceries',
+      recordNameHint: slug => `Saved as “${slug}” under ~/.hermes/skills/`,
+      recordDescLabel: 'Description (optional)',
+      recordDescPlaceholder: 'When to use this workflow…',
+      recordDescHint: 'One sentence, 60 characters at most.',
+      recordSteps: count => `Recorded steps (${count})`,
+      recordEmpty: 'No steps were captured — the recording was empty.',
+      recordSave: 'Save skill',
+      recordSaving: 'Saving…',
+      recordSaved: name => `Saved “${name}” to your skills.`,
+      recordSaveFailed: 'Could not save the skill.'
     }
   },
 

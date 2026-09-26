@@ -4881,7 +4881,26 @@ export const zh = defineLocale({
       commentPlaceholder: '添加批注…',
       commentTitle: n => `批注 ${n}`,
       saveComment: '保存',
-      cancelComment: '取消批注'
+      cancelComment: '取消批注',
+      record: '录制任务',
+      recordStop: '停止录制',
+      recording: count => `录制中 · ${count}`,
+      recordNeedPage: '请先在内置浏览器中打开一个页面。',
+      recordFailed: '无法在此页面上开始录制。',
+      recordTitle: '将录制内容保存为技能',
+      recordDesc: '检查已捕获的步骤、命名技能并保存为草稿。之后智能体可从你的技能中重放它。',
+      recordName: '名称',
+      recordNamePlaceholder: '订购生活用品',
+      recordNameHint: slug => `将以「${slug}」保存到 ~/.hermes/skills/`,
+      recordDescLabel: '描述（可选）',
+      recordDescPlaceholder: '何时使用此流程…',
+      recordDescHint: '一句话，最多 60 个字符。',
+      recordSteps: count => `已录制步骤（${count}）`,
+      recordEmpty: '未捕获任何步骤——录制为空。',
+      recordSave: '保存技能',
+      recordSaving: '正在保存…',
+      recordSaved: name => `已将「${name}」保存到你的技能。`,
+      recordSaveFailed: '无法保存技能。'
     }
   },
 
