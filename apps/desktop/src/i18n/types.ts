@@ -3470,6 +3470,10 @@ export interface Translations {
     stop: string
     dismiss: string
     exit: (code: number) => string
+    verifyChecking: string
+    verifyFailed: (count: number) => string
+    verifyOpenConsole: string
+    verifyPassed: string
     control: {
       goalActiveTurns: (turn: number, maxTurns: number) => string
       goalDoneTurns: (turns: number) => string

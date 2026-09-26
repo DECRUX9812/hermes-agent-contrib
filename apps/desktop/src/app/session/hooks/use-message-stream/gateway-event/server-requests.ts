@@ -9,10 +9,12 @@ import { pendingClarifyToolPayload } from '@/app/session/hooks/use-session-actio
 import { translateNow } from '@/i18n'
 import { restorePendingClarifyToolCall } from '@/lib/chat-messages'
 import type { PreviewActAction } from '@/lib/preview-act/act-in-page'
+import { verifyActivePreview } from '@/lib/preview-verify'
 import type { TourAction, TourStep } from '@/lib/tour'
 import { normalizeChoices, normalizeQuestions, setClarifyRequest, warnDroppedChoices } from '@/store/clarify'
 import type { ScopedServerRequest } from '@/store/gateway'
 import { dispatchNativeNotification } from '@/store/native-notifications'
+import { recordPreviewVerifyResult, recordPreviewVerifyRunning } from '@/store/preview-verify'
 import {
   receiveApprovalRequest,
   setSecretRequest,
@@ -70,7 +72,7 @@ type PreviewSessionRoute = 'ignore' | 'retry' | 'run'
  * would win the race, so the tool reports "no preview tab / no terminal" while
  * the owner's pane is open (#113348).
  */
-const WINDOW_OWNED_REQUESTS = new Set(['preview.act', 'preview.read', 'terminal.read', 'window.read', 'tour'])
+const WINDOW_OWNED_REQUESTS = new Set(['preview.act', 'preview.read', 'preview.verify', 'terminal.read', 'window.read', 'tour'])
 
 /** This window hosts the session: it is the primary view or an open session tile. */
 export function windowHostsSession(sessionId: string, activeSessionId: null | string): boolean {
@@ -455,6 +457,29 @@ const tour: Handler = ({ isActiveSession, request }) => {
     )
 }
 
+const previewVerify: Handler = ({ request, sessionId }) => {
+  // verify_preview tool: settle, then answer pass/fail from the resolved
+  // preview's console log. Read-only like preview.read — the owning window
+  // answers and the same verdict posts a status card on the session.
+  if (sessionId) {
+    recordPreviewVerifyRunning(sessionId)
+  }
+
+  void verifyActivePreview({ settleMs: num(request.params.settle_ms) }).then(outcome => {
+    if (sessionId) {
+      recordPreviewVerifyResult(sessionId, {
+        errorCount: 'error' in outcome ? 0 : outcome.errorCount,
+        firstError: 'error' in outcome ? outcome.error : outcome.errors[0]?.message,
+        ok: outcome.ok,
+        tabId: 'error' in outcome ? undefined : outcome.tabId,
+        url: 'error' in outcome ? undefined : outcome.url
+      })
+    }
+
+    answerValue(request, outcome)
+  })
+}
+
 /** Method → handler. Every `ServerRequestMap` key the desktop answers. */
 export const SERVER_REQUEST_HANDLERS: Record<string, Handler> = {
   approval,
@@ -462,6 +487,7 @@ export const SERVER_REQUEST_HANDLERS: Record<string, Handler> = {
   'display.install.sudo': displayInstallSudo,
   'preview.act': previewAct,
   'preview.read': previewRead,
+  'preview.verify': previewVerify,
   secret,
   sudo,
   'terminal.read': terminalRead,

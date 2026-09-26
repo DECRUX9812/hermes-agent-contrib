@@ -22144,6 +22144,33 @@
         "title": "PreviewRestartProgressPayload",
         "type": "object"
       },
+      "PreviewVerifyRequestParams": {
+        "additionalProperties": false,
+        "description": "``tools/verify_preview_tool.py`` field set.",
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "settle_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Settle Ms"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "PreviewVerifyRequestParams",
+        "type": "object"
+      },
       "ProcessEntry": {
         "additionalProperties": true,
         "description": "``tools/process_registry.py::list_sessions`` row plus the gateway's ``output_tail``.",
@@ -37708,6 +37735,24 @@
           "name": "params",
           "schema": {
             "$ref": "#/components/schemas/ReadRangeRequestParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ValueResult"
+        }
+      }
+    },
+    {
+      "name": "preview.verify",
+      "summary": "Read the in-app preview's console errors and answer a pass/fail (JSON).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/PreviewVerifyRequestParams"
           }
         }
       ],

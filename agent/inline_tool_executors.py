@@ -265,6 +265,10 @@ INLINE_TOOL_EXECUTORS: Dict[str, InlineToolExecutor] = {
         "tools.annotate_preview_tool", "annotate_preview_tool", "drive_preview_callback",
         ("action", "action", "add"), ("ref", "ref"), ("selector", "selector"), ("label", "label"),
     ),
+    "verify_preview": _callback_tool(
+        "tools.verify_preview_tool", "verify_preview_tool", "verify_preview_callback",
+        ("settle_ms", "settle_ms"),
+    ),
     "read_window_below": _callback_tool(
         "tools.read_window_tool", "read_window_below_tool", "read_window_below_callback",
     ),

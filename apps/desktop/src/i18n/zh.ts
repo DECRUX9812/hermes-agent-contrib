@@ -3929,6 +3929,10 @@ export const zh = defineLocale({
     stop: '停止',
     dismiss: '关闭',
     exit: code => `退出码 ${code}`,
+    verifyChecking: '正在检查预览…',
+    verifyFailed: count => `预览检查未通过 — 控制台有 ${count} 个错误`,
+    verifyOpenConsole: '打开控制台',
+    verifyPassed: '预览检查通过',
     control: {
       goalActiveTurns: (turn, maxTurns) => `第 ${turn}/${maxTurns} 轮`,
       goalDoneTurns: turns => `共 ${turns} 轮`,

@@ -32,6 +32,7 @@ import {
 import { $freeTierRoute, $freeTierStatus, freeTierStripPending } from '@/store/free-tier'
 import { $interfaceMode, shownInMode, type Tiered } from '@/store/interface-mode'
 import { $previewStatusBySession, dismissPreviewArtifact } from '@/store/preview-status'
+import { $previewVerifyBySession, dismissPreviewVerify } from '@/store/preview-verify'
 import { $sessionControlBySession, refreshSessionControl } from '@/store/session-control'
 import { $threadScrolledUpBySession } from '@/store/thread-scroll'
 import { openSessionInNewWindow } from '@/store/windows'
@@ -42,6 +43,7 @@ import { useSessionValue } from './session-control-utils'
 import { StatusItemRow } from './status-row'
 import { SubagentSection } from './subagent-section'
 import { useSubagentSnapshot } from './use-subagent-snapshot'
+import { PreviewVerifyRow } from './verify-row'
 
 // Slow safety-net poll for silent exits (processes without notify_on_complete
 // emit no event when they die). Only armed while a running row is on screen.
@@ -122,6 +124,7 @@ export function ComposerStatusStack({ onSubmit, queue, sessionId }: ComposerStat
   // items actually changed.
   const items = useSessionSlice($statusItemsBySession, sessionId)
   const previews = useSessionSlice($previewStatusBySession, sessionId)
+  const previewVerify = useSessionValue($previewVerifyBySession, sessionId)
   const controlEntry = useSessionValue($sessionControlBySession, sessionId)
 
   const surfaceId = useComposerSurfaceId()
@@ -301,6 +304,19 @@ export function ComposerStatusStack({ onSubmit, queue, sessionId }: ComposerStat
   // the queue or background group expands.
   if (previewRows.length > 0) {
     sections.push({ key: 'preview', node: <div className="status-artifacts">{previewRows}</div> })
+  }
+
+  // verify_preview's verdict rides the artifact lane: latest check per session,
+  // dismissible, click-through to the tab's console.
+  if (previewVerify && sessionId) {
+    sections.push({
+      key: 'preview-verify',
+      node: (
+        <div className="status-artifacts">
+          <PreviewVerifyRow item={previewVerify} onDismiss={() => dismissPreviewVerify(sessionId)} />
+        </div>
+      )
+    })
   }
 
   // Micro actions are the TOP-MOST thing in the whole overlay lane — above the

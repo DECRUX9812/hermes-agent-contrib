@@ -4534,6 +4534,10 @@ export const frOverrides = {
     stop: 'Arrêter',
     dismiss: 'Rejeter',
     exit: code => `sortie ${code}`,
+    verifyChecking: 'Vérification de l’aperçu…',
+    verifyFailed: count => `Vérification échouée — ${count} ${count === 1 ? 'erreur' : 'erreurs'} de console`,
+    verifyOpenConsole: 'Ouvrir la console',
+    verifyPassed: 'Vérification de l’aperçu réussie',
     control: {
       goalActiveTurns: (turn, maxTurns) => `Tour ${turn}/${maxTurns}`,
       goalDoneTurns: turns => `${turns} tour${turns === 1 ? '' : 's'}`,

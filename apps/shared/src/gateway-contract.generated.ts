@@ -4248,6 +4248,11 @@ export interface PreviewActRequestParams {
   max?: number | null
   allow_shortcut?: boolean | null
 }
+/** ``tools/verify_preview_tool.py`` field set. */
+export interface PreviewVerifyRequestParams {
+  session_id: string
+  settle_ms?: number | null
+}
 /** ``tools/tour_tool.py`` field set. */
 export interface TourRequestParams {
   session_id: string
@@ -5428,6 +5433,8 @@ export interface ServerRequestMap {
   'preview.act': { params: PreviewActRequestParams; result: ValueResult }
   /** Read the in-app browser preview's text (JSON text answer). */
   'preview.read': { params: ReadRangeRequestParams; result: ValueResult }
+  /** Read the in-app preview's console errors and answer a pass/fail (JSON). */
+  'preview.verify': { params: PreviewVerifyRequestParams; result: ValueResult }
   /** Masked value for a named env var (skills / setup flows). */
   secret: { params: SecretRequestParams; result: ValueResult }
   /** Masked sudo password for the terminal tool. */
@@ -5452,6 +5459,7 @@ export const SERVER_REQUEST_METHODS = [
   'display.install.sudo',
   'preview.act',
   'preview.read',
+  'preview.verify',
   'secret',
   'sudo',
   'terminal.read',

@@ -3262,6 +3262,10 @@ export const ru = defineLocale({
     stop: 'Стоп',
     dismiss: 'Скрыть',
     exit: code => `exit ${code}`,
+    verifyChecking: 'Проверяю предпросмотр…',
+    verifyFailed: count => `Проверка не прошла — ${count} ${RU_PLURAL(count, 'ошибка', 'ошибки', 'ошибок')} консоли`,
+    verifyOpenConsole: 'Открыть консоль',
+    verifyPassed: 'Проверка предпросмотра пройдена',
     control: {
       goalActiveTurns: (turn, maxTurns) => `Ход ${turn}/${maxTurns}`,
       goalDoneTurns: turns => `${turns} ходов`,
