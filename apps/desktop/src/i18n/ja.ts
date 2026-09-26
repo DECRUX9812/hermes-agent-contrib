@@ -650,6 +650,9 @@ export const ja = defineLocale({
       title: '外観',
       intro:
         'デスクトップ専用の表示設定です。モードは明るさ、テーマはアクセントカラーとチャット面のスタイルを制御します。',
+      simpleModeTitle: 'シンプルモード',
+      simpleModeDesc:
+        'チャット中心のすっきりした画面です。高度なパネルやツール、ステータス項目を隠します。すべての機能は設定と ⌘K からいつでも使え、すぐに元の表示へ戻せます。',
       colorMode: 'カラーモード',
       colorModeDesc: '固定モードを選ぶか、Hermes をシステム設定に合わせます。',
       toolViewTitle: 'ツール呼び出しの表示',
@@ -2471,6 +2474,13 @@ export const ja = defineLocale({
       artifacts: 'アーティファクト',
       cron: 'スケジュール済みジョブ'
     },
+    interfaceMode: {
+      label: 'インターフェース',
+      simple: 'シンプル',
+      full: 'フル',
+      toFull: 'シンプルモードでは高度なパネルとコントロールが非表示になります。クリックするとフル表示に戻ります。',
+      toSimple: 'チャット中心のすっきりした画面に戻ります。'
+    },
     searchAria: 'セッションを検索',
     searchPlaceholder: 'セッションを検索…',
     clearSearch: '検索をクリア',
@@ -2625,6 +2635,10 @@ export const ja = defineLocale({
       working: '実行中',
       done: '完了'
     }
+  },
+
+  intro: {
+    recentSessions: '前回の続きから'
   },
 
   composer: {
@@ -2810,6 +2824,7 @@ export const ja = defineLocale({
     pasteImage: '画像を貼り付け',
     url: 'URL…',
     promptSnippets: 'プロンプトスニペット…',
+    scheduleJob: 'スケジュールで実行…',
     tipPre: 'ヒント: ',
     tipPost: ' と入力してファイルをインラインで参照。',
     snippetsTitle: 'プロンプトスニペット',
@@ -3399,6 +3414,11 @@ export const ja = defineLocale({
       openCron: 'Cron ジョブを開く',
       starmap: 'メモリグラフ',
       openStarmap: 'メモリグラフを開く',
+      artifacts: '成果物',
+      artifactsTitle: 'このチャットで生成された成果物 — 選ぶとスレッドの横に開きます',
+      artifactsCount: count => `成果物 ${count} 件`,
+      browseAllArtifacts: '成果物をすべて表示',
+      toggleArtifacts: '成果物',
       turnRunning: '実行中',
       contextUsage: 'コンテキスト使用状況',
       systemResources: {

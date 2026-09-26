@@ -15,7 +15,16 @@ import {
 import { Kbd } from '@/components/ui/kbd'
 import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
-import { Clipboard, FileText, FolderOpen, type IconComponent, ImageIcon, Link, MessageSquareText } from '@/lib/icons'
+import {
+  Clipboard,
+  Clock,
+  FileText,
+  FolderOpen,
+  type IconComponent,
+  ImageIcon,
+  Link,
+  MessageSquareText
+} from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
 import { useComposerAttachmentProviders } from './contrib'
@@ -31,7 +40,8 @@ export function ContextMenu({
   onPasteClipboardImage,
   onPickFiles,
   onPickFolders,
-  onPickImages
+  onPickImages,
+  onScheduleDraft
 }: ContextMenuProps) {
   const { t } = useI18n()
   const c = t.composer
@@ -92,6 +102,9 @@ export function ContextMenu({
 
           <ContextMenuItem icon={MessageSquareText} onSelect={() => setSnippetsOpen(true)}>
             {c.promptSnippets}
+          </ContextMenuItem>
+          <ContextMenuItem icon={Clock} onSelect={onScheduleDraft}>
+            {c.scheduleJob}
           </ContextMenuItem>
 
           {attachmentProviders.length > 0 && <DropdownMenuSeparator />}
@@ -187,6 +200,8 @@ interface ContextMenuItemProps {
 interface ContextMenuProps {
   onInsertText: (text: string) => void
   onOpenUrlDialog: () => void
+  /** Seeds a cron create-draft from the composer's current text, then routes to /cron. */
+  onScheduleDraft?: () => void
   onPasteClipboardImage?: (opts?: { silent?: boolean }) => Promise<boolean> | void
   onPickFiles?: () => void
   onPickFolders?: () => void

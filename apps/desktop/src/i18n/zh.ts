@@ -811,6 +811,8 @@ export const zh = defineLocale({
     appearance: {
       title: '外观',
       intro: '这些是仅桌面端的显示偏好。模式控制明暗；主题控制强调色与对话界面样式。',
+      simpleModeTitle: '简洁模式',
+      simpleModeDesc: '更清爽、以聊天为主的界面：隐藏高级面板、工具和状态项。所有功能仍可随时通过“设置”和 ⌘K 访问，可随时切换回来。',
       colorMode: '颜色模式',
       colorModeDesc: '选择固定模式，或让 Hermes 跟随系统设置。',
       toolViewTitle: '工具调用显示',
@@ -3327,6 +3329,13 @@ export const zh = defineLocale({
       artifacts: '产物',
       cron: '定时任务'
     },
+    interfaceMode: {
+      label: '界面',
+      simple: '简洁',
+      full: '完整',
+      toFull: '简洁模式会隐藏高级面板和控件。点击切换到完整界面。',
+      toSimple: '返回清爽的聊天优先界面。'
+    },
     searchAria: '搜索会话',
     searchPlaceholder: '搜索会话…',
     clearSearch: '清除搜索',
@@ -3491,6 +3500,10 @@ export const zh = defineLocale({
       done: '已完成'
     },
     markAllRead: '全部标记为已读'
+  },
+
+  intro: {
+    recentSessions: '从上次继续'
   },
 
   composer: {
@@ -3683,6 +3696,7 @@ export const zh = defineLocale({
     pasteImage: '粘贴图片',
     url: 'URL…',
     promptSnippets: '提示词片段…',
+    scheduleJob: '定时运行…',
     tipPre: '提示：输入 ',
     tipPost: ' 以内联引用文件。',
     snippetsTitle: '提示词片段',
@@ -4383,6 +4397,11 @@ export const zh = defineLocale({
       openWebhooks: '打开 Webhook',
       starmap: '记忆图谱',
       openStarmap: '打开记忆图谱',
+      artifacts: '产物',
+      artifactsTitle: '本会话生成的交付物 — 选择一个在对话旁打开',
+      artifactsCount: count => `${count} 个产物`,
+      browseAllArtifacts: '浏览全部产物',
+      toggleArtifacts: '产物',
       turnRunning: '运行中',
       contextUsage: '上下文用量',
       systemResources: {

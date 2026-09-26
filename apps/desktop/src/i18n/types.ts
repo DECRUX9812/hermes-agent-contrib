@@ -920,6 +920,8 @@ export interface Translations {
     appearance: {
       title: string
       intro: string
+      simpleModeTitle: string
+      simpleModeDesc: string
       colorMode: string
       colorModeDesc: string
       toolViewTitle: string
@@ -2968,6 +2970,13 @@ export interface Translations {
     }
     profileRail: string
     nav: Record<string, string>
+    interfaceMode: {
+      label: string
+      simple: string
+      full: string
+      toFull: string
+      toSimple: string
+    }
     searchAria: string
     searchPlaceholder: string
     clearSearch: string
@@ -3138,6 +3147,10 @@ export interface Translations {
     markAllRead: string
   }
 
+  intro: {
+    recentSessions: string
+  }
+
   composer: {
     message: string
     wakingProfile: (profile: string) => string
@@ -3232,6 +3245,7 @@ export interface Translations {
     pasteImage: string
     url: string
     promptSnippets: string
+    scheduleJob: string
     tipPre: string
     tipPost: string
     snippetsTitle: string
@@ -3930,6 +3944,11 @@ export interface Translations {
       openWebhooks: string
       starmap: string
       openStarmap: string
+      artifacts: string
+      artifactsTitle: string
+      artifactsCount: (count: number) => string
+      browseAllArtifacts: string
+      toggleArtifacts: string
       turnRunning: string
       contextUsage: string
       systemResources: {

@@ -1111,6 +1111,9 @@ export const en: Translations = {
     appearance: {
       title: 'Appearance',
       intro: 'Desktop-only. Mode is brightness; theme is palette and chat chrome.',
+      simpleModeTitle: 'Simple mode',
+      simpleModeDesc:
+        'A cleaner, chat-first interface: hides advanced panes, tools, and status items. Everything stays reachable from Settings and ⌘K — switch back any time.',
       colorMode: 'Color Mode',
       colorModeDesc: 'Pick a fixed mode or let Hermes follow your system setting.',
       toolViewTitle: 'Tool Call Display',
@@ -3526,6 +3529,13 @@ export const en: Translations = {
       artifacts: 'Artifacts',
       cron: 'Scheduled jobs'
     },
+    interfaceMode: {
+      label: 'Interface',
+      simple: 'Simple',
+      full: 'Full',
+      toFull: 'Simple mode hides advanced panes and controls. Click for the full interface.',
+      toSimple: 'Back to the clean, chat-first interface.'
+    },
     searchAria: 'Search sessions',
     searchPlaceholder: 'Search sessions…',
     clearSearch: 'Clear search',
@@ -3699,6 +3709,10 @@ export const en: Translations = {
       done: 'Done'
     },
     markAllRead: 'Mark all as read'
+  },
+
+  intro: {
+    recentSessions: 'Pick up where you left off'
   },
 
   composer: {
@@ -3893,6 +3907,7 @@ export const en: Translations = {
     pasteImage: 'Paste image',
     url: 'URL…',
     promptSnippets: 'Prompt snippets…',
+    scheduleJob: 'Run on a schedule…',
     tipPre: 'Tip: type ',
     tipPost: ' to reference files inline.',
     snippetsTitle: 'Prompt snippets',
@@ -4658,6 +4673,11 @@ export const en: Translations = {
       openWebhooks: 'Open webhooks',
       starmap: 'Memory Graph',
       openStarmap: 'Open memory graph',
+      artifacts: 'Artifacts',
+      artifactsTitle: 'Deliverables generated in this chat — pick one to open it beside the thread',
+      artifactsCount: count => `${count} artifact${count === 1 ? '' : 's'}`,
+      browseAllArtifacts: 'Browse all artifacts',
+      toggleArtifacts: 'Artifacts',
       turnRunning: 'Running',
       contextUsage: 'Context usage',
       systemResources: {

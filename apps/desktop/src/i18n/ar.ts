@@ -680,6 +680,9 @@ export const ar = defineLocale({
     appearance: {
       title: 'المظهر',
       intro: 'خصص مظهر Hermes Desktop.',
+      simpleModeTitle: 'الوضع المبسّط',
+      simpleModeDesc:
+        'واجهة أنظف تركّز على المحادثة: تخفي اللوحات والأدوات وعناصر الحالة المتقدّمة. يبقى كل شيء متاحًا من الإعدادات و ⌘K — ويمكنك الرجوع في أي وقت.',
       colorMode: 'نمط الألوان',
       colorModeDesc: 'اختر الوضع الفاتح أو الداكن أو اتبع النظام.',
       toolViewTitle: 'عرض الأدوات',
@@ -2093,6 +2096,13 @@ export const ar = defineLocale({
       artifacts: 'العناصر',
       cron: 'المهام المجدولة'
     },
+    interfaceMode: {
+      label: 'الواجهة',
+      simple: 'مبسّط',
+      full: 'كامل',
+      toFull: 'يخفي الوضع المبسّط اللوحات وعناصر التحكم المتقدّمة. اضغط للعودة إلى الواجهة الكاملة.',
+      toSimple: 'العودة إلى الواجهة المبسّطة المركّزة على المحادثة.'
+    },
     searchAria: 'البحث في الجلسات',
     searchPlaceholder: 'البحث في الجلسات...',
     clearSearch: 'مسح البحث',
@@ -2235,6 +2245,10 @@ export const ar = defineLocale({
       ageMin: 'دقيقة'
     }
   },
+  intro: {
+    recentSessions: 'تابع من حيث توقفت'
+  },
+
   composer: {
     message: 'الرسالة',
     wakingProfile: profile => `جار إيقاظ ${profile}`,
@@ -2393,6 +2407,7 @@ export const ar = defineLocale({
     pasteImage: 'لصق صورة',
     url: 'رابط',
     promptSnippets: 'مقتطفات جاهزة',
+    scheduleJob: 'التشغيل وفق جدول...',
     tipPre: 'نصيحة: اكتب ',
     tipPost: ' للإشارة إلى الملفات ضمن النص.',
     snippetsTitle: 'مقتطفات الموجّهات',
@@ -2933,6 +2948,11 @@ export const ar = defineLocale({
       running: count => `${count} يعمل`,
       cron: 'المهام',
       openCron: 'فتح المهام المجدولة',
+      artifacts: 'المخرجات',
+      artifactsTitle: 'المخرجات الناتجة في هذه المحادثة — اختر واحدًا لفتحه بجانب المحادثة',
+      artifactsCount: count => `${count} من المخرجات`,
+      browseAllArtifacts: 'تصفح كل المخرجات',
+      toggleArtifacts: 'المخرجات',
       turnRunning: 'الدور يعمل',
       contextUsage: 'استخدام السياق',
       focusedSince: 'منذ التركيز',
