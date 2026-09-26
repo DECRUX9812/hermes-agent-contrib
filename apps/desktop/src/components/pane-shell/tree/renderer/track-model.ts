@@ -12,7 +12,8 @@ import type * as React from 'react'
 import type { MenuKit } from '@/components/ui/actions-menu'
 import type { Contribution } from '@/contrib/types'
 
-import type { GroupNode, LayoutNode } from '../model'
+import type { PanePlacementHint } from '../grid-to-tree'
+import type { DropPosition, GroupNode, LayoutNode } from '../model'
 import { allPaneIds } from '../model'
 
 import type { FloatingAnchor } from './floating-rect'
@@ -43,8 +44,34 @@ export interface PaneSizing {
   maxHeight?: string
 }
 
-/** Chrome behavior flags a pane contributes. Read via `paneChrome`. */
-interface PaneChrome extends PaneSizing {
+/** A dock gesture riding on the pane's `data` — the declarative form of
+ *  dragging the pane onto another pane's drop chip. Applied ONCE when the
+ *  pane is adopted into the tree; the user's own rearrangement wins after
+ *  that (unless `enforce` keeps re-homing it at every boot). */
+export interface PaneDockHint {
+  /** Anchor pane id (`workspace` is the main thread; also `sessions`,
+   *  `terminal`, `files`, `review`, `logs`, or any contributed pane id). */
+  pane: string
+  /** Which edge of the anchor to dock on; `'center'` stacks as a tab. */
+  pos: DropPosition
+  /** Center docks: stack BEFORE this pane id (the strip divider's slot). */
+  before?: null | string
+  /** Enforced dock invariant: the pane is re-homed onto this hint's anchor
+   *  on EVERY boot when it isn't already in the declared relationship —
+   *  no one-time token, and user placement does not exempt it. Once per
+   *  adoption lifetime (per boot), so an intra-session drag sticks until the
+   *  next boot. See `enforceDockedPanes`. */
+  enforce?: boolean
+}
+
+/** The `data` payload of a `panes` contribution — chrome behavior flags a
+ *  pane contributes. This IS the public pane contract third-party plugins
+ *  author against (SDK export `PaneContribution`); read via `paneChrome`. */
+export interface PaneContribution extends PaneSizing {
+  /** One-time dock gesture — where the pane lands on first adoption.
+   *  Pair `placement` (the tiling role it stacks with) with `dock` (the
+   *  concrete edge) when the role alone lands somewhere wrong. */
+  dock?: PaneDockHint
   /** Leaves the grid on narrow viewports; revealed as an edge overlay. */
   collapsible?: boolean
   /** Arrive minimized — a rail tab rather than an open zone. For a pane that
@@ -59,7 +86,7 @@ interface PaneChrome extends PaneSizing {
    *  the pane is excluded from the tree entirely and rendered as a fixed card
    *  above it (see renderer/floating-panes.tsx). A floating pane takes no
    *  space from any zone, has no tab, and can't be docked or split. */
-  placement?: string
+  placement?: PanePlacementHint | 'floating'
   /** Spawn corner for `placement: 'floating'` (default `'top-right'`). The
    *  pane also TRACKS that corner's edges when the window resizes. */
   anchor?: FloatingAnchor
@@ -133,7 +160,7 @@ interface PaneChrome extends PaneSizing {
   tabTitleText?: () => string
 }
 
-export const paneChrome = (c: Contribution | undefined) => (c?.data ?? {}) as PaneChrome
+export const paneChrome = (c: Contribution | undefined) => (c?.data ?? {}) as PaneContribution
 
 /** Resolve a computed style length ("237px" / "none" / "auto") to px. */
 export function computedPx(value: string, fallback: number): number {

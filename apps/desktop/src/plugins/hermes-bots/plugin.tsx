@@ -22,6 +22,7 @@ import {
   host,
   LocalizedTabTitle,
   PALETTE_AREA,
+  type PaneContribution,
   SIDEBAR_LIST_TOP_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
   translateNow
@@ -502,7 +503,7 @@ export default {
           pos: 'center',
           enforce: true
         }
-      },
+      } satisfies PaneContribution,
       render: () => <BotsPane />
     })
 
@@ -541,7 +542,7 @@ export default {
           // chat until the user opens it.
           defaultCollapsed: true,
           width: '250px'
-        },
+        } satisfies PaneContribution,
         render: () => <RoutinesPane />
       })
 

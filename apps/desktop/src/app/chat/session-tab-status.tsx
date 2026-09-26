@@ -1,7 +1,7 @@
 /**
  * Per-tab session status — the live signal a session TAB carries: elapsed time
  * plus the "what it's doing now" line (current tool, waiting question,
- * subagent count). Rendered on EVERY session tab by `PaneChrome.tabTrail`, so
+ * subagent count). Rendered on EVERY session tab by `PaneContribution.tabTrail`, so
  * a tile's strip answers "is it still running and on what" without fronting
  * the pane. (The zone strip's `stripTrail` — the skill chip — stays active-pane
  * only by design; the status belongs to the session, not the pane's focus.)

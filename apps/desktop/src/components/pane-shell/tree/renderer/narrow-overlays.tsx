@@ -177,7 +177,7 @@ export function NarrowOverlays() {
           onMouseLeave={onMouseLeave}
           // Match the pane's docked width (sessions ~237px, files its rail
           // width) instead of a fat fixed 20rem — capped for tiny screens.
-          style={{ width: `min(${(revealed.data as { width?: string } | undefined)?.width ?? '18rem'}, 85vw)` }}
+          style={{ width: `min(${paneChrome(revealed).width ?? '18rem'}, 85vw)` }}
         >
           {/* Zone-mates share the overlay through the zone's own tab strip
               (SESSIONS | BOTS) — a lone pane keeps the stripless form. */}

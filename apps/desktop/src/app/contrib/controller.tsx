@@ -15,6 +15,7 @@ import { OnboardingChatDirective } from '@/components/onboarding-chat/directive'
 import { $layoutEditMode, toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { allPaneIds } from '@/components/pane-shell/tree/model'
 import { LayoutTreeRoot } from '@/components/pane-shell/tree/renderer'
+import { paneChrome } from '@/components/pane-shell/tree/renderer/track-model'
 import {
   $layoutTree,
   bindPaneVisibility,
@@ -799,9 +800,7 @@ registry.register(
   const stripTabToggles = new Map<string, () => void>()
 
   const syncStripTabToggles = () => {
-    const hideOnlyPanes = registry
-      .getArea('panes')
-      .filter(c => (c.data as { hideOnly?: boolean } | undefined)?.hideOnly)
+    const hideOnlyPanes = registry.getArea('panes').filter(c => paneChrome(c).hideOnly)
 
     const wanted = new Set(hideOnlyPanes.map(c => c.id))
 

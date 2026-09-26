@@ -1726,12 +1726,22 @@ export { MessageTextContent } from '@/components/assistant-ui/markdown-text'
 /** The oversized Collapse lettering an empty chat is titled with — core writes
  *  "HERMES AGENT" with it, a `chat.empty` contribution writes its own name. */
 export { Wordmark } from '@/components/chat/wordmark'
+export type { PanePlacementHint } from '@/components/pane-shell/tree/grid-to-tree'
+export type { LayoutNode } from '@/components/pane-shell/tree/model'
+/** The `layouts` area (`data` is a `LayoutNode` tree): a plugin ships a named
+ *  workspace preset the layout picker can apply. */
+export { LAYOUTS_AREA } from '@/components/pane-shell/tree/presets'
 /** Pane placement roles. `'floating'` is the one NON-tiling value: the pane is
  *  excluded from the layout tree and rendered as a fixed, draggable card above
  *  it — it takes no width from any zone, has no tab, and can't be docked.
  *  Pair it with `anchor` (spawn corner, default `'top-right'`) plus
  *  `width`/`height`. */
 export type { FloatingAnchor } from '@/components/pane-shell/tree/renderer/floating-rect'
+/** The typed `data` contract of a `panes` contribution — chrome behavior the
+ *  layout tree honors (placement role, dock gesture, tab chrome, sizing).
+ *  Author with `data: {…} satisfies PaneContribution` so a misspelled flag is
+ *  a compile error, not a silently ignored hint. */
+export type { PaneContribution, PaneDockHint, PaneSizing } from '@/components/pane-shell/tree/renderer/track-model'
 export { StatusDot, type StatusTone } from '@/components/status-dot'
 export { Badge } from '@/components/ui/badge'
 export { Button } from '@/components/ui/button'
@@ -1806,6 +1816,9 @@ export { Skeleton } from '@/components/ui/skeleton'
 export { Switch } from '@/components/ui/switch'
 export { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 export { Textarea } from '@/components/ui/textarea'
+
+// -- contracts ----------------------------------------------------------------
+
 export { Tip, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 export type { GatewayEventListener } from '@/contrib/events'
 export type {
@@ -1824,9 +1837,6 @@ export type {
  *  `ctx.register` stays the door for permanent contributions. Namespace the
  *  id with your plugin slug (`kanban:board-switcher`). */
 export { Contribute, type ContributeProps } from '@/contrib/react/contribute'
-
-// -- contracts ----------------------------------------------------------------
-
 export type { Contribution } from '@/contrib/types'
 /** The live gateway instance type — for typing the `gateway` prop `ConnectorsTab`
  *  takes; obtain the instance from `host.getGateway()`. */
@@ -1888,6 +1898,8 @@ export { formatModifierToken } from '@/lib/keybinds/combo'
  *  a renderer that stays open for days. Only for values that can be
  *  regenerated — eviction costs a recompute or a refetch, never correctness. */
 export { LruCache } from '@/lib/lru-cache'
+
+export const PANES_AREA = 'panes'
 /** Capture a gateway file download alongside a REST read (see the SDK guide). */
 export { captureGatewayFileDownload } from '@/lib/media'
 /** The app's deterministic identity color for a name (profiles, assignees,
@@ -1904,8 +1916,6 @@ export { queryClient } from '@/lib/query-client'
 /** Compact labels for the reasoning levels exported from @hermes/shared, so a
  *  plugin surfacing a thinking depth uses the same spelling as the app. */
 export { reasoningEffortLabel } from '@/lib/reasoning-effort'
-
-export const PANES_AREA = 'panes'
 export const STATUSBAR_AREAS = { left: 'statusBar.left', right: 'statusBar.right' } as const
 /** Titlebar slots are PERMANENT mount points: a component registered here
  *  stays mounted across chat ↔ page navigation, so `useEffect` setup/cleanup
