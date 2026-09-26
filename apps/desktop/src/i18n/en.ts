@@ -3755,6 +3755,7 @@ export const en: Translations = {
     startVoice: 'Start voice conversation',
     openDirective: 'Open',
     queueMessage: 'Queue message',
+    queueWithAttachments: 'Queue with attachments',
     steer: 'Steer the current run',
     steerTurn: 'Steer turn',
     stop: 'Stop',

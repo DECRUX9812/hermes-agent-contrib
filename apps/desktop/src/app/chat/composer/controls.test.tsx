@@ -158,6 +158,20 @@ describe('ComposerControls shortcut tooltips', () => {
 
     await expectShortcutTooltip('Queue message', 'Ctrl+↵')
   })
+
+  it('names the queue path when steer is blocked only by attachments', async () => {
+    const onQueue = vi.fn()
+    renderControls({ busy: true, busyAction: 'queue', onQueue, queueWithAttachments: true })
+
+    const button = screen.getByRole('button', { name: 'Queue with attachments' })
+    expect(button.textContent).toContain('Queue with attachments')
+    expect(screen.queryByLabelText('Queue message')).toBeNull()
+
+    fireEvent.click(button)
+    expect(onQueue).toHaveBeenCalledTimes(1)
+
+    await expectShortcutTooltip('Queue with attachments', 'Ctrl+↵')
+  })
 })
 
 describe('wake-word ear visibility', () => {

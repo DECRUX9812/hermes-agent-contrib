@@ -2274,6 +2274,7 @@ export const ar = defineLocale({
     startVoice: 'بدء الصوت',
     openDirective: 'فتح',
     queueMessage: 'إضافة الرسالة للطابور',
+    queueWithAttachments: 'إضافة إلى الطابور مع المرفقات',
     steer: 'توجيه',
     steerTurn: 'توجيه الدور',
     stop: 'إيقاف',

@@ -2879,6 +2879,7 @@ export const ru = defineLocale({
     startVoice: 'Начать голосовой разговор',
     openDirective: 'Открыть',
     queueMessage: 'Вставить сообщение в очередь',
+    queueWithAttachments: 'В очередь с вложениями',
     steer: 'Направить текущий запуск',
     steerTurn: 'Направить ход',
     stop: 'Стоп',

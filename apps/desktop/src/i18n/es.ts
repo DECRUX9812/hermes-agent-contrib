@@ -4118,6 +4118,7 @@ export const esOverrides = {
     startVoice: 'Iniciar conversación de voz',
     openDirective: 'Abrir',
     queueMessage: 'Poner mensaje en cola',
+    queueWithAttachments: 'Enviar a la cola con adjuntos',
     steer: 'Guiar la ejecución actual',
     steerTurn: 'Guiar el turno',
     stop: 'Detener',

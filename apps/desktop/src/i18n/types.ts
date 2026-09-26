@@ -3169,6 +3169,7 @@ export interface Translations {
     startVoice: string
     openDirective: string
     queueMessage: string
+    queueWithAttachments: string
     steer: string
     steerTurn: string
     stop: string

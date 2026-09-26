@@ -4137,6 +4137,7 @@ export const frOverrides = {
     startVoice: 'Démarrer la conversation vocale',
     openDirective: 'Ouvrir',
     queueMessage: "Mettre le message en file d'attente",
+    queueWithAttachments: 'Mettre en file avec pièces jointes',
     steer: "Diriger l'exécution en cours",
     steerTurn: 'Diriger le tour',
     stop: 'Arrêter',

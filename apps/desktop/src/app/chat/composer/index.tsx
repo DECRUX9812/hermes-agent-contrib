@@ -421,7 +421,12 @@ export function ChatBar({
   // into a tool result) and never for a slash command (those execute inline).
   // A blocking prompt (approval/sudo/secret) also rules it out: the tool batch
   // is parked on the user, so a steer can't reach the model — text queues.
-  const canSteer = busy && !compacting && !blockingPrompt && !!onSteer && attachments.length === 0 && isSteerableText
+  const steerEligible = busy && !compacting && !blockingPrompt && !!onSteer && isSteerableText
+  const canSteer = steerEligible && attachments.length === 0
+  // Steer-eligible but for the attachment chips: the only reason the turn
+  // can't take this message is the tool-result image carriage, so the queue
+  // affordance names what it carries ("Queue with attachments", Composer S3).
+  const queueWithAttachments = steerEligible && attachments.length > 0
 
   // While busy: text redirects the live turn (Cursor-style stop-and-correct),
   // attachments queue for the next turn, an empty composer stops.
@@ -1164,12 +1169,14 @@ export function ChatBar({
       }}
       disabled={disabled}
       foldVoice={foldVoice}
+      gateway={gateway}
       hasComposerPayload={hasComposerPayload}
       hideModelPill={guidedChat}
       minimal={minimal}
       onDictate={dictate}
       onQueue={queueDraft}
       onToggleAutoSpeak={handleToggleAutoSpeak}
+      queueWithAttachments={queueWithAttachments}
       state={state}
       voiceStatus={voiceStatus}
     />
