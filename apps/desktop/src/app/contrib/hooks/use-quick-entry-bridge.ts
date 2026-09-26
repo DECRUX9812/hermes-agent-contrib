@@ -1,10 +1,13 @@
 import { useEffect, useRef } from 'react'
 
+import { subscribeRuntimeI18nLocale, translateNow } from '@/i18n/runtime'
 import {
   initQuickEntryBridge,
   QUICK_TARGET_CURRENT,
   QUICK_TARGET_NEW,
+  quickEntryContextBlock,
   type QuickEntrySessionOption,
+  type QuickEntrySubmitPayload,
   setQuickEntrySubmitHandler
 } from '@/store/quick-entry'
 import { $gatewayState, $sessions } from '@/store/session'
@@ -61,7 +64,16 @@ export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: Quic
       return
     }
 
-    setQuickEntrySubmitHandler(({ target, text }) => {
+    setQuickEntrySubmitHandler((payload: QuickEntrySubmitPayload) => {
+      // The context chip the quick window still held at submit rides along as
+      // a metadata line ahead of the typed text — the model sees what the user
+      // was working in without the transcript bubble gaining noise.
+      const text = payload.context
+        ? `${quickEntryContextBlock(payload.context)}\n\n${payload.text}`
+        : payload.text
+
+      const target = payload.target
+
       if (target === QUICK_TARGET_NEW) {
         // Same as the user clicking New Chat and typing: fresh draft, then the
         // normal submit creates the backend session.
@@ -112,17 +124,30 @@ export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: Quic
     }
 
     const push = () => {
-      api.pushState({ connected: $gatewayState.get() === 'open', sessions: sessionOptions() })
+      // The quick window has no i18n provider, so its chip copy is resolved
+      // here in the primary renderer and pushed along with the session list.
+      api.pushState({
+        connected: $gatewayState.get() === 'open',
+        sessions: sessionOptions(),
+        strings: {
+          contextLabel: translateNow('quickEntry.contextLabel'),
+          contextRemove: translateNow('quickEntry.contextRemove')
+        }
+      })
     }
 
     push()
 
     const offGateway = $gatewayState.listen(push)
     const offSessions = $sessions.listen(push)
+    // A locale switch mid-session should relabel the chip, not wait for the
+    // next connection change to refresh the pushed copy.
+    const offLocale = subscribeRuntimeI18nLocale(push)
 
     return () => {
       offGateway()
       offSessions()
+      offLocale()
     }
   }, [])
 }

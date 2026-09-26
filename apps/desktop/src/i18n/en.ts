@@ -5758,6 +5758,11 @@ export const en: Translations = {
     }
   },
 
+  quickEntry: {
+    contextLabel: 'Context',
+    contextRemove: 'Remove context'
+  },
+
   tips: {
     close: "Don't show this tip again",
     items: {

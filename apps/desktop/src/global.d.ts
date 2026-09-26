@@ -17,7 +17,12 @@ import type {
   PetOverlayOpenRequest,
   PetOverlayStatePayload
 } from './store/pet-overlay'
-import type { QuickEntryStatePush, QuickEntryStatus, QuickEntrySubmitPayload } from './store/quick-entry'
+import type {
+  QuickEntryContext,
+  QuickEntryStatePush,
+  QuickEntryStatus,
+  QuickEntrySubmitPayload
+} from './store/quick-entry'
 
 export {}
 
@@ -201,6 +206,9 @@ declare global {
         // Quick window subscribes to "you were just summoned" so it can reset
         // its draft and re-focus the input on every open.
         onShown: (callback: () => void) => () => void
+        // Main → quick window: the frontmost-app context captured at summon
+        // time; null when the platform cannot answer (no chip then).
+        onContext: (callback: (context: QuickEntryContext | null) => void) => () => void
       }
       getBootProgress: () => Promise<DesktopBootProgress>
       getConnectionConfig: (profile?: null | string) => Promise<DesktopConnectionConfig>

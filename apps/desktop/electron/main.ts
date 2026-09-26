@@ -433,7 +433,13 @@ import {
   tagRegistrySessionResponse,
   tagRemoteSessionRows
 } from './profile-session-routing'
-import { createQuickEntryShortcut, quickEntryWindowBounds, sanitizeQuickEntrySettings } from './quick-entry'
+import {
+  createQuickEntryShortcut,
+  pickQuickEntryContext,
+  quickEntryWindowBounds,
+  sanitizeQuickEntryContext,
+  sanitizeQuickEntrySettings
+} from './quick-entry'
 import { createQuitFinalization } from './quit-finalization'
 import { type ActiveWork, backendOwnedByApp, mergeActiveWork, normalizeActiveWork, quitPromptFor } from './quit-guard'
 import { backendQuitNeedsWait, createQuitTeardownCoordinator, type QuitTeardownTask } from './quit-teardown'
@@ -14550,6 +14556,39 @@ let quickEntryWindow = null
 // replayed to a quick window that spawns after the push happened.
 let quickEntryLastState = null
 
+// Frontmost-app context for the current summon (#37): captured at show time,
+// replayed on did-finish-load for a fresh spawn, and cleared when the window
+// hides so a stale chip never survives into the next summon. `seq` guards the
+// async capture: a hide or a newer summon supersedes a late-resolving read.
+let quickEntryLastContext = null
+let quickEntryContextSeq = 0
+
+// Capture the frontmost other-process window for the context chip. Enumeration
+// is async and tolerant — a platform that cannot answer (Wayland, missing
+// xprop) just means no chip, never a blocked summon.
+async function captureQuickEntryContext() {
+  const seq = ++quickEntryContextSeq
+  const titlesAvailable = IS_MAC ? systemPreferences.getMediaAccessStatus?.('screen') === 'granted' : true
+  const windows = await enumerateWindowsFrontToBack(process.pid, titlesAvailable).catch(() => null)
+
+  if (seq !== quickEntryContextSeq) {
+    return
+  }
+
+  const context = windows && !enumerationFailed(windows) ? pickQuickEntryContext(windows, process.pid) : null
+  quickEntryLastContext = context
+
+  // Send whenever the window exists — before load the send is dropped but the
+  // did-finish-load replay covers it; between load and show the renderer just
+  // holds the chip until it paints. A hidden window may also receive it, but
+  // the next summon's 'shown' + fresh capture overwrite it anyway.
+  const win = quickEntryWindow
+
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('hermes:quick-entry:context', context)
+  }
+}
+
 function readQuickEntrySettings() {
   try {
     return sanitizeQuickEntrySettings(JSON.parse(fs.readFileSync(QUICK_ENTRY_CONFIG_PATH, 'utf8')))
@@ -14647,16 +14686,28 @@ function spawnQuickEntryWindow() {
   win.on('closed', () => {
     if (quickEntryWindow === win) {
       quickEntryWindow = null
+      // A close without a hide (feature disabled, quit path) ends the summon
+      // too — never let its context replay into a later cold spawn.
+      quickEntryContextSeq += 1
+      quickEntryLastContext = null
     }
   })
 
   // Replay the last known gateway state as soon as the page can hear it — a
   // freshly spawned quick window must not sit "disconnected" when the primary
-  // renderer already reported a live gateway.
+  // renderer already reported a live gateway. Same for the context chip: the
+  // summon-time capture usually resolves before first paint, so the replay
+  // delivers it to a window that spawned after the send.
   win.webContents.on('did-finish-load', () => {
-    if (!win.isDestroyed() && quickEntryLastState) {
+    if (win.isDestroyed()) {
+      return
+    }
+
+    if (quickEntryLastState) {
       win.webContents.send('hermes:quick-entry:state', quickEntryLastState)
     }
+
+    win.webContents.send('hermes:quick-entry:context', quickEntryLastContext)
   })
 
   attachRendererConsoleCapture(win, 'quick-entry', rememberLog)
@@ -14677,33 +14728,44 @@ function repositionQuickEntryWindow(win) {
 }
 
 function showQuickEntryWindow() {
-  if (!quickEntryWindow || quickEntryWindow.isDestroyed()) {
+  // Capture the frontmost app BEFORE we raise our own window — after we show,
+  // z-order still skips us (same pid), but the honest reading is whatever was
+  // on top at chord-press time.
+  const win = quickEntryWindow && !quickEntryWindow.isDestroyed() ? quickEntryWindow : null
+  void captureQuickEntryContext()
+
+  if (!win) {
     // Reveal the window this call created, not whatever `quickEntryWindow`
     // points at by the time the event lands.
-    const win = spawnQuickEntryWindow()
-    quickEntryWindow = win
+    const spawned = spawnQuickEntryWindow()
+    quickEntryWindow = spawned
 
-    wireWindowReveal(win, {
+    wireWindowReveal(spawned, {
       show: () => {
-        win.show()
-        win.focus()
+        spawned.show()
+        spawned.focus()
       }
     })
 
     return
   }
 
-  repositionQuickEntryWindow(quickEntryWindow)
-  quickEntryWindow.show()
-  quickEntryWindow.focus()
+  repositionQuickEntryWindow(win)
+  win.show()
+  win.focus()
   // Re-summoned: tell the renderer to clear any stale draft and refocus.
-  quickEntryWindow.webContents.send('hermes:quick-entry:shown')
+  win.webContents.send('hermes:quick-entry:shown')
 }
 
 function hideQuickEntryWindow() {
   if (quickEntryWindow && !quickEntryWindow.isDestroyed()) {
     quickEntryWindow.hide()
   }
+
+  // Hiding retires the summon: the context captured for it must not linger for
+  // a later cold-start spawn to replay, and an in-flight capture is invalidated.
+  quickEntryContextSeq += 1
+  quickEntryLastContext = null
 }
 
 // The chord toggles: pressing it while the composer is up puts it away, so one
@@ -17722,10 +17784,15 @@ ipcMain.on('hermes:quick-entry:submit', (_event, payload) => {
   }
 
   // Deliberately does NOT raise/focus the main window — the user asked to fire
-  // a prompt from wherever they were, not to be yanked into the app.
+  // a prompt from wherever they were, not to be yanked into the app. The
+  // optional `context` is the frontmost-app chip the quick window offered;
+  // sanitize here so a forged/legacy payload can't smuggle arbitrary fields.
+  const context = sanitizeQuickEntryContext(payload?.context)
+
   mainWindow.webContents.send('hermes:quick-entry:submit', {
     target: typeof payload?.target === 'string' && payload.target ? payload.target : 'current',
-    text
+    text,
+    ...(context ? { context } : {})
   })
 })
 

@@ -6228,6 +6228,11 @@ export const deOverrides = {
       startMessaging: 'Messaging starten'
     }
   },
+  quickEntry: {
+    contextLabel: 'Kontext',
+    contextRemove: 'Kontext entfernen'
+  },
+
   tips: {
     close: 'Diesen Tip nicht mehr zeigen',
     items: {

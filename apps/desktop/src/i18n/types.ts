@@ -4841,6 +4841,16 @@ export interface Translations {
     }
   }
 
+  /** The standalone quick-entry composer window (global shortcut). It runs
+   *  without an i18n provider of its own — the primary renderer resolves these
+   *  and pushes them to the window as part of its state payload. */
+  quickEntry: {
+    /** Prefix on the frontmost-app context chip ("Context — Safari · …"). */
+    contextLabel: string
+    /** A11y label for the control that drops the chip before submitting. */
+    contextRemove: string
+  }
+
   tips: {
     close: string
     /** Keyed by `TipId`, so a new tip without copy is a type error. Plus the

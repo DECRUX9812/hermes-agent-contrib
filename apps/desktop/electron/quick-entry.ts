@@ -274,6 +274,68 @@ export interface QuickEntrySettings {
   shortcut: string
 }
 
+// ── Frontmost-app context chip ──────────────────────────────────────────────
+//
+// Roadmap #37: the window the user was working in when they summoned Quick
+// Entry rides the prompt as an opt-out context chip. Metadata only — the app
+// name and window title, same privacy contract as the read_window_below tool
+// (main passes titles through only when macOS Screen Recording is ALREADY
+// granted and never prompts for it). There is no way to read the text
+// selection from z-order window metadata, so the window title is the honest
+// proxy for "what the user was looking at".
+
+/** What the context chip carries: the frontmost other-process window. */
+export interface QuickEntryContext {
+  /** Owning application name ("Safari", "Code"). */
+  app: string
+  /** Window title — '' when the platform withholds it or the window is
+   *  untitled. */
+  title: string
+}
+
+/** Minimal enumerated-window shape the picker reads (structural, so callers
+ *  can pass EnumeratedWindow without this module importing window-below). */
+export interface QuickEntryContextWindow {
+  app: string
+  pid: number
+  title: string
+}
+
+/**
+ * The app the user was in when they pressed the chord: the first window in
+ * the front-to-back list that isn't ours AND carries an app name. Our own
+ * windows (main, quick entry, HUD — all share the main pid) are skipped, so
+ * a summon issued while Hermes itself was frontmost still names the app
+ * underneath it.
+ */
+export function pickQuickEntryContext(
+  windows: QuickEntryContextWindow[] | null | undefined,
+  selfPid: number
+): QuickEntryContext | null {
+  const frontmost = windows?.find(w => w.pid !== selfPid && w.app.trim())
+
+  return frontmost ? { app: frontmost.app, title: frontmost.title } : null
+}
+
+/**
+ * Normalize a context payload arriving over IPC (submit forwarding). Drops
+ * anything without a usable app name.
+ */
+export function sanitizeQuickEntryContext(raw: unknown): QuickEntryContext | null {
+  if (!raw || typeof raw !== 'object') {
+    return null
+  }
+
+  const record = raw as Record<string, unknown>
+  const app = typeof record.app === 'string' ? record.app.trim() : ''
+
+  if (!app) {
+    return null
+  }
+
+  return { app, title: typeof record.title === 'string' ? record.title : '' }
+}
+
 /**
  * Raw persisted JSON → usable settings. A malformed/absent file, or a shortcut
  * that no longer validates (hand-edited, or from a future build), falls back to

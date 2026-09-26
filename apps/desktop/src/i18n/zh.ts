@@ -5322,6 +5322,11 @@ export const zh = defineLocale({
     }
   },
 
+  quickEntry: {
+    contextLabel: '上下文',
+    contextRemove: '移除上下文'
+  },
+
   tips: {
     close: '不再显示这条提示',
     items: {

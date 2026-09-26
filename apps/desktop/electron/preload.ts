@@ -273,6 +273,14 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.on('hermes:quick-entry:shown', listener)
 
       return () => ipcRenderer.removeListener('hermes:quick-entry:shown', listener)
+    },
+    // Main → quick window: the frontmost-app context captured at summon time
+    // (null when the platform can't answer — Wayland, missing xprop, …).
+    onContext: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('hermes:quick-entry:context', listener)
+
+      return () => ipcRenderer.removeListener('hermes:quick-entry:context', listener)
     }
   },
   getBootProgress: () => ipcRenderer.invoke('hermes:boot-progress:get'),

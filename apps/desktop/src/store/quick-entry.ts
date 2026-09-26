@@ -17,6 +17,10 @@
 
 import { atom } from 'nanostores'
 
+import type { QuickEntryContext } from '../../electron/quick-entry'
+
+export type { QuickEntryContext }
+
 export interface QuickEntryState {
   enabled: boolean
   /** null before the first read; the settings row shows a skeleton until then. */
@@ -119,13 +123,28 @@ export const QUICK_TARGET_NEW = 'new'
 export interface QuickEntryStatePush {
   connected: boolean
   sessions: QuickEntrySessionOption[]
+  /** Localized chip copy, resolved by the primary renderer — the quick window
+   *  has no i18n provider of its own, so strings ride the same push as the
+   *  session list. */
+  strings?: { contextLabel: string; contextRemove: string }
 }
 
 /** What a quick-window submit carries back to the primary renderer. */
 export interface QuickEntrySubmitPayload {
+  /** The frontmost-app context the chip still held at submit time. */
+  context?: QuickEntryContext
   /** QUICK_TARGET_CURRENT, QUICK_TARGET_NEW, or a stored session id. */
   target: string
   text: string
+}
+
+/** The context line prepended to the model-bound text when the chip survived
+ *  to submit — bracketed like other client-side context annotations, in one
+ *  line so it reads as metadata rather than user prose. */
+export function quickEntryContextBlock(context: QuickEntryContext): string {
+  const title = context.title.trim()
+
+  return `[Context: frontmost app — ${context.app}${title ? ` · "${title}"` : ''}]`
 }
 
 /**
@@ -139,9 +158,13 @@ export interface QuickEntrySubmitPayload {
 export interface QuickComposerState {
   /** Last pushed gateway truth. False (the initial value) disables submit. */
   connected: boolean
+  /** The captured frontmost-app context chip, or null once dropped/absent. */
+  context: QuickEntryContext | null
   draft: string
   /** Recent sessions the picker offers, pushed by the primary renderer. */
   sessions: QuickEntrySessionOption[]
+  /** Localized chip copy pushed by the primary renderer. */
+  strings: { contextLabel: string; contextRemove: string }
   /** True between a send and the window actually hiding. Blocks a double-send. */
   submitting: boolean
   /** Where a submit lands: current / new / a stored session id. */
@@ -152,10 +175,17 @@ export interface QuickComposerState {
 
 export type QuickComposerEvent =
   | { type: 'blur' }
+  | { type: 'context'; context: QuickEntryContext | null }
   | { type: 'dismiss' }
+  | { type: 'drop-context' }
   | { type: 'edit'; draft: string }
   | { type: 'shown' }
-  | { type: 'state'; connected: boolean; sessions: QuickEntrySessionOption[] }
+  | {
+      type: 'state'
+      connected: boolean
+      sessions: QuickEntrySessionOption[]
+      strings?: { contextLabel: string; contextRemove: string }
+    }
   | { type: 'submit' }
   | { type: 'target'; target: string }
 
@@ -169,8 +199,10 @@ export const initialQuickComposerState: QuickComposerState = {
   // Disconnected until the primary renderer's first push proves otherwise — a
   // capture window that accepts text it can never deliver is a lie.
   connected: false,
+  context: null,
   draft: '',
   sessions: [],
+  strings: { contextLabel: 'Context', contextRemove: 'Remove context' },
   submitting: false,
   target: QUICK_TARGET_CURRENT,
   visible: true
@@ -181,11 +213,34 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
     case 'blur':
     case 'dismiss': {
       // Escape / focus loss discards without sending. A dismiss mid-submit still
-      // hides — the send already left for the main process.
+      // hides — the send already left for the main process. The context chip is
+      // per-summon, so it is retired here too.
       return {
         send: null,
-        state: { ...state, draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: false }
+        state: {
+          ...state,
+          context: null,
+          draft: '',
+          submitting: false,
+          target: QUICK_TARGET_CURRENT,
+          visible: false
+        }
       }
+    }
+
+    case 'context': {
+      // The summon-time capture resolving (possibly late, after 'shown'). Only
+      // meaningful while the window is up — a context arriving into a dismissed
+      // window would resurrect a chip nobody asked for.
+      if (!state.visible) {
+        return { send: null, state }
+      }
+
+      return { send: null, state: { ...state, context: event.context } }
+    }
+
+    case 'drop-context': {
+      return { send: null, state: { ...state, context: null } }
     }
 
     case 'edit': {
@@ -193,11 +248,19 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
     }
 
     case 'shown': {
-      // Re-summoned: a fresh capture surface every time — never a stale draft or
-      // a leftover target — but the pushed gateway truth carries over.
+      // Re-summoned: a fresh capture surface every time — never a stale draft,
+      // a leftover target, or last summon's context chip — but the pushed
+      // gateway truth carries over. The fresh capture arrives via 'context'.
       return {
         send: null,
-        state: { ...state, draft: '', submitting: false, target: QUICK_TARGET_CURRENT, visible: true }
+        state: {
+          ...state,
+          context: null,
+          draft: '',
+          submitting: false,
+          target: QUICK_TARGET_CURRENT,
+          visible: true
+        }
       }
     }
 
@@ -216,6 +279,7 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
           ...state,
           connected: event.connected,
           sessions: event.sessions,
+          strings: event.strings ?? state.strings,
           target: targetStillValid ? state.target : QUICK_TARGET_CURRENT
         }
       }
@@ -231,8 +295,8 @@ export function quickComposerReducer(state: QuickComposerState, event: QuickComp
       }
 
       return {
-        send: { target: state.target, text },
-        state: { ...state, draft: '', submitting: true, visible: false }
+        send: { target: state.target, text, ...(state.context ? { context: state.context } : {}) },
+        state: { ...state, context: null, draft: '', submitting: true, visible: false }
       }
     }
 
@@ -278,10 +342,28 @@ function normalizeSubmitPayload(raw: unknown): null | QuickEntrySubmitPayload {
     return null
   }
 
+  const context = normalizeSubmitContext(record.context)
+
   return {
     target: typeof record.target === 'string' && record.target ? record.target : QUICK_TARGET_CURRENT,
-    text
+    text,
+    ...(context ? { context } : {})
   }
+}
+
+function normalizeSubmitContext(raw: unknown): QuickEntryContext | null {
+  if (!raw || typeof raw !== 'object') {
+    return null
+  }
+
+  const record = raw as Record<string, unknown>
+  const app = typeof record.app === 'string' ? record.app.trim() : ''
+
+  if (!app) {
+    return null
+  }
+
+  return { app, title: typeof record.title === 'string' ? record.title : '' }
 }
 
 /**
