@@ -4,6 +4,39 @@ import { defineLocale } from './define-locale'
 import { introZhHant } from './intro-zh-hant'
 
 export const zhHant = defineLocale({
+  connectors: {
+    title: '連接你的應用程式',
+    connect: '連接',
+    skip: '暫時不要',
+    cancel: '停止等待',
+    retry: '再試一次',
+    grant: '重新連接',
+    connected: '已連接',
+    checking: '正在檢查你的應用程式…',
+    notConnected: '未連接',
+    skipped: '已略過',
+    disabled: '無法使用',
+    failed: '無法連接',
+    needsAuth: '存取權已過期',
+    opening: '正在開啟登入…',
+    waiting: '正在等待瀏覽器…',
+    timeout: '仍在等待授權。',
+    refresh: '重新整理狀態',
+    connectError: '無法開始授權。請再試一次。',
+    connectErrorFor: (app: string) => `無法開始 ${app} 的授權。`,
+    unavailable: '此工作階段無法使用連接器。',
+    ownerMissing: '請重新開啟此對話以管理其連接。',
+    search: '尋找應用程式',
+    empty: '沒有相符的應用程式',
+    disclaimer: '連接為選用。僅授權你想讓 Hermes 使用的應用程式。',
+    execution: '連接器工具',
+    setup: (server: string) => `設定 ${server}`,
+    openInBrowser: '在瀏覽器中開啟',
+    setupCancel: '取消',
+    authorizedToolsUnavailable: '已授權。工具無法使用。',
+    required: '必要'
+  },
+
   externalOpenFailed: {
     title: '無法開啟此連結',
     message: '沒有註冊用於開啟此位址的瀏覽器。請複製連結並手動開啟。',
