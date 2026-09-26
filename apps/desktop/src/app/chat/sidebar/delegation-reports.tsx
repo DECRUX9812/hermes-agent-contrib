@@ -56,7 +56,6 @@ function DelegationReportCard({ profile, report }: DelegationReportCardProps) {
           aria-label={labels.dismiss}
           className="shrink-0 rounded p-0.5 text-(--ui-text-quaternary) opacity-0 transition-opacity hover:text-(--ui-text-secondary) focus-visible:opacity-100 group-hover/card:opacity-100"
           onClick={() => dismissDelegationReport(profile, report.delegation_id)}
-          title={labels.dismiss}
           type="button"
         >
           <Codicon name="close" size={11} />
