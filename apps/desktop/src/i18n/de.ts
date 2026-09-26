@@ -4155,6 +4155,7 @@ export const deOverrides = {
     startVoice: 'Sprachkonversation starten',
     openDirective: 'Öffnen',
     queueMessage: 'Nachricht einreihen',
+    queueWithAttachments: 'Mit Anhängen einreihen',
     steer: 'Laufenden Lauf steuern',
     steerTurn: 'Turn steuern',
     stop: 'Stopp',

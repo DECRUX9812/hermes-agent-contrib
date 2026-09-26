@@ -2913,6 +2913,7 @@ export const zhHant = defineLocale({
     startVoice: '開始語音對話',
     openDirective: '開啟',
     queueMessage: '排隊訊息',
+    queueWithAttachments: '與附件一起排隊',
     steerTurn: '引導目前回合',
     stop: '停止',
     send: '傳送',

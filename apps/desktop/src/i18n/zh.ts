@@ -3567,6 +3567,7 @@ export const zh = defineLocale({
     startVoice: '开始语音对话',
     openDirective: '打开',
     queueMessage: '排队消息',
+    queueWithAttachments: '与附件一起排队',
     steer: '引导当前运行',
     steerTurn: '引导当前回合',
     stop: '停止',

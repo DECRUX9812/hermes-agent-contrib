@@ -3,6 +3,7 @@ import { useStore } from '@nanostores/react'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
+import type { HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { Ear, EarOff, iconSize, Layers3, Loader2, Square } from '@/lib/icons'
@@ -11,6 +12,7 @@ import { $hudMode, closeHud, resetHudLayout } from '@/store/hud'
 import { $wakeWord, toggleWakeWord } from '@/store/wake-word'
 
 import { ApprovalPill } from './approval-pill'
+import { ContextRing } from './context-ring'
 import { ACTIVE_ICON_BTN, GHOST_ICON_BTN, PRIMARY_ICON_BTN } from './control-classes' 
 import type { ConversationStatus } from './hooks/use-voice-conversation'
 import { ModelPill } from './model-pill'
@@ -44,9 +46,11 @@ export function ComposerControls({
   conversation,
   disabled,
   foldVoice = false,
+  gateway,
   hasComposerPayload,
   hideModelPill = false,
   minimal = false,
+  queueWithAttachments = false,
   state,
   voiceStatus,
   onDictate,
@@ -61,9 +65,13 @@ export function ComposerControls({
   conversation: ConversationProps
   disabled: boolean
   foldVoice?: boolean
+  gateway?: HermesGateway | null
   hasComposerPayload: boolean
   hideModelPill?: boolean
   minimal?: boolean
+  /** Steer is eligible but for the attachment chips — label the queue path
+   *  with what it actually carries so the dead end reads as a choice. */
+  queueWithAttachments?: boolean
   state: ChatBarState
   voiceStatus: VoiceStatus
   onDictate: () => void
@@ -122,6 +130,7 @@ export function ComposerControls({
             <>
               <ModelPill compact={compactModelPill} disabled={disabled} model={state.model} />
               {compactModelPill ? null : <ReasoningPill disabled={disabled} model={state.model} />}
+              <ContextRing disabled={disabled} gateway={gateway} />
             </>
           )}
           <ApprovalPill compact={compactModelPill} disabled={disabled} />
@@ -129,19 +138,39 @@ export function ComposerControls({
         </>
       )}
       {showQueueButton ? (
-        <Tip label={<TipKeybindLabel actionId="composer.queue" text={c.queueMessage} />} placement="control">
-          <Button
-            aria-label={c.queueMessage}
-            className={GHOST_ICON_BTN}
-            disabled={disabled}
-            onClick={onQueue}
-            size="icon"
-            type="button"
-            variant="ghost"
-          >
-            <Layers3 className={iconSize.sm} />
-          </Button>
-        </Tip>
+        queueWithAttachments ? (
+          // Steer is text-only by contract — the gateway can't carry images
+          // into a tool result — so an attachment payload used to silently
+          // lose the steer affordance. Name the fallback instead: same queue
+          // path, labeled with what it carries.
+          <Tip label={<TipKeybindLabel actionId="composer.queue" text={c.queueWithAttachments} />} placement="control">
+            <Button
+              aria-label={c.queueWithAttachments}
+              className="h-(--composer-control-size) shrink-0 gap-1.5 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+              disabled={disabled}
+              onClick={onQueue}
+              type="button"
+              variant="ghost"
+            >
+              <Layers3 className={iconSize.sm} />
+              <span>{c.queueWithAttachments}</span>
+            </Button>
+          </Tip>
+        ) : (
+          <Tip label={<TipKeybindLabel actionId="composer.queue" text={c.queueMessage} />} placement="control">
+            <Button
+              aria-label={c.queueMessage}
+              className={GHOST_ICON_BTN}
+              disabled={disabled}
+              onClick={onQueue}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <Layers3 className={iconSize.sm} />
+            </Button>
+          </Tip>
+        )
       ) : null}
       {showVoicePrimary ? (
         <StartVoiceButton disabled={disabled} label={c.startVoice} onStart={conversation.onStart} />
