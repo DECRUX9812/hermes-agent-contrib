@@ -49,6 +49,7 @@ import {
   annotateBotSource,
   botActivitySession,
   botAttentionHint,
+  botHandle,
   botRosterKey,
   botSelectionKey,
   botSourceStatus,
@@ -109,8 +110,28 @@ export function AgentsSection() {
     roster.filter(bot => !isBotHidden(bot, allMeta) && botSourceStatus(annotateBotSource(bot, sourceSnapshot)).available)
   )
 
-  const shown = visible.slice(0, AGENTS_ROW_CAP)
+  // While the rail's search runs, this section IS its bots result set — the
+  // contribution stays mounted (sidebar.listTop `searchable`) and narrows to
+  // matching rows; the cap and the "All bots" door step aside.
+  const searchQuery = useValue(host.state.sidebarSearchQuery).trim().toLowerCase()
+
+  const matched = searchQuery
+    ? visible.filter(bot => {
+        const meta = botRosterMeta(bot, allMeta)
+        const hay = [bot.name, displayName(bot, meta), botHandle(bot.name, bot)]
+
+        return hay.some(field => field?.toLowerCase().includes(searchQuery))
+      })
+    : visible
+
+  const shown = searchQuery ? matched : visible.slice(0, AGENTS_ROW_CAP)
   const loading = !data && !error
+
+  // No matching bots during a search — the sessions Results column owns the
+  // space; an empty BOTS header would read as "you have no bots".
+  if (searchQuery && shown.length === 0) {
+    return null
+  }
 
   return (
     <section aria-label={t.common.bots} className="px-0">
@@ -186,7 +207,7 @@ export function AgentsSection() {
               <span className="min-w-0 truncate">{b.roster.emptyDesc}</span>
             </RowButton>
           )}
-          {visible.length > 0 && (
+          {visible.length > 0 && !searchQuery && (
             <RowButton
               className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--ui-control-hover-background) hover:text-foreground"
               onClick={() => host.revealPane('hermes-bots:pane')}
@@ -263,8 +284,12 @@ function AgentRow({ bot }: { bot: RosterRow }) {
         isActive && 'bg-(--ui-row-active-background)'
       )}
       data-roster-key={botRosterKey(bot)}
+      // Roving keyboard row — same rail contract as session rows (arrows walk
+      // it, Tab doesn't stop on it).
+      data-sidebar-row=""
       onClick={() => void openRosterBot(bot)}
       onPointerEnter={() => warmRosterBot(bot)}
+      tabIndex={-1}
     >
       <div className={cn('shrink-0', !sourceStatus.available && 'grayscale opacity-60')}>
         <BotFace color={avatarColor(color, bot.name)} image={photo ? image : null} name={bot.name} shape={shape} size={26} />

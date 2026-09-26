@@ -2633,6 +2633,7 @@ export const ru = defineLocale({
     noMatch: query => `Нет сеансов по запросу «${query}».`,
     results: 'Результаты',
     pinned: 'Закреплённые',
+    needsAttention: 'Требует внимания',
     sessions: 'Сеансы',
     terminal: 'Терминал',
     files: 'Файлы',
