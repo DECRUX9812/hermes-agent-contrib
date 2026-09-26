@@ -169,6 +169,7 @@ const SAFE_HTML_TAG_NAMES = new Set([
 ])
 
 const CITATION_MARKER_RE = /(?<=[\p{L}\p{N})\].,!?:;"'”’])\[(?:\d+(?:\s*,\s*\d+)*)\](?!\()/gu
+
 // Markdown links whose target is a filesystem path on the agent's machine:
 // `[report](/home/user/report.md)`, `[notes](file:///srv/notes.txt)`,
 // `[todo](~/todo.md)`, `[log](C:\logs\run.txt)`. Negative lookbehind keeps

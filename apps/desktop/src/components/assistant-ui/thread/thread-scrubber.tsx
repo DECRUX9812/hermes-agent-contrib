@@ -163,6 +163,7 @@ const ActiveThreadScrubber: FC = () => {
       onKeyDown={event => {
         const viewport = ownViewport(root.current)
         const page = viewport ? viewport.clientHeight * 0.9 : 200
+
         const delta = {
           ArrowDown: 80,
           ArrowUp: -80,

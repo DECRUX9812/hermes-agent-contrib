@@ -137,6 +137,7 @@ function RegionCaptureEditor({ dataUrl, height, width }: { dataUrl: string; heig
   const [dragRect, setDragRect] = useState<RegionRect | null>(null)
 
   const frameBox = fitInside(width, height, window.innerWidth * 0.92, window.innerHeight * 0.92)
+
   const regionBox = region
     ? fitInside(region.width, region.height, window.innerWidth * 0.8, window.innerHeight * 0.72)
     : null

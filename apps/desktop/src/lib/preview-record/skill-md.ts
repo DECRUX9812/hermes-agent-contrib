@@ -102,6 +102,7 @@ function descriptionFor(input: RecordedSkillInput): string {
     if (custom.length <= 60 && custom.endsWith('.')) {
       return custom
     }
+
     const clipped = custom.slice(0, 59).replace(/[.\s]+$/, '')
 
     return clipped ? `${clipped}.` : 'Recorded UI workflow.'

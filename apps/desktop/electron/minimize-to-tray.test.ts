@@ -225,7 +225,11 @@ test('opt-in minimize and primary Close preserve windows while explicit Quit sti
   expect(main.visible).toBe(true)
   main.restore()
   await native.ipc.get('hermes:minimize-to-tray:set')!(null, true)
-  expect(native.ipc.get('hermes:minimize-to-tray:get')!()).toEqual({ enabled: true, available: true, statusEnabled: false })
+  expect(native.ipc.get('hermes:minimize-to-tray:get')!()).toEqual({
+    enabled: true,
+    available: true,
+    statusEnabled: false
+  })
   main.minimize()
   await flushDeferredHide()
   expect(main.destroyed).toBe(false)
