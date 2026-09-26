@@ -95,15 +95,19 @@ import {
 
 interface BotRowProps {
   bot: RosterRow
+  /** "Assign task…" — opens the mailbox compose dialog (#48). */
+  onAssignTask?: (bot: RosterRow) => void
   onDelete: (bot: RosterRow) => void
   onEdit: (bot: RosterRow) => void
   onGroup: (bot: RosterRow) => void
   /** Opens the New section dialog; the bot is filed into it on create. */
   onNewSection: (bot: RosterRow) => void
+  /** Open mailbox notes addressed to this bot — the row's task badge. */
+  openTasks?: number
   showHandle?: boolean
 }
 
-export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandle }: BotRowProps) {
+export function BotRow({ bot, onAssignTask, onDelete, onEdit, onGroup, onNewSection, openTasks, showHandle }: BotRowProps) {
   const { t } = useI18n()
   const b = useBots()
   const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
@@ -273,6 +277,14 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
               />
             </Tip>
           ) : null}
+          {openTasks ? (
+            <Tip label={b.mailbox.openTasks(openTasks)}>
+              <span className="flex shrink-0 items-center gap-0.5 text-[0.6875rem] text-(--ui-text-tertiary)">
+                <Codicon aria-label={b.mailbox.section} name="inbox" />
+                {openTasks}
+              </span>
+            </Tip>
+          ) : null}
           {isOpening ? (
             <GlyphSpinner ariaLabel={b.bot.openingChat} className="shrink-0 text-xs text-(--ui-text-secondary)" />
           ) : null}
@@ -302,6 +314,9 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
       <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => void openRosterBot(bot)}>{b.bot.openBotChat}</ContextMenuItem>
+        {onAssignTask ? (
+          <ContextMenuItem onSelect={() => onAssignTask(bot)}>{b.mailbox.assignTask}</ContextMenuItem>
+        ) : null}
         <ContextMenuItem onSelect={() => openBotScreen(bot, meta)}>{b.screen.menu}</ContextMenuItem>
         {/* Phone parity (#40): Messaging scoped to this bot's profile — the
             platform cards there carry the deep link + QR. Remote-source bots

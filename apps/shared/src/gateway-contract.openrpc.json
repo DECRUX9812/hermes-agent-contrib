@@ -241,6 +241,60 @@
       }
     },
     {
+      "name": "bots_mailbox.list",
+      "summary": "List this install's agent-mailbox notes, newest first; 'handle' narrows to one bot.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsMailboxListParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsMailboxListResult"
+        }
+      }
+    },
+    {
+      "name": "bots_mailbox.send",
+      "summary": "File a user-authored task note and deliver it into the target's Bot Chat (local: blocking turn via bot_relay.deliver; remote: queued for the Desktop relay).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsMailboxSendParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsMailboxSendResult"
+        }
+      }
+    },
+    {
+      "name": "bots_mailbox.update",
+      "summary": "Flip a mailbox note's status (open\u2192accepted/declined/done); live sender bots get a one-line ping.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsMailboxUpdateParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsMailboxUpdateResult"
+        }
+      }
+    },
+    {
       "name": "browser.controller.detach",
       "summary": "Hard-detach only the controller owned by this authenticated transport.",
       "params": [
@@ -6646,9 +6700,160 @@
         "title": "BillingStepUpVerificationPayload",
         "type": "object"
       },
+      "BotMailboxNote": {
+        "additionalProperties": true,
+        "description": "A stored mailbox note \u2014 ``tools/bot_mailbox.py::append_note``.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "to": {
+            "$ref": "#/components/schemas/BotMailboxParty"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/BotMailboxParty"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Payload"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "integer"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Room"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "to",
+          "sender",
+          "title",
+          "body",
+          "status",
+          "reply",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BotMailboxNote",
+        "type": "object"
+      },
+      "BotMailboxParty": {
+        "additionalProperties": true,
+        "description": "One end of a note \u2014 ``tools/bot_mailbox.py::_normalize_party``. ``kind`` is 'bot' or\n'user'; ``connection`` is the sender-side connection id (display only).",
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Kind"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Handle"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "connection": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Connection"
+          }
+        },
+        "title": "BotMailboxParty",
+        "type": "object"
+      },
       "BotRelayDeliverParams": {
         "additionalProperties": false,
-        "description": "``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds).",
+        "description": "``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds).\n``note`` is an optional mailbox task hand-off (``{id, title, body, payload?}``) filed on\nthis install before delivery.",
         "properties": {
           "profile": {
             "title": "Profile",
@@ -6693,6 +6898,19 @@
             ],
             "default": null,
             "title": "From Connection"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
           }
         },
         "required": [
@@ -6860,6 +7078,215 @@
           "count"
         ],
         "title": "BotRelayRosterSyncResult",
+        "type": "object"
+      },
+      "BotsMailboxListParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Handle"
+          }
+        },
+        "title": "BotsMailboxListParams",
+        "type": "object"
+      },
+      "BotsMailboxListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/BotMailboxNote"
+            },
+            "title": "Notes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "title": "BotsMailboxListResult",
+        "type": "object"
+      },
+      "BotsMailboxSendParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Body"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Payload"
+          }
+        },
+        "required": [
+          "to",
+          "title"
+        ],
+        "title": "BotsMailboxSendParams",
+        "type": "object"
+      },
+      "BotsMailboxSendResult": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "$ref": "#/components/schemas/BotMailboxNote"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reply"
+          },
+          "queued": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Queued"
+          },
+          "delivery_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Delivery Error"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "BotsMailboxSendResult",
+        "type": "object"
+      },
+      "BotsMailboxUpdateParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reply"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "BotsMailboxUpdateParams",
+        "type": "object"
+      },
+      "BotsMailboxUpdateResult": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "$ref": "#/components/schemas/BotMailboxNote"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "BotsMailboxUpdateResult",
         "type": "object"
       },
       "BrowserAction": {
@@ -25952,7 +26379,7 @@
       },
       "RelayEnvelope": {
         "additionalProperties": true,
-        "description": "``tools/bot_relay.py::enqueue_envelope``.",
+        "description": "``tools/bot_relay.py::enqueue_envelope``. ``note`` rides along when the DM is a\ntask hand-off (#48) \u2014 ``bot_relay.deliver`` files it into the target's mailbox.",
         "properties": {
           "id": {
             "title": "Id",
@@ -25992,6 +26419,19 @@
           "message": {
             "title": "Message",
             "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
           }
         },
         "required": [

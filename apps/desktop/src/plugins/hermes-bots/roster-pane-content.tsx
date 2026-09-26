@@ -4,6 +4,8 @@ import type { ReactNode, RefObject } from 'react'
 import type { useRoster } from './data'
 import { $showHiddenBots } from './hidden-bots'
 import type { useBots } from './i18n'
+import type { MailboxNote } from './mailbox'
+import { RosterMailboxSection } from './mailbox-parts'
 import type { deriveRosterPresentation, deriveRosterRows } from './roster-pane-derivation'
 import type { rosterSectionRenderers } from './roster-pane-sections'
 import type { rosterGatewayOptions } from './roster-sections'
@@ -33,6 +35,11 @@ interface RosterContentProps {
   hiddenBots: RosterRow[]
   showHiddenRows: boolean
   hiddenGatewaySections: ReturnType<typeof deriveRosterPresentation>['hiddenGatewaySections']
+  /** The union mailbox's non-terminal notes (#48) — the Tasks section renders
+   *  them inside the scroll area; an empty list mounts nothing. */
+  mailboxNotes: MailboxNote[]
+  mailboxCollapsed: boolean
+  toggleMailboxSection: () => void
   renderBotRow: (bot: RosterRow, keyPrefix?: string) => ReactNode
   renderGroupChatSection: ReturnType<typeof rosterSectionRenderers>['renderGroupChatSection']
   renderGatewaySection: ReturnType<typeof rosterSectionRenderers>['renderGatewaySection']
@@ -64,6 +71,9 @@ export function renderRosterContent({
   hiddenBots,
   showHiddenRows,
   hiddenGatewaySections,
+  mailboxNotes,
+  mailboxCollapsed,
+  toggleMailboxSection,
   renderBotRow,
   renderGroupChatSection,
   renderGatewaySection,
@@ -134,6 +144,12 @@ export function renderRosterContent({
                   ...gatewaySections.sections.map(renderGatewaySection)
                 ].filter(Boolean)
               : renderUserSections(rosterRows)}
+            <RosterMailboxSection
+              collapsed={mailboxCollapsed}
+              notes={mailboxNotes}
+              onToggle={toggleMailboxSection}
+              roster={roster}
+            />
             {showHiddenSection ? (
               <div
                 className="mt-1 border-t border-(--ui-stroke-tertiary) pt-1"

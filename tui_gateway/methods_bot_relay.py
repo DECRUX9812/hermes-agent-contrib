@@ -7,9 +7,12 @@ the SENDER gateway for its waiter). Plumbing: ``tools/bot_relay.py``; handlers a
 server.py's globals (method_ctx.py) and reference ``_ok``/``_err`` bare."""
 
 import contextlib
+import logging
 import os
 import subprocess
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Defined beside the sender-side waiter budget so the two Python sides cannot drift (#93911).
 from tools.bot_failure_reasons import delivery_failure_reason
@@ -100,6 +103,31 @@ def _(rid, params: dict, _root=_relay_root, _run=_run_delivery,
         from tools.bot_relay import qualify_sender_stamp, read_remote_roster
         message = qualify_sender_stamp(message, params.get("from_handle"), params.get("from_connection"),
                                        read_remote_roster(root), local_taken_forms(root))
+
+        # A relayed task hand-off (#48) also files its mailbox note on THIS install — before
+        # delivery, so the recipient's update_task resolves the id even if the turn stalls.
+        # Upsert keyed on the sender-minted id: a re-delivered envelope never resets status.
+        note = params.get("note")
+        if isinstance(note, dict) and note.get("id") and note.get("title"):
+            try:
+                from tools.bot_mailbox import append_note
+                from tools.bot_mode_probe import _handle as _bot_handle
+
+                append_note(
+                    root,
+                    note_id=str(note["id"]),
+                    to={"kind": "bot", "profile": resolved, "handle": _bot_handle(resolved)},
+                    sender={"kind": "bot", "profile": str(params.get("from_profile") or ""),
+                            "handle": str(params.get("from_handle") or ""),
+                            "connection": str(params.get("from_connection") or "")},
+                    title=str(note["title"]),
+                    body=str(note.get("body") or ""),
+                    payload=note.get("payload"),
+                    created_at=note.get("created_at") or None,
+                )
+            except Exception:
+                # A note bookkeeping failure must not eat the DM it rides with.
+                logger.warning("bot_relay.deliver: mailbox note %s not filed", note.get("id"), exc_info=True)
 
         # When THIS gateway already hosts the target's Bot Chat live, the subprocess transport is
         # fenced out by the single-owner lease and the payload dropped (#100523). See below.

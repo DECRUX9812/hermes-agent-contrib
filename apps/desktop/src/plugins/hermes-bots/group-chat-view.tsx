@@ -104,6 +104,8 @@ import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
+import { roomMailboxNotes, useMailbox } from './mailbox'
+import { MailboxNoteCard } from './mailbox-parts'
 import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
 import { bumpBotOpenGeneration, getPluginCtx, ID } from './shared'
 import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage, RosterRow } from './types'
@@ -750,6 +752,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     .filter(entry => entry?.group === group)
     .sort((a, b) => (a.at || 0) - (b.at || 0))
 
+  // Mailbox notes touching this room's members (#48) — task hand-offs the
+  // bots filed, or the user assigned, rendered under the log as status cards.
+  const mailboxNotes = roomMailboxNotes(useMailbox().data || [], members)
+
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
   const availabilityLabel = `${availableMembers} of ${members.length} available`
 
@@ -1363,6 +1369,9 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}
               members={members}
             />
+          ))}
+          {mailboxNotes.map(note => (
+            <MailboxNoteCard key={`mailbox:${note.connectionId || ''}:${note.id}`} members={members} note={note} />
           ))}
           {room.running ? (
             <div className="px-2 py-1 text-[0.7rem] italic text-(--ui-text-quaternary)" key={'working'}>

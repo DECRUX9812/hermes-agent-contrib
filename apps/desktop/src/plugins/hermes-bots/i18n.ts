@@ -170,6 +170,31 @@ type BotsMessages = {
     deleted: (name: string, count: number) => string
     undo: string
   }
+  /** The agent mailbox (#48): task hand-off notes in the roster + group chats. */
+  mailbox: {
+    section: string
+    newTaskHint: string
+    assignTask: string
+    assignTitle: (bot: string) => string
+    assignTitleGeneric: string
+    assignDescription: string
+    titlePlaceholder: string
+    bodyPlaceholder: string
+    send: string
+    sent: (bot: string) => string
+    sendFailed: (error: string) => string
+    updateFailed: (error: string) => string
+    cardRoute: (from: string, to: string) => string
+    statusOpen: string
+    statusAccepted: string
+    statusDeclined: string
+    statusDone: string
+    accept: string
+    decline: string
+    markDone: string
+    replyPrefix: string
+    openTasks: (count: number) => string
+  }
   /** Creating, editing and removing a bot. */
   bot: {
     newTitle: string
@@ -624,6 +649,30 @@ const en: BotsMessages = {
         : `Deleted “${name}” — ${count} ${count === 1 ? 'bot' : 'bots'} moved to Unassigned`,
     undo: 'Undo'
   },
+  mailbox: {
+    section: 'Tasks',
+    newTaskHint: 'Assign a task',
+    assignTask: 'Assign task…',
+    assignTitle: bot => `Assign task to ${bot}`,
+    assignTitleGeneric: 'Assign task',
+    assignDescription: 'Files a tracked note beside the bot\'s chat — it accepts, declines, or marks it done.',
+    titlePlaceholder: 'Task title',
+    bodyPlaceholder: 'Details, links, acceptance criteria…',
+    send: 'Assign',
+    sent: bot => `Task assigned to ${bot}`,
+    sendFailed: error => `Couldn't send the task: ${error}`,
+    updateFailed: error => `Couldn't update the note: ${error}`,
+    cardRoute: (from, to) => `${from} → ${to}`,
+    statusOpen: 'Open',
+    statusAccepted: 'Accepted',
+    statusDeclined: 'Declined',
+    statusDone: 'Done',
+    accept: 'Accept',
+    decline: 'Decline',
+    markDone: 'Mark done',
+    replyPrefix: 'Reply',
+    openTasks: count => `${count} open ${count === 1 ? 'task' : 'tasks'}`
+  },
   bot: {
     newTitle: 'New bot',
     editTitle: 'Edit profile',
@@ -1059,6 +1108,30 @@ const ja: BotsMessages = {
         : `「${name}」を削除しました — ${count} 件のボットを未分類に移動しました`,
     undo: '元に戻す'
   },
+  mailbox: {
+    section: 'タスク',
+    newTaskHint: 'タスクを割り当てる',
+    assignTask: 'タスクを割り当て…',
+    assignTitle: bot => `${bot} にタスクを割り当て`,
+    assignTitleGeneric: 'タスクを割り当て',
+    assignDescription: 'ボットのチャットの横に追跡ノートを作成します — ボットが受諾・辞退・完了を記録します。',
+    titlePlaceholder: 'タスクのタイトル',
+    bodyPlaceholder: '詳細、リンク、受け入れ条件…',
+    send: '割り当て',
+    sent: bot => `${bot} にタスクを割り当てました`,
+    sendFailed: error => `タスクを送信できませんでした: ${error}`,
+    updateFailed: error => `ノートを更新できませんでした: ${error}`,
+    cardRoute: (from, to) => `${from} → ${to}`,
+    statusOpen: '未対応',
+    statusAccepted: '受諾済み',
+    statusDeclined: '辞退済み',
+    statusDone: '完了',
+    accept: '受諾',
+    decline: '辞退',
+    markDone: '完了にする',
+    replyPrefix: '返信',
+    openTasks: count => `未対応のタスク ${count} 件`
+  },
   bot: {
     newTitle: '新しいボット',
     editTitle: 'プロファイルを編集',
@@ -1487,6 +1560,30 @@ const zh: BotsMessages = {
     deleted: (name, count) => (count === 0 ? `已删除“${name}”` : `已删除“${name}” — ${count} 个机器人已移至未分类`),
     undo: '撤销'
   },
+  mailbox: {
+    section: '任务',
+    newTaskHint: '分配任务',
+    assignTask: '分配任务…',
+    assignTitle: bot => `给 ${bot} 分配任务`,
+    assignTitleGeneric: '分配任务',
+    assignDescription: '在机器人聊天旁创建一条可跟踪的便签 — 机器人可以接受、拒绝或标记完成。',
+    titlePlaceholder: '任务标题',
+    bodyPlaceholder: '详情、链接、验收标准…',
+    send: '分配',
+    sent: bot => `已将任务分配给 ${bot}`,
+    sendFailed: error => `无法发送任务：${error}`,
+    updateFailed: error => `无法更新便签：${error}`,
+    cardRoute: (from, to) => `${from} → ${to}`,
+    statusOpen: '待处理',
+    statusAccepted: '已接受',
+    statusDeclined: '已拒绝',
+    statusDone: '已完成',
+    accept: '接受',
+    decline: '拒绝',
+    markDone: '标记完成',
+    replyPrefix: '回复',
+    openTasks: count => `${count} 个待处理任务`
+  },
   bot: {
     newTitle: '新建机器人',
     editTitle: '编辑配置档案',
@@ -1908,6 +2005,30 @@ const zhHant: BotsMessages = {
     removeFromSection: '移出分區',
     deleted: (name, count) => (count === 0 ? `已刪除「${name}」` : `已刪除「${name}」— ${count} 個機器人已移至未分類`),
     undo: '復原'
+  },
+  mailbox: {
+    section: '任務',
+    newTaskHint: '指派任務',
+    assignTask: '指派任務…',
+    assignTitle: bot => `指派任務給 ${bot}`,
+    assignTitleGeneric: '指派任務',
+    assignDescription: '在機器人聊天旁建立一則可追蹤的便箋 — 機器人可以接受、婉拒或標記完成。',
+    titlePlaceholder: '任務標題',
+    bodyPlaceholder: '詳細內容、連結、驗收標準…',
+    send: '指派',
+    sent: bot => `已將任務指派給 ${bot}`,
+    sendFailed: error => `無法傳送任務：${error}`,
+    updateFailed: error => `無法更新便箋：${error}`,
+    cardRoute: (from, to) => `${from} → ${to}`,
+    statusOpen: '待處理',
+    statusAccepted: '已接受',
+    statusDeclined: '已婉拒',
+    statusDone: '已完成',
+    accept: '接受',
+    decline: '婉拒',
+    markDone: '標記完成',
+    replyPrefix: '回覆',
+    openTasks: count => `${count} 個待處理任務`
   },
   bot: {
     newTitle: '新增機器人',

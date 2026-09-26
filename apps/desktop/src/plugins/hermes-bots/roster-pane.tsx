@@ -39,6 +39,8 @@ import { $groupMainTabsRev, shouldRenderGroupChatInPane } from './group-panes'
 import { $activeGroupMemberKeys } from './group-presence'
 import { $showHiddenBots, isBotHidden } from './hidden-bots'
 import { useBots } from './i18n'
+import { mailboxOpenCountFor, useMailbox } from './mailbox'
+import { MailboxTaskDialog } from './mailbox-parts'
 import { $activityToasts } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
@@ -254,6 +256,10 @@ export function BotsPane() {
   const [sectionDialog, setSectionDialog] = useState<SectionDialogState>(null)
 
   const [grouping, setGrouping] = useState<null | RosterRow>(null)
+  // The mailbox (#48): notes the union mailbox query returned, plus the bot
+  // whose Assign-task dialog is open.
+  const mailboxNotes = useMailbox().data || []
+  const [assigningTask, setAssigningTask] = useState<null | RosterRow>(null)
   const [query, setQuery] = useState('')
   const [rowKindFilter, setRowKindFilter] = useState<RosterKindFilter>('all')
   const [activityFilter, setActivityFilter] = useState<RosterActivityFilter>('all')
@@ -427,10 +433,12 @@ export function BotsPane() {
     <BotRow
       bot={bot}
       key={`${keyPrefix}${botRosterKey(bot)}`}
+      onAssignTask={setAssigningTask}
       onDelete={setDeleting}
       onEdit={setEditing}
       onGroup={setGrouping}
       onNewSection={target => setSectionDialog({ bot: target, mode: 'create' })}
+      openTasks={mailboxOpenCountFor(mailboxNotes, bot)}
       showHandle={botNeedsHandleLabel(bot, roster, allMeta)}
     />
   )
@@ -516,12 +524,16 @@ export function BotsPane() {
         hiddenBots,
         showHiddenRows,
         hiddenGatewaySections,
+        mailboxNotes,
+        mailboxCollapsed: rosterSectionCollapsed('mailbox'),
+        toggleMailboxSection: () => toggleRosterSection('mailbox'),
         renderBotRow,
         renderGroupChatSection,
         renderGatewaySection,
         renderUserSections,
         renderHiddenGatewaySection
       })}
+      <MailboxTaskDialog member={assigningTask} onClose={() => setAssigningTask(null)} />
       {renderRosterDialogs({
         b,
         t,

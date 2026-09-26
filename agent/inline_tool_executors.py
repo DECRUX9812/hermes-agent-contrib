@@ -241,7 +241,13 @@ INLINE_TOOL_EXECUTORS: Dict[str, InlineToolExecutor] = {
     # Chat session carries the schema, and the tool re-gates on the title.
     "message_agent": _tool(
         "tools.bot_mode_dm", "message_agent_tool", ("target", "target", ""), ("message", "message", ""),
+        ("task", "task"),
         task_id=lambda agent, ctx: ctx.effective_task_id, agent=lambda agent, ctx: agent,
+    ),
+    # Bot mailbox status door, injected beside message_agent under the same gate.
+    "update_task": _tool(
+        "tools.bot_mailbox", "update_task_tool", ("note", "note", ""), ("status", "status", ""),
+        ("reply", "reply", ""), agent=lambda agent, ctx: agent,
     ),
     "session_search": _session_search,
     "memory": _memory,
@@ -300,6 +306,6 @@ def resolve_invoke_tool_executor(agent, function_name: str) -> Optional[InlineTo
     memory_manager = agent._memory_manager
     if memory_manager and memory_manager.has_tool(function_name):
         return lambda agent, args, ctx: agent._memory_manager.handle_tool_call(function_name, args)
-    if function_name == "message_agent":
+    if function_name in ("message_agent", "update_task"):
         return None
     return INLINE_TOOL_EXECUTORS.get(function_name)
