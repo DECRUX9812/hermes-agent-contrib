@@ -3035,6 +3035,24 @@ export const zh = defineLocale({
       slack: 'Slack',
       email: '电子邮件',
       github_comment: 'GitHub 评论'
+    },
+    mobile: {
+      title: '手机伴侣',
+      hint: '从手机操控此后端 —— 状态、审批、快速回复。',
+      pairButton: '配对手机',
+      dialogTitle: '配对手机',
+      dialogDesc:
+        '生成一次性配对码，然后在手机上打开伴侣页面并输入该码。该页面可查看会话状态、处理待审批项，并向此后端发送快速回复。',
+      backendUrl: '后端 URL',
+      backendUrlHint: '手机可访问的地址（局域网、隧道或远程连接）。',
+      create: '生成配对码',
+      creating: '正在生成…',
+      createFailed: (detail: string) => `无法生成配对码${detail ? `：${detail}` : ''}`,
+      codeLabel: '配对码',
+      openHint: (url: string) => `在手机上打开 ${url} 并输入配对码。`,
+      expires: (minutes: number) => `一次性使用 · ${minutes} 分钟后过期。`,
+      copy: '复制',
+      done: '完成'
     }
   },
 

@@ -531,3 +531,14 @@ class _PluginProvidersPutBody(BaseModel):
 class _PluginVisibilityBody(BaseModel):
     hidden: bool
 
+
+class MobilePairExchange(BaseModel):
+    code: str
+
+class MobileRespond(BaseModel):
+    request_id: str
+    result: dict
+
+class MobileReply(BaseModel):
+    session_id: str
+    text: str

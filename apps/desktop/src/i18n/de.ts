@@ -3608,6 +3608,24 @@ export const deOverrides = {
       slack: 'Slack',
       email: 'E-Mail',
       github_comment: 'GitHub-Kommentar'
+    },
+    mobile: {
+      title: 'Mobiler Begleiter',
+      hint: 'Dieses Backend vom Telefon aus steuern — Status, Freigaben, Kurzantworten.',
+      pairButton: 'Telefon koppeln',
+      dialogTitle: 'Telefon koppeln',
+      dialogDesc:
+        'Erstelle einen einmaligen Kopplungscode, öffne dann die Begleitseite auf deinem Telefon und gib den Code ein. Die Seite kann den Sitzungsstatus lesen, ausstehende Freigaben beantworten und Kurzantworten an dieses Backend senden.',
+      backendUrl: 'Backend-URL',
+      backendUrlHint: 'Eine Adresse, die dein Telefon erreichen kann (LAN, Tunnel oder Remote-Verbindung).',
+      create: 'Kopplungscode erstellen',
+      creating: 'Wird erstellt…',
+      createFailed: (detail: string) => `Kopplungscode konnte nicht erstellt werden${detail ? `: ${detail}` : ''}`,
+      codeLabel: 'Kopplungscode',
+      openHint: (url: string) => `Öffne ${url} auf deinem Telefon und gib den Code ein.`,
+      expires: (minutes: number) => `Einmalig · läuft in ${minutes} Min. ab.`,
+      copy: 'Kopieren',
+      done: 'Fertig'
     }
   },
   profiles: {
