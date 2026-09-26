@@ -5486,6 +5486,12 @@ export const en: Translations = {
         'Everything after this prompt is removed from the conversation, and the prompt runs again from here.',
       restoreConfirm: 'Restore & rerun',
       restoreNext: 'Restore next checkpoint',
+      revertFilesTip: 'Revert files to before this prompt',
+      revertFilesTitle: 'Revert files?',
+      revertFilesBody:
+        'Files Hermes changed in that turn go back to how they were — anything you edited by hand is kept. The conversation is untouched.',
+      revertFilesConfirm: 'Revert files',
+      revertFilesFailed: 'Could not revert files',
       goForward: 'Go forward',
       sendEdited: 'Send edited message',
       attachingFile: 'Attaching…'

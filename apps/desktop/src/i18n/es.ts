@@ -5862,6 +5862,12 @@ export const esOverrides = {
         'Todo lo que sigue a este mensaje se elimina de la conversación y el mensaje se ejecuta nuevamente desde aquí.',
       restoreConfirm: 'Restaurar y volver a ejecutar',
       restoreNext: 'Restaurar checkpoint siguiente',
+      revertFilesTip: 'Revertir archivos al estado anterior a este mensaje',
+      revertFilesTitle: '¿Revertir archivos?',
+      revertFilesBody:
+        'Los archivos que Hermes modificó en ese turno vuelven a su estado anterior; todo lo que editaste a mano se conserva. La conversación no cambia.',
+      revertFilesConfirm: 'Revertir archivos',
+      revertFilesFailed: 'No se pudieron revertir los archivos',
       goForward: 'Avanzar',
       sendEdited: 'Enviar edición',
       attachingFile: 'Adjuntando…'

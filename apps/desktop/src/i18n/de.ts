@@ -5873,6 +5873,12 @@ export const deOverrides = {
       restoreBody: 'Alles nach diesem Prompt wird aus der Konversation entfernt, und der Prompt läuft von hier erneut.',
       restoreConfirm: 'Wiederherstellen & erneut ausführen',
       restoreNext: 'Nächsten Checkpoint wiederherstellen',
+      revertFilesTip: 'Dateien auf den Stand vor diesem Prompt zurücksetzen',
+      revertFilesTitle: 'Dateien zurücksetzen?',
+      revertFilesBody:
+        'Dateien, die Hermes in diesem Schritt geändert hat, werden zurückgesetzt — von dir manuell bearbeitete Dateien bleiben erhalten. Die Konversation bleibt unverändert.',
+      revertFilesConfirm: 'Dateien zurücksetzen',
+      revertFilesFailed: 'Dateien konnten nicht zurückgesetzt werden',
       goForward: 'Vorwärts',
       sendEdited: 'Bearbeitete Nachricht senden',
       attachingFile: 'Hängt an…'

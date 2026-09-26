@@ -87,6 +87,25 @@ def _record_persisted_path_for_stub(agent, tool_call_id: str, function_result) -
         logger.debug("persisted-path record for result stub failed: %s", exc)
 
 
+def _checkpoint_turn_context(agent) -> dict | None:
+    """Identity of the user turn a checkpoint precedes (session id + turn ordinal
+    + durable row id when the row has already flushed). ``None`` outside a user
+    turn. ``_session_messages`` binds the live list on the first persist of the
+    turn; before that the row id is simply absent."""
+    turn_no = getattr(agent, "_user_turn_count", None)
+    if not isinstance(turn_no, int) or turn_no <= 0:
+        return None
+    row_id = None
+    idx = getattr(agent, "_persist_user_message_idx", None)
+    msgs = getattr(agent, "_session_messages", None)
+    if isinstance(idx, int) and isinstance(msgs, list) and 0 <= idx < len(msgs):
+        row = msgs[idx]
+        if isinstance(row, dict) and isinstance(row.get("_row_id"), int):
+            row_id = row["_row_id"]
+    return {"session": getattr(agent, "session_id", "") or "",
+            "turn": turn_no, "row_id": row_id}
+
+
 def _ensure_file_checkpoint(agent, function_name: str, function_args: dict, effective_task_id: str) -> None:
     """Checkpoint the same workspace path that the file tool will mutate, resolved the way
     file tools do (against the task's live cwd, which differs from the process cwd in Docker)."""
@@ -106,6 +125,7 @@ def _ensure_file_checkpoint(agent, function_name: str, function_args: dict, effe
     resolved_path = _resolve_path_for_task(file_path, effective_task_id or "default")
     agent._checkpoint_mgr.ensure_checkpoint(
         agent._checkpoint_mgr.get_working_dir_for_path(str(resolved_path)), f"before {function_name}",
+        turn=_checkpoint_turn_context(agent),
     )
 
 
@@ -1028,7 +1048,10 @@ def _begin_tool_execution(agent, ref: _ToolCallRef, display_index: int | None) -
                 if container_backend_for_task(effective_task_id or "default") is None:
                     from agent.runtime_cwd import scope_terminal_cwd
                     cwd = function_args.get("workdir") or scope_terminal_cwd() or os.getcwd()
-                    agent._checkpoint_mgr.ensure_checkpoint(cwd, f"before terminal: {command[:60]}")
+                    agent._checkpoint_mgr.ensure_checkpoint(
+                        cwd, f"before terminal: {command[:60]}",
+                        turn=_checkpoint_turn_context(agent),
+                    )
 
 
 def _emit_tool_complete_and_risk(agent, ref: _ToolCallRef, result, risk_metadata, blocked: bool) -> None:

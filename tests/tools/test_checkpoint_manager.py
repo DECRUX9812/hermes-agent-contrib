@@ -188,6 +188,24 @@ class TestListCheckpoints:
         assert result[0]["reason"] == "third"
         assert result[2]["reason"] == "first"
 
+    def test_turn_trailers_round_trip(self, mgr, work_dir):
+        """Checkpoints stamped with a user-turn context report it in list_checkpoints."""
+        mgr.ensure_checkpoint(
+            str(work_dir), "before write_file",
+            turn={"session": "sess-1", "turn": 2, "row_id": 17})
+        mgr.new_turn()
+        (work_dir / "main.py").write_text("v2\n")
+        mgr.ensure_checkpoint(str(work_dir), "untagged")
+
+        result = mgr.list_checkpoints(str(work_dir))
+        assert len(result) == 2
+        tagged, untagged = result[1], result[0]
+        assert tagged["turn"] == 2
+        assert tagged["sid"] == "sess-1"
+        assert tagged["user_row_id"] == 17
+        for key in ("turn", "sid", "user_row_id"):
+            assert key not in untagged
+
     def test_projects_share_one_store_but_list_separately(
         self, mgr, checkpoint_base, tmp_path,
     ):
