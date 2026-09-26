@@ -21,6 +21,7 @@ const queue = (parked: boolean) => (
     entries={[{ attachments: [], id: 'queued', queuedAt: 1, text: 'Queued request' }]}
     onDelete={noop}
     onEdit={noop}
+    onMove={noop}
     onResume={noop}
     onSendNow={noop}
     parked={parked}

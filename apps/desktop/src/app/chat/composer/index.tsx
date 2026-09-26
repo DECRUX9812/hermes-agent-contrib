@@ -32,7 +32,7 @@ import { interceptsTypedVoiceStop } from '@/lib/voice-stop-word'
 import { sessionCompacting } from '@/store/compaction'
 import { browseBackward, browseForward, deriveUserHistory, isBrowsingHistory } from '@/store/composer-input-history'
 import { POPOUT_WIDTH_REM } from '@/store/composer-popout'
-import { parkQueuedPrompts, removeQueuedPrompt, unparkQueuedPrompts } from '@/store/composer-queue'
+import { moveQueuedPrompt, parkQueuedPrompts, removeQueuedPrompt, unparkQueuedPrompts } from '@/store/composer-queue'
 import { setCronCreateDraft } from '@/store/cron'
 import { $hudMode } from '@/store/hud'
 import { $showsAdvancedChrome } from '@/store/interface-mode'
@@ -1369,6 +1369,7 @@ export function ChatBar({
                       }
                     }}
                     onEdit={beginQueuedEdit}
+                    onMove={(id, direction) => moveQueuedPrompt(activeQueueSessionKey, id, direction)}
                     onResume={() => {
                       unparkQueuedPrompts(activeQueueSessionKey)
 

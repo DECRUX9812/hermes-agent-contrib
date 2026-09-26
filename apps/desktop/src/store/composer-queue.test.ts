@@ -10,6 +10,7 @@ import {
   getQueuedPrompts,
   isQueueParked,
   migrateQueuedPrompts,
+  moveQueuedPrompt,
   parkQueuedPrompts,
   promoteQueuedPrompt,
   removeQueuedPrompt,
@@ -156,6 +157,33 @@ describe('composer queue store', () => {
     expect(promoteQueuedPrompt(SESSION_KEY, third!.id)).toBe(true)
     expect(getQueuedPrompts(SESSION_KEY).map(entry => entry.text)).toEqual(['third', 'first', 'second'])
     expect(promoteQueuedPrompt(SESSION_KEY, third!.id)).toBe(false)
+  })
+
+  it('moves a queued entry one slot toward the head or the tail', () => {
+    const first = enqueueQueuedPrompt(SESSION_KEY, { attachments: [], text: 'first' })
+    const second = enqueueQueuedPrompt(SESSION_KEY, { attachments: [], text: 'second' })
+    const third = enqueueQueuedPrompt(SESSION_KEY, { attachments: [], text: 'third' })
+
+    expect(first).not.toBeNull()
+    expect(second).not.toBeNull()
+    expect(third).not.toBeNull()
+
+    expect(moveQueuedPrompt(SESSION_KEY, third!.id, -1)).toBe(true)
+    expect(getQueuedPrompts(SESSION_KEY).map(entry => entry.text)).toEqual(['first', 'third', 'second'])
+
+    expect(moveQueuedPrompt(SESSION_KEY, third!.id, -1)).toBe(true)
+    expect(getQueuedPrompts(SESSION_KEY).map(entry => entry.text)).toEqual(['third', 'first', 'second'])
+
+    // Head cannot move earlier; tail cannot move later.
+    expect(moveQueuedPrompt(SESSION_KEY, third!.id, -1)).toBe(false)
+    expect(moveQueuedPrompt(SESSION_KEY, second!.id, 1)).toBe(false)
+
+    expect(moveQueuedPrompt(SESSION_KEY, first!.id, 1)).toBe(true)
+    expect(getQueuedPrompts(SESSION_KEY).map(entry => entry.text)).toEqual(['third', 'second', 'first'])
+
+    // Unknown ids and sessions no-op instead of writing.
+    expect(moveQueuedPrompt(SESSION_KEY, 'missing', -1)).toBe(false)
+    expect(moveQueuedPrompt('no-such-session', third!.id, -1)).toBe(false)
   })
 
   it('updates queued text and attachment snapshot', () => {

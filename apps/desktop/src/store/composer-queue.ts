@@ -308,6 +308,33 @@ export const promoteQueuedPrompt = (key: string | null | undefined, id: string):
   return true
 }
 
+/** Swap a queued entry with its neighbor — `direction` -1 moves it one slot
+ *  toward the head (sends sooner), +1 one slot toward the tail. The queue is
+ *  FIFO, so the panel's up/down affordance is this single step, repeated. */
+export const moveQueuedPrompt = (key: string | null | undefined, id: string, direction: -1 | 1): boolean => {
+  const sid = sidOf(key)
+
+  if (!sid) {
+    return false
+  }
+
+  const queue = queueFor(sid)
+  const index = queue.findIndex(e => e.id === id)
+  const target = index + direction
+
+  if (index < 0 || target < 0 || target >= queue.length) {
+    return false
+  }
+
+  const next = [...queue]
+  const entry = next[index]!
+  next[index] = next[target]!
+  next[target] = entry
+  writeSession(sid, next)
+
+  return true
+}
+
 export const updateQueuedPrompt = (
   key: string | null | undefined,
   id: string,

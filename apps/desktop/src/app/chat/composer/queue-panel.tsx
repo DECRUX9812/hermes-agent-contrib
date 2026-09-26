@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
 import { type Translations, useI18n } from '@/i18n'
-import { CornerDownLeft, iconSize, Pencil, SteeringWheel } from '@/lib/icons'
+import { ArrowDown, ArrowUp, CornerDownLeft, iconSize, Pencil, SteeringWheel } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { isSteerableEntry, type QueuedPromptEntry } from '@/store/composer-queue'
 
@@ -14,6 +14,8 @@ interface QueuePanelProps {
   entries: QueuedPromptEntry[]
   onDelete: (id: string) => void
   onEdit: (entry: QueuedPromptEntry) => void
+  /** Move an entry one slot toward the head (-1) or the tail (+1). */
+  onMove: (id: string, direction: -1 | 1) => void
   /** Lift a park (explicit Stop/Esc halt) and let the queue flow again. */
   onResume: () => void
   onSendNow: (id: string) => void
@@ -35,6 +37,7 @@ export function QueuePanel({
   entries,
   onDelete,
   onEdit,
+  onMove,
   onResume,
   onSendNow,
   onSteerNow,
@@ -67,7 +70,7 @@ export function QueuePanel({
       icon={<Codicon className="text-muted-foreground/70" name={parked ? 'debug-pause' : 'layers'} size="0.8rem" />}
       label={parked ? c.queuedPaused(entries.length) : c.queued(entries.length)}
     >
-      {entries.map(entry => {
+      {entries.map((entry, index) => {
         const isEditing = editingId === entry.id
         const attachmentsCount = entry.attachments.length
         // Steer only surfaces where it can actually deliver: a live turn to
@@ -85,6 +88,32 @@ export function QueuePanel({
             leading={<Codicon className="text-muted-foreground/70" name="comment" size="0.8rem" />}
             trailing={
               <>
+                <Tip label={c.queueMoveUp}>
+                  <Button
+                    aria-label={c.queueMoveUp}
+                    className="size-5 rounded-md"
+                    disabled={index === 0}
+                    onClick={() => onMove(entry.id, -1)}
+                    size="icon-xs"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ArrowUp className={iconSize.xs} />
+                  </Button>
+                </Tip>
+                <Tip label={c.queueMoveDown}>
+                  <Button
+                    aria-label={c.queueMoveDown}
+                    className="size-5 rounded-md"
+                    disabled={index === entries.length - 1}
+                    onClick={() => onMove(entry.id, 1)}
+                    size="icon-xs"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <ArrowDown className={iconSize.xs} />
+                  </Button>
+                </Tip>
                 <Tip label={c.queueEdit}>
                   <Button
                     aria-label={c.queueEdit}
