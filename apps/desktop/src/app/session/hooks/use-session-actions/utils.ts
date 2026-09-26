@@ -10,7 +10,7 @@ import {
   textPart,
   toChatMessages
 } from '@/lib/chat-messages'
-import { normalizePersonalityValue } from '@/lib/chat-runtime'
+import { normalizePersonalityValue, normalizeSessionSkills } from '@/lib/chat-runtime'
 import { embeddedImageUrls, textWithoutEmbeddedImages } from '@/lib/embedded-images'
 import { parseErrorSurface } from '@/lib/error-surface'
 import { isMessagingSource, normalizeSessionSource } from '@/lib/session-source'
@@ -791,12 +791,14 @@ export function preserveLocalPendingTurnMessages(
   // unacknowledged repeat whose committed twin predates the acknowledged
   // boundary (and never enters this window) still survives.
   const newestAuthoritativeUser = [...remainingNext].reverse().find(message => message.role === 'user')
+
   const acknowledgedUserCandidates = remainingNext.filter(
     message =>
       message.role === 'user' &&
       !isGatewaySystemMarker(message) &&
       (message.rowId !== undefined || message === newestAuthoritativeUser)
   )
+
   const preserved: ChatMessage[] = []
   // Authoritative id → richer local pending row. Replacing (not appending)
   // avoids painting both the empty inflight shell and the full stream bubble.
@@ -2102,6 +2104,7 @@ type SessionRuntimeStatePatch = Partial<
     | 'reasoningEffortPending'
     | 'reasoningEffortWire'
     | 'serviceTier'
+    | 'skills'
     | 'yolo'
   >
 >
@@ -2241,6 +2244,10 @@ export function applyRuntimeInfo(
 
   if (typeof info.yolo === 'boolean') {
     sessionState.yolo = info.yolo
+  }
+
+  if (info.skills !== undefined) {
+    sessionState.skills = normalizeSessionSkills(info.skills)
   }
 
   if (foreground) {

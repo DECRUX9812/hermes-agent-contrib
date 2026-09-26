@@ -25,6 +25,7 @@ function publishGuide(storedSessionId: string, visible = true) {
     fast: false,
     yolo: false,
     personality: '',
+    skills: {},
     busy: false,
     awaitingResponse: false,
     streamId: null,

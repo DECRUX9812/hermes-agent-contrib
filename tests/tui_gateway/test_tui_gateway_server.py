@@ -3168,6 +3168,31 @@ def test_complete_slash_and_skills_reload_are_bound_to_the_session_cwd(tmp_path,
     assert {i["name"] for i in other["result"]["added"]} == {"beta-skill"}, other["output"]
 
 
+def test_session_info_skills_are_bound_to_the_session_cwd(tmp_path, monkeypatch):
+    # session.info's live skills lookup ran unbound: every broadcast/off-turn caller reported the
+    # CALLER's context (launch env / ambient cwd) on every session, so the desktop header would
+    # show the launch repo's skills on a session rooted in a different trusted project — or none.
+    # _session_skills pins the session's cwd + profile scope like the agent build does, and its
+    # per-session memo must not let one session's set bleed into another under alternation.
+    import agent.skill_utils as skill_utils
+
+    _two_repo_project_skill_sessions(tmp_path, monkeypatch)
+    for sid, own, other in (("sid-a", "alpha-skill", "beta-skill"),
+                            ("sid-b", "beta-skill", "alpha-skill")):
+        session = server._sessions[sid]
+        skills = server._session_skills(session["session_key"], session)
+        flat = {name for names in skills.values() for name in names}
+        assert own in flat and other not in flat, skills
+    # Alternating A→B→A: the memo serves each session its own set (the signature cache's single
+    # slot has already thrashed by the second A call).
+    a = server._session_skills("key-a", server._sessions["sid-a"])
+    b = server._session_skills("key-b", server._sessions["sid-b"])
+    assert {n for names in a.values() for n in names} == {"alpha-skill"}
+    assert {n for names in b.values() for n in names} == {"beta-skill"}
+    # Nothing leaks past the lookup: the thread's logical cwd is unbound again.
+    assert skill_utils.find_project_root() is None
+
+
 def test_history_to_messages_types_a_legacy_auto_continue_row():
     # A crash-interrupted turn used to be typed only AFTER it finished, so a
     # turn killed a second time (or any row written before turn-start typing

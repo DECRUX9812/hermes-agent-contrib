@@ -113,6 +113,9 @@ export type GatewayEventPayload = {
   credential_warning?: string
   install_warning?: string
   personality?: string
+  /** session.info: the session's skills grouped by category (flat list on
+   *  older backends). Metadata for the header chip — never prompt content. */
+  skills?: Record<string, string[]> | string[]
   usage?: Partial<UsageStats>
   // agent.terminal.output — live chunk for a read-only agent terminal tab
   process_id?: string
