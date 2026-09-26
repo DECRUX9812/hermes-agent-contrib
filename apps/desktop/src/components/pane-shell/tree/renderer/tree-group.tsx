@@ -723,6 +723,14 @@ export function TreeGroup({
                         </span>
                       ) : null}
                       <PaneTabLabel>{tabLabel(paneId)}</PaneTabLabel>
+                      {chrome.tabTrail ? (
+                        // Per-tab live status (a session tile's elapsed +
+                        // current tool) — every tab carries it, so it yields
+                        // space to the label and hides on the vertical rail.
+                        <span className="-ml-1 mr-2 flex min-w-0 items-center group-data-[vertical]/tab:hidden">
+                          {chrome.tabTrail()}
+                        </span>
+                      ) : null}
                     </PaneTab>
                   )
 

@@ -4,6 +4,7 @@ import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } f
 
 import { SessionDraftTitle } from '@/app/chat/session-draft-title'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
+import { SessionTabStatus } from '@/app/chat/session-tab-status'
 import { SkillTag } from '@/app/chat/skill-tag'
 import { PALETTE_AREA, type PaletteContribution, paletteToggle } from '@/app/command-palette/contrib'
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
@@ -564,6 +565,9 @@ const syncWorkspaceTitle = () => {
       // fresh draft has no session to key by, which IS its status: the dot
       // resolves to `draft` and marks the tab rather than leaving a hole.
       tabLead: () => <SessionStatusDot session={stored} storedSessionId={selected} />,
+      // The same per-tab status the session tiles carry — the workspace tab
+      // is a session tab too, so it shows elapsed + what it's doing.
+      tabTrail: () => <SessionTabStatus storedSessionId={selected} />,
       // A draft's name lives in its composer, not in any session row, so the
       // label subscribes to it directly — typing renames the tab without
       // re-registering the pane.
