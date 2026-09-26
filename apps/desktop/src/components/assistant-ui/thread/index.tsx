@@ -2,6 +2,7 @@ import { createContext, memo, useCallback, useContext, useMemo, useRef, useState
 
 import { ChatEmptySlot } from '@/components/assistant-ui/chat-empty-slot'
 import { AssistantMessage } from '@/components/assistant-ui/thread/assistant-message'
+import { DelegationPill } from '@/components/assistant-ui/thread/delegation-pill'
 import { ThreadMessageList } from '@/components/assistant-ui/thread/list'
 import { BackgroundResumeNotice, CenteredThreadSpinner } from '@/components/assistant-ui/thread/status'
 import { SystemMessage } from '@/components/assistant-ui/thread/system-message'
@@ -177,7 +178,15 @@ export const Thread = memo(function Thread({
   // element every render defeats the bail-out and drags the whole transcript
   // into the switch's render pass. It takes no props, so one element is
   // always correct.
-  const loadingIndicator = useMemo(() => <BackgroundResumeNotice />, [])
+  const loadingIndicator = useMemo(
+    () => (
+      <>
+        <DelegationPill />
+        <BackgroundResumeNotice />
+      </>
+    ),
+    []
+  )
 
   return (
     <ThreadEditContext.Provider value={editContext}>
