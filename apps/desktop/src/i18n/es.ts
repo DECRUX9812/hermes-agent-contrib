@@ -3599,6 +3599,24 @@ export const esOverrides = {
       slack: 'Slack',
       email: 'Correo electrónico',
       github_comment: 'Comentario de GitHub'
+    },
+    mobile: {
+      title: 'Compañero móvil',
+      hint: 'Controla este backend desde un teléfono: estado, aprobaciones y respuestas rápidas.',
+      pairButton: 'Vincular un teléfono',
+      dialogTitle: 'Vincular un teléfono',
+      dialogDesc:
+        'Crea un código de vinculación de un solo uso, abre la página del compañero en el teléfono e introduce el código. La página puede leer el estado de las sesiones, responder aprobaciones pendientes y enviar respuestas rápidas en este backend.',
+      backendUrl: 'URL del backend',
+      backendUrlHint: 'Una dirección accesible desde el teléfono (LAN, túnel o conexión remota).',
+      create: 'Crear código de vinculación',
+      creating: 'Creando…',
+      createFailed: (detail: string) => `No se pudo crear el código de vinculación${detail ? `: ${detail}` : ''}`,
+      codeLabel: 'Código de vinculación',
+      openHint: (url: string) => `Abre ${url} en tu teléfono e introduce el código.`,
+      expires: (minutes: number) => `De un solo uso · caduca en ${minutes} min.`,
+      copy: 'Copiar',
+      done: 'Listo'
     }
   },
   profiles: {

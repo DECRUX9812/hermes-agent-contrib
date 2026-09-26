@@ -3236,6 +3236,24 @@ export const en: Translations = {
       slack: 'Slack',
       email: 'Email',
       github_comment: 'GitHub comment'
+    },
+    mobile: {
+      title: 'Mobile companion',
+      hint: 'Steer this backend from a phone — status, approvals, quick replies.',
+      pairButton: 'Pair a phone',
+      dialogTitle: 'Pair a phone',
+      dialogDesc:
+        'Create a one-time pairing code, then open the companion page on your phone and enter it. The page can read session status, answer pending approvals, and send quick replies on this backend.',
+      backendUrl: 'Backend URL',
+      backendUrlHint: 'An address your phone can reach (LAN, tunnel, or remote connection).',
+      create: 'Create pairing code',
+      creating: 'Creating…',
+      createFailed: (detail: string) => `Could not create a pairing code${detail ? `: ${detail}` : ''}`,
+      codeLabel: 'Pairing code',
+      openHint: (url: string) => `Open ${url} on your phone and enter the code.`,
+      expires: (minutes: number) => `Single-use · expires in ${minutes} min.`,
+      copy: 'Copy',
+      done: 'Done'
     }
   },
 

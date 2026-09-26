@@ -3616,6 +3616,24 @@ export const frOverrides = {
       slack: 'Slack',
       email: 'E-mail',
       github_comment: 'Commentaire GitHub'
+    },
+    mobile: {
+      title: 'Compagnon mobile',
+      hint: 'Pilotez ce backend depuis un téléphone : statut, approbations, réponses rapides.',
+      pairButton: 'Jumeler un téléphone',
+      dialogTitle: 'Jumeler un téléphone',
+      dialogDesc:
+        'Créez un code de jumelage à usage unique, puis ouvrez la page compagnon sur votre téléphone et saisissez le code. La page peut lire le statut des sessions, répondre aux approbations en attente et envoyer des réponses rapides sur ce backend.',
+      backendUrl: 'URL du backend',
+      backendUrlHint: 'Une adresse joignable par le téléphone (LAN, tunnel ou connexion distante).',
+      create: 'Créer un code de jumelage',
+      creating: 'Création…',
+      createFailed: (detail: string) => `Impossible de créer le code de jumelage${detail ? ` : ${detail}` : ''}`,
+      codeLabel: 'Code de jumelage',
+      openHint: (url: string) => `Ouvrez ${url} sur votre téléphone et saisissez le code.`,
+      expires: (minutes: number) => `Usage unique · expire dans ${minutes} min.`,
+      copy: 'Copier',
+      done: 'Terminé'
     }
   },
   profiles: {

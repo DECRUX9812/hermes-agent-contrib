@@ -2721,6 +2721,23 @@ export interface Translations {
     createFailed: (detail: string) => string
     copy: string
     deliverOptions: Record<string, string>
+    mobile: {
+      title: string
+      hint: string
+      pairButton: string
+      dialogTitle: string
+      dialogDesc: string
+      backendUrl: string
+      backendUrlHint: string
+      create: string
+      creating: string
+      createFailed: (detail: string) => string
+      codeLabel: string
+      openHint: (url: string) => string
+      expires: (minutes: number) => string
+      copy: string
+      done: string
+    }
   }
 
   profiles: {
