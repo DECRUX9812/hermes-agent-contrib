@@ -36,6 +36,7 @@ import {
 import { SidebarPanelLabel } from '../../shell/sidebar-label'
 import { PaneEmptyState, RightSidebarSectionHeader } from '../index'
 
+import { AgentReviewMenu } from './agent-review-menu'
 import { ReviewFileTree } from './file-tree'
 import { ReviewShipBar } from './ship-bar'
 
@@ -94,6 +95,7 @@ export function ReviewPane() {
               <Codicon name={treeMode === 'tree' ? 'list-flat' : 'list-tree'} size="0.8125rem" />
             </Button>
           </Tip>
+          <AgentReviewMenu />
           <Tip label={c.stageAll}>
             <Button
               aria-label={c.stageAll}

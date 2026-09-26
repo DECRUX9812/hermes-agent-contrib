@@ -4266,6 +4266,14 @@ export const en: Translations = {
       agentShipUnavailable: "The chat that owns these changes isn't on screen.",
       agentShipPrompt:
         'Review the current changes, commit them with a clear conventional-commit message, push the branch, and open a pull request.',
+      agentReview: 'Have an agent review',
+      agentReviewPick: 'Review with',
+      agentReviewNoProfiles: 'No profiles found',
+      agentReviewPrompt:
+        'Review the diff in the attached file. Report concrete issues — bugs, regressions, unhandled cases — before style nits.',
+      agentReviewAttachment: 'Working-tree diff',
+      agentReviewUnavailable: 'Nothing to review — no repo or no pending diff.',
+      agentReviewReportTitle: (reviewer: string) => `Review by ${reviewer}`,
       newBranch: 'New branch',
       branchOffFrom: base => `New branch from ${base}`,
       switchTo: branch => `Switch to ${branch}`,

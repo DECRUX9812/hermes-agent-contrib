@@ -797,6 +797,30 @@ export function announceNewSessionDraftKey(toKey: string | null | undefined): vo
   announcedNewSessionDraftKey = toKey?.trim() || null
 }
 
+/** The `__new__:<profile>` bucket a draft moved FROM onto a real session key.
+ *  Features that seed fresh-chat drafts (agent review pass) subscribe to learn
+ *  which stored session their seed actually landed in. */
+export interface NewSessionDraftAdoption {
+  draftKey: string
+  sessionKey: string
+}
+
+const newSessionDraftAdoptionListeners = new Set<(adoption: NewSessionDraftAdoption) => void>()
+
+export function onNewSessionDraftAdopted(
+  listener: (adoption: NewSessionDraftAdoption) => void
+): () => void {
+  newSessionDraftAdoptionListeners.add(listener)
+
+  return () => newSessionDraftAdoptionListeners.delete(listener)
+}
+
+const emitNewSessionDraftAdopted = (fromKey: string, toKey: string): void => {
+  for (const listener of newSessionDraftAdoptionListeners) {
+    listener({ draftKey: fromKey, sessionKey: toKey })
+  }
+}
+
 /** Consume the announcement; move the `__new__` draft when it names `toKey`. */
 export function adoptNewSessionDraft(toKey: string | null | undefined): boolean {
   const announced = announcedNewSessionDraftKey
@@ -807,15 +831,27 @@ export function adoptNewSessionDraft(toKey: string | null | undefined): boolean 
   }
 
   if (draftsBySession.has(draftKey(null))) {
-    return migrateSessionDraft(null, toKey)
+    const fromKey = draftKey(null)
+    const adopted = migrateSessionDraft(null, toKey)
+
+    if (adopted) {
+      emitNewSessionDraftAdopted(fromKey, toKey.trim())
+    }
+
+    return adopted
   }
 
   // A profile re-aim mid-typing stashes the text under a different profile's
   // bucket than the send resolves — the draft still belongs to the send, so
   // take whichever fresh bucket holds it.
   const other = [...draftsBySession.keys()].find(key => key.startsWith(NEW_SESSION_DRAFT_KEY))
+  const adopted = Boolean(other) && migrateSessionDraft(other, toKey)
 
-  return !!other && migrateSessionDraft(other, toKey)
+  if (adopted && other) {
+    emitNewSessionDraftAdopted(other, toKey.trim())
+  }
+
+  return adopted
 }
 
 /**

@@ -3579,6 +3579,13 @@ export interface Translations {
       agentShip: string
       agentShipUnavailable: string
       agentShipPrompt: string
+      agentReview: string
+      agentReviewPick: string
+      agentReviewNoProfiles: string
+      agentReviewPrompt: string
+      agentReviewAttachment: string
+      agentReviewUnavailable: string
+      agentReviewReportTitle: (reviewer: string) => string
       newBranch: string
       branchOffFrom: (base: string) => string
       switchTo: (branch: string) => string

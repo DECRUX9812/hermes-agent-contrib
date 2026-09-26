@@ -4627,6 +4627,14 @@ export const esOverrides = {
       agentShipUnavailable: 'El chat al que pertenecen estos cambios no está en pantalla.',
       agentShipPrompt:
         'Revisa los cambios actuales, haz un commit con un mensaje convencional claro, envía la rama y abre un pull request.',
+      agentReview: 'Que un agente lo revise',
+      agentReviewPick: 'Revisar con',
+      agentReviewNoProfiles: 'No se encontraron perfiles',
+      agentReviewPrompt:
+        'Revisa el diff del archivo adjunto. Informa problemas concretos — errores, regresiones, casos sin manejar — antes que detalles de estilo.',
+      agentReviewAttachment: 'Diff del árbol de trabajo',
+      agentReviewUnavailable: 'Nada que revisar: no hay repositorio o no hay diff pendiente.',
+      agentReviewReportTitle: (reviewer: string) => `Revisión de ${reviewer}`,
       newBranch: 'Nueva rama',
       branchOffFrom: base => `Nueva rama desde ${base}`,
       switchTo: branch => `Cambiar a ${branch}`,

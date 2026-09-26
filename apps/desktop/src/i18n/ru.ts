@@ -3375,6 +3375,14 @@ export const ru = defineLocale({
       agentShipUnavailable: 'Чат, которому принадлежат эти изменения, не на экране.',
       agentShipPrompt:
         'Проверьте текущие изменения, закоммитьте их с ясным conventional-commit сообщением, запушьте ветку и создайте pull request.',
+      agentReview: 'Попросить агента проверить',
+      agentReviewPick: 'Проверить с',
+      agentReviewNoProfiles: 'Профили не найдены',
+      agentReviewPrompt:
+        'Проверьте diff во вложенном файле. Сообщите о конкретных проблемах — ошибках, регрессиях, необработанных случаях — прежде чем о стиле.',
+      agentReviewAttachment: 'Diff рабочего дерева',
+      agentReviewUnavailable: 'Нечего проверять: нет репозитория или нет ожидающего diff.',
+      agentReviewReportTitle: (reviewer: string) => `Проверка: ${reviewer}`,
       newBranch: 'Новая ветка',
       branchOffFrom: base => `Новая ветка от ${base}`,
       switchTo: branch => `Переключиться на ${branch}`,

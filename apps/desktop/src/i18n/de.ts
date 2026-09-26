@@ -4637,6 +4637,14 @@ export const deOverrides = {
       agentShipUnavailable: 'Der Chat, der diese Änderungen besitzt, ist nicht auf dem Bildschirm.',
       agentShipPrompt:
         'Überprüfe die aktuellen Änderungen, committe sie mit einer klaren Conventional-Commit-Message, pushe den Branch und öffne einen Pull Request.',
+      agentReview: 'Von einem Agenten prüfen lassen',
+      agentReviewPick: 'Prüfen mit',
+      agentReviewNoProfiles: 'Keine Profile gefunden',
+      agentReviewPrompt:
+        'Überprüfe den Diff in der angehängten Datei. Melde konkrete Probleme — Bugs, Regressionen, unbehandelte Fälle — vor Stil-Anmerkungen.',
+      agentReviewAttachment: 'Working-Tree-Diff',
+      agentReviewUnavailable: 'Nichts zu prüfen — kein Repository oder kein ausstehender Diff.',
+      agentReviewReportTitle: (reviewer: string) => `Review von ${reviewer}`,
       newBranch: 'Neuer Branch',
       branchOffFrom: base => `Neuer Branch von ${base}`,
       switchTo: branch => `Zu ${branch} wechseln`,
