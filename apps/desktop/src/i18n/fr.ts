@@ -1110,9 +1110,9 @@ export const frOverrides = {
       uiScaleDesc: (percent: number) =>
         `Redimensionne le texte et les contrôles dans toute l'application. Cmd/Ctrl avec +, - et 0 fonctionne aussi. Actuel : ${percent}%.`,
       sessionDensityTitle: 'Densité de la liste des sessions',
-      sessionDensityDesc:
-        'Choisissez la quantité de contexte affichée sous les titres de session dans la barre latérale.',
+      sessionDensityDesc: 'Choisissez combien chaque ligne de session affiche dans la barre latérale.',
       sessionDensityCompact: 'Compacte',
+      sessionDensityCondensed: 'Condensée',
       sessionDensityComfortable: 'Confortable',
       sessionDensityDetailed: 'Détaillée',
       tabStripTitle: "Barre d'onglets",

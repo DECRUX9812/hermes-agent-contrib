@@ -12,6 +12,7 @@ import type * as ChatRuntime from '@/lib/chat-runtime'
 import { SESSION_ROW_AREAS, type SessionRowSlotProps } from '@/lib/session-row-slots'
 import type * as Time from '@/lib/time'
 import type * as ComposerStatusStore from '@/store/composer-status'
+import { $sidebarRowMeta } from '@/store/layout'
 import type * as SessionStore from '@/store/session'
 import { setSessionListDensity } from '@/store/session-list-density'
 import { clearAllSessionStates, publishSessionState } from '@/store/session-states'
@@ -384,6 +385,82 @@ describe('SidebarSessionRow', () => {
     renderRow(makeSession({ title: 'Live row' }))
 
     expect(menuProps).toHaveBeenCalledWith(expect.objectContaining({ archived: false }))
+  })
+})
+
+// Condensed (roadmap #5): the one-line row collapses to dot + title, and the
+// meta the fuller densities paint folds into the title's tooltip so nothing
+// becomes unreachable.
+describe('SidebarSessionRow condensed density', () => {
+  afterEach(() => {
+    setSessionListDensity('compact')
+    $sidebarRowMeta.set(['preview', 'updated'])
+    vi.useRealTimers()
+  })
+
+  const condensedSession = () =>
+    makeSession({
+      continuation_kind: 'compression',
+      git_branch: 'main',
+      handoff_platform: 'telegram',
+      handoff_state: 'active',
+      message_count: 4,
+      model: 'vendor/claude-big',
+      title: 'Condensed row'
+    })
+
+  it('renders dot + title only — no meta line, no badges, still the ⋯ menu', () => {
+    setSessionListDensity('condensed')
+
+    const { container } = renderRow(condensedSession())
+
+    // Comfortable would paint "main · claude-big · 4 messages" under the title.
+    expect(screen.queryByText('main · claude-big · 4 messages')).toBeNull()
+    expect(container.querySelector('.codicon-layers')).toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Session actions' })).toBeTruthy()
+  })
+
+  it('still reaches the hidden meta through the title tooltip', () => {
+    vi.useFakeTimers()
+    setSessionListDensity('condensed')
+    renderRow(condensedSession())
+
+    const trigger = screen.getByText('Condensed row').closest('[data-slot="tooltip-trigger"]') as HTMLElement
+
+    act(() => {
+      fireEvent.pointerMove(trigger)
+      fireEvent.pointerEnter(trigger)
+      vi.advanceTimersByTime(300)
+    })
+
+    const tip = screen.getByRole('tooltip')
+    expect(tip.textContent).toContain('Condensed row')
+    expect(tip.textContent).toContain('main · claude-big · 4 messages')
+    expect(tip.textContent).toContain('Started on telegram')
+    expect(tip.textContent).toContain('compressed and continued')
+  })
+
+  it('keeps the overflow-only title tooltip when there is no meta to fold in', () => {
+    vi.useFakeTimers()
+    setSessionListDensity('condensed')
+    // Bare meta prefs leave nothing hidden, so the title keeps its
+    // overflow-only OverflowTip instead of the always-on condensed tip.
+    $sidebarRowMeta.set([])
+    const title = 'A very long session title that the sidebar cannot possibly fit'
+    renderRow(makeSession({ title }))
+
+    const trigger = screen.getByText(title).closest('[data-slot="tooltip-trigger"]') as HTMLElement
+    Object.defineProperty(trigger, 'scrollWidth', { configurable: true, value: 300 })
+    Object.defineProperty(trigger, 'clientWidth', { configurable: true, value: 100 })
+
+    act(() => {
+      fireEvent.pointerMove(trigger)
+      fireEvent.pointerEnter(trigger)
+      vi.advanceTimersByTime(700)
+    })
+
+    expect(screen.getByRole('tooltip').textContent).toContain(title)
   })
 })
 

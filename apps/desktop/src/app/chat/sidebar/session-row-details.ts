@@ -15,7 +15,7 @@ const modelLabel = (model: null | string) => model?.split('/').pop()?.trim() || 
 const oneLine = (value: null | string) => value?.replace(/\s+/g, ' ').trim() || null
 
 export const sessionRowEstimate = (density: SessionListDensity) =>
-  ({ compact: 28, comfortable: 45, detailed: 63 })[density]
+  ({ compact: 28, condensed: 22, comfortable: 45, detailed: 63 })[density]
 
 export function sessionRowDetails(session: SessionInfo, fmt: SessionRowFormatters): SessionRowDetails {
   const preview = oneLine(session.preview)

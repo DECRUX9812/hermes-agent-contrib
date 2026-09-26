@@ -39,7 +39,7 @@ const bindSetting = <T>(
 const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
 
 const isSessionListDensity = (value: unknown): value is SessionListDensity =>
-  value === 'compact' || value === 'comfortable' || value === 'detailed'
+  value === 'compact' || value === 'condensed' || value === 'comfortable' || value === 'detailed'
 
 const isTabStripDefault = (value: unknown): value is TabStripDefault =>
   value === 'auto' || value === 'always' || value === 'never'

@@ -837,8 +837,9 @@ export const zh = defineLocale({
       uiScaleDesc: (percent: number) =>
         `缩放整个应用的文字和界面。也可使用 Cmd/Ctrl 加 +、- 或 0 调整。当前：${percent}%`,
       sessionDensityTitle: '会话列表密度',
-      sessionDensityDesc: '选择侧边栏会话标题下方显示的信息量。',
+      sessionDensityDesc: '选择侧边栏中每个会话行显示的信息量。',
       sessionDensityCompact: '紧凑',
+      sessionDensityCondensed: '极简',
       sessionDensityComfortable: '舒适',
       sessionDensityDetailed: '详细',
       tabStripTitle: '标签栏',

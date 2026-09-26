@@ -707,8 +707,9 @@ export const ru = defineLocale({
       uiScaleDesc: percent =>
         `Масштабирует текст и элементы управления во всём приложении. Также работает Cmd/Ctrl с +, − и 0. Сейчас: ${percent}%.`,
       sessionDensityTitle: 'Плотность списка сеансов',
-      sessionDensityDesc: 'Выберите, сколько контекста показывать под заголовками сеансов в боковой панели.',
+      sessionDensityDesc: 'Выберите, сколько показывает каждая строка сеанса в боковой панели.',
       sessionDensityCompact: 'Компактно',
+      sessionDensityCondensed: 'Сжато',
       sessionDensityComfortable: 'Комфортно',
       sessionDensityDetailed: 'Подробно',
       tabStripTitle: 'Панель вкладок',

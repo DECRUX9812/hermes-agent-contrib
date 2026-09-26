@@ -1139,8 +1139,9 @@ export const en: Translations = {
       uiScaleDesc: (percent: number) =>
         `Scales text and controls across the whole app. Cmd/Ctrl with +, - and 0 also works. Current: ${percent}%.`,
       sessionDensityTitle: 'Session List Density',
-      sessionDensityDesc: 'Choose how much context appears beneath session titles in the sidebar.',
+      sessionDensityDesc: 'Choose how much each session row shows in the sidebar.',
       sessionDensityCompact: 'Compact',
+      sessionDensityCondensed: 'Condensed',
       sessionDensityComfortable: 'Comfortable',
       sessionDensityDetailed: 'Detailed',
       tabStripTitle: 'Tab Strip',
