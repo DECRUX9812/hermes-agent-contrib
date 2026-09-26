@@ -4,6 +4,8 @@ import json
 import sys
 import types
 
+import pytest
+
 from plugins.memory.mem0._setup import (
     parse_flags,
     build_oss_config,
@@ -11,6 +13,7 @@ from plugins.memory.mem0._setup import (
     _prompt_api_key,
     post_setup,
     _check_qdrant_path,
+    _ensure_pgvector,
 )
 
 
@@ -114,6 +117,33 @@ class TestBuildOSSConfig:
         ])
         oss, _ = build_oss_config(flags)
         assert oss["vector_store"]["config"]["path"] == "/data/qdrant"
+
+
+@pytest.mark.parametrize("configured_password", [None, "provided-local-password"])
+def test_local_pgvector_password_is_used_for_container_and_saved_config(monkeypatch, configured_password):
+    if configured_password is None:
+        monkeypatch.delenv("MEM0_PGVECTOR_PASSWORD", raising=False)
+    else:
+        monkeypatch.setenv("MEM0_PGVECTOR_PASSWORD", configured_password)
+    monkeypatch.setattr("plugins.memory.mem0._setup._check_pgvector", lambda host, port: (False, ""))
+    monkeypatch.setattr("plugins.memory.mem0._setup.shutil.which", lambda command: "/usr/bin/docker")
+    monkeypatch.setattr("plugins.memory.mem0._setup._pg_ready", lambda host, port, wait: True)
+    monkeypatch.setattr("builtins.input", lambda prompt: "")
+
+    calls = []
+
+    def fake_docker(*args, **kwargs):
+        calls.append(args)
+        return types.SimpleNamespace(returncode=1, stdout="")
+
+    monkeypatch.setattr("plugins.memory.mem0._setup._docker", fake_docker)
+    config = _ensure_pgvector()
+    run = next(args for args in calls if args[0] == "run")
+    assert f"POSTGRES_PASSWORD={config['password']}" in run
+    if configured_password is None:
+        assert len(config["password"]) >= 40
+    else:
+        assert config["password"] == configured_password
 
 
 class TestWriteEnv:
