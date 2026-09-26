@@ -2470,6 +2470,15 @@ export interface Translations {
     topSkills: string
     noSkillActivity: string
     actions: (count: string) => string
+    /** Opt-in toggle that reveals the spend rows (local aggregation only). */
+    costAnalytics: string
+    costAnalyticsHint: string
+    dailySpend: string
+    estimatedCost: string
+    perProfile: string
+    topSessions: string
+    loadedSessionsHint: string
+    noSpend: string
     logFile: string
     logLevel: string
     logSearchPlaceholder: string
