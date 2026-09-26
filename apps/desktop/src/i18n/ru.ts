@@ -2830,6 +2830,14 @@ export const ru = defineLocale({
       untitledChat: id => `Чат ${id}`,
       messageCount: count => `${count} ${RU_PLURAL(count, 'сообщение', 'сообщения', 'сообщений')}`,
       todoProgress: 'Задачи выполнены',
+      digest: {
+        agents: count => `Запущено агентов: ${count}`,
+        approve: command => `Подтвердить: ${command}`,
+        compacting: 'Сжатие диалога',
+        replying: 'Пишет ответ',
+        stalled: 'Всё ещё выполняется — давно нет активности',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: 'сейчас',
       ageDay: 'д',
       ageHour: 'ч',

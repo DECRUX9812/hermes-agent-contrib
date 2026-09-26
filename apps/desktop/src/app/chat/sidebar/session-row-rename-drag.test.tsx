@@ -61,7 +61,28 @@ vi.mock('@/hermes', async importOriginal => {
 
   return { ...actual, renameSession: vi.fn() }
 })
+
+// The live digest line (store/session-digest.ts) resolves its labels through
+// module-level `translateNow`, outside useI18n.
+const digestStrings = vi.hoisted((): Record<string, string | ((...args: unknown[]) => string)> => ({
+  'sidebar.row.backgroundRunning': 'Running in background',
+  'sidebar.row.digest.agents': count => `${count} agents running`,
+  'sidebar.row.digest.approve': command => `Approve: ${command}`,
+  'sidebar.row.digest.compacting': 'Summarizing thread',
+  'sidebar.row.digest.replying': 'Writing a reply',
+  'sidebar.row.digest.stalled': 'Still running — quiet for a while',
+  'sidebar.row.digest.todo': (done, total, task) => `${done}/${total} · ${task}`,
+  'sidebar.row.finishedUnread': 'Finished',
+  'sidebar.row.sessionRunning': 'Running',
+  'sidebar.row.waitingForAnswer': 'Waiting for answer'
+}))
+
 vi.mock('@/i18n', () => ({
+  translateNow: (key: string, ...args: unknown[]) => {
+    const value = digestStrings[key]
+
+    return typeof value === 'function' ? value(...args) : String(value ?? key)
+  },
   useI18n: () => ({
     t: {
       assistant: {

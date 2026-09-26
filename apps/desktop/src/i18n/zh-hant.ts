@@ -2842,6 +2842,14 @@ export const zhHant = defineLocale({
       deleting: '正在刪除…',
       deleted: '會話已刪除',
       untitledChat: id => `工作階段 ${id}`,
+      digest: {
+        agents: count => `${count} 個子代理正在執行`,
+        approve: command => `核准：${command}`,
+        compacting: '正在摘要對話',
+        replying: '正在撰寫回覆',
+        stalled: '仍在執行 — 已有一段時間沒有輸出',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: '剛才',
       ageDay: '天',
       ageHour: '時',

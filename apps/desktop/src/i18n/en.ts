@@ -3709,6 +3709,14 @@ export const en: Translations = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'message' : 'messages'}`,
       todoProgress: 'Tasks completed',
+      digest: {
+        agents: count => (count === 1 ? 'An agent is running' : `${count} agents running`),
+        approve: command => `Approve: ${command}`,
+        compacting: 'Summarizing thread',
+        replying: 'Writing a reply',
+        stalled: 'Still running — quiet for a while',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: 'now',
       ageDay: 'd',
       ageHour: 'h',

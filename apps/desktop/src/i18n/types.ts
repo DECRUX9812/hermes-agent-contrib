@@ -3139,6 +3139,14 @@ export interface Translations {
       untitledChat: (id: string) => string
       messageCount: (count: number) => string
       todoProgress: string
+      digest: {
+        agents: (count: number) => string
+        approve: (command: string) => string
+        compacting: string
+        replying: string
+        stalled: string
+        todo: (done: number, total: number, task: string) => string
+      }
       ageNow: string
       ageDay: string
       ageHour: string

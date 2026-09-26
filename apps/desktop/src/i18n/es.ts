@@ -4073,6 +4073,14 @@ export const esOverrides = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'mensaje' : 'mensajes'}`,
       todoProgress: 'Tareas completadas',
+      digest: {
+        agents: count => (count === 1 ? 'Un agente en ejecución' : `${count} agentes en ejecución`),
+        approve: command => `Aprobar: ${command}`,
+        compacting: 'Resumiendo la conversación',
+        replying: 'Escribiendo una respuesta',
+        stalled: 'Sigue en ejecución — en pausa desde hace un rato',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: 'ahora',
       ageDay: 'd',
       ageHour: 'h',

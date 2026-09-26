@@ -2629,6 +2629,14 @@ export const ja = defineLocale({
       deleting: '削除中…',
       deleted: 'セッションを削除しました',
       untitledChat: id => `セッション ${id}`,
+      digest: {
+        agents: count => `${count} つのエージェントが実行中`,
+        approve: command => `承認: ${command}`,
+        compacting: '会話を要約中',
+        replying: '返信を作成中',
+        stalled: '実行を継続中 — しばらく応答なし',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: 'たった今',
       ageDay: '日',
       ageHour: '時間',

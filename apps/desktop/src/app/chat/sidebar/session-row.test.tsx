@@ -13,6 +13,7 @@ import { SESSION_ROW_AREAS, type SessionRowSlotProps } from '@/lib/session-row-s
 import type * as Time from '@/lib/time'
 import type * as ComposerStatusStore from '@/store/composer-status'
 import type * as SessionStore from '@/store/session'
+import { setSessionListDensity } from '@/store/session-list-density'
 import { clearAllSessionStates, publishSessionState } from '@/store/session-states'
 import type * as SessionStatesStore from '@/store/session-states'
 import type * as WindowsStore from '@/store/windows'
@@ -22,7 +23,28 @@ import { SidebarSessionRow } from './session-row'
 
 afterEach(cleanup)
 
+// The live digest line (store/session-digest.ts) resolves its labels through
+// module-level `translateNow`, outside useI18n — so the mock has to answer the
+// same key set that `t.sidebar.row` carries below.
+const digestStrings = vi.hoisted((): Record<string, string | ((...args: unknown[]) => string)> => ({
+  'sidebar.row.backgroundRunning': 'Running in background',
+  'sidebar.row.digest.agents': count => `${count} agents running`,
+  'sidebar.row.digest.approve': command => `Approve: ${command}`,
+  'sidebar.row.digest.compacting': 'Summarizing thread',
+  'sidebar.row.digest.replying': 'Writing a reply',
+  'sidebar.row.digest.stalled': 'Still running — quiet for a while',
+  'sidebar.row.digest.todo': (done, total, task) => `${done}/${total} · ${task}`,
+  'sidebar.row.finishedUnread': 'Finished',
+  'sidebar.row.sessionRunning': 'Running',
+  'sidebar.row.waitingForAnswer': 'Waiting for answer'
+}))
+
 vi.mock('@/i18n', () => ({
+  translateNow: (key: string, ...args: unknown[]) => {
+    const value = digestStrings[key]
+
+    return typeof value === 'function' ? value(...args) : String(value ?? key)
+  },
   useI18n: () => ({
     t: {
       sidebar: {
@@ -200,6 +222,65 @@ describe('SidebarSessionRow running arc', () => {
     const { container } = renderRow(makeSession({ title: 'Running' }))
 
     expect(arc(container)).toBeTruthy()
+  })
+})
+
+// The digest line claims the row's lowest sub-line while the session has
+// something to say and returns the slot to the static text when it doesn't.
+// Only non-compact densities carry the line; the store defaults to compact.
+describe('SidebarSessionRow live digest', () => {
+  afterEach(() => {
+    clearAllSessionStates()
+    setSessionListDensity('compact')
+  })
+
+  const workingOn = (command: string) =>
+    publishSessionState('rt1', {
+      ...createClientSessionState('s1', [
+        {
+          id: 'a1',
+          parts: [{ type: 'tool-call', toolCallId: 't1', toolName: 'terminal', args: { command } }],
+          pending: true,
+          role: 'assistant'
+        } as never
+      ]),
+      busy: true
+    })
+
+  it("paints the session's current action on the row's second line", () => {
+    setSessionListDensity('comfortable')
+    workingOn('npm test')
+
+    const { container } = renderRow(makeSession({ id: 's1', title: 'Working row' }))
+
+    expect(container.textContent).toContain('Running npm test')
+  })
+
+  it('keeps the metadata line for a session with nothing to say', () => {
+    setSessionListDensity('comfortable')
+
+    const { container } = renderRow(makeSession({ id: 's1', message_count: 3, title: 'Quiet row' }))
+
+    expect(container.textContent).toContain('3 messages')
+  })
+
+  it('swaps the action line for the finished preview when the turn settles', () => {
+    setSessionListDensity('comfortable')
+    workingOn('npm test')
+
+    const { container } = renderRow(makeSession({ id: 's1', message_count: 3, title: 'Settling row' }))
+
+    expect(container.textContent).toContain('Running npm test')
+
+    // A settled turn the user wasn't watching is unread. Sessions nothing
+    // references release their transcript on settle, so the line switches to
+    // the unread marker — not back to the stale action or the metadata.
+    act(() => {
+      publishSessionState('rt1', { ...createClientSessionState('s1'), busy: false })
+    })
+
+    expect(container.textContent).not.toContain('Running npm test')
+    expect(container.textContent).toContain('Finished')
   })
 })
 
