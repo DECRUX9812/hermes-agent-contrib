@@ -3005,7 +3005,14 @@ export const frOverrides = {
     emptyDesc: 'Quand une session travaille — sur n’importe quel profil ou gateway — elle apparaît ici.',
     untitledRun: 'Exécution sans titre',
     railPill: count => (count === 1 ? '1 exécution' : `${count} exécutions`),
-    close: 'Fermer'
+    close: 'Fermer',
+    fanOut: 'Diffuser',
+    fanOutTitle: 'Envoyer un prompt aux agents choisis',
+    fanOutPlaceholder: 'Un prompt, chaque agent choisi…',
+    fanOutNoAgents: 'Aucun agent joignable à choisir',
+    fanOutClose: 'Replier',
+    fanOutSend: count => (count === 1 ? 'Envoyer à 1 agent' : `Envoyer à ${count} agents`),
+    fanOutFailed: 'Impossible de créer une session pour l’un des agents choisis'
   },
   commandCenter: {
     close: 'Fermer le centre de commandes',

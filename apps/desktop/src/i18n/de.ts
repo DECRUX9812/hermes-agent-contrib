@@ -2995,7 +2995,14 @@ export const deOverrides = {
     emptyDesc: 'Sobald eine Sitzung arbeitet — in einem beliebigen Profil oder Gateway — erscheint sie hier.',
     untitledRun: 'Unbenannter Lauf',
     railPill: count => (count === 1 ? '1 Lauf' : `${count} Läufe`),
-    close: 'Schließen'
+    close: 'Schließen',
+    fanOut: 'Auffächern',
+    fanOutTitle: 'Einen Prompt an die ausgewählten Agenten senden',
+    fanOutPlaceholder: 'Ein Prompt, jeder ausgewählte Agent…',
+    fanOutNoAgents: 'Keine erreichbaren Agenten zur Auswahl',
+    fanOutClose: 'Einklappen',
+    fanOutSend: count => (count === 1 ? 'An 1 Agenten senden' : `An ${count} Agenten senden`),
+    fanOutFailed: 'Für einen der ausgewählten Agenten konnte keine Sitzung erstellt werden'
   },
   commandCenter: {
     close: 'Command Center schließen',

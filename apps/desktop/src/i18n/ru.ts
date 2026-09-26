@@ -1878,7 +1878,14 @@ export const ru = defineLocale({
     emptyDesc: 'Когда сессия начинает работу — в любом профиле или шлюзе — она появляется здесь.',
     untitledRun: 'Запуск без названия',
     railPill: count => `${count} ${RU_PLURAL(count, 'запуск', 'запуска', 'запусков')}`,
-    close: 'Закрыть'
+    close: 'Закрыть',
+    fanOut: 'Разослать',
+    fanOutTitle: 'Отправить один промпт выбранным агентам',
+    fanOutPlaceholder: 'Один промпт для каждого выбранного агента…',
+    fanOutNoAgents: 'Нет доступных агентов для выбора',
+    fanOutClose: 'Свернуть',
+    fanOutSend: count => `Отправить ${count} ${RU_PLURAL(count, 'агенту', 'агентам', 'агентам')}`,
+    fanOutFailed: 'Не удалось создать сессию для одного из выбранных агентов'
   },
   commandCenter: {
     close: 'Закрыть командный центр',

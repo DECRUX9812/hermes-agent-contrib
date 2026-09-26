@@ -1,4 +1,5 @@
 import { useStore } from '@nanostores/react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { useElapsedSeconds } from '@/components/chat/activity-timer'
@@ -16,19 +17,32 @@ import { useFleetRoster } from '../chat/sidebar/use-fleet-roster'
 import { openSession } from '../open-session'
 import { Panel, PanelEmpty, PanelHeader } from '../overlays/panel'
 
+import { FanOutPanel } from './fan-out'
+import type { FanOutTarget } from './fan-out-model'
+
 /**
  * The fleet run roster — every active run across profiles and gateways as a
- * card. Roadmap #19: read-only by design, cards are click-through only (no
- * actions); a card's only verb is "take me to that run". Data comes from
+ * card. Roadmap #19: run cards stay click-through only (a card's only verb is
+ * "take me to that run"); roadmap #21 adds the fan-out panel, which mints NEW
+ * sessions rather than acting on the listed runs. Data comes from
  * `$fleetRuns`, a projection of stores the shell already maintains, so the
  * overlay paints live without owning any fetch of its own beyond the fleet
  * roster refresh the rail already performs on demand.
  */
-export function RosterView({ onClose }: { onClose: () => void }) {
+export function RosterView({
+  onClose,
+  onFanOut
+}: {
+  onClose: () => void
+  /** Roadmap #21: send one prompt to every explicitly-picked agent as sibling
+   *  tiles. Wiring owns the creates + submits; absent on hosts that can't. */
+  onFanOut?: (targets: FanOutTarget[], text: string) => void
+}) {
   const { t } = useI18n()
   const navigate = useNavigate()
   const runs = useStore($fleetRuns)
   const sessions = useStore($sessions)
+  const [fanOutOpen, setFanOutOpen] = useState(false)
 
   // Same on-demand contract as the rail: pull once on mount and on window
   // focus, never on a timer.
@@ -58,24 +72,48 @@ export function RosterView({ onClose }: { onClose: () => void }) {
 
   return (
     <Panel closeLabel={t.roster.close} onClose={onClose}>
+      <PanelHeader
+        actions={
+          onFanOut && !fanOutOpen ? (
+            <button
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-(--ui-row-hover-background) hover:text-foreground"
+              onClick={() => setFanOutOpen(true)}
+              type="button"
+            >
+              <Codicon name="broadcast" size="0.875rem" />
+              {t.roster.fanOut}
+            </button>
+          ) : null
+        }
+        subtitle={t.roster.subtitle}
+        title={t.roster.title}
+      />
+      {onFanOut && fanOutOpen ? (
+        <FanOutPanel
+          onCollapse={() => setFanOutOpen(false)}
+          onSend={(targets, text) => {
+            // The new tabs land behind the overlay; close so they're the
+            // surface the fan-out visibly fills.
+            onClose()
+            onFanOut(targets, text)
+          }}
+        />
+      ) : null}
       {runs.length === 0 ? (
         <PanelEmpty description={t.roster.emptyDesc} icon="pulse" title={t.roster.emptyTitle} />
       ) : (
-        <>
-          <PanelHeader subtitle={t.roster.subtitle} title={t.roster.title} />
-          <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pr-1">
-            <div className="grid min-w-0 gap-1">
-              {runs.map(run => (
-                <FleetRunCard
-                  key={run.sessionId ?? `${run.profile}:${run.title}`}
-                  onOpen={() => openRun(run)}
-                  run={run}
-                  session={sessions.find(row => row.id === run.sessionId) ?? null}
-                />
-              ))}
-            </div>
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain pr-1">
+          <div className="grid min-w-0 gap-1">
+            {runs.map(run => (
+              <FleetRunCard
+                key={run.sessionId ?? `${run.profile}:${run.title}`}
+                onOpen={() => openRun(run)}
+                run={run}
+                session={sessions.find(row => row.id === run.sessionId) ?? null}
+              />
+            ))}
           </div>
-        </>
+        </div>
       )}
     </Panel>
   )

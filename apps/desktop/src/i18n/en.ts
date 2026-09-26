@@ -2696,7 +2696,14 @@ export const en: Translations = {
     emptyDesc: 'When a session starts working — on any profile or gateway — it shows up here.',
     untitledRun: 'Untitled run',
     railPill: count => (count === 1 ? '1 run' : `${count} runs`),
-    close: 'Close'
+    close: 'Close',
+    fanOut: 'Fan out',
+    fanOutTitle: 'Send one prompt to the picked agents',
+    fanOutPlaceholder: 'One prompt, every picked agent…',
+    fanOutNoAgents: 'No reachable agents to pick',
+    fanOutClose: 'Collapse',
+    fanOutSend: count => (count === 1 ? 'Send to 1 agent' : `Send to ${count} agents`),
+    fanOutFailed: 'Couldn’t create a session for one of the picked agents'
   },
 
   commandCenter: {

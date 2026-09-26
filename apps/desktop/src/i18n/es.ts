@@ -2987,7 +2987,14 @@ export const esOverrides = {
     emptyDesc: 'Cuando una sesión empieza a trabajar — en cualquier perfil o gateway — aparece aquí.',
     untitledRun: 'Ejecución sin título',
     railPill: count => (count === 1 ? '1 ejecución' : `${count} ejecuciones`),
-    close: 'Cerrar'
+    close: 'Cerrar',
+    fanOut: 'Difundir',
+    fanOutTitle: 'Enviar un prompt a los agentes elegidos',
+    fanOutPlaceholder: 'Un prompt, cada agente elegido…',
+    fanOutNoAgents: 'No hay agentes accesibles para elegir',
+    fanOutClose: 'Contraer',
+    fanOutSend: count => (count === 1 ? 'Enviar a 1 agente' : `Enviar a ${count} agentes`),
+    fanOutFailed: 'No se pudo crear una sesión para uno de los agentes elegidos'
   },
   commandCenter: {
     close: 'Cerrar Centro de comandos',
