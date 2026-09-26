@@ -31,6 +31,7 @@ import { ArchiveOff } from '@/lib/icons'
 import { isSubmitEnter } from '@/lib/ime'
 import { PROFILE_SWATCHES } from '@/lib/profile-color'
 import { exportSession } from '@/lib/session-export'
+import { exportSessionMarkdown, sessionMarkdownText } from '@/lib/session-markdown'
 import { activeGateway } from '@/store/gateway'
 import { notify, notifyError } from '@/store/notifications'
 import { $projectTree, moveSessionToProject, projectIdForCwd, projectRootCwd } from '@/store/projects'
@@ -361,6 +362,15 @@ function useSessionActions({
         triggerHaptic('selection')
         void exportSession(sessionId, { profile, title })
       }
+    }),
+    spec({
+      disabled: !sessionId,
+      icon: 'markdown',
+      label: r.exportMarkdown,
+      onSelect: () => {
+        triggerHaptic('selection')
+        void exportSessionMarkdown(sessionId, { profile, title })
+      }
     })
   ]
 
@@ -497,6 +507,15 @@ function useSessionActions({
       />
       <kit.Separator />
       {workItems.map(item => renderActionItem(kit, item))}
+      <CopyButton
+        appearance={kit.copyAppearance}
+        disabled={!sessionId}
+        iconClassName="size-3.5 text-current"
+        key={r.copyMarkdown}
+        label={r.copyMarkdown}
+        onCopyError={err => notifyError(err, t.common.copyFailed)}
+        text={async () => sessionMarkdownText(sessionId, { profile, title })}
+      />
       <kit.Sub>
         <kit.SubTrigger disabled={!sessionId}>
           <Codicon name="folder" size="0.875rem" />
