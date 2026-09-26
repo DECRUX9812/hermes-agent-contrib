@@ -3612,7 +3612,7 @@ export const zh = defineLocale({
       '描述你需要什么',
       '我们该处理什么？',
       '随便问点什么',
-      '从一个目标开始'
+      '说出你想要的结果'
     ],
     followUpPlaceholders: [
       '发送后续消息',
@@ -3818,6 +3818,16 @@ export const zh = defineLocale({
       tip: skill => `你提到了“${skill}” — 点击以该技能开头`,
       done: skill => `已添加 /${skill}`,
       doneTip: '发送时将加载该技能'
+    },
+    goalChips: {
+      planLabel: '先制定计划',
+      planTip: '将其变为 /plan — 在开始工作前把分步计划写入 .hermes/plans/',
+      planDone: '计划就绪',
+      planDoneTip: '发送时执行计划',
+      goalLabel: '设为目标',
+      goalTip: '将其变为 /goal — Hermes 会持续朝这个结果努力',
+      goalDone: '目标就绪',
+      goalDoneTip: '发送时目标生效'
     },
     githubSuggestions: {
       label: '设置 GitHub',

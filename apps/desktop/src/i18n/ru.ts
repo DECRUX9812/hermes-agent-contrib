@@ -2950,7 +2950,7 @@ export const ru = defineLocale({
       'Опишите, что нужно',
       'Что обсудим?',
       'Спросите о чём угодно',
-      'Начните с цели'
+      'Назовите нужный результат'
     ],
     followUpPlaceholders: [
       'Отправьте продолжение',
@@ -3151,6 +3151,16 @@ export const ru = defineLocale({
       tip: skill => `Вы упомянули «${skill}» — нажмите, чтобы начать с этого навыка`,
       done: skill => `Добавлено /${skill}`,
       doneTip: 'Навык загрузится при отправке'
+    },
+    goalChips: {
+      planLabel: 'Сначала план',
+      planTip: 'Превращает в /plan — пошаговый план в .hermes/plans/ до начала работы',
+      planDone: 'План готов',
+      planDoneTip: 'План выполняется при отправке',
+      goalLabel: 'Сделать целью',
+      goalTip: 'Превращает в /goal — постоянный результат, к которому Hermes идёт',
+      goalDone: 'Цель готова',
+      goalDoneTip: 'Цель вступит в силу при отправке'
     },
     githubSuggestions: {
       label: 'Настроить GitHub',

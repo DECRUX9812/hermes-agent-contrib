@@ -4200,7 +4200,7 @@ export const deOverrides = {
       'Beschreiben Sie, was Sie brauchen',
       'Was sollen wir angehen?',
       'Fragen Sie irgendetwas',
-      'Beginnen Sie mit einem Ziel'
+      'Nennen Sie das gewünschte Ergebnis'
     ],
     followUpPlaceholders: [
       'Folge senden',
@@ -4412,6 +4412,16 @@ export const deOverrides = {
       tip: skill => `Sie haben „${skill}“ erwähnt – klicken, um mit diesem Skill zu beginnen`,
       done: skill => `/skill hinzugefügt: ${skill}`,
       doneTip: 'Die Fähigkeit wird beim Senden geladen'
+    },
+    goalChips: {
+      planLabel: 'Erst planen',
+      planTip: 'Macht daraus /plan — ein Schritt-für-Schritt-Plan in .hermes/plans/, bevor etwas ausgeführt wird',
+      planDone: 'Plan bereit',
+      planDoneTip: 'Der Plan läuft beim Senden',
+      goalLabel: 'Als Ziel setzen',
+      goalTip: 'Macht daraus /goal — ein dauerhaftes Ergebnis, auf das Hermes hinarbeitet',
+      goalDone: 'Ziel bereit',
+      goalDoneTip: 'Das Ziel greift beim Senden'
     },
     githubSuggestions: {
       label: 'GitHub einrichten',
