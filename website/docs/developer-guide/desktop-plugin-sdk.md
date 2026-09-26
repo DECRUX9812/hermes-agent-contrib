@@ -270,6 +270,37 @@ data: {
 `'top' | 'bottom' | 'left' | 'right' | 'center'`. Declare a `width`/`height` so
 the pane doesn't claim half the zone.
 
+The whole `data` payload is typed as **`PaneContribution`** (dock hints are
+`PaneDockHint`, placements `PanePlacementHint`) — in TypeScript, author it with
+`satisfies` so a misspelled flag is a compile error instead of a silently
+ignored hint:
+
+```typescript
+import { PANES_AREA, type PaneContribution } from '@hermes/plugin-sdk'
+
+ctx.register({
+  id: 'pane',
+  area: PANES_AREA,
+  title: 'my pane',
+  data: {
+    placement: 'right',
+    width: '260px',
+    collapsible: true, // leaves the grid on narrow viewports (edge overlay)
+    hideOnly: true, // no ✕/Close verb — Show/Hide instead (standing chrome)
+    tabTitle: () => jsx(MyTabLabel, {}), // live label, beats `title`
+    tabTitleText: () => 'my pane', // string form for menus/drag ghost
+    dock: { pane: 'sessions', pos: 'center', enforce: true }
+  } satisfies PaneContribution,
+  render: () => jsx(MyPane, {})
+})
+```
+
+`PaneContribution` also covers `lifecycleKeepAlive` (stay mounted while hidden),
+`headerVeto` + `headerContent` (page-owned chrome), `tabLead`/`tabTrail`/
+`stripTrail`/`newTab`/`tabWrap`/`tabMenuPrefix`/`tabDrag` (tab + strip
+behavior), `revealAliases`, floating `anchor`, and the `PaneSizing` fields
+(`width`/`height`/`minWidth`/`maxWidth`/`minHeight`/`maxHeight`).
+
 Closing the only pane contributed by a plugin disables that plugin, which can
 be re-enabled from **Capabilities → Plugins**. When a plugin contributes multiple
 panes, closing one dismisses only that pane and leaves the plugin's other panes,
@@ -1549,8 +1580,8 @@ pipeline as a trust boundary.
 |----------|---------|
 | Host | `host` (`.state.*`, `.settings`, `.notify`, `.notifyError`, `.navigate`, `.onEvent`, `.logs`, `.status`, `.restartGateway`, `.request`, `.composer`, `.sessions`, `.skills`, `.toolsets`, `.profiles`, `.pluginDecisions`) |
 | Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `HermesOpenTarget`, `Contribution` |
-| Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `COMPOSER_AREAS`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS` |
-| Area payloads | `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution` |
+| Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `LAYOUTS_AREA`, `COMPOSER_AREAS`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS` |
+| Area payloads | `PaneContribution` (+ `PaneDockHint`, `PanePlacementHint`, `PaneSizing`), `LayoutNode`, `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `ComposerModelPillProvider`, `ChatEmptyContribution`, `TranscriptDirectiveContribution`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution`, `ProfileGroupHeaderContribution`, `SidebarListTopContribution` |
 | React / state | `useValue`, `atom`, `computed`, `useQuery`, `useMutation`, `useQueryClient`, `queryClient`, `Contribute` |
 | Theming | `useTheme`, `requestTheme`, `setAccentOverride`, `$accentOverride`, `retintTheme`, `themeHue`, `DesktopTheme`, `DesktopThemeColors`, plus OKLCH math (`hexToOklch`, `oklchToHex`, `oklchToSrgb255`, `mixOklab`, `maxChroma`, `hueDelta`, `normalizeHex`) and sRGB measures (`contrastRatio` — `number | null`, null for unparseable input — `readableOn`) |
 | UI kit | `Button`, `Input`, `Textarea`, `Select*`, `Switch`, `Checkbox`, `SegmentedControl`, `Tabs*`, `Dialog*`, `ConfirmDialog`, `DropdownMenu*`, `ContextMenu*`, `Popover*`, `Tip`/`Tooltip*`, `Badge`, `Kbd`/`KbdGroup`, `SearchField`, `ScrollArea`, `Separator`, `Skeleton`, `GlyphSpinner`, `Loader`, `EmptyState`, `ErrorState`, `CopyButton`, `StatusDot`, `LogView`, `Codicon`, `DecodeText`, `SandboxedFrame` |

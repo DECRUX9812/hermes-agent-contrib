@@ -46,6 +46,7 @@ import {
 } from './model'
 import { FLOATING_PLACEMENT } from './renderer/floating-rect'
 import { tabStripVisibleForZone } from './renderer/strip-visibility'
+import { paneChrome, type PaneContribution } from './renderer/track-model'
 
 // v2: v1 trees were saved against placeholder panes with index-order zone
 // assignment (chat could land in a corner cell). Retire them wholesale.
@@ -578,15 +579,13 @@ export function trackActiveTreeGroup(): () => void {
 }
 
 const isUncloseablePane = (paneId: string): boolean =>
-  Boolean(
-    (registry.getArea('panes').find(c => c.id === paneId)?.data as { uncloseable?: boolean } | undefined)?.uncloseable
-  )
+  Boolean(paneChrome(registry.getArea('panes').find(c => c.id === paneId)).uncloseable)
 
 /** Hide-only chrome tabs (sessions / Bots): excluded from every close verb —
  *  Close-others / Close-all sweeping the sessions strip must not take standing
  *  chrome with it. They hide through `setStripTabHidden` instead. */
 export const isHideOnlyPane = (paneId: string): boolean =>
-  Boolean((registry.getArea('panes').find(c => c.id === paneId)?.data as { hideOnly?: boolean } | undefined)?.hideOnly)
+  Boolean(paneChrome(registry.getArea('panes').find(c => c.id === paneId)).hideOnly)
 
 /** A pane that belongs to a CHAT tab strip — the workspace or a session tile.
  *  Chat surfaces only: this gates where a session may DOCK (drops, ⌘T's "+"),
@@ -600,8 +599,7 @@ export const isSessionStripPane = (paneId: string): boolean =>
  *  over a Browser/page zone while ⌘1…⌘9 worked. Standing side chrome (files /
  *  sessions / terminal) isn't 'main', so those zones still fall through. */
 export const isMainStripPane = (paneId: string): boolean =>
-  (registry.getArea('panes').find(c => c.id === paneId)?.data as { placement?: string } | undefined)?.placement ===
-  'main'
+  paneChrome(registry.getArea('panes').find(c => c.id === paneId)).placement === 'main'
 
 /** Whether a zone may receive a SESSION drop — an existing session dragged
  *  from the sidebar, or a brand-new one dropped from a create-drag ("New
@@ -779,9 +777,9 @@ export function hideOnlyZoneTabs(groupId: string): { hidden: boolean; id: string
 
   return group.panes.flatMap(id => {
     const pane = panes.find(p => p.id === id)
-    const chrome = pane?.data as { hideOnly?: boolean; tabTitleText?: () => string } | undefined
+    const chrome = paneChrome(pane)
 
-    if (!chrome?.hideOnly) {
+    if (!chrome.hideOnly) {
       return []
     }
 
@@ -836,7 +834,7 @@ export function shownPanesInGroup(group: { panes: readonly string[] }): string[]
     if (
       typeof window !== 'undefined' &&
       window.matchMedia?.(SIDEBAR_COLLAPSE_MEDIA_QUERY).matches &&
-      Boolean((pane.data as { collapsible?: boolean } | undefined)?.collapsible)
+      Boolean(paneChrome(pane).collapsible)
     ) {
       return false
     }
@@ -954,9 +952,7 @@ function rootRow(): SplitNode | null {
 
   const hasMain = (node: LayoutNode): boolean => {
     if (node.type === 'group') {
-      return node.panes.some(
-        id => (panes.find(p => p.id === id)?.data as { placement?: string } | undefined)?.placement === 'main'
-      )
+      return node.panes.some(id => paneChrome(panes.find(p => p.id === id)).placement === 'main')
     }
 
     return node.children.some(hasMain)
@@ -982,11 +978,7 @@ export function paneRootSide(paneId: string): null | TreeSide {
   const index = row.children.findIndex(c => allPaneIds(c).includes(paneId))
 
   const mainIndices = row.children.flatMap((child, i) =>
-    allPaneIds(child).some(
-      id =>
-        id === 'workspace' ||
-        (panes.find(p => p.id === id)?.data as { placement?: string } | undefined)?.placement === 'main'
-    )
+    allPaneIds(child).some(id => id === 'workspace' || paneChrome(panes.find(p => p.id === id)).placement === 'main')
       ? [i]
       : []
   )
@@ -1183,7 +1175,7 @@ function restoreDismissedSidePanes(side: TreeSide) {
       continue
     }
 
-    const placement = (pane.data as { placement?: string } | undefined)?.placement
+    const placement = paneChrome(pane).placement
     const paneSide = placement === 'left' ? 'left' : placement === 'main' ? null : 'right'
 
     if (paneSide === side) {
@@ -1411,18 +1403,6 @@ export function declareDefaultTree(tree: LayoutNode, simpleTree: LayoutNode = tr
  * boots), so user rearrangement wins from then on and plugin reloads keep
  * the pane where the user left it.
  */
-interface PaneDockHint {
-  pane: string
-  pos: DropPosition
-  /** Center docks: stack BEFORE this pane id (the strip divider's slot). */
-  before?: null | string
-  /** Enforced dock invariant: the pane is re-homed onto this hint's anchor
-   *  on EVERY boot when it isn't already in the declared relationship —
-   *  no one-time token, and user placement does not exempt it. Once per
-   *  adoption lifetime (per boot), so an intra-session drag sticks until the
-   *  next boot. See `enforceDockedPanes`. */
-  enforce?: boolean
-}
 
 // The retired one-time dock-heal ledger (`heal: '<token>'` hints). Its guards
 // (token burned even when the heal was skipped; $userPlacedPanes exempt) left
@@ -1465,7 +1445,7 @@ export function resetEnforcedDocks(): void {
  */
 function enforceDockedPanes(
   tree: LayoutNode,
-  dataOf: (paneId: string) => { dock?: PaneDockHint; placement?: string } | undefined
+  dataOf: (paneId: string) => PaneContribution | undefined
 ): LayoutNode {
   let next = tree
 
@@ -1534,9 +1514,11 @@ export function adoptContributedPanes(): void {
 
   const panes = registry.getArea('panes')
 
-  const dataOf = (paneId: string) =>
-    panes.find(c => c.id === paneId)?.data as
-      { defaultCollapsed?: boolean; dock?: PaneDockHint; placement?: string } | undefined
+  const dataOf = (paneId: string): PaneContribution | undefined => {
+    const contribution = panes.find(c => c.id === paneId)
+
+    return contribution ? paneChrome(contribution) : undefined
+  }
 
   const placementOf = (paneId: string) => dataOf(paneId)?.placement
   const mainId = panes.find(c => placementOf(c.id) === 'main')?.id
@@ -1696,9 +1678,9 @@ export function dockPaneBeside(paneId: string, anchorPaneId: string) {
   // The uncloseable main workspace (session tiles are placement:'main' too,
   // but closeable, so the uncloseable flag disambiguates).
   const mainId = panes.find(c => {
-    const data = c.data as { placement?: string; uncloseable?: boolean } | undefined
+    const data = paneChrome(c)
 
-    return data?.placement === 'main' && data.uncloseable
+    return data.placement === 'main' && data.uncloseable
   })?.id
 
   const order = allPaneIds(tree)

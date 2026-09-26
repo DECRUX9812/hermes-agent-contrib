@@ -81,8 +81,9 @@ The ONLY import surface is `@hermes/plugin-sdk` (plus `react` /
   `host.status()`, `haptic('tap')`.
 - `ctx.register({ id, area, order?, render?, data? })` — contribute UI.
   Key areas: `'statusBar.right'`/`'statusBar.left'` (chips),
-  `'panes'` (layout zones — set `title` and
-  `data: { placement, dock?, width?, height? }`; the pane auto-joins a
+  `PANES_AREA`/`'panes'` (layout zones — set `title` and
+  `data: { placement, dock?, width?, height? }`, typed as `PaneContribution`
+  for TypeScript plugins; the pane auto-joins a
   matching zone), `PALETTE_AREA` (⌘K commands), `KEYBINDS_AREA` (rebindable
   actions), `THEMES_AREA` (`data` is a full `DesktopTheme`).
 - THEMES: registering one only lists it in the picker. Select it with
