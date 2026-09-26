@@ -4475,6 +4475,25 @@ export interface Translations {
       commentTitle: (n: number) => string
       saveComment: string
       cancelComment: string
+      record: string
+      recordStop: string
+      recording: (count: number) => string
+      recordNeedPage: string
+      recordFailed: string
+      recordTitle: string
+      recordDesc: string
+      recordName: string
+      recordNamePlaceholder: string
+      recordNameHint: (slug: string) => string
+      recordDescLabel: string
+      recordDescPlaceholder: string
+      recordDescHint: string
+      recordSteps: (count: number) => string
+      recordEmpty: string
+      recordSave: string
+      recordSaving: string
+      recordSaved: (name: string) => string
+      recordSaveFailed: string
     }
   }
 

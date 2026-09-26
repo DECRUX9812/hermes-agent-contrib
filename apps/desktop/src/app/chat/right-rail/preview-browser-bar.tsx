@@ -44,6 +44,9 @@ interface PreviewBrowserBarProps {
   onToggleAnnotate?: () => void
   onToggleConsole: () => void
   onToggleDevTools: () => void
+  onToggleRecord?: () => void
+  recordCount?: number
+  recording?: boolean
   /** The page's CURRENT address (it moves as the user navigates), not the
    *  target the tab was opened with. */
   url: string
@@ -113,6 +116,9 @@ export function PreviewBrowserBar({
   onToggleAnnotate,
   onToggleConsole,
   onToggleDevTools,
+  onToggleRecord,
+  recordCount = 0,
+  recording = false,
   url
 }: PreviewBrowserBarProps) {
   const { t } = useI18n()
@@ -231,6 +237,28 @@ export function PreviewBrowserBar({
           style={{ background: ANNOTATE_BLUE }}
         >
           {copy.commenting}
+        </span>
+      ) : null}
+      {onToggleRecord ? (
+        <PaneStripGlyph
+          active={recording}
+          icon={
+            <Codicon
+              className={cn(recording && 'text-destructive')}
+              name="record"
+              size="0.8125rem"
+            />
+          }
+          label={recording ? copy.recordStop : copy.record}
+          onSelect={onToggleRecord}
+        />
+      ) : null}
+      {recording ? (
+        <span
+          className="hidden shrink-0 items-center rounded-full bg-destructive px-2 py-0.5 text-[0.625rem] font-semibold tracking-wide text-white uppercase sm:inline-flex"
+          data-record-status="recording"
+        >
+          {copy.recording(recordCount)}
         </span>
       ) : null}
       {commentCount > 0 && onFlushComments ? (

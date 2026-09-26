@@ -5587,7 +5587,27 @@ export const frOverrides = {
       commentPlaceholder: 'Ajouter un commentaire...',
       commentTitle: n => `Commentaire ${n}`,
       saveComment: 'Enregistrer',
-      cancelComment: 'Annuler le commentaire'
+      cancelComment: 'Annuler le commentaire',
+      record: 'Enregistrer une tâche',
+      recordStop: 'Arrêter l’enregistrement',
+      recording: count => `Enregistrement · ${count}`,
+      recordNeedPage: 'Ouvrez d’abord une page dans le navigateur intégré.',
+      recordFailed: 'Impossible de démarrer l’enregistrement sur cette page.',
+      recordTitle: 'Enregistrer comme compétence',
+      recordDesc:
+        'Vérifiez les étapes capturées, nommez la compétence puis enregistrez le brouillon. L’agent pourra ensuite la rejouer depuis vos compétences.',
+      recordName: 'Nom',
+      recordNamePlaceholder: 'Faire les courses',
+      recordNameHint: slug => `Sera enregistré sous « ${slug} » dans ~/.hermes/skills/`,
+      recordDescLabel: 'Description (facultative)',
+      recordDescPlaceholder: 'Quand utiliser ce flux…',
+      recordDescHint: 'Une phrase, 60 caractères au maximum.',
+      recordSteps: count => `Étapes enregistrées (${count})`,
+      recordEmpty: 'Aucune étape capturée — l’enregistrement était vide.',
+      recordSave: 'Enregistrer',
+      recordSaving: 'Enregistrement…',
+      recordSaved: name => `« ${name} » a été enregistré dans vos compétences.`,
+      recordSaveFailed: 'Impossible d’enregistrer la compétence.'
     }
   },
   interfaceMode: {

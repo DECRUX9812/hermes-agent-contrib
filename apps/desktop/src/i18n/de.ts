@@ -5576,7 +5576,27 @@ export const deOverrides = {
       commentPlaceholder: 'Kommentar hinzufügen …',
       commentTitle: n => `Kommentar ${n}`,
       saveComment: 'Speichern',
-      cancelComment: 'Kommentar abbrechen'
+      cancelComment: 'Kommentar abbrechen',
+      record: 'Aufgabe aufzeichnen',
+      recordStop: 'Aufzeichnung stoppen',
+      recording: count => `Aufzeichnung · ${count}`,
+      recordNeedPage: 'Öffne zuerst eine Seite im In-App-Browser.',
+      recordFailed: 'Aufzeichnung konnte auf dieser Seite nicht gestartet werden.',
+      recordTitle: 'Aufzeichnung als Skill speichern',
+      recordDesc:
+        'Prüfe die aufgezeichneten Schritte, benenne den Skill und speichere ihn als Entwurf. Der Agent kann ihn dann aus deinen Skills wiedergeben.',
+      recordName: 'Name',
+      recordNamePlaceholder: 'Lebensmittel bestellen',
+      recordNameHint: slug => `Wird als „${slug}“ unter ~/.hermes/skills/ gespeichert`,
+      recordDescLabel: 'Beschreibung (optional)',
+      recordDescPlaceholder: 'Wann dieser Ablauf verwendet wird…',
+      recordDescHint: 'Ein Satz, höchstens 60 Zeichen.',
+      recordSteps: count => `Aufgezeichnete Schritte (${count})`,
+      recordEmpty: 'Keine Schritte erfasst — die Aufzeichnung war leer.',
+      recordSave: 'Skill speichern',
+      recordSaving: 'Wird gespeichert…',
+      recordSaved: name => `„${name}“ wurde in deinen Skills gespeichert.`,
+      recordSaveFailed: 'Skill konnte nicht gespeichert werden.'
     }
   },
   interfaceMode: {

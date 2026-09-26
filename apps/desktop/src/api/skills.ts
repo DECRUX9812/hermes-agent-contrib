@@ -43,6 +43,30 @@ export function setSkillEnabled(
   })
 }
 
+export interface CreatedSkill {
+  message?: string
+  path?: string
+  success?: boolean
+}
+
+/** Write a skill through the backend's `skill_manage` create path — lands in
+ *  the profile's `~/.hermes/skills/` and clears the prompt cache so the next
+ *  session can see it. `profile` rides the body (the route's contract), the
+ *  connection scope the request tag. */
+export function createSkill(
+  input: { category?: string; content: string; name: string },
+  profile?: ProfileScope
+): Promise<CreatedSkill> {
+  const bodyProfile = typeof profile === 'object' && profile !== null ? profile.profile : profile
+
+  return window.hermesDesktop.api<CreatedSkill>({
+    ...capabilityScoped(profile),
+    body: { category: input.category, content: input.content, name: input.name, profile: bodyProfile },
+    method: 'POST',
+    path: '/api/skills'
+  })
+}
+
 export function getStarmapGraph(): Promise<StarmapGraph> {
   return hermesApi<StarmapGraph>({
     ...profileScoped(),
