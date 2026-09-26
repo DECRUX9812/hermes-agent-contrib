@@ -3139,6 +3139,8 @@ export interface Translations {
       unreadFailed: string
       copyId: string
       export: string
+      exportMarkdown: string
+      copyMarkdown: string
       branchFrom: string
       rename: string
       archive: string
@@ -4400,6 +4402,7 @@ export interface Translations {
       stopReading: string
       readAloud: string
       copyFullResponse: string
+      copyMarkdown: string
       readAloudFullResponseHint: string
       editMessage: string
       expandMessage: string
@@ -4659,6 +4662,12 @@ export interface Translations {
     hydrationSyncing: (profile: string) => string
     sessionExported: string
     sessionExportFailed: string
+    markdownUser: string
+    markdownAssistant: string
+    markdownSystem: string
+    markdownReasoning: string
+    markdownToolCall: string
+    markdownToolResult: string
     imageSaved: string
     downloadStarted: string
     restartToUseSaveImage: string
