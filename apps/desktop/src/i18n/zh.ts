@@ -2507,6 +2507,16 @@ export const zh = defineLocale({
     tokens: value => `${value} 词元`
   },
 
+  roster: {
+    title: '进行中的运行',
+    subtitle: '所有配置文件和网关上正在运行的任务。',
+    emptyTitle: '没有进行中的运行',
+    emptyDesc: '当会话开始工作时——在任何配置文件或网关上——它会出现在这里。',
+    untitledRun: '未命名运行',
+    railPill: count => `${count} 个运行`,
+    close: '关闭'
+  },
+
   commandCenter: {
     close: '关闭命令中心',
     paletteTitle: '命令面板',

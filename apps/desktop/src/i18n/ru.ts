@@ -1871,6 +1871,15 @@ export const ru = defineLocale({
     durationMinutes: (minutes, seconds) => `${minutes}м ${seconds}с`,
     tokens: value => `${value} ток`
   },
+  roster: {
+    title: 'Активные запуски',
+    subtitle: 'Все запуски в работе по всем профилям и шлюзам.',
+    emptyTitle: 'Нет активных запусков',
+    emptyDesc: 'Когда сессия начинает работу — в любом профиле или шлюзе — она появляется здесь.',
+    untitledRun: 'Запуск без названия',
+    railPill: count => `${count} ${RU_PLURAL(count, 'запуск', 'запуска', 'запусков')}`,
+    close: 'Закрыть'
+  },
   commandCenter: {
     close: 'Закрыть командный центр',
     paletteTitle: 'Палитра команд',

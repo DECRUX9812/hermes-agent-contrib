@@ -2988,6 +2988,15 @@ export const deOverrides = {
     durationMinutes: (minutes, seconds) => `${minutes}m ${seconds}s`,
     tokens: value => `${value} Tok`
   },
+  roster: {
+    title: 'Aktive Läufe',
+    subtitle: 'Jeder Lauf über alle Profile und Gateways hinweg.',
+    emptyTitle: 'Keine aktiven Läufe',
+    emptyDesc: 'Sobald eine Sitzung arbeitet — in einem beliebigen Profil oder Gateway — erscheint sie hier.',
+    untitledRun: 'Unbenannter Lauf',
+    railPill: count => (count === 1 ? '1 Lauf' : `${count} Läufe`),
+    close: 'Schließen'
+  },
   commandCenter: {
     close: 'Command Center schließen',
     paletteTitle: 'Befehlspalette',

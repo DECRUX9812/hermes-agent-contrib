@@ -67,6 +67,7 @@ import {
   selectConnection
 } from '@/store/connections'
 import { $fleetRoster, refreshFleetRoster } from '@/store/fleet-roster'
+import { $fleetRuns } from '@/store/fleet-runs'
 import { notify, notifyError } from '@/store/notifications'
 import {
   $activeGatewayProfile,
@@ -102,7 +103,7 @@ import type { ProfileInfo } from '@/types/hermes'
 import { CreateProfileDialog } from '../../profiles/create-profile-dialog'
 import { DeleteProfileDialog } from '../../profiles/delete-profile-dialog'
 import { RenameProfileDialog } from '../../profiles/rename-profile-dialog'
-import { PROFILES_ROUTE, SETTINGS_ROUTE } from '../../routes'
+import { PROFILES_ROUTE, ROSTER_ROUTE, SETTINGS_ROUTE } from '../../routes'
 
 import { ConnectionGlyph } from './connection-glyph'
 import { buildRestGroups, countRestAgents, type FleetAgent, type FleetGroup, fleetRouteKey } from './fleet-rail'
@@ -223,6 +224,7 @@ export function ProfileRail() {
   const registry = useStore($connectionsRegistry)
   const activeConnectionId = useStore($activeConnectionId)
   const roster = useStore($fleetRoster)
+  const fleetRunCount = useStore($fleetRuns).length
   const navigate = useNavigate()
   const [createOpen, setCreateOpen] = useState(false)
   const [pendingRename, setPendingRename] = useState<null | ProfileInfo>(null)
@@ -628,6 +630,19 @@ export function ProfileRail() {
           single-profile user must be able to edit the default's persona
           without first creating a throwaway second profile. */}
       <ProfilePill active={false} glyph="ellipsis" label={p.manageProfiles} onSelect={() => navigate(PROFILES_ROUTE)} />
+
+      {/* Roster — self-limiting affordance: the pill exists only while a run
+          is actually in flight somewhere across the fleet, and opens the
+          roster overlay (click-through cards, no actions). */}
+      {fleetRunCount > 0 && (
+        <ProfilePill
+          active={false}
+          glyph="pulse"
+          label={t.roster.railPill(fleetRunCount)}
+          onSelect={() => navigate(ROSTER_ROUTE)}
+          slot="profile-rail-roster"
+        />
+      )}
 
       {localDeviceDialog}
 

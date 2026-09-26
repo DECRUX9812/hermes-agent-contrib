@@ -2295,6 +2295,16 @@ export interface Translations {
     tokens: (value: number | string) => string
   }
 
+  roster: {
+    title: string
+    subtitle: string
+    emptyTitle: string
+    emptyDesc: string
+    untitledRun: string
+    railPill: (count: number) => string
+    close: string
+  }
+
   commandCenter: {
     close: string
     paletteTitle: string

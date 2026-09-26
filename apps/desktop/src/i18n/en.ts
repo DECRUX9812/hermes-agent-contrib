@@ -2689,6 +2689,16 @@ export const en: Translations = {
     tokens: value => `${value} tok`
   },
 
+  roster: {
+    title: 'Active runs',
+    subtitle: 'Every run in flight across profiles and gateways.',
+    emptyTitle: 'No active runs',
+    emptyDesc: 'When a session starts working — on any profile or gateway — it shows up here.',
+    untitledRun: 'Untitled run',
+    railPill: count => (count === 1 ? '1 run' : `${count} runs`),
+    close: 'Close'
+  },
+
   commandCenter: {
     close: 'Close command center',
     paletteTitle: 'Command palette',

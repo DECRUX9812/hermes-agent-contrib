@@ -183,6 +183,7 @@ const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).
 const ProfilesView = lazy(async () => ({ default: (await import('../profiles')).ProfilesView }))
 const SettingsView = lazy(async () => ({ default: (await import('../settings')).SettingsView }))
 const StarmapView = lazy(async () => ({ default: (await import('../starmap')).StarmapView }))
+const RosterView = lazy(async () => ({ default: (await import('../roster')).RosterView }))
 
 // Surfaces (the four wired panes), the render context + WiredPane, and the
 // WiringActions/WiringApi contracts all live in sibling modules — this file is
@@ -348,6 +349,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     openStarmap,
     profilesOpen,
     resetOverlayReturnRoute,
+    rosterOpen,
     settingsOpen,
     starmapOpen,
     toggleCommandCenter,
@@ -1449,6 +1451,12 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       {starmapOpen && (
         <Suspense fallback={null}>
           <StarmapView onClose={closeOverlayToPreviousRoute} />
+        </Suspense>
+      )}
+
+      {rosterOpen && (
+        <Suspense fallback={null}>
+          <RosterView onClose={closeOverlayToPreviousRoute} />
         </Suspense>
       )}
 
