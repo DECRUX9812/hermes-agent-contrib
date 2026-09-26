@@ -321,7 +321,9 @@ const ActiveThreadTimeline: FC = () => {
       role="navigation"
       style={{
         position: 'absolute',
-        right: 0,
+        // The density scrubber owns the rightmost strip; the rail floats just
+        // inside it instead of sitting on top of the minimap's ticks.
+        right: '0.75rem',
         top: '50%',
         transform: 'translateY(-50%)',
         zIndex: 40,

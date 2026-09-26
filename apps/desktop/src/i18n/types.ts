@@ -4330,6 +4330,7 @@ export interface Translations {
     thread: {
       loadingSession: string
       showEarlier: string
+      timelineScrubber: string
       loadingResponse: string
       loadingLocalModel: (model: string) => string
       processingPrompt: string
