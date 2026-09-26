@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { SearchField } from '@/components/ui/search-field'
 import { SegmentedControl } from '@/components/ui/segmented-control'
+import { Switch } from '@/components/ui/switch'
 import { ResponsiveTabs } from '@/components/ui/tab-dropdown'
 import { Tip } from '@/components/ui/tooltip'
 import { getActionStatus, getLogs, getStatus, getUsageAnalytics, restartGateway, updateHermes } from '@/hermes'
@@ -34,6 +35,7 @@ import { fmtDateTime } from '@/lib/time'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { upsertDesktopActionTask } from '@/store/activity'
+import { $costAnalyticsEnabled, setCostAnalyticsEnabled } from '@/store/cost-analytics-enabled'
 import { $pinnedSessionIds, pinSession, SIDEBAR_SESSIONS_PAGE_SIZE, unpinSession } from '@/store/layout'
 import {
   $notificationHistory,
@@ -41,7 +43,7 @@ import {
   type NotificationKind,
   notify
 } from '@/store/notifications'
-import { $sessionProfilesTruncated, $sessions, sessionPinId } from '@/store/session'
+import { $sessionProfilesTruncated, $sessionProfilesUsage, $sessions, sessionPinId } from '@/store/session'
 import { confirmSharedGatewayRestart } from '@/store/system-actions'
 
 import { SidebarLoadMoreRow } from '../chat/sidebar/load-more-row'
@@ -50,6 +52,7 @@ import { useRouteEnumParam } from '../hooks/use-route-enum-param'
 import { OverlayMain, OverlayNav, OverlaySplitLayout } from '../overlays/overlay-split-layout'
 import { OverlayView } from '../overlays/overlay-view'
 
+import { formatUsd, profileSpendRows, sessionSpendRows } from './cost-analytics'
 import { MaintenancePanel } from './maintenance'
 
 export type CommandCenterSection = 'maintenance' | 'notices' | 'sessions' | 'system' | 'usage'
@@ -699,6 +702,16 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
   const totals = usage?.totals
   const byModel = usage?.by_model ?? []
   const topSkills = usage?.skills?.top_skills ?? []
+  const costEnabled = useStore($costAnalyticsEnabled)
+  const profilesUsage = useStore($sessionProfilesUsage)
+  const allSessions = useStore($sessions)
+  const profileSpend = useMemo(() => (costEnabled ? profileSpendRows(profilesUsage) : []), [costEnabled, profilesUsage])
+  const sessionSpend = useMemo(() => (costEnabled ? sessionSpendRows(allSessions, 6) : []), [allSessions, costEnabled])
+
+  const maxDailyCost = useMemo(
+    () => daily.reduce((acc, entry) => Math.max(acc, entry.estimated_cost || 0), 0),
+    [daily]
+  )
 
   const maxTokens = useMemo(() => {
     if (!daily.length) {
@@ -736,13 +749,40 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
         </span>
       )}
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-4 py-2 sm:grid-cols-3">
+      <div className="flex items-center justify-between gap-3 rounded-md px-1 py-1.5">
+        <div className="min-w-0">
+          <div className="text-[0.625rem] font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)">
+            {cc.costAnalytics}
+          </div>
+          <div className="text-[0.62rem] text-(--ui-text-tertiary)">{cc.costAnalyticsHint}</div>
+        </div>
+        <Switch
+          aria-label={cc.costAnalytics}
+          checked={costEnabled}
+          onCheckedChange={setCostAnalyticsEnabled}
+          size="xs"
+        />
+      </div>
+
+      <div
+        className={cn(
+          'grid grid-cols-2 gap-x-4 gap-y-4 py-2 sm:grid-cols-3',
+          costEnabled && 'sm:grid-cols-4'
+        )}
+      >
         <UsageStat label={cc.statSessions} value={compactNumber(totals.total_sessions)} />
         <UsageStat label={cc.statApiCalls} value={compactNumber(totals.total_api_calls)} />
         <UsageStat
           label={cc.statTokens}
           value={`${compactNumber(totals.total_input)} / ${compactNumber(totals.total_output)}`}
         />
+        {costEnabled && (
+          <UsageStat
+            hint={totals.total_actual_cost > 0 ? cc.actualCost(formatUsd(totals.total_actual_cost)) : undefined}
+            label={cc.statCost}
+            value={formatUsd(totals.total_estimated_cost)}
+          />
+        )}
       </div>
 
       <section>
@@ -796,13 +836,58 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
         )}
       </section>
 
+      {costEnabled && (
+        <section>
+          <div className="mb-2 flex items-baseline justify-between">
+            <span className="text-[0.625rem] font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)">
+              {cc.dailySpend}
+            </span>
+            <span className="flex items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary)">
+              <span className="size-2 rounded-[1px] bg-amber-500/70" /> {cc.estimatedCost}
+            </span>
+          </div>
+          {daily.length === 0 ? (
+            <div className="grid h-16 place-items-center text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
+              {cc.noDailyActivity}
+            </div>
+          ) : (
+            <>
+              <div className="flex h-16 items-end gap-px">
+                {daily.map(entry => {
+                  const costH = Math.round(((entry.estimated_cost || 0) / (maxDailyCost || 1)) * 64)
+
+                  return (
+                    <div
+                      className="flex h-16 min-w-0 flex-1 flex-col justify-end"
+                      key={entry.day}
+                      title={`${entry.day} · ${formatUsd(entry.estimated_cost || 0)}`}
+                    >
+                      <div
+                        className="w-full rounded-t-[1px] bg-amber-500/60"
+                        style={{ height: Math.max(costH, entry.estimated_cost > 0 ? 1 : 0) }}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+              <div className="mt-1 flex justify-between text-[0.6rem] text-(--ui-text-tertiary)">
+                <span>{daily[0]?.day}</span>
+                <span>{daily[daily.length - 1]?.day}</span>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
       <div className="grid min-h-0 gap-x-8 gap-y-5 pt-1 sm:grid-cols-2">
         <UsageList
           emptyLabel={cc.noModelUsage}
           rows={byModel.slice(0, 6).map(entry => ({
             key: entry.model,
             label: entry.model,
-            value: `${compactNumber((entry.input_tokens || 0) + (entry.output_tokens || 0))}`
+            value: costEnabled
+              ? `${compactNumber((entry.input_tokens || 0) + (entry.output_tokens || 0))} · ${formatUsd(entry.estimated_cost || 0)}`
+              : `${compactNumber((entry.input_tokens || 0) + (entry.output_tokens || 0))}`
           }))}
           title={cc.topModels}
         />
@@ -815,6 +900,25 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
           }))}
           title={cc.topSkills}
         />
+        {costEnabled && (
+          <UsageList
+            emptyLabel={cc.noSpend}
+            rows={profileSpend.map(row => ({
+              key: row.key,
+              label: row.label,
+              value: `${formatUsd(row.cost)} · ${compactNumber(row.tokens ?? 0)}`
+            }))}
+            title={cc.perProfile}
+          />
+        )}
+        {costEnabled && (
+          <UsageList
+            emptyLabel={cc.noSpend}
+            hint={cc.loadedSessionsHint}
+            rows={sessionSpend.map(row => ({ key: row.key, label: row.label, value: formatUsd(row.cost) }))}
+            title={cc.topSessions}
+          />
+        )}
       </div>
     </div>
   )
@@ -822,10 +926,12 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
 
 function UsageList({
   emptyLabel,
+  hint,
   rows,
   title
 }: {
   emptyLabel: string
+  hint?: string
   rows: Array<{ key: string; label: string; value: string }>
   title: string
 }) {
@@ -833,6 +939,7 @@ function UsageList({
     <section className="min-w-0">
       <div className="mb-1.5 text-[0.625rem] font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)">
         {title}
+        {hint ? <span className="ml-1.5 font-normal normal-case tracking-normal opacity-70">{hint}</span> : null}
       </div>
       {rows.length === 0 ? (
         <div className="text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
