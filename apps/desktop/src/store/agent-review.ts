@@ -11,8 +11,8 @@ import type { SessionMessage } from '@/types/hermes'
 import { type ComposerAttachment, NEW_SESSION_DRAFT_KEY, onNewSessionDraftAdopted, stashSessionDraft } from './composer'
 import { normalizeProfileKey, pinNewChatProfile, requestFreshSession } from './profile'
 import { $reviewScopeTarget, reviewRepoCwd } from './review'
+import { sessionIdForReviewTarget } from './review-session'
 import {
-  $selectedStoredSessionId,
   $sessions,
   idsShareLineage,
   sessionMatchesStoredId,
@@ -80,13 +80,7 @@ function rememberPending(draftKey: string, pending: PendingAgentReview): void {
 /** The session the pane is reviewing: a tile-scoped pane names its session in
  *  the target (`tile:<storedId>`); the default scope reviews the selected chat. */
 function reviewOriginSessionId(): null | string {
-  const target = $reviewScopeTarget.get()
-
-  if (target.startsWith('tile:')) {
-    return target.slice('tile:'.length).trim() || null
-  }
-
-  return $selectedStoredSessionId.get()
+  return sessionIdForReviewTarget($reviewScopeTarget.get())
 }
 
 /**

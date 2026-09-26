@@ -62,6 +62,9 @@ const INDENT = 12
 // Per git status letter: a tinted diff codicon so the file's nature reads at a
 // glance (added / modified / deleted / renamed / untracked).
 const STATUS_GLYPH: Record<string, { icon: string; tone: string }> = {
+  // '.' is the session scope's synthetic "touched, no current diff" row — not
+  // a git status letter, just a muted dash marker.
+  '.': { icon: 'dash', tone: 'text-muted-foreground/50' },
   A: { icon: 'diff-added', tone: 'text-(--ui-green)' },
   C: { icon: 'diff-added', tone: 'text-(--ui-green)' },
   D: { icon: 'diff-removed', tone: 'text-(--ui-red)' },
@@ -71,9 +74,13 @@ const STATUS_GLYPH: Record<string, { icon: string; tone: string }> = {
   '?': { icon: 'diff-added', tone: 'text-muted-foreground/60' }
 }
 
+// A session-scope row with no working-tree delta: open + preview still apply,
+// stage/revert don't (there is nothing to stage or discard).
+const isTouchedOnly = (file: HermesReviewFile): boolean => file.status === '.'
+
 // Review paths are repo-relative; the composer drop expects absolute paths, so
 // join against the pane's repo (its pinned scope, else the active session cwd).
-function absolutePath(relative: string): string {
+export function absolutePath(relative: string): string {
   if (/^([a-zA-Z]:[\\/]|\/)/.test(relative)) {
     return relative
   }
@@ -420,8 +427,9 @@ function ReviewFileRow({ node, depth }: { node: ReviewTreeNode; depth: number })
           )}
         </span>
 
-        <span className="hidden shrink-0 items-center gap-0.5 group-hover/review-row:flex">
-          <Tip label={file.staged ? c.unstage : c.stage}>
+        {!isTouchedOnly(file) && (
+          <span className="hidden shrink-0 items-center gap-0.5 group-hover/review-row:flex">
+            <Tip label={file.staged ? c.unstage : c.stage}>
             <Button
               aria-label={file.staged ? c.unstage : c.stage}
               className="size-4 rounded text-muted-foreground/70 hover:text-foreground"
@@ -434,22 +442,23 @@ function ReviewFileRow({ node, depth }: { node: ReviewTreeNode; depth: number })
             >
               <Codicon name={file.staged ? 'remove' : 'add'} size="0.7rem" />
             </Button>
-          </Tip>
-          <Tip label={c.revert}>
-            <Button
-              aria-label={c.revert}
-              className="size-4 rounded text-muted-foreground/70 hover:text-(--ui-red)"
-              onClick={event => {
-                event.stopPropagation()
-                requestRevert(file.path)
-              }}
-              size="icon-xs"
-              variant="ghost"
-            >
-              <Codicon name="discard" size="0.7rem" />
-            </Button>
-          </Tip>
-        </span>
+            </Tip>
+            <Tip label={c.revert}>
+              <Button
+                aria-label={c.revert}
+                className="size-4 rounded text-muted-foreground/70 hover:text-(--ui-red)"
+                onClick={event => {
+                  event.stopPropagation()
+                  requestRevert(file.path)
+                }}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <Codicon name="discard" size="0.7rem" />
+              </Button>
+            </Tip>
+          </span>
+        )}
 
         <DiffCount
           added={node.added}
@@ -495,18 +504,22 @@ function ReviewFileContextMenu({
         <ContextMenuItem onSelect={onOpenChanges}>{c.openChanges}</ContextMenuItem>
         <ContextMenuItem onSelect={onOpenFile}>{c.openFile}</ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem
-          onSelect={() =>
-            void (file.staged ? unstageReviewFile(file.path) : stageReviewFile(file.path)).catch(err =>
-              notifyError(err, file.staged ? c.unstage : c.stage)
-            )
-          }
-        >
-          {file.staged ? c.unstage : c.stage}
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={() => requestRevert(file.path)} variant="destructive">
-          {c.revert}
-        </ContextMenuItem>
+        {!isTouchedOnly(file) && (
+          <>
+            <ContextMenuItem
+              onSelect={() =>
+                void (file.staged ? unstageReviewFile(file.path) : stageReviewFile(file.path)).catch(err =>
+                  notifyError(err, file.staged ? c.unstage : c.stage)
+                )
+              }
+            >
+              {file.staged ? c.unstage : c.stage}
+            </ContextMenuItem>
+            <ContextMenuItem onSelect={() => requestRevert(file.path)} variant="destructive">
+              {c.revert}
+            </ContextMenuItem>
+          </>
+        )}
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => revealFileInTree(dragPath)}>{m.revealInSidebar}</ContextMenuItem>
         {localFs && (

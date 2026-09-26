@@ -6,13 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DiffCount } from '@/components/ui/diff-count'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Tip } from '@/components/ui/tooltip'
 import { useDelayedTrue } from '@/hooks/use-delayed-true'
 import { useI18n } from '@/i18n'
 import { displayPath } from '@/lib/display-path'
+import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
 import { cn } from '@/lib/utils'
 import { $panesFlipped } from '@/store/layout'
 import { notifyError } from '@/store/notifications'
+import { openPreview } from '@/store/preview'
 import {
   $reviewDiff,
   $reviewDiffLoading,
@@ -20,6 +23,7 @@ import {
   $reviewIsRepo,
   $reviewLoading,
   $reviewRevertTarget,
+  $reviewScopeMode,
   $reviewSelectedPath,
   $reviewTreeMode,
   cancelRevert,
@@ -28,6 +32,8 @@ import {
   confirmRevert,
   refreshReview,
   requestRevert,
+  type ReviewScopeMode,
+  setReviewScopeMode,
   stageReviewFile,
   toggleReviewTreeMode,
   unstageReviewFile
@@ -37,7 +43,7 @@ import { SidebarPanelLabel } from '../../shell/sidebar-label'
 import { PaneEmptyState, RightSidebarSectionHeader } from '../index'
 
 import { AgentReviewMenu } from './agent-review-menu'
-import { ReviewFileTree } from './file-tree'
+import { absolutePath, ReviewFileTree } from './file-tree'
 import { ReviewShipBar } from './ship-bar'
 
 // Compact header/diff action buttons — micro hit targets packed tight, matching
@@ -56,6 +62,8 @@ export function ReviewPane() {
   const diffLoading = useStore($reviewDiffLoading)
   const revertTarget = useStore($reviewRevertTarget)
   const treeMode = useStore($reviewTreeMode)
+  const scopeMode = useStore($reviewScopeMode)
+  const sessionScope = scopeMode === 'session'
 
   const selectedFile = files.find(file => file.path === selectedPath)
   const hasFiles = files.length > 0
@@ -95,36 +103,45 @@ export function ReviewPane() {
               <Codicon name={treeMode === 'tree' ? 'list-flat' : 'list-tree'} size="0.8125rem" />
             </Button>
           </Tip>
-          <AgentReviewMenu />
-          <Tip label={c.stageAll}>
-            <Button
-              aria-label={c.stageAll}
-              className={ACTION_BTN}
-              disabled={!hasFiles}
-              onClick={() => void stageReviewFile(null).catch(err => notifyError(err, c.stageAll))}
-              size="icon-xs"
-              variant="ghost"
-            >
-              <Codicon name="add" size="0.8125rem" />
-            </Button>
-          </Tip>
-          <Tip label={c.revertAll}>
-            <Button
-              aria-label={c.revertAll}
-              className={ACTION_BTN}
-              disabled={!hasFiles}
-              onClick={() => requestRevert(null)}
-              size="icon-xs"
-              variant="ghost"
-            >
-              <Codicon name="discard" size="0.8125rem" />
-            </Button>
-          </Tip>
+          {/* Whole-tree actions stay on the working-tree scope: "stage all"
+              against a session-filtered list would quietly stage files the
+              view isn't showing. Agent review ships the whole-tree diff
+              (commitContext), so it hides here too rather than lying about
+              its scope. */}
+          {!sessionScope && (
+            <>
+              <AgentReviewMenu />
+              <Tip label={c.stageAll}>
+                <Button
+                  aria-label={c.stageAll}
+                  className={ACTION_BTN}
+                  disabled={!hasFiles}
+                  onClick={() => void stageReviewFile(null).catch(err => notifyError(err, c.stageAll))}
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <Codicon name="add" size="0.8125rem" />
+                </Button>
+              </Tip>
+              <Tip label={c.revertAll}>
+                <Button
+                  aria-label={c.revertAll}
+                  className={ACTION_BTN}
+                  disabled={!hasFiles}
+                  onClick={() => requestRevert(null)}
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <Codicon name="discard" size="0.8125rem" />
+                </Button>
+              </Tip>
+            </>
+          )}
           <Tip label={t.rightSidebar.refreshTree}>
             <Button
               aria-label={t.rightSidebar.refreshTree}
               className={ACTION_BTN}
-              onClick={() => void refreshReview()}
+              onClick={() => void refreshReview({ rescanSession: true })}
               size="icon-xs"
               variant="ghost"
             >
@@ -137,6 +154,21 @@ export function ReviewPane() {
         </RightSidebarSectionHeader>
       )}
 
+      {/* Scope switch (#28): the whole working tree vs the session's own
+          touched set. */}
+      {(loading || isRepo) && (
+        <div className="flex items-center px-2.5 pb-1" data-suppress-pane-reveal-side="">
+          <SegmentedControl<ReviewScopeMode>
+            onChange={setReviewScopeMode}
+            options={[
+              { id: 'uncommitted', label: c.scopeUncommitted },
+              { id: 'session', label: c.scopeSession }
+            ]}
+            value={scopeMode}
+          />
+        </div>
+      )}
+
       {loading || isRepo ? (
         hasFiles ? (
           <ReviewFileTree />
@@ -145,7 +177,7 @@ export function ReviewPane() {
         ) : loading ? (
           <div className="min-h-0 flex-1" />
         ) : (
-          <PaneEmptyState label={t.rightSidebar.noDiffs} />
+          <PaneEmptyState label={sessionScope ? c.sessionEmpty : t.rightSidebar.noDiffs} />
         )
       ) : (
         // No repo at all → same terse empty state, just without the chrome.
@@ -169,6 +201,30 @@ export function ReviewPane() {
               {displayPath(selectedFile.path)}
             </span>
             <DiffCount added={selectedFile.added} className="text-[0.64rem] leading-4" removed={selectedFile.removed} />
+            {/* Open-in-editor: the file itself in the preview pane. */}
+            <Tip label={c.openFile}>
+              <Button
+                aria-label={c.openFile}
+                className={ACTION_BTN}
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      const preview = await normalizeOrLocalPreviewTarget(absolutePath(selectedFile.path))
+
+                      if (preview) {
+                        openPreview(preview)
+                      }
+                    } catch (err) {
+                      notifyError(err, t.rightSidebar.previewUnavailable)
+                    }
+                  })()
+                }}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <Codicon name="go-to-file" size="0.8rem" />
+              </Button>
+            </Tip>
             <Tip label={selectedFile.staged ? c.unstage : c.stage}>
               <Button
                 aria-label={selectedFile.staged ? c.unstage : c.stage}

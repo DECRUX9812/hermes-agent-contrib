@@ -4269,6 +4269,8 @@ export const en: Translations = {
       notRepo: 'Not a git repository',
       noDiff: 'No diff to show',
       scopeUncommitted: 'Uncommitted',
+      scopeSession: 'Session',
+      sessionEmpty: 'No session changes',
       scopeBranch: 'Branch',
       scopeLastTurn: 'Last turn',
       commit: 'Commit',

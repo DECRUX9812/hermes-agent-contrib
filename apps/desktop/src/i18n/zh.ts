@@ -4044,6 +4044,8 @@ export const zh = defineLocale({
       notRepo: '不是 Git 仓库',
       noDiff: '没有可显示的差异',
       scopeUncommitted: '未提交',
+      scopeSession: '会话',
+      sessionEmpty: '没有会话更改',
       scopeBranch: '分支',
       scopeLastTurn: '上一轮',
       commit: '提交',
