@@ -4612,6 +4612,14 @@ export const frOverrides = {
       agentShipUnavailable: "La conversation à l'origine de ces modifications n'est pas affichée.",
       agentShipPrompt:
         'Passez en revue les modifications actuelles, validez-les avec un message de validation conventionnel clair, poussez la branche, puis ouvrez une pull request.',
+      agentReview: 'Faire relire par un agent',
+      agentReviewPick: 'Relire avec',
+      agentReviewNoProfiles: 'Aucun profil trouvé',
+      agentReviewPrompt:
+        'Relisez le diff du fichier joint. Signalez les problèmes concrets — bugs, régressions, cas non gérés — avant les remarques de style.',
+      agentReviewAttachment: 'Diff de l’arbre de travail',
+      agentReviewUnavailable: 'Rien à relire : aucun dépôt ou aucun diff en attente.',
+      agentReviewReportTitle: (reviewer: string) => `Relecture par ${reviewer}`,
       newBranch: 'Nouvelle branche',
       branchOffFrom: base => `Nouvelle branche à partir de ${base}`,
       switchTo: branch => `Basculer vers ${branch}`,

@@ -4,6 +4,7 @@ import { useStore } from '@nanostores/react'
 import { Codicon } from '@/components/ui/codicon'
 import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
+import { $agentReviewReportsBySession } from '@/store/agent-review'
 import {
   $delegationReportsBySession,
   $dismissedDelegationReports,
@@ -103,6 +104,9 @@ interface SidebarDelegationReportsProps {
  */
 export function SidebarDelegationReports({ sessions }: SidebarDelegationReportsProps) {
   const reports = useStore($delegationReportsBySession)
+  // Synthesized cards (agent review) live in their own atom — subscribe so a
+  // freshly landed report repaints the fold.
+  useStore($agentReviewReportsBySession)
   const dismissed = useStore($dismissedDelegationReports)
 
   const cards = sessions.flatMap(session =>

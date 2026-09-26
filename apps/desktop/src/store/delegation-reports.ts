@@ -6,6 +6,7 @@ import { normalizeProfileKey } from '@/store/profile'
 import { ambientRequestFor } from '@/store/session-gone-latch'
 import { requestForOwnedSession } from '@/store/session-states'
 
+import { $agentReviewReportsBySession, forgetAgentReviewReports } from './agent-review'
 import { $gateway } from './gateway'
 
 /**
@@ -77,7 +78,11 @@ export function visibleDelegationReports(
 ): DelegationReport[] {
   const hidden = dismissed[normalizeProfileKey(profile)] ?? []
 
-  return (reports[sessionId] ?? []).filter(report => !hidden.includes(report.delegation_id))
+  // Synthesized cards (agent-review.ts) ride the same dismissal buckets — a
+  // dismissed review stays dismissed next to its server-reported siblings.
+  const all = [...(reports[sessionId] ?? []), ...($agentReviewReportsBySession.get()[sessionId] ?? [])]
+
+  return all.filter(report => !hidden.includes(report.delegation_id))
 }
 
 /** Pull the settled-delegation feed for one origin session through its OWN
@@ -156,4 +161,6 @@ export function forgetDelegationReports(sessionId: string): void {
 
   const { [sessionId]: _drop, ...rest } = map
   $delegationReportsBySession.set(rest)
+
+  forgetAgentReviewReports(sessionId)
 }
