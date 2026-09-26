@@ -10,7 +10,7 @@ export const en: Translations = {
     close: 'Close'
   },
   // English editorial copy stays in the shipped JSONL; other locales override it.
-  intro: { stock: {}, custom: () => [] },
+  intro: { stock: {}, custom: () => [], recentSessions: 'Pick up where you left off' },
   catalog: {
     add: 'Add',
     added: 'Added',
@@ -3527,7 +3527,8 @@ export const en: Translations = {
       capabilities: 'Capabilities',
       messaging: 'Messaging',
       artifacts: 'Artifacts',
-      cron: 'Scheduled jobs'
+      cron: 'Scheduled jobs',
+      browse: 'Browse'
     },
     interfaceMode: {
       label: 'Interface',
@@ -3709,10 +3710,6 @@ export const en: Translations = {
       done: 'Done'
     },
     markAllRead: 'Mark all as read'
-  },
-
-  intro: {
-    recentSessions: 'Pick up where you left off'
   },
 
   composer: {

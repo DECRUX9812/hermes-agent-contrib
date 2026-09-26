@@ -2094,7 +2094,8 @@ export const ar = defineLocale({
       capabilities: 'المهارات',
       messaging: 'المراسلة',
       artifacts: 'العناصر',
-      cron: 'المهام المجدولة'
+      cron: 'المهام المجدولة',
+      browse: 'تصفح'
     },
     interfaceMode: {
       label: 'الواجهة',

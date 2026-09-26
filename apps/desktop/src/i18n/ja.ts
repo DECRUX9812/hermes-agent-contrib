@@ -2472,7 +2472,8 @@ export const ja = defineLocale({
       capabilities: 'スキルとツール',
       messaging: 'メッセージング',
       artifacts: 'アーティファクト',
-      cron: 'スケジュール済みジョブ'
+      cron: 'スケジュール済みジョブ',
+      browse: 'ブラウズ'
     },
     interfaceMode: {
       label: 'インターフェース',
@@ -2635,10 +2636,6 @@ export const ja = defineLocale({
       working: '実行中',
       done: '完了'
     }
-  },
-
-  intro: {
-    recentSessions: '前回の続きから'
   },
 
   composer: {

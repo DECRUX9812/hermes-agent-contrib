@@ -3327,7 +3327,8 @@ export const zh = defineLocale({
       capabilities: '技能与工具',
       messaging: '消息平台',
       artifacts: '产物',
-      cron: '定时任务'
+      cron: '定时任务',
+      browse: '浏览'
     },
     interfaceMode: {
       label: '界面',
@@ -3500,10 +3501,6 @@ export const zh = defineLocale({
       done: '已完成'
     },
     markAllRead: '全部标记为已读'
-  },
-
-  intro: {
-    recentSessions: '从上次继续'
   },
 
   composer: {

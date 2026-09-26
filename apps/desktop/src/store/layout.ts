@@ -13,7 +13,7 @@ import { connectionScopedAtom } from '@/lib/connection-scoped'
 import { LAYOUT_KEYS } from '@/lib/layout-persistence'
 import { type Codec, Codecs, persistentAtom } from '@/lib/persisted'
 import { arraysEqual, insertUniqueId, readKey } from '@/lib/storage'
-import { modeBound, modeLayout } from '@/store/interface-mode'
+import { $interfaceMode, modeBound, modeLayout } from '@/store/interface-mode'
 
 import { $paneStates, ensurePaneRegistered, setPaneOpen, setPaneWidthOverride } from './panes'
 import { $showAllProfiles, setShowAllProfiles } from './profile'
@@ -225,6 +225,10 @@ export const $dismissedWorktreeIds = persistentAtom(
 export const $removedWorktreeIds = persistentAtom('hermes.desktop.removedWorktrees', [] as string[], Codecs.stringArray)
 export const $sidebarPinsOpen = atom(true)
 export const $sidebarRecentsOpen = atom(true)
+// The "Browse" fold holding every secondary nav row below New session. Kept
+// per interface mode through modeLayout, so Simple opens collapsed (the rail
+// is its leanest) while Advanced defaults to the full row set.
+export const $sidebarBrowseOpen = modeLayout.atom('hermes.desktop.sidebarBrowseOpen', () => $interfaceMode.get() !== 'simple', Codecs.bool)
 // Cron-job sessions live in their own section below recents, collapsed by
 // default (it only renders at all when cron sessions exist) so the
 // scheduler's `[IMPORTANT: …]` first-message previews don't spam recents.
@@ -631,6 +635,10 @@ export function setSidebarPinsOpen(open: boolean) {
 
 export function setSidebarRecentsOpen(open: boolean) {
   $sidebarRecentsOpen.set(open)
+}
+
+export function setSidebarBrowseOpen(open: boolean) {
+  $sidebarBrowseOpen.set(open)
 }
 
 export function setSidebarCronOpen(open: boolean) {

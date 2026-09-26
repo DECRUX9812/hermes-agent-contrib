@@ -7,10 +7,10 @@
  * competing answers in each surface.
  */
 
-import { atom, host, useValue } from '@hermes/plugin-sdk'
+import { atom, coarseElapsed, host, useValue } from '@hermes/plugin-sdk'
 
 import { botActivitySession, botHandle, botRosterKey, isActiveRosterBot } from './data'
-import type { RosterActivityFilter, RosterRow } from './types'
+import type { RosterActivityFilter, RosterRow, SidebarRowLabels } from './types'
 
 // ── human-readable row helpers ───────────────────────────────────────────────
 
@@ -186,4 +186,41 @@ export function botRowOwnsWorkspace(
   }
 
   return isActiveRosterBot(bot, focusedOwner)
+}
+
+/** Row age in the sidebar's compact form ("now", "52m", "3h", "18d").
+ *  Deliberately the same `coarseElapsed` + suffix pair the session rows
+ *  directly above use, so the two lists in one rail don't disagree about how
+ *  an age is spelled. Not `relativeTime` — that's the bidirectional Intl form
+ *  ("in 14 hr"), which belongs on a scheduled next-run. */
+export function rosterRowAge(ms: number, r: SidebarRowLabels): string {
+  const { unit, value } = coarseElapsed(Date.now() - ms)
+
+  return unit === 'second' ? r.ageNow : `${value}${unit === 'day' ? r.ageDay : unit === 'hour' ? r.ageHour : r.ageMin}`
+}
+
+/** Pointer-over pre-warm: dial the bot's own backend before the click lands so
+ *  openRosterBot feels instant. Source-scoped (multi-gateway) rows pre-dial
+ *  their OWN source rather than the active gateway; plain profiles take the
+ *  single-gateway path. Best-effort — host without the hooks does nothing. */
+export function warmRosterBot(bot: RosterRow): void {
+  if (bot.sourceScoped && typeof host.warmAgent === 'function') {
+    try {
+      host.warmAgent(bot.connectionId, bot.name)
+    } catch {
+      /* warm is best-effort */
+    }
+
+    return
+  }
+
+  if (typeof host.warmProfile !== 'function') {
+    return
+  }
+
+  try {
+    host.warmProfile(bot.name)
+  } catch {
+    /* warm is best-effort */
+  }
 }

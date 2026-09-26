@@ -1629,6 +1629,7 @@ export { SessionStatusDot, type SessionStatusDotProps } from '@/app/chat/session
  *  above you; spell the classes yourself and the row drifts. The session row is
  *  canonical; `row-geometry.ts` explains what each measurement belongs to. */
 export { SidebarRowLead } from '@/app/chat/sidebar/chrome'
+export { SidebarSectionMeta } from '@/app/chat/sidebar/chrome'
 /** One glyph per gateway kind — device, cloud, terminal, network. The statusbar
  *  switcher, the fleet profile rail and any plugin rail listing gateways share
  *  it, so a connection looks the same wherever it is named. */
@@ -1671,8 +1672,10 @@ export {
   type ProfileGroupRoute,
   type RouteContribution,
   ROUTES_AREA,
+  SIDEBAR_LIST_TOP_AREA,
   SIDEBAR_NAV_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
+  type SidebarListTopContribution,
   type SidebarNavContribution,
   WORKSPACE_PAGE_HEADER_AREA
 } from '@/app/routes'
@@ -1682,12 +1685,12 @@ export {
  *  look) — use it for colour picking instead of driving app widgets through
  *  React internals; pair it with `host.sessions.setColor` for session colours. */
 export { APPEARANCE_AREAS } from '@/app/settings/appearance-contrib'
-
 /** THE settings rows: `ListRow` is label + description with the control beside
  *  it (wide) or under it (narrow); `ToggleRow` is the one on/off row — a Switch,
  *  never an Off/On pill pair. Use them for preference rows in plugin panes and
  *  dialogs so they line up with core Settings. */
 export { ListRow, ToggleRow } from '@/app/settings/primitives'
+
 /** THE full per-toolset config panel core Settings renders — provider picker,
  *  env vars / API keys, model catalog picker, and post-setup runners. Route-
  *  decoupled (the "manage keys" deep link is a no-op outside the router); pass
@@ -1705,6 +1708,11 @@ export {
   ModelMenuCloseContext,
   type ModelMenuController
 } from '@/app/shell/model-catalog-menu'
+/** The sessions column's section chrome: the dither-dot uppercase label every
+ *  section (Pinned, Sessions, a contributed `sidebar.listTop` section) carries,
+ *  and the muted meta slot beside it. Spelling them yourself drifts the rail's
+ *  type scale apart. */
+export { SidebarPanelLabel } from '@/app/shell/sidebar-label'
 export type { StatusbarItem } from '@/app/shell/statusbar-controls'
 export type { TitlebarTool } from '@/app/shell/titlebar-controls'
 /** Canonical raw message renderer: applies Desktop message transforms (including

@@ -2691,7 +2691,8 @@ export const zhHant = defineLocale({
       capabilities: '技能與工具',
       messaging: '訊息平台',
       artifacts: '成品',
-      cron: '排程工作'
+      cron: '排程工作',
+      browse: '瀏覽'
     },
     interfaceMode: {
       label: '介面',
@@ -2850,10 +2851,6 @@ export const zhHant = defineLocale({
       working: '進行中',
       done: '已完成'
     }
-  },
-
-  intro: {
-    recentSessions: '從上次繼續'
   },
 
   composer: {
