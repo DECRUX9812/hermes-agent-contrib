@@ -89,7 +89,9 @@ import {
   NEW_CHAT_ROUTE,
   PROFILES_ROUTE,
   sessionRoute,
-  SETTINGS_ROUTE
+  SETTINGS_ROUTE,
+  STARMAP_ROUTE,
+  WEBHOOKS_ROUTE
 } from '../routes'
 
 export interface KeybindRuntimeDeps {
@@ -223,6 +225,8 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'nav.artifacts': () => navigateToWorkspacePage(navigate, ARTIFACTS_ROUTE),
     'nav.cron': () => navigate(CRON_ROUTE),
     'nav.agents': () => navigate(AGENTS_ROUTE),
+    'nav.starmap': () => navigate(STARMAP_ROUTE),
+    'nav.webhooks': () => navigate(WEBHOOKS_ROUTE),
 
     'session.new': () => {
       // Match the sidebar New Session button. A plain keyboard new chat should
@@ -365,6 +369,19 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     })
 
     return () => stopF12Shortcut?.()
+  }, [])
+
+  // The native menu's door items carry no accelerators (the chords are
+  // rebindable), so a click sends the action id instead — it lands in the
+  // same handler table a keypress would have hit.
+  useEffect(() => {
+    const unsubscribe = window.hermesDesktop?.onMenuActionRequested?.(actionId => {
+      const handler = handlersRef.current[actionId] ?? contributedKeybindHandler(actionId)
+
+      handler?.()
+    })
+
+    return () => unsubscribe?.()
   }, [])
 
   useEffect(() => {

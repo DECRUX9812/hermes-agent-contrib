@@ -145,12 +145,17 @@ export function useSettingsSearchCatalog(enabled: boolean) {
 
   // Every hand-built settings row, straight from the manifest that also
   // routes and ids them — the palette cannot drift from the pages.
-  const settingEntries: SettingsSearchEntry[] = settingSearchTargets(t).map(({ id, view, ...entry }) => {
+  const settingEntries: SettingsSearchEntry[] = settingSearchTargets(t).map(({ id, subpage, view, ...entry }) => {
     const parent = parentOf(view)
+    const parentLabel = parent?.label ?? view
+    // Breadcrumb over the owning subpage — "Appearance › Window layout" — so a
+    // palette hit also teaches where the control lives.
+    const page = subpage ? settingsSubpages(view).find(candidate => candidate.id === subpage) : undefined
+    const context = page ? `${parentLabel} › ${t.settings.subpages[page.labelKey]}` : parentLabel
 
     return {
       ...entry,
-      context: parent?.label ?? view,
+      context,
       icon: parent?.icon ?? Settings2,
       id: `setting:${id}`,
       target: { setting: id, view }
@@ -159,7 +164,7 @@ export function useSettingsSearchCatalog(enabled: boolean) {
 
   // A page named after its one setting (Appearance › Theme) would show up as
   // two identical rows; the setting wins because it lands on the row itself.
-  const settingLabels = new Set(settingEntries.map(entry => `${entry.context}\u0000${entry.label}`))
+  const settingLabels = new Set(settingEntries.map(entry => `${entry.label}\u0000${entry.target.view}`))
 
   const subpageEntries: SettingsSearchEntry[] = parents
     .flatMap(parent =>
@@ -172,7 +177,7 @@ export function useSettingsSearchCatalog(enabled: boolean) {
         target: { view: parent.view, subpage: page.id }
       }))
     )
-    .filter(entry => !settingLabels.has(`${entry.context}\u0000${entry.label}`))
+    .filter(entry => !settingLabels.has(`${entry.label}\u0000${entry.target.view}`))
 
   return {
     subpageEntries,

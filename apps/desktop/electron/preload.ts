@@ -518,6 +518,12 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
 
     return () => ipcRenderer.removeListener('hermes:open-updates', listener)
   },
+  onMenuActionRequested: callback => {
+    const listener = (_event, actionId) => callback(actionId)
+    ipcRenderer.on('hermes:menu-action', listener)
+
+    return () => ipcRenderer.removeListener('hermes:menu-action', listener)
+  },
   onDeepLink: callback => {
     const listener = (_event, payload) => callback(payload)
     ipcRenderer.on('hermes:deep-link', listener)

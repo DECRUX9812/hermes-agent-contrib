@@ -7,6 +7,7 @@ import { ZoomableImage } from '@/components/chat/zoomable-image'
 import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/ui/copy-button'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   Pagination,
   PaginationButton,
@@ -349,12 +350,7 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
       {!artifacts ? (
         <PageLoader label={a.indexing} />
       ) : visibleArtifacts.length === 0 ? (
-        <div className="grid h-full place-items-center px-6 text-center">
-          <div>
-            <div className="text-sm font-medium">{a.noArtifactsTitle}</div>
-            <div className="mt-1 text-xs text-muted-foreground">{a.noArtifactsDesc}</div>
-          </div>
-        </div>
+        <EmptyState className="h-full px-6" description={a.noArtifactsDesc} title={a.noArtifactsTitle} />
       ) : (
         <div className="h-full overflow-y-auto [scrollbar-gutter:stable]">
           <div className="flex flex-col gap-3 px-3 pb-2">

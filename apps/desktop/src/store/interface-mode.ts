@@ -1,8 +1,10 @@
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores'
 
+import { translateNow } from '@/i18n'
 import { createLayoutPersistence } from '@/lib/layout-persistence'
 import { type Codec, persistentAtom } from '@/lib/persisted'
 import type { SidebarRowMeta } from '@/store/layout'
+import { notify } from '@/store/notifications'
 import type { ToolViewMode } from '@/store/tool-view'
 import { isBrowserWindow, isHudWindow, isSecondaryWindow } from '@/store/windows'
 
@@ -62,7 +64,20 @@ export const modeLayout = createLayoutPersistence(
 )
 
 export function setInterfaceMode(mode: InterfaceMode) {
+  const wasSimple = $interfaceMode.get() === 'simple'
+
   modeLayout.change(mode, () => $interfaceMode.set(mode))
+
+  // The switch hides panes and tools all at once — say where they went, with
+  // the door back. A reaction to the user's own action, so it stays a toast.
+  if (mode === 'simple' && !wasSimple) {
+    notify({
+      action: { label: translateNow('interfaceMode.showAdvanced'), onClick: () => setInterfaceMode('advanced') },
+      durationMs: 8_000,
+      message: translateNow('interfaceMode.simpleNotice'),
+      placement: 'bottom-right'
+    })
+  }
 }
 
 /** The ⌘K row and the rebindable `view.toggleSimpleMode` action. */

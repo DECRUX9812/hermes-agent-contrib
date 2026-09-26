@@ -4012,6 +4012,10 @@ export interface Translations {
     title: string
     hint: string
     sessionNote: string
+    /** Toast shown right after the interface switches to Simple — where the
+     *  panes went plus the door back. */
+    simpleNotice: string
+    showAdvanced: string
     simple: { label: string; description: string }
     advanced: { label: string; description: string }
   }

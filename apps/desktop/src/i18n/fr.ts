@@ -658,6 +658,8 @@ export const fr = defineLocale({
       'nav.artifacts': 'Ouvrir les artefacts',
       'nav.cron': 'Ouvrir les tâches planifiées',
       'nav.agents': 'Ouvrir les agents',
+      'nav.starmap': 'Ouvrir le graphique de mémoire',
+      'nav.webhooks': 'Ouvrir les webhooks',
       'session.new': 'Nouvelle session',
       'session.newTab': 'Nouvel onglet de session',
       'session.newWindow': 'Nouvelle fenêtre',
@@ -5223,6 +5225,8 @@ export const fr = defineLocale({
     hint: 'Modifie ce qui est affiché, pas ce que Hermes peut faire.',
     sessionNote:
       'Défini par le mode Simple. Une modification ici dure le temps de cette session ; passez en mode Avancé pour la conserver.',
+    simpleNotice: 'Mode Simple — les panneaux et les outils supplémentaires sont masqués.',
+    showAdvanced: 'Afficher le mode Avancé',
     simple: {
       label: 'Simple',
       description:
@@ -6000,6 +6004,10 @@ export const fr = defineLocale({
       'right-pane': {
         title: 'Le volet de travail',
         text: "Les fichiers, le terminal, la revue et le navigateur intégré partagent le côté droit de l'application."
+      },
+      'advanced-mode': {
+        title: 'Plus de choses derrière le mode Avancé',
+        text: 'Les panneaux, les tâches planifiées, les capacités et la barre d’état restent en mode Avancé — Paramètres › Apparence › Fenêtre et disposition change de mode.'
       }
     }
   },
