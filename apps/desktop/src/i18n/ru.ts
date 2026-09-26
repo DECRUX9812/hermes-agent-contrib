@@ -2684,6 +2684,14 @@ export const ru = defineLocale({
     missingTitle: 'Артефакт недоступен',
     missingBody: 'Этот артефакт больше нет в локальном реестре.'
   },
+  artifactRail: {
+    empty: 'В этом сеансе пока нет артефактов',
+    noSession: 'Сеанс не выбран',
+    open: 'Открыть',
+    openFailed: 'Не удалось открыть артефакт',
+    saveFailed: 'Не удалось сохранить артефакт',
+    saveToFile: 'Сохранить в файл'
+  },
   sidebar: {
     profileRail: 'Панель профилей',
     filter: {
@@ -2775,6 +2783,7 @@ export const ru = defineLocale({
     files: 'Файлы',
     review: 'Проверка',
     logs: 'Журналы',
+    artifacts: 'Артефакты',
     cronJobs: 'Cron-задачи',
     groupAriaGrouped: 'Показать сеансы одним списком',
     groupAriaUngrouped: 'Сгруппировать сеансы по рабочим пространствам',
@@ -2889,6 +2898,7 @@ export const ru = defineLocale({
       export: 'Экспорт',
       exportMarkdown: 'Экспортировать как Markdown',
       copyMarkdown: 'Копировать как Markdown',
+      artifacts: 'Артефакты',
       branchFrom: 'Ветка',
       rename: 'Переименовать',
       archive: 'В архив',

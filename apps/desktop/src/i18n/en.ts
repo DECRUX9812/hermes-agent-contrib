@@ -3563,6 +3563,15 @@ export const en: Translations = {
     missingBody: 'This artifact is no longer in the local registry.'
   },
 
+  artifactRail: {
+    empty: 'No artifacts in this session yet',
+    noSession: 'No session selected',
+    open: 'Open',
+    openFailed: 'Could not open artifact',
+    saveFailed: 'Could not save artifact',
+    saveToFile: 'Save to file'
+  },
+
   sidebar: {
     filter: {
       grouping: 'Grouping',
@@ -3654,6 +3663,7 @@ export const en: Translations = {
     files: 'Files',
     review: 'Review',
     logs: 'Logs',
+    artifacts: 'Artifacts',
     cronJobs: 'Cron jobs',
     groupAriaGrouped: 'Show sessions as a single list',
     groupAriaUngrouped: 'Group sessions by workspace',
@@ -3775,6 +3785,7 @@ export const en: Translations = {
       export: 'Export',
       exportMarkdown: 'Export as Markdown',
       copyMarkdown: 'Copy as Markdown',
+      artifacts: 'Artifacts',
       branchFrom: 'Branch',
       rename: 'Rename…',
       archive: 'Archive',

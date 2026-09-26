@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query'
 import { atom } from 'nanostores'
 
 import { RightSidebarPane } from '@/app/right-sidebar'
+import { ArtifactsRailPane } from '@/app/right-sidebar/artifacts'
 import { ReviewPane } from '@/app/right-sidebar/review'
 import type { GroupSetter } from '@/app/shell/group-setter'
 import type { StatusbarItem } from '@/app/shell/statusbar-controls'
@@ -105,6 +106,18 @@ export function ReviewPaneContent() {
   return (
     <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col [&>aside]:min-h-0 [&>aside]:flex-1')}>
       <ReviewPane key={cwd || 'no-cwd'} />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Artifacts — the per-session rail (#32)
+// ---------------------------------------------------------------------------
+
+export function ArtifactsPane() {
+  return (
+    <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col')}>
+      <ArtifactsRailPane />
     </div>
   )
 }

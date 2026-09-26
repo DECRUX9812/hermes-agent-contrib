@@ -3935,6 +3935,14 @@ export const deOverrides = {
     missingTitle: 'Artifact nicht verfügbar',
     missingBody: 'Dieses Artifact ist nicht mehr in der lokalen Registry.'
   },
+  artifactRail: {
+    empty: 'Noch keine Artefakte in dieser Session',
+    noSession: 'Keine Session ausgewählt',
+    open: 'Öffnen',
+    openFailed: 'Artefakt konnte nicht geöffnet werden',
+    saveFailed: 'Artefakt konnte nicht gespeichert werden',
+    saveToFile: 'In Datei speichern'
+  },
   sidebar: {
     filter: {
       grouping: 'Gruppierung',
@@ -4019,6 +4027,7 @@ export const deOverrides = {
     files: 'Dateien',
     review: 'Review',
     logs: 'Logs',
+    artifacts: 'Artefakte',
     cronJobs: 'Cron-Jobs',
     groupAriaGrouped: 'Sessions als einzelne Liste anzeigen',
     groupAriaUngrouped: 'Sessions nach Workspace gruppieren',
@@ -4142,6 +4151,7 @@ export const deOverrides = {
       export: 'Exportieren',
       exportMarkdown: 'Als Markdown exportieren',
       copyMarkdown: 'Als Markdown kopieren',
+      artifacts: 'Artefakte',
       branchFrom: 'Branch',
       rename: 'Umbenennen…',
       archive: 'Archivieren',

@@ -3005,6 +3005,15 @@ export interface Translations {
     missingBody: string
   }
 
+  artifactRail: {
+    empty: string
+    noSession: string
+    open: string
+    openFailed: string
+    saveFailed: string
+    saveToFile: string
+  }
+
   sidebar: {
     archive: {
       finished: string
@@ -3088,6 +3097,7 @@ export interface Translations {
     files: string
     review: string
     logs: string
+    artifacts: string
     cronJobs: string
     groupAriaGrouped: string
     groupAriaUngrouped: string
@@ -3204,6 +3214,7 @@ export interface Translations {
       export: string
       exportMarkdown: string
       copyMarkdown: string
+      artifacts: string
       branchFrom: string
       rename: string
       archive: string
