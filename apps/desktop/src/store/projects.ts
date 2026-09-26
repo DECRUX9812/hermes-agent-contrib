@@ -1318,6 +1318,8 @@ export interface StartWorkSessionRequest {
   /** Stack the fresh session as a tab when main already holds a chat (palette/⌘O opens-from-nowhere). */
   openTab?: boolean
   path: string
+  /** `@kind:value` inline refs inserted as chips after `draft` (plan→build handoff). */
+  refs?: string[]
   token: number
 }
 
@@ -1369,7 +1371,11 @@ export function closeWorktreeDialog(): void {
 
 let startWorkToken = 0
 
-export function requestStartWorkSession(path: string, draft?: string, options?: { openTab?: boolean }): void {
+export function requestStartWorkSession(
+  path: string,
+  draft?: string,
+  options?: { openTab?: boolean; refs?: string[] }
+): void {
   const target = path.trim()
 
   if (!target) {
@@ -1381,6 +1387,7 @@ export function requestStartWorkSession(path: string, draft?: string, options?: 
     draft: draft?.trim() || undefined,
     openTab: options?.openTab || undefined,
     path: target,
+    refs: options?.refs?.length ? options.refs : undefined,
     token: startWorkToken
   })
 }

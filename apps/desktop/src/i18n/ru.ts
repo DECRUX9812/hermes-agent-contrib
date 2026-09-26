@@ -2610,7 +2610,9 @@ export const ru = defineLocale({
     kindLink: 'ссылка',
     chat: 'Чат',
     copyUrl: 'Копировать URL',
-    copyPath: 'Копировать путь'
+    copyPath: 'Копировать путь',
+    buildWithPlan: 'Собрать по этому плану',
+    buildWithPlanDraft: 'Реализуй этот план:'
   },
 
   artifactCard: {

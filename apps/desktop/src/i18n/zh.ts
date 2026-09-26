@@ -3275,7 +3275,9 @@ export const zh = defineLocale({
     kindLink: '链接',
     chat: '对话',
     copyUrl: '复制 URL',
-    copyPath: '复制路径'
+    copyPath: '复制路径',
+    buildWithPlan: '使用此计划构建',
+    buildWithPlanDraft: '实现这个计划：'
   },
 
   artifactCard: {

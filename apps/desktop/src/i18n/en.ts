@@ -3486,7 +3486,9 @@ export const en: Translations = {
     kindLink: 'link',
     chat: 'Chat',
     copyUrl: 'Copy URL',
-    copyPath: 'Copy path'
+    copyPath: 'Copy path',
+    buildWithPlan: 'Build with this plan',
+    buildWithPlanDraft: 'Build this plan:'
   },
 
   artifactCard: {
