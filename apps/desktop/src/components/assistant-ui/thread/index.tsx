@@ -5,6 +5,7 @@ import { AssistantMessage } from '@/components/assistant-ui/thread/assistant-mes
 import { ThreadMessageList } from '@/components/assistant-ui/thread/list'
 import { BackgroundResumeNotice, CenteredThreadSpinner } from '@/components/assistant-ui/thread/status'
 import { SystemMessage } from '@/components/assistant-ui/thread/system-message'
+import { ThreadScrubber } from '@/components/assistant-ui/thread/thread-scrubber'
 import { ThreadTimeline } from '@/components/assistant-ui/thread/timeline'
 import { useTranscriptWindow } from '@/components/assistant-ui/thread/transcript-window'
 import { type RestoreMessageTarget } from '@/components/assistant-ui/thread/types'
@@ -192,6 +193,7 @@ export const Thread = memo(function Thread({
         />
         {loading === 'session' && <CenteredThreadSpinner />}
         <ThreadTimeline />
+        <ThreadScrubber />
         <ConfirmDialog
           confirmLabel={copy.restoreConfirm}
           description={copy.restoreBody}

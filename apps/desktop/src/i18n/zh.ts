@@ -4779,6 +4779,7 @@ export const zh = defineLocale({
     thread: {
       loadingSession: '正在加载会话',
       showEarlier: '显示更早的消息',
+      timelineScrubber: '会话记录缩略图',
       loadingResponse: 'Hermes 正在加载回复',
       loadingLocalModel: model => `正在将 ${model} 载入内存`,
       processingPrompt: '正在处理提示词',
