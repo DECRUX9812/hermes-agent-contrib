@@ -4174,6 +4174,20 @@ export const esOverrides = {
       strip: 'Sesiones seguidas',
       stop: 'Dejar de seguir'
     },
+    selection: {
+      ariaLabel: 'Sesiones seleccionadas',
+      count: (count: number) => `${count} seleccionadas`,
+      pin: 'Fijar',
+      unpin: 'Desfijar',
+      mute: 'Silenciar',
+      unmute: 'Quitar silencio',
+      tag: 'Etiquetar',
+      archive: 'Archivar',
+      clear: 'Quitar selección',
+      tagDialogTitle: (count: number) =>
+        count === 1 ? 'Etiquetar 1 sesión' : `Etiquetar ${count} sesiones`,
+      tagDialogDesc: 'Añade la etiqueta a todas las sesiones seleccionadas.'
+    },
     dateDivider: {
       today: 'Hoy, más temprano',
       yesterday: 'Ayer',

@@ -38,6 +38,12 @@ import { sessionPinId } from '@/store/session'
 import { $sessionDigestById } from '@/store/session-digest'
 import { $sessionDotStateById, hasLiveTurn, showsRunningArc } from '@/store/session-dot-state'
 import { $sessionListDensity } from '@/store/session-list-density'
+import {
+  $selectedSessionKeys,
+  selectionKeyForSession,
+  selectOnlySession,
+  toggleSessionSelected
+} from '@/store/session-selection'
 import { $openStoredSessionIds } from '@/store/session-states'
 import { sessionCostUsd } from '@/store/sidebar-archive'
 import { $todoProgressBySession } from '@/store/todos'
@@ -77,6 +83,9 @@ interface SidebarSessionRowProps extends React.ComponentProps<'div'> {
   /** Toggle the persisted read-state watermark. */
   onToggleUnread: () => void
   onResume: () => void
+  /** ⇧/⌘⇧-click needs the containing list's ordered row keys to size a
+   *  range — the row can't see its siblings, so the list supplies them. */
+  onSelectRange?: (additive: boolean) => void
   reorderable?: boolean
   dragging?: boolean
   dragHandleProps?: React.HTMLAttributes<HTMLElement>
@@ -143,6 +152,7 @@ function SidebarSessionRowImpl({
   onPin,
   onToggleUnread,
   onResume,
+  onSelectRange,
   reorderable = false,
   dragging = false,
   dragHandleProps,
@@ -216,6 +226,10 @@ function SidebarSessionRowImpl({
   // it reaches all four row render paths at once, the set only changes when a
   // tile opens or closes, and the boolean bails every unaffected row out.
   const openUnfocused = useStoreSelector($openStoredSessionIds, open => !isSelected && open.has(session.id))
+  // In the rail's ⌘/⇧ multi-select set. A keyed selector rather than a prop,
+  // same as openUnfocused: one click elsewhere shouldn't repaint every row.
+  const selectionKey = selectionKeyForSession(session)
+  const multiSelected = useStoreSelector($selectedSessionKeys, keys => keys.has(selectionKey))
   const totalTokens = session.input_tokens + session.output_tokens
   const cost = sessionCostUsd(session)
 
@@ -491,6 +505,9 @@ function SidebarSessionRowImpl({
           !card && density === 'detailed' && 'min-h-[3.875rem]',
           !card && condensed && 'min-h-[1.375rem]',
           isSelected && 'bg-(--ui-row-active-background)',
+          // In the multi-select set: the "lit but not the focused one" band
+          // rows already use for open-in-another-pane.
+          multiSelected && !isSelected && 'bg-(--ui-row-open-background)',
           // Open in another pane: the SAME band, just weaker. Its own mixed
           // token rather than row opacity — dimming the whole row would take
           // the title and the status dot down with it.
@@ -570,18 +587,17 @@ function SidebarSessionRowImpl({
           })}
           onClick={event => {
             // Modifier-click gestures on a row (see `resolveSessionRowClick`):
-            //   ⇧          → pin / unpin
-            //   ⌘/⌃        → open in a new tab (stack into main)
-            //   ⌘/⌃ + ⇧    → pop into its own window (needs standalone windows)
+            //   ⌘/⌃        → toggle in/out of the multi-select set
+            //   ⇧          → range-select from the last clicked row
+            //   ⌘/⌃ + ⇧    → add that range to the selection
             //   ⌥ + ⇧      → archive
-            // A plain click resumes. Archive also lives in the row's ⋯ and
-            // right-click menus and as a rebindable hotkey (`session.archive`).
-            // `openSession`'s 'window' intent already falls back to 'tab' when
-            // the bridge lacks standalone windows, so the resolver can always
-            // offer the window action here.
-            const action = resolveSessionRowClick(event, { canOpenWindow: true })
+            // A plain click resumes (and collapses the selection to that
+            // row — Finder's rule). New tab/window moved to middle-click and
+            // the row's menus; archive also lives there and on a hotkey.
+            const action = resolveSessionRowClick(event)
 
             if (action === 'resume') {
+              selectOnlySession(session)
               onResume()
 
               return
@@ -593,12 +609,10 @@ function SidebarSessionRowImpl({
 
             if (action === 'archive') {
               onArchive()
-            } else if (action === 'pin') {
-              onPin()
-            } else if (action === 'newTab') {
-              openSession(session.id, () => undefined, 'tab')
+            } else if (action === 'selectToggle') {
+              toggleSessionSelected(session)
             } else {
-              openSession(session.id, () => undefined, 'window')
+              onSelectRange?.(action === 'selectRangeAdditive')
             }
           }}
         >

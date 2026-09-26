@@ -4184,6 +4184,20 @@ export const deOverrides = {
       strip: 'Beobachtete Sitzungen',
       stop: 'Nicht mehr beobachten'
     },
+    selection: {
+      ariaLabel: 'Ausgewählte Sitzungen',
+      count: (count: number) => `${count} ausgewählt`,
+      pin: 'Anheften',
+      unpin: 'Lösen',
+      mute: 'Stummschalten',
+      unmute: 'Stummschaltung aufheben',
+      tag: 'Tag',
+      archive: 'Archivieren',
+      clear: 'Auswahl aufheben',
+      tagDialogTitle: (count: number) =>
+        count === 1 ? '1 Sitzung taggen' : `${count} Sitzungen taggen`,
+      tagDialogDesc: 'Fügt den Tag jeder ausgewählten Sitzung hinzu.'
+    },
     dateDivider: {
       today: 'Heute früher',
       yesterday: 'Gestern',

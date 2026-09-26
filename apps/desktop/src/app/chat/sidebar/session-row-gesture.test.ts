@@ -3,44 +3,37 @@ import { describe, expect, it } from 'vitest'
 import { resolveSessionRowClick } from './session-row-gesture'
 
 const NO_MODS = { altKey: false, ctrlKey: false, metaKey: false, shiftKey: false }
-const WINDOW_OK = { canOpenWindow: true }
-const NO_WINDOW = { canOpenWindow: false }
 
 describe('resolveSessionRowClick', () => {
   it('resumes on a plain click', () => {
-    expect(resolveSessionRowClick(NO_MODS, WINDOW_OK)).toBe('resume')
+    expect(resolveSessionRowClick(NO_MODS)).toBe('resume')
   })
 
-  it('pins on ⇧-click', () => {
-    expect(resolveSessionRowClick({ ...NO_MODS, shiftKey: true }, WINDOW_OK)).toBe('pin')
+  it('toggles selection on ⌘/⌃-click', () => {
+    expect(resolveSessionRowClick({ ...NO_MODS, metaKey: true })).toBe('selectToggle')
+    expect(resolveSessionRowClick({ ...NO_MODS, ctrlKey: true })).toBe('selectToggle')
   })
 
-  it('opens a new tab on ⌘/⌃-click', () => {
-    expect(resolveSessionRowClick({ ...NO_MODS, metaKey: true }, WINDOW_OK)).toBe('newTab')
-    expect(resolveSessionRowClick({ ...NO_MODS, ctrlKey: true }, WINDOW_OK)).toBe('newTab')
-    expect(resolveSessionRowClick({ ...NO_MODS, ctrlKey: true }, NO_WINDOW)).toBe('newTab')
+  it('range-selects on ⇧-click', () => {
+    expect(resolveSessionRowClick({ ...NO_MODS, shiftKey: true })).toBe('selectRange')
   })
 
-  it('opens a new window on ⌘/⌃+⇧-click when supported', () => {
-    expect(resolveSessionRowClick({ ...NO_MODS, metaKey: true, shiftKey: true }, WINDOW_OK)).toBe('newWindow')
-    expect(resolveSessionRowClick({ ...NO_MODS, ctrlKey: true, shiftKey: true }, WINDOW_OK)).toBe('newWindow')
+  it('range-selects additively on ⌘/⌃+⇧-click', () => {
+    expect(resolveSessionRowClick({ ...NO_MODS, metaKey: true, shiftKey: true })).toBe('selectRangeAdditive')
+    expect(resolveSessionRowClick({ ...NO_MODS, ctrlKey: true, shiftKey: true })).toBe('selectRangeAdditive')
   })
 
-  it('falls back to a new tab for ⌘/⌃+⇧-click when windows are unavailable (web embed)', () => {
-    expect(resolveSessionRowClick({ ...NO_MODS, metaKey: true, shiftKey: true }, NO_WINDOW)).toBe('newTab')
-  })
-
-  // The regression this whole module guards: ⌥+⇧ sets shiftKey too, so a naive
-  // "check shiftKey first" would swallow archive into "pin".
+  // The regression this whole module guards: ⌥+⇧ sets shiftKey too, so a
+  // naive "check shiftKey first" would swallow archive into a range select.
   it('archives on ⌥+⇧-click', () => {
-    expect(resolveSessionRowClick({ ...NO_MODS, altKey: true, shiftKey: true }, WINDOW_OK)).toBe('archive')
+    expect(resolveSessionRowClick({ ...NO_MODS, altKey: true, shiftKey: true })).toBe('archive')
   })
 
-  it('archives regardless of window support (archive needs no standalone window)', () => {
-    expect(resolveSessionRowClick({ ...NO_MODS, altKey: true, shiftKey: true }, NO_WINDOW)).toBe('archive')
+  it('⌥+⇧ beats every modifier combination, including the primary key', () => {
+    expect(resolveSessionRowClick({ altKey: true, ctrlKey: true, metaKey: true, shiftKey: true })).toBe('archive')
   })
 
   it('does not archive on ⌥-click alone', () => {
-    expect(resolveSessionRowClick({ ...NO_MODS, altKey: true }, WINDOW_OK)).toBe('resume')
+    expect(resolveSessionRowClick({ ...NO_MODS, altKey: true })).toBe('resume')
   })
 })

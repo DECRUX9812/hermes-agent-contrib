@@ -3817,6 +3817,19 @@ export const en: Translations = {
       strip: 'Watched sessions',
       stop: 'Stop watching'
     },
+    selection: {
+      ariaLabel: 'Selected sessions',
+      count: (count: number) => `${count} selected`,
+      pin: 'Pin',
+      unpin: 'Unpin',
+      mute: 'Mute',
+      unmute: 'Unmute',
+      tag: 'Tag',
+      archive: 'Archive',
+      clear: 'Clear selection',
+      tagDialogTitle: (count: number) => `Tag ${count} session${count === 1 ? '' : 's'}`,
+      tagDialogDesc: 'Adds the tag to every selected session.'
+    },
     dateDivider: {
       today: 'Earlier today',
       yesterday: 'Yesterday',

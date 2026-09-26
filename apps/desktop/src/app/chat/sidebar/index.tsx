@@ -202,6 +202,7 @@ import {
   SidebarSessionSkeletons,
   SidebarStorageCorruptNotice
 } from './section-states'
+import { SessionSelectionBar } from './selection-bar'
 import { buildSessionByAnyId, resolvePinnedSessions } from './session-index'
 import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
 import { CONTEXT_SPLIT_KIT, SplitSubmenu } from './split-submenu'
@@ -2352,6 +2353,11 @@ export function ChatSidebar({
                 open={cronOpen}
               />
             )}
+
+            {/* ⌘/⇧-click multi-select (#18): a floating bulk-action pill at
+                the bottom of the column while rows are selected. Renders
+                nothing on an empty selection. */}
+            <SessionSelectionBar />
           </div>
         )}
 
