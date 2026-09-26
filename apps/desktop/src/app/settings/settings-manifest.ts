@@ -96,6 +96,12 @@ export const SETTINGS_MANIFEST = {
       available: () => Boolean(window.hermesDesktop?.minimizeToTray),
       copy: t => ({ label: t.settings.config.minimizeToTrayTitle, description: t.settings.config.minimizeToTrayDesc })
     },
+    menuBarStatus: {
+      subpage: 'window-layout',
+      keywords: ['tray', 'menu bar', 'status', 'badge', 'sessions', 'active'],
+      available: () => Boolean(window.hermesDesktop?.menuBarStatus),
+      copy: t => ({ label: t.settings.config.menuBarStatusTitle, description: t.settings.config.menuBarStatusDesc })
+    },
     translucency: {
       ...appearanceSetting('window-layout', ['opacity', 'transparent', 'glass', 'blur'], 'translucency'),
       available: () => TRANSLUCENCY_SUPPORTED

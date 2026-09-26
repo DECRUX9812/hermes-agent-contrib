@@ -163,6 +163,7 @@ import {
   useBackgroundSync
 } from './hooks/use-background-sync'
 import { useDesktopIntegrations } from './hooks/use-desktop-integrations'
+import { useMenuBarStatus } from './hooks/use-menu-bar-status'
 import { usePetBridge } from './hooks/use-pet-bridge'
 import { useQuickEntryBridge } from './hooks/use-quick-entry-bridge'
 import { useSessionTileDelegate } from './hooks/use-session-tile-delegate'
@@ -816,6 +817,10 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // SAME submit machinery the normal composer uses (current chat / picked
   // session / new session), and it hears gateway truth from this window.
   useQuickEntryBridge({ startFreshSessionDraft, submitText })
+
+  // Menu-bar status (#38): push the session dot-state truth out to the tray
+  // menu/badge so the menu bar mirrors what the sidebar paints.
+  useMenuBarStatus()
 
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })

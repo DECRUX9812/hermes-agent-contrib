@@ -1623,6 +1623,11 @@ export const esOverrides = {
         'Al minimizar las ventanas o cerrar la ventana principal, se ocultan en la bandeja del sistema (barra de menús en macOS) y Hermes sigue ejecutándose. Usa Salir de Hermes en el menú de la bandeja o Cmd+Q para salir. Desactivado por defecto; se aplica solo a este dispositivo.',
       minimizeToTrayUnavailable:
         'La bandeja del sistema no está disponible. Las ventanas se minimizarán y cerrarán con normalidad. Desactiva y vuelve a activar esta opción para reintentarlo.',
+      menuBarStatusTitle: 'Estado en la barra de menús',
+      menuBarStatusDesc:
+        'Muestra un icono de Hermes en la barra de menús de macOS (bandeja del sistema en Windows/Linux) con una insignia de estado, sesiones recientes y acciones rápidas. Desactivado por defecto; solo se aplica a este dispositivo.',
+      menuBarStatusUnavailable:
+        'La bandeja del sistema no está disponible en esta plataforma. Desactiva y vuelve a activar la opción para reintentarlo.',
       none: 'Ninguno',
       noneParen: '(ninguno)',
       builtinOnly: 'Solo integradas',
@@ -6253,6 +6258,16 @@ deliverableArtifacts: 'Artefactos',
       startMessaging: 'Iniciar mensajería'
     }
   },
+  menuBar: {
+    newSession: 'Nueva sesión',
+    quickEntry: 'Entrada rápida',
+    quit: 'Salir de Hermes',
+    recentSessions: 'Sesiones recientes',
+    show: 'Mostrar Hermes',
+    statusIdle: 'Hermes — inactivo',
+    statusActive: (runs: number, needsYou: number) => `${runs} en ejecución · ${needsYou} te espera`
+  },
+
   quickEntry: {
     contextLabel: 'Contexto',
     contextRemove: 'Quitar contexto'

@@ -13445,8 +13445,43 @@ const minimizeToTray = createMinimizeToTray({
   getIconPath: getAppIconPath,
   restoreMainWindow: () => ensureMainWindow(mainWindow, { isReady: app.isReady(), createWindow, focusWindow }),
   isQuittingForHandoff: () => isQuittingForHandoff,
-  log: rememberLog
+  log: rememberLog,
+  // Menu-bar status (#38) menu actions. Each restores the app and hands the
+  // renderer an intent; when the renderer isn't listening yet (the window was
+  // recreated for the click), the intent waits on the deep-link-ready flush.
+  focusSession: id => deliverTrayIntent('session', id),
+  newSession: () => deliverTrayIntent('new-session'),
+  quickEntryEnabled: () => readQuickEntrySettings().enabled,
+  summonQuickEntry: () => showQuickEntryWindow()
 })
+
+// Queued menu-bar intents (#38): a tray click that had to recreate the main
+// window cannot send before the renderer mounts its listeners, so the intent
+// parks here and flushes on `hermes:deep-link-ready` like deep links do.
+let pendingTraySessionFocus = null
+let pendingTrayNewSession = false
+
+function deliverTrayIntent(kind, sessionId) {
+  minimizeToTray.restore()
+
+  const win = mainWindow
+
+  if (win && !win.isDestroyed() && _rendererReadyForDeepLink) {
+    if (kind === 'session') {
+      win.webContents.send('hermes:focus-session', sessionId)
+    } else {
+      win.webContents.send('hermes:menu-bar:new-session')
+    }
+
+    return
+  }
+
+  if (kind === 'session') {
+    pendingTraySessionFocus = sessionId
+  } else {
+    pendingTrayNewSession = true
+  }
+}
 
 function focusWindow(win) {
   if (!win || win.isDestroyed()) {
@@ -18575,6 +18610,17 @@ ipcMain.handle('hermes:deep-link-ready', () => {
     const queued = _pendingMenuActions
     _pendingMenuActions = []
     queued.forEach(actionId => sendMenuActionRequested(actionId))
+  }
+
+  if (pendingTraySessionFocus) {
+    const queued = pendingTraySessionFocus
+    pendingTraySessionFocus = null
+    mainWindow?.webContents.send('hermes:focus-session', queued)
+  }
+
+  if (pendingTrayNewSession) {
+    pendingTrayNewSession = false
+    mainWindow?.webContents.send('hermes:menu-bar:new-session')
   }
 
   if (_pendingDeepLink) {

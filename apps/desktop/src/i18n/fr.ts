@@ -1628,6 +1628,11 @@ export const frOverrides = {
         'Réduire les fenêtres ou fermer la fenêtre principale les masque dans la zone de notification (barre des menus sur macOS) et Hermes continue de s’exécuter. Utilisez Quitter Hermes dans le menu de la zone de notification ou Cmd+Q pour quitter. Désactivé par défaut ; s’applique uniquement à cet appareil.',
       minimizeToTrayUnavailable:
         'La zone de notification est indisponible. Les fenêtres seront réduites et fermées normalement. Désactivez puis réactivez cette option pour réessayer.',
+      menuBarStatusTitle: 'Statut dans la barre de menus',
+      menuBarStatusDesc:
+        "Affiche une icône Hermes dans la barre de menus macOS (zone de notification sous Windows/Linux) avec un badge d'état, les sessions récentes et des actions rapides. Désactivé par défaut ; s'applique uniquement à cet appareil.",
+      menuBarStatusUnavailable:
+        'La zone de notification est indisponible sur cette plateforme. Désactivez puis réactivez cette option pour réessayer.',
       none: 'Aucun',
       noneParen: '(aucun)',
       builtinOnly: 'Intégré uniquement',
@@ -6274,6 +6279,16 @@ deliverableArtifacts: 'Artefacts',
       startMessaging: 'Démarrer la messagerie'
     }
   },
+  menuBar: {
+    newSession: 'Nouvelle session',
+    quickEntry: 'Saisie rapide',
+    quit: 'Quitter Hermes',
+    recentSessions: 'Sessions récentes',
+    show: 'Afficher Hermes',
+    statusIdle: 'Hermes — inactif',
+    statusActive: (runs: number, needsYou: number) => `${runs} en cours · ${needsYou} attend votre attention`
+  },
+
   quickEntry: {
     contextLabel: 'Contexte',
     contextRemove: 'Retirer le contexte'

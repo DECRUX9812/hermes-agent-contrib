@@ -1147,6 +1147,9 @@ export interface Translations {
       minimizeToTrayTitle: string
       minimizeToTrayDesc: string
       minimizeToTrayUnavailable: string
+      menuBarStatusTitle: string
+      menuBarStatusDesc: string
+      menuBarStatusUnavailable: string
       none: string
       noneParen: string
       builtinOnly: string
@@ -4890,6 +4893,22 @@ export interface Translations {
   /** The standalone quick-entry composer window (global shortcut). It runs
    *  without an i18n provider of its own — the primary renderer resolves these
    *  and pushes them to the window as part of its state payload. */
+  menuBar: {
+    /** Tray quick action starting a fresh chat (#38). */
+    newSession: string
+    /** Tray item summoning the quick-entry window (shown only when it's on). */
+    quickEntry: string
+    quit: string
+    /** Header over the recent-session rows in the tray menu. */
+    recentSessions: string
+    /** Tray item that restores and focuses the main window. */
+    show: string
+    /** Status line when nothing runs and nothing waits on the user. */
+    statusIdle: string
+    /** Status line with live counts — "2 running · 1 needs you". */
+    statusActive: (runs: number, needsYou: number) => string
+  }
+
   quickEntry: {
     /** Prefix on the frontmost-app context chip ("Context — Safari · …"). */
     contextLabel: string

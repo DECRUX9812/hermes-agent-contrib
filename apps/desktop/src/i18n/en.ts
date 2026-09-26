@@ -1371,6 +1371,11 @@ export const en: Translations = {
         'Minimize windows or close the main window to hide them in the system tray (menu bar on macOS) and keep Hermes running. Use Quit Hermes from the tray menu or Cmd+Q to exit. Off by default; applies only to this device.',
       minimizeToTrayUnavailable:
         'The system tray is unavailable. Windows will minimize and close normally. Turn this off and on to retry.',
+      menuBarStatusTitle: 'Menu-bar status',
+      menuBarStatusDesc:
+        'Show a Hermes icon in the macOS menu bar (system tray on Windows/Linux) with a live status badge, recent sessions, and quick actions. Off by default; applies only to this device.',
+      menuBarStatusUnavailable:
+        'The system tray is unavailable on this platform. Turn this off and on to retry.',
       none: 'None',
       noneParen: '(none)',
       builtinOnly: 'Built-in only',
@@ -5792,6 +5797,16 @@ deliverableArtifacts: 'Artifacts',
         "Hermes couldn't reach your messaging connection. Start it from Settings → Messaging, then try the handoff again.",
       startMessaging: 'Start messaging'
     }
+  },
+
+  menuBar: {
+    newSession: 'New Session',
+    quickEntry: 'Quick Entry',
+    quit: 'Quit Hermes',
+    recentSessions: 'Recent Sessions',
+    show: 'Show Hermes',
+    statusIdle: 'Hermes — idle',
+    statusActive: (runs: number, needsYou: number) => `${runs} running · ${needsYou} needs you`
   },
 
   quickEntry: {

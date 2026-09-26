@@ -1624,6 +1624,11 @@ export const deOverrides = {
         'Beim Minimieren von Fenstern oder Schließen des Hauptfensters werden diese im Infobereich (Menüleiste unter macOS) ausgeblendet und Hermes läuft weiter. Beenden Sie über „Hermes beenden“ im Infobereich-Menü oder mit Cmd+Q. Standardmäßig aus; gilt nur für dieses Gerät.',
       minimizeToTrayUnavailable:
         'Der Infobereich ist nicht verfügbar. Fenster werden normal minimiert und geschlossen. Schalten Sie die Option aus und wieder ein, um es erneut zu versuchen.',
+      menuBarStatusTitle: 'Menüleisten-Status',
+      menuBarStatusDesc:
+        'Zeigt ein Hermes-Symbol in der macOS-Menüleiste (Infobereich unter Windows/Linux) mit Status-Badge, letzten Sitzungen und Schnellaktionen. Standardmäßig aus; gilt nur für dieses Gerät.',
+      menuBarStatusUnavailable:
+        'Der Infobereich ist auf dieser Plattform nicht verfügbar. Schalten Sie die Option aus und wieder ein, um es erneut zu versuchen.',
       none: 'Keine',
       noneParen: '(keine)',
       builtinOnly: 'Nur eingebaut',
@@ -6263,6 +6268,16 @@ deliverableArtifacts: 'Artefakte',
       startMessaging: 'Messaging starten'
     }
   },
+  menuBar: {
+    newSession: 'Neue Sitzung',
+    quickEntry: 'Schnelleingabe',
+    quit: 'Hermes beenden',
+    recentSessions: 'Letzte Sitzungen',
+    show: 'Hermes anzeigen',
+    statusIdle: 'Hermes — bereit',
+    statusActive: (runs: number, needsYou: number) => `${runs} aktiv · ${needsYou} wartet auf Sie`
+  },
+
   quickEntry: {
     contextLabel: 'Kontext',
     contextRemove: 'Kontext entfernen'
