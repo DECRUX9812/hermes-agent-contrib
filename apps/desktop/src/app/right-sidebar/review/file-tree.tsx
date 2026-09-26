@@ -432,18 +432,18 @@ function ReviewFileRow({ node, depth }: { node: ReviewTreeNode; depth: number })
         {!isTouchedOnly(file) && (
           <span className="hidden shrink-0 items-center gap-0.5 group-hover/review-row:flex">
             <Tip label={file.staged ? c.unstage : c.stage}>
-            <Button
-              aria-label={file.staged ? c.unstage : c.stage}
-              className="size-4 rounded text-muted-foreground/70 hover:text-foreground"
-              onClick={event => {
-                event.stopPropagation()
-                void (file.staged ? unstageReviewFile(file.path) : stageReviewFile(file.path))
-              }}
-              size="icon-xs"
-              variant="ghost"
-            >
-              <Codicon name={file.staged ? 'remove' : 'add'} size="0.7rem" />
-            </Button>
+              <Button
+                aria-label={file.staged ? c.unstage : c.stage}
+                className="size-4 rounded text-muted-foreground/70 hover:text-foreground"
+                onClick={event => {
+                  event.stopPropagation()
+                  void (file.staged ? unstageReviewFile(file.path) : stageReviewFile(file.path))
+                }}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <Codicon name={file.staged ? 'remove' : 'add'} size="0.7rem" />
+              </Button>
             </Tip>
             <Tip label={c.revert}>
               <Button

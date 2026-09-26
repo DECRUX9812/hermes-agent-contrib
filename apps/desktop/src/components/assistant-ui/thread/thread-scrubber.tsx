@@ -79,11 +79,7 @@ const ActiveThreadScrubber: FC = () => {
 
     setMarkers(previous => (sameMarkers(previous, next) ? previous : next))
     setWindow(scrubberViewportWindow(viewport.scrollTop, scrollHeight, clientHeight))
-    setPercent(
-      Math.round(
-        (scrollHeight > clientHeight ? viewport.scrollTop / (scrollHeight - clientHeight) : 0) * 100
-      )
-    )
+    setPercent(Math.round((scrollHeight > clientHeight ? viewport.scrollTop / (scrollHeight - clientHeight) : 0) * 100))
   }, [])
 
   useEffect(() => {
@@ -167,7 +163,14 @@ const ActiveThreadScrubber: FC = () => {
       onKeyDown={event => {
         const viewport = ownViewport(root.current)
         const page = viewport ? viewport.clientHeight * 0.9 : 200
-        const delta = { ArrowDown: 80, ArrowUp: -80, End: Number.MAX_SAFE_INTEGER, Home: -Number.MAX_SAFE_INTEGER, PageDown: page, PageUp: -page }[event.key]
+        const delta = {
+          ArrowDown: 80,
+          ArrowUp: -80,
+          End: Number.MAX_SAFE_INTEGER,
+          Home: -Number.MAX_SAFE_INTEGER,
+          PageDown: page,
+          PageUp: -page
+        }[event.key]
 
         if (delta === undefined) {
           return

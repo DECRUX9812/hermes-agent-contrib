@@ -39,7 +39,9 @@ export async function startRegionCapture(): Promise<void> {
     if (!result.ok) {
       notify({
         kind: 'error',
-        message: translateNow(result.reason === 'screen-permission' ? 'regionCapture.permissionDenied' : 'regionCapture.captureFailed')
+        message: translateNow(
+          result.reason === 'screen-permission' ? 'regionCapture.permissionDenied' : 'regionCapture.captureFailed'
+        )
       })
       $regionCapture.set({ status: 'idle' })
 

@@ -1248,7 +1248,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
           ...SECTIONS.map(section => ({
             icon: section.icon,
             frecencyKey: `settings:${section.id}`,
-          id: `sp-config-${section.id}`,
+            id: `sp-config-${section.id}`,
             keywords: ['settings', section.label, settingsSectionLabel(section)],
             label: settingsSectionLabel(section),
             run: go(settingsTab(`config:${section.id}`))
@@ -1338,7 +1338,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
                 active: themeName === theme.name,
                 icon: Palette,
                 frecencyKey: `theme:${theme.name}`,
-              id: `theme-${theme.name}`,
+                id: `theme-${theme.name}`,
                 keepOpen: true,
                 keywords: ['theme', 'appearance', 'palette', theme.label, theme.description ?? ''],
                 label: theme.label,

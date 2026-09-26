@@ -68,10 +68,7 @@ function registryArtifactsForSession(sessionId: string, sessions: readonly Sessi
  *  branch-scope review list (the "everything vs merge-base" view — the same
  *  shape the review pane's session scope diffs against). Files whose churn is
  *  already committed show as touched rows with no +/-. */
-async function deliverableFileRows(
-  session: SessionInfo,
-  sessionId: string
-): Promise<DeliverableFileRow[]> {
+async function deliverableFileRows(session: SessionInfo, sessionId: string): Promise<DeliverableFileRow[]> {
   const cwd = session.cwd?.trim() || session.git_repo_root?.trim() || ''
 
   if (!cwd) {
@@ -116,13 +113,14 @@ export function deliverableMarkdown(input: {
   title: string
   transcriptArtifacts: TranscriptArtifact[]
 }): string {
-  const blocks = [
-    `# ${input.title}`,
-    '',
-    `- ${translateNow('desktop.deliverableSession')}: \`${input.sessionId}\``
-  ]
+  const blocks = [`# ${input.title}`, '', `- ${translateNow('desktop.deliverableSession')}: \`${input.sessionId}\``]
 
-  blocks.push('', `## ${translateNow('desktop.deliverableSummary')}`, '', input.summary || `*${translateNow('desktop.deliverableNoSummary')}*`)
+  blocks.push(
+    '',
+    `## ${translateNow('desktop.deliverableSummary')}`,
+    '',
+    input.summary || `*${translateNow('desktop.deliverableNoSummary')}*`
+  )
 
   if (input.files.length > 0) {
     const added = input.files.reduce((sum, row) => sum + (row.added ?? 0), 0)

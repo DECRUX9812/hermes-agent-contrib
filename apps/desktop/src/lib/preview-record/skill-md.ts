@@ -91,8 +91,7 @@ export function describeRecordedStep(step: RecordedStep): string {
   }
 }
 
-const yamlDoubleQuoted = (value: string) =>
-  `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+const yamlDoubleQuoted = (value: string) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 
 /** Descriptions must fit the 60-char system-prompt budget AND end in a period
  *  (`_validate_frontmatter` rejects longer ones on create). */
@@ -100,7 +99,9 @@ function descriptionFor(input: RecordedSkillInput): string {
   const custom = (input.description || '').trim().replace(/\s+/g, ' ')
 
   if (custom) {
-    if (custom.length <= 60 && custom.endsWith('.')) {return custom}
+    if (custom.length <= 60 && custom.endsWith('.')) {
+      return custom
+    }
     const clipped = custom.slice(0, 59).replace(/[.\s]+$/, '')
 
     return clipped ? `${clipped}.` : 'Recorded UI workflow.'
@@ -137,7 +138,7 @@ export function buildRecordedSkillMarkdown(input: RecordedSkillInput): string {
     '',
     'Recorded in the desktop in-app browser. Replay with `drive_preview` — the',
     'preview act engine understands `click`/`type`/`press`/`scroll` on the open',
-    'page — or perform the steps in any browser. Selectors are the page\'s own',
+    "page — or perform the steps in any browser. Selectors are the page's own",
     'at record time; verify the draft before relying on it.',
     '',
     '## Steps',

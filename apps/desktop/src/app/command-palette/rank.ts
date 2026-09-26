@@ -131,8 +131,7 @@ export const rankGroups = (
         ? {
             ...group,
             items: [...group.items].sort(
-              (a, b) =>
-                frecencyScore(frecency[frecencyKeyOf(b)], now) - frecencyScore(frecency[frecencyKeyOf(a)], now)
+              (a, b) => frecencyScore(frecency[frecencyKeyOf(b)], now) - frecencyScore(frecency[frecencyKeyOf(a)], now)
             )
           }
         : group

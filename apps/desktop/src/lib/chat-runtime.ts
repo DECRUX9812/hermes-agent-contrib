@@ -79,9 +79,7 @@ export function normalizeSessionSkills(value: unknown): Record<string, string[]>
   const skills: Record<string, string[]> = {}
 
   for (const [category, names] of Object.entries(value as Record<string, unknown>)) {
-    const list = Array.isArray(names)
-      ? names.filter((n): n is string => typeof n === 'string' && n.length > 0)
-      : []
+    const list = Array.isArray(names) ? names.filter((n): n is string => typeof n === 'string' && n.length > 0) : []
 
     if (list.length) {
       skills[category] = list
@@ -104,9 +102,7 @@ export function sameSessionSkills(a: Record<string, string[]>, b: Record<string,
     const names = a[key]
     const other = b[key]
 
-    return (
-      Array.isArray(other) && names.length === other.length && names.every((n, i) => n === other[i])
-    )
+    return Array.isArray(other) && names.length === other.length && names.every((n, i) => n === other[i])
   })
 }
 

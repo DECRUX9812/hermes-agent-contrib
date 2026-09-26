@@ -49,14 +49,9 @@ export function SkillTag({ className, storedSessionId }: { className?: string; s
         <div className="max-h-64 overflow-y-auto">
           {groups.map(([category, names]) => (
             <div key={category || 'default'}>
-              {category && category !== 'general' && (
-                <div className={cn(menuLabelClass, 'pt-1.5')}>{category}</div>
-              )}
+              {category && category !== 'general' && <div className={cn(menuLabelClass, 'pt-1.5')}>{category}</div>}
               {names.map(name => (
-                <div
-                  className="truncate px-2 py-0.5 text-xs leading-5 text-(--ui-text-primary)"
-                  key={name}
-                >
+                <div className="truncate px-2 py-0.5 text-xs leading-5 text-(--ui-text-primary)" key={name}>
                   {name}
                 </div>
               ))}

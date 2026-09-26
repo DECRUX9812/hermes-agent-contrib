@@ -38,14 +38,7 @@ import {
 } from './prompts'
 
 export type AttentionItemKind =
-  | 'approval'
-  | 'clarify'
-  | 'error'
-  | 'secret'
-  | 'sudo'
-  | 'vaultCode'
-  | 'vaultSave'
-  | 'vaultUnlock'
+  'approval' | 'clarify' | 'error' | 'secret' | 'sudo' | 'vaultCode' | 'vaultSave' | 'vaultUnlock'
 
 export interface AttentionItem {
   /** Stable row id: `${kind}:${sessionKey}:${requestId-or-index}`. */

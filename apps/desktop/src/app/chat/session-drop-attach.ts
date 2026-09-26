@@ -112,8 +112,7 @@ async function osDropAttachment(candidate: DroppedFile, cwd: string): Promise<Co
     }
   }
 
-  const isImage =
-    file.type.startsWith('image/') || isImagePath(file.name) || Boolean(filePath && isImagePath(filePath))
+  const isImage = file.type.startsWith('image/') || isImagePath(file.name) || Boolean(filePath && isImagePath(filePath))
 
   if (isImage) {
     // Durable copy first — a Finder screenshot can live under a TemporaryItems

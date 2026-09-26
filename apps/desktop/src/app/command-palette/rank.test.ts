@@ -69,9 +69,7 @@ describe('rankGroups with a query', () => {
   })
 
   it('lifts a heavily used row over a same-quality text match', () => {
-    const groups: PaletteGroup[] = [
-      { heading: 'G', items: [item('x', 'Tools pane'), item('y', 'Tools menu')] }
-    ]
+    const groups: PaletteGroup[] = [{ heading: 'G', items: [item('x', 'Tools pane'), item('y', 'Tools menu')] }]
 
     // Both are word matches (0.85); a strong recent history decides the tie.
     const ranked = rankGroups(groups, 'tools', history('y', 30), NOW)
@@ -80,9 +78,7 @@ describe('rankGroups with a query', () => {
   })
 
   it('never surfaces a row that does not match the needle', () => {
-    const groups: PaletteGroup[] = [
-      { heading: 'G', items: [item('x', 'Tools'), item('y', 'Completely unrelated')] }
-    ]
+    const groups: PaletteGroup[] = [{ heading: 'G', items: [item('x', 'Tools'), item('y', 'Completely unrelated')] }]
 
     // Even maximal frecency can't resurrect a zero-match row.
     const ranked = rankGroups(groups, 'tools', history('y', 10_000), NOW)

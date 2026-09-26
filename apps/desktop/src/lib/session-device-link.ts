@@ -1,8 +1,4 @@
-import type {
-  DesktopConnectionKind,
-  DesktopConnectionsRegistry,
-  DesktopRegistryConnection
-} from '@/global'
+import type { DesktopConnectionKind, DesktopConnectionsRegistry, DesktopRegistryConnection } from '@/global'
 
 import { connectionEndpoint } from './connection-display'
 

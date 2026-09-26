@@ -23,7 +23,12 @@ describe('handoffTargets', () => {
     const targets = handoffTargets([
       platform({ id: 'telegram', name: 'Telegram' }),
       platform({ home_channel: { chat_id: '1', name: 'home', platform: 'slack' }, id: 'slack', name: 'Slack' }),
-      platform({ enabled: false, home_channel: { chat_id: '1', name: 'home', platform: 'discord' }, id: 'discord', name: 'Discord' }),
+      platform({
+        enabled: false,
+        home_channel: { chat_id: '1', name: 'home', platform: 'discord' },
+        id: 'discord',
+        name: 'Discord'
+      }),
       platform({ home_channel: { chat_id: '', name: '', platform: 'signal' }, id: 'signal', name: 'Signal' })
     ])
 

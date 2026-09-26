@@ -305,12 +305,7 @@ function stepHistoryMatch(direction: 1 | -1): void {
  * transcript's own reveal path — so `use-stick-to-bottom` remains the only
  * scroll owner and the render budget decides what materializes.
  */
-async function revealHistoryMatch(
-  scope: HTMLElement,
-  query: string,
-  index: number,
-  token: number
-): Promise<void> {
+async function revealHistoryMatch(scope: HTMLElement, query: string, index: number, token: number): Promise<void> {
   const match = historyMatches[index]
   const viewport = match && transcriptViewportForScope(scope)
 

@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { $previewVerifyBySession, dismissPreviewVerify, recordPreviewVerifyResult, recordPreviewVerifyRunning } from './preview-verify'
+import {
+  $previewVerifyBySession,
+  dismissPreviewVerify,
+  recordPreviewVerifyResult,
+  recordPreviewVerifyRunning
+} from './preview-verify'
 
 describe('preview-verify store', () => {
   beforeEach(() => {
@@ -11,7 +16,13 @@ describe('preview-verify store', () => {
     recordPreviewVerifyRunning('s1')
     expect($previewVerifyBySession.get().s1?.running).toBe(true)
 
-    recordPreviewVerifyResult('s1', { errorCount: 2, firstError: 'boom', ok: false, tabId: 't1', url: 'http://localhost:5174' })
+    recordPreviewVerifyResult('s1', {
+      errorCount: 2,
+      firstError: 'boom',
+      ok: false,
+      tabId: 't1',
+      url: 'http://localhost:5174'
+    })
     const record = $previewVerifyBySession.get().s1
 
     expect(record?.running).toBe(false)

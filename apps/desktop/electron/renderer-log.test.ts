@@ -15,12 +15,8 @@ describe('formatRendererConsoleLine', () => {
   })
 
   it('drops non-error levels', () => {
-    expect(
-      formatRendererConsoleLine('main', { level: 'debug', message: 'x', sourceId: 's', lineNumber: 1 })
-    ).toBeNull()
-    expect(
-      formatRendererConsoleLine('main', { level: 'info', message: 'x', sourceId: 's', lineNumber: 1 })
-    ).toBeNull()
+    expect(formatRendererConsoleLine('main', { level: 'debug', message: 'x', sourceId: 's', lineNumber: 1 })).toBeNull()
+    expect(formatRendererConsoleLine('main', { level: 'info', message: 'x', sourceId: 's', lineNumber: 1 })).toBeNull()
     expect(
       formatRendererConsoleLine('main', { level: 'warning', message: 'warn', sourceId: 's', lineNumber: 1 })
     ).toBeNull()

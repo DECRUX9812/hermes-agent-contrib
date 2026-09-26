@@ -4622,7 +4622,7 @@ export interface Translations {
       dismiss: string
       turns: (count: number) => string
       todo: (progress: string) => string
-    },
+    }
     thread: {
       loadingSession: string
       showEarlier: string

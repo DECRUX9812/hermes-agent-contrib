@@ -108,7 +108,9 @@ export function AgentsSection() {
   // The pane's own visible-set rule minus its filters: hidden bots stay out,
   // same-name twins across sources collapse to the reachable one.
   const visible = preferReachableSameNameRows(
-    roster.filter(bot => !isBotHidden(bot, allMeta) && botSourceStatus(annotateBotSource(bot, sourceSnapshot)).available)
+    roster.filter(
+      bot => !isBotHidden(bot, allMeta) && botSourceStatus(annotateBotSource(bot, sourceSnapshot)).available
+    )
   )
 
   // While the rail's search runs, this section IS its bots result set — the
@@ -303,7 +305,13 @@ function AgentRow({ bot }: { bot: RosterRow }) {
       tabIndex={-1}
     >
       <div className={cn('shrink-0', !sourceStatus.available && 'grayscale opacity-60')}>
-        <BotFace color={avatarColor(color, bot.name)} image={photo ? image : null} name={bot.name} shape={shape} size={26} />
+        <BotFace
+          color={avatarColor(color, bot.name)}
+          image={photo ? image : null}
+          name={bot.name}
+          shape={shape}
+          size={26}
+        />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">

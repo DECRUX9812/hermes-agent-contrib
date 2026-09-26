@@ -1443,10 +1443,7 @@ export function resetEnforcedDocks(): void {
  * insert pins the zone's header shown, which is the point: the strip is how
  * the user finds the tab.
  */
-function enforceDockedPanes(
-  tree: LayoutNode,
-  dataOf: (paneId: string) => PaneContribution | undefined
-): LayoutNode {
+function enforceDockedPanes(tree: LayoutNode, dataOf: (paneId: string) => PaneContribution | undefined): LayoutNode {
   let next = tree
 
   for (const pane of registry.getArea('panes')) {

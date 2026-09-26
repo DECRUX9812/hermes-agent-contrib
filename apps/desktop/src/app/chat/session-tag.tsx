@@ -40,7 +40,12 @@ export function SessionTagChips({ profile, sessionId }: { profile?: null | strin
         <SessionTagChip key={tag.label.toLowerCase()} tag={tag} />
       ))}
       {tags.length > 2 && (
-        <Tip label={tags.slice(2).map(tag => tag.label).join(', ')}>
+        <Tip
+          label={tags
+            .slice(2)
+            .map(tag => tag.label)
+            .join(', ')}
+        >
           <span className="shrink-0 text-[0.5625rem] leading-none text-(--ui-text-tertiary)">+{tags.length - 2}</span>
         </Tip>
       )}

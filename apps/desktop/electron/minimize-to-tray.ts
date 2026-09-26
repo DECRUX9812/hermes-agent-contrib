@@ -318,11 +318,7 @@ export function createMinimizeToTray(options: Options) {
 
   const writePrefs = () => {
     fs.mkdirSync(path.dirname(options.preferencesPath), { recursive: true })
-    fs.writeFileSync(
-      `${options.preferencesPath}.tmp`,
-      JSON.stringify({ enabled, status: statusEnabled }),
-      'utf8'
-    )
+    fs.writeFileSync(`${options.preferencesPath}.tmp`, JSON.stringify({ enabled, status: statusEnabled }), 'utf8')
     fs.renameSync(`${options.preferencesPath}.tmp`, options.preferencesPath)
   }
 

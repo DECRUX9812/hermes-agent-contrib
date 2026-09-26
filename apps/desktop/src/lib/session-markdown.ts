@@ -35,8 +35,7 @@ export function markdownLabels(): MarkdownLabels {
   }
 }
 
-const details = (summary: string, body: string) =>
-  `<details>\n<summary>${summary}</summary>\n\n${body}\n\n</details>`
+const details = (summary: string, body: string) => `<details>\n<summary>${summary}</summary>\n\n${body}\n\n</details>`
 
 // ```` lets a body that itself contains ``` survive the fence.
 const fence = (body: string, lang = '') => {
@@ -45,8 +44,7 @@ const fence = (body: string, lang = '') => {
   return `${ticks}${lang}\n${body}\n${ticks}`
 }
 
-const show = (value: unknown): string =>
-  typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+const show = (value: unknown): string => (typeof value === 'string' ? value : JSON.stringify(value, null, 2))
 
 interface PersistedToolCall {
   args?: unknown
@@ -64,7 +62,8 @@ function persistedToolCalls(value: unknown): { args: string; name: string }[] {
 
   return value.flatMap(entry => {
     const call = (entry ?? {}) as PersistedToolCall
-    const name = typeof call.name === 'string' ? call.name : typeof call.function?.name === 'string' ? call.function.name : ''
+    const name =
+      typeof call.name === 'string' ? call.name : typeof call.function?.name === 'string' ? call.function.name : ''
     const args = call.args ?? call.arguments ?? call.function?.arguments
 
     return name ? [{ args: args === undefined ? '' : show(args), name }] : []
@@ -226,10 +225,7 @@ export async function sessionMarkdownText(sessionId: string, params: SessionMark
 
 /** Session menu's "Export as Markdown" — same fetch as the JSON export, but
  *  the file is the readable transcript with tool calls collapsed. */
-export async function exportSessionMarkdown(
-  sessionId: string,
-  params: Omit<SessionMarkdownParams, 'labels'> = {}
-) {
+export async function exportSessionMarkdown(sessionId: string, params: Omit<SessionMarkdownParams, 'labels'> = {}) {
   if (!sessionId) {
     return
   }
@@ -237,7 +233,11 @@ export async function exportSessionMarkdown(
   try {
     const markdown = await sessionMarkdownText(sessionId, params)
 
-    downloadTextFile(sessionExportFilename(sessionId, params.title ?? params.session?.title, 'md'), markdown, 'text/markdown')
+    downloadTextFile(
+      sessionExportFilename(sessionId, params.title ?? params.session?.title, 'md'),
+      markdown,
+      'text/markdown'
+    )
     notify({ kind: 'success', message: translateNow('desktop.sessionExported'), durationMs: 2_000 })
   } catch (err) {
     notifyError(err, translateNow('desktop.sessionExportFailed'))

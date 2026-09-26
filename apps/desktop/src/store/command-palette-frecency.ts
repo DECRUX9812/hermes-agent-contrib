@@ -52,18 +52,22 @@ const sanitize = (value: unknown): PaletteFrecencyTable => {
   return table
 }
 
-export const $paletteFrecency = connectionScopedAtom<PaletteFrecencyTable>(
-  STORAGE_KEY,
-  {},
-  Codecs.json(sanitize)
-)
+export const $paletteFrecency = connectionScopedAtom<PaletteFrecencyTable>(STORAGE_KEY, {}, Codecs.json(sanitize))
 
 // Recency buckets: frequency alone would pin last month's daily habit above
 // the thing picked twice today, so each use counts for more while it's fresh.
 const HOUR_MS = 3_600_000
 
 const recencyWeight = (ageMs: number): number =>
-  ageMs < 4 * HOUR_MS ? 4 : ageMs < 24 * HOUR_MS ? 2 : ageMs < 7 * 24 * HOUR_MS ? 1 : ageMs < 30 * 24 * HOUR_MS ? 0.5 : 0.2
+  ageMs < 4 * HOUR_MS
+    ? 4
+    : ageMs < 24 * HOUR_MS
+      ? 2
+      : ageMs < 7 * 24 * HOUR_MS
+        ? 1
+        : ageMs < 30 * 24 * HOUR_MS
+          ? 0.5
+          : 0.2
 
 /** Raw strength of a history entry — the unit ordering and pruning work in. */
 export function frecencyScore(use: PaletteUse | undefined, now: number): number {

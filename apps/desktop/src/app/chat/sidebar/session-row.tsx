@@ -541,8 +541,7 @@ function SidebarSessionRowImpl({
           // it (translucency let the rows below bleed through). data-glass-opaque
           // keeps that true when window glass thins the field.
           dragging && 'z-10 cursor-grabbing bg-(--ui-sidebar-surface-background)',
-          rowFileDrag === 'files' &&
-            'bg-(--ui-row-active-background) shadow-[inset_0_0_0_1px_var(--dt-composer-ring)]',
+          rowFileDrag === 'files' && 'bg-(--ui-row-active-background) shadow-[inset_0_0_0_1px_var(--dt-composer-ring)]',
           className
         )}
         data-glass-opaque={dragging ? '' : undefined}
@@ -588,237 +587,237 @@ function SidebarSessionRowImpl({
       >
         {showsRunningArc(dotState) && <span aria-hidden="true" className="arc-border arc-row" />}
         <SessionPeek onOpenChange={setPeekOpen} session={session}>
-        <SidebarRowBody
-          // Every trailing figure lives in the actions slot, which the row
-          // measures — so the title needs a gap from it and nothing else. Hover
-          // changes what you can see in that slot, never how wide it is. The
-          // card has no such column to clear (its cluster is INSIDE the body,
-          // ending at the shell's own trailing inset), and keeping the gap
-          // would pull the header in past every line below it.
-          className={cn(
-            'z-0',
-            card && 'pr-0',
-            branchStem && 'pl-3.5',
-            // The card is a grid with ONE spacing knob: --card-gap. Every row
-            // gap is gap-y-(--card-gap); the title/preview group opts out
-            // with its own tighter internal flex gap.
-            card && 'flex-col items-stretch justify-center py-1.5 [--card-gap:0.4rem] gap-(--card-gap)'
-          )}
-          // Middle-click = open in a new tab (browser muscle memory).
-          {...middleClickHandlers(() => {
-            triggerHaptic('selection')
-            openSession(session.id, () => undefined, 'tab')
-          })}
-          onClick={event => {
-            // Modifier-click gestures on a row (see `resolveSessionRowClick`):
-            //   ⌘/⌃        → toggle in/out of the multi-select set
-            //   ⇧          → range-select from the last clicked row
-            //   ⌘/⌃ + ⇧    → add that range to the selection
-            //   ⌥ + ⇧      → archive
-            // A plain click resumes (and collapses the selection to that
-            // row — Finder's rule). New tab/window moved to middle-click and
-            // the row's menus; archive also lives there and on a hotkey.
-            const action = resolveSessionRowClick(event)
+          <SidebarRowBody
+            // Every trailing figure lives in the actions slot, which the row
+            // measures — so the title needs a gap from it and nothing else. Hover
+            // changes what you can see in that slot, never how wide it is. The
+            // card has no such column to clear (its cluster is INSIDE the body,
+            // ending at the shell's own trailing inset), and keeping the gap
+            // would pull the header in past every line below it.
+            className={cn(
+              'z-0',
+              card && 'pr-0',
+              branchStem && 'pl-3.5',
+              // The card is a grid with ONE spacing knob: --card-gap. Every row
+              // gap is gap-y-(--card-gap); the title/preview group opts out
+              // with its own tighter internal flex gap.
+              card && 'flex-col items-stretch justify-center py-1.5 [--card-gap:0.4rem] gap-(--card-gap)'
+            )}
+            // Middle-click = open in a new tab (browser muscle memory).
+            {...middleClickHandlers(() => {
+              triggerHaptic('selection')
+              openSession(session.id, () => undefined, 'tab')
+            })}
+            onClick={event => {
+              // Modifier-click gestures on a row (see `resolveSessionRowClick`):
+              //   ⌘/⌃        → toggle in/out of the multi-select set
+              //   ⇧          → range-select from the last clicked row
+              //   ⌘/⌃ + ⇧    → add that range to the selection
+              //   ⌥ + ⇧      → archive
+              // A plain click resumes (and collapses the selection to that
+              // row — Finder's rule). New tab/window moved to middle-click and
+              // the row's menus; archive also lives there and on a hotkey.
+              const action = resolveSessionRowClick(event)
 
-            if (action === 'resume') {
-              selectOnlySession(session)
-              onResume()
+              if (action === 'resume') {
+                selectOnlySession(session)
+                onResume()
 
-              return
-            }
+                return
+              }
 
-            event.preventDefault()
-            event.stopPropagation()
-            triggerHaptic('selection')
+              event.preventDefault()
+              event.stopPropagation()
+              triggerHaptic('selection')
 
-            if (action === 'archive') {
-              onArchive()
-            } else if (action === 'selectToggle') {
-              toggleSessionSelected(session)
-            } else {
-              onSelectRange?.(action === 'selectRangeAdditive')
-            }
-          }}
-        >
-          {(() => {
-            const leadNode = reorderable ? (
-              <SidebarRowGrab ariaLabel={handleLabel} dragging={dragging} dragHandleProps={dragHandleProps}>
-                {lead ?? (
-                  <SessionStatusDot
-                    branchStem={branchStem}
-                    className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
-                    session={session}
-                    storedSessionId={session.id}
-                  />
-                )}
-              </SidebarRowGrab>
-            ) : (
-              <SidebarRowLead className="overflow-hidden">
-                {lead ?? <SessionStatusDot branchStem={branchStem} session={session} storedSessionId={session.id} />}
-              </SidebarRowLead>
-            )
-
-            const handoffBadge =
-              handoffSource && handoffLabel ? (
-                <Tip label={peekOpen ? '' : r.handoffOrigin(handoffLabel)}>
-                  <PlatformAvatar
-                    className="-mt-px size-4 shrink-0 rounded-[4px] text-[0.5rem] [&_svg]:size-2.5"
-                    platformId={handoffSource}
-                    platformName={handoffLabel}
-                  />
-                </Tip>
-              ) : null
-
-            // A projected continuation renders as a plain top-level row, which
-            // reads as a brand-new conversation that "appeared by itself" — and
-            // the sealed predecessor it replaced once nested like a branch
-            // users deleted as accidents (#121148). Label the provenance so an
-            // automatic rotation is legible as one.
-            const continuationBadge =
-              session.continuation_kind === 'compression' ? (
-                <Tip label={peekOpen ? '' : r.continuationOrigin}>
-                  <Codicon
-                    aria-hidden="true"
-                    className="size-3.5 shrink-0 text-(--ui-text-quaternary)"
-                    name="layers"
-                    size="0.75rem"
-                  />
-                </Tip>
-              ) : null
-
-            if (!card) {
-              const titleLabel = (
-                <SidebarRowLabel
-                  className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
-                  onPointerEnter={armMarquee}
-                  onPointerLeave={disarmMarquee}
-                >
-                  <span className="hover-marquee-inner">{title}</span>
-                </SidebarRowLabel>
+              if (action === 'archive') {
+                onArchive()
+              } else if (action === 'selectToggle') {
+                toggleSessionSelected(session)
+              } else {
+                onSelectRange?.(action === 'selectRangeAdditive')
+              }
+            }}
+          >
+            {(() => {
+              const leadNode = reorderable ? (
+                <SidebarRowGrab ariaLabel={handleLabel} dragging={dragging} dragHandleProps={dragHandleProps}>
+                  {lead ?? (
+                    <SessionStatusDot
+                      branchStem={branchStem}
+                      className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
+                      session={session}
+                      storedSessionId={session.id}
+                    />
+                  )}
+                </SidebarRowGrab>
+              ) : (
+                <SidebarRowLead className="overflow-hidden">
+                  {lead ?? <SessionStatusDot branchStem={branchStem} session={session} storedSessionId={session.id} />}
+                </SidebarRowLead>
               )
 
-              return (
-                <>
-                  {leadNode}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
-                  {!condensed && handoffBadge}
-                  {!condensed && continuationBadge}
-                  <span className="min-w-0 flex-1 self-center">
-                    {condensed && condensedMeta.length > 0 ? (
-                      // Always-on tip: in condensed the title may not
-                      // overflow yet the folded-in meta still needs a door.
-                      <Tip label={condensedTip} placement="row">
-                        {titleLabel}
-                      </Tip>
-                    ) : (
-                      // Remount while the peek is open: OverflowTip's `open` is
-                      // internal state that would otherwise restore itself.
-                      <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
-                        {titleLabel}
-                      </OverflowTip>
-                    )}
-                    {/* Session-list density (#68119): comfortable adds one
+              const handoffBadge =
+                handoffSource && handoffLabel ? (
+                  <Tip label={peekOpen ? '' : r.handoffOrigin(handoffLabel)}>
+                    <PlatformAvatar
+                      className="-mt-px size-4 shrink-0 rounded-[4px] text-[0.5rem] [&_svg]:size-2.5"
+                      platformId={handoffSource}
+                      platformName={handoffLabel}
+                    />
+                  </Tip>
+                ) : null
+
+              // A projected continuation renders as a plain top-level row, which
+              // reads as a brand-new conversation that "appeared by itself" — and
+              // the sealed predecessor it replaced once nested like a branch
+              // users deleted as accidents (#121148). Label the provenance so an
+              // automatic rotation is legible as one.
+              const continuationBadge =
+                session.continuation_kind === 'compression' ? (
+                  <Tip label={peekOpen ? '' : r.continuationOrigin}>
+                    <Codicon
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0 text-(--ui-text-quaternary)"
+                      name="layers"
+                      size="0.75rem"
+                    />
+                  </Tip>
+                ) : null
+
+              if (!card) {
+                const titleLabel = (
+                  <SidebarRowLabel
+                    className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
+                    onPointerEnter={armMarquee}
+                    onPointerLeave={disarmMarquee}
+                  >
+                    <span className="hover-marquee-inner">{title}</span>
+                  </SidebarRowLabel>
+                )
+
+                return (
+                  <>
+                    {leadNode}
+                    <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
+                    {!condensed && handoffBadge}
+                    {!condensed && continuationBadge}
+                    <span className="min-w-0 flex-1 self-center">
+                      {condensed && condensedMeta.length > 0 ? (
+                        // Always-on tip: in condensed the title may not
+                        // overflow yet the folded-in meta still needs a door.
+                        <Tip label={condensedTip} placement="row">
+                          {titleLabel}
+                        </Tip>
+                      ) : (
+                        // Remount while the peek is open: OverflowTip's `open` is
+                        // internal state that would otherwise restore itself.
+                        <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
+                          {titleLabel}
+                        </OverflowTip>
+                      )}
+                      {/* Session-list density (#68119): comfortable adds one
                         deterministic metadata line; detailed adds the initial
                         request preview. Compact keeps today's one-line row,
                         condensed goes further — the meta lives on the title's
                         tooltip instead. The live digest claims the line under
                         the title while the session has something to say — the
                         static text returns the moment it doesn't. */}
-                    {(density === 'comfortable' || density === 'detailed') && (digest ?? details.metadata) && (
-                      <span
-                        className={cn(
-                          'mt-0.5 block truncate text-[0.625rem] text-(--ui-text-tertiary)',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                      >
-                        {digest ?? details.metadata}
-                      </span>
-                    )}
-                    {density === 'detailed' && details.preview && (
-                      <span
-                        className={cn(
-                          'mt-1 block truncate text-[0.625rem] text-(--ui-text-quaternary)',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                      >
-                        {details.preview}
-                      </span>
-                    )}
-                  </span>
-                  <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
-                </>
-              )
-            }
+                      {(density === 'comfortable' || density === 'detailed') && (digest ?? details.metadata) && (
+                        <span
+                          className={cn(
+                            'mt-0.5 block truncate text-[0.625rem] text-(--ui-text-tertiary)',
+                            SIDEBAR_TRUNCATED_LEADING
+                          )}
+                        >
+                          {digest ?? details.metadata}
+                        </span>
+                      )}
+                      {density === 'detailed' && details.preview && (
+                        <span
+                          className={cn(
+                            'mt-1 block truncate text-[0.625rem] text-(--ui-text-quaternary)',
+                            SIDEBAR_TRUNCATED_LEADING
+                          )}
+                        >
+                          {details.preview}
+                        </span>
+                      )}
+                    </span>
+                    <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
+                  </>
+                )
+              }
 
-            return (
-              <>
-                {/* Header row — ONE div: dot, context, then the age/kebab
+              return (
+                <>
+                  {/* Header row — ONE div: dot, context, then the age/kebab
                     cluster in flow at its right edge. Keeping the cluster
                     inside this line (instead of the shell's full-height side
                     column) means title/preview/meta below span the card's
                     entire width — nothing truncates against the kebab. */}
-                <div className="flex min-w-0 items-center gap-1.5">
-                  {leadNode}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
-                  <span
-                    className={cn(
-                      'min-w-0 flex-1 truncate text-[0.6875rem] text-(--ui-text-tertiary)',
-                      SIDEBAR_TRUNCATED_LEADING
-                    )}
-                  >
-                    {context}
-                  </span>
-                  {handoffBadge}
-                  {continuationBadge}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
-                  {actionsNode}
-                </div>
-                {/* Title + preview: ONE grouped cell with its own tight
-                    internal gap — it does not inherit the card's rhythm. */}
-                <div className="flex min-w-0 flex-col gap-[0.15rem]">
-                  <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
-                    <SidebarRowLabel
-                      className={cn(
-                        'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
-                        SIDEBAR_TRUNCATED_LEADING
-                      )}
-                      onPointerEnter={armMarquee}
-                      onPointerLeave={disarmMarquee}
-                    >
-                      <span className="hover-marquee-inner">{title}</span>
-                    </SidebarRowLabel>
-                  </OverflowTip>
-                  {rowMeta.includes('preview') && (digest ?? session.preview) ? (
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    {leadNode}
+                    <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
                     <span
                       className={cn(
-                        'min-w-0 truncate text-[0.625rem] text-(--ui-text-quaternary)',
+                        'min-w-0 flex-1 truncate text-[0.6875rem] text-(--ui-text-tertiary)',
                         SIDEBAR_TRUNCATED_LEADING
                       )}
                     >
-                      {digest ?? session.preview}
+                      {context}
                     </span>
-                  ) : null}
-                </div>
-                {model || size || todoProgress ? (
-                  <span
-                    className={cn(
-                      'flex min-w-0 items-baseline gap-2 text-[0.625rem] text-(--ui-text-tertiary)',
-                      SIDEBAR_TRUNCATED_LEADING
-                    )}
-                  >
-                    {model ? <span className="min-w-0 truncate">{model}</span> : null}
-                    {size ? <span className="shrink-0 tabular-nums">{size}</span> : null}
-                    {todoProgress ? (
-                      <span className="ml-auto shrink-0 tabular-nums" title={r.todoProgress}>
-                        {todoProgress}
+                    {handoffBadge}
+                    {continuationBadge}
+                    <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
+                    {actionsNode}
+                  </div>
+                  {/* Title + preview: ONE grouped cell with its own tight
+                    internal gap — it does not inherit the card's rhythm. */}
+                  <div className="flex min-w-0 flex-col gap-[0.15rem]">
+                    <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
+                      <SidebarRowLabel
+                        className={cn(
+                          'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
+                          SIDEBAR_TRUNCATED_LEADING
+                        )}
+                        onPointerEnter={armMarquee}
+                        onPointerLeave={disarmMarquee}
+                      >
+                        <span className="hover-marquee-inner">{title}</span>
+                      </SidebarRowLabel>
+                    </OverflowTip>
+                    {rowMeta.includes('preview') && (digest ?? session.preview) ? (
+                      <span
+                        className={cn(
+                          'min-w-0 truncate text-[0.625rem] text-(--ui-text-quaternary)',
+                          SIDEBAR_TRUNCATED_LEADING
+                        )}
+                      >
+                        {digest ?? session.preview}
                       </span>
                     ) : null}
-                  </span>
-                ) : null}
-              </>
-            )
-          })()}
-        </SidebarRowBody>
+                  </div>
+                  {model || size || todoProgress ? (
+                    <span
+                      className={cn(
+                        'flex min-w-0 items-baseline gap-2 text-[0.625rem] text-(--ui-text-tertiary)',
+                        SIDEBAR_TRUNCATED_LEADING
+                      )}
+                    >
+                      {model ? <span className="min-w-0 truncate">{model}</span> : null}
+                      {size ? <span className="shrink-0 tabular-nums">{size}</span> : null}
+                      {todoProgress ? (
+                        <span className="ml-auto shrink-0 tabular-nums" title={r.todoProgress}>
+                          {todoProgress}
+                        </span>
+                      ) : null}
+                    </span>
+                  ) : null}
+                </>
+              )
+            })()}
+          </SidebarRowBody>
         </SessionPeek>
       </SidebarRowShell>
     </SessionContextMenu>

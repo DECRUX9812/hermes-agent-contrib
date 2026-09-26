@@ -68,9 +68,10 @@ export function sanitizeTrayStatusPush(raw: unknown): TrayStatusPush | null {
 
   const record = raw as Record<string, unknown>
 
-  const rawStrings = (typeof record.strings === 'object' && record.strings !== null
-    ? record.strings
-    : {}) as Record<string, unknown>
+  const rawStrings = (typeof record.strings === 'object' && record.strings !== null ? record.strings : {}) as Record<
+    string,
+    unknown
+  >
 
   const strings: TrayStatusStrings = {
     newSession: cleanString(rawStrings.newSession, DEFAULT_TRAY_STATUS_STRINGS.newSession),
@@ -96,10 +97,7 @@ export function sanitizeTrayStatusPush(raw: unknown): TrayStatusPush | null {
         continue
       }
 
-      const title =
-        typeof row.title === 'string' && row.title.trim()
-          ? row.title.trim().slice(0, MENU_TITLE_LIMIT)
-          : id
+      const title = typeof row.title === 'string' && row.title.trim() ? row.title.trim().slice(0, MENU_TITLE_LIMIT) : id
 
       sessions.push({ attention: row.attention === true, id, title })
 

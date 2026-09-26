@@ -425,8 +425,7 @@ export function resolveNewChatOwnerRoute(forProfile?: string): AgentProfileRoute
 // another's composer. Registered here, not imported by store/composer.ts,
 // which stays leaf-level to keep the store graph acyclic.
 registerComposerNewDraftProfileResolver(
-  () =>
-    resolveNewChatOwnerRoute()?.profile || $newChatProfile.get() || normalizeProfileKey($activeGatewayProfile.get())
+  () => resolveNewChatOwnerRoute()?.profile || $newChatProfile.get() || normalizeProfileKey($activeGatewayProfile.get())
 )
 
 // Bumped whenever the open session should be dropped for a fresh new-session

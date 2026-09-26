@@ -27,7 +27,10 @@ export function recordPreviewVerifyRunning(sessionId: string): void {
     return
   }
 
-  $previewVerifyBySession.set({ ...$previewVerifyBySession.get(), [sessionId]: { at: Date.now(), errorCount: 0, ok: false, running: true } })
+  $previewVerifyBySession.set({
+    ...$previewVerifyBySession.get(),
+    [sessionId]: { at: Date.now(), errorCount: 0, ok: false, running: true }
+  })
 }
 
 export function recordPreviewVerifyResult(

@@ -60,13 +60,12 @@ describe('nudgeChips', () => {
     expect(chips.every(chip => chip.label && chip.tip && chip.doneLabel)).toBe(true)
   })
 
-  it.each([
-    'Here is the summary you asked for.',
-    'The report is attached above.',
-    'Your bookings are listed below.'
-  ])('skips the PR chip when nothing signals code work: %s', text => {
-    expect(nudgeChips(text).map(chip => chip.id)).toEqual(['followup'])
-  })
+  it.each(['Here is the summary you asked for.', 'The report is attached above.', 'Your bookings are listed below.'])(
+    'skips the PR chip when nothing signals code work: %s',
+    text => {
+      expect(nudgeChips(text).map(chip => chip.id)).toEqual(['followup'])
+    }
+  )
 
   it('invoking a chip drafts text without sending', async () => {
     const [chip] = nudgeChips('Committed the change.')

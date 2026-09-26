@@ -73,12 +73,7 @@ import { LocalFilePreview, PreviewEmptyState, PreviewModeSwitcher } from './prev
 import { type PreviewInputEvent, registerPreviewInput, toWebviewInputSpace } from './preview-input'
 import { PREVIEW_BROWSER_ATTR, registerPreviewNav } from './preview-nav'
 import { registerPreviewPageReader } from './preview-reader'
-import {
-  drainRecorderSteps,
-  installRecorder,
-  RECORD_POLL_MS,
-  teardownRecorder
-} from './preview-record'
+import { drainRecorderSteps, installRecorder, RECORD_POLL_MS, teardownRecorder } from './preview-record'
 import { PreviewRecordDialog } from './preview-record-dialog'
 import { registerPreviewScriptRunner } from './preview-script-runner'
 import { RealProfileConsentDialog } from './real-profile-consent-dialog'
@@ -1301,9 +1296,7 @@ export function PreviewPane({
 
       // A fresh document dropped the guest recorder; re-arm while recording.
       if (recordingRef.current) {
-        void installRecorder({ executeJavaScript: bindPreviewExecuteJavaScript(webview) }).catch(
-          () => undefined
-        )
+        void installRecorder({ executeJavaScript: bindPreviewExecuteJavaScript(webview) }).catch(() => undefined)
       }
     }
 

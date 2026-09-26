@@ -2,11 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { DesktopRegistryConnection } from '@/global'
 
-import {
-  buildSessionOpenLink,
-  normalizeLinkAddress,
-  resolveSessionOpenLinkConnection
-} from './session-device-link'
+import { buildSessionOpenLink, normalizeLinkAddress, resolveSessionOpenLinkConnection } from './session-device-link'
 
 const remote = (overrides: Partial<DesktopRegistryConnection> = {}): DesktopRegistryConnection => ({
   id: 'conn-remote',
@@ -93,9 +89,9 @@ describe('resolveSessionOpenLinkConnection', () => {
     const viaLan = remote({ id: 'lan', url: 'http://192.168.1.10:8642' })
     const viaTunnel = remote({ id: 'tunnel', url: 'https://tunnel.example.com' })
 
-    expect(resolveSessionOpenLinkConnection(registry(viaLan, viaTunnel), { id: 's1', install: 'install-abc' })?.id).toBe(
-      'lan'
-    )
+    expect(
+      resolveSessionOpenLinkConnection(registry(viaLan, viaTunnel), { id: 's1', install: 'install-abc' })?.id
+    ).toBe('lan')
   })
 
   it('falls back to a same-kind endpoint match', () => {

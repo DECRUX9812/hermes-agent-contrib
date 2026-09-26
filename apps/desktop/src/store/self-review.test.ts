@@ -16,8 +16,7 @@ describe('parseSelfReviewResponse', () => {
   })
 
   it('skips fences/prologue and keeps only well-shaped rows', () => {
-    const text =
-      '```json\n[{"path":"a.ts","line":5,"body":"ok"},{"path":"b.ts"},{"line":9,"body":"no path"},null]\n```'
+    const text = '```json\n[{"path":"a.ts","line":5,"body":"ok"},{"path":"b.ts"},{"line":9,"body":"no path"},null]\n```'
 
     expect(parseSelfReviewResponse(text)).toEqual([{ body: 'ok', line: 5, path: 'a.ts' }])
   })

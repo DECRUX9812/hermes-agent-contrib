@@ -45,9 +45,8 @@ export function sessionTabStatus(
 }
 
 export function SessionTabStatus({ storedSessionId }: { storedSessionId: null | string }) {
-  const startedMs = useStoreSelector(
-    $fleetRuns,
-    runs => (storedSessionId ? (runs.find(entry => entry.sessionId === storedSessionId)?.startedMs ?? null) : null)
+  const startedMs = useStoreSelector($fleetRuns, runs =>
+    storedSessionId ? (runs.find(entry => entry.sessionId === storedSessionId)?.startedMs ?? null) : null
   )
 
   const detail = useStoresSelector(

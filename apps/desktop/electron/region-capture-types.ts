@@ -10,8 +10,7 @@ export interface RegionCaptureFrame {
 }
 
 export type RegionCaptureResult =
-  | { frame: RegionCaptureFrame; ok: true }
-  | { ok: false; reason: 'screen-permission' | 'unavailable' }
+  { frame: RegionCaptureFrame; ok: true } | { ok: false; reason: 'screen-permission' | 'unavailable' }
 
 export interface RegionCaptureApi {
   capture(): Promise<RegionCaptureResult>

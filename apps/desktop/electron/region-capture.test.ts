@@ -8,7 +8,10 @@ const source = (displayId?: string): CaptureSource => ({
   thumbnail: { getSize: () => ({ height: 10, width: 10 }), isEmpty: () => false, toPNG: () => Buffer.from('') }
 })
 
-const display = (id: number, scaleFactor = 1): { id: number; scaleFactor: number; size: { height: number; width: number } } => ({
+const display = (
+  id: number,
+  scaleFactor = 1
+): { id: number; scaleFactor: number; size: { height: number; width: number } } => ({
   id,
   scaleFactor,
   size: { height: 1440, width: 2560 }

@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { $pendingAttentionReveal, collectAttentionItems, requestAttentionReveal, takeAttentionReveal } from './attention-inbox'
+import {
+  $pendingAttentionReveal,
+  collectAttentionItems,
+  requestAttentionReveal,
+  takeAttentionReveal
+} from './attention-inbox'
 import type { NotificationHistoryEntry } from './notifications'
 
 const emptySources = {
@@ -56,17 +61,12 @@ describe('collectAttentionItems', () => {
       sudo: { 'sess-1': { command: 'brew install jq', requestId: 'u1', sessionId: 'sess-1' } },
       vaultCode: { 'sess-1': { hint: 'check SMS', requestId: 'vc1', sessionId: 'sess-1', site: 'bank.com' } },
       vaultSave: { 'sess-1': { origin: 'https://x', requestId: 'vs1', sessionId: 'sess-1', site: 'x.com' } },
-      vaultUnlock: { 'sess-1': { backend: '1password', displayName: '1Password', requestId: 'vu1', sessionId: 'sess-1' } }
+      vaultUnlock: {
+        'sess-1': { backend: '1password', displayName: '1Password', requestId: 'vu1', sessionId: 'sess-1' }
+      }
     })
 
-    expect(items.map(item => item.kind)).toEqual([
-      'clarify',
-      'sudo',
-      'secret',
-      'vaultUnlock',
-      'vaultSave',
-      'vaultCode'
-    ])
+    expect(items.map(item => item.kind)).toEqual(['clarify', 'sudo', 'secret', 'vaultUnlock', 'vaultSave', 'vaultCode'])
     expect(items.map(item => item.id)).toEqual([
       'clarify:sess-2:c1',
       'sudo:sess-1:u1',
@@ -83,9 +83,7 @@ describe('collectAttentionItems', () => {
       sudo: { '': { requestId: 'u1', sessionId: null } }
     })
 
-    expect(items).toEqual([
-      expect.objectContaining({ id: 'sudo::u1', kind: 'sudo', sessionId: null })
-    ])
+    expect(items).toEqual([expect.objectContaining({ id: 'sudo::u1', kind: 'sudo', sessionId: null })])
   })
 
   it('lists session-scoped error notices, deduped, newest first — after pendings', () => {
@@ -115,9 +113,7 @@ describe('collectAttentionItems', () => {
       errors: [errorEntry({ title: 'LLM timeout' })]
     })
 
-    expect(items[0]).toEqual(
-      expect.objectContaining({ detail: 'turn failed', title: 'LLM timeout' })
-    )
+    expect(items[0]).toEqual(expect.objectContaining({ detail: 'turn failed', title: 'LLM timeout' }))
   })
 })
 

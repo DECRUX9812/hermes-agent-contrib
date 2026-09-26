@@ -12,12 +12,7 @@ import { type ComposerAttachment, NEW_SESSION_DRAFT_KEY, onNewSessionDraftAdopte
 import { normalizeProfileKey, pinNewChatProfile, requestFreshSession } from './profile'
 import { $reviewScopeTarget, reviewRepoCwd } from './review'
 import { sessionIdForReviewTarget } from './review-session'
-import {
-  $sessions,
-  idsShareLineage,
-  sessionMatchesStoredId,
-  setNewChatWorkspaceTarget
-} from './session'
+import { $sessions, idsShareLineage, sessionMatchesStoredId, setNewChatWorkspaceTarget } from './session'
 import { $sessionStates } from './session-states'
 import { markSessionUnreadFinished } from './session-unread'
 
@@ -88,10 +83,7 @@ function reviewOriginSessionId(): null | string {
  * profile. Returns false (caller toasts) when the pane has no repo, no diff,
  * or the paste bridge is unavailable.
  */
-export async function seedAgentReview(
-  reviewerName: string,
-  reviewerLabel?: string
-): Promise<boolean> {
+export async function seedAgentReview(reviewerName: string, reviewerLabel?: string): Promise<boolean> {
   const reviewer = normalizeProfileKey(reviewerName)
   const cwd = reviewRepoCwd()
   const review = desktopGit()?.review
@@ -218,9 +210,7 @@ function reviewSummaryText(messages: readonly SessionMessage[]): string {
 
       if (Array.isArray(candidate)) {
         const text = candidate
-          .map((part: unknown) =>
-            part && typeof part === 'object' && 'text' in part ? String(part.text) : ''
-          )
+          .map((part: unknown) => (part && typeof part === 'object' && 'text' in part ? String(part.text) : ''))
           .join('')
           .trim()
 

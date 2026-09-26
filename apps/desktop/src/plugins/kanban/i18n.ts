@@ -1134,7 +1134,8 @@ const fr: KanbanMessages = {
   archive: 'Archiver',
   clearSelection: 'Effacer la sélection (Échap)',
   refused: 'refusée',
-  bulkFailed: (failed, total, err) => `${failed} sur ${total} ont échoué — ${err}. Les cartes en échec restent sélectionnées.`,
+  bulkFailed: (failed, total, err) =>
+    `${failed} sur ${total} ont échoué — ${err}. Les cartes en échec restent sélectionnées.`,
   titlePlaceholderTriage: 'Idée brute — un spécificateur la précisera',
   titlePlaceholder: 'Titre',
   descPlaceholder: 'Description (facultative)',
@@ -1145,7 +1146,8 @@ const fr: KanbanMessages = {
   model: 'Modèle',
   modelInherit: 'Défaut du profil',
   modelClear: 'Effacer la surcharge de modèle',
-  modelHint: 'Exécute cette tâche sur un modèle et une profondeur de pensée précis. Non défini : ceux du profil assigné.',
+  modelHint:
+    'Exécute cette tâche sur un modèle et une profondeur de pensée précis. Non défini : ceux du profil assigné.',
   workspaceInherit: 'Hérite du répertoire de projet du tableau',
   workspaceInheritDir: dir => `Laisser vide pour hériter de ${dir}`,
   workspaceInheritGeneric: 'Laisser vide pour hériter du répertoire de projet du tableau.',
@@ -1167,7 +1169,8 @@ const fr: KanbanMessages = {
   reEstimate: 'Réestimer',
   makesModelCall: 'appelle un modèle',
   estimateTip: 'Estimation approximative de tokens et de complexité par le modèle auxiliaire — appelle un modèle.',
-  estimateTipLong: 'Lance un appel rapide au modèle auxiliaire pour estimer tokens et complexité. Indicatif, pas une facture.',
+  estimateTipLong:
+    'Lance un appel rapide au modèle auxiliaire pour estimer tokens et complexité. Indicatif, pas une facture.',
   roughEstimate: 'Estimation approximative',
   tokUnit: 'tok',
   couldNotEstimate: 'Estimation impossible',
@@ -1255,7 +1258,8 @@ const fr: KanbanMessages = {
   boardImportedAs: slug => `Ce nom était pris — importé en tant que ${slug}`,
   renameBoardTitle: 'Renommer le tableau',
   deleteBoardTitle: name => `Supprimer « ${name} » ?`,
-  deleteBoardConfirm: 'Le tableau est archivé, pas effacé — ses tâches et pièces jointes restent sur le disque et peuvent être restaurées.',
+  deleteBoardConfirm:
+    'Le tableau est archivé, pas effacé — ses tâches et pièces jointes restent sur le disque et peuvent être restaurées.',
   boardArchived: path => `Tableau archivé vers ${path}`,
   boardSettingsFor: name => `Paramètres du tableau — ${name}`,
   name: 'Nom',
@@ -1299,7 +1303,10 @@ const de: KanbanMessages = {
     todo: { label: 'Todo', help: 'Wartet auf Abhängigkeiten oder unzugewiesen.' },
     scheduled: { label: 'Geplant', help: 'Wartet auf den geplanten Zeitpunkt.' },
     ready: { label: 'Bereit', help: 'Abhängigkeiten erfüllt — Profil zuweisen und der Dispatcher führt sie aus.' },
-    running: { label: 'Läuft', help: 'Von einem Worker übernommen — ein Agent arbeitet daran. Vom Dispatcher gesetzt.' },
+    running: {
+      label: 'Läuft',
+      help: 'Von einem Worker übernommen — ein Agent arbeitet daran. Vom Dispatcher gesetzt.'
+    },
     blocked: { label: 'Blockiert', help: 'Der Worker braucht menschliche Eingabe.' },
     review: { label: 'Review', help: 'Ein Review-Agent prüft die Arbeit. Vom Dispatcher gesetzt.' },
     done: { label: 'Fertig', help: 'Abgeschlossen; abhängige Kinder werden bereit.' },
@@ -1350,7 +1357,8 @@ const de: KanbanMessages = {
   archive: 'Archivieren',
   clearSelection: 'Auswahl löschen (Esc)',
   refused: 'abgelehnt',
-  bulkFailed: (failed, total, err) => `${failed} von ${total} fehlgeschlagen — ${err}. Fehlgeschlagene Karten bleiben ausgewählt.`,
+  bulkFailed: (failed, total, err) =>
+    `${failed} von ${total} fehlgeschlagen — ${err}. Fehlgeschlagene Karten bleiben ausgewählt.`,
   titlePlaceholderTriage: 'Grobe Idee — ein Spezifizierer arbeitet sie aus',
   titlePlaceholder: 'Titel',
   descPlaceholder: 'Beschreibung (optional)',
@@ -1361,7 +1369,8 @@ const de: KanbanMessages = {
   model: 'Modell',
   modelInherit: 'Profil-Standard',
   modelClear: 'Modell-Überschreibung entfernen',
-  modelHint: 'Führt diese Aufgabe auf einem bestimmten Modell mit bestimmter Denktiefe aus. Leer = Einstellung des zugewiesenen Profils.',
+  modelHint:
+    'Führt diese Aufgabe auf einem bestimmten Modell mit bestimmter Denktiefe aus. Leer = Einstellung des zugewiesenen Profils.',
   workspaceInherit: 'Erbt das Projektverzeichnis des Boards',
   workspaceInheritDir: dir => `Leer lassen, um ${dir} zu erben`,
   workspaceInheritGeneric: 'Leer lassen, um das Projektverzeichnis des Boards zu erben.',
@@ -1383,7 +1392,8 @@ const de: KanbanMessages = {
   reEstimate: 'Neu schätzen',
   makesModelCall: 'ruft ein Modell auf',
   estimateTip: 'Grobe Token- und Komplexitätsschätzung vom Hilfsmodell — ruft ein Modell auf.',
-  estimateTipLong: 'Ruft kurz das Hilfsmodell auf, um Tokens und Komplexität zu schätzen. Ein Anhaltspunkt, keine Rechnung.',
+  estimateTipLong:
+    'Ruft kurz das Hilfsmodell auf, um Tokens und Komplexität zu schätzen. Ein Anhaltspunkt, keine Rechnung.',
   roughEstimate: 'Grobe Schätzung',
   tokUnit: 'tok',
   couldNotEstimate: 'Schätzung nicht möglich',
@@ -1471,7 +1481,8 @@ const de: KanbanMessages = {
   boardImportedAs: slug => `Name vergeben — als ${slug} importiert`,
   renameBoardTitle: 'Board umbenennen',
   deleteBoardTitle: name => `„${name}“ löschen?`,
-  deleteBoardConfirm: 'Das Board wird archiviert, nicht gelöscht — Aufgaben und Anhänge bleiben auf der Festplatte und lassen sich wiederherstellen.',
+  deleteBoardConfirm:
+    'Das Board wird archiviert, nicht gelöscht — Aufgaben und Anhänge bleiben auf der Festplatte und lassen sich wiederherstellen.',
   boardArchived: path => `Board nach ${path} archiviert`,
   boardSettingsFor: name => `Board-Einstellungen — ${name}`,
   name: 'Name',
@@ -1497,7 +1508,8 @@ const de: KanbanMessages = {
     blockedTitle: 'Aufgabe blockiert — deine Eingabe nötig',
     blockLoopTitle: 'Aufgabe in Triage geroutet — Entscheidung nötig',
     gaveUpTitle: 'Aufgabe gestoppt',
-    gaveUpBody: 'Hermes konnte diese Aufgabe nicht abschließen. Öffne Kanban, um den Grund zu sehen und sie neu zuzuweisen.',
+    gaveUpBody:
+      'Hermes konnte diese Aufgabe nicht abschließen. Öffne Kanban, um den Grund zu sehen und sie neu zuzuweisen.',
     crashedTitle: 'Aufgabe hatte ein Problem — Hermes versucht es automatisch erneut',
     timedOutTitle: 'Aufgabe dauerte zu lange — Hermes versucht es automatisch erneut',
     openKanban: 'Kanban öffnen',
@@ -1527,7 +1539,8 @@ const es: KanbanMessages = {
     scheduled: 'Programada necesita una hora de activación — la fijan los agentes; no se puede arrastrar.'
   },
   arcRunning: 'Un agente está trabajando en esto ahora.',
-  arcStale: 'Reclamada, pero sin heartbeat del worker desde hace más de 2 minutos — el despachador la reclamará de nuevo.',
+  arcStale:
+    'Reclamada, pero sin heartbeat del worker desde hace más de 2 minutos — el despachador la reclamará de nuevo.',
   title: 'Kanban',
   orchestrationSettings: 'Configuración de orquestación',
   newTask: 'Nueva tarea',
@@ -1566,7 +1579,8 @@ const es: KanbanMessages = {
   archive: 'Archivar',
   clearSelection: 'Limpiar selección (Esc)',
   refused: 'rechazada',
-  bulkFailed: (failed, total, err) => `${failed} de ${total} fallaron — ${err}. Las tarjetas fallidas siguen seleccionadas.`,
+  bulkFailed: (failed, total, err) =>
+    `${failed} de ${total} fallaron — ${err}. Las tarjetas fallidas siguen seleccionadas.`,
   titlePlaceholderTriage: 'Idea aproximada — un especificador la concretará',
   titlePlaceholder: 'Título',
   descPlaceholder: 'Descripción (opcional)',
@@ -1577,7 +1591,8 @@ const es: KanbanMessages = {
   model: 'Modelo',
   modelInherit: 'Predeterminado del perfil',
   modelClear: 'Quitar anulación de modelo',
-  modelHint: 'Ejecuta esta tarea con un modelo y una profundidad de pensamiento concretos. Vacío usa los del perfil asignado.',
+  modelHint:
+    'Ejecuta esta tarea con un modelo y una profundidad de pensamiento concretos. Vacío usa los del perfil asignado.',
   workspaceInherit: 'Hereda el directorio de proyecto del tablero',
   workspaceInheritDir: dir => `Deja vacío para heredar ${dir}`,
   workspaceInheritGeneric: 'Deja vacío para heredar el directorio de proyecto del tablero.',
@@ -1599,7 +1614,8 @@ const es: KanbanMessages = {
   reEstimate: 'Reestimar',
   makesModelCall: 'hace una llamada al modelo',
   estimateTip: 'Estimación aproximada de tokens y complejidad del modelo auxiliar — hace una llamada al modelo.',
-  estimateTipLong: 'Hace una llamada rápida al modelo auxiliar para estimar tokens y complejidad. Orientativo, no una factura.',
+  estimateTipLong:
+    'Hace una llamada rápida al modelo auxiliar para estimar tokens y complejidad. Orientativo, no una factura.',
   roughEstimate: 'Estimación aproximada',
   tokUnit: 'tok',
   couldNotEstimate: 'No se pudo estimar',
@@ -1607,8 +1623,7 @@ const es: KanbanMessages = {
   introBody:
     'No ejecutas las tarjetas tú — lo hacen los agentes. Pon una tarjeta con asignado en Lista y un agente la tomará en un minuto. Sin asignado, no hay ejecución. Triaje: un agente convierte la idea en una tarea de verdad. Pendiente: espera otras tarjetas. Programada: espera un temporizador. En curso y Revisión: los carriles de los agentes, no intervengas. Bloqueada: te espera a ti. Los resultados vuelven a la tarjeta.',
   introGotIt: 'Entendido',
-  evtCreated: (where, assignee) =>
-    `creada${where ? ` en ${where}` : ''}${assignee ? ` · asignada a ${assignee}` : ''}`,
+  evtCreated: (where, assignee) => `creada${where ? ` en ${where}` : ''}${assignee ? ` · asignada a ${assignee}` : ''}`,
   evtMovedTo: col => `movida a ${col}`,
   evtParentReopened: parent => `padre ${parent} reabierto`,
   evtAssignedTo: assignee => `asignada a ${assignee}`,
@@ -1687,7 +1702,8 @@ const es: KanbanMessages = {
   boardImportedAs: slug => `Ese nombre estaba ocupado — importado como ${slug}`,
   renameBoardTitle: 'Renombrar tablero',
   deleteBoardTitle: name => `¿Eliminar «${name}»?`,
-  deleteBoardConfirm: 'El tablero se archiva, no se borra — sus tareas y adjuntos quedan en disco y se pueden restaurar.',
+  deleteBoardConfirm:
+    'El tablero se archiva, no se borra — sus tareas y adjuntos quedan en disco y se pueden restaurar.',
   boardArchived: path => `Tablero archivado en ${path}`,
   boardSettingsFor: name => `Configuración del tablero — ${name}`,
   name: 'Nombre',
@@ -1782,7 +1798,8 @@ const ru: KanbanMessages = {
   archive: 'В архив',
   clearSelection: 'Снять выделение (Esc)',
   refused: 'отклонено',
-  bulkFailed: (failed, total, err) => `Ошибок: ${failed} из ${total} — ${err}. Карточки с ошибками остаются выбранными.`,
+  bulkFailed: (failed, total, err) =>
+    `Ошибок: ${failed} из ${total} — ${err}. Карточки с ошибками остаются выбранными.`,
   titlePlaceholderTriage: 'Черновая идея — спецификатор доработает',
   titlePlaceholder: 'Заголовок',
   descPlaceholder: 'Описание (необязательно)',
@@ -1823,8 +1840,7 @@ const ru: KanbanMessages = {
   introBody:
     'Карточки выполняете не вы — агенты. Поставьте карточку с исполнителем в «Готово», и агент возьмёт её в течение минуты. Нет исполнителя — нет запуска. Триаж: агент сначала превращает идею в полноценную задачу. Сделать: ждёт других карточек. Запланировано: ждёт таймера. Выполняется и Ревью: полосы агентов — не трогайте. Заблокировано: ждёт вас. Результаты возвращаются на карточку.',
   introGotIt: 'Понятно',
-  evtCreated: (where, assignee) =>
-    `создана${where ? ` в ${where}` : ''}${assignee ? ` · назначена ${assignee}` : ''}`,
+  evtCreated: (where, assignee) => `создана${where ? ` в ${where}` : ''}${assignee ? ` · назначена ${assignee}` : ''}`,
   evtMovedTo: col => `перемещена в ${col}`,
   evtParentReopened: parent => `родитель ${parent} переоткрыт`,
   evtAssignedTo: assignee => `назначена ${assignee}`,
@@ -1865,8 +1881,7 @@ const ru: KanbanMessages = {
   comments: n => `Комментарии · ${n}`,
   commentsHelpRunning:
     'Задача выполняется. Ваша заметка попадёт в текущий ход воркера через несколько секунд — без блокировки/разблокировки. «Вернуть в очередь с заметкой» перезапускает задачу с нуля, с вашей заметкой в контексте.',
-  commentsHelp:
-    'Комментарии добавляются в тред задачи. Воркер, берущий задачу, читает их как часть контекста.',
+  commentsHelp: 'Комментарии добавляются в тред задачи. Воркер, берущий задачу, читает их как часть контекста.',
   send: 'Отправить',
   comment: 'Комментарий',
   messageWorker: 'Сообщение работающему воркеру…',
@@ -1903,7 +1918,8 @@ const ru: KanbanMessages = {
   boardImportedAs: slug => `Имя занято — импортировано как ${slug}`,
   renameBoardTitle: 'Переименовать доску',
   deleteBoardTitle: name => `Удалить «${name}»?`,
-  deleteBoardConfirm: 'Доска архивируется, а не стирается — её задачи и вложения остаются на диске и могут быть восстановлены.',
+  deleteBoardConfirm:
+    'Доска архивируется, а не стирается — её задачи и вложения остаются на диске и могут быть восстановлены.',
   boardArchived: path => `Доска заархивирована в ${path}`,
   boardSettingsFor: name => `Настройки доски — ${name}`,
   name: 'Имя',
@@ -2039,8 +2055,7 @@ const ar: KanbanMessages = {
   introBody:
     'لست أنت من يشغّل البطاقات — بل الوكلاء. ضع بطاقة لها معيّن في «جاهزة» وسيلتقطها وكيل خلال دقيقة. بلا معيّن، لا تشغيل. الفرز: وكيل يحوّل الفكرة أولًا إلى مهمة حقيقية. للتنفيذ: تنتظر بطاقات أخرى. المجدولة: تنتظر مؤقتًا. قيد التشغيل والمراجعة: مسارات الوكلاء — لا تتدخل. المحظورة: تنتظرك أنت. تعود النتائج إلى البطاقة.',
   introGotIt: 'فهمت',
-  evtCreated: (where, assignee) =>
-    `أُنشئت${where ? ` في ${where}` : ''}${assignee ? ` · أُسندت إلى ${assignee}` : ''}`,
+  evtCreated: (where, assignee) => `أُنشئت${where ? ` في ${where}` : ''}${assignee ? ` · أُسندت إلى ${assignee}` : ''}`,
   evtMovedTo: col => `نُقلت إلى ${col}`,
   evtParentReopened: parent => `أُعيد فتح الأصل ${parent}`,
   evtAssignedTo: assignee => `أُسندت إلى ${assignee}`,
@@ -2081,8 +2096,7 @@ const ar: KanbanMessages = {
   comments: n => `التعليقات · ${n}`,
   commentsHelpRunning:
     'هذه المهمة قيد التشغيل. تُدمج ملاحظتك في دور العامل الحالي خلال ثوانٍ — دون حظر/فكّ حظر. «إعادة إلى الطابور مع ملاحظة» يعيد تشغيل المهمة من البداية وملاحظتك في السياق.',
-  commentsHelp:
-    'تُضاف التعليقات إلى سلسلة المهمة. عندما يلتقط عامل المهمة يقرأها كجزء من سياقه.',
+  commentsHelp: 'تُضاف التعليقات إلى سلسلة المهمة. عندما يلتقط عامل المهمة يقرأها كجزء من سياقه.',
   send: 'إرسال',
   comment: 'تعليق',
   messageWorker: 'رسالة إلى العامل الجاري…',
@@ -2136,8 +2150,7 @@ const ar: KanbanMessages = {
   defaultParen: '(افتراضي)',
   autoDecompose: 'تفكيك مهام الفرز تلقائيًا',
   profileDescriptions: 'أوصاف الملفات الشخصية',
-  profileDescriptionsHint:
-    'توجّه الأوصاف توجيهَ المفكّك. ولّدها بالنموذج المساعد أو اكتبها بنفسك.',
+  profileDescriptionsHint: 'توجّه الأوصاف توجيهَ المفكّك. ولّدها بالنموذج المساعد أو اكتبها بنفسك.',
   profileGoodAt: 'بماذا يتقن هذا الملف الشخصي؟',
   auto: 'تلقائي',
   notify: {

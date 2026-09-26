@@ -36,7 +36,16 @@ export interface VoiceFanProps {
  * Items are memoized on the handful of state bits they read, so the fan only
  * re-renders when a toggle actually flips — not on every composer keystroke.
  */
-export function VoiceFan({ autoSpeak, busy, disabled, state, voiceStatus, onDictate, onStartConversation, onToggleAutoSpeak }: VoiceFanProps) {
+export function VoiceFan({
+  autoSpeak,
+  busy,
+  disabled,
+  state,
+  voiceStatus,
+  onDictate,
+  onStartConversation,
+  onToggleAutoSpeak
+}: VoiceFanProps) {
   const { t } = useI18n()
   const c = t.composer
   const wake = useStore($wakeWord)

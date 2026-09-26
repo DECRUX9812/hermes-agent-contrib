@@ -147,9 +147,7 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
 
       // Plan→build handoff anchors a fresh session to the plan's workspace; a
       // cwd-relative plan path resolves against the session that wrote it.
-      setSessionCwdById(
-        Object.fromEntries(sessions.map(session => [session.id, session.cwd ?? undefined]))
-      )
+      setSessionCwdById(Object.fromEntries(sessions.map(session => [session.id, session.cwd ?? undefined])))
 
       const { artifacts: nextArtifacts, failures } = await loadArtifactsForSessions(
         sessions,

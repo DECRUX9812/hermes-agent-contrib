@@ -72,7 +72,14 @@ type PreviewSessionRoute = 'ignore' | 'retry' | 'run'
  * would win the race, so the tool reports "no preview tab / no terminal" while
  * the owner's pane is open (#113348).
  */
-const WINDOW_OWNED_REQUESTS = new Set(['preview.act', 'preview.read', 'preview.verify', 'terminal.read', 'window.read', 'tour'])
+const WINDOW_OWNED_REQUESTS = new Set([
+  'preview.act',
+  'preview.read',
+  'preview.verify',
+  'terminal.read',
+  'window.read',
+  'tour'
+])
 
 /** This window hosts the session: it is the primary view or an open session tile. */
 export function windowHostsSession(sessionId: string, activeSessionId: null | string): boolean {

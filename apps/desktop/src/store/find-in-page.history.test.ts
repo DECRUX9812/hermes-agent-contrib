@@ -10,14 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TIMELINE_REVEAL_EVENT, type TimelineRevealRequest } from '@/components/assistant-ui/thread/timeline-data'
 import { $selectedStoredSessionId } from '@/store/session'
 
-import {
-  $findInPage,
-  closeFindBar,
-  findNext,
-  openFindBar,
-  setFindHistoryMode,
-  setFindQuery
-} from './find-in-page'
+import { $findInPage, closeFindBar, findNext, openFindBar, setFindHistoryMode, setFindQuery } from './find-in-page'
 import { resetTranscriptFindForTest } from './transcript-find'
 
 const getSessionMessages = vi.fn()

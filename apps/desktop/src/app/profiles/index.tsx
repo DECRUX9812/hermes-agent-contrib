@@ -15,13 +15,7 @@ import { AlertTriangle, Save } from '@/lib/icons'
 import { PROFILE_SWATCHES, resolveProfileColor } from '@/lib/profile-color'
 import { normalize } from '@/lib/text'
 import { notify, notifyError } from '@/store/notifications'
-import {
-  $profileColors,
-  normalizeProfileKey,
-  profileLabel,
-  refreshProfiles,
-  setProfileColor
-} from '@/store/profile'
+import { $profileColors, normalizeProfileKey, profileLabel, refreshProfiles, setProfileColor } from '@/store/profile'
 
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import {
@@ -214,6 +208,7 @@ function ProfileRow({
   const colors = useStore($profileColors)
   const [pickerOpen, setPickerOpen] = useState(false)
   const color = colors[normalizeProfileKey(profile.name)] ?? null
+
   const rowMenuItems = profile.is_default
     ? menuItems
     : [

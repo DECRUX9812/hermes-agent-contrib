@@ -88,10 +88,7 @@ export function SessionWatchStrip({ onOpen }: SessionWatchStripProps) {
         const label = session ? sessionTitle(session) : t.sidebar.row.untitledChat(durableId)
 
         return (
-          <div
-            className="group/watch-chip relative flex min-w-0 max-w-36 shrink-0 items-center"
-            key={key}
-          >
+          <div className="group/watch-chip relative flex min-w-0 max-w-36 shrink-0 items-center" key={key}>
             <button
               className="flex min-w-0 items-center gap-1.5 rounded-full border border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background) py-0.5 pl-1.5 pr-1.5 text-[0.6875rem] leading-none text-(--ui-text-secondary) transition-colors hover:border-(--ui-stroke-secondary) hover:text-(--ui-text-primary) group-hover/watch-chip:pr-5"
               onClick={() => {

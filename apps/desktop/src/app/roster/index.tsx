@@ -129,7 +129,11 @@ function FleetRunCard({
   session: null | SessionInfo | undefined
 }) {
   const { t } = useI18n()
-  const elapsed = useElapsedSeconds(Boolean(run.startedMs), `fleet-run:${run.sessionId ?? run.title}`, run.startedMs ?? undefined)
+  const elapsed = useElapsedSeconds(
+    Boolean(run.startedMs),
+    `fleet-run:${run.sessionId ?? run.title}`,
+    run.startedMs ?? undefined
+  )
   const openable = run.sessionId !== null
   const where = [run.profile, run.connectionLabel].filter(Boolean).join(' · ')
 

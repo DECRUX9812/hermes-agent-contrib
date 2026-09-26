@@ -1062,7 +1062,7 @@ export const frOverrides = {
       completionSoundPreview: 'Aperçu',
       quietHoursTitle: 'Heures calmes',
       quietHoursDesc:
-        "Retient les notifications courantes pendant une plage quotidienne ; elles arrivent dans un récapitulatif à la fin. Approbations, questions et erreurs passent toujours.",
+        'Retient les notifications courantes pendant une plage quotidienne ; elles arrivent dans un récapitulatif à la fin. Approbations, questions et erreurs passent toujours.',
       quietHoursWindowTitle: 'Plage calme',
       quietHoursWindowDesc:
         "Les notifications sont silencieuses de l'heure de début à l'heure de fin — un début après la fin couvre la nuit.",
@@ -1072,10 +1072,8 @@ export const frOverrides = {
       digestDesc:
         'Regroupe les notifications courantes en un seul récapitulatif par heure au lieu de les envoyer une par une.',
       sessionOverridesTitle: 'Exceptions par session',
-      sessionOverridesDesc:
-        'Discussions masquées depuis le menu de session de la barre latérale. Réactivez-les ici.',
-      sessionOverridesEmpty:
-        'Aucune session masquée. Masquez une discussion depuis son menu latéral pour la voir ici.'
+      sessionOverridesDesc: 'Discussions masquées depuis le menu de session de la barre latérale. Réactivez-les ici.',
+      sessionOverridesEmpty: 'Aucune session masquée. Masquez une discussion depuis son menu latéral pour la voir ici.'
     },
     sections: {
       model: 'Modèle',
@@ -3252,7 +3250,7 @@ export const frOverrides = {
     noSkillActivity: 'Aucune activité de skill pour le moment.',
     actions: count => `${count} actions`,
     costAnalytics: 'Analyse des coûts',
-    costAnalyticsHint: "Agrégés sur cet appareil uniquement — les données de coût ne sont jamais envoyées.",
+    costAnalyticsHint: 'Agrégés sur cet appareil uniquement — les données de coût ne sont jamais envoyées.',
     dailySpend: 'Dépenses par jour',
     estimatedCost: 'estimé',
     perProfile: 'Par profil',
@@ -4252,7 +4250,7 @@ export const frOverrides = {
       openDeviceOpenConnections: 'Ouvrir Gateways',
       handoffNone: "Aucune plateforme de messagerie n'est prête pour le transfert",
       handoffOrigin: platform => `Transférée depuis ${platform}`,
-      continuationOrigin: "Continuation automatique — cette conversation a été compressée puis poursuivie",
+      continuationOrigin: 'Continuation automatique — cette conversation a été compressée puis poursuivie',
       ownedByProfile: profile => `Profil : ${profile}`,
       renamed: 'Renommée',
       renameFailed: 'Échec du renommage',
@@ -4268,7 +4266,8 @@ export const frOverrides = {
       askAbout: 'Poser une question sur cette session',
       ask: {
         clear: 'Effacer le fil',
-        dialogDesc: title => `Les questions sur ${title} sont répondues à partir de sa transcription enregistrée — jamais depuis la conversation en cours.`,
+        dialogDesc: title =>
+          `Les questions sur ${title} sont répondues à partir de sa transcription enregistrée — jamais depuis la conversation en cours.`,
         dialogTitle: 'Poser une question sur cette session',
         empty: 'Posez une question sur ce que cette session a fait, décidé ou écrit.',
         failed: 'Impossible d’obtenir une réponse',
@@ -4326,8 +4325,7 @@ export const frOverrides = {
       tag: 'Étiqueter',
       archive: 'Archiver',
       clear: 'Effacer la sélection',
-      tagDialogTitle: (count: number) =>
-        count === 1 ? 'Étiqueter 1 session' : `Étiqueter ${count} sessions`,
+      tagDialogTitle: (count: number) => (count === 1 ? 'Étiqueter 1 session' : `Étiqueter ${count} sessions`),
       tagDialogDesc: 'Ajoute l’étiquette à chaque session sélectionnée.'
     },
     dateDivider: {
@@ -4628,7 +4626,8 @@ export const frOverrides = {
       prDoneTip: 'Relisez le brouillon puis envoyez-le pour que l’agent ouvre la PR',
       followupLabel: 'Planifier un suivi',
       followupTip: 'Programme un point sur ce travail — rédige la demande pour vous',
-      followupDraft: 'Configure ça comme une tâche planifiée : reviens sur ce travail dans une heure et dis-moi ce qui a changé.',
+      followupDraft:
+        'Configure ça comme une tâche planifiée : reviens sur ce travail dans une heure et dis-moi ce qui a changé.',
       followupDone: 'Suivi rédigé',
       followupDoneTip: 'Ajustez l’horaire dans le brouillon puis envoyez-le'
     },
@@ -4658,11 +4657,12 @@ export const frOverrides = {
     capturing: 'Capture en cours…',
     clear: 'Recommencer',
     notePlaceholder: 'Note pour l’agent (facultatif)…',
-    permissionDenied: 'L’enregistrement d’écran est désactivé — activez-le dans Réglages → Confidentialité et sécurité → Enregistrement d’écran.',
+    permissionDenied:
+      'L’enregistrement d’écran est désactivé — activez-le dans Réglages → Confidentialité et sécurité → Enregistrement d’écran.',
     selectHint: 'Glissez pour choisir une zone · Échap pour annuler',
     toolTips: { arrow: 'Flèche', pen: 'Dessiner', rect: 'Rectangle' },
     unavailable: 'La capture d’écran n’est pas disponible ici.',
-    undo: 'Annuler',
+    undo: 'Annuler'
   },
   voiceStatus: {
     idle: 'Hermes est au repos — rien n’est en cours.',
@@ -4671,7 +4671,7 @@ export const frOverrides = {
     stalled: 'Hermes semble bloqué — c’est silencieux depuis un moment.',
     needsInput: 'Hermes attend ta réponse.',
     finished: 'Le dernier tour est terminé — la réponse t’attend.',
-    progress: (done, total) => `${done} tâches sur ${total} terminées.`,
+    progress: (done, total) => `${done} tâches sur ${total} terminées.`
   },
   statusStack: {
     hideStack: 'Masquer la pile d’état',
@@ -5978,7 +5978,7 @@ export const frOverrides = {
       revertFilesTip: 'Restaurer les fichiers à leur état avant ce message',
       revertFilesTitle: 'Restaurer les fichiers ?',
       revertFilesBody:
-        'Les fichiers modifiés par Hermes dans ce tour retrouvent leur état antérieur — tout ce que vous avez édité à la main est conservé. La conversation n\'est pas touchée.',
+        "Les fichiers modifiés par Hermes dans ce tour retrouvent leur état antérieur — tout ce que vous avez édité à la main est conservé. La conversation n'est pas touchée.",
       revertFilesConfirm: 'Restaurer les fichiers',
       revertFilesFailed: 'Impossible de restaurer les fichiers',
       goForward: 'Avancer',
@@ -6376,10 +6376,10 @@ export const frOverrides = {
     markdownReasoning: 'Raisonnement',
     markdownToolCall: "Appel d'outil",
     markdownToolResult: "Résultat d'outil",
-deliverableArtifacts: 'Artefacts',
+    deliverableArtifacts: 'Artefacts',
     deliverableChanges: 'Modifications',
     deliverableFilesLine: (files, added, removed) => `${files} fichiers modifiés · +${added} / −${removed}`,
-    deliverableNoSummary: "Aucune réponse de l’assistant enregistrée",
+    deliverableNoSummary: 'Aucune réponse de l’assistant enregistrée',
     deliverablePullRequest: 'Pull request',
     deliverableSession: 'Session',
     deliverableSummary: 'Résumé',

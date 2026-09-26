@@ -44,6 +44,7 @@ test('normalizes a launch profile the same way the CLI does', () => {
 test('a launch --profile is persisted before the backend reads active-profile.json', () => {
   withStoredProfile('stored', target => {
     const preferences = createDesktopProfilePreferences(target)
+
     const launched = applyLaunchProfileOverride(['Hermes.exe', '--profile', 'desktop'], name => {
       preferences.remember(name)
     })
@@ -80,6 +81,7 @@ test('a missing or invalid flag does not change the stored profile', () => {
     withStoredProfile('stored', target => {
       const before = fs.readFileSync(target, 'utf8')
       let persisted = false
+
       const launched = applyLaunchProfileOverride(argv, () => {
         persisted = true
       })

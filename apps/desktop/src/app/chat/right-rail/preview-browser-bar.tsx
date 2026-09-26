@@ -242,13 +242,7 @@ export function PreviewBrowserBar({
       {onToggleRecord ? (
         <PaneStripGlyph
           active={recording}
-          icon={
-            <Codicon
-              className={cn(recording && 'text-destructive')}
-              name="record"
-              size="0.8125rem"
-            />
-          }
+          icon={<Codicon className={cn(recording && 'text-destructive')} name="record" size="0.8125rem" />}
           label={recording ? copy.recordStop : copy.record}
           onSelect={onToggleRecord}
         />

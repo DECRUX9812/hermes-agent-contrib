@@ -35,11 +35,7 @@ function DelegationReportCard({ profile, report }: DelegationReportCardProps) {
   const variant = OUTCOME_VARIANTS[report.outcome] ?? OUTCOME_VARIANTS.needs_decision
 
   const outcomeLabel =
-    report.outcome === 'done'
-      ? labels.done
-      : report.outcome === 'failed'
-        ? labels.failed
-        : labels.needsDecision
+    report.outcome === 'done' ? labels.done : report.outcome === 'failed' ? labels.failed : labels.needsDecision
 
   const childSessionId = reportChildSessionId(report)
 

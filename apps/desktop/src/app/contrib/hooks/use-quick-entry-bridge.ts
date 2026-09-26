@@ -68,9 +68,7 @@ export function useQuickEntryBridge({ startFreshSessionDraft, submitText }: Quic
       // The context chip the quick window still held at submit rides along as
       // a metadata line ahead of the typed text — the model sees what the user
       // was working in without the transcript bubble gaining noise.
-      const text = payload.context
-        ? `${quickEntryContextBlock(payload.context)}\n\n${payload.text}`
-        : payload.text
+      const text = payload.context ? `${quickEntryContextBlock(payload.context)}\n\n${payload.text}` : payload.text
 
       const target = payload.target
 

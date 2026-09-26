@@ -39,9 +39,7 @@ describe('session-ask companion thread store', () => {
 
   it('rejects without a gateway or a question and never marks pending', async () => {
     await expect(askSessionQuestion(null, 's1', 'hi')).rejects.toThrow()
-    await expect(
-      askSessionQuestion(null, 's1', '  ')
-    ).rejects.toThrow()
+    await expect(askSessionQuestion(null, 's1', '  ')).rejects.toThrow()
     expect(sessionAskPendingFor(null, 's1')).toBe(false)
     expect(sessionAskThreadFor(null, 's1')).toEqual([])
   })

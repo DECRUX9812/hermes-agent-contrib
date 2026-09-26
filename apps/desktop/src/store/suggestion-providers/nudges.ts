@@ -53,11 +53,7 @@ export function setProactiveNudgesEnabled(on: boolean) {
 /** Last assistant text for a session: the unread digest when the turn ended
  *  unseen, else the session list's preview. Exported shape feeds the heuristics. */
 function settleTextOf(storedId: string): string {
-  return (
-    $sessionDigestById.get()[storedId] ??
-    $sessions.get().find(session => session.id === storedId)?.preview ??
-    ''
-  )
+  return $sessionDigestById.get()[storedId] ?? $sessions.get().find(session => session.id === storedId)?.preview ?? ''
 }
 
 // "Finished code work" tells — deliberately narrow (same lesson as the cron

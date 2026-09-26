@@ -443,10 +443,8 @@ function publishDraftAttachmentCount(key: string, count: number): void {
 }
 
 /** Staged count for one draft scope — the session row badge's selector. */
-export const draftAttachmentCountIn = (
-  counts: Record<string, number>,
-  scope: string | null | undefined
-): number => counts[draftKey(scope)] ?? 0
+export const draftAttachmentCountIn = (counts: Record<string, number>, scope: string | null | undefined): number =>
+  counts[draftKey(scope)] ?? 0
 
 /**
  * Publish a mounted composer's live attachment set under its draft scope.
@@ -807,9 +805,7 @@ export interface NewSessionDraftAdoption {
 
 const newSessionDraftAdoptionListeners = new Set<(adoption: NewSessionDraftAdoption) => void>()
 
-export function onNewSessionDraftAdopted(
-  listener: (adoption: NewSessionDraftAdoption) => void
-): () => void {
+export function onNewSessionDraftAdopted(listener: (adoption: NewSessionDraftAdoption) => void): () => void {
   newSessionDraftAdoptionListeners.add(listener)
 
   return () => newSessionDraftAdoptionListeners.delete(listener)

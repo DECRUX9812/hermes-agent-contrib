@@ -19,7 +19,10 @@ describe('buildSessionRecap', () => {
   it('returns null for an empty transcript and for one fresher than the idle threshold', () => {
     expect(buildSessionRecap([], IDLE, NOW)).toBeNull()
 
-    const fresh = [msg('user', 'hi', { timestamp: NOW / 1000 - 60 }), msg('assistant', 'hello', { timestamp: NOW / 1000 - 30 })]
+    const fresh = [
+      msg('user', 'hi', { timestamp: NOW / 1000 - 60 }),
+      msg('assistant', 'hello', { timestamp: NOW / 1000 - 30 })
+    ]
 
     expect(buildSessionRecap(fresh, IDLE, NOW)).toBeNull()
   })
@@ -57,7 +60,9 @@ describe('buildSessionRecap', () => {
   it('stays quiet while a turn is in flight', () => {
     const tailSec = NOW / 1000 - IDLE / 1000 - 5
 
-    expect(buildSessionRecap([msg('assistant', 'draft so far', { pending: true, timestamp: tailSec })], IDLE, NOW)).toBeNull()
+    expect(
+      buildSessionRecap([msg('assistant', 'draft so far', { pending: true, timestamp: tailSec })], IDLE, NOW)
+    ).toBeNull()
   })
 
   it('truncates a long first line for the strip', () => {

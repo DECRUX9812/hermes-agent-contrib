@@ -166,9 +166,7 @@ export async function askSessionQuestion(
     }
 
     const map = $sessionAskThreads.get()
-    $sessionAskThreads.set(
-      sanitizeThreadMap({ ...map, [key]: [...(map[key] ?? []), turn] })
-    )
+    $sessionAskThreads.set(sanitizeThreadMap({ ...map, [key]: [...(map[key] ?? []), turn] }))
 
     return turn
   } finally {

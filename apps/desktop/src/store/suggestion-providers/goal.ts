@@ -1,10 +1,6 @@
 import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
 import { translateNow } from '@/i18n'
-import {
-  type ComposerSuggestion,
-  type DraftProviderContext,
-  registerDraftProvider
-} from '@/store/composer-suggestions'
+import { type ComposerSuggestion, type DraftProviderContext, registerDraftProvider } from '@/store/composer-suggestions'
 
 /**
  * Goal-first plan chips (roadmap #20): the NEW-session draft — the empty box

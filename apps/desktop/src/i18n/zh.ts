@@ -837,7 +837,8 @@ export const zh = defineLocale({
       title: '外观',
       intro: '这些是仅桌面端的显示偏好。模式控制明暗；主题控制强调色与对话界面样式。',
       simpleModeTitle: '简洁模式',
-      simpleModeDesc: '更清爽、以聊天为主的界面：隐藏高级面板、工具和状态项。所有功能仍可随时通过“设置”和 ⌘K 访问，可随时切换回来。',
+      simpleModeDesc:
+        '更清爽、以聊天为主的界面：隐藏高级面板、工具和状态项。所有功能仍可随时通过“设置”和 ⌘K 访问，可随时切换回来。',
       colorMode: '颜色模式',
       colorModeDesc: '选择固定模式，或让 Hermes 跟随系统设置。',
       toolViewTitle: '工具调用显示',
@@ -1369,7 +1370,8 @@ export const zh = defineLocale({
       keepAwakeTitle: '保持电脑唤醒',
       keepAwakeDesc: '阻止本机休眠，让长时间或通宵运行继续进行。屏幕仍可变暗。',
       proactiveNudgesTitle: '主动建议',
-      proactiveNudgesDesc: '会话回合结束时，在输入框上方提供下一步建议条 — 比如发起 PR、安排跟进。它们只会起草文字，不会自动发送。',
+      proactiveNudgesDesc:
+        '会话回合结束时，在输入框上方提供下一步建议条 — 比如发起 PR、安排跟进。它们只会起草文字，不会自动发送。',
       disableF12Title: '禁用 F12 开发者工具',
       disableF12Desc: '阻止 F12 打开开发者工具。Ctrl+Shift+I（Mac 上为 Cmd+Opt+I）仍然可用。',
       alwaysExternalLinksTitle: '始终在外部浏览器中打开链接',
@@ -3633,10 +3635,12 @@ export const zh = defineLocale({
       continueOnPhone: '在手机上继续',
       openOnDevice: '在另一台设备上打开',
       openDeviceTitle: '在另一台设备上打开',
-      openDeviceDesc: home => `扫描二维码或将链接发送到另一台 Hermes 设备，只要其连接可以访问 ${home}。会话保留在原处——移动的只是视图。`,
+      openDeviceDesc: home =>
+        `扫描二维码或将链接发送到另一台 Hermes 设备，只要其连接可以访问 ${home}。会话保留在原处——移动的只是视图。`,
       openDeviceHomeFallback: '其所属后端',
       openDeviceIncomingTitle: '在此设备上打开会话？',
-      openDeviceIncomingDesc: (title, label) => `“${title}”位于 ${label}。打开会将此窗口切换到该连接——会话的归属不会改变。`,
+      openDeviceIncomingDesc: (title, label) =>
+        `“${title}”位于 ${label}。打开会将此窗口切换到该连接——会话的归属不会改变。`,
       openDeviceSwitchAndOpen: '切换并打开',
       openDeviceSwitching: '正在切换…',
       openDeviceIncomingMissingTitle: '找不到连接',
@@ -4048,7 +4052,7 @@ export const zh = defineLocale({
     selectHint: '拖动以选择区域 · Esc 取消',
     toolTips: { arrow: '箭头', pen: '画笔', rect: '矩形' },
     unavailable: '此处无法进行屏幕捕获。',
-    undo: '撤销',
+    undo: '撤销'
   },
   voiceStatus: {
     idle: 'Hermes 空闲中 —— 没有正在运行的任务。',
@@ -4057,7 +4061,7 @@ export const zh = defineLocale({
     stalled: 'Hermes 似乎卡住了 —— 已经有一会儿没有动静了。',
     needsInput: 'Hermes 正在等待你的回复。',
     finished: '上一轮已经结束 —— 回复在等你查看。',
-    progress: (done, total) => `${total} 项任务已完成 ${done} 项。`,
+    progress: (done, total) => `${total} 项任务已完成 ${done} 项。`
   },
   statusStack: {
     hideStack: '隐藏状态面板',
@@ -5163,8 +5167,7 @@ export const zh = defineLocale({
       restoreNext: '恢复下一个检查点',
       revertFilesTip: '将文件还原到此提示之前的状态',
       revertFilesTitle: '还原文件？',
-      revertFilesBody:
-        'Hermes 在该轮中修改的文件将恢复到之前的状态——你手动编辑过的内容会保留。对话不受影响。',
+      revertFilesBody: 'Hermes 在该轮中修改的文件将恢复到之前的状态——你手动编辑过的内容会保留。对话不受影响。',
       revertFilesConfirm: '还原文件',
       revertFilesFailed: '无法还原文件',
       goForward: '前进',
@@ -5448,7 +5451,7 @@ export const zh = defineLocale({
     markdownReasoning: '推理过程',
     markdownToolCall: '工具调用',
     markdownToolResult: '工具结果',
-deliverableArtifacts: '产物',
+    deliverableArtifacts: '产物',
     deliverableChanges: '变更',
     deliverableFilesLine: (files, added, removed) => `共修改 ${files} 个文件 · +${added} / −${removed}`,
     deliverableNoSummary: '未记录助手回复',

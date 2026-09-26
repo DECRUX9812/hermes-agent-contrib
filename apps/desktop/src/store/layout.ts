@@ -241,7 +241,11 @@ export const setSidebarAttentionOpen = (open: boolean) => $sidebarAttentionOpen.
 // The "Browse" fold holding every secondary nav row below New session. Kept
 // per interface mode through modeLayout, so Simple opens collapsed (the rail
 // is its leanest) while Advanced defaults to the full row set.
-export const $sidebarBrowseOpen = modeLayout.atom('hermes.desktop.sidebarBrowseOpen', () => $interfaceMode.get() !== 'simple', Codecs.bool)
+export const $sidebarBrowseOpen = modeLayout.atom(
+  'hermes.desktop.sidebarBrowseOpen',
+  () => $interfaceMode.get() !== 'simple',
+  Codecs.bool
+)
 // Cron-job sessions live in their own section below recents, collapsed by
 // default (it only renders at all when cron sessions exist) so the
 // scheduler's `[IMPORTANT: …]` first-message previews don't spam recents.
@@ -437,12 +441,7 @@ export const $sidebarFiltersActive: ReadableAtom<boolean> = computed(
     $sidebarShowArchived
   ],
   (statuses, projects, profiles, prs, tags, archived) =>
-    statuses.length > 0 ||
-    projects.length > 0 ||
-    profiles.length > 0 ||
-    prs.length > 0 ||
-    tags.length > 0 ||
-    archived
+    statuses.length > 0 || projects.length > 0 || profiles.length > 0 || prs.length > 0 || tags.length > 0 || archived
 )
 
 /** Anything at all moved off the shipped view — what makes a reset worth

@@ -115,9 +115,7 @@ export async function isolateSessionToWorktree(sessionId: string): Promise<strin
 
   const name = `session-${worktreeSlug(session.title || session.id)}`
 
-  const added = await git
-    .worktreeAdd(repoRoot, { name })
-    .catch(err => staleBackendError(err))
+  const added = await git.worktreeAdd(repoRoot, { name }).catch(err => staleBackendError(err))
 
   const profile = projectProfile()
   const gateway = $gateway.get()
@@ -138,7 +136,12 @@ export async function isolateSessionToWorktree(sessionId: string): Promise<strin
   setSessions(prev =>
     prev.map(s =>
       sessionMatchesStoredId(s, sessionId)
-        ? { ...s, cwd: moved, git_branch: res.branch ?? added.branch, git_repo_root: res.git_repo_root ?? added.repoRoot }
+        ? {
+            ...s,
+            cwd: moved,
+            git_branch: res.branch ?? added.branch,
+            git_repo_root: res.git_repo_root ?? added.repoRoot
+          }
         : s
     )
   )
@@ -158,9 +161,7 @@ export async function mergeSessionWorktree(sessionId: string): Promise<string> {
     throw new Error(translateNow('sidebar.row.worktreeUnavailable'))
   }
 
-  const res = await git
-    .worktreeMerge(info.repoRoot, info.worktreePath)
-    .catch(err => staleBackendError(err))
+  const res = await git.worktreeMerge(info.repoRoot, info.worktreePath).catch(err => staleBackendError(err))
 
   refreshWorktrees()
 
@@ -185,11 +186,7 @@ export async function restoreSessionWorktree(session: SessionInfo): Promise<void
     if (res.restored) {
       refreshWorktrees()
       setSessions(prev =>
-        prev.map(s =>
-          sessionMatchesStoredId(s, session.id)
-            ? { ...s, git_branch: res.branch || s.git_branch }
-            : s
-        )
+        prev.map(s => (sessionMatchesStoredId(s, session.id) ? { ...s, git_branch: res.branch || s.git_branch } : s))
       )
     }
   } catch {
