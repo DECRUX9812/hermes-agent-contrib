@@ -3610,6 +3610,8 @@ export const ja = defineLocale({
     hint: '表示される内容が変わるだけで、Hermes にできることは変わりません。',
     sessionNote:
       'シンプルモードで設定されています。ここでの変更はこのセッション中のみ有効です。自分の設定にするには詳細モードに切り替えてください。',
+    simpleNotice: 'シンプルモード — ペインと追加ツールは非表示になります。',
+    showAdvanced: '詳細モードを表示',
     simple: {
       label: 'シンプル',
       description:
@@ -4135,6 +4137,13 @@ export const ja = defineLocale({
     }
   },
 
+  keybinds: {
+    actions: {
+      'nav.starmap': 'メモリグラフを開く',
+      'nav.webhooks': 'Webhook を開く'
+    }
+  },
+
   tips: {
     close: 'このヒントを今後表示しない',
     items: {
@@ -4183,6 +4192,10 @@ export const ja = defineLocale({
       'right-pane': {
         title: '作業用ペイン',
         text: 'ファイル、ターミナル、レビュー、アプリ内ブラウザはサイドペインにまとまっています。'
+      },
+      'advanced-mode': {
+        title: '詳細モードの向こう側',
+        text: 'ペイン、Cron、機能、ステータスバーは詳細モードにあります — 設定 › 外観 › ウィンドウとレイアウトで切り替えられます。'
       }
     }
   },

@@ -119,26 +119,28 @@ export function AccentSwatch({
 // layout editor's thumbnails at a larger size.
 export type MiniNode = 1 | { dir: 'column' | 'row'; children: MiniNode[]; weights: number[] }
 
-export const ELITE_LAYOUT_ID = 'terminal-deck'
+export const ADVANCED_LAYOUT_ID = 'terminal-deck'
 
 // Each pick is an arrangement AND an interface mode. First launch is the one
 // place a single question can answer both: someone here to talk to Hermes
 // should not have to find Simple mode afterwards, and a developer who asked
-// for the terminal deck wants the tooling on. Basic applies Simple's own
+// for the terminal deck wants the tooling on. Simple applies Simple's own
 // preset so its shelf shows the pick as active.
 export const LAYOUTS: Array<{ description: string; id: string; mode: InterfaceMode; name: string; tree: MiniNode }> = [
   {
-    description: 'For talking to Hermes.',
+    // The app's own vocabulary (Settings → Appearance → Interface mode):
+    // "Simple" / "Advanced", so the names learned here still apply later.
+    description: 'Simple mode — for talking to Hermes.',
     id: 'sidebar-left',
     mode: 'simple',
-    name: 'Basic',
+    name: 'Simple',
     tree: { children: [1, 1], dir: 'row', weights: [1, 4.6] }
   },
   {
-    description: 'For developers: terminal, files, diffs.',
-    id: ELITE_LAYOUT_ID,
+    description: 'Advanced mode — for developers: terminal, files, diffs.',
+    id: ADVANCED_LAYOUT_ID,
     mode: 'advanced',
-    name: 'Elite',
+    name: 'Advanced',
     tree: {
       children: [{ children: [1, 1, 1], dir: 'row', weights: [1, 3.2, 1.2] }, 1],
       dir: 'column',

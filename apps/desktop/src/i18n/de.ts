@@ -659,6 +659,8 @@ export const deOverrides = {
       'nav.artifacts': 'Artefakte öffnen',
       'nav.cron': 'Geplante Jobs öffnen',
       'nav.agents': 'Agenten öffnen',
+      'nav.starmap': 'Memory-Graph öffnen',
+      'nav.webhooks': 'Webhooks öffnen',
       'session.new': 'Neue Session',
       'session.newTab': 'Neuer Session-Tab',
       'session.newWindow': 'Neues Fenster',
@@ -5256,6 +5258,8 @@ export const deOverrides = {
     hint: 'Ändert, was angezeigt wird, nicht was Hermes kann.',
     sessionNote:
       'Vom einfachen Modus festgelegt. Eine Änderung hier gilt für diese Session; wechseln Sie zu „Erweitert“, um sie dauerhaft zu übernehmen.',
+    simpleNotice: 'Einfacher Modus — Bereiche und zusätzliche Werkzeuge sind ausgeblendet.',
+    showAdvanced: 'Erweitert anzeigen',
     simple: {
       label: 'Einfach',
       description: 'Zum Chatten mit Hermes. Seitenleiste und Chat; keine Terminal-, Datei- oder Diff-Bereiche.'
@@ -6039,6 +6043,10 @@ export const deOverrides = {
       'right-pane': {
         title: 'Der Arbeitsbereich',
         text: 'Dateien, Terminal, Review und der In-App-Browser teilen sich die rechte Seite.'
+      },
+      'advanced-mode': {
+        title: 'Mehr hinter Erweitert',
+        text: 'Bereiche, Cron, Skills und die Statusleiste ruhen im Erweiterten Modus — Einstellungen › Darstellung › Fenster & Layout schaltet um.'
       }
     }
   },

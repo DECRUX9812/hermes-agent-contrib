@@ -28,6 +28,7 @@ import type { Translations } from '@/i18n/types'
 import { resolveTipAnchor } from '@/lib/tips/anchor'
 import { TIP_CATALOG } from '@/lib/tips/catalog'
 import { nextTip } from '@/lib/tips/rotation'
+import { $interfaceMode, shownInMode } from '@/store/interface-mode'
 import { $localModelsEnabled } from '@/store/local-models-flag'
 import { $awaitingResponse, $busy } from '@/store/session'
 import { $activeTip, $lastTipId, $nextTipAt, $retiredTips, $tipsEnabled, $tipShownAt, showTip } from '@/store/tips'
@@ -126,8 +127,11 @@ export function useTipRotation(copy: Translations['tips']) {
       }
 
       // Only tips with something on screen to point at are candidates, so the
-      // rotation never burns a turn on a pane the user isn't showing.
-      const onScreen = TIP_CATALOG.filter(tip => resolveTipAnchor(document, tip.targets))
+      // rotation never burns a turn on a pane the user isn't showing — and a
+      // mode-tiered tip is a candidate only in its own mode (a Simple-only tip
+      // would point at nothing in Advanced).
+      const inMode = shownInMode($interfaceMode.get())
+      const onScreen = TIP_CATALOG.filter(tip => inMode(tip) && resolveTipAnchor(document, tip.targets))
 
       const chosen = nextTip(
         TIP_CATALOG.map(tip => tip.id),

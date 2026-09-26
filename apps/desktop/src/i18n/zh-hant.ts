@@ -3799,6 +3799,8 @@ export const zhHant = defineLocale({
     title: '介面模式',
     hint: '只改變顯示的內容，不改變 Hermes 的能力。',
     sessionNote: '由簡潔模式設定。此處的變更僅在本次工作階段內生效；切換到進階模式即可保留為你的設定。',
+    simpleNotice: '簡潔模式 — 面板與其他工具已隱藏。',
+    showAdvanced: '顯示進階模式',
     simple: {
       label: '簡潔',
       description: '用於與 Hermes 對話。只有側邊欄和聊天；沒有終端機、檔案或差異面板。'
@@ -4284,6 +4286,13 @@ export const zhHant = defineLocale({
     openLogs: '開啟記錄'
   },
 
+  keybinds: {
+    actions: {
+      'nav.starmap': '開啟記憶圖譜',
+      'nav.webhooks': '開啟 Webhook'
+    }
+  },
+
   tips: {
     close: '不再顯示這則提示',
     items: {
@@ -4332,6 +4341,10 @@ export const zhHant = defineLocale({
       'right-pane': {
         title: '工作面板',
         text: '檔案、終端機、審閱與內建瀏覽器都在側邊面板裡。'
+      },
+      'advanced-mode': {
+        title: '進階模式裡還有更多',
+        text: '面板、排程工作、功能與狀態列都在進階模式中 — 設定 › 外觀 › 視窗與佈局 可隨時切換。'
       }
     }
   },

@@ -116,6 +116,5 @@ export const introEs: Translations['intro'] = {
     'Deja la tarea aquí. Mantendré el trabajo ligado al repositorio.',
     `Dame el contexto y responderé en modo ${label}.`
   ],
-
-  recentSessions: 'Retoma donde lo dejaste'
+  recentSessions: 'Continúa donde lo dejaste'
 }

@@ -426,6 +426,8 @@ export const zh = defineLocale({
       'nav.artifacts': '打开制品',
       'nav.cron': '打开定时任务',
       'nav.agents': '打开智能体',
+      'nav.starmap': '打开记忆图谱',
+      'nav.webhooks': '打开 Webhook',
       'session.new': '新建会话',
       'session.newTab': '新建会话标签',
       'session.newWindow': '新建窗口',
@@ -4599,6 +4601,8 @@ export const zh = defineLocale({
     title: '界面模式',
     hint: '只改变显示的内容，不改变 Hermes 的能力。',
     sessionNote: '由简洁模式设定。此处的更改仅在本次会话内生效；切换到高级模式即可保留为你的设置。',
+    simpleNotice: '简洁模式 — 面板和其他工具已隐藏。',
+    showAdvanced: '显示高级模式',
     simple: {
       label: '简洁',
       description: '用于与 Hermes 对话。只有侧边栏和聊天；没有终端、文件或差异面板。'
@@ -5144,6 +5148,10 @@ export const zh = defineLocale({
       'right-pane': {
         title: '工作面板',
         text: '文件、终端、审阅和内置浏览器都在侧边面板里。'
+      },
+      'advanced-mode': {
+        title: '高级模式里还有更多',
+        text: '面板、定时任务、功能和状态栏都在高级模式中 — 设置 › 外观 › 窗口与布局 可随时切换。'
       }
     }
   },
