@@ -515,7 +515,9 @@ export const zh = defineLocale({
 
   findInPage: {
     next: '下一个匹配',
-    previous: '上一个匹配'
+    previous: '上一个匹配',
+    searchAll: '搜索全部历史',
+    searchAllShort: '历史'
   },
 
   language: {

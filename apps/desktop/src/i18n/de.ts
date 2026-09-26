@@ -751,7 +751,9 @@ export const deOverrides = {
   },
   findInPage: {
     next: 'Nächster Treffer',
-    previous: 'Vorheriger Treffer'
+    previous: 'Vorheriger Treffer',
+    searchAll: 'Gesamten Verlauf durchsuchen',
+    searchAllShort: 'Verlauf'
   },
   language: {
     label: 'Sprache',

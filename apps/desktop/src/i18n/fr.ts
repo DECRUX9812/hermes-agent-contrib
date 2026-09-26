@@ -750,7 +750,9 @@ export const frOverrides = {
   },
   findInPage: {
     next: 'Correspondance suivante',
-    previous: 'Correspondance précédente'
+    previous: 'Correspondance précédente',
+    searchAll: 'Rechercher dans tout l’historique',
+    searchAllShort: 'Historique'
   },
   language: {
     label: 'Langue',

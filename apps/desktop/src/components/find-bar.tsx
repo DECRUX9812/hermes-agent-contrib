@@ -14,6 +14,7 @@ import {
   findPrevious,
   initFindInPageListener,
   initOpenFindBarListener,
+  setFindHistoryMode,
   setFindQuery
 } from '@/store/find-in-page'
 
@@ -36,7 +37,7 @@ import {
  */
 export function FindBar() {
   const { t } = useI18n()
-  const { active, query, matchOrdinal, matchCount, focusRequest } = useStore($findInPage)
+  const { active, query, matchOrdinal, matchCount, matchCapped, history, focusRequest } = useStore($findInPage)
   const inputRef = useRef<HTMLInputElement>(null)
   const nativeSearchRequestRef = useRef(0)
   const [localQuery, setLocalQuery] = useState('')
@@ -291,7 +292,7 @@ export function FindBar() {
     }
   }
 
-  const matchLabel = formatMatchLabel(query, matchOrdinal, matchCount)
+  const matchLabel = formatMatchLabel(query, matchOrdinal, matchCount, matchCapped)
 
   const barStyle = filesPaneRight != null ? { right: `calc(${filesPaneRight}px + 0.75rem)` } : undefined
 
@@ -327,6 +328,26 @@ export function FindBar() {
           {matchLabel}
         </span>
       )}
+
+      {/* Transcript-scoped search: matches stored history beyond the rendered
+          window and jumps via the reveal machinery; falls back to DOM find
+          when the surface has no stored transcript. */}
+      <Tip label={t.findInPage.searchAll}>
+        <button
+          aria-label={t.findInPage.searchAll}
+          aria-pressed={history}
+          className={cn(
+            'flex h-6 items-center rounded px-1.5 text-[0.6875rem] font-medium',
+            history
+              ? 'bg-(--ui-control-hover-background) text-(--ui-accent)'
+              : 'text-(--ui-text-tertiary) hover:bg-(--ui-control-hover-background)'
+          )}
+          onClick={() => setFindHistoryMode(!history)}
+          type="button"
+        >
+          {t.findInPage.searchAllShort}
+        </button>
+      </Tip>
 
       <Tip label={t.findInPage.previous}>
         <button

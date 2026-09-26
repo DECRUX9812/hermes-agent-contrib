@@ -751,7 +751,9 @@ export const esOverrides = {
   },
   findInPage: {
     next: 'Siguiente coincidencia',
-    previous: 'Coincidencia anterior'
+    previous: 'Coincidencia anterior',
+    searchAll: 'Buscar en todo el historial',
+    searchAllShort: 'Historial'
   },
   language: {
     label: 'Idioma',
