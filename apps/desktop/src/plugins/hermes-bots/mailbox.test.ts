@@ -7,20 +7,21 @@
  * matched on handle OR profile name against that connection.
  */
 
+import type * as PluginSdk from '@hermes/plugin-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   fetchMailboxNotes,
+  type MailboxNote,
   mailboxOpenCountFor,
   roomMailboxNotes,
   sendMailboxNote,
-  updateMailboxNote,
-  type MailboxNote
+  updateMailboxNote
 } from './mailbox'
 import type { GroupMember, ProfileRoute } from './types'
 
 vi.mock('@hermes/plugin-sdk', async importOriginal => {
-  const actual = await importOriginal<typeof import('@hermes/plugin-sdk')>()
+  const actual = await importOriginal<typeof PluginSdk>()
 
   return {
     ...actual,
@@ -123,6 +124,7 @@ describe('sendMailboxNote / updateMailboxNote', () => {
 describe('roomMailboxNotes', () => {
   it('includes notes a member sends or receives on their connection', () => {
     const members = [member({ name: 'alice', handle: 'alice', connectionId: 'conn-a' })]
+
     const notes = [
       note({ id: 'in', connectionId: 'conn-a' }),
       note({ id: 'other-conn', connectionId: 'conn-b' }),
@@ -151,6 +153,7 @@ describe('roomMailboxNotes', () => {
 describe('mailboxOpenCountFor', () => {
   it('counts open notes addressed to the bot on its connection only', () => {
     const bob = member()
+
     const notes = [
       note({ connectionId: 'conn-a' }),
       note({ id: 'mbx_2', connectionId: 'conn-a', status: 'done' }),
