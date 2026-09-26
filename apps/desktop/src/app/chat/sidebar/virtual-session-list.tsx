@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useStore } from '@nanostores/react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type * as React from 'react'
-import { type FC, useEffect, useRef } from 'react'
+import { type FC, useEffect, useMemo, useRef } from 'react'
 
 import type { SessionInfo } from '@/hermes'
 import { useI18n } from '@/i18n'
@@ -12,6 +12,7 @@ import { sessionBucketLabel } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { sessionPinId } from '@/store/session'
 import { $sessionListDensity } from '@/store/session-list-density'
+import { applySessionRange, listRowSelectionKeys } from '@/store/session-selection'
 
 import { SidebarDateDivider } from './chrome'
 import { SidebarSessionRow } from './session-row'
@@ -29,6 +30,8 @@ interface SessionRowCommonProps {
   onPin: () => void
   onToggleUnread: () => void
   onResume: () => void
+  /** ⇧/⌘⇧-click: range-select against the list's own ordered row keys. */
+  onSelectRange?: (additive: boolean) => void
   reorderable?: boolean
   showProfile?: boolean
 }
@@ -86,6 +89,9 @@ export const VirtualSessionList: FC<VirtualSessionListProps> = ({
   const dividerLabels = t.sidebar.dateDivider
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const density = useStore($sessionListDensity)
+
+  // ⇧-click ranges measure over exactly what this list renders, in order.
+  const selectionKeys = useMemo(() => listRowSelectionKeys(listRows), [listRows])
 
   const virtualizer = useVirtualizer({
     count: listRows.length,
@@ -167,6 +173,7 @@ export const VirtualSessionList: FC<VirtualSessionListProps> = ({
       onBranch: onBranchSession ? () => onBranchSession(session.id, session.profile) : undefined,
       onDelete: () => onDeleteSession(session.id),
       onPin: () => onTogglePin(sessionPinId(session)),
+      onSelectRange: additive => applySessionRange(selectionKeys, session, additive),
       onToggleUnread: () => onToggleUnread(session.id),
       onResume: () => onResumeSession(session.id, session),
       reorderable,

@@ -3588,6 +3588,19 @@ export const zh = defineLocale({
       strip: '已关注的会话',
       stop: '取消关注'
     },
+    selection: {
+      ariaLabel: '已选中的会话',
+      count: (count: number) => `已选 ${count} 项`,
+      pin: '固定',
+      unpin: '取消固定',
+      mute: '静音',
+      unmute: '取消静音',
+      tag: '添加标签',
+      archive: '归档',
+      clear: '清除选择',
+      tagDialogTitle: (count: number) => `为 ${count} 个会话添加标签`,
+      tagDialogDesc: '标签会添加到所有选中的会话。'
+    },
     dateDivider: {
       today: '今天早些时候',
       yesterday: '昨天',

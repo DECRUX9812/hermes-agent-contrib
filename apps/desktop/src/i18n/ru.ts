@@ -2923,6 +2923,20 @@ export const ru = defineLocale({
       strip: 'Отслеживаемые сеансы',
       stop: 'Перестать наблюдать'
     },
+    selection: {
+      ariaLabel: 'Выбранные сеансы',
+      count: (count: number) => `Выбрано: ${count}`,
+      pin: 'Закрепить',
+      unpin: 'Открепить',
+      mute: 'Отключить уведомления',
+      unmute: 'Включить уведомления',
+      tag: 'Добавить метку',
+      archive: 'В архив',
+      clear: 'Снять выделение',
+      tagDialogTitle: (count: number) =>
+        `Добавить метку: ${count} ${count === 1 ? 'сеанс' : count < 5 ? 'сеанса' : 'сеансов'}`,
+      tagDialogDesc: 'Метка будет добавлена ко всем выбранным сеансам.'
+    },
     dateDivider: {
       today: 'Ранее сегодня',
       yesterday: 'Вчера',

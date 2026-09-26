@@ -3238,6 +3238,21 @@ export interface Translations {
       strip: string
       stop: string
     }
+    /** ⌘/⇧-click multi-select: the floating bulk-action bar at the bottom of
+     *  the sessions column and its tag dialog. */
+    selection: {
+      ariaLabel: string
+      count: (count: number) => string
+      pin: string
+      unpin: string
+      mute: string
+      unmute: string
+      tag: string
+      archive: string
+      clear: string
+      tagDialogTitle: (count: number) => string
+      tagDialogDesc: string
+    }
     dateDivider: {
       today: string
       yesterday: string

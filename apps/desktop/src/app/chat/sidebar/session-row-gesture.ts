@@ -3,7 +3,12 @@
 // component) so the precedence — the part that's easy to get subtly wrong —
 // is unit-testable without rendering the whole sidebar.
 
-export type SessionRowClickAction = 'archive' | 'newTab' | 'newWindow' | 'pin' | 'resume'
+export type SessionRowClickAction =
+  | 'archive'
+  | 'resume'
+  | 'selectRange'
+  | 'selectRangeAdditive'
+  | 'selectToggle'
 
 export interface SessionRowClickModifiers {
   altKey: boolean
@@ -15,35 +20,37 @@ export interface SessionRowClickModifiers {
 /**
  * Resolve the click action from its modifiers.
  *
- * Precedence matters: the multi-modifier gestures (⌥+⇧ archive, ⌘/⌃+⇧ new
- * window) MUST be checked before the single-modifier pin (⇧) and new-tab
- * (⌘/⌃) gestures, because they set those flags too — testing `shiftKey`
- * first would swallow both into "pin".
+ * Multi-select owns the two Finder chords: ⌘/⌃-click toggles the row in and
+ * out of the selection set, ⇧-click extends a range from the last clicked
+ * anchor, and ⌘/⌃+⇧-click adds that range to whatever is already selected.
+ * The rail's own ⌥+⇧ archive gesture is checked FIRST — it sets shiftKey
+ * too, so a naive `shiftKey` test would swallow it into a range select.
  *
- * Archive is independent of window support (it works in the web embed too);
- * only the new-window gesture needs standalone windows, and without them
- * ⌘/⌃+⇧ falls through to the plain ⌘/⌃ new-tab behaviour.
+ * (New-tab / new-window live on middle-click and the row's menus now; the
+ * modifier chords belong to selection.)
  */
-export function resolveSessionRowClick(
-  { altKey, ctrlKey, metaKey, shiftKey }: SessionRowClickModifiers,
-  opts: { canOpenWindow: boolean }
-): SessionRowClickAction {
+export function resolveSessionRowClick({
+  altKey,
+  ctrlKey,
+  metaKey,
+  shiftKey
+}: SessionRowClickModifiers): SessionRowClickAction {
   const primaryModifier = metaKey || ctrlKey
 
   if (altKey && shiftKey) {
     return 'archive'
   }
 
-  if (primaryModifier && shiftKey && opts.canOpenWindow) {
-    return 'newWindow'
+  if (primaryModifier && shiftKey) {
+    return 'selectRangeAdditive'
   }
 
   if (primaryModifier) {
-    return 'newTab'
+    return 'selectToggle'
   }
 
   if (shiftKey) {
-    return 'pin'
+    return 'selectRange'
   }
 
   return 'resume'
