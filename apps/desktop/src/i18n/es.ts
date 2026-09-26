@@ -4423,6 +4423,7 @@ export const esOverrides = {
     folder: 'Carpeta…',
     images: 'Imágenes…',
     pasteImage: 'Pegar imagen',
+    captureRegion: 'Capturar zona de pantalla…',
     url: 'URL…',
     promptSnippets: 'Fragmentos de prompt…',
     slashCommands: 'Comandos slash…',
@@ -4496,6 +4497,19 @@ export const esOverrides = {
         text: 'Explica cómo funciona esto y señala los archivos clave.'
       }
     }
+  },
+  regionCapture: {
+    attach: 'Adjuntar',
+    cancel: 'Cancelar',
+    captureFailed: 'No se pudo capturar la pantalla.',
+    capturing: 'Capturando…',
+    clear: 'Empezar de nuevo',
+    notePlaceholder: 'Nota para el agente (opcional)…',
+    permissionDenied: 'La grabación de pantalla está desactivada: actívala en Ajustes → Privacidad y seguridad → Grabación de pantalla.',
+    selectHint: 'Arrastra para elegir una zona · Esc para cancelar',
+    toolTips: { arrow: 'Flecha', pen: 'Dibujar', rect: 'Rectángulo' },
+    unavailable: 'La captura de pantalla no está disponible aquí.',
+    undo: 'Deshacer',
   },
   statusStack: {
     hideStack: 'Ocultar la pila de estado',

@@ -235,6 +235,11 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
           }
         }
       : undefined,
+  // Region capture: one-shot full-frame grab of the window's display for the
+  // markup overlay (roadmap #34); the overlay does crop + markup itself.
+  regionCapture: {
+    capture: () => ipcRenderer.invoke('hermes:region-capture:capture')
+  },
   // Quick Entry: the global-hotkey mini composer window. Main owns the OS
   // shortcut + the persisted preference; the quick window only captures text
   // and hands it back, and the primary renderer submits it through the normal

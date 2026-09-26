@@ -19,6 +19,7 @@ import {
   Clipboard,
   Clock,
   Command,
+  Crop,
   FileText,
   FolderOpen,
   type IconComponent,
@@ -27,6 +28,7 @@ import {
   MessageSquareText
 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import { startRegionCapture } from '@/store/region-capture'
 
 import { useComposerAttachmentProviders } from './contrib'
 import { GHOST_ICON_BTN } from './controls'
@@ -99,6 +101,13 @@ export function ContextMenu({
           <ContextMenuItem icon={Link} onSelect={onOpenUrlDialog}>
             {c.url}
           </ContextMenuItem>
+          {/* Region capture (#34) — only real under Electron; web/other shells
+              don't expose the bridge and keep the row hidden. */}
+          {window.hermesDesktop?.regionCapture && (
+            <ContextMenuItem icon={Crop} onSelect={() => void startRegionCapture()}>
+              {c.captureRegion}
+            </ContextMenuItem>
+          )}
 
           <DropdownMenuSeparator />
 
