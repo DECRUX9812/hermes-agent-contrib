@@ -400,6 +400,25 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       return () => ipcRenderer.removeListener('hermes:minimize-to-tray:changed', listener)
     }
   },
+  // Menu-bar status (#38): the renderer pushes live session status into main
+  // for the tray menu/badge, and receives the New Session quick action back.
+  menuBarStatus: {
+    get: () => ipcRenderer.invoke('hermes:menu-bar-status:get'),
+    set: on => ipcRenderer.invoke('hermes:menu-bar-status:set', on),
+    push: payload => ipcRenderer.send('hermes:menu-bar-status:push', payload),
+    onChanged: callback => {
+      const listener = (_event, status) => callback(status)
+      ipcRenderer.on('hermes:minimize-to-tray:changed', listener)
+
+      return () => ipcRenderer.removeListener('hermes:minimize-to-tray:changed', listener)
+    },
+    onNewSession: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:menu-bar:new-session', listener)
+
+      return () => ipcRenderer.removeListener('hermes:menu-bar:new-session', listener)
+    }
+  },
   setDisableF12: blocked => ipcRenderer.send('hermes:devtools:disable-f12', blocked),
   setF12ShortcutActive: active => ipcRenderer.send('hermes:f12ShortcutActive', Boolean(active)),
   onF12Shortcut: callback => {

@@ -22,6 +22,7 @@ import {
 } from '@/store/native-notifications'
 import { requestPluginCatalogInstallFromDeepLink } from '@/store/plugin-catalog-install'
 import { openPluginInstallRequest } from '@/store/plugin-install-request'
+import { requestFreshSession } from '@/store/profile'
 import { openFolderAsProject } from '@/store/projects'
 import {
   $selectedStoredSessionId,
@@ -324,6 +325,18 @@ export function useDesktopIntegrations({
 
     return () => unsubscribe?.()
   }, [locationPathname, navigate, runtimeIdByStoredSessionId])
+
+  // Menu-bar status (#38) quick action: the tray's "New Session" lands here
+  // after main has restored/focused the window. Same fresh-draft path a
+  // profile switch takes, so the click behaves exactly like the in-app New
+  // Chat button — user-driven, never auto-acting.
+  useEffect(() => {
+    const unsubscribe = window.hermesDesktop?.menuBarStatus?.onNewSession?.(() => {
+      requestFreshSession()
+    })
+
+    return () => unsubscribe?.()
+  }, [])
 
   useEffect(() => {
     const unsubscribe = window.hermesDesktop?.onNotificationAction?.(({ actionId, sessionId }) => {

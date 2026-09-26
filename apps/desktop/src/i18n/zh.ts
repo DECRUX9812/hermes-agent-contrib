@@ -1330,6 +1330,10 @@ export const zh = defineLocale({
       minimizeToTrayDesc:
         '最小化窗口或关闭主窗口时，将其隐藏到系统托盘（macOS 上为菜单栏），让 Hermes 继续运行。通过托盘菜单中的“退出 Hermes”或 Cmd+Q 退出。默认关闭，仅适用于此设备。',
       minimizeToTrayUnavailable: '系统托盘不可用。窗口将正常最小化和关闭。关闭此选项后重新开启即可重试。',
+      menuBarStatusTitle: '菜单栏状态',
+      menuBarStatusDesc:
+        '在 macOS 菜单栏（Windows/Linux 为系统托盘）显示 Hermes 图标，包含实时状态徽标、最近会话和快捷操作。默认关闭；仅适用于本设备。',
+      menuBarStatusUnavailable: '此平台的系统托盘不可用。关闭后重新开启即可重试。',
       none: '无',
       noneParen: '(无)',
       builtinOnly: '仅内置',
@@ -5328,6 +5332,16 @@ export const zh = defineLocale({
       failed: error => `移交失败：${error}`,
       timedOut: '等待网关超时。`hermes gateway` 是否正在运行？'
     }
+  },
+
+  menuBar: {
+    newSession: '新会话',
+    quickEntry: '快速输入',
+    quit: '退出 Hermes',
+    recentSessions: '最近会话',
+    show: '显示 Hermes',
+    statusIdle: 'Hermes — 空闲',
+    statusActive: (runs: number, needsYou: number) => `${runs} 个运行中 · ${needsYou} 个待处理`
   },
 
   quickEntry: {

@@ -8,6 +8,7 @@ import type { MachineProfile } from '../electron/machine-profile'
 import type { HermesNotification } from '../electron/notification-types'
 import type { PoolLimits } from '../electron/pool-limits'
 import type { RegionCaptureApi } from '../electron/region-capture-types'
+import type { TrayStatusPush } from '../electron/tray-status'
 import type { GrowRequest } from '../electron/window-growth'
 
 import type { WakeIndicatorState } from './lib/wake-indicator'
@@ -380,9 +381,22 @@ declare global {
       setTranslucency?: (payload: TranslucencyState) => void
       setKeepAwake?: (on: boolean) => void
       minimizeToTray?: {
-        get: () => Promise<{ enabled: boolean; available: boolean }>
-        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean }>
-        onChanged: (callback: (status: { enabled: boolean; available: boolean }) => void) => () => void
+        get: () => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        onChanged: (
+          callback: (status: { enabled: boolean; available: boolean; statusEnabled: boolean }) => void
+        ) => () => void
+      }
+      /** Menu-bar status surface (#38): renderer pushes live session status for
+       *  the tray menu/badge; `onNewSession` is the tray's new-chat action. */
+      menuBarStatus?: {
+        get: () => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        push: (payload: TrayStatusPush) => void
+        onChanged: (
+          callback: (status: { enabled: boolean; available: boolean; statusEnabled: boolean }) => void
+        ) => () => void
+        onNewSession: (callback: () => void) => () => void
       }
       setDisableF12?: (blocked: boolean) => void
       setF12ShortcutActive?: (active: boolean) => void
