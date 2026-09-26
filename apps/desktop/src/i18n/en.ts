@@ -3054,6 +3054,15 @@ export const en: Translations = {
       savedRestarting: 'Telegram saved; gateway restarting…',
       savedRestartFailed: detail => `Telegram saved; gateway restart failed${detail}`
     },
+    phoneParity: {
+      title: 'Continue on your phone',
+      presence: 'Gateway presence',
+      scanHint: 'Scan with your phone, or open the link on this device.',
+      linkPending: 'The direct link appears here once the adapter is connected.',
+      openLink: 'Open link',
+      copyLink: 'Copy link',
+      copyFailed: 'Could not copy the link'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot token',
@@ -3804,6 +3813,8 @@ export const en: Translations = {
       finishedUnread: 'Finished — unread',
       backgroundRunning: 'Background task running',
       draftSession: 'Draft — nothing sent yet',
+      continueOnPhone: 'Continue on phone',
+      handoffNone: 'No messaging platform is ready for a handoff',
       handoffOrigin: platform => `Handed off from ${platform}`,
       continuationOrigin: 'Automatic continuation — this conversation was compressed and continued',
       ownedByProfile: profile => `Profile: ${profile}`,
@@ -5785,6 +5796,8 @@ deliverableArtifacts: 'Artifacts',
     dropFiles: 'Drop files',
     handoff: {
       pickPlatform: 'Choose a destination',
+      queued: (platform, home) => `Handing off to ${platform} (${home})…`,
+      sessionUnavailable: 'This chat is not live on the gateway right now.',
       success: platform => `Handed off to ${platform}. Resume here anytime.`,
       systemNote: platform => `↻ Handed off to ${platform} — resume here anytime.`,
       failed: error => `Handoff failed: ${error}`,

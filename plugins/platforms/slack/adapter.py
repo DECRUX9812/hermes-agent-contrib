@@ -1766,6 +1766,17 @@ class SlackAdapter(BasePlatformAdapter):
         self._team_bot_names[team_id] = bot_name
         if self._bot_user_id is None:
             self._bot_user_id = bot_user_id
+            if team_id and bot_user_id:
+                # Primary workspace identity = the parity link (same "first token wins"
+                # rule as _bot_user_id): slack:// opens the app to the bot's DM-able
+                # profile; the workspace URL is the QR/web fallback.
+                self._write_runtime_status_safe("bot identity", platform_identity={
+                    "label": f"@{bot_name} · {team_name}",
+                    "deep_link": f"slack://user?team={team_id}&id={bot_user_id}",
+                    "web_link": auth_response.get("url") or "",
+                    "team_id": team_id,
+                    "bot_user_id": bot_user_id,
+                })
         if self._bot_display_name is None:
             self._bot_display_name = bot_name
         logger.info(

@@ -32,7 +32,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { renameSession } from '@/hermes'
+import { getMessagingPlatforms, type MessagingPlatformInfo, renameSession } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { ArchiveOff } from '@/lib/icons'
@@ -40,6 +40,7 @@ import { isSubmitEnter } from '@/lib/ime'
 import { PROFILE_SWATCHES } from '@/lib/profile-color'
 import { exportSessionDeliverable } from '@/lib/session-deliverable'
 import { exportSession } from '@/lib/session-export'
+import { handoffTargets, runSessionHandoff } from '@/lib/session-handoff'
 import { exportSessionMarkdown, sessionMarkdownText } from '@/lib/session-markdown'
 import { useSessionSlice } from '@/lib/use-session-slice'
 import { revealArtifactsRail } from '@/store/artifact-rail'
@@ -195,6 +196,68 @@ function MoveToProjectItems({ kit, sessionId, profile }: { kit: MenuKit; session
           }}
         >
           {node.label}
+        </kit.Item>
+      ))}
+    </>
+  )
+}
+
+// The "Continue on phone" submenu — the per-session door to the platform
+// parity links (#40). Its own component so only an OPEN submenu fetches the
+// platform list. Only rendered for the row that IS the open session: the
+// handoff RPC needs a live runtime id, and the only runtime id this window
+// knows for sure is the active one.
+function HandoffPlatformItems({ kit, profile }: { kit: MenuKit; profile?: string }) {
+  const { t } = useI18n()
+  const r = t.sidebar.row
+  const [platforms, setPlatforms] = useState< MessagingPlatformInfo[] | null>(null)
+
+  useEffect(() => {
+    let live = true
+
+    void getMessagingPlatforms(profile)
+      .then(result => {
+        if (live) {
+          setPlatforms(handoffTargets(result.platforms))
+        }
+      })
+      .catch(() => {
+        if (live) {
+          setPlatforms([])
+        }
+      })
+
+    return () => {
+      live = false
+    }
+  }, [profile])
+
+  if (platforms === null) {
+    return <kit.Item disabled>{t.common.loading}</kit.Item>
+  }
+
+  if (platforms.length === 0) {
+    return <kit.Item disabled>{r.handoffNone}</kit.Item>
+  }
+
+  return (
+    <>
+      {platforms.map(platform => (
+        <kit.Item
+          key={platform.id}
+          onSelect={() => {
+            triggerHaptic('selection')
+            void runSessionHandoff(platform.id, {
+              failed: error => t.desktop.handoff.failed(error),
+              queued: (name, home) => t.desktop.handoff.queued(name, home),
+              sessionUnavailable: t.desktop.handoff.sessionUnavailable,
+              startMessaging: t.desktop.handoff.startMessaging,
+              success: name => t.desktop.handoff.success(name),
+              timedOut: t.desktop.handoff.timedOut
+            })
+          }}
+        >
+          {platform.identity?.label || platform.name}
         </kit.Item>
       ))}
     </>
@@ -603,6 +666,18 @@ function useSessionActions({
           <MoveToProjectItems kit={kit} profile={profile} sessionId={sessionId} />
         </kit.SubContent>
       </kit.Sub>
+      {/* Only the open session has a runtime id this window can hand off. */}
+      {sessionId === selectedStoredSessionId && (
+        <kit.Sub>
+          <kit.SubTrigger disabled={!sessionId}>
+            <Codicon name="device-mobile" size="0.875rem" />
+            <span>{r.continueOnPhone}</span>
+          </kit.SubTrigger>
+          <kit.SubContent>
+            <HandoffPlatformItems kit={kit} profile={profile} />
+          </kit.SubContent>
+        </kit.Sub>
+      )}
       {tabItems.length > 0 && (
         <>
           <kit.Separator />

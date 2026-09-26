@@ -181,6 +181,8 @@ type BotsMessages = {
     /** Re-opens the forever-chat on purpose. A plain row click only returns to
      *  the tabs already open, so a closed Bot Chat needs an explicit ask. */
     openBotChat: string
+    /** Row context menu: Messaging scoped to this bot — its platform links + QR (#40). */
+    continueOnPhone: string
     /** Screen-reader label for the row spinner while a cold bot chat opens. */
     openingChat: string
     /** Row context menu: pin/hide toggles, their toasts, and the groups entry. */
@@ -630,6 +632,7 @@ const en: BotsMessages = {
     descriptionHint: 'Leave blank to generate from the bot’s name and description.',
     newChatWith: 'New chat with this bot',
     openBotChat: 'Open Bot Chat',
+    continueOnPhone: 'Continue on phone…',
     openingChat: 'Opening chat…',
     pinToTop: 'Pin to top',
     unpin: 'Unpin',
@@ -1064,6 +1067,7 @@ const ja: BotsMessages = {
     descriptionHint: '空欄のままにすると、ボットの名前と説明から生成します。',
     newChatWith: 'このボットと新しいチャット',
     openBotChat: 'ボットチャットを開く',
+    continueOnPhone: 'スマホで続ける…',
     openingChat: 'チャットを開いています…',
     pinToTop: '先頭にピン留め',
     unpin: 'ピン留めを解除',
@@ -1491,6 +1495,7 @@ const zh: BotsMessages = {
     descriptionHint: '留空则根据机器人的名称和描述生成。',
     newChatWith: '与此机器人开新聊天',
     openBotChat: '打开机器人聊天',
+    continueOnPhone: '在手机上继续…',
     openingChat: '正在打开聊天…',
     pinToTop: '置顶',
     unpin: '取消置顶',
@@ -1912,6 +1917,7 @@ const zhHant: BotsMessages = {
     descriptionHint: '留空則依機器人的名稱和描述產生。',
     newChatWith: '與此機器人開新聊天',
     openBotChat: '開啟機器人聊天',
+    continueOnPhone: '在手機上繼續…',
     openingChat: '正在開啟聊天…',
     pinToTop: '釘選到頂端',
     unpin: '取消釘選',

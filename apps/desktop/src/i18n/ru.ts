@@ -2226,6 +2226,15 @@ export const ru = defineLocale({
       savedRestarting: 'Telegram сохранён; шлюз перезапускается…',
       savedRestartFailed: detail => `Telegram сохранён; перезапуск шлюза не удался${detail}`
     },
+    phoneParity: {
+      title: 'Продолжить на телефоне',
+      presence: 'Статус шлюза',
+      scanHint: 'Отсканируйте телефоном или откройте ссылку на этом устройстве.',
+      linkPending: 'Прямая ссылка появится здесь после подключения адаптера.',
+      openLink: 'Открыть ссылку',
+      copyLink: 'Копировать ссылку',
+      copyFailed: 'Не удалось скопировать ссылку'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Токен бота',
@@ -2917,6 +2926,8 @@ export const ru = defineLocale({
       finishedUnread: 'Завершён — не прочитан',
       backgroundRunning: 'Фоновая задача выполняется',
       draftSession: 'Черновик — ещё ничего не отправлено',
+      continueOnPhone: 'Продолжить на телефоне',
+      handoffNone: 'Ни одна платформа сообщений не готова к передаче',
       handoffOrigin: platform => `Передано из ${platform}`,
       ownedByProfile: profile => `Профиль: ${profile}`,
       renamed: 'Переименовано',
@@ -4514,6 +4525,8 @@ deliverableArtifacts: 'Артефакты',
     dropFiles: 'Перетащите файлы',
     handoff: {
       pickPlatform: 'Выберите назначение',
+      queued: (platform, home) => `Передача в ${platform} (${home})…`,
+      sessionUnavailable: 'Сейчас этот чат не активен на шлюзе.',
       success: platform => `Передаём в ${platform}. Возобновите здесь в любой момент.`,
       systemNote: platform => `↻ Передано в ${platform} — возобновите здесь в любой момент.`,
       failed: error => `Передача не удалась: ${error}`,

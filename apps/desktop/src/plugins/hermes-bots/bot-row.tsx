@@ -303,6 +303,16 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => void openRosterBot(bot)}>{b.bot.openBotChat}</ContextMenuItem>
         <ContextMenuItem onSelect={() => openBotScreen(bot, meta)}>{b.screen.menu}</ContextMenuItem>
+        {/* Phone parity (#40): Messaging scoped to this bot's profile — the
+            platform cards there carry the deep link + QR. Remote-source bots
+            have no platforms on this backend, so the item hides for them. */}
+        {!bot.remoteSource && typeof host.navigate === 'function' && (
+          <ContextMenuItem
+            onSelect={() => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`)}
+          >
+            {b.bot.continueOnPhone}
+          </ContextMenuItem>
+        )}
         <ContextMenuCheckboxItem
           checked={Boolean(meta?.screenAutoOpen)}
           onSelect={() => {

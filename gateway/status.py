@@ -1191,6 +1191,7 @@ def _prepare_runtime_status_update(
     retrying_since: Any = _UNSET, served_profiles: Any = _UNSET, session_store: Any = _UNSET,
     multiplex_standalone_reason: Any = _UNSET,
     platform_metrics: Any = _UNSET,
+    platform_identity: Any = _UNSET,
     ingress_url: Any = _UNSET, listener_base: Any = _UNSET, clear_profile_platforms: bool = False,
     drop_profile_platforms: Optional[str] = None,
     load_existing: bool = True, reload_existing: bool = False,
@@ -1243,6 +1244,9 @@ def _prepare_runtime_status_update(
                 ("needs_attention", needs_attention, bool),
                 ("retrying_since", retrying_since, None),
                 ("metrics", platform_metrics, None),
+                # Who the user reaches on their phone (bot handle / workspace + deep link),
+                # published by adapters that know their own identity.
+                ("identity", platform_identity, None),
                 ("ingress_url", ingress_url, None),
                 ("listener_base", listener_base, None),
             ))

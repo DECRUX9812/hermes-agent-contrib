@@ -2859,6 +2859,15 @@ export const zh = defineLocale({
       savedRestarting: 'Telegram 已保存；网关正在重启…',
       savedRestartFailed: detail => `Telegram 已保存；网关重启失败${detail}`
     },
+    phoneParity: {
+      title: '在手机上继续',
+      presence: '网关状态',
+      scanHint: '用手机扫描，或在此设备上打开链接。',
+      linkPending: '适配器连接后，直接链接将显示在此处。',
+      openLink: '打开链接',
+      copyLink: '复制链接',
+      copyFailed: '无法复制链接'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot 令牌',
@@ -3582,6 +3591,8 @@ export const zh = defineLocale({
       finishedUnread: '已完成 — 未读',
       backgroundRunning: '后台任务运行中',
       draftSession: '草稿 — 尚未发送',
+      continueOnPhone: '在手机上继续',
+      handoffNone: '没有可用于移交的消息平台',
       handoffOrigin: platform => `从 ${platform} 转接`,
       continuationOrigin: '自动延续 — 此对话已压缩并延续',
       ownedByProfile: profile => `配置档：${profile}`,
@@ -5351,6 +5362,8 @@ deliverableArtifacts: '产物',
     dropFiles: '拖放文件',
     handoff: {
       pickPlatform: '选择目标平台',
+      queued: (platform, home) => `正在移交到 ${platform}（${home}）…`,
+      sessionUnavailable: '此聊天当前未在网关上运行。',
       success: platform => `已移交到 ${platform}。随时可在此处恢复。`,
       systemNote: platform => `↻ 已移交到 ${platform} — 随时可在此处恢复。`,
       failed: error => `移交失败：${error}`,

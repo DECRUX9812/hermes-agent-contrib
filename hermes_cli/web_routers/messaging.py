@@ -268,6 +268,9 @@ def _messaging_platform_payload(
         "home_channel": home_channel, "env_vars": env_vars,
         # Multiplex secondary served on the default's shared listener: the vendor callback URL.
         "ingress_url": runtime_platform.get("ingress_url") if gateway_running else None,
+        # Adapter-published identity (bot handle / workspace + deep link) for
+        # "continue on your phone" surfaces; absent until the adapter connects.
+        "identity": runtime_platform.get("identity") if gateway_running else None,
     }
     if platform_id == "whatsapp":
         whatsapp_mode = env_value("WHATSAPP_MODE").strip()

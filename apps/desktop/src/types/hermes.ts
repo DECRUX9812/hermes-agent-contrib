@@ -324,6 +324,18 @@ export interface MessagingHomeChannel {
   thread_id?: string
 }
 
+/** Adapter-published contact point for "continue on your phone" surfaces.
+ *  `deep_link` opens the vendor app directly (t.me/@bot, slack://user…);
+ *  `web_link` is the https fallback a phone camera can scan. */
+export interface MessagingPlatformIdentity {
+  bot_user_id?: string
+  deep_link?: string
+  label?: string
+  team_id?: string
+  username?: string
+  web_link?: string
+}
+
 export interface MessagingPlatformInfo {
   configured: boolean
   description: string
@@ -335,6 +347,9 @@ export interface MessagingPlatformInfo {
   gateway_running: boolean
   home_channel?: MessagingHomeChannel | null
   id: string
+  /** Set by adapters that know their own handle/workspace; only populated while
+   *  the gateway is running and the adapter has connected. */
+  identity?: MessagingPlatformIdentity | null
   /** Served secondary under a multiplexed gateway: the /p/<profile>/ URL on the shared listener
    *  the client (or vendor console) must call. Null for standalone and default-profile platforms. */
   ingress_url?: null | string

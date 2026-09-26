@@ -3381,6 +3381,15 @@ export const deOverrides = {
       savedRestarting: 'Telegram gespeichert; Gateway wird neu gestartet…',
       savedRestartFailed: detail => `Telegram gespeichert; Gateway-Neustart fehlgeschlagen${detail}`
     },
+    phoneParity: {
+      title: 'Auf dem Handy fortsetzen',
+      presence: 'Gateway-Status',
+      scanHint: 'Mit dem Handy scannen oder den Link auf diesem Gerät öffnen.',
+      linkPending: 'Der direkte Link erscheint hier, sobald der Adapter verbunden ist.',
+      openLink: 'Link öffnen',
+      copyLink: 'Link kopieren',
+      copyFailed: 'Der Link konnte nicht kopiert werden'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot-Token',
@@ -4170,6 +4179,8 @@ export const deOverrides = {
       finishedUnread: 'Abgeschlossen – ungelesen',
       backgroundRunning: 'Hintergrundaufgabe läuft',
       draftSession: 'Entwurf – noch nichts gesendet',
+      continueOnPhone: 'Auf dem Handy fortfahren',
+      handoffNone: 'Keine Messaging-Plattform ist für eine Übergabe bereit',
       handoffOrigin: platform => `Übergeben von ${platform}`,
       continuationOrigin: 'Automatische Fortsetzung — dieser Chat wurde komprimiert und fortgesetzt',
       ownedByProfile: profile => `Profil: ${profile}`,
@@ -6256,6 +6267,8 @@ deliverableArtifacts: 'Artefakte',
     dropFiles: 'Dateien ablegen',
     handoff: {
       pickPlatform: 'Ziel wählen',
+      queued: (platform, home) => `Übergabe an ${platform} (${home})…`,
+      sessionUnavailable: 'Dieser Chat ist gerade nicht live auf dem Gateway.',
       success: platform => `Übergeben an ${platform}. Jederzeit hier fortsetzen.`,
       systemNote: platform => `↻ Übergeben an ${platform} — jederzeit hier fortsetzen.`,
       failed: error => `Übergabe fehlgeschlagen: ${error}`,
