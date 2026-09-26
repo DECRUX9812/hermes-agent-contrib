@@ -4135,6 +4135,9 @@ export const frOverrides = {
         stalled: 'Toujours en cours — silencieuse depuis un moment',
         todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
       },
+      prCiPassing: 'CI au vert',
+      prCiFailing: 'CI en échec',
+      prCiPending: 'CI en cours',
       ageNow: 'maintenant',
       ageDay: 'j',
       ageHour: 'h',

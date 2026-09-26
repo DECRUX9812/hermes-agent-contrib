@@ -3537,6 +3537,9 @@ export const zh = defineLocale({
         stalled: '仍在运行 — 已有一段时间没有输出',
         todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
       },
+      prCiPassing: 'CI 通过',
+      prCiFailing: 'CI 失败',
+      prCiPending: 'CI 进行中',
       ageNow: '刚刚',
       ageDay: '天',
       ageHour: '时',

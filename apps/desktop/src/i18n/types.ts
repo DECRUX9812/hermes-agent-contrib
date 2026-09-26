@@ -3182,6 +3182,9 @@ export interface Translations {
         stalled: string
         todo: (done: number, total: number, task: string) => string
       }
+      prCiPassing: string
+      prCiFailing: string
+      prCiPending: string
       ageNow: string
       ageDay: string
       ageHour: string

@@ -4117,6 +4117,9 @@ export const esOverrides = {
         stalled: 'Sigue en ejecución — en pausa desde hace un rato',
         todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
       },
+      prCiPassing: 'CI en verde',
+      prCiFailing: 'CI fallando',
+      prCiPending: 'CI en curso',
       ageNow: 'ahora',
       ageDay: 'd',
       ageHour: 'h',

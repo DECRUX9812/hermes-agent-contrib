@@ -1565,6 +1565,9 @@ export interface HermesReviewPr {
 // opened from — how a session row finds its own PR.
 export interface HermesBranchPullRequest {
   branch: string
+  /** Head commit's check rollup folded to `failure` | `pending` | `success`;
+   *  absent on pre-checks backends and on PRs whose head has no checks. */
+  checks?: 'failure' | 'pending' | 'success'
   draft: boolean
   number: number
   /** `open` | `closed` | `merged`, lowercased from gh. */

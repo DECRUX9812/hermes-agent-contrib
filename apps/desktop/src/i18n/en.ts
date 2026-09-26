@@ -3758,6 +3758,9 @@ export const en: Translations = {
         stalled: 'Still running — quiet for a while',
         todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
       },
+      prCiPassing: 'CI passing',
+      prCiFailing: 'CI failing',
+      prCiPending: 'CI running',
       ageNow: 'now',
       ageDay: 'd',
       ageHour: 'h',

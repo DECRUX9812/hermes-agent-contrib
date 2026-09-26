@@ -420,7 +420,23 @@ def review_ship_info(cwd: str) -> dict:
 # page. Aliases carry many branches per request; 50 stays inside GitHub's node budget.
 _PR_QUERY_BRANCH_CHUNK = 50
 _PR_QUERY_BRANCH_CAP = 300
-_PR_NODE_FIELDS = "number state isDraft isCrossRepository title url headRefName"
+_PR_NODE_FIELDS = ("number state isDraft isCrossRepository title url headRefName "
+                   "commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }")
+
+
+def _pr_check_state(pr: dict) -> str | None:
+    """GitHub folds a commit's checks into one rollup state; keep the three
+    buckets a row chip can show and omit the field when the head commit has no
+    checks at all."""
+    nodes = ((pr.get("commits") or {}).get("nodes") or [])
+    rollup = ((nodes[0].get("commit") or {}).get("statusCheckRollup") or {}).get("state") if nodes else None
+    if rollup == "SUCCESS":
+        return "success"
+    if rollup in ("FAILURE", "ERROR"):
+        return "failure"
+    if rollup in ("EXPECTED", "PENDING"):
+        return "pending"
+    return None
 
 
 def _pr_query(owner: str, name: str, branches: list[str], numbers: list[int]) -> str:
@@ -438,9 +454,13 @@ def _pr_query(owner: str, name: str, branches: list[str], numbers: list[int]) ->
 
 
 def _pr_payload(pr: dict) -> dict:
-    return {"branch": str(pr.get("headRefName")), "draft": bool(pr.get("isDraft")),
-            "number": int(pr.get("number") or 0), "state": str(pr.get("state") or "").lower(),
-            "title": str(pr.get("title") or ""), "url": str(pr.get("url") or "")}
+    payload = {"branch": str(pr.get("headRefName")), "draft": bool(pr.get("isDraft")),
+               "number": int(pr.get("number") or 0), "state": str(pr.get("state") or "").lower(),
+               "title": str(pr.get("title") or ""), "url": str(pr.get("url") or "")}
+    checks = _pr_check_state(pr)
+    if checks:
+        payload["checks"] = checks
+    return payload
 
 
 def _own_pr(key: str, field: dict) -> dict | None:

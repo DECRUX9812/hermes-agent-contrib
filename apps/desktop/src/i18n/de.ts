@@ -4127,6 +4127,9 @@ export const deOverrides = {
         stalled: 'Läuft noch — seit einer Weile ruhig',
         todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
       },
+      prCiPassing: 'CI erfolgreich',
+      prCiFailing: 'CI fehlgeschlagen',
+      prCiPending: 'CI läuft',
       ageNow: 'jetzt',
       ageDay: 'T',
       ageHour: 'h',

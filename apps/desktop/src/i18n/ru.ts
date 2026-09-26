@@ -2873,6 +2873,9 @@ export const ru = defineLocale({
         stalled: 'Всё ещё выполняется — давно нет активности',
         todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
       },
+      prCiPassing: 'CI проходит',
+      prCiFailing: 'CI падает',
+      prCiPending: 'CI выполняется',
       ageNow: 'сейчас',
       ageDay: 'д',
       ageHour: 'ч',
