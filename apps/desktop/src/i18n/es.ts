@@ -3058,15 +3058,24 @@ export const esOverrides = {
     archivedChats: 'Chats archivados',
     sections: {
       maintenance: 'Mantenimiento',
+      notices: 'Notificaciones',
       sessions: 'Sesiones',
       system: 'Sistema',
       usage: 'Uso'
     },
     sectionDescriptions: {
       maintenance: 'Diagnóstico, copias de seguridad, curador y datos de memoria',
+      notices: 'Notificaciones y avisos recientes',
       sessions: 'Buscar y gestionar sesiones',
       system: 'Estado, registros y acciones del sistema',
       usage: 'Actividad de tokens, coste y skills a lo largo del tiempo'
+    },
+    notices: {
+      empty: 'Aún no hay notificaciones — los avisos se registran aquí al ocurrir.',
+      clear: 'Borrar',
+      mutedTag: 'Silenciado',
+      destCenter: 'Aviso centrado',
+      destCorner: 'Aviso en esquina'
     },
     nav: {
       newChat: {
@@ -4038,6 +4047,9 @@ export const esOverrides = {
       unpin: 'Desfijar',
       markUnread: 'Marcar como no leído',
       markRead: 'Marcar como leído',
+      muteNotifications: 'Silenciar notificaciones',
+      unmuteNotifications: 'Reactivar notificaciones',
+      mutedTooltip: 'Notificaciones silenciadas para esta sesión',
       unreadFailed: 'No se pudo actualizar el estado de no leído',
       copyId: 'Copiar ID',
       export: 'Exportar',
@@ -5034,6 +5046,8 @@ export const esOverrides = {
       branch: branch => `rama ${branch}`,
       closeCommandCenter: 'Cerrar Centro de comandos',
       openCommandCenter: 'Abrir Centro de comandos',
+      toggleNotices: 'Notificaciones',
+      noticesTitle: 'Notificaciones recientes',
       showTerminal: 'Mostrar terminal',
       hideTerminal: 'Ocultar terminal',
       gateway: 'Gateway',

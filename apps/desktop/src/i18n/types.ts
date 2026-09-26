@@ -2368,8 +2368,15 @@ export interface Translations {
     settingsFields: string
     mcpServers: string
     archivedChats: string
-    sections: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
-    sectionDescriptions: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
+    sections: Record<'maintenance' | 'notices' | 'sessions' | 'system' | 'usage', string>
+    sectionDescriptions: Record<'maintenance' | 'notices' | 'sessions' | 'system' | 'usage', string>
+    notices: {
+      empty: string
+      clear: string
+      mutedTag: string
+      destCenter: string
+      destCorner: string
+    }
     nav: Record<'newChat' | 'settings' | 'capabilities' | 'messaging' | 'artifacts', { title: string; detail: string }>
     sectionEntries: Record<'sessions' | 'system' | 'usage', { title: string; detail: string }>
     providerNavigate: string
@@ -3104,6 +3111,9 @@ export interface Translations {
       unpin: string
       markUnread: string
       markRead: string
+      muteNotifications: string
+      unmuteNotifications: string
+      mutedTooltip: string
       unreadFailed: string
       copyId: string
       export: string
@@ -3944,6 +3954,8 @@ export interface Translations {
       toggleTokensPerSecond: string
       toggleVersion: string
       toggleFreeTier: string
+      toggleNotices: string
+      noticesTitle: string
       toggleWorkspace: string
       cacheHitRateTitle: string
       tokensPerSecondTitle: string

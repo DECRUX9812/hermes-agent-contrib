@@ -1,4 +1,5 @@
 import { compactNumber } from '@hermes/shared'
+import { useStore } from '@nanostores/react'
 import { type MouseEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { LogTail } from '@/components/chat/log-tail'
@@ -16,10 +17,14 @@ import { sessionTitle } from '@/lib/chat-runtime'
 import {
   Activity,
   AlertCircle,
+  AlertTriangle,
   BarChart3,
   Bookmark,
   BookmarkFilled,
+  CheckCircle2,
   Download,
+  type IconComponent,
+  Info,
   MessageCircle,
   Trash2,
   Wrench
@@ -30,7 +35,12 @@ import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { upsertDesktopActionTask } from '@/store/activity'
 import { $pinnedSessionIds, pinSession, SIDEBAR_SESSIONS_PAGE_SIZE, unpinSession } from '@/store/layout'
-import { notify } from '@/store/notifications'
+import {
+  $notificationHistory,
+  clearNotificationHistory,
+  type NotificationKind,
+  notify
+} from '@/store/notifications'
 import { $sessionProfilesTruncated, $sessions, sessionPinId } from '@/store/session'
 import { confirmSharedGatewayRestart } from '@/store/system-actions'
 
@@ -42,9 +52,9 @@ import { OverlayView } from '../overlays/overlay-view'
 
 import { MaintenancePanel } from './maintenance'
 
-export type CommandCenterSection = 'maintenance' | 'sessions' | 'system' | 'usage'
+export type CommandCenterSection = 'maintenance' | 'notices' | 'sessions' | 'system' | 'usage'
 
-const SECTIONS = ['sessions', 'system', 'usage', 'maintenance'] as const satisfies readonly CommandCenterSection[]
+const SECTIONS = ['sessions', 'notices', 'system', 'usage', 'maintenance'] as const satisfies readonly CommandCenterSection[]
 
 const LOG_FILES = ['agent', 'errors', 'gateway', 'desktop'] as const
 const LOG_LEVELS = ['ALL', 'INFO', 'WARNING', 'ERROR'] as const
@@ -483,6 +493,8 @@ export function CommandCenterView({
               period={usagePeriod}
               usage={usage}
             />
+          ) : section === 'notices' ? (
+            <NoticesPanel />
           ) : section === 'maintenance' ? (
             <MaintenancePanel />
           ) : (
@@ -591,6 +603,84 @@ export function CommandCenterView({
         />
       )}
     </OverlayView>
+  )
+}
+
+const NOTICE_KIND_ICONS: Record<NotificationKind, { icon: IconComponent; iconClass: string }> = {
+  error: { icon: AlertCircle, iconClass: 'text-destructive' },
+  warning: { icon: AlertTriangle, iconClass: 'text-primary' },
+  info: { icon: Info, iconClass: 'text-muted-foreground' },
+  success: { icon: CheckCircle2, iconClass: 'text-primary' }
+}
+
+// Surfaces B4: the bounded in-memory record behind toasts — every notify()
+// call lands here whether or not it painted (muted sessions record as
+// suppressed). Read-only rows; the only write is Clear.
+function NoticesPanel() {
+  const { t } = useI18n()
+  const n = t.commandCenter.notices
+  const history = useStore($notificationHistory)
+
+  if (history.length === 0) {
+    return <EmptyPanel description={n.empty} />
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <ul>
+          {history.map(entry => {
+            const tone = NOTICE_KIND_ICONS[entry.kind]
+            const Icon = tone.icon
+
+            return (
+              <li className="flex items-start gap-2.5 border-b border-(--ui-stroke-tertiary) py-2.5 last:border-b-0" key={entry.id}>
+                <Icon className={cn('mt-0.5 size-3.5 shrink-0', tone.iconClass)} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className="min-w-0 truncate text-[length:var(--conversation-text-font-size)] font-medium text-foreground">
+                      {entry.title ?? entry.message}
+                    </span>
+                    <span className="ml-auto shrink-0 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
+                      {formatTimestamp(entry.createdAt / 1000)}
+                    </span>
+                  </div>
+                  {entry.title && (
+                    <div className="truncate text-[length:var(--conversation-caption-font-size)] text-(--ui-text-secondary)">
+                      {entry.message}
+                    </div>
+                  )}
+                  {entry.detail && (
+                    <div className="truncate text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
+                      {entry.detail}
+                    </div>
+                  )}
+                  {(entry.actionLabel ?? entry.suppressed) && (
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
+                      <span>
+                        {entry.suppressed
+                          ? n.mutedTag
+                          : entry.placement === 'bottom-right'
+                            ? n.destCorner
+                            : n.destCenter}
+                      </span>
+                      {entry.actionLabel && (
+                        <span className="rounded-sm border border-(--ui-stroke-tertiary) px-1 leading-4">{entry.actionLabel}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+      <div className="flex shrink-0 justify-end pt-2">
+        <Button onClick={clearNotificationHistory} size="sm" type="button" variant="ghost">
+          {n.clear}
+        </Button>
+      </div>
+    </div>
   )
 }
 

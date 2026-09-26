@@ -20,6 +20,7 @@ import { displayPath, pathLeaf } from '@/lib/display-path'
 import {
   Activity,
   AlertCircle,
+  Bell,
   Clock,
   Command,
   FolderOpen,
@@ -489,6 +490,17 @@ export function useStatusbarItems({
         variant: 'action'
       },
       {
+        // The pull surface for toast history — hidden by default like the
+        // other route shortcuts; the right-click menu (or ⌘K) brings it on.
+        className: 'w-7 justify-center px-0',
+        icon: <Bell className="size-3.5" />,
+        id: 'notices',
+        onSelect: () => openCommandCenterSection('notices'),
+        title: copy.noticesTitle,
+        toggleLabel: copy.toggleNotices,
+        variant: 'action'
+      },
+      {
         hidden: !sessionsShowing,
         id: 'gateway-switcher',
         lockedVisible: true,
@@ -689,6 +701,7 @@ export function useStatusbarItems({
       inferenceReady,
       inferenceStatus?.reason,
       openAgents,
+      openCommandCenterSection,
       profileRailVisible,
       projectName,
       sessionsShowing,

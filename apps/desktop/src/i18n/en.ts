@@ -2765,12 +2765,26 @@ export const en: Translations = {
     settingsFields: 'Settings fields',
     mcpServers: 'MCP servers',
     archivedChats: 'Archived chats',
-    sections: { maintenance: 'Maintenance', sessions: 'Sessions', system: 'System', usage: 'Usage' },
+    sections: {
+      maintenance: 'Maintenance',
+      notices: 'Notices',
+      sessions: 'Sessions',
+      system: 'System',
+      usage: 'Usage'
+    },
     sectionDescriptions: {
       maintenance: 'Diagnostics, backups, curator, and memory data',
+      notices: 'Recent notifications and alerts',
       sessions: 'Search and manage sessions',
       system: 'Status, logs, and system actions',
       usage: 'Token, cost, and skill activity over time'
+    },
+    notices: {
+      empty: 'No notices yet — toasts and alerts land here as they happen.',
+      clear: 'Clear',
+      mutedTag: 'Muted',
+      destCenter: 'Center toast',
+      destCorner: 'Corner toast'
     },
     nav: {
       newChat: { title: 'New session', detail: 'Start a fresh session' },
@@ -3674,6 +3688,9 @@ export const en: Translations = {
       unpin: 'Unpin',
       markUnread: 'Mark as unread',
       markRead: 'Mark as read',
+      muteNotifications: 'Mute notifications',
+      unmuteNotifications: 'Unmute notifications',
+      mutedTooltip: 'Notifications muted for this session',
       unreadFailed: 'Could not update unread state',
       copyId: 'Copy ID',
       export: 'Export',
@@ -4681,6 +4698,8 @@ export const en: Translations = {
       toggleTokensPerSecond: 'Tokens per second',
       toggleVersion: 'Version & updates',
       toggleFreeTier: 'Free tier',
+      toggleNotices: 'Notices',
+      noticesTitle: 'Recent notices',
       toggleWorkspace: 'Workspace',
       cacheHitRateTitle: 'Prompt cache hit rate this session — cached tokens cost less, so higher is cheaper',
       tokensPerSecondTitle: 'Output tokens per second, averaged over the last 10 model calls',

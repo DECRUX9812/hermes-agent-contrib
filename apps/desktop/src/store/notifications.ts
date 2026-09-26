@@ -4,6 +4,7 @@ import { translateNow } from '@/i18n'
 import { isOutOfSyncRpcParams } from '@/lib/gateway-rpc'
 import { isLocalBackendSlotWaitTimeout, requestPoolLimitsSettings } from '@/store/pool-limits'
 import { requestBackendRestart, requestRoute } from '@/store/recovery-requests'
+import { isSessionMuted } from '@/store/session-mute'
 
 export type NotificationKind = 'error' | 'warning' | 'info' | 'success'
 
@@ -32,6 +33,9 @@ export interface AppNotification {
   onDismiss?: () => void
   createdAt: number
   placement?: NotificationPlacement
+  /** Stored or runtime session id this notice is scoped to — muted sessions
+   *  keep their history record but don't interrupt. */
+  sessionId?: null | string
 }
 
 export interface NotificationInput {
@@ -48,12 +52,37 @@ export interface NotificationInput {
   onDismiss?: () => void
   durationMs?: number
   placement?: NotificationPlacement
+  sessionId?: null | string
 }
+
+/** One entry per notify() call, newest first — the pull surface behind the
+ *  Command Center "Recent notices" section (Surfaces B4). In-memory and
+ *  bounded: persistence would outlive the toast's "deal with it now" intent. */
+export interface NotificationHistoryEntry {
+  id: string
+  kind: NotificationKind
+  title?: string
+  message: string
+  detail?: string
+  actionLabel?: string
+  sessionId?: null | string
+  /** The toast was held back because its session is muted. */
+  suppressed?: boolean
+  createdAt: number
+  placement?: NotificationPlacement
+}
+
+export const NOTIFICATION_HISTORY_LIMIT = 50
 
 let notificationCounter = 0
 const timers = new Map<string, number>()
 
 export const $notifications = atom<AppNotification[]>([])
+export const $notificationHistory = atom<NotificationHistoryEntry[]>([])
+
+export function clearNotificationHistory() {
+  $notificationHistory.set([])
+}
 
 function defaultDuration(kind: NotificationKind) {
   if (kind === 'error' || kind === 'warning') {
@@ -237,11 +266,38 @@ export function notify(input: NotificationInput): string {
     secondaryAction: input.secondaryAction,
     onDismiss: input.onDismiss,
     createdAt: Date.now(),
-    placement: input.placement ?? defaultPlacement(kind, input.action)
+    placement: input.placement ?? defaultPlacement(kind, input.action),
+    sessionId: input.sessionId
   }
+
+  const suppressed = input.sessionId != null && isSessionMuted(input.sessionId)
+
+  $notificationHistory.set(
+    [
+      {
+        id,
+        kind,
+        title: notification.title,
+        message: notification.message,
+        detail: notification.detail,
+        actionLabel: notification.action?.label,
+        sessionId: notification.sessionId,
+        suppressed,
+        createdAt: notification.createdAt,
+        placement: notification.placement
+      },
+      ...$notificationHistory.get()
+    ].slice(0, NOTIFICATION_HISTORY_LIMIT)
+  )
 
   window.clearTimeout(timers.get(id))
   timers.delete(id)
+
+  // Muted sessions: recorded above, just never raised as a toast.
+  if (suppressed) {
+    return id
+  }
+
   // Visual depth is capped by CardStack, not by discarding queued notifications.
   $notifications.set([notification, ...$notifications.get().filter(item => item.id !== id)])
 

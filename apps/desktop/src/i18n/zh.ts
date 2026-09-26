@@ -2582,12 +2582,20 @@ export const zh = defineLocale({
     settingsFields: '设置字段',
     mcpServers: 'MCP 服务器',
     archivedChats: '已归档对话',
-    sections: { maintenance: '维护', sessions: '会话', system: '系统', usage: '用量' },
+    sections: { maintenance: '维护', notices: '通知', sessions: '会话', system: '系统', usage: '用量' },
     sectionDescriptions: {
       maintenance: '诊断、备份、维护器与记忆数据',
+      notices: '最近的通知与提醒',
       sessions: '搜索与管理会话',
       system: '状态、日志与系统操作',
       usage: '一段时间内的词元、成本与技能活动'
+    },
+    notices: {
+      empty: '暂无通知——出现的提示与提醒会记录在这里。',
+      clear: '清空',
+      mutedTag: '已静音',
+      destCenter: '居中弹窗',
+      destCorner: '角落弹窗'
     },
     nav: {
       newChat: { title: '新建会话', detail: '开始一个新会话' },
@@ -3459,6 +3467,9 @@ export const zh = defineLocale({
       unpin: '取消置顶',
       markUnread: '标记为未读',
       markRead: '标记为已读',
+      muteNotifications: '静音通知',
+      unmuteNotifications: '取消静音',
+      mutedTooltip: '该会话的通知已静音',
       unreadFailed: '无法更新未读状态',
       copyId: '复制 ID',
       export: '导出',
@@ -4374,6 +4385,8 @@ export const zh = defineLocale({
       branch: branch => `分支 ${branch}`,
       closeCommandCenter: '关闭命令中心',
       openCommandCenter: '打开命令中心',
+      toggleNotices: '通知',
+      noticesTitle: '近期通知',
       showTerminal: '显示终端',
       hideTerminal: '隐藏终端',
       gateway: '网关',

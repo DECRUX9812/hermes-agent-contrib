@@ -46,6 +46,7 @@ import {
   setSessions
 } from '@/store/session'
 import { $sessionColorOverrides, setSessionColorOverride } from '@/store/session-color'
+import { $mutedSessionIds, isSessionMuted, toggleSessionMuted } from '@/store/session-mute'
 import { $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
 import { ackStoredSessionId } from '@/store/session-unread'
 import { canOpenSessionInTerminal, canOpenSessionWindow, openSessionInTerminal } from '@/store/windows'
@@ -221,6 +222,10 @@ function useSessionActions({
   // The row's finished-unread dot is cleared by opening the session (main or
   // tile) — this menu item is the explicit escape hatch for the rest.
   const isUnread = useStore($unreadFinishedSessionIds).includes(sessionId)
+  // Subscribe for freshness; the check itself resolves through lineage
+  // aliases (the row passes session.id, the store keys on the durable pin id).
+  const mutedSessionIds = useStore($mutedSessionIds)
+  const isMuted = mutedSessionIds.length > 0 && isSessionMuted(sessionId)
 
   // Already showing as a tab somewhere (a tile, or loaded in main — main IS
   // a tab): offering "Open in new tab" again is noise.
@@ -335,6 +340,17 @@ function useSessionActions({
         } else {
           onToggleUnread?.()
         }
+      }
+    }),
+    // Mute silences the session's toasts + OS notifications (turnDone,
+    // backgroundDone, compress notices); the in-app record keeps them.
+    spec({
+      disabled: !sessionId,
+      icon: isMuted ? 'bell' : 'bell-slash',
+      label: isMuted ? r.unmuteNotifications : r.muteNotifications,
+      onSelect: () => {
+        triggerHaptic('selection')
+        toggleSessionMuted(sessionId)
       }
     })
   ]

@@ -1449,14 +1449,23 @@ export const ar = defineLocale({
     archivedChats: 'المحادثات المؤرشفة',
     commands: 'الأوامر',
     sections: {
+      notices: 'الإشعارات',
       sessions: 'الجلسات',
       system: 'النظام',
       usage: 'الاستخدام'
     },
     sectionDescriptions: {
+      notices: 'الإشعارات والتنبيهات الأخيرة',
       sessions: 'البحث في الجلسات وإدارتها',
       system: 'الحالة والسجلات وإجراءات النظام',
       usage: 'نشاط الرموز والتكلفة والمهارات عبر الزمن'
+    },
+    notices: {
+      empty: 'لا إشعارات بعد — تُسجَّل التنبيهات المنبثقة هنا فور ظهورها.',
+      clear: 'مسح',
+      mutedTag: 'مكتوم',
+      destCenter: 'تنبيه وسط الشاشة',
+      destCorner: 'تنبيه في الزاوية'
     },
     nav: {
       newChat: {
@@ -2219,6 +2228,9 @@ export const ar = defineLocale({
       unpin: 'إلغاء التثبيت',
       markUnread: 'وضع علامة كغير مقروء',
       markRead: 'وضع علامة كمقروء',
+      muteNotifications: 'كتم الإشعارات',
+      unmuteNotifications: 'إلغاء كتم الإشعارات',
+      mutedTooltip: 'الإشعارات مكتومة لهذه الجلسة',
       unreadFailed: 'تعذر تحديث حالة القراءة',
       copyId: 'نسخ المعرف',
       export: 'تصدير',
@@ -2952,6 +2964,8 @@ export const ar = defineLocale({
       branch: branch => `الفرع ${branch}`,
       closeCommandCenter: 'إغلاق مركز الأوامر',
       openCommandCenter: 'فتح مركز الأوامر',
+      toggleNotices: 'الإشعارات',
+      noticesTitle: 'الإشعارات الأخيرة',
       showTerminal: 'إظهار الطرفية',
       hideTerminal: 'إخفاء الطرفية',
       gateway: 'البوابة',

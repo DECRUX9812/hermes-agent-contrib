@@ -61,7 +61,8 @@ function surfaceBillingBlock(sessionId: string, raw: unknown): void {
     message: firstBillingLine(block.message) || translateNow('billingBlock.fallbackMessage'),
     // Sticky: a credit wall blocks every turn until resolved.
     durationMs: 0,
-    action: { label: billingCtaLabel(block, ctaCopy), onClick: () => runBillingRecovery(block) }
+    action: { label: billingCtaLabel(block, ctaCopy), onClick: () => runBillingRecovery(block) },
+    sessionId
   })
 }
 
@@ -387,7 +388,7 @@ export function handleMessageStreamEvent(ctx: GatewayEventContext): boolean {
 
     // History-commit note (e.g. a mid-turn desync) the gateway chose to surface.
     if (typeof payload?.warning === 'string' && payload.warning.trim()) {
-      notify({ kind: 'warning', message: payload.warning })
+      notify({ kind: 'warning', message: payload.warning, sessionId })
     }
 
     if (isActiveEvent) {

@@ -3,6 +3,7 @@ import { atom } from 'nanostores'
 import { translateNow } from '@/i18n'
 import { type HermesOpenTarget, resolveHermesOpenPath } from '@/lib/hermes-open-target'
 import { persistString, storedString } from '@/lib/storage'
+import { isSessionMuted } from '@/store/session-mute'
 
 import { $gateway } from './gateway'
 import { withinNativeNotifyBaseline } from './notify-baseline'
@@ -227,6 +228,13 @@ export function dispatchNativeNotification(input: NativeNotificationInput): bool
   }
 
   if (withinNativeNotifyBaseline()) {
+    return false
+  }
+
+  // A muted session's turn ends, background exits, and attention pings never
+  // leave the app. isSessionMuted works on stored ids, so translate a runtime
+  // id first.
+  if (input.sessionId && isSessionMuted(storedSessionIdForRuntimeId(input.sessionId) ?? input.sessionId)) {
     return false
   }
 
