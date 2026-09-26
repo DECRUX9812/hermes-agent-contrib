@@ -1847,11 +1847,19 @@ export const ja = defineLocale({
     settingsFields: '設定フィールド',
     mcpServers: 'MCP サーバー',
     archivedChats: 'アーカイブ済みチャット',
-    sections: { sessions: 'セッション', system: 'システム', usage: '使用状況' },
+    sections: { notices: '通知', sessions: 'セッション', system: 'システム', usage: '使用状況' },
     sectionDescriptions: {
+      notices: '最近の通知とアラート',
       sessions: 'セッションの検索と管理',
       system: 'ステータス、ログ、システムアクション',
       usage: 'トークン、コスト、スキルの活動履歴'
+    },
+    notices: {
+      empty: 'まだ通知はありません。発生したトーストやアラートがここに記録されます。',
+      clear: 'クリア',
+      mutedTag: 'ミュート中',
+      destCenter: '中央トースト',
+      destCorner: 'コーナートースト'
     },
     nav: {
       newChat: { title: '新しいセッション', detail: '新しいセッションを開始' },
@@ -2634,6 +2642,9 @@ export const ja = defineLocale({
       unpin: 'ピン留めを解除',
       markUnread: '未読にする',
       markRead: '既読にする',
+      muteNotifications: '通知をミュート',
+      unmuteNotifications: 'ミュートを解除',
+      mutedTooltip: 'このセッションの通知はミュートされています',
       unreadFailed: '未読状態を更新できませんでした',
       copyId: 'ID をコピー',
       export: 'エクスポート',
@@ -3455,6 +3466,8 @@ export const ja = defineLocale({
       branch: branch => `ブランチ ${branch}`,
       closeCommandCenter: 'コマンドセンターを閉じる',
       openCommandCenter: 'コマンドセンターを開く',
+      toggleNotices: '通知',
+      noticesTitle: '最近の通知',
       showTerminal: 'ターミナルを表示',
       hideTerminal: 'ターミナルを非表示',
       gateway: 'ゲートウェイ',

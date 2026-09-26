@@ -35,7 +35,9 @@ import {
   toggleTargetZoneTabStrip
 } from '@/components/pane-shell/tree/store'
 import { $workspaceOwnerLabels, workspaceOwnerTitle } from '@/components/pane-shell/workspace-scope'
+import { Codicon } from '@/components/ui/codicon'
 import { SidebarProvider } from '@/components/ui/sidebar'
+import { Tip } from '@/components/ui/tooltip'
 import { discoverBundledPlugins } from '@/contrib/plugins'
 import { Slot } from '@/contrib/react/slot'
 import { registry } from '@/contrib/registry'
@@ -56,6 +58,11 @@ import {
 } from '@/lib/icons'
 import { type KeybindContribution, KEYBINDS_AREA } from '@/lib/keybinds/actions'
 import { isOnboardingEnabled } from '@/lib/onboarding-enabled'
+import {
+  SESSION_ROW_AREAS,
+  type SessionRowSlotContribution,
+  type SessionRowSlotProps
+} from '@/lib/session-row-slots'
 import { TRANSCRIPT_DIRECTIVE_AREA, type TranscriptDirectiveContribution } from '@/lib/transcript-directives'
 import { setYoloEnabled } from '@/lib/yolo-session'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
@@ -95,6 +102,7 @@ import {
   sessionMatchesStoredId
 } from '@/store/session'
 import { runBulkArchive } from '@/store/session-bulk-archive'
+import { $mutedSessionIds } from '@/store/session-mute'
 import { watchSessionPins } from '@/store/session-pin-sync'
 import { $botChatScopes } from '@/store/session-states'
 import { watchUnreadWriteGuard } from '@/store/session-unread-remote'
@@ -820,6 +828,32 @@ registerPaneOpener('sessions', () => {
 registerPaneCloser('files', () =>
   paneRootSide('files') === fileBrowserSide() ? setFileBrowserOpen(false) : dismissTreePane('files')
 )
+
+// A muted session's row carries a quiet bell-slash in the trailing seam —
+// passive state, same as the unread dot; the mute itself toggles from the
+// row's context menu. The slot's sessionId is the durable pin id, which is
+// exactly the key $mutedSessionIds stores.
+function MutedSessionGlyph({ sessionId }: SessionRowSlotProps) {
+  const mutedSessionIds = useStore($mutedSessionIds)
+
+  if (!mutedSessionIds.includes(sessionId)) {
+    return null
+  }
+
+  return (
+    <Tip label={translateNow('sidebar.row.mutedTooltip')}>
+      <Codicon className="text-(--ui-text-tertiary)" name="bell-slash" size="0.75rem" />
+    </Tip>
+  )
+}
+
+registry.register({
+  id: 'session-row.mutedGlyph',
+  area: SESSION_ROW_AREAS.trailing,
+  data: {
+    render: ({ sessionId }) => <MutedSessionGlyph sessionId={sessionId} />
+  } satisfies SessionRowSlotContribution
+})
 
 // ---------------------------------------------------------------------------
 

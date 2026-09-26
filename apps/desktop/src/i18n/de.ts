@@ -3068,15 +3068,24 @@ export const deOverrides = {
     archivedChats: 'Archivierte Chats',
     sections: {
       maintenance: 'Wartung',
+      notices: 'Benachrichtigungen',
       sessions: 'Sessions',
       system: 'System',
       usage: 'Nutzung'
     },
     sectionDescriptions: {
       maintenance: 'Diagnose, Backups, Curator und Memory-Daten',
+      notices: 'Letzte Benachrichtigungen und Hinweise',
       sessions: 'Sessions durchsuchen und verwalten',
       system: 'Status, Logs und Systemaktionen',
       usage: 'Token-, Kosten- und Skill-Aktivität im Zeitverlauf'
+    },
+    notices: {
+      empty: 'Noch keine Benachrichtigungen — Hinweise und Toasts erscheinen hier.',
+      clear: 'Löschen',
+      mutedTag: 'Stumm',
+      destCenter: 'Mittlerer Toast',
+      destCorner: 'Eck-Toast'
     },
     nav: {
       newChat: {
@@ -4069,6 +4078,9 @@ export const deOverrides = {
       unpin: 'Lösen',
       markUnread: 'Als ungelesen markieren',
       markRead: 'Als gelesen markieren',
+      muteNotifications: 'Benachrichtigungen stummschalten',
+      unmuteNotifications: 'Stummschaltung aufheben',
+      mutedTooltip: 'Benachrichtigungen für diese Sitzung stummgeschaltet',
       unreadFailed: 'Ungelesen-Status konnte nicht aktualisiert werden',
       copyId: 'ID kopieren',
       export: 'Exportieren',
@@ -5090,6 +5102,8 @@ export const deOverrides = {
       branch: branch => `Branch ${branch}`,
       closeCommandCenter: 'Command Center schließen',
       openCommandCenter: 'Command Center öffnen',
+      toggleNotices: 'Benachrichtigungen',
+      noticesTitle: 'Letzte Benachrichtigungen',
       showTerminal: 'Terminal anzeigen',
       hideTerminal: 'Terminal ausblenden',
       gateway: 'Gateway',

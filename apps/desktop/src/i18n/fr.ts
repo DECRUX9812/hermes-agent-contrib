@@ -3079,15 +3079,24 @@ export const frOverrides = {
     archivedChats: 'Conversations archivées',
     sections: {
       maintenance: 'Maintenance',
+      notices: 'Notifications',
       sessions: 'Sessions',
       system: 'Système',
       usage: 'Utilisation'
     },
     sectionDescriptions: {
       maintenance: 'Diagnostiques, sauvegardes, curateur et données de mémoire',
+      notices: 'Notifications et alertes récentes',
       sessions: 'Rechercher et gérer les sessions',
       system: 'État, journaux et actions système',
       usage: 'Activité des jetons, coûts et skills au fil du temps'
+    },
+    notices: {
+      empty: 'Aucune notification pour l’instant — les alertes s’affichent ici au fur et à mesure.',
+      clear: 'Effacer',
+      mutedTag: 'En sourdine',
+      destCenter: 'Toast centré',
+      destCorner: 'Toast en coin'
     },
     nav: {
       newChat: {
@@ -4078,6 +4087,9 @@ export const frOverrides = {
       unpin: 'Désépingler',
       markUnread: 'Marquer comme non lue',
       markRead: 'Marquer comme lue',
+      muteNotifications: 'Couper les notifications',
+      unmuteNotifications: 'Réactiver les notifications',
+      mutedTooltip: 'Notifications en sourdine pour cette session',
       unreadFailed: "Impossible de mettre à jour l'état de lecture",
       copyId: "Copier l'ID",
       export: 'Exporter',
@@ -5102,6 +5114,8 @@ export const frOverrides = {
       branch: branch => `branche ${branch}`,
       closeCommandCenter: 'Fermer le centre de commandes',
       openCommandCenter: 'Ouvrir le centre de commandes',
+      toggleNotices: 'Notifications',
+      noticesTitle: 'Notifications récentes',
       showTerminal: 'Afficher le terminal',
       hideTerminal: 'Masquer le terminal',
       gateway: 'Gateway',

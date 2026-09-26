@@ -1949,12 +1949,20 @@ export const ru = defineLocale({
     settingsFields: 'Поля настроек',
     mcpServers: 'MCP-серверы',
     archivedChats: 'Архивные чаты',
-    sections: { maintenance: 'Обслуживание', sessions: 'Сеансы', system: 'Система', usage: 'Использование' },
+    sections: { maintenance: 'Обслуживание', notices: 'Уведомления', sessions: 'Сеансы', system: 'Система', usage: 'Использование' },
     sectionDescriptions: {
       maintenance: 'Диагностика, резервные копии, курир и данные памяти',
+      notices: 'Последние уведомления и оповещения',
       sessions: 'Поиск и управление сеансами',
       system: 'Статус, журналы и системные действия',
       usage: 'Токены, стоимость и активность навыков со временем'
+    },
+    notices: {
+      empty: 'Уведомлений пока нет — всплывающие подсказки будут записываться здесь.',
+      clear: 'Очистить',
+      mutedTag: 'Отключено',
+      destCenter: 'Тост по центру',
+      destCorner: 'Тост в углу'
     },
     nav: {
       newChat: { title: 'Новый сеанс', detail: 'Начать новый сеанс' },
@@ -2817,6 +2825,9 @@ export const ru = defineLocale({
       unpin: 'Открепить',
       markUnread: 'Отметить как непрочитанное',
       markRead: 'Отметить как прочитанное',
+      muteNotifications: 'Отключить уведомления',
+      unmuteNotifications: 'Включить уведомления',
+      mutedTooltip: 'Уведомления для этого сеанса отключены',
       unreadFailed: 'Не удалось обновить состояние непрочитанных',
       copyId: 'Копировать ID',
       export: 'Экспорт',
@@ -3687,6 +3698,8 @@ export const ru = defineLocale({
       branch: branch => `ветка ${branch}`,
       closeCommandCenter: 'Закрыть командный центр',
       openCommandCenter: 'Открыть командный центр',
+      toggleNotices: 'Уведомления',
+      noticesTitle: 'Последние уведомления',
       showTerminal: 'Показать терминал',
       hideTerminal: 'Скрыть терминал',
       gateway: 'Шлюз',

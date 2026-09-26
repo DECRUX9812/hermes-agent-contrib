@@ -160,7 +160,8 @@ export function handleInputRequestEvent(ctx: GatewayEventContext): boolean {
         action: {
           label: translateNow('assistant.approval.openSafetySettings'),
           onClick: () => requestRoute(SAFETY_SETTINGS_ROUTE)
-        }
+        },
+        sessionId
       })
     }
   } else if ($sudoRequests.get()[key]?.requestId === id) {
