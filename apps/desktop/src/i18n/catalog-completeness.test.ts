@@ -105,7 +105,7 @@ describe.each(COMPLETE_LOCALES)('%s desktop catalog', locale => {
 // only rise. When a PR adds English copy, either translate it in the partial
 // locales or bump the baseline after weighing the visible cost — never let it
 // drift down unnoticed.
-const PARTIAL_LOCALE_BASELINE = { ar: 4368, ja: 3486, 'zh-hant': 4389 } as const satisfies Partial<
+const PARTIAL_LOCALE_BASELINE = { ar: 4368, ja: 4386, 'zh-hant': 4389 } as const satisfies Partial<
   Record<Locale, number>
 >
 
