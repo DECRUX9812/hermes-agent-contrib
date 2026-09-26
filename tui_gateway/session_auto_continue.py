@@ -302,7 +302,9 @@ def _persist_queued_user_row(session: dict, envelope: dict, display_kind: str | 
                 if db is None:
                     return
                 try:
-                    key = session.get("session_key")
+                    # The staged dict records the session its row was written under; a rotated-away
+                    # ``session_key`` misses that row's session_id and the merge update no-ops.
+                    key = _submit_row_owner_key(staged, session)
                     # An in-place compaction of the live turn re-sequences the row to a new id: follow it.
                     live_id = db.resolve_active_row_id(key, staged["_row_id"])
                     updated = live_id is not None and db.set_user_message_content(key, live_id, envelope["text"])
@@ -347,7 +349,10 @@ def _replace_queued_user_row_for_turn(session: dict, queued: dict) -> dict | Non
         if db is None:
             return
         try:
-            key = session.get("session_key")
+            # The accept-time dict records the session its row was written under; a rotated-away
+            # ``session_key`` would miss it and leave that row ACTIVE beside its replacement in the
+            # continuation — the [uA, uB, aA] shape this function exists to prevent.
+            key = _submit_row_owner_key(early, session)
             # Deactivate the row that is live NOW: an in-place compaction may have re-sequenced the
             # accept-time row, and deactivating the original id would leave its clone active.
             live_id = db.resolve_active_row_id(key, early["_row_id"])
