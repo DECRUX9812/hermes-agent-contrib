@@ -3171,6 +3171,7 @@ export const ru = defineLocale({
     folder: 'Папка…',
     images: 'Изображения…',
     pasteImage: 'Вставить изображение',
+    captureRegion: 'Снимок области экрана…',
     url: 'URL…',
     promptSnippets: 'Фрагменты промптов…',
     scheduleJob: 'Запускать по расписанию…',
@@ -3245,6 +3246,19 @@ export const ru = defineLocale({
         text: 'Пожалуйста, объясните, как это работает, и укажите ключевые файлы.'
       }
     }
+  },
+  regionCapture: {
+    attach: 'Прикрепить',
+    cancel: 'Отмена',
+    captureFailed: 'Не удалось снять экран.',
+    capturing: 'Снимаю…',
+    clear: 'Начать заново',
+    notePlaceholder: 'Заметка для агента (необязательно)…',
+    permissionDenied: 'Запись экрана выключена — включите в Настройках → Конфиденциальность и безопасность → Запись экрана.',
+    selectHint: 'Тяните, чтобы выбрать область · Esc — отмена',
+    toolTips: { arrow: 'Стрелка', pen: 'Рисовать', rect: 'Прямоугольник' },
+    unavailable: 'Снимок экрана здесь недоступен.',
+    undo: 'Отменить',
   },
   statusStack: {
     hideStack: 'Скрыть панель состояния',

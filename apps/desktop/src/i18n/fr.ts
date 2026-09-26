@@ -4443,6 +4443,7 @@ export const frOverrides = {
     folder: 'Dossier…',
     images: 'Images…',
     pasteImage: 'Coller une image',
+    captureRegion: 'Capturer une zone de l’écran…',
     url: 'URL…',
     promptSnippets: "Extraits d'invite…",
     slashCommands: 'Commandes slash…',
@@ -4517,6 +4518,19 @@ export const frOverrides = {
         text: 'Veuillez expliquer comment cela fonctionne et pointez-moi vers les fichiers clés.'
       }
     }
+  },
+  regionCapture: {
+    attach: 'Joindre',
+    cancel: 'Annuler',
+    captureFailed: 'Impossible de capturer l’écran.',
+    capturing: 'Capture en cours…',
+    clear: 'Recommencer',
+    notePlaceholder: 'Note pour l’agent (facultatif)…',
+    permissionDenied: 'L’enregistrement d’écran est désactivé — activez-le dans Réglages → Confidentialité et sécurité → Enregistrement d’écran.',
+    selectHint: 'Glissez pour choisir une zone · Échap pour annuler',
+    toolTips: { arrow: 'Flèche', pen: 'Dessiner', rect: 'Rectangle' },
+    unavailable: 'La capture d’écran n’est pas disponible ici.',
+    undo: 'Annuler',
   },
   statusStack: {
     hideStack: 'Masquer la pile d’état',

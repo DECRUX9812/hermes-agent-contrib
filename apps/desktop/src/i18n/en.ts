@@ -4062,6 +4062,7 @@ export const en: Translations = {
     folder: 'Folder…',
     images: 'Images…',
     pasteImage: 'Paste image',
+    captureRegion: 'Screenshot region…',
     url: 'URL…',
     promptSnippets: 'Prompt snippets…',
     scheduleJob: 'Run on a schedule…',
@@ -4138,6 +4139,19 @@ export const en: Translations = {
     }
   },
 
+  regionCapture: {
+    attach: 'Attach',
+    cancel: 'Cancel',
+    captureFailed: 'Couldn’t capture the screen.',
+    capturing: 'Capturing…',
+    clear: 'Start over',
+    notePlaceholder: 'Note for the agent (optional)…',
+    permissionDenied: 'Screen recording permission is off — enable it in System Settings → Privacy & Security → Screen Recording.',
+    selectHint: 'Drag to pick a region · Esc to cancel',
+    toolTips: { arrow: 'Arrow', pen: 'Draw', rect: 'Rectangle' },
+    unavailable: 'Screen capture isn’t available here.',
+    undo: 'Undo',
+  },
   statusStack: {
     hideStack: 'Hide status stack',
     showStack: 'Show status stack',

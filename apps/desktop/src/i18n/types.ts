@@ -3394,6 +3394,7 @@ export interface Translations {
     folder: string
     images: string
     pasteImage: string
+    captureRegion: string
     url: string
     promptSnippets: string
     scheduleJob: string
@@ -3454,6 +3455,19 @@ export interface Translations {
     }
   }
 
+  regionCapture: {
+    attach: string
+    cancel: string
+    captureFailed: string
+    capturing: string
+    clear: string
+    notePlaceholder: string
+    permissionDenied: string
+    selectHint: string
+    toolTips: { arrow: string; pen: string; rect: string }
+    unavailable: string
+    undo: string
+  }
   statusStack: {
     hideStack: string
     showStack: string

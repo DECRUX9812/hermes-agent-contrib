@@ -7,6 +7,7 @@ import type * as React from 'react'
 import { memo, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
+import { RegionCaptureOverlay } from '@/app/region-capture/overlay'
 import type { SubmitTextOptions } from '@/app/session/hooks/use-prompt-actions/utils'
 import { sessionShouldHaveTranscript } from '@/app/session/hooks/use-session-actions/utils'
 import { Thread } from '@/components/assistant-ui/thread'
@@ -920,6 +921,10 @@ const ChatViewContent = memo(function ChatViewContent({
               target; the link overlay shows only for the center region. */}
           <ChatDropOverlay kind={overlayKind} />
           <ChatSwapOverlay profile={gatewaySwapTarget} />
+          {/* Region capture (#34): in-app select + markup overlay; stores its
+              frame on $regionCapture and lands on whichever composer was
+              active when the menu kicked it. */}
+          <RegionCaptureOverlay />
           {/* Paint-first wake (#89843): transcript is live, profile gate still
               settling in the background — subtle badge, not an overlay. */}
           {isPrimary && !gatewaySwapTarget && <ChatSyncBadge profile={hydrationSyncProfile} />}

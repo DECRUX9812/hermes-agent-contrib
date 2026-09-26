@@ -3837,6 +3837,7 @@ export const zh = defineLocale({
     folder: '文件夹…',
     images: '图片…',
     pasteImage: '粘贴图片',
+    captureRegion: '屏幕区域截图…',
     url: 'URL…',
     promptSnippets: '提示词片段…',
     scheduleJob: '定时运行…',
@@ -3913,6 +3914,19 @@ export const zh = defineLocale({
     }
   },
 
+  regionCapture: {
+    attach: '附加',
+    cancel: '取消',
+    captureFailed: '无法捕获屏幕。',
+    capturing: '正在捕获…',
+    clear: '重新开始',
+    notePlaceholder: '给代理的备注（可选）…',
+    permissionDenied: '屏幕录制权限已关闭 — 请在系统设置 → 隐私与安全性 → 屏幕录制中启用。',
+    selectHint: '拖动以选择区域 · Esc 取消',
+    toolTips: { arrow: '箭头', pen: '画笔', rect: '矩形' },
+    unavailable: '此处无法进行屏幕捕获。',
+    undo: '撤销',
+  },
   statusStack: {
     hideStack: '隐藏状态面板',
     showStack: '显示状态面板',

@@ -4433,6 +4433,7 @@ export const deOverrides = {
     folder: 'Ordner…',
     images: 'Bilder…',
     pasteImage: 'Bild einfügen',
+    captureRegion: 'Bildschirmbereich aufnehmen…',
     url: 'URL…',
     promptSnippets: 'Prompt-Schnipsel…',
     slashCommands: 'Slash-Befehle…',
@@ -4506,6 +4507,19 @@ export const deOverrides = {
         text: 'Bitte erkläre, wie das funktioniert, und zeige mir die Schlüsseldateien.'
       }
     }
+  },
+  regionCapture: {
+    attach: 'Anhängen',
+    cancel: 'Abbrechen',
+    captureFailed: 'Der Bildschirm konnte nicht aufgenommen werden.',
+    capturing: 'Aufnahme läuft…',
+    clear: 'Neu beginnen',
+    notePlaceholder: 'Notiz für den Agenten (optional)…',
+    permissionDenied: 'Bildschirmaufnahme ist deaktiviert — in Systemeinstellungen → Datenschutz & Sicherheit → Bildschirmaufnahme erlauben.',
+    selectHint: 'Ziehen, um einen Bereich zu wählen · Esc zum Abbrechen',
+    toolTips: { arrow: 'Pfeil', pen: 'Zeichnen', rect: 'Rechteck' },
+    unavailable: 'Bildschirmaufnahme ist hier nicht verfügbar.',
+    undo: 'Rückgängig',
   },
   statusStack: {
     hideStack: 'Statusstapel ausblenden',
