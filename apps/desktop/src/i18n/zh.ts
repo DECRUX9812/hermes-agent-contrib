@@ -1368,6 +1368,8 @@ export const zh = defineLocale({
         '确定移除所有已启用的工具集吗？这将禁用记忆、终端、网络搜索、委派以及大多数其他工具，直到你重新启用它们。',
       keepAwakeTitle: '保持电脑唤醒',
       keepAwakeDesc: '阻止本机休眠，让长时间或通宵运行继续进行。屏幕仍可变暗。',
+      proactiveNudgesTitle: '主动建议',
+      proactiveNudgesDesc: '会话回合结束时，在输入框上方提供下一步建议条 — 比如发起 PR、安排跟进。它们只会起草文字，不会自动发送。',
       disableF12Title: '禁用 F12 开发者工具',
       disableF12Desc: '阻止 F12 打开开发者工具。Ctrl+Shift+I（Mac 上为 Cmd+Opt+I）仍然可用。',
       alwaysExternalLinksTitle: '始终在外部浏览器中打开链接',
@@ -3961,6 +3963,18 @@ export const zh = defineLocale({
       prefix: '将此设置为定时任务:',
       done: '已标记为定时任务',
       doneTip: '发送后由智能体创建任务'
+    },
+    nudges: {
+      prLabel: '发起 PR',
+      prTip: '上一条回复看起来是已完成的代码工作 — 帮你起草请求',
+      prDraft: '为刚才的改动发起一个 pull request。',
+      prDone: '已起草 PR 请求',
+      prDoneTip: '检查草稿并发送，让代理发起 PR',
+      followupLabel: '安排跟进',
+      followupTip: '为这项工作安排一次复查 — 为你起草请求',
+      followupDraft: '将此设置为定时任务：一小时后复查这项工作并告诉我有什么变化。',
+      followupDone: '已起草跟进请求',
+      followupDoneTip: '在草稿中调整时间后发送'
     },
     snippets: {
       codeReview: {

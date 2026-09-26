@@ -1668,6 +1668,9 @@ export const esOverrides = {
       keepAwakeTitle: 'Mantener el equipo activo',
       keepAwakeDesc:
         'Impide que este equipo entre en reposo para que las ejecuciones largas o nocturnas continúen. La pantalla puede seguir atenuándose.',
+      proactiveNudgesTitle: 'Sugerencias proactivas',
+      proactiveNudgesDesc:
+        'Al terminar un turno, ofrece chips de siguientes pasos sobre el editor — abrir un PR, programar un seguimiento. Solo redactan texto; nada se envía solo.',
       disableF12Title: 'Desactivar DevTools con F12',
       disableF12Desc:
         'Impide que F12 abra las herramientas para desarrolladores. Ctrl+Shift+I (o Cmd+Opt+I en Mac) sigue funcionando.',
@@ -4551,6 +4554,18 @@ export const esOverrides = {
       prefix: 'Configúralo como tarea programada:',
       done: 'Marcado para programar',
       doneTip: 'Envíalo y el agente creará la tarea'
+    },
+    nudges: {
+      prLabel: 'Abrir un PR',
+      prTip: 'La última respuesta suena a trabajo de código terminado — redactar la petición',
+      prDraft: 'Abre una pull request con los cambios que acabamos de hacer.',
+      prDone: 'Petición de PR redactada',
+      prDoneTip: 'Revisa el borrador y envíalo para que el agente abra el PR',
+      followupLabel: 'Programar seguimiento',
+      followupTip: 'Programa una revisión de este trabajo — redacta la petición por ti',
+      followupDraft: 'Configúralo como tarea programada: revisa este trabajo en una hora y dime qué cambió.',
+      followupDone: 'Seguimiento redactado',
+      followupDoneTip: 'Ajusta la hora en el borrador y envíalo'
     },
     snippets: {
       codeReview: {

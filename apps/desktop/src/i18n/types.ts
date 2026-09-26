@@ -1185,6 +1185,8 @@ export interface Translations {
       toolsetsWipeConfirm: string
       keepAwakeTitle: string
       keepAwakeDesc: string
+      proactiveNudgesTitle: string
+      proactiveNudgesDesc: string
       disableF12Title: string
       disableF12Desc: string
       alwaysExternalLinksTitle: string
@@ -3529,6 +3531,20 @@ export interface Translations {
       prefix: string
       done: string
       doneTip: string
+    }
+    /** Proactive next-step chips offered on session settle (#43, opt-in).
+     *  `*Draft` is the text inserted into the composer — never auto-sent. */
+    nudges: {
+      prLabel: string
+      prTip: string
+      prDraft: string
+      prDone: string
+      prDoneTip: string
+      followupLabel: string
+      followupTip: string
+      followupDraft: string
+      followupDone: string
+      followupDoneTip: string
     }
   }
 

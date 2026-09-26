@@ -27,6 +27,7 @@ import { notify, notifyError } from '@/store/notifications'
 import { normalizeProfileKey } from '@/store/profile'
 import { repoDiscoveryPolicyFromConfig, repoDiscoveryPolicySignature, scanAndRecordRepos } from '@/store/projects'
 import { $settingsRequestProfile } from '@/store/settings-scope'
+import { $proactiveNudgesEnabled, setProactiveNudgesEnabled } from '@/store/suggestion-providers/nudges'
 import type { ConfigFieldSchema, HermesConfigRecord } from '@/types/hermes'
 
 import { hermesConfigCacheWriter, useHermesConfigRecord } from '../hooks/use-config-record'
@@ -100,6 +101,7 @@ function ConfigSettingsInner({
 }: ConfigSettingsProps & { scopeProfile: string | undefined }) {
   const { t } = useI18n()
   const c = t.settings.config
+  const proactiveNudges = useStore($proactiveNudgesEnabled)
   const keepAwake = useStore($keepAwake)
   const disableF12 = useStore($disableF12)
   const alwaysExternalLinks = useStore($alwaysExternalLinks)
@@ -299,6 +301,7 @@ function ConfigSettingsInner({
     activeSectionId === 'model' && (subpage === undefined || ['main', 'auxiliary', 'moa'].includes(subpage))
 
   const showDesktopSettings = activeSectionId === 'advanced' && (subpage === undefined || subpage === 'desktop')
+  const showBehavior = activeSectionId === 'chat' && (subpage === undefined || subpage === 'behavior')
   const showAttachments = activeSectionId === 'chat' && (subpage === undefined || subpage === 'attachments')
 
   // Deep-link target from the command palette (?field=<key>): scroll the row
@@ -432,7 +435,7 @@ function ConfigSettingsInner({
     visibleFields.length === 0 &&
     (subpage === undefined
       ? activeSectionId !== 'chat'
-      : !showModelSettings && !showDesktopSettings && !showAttachments)
+      : !showModelSettings && !showDesktopSettings && !showBehavior && !showAttachments)
 
   return renderPage(
     <>
@@ -464,6 +467,17 @@ function ConfigSettingsInner({
           <PoolLimitsSetting />
           <QuickEntrySettings />
         </>
+      )}
+      {/* Proactive nudges (roadmap #43, opt-in): device-local pref — settled
+          sessions offer next-step draft chips above the composer. */}
+      {showBehavior && (
+        <ToggleRow
+          checked={proactiveNudges}
+          description={c.proactiveNudgesDesc}
+          id={settingElementId(SETTING_IDS.chat.proactiveNudges)}
+          label={c.proactiveNudgesTitle}
+          onChange={setProactiveNudgesEnabled}
+        />
       )}
       {/* Device-local attach/preview byte cap (main-process IPC guard). Chat is
           where image-attachment behavior already lives, so this sits above the
