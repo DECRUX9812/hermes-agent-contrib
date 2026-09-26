@@ -8,7 +8,6 @@
 
 import {
   cn,
-  coarseElapsed,
   Codicon,
   ContextMenu,
   ContextMenuCheckboxItem,
@@ -74,11 +73,13 @@ import {
   botRowOwnsWorkspace,
   botWorkingMood,
   previewKind,
+  rosterRowAge,
   useTurnBusy,
+  warmRosterBot,
   workerActiveAt
 } from './row-helpers'
 import { openBotScreen } from './screen-open'
-import type { GroupMember, RosterRow, SidebarRowLabels } from './types'
+import type { GroupMember, RosterRow } from './types'
 import {
   $botSections,
   $draggingBot,
@@ -91,17 +92,6 @@ import {
 } from './user-sections'
 
 // ── bot row ──────────────────────────────────────────────────────────────────
-
-/** Row age in the sidebar's compact form ("now", "52m", "3h", "18d").
- *  Deliberately the same `coarseElapsed` + suffix pair the session rows
- *  directly above use, so the two lists in one rail don't disagree about how
- *  an age is spelled. Not `relativeTime` — that's the bidirectional Intl form
- *  ("in 14 hr"), which belongs on a scheduled next-run. */
-function rowAge(ms: number, r: SidebarRowLabels): string {
-  const { unit, value } = coarseElapsed(Date.now() - ms)
-
-  return unit === 'second' ? r.ageNow : `${value}${unit === 'day' ? r.ageDay : unit === 'hour' ? r.ageHour : r.ageMin}`
-}
 
 interface BotRowProps {
   bot: RosterRow
@@ -202,28 +192,9 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
     .filter(Boolean)
     .join(' · ')
 
-  const warm = () => {
-    // Multi-source row: pre-dial the agent's OWN source (feature-detected).
-    if (bot.sourceScoped && typeof host.warmAgent === 'function') {
-      try {
-        host.warmAgent(bot.connectionId, bot.name)
-      } catch {
-        /* warm is best-effort */
-      }
-
-      return
-    }
-
-    if (typeof host.warmProfile !== 'function') {
-      return
-    }
-
-    try {
-      host.warmProfile(bot.name)
-    } catch {
-      /* warm is best-effort */
-    }
-  }
+  // Pointer-over pre-warm (see row-helpers.warmRosterBot): dials the bot's
+  // own backend — its own source when source-scoped — before the click lands.
+  const warm = () => warmRosterBot(bot)
 
   // Rows and Active Now share the exact-owner open path; only that path may
   // activate a source and resolve the canonical Bot Chat.
@@ -307,7 +278,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
           ) : null}
           {rowAgeTs ? (
             <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
-              {rowAge(rowAgeTs * 1000, t.sidebar.row)}
+              {rosterRowAge(rowAgeTs * 1000, t.sidebar.row)}
             </span>
           ) : null}
         </div>
@@ -610,7 +581,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
           ) : null}
           {lastAt ? (
             <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
-              {rowAge(lastAt, t.sidebar.row)}
+              {rosterRowAge(lastAt, t.sidebar.row)}
             </span>
           ) : null}
         </div>

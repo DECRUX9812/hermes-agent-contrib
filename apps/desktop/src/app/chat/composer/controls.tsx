@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils'
 import { $hudMode, closeHud, resetHudLayout } from '@/store/hud'
 import { $wakeWord, toggleWakeWord } from '@/store/wake-word'
 
-import { ACTIVE_ICON_BTN, GHOST_ICON_BTN, PRIMARY_ICON_BTN } from './control-classes'
+import { ApprovalPill } from './approval-pill'
+import { ACTIVE_ICON_BTN, GHOST_ICON_BTN, PRIMARY_ICON_BTN } from './control-classes' 
 import type { ConversationStatus } from './hooks/use-voice-conversation'
 import { ModelPill } from './model-pill'
 import { ReasoningPill } from './reasoning-pill'
@@ -81,6 +82,7 @@ export function ComposerControls({
   // Steer is just send: a payload keeps the Send affordance mid-turn. Stop
   // only when the composer is empty and a turn is running.
   const showStop = busy && !hasComposerPayload
+  const sendLabel = showStop ? c.stop : busyAction === 'steer' ? c.steerTurn : c.send
   const showQueueButton = busyAction !== 'stop' && hasComposerPayload
   // The HUD is a Spotlight bar a few hundred pixels wide, so the four separate
   // voice toggles fold into one menu there and leave the row to the input. A
@@ -122,6 +124,7 @@ export function ComposerControls({
               {compactModelPill ? null : <ReasoningPill disabled={disabled} model={state.model} />}
             </>
           )}
+          <ApprovalPill compact={compactModelPill} disabled={disabled} />
           {voiceControls}
         </>
       )}
@@ -143,18 +146,9 @@ export function ComposerControls({
       {showVoicePrimary ? (
         <StartVoiceButton disabled={disabled} label={c.startVoice} onStart={conversation.onStart} />
       ) : (
-        <Tip
-          label={
-            showStop ? (
-              <TipKeybindLabel actionId="composer.send" text={c.stop} />
-            ) : (
-              <TipKeybindLabel actionId="composer.send" text={c.send} />
-            )
-          }
-          placement="control"
-        >
+        <Tip label={<TipKeybindLabel actionId="composer.send" text={sendLabel} />} placement="control">
           <Button
-            aria-label={showStop ? c.stop : c.send}
+            aria-label={sendLabel}
             className={PRIMARY_ICON_BTN}
             disabled={disabled || !canSubmit}
             type="submit"

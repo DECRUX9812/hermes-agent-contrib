@@ -16,11 +16,16 @@
  * a tip at a positional selector or a translated aria-label.
  */
 
+import type { InterfaceTier } from '@/store/interface-mode'
+
 export type TipSide = 'bottom' | 'left' | 'right' | 'top'
 
 export interface TipDef {
   /** Persistence key for a hard close. Stable forever — renaming forgets it. */
   id: TipId
+  /** Interface-mode gate: a `'simple'` tip is a candidate only while Simple is
+   *  on — it names doors to controls the other mode keeps hidden. */
+  tier?: InterfaceTier
   /** Keybind action id; the bubble renders its live combo. Never hardcode one. */
   keybind?: string
   /** Preferred side of the anchor. Flips at a viewport edge like any popover. */
@@ -30,6 +35,7 @@ export interface TipDef {
 }
 
 export type TipId =
+  | 'advanced-mode'
   | 'artifacts'
   | 'command-palette'
   | 'composer-mentions'
@@ -45,12 +51,22 @@ export type TipId =
 // to stand alone, because that is how they arrive.
 export const TIP_CATALOG: readonly TipDef[] = [
   { id: 'new-session', keybind: 'session.new', side: 'right', targets: ['[data-tour="sidebar-nav-new-session"]'] },
-  { id: 'skills', keybind: 'nav.capabilities', side: 'right', targets: ['[data-tour="sidebar-nav-capabilities"]'] },
-  { id: 'messaging', keybind: 'nav.messaging', side: 'right', targets: ['[data-tour="sidebar-nav-messaging"]'] },
-  { id: 'artifacts', keybind: 'nav.artifacts', side: 'right', targets: ['[data-tour="sidebar-nav-artifacts"]'] },
-  { id: 'cron', keybind: 'nav.cron', side: 'right', targets: ['[data-tour="sidebar-nav-cron"]'] },
+  // Folded destinations fall back to the Browse disclosure — pointing at the
+  // caret teaches where the row lives instead of silently skipping the tip.
+  { id: 'skills', keybind: 'nav.capabilities', side: 'right', targets: ['[data-tour="sidebar-nav-capabilities"]', '[data-tour="sidebar-browse"]'] },
+  { id: 'messaging', keybind: 'nav.messaging', side: 'right', targets: ['[data-tour="sidebar-nav-messaging"]', '[data-tour="sidebar-browse"]'] },
+  { id: 'artifacts', keybind: 'nav.artifacts', side: 'right', targets: ['[data-tour="sidebar-nav-artifacts"]', '[data-tour="sidebar-browse"]'] },
+  { id: 'cron', keybind: 'nav.cron', side: 'right', targets: ['[data-tour="sidebar-nav-cron"]', '[data-tour="sidebar-browse"]'] },
   { id: 'command-palette', keybind: 'nav.commandPalette', side: 'right', targets: ['[data-tour="sessions-sidebar"]'] },
   { id: 'profiles', keybind: 'profile.next', side: 'right', targets: ['[data-tour="profile-rail"]'] },
   { id: 'composer-mentions', side: 'top', targets: ['[data-tour="composer"]'] },
-  { id: 'right-pane', keybind: 'view.toggleRightSidebar', side: 'bottom', targets: ['[data-tour="right-pane-toggle"]'] }
+  { id: 'right-pane', keybind: 'view.toggleRightSidebar', side: 'bottom', targets: ['[data-tour="right-pane-toggle"]'] },
+  // Simple-only: names the door to the machinery the mode hides, anchored on
+  // the titlebar's layout button or settings gear — both render in Simple.
+  {
+    id: 'advanced-mode',
+    side: 'bottom',
+    targets: ['[data-tour="titlebar-layout"]', '[data-tour="titlebar-settings"]'],
+    tier: 'simple'
+  }
 ]

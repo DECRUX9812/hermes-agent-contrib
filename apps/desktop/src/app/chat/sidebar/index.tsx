@@ -6,9 +6,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
+import { SidebarPanelLabel } from '@/app/shell/sidebar-label'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
+import { DisclosureCaret } from '@/components/ui/disclosure-caret'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { KbdGroup } from '@/components/ui/kbd'
 import { SearchField } from '@/components/ui/search-field'
@@ -22,6 +24,7 @@ import {
   SidebarMenuItem
 } from '@/components/ui/sidebar'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
+import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/hermes'
 import { useI18n } from '@/i18n'
@@ -38,6 +41,8 @@ import {
   $dismissedAutoProjectIds,
   $panesFlipped,
   $pinnedSessionIds,
+  $sidebarAttentionOpen,
+  $sidebarBrowseOpen,
   $sidebarCardRows,
   $sidebarCronOpen,
   $sidebarFiltersActive,
@@ -51,6 +56,7 @@ import {
   $sidebarProjectFilter,
   $sidebarProjectOrderIds,
   $sidebarRecentsOpen,
+  $sidebarSearchQuery,
   $sidebarSessionOrderIds,
   $sidebarSessionOrderManual,
   $sidebarShowAllSessions,
@@ -62,10 +68,13 @@ import {
   pinSession,
   SESSION_SEARCH_FOCUS_EVENT,
   setPinnedSessionOrder,
+  setSidebarAttentionOpen,
+  setSidebarBrowseOpen,
   setSidebarCronOpen,
   setSidebarPinsOpen,
   setSidebarProjectOrderIds,
   setSidebarRecentsOpen,
+  setSidebarSearchQuery,
   setSidebarSessionOrderIds,
   setSidebarSessionOrderManual,
   setSidebarWorkspaceOrderIds,
@@ -126,7 +135,7 @@ import {
   markAllSessionsRead,
   sessionPinId
 } from '@/store/session'
-import { $sessionDotStateById, sessionStatusBucket } from '@/store/session-dot-state'
+import { $sessionDotStateById, sessionStatusBucket, sessionStatusRank } from '@/store/session-dot-state'
 import { $unconfirmedPinWrites } from '@/store/session-pin-sync'
 import { $removedSessionIds } from '@/store/session-removal'
 import { $focusedSessionIsTile, $focusedStoredSessionId, $workingSessionIds } from '@/store/session-states'
@@ -142,7 +151,9 @@ import {
   CAPABILITIES_ROUTE,
   CRON_ROUTE,
   MESSAGING_ROUTE,
+  SIDEBAR_LIST_TOP_AREA,
   SIDEBAR_NAV_AREA,
+  type SidebarListTopContribution,
   type SidebarNavContribution
 } from '../../routes'
 import type { SidebarNavItem } from '../../types'
@@ -216,14 +227,16 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     label: '',
     icon: props => <Codicon name="symbol-misc" {...props} />,
     route: CAPABILITIES_ROUTE,
-    keybindActionId: 'nav.capabilities'
+    keybindActionId: 'nav.capabilities',
+    tier: 'advanced'
   },
   {
     id: 'messaging',
     label: '',
     icon: props => <Codicon name="comment" {...props} />,
     route: MESSAGING_ROUTE,
-    keybindActionId: 'nav.messaging'
+    keybindActionId: 'nav.messaging',
+    tier: 'advanced'
   },
   // Artifacts and Scheduled jobs are outputs of running Hermes the developer
   // way; Capabilities and Messaging are how anyone sets it up.
@@ -439,9 +452,16 @@ export function ChatSidebar({
   // disposes its contribution and the rows come straight back.
   const navPrefs = useContributions(SIDEBAR_NAV_PREFS_AREA)
 
-  const navItems = useMemo(
-    () => applySidebarNavPrefs([...SIDEBAR_NAV, ...contributedNav].filter(shownInMode(interfaceMode)), navPrefs),
-    [contributedNav, interfaceMode, navPrefs]
+  // Contributed list-top sections (`sidebar.listTop`) render inside the
+  // sessions column, above Pinned — the bots plugin's Agents section folds the
+  // roster in here so a bot is one click from the same rail, no tab switch.
+  const listTopContribs = useContributions(SIDEBAR_LIST_TOP_AREA)
+
+  // A `searchable` contribution stays mounted while the rail's search runs and
+  // filters its own rows — the Agents fold is the rail's bots result set.
+  const hasSearchableListTop = useMemo(
+    () => listTopContribs.some(c => Boolean((c.data as SidebarListTopContribution | undefined)?.searchable)),
+    [listTopContribs]
   )
 
   const panesFlipped = useStore($panesFlipped)
@@ -536,7 +556,10 @@ export function ChatSidebar({
   const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const newSessionCombo = useStore($bindings)['session.new']?.[0]
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
-  const [searchQuery, setSearchQuery] = useState('')
+  // Live search text rides a store atom (`$sidebarSearchQuery`) so a
+  // searchable listTop contribution reads the same query.
+  const searchQuery = useStore($sidebarSearchQuery)
+  const setSearchQuery = setSidebarSearchQuery
   const [serverMatches, setServerMatches] = useState<SessionSearchResult[]>([])
   const [searchPending, setSearchPending] = useState(false)
   const [newSessionKbdFlash, setNewSessionKbdFlash] = useState(false)
@@ -673,6 +696,30 @@ export function ChatSidebar({
     [messagingSessions, profileScope]
   )
 
+  const navItems = useMemo(
+    () =>
+      applySidebarNavPrefs(
+        [...SIDEBAR_NAV, ...contributedNav].filter(
+          item =>
+            shownInMode(interfaceMode)(item) ||
+            // The Messaging door rides the rail, not the mode: the sessions it
+            // groups live here in Simple too, so hiding its row in Simple
+            // stranded a whole slice with no door at all. It appears iff the
+            // rail has messaging rows to open.
+            (item.id === 'messaging' && visibleMessagingSessions.length > 0)
+        ),
+        navPrefs
+      ),
+    [contributedNav, interfaceMode, navPrefs, visibleMessagingSessions.length]
+  )
+
+  // One rail, one mental model: New session is the single primary action.
+  // Every other nav row folds into the "Browse" disclosure (per-mode persisted
+  // open state) so the list — agents, pinned, sessions — is what you see.
+  const primaryNavItems = useMemo(() => navItems.filter(item => item.id === 'new-session'), [navItems])
+  const browseNavItems = useMemo(() => navItems.filter(item => item.id !== 'new-session'), [navItems])
+  const browseOpen = useStore($sidebarBrowseOpen)
+
   // Index sessions by every id a pin might be stored under — recents, cron,
   // AND messaging, since all three can be pinned (see session-index.ts).
   const sessionByAnyId = useMemo(
@@ -726,12 +773,41 @@ export function ChatSidebar({
     [pinnedIdentitySet]
   )
 
-  // What the project tree drops: pins (they live in their own section) plus
-  // anything the active filters exclude, so filtering works the same whether
-  // you're looking at the flat list or the lanes.
+  // ── Needs attention ────────────────────────────────────────────────────
+  // The rail's inbox fold: sessions a surface already flags — waiting on the
+  // user, stalled mid-turn, or finished-but-unread — gathered at the top and
+  // ranked loudest-first (the same rank order-by-status uses). The pin rule
+  // holds here too: a flagged row lives in this fold and nowhere else, so the
+  // fold drains to inbox zero instead of shadowing the lists below it.
+  const attentionSessions = useMemo(() => {
+    const flagged = sortedSessions.filter(session => {
+      if (isPinnedSession(session)) {
+        return false
+      }
+
+      const state = dotStates[session.id]
+
+      return state === 'needs-input' || state === 'stalled' || state === 'unread'
+    })
+
+    return flagged.sort(
+      (a, b) =>
+        sessionStatusRank(dotStates[a.id] ?? 'idle') - sessionStatusRank(dotStates[b.id] ?? 'idle') ||
+        sessionTime(b) - sessionTime(a)
+    )
+  }, [sortedSessions, isPinnedSession, dotStates])
+
+  const attentionIdSet = useMemo(() => new Set(attentionSessions.map(s => s.id)), [attentionSessions])
+  const attentionOpen = useStore($sidebarAttentionOpen)
+
+  // What the project tree drops: pins and the attention fold's rows (both
+  // live in their own sections) plus anything the active filters exclude, so
+  // filtering works the same whether you're looking at the flat list or the
+  // lanes.
   const isHiddenFromProjects = useCallback(
-    (session: SessionInfo) => isPinnedSession(session) || (filtersNarrow && !sessionMatchesFilters(session)),
-    [isPinnedSession, filtersNarrow, sessionMatchesFilters]
+    (session: SessionInfo) =>
+      isPinnedSession(session) || attentionIdSet.has(session.id) || (filtersNarrow && !sessionMatchesFilters(session)),
+    [isPinnedSession, attentionIdSet, filtersNarrow, sessionMatchesFilters]
   )
 
   // Full-text search across *all* sessions (not just the loaded page) so 699
@@ -776,8 +852,8 @@ export function ChatSidebar({
   )
 
   const unpinnedAgentSessions = useMemo(
-    () => sortedSessions.filter(s => !isPinnedSession(s)),
-    [sortedSessions, isPinnedSession]
+    () => sortedSessions.filter(s => !isPinnedSession(s) && !attentionIdSet.has(s.id)),
+    [sortedSessions, isPinnedSession, attentionIdSet]
   )
 
   useEffect(() => {
@@ -1563,6 +1639,212 @@ export function ChatSidebar({
       })
     )
 
+  const renderNavItem = (item: SidebarNavItem) => {
+    const isInteractive = Boolean(item.action) || Boolean(item.route)
+
+    const active =
+      (item.id === 'capabilities' && currentView === 'capabilities') ||
+      (item.id === 'messaging' && currentView === 'messaging') ||
+      (item.id === 'artifacts' && currentView === 'artifacts') ||
+      (item.id === 'cron' && currentView === 'cron') ||
+      // Contributed rows light up at their own route.
+      (currentView === 'extension' && Boolean(item.route) && pathname === item.route)
+
+    const isNewSession = item.id === 'new-session'
+
+    const button = (
+      <SidebarMenuButton
+        aria-disabled={!isInteractive}
+        className={cn(
+          // no-drag: these rows sit directly under the titlebar's
+          // [-webkit-app-region:drag] strips (app-shell.tsx), with only
+          // 6px of clearance. Drag regions win hit-testing over DOM
+          // (pointer-events can't override), and on Linux/WSLg the
+          // resolved region has been observed to swallow clicks on the
+          // top rows. Same carve-out as USER_BUBBLE_BASE_CLASS in
+          // thread.tsx.
+          'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-[0.8125rem] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
+          active &&
+            'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!',
+          !isInteractive &&
+            'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit'
+        )}
+        // A tip anchored to the label points at the end of the
+        // word; the row is what it's actually about.
+        data-tip-region=""
+        onClick={() => {
+          // A plain new session lands in whatever profile the live
+          // gateway is on (= the active switcher context). null →
+          // no swap. The switcher header is the single place to
+          // change which profile that is.
+          if (isNewSession) {
+            $newChatProfile.set(null)
+          }
+
+          onNavigate(item)
+        }}
+        onPointerDown={event => {
+          // The "New session" row is a drag source too: drag it onto
+          // a chat zone's tab strip / edge / center to create the
+          // session exactly there (stack / split). The pointer drag
+          // session owns the gesture — a sub-threshold release falls
+          // through to the onClick above (ordinary new session), and
+          // an engaged drag suppresses that click so it never
+          // double-creates. The create callback sets $newChatProfile
+          // itself (the suppressed click can't), so a dragged new
+          // session lands in the same profile a click would.
+          if (!isNewSession) {
+            return
+          }
+
+          startNewSessionDrag(placement => {
+            $newChatProfile.set(null)
+            onNewSessionSplit(placement.dir, { anchor: placement.anchor, before: placement.before })
+          }, event)
+        }}
+        tooltip={
+          item.keybindActionId
+            ? {
+                children: (
+                  <TipKeybindLabel actionId={item.keybindActionId} text={s.nav[item.id] ?? item.label} />
+                )
+              }
+            : (s.nav[item.id] ?? item.label)
+        }
+        type="button"
+      >
+        <item.icon className="size-4 shrink-0 text-[color-mix(in_srgb,currentColor_72%,transparent)]" />
+        {/* Shrink-to-fit, not flex-1: the label carries the row's
+            `data-tour` handle, and anything anchored to it should
+            land at the end of the WORD, not out at the sidebar's
+            edge. Still truncates — `min-w-0` lets it shrink past
+            its content when the rail is narrow — and the trailing
+            chip's `ml-auto` was already doing the pushing that
+            `flex-1` looked like it was for.
+            Its own `sidebar-nav-` namespace: the overlay nav owns
+            `nav-<id>`, and both are on screen with Settings open. */}
+        <span className="min-w-0 truncate" data-tip-arrow-only="" data-tour={`sidebar-nav-${item.id}`}>
+          {s.nav[item.id] ?? item.label}
+        </span>
+        {isNewSession && (
+          <KbdGroup
+            className={cn('ml-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
+            keys={newSessionKbd}
+            size="sm"
+          />
+        )}
+      </SidebarMenuButton>
+    )
+
+    // New session + route-backed pages can open in a split —
+    // right-click for the directional "Open in split" submenu.
+    return (
+      <SidebarMenuItem key={item.id}>
+        {isNewSession || item.route ? (
+          <ContextMenu>
+            <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
+            <ContextMenuContent aria-label={s.nav[item.id] ?? item.label}>
+              <SplitSubmenu
+                kit={CONTEXT_SPLIT_KIT}
+                label={s.row.openInSplit}
+                onSplit={dir => {
+                  if (isNewSession) {
+                    onNewSessionSplit(dir)
+                  } else if (item.route) {
+                    openRouteTile(item.route, dir)
+                  }
+                }}
+              />
+            </ContextMenuContent>
+          </ContextMenu>
+        ) : (
+          button
+        )}
+      </SidebarMenuItem>
+    )
+  }
+
+  // ── Roving arrow nav ────────────────────────────────────────────────────
+  // One list, one keyboard model: ↓ from the search field enters the rows, ↑
+  // on the first row returns to it, ↑/↓/Home/End walk everything marked
+  // data-sidebar-row (session, bot, cron — DOM order, so sections interleave
+  // exactly as painted). The focusin side keeps the Tab door on the row the
+  // user last touched: focused promotes to 0, every sibling back to -1.
+  const onSidebarFocus = (e: React.FocusEvent<HTMLElement>) => {
+    const row = (e.target as HTMLElement).closest?.('[data-sidebar-row]')
+
+    if (row instanceof HTMLElement) {
+      for (const el of e.currentTarget.querySelectorAll<HTMLElement>('[data-sidebar-row]')) {
+        el.tabIndex = -1
+      }
+
+      row.tabIndex = 0
+    }
+  }
+
+  const onSidebarKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    const rows = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[data-sidebar-row]'))
+
+    if (!rows.length) {
+      return
+    }
+
+    if (e.target === searchInputRef.current) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        rows[0].focus()
+      }
+
+      return
+    }
+
+    const target = e.target as HTMLElement
+
+    // Only the row itself joins the walk — a kebab, drag handle, or link
+    // nested inside one keeps its own keys.
+    if (!target.hasAttribute('data-sidebar-row')) {
+      return
+    }
+
+    const index = rows.indexOf(target)
+
+    if (index < 0) {
+      return
+    }
+
+    if (e.key === 'ArrowUp' && index === 0) {
+      e.preventDefault()
+      searchInputRef.current?.focus()
+
+      return
+    }
+
+    let next = -1
+
+    if (e.key === 'ArrowDown') {
+      next = Math.min(index + 1, rows.length - 1)
+    } else if (e.key === 'ArrowUp') {
+      next = index - 1
+    } else if (e.key === 'Home') {
+      next = 0
+    } else if (e.key === 'End') {
+      next = rows.length - 1
+    }
+
+    if (next < 0 || next === index) {
+      return
+    }
+
+    e.preventDefault()
+
+    const row = rows[next]
+
+    row.focus({ preventScroll: true })
+    // A virtualized list paints its own window — scrolling the target in
+    // pulls the rows after it into existence for the next press.
+    row.scrollIntoView({ block: 'nearest' })
+  }
+
   return (
     <Sidebar
       className={cn(
@@ -1577,141 +1859,39 @@ export function ChatSidebar({
       data-tip-region=""
       data-tour="sessions-sidebar"
     >
-      <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
+      <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5" onFocus={onSidebarFocus} onKeyDown={onSidebarKeyDown}>
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
-              {navItems.map(item => {
-                const isInteractive = Boolean(item.action) || Boolean(item.route)
-
-                const active =
-                  (item.id === 'capabilities' && currentView === 'capabilities') ||
-                  (item.id === 'messaging' && currentView === 'messaging') ||
-                  (item.id === 'artifacts' && currentView === 'artifacts') ||
-                  (item.id === 'cron' && currentView === 'cron') ||
-                  // Contributed rows light up at their own route.
-                  (currentView === 'extension' && Boolean(item.route) && pathname === item.route)
-
-                const isNewSession = item.id === 'new-session'
-
-                const button = (
-                  <SidebarMenuButton
-                    aria-disabled={!isInteractive}
-                    className={cn(
-                      // no-drag: these rows sit directly under the titlebar's
-                      // [-webkit-app-region:drag] strips (app-shell.tsx), with only
-                      // 6px of clearance. Drag regions win hit-testing over DOM
-                      // (pointer-events can't override), and on Linux/WSLg the
-                      // resolved region has been observed to swallow clicks on the
-                      // top rows. Same carve-out as USER_BUBBLE_BASE_CLASS in
-                      // thread.tsx.
-                      'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-[0.8125rem] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
-                      active &&
-                        'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!',
-                      !isInteractive &&
-                        'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit'
-                    )}
-                    // A tip anchored to the label points at the end of the
-                    // word; the row is what it's actually about.
-                    data-tip-region=""
-                    onClick={() => {
-                      // A plain new session lands in whatever profile the live
-                      // gateway is on (= the active switcher context). null →
-                      // no swap. The switcher header is the single place to
-                      // change which profile that is.
-                      if (isNewSession) {
-                        $newChatProfile.set(null)
-                      }
-
-                      onNavigate(item)
-                    }}
-                    onPointerDown={event => {
-                      // The "New session" row is a drag source too: drag it onto
-                      // a chat zone's tab strip / edge / center to create the
-                      // session exactly there (stack / split). The pointer drag
-                      // session owns the gesture — a sub-threshold release falls
-                      // through to the onClick above (ordinary new session), and
-                      // an engaged drag suppresses that click so it never
-                      // double-creates. The create callback sets $newChatProfile
-                      // itself (the suppressed click can't), so a dragged new
-                      // session lands in the same profile a click would.
-                      if (!isNewSession) {
-                        return
-                      }
-
-                      startNewSessionDrag(placement => {
-                        $newChatProfile.set(null)
-                        onNewSessionSplit(placement.dir, { anchor: placement.anchor, before: placement.before })
-                      }, event)
-                    }}
-                    tooltip={
-                      item.keybindActionId
-                        ? {
-                            children: (
-                              <TipKeybindLabel actionId={item.keybindActionId} text={s.nav[item.id] ?? item.label} />
-                            )
-                          }
-                        : (s.nav[item.id] ?? item.label)
-                    }
+              {primaryNavItems.map(renderNavItem)}
+              {/* Secondary rows fold under Browse — New session stays the one
+                  primary action and the list below is what the rail is for.
+                  The caret stays visible: it is the fold's discoverability. */}
+              {browseNavItems.length > 0 && (
+                <SidebarMenuItem>
+                  <button
+                    aria-expanded={browseOpen}
+                    className="group/browse-label flex w-fit min-w-0 items-center gap-1 rounded-md bg-transparent px-1 py-1.5 text-left leading-none"
+                    data-tour="sidebar-browse"
+                    onClick={() => setSidebarBrowseOpen(!browseOpen)}
                     type="button"
                   >
-                    <item.icon className="size-4 shrink-0 text-[color-mix(in_srgb,currentColor_72%,transparent)]" />
-                    {/* Shrink-to-fit, not flex-1: the label carries the row's
-                        `data-tour` handle, and anything anchored to it should
-                        land at the end of the WORD, not out at the sidebar's
-                        edge. Still truncates — `min-w-0` lets it shrink past
-                        its content when the rail is narrow — and the trailing
-                        chip's `ml-auto` was already doing the pushing that
-                        `flex-1` looked like it was for.
-                        Its own `sidebar-nav-` namespace: the overlay nav owns
-                        `nav-<id>`, and both are on screen with Settings open. */}
-                    <span className="min-w-0 truncate" data-tip-arrow-only="" data-tour={`sidebar-nav-${item.id}`}>
-                      {s.nav[item.id] ?? item.label}
-                    </span>
-                    {isNewSession && (
-                      <KbdGroup
-                        className={cn('ml-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}
-                        keys={newSessionKbd}
-                        size="sm"
-                      />
-                    )}
-                  </SidebarMenuButton>
-                )
-
-                // New session + route-backed pages can open in a split —
-                // right-click for the directional "Open in split" submenu.
-                return (
-                  <SidebarMenuItem key={item.id}>
-                    {isNewSession || item.route ? (
-                      <ContextMenu>
-                        <ContextMenuTrigger asChild>{button}</ContextMenuTrigger>
-                        <ContextMenuContent aria-label={s.nav[item.id] ?? item.label}>
-                          <SplitSubmenu
-                            kit={CONTEXT_SPLIT_KIT}
-                            label={s.row.openInSplit}
-                            onSplit={dir => {
-                              if (isNewSession) {
-                                onNewSessionSplit(dir)
-                              } else if (item.route) {
-                                openRouteTile(item.route, dir)
-                              }
-                            }}
-                          />
-                        </ContextMenuContent>
-                      </ContextMenu>
-                    ) : (
-                      button
-                    )}
-                  </SidebarMenuItem>
-                )
-              })}
+                    <SidebarPanelLabel>{s.nav.browse ?? 'Browse'}</SidebarPanelLabel>
+                    <DisclosureCaret className="text-(--ui-text-tertiary)" open={browseOpen} />
+                  </button>
+                </SidebarMenuItem>
+              )}
+              {browseOpen && browseNavItems.map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarStorageCorruptNotice />
 
-        {showSessionSections && (
+        {/* The field mounts while the sessions area has content OR any
+            searchable listTop contribution is up — on an empty account the
+            Bots fold still answers a query. */}
+        {(showSessionSections || hasSearchableListTop) && (
           <div className="shrink-0 px-2 pb-1 pt-1">
             <SearchField
               aria-label={s.searchAria}
@@ -1719,6 +1899,58 @@ export function ChatSidebar({
               onChange={setSearchQuery}
               placeholder={s.searchPlaceholder}
               value={searchQuery}
+            />
+          </div>
+        )}
+
+        {/* Contributed list-top sections (`sidebar.listTop`) pin above the
+            sessions list — including on an empty account, since
+            showSessionSections gates only the list itself. A `searchable`
+            contribution stays mounted while a search query runs (it filters
+            its own rows); non-searchable ones step aside for the results
+            column. The area is bounded and scrolls its own rows: a tall
+            section can never starve the sessions column of a viewport. */}
+        {listTopContribs.length > 0 && (
+          <div className="max-h-[45%] shrink-0 overflow-y-auto pb-1">
+            {listTopContribs.map(c => {
+              const data = c.data as SidebarListTopContribution | undefined
+              const render = data?.render
+
+              if (trimmedQuery && !data?.searchable) {
+                return null
+              }
+
+              return (
+                <ContribBoundary id={c.id} key={c.id} variant="chip">
+                  {typeof render === 'function' ? <ContribRender render={render} /> : null}
+                </ContribBoundary>
+              )
+            })}
+          </div>
+        )}
+
+        {/* The rail's inbox: anything a dot already flags, pulled out of the
+            list into a fold of its own so it can't scroll out of sight. */}
+        {!trimmedQuery && !showArchived && attentionSessions.length > 0 && (
+          <div className="max-h-[45%] shrink-0 overflow-y-auto pb-1">
+            <SidebarSessionsSection
+              activeSessionId={activeSidebarSessionId}
+              card={cardRows}
+              emptyState={null}
+              label={s.needsAttention}
+              onArchiveSession={onArchiveSession}
+              onBranchSession={onBranchSession}
+              onDeleteSession={onDeleteSession}
+              onResumeSession={onResumeSession}
+              onToggle={() => setSidebarAttentionOpen(!attentionOpen)}
+              onTogglePin={pinSession}
+              onToggleUnread={toggleUnread}
+              open={attentionOpen}
+              pinned={false}
+              preserveOrder
+              rootClassName="shrink-0 p-0"
+              sessions={attentionSessions}
+              showProfileTags={showAllProfiles}
             />
           </div>
         )}
@@ -2066,6 +2298,7 @@ export function ChatSidebar({
             <ProfileRail />
           </div>
         )}
+
       </SidebarContent>
       <ProjectDialog />
       {/* One mount for the whole app. The header of WorktreeDialog tells why. */}

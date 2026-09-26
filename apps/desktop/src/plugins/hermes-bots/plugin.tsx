@@ -17,17 +17,21 @@
 
 import {
   CHAT_EMPTY_AREA,
+  Codicon,
   COMPOSER_AREAS,
   host,
   LocalizedTabTitle,
   PALETTE_AREA,
+  SIDEBAR_LIST_TOP_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
 import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@hermes/plugin-sdk'
 
+import { AgentsSection } from './agents-section'
 import { startFaceClock, stopFaceClock } from './avatar'
 import {
+  $agentsSectionOpen,
   $botChatFocused,
   $botsPaneVisible,
   $focusedBotOwner,
@@ -43,12 +47,16 @@ import { bindProfileSync, RoutinesPane } from './cron'
 import {
   $botMeta,
   $lastRoster,
+  annotateBotSource,
   botHandle,
   botMentionTag,
+  botRosterKey,
   botSelectionKey,
+  botSourceStatus,
   cachedUnionRoster,
   isActiveRosterBot,
   migrateBotMeta,
+  preferReachableSameNameRows,
   primeRoster,
   resolveRosterMentions
 } from './data'
@@ -66,11 +74,12 @@ import {
   updateGroupChat
 } from './group-chat'
 import { groupWorkspaceOwnerKey } from './group-membership'
+import { isBotHidden } from './hidden-bots'
 import { annotateOrphanedGroupChatMembers } from './hygiene'
 import { BOTS_LOCALES } from './i18n'
 import { displayName } from './labels'
 import { startBotRelay, stopBotRelay } from './relay'
-import { $activityToasts } from './roster-actions'
+import { $activityToasts, openRosterBot } from './roster-actions'
 import {
   botChatOwnsWorkspace,
   BotsPane,
@@ -242,6 +251,20 @@ export default {
         .catch(() => undefined)
     } catch {
       /* no storage — default (silent) stays */
+    }
+
+    // Hydrate the Sessions-rail Agents fold (default open).
+    try {
+      // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
+      Promise.resolve(ctx.storage?.get?.('agents-section-open'))
+        .then(value => {
+          if (typeof value === 'boolean') {
+            $agentsSectionOpen.set(value)
+          }
+        })
+        .catch(() => undefined)
+    } catch {
+      /* no storage — the rail section stays open */
     }
 
     // Hydrate persisted group-chat room logs (epoch/running are runtime-only
@@ -428,6 +451,16 @@ export default {
       id: 'screen-portal',
       area: SIDEBAR_PROFILE_GROUP_HEADER_AREA,
       data: { render: (route: ProfileGroupRoute) => <ProfileGroupScreenPortal route={route} /> }
+    })
+
+    // Sessions rail, above Pinned: the compact Agents fold — the roster's
+    // one-click form inside the same column the sessions live in, so a bot
+    // never needs a tab switch to open. The BOTS pane stays the management
+    // surface (the fold's header gear / "All bots" row front it).
+    ctx.register({
+      id: 'agents-section',
+      area: SIDEBAR_LIST_TOP_AREA,
+      data: { render: () => <AgentsSection />, searchable: true }
     })
     ctx.register({
       id: 'pane',
@@ -729,6 +762,42 @@ export default {
             kind: 'info',
             message: ctx.i18n.t('bot.createFirstHint')
           })
+        }
+      }
+    })
+
+    // One palette row per live bot — the keyboard door straight into a bot's
+    // canonical chat. `items()` re-reads the cached roster on every palette
+    // open (same freshness contract as `detail()`), and projects the same
+    // visible set the rail's BOTS fold computes rather than keeping a second
+    // membership list. The parent "Bots" row opens the pane.
+    ctx.register({
+      id: 'agents',
+      area: PALETTE_AREA,
+      data: {
+        id: `${ID}.agents`,
+        label: 'Bots',
+        keywords: ['bot', 'agent', 'roster', 'chat'],
+        run: () => void host.revealPane(`${ID}:pane`),
+        items: () => {
+          const meta = $botMeta.get()
+          const snapshot = cachedUnionRoster()
+          const sources = snapshot?.sources ?? []
+
+          const visible = preferReachableSameNameRows(
+            (snapshot?.profiles ?? []).filter(
+              bot => !isBotHidden(bot, meta) && botSourceStatus(annotateBotSource(bot, sources)).available
+            )
+          )
+
+          return visible.map(bot => ({
+            id: `bot-${botRosterKey(bot)}`,
+            label: displayName(bot, botRosterMeta(bot, meta)),
+            keywords: ['bot', 'agent', 'chat', bot.name, botHandle(bot.name, bot)].filter(Boolean),
+            detail: () => (bot.remoteSource ? 'remote' : 'local'),
+            icon: (props: { className?: string }) => <Codicon name="robot" {...props} />,
+            run: () => void openRosterBot(bot)
+          }))
         }
       }
     })

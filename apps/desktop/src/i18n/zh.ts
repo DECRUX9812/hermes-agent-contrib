@@ -429,6 +429,8 @@ export const zh = defineLocale({
       'nav.artifacts': '打开制品',
       'nav.cron': '打开定时任务',
       'nav.agents': '打开智能体',
+      'nav.starmap': '打开记忆图谱',
+      'nav.webhooks': '打开 Webhook',
       'session.new': '新建会话',
       'session.newTab': '新建会话标签',
       'session.newWindow': '新建窗口',
@@ -816,6 +818,8 @@ export const zh = defineLocale({
     appearance: {
       title: '外观',
       intro: '这些是仅桌面端的显示偏好。模式控制明暗；主题控制强调色与对话界面样式。',
+      simpleModeTitle: '简洁模式',
+      simpleModeDesc: '更清爽、以聊天为主的界面：隐藏高级面板、工具和状态项。所有功能仍可随时通过“设置”和 ⌘K 访问，可随时切换回来。',
       colorMode: '颜色模式',
       colorModeDesc: '选择固定模式，或让 Hermes 跟随系统设置。',
       toolViewTitle: '工具调用显示',
@@ -3330,7 +3334,15 @@ export const zh = defineLocale({
       capabilities: '技能与工具',
       messaging: '消息平台',
       artifacts: '产物',
-      cron: '定时任务'
+      cron: '定时任务',
+      browse: '浏览'
+    },
+    interfaceMode: {
+      label: '界面',
+      simple: '简洁',
+      full: '完整',
+      toFull: '简洁模式会隐藏高级面板和控件。点击切换到完整界面。',
+      toSimple: '返回清爽的聊天优先界面。'
     },
     searchAria: '搜索会话',
     searchPlaceholder: '搜索会话…',
@@ -3338,6 +3350,7 @@ export const zh = defineLocale({
     noMatch: query => `没有会话匹配"${query}"。`,
     results: '结果',
     pinned: '已置顶',
+    needsAttention: '需要注意',
     sessions: '会话',
     terminal: '终端',
     files: '文件',
@@ -3526,6 +3539,7 @@ export const zh = defineLocale({
     openDirective: '打开',
     queueMessage: '排队消息',
     steer: '引导当前运行',
+    steerTurn: '引导当前回合',
     stop: '停止',
     send: '发送',
     speaking: '讲话中',
@@ -3642,6 +3656,7 @@ export const zh = defineLocale({
       'composer.help': '此快速帮助 (删除以关闭)',
       'composer.sendNewline': '发送 · Shift+Enter 换行',
       'composer.sendQueued': '发送下一条排队的回合',
+      'composer.modelPicker': '模型选择器',
       'keybinds.openPanel': '所有键盘快捷键',
       'composer.cancel': '关闭弹窗 · 取消运行',
       'composer.history': '循环弹窗 / 历史'
@@ -3688,6 +3703,8 @@ export const zh = defineLocale({
     pasteImage: '粘贴图片',
     url: 'URL…',
     promptSnippets: '提示词片段…',
+    scheduleJob: '定时运行…',
+    slashCommands: '斜杠命令…',
     tipPre: '提示：输入 ',
     tipPost: ' 以内联引用文件。',
     snippetsTitle: '提示词片段',
@@ -4392,6 +4409,11 @@ export const zh = defineLocale({
       openWebhooks: '打开 Webhook',
       starmap: '记忆图谱',
       openStarmap: '打开记忆图谱',
+      artifacts: '产物',
+      artifactsTitle: '本会话生成的交付物 — 选择一个在对话旁打开',
+      artifactsCount: count => `${count} 个产物`,
+      browseAllArtifacts: '浏览全部产物',
+      toggleArtifacts: '产物',
       turnRunning: '运行中',
       contextUsage: '上下文用量',
       systemResources: {
@@ -4591,6 +4613,8 @@ export const zh = defineLocale({
     title: '界面模式',
     hint: '只改变显示的内容，不改变 Hermes 的能力。',
     sessionNote: '由简洁模式设定。此处的更改仅在本次会话内生效；切换到高级模式即可保留为你的设置。',
+    simpleNotice: '简洁模式 — 面板和其他工具已隐藏。',
+    showAdvanced: '显示高级模式',
     simple: {
       label: '简洁',
       description: '用于与 Hermes 对话。只有侧边栏和聊天；没有终端、文件或差异面板。'
@@ -5072,6 +5096,7 @@ export const zh = defineLocale({
     imageAttach: '附加图片',
     imageWriteFailed: '无法将图片写入磁盘。',
     imageAttachFailed: '附加图片失败',
+    pastedAsFile: '已粘贴为文件',
     pastedContent: '粘贴内容',
     pasteAttachFailed: '无法附加粘贴的文本',
     attachImages: '附加图片',
@@ -5136,6 +5161,10 @@ export const zh = defineLocale({
       'right-pane': {
         title: '工作面板',
         text: '文件、终端、审阅和内置浏览器都在侧边面板里。'
+      },
+      'advanced-mode': {
+        title: '高级模式里还有更多',
+        text: '面板、定时任务、功能和状态栏都在高级模式中 — 设置 › 外观 › 窗口与布局 可随时切换。'
       }
     }
   },

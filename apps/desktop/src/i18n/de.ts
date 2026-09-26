@@ -663,6 +663,8 @@ export const deOverrides = {
       'nav.artifacts': 'Artefakte öffnen',
       'nav.cron': 'Geplante Jobs öffnen',
       'nav.agents': 'Agenten öffnen',
+      'nav.starmap': 'Memory-Graph öffnen',
+      'nav.webhooks': 'Webhooks öffnen',
       'session.new': 'Neue Session',
       'session.newTab': 'Neuer Session-Tab',
       'session.newWindow': 'Neues Fenster',
@@ -3914,7 +3916,8 @@ export const deOverrides = {
       capabilities: 'Fähigkeiten',
       messaging: 'Messaging',
       artifacts: 'Artefakte',
-      cron: 'Geplante Jobs'
+      cron: 'Geplante Jobs',
+      browse: 'Durchsuchen'
     },
     searchAria: 'Sessions durchsuchen',
     searchPlaceholder: 'Sessions durchsuchen…',
@@ -3922,6 +3925,7 @@ export const deOverrides = {
     noMatch: query => `Keine Sessions passen zu “${query}”.`,
     results: 'Ergebnisse',
     pinned: 'Angepinnt',
+    needsAttention: 'Handlungsbedarf',
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Dateien',
@@ -4120,6 +4124,7 @@ export const deOverrides = {
     openDirective: 'Öffnen',
     queueMessage: 'Nachricht einreihen',
     steer: 'Laufenden Lauf steuern',
+    steerTurn: 'Turn steuern',
     stop: 'Stopp',
     send: 'Senden',
     speaking: 'Spricht',
@@ -4240,6 +4245,7 @@ export const deOverrides = {
       'composer.help': 'diese Schnellhilfe (Löschen zum Schließen)',
       'composer.sendNewline': 'senden · Shift+Enter für neue Zeile',
       'composer.sendQueued': 'nächsten eingereihten Turn senden',
+      'composer.modelPicker': 'Modellauswahl öffnen',
       'keybinds.openPanel': 'alle Tastaturkürzel',
       'composer.cancel': 'Popover schließen · Lauf abbrechen',
       'composer.history': 'Popover / Verlauf durchblättern'
@@ -4288,6 +4294,7 @@ export const deOverrides = {
     pasteImage: 'Bild einfügen',
     url: 'URL…',
     promptSnippets: 'Prompt-Schnipsel…',
+    slashCommands: 'Slash-Befehle…',
     tipPre: 'Tipp: Geben Sie ',
     tipPost: ' ein, um Dateien inline zu referenzieren.',
     snippetsTitle: 'Prompt-Schnipsel',
@@ -5262,6 +5269,8 @@ export const deOverrides = {
     hint: 'Ändert, was angezeigt wird, nicht was Hermes kann.',
     sessionNote:
       'Vom einfachen Modus festgelegt. Eine Änderung hier gilt für diese Session; wechseln Sie zu „Erweitert“, um sie dauerhaft zu übernehmen.',
+    simpleNotice: 'Einfacher Modus — Bereiche und zusätzliche Werkzeuge sind ausgeblendet.',
+    showAdvanced: 'Erweitert anzeigen',
     simple: {
       label: 'Einfach',
       description: 'Zum Chatten mit Hermes. Seitenleiste und Chat; keine Terminal-, Datei- oder Diff-Bereiche.'
@@ -5981,6 +5990,7 @@ export const deOverrides = {
     imageAttach: 'Bild anhängen',
     imageWriteFailed: 'Bild konnte nicht auf die Festplatte geschrieben werden.',
     imageAttachFailed: 'Bild-Anhängen fehlgeschlagen',
+    pastedAsFile: 'Als Datei eingefügt',
     pastedContent: 'Eingefügter Inhalt',
     pasteAttachFailed: 'Eingefügter Text konnte nicht angehängt werden',
     attachImages: 'Bilder anhängen',
@@ -6045,6 +6055,10 @@ export const deOverrides = {
       'right-pane': {
         title: 'Der Arbeitsbereich',
         text: 'Dateien, Terminal, Review und der In-App-Browser teilen sich die rechte Seite.'
+      },
+      'advanced-mode': {
+        title: 'Mehr hinter Erweitert',
+        text: 'Bereiche, Cron, Skills und die Statusleiste ruhen im Erweiterten Modus — Einstellungen › Darstellung › Fenster & Layout schaltet um.'
       }
     }
   },

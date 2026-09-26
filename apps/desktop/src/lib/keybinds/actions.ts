@@ -118,6 +118,8 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   { id: 'nav.artifacts', category: 'navigation', defaults: [] },
   { id: 'nav.cron', category: 'navigation', defaults: [] },
   { id: 'nav.agents', category: 'navigation', defaults: [] },
+  { id: 'nav.starmap', category: 'navigation', defaults: [] },
+  { id: 'nav.webhooks', category: 'navigation', defaults: [] },
 
   // ── View (layout + appearance + the shortcuts panel itself) ───────────────
   { id: 'view.toggleSidebar', category: 'view', defaults: ['mod+b'] },
@@ -186,7 +188,9 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   // and a user who prefers a dedicated chord can bind one.
   { id: 'view.findNext', category: 'view', defaults: [] },
   { id: 'view.findPrevious', category: 'view', defaults: [] },
-  { id: 'appearance.toggleMode', category: 'view', defaults: ['shift+x'] },
+  // Unbound (#76185's class again): a bare shifted letter can't be pressed
+  // deliberately — this one flipped the whole theme. Still rebindable.
+  { id: 'appearance.toggleMode', category: 'view', defaults: [] },
   { id: 'keybinds.openPanel', category: 'view', defaults: ['mod+/'] }
 ]
 

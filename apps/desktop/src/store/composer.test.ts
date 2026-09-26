@@ -6,13 +6,18 @@ import {
   $voiceConversationStartRequest,
   addComposerAttachment,
   adoptGoneSessionDraft,
+  adoptNewSessionDraft,
   announceGoneSessionDraft,
+  announceNewSessionDraftKey,
   clearSessionDraft,
   type ComposerAttachment,
   createComposerAttachmentOccurrenceId,
   createComposerAttachmentScope,
   mainComposerScope,
+  dropComposerDraftsForProfile,
+  migrateComposerDraftsForProfile,
   migrateSessionDraft,
+  registerComposerNewDraftProfileResolver,
   removeComposerAttachment,
   requestVoiceConversationStart,
   revokeAttachmentPreviewUrls,
@@ -260,8 +265,14 @@ describe('updateComposerAttachment', () => {
 })
 
 describe('session drafts', () => {
+  let draftProfile = 'default'
+
+  registerComposerNewDraftProfileResolver(() => draftProfile)
+
   afterEach(() => {
-    for (const scope of ['session-a', 'session-b', null]) {
+    draftProfile = 'default'
+
+    for (const scope of ['session-a', 'session-b', 'session-new', null, '__new__:alpha', '__new__:beta']) {
       clearSessionDraft(scope)
     }
 
@@ -286,15 +297,47 @@ describe('session drafts', () => {
     expect(takeSessionDraft('session-a').text).toBe('session draft')
   })
 
-  it('persists draft text (not attachments) to localStorage', () => {
-    stashSessionDraft('session-a', 'survives reload', [attachment({ id: 'file:a' })])
+  it('persists draft text and path-backed chips to localStorage', () => {
+    stashSessionDraft('session-a', 'survives reload', [
+      attachment({ id: 'file:a', detail: 'src', path: '/work/doc.pdf', refText: '@file:doc.pdf' })
+    ])
 
     const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<
       string,
-      string
+      { attachments?: unknown[]; text: string }
     >
 
-    expect(persisted['session-a']).toBe('survives reload')
+    expect(persisted['session-a']).toEqual({
+      attachments: [{ detail: 'src', id: 'file:a', kind: 'file', label: 'doc.pdf', path: '/work/doc.pdf', refText: '@file:doc.pdf' }],
+      text: 'survives reload'
+    })
+  })
+
+  it('drops blob and terminal chips — and upload/preview state — from persisted payloads', () => {
+    stashSessionDraft('session-a', 'with chips', [
+      attachment({ id: 'image:a', kind: 'image', previewUrl: 'blob:x', thumbnailUrl: 'data:y', uploadState: 'uploading' }),
+      attachment({ id: 'terminal:t', kind: 'terminal' }),
+      attachment({ id: 'url:u', kind: 'url', label: 'site', path: 'https://x.test', previewUrl: 'blob:z', uploadState: 'error' })
+    ])
+
+    const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      { attachments?: { id: string; kind: string; previewUrl?: string; uploadState?: string }[]; text: string }
+    >
+
+    expect(persisted['session-a']?.attachments).toEqual([
+      { id: 'url:u', kind: 'url', label: 'site', path: 'https://x.test' }
+    ])
+  })
+
+  it('still restores a legacy v3 key→text payload', async () => {
+    window.localStorage.setItem('hermes:composer-drafts:v3', JSON.stringify({ 'session-a': 'legacy draft' }))
+    vi.resetModules()
+
+    const reloaded = await import('./composer')
+
+    expect(reloaded.takeSessionDraft('session-a').text).toBe('legacy draft')
+    expect(window.localStorage.getItem('hermes:composer-drafts:v3')).toBeNull()
   })
 
   it('evicts empty drafts instead of leaving stale entries behind', () => {
@@ -377,5 +420,55 @@ describe('session drafts', () => {
 
     clearSessionDraft(null)
     clearSessionDraft('to')
+  })
+
+  it('scopes the pre-session bucket per profile so a fresh chat cannot bleed across profiles', () => {
+    draftProfile = 'alpha'
+    stashSessionDraft(null, 'alpha draft', [])
+
+    draftProfile = 'beta'
+    expect(takeSessionDraft(null).text).toBe('')
+
+    stashSessionDraft(null, 'beta draft', [])
+
+    draftProfile = 'alpha'
+    expect(takeSessionDraft(null).text).toBe('alpha draft')
+
+    const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      { text: string }
+    >
+
+    expect(persisted['__new__:alpha']?.text).toBe('alpha draft')
+    expect(persisted['__new__:beta']?.text).toBe('beta draft')
+    expect(persisted['__new__']).toBeUndefined()
+  })
+
+  it('moves the sent fresh draft even when the profile re-aimed mid-typing', () => {
+    draftProfile = 'alpha'
+    stashSessionDraft(null, 'typed before the switch', [])
+
+    draftProfile = 'beta'
+    announceNewSessionDraftKey('session-new')
+
+    expect(adoptNewSessionDraft('session-new')).toBe(true)
+    expect(takeSessionDraft('session-new').text).toBe('typed before the switch')
+  })
+
+  it('migrates the profile bucket on rename and drops it on local delete only', () => {
+    draftProfile = 'alpha'
+    stashSessionDraft(null, 'alpha draft', [])
+
+    migrateComposerDraftsForProfile('alpha', 'beta')
+    expect(takeSessionDraft('__new__:beta').text).toBe('alpha draft')
+    expect(takeSessionDraft('__new__:alpha').text).toBe('')
+
+    // A remote connection's delete cannot be told apart from a same-named
+    // local profile — leave the bucket alone.
+    dropComposerDraftsForProfile('beta', { connectionId: 'remote-conn', profile: 'beta' })
+    expect(takeSessionDraft('__new__:beta').text).toBe('alpha draft')
+
+    dropComposerDraftsForProfile('beta')
+    expect(takeSessionDraft('__new__:beta').text).toBe('')
   })
 })

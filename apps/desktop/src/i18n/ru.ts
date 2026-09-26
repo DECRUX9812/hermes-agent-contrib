@@ -377,6 +377,8 @@ export const ru = defineLocale({
       'nav.artifacts': 'Открыть артефакты',
       'nav.cron': 'Открыть запланированные задачи',
       'nav.agents': 'Открыть агенты',
+      'nav.starmap': 'Открыть граф памяти',
+      'nav.webhooks': 'Открыть вебхуки',
       'session.new': 'Новый сеанс',
       'session.newTab': 'Новая вкладка сеанса',
       'session.newWindow': 'Новое окно',
@@ -684,6 +686,9 @@ export const ru = defineLocale({
     appearance: {
       title: 'Внешний вид',
       intro: 'Только для приложения. Режим — это яркость, тема — палитра и оформление чата.',
+      simpleModeTitle: 'Простой режим',
+      simpleModeDesc:
+        'Более чистый интерфейс с упором на чат: скрывает расширенные панели, инструменты и элементы статуса. Всё остаётся доступным из настроек и по ⌘K — вернуться можно в любой момент.',
       colorMode: 'Цветовой режим',
       colorModeDesc: 'Выберите фиксированный режим или позвольте Hermes следовать настройкам системы.',
       toolViewTitle: 'Отображение вызовов инструментов',
@@ -2664,7 +2669,15 @@ export const ru = defineLocale({
       capabilities: 'Возможности',
       messaging: 'Сообщения',
       artifacts: 'Артефакты',
-      cron: 'Запланированные задачи'
+      cron: 'Запланированные задачи',
+      browse: 'Обзор'
+    },
+    interfaceMode: {
+      label: 'Интерфейс',
+      simple: 'Простой',
+      full: 'Полный',
+      toFull: 'Простой режим скрывает расширенные панели и элементы управления. Нажмите, чтобы вернуть полный интерфейс.',
+      toSimple: 'Вернуться к простому интерфейсу с упором на чат.'
     },
     searchAria: 'Поиск сеансов',
     searchPlaceholder: 'Поиск сеансов…',
@@ -2672,6 +2685,7 @@ export const ru = defineLocale({
     noMatch: query => `Нет сеансов по запросу «${query}».`,
     results: 'Результаты',
     pinned: 'Закреплённые',
+    needsAttention: 'Требует внимания',
     sessions: 'Сеансы',
     terminal: 'Терминал',
     files: 'Файлы',
@@ -2833,6 +2847,10 @@ export const ru = defineLocale({
     },
     markAllRead: 'Отметить все как прочитанные'
   },
+  intro: {
+    recentSessions: 'Продолжите с того места, где остановились'
+  },
+
   composer: {
     message: 'Сообщение',
     wakingProfile: profile => `Пробуждаем ${profile}…`,
@@ -2861,6 +2879,7 @@ export const ru = defineLocale({
     openDirective: 'Открыть',
     queueMessage: 'Вставить сообщение в очередь',
     steer: 'Направить текущий запуск',
+    steerTurn: 'Направить ход',
     stop: 'Стоп',
     send: 'Отправить',
     speaking: 'Говорит',
@@ -2970,6 +2989,7 @@ export const ru = defineLocale({
       'composer.help': 'эта быстрая справка (удалите, чтобы закрыть)',
       'composer.sendNewline': 'отправить · Shift+Enter — новая строка',
       'composer.sendQueued': 'отправить следующий ход в очереди',
+      'composer.modelPicker': 'выбор модели',
       'keybinds.openPanel': 'все горячие клавиши',
       'composer.cancel': 'закрыть поповер · отменить запуск',
       'composer.history': 'переключать поповер / историю'
@@ -3017,6 +3037,8 @@ export const ru = defineLocale({
     pasteImage: 'Вставить изображение',
     url: 'URL…',
     promptSnippets: 'Фрагменты промптов…',
+    scheduleJob: 'Запускать по расписанию…',
+    slashCommands: 'Слэш-команды…',
     tipPre: 'Подсказка: введите ',
     tipPost: ' чтобы ссылаться на файлы inline.',
     snippetsTitle: 'Фрагменты промптов',
@@ -3651,6 +3673,11 @@ export const ru = defineLocale({
       openWebhooks: 'Открыть вебхуки',
       starmap: 'Граф памяти',
       openStarmap: 'Открыть граф памяти',
+      artifacts: 'Артефакты',
+      artifactsTitle: 'Материалы, созданные в этом чате — выберите, чтобы открыть рядом с диалогом',
+      artifactsCount: count => `${count} ${RU_NOUN(count, 'артефакт', 'артефакта', 'артефактов')}`,
+      browseAllArtifacts: 'Все артефакты',
+      toggleArtifacts: 'Артефакты',
       turnRunning: 'Выполняется',
       contextUsage: 'Использование контекста',
       contextUsagePanel: {
@@ -3830,6 +3857,8 @@ export const ru = defineLocale({
     hint: 'Меняет то, что показано, а не то, что умеет Hermes.',
     sessionNote:
       'Задано простым режимом. Изменение здесь действует до конца сеанса; переключитесь в расширенный, чтобы сделать его своим.',
+    simpleNotice: 'Простой режим — панели и дополнительные инструменты скрыты.',
+    showAdvanced: 'Показать расширенный',
     simple: {
       label: 'Простой',
       description: 'Для общения с Hermes. Боковая панель и чат; без терминала, файлов и панелей diff.'
@@ -4230,6 +4259,7 @@ export const ru = defineLocale({
     imageAttach: 'Прикрепление изображения',
     imageWriteFailed: 'Не удалось записать изображение на диск.',
     imageAttachFailed: 'Прикрепление изображения не удалось',
+    pastedAsFile: 'Вставлено как файл',
     attachImages: 'Прикрепить изображения',
     clipboard: 'Буфер обмена',
     noClipboardImage: 'Изображение в буфере обмена не найдено',
@@ -4243,6 +4273,15 @@ export const ru = defineLocale({
       timedOut: 'Превышено время ожидания шлюза. Выполняется ли `hermes gateway`?'
     }
   },
+  tips: {
+    items: {
+      'advanced-mode': {
+        title: 'Больше в расширенном режиме',
+        text: 'Панели, cron, возможности и строка состояния живут в расширенном режиме — Настройки › Внешний вид › Окно и расположение переключает режим.'
+      }
+    }
+  },
+
   errors: {
     genericFailure: 'Что-то пошло не так',
     boundaryTitle: 'Что-то сломалось в интерфейсе',

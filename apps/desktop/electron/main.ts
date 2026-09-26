@@ -6669,6 +6669,33 @@ function sendOpenUpdatesRequested() {
   mainWindow.focus()
 }
 
+// A menu item is a door, not a key: it sends the keybind ACTION id and the
+// renderer dispatches it through the same handler the (rebindable) chord
+// would fire, so a click and the user's own binding never diverge. Queued
+// like the other menu requests until the renderer mounts its listener (the
+// 'hermes:deep-link-ready' signal flushes _pendingMenuActions).
+function sendMenuActionRequested(actionId: string) {
+  if (!_rendererReadyForDeepLink || !mainWindow || mainWindow.isDestroyed()) {
+    _pendingMenuActions.push(actionId)
+
+    return
+  }
+
+  const { webContents } = mainWindow
+
+  if (!webContents || webContents.isDestroyed()) {
+    return
+  }
+
+  webContents.send('hermes:menu-action', actionId)
+
+  if (!mainWindow.isVisible()) {
+    mainWindow.show()
+  }
+
+  mainWindow.focus()
+}
+
 // Push titlebar/fullscreen chrome state to a window's renderer. Defaults to the
 // primary, but any full chat window (primary or a secondary "instance" peer)
 // passes itself so its own fullscreen toggle drives its own traffic-light inset.
@@ -6706,6 +6733,11 @@ function buildApplicationMenu() {
       submenu: [
         { label: `About ${APP_NAME}`, click: () => showAboutPanelFresh() },
         checkForUpdatesItem,
+        { type: 'separator' },
+        // Same no-accelerator rule as File: ⌘, is the rebindable renderer
+        // keybind (nav.settings); the click sends the action id so a
+        // user rebind and this menu item never diverge.
+        { click: () => sendMenuActionRequested('nav.settings'), label: 'Settings…' },
         { type: 'separator' },
         { role: 'services' },
         { type: 'separator' },
@@ -6817,6 +6849,15 @@ function buildApplicationMenu() {
         }
       },
       { type: 'separator' },
+      // App doors under View, unaccelerated for the same reason: each click
+      // sends the keybind action id (nav.commandPalette ⌘K, nav.commandCenter
+      // ⌘., view.toggleSidebar ⌘B, view.toggleStatusbar ⌘⇧S) instead of
+      // claiming the chord. The renderer's rebind panel stays authoritative.
+      { click: () => sendMenuActionRequested('nav.commandPalette'), label: 'Command Palette' },
+      { click: () => sendMenuActionRequested('nav.commandCenter'), label: 'Command Center' },
+      { click: () => sendMenuActionRequested('view.toggleSidebar'), label: 'Toggle Sidebar' },
+      { click: () => sendMenuActionRequested('view.toggleStatusbar'), label: 'Toggle Status Bar' },
+      { type: 'separator' },
       { role: 'togglefullscreen' }
     ]
   })
@@ -6829,7 +6870,13 @@ function buildApplicationMenu() {
   template.push({
     label: 'Help',
     role: 'help',
-    submenu: [checkForUpdatesItem]
+    submenu: [
+      // ⌘/ is the rebindable renderer keybind (keybinds.openPanel) — no
+      // accelerator here either.
+      { click: () => sendMenuActionRequested('keybinds.openPanel'), label: 'Keyboard Shortcuts' },
+      { type: 'separator' },
+      checkForUpdatesItem
+    ]
   })
 
   return Menu.buildFromTemplate(template)
@@ -18316,6 +18363,8 @@ let _pendingDeepLink = null
 let _rendererReadyForDeepLink = false
 // Set by sendOpenUpdatesRequested() when the renderer cannot hear it yet.
 let _pendingOpenUpdates = false
+// Same for menu items clicked before the renderer mounted its action listener.
+let _pendingMenuActions: string[] = []
 
 function _extractDeepLink(argv) {
   if (!Array.isArray(argv)) {
@@ -18396,6 +18445,12 @@ ipcMain.handle('hermes:deep-link-ready', () => {
   if (_pendingOpenUpdates) {
     _pendingOpenUpdates = false
     sendOpenUpdatesRequested()
+  }
+
+  if (_pendingMenuActions.length > 0) {
+    const queued = _pendingMenuActions
+    _pendingMenuActions = []
+    queued.forEach(actionId => sendMenuActionRequested(actionId))
   }
 
   if (_pendingDeepLink) {

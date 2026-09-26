@@ -662,6 +662,8 @@ export const frOverrides = {
       'nav.artifacts': 'Ouvrir les artefacts',
       'nav.cron': 'Ouvrir les tâches planifiées',
       'nav.agents': 'Ouvrir les agents',
+      'nav.starmap': 'Ouvrir le graphique de mémoire',
+      'nav.webhooks': 'Ouvrir les webhooks',
       'session.new': 'Nouvelle session',
       'session.newTab': 'Nouvel onglet de session',
       'session.newWindow': 'Nouvelle fenêtre',
@@ -3923,7 +3925,8 @@ export const frOverrides = {
       capabilities: 'Capacités',
       messaging: 'Messagerie',
       artifacts: 'Artefacts',
-      cron: 'Tâches planifiées'
+      cron: 'Tâches planifiées',
+      browse: 'Explorer'
     },
     searchAria: 'Rechercher des sessions',
     searchPlaceholder: 'Rechercher des sessions…',
@@ -3931,6 +3934,7 @@ export const frOverrides = {
     noMatch: query => `Aucune session ne correspond à « ${query} ».`,
     results: 'Résultats',
     pinned: 'Épinglées',
+    needsAttention: 'Attention requise',
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Fichiers',
@@ -4128,6 +4132,7 @@ export const frOverrides = {
     openDirective: 'Ouvrir',
     queueMessage: "Mettre le message en file d'attente",
     steer: "Diriger l'exécution en cours",
+    steerTurn: 'Diriger le tour',
     stop: 'Arrêter',
     send: 'Envoyer',
     speaking: 'Parle',
@@ -4250,6 +4255,7 @@ export const frOverrides = {
       'composer.help': 'aide rapide (effacer pour fermer)',
       'composer.sendNewline': 'envoyer · Shift+Entrée pour un retour à la ligne',
       'composer.sendQueued': "envoyer le prochain tour en file d'attente",
+      'composer.modelPicker': 'sélecteur de modèle',
       'keybinds.openPanel': 'tous les raccourcis clavier',
       'composer.cancel': "fermer le popover · annuler l'exécution",
       'composer.history': 'parcourir le popover / historique'
@@ -4298,6 +4304,7 @@ export const frOverrides = {
     pasteImage: 'Coller une image',
     url: 'URL…',
     promptSnippets: "Extraits d'invite…",
+    slashCommands: 'Commandes slash…',
     tipPre: 'Conseil : tapez ',
     tipPost: ' pour référencer des fichiers en ligne.',
     snippetsTitle: "Extraits d'invite",
@@ -5274,6 +5281,8 @@ export const frOverrides = {
     hint: 'Modifie ce qui est affiché, pas ce que Hermes peut faire.',
     sessionNote:
       'Défini par le mode Simple. Une modification ici dure le temps de cette session ; passez en mode Avancé pour la conserver.',
+    simpleNotice: 'Mode Simple — les panneaux et les outils supplémentaires sont masqués.',
+    showAdvanced: 'Afficher le mode Avancé',
     simple: {
       label: 'Simple',
       description:
@@ -5992,6 +6001,7 @@ export const frOverrides = {
     imageAttach: 'Image jointe',
     imageWriteFailed: "Échec de l'écriture de l'image sur le disque.",
     imageAttachFailed: "Échec de l'ajout de l'image",
+    pastedAsFile: 'Collé comme fichier',
     pastedContent: 'Contenu collé',
     pasteAttachFailed: 'Impossible de joindre le texte collé',
     attachImages: 'Joindre des images',
@@ -6056,6 +6066,10 @@ export const frOverrides = {
       'right-pane': {
         title: 'Le volet de travail',
         text: "Les fichiers, le terminal, la revue et le navigateur intégré partagent le côté droit de l'application."
+      },
+      'advanced-mode': {
+        title: 'Plus de choses derrière le mode Avancé',
+        text: 'Les panneaux, les tâches planifiées, les capacités et la barre d’état restent en mode Avancé — Paramètres › Apparence › Fenêtre et disposition change de mode.'
       }
     }
   },

@@ -23,7 +23,7 @@ import {
   resetStatusbarLayout,
   setStatusbarItemVisible,
   toggleStatusbarVisible
-} from '@/store/statusbar-prefs'
+} from '@/store/statusbar-prefs' 
 
 // Shared chrome styling for interactive statusbar items (button / link / menu
 // trigger). The 'text' variant intentionally omits hover/transition/disabled.
@@ -92,7 +92,6 @@ interface StatusbarControlsProps extends ComponentProps<'footer'> {
 export function StatusbarControls({ className, leftItems = [], items = [], ...props }: StatusbarControlsProps) {
   const navigate = useNavigate()
   const hiddenIds = useStore($statusbarHiddenIds)
-
   const visible = (item: StatusbarItem) =>
     !item.hidden && (item.lockedVisible || !item.toggleLabel || !hiddenIds.includes(item.id))
 

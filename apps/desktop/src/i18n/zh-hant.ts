@@ -601,6 +601,9 @@ export const zhHant = defineLocale({
     appearance: {
       title: '外觀',
       intro: '這些是僅限桌面端的顯示偏好。模式控制亮度；主題控制強調色與聊天介面樣式。',
+      simpleModeTitle: '簡潔模式',
+      simpleModeDesc:
+        '更清爽、以聊天為主的介面：隱藏進階面板、工具和狀態項目。所有功能仍可隨時透過「設定」和 ⌘K 存取，可隨時切換回來。',
       colorMode: '色彩模式',
       colorModeDesc: '選擇固定模式，或讓 Hermes 跟隨系統設定。',
       toolViewTitle: '工具呼叫顯示',
@@ -2691,7 +2694,15 @@ export const zhHant = defineLocale({
       capabilities: '技能與工具',
       messaging: '訊息平台',
       artifacts: '成品',
-      cron: '排程工作'
+      cron: '排程工作',
+      browse: '瀏覽'
+    },
+    interfaceMode: {
+      label: '介面',
+      simple: '簡潔',
+      full: '完整',
+      toFull: '簡潔模式會隱藏進階面板和控制項。點擊切換到完整介面。',
+      toSimple: '返回清爽的聊天優先介面。'
     },
     searchAria: '搜尋工作階段',
     searchPlaceholder: '搜尋工作階段…',
@@ -2699,6 +2710,7 @@ export const zhHant = defineLocale({
     noMatch: query => `沒有工作階段符合「${query}」。`,
     results: '結果',
     pinned: '已釘選',
+    needsAttention: '需要注意',
     sessions: '工作階段',
     terminal: '終端機',
     files: '檔案',
@@ -2872,6 +2884,7 @@ export const zhHant = defineLocale({
     startVoice: '開始語音對話',
     openDirective: '開啟',
     queueMessage: '排隊訊息',
+    steerTurn: '引導目前回合',
     stop: '停止',
     send: '傳送',
     speaking: '說話中',
@@ -2981,6 +2994,7 @@ export const zhHant = defineLocale({
       'composer.help': '此快速說明（刪除以關閉）',
       'composer.sendNewline': '傳送 · Shift+Enter 換行',
       'composer.sendQueued': '傳送下一個排隊的回合',
+      'composer.modelPicker': '模型選擇器',
       'keybinds.openPanel': '所有鍵盤快捷鍵',
       'composer.cancel': '關閉彈出視窗 · 取消執行',
       'composer.history': '循環彈出視窗 / 歷史記錄'
@@ -3027,6 +3041,8 @@ export const zhHant = defineLocale({
     pasteImage: '貼上圖片',
     url: 'URL…',
     promptSnippets: '提示詞片段…',
+    scheduleJob: '定時執行…',
+    slashCommands: '斜線指令…',
     tipPre: '提示：輸入 ',
     tipPost: ' 以行內參照檔案。',
     snippetsTitle: '提示詞片段',
@@ -3598,6 +3614,11 @@ export const zhHant = defineLocale({
       openCron: '開啟排程工作',
       starmap: '記憶圖譜',
       openStarmap: '開啟記憶圖譜',
+      artifacts: '成品',
+      artifactsTitle: '本工作階段產生的交付物 — 選擇一個在對話旁開啟',
+      artifactsCount: count => `${count} 個成品`,
+      browseAllArtifacts: '瀏覽全部成品',
+      toggleArtifacts: '成品',
       turnRunning: '執行中',
       contextUsage: '上下文使用量',
       systemResources: {
@@ -3787,6 +3808,8 @@ export const zhHant = defineLocale({
     title: '介面模式',
     hint: '只改變顯示的內容，不改變 Hermes 的能力。',
     sessionNote: '由簡潔模式設定。此處的變更僅在本次工作階段內生效；切換到進階模式即可保留為你的設定。',
+    simpleNotice: '簡潔模式 — 面板與其他工具已隱藏。',
+    showAdvanced: '顯示進階模式',
     simple: {
       label: '簡潔',
       description: '用於與 Hermes 對話。只有側邊欄和聊天；沒有終端機、檔案或差異面板。'
@@ -4248,6 +4271,7 @@ export const zhHant = defineLocale({
     imageAttach: '附加圖片',
     imageWriteFailed: '無法將圖片寫入磁碟。',
     imageAttachFailed: '附加圖片失敗',
+    pastedAsFile: '已貼上為檔案',
     pastedContent: '貼上內容',
     pasteAttachFailed: '無法附加貼上的文字',
     attachImages: '附加圖片',
@@ -4270,6 +4294,13 @@ export const zhHant = defineLocale({
     boundaryDesc: '此檢視遇到意外錯誤。您的聊天和設定是安全的。',
     reloadWindow: '重新載入視窗',
     openLogs: '開啟記錄'
+  },
+
+  keybinds: {
+    actions: {
+      'nav.starmap': '開啟記憶圖譜',
+      'nav.webhooks': '開啟 Webhook'
+    }
   },
 
   tips: {
@@ -4320,6 +4351,10 @@ export const zhHant = defineLocale({
       'right-pane': {
         title: '工作面板',
         text: '檔案、終端機、審閱與內建瀏覽器都在側邊面板裡。'
+      },
+      'advanced-mode': {
+        title: '進階模式裡還有更多',
+        text: '面板、排程工作、功能與狀態列都在進階模式中 — 設定 › 外觀 › 視窗與佈局 可隨時切換。'
       }
     }
   },

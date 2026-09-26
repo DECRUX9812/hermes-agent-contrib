@@ -68,6 +68,7 @@ export interface Translations {
   intro: {
     stock: Record<string, string[]>
     custom: (label: string) => string[]
+    recentSessions: string
   }
   catalog: {
     add: string
@@ -923,6 +924,8 @@ export interface Translations {
     appearance: {
       title: string
       intro: string
+      simpleModeTitle: string
+      simpleModeDesc: string
       colorMode: string
       colorModeDesc: string
       toolViewTitle: string
@@ -2971,12 +2974,20 @@ export interface Translations {
     }
     profileRail: string
     nav: Record<string, string>
+    interfaceMode: {
+      label: string
+      simple: string
+      full: string
+      toFull: string
+      toSimple: string
+    }
     searchAria: string
     searchPlaceholder: string
     clearSearch: string
     noMatch: (query: string) => string
     results: string
     pinned: string
+    needsAttention: string
     sessions: string
     terminal: string
     files: string
@@ -3153,6 +3164,7 @@ export interface Translations {
     openDirective: string
     queueMessage: string
     steer: string
+    steerTurn: string
     stop: string
     send: string
     speaking: string
@@ -3235,6 +3247,8 @@ export interface Translations {
     pasteImage: string
     url: string
     promptSnippets: string
+    scheduleJob: string
+    slashCommands: string
     tipPre: string
     tipPost: string
     snippetsTitle: string
@@ -3937,6 +3951,11 @@ export interface Translations {
       openWebhooks: string
       starmap: string
       openStarmap: string
+      artifacts: string
+      artifactsTitle: string
+      artifactsCount: (count: number) => string
+      browseAllArtifacts: string
+      toggleArtifacts: string
       turnRunning: string
       contextUsage: string
       systemResources: {
@@ -4134,6 +4153,10 @@ export interface Translations {
     title: string
     hint: string
     sessionNote: string
+    /** Toast shown right after the interface switches to Simple — where the
+     *  panes went plus the door back. */
+    simpleNotice: string
+    showAdvanced: string
     simple: { label: string; description: string }
     advanced: { label: string; description: string }
   }
@@ -4573,6 +4596,7 @@ export interface Translations {
     imageAttach: string
     imageWriteFailed: string
     imageAttachFailed: string
+    pastedAsFile: string
     pastedContent: string
     pasteAttachFailed: string
     attachImages: string

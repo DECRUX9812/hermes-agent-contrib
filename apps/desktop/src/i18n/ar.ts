@@ -361,6 +361,8 @@ export const ar = defineLocale({
       'nav.artifacts': 'فتح العناصر',
       'nav.cron': 'فتح المهام المجدولة',
       'nav.agents': 'فتح الوكلاء',
+      'nav.starmap': 'فتح خريطة الذاكرة',
+      'nav.webhooks': 'فتح Webhooks',
       'session.new': 'جلسة جديدة',
       'session.newTab': 'علامة تبويب جلسة جديدة',
       'session.newWindow': 'جلسة جديدة في نافذة',
@@ -685,6 +687,9 @@ export const ar = defineLocale({
     appearance: {
       title: 'المظهر',
       intro: 'خصص مظهر Hermes Desktop.',
+      simpleModeTitle: 'الوضع المبسّط',
+      simpleModeDesc:
+        'واجهة أنظف تركّز على المحادثة: تخفي اللوحات والأدوات وعناصر الحالة المتقدّمة. يبقى كل شيء متاحًا من الإعدادات و ⌘K — ويمكنك الرجوع في أي وقت.',
       colorMode: 'نمط الألوان',
       colorModeDesc: 'اختر الوضع الفاتح أو الداكن أو اتبع النظام.',
       toolViewTitle: 'عرض الأدوات',
@@ -2096,7 +2101,18 @@ export const ar = defineLocale({
       capabilities: 'المهارات',
       messaging: 'المراسلة',
       artifacts: 'العناصر',
-      cron: 'المهام المجدولة'
+      chat: 'المحادثة',
+      settings: 'الإعدادات',
+      cron: 'المهام المجدولة',
+      agents: 'الوكلاء',
+      browse: 'تصفح'
+    },
+    interfaceMode: {
+      label: 'الواجهة',
+      simple: 'مبسّط',
+      full: 'كامل',
+      toFull: 'يخفي الوضع المبسّط اللوحات وعناصر التحكم المتقدّمة. اضغط للعودة إلى الواجهة الكاملة.',
+      toSimple: 'العودة إلى الواجهة المبسّطة المركّزة على المحادثة.'
     },
     searchAria: 'البحث في الجلسات',
     searchPlaceholder: 'البحث في الجلسات...',
@@ -2104,6 +2120,7 @@ export const ar = defineLocale({
     noMatch: query => `لا توجد جلسات تطابق "${query}"`,
     results: 'النتائج',
     pinned: 'المثبتة',
+    needsAttention: 'تحتاج إلى انتباه',
     sessions: 'الجلسات',
     terminal: 'الطرفية',
     files: 'الملفات',
@@ -2240,6 +2257,10 @@ export const ar = defineLocale({
       ageMin: 'دقيقة'
     }
   },
+  intro: {
+    recentSessions: 'تابع من حيث توقفت'
+  },
+
   composer: {
     message: 'الرسالة',
     wakingProfile: profile => `جار إيقاظ ${profile}`,
@@ -2252,6 +2273,7 @@ export const ar = defineLocale({
     openDirective: 'فتح',
     queueMessage: 'إضافة الرسالة للطابور',
     steer: 'توجيه',
+    steerTurn: 'توجيه الدور',
     stop: 'إيقاف',
     send: 'إرسال',
     speaking: 'يتحدث',
@@ -2355,6 +2377,7 @@ export const ar = defineLocale({
       'composer.help': 'هذه المساعدة السريعة (احذف للإخفاء)',
       'composer.sendNewline': 'إرسال · Shift+Enter لسطر جديد',
       'composer.sendQueued': 'إرسال الدور التالي في قائمة الانتظار',
+      'composer.modelPicker': 'منتقي النموذج',
       'keybinds.openPanel': 'كل اختصارات لوحة المفاتيح',
       'composer.cancel': 'إغلاق النافذة المنبثقة · إلغاء التشغيل',
       'composer.history': 'التنقل في النافذة المنبثقة / السجل'
@@ -2398,6 +2421,8 @@ export const ar = defineLocale({
     pasteImage: 'لصق صورة',
     url: 'رابط',
     promptSnippets: 'مقتطفات جاهزة',
+    scheduleJob: 'التشغيل وفق جدول...',
+    slashCommands: 'أوامر سلاش…',
     tipPre: 'نصيحة: اكتب ',
     tipPost: ' للإشارة إلى الملفات ضمن النص.',
     snippetsTitle: 'مقتطفات الموجّهات',
@@ -2941,6 +2966,11 @@ export const ar = defineLocale({
       running: count => `${count} يعمل`,
       cron: 'المهام',
       openCron: 'فتح المهام المجدولة',
+      artifacts: 'المخرجات',
+      artifactsTitle: 'المخرجات الناتجة في هذه المحادثة — اختر واحدًا لفتحه بجانب المحادثة',
+      artifactsCount: count => `${count} من المخرجات`,
+      browseAllArtifacts: 'تصفح كل المخرجات',
+      toggleArtifacts: 'المخرجات',
       turnRunning: 'الدور يعمل',
       contextUsage: 'استخدام السياق',
       focusedSince: 'منذ التركيز',
@@ -3098,6 +3128,8 @@ export const ar = defineLocale({
     title: 'وضع الواجهة',
     hint: 'يغيّر ما يظهر، وليس ما يستطيع Hermes فعله.',
     sessionNote: 'يحدده الوضع البسيط. التغيير هنا يستمر لهذه الجلسة فقط؛ بدّل إلى المتقدم لجعله خيارك.',
+    simpleNotice: 'الوضع البسيط — اللوحات والأدوات الإضافية مخفية.',
+    showAdvanced: 'إظهار المتقدم',
     simple: {
       label: 'بسيط',
       description: 'للتحدث مع Hermes. الشريط الجانبي والدردشة؛ بلا طرفية أو لوحات ملفات أو فروقات.'
@@ -3592,6 +3624,7 @@ export const ar = defineLocale({
     imageAttach: 'إرفاق الصورة',
     imageWriteFailed: 'فشل كتابة الصورة',
     imageAttachFailed: 'فشل إرفاق الصورة',
+    pastedAsFile: 'لصق كملف',
     pastedContent: 'محتوى ملصق',
     pasteAttachFailed: 'تعذر إرفاق النص الملصق',
     attachImages: 'إرفاق الصور',
@@ -3662,6 +3695,10 @@ export const ar = defineLocale({
       'right-pane': {
         title: 'لوحة العمل',
         text: 'الملفات والطرفية والمراجعة والمتصفح المدمج تتشارك اللوحة الجانبية.'
+      },
+      'advanced-mode': {
+        title: 'المزيد خلف الوضع المتقدم',
+        text: 'اللوحات وcron والإمكانات وشريط الحالة موجودة في الوضع المتقدم — الإعدادات › المظهر › النافذة والتخطيط يبدّل الوضع.'
       }
     }
   },

@@ -654,6 +654,9 @@ export const ja = defineLocale({
       title: '外観',
       intro:
         'デスクトップ専用の表示設定です。モードは明るさ、テーマはアクセントカラーとチャット面のスタイルを制御します。',
+      simpleModeTitle: 'シンプルモード',
+      simpleModeDesc:
+        'チャット中心のすっきりした画面です。高度なパネルやツール、ステータス項目を隠します。すべての機能は設定と ⌘K からいつでも使え、すぐに元の表示へ戻せます。',
       colorMode: 'カラーモード',
       colorModeDesc: '固定モードを選ぶか、Hermes をシステム設定に合わせます。',
       toolViewTitle: 'ツール呼び出しの表示',
@@ -2473,7 +2476,15 @@ export const ja = defineLocale({
       capabilities: 'スキルとツール',
       messaging: 'メッセージング',
       artifacts: 'アーティファクト',
-      cron: 'スケジュール済みジョブ'
+      cron: 'スケジュール済みジョブ',
+      browse: 'ブラウズ'
+    },
+    interfaceMode: {
+      label: 'インターフェース',
+      simple: 'シンプル',
+      full: 'フル',
+      toFull: 'シンプルモードでは高度なパネルとコントロールが非表示になります。クリックするとフル表示に戻ります。',
+      toSimple: 'チャット中心のすっきりした画面に戻ります。'
     },
     searchAria: 'セッションを検索',
     searchPlaceholder: 'セッションを検索…',
@@ -2481,6 +2492,7 @@ export const ja = defineLocale({
     noMatch: query => `"${query}" に一致するセッションがありません。`,
     results: '結果',
     pinned: 'ピン留め',
+    needsAttention: '要対応',
     sessions: 'セッション',
     terminal: 'ターミナル',
     files: 'ファイル',
@@ -2658,6 +2670,7 @@ export const ja = defineLocale({
     startVoice: '音声会話を開始',
     openDirective: '開く',
     queueMessage: 'メッセージをキューに入れる',
+    steerTurn: 'ターンを操縦',
     stop: '停止',
     send: '送信',
     speaking: '話しています',
@@ -2767,6 +2780,7 @@ export const ja = defineLocale({
       'composer.help': 'クイックヘルプ（削除で閉じる）',
       'composer.sendNewline': '送信 · 改行は Shift+Enter',
       'composer.sendQueued': '次のキュー済みターンを送信',
+      'composer.modelPicker': 'モデルピッカー',
       'keybinds.openPanel': 'すべてのキーボードショートカット',
       'composer.cancel': 'ポップオーバーを閉じる · 実行をキャンセル',
       'composer.history': 'ポップオーバー / 履歴を切り替え'
@@ -2814,6 +2828,8 @@ export const ja = defineLocale({
     pasteImage: '画像を貼り付け',
     url: 'URL…',
     promptSnippets: 'プロンプトスニペット…',
+    scheduleJob: 'スケジュールで実行…',
+    slashCommands: 'スラッシュコマンド…',
     tipPre: 'ヒント: ',
     tipPost: ' と入力してファイルをインラインで参照。',
     snippetsTitle: 'プロンプトスニペット',
@@ -3407,6 +3423,11 @@ export const ja = defineLocale({
       openCron: 'Cron ジョブを開く',
       starmap: 'メモリグラフ',
       openStarmap: 'メモリグラフを開く',
+      artifacts: '成果物',
+      artifactsTitle: 'このチャットで生成された成果物 — 選ぶとスレッドの横に開きます',
+      artifactsCount: count => `成果物 ${count} 件`,
+      browseAllArtifacts: '成果物をすべて表示',
+      toggleArtifacts: '成果物',
       turnRunning: '実行中',
       contextUsage: 'コンテキスト使用状況',
       systemResources: {
@@ -3600,6 +3621,8 @@ export const ja = defineLocale({
     hint: '表示される内容が変わるだけで、Hermes にできることは変わりません。',
     sessionNote:
       'シンプルモードで設定されています。ここでの変更はこのセッション中のみ有効です。自分の設定にするには詳細モードに切り替えてください。',
+    simpleNotice: 'シンプルモード — ペインと追加ツールは非表示になります。',
+    showAdvanced: '詳細モードを表示',
     simple: {
       label: 'シンプル',
       description:
@@ -4109,6 +4132,7 @@ export const ja = defineLocale({
     imageAttach: '画像を添付',
     imageWriteFailed: '画像のディスクへの書き込みに失敗しました。',
     imageAttachFailed: '画像の添付に失敗しました',
+    pastedAsFile: 'ファイルとして貼り付け',
     pastedContent: '貼り付けた内容',
     pasteAttachFailed: '貼り付けたテキストを添付できませんでした',
     attachImages: '画像を添付',
@@ -4122,6 +4146,13 @@ export const ja = defineLocale({
       systemNote: platform => `↻ ${platform} に引き継ぎました — いつでもここで再開できます。`,
       failed: error => `引き継ぎに失敗しました: ${error}`,
       timedOut: 'ゲートウェイの待機がタイムアウトしました。`hermes gateway` は起動していますか？'
+    }
+  },
+
+  keybinds: {
+    actions: {
+      'nav.starmap': 'メモリグラフを開く',
+      'nav.webhooks': 'Webhook を開く'
     }
   },
 
@@ -4173,6 +4204,10 @@ export const ja = defineLocale({
       'right-pane': {
         title: '作業用ペイン',
         text: 'ファイル、ターミナル、レビュー、アプリ内ブラウザはサイドペインにまとまっています。'
+      },
+      'advanced-mode': {
+        title: '詳細モードの向こう側',
+        text: 'ペイン、Cron、機能、ステータスバーは詳細モードにあります — 設定 › 外観 › ウィンドウとレイアウトで切り替えられます。'
       }
     }
   },

@@ -28,13 +28,40 @@ export interface PaletteContribution {
   detailVariant?: 'muted' | 'state'
   /** Leave the palette open after running — for rows you may run repeatedly. */
   keepOpen?: boolean
+  /**
+   * Dynamic child rows expanded into the list on every palette mount — the
+   * roster door that contributes one row per live bot. A function because
+   * contributions register once at boot while membership keeps changing; the
+   * palette re-reads it like `detail`. Children follow the same schema; a
+   * missing `label`/`run` drops the child, not the parent row.
+   */
+  items?: () => PaletteContribution[]
 }
 
 /** Contributed palette rows, with stable render keys. */
 export function usePaletteContributions(): Array<PaletteContribution & { key: string }> {
-  return useContributions(PALETTE_AREA)
-    .map(c => ({ key: `${c.source ?? 'core'}:${c.id}`, ...(c.data as PaletteContribution) }))
-    .filter(item => Boolean(item.label && item.run))
+  const out: Array<PaletteContribution & { key: string }> = []
+
+  for (const c of useContributions(PALETTE_AREA)) {
+    const data = c.data as PaletteContribution
+    const keyOf = (id: string) => `${c.source ?? 'core'}:${id}`
+
+    if (data?.label && typeof data.run === 'function') {
+      out.push({ key: keyOf(c.id), ...data })
+    }
+
+    // A contribution's `items()` is re-read here — same open-time contract as
+    // `detail()` — so dynamic memberships (the bot roster) are fresh per open.
+    const items = typeof data?.items === 'function' ? data.items() : undefined
+
+    for (const item of items ?? []) {
+      if (item?.label && typeof item.run === 'function') {
+        out.push({ key: keyOf(`${c.id}/${item.id}`), ...item })
+      }
+    }
+  }
+
+  return out
 }
 
 /**

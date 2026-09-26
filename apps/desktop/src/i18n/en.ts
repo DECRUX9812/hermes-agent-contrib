@@ -10,7 +10,7 @@ export const en: Translations = {
     close: 'Close'
   },
   // English editorial copy stays in the shipped JSONL; other locales override it.
-  intro: { stock: {}, custom: () => [] },
+  intro: { stock: {}, custom: () => [], recentSessions: 'Pick up where you left off' },
   catalog: {
     add: 'Add',
     added: 'Added',
@@ -716,6 +716,8 @@ export const en: Translations = {
       'nav.artifacts': 'Open artifacts',
       'nav.cron': 'Open scheduled jobs',
       'nav.agents': 'Open agents',
+      'nav.starmap': 'Open memory graph',
+      'nav.webhooks': 'Open webhooks',
       'session.new': 'New session',
       'session.newTab': 'New session tab',
       'session.newWindow': 'New window',
@@ -1117,6 +1119,9 @@ export const en: Translations = {
     appearance: {
       title: 'Appearance',
       intro: 'Desktop-only. Mode is brightness; theme is palette and chat chrome.',
+      simpleModeTitle: 'Simple mode',
+      simpleModeDesc:
+        'A cleaner, chat-first interface: hides advanced panes, tools, and status items. Everything stays reachable from Settings and ⌘K — switch back any time.',
       colorMode: 'Color Mode',
       colorModeDesc: 'Pick a fixed mode or let Hermes follow your system setting.',
       toolViewTitle: 'Tool Call Display',
@@ -3530,7 +3535,15 @@ export const en: Translations = {
       capabilities: 'Capabilities',
       messaging: 'Messaging',
       artifacts: 'Artifacts',
-      cron: 'Scheduled jobs'
+      cron: 'Scheduled jobs',
+      browse: 'Browse'
+    },
+    interfaceMode: {
+      label: 'Interface',
+      simple: 'Simple',
+      full: 'Full',
+      toFull: 'Simple mode hides advanced panes and controls. Click for the full interface.',
+      toSimple: 'Back to the clean, chat-first interface.'
     },
     searchAria: 'Search sessions',
     searchPlaceholder: 'Search sessions…',
@@ -3538,6 +3551,7 @@ export const en: Translations = {
     noMatch: query => `No sessions match “${query}”.`,
     results: 'Results',
     pinned: 'Pinned',
+    needsAttention: 'Needs attention',
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Files',
@@ -3735,6 +3749,7 @@ export const en: Translations = {
     openDirective: 'Open',
     queueMessage: 'Queue message',
     steer: 'Steer the current run',
+    steerTurn: 'Steer turn',
     stop: 'Stop',
     send: 'Send',
     speaking: 'Speaking',
@@ -3852,6 +3867,7 @@ export const en: Translations = {
       'composer.help': 'this quick help (delete to dismiss)',
       'composer.sendNewline': 'send · Shift+Enter for newline',
       'composer.sendQueued': 'send next queued turn',
+      'composer.modelPicker': 'model picker',
       'keybinds.openPanel': 'all keyboard shortcuts',
       'composer.cancel': 'close popover · cancel run',
       'composer.history': 'cycle popover / history'
@@ -3899,6 +3915,8 @@ export const en: Translations = {
     pasteImage: 'Paste image',
     url: 'URL…',
     promptSnippets: 'Prompt snippets…',
+    scheduleJob: 'Run on a schedule…',
+    slashCommands: 'Slash commands…',
     tipPre: 'Tip: type ',
     tipPost: ' to reference files inline.',
     snippetsTitle: 'Prompt snippets',
@@ -4668,6 +4686,11 @@ export const en: Translations = {
       openWebhooks: 'Open webhooks',
       starmap: 'Memory Graph',
       openStarmap: 'Open memory graph',
+      artifacts: 'Artifacts',
+      artifactsTitle: 'Deliverables generated in this chat — pick one to open it beside the thread',
+      artifactsCount: count => `${count} artifact${count === 1 ? '' : 's'}`,
+      browseAllArtifacts: 'Browse all artifacts',
+      toggleArtifacts: 'Artifacts',
       turnRunning: 'Running',
       contextUsage: 'Context usage',
       systemResources: {
@@ -4869,6 +4892,8 @@ export const en: Translations = {
     title: 'Interface mode',
     hint: 'Changes what is shown, not what Hermes can do.',
     sessionNote: 'Set by Simple mode. A change here lasts for this session; switch to Advanced to make it yours.',
+    simpleNotice: 'Simple mode — panes and extra tools are hidden.',
+    showAdvanced: 'Show Advanced',
     simple: {
       label: 'Simple',
       description: 'For talking to Hermes. Sidebar and chat; no terminal, file or diff panes.'
@@ -5491,6 +5516,7 @@ export const en: Translations = {
     imageAttach: 'Image attach',
     imageWriteFailed: 'Failed to write image to disk.',
     imageAttachFailed: 'Image attach failed',
+    pastedAsFile: 'Pasted as file',
     pastedContent: 'Pasted content',
     pasteAttachFailed: 'Could not attach pasted text',
     attachImages: 'Attach images',
@@ -5557,6 +5583,10 @@ export const en: Translations = {
       'right-pane': {
         title: 'The working pane',
         text: 'Files, terminal, review and the in-app browser share the right side.'
+      },
+      'advanced-mode': {
+        title: 'More behind Advanced',
+        text: 'Panes, cron, capabilities and the statusbar rest in Advanced mode — Settings › Appearance › Window layout switches.'
       }
     }
   },

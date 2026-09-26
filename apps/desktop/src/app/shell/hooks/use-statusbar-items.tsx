@@ -27,6 +27,7 @@ import {
   Hash,
   Layers3,
   Loader2,
+  Package,
   Terminal,
   Zap
 } from '@/lib/icons'
@@ -36,6 +37,7 @@ import { cacheHitLabel, contextBarLabel, LiveDuration, tokensPerSecondLabel, usa
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
+import { $artifactRegistry, type ArtifactRecord, openArtifact } from '@/store/artifacts'
 import { copyFilePath, revealFile, shouldOfferLocalReveal } from '@/store/file-actions'
 import { $freeTierStatus, FREE_TIER_MODEL } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
@@ -44,6 +46,7 @@ import { $onboardingGate, guidedOnboardingActive } from '@/store/onboarding-gate
 import { $activeGatewayProfile } from '@/store/profile'
 import { $profileRailVisible } from '@/store/profile-rail-prefs'
 import { $projectTree, projectNameForCwd } from '@/store/projects'
+import { openRouteTile } from '@/store/route-tiles'
 import {
   $activeSessionId,
   $busy,
@@ -78,10 +81,12 @@ import {
 } from '@/store/updates'
 import type { StatusResponse, UsageStats } from '@/types/hermes'
 
-import { CRON_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
+import { ARTIFACTS_ROUTE, CRON_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
 import type { StatusbarItem } from '../statusbar-controls'
 
 const EMPTY_USAGE: UsageStats = { calls: 0, input: 0, output: 0, total: 0 }
+
+const NO_ARTIFACTS: readonly ArtifactRecord[] = []
 
 interface StatusbarItemsOptions {
   agentsOpen: boolean
@@ -266,6 +271,16 @@ export function useStatusbarItems({
       !focusedStateStoredId ||
       focusedStateStoredId === focusedStoredSessionId ||
       liveCwdSharesFocusLineage)
+
+  // Registry is keyed by the same id artifact cards register under
+  // (stored id, falling back to the live runtime id on drafts). The atom's
+  // per-session array is referentially stable between writes, so the selector
+  // only re-renders when THIS session's artifacts actually change.
+  const artifactSessionId = focusedStoredSessionId || focusedRuntimeId || ''
+
+  const sessionArtifacts = useStoreSelector($artifactRegistry, registry =>
+    artifactSessionId ? (registry[artifactSessionId] ?? NO_ARTIFACTS) : NO_ARTIFACTS
+  )
 
   const currentCwd = (
     (liveCwdBelongsToFocus ? focusedStateCwd : '') ||
@@ -618,6 +633,38 @@ export function useStatusbarItems({
         to: WEBHOOKS_ROUTE,
         toggleLabel: copy.webhooks,
         variant: 'action'
+      },
+      {
+        detail: sessionArtifacts.length > 0 ? copy.artifactsCount(sessionArtifacts.length) : undefined,
+        hidden: sessionArtifacts.length === 0,
+        icon: <Package className="size-3" />,
+        id: 'artifacts',
+        label: copy.artifacts,
+        menuItems: [
+          // Newest first — the artifact the user just watched generate is the
+          // one they reach for. More than the cap → the full list is one
+          // click away in the docked artifacts page.
+          ...[...sessionArtifacts]
+            .reverse()
+            .slice(0, 8)
+            .map(artifact => ({
+              id: `artifact-${artifact.id}`,
+              label: artifact.title,
+              onSelect: () => openArtifact(artifact.id),
+              title:
+                artifact.versions.length > 1
+                  ? `${t.artifactCard.kind[artifact.kind]} · ${t.artifactCard.versionBadge(artifact.versions.length)}`
+                  : t.artifactCard.kind[artifact.kind]
+            })),
+          {
+            id: 'artifacts-browse-all',
+            label: copy.browseAllArtifacts,
+            onSelect: () => openRouteTile(ARTIFACTS_ROUTE)
+          }
+        ],
+        title: copy.artifactsTitle,
+        toggleLabel: copy.toggleArtifacts,
+        variant: 'menu'
       }
     ],
     [
@@ -645,8 +692,10 @@ export function useStatusbarItems({
       profileRailVisible,
       projectName,
       sessionsShowing,
+      sessionArtifacts,
       subagentsFailed,
       subagentsRunning,
+      t,
       toggleCommandCenter
     ]
   )

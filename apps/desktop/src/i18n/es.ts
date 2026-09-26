@@ -663,6 +663,8 @@ export const esOverrides = {
       'nav.artifacts': 'Abrir artefactos',
       'nav.cron': 'Abrir tareas programadas',
       'nav.agents': 'Abrir agentes',
+      'nav.starmap': 'Abrir grafo de memoria',
+      'nav.webhooks': 'Abrir webhooks',
       'session.new': 'Nueva sesión',
       'session.newTab': 'Nueva pestaña de sesión',
       'session.newWindow': 'Nueva ventana',
@@ -3904,7 +3906,8 @@ export const esOverrides = {
       capabilities: 'Capacidades',
       messaging: 'Mensajería',
       artifacts: 'Artefactos',
-      cron: 'Tareas programadas'
+      cron: 'Tareas programadas',
+      browse: 'Explorar'
     },
     searchAria: 'Buscar sesiones',
     searchPlaceholder: 'Buscar sesiones…',
@@ -3912,6 +3915,7 @@ export const esOverrides = {
     noMatch: query => `Ninguna sesión coincide con “${query}”.`,
     results: 'Resultados',
     pinned: 'Fijadas',
+    needsAttention: 'Necesita atención',
     sessions: 'Sesiones',
     terminal: 'Terminal',
     files: 'Archivos',
@@ -4110,6 +4114,7 @@ export const esOverrides = {
     openDirective: 'Abrir',
     queueMessage: 'Poner mensaje en cola',
     steer: 'Guiar la ejecución actual',
+    steerTurn: 'Guiar el turno',
     stop: 'Detener',
     send: 'Enviar',
     speaking: 'Hablando',
@@ -4231,6 +4236,7 @@ export const esOverrides = {
       'composer.help': 'esta ayuda rápida (eliminar para descartarla)',
       'composer.sendNewline': 'enviar · Shift+Enter para insertar una línea nueva',
       'composer.sendQueued': 'enviar el siguiente turno en cola',
+      'composer.modelPicker': 'selector de modelo',
       'keybinds.openPanel': 'todos los atajos de teclado',
       'composer.cancel': 'cerrar el menú emergente · cancelar la ejecución',
       'composer.history': 'recorrer el menú emergente o el historial'
@@ -4278,6 +4284,7 @@ export const esOverrides = {
     pasteImage: 'Pegar imagen',
     url: 'URL…',
     promptSnippets: 'Fragmentos de prompt…',
+    slashCommands: 'Comandos slash…',
     tipPre: 'Consejo: escribe ',
     tipPost: ' para referenciar archivos en línea.',
     snippetsTitle: 'Fragmentos de prompt',
@@ -5255,6 +5262,8 @@ export const esOverrides = {
     hint: 'Cambia lo que se muestra, no lo que Hermes puede hacer.',
     sessionNote:
       'Definido por el modo Simple. Un cambio aquí dura esta sesión; cambia a Avanzado para que sea permanente.',
+    simpleNotice: 'Modo Simple — los paneles y las herramientas extra están ocultos.',
+    showAdvanced: 'Mostrar Avanzado',
     simple: {
       label: 'Simple',
       description: 'Para hablar con Hermes. Barra lateral y chat; sin paneles de terminal, archivos ni diferencias.'
@@ -5971,6 +5980,7 @@ export const esOverrides = {
     imageAttach: 'Adjuntar imagen',
     imageWriteFailed: 'No se pudo escribir la imagen en disco.',
     imageAttachFailed: 'No se pudo adjuntar la imagen',
+    pastedAsFile: 'Pegado como archivo',
     pastedContent: 'Contenido pegado',
     pasteAttachFailed: 'No se pudo adjuntar el texto pegado',
     attachImages: 'Adjuntar imágenes',
@@ -6036,6 +6046,10 @@ export const esOverrides = {
       'right-pane': {
         title: 'El panel de trabajo',
         text: 'Archivos, terminal, revisión y el navegador integrado comparten el lado derecho.'
+      },
+      'advanced-mode': {
+        title: 'Más detrás de Avanzado',
+        text: 'Los paneles, las tareas programadas, las capacidades y la barra de estado descansan en el modo Avanzado — Configuración › Apariencia › Ventana y diseño cambia de modo.'
       }
     }
   },

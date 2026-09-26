@@ -310,6 +310,9 @@ export function settingDefinition(view: SettingsView, id: string): SettingDefini
 export interface SettingSearchTarget extends SettingCopy {
   id: string
   keywords: string[]
+  /** The child page the control lives on, when its view has subpages — what
+   *  makes the palette hit's breadcrumb read "Appearance › Window layout". */
+  subpage?: string
   view: SettingsView
 }
 
@@ -321,6 +324,7 @@ export function settingSearchTargets(t: Translations): SettingSearchTarget[] {
       .map(([key, setting]) => ({
         id: SETTING_IDS[viewKey][key as keyof (typeof SETTING_IDS)[typeof viewKey]],
         keywords: [...setting.keywords],
+        subpage: setting.subpage,
         view: manifestView(viewKey),
         ...setting.copy(t)
       }))

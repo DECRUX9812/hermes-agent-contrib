@@ -206,9 +206,20 @@ export function SidebarRowCluster({ className, ...props }: React.ComponentProps<
   return <div className={cn(SIDEBAR_ROW_INSET, className)} {...props} />
 }
 
-/** Session row main tap target. */
+/** Session row main tap target. `data-sidebar-row` joins the rail's roving
+ *  keyboard set — arrows walk it via the sidebar's container keydown; `tabIndex
+ *  -1` keeps hundreds of rows out of the Tab order (the last-focused row is
+ *  promoted back to 0 by the container's focusin listener, so Tab returns to
+ *  where you left the list). */
 export function SidebarRowBody({ className, ...props }: React.ComponentProps<'button'>) {
-  return <RowButton className={cn(SIDEBAR_ROW_INSET, 'bg-transparent text-left', className)} {...props} />
+  return (
+    <RowButton
+      className={cn(SIDEBAR_ROW_INSET, 'bg-transparent text-left', className)}
+      data-sidebar-row=""
+      tabIndex={-1}
+      {...props}
+    />
+  )
 }
 
 /** Tappable label — underline/truncate live on the inner span, not the button. */

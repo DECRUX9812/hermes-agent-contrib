@@ -538,6 +538,9 @@ declare global {
       onPreviewNav?: (callback: (command: 'back' | 'forward' | 'reload') => void) => () => void
       onOpenFolderRequested?: (callback: () => void) => () => void
       onOpenUpdatesRequested?: (callback: () => void) => () => void
+      /** Native-menu door items send the keybind action id; the renderer
+       *  dispatches it through the same handler a keypress would use. */
+      onMenuActionRequested?: (callback: (actionId: string) => void) => () => void
       onDeepLink?: (
         callback: (payload: { kind: string; name: string; params: Record<string, string> }) => void
       ) => () => void
