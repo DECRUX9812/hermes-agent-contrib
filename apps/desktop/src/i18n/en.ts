@@ -5689,6 +5689,10 @@ export const en: Translations = {
     secretTitle: 'Secret required',
     secretDesc: 'Hermes needs a credential to continue.',
     secretPlaceholder: 'secret value',
+    secretCardSkip: 'Skip',
+    secretCardSave: 'Save',
+    secretCardFootnote:
+      "Stored in this profile's secrets — the value is sent straight to the backend and never enters the conversation.",
     vaultUnlockSendFailed: 'Could not send master password',
     vaultUnlockTitle: name => `Unlock ${name}`,
     vaultUnlockDesc: name =>

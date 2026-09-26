@@ -4796,6 +4796,9 @@ export interface Translations {
     secretTitle: string
     secretDesc: string
     secretPlaceholder: string
+    secretCardSkip: string
+    secretCardSave: string
+    secretCardFootnote: string
     vaultUnlockSendFailed: string
     vaultUnlockTitle: (name: string) => string
     vaultUnlockDesc: (name: string) => string
