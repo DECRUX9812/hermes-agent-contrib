@@ -38,6 +38,7 @@ import { triggerHaptic } from '@/lib/haptics'
 import { ArchiveOff } from '@/lib/icons'
 import { isSubmitEnter } from '@/lib/ime'
 import { PROFILE_SWATCHES } from '@/lib/profile-color'
+import { exportSessionDeliverable } from '@/lib/session-deliverable'
 import { exportSession } from '@/lib/session-export'
 import { exportSessionMarkdown, sessionMarkdownText } from '@/lib/session-markdown'
 import { useSessionSlice } from '@/lib/use-session-slice'
@@ -423,6 +424,17 @@ function useSessionActions({
       onSelect: () => {
         triggerHaptic('selection')
         void exportSessionMarkdown(sessionId, { profile, title })
+      }
+    }),
+    // One-file shareable outcome report (#35): summary + diff stat + artifacts
+    // + PR link — a deliverable, not the raw transcript exports above.
+    spec({
+      disabled: !sessionId,
+      icon: 'export',
+      label: r.exportDeliverable,
+      onSelect: () => {
+        triggerHaptic('selection')
+        void exportSessionDeliverable(sessionId, { profile, title })
       }
     })
   ]

@@ -3203,6 +3203,7 @@ export interface Translations {
       copyId: string
       export: string
       exportMarkdown: string
+      exportDeliverable: string
       copyMarkdown: string
       branchFrom: string
       rename: string
@@ -4820,6 +4821,13 @@ export interface Translations {
     markdownReasoning: string
     markdownToolCall: string
     markdownToolResult: string
+    deliverableArtifacts: string
+    deliverableChanges: string
+    deliverableFilesLine: (files: number, added: number, removed: number) => string
+    deliverableNoSummary: string
+    deliverablePullRequest: string
+    deliverableSession: string
+    deliverableSummary: string
     imageSaved: string
     downloadStarted: string
     restartToUseSaveImage: string
