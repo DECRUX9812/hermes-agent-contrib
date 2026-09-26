@@ -206,6 +206,7 @@ import { buildSessionByAnyId, resolvePinnedSessions } from './session-index'
 import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
 import { CONTEXT_SPLIT_KIT, SplitSubmenu } from './split-submenu'
 import { useEnteredProjectSessions } from './use-entered-project-sessions'
+import { SessionWatchStrip } from './watch-strip'
 
 // Non-session groups (messaging platforms) stay compact: show a few rows up
 // front, reveal more in larger steps on demand. Keeps a busy platform from
@@ -2013,6 +2014,12 @@ export function ChatSidebar({
             {attentionOpen ? <SidebarDelegationReports sessions={attentionSessions} /> : null}
           </div>
         )}
+
+        {/* Watched sessions (#17): compact live chips pinned at the top of the
+            sessions column so a watched conversation stays one click away
+            however far down the list it scrolls. Renders nothing when the
+            watch set is empty. */}
+        {!trimmedQuery && !showArchived && <SessionWatchStrip onOpen={onResumeSession} />}
 
         {showSessionSections && (
           <div

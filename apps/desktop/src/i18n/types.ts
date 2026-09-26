@@ -3138,6 +3138,8 @@ export interface Translations {
       muteNotifications: string
       unmuteNotifications: string
       mutedTooltip: string
+      watch: string
+      stopWatching: string
       unreadFailed: string
       copyId: string
       export: string
@@ -3196,6 +3198,12 @@ export interface Translations {
       ageDay: string
       ageHour: string
       ageMin: string
+    }
+    /** The watch strip: compact live chips for watched sessions, pinned at
+     *  the top of the sessions column. */
+    watch: {
+      strip: string
+      stop: string
     }
     dateDivider: {
       today: string

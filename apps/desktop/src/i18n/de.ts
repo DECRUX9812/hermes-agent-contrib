@@ -4083,6 +4083,8 @@ export const deOverrides = {
       muteNotifications: 'Benachrichtigungen stummschalten',
       unmuteNotifications: 'Stummschaltung aufheben',
       mutedTooltip: 'Benachrichtigungen für diese Sitzung stummgeschaltet',
+      watch: 'Beobachten',
+      stopWatching: 'Nicht mehr beobachten',
       unreadFailed: 'Ungelesen-Status konnte nicht aktualisiert werden',
       copyId: 'ID kopieren',
       export: 'Exportieren',
@@ -4141,6 +4143,10 @@ export const deOverrides = {
       ageDay: 'T',
       ageHour: 'h',
       ageMin: 'Min'
+    },
+    watch: {
+      strip: 'Beobachtete Sitzungen',
+      stop: 'Nicht mehr beobachten'
     },
     dateDivider: {
       today: 'Heute früher',

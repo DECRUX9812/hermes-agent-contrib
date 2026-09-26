@@ -3714,6 +3714,8 @@ export const en: Translations = {
       muteNotifications: 'Mute notifications',
       unmuteNotifications: 'Unmute notifications',
       mutedTooltip: 'Notifications muted for this session',
+      watch: 'Watch',
+      stopWatching: 'Stop watching',
       unreadFailed: 'Could not update unread state',
       copyId: 'Copy ID',
       export: 'Export',
@@ -3772,6 +3774,10 @@ export const en: Translations = {
       ageDay: 'd',
       ageHour: 'h',
       ageMin: 'm'
+    },
+    watch: {
+      strip: 'Watched sessions',
+      stop: 'Stop watching'
     },
     dateDivider: {
       today: 'Earlier today',

@@ -2830,6 +2830,8 @@ export const ru = defineLocale({
       muteNotifications: 'Отключить уведомления',
       unmuteNotifications: 'Включить уведомления',
       mutedTooltip: 'Уведомления для этого сеанса отключены',
+      watch: 'Наблюдать',
+      stopWatching: 'Перестать наблюдать',
       unreadFailed: 'Не удалось обновить состояние непрочитанных',
       copyId: 'Копировать ID',
       export: 'Экспорт',
@@ -2887,6 +2889,10 @@ export const ru = defineLocale({
       ageDay: 'д',
       ageHour: 'ч',
       ageMin: 'м'
+    },
+    watch: {
+      strip: 'Отслеживаемые сеансы',
+      stop: 'Перестать наблюдать'
     },
     dateDivider: {
       today: 'Ранее сегодня',

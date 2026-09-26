@@ -4073,6 +4073,8 @@ export const esOverrides = {
       muteNotifications: 'Silenciar notificaciones',
       unmuteNotifications: 'Reactivar notificaciones',
       mutedTooltip: 'Notificaciones silenciadas para esta sesión',
+      watch: 'Seguir',
+      stopWatching: 'Dejar de seguir',
       unreadFailed: 'No se pudo actualizar el estado de no leído',
       copyId: 'Copiar ID',
       export: 'Exportar',
@@ -4131,6 +4133,10 @@ export const esOverrides = {
       ageDay: 'd',
       ageHour: 'h',
       ageMin: 'm'
+    },
+    watch: {
+      strip: 'Sesiones seguidas',
+      stop: 'Dejar de seguir'
     },
     dateDivider: {
       today: 'Hoy, más temprano',
