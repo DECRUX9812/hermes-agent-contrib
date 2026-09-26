@@ -532,6 +532,10 @@ export const esOverrides = {
       rpcOutOfSync: 'La app y el backend están en versiones distintas. Actualiza ambos.',
       restartHermesFailed: 'No se pudo reiniciar Hermes'
     },
+    digest: {
+      title: count => `Resumen de Hermes — ${count} avisos`,
+      line: (count, label) => `${count} × ${label}`
+    },
     actions: {
       restartHermes: 'Reiniciar Hermes',
       openKeys: 'Abrir Claves',
@@ -1055,7 +1059,23 @@ export const esOverrides = {
       completionSoundTitle: 'Sonido de finalización',
       completionSoundDesc:
         'Reproduce un sonido cuando termina el turno de un agente. Elige un ajuste predefinido y pruébalo aquí.',
-      completionSoundPreview: 'Vista previa'
+      completionSoundPreview: 'Vista previa',
+      quietHoursTitle: 'Horario de silencio',
+      quietHoursDesc:
+        'Retiene las notificaciones rutinarias durante un intervalo diario; llegan en un resumen cuando termina. Aprobaciones, preguntas y errores siguen llegando.',
+      quietHoursWindowTitle: 'Intervalo de silencio',
+      quietHoursWindowDesc:
+        'Las notificaciones se silencian desde la hora de inicio hasta la de fin — si el inicio es posterior al fin, abarca la noche.',
+      quietHoursFrom: 'Desde',
+      quietHoursTo: 'Hasta',
+      digestTitle: 'Resumen por hora',
+      digestDesc:
+        'Agrupa las notificaciones rutinarias en un solo resumen cada hora en lugar de emitirlas una a una.',
+      sessionOverridesTitle: 'Excepciones por sesión',
+      sessionOverridesDesc:
+        'Chats que silenciaste desde el menú de sesión de la barra lateral. Reactiva cualquiera desde aquí.',
+      sessionOverridesEmpty:
+        'No hay sesiones silenciadas. Silencia un chat desde su menú en la barra lateral para verlo aquí.'
     },
     sections: {
       model: 'Modelo',

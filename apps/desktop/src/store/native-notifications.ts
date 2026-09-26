@@ -6,6 +6,7 @@ import { persistString, storedString } from '@/lib/storage'
 import { isSessionMuted } from '@/store/session-mute'
 
 import { $gateway } from './gateway'
+import { enqueueDigestEntry, gateNativeByRules } from './notification-rules'
 import { withinNativeNotifyBaseline } from './notify-baseline'
 import {
   answerApproval,
@@ -235,6 +236,15 @@ export function dispatchNativeNotification(input: NativeNotificationInput): bool
   // leave the app. isSessionMuted works on stored ids, so translate a runtime
   // id first.
   if (input.sessionId && isSessionMuted(storedSessionIdForRuntimeId(input.sessionId) ?? input.sessionId)) {
+    return false
+  }
+
+  // Notification rules (#39): quiet hours and digest mode hold ambient kinds
+  // for the next batched summary; approval/input/turnError always break
+  // through. Held entries report false — they never surface individually.
+  if (gateNativeByRules(input.kind) === 'hold') {
+    enqueueDigestEntry(input)
+
     return false
   }
 

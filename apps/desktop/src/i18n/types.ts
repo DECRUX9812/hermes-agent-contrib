@@ -599,6 +599,12 @@ export interface Translations {
       rpcOutOfSync: string
       restartHermesFailed: string
     }
+    digest: {
+      /** OS notification title for the batched summary (rule #39). */
+      title: (count: number) => string
+      /** One per-kind count line inside the digest body ("2 × Response ready"). */
+      line: (count: number, label: string) => string
+    }
     actions: {
       restartHermes: string
       openKeys: string
@@ -922,6 +928,17 @@ export interface Translations {
       completionSoundTitle: string
       completionSoundDesc: string
       completionSoundPreview: string
+      quietHoursTitle: string
+      quietHoursDesc: string
+      quietHoursWindowTitle: string
+      quietHoursWindowDesc: string
+      quietHoursFrom: string
+      quietHoursTo: string
+      digestTitle: string
+      digestDesc: string
+      sessionOverridesTitle: string
+      sessionOverridesDesc: string
+      sessionOverridesEmpty: string
     }
     sections: Record<string, string>
     searchPlaceholder: Record<'about' | 'config' | 'gateway' | 'keys' | 'mcp' | 'sessions', string>

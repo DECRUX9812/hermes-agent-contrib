@@ -580,6 +580,10 @@ export const en: Translations = {
       rpcOutOfSync: 'The app and the backend are on different versions. Update both.',
       restartHermesFailed: "Couldn't restart Hermes"
     },
+    digest: {
+      title: count => `Hermes digest — ${count} updates`,
+      line: (count, label) => `${count} × ${label}`
+    },
     actions: {
       restartHermes: 'Restart Hermes',
       openKeys: 'Open Keys',
@@ -1094,7 +1098,20 @@ export const en: Translations = {
       testUnsupported: 'This system does not support native notifications.',
       completionSoundTitle: 'Completion Sound',
       completionSoundDesc: 'Plays when an agent turn finishes. Pick a preset and preview it here.',
-      completionSoundPreview: 'Preview'
+      completionSoundPreview: 'Preview',
+      quietHoursTitle: 'Quiet hours',
+      quietHoursDesc:
+        'Holds routine notifications during a daily window; they arrive in a digest when it ends. Approvals, questions, and errors still break through.',
+      quietHoursWindowTitle: 'Quiet window',
+      quietHoursWindowDesc:
+        'Notifications stay quiet from the start time to the end time — a start after the end means overnight.',
+      quietHoursFrom: 'From',
+      quietHoursTo: 'To',
+      digestTitle: 'Hourly digest',
+      digestDesc: 'Batches routine notifications into one summary each hour instead of firing each on its own.',
+      sessionOverridesTitle: 'Per-session overrides',
+      sessionOverridesDesc: 'Chats you muted from the sidebar session menu. Unmute any of them here.',
+      sessionOverridesEmpty: 'No muted sessions. Mute a chat from its sidebar menu and it appears here.'
     },
     sections: {
       model: 'Model',

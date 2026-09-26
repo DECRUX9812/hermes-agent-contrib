@@ -217,6 +217,38 @@ export const SETTINGS_MANIFEST = {
         } satisfies SettingDefinition
       ])
     ),
+    quietHours: {
+      subpage: 'alerts',
+      keywords: ['quiet', 'hours', 'sleep', 'night', 'do not disturb', 'silence'],
+      copy: t => ({
+        label: t.settings.notifications.quietHoursTitle,
+        description: t.settings.notifications.quietHoursDesc
+      })
+    },
+    quietHoursWindow: {
+      subpage: 'alerts',
+      keywords: ['quiet', 'hours', 'from', 'to', 'night', 'window'],
+      copy: t => ({
+        label: t.settings.notifications.quietHoursWindowTitle,
+        description: t.settings.notifications.quietHoursWindowDesc
+      })
+    },
+    digest: {
+      subpage: 'alerts',
+      keywords: ['digest', 'batch', 'hourly', 'bundle', 'summary'],
+      copy: t => ({
+        label: t.settings.notifications.digestTitle,
+        description: t.settings.notifications.digestDesc
+      })
+    },
+    sessionOverrides: {
+      subpage: 'alerts',
+      keywords: ['session', 'mute', 'unmute', 'override', 'per session'],
+      copy: t => ({
+        label: t.settings.notifications.sessionOverridesTitle,
+        description: t.settings.notifications.sessionOverridesDesc
+      })
+    },
     completionSound: {
       subpage: 'sounds',
       keywords: ['sound', 'chime', 'ding', 'audio', 'done', 'complete', 'mute'],

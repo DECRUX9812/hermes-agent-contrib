@@ -302,6 +302,10 @@ export const zh = defineLocale({
       openaiTtsNeedsKey: 'OpenAI TTS 需要 VOICE_TOOLS_OPENAI_KEY 或 OPENAI_API_KEY。',
       codeSkewRestartRequired: '更新后此后端仍在运行旧代码。请重启以加载新代码。'
     },
+    digest: {
+      title: count => `Hermes 摘要 — ${count} 条通知`,
+      line: (count, label) => `${count} × ${label}`
+    },
     voice: {
       configureSpeechToText: '配置语音转文字后即可使用语音模式。',
       couldNotStartSession: '无法启动语音会话',
@@ -793,7 +797,18 @@ export const zh = defineLocale({
       testUnsupported: '此系统不支持原生通知。',
       completionSoundTitle: '完成提示音',
       completionSoundDesc: '智能体回合结束时播放。可在此选择预设并预览。',
-      completionSoundPreview: '预览'
+      completionSoundPreview: '预览',
+      quietHoursTitle: '免打扰时段',
+      quietHoursDesc: '在每日时段内暂缓普通通知；时段结束后以摘要形式送达。批准、提问和错误仍会照常提醒。',
+      quietHoursWindowTitle: '免打扰窗口',
+      quietHoursWindowDesc: '从开始时间到结束时间内静默通知 — 开始时间晚于结束时间时表示跨夜。',
+      quietHoursFrom: '从',
+      quietHoursTo: '至',
+      digestTitle: '每小时摘要',
+      digestDesc: '将普通通知合并为每小时一条摘要，而不是逐条弹出。',
+      sessionOverridesTitle: '会话级例外',
+      sessionOverridesDesc: '你在侧边栏会话菜单中静音的聊天。可在此重新开启。',
+      sessionOverridesEmpty: '没有已静音的会话。在会话的侧边栏菜单中选择静音后，它会出现在这里。'
     },
     sections: {
       model: '模型',
