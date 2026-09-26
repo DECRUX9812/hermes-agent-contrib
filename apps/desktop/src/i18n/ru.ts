@@ -4037,6 +4037,12 @@ export const ru = defineLocale({
     }
   },
   assistant: {
+    sessionRecap: {
+      title: 'Где всё остановилось',
+      dismiss: 'Скрыть',
+      turns: count => `Реплик: ${count}`,
+      todo: progress => `План: ${progress}`
+    },
     thread: {
       loadingSession: 'Загрузка сеанса',
       showEarlier: 'Показать ранние сообщения',

@@ -4337,6 +4337,13 @@ export interface Translations {
   }
 
   assistant: {
+    /** "Where it left off" strip on a settled stored-session transcript (#13). */
+    sessionRecap: {
+      title: string
+      dismiss: string
+      turns: (count: number) => string
+      todo: (progress: string) => string
+    },
     thread: {
       loadingSession: string
       showEarlier: string

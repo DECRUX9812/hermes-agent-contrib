@@ -4793,6 +4793,12 @@ export const zh = defineLocale({
   },
 
   assistant: {
+    sessionRecap: {
+      title: '上次进度',
+      dismiss: '忽略',
+      turns: count => `${count} 个回合`,
+      todo: progress => `计划 ${progress}`
+    },
     thread: {
       loadingSession: '正在加载会话',
       showEarlier: '显示更早的消息',
