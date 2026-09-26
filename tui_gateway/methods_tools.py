@@ -1020,7 +1020,13 @@ def _(rid, params: dict, session) -> dict:
         if not mgr.enabled:
             return _ok(rid, {"enabled": False, "checkpoints": []})
         keys = ("hash", "timestamp", "message")
-        rows = [{k: c.get(k, "") for k in keys} for c in mgr.list_checkpoints(cwd)]
+        rows = []
+        for c in mgr.list_checkpoints(cwd):
+            row = {k: c.get(k, "") for k in keys}
+            for tagged in ("turn", "sid", "user_row_id"):
+                if c.get(tagged) is not None:
+                    row[tagged] = c[tagged]
+            rows.append(row)
         return _ok(rid, {"enabled": True, "checkpoints": rows})
     return _with_checkpoints(session, go)
 
@@ -1032,14 +1038,20 @@ def _(rid, params: dict, session) -> dict:
         return _err(rid, 4014, "hash required")
     # Full-history rollback mutates session history → rejected mid-turn (prompt.submit
     # would drop the agent's output or clobber it). File-scoped only touches disk.
+    # ``files_only`` reverts the tree without rewinding the transcript (the
+    # per-message "revert files" affordance), but still refuses mid-turn.
     if not file_path and session.get("running"):
         return _err(rid, 4009, busy_message("rollback restore"))
+
+    files_only = bool(params.get("files_only"))
+    safe = bool(params.get("safe"))
 
     def go(mgr, cwd):
         if reason := _container_checkpoint_refusal(session, mgr, cwd):
             return {"success": False, "error": reason}
-        result = mgr.restore(cwd, _resolve_checkpoint_hash(mgr, cwd, target), file_path=file_path or None)
-        if result.get("success") and not file_path:
+        result = mgr.restore(cwd, _resolve_checkpoint_hash(mgr, cwd, target),
+                             file_path=file_path or None, safe=safe)
+        if result.get("success") and not file_path and not files_only:
             removed = 0
             with session["history_lock"]:
                 _history, user_indices = _user_turn_indices(session)

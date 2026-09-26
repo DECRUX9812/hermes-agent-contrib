@@ -5118,6 +5118,12 @@ export const zh = defineLocale({
       restoreBody: '此提示之后的所有消息将从对话中移除，并从此处重新运行该提示。',
       restoreConfirm: '恢复并重新运行',
       restoreNext: '恢复下一个检查点',
+      revertFilesTip: '将文件还原到此提示之前的状态',
+      revertFilesTitle: '还原文件？',
+      revertFilesBody:
+        'Hermes 在该轮中修改的文件将恢复到之前的状态——你手动编辑过的内容会保留。对话不受影响。',
+      revertFilesConfirm: '还原文件',
+      revertFilesFailed: '无法还原文件',
       goForward: '前进',
       sendEdited: '发送编辑后的消息',
       attachingFile: '正在附加…'

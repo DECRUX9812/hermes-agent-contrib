@@ -2924,7 +2924,7 @@
     },
     {
       "name": "rollback.list",
-      "summary": "Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off.",
+      "summary": "Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off. Entries may carry ``sid``/``turn``/``user_row_id`` identifying the user prompt the snapshot precedes.",
       "params": [
         {
           "name": "params",
@@ -26381,6 +26381,42 @@
             "default": "",
             "title": "Message",
             "type": "string"
+          },
+          "turn": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Turn"
+          },
+          "sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sid"
+          },
+          "user_row_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "User Row Id"
           }
         },
         "title": "RollbackCheckpoint",
@@ -26515,6 +26551,16 @@
             ],
             "default": null,
             "title": "File Path"
+          },
+          "files_only": {
+            "default": false,
+            "title": "Files Only",
+            "type": "boolean"
+          },
+          "safe": {
+            "default": false,
+            "title": "Safe",
+            "type": "boolean"
           },
           "profile": {
             "anyOf": [

@@ -4679,6 +4679,13 @@ export interface Translations {
       restoreBody: string
       restoreConfirm: string
       restoreNext: string
+      /** Per-user-message affordance: revert workspace files to the checkpoint
+       *  taken before that prompt (transcript untouched). */
+      revertFilesTip: string
+      revertFilesTitle: string
+      revertFilesBody: string
+      revertFilesConfirm: string
+      revertFilesFailed: string
       goForward: string
       sendEdited: string
       attachingFile: string

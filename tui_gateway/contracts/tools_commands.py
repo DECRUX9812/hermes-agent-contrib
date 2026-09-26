@@ -353,6 +353,11 @@ class RollbackCheckpoint(Result):
     hash: str = ""
     timestamp: str = ""
     message: str = ""
+    # User-turn trailers stamped at snapshot time (see tools/checkpoint_manager
+    # Hermes-* trailers): absent on checkpoints taken before tagging existed.
+    turn: int | None = None
+    sid: str | None = None
+    user_row_id: int | None = None
 
 
 class RollbackListResult(Result):
@@ -361,13 +366,17 @@ class RollbackListResult(Result):
 
 
 method("rollback.list", params=RollbackListParams, result=RollbackListResult,
-       doc="Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off.")
+       doc="Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off. "
+           "Entries may carry ``sid``/``turn``/``user_row_id`` identifying the user prompt "
+           "the snapshot precedes.")
 
 
 class RollbackRestoreParams(Params):
     session_id: str
     hash: str
     file_path: str | None = None
+    files_only: bool = False
+    safe: bool = False
     profile: str | None = None
 
 

@@ -5928,6 +5928,12 @@ export const frOverrides = {
         "Tout ce qui suit cette invite est retiré de la conversation, puis l'invite est relancée à partir d'ici.",
       restoreConfirm: 'Restaurer et relancer',
       restoreNext: 'Restaurer le point de contrôle suivant',
+      revertFilesTip: 'Restaurer les fichiers à leur état avant ce message',
+      revertFilesTitle: 'Restaurer les fichiers ?',
+      revertFilesBody:
+        'Les fichiers modifiés par Hermes dans ce tour retrouvent leur état antérieur — tout ce que vous avez édité à la main est conservé. La conversation n\'est pas touchée.',
+      revertFilesConfirm: 'Restaurer les fichiers',
+      revertFilesFailed: 'Impossible de restaurer les fichiers',
       goForward: 'Avancer',
       sendEdited: 'Envoyer le message modifié',
       attachingFile: 'Ajout en cours…'

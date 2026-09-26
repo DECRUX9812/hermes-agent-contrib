@@ -3584,11 +3584,16 @@ export interface RollbackCheckpoint {
   hash?: string
   timestamp?: string
   message?: string
+  turn?: number | null
+  sid?: string | null
+  user_row_id?: number | null
 }
 export interface RollbackRestoreParams {
   session_id: string
   hash: string
   file_path?: string | null
+  files_only?: boolean
+  safe?: boolean
   profile?: string | null
 }
 /** ``tools/checkpoint_manager.py::restore`` outcome; ``history_removed`` is added for a full (non-file) restore that also rewound the live transcript. */
@@ -5044,7 +5049,7 @@ export interface RpcMethods {
   'request.answer': { params: RequestAnswerParams; result: RequestAnswerResult }
   /** Diff between a checkpoint and the working tree, with an ANSI rendering sized to the TUI. */
   'rollback.diff': { params: RollbackDiffParams; result: RollbackDiffResult }
-  /** Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off. */
+  /** Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off. Entries may carry ``sid``/``turn``/``user_row_id`` identifying the user prompt the snapshot precedes. */
   'rollback.list': { params: RollbackListParams; result: RollbackListResult }
   /** Restore the working tree (or one file) to a checkpoint by hash or 1-based index. */
   'rollback.restore': { params: RollbackRestoreParams; result: RollbackRestoreResult }
