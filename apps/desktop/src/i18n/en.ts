@@ -4154,6 +4154,10 @@ export const en: Translations = {
     stop: 'Stop',
     dismiss: 'Dismiss',
     exit: code => `exit ${code}`,
+    verifyChecking: 'Checking the preview…',
+    verifyFailed: count => `Preview check failed — ${count} console ${count === 1 ? 'error' : 'errors'}`,
+    verifyOpenConsole: 'Open the console',
+    verifyPassed: 'Preview check passed',
     control: {
       goalActiveTurns: (turn, maxTurns) => `Turn ${turn}/${maxTurns}`,
       goalDoneTurns: turns => `${turns} turn${turns === 1 ? '' : 's'}`,

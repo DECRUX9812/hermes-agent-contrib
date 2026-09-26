@@ -4523,6 +4523,10 @@ export const deOverrides = {
     stop: 'Stopp',
     dismiss: 'Verwerfen',
     exit: code => `exit ${code}`,
+    verifyChecking: 'Vorschau wird geprüft…',
+    verifyFailed: count => `Vorschau-Prüfung fehlgeschlagen — ${count} Konsolenfehler`,
+    verifyOpenConsole: 'Konsole öffnen',
+    verifyPassed: 'Vorschau-Prüfung bestanden',
     control: {
       goalActiveTurns: (turn, maxTurns) => `Runde ${turn}/${maxTurns}`,
       goalDoneTurns: turns => `${turns} Runde${turns === 1 ? '' : 'n'}`,

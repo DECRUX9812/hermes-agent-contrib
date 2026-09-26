@@ -162,6 +162,8 @@ def _agent_cbs(sid: str) -> dict:
         "read_preview_callback": _read_block("preview.read", 45),
         # drive_preview / annotate_preview (desktop GUI): same budget as the preview read it ends with.
         "drive_preview_callback": lambda payload: _ask("preview.act", sid, dict(payload), timeout=45),
+        # verify_preview (desktop GUI): settle window + console read + card write.
+        "verify_preview_callback": lambda payload: _ask("preview.verify", sid, dict(payload), timeout=60),
         # read_window_below (desktop GUI): main process enumerates native windows.
         "read_window_below_callback": lambda: _ask("window.read", sid, {}, timeout=30),
         # manage_connections card. Fire-and-forget: the tool thread waits on its own operation

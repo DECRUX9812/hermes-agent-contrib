@@ -185,6 +185,16 @@ server_request("preview.act", params=PreviewActRequestParams, result=ValueResult
                doc="Click / type / scroll / annotate inside the in-app browser preview.")
 
 
+class PreviewVerifyRequestParams(ServerRequestParams):
+    """``tools/verify_preview_tool.py`` field set."""
+
+    settle_ms: int | None = None
+
+
+server_request("preview.verify", params=PreviewVerifyRequestParams, result=ValueResult,
+               doc="Read the in-app preview's console errors and answer a pass/fail (JSON).")
+
+
 class TourStep(Params):
     selector: str | None = None
     title: str | None = None
