@@ -6,7 +6,11 @@ import type { BundledLanguage, ShikiTransformer, ThemedToken } from 'shiki'
 import { chunkLines, type LineChunk, useFixedRowWindow } from '@/components/chat/fixed-row-window'
 import { exceedsHighlightBudget, SHIKI_THEME } from '@/components/chat/shiki-highlighter'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { Tip } from '@/components/ui/tooltip'
+import { useI18n } from '@/i18n'
+import { displayPath } from '@/lib/display-path'
 import { shikiLanguageForFilename } from '@/lib/markdown-code'
 import { cn } from '@/lib/utils'
 
@@ -306,6 +310,68 @@ export interface DiffComment {
   line: number
 }
 
+/** A user-authored comment anchored to a diff line range (1-based NEW-file
+ *  line numbers; removed rows anchor by their old-file number). */
+export interface DiffLineComment {
+  endLine: number
+  startLine: number
+  text: string
+}
+
+// The line a user comment anchors to: the new-file number where one exists,
+// else the removed row's old-file number (there is no new-file line to name).
+const commentAnchorLine = (line: DiffLine): number | undefined => line.newNo ?? line.oldNo
+
+/** Hover affordance on a commentable diff row — a '+' that starts a comment
+ *  (shift-click extends the anchored range), matching hosted-review UX. */
+function LineCommentButton({
+  anchor,
+  onAnchor
+}: {
+  anchor: number
+  onAnchor: (anchor: number, extend: boolean) => void
+}) {
+  const { t } = useI18n()
+
+  return (
+    <button
+      aria-label={t.statusStack.coding.commentOnLine(anchor)}
+      className="absolute inset-y-0 left-0 hidden w-4 items-center justify-center text-muted-foreground/80 hover:text-(--ui-text-secondary) group-hover/dr:flex"
+      onClick={event => onAnchor(anchor, event.shiftKey)}
+      type="button"
+    >
+      <Codicon name="add" size="0.6rem" />
+    </button>
+  )
+}
+
+/** One windowed diff row: the line text (or its Shiki tokens) plus, when the
+ *  panel opted into commenting, a hover '+' anchored to this line. */
+function WindowedRow({
+  line,
+  onLineAnchor,
+  tokens
+}: {
+  line: DiffLine
+  onLineAnchor?: (anchor: number, extend: boolean) => void
+  tokens?: ThemedToken[]
+}) {
+  const anchor = onLineAnchor ? commentAnchorLine(line) : undefined
+
+  return (
+    <span className={cn(PREVIEW_DIFF_LINE_BASE, DIFF_KIND_TINT[line.kind], anchor !== undefined && 'group/dr relative')}>
+      {anchor !== undefined && onLineAnchor && <LineCommentButton anchor={anchor} onAnchor={onLineAnchor} />}
+      {tokens && tokens.length > 0
+        ? tokens.map((token, tokenIndex) => (
+            <span key={`${tokenIndex}-${token.offset}`} style={tokenStyle(token)}>
+              {token.content}
+            </span>
+          ))
+        : line.text || ' '}
+    </span>
+  )
+}
+
 /**
  * Interleave self-review comments into parsed diff rows as 'comment' lines,
  * each anchored directly below the deepest-parsed row carrying its new-file
@@ -437,11 +503,13 @@ function PreviewDiffRows({
   afterLines = 0,
   beforeLines = 0,
   chunks,
+  onLineAnchor,
   tokens
 }: {
   afterLines?: number
   beforeLines?: number
   chunks: Array<LineChunk<DiffLine>>
+  onLineAnchor?: (anchor: number, extend: boolean) => void
   tokens?: ThemedToken[][] | null
 }) {
   return (
@@ -451,22 +519,18 @@ function PreviewDiffRows({
         <div className="block" key={chunk.start}>
           {chunk.lines.map((line, offset) => {
             const index = chunk.start + offset
-            const rowTokens = tokens?.[index] ?? []
 
             if (line.kind === 'comment') {
               return <CommentRow key={`${index}-${line.text}`} line={line} />
             }
 
             return (
-              <span className={cn(PREVIEW_DIFF_LINE_BASE, DIFF_KIND_TINT[line.kind])} key={`${index}-${line.text}`}>
-                {rowTokens.length > 0
-                  ? rowTokens.map((token, tokenIndex) => (
-                      <span key={`${tokenIndex}-${token.offset}`} style={tokenStyle(token)}>
-                        {token.content}
-                      </span>
-                    ))
-                  : line.text || ' '}
-              </span>
+              <WindowedRow
+                key={`${index}-${line.text}`}
+                line={line}
+                onLineAnchor={onLineAnchor}
+                tokens={tokens?.[index] ?? []}
+              />
             )
           })}
         </div>
@@ -482,7 +546,8 @@ function TokenizedDiffBody({
   chunked = false,
   chunks,
   language,
-  lines
+  lines,
+  onLineAnchor
 }: {
   afterLines?: number
   beforeLines?: number
@@ -490,6 +555,7 @@ function TokenizedDiffBody({
   chunks?: Array<LineChunk<DiffLine>>
   language: string
   lines: DiffLine[]
+  onLineAnchor?: (anchor: number, extend: boolean) => void
 }) {
   const code = React.useMemo(() => lines.map(line => line.text).join('\n'), [lines])
   const theme = useThemeName()
@@ -525,6 +591,7 @@ function TokenizedDiffBody({
         afterLines={afterLines}
         beforeLines={beforeLines}
         chunks={chunks ?? chunkLines(lines, PREVIEW_CHUNK_LINES)}
+        onLineAnchor={onLineAnchor}
       />
     ) : (
       <DiffBody lines={lines} />
@@ -537,6 +604,7 @@ function TokenizedDiffBody({
         afterLines={afterLines}
         beforeLines={beforeLines}
         chunks={chunks ?? chunkLines(lines, PREVIEW_CHUNK_LINES)}
+        onLineAnchor={onLineAnchor}
         tokens={tokens}
       />
     )
@@ -549,18 +617,8 @@ function TokenizedDiffBody({
           return <CommentRow key={`${index}-${line.text}`} line={line} />
         }
 
-        const rowTokens = tokens[index] ?? []
-
         return (
-          <span className={cn(PREVIEW_DIFF_LINE_BASE, DIFF_KIND_TINT[line.kind])} key={`${index}-${line.text}`}>
-            {rowTokens.length > 0
-              ? rowTokens.map((token, tokenIndex) => (
-                  <span key={`${tokenIndex}-${token.offset}`} style={tokenStyle(token)}>
-                    {token.content}
-                  </span>
-                ))
-              : line.text || ' '}
-          </span>
+          <WindowedRow key={`${index}-${line.text}`} line={line} tokens={tokens[index] ?? []} />
         )
       })}
     </>
@@ -682,6 +740,65 @@ function DiffOverviewRuler({ lines }: { lines: DiffLine[] }) {
   )
 }
 
+/** Bottom bar for a user-authored diff comment: names the anchored line
+ *  range and collects the feedback text. Enter submits, Esc cancels — it
+ *  never sends anything itself; the caller owns where the draft lands. */
+function DiffCommentBar({
+  anchor,
+  path,
+  onCancel,
+  onSubmit
+}: {
+  anchor: { end: number; start: number }
+  path?: string
+  onCancel: () => void
+  onSubmit: (text: string) => void
+}) {
+  const { t } = useI18n()
+  const c = t.statusStack.coding
+  const [text, setText] = React.useState('')
+  const start = Math.min(anchor.start, anchor.end)
+  const end = Math.max(anchor.start, anchor.end)
+  const label = `${displayPath(path) || ''}:${start === end ? start : `${start}-${end}`}`
+
+  return (
+    <div className="flex items-center gap-1.5 border-t border-(--ui-stroke-secondary) px-2 py-1">
+      <span className="shrink-0 truncate font-mono text-[0.62rem] text-muted-foreground/70">{label}</span>
+      <input
+        autoFocus
+        className="min-w-0 flex-1 bg-transparent text-[0.7rem] text-(--ui-text-secondary) outline-none placeholder:text-muted-foreground/50"
+        onChange={event => setText(event.target.value)}
+        onKeyDown={event => {
+          if (event.key === 'Enter' && text.trim()) {
+            onSubmit(text.trim())
+          } else if (event.key === 'Escape') {
+            onCancel()
+          }
+        }}
+        placeholder={c.diffCommentPlaceholder}
+        value={text}
+      />
+      <Tip label={c.diffCommentSend}>
+        <Button
+          aria-label={c.diffCommentSend}
+          className="size-5"
+          disabled={!text.trim()}
+          onClick={() => onSubmit(text.trim())}
+          size="icon-xs"
+          variant="ghost"
+        >
+          <Codicon name="check" size="0.75rem" />
+        </Button>
+      </Tip>
+      <Tip label={t.common.cancel}>
+        <Button aria-label={t.common.cancel} className="size-5" onClick={onCancel} size="icon-xs" variant="ghost">
+          <Codicon name="close" size="0.75rem" />
+        </Button>
+      </Tip>
+    </div>
+  )
+}
+
 interface FileDiffPanelProps {
   /** Override the default (tool-card) box styling — the full-height preview
    *  cancels the bleed/clamp so the diff fills its pane. */
@@ -692,6 +809,10 @@ interface FileDiffPanelProps {
   /** Current file text. When provided, the panel expands hunked diffs into a
    *  full-file view so unchanged lines are preserved between hunks. */
   fullText?: string
+  /** Opt-in per-line commenting (the review pane's diff → composer feedback):
+   *  rows get a hover '+' anchor and a bottom editor bar. Only mounted on the
+   *  windowed path — compact tool-card diffs stay read-only. */
+  onDiffComment?: (comment: DiffLineComment) => void
   path?: string
   /** Render an old/new line-number gutter (the full preview diff). The compact
    *  tool-card + inline review diff leave this off. */
@@ -707,6 +828,7 @@ export function FileDiffPanel({
   comments,
   diff,
   fullText,
+  onDiffComment,
   path,
   showLineNumbers = false,
   virtualized = false
@@ -716,6 +838,17 @@ export function FileDiffPanel({
       insertDiffComments(fullText != null ? parseFullFileDiff(diff, fullText) : parseDiff(diff), comments ?? []),
     [comments, diff, fullText]
   )
+
+  // The open comment anchor: click '+' on a row to anchor, shift-click another
+  // to extend the range. A file/diff swap drops it so a stale range can't
+  // submit against the wrong lines.
+  const [commentAnchor, setCommentAnchor] = React.useState<null | { end: number; start: number }>(null)
+
+  React.useEffect(() => setCommentAnchor(null), [diff, path])
+
+  const onLineAnchor = React.useCallback((line: number, extend: boolean) => {
+    setCommentAnchor(current => (extend && current ? { ...current, end: line } : { end: line, start: line }))
+  }, [])
 
   const lineChunks = React.useMemo(() => chunkLines(lines, PREVIEW_CHUNK_LINES), [lines])
 
@@ -735,6 +868,8 @@ export function FileDiffPanel({
   // Windowed: we own fixed-height rows and render only the visible chunks, so a
   // large diff never mounts (or Shiki-highlights) every line. Compact tool cards
   // are small/clamped, so they let Shiki own the rows (SyntaxDiff).
+  const anchoredAnchor = onDiffComment ? onLineAnchor : undefined
+
   const windowedBody = canHighlight ? (
     <TokenizedDiffBody
       afterLines={afterRows}
@@ -743,9 +878,15 @@ export function FileDiffPanel({
       chunks={visibleLineChunks}
       language={language}
       lines={lines}
+      onLineAnchor={anchoredAnchor}
     />
   ) : (
-    <PreviewDiffRows afterLines={afterRows} beforeLines={beforeRows} chunks={visibleLineChunks} />
+    <PreviewDiffRows
+      afterLines={afterRows}
+      beforeLines={beforeRows}
+      chunks={visibleLineChunks}
+      onLineAnchor={anchoredAnchor}
+    />
   )
 
   const compactBody = !canHighlight ? (
@@ -810,6 +951,21 @@ export function FileDiffPanel({
           <div className="min-w-0">{windowedBody}</div>
         )}
       </div>
+      {commentAnchor && onDiffComment && (
+        <DiffCommentBar
+          anchor={commentAnchor}
+          onCancel={() => setCommentAnchor(null)}
+          onSubmit={text => {
+            onDiffComment({
+              endLine: Math.max(commentAnchor.start, commentAnchor.end),
+              startLine: Math.min(commentAnchor.start, commentAnchor.end),
+              text
+            })
+            setCommentAnchor(null)
+          }}
+          path={path}
+        />
+      )}
       <DiffOverviewRuler lines={lines} />
     </div>
   )

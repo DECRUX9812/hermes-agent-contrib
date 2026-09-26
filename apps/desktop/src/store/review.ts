@@ -1,5 +1,6 @@
 import { atom, computed } from 'nanostores'
 
+import { requestComposerInsertAcked } from '@/app/chat/composer/focus'
 import { SIDEBAR_COLLAPSE_MEDIA_QUERY } from '@/app/layout-constants'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { isPaneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
@@ -12,6 +13,7 @@ import { Codecs, persistentAtom } from '@/lib/persisted'
 import { modeBound } from '@/store/interface-mode'
 
 import { refreshRepoStatus, repoStatusForCwd } from './coding-status'
+import { stashSessionDraft, takeSessionDraft } from './composer'
 import { stampSessionPrBranch } from './pull-requests'
 import { sessionIdForReviewTarget, sessionTouchedPaths } from './review-session'
 import {
@@ -516,6 +518,55 @@ export async function confirmRevert(): Promise<void> {
   if (target) {
     await revertReviewFile(target.path)
   }
+}
+
+// ── Diff comments → composer feedback (#29) ──────────────────────────────────
+
+/** The durable session id behind the pane's scope target: a tile-scoped pane
+ *  names its session in `tile:<storedId>`; 'main' is the selected chat. */
+function reviewScopeStoredId(): null | string {
+  const target = $reviewScopeTarget.get()
+
+  if (target.startsWith('tile:')) {
+    return target.slice('tile:'.length).trim() || null
+  }
+
+  return $selectedStoredSessionId.get()
+}
+
+/** Format the structured feedback line the composer draft carries. */
+export function formatDiffComment(path: string, startLine: number, endLine: number, text: string): string {
+  const range = startLine === endLine ? `${startLine}` : `${startLine}-${endLine}`
+
+  return `${path}:${range} — ${text}`
+}
+
+/**
+ * Seed a diff-line comment into the scoped session's composer AS A DRAFT —
+ * never submitted. The insert bus writes it when the target composer is
+ * mounted; when nothing claims the address (tile closed, input disabled) the
+ * text lands on the session's persisted stash instead, so feedback queued for
+ * a parked session is still waiting when it next opens. Returns false only
+ * when neither path could place it (no session resolved at all).
+ */
+export async function draftDiffComment(formatted: string): Promise<boolean> {
+  const target = $reviewScopeTarget.get()
+
+  if (await requestComposerInsertAcked(formatted, { mode: 'block', target })) {
+    return true
+  }
+
+  const storedId = reviewScopeStoredId()
+
+  if (!storedId) {
+    return false
+  }
+
+  const draft = takeSessionDraft(storedId)
+
+  stashSessionDraft(storedId, draft.text ? `${draft.text}\n\n${formatted}` : formatted, draft.attachments)
+
+  return true
 }
 
 // ── Ship flow (commit / push / PR) ───────────────────────────────────────────

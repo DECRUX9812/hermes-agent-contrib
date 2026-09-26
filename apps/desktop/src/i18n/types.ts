@@ -3617,6 +3617,11 @@ export interface Translations {
       selfReviewClean: string
       selfReviewClear: string
       selfReviewComments: (count: number) => string
+      commentOnLine: (line: number) => string
+      diffCommentPlaceholder: string
+      diffCommentSend: string
+      /** Toast after a diff comment lands in the composer as a draft. */
+      commentSeeded: string
       newBranch: string
       branchOffFrom: (base: string) => string
       switchTo: (branch: string) => string

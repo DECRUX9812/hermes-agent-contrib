@@ -30,6 +30,8 @@ import {
   clearReviewSelection,
   closeReview,
   confirmRevert,
+  draftDiffComment,
+  formatDiffComment,
   refreshReview,
   requestRevert,
   type ReviewScopeMode,
@@ -320,6 +322,15 @@ export function ReviewPane() {
                 className="mx-0 mb-0 h-full max-h-none"
                 comments={selectedComments}
                 diff={diff}
+                onDiffComment={({ endLine, startLine, text }) => {
+                  // Comment lands as a composer draft for the scoped session —
+                  // nothing is ever sent from here (#29).
+                  void draftDiffComment(formatDiffComment(selectedFile.path, startLine, endLine, text)).then(ok => {
+                    if (ok) {
+                      notify({ kind: 'info', message: c.commentSeeded })
+                    }
+                  })
+                }}
                 path={selectedFile.path}
                 virtualized
               />
