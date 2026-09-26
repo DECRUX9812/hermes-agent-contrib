@@ -4532,6 +4532,15 @@ export const frOverrides = {
     unavailable: 'La capture d’écran n’est pas disponible ici.',
     undo: 'Annuler',
   },
+  voiceStatus: {
+    idle: 'Hermes est au repos — rien n’est en cours.',
+    working: 'Hermes y travaille encore.',
+    workingOn: detail => `Hermes travaille — en ce moment sur ${detail}.`,
+    stalled: 'Hermes semble bloqué — c’est silencieux depuis un moment.',
+    needsInput: 'Hermes attend ta réponse.',
+    finished: 'Le dernier tour est terminé — la réponse t’attend.',
+    progress: (done, total) => `${done} tâches sur ${total} terminées.`,
+  },
   statusStack: {
     hideStack: 'Masquer la pile d’état',
     showStack: 'Afficher la pile d’état',

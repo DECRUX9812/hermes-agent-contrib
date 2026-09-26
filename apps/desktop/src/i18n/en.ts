@@ -4152,6 +4152,15 @@ export const en: Translations = {
     unavailable: 'Screen capture isn’t available here.',
     undo: 'Undo',
   },
+  voiceStatus: {
+    idle: 'Hermes is idle — nothing is running.',
+    working: 'Hermes is still working on it.',
+    workingOn: detail => `Hermes is working — right now it's ${detail}.`,
+    stalled: 'Hermes seems stalled — it has been quiet for a while.',
+    needsInput: 'Hermes is waiting for your input.',
+    finished: 'The last turn finished — the reply is waiting for you.',
+    progress: (done, total) => `${done} of ${total} tasks done.`,
+  },
   statusStack: {
     hideStack: 'Hide status stack',
     showStack: 'Show status stack',

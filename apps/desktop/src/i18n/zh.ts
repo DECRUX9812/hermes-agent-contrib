@@ -3927,6 +3927,15 @@ export const zh = defineLocale({
     unavailable: '此处无法进行屏幕捕获。',
     undo: '撤销',
   },
+  voiceStatus: {
+    idle: 'Hermes 空闲中 —— 没有正在运行的任务。',
+    working: 'Hermes 还在处理中。',
+    workingOn: detail => `Hermes 正在工作 —— 当前在${detail}。`,
+    stalled: 'Hermes 似乎卡住了 —— 已经有一会儿没有动静了。',
+    needsInput: 'Hermes 正在等待你的回复。',
+    finished: '上一轮已经结束 —— 回复在等你查看。',
+    progress: (done, total) => `${total} 项任务已完成 ${done} 项。`,
+  },
   statusStack: {
     hideStack: '隐藏状态面板',
     showStack: '显示状态面板',

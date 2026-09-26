@@ -13,6 +13,7 @@ import {
 } from '@/lib/spoken-reply'
 import { CONVERSATION_LEASE, READ_ALOUD_LEASE, syncTtsLease } from '@/lib/tts-lease'
 import { toLiveHistory } from '@/lib/voice-live'
+import { composeSessionStatusSpeech } from '@/lib/voice-status'
 import { clearWakeIndicator, syncWakeIndicatorWithVoice } from '@/lib/wake-indicator'
 import { $voiceConversationStartRequest, takeVoiceConversationStart } from '@/store/composer'
 import { resetBrowseState } from '@/store/composer-input-history'
@@ -209,6 +210,9 @@ export function useComposerVoice({
   // fail and the conversation never starts listening.
   const wakePauseBarrierRef = useRef<Promise<void> | null>(null)
 
+  /** "What's it doing?" — answered from the session stores, never a turn. */
+  const statusReply = () => composeSessionStatusSpeech(t.voiceStatus, sessionId ?? '', $messages.get())
+
   const chainedConversation = useVoiceConversation({
     busy,
     consumePendingResponse,
@@ -218,6 +222,7 @@ export function useComposerVoice({
     // the same seam as the Stop button — so the interjection becomes the next
     // turn instead of waiting behind a reply the user already rejected.
     onInterrupt,
+    onStatusQuestion: statusReply,
     // A spoken stop command ("stop", "never mind", "goodbye", …) ends the
     // hands-free conversation. Flipping the flag is the authoritative off
     // switch — the enabled=false prop + effect below drive conversation.end()
@@ -239,6 +244,7 @@ export function useComposerVoice({
     enabled: voiceConversationActive && liveEngineActive,
     onFatalError: () => setVoiceConversationActive(false),
     onInterrupt,
+    onStatusQuestion: statusReply,
     onStopWord: () => setVoiceConversationActive(false),
     onSubmit: submitLiveDelegation,
     pendingResponse: pendingTurnResponse,

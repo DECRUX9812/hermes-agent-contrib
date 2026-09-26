@@ -49,7 +49,7 @@ const ADDRESS_PREFIXES: readonly string[] = ['hey hermes', 'hey hermes,', 'herme
 // ("стоп!", "«отбой»", "停止。"), collapse whitespace. Transcripts and
 // configured phrases go through the same function, so the match stays exact —
 // like the backend's `is_voice_stop_phrase` — just punctuation-insensitive.
-function normalize(text: string): string {
+export function normalizeVoiceUtterance(text: string): string {
   return text
     .normalize('NFKC')
     .toLowerCase()
@@ -58,7 +58,7 @@ function normalize(text: string): string {
     .trim()
 }
 
-function stripAddress(text: string): string {
+export function stripVoiceAddress(text: string): string {
   for (const prefix of ADDRESS_PREFIXES) {
     if (text === prefix) {
       // Bare address ("hermes") is not a stop command on its own.
@@ -73,7 +73,7 @@ function stripAddress(text: string): string {
   return text
 }
 
-const DEFAULT_PHRASES = STOP_PHRASES.map(normalize)
+const DEFAULT_PHRASES = STOP_PHRASES.map(normalizeVoiceUtterance)
 
 function phrasesForConfig(config: VoiceStopPhraseConfig): readonly string[] | null {
   if (config.mode === 'disabled') {
@@ -81,7 +81,7 @@ function phrasesForConfig(config: VoiceStopPhraseConfig): readonly string[] | nu
   }
 
   if (config.mode === 'custom') {
-    return config.phrases.map(normalize).filter(phrase => phrase.length > 0)
+    return config.phrases.map(normalizeVoiceUtterance).filter(phrase => phrase.length > 0)
   }
 
   return DEFAULT_PHRASES
@@ -108,7 +108,7 @@ export function isVoiceStopCommand(
     return false
   }
 
-  const normalized = normalize(transcript)
+  const normalized = normalizeVoiceUtterance(transcript)
 
   if (!normalized) {
     return false
@@ -117,7 +117,7 @@ export function isVoiceStopCommand(
   // Match with the address prefix stripped, and also as-is (so a bare "stop"
   // with no prefix still matches, and "please stop" — where "please" isn't a
   // prefix — matches directly).
-  const candidates = new Set([normalized, stripAddress(normalized)])
+  const candidates = new Set([normalized, stripVoiceAddress(normalized)])
 
   for (const candidate of candidates) {
     if (phrases.includes(candidate)) {

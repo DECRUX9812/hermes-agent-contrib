@@ -4511,6 +4511,15 @@ export const esOverrides = {
     unavailable: 'La captura de pantalla no está disponible aquí.',
     undo: 'Deshacer',
   },
+  voiceStatus: {
+    idle: 'Hermes está inactivo — no hay nada en marcha.',
+    working: 'Hermes sigue trabajando en ello.',
+    workingOn: detail => `Hermes está trabajando — ahora mismo en ${detail}.`,
+    stalled: 'Hermes parece atascado — lleva un rato sin responder.',
+    needsInput: 'Hermes está esperando tu respuesta.',
+    finished: 'El último turno terminó — la respuesta te está esperando.',
+    progress: (done, total) => `${done} de ${total} tareas hechas.`,
+  },
   statusStack: {
     hideStack: 'Ocultar la pila de estado',
     showStack: 'Mostrar la pila de estado',
