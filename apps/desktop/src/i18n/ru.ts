@@ -2846,6 +2846,22 @@ export const ru = defineLocale({
       working: 'Работает',
       done: 'Готово'
     },
+    peek: {
+      idle: 'Ожидание',
+      archived: 'В архиве',
+      workspace: 'Рабочая папка',
+      branch: 'Ветка',
+      model: 'Модель',
+      stats: 'Статистика',
+      tokens: count => `${count} токенов`,
+      agents: 'Делегированные агенты',
+      agentsSummary: count => `агентов: ${count}`,
+      agentsRunning: count => `выполняется: ${count}`,
+      profile: 'Профиль',
+      source: 'Источник',
+      started: 'Запущен',
+      updated: 'Обновлён'
+    },
     markAllRead: 'Отметить все как прочитанные'
   },
   intro: {

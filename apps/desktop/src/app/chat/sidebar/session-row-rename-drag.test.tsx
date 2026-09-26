@@ -81,6 +81,22 @@ vi.mock('@/i18n', () => ({
       },
       errors: { genericFailure: 'Something went wrong' },
       sidebar: {
+        peek: {
+          agents: 'Delegated agents',
+          agentsRunning: (count: number) => `${count} running`,
+          agentsSummary: (count: number) => `${count} agents`,
+          archived: 'Archived',
+          branch: 'Branch',
+          idle: 'Idle',
+          model: 'Model',
+          profile: 'Profile',
+          source: 'Source',
+          started: 'Started',
+          stats: 'Stats',
+          tokens: (count: string) => `${count} tokens`,
+          updated: 'Updated',
+          workspace: 'Workspace'
+        },
         messageCount: (count: number) => `${count} messages`,
         projects: {
           home: 'Home',

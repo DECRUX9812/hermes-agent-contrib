@@ -4089,6 +4089,22 @@ export const esOverrides = {
       working: 'En progreso',
       done: 'Completado'
     },
+    peek: {
+      idle: 'Inactivo',
+      archived: 'Archivado',
+      workspace: 'Espacio de trabajo',
+      branch: 'Rama',
+      model: 'Modelo',
+      stats: 'Estadísticas',
+      tokens: count => `${count} tokens`,
+      agents: 'Agentes delegados',
+      agentsSummary: count => `${count} ${count === 1 ? 'agente' : 'agentes'}`,
+      agentsRunning: count => `${count} en ejecución`,
+      profile: 'Perfil',
+      source: 'Origen',
+      started: 'Iniciado',
+      updated: 'Actualizado'
+    },
     markAllRead: 'Marcar todo como leído'
   },
   composer: {

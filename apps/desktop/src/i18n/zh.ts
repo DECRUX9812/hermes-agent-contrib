@@ -3511,6 +3511,22 @@ export const zh = defineLocale({
       working: '进行中',
       done: '已完成'
     },
+    peek: {
+      idle: '空闲',
+      archived: '已归档',
+      workspace: '工作区',
+      branch: '分支',
+      model: '模型',
+      stats: '统计',
+      tokens: count => `${count} 个 token`,
+      agents: '委派的智能体',
+      agentsSummary: count => `${count} 个智能体`,
+      agentsRunning: count => `${count} 个运行中`,
+      profile: '配置文件',
+      source: '来源',
+      started: '开始时间',
+      updated: '更新时间'
+    },
     markAllRead: '全部标记为已读'
   },
 

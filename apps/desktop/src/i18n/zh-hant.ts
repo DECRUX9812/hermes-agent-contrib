@@ -2649,6 +2649,22 @@ export const zhHant = defineLocale({
 
   sidebar: {
     profileRail: '設定檔列',
+    peek: {
+      idle: '閒置',
+      archived: '已封存',
+      workspace: '工作區',
+      branch: '分支',
+      model: '模型',
+      stats: '統計',
+      tokens: count => `${count} 個 token`,
+      agents: '委派的代理人',
+      agentsSummary: count => `${count} 個代理人`,
+      agentsRunning: count => `${count} 個執行中`,
+      profile: '設定檔',
+      source: '來源',
+      started: '開始時間',
+      updated: '更新時間'
+    },
     markAllRead: '全部標示為已讀',
     filter: {
       grouping: '分組',
