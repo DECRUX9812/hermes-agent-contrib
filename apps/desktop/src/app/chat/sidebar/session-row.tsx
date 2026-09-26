@@ -1,6 +1,6 @@
 import { compactNumber } from '@hermes/shared'
 import { useStore } from '@nanostores/react'
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import type * as React from 'react'
 
 import { PrTag } from '@/app/chat/pr-tag'
@@ -50,6 +50,7 @@ import {
 } from './chrome'
 import { shellOwnsPress } from './reorderable-list'
 import { SessionActionsMenu, SessionContextMenu } from './session-actions-menu'
+import { SessionPeek } from './session-peek'
 import { sessionRowDetails } from './session-row-details'
 import { resolveSessionRowClick } from './session-row-gesture'
 import { SessionRowSlot } from './session-row-slots'
@@ -148,6 +149,10 @@ function SidebarSessionRowImpl({
 }: SidebarSessionRowProps) {
   const { t } = useI18n()
   const r = t.sidebar.row
+  // While the peek card is open the row's own hover labels (title overflow,
+  // badge tips, the age tip) would land on top of it — they go quiet until it
+  // closes. Open state lives here so every tip in the row shares the answer.
+  const [peekOpen, setPeekOpen] = useState(false)
   const { cancelPrewarm, notePointerMove, startPrewarm } = useProfilePrewarm(session.profile)
   const title = sessionTitle(session)
   const density = useStore($sessionListDensity)
@@ -252,7 +257,7 @@ function SidebarSessionRowImpl({
           <span className={cn('inline-block text-right', TAIL_HIDES)}>
             {head && sep}
             {showAge ? (
-              <Tip label={absoluteAge} side="top">
+              <Tip label={peekOpen ? '' : absoluteAge} side="top">
                 <time
                   aria-label={`${age}, ${absoluteAge}`}
                   className="pointer-events-auto focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sidebar-ring"
@@ -449,6 +454,7 @@ function SidebarSessionRowImpl({
         {...rest}
       >
         {showsRunningArc(dotState) && <span aria-hidden="true" className="arc-border arc-row" />}
+        <SessionPeek onOpenChange={setPeekOpen} session={session}>
         <SidebarRowBody
           // Every trailing figure lives in the actions slot, which the row
           // measures — so the title needs a gap from it and nothing else. Hover
@@ -524,7 +530,7 @@ function SidebarSessionRowImpl({
 
             const handoffBadge =
               handoffSource && handoffLabel ? (
-                <Tip label={r.handoffOrigin(handoffLabel)}>
+                <Tip label={peekOpen ? '' : r.handoffOrigin(handoffLabel)}>
                   <PlatformAvatar
                     className="-mt-px size-4 shrink-0 rounded-[4px] text-[0.5rem] [&_svg]:size-2.5"
                     platformId={handoffSource}
@@ -540,7 +546,7 @@ function SidebarSessionRowImpl({
             // automatic rotation is legible as one.
             const continuationBadge =
               session.continuation_kind === 'compression' ? (
-                <Tip label={r.continuationOrigin}>
+                <Tip label={peekOpen ? '' : r.continuationOrigin}>
                   <Codicon
                     aria-hidden="true"
                     className="size-3.5 shrink-0 text-(--ui-text-quaternary)"
@@ -558,7 +564,9 @@ function SidebarSessionRowImpl({
                   {handoffBadge}
                   {continuationBadge}
                   <span className="min-w-0 flex-1 self-center">
-                    <OverflowTip label={title} placement="row">
+                    {/* Remount while the peek is open: OverflowTip's `open` is
+                        internal state that would otherwise restore itself. */}
+                    <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
                       <SidebarRowLabel
                         className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
                         onPointerEnter={armMarquee}
@@ -622,7 +630,7 @@ function SidebarSessionRowImpl({
                 {/* Title + preview: ONE grouped cell with its own tight
                     internal gap — it does not inherit the card's rhythm. */}
                 <div className="flex min-w-0 flex-col gap-[0.15rem]">
-                  <OverflowTip label={title} placement="row">
+                  <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
                     <SidebarRowLabel
                       className={cn(
                         'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
@@ -665,6 +673,7 @@ function SidebarSessionRowImpl({
             )
           })()}
         </SidebarRowBody>
+        </SessionPeek>
       </SidebarRowShell>
     </SessionContextMenu>
   )

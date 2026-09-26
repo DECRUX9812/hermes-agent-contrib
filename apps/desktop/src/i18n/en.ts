@@ -3736,6 +3736,22 @@ export const en: Translations = {
       working: 'Working',
       done: 'Done'
     },
+    peek: {
+      idle: 'Idle',
+      archived: 'Archived',
+      workspace: 'Workspace',
+      branch: 'Branch',
+      model: 'Model',
+      stats: 'Stats',
+      tokens: count => `${count} tokens`,
+      agents: 'Delegated agents',
+      agentsSummary: count => `${count} ${count === 1 ? 'agent' : 'agents'}`,
+      agentsRunning: count => `${count} running`,
+      profile: 'Profile',
+      source: 'Source',
+      started: 'Started',
+      updated: 'Updated'
+    },
     markAllRead: 'Mark all as read'
   },
 

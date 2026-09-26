@@ -2054,6 +2054,22 @@ export const ar = defineLocale({
   },
   sidebar: {
     profileRail: 'شريط الملفات الشخصية',
+    peek: {
+      idle: 'خامل',
+      archived: 'مؤرشف',
+      workspace: 'مساحة العمل',
+      branch: 'الفرع',
+      model: 'النموذج',
+      stats: 'الإحصاءات',
+      tokens: count => `${count} رمز`,
+      agents: 'الوكلاء المفوَّضون',
+      agentsSummary: count => `${count} وكلاء`,
+      agentsRunning: count => `${count} قيد التشغيل`,
+      profile: 'الملف الشخصي',
+      source: 'المصدر',
+      started: 'بدأ',
+      updated: 'آخر تحديث'
+    },
     markAllRead: 'وضع علامة مقروء على الكل',
     filter: {
       grouping: 'تجميع',

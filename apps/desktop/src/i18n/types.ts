@@ -3165,6 +3165,24 @@ export interface Translations {
       working: string
       done: string
     }
+    /** The session hovercard ("peek") — inspect a row's full context without
+     *  resuming it. Labels for the card's detail rows. */
+    peek: {
+      idle: string
+      archived: string
+      workspace: string
+      branch: string
+      model: string
+      stats: string
+      tokens: (count: string) => string
+      agents: string
+      agentsSummary: (count: number) => string
+      agentsRunning: (count: number) => string
+      profile: string
+      source: string
+      started: string
+      updated: string
+    }
     markAllRead: string
   }
 

@@ -4119,6 +4119,22 @@ export const frOverrides = {
       working: 'En cours',
       done: 'Terminées'
     },
+    peek: {
+      idle: 'Inactif',
+      archived: 'Archivé',
+      workspace: 'Espace de travail',
+      branch: 'Branche',
+      model: 'Modèle',
+      stats: 'Statistiques',
+      tokens: count => `${count} tokens`,
+      agents: 'Agents délégués',
+      agentsSummary: count => `${count} ${count === 1 ? 'agent' : 'agents'}`,
+      agentsRunning: count => `${count} en cours`,
+      profile: 'Profil',
+      source: 'Source',
+      started: 'Démarré',
+      updated: 'Mis à jour'
+    },
     markAllRead: 'Tout marquer comme lu'
   },
   composer: {

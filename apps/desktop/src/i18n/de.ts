@@ -4110,6 +4110,22 @@ export const deOverrides = {
       working: 'In Arbeit',
       done: 'Erledigt'
     },
+    peek: {
+      idle: 'Leerlauf',
+      archived: 'Archiviert',
+      workspace: 'Arbeitsbereich',
+      branch: 'Branch',
+      model: 'Modell',
+      stats: 'Statistik',
+      tokens: count => `${count} Tokens`,
+      agents: 'Delegierte Agenten',
+      agentsSummary: count => `${count} ${count === 1 ? 'Agent' : 'Agenten'}`,
+      agentsRunning: count => `${count} aktiv`,
+      profile: 'Profil',
+      source: 'Quelle',
+      started: 'Gestartet',
+      updated: 'Aktualisiert'
+    },
     markAllRead: 'Alle als gelesen markieren'
   },
   composer: {

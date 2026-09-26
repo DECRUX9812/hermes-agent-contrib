@@ -2432,6 +2432,22 @@ export const ja = defineLocale({
 
   sidebar: {
     profileRail: 'プロファイルバー',
+    peek: {
+      idle: 'アイドル',
+      archived: 'アーカイブ済み',
+      workspace: 'ワークスペース',
+      branch: 'ブランチ',
+      model: 'モデル',
+      stats: '統計',
+      tokens: count => `${count} トークン`,
+      agents: '委任エージェント',
+      agentsSummary: count => `${count} 件のエージェント`,
+      agentsRunning: count => `${count} 件実行中`,
+      profile: 'プロファイル',
+      source: 'ソース',
+      started: '開始',
+      updated: '更新'
+    },
     markAllRead: 'すべて既読にする',
     filter: {
       grouping: 'グループ化',
