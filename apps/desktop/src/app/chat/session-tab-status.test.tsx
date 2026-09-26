@@ -28,11 +28,7 @@ describe('sessionTabStatus', () => {
   })
 
   it('prefers the run detail (resolved through aliases) over the raw digest', () => {
-    const status = sessionTabStatus(
-      's1',
-      [run({ startedMs: 1234, detail: 'Asking you' })],
-      { s1: 'stale digest' }
-    )
+    const status = sessionTabStatus('s1', [run({ startedMs: 1234, detail: 'Asking you' })], { s1: 'stale digest' })
 
     expect(status.detail).toBe('Asking you')
   })

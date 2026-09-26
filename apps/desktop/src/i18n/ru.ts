@@ -2018,7 +2018,13 @@ export const ru = defineLocale({
     settingsFields: 'Поля настроек',
     mcpServers: 'MCP-серверы',
     archivedChats: 'Архивные чаты',
-    sections: { maintenance: 'Обслуживание', notices: 'Уведомления', sessions: 'Сеансы', system: 'Система', usage: 'Использование' },
+    sections: {
+      maintenance: 'Обслуживание',
+      notices: 'Уведомления',
+      sessions: 'Сеансы',
+      system: 'Система',
+      usage: 'Использование'
+    },
     sectionDescriptions: {
       maintenance: 'Диагностика, резервные копии, курир и данные памяти',
       notices: 'Последние уведомления и оповещения',
@@ -2813,7 +2819,8 @@ export const ru = defineLocale({
       label: 'Интерфейс',
       simple: 'Простой',
       full: 'Полный',
-      toFull: 'Простой режим скрывает расширенные панели и элементы управления. Нажмите, чтобы вернуть полный интерфейс.',
+      toFull:
+        'Простой режим скрывает расширенные панели и элементы управления. Нажмите, чтобы вернуть полный интерфейс.',
       toSimple: 'Вернуться к простому интерфейсу с упором на чат.'
     },
     searchAria: 'Поиск сеансов',
@@ -3004,7 +3011,8 @@ export const ru = defineLocale({
       askAbout: 'Спросить об этом сеансе',
       ask: {
         clear: 'Очистить ветку',
-        dialogDesc: title => `Ответы на вопросы о ${title} берутся из сохранённой транскрипции — никогда из активного диалога.`,
+        dialogDesc: title =>
+          `Ответы на вопросы о ${title} берутся из сохранённой транскрипции — никогда из активного диалога.`,
         dialogTitle: 'Спросить об этом сеансе',
         empty: 'Спросите, что этот сеанс сделал, решил или записал.',
         failed: 'Не удалось получить ответ',
@@ -3025,8 +3033,7 @@ export const ru = defineLocale({
       isolateWorktreeDone: name => `Изолировано в worktree ${name}`,
       mergeWorktree: 'Слить worktree обратно',
       mergeWorktreeTitle: 'Слить worktree обратно',
-      mergeWorktreeDesc: (branch, repo) =>
-        `Слить ветку ${branch} обратно в копию ${repo}? Она должна быть чистой.`,
+      mergeWorktreeDesc: (branch, repo) => `Слить ветку ${branch} обратно в копию ${repo}? Она должна быть чистой.`,
       mergingWorktree: 'Слияние…',
       mergedWorktree: into => `Слито в ${into}`,
       mergeWorktreeFailed: 'Не удалось слить worktree',
@@ -3385,11 +3392,12 @@ export const ru = defineLocale({
     capturing: 'Снимаю…',
     clear: 'Начать заново',
     notePlaceholder: 'Заметка для агента (необязательно)…',
-    permissionDenied: 'Запись экрана выключена — включите в Настройках → Конфиденциальность и безопасность → Запись экрана.',
+    permissionDenied:
+      'Запись экрана выключена — включите в Настройках → Конфиденциальность и безопасность → Запись экрана.',
     selectHint: 'Тяните, чтобы выбрать область · Esc — отмена',
     toolTips: { arrow: 'Стрелка', pen: 'Рисовать', rect: 'Прямоугольник' },
     unavailable: 'Снимок экрана здесь недоступен.',
-    undo: 'Отменить',
+    undo: 'Отменить'
   },
   voiceStatus: {
     idle: 'Hermes простаивает — ничего не выполняется.',
@@ -3398,7 +3406,7 @@ export const ru = defineLocale({
     stalled: 'Hermes, похоже, завис — уже давно ничего не выдаёт.',
     needsInput: 'Hermes ждёт твоего ответа.',
     finished: 'Последний ход завершён — ответ ждёт тебя.',
-    progress: (done, total) => `Выполнено ${done} ${RU_PLURAL(done, 'задача', 'задачи', 'задач')} из ${total}.`,
+    progress: (done, total) => `Выполнено ${done} ${RU_PLURAL(done, 'задача', 'задачи', 'задач')} из ${total}.`
   },
   statusStack: {
     hideStack: 'Скрыть панель состояния',
@@ -4624,7 +4632,7 @@ export const ru = defineLocale({
     markdownReasoning: 'Рассуждения',
     markdownToolCall: 'Вызов инструмента',
     markdownToolResult: 'Результат инструмента',
-deliverableArtifacts: 'Артефакты',
+    deliverableArtifacts: 'Артефакты',
     deliverableChanges: 'Изменения',
     deliverableFilesLine: (files, added, removed) => `Затронуто файлов: ${files} · +${added} / −${removed}`,
     deliverableNoSummary: 'Ответ ассистента не записан',

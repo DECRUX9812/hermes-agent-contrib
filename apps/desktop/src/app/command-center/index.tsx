@@ -37,12 +37,7 @@ import { cn } from '@/lib/utils'
 import { upsertDesktopActionTask } from '@/store/activity'
 import { $costAnalyticsEnabled, setCostAnalyticsEnabled } from '@/store/cost-analytics-enabled'
 import { $pinnedSessionIds, pinSession, SIDEBAR_SESSIONS_PAGE_SIZE, unpinSession } from '@/store/layout'
-import {
-  $notificationHistory,
-  clearNotificationHistory,
-  type NotificationKind,
-  notify
-} from '@/store/notifications'
+import { $notificationHistory, clearNotificationHistory, type NotificationKind, notify } from '@/store/notifications'
 import { $sessionProfilesTruncated, $sessionProfilesUsage, $sessions, sessionPinId } from '@/store/session'
 import { confirmSharedGatewayRestart } from '@/store/system-actions'
 
@@ -57,7 +52,13 @@ import { MaintenancePanel } from './maintenance'
 
 export type CommandCenterSection = 'maintenance' | 'notices' | 'sessions' | 'system' | 'usage'
 
-const SECTIONS = ['sessions', 'notices', 'system', 'usage', 'maintenance'] as const satisfies readonly CommandCenterSection[]
+const SECTIONS = [
+  'sessions',
+  'notices',
+  'system',
+  'usage',
+  'maintenance'
+] as const satisfies readonly CommandCenterSection[]
 
 const LOG_FILES = ['agent', 'errors', 'gateway', 'desktop'] as const
 const LOG_LEVELS = ['ALL', 'INFO', 'WARNING', 'ERROR'] as const
@@ -175,9 +176,8 @@ export function CommandCenterView({
   // Gate like the other selectors: only subscribe on the Sessions tab so
   // System/Usage/Maintenance don't re-render when $sessionProfilesTruncated
   // ticks on every session fetch.
-  const sessionProfilesTruncated = useStoreSelector(
-    $sessionProfilesTruncated,
-    s => (section === 'sessions' ? s : EMPTY_TRUNCATED)
+  const sessionProfilesTruncated = useStoreSelector($sessionProfilesTruncated, s =>
+    section === 'sessions' ? s : EMPTY_TRUNCATED
   )
 
   const [query, setQuery] = useState('')
@@ -434,48 +434,48 @@ export function CommandCenterView({
                 ) : (
                   <ul>
                     {filteredSessions.map(session => {
-                    const pinId = sessionPinId(session)
-                    const pinned = pinnedSessionIds.includes(pinId)
+                      const pinId = sessionPinId(session)
+                      const pinned = pinnedSessionIds.includes(pinId)
 
-                    return (
-                      <li className="group flex items-center gap-2 py-2" key={session.id}>
-                        <button
-                          className="min-w-0 flex-1 text-left"
-                          onClick={() => onOpenSession(session.id)}
-                          type="button"
-                        >
-                          <div className="truncate text-[length:var(--conversation-text-font-size)] font-medium text-foreground">
-                            {sessionTitle(session)}
+                      return (
+                        <li className="group flex items-center gap-2 py-2" key={session.id}>
+                          <button
+                            className="min-w-0 flex-1 text-left"
+                            onClick={() => onOpenSession(session.id)}
+                            type="button"
+                          >
+                            <div className="truncate text-[length:var(--conversation-text-font-size)] font-medium text-foreground">
+                              {sessionTitle(session)}
+                            </div>
+                            <div className="truncate text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
+                              {formatTimestamp(session.last_active || session.started_at)}
+                            </div>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                            <RowIconButton
+                              onClick={() => (pinned ? unpinSession(pinId) : pinSession(pinId))}
+                              title={pinned ? cc.unpinSession : cc.pinSession}
+                            >
+                              {pinned ? <BookmarkFilled className="size-3.5" /> : <Bookmark className="size-3.5" />}
+                            </RowIconButton>
+                            <RowIconButton
+                              onClick={() => void exportSession(session.id, { session, title: sessionTitle(session) })}
+                              title={cc.exportSession}
+                            >
+                              <Download className="size-3.5" />
+                            </RowIconButton>
+                            <RowIconButton
+                              className="hover:text-destructive"
+                              onClick={() => setPendingDelete(session)}
+                              title={cc.deleteSession}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </RowIconButton>
                           </div>
-                          <div className="truncate text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
-                            {formatTimestamp(session.last_active || session.started_at)}
-                          </div>
-                        </button>
-                        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                          <RowIconButton
-                            onClick={() => (pinned ? unpinSession(pinId) : pinSession(pinId))}
-                            title={pinned ? cc.unpinSession : cc.pinSession}
-                          >
-                            {pinned ? <BookmarkFilled className="size-3.5" /> : <Bookmark className="size-3.5" />}
-                          </RowIconButton>
-                          <RowIconButton
-                            onClick={() => void exportSession(session.id, { session, title: sessionTitle(session) })}
-                            title={cc.exportSession}
-                          >
-                            <Download className="size-3.5" />
-                          </RowIconButton>
-                          <RowIconButton
-                            className="hover:text-destructive"
-                            onClick={() => setPendingDelete(session)}
-                            title={cc.deleteSession}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </RowIconButton>
-                        </div>
-                      </li>
-                    )
-                  })}
-                </ul>
+                        </li>
+                      )
+                    })}
+                  </ul>
                 )}
               </div>
               {hasMoreSessions && !!onLoadMoreSessions && !debouncedQuery && (
@@ -637,7 +637,10 @@ function NoticesPanel() {
             const Icon = tone.icon
 
             return (
-              <li className="flex items-start gap-2.5 border-b border-(--ui-stroke-tertiary) py-2.5 last:border-b-0" key={entry.id}>
+              <li
+                className="flex items-start gap-2.5 border-b border-(--ui-stroke-tertiary) py-2.5 last:border-b-0"
+                key={entry.id}
+              >
                 <Icon className={cn('mt-0.5 size-3.5 shrink-0', tone.iconClass)} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
@@ -668,7 +671,9 @@ function NoticesPanel() {
                             : n.destCenter}
                       </span>
                       {entry.actionLabel && (
-                        <span className="rounded-sm border border-(--ui-stroke-tertiary) px-1 leading-4">{entry.actionLabel}</span>
+                        <span className="rounded-sm border border-(--ui-stroke-tertiary) px-1 leading-4">
+                          {entry.actionLabel}
+                        </span>
                       )}
                     </div>
                   )}
@@ -708,10 +713,7 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
   const profileSpend = useMemo(() => (costEnabled ? profileSpendRows(profilesUsage) : []), [costEnabled, profilesUsage])
   const sessionSpend = useMemo(() => (costEnabled ? sessionSpendRows(allSessions, 6) : []), [allSessions, costEnabled])
 
-  const maxDailyCost = useMemo(
-    () => daily.reduce((acc, entry) => Math.max(acc, entry.estimated_cost || 0), 0),
-    [daily]
-  )
+  const maxDailyCost = useMemo(() => daily.reduce((acc, entry) => Math.max(acc, entry.estimated_cost || 0), 0), [daily])
 
   const maxTokens = useMemo(() => {
     if (!daily.length) {
@@ -764,12 +766,7 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
         />
       </div>
 
-      <div
-        className={cn(
-          'grid grid-cols-2 gap-x-4 gap-y-4 py-2 sm:grid-cols-3',
-          costEnabled && 'sm:grid-cols-4'
-        )}
-      >
+      <div className={cn('grid grid-cols-2 gap-x-4 gap-y-4 py-2 sm:grid-cols-3', costEnabled && 'sm:grid-cols-4')}>
         <UsageStat label={cc.statSessions} value={compactNumber(totals.total_sessions)} />
         <UsageStat label={cc.statApiCalls} value={compactNumber(totals.total_api_calls)} />
         <UsageStat

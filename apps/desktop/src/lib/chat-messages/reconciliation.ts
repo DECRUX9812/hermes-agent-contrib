@@ -128,7 +128,9 @@ const attachmentTurnAssistantMatchIndex = (
     return -1
   }
 
-  const storedUserIndex = storedMessages.findIndex(stored => stored.role === 'user' && sameAttachmentTurn(stored, localUser))
+  const storedUserIndex = storedMessages.findIndex(
+    stored => stored.role === 'user' && sameAttachmentTurn(stored, localUser)
+  )
 
   if (storedUserIndex === -1) {
     return -1
@@ -349,9 +351,7 @@ function localAssistantErrorIdsToPreserve(
     // hydrated user row, still names the turn: fold the error onto the first
     // settled assistant reply after that row.
     const hydratedAttachmentAssistantIndex =
-      hydratedAssistantIndex === -1
-        ? attachmentTurnAssistantMatchIndex(mergedNextMessages, currentMessages, index)
-        : -1
+      hydratedAssistantIndex === -1 ? attachmentTurnAssistantMatchIndex(mergedNextMessages, currentMessages, index) : -1
 
     if (hydratedAttachmentAssistantIndex !== -1) {
       mergedNextMessages[hydratedAttachmentAssistantIndex] = {

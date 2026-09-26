@@ -164,12 +164,7 @@ export function SessionSelectionBar() {
           <Codicon name="close" size="0.6875rem" />
         </button>
       </div>
-      <SelectionTagsDialog
-        count={count}
-        onOpenChange={setTagOpen}
-        open={tagOpen}
-        selected={selected}
-      />
+      <SelectionTagsDialog count={count} onOpenChange={setTagOpen} open={tagOpen} selected={selected} />
     </div>
   )
 }

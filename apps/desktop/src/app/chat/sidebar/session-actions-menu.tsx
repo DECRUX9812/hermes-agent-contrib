@@ -67,11 +67,7 @@ import { $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
 import { $sessionTags, addSessionTag, removeSessionTag, sessionTagKey } from '@/store/session-tags'
 import { ackStoredSessionId } from '@/store/session-unread'
 import { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } from '@/store/session-watch'
-import {
-  isolateSessionToWorktree,
-  mergeSessionWorktree,
-  sessionWorktreeInfo
-} from '@/store/session-worktree'
+import { isolateSessionToWorktree, mergeSessionWorktree, sessionWorktreeInfo } from '@/store/session-worktree'
 import { canOpenSessionInTerminal, canOpenSessionWindow, openSessionInTerminal } from '@/store/windows'
 
 import type { SessionTitleResponse } from '../../types'
@@ -276,7 +272,7 @@ function SessionWorktreeItems({
 function HandoffPlatformItems({ kit, profile }: { kit: MenuKit; profile?: string }) {
   const { t } = useI18n()
   const r = t.sidebar.row
-  const [platforms, setPlatforms] = useState< MessagingPlatformInfo[] | null>(null)
+  const [platforms, setPlatforms] = useState<MessagingPlatformInfo[] | null>(null)
 
   useEffect(() => {
     let live = true
@@ -858,18 +854,23 @@ function useSessionActions({
   )
 
   const askDialog = (
-    <SessionAskDialog
-      onOpenChange={setAskOpen}
-      open={askOpen}
-      profile={profile}
-      sessionId={sessionId}
-      title={title}
-    />
+    <SessionAskDialog onOpenChange={setAskOpen} open={askOpen} profile={profile} sessionId={sessionId} title={title} />
   )
 
-  const deviceDialog = <SessionDeviceDialog onOpenChange={setDeviceOpen} open={deviceOpen} sessionId={sessionId} title={title} />
+  const deviceDialog = (
+    <SessionDeviceDialog onOpenChange={setDeviceOpen} open={deviceOpen} sessionId={sessionId} title={title} />
+  )
 
-  return { askDialog, deleteDialog, deviceDialog, mergeWorktreeDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog }
+  return {
+    askDialog,
+    deleteDialog,
+    deviceDialog,
+    mergeWorktreeDialog,
+    onCloseAutoFocus,
+    renameDialog,
+    renderItems,
+    tagsDialog
+  }
 }
 
 interface MergeWorktreeDialogProps {
@@ -939,8 +940,16 @@ interface SessionActionsMenuProps
 export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ...actions }: SessionActionsMenuProps) {
   const { t } = useI18n()
 
-  const { askDialog, deleteDialog, deviceDialog, mergeWorktreeDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } =
-    useSessionActions(actions)
+  const {
+    askDialog,
+    deleteDialog,
+    deviceDialog,
+    mergeWorktreeDialog,
+    onCloseAutoFocus,
+    renameDialog,
+    renderItems,
+    tagsDialog
+  } = useSessionActions(actions)
 
   return (
     <>
@@ -971,8 +980,16 @@ interface SessionContextMenuProps extends SessionActions {
 export function SessionContextMenu({ children, ...actions }: SessionContextMenuProps) {
   const { t } = useI18n()
 
-  const { askDialog, deleteDialog, deviceDialog, mergeWorktreeDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } =
-    useSessionActions(actions)
+  const {
+    askDialog,
+    deleteDialog,
+    deviceDialog,
+    mergeWorktreeDialog,
+    onCloseAutoFocus,
+    renameDialog,
+    renderItems,
+    tagsDialog
+  } = useSessionActions(actions)
 
   return (
     <>
@@ -1130,10 +1147,7 @@ function SessionTagsDialog({ open, onOpenChange, sessionId, profile }: SessionTa
         {tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {tags.map(tag => (
-              <span
-                className="inline-flex items-center gap-0.5 rounded-full py-0.5 pr-0.5 pl-0.5"
-                key={tag.label}
-              >
+              <span className="inline-flex items-center gap-0.5 rounded-full py-0.5 pr-0.5 pl-0.5" key={tag.label}>
                 <SessionTagChip tag={tag} />
                 <button
                   aria-label={r.tagsRemoveLabel(tag.label)}

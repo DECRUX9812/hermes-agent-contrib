@@ -77,9 +77,7 @@ export function PhoneParityCard({
       <p className="mt-1 text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-(--ui-text-tertiary)">
         {qrLink ? p.scanHint : p.linkPending}
       </p>
-      {qr && (
-        <img alt={p.title} className="mt-2 rounded-sm" height={112} src={qr} width={112} />
-      )}
+      {qr && <img alt={p.title} className="mt-2 rounded-sm" height={112} src={qr} width={112} />}
       <div className="mt-2 flex items-center gap-2">
         <Button disabled={!openLink} onClick={() => openExternalLink(openLink)} size="sm" variant="secondary">
           {p.openLink}

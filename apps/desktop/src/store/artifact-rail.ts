@@ -1,9 +1,6 @@
 import { atom, computed } from 'nanostores'
 
-import {
-  collectArtifactsForSession,
-  type ArtifactRecord as TranscriptArtifact
-} from '@/app/artifacts/artifact-utils'
+import { collectArtifactsForSession, type ArtifactRecord as TranscriptArtifact } from '@/app/artifacts/artifact-utils'
 import { SIDEBAR_COLLAPSE_MEDIA_QUERY } from '@/app/layout-constants'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { isPaneVisible, revealTreePane } from '@/components/pane-shell/tree/store'

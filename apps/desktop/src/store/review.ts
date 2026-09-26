@@ -146,9 +146,7 @@ export const $reviewScopeTarget = atom('main')
  *  backend), so an unowned path yields null and the pane falls to its
  *  "not a repo" state instead. */
 export const reviewRepoCwd = (): null | string =>
-  $reviewScopeCwd.get()?.trim() ||
-  (workspaceCwdBelongsToSelectedSession() ? $currentCwd.get()?.trim() : null) ||
-  null
+  $reviewScopeCwd.get()?.trim() || (workspaceCwdBelongsToSelectedSession() ? $currentCwd.get()?.trim() : null) || null
 
 const repoCwd = reviewRepoCwd
 

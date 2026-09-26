@@ -32,8 +32,7 @@ export interface RecordedStep {
 
 export const RECORD_STEPS_LIMIT = 400
 
-const INTERACTIVE =
-  'a,button,input,select,textarea,label,summary,[role="button"],[role="link"],[onclick],[tabindex]'
+const INTERACTIVE = 'a,button,input,select,textarea,label,summary,[role="button"],[role="link"],[onclick],[tabindex]'
 
 const FORM_FIELD = 'INPUT,TEXTAREA,SELECT'
 
@@ -42,15 +41,13 @@ export function recordInPage(doc: Document, isTrustedEvent?: (event: Event) => b
   let steps: RecordedStep[] = []
   let bound = false
 
-  const clip = (value: null | string | undefined, max = 40) =>
-    (value || '').replace(/\s+/g, ' ').trim().slice(0, max)
+  const clip = (value: null | string | undefined, max = 40) => (value || '').replace(/\s+/g, ' ').trim().slice(0, max)
 
   /** Attribute value inside a `["…"]` selector: close the string honestly. */
   const quoted = (value: string) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 
   /** `#id` for sane ids, `[id="…"]` otherwise — `#foo.bar` resolves nothing. */
-  const idSelector = (id: string) =>
-    /^[A-Za-z][\w-]*$/.test(id) ? `#${id}` : `[id=${quoted(id)}]`
+  const idSelector = (id: string) => (/^[A-Za-z][\w-]*$/.test(id) ? `#${id}` : `[id=${quoted(id)}]`)
 
   function selectorFor(el: Element): string | undefined {
     const element = el as HTMLElement

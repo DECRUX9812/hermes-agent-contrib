@@ -91,9 +91,7 @@ export function windowBackgroundMaterialOptions(
   isWindows: boolean,
   glassSupported: boolean
 ): { backgroundMaterial?: WindowsBackgroundMaterial } {
-  return isWindows && glassSupported && glassActive(state)
-    ? { backgroundMaterial: backgroundMaterialFor(state) }
-    : {}
+  return isWindows && glassSupported && glassActive(state) ? { backgroundMaterial: backgroundMaterialFor(state) } : {}
 }
 
 /**

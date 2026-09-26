@@ -4,8 +4,7 @@ import type { SessionInfo } from '@/types/hermes'
 
 import { formatUsd, profileSpendRows, sessionSpendRows } from './cost-analytics'
 
-const session = (over: Partial<SessionInfo>): SessionInfo =>
-  ({ id: 's', title: '', ...over }) as SessionInfo
+const session = (over: Partial<SessionInfo>): SessionInfo => ({ id: 's', title: '', ...over }) as SessionInfo
 
 describe('formatUsd', () => {
   it('rounds to whole cents like the sidebar usage totals', () => {

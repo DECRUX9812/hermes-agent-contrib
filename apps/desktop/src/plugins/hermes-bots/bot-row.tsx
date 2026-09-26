@@ -107,7 +107,16 @@ interface BotRowProps {
   showHandle?: boolean
 }
 
-export function BotRow({ bot, onAssignTask, onDelete, onEdit, onGroup, onNewSection, openTasks, showHandle }: BotRowProps) {
+export function BotRow({
+  bot,
+  onAssignTask,
+  onDelete,
+  onEdit,
+  onGroup,
+  onNewSection,
+  openTasks,
+  showHandle
+}: BotRowProps) {
   const { t } = useI18n()
   const b = useBots()
   const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
@@ -322,9 +331,7 @@ export function BotRow({ bot, onAssignTask, onDelete, onEdit, onGroup, onNewSect
             platform cards there carry the deep link + QR. Remote-source bots
             have no platforms on this backend, so the item hides for them. */}
         {!bot.remoteSource && typeof host.navigate === 'function' && (
-          <ContextMenuItem
-            onSelect={() => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`)}
-          >
+          <ContextMenuItem onSelect={() => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`)}>
             {b.bot.continueOnPhone}
           </ContextMenuItem>
         )}

@@ -12,8 +12,7 @@ const PLAN_TAIL_ABS_RE = /[\\/]\.hermes[\\/]plans[\\/][^\\/]+\.md$/i
 const PLAN_TAIL_REL_RE = /^\.hermes[\\/]plans[\\/][^\\/]+\.md$/i
 const FILE_URL_RE = /^file:\/\//i
 
-const normalizePath = (value: string): string =>
-  value.replace(FILE_URL_RE, '').replace(/\\/g, '/').replace(/^\.\//, '')
+const normalizePath = (value: string): string => value.replace(FILE_URL_RE, '').replace(/\\/g, '/').replace(/^\.\//, '')
 
 /** The plan file's path as the artifact carries it, or null when the record
  *  isn't a `.hermes/plans/*.md` file artifact. */

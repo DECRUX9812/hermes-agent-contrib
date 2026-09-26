@@ -655,7 +655,7 @@ const en: BotsMessages = {
     assignTask: 'Assign task…',
     assignTitle: bot => `Assign task to ${bot}`,
     assignTitleGeneric: 'Assign task',
-    assignDescription: 'Files a tracked note beside the bot\'s chat — it accepts, declines, or marks it done.',
+    assignDescription: "Files a tracked note beside the bot's chat — it accepts, declines, or marks it done.",
     titlePlaceholder: 'Task title',
     bodyPlaceholder: 'Details, links, acceptance criteria…',
     send: 'Assign',

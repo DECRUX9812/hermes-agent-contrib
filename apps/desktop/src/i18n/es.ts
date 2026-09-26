@@ -1069,8 +1069,7 @@ export const esOverrides = {
       quietHoursFrom: 'Desde',
       quietHoursTo: 'Hasta',
       digestTitle: 'Resumen por hora',
-      digestDesc:
-        'Agrupa las notificaciones rutinarias en un solo resumen cada hora en lugar de emitirlas una a una.',
+      digestDesc: 'Agrupa las notificaciones rutinarias en un solo resumen cada hora en lugar de emitirlas una a una.',
       sessionOverridesTitle: 'Excepciones por sesión',
       sessionOverridesDesc:
         'Chats que silenciaste desde el menú de sesión de la barra lateral. Reactiva cualquiera desde aquí.',
@@ -4250,7 +4249,8 @@ export const esOverrides = {
       askAbout: 'Preguntar sobre esta sesión',
       ask: {
         clear: 'Borrar hilo',
-        dialogDesc: title => `Las preguntas sobre ${title} se responden desde su transcripción guardada — nunca desde la conversación activa.`,
+        dialogDesc: title =>
+          `Las preguntas sobre ${title} se responden desde su transcripción guardada — nunca desde la conversación activa.`,
         dialogTitle: 'Preguntar sobre esta sesión',
         empty: 'Pregunta qué hizo, decidió o escribió esta sesión.',
         failed: 'No se pudo obtener una respuesta',
@@ -4308,8 +4308,7 @@ export const esOverrides = {
       tag: 'Etiquetar',
       archive: 'Archivar',
       clear: 'Quitar selección',
-      tagDialogTitle: (count: number) =>
-        count === 1 ? 'Etiquetar 1 sesión' : `Etiquetar ${count} sesiones`,
+      tagDialogTitle: (count: number) => (count === 1 ? 'Etiquetar 1 sesión' : `Etiquetar ${count} sesiones`),
       tagDialogDesc: 'Añade la etiqueta a todas las sesiones seleccionadas.'
     },
     dateDivider: {
@@ -4637,11 +4636,12 @@ export const esOverrides = {
     capturing: 'Capturando…',
     clear: 'Empezar de nuevo',
     notePlaceholder: 'Nota para el agente (opcional)…',
-    permissionDenied: 'La grabación de pantalla está desactivada: actívala en Ajustes → Privacidad y seguridad → Grabación de pantalla.',
+    permissionDenied:
+      'La grabación de pantalla está desactivada: actívala en Ajustes → Privacidad y seguridad → Grabación de pantalla.',
     selectHint: 'Arrastra para elegir una zona · Esc para cancelar',
     toolTips: { arrow: 'Flecha', pen: 'Dibujar', rect: 'Rectángulo' },
     unavailable: 'La captura de pantalla no está disponible aquí.',
-    undo: 'Deshacer',
+    undo: 'Deshacer'
   },
   voiceStatus: {
     idle: 'Hermes está inactivo — no hay nada en marcha.',
@@ -4650,7 +4650,7 @@ export const esOverrides = {
     stalled: 'Hermes parece atascado — lleva un rato sin responder.',
     needsInput: 'Hermes está esperando tu respuesta.',
     finished: 'El último turno terminó — la respuesta te está esperando.',
-    progress: (done, total) => `${done} de ${total} tareas hechas.`,
+    progress: (done, total) => `${done} de ${total} tareas hechas.`
   },
   statusStack: {
     hideStack: 'Ocultar la pila de estado',
@@ -6354,7 +6354,7 @@ export const esOverrides = {
     markdownReasoning: 'Razonamiento',
     markdownToolCall: 'Llamada a herramienta',
     markdownToolResult: 'Resultado de herramienta',
-deliverableArtifacts: 'Artefactos',
+    deliverableArtifacts: 'Artefactos',
     deliverableChanges: 'Cambios',
     deliverableFilesLine: (files, added, removed) => `${files} archivos modificados · +${added} / −${removed}`,
     deliverableNoSummary: 'No se registró ninguna respuesta del asistente',

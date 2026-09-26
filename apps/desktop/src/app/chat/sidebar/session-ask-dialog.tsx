@@ -95,16 +95,12 @@ export function SessionAskDialog({ open, onOpenChange, sessionId, title, profile
           <DialogDescription>{r.dialogDesc(title || durableId)}</DialogDescription>
         </DialogHeader>
         <div className="min-h-24 flex-1 space-y-3 overflow-y-auto py-1" ref={scrollRef}>
-          {thread.length === 0 && !pending && (
-            <p className="text-sm text-(--ui-text-tertiary)">{r.empty}</p>
-          )}
+          {thread.length === 0 && !pending && <p className="text-sm text-(--ui-text-tertiary)">{r.empty}</p>}
           {thread.map((turn, index) => (
             <div className="space-y-1" key={`${turn.askedAt}-${index}`}>
               <p className="text-sm font-medium">{turn.question}</p>
               <p className="text-sm whitespace-pre-wrap text-(--ui-text-secondary)">{turn.answer}</p>
-              {turn.truncated && (
-                <p className="text-xs text-(--ui-text-tertiary)">{r.truncatedNote}</p>
-              )}
+              {turn.truncated && <p className="text-xs text-(--ui-text-tertiary)">{r.truncatedNote}</p>}
             </div>
           ))}
           {pending && (
@@ -135,11 +131,7 @@ export function SessionAskDialog({ open, onOpenChange, sessionId, title, profile
         </div>
         <DialogFooter>
           {thread.length > 0 && (
-            <Button
-              onClick={() => clearSessionAskThread(ownerProfile, durableId)}
-              type="button"
-              variant="ghost"
-            >
+            <Button onClick={() => clearSessionAskThread(ownerProfile, durableId)} type="button" variant="ghost">
               {r.clear}
             </Button>
           )}

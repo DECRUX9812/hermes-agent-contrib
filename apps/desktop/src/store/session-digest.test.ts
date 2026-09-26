@@ -19,7 +19,13 @@ const assistantMessage = (parts: ChatMessage['parts'], pending = false): ChatMes
   ({ id: 'a1', parts, pending, role: 'assistant' }) as ChatMessage
 
 const toolPart = (toolName: string, args: unknown = {}, pending = true) =>
-  ({ type: 'tool-call', toolCallId: `${toolName}-1`, toolName, args, ...(pending ? {} : { result: { ok: true } }) }) as never
+  ({
+    type: 'tool-call',
+    toolCallId: `${toolName}-1`,
+    toolName,
+    args,
+    ...(pending ? {} : { result: { ok: true } })
+  }) as never
 
 const subagent = (overrides: Partial<SubagentProgress>): SubagentProgress =>
   ({

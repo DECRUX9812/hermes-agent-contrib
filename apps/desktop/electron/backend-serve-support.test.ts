@@ -49,7 +49,10 @@ test('a probe that fails by timeout is not cached, so the next check re-probes',
 })
 
 test('a CLI without serve routes through dashboard only after its help command succeeds', async () => {
-  const probe = vi.spyOn(probes, 'execProbe').mockRejectedValueOnce(new Error('unknown serve')).mockResolvedValueOnce(undefined)
+  const probe = vi
+    .spyOn(probes, 'execProbe')
+    .mockRejectedValueOnce(new Error('unknown serve'))
+    .mockResolvedValueOnce(undefined)
   const supportsServe = createBackendServeSupportResolver('/unused', () => {})
   const backend = { command: '/unused/hermes', args: ['serve'] }
 

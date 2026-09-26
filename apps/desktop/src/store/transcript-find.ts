@@ -108,10 +108,7 @@ export function transcriptFindTarget(root: Element): TranscriptFindTarget | null
  * the user most likely means. Cached per (session, owner) for the TTL so a
  * typing burst never re-reads the transcript.
  */
-export function loadTranscriptFindCorpus(
-  target: TranscriptFindTarget,
-  signal: AbortSignal
-): Promise<Corpus | null> {
+export function loadTranscriptFindCorpus(target: TranscriptFindTarget, signal: AbortSignal): Promise<Corpus | null> {
   const key = corpusKey(target.storedId, target.scope)
   const cached = corpusCache.get(key)
 

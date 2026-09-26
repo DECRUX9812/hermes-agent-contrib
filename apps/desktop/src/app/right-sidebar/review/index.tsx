@@ -40,13 +40,7 @@ import {
   toggleReviewTreeMode,
   unstageReviewFile
 } from '@/store/review'
-import {
-  $selfReview,
-  $selfReviewRunning,
-  clearSelfReview,
-  runSelfReview,
-  selfReviewForFile
-} from '@/store/self-review'
+import { $selfReview, $selfReviewRunning, clearSelfReview, runSelfReview, selfReviewForFile } from '@/store/self-review'
 
 import { SidebarPanelLabel } from '../../shell/sidebar-label'
 import { PaneEmptyState, RightSidebarSectionHeader } from '../index'
@@ -79,10 +73,7 @@ export function ReviewPane() {
   const selectedFile = files.find(file => file.path === selectedPath)
   const selectedComments = selectedFile ? selfReviewForFile(selectedFile.path, diff) : []
 
-  const selfReviewTotal = Object.values(selfReview.files).reduce(
-    (total, entry) => total + entry.comments.length,
-    0
-  )
+  const selfReviewTotal = Object.values(selfReview.files).reduce((total, entry) => total + entry.comments.length, 0)
 
   const hasFiles = files.length > 0
   // `{ path: null }` → revert all; `{ path: '…' }` → revert one file.

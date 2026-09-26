@@ -30,7 +30,13 @@ describe('fanOutTargets', () => {
         [
           agent({ profile: 'default' }),
           agent({ profile: 'omar', handle: 'omar@this-device' }),
-          agent({ connectionId: 'conn-b', connectionKind: 'ssh', connectionLabel: 'VPS', profile: 'ops', handle: 'ops@vps' })
+          agent({
+            connectionId: 'conn-b',
+            connectionKind: 'ssh',
+            connectionLabel: 'VPS',
+            profile: 'ops',
+            handle: 'ops@vps'
+          })
         ],
         [
           { connectionId: 'conn-a', label: 'This device', kind: 'local', reachable: true },

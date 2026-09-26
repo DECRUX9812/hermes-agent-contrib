@@ -60,10 +60,13 @@ describe('diffStarmapGraphs', () => {
   })
 
   it('reports only added nodes + new links as a non-structural delta', () => {
-    const next = graph([node('a'), node('b'), node('c')], [
-      { source: 'a', target: 'b' },
-      { source: 'b', target: 'c' }
-    ])
+    const next = graph(
+      [node('a'), node('b'), node('c')],
+      [
+        { source: 'a', target: 'b' },
+        { source: 'b', target: 'c' }
+      ]
+    )
 
     const delta = diffStarmapGraphs(before, next)
 
@@ -97,7 +100,10 @@ describe('sameStarmapGraph', () => {
 })
 
 describe('resolveLiveSkillSessions', () => {
-  const sessions = [makeSessionInfo({ id: 's-old', last_active: 10 }), makeSessionInfo({ id: 's-new', last_active: 99 })]
+  const sessions = [
+    makeSessionInfo({ id: 's-old', last_active: 10 }),
+    makeSessionInfo({ id: 's-new', last_active: 99 })
+  ]
 
   it('binds a skill to its busiest session, then the most recent', () => {
     const live = resolveLiveSkillSessions(
@@ -138,8 +144,14 @@ describe('resolveLiveSkillSessions', () => {
 
 describe('settle detection', () => {
   it('fires only on a busy → idle edge for a skill', () => {
-    const busy = new Map([['coding', true], ['git', true]])
-    const next = new Map([['coding', false], ['git', true]])
+    const busy = new Map([
+      ['coding', true],
+      ['git', true]
+    ])
+    const next = new Map([
+      ['coding', false],
+      ['git', true]
+    ])
 
     expect(detectSettles(busy, next)).toEqual(['coding'])
     // A skill dropping off the map entirely also settles.

@@ -78,9 +78,7 @@ export const PreviewVerifyRow = memo(function PreviewVerifyRow({
       >
         <span className="min-w-0 truncate text-[0.73rem] leading-4 text-foreground/92">
           {label}
-          {!item.running && item.firstError && (
-            <span className="text-muted-foreground/80"> — {item.firstError}</span>
-          )}
+          {!item.running && item.firstError && <span className="text-muted-foreground/80"> — {item.firstError}</span>}
         </span>
       </Tip>
     </StatusRow>

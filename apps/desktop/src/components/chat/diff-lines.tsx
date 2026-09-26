@@ -359,7 +359,9 @@ function WindowedRow({
   const anchor = onLineAnchor ? commentAnchorLine(line) : undefined
 
   return (
-    <span className={cn(PREVIEW_DIFF_LINE_BASE, DIFF_KIND_TINT[line.kind], anchor !== undefined && 'group/dr relative')}>
+    <span
+      className={cn(PREVIEW_DIFF_LINE_BASE, DIFF_KIND_TINT[line.kind], anchor !== undefined && 'group/dr relative')}
+    >
       {anchor !== undefined && onLineAnchor && <LineCommentButton anchor={anchor} onAnchor={onLineAnchor} />}
       {tokens && tokens.length > 0
         ? tokens.map((token, tokenIndex) => (
@@ -617,9 +619,7 @@ function TokenizedDiffBody({
           return <CommentRow key={`${index}-${line.text}`} line={line} />
         }
 
-        return (
-          <WindowedRow key={`${index}-${line.text}`} line={line} tokens={tokens[index] ?? []} />
-        )
+        return <WindowedRow key={`${index}-${line.text}`} line={line} tokens={tokens[index] ?? []} />
       })}
     </>
   )
@@ -834,8 +834,7 @@ export function FileDiffPanel({
   virtualized = false
 }: FileDiffPanelProps) {
   const lines = React.useMemo(
-    () =>
-      insertDiffComments(fullText != null ? parseFullFileDiff(diff, fullText) : parseDiff(diff), comments ?? []),
+    () => insertDiffComments(fullText != null ? parseFullFileDiff(diff, fullText) : parseDiff(diff), comments ?? []),
     [comments, diff, fullText]
   )
 

@@ -226,7 +226,8 @@ export function buildFleetRuns({
 
     // A claim may land on any lineage alias (compression/branch tips claim
     // under every id), not just the row's stored id — resolve both.
-    const row = sessions.find(session => session.id === key) ?? sessions.find(session => session._lineage_ids?.includes(key))
+    const row =
+      sessions.find(session => session.id === key) ?? sessions.find(session => session._lineage_ids?.includes(key))
 
     if (row?.archived) {
       continue

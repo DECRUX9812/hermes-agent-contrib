@@ -7,7 +7,10 @@ vi.mock('@/i18n', () => ({
 import { buildMenuBarStatus, MENU_BAR_RECENT_SESSIONS } from './menu-bar-status'
 import type { SessionDotState } from './session-dot-state'
 
-const session = (id: string, overrides: { archived?: boolean; preview?: null | string; title?: null | string } = {}) => ({
+const session = (
+  id: string,
+  overrides: { archived?: boolean; preview?: null | string; title?: null | string } = {}
+) => ({
   archived: false,
   id,
   preview: '',
@@ -21,10 +24,7 @@ describe('buildMenuBarStatus', () => {
   })
 
   it('reports a quiet idle state when nothing is running or waiting', () => {
-    const result = buildMenuBarStatus(
-      { a: 'idle' as SessionDotState },
-      [session('a')]
-    )
+    const result = buildMenuBarStatus({ a: 'idle' as SessionDotState }, [session('a')])
 
     expect(result.activeRuns).toBe(0)
     expect(result.needsYou).toBe(0)
@@ -54,10 +54,10 @@ describe('buildMenuBarStatus', () => {
   })
 
   it('excludes archived sessions from counts and the recent list', () => {
-    const result = buildMenuBarStatus(
-      { a: 'needs-input', b: 'unread' } as Record<string, SessionDotState>,
-      [session('a', { archived: true }), session('b')]
-    )
+    const result = buildMenuBarStatus({ a: 'needs-input', b: 'unread' } as Record<string, SessionDotState>, [
+      session('a', { archived: true }),
+      session('b')
+    ])
 
     expect(result.needsYou).toBe(1)
     expect(result.sessions.map(row => row.id)).toEqual(['b'])
@@ -86,14 +86,11 @@ describe('buildMenuBarStatus', () => {
   })
 
   it('ellipsizes long titles and falls back to preview then id', () => {
-    const result = buildMenuBarStatus(
-      {},
-      [
-        session('long', { title: 'x'.repeat(80) }),
-        session('prev', { preview: 'the preview text', title: '   ' }),
-        session('bare', { preview: '', title: '  ' })
-      ]
-    )
+    const result = buildMenuBarStatus({}, [
+      session('long', { title: 'x'.repeat(80) }),
+      session('prev', { preview: 'the preview text', title: '   ' }),
+      session('bare', { preview: '', title: '  ' })
+    ])
 
     expect(result.sessions[0].title.endsWith('…')).toBe(true)
     expect(result.sessions[1].title).toBe('the preview text')

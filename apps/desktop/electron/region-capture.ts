@@ -83,7 +83,11 @@ export function installRegionCapture({ rendererUrl }: { rendererUrl: string }): 
     try {
       const url = new URL(event.senderFrame.url)
 
-      if (url.protocol !== expectedUrl.protocol || url.host !== expectedUrl.host || url.pathname !== expectedUrl.pathname) {
+      if (
+        url.protocol !== expectedUrl.protocol ||
+        url.host !== expectedUrl.host ||
+        url.pathname !== expectedUrl.pathname
+      ) {
         return { ok: false, reason: 'unavailable' }
       }
     } catch {

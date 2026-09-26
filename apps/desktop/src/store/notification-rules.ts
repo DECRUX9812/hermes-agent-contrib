@@ -147,10 +147,7 @@ export function msUntilQuietHoursEnd(rules: NotificationRules, now: Date = new D
 /** What the rules want done with a notification right now: `fire` through the
  *  ordinary gates, or `hold` into the digest queue (quiet hours or digest
  *  mode — either way it lands in the next batched summary). */
-export function gateNativeByRules(
-  kind: NativeNotificationKind,
-  now: Date = new Date()
-): 'fire' | 'hold' {
+export function gateNativeByRules(kind: NativeNotificationKind, now: Date = new Date()): 'fire' | 'hold' {
   if (!AMBIENT_RULE_KINDS.has(kind)) {
     return 'fire'
   }

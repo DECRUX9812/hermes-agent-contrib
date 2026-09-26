@@ -4,12 +4,7 @@ import type { ArtifactRecord as TranscriptArtifact } from '@/app/artifacts/artif
 import { getAllSessionMessages } from '@/hermes'
 import type { SessionInfo, SessionMessage } from '@/types/hermes'
 
-import {
-  $railArtifacts,
-  $railItems,
-  mergeRailArtifacts,
-  refreshArtifactRail
-} from './artifact-rail'
+import { $railArtifacts, $railItems, mergeRailArtifacts, refreshArtifactRail } from './artifact-rail'
 import { type ArtifactRecord, clearArtifactRegistry, upsertArtifact } from './artifacts'
 import { $selectedStoredSessionId, setSessions } from './session'
 

@@ -5,7 +5,21 @@
  * here touches the note files directly.
  */
 
-import { Button, cn, Codicon, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, host, Input, Textarea, useI18n } from '@hermes/plugin-sdk'
+import {
+  Button,
+  cn,
+  Codicon,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  host,
+  Input,
+  Textarea,
+  useI18n
+} from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
 import { useBots } from './i18n'
@@ -46,7 +60,10 @@ function partyLabel(party: MailboxNote['to'] | MailboxNote['sender'], members: G
     const handle = String(m?.handle || '').toLowerCase()
     const name = String(m?.name || '').toLowerCase()
 
-    return (handle && handle === String(party.handle || '').toLowerCase()) || (name && name === String(party.profile || '').toLowerCase())
+    return (
+      (handle && handle === String(party.handle || '').toLowerCase()) ||
+      (name && name === String(party.profile || '').toLowerCase())
+    )
   })
 
   return member ? displayName(member) : party.name || (party.handle ? `@${party.handle}` : party.profile || '?')
@@ -147,7 +164,9 @@ export function MailboxTaskDialog({ member, onClose }: { member: GroupMember | n
     <Dialog onOpenChange={open => !open && onClose()} open={Boolean(member)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{member ? b.mailbox.assignTitle(displayName(member)) : b.mailbox.assignTitleGeneric}</DialogTitle>
+          <DialogTitle>
+            {member ? b.mailbox.assignTitle(displayName(member)) : b.mailbox.assignTitleGeneric}
+          </DialogTitle>
           <DialogDescription>{b.mailbox.assignDescription}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-2 py-1">

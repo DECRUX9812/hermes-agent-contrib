@@ -226,21 +226,26 @@ export function useMessageStream({
   // leave rAF/timer spinning and burning the compositor. One flag + reused
   // clear helper at the kill/cancel boundary is the whole fix.
   const killedRef = useRef(false)
+
   const clearGpuLoop = useCallback((sessionId?: string) => {
     killedRef.current = true
+
     // per-session kill also marks that session so later deltas for it are dropped
     if (sessionId) {
       queuedDeltasRef.current.delete(sessionId)
     }
+
     if (flushHandleRef.current !== null && typeof window !== 'undefined') {
       window.clearTimeout(flushHandleRef.current)
       flushHandleRef.current = null
     }
+
     if (measureRafRef.current !== null && typeof window !== 'undefined') {
       window.cancelAnimationFrame(measureRafRef.current)
       measureRafRef.current = null
     }
   }, [])
+
   const nativeSubagentSessionsRef = useRef<Set<string>>(new Set())
   // Turns that auto-compacted: skip post-turn hydrate so live scrollback survives.
   const compactedTurnRef = useRef<Set<string>>(new Set())
@@ -295,8 +300,10 @@ export function useMessageStream({
   const scheduleDeltaFlush = useCallback(() => {
     if (killedRef.current) {
       clearGpuLoop()
+
       return
     }
+
     if (flushHandleRef.current !== null) {
       return
     }
@@ -397,10 +404,13 @@ export function useMessageStream({
       if (!delta) {
         return
       }
+
       if (sessionInterrupted(sessionId)) {
         clearGpuLoop(sessionId)
+
         return
       }
+
       if (killedRef.current) {
         // previous kill left flag set; a fresh valid session resets it so
         // the compositor loop can resume (ponytail: minimal reset)

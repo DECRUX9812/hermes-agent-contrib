@@ -48,8 +48,7 @@ const report = (id: string, extra: Partial<DelegationReport> = {}): DelegationRe
   ...extra
 })
 
-const session = (id: string, profile = 'default'): SessionInfo =>
-  ({ id, profile }) as unknown as SessionInfo
+const session = (id: string, profile = 'default'): SessionInfo => ({ id, profile }) as unknown as SessionInfo
 
 describe('SidebarDelegationReports', () => {
   beforeEach(() => {
@@ -94,9 +93,7 @@ describe('SidebarDelegationReports', () => {
 
   it('marks the mixed middle as needs-decision', () => {
     $delegationReportsBySession.set({
-      s1: [
-        report('d1', { outcome: 'needs_decision', task_count: 2, completed_count: 1, title: 'Batch' })
-      ]
+      s1: [report('d1', { outcome: 'needs_decision', task_count: 2, completed_count: 1, title: 'Batch' })]
     })
 
     render(<SidebarDelegationReports sessions={[session('s1')]} />)

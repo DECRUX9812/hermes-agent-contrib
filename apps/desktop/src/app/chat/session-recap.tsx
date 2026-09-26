@@ -119,7 +119,10 @@ export function SessionRecapCard({ storedSessionId }: { storedSessionId: string 
     .join(' · ')
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-4" data-slot="session-recap">
+    <div
+      className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-4"
+      data-slot="session-recap"
+    >
       <div
         className="pointer-events-auto flex w-full max-w-xl items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--dt-composer-ring)_32%,transparent)] bg-[color-mix(in_srgb,var(--dt-card)_94%,transparent)] px-2.5 py-1.5 shadow-composer"
         role="status"

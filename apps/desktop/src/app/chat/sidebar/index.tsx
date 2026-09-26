@@ -1720,8 +1720,7 @@ export function ChatSidebar({
           'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-[0.8125rem] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
           active &&
             'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!',
-          !isInteractive &&
-            'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit'
+          !isInteractive && 'cursor-default hover:border-transparent hover:bg-transparent hover:text-inherit'
         )}
         // A tip anchored to the label points at the end of the
         // word; the row is what it's actually about.
@@ -1759,9 +1758,7 @@ export function ChatSidebar({
         tooltip={
           item.keybindActionId
             ? {
-                children: (
-                  <TipKeybindLabel actionId={item.keybindActionId} text={s.nav[item.id] ?? item.label} />
-                )
+                children: <TipKeybindLabel actionId={item.keybindActionId} text={s.nav[item.id] ?? item.label} />
               }
             : (s.nav[item.id] ?? item.label)
         }
@@ -1913,7 +1910,11 @@ export function ChatSidebar({
       data-tip-region=""
       data-tour="sessions-sidebar"
     >
-      <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5" onFocus={onSidebarFocus} onKeyDown={onSidebarKeyDown}>
+      <SidebarContent
+        className="gap-0 overflow-hidden bg-transparent px-2.5"
+        onFocus={onSidebarFocus}
+        onKeyDown={onSidebarKeyDown}
+      >
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
@@ -2370,7 +2371,6 @@ export function ChatSidebar({
             <ProfileRail />
           </div>
         )}
-
       </SidebarContent>
       <ProjectDialog />
       {/* One mount for the whole app. The header of WorktreeDialog tells why. */}

@@ -75,9 +75,7 @@ describe('buildRecordedSkillMarkdown', () => {
 describe('describeRecordedStep', () => {
   it('describes each kind', () => {
     expect(describeRecordedStep({ kind: 'navigate', url: 'https://x.dev' })).toBe('Open `https://x.dev`')
-    expect(describeRecordedStep({ kind: 'click', label: 'Go', selector: 'button' })).toBe(
-      'Click **Go** (`button`)'
-    )
+    expect(describeRecordedStep({ kind: 'click', label: 'Go', selector: 'button' })).toBe('Click **Go** (`button`)')
     expect(describeRecordedStep({ kind: 'press', key: 'Tab' })).toBe('Press **Tab**')
   })
 })

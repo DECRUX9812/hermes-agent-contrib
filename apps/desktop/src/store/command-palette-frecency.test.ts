@@ -29,7 +29,7 @@ describe('recordPaletteUse', () => {
     expect(readStored()['nav-settings']).toEqual({ count: 2, lastUsed: NOW + 1000 })
   })
 
-  it('merges another window\'s write instead of clobbering it', () => {
+  it("merges another window's write instead of clobbering it", () => {
     recordPaletteUse('nav-settings', NOW)
 
     // A sibling window records a different row after our snapshot loaded.

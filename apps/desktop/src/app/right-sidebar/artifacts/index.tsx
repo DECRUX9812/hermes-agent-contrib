@@ -10,12 +10,7 @@ import { artifactDownloadName } from '@/lib/artifact-detect'
 import { downloadTextFile } from '@/lib/download-text'
 import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
 import { downloadGatewayFileWithFeedback, isArtifactFilePath, isRemoteGateway } from '@/lib/media'
-import {
-  $railArtifactsLoading,
-  $railItems,
-  type RailArtifactItem,
-  refreshArtifactRail
-} from '@/store/artifact-rail'
+import { $railArtifactsLoading, $railItems, type RailArtifactItem, refreshArtifactRail } from '@/store/artifact-rail'
 import { type ArtifactRecord, openArtifact } from '@/store/artifacts'
 import { notifyError } from '@/store/notifications'
 import { openPreview } from '@/store/preview'

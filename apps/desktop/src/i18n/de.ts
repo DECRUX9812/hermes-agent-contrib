@@ -4260,7 +4260,8 @@ export const deOverrides = {
       askAbout: 'Zu dieser Session fragen',
       ask: {
         clear: 'Verlauf löschen',
-        dialogDesc: title => `Fragen zu ${title} werden aus dem gespeicherten Transkript beantwortet — niemals aus der laufenden Unterhaltung.`,
+        dialogDesc: title =>
+          `Fragen zu ${title} werden aus dem gespeicherten Transkript beantwortet — niemals aus der laufenden Unterhaltung.`,
         dialogTitle: 'Zu dieser Session fragen',
         empty: 'Stelle eine Frage dazu, was diese Session getan, entschieden oder geschrieben hat.',
         failed: 'Antwort konnte nicht abgerufen werden',
@@ -4318,8 +4319,7 @@ export const deOverrides = {
       tag: 'Tag',
       archive: 'Archivieren',
       clear: 'Auswahl aufheben',
-      tagDialogTitle: (count: number) =>
-        count === 1 ? '1 Sitzung taggen' : `${count} Sitzungen taggen`,
+      tagDialogTitle: (count: number) => (count === 1 ? '1 Sitzung taggen' : `${count} Sitzungen taggen`),
       tagDialogDesc: 'Fügt den Tag jeder ausgewählten Sitzung hinzu.'
     },
     dateDivider: {
@@ -4648,11 +4648,12 @@ export const deOverrides = {
     capturing: 'Aufnahme läuft…',
     clear: 'Neu beginnen',
     notePlaceholder: 'Notiz für den Agenten (optional)…',
-    permissionDenied: 'Bildschirmaufnahme ist deaktiviert — in Systemeinstellungen → Datenschutz & Sicherheit → Bildschirmaufnahme erlauben.',
+    permissionDenied:
+      'Bildschirmaufnahme ist deaktiviert — in Systemeinstellungen → Datenschutz & Sicherheit → Bildschirmaufnahme erlauben.',
     selectHint: 'Ziehen, um einen Bereich zu wählen · Esc zum Abbrechen',
     toolTips: { arrow: 'Pfeil', pen: 'Zeichnen', rect: 'Rechteck' },
     unavailable: 'Bildschirmaufnahme ist hier nicht verfügbar.',
-    undo: 'Rückgängig',
+    undo: 'Rückgängig'
   },
   voiceStatus: {
     idle: 'Hermes ist bereit — gerade läuft nichts.',
@@ -4661,7 +4662,7 @@ export const deOverrides = {
     stalled: 'Hermes scheint zu hängen — es war schon eine Weile still.',
     needsInput: 'Hermes wartet auf deine Eingabe.',
     finished: 'Die letzte Runde ist fertig — die Antwort wartet auf dich.',
-    progress: (done, total) => `${done} von ${total} Aufgaben erledigt.`,
+    progress: (done, total) => `${done} von ${total} Aufgaben erledigt.`
   },
   statusStack: {
     hideStack: 'Statusstapel ausblenden',
@@ -6366,7 +6367,7 @@ export const deOverrides = {
     markdownReasoning: 'Gedanken',
     markdownToolCall: 'Tool-Aufruf',
     markdownToolResult: 'Tool-Ergebnis',
-deliverableArtifacts: 'Artefakte',
+    deliverableArtifacts: 'Artefakte',
     deliverableChanges: 'Änderungen',
     deliverableFilesLine: (files, added, removed) => `${files} Dateien bearbeitet · +${added} / −${removed}`,
     deliverableNoSummary: 'Keine Assistentenantwort aufgezeichnet',

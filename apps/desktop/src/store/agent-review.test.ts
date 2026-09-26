@@ -3,17 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as SessionsApi from '@/api/sessions'
 import { createClientSessionState } from '@/lib/chat-runtime'
 
-import {
-  $agentReviewReportsBySession,
-  forgetAgentReviewReports,
-  seedAgentReview
-} from './agent-review'
-import {
-  adoptNewSessionDraft,
-  announceNewSessionDraftKey,
-  stashSessionDraft,
-  takeSessionDraft
-} from './composer'
+import { $agentReviewReportsBySession, forgetAgentReviewReports, seedAgentReview } from './agent-review'
+import { adoptNewSessionDraft, announceNewSessionDraftKey, stashSessionDraft, takeSessionDraft } from './composer'
 import { $dismissedDelegationReports, dismissDelegationReport, visibleDelegationReports } from './delegation-reports'
 import { $newChatProfile } from './profile'
 import { $reviewScopeCwd, $reviewScopeTarget } from './review'
@@ -139,9 +130,7 @@ describe('agent review pass', () => {
     expect($unreadFinishedSessionIds.get()).toContain('origin-1')
 
     // The card unions into the shared visible feed and respects dismissal.
-    expect(visibleDelegationReports('origin-1', null).map(r => r.delegation_id)).toEqual([
-      'agent-review:sess-review-1'
-    ])
+    expect(visibleDelegationReports('origin-1', null).map(r => r.delegation_id)).toEqual(['agent-review:sess-review-1'])
     dismissDelegationReport(null, 'agent-review:sess-review-1')
     expect(visibleDelegationReports('origin-1', null)).toEqual([])
   })

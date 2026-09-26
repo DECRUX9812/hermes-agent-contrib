@@ -137,7 +137,9 @@ function RegionCaptureEditor({ dataUrl, height, width }: { dataUrl: string; heig
   const [dragRect, setDragRect] = useState<RegionRect | null>(null)
 
   const frameBox = fitInside(width, height, window.innerWidth * 0.92, window.innerHeight * 0.92)
-  const regionBox = region ? fitInside(region.width, region.height, window.innerWidth * 0.8, window.innerHeight * 0.72) : null
+  const regionBox = region
+    ? fitInside(region.width, region.height, window.innerWidth * 0.8, window.innerHeight * 0.72)
+    : null
 
   // Redraw the markup layer whenever strokes change. One canvas pass: crop +
   // every stroke in CSS space.
@@ -229,7 +231,10 @@ function RegionCaptureEditor({ dataUrl, height, width }: { dataUrl: string; heig
     }
 
     // Zero-size drags (a click) leave a dot for pen, nothing for shapes.
-    const keep = active.type === 'pen' || (active.type === 'rect' && active.rect.width > 1) || (active.type === 'arrow' && arrowHeadPoints(active.from, active.to, 12))
+    const keep =
+      active.type === 'pen' ||
+      (active.type === 'rect' && active.rect.width > 1) ||
+      (active.type === 'arrow' && arrowHeadPoints(active.from, active.to, 12))
 
     if (keep) {
       setStrokes(current => [...current, active])
@@ -429,11 +434,16 @@ export function RegionCaptureOverlay() {
 
   if (capture.status === 'capturing') {
     return (
-      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60" data-slot="region-capture-overlay">
+      <div
+        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60"
+        data-slot="region-capture-overlay"
+      >
         <GlyphSpinner ariaLabel={t.regionCapture.capturing} className="text-[1.2rem] text-white/80" spinner="braille" />
       </div>
     )
   }
 
-  return <RegionCaptureEditor dataUrl={capture.frame.dataUrl} height={capture.frame.height} width={capture.frame.width} />
+  return (
+    <RegionCaptureEditor dataUrl={capture.frame.dataUrl} height={capture.frame.height} width={capture.frame.width} />
+  )
 }

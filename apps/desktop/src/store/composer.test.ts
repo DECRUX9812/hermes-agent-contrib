@@ -310,16 +310,31 @@ describe('session drafts', () => {
     >
 
     expect(persisted['session-a']).toEqual({
-      attachments: [{ detail: 'src', id: 'file:a', kind: 'file', label: 'doc.pdf', path: '/work/doc.pdf', refText: '@file:doc.pdf' }],
+      attachments: [
+        { detail: 'src', id: 'file:a', kind: 'file', label: 'doc.pdf', path: '/work/doc.pdf', refText: '@file:doc.pdf' }
+      ],
       text: 'survives reload'
     })
   })
 
   it('drops blob and terminal chips — and upload/preview state — from persisted payloads', () => {
     stashSessionDraft('session-a', 'with chips', [
-      attachment({ id: 'image:a', kind: 'image', previewUrl: 'blob:x', thumbnailUrl: 'data:y', uploadState: 'uploading' }),
+      attachment({
+        id: 'image:a',
+        kind: 'image',
+        previewUrl: 'blob:x',
+        thumbnailUrl: 'data:y',
+        uploadState: 'uploading'
+      }),
       attachment({ id: 'terminal:t', kind: 'terminal' }),
-      attachment({ id: 'url:u', kind: 'url', label: 'site', path: 'https://x.test', previewUrl: 'blob:z', uploadState: 'error' })
+      attachment({
+        id: 'url:u',
+        kind: 'url',
+        label: 'site',
+        path: 'https://x.test',
+        previewUrl: 'blob:z',
+        uploadState: 'error'
+      })
     ])
 
     const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<

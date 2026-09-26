@@ -1,9 +1,5 @@
 import { delay, inlineErrorMessage } from '@/app/session/hooks/use-prompt-actions/utils'
-import type {
-  HandoffFailResponse,
-  HandoffRequestResponse,
-  HandoffStateResponse
-} from '@/app/types'
+import type { HandoffFailResponse, HandoffRequestResponse, HandoffStateResponse } from '@/app/types'
 import type { MessagingPlatformInfo } from '@/hermes'
 import { activeGateway } from '@/store/gateway'
 import { notify } from '@/store/notifications'

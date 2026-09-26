@@ -10,8 +10,7 @@ const isTrusted = () => trustedFlag
 const click = (el: Element) => el.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 const change = (el: Element) => el.dispatchEvent(new Event('change', { bubbles: true }))
 
-const keydown = (el: Element, key: string) =>
-  el.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key }))
+const keydown = (el: Element, key: string) => el.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key }))
 
 let api: ReturnType<typeof recordInPage> | undefined
 

@@ -1391,8 +1391,7 @@ export const en: Translations = {
       menuBarStatusTitle: 'Menu-bar status',
       menuBarStatusDesc:
         'Show a Hermes icon in the macOS menu bar (system tray on Windows/Linux) with a live status badge, recent sessions, and quick actions. Off by default; applies only to this device.',
-      menuBarStatusUnavailable:
-        'The system tray is unavailable on this platform. Turn this off and on to retry.',
+      menuBarStatusUnavailable: 'The system tray is unavailable on this platform. Turn this off and on to retry.',
       none: 'None',
       noneParen: '(none)',
       builtinOnly: 'Built-in only',
@@ -3891,7 +3890,8 @@ export const en: Translations = {
       askAbout: 'Ask about this session',
       ask: {
         clear: 'Clear thread',
-        dialogDesc: title => `Questions about ${title} are answered from its stored transcript — never the live conversation.`,
+        dialogDesc: title =>
+          `Questions about ${title} are answered from its stored transcript — never the live conversation.`,
         dialogTitle: 'Ask about this session',
         empty: 'Ask a question about what this session did, decided, or wrote.',
         failed: 'Could not get an answer',
@@ -3912,8 +3912,7 @@ export const en: Translations = {
       isolateWorktreeDone: name => `Isolated in worktree ${name}`,
       mergeWorktree: 'Merge worktree back',
       mergeWorktreeTitle: 'Merge worktree back',
-      mergeWorktreeDesc: (branch, repo) =>
-        `Merge branch ${branch} back into the ${repo} checkout? It must be clean.`,
+      mergeWorktreeDesc: (branch, repo) => `Merge branch ${branch} back into the ${repo} checkout? It must be clean.`,
       mergingWorktree: 'Merging…',
       mergedWorktree: into => `Merged into ${into}`,
       mergeWorktreeFailed: "Couldn't merge the worktree",
@@ -4276,11 +4275,12 @@ export const en: Translations = {
     capturing: 'Capturing…',
     clear: 'Start over',
     notePlaceholder: 'Note for the agent (optional)…',
-    permissionDenied: 'Screen recording permission is off — enable it in System Settings → Privacy & Security → Screen Recording.',
+    permissionDenied:
+      'Screen recording permission is off — enable it in System Settings → Privacy & Security → Screen Recording.',
     selectHint: 'Drag to pick a region · Esc to cancel',
     toolTips: { arrow: 'Arrow', pen: 'Draw', rect: 'Rectangle' },
     unavailable: 'Screen capture isn’t available here.',
-    undo: 'Undo',
+    undo: 'Undo'
   },
   voiceStatus: {
     idle: 'Hermes is idle — nothing is running.',
@@ -4289,7 +4289,7 @@ export const en: Translations = {
     stalled: 'Hermes seems stalled — it has been quiet for a while.',
     needsInput: 'Hermes is waiting for your input.',
     finished: 'The last turn finished — the reply is waiting for you.',
-    progress: (done, total) => `${done} of ${total} tasks done.`,
+    progress: (done, total) => `${done} of ${total} tasks done.`
   },
   statusStack: {
     hideStack: 'Hide status stack',
@@ -5891,7 +5891,7 @@ export const en: Translations = {
     markdownReasoning: 'Reasoning',
     markdownToolCall: 'Tool call',
     markdownToolResult: 'Tool result',
-deliverableArtifacts: 'Artifacts',
+    deliverableArtifacts: 'Artifacts',
     deliverableChanges: 'Changes',
     deliverableFilesLine: (files, added, removed) => `${files} files touched · +${added} / −${removed}`,
     deliverableNoSummary: 'No assistant reply recorded',

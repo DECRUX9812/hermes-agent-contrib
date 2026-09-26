@@ -19,9 +19,9 @@ describe('messageToMarkdown', () => {
   })
 
   it('skips hidden rows entirely', () => {
-    expect(
-      messageToMarkdown(message({ content: 'secret', display_kind: 'hidden', role: 'assistant' }), labels)
-    ).toBe('')
+    expect(messageToMarkdown(message({ content: 'secret', display_kind: 'hidden', role: 'assistant' }), labels)).toBe(
+      ''
+    )
   })
 
   it('prefers display_content over raw content', () => {

@@ -885,7 +885,8 @@ export function preserveLocalPendingTurnMessages(
       acknowledgedUserCandidates.some(
         candidate =>
           (!conflictingTranscriptIdentity(message, candidate) &&
-            textWithoutReferenceLines(chatMessageText(candidate)) === textWithoutReferenceLines(chatMessageText(message))) ||
+            textWithoutReferenceLines(chatMessageText(candidate)) ===
+              textWithoutReferenceLines(chatMessageText(message))) ||
           sameAttachmentTurn(candidate, message)
       )
     ) {

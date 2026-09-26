@@ -487,8 +487,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.invoke('hermes:git:worktreeRemove', repoPath, worktreePath, options),
     worktreeEnsure: (repoPath, worktreePath, branch) =>
       ipcRenderer.invoke('hermes:git:worktreeEnsure', repoPath, worktreePath, branch),
-    worktreeMerge: (repoPath, worktreePath) =>
-      ipcRenderer.invoke('hermes:git:worktreeMerge', repoPath, worktreePath),
+    worktreeMerge: (repoPath, worktreePath) => ipcRenderer.invoke('hermes:git:worktreeMerge', repoPath, worktreePath),
     branchSwitch: (repoPath, branch) => ipcRenderer.invoke('hermes:git:branchSwitch', repoPath, branch),
     branchList: repoPath => ipcRenderer.invoke('hermes:git:branchList', repoPath),
     baseBranchList: repoPath => ipcRenderer.invoke('hermes:git:baseBranchList', repoPath),

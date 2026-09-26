@@ -155,8 +155,7 @@ describe('sessionBucketLabel', () => {
 describe('relativeDayCount', () => {
   // Build local-time instants so the assertions are timezone-independent:
   // both relativeDayCount and its Date(...).setHours use local time.
-  const at = (year: number, month: number, day: number, hour = 0) =>
-    new Date(year, month, day, hour).getTime()
+  const at = (year: number, month: number, day: number, hour = 0) => new Date(year, month, day, hour).getTime()
 
   it('counts calendar-date changes, not 24h buckets', () => {
     expect(relativeDayCount(at(2026, 7, 2, 10), at(2026, 7, 3, 10))).toBe(1)
@@ -173,8 +172,7 @@ describe('relativeDayCount', () => {
 })
 
 describe('relativeTime day-word (#76725)', () => {
-  const at = (year: number, month: number, day: number, hour = 0) =>
-    new Date(year, month, day, hour).getTime()
+  const at = (year: number, month: number, day: number, hour = 0) => new Date(year, month, day, hour).getTime()
 
   it('does not label a two-calendar-day-out run the same as a genuine next-day run', () => {
     const nextDay = relativeTime(at(2026, 7, 3, 10), at(2026, 7, 2, 10)) // real "tomorrow"

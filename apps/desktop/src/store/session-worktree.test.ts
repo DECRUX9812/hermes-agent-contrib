@@ -47,15 +47,9 @@ describe('sessionWorktreeInfo', () => {
   })
 
   it('is null for the main checkout and for a dir outside .worktrees', () => {
-    expect(
-      sessionWorktreeInfo(makeSessionInfo({ cwd: '/repo', git_repo_root: '/repo' }))
-    ).toBeNull()
-    expect(
-      sessionWorktreeInfo(makeSessionInfo({ cwd: '/repo/src', git_repo_root: '/repo' }))
-    ).toBeNull()
-    expect(
-      sessionWorktreeInfo(makeSessionInfo({ cwd: '/elsewhere/.worktrees/x', git_repo_root: '/repo' }))
-    ).toBeNull()
+    expect(sessionWorktreeInfo(makeSessionInfo({ cwd: '/repo', git_repo_root: '/repo' }))).toBeNull()
+    expect(sessionWorktreeInfo(makeSessionInfo({ cwd: '/repo/src', git_repo_root: '/repo' }))).toBeNull()
+    expect(sessionWorktreeInfo(makeSessionInfo({ cwd: '/elsewhere/.worktrees/x', git_repo_root: '/repo' }))).toBeNull()
   })
 
   it('finds the worktree dir as the first segment under .worktrees', () => {
@@ -200,11 +194,7 @@ describe('mergeSessionWorktree / restoreSessionWorktree', () => {
 
     await restoreSessionWorktree($sessions.get()[0]!)
 
-    expect(worktreeEnsure).toHaveBeenCalledWith(
-      '/repo',
-      '/repo/.worktrees/session-fix-bug',
-      ''
-    )
+    expect(worktreeEnsure).toHaveBeenCalledWith('/repo', '/repo/.worktrees/session-fix-bug', '')
     expect($sessions.get()[0]?.git_branch).toBe('hermes/session-fix-bug')
   })
 

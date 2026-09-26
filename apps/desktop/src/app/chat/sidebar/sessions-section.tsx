@@ -369,12 +369,7 @@ export function SidebarSessionsSection({
 
   // A single flat/virtual/lane list row — either a divider or a session.
   const renderListRow = useCallback(
-    (
-      row: SidebarListRow,
-      draggable: boolean,
-      action?: React.ReactNode,
-      selectionKeys?: readonly string[]
-    ) => {
+    (row: SidebarListRow, draggable: boolean, action?: React.ReactNode, selectionKeys?: readonly string[]) => {
       if (row.kind === 'session') {
         return renderRow(row.entry.session, draggable, row.entry.branchStem, selectionKeys)
       }

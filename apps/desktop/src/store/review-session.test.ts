@@ -20,14 +20,17 @@ describe('collectSessionEditPaths', () => {
   })
 
   it('dedupes repeated edits to the same file', () => {
-    const messages: ChatMessage[] = [toolMessage('edit_file', { path: 'src/a.ts' }), toolMessage('patch', { path: 'src/a.ts' })]
+    const messages: ChatMessage[] = [
+      toolMessage('edit_file', { path: 'src/a.ts' }),
+      toolMessage('patch', { path: 'src/a.ts' })
+    ]
 
     expect(collectSessionEditPaths(messages)).toEqual(['src/a.ts'])
   })
 
   it('ignores non-tool parts and malformed calls', () => {
     const messages: ChatMessage[] = [
-      ({ id: 'm1', parts: [{ type: 'text', text: 'editing src/x.ts' }], role: 'assistant' }) as ChatMessage,
+      { id: 'm1', parts: [{ type: 'text', text: 'editing src/x.ts' }], role: 'assistant' } as ChatMessage,
       toolMessage('edit_file', { path: 42 })
     ]
 

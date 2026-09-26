@@ -63,9 +63,10 @@ describe('SkillTag', () => {
 
 describe('normalizeSessionSkills', () => {
   it('passes category maps through and filters non-strings', () => {
-    expect(
-      normalizeSessionSkills({ mlops: ['axolotl', 7, null], general: ['git-flow'] })
-    ).toEqual({ mlops: ['axolotl'], general: ['git-flow'] })
+    expect(normalizeSessionSkills({ mlops: ['axolotl', 7, null], general: ['git-flow'] })).toEqual({
+      mlops: ['axolotl'],
+      general: ['git-flow']
+    })
   })
 
   it('groups a legacy flat list under the unnamed category', () => {

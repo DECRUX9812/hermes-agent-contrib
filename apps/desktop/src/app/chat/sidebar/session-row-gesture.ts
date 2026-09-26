@@ -3,12 +3,7 @@
 // component) so the precedence — the part that's easy to get subtly wrong —
 // is unit-testable without rendering the whole sidebar.
 
-export type SessionRowClickAction =
-  | 'archive'
-  | 'resume'
-  | 'selectRange'
-  | 'selectRangeAdditive'
-  | 'selectToggle'
+export type SessionRowClickAction = 'archive' | 'resume' | 'selectRange' | 'selectRangeAdditive' | 'selectToggle'
 
 export interface SessionRowClickModifiers {
   altKey: boolean

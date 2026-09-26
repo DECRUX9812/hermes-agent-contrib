@@ -53,8 +53,7 @@ const oneLine = (value: null | string | undefined): string => value?.replace(/\s
 // A run summary only narrates ephemeral activity — card tools render their own
 // surface in the transcript. File edits are the exception worth keeping in the
 // digest: "Editing wiring.tsx" is exactly the glance a run line exists for.
-const digestable = (toolName: string) =>
-  !isSilentTool(toolName) && (!isCardTool(toolName) || isFileEditTool(toolName))
+const digestable = (toolName: string) => !isSilentTool(toolName) && (!isCardTool(toolName) || isFileEditTool(toolName))
 
 const pendingTool = (tool: { completedAt?: number; result?: unknown }) =>
   tool.result === undefined && tool.completedAt === undefined

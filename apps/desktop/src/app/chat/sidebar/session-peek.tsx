@@ -32,7 +32,10 @@ const PEEK_OPEN_DELAY_MS = 800
 const PEEK_CLOSE_DELAY_MS = 150
 
 // Same resolved state the row's dot paints — the card cannot disagree with it.
-const STATE_LABEL: Record<SessionDotState, (r: Translations['sidebar']['row'], p: Translations['sidebar']['peek']) => string> = {
+const STATE_LABEL: Record<
+  SessionDotState,
+  (r: Translations['sidebar']['row'], p: Translations['sidebar']['peek']) => string
+> = {
   background: r => r.backgroundRunning,
   draft: r => r.draftSession,
   idle: (_r, p) => p.idle,
@@ -46,7 +49,12 @@ function PeekRow({ children, label, wrap }: { children: React.ReactNode; label: 
   return (
     <div className="flex min-w-0 items-baseline gap-2">
       <span className="w-14 shrink-0 text-[0.625rem] leading-4 text-(--ui-text-quaternary)">{label}</span>
-      <span className={cn('min-w-0 flex-1 text-[0.6875rem] leading-4 text-(--ui-text-tertiary)', wrap ? 'break-words' : 'truncate')}>
+      <span
+        className={cn(
+          'min-w-0 flex-1 text-[0.6875rem] leading-4 text-(--ui-text-tertiary)',
+          wrap ? 'break-words' : 'truncate'
+        )}
+      >
         {children}
       </span>
     </div>
@@ -97,12 +105,8 @@ function SessionPeekBody({ session }: { session: SessionInfo }) {
         ) : (
           <span aria-hidden="true" className={sessionDotClassName(dotState)} />
         )}
-        <span className="text-[0.625rem] font-medium text-(--ui-text-tertiary)">
-          {STATE_LABEL[dotState](r, p)}
-        </span>
-        {session.archived ? (
-          <span className="text-[0.625rem] text-(--ui-text-quaternary)">· {p.archived}</span>
-        ) : null}
+        <span className="text-[0.625rem] font-medium text-(--ui-text-tertiary)">{STATE_LABEL[dotState](r, p)}</span>
+        {session.archived ? <span className="text-[0.625rem] text-(--ui-text-quaternary)">· {p.archived}</span> : null}
       </div>
       <p className="line-clamp-2 min-w-0 break-words text-[0.8125rem] font-medium leading-snug text-(--ui-text-primary)">
         {title}
@@ -126,10 +130,15 @@ function SessionPeekBody({ session }: { session: SessionInfo }) {
           </PeekRow>
         ) : null}
         {session.model ? <PeekRow label={p.model}>{displayModelName(session.model)}</PeekRow> : null}
-        {stats.length ? <PeekRow label={p.stats} wrap>{stats.join(' · ')}</PeekRow> : null}
+        {stats.length ? (
+          <PeekRow label={p.stats} wrap>
+            {stats.join(' · ')}
+          </PeekRow>
+        ) : null}
         {subagents?.length ? (
           <PeekRow label={p.agents}>
-            {p.agentsSummary(subagents.length)}{runningAgents ? ` · ${p.agentsRunning(runningAgents)}` : ''}
+            {p.agentsSummary(subagents.length)}
+            {runningAgents ? ` · ${p.agentsRunning(runningAgents)}` : ''}
           </PeekRow>
         ) : null}
         {profile !== 'default' ? <PeekRow label={p.profile}>{profile}</PeekRow> : null}

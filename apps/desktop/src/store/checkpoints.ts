@@ -72,10 +72,7 @@ export function $checkpointForUserRow(
 
 /** Pull `rollback.list` for one session through its OWN backend, dedup'd and
  *  TTL'd. Callers fire-and-forget; failures leave the previous cache intact. */
-export function ensureSessionCheckpoints(
-  sessionId: null | string | undefined,
-  force = false
-): Promise<void> {
+export function ensureSessionCheckpoints(sessionId: null | string | undefined, force = false): Promise<void> {
   if (!sessionId) {
     return Promise.resolve()
   }
@@ -98,12 +95,9 @@ export function ensureSessionCheckpoints(
     return Promise.resolve()
   }
 
-  const task = requestForOwnedSession<RollbackListResult>(
-    sessionId,
-    ambientRequestFor(gateway),
-    'rollback.list',
-    { session_id: sessionId }
-  )
+  const task = requestForOwnedSession<RollbackListResult>(sessionId, ambientRequestFor(gateway), 'rollback.list', {
+    session_id: sessionId
+  })
     .then(result => {
       $checkpointsBySession.set({
         ...$checkpointsBySession.get(),
@@ -141,11 +135,7 @@ export function markCheckpointsStale(sessionId: null | string | undefined): void
  *  transcript untouched (`files_only`), and user-hand-edited files preserved
  *  (`safe`, per the agent-write ledger). `failMessage` is the localized toast
  *  title, supplied by the caller (store code can't reach `t()`). */
-export async function revertToCheckpoint(
-  sessionId: string,
-  hash: string,
-  failMessage: string
-): Promise<boolean> {
+export async function revertToCheckpoint(sessionId: string, hash: string, failMessage: string): Promise<boolean> {
   const gateway = $gateway.get()
 
   if (!gateway) {

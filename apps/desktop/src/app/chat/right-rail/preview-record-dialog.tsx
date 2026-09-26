@@ -20,11 +20,7 @@ import { Input } from '@/components/ui/input'
 import { createSkill } from '@/hermes'
 import { useI18n } from '@/i18n'
 import type { RecordedStep } from '@/lib/preview-record/in-page'
-import {
-  buildRecordedSkillMarkdown,
-  slugifySkillName,
-  summarizeRecordedStep
-} from '@/lib/preview-record/skill-md'
+import { buildRecordedSkillMarkdown, slugifySkillName, summarizeRecordedStep } from '@/lib/preview-record/skill-md'
 import { notify, notifyError } from '@/store/notifications'
 
 const VERB_LABELS = { click: 'Click', navigate: 'Open', press: 'Press', type: 'Type' } as const

@@ -263,9 +263,7 @@ export const UserMessage: FC<{
 
   // The checkpoint that preceded this prompt, if the backend stamped one —
   // feeds the "revert files" affordance (roadmap #31).
-  const revertTarget = useStore(
-    useMemo(() => $checkpointForUserRow(sessionId, rowId), [sessionId, rowId])
-  )
+  const revertTarget = useStore(useMemo(() => $checkpointForUserRow(sessionId, rowId), [sessionId, rowId]))
 
   // Mount and each settled edge refetch (a turn may have written new
   // checkpoints); while running the cached list is fine (TTL still applies).
