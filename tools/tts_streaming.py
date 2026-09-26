@@ -155,9 +155,8 @@ def _try_instantiate(name: str, tts_config: Dict) -> Optional[StreamingTTSProvid
         return None
 
 
-# Fallback priority for ``tts.streaming.provider: auto`` — best chunked latency/quality
-# first. Deliberately hard-coded (a UX decision); edge is absent (no chunked-PCM API).
-_PROVIDER_PRIORITY: List[str] = ["elevenlabs", "gemini", "openai", "xai"]
+# Fallback priority for ``tts.streaming.provider: auto`` — best chunked latency/quality first.
+_PROVIDER_PRIORITY: List[str] = ["elevenlabs", "gemini", "openai", "xai", "edge"]
 
 
 def resolve_streaming_provider(
@@ -398,3 +397,95 @@ class XAIStreamer(StreamingTTSProvider):
                 if exc.__class__.__name__ != "ConnectionClosed":
                     logger.warning("xAI WS receive failed: %s", exc)
                 return
+
+
+@register("edge")
+class EdgeStreamer(StreamingTTSProvider):
+    """Edge TTS streaming via Communicate.stream() transcoded to 24kHz mono PCM with ffmpeg."""
+
+    sample_rate: int = 24000
+    channels: int = 1
+    sample_width: int = 2
+
+    @staticmethod
+    def available() -> bool:
+        import shutil
+        try:
+            import edge_tts  # noqa: F401
+            return bool(shutil.which("ffmpeg"))
+        except ImportError:
+            return False
+
+    def stream(self, text: str) -> Iterator[bytes]:
+        import asyncio
+        import edge_tts
+        import subprocess
+        import threading
+        from tools.tts_tool_providers import DEFAULT_EDGE_VOICE
+
+        voice = str(self.section.get("voice", DEFAULT_EDGE_VOICE)).strip() or DEFAULT_EDGE_VOICE
+        rate = str(self.section.get("rate", "+0%")).strip() or "+0%"
+        volume = str(self.section.get("volume", "+0%")).strip() or "+0%"
+        pitch = str(self.section.get("pitch", "+0Hz")).strip() or "+0Hz"
+
+        cmd = [
+            "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",
+            "-probesize", "32",
+            "-analyzeduration", "0",
+            "-fflags", "nobuffer",
+            "-flags", "low_delay",
+            "-f", "mp3", "-i", "pipe:0",
+            "-f", "s16le", "-acodec", "pcm_s16le", "-ac", "1", "-ar", "24000", "pipe:1",
+        ]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=0)
+
+        def _feed():
+            async def _run():
+                try:
+                    comm = edge_tts.Communicate(text, voice, rate=rate, volume=volume, pitch=pitch)
+                    async for chunk in comm.stream():
+                        data = chunk.get("data")
+                        if chunk.get("type") == "audio" and data and proc.stdin:
+                            try:
+                                proc.stdin.write(data)
+                                proc.stdin.flush()
+                            except (BrokenPipeError, OSError):
+                                break
+                except Exception:
+                    pass
+                finally:
+                    if proc.stdin:
+                        try:
+                            proc.stdin.close()
+                        except Exception:
+                            pass
+
+            asyncio.run(_run())
+
+        feed_thread = threading.Thread(target=_feed, daemon=True)
+        feed_thread.start()
+
+        def _reader() -> Iterator[bytes]:
+            try:
+                while True:
+                    if not proc.stdout:
+                        break
+                    chunk = proc.stdout.read(4096)
+                    if not chunk:
+                        break
+                    yield chunk
+            finally:
+                if proc.stdout:
+                    try:
+                        proc.stdout.close()
+                    except Exception:
+                        pass
+                if proc.poll() is None:
+                    try:
+                        proc.kill()
+                    except Exception:
+                        pass
+                proc.wait()
+                feed_thread.join(timeout=1.0)
+
+        yield from _capped(_reader(), "Edge streaming TTS")

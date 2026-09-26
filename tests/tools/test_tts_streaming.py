@@ -87,7 +87,7 @@ def test_never_swaps_provider_for_streaming(monkeypatch):
     # A registered streamer must NOT be substituted when the user picked another
     # (non-streaming) provider — that would silently change their voice.
     _register_fake(monkeypatch, "elevenlabs")
-    assert ts.resolve_streaming_provider({"provider": "edge"}) is None
+    assert ts.resolve_streaming_provider({"provider": "kittentts"}) is None
 
 
 # ── Built-in provider availability ───────────────────────────────────────
@@ -1059,3 +1059,10 @@ def test_sync_pipeline_falls_back_to_requested_path_when_reported_missing(monkey
     assert len(played) == 1 and played[0][1] > 0, (
         "requested-path fallback no longer plays"
     )
+
+
+def test_edge_streamer_resolves_and_is_available():
+    assert ts.EdgeStreamer.available() is True
+    streamer = ts.resolve_streaming_provider({"provider": "edge"})
+    assert isinstance(streamer, ts.EdgeStreamer)
+    assert streamer.sample_rate == 24000

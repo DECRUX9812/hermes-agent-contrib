@@ -4593,6 +4593,40 @@ _WATCHDOG_EXIT_REASONS = {
 }
 
 
+def _platform_row_is_tombstone(pdata: dict, state: dict) -> bool:
+    """True when a platform row's writer is a process that has since exited.
+
+    ``gateway/status.py`` stamps every runtime-status write with the writing process's
+    ``(pid, start_time)``. A gateway that dies leaves its last platform rows behind --
+    ``_prepare_runtime_status_update(load_existing=True)`` merges the snapshot, so a row for a
+    platform that was later disabled is carried forward forever. Treat a row whose writer is
+    provably gone as history, not as a current fault.
+
+    A row with no ``writer_pid`` at all (a hand-written fixture, or one written by a version
+    that did not stamp the writer) cannot be proven stale, so it is never a tombstone: the
+    pre-stamp behaviour stays the default.
+    """
+    writer_pid = pdata.get("writer_pid")
+    if not writer_pid:
+        return False
+    try:
+        from gateway import status as status_mod
+    except Exception:
+        return False
+    if writer_pid == state.get("pid"):
+        return False  # the running gateway wrote this row -- live fault
+    if status_mod._pid_exists(writer_pid):
+        writer_start = pdata.get("writer_start_time")
+        if writer_start is None:
+            return False  # live pid, unknown start time -- not provably stale
+        try:
+            if status_mod._get_process_start_time(writer_pid) == writer_start:
+                return False  # a *different* live gateway process owns this row
+        except Exception:
+            return False
+    return True
+
+
 def _runtime_health_lines() -> list[str]:
     """Summarize the latest persisted gateway runtime health state."""
     try:
@@ -4607,10 +4641,15 @@ def _runtime_health_lines() -> list[str]:
 
     gateway_state = state.get("gateway_state")
     exit_reason = state.get("exit_reason")
+    # A platform row stamped by a *different* (now dead) gateway process is a tombstone, not a
+    # fault. Disabling a platform never removes its last row -- ``_prepare_runtime_status_update``
+    # merges the file it is given -- so it survives shutdowns and restarts indefinitely. Reporting
+    # it pins a healthy gateway to "degraded" until someone deletes the snapshot by hand. Only
+    # rows the running gateway itself wrote describe live state.
     lines = [
         f"⚠ {platform}: {pdata.get('error_message') or 'unknown error'}"
         for platform, pdata in (state.get("platforms", {}) or {}).items()
-        if pdata.get("state") == "fatal"
+        if pdata.get("state") == "fatal" and not _platform_row_is_tombstone(pdata, state)
     ]
 
     # A live-claiming snapshot can outlive an ungracefully killed gateway (taskkill /F, OOM). Past

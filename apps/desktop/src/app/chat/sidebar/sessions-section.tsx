@@ -49,6 +49,17 @@ import { VirtualSessionList } from './virtual-session-list'
 
 export const VIRTUALIZE_THRESHOLD = 25
 
+// Month-level divider keys ("m-2026-08", "my-2025-11") — including the
+// project-lane prefixed "project:<id>:m-…" form — rest collapsed: deep
+// history is one click away rather than a wall of rows between the user and
+// today. An explicit toggle (or Collapse/Expand all) writes a real state and
+// always wins over this default.
+const MONTH_GROUP_KEY = new RegExp('(?:^|:)my?-[0-9]{4}-')
+
+function defaultListGroupOpen(key: string): boolean {
+  return !MONTH_GROUP_KEY.test(key)
+}
+
 interface SidebarSectionHeaderProps {
   label: string
   open: boolean
@@ -247,7 +258,10 @@ export function SidebarSessionsSection({
   const statusDividerLabels = t.sidebar.statusDivider
   const dotStates = useStore($sessionDotStateById)
   const nodeOpen = useStore($sidebarWorkspaceNodeOpen)
-  const isListGroupOpen = useCallback((key: string) => nodeOpen[listGroupNodeId(key)] ?? true, [nodeOpen])
+  const isListGroupOpen = useCallback(
+    (key: string) => nodeOpen[listGroupNodeId(key)] ?? defaultListGroupOpen(key),
+    [nodeOpen]
+  )
   const sectionOpen = collapsible ? open : true
   const hasGroupedSessions = Boolean(groups?.some(group => group.sessions.length > 0))
   // A defined project list is itself content (even an empty project should

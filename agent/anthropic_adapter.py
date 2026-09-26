@@ -227,7 +227,7 @@ _OAUTH_ONLY_BETAS = ["claude-code-20250219", "oauth-2025-04-20"]
 # Claude Code identity — OAuth requests without it intermittently 500. Anthropic rejects OAuth
 # requests whose user-agent version is too far behind the actual release, so the installed
 # version is detected and this fallback kept current.
-_CLAUDE_CODE_VERSION_FALLBACK = "2.1.74"
+_CLAUDE_CODE_VERSION_FALLBACK = "2.1.283"
 _claude_code_version_cache: Optional[str] = None
 
 # Install prefixes probed in addition to PATH. GUI launches (the Electron desktop app, macOS
