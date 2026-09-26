@@ -2681,6 +2681,16 @@ export const zhHant = defineLocale({
       closed: '已關閉',
       noPR: '無 PR'
     },
+    archive: {
+      finished: '封存已完成的工作階段',
+      olderThan: '封存早於以下時間的工作階段…',
+      days: (days: number) => `${days} 天`,
+      confirmTitle: (count: number) => `封存 ${count} 個工作階段？`,
+      confirmBody: '釘選的聊天永不會被封存，也不會刪除任何內容——已封存的工作階段會移至「已封存」檢視。',
+      confirmAction: '封存',
+      done: (count: number) => `已封存 ${count} 個工作階段`,
+      none: '沒有可封存的工作階段'
+    },
     gatewayGroups: {
       grouping: '閘道與設定檔',
       rename: '重新命名群組',

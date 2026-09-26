@@ -2086,6 +2086,17 @@ export const ar = defineLocale({
       closed: 'مغلق',
       noPR: 'لا يوجد PR'
     },
+    archive: {
+      finished: 'أرشفة الجلسات المنتهية',
+      olderThan: 'أرشفة الجلسات الأقدم من…',
+      days: (days: number) => `${days} أيام`,
+      confirmTitle: (count: number) => `أرشفة ${count} جلسة؟`,
+      confirmBody:
+        'لا تُؤرشف المحادثات المثبتة أبدًا ولا يُحذف أي شيء — تنتقل الجلسات المؤرشفة إلى عرض المؤرشفة.',
+      confirmAction: 'أرشفة',
+      done: (count: number) => `تمت أرشفة ${count} جلسة`,
+      none: 'لا توجد جلسات للأرشفة'
+    },
     gatewayGroups: {
       grouping: 'البوابة والملف الشخصي',
       rename: 'إعادة تسمية المجموعة',

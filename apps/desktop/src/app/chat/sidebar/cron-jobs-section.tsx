@@ -186,7 +186,12 @@ export function SidebarCronJobsSection({
         >
           <SidebarPanelLabel>{label}</SidebarPanelLabel>
           <DisclosureCaret
-            className="text-(--ui-text-tertiary) opacity-0 transition group-hover/section-label:opacity-100"
+            className={cn(
+              'text-(--ui-text-tertiary) transition',
+              open
+                ? 'opacity-0 group-hover/section-label:opacity-100 group-focus-visible/section-label:opacity-100'
+                : 'opacity-100'
+            )}
             open={open}
           />
         </button>
@@ -375,7 +380,9 @@ function CronJobSidebarRow({
               <DisclosureCaret
                 className={cn(
                   'shrink-0 text-(--ui-text-tertiary) transition',
-                  expanded ? 'opacity-100' : 'opacity-0 group-hover/cron:opacity-100'
+                  expanded
+                    ? 'opacity-0 group-hover/cron:opacity-100 group-focus-visible/cron:opacity-100'
+                    : 'opacity-100'
                 )}
                 open={expanded}
               />

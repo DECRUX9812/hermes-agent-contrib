@@ -66,6 +66,7 @@ import { runImportProfileFlow } from '@/store/profile-share'
 import { $projectTree } from '@/store/projects'
 import type { PullRequestBucket } from '@/store/pull-requests'
 import { $unreadFinishedSessionIds, markAllSessionsRead } from '@/store/session'
+import { runBulkArchive } from '@/store/session-bulk-archive'
 import type { SessionStatusBucket } from '@/store/session-dot-state'
 import { $sessionsHaveCost } from '@/store/sidebar-archive'
 
@@ -88,6 +89,10 @@ function OptionGlyph({ option }: { option: Option }) {
 /** Every option row — single or multi select — leaves the menu open, so a whole
  *  view can be set up in one pass. Only the actions at the bottom dismiss it. */
 const keepOpen = (event: Event) => event.preventDefault()
+
+// "Archive older than…" presets — sweeping by recency, not by a fixed clock
+// range, so the useful grain is a handful of round ages.
+const BULK_ARCHIVE_DAYS = [7, 30, 90] as const
 
 function OptionCheckbox({ checked, onCheck, option }: { checked: boolean; onCheck: () => void; option: Option }) {
   return (
@@ -450,6 +455,22 @@ export function SidebarFilterMenu({ className }: { className?: string }) {
         <DropdownMenuItem disabled={unreadIds.length === 0} onSelect={markAllSessionsRead}>
           {t.sidebar.markAllRead}
         </DropdownMenuItem>
+
+        {/* Bulk filing for the rail: candidates resolve at click time (idle,
+            read, unpinned) and each row takes the row's own archive path
+            after one shared confirmation. */}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => void runBulkArchive()}>{t.sidebar.archive.finished}</DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>{t.sidebar.archive.olderThan}</DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            {BULK_ARCHIVE_DAYS.map(days => (
+              <DropdownMenuItem key={days} onSelect={() => void runBulkArchive(days)}>
+                {t.sidebar.archive.days(days)}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
   )

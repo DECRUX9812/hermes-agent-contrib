@@ -3913,6 +3913,17 @@ export const frOverrides = {
       closed: 'Fermée',
       noPR: 'Aucune PR'
     },
+    archive: {
+      finished: 'Archiver les sessions terminées',
+      olderThan: 'Archiver les sessions de plus de…',
+      days: (days: number) => `${days} jours`,
+      confirmTitle: (count: number) => `Archiver ${count} session${count === 1 ? '' : 's'} ?`,
+      confirmBody:
+        'Les discussions épinglées ne sont jamais archivées et rien n’est supprimé — les sessions archivées passent dans la vue Archivées.',
+      confirmAction: 'Archiver',
+      done: (count: number) => `${count} session${count === 1 ? '' : 's'} archivée${count === 1 ? '' : 's'}`,
+      none: 'Aucune session à archiver'
+    },
     gatewayGroups: {
       grouping: 'Gateway et profil',
       rename: 'Renommer le groupe',

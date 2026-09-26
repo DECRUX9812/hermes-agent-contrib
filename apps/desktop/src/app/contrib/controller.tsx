@@ -43,6 +43,7 @@ import { discoverRuntimePlugins } from '@/contrib/runtime-loader'
 import { LocalizedTabTitle, translateNow } from '@/i18n'
 import { NEW_SESSION_TITLE, sessionTitle as storedSessionTitle } from '@/lib/chat-runtime'
 import {
+  Archive,
   Download,
   FileText,
   LayoutDashboard,
@@ -93,6 +94,7 @@ import {
   ownerLookupSessionRows,
   sessionMatchesStoredId
 } from '@/store/session'
+import { runBulkArchive } from '@/store/session-bulk-archive'
 import { watchSessionPins } from '@/store/session-pin-sync'
 import { $botChatScopes } from '@/store/session-states'
 import { watchUnreadWriteGuard } from '@/store/session-unread-remote'
@@ -326,6 +328,39 @@ registry.registerMany([
       label: 'Reload desktop plugins',
       keywords: ['plugins', 'reload', 'refresh', 'desktop'],
       run: () => void discoverRuntimePlugins()
+    } satisfies PaletteContribution
+  },
+  // Bulk rail filing (the filter menu runs the same sweep): candidates are
+  // the rail's idle + read + unpinned rows; each takes the row's own archive
+  // path after one shared confirmation.
+  {
+    id: 'sessions.archiveFinished',
+    area: PALETTE_AREA,
+    data: {
+      id: 'sessions.archiveFinished',
+      label: 'Archive finished sessions',
+      icon: Archive,
+      keywords: ['archive', 'sessions', 'finished', 'cleanup', 'tidy'],
+      run: () => void runBulkArchive()
+    } satisfies PaletteContribution
+  },
+  {
+    id: 'sessions.archiveOlder',
+    area: PALETTE_AREA,
+    data: {
+      id: 'sessions.archiveOlder',
+      label: 'Archive sessions older than…',
+      icon: Archive,
+      keywords: ['archive', 'sessions', 'old', 'stale', 'cleanup'],
+      // The bare row runs the sensible default; a day-count row per preset
+      // expands beneath it on every palette open.
+      run: () => void runBulkArchive(30),
+      items: () =>
+        [7, 30, 90].map(days => ({
+          id: `sessions.archiveOlder.${days}`,
+          label: `${days} days`,
+          run: () => void runBulkArchive(days)
+        }))
     } satisfies PaletteContribution
   },
   // The core `::preview{file="…"}` transcript directive — the model (or a

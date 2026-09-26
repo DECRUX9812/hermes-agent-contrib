@@ -2654,6 +2654,17 @@ export const ru = defineLocale({
       resetToDefaults: 'Сбросить настройки',
       noPR: 'Без PR'
     },
+    archive: {
+      finished: 'Архивировать завершённые сеансы',
+      olderThan: 'Архивировать сеансы старше…',
+      days: (days: number) => `${days} дн.`,
+      confirmTitle: (count: number) => `Архивировать сеансов: ${count}?`,
+      confirmBody:
+        'Закреплённые чаты никогда не архивируются, и ничего не удаляется — архивированные сеансы переносятся в представление «Архивные».',
+      confirmAction: 'Архивировать',
+      done: (count: number) => `Архивировано сеансов: ${count}`,
+      none: 'Нет сеансов для архивирования'
+    },
     gatewayGroups: {
       grouping: 'Шлюз и профиль',
       rename: 'Переименовать группу',

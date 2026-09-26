@@ -2935,6 +2935,16 @@ export interface Translations {
   }
 
   sidebar: {
+    archive: {
+      finished: string
+      olderThan: string
+      days: (days: number) => string
+      confirmTitle: (count: number) => string
+      confirmBody: string
+      confirmAction: string
+      done: (count: number) => string
+      none: string
+    }
     filter: {
       grouping: string
       ordering: string
