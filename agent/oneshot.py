@@ -63,8 +63,32 @@ def _commit_message_template(variables: Dict[str, Any]) -> Tuple[str, str]:
     return _COMMIT_INSTRUCTIONS, "\n\n".join(parts)
 
 
+_CODE_REVIEW_INSTRUCTIONS = (
+    "You are a senior code reviewer. Given a unified diff of uncommitted changes, find the "
+    "problems a maintainer would want caught BEFORE merge: bugs, regressions, security or "
+    "correctness issues, and violations of conventions visible in the surrounding code.\n"
+    "Rules:\n"
+    "- Report only concrete issues you are confident about — no style nits, no praise, no "
+    "speculation about code outside the diff.\n"
+    "- `line` is the NEW-file line number the comment lands on (the `+` side); derive it from "
+    "the `@@` hunk headers.\n"
+    "- `path` is the repo-relative path exactly as it appears in the diff headers.\n"
+    "- Keep each `body` to one short line (<= 140 chars); it renders inline on the diff.\n"
+    "- Return ONLY a JSON array, most important first, at most 12 items: "
+    '[{"path": "a/b.py", "line": 42, "body": "..."}]. Return [] when the diff is clean.'
+)
+
+
+def _code_review_template(variables: Dict[str, Any]) -> Tuple[str, str]:
+    # Reviewer budget is larger than the commit message's: dropped context is a
+    # missed bug, and comments reference line numbers the whole diff assigns.
+    diff = _truncate(str(variables.get("diff") or ""), 40000)
+    return _CODE_REVIEW_INSTRUCTIONS, "Diff under review:\n" + (diff or "(no diff)")
+
+
 # Registry of named templates; add an entry to give a new surface a reusable prompt.
 PROMPT_TEMPLATES: Dict[str, PromptTemplate] = {
+    "code_review": _code_review_template,
     "commit_message": _commit_message_template,
 }
 

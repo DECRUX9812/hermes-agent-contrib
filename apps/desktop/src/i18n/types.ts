@@ -3605,6 +3605,11 @@ export interface Translations {
       agentReviewAttachment: string
       agentReviewUnavailable: string
       agentReviewReportTitle: (reviewer: string) => string
+      selfReview: string
+      selfReviewRunning: string
+      selfReviewClean: string
+      selfReviewClear: string
+      selfReviewComments: (count: number) => string
       newBranch: string
       branchOffFrom: (base: string) => string
       switchTo: (branch: string) => string

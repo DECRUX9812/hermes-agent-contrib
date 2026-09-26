@@ -44,6 +44,7 @@ import {
   stageReviewFile,
   unstageReviewFile
 } from '@/store/review'
+import { $selfReview } from '@/store/self-review'
 import { $currentCwd } from '@/store/session'
 
 import { pickRevealLabel } from '../file-actions'
@@ -315,6 +316,7 @@ function ReviewFileRow({ node, depth }: { node: ReviewTreeNode; depth: number })
   const selectedPath = useStore($reviewSelectedPath)
   const file = node.file!
   const selected = file.path === selectedPath
+  const selfReviewCount = useStore($selfReview).files[file.path]?.comments.length ?? 0
   const glyph = STATUS_GLYPH[file.status] ?? STATUS_GLYPH.M
   const dragPath = absolutePath(file.path)
   // Reactive mirror of reviewRepoCwd(): the pinned scope wins, else the
@@ -451,6 +453,14 @@ function ReviewFileRow({ node, depth }: { node: ReviewTreeNode; depth: number })
           </Tip>
         </span>
 
+        {selfReviewCount > 0 && (
+          <Tip label={c.selfReviewComments(selfReviewCount)}>
+            <span className="flex shrink-0 items-center gap-0.5 text-[0.62rem] text-(--ui-accent-secondary)">
+              <Codicon name="comment" size="0.6rem" />
+              {selfReviewCount}
+            </span>
+          </Tip>
+        )}
         <DiffCount
           added={node.added}
           className="text-[0.64rem] leading-4 group-hover/review-row:hidden"
