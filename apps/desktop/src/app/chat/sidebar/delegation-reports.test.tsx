@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { $delegationReportsBySession, $dismissedDelegationReports } from '@/store/delegation-reports'
+import type * as Windows from '@/store/windows'
 import type { SessionInfo } from '@/types/hermes'
 
 import { SidebarDelegationReports } from './delegation-reports'
@@ -29,7 +30,7 @@ vi.mock('@/i18n', () => ({
 }))
 
 vi.mock('@/store/windows', async importOriginal => {
-  const actual = await importOriginal<typeof import('@/store/windows')>()
+  const actual = await importOriginal<typeof Windows>()
 
   return { ...actual, openSessionInNewWindow: (...args: unknown[]) => openSessionInNewWindow(...args) }
 })
