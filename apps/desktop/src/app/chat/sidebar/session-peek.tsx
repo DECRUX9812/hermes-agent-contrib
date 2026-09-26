@@ -42,11 +42,13 @@ const STATE_LABEL: Record<SessionDotState, (r: Translations['sidebar']['row'], p
   working: r => r.sessionRunning
 }
 
-function PeekRow({ children, label }: { children: React.ReactNode; label: string }) {
+function PeekRow({ children, label, wrap }: { children: React.ReactNode; label: string; wrap?: boolean }) {
   return (
     <div className="flex min-w-0 items-baseline gap-2">
       <span className="w-14 shrink-0 text-[0.625rem] leading-4 text-(--ui-text-quaternary)">{label}</span>
-      <span className="min-w-0 flex-1 truncate text-[0.6875rem] leading-4 text-(--ui-text-tertiary)">{children}</span>
+      <span className={cn('min-w-0 flex-1 text-[0.6875rem] leading-4 text-(--ui-text-tertiary)', wrap ? 'break-words' : 'truncate')}>
+        {children}
+      </span>
     </div>
   )
 }
@@ -124,7 +126,7 @@ function SessionPeekBody({ session }: { session: SessionInfo }) {
           </PeekRow>
         ) : null}
         {session.model ? <PeekRow label={p.model}>{displayModelName(session.model)}</PeekRow> : null}
-        {stats.length ? <PeekRow label={p.stats}>{stats.join(' · ')}</PeekRow> : null}
+        {stats.length ? <PeekRow label={p.stats} wrap>{stats.join(' · ')}</PeekRow> : null}
         {subagents?.length ? (
           <PeekRow label={p.agents}>
             {p.agentsSummary(subagents.length)}{runningAgents ? ` · ${p.agentsRunning(runningAgents)}` : ''}
