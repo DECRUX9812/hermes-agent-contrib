@@ -64,7 +64,9 @@ const RELAY_DELIVER_BACKEND_CEILING_MS = RELAY_TURN_LOCK_WAIT_MS + RELAY_TURN_AT
 // answers at its own limit still wins the race against this timer.
 const RELAY_DELIVER_SETTLEMENT_MARGIN_MS = 180_000
 // tools/bot_relay.py REPLY_WAIT_SECONDS rebuilds this sum and waits past it for the timeout reply below.
-const RELAY_DELIVER_TIMEOUT_MS = RELAY_DELIVER_BACKEND_CEILING_MS + RELAY_DELIVER_SETTLEMENT_MARGIN_MS
+// Exported for mailbox.ts — `bots_mailbox.send` to a local bot takes a whole
+// turn through bot_relay.deliver, so it shares this deadline.
+export const RELAY_DELIVER_TIMEOUT_MS = RELAY_DELIVER_BACKEND_CEILING_MS + RELAY_DELIVER_SETTLEMENT_MARGIN_MS
 // Push path (#93091): the gateway broadcasts `bot_relay.outbox.pending` when
 // an envelope lands on disk; a burst of signals inside this window collapses
 // to ONE drain. The interval poll above stays as the backstop for older
@@ -159,7 +161,9 @@ interface RelayAgentRow {
   title: string
 }
 
-/** A queued cross-connection message drained from a gateway's outbox. */
+/** A queued cross-connection message drained from a gateway's outbox.
+ *  `note` rides the envelope when the DM is a mailbox task hand-off (#48) —
+ *  forwarded to `bot_relay.deliver`, which files it on the target install. */
 interface RelayEnvelope {
   id?: string
   message?: string
@@ -167,6 +171,7 @@ interface RelayEnvelope {
   from_handle?: string
   target_connection?: string
   target_profile?: string
+  note?: Record<string, unknown>
 }
 
 /** Reconcile retention with the CURRENT connection set: pin new connections,
@@ -569,7 +574,8 @@ async function deliverRelayEnvelope(
         message: String(envelope?.message || ''),
         from_profile: String(envelope?.from_profile || ''),
         from_handle: String(envelope?.from_handle || ''),
-        from_connection: String(sender.id)
+        from_connection: String(sender.id),
+        ...(envelope?.note && typeof envelope.note === 'object' ? { note: envelope.note } : {})
       },
       RELAY_DELIVER_TIMEOUT_MS
     )

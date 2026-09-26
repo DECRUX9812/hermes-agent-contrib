@@ -290,10 +290,13 @@ def _target_liveness(root: Path | str, target: dict) -> Optional[bool]:
         return None
 
 
-def enqueue_envelope(root: Path | str, *, target: dict, message: str, sender_profile: str, sender_handle: str) -> dict:
+def enqueue_envelope(root: Path | str, *, target: dict, message: str, sender_profile: str, sender_handle: str,
+                     note: Optional[dict] = None) -> dict:
     """Queue a cross-connection DM for the Desktop relay; returns the envelope. Raises
     ``EnvelopeRefusedError`` ('runtime_offline') without writing when the target is
-    definitively offline; unknown liveness enqueues (fail-open)."""
+    definitively offline; unknown liveness enqueues (fail-open). ``note`` (``{id, title,
+    body, payload?}``) rides the envelope for ``bot_relay.deliver`` to file into the
+    target install's agent mailbox (tools/bot_mailbox.py)."""
     if _target_liveness(root, target) is False:
         label = (f"@{target.get('handle') or target.get('profile') or '?'} on "
                  f"{target.get('connection_label') or target.get('connection_id') or '?'}")
@@ -306,6 +309,8 @@ def enqueue_envelope(root: Path | str, *, target: dict, message: str, sender_pro
         "target_connection": target["connection_id"], "target_profile": target["profile"],
         "target_handle": target["handle"], "message": message,
     }
+    if isinstance(note, dict) and note.get("id") and note.get("title"):
+        envelope["note"] = note
     _atomic_write_json(base / OUTBOX_DIR / f"{envelope['id']}.json", envelope)
     return envelope
 

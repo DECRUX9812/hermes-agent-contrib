@@ -1615,7 +1615,7 @@ export interface BotRelayOutboxDrainParams {
 export interface BotRelayOutboxDrainResult {
   envelopes: RelayEnvelope[]
 }
-/** ``tools/bot_relay.py::enqueue_envelope``. */
+/** ``tools/bot_relay.py::enqueue_envelope``. ``note`` rides along when the DM is a task hand-off (#48) — ``bot_relay.deliver`` files it into the target's mailbox. */
 export interface RelayEnvelope {
   id: string
   created_at: number
@@ -1625,15 +1625,17 @@ export interface RelayEnvelope {
   target_profile: string
   target_handle: string
   message: string
+  note?: Record<string, unknown> | null
   [key: string]: unknown
 }
-/** ``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds). */
+/** ``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds). ``note`` is an optional mailbox task hand-off (``{id, title, body, payload?}``) filed on this install before delivery. */
 export interface BotRelayDeliverParams {
   profile: string
   message: string
   from_profile?: string | null
   from_handle?: string | null
   from_connection?: string | null
+  note?: Record<string, unknown> | null
 }
 export interface BotRelayDeliverResult {
   reply: string
@@ -1647,6 +1649,60 @@ export interface BotRelayReplyParams {
 }
 export interface OkResult {
   ok?: boolean
+}
+export interface BotsMailboxListParams {
+  profile?: string | null
+  handle?: string | null
+}
+export interface BotsMailboxListResult {
+  notes: BotMailboxNote[]
+}
+/** A stored mailbox note — ``tools/bot_mailbox.py::append_note``. */
+export interface BotMailboxNote {
+  id: string
+  kind: string
+  to: BotMailboxParty
+  sender: BotMailboxParty
+  title: string
+  body: string
+  payload?: Record<string, unknown> | null
+  status: string
+  reply: string
+  created_at: number
+  updated_at: number
+  room?: string | null
+  [key: string]: unknown
+}
+/** One end of a note — ``tools/bot_mailbox.py::_normalize_party``. ``kind`` is 'bot' or 'user'; ``connection`` is the sender-side connection id (display only). */
+export interface BotMailboxParty {
+  kind?: string | null
+  profile?: string | null
+  handle?: string | null
+  name?: string | null
+  connection?: string | null
+  [key: string]: unknown
+}
+export interface BotsMailboxSendParams {
+  profile?: string | null
+  to: string
+  title: string
+  body?: string | null
+  payload?: Record<string, unknown> | null
+}
+export interface BotsMailboxSendResult {
+  note: BotMailboxNote
+  reply?: string | null
+  queued?: boolean | null
+  delivery_error?: string | null
+}
+export interface BotsMailboxUpdateParams {
+  profile?: string | null
+  id: string
+  status: string
+  reply?: string | null
+}
+export interface BotsMailboxUpdateResult {
+  note: BotMailboxNote
 }
 export interface BrowserControllerRegisterParams {
   session_id: string
@@ -4751,6 +4807,12 @@ export interface RpcMethods {
   'bot_relay.reply': { params: BotRelayReplyParams; result: OkResult }
   /** Replace this gateway's view of agents on other connections; answers the accepted row count. */
   'bot_relay.roster.sync': { params: BotRelayRosterSyncParams; result: BotRelayRosterSyncResult }
+  /** List this install's agent-mailbox notes, newest first; 'handle' narrows to one bot. */
+  'bots_mailbox.list': { params: BotsMailboxListParams; result: BotsMailboxListResult }
+  /** File a user-authored task note and deliver it into the target's Bot Chat (local: blocking turn via bot_relay.deliver; remote: queued for the Desktop relay). */
+  'bots_mailbox.send': { params: BotsMailboxSendParams; result: BotsMailboxSendResult }
+  /** Flip a mailbox note's status (open→accepted/declined/done); live sender bots get a one-line ping. */
+  'bots_mailbox.update': { params: BotsMailboxUpdateParams; result: BotsMailboxUpdateResult }
   /** Hard-detach only the controller owned by this authenticated transport. */
   'browser.controller.detach': { params: BrowserControllerParams; result: BrowserControllerDetachResult }
   /** Acknowledge a heartbeat only for this transport's own attached controller. */
@@ -5219,6 +5281,9 @@ export const RPC_METHODS = [
   'bot_relay.outbox.drain',
   'bot_relay.reply',
   'bot_relay.roster.sync',
+  'bots_mailbox.list',
+  'bots_mailbox.send',
+  'bots_mailbox.update',
   'browser.controller.detach',
   'browser.controller.heartbeat',
   'browser.controller.register',

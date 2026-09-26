@@ -445,9 +445,13 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
  *  the `vi.mock` factory rather than hoisted alongside it. */
 export async function pluginSdkMock(host: Record<string, unknown>) {
   const nanostores = await import('nanostores')
+  // relay.ts builds an LruCache at module scope, and group modules reach it
+  // transitively (e.g. through mailbox.ts) — the real class keeps the mock honest.
+  const { LruCache } = await import('../../lib/lru-cache')
 
   return {
     atom: nanostores.atom,
+    LruCache,
     // Feature-detected SDK members: the modules read them off the namespace
     // and fall back when absent, but vitest rejects a namespace access with
     // no matching export at all — so they have to be present and undefined.
