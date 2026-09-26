@@ -13,6 +13,7 @@ import { modeBound } from '@/store/interface-mode'
 
 import { refreshRepoStatus, repoStatusForCwd } from './coding-status'
 import { stampSessionPrBranch } from './pull-requests'
+import { sessionIdForReviewTarget, sessionTouchedPaths } from './review-session'
 import {
   $busy,
   $currentCwd,
@@ -40,6 +41,7 @@ const OPEN_KEY = 'hermes.desktop.reviewOpen'
 const COMMIT_DEFAULT_KEY = 'hermes.desktop.reviewCommitDefault'
 const TREE_MODE_KEY = 'hermes.desktop.reviewTreeMode'
 const SELECTED_KEY = 'hermes.desktop.reviewSelectedPath'
+const SCOPE_MODE_KEY = 'hermes.desktop.reviewScopeMode'
 const REVIEW_REFRESH_DEBOUNCE_MS = 100
 const SHIP_INFO_STALE_MS = 30_000
 
@@ -57,6 +59,29 @@ export const $reviewCommitDefault = persistentAtom<CommitAction>(COMMIT_DEFAULT_
   decode: raw => (raw === 'commitPush' ? 'commitPush' : 'commit'),
   encode: value => value
 })
+
+// File-list scope (#28): the classic working-tree diff, or the session's own
+// touched set joined onto it — one tree aggregating every file the session
+// edited, each still opening the same unified per-file diff. Persisted as a
+// view preference (global UI state, not per-session truth).
+export type ReviewScopeMode = 'session' | 'uncommitted'
+
+export const $reviewScopeMode = persistentAtom<ReviewScopeMode>(SCOPE_MODE_KEY, 'uncommitted', {
+  decode: raw => (raw === 'session' ? 'session' : 'uncommitted'),
+  encode: value => value
+})
+
+export function setReviewScopeMode(mode: ReviewScopeMode): void {
+  if ($reviewScopeMode.get() === mode) {
+    return
+  }
+
+  $reviewScopeMode.set(mode)
+  // The displayed list changes wholesale; a stale selection would strand the
+  // diff pane on a file that may not exist in the other scope.
+  clearReviewSelection()
+  void refreshReview({ rescanSession: true })
+}
 
 // Changed-file layout: a flat path list (VS Code's default) or a folder tree.
 export type ReviewTreeMode = 'list' | 'tree'
@@ -142,7 +167,7 @@ function reviewCtx(): { cwd: string; review: ReviewBridge } | null {
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
-export async function refreshReview(): Promise<void> {
+export async function refreshReview({ rescanSession = false }: { rescanSession?: boolean } = {}): Promise<void> {
   const ctx = reviewCtx()
   const seq = (reviewRefreshSeq += 1)
 
@@ -175,7 +200,22 @@ export async function refreshReview(): Promise<void> {
 
     // Hide dep/build/cache dirs and OS noise even when the repo tracks them —
     // .gitignored paths are already dropped upstream by `git status`.
-    const files = result.files.filter(file => !isExcludedPath(file.path))
+    let files = result.files.filter(file => !isExcludedPath(file.path))
+
+    // Session scope: the pane aggregates ALL files the session touched
+    // (roadmap #28). Git stays the truth for +/-/status; a touched file whose
+    // net diff is already committed or reverted stays listed as a clean
+    // 'touched' row (status '.') — the session edited it either way.
+    if ($reviewScopeMode.get() === 'session') {
+      const storedId = sessionIdForReviewTarget($reviewScopeTarget.get())
+      const touched = storedId ? await sessionTouchedPaths(cwd, storedId, { rescan: rescanSession }) : []
+
+      if (seq !== reviewRefreshSeq || repoCwd() !== cwd) {
+        return
+      }
+
+      files = sessionReviewFiles(files, touched)
+    }
 
     $reviewFiles.set(files)
 
@@ -379,6 +419,26 @@ function matchReviewFile(files: readonly HermesReviewFile[], path: string): Herm
 
     return candidate === target || target.endsWith(`/${candidate}`) || candidate.endsWith(`/${target}`)
   })
+}
+
+// Join the session's touched paths onto the git list via tail-matching (tool
+// calls report absolute or repo-relative paths; git reports repo-relative).
+// First-touched order is kept — the tree reads chronologically.
+function sessionReviewFiles(files: HermesReviewFile[], touched: string[]): HermesReviewFile[] {
+  const out: HermesReviewFile[] = []
+  const seen = new Set<string>()
+
+  for (const path of touched) {
+    const hit = matchReviewFile(files, path)
+    const file = hit ?? { added: 0, path, removed: 0, staged: false, status: '.' }
+
+    if (!seen.has(file.path)) {
+      seen.add(file.path)
+      out.push(file)
+    }
+  }
+
+  return out
 }
 
 /**
@@ -637,6 +697,14 @@ let prevScopeCwd = $reviewScopeCwd.get()
 $reviewScopeCwd.subscribe(scope => {
   if (scope !== prevScopeCwd) {
     prevScopeCwd = scope
+    onReviewRepoMoved()
+  }
+})
+
+// A same-repo re-home to another tile's session changes which conversation the
+// session scope reads — refresh even when the cwd didn't move.
+$reviewScopeTarget.subscribe(() => {
+  if ($reviewOpen.get()) {
     onReviewRepoMoved()
   }
 })

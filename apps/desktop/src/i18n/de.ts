@@ -4641,6 +4641,8 @@ export const deOverrides = {
       notRepo: 'Kein git-Repository',
       noDiff: 'Kein Diff zum Anzeigen',
       scopeUncommitted: 'Nicht committet',
+      scopeSession: 'Sitzung',
+      sessionEmpty: 'Keine Sitzungsänderungen',
       scopeBranch: 'Branch',
       scopeLastTurn: 'Letzte Runde',
       commit: 'Commit',

@@ -4652,6 +4652,8 @@ export const frOverrides = {
       notRepo: 'Pas un dépôt git',
       noDiff: 'Aucune différence à afficher',
       scopeUncommitted: 'Non validé',
+      scopeSession: 'Session',
+      sessionEmpty: 'Aucun changement de session',
       scopeBranch: 'Branche',
       scopeLastTurn: 'Dernier tour',
       commit: 'Valider',

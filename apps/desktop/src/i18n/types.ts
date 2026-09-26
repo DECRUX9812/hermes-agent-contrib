@@ -3585,6 +3585,9 @@ export interface Translations {
       notRepo: string
       noDiff: string
       scopeUncommitted: string
+      scopeSession: string
+      /** Session-scope empty state: the session named no file-edit paths. */
+      sessionEmpty: string
       scopeBranch: string
       scopeLastTurn: string
       commit: string

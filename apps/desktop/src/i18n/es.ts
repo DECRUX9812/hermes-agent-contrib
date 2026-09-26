@@ -4631,6 +4631,8 @@ export const esOverrides = {
       notRepo: 'No es un repositorio Git',
       noDiff: 'No hay diferencias que mostrar',
       scopeUncommitted: 'Sin confirmar',
+      scopeSession: 'Sesión',
+      sessionEmpty: 'Sin cambios de sesión',
       scopeBranch: 'Rama',
       scopeLastTurn: 'Último turno',
       commit: 'Hacer commit',

@@ -3379,6 +3379,8 @@ export const ru = defineLocale({
       notRepo: 'Не git-репозиторий',
       noDiff: 'Нет diff для показа',
       scopeUncommitted: 'Незакоммиченные',
+      scopeSession: 'Сессия',
+      sessionEmpty: 'Нет изменений сессии',
       scopeBranch: 'Ветка',
       scopeLastTurn: 'Последний ход',
       commit: 'Коммит',
