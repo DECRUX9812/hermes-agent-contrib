@@ -2050,7 +2050,8 @@ export const ar = defineLocale({
       chat: 'المحادثة',
       settings: 'الإعدادات',
       cron: 'المهام المجدولة',
-      agents: 'الوكلاء'
+      agents: 'الوكلاء',
+      browse: 'تصفح'
     },
     interfaceMode: {
       label: 'الواجهة',

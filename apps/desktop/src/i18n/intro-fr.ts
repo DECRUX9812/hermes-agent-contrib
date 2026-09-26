@@ -115,5 +115,7 @@ export const introFr: Translations['intro'] = {
     'Envoyez un problème, un fichier ou une idée. Je suivrai la personnalité configurée.',
     'Déposez la tâche ici. Je travaillerai en restant fidèle à la réalité du dépôt.',
     `Donnez-moi le contexte. Je réponds en mode ${label}.`
-  ]
+  ],
+
+  recentSessions: 'Reprenez là où vous vous étiez arrêté'
 }

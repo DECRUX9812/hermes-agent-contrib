@@ -57,6 +57,21 @@ export const $openBotChat = atom<{ key: string; openedRegistryId: string; opened
  *  from render. */
 export const $botChatFocused = atom(false)
 
+/** Sessions-rail Agents section open/closed. Default open — the section is
+ *  how most clicks reach a bot once the roster folds into the one nav rail.
+ *  Persisted via ctx.storage under 'agents-section-open'. */
+export const $agentsSectionOpen = atom(true)
+
+export function setAgentsSectionOpen(open: boolean) {
+  $agentsSectionOpen.set(open)
+
+  try {
+    Promise.resolve(getPluginCtx()?.storage?.set?.('agents-section-open', open)).catch(() => undefined)
+  } catch {
+    /* storage unavailable — fold holds for this window only */
+  }
+}
+
 export function saveSelectedRosterBot(bot: RosterRow) {
   const key = botRosterKey(bot)
   $selectedBot.set(botSelectionKey(bot))

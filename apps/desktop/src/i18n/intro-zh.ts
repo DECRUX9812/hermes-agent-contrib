@@ -115,5 +115,7 @@ export const introZh: Translations['intro'] = {
     '发送问题、文件或想法。我会遵循你配置的人格。',
     '把任务放在这里。我会根据仓库的实际情况开展工作。',
     `给我上下文，我会以 ${label} 模式回答。`
-  ]
+  ],
+
+  recentSessions: '从上次继续'
 }

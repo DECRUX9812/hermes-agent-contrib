@@ -139,6 +139,13 @@ type BotsMessages = {
     rosterUnavailable: (reason: string) => string
     waitingForGateway: string
   }
+  /** Sessions-rail Agents fold — the compact roster beside the sessions. */
+  agents: {
+    /** Footer row into the full Bots pane (management surface). */
+    allBots: (count: number) => string
+    /** Header gear aria/tooltip: fronts the Bots pane. */
+    manage: string
+  }
   /** User-made roster sections (folders the user files bots into). */
   sections: {
     newSection: string
@@ -579,6 +586,10 @@ const en: BotsMessages = {
     waitingForGateway:
       'Waiting for the gateway connection… (remote gateways can take a few seconds; retries automatically)'
   },
+  agents: {
+    allBots: count => `All ${count} ${count === 1 ? 'bot' : 'bots'}`,
+    manage: 'Manage bots'
+  },
   sections: {
     newSection: 'New section',
     newTitle: 'New section',
@@ -1004,6 +1015,10 @@ const ja: BotsMessages = {
       `名簿を取得できません: ${reason}。ゲートウェイが profiles.list より前の場合は、Hermes を更新してゲートウェイを再起動してください。`,
     waitingForGateway: 'ゲートウェイ接続を待っています…（リモートは数秒かかることがあります。自動で再試行します）'
   },
+  agents: {
+    allBots: count => `すべてのボット（${count}）`,
+    manage: 'ボットを管理'
+  },
   sections: {
     newSection: '新しいセクション',
     newTitle: '新しいセクション',
@@ -1426,6 +1441,10 @@ const zh: BotsMessages = {
     rosterUnavailable: reason => `无法获取名单：${reason}。如果网关早于 profiles.list，请更新 Hermes 并重启网关。`,
     waitingForGateway: '正在等待网关连接…（远程网关可能需要几秒；会自动重试）'
   },
+  agents: {
+    allBots: count => `全部 ${count} 个机器人`,
+    manage: '管理机器人'
+  },
   sections: {
     newSection: '新建分区',
     newTitle: '新建分区',
@@ -1838,6 +1857,10 @@ const zhHant: BotsMessages = {
     retryNow: '立即重試',
     rosterUnavailable: reason => `無法取得名單：${reason}。如果閘道早於 profiles.list，請更新 Hermes 並重新啟動閘道。`,
     waitingForGateway: '正在等待閘道連線…（遠端閘道可能需要幾秒；會自動重試）'
+  },
+  agents: {
+    allBots: count => `全部 ${count} 個機器人`,
+    manage: '管理機器人'
   },
   sections: {
     newSection: '新增分區',
