@@ -99,3 +99,36 @@ describe.each(COMPLETE_LOCALES)('%s desktop catalog', locale => {
     }
   })
 })
+
+// Partial locales merge English under their overrides, so a *new* key ships
+// silently untranslated. This ratchet pins the translated-leaf count: it may
+// only rise. When a PR adds English copy, either translate it in the partial
+// locales or bump the baseline after weighing the visible cost — never let it
+// drift down unnoticed.
+const PARTIAL_LOCALE_BASELINE = { ar: 3149, ja: 3486, 'zh-hant': 3731 } as const satisfies Partial<
+  Record<Locale, number>
+>
+
+describe.each(Object.keys(PARTIAL_LOCALE_BASELINE) as (keyof typeof PARTIAL_LOCALE_BASELINE)[])(
+  '%s partial locale coverage ratchet',
+  locale => {
+    it('does not lose translated strings', () => {
+      const catalog = catalogLeaves(locale)
+      let translated = 0
+
+      for (const [path, value] of catalog) {
+        // An untranslated leaf is the SAME value reference the merge filled in
+        // from English — works for strings, functions, and arrays alike.
+        if (catalog.get(path) !== undefined && !english.has(path)) {
+          continue
+        }
+
+        if (value !== english.get(path)) {
+          translated += 1
+        }
+      }
+
+      expect(translated).toBeGreaterThanOrEqual(PARTIAL_LOCALE_BASELINE[locale])
+    })
+  }
+)

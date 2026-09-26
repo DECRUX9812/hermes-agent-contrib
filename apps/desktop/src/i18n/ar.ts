@@ -1,6 +1,39 @@
 import { defineLocale } from './define-locale'
 
 export const ar = defineLocale({
+  connectors: {
+    title: 'اربط تطبيقاتك',
+    connect: 'ربط',
+    skip: 'ليس الآن',
+    cancel: 'إيقاف الانتظار',
+    retry: 'إعادة المحاولة',
+    grant: 'إعادة الربط',
+    connected: 'متصل',
+    checking: 'جارٍ فحص تطبيقاتك…',
+    notConnected: 'غير متصل',
+    skipped: 'تم التخطي',
+    disabled: 'غير متاح',
+    failed: 'تعذّر الربط',
+    needsAuth: 'انتهت صلاحية الوصول',
+    opening: 'جارٍ فتح تسجيل الدخول…',
+    waiting: 'بانتظار المتصفح…',
+    timeout: 'ما زلنا بانتظار التفويض.',
+    refresh: 'تحديث الحالة',
+    connectError: 'تعذّر بدء التفويض. حاول مجددًا.',
+    connectErrorFor: (app: string) => `تعذّر بدء التفويض لـ ${app}.`,
+    unavailable: 'الموصّلات غير متاحة لهذه الجلسة.',
+    ownerMissing: 'أعد فتح هذه المحادثة لإدارة اتصالاتها.',
+    search: 'ابحث عن تطبيق',
+    empty: 'لا توجد تطبيقات مطابقة',
+    disclaimer: 'الربط اختياري. فوّض فقط التطبيقات التي تريد أن يستخدمها Hermes.',
+    execution: 'أدوات الموصّلات',
+    setup: (server: string) => `إعداد ${server}`,
+    openInBrowser: 'افتح في المتصفح',
+    setupCancel: 'إلغاء',
+    authorizedToolsUnavailable: 'تم التفويض. الأدوات غير متاحة.',
+    required: 'مطلوب'
+  },
+
   externalOpenFailed: {
     title: 'تعذّر فتح هذا الرابط',
     message: 'لا يوجد متصفح مسجل لفتح هذا العنوان. انسخ الرابط وافتحه يدويًا.',

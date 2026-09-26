@@ -4,6 +4,39 @@ import { defineLocale } from './define-locale'
 import { introJa } from './intro-ja'
 
 export const ja = defineLocale({
+  connectors: {
+    title: 'アプリを接続',
+    connect: '接続',
+    skip: 'あとで',
+    cancel: '待機を中止',
+    retry: '再試行',
+    grant: '再接続',
+    connected: '接続済み',
+    checking: 'アプリを確認中…',
+    notConnected: '未接続',
+    skipped: 'スキップ済み',
+    disabled: '利用不可',
+    failed: '接続できませんでした',
+    needsAuth: 'アクセス権の有効期限切れ',
+    opening: 'サインインを開いています…',
+    waiting: 'ブラウザを待っています…',
+    timeout: 'まだ認可を待っています。',
+    refresh: 'ステータスを更新',
+    connectError: '認可を開始できませんでした。もう一度お試しください。',
+    connectErrorFor: (app: string) => `${app} の認可を開始できませんでした。`,
+    unavailable: 'このセッションではコネクタを利用できません。',
+    ownerMissing: 'この会話を再度開いて接続を管理してください。',
+    search: 'アプリを検索',
+    empty: '一致するアプリがありません',
+    disclaimer: '接続は任意です。Hermes に使わせたいアプリだけを認可してください。',
+    execution: 'コネクタツール',
+    setup: (server: string) => `${server} をセットアップ`,
+    openInBrowser: 'ブラウザで開く',
+    setupCancel: 'キャンセル',
+    authorizedToolsUnavailable: '認可済み。ツールは利用できません。',
+    required: '必須'
+  },
+
   externalOpenFailed: {
     title: 'このリンクを開けませんでした',
     message: 'このアドレスを開くブラウザが登録されていません。リンクをコピーして手動で開いてください。',
