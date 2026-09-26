@@ -296,7 +296,7 @@ export function Intro({ composer, personality, seed }: IntroProps) {
           `[data-slot='aui_intro'] > div` in styles.css pins direct children to
           the composer width, which is what silently flattened the per-element
           `max-w-*` caps the stack used to carry. */}
-      <div className="pointer-events-auto flex w-full min-w-0 flex-col items-center">
+      <div className="pointer-events-auto mt-6 flex w-full min-w-0 flex-col items-center">
         {composer}
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">

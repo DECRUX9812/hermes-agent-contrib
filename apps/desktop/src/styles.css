@@ -1805,6 +1805,20 @@ body.guest-pointer-lock :is(webview, iframe) {
   max-width: var(--composer-width);
 }
 
+/* The empty canvas hosts the live composer in-flow (one prompt surface), so
+   its dock must stop anchoring to the pane bottom and drop the dock clearance —
+   otherwise the chips and recent rows render under the composer. */
+[data-slot='aui_intro']:has([data-slot='composer-dock']) {
+  padding-bottom: 0;
+}
+
+[data-slot='aui_intro'] [data-slot='composer-dock']:not([data-popped-out]) {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  translate: none;
+}
+
 [data-slot='aui_intro'] p:last-child {
   max-width: 34rem;
   margin-inline: auto;
