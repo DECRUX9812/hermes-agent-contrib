@@ -102,6 +102,12 @@ interface PaneChrome extends PaneSizing {
    *  the tab and the sidebar row render status/color from the ONE primitive
    *  (self-subscribing — it updates without the strip re-registering). */
   tabLead?: () => React.ReactNode
+  /** A trail NODE for this pane's TAB, rendered after the label — per-tab live
+   *  status shown on EVERY tab in the strip (a session's elapsed time + current
+   *  tool), unlike `stripTrail`, which only the zone's active pane gets.
+   *  Self-subscribing like `tabLead`; absent/empty renders nothing. Hidden on
+   *  vertical rails — the rail has no room for text next to the label. */
+  tabTrail?: () => React.ReactNode
   /** A node the ACTIVE pane contributes to its zone strip's pinned trailing
    *  edge — a per-pane affordance that answers "what is this surface" at a
    *  glance (a session's skill chip). Read only for the zone's active pane,
