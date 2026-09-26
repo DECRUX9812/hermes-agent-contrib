@@ -1,10 +1,28 @@
-# Desktop revamp plan — from feature pile to product
+# Desktop revamp plan — from feature pile to agent OS
 
 The execution plan for the next phase of `apps/desktop`, written for Devin (or
-any agent) to implement in waves of small, validated PRs. Companion to
+any agent) to implement in gated waves of small, validated PRs. Companion to
 [`agentic-desktop-roadmap.md`](./agentic-desktop-roadmap.md) (what we built)
 and [`control-surface-research.md`](./control-surface-research.md) (why).
-Snapshot measured on `main` at `02d91043`, September 26, 2026.
+Snapshot measured on fork `main` at `02d91043`, September 26, 2026.
+
+It has two goals that must land together:
+
+1. **A full UI/UX rebuild.** Hermes Desktop should stop being "a chat app with
+   50 overlays" and become an **agent OS**: one front door for outcomes, named
+   teammates who report back, a live fleet you can read at a glance. The best
+   of rabbitOS 3, OpenClaw, Grok Bot and Meta Muse, built around one spine.
+2. **Survive the upstream gateway rewrite.** Upstream
+   `NousResearch/hermes-agent` is replacing the backend topology the desktop
+   is built on (one-gateway [#106742] + the `serve` cutover gist, plus the
+   `hermes_cli` evacuation [#122491]). Every wave below must work on **today's
+   pooled `serve` AND the canonical gateway**, and must not dig us deeper into
+   code upstream is deleting.
+
+[#106742]: https://github.com/NousResearch/hermes-agent/pull/106742
+[#122491]: https://github.com/NousResearch/hermes-agent/pull/122491
+
+---
 
 ## 1. Diagnosis — why ~50 shipped features didn't make a dent
 
@@ -15,13 +33,13 @@ the plugin panes SDK, and more. The app still *feels* like the same chat app
 because of four structural problems. The features are fine; how they're
 wired into the product is what's missing.
 
-**1. Breadth without a spine.** Every feature got its own door. There are
-13 route overlays besides chat (`app/routes.ts`: settings, command-center,
-inbox, session-import, capabilities, messaging, webhooks, artifacts, cron,
-profiles, agents, starmap, roster) plus the `/kanban` plugin page, HUD run cards and the
+**1. Breadth without a spine.** Every feature got its own door. There are 13
+route overlays besides chat (`app/routes.ts`: settings, command-center, inbox,
+session-import, capabilities, messaging, webhooks, artifacts, cron, profiles,
+agents, starmap, roster) plus the `/kanban` plugin page, HUD run cards and the
 menu-bar tray. The question *"what is running, and what needs me?"* is
-answered by at least **seven** surfaces: Inbox, Agents, Roster, Starmap,
-Command Center, Kanban, HUD run cards, plus rail digests and delegation
+answered by at least **seven** surfaces (Inbox, Agents, Roster, Starmap,
+Command Center, Kanban, HUD run cards) plus rail digests and delegation
 reports. Each is backed by its own store (`agent-notices`, `attention-inbox`,
 `delegation-reports`, `fleet-roster`, `fleet-runs`, `session-digest`, …). No
 single view is authoritative, so none of them becomes a habit.
@@ -34,301 +52,464 @@ chats, and closes it sees none of the last 50 PRs.
 **3. Features are doors, not defaults.** Several headline features are
 opt-in (proactive nudges, worktree isolation, quick entry, menu-bar status,
 digest-mode notifications) or reachable only from ⌘K or a context menu.
-There is no "what's new" moment and no progressive discovery. Unused
-features read as missing features.
+There is no "what's new" moment and no progressive discovery. Wave 0 confirms
+each default in the running app.
 
 **4. The codebase taxes every change.** The renderer is ~405k lines: 53
 non-i18n source files exceed 1,000 lines, and there are **198** modules in
-`src/store/`. The worst offenders sit on the hot path of every feature:
+`src/store/`. The worst offenders sit on every feature's path:
 
-| File | Lines |
-|---|---|
-| `app/session/hooks/use-session-actions/index.ts` | 3,085 |
-| `store/session-states.ts` | 2,864 |
-| `store/gateway.ts` | 2,490 |
-| `app/chat/sidebar/index.tsx` | 2,388 |
-| `app/session/hooks/use-session-actions/utils.ts` | 2,362 |
-| `components/pane-shell/tree/store.ts` | 2,282 |
-| `sdk/index.ts` | 2,036 |
-| `plugins/hermes-bots/group-chat.ts` | 1,897 |
-| `store/session.ts` | 1,762 |
-| `plugins/kanban/board.tsx` | 1,639 |
-| `app/gateway/hooks/use-gateway-boot.ts` | 1,633 |
-| `app/chat/sidebar/profile-switcher.tsx` | 1,632 |
-| `components/assistant-ui/thread/list.tsx` | 1,627 |
-| `app/chat/composer/index.tsx` | 1,612 |
-| `app/chat/right-rail/preview-pane.tsx` | 1,602 |
+| File | Lines | Upstream #106742 touches it? |
+|---|---|---|
+| `app/session/hooks/use-session-actions/index.ts` + `utils.ts` | 5,447 | no |
+| `store/session-states.ts` | 2,864 | lightly (+8/−) |
+| `store/gateway.ts` | 2,490 | **yes, 119 lines** |
+| `app/chat/sidebar/index.tsx` | 2,388 | no |
+| `components/pane-shell/tree/store.ts` | 2,282 | no |
+| `store/session.ts` | 1,762 | lightly |
+| `app/gateway/hooks/use-gateway-boot.ts` | 1,633 | check at sync |
+| `app/chat/sidebar/profile-switcher.tsx` | 1,632 | no |
+| `components/assistant-ui/thread/list.tsx` | 1,627 | no |
+| `app/chat/composer/index.tsx` | 1,612 | no |
+| `app/chat/right-rail/preview-pane.tsx` | 1,602 | no |
 
-Each feature PR had to thread through these files. That means regressions,
-review fatigue, and no one owns the experience end to end. Nothing measures
-performance either, so we can't tell whether 50 features made the app slower.
+**Thesis:** the next leap is **a redesign around one spine, not more
+features.** One fleet model, one "needs me / running" view, the agent-OS
+experience layered on top of it, safe features on by default, measurably fast.
+All of it must be built on seams that survive the gateway cutover.
 
-**Thesis:** the next leap is **consolidation, not addition**. Give the app
-one spine (a single fleet model and a single "needs me / running" view),
-bring the best features *into chat*, turn safe features on by default, and
-make it measurably fast. **No new roadmap features until Wave 4 ships.**
+---
 
-## 2. North star — what "god tier" means, measurably
+## 2. The upstream gateway changes — what they do to us
 
-A scorecard. Wave 0 records the baseline, and each wave must move its rows.
+### 2.1 What's changing upstream (state as of 2026-09-26)
 
-| Dimension | Target |
-|---|---|
-| **One glance** | From any surface, "what's running / what needs me" is answered by **one** view, fed by **one** store. |
-| **Chat carries the value** | The chat header + rail + empty state expose digest, PR/CI, capability, worktree, and needs-you *without* opening an overlay. |
-| **Fewer doors** | Monitoring overlays (Inbox, Agents, Roster, Starmap, Kanban-as-status, HUD cards) collapse to **one** Mission Control page with lenses. Route overlays go from 13 to about 9. |
-| **Defaults that work** | Every shipped feature is either on by default, surfaced in context, or deliberately advanced. None is merely buried. |
-| **Fast** | Cold start, session switch, 2k-message transcript scroll, keystroke-to-paint in the composer, and rail with 500 sessions: all measured in CI with budgets. None regresses by more than 10% from baseline, and the top two improve. |
-| **Maintainable** | No non-i18n renderer file over 1,500 lines in the families touched. Fleet/attention state is one store family, not six. |
+**One gateway ([#106742], open, CI green).** Replaces competing writers
+against `state.db` with one `SessionAuthority` per profile: a durable FIFO of
+admissions, generation-fenced claims, replay epochs, and unknown-execution
+recovery. CLI, TUI, local Desktop, API, ACP, bots and cron become **readers and
+submitters** over the gateway WebSocket with single-use tickets. Session policy
+(model, provider, toolsets) is frozen at creation, with no process-env reads.
+Desktop is an **attach-only client**: quitting the app leaves the gateway
+running, and `hermes gateway stop` is the explicit teardown. Its desktop-side
+diff (file stat only):
 
-## 3. How to work — the method (non-negotiable)
+- **Deleted:** `store/pool-limits.ts`, `gateway-spawn-priority.test.ts`,
+  `test/pool-retirement-renderer.ts`, and parts of `store/profile.ts`. The
+  pooled `hermes serve` per (connection, profile) is going away.
+- **Added:** `store/pending-submissions.ts` (send retry identity for ambiguous
+  acks), `runtime-gone` handling, `apps/shared/src/gateway-events.ts`,
+  `session-http-mutations.ts`, and replay handling in
+  `apps/shared/src/json-rpc-gateway.ts` (+ `json-rpc-gateway-replay.test.ts`).
+- **Rewritten:** `store/gateway.ts` (119 lines), `store/notifications.ts`,
+  `store/updates.ts`, `types/hermes.ts`.
+- **Backend:** `tui_gateway/server.py` −1,424 lines, split into
+  `agent_factory.py`, `session_registry.py` and `command_discovery.py`;
+  `methods_bot_relay.py` −225; `hermes_cli/web_server*` and
+  `web_routers/sessions.py` reworked.
 
-This is how the plan expects each session to operate:
+**`serve` cutover (the entry-point gist, fast-follow).** `serve`, remote
+Desktop (URL / Cloud / SSH) and web reach the canonical authority instead of
+hosting their own agent. It ships as 4 PRs: serve cutover → remote Desktop/
+browser → legacy-host removal → producer fixes. It is gated on #109403
+(desktop replay-gap recovery), #109404 (detach a subscription without stopping
+execution), #109405 and #109412. Touchpoints named for us:
+`electron/remote-lifecycle.ts`, `electron/main.ts`,
+`apps/shared/src/json-rpc-gateway.ts`. The rules: *"no Desktop-only recovery
+framework"*, *"closing a viewer must not terminate the shared owner"*, and
+*"an unavailable owner never causes legacy fallback."* It sits beside profile
+multiplexing (#109417): one `hermes gateway run` serves every profile.
+`tui_gateway/agent_factory.py` is deleted once callers migrate. The web
+dashboard is on a deprecation path, so **Desktop is the primary GUI.**
 
-1. **Verify the premise first.** Before changing a surface, reproduce the
-   current behavior on `main` (dev build or e2e). Name the file and line
-   where the problem manifests. If the claim in this plan is wrong against
-   the code, fix the plan (PR to this doc), don't force the change.
-2. **Read the rules for the area.** Root `AGENTS.md`, `apps/desktop/AGENTS.md`,
-   `apps/desktop/src/AGENTS.md`, and `DESIGN.md`. The invariants that bind
-   every item: *offer, don't hijack*; profiles are islands; prompt caching is
-   sacred; state lives with its authority, keyed by declared scope; new
+**`hermes_cli` evacuation ([#122491], draft, phases 0–2 of 11 done).**
+Behavior-neutral moves: `hermes_cli.profiles` → `profiles/`,
+`hermes_cli.gateway_*` → `gateway/`, service manager → `gateway/`, process
+helpers → `runtime/`. Later phases move plugins, providers, auth, commands,
+**Kanban**, and automation, then cut the entry point over to `nous_cli`. No
+permanent re-export shims. It depends on #106742. Maintainers have said they'll
+review big refactors **after** one-gateway merges.
+
+**Not yet reviewed:** the specific comment
+`#issuecomment-5657057905` on #106742 was not readable from this session.
+Whoever picks this up reads it first and amends this section if it changes
+anything.
+
+### 2.2 What that breaks or changes in the fork
+
+| Fork surface | Why it's exposed | Plan |
+|---|---|---|
+| Pooled-serve settings (`pool-limits.ts`, "warm bot backends", "backend idle timeout", spawn priority; ~20 renderer files) | Upstream deletes the pool | Don't polish or extend. Hide them behind a capability probe (below); remove them at sync. |
+| `store/gateway.ts`, `use-gateway-boot.ts` | Upstream rewrites the transport/boot path | **Don't split before the sync** (Wave 1 defers 1.3). Changes here now become merge conflicts. |
+| Fork backend methods on `tui_gateway/server.py`: `session.ask` (companion), mailbox, checkpoints, worktree, record-a-task | Upstream moves this file's content into `agent_factory` / `session_registry` | Wave 0.4 inventories each; the sync re-homes them onto the authority. The companion and mailbox **must admit through the authority**, not in-process dispatch (upstream lists hosted rooms as the same known gap). |
+| Mobile companion routes `hermes_cli/web_routers/mobile.py` (`/api/mobile/*` on `serve`) | `serve` stops owning conversations; #122491 relocates `hermes_cli` domains | Keep routes thin: they call session APIs and hold no session state. At cutover they move onto the gateway API with the rest of serve's conversational routes. |
+| Fork Python importing `hermes_cli.profiles` / `hermes_cli.gateway_*` | #122491 moves them | New fork backend code goes in the owning subsystem, never under `hermes_cli`. Repoint imports at each upstream sync; no in-tree compat pointers. |
+| Kanban (`plugins/kanban` desktop page ← `hermes_cli/kanban*.py`) | #122491 phase 8 moves Kanban ownership | Desktop talks to it only through its REST/RPC wire contract, so the move is invisible to the renderer. Keep it that way. |
+| Local-session lifecycle ("quit stops the backend") | Desktop becomes attach-only; quitting leaves work running | The UX must say so: tray/menu-bar "Hermes is still working (3)", an explicit "Stop gateway" action, report-back on relaunch. |
+
+### 2.3 New client contracts the UX must design for (they're coming either way)
+
+These aren't optional polish. The cutover makes them real states, and a
+"next level" UI shows them honestly instead of glitching:
+
+- **Attached / detached / replaying / snapshot-recovered** per session. Detach
+  never cancels. After a replay gap, the transcript recovers from an
+  authoritative snapshot, with drafts and completed turns preserved.
+- **Ambiguous send.** The send is admitted but the ack is lost, then retried
+  with the same identity: no duplicate bubble, no "failed" flash. The composer
+  shows *sending → queued → running*, fed by `pending-submissions`.
+- **Unknown execution.** A run whose owner died becomes `unknown` and blocks
+  its queued followers until an authorized resolution. It's a **Needs you**
+  item: "Run interrupted — outcome unknown. Resume / mark done / discard",
+  never an auto-retry of ambiguous tool effects.
+- **Shared controls.** One approval answered on the phone, TUI or another
+  window settles everywhere. The card animates out as "Answered elsewhere",
+  never as an error.
+- **Cross-surface presence.** The same canonical session can be open in TUI,
+  Desktop, phone and web. Show viewers ("also open in TUI · phone") if and
+  when the authority exposes it. Until then, show nothing rather than guess.
+- **Owner restart.** "Reconnecting to Hermes…" is a soft state on the affected
+  rows, not a full-screen boot overlay.
+
+### 2.4 Compatible with both topologies — the rule
+
+The desktop must work against **(a) today's pooled `serve`** and **(b) the
+canonical gateway**, from one codebase, using the AGENTS.md ladder:
+
+- **Probe capabilities, don't sniff versions.** One resolver
+  (`store/backend-capabilities.ts`, a new small module) answers `canonicalAuthority`,
+  `replayEpochs`, `pendingSubmissionIdentity`, `sharedControls`,
+  `attachOnlyLifecycle`, `viewerPresence`. Every surface in §2.3 reads from it.
+  A missing capability means a degraded, honest state, never a fork-only
+  recovery framework.
+- **New UX consumes the fleet model, never transport internals.** `store/fleet`
+  (Wave 2) is the only thing Mission Control, the rail, the header strip, HUD,
+  tray and mobile read. At cutover only `store/fleet`'s adapters change.
+- **Key everything by durable session identity** (lineage root for
+  compression-surviving state), never by the pooled process or socket.
+- **No new backend RPC on `tui_gateway/server.py`** until after the sync.
+  Anything a redesign item needs from the backend waits, or reuses
+  existing `session.*` / `profiles.list` / kanban REST.
+
+---
+
+## 3. The experience — Hermes as an agent OS
+
+What we take from each product, and the one thing we refuse (from
+`agentic-desktop-roadmap.md` §1, where each was verified):
+
+| Source | Take | Refuse |
+|---|---|---|
+| **rabbitOS 3** | One box, one *outcome*: decompose, then **report back when done or when a decision is needed**. Legible node roster. | Single stream with no session list; implicit routing across agents (profiles are islands). |
+| **OpenClaw** | **Inspect without entering**: live digest rail per session; **companion thread** to ask *about* a run without touching it; selection actions; hovercards. | A Lit web control UI as the product. We stay native. |
+| **Grok Bot** | **Bots are teammates**: named, always-on, *come back only when approval is needed*; hand control back (CAPTCHA/2FA); secure-field asks; teach by recording; bot→bot chaining. | Cloud computer by default; Hermes runs where the user chose. |
+| **Meta Muse** | Talks like **messaging a person**; **goal → plan → proactive nudge** loop; **persona identity** (name/avatar); explicit permission grants; phone parity. | Acting on its own without consent. Nudges are offers. |
+
+### 3.1 The shell — three zones, one spine
+
+```
+┌──────────────┬───────────────────────────────────────┬──────────────────┐
+│ TEAM         │  CONVERSATION (home)                  │ CONTEXT          │
+│ ▸ Needs you 3│  header: ● digest · PR/CI · skills ·  │ lens tabs:       │
+│ ▸ Teammates  │          worktree · ctx ring · ?ask   │  Ask (companion) │
+│   ◉ Atlas    │                                       │  Diff / Files    │
+│   ◌ Scout    │  transcript (delegation pills,        │  Preview         │
+│ ▸ Running  4 │   report cards, checkpoints)          │  Terminal        │
+│ ▸ Recent     │                                       │                  │
+│ ▸ Scheduled  │  composer: outcome-first, + actions   │                  │
+└──────────────┴───────────────────────────────────────┴──────────────────┘
+        ⌘⇧M → Mission Control (full view: Needs you · Running · Map · Board)
+```
+
+- **Team (left).** Replaces today's sessions/bots/cron rail sections with one
+  fleet-backed list: *Needs you* (only when non-empty), *Teammates* (bots with
+  persona avatar + presence dot + one-line status), *Running*, *Recent*,
+  *Scheduled*. Profiles stay explicit groups, never merged.
+- **Conversation (center).** Still the home, and now it carries the value:
+  a live header strip, report cards and delegation pills inline, and an
+  outcome-first composer.
+- **Context (right).** One tabbed lens host. The **Ask** tab (the companion
+  thread, OpenClaw style) sits beside Diff/Files, Preview and Terminal. Panes
+  stay alive when hidden.
+- **Mission Control (⌘⇧M).** One full view replacing Inbox, Roster, Agents
+  and Starmap as separate routes: *Needs you* (Linear-style triage),
+  *Running* (roster + fan-out + subagent tree), *Map* (Starmap), *Board*
+  (links to the kanban plugin page). Old routes redirect to lenses.
+
+### 3.2 The five signature experiences
+
+1. **Outcome launchpad** (OS3 + Muse). The new-chat screen is a front door:
+   state an outcome, pick teammate(s) explicitly, optionally "run on N" as a
+   fan-out. It shows *Continue* (recaps), *Needs you* (top 3) and *Next
+   scheduled*. The first reply renders a **plan card** (reusing plan artifacts
+   and the checklist/todos store), and the session gets a **report card** when
+   it settles.
+2. **Teammates** (Grok Bot + Muse). Each bot has a persona card (name, avatar,
+   role line, presence, what it's on), messaged like a person in its canonical
+   Bot Chat (identity rules in `src/AGENTS.md` unchanged). The return contract
+   is visible: *"Atlas will come back when it's done or needs you."*
+   Hand-back-control, secure asks, record-a-task and mailbox hand-offs
+   (chaining) all render as first-class cards in the conversation.
+3. **Inspect without entering** (OpenClaw). The header strip + hover peek +
+   Ask tab. Answer "what's it doing / why did it stop / what's left" without
+   opening, interrupting, or touching the prompt cache.
+4. **One queue of "needs you"** (OS3 decision cards + AionUi + Linear).
+   Approvals, clarifies, secret asks, unknown-execution resolutions (§2.3) and
+   mailbox hand-offs across all profiles, in rail, Mission Control, tray,
+   HUD and phone, all from `$needsYou`. Answered anywhere, settled everywhere.
+5. **Ambient presence** (Muse / ChatGPT / OS3). Tray/menu-bar with running
+   and needs-you counts, quick entry, HUD run cards, voice steering, phone
+   parity. The attach-only lifecycle makes this essential: work keeps running
+   after the window closes, and the user needs to see it.
+
+### 3.3 Visual & motion language
+
+This keeps `DESIGN.md` (flat, tokens, one primitive per concern) and adds
+three named contracts, documented in `DESIGN.md` in the same PR that adds them:
+
+- **State colour ramp.** One token set for run states: idle, thinking, tool,
+  needs-you, unknown, done, failed. Used by dots, digest lines, cards, tray
+  and HUD. No surface-specific colours.
+- **Persona tokens.** Avatar ring, accent and presence dot per teammate,
+  derived from profile identity. Never free-form colours.
+- **Arrival motion.** One 160ms enter/settle for cards (report, needs-you,
+  answered-elsewhere), respecting reduced-motion. Motion never masks latency.
+
+---
+
+## 4. How to work — the method (non-negotiable)
+
+1. **Verify the premise first.** Reproduce current behavior on `main` (dev
+   build or e2e) and name the file and line. If this plan is wrong against the
+   code, fix the plan (a PR to this doc), don't force the change.
+2. **Read the rules for the area:** root `AGENTS.md`,
+   `apps/desktop/AGENTS.md`, `apps/desktop/src/AGENTS.md`, `DESIGN.md`. They
+   bind every item: *offer, don't hijack*; profiles are islands; prompt caching
+   is sacred; state lives with its authority, keyed by declared scope;
    profile-keyed persistence joins `migrateTilesForProfile` +
    `dropTilesForProfile`; one primitive per concern; i18n in all 9 locales.
-3. **Refactors are behavior-neutral and separate.** A split PR moves code
-   and nothing else, and tests move with the code. Never mix a split with a
-   behavior change. Refactors come FIRST in any family a feature will touch.
-4. **Small, focused PRs off latest `main`.** One PR per item, with a
-   conventional-commit title (`refactor(desktop): …`, `feat(desktop): …`).
-   Rebase when `main` moves, and use a merge commit, never a force-push, on
-   a branch someone else owns.
-5. **Prove it before pushing.** From `apps/desktop`, run
-   `npm run typecheck`, `npm run lint`, and `npx vitest run <affected files>`.
-   UI-visible changes also get a dev-build walkthrough with screenshots in
-   the PR. Anything at a seam (profile routing, remote connections) gets a
-   real-path check, not only mocks.
-6. **Behavior contracts, not snapshots.** 1–2 invariant tests per fix,
-   proven red on base. No change-detector tests and no source-reading tests.
-7. **Escalate UX forks.** The decision gates in §5 are the owner's. Don't
-   guess on anything that changes what the user sees by default.
+3. **Cutover-safe (§2.4) or it doesn't merge.** Every PR description answers:
+   *does this touch transport/boot/pool/`tui_gateway` server code? If yes, why
+   now and not after the sync?*
+4. **Refactors are behavior-neutral and separate.** Split PRs move code, and
+   tests move with the code. Never mix a split with a behavior change.
+5. **Small, focused PRs off latest `main`**, with conventional-commit titles.
+   Rebase when `main` moves, and use merge commits on branches you don't own.
+6. **Prove it before pushing.** From `apps/desktop`: `npm run typecheck`,
+   `npm run lint`, `npx vitest run <affected>`. UI changes get dev-build
+   screenshots or a recording in the PR.
+7. **Behavior contracts, not snapshots.** 1–2 invariant tests per change,
+   proven red on base. No change-detectors and no source-reading tests.
+8. **Escalate UX forks.** The gates in §6 are the owner's.
 
-**Parallelism budget (SWE-2 cap = 5 sessions):** the parent orchestrator plus
-up to 3 children run at once, which leaves 1 slot of headroom so a stuck child
-never blocks the queue. Children run `swe-2-high`. Each wave below lists its
-parallel lanes.
+**Parallelism budget (SWE-2 cap = 5):** the parent orchestrator plus at most 3
+children (`swe-2-high`) at a time, leaving 1 slot of headroom.
 
-## 4. The waves
+---
 
-### Wave 0 — Baseline & inventory (1 session, no product change)
+## 5. The waves
 
-Goal: turn the diagnosis into data so every later PR can prove it helped.
+### Wave 0 — Baseline, inventory, cutover map (no product change)
 
-- **0.1 Feature inventory** → `apps/desktop/docs/revamp/inventory.md`. For
-  every roadmap item #1–#51, record: entry point(s) (chrome / palette / row
-  menu / settings / overlay), default state (on / opt-in / hidden), which
-  store owns its state, and a verdict for §4 Wave 4 (*default-on*,
-  *surface-in-context*, *keep advanced*, *retire*). Verify each by running
-  the dev build, not by grepping.
-- **0.2 Perf harness** → `e2e/perf/*.spec.ts` + a fixture generator. Cover
-  cold start to interactive, session switch (warm/cold), scroll a
-  2,000-message transcript with tool cards, composer keystroke latency during
-  streaming, and a rail with 500 sessions across 3 profiles. Emit JSON. Record
-  numbers in `docs/revamp/baseline.md`. Wire it as a non-blocking CI job
-  first; it becomes blocking in Wave 5.
-- **0.3 Shape metrics** — a small script (`scripts/ts-shape-metrics.mjs`)
-  listing files over 1,000/1,500 lines and store count. Record the baseline.
-  Wave 1 PRs quote before/after from it.
+- **0.1 Feature inventory** → `docs/revamp/inventory.md`. For each roadmap
+  item #1–#51: entry points, default state, owning store, and a verdict
+  (*default-on / surface-in-context / keep advanced / retire*). Verified in the
+  dev build.
+- **0.2 Perf harness** → `e2e/perf/*.spec.ts` + a fixture generator. Covers
+  cold start, session switch, 2k-message transcript scroll, composer keystroke
+  latency while streaming, and a 500-session rail across 3 profiles. Record in
+  `docs/revamp/baseline.md`; the CI job is non-blocking for now.
+- **0.3 Shape metrics** script (`scripts/ts-shape-metrics.mjs`): files over
+  1,000 / 1,500 lines, and the store count.
+- **0.4 Cutover conflict map** → `docs/revamp/cutover-map.md`. Every fork
+  backend method/route added since the last upstream sync (`git log` on
+  `tui_gateway/`, `hermes_cli/web_routers/`) with its upstream destination
+  (authority method / gateway API / owning subsystem per #122491) and the
+  renderer call sites that use it. Read the unreviewed #106742 comment here.
+- **0.5 Dual-topology e2e fixtures.** Extend `tests-js` mock-server so the
+  desktop e2e can run in *pooled* and *canonical* modes. Canonical mode
+  simulates replay gap, ambiguous ack, unknown execution, and an approval
+  answered elsewhere, mirroring the gist's acceptance tests 1–6 and 9–10 from
+  the client side.
 
-Lanes: 0.1 ∥ 0.2 ∥ 0.3 (3 children).
+Lanes: {0.1}, {0.2 + 0.3}, {0.4 + 0.5}.
 
-### Wave 1 — Refactor the spine (behavior-neutral, mechanical)
+### Wave 1 — Refactor the spine (behavior-neutral)
 
-Split the god files that every later wave touches. Each split follows the
-facade + siblings pattern already used in-tree: the directory keeps an
-`index.ts` with public entry points, and topic modules sit beside it. No
-re-export shims for internal moves; update imports and fix any `AGENTS.md`
-or doc that names a moved symbol in the same PR.
-
-| # | Family | Split by |
+| # | Family | When |
 |---|---|---|
-| 1.1 | `use-session-actions/index.ts` + `utils.ts` (5.4k) | create / open / resume / archive / fork / tile routing / gone-session handling |
-| 1.2 | `store/session-states.ts` (2.9k) | tiles-by-profile persistence, rename migration (`migrateTilesForProfile`/`dropTilesForProfile` stay one module), route memory, owner hints |
-| 1.3 | `store/gateway.ts` + `use-gateway-boot.ts` (4.1k) | socket lifecycle, connection resolution ladder, re-home shapes (soft/hard/live-swap), boot UI state |
-| 1.4 | `chat/sidebar/index.tsx` + `profile-switcher.tsx` (4k) | rail shell, section renderers, filter/sort model, profile switcher menus |
-| 1.5 | `composer/index.tsx` + `thread/list.tsx` (3.2k) | composer shell vs. input/attachments/queue/voice/slash; list virtualization vs. row rendering |
-| 1.6 | `pane-shell/tree/store.ts` (2.3k) | tree model, ops, persistence |
+| 1.1 | `use-session-actions/index.ts` + `utils.ts` → create / open / resume / archive / fork / tile routing / gone-session | now |
+| 1.2 | `store/session-states.ts` → tiles persistence, rename migration (keep `migrate`/`drop` together), route memory, owner hints | now |
+| 1.4 | `chat/sidebar/index.tsx` + `profile-switcher.tsx` → shell, sections, filter/sort model, switcher menus | now (Wave 3 rebuilds it) |
+| 1.5 | `composer/index.tsx` + `thread/list.tsx` | now |
+| 1.6 | `pane-shell/tree/store.ts` | now |
+| 1.3 | `store/gateway.ts` + `use-gateway-boot.ts` | **after the upstream sync.** Split the post-sync file, not today's. |
 
-Rules: each PR ships with `ts-shape-metrics` before/after and a green run of
-the affected vitest files. The suite count must be unchanged, with tests moved,
-not deleted. Do 1.1–1.3 before Wave 2 and 1.4–1.5 before Wave 3.
+Each PR quotes before/after shape metrics, keeps the suite count unchanged, and
+fixes any doc that names a moved symbol. Lanes: {1.1, 1.2, 1.5}, then {1.4, 1.6}.
 
-Lanes: {1.1, 1.2, 1.3} in parallel, then {1.4, 1.5, 1.6}.
+### Wave 2 — The spine: `store/backend-capabilities` + `store/fleet` + Mission Control
 
-### Wave 2 — One fleet model + Mission Control
+- **2.1 `store/backend-capabilities.ts`** (§2.4). One resolver; on today's
+  backend it answers "pooled, no replay, no shared controls". Pool-limit
+  settings render only when `canonicalAuthority` is false.
+- **2.2 `store/fleet/`** consolidates `agent-notices`, `attention-inbox`,
+  `delegation-reports`, `fleet-roster`, `fleet-runs` and `session-digest` into:
+  - `$fleetRuns`: every live/recent run with its state from the §3.3 ramp,
+    including `unknown`.
+  - `$needsYou`: approvals, clarifies, secret asks, unknown-execution
+    resolutions and mailbox hand-offs, each with a deep link.
+  - `$teammates`: bots with persona, presence and current activity.
+  - `$reports`: settled-run report cards.
 
-**2.1 `store/fleet/` — one derived model.** Consolidate `agent-notices`,
-`attention-inbox`, `delegation-reports`, `fleet-roster`, `fleet-runs`, and
-`session-digest` into one store family:
+  It's a pure derivation over existing stores/RPC behind a thin **source
+  adapter** per topology, keyed by durable session identity. All consumers
+  migrate, the old stores are deleted, and reference identity is preserved on
+  no-ops.
+- **2.3 Mission Control** *(gate G1)*. Lenses Needs you / Running / Map /
+  Board; old routes redirect; `⌘⇧M`; one titlebar needs-you badge.
 
-- `$fleetRuns`: every live/recent run across connections and profiles
-  (identity, profile, state dot, digest line, elapsed, PR/CI, worktree).
-- `$needsYou`: approvals, clarifies, secret asks, errors, and mailbox
-  hand-offs awaiting the user, each with a deep link to the exact card.
-- `$reports`: settled-run report cards (outcome, duration, files, PR).
+Lanes: 2.1 ∥ 2.2 first, then 2.3 ∥ consumer migrations.
 
-It's read-only derivation over existing stores/RPC, so there's no new
-backend surface. Preserve reference identity on no-ops, and coalesce cosmetic
-ticks but flush terminal transitions (per `AGENTS.md`). Keys route through
-session identity, not the pooled `serve` process, which keeps it ready for the
-upstream one-gateway cutover (roadmap §5). Every existing consumer (rail, HUD
-run cards, menu-bar tray, mobile companion status, inbox, roster) migrates to
-read from it. The old stores are deleted in the same PR series, not left
-behind.
+### Wave 3 — The agent-OS shell (the visible rebuild)
 
-**2.2 Mission Control page** *(decision gate G1)*. One route replaces Inbox,
-Roster, Agents, and Starmap as separate overlays. It has three lenses over
-`store/fleet`:
+- **3.1 Team rail** (§3.1 left zone) on `store/fleet` *(gate G2)*.
+- **3.2 Conversation header strip**: state + digest, PR/CI, worktree
+  (merge-back), capability chip (today's `SkillTag`, widened to toolset + model),
+  context ring, and an **Ask** button. The peek card becomes its hover detail.
+- **3.3 Context lens host**: one tabbed right zone (Ask / Diff·Files / Preview
+  / Terminal) replacing ad-hoc right-rail toggles; panes stay alive.
+- **3.4 Outcome launchpad + plan card + report card** (§3.2 #1) *(gate G2)*.
+- **3.5 Teammate persona cards + the return contract** (§3.2 #2). Hand-back,
+  secure ask, record-a-task and mailbox hand-off cards are unified into one
+  card family in the transcript.
+- **3.6 One composer `+` menu**: attach, region capture, record-a-task,
+  fan-out, plan→build, voice steering, Ask. The slash palette and ⌘K invoke
+  the same actions.
+- **3.7 Cutover-state UX** (§2.3): send states from pending submissions,
+  answered-elsewhere, unknown-execution resolution card, soft reconnecting
+  rows. Built against the Wave 0.5 canonical fixtures and inert on pooled
+  backends through `backend-capabilities`.
 
-- **Needs you** (default lens): the attention queue, keyboard-triaged
-  Linear-style (`j/k`, `enter` opens at the card, `a` approve where safe,
-  `e` archive). This absorbs Inbox.
-- **Running**: roster cards with digest + fan-out entry, plus the subagent
-  tree on expand. This absorbs Roster + Agents.
-- **Map**: Starmap as a visual lens, not a separate route.
-
-Kanban stays the kanban plugin page (it's a planning surface, not a status
-surface), with a "Board" link from Mission Control. Command Center keeps
-maintenance, cost analytics, and Notices. Old routes redirect to the matching
-lens so deep links and palette commands survive. One shortcut (proposed `⌘⇧M`)
-opens it, and the titlebar gets a single needs-you count badge that opens it.
-
-Lanes: 2.1 alone first (it's the spine), then 2.2 ∥ consumer migrations.
-
-### Wave 3 — Bring the value into chat (the home surface)
-
-**3.1 Session header strip.** One consolidated strip in the chat header
-reading `store/fleet`: state + digest line, PR/CI chip, worktree chip (with
-merge-back), capability chip (today's `SkillTag` from the tile zone strip,
-widened to toolset count + model — roadmap #15), context ring, and a
-companion-thread button. It replaces scattered per-feature header bits, and
-the peek card becomes this strip's hover detail. Priority collapse at narrow
-widths comes from one layout table, not per-chip media queries.
-
-**3.2 Rail = live fleet.** Rows read `$fleetRuns`. A pinned **Needs you**
-section at the top of the rail appears only when non-empty; it holds
-compact cards that open the session at the card. It offers, never navigates.
-Report cards land here on settle, not as toasts.
-
-**3.3 Launchpad empty state** *(decision gate G2)*. The new-chat draft becomes
-the front door: a goal-first composer (roadmap #20), explicit profile/bot
-target, "run on N agents" fan-out toggle, and three compact blocks:
-*Continue* (recent + recap), *Needs you* (top 3 from `$needsYou`), and
-*Scheduled* (next cron runs). No auto-actions. Each block is a click-through.
-
-**3.4 One composer action menu.** A single `+` menu merges attach, screenshot
-region, record-a-task, fan-out, plan→build handoff, voice steering, and
-companion ask. The slash palette and ⌘K invoke the same actions (one action,
-one home).
-
-**3.5 Transcript polish.** Inline delegation pills and checkpoint revert get
-consistent affordances. The timeline scrubber shows needs-you and report
-markers from `store/fleet`.
-
-Lanes: 3.1 ∥ 3.2 ∥ 3.4, then 3.3 and 3.5.
+Lanes: {3.1, 3.2, 3.3} → {3.4, 3.5, 3.6} → {3.7}.
 
 ### Wave 4 — Defaults & discovery
 
-- **4.1 Default flips** *(decision gate G3)*. Apply the inventory verdicts.
-  Candidates to turn on by default: proactive nudges (they are offers, so
-  they don't hijack), menu-bar status, notification digest for background
-  sessions, frecency ranking. Worktree isolation stays opt-in per project but
-  gets offered in context: first multi-file write in a git project → inline
-  "isolate future sessions?" chip. Every flip keeps its settings toggle, and
-  respects an explicit prior user choice (an unset value flips; a set value
-  never does).
-- **4.2 What's new, once.** After an update, a dismissible Notices entry (in
-  Command Center, and a badge on the titlebar) lists up to 5 features with
-  "Show me" buttons that open the feature's own surface. Never a modal.
-- **4.3 Contextual tips.** Use the existing `components/tips` rotation to teach
-  one feature at the moment it becomes relevant (e.g., first time 2+ sessions
-  run → Mission Control tip). Cap one tip per day and respect dismissals.
-- **4.4 Palette as the index.** Every feature from the inventory is reachable
-  from ⌘K by its product noun, with frecency on.
-
-Lanes: 4.1 ∥ 4.2 ∥ 4.3/4.4 (one child).
+- **4.1 Default flips** *(gate G3)*, from the inventory verdicts. Anything that
+  only ever *offers* is a candidate: nudges, menu-bar status, digest
+  notifications for background sessions, frecency. Worktree isolation gets
+  offered in context. An explicit prior user choice always wins.
+- **4.2 What's new, once per update**: a Notices entry + titlebar badge with
+  "Show me" buttons. Never a modal.
+- **4.3 Contextual tips** via `components/tips`, capped at one per day.
+- **4.4 ⌘K as the index**: every product noun is reachable, with frecency on.
 
 ### Wave 5 — Feel: speed, polish, finish
 
-- **5.1 Perf budgets become blocking** in CI, using the Wave 0 harness. Fix the
-  top two regressions it finds: likely broad store subscriptions in rail rows
-  and transcript rows. Verify with the React profiler before and after.
-- **5.2 Primitive + token sweep.** Grep for raw hex/rgba, `className` overrides
-  of primitive padding/radius, native `title=` on buttons, and
-  `transition-all`. Migrate onto `DESIGN.md` primitives. Run it as a lint rule
-  where possible so it stays fixed.
-- **5.3 Keyboard & a11y pass** across the new surfaces: focus order, single-action
-  `Esc`, `aria-label` on icon chrome, and reduced-motion.
-- **5.4 Locale completion** for `ar`, `ja`, `zh-hant` (roadmap #7), plus a
-  missing-keys CI check.
+- **5.1** Perf budgets become blocking; fix the top two regressions (likely
+  broad subscriptions in rail and transcript rows).
+- **5.2** Primitive + token sweep (raw colours, `className` overrides,
+  `title=`, `transition-all`) as lint rules.
+- **5.3** Keyboard & a11y pass on all new surfaces, plus reduced-motion.
+- **5.4** Locale completion (`ar`, `ja`, `zh-hant`) and a missing-keys CI check.
 
-Lanes: 5.1 ∥ 5.2 ∥ {5.3, 5.4}.
+### Wave S — The upstream sync (triggered when #106742 merges)
 
-### Wave 6 — Convergence readiness
+This runs as its own track, owned by one session, and pauses the other waves
+only for the files it touches:
 
-Before the upstream one-gateway cutover (roadmap §5) syncs, audit that
-`store/fleet`, mobile companion, handoff links, worktrees, companion thread,
-and mailbox route through session-authority lookups, not the pooled `serve`
-process. Output: a short checklist in `docs/revamp/cutover-readiness.md` plus
-fixes.
+1. Merge upstream `main`. Accept upstream's transport/pool deletions;
+   delete fork pool UI rather than port it.
+2. Re-home each fork backend method using the 0.4 cutover map: companion
+   `session.ask` and mailbox admit through the authority; checkpoints, worktree
+   and record-a-task sit on the session registry; mobile routes follow serve's
+   conversational API.
+3. Flip `store/fleet`'s source adapter and `backend-capabilities` to canonical;
+   run both e2e topologies.
+4. Now do Wave 1.3 (split `store/gateway.ts` / boot) on the merged file.
+5. Repeat the import repoint for each #122491 phase as it lands upstream.
+6. Once the serve cutover PR 2 (remote Desktop) lands, verify
+   `remote-lifecycle.ts` behavior: disconnect closes transport only, and never
+   falls back to a legacy host.
 
-## 5. Owner decision gates (answer before the wave starts)
+---
 
-- **G1 — Mission Control merge.** Retire Inbox / Roster / Agents / Starmap as
-  separate routes in favor of one page with lenses (old routes redirect)?
-  *Recommendation: yes.* This is the single biggest "dent" lever.
-- **G2 — Launchpad empty state.** Replace the current new-chat empty state
-  with the goal-first launchpad? *Recommendation: yes*, with a settings
-  toggle for a minimal empty state.
-- **G3 — Default flips.** Approve the per-feature list produced by Wave 0.1.
-  *Recommendation:* flip everything whose verdict is *default-on* and that
-  only ever offers (never acts).
-- **G4 — Feature freeze.** No new roadmap features until Wave 4 ships;
-  bug fixes and upstream syncs continue. *Recommendation: yes.*
+## 6. Owner decision gates
 
-## 6. Sequencing at a glance
+- **G1 — Mission Control merge.** Retire Inbox / Roster / Agents / Starmap
+  routes into one view with lenses (redirects kept)? *Recommend yes.*
+- **G2 — Agent-OS shell.** Replace the current rail and empty state with the
+  Team rail + outcome launchpad (§3.1–3.2), with a "classic" toggle for one
+  release? *Recommend yes.* This is the redesign.
+- **G3 — Default flips.** Approve the per-feature list from Wave 0.1.
+- **G4 — Feature freeze.** No new roadmap features until Wave 4 ships; bug
+  fixes and upstream syncs continue. *Recommend yes.*
+- **G5 — Upstream alignment.** Build the §2.3 cutover-state UX *ahead* of the
+  upstream merge, against fixtures? *Recommend yes*: it's inert on pooled
+  backends and makes the sync a switch-flip instead of a scramble.
+
+---
+
+## 7. Sequencing at a glance
 
 ```
-Wave 0  inventory ∥ perf harness ∥ shape metrics
+Wave 0  inventory ∥ perf+metrics ∥ cutover map + dual-topology fixtures
    │
-Wave 1  split session-actions ∥ session-states ∥ gateway   → then sidebar ∥ composer ∥ pane-tree
+Wave 1  session-actions ∥ session-states ∥ composer/list → sidebar ∥ pane-tree   (gateway.ts split deferred to Wave S)
    │
-Wave 2  store/fleet (spine) ──► Mission Control ∥ consumer migrations      [G1]
+Wave 2  backend-capabilities ∥ store/fleet ──► Mission Control           [G1]
    │
-Wave 3  header strip ∥ rail needs-you ∥ composer + menu ──► launchpad, transcript  [G2]
+Wave 3  team rail ∥ header strip ∥ lens host → launchpad ∥ teammates ∥ + menu → cutover-state UX   [G2, G5]
    │
-Wave 4  default flips ∥ what's new ∥ tips + palette index                  [G3]
+Wave 4  default flips ∥ what's new ∥ tips + ⌘K index                     [G3]
    │
-Wave 5  perf budgets blocking ∥ primitive sweep ∥ a11y + locales
-   │
-Wave 6  cutover readiness audit
+Wave 5  perf budgets ∥ primitive sweep ∥ a11y + locales
+
+Wave S  (independent trigger: upstream #106742 merges) sync → re-home fork backend → flip adapters → gateway.ts split
 ```
 
-Waves 0 and 1 unblock everything and change nothing the user sees; start both
-immediately after G4. Wave 2 is the spine; don't start Wave 3 until
-`store/fleet` is merged.
+---
 
-## 7. Brief for the orchestrating Devin session (copy-paste)
+## 8. Known reports to verify in Wave 0 (from community chat, unverified)
 
-> Implement `apps/desktop/docs/revamp-plan.md` wave by wave. Read root
-> `AGENTS.md`, `apps/desktop/AGENTS.md`, `apps/desktop/src/AGENTS.md`, and
-> `DESIGN.md` first. Work the method in §3 exactly: verify the premise on
-> `main` before changing anything, keep refactors behavior-neutral and in
-> their own PRs, one focused PR per item off latest `main`, and run
-> `npm run typecheck && npm run lint && npx vitest run <affected>` from
-> `apps/desktop` before every PR. Include screenshots for UI changes. Run at
-> most 3 children in parallel (`swe-2-high`) to stay under the 5-session cap.
-> Start with Wave 0 (three lanes) and Wave 1's first three splits. Stop and
-> escalate at each decision gate in §5 with the Wave 0 inventory attached. Do
-> not add new features until Wave 4 ships. Report after each wave with: PR
-> links, scorecard rows moved (§2), and anything in this plan the code proved
-> wrong.
+- **Bots side-chat lost on round-trip:** Bot row → right-click "Start new chat
+  with Bot" → go to Sessions → back to Bots → right-click "Open recent
+  session" → the new side-chat appears lost. Check against the `src/AGENTS.md`
+  rule that side-chats stay visible in the Sessions sidebar and are never the
+  bot row's target. The likely fix belongs in the side-chat visibility path,
+  **not** in canonical-chat identity.
+
+---
+
+## 9. Brief for the orchestrating Devin session (copy-paste)
+
+> Implement `apps/desktop/docs/revamp-plan.md`. Read root `AGENTS.md`,
+> `apps/desktop/AGENTS.md`, `apps/desktop/src/AGENTS.md`, and `DESIGN.md`
+> first, then §2 of the plan (upstream gateway changes) before touching
+> anything. Work the method in §4 exactly: verify the premise on `main`,
+> behavior-neutral refactors in their own PRs, one focused PR per item off
+> latest `main`, and `npm run typecheck && npm run lint && npx vitest run
+> <affected>` from `apps/desktop` before every PR, with screenshots for UI.
+> Every PR must be cutover-safe (§2.4): no new backend RPC on
+> `tui_gateway/server.py`, no changes to `store/gateway.ts`/boot/pool code
+> unless required, and new UX reads `store/fleet` + `store/backend-capabilities`
+> only. Max 3 children in parallel (`swe-2-high`). Start with Wave 0 (three
+> lanes) and Wave 1's first lane. Stop and escalate at each gate in §6 with
+> the Wave 0 inventory and cutover map attached. When upstream #106742 merges,
+> start Wave S in its own session. Report after each wave with PR links, the
+> scorecard rows moved (§10), and anything the code proved wrong.
+
+---
+
+## 10. Scorecard — what "god tier" means, measurably
+
+| Dimension | Target |
+|---|---|
+| **One glance** | "What's running / what needs me" answered by one view fed by one store, from any surface: rail, Mission Control, tray, HUD, phone. |
+| **Chat carries the value** | Header strip, report cards, delegation pills and needs-you visible without opening an overlay. |
+| **Fewer doors** | Route overlays go from 13 to about 9; monitoring surfaces become one Mission Control. |
+| **Teammates feel like people** | Every bot has persona, presence, current activity and a visible return contract. |
+| **Defaults that work** | Every shipped feature is on, surfaced in context, or deliberately advanced. None is merely buried. |
+| **Cutover-ready** | The same build passes desktop e2e in pooled **and** canonical fixture modes; the Wave S sync needs no renderer UX rewrite. |
+| **Fast** | Cold start, session switch, 2k-message scroll, keystroke latency and a 500-session rail are measured in CI. None regresses by more than 10%; the top two improve. |
+| **Maintainable** | No non-i18n renderer file over 1,500 lines in the touched families; fleet/attention state is one store family, not six. |
