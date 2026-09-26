@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 import type * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 
+import { SessionTagChip } from '@/app/chat/session-tag'
 import { openSession } from '@/app/open-session'
 import {
   closeAllTreeTabs,
@@ -22,7 +23,14 @@ import { Codicon } from '@/components/ui/codicon'
 import { ColorSwatches } from '@/components/ui/color-swatches'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { CopyButton } from '@/components/ui/copy-button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { renameSession } from '@/hermes'
 import { useI18n } from '@/i18n'
@@ -31,6 +39,7 @@ import { ArchiveOff } from '@/lib/icons'
 import { isSubmitEnter } from '@/lib/ime'
 import { PROFILE_SWATCHES } from '@/lib/profile-color'
 import { exportSession } from '@/lib/session-export'
+import { useSessionSlice } from '@/lib/use-session-slice'
 import { activeGateway } from '@/store/gateway'
 import { notify, notifyError } from '@/store/notifications'
 import { $projectTree, moveSessionToProject, projectIdForCwd, projectRootCwd } from '@/store/projects'
@@ -47,6 +56,7 @@ import {
 } from '@/store/session'
 import { $sessionColorOverrides, setSessionColorOverride } from '@/store/session-color'
 import { $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
+import { $sessionTags, addSessionTag, removeSessionTag, sessionTagKey } from '@/store/session-tags'
 import { ackStoredSessionId } from '@/store/session-unread'
 import { canOpenSessionInTerminal, canOpenSessionWindow, openSessionInTerminal } from '@/store/windows'
 
@@ -206,6 +216,7 @@ function useSessionActions({
   const { t } = useI18n()
   const r = t.sidebar.row
   const [renameOpen, setRenameOpen] = useState(false)
+  const [tagsOpen, setTagsOpen] = useState(false)
   // The rename item opens a Dialog. When a menu closes, Radix restores focus to
   // its trigger — for a sidebar row that trigger is the row's own <button>, so
   // focus lands there instead of the dialog's input: Space then activates the
@@ -298,6 +309,16 @@ function useSessionActions({
         // Keep focus off the row trigger so it lands in the dialog input.
         suppressCloseFocusRef.current = true
         setRenameOpen(true)
+      }
+    }),
+    spec({
+      disabled: !sessionId,
+      icon: 'tag',
+      label: r.tags,
+      onSelect: () => {
+        triggerHaptic('selection')
+        suppressCloseFocusRef.current = true
+        setTagsOpen(true)
       }
     }),
     spec({
@@ -561,7 +582,11 @@ function useSessionActions({
     />
   )
 
-  return { deleteDialog, onCloseAutoFocus, renameDialog, renderItems }
+  const tagsDialog = (
+    <SessionTagsDialog onOpenChange={setTagsOpen} open={tagsOpen} profile={profile} sessionId={sessionId} />
+  )
+
+  return { deleteDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog }
 }
 
 interface DeleteSessionDialogProps {
@@ -602,7 +627,7 @@ interface SessionActionsMenuProps
 
 export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ...actions }: SessionActionsMenuProps) {
   const { t } = useI18n()
-  const { deleteDialog, onCloseAutoFocus, renameDialog, renderItems } = useSessionActions(actions)
+  const { deleteDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } = useSessionActions(actions)
 
   return (
     <>
@@ -617,6 +642,7 @@ export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ..
         {children}
       </ActionsMenu>
       {renameDialog}
+      {tagsDialog}
       {deleteDialog}
     </>
   )
@@ -628,7 +654,7 @@ interface SessionContextMenuProps extends SessionActions {
 
 export function SessionContextMenu({ children, ...actions }: SessionContextMenuProps) {
   const { t } = useI18n()
-  const { deleteDialog, onCloseAutoFocus, renameDialog, renderItems } = useSessionActions(actions)
+  const { deleteDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } = useSessionActions(actions)
 
   return (
     <>
@@ -641,6 +667,7 @@ export function SessionContextMenu({ children, ...actions }: SessionContextMenuP
         {children}
       </ActionsContextMenu>
       {renameDialog}
+      {tagsDialog}
       {deleteDialog}
     </>
   )
@@ -724,6 +751,113 @@ function RenameSessionDialog({ open, onOpenChange, sessionId, currentTitle, prof
           </Button>
           <Button disabled={submitting} onClick={() => void submit()} type="button">
             {t.common.save}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface SessionTagsDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  sessionId: string
+  profile?: string
+}
+
+// The tag editor behind the menu's Tags item — the desktop's Linear-labels
+// analogue. Add/remove mutate the store immediately (there is nothing to
+// submit), so the dialog only closes on Done/Escape. Tags key on the durable
+// lineage id under the row's owning profile, so they ride out compression and
+// stay inside their island; deleting the session leaves an orphaned entry the
+// next delete sweep or profile migration drops.
+function SessionTagsDialog({ open, onOpenChange, sessionId, profile }: SessionTagsDialogProps) {
+  const { t } = useI18n()
+  const r = t.sidebar.row
+  const session = useStore($sessions).find(s => sessionMatchesStoredId(s, sessionId))
+  const durableId = session ? sessionPinId(session) : sessionId
+  const ownerProfile = session?.profile ?? profile
+  const tags = useSessionSlice($sessionTags, sessionTagKey(ownerProfile, durableId))
+  const [label, setLabel] = useState('')
+  const [color, setColor] = useState<null | string>(PROFILE_SWATCHES[0] ?? null)
+
+  useEffect(() => {
+    if (open) {
+      setLabel('')
+      setColor(PROFILE_SWATCHES[0] ?? null)
+    }
+  }, [open])
+
+  const add = () => {
+    const trimmed = label.trim()
+
+    if (!trimmed || !color || !durableId) {
+      return
+    }
+
+    addSessionTag(ownerProfile, durableId, { color, label: trimmed })
+    setLabel('')
+  }
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{r.tagsDialogTitle}</DialogTitle>
+          <DialogDescription>{r.tagsDialogDesc}</DialogDescription>
+        </DialogHeader>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map(tag => (
+              <span
+                className="inline-flex items-center gap-0.5 rounded-full py-0.5 pr-0.5 pl-0.5"
+                key={tag.label}
+              >
+                <SessionTagChip tag={tag} />
+                <button
+                  aria-label={r.tagsRemoveLabel(tag.label)}
+                  className="grid size-3.5 place-items-center rounded-full text-(--ui-text-tertiary) hover:bg-(--ui-control-hover-background) hover:text-foreground"
+                  onClick={() => removeSessionTag(ownerProfile, durableId, tag.label)}
+                  type="button"
+                >
+                  <Codicon name="close" size="0.625rem" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <ColorSwatches
+              clearLabel={t.sidebar.projects.noColor}
+              onChange={setColor}
+              swatches={PROFILE_SWATCHES}
+              value={color}
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            autoFocus
+            onChange={event => setLabel(event.target.value)}
+            onKeyDown={event => {
+              if (isSubmitEnter(event)) {
+                event.preventDefault()
+                add()
+              } else if (event.key === 'Escape') {
+                onOpenChange(false)
+              }
+            }}
+            placeholder={r.tagsAddPlaceholder}
+            value={label}
+          />
+          <Button disabled={!label.trim() || !color} onClick={add} type="button">
+            {r.tagsAdd}
+          </Button>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">
+            {t.common.done}
           </Button>
         </DialogFooter>
       </DialogContent>

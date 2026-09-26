@@ -35,6 +35,7 @@ import {
   $sidebarShowAllSessions,
   $sidebarShowArchived,
   $sidebarStatusFilter,
+  $sidebarTagFilter,
   $sidebarViewCustomized,
   $sidebarWorkspaceNodeOpen,
   resetSidebarView,
@@ -52,7 +53,8 @@ import {
   toggleSidebarProfileFilter,
   toggleSidebarProjectFilter,
   toggleSidebarRowMeta,
-  toggleSidebarStatusFilter
+  toggleSidebarStatusFilter,
+  toggleSidebarTagFilter
 } from '@/store/layout'
 import {
   $profiles,
@@ -67,6 +69,7 @@ import { $projectTree } from '@/store/projects'
 import type { PullRequestBucket } from '@/store/pull-requests'
 import { $unreadFinishedSessionIds, markAllSessionsRead } from '@/store/session'
 import type { SessionStatusBucket } from '@/store/session-dot-state'
+import { $sessionTags, collectSessionTagFacets } from '@/store/session-tags'
 import { $sessionsHaveCost } from '@/store/sidebar-archive'
 
 interface Option<T extends string = string> {
@@ -173,6 +176,11 @@ export function SidebarFilterMenu({ className }: { className?: string }) {
   const profileNames = useStore($profiles).map(profile => normalizeProfileKey(profile.name))
   const narrowsByProfile = showAllProfiles && profileNames.length > 1
   const prFilter = useStore($sidebarPrFilter)
+  const tagFilter = useStore($sidebarTagFilter)
+  // Every label in use anywhere in this connection's sidebar, so a tag applied
+  // deep in the list still shows up here as a checkbox rather than asking the
+  // user to type it blind.
+  const tagFacets = collectSessionTagFacets(useStore($sessionTags))
   const showArchived = useStore($sidebarShowArchived)
   const filtersActive = useStore($sidebarFiltersActive)
   const viewCustomized = useStore($sidebarViewCustomized)
@@ -363,6 +371,24 @@ export function SidebarFilterMenu({ className }: { className?: string }) {
                     key={option.id}
                     onCheck={() => toggleSidebarPrFilter(option.id)}
                     option={option}
+                  />
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+
+          {/* Only exists once a tag does — an empty facet would sit there
+              forever for anyone who never uses them. */}
+          {tagFacets.length > 0 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>{f.tags}</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="max-h-80 overflow-y-auto">
+                {tagFacets.map(tag => (
+                  <OptionCheckbox
+                    checked={tagFilter.includes(tag.label)}
+                    key={tag.label}
+                    onCheck={() => toggleSidebarTagFilter(tag.label)}
+                    option={{ icon: 'tag', id: tag.label, label: tag.label }}
                   />
                 ))}
               </DropdownMenuSubContent>

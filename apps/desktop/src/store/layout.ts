@@ -53,6 +53,7 @@ const SIDEBAR_SHOW_ARCHIVED_STORAGE_KEY = 'hermes.desktop.sidebarShowArchived'
 const SIDEBAR_PROJECT_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarProjectFilter'
 const SIDEBAR_PROFILE_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarProfileFilter'
 const SIDEBAR_PR_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarPrFilter'
+const SIDEBAR_TAG_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarTagFilter'
 const SIDEBAR_WORKSPACE_ORDER_STORAGE_KEY = 'hermes.desktop.workspaceOrder'
 const SIDEBAR_WORKSPACE_PARENT_ORDER_STORAGE_KEY = 'hermes.desktop.workspaceParentOrder'
 const SIDEBAR_PROJECT_ORDER_STORAGE_KEY = 'hermes.desktop.projectOrder'
@@ -409,6 +410,11 @@ export const $sidebarPrFilter = persistentAtom<PullRequestBucket[]>(
   listOf(PR_FILTERS)
 )
 
+// User-assigned session tag labels (store/session-tags). Values are the label
+// strings as applied in the tags dialog; matching is case-sensitive against
+// each session's stored list, so the facet dedupes label-siblings by key.
+export const $sidebarTagFilter = persistentAtom<string[]>(SIDEBAR_TAG_FILTER_STORAGE_KEY, [], Codecs.stringArray)
+
 export const $sidebarGrouping: ReadableAtom<SidebarGrouping> = computed(
   [$sidebarAgentsGrouped, $sidebarFlatGrouping, $sidebarAllProfilesGrouping, $showAllProfiles],
   (grouped, flat, allProfiles, showAll) => (grouped ? 'project' : showAll ? allProfiles : flat)
@@ -422,9 +428,21 @@ export const $sidebarOrdering: ReadableAtom<SidebarOrdering> = computed(
 )
 
 export const $sidebarFiltersActive: ReadableAtom<boolean> = computed(
-  [$sidebarStatusFilter, $sidebarProjectFilter, $sidebarProfileFilter, $sidebarPrFilter, $sidebarShowArchived],
-  (statuses, projects, profiles, prs, archived) =>
-    statuses.length > 0 || projects.length > 0 || profiles.length > 0 || prs.length > 0 || archived
+  [
+    $sidebarStatusFilter,
+    $sidebarProjectFilter,
+    $sidebarProfileFilter,
+    $sidebarPrFilter,
+    $sidebarTagFilter,
+    $sidebarShowArchived
+  ],
+  (statuses, projects, profiles, prs, tags, archived) =>
+    statuses.length > 0 ||
+    projects.length > 0 ||
+    profiles.length > 0 ||
+    prs.length > 0 ||
+    tags.length > 0 ||
+    archived
 )
 
 /** Anything at all moved off the shipped view — what makes a reset worth
@@ -748,11 +766,16 @@ export function toggleSidebarPrFilter(bucket: PullRequestBucket) {
   toggleIn($sidebarPrFilter, bucket)
 }
 
+export function toggleSidebarTagFilter(tag: string) {
+  toggleIn($sidebarTagFilter, tag)
+}
+
 function clearSidebarFilters() {
   $sidebarStatusFilter.set([])
   $sidebarProjectFilter.set([])
   $sidebarProfileFilter.set([])
   $sidebarPrFilter.set([])
+  $sidebarTagFilter.set([])
   $sidebarShowArchived.set(false)
 }
 

@@ -6,6 +6,7 @@ import type * as React from 'react'
 import { PrTag } from '@/app/chat/pr-tag'
 import { ProfileTag } from '@/app/chat/profile-tag'
 import { startSessionDrag } from '@/app/chat/session-drag'
+import { SessionTagChips } from '@/app/chat/session-tag'
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { openSession } from '@/app/open-session'
 import { formatMessageTimestamp } from '@/components/assistant-ui/thread/timestamp'
@@ -211,6 +212,14 @@ function SidebarSessionRowImpl({
   if (pr) {
     trailing.push({ key: 'pr', node: <PrTag pr={pr} /> })
   }
+
+  // User-assigned label chips ride the same trailing slot as the profile/PR
+  // identity chips — they key on the durable lineage id, so a compression
+  // (or a session-id rotation) never un-chips a row mid-list.
+  trailing.push({
+    key: 'tags',
+    node: <SessionTagChips profile={session.profile} sessionId={sessionPinId(session)} />
+  })
 
   const showAge = pinnedAge || card
 
