@@ -21,6 +21,7 @@ export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
 export const STARMAP_ROUTE = '/starmap'
+export const ROSTER_ROUTE = '/roster'
 
 export type AppView =
   | 'session-import'
@@ -37,6 +38,7 @@ export type AppView =
   | 'extension'
   | 'messaging'
   | 'profiles'
+  | 'roster'
   | 'settings'
   | 'starmap'
   | 'webhooks'
@@ -51,6 +53,7 @@ export type AppRouteId =
   | 'messaging'
   | 'new'
   | 'profiles'
+  | 'roster'
   | 'settings'
   | 'starmap'
   | 'webhooks'
@@ -73,7 +76,8 @@ export const APP_ROUTES = [
   { id: 'cron', path: CRON_ROUTE, view: 'cron' },
   { id: 'profiles', path: PROFILES_ROUTE, view: 'profiles' },
   { id: 'agents', path: AGENTS_ROUTE, view: 'agents' },
-  { id: 'starmap', path: STARMAP_ROUTE, view: 'starmap' }
+  { id: 'starmap', path: STARMAP_ROUTE, view: 'starmap' },
+  { id: 'roster', path: ROSTER_ROUTE, view: 'roster' }
 ] as const satisfies readonly AppRoute[]
 
 const APP_VIEW_BY_PATH = new Map<string, AppView>(APP_ROUTES.map(route => [route.path, route.view]))
@@ -186,6 +190,7 @@ export const OVERLAY_VIEWS: ReadonlySet<AppView> = new Set([
   'command-center',
   'cron',
   'profiles',
+  'roster',
   'settings',
   'starmap',
   'webhooks'

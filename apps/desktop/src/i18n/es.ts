@@ -2980,6 +2980,15 @@ export const esOverrides = {
     durationMinutes: (minutes, seconds) => `${minutes}m ${seconds}s`,
     tokens: value => `${value} tok`
   },
+  roster: {
+    title: 'Ejecuciones activas',
+    subtitle: 'Cada ejecución en curso en todos los perfiles y gateways.',
+    emptyTitle: 'No hay ejecuciones activas',
+    emptyDesc: 'Cuando una sesión empieza a trabajar — en cualquier perfil o gateway — aparece aquí.',
+    untitledRun: 'Ejecución sin título',
+    railPill: count => (count === 1 ? '1 ejecución' : `${count} ejecuciones`),
+    close: 'Cerrar'
+  },
   commandCenter: {
     close: 'Cerrar Centro de comandos',
     paletteTitle: 'Paleta de comandos',
