@@ -36,6 +36,7 @@ import { cn } from '@/lib/utils'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $activeConnectionId } from '@/store/connections'
 import { $cronJobs } from '@/store/cron'
+import { refreshDelegationReports } from '@/store/delegation-reports'
 import { $interfaceMode, $showsAdvancedChrome, shownInMode } from '@/store/interface-mode'
 import { $bindings } from '@/store/keybinds'
 import {
@@ -162,6 +163,7 @@ import { type NewSessionSplitHandler, startNewSessionDrag } from '../new-session
 
 import { SidebarSectionAddButton } from './chrome'
 import { SidebarCronJobsSection } from './cron-jobs-section'
+import { SidebarDelegationReports } from './delegation-reports'
 import { SidebarFilterMenu } from './filter-menu'
 import { buildGatewaySessionGroups, scopeGatewaySessionGroups, useGatewaySessionGroups } from './gateway-group-model'
 import { SidebarLoadMoreRow } from './load-more-row'
@@ -801,6 +803,20 @@ export function ChatSidebar({
 
   const attentionIdSet = useMemo(() => new Set(attentionSessions.map(s => s.id)), [attentionSessions])
   const attentionOpen = useStore($sidebarAttentionOpen)
+
+  // Report-back cards: a settled background delegation belongs to the session
+  // that spawned it, so the fold's membership IS the fetch set — the effect
+  // keys on ids (not the rows' dot churn) and each pull routes through the
+  // owning profile's backend, which may differ from the ambient gateway.
+  const attentionReportKey = useMemo(() => attentionSessions.map(s => s.id).join('\n'), [attentionSessions])
+
+  useEffect(() => {
+    for (const id of attentionReportKey.split('\n')) {
+      if (id) {
+        void refreshDelegationReports(id)
+      }
+    }
+  }, [attentionReportKey])
 
   // What the project tree drops: pins and the attention fold's rows (both
   // live in their own sections) plus anything the active filters exclude, so
@@ -1960,6 +1976,7 @@ export function ChatSidebar({
               sessions={attentionSessions}
               showProfileTags={showAllProfiles}
             />
+            {attentionOpen ? <SidebarDelegationReports sessions={attentionSessions} /> : null}
           </div>
         )}
 

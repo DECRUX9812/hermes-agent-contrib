@@ -2700,6 +2700,14 @@ export const ru = defineLocale({
     results: 'Результаты',
     pinned: 'Закреплённые',
     needsAttention: 'Требует внимания',
+    delegationReports: {
+      done: 'Готово',
+      needsDecision: 'Требуется решение',
+      failed: 'Ошибка',
+      openSubagent: 'Открыть субагента',
+      dismiss: 'Скрыть отчёт',
+      tasks: (count, completed) => `Завершено ${completed} из ${count} задач`
+    },
     sessions: 'Сеансы',
     terminal: 'Терминал',
     files: 'Файлы',

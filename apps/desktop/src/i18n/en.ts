@@ -3571,6 +3571,14 @@ export const en: Translations = {
     results: 'Results',
     pinned: 'Pinned',
     needsAttention: 'Needs attention',
+    delegationReports: {
+      done: 'Done',
+      needsDecision: 'Needs decision',
+      failed: 'Failed',
+      openSubagent: 'Open subagent',
+      dismiss: 'Dismiss report',
+      tasks: (count, completed) => `${completed} of ${count} tasks finished`
+    },
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Files',

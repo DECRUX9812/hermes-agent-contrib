@@ -2149,6 +2149,14 @@ export const ar = defineLocale({
     results: 'النتائج',
     pinned: 'المثبتة',
     needsAttention: 'تحتاج إلى انتباه',
+    delegationReports: {
+      done: 'تم',
+      needsDecision: 'يحتاج إلى قرار',
+      failed: 'فشل',
+      openSubagent: 'فتح الوكيل الفرعي',
+      dismiss: 'تجاهل التقرير',
+      tasks: (count, completed) => `تم إنجاز ${completed} من ${count} مهام`
+    },
     sessions: 'الجلسات',
     terminal: 'الطرفية',
     files: 'الملفات',

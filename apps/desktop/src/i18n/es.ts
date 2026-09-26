@@ -3933,6 +3933,14 @@ export const esOverrides = {
     results: 'Resultados',
     pinned: 'Fijadas',
     needsAttention: 'Necesita atención',
+    delegationReports: {
+      done: 'Hecho',
+      needsDecision: 'Necesita decisión',
+      failed: 'Falló',
+      openSubagent: 'Abrir subagente',
+      dismiss: 'Descartar informe',
+      tasks: (count, completed) => `${completed} de ${count} tareas terminadas`
+    },
     sessions: 'Sesiones',
     terminal: 'Terminal',
     files: 'Archivos',

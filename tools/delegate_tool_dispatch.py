@@ -212,6 +212,13 @@ def _execute_and_aggregate(batch: _Batch, *, honor_parent_interrupt: bool = True
     unit_paths = [batch.live_paths[i] for (i, _, _) in batch.children if i < len(batch.live_paths)]
     if unit_paths:
         combined["live_transcripts"] = unit_paths
+    # The child's stored session id per task, so report-back surfaces can open the worker's own
+    # transcript; lives on the result dict (result_json + completion payload), not the model text.
+    child_session_ids = {
+        str(i): str(child.session_id) for (i, _, child) in batch.children
+        if getattr(child, "session_id", None)}
+    if child_session_ids:
+        combined["child_session_ids"] = child_session_ids
     if batch.group is not None:
         combined["group"] = batch.group
     return combined

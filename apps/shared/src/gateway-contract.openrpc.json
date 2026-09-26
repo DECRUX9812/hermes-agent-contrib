@@ -781,6 +781,24 @@
       }
     },
     {
+      "name": "delegation.reports",
+      "summary": "Terminal delegations routed to this session, newest first \u2014 the sidebar report cards.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/SessionParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DelegationReportsResult"
+        }
+      }
+    },
+    {
       "name": "delegation.status",
       "summary": "Running subagent tree plus the spawn pause flag and limits.",
       "params": [
@@ -11863,6 +11881,144 @@
           "paused"
         ],
         "title": "DelegationPauseResult",
+        "type": "object"
+      },
+      "DelegationReport": {
+        "additionalProperties": false,
+        "description": "One settled background delegation awaiting report-back to its origin session.",
+        "properties": {
+          "delegation_id": {
+            "title": "Delegation Id",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/DelegationReportOutcome"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "summary_source": {
+            "$ref": "#/components/schemas/DelegationReportSummarySource"
+          },
+          "task_count": {
+            "title": "Task Count",
+            "type": "integer"
+          },
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "failed_count": {
+            "title": "Failed Count",
+            "type": "integer"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Duration Seconds"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Completed At"
+          },
+          "delivery_state": {
+            "default": "",
+            "title": "Delivery State",
+            "type": "string"
+          },
+          "child_session_ids": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Child Session Ids",
+            "type": "object"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Group"
+          }
+        },
+        "required": [
+          "delegation_id",
+          "state",
+          "outcome",
+          "title",
+          "summary",
+          "summary_source",
+          "task_count",
+          "completed_count",
+          "failed_count"
+        ],
+        "title": "DelegationReport",
+        "type": "object"
+      },
+      "DelegationReportOutcome": {
+        "description": "done = every task finished cleanly; failed = nothing completed; needs_decision =\nthe mixed middle (interrupted, truncated, partly failed, stalled) \u2014 a human should look.",
+        "enum": [
+          "done",
+          "needs_decision",
+          "failed"
+        ],
+        "title": "DelegationReportOutcome",
+        "type": "string"
+      },
+      "DelegationReportSummarySource": {
+        "description": "``model`` = the cached utility-model one-liner; ``heuristic`` = first substantive line of\nthe result, always available when no auxiliary model is configured.",
+        "enum": [
+          "model",
+          "heuristic"
+        ],
+        "title": "DelegationReportSummarySource",
+        "type": "string"
+      },
+      "DelegationReportsResult": {
+        "additionalProperties": false,
+        "properties": {
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/DelegationReport"
+            },
+            "title": "Reports",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reports"
+        ],
+        "title": "DelegationReportsResult",
         "type": "object"
       },
       "DelegationStatusResult": {
