@@ -3858,7 +3858,9 @@ export const esOverrides = {
     kindLink: 'enlace',
     chat: 'Chat',
     copyUrl: 'Copiar URL',
-    copyPath: 'Copiar ruta'
+    copyPath: 'Copiar ruta',
+    buildWithPlan: 'Construir con este plan',
+    buildWithPlanDraft: 'Implementa este plan:'
   },
   artifactCard: {
     kind: {

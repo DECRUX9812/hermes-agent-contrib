@@ -3877,7 +3877,9 @@ export const frOverrides = {
     kindLink: 'lien',
     chat: 'Conversation',
     copyUrl: "Copier l'URL",
-    copyPath: 'Copier le chemin'
+    copyPath: 'Copier le chemin',
+    buildWithPlan: 'Construire avec ce plan',
+    buildWithPlanDraft: 'Implémente ce plan :'
   },
   artifactCard: {
     kind: {

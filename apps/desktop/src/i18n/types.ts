@@ -2934,6 +2934,10 @@ export interface Translations {
     chat: string
     copyUrl: string
     copyPath: string
+    /** Plan→build handoff (#22): hover action on a plan artifact row. */
+    buildWithPlan: string
+    /** Composer draft seeded into the fresh build session. */
+    buildWithPlanDraft: string
   }
 
   artifactCard: {

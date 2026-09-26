@@ -95,7 +95,7 @@ import { isAuxiliaryWindow, isBrowserWindow, isHudWindow } from '@/store/windows
 import { useSkinCommand } from '@/themes/use-skin-command'
 
 import { closeWorkspaceTab } from '../chat/close-tab'
-import { requestComposerInsert } from '../chat/composer/focus'
+import { requestComposerInsert, requestComposerInsertRefs } from '../chat/composer/focus'
 import { useComposerActions } from '../chat/hooks/use-composer-actions'
 import { CommandPalette } from '../command-palette'
 import { triggerAndRefreshCronJobs } from '../cron/cron-actions'
@@ -674,6 +674,12 @@ export function ContribWiring({ children }: { children: ReactNode }) {
 
     if (startWorkSessionRequest.draft) {
       requestComposerInsert(startWorkSessionRequest.draft, { target: 'main' })
+    }
+
+    // Both inserts ride the deferred bus in dispatch order, so seeded chips
+    // (plan→build handoff) land after the draft text on the fresh composer.
+    if (startWorkSessionRequest.refs?.length) {
+      requestComposerInsertRefs(startWorkSessionRequest.refs, { target: 'main' })
     }
   }, [startSessionInWorkspace, startWorkSessionRequest])
 

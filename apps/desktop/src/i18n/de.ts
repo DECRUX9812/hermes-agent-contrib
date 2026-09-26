@@ -3868,7 +3868,9 @@ export const deOverrides = {
     kindLink: 'Link',
     chat: 'Chat',
     copyUrl: 'URL kopieren',
-    copyPath: 'Pfad kopieren'
+    copyPath: 'Pfad kopieren',
+    buildWithPlan: 'Mit diesem Plan bauen',
+    buildWithPlanDraft: 'Diesen Plan umsetzen:'
   },
   artifactCard: {
     kind: {
