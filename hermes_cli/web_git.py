@@ -662,6 +662,45 @@ def worktree_remove(cwd: str, worktree_path: str, force: bool) -> dict:
     return {"removed": worktree_path}
 
 
+def worktree_ensure(cwd: str, worktree_path: str, branch: str) -> dict:
+    """Recreate a session worktree whose directory is gone (roadmap #47:
+    "restore recreates missing worktrees"). Idempotent — an existing dir is a
+    no-op. `git worktree prune` clears the stale registration a deleted dir
+    leaves behind; a branch that itself was deleted re-seeds at the same path
+    from HEAD so the session's cwd exists again either way.
+    """
+    root = _main_root(cwd)
+    if _is_dir(worktree_path):
+        return {"path": worktree_path, "branch": branch, "repoRoot": root, "restored": False}
+    _git(root, ["worktree", "prune"])
+    name = _sanitize_branch(branch) or _slugify(os.path.basename(worktree_path))
+    if not name:
+        raise RuntimeError("worktree path has no usable branch name")
+    code, _, _ = _git(root, ["worktree", "add", worktree_path, name])
+    if code != 0:
+        # The branch ref is gone (deleted after the worktree was) — recreate it
+        # from the repo's HEAD so the directory (and the session's cwd) is
+        # restored rather than erroring the open.
+        _git_ok(root, ["worktree", "add", "-b", name, worktree_path])
+    return {"path": worktree_path, "branch": name, "repoRoot": root, "restored": True}
+
+
+def worktree_merge(cwd: str, worktree_path: str) -> dict:
+    """Merge a session worktree's branch back into the repo's MAIN checkout
+    (roadmap #47 "merge back"). Asks git for the worktree's live branch — the
+    stored session value can be stale if the user switched inside it. A dirty
+    main checkout fails the merge exactly as `git merge` does; the error text
+    reaches the desktop toast unchanged.
+    """
+    root = _main_root(cwd)
+    branch = _git_line(worktree_path, ["rev-parse", "--abbrev-ref", "HEAD"])
+    if not branch or branch == "HEAD":
+        raise RuntimeError(f"no branch checked out in {worktree_path}")
+    into = _git_line(root, ["rev-parse", "--abbrev-ref", "HEAD"])
+    _git_ok(root, ["merge", "--no-edit", branch])
+    return {"merged": True, "branch": branch, "into": into, "repoRoot": root}
+
+
 def _ref_names(cwd: str, *patterns: str, fmt: str = "%(refname:short)") -> list[str]:
     """Non-empty ``for-each-ref`` lines, newest commit first."""
     out = _git_out(cwd, ["for-each-ref", f"--format={fmt}", "--sort=-committerdate", *patterns])

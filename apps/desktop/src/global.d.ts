@@ -492,6 +492,18 @@ declare global {
           worktreePath: string,
           options?: { force?: boolean }
         ) => Promise<{ removed: string }>
+        // Session-worktree affordances (roadmap #47): recreate a missing
+        // worktree dir on session open, merge its branch back into the main
+        // checkout.
+        worktreeEnsure: (
+          repoPath: string,
+          worktreePath: string,
+          branch: string
+        ) => Promise<{ branch: string; path: string; repoRoot: string; restored: boolean }>
+        worktreeMerge: (
+          repoPath: string,
+          worktreePath: string
+        ) => Promise<{ branch: string; into: string; merged: boolean; repoRoot: string }>
         branchSwitch: (repoPath: string, branch: string) => Promise<{ branch: string }>
         // The local branches, plus the remote-tracking refs that have no local
         // branch, for the "convert a branch into a worktree" picker.

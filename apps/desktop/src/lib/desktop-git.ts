@@ -56,6 +56,11 @@ const remoteGit: GitBridge = {
   worktreeRemove: (repoPath, worktreePath, options) =>
     gitPost('worktree/remove', { force: options?.force ?? false, path: repoPath, worktreePath }),
 
+  worktreeEnsure: (repoPath, worktreePath, branch) =>
+    gitPost('worktree/ensure', { branch, path: repoPath, worktreePath }),
+
+  worktreeMerge: (repoPath, worktreePath) => gitPost('worktree/merge', { path: repoPath, worktreePath }),
+
   branchSwitch: (repoPath, branch) => gitPost('branch/switch', { branch, path: repoPath }),
 
   branchList: async repoPath =>

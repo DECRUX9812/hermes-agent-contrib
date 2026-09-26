@@ -36,6 +36,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { getMessagingPlatforms, type MessagingPlatformInfo, renameSession } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { desktopGit } from '@/lib/desktop-git'
 import { triggerHaptic } from '@/lib/haptics'
 import { ArchiveOff } from '@/lib/icons'
 import { isSubmitEnter } from '@/lib/ime'
@@ -66,6 +67,11 @@ import { $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
 import { $sessionTags, addSessionTag, removeSessionTag, sessionTagKey } from '@/store/session-tags'
 import { ackStoredSessionId } from '@/store/session-unread'
 import { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } from '@/store/session-watch'
+import {
+  isolateSessionToWorktree,
+  mergeSessionWorktree,
+  sessionWorktreeInfo
+} from '@/store/session-worktree'
 import { canOpenSessionInTerminal, canOpenSessionWindow, openSessionInTerminal } from '@/store/windows'
 
 import type { SessionTitleResponse } from '../../types'
@@ -204,6 +210,64 @@ function MoveToProjectItems({ kit, sessionId, profile }: { kit: MenuKit; session
   )
 }
 
+// #47 worktree-per-session: the ⋯ menu's isolate / merge-back verbs. Its own
+// component so only an OPEN menu reads the sessions store (same reasoning as
+// MoveToProjectItems). Which verb shows is derived from the row's stored
+// cwd/git meta — a session parked under <repo>/.worktrees/ gets "merge back",
+// any other session with a workspace gets the opt-in "isolate".
+function SessionWorktreeItems({
+  kit,
+  onMerge,
+  sessionId
+}: {
+  kit: MenuKit
+  onMerge: (branch: string, repo: string) => void
+  sessionId: string
+}) {
+  const { t } = useI18n()
+  const r = t.sidebar.row
+  const session = useStore($sessions).find(s => sessionMatchesStoredId(s, sessionId))
+
+  // No cwd → nothing to isolate; no git bridge (browser preview) → the verb
+  // would only toast an error, so stay out of the menu entirely.
+  if (!session?.cwd?.trim() || !desktopGit()) {
+    return null
+  }
+
+  const worktree = sessionWorktreeInfo(session)
+
+  if (worktree) {
+    const branch = worktree.branch || worktree.worktreePath.split('/').pop() || ''
+    const repo = worktree.repoRoot.split(/[\\/]/).pop() || worktree.repoRoot
+
+    return (
+      <kit.Item
+        onSelect={() => {
+          triggerHaptic('selection')
+          onMerge(branch, repo)
+        }}
+      >
+        <Codicon name="git-merge" size="0.875rem" />
+        <span>{r.mergeWorktree}</span>
+      </kit.Item>
+    )
+  }
+
+  return (
+    <kit.Item
+      onSelect={() => {
+        triggerHaptic('selection')
+        isolateSessionToWorktree(sessionId)
+          .then(branch => notify({ durationMs: 3_000, kind: 'success', message: r.isolateWorktreeDone(branch) }))
+          .catch(err => notifyError(err, r.worktreeUnavailable))
+      }}
+    >
+      <Codicon name="git-branch" size="0.875rem" />
+      <span>{r.isolateWorktree}</span>
+    </kit.Item>
+  )
+}
+
 // The "Continue on phone" submenu — the per-session door to the platform
 // parity links (#40). Its own component so only an OPEN submenu fetches the
 // platform list. Only rendered for the row that IS the open session: the
@@ -298,6 +362,10 @@ function useSessionActions({
   // the project menu's appearance-popover guard.
   const suppressCloseFocusRef = useRef(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  // Merge-back confirm (#47): the branch/repo pair the item captured when it
+  // was clicked — the dialog must not re-derive it from a row that may have
+  // re-filed under new git meta mid-dialog.
+  const [mergeWorktreeTarget, setMergeWorktreeTarget] = useState<null | { branch: string; repo: string }>(null)
   const tiles = useStore($sessionTiles)
   const selectedStoredSessionId = useStore($selectedStoredSessionId)
   const isRemote = useStore($connection)?.mode === 'remote'
@@ -696,6 +764,11 @@ function useSessionActions({
           <MoveToProjectItems kit={kit} profile={profile} sessionId={sessionId} />
         </kit.SubContent>
       </kit.Sub>
+      <SessionWorktreeItems
+        kit={kit}
+        onMerge={(branch, repo) => setMergeWorktreeTarget({ branch, repo })}
+        sessionId={sessionId}
+      />
       {/* Only the open session has a runtime id this window can hand off. */}
       {sessionId === selectedStoredSessionId && (
         <kit.Sub>
@@ -763,6 +836,23 @@ function useSessionActions({
     />
   )
 
+  const mergeWorktreeDialog = mergeWorktreeTarget && (
+    <MergeWorktreeDialog
+      branch={mergeWorktreeTarget.branch}
+      onConfirm={async () => {
+        const into = await mergeSessionWorktree(sessionId)
+        notify({ durationMs: 3_000, kind: 'success', message: r.mergedWorktree(into) })
+      }}
+      onOpenChange={open => {
+        if (!open) {
+          setMergeWorktreeTarget(null)
+        }
+      }}
+      open
+      repo={mergeWorktreeTarget.repo}
+    />
+  )
+
   const tagsDialog = (
     <SessionTagsDialog onOpenChange={setTagsOpen} open={tagsOpen} profile={profile} sessionId={sessionId} />
   )
@@ -779,7 +869,35 @@ function useSessionActions({
 
   const deviceDialog = <SessionDeviceDialog onOpenChange={setDeviceOpen} open={deviceOpen} sessionId={sessionId} title={title} />
 
-  return { askDialog, deleteDialog, deviceDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog }
+  return { askDialog, deleteDialog, deviceDialog, mergeWorktreeDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog }
+}
+
+interface MergeWorktreeDialogProps {
+  branch: string
+  onConfirm: () => Promise<void>
+  onOpenChange: (open: boolean) => void
+  open: boolean
+  repo: string
+}
+
+// Confirm before folding a worktree branch into the repo's main checkout —
+// a merge writes merge commits and can leave the main tree in conflict state,
+// so the row chip's affordance asks once (same guard shape as delete).
+function MergeWorktreeDialog({ branch, onConfirm, onOpenChange, open, repo }: MergeWorktreeDialogProps) {
+  const { t } = useI18n()
+  const r = t.sidebar.row
+
+  return (
+    <ConfirmDialog
+      busyLabel={r.mergingWorktree}
+      confirmLabel={r.mergeWorktree}
+      description={r.mergeWorktreeDesc(branch, repo)}
+      onClose={() => onOpenChange(false)}
+      onConfirm={onConfirm}
+      open={open}
+      title={r.mergeWorktreeTitle}
+    />
+  )
 }
 
 interface DeleteSessionDialogProps {
@@ -821,7 +939,7 @@ interface SessionActionsMenuProps
 export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ...actions }: SessionActionsMenuProps) {
   const { t } = useI18n()
 
-  const { askDialog, deleteDialog, deviceDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } =
+  const { askDialog, deleteDialog, deviceDialog, mergeWorktreeDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } =
     useSessionActions(actions)
 
   return (
@@ -841,6 +959,7 @@ export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ..
       {askDialog}
       {deviceDialog}
       {deleteDialog}
+      {mergeWorktreeDialog}
     </>
   )
 }
@@ -852,7 +971,7 @@ interface SessionContextMenuProps extends SessionActions {
 export function SessionContextMenu({ children, ...actions }: SessionContextMenuProps) {
   const { t } = useI18n()
 
-  const { askDialog, deleteDialog, deviceDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } =
+  const { askDialog, deleteDialog, deviceDialog, mergeWorktreeDialog, onCloseAutoFocus, renameDialog, renderItems, tagsDialog } =
     useSessionActions(actions)
 
   return (
@@ -870,6 +989,7 @@ export function SessionContextMenu({ children, ...actions }: SessionContextMenuP
       {askDialog}
       {deviceDialog}
       {deleteDialog}
+      {mergeWorktreeDialog}
     </>
   )
 }

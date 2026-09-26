@@ -45,6 +45,7 @@ import {
   toggleSessionSelected
 } from '@/store/session-selection'
 import { $openStoredSessionIds } from '@/store/session-states'
+import { sessionWorktreeInfo } from '@/store/session-worktree'
 import { sessionCostUsd } from '@/store/sidebar-archive'
 import { $todoProgressBySession } from '@/store/todos'
 
@@ -257,6 +258,29 @@ function SidebarSessionRowImpl({
 
   if (!condensed && pr) {
     trailing.push({ key: 'pr', node: <PrTag pr={pr} /> })
+  }
+
+  // Worktree-per-session (#47): a session parked under <repo>/.worktrees/
+  // carries its branch as a chip — the passive indicator. The verbs (isolate
+  // / merge back) live in the row's ⋯ menu.
+  if (!condensed) {
+    const worktree = sessionWorktreeInfo(session)
+
+    if (worktree) {
+      const worktreeBranch = worktree.branch || worktree.worktreePath.split('/').pop() || ''
+
+      trailing.push({
+        key: 'worktree',
+        node: (
+          <Tip label={peekOpen ? '' : r.worktreeTag(worktreeBranch)} side="top">
+            <span className="pointer-events-none inline-flex items-center gap-0.5 whitespace-nowrap tabular-nums text-[0.625rem] leading-none text-(--ui-text-tertiary)">
+              <Codicon name="git-branch" size="0.625rem" />
+              {worktreeBranch}
+            </span>
+          </Tip>
+        )
+      })
+    }
   }
 
   // User-assigned label chips ride the same trailing slot as the profile/PR

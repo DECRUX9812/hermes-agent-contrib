@@ -4267,6 +4267,17 @@ export const esOverrides = {
       messageCount: count => `${count} ${count === 1 ? 'mensaje' : 'mensajes'}`,
       todoProgress: 'Tareas completadas',
       attachmentCount: count => `${count} adjunto${count === 1 ? '' : 's'}`,
+      isolateWorktree: 'Aislar en worktree',
+      isolateWorktreeDone: name => `Aislado en el worktree ${name}`,
+      mergeWorktree: 'Fusionar el worktree',
+      mergeWorktreeTitle: 'Fusionar el worktree',
+      mergeWorktreeDesc: (branch, repo) =>
+        `¿Fusionar la rama ${branch} de vuelta en el checkout de ${repo}? Debe estar limpio.`,
+      mergingWorktree: 'Fusionando…',
+      mergedWorktree: into => `Fusionado en ${into}`,
+      mergeWorktreeFailed: 'No se pudo fusionar el worktree',
+      worktreeTag: branch => `Worktree aislado · ${branch}`,
+      worktreeUnavailable: 'Los worktrees de git no están disponibles aquí',
       digest: {
         agents: count => (count === 1 ? 'Un agente en ejecución' : `${count} agentes en ejecución`),
         approve: command => `Aprobar: ${command}`,

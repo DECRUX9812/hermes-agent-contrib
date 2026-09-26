@@ -3021,6 +3021,17 @@ export const ru = defineLocale({
       messageCount: count => `${count} ${RU_PLURAL(count, 'сообщение', 'сообщения', 'сообщений')}`,
       todoProgress: 'Задачи выполнены',
       attachmentCount: count => `Вложено: ${count}`,
+      isolateWorktree: 'Изолировать в worktree',
+      isolateWorktreeDone: name => `Изолировано в worktree ${name}`,
+      mergeWorktree: 'Слить worktree обратно',
+      mergeWorktreeTitle: 'Слить worktree обратно',
+      mergeWorktreeDesc: (branch, repo) =>
+        `Слить ветку ${branch} обратно в копию ${repo}? Она должна быть чистой.`,
+      mergingWorktree: 'Слияние…',
+      mergedWorktree: into => `Слито в ${into}`,
+      mergeWorktreeFailed: 'Не удалось слить worktree',
+      worktreeTag: branch => `Изолированный worktree · ${branch}`,
+      worktreeUnavailable: 'Git worktree здесь недоступны',
       digest: {
         agents: count => `Запущено агентов: ${count}`,
         approve: command => `Подтвердить: ${command}`,

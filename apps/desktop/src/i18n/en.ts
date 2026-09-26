@@ -3908,6 +3908,17 @@ export const en: Translations = {
       messageCount: count => `${count} ${count === 1 ? 'message' : 'messages'}`,
       todoProgress: 'Tasks completed',
       attachmentCount: count => `${count} attached`,
+      isolateWorktree: 'Isolate in worktree',
+      isolateWorktreeDone: name => `Isolated in worktree ${name}`,
+      mergeWorktree: 'Merge worktree back',
+      mergeWorktreeTitle: 'Merge worktree back',
+      mergeWorktreeDesc: (branch, repo) =>
+        `Merge branch ${branch} back into the ${repo} checkout? It must be clean.`,
+      mergingWorktree: 'Merging…',
+      mergedWorktree: into => `Merged into ${into}`,
+      mergeWorktreeFailed: "Couldn't merge the worktree",
+      worktreeTag: branch => `Isolated worktree · ${branch}`,
+      worktreeUnavailable: 'Git worktrees are not available here',
       digest: {
         agents: count => (count === 1 ? 'An agent is running' : `${count} agents running`),
         approve: command => `Approve: ${command}`,
