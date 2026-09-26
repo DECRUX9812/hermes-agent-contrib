@@ -15,6 +15,8 @@
  * counts the user can't act on from the menu.
  */
 
+import type { MenuItemConstructorOptions } from 'electron'
+
 export interface TrayStatusSession {
   /** True when this row is blocking/unread/stalled — the ● marker. */
   attention: boolean
@@ -150,9 +152,9 @@ export interface TrayMenuActions {
 export function buildTrayMenuTemplate(
   push: TrayStatusPush | null,
   actions: TrayMenuActions
-): { click?: () => void; enabled?: boolean; label?: string; type?: string }[] {
+): MenuItemConstructorOptions[] {
   const strings = push?.strings ?? DEFAULT_TRAY_STATUS_STRINGS
-  const items: { click?: () => void; enabled?: boolean; label?: string; type?: string }[] = []
+  const items: MenuItemConstructorOptions[] = []
 
   items.push({ enabled: false, label: strings.statusLine })
   items.push({ type: 'separator' })

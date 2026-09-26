@@ -9,6 +9,12 @@ import {
   type TrayStatusPush
 } from './tray-status'
 
+// MenuItemConstructorOptions.click wants the native (item, window, event) triple;
+// our handlers ignore it, so tests invoke through this cast instead.
+function clickItem(item: { click?: unknown } | undefined) {
+  ;(item?.click as (() => void) | undefined)?.()
+}
+
 function push(overrides: Partial<TrayStatusPush> = {}): TrayStatusPush {
   return {
     activeRuns: 0,
@@ -136,7 +142,7 @@ describe('buildTrayMenuTemplate', () => {
 
     const row = template.find(item => item.label === '● Blocked job')
 
-    row?.click?.()
+    clickItem(row)
     expect(acts.focusSession).toHaveBeenCalledWith('s1')
   })
 
@@ -145,10 +151,10 @@ describe('buildTrayMenuTemplate', () => {
     const template = buildTrayMenuTemplate(push(), acts)
     const byLabel = (label: string) => template.find(item => item.label === label)
 
-    byLabel('New Session')?.click?.()
-    byLabel('Quick Entry')?.click?.()
-    byLabel('Show Hermes')?.click?.()
-    byLabel('Quit Hermes')?.click?.()
+    clickItem(byLabel('New Session'))
+    clickItem(byLabel('Quick Entry'))
+    clickItem(byLabel('Show Hermes'))
+    clickItem(byLabel('Quit Hermes'))
 
     expect(acts.newSession).toHaveBeenCalledOnce()
     expect(acts.summonQuickEntry).toHaveBeenCalledOnce()
