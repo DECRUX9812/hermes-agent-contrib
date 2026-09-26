@@ -10,79 +10,105 @@ afterEach(cleanup)
 // a broken asChild composition on the kebab trigger fails here — the menu
 // must still open on click.
 
-vi.mock('@/components/pane-shell/tree/store', () => ({
+vi.mock('@/components/pane-shell/tree/store', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   closeAllTreeTabs: vi.fn(),
   closeOtherTreeTabs: vi.fn(),
   closeTreeTabsToRight: vi.fn(),
   treeTabCloseTargets: vi.fn(() => null)
 }))
-vi.mock('@/hermes', () => ({
+vi.mock('@/hermes', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   renameSession: vi.fn(),
   setApiRequestProfile: vi.fn(),
   setSessionUnreadRemote: vi.fn(() => Promise.resolve({ ok: true }))
 }))
-vi.mock('@/i18n', () => ({
-  useI18n: () => ({
-    t: {
-      common: {
-        cancel: 'Cancel',
-        close: 'Close',
-        confirm: 'Confirm',
-        delete: 'Delete',
-        done: 'Done',
-        loading: 'Loading…',
-        save: 'Save'
-      },
-      errors: { genericFailure: 'Something went wrong' },
-      sidebar: {
-        projects: {
-          menuAppearance: 'Appearance',
-          moveFailed: 'Could not move session',
-          moveNoProjects: 'No other projects',
-          movedTo: (name: string) => `Moved to ${name}`,
-          moveToProject: 'Move to project',
-          noColor: 'No color'
+vi.mock('@/i18n', async () => {
+  // Real English strings underneath: the menu mounts dialogs whose keys this test doesn't assert on.
+  const { en } = await import('@/i18n/en')
+
+  return {
+    useI18n: () => ({
+      t: {
+        common: {
+          cancel: 'Cancel',
+          close: 'Close',
+          confirm: 'Confirm',
+          delete: 'Delete',
+          done: 'Done',
+          loading: 'Loading…',
+          save: 'Save'
         },
-        row: {
-          archive: 'Archive',
-          branchFrom: 'Branch from here',
-          copyId: 'Copy ID',
-          copyIdFailed: 'Failed to copy ID',
-          deleteDesc: (title: string) => `Delete ${title}?`,
-          deleteTitle: 'Delete session?',
-          deleting: 'Deleting…',
-          deleted: 'Session deleted',
-          export: 'Export',
-          hideTabBar: 'Hide tab bar',
-          markRead: 'Mark as read',
-          pin: 'Pin',
-          rename: 'Rename',
-          renameDesc: 'Leave empty to clear.',
-          renameFailed: 'Rename failed',
-          renameTitle: 'Rename session',
-          renamed: 'Renamed',
-          sessionActions: 'Session actions',
-          unarchive: 'Unarchive',
-          unpin: 'Unpin',
-          untitledPlaceholder: 'Untitled'
-        }
-      },
-      zones: { closeAll: 'Close all', closeOthers: 'Close others', closeToRight: 'Close to the right' }
-    }
-  })
+        errors: { genericFailure: 'Something went wrong' },
+        sidebar: {
+          projects: {
+            menuAppearance: 'Appearance',
+            moveFailed: 'Could not move session',
+            moveNoProjects: 'No other projects',
+            movedTo: (name: string) => `Moved to ${name}`,
+            moveToProject: 'Move to project',
+            noColor: 'No color'
+          },
+          row: {
+            ...en.sidebar.row,
+            archive: 'Archive',
+            branchFrom: 'Branch from here',
+            copyId: 'Copy ID',
+            copyIdFailed: 'Failed to copy ID',
+            deleteDesc: (title: string) => `Delete ${title}?`,
+            deleteTitle: 'Delete session?',
+            deleting: 'Deleting…',
+            deleted: 'Session deleted',
+            export: 'Export',
+            hideTabBar: 'Hide tab bar',
+            markRead: 'Mark as read',
+            pin: 'Pin',
+            rename: 'Rename',
+            renameDesc: 'Leave empty to clear.',
+            renameFailed: 'Rename failed',
+            renameTitle: 'Rename session',
+            renamed: 'Renamed',
+            sessionActions: 'Session actions',
+            unarchive: 'Unarchive',
+            unpin: 'Unpin',
+            untitledPlaceholder: 'Untitled'
+          }
+        },
+        zones: { closeAll: 'Close all', closeOthers: 'Close others', closeToRight: 'Close to the right' }
+      }
+    })
+  }
+})
+vi.mock('@/lib/haptics', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  triggerHaptic: vi.fn()
 }))
-vi.mock('@/lib/haptics', () => ({ triggerHaptic: vi.fn() }))
-vi.mock('@/lib/profile-color', () => ({ PROFILE_SWATCHES: [] }))
-vi.mock('@/lib/session-export', () => ({ exportSession: vi.fn() }))
-vi.mock('@/store/gateway', () => ({ activeGateway: vi.fn(() => null) }))
-vi.mock('@/store/notifications', () => ({ notify: vi.fn(), notifyError: vi.fn() }))
-vi.mock('@/store/projects', () => ({
+vi.mock('@/lib/profile-color', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  PROFILE_SWATCHES: []
+}))
+vi.mock('@/lib/session-export', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  exportSession: vi.fn()
+}))
+vi.mock('@/store/gateway', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  activeGateway: vi.fn(() => null)
+}))
+vi.mock('@/store/notifications', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  notify: vi.fn(),
+  notifyError: vi.fn()
+}))
+vi.mock('@/store/projects', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   $projectTree: atom<unknown[]>([]),
   moveSessionToProject: vi.fn(),
   projectIdForCwd: vi.fn(() => null),
   projectRootCwd: vi.fn(() => '')
 }))
-vi.mock('@/store/session', () => ({
+vi.mock('@/store/session', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   $activeSessionId: atom<null | string>(null),
   $connection: atom<null | { mode: string }>(null),
   $cronSessions: atom<unknown[]>([]),
@@ -95,16 +121,19 @@ vi.mock('@/store/session', () => ({
   sessionPinId: vi.fn((s: { id: string }) => s.id),
   setSessions: vi.fn()
 }))
-vi.mock('@/store/session-color', () => ({
+vi.mock('@/store/session-color', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   $sessionColorOverrides: atom<Record<string, string>>({}),
   setSessionColorOverride: vi.fn()
 }))
-vi.mock('@/store/session-states', () => ({
+vi.mock('@/store/session-states', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   $sessionTiles: atom<unknown[]>([]),
   closeAllOpenSessionTiles: vi.fn(),
   openSessionTile: vi.fn()
 }))
-vi.mock('@/store/windows', () => ({
+vi.mock('@/store/windows', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   canOpenSessionInTerminal: () => false,
   canOpenSessionWindow: () => false,
   isBrowserWindow: () => false,

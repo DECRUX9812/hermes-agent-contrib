@@ -77,94 +77,100 @@ const digestStrings = vi.hoisted((): Record<string, string | ((...args: unknown[
   'sidebar.row.waitingForAnswer': 'Waiting for answer'
 }))
 
-vi.mock('@/i18n', () => ({
-  translateNow: (key: string, ...args: unknown[]) => {
-    const value = digestStrings[key]
+vi.mock('@/i18n', async () => {
+  // Real English strings underneath: rows mount dialogs whose keys this test doesn't care about.
+  const { en } = await import('@/i18n/en')
 
-    return typeof value === 'function' ? value(...args) : String(value ?? key)
-  },
-  useI18n: () => ({
-    t: {
-      assistant: {
-        thread: {
-          today: (time: string) => `Today at ${time}`,
-          yesterday: (time: string) => `Yesterday at ${time}`
-        }
-      },
-      common: {
-        cancel: 'Cancel',
-        close: 'Close',
-        confirm: 'Confirm',
-        delete: 'Delete',
-        done: 'Done',
-        loading: 'Loading…',
-        save: 'Save'
-      },
-      errors: { genericFailure: 'Something went wrong' },
-      sidebar: {
-        peek: {
-          agents: 'Delegated agents',
-          agentsRunning: (count: number) => `${count} running`,
-          agentsSummary: (count: number) => `${count} agents`,
-          archived: 'Archived',
-          branch: 'Branch',
-          idle: 'Idle',
-          model: 'Model',
-          profile: 'Profile',
-          source: 'Source',
-          started: 'Started',
-          stats: 'Stats',
-          tokens: (count: string) => `${count} tokens`,
-          updated: 'Updated',
-          workspace: 'Workspace'
+  return {
+    translateNow: (key: string, ...args: unknown[]) => {
+      const value = digestStrings[key]
+
+      return typeof value === 'function' ? value(...args) : String(value ?? key)
+    },
+    useI18n: () => ({
+      t: {
+        assistant: {
+          thread: {
+            today: (time: string) => `Today at ${time}`,
+            yesterday: (time: string) => `Yesterday at ${time}`
+          }
         },
-        messageCount: (count: number) => `${count} messages`,
-        projects: {
-          home: 'Home',
-          menuAppearance: 'Appearance',
-          moveFailed: 'Could not move session',
-          moveNoProjects: 'No other projects',
-          movedTo: (name: string) => `Moved to ${name}`,
-          moveToProject: 'Move to project',
-          noColor: 'No color'
+        common: {
+          cancel: 'Cancel',
+          close: 'Close',
+          confirm: 'Confirm',
+          delete: 'Delete',
+          done: 'Done',
+          loading: 'Loading…',
+          save: 'Save'
         },
-        row: {
-          ageMin: 'm',
-          ageNow: 'now',
-          archive: 'Archive',
-          backgroundRunning: 'Running in background',
-          branchFrom: 'Branch from here',
-          copyId: 'Copy ID',
-          copyIdFailed: 'Failed to copy ID',
-          deleteDesc: (title: string) => `Delete ${title}?`,
-          deleteTitle: 'Delete session?',
-          deleted: 'Session deleted',
-          deleting: 'Deleting…',
-          export: 'Export',
-          finishedUnread: 'Finished',
-          handoffOrigin: (platform: string) => `Started on ${platform}`,
-          hideTabBar: 'Hide tab bar',
-          markRead: 'Mark as read',
+        errors: { genericFailure: 'Something went wrong' },
+        sidebar: {
+          peek: {
+            agents: 'Delegated agents',
+            agentsRunning: (count: number) => `${count} running`,
+            agentsSummary: (count: number) => `${count} agents`,
+            archived: 'Archived',
+            branch: 'Branch',
+            idle: 'Idle',
+            model: 'Model',
+            profile: 'Profile',
+            source: 'Source',
+            started: 'Started',
+            stats: 'Stats',
+            tokens: (count: string) => `${count} tokens`,
+            updated: 'Updated',
+            workspace: 'Workspace'
+          },
           messageCount: (count: number) => `${count} messages`,
-          needsInput: 'Needs input',
-          pin: 'Pin',
-          rename: 'Rename',
-          renamed: 'Renamed',
-          renameFailed: 'Rename failed',
-          renameTitle: 'Rename session',
-          sessionActions: 'Session actions',
-          sessionRunning: 'Running',
-          todoProgress: 'Tasks completed',
-          unpin: 'Unpin',
-          untitledPlaceholder: 'Untitled',
-          waitingForAnswer: 'Waiting for answer'
+          projects: {
+            home: 'Home',
+            menuAppearance: 'Appearance',
+            moveFailed: 'Could not move session',
+            moveNoProjects: 'No other projects',
+            movedTo: (name: string) => `Moved to ${name}`,
+            moveToProject: 'Move to project',
+            noColor: 'No color'
+          },
+          row: {
+            ...en.sidebar.row,
+            ageMin: 'm',
+            ageNow: 'now',
+            archive: 'Archive',
+            backgroundRunning: 'Running in background',
+            branchFrom: 'Branch from here',
+            copyId: 'Copy ID',
+            copyIdFailed: 'Failed to copy ID',
+            deleteDesc: (title: string) => `Delete ${title}?`,
+            deleteTitle: 'Delete session?',
+            deleted: 'Session deleted',
+            deleting: 'Deleting…',
+            export: 'Export',
+            finishedUnread: 'Finished',
+            handoffOrigin: (platform: string) => `Started on ${platform}`,
+            hideTabBar: 'Hide tab bar',
+            markRead: 'Mark as read',
+            messageCount: (count: number) => `${count} messages`,
+            needsInput: 'Needs input',
+            pin: 'Pin',
+            rename: 'Rename',
+            renamed: 'Renamed',
+            renameFailed: 'Rename failed',
+            renameTitle: 'Rename session',
+            sessionActions: 'Session actions',
+            sessionRunning: 'Running',
+            todoProgress: 'Tasks completed',
+            unpin: 'Unpin',
+            untitledPlaceholder: 'Untitled',
+            waitingForAnswer: 'Waiting for answer'
+          },
+          toolCallCount: (count: number) => `${count} tool calls`
         },
-        toolCallCount: (count: number) => `${count} tool calls`
-      },
-      zones: { closeAll: 'Close all', closeOthers: 'Close others', closeToRight: 'Close to the right' }
-    }
-  })
-}))
+        zones: { closeAll: 'Close all', closeOthers: 'Close others', closeToRight: 'Close to the right' }
+      }
+    })
+  }
+})
 vi.mock('@/lib/haptics', async importOriginal => {
   const actual = await importOriginal<Record<string, unknown>>()
 

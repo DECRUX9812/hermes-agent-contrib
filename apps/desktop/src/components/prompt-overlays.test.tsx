@@ -119,6 +119,8 @@ describe('PromptOverlays', () => {
     expect(notifyError).not.toHaveBeenCalled()
   })
 
+  // Session-bound secret asks render in the transcript (PendingSecretCard); this
+  // modal is the surface for sessionless ones, so these drive a sessionless ask.
   it('answers the live secret request with an empty value on Cancel and clears the dialog', async () => {
     const respond = vi.fn()
     const request = vi.fn()
@@ -126,9 +128,9 @@ describe('PromptOverlays', () => {
     $activeSessionId.set('s1')
     $gateway.set({ request } as never)
     rememberServerRequest({ fail: vi.fn(), id: 'secret-1', method: 'secret', params: {}, respond })
-    setSecretRequest({ envVar: 'TEST_SECRET', prompt: 'Paste a secret', requestId: 'secret-1', sessionId: 's1' })
+    setSecretRequest({ envVar: 'TEST_SECRET', prompt: 'Paste a secret', requestId: 'secret-1', sessionId: null })
 
-    renderPrompts()
+    renderPrompts(null)
 
     expect(screen.getByText('TEST_SECRET')).toBeTruthy()
 
@@ -146,9 +148,9 @@ describe('PromptOverlays', () => {
 
     $activeSessionId.set('s1')
     $gateway.set({ request } as never)
-    setSecretRequest({ envVar: 'TEST_SECRET', prompt: 'Paste a secret', requestId: 'secret-1', sessionId: 's1' })
+    setSecretRequest({ envVar: 'TEST_SECRET', prompt: 'Paste a secret', requestId: 'secret-1', sessionId: null })
 
-    renderPrompts()
+    renderPrompts(null)
 
     expect(screen.getByText('TEST_SECRET')).toBeTruthy()
 

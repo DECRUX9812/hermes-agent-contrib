@@ -13451,7 +13451,7 @@ const minimizeToTray = createMinimizeToTray({
 let pendingTraySessionFocus = null
 let pendingTrayNewSession = false
 
-function deliverTrayIntent(kind, sessionId) {
+function deliverTrayIntent(kind: 'new-session' | 'session', sessionId?: string) {
   minimizeToTray.restore()
 
   const win = mainWindow

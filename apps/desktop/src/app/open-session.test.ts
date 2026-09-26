@@ -23,7 +23,8 @@ vi.mock('@/store/session-states', () => ({
   setSessionTileWorkspaceScope: (...args: unknown[]) => setSessionTileWorkspaceScope(...args)
 }))
 
-vi.mock('@/store/windows', () => ({
+vi.mock('@/store/windows', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   canOpenSessionWindow: () => canOpenSessionWindow(),
   openSessionInNewWindow: (...args: unknown[]) => openSessionInNewWindow(...args)
 }))

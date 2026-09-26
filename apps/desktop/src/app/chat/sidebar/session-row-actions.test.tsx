@@ -31,83 +31,89 @@ const digestStrings = vi.hoisted((): Record<string, string | ((...args: unknown[
   'sidebar.row.waitingForAnswer': 'Waiting for answer'
 }))
 
-vi.mock('@/i18n', () => ({
-  translateNow: (key: string, ...args: unknown[]) => {
-    const value = digestStrings[key]
+vi.mock('@/i18n', async () => {
+  // Real English strings underneath: rows mount dialogs whose keys this test doesn't assert on.
+  const { en } = await import('@/i18n/en')
 
-    return typeof value === 'function' ? value(...args) : String(value ?? key)
-  },
-  useI18n: () => ({
-    t: {
-      common: { cancel: 'Cancel', close: 'Close', delete: 'Delete', save: 'Save' },
-      assistant: {
-        thread: {
-          today: (time: string) => `Today, ${time}`,
-          yesterday: (time: string) => `Yesterday, ${time}`
-        }
-      },
-      sidebar: {
-        peek: {
-          agents: 'Delegated agents',
-          agentsRunning: (count: number) => `${count} running`,
-          agentsSummary: (count: number) => `${count} agents`,
-          archived: 'Archived',
-          branch: 'Branch',
-          idle: 'Idle',
-          model: 'Model',
-          profile: 'Profile',
-          source: 'Source',
-          started: 'Started',
-          stats: 'Stats',
-          tokens: (count: string) => `${count} tokens`,
-          updated: 'Updated',
-          workspace: 'Workspace'
+  return {
+    translateNow: (key: string, ...args: unknown[]) => {
+      const value = digestStrings[key]
+
+      return typeof value === 'function' ? value(...args) : String(value ?? key)
+    },
+    useI18n: () => ({
+      t: {
+        common: { cancel: 'Cancel', close: 'Close', delete: 'Delete', save: 'Save' },
+        assistant: {
+          thread: {
+            today: (time: string) => `Today, ${time}`,
+            yesterday: (time: string) => `Yesterday, ${time}`
+          }
         },
-        messageCount: (count: number) => `${count} messages`,
-        toolCallCount: (count: number) => `${count} tool calls`,
-        projects: {
-          menuAppearance: 'Appearance',
-          moveFailed: 'Could not move session',
-          moveNoProjects: 'No other projects',
-          movedTo: (name: string) => `Moved to ${name}`,
-          moveToProject: 'Move to project',
-          noColor: 'No color'
-        },
-        row: {
-          ageMin: 'm',
-          ageNow: 'now',
-          archive: 'Archive',
-          backgroundRunning: 'Running in background',
-          branchFrom: 'Branch from here',
-          copyId: 'Copy ID',
-          copyIdFailed: 'Failed to copy ID',
-          deleteDesc: (title: string) => `Delete ${title}?`,
-          deleteTitle: 'Delete session?',
-          deleting: 'Deleting…',
-          deleted: 'Session deleted',
-          export: 'Export',
-          finishedUnread: 'Finished',
-          handoffOrigin: (platform: string) => `Started on ${platform}`,
-          hideTabBar: 'Hide tab bar',
+        sidebar: {
+          peek: {
+            agents: 'Delegated agents',
+            agentsRunning: (count: number) => `${count} running`,
+            agentsSummary: (count: number) => `${count} agents`,
+            archived: 'Archived',
+            branch: 'Branch',
+            idle: 'Idle',
+            model: 'Model',
+            profile: 'Profile',
+            source: 'Source',
+            started: 'Started',
+            stats: 'Stats',
+            tokens: (count: string) => `${count} tokens`,
+            updated: 'Updated',
+            workspace: 'Workspace'
+          },
           messageCount: (count: number) => `${count} messages`,
-          needsInput: 'Needs input',
-          pin: 'Pin',
-          rename: 'Rename',
-          renameDesc: 'Leave empty to clear.',
-          renameFailed: 'Rename failed',
-          renameTitle: 'Rename session',
-          renamed: 'Renamed',
-          sessionActions: 'Session actions',
-          sessionRunning: 'Running',
-          unpin: 'Unpin',
-          untitledPlaceholder: 'Untitled',
-          waitingForAnswer: 'Waiting for answer'
-        }
-      },
-      zones: { closeAll: 'Close all', closeOthers: 'Close others', closeToRight: 'Close to the right' }
-    }
-  })
-}))
+          toolCallCount: (count: number) => `${count} tool calls`,
+          projects: {
+            menuAppearance: 'Appearance',
+            moveFailed: 'Could not move session',
+            moveNoProjects: 'No other projects',
+            movedTo: (name: string) => `Moved to ${name}`,
+            moveToProject: 'Move to project',
+            noColor: 'No color'
+          },
+          row: {
+            ...en.sidebar.row,
+            ageMin: 'm',
+            ageNow: 'now',
+            archive: 'Archive',
+            backgroundRunning: 'Running in background',
+            branchFrom: 'Branch from here',
+            copyId: 'Copy ID',
+            copyIdFailed: 'Failed to copy ID',
+            deleteDesc: (title: string) => `Delete ${title}?`,
+            deleteTitle: 'Delete session?',
+            deleting: 'Deleting…',
+            deleted: 'Session deleted',
+            export: 'Export',
+            finishedUnread: 'Finished',
+            handoffOrigin: (platform: string) => `Started on ${platform}`,
+            hideTabBar: 'Hide tab bar',
+            messageCount: (count: number) => `${count} messages`,
+            needsInput: 'Needs input',
+            pin: 'Pin',
+            rename: 'Rename',
+            renameDesc: 'Leave empty to clear.',
+            renameFailed: 'Rename failed',
+            renameTitle: 'Rename session',
+            renamed: 'Renamed',
+            sessionActions: 'Session actions',
+            sessionRunning: 'Running',
+            unpin: 'Unpin',
+            untitledPlaceholder: 'Untitled',
+            waitingForAnswer: 'Waiting for answer'
+          }
+        },
+        zones: { closeAll: 'Close all', closeOthers: 'Close others', closeToRight: 'Close to the right' }
+      }
+    })
+  }
+})
 vi.mock('@/app/chat/profile-tag', () => ({ ProfileTag: () => null }))
 vi.mock('@/app/chat/session-drag', () => ({ startSessionDrag: vi.fn() }))
 vi.mock('@/hermes', async importOriginal => ({

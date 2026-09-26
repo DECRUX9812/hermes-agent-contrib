@@ -134,6 +134,14 @@ export function trayStatusBadge(push: TrayStatusPush | null): string {
   return parts.join(' ')
 }
 
+/** Structural subset of Electron's MenuItemConstructorOptions — kept local so this module stays electron-free. */
+export interface TrayMenuItem {
+  click?: () => void
+  enabled?: boolean
+  label?: string
+  type?: 'separator'
+}
+
 export interface TrayMenuActions {
   focusSession: (id: string) => void
   newSession: () => void
@@ -147,12 +155,9 @@ export interface TrayMenuActions {
  * The whole context menu as a plain template — pure so the shape is unit
  * testable; minimize-to-tray just hands it to `Menu.buildFromTemplate`.
  */
-export function buildTrayMenuTemplate(
-  push: TrayStatusPush | null,
-  actions: TrayMenuActions
-): { click?: () => void; enabled?: boolean; label?: string; type?: string }[] {
+export function buildTrayMenuTemplate(push: TrayStatusPush | null, actions: TrayMenuActions): TrayMenuItem[] {
   const strings = push?.strings ?? DEFAULT_TRAY_STATUS_STRINGS
-  const items: { click?: () => void; enabled?: boolean; label?: string; type?: string }[] = []
+  const items: TrayMenuItem[] = []
 
   items.push({ enabled: false, label: strings.statusLine })
   items.push({ type: 'separator' })
