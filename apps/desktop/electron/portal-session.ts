@@ -175,7 +175,17 @@ export function createPortalSession({
       }
 
       win.on('closed', () => finish('closed'))
-      win.loadURL(portalBaseUrl).catch(error => finish(error instanceof Error ? error : new Error(String(error))))
+      win.loadURL(portalBaseUrl).catch(error => {
+        // A portal redirect can supersede the initial load. Keep watching the
+        // cookie jar instead of destroying the window before sign-in completes.
+        if (Number(error?.code) === -3 || /\bERR_ABORTED\b/.test(String(error?.message))) {
+          void checkCookie()
+
+          return
+        }
+
+        finish(error instanceof Error ? error : new Error(String(error)))
+      })
     })
   }
 
