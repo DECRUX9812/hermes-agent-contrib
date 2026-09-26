@@ -4271,6 +4271,8 @@ export const deOverrides = {
     restoredDraftNotice: 'Ihre nicht gesendete Nachricht wurde wiederhergestellt',
     restoredDraftUndo: 'Rückgängig',
     queueEdit: 'Bearbeiten',
+    queueMoveUp: 'Nach vorne',
+    queueMoveDown: 'Nach hinten',
     queueSendNext: 'Weiter',
     queueSteer: 'Steuern — laufenden Turn jetzt umleiten',
     queueSend: 'Senden',

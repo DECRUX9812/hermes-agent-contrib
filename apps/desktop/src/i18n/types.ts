@@ -3226,6 +3226,8 @@ export interface Translations {
     restoredDraftNotice: string
     restoredDraftUndo: string
     queueEdit: string
+    queueMoveUp: string
+    queueMoveDown: string
     queueSendNext: string
     queueSend: string
     queueSteer: string

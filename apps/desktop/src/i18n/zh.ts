@@ -3679,6 +3679,8 @@ export const zh = defineLocale({
     restoredDraftNotice: '已恢复你未发送的消息',
     restoredDraftUndo: '撤销',
     queueEdit: '编辑',
+    queueMoveUp: '上移',
+    queueMoveDown: '下移',
     queueSendNext: '下一个',
     queueSteer: '引导 — 立即修正当前回合',
     queueSend: '发送',
