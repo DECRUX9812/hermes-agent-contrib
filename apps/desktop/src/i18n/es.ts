@@ -5438,6 +5438,12 @@ export const esOverrides = {
     }
   },
   assistant: {
+    sessionRecap: {
+      title: 'Dónde quedó',
+      dismiss: 'Descartar',
+      turns: count => `${count} ${count === 1 ? 'turno' : 'turnos'}`,
+      todo: progress => `plan ${progress}`
+    },
     thread: {
       loadingSession: 'Cargando sesión',
       showEarlier: 'Mostrar mensajes anteriores',

@@ -77,6 +77,7 @@ import { ResumeExhaustedOverlay } from './resume-exhausted-overlay'
 import { isRouteSessionMismatch } from './route-session-state'
 import { useRuntimeMessageRepository } from './runtime-repository'
 import { ScrollToBottomButton } from './scroll-to-bottom-button'
+import { SessionRecapCard } from './session-recap'
 import { useSessionView } from './session-view'
 import { SessionActionsMenu } from './sidebar/session-actions-menu'
 import { composerStaysMounted, routedSessionIsLoading, threadLoadingState } from './thread-loading'
@@ -888,6 +889,17 @@ const ChatViewContent = memo(function ChatViewContent({
               sessionKey={threadKey}
             />
           )}
+          {/* "Where it left off" recap (#13) — only once the transcript is
+              settled: gating on loadingSession/routeSessionMismatch/
+              resumeExhausted/messagesEmpty keeps it dark through resume and
+              hydration flicker; SessionRecapCard reads view.$messages
+              one-shot at mount (the atom is far too hot to subscribe here). */}
+          {!guideOpening &&
+            !loadingSession &&
+            !routeSessionMismatch &&
+            !resumeExhausted &&
+            !messagesEmpty &&
+            storedId && <SessionRecapCard storedSessionId={storedId} />}
           {resumeExhausted && routedSessionId && (
             <ResumeExhaustedOverlay onRetryResume={onRetryResume} sessionId={routedSessionId} />
           )}

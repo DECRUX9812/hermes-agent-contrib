@@ -5068,6 +5068,12 @@ export const en: Translations = {
   },
 
   assistant: {
+    sessionRecap: {
+      title: 'Where it left off',
+      dismiss: 'Dismiss',
+      turns: count => `${count} ${count === 1 ? 'turn' : 'turns'}`,
+      todo: progress => `plan ${progress}`
+    },
     thread: {
       loadingSession: 'Loading session',
       showEarlier: 'Show earlier messages',

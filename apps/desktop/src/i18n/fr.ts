@@ -5459,6 +5459,12 @@ export const frOverrides = {
     }
   },
   assistant: {
+    sessionRecap: {
+      title: 'Reprise ici',
+      dismiss: 'Fermer',
+      turns: count => `${count} ${count === 1 ? 'tour' : 'tours'}`,
+      todo: progress => `plan ${progress}`
+    },
     thread: {
       loadingSession: 'Chargement de la session',
       showEarlier: 'Afficher les messages précédents',

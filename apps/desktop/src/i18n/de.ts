@@ -5444,6 +5444,12 @@ export const deOverrides = {
     }
   },
   assistant: {
+    sessionRecap: {
+      title: 'Hier ging es weiter',
+      dismiss: 'Schließen',
+      turns: count => `${count} ${count === 1 ? 'Runde' : 'Runden'}`,
+      todo: progress => `Plan ${progress}`
+    },
     thread: {
       loadingSession: 'Session wird geladen',
       showEarlier: 'Frühere Nachrichten anzeigen',
