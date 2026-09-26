@@ -532,6 +532,10 @@ export const deOverrides = {
       rpcOutOfSync: 'App und Backend laufen in unterschiedlichen Versionen. Aktualisieren Sie beide.',
       restartHermesFailed: 'Hermes konnte nicht neu gestartet werden'
     },
+    digest: {
+      title: count => `Hermes-Zusammenfassung — ${count} Meldungen`,
+      line: (count, label) => `${count} × ${label}`
+    },
     actions: {
       restartHermes: 'Hermes neu starten',
       openKeys: 'Schlüssel öffnen',
@@ -1055,7 +1059,23 @@ export const deOverrides = {
       completionSoundTitle: 'Abschluss-Sound',
       completionSoundDesc:
         'Wird abgespielt, wenn ein Agent-Turn endet. Wählen Sie eine Vorlage aus und hören Sie sie hier an.',
-      completionSoundPreview: 'Vorschau'
+      completionSoundPreview: 'Vorschau',
+      quietHoursTitle: 'Ruhezeiten',
+      quietHoursDesc:
+        'Hält alltägliche Benachrichtigungen in einem täglichen Zeitfenster zurück; sie gehen am Ende als Zusammenfassung ein. Freigaben, Rückfragen und Fehler kommen trotzdem durch.',
+      quietHoursWindowTitle: 'Ruhefenster',
+      quietHoursWindowDesc:
+        'Benachrichtigungen sind von der Start- bis zur Endzeit stumm — liegt der Start nach dem Ende, gilt die Zeit über Nacht.',
+      quietHoursFrom: 'Von',
+      quietHoursTo: 'Bis',
+      digestTitle: 'Stündliche Zusammenfassung',
+      digestDesc:
+        'Fasst alltägliche Benachrichtigungen zu einer einzigen Zusammenfassung pro Stunde zusammen, statt jede einzeln zu senden.',
+      sessionOverridesTitle: 'Sitzungs-Ausnahmen',
+      sessionOverridesDesc:
+        'Chats, die Sie im Sitzungsmenü der Seitenleiste stummgeschaltet haben. Hier können Sie sie wieder aktivieren.',
+      sessionOverridesEmpty:
+        'Keine stummgeschalteten Sitzungen. Schalten Sie einen Chat über sein Seitenleisten-Menü stumm, um ihn hier aufzulisten.'
     },
     sections: {
       model: 'Modell',

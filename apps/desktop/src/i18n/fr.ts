@@ -531,6 +531,10 @@ export const frOverrides = {
       rpcOutOfSync: "L'application et le backend ne sont pas sur la même version. Mettez-les tous les deux à jour.",
       restartHermesFailed: 'Impossible de redémarrer Hermes'
     },
+    digest: {
+      title: count => `Récapitulatif Hermes — ${count} notifications`,
+      line: (count, label) => `${count} × ${label}`
+    },
     actions: {
       restartHermes: 'Redémarrer Hermes',
       openKeys: 'Ouvrir les clés',
@@ -1055,7 +1059,23 @@ export const frOverrides = {
       testUnsupported: 'Ce système ne prend pas en charge les notifications natives.',
       completionSoundTitle: 'Son de fin',
       completionSoundDesc: "Se joue à la fin d'un tour d'agent. Choisissez un préréglage et prévisualisez-le ici.",
-      completionSoundPreview: 'Aperçu'
+      completionSoundPreview: 'Aperçu',
+      quietHoursTitle: 'Heures calmes',
+      quietHoursDesc:
+        "Retient les notifications courantes pendant une plage quotidienne ; elles arrivent dans un récapitulatif à la fin. Approbations, questions et erreurs passent toujours.",
+      quietHoursWindowTitle: 'Plage calme',
+      quietHoursWindowDesc:
+        "Les notifications sont silencieuses de l'heure de début à l'heure de fin — un début après la fin couvre la nuit.",
+      quietHoursFrom: 'De',
+      quietHoursTo: 'À',
+      digestTitle: 'Récapitulatif horaire',
+      digestDesc:
+        'Regroupe les notifications courantes en un seul récapitulatif par heure au lieu de les envoyer une par une.',
+      sessionOverridesTitle: 'Exceptions par session',
+      sessionOverridesDesc:
+        'Discussions masquées depuis le menu de session de la barre latérale. Réactivez-les ici.',
+      sessionOverridesEmpty:
+        'Aucune session masquée. Masquez une discussion depuis son menu latéral pour la voir ici.'
     },
     sections: {
       model: 'Modèle',

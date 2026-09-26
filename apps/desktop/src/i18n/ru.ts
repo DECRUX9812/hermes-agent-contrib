@@ -278,6 +278,10 @@ export const ru = defineLocale({
       openaiRejectedApiKey: 'OpenAI отклонил API-ключ.',
       openaiTtsNeedsKey: 'Для TTS OpenAI нужен VOICE_TOOLS_OPENAI_KEY или OPENAI_API_KEY.'
     },
+    digest: {
+      title: count => `Сводка Hermes — ${count} уведомлений`,
+      line: (count, label) => `${count} × ${label}`
+    },
     voice: {
       configureSpeechToText: 'Настройте распознавание речи, чтобы использовать голосовой режим.',
       couldNotStartSession: 'Не удалось начать голосовой сеанс',
@@ -660,7 +664,21 @@ export const ru = defineLocale({
       testUnsupported: 'Эта система не поддерживает системные уведомления.',
       completionSoundTitle: 'Звук завершения',
       completionSoundDesc: 'Воспроизводится, когда ход агента завершён. Выберите пресет и прослушайте здесь.',
-      completionSoundPreview: 'Прослушать'
+      completionSoundPreview: 'Прослушать',
+      quietHoursTitle: 'Тихие часы',
+      quietHoursDesc:
+        'Удерживает обычные уведомления в течение заданного окна; по его окончании они приходят сводкой. Запросы на подтверждение, вопросы и ошибки проходят всегда.',
+      quietHoursWindowTitle: 'Окно тишины',
+      quietHoursWindowDesc:
+        'Уведомления отключены от времени начала до времени конца — если начало позже конца, окно захватывает ночь.',
+      quietHoursFrom: 'С',
+      quietHoursTo: 'До',
+      digestTitle: 'Сводка раз в час',
+      digestDesc: 'Объединяет обычные уведомления в одну сводку раз в час вместо отдельных показов.',
+      sessionOverridesTitle: 'Исключения для сессий',
+      sessionOverridesDesc: 'Чаты, отключённые вами в меню сессии боковой панели. Включите их обратно здесь.',
+      sessionOverridesEmpty:
+        'Нет отключённых сессий. Отключите уведомления чата из его меню в боковой панели, чтобы он появился здесь.'
     },
     sections: {
       model: 'Модель',
