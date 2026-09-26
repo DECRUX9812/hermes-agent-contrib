@@ -90,8 +90,15 @@ function SidebarSectionHeader({
           type="button"
         >
           {labelBody}
+          {/* A closed disclosure always shows its caret — otherwise the fold
+              reads as a static label; an open one may wait for hover/focus. */}
           <DisclosureCaret
-            className="text-(--ui-text-tertiary) opacity-0 transition group-hover/section-label:opacity-100"
+            className={cn(
+              'text-(--ui-text-tertiary) transition',
+              open
+                ? 'opacity-0 group-hover/section-label:opacity-100 group-focus-visible/section-label:opacity-100'
+                : 'opacity-100'
+            )}
             open={open}
           />
         </button>

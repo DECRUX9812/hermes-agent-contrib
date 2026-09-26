@@ -3319,6 +3319,16 @@ export const zh = defineLocale({
       closed: '已关闭',
       noPR: '无PR'
     },
+    archive: {
+      finished: '归档已完成的会话',
+      olderThan: '归档早于以下时间的会话…',
+      days: (days: number) => `${days} 天`,
+      confirmTitle: (count: number) => `归档 ${count} 个会话？`,
+      confirmBody: '置顶聊天永远不会被归档，也不会删除任何内容——已归档的会话会移到"已归档"视图。',
+      confirmAction: '归档',
+      done: (count: number) => `已归档 ${count} 个会话`,
+      none: '没有可归档的会话'
+    },
     profileRail: '配置档案栏',
     gatewayGroups: {
       grouping: '网关与配置',

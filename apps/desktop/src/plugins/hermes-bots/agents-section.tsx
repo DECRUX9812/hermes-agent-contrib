@@ -83,6 +83,7 @@ export function AgentsSection() {
   const open = useValue($agentsSectionOpen)
   const { data, error, refetch } = useRoster()
   const allMeta = useValue($botMeta)
+  const attentionByKey = useValue($botAttention)
   const gatewayUp = useValue(host.state.gateway) === 'open'
   const [createOpen, setCreateOpen] = useState(false)
 
@@ -144,8 +145,18 @@ export function AgentsSection() {
         >
           <SidebarPanelLabel>{t.common.bots}</SidebarPanelLabel>
           {visible.length > 0 && <SidebarSectionMeta>{visible.length}</SidebarSectionMeta>}
+          {/* Folded, a bot needing attention is invisible — surface a passive
+              dot; the expanded rows carry the reason themselves. */}
+          {!open && Object.keys(attentionByKey).length > 0 && (
+            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+          )}
           <DisclosureCaret
-            className="text-(--ui-text-tertiary) opacity-0 transition group-hover/section-label:opacity-100"
+            className={cn(
+              'text-(--ui-text-tertiary) transition',
+              open
+                ? 'opacity-0 group-hover/section-label:opacity-100 group-focus-visible/section-label:opacity-100'
+                : 'opacity-100'
+            )}
             open={open}
           />
         </button>

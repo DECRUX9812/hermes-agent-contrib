@@ -3903,6 +3903,17 @@ export const deOverrides = {
       closed: 'Geschlossen',
       noPR: 'Kein PR'
     },
+    archive: {
+      finished: 'Abgeschlossene Sessions archivieren',
+      olderThan: 'Sessions archivieren, die älter sind als…',
+      days: (days: number) => `${days} Tage`,
+      confirmTitle: (count: number) => `${count} ${count === 1 ? 'Session' : 'Sessions'} archivieren?`,
+      confirmBody:
+        'Angeheftete Chats werden nie archiviert und nichts wird gelöscht — archivierte Sessions wandern in die Ansicht „Archiviert“.',
+      confirmAction: 'Archivieren',
+      done: (count: number) => `${count} ${count === 1 ? 'Session' : 'Sessions'} archiviert`,
+      none: 'Keine Sessions zum Archivieren'
+    },
     gatewayGroups: {
       grouping: 'Gateway & Profil',
       rename: 'Gruppe umbenennen',

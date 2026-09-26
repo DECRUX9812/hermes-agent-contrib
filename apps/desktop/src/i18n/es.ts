@@ -3893,6 +3893,17 @@ export const esOverrides = {
       closed: 'Cerrada',
       noPR: 'Sin PR'
     },
+    archive: {
+      finished: 'Archivar sesiones terminadas',
+      olderThan: 'Archivar sesiones de más de…',
+      days: (days: number) => `${days} días`,
+      confirmTitle: (count: number) => `¿Archivar ${count} ${count === 1 ? 'sesión' : 'sesiones'}?`,
+      confirmBody:
+        'Los chats fijados nunca se archivan y nada se borra: las sesiones archivadas pasan a la vista Archivadas.',
+      confirmAction: 'Archivar',
+      done: (count: number) => `${count} ${count === 1 ? 'sesión archivada' : 'sesiones archivadas'}`,
+      none: 'No hay sesiones que archivar'
+    },
     gatewayGroups: {
       grouping: 'Gateway y perfil',
       rename: 'Renombrar grupo',

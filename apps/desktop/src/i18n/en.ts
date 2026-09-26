@@ -3524,6 +3524,17 @@ export const en: Translations = {
       closed: 'Closed',
       noPR: 'No PR'
     },
+    archive: {
+      finished: 'Archive finished sessions',
+      olderThan: 'Archive sessions older than…',
+      days: (days: number) => `${days} days`,
+      confirmTitle: (count: number) => `Archive ${count} session${count === 1 ? '' : 's'}?`,
+      confirmBody:
+        'Pinned chats are never archived, and nothing is deleted — archived sessions move to the Archived view.',
+      confirmAction: 'Archive',
+      done: (count: number) => `Archived ${count} session${count === 1 ? '' : 's'}`,
+      none: 'No sessions to archive'
+    },
     gatewayGroups: {
       grouping: 'Gateway & profile',
       rename: 'Rename group',

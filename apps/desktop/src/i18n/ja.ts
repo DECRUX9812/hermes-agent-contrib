@@ -2464,6 +2464,17 @@ export const ja = defineLocale({
       closed: 'クローズ済み',
       noPR: 'PRなし'
     },
+    archive: {
+      finished: '完了したセッションをアーカイブ',
+      olderThan: '…より古いセッションをアーカイブ',
+      days: (days: number) => `${days} 日`,
+      confirmTitle: (count: number) => `${count} 件のセッションをアーカイブしますか？`,
+      confirmBody:
+        'ピン留めされたチャットはアーカイブされず、何も削除されません。アーカイブされたセッションは「アーカイブ」ビューに移動します。',
+      confirmAction: 'アーカイブ',
+      done: (count: number) => `${count} 件のセッションをアーカイブしました`,
+      none: 'アーカイブするセッションがありません'
+    },
     gatewayGroups: {
       grouping: 'ゲートウェイとプロファイル',
       rename: 'グループ名を変更',

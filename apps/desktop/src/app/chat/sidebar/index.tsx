@@ -5,6 +5,7 @@ import type * as React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
+import { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { SidebarPanelLabel } from '@/app/shell/sidebar-label'
 import { Button } from '@/components/ui/button'
@@ -231,12 +232,13 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     tier: 'advanced'
   },
   {
+    // No tier: the rail's messaging sections render in Simple too, so the
+    // door they open must ride every mode or a whole slice is stranded.
     id: 'messaging',
     label: '',
     icon: props => <Codicon name="comment" {...props} />,
     route: MESSAGING_ROUTE,
-    keybindActionId: 'nav.messaging',
-    tier: 'advanced'
+    keybindActionId: 'nav.messaging'
   },
   // Artifacts and Scheduled jobs are outputs of running Hermes the developer
   // way; Capabilities and Messaging are how anyone sets it up.
@@ -699,18 +701,10 @@ export function ChatSidebar({
   const navItems = useMemo(
     () =>
       applySidebarNavPrefs(
-        [...SIDEBAR_NAV, ...contributedNav].filter(
-          item =>
-            shownInMode(interfaceMode)(item) ||
-            // The Messaging door rides the rail, not the mode: the sessions it
-            // groups live here in Simple too, so hiding its row in Simple
-            // stranded a whole slice with no door at all. It appears iff the
-            // rail has messaging rows to open.
-            (item.id === 'messaging' && visibleMessagingSessions.length > 0)
-        ),
+        [...SIDEBAR_NAV, ...contributedNav].filter(item => shownInMode(interfaceMode)(item)),
         navPrefs
       ),
-    [contributedNav, interfaceMode, navPrefs, visibleMessagingSessions.length]
+    [contributedNav, interfaceMode, navPrefs]
   )
 
   // One rail, one mental model: New session is the single primary action.
@@ -719,6 +713,14 @@ export function ChatSidebar({
   const primaryNavItems = useMemo(() => navItems.filter(item => item.id === 'new-session'), [navItems])
   const browseNavItems = useMemo(() => navItems.filter(item => item.id !== 'new-session'), [navItems])
   const browseOpen = useStore($sidebarBrowseOpen)
+
+  // The one row behind the Browse fold carrying urgent state is Scheduled
+  // jobs — a job past its slot or mid-run deserves a passive dot on the
+  // label; the fold itself never opens on its own.
+  const browseAttention = useMemo(
+    () => cronJobs.some(job => jobState(job) === 'running' || nextRunOverdueMs(job) !== null),
+    [cronJobs]
+  )
 
   // Index sessions by every id a pin might be stored under — recents, cron,
   // AND messaging, since all three can be pinned (see session-index.ts).
@@ -1877,6 +1879,12 @@ export function ChatSidebar({
                     type="button"
                   >
                     <SidebarPanelLabel>{s.nav.browse ?? 'Browse'}</SidebarPanelLabel>
+                    {/* Folded, an overdue/running cron job behind the Scheduled
+                        jobs row is invisible — surface a passive dot; never
+                        auto-open the fold. */}
+                    {!browseOpen && browseAttention && (
+                      <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+                    )}
                     <DisclosureCaret className="text-(--ui-text-tertiary)" open={browseOpen} />
                   </button>
                 </SidebarMenuItem>
@@ -1888,10 +1896,10 @@ export function ChatSidebar({
 
         <SidebarStorageCorruptNotice />
 
-        {/* The field mounts while the sessions area has content OR any
-            searchable listTop contribution is up — on an empty account the
-            Bots fold still answers a query. */}
-        {(showSessionSections || hasSearchableListTop) && (
+        {/* The field mounts whenever the gateway is up: it is the target of
+            mod+shift+f, which would dead-fire into a null ref on an empty
+            account. The older gates still apply when it is up for content. */}
+        {(gatewayState === 'open' || showSessionSections || hasSearchableListTop) && (
           <div className="shrink-0 px-2 pb-1 pt-1">
             <SearchField
               aria-label={s.searchAria}
