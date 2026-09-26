@@ -2303,6 +2303,13 @@ export interface Translations {
     untitledRun: string
     railPill: (count: number) => string
     close: string
+    fanOut: string
+    fanOutTitle: string
+    fanOutPlaceholder: string
+    fanOutNoAgents: string
+    fanOutClose: string
+    fanOutSend: (count: number) => string
+    fanOutFailed: string
   }
 
   attentionInbox: {

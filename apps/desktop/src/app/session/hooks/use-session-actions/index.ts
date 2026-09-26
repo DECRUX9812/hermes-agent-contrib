@@ -873,7 +873,9 @@ export function useSessionActions({
         route?: AgentProfileRoute | null
         workspaceScope?: SessionTileWorkspaceScope
       }
-    ) => {
+      // The created ids so a caller (parallel fan-out) can drive the fresh
+      // session itself — e.g. submit the shared prompt into each new tile.
+    ): Promise<{ runtimeId: string; storedSessionId: string } | undefined> => {
       const listed = options?.listed ?? true
 
       try {
@@ -1031,6 +1033,8 @@ export function useSessionActions({
         openSessionTile(stored, dir, options?.anchor, options?.before, workspaceScope)
         patchSessionTile(stored, { runtimeId: created.session_id })
 
+        const createdIds = { runtimeId: created.session_id, storedSessionId: stored }
+
         if (dir === 'center' && runtimeInfo?.cwd) {
           setCurrentCwdTransient(runtimeInfo.cwd)
           setWorkspaceCwdOwner(stored)
@@ -1041,6 +1045,8 @@ export function useSessionActions({
         if (listed) {
           broadcastSessionsChanged()
         }
+
+        return createdIds
       } catch (error) {
         notifyError(error, copy.createSessionFailed)
       }

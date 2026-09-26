@@ -88,6 +88,7 @@ import {
   setBusy,
   setMessages
 } from '@/store/session'
+import { sessionTileDelegate } from '@/store/session-states'
 import { $archivedSessions } from '@/store/sidebar-archive'
 import { $titlebarAppActionsSide, titlebarAppActionsClusterCounts } from '@/store/titlebar-app-actions'
 import { armWakeWord, stopClientCapture } from '@/store/wake-word'
@@ -113,6 +114,7 @@ import { RemoteFolderPicker } from '../right-sidebar/files/remote-picker'
 import { resetProjectTreeState } from '../right-sidebar/files/use-project-tree'
 import { PersistentTerminal } from '../right-sidebar/terminal/persistent'
 import { closeAllTerminals } from '../right-sidebar/terminal/terminals'
+import type { FanOutTarget } from '../roster/fan-out-model'
 import {
   CRON_ROUTE,
   navigateToWorkspacePage,
@@ -1064,6 +1066,34 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     void openNewSessionTile('center', { listed: false })
   }, [openNewSessionTile])
 
+  // Roadmap #21 — parallel fan-out: one prompt mints a sibling session tile
+  // on EVERY explicitly-picked profile/bot. Each create rides the pick's own
+  // exact owner route (also stamped as the tile's ownerRoute so its socket
+  // stays pinned), so islands stay islands — nothing routes implicitly.
+  // Sequential creates keep tab order matching the pick list and isolate a
+  // single failure to one toast instead of failing the whole send.
+  const fanOutPrompt = useCallback(
+    (targets: FanOutTarget[], text: string) => {
+      void (async () => {
+        for (const target of targets) {
+          try {
+            const created = await openNewSessionTile('center', {
+              route: target.route,
+              workspaceScope: { ownerRoute: target.route, workspaceMode: 'sessions' }
+            })
+
+            if (created?.runtimeId) {
+              await sessionTileDelegate()?.submitToSession(created.runtimeId, text)
+            }
+          } catch (error) {
+            notifyError(error, translateNow('roster.fanOutFailed'))
+          }
+        }
+      })()
+    },
+    [openNewSessionTile]
+  )
+
   // Archive the selected session (rebindable `session.archive` hotkey).
   const archiveSelectedSession = useCallback(() => {
     const sessionId = $selectedStoredSessionId.get()
@@ -1473,7 +1503,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
 
       {rosterOpen && (
         <Suspense fallback={null}>
-          <RosterView onClose={closeOverlayToPreviousRoute} />
+          <RosterView onClose={closeOverlayToPreviousRoute} onFanOut={fanOutPrompt} />
         </Suspense>
       )}
 

@@ -2514,7 +2514,14 @@ export const zh = defineLocale({
     emptyDesc: '当会话开始工作时——在任何配置文件或网关上——它会出现在这里。',
     untitledRun: '未命名运行',
     railPill: count => `${count} 个运行`,
-    close: '关闭'
+    close: '关闭',
+    fanOut: '扇出',
+    fanOutTitle: '将同一条提示发送给所选代理',
+    fanOutPlaceholder: '一条提示，发给每个所选代理…',
+    fanOutNoAgents: '没有可连接的代理可供选择',
+    fanOutClose: '收起',
+    fanOutSend: count => `发送给 ${count} 个代理`,
+    fanOutFailed: '无法为其中一个所选代理创建会话'
   },
 
   attentionInbox: {
