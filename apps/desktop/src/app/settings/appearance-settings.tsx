@@ -502,6 +502,7 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   ] as const
 
   const sessionDensityOptions = [
+    { id: 'condensed', label: a.sessionDensityCondensed },
     { id: 'compact', label: a.sessionDensityCompact },
     { id: 'comfortable', label: a.sessionDensityComfortable },
     { id: 'detailed', label: a.sessionDensityDetailed }

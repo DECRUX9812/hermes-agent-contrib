@@ -942,6 +942,7 @@ export interface Translations {
       sessionDensityTitle: string
       sessionDensityDesc: string
       sessionDensityCompact: string
+      sessionDensityCondensed: string
       sessionDensityComfortable: string
       sessionDensityDetailed: string
       tabStripTitle: string

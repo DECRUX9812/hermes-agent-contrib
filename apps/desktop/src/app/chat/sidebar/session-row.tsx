@@ -151,6 +151,10 @@ function SidebarSessionRowImpl({
   const { cancelPrewarm, notePointerMove, startPrewarm } = useProfilePrewarm(session.profile)
   const title = sessionTitle(session)
   const density = useStore($sessionListDensity)
+  // Condensed is a one-line variant taken further: dot + title, nothing else.
+  // Everything the fuller densities paint (chips, badges, meta, age) folds
+  // into the title's tooltip so collapsing the row strands no information.
+  const condensed = !card && density === 'condensed'
   const fmt = t.sidebar
 
   const details = sessionRowDetails(session, {
@@ -204,11 +208,11 @@ function SidebarSessionRowImpl({
   // to the left of the kebab's own column: never flush right, never swapping.
   const trailing: { key: string; node: React.ReactNode }[] = []
 
-  if ((showProfile || pinnedProfile) && hasProfileTag) {
+  if (!condensed && (showProfile || pinnedProfile) && hasProfileTag) {
     trailing.push({ key: 'profile', node: <ProfileTag profile={session.profile} /> })
   }
 
-  if (pr) {
+  if (!condensed && pr) {
     trailing.push({ key: 'pr', node: <PrTag pr={pr} /> })
   }
 
@@ -222,7 +226,7 @@ function SidebarSessionRowImpl({
   // The one-line row's progress chip sits in the trailing slot so a working
   // row reads its plan without opening the chat. (todoProgress is only set
   // while a plan exists, so it self-clears when the last item lands.)
-  if (!card && todoProgress) {
+  if (!condensed && !card && todoProgress) {
     trailing.push({
       key: 'progress',
       node: (
@@ -236,7 +240,7 @@ function SidebarSessionRowImpl({
     })
   }
 
-  if (figures.length || showAge) {
+  if (!condensed && (figures.length || showAge)) {
     // The card's meta lines separate by spacing alone, so its header figures
     // match (non-breaking pair — plain spaces collapse to one); the one-line
     // row keeps the interpunct between joined figures.
@@ -303,6 +307,33 @@ function SidebarSessionRowImpl({
   // between them (HTML collapses runs of whitespace to one).
   const model = card && session.model ? displayModelName(session.model) : ''
   const size = card && session.message_count > 0 ? r.messageCount(session.message_count) : ''
+
+  // The condensed row hides every badge and meta line; this tooltip is where
+  // they still reach. Same inputs the fuller rows paint, as text lines.
+  const condensedMeta = condensed
+    ? ([
+        details.metadata || null,
+        details.preview,
+        (showProfile || pinnedProfile) && hasProfileTag ? session.profile : null,
+        pr ? `#${pr.number} ${pr.title}` : null,
+        handoffLabel ? r.handoffOrigin(handoffLabel) : null,
+        session.continuation_kind === 'compression' ? r.continuationOrigin : null,
+        todoProgress ? `${r.todoProgress}: ${todoProgress}` : null,
+        ...figures,
+        showAge ? absoluteAge : null
+      ].filter(Boolean) as string[])
+    : []
+
+  const condensedTip = (
+    <>
+      <span className="block">{title}</span>
+      {condensedMeta.map(line => (
+        <span className="block text-(--ui-text-tertiary)" key={line}>
+          {line}
+        </span>
+      ))}
+    </>
+  )
 
   // An archived session has no live status to paint, so the archive glyph takes
   // the lead slot the dot would occupy instead of adding a column of its own.
@@ -393,9 +424,11 @@ function SidebarSessionRowImpl({
           'group row-hover relative',
           card && SIDEBAR_ROW_CARD_MIN_H,
           // Density-aware minimum heights for the inline (non-card) row: the
-          // metadata / preview lines below need the extra rows (#68119).
-          !card && density !== 'compact' && 'min-h-[2.75rem]',
+          // metadata / preview lines below need the extra rows (#68119), and
+          // condensed pulls the row tighter than the shared shell minimum.
+          !card && (density === 'comfortable' || density === 'detailed') && 'min-h-[2.75rem]',
           !card && density === 'detailed' && 'min-h-[3.875rem]',
+          !card && condensed && 'min-h-[1.375rem]',
           isSelected && 'bg-(--ui-row-active-background)',
           // Open in another pane: the SAME band, just weaker. Its own mixed
           // token rather than row opacity — dimming the whole row would take
@@ -551,26 +584,40 @@ function SidebarSessionRowImpl({
               ) : null
 
             if (!card) {
+              const titleLabel = (
+                <SidebarRowLabel
+                  className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
+                  onPointerEnter={armMarquee}
+                  onPointerLeave={disarmMarquee}
+                >
+                  <span className="hover-marquee-inner">{title}</span>
+                </SidebarRowLabel>
+              )
+
               return (
                 <>
                   {leadNode}
                   <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
-                  {handoffBadge}
-                  {continuationBadge}
+                  {!condensed && handoffBadge}
+                  {!condensed && continuationBadge}
                   <span className="min-w-0 flex-1 self-center">
-                    <OverflowTip label={title} placement="row">
-                      <SidebarRowLabel
-                        className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
-                        onPointerEnter={armMarquee}
-                        onPointerLeave={disarmMarquee}
-                      >
-                        <span className="hover-marquee-inner">{title}</span>
-                      </SidebarRowLabel>
-                    </OverflowTip>
+                    {condensed && condensedMeta.length > 0 ? (
+                      // Always-on tip: in condensed the title may not
+                      // overflow yet the folded-in meta still needs a door.
+                      <Tip label={condensedTip} placement="row">
+                        {titleLabel}
+                      </Tip>
+                    ) : (
+                      <OverflowTip label={title} placement="row">
+                        {titleLabel}
+                      </OverflowTip>
+                    )}
                     {/* Session-list density (#68119): comfortable adds one
                         deterministic metadata line; detailed adds the initial
-                        request preview. Compact keeps today's one-line row. */}
-                    {density !== 'compact' && details.metadata && (
+                        request preview. Compact keeps today's one-line row,
+                        condensed goes further — the meta lives on the title's
+                        tooltip instead. */}
+                    {(density === 'comfortable' || density === 'detailed') && details.metadata && (
                       <span
                         className={cn(
                           'mt-0.5 block truncate text-[0.625rem] text-(--ui-text-tertiary)',
