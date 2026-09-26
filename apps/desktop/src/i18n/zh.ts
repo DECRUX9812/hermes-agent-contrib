@@ -2528,6 +2528,11 @@ export const zh = defineLocale({
     fanOutFailed: '无法为其中一个所选代理创建会话'
   },
 
+  hud: {
+    needsYou: '等待你',
+    openRunInApp: title => `在应用窗口中打开 ${title}`
+  },
+
   attentionInbox: {
     title: '需要处理',
     empty: '没有待处理的事项。',
