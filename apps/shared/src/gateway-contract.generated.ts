@@ -3155,6 +3155,24 @@ export interface SessionHistoryResult {
   count: number
   messages: TranscriptMessage[]
 }
+/** ``session_id`` takes a stored id/prefix OR a live runtime id; ``history`` is the client's companion thread so far (bounded server-side). */
+export interface SessionAskParams {
+  profile?: string | null
+  session_id: string
+  question: string
+  history?: SessionAskExchange[] | null
+}
+/** One prior companion Q/A the client holds, replayed for thread continuity. */
+export interface SessionAskExchange {
+  question: string
+  answer: string
+}
+export interface SessionAskResult {
+  answer: string
+  resolved_id: string
+  messages_considered: number
+  truncated: boolean
+}
 export interface SessionUsageParams {
   session_id: string
   profile?: string | null
@@ -5034,6 +5052,8 @@ export interface RpcMethods {
   'session.activate': { params: SessionActivateParams; result: SessionActivateResult }
   /** Live sessions in this process, insertion order (not a DB browser). */
   'session.active_list': { params: SessionActiveListParams; result: SessionActiveListResult }
+  /** One-shot utility-model answer about a session's transcript (companion thread); read-only, never touches the live conversation's context. */
+  'session.ask': { params: SessionAskParams; result: SessionAskResult }
   /** Fork a live session into a new stored child that shares the parent's history so far. */
   'session.branch': { params: SessionBranchParams; result: SessionBranchResult }
   /** Whole-session branch of a stored parent: the owning backend reads and copies the transcript, which never crosses the wire (a separate method so an older gateway fails loudly, not with an empty branch). */
@@ -5347,6 +5367,7 @@ export const RPC_METHODS = [
   'rollback.restore',
   'session.activate',
   'session.active_list',
+  'session.ask',
   'session.branch',
   'session.branch_stored',
   'session.branch_whole',

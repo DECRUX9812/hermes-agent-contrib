@@ -2995,6 +2995,24 @@
       }
     },
     {
+      "name": "session.ask",
+      "summary": "One-shot utility-model answer about a session's transcript (companion thread); read-only, never touches the live conversation's context.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/SessionAskParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/SessionAskResult"
+        }
+      }
+    },
+    {
       "name": "session.branch",
       "summary": "Fork a live session into a new stored child that shares the parent's history so far.",
       "params": [
@@ -27858,6 +27876,104 @@
           "sessions"
         ],
         "title": "SessionActiveListResult",
+        "type": "object"
+      },
+      "SessionAskExchange": {
+        "additionalProperties": false,
+        "description": "One prior companion Q/A the client holds, replayed for thread continuity.",
+        "properties": {
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "answer"
+        ],
+        "title": "SessionAskExchange",
+        "type": "object"
+      },
+      "SessionAskParams": {
+        "additionalProperties": false,
+        "description": "``session_id`` takes a stored id/prefix OR a live runtime id; ``history`` is the\nclient's companion thread so far (bounded server-side).",
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "question": {
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "history": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SessionAskExchange"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "History"
+          }
+        },
+        "required": [
+          "session_id",
+          "question"
+        ],
+        "title": "SessionAskParams",
+        "type": "object"
+      },
+      "SessionAskResult": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "resolved_id": {
+            "title": "Resolved Id",
+            "type": "string"
+          },
+          "messages_considered": {
+            "title": "Messages Considered",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "resolved_id",
+          "messages_considered",
+          "truncated"
+        ],
+        "title": "SessionAskResult",
         "type": "object"
       },
       "SessionBranchParams": {

@@ -3851,6 +3851,18 @@ export const en: Translations = {
       tagsAddPlaceholder: 'New tag label',
       tagsAdd: 'Add',
       tagsRemoveLabel: label => `Remove tag ${label}`,
+      askAbout: 'Ask about this session',
+      ask: {
+        clear: 'Clear thread',
+        dialogDesc: title => `Questions about ${title} are answered from its stored transcript — never the live conversation.`,
+        dialogTitle: 'Ask about this session',
+        empty: 'Ask a question about what this session did, decided, or wrote.',
+        failed: 'Could not get an answer',
+        placeholder: 'Ask about this session…',
+        send: 'Ask',
+        thinking: 'Reading the transcript…',
+        truncatedNote: 'Answered from the beginning and end of a long transcript.'
+      },
       deleteTitle: 'Delete session?',
       deleteDesc: title => `This will permanently delete “${title}”. This cannot be undone.`,
       deleting: 'Deleting…',

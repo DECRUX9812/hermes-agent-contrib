@@ -4228,6 +4228,18 @@ export const frOverrides = {
       tagsAddPlaceholder: 'Nouvelle étiquette',
       tagsAdd: 'Ajouter',
       tagsRemoveLabel: label => `Retirer l’étiquette ${label}`,
+      askAbout: 'Poser une question sur cette session',
+      ask: {
+        clear: 'Effacer le fil',
+        dialogDesc: title => `Les questions sur ${title} sont répondues à partir de sa transcription enregistrée — jamais depuis la conversation en cours.`,
+        dialogTitle: 'Poser une question sur cette session',
+        empty: 'Posez une question sur ce que cette session a fait, décidé ou écrit.',
+        failed: 'Impossible d’obtenir une réponse',
+        placeholder: 'Question sur cette session…',
+        send: 'Envoyer',
+        thinking: 'Lecture de la transcription…',
+        truncatedNote: 'Réponse issue du début et de la fin d’une longue transcription.'
+      },
       deleteTitle: 'Supprimer la session ?',
       deleteDesc: title => `« ${title} » sera définitivement supprimée. Cette action est irréversible.`,
       deleting: 'Suppression…',

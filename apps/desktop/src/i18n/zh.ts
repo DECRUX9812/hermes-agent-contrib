@@ -3626,6 +3626,18 @@ export const zh = defineLocale({
       tagsAddPlaceholder: '新标签名称',
       tagsAdd: '添加',
       tagsRemoveLabel: label => `移除标签 ${label}`,
+      askAbout: '询问此会话',
+      ask: {
+        clear: '清空线程',
+        dialogDesc: title => `关于 ${title} 的问题将根据其已保存的转录内容回答——不会触及正在进行的对话。`,
+        dialogTitle: '询问此会话',
+        empty: '询问此会话做了什么、决定了什么或写入了什么。',
+        failed: '无法获得回答',
+        placeholder: '就此会话提问…',
+        send: '提问',
+        thinking: '正在读取转录内容…',
+        truncatedNote: '回答基于长转录内容的开头和结尾部分。'
+      },
       deleteTitle: '删除会话？',
       deleteDesc: title => `这将永久删除“${title}”，且无法撤销。`,
       deleting: '正在删除…',
