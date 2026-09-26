@@ -3909,6 +3909,7 @@ export const esOverrides = {
     noMatch: query => `Ninguna sesión coincide con “${query}”.`,
     results: 'Resultados',
     pinned: 'Fijadas',
+    needsAttention: 'Necesita atención',
     sessions: 'Sesiones',
     terminal: 'Terminal',
     files: 'Archivos',

@@ -3919,6 +3919,7 @@ export const deOverrides = {
     noMatch: query => `Keine Sessions passen zu “${query}”.`,
     results: 'Ergebnisse',
     pinned: 'Angepinnt',
+    needsAttention: 'Handlungsbedarf',
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Dateien',

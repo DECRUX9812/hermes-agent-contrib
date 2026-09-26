@@ -225,6 +225,18 @@ export const $dismissedWorktreeIds = persistentAtom(
 export const $removedWorktreeIds = persistentAtom('hermes.desktop.removedWorktrees', [] as string[], Codecs.stringArray)
 export const $sidebarPinsOpen = atom(true)
 export const $sidebarRecentsOpen = atom(true)
+
+// The rail's live search text. Kept in a store (not component state) so a
+// searchable `sidebar.listTop` contribution — the Agents fold — filters its
+// own rows against the same query the sessions list is searching with.
+export const $sidebarSearchQuery = atom('')
+export const setSidebarSearchQuery = (query: string) => $sidebarSearchQuery.set(query)
+
+// "Needs attention" fold — sessions a surface already flags (needs-input /
+// stalled / unread) gathered at the top of the list. Persisted like the other
+// disclosure prefs; defaults open — it exists to surface, not to be found.
+export const $sidebarAttentionOpen = persistentAtom('hermes.desktop.sidebarAttentionOpen', true, Codecs.bool)
+export const setSidebarAttentionOpen = (open: boolean) => $sidebarAttentionOpen.set(open)
 // The "Browse" fold holding every secondary nav row below New session. Kept
 // per interface mode through modeLayout, so Simple opens collapsed (the rail
 // is its leanest) while Advanced defaults to the full row set.

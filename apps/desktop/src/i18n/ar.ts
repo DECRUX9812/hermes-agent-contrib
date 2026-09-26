@@ -2110,6 +2110,7 @@ export const ar = defineLocale({
     noMatch: query => `لا توجد جلسات تطابق "${query}"`,
     results: 'النتائج',
     pinned: 'المثبتة',
+    needsAttention: 'تحتاج إلى انتباه',
     sessions: 'الجلسات',
     terminal: 'الطرفية',
     files: 'الملفات',

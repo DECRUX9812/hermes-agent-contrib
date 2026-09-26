@@ -160,7 +160,9 @@ export interface ProfileGroupHeaderContribution {
 // ── Contributed list-top section — the `sidebar.listTop` registry area ───────
 // A RENDER contribution mounted at the top of the Sessions sidebar's scroll
 // column, above Pinned, while the flat list is on screen. It unmounts while a
-// search query runs — the results column owns the space then. The contribution
+// search query runs — the results column owns the space then — unless it
+// declares `searchable`, in which case it stays mounted and filters its own
+// rows by the live query (`host.state.sidebarSearchQuery`). The contribution
 // renders its own section chrome (label, collapse, actions) so it composes
 // with the lists it sits above without core knowing what it contains.
 // First consumer: the Bots plugin's compact agent section, which folds the
@@ -171,6 +173,8 @@ export const SIDEBAR_LIST_TOP_AREA = 'sidebar.listTop'
 /** Payload of a `sidebar.listTop` data contribution. */
 export interface SidebarListTopContribution {
   render: () => ReactNode
+  /** Stay mounted during a search and filter own rows by the query. */
+  searchable?: boolean
 }
 
 // Views that render as a full-screen modal card (OverlayView) over the shell.

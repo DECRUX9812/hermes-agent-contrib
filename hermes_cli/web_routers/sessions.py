@@ -357,6 +357,15 @@ async def search_sessions(
                     row = db.get_session_rich_row(sid)
                 except Exception:
                     row = None
+                # Hidden rows (Bot Chats, swept side-chats) must not answer a
+                # sessions search: every list path filters `s.hidden = 0`, and
+                # the FTS path below walks message text with no session filter,
+                # so a bot's forever-chat could out-rank a real session. The
+                # row carries `s.*`, so the flag rides the same lookup. This
+                # narrows only the desktop-facing search route — the agent's
+                # own search_messages tool keeps full-text reach.
+                if row and row.get("hidden"):
+                    return
                 if row:
                     last_active = row.get("last_active") or row.get("started_at")
                     payload.update({
