@@ -5891,6 +5891,15 @@ class TelegramAdapter(BasePlatformAdapter):
             return
         self._bot_username_observed = handle
         self._bot_identity_checked_at = time.monotonic()
+        # The t.me handle IS the phone-parity deep link; surfaces (desktop Messaging,
+        # "continue on your phone") read it off the runtime status record.
+        self._write_runtime_status_safe(
+            "bot identity",
+            platform_identity={
+                "username": handle,
+                "label": f"@{handle}",
+                "deep_link": f"https://t.me/{handle}",
+            })
         if previous:
             logger.info(
                 "[%s] Telegram bot username changed: @%s -> @%s (mention routing now follows the new handle)", self.name, previous, handle)

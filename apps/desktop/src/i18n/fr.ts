@@ -3395,6 +3395,15 @@ export const frOverrides = {
       savedRestarting: 'Telegram enregistré ; redémarrage du gateway…',
       savedRestartFailed: detail => `Telegram enregistré ; le redémarrage du gateway a échoué${detail}`
     },
+    phoneParity: {
+      title: 'Continuer sur votre téléphone',
+      presence: 'Présence de la passerelle',
+      scanHint: 'Scannez avec votre téléphone ou ouvrez le lien sur cet appareil.',
+      linkPending: "Le lien direct apparaîtra ici une fois l'adaptateur connecté.",
+      openLink: 'Ouvrir le lien',
+      copyLink: 'Copier le lien',
+      copyFailed: 'Impossible de copier le lien'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Jeton du bot',
@@ -4183,6 +4192,8 @@ export const frOverrides = {
       finishedUnread: 'Terminée — non lue',
       backgroundRunning: 'Tâche en arrière-plan en cours',
       draftSession: 'Brouillon — aucun message envoyé',
+      continueOnPhone: 'Continuer sur le téléphone',
+      handoffNone: "Aucune plateforme de messagerie n'est prête pour le transfert",
       handoffOrigin: platform => `Transférée depuis ${platform}`,
       continuationOrigin: "Continuation automatique — cette conversation a été compressée puis poursuivie",
       ownedByProfile: profile => `Profil : ${profile}`,
@@ -6272,6 +6283,8 @@ deliverableArtifacts: 'Artefacts',
     dropFiles: 'Déposer des fichiers',
     handoff: {
       pickPlatform: 'Choisissez une destination',
+      queued: (platform, home) => `Transfert vers ${platform} (${home})…`,
+      sessionUnavailable: "Cette conversation n'est pas active sur la passerelle pour le moment.",
       success: platform => `Transféré vers ${platform}. Reprenez ici à tout moment.`,
       systemNote: platform => `↻ Transféré vers ${platform} — reprenez ici à tout moment.`,
       failed: error => `Échec du transfert : ${error}`,

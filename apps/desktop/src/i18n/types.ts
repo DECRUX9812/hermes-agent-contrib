@@ -2631,6 +2631,17 @@ export interface Translations {
       savedRestarting: string
       savedRestartFailed: (detail: string) => string
     }
+    /** "Continue on your phone" card on a platform detail — QR + deep link +
+     *  gateway presence, fed by the adapter-published `identity` field (#40). */
+    phoneParity: {
+      title: string
+      presence: string
+      scanHint: string
+      linkPending: string
+      openLink: string
+      copyLink: string
+      copyFailed: string
+    }
     fieldCopy: Record<string, { label?: string; help?: string; placeholder?: string }>
     platformIntro: Record<string, string>
   }
@@ -3236,6 +3247,12 @@ export interface Translations {
       finishedUnread: string
       backgroundRunning: string
       draftSession: string
+      /** "Continue on phone" submenu — hand this session off to a messaging
+       *  platform (Telegram/Slack) via handoff.request; the phone-parity card
+       *  in Messaging carries the link/QR. */
+      continueOnPhone: string
+      /** Empty state inside the submenu when no platform can take a handoff. */
+      handoffNone: string
       handoffOrigin: (platform: string) => string
       continuationOrigin: string
       ownedByProfile: (profile: string) => string
@@ -4882,6 +4899,11 @@ export interface Translations {
     dropFiles: string
     handoff: {
       pickPlatform: string
+      /** Immediate feedback when the session menu queues a handoff — the
+       *  composer flow stays silent until completion. */
+      queued: (platform: string, home: string) => string
+      /** The active session has no live runtime the gateway can move. */
+      sessionUnavailable: string
       success: (platform: string) => string
       systemNote: (platform: string) => string
       failed: (error: string) => string

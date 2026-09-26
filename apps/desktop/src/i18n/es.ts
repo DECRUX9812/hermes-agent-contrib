@@ -3378,6 +3378,15 @@ export const esOverrides = {
       savedRestarting: 'Telegram guardado; reiniciando el gateway…',
       savedRestartFailed: (detail: string) => `Telegram guardado; falló el reinicio del gateway${detail}`
     },
+    phoneParity: {
+      title: 'Continuar en tu teléfono',
+      presence: 'Presencia de la puerta de enlace',
+      scanHint: 'Escanea con tu teléfono o abre el enlace en este dispositivo.',
+      linkPending: 'El enlace directo aparecerá aquí cuando el adaptador esté conectado.',
+      openLink: 'Abrir enlace',
+      copyLink: 'Copiar enlace',
+      copyFailed: 'No se pudo copiar el enlace'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Token del bot',
@@ -4165,6 +4174,8 @@ export const esOverrides = {
       finishedUnread: 'Finalizada — sin leer',
       backgroundRunning: 'Tarea en segundo plano en ejecución',
       draftSession: 'Borrador — aún no se ha enviado nada',
+      continueOnPhone: 'Continuar en el teléfono',
+      handoffNone: 'Ninguna plataforma de mensajería está lista para el traspaso',
       handoffOrigin: platform => `Transferido desde ${platform}`,
       continuationOrigin: 'Continuación automática: esta conversación fue comprimida y continuada',
       ownedByProfile: profile => `Perfil: ${profile}`,
@@ -6250,6 +6261,8 @@ deliverableArtifacts: 'Artefactos',
     dropFiles: 'Soltar archivos',
     handoff: {
       pickPlatform: 'Elige un destino',
+      queued: (platform, home) => `Traspasando a ${platform} (${home})…`,
+      sessionUnavailable: 'Este chat no está activo en la puerta de enlace ahora mismo.',
       success: platform => `Transferido a ${platform}. Puedes reanudar aquí cuando quieras.`,
       systemNote: platform => `↻ Transferido a ${platform}; puedes reanudar aquí cuando quieras.`,
       failed: error => `La transferencia falló: ${error}`,
