@@ -2993,6 +2993,14 @@ export interface Translations {
     results: string
     pinned: string
     needsAttention: string
+    delegationReports: {
+      done: string
+      needsDecision: string
+      failed: string
+      openSubagent: string
+      dismiss: string
+      tasks: (count: number, completed: number) => string
+    }
     sessions: string
     terminal: string
     files: string

@@ -3930,6 +3930,14 @@ export const deOverrides = {
     results: 'Ergebnisse',
     pinned: 'Angepinnt',
     needsAttention: 'Handlungsbedarf',
+    delegationReports: {
+      done: 'Fertig',
+      needsDecision: 'Entscheidung nötig',
+      failed: 'Fehlgeschlagen',
+      openSubagent: 'Subagent öffnen',
+      dismiss: 'Meldung verwerfen',
+      tasks: (count, completed) => `${completed} von ${count} Aufgaben abgeschlossen`
+    },
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Dateien',

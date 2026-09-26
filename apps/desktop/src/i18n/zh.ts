@@ -3353,6 +3353,14 @@ export const zh = defineLocale({
     results: '结果',
     pinned: '已置顶',
     needsAttention: '需要注意',
+    delegationReports: {
+      done: '已完成',
+      needsDecision: '需要决定',
+      failed: '失败',
+      openSubagent: '打开子代理',
+      dismiss: '关闭报告',
+      tasks: (count, completed) => `${count} 个任务中已完成 ${completed} 个`
+    },
     sessions: '会话',
     terminal: '终端',
     files: '文件',

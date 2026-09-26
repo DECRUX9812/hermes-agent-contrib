@@ -3940,6 +3940,14 @@ export const frOverrides = {
     results: 'Résultats',
     pinned: 'Épinglées',
     needsAttention: 'Attention requise',
+    delegationReports: {
+      done: 'Terminé',
+      needsDecision: 'Décision requise',
+      failed: 'Échec',
+      openSubagent: 'Ouvrir le sous-agent',
+      dismiss: 'Ignorer le rapport',
+      tasks: (count, completed) => `${completed} sur ${count} tâches terminées`
+    },
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Fichiers',

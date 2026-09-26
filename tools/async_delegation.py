@@ -559,6 +559,74 @@ def get_durable_delegation(delegation_id: str) -> Optional[Dict[str, Any]]:
         "delivery_attempts": row[6], "origin_session_id": row[7] or ""}
 
 
+# Routing columns a report-back query OR-matches against the one session id the client holds:
+# the dispatch-time routing key (``origin_session``), the UI tab id, the spawner's durable id,
+# and the raw request session id. Any one claiming the row makes it this session's report.
+_SESSION_ROUTING_COLUMNS = ("origin_session", "origin_ui_session_id", "parent_session_id", "origin_session_id")
+
+
+def settled_delegations_for_session(session_id: str, *, limit: int = 25) -> List[Dict[str, Any]]:
+    """Terminal durable delegations routed to ``session_id`` — the report-card feed.
+
+    'dropped' rows are permanently undeliverable (nothing left to report), live states are not
+    settled yet; everything else is a candidate card. Newest first, bounded by ``limit``.
+    """
+    sid = (session_id or "").strip()
+    if not sid:
+        return []
+    where = " OR ".join(f"{col}=?" for col in _SESSION_ROUTING_COLUMNS)
+    with _DB_LOCK, _transaction() as conn:
+        rows = conn.execute(
+            f"""SELECT delegation_id, state, dispatched_at, completed_at, event_json, result_json,
+                       delivery_state, origin_session, origin_ui_session_id, parent_session_id,
+                       origin_session_id
+                FROM async_delegations
+                WHERE ({where}) AND delivery_state != 'dropped'
+                  AND state NOT IN ('running', 'stalling', 'finalizing')
+                ORDER BY completed_at DESC LIMIT ?""",
+            (sid, sid, sid, sid, limit)).fetchall()
+    reports = []
+    for row in rows:
+        try:
+            event = json.loads(row[4]) if row[4] else {}
+            result = json.loads(row[5]) if row[5] else {}
+        except (TypeError, ValueError):
+            event, result = {}, {}
+        reports.append({
+            "delegation_id": row[0], "state": row[1], "dispatched_at": row[2], "completed_at": row[3],
+            "event": event if isinstance(event, dict) else {},
+            "result": result if isinstance(result, dict) else {},
+            "delivery_state": row[6], "origin_session": row[7] or "",
+            "origin_ui_session_id": row[8] or "", "parent_session_id": row[9] or "",
+            "origin_session_id": row[10] or ""})
+    return reports
+
+
+def record_delegation_report_summary(delegation_id: str, summary: str) -> None:
+    """Cache a generated report-card one-liner on the durable row (``result_json.report_summary``)
+    so repeat ``delegation.reports`` reads skip the auxiliary model call. Best-effort: a failed
+    write only means the next read regenerates or falls back to the heuristic snippet."""
+    if not delegation_id or not summary:
+        return
+    try:
+        with _DB_LOCK, _transaction() as conn:
+            row = conn.execute("SELECT result_json FROM async_delegations WHERE delegation_id=?",
+                               (delegation_id,)).fetchone()
+            if row is None:
+                return
+            try:
+                result = json.loads(row[0] or "{}") or {}
+            except (TypeError, ValueError):
+                return
+            if not isinstance(result, dict) or result.get("report_summary") == summary:
+                return
+            result["report_summary"] = summary
+            conn.execute("UPDATE async_delegations SET result_json=? WHERE delegation_id=?",
+                         (json.dumps(result, ensure_ascii=False), delegation_id))
+    except Exception:  # noqa: BLE001 — a cache write must never break the read path
+        logger.debug("report summary cache write failed for %s", delegation_id, exc_info=True)
+
+
 # ── In-memory registry queries ──────────────────────────────────────────────
 def _get_executor(max_workers: int) -> ThreadPoolExecutor:
     """Lazily create (or grow in place, never shrink) the shared daemon executor. Raising

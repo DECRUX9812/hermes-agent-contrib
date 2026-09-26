@@ -1130,6 +1130,30 @@ export interface ConnectorPolicySetResult {
   revision: string
   effective: ConnectorPolicyEffectiveUnrestricted | ConnectorPolicyEffectiveDenyAll | ConnectorPolicyEffectiveAllow | ConnectorPolicyEffectiveDeny
 }
+export interface DelegationReportsResult {
+  reports: DelegationReport[]
+}
+/** One settled background delegation awaiting report-back to its origin session. */
+export interface DelegationReport {
+  delegation_id: string
+  state: string
+  outcome: DelegationReportOutcome
+  title: string
+  summary: string
+  summary_source: DelegationReportSummarySource
+  task_count: number
+  completed_count: number
+  failed_count: number
+  duration_seconds?: number | null
+  completed_at?: number | null
+  delivery_state?: string
+  child_session_ids?: Record<string, string>
+  group?: string | null
+}
+/** done = every task finished cleanly; failed = nothing completed; needs_decision = the mixed middle (interrupted, truncated, partly failed, stalled) — a human should look. */
+export type DelegationReportOutcome = 'done' | 'needs_decision' | 'failed'
+/** ``model`` = the cached utility-model one-liner; ``heuristic`` = first substantive line of the result, always available when no auxiliary model is configured. */
+export type DelegationReportSummarySource = 'model' | 'heuristic'
 /** ``tools/bot_desktop/runtime.py::DesktopStatus`` plus the lease and the profile it speaks for. */
 export interface DisplayStatus {
   profile: string
@@ -4759,6 +4783,8 @@ export interface RpcMethods {
   'cron.manage': { params: CronManageParams; result: CronManageResult }
   /** Block/unblock NEW spawns globally (active children keep running); returns the new state. */
   'delegation.pause': { params: DelegationPauseParams; result: DelegationPauseResult }
+  /** Terminal delegations routed to this session, newest first — the sidebar report cards. */
+  'delegation.reports': { params: SessionParams; result: DelegationReportsResult }
   /** Running subagent tree plus the spawn pause flag and limits. */
   'delegation.status': { params: ProfileParams; result: DelegationStatusResult }
   /** Upload a force-redacted debug bundle to Nous-internal diagnostics storage. */
@@ -5193,6 +5219,7 @@ export const RPC_METHODS = [
   'connectors.tools',
   'cron.manage',
   'delegation.pause',
+  'delegation.reports',
   'delegation.status',
   'diagnostics.share_nous',
   'display.install',

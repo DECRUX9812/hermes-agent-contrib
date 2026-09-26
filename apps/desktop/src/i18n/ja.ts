@@ -2497,6 +2497,14 @@ export const ja = defineLocale({
     results: '結果',
     pinned: 'ピン留め',
     needsAttention: '要対応',
+    delegationReports: {
+      done: '完了',
+      needsDecision: '要判断',
+      failed: '失敗',
+      openSubagent: 'サブエージェントを開く',
+      dismiss: 'レポートを閉じる',
+      tasks: (count, completed) => `${count} 件中 ${completed} 件が完了`
+    },
     sessions: 'セッション',
     terminal: 'ターミナル',
     files: 'ファイル',

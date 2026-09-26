@@ -2714,6 +2714,14 @@ export const zhHant = defineLocale({
     results: '結果',
     pinned: '已釘選',
     needsAttention: '需要注意',
+    delegationReports: {
+      done: '已完成',
+      needsDecision: '需要決定',
+      failed: '失敗',
+      openSubagent: '開啟子代理',
+      dismiss: '關閉報告',
+      tasks: (count, completed) => `${count} 個任務中已完成 ${completed} 個`
+    },
     sessions: '工作階段',
     terminal: '終端機',
     files: '檔案',
