@@ -4091,6 +4091,8 @@ export const frOverrides = {
       muteNotifications: 'Couper les notifications',
       unmuteNotifications: 'Réactiver les notifications',
       mutedTooltip: 'Notifications en sourdine pour cette session',
+      watch: 'Suivre',
+      stopWatching: 'Ne plus suivre',
       unreadFailed: "Impossible de mettre à jour l'état de lecture",
       copyId: "Copier l'ID",
       export: 'Exporter',
@@ -4149,6 +4151,10 @@ export const frOverrides = {
       ageDay: 'j',
       ageHour: 'h',
       ageMin: 'm'
+    },
+    watch: {
+      strip: 'Sessions suivies',
+      stop: 'Ne plus suivre'
     },
     dateDivider: {
       today: "Aujourd'hui",

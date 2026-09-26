@@ -3492,6 +3492,8 @@ export const zh = defineLocale({
       muteNotifications: '静音通知',
       unmuteNotifications: '取消静音',
       mutedTooltip: '该会话的通知已静音',
+      watch: '关注',
+      stopWatching: '取消关注',
       unreadFailed: '无法更新未读状态',
       copyId: '复制 ID',
       export: '导出',
@@ -3551,6 +3553,10 @@ export const zh = defineLocale({
       ageDay: '天',
       ageHour: '时',
       ageMin: '分'
+    },
+    watch: {
+      strip: '已关注的会话',
+      stop: '取消关注'
     },
     dateDivider: {
       today: '今天早些时候',

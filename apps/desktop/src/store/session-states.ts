@@ -80,6 +80,7 @@ import {
 } from './session-request-router'
 import { dropSessionTagsForProfile, migrateSessionTagsForProfile } from './session-tags'
 import { ackStoredSessionId, markSessionUnreadFinished } from './session-unread'
+import { dropWatchedSessionsForProfile, migrateWatchedSessionsForProfile } from './session-watch'
 import { migrateTranscriptTailsForProfile } from './transcript-tail-cache'
 import { isBrowserWindow, isSecondaryWindow } from './windows'
 
@@ -2553,6 +2554,7 @@ export function dropTilesForProfile(
   // later same-name profile must not inherit its unsent text.
   dropComposerDraftsForProfile(name, route)
   dropSessionTagsForProfile(name, route)
+  dropWatchedSessionsForProfile(name, route)
   // Route fields go through the SAME canonicalization as `name` below — a
   // source-scoped delete must not be defeated by stray whitespace around a
   // profile name that a non-route delete trims away.
@@ -2698,6 +2700,7 @@ export function migrateTilesForProfile(oldProfile: string, newProfile: string): 
   migrateStatusDrawersForProfile(from, to)
   migrateComposerDraftsForProfile(from, to)
   migrateSessionTagsForProfile(from, to)
+  migrateWatchedSessionsForProfile(from, to)
   // Sibling family: the rail's profile-keyed buckets move with the rename, or
   // the renamed profile opens with an empty rail and the old name keeps them.
   migratePreviewTabsForProfile(from, to)

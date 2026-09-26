@@ -60,6 +60,7 @@ import { $mutedSessionIds, isSessionMuted, toggleSessionMuted } from '@/store/se
 import { $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
 import { $sessionTags, addSessionTag, removeSessionTag, sessionTagKey } from '@/store/session-tags'
 import { ackStoredSessionId } from '@/store/session-unread'
+import { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } from '@/store/session-watch'
 import { canOpenSessionInTerminal, canOpenSessionWindow, openSessionInTerminal } from '@/store/windows'
 
 import type { SessionTitleResponse } from '../../types'
@@ -238,6 +239,10 @@ function useSessionActions({
   // aliases (the row passes session.id, the store keys on the durable pin id).
   const mutedSessionIds = useStore($mutedSessionIds)
   const isMuted = mutedSessionIds.length > 0 && isSessionMuted(sessionId)
+  // Watched sessions render as live chips at the top of the rail — same
+  // lineage-safe lookup as mute (the row id resolves to the durable pin id).
+  const watchedSessionKeys = useStore($watchedSessionKeys)
+  const isWatched = Object.keys(watchedSessionKeys).length > 0 && isWatchedSessionId(sessionId)
 
   // Already showing as a tab somewhere (a tile, or loaded in main — main IS
   // a tab): offering "Open in new tab" again is noise.
@@ -373,6 +378,17 @@ function useSessionActions({
       onSelect: () => {
         triggerHaptic('selection')
         toggleSessionMuted(sessionId)
+      }
+    }),
+    // Watch pins a live status chip to the top of the Sessions rail — the
+    // quiet "keep an eye on it" counterpart to mute's "leave me alone".
+    spec({
+      disabled: !sessionId,
+      icon: isWatched ? 'eye-closed' : 'eye',
+      label: isWatched ? r.stopWatching : r.watch,
+      onSelect: () => {
+        triggerHaptic('selection')
+        toggleSessionWatched(sessionId)
       }
     })
   ]
