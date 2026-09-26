@@ -2997,6 +2997,23 @@ export const deOverrides = {
     railPill: count => (count === 1 ? '1 Lauf' : `${count} Läufe`),
     close: 'Schließen'
   },
+  attentionInbox: {
+    title: 'Benötigt Aufmerksamkeit',
+    empty: 'Nichts wartet auf dich.',
+    count: count => `${count} ausstehend`,
+    appScope: 'Anwendung',
+    unknownSession: 'Sitzung',
+    kinds: {
+      approval: 'Tool-Freigabe',
+      clarify: 'Rückfrage',
+      error: 'Fehler',
+      secret: 'Secret-Anfrage',
+      sudo: 'Sudo-Anfrage',
+      vaultCode: 'Tresor-Code',
+      vaultSave: 'Tresor-Login',
+      vaultUnlock: 'Tresor entsperren'
+    }
+  },
   commandCenter: {
     close: 'Command Center schließen',
     paletteTitle: 'Befehlspalette',
@@ -5135,6 +5152,8 @@ export const deOverrides = {
       openCommandCenter: 'Command Center öffnen',
       toggleNotices: 'Benachrichtigungen',
       noticesTitle: 'Letzte Benachrichtigungen',
+      toggleAttentionInbox: 'Eingang',
+      attentionInboxTitle: 'Ausstehende Freigaben und Fragen',
       showTerminal: 'Terminal anzeigen',
       hideTerminal: 'Terminal ausblenden',
       gateway: 'Gateway',

@@ -1880,6 +1880,23 @@ export const ru = defineLocale({
     railPill: count => `${count} ${RU_PLURAL(count, 'запуск', 'запуска', 'запусков')}`,
     close: 'Закрыть'
   },
+  attentionInbox: {
+    title: 'Требует внимания',
+    empty: 'Ничего не ждёт вашего ответа.',
+    count: count => `Ожидает: ${count}`,
+    appScope: 'Приложение',
+    unknownSession: 'Сессия',
+    kinds: {
+      approval: 'Одобрение инструмента',
+      clarify: 'Уточняющий вопрос',
+      error: 'Ошибка',
+      secret: 'Запрос секрета',
+      sudo: 'Запрос sudo',
+      vaultCode: 'Код хранилища',
+      vaultSave: 'Вход в хранилище',
+      vaultUnlock: 'Разблокировка хранилища'
+    }
+  },
   commandCenter: {
     close: 'Закрыть командный центр',
     paletteTitle: 'Палитра команд',
@@ -3731,6 +3748,8 @@ export const ru = defineLocale({
       openCommandCenter: 'Открыть командный центр',
       toggleNotices: 'Уведомления',
       noticesTitle: 'Последние уведомления',
+      toggleAttentionInbox: 'Очередь внимания',
+      attentionInboxTitle: 'Ожидающие одобрения и вопросы',
       showTerminal: 'Показать терминал',
       hideTerminal: 'Скрыть терминал',
       gateway: 'Шлюз',

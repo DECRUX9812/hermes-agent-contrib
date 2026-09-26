@@ -3007,6 +3007,23 @@ export const frOverrides = {
     railPill: count => (count === 1 ? '1 exécution' : `${count} exécutions`),
     close: 'Fermer'
   },
+  attentionInbox: {
+    title: 'Nécessite une action',
+    empty: 'Rien n’attend votre réponse.',
+    count: count => `${count} en attente`,
+    appScope: 'Application',
+    unknownSession: 'Session',
+    kinds: {
+      approval: 'Approbation d’outil',
+      clarify: 'Question de clarification',
+      error: 'Erreur',
+      secret: 'Demande de secret',
+      sudo: 'Demande sudo',
+      vaultCode: 'Code du coffre',
+      vaultSave: 'Identifiants du coffre',
+      vaultUnlock: 'Déverrouillage du coffre'
+    }
+  },
   commandCenter: {
     close: 'Fermer le centre de commandes',
     paletteTitle: 'Palette de commandes',
@@ -5146,6 +5163,8 @@ export const frOverrides = {
       openCommandCenter: 'Ouvrir le centre de commandes',
       toggleNotices: 'Notifications',
       noticesTitle: 'Notifications récentes',
+      toggleAttentionInbox: 'Boîte d’attention',
+      attentionInboxTitle: 'Approbations et questions en attente',
       showTerminal: 'Afficher le terminal',
       hideTerminal: 'Masquer le terminal',
       gateway: 'Gateway',
