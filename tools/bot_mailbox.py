@@ -19,6 +19,7 @@ from __future__ import annotations
 import contextlib
 import json
 import logging
+import re
 import time
 import uuid
 from pathlib import Path
@@ -32,6 +33,9 @@ MAILBOX_DIR_NAME = "bot-mailbox"
 NOTES_DIR = "notes"
 
 NOTE_ID_PREFIX = "mbx_"
+# Ids arrive from other installs (relay envelopes) and from the model (update_task), and
+# name a file under notes/ — anything but the minted shape could path-traverse out of it.
+_NOTE_ID_RE = re.compile(r"^mbx_[A-Za-z0-9_-]{1,64}$")
 
 # Payload bounds — a note is a pointer to work, not the work itself. The body cap matches
 # the DM cap (the DM text doubles as the note body); the payload dict stays small so a
@@ -73,6 +77,8 @@ def _notes_dir(root: Path | str) -> Path:
 
 
 def _note_path(root: Path | str, note_id: str) -> Path:
+    if not _NOTE_ID_RE.fullmatch(str(note_id)):
+        raise ValueError(f"invalid mailbox note id {note_id!r}")
     return _notes_dir(root) / f"{note_id}.json"
 
 

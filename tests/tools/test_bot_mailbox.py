@@ -118,3 +118,16 @@ def test_update_task_tool_roundtrip(monkeypatch, root):
     missing = json.loads(update_task_tool("mbx_nope", "done", agent=object()))
     assert "error" in missing
     assert "known_notes" in missing
+
+
+@pytest.mark.parametrize("bad_id", ["../../escaped", "mbx_../../escaped", "mbx_a/b", "/abs/path"])
+def test_foreign_note_id_never_leaves_the_notes_dir(tmp_path, bad_id):
+    """Relay envelopes and the model's update_task carry the id from outside; it names a
+    file, so a traversal-shaped id must be refused rather than written or read anywhere."""
+    root = tmp_path / "install" / "root"
+    root.mkdir(parents=True)
+    with pytest.raises(ValueError):
+        append_note(root, note_id=bad_id, to=_party(), sender=_party("bot", "bob", "bob"), title="t")
+    with pytest.raises(KeyError):
+        update_note(root, bad_id, status="done")
+    assert list(tmp_path.rglob("*.json")) == []
