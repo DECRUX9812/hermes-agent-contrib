@@ -63,9 +63,9 @@ describe('collectAttentionItems', () => {
       'clarify',
       'sudo',
       'secret',
-      'vault-unlock',
-      'vault-save',
-      'vault-code'
+      'vaultUnlock',
+      'vaultSave',
+      'vaultCode'
     ])
     expect(items.map(item => item.id)).toEqual([
       'clarify:sess-2:c1',

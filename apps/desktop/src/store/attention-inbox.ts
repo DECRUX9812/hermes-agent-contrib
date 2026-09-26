@@ -21,6 +21,7 @@ import type { NotificationHistoryEntry } from '@/store/notifications'
 
 import type { ClarifyRequest } from './clarify'
 import { $clarifyRequests } from './clarify'
+import { $notificationHistory } from './notifications'
 import {
   $approvalQueues,
   $secretRequests,
@@ -35,7 +36,6 @@ import {
   type VaultSaveLoginRequest,
   type VaultUnlockRequest
 } from './prompts'
-import { $notificationHistory } from './notifications'
 
 export type AttentionItemKind =
   | 'approval'
@@ -43,9 +43,9 @@ export type AttentionItemKind =
   | 'error'
   | 'secret'
   | 'sudo'
-  | 'vault-code'
-  | 'vault-save'
-  | 'vault-unlock'
+  | 'vaultCode'
+  | 'vaultSave'
+  | 'vaultUnlock'
 
 export interface AttentionItem {
   /** Stable row id: `${kind}:${sessionKey}:${requestId-or-index}`. */
@@ -86,9 +86,11 @@ function errorItems(errors: readonly NotificationHistoryEntry[]): AttentionItem[
     }
 
     const dedupe = `${entry.sessionId}${entry.title ?? ''}${entry.message}`
+
     if (seen.has(dedupe)) {
       continue
     }
+
     seen.add(dedupe)
 
     items.push({
@@ -153,7 +155,7 @@ export function collectAttentionItems(src: AttentionSources): AttentionItem[] {
   for (const [key, request] of Object.entries(src.vaultUnlock)) {
     items.push({
       id: `vault-unlock:${key}:${request.requestId}`,
-      kind: 'vault-unlock',
+      kind: 'vaultUnlock',
       sessionId: request.sessionId,
       title: request.displayName || request.backend
     })
@@ -162,7 +164,7 @@ export function collectAttentionItems(src: AttentionSources): AttentionItem[] {
   for (const [key, request] of Object.entries(src.vaultSave)) {
     items.push({
       id: `vault-save:${key}:${request.requestId}`,
-      kind: 'vault-save',
+      kind: 'vaultSave',
       sessionId: request.sessionId,
       title: request.site || request.origin
     })
@@ -171,7 +173,7 @@ export function collectAttentionItems(src: AttentionSources): AttentionItem[] {
   for (const [key, request] of Object.entries(src.vaultCode)) {
     items.push({
       id: `vault-code:${key}:${request.requestId}`,
-      kind: 'vault-code',
+      kind: 'vaultCode',
       sessionId: request.sessionId,
       title: request.site,
       ...(request.hint ? { detail: request.hint } : {})

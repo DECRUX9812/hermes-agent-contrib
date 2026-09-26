@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { $attentionItems, type AttentionItem, type AttentionItemKind, requestAttentionReveal } from '@/store/attention-inbox'
 import { $cronSessions, $messagingSessions, $sessions } from '@/store/session'
 import { storedSessionIdForRuntimeId } from '@/store/session-states'
+
 import { buildSessionByAnyId } from '../chat/sidebar/session-index'
 import { OverlayView } from '../overlays/overlay-view'
 
@@ -25,9 +26,9 @@ const KIND_ICONS: Record<AttentionItemKind, { className: string; icon: typeof Al
   error: { className: 'text-destructive', icon: AlertCircle },
   secret: { className: 'text-(--ui-text-secondary)', icon: KeyRound },
   sudo: { className: 'text-(--ui-text-secondary)', icon: Terminal },
-  'vault-code': { className: 'text-(--ui-text-secondary)', icon: HelpCircle },
-  'vault-save': { className: 'text-(--ui-text-secondary)', icon: Lock },
-  'vault-unlock': { className: 'text-(--ui-text-secondary)', icon: Lock }
+  vaultCode: { className: 'text-(--ui-text-secondary)', icon: HelpCircle },
+  vaultSave: { className: 'text-(--ui-text-secondary)', icon: Lock },
+  vaultUnlock: { className: 'text-(--ui-text-secondary)', icon: Lock }
 }
 
 interface AttentionInboxViewProps {
