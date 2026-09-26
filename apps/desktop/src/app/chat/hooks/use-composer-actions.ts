@@ -36,7 +36,7 @@ const BLOB_MIME_EXTENSION: Record<string, string> = {
   'image/x-icon': '.ico'
 }
 
-function blobExtension(blob: Blob): string {
+export function blobExtension(blob: Blob): string {
   const mime = normalize(blob.type.split(';')[0])
 
   return BLOB_MIME_EXTENSION[mime] || '.png'

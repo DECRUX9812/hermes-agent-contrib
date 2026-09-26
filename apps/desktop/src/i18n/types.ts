@@ -3181,6 +3181,7 @@ export interface Translations {
       untitledChat: (id: string) => string
       messageCount: (count: number) => string
       todoProgress: string
+      attachmentCount: (count: number) => string
       digest: {
         agents: (count: number) => string
         approve: (command: string) => string

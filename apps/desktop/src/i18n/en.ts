@@ -3757,6 +3757,7 @@ export const en: Translations = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'message' : 'messages'}`,
       todoProgress: 'Tasks completed',
+      attachmentCount: count => `${count} attached`,
       digest: {
         agents: count => (count === 1 ? 'An agent is running' : `${count} agents running`),
         approve: command => `Approve: ${command}`,

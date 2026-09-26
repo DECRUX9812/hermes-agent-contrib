@@ -4116,6 +4116,7 @@ export const esOverrides = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'mensaje' : 'mensajes'}`,
       todoProgress: 'Tareas completadas',
+      attachmentCount: count => `${count} adjunto${count === 1 ? '' : 's'}`,
       digest: {
         agents: count => (count === 1 ? 'Un agente en ejecución' : `${count} agentes en ejecución`),
         approve: command => `Aprobar: ${command}`,
