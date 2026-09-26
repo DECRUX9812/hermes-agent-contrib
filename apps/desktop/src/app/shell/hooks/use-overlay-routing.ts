@@ -21,6 +21,7 @@ export function useOverlayRouting() {
   const currentView = appViewForPath(location.pathname)
   const settingsOpen = currentView === 'settings'
   const commandCenterOpen = currentView === 'command-center'
+  const inboxOpen = currentView === 'inbox'
   const agentsOpen = currentView === 'agents'
   const starmapOpen = currentView === 'starmap'
   const cronOpen = currentView === 'cron'
@@ -80,6 +81,7 @@ export function useOverlayRouting() {
     commandCenterOpen,
     cronOpen,
     currentView,
+    inboxOpen,
     openAgents,
     openCommandCenterSection,
     openRoster,

@@ -26,6 +26,7 @@ import {
   FolderOpen,
   Globe,
   Hash,
+  Inbox,
   Layers3,
   Loader2,
   Package,
@@ -39,6 +40,7 @@ import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
 import { $artifactRegistry, type ArtifactRecord, openArtifact } from '@/store/artifacts'
+import { $attentionItemCount } from '@/store/attention-inbox'
 import { copyFilePath, revealFile, shouldOfferLocalReveal } from '@/store/file-actions'
 import { $freeTierStatus, FREE_TIER_MODEL } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
@@ -82,7 +84,7 @@ import {
 } from '@/store/updates'
 import type { StatusResponse, UsageStats } from '@/types/hermes'
 
-import { ARTIFACTS_ROUTE, CRON_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
+import { ARTIFACTS_ROUTE, CRON_ROUTE, INBOX_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
 import type { StatusbarItem } from '../statusbar-controls'
 
 const EMPTY_USAGE: UsageStats = { calls: 0, input: 0, output: 0, total: 0 }
@@ -171,6 +173,7 @@ export function useStatusbarItems({
   const backendUpdateApply = useStore($backendUpdateApply)
   const desktopVersion = useStore($desktopVersion)
   const connection = useStore($connection)
+  const attentionCount = useStore($attentionItemCount)
 
   // The FOCUSED session (interacted tile, else the primary — the same
   // derivation the titlebar title follows): every session-scoped readout
@@ -501,6 +504,21 @@ export function useStatusbarItems({
         variant: 'action'
       },
       {
+        // The attention inbox's door (roadmap #16): every pending approval,
+        // clarify, and error across sessions in one overlay. Surfaces on its
+        // own only while something is actually waiting; the right-click menu
+        // can pin it on permanently.
+        className: 'w-7 justify-center px-0',
+        detail: attentionCount > 0 ? attentionCount : undefined,
+        hidden: attentionCount === 0,
+        icon: <Inbox className="size-3.5" />,
+        id: 'attention-inbox',
+        to: INBOX_ROUTE,
+        title: copy.attentionInboxTitle,
+        toggleLabel: copy.toggleAttentionInbox,
+        variant: 'action'
+      },
+      {
         hidden: !sessionsShowing,
         id: 'gateway-switcher',
         lockedVisible: true,
@@ -681,6 +699,7 @@ export function useStatusbarItems({
     ],
     [
       agentsOpen,
+      attentionCount,
       botsShowing,
       commandCenterOpen,
       copy,

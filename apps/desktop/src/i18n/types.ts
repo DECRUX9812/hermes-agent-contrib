@@ -2305,6 +2305,24 @@ export interface Translations {
     close: string
   }
 
+  attentionInbox: {
+    title: string
+    empty: string
+    count: (count: number) => string
+    appScope: string
+    unknownSession: string
+    kinds: {
+      approval: string
+      clarify: string
+      error: string
+      secret: string
+      sudo: string
+      vaultCode: string
+      vaultSave: string
+      vaultUnlock: string
+    }
+  }
+
   commandCenter: {
     close: string
     paletteTitle: string
@@ -4043,6 +4061,8 @@ export interface Translations {
       toggleFreeTier: string
       toggleNotices: string
       noticesTitle: string
+      toggleAttentionInbox: string
+      attentionInboxTitle: string
       toggleWorkspace: string
       cacheHitRateTitle: string
       tokensPerSecondTitle: string

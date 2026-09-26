@@ -22,6 +22,7 @@ import { usePaneLifecycle, usePaneVisible } from '@/components/pane-shell/pane-v
 import { useI18n } from '@/i18n'
 import { messagePaintWeight } from '@/lib/render-weight'
 import { cn } from '@/lib/utils'
+import { $pendingAttentionReveal, takeAttentionReveal } from '@/store/attention-inbox'
 import {
   COMPOSER_CLEARANCE_SLOT,
   getThreadScrollPosition,
@@ -529,6 +530,28 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
   )
 
   const { olderAvailable, expandWindow, isHistorical, returnToLatest } = useTranscriptWindow()
+
+  // Attention-inbox deep link: a pending reveal for THIS session snaps the
+  // transcript to its tail — where the waiting approval/clarify card lives.
+  // The scroller can be empty on the commit the marker arrives (session still
+  // hydrating); leave it unconsumed and structuralSignature re-fires the
+  // effect once content lands.
+  const attentionReveal = useStore($pendingAttentionReveal)
+
+  useEffect(() => {
+    if (!sessionId || attentionReveal?.sessionId !== sessionId) {
+      return
+    }
+
+    const scroller = scrollRef.current
+
+    if (!scroller || scroller.scrollHeight === 0) {
+      return
+    }
+
+    takeAttentionReveal(sessionId)
+    scrollToBottomUnlessSelecting('instant')
+  }, [attentionReveal, scrollRef, scrollToBottomUnlessSelecting, sessionId, structuralSignature])
 
   useEffect(() => {
     $mountedTranscriptPanes.set($mountedTranscriptPanes.get() + 1)

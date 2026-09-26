@@ -2989,6 +2989,23 @@ export const esOverrides = {
     railPill: count => (count === 1 ? '1 ejecución' : `${count} ejecuciones`),
     close: 'Cerrar'
   },
+  attentionInbox: {
+    title: 'Necesita atención',
+    empty: 'Nada está esperando tu respuesta.',
+    count: count => `${count} pendientes`,
+    appScope: 'Aplicación',
+    unknownSession: 'Sesión',
+    kinds: {
+      approval: 'Aprobación de herramienta',
+      clarify: 'Pregunta aclaratoria',
+      error: 'Error',
+      secret: 'Solicitud de secreto',
+      sudo: 'Solicitud de sudo',
+      vaultCode: 'Código de la bóveda',
+      vaultSave: 'Inicio de sesión en la bóveda',
+      vaultUnlock: 'Desbloqueo de la bóveda'
+    }
+  },
   commandCenter: {
     close: 'Cerrar Centro de comandos',
     paletteTitle: 'Paleta de comandos',
@@ -5127,6 +5144,8 @@ export const esOverrides = {
       openCommandCenter: 'Abrir Centro de comandos',
       toggleNotices: 'Notificaciones',
       noticesTitle: 'Notificaciones recientes',
+      toggleAttentionInbox: 'Bandeja de atención',
+      attentionInboxTitle: 'Aprobaciones y preguntas pendientes',
       showTerminal: 'Mostrar terminal',
       hideTerminal: 'Ocultar terminal',
       gateway: 'Gateway',

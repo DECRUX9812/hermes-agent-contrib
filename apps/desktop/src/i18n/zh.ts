@@ -2517,6 +2517,23 @@ export const zh = defineLocale({
     close: '关闭'
   },
 
+  attentionInbox: {
+    title: '需要处理',
+    empty: '没有待处理的事项。',
+    count: count => `${count} 项待处理`,
+    appScope: '应用',
+    unknownSession: '会话',
+    kinds: {
+      approval: '工具批准',
+      clarify: '澄清问题',
+      error: '错误',
+      secret: '密钥请求',
+      sudo: 'sudo 请求',
+      vaultCode: '保险库验证码',
+      vaultSave: '保险库登录',
+      vaultUnlock: '解锁保险库'
+    }
+  },
   commandCenter: {
     close: '关闭命令中心',
     paletteTitle: '命令面板',
@@ -4466,6 +4483,8 @@ export const zh = defineLocale({
       openCommandCenter: '打开命令中心',
       toggleNotices: '通知',
       noticesTitle: '近期通知',
+      toggleAttentionInbox: '待处理收件箱',
+      attentionInboxTitle: '待处理的批准与问题',
       showTerminal: '显示终端',
       hideTerminal: '隐藏终端',
       gateway: '网关',

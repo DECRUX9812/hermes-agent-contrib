@@ -2699,6 +2699,24 @@ export const en: Translations = {
     close: 'Close'
   },
 
+  attentionInbox: {
+    title: 'Needs attention',
+    empty: 'Nothing is waiting on you.',
+    count: count => `${count} waiting`,
+    appScope: 'Application',
+    unknownSession: 'Session',
+    kinds: {
+      approval: 'Tool approval',
+      clarify: 'Clarifying question',
+      error: 'Error',
+      secret: 'Secret request',
+      sudo: 'Sudo request',
+      vaultCode: 'Vault code',
+      vaultSave: 'Vault login',
+      vaultUnlock: 'Vault unlock'
+    }
+  },
+
   commandCenter: {
     close: 'Close command center',
     paletteTitle: 'Command palette',
@@ -4780,6 +4798,8 @@ export const en: Translations = {
       toggleFreeTier: 'Free tier',
       toggleNotices: 'Notices',
       noticesTitle: 'Recent notices',
+      toggleAttentionInbox: 'Attention inbox',
+      attentionInboxTitle: 'Pending approvals and questions',
       toggleWorkspace: 'Workspace',
       cacheHitRateTitle: 'Prompt cache hit rate this session — cached tokens cost less, so higher is cheaper',
       tokensPerSecondTitle: 'Output tokens per second, averaged over the last 10 model calls',
