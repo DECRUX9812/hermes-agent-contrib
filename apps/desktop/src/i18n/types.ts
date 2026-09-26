@@ -2316,6 +2316,13 @@ export interface Translations {
     fanOutFailed: string
   }
 
+  hud: {
+    /** The "needs you" pill on a HUD run card whose session is blocked on input. */
+    needsYou: string
+    /** Aria label for a run card's click-through (hands the session to the app window). */
+    openRunInApp: (title: string) => string
+  }
+
   attentionInbox: {
     title: string
     empty: string

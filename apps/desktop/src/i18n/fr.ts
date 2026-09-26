@@ -3018,6 +3018,11 @@ export const frOverrides = {
     fanOutSend: count => (count === 1 ? 'Envoyer à 1 agent' : `Envoyer à ${count} agents`),
     fanOutFailed: 'Impossible de créer une session pour l’un des agents choisis'
   },
+
+  hud: {
+    needsYou: 'Vous attend',
+    openRunInApp: title => `Ouvrir ${title} dans la fenêtre de l'app`
+  },
   attentionInbox: {
     title: 'Nécessite une action',
     empty: 'Rien n’attend votre réponse.',

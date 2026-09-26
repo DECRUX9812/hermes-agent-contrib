@@ -3008,6 +3008,11 @@ export const deOverrides = {
     fanOutSend: count => (count === 1 ? 'An 1 Agenten senden' : `An ${count} Agenten senden`),
     fanOutFailed: 'Für einen der ausgewählten Agenten konnte keine Sitzung erstellt werden'
   },
+
+  hud: {
+    needsYou: 'Wartet auf dich',
+    openRunInApp: title => `${title} im App-Fenster öffnen`
+  },
   attentionInbox: {
     title: 'Benötigt Aufmerksamkeit',
     empty: 'Nichts wartet auf dich.',

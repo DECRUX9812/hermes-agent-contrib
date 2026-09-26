@@ -1891,6 +1891,11 @@ export const ru = defineLocale({
     fanOutSend: count => `Отправить ${count} ${RU_PLURAL(count, 'агенту', 'агентам', 'агентам')}`,
     fanOutFailed: 'Не удалось создать сессию для одного из выбранных агентов'
   },
+
+  hud: {
+    needsYou: 'Ждёт вас',
+    openRunInApp: title => `Открыть «${title}» в окне приложения`
+  },
   attentionInbox: {
     title: 'Требует внимания',
     empty: 'Ничего не ждёт вашего ответа.',

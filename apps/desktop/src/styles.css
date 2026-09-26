@@ -3105,6 +3105,75 @@ button[data-slot='aui_msg-reactions'] svg {
   pointer-events: auto;
 }
 
+/* Run cards — every OTHER session still working (or waiting on you), parked
+   just inside the band's top edge: the fade ramp is where transcript text is
+   weakest, so the cards sit where nothing worth reading lives. Glanceable at
+   rest, full ink once the shell is engaged — the same three-state grammar the
+   band uses. The container answers no clicks; only the cards do, so the gaps
+   between them still fall through to the app behind. */
+[data-hud-shell] [data-hud-runs] {
+  position: absolute;
+  right: var(--hud-band-inset);
+  bottom: calc(var(--hud-bar-height, var(--composer-fallback-height)) + 0.375rem);
+  left: var(--hud-band-inset);
+  z-index: 1;
+  display: grid;
+  gap: 0.125rem;
+  max-height: 7.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+  /* The band's ink law applies here too: light-on-dark over someone else's
+     window, unconditionally — a card's legibility cannot depend on a state. */
+  color: var(--hud-overlay-ink, #fff);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.9),
+    0 0 6px rgb(0 0 0 / 0.55);
+  opacity: 0.78;
+  transition: opacity var(--hud-dim) var(--hud-ease-enter);
+}
+
+[data-hud-shell][data-hud-edge='top'] [data-hud-runs] {
+  top: calc(var(--hud-bar-height, var(--composer-fallback-height)) + 0.375rem);
+  bottom: auto;
+}
+
+[data-hud-shell][data-hud-typing] [data-hud-runs],
+[data-hud-shell][data-hud-held] [data-hud-runs],
+[data-hud-shell] [data-hud-runs]:hover,
+[data-hud-shell] [data-hud-runs]:focus-within {
+  opacity: 1;
+}
+
+/* Each card opts in — the strip's gaps stay transparent to the pointer so
+   they keep falling through to whatever sits behind the window. */
+[data-hud-shell] [data-hud-run-card] {
+  pointer-events: auto;
+  border-radius: 0.375rem;
+  background: rgb(12 14 18 / 0.55);
+}
+
+[data-hud-shell] [data-hud-run-card]:hover,
+[data-hud-shell] [data-hud-run-card]:focus-visible {
+  background: rgb(12 14 18 / 0.72);
+}
+
+/* The "needs you" pill — the amber cue a blocking question earns elsewhere,
+   kept legible over the overlay's white ink. */
+[data-hud-shell] [data-hud-run-needs] {
+  flex: none;
+  border-radius: 999px;
+  padding: 0.0625rem 0.375rem;
+  background: rgb(245 158 11 / 0.22);
+  color: #fbbf24;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 /* Three states, not two. A turn landing brings the transcript up, but only part
    way — it is there to be glanced at over whatever you are actually doing, and
    full-strength text over another app reads as the HUD demanding attention it

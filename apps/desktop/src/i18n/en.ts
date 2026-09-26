@@ -2710,6 +2710,11 @@ export const en: Translations = {
     fanOutFailed: 'Couldn’t create a session for one of the picked agents'
   },
 
+  hud: {
+    needsYou: 'Needs you',
+    openRunInApp: title => `Open ${title} in the app window`
+  },
+
   attentionInbox: {
     title: 'Needs attention',
     empty: 'Nothing is waiting on you.',

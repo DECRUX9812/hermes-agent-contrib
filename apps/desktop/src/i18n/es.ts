@@ -3000,6 +3000,11 @@ export const esOverrides = {
     fanOutSend: count => (count === 1 ? 'Enviar a 1 agente' : `Enviar a ${count} agentes`),
     fanOutFailed: 'No se pudo crear una sesión para uno de los agentes elegidos'
   },
+
+  hud: {
+    needsYou: 'Te espera',
+    openRunInApp: title => `Abrir ${title} en la ventana de la app`
+  },
   attentionInbox: {
     title: 'Necesita atención',
     empty: 'Nada está esperando tu respuesta.',
