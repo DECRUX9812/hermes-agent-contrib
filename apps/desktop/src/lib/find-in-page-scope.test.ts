@@ -9,11 +9,13 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
 import {
+  activateHitWithinRow,
   captureFindScope,
   currentFindScope,
   performScopedFind,
   releaseFindScope,
-  resolveCurrentFindScope
+  resolveCurrentFindScope,
+  transcriptViewportForScope
 } from './find-in-page-scope'
 
 function plantSurface(id: string, html: string, hidden = false): HTMLElement {
@@ -451,5 +453,54 @@ describe('scoped find survives React re-render', () => {
     await flushAll()
 
     expect(surface.querySelectorAll('mark.find-hit').length).toBe(0)
+  })
+})
+
+describe('activateHitWithinRow', () => {
+  it('activates the occurrence-th mark inside the row, not the global first', () => {
+    const surface = plantSurface(
+      'surface',
+      '<div data-message-id="m1"><p>needle</p></div><div data-message-id="m2"><p>needle and needle</p></div>'
+    )
+
+    const row = surface.querySelector<HTMLElement>('[data-message-id="m2"]')!
+
+    expect(activateHitWithinRow(surface, 'needle', row, 1)).toBe(true)
+
+    const active = surface.querySelector('mark[data-find-active]')
+    expect(active).not.toBeNull()
+    expect(row.contains(active)).toBe(true)
+    // Second mark inside the row is active — the row-local pick, not the
+    // document-order first.
+    expect([...row.querySelectorAll('mark.find-hit')].indexOf(active as HTMLElement)).toBe(1)
+  })
+
+  it('clamps the occurrence when the DOM holds fewer marks than history counted', () => {
+    const surface = plantSurface('surface', '<div data-message-id="m1"><p>needle</p></div>')
+    const row = surface.querySelector<HTMLElement>('[data-message-id="m1"]')!
+
+    expect(activateHitWithinRow(surface, 'needle', row, 4)).toBe(true)
+    expect(row.querySelector('mark[data-find-active]')).not.toBeNull()
+  })
+
+  it('returns false when the row carries no mark (hit the DOM cannot wrap)', () => {
+    const surface = plantSurface('surface', '<div data-message-id="m1"><p>plain text</p></div>')
+    const row = surface.querySelector<HTMLElement>('[data-message-id="m1"]')!
+
+    expect(activateHitWithinRow(surface, 'needle', row, 0)).toBe(false)
+  })
+})
+
+describe('transcriptViewportForScope', () => {
+  it('finds the transcript viewport inside a chat surface', () => {
+    const surface = plantSurface('surface', '<div data-slot="aui_thread-viewport"></div>')
+
+    expect(transcriptViewportForScope(surface)?.dataset.slot).toBe('aui_thread-viewport')
+  })
+
+  it('returns null for a surface with no transcript', () => {
+    const surface = plantSurface('surface', '<p>not a chat</p>')
+
+    expect(transcriptViewportForScope(surface)).toBeNull()
   })
 })

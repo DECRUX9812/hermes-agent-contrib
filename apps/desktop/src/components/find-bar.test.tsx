@@ -72,7 +72,7 @@ function installBridge() {
 }
 
 function resetStore() {
-  $findInPage.set({ active: false, query: '', matchOrdinal: 0, matchCount: 0, focusRequest: 0 })
+  $findInPage.set({ active: false, query: '', matchOrdinal: 0, matchCount: 0, matchCapped: false, history: false, focusRequest: 0 })
 }
 
 // Zero the bridge refcount so a leaked subscription can't bleed between tests.
@@ -231,7 +231,7 @@ describe('find-in-page store', () => {
     plantSurface()
     openFindBar()
 
-    expect($findInPage.get()).toEqual({ active: true, query: '', matchOrdinal: 0, matchCount: 0, focusRequest: 0 })
+    expect($findInPage.get()).toEqual({ active: true, query: '', matchOrdinal: 0, matchCount: 0, matchCapped: false, history: false, focusRequest: 0 })
   })
 
   it('a repeat open keeps the typed query and asks for focus again', () => {
@@ -610,7 +610,7 @@ describe('FindBar', () => {
 
     // Counter appears once a query + results exist.
     expect(screen.queryByText('3/12')).toBeNull()
-    actStore(() => $findInPage.set({ active: true, query: 'two', matchOrdinal: 1, matchCount: 1, focusRequest: 0 }))
+    actStore(() => $findInPage.set({ active: true, query: 'two', matchOrdinal: 1, matchCount: 1, matchCapped: false, history: false, focusRequest: 0 }))
     await waitFor(() => expect(screen.getByText('1/1')).toBeTruthy())
   })
 
@@ -883,7 +883,7 @@ describe('FindBar', () => {
     // Bar gone, state reset, and the highlights stripped — stale marks
     // must not survive a session switch.
     await waitFor(() => expect(screen.queryByRole('search')).toBeNull())
-    expect($findInPage.get()).toEqual({ active: false, query: '', matchOrdinal: 0, matchCount: 0, focusRequest: 0 })
+    expect($findInPage.get()).toEqual({ active: false, query: '', matchOrdinal: 0, matchCount: 0, matchCapped: false, history: false, focusRequest: 0 })
     expect(surface.querySelectorAll('mark.find-hit').length).toBe(0)
   })
 

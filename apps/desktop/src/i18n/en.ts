@@ -809,7 +809,9 @@ export const en: Translations = {
 
   findInPage: {
     next: 'Next match',
-    previous: 'Previous match'
+    previous: 'Previous match',
+    searchAll: 'Search all history',
+    searchAllShort: 'History'
   },
 
   language: {

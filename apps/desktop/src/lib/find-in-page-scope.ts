@@ -625,6 +625,51 @@ function reapplying(root: HTMLElement): void {
   }
 }
 
+const VIEWPORT_SELECTOR = '[data-slot="aui_thread-viewport"]'
+
+/** The transcript scroll viewport inside a captured chat surface, if any. */
+export function transcriptViewportForScope(root: Element): HTMLElement | null {
+  return root.querySelector<HTMLElement>(VIEWPORT_SELECTOR)
+}
+
+/**
+ * History-mode activation: make the `occurrence`-th hit inside `row` the
+ * active mark. `performScopedFind` with `findNext` reuses live marks when they
+ * still cover the query (or re-wraps when they do not); the row-local pick then
+ * overrides the active mark — the history engine's ordinal is what the bar
+ * shows, and the DOM marks are only the highlight layer.
+ *
+ * Returns false when the row carries no mark at all — the DOM walker cannot
+ * wrap a match that spans element boundaries, so the row-level scroll
+ * position is then the only feedback.
+ */
+export function activateHitWithinRow(root: Element, query: string, row: Element, occurrence: number): boolean {
+  performScopedFind(root, query, { forward: true, findNext: true })
+
+  const marks = row.querySelectorAll<HTMLElement>(`mark.${HIGHLIGHT_CLASS}`)
+
+  if (marks.length === 0) {
+    return false
+  }
+
+  const index = Math.min(Math.max(occurrence, 0), marks.length - 1)
+  const mark = marks[index]
+
+  setActiveMark(mark ?? null)
+
+  // The re-apply watcher restores position by the mark's GLOBAL ordinal — the
+  // row-local index would resurrect the wrong hit after a React re-render.
+  if (mark) {
+    const globalIndex = [...root.querySelectorAll<HTMLElement>(`mark.${HIGHLIGHT_CLASS}`)].indexOf(mark)
+
+    if (globalIndex !== -1) {
+      lastActiveOrdinal = globalIndex + 1
+    }
+  }
+
+  return true
+}
+
 /** Tear down highlights and the scope marker — called when the bar closes. */
 export function releaseFindScope(): void {
   const roots = document.querySelectorAll<HTMLElement>(`[${ROOT_ATTR}]`)

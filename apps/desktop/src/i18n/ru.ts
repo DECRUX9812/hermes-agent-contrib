@@ -467,7 +467,9 @@ export const ru = defineLocale({
   },
   findInPage: {
     next: 'Следующее вхождение',
-    previous: 'Предыдущее вхождение'
+    previous: 'Предыдущее вхождение',
+    searchAll: 'Искать по всей истории',
+    searchAllShort: 'История'
   },
 
   language: {

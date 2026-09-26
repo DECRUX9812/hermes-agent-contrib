@@ -724,6 +724,10 @@ export interface Translations {
   findInPage: {
     next: string
     previous: string
+    /** Transcript-scoped mode toggle: tooltip/aria description. */
+    searchAll: string
+    /** Transcript-scoped mode toggle: the compact chip label in the bar. */
+    searchAllShort: string
   }
 
   language: {
