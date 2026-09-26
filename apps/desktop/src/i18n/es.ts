@@ -2937,7 +2937,11 @@ export const esOverrides = {
     importEmpty: 'Pega un código de mapa para cargarlo.',
     importSuccess: nodes => `Se cargó un mapa con ${nodes} ${nodes === 1 ? 'nodo' : 'nodos'}.`,
     importedBadge: 'mapa importado',
-    resetToMine: 'Volver a mi mapa'
+    resetToMine: 'Volver a mi mapa',
+    live: 'En vivo',
+    liveHint: 'Ver en vivo: las skills pulsan mientras una sesión las usa y destellan al terminar',
+    liveOff: 'Detener actualizaciones en vivo',
+    openSession: 'Abrir sesión'
   },
   agents: {
     extendedTranscript: 'Transcripción ampliada',

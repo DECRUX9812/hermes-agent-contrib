@@ -2644,7 +2644,11 @@ export const en: Translations = {
     importEmpty: 'Paste a map code to load it.',
     importSuccess: nodes => `Loaded a map with ${nodes} ${nodes === 1 ? 'node' : 'nodes'}.`,
     importedBadge: 'imported map',
-    resetToMine: 'Back to my map'
+    resetToMine: 'Back to my map',
+    live: 'Live',
+    liveHint: 'Watch live: skills pulse while a session uses them, and flash when it settles',
+    liveOff: 'Stop live updates',
+    openSession: 'Open session'
   },
   agents: {
     extendedTranscript: 'Extended transcript',
