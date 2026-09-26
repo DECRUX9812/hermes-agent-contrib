@@ -3912,6 +3912,14 @@ export const esOverrides = {
     missingTitle: 'Artefacto no disponible',
     missingBody: 'Este artefacto ya no está en el registro local.'
   },
+  artifactRail: {
+    empty: 'Aún no hay artefactos en esta sesión',
+    noSession: 'No hay ninguna sesión seleccionada',
+    open: 'Abrir',
+    openFailed: 'No se pudo abrir el artefacto',
+    saveFailed: 'No se pudo guardar el artefacto',
+    saveToFile: 'Guardar en un archivo'
+  },
   sidebar: {
     filter: {
       grouping: 'Agrupación',
@@ -3996,6 +4004,7 @@ export const esOverrides = {
     files: 'Archivos',
     review: 'Revisión',
     logs: 'Registros',
+    artifacts: 'Artefactos',
     cronJobs: 'Tareas cron',
     groupAriaGrouped: 'Mostrar sesiones como una sola lista',
     groupAriaUngrouped: 'Agrupar sesiones por espacio de trabajo',
@@ -4119,6 +4128,7 @@ export const esOverrides = {
       export: 'Exportar',
       exportMarkdown: 'Exportar como Markdown',
       copyMarkdown: 'Copiar como Markdown',
+      artifacts: 'Artefactos',
       branchFrom: 'Rama',
       rename: 'Renombrar',
       archive: 'Archivar',

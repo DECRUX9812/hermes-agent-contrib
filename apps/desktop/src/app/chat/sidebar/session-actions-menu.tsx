@@ -41,6 +41,7 @@ import { PROFILE_SWATCHES } from '@/lib/profile-color'
 import { exportSession } from '@/lib/session-export'
 import { exportSessionMarkdown, sessionMarkdownText } from '@/lib/session-markdown'
 import { useSessionSlice } from '@/lib/use-session-slice'
+import { revealArtifactsRail } from '@/store/artifact-rail'
 import { activeGateway } from '@/store/gateway'
 import { notify, notifyError } from '@/store/notifications'
 import { $projectTree, moveSessionToProject, projectIdForCwd, projectRootCwd } from '@/store/projects'
@@ -423,6 +424,18 @@ function useSessionActions({
       onSelect: () => {
         triggerHaptic('selection')
         void exportSessionMarkdown(sessionId, { profile, title })
+      }
+    }),
+    // Per-session artifact rail (#32): open the chat (focus it if it's already
+    // on screen), then front the rail — it follows the focused session.
+    spec({
+      disabled: !sessionId,
+      icon: 'package',
+      label: r.artifacts,
+      onSelect: () => {
+        triggerHaptic('selection')
+        openSession(sessionId, () => undefined, 'in-place')
+        revealArtifactsRail()
       }
     })
   ]

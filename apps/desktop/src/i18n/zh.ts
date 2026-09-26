@@ -3338,6 +3338,15 @@ export const zh = defineLocale({
     missingBody: '此产物已不在本地注册表中。'
   },
 
+  artifactRail: {
+    empty: '本会话尚无产物',
+    noSession: '未选择会话',
+    open: '打开',
+    openFailed: '无法打开产物',
+    saveFailed: '无法保存产物',
+    saveToFile: '保存为文件'
+  },
+
   sidebar: {
     filter: {
       grouping: '分组',
@@ -3428,6 +3437,7 @@ export const zh = defineLocale({
     files: '文件',
     review: '审查',
     logs: '日志',
+    artifacts: '产物',
     cronJobs: '定时任务',
     groupAriaGrouped: '以单一列表显示会话',
     groupAriaUngrouped: '按工作区分组会话',
@@ -3539,6 +3549,7 @@ export const zh = defineLocale({
       export: '导出',
       exportMarkdown: '导出为 Markdown',
       copyMarkdown: '复制为 Markdown',
+      artifacts: '产物',
       branchFrom: '分支',
       rename: '重命名…',
       archive: '归档',

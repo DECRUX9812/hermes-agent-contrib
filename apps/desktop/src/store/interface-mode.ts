@@ -96,6 +96,7 @@ export interface ModeContext {
 }
 
 export interface ModePolicy {
+  artifactsOpen: boolean
   fileBrowserOpen: boolean
   hideCodeDiffs: boolean
   profileRailVisible: boolean
@@ -115,6 +116,7 @@ type PolicyTable = { readonly [K in ModePolicyKey]?: PolicyEntry<K> }
 
 const SIMPLE_POLICY: PolicyTable = {
   // Hide-style panes rest closed; their keybinds and the agent still reveal them.
+  artifactsOpen: false,
   fileBrowserOpen: false,
   // Inline diffs are the review pane's job; the changed-files summary stays.
   hideCodeDiffs: true,

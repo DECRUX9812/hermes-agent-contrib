@@ -51,6 +51,7 @@ import {
   Download,
   FileText,
   LayoutDashboard,
+  Package,
   PanelBottom,
   PanelTop,
   SlidersHorizontal,
@@ -67,6 +68,13 @@ import {
 } from '@/lib/session-row-slots'
 import { TRANSCRIPT_DIRECTIVE_AREA, type TranscriptDirectiveContribution } from '@/lib/transcript-directives'
 import { setYoloEnabled } from '@/lib/yolo-session'
+import {
+  $artifactsOpen,
+  ARTIFACTS_PANE_ID,
+  closeArtifactsRail,
+  openArtifactsRail,
+  toggleArtifactsRail
+} from '@/store/artifact-rail'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $interfaceMode, $showsAdvancedChrome, setModeContext, toggleSimpleMode } from '@/store/interface-mode'
 import {
@@ -132,7 +140,7 @@ import { $workspaceIsPage, WORKSPACE_PAGE_HEADER_AREA } from '../routes'
 
 import { BASIC_TREE, DEFAULT_TREE, registerLayoutPresets } from './layout-presets'
 import { bindLayoutSides } from './layout-sides'
-import { FilesPane, LogsPane, ReviewPaneContent } from './panes'
+import { ArtifactsPane, FilesPane, LogsPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
 
 /**
@@ -291,6 +299,24 @@ registry.registerMany([
       tabTitleText: () => translateNow('sidebar.review')
     },
     render: () => idle(<ReviewPaneContent />)
+  },
+  {
+    id: ARTIFACTS_PANE_ID,
+    area: 'panes',
+    title: translateNow('sidebar.artifacts'),
+    // The per-session artifact rail (#32): follows the focused session, so
+    // unlike files/review it is NOT workspace-gated — a detached chat can
+    // still produce artifacts.
+    data: {
+      placement: 'right',
+      collapsible: true,
+      width: FILE_BROWSER_DEFAULT_WIDTH,
+      minWidth: FILE_BROWSER_MIN_WIDTH,
+      maxWidth: FILE_BROWSER_MAX_WIDTH,
+      tabTitle: () => <LocalizedTabTitle select={t => t.sidebar.artifacts} />,
+      tabTitleText: () => translateNow('sidebar.artifacts')
+    },
+    render: () => idle(<ArtifactsPane />)
   }
 ])
 
@@ -657,6 +683,8 @@ bindPaneVisibility(
   closeReview,
   () => openReview($reviewScopeCwd.get(), $reviewScopeTarget.get())
 )
+// The artifacts rail follows the focused session — no workspace gate.
+bindPaneVisibility('artifacts', $artifactsOpen, closeArtifactsRail, openArtifactsRail)
 // ⌃` / statusbar toggle — the terminal COLLAPSES to a rail (tab stays), not
 // hides; PTYs stay alive while collapsed (see PersistentTerminal). Simple has
 // no terminal: where chrome is off a closed one hides, rail and all, and ⌃`
@@ -673,6 +701,19 @@ $profiles.subscribe(profiles => setModeContext({ profileCount: profiles.length }
 $connectionsRegistry.subscribe(registry => setModeContext({ connectionCount: registry?.connections.length ?? 0 }))
 // ⌘K door onto the same pane the keybind and statusbar pill flip.
 registry.register(terminalPaletteToggle)
+
+// ⌘K door for the artifact rail (the session-row menu is the other).
+registry.register(
+  paletteToggle({
+    id: 'artifacts.toggle',
+    label: 'Toggle artifacts rail',
+    icon: Package,
+    keywords: ['artifacts', 'deliverables', 'outputs', 'files', 'rail', 'show', 'hide'],
+    // On-screen truth, same contract as the logs toggle below.
+    get: () => isPaneVisible(ARTIFACTS_PANE_ID),
+    set: () => toggleArtifactsRail()
+  })
+)
 
 // Logs are ⌘K-ONLY chrome: the pane contribution EXISTS only while $logsOpen
 // is on. Off (the default) keeps logs out of the registry and the tree
