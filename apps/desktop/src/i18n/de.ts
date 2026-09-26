@@ -4226,6 +4226,22 @@ export const deOverrides = {
       backgroundRunning: 'Hintergrundaufgabe läuft',
       draftSession: 'Entwurf – noch nichts gesendet',
       continueOnPhone: 'Auf dem Handy fortfahren',
+      openOnDevice: 'Auf anderem Gerät öffnen',
+      openDeviceTitle: 'Auf anderem Gerät öffnen',
+      openDeviceDesc: home =>
+        `Scanne den Code oder sende den Link an ein anderes Hermes-Gerät, dessen Verbindungen ${home} erreichen. Die Sitzung bleibt, wo sie ist — nur die Ansicht wechselt.`,
+      openDeviceHomeFallback: 'ihrem Ursprungs-Backend',
+      openDeviceIncomingTitle: 'Sitzung auf diesem Gerät öffnen?',
+      openDeviceIncomingDesc: (title, label) =>
+        `„${title}“ liegt auf ${label}. Beim Öffnen wechselt dieses Fenster zu dieser Verbindung — der Sitzungsort bleibt unverändert.`,
+      openDeviceSwitchAndOpen: 'Wechseln und öffnen',
+      openDeviceSwitching: 'Wechsle…',
+      openDeviceIncomingMissingTitle: 'Verbindung nicht gefunden',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `„${id}“ liegt auf ${endpoint}, das auf diesem Gerät keine registrierte Verbindung ist. Füge sie unter Einstellungen → Gateways hinzu und öffne den Link erneut.`
+          : `„${id}“ liegt auf einem Backend, das dieses Gerät nicht erreicht. Registriere die Verbindung unter Einstellungen → Gateways und öffne den Link erneut.`,
+      openDeviceOpenConnections: 'Gateways öffnen',
       handoffNone: 'Keine Messaging-Plattform ist für eine Übergabe bereit',
       handoffOrigin: platform => `Übergeben von ${platform}`,
       continuationOrigin: 'Automatische Fortsetzung — dieser Chat wurde komprimiert und fortgesetzt',

@@ -4216,6 +4216,22 @@ export const esOverrides = {
       backgroundRunning: 'Tarea en segundo plano en ejecución',
       draftSession: 'Borrador — aún no se ha enviado nada',
       continueOnPhone: 'Continuar en el teléfono',
+      openOnDevice: 'Abrir en otro dispositivo',
+      openDeviceTitle: 'Abrir en otro dispositivo',
+      openDeviceDesc: home =>
+        `Escanea el código o envía el enlace a otro dispositivo Hermes cuyas conexiones lleguen a ${home}. La sesión permanece donde está: solo se mueve la vista.`,
+      openDeviceHomeFallback: 'su backend de origen',
+      openDeviceIncomingTitle: '¿Abrir la sesión en este dispositivo?',
+      openDeviceIncomingDesc: (title, label) =>
+        `“${title}” reside en ${label}. Al abrirla, esta ventana cambia a esa conexión; la sesión no se mueve de su origen.`,
+      openDeviceSwitchAndOpen: 'Cambiar y abrir',
+      openDeviceSwitching: 'Cambiando…',
+      openDeviceIncomingMissingTitle: 'Conexión no encontrada',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `“${id}” reside en ${endpoint}, que no es una conexión registrada en este dispositivo. Añádela en Configuración → Gateways y vuelve a abrir el enlace.`
+          : `“${id}” reside en un backend al que este dispositivo no puede acceder. Registra la conexión en Configuración → Gateways y vuelve a abrir el enlace.`,
+      openDeviceOpenConnections: 'Abrir Gateways',
       handoffNone: 'Ninguna plataforma de mensajería está lista para el traspaso',
       handoffOrigin: platform => `Transferido desde ${platform}`,
       continuationOrigin: 'Continuación automática: esta conversación fue comprimida y continuada',

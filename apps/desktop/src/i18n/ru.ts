@@ -2971,6 +2971,22 @@ export const ru = defineLocale({
       backgroundRunning: 'Фоновая задача выполняется',
       draftSession: 'Черновик — ещё ничего не отправлено',
       continueOnPhone: 'Продолжить на телефоне',
+      openOnDevice: 'Открыть на другом устройстве',
+      openDeviceTitle: 'Открыть на другом устройстве',
+      openDeviceDesc: home =>
+        `Отсканируйте код или отправьте ссылку на другое устройство Hermes, чьи подключения достигают ${home}. Сессия остаётся на месте — переносится только представление.`,
+      openDeviceHomeFallback: 'её домашний бэкенд',
+      openDeviceIncomingTitle: 'Открыть сессию на этом устройстве?',
+      openDeviceIncomingDesc: (title, label) =>
+        `«${title}» находится на ${label}. При открытии это окно переключится на это подключение — дом сессии не меняется.`,
+      openDeviceSwitchAndOpen: 'Переключить и открыть',
+      openDeviceSwitching: 'Переключение…',
+      openDeviceIncomingMissingTitle: 'Подключение не найдено',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `«${id}» находится на ${endpoint}, который не зарегистрирован как подключение на этом устройстве. Добавьте его в Настройки → Шлюзы и откройте ссылку снова.`
+          : `«${id}» находится на бэкенде, недоступном с этого устройства. Зарегистрируйте подключение в Настройки → Шлюзы и откройте ссылку снова.`,
+      openDeviceOpenConnections: 'Открыть шлюзы',
       handoffNone: 'Ни одна платформа сообщений не готова к передаче',
       handoffOrigin: platform => `Передано из ${platform}`,
       ownedByProfile: profile => `Профиль: ${profile}`,

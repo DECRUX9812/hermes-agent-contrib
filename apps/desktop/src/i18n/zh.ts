@@ -3631,6 +3631,20 @@ export const zh = defineLocale({
       backgroundRunning: '后台任务运行中',
       draftSession: '草稿 — 尚未发送',
       continueOnPhone: '在手机上继续',
+      openOnDevice: '在另一台设备上打开',
+      openDeviceTitle: '在另一台设备上打开',
+      openDeviceDesc: home => `扫描二维码或将链接发送到另一台 Hermes 设备，只要其连接可以访问 ${home}。会话保留在原处——移动的只是视图。`,
+      openDeviceHomeFallback: '其所属后端',
+      openDeviceIncomingTitle: '在此设备上打开会话？',
+      openDeviceIncomingDesc: (title, label) => `“${title}”位于 ${label}。打开会将此窗口切换到该连接——会话的归属不会改变。`,
+      openDeviceSwitchAndOpen: '切换并打开',
+      openDeviceSwitching: '正在切换…',
+      openDeviceIncomingMissingTitle: '找不到连接',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `“${id}”位于 ${endpoint}，此设备上没有注册该连接。请在 设置 → Gateways 中添加它，然后重新打开链接。`
+          : `“${id}”位于此设备无法访问的后端。请在 设置 → Gateways 中注册该连接，然后重新打开链接。`,
+      openDeviceOpenConnections: '打开 Gateways',
       handoffNone: '没有可用于移交的消息平台',
       handoffOrigin: platform => `从 ${platform} 转接`,
       continuationOrigin: '自动延续 — 此对话已压缩并延续',
