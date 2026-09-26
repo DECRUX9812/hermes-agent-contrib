@@ -16,7 +16,7 @@ import {
 } from '@/lib/storage'
 import { withTimeout } from '@/lib/with-timeout'
 import { registerComposerNewDraftProfileResolver } from '@/store/composer'
-import { $connectionsRegistry, registryConnectionKind } from '@/store/connection-registry-state'
+import { registryConnectionKind } from '@/store/connection-registry-state'
 import {
   $gateway,
   activeGatewayConnectionId,
