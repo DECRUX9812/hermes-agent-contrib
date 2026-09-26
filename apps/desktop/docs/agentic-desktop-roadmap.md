@@ -328,3 +328,31 @@ weakest standalone and could fold into #10.)*
   profile-rename migration pair.
 - Backend-touching items (marked B) are Phase 3+ — renderer-first held through
   the cheap phases.
+
+---
+
+## 5. Upstream convergence — the one-gateway cutover
+
+Upstream `NousResearch/hermes-agent` PR
+[#106742](https://github.com/NousResearch/hermes-agent/pull/106742)
+("One gateway owns every local session") is staged to land with a fast-follow
+that re-parents `serve`, remote Desktop, and web onto the canonical
+gateway-owned session authority
+([unsupportedpastels' entry-point plan](https://gist.github.com/unsupportedpastels/765f9d551ce88ee01630c18367763e75),
+aligned with the profile-multiplexing direction #109417). When it lands, the
+fork's sync will be a very large merge; the design rule for everything on this
+roadmap until then:
+
+- **Route through session/authority lookups, not process-local state.** New
+  backend surface stays on the existing `serve` / `tui_gateway` seams; nothing
+  may assume the session owner is the pooled standalone `hermes serve` the
+  desktop spawns today.
+- **Most-affected items:** #40/#50 (device links — post-cutover a remote
+  client attaches to the same canonical session rather than re-homing a view),
+  #45 (mobile companion — its `/api/mobile/*` routes extend `serve` and will
+  ride the cutover), #47 (worktree-per-session — keyed to session identity,
+  which survives, but lifecycle/ownership moves), #44/#48 (companion thread,
+  mailbox — admissions/queues move to the gateway FIFO).
+- **Not a blocker:** every item ships value on today's topology and the
+  cutover preserves session identity, queue durability, and controls — the
+  seam is what we keep clean, not the feature set.
