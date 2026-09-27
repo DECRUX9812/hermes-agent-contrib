@@ -363,6 +363,3 @@ export type AttentionClass = 'agent_blocked' | 'missing_config' | 'provider_auth
 
 export type RosterKindFilter = 'all' | 'bots' | 'groups'
 export type RosterActivityFilter = 'active' | 'all' | 'older' | 'recent'
-/** Roster sort menu modes (A5). Extend this union + `ROSTER_SORTS` in
- *  roster-pane-derivation to add a mode — one entry, one comparator. */
-export type RosterSortMode = 'alpha' | 'attention' | 'recent'

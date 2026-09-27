@@ -48,6 +48,10 @@ import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
 import { deleteProfile, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
+import { $attentionItems, type AttentionItem } from '@/store/attention-inbox'
+import { $attentionCountsByOwner } from '@/store/attention-owner-counts'
+import { $statusItemsBySession, type ComposerStatusItem } from '@/store/composer-status'
+import { $cronJobs } from '@/store/cron'
 import {
   $gateway,
   activeGatewayConnectionId,
@@ -94,6 +98,8 @@ import {
   setResumeExhaustedSessionId,
   setSessionOwnerHint
 } from '@/store/session'
+import { $sessionDotStateById, type SessionDotState } from '@/store/session-dot-state'
+import { isSessionOwnerRoute } from '@/store/session-request-router'
 import {
   $focusedRuntimeId,
   $focusedSessionState,
@@ -104,8 +110,9 @@ import {
   focusWorkspaceOwnerSessionTile,
   sessionTileDelegate
 } from '@/store/session-states'
+import { knownOwnerForSession } from '@/store/session-states-routing'
 import { runGatewayRestart } from '@/store/system-actions'
-import type { PaginatedSessions, UsageStats } from '@/types/hermes'
+import type { CronJob, PaginatedSessions, UsageStats } from '@/types/hermes'
 
 import { pluginDecisions, profiles, skills, toolsets } from './bridge'
 import { composerHost } from './composer'
@@ -146,6 +153,13 @@ const $focusedAwaitingResponse = focusedTurnFlag(
 export interface PluginFocusedSessionOwner {
   connectionId: string
   profile: string
+}
+
+/** A session's proven owner — `focusedSessionOwner` plus the backend profile
+ *  an aliased remote route serves (`targetProfile`, when it differs). A bare
+ *  (`connectionId: ''`) owner is the primary/ambient socket. */
+export interface PluginSessionOwner extends PluginFocusedSessionOwner {
+  targetProfile?: string
 }
 
 /**
@@ -236,6 +250,21 @@ const $busyBySession = computed($sessionStates, states => {
 
   for (const [id, state] of Object.entries(states)) {
     map[id] = Boolean(state.busy)
+  }
+
+  return map
+})
+
+/** Runtime session id → its stored (durable) id. The inverse of what
+ *  `busyBySession` callers need: status streams key by runtime id, while
+ *  durable surfaces (rosters, badges, lists) key by stored id. */
+const $storedSessionByRuntimeId = computed($sessionStates, states => {
+  const map: Record<string, string> = {}
+
+  for (const [id, state] of Object.entries(states)) {
+    if (state.storedSessionId) {
+      map[id] = state.storedSessionId
+    }
   }
 
   return map
@@ -654,6 +683,16 @@ export const host = {
   state: {
     /** Runtime id of the active chat session (null on a fresh draft). */
     activeSessionId: readonlyAtom<null | string>($activeSessionId),
+    /** Attention-inbox items plus unread/needs-input session dots, rolled up
+     *  under the session's PROVEN owner — scope keys are `conn:<id>::<profile>`
+     *  for connection-tagged owners and the bare profile for connection-free
+     *  ones. An item never attributes on ambient-gateway guesses, so a
+     *  same-named profile on another connection inherits nothing. */
+    attentionCountsByOwner: readonlyAtom<Record<string, number>>($attentionCountsByOwner),
+    /** The attention inbox itself — every open approval/clarify/error/secret/
+     *  sudo/vault ask, each carrying its runtime session id (null = app-level,
+     *  never attributable to a session owner). */
+    attentionItems: readonlyAtom<readonly AttentionItem[]>($attentionItems),
     /** True from send until the first assistant payload on the focused chat. */
     awaitingResponse: readonlyAtom<boolean>($focusedAwaitingResponse),
     /**
@@ -667,8 +706,19 @@ export const host = {
     busyBySession: readonlyAtom<Record<string, boolean>>($busyBySession),
     /** Registry source that owns the active gateway, when source-scoped. */
     connectionId: readonlyAtom<null | string>($activeConnectionId),
+    /** Cron/routine jobs for the current sidebar profile scope — includes
+     *  `state` ('running' for an in-flight run) and the `[bot:<slug>]` name
+     *  tag Bot Mode stamps, so a roster can tell which bot owns a running
+     *  job. Empty when the scope has no jobs or hasn't loaded. */
+    cronJobs: readonlyAtom<readonly CronJob[]>($cronJobs),
     /** Active workspace cwd ('' when detached). */
     cwd: readonlyAtom<string>($currentCwd),
+    /** Stored session id → the state `SessionStatusDot` would paint
+     *  ('draft' | 'idle' | 'background' | 'working' | 'stalled' |
+     *  'needs-input' | 'unread'). Claims fan out over compression lineages,
+     *  so any alias of a conversation resolves — the backend need not report
+     *  a turn for the key to exist. */
+    dotStateBySession: readonlyAtom<Record<string, SessionDotState>>($sessionDotStateById),
     /** Runtime id of the FOCUSED chat session — the interacted tile, else the
      *  primary. Prefer this over `activeSessionId` for any readout that
      *  should follow the user between tiles (context, tokens, cost). */
@@ -698,6 +748,13 @@ export const host = {
     /** The sessions rail's live search text ('' when idle). A `sidebar.listTop`
      *  contribution marked `searchable` filters its own rows by this. */
     sidebarSearchQuery: readonlyAtom<string>($sidebarSearchQuery),
+    /** Runtime session id → live composer work items (todo / background /
+     *  subagent / goal) — `currentTool` names the tool a running item is
+     *  executing. Empty for a session with no live turn machinery. */
+    statusItemsBySession: readonlyAtom<Record<string, ComposerStatusItem[]>>($statusItemsBySession),
+    /** Runtime session id → its stored (durable) id — translate a status
+     *  stream's key into the identity durable surfaces key by. */
+    storedSessionByRuntimeId: readonlyAtom<Record<string, string>>($storedSessionByRuntimeId),
     /** Window geometry ({ width, height, narrow }). */
     viewport: readonlyAtom<ViewportRect>($viewport)
   },
@@ -875,6 +932,30 @@ export const host = {
    *  active gateway is a registered remote. Re-read per use — it changes on
    *  profile/agent swaps. */
   activeConnectionId: (): null | string => activeGatewayConnectionId(),
+
+  /** The connection-qualified owner a session id PROVED itself under — the
+   *  title stamp, a resume hint, a tile binding, or the runtime scope it
+   *  streamed events under, in that order. Both stored and runtime ids are
+   *  accepted; resolves to null when the ladder cannot attribute it (never a
+   *  guess on the ambient gateway, so same-named profiles on different
+   *  connections can't bleed into each other). */
+  sessionOwner: (sessionId: null | string | undefined): PluginSessionOwner | null => {
+    const owner = knownOwnerForSession(sessionId)
+
+    if (isSessionOwnerRoute(owner)) {
+      return {
+        connectionId: owner.connectionId,
+        profile: normalizeProfileKey(owner.profile),
+        ...(owner.targetProfile ? { targetProfile: normalizeProfileKey(owner.targetProfile) } : {})
+      }
+    }
+
+    if (typeof owner === 'string' && owner.trim()) {
+      return { connectionId: '', profile: normalizeProfileKey(owner) }
+    }
+
+    return null
+  },
 
   /** The registered connection list (labels, kinds, primary) — token bytes
    *  never included. Rejects on Desktop builds without the registry. */
@@ -1644,7 +1725,7 @@ export { PALETTE_AREA, type PaletteContribution } from '@/app/command-palette/co
  *  sits past the scheduler grace and the job is expected to fire. Every surface
  *  that prints a next run switches its label on this (`t.cron.next` →
  *  `t.cron.overdueSince`) so a dead scheduler never reads as "Next: 7 hr ago". */
-export { nextRunOverdueMs } from '@/app/cron/job-state'
+export { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
 /** THE master-detail toolkit core uses for list+inspector surfaces (Scheduled
  *  jobs, Kanban, …): a dense left `PanelList` of `PanelListRow`s beside a
  *  scrolling `PanelDetail` of `PanelSectionLabel` / `PanelMeta` / `PanelBlock`.
@@ -1949,6 +2030,9 @@ export {
   type TranscriptDirectiveProps
 } from '@/lib/transcript-directives'
 export { cn } from '@/lib/utils'
+export type { AttentionItem } from '@/store/attention-inbox'
+export type { ComposerStatusItem } from '@/store/composer-status'
+export type { SessionDotState } from '@/store/session-dot-state'
 /** Per-owner (bot) notification modes — `'muted'` silences every session the
  *  profile owns (canonical chat, side-chats, cron runs); `'quiet'` holds them
  *  into the digest while the global quiet-hours window is open. Keys are
@@ -2010,7 +2094,7 @@ export { requestTheme } from '@/themes/request'
 export { retintTheme, themeHue } from '@/themes/retint'
 export type { DesktopTheme, DesktopThemeColors } from '@/themes/types'
 export { THEMES_AREA } from '@/themes/user-themes'
-export type { StatusResponse } from '@/types/hermes'
+export type { CronJob, StatusResponse } from '@/types/hermes'
 /** Public SDK name for the shared gateway wire event; kept stable for plugins. */
 export type { GatewayEvent as RpcEvent } from '@hermes/shared'
 /** Bot Screen wire shapes, generated from `tui_gateway/contracts/display.py`. */

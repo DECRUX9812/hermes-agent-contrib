@@ -13,10 +13,11 @@ import {
 
 import { botSourceStatus } from './data'
 import type { useBots } from './i18n'
+import type { RosterSortMode } from './live-status'
 import { setActivityToasts } from './roster-actions'
 import { GatewayKindGlyph } from './roster-sections'
 import type { rosterGatewayOptions } from './roster-sections'
-import type { RosterActivityFilter, RosterKindFilter, RosterRow, RosterSortMode } from './types'
+import type { RosterActivityFilter, RosterKindFilter, RosterRow } from './types'
 
 interface renderRosterToolbarProps {
   b: ReturnType<typeof useBots>
@@ -43,6 +44,7 @@ interface renderRosterToolbarProps {
   setActivityFilter: (value: RosterActivityFilter) => void
   gatewayFilter: string
   setGatewayFilter: (value: string) => void
+  /** A2 — the roster sort: 'recent' (default) or 'attention' first. */
   sortMode: RosterSortMode
   setSortMode: (value: RosterSortMode) => void
 }
@@ -185,6 +187,19 @@ export function renderRosterToolbar({
                     {activityFilter === value ? <Codicon name="check" /> : null}
                   </DropdownMenuItem>
                 ))}
+                <DropdownMenuSeparator />
+                {(
+                  [
+                    ['recent', b.roster.sortRecent],
+                    ['attention', b.roster.sortAttention],
+                    ['alpha', b.roster.sortAlpha]
+                  ] as [RosterSortMode, string][]
+                ).map(([value, label]) => (
+                  <DropdownMenuItem key={`sort:${value}`} onSelect={() => setSortMode(value)}>
+                    <span className="min-w-0 flex-1">{label}</span>
+                    {sortMode === value ? <Codicon name="check" /> : null}
+                  </DropdownMenuItem>
+                ))}
                 {gatewayOptions.length > 1 ? <DropdownMenuSeparator /> : null}
                 {gatewayOptions.length > 1 ? (
                   <DropdownMenuItem onSelect={() => setGatewayFilter('all')}>
@@ -233,39 +248,6 @@ export function renderRosterToolbar({
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
-          {/* Roster sort (A5): one entry per `RosterSortMode` — the comparator
-              lives in `ROSTER_SORTS` (roster-pane-derivation.ts). */}
-          <DropdownMenu key={'roster-sort'}>
-            <Tip label={b.roster.sort}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-label={b.roster.sort}
-                  className={cn(
-                    'size-7 shrink-0 rounded-md text-(--ui-text-tertiary) hover:text-foreground',
-                    sortMode !== 'recent' && 'text-(--ui-accent)'
-                  )}
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <Codicon name="list-ordered" />
-                </Button>
-              </DropdownMenuTrigger>
-            </Tip>
-            <DropdownMenuContent align="end">
-              {(
-                [
-                  ['recent', b.roster.sortRecent],
-                  ['alpha', b.roster.sortAlpha],
-                  ['attention', b.roster.sortAttention]
-                ] as [RosterSortMode, string][]
-              ).map(([value, label]) => (
-                <DropdownMenuItem key={`sort:${value}`} onSelect={() => setSortMode(value)}>
-                  <span className="min-w-0 flex-1">{label}</span>
-                  {sortMode === value ? <Codicon name="check" /> : null}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       ) : null}
     </>

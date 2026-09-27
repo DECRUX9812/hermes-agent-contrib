@@ -141,11 +141,22 @@ type BotsMessages = {
     retryNow: string
     rosterUnavailable: (reason: string) => string
     waitingForGateway: string
-    /** Roster sort menu (A5) — trigger label + one entry per mode. */
-    sort: string
+    /** A1 — the row's live status line: what the bot is doing right now.
+     *  'idle'/'unknown' are the honest floor; recency is never one of them. */
+    liveIdle: string
+    liveWorking: string
+    liveWorkingTool: (tool: string) => string
+    liveStalled: string
+    liveRoutine: (title: string) => string
+    liveRoutineUnnamed: string
+    liveGroup: string
+    liveBackground: string
+    liveDelegated: string
+    /** A2 — the attention badge tooltip, and the sort menu's options. */
+    attentionItems: (count: number) => string
     sortRecent: string
-    sortAlpha: string
     sortAttention: string
+    sortAlpha: string
   }
   /** Sessions-rail Agents fold — the compact roster beside the sessions. */
   agents: {
@@ -646,10 +657,19 @@ const en: BotsMessages = {
       `Roster unavailable: ${reason}. If your gateway predates profiles.list, update Hermes and restart the gateway.`,
     waitingForGateway:
       'Waiting for the gateway connection… (remote gateways can take a few seconds; retries automatically)',
-    sort: 'Sort',
+    liveIdle: 'Idle',
+    liveWorking: 'Working',
+    liveWorkingTool: tool => `Working · ${tool}`,
+    liveStalled: 'Stalled',
+    liveRoutine: title => `Running ${title}`,
+    liveRoutineUnnamed: 'Running a routine',
+    liveGroup: 'In a group round',
+    liveBackground: 'Background task running',
+    liveDelegated: 'On a task',
+    attentionItems: count => (count === 1 ? '1 item needs attention' : `${count} items need attention`),
     sortRecent: 'Recent activity',
-    sortAlpha: 'A–Z',
-    sortAttention: 'Needs attention first'
+    sortAttention: 'Attention first',
+    sortAlpha: 'A–Z'
   },
   agents: {
     allBots: count => `All ${count} ${count === 1 ? 'bot' : 'bots'}`,
@@ -1127,10 +1147,19 @@ const ja: BotsMessages = {
     rosterUnavailable: reason =>
       `名簿を取得できません: ${reason}。ゲートウェイが profiles.list より前の場合は、Hermes を更新してゲートウェイを再起動してください。`,
     waitingForGateway: 'ゲートウェイ接続を待っています…（リモートは数秒かかることがあります。自動で再試行します）',
-    sort: '並べ替え',
-    sortRecent: '最近のアクティビティ',
-    sortAlpha: '名前順',
-    sortAttention: '要対応を先頭に'
+    liveIdle: 'アイドル',
+    liveWorking: '実行中',
+    liveWorkingTool: tool => `実行中 · ${tool}`,
+    liveStalled: '停滞中',
+    liveRoutine: title => `${title} を実行中`,
+    liveRoutineUnnamed: 'ルーチンを実行中',
+    liveGroup: 'グループラウンド中',
+    liveBackground: 'バックグラウンドタスク実行中',
+    liveDelegated: 'タスク実行中',
+    attentionItems: count => `${count} 件の項目に対応が必要です`,
+    sortRecent: '最近のアクティビティ順',
+    sortAttention: '要対応を先に',
+    sortAlpha: '名前順'
   },
   agents: {
     allBots: count => `すべてのボット（${count}）`,
@@ -1604,10 +1633,19 @@ const zh: BotsMessages = {
     retryNow: '立即重试',
     rosterUnavailable: reason => `无法获取名单：${reason}。如果网关早于 profiles.list，请更新 Hermes 并重启网关。`,
     waitingForGateway: '正在等待网关连接…（远程网关可能需要几秒；会自动重试）',
-    sort: '排序',
-    sortRecent: '最近活动',
-    sortAlpha: '按名称排序',
-    sortAttention: '需要注意的优先'
+    liveIdle: '空闲',
+    liveWorking: '运行中',
+    liveWorkingTool: tool => `运行中 · ${tool}`,
+    liveStalled: '已停滞',
+    liveRoutine: title => `正在运行 ${title}`,
+    liveRoutineUnnamed: '正在运行例程',
+    liveGroup: '正在参与群聊回合',
+    liveBackground: '后台任务运行中',
+    liveDelegated: '正在处理任务',
+    attentionItems: count => `${count} 个项目需要处理`,
+    sortRecent: '按最近活动',
+    sortAttention: '需处理优先',
+    sortAlpha: '按名称排序'
   },
   agents: {
     allBots: count => `全部 ${count} 个机器人`,
@@ -2072,10 +2110,19 @@ const zhHant: BotsMessages = {
     retryNow: '立即重試',
     rosterUnavailable: reason => `無法取得名單：${reason}。如果閘道早於 profiles.list，請更新 Hermes 並重新啟動閘道。`,
     waitingForGateway: '正在等待閘道連線…（遠端閘道可能需要幾秒；會自動重試）',
-    sort: '排序',
-    sortRecent: '最近活動',
-    sortAlpha: '依名稱排序',
-    sortAttention: '需要注意的優先'
+    liveIdle: '閒置',
+    liveWorking: '執行中',
+    liveWorkingTool: tool => `執行中 · ${tool}`,
+    liveStalled: '已停滯',
+    liveRoutine: title => `正在執行 ${title}`,
+    liveRoutineUnnamed: '正在執行例程',
+    liveGroup: '正在群組回合中',
+    liveBackground: '背景任務執行中',
+    liveDelegated: '正在處理任務',
+    attentionItems: count => `${count} 個項目需要處理`,
+    sortRecent: '依最近活動',
+    sortAttention: '需處理優先',
+    sortAlpha: '依名稱排序'
   },
   agents: {
     allBots: count => `全部 ${count} 個機器人`,

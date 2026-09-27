@@ -24,12 +24,10 @@ import {
  * the dialogs; nothing in Bot Mode imports it except the plugin entry point.
  */
 import {
-  $botAttention,
   $botMeta,
   $lastRoster,
   annotateBotSource,
   botRosterKey,
-  botSelectionKey,
   botSourceStatus,
   sourceByConnection,
   useRoster
@@ -41,9 +39,10 @@ import { $groupMainTabsRev, shouldRenderGroupChatInPane } from './group-panes'
 import { $activeGroupMemberKeys } from './group-presence'
 import { $showHiddenBots, isBotHidden } from './hidden-bots'
 import { useBots } from './i18n'
+import { $rosterSortMode, setRosterSortMode, useRosterAttentionCounts } from './live-status'
 import { mailboxOpenCountFor, useMailbox } from './mailbox'
 import { MailboxTaskDialog } from './mailbox-parts'
-import { $activityToasts, $rosterSortMode, setRosterSortMode } from './roster-actions'
+import { $activityToasts } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
 import { renderRosterDialogs } from './roster-pane-dialogs'
@@ -303,18 +302,15 @@ export function BotsPane() {
   const sourceWithSelectedOwner =
     selectionHydrated && rosterHydrated ? rosterWithSelectedOwner(source, sourceSnapshot, selectedRosterKey) : source
 
-  // Sort menu pref (A5): 'attention' needs the same 3-key lookup the row
-  // badges use — selection key, roster key, and `<conn>::<name>`.
+  // A2 — the attention rollup drives both the per-row badge and the
+  // 'attention-first' sort: flagged bots top their band while pinned stays
+  // the outer band (the user's own filing never loses to a count).
   const sortMode = useValue($rosterSortMode)
-  const attentionByKey = useValue($botAttention)
+  const attentionCounts = useRosterAttentionCounts(sourceWithSelectedOwner)
+  const attentionOf = (bot: RosterRow): number => attentionCounts.get(botRosterKey(bot)) ?? 0
 
   const { roster, activityOf, isPinned } = sortRosterBots(sourceWithSelectedOwner, allMeta, {
-    hasAttention: bot =>
-      Boolean(
-        attentionByKey[botSelectionKey(bot)] ||
-          attentionByKey[botRosterKey(bot)] ||
-          attentionByKey[`${bot?.connectionId || activeConnectionId}::${bot?.name || 'default'}`]
-      ),
+    attentionOf,
     mode: sortMode
   })
 
@@ -371,6 +367,7 @@ export function BotsPane() {
     activeRosterKeys,
     gatewayOptions,
     activityOf,
+    attentionOf: sortMode === 'attention' ? attentionOf : undefined,
     isPinned
   })
 
@@ -514,8 +511,8 @@ export function BotsPane() {
         setActivityFilter,
         gatewayFilter,
         setGatewayFilter,
-        setSortMode: setRosterSortMode,
-        sortMode
+        sortMode,
+        setSortMode: setRosterSortMode
       })}
       {renderRosterContent({
         b,
