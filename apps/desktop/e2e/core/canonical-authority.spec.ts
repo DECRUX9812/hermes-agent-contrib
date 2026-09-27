@@ -237,12 +237,15 @@ test('pooled: the same ambiguous submit re-executes (fixture discriminates topol
     await waitForInteractive(app, page)
     await send(page, `${U(1)} pooled ack`, 'Enter', ws)
     await expect.poll(() => authority.executions.length).toBe(1)
+    await expect(viewport(page)).toContainText('Acknowledged by the mock authority.', { timeout: 60_000 })
 
     // Pooled semantics: submitting the same text again is a second admission —
-    // nothing carries identity to dedupe on. The canonical-mode twin above
+    // nothing carries identity to dedupe on. `send`'s same-probe guard would
+    // never press Enter twice for identical text, so this is a single explicit
+    // submit after the first turn visibly settled. The canonical-mode twin
     // asserts the same wire shape executes once.
-    await send(page, `${U(1)} pooled ack`, 'Enter', ws)
-    await expect.poll(() => authority.executions.length).toBe(2)
+    await submitOnce(page, `${U(1)} pooled ack`)
+    await expect.poll(() => authority.executions.length, { timeout: 60_000 }).toBe(2)
   } finally {
     await app.close().catch(() => undefined)
     await authority.close()
