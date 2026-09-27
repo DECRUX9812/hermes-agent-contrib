@@ -50,6 +50,9 @@ interface renderRosterToolbarProps {
   /** D1/D3 — fleet surfaces open from the toolbar. */
   setBroadcastOpen: (value: boolean) => void
   setCalendarOpen: (value: boolean) => void
+  /** G6 — the marketplace stub is another way to add a bot, so it lives on
+   *  the New… menu. */
+  setMarketplaceOpen: (value: boolean) => void
 }
 
 export function renderRosterToolbar({
@@ -76,7 +79,8 @@ export function renderRosterToolbar({
   sortMode,
   setSortMode,
   setBroadcastOpen,
-  setCalendarOpen
+  setCalendarOpen,
+  setMarketplaceOpen
 }: renderRosterToolbarProps) {
   return (
     <>
@@ -123,6 +127,10 @@ export function renderRosterToolbar({
               >
                 <Codicon className="mr-1.5" name="organization" />
                 {b.group.newTitle}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setMarketplaceOpen(true)}>
+                <Codicon className="mr-1.5" name="extensions" />
+                {b.market.menuItem}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setSectionDialog({ mode: 'create' })}>

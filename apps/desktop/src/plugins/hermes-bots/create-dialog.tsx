@@ -113,6 +113,9 @@ interface CapabilityCatalog {
   toolsets: CapabilityEntry[]
 }
 interface CreateAgentDialogProps {
+  /** G6 — a marketplace starter card opens the dialog already seeded with
+   *  that template (same seeding the template picker applies). */
+  initialTemplate?: BotTemplateId
   onClose: () => void
   /** Opens the editor for a just-created local bot whose model is not ready. */
   onConfigureModel?: (bot: RosterRow) => void
@@ -120,7 +123,7 @@ interface CreateAgentDialogProps {
   roster: RosterRow[]
 }
 
-export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: CreateAgentDialogProps) {
+export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemplate, roster }: CreateAgentDialogProps) {
   const { t } = useI18n()
   const b = useBots()
   const [name, setName] = useState('')
@@ -437,6 +440,15 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
       setDirtyCaps(prev => ({ ...prev, skills: true }))
     }
   }
+
+  // G6: a marketplace starter card seeds the dialog through the same
+  // applyTemplate path the in-dialog picker uses, once per open.
+  useEffect(() => {
+    if (open && initialTemplate && initialTemplate !== 'custom') {
+      applyTemplate(initialTemplate)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- applyTemplate reads the reset form state at open time.
+  }, [open, initialTemplate])
 
   // Materialize the profile exactly once. createdRef stores the finished slug
   // (its consumers — the taken check, draft discard on cancel, the MCP setup

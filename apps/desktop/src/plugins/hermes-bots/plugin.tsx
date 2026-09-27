@@ -48,7 +48,7 @@ import {
 } from './bot-state'
 import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
 import { BotChatEmpty } from './chat-empty'
-import { bindProfileSync, RoutinesPane } from './cron'
+import { bindProfileSync } from './cron'
 import {
   $botMeta,
   $lastRoster,
@@ -85,6 +85,8 @@ import { annotateOrphanedGroupChatMembers } from './hygiene'
 import { BOTS_LOCALES } from './i18n'
 import { displayName } from './labels'
 import { hydrateRosterSortMode } from './live-status'
+import { MissionRail } from './mission-rail'
+import { hydrateRailSections } from './rail-state'
 import { startBotRelay, stopBotRelay } from './relay'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import {
@@ -266,6 +268,8 @@ export default {
     // Hydrate the roster sort pref (default 'recent'; 'attention' floats
     // bots with open items — self-contained in live-status.ts).
     hydrateRosterSortMode()
+    // Hydrate the mission rail's per-section fold state (default expanded).
+    hydrateRailSections()
 
     // Hydrate the Sessions-rail Agents fold (default open).
     try {
@@ -557,13 +561,13 @@ export default {
             pos: 'right',
             enforce: true
           },
-          // A bot's schedule is glanceable, not something you sit in — it
+          // A bot's context rail is glanceable, not something you sit in — it
           // arrives as the right edge's vertical tab and takes no width off the
           // chat until the user opens it.
           defaultCollapsed: true,
           width: '250px'
         } satisfies PaneContribution,
-        render: () => <RoutinesPane />
+        render: () => <MissionRail />
       })
 
       // The pane's ✕ remembers a Close across launches, and nothing else ever

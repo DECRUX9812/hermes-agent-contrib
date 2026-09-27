@@ -1,6 +1,7 @@
 import { ConfirmDialog, host } from '@hermes/plugin-sdk'
 import type { useI18n } from '@hermes/plugin-sdk'
 
+import type { BotTemplateId } from './bot-templates'
 import { CreateAgentDialog, CreateGroupChatDialog, GroupDialog } from './create-dialog'
 import type { useRoster } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
@@ -15,7 +16,10 @@ interface renderRosterDialogsProps {
   b: ReturnType<typeof useBots>
   t: ReturnType<typeof useI18n>['t']
   createOpen: boolean
+  /** G6 — marketplace starter template to seed the create dialog with. */
+  createTemplate?: BotTemplateId
   setCreateOpen: (value: boolean) => void
+  setCreateTemplate: (value: BotTemplateId | undefined) => void
   groupCreateOpen: boolean
   setGroupCreateOpen: (value: boolean) => void
   editing: RosterRow | null
@@ -37,7 +41,9 @@ export function renderRosterDialogs({
   b,
   t,
   createOpen,
+  createTemplate,
   setCreateOpen,
+  setCreateTemplate,
   groupCreateOpen,
   setGroupCreateOpen,
   editing,
@@ -57,8 +63,10 @@ export function renderRosterDialogs({
   return (
     <>
       <CreateAgentDialog
+        initialTemplate={createTemplate}
         onClose={() => {
           setCreateOpen(false)
+          setCreateTemplate(undefined)
           void refetch()
         }}
         onConfigureModel={setEditing}
