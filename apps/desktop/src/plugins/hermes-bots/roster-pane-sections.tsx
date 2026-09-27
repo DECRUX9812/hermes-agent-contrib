@@ -30,6 +30,9 @@ interface RosterSectionRenderersProps {
   rosterSectionCollapsed: (id: string) => boolean
   toggleRosterSection: (id: string) => void
   setSectionDialog: (value: SectionDialogState) => void
+  /** G10 — cards layout: bot rows render as cards in an auto-fill grid;
+   *  group rows stay full-width. */
+  cardMode: boolean
   renderBotRow: (bot: RosterRow, keyPrefix?: string) => ReactNode
   renderGroupRow: (row: { members: GroupMember[]; name: string }) => ReactNode
   sortedGroupRows: RosterGroupRow[]
@@ -45,10 +48,17 @@ export function rosterSectionRenderers({
   rosterSectionCollapsed,
   toggleRosterSection,
   setSectionDialog,
+  cardMode,
   renderBotRow,
   renderGroupRow,
   sortedGroupRows
 }: RosterSectionRenderersProps) {
+  // The flat rows container vs the card grid — one class switch shared by
+  // every section body.
+  const rowsClass = cardMode
+    ? 'grid min-w-0 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5 px-1.5 py-1'
+    : 'grid min-w-0 gap-0.5'
+
   const removeSection = (id: string) => {
     const name = userSections.find(section => section.id === id)?.name || ''
     const { members, undo } = deleteBotSection(id, roster)
@@ -75,7 +85,23 @@ export function rosterSectionRenderers({
   const renderUserSections = (rows: UserSectionRow[], keyPrefix = '') => {
     // No sections made: the plain list, exactly as before this feature.
     if (!userSections.length) {
-      return rows.map(row => (row.kind === 'group' ? renderGroupRow(row) : renderBotRow(row.bot, keyPrefix)))
+      if (!cardMode) {
+        return rows.map(row => (row.kind === 'group' ? renderGroupRow(row) : renderBotRow(row.bot, keyPrefix)))
+      }
+
+      return (
+        <div className={rowsClass}>
+          {rows.map(row =>
+            row.kind === 'group' ? (
+              <div className="col-span-full" key={row.name}>
+                {renderGroupRow(row)}
+              </div>
+            ) : (
+              renderBotRow(row.bot, keyPrefix)
+            )
+          )}
+        </div>
+      )
     }
 
     const nested = Boolean(keyPrefix)
@@ -134,9 +160,15 @@ export function rosterSectionRenderers({
                 onToggle={() => toggleRosterSection(key)}
               />
               {collapsed ? null : block.rows.length ? (
-                <div className="grid min-w-0 gap-0.5">
+                <div className={rowsClass}>
                   {block.rows.map(row =>
-                    row.kind === 'group' ? renderGroupRow(row) : renderBotRow(row.bot, `${key}:`)
+                    row.kind === 'group' ? (
+                      <div className={cardMode ? 'col-span-full' : ''} key={row.name}>
+                        {renderGroupRow(row)}
+                      </div>
+                    ) : (
+                      renderBotRow(row.bot, `${key}:`)
+                    )
                   )}
                 </div>
               ) : (
@@ -164,9 +196,7 @@ export function rosterSectionRenderers({
           onToggle={() => toggleRosterSection(sectionId)}
           option={section.option}
         />
-        {collapsed ? null : (
-          <div className="grid min-w-0 gap-0.5">{renderUserSections(section.rows, `${section.id}:`)}</div>
-        )}
+        {collapsed ? null : <div className="min-w-0">{renderUserSections(section.rows, `${section.id}:`)}</div>}
       </div>
     )
   }
@@ -185,9 +215,7 @@ export function rosterSectionRenderers({
           onToggle={() => toggleRosterSection(sectionId)}
           tip={`${sortedGroupRows.length} global group chat${sortedGroupRows.length === 1 ? '' : 's'}`}
         />
-        {collapsed ? null : (
-          <div className="grid min-w-0 gap-0.5">{renderUserSections(sortedGroupRows, 'groups:')}</div>
-        )}
+        {collapsed ? null : <div className="min-w-0">{renderUserSections(sortedGroupRows, 'groups:')}</div>}
       </div>
     )
   }
@@ -201,7 +229,11 @@ export function rosterSectionRenderers({
         </span>
         <span className="shrink-0 font-normal tabular-nums">{section.rows.length}</span>
       </div>
-      {section.rows.map(row => renderBotRow(row.bot, `hidden:${section.id}:`))}
+      {cardMode ? (
+        <div className={rowsClass}>{section.rows.map(row => renderBotRow(row.bot, `hidden:${section.id}:`))}</div>
+      ) : (
+        section.rows.map(row => renderBotRow(row.bot, `hidden:${section.id}:`))
+      )}
     </div>
   )
 

@@ -1,6 +1,7 @@
 import { host, useI18n, useValue } from '@hermes/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 
+import { BotCard } from './bot-card'
 import { BotRow } from './bot-row'
 import {
   $botChatFocused,
@@ -54,6 +55,7 @@ import { $lastSources, usePublishRosterSnapshot } from './roster-pane-lifecycle'
 import { rosterSectionRenderers } from './roster-pane-sections'
 import { renderRosterToolbar } from './roster-pane-toolbar'
 import { botNeedsHandleLabel, rosterGatewayOptions } from './roster-sections'
+import { $rosterViewMode, setRosterViewMode } from './roster-view'
 import { RoutinesCalendarDialog } from './routines-calendar'
 import { botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
 import { activeBots, useTurnBusy } from './row-helpers'
@@ -61,10 +63,12 @@ import { TriageStrip } from './triage-strip'
 import type { BotMeta, GatewaySource, GroupMember, RosterActivityFilter, RosterKindFilter, RosterRow } from './types'
 import {
   $botSections,
+  $collapsedBotSections,
   $draggingBot,
   adoptBotSectionsFromMeta,
   backfillBotSectionNames,
-  type SectionDialogState
+  type SectionDialogState,
+  toggleBotSectionCollapsed
 } from './user-sections'
 import { useEscapeCancelsBotDrag } from './user-sections-ui'
 
@@ -275,7 +279,9 @@ export function BotsPane() {
   const [rowKindFilter, setRowKindFilter] = useState<RosterKindFilter>('all')
   const [activityFilter, setActivityFilter] = useState<RosterActivityFilter>('all')
   const [gatewayFilter, setGatewayFilter] = useState('all')
-  const [collapsedRosterSections, setCollapsedRosterSections] = useState<Set<string>>(() => new Set())
+  // Collapsed folds persist device-locally (G4) — $collapsedBotSections is
+  // loaded from plugin storage at register().
+  const collapsedRosterSections = useValue($collapsedBotSections)
   const hiddenSectionRef = useRef<null | HTMLDivElement>(null)
   const activityToasts = useValue($activityToasts)
   const groupChatName = useValue($groupChatWorkspace)
@@ -316,6 +322,8 @@ export function BotsPane() {
   // 'attention-first' sort: flagged bots top their band while pinned stays
   // the outer band (the user's own filing never loses to a count).
   const sortMode = useValue($rosterSortMode)
+  const viewMode = useValue($rosterViewMode)
+  const cardMode = viewMode === 'cards'
   const attentionCounts = useRosterAttentionCounts(sourceWithSelectedOwner)
   const attentionOf = (bot: RosterRow): number => attentionCounts.get(botRosterKey(bot)) ?? 0
 
@@ -408,19 +416,7 @@ export function BotsPane() {
 
   const rosterSectionCollapsed = (id: string): boolean => !hasRosterConstraint && collapsedRosterSections.has(id)
 
-  const toggleRosterSection = (id: string): void => {
-    setCollapsedRosterSections(previous => {
-      const next = new Set(previous)
-
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-
-      return next
-    })
-  }
+  const toggleRosterSection = toggleBotSectionCollapsed
 
   useEffect(() => {
     if (!hiddenExpanded || hasRosterConstraint) {
@@ -451,19 +447,33 @@ export function BotsPane() {
     return <GroupChatWorkspace group={groupChatName} members={groupChatMembers} />
   }
 
-  const renderBotRow = (bot: RosterRow, keyPrefix = '') => (
-    <BotRow
-      bot={bot}
-      key={`${keyPrefix}${botRosterKey(bot)}`}
-      onAssignTask={setAssigningTask}
-      onDelete={setDeleting}
-      onEdit={setEditing}
-      onGroup={setGrouping}
-      onNewSection={target => setSectionDialog({ bot: target, mode: 'create' })}
-      openTasks={mailboxOpenCountFor(mailboxNotes, bot)}
-      showHandle={botNeedsHandleLabel(bot, roster, allMeta)}
-    />
-  )
+  // G10 — the card view is the SAME row through a different visual: one
+  // renderer switches per bot so section blocks, hidden rows, and filters
+  // all stay identical between views.
+  const renderBotRow = (bot: RosterRow, keyPrefix = '') =>
+    cardMode ? (
+      <BotCard
+        bot={bot}
+        key={`${keyPrefix}${botRosterKey(bot)}`}
+        onAssignTask={setAssigningTask}
+        onDelete={setDeleting}
+        onEdit={setEditing}
+        onGroup={setGrouping}
+        onNewSection={target => setSectionDialog({ bot: target, mode: 'create' })}
+      />
+    ) : (
+      <BotRow
+        bot={bot}
+        key={`${keyPrefix}${botRosterKey(bot)}`}
+        onAssignTask={setAssigningTask}
+        onDelete={setDeleting}
+        onEdit={setEditing}
+        onGroup={setGrouping}
+        onNewSection={target => setSectionDialog({ bot: target, mode: 'create' })}
+        openTasks={mailboxOpenCountFor(mailboxNotes, bot)}
+        showHandle={botNeedsHandleLabel(bot, roster, allMeta)}
+      />
+    )
 
   const renderGroupRow = (row: { members: GroupMember[]; name: string }) => (
     <RosterGroupRowView
@@ -493,6 +503,7 @@ export function BotsPane() {
       rosterSectionCollapsed,
       toggleRosterSection,
       setSectionDialog,
+      cardMode,
       renderBotRow,
       renderGroupRow,
       sortedGroupRows
@@ -525,7 +536,9 @@ export function BotsPane() {
         setSortMode: setRosterSortMode,
         setBroadcastOpen,
         setCalendarOpen,
-        setMarketplaceOpen
+        setMarketplaceOpen,
+        viewMode,
+        setViewMode: setRosterViewMode
       })}
       <TriageStrip bots={roster} onOpen={bot => void openRosterBot(bot)} />
       {renderRosterContent({
@@ -555,6 +568,7 @@ export function BotsPane() {
         mailboxNotes,
         mailboxCollapsed: rosterSectionCollapsed('mailbox'),
         toggleMailboxSection: () => toggleRosterSection('mailbox'),
+        cardMode,
         renderBotRow,
         renderGroupChatSection,
         renderGatewaySection,

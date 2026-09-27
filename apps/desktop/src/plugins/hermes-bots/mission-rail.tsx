@@ -33,7 +33,7 @@ import {
 import { $botMeta, $lastRoster, botHandle } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { useBots } from './i18n'
-import { displayName } from './labels'
+import { botRole, displayName } from './labels'
 import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
 import { NewTaskButton } from './new-task'
 import { $railCollapsed, type RailSectionId, setRailSectionCollapsed } from './rail-state'
@@ -88,7 +88,9 @@ function BotProfileCard({ bot, meta, onEdit }: { bot: RosterRow; meta?: Paramete
   const { shape, color, image } = botAppearance(bot.name, meta)
   const name = displayName({ name: bot.name }, meta)
   const handle = botHandle(bot.name, bot)
-  const subtitle = String(bot.description || bot.title || '').trim()
+  // G3 persona role one-liner; falls back to the description's first
+  // sentence, empty when nothing says what the bot is for.
+  const subtitle = botRole(bot, meta)
 
   return (
     <div className="px-3 pt-3 pb-2" data-testid="rail-profile-card">

@@ -17,6 +17,7 @@
 
 import {
   CHAT_EMPTY_AREA,
+  CHAT_HEADER_AREAS,
   Codicon,
   COMPOSER_AREAS,
   host,
@@ -28,10 +29,17 @@ import {
   TRANSCRIPT_DIRECTIVE_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
-import type { ChatEmptyProps, PluginContext, ProfileGroupRoute, TranscriptDirectiveProps } from '@hermes/plugin-sdk'
+import type {
+  ChatEmptyProps,
+  ChatHeaderSlotContribution,
+  PluginContext,
+  ProfileGroupRoute,
+  TranscriptDirectiveProps
+} from '@hermes/plugin-sdk'
 
 import { AgentsSection } from './agents-section'
 import { startFaceClock, stopFaceClock } from './avatar'
+import { BotHeaderIdentity } from './bot-header-chip'
 import { BOT_PLAN_DIRECTIVE, rewritePlanDraft } from './bot-plan'
 import { BotPlanCard, canonicalBotChatOnScreen } from './bot-plan-card'
 import { BotPlanChecklist } from './bot-plan-checklist'
@@ -96,6 +104,7 @@ import {
   selectedRosterBot,
   sessionOwnsWorkspace
 } from './roster-pane'
+import { hydrateRosterViewMode } from './roster-view'
 import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
 import { startScreenAutoRaise } from './screen-autoraise'
 import { ProfileGroupScreenPortal } from './screen-portal'
@@ -268,6 +277,7 @@ export default {
     // Hydrate the roster sort pref (default 'recent'; 'attention' floats
     // bots with open items — self-contained in live-status.ts).
     hydrateRosterSortMode()
+    hydrateRosterViewMode()
     // Hydrate the mission rail's per-section fold state (default expanded).
     hydrateRailSections()
 
@@ -487,6 +497,17 @@ export default {
       area: SIDEBAR_LIST_TOP_AREA,
       data: { render: () => <AgentsSection />, searchable: true }
     })
+    // G3/G7 — the canonical Bot Chat's header carries the bot's persona:
+    // the role one-liner beside the title, and the pinned model as a chip
+    // whose click opens the same quick-swap menu the row context menu has.
+    // The contribution decides per header — only (profile, 'Bot Chat') gets
+    // it; every other chat renders nothing.
+    ctx.register({
+      id: 'bot-header-identity',
+      area: CHAT_HEADER_AREAS.title,
+      data: { render: props => <BotHeaderIdentity {...props} /> } as ChatHeaderSlotContribution
+    })
+
     ctx.register({
       id: 'pane',
       area: 'panes',

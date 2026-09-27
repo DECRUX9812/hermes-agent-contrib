@@ -2040,9 +2040,14 @@ export {
 export { DisclosureCaret } from '@/components/ui/disclosure-caret'
 export {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 export { EmptyState } from '@/components/ui/empty-state'
@@ -2130,6 +2135,11 @@ export { type BudgetedLoop, type BudgetedLoopOptions, createBudgetedLoop } from 
 /** The blank transcript as a contribution area: claim the sessions you own and
  *  render what stands in the gap. Core's own splash keeps a fresh draft. */
 export { CHAT_EMPTY_AREA, type ChatEmptyContribution, type ChatEmptyProps } from '@/lib/chat-empty'
+/** Chat-header decoration slot: register a `data` contribution with a
+ *  `render` for `CHAT_HEADER_AREAS.title` to decorate the header's title row
+ *  (the props carry the durable session id, owning profile, and shown title;
+ *  render `null` for headers the plugin doesn't own). */
+export { CHAT_HEADER_AREAS, type ChatHeaderSlotContribution, type ChatHeaderSlotProps } from '@/lib/chat-header-slots'
 /** `chatMessageText` flattens a message's text parts to a string — the shared
  *  read the transcript-derivation helpers (and every plugin that scans a
  *  conversation) build on. `answeredAfter` tells whether any visible user
@@ -2152,20 +2162,18 @@ export { triggerHaptic as haptic } from '@/lib/haptics'
 export type { HermesOpenTarget } from '@/lib/hermes-open-target'
 /** The app's lucide icon set (RefreshCw, LayoutDashboard, Activity, …). */
 export * as icons from '@/lib/icons'
+
+export const PANES_AREA = 'panes'
 /** IME-aware Enter: true only for a real submit Enter, never a CJK composition
  *  commit (`isComposing` or the legacy keyCode 229). Use it on every plugin
  *  text field whose bare Enter performs an action. */
 export { isSubmitEnter } from '@/lib/ime'
-
-export const PANES_AREA = 'panes'
 export { type KeybindContribution, KEYBINDS_AREA } from '@/lib/keybinds/actions'
 export { formatModifierToken } from '@/lib/keybinds/combo'
 /** A `Map` with a ceiling, for the module-level caches a plugin keeps across
  *  a renderer that stays open for days. Only for values that can be
  *  regenerated — eviction costs a recompute or a refetch, never correctness. */
 export { LruCache } from '@/lib/lru-cache'
-/** Capture a gateway file download alongside a REST read (see the SDK guide). */
-export { captureGatewayFileDownload } from '@/lib/media'
 export const STATUSBAR_AREAS = { left: 'statusBar.left', right: 'statusBar.right' } as const
 /** Titlebar slots are PERMANENT mount points: a component registered here
  *  stays mounted across chat ↔ page navigation, so `useEffect` setup/cleanup
@@ -2173,6 +2181,8 @@ export const STATUSBAR_AREAS = { left: 'statusBar.left', right: 'statusBar.right
  *  should exist only while a page is up go to `WORKSPACE_PAGE_HEADER_AREA`. */
 export const TITLEBAR_AREAS = { center: 'titleBar.center', left: 'titleBar.left', right: 'titleBar.right' } as const
 
+/** Capture a gateway file download alongside a REST read (see the SDK guide). */
+export { captureGatewayFileDownload } from '@/lib/media'
 /** The app's deterministic identity color for a name (profiles, assignees,
  *  authors), its translucent tag fill, and the curated picker swatches — so
  *  plugin-rendered identities read the same hue as everywhere else. The
