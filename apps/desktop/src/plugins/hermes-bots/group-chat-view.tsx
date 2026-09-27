@@ -102,6 +102,7 @@ import {
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
+import { markGroupRead } from './group-unread'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
 import { roomMailboxNotes, useMailbox } from './mailbox'
@@ -1512,6 +1513,7 @@ export function openGroupChat(group: string): void {
     ...$groupNeedsYou.get(),
     [group]: false
   })
+  markGroupRead(group)
   const ownerKey = groupWorkspaceOwnerKey(group)
   setBotsWorkspaceOwner(ownerKey, null, 'New group conversations start in the group composer.')
   // #93813: what reached the members' room sessions while nobody drove them
