@@ -48,6 +48,9 @@ interface renderRosterToolbarProps {
   /** A2 — the roster sort: 'recent' (default) or 'attention' first. */
   sortMode: RosterSortMode
   setSortMode: (value: RosterSortMode) => void
+  /** D1/D3 — fleet surfaces open from the toolbar. */
+  setBroadcastOpen: (value: boolean) => void
+  setCalendarOpen: (value: boolean) => void
   /** G10 — the roster view: 'list' (default) or the 'cards' grid. */
   viewMode: RosterViewMode
   setViewMode: (value: RosterViewMode) => void
@@ -76,6 +79,8 @@ export function renderRosterToolbar({
   setGatewayFilter,
   sortMode,
   setSortMode,
+  setBroadcastOpen,
+  setCalendarOpen,
   viewMode,
   setViewMode
 }: renderRosterToolbarProps) {
@@ -144,6 +149,36 @@ export function renderRosterToolbar({
               <DropdownMenuItem onSelect={() => setSectionDialog({ mode: 'create' })}>
                 <Codicon className="mr-1.5" name="new-folder" />
                 {b.sections.newSection}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <Tip label={b.broadcast.title}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label={b.broadcast.title}
+                  className="rounded-md text-(--ui-text-tertiary) hover:text-foreground"
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <Codicon name="broadcast" />
+                </Button>
+              </DropdownMenuTrigger>
+            </Tip>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                disabled={!roster.filter(bot => !bot?.ghost).length}
+                onSelect={() => setBroadcastOpen(true)}
+              >
+                <Codicon className="mr-1.5" name="broadcast" />
+                {b.broadcast.menuItem}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!roster.filter(bot => !bot?.ghost).length}
+                onSelect={() => setCalendarOpen(true)}
+              >
+                <Codicon className="mr-1.5" name="calendar" />
+                {b.calendar.menuItem}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
