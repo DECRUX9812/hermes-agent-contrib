@@ -41,6 +41,7 @@ import { useEffect, useRef, useState } from 'react'
 import { avatarColor, blobatarSvg, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { AvatarPicker } from './avatar-picker'
+import { importBot } from './bot-export'
 import { $selectedBot } from './bot-state'
 import { BOT_TEMPLATE_IDS, BOT_TEMPLATES, disabledSkillNames, stagedSkillsForTemplate } from './bot-templates'
 import type { BotTemplateId } from './bot-templates'
@@ -1116,6 +1117,25 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           ) : null}
         </div>
         <DialogFooter>
+          {/* C5: bring a shared bot bundle in — imports the profile (skills,
+              toolsets, MCP, SOUL, ui_meta bot pack) and lands it on the
+              roster. Disabled while a create is mid-flight. */}
+          <Button
+            className="mr-auto"
+            disabled={busy}
+            onClick={() =>
+              void importBot().then(name => {
+                if (name) {
+                  discardDraft()
+                  reset()
+                  onClose()
+                }
+              })
+            }
+            variant="ghost"
+          >
+            {b.bot.importBot}
+          </Button>
           <Button
             disabled={busy}
             onClick={() => {

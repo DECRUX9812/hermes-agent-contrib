@@ -48,6 +48,7 @@ import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
 import { deleteProfile, getAllSessionMessages, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { selectDesktopPaths } from '@/lib/desktop-fs'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
 import { mergeRailArtifacts, type RailArtifactItem, registryArtifactsForSessions } from '@/store/artifact-rail'
 import { $artifactRegistry } from '@/store/artifacts'
@@ -85,6 +86,10 @@ import {
   setActiveProfile,
   setShowAllProfiles
 } from '@/store/profile'
+import {
+  exportProfileBundle,
+  importProfileBundle
+} from '@/store/profile-share'
 import {
   $activeSessionId,
   $connection,
@@ -1732,6 +1737,80 @@ export const host = {
     )
 
     return { failures: failures.length, items: mergeRailArtifacts(registry, transcript), sessions }
+  },
+
+  /** Native save-path dialog (title/filters/defaultPath); null on cancel, and
+   *  null when the shell bridge is absent. The path names a file on the
+   *  filesystem the backend sees — for a remote connection that is the remote
+   *  host, so pair it with a route-scoped export/import call, not a local fs
+   *  read. */
+  pickSavePath: async (options: {
+    defaultPath?: string
+    filters?: Array<{ extensions: string[]; name: string }>
+    title?: string
+  } = {}): Promise<null | string> => window.hermesDesktop?.selectSavePath?.(options) ?? null,
+
+  /** Open-path dialog (files or directories), remote-aware via the remote
+   *  picker for directory selections. Returns the chosen paths (empty on
+   *  cancel). */
+  pickOpenPaths: async (options?: {
+    directories?: boolean
+    filters?: Array<{ extensions: string[]; name: string }>
+    multiple?: boolean
+    title?: string
+  }): Promise<string[]> => selectDesktopPaths(options),
+
+  /** Export a profile as a shareable archive (profile dir — config, skills,
+   *  SOUL.md, ui_meta, assets — plus the desktop appearance overlay), via the
+   *  backend's own export, which excludes credentials, .env, session DBs, and
+   *  runtime dirs. `extraFiles` stages extra root-level files (a manifest) into
+   *  the archive. `options.output` is a path on the BACKEND's filesystem — for
+   *  a remote route that is the remote host. */
+  exportProfileBundle: async (
+    route: PluginProfileRoute | null,
+    options: { extraFiles?: Record<string, string>; output?: string; profile: string }
+  ): Promise<string> => {
+    if (route && (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim())) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    const profile = options.profile.trim()
+
+    if (!profile) {
+      throw new Error('Profile export requires a profile')
+    }
+
+    return exportProfileBundle(profile, {
+      extraFiles: options.extraFiles,
+      output: options.output,
+      scope: { connectionId: route?.connectionId, profile: route?.targetProfile ?? profile }
+    })
+  },
+
+  /** Import a profile archive (a path on the backend's filesystem) as a new
+   *  profile and apply its bundled appearance overlay. Returns the created
+   *  profile name. Does NOT switch the active profile — the caller decides
+   *  what an import means for its surface. */
+  importProfileBundle: async (
+    route: PluginProfileRoute | null,
+    options: { archive: string; name?: string }
+  ): Promise<{ name: string }> => {
+    if (route && (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim())) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    const archive = options.archive.trim()
+
+    if (!archive) {
+      throw new Error('Profile import requires an archive path')
+    }
+
+    const name = await importProfileBundle(archive, options.name, {
+      connectionId: route?.connectionId,
+      profile: route?.targetProfile
+    })
+
+    return { name }
   },
 
   /** Gateway JSON-RPC — sessions, config, skills, cron, kanban, everything
