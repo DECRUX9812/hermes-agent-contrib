@@ -21,7 +21,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { applyAdvancedConfig, emptyAdvancedState } from './profile-config'
+import { applyAdvancedConfig, capabilityCounts, emptyAdvancedState } from './profile-config'
 import type { RosterRow } from './types'
 
 type AdvancedConfigState = ReturnType<typeof emptyAdvancedState>
@@ -228,5 +228,32 @@ describe('a guarded model switch (#95293)', () => {
     expect(routed).toHaveLength(1)
     expect(confirmMock).not.toHaveBeenCalled()
     expect(result).toMatchObject({ applied: { model: true }, ok: true })
+  })
+})
+
+describe('capabilityCounts (C2 summary)', () => {
+  // The Capabilities section header reads "3 skills · 2 toolsets · 1 MCP
+  //  server" BEFORE it is expanded — these counts are that read view. They
+  //  must come from profiles.describe only (mcp_servers = configured servers;
+  //  the catalog is for installs, not the count).
+  it('counts enabled skills and toolsets over totals; MCP counts configured servers', () => {
+    expect(
+      capabilityCounts({
+        mcp_servers: [{ name: 'web' }, { name: 'fs' }],
+        skills: [{ name: 'a', enabled: true }, { name: 'b', enabled: false }, { name: 'c', enabled: true }],
+        toolsets: [{ name: 'core', enabled: true }, { name: 'browser' }]
+      })
+    ).toEqual({ mcp: 2, skills: 2, skillsTotal: 3, toolsets: 1, toolsetsTotal: 2 })
+  })
+
+  it('a missing/failed describe answers null — no fake zeros over a section the user never opened', () => {
+    expect(capabilityCounts(null)).toBeNull()
+    expect(capabilityCounts({ skills: [], toolsets: [], mcp_servers: [] })).toEqual({
+      mcp: 0,
+      skills: 0,
+      skillsTotal: 0,
+      toolsets: 0,
+      toolsetsTotal: 0
+    })
   })
 })

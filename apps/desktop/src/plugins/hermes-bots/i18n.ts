@@ -59,6 +59,10 @@ type BotsMessages = {
     createOn: string
     general: string
     capabilities: string
+    /** Collapsed Capabilities header read: enabled counts or, before the
+     *  describe lands, the hint naming what the section holds. */
+    capabilitiesSummary: (skills: number, toolsets: number, mcp: number) => string
+    capabilitiesHint: string
     skills: string
     tools: string
     cloneFrom: string
@@ -272,6 +276,15 @@ type BotsMessages = {
     /** Duplicate progress + success toasts. */
     duplicating: (name: string) => string
     duplicated: (name: string, source: string) => string
+    /** Export/import bot bundles (C5). `exportBot` is the save dialog's title;
+     *  `exportBotMenu` the row context-menu label. */
+    exportBotMenu: string
+    exportBot: (name: string) => string
+    exported: (path: string) => string
+    exportFailed: string
+    importBot: string
+    imported: (name: string) => string
+    importFailed: string
     /** Model quick-swap submenu (C3). Failure copy reuses
      *  `editor.modelSwitchFailed`. */
     modelMenu: string
@@ -641,6 +654,24 @@ type BotsMessages = {
     attention: (name: string, reason: string) => string
     openItem: (name: string) => string
   }
+  /** B1+B2 — the `/plan` proposal card + live checklist above the composer.
+   *  Model-bound strings (the mode prefix, the execute prompt, the `::botplan`
+   *  and `DONE:` markers) stay English in bot-plan.ts — this section is only
+   *  the chrome the user reads. */
+  plan: {
+    proposedTitle: string
+    stepsCount: (count: number) => string
+    approve: string
+    edit: string
+    dismiss: string
+    /** Shown inline once the plan is taken up (approved, edited, or replied
+     *  to) — the card's buttons collapse to this state line. */
+    settledNote: string
+    checklistTitle: string
+    stepsDone: (done: number, total: number) => string
+    complete: string
+    clearChecklist: string
+  }
 }
 
 const en: BotsMessages = {
@@ -668,6 +699,8 @@ const en: BotsMessages = {
     createOn: 'Create on',
     general: 'General',
     capabilities: 'Capabilities',
+    capabilitiesSummary: (skills, toolsets, mcp) => `${skills} skills · ${toolsets} toolsets · ${mcp} MCP servers`,
+    capabilitiesHint: 'model · skills · toolsets · MCP · SOUL.md',
     skills: 'Skills',
     tools: 'Tools',
     cloneFrom: 'Clone from profile',
@@ -877,6 +910,13 @@ const en: BotsMessages = {
     duplicateFailed: 'Duplicate failed',
     duplicating: name => `Duplicating ${name}…`,
     duplicated: (name, source) => `Created ${name} — full copy of ${source}`,
+    exportBotMenu: 'Export bot…',
+    exportBot: name => `Export ${name}…`,
+    exported: path => `Exported to ${path}`,
+    exportFailed: 'Export failed',
+    importBot: 'Import bot…',
+    imported: name => `Imported ${name}`,
+    importFailed: 'Import failed',
     modelMenu: 'Model',
     modelLoading: 'Loading models…',
     modelUnavailable: 'Model list unavailable',
@@ -1217,6 +1257,18 @@ const en: BotsMessages = {
     unreachable: name => `${name}’s gateway is unreachable`,
     attention: (name, reason) => `${name}: ${reason}`,
     openItem: name => `Open ${name}`
+  },
+  plan: {
+    proposedTitle: 'Proposed plan',
+    stepsCount: count => `${count} ${count === 1 ? 'step' : 'steps'}`,
+    approve: 'Approve & run',
+    edit: 'Edit',
+    dismiss: 'Dismiss',
+    settledNote: 'Plan handled.',
+    checklistTitle: 'Plan',
+    stepsDone: (done, total) => `${done}/${total} done`,
+    complete: 'Complete',
+    clearChecklist: 'Clear'
   }
 }
 
@@ -1246,6 +1298,8 @@ const ja: BotsMessages = {
     createOn: '作成先',
     general: '一般',
     capabilities: '機能',
+    capabilitiesSummary: (skills, toolsets, mcp) => `スキル ${skills} · ツールセット ${toolsets} · MCP サーバー ${mcp}`,
+    capabilitiesHint: 'モデル · スキル · ツールセット · MCP · SOUL.md',
     skills: 'スキル',
     tools: 'ツール',
     cloneFrom: '複製元のプロファイル',
@@ -1455,6 +1509,13 @@ const ja: BotsMessages = {
     duplicateFailed: '複製に失敗しました',
     duplicating: name => `${name} を複製中…`,
     duplicated: (name, source) => `作成しました ${name} — ${source} の完全なコピー`,
+    exportBotMenu: 'ボットをエクスポート…',
+    exportBot: name => `${name} をエクスポート…`,
+    exported: path => `${path} にエクスポートしました`,
+    exportFailed: 'エクスポートに失敗しました',
+    importBot: 'ボットをインポート…',
+    imported: name => `${name} をインポートしました`,
+    importFailed: 'インポートに失敗しました',
     modelMenu: 'モデル',
     modelLoading: 'モデルを読み込み中…',
     modelUnavailable: 'モデル一覧を取得できません',
@@ -1798,6 +1859,18 @@ const ja: BotsMessages = {
     unreachable: name => `${name}のゲートウェイに到達できません`,
     attention: (name, reason) => `${name}: ${reason}`,
     openItem: name => `${name}を開く`
+  },
+  plan: {
+    proposedTitle: '提案されたプラン',
+    stepsCount: count => `${count} ステップ`,
+    approve: '承認して実行',
+    edit: '編集',
+    dismiss: '閉じる',
+    settledNote: 'プランは処理済みです。',
+    checklistTitle: 'プラン',
+    stepsDone: (done, total) => `${done}/${total} 完了`,
+    complete: '完了',
+    clearChecklist: 'クリア'
   }
 }
 
@@ -1825,6 +1898,8 @@ const zh: BotsMessages = {
     createOn: '创建位置',
     general: '常规',
     capabilities: '能力',
+    capabilitiesSummary: (skills, toolsets, mcp) => `${skills} 项技能 · ${toolsets} 个工具集 · ${mcp} 个 MCP 服务器`,
+    capabilitiesHint: '模型 · 技能 · 工具集 · MCP · SOUL.md',
     skills: '技能',
     tools: '工具',
     cloneFrom: '从配置档案克隆',
@@ -2026,6 +2101,13 @@ const zh: BotsMessages = {
     duplicateFailed: '复制失败',
     duplicating: name => `正在复制 ${name}…`,
     duplicated: (name, source) => `已创建 ${name} — ${source} 的完整副本`,
+    exportBotMenu: '导出机器人…',
+    exportBot: name => `导出 ${name}…`,
+    exported: path => `已导出到 ${path}`,
+    exportFailed: '导出失败',
+    importBot: '导入机器人…',
+    imported: name => `已导入 ${name}`,
+    importFailed: '导入失败',
     modelMenu: '模型',
     modelLoading: '正在加载模型…',
     modelUnavailable: '无法获取模型列表',
@@ -2363,6 +2445,18 @@ const zh: BotsMessages = {
     unreachable: name => `无法访问 ${name} 的网关`,
     attention: (name, reason) => `${name}：${reason}`,
     openItem: name => `打开 ${name}`
+  },
+  plan: {
+    proposedTitle: '建议方案',
+    stepsCount: count => `${count} 个步骤`,
+    approve: '批准并运行',
+    edit: '编辑',
+    dismiss: '忽略',
+    settledNote: '方案已处理。',
+    checklistTitle: '方案',
+    stepsDone: (done, total) => `已完成 ${done}/${total}`,
+    complete: '已完成',
+    clearChecklist: '清除'
   }
 }
 
@@ -2390,6 +2484,8 @@ const zhHant: BotsMessages = {
     createOn: '建立位置',
     general: '一般',
     capabilities: '功能',
+    capabilitiesSummary: (skills, toolsets, mcp) => `${skills} 項技能 · ${toolsets} 個工具組 · ${mcp} 個 MCP 伺服器`,
+    capabilitiesHint: '模型 · 技能 · 工具組 · MCP · SOUL.md',
     skills: '技能',
     tools: '工具',
     cloneFrom: '從設定檔複製',
@@ -2591,6 +2687,13 @@ const zhHant: BotsMessages = {
     duplicateFailed: '複製失敗',
     duplicating: name => `正在複製 ${name}…`,
     duplicated: (name, source) => `已建立 ${name} — ${source} 的完整複本`,
+    exportBotMenu: '匯出機器人…',
+    exportBot: name => `匯出 ${name}…`,
+    exported: path => `已匯出至 ${path}`,
+    exportFailed: '匯出失敗',
+    importBot: '匯入機器人…',
+    imported: name => `已匯入 ${name}`,
+    importFailed: '匯入失敗',
     modelMenu: '模型',
     modelLoading: '正在載入模型…',
     modelUnavailable: '無法取得模型清單',
@@ -2928,6 +3031,18 @@ const zhHant: BotsMessages = {
     unreachable: name => `無法連接 ${name} 的閘道`,
     attention: (name, reason) => `${name}：${reason}`,
     openItem: name => `開啟 ${name}`
+  },
+  plan: {
+    proposedTitle: '建議方案',
+    stepsCount: count => `${count} 個步驟`,
+    approve: '核准並執行',
+    edit: '編輯',
+    dismiss: '關閉',
+    settledNote: '方案已處理。',
+    checklistTitle: '方案',
+    stepsDone: (done, total) => `已完成 ${done}/${total}`,
+    complete: '已完成',
+    clearChecklist: '清除'
   }
 }
 

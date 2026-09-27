@@ -50,7 +50,8 @@ const DirectiveEntry: FC<{
   contribution: Contribution
   parsed: ParsedTranscriptDirective
   streaming: boolean
-}> = ({ contribution, parsed, streaming }) => {
+  messageText: string
+}> = ({ contribution, parsed, streaming, messageText }) => {
   const render = (contribution.data as TranscriptDirectiveContribution).render
 
   // Stable component IDENTITY per (render, parsed) — a fresh type per parent
@@ -60,9 +61,9 @@ const DirectiveEntry: FC<{
   const Leaf = useMemo(
     () =>
       function DirectiveLeafHost({ streaming: live }: { streaming: boolean }) {
-        return <>{render({ attrs: parsed.attrs, source: parsed.source, streaming: live })}</>
+        return <>{render({ attrs: parsed.attrs, source: parsed.source, streaming: live, messageText })}</>
       },
-    [render, parsed]
+    [render, parsed, messageText]
   )
 
   return (
@@ -72,7 +73,11 @@ const DirectiveEntry: FC<{
   )
 }
 
-export const TranscriptDirectiveLeaf: FC<{ text: string; streaming?: boolean }> = ({ text, streaming }) => {
+export const TranscriptDirectiveLeaf: FC<{ text: string; streaming?: boolean; messageText?: string }> = ({
+  text,
+  streaming,
+  messageText = ''
+}) => {
   const contributions = useContributions(TRANSCRIPT_DIRECTIVE_AREA)
 
   const segments = useMemo<TranscriptParagraphSegment[] | null>(() => {
@@ -110,9 +115,15 @@ export const TranscriptDirectiveLeaf: FC<{ text: string; streaming?: boolean }> 
   const renderLeaf = useMemo(
     () =>
       render && parsed
-        ? () => render({ attrs: parsed.attrs, source: parsed.source, streaming: streaming ?? false })
+        ? () =>
+            render({
+              attrs: parsed.attrs,
+              source: parsed.source,
+              streaming: streaming ?? false,
+              messageText
+            })
         : null,
-    [render, parsed, streaming]
+    [render, parsed, streaming, messageText]
   )
 
   if (!onboardingEnabled) {
@@ -137,6 +148,7 @@ export const TranscriptDirectiveLeaf: FC<{ text: string; streaming?: boolean }> 
         <DirectiveEntry
           contribution={entry.match}
           key={entry.key}
+          messageText={messageText}
           parsed={entry.parsed}
           streaming={streaming ?? false}
         />
