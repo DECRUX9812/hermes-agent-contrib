@@ -13,6 +13,7 @@ import {
 
 import { botSourceStatus } from './data'
 import type { useBots } from './i18n'
+import type { RosterSortMode } from './live-status'
 import { setActivityToasts } from './roster-actions'
 import { GatewayKindGlyph } from './roster-sections'
 import type { rosterGatewayOptions } from './roster-sections'
@@ -43,6 +44,9 @@ interface renderRosterToolbarProps {
   setActivityFilter: (value: RosterActivityFilter) => void
   gatewayFilter: string
   setGatewayFilter: (value: string) => void
+  /** A2 — the roster sort: 'recent' (default) or 'attention' first. */
+  sortMode: RosterSortMode
+  setSortMode: (value: RosterSortMode) => void
 }
 
 export function renderRosterToolbar({
@@ -65,7 +69,9 @@ export function renderRosterToolbar({
   activityFilter,
   setActivityFilter,
   gatewayFilter,
-  setGatewayFilter
+  setGatewayFilter,
+  sortMode,
+  setSortMode
 }: renderRosterToolbarProps) {
   return (
     <>
@@ -179,6 +185,18 @@ export function renderRosterToolbar({
                   <DropdownMenuItem key={`activity:${value}`} onSelect={() => setActivityFilter(value)}>
                     <span className="min-w-0 flex-1">{label}</span>
                     {activityFilter === value ? <Codicon name="check" /> : null}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                {(
+                  [
+                    ['recent', b.roster.sortRecent],
+                    ['attention', b.roster.sortAttention]
+                  ] as [RosterSortMode, string][]
+                ).map(([value, label]) => (
+                  <DropdownMenuItem key={`sort:${value}`} onSelect={() => setSortMode(value)}>
+                    <span className="min-w-0 flex-1">{label}</span>
+                    {sortMode === value ? <Codicon name="check" /> : null}
                   </DropdownMenuItem>
                 ))}
                 {gatewayOptions.length > 1 ? <DropdownMenuSeparator /> : null}

@@ -43,7 +43,6 @@ import {
 } from './bot-state'
 import { ensureBotMetadata } from './canonical-chat'
 import {
-  $botAttention,
   $botMeta,
   $lastRoster,
   botActivitySession,
@@ -65,6 +64,7 @@ import { $groupReadAt, groupLastRoundSummary, groupUnreadCount } from './group-u
 import { fallbackSelectionAfterHide, isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
 import { displayName, stripPreviewMarkdown } from './labels'
+import { botLiveStatusLabel, useBotAttention, useBotLiveStatus } from './live-status'
 import { duplicateBot } from './profile-ops'
 import { botRecentSession, openBotRecentSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
@@ -172,19 +172,15 @@ export function BotRow({
   // Status keys off the canonical Bot Chat — the very session this row opens,
   // so the dot and the click can never describe different conversations.
   const canonicalSessionId = botCanonicalSessionId(bot)
-  // Needs-attention badge (#93091 item 3): background failures record under
-  // the selection key (group turns) or the route key (relay deliveries) —
-  // check both. Local/unannotated rows carry no connectionId, so their relay
-  // failures live under `<activeConnectionId>::<name>` — resolve that shape
-  // too or active-gateway bots never badge. Hidden bots keep their entry;
-  // hiding is display-only.
-  const attentionByKey = useValue($botAttention)
-
-  const attention =
-    attentionByKey[botSelectionKey(bot)] ||
-    attentionByKey[botRosterKey(bot)] ||
-    attentionByKey[`${bot?.connectionId || activeConnectionId}::${bot?.name || 'default'}`] ||
-    null
+  // A2 — the attention rollup: inbox items + quiet unread/needs-input dots
+  // counted under the bot's proven owner scope (never the ambient gateway —
+  // a same-named bot on another connection inherits nothing), plus the
+  // recorded failure flag whose reason still drives the tooltip.
+  const attention = useBotAttention(bot)
+  // A1 — the live status line: needs-input > live turn > routine > group >
+  // background > delegated worker > honest floor. Built from signals that
+  // expire (dot claims, job state, round keys, heartbeat) — never the clock.
+  const live = useBotLiveStatus(bot)
 
   // WHO sent the last message (bot-to-bot DM vs human) — the full stored
   // history lives in the canonical chat, not inline.
@@ -201,7 +197,24 @@ export function BotRow({
 
   const handle = botHandle(bot.name, bot)
   const gatewayLabel = bot.connectionLabel || (bot.connectionId === 'local' ? b.bot.thisDevice : '')
-  const showDetailsRow = Boolean(showHandle || displayPreview || fromBot)
+
+  // The live claim outranks the preview — a stale message tail under an
+  // actively working bot reads as frozen. 'Idle' only fills the line when
+  // nothing else would render (the floor, not a permanent caption); an
+  // unreachable source shows its preview, or nothing — never a guess.
+  const liveText =
+    live.kind === 'idle' || live.kind === 'unknown' ? null : botLiveStatusLabel(live, b.roster)
+
+  const detailText = liveText || displayPreview || (live.kind === 'idle' ? b.roster.liveIdle : '')
+
+  const liveTone =
+    live.kind === 'needs-input' || live.kind === 'stalled'
+      ? 'amber'
+      : liveText
+        ? 'live'
+        : null
+
+  const showDetailsRow = Boolean(showHandle || detailText || fromBot)
 
   const rowTooltip = [displayName(bot, meta), `@${handle}`, gatewayLabel, sourceStatus.label]
     .filter(Boolean)
@@ -279,13 +292,29 @@ export function BotRow({
               <span className="min-w-0 truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
             </Tip>
           </div>
-          {attention ? (
-            <Tip label={botAttentionHint(attention.reason)}>
-              <Codicon
-                aria-label={b.roster.needsAttention}
-                className="shrink-0 text-[0.6875rem] text-amber-600 dark:text-amber-300"
-                name="warning"
-              />
+          {attention.count > 0 ? (
+            <Tip
+              label={
+                attention.reason
+                  ? botAttentionHint(attention.reason)
+                  : b.roster.attentionItems(attention.count)
+              }
+            >
+              <span
+                aria-label={
+                  attention.reason
+                    ? `${b.roster.needsAttention}: ${botAttentionHint(attention.reason)}`
+                    : b.roster.attentionItems(attention.count)
+                }
+                className="flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums text-amber-600 dark:text-amber-300"
+                onClick={event => {
+                  event.stopPropagation()
+                  open()
+                }}
+              >
+                <Codicon name="warning" />
+                {attention.count}
+              </span>
             </Tip>
           ) : null}
           {openTasks ? (
@@ -310,9 +339,18 @@ export function BotRow({
             {showHandle ? (
               <span className="shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)">{`@${handle}`}</span>
             ) : null}
-            {showHandle && displayPreview ? <span className="shrink-0 text-(--ui-text-quaternary)">·</span> : null}
-            {displayPreview ? (
-              <span className={cn('min-w-0 truncate', fromBot && 'italic')}>{displayPreview}</span>
+            {showHandle && detailText ? <span className="shrink-0 text-(--ui-text-quaternary)">·</span> : null}
+            {detailText ? (
+              <span
+                className={cn(
+                  'min-w-0 truncate',
+                  liveTone === 'amber' && 'text-amber-600 dark:text-amber-300',
+                  liveTone === 'live' && 'text-(--ui-text-secondary)',
+                  !liveText && fromBot && 'italic'
+                )}
+              >
+                {detailText}
+              </span>
             ) : null}
           </div>
         ) : null}
