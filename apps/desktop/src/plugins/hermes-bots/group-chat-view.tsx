@@ -64,9 +64,11 @@ import {
   $groupChatWorkspace,
   $groupClarify,
   $groupNeedsYou,
+  groupRoundContributions,
   groupThreadOf,
   rememberGroupChatTombstone,
   scheduleGroupChatServerSync,
+  setGroupChatGoal,
   setGroupChatHoldDetection,
   setGroupChatImage,
   updateGroupChat
@@ -400,15 +402,18 @@ function GroupChatSettingsDialog({
   const rooms: Record<string, GroupChatRoom> = useValue($groupChats)
   const current = (rooms[group] || {}).image || null
   const currentHoldDetection = (rooms[group] || {}).holdDetection !== false
+  const currentGoal = String((rooms[group] || {}).goal || '')
   const [name, setName] = useState(group)
   const [image, setImage] = useState(current)
   const [holdDetection, setHoldDetection] = useState(currentHoldDetection)
+  const [goal, setGoal] = useState(currentGoal)
   const [compressing, setCompressing] = useState<null | string>(null)
   useEffect(() => {
     if (open) {
       setName(group)
       setImage(current)
       setHoldDetection(currentHoldDetection)
+      setGoal(currentGoal)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, group])
@@ -458,6 +463,10 @@ function GroupChatSettingsDialog({
       setGroupChatHoldDetection(finalName, holdDetection)
     }
 
+    if (goal.trim() !== currentGoal) {
+      setGroupChatGoal(finalName, goal)
+    }
+
     onClose()
 
     if (finalName !== group) {
@@ -505,6 +514,20 @@ function GroupChatSettingsDialog({
           label={b.group.holdDetection}
           onChange={setHoldDetection}
         />
+        <div className="flex flex-col gap-1" data-testid="group-settings-goal">
+          <label className="text-[0.75rem] font-medium text-(--ui-text-secondary)" htmlFor="group-goal-input">
+            {b.group.goal}
+          </label>
+          <Input
+            aria-label={b.group.goal}
+            id="group-goal-input"
+            maxLength={200}
+            onChange={event => setGoal(event.target.value)}
+            placeholder={b.group.goalPlaceholder}
+            value={goal}
+          />
+          <span className="text-[0.6875rem] text-(--ui-text-quaternary)">{b.group.goalHint}</span>
+        </div>
         {(members || []).length > 0 ? (
           <ul className="flex flex-col gap-1" data-testid="group-settings-members">
             {(members || []).map(member => {
@@ -757,6 +780,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // bots filed, or the user assigned, rendered under the log as status cards.
   const mailboxNotes = roomMailboxNotes(useMailbox().data || [], members)
 
+  // D2 — the completed round's contribution one-liners (empty while a round
+  //  is running or no round has landed yet).
+  const roundContributions = room.running ? [] : groupRoundContributions(room)
+
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
   const availabilityLabel = `${availableMembers} of ${members.length} available`
 
@@ -780,7 +807,14 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           <Codicon name="organization" />
         </span>
       )}
-      <div className="min-w-0 flex-1 truncate text-sm font-semibold">{group}</div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold">{group}</div>
+        {room.goal ? (
+          <div className="truncate text-[0.6875rem] text-(--ui-text-tertiary)" data-testid="group-goal">
+            {room.goal}
+          </div>
+        ) : null}
+      </div>
       <Tip label={memberNames}>
         <span
           aria-label={availabilityLabel}
@@ -1374,6 +1408,27 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           {mailboxNotes.map(note => (
             <MailboxNoteCard key={`mailbox:${note.connectionId || ''}:${note.id}`} members={members} note={note} />
           ))}
+          {/* D2 — after a round settles, one card per member's first line */
+          /* (pure derivation over the log; no LLM call). */}
+          {!room.running && roundContributions.length ? (
+            <div
+              className="rounded-md border border-(--ui-stroke-secondary) px-2.5 py-2"
+              data-testid="group-round-summary"
+              key={'round-summary'}
+            >
+              <div className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
+                {b.group.roundSummaryTitle}
+              </div>
+              <ul className="flex flex-col gap-0.5">
+                {roundContributions.map(entry => (
+                  <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>
+                    <span className="shrink-0 font-medium text-(--ui-text-secondary)">{entry.name}</span>
+                    <span className="min-w-0 flex-1 truncate text-(--ui-text-tertiary)">{entry.line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {room.running ? (
             <div className="px-2 py-1 text-[0.7rem] italic text-(--ui-text-quaternary)" key={'working'}>
               {roomClarifies.length

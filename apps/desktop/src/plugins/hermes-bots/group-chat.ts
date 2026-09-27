@@ -59,6 +59,7 @@ let groupChatSyncTimer: ReturnType<typeof setTimeout> | null = null
 /** One room inside the bounded ui_meta projection: a compacted log plus the
  *  identity fields, without any of `GroupChat`'s runtime/orchestration state. */
 interface GroupChatSyncRoom {
+  goal?: string
   holdDetection?: boolean
   image?: null | string
   log: GroupMessage[]
@@ -356,6 +357,11 @@ export function groupChatSyncSnapshot(
       log,
       holdDetection: room.holdDetection !== false,
       revision: Math.max(0, Number(room?.syncRevision ?? room?.revision ?? 0)),
+      ...(typeof room?.goal === 'string' && room.goal.trim()
+        ? {
+            goal: room.goal.trim().slice(0, 200)
+          }
+        : {}),
       members: (Array.isArray(room.members) ? room.members : []).slice(0, GROUP_CHAT_MAX_MEMBERS).map(member => ({
         name: String(member?.name || '').slice(0, 128),
         ...(member?.handle
@@ -546,17 +552,20 @@ export function mergeGroupChatSyncSnapshots(
     let members: GroupMember[]
     let image: null | string | undefined
     let holdDetection = true
+    let goal: string | undefined
 
     if (localRevision > remoteRevision) {
       identity = localRoom
       members = [...(localRoom?.members || [])]
       image = localRoom?.image
       holdDetection = localRoom?.holdDetection !== false
+      goal = localRoom?.goal
     } else if (remoteRevision > localRevision) {
       identity = remoteRoom
       members = [...(remoteRoom?.members || [])]
       image = remoteRoom?.image
       holdDetection = remoteRoom?.holdDetection !== false
+      goal = remoteRoom?.goal
     } else {
       identity = localRoom || remoteRoom
       const byId = new Map<string, GroupMember>()
@@ -570,6 +579,7 @@ export function mergeGroupChatSyncSnapshots(
       holdDetection = Object.prototype.hasOwnProperty.call(localRoom || {}, 'holdDetection')
         ? localRoom?.holdDetection !== false
         : remoteRoom?.holdDetection !== false
+      goal = Object.prototype.hasOwnProperty.call(localRoom || {}, 'goal') ? localRoom?.goal : remoteRoom?.goal
     }
 
     rooms[key] = {
@@ -599,6 +609,11 @@ export function mergeGroupChatSyncSnapshots(
       ...(typeof image === 'string' && image
         ? {
             image
+          }
+        : {}),
+      ...(typeof goal === 'string' && goal
+        ? {
+            goal
           }
         : {})
     }
@@ -839,6 +854,11 @@ export function mergeRemoteGroupChatSnapshotIntoRooms(
         : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'image')
           ? projected.image || null
           : existing.image || null,
+      goal: isPreserved
+        ? existing.goal
+        : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'goal')
+          ? projected.goal || undefined
+          : existing.goal,
       syncRevision: isPreserved ? localRevision : Math.max(remoteRevision, localRevision),
       epoch: Number(existing.epoch || 0),
       running: Boolean(existing.running)
@@ -921,6 +941,7 @@ export function durableGroupChatRooms(all: Record<string, GroupChat> = $groupCha
       // already carries.
       roomId: typeof room.roomId === 'string' && room.roomId ? room.roomId : null,
       image: room.image || null,
+      goal: room.goal,
       rosterOrder: room.rosterOrder,
       pinned: room.pinned,
       // Sidebar filing (user-sections) is room-local; keep it across sync.
@@ -1634,6 +1655,7 @@ export function updateGroupChat(
         roomId: typeof room.roomId === 'string' && room.roomId ? room.roomId : null,
         // Room picture (small data URL, same normalization as bot avatars).
         image: room.image || null,
+        goal: room.goal,
         rosterOrder: room.rosterOrder,
         pinned: room.pinned,
         // Sidebar filing (user-sections) is room-local; keep it durable.
@@ -1695,6 +1717,68 @@ export function setGroupChatImage(group: string, image: null | string | undefine
 
     return room
   })
+}
+
+/** The room's stated objective (D2) — persisted with the room record like
+ *  every other group meta field, so it rides the same bounded sync. */
+export function setGroupChatGoal(group: string, goal: null | string | undefined) {
+  updateGroupChat(group, (room: GroupChatRoom) => {
+    room.goal = String(goal || '').trim() || undefined
+
+    return room
+  })
+}
+
+/** One member's line in a completed round's summary card: their name plus a
+ *  one-line excerpt of what they contributed. */
+export interface GroupRoundContribution {
+  /** Display name of the contributing member. */
+  name: string
+  /** First substantive line of the member's first reply this round. */
+  line: string
+}
+
+/** Derive a completed round's per-member contribution lines for the summary
+ *  card (D2): the round is the contiguous tail of the log after the last
+ *  `user` entry, and each member contributes the first line of their FIRST
+ *  message in it — the answer a reader skims the round for. Pure: never
+ *  mints data, returns [] when nothing followed the last prompt. */
+export function groupRoundContributions(room: Pick<GroupChat, 'log'>): GroupRoundContribution[] {
+  const log = Array.isArray(room?.log) ? room.log : []
+  let boundary = -1
+
+  for (let i = log.length - 1; i >= 0; i--) {
+    if (log[i]?.from?.kind === 'user') {
+      boundary = i
+
+      break
+    }
+  }
+
+  const seen = new Set<string>()
+  const out: GroupRoundContribution[] = []
+
+  for (const entry of log.slice(boundary + 1)) {
+    const from = entry?.from
+
+    if (from?.kind !== 'member' || !from.name || seen.has(from.name)) {
+      continue
+    }
+
+    const line = String(entry?.text || '')
+      .split('\n')
+      .map(row => row.trim())
+      .find(row => row.length > 0)
+
+    if (!line) {
+      continue
+    }
+
+    seen.add(from.name)
+    out.push({ line, name: from.name })
+  }
+
+  return out
 }
 
 function groupChatEntryId(): string {

@@ -433,6 +433,12 @@ type BotsMessages = {
     answerTo: (member: string) => string
     /** Roster badge: member messages since the room was last opened. */
     unreadCount: (count: number) => string
+    /** D2 — the room's stated objective (settings field + header line). */
+    goal: string
+    goalHint: string
+    goalPlaceholder: string
+    /** D2 — the card that lands after a completed round. */
+    roundSummaryTitle: string
   }
   /** Skills hub + MCP setup surfaces embedded in the bot editor. */
   tools: {
@@ -623,6 +629,45 @@ type BotsMessages = {
     replay: string
     tookSeconds: (seconds: number) => string
     tookMinutes: (minutes: number) => string
+  }
+  /** D1 — the fleet broadcast dialog. */
+  broadcast: {
+    menuItem: string
+    title: string
+    desc: string
+    promptLabel: string
+    promptPlaceholder: string
+    selectAll: string
+    clearAll: string
+    send: (count: number) => string
+    statusSending: string
+    statusWorking: string
+    statusFailed: string
+    emptyReply: string
+    noBotSelected: string
+  }
+  /** D3 — the cross-bot routines schedule view. */
+  calendar: {
+    menuItem: string
+    title: string
+    desc: string
+    nextUp: string
+    overdue: string
+    paused: string
+    empty: string
+    loadFailed: string
+    untitledJob: string
+  }
+  /** D4 — the stuck-work triage strip on the roster. */
+  triage: {
+    title: string
+    needsInput: (name: string) => string
+    turnFailed: (name: string) => string
+    deliveryFailed: (name: string) => string
+    routineOverdue: (name: string) => string
+    unreachable: (name: string) => string
+    attention: (name: string, reason: string) => string
+    openItem: (name: string) => string
   }
   /** B1+B2 — the `/plan` proposal card + live checklist above the composer.
    *  Model-bound strings (the mode prefix, the execute prompt, the `::botplan`
@@ -1021,7 +1066,11 @@ const en: BotsMessages = {
     wantsToRunCommand: handle => `@${handle} wants to run a command:`,
     asks: handle => `@${handle} asks:`,
     answerTo: member => `Answer @${member}`,
-    unreadCount: count => `${count} unread`
+    unreadCount: count => `${count} unread`,
+    goal: 'Goal',
+    goalHint: 'What this room is trying to accomplish — shown under the title.',
+    goalPlaceholder: 'e.g. Compare retrieval strategies for the docs search',
+    roundSummaryTitle: 'Round summary'
   },
   tools: {
     installHint: name => `Install "${name}" and add it to the list above`,
@@ -1199,6 +1248,42 @@ const en: BotsMessages = {
     replay: 'Replay',
     tookSeconds: seconds => `${seconds}s`,
     tookMinutes: minutes => `${minutes}m`
+  },
+  broadcast: {
+    menuItem: 'Broadcast to bots…',
+    title: 'Broadcast to bots',
+    desc: 'One prompt goes to each selected bot’s chat; replies collect below.',
+    promptLabel: 'Prompt',
+    promptPlaceholder: 'Ask every selected bot…',
+    selectAll: 'Select all',
+    clearAll: 'Clear',
+    send: count => `Send to ${count} bot${count === 1 ? '' : 's'}`,
+    statusSending: 'Sending…',
+    statusWorking: 'Still working…',
+    statusFailed: 'Failed',
+    emptyReply: 'No reply text',
+    noBotSelected: 'Select at least one bot.'
+  },
+  calendar: {
+    menuItem: 'Routines calendar…',
+    title: 'Routines calendar',
+    desc: 'Every bot’s scheduled routines, in one list.',
+    nextUp: 'Next up',
+    overdue: 'Overdue',
+    paused: 'Paused',
+    empty: 'No routines scheduled.',
+    loadFailed: 'Could not load routines from some gateways.',
+    untitledJob: 'Untitled routine'
+  },
+  triage: {
+    title: 'Needs attention',
+    needsInput: name => `${name} needs input`,
+    turnFailed: name => `${name}’s last turn failed`,
+    deliveryFailed: name => `${name} has a failed delivery`,
+    routineOverdue: name => `${name} has an overdue routine`,
+    unreachable: name => `${name}’s gateway is unreachable`,
+    attention: (name, reason) => `${name}: ${reason}`,
+    openItem: name => `Open ${name}`
   },
   plan: {
     proposedTitle: 'Proposed plan',
@@ -1592,7 +1677,11 @@ const ja: BotsMessages = {
     wantsToRunCommand: handle => `@${handle}がコマンドを実行しようとしています:`,
     asks: handle => `@${handle}からの質問:`,
     answerTo: member => `@${member}に回答`,
-    unreadCount: count => `未読 ${count} 件`
+    unreadCount: count => `未読 ${count} 件`,
+    goal: '目標',
+    goalHint: 'このルームが達成したいこと — タイトルの下に表示されます。',
+    goalPlaceholder: '例：ドキュメント検索の検索戦略を比較する',
+    roundSummaryTitle: 'ラウンドの要約'
   },
   tools: {
     installHint: name => `「${name}」をインストールして上の一覧に追加`,
@@ -1773,6 +1862,42 @@ const ja: BotsMessages = {
     replay: 'リプレイ',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分`
+  },
+  broadcast: {
+    menuItem: 'ボットへ一括送信…',
+    title: 'ボットへ一括送信',
+    desc: '選択した各ボットのチャットへ同じプロンプトを送り、返信を下に集めます。',
+    promptLabel: 'プロンプト',
+    promptPlaceholder: '選択したすべてのボットへ質問…',
+    selectAll: 'すべて選択',
+    clearAll: 'クリア',
+    send: count => `${count}件のボットへ送信`,
+    statusSending: '送信中…',
+    statusWorking: 'まだ実行中…',
+    statusFailed: '失敗',
+    emptyReply: '返信テキストなし',
+    noBotSelected: 'ボットを1つ以上選択してください。'
+  },
+  calendar: {
+    menuItem: 'ルーチンカレンダー…',
+    title: 'ルーチンカレンダー',
+    desc: 'すべてのボットの定期実行を一覧で表示します。',
+    nextUp: '次の実行',
+    overdue: '期限超過',
+    paused: '一時停止',
+    empty: '定期実行はありません。',
+    loadFailed: '一部のゲートウェイからルーチンを読み込めませんでした。',
+    untitledJob: '無題のルーチン'
+  },
+  triage: {
+    title: '要対応',
+    needsInput: name => `${name}が入力待ちです`,
+    turnFailed: name => `${name}の前回の実行が失敗しました`,
+    deliveryFailed: name => `${name}に失敗した配信があります`,
+    routineOverdue: name => `${name}に期限超過のルーチンがあります`,
+    unreachable: name => `${name}のゲートウェイに到達できません`,
+    attention: (name, reason) => `${name}: ${reason}`,
+    openItem: name => `${name}を開く`
   },
   plan: {
     proposedTitle: '提案されたプラン',
@@ -2153,7 +2278,11 @@ const zh: BotsMessages = {
     wantsToRunCommand: handle => `@${handle} 想执行一个命令：`,
     asks: handle => `@${handle} 的提问：`,
     answerTo: member => `回答 @${member}`,
-    unreadCount: count => `${count} 条未读`
+    unreadCount: count => `${count} 条未读`,
+    goal: '目标',
+    goalHint: '此房间要达成的目标 — 显示在标题下方。',
+    goalPlaceholder: '例如：比较文档搜索的检索策略',
+    roundSummaryTitle: '轮次总结'
   },
   tools: {
     installHint: name => `安装“${name}”并添加到上方列表`,
@@ -2331,6 +2460,42 @@ const zh: BotsMessages = {
     replay: '回放',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分钟`
+  },
+  broadcast: {
+    menuItem: '向机器人广播…',
+    title: '向机器人广播',
+    desc: '向每个所选机器人的聊天发送同一提示，回复收集在下方。',
+    promptLabel: '提示词',
+    promptPlaceholder: '询问所有已选机器人…',
+    selectAll: '全选',
+    clearAll: '清除',
+    send: count => `发送给 ${count} 个机器人`,
+    statusSending: '发送中…',
+    statusWorking: '仍在运行…',
+    statusFailed: '失败',
+    emptyReply: '无回复内容',
+    noBotSelected: '请至少选择一个机器人。'
+  },
+  calendar: {
+    menuItem: '例行任务日历…',
+    title: '例行任务日历',
+    desc: '在一个列表中查看所有机器人的例行任务。',
+    nextUp: '接下来',
+    overdue: '已过期',
+    paused: '已暂停',
+    empty: '没有已安排的例行任务。',
+    loadFailed: '无法从部分网关加载例行任务。',
+    untitledJob: '未命名任务'
+  },
+  triage: {
+    title: '需要注意',
+    needsInput: name => `${name} 需要输入`,
+    turnFailed: name => `${name} 的上次运行失败`,
+    deliveryFailed: name => `${name} 有投递失败`,
+    routineOverdue: name => `${name} 有过期的例行任务`,
+    unreachable: name => `无法访问 ${name} 的网关`,
+    attention: (name, reason) => `${name}：${reason}`,
+    openItem: name => `打开 ${name}`
   },
   plan: {
     proposedTitle: '建议方案',
@@ -2711,7 +2876,11 @@ const zhHant: BotsMessages = {
     wantsToRunCommand: handle => `@${handle} 想執行一個命令：`,
     asks: handle => `@${handle} 的提問：`,
     answerTo: member => `回覆 @${member}`,
-    unreadCount: count => `${count} 則未讀`
+    unreadCount: count => `${count} 則未讀`,
+    goal: '目標',
+    goalHint: '此房間要達成的目標 — 顯示在標題下方。',
+    goalPlaceholder: '例如：比較文件搜尋的檢索策略',
+    roundSummaryTitle: '回合總結'
   },
   tools: {
     installHint: name => `安裝「${name}」並新增至上方清單`,
@@ -2889,6 +3058,42 @@ const zhHant: BotsMessages = {
     replay: '重播',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分鐘`
+  },
+  broadcast: {
+    menuItem: '向機器人廣播…',
+    title: '向機器人廣播',
+    desc: '向每個所選機器人的聊天發送同一提示，回覆收集於下方。',
+    promptLabel: '提示詞',
+    promptPlaceholder: '詢問所有已選機器人…',
+    selectAll: '全選',
+    clearAll: '清除',
+    send: count => `傳送給 ${count} 個機器人`,
+    statusSending: '傳送中…',
+    statusWorking: '仍在執行…',
+    statusFailed: '失敗',
+    emptyReply: '無回覆內容',
+    noBotSelected: '請至少選擇一個機器人。'
+  },
+  calendar: {
+    menuItem: '例行任務日曆…',
+    title: '例行任務日曆',
+    desc: '在一個列表中檢視所有機器人的例行任務。',
+    nextUp: '接下來',
+    overdue: '已過期',
+    paused: '已暫停',
+    empty: '沒有已排定的例行任務。',
+    loadFailed: '無法從部分閘道載入例行任務。',
+    untitledJob: '未命名任務'
+  },
+  triage: {
+    title: '需要注意',
+    needsInput: name => `${name} 需要輸入`,
+    turnFailed: name => `${name} 的上次執行失敗`,
+    deliveryFailed: name => `${name} 有遞送失敗`,
+    routineOverdue: name => `${name} 有過期的例行任務`,
+    unreachable: name => `無法連接 ${name} 的閘道`,
+    attention: (name, reason) => `${name}：${reason}`,
+    openItem: name => `開啟 ${name}`
   },
   plan: {
     proposedTitle: '建議方案',

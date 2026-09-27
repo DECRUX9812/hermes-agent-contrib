@@ -15,6 +15,7 @@ import {
   parseRosterKey,
   saveSelectedRosterBot
 } from './bot-state'
+import { BroadcastDialog } from './broadcast-dialog'
 /**
  * The Bots pane itself: the roster's selection reconciliation, the
  * workspace-ownership reads its lifecycle keys off, and the pane that lists
@@ -42,7 +43,7 @@ import { useBots } from './i18n'
 import { $rosterSortMode, setRosterSortMode, useRosterAttentionCounts } from './live-status'
 import { mailboxOpenCountFor, useMailbox } from './mailbox'
 import { MailboxTaskDialog } from './mailbox-parts'
-import { $activityToasts } from './roster-actions'
+import { $activityToasts, openRosterBot } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
 import { renderRosterDialogs } from './roster-pane-dialogs'
@@ -51,8 +52,10 @@ import { $lastSources, usePublishRosterSnapshot } from './roster-pane-lifecycle'
 import { rosterSectionRenderers } from './roster-pane-sections'
 import { renderRosterToolbar } from './roster-pane-toolbar'
 import { botNeedsHandleLabel, rosterGatewayOptions } from './roster-sections'
+import { RoutinesCalendarDialog } from './routines-calendar'
 import { botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
 import { activeBots, useTurnBusy } from './row-helpers'
+import { TriageStrip } from './triage-strip'
 import type { BotMeta, GatewaySource, GroupMember, RosterActivityFilter, RosterKindFilter, RosterRow } from './types'
 import {
   $botSections,
@@ -243,6 +246,8 @@ export function BotsPane() {
   const activeConnectionId = host.state.connectionId?.get?.() || 'local'
   const [createOpen, setCreateOpen] = useState(false)
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
+  const [broadcastOpen, setBroadcastOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const [editing, setEditing] = useState<null | RosterRow>(null)
   // `path` is the profile directory the gateway reports on a profiles.list row;
   // it is not part of the shared RosterRow model, so it rides as an extra here.
@@ -512,8 +517,11 @@ export function BotsPane() {
         gatewayFilter,
         setGatewayFilter,
         sortMode,
-        setSortMode: setRosterSortMode
+        setSortMode: setRosterSortMode,
+        setBroadcastOpen,
+        setCalendarOpen
       })}
+      <TriageStrip bots={roster} onOpen={bot => void openRosterBot(bot)} />
       {renderRosterContent({
         b,
         staleNotice,
@@ -548,6 +556,8 @@ export function BotsPane() {
         renderHiddenGatewaySection
       })}
       <MailboxTaskDialog member={assigningTask} onClose={() => setAssigningTask(null)} />
+      <BroadcastDialog bots={roster} onClose={() => setBroadcastOpen(false)} open={broadcastOpen} />
+      <RoutinesCalendarDialog bots={roster} onClose={() => setCalendarOpen(false)} open={calendarOpen} />
       {renderRosterDialogs({
         b,
         t,
