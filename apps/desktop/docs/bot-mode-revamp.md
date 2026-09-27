@@ -197,7 +197,12 @@ missing pieces the shots reveal. All renderer.
   buttons that do the thing ("Show me how it works"). A small set of
   dismissible capability cards, rendered from a local list; also the hook
   where Ideas/Feed-style prompt suggestions live later.
-- **G10 Hermes-native styling** — all of G1–G9 executes inside DESIGN.md:
+- **G10 Roster card view** (OpenClaw shot) — the roster gains a card-grid
+  mode beside the list: each card shows avatar + name, model chip,
+  "Active Xh ago" recency, a last-activity preview line, and a primary
+  "Open chat" action. Same data the list rows already render (A1 status,
+  A2 badge); the card view is a presentation mode, device-local pref.
+- **G11 Hermes-native styling** — all of G1–G10 executes inside DESIGN.md:
   the Hermes voice stays mythic and restrained — mono accents, hairline
   borders, the existing color/spacing tokens. This phase restyles the
   plugin within our design language; it does not import a competitor's
