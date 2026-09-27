@@ -97,6 +97,17 @@ describe('deriveBotRuns', () => {
     expect(groupCards[0].summary).toContain('answer is 42')
     expect(groupCards[0].status).toBe('ok')
   })
+
+  it('marks the canonical card running on a live-turn claim, not only on tile focus', () => {
+    // E1: a relay-delivered or routine turn on the hidden canonical chat has
+    // no focused tile, so chatBusy alone reads 'ok' — the working dot is the
+    // claim that matters.
+    const idle = deriveBotRuns({ bot: BOT })
+    const working = deriveBotRuns({ bot: BOT, chatWorking: true })
+
+    expect(idle.find(run => run.kind === 'chat')?.status).toBe('ok')
+    expect(working.find(run => run.kind === 'chat')?.status).toBe('running')
+  })
 })
 
 describe('replay targets (B4)', () => {

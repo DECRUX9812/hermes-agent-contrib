@@ -54,6 +54,10 @@ export interface BotRunSignals {
   bot: RosterRow | null | undefined
   /** Whether the focused chat turn belongs to this bot. */
   chatBusy?: boolean
+  /** The canonical chat's status dot claims a live turn (working or stalled)
+ *  — broader than `chatBusy`, which only sees the focused tile, so a
+ *  relay-delivered or cron turn on the hidden chat still reads 'running'. */
+  chatWorking?: boolean
   groupActivity?: null | Record<string, { events?: GroupActivityEntry[] }>
   /** Routine jobs already scoped to this bot by `selectRoutineJobs`. */
   jobs?: null | RoutineJob[]
@@ -175,7 +179,7 @@ export function deriveBotRuns(signals: BotRunSignals, limit = BOT_RUNS_LIMIT): B
       id: `${fromBot ? 'relay' : 'chat'}:${lastActive}`,
       kind: fromBot ? 'relay' : 'chat',
       at: lastActive * 1000,
-      status: signals.chatBusy ? 'running' : 'ok',
+      status: signals.chatBusy || signals.chatWorking ? 'running' : 'ok',
       title: '',
       replay: canonicalSessionId ? { at: lastActive * 1000, sessionId: canonicalSessionId } : undefined,
       summary: fromBot ? `@${fromBot}: ${summary}` : summary

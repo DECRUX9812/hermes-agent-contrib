@@ -70,10 +70,11 @@ import { $groupReadAt, groupLastRoundSummary, groupUnreadCount } from './group-u
 import { fallbackSelectionAfterHide, isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
 import { displayName, stripPreviewMarkdown } from './labels'
-import { botLiveStatusLabel, useBotAttention, useBotLiveStatus } from './live-status'
+import { botLiveStatusLabel, useBotAttention, useBotHealth, useBotLiveStatus } from './live-status'
 import { BotModelMenu } from './model-menu'
 import { duplicateBot } from './profile-ops'
 import { botRecentSession, openBotRecentSession } from './recent-session'
+import { $relayInflight, relayLaneKey } from './relay'
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
 import {
@@ -87,6 +88,7 @@ import {
   warmRosterBot,
   workerActiveAt
 } from './row-helpers'
+import { retryBotDeliveries, stopBotTurn } from './run-controls'
 import { openBotScreen } from './screen-open'
 import type { GroupMember, RosterRow } from './types'
 import {
@@ -198,6 +200,28 @@ export function BotRow({
   // background > delegated worker > honest floor. Built from signals that
   // expire (dot claims, job state, round keys, heartbeat) — never the clock.
   const live = useBotLiveStatus(bot)
+  // E1 — the stop affordance keys off the same live-turn claim the status
+  // line makes; the action resolves the canonical chat's runtime id at click
+  // time (run-controls.stopBotTurn), never a remembered session pointer.
+  const canStop = live.kind === 'working' || live.kind === 'stalled'
+  // E2 — the health chip: unreachable source > recorded failure flag > a
+  // failed work item on the canonical runtime. Renderer-side derivation over
+  // existing atoms only.
+  const health = useBotHealth(bot)
+  // E3 — a delivery queued or in flight to this bot shows on the row tooltip.
+  const inflight = useValue($relayInflight)
+
+  const deliveryInflight = inflight.has(
+    relayLaneKey(String(bot?.connectionId || activeConnectionId), String(bot?.name || 'default'))
+  )
+
+  const stopRun = () => {
+    void stopBotTurn(bot).then(result => {
+      if (result === 'failed') {
+        host.notifyError?.(new Error('session.interrupt rejected'), b.roster.stopRunFailed)
+      }
+    })
+  }
 
   // Per-bot notification mode (A4): keyed `conn::profile` — the same owner the
   // store resolves for the bot's canonical chat, side-chats and cron runs.
@@ -239,9 +263,28 @@ export function BotRow({
 
   const showDetailsRow = Boolean(showHandle || detailText || fromBot)
 
-  const rowTooltip = [displayName(bot, meta), `@${handle}`, gatewayLabel, sourceStatus.label]
+  const rowTooltip = [
+    displayName(bot, meta),
+    `@${handle}`,
+    gatewayLabel,
+    sourceStatus.label,
+    deliveryInflight ? b.roster.deliveryInFlight : ''
+  ]
     .filter(Boolean)
     .join(' · ')
+
+  // E2 — the chip's tooltip: the source label when unreachable, the flagged
+  // reason's hint otherwise, with the generic "last run failed" fallback.
+  const healthLabel =
+    health.kind === 'unreachable'
+      ? sourceStatus.label
+      : health.detail === 'last_run_failed'
+        ? b.roster.lastRunFailed
+        : health.detail === 'stalled'
+          ? b.roster.liveStalled
+          : health.detail
+            ? botAttentionHint(health.detail)
+            : b.roster.needsAttention
 
   // Pointer-over pre-warm (see row-helpers.warmRosterBot): dials the bot's
   // own backend — its own source when source-scoped — before the click lands.
@@ -320,6 +363,34 @@ export function BotRow({
               <span className="min-w-0 truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
             </Tip>
           </div>
+          {canStop ? (
+            <Tip label={b.roster.stopRun}>
+              <span
+                aria-label={b.roster.stopRun}
+                className="flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-destructive"
+                onClick={event => {
+                  event.stopPropagation()
+                  stopRun()
+                }}
+                role="button"
+              >
+                <Codicon name="debug-stop" />
+              </span>
+            </Tip>
+          ) : null}
+          {health.kind !== 'ok' ? (
+            <Tip label={healthLabel}>
+              <span
+                aria-label={healthLabel}
+                className={cn(
+                  'flex shrink-0 items-center text-[0.6875rem]',
+                  health.kind === 'unreachable' ? 'text-destructive' : 'text-amber-600 dark:text-amber-300'
+                )}
+              >
+                <Codicon name={health.kind === 'unreachable' ? 'debug-disconnect' : 'warning'} />
+              </span>
+            </Tip>
+          ) : null}
           {attention.count > 0 ? (
             <Tip
               label={
@@ -391,6 +462,18 @@ export function BotRow({
       <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => void openRosterBot(bot)}>{b.bot.openBotChat}</ContextMenuItem>
+        {/* E1 — same stop the row chip fires; kept in the menu so the
+            affordance is discoverable and announces itself disabled. */}
+        <ContextMenuItem disabled={!canStop} onSelect={stopRun}>
+          {b.roster.stopRun}
+        </ContextMenuItem>
+        {/* E3 — only meaningful while this bot has mail queued or a flagged
+            failure the drain can re-drive. */}
+        {deliveryInflight || attention.reason ? (
+          <ContextMenuItem onSelect={() => retryBotDeliveries()}>
+            {b.roster.retryDeliveries}
+          </ContextMenuItem>
+        ) : null}
         {onAssignTask ? (
           <ContextMenuItem onSelect={() => onAssignTask(bot)}>{b.mailbox.assignTask}</ContextMenuItem>
         ) : null}

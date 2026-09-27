@@ -1053,3 +1053,38 @@ describe('the drain loop does not let one delivery hold every other gateway’s 
     stopBotRelay()
   })
 })
+
+describe('manual outbox retry (E3)', () => {
+  it('drains every route on retry even when none signaled outbox work', async () => {
+    const calls = respondWith(() => ({ envelopes: [] }))
+    const { retryRelayOutbox, startBotRelay, stopBotRelay } = await loadRelay()
+
+    startBotRelay()
+    await vi.advanceTimersByTimeAsync(0)
+    calls.length = 0
+
+    // The push door is present, so an idle tick dials nobody (#118856) —
+    // a manual retry is the user's explicit "look again" and visits all.
+    retryRelayOutbox()
+    await vi.advanceTimersByTimeAsync(10)
+
+    expect(calls.filter(call => call.method === 'bot_relay.outbox.drain')).toHaveLength(2)
+
+    stopBotRelay()
+  })
+
+  it('is a no-op once the relay is stopped', async () => {
+    const calls = respondWith(() => ({ envelopes: [] }))
+    const { retryRelayOutbox, startBotRelay, stopBotRelay } = await loadRelay()
+
+    startBotRelay()
+    await vi.advanceTimersByTimeAsync(0)
+    stopBotRelay()
+    calls.length = 0
+
+    retryRelayOutbox()
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(calls.filter(call => call.method === 'bot_relay.outbox.drain')).toHaveLength(0)
+  })
+})

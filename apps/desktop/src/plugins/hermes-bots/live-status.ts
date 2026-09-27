@@ -31,7 +31,7 @@ import { useMemo } from 'react'
 import { $botAttention, botRosterKey, botSelectionKey, botSourceStatus } from './data'
 import { $activeGroupMemberKeys } from './group-presence'
 import type { BotsText } from './i18n'
-import { botCanonicalSessionId, workerActiveAt } from './row-helpers'
+import { botCanonicalRuntimeId, botCanonicalSessionId, workerActiveAt } from './row-helpers'
 import { getPluginCtx } from './shared'
 import type { RosterRow } from './types'
 
@@ -177,11 +177,8 @@ export function useBotLiveStatus(bot: RosterRow): BotLiveStatus {
   const canonicalId = botCanonicalSessionId(bot)
 
   const runtimeId = useMemo(
-    () =>
-      canonicalId
-        ? Object.keys(storedByRuntime || {}).find(id => storedByRuntime[id] === canonicalId)
-        : undefined,
-    [canonicalId, storedByRuntime]
+    () => botCanonicalRuntimeId(bot, storedByRuntime || {}) ?? undefined,
+    [bot, storedByRuntime]
   )
 
   const items = runtimeId ? statusItems?.[runtimeId] : undefined
@@ -360,6 +357,73 @@ export function useRosterAttentionCounts(roster: readonly RosterRow[]): Readonly
 
     return counts
   }, [activeConnectionId, attentionMap, dotById, ownerCounts, roster])
+}
+
+// ── E2: health badge ─────────────────────────────────────────────────────────
+// A small chip on the row when the bot is unhealthy, derived from signals the
+// renderer already holds — nothing polls: the owning gateway's reachability,
+// the recorded needs-attention flag (classified relay-delivery and group-turn
+// failures), and a failed work item on the canonical chat's live runtime.
+
+export type BotHealthKind = 'attention' | 'ok' | 'unreachable'
+
+export interface BotHealth {
+  /** The classified attention reason when the flag set one; the component
+   *  maps it through `botAttentionHint` for the tooltip. */
+  detail?: string
+  kind: BotHealthKind
+}
+
+export interface BotHealthSignals {
+  /** A work item on the canonical chat's runtime ended in 'failed'. */
+  lastRunFailed?: boolean
+  /** The owning gateway can't be reached right now (missing or errored). */
+  reachable?: boolean
+  /** The recorded flag's classified reason, when one is set. */
+  reason?: null | string
+}
+
+/** Priority the row shows: an unreachable source outranks every in-band
+ *  signal — a bot whose backend is gone cannot report a failure itself. */
+export function botHealth(signals: BotHealthSignals): BotHealth {
+  if (signals.reachable === false) {
+    return { kind: 'unreachable' }
+  }
+
+  if (signals.reason) {
+    return { detail: signals.reason, kind: 'attention' }
+  }
+
+  if (signals.lastRunFailed) {
+    return { detail: 'last_run_failed', kind: 'attention' }
+  }
+
+  return { kind: 'ok' }
+}
+
+export function useBotHealth(bot: RosterRow): BotHealth {
+  const attentionMap = useValue($botAttention)
+  const dotById = useValue(host.state.dotStateBySession)
+  const statusItems = useValue(host.state.statusItemsBySession)
+  const storedByRuntime = useValue(host.state.storedSessionByRuntimeId)
+  const activeConnectionId = String(host.state.connectionId?.get?.() || 'local').trim()
+
+  const flag =
+    attentionMap?.[botSelectionKey(bot) || ''] ||
+    attentionMap?.[botRosterKey(bot)] ||
+    attentionMap?.[`${bot?.connectionId || activeConnectionId}::${bot?.name || 'default'}`]
+
+  const canonicalId = botCanonicalSessionId(bot)
+  const runtimeId = canonicalId ? botCanonicalRuntimeId(bot, storedByRuntime || {}) : null
+  const items = runtimeId ? statusItems?.[runtimeId] : undefined
+
+  return botHealth({
+    lastRunFailed: Boolean(items?.some(item => item.state === 'failed')),
+    reachable: botSourceStatus(bot).available,
+    // A stalled canonical turn is a health signal too — the bot is mid-turn
+    // but nothing has moved, so surface it under the same chip.
+    reason: flag?.reason || (canonicalId && dotById?.[canonicalId] === 'stalled' ? 'stalled' : null)
+  })
 }
 
 // ── roster sort preference ───────────────────────────────────────────────────

@@ -7,7 +7,7 @@
  * drives the two doors, startBotRelay / stopBotRelay.
  */
 
-import { host, LruCache } from '@hermes/plugin-sdk'
+import { atom, host, LruCache } from '@hermes/plugin-sdk'
 
 import { botHandle, clearBotAttention, noteBotAttention } from './data'
 import { ID } from './shared'
@@ -511,6 +511,29 @@ interface RelayQueuedEnvelope {
 // settles so an idle target holds no state.
 const relayLanes = new Map<string, Promise<void>>()
 
+/** Lane keys with a delivery queued or in flight (E3 surface) — the row's
+ *  "delivery in flight" hint reads it. Mirrors relayLanes' key set but is an
+ *  atom so roster rows re-render when a lane opens or settles. */
+export const $relayInflight = atom<ReadonlySet<string>>(new Set())
+
+function noteRelayLane(key: string, live: boolean) {
+  const next = new Set($relayInflight.get())
+
+  if (live) {
+    next.add(key)
+  } else {
+    next.delete(key)
+  }
+
+  $relayInflight.set(next)
+}
+
+/** The lane key a bot row asks about: the bot's own `conn::profile` as the
+ *  delivery TARGET (same key `deliverRelayEnvelope` computes). */
+export function relayLaneKey(connectionId: string, profile: string): string {
+  return `${connectionId}::${profile}`
+}
+
 /** Queue one claimed envelope behind the deliveries already running for the
  *  same target profile; other targets are untouched. */
 function enqueueRelayDelivery(sender: RelayConnection, envelope: RelayEnvelope, byId: Map<string, RelayConnection>) {
@@ -521,9 +544,11 @@ function enqueueRelayDelivery(sender: RelayConnection, envelope: RelayEnvelope, 
   )
 
   relayLanes.set(key, tail)
+  noteRelayLane(key, true)
   void tail.finally(() => {
     if (relayLanes.get(key) === tail) {
       relayLanes.delete(key)
+      noteRelayLane(key, false)
     }
   })
 }
@@ -620,6 +645,21 @@ function scheduleRelayPushDrain() {
   }, RELAY_PUSH_DEBOUNCE_MS)
 }
 
+/** Manual outbox retry (E3): the run card's "retry now" door. Marks every
+ *  route as having outbox work and runs one drain pass now, so pending
+ *  envelopes are claimed and claimed-but-unanswered ones get re-offered —
+ *  the same doors the push event drives, without waiting the poll interval
+ *  or the gateway's reoffer clock. A stopped relay stays stopped: the drain
+ *  guards on `relay.disposed` itself. */
+export function retryRelayOutbox() {
+  if (relay.disposed) {
+    return
+  }
+
+  routesWithOutboxWork.add(RELAY_OUTBOX_ANY)
+  void drainRelayOutboxes()
+}
+
 export function startBotRelay() {
   relay.disposed = false
   relay.rosterClearedFor = null
@@ -662,6 +702,7 @@ export function stopBotRelay() {
   // Queued deliveries check `disposed` before they run; forget the lane tails
   // so a restart starts every target fresh instead of behind stale chains.
   relayLanes.clear()
+  $relayInflight.set(new Set())
   // Unpin every relay-retained socket (#93594): with the relay stopped the
   // pooled entries return to dispose-at-refcount-0 semantics.
   releaseRelayRetention()
