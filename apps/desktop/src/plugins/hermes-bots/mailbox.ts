@@ -202,24 +202,30 @@ export function roomMailboxNotes(notes: MailboxNote[], members: GroupMember[]): 
   })
 }
 
-/** Open notes addressed to ONE bot — the roster row's badge. */
-export function mailboxOpenCountFor(notes: MailboxNote[], member: GroupMember): number {
-  const handle = String(member?.handle || '').toLowerCase()
-  const name = String(member?.name || '').toLowerCase()
+/** Does a note address that member? `to.kind === 'bot'` plus handle-or-profile
+ *  against the member identity, connection-scoped when the member carries one
+ *  — the one matching rule the open-count badge and the inbound-event cards
+ *  (G5) share, so a note that badges also cards and vice versa. */
+export function noteAddressesMember(note: MailboxNote, member: GroupMember): boolean {
+  if (note?.to?.kind !== 'bot') {
+    return false
+  }
+
   const connectionId = String(member?.connectionId || '')
 
-  return notes.filter(note => {
-    if (note.status !== 'open' || note.to?.kind !== 'bot') {
-      return false
-    }
+  if (connectionId && String(note.connectionId || '') !== connectionId) {
+    return false
+  }
 
-    if (connectionId && String(note.connectionId || '') !== connectionId) {
-      return false
-    }
+  const handle = String(member?.handle || '').toLowerCase()
+  const name = String(member?.name || '').toLowerCase()
+  const toHandle = String(note.to?.handle || '').toLowerCase()
+  const toProfile = String(note.to?.profile || '').toLowerCase()
 
-    const toHandle = String(note.to?.handle || '').toLowerCase()
-    const toProfile = String(note.to?.profile || '').toLowerCase()
+  return Boolean((handle && toHandle === handle) || (name && toProfile === name))
+}
 
-    return (handle && toHandle === handle) || (name && toProfile === name)
-  }).length
+/** Open notes addressed to ONE bot — the roster row's badge. */
+export function mailboxOpenCountFor(notes: MailboxNote[], member: GroupMember): number {
+  return notes.filter(note => note.status === 'open' && noteAddressesMember(note, member)).length
 }

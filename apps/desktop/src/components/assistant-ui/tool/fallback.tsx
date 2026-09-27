@@ -47,10 +47,12 @@ import { AlertCircle, CheckCircle2 } from '@/lib/icons'
 import { isOnboardingEnabled } from '@/lib/onboarding-enabled'
 import { toolResultRecord } from '@/lib/tool-result-metadata'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
+import { useStoresSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { recordPreviewArtifact } from '@/store/preview-status'
 import { sessionApprovalRequest } from '@/store/prompts'
 import { $showReasoning } from '@/store/reasoning-disclosure'
+import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
 import { $toolInlineDiff } from '@/store/tool-diffs'
 import { $toolRowDismissed, dismissToolRow } from '@/store/tool-dismiss'
 import {
@@ -91,6 +93,12 @@ import { ToolRunTicker } from './run-ticker'
 // future embedding surface.
 const ToolEmbedContext = createContext(false)
 const ToolRunDisclosureContext = createContext<string | null>(null)
+
+/** True while a bot-chat activity pill is expanded (bot-mode G2). The
+ *  answer-only gate in the tool fallback consults it so a collapsed pill
+ *  hides quiet rows — while failures, approvals and card tools still render
+ *  — and an expanded one reveals them in place. */
+export const ActivityPillExpandedContext = createContext(false)
 
 // A search hit's title is result *content* inside an expanded row, not one of
 // the scaffolding lines, so it keeps the brighter secondary grey.
@@ -1040,12 +1048,81 @@ const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> =
  * for different ranges keeps the decision next to the rendering that depends
  * on it.
  */
+/**
+ * Bot-chat activity pill (bot-mode G2): in a Bot Chat's transcript a run of
+ * tool calls renders as one compact collapsed line — "› Reading 62 unread
+ * threads" — instead of the settled run's quiet chrome. Expanding it reveals
+ * the individual rows in place via `ActivityPillExpandedContext`.
+ *
+ * The pill owns only the summary line: children always mount, and each row
+ * still self-gates — failures, approvals and card tools render inside a
+ * collapsed pill exactly as answer-only renders them inline, so nothing the
+ * user must act on is ever hidden by the collapse.
+ */
+const BotActivityPill: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> = ({
+  children,
+  endIndex,
+  startIndex
+}) => {
+  const messageRunning = useAuiState(selectMessageRunning)
+
+  const { approvalActivity, completedAt, entryIds, key, live, startedAt, summary } = useToolRun(
+    startIndex,
+    endIndex
+  )
+
+  const sessionId = useStore(useSessionView().$runtimeId)
+  const approval = useStore(useMemo(() => sessionApprovalRequest(sessionId), [sessionId]))
+  const currentTurn = useAuiState(state => isCurrentTurnMessage(state.thread.messages, state.message.id))
+  const representedByApproval = !!approval && currentTurn && approvalActivity
+  const disclosureId = `tool-run:${key}`
+  const persistedOpen = useStore($toolDisclosureOpen(disclosureId))
+  const rowOpen = useStore(useMemo(() => $anyToolDisclosureOpen(entryIds), [entryIds]))
+  const enterRef = useEnterAnimation(messageRunning, `tool-run:${key}`)
+  // Pills start collapsed — the one-line summary IS the presentation — but a
+  // persisted disclosure (or a row the user opened inside) wins, matching the
+  // same disclosure id the full transcript would use.
+  const expanded = (persistedOpen ?? rowOpen) ?? false
+
+  return (
+    <ToolRunDisclosureContext.Provider value={disclosureId}>
+      <ActivityPillExpandedContext.Provider value={expanded}>
+        <div className="min-w-0 max-w-full" data-slot="bot-activity-pill" ref={enterRef}>
+          {!representedByApproval && (
+            <div data-conversation-scaffold="" data-tool-summary="">
+              <ScaffoldRow
+                onToggle={() => setToolDisclosureOpen(disclosureId, !expanded)}
+                open={expanded}
+                trailing={<TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />}
+              >
+                <FadeText className={cn(SCAFFOLD_LABEL_CLASS, 'truncate')}>
+                  {live ? <span className="shimmer">{summary}</span> : summary}
+                </FadeText>
+              </ScaffoldRow>
+            </div>
+          )}
+          {children}
+        </div>
+      </ActivityPillExpandedContext.Provider>
+    </ToolRunDisclosureContext.Provider>
+  )
+}
+
 export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> = ({
   children,
   endIndex,
   startIndex
 }) => {
   const showReasoning = useStore($showReasoning)
+  const sessionId = useStore(useSessionView().$runtimeId)
+
+  // A Bot Chat's transcript renders its tool runs as pills (G2); every other
+  // session keeps the answer-only passthrough below. The same three-store
+  // resolution the composer uses — the scope set records the answer, and
+  // resolving this runtime id to its stored id reads the other two.
+  const botChat = useStoresSelector([$botChatSessionIds, $sessionStates, $sessionTiles], () =>
+    isBotChatSession(sessionId)
+  )
 
   // Joined rather than returned as an array: assistant-ui compares selector
   // results with `Object.is` and re-runs them on every store update, so a
@@ -1071,7 +1148,29 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   // mount so clarify, diffs, and failed calls can render on their own.
   // reasoning_effort is not a display switch.
   if (!showReasoning) {
-    return children
+    if (!botChat) {
+      return children
+    }
+
+    // A Bot Chat's runs become activity pills: the run's own summary line as
+    // a compact collapsible chip, cards still in place.
+    return (
+      <ToolEmbedContext.Provider value={false}>
+        {items.map(item =>
+          item.kind === 'card' ? (
+            <Fragment key={`card:${item.index}`}>{rows[item.index]}</Fragment>
+          ) : (
+            <BotActivityPill
+              endIndex={startIndex + item.end}
+              key={`run:${item.start}`}
+              startIndex={startIndex + item.start}
+            >
+              {rows.slice(item.start, item.end + 1)}
+            </BotActivityPill>
+          )
+        )}
+      </ToolEmbedContext.Provider>
+    )
   }
 
   return (

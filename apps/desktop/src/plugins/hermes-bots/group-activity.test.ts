@@ -227,10 +227,14 @@ describe('epoch scoping', () => {
     const room = await loadRoom({ turn: ({ n }) => (n === 1 ? first : '(pass)') })
     const member: GroupMember[] = [{ name: 'research', title: '' }]
     const thread = room.rounds.sendToGroupChat('Busy', member, 'first ask')!
-    await drain(() => room.gateway.calls.length < 1, 50)
+    // Default drain limit: the first-dispatch chain is ~dozens of awaits and
+    // a tight cap was the flake — it could return before the turn landed.
+    await drain(() => room.gateway.calls.length < 1)
     const epoch = room.chat.$groupChats.get().Busy.epoch
     room.rounds.sendToGroupChat('Busy', member, 'follow-up', thread)
-    await drain(() => false)
+    // Wait for a real condition — the follow-up's 'queued' marker — instead of
+    // a bare flush, so the assertions below never race the enqueue.
+    await drain(() => feed(room, 'Busy').filter(event => event.kind === 'queued').length < 2)
     expect(room.gateway.calls).toHaveLength(1)
     expect(room.chat.$groupChats.get().Busy.epoch).toBe(epoch)
     release('first reply')

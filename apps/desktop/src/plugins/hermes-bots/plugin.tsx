@@ -39,6 +39,7 @@ import type {
 
 import { AgentsSection } from './agents-section'
 import { startFaceClock, stopFaceClock } from './avatar'
+import { BotInboundCards } from './bot-events-view'
 import { BotHeaderIdentity } from './bot-header-chip'
 import { BOT_PLAN_DIRECTIVE, rewritePlanDraft } from './bot-plan'
 import { BotPlanCard, canonicalBotChatOnScreen } from './bot-plan-card'
@@ -54,6 +55,8 @@ import {
   $selectedRosterKey,
   focusedMentionProfile
 } from './bot-state'
+import { hydrateDismissedBotTips } from './bot-tips'
+import { BotChatTips } from './bot-tips-view'
 import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
 import { BotChatEmpty } from './chat-empty'
 import { bindProfileSync } from './cron'
@@ -280,6 +283,9 @@ export default {
     hydrateRosterViewMode()
     // Hydrate the mission rail's per-section fold state (default expanded).
     hydrateRailSections()
+
+    // Hydrate dismissed tip cards (G9) — per bot, this device only.
+    hydrateDismissedBotTips()
 
     // Hydrate the Sessions-rail Agents fold (default open).
     try {
@@ -794,6 +800,26 @@ export default {
       data: {
         render: ({ sessionId }: ChatEmptyProps) => <BotChatEmpty sessionId={sessionId} />
       }
+    })
+
+    // G9 — capability tip cards under the empty-state hero, on the same
+    // claim the hero makes (canonical chat, empty transcript = first run).
+    ctx.register({
+      id: 'chat-empty-tips',
+      area: CHAT_EMPTY_AREA,
+      data: {
+        render: ({ sessionId }: ChatEmptyProps) => <BotChatTips sessionId={sessionId} />
+      }
+    })
+
+    // G5 — inbound events bound to the bot (mailbox notes, relay deliveries,
+    // routine completions) as compact cards inside its canonical chat. The
+    // contribution answers for itself: null when the focused chat is not a
+    // canonical Bot Chat.
+    ctx.register({
+      id: 'bot-inbound-cards',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotInboundCards />
     })
 
     ctx.register({

@@ -10,7 +10,7 @@
  *  - Copy screenshot never writes an empty clipboard entry.
  */
 
-import { act, fireEvent, render } from '@testing-library/react'
+import { act, fireEvent, render, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
@@ -155,11 +155,14 @@ it('take over mints a viewer through display.observe before acquiring, then open
   const view = render(<BotComputerPanel bot={botRemote} />)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Take over' }))
-  await act(async () => {})
 
-  expect(rpcCalls().map(([method]) => method)).toEqual(['display.observe', 'display.lease.acquire'])
-  expect(rpcCalls()[1]?.[1]).toMatchObject({ viewer_id: 'v-minted' })
-  expect(vi.mocked(openBotScreen)).toHaveBeenCalledWith(botRemote, null)
+  // The chain is observe → acquire → open: several awaited hops, so a single
+  // act() flush can drain before the acquire lands. waitFor settles it.
+  await waitFor(() => {
+    expect(rpcCalls().map(([method]) => method)).toEqual(['display.observe', 'display.lease.acquire'])
+    expect(rpcCalls()[1]?.[1]).toMatchObject({ viewer_id: 'v-minted' })
+    expect(vi.mocked(openBotScreen)).toHaveBeenCalledWith(botRemote, null)
+  })
   view.unmount()
 })
 
@@ -181,9 +184,10 @@ it('hand back releases the lease with this window\u2019s minted viewer id', asyn
   const view = render(<BotComputerPanel bot={botRemote} />)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Hand back' }))
-  await act(async () => {})
 
-  expect(rpcCalls()).toEqual([['display.lease.release', { viewer_id: 'v-ours' }]])
+  await waitFor(() => {
+    expect(rpcCalls()).toEqual([['display.lease.release', { viewer_id: 'v-ours' }]])
+  })
   view.unmount()
 })
 
@@ -200,12 +204,13 @@ it('restart bounces the screen: display.stop (forced) before display.start', asy
   const view = render(<BotComputerPanel bot={botRemote} />)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Restart' }))
-  await act(async () => {})
 
-  expect(rpcCalls()).toEqual([
-    ['display.stop', { force: true }],
-    ['display.start', {}]
-  ])
+  await waitFor(() => {
+    expect(rpcCalls()).toEqual([
+      ['display.stop', { force: true }],
+      ['display.start', {}]
+    ])
+  })
   view.unmount()
 })
 
@@ -226,9 +231,10 @@ it('opens the bot workdir in a user terminal on the canonical chat; hidden for r
   const view = render(<BotComputerPanel bot={botLocal} />)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Workdir' }))
-  await act(async () => {})
 
-  expect(openSessionInTerminal).toHaveBeenCalledWith('sess-canonical', { cwd: '/work/proj', profile: 'default' })
+  await waitFor(() => {
+    expect(openSessionInTerminal).toHaveBeenCalledWith('sess-canonical', { cwd: '/work/proj', profile: 'default' })
+  })
   view.unmount()
 
   const remote = render(<BotComputerPanel bot={botRemote} />)
@@ -250,8 +256,9 @@ it('copy screenshot never writes an empty frame to the clipboard', async () => {
   const view = render(<BotComputerPanel bot={botRemote} />)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Copy screenshot' }))
-  await act(async () => {})
 
-  expect(vi.mocked(host.notifyError)).toHaveBeenCalled()
+  await waitFor(() => {
+    expect(vi.mocked(host.notifyError)).toHaveBeenCalled()
+  })
   view.unmount()
 })
