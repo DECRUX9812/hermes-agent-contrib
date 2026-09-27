@@ -16,6 +16,7 @@ import { type ReactNode, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { BotDeliverablesSection } from './bot-deliverables'
+import { BotSessionDeck } from './bot-session-deck'
 import { exportBot } from './bot-export'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { BotTaskLog } from './bot-task-log'
@@ -197,6 +198,13 @@ export function MissionRail() {
       <RailSection id="tasks" title={b.rail.tasks}>
         <BotTaskLog jobs={jobs} onOpenRoutine={setDetailJobId} owner={owner} />
       </RailSection>
+      {/* F1's session deck owns its own section header (title + count +
+          refresh/new-chat live in its RosterSectionHeader) and fold state —
+          like the deliverables section it sits outside the RailSection
+          chrome rather than double-headering. */}
+      <div className="border-t border-(--ui-stroke-secondary)">
+        <BotSessionDeck owner={owner} />
+      </div>
       <RailSection id="computer" title={b.screen.panelTitle}>
         <div className="px-3 pb-2 pt-1">
           <BotComputerPanel bot={owner} meta={meta} />

@@ -718,6 +718,16 @@ type BotsMessages = {
     importHint: string
     add: string
   }
+  /** F1 — the session deck on the bot pane: every session the bot's profile
+   *  owns, canonical chat first. */
+  deck: {
+    title: string
+    newChat: string
+    refresh: string
+    canonical: string
+    empty: string
+    untitled: string
+  }
 }
 
 const en: BotsMessages = {
@@ -1349,6 +1359,14 @@ const en: BotsMessages = {
     importFile: 'Import from file',
     importHint: 'Install a bot bundle exported from another Hermes install.',
     add: 'Add bot'
+  },
+  deck: {
+    title: 'Sessions',
+    newChat: 'New chat',
+    refresh: 'Refresh',
+    canonical: 'canonical',
+    empty: 'No sessions yet.',
+    untitled: 'Untitled session'
   }
 }
 
@@ -1970,6 +1988,14 @@ const ja: BotsMessages = {
     stepsDone: (done, total) => `${done}/${total} 完了`,
     complete: '完了',
     clearChecklist: 'クリア'
+  },
+  deck: {
+    title: 'セッション',
+    newChat: '新しいチャット',
+    refresh: '更新',
+    canonical: '正規',
+    empty: 'セッションはまだありません。',
+    untitled: '無題のセッション'
   }
 ,
   rail: {
@@ -2591,6 +2617,14 @@ const zh: BotsMessages = {
     stepsDone: (done, total) => `已完成 ${done}/${total}`,
     complete: '已完成',
     clearChecklist: '清除'
+  },
+  deck: {
+    title: '会话',
+    newChat: '新聊天',
+    refresh: '刷新',
+    canonical: '规范',
+    empty: '还没有会话。',
+    untitled: '未命名会话'
   }
 ,
   rail: {
@@ -3212,6 +3246,14 @@ const zhHant: BotsMessages = {
     stepsDone: (done, total) => `已完成 ${done}/${total}`,
     complete: '已完成',
     clearChecklist: '清除'
+  },
+  deck: {
+    title: '工作階段',
+    newChat: '新聊天',
+    refresh: '重新整理',
+    canonical: '正典',
+    empty: '還沒有工作階段。',
+    untitled: '未命名工作階段'
   }
 ,
   rail: {
