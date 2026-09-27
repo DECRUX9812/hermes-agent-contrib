@@ -15,6 +15,7 @@ import {
   parseRosterKey,
   saveSelectedRosterBot
 } from './bot-state'
+import { BroadcastDialog } from './broadcast-dialog'
 /**
  * The Bots pane itself: the roster's selection reconciliation, the
  * workspace-ownership reads its lifecycle keys off, and the pane that lists
@@ -40,10 +41,8 @@ import { $activeGroupMemberKeys } from './group-presence'
 import { $showHiddenBots, isBotHidden } from './hidden-bots'
 import { useBots } from './i18n'
 import { $rosterSortMode, setRosterSortMode, useRosterAttentionCounts } from './live-status'
-import { RoutinesCalendarDialog } from './routines-calendar'
 import { mailboxOpenCountFor, useMailbox } from './mailbox'
 import { MailboxTaskDialog } from './mailbox-parts'
-import { BroadcastDialog } from './broadcast-dialog'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
@@ -53,9 +52,10 @@ import { $lastSources, usePublishRosterSnapshot } from './roster-pane-lifecycle'
 import { rosterSectionRenderers } from './roster-pane-sections'
 import { renderRosterToolbar } from './roster-pane-toolbar'
 import { botNeedsHandleLabel, rosterGatewayOptions } from './roster-sections'
+import { RoutinesCalendarDialog } from './routines-calendar'
 import { botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
-import { TriageStrip } from './triage-strip'
 import { activeBots, useTurnBusy } from './row-helpers'
+import { TriageStrip } from './triage-strip'
 import type { BotMeta, GatewaySource, GroupMember, RosterActivityFilter, RosterKindFilter, RosterRow } from './types'
 import {
   $botSections,

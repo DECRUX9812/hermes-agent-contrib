@@ -9,7 +9,6 @@
  */
 
 import {
-  Button,
   cn,
   Codicon,
   Dialog,
@@ -19,7 +18,6 @@ import {
   DialogTitle,
   nextRunOverdueMs,
   relativeTime,
-  Tip,
   useValue
 } from '@hermes/plugin-sdk'
 import { useEffect, useState } from 'react'
@@ -32,13 +30,13 @@ import type { FleetRoutine } from './fleet-schedule'
 import { useBots } from './i18n'
 import { displayName } from './labels'
 import { botRosterMeta } from './routing'
-import type { RosterRow, RoutineJob } from './types'
+import type { RosterRow } from './types'
 
 function FleetJobRow({ bot, job }: FleetRoutine) {
   const b = useBots()
   const allMeta = useValue($botMeta)
   const meta = botRosterMeta(bot, allMeta)
-  const { shape, color, image } = botAppearance(bot, meta)
+  const { shape, color, image } = botAppearance(bot.name, meta)
   const name = displayName(bot, meta)
   const fireAt = Date.parse(String(job.next_run_at || ''))
   const overdue = nextRunOverdueMs(job) !== null

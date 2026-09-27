@@ -18,7 +18,7 @@
  * chat instead of a per-group session.
  */
 
-import { atom, host } from '@hermes/plugin-sdk'
+import { atom } from '@hermes/plugin-sdk'
 
 import { CANONICAL_CHAT_TITLE, findExistingCanonicalChat } from './canonical-chat'
 import { botRosterKey } from './data'
@@ -114,6 +114,7 @@ async function resolveCanonicalForDispatch(bot: RosterRow): Promise<null | strin
   // re-read the registry and adopt the winner instead of prompting into our
   // stray lazy session.
   const route = botConnectionRoute(bot)
+
   const created = await requestForBot<{ session_id?: string; stored_session_id?: string }>(
     bot,
     'session.create',
@@ -225,6 +226,12 @@ async function collectReply(
   }
 }
 
+/** The run currently allowed to write — a newer broadcast supersedes an
+ *  older one's in-flight patches. Kept as a separate binding because each
+ *  patch replaces the atom's value, so comparing the atom's contents to the
+ *  original object would drop every patch after the first. */
+let latestRun: BroadcastRun | null = null
+
 /** Send one prompt to each bot's canonical chat in parallel and collect the
  *  replies into $broadcastRun for the results surface. Never navigates. */
 export function broadcastPrompt(bots: RosterRow[], prompt: string) {
@@ -247,7 +254,7 @@ export function broadcastPrompt(bots: RosterRow[], prompt: string) {
   const setEntry = (key: string, part: Partial<BroadcastEntry>) => {
     const current = $broadcastRun.get()
 
-    if (current !== run) {
+    if (latestRun !== run || !current) {
       return // a newer broadcast superseded this one
     }
 
@@ -257,6 +264,7 @@ export function broadcastPrompt(bots: RosterRow[], prompt: string) {
     })
   }
 
+  latestRun = run
   $broadcastRun.set(run)
 
   for (const entry of run.entries) {
@@ -302,5 +310,6 @@ export function broadcastPrompt(bots: RosterRow[], prompt: string) {
 
 /** Test hook: reset run state between tests. */
 export function resetBroadcastForTest() {
+  latestRun = null
   $broadcastRun.set(null)
 }

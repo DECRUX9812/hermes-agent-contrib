@@ -11,14 +11,13 @@
 import {
   Button,
   Checkbox,
-  cn,
   Codicon,
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   Textarea,
   Tip,
   useValue
@@ -49,14 +48,15 @@ function BroadcastStatusGlyph({ status }: { status: BroadcastEntry['status'] }) 
     return <Codicon className="text-destructive" name="error" />
   }
 
-  return <Codicon className="text-green-600 dark:text-green-400" name="check" aria-label={b.broadcast.title} />
+  return <Codicon aria-label={b.broadcast.title} className="text-green-600 dark:text-green-400" name="check" />
 }
 
 function BroadcastResultCard({ entry }: { entry: BroadcastEntry }) {
   const b = useBots()
   const allMeta = useValue($botMeta)
-  const { shape, color, image } = botAppearance(entry.bot, botRosterMeta(entry.bot, allMeta))
-  const name = displayName(entry.bot, botRosterMeta(entry.bot, allMeta))
+  const meta = botRosterMeta(entry.bot, allMeta)
+  const { shape, color, image } = botAppearance(entry.bot.name, meta)
+  const name = displayName(entry.bot, meta)
 
   const statusLabel =
     entry.status === 'sending'
@@ -180,7 +180,7 @@ export function BroadcastDialog({
             {eligible.map(bot => {
               const key = botRosterKey(bot) || bot.name
               const meta = botRosterMeta(bot, allMeta)
-              const { shape, color, image } = botAppearance(bot, meta)
+              const { shape, color, image } = botAppearance(bot.name, meta)
 
               return (
                 <li className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-(--chrome-action-hover)" key={key}>

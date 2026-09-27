@@ -57,6 +57,7 @@ vi.mock('./row-helpers', () => ({
 import { deriveTriageItems } from './triage'
 
 const bot = (name: string, fields: Partial<RosterRow> = {}) => ({ name, ...fields }) as RosterRow
+
 const overdueJob = (): RoutineJob =>
   ({ enabled: true, job_id: 'j1', next_run_at: new Date(Date.now() - 60 * 60 * 1000).toISOString() }) as RoutineJob
 

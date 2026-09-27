@@ -79,11 +79,22 @@ const withChat = (name: string): RosterRow =>
 
 const noChat = (name: string): RosterRow => ({ name }) as RosterRow
 
-/** Let queued microtasks (resolve → resume → submit) settle, then advance one
- *  poll tick so collectReply can read the settled turn. */
+/** A single `await` only reaches the microtasks already queued when our
+ *  continuation was enqueued — a promise CHAIN keeps enqueueing behind it.
+ *  Rounds of `Promise.resolve()` walk the FIFO until the dispatch chain
+ *  (resolve → resume → submit) has fully settled. */
+async function flushChain() {
+  for (let i = 0; i < 30; i++) {
+    await Promise.resolve()
+  }
+}
+
+/** Let the dispatch chain settle, then advance one poll tick so collectReply
+ *  can read the turn, then flush its patch. */
 async function settleOnePoll() {
-  await vi.advanceTimersByTimeAsync(1)
+  await flushChain()
   await vi.advanceTimersByTimeAsync(4_000)
+  await flushChain()
 }
 
 beforeEach(() => {

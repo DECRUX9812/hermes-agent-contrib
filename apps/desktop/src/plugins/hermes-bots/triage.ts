@@ -12,7 +12,6 @@ import { nextRunOverdueMs } from '@hermes/plugin-sdk'
 import type { SessionDotState } from '@hermes/plugin-sdk'
 
 import { botRosterKey, botSelectionKey, botSourceStatus } from './data'
-import { relayLaneKey } from './relay'
 import { botCanonicalRuntimeId, botCanonicalSessionId } from './row-helpers'
 import type { RosterRow, RoutineJob } from './types'
 
@@ -36,7 +35,7 @@ export interface TriageSignals {
   /** Composer status items keyed by session id (runtime or stored). */
   statusItems?: Record<string, readonly { state?: string }[] | undefined>
   /** Runtime→stored id bridge for canonical chats (see row-helpers). */
-  storedByRuntime?: Record<string, string | undefined>
+  storedByRuntime?: Readonly<Record<string, string>>
   /** Routine jobs already known per bot — keyed by roster key or bare name
    *  (the two shapes `useRoutines`' cache key takes). */
   jobs?: ReadonlyMap<string, readonly RoutineJob[]>
@@ -69,6 +68,7 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
     // 1. Gateway the bot lives on is unreachable — nothing else can run.
     if (botSourceStatus(bot).available === false) {
       add('unreachable')
+
       continue
     }
 
@@ -81,6 +81,7 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
       const lane = `${bot?.connectionId || signals.activeConnectionId || 'local'}::${bot?.name || 'default'}`
 
       add(signals.relayInflight?.has(lane) ? 'delivery' : 'attention', String(flag?.reason || '').trim() || undefined)
+
       continue
     }
 
@@ -89,15 +90,19 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
 
     if (storedId && signals.dotById?.[storedId] === 'needs-input') {
       add('needs-input')
+
       continue
     }
 
     // 4. Failed status item on the canonical chat (runtime or stored id).
     const runtimeId = botCanonicalRuntimeId(bot, signals.storedByRuntime || {})
-    const rows = (runtimeId && signals.statusItems?.[runtimeId]) || (storedId && signals.statusItems?.[storedId])
+
+    const rows =
+      (runtimeId ? signals.statusItems?.[runtimeId] : undefined) || (storedId ? signals.statusItems?.[storedId] : undefined)
 
     if (rows?.some(item => item?.state === 'failed')) {
       add('turn-failed')
+
       continue
     }
 

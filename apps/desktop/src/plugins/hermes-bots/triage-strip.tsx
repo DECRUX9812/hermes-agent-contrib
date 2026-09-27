@@ -9,7 +9,7 @@ import { useMemo } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { ROUTINES_QUERY_KEY } from './cron'
-import { $botAttention, $botMeta, botRosterKey } from './data'
+import { $botAttention, $botMeta } from './data'
 import { useBots } from './i18n'
 import type { BotsText } from './i18n'
 import { displayName } from './labels'
@@ -23,16 +23,22 @@ function triageLabel(b: BotsText, item: TriageItem, name: string): string {
   switch (item.kind) {
     case 'unreachable':
       return b.triage.unreachable(name)
+
     case 'delivery':
       return b.triage.deliveryFailed(name)
+
     case 'attention':
       return b.triage.attention(name, item.detail || '')
+
     case 'needs-input':
       return b.triage.needsInput(name)
+
     case 'turn-failed':
       return b.triage.turnFailed(name)
+
     case 'overdue':
       return b.triage.routineOverdue(name)
+
     default:
       return name
   }
@@ -114,7 +120,7 @@ export function TriageStrip({
       </div>
       {items.map(item => {
         const meta = botRosterMeta(item.bot, allMeta)
-        const { shape, color, image } = botAppearance(item.bot, meta)
+        const { shape, color, image } = botAppearance(item.bot.name, meta)
         const name = displayName(item.bot, meta)
 
         return (

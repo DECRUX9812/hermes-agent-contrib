@@ -9,7 +9,7 @@
  *      the same ui_meta sync.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { GroupMessage } from './types'
 
@@ -21,18 +21,14 @@ vi.mock('@hermes/plugin-sdk', async () => {
   return pluginSdkMock(host)
 })
 
-interface Chat {
-  chat: typeof import('./group-chat')
-}
-
-async function loadChat(): Promise<Chat & { storage: Map<string, unknown> }> {
+async function loadChat() {
   vi.resetModules()
 
   for (const key of Object.keys(host)) {
     delete host[key]
   }
 
-  const { createGroupGateway, pluginSdkMock: _unused, scriptedStorage } = await import('./group-test-utils')
+  const { createGroupGateway, scriptedStorage } = await import('./group-test-utils')
   const gateway = createGroupGateway()
 
   Object.assign(host, gateway.host)
