@@ -242,6 +242,23 @@ export function selectRoutineJobs(
   }
 }
 
+/** Routines for one bot as any surface reads them — the pane's selection
+ *  logic plus the last-good-list fallback in one place, so the Routines pane
+ *  and the inbound-event cards can never disagree on which jobs belong to
+ *  the bot. */
+export function useRoutineJobsForBot(owner: RoutineOwner): RoutineJob[] {
+  const name = String((typeof owner === 'string' ? owner : owner?.name) || '').trim() || 'default'
+  const { data, error } = useRoutines(owner)
+  const lastJobs = useValue($lastJobs)
+  const view = selectRoutineJobs(data, error, lastJobs, name)
+
+  if (view.live) {
+    $lastJobs.set(view.live)
+  }
+
+  return view.jobs
+}
+
 /**
  * Why the Routines pane can be empty while the bot's cron store has jobs.
  *

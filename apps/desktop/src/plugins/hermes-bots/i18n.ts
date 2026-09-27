@@ -707,6 +707,23 @@ type BotsMessages = {
     empty: string
     untitled: string
   }
+  /** G5 — the inbound-event strip inside a bot's canonical chat. */
+  events: {
+    /** Link affordance that opens the thing a card came from. */
+    open: string
+    /** Live relay-delivery line. */
+    inflight: string
+  }
+  /** G9 — dismissible capability tips on a bot's first-run canonical chat. */
+  tips: {
+    computer: string
+    delegate: string
+    dismiss: string
+    openBots: string
+    openComputer: string
+    openRoutines: string
+    schedule: string
+  }
 }
 
 const en: BotsMessages = {
@@ -1331,6 +1348,19 @@ const en: BotsMessages = {
     canonical: 'canonical',
     empty: 'No sessions yet.',
     untitled: 'Untitled session'
+  },
+  events: {
+    open: 'Open',
+    inflight: 'A message is on its way'
+  },
+  tips: {
+    computer: 'I can use websites, not just search them',
+    delegate: 'I can hand work to other bots and work in a group',
+    dismiss: 'Dismiss',
+    openBots: 'Open Agents',
+    openComputer: 'Open computer',
+    openRoutines: 'Open routines',
+    schedule: 'I can run on a schedule'
   }
 }
 
@@ -1960,6 +1990,19 @@ const ja: BotsMessages = {
     canonical: '正規',
     empty: 'セッションはまだありません。',
     untitled: '無題のセッション'
+  },
+  events: {
+    open: '開く',
+    inflight: 'メッセージを配信中です'
+  },
+  tips: {
+    computer: '検索するだけでなく、サイトを実際に操作できます',
+    delegate: 'ほかのボットに作業を渡してグループで動けます',
+    dismiss: '閉じる',
+    openBots: 'エージェントを開く',
+    openComputer: 'コンピューターを開く',
+    openRoutines: 'ルーティンを開く',
+    schedule: 'スケジュールで自動実行できます'
   }
 }
 
@@ -2573,6 +2616,19 @@ const zh: BotsMessages = {
     canonical: '规范',
     empty: '还没有会话。',
     untitled: '未命名会话'
+  },
+  events: {
+    open: '打开',
+    inflight: '消息正在送达'
+  },
+  tips: {
+    computer: '我不只能搜索网站，还能实际操作它们',
+    delegate: '我可以把任务交给其他机器人，也能参与群组协作',
+    dismiss: '关闭',
+    openBots: '打开代理',
+    openComputer: '打开电脑面板',
+    openRoutines: '打开例程',
+    schedule: '我可以按计划自动运行'
   }
 }
 
@@ -3186,6 +3242,19 @@ const zhHant: BotsMessages = {
     canonical: '正典',
     empty: '還沒有工作階段。',
     untitled: '未命名工作階段'
+  },
+  events: {
+    open: '開啟',
+    inflight: '訊息正在送達'
+  },
+  tips: {
+    computer: '我不只能搜尋網站，還能實際操作它們',
+    delegate: '我可以把工作交給其他機器人，也能參與群組協作',
+    dismiss: '關閉',
+    openBots: '開啟代理',
+    openComputer: '開啟電腦面板',
+    openRoutines: '開啟例程',
+    schedule: '我可以按排程自動執行'
   }
 }
 
