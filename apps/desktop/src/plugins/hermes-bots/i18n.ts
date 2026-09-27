@@ -228,6 +228,8 @@ type BotsMessages = {
     helpPromptPlaceholder: string
     descriptionHint: string
     newChatWith: string
+    /** Pane/row affordance: spawn a side-chat in a second tile — never the canonical Bot Chat. */
+    newTask: string
     /** Re-opens the forever-chat on purpose. A plain row click only returns to
      *  the tabs already open, so a closed Bot Chat needs an explicit ask. */
     openBotChat: string
@@ -452,6 +454,19 @@ type BotsMessages = {
     noPackageManager: string
     portalTitle: string
     portalOpen: string
+    /** Computer panel (the docked upgrade of the screen hero): header title,
+     *  quick actions and the resize handle. */
+    panelTitle: string
+    openFullPane: string
+    copyScreenshot: string
+    screenshotCopied: string
+    screenshotFailed: string
+    restartScreen: string
+    restartFailed: string
+    openWorkdir: string
+    workdirUnavailable: string
+    workdirFailed: string
+    resizePanel: string
     heroStopped: string
     heroNotInstalled: string
     heroConnecting: string
@@ -789,6 +804,7 @@ const en: BotsMessages = {
     helpPromptPlaceholder: 'What should this bot help with?',
     descriptionHint: 'Leave blank to generate from the bot’s name and description.',
     newChatWith: 'New chat with this bot',
+    newTask: 'New task',
     openBotChat: 'Open Bot Chat',
     continueOnPhone: 'Continue on phone…',
     openingChat: 'Opening chat…',
@@ -980,7 +996,7 @@ const en: BotsMessages = {
     title: 'Screen',
     menu: 'Open Screen',
     unsupportedTitle: 'No bot screen on this host',
-    unsupportedBody: 'Bot screens run on Linux gateway hosts. This bot uses the host\u2019s own display.',
+    unsupportedBody: 'Bot screens run on Linux gateway hosts. This bot uses the host’s own display.',
     notInstalledTitle: 'Screen packages missing',
     notInstalledBody: 'The gateway host needs TigerVNC and the Xfce core to give this bot a screen. Run on the host:',
     installHint: 'Runs on the gateway host as the user Hermes runs as; sudo is asked for once, through Hermes.',
@@ -991,6 +1007,17 @@ const en: BotsMessages = {
     noPackageManager: 'No supported package manager (apt, dnf, pacman) was found on the gateway host.',
     portalTitle: 'Screen',
     portalOpen: 'Open',
+    panelTitle: 'Computer',
+    openFullPane: 'Open full pane',
+    copyScreenshot: 'Copy screenshot',
+    screenshotCopied: 'Screenshot copied',
+    screenshotFailed: 'Couldn’t copy the screenshot',
+    restartScreen: 'Restart screen',
+    restartFailed: 'Couldn’t restart the screen',
+    openWorkdir: 'Open workdir',
+    workdirUnavailable: 'The bot’s workdir isn’t reachable from here',
+    workdirFailed: 'Couldn’t open the workdir',
+    resizePanel: 'Drag to resize',
     heroStopped: 'Screen is off',
     heroNotInstalled: 'Not installed on this host',
     heroConnecting: 'Checking the screen…',
@@ -1005,13 +1032,13 @@ const en: BotsMessages = {
     portalStopped: 'Stopped',
     portalNotInstalled: 'Not installed on host',
     portalUnsupported: 'Not available on this host',
-    portalUnavailable: 'Update the bot\u2019s Hermes to use Screen',
+    portalUnavailable: 'Update the bot’s Hermes to use Screen',
     unavailableTitle: 'Screen needs a newer Hermes',
     autoOpenMenu: 'Open Screen when the bot uses it',
     autoOpenOnToast: name => `${name}’s Screen opens when it starts using its desktop`,
     autoOpenOffToast: name => `${name}’s Screen stays closed until you open it`,
     stoppedTitle: 'Screen is off',
-    stoppedBody: 'Start this bot\u2019s desktop to watch what it does and take over when it needs you.',
+    stoppedBody: 'Start this bot’s desktop to watch what it does and take over when it needs you.',
     start: 'Start screen',
     attaching: 'Connecting to the screen\u2026',
     streamLost: 'Screen stream ended',
@@ -1321,6 +1348,7 @@ const ja: BotsMessages = {
     helpPromptPlaceholder: 'このボットは何を手伝いますか？',
     descriptionHint: '空欄のままにすると、ボットの名前と説明から生成します。',
     newChatWith: 'このボットと新しいチャット',
+    newTask: '新しいタスク',
     openBotChat: 'ボットチャットを開く',
     continueOnPhone: 'スマホで続ける…',
     openingChat: 'チャットを開いています…',
@@ -1526,6 +1554,17 @@ const ja: BotsMessages = {
     noPackageManager: 'ゲートウェイホストに対応するパッケージマネージャー (apt, dnf, pacman) が見つかりません。',
     portalTitle: 'スクリーン',
     portalOpen: '開く',
+    panelTitle: 'コンピューター',
+    openFullPane: 'フルペインで開く',
+    copyScreenshot: 'スクリーンショットをコピー',
+    screenshotCopied: 'スクリーンショットをコピーしました',
+    screenshotFailed: 'スクリーンショットをコピーできませんでした',
+    restartScreen: '画面を再起動',
+    restartFailed: '画面を再起動できませんでした',
+    openWorkdir: '作業ディレクトリを開く',
+    workdirUnavailable: 'このボットの作業ディレクトリはここから開けません',
+    workdirFailed: '作業ディレクトリを開けませんでした',
+    resizePanel: 'ドラッグでサイズ変更',
     heroStopped: '画面は停止中',
     heroNotInstalled: 'このホストには未インストール',
     heroConnecting: '画面を確認中…',
@@ -1846,6 +1885,7 @@ const zh: BotsMessages = {
     helpPromptPlaceholder: '这个机器人应该帮你做什么？',
     descriptionHint: '留空则根据机器人的名称和描述生成。',
     newChatWith: '与此机器人开新聊天',
+    newTask: '新任务',
     openBotChat: '打开机器人聊天',
     continueOnPhone: '在手机上继续…',
     openingChat: '正在打开聊天…',
@@ -2045,6 +2085,17 @@ const zh: BotsMessages = {
     noPackageManager: '网关主机上未找到受支持的包管理器（apt、dnf、pacman）。',
     portalTitle: '屏幕',
     portalOpen: '打开',
+    panelTitle: '计算机',
+    openFullPane: '打开完整窗格',
+    copyScreenshot: '复制屏幕截图',
+    screenshotCopied: '截图已复制',
+    screenshotFailed: '无法复制截图',
+    restartScreen: '重启屏幕',
+    restartFailed: '无法重启屏幕',
+    openWorkdir: '打开工作目录',
+    workdirUnavailable: '无法从这里访问该机器人的工作目录',
+    workdirFailed: '无法打开工作目录',
+    resizePanel: '拖动调整大小',
     heroStopped: '屏幕已关闭',
     heroNotInstalled: '此主机未安装',
     heroConnecting: '正在检查屏幕…',
@@ -2365,6 +2416,7 @@ const zhHant: BotsMessages = {
     helpPromptPlaceholder: '這個機器人應該幫你做什麼？',
     descriptionHint: '留空則依機器人的名稱和描述產生。',
     newChatWith: '與此機器人開新聊天',
+    newTask: '新任務',
     openBotChat: '開啟機器人聊天',
     continueOnPhone: '在手機上繼續…',
     openingChat: '正在開啟聊天…',
@@ -2564,6 +2616,17 @@ const zhHant: BotsMessages = {
     noPackageManager: '閘道主機上找不到受支援的套件管理器（apt、dnf、pacman）。',
     portalTitle: '螢幕',
     portalOpen: '開啟',
+    panelTitle: '電腦',
+    openFullPane: '開啟完整窗格',
+    copyScreenshot: '複製螢幕截圖',
+    screenshotCopied: '已複製螢幕截圖',
+    screenshotFailed: '無法複製螢幕截圖',
+    restartScreen: '重新啟動螢幕',
+    restartFailed: '無法重新啟動螢幕',
+    openWorkdir: '開啟工作目錄',
+    workdirUnavailable: '無法從這裡存取此機器人的工作目錄',
+    workdirFailed: '無法開啟工作目錄',
+    resizePanel: '拖曳調整大小',
     heroStopped: '螢幕已關閉',
     heroNotInstalled: '此主機未安裝',
     heroConnecting: '正在檢查螢幕…',

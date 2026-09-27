@@ -49,9 +49,10 @@ import { $botMeta, $lastRoster, botHandle, botRosterKey, botSelectionKey, isActi
 import { labeled } from './dialog-parts'
 import { botsText, type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
+import { NewTaskButton } from './new-task'
 import { botConnectionRoute, botRosterMeta, requestForBot } from './routing'
 import { rosterRowAge } from './row-helpers'
-import { ScreenHero } from './screen-hero'
+import { BotComputerPanel } from './screen-panel'
 import { ID } from './shared'
 import type { BotMeta, RosterRow, RoutineJob } from './types'
 
@@ -1420,7 +1421,7 @@ export function RoutinesPane() {
   return (
     <div className="flex h-full flex-col">
       <div className="px-3 pt-3">
-        <ScreenHero bot={owner} meta={meta} />
+        <BotComputerPanel bot={owner} meta={meta} />
       </div>
       <div className="flex items-center gap-2 px-3 pt-3 pb-2">
         <BotFace color={avatarColor(color, bot)} image={image} name={bot} shape={shape} size={22} />
@@ -1440,6 +1441,7 @@ export function RoutinesPane() {
           </div>
           <div className="text-[0.65rem] uppercase tracking-wider text-(--ui-text-quaternary)">{c.title}</div>
         </div>
+        <NewTaskButton bot={owner} />
         <Tip label={c.newCron}>
           <Button aria-label={c.newCron} onClick={openCreate} size="icon-xs" variant="ghost">
             <Codicon name="add" />
