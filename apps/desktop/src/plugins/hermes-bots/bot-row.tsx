@@ -39,6 +39,7 @@ import {
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
+import { exportBot } from './bot-export'
 import {
   $botChatFocused,
   $focusedBotOwner,
@@ -546,6 +547,7 @@ export function BotRow({
         >
           {b.bot.duplicate}
         </ContextMenuItem>
+        <ContextMenuItem onSelect={() => void exportBot(bot, meta)}>{b.bot.exportBotMenu}</ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem
           onSelect={() => {

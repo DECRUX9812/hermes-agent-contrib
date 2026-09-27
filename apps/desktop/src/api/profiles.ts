@@ -92,9 +92,10 @@ export function getProfileSetupCommand(name: string): Promise<ProfileSetupComman
  *  interface overlay) into the archive alongside the profile's own artifacts. */
 export function exportProfileArchive(
   name: string,
-  opts: { extraFiles?: Record<string, string>; output?: string } = {}
+  opts: { extraFiles?: Record<string, string>; output?: string; scope?: ProfileScope } = {}
 ): Promise<{ archive: string; ok: boolean }> {
   return hermesApi<{ archive: string; ok: boolean }>({
+    ...profileOwnerScoped(opts.scope),
     path: `/api/profiles/${encodeURIComponent(name)}/export`,
     method: 'POST',
     body: { extra_files: opts.extraFiles ?? {}, output: opts.output ?? '' },
@@ -107,9 +108,11 @@ export function exportProfileArchive(
  *  apply theme/layout without another round-trip. */
 export function importProfileArchive(
   archive: string,
-  name?: string
+  name?: string,
+  scope?: ProfileScope
 ): Promise<{ desktop: null | ProfileDesktopOverlay; name: string; ok: boolean; path: string }> {
   return hermesApi<{ desktop: null | ProfileDesktopOverlay; name: string; ok: boolean; path: string }>({
+    ...profileOwnerScoped(scope),
     path: '/api/profiles/import',
     method: 'POST',
     body: { archive, name: name || null },

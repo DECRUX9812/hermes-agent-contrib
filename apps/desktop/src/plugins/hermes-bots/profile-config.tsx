@@ -102,6 +102,35 @@ export interface ProfileDescribeResponse {
   soul?: string
   toolsets?: CapabilityEntry[]
 }
+
+/** Enabled-count roll-up of a `profiles.describe` payload — the read summary
+ *  the Edit Profile Capabilities header shows while collapsed. null when the
+ *  describe never loaded (hidden, never fake zeros). */
+export interface CapabilityCounts {
+  mcp: number
+  skills: number
+  skillsTotal: number
+  toolsets: number
+  toolsetsTotal: number
+}
+
+export function capabilityCounts(res: null | ProfileDescribeResponse | undefined): CapabilityCounts | null {
+  if (!res) {
+    return null
+  }
+
+  const skills = res.skills ?? []
+  const toolsets = res.toolsets ?? []
+
+  return {
+    mcp: res.mcp_servers?.length ?? 0,
+    skills: skills.filter(skill => skill.enabled).length,
+    skillsTotal: skills.length,
+    toolsets: toolsets.filter(toolset => toolset.enabled).length,
+    toolsetsTotal: toolsets.length
+  }
+}
+
 /** `mcp.catalog` — the bundled, installable MCP menu. */
 export interface McpCatalogResponse {
   servers?: CapabilityEntry[]
