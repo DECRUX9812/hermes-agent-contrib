@@ -65,6 +65,7 @@ import { fallbackSelectionAfterHide, isBotHidden, isBotPinned } from './hidden-b
 import { useBots } from './i18n'
 import { displayName, stripPreviewMarkdown } from './labels'
 import { botLiveStatusLabel, useBotAttention, useBotLiveStatus } from './live-status'
+import { BotModelMenu } from './model-menu'
 import { duplicateBot } from './profile-ops'
 import { botRecentSession, openBotRecentSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
@@ -459,11 +460,12 @@ export function BotRow({
         >
           {groups.length ? b.bot.groupsMenu(groups.join(', ')) : b.bot.manageGroups}
         </ContextMenuItem>
+        <BotModelMenu bot={bot} />
         <ContextMenuItem
           onSelect={() => {
             host.notify({
               kind: 'info',
-              message: `Duplicating ${displayName(bot, meta)}…`
+              message: b.bot.duplicating(displayName(bot, meta))
             })
             duplicateBot(bot, $lastRoster.get())
               .then(name => {
@@ -472,7 +474,7 @@ export function BotRow({
                 })
                 host.notify({
                   kind: 'success',
-                  message: `Created ${name} — full copy of ${bot.name}`
+                  message: b.bot.duplicated(name, bot.name)
                 })
               })
               .catch(err => host.notifyError(err, b.bot.duplicateFailed))
