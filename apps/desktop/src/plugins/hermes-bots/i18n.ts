@@ -152,10 +152,11 @@ type BotsMessages = {
     liveGroup: string
     liveBackground: string
     liveDelegated: string
-    /** A2 — the attention badge tooltip, and the sort menu's two options. */
+    /** A2 — the attention badge tooltip, and the sort menu's options. */
     attentionItems: (count: number) => string
     sortRecent: string
     sortAttention: string
+    sortAlpha: string
   }
   /** Sessions-rail Agents fold — the compact roster beside the sessions. */
   agents: {
@@ -270,6 +271,10 @@ type BotsMessages = {
     chatEmpty: string
     /** First line of a brand-new bot's forever-chat — see `kickoffText`. */
     kickoff: string
+    /** Per-bot notification controls (A4) — context-menu submenu + items. */
+    notifications: string
+    muteAll: string
+    muteQuiet: string
   }
   /** Avatar picker: shapes, blobs, pets, uploads, generation. */
   avatar: {
@@ -663,7 +668,8 @@ const en: BotsMessages = {
     liveDelegated: 'On a task',
     attentionItems: count => (count === 1 ? '1 item needs attention' : `${count} items need attention`),
     sortRecent: 'Recent activity',
-    sortAttention: 'Attention first'
+    sortAttention: 'Attention first',
+    sortAlpha: 'A–Z'
   },
   agents: {
     allBots: count => `All ${count} ${count === 1 ? 'bot' : 'bots'}`,
@@ -764,7 +770,10 @@ const en: BotsMessages = {
     openChatFailedMessage: 'Try again.',
     openGateways: 'Open Gateways',
     chatEmpty: 'Say something to get started.',
-    kickoff: 'Hey, tell me about yourself!'
+    kickoff: 'Hey, tell me about yourself!',
+    notifications: 'Notifications',
+    muteAll: 'Mute all notifications',
+    muteQuiet: 'Mute during quiet hours'
   },
   avatar: {
     classicShapes: 'Classic shapes',
@@ -1149,7 +1158,8 @@ const ja: BotsMessages = {
     liveDelegated: 'タスク実行中',
     attentionItems: count => `${count} 件の項目に対応が必要です`,
     sortRecent: '最近のアクティビティ順',
-    sortAttention: '要対応を先に'
+    sortAttention: '要対応を先に',
+    sortAlpha: '名前順'
   },
   agents: {
     allBots: count => `すべてのボット（${count}）`,
@@ -1250,7 +1260,10 @@ const ja: BotsMessages = {
     openChatFailedMessage: 'もう一度お試しください。',
     openGateways: 'ゲートウェイを開く',
     chatEmpty: '何か書いて始めましょう。',
-    kickoff: 'こんにちは、自己紹介をしてください！'
+    kickoff: 'こんにちは、自己紹介をしてください！',
+    notifications: '通知',
+    muteAll: 'すべての通知をミュート',
+    muteQuiet: '静寂時間帯はミュート'
   },
   avatar: {
     classicShapes: 'クラシックシェイプ',
@@ -1631,7 +1644,8 @@ const zh: BotsMessages = {
     liveDelegated: '正在处理任务',
     attentionItems: count => `${count} 个项目需要处理`,
     sortRecent: '按最近活动',
-    sortAttention: '需处理优先'
+    sortAttention: '需处理优先',
+    sortAlpha: '按名称排序'
   },
   agents: {
     allBots: count => `全部 ${count} 个机器人`,
@@ -1729,7 +1743,10 @@ const zh: BotsMessages = {
     openChatFailedMessage: '请重试。',
     openGateways: '打开网关',
     chatEmpty: '说点什么开始吧。',
-    kickoff: '你好，介绍一下你自己吧！'
+    kickoff: '你好，介绍一下你自己吧！',
+    notifications: '通知',
+    muteAll: '静音所有通知',
+    muteQuiet: '免打扰时段内静音'
   },
   avatar: {
     classicShapes: '经典形状',
@@ -2104,7 +2121,8 @@ const zhHant: BotsMessages = {
     liveDelegated: '正在處理任務',
     attentionItems: count => `${count} 個項目需要處理`,
     sortRecent: '依最近活動',
-    sortAttention: '需處理優先'
+    sortAttention: '需處理優先',
+    sortAlpha: '依名稱排序'
   },
   agents: {
     allBots: count => `全部 ${count} 個機器人`,
@@ -2202,7 +2220,10 @@ const zhHant: BotsMessages = {
     openChatFailedMessage: '請再試一次。',
     openGateways: '開啟閘道',
     chatEmpty: '說點什麼開始吧。',
-    kickoff: '你好，介紹一下你自己吧！'
+    kickoff: '你好，介紹一下你自己吧！',
+    notifications: '通知',
+    muteAll: '靜音所有通知',
+    muteQuiet: '免打擾時段內靜音'
   },
   avatar: {
     classicShapes: '經典形狀',

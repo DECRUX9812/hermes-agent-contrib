@@ -73,4 +73,23 @@ describe('sortRosterBots', () => {
 
     expect(sorted.map(b => b.name)).toEqual(['quiet-new', 'flagged', 'quiet-old'])
   })
+
+  it('alpha orders by display name, activity only breaking ties', () => {
+    const { roster: sorted } = sortRosterBots(roster, {}, { mode: 'alpha' })
+
+    expect(sorted.map(b => b.name)).toEqual(['flagged', 'quiet-new', 'quiet-old'])
+  })
+
+  it('alpha still keeps the pinned band outer', () => {
+    const { roster: sorted } = sortRosterBots(roster, { 'quiet-new': { pinned: true } }, { mode: 'alpha' })
+
+    expect(sorted[0].name).toBe('quiet-new')
+    expect(sorted.slice(1).map(b => b.name)).toEqual(['flagged', 'quiet-old'])
+  })
+
+  it('an unknown persisted mode falls back to recent ordering', () => {
+    const { roster: sorted } = sortRosterBots(roster, {}, { mode: 'bogus' as never })
+
+    expect(sorted.map(b => b.name)).toEqual(['quiet-new', 'quiet-old', 'flagged'])
+  })
 })

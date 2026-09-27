@@ -5,6 +5,8 @@ import { groupChatMemberBots, groupChatNames, groupLastActivity } from './group-
 import { sortGroupRosterRows } from './group-order'
 import { isBotPinned } from './hidden-bots'
 import { isBotHidden } from './hidden-bots'
+import { displayName } from './labels'
+import type { RosterSortMode } from './live-status'
 import { filterBotsByGateway, groupMatchesRosterFilters, rosterGatewaySections } from './roster-sections'
 import type { rosterGatewayOptions } from './roster-sections'
 import { botRosterMeta } from './routing'
@@ -226,8 +228,24 @@ export interface RosterSortSpec {
   /** Per-bot attention rollup; consulted only when `mode` is 'attention'. */
   attentionOf?: (bot: RosterRow) => number
   /** 'recent' (default) is pinned → activity desc; 'attention' inserts the
-   *  rollup between the two bands. */
-  mode?: 'attention' | 'recent'
+   *  rollup between the two bands; 'alpha' orders by display name inside
+   *  each pin band. */
+  mode?: RosterSortMode
+}
+
+/** What every sort comparator may need, computed once per call. */
+interface RosterSortContext {
+  activityOf: (bot: RosterRow) => number
+  attentionOf: (bot: RosterRow) => number
+  nameOf: (bot: RosterRow) => string
+}
+
+/** A new sort mode is one comparator here, one `RosterSortMode` member, and
+ *  one i18n label — the pin band and activity tiebreak apply to all of them. */
+const ROSTER_SORTS: Record<RosterSortMode, (a: RosterRow, b: RosterRow, ctx: RosterSortContext) => number> = {
+  alpha: (a, b, ctx) => ctx.nameOf(a).localeCompare(ctx.nameOf(b)) || ctx.activityOf(b) - ctx.activityOf(a),
+  attention: (a, b, ctx) => ctx.attentionOf(b) - ctx.attentionOf(a) || ctx.activityOf(b) - ctx.activityOf(a),
+  recent: (a, b, ctx) => ctx.activityOf(b) - ctx.activityOf(a)
 }
 
 export function sortRosterBots(
@@ -246,10 +264,18 @@ export function sortRosterBots(
     return Math.max(created, lastMsg)
   }
 
-  // Pin is a source-qualified Desktop preference, not gateway profile state.
+  // Pin is a source-qualified Desktop preference, not gateway profile state —
+  // it stays the outer band under every sort mode.
   const isPinned = (bot: RosterRow): boolean => isBotPinned(bot, allMeta)
+  const nameOf = (bot: RosterRow): string => displayName(bot, botRosterMeta(bot, allMeta)).toLowerCase()
 
-  const attentionOf = sort?.mode === 'attention' ? sort.attentionOf : undefined
+  const ctx: RosterSortContext = {
+    activityOf,
+    attentionOf: sort?.attentionOf ?? (() => 0),
+    nameOf
+  }
+
+  const comparator = ROSTER_SORTS[sort?.mode ?? 'recent'] ?? ROSTER_SORTS.recent
 
   const roster = sourceWithSelectedOwner.slice().sort((a, b) => {
     const pa = isPinned(a) ? 1 : 0
@@ -259,15 +285,7 @@ export function sortRosterBots(
       return pb - pa
     }
 
-    if (attentionOf) {
-      const attention = attentionOf(b) - attentionOf(a)
-
-      if (attention) {
-        return attention
-      }
-    }
-
-    return activityOf(b) - activityOf(a)
+    return comparator(a, b, ctx)
   })
 
   return { roster, activityOf, isPinned }

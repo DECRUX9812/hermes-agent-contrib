@@ -191,7 +191,8 @@ export function renderRosterToolbar({
                 {(
                   [
                     ['recent', b.roster.sortRecent],
-                    ['attention', b.roster.sortAttention]
+                    ['attention', b.roster.sortAttention],
+                    ['alpha', b.roster.sortAlpha]
                   ] as [RosterSortMode, string][]
                 ).map(([value, label]) => (
                   <DropdownMenuItem key={`sort:${value}`} onSelect={() => setSortMode(value)}>

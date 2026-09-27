@@ -364,7 +364,7 @@ export function useRosterAttentionCounts(roster: readonly RosterRow[]): Readonly
 
 // ── roster sort preference ───────────────────────────────────────────────────
 
-export type RosterSortMode = 'attention' | 'recent'
+export type RosterSortMode = 'alpha' | 'attention' | 'recent'
 
 /** Roster order is a per-window presentation choice (like the activity
  *  filters beside it); it persists under plugin storage so a restarted
@@ -380,7 +380,7 @@ export function hydrateRosterSortMode(): void {
     // @ts-expect-error typed as written rather than changing the call.
     Promise.resolve(getPluginCtx()?.storage?.get?.(ROSTER_SORT_STORAGE_KEY))
       .then(value => {
-        if (value === 'attention' || value === 'recent') {
+        if (value === 'alpha' || value === 'attention' || value === 'recent') {
           $rosterSortMode.set(value)
         }
       })

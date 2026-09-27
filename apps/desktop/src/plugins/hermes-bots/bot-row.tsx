@@ -7,6 +7,7 @@
  */
 
 import {
+  $ownerNotifyModes,
   Badge,
   cn,
   Codicon,
@@ -22,9 +23,11 @@ import {
   GlyphSpinner,
   haptic,
   host,
+  ownerNotifyKey,
   queryClient,
   RowButton,
   SessionStatusDot,
+  setOwnerNotifyMode,
   SidebarRowLead,
   Tip,
   useI18n,
@@ -181,6 +184,12 @@ export function BotRow({
   // background > delegated worker > honest floor. Built from signals that
   // expire (dot claims, job state, round keys, heartbeat) — never the clock.
   const live = useBotLiveStatus(bot)
+
+  // Per-bot notification mode (A4): keyed `conn::profile` — the same owner the
+  // store resolves for the bot's canonical chat, side-chats and cron runs.
+  const ownerNotifyModes = useValue($ownerNotifyModes)
+  const notifyKey = ownerNotifyKey(bot?.connectionId, bot?.targetProfile || bot?.name)
+  const notifyMode = ownerNotifyModes[notifyKey]
 
   // WHO sent the last message (bot-to-bot DM vs human) — the full stored
   // history lives in the canonical chat, not inline.
@@ -440,6 +449,23 @@ export function BotRow({
         >
           {hidden ? b.bot.unhide : b.bot.hide}
         </ContextMenuItem>
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>{b.bot.notifications}</ContextMenuSubTrigger>
+          <ContextMenuSubContent>
+            <ContextMenuCheckboxItem
+              checked={notifyMode === 'muted'}
+              onSelect={() => setOwnerNotifyMode(notifyKey, notifyMode === 'muted' ? null : 'muted')}
+            >
+              {b.bot.muteAll}
+            </ContextMenuCheckboxItem>
+            <ContextMenuCheckboxItem
+              checked={notifyMode === 'quiet'}
+              onSelect={() => setOwnerNotifyMode(notifyKey, notifyMode === 'quiet' ? null : 'quiet')}
+            >
+              {b.bot.muteQuiet}
+            </ContextMenuCheckboxItem>
+          </ContextMenuSubContent>
+        </ContextMenuSub>
         <ContextMenuSeparator />
         <ContextMenuItem
           onSelect={() =>

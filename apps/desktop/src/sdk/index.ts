@@ -2033,6 +2033,17 @@ export { cn } from '@/lib/utils'
 export type { AttentionItem } from '@/store/attention-inbox'
 export type { ComposerStatusItem } from '@/store/composer-status'
 export type { SessionDotState } from '@/store/session-dot-state'
+/** Per-owner (bot) notification modes — `'muted'` silences every session the
+ *  profile owns (canonical chat, side-chats, cron runs); `'quiet'` holds them
+ *  into the digest while the global quiet-hours window is open. Keys are
+ *  `connectionId::profile` via `ownerNotifyKey`; persisted per profile. */
+export {
+  $ownerNotifyModes,
+  ownerNotifyKey,
+  ownerNotifyMode,
+  type OwnerNotifyMode,
+  setOwnerNotifyMode
+} from '@/store/session-mute'
 /** THE unread store behind `SessionStatusDot`'s emerald dot. A plugin that
  *  learns out-of-band that a session produced something the user hasn't seen
  *  (a roster poll's activity watermark, say) writes HERE rather than keeping
