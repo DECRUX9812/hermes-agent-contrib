@@ -39,6 +39,7 @@ import { $groupMainTabsRev, shouldRenderGroupChatInPane } from './group-panes'
 import { $activeGroupMemberKeys } from './group-presence'
 import { $showHiddenBots, isBotHidden } from './hidden-bots'
 import { useBots } from './i18n'
+import { $rosterSortMode, setRosterSortMode, useRosterAttentionCounts } from './live-status'
 import { mailboxOpenCountFor, useMailbox } from './mailbox'
 import { MailboxTaskDialog } from './mailbox-parts'
 import { $activityToasts } from './roster-actions'
@@ -301,7 +302,17 @@ export function BotsPane() {
   const sourceWithSelectedOwner =
     selectionHydrated && rosterHydrated ? rosterWithSelectedOwner(source, sourceSnapshot, selectedRosterKey) : source
 
-  const { roster, activityOf, isPinned } = sortRosterBots(sourceWithSelectedOwner, allMeta)
+  // A2 — the attention rollup drives both the per-row badge and the
+  // 'attention-first' sort: flagged bots top their band while pinned stays
+  // the outer band (the user's own filing never loses to a count).
+  const sortMode = useValue($rosterSortMode)
+  const attentionCounts = useRosterAttentionCounts(sourceWithSelectedOwner)
+  const attentionOf = (bot: RosterRow): number => attentionCounts.get(botRosterKey(bot)) ?? 0
+
+  const { roster, activityOf, isPinned } = sortRosterBots(sourceWithSelectedOwner, allMeta, {
+    attentionOf,
+    mode: sortMode
+  })
 
   // Sections made on ANOTHER desktop arrive as id + name on each member's
   // ui_meta; rebuild the records this machine has never seen so the roster
@@ -356,6 +367,7 @@ export function BotsPane() {
     activeRosterKeys,
     gatewayOptions,
     activityOf,
+    attentionOf: sortMode === 'attention' ? attentionOf : undefined,
     isPinned
   })
 
@@ -498,7 +510,9 @@ export function BotsPane() {
         activityFilter,
         setActivityFilter,
         gatewayFilter,
-        setGatewayFilter
+        setGatewayFilter,
+        sortMode,
+        setSortMode: setRosterSortMode
       })}
       {renderRosterContent({
         b,

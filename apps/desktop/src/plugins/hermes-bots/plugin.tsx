@@ -79,6 +79,7 @@ import { isBotHidden } from './hidden-bots'
 import { annotateOrphanedGroupChatMembers } from './hygiene'
 import { BOTS_LOCALES } from './i18n'
 import { displayName } from './labels'
+import { hydrateRosterSortMode } from './live-status'
 import { startBotRelay, stopBotRelay } from './relay'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import {
@@ -253,6 +254,10 @@ export default {
     } catch {
       /* no storage — default (silent) stays */
     }
+
+    // Hydrate the roster sort pref (default 'recent'; 'attention' floats
+    // bots with open items — self-contained in live-status.ts).
+    hydrateRosterSortMode()
 
     // Hydrate the Sessions-rail Agents fold (default open).
     try {
