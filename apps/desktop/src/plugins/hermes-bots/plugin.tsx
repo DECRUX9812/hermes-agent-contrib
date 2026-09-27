@@ -93,7 +93,7 @@ import { groupWorkspaceOwnerKey } from './group-membership'
 import { bindGroupReadTracking } from './group-unread'
 import { isBotHidden } from './hidden-bots'
 import { annotateOrphanedGroupChatMembers } from './hygiene'
-import { BOTS_LOCALES } from './i18n'
+import { BOTS_LOCALES, botsText, useBots } from './i18n'
 import { displayName } from './labels'
 import { hydrateRosterSortMode } from './live-status'
 import { MissionRail } from './mission-rail'
@@ -133,6 +133,12 @@ interface ComposerDraftPayload {
    *  model-facing scaffold it sends). */
   displayText?: string
   text: string
+}
+
+/** Reactive tab label for the routines/context rail — `LocalizedTabTitle`
+ *  only reaches core translations, so the plugin block needs `useBots`. */
+function RailTabTitle() {
+  return <>{useBots().rail.title}</>
 }
 
 export default {
@@ -574,13 +580,14 @@ export default {
       const dispose = ctx.register({
         id: 'routines',
         area: 'panes',
-        // The app's noun for these, so the tab agrees with the pane header and
-        // with the core Scheduled jobs surface. `translateNow`, not `useI18n`:
-        // a pane title is read at registration, outside React.
-        title: translateNow('cron.title'),
+        // The rail hosts profile card / task log / computer / deliverables —
+        // `rail.title`, not `cron.title`, so the tab reads 'Bot context' instead
+        // of duplicating the 'Scheduled jobs' section inside it. `botsText`,
+        // not `useI18n`: a pane title is read at registration, outside React.
+        title: botsText().rail.title,
         data: {
-          tabTitle: () => <LocalizedTabTitle select={t => t.cron.title} />,
-          tabTitleText: () => translateNow('cron.title'),
+          tabTitle: () => <RailTabTitle />,
+          tabTitleText: () => botsText().rail.title,
           placement: 'main',
           // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
           dock: {

@@ -9,7 +9,7 @@ bare."""
 
 from pathlib import Path
 
-from .method_ctx import HandlerRegistry
+from .method_ctx import HandlerRegistry, bind_module
 
 _registry = HandlerRegistry()
 method = _registry.method
@@ -188,7 +188,9 @@ def _notify_sender_status(root: Path, note: dict) -> None:
 
 
 def register(server) -> None:
-    _registry.install(server)
+    # bind_module, not bare install: the rebound handlers resolve module helpers
+    # (_local_roster, _notify_sender_status, _mailbox_root) in server globals.
+    bind_module(globals(), server, skip=("_",))
     # send rides bot_relay.deliver — a full one-turn conversation when the target's Bot
     # Chat isn't live (see _LONG_HANDLERS' bot_relay.* comment).
     server._LONG_HANDLERS = server._LONG_HANDLERS | {"bots_mailbox.send"}
