@@ -24,10 +24,12 @@ import {
  * the dialogs; nothing in Bot Mode imports it except the plugin entry point.
  */
 import {
+  $botAttention,
   $botMeta,
   $lastRoster,
   annotateBotSource,
   botRosterKey,
+  botSelectionKey,
   botSourceStatus,
   sourceByConnection,
   useRoster
@@ -41,7 +43,7 @@ import { $showHiddenBots, isBotHidden } from './hidden-bots'
 import { useBots } from './i18n'
 import { mailboxOpenCountFor, useMailbox } from './mailbox'
 import { MailboxTaskDialog } from './mailbox-parts'
-import { $activityToasts } from './roster-actions'
+import { $activityToasts, $rosterSortMode, setRosterSortMode } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
 import { renderRosterDialogs } from './roster-pane-dialogs'
@@ -301,7 +303,20 @@ export function BotsPane() {
   const sourceWithSelectedOwner =
     selectionHydrated && rosterHydrated ? rosterWithSelectedOwner(source, sourceSnapshot, selectedRosterKey) : source
 
-  const { roster, activityOf, isPinned } = sortRosterBots(sourceWithSelectedOwner, allMeta)
+  // Sort menu pref (A5): 'attention' needs the same 3-key lookup the row
+  // badges use — selection key, roster key, and `<conn>::<name>`.
+  const sortMode = useValue($rosterSortMode)
+  const attentionByKey = useValue($botAttention)
+
+  const { roster, activityOf, isPinned } = sortRosterBots(sourceWithSelectedOwner, allMeta, {
+    hasAttention: bot =>
+      Boolean(
+        attentionByKey[botSelectionKey(bot)] ||
+          attentionByKey[botRosterKey(bot)] ||
+          attentionByKey[`${bot?.connectionId || activeConnectionId}::${bot?.name || 'default'}`]
+      ),
+    mode: sortMode
+  })
 
   // Sections made on ANOTHER desktop arrive as id + name on each member's
   // ui_meta; rebuild the records this machine has never seen so the roster
@@ -498,7 +513,9 @@ export function BotsPane() {
         activityFilter,
         setActivityFilter,
         gatewayFilter,
-        setGatewayFilter
+        setGatewayFilter,
+        setSortMode: setRosterSortMode,
+        sortMode
       })}
       {renderRosterContent({
         b,

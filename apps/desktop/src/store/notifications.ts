@@ -4,7 +4,7 @@ import { translateNow } from '@/i18n'
 import { isOutOfSyncRpcParams } from '@/lib/gateway-rpc'
 import { isLocalBackendSlotWaitTimeout, requestPoolLimitsSettings } from '@/store/pool-limits'
 import { requestBackendRestart, requestRoute } from '@/store/recovery-requests'
-import { isSessionMuted } from '@/store/session-mute'
+import { isSessionNotificationMuted } from '@/store/session-mute'
 
 export type NotificationKind = 'error' | 'warning' | 'info' | 'success'
 
@@ -270,7 +270,7 @@ export function notify(input: NotificationInput): string {
     sessionId: input.sessionId
   }
 
-  const suppressed = input.sessionId != null && isSessionMuted(input.sessionId)
+  const suppressed = input.sessionId != null && isSessionNotificationMuted(input.sessionId)
 
   $notificationHistory.set(
     [

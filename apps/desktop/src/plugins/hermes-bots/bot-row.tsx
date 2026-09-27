@@ -7,6 +7,7 @@
  */
 
 import {
+  $ownerNotifyModes,
   cn,
   Codicon,
   ContextMenu,
@@ -21,9 +22,11 @@ import {
   GlyphSpinner,
   haptic,
   host,
+  ownerNotifyKey,
   queryClient,
   RowButton,
   SessionStatusDot,
+  setOwnerNotifyMode,
   SidebarRowLead,
   Tip,
   useI18n,
@@ -177,6 +180,12 @@ export function BotRow({
   // too or active-gateway bots never badge. Hidden bots keep their entry;
   // hiding is display-only.
   const attentionByKey = useValue($botAttention)
+
+  // Per-bot notification mode (A4): keyed `conn::profile` — the same owner the
+  // store resolves for the bot's canonical chat, side-chats and cron runs.
+  const ownerNotifyModes = useValue($ownerNotifyModes)
+  const notifyKey = ownerNotifyKey(bot?.connectionId, bot?.targetProfile || bot?.name)
+  const notifyMode = ownerNotifyModes[notifyKey]
 
   const attention =
     attentionByKey[botSelectionKey(bot)] ||
@@ -400,6 +409,26 @@ export function BotRow({
         >
           {hidden ? b.bot.unhide : b.bot.hide}
         </ContextMenuItem>
+        {/* Per-bot notification prefs: the modes are owner-scoped, so one
+            toggle reaches the canonical Bot Chat AND every side-chat/cron
+            session the profile owns — now and later. */}
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>{b.bot.notifications}</ContextMenuSubTrigger>
+          <ContextMenuSubContent>
+            <ContextMenuCheckboxItem
+              checked={notifyMode === 'muted'}
+              onSelect={() => setOwnerNotifyMode(notifyKey, notifyMode === 'muted' ? null : 'muted')}
+            >
+              {b.bot.muteAll}
+            </ContextMenuCheckboxItem>
+            <ContextMenuCheckboxItem
+              checked={notifyMode === 'quiet'}
+              onSelect={() => setOwnerNotifyMode(notifyKey, notifyMode === 'quiet' ? null : 'quiet')}
+            >
+              {b.bot.muteQuiet}
+            </ContextMenuCheckboxItem>
+          </ContextMenuSubContent>
+        </ContextMenuSub>
         <ContextMenuSeparator />
         <ContextMenuItem
           onSelect={() =>

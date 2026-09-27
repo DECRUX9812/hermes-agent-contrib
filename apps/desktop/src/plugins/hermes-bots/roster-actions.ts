@@ -28,7 +28,7 @@ import { displayName } from './labels'
 import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
 import { botCanonicalSessionId } from './row-helpers'
 import { bumpBotOpenGeneration, getBotOpenGeneration, getPluginCtx } from './shared'
-import type { RosterRow } from './types'
+import type { RosterRow, RosterSortMode } from './types'
 
 // last_active watermark per source-qualified bot, seeded on first poll so a
 // fresh mount doesn't mark ancient history unread.
@@ -45,6 +45,20 @@ export function setActivityToasts(enabled: boolean) {
 
   try {
     Promise.resolve(getPluginCtx()?.storage?.set?.('activity-toasts', enabled)).catch(() => undefined)
+  } catch {
+    /* storage unavailable — pref holds for this window only */
+  }
+}
+
+/** Roster sort menu selection (A5). Device-local like the other roster prefs —
+ *  persisted via ctx.storage under 'roster-sort', hydrated in plugin.tsx. */
+export const $rosterSortMode = atom<RosterSortMode>('recent')
+
+export function setRosterSortMode(mode: RosterSortMode) {
+  $rosterSortMode.set(mode)
+
+  try {
+    Promise.resolve(getPluginCtx()?.storage?.set?.('roster-sort', mode)).catch(() => undefined)
   } catch {
     /* storage unavailable — pref holds for this window only */
   }

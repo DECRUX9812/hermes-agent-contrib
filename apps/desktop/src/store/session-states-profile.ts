@@ -8,6 +8,7 @@ import {
   migrateSessionOwnerHintsForProfile
 } from './session'
 import { dropSessionAskForProfile, migrateSessionAskForProfile } from './session-ask'
+import { dropOwnerNotifyModesForProfile, migrateOwnerNotifyModesForProfile } from './session-mute'
 import {
   type SessionProfileRoute
 } from './session-request-router'
@@ -52,6 +53,7 @@ export function dropTilesForProfile(
   dropSessionTagsForProfile(name, route)
   dropSessionAskForProfile(name, route)
   dropWatchedSessionsForProfile(name, route)
+  dropOwnerNotifyModesForProfile(name, route)
   // Route fields go through the SAME canonicalization as `name` below — a
   // source-scoped delete must not be defeated by stray whitespace around a
   // profile name that a non-route delete trims away.
@@ -200,6 +202,7 @@ export function migrateTilesForProfile(oldProfile: string, newProfile: string): 
   migrateSessionTagsForProfile(from, to)
   migrateSessionAskForProfile(from, to)
   migrateWatchedSessionsForProfile(from, to)
+  migrateOwnerNotifyModesForProfile(from, to)
   // Sibling family: the rail's profile-keyed buckets move with the rename, or
   // the renamed profile opens with an empty rail and the old name keeps them.
   migratePreviewTabsForProfile(from, to)

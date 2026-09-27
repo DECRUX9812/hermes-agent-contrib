@@ -141,6 +141,11 @@ type BotsMessages = {
     retryNow: string
     rosterUnavailable: (reason: string) => string
     waitingForGateway: string
+    /** Roster sort menu (A5) — trigger label + one entry per mode. */
+    sort: string
+    sortRecent: string
+    sortAlpha: string
+    sortAttention: string
   }
   /** Sessions-rail Agents fold — the compact roster beside the sessions. */
   agents: {
@@ -255,6 +260,10 @@ type BotsMessages = {
     chatEmpty: string
     /** First line of a brand-new bot's forever-chat — see `kickoffText`. */
     kickoff: string
+    /** Per-bot notification controls (A4) — context-menu submenu + items. */
+    notifications: string
+    muteAll: string
+    muteQuiet: string
   }
   /** Avatar picker: shapes, blobs, pets, uploads, generation. */
   avatar: {
@@ -620,7 +629,11 @@ const en: BotsMessages = {
     rosterUnavailable: reason =>
       `Roster unavailable: ${reason}. If your gateway predates profiles.list, update Hermes and restart the gateway.`,
     waitingForGateway:
-      'Waiting for the gateway connection… (remote gateways can take a few seconds; retries automatically)'
+      'Waiting for the gateway connection… (remote gateways can take a few seconds; retries automatically)',
+    sort: 'Sort',
+    sortRecent: 'Recent activity',
+    sortAlpha: 'A–Z',
+    sortAttention: 'Needs attention first'
   },
   agents: {
     allBots: count => `All ${count} ${count === 1 ? 'bot' : 'bots'}`,
@@ -721,7 +734,10 @@ const en: BotsMessages = {
     openChatFailedMessage: 'Try again.',
     openGateways: 'Open Gateways',
     chatEmpty: 'Say something to get started.',
-    kickoff: 'Hey, tell me about yourself!'
+    kickoff: 'Hey, tell me about yourself!',
+    notifications: 'Notifications',
+    muteAll: 'Mute all notifications',
+    muteQuiet: 'Mute during quiet hours'
   },
   avatar: {
     classicShapes: 'Classic shapes',
@@ -1079,7 +1095,11 @@ const ja: BotsMessages = {
     retryNow: '今すぐ再試行',
     rosterUnavailable: reason =>
       `名簿を取得できません: ${reason}。ゲートウェイが profiles.list より前の場合は、Hermes を更新してゲートウェイを再起動してください。`,
-    waitingForGateway: 'ゲートウェイ接続を待っています…（リモートは数秒かかることがあります。自動で再試行します）'
+    waitingForGateway: 'ゲートウェイ接続を待っています…（リモートは数秒かかることがあります。自動で再試行します）',
+    sort: '並べ替え',
+    sortRecent: '最近のアクティビティ',
+    sortAlpha: '名前順',
+    sortAttention: '要対応を先頭に'
   },
   agents: {
     allBots: count => `すべてのボット（${count}）`,
@@ -1180,7 +1200,10 @@ const ja: BotsMessages = {
     openChatFailedMessage: 'もう一度お試しください。',
     openGateways: 'ゲートウェイを開く',
     chatEmpty: '何か書いて始めましょう。',
-    kickoff: 'こんにちは、自己紹介をしてください！'
+    kickoff: 'こんにちは、自己紹介をしてください！',
+    notifications: '通知',
+    muteAll: 'すべての通知をミュート',
+    muteQuiet: '静寂時間帯はミュート'
   },
   avatar: {
     classicShapes: 'クラシックシェイプ',
@@ -1534,7 +1557,11 @@ const zh: BotsMessages = {
     unavailable: '不可用',
     retryNow: '立即重试',
     rosterUnavailable: reason => `无法获取名单：${reason}。如果网关早于 profiles.list，请更新 Hermes 并重启网关。`,
-    waitingForGateway: '正在等待网关连接…（远程网关可能需要几秒；会自动重试）'
+    waitingForGateway: '正在等待网关连接…（远程网关可能需要几秒；会自动重试）',
+    sort: '排序',
+    sortRecent: '最近活动',
+    sortAlpha: '按名称排序',
+    sortAttention: '需要注意的优先'
   },
   agents: {
     allBots: count => `全部 ${count} 个机器人`,
@@ -1632,7 +1659,10 @@ const zh: BotsMessages = {
     openChatFailedMessage: '请重试。',
     openGateways: '打开网关',
     chatEmpty: '说点什么开始吧。',
-    kickoff: '你好，介绍一下你自己吧！'
+    kickoff: '你好，介绍一下你自己吧！',
+    notifications: '通知',
+    muteAll: '静音所有通知',
+    muteQuiet: '免打扰时段内静音'
   },
   avatar: {
     classicShapes: '经典形状',
@@ -1980,7 +2010,11 @@ const zhHant: BotsMessages = {
     unavailable: '不可用',
     retryNow: '立即重試',
     rosterUnavailable: reason => `無法取得名單：${reason}。如果閘道早於 profiles.list，請更新 Hermes 並重新啟動閘道。`,
-    waitingForGateway: '正在等待閘道連線…（遠端閘道可能需要幾秒；會自動重試）'
+    waitingForGateway: '正在等待閘道連線…（遠端閘道可能需要幾秒；會自動重試）',
+    sort: '排序',
+    sortRecent: '最近活動',
+    sortAlpha: '依名稱排序',
+    sortAttention: '需要注意的優先'
   },
   agents: {
     allBots: count => `全部 ${count} 個機器人`,
@@ -2078,7 +2112,10 @@ const zhHant: BotsMessages = {
     openChatFailedMessage: '請再試一次。',
     openGateways: '開啟閘道',
     chatEmpty: '說點什麼開始吧。',
-    kickoff: '你好，介紹一下你自己吧！'
+    kickoff: '你好，介紹一下你自己吧！',
+    notifications: '通知',
+    muteAll: '靜音所有通知',
+    muteQuiet: '免打擾時段內靜音'
   },
   avatar: {
     classicShapes: '經典形狀',

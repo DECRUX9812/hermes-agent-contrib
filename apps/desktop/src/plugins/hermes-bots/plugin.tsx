@@ -80,7 +80,7 @@ import { annotateOrphanedGroupChatMembers } from './hygiene'
 import { BOTS_LOCALES } from './i18n'
 import { displayName } from './labels'
 import { startBotRelay, stopBotRelay } from './relay'
-import { $activityToasts, openRosterBot } from './roster-actions'
+import { $activityToasts, $rosterSortMode, openRosterBot } from './roster-actions'
 import {
   botChatOwnsWorkspace,
   BotsPane,
@@ -252,6 +252,20 @@ export default {
         .catch(() => undefined)
     } catch {
       /* no storage — default (silent) stays */
+    }
+
+    // Hydrate the roster sort pref (default 'recent').
+    try {
+      // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
+      Promise.resolve(ctx.storage?.get?.('roster-sort'))
+        .then(value => {
+          if (value === 'recent' || value === 'alpha' || value === 'attention') {
+            $rosterSortMode.set(value)
+          }
+        })
+        .catch(() => undefined)
+    } catch {
+      /* no storage — 'recent' stays */
     }
 
     // Hydrate the Sessions-rail Agents fold (default open).
