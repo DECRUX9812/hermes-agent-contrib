@@ -148,6 +148,46 @@ Manus/Grok-class agents, not a hidden screen pane.
 - **F4 Computer quick actions** — from the computer panel: open in full
   pane, copy screenshot, restart screen session, link to the bot's workdir.
 
+### Phase G — Visual redesign pass (the competitor bar, verbatim)
+
+Reference shots: Manus-class three-pane bot workspace and Grok's bot
+roster (both supplied by the user). This phase is the *look* — it restyles
+what Phases A–F built into the shape users now expect, and adds the small
+missing pieces the shots reveal. All renderer.
+
+- **G1 Three-pane mission layout** — the bot workspace is a fixed
+  triptych: roster rail | bot chat | context rail. The context rail hosts
+  the computer panel (F2) above Routines (existing `cron.tsx`), collapsible
+  per section; collapsing yields the classic chat width. Replaces the
+  current "everything is a pane you hunt for" arrangement when a bot is
+  focused.
+- **G2 Activity pills in-transcript** — mid-turn activity renders as
+  compact collapsible pills inline in the transcript ("› Reading 62
+  unread threads", "› Drafted 6 replies") rather than a wall of tool
+  output; expand shows the tool detail. Reuse the turn/tool markers the
+  scrubber already reads.
+- **G3 Bot personas** — every bot gets a role subtitle under its name in
+  the roster and chat header ("Head of Research", "Staff Engineer") plus
+  a per-bot accent color for avatar ring + row tint. Role is a one-line
+  field on bot meta (default derived from title/description); accent is
+  auto-assigned from the avatar hash, overridable in Edit Profile.
+- **G4 Roster grouping** — named sections in the roster ("Websites
+  Building", …) with collapsible headers; groups are device-local prefs
+  layered over the A5 sort. Drag-to-group later; v1 = create/rename/
+  assign via row context menu.
+- **G5 Inbound event cards** — external events bound to a bot (relay
+  deliveries, routine completions, webhook/git events like Grok's
+  "Inbound: repo#5 — needs triage" card) render as a distinct compact
+  card in the canonical chat — provenance icon, one-line summary, link.
+  Read-only projection of signals the mailbox/relay already records.
+- **G6 Bot marketplace stub** — a Marketplace affordance on the roster:
+  v1 browses bot bundles produced by C5 export (local dir + paste-a-file),
+  no registry backend. Ships the UI + import path; a hosted registry is a
+  separate later decision.
+- **G7 Header model chip** — the bot chat header shows the bot's model
+  (the "Claude Sonnet 5" chip in the shots) beside the screen/settings
+  affordances; click opens the C3 quick-swap.
+
 ## Cutover note
 
 Everything in Phases B–E that touches backend semantics respects the
