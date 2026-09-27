@@ -44,6 +44,10 @@ export const COMPOSER_AREAS = {
 export interface ComposerDraft {
   text: string
   attachments?: ComposerAttachment[]
+  /** What the user bubble shows when `text` was rewritten for the model —
+   *  e.g. `/plan refactor X` whose wire text is a longer plan-mode prompt.
+   *  Maps to `SubmitTextOptions.displayText` (optimistic bubble only). */
+  displayText?: string
 }
 
 /** Payload of a `composer.middleware` data contribution. */

@@ -596,6 +596,24 @@ type BotsMessages = {
     tookSeconds: (seconds: number) => string
     tookMinutes: (minutes: number) => string
   }
+  /** B1+B2 — the `/plan` proposal card + live checklist above the composer.
+   *  Model-bound strings (the mode prefix, the execute prompt, the `::botplan`
+   *  and `DONE:` markers) stay English in bot-plan.ts — this section is only
+   *  the chrome the user reads. */
+  plan: {
+    proposedTitle: string
+    stepsCount: (count: number) => string
+    approve: string
+    edit: string
+    dismiss: string
+    /** Shown inline once the plan is taken up (approved, edited, or replied
+     *  to) — the card's buttons collapse to this state line. */
+    settledNote: string
+    checklistTitle: string
+    stepsDone: (done: number, total: number) => string
+    complete: string
+    clearChecklist: string
+  }
 }
 
 const en: BotsMessages = {
@@ -1132,6 +1150,18 @@ const en: BotsMessages = {
     replay: 'Replay',
     tookSeconds: seconds => `${seconds}s`,
     tookMinutes: minutes => `${minutes}m`
+  },
+  plan: {
+    proposedTitle: 'Proposed plan',
+    stepsCount: count => `${count} ${count === 1 ? 'step' : 'steps'}`,
+    approve: 'Approve & run',
+    edit: 'Edit',
+    dismiss: 'Dismiss',
+    settledNote: 'Plan handled.',
+    checklistTitle: 'Plan',
+    stepsDone: (done, total) => `${done}/${total} done`,
+    complete: 'Complete',
+    clearChecklist: 'Clear'
   }
 }
 
@@ -1673,6 +1703,18 @@ const ja: BotsMessages = {
     replay: 'リプレイ',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分`
+  },
+  plan: {
+    proposedTitle: '提案されたプラン',
+    stepsCount: count => `${count} ステップ`,
+    approve: '承認して実行',
+    edit: '編集',
+    dismiss: '閉じる',
+    settledNote: 'プランは処理済みです。',
+    checklistTitle: 'プラン',
+    stepsDone: (done, total) => `${done}/${total} 完了`,
+    complete: '完了',
+    clearChecklist: 'クリア'
   }
 }
 
@@ -2198,6 +2240,18 @@ const zh: BotsMessages = {
     replay: '回放',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分钟`
+  },
+  plan: {
+    proposedTitle: '建议方案',
+    stepsCount: count => `${count} 个步骤`,
+    approve: '批准并运行',
+    edit: '编辑',
+    dismiss: '忽略',
+    settledNote: '方案已处理。',
+    checklistTitle: '方案',
+    stepsDone: (done, total) => `已完成 ${done}/${total}`,
+    complete: '已完成',
+    clearChecklist: '清除'
   }
 }
 
@@ -2723,6 +2777,18 @@ const zhHant: BotsMessages = {
     replay: '重播',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分鐘`
+  },
+  plan: {
+    proposedTitle: '建議方案',
+    stepsCount: count => `${count} 個步驟`,
+    approve: '核准並執行',
+    edit: '編輯',
+    dismiss: '關閉',
+    settledNote: '方案已處理。',
+    checklistTitle: '方案',
+    stepsDone: (done, total) => `已完成 ${done}/${total}`,
+    complete: '已完成',
+    clearChecklist: '清除'
   }
 }
 

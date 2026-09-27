@@ -155,7 +155,7 @@ export function ChatBar({
         return false
       }
 
-      return onSubmitProp(draft.text, { ...options, attachments: draft.attachments })
+      return onSubmitProp(draft.text, { ...options, attachments: draft.attachments, displayText: draft.displayText ?? options?.displayText })
     },
     [onSubmitProp]
   )
