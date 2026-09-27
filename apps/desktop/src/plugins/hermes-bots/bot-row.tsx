@@ -7,13 +7,11 @@
  */
 
 import {
-  $ownerNotifyModes,
   $watchedSessionKeys,
   Badge,
   cn,
   Codicon,
   ContextMenu,
-  ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
@@ -25,59 +23,44 @@ import {
   haptic,
   host,
   isWatchedSessionId,
-  ownerNotifyKey,
-  queryClient,
   RowButton,
   SessionStatusDot,
-  setOwnerNotifyMode,
   SidebarRowLead,
   Tip,
-  toggleSessionWatched,
   useI18n,
   useValue
 } from '@hermes/plugin-sdk'
 
-import { avatarColor, botAppearance, BotFace } from './avatar'
+import { botAccentColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
-import { exportBot } from './bot-export'
+import { BotRowMenu } from './bot-menu'
 import {
   $botChatFocused,
   $focusedBotOwner,
   $pendingBotOpen,
   $selectedRosterKey,
-  focusedRosterOwner,
-  saveSelectedRosterBot
+  focusedRosterOwner
 } from './bot-state'
-import { ensureBotMetadata } from './canonical-chat'
 import {
   $botMeta,
-  $lastRoster,
   botActivitySession,
   botAttentionHint,
   botHandle,
   botRosterKey,
-  botSelectionKey,
-  botSourceStatus,
-  isDefaultBot,
-  newBotChat,
-  ROSTER_KEY,
-  saveBotMeta
+  botSourceStatus
 } from './data'
 import { $groupChats, $groupChatWorkspace, groupChatRoomKey } from './group-chat'
-import { botGroups, groupLastActivity } from './group-membership'
+import { groupLastActivity } from './group-membership'
 import { toggleGroupChatPinned } from './group-pin'
 import { $activeGroupMemberKeys } from './group-presence'
 import { $groupReadAt, groupLastRoundSummary, groupUnreadCount } from './group-unread'
-import { fallbackSelectionAfterHide, isBotHidden, isBotPinned } from './hidden-bots'
+import { isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
-import { displayName, stripPreviewMarkdown } from './labels'
+import { botRole, displayName, stripPreviewMarkdown } from './labels'
 import { botLiveStatusLabel, useBotAttention, useBotHealth, useBotLiveStatus } from './live-status'
-import { BotModelMenu } from './model-menu'
-import { duplicateBot } from './profile-ops'
-import { botRecentSession, openBotRecentSession } from './recent-session'
 import { $relayInflight, relayLaneKey } from './relay'
 import { openRosterBot } from './roster-actions'
-import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
+import { botRosterMeta } from './routing'
 import {
   A2A_PREFIX_RE,
   botCanonicalSessionId,
@@ -89,17 +72,14 @@ import {
   warmRosterBot,
   workerActiveAt
 } from './row-helpers'
-import { retryBotDeliveries, stopBotTurn } from './run-controls'
-import { openBotScreen } from './screen-open'
+import { stopBotTurn } from './run-controls'
 import type { GroupMember, RosterRow } from './types'
 import {
   $botSections,
   $draggingBot,
   BOT_DRAG_MIME,
-  botSectionId,
   groupChatSectionId,
   groupDragKey,
-  moveBotsToSection,
   moveGroupChatsToSection
 } from './user-sections'
 
@@ -142,7 +122,6 @@ export function BotRow({
   const hidden = isBotHidden(bot, allMeta)
   const pinned = isBotPinned(bot, allMeta)
   const sourceStatus = botSourceStatus(bot)
-  const groups = botGroups(meta)
   const last = bot.last_session
   // Highlight follows the chat on screen (focused session's owner), not the
   // gateway socket's home — a focused tab doesn't swap the socket, and on the
@@ -224,12 +203,6 @@ export function BotRow({
     })
   }
 
-  // Per-bot notification mode (A4): keyed `conn::profile` — the same owner the
-  // store resolves for the bot's canonical chat, side-chats and cron runs.
-  const ownerNotifyModes = useValue($ownerNotifyModes)
-  const notifyKey = ownerNotifyKey(bot?.connectionId, bot?.targetProfile || bot?.name)
-  const notifyMode = ownerNotifyModes[notifyKey]
-
   // WHO sent the last message (bot-to-bot DM vs human) — the full stored
   // history lives in the canonical chat, not inline.
   // Preview identity must match click identity (#88200): when the backend
@@ -263,6 +236,13 @@ export function BotRow({
         : null
 
   const showDetailsRow = Boolean(showHandle || detailText || fromBot)
+
+  // G3 — persona: role subtitle (explicit `meta.role` or the description's
+  // first sentence) and the accent color = the avatar's own color —
+  // deterministic from the name when unset, and the AvatarPicker's existing
+  // color choice IS the override, so no second palette exists to drift.
+  const role = botRole(bot, meta)
+  const accent = botAccentColor(bot, meta)
 
   const rowTooltip = [
     displayName(bot, meta),
@@ -300,9 +280,7 @@ export function BotRow({
   // gestures. The drag carries the roster key under a private MIME type, so
   // only a section block can accept it.
   const rosterKey = botRosterKey(bot)
-  const sections = useValue($botSections)
   const dragging = useValue($draggingBot) === rosterKey
-  const currentSectionId = botSectionId(bot, allMeta)
 
   const row = (
     <RowButton
@@ -326,10 +304,18 @@ export function BotRow({
         $draggingBot.set(rosterKey)
       }}
       onPointerEnter={warm}
+      style={{
+        // Faint accent tint bleeding in from the row's left edge — hairline
+        // subtlety, not a skinned fill.
+        backgroundImage: `linear-gradient(90deg, ${accent}0d, transparent 55%)`
+      }}
     >
-      <div className={cn('shrink-0', !sourceStatus.available && 'grayscale opacity-60')}>
+      <div
+        className={cn('shrink-0 rounded-lg', !sourceStatus.available && 'grayscale opacity-60')}
+        style={{ boxShadow: `0 0 0 1px ${accent}80` }}
+      >
         <BotFace
-          color={avatarColor(color, bot.name)}
+          color={accent}
           image={photo ? image : null}
           mood={botMood}
           name={bot.name}
@@ -434,6 +420,9 @@ export function BotRow({
             </span>
           ) : null}
         </div>
+        {role ? (
+          <div className="min-w-0 truncate text-[0.6875rem] leading-snug text-(--ui-text-quaternary)">{role}</div>
+        ) : null}
         {showDetailsRow ? (
           <div className="flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-tertiary)">
             {showHandle ? (
@@ -459,232 +448,16 @@ export function BotRow({
   )
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onSelect={() => void openRosterBot(bot)}>{b.bot.openBotChat}</ContextMenuItem>
-        {/* E1 — same stop the row chip fires; kept in the menu so the
-            affordance is discoverable and announces itself disabled. */}
-        <ContextMenuItem disabled={!canStop} onSelect={stopRun}>
-          {b.roster.stopRun}
-        </ContextMenuItem>
-        {/* E3 — only meaningful while this bot has mail queued or a flagged
-            failure the drain can re-drive. */}
-        {deliveryInflight || attention.reason ? (
-          <ContextMenuItem onSelect={() => retryBotDeliveries()}>
-            {b.roster.retryDeliveries}
-          </ContextMenuItem>
-        ) : null}
-        {onAssignTask ? (
-          <ContextMenuItem onSelect={() => onAssignTask(bot)}>{b.mailbox.assignTask}</ContextMenuItem>
-        ) : null}
-        <ContextMenuItem onSelect={() => openBotScreen(bot, meta)}>{b.screen.menu}</ContextMenuItem>
-        {/* Phone parity (#40): Messaging scoped to this bot's profile — the
-            platform cards there carry the deep link + QR. Remote-source bots
-            have no platforms on this backend, so the item hides for them. */}
-        {!bot.remoteSource && typeof host.navigate === 'function' && (
-          <ContextMenuItem onSelect={() => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`)}>
-            {b.bot.continueOnPhone}
-          </ContextMenuItem>
-        )}
-        <ContextMenuCheckboxItem
-          checked={Boolean(meta?.screenAutoOpen)}
-          onSelect={() => {
-            void ensureBotMetadata(bot)
-              .then(current => {
-                const next = !current.screenAutoOpen
-                void saveBotMeta(bot, { screenAutoOpen: next })
-                host.notify({
-                  kind: 'info',
-                  message: next
-                    ? b.screen.autoOpenOnToast(displayName(bot, current))
-                    : b.screen.autoOpenOffToast(displayName(bot, current))
-                })
-              })
-              .catch(error => host.notifyError?.(error, b.bot.metadataLoadFailed))
-          }}
-        >
-          {b.screen.autoOpenMenu}
-        </ContextMenuCheckboxItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onSelect={() => {
-            void ensureBotMetadata(bot)
-              .then(current => {
-                const pinned = Boolean(current.pinned)
-                void saveBotMeta(bot, {
-                  pinned: !pinned
-                })
-                host.notify({
-                  kind: 'info',
-                  message: pinned
-                    ? b.bot.unpinnedToast(displayName(bot, current))
-                    : b.bot.pinnedToast(displayName(bot, current))
-                })
-              })
-              .catch(error => host.notifyError?.(error, b.bot.metadataLoadFailed))
-          }}
-        >
-          {pinned ? b.bot.unpin : b.bot.pinToTop}
-        </ContextMenuItem>
-        <ContextMenuItem
-          onSelect={() => {
-            void ensureBotMetadata(bot)
-              .then(current => {
-                const hidden = Boolean(current.hidden)
-                void saveBotMeta(bot, {
-                  hidden: !hidden
-                })
-
-                if (!hidden) {
-                  fallbackSelectionAfterHide(botSelectionKey(bot))
-                }
-
-                host.notify({
-                  kind: 'info',
-                  message: hidden
-                    ? b.bot.unhiddenToast(displayName(bot, current))
-                    : b.bot.hiddenToast(displayName(bot, current))
-                })
-              })
-              .catch(error => host.notifyError?.(error, b.bot.metadataLoadFailed))
-          }}
-        >
-          {hidden ? b.bot.unhide : b.bot.hide}
-        </ContextMenuItem>
-        {typeof toggleSessionWatched === 'function' ? (
-          <ContextMenuCheckboxItem
-            checked={watched}
-            disabled={!canonicalSessionId}
-            onSelect={() => {
-              if (!canonicalSessionId) {
-                return
-              }
-
-              const next = toggleSessionWatched(canonicalSessionId)
-
-              host.notify({
-                kind: 'info',
-                message: next ? b.bot.watchToast(displayName(bot, meta)) : b.bot.unwatchToast(displayName(bot, meta))
-              })
-            }}
-          >
-            {b.bot.watch}
-          </ContextMenuCheckboxItem>
-        ) : null}
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>{b.bot.notifications}</ContextMenuSubTrigger>
-          <ContextMenuSubContent>
-            <ContextMenuCheckboxItem
-              checked={notifyMode === 'muted'}
-              onSelect={() => setOwnerNotifyMode(notifyKey, notifyMode === 'muted' ? null : 'muted')}
-            >
-              {b.bot.muteAll}
-            </ContextMenuCheckboxItem>
-            <ContextMenuCheckboxItem
-              checked={notifyMode === 'quiet'}
-              onSelect={() => setOwnerNotifyMode(notifyKey, notifyMode === 'quiet' ? null : 'quiet')}
-            >
-              {b.bot.muteQuiet}
-            </ContextMenuCheckboxItem>
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onSelect={() =>
-            void ensureBotMetadata(bot)
-              .then(() => onEdit(bot))
-              .catch(error => host.notifyError?.(error, b.bot.loadFailed))
-          }
-        >
-          {b.bot.editMenu}
-        </ContextMenuItem>
-        <ContextMenuItem
-          onSelect={() =>
-            void ensureBotMetadata(bot)
-              .then(() => onGroup(bot))
-              .catch(error => host.notifyError?.(error, b.bot.groupsLoadFailed))
-          }
-        >
-          {groups.length ? b.bot.groupsMenu(groups.join(', ')) : b.bot.manageGroups}
-        </ContextMenuItem>
-        <BotModelMenu bot={bot} />
-        <ContextMenuItem
-          onSelect={() => {
-            host.notify({
-              kind: 'info',
-              message: b.bot.duplicating(displayName(bot, meta))
-            })
-            duplicateBot(bot, $lastRoster.get())
-              .then(name => {
-                queryClient.invalidateQueries({
-                  queryKey: ROSTER_KEY
-                })
-                host.notify({
-                  kind: 'success',
-                  message: b.bot.duplicated(name, bot.name)
-                })
-              })
-              .catch(err => host.notifyError(err, b.bot.duplicateFailed))
-          }}
-        >
-          {b.bot.duplicate}
-        </ContextMenuItem>
-        <ContextMenuItem onSelect={() => void exportBot(bot, meta)}>{b.bot.exportBotMenu}</ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onSelect={() => {
-            saveSelectedRosterBot(bot)
-            setBotsWorkspaceOwner(botWorkspaceOwnerKey(bot), bot)
-            newBotChat(bot)
-          }}
-        >
-          {b.bot.newChatWith}
-        </ContextMenuItem>
-        {/* Click-to-latest (#93054): the freshest listed session — a cron run,
-            a delegated job, a side thread — without moving the row click off
-            the canonical Bot Chat. */}
-        <ContextMenuItem disabled={!botRecentSession(bot)} onSelect={() => void openBotRecentSession(bot)}>
-          Open recent session
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        {/* Filing. Membership is one field on the bot's meta (`sectionId`), so
-            this is a one-field write and no list anywhere has to be kept in
-            sync with it. */}
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>{b.sections.moveTo}</ContextMenuSubTrigger>
-          <ContextMenuSubContent>
-            {sections.map(section => (
-              <ContextMenuItem
-                disabled={section.id === currentSectionId}
-                key={section.id}
-                onSelect={() => void moveBotsToSection([bot], section.id)}
-              >
-                <Codicon className="mr-1.5" name="folder" />
-                {section.name}
-              </ContextMenuItem>
-            ))}
-            {sections.length ? <ContextMenuSeparator /> : null}
-            <ContextMenuItem onSelect={() => onNewSection(bot)}>
-              <Codicon className="mr-1.5" name="new-folder" />
-              {b.sections.newSectionEllipsis}
-            </ContextMenuItem>
-            {currentSectionId ? (
-              <ContextMenuItem onSelect={() => void moveBotsToSection([bot], null)}>
-                <Codicon className="mr-1.5" name="inbox" />
-                {b.sections.removeFromSection}
-              </ContextMenuItem>
-            ) : null}
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        {isDefaultBot(bot) ? null : <ContextMenuSeparator />}
-        {isDefaultBot(bot) ? null : (
-          <ContextMenuItem onSelect={() => onDelete(bot)} variant="destructive">
-            {t.common.delete}
-          </ContextMenuItem>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+    <BotRowMenu
+      bot={bot}
+      onAssignTask={onAssignTask}
+      onDelete={onDelete}
+      onEdit={onEdit}
+      onGroup={onGroup}
+      onNewSection={onNewSection}
+    >
+      {row}
+    </BotRowMenu>
   )
 }
 
