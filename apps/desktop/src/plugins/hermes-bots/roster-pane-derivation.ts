@@ -274,6 +274,7 @@ export function sortRosterBots(
     attentionOf: sort?.attentionOf ?? (() => 0),
     nameOf
   }
+
   const comparator = ROSTER_SORTS[sort?.mode ?? 'recent'] ?? ROSTER_SORTS.recent
 
   const roster = sourceWithSelectedOwner.slice().sort((a, b) => {
