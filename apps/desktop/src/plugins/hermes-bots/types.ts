@@ -188,6 +188,10 @@ export interface GroupHold {
 }
 
 export interface GroupChat {
+  /** The room's stated objective (Bot Mode D2) — set from group settings,
+   *  shown under the room title, and what a completed round's summary card is
+   *  measuring contributions against. */
+  goal?: string
   /** Whether user text may create sticky member holds. Defaults to true for
    *  rooms written by older builds; the room settings switch can disable it. */
   holdDetection?: boolean

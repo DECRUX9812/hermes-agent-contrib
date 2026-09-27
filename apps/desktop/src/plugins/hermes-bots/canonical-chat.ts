@@ -226,7 +226,7 @@ export function notifyBotOpenFailure(error: unknown, bot: RosterRow, step: BotOp
  *  (canonical chats are always hidden). Remote bots route via requestForBot
  *  on the immutable captured owner — activation is a UI concern and never
  *  authorizes this RPC. */
-async function findExistingCanonicalChat(owner: RosterRow | string): Promise<CanonicalChatRow | null> {
+export async function findExistingCanonicalChat(owner: RosterRow | string): Promise<CanonicalChatRow | null> {
   const { bot, name, route } = botOwner(owner)
   // FAIL CLOSED. A failed registry lookup MUST NOT read as "no Bot Chat
   // exists" — that is the one remaining way to fork a bot's forever chat.

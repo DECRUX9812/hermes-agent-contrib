@@ -57,6 +57,10 @@ import type { BotMeta, RosterRow, RoutineJob } from './types'
 
 const ROUTINES_KEY = [ID, 'routines']
 
+/** The routines query's key prefix — the triage strip (D4) reads the same
+ *  cache rather than issuing its own cron RPCs. */
+export const ROUTINES_QUERY_KEY = ROUTINES_KEY
+
 /** Last good cron list, same idea as the roster snapshot. */
 const $lastJobs = atom<RoutineJob[]>([])
 
