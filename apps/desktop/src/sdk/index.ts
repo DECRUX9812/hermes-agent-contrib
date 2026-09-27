@@ -1799,6 +1799,13 @@ export {
  *  circle beside it — a plugin's own dot inverts core's color vocabulary the
  *  moment either side moves. */
 export { SessionStatusDot, type SessionStatusDotProps } from '@/app/chat/session-status-dot'
+/** The session view a component renders inside — main chat defaults to
+ *  `PRIMARY_SESSION_VIEW` with no provider, panes/tiles mount under their own
+ *  `SessionViewProvider`. Read `view.$storedId` / `view.$runtimeId` /
+ *  `view.$messages` atoms (with `useValue`) to scope a contribution to the
+ *  transcript it is mounted in — never the focused-session atoms, which always
+ *  follow the main pane and would leak one chat's UI into another's. */
+export { type SessionView, useSessionView } from '@/app/chat/session-view'
 /** The sidebar row's leading cell — the fixed box a dot, icon or handle sits in.
  *  Reserve it and your label starts on the same left edge as every session row
  *  above you; spell the classes yourself and the row drifts. The session row is
@@ -1860,12 +1867,12 @@ export {
  *  look) — use it for colour picking instead of driving app widgets through
  *  React internals; pair it with `host.sessions.setColor` for session colours. */
 export { APPEARANCE_AREAS } from '@/app/settings/appearance-contrib'
+
 /** THE settings rows: `ListRow` is label + description with the control beside
  *  it (wide) or under it (narrow); `ToggleRow` is the one on/off row — a Switch,
  *  never an Off/On pill pair. Use them for preference rows in plugin panes and
  *  dialogs so they line up with core Settings. */
 export { ListRow, ToggleRow } from '@/app/settings/primitives'
-
 /** THE full per-toolset config panel core Settings renders — provider picker,
  *  env vars / API keys, model catalog picker, and post-setup runners. Route-
  *  decoupled (the "manage keys" deep link is a no-op outside the router); pass
@@ -1986,10 +1993,10 @@ export { Separator } from '@/components/ui/separator'
 export { Skeleton } from '@/components/ui/skeleton'
 export { Switch } from '@/components/ui/switch'
 export { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-export { Textarea } from '@/components/ui/textarea'
 
 // -- contracts ----------------------------------------------------------------
 
+export { Textarea } from '@/components/ui/textarea'
 export { Tip, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 export type { GatewayEventListener } from '@/contrib/events'
 export type {
@@ -2044,6 +2051,13 @@ export { type BudgetedLoop, type BudgetedLoopOptions, createBudgetedLoop } from 
 /** The blank transcript as a contribution area: claim the sessions you own and
  *  render what stands in the gap. Core's own splash keeps a fresh draft. */
 export { CHAT_EMPTY_AREA, type ChatEmptyContribution, type ChatEmptyProps } from '@/lib/chat-empty'
+/** `chatMessageText` flattens a message's text parts to a string — the shared
+ *  read the transcript-derivation helpers (and every plugin that scans a
+ *  conversation) build on. `answeredAfter` tells whether any visible user
+ *  message follows a given assistant message, the "was this card replied to"
+ *  check transcript cards share. */
+export { answeredAfter, chatMessageText } from '@/lib/chat-messages/parts'
+export type { ChatMessage } from '@/lib/chat-messages/types'
 /** THE confirm flow for guarded model switches — when a gateway model-switch
  *  RPC answers `confirm_required` (data-policy / expensive-model guard),
  *  route it through this shared applier instead of forking a per-surface
@@ -2063,16 +2077,23 @@ export * as icons from '@/lib/icons'
  *  commit (`isComposing` or the legacy keyCode 229). Use it on every plugin
  *  text field whose bare Enter performs an action. */
 export { isSubmitEnter } from '@/lib/ime'
+
+export const PANES_AREA = 'panes'
 export { type KeybindContribution, KEYBINDS_AREA } from '@/lib/keybinds/actions'
 export { formatModifierToken } from '@/lib/keybinds/combo'
 /** A `Map` with a ceiling, for the module-level caches a plugin keeps across
  *  a renderer that stays open for days. Only for values that can be
  *  regenerated — eviction costs a recompute or a refetch, never correctness. */
 export { LruCache } from '@/lib/lru-cache'
-
-export const PANES_AREA = 'panes'
 /** Capture a gateway file download alongside a REST read (see the SDK guide). */
 export { captureGatewayFileDownload } from '@/lib/media'
+export const STATUSBAR_AREAS = { left: 'statusBar.left', right: 'statusBar.right' } as const
+/** Titlebar slots are PERMANENT mount points: a component registered here
+ *  stays mounted across chat ↔ page navigation, so `useEffect` setup/cleanup
+ *  runs once per registration, not once per route. Page-owned controls that
+ *  should exist only while a page is up go to `WORKSPACE_PAGE_HEADER_AREA`. */
+export const TITLEBAR_AREAS = { center: 'titleBar.center', left: 'titleBar.left', right: 'titleBar.right' } as const
+
 /** The app's deterministic identity color for a name (profiles, assignees,
  *  authors), its translucent tag fill, and the curated picker swatches — so
  *  plugin-rendered identities read the same hue as everywhere else. The
@@ -2087,13 +2108,6 @@ export { queryClient } from '@/lib/query-client'
 /** Compact labels for the reasoning levels exported from @hermes/shared, so a
  *  plugin surfacing a thinking depth uses the same spelling as the app. */
 export { reasoningEffortLabel } from '@/lib/reasoning-effort'
-export const STATUSBAR_AREAS = { left: 'statusBar.left', right: 'statusBar.right' } as const
-/** Titlebar slots are PERMANENT mount points: a component registered here
- *  stays mounted across chat ↔ page navigation, so `useEffect` setup/cleanup
- *  runs once per registration, not once per route. Page-owned controls that
- *  should exist only while a page is up go to `WORKSPACE_PAGE_HEADER_AREA`. */
-export const TITLEBAR_AREAS = { center: 'titleBar.center', left: 'titleBar.left', right: 'titleBar.right' } as const
-
 /** The app's own gateway-readiness evaluation (setup.status +
  *  setup.runtime_check, reconciled) — pass `host.request`. Don't hand-roll
  *  readiness from raw RPC shapes. */

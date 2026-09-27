@@ -25,12 +25,16 @@ import {
   type PaneContribution,
   SIDEBAR_LIST_TOP_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
+  TRANSCRIPT_DIRECTIVE_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
-import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@hermes/plugin-sdk'
+import type { ChatEmptyProps, PluginContext, ProfileGroupRoute, TranscriptDirectiveProps } from '@hermes/plugin-sdk'
 
 import { AgentsSection } from './agents-section'
 import { startFaceClock, stopFaceClock } from './avatar'
+import { BOT_PLAN_DIRECTIVE, rewritePlanDraft } from './bot-plan'
+import { BotPlanCard, canonicalBotChatOnScreen } from './bot-plan-card'
+import { BotPlanChecklist } from './bot-plan-checklist'
 import {
   $agentsSectionOpen,
   $botChatFocused,
@@ -111,6 +115,9 @@ interface MentionCompletionItem {
  *  cancels (this plugin never cancels). */
 interface ComposerDraftPayload {
   attachments?: unknown[]
+  /** Bubble text for a rewritten draft (plan mode shows '/plan …', not the
+   *  model-facing scaffold it sends). */
+  displayText?: string
   text: string
 }
 
@@ -814,6 +821,49 @@ export default {
           }))
         }
       }
+    })
+
+    // `/plan` in a canonical Bot Chat (B1): the draft is rewritten into a
+    // plan-mode prompt — the reply's numbered plan + trailing `::botplan`
+    // marker render as an approval card (botplan directive below) instead of
+    // a normal turn. Everywhere else `/plan` passes through to the backend's
+    // own planner (.hermes/plans/*.md). Registered BEFORE the mention
+    // middleware so a `@bot` inside the task still resolves, appending its
+    // note after the scaffold rather than inside the brief.
+    ctx.register({
+      id: 'plan-mode-middleware',
+      area: COMPOSER_AREAS.middleware,
+      data: {
+        handler: (draft: ComposerDraftPayload): ComposerDraftPayload => {
+          const rewritten = rewritePlanDraft(
+            draft.text || '',
+            canonicalBotChatOnScreen(host.state.focusedStoredSessionId.get())
+          )
+
+          return rewritten ? { ...draft, text: rewritten.text, displayText: rewritten.displayText } : draft
+        }
+      }
+    })
+
+    // The plan reply's `::botplan` paragraph becomes the approval card — the
+    // numbered list above it stays normal transcript text, so an unclaimed
+    // marker (streaming, non-canonical chat) degrades to a plain line.
+    ctx.register({
+      id: 'botplan-directive',
+      area: TRANSCRIPT_DIRECTIVE_AREA,
+      data: {
+        name: BOT_PLAN_DIRECTIVE,
+        render: (props: TranscriptDirectiveProps) => <BotPlanCard {...props} />
+      }
+    })
+
+    // B2 — the live checklist pinned above a canonical chat's composer while
+    // an approved plan runs. Fully transcript-derived (bot-plan.ts); clear is
+    // cosmetic and in-memory.
+    ctx.register({
+      id: 'bot-plan-checklist',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotPlanChecklist />
     })
 
     // @-mention middleware: "@<bot> do the thing" in any chat gets an

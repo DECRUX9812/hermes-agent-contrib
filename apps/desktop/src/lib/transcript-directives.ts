@@ -36,6 +36,12 @@ export interface TranscriptDirectiveProps {
   source: string
   /** True while the surrounding message is still streaming. */
   streaming: boolean
+  /** Full text of the message part the directive was parsed from — a
+   *  directive that marks content ("render THIS as a card") reads the plan,
+   *  the answer choices, or the document out of it instead of squeezing it
+   *  into attrs. '' when the leaf renders outside a real message part
+   *  (standalone `MessageTextContent`, tests mounting the leaf directly). */
+  messageText: string
 }
 
 /** Payload of a `transcript.directives` contribution's `data`. */
