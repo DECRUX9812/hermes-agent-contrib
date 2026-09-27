@@ -15,6 +15,7 @@ import { useSessionView } from '@/app/chat/session-view'
 import {
   $transcriptSearchJumps,
   loadTranscriptFindCorpus,
+  locateTranscriptReplayRow,
   locateTranscriptSearchHit,
   takeTranscriptSearchJump,
   transcriptFindTarget,
@@ -91,7 +92,9 @@ async function runTranscriptSearchJump(
     return
   }
 
-  const hit = locateTranscriptSearchHit(corpus.rows, jump)
+  // A replay jump lands on the span covering its instant instead of a query
+  // hit — same reveal/scroll path from there.
+  const hit = jump.atMs !== undefined ? locateTranscriptReplayRow(corpus.rows, jump.atMs) : locateTranscriptSearchHit(corpus.rows, jump)
 
   if (!hit) {
     return
