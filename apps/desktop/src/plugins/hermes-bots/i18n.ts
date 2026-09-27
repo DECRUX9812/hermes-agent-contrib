@@ -102,6 +102,15 @@ type BotsMessages = {
     updated: (name: string) => string
     created: (name: string) => string
     createdOn: (name: string, target: string) => string
+    /** Create-dialog preset picker (C1). Soul stubs stay out of here — they
+     *  are agent-facing SOUL.md content and live in `bot-templates.ts`. */
+    templates: {
+      label: string
+      custom: { name: string }
+      engineer: { description: string; name: string; title: string }
+      ops: { description: string; name: string; title: string }
+      researcher: { description: string; name: string; title: string }
+    }
   }
   roster: {
     search: string
@@ -260,6 +269,16 @@ type BotsMessages = {
     attentionBlocked: string
     duplicate: string
     duplicateFailed: string
+    /** Duplicate progress + success toasts. */
+    duplicating: (name: string) => string
+    duplicated: (name: string, source: string) => string
+    /** Model quick-swap submenu (C3). Failure copy reuses
+     *  `editor.modelSwitchFailed`. */
+    modelMenu: string
+    modelLoading: string
+    modelUnavailable: string
+    modelSetTo: (model: string) => string
+    modelInheritSet: string
     deleteTitle: string
     removeFromAllGroups: string
     createFirstHint: string
@@ -629,7 +648,26 @@ const en: BotsMessages = {
     sectionsFailed: sections => `Some sections failed: ${sections}`,
     updated: name => `${name} updated`,
     created: name => `Bot "${name}" created`,
-    createdOn: (name, target) => `Bot "${name}" created on ${target}`
+    createdOn: (name, target) => `Bot "${name}" created on ${target}`,
+    templates: {
+      label: 'Template',
+      custom: { name: 'Custom' },
+      engineer: {
+        description: 'Writes, reviews, and debugs code in small verified steps.',
+        name: 'Engineer',
+        title: 'Engineer'
+      },
+      ops: {
+        description: 'Watches systems and schedules, investigates anomalies, escalates clearly.',
+        name: 'Ops',
+        title: 'Ops'
+      },
+      researcher: {
+        description: 'Deep research with cited sources, cross-checked claims, open questions tracked.',
+        name: 'Researcher',
+        title: 'Researcher'
+      }
+    }
   },
   roster: {
     search: 'Search bots and group chats',
@@ -770,6 +808,13 @@ const en: BotsMessages = {
     attentionBlocked: 'Bot is blocked — see its last message',
     duplicate: 'Duplicate',
     duplicateFailed: 'Duplicate failed',
+    duplicating: name => `Duplicating ${name}…`,
+    duplicated: (name, source) => `Created ${name} — full copy of ${source}`,
+    modelMenu: 'Model',
+    modelLoading: 'Loading models…',
+    modelUnavailable: 'Model list unavailable',
+    modelSetTo: model => `Model set to ${model}`,
+    modelInheritSet: 'Model follows the launch profile',
     deleteTitle: 'Delete bot and profile?',
     removeFromAllGroups: 'Remove from all groups',
     createFirstHint: 'Open the Bots pane and hit “New Bot”.',
@@ -1126,7 +1171,26 @@ const ja: BotsMessages = {
     sectionsFailed: sections => `一部の設定に失敗しました: ${sections}`,
     updated: name => `${name} を更新しました`,
     created: name => `ボット「${name}」を作成しました`,
-    createdOn: (name, target) => `${target} にボット「${name}」を作成しました`
+    createdOn: (name, target) => `${target} にボット「${name}」を作成しました`,
+    templates: {
+      label: 'テンプレート',
+      custom: { name: 'カスタム' },
+      engineer: {
+        description: '小さな検証済みステップでコードを書き、レビューし、デバッグします。',
+        name: 'エンジニア',
+        title: 'エンジニア'
+      },
+      ops: {
+        description: 'システムやスケジュールを監視し、異常を調査して、明確にエスカレーションします。',
+        name: 'オプス',
+        title: 'オプス'
+      },
+      researcher: {
+        description: '引用付きの出典で深く調査し、主張を相互確認し、未解決の問いを追跡します。',
+        name: 'リサーチャー',
+        title: 'リサーチャー'
+      }
+    }
   },
   roster: {
     search: 'ボットとグループチャットを検索',
@@ -1266,6 +1330,13 @@ const ja: BotsMessages = {
     attentionBlocked: 'ボットがブロックされています — 最後のメッセージを確認してください',
     duplicate: '複製',
     duplicateFailed: '複製に失敗しました',
+    duplicating: name => `${name} を複製中…`,
+    duplicated: (name, source) => `作成しました ${name} — ${source} の完全なコピー`,
+    modelMenu: 'モデル',
+    modelLoading: 'モデルを読み込み中…',
+    modelUnavailable: 'モデル一覧を取得できません',
+    modelSetTo: model => `モデルを ${model} に設定しました`,
+    modelInheritSet: '起動プロファイルのモデルを継承します',
     deleteTitle: 'ボットとプロファイルを削除しますか？',
     removeFromAllGroups: 'すべてのグループから外す',
     createFirstHint: 'ボットパネルを開いて「新しいボット」を押してください。',
@@ -1619,7 +1690,26 @@ const zh: BotsMessages = {
     sectionsFailed: sections => `部分设置失败：${sections}`,
     updated: name => `已更新 ${name}`,
     created: name => `已创建机器人“${name}”`,
-    createdOn: (name, target) => `已在 ${target} 上创建机器人“${name}”`
+    createdOn: (name, target) => `已在 ${target} 上创建机器人“${name}”`,
+    templates: {
+      label: '模板',
+      custom: { name: '自定义' },
+      engineer: {
+        description: '以小步可验证的方式编写、审查和调试代码。',
+        name: '工程师',
+        title: '工程师'
+      },
+      ops: {
+        description: '监视系统与计划任务，排查异常，并清晰地升级汇报。',
+        name: '运维',
+        title: '运维'
+      },
+      researcher: {
+        description: '深入调研并注明出处，交叉核实论断，持续追踪待解问题。',
+        name: '研究员',
+        title: '研究员'
+      }
+    }
   },
   roster: {
     search: '搜索机器人和群聊',
@@ -1755,6 +1845,13 @@ const zh: BotsMessages = {
     attentionBlocked: '机器人已被阻止 — 请查看其最后一条消息',
     duplicate: '复制',
     duplicateFailed: '复制失败',
+    duplicating: name => `正在复制 ${name}…`,
+    duplicated: (name, source) => `已创建 ${name} — ${source} 的完整副本`,
+    modelMenu: '模型',
+    modelLoading: '正在加载模型…',
+    modelUnavailable: '无法获取模型列表',
+    modelSetTo: model => `模型已设为 ${model}`,
+    modelInheritSet: '模型将继承启动配置',
     deleteTitle: '删除机器人和配置档案？',
     removeFromAllGroups: '从所有群组中移除',
     createFirstHint: '打开机器人面板，点击“新建机器人”。',
@@ -2102,7 +2199,26 @@ const zhHant: BotsMessages = {
     sectionsFailed: sections => `部分設定失敗：${sections}`,
     updated: name => `已更新 ${name}`,
     created: name => `已建立機器人「${name}」`,
-    createdOn: (name, target) => `已在 ${target} 上建立機器人「${name}」`
+    createdOn: (name, target) => `已在 ${target} 上建立機器人「${name}」`,
+    templates: {
+      label: '範本',
+      custom: { name: '自訂' },
+      engineer: {
+        description: '以小步可驗證的方式撰寫、審查並除錯程式碼。',
+        name: '工程師',
+        title: '工程師'
+      },
+      ops: {
+        description: '監視系統與排程工作，排查異常，並清楚地升級回報。',
+        name: '維運',
+        title: '維運'
+      },
+      researcher: {
+        description: '深入調研並註明出處，交叉核實論斷，持續追蹤待解問題。',
+        name: '研究員',
+        title: '研究員'
+      }
+    }
   },
   roster: {
     search: '搜尋機器人和群組聊天',
@@ -2238,6 +2354,13 @@ const zhHant: BotsMessages = {
     attentionBlocked: '機器人已被封鎖 — 請查看其最後一則訊息',
     duplicate: '複製',
     duplicateFailed: '複製失敗',
+    duplicating: name => `正在複製 ${name}…`,
+    duplicated: (name, source) => `已建立 ${name} — ${source} 的完整複本`,
+    modelMenu: '模型',
+    modelLoading: '正在載入模型…',
+    modelUnavailable: '無法取得模型清單',
+    modelSetTo: model => `模型已設為 ${model}`,
+    modelInheritSet: '模型將沿用啟動設定檔',
     deleteTitle: '刪除機器人和設定檔？',
     removeFromAllGroups: '從所有群組中移除',
     createFirstHint: '開啟機器人面板，點「新增機器人」。',

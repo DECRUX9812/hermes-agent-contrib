@@ -42,6 +42,8 @@ import { avatarColor, blobatarSvg, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { AvatarPicker } from './avatar-picker'
 import { $selectedBot } from './bot-state'
+import { BOT_TEMPLATE_IDS, BOT_TEMPLATES, disabledSkillNames, stagedSkillsForTemplate } from './bot-templates'
+import type { BotTemplateId } from './bot-templates'
 import { createCanonicalChat } from './canonical-chat'
 import { $botMeta, botHandle, botRosterKey, filterBots, ROSTER_KEY, saveBotMeta } from './data'
 import { labeled, ResizableFrame } from './dialog-parts'
@@ -142,6 +144,12 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
   const [model, setModel] = useState('')
   const [provider, setProvider] = useState('')
   const [soul, setSoul] = useState('')
+  // C1 preset picker: 'custom' is the blank slate (the historical default).
+  // The ref mirror keeps async catalog callbacks reading the CURRENT preset —
+  // a template picked while ensureCaps is in flight must still curate the
+  // catalog that lands.
+  const [template, setTemplate] = useState<BotTemplateId>('custom')
+  const templateRef = useRef<BotTemplateId>('custom')
   const [noSkills, setNoSkills] = useState(false)
   const [shareAuth, setShareAuth] = useState(true)
   const [advTab, setAdvTab] = useState('general')
@@ -276,6 +284,8 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
     setModel('')
     setProvider('')
     setSoul('')
+    setTemplate('custom')
+    templateRef.current = 'custom'
     setNoSkills(false)
     setShareAuth(true)
     setAdvTab('general')
@@ -319,9 +329,18 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
         const configured = res.mcp_servers || []
         const have = new Set(configured.map(m => m.name))
         const catalog = ((cat && cat.servers) || []).filter(s => !have.has(s.name))
+        // A preset picked before the capabilities tab loaded still curates
+        // the staged list — the checkboxes are what the create writes.
+        const rawSkills = res.skills || []
+        const curatedSkills = stagedSkillsForTemplate(rawSkills, BOT_TEMPLATES[templateRef.current])
+
+        if (curatedSkills !== rawSkills) {
+          setDirtyCaps(prev => (prev.skills ? prev : { ...prev, skills: true }))
+        }
+
         setCaps({
           source: capSource,
-          skills: res.skills || [],
+          skills: curatedSkills,
           toolsets: res.toolsets || [],
           mcp: [
             ...configured,
@@ -360,6 +379,62 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           }
         : prev
     )
+  }
+
+  // C1: pick a preset — it seeds title/description/soul/model and curates the
+  // staged skills. 'custom' is the blank slate: it clears only fields still
+  // carrying a preset's seed, never text the user typed over one.
+  const applyTemplate = (id: BotTemplateId) => {
+    setTemplate(id)
+    templateRef.current = id
+    const spec = BOT_TEMPLATES[id]
+
+    if (id === 'custom') {
+      for (const other of BOT_TEMPLATE_IDS) {
+        if (other === 'custom') {
+          continue
+        }
+
+        const otherSpec = BOT_TEMPLATES[other]
+        const otherSeed = b.editor.templates[other]
+
+        if (title === otherSeed.title) {
+          setTitle('')
+        }
+
+        if (description === otherSeed.description) {
+          setDescription('')
+        }
+
+        if (soul === otherSpec.soul) {
+          setSoul('')
+        }
+
+        if (model === otherSpec.model && provider === otherSpec.provider) {
+          setModel('')
+          setProvider('')
+        }
+      }
+
+      return
+    }
+
+    const seed = b.editor.templates[id]
+
+    setTitle(seed.title)
+    setDescription(seed.description)
+    setSoul(spec.soul)
+    setModel(spec.model)
+    setProvider(spec.provider)
+
+    if (spec.skills.length) {
+      // Caps may not have loaded yet (the Advanced tab fetches lazily) — the
+      // submit path's profiles.describe fallback covers that case.
+      setCaps(prev =>
+        prev ? { ...prev, skills: stagedSkillsForTemplate(prev.skills, spec) } : prev
+      )
+      setDirtyCaps(prev => ({ ...prev, skills: true }))
+    }
   }
 
   // Materialize the profile exactly once. createdRef stores the finished slug
@@ -424,6 +499,21 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
 
         if (dirtyCaps.skills && caps) {
           capPayload.disabled_skills = caps.skills.filter(s => !s.enabled).map(s => s.name)
+        } else if (BOT_TEMPLATES[templateRef.current].skills.length) {
+          // A preset curating skills while the capabilities tab never opened:
+          // diff against the NEW profile's installed list (the clone source's
+          // catalog is only a proxy for it).
+          const described = await requestForTarget<ProfileDescribeResponse>('profiles.describe', {
+            name: slug
+          }).catch(() => null)
+
+          const disabled = described?.skills
+            ? disabledSkillNames(described.skills, BOT_TEMPLATES[templateRef.current])
+            : null
+
+          if (disabled) {
+            capPayload.disabled_skills = disabled
+          }
         }
 
         if (dirtyCaps.toolsets && caps) {
@@ -625,6 +715,22 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           <DialogDescription>{b.editor.newDescription}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3.5">
+          {/* C1: template presets seed the form; Custom is the blank slate. */}
+          {labeled(
+            b.editor.templates.label,
+            <div className="flex flex-col gap-1.5">
+              <SegmentedControl
+                onChange={applyTemplate}
+                options={BOT_TEMPLATE_IDS.map(id => ({ id, label: b.editor.templates[id].name }))}
+                value={template}
+              />
+              {template !== 'custom' ? (
+                <div className="text-[0.6875rem] text-(--ui-text-tertiary)">
+                  {b.editor.templates[template].description}
+                </div>
+              ) : null}
+            </div>
+          )}
           <div className="flex justify-center py-1">
             <BotFace
               color={avatarColor(color, slug || 'agent')}
