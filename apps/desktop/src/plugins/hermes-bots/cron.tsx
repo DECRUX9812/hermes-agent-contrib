@@ -17,11 +17,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  GlyphSpinner,
   host,
   Input,
   nextRunOverdueMs,
-  PanelEmpty,
   queryClient,
   relativeTime,
   RowButton,
@@ -41,21 +39,15 @@ import {
 } from '@hermes/plugin-sdk'
 import { useEffect, useState } from 'react'
 
-import { avatarColor, botAppearance, BotFace } from './avatar'
-import { BotDeliverablesSection } from './bot-deliverables'
-import { BotRunsSection } from './bot-runs-section'
-import { BotSessionDeck } from './bot-session-deck'
-import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
-import { $botMeta, $lastRoster, botHandle, botRosterKey, botSelectionKey, isActiveRosterBot } from './data'
+import { $selectedBot } from './bot-state'
+import { $botMeta, botRosterKey, botSelectionKey, isActiveRosterBot } from './data'
 import { labeled } from './dialog-parts'
 import { botsText, type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
-import { NewTaskButton } from './new-task'
 import { botConnectionRoute, botRosterMeta, requestForBot } from './routing'
 import { rosterRowAge } from './row-helpers'
-import { BotComputerPanel } from './screen-panel'
 import { ID } from './shared'
-import type { BotMeta, RosterRow, RoutineJob } from './types'
+import type { RosterRow, RoutineJob } from './types'
 
 const ROUTINES_KEY = [ID, 'routines']
 
@@ -64,18 +56,7 @@ const ROUTINES_KEY = [ID, 'routines']
 export const ROUTINES_QUERY_KEY = ROUTINES_KEY
 
 /** Last good cron list, same idea as the roster snapshot. */
-const $lastJobs = atom<RoutineJob[]>([])
-
-function showsHandle(name: string, meta: BotMeta | null | undefined, bot?: RosterRow) {
-  const display = displayName(
-    {
-      name
-    },
-    meta
-  )
-
-  return Boolean(name && display.toLowerCase() !== botHandle(name, bot).toLowerCase())
-}
+export const $lastJobs = atom<RoutineJob[]>([])
 
 // ── routines (cron) ──────────────────────────────────────────────────────────
 //
@@ -182,7 +163,7 @@ export async function loadRoutines(owner: RoutineOwner): Promise<RoutineListResu
   }
 }
 
-function useRoutines(owner: RoutineOwner) {
+export function useRoutines(owner: RoutineOwner) {
   const bot =
     typeof owner === 'string'
       ? {
@@ -1367,153 +1348,5 @@ export function resolveRoutineOwner(
           name: focusedOwner.name
         }
       : null)
-  )
-}
-
-export function RoutinesPane() {
-  const selected = useValue($selectedBot)
-  const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
-  // Subscribe instead of a bare read: BotsPane owns the roster fetch and
-  // can hydrate (or replace) rows after this pane mounted, so a .get()
-  // snapshot captured while the roster was still empty pinned the pane on
-  // "unavailable" until some unrelated atom happened to re-render it (#94483).
-  // A complete focused owner is still authoritative. If its exact roster row
-  // is absent, fail closed rather than routing cron reads/mutations through a
-  // stale selection or an unscoped profile name.
-  const owner = resolveRoutineOwner(useValue($lastRoster), focusedOwner, selected)
-  const bot = String(owner?.name || focusedOwner?.name || 'default').trim() || 'default'
-  const allMeta = useValue($botMeta)
-  const meta = owner ? botRosterMeta(owner, allMeta) : null
-  const { shape, color, image } = botAppearance(bot, meta)
-  const { data, error, isLoading, refetch } = useRoutines(owner)
-  const b = useBots()
-  const { t } = useI18n()
-  const c = t.cron
-  const [createOpen, setCreateOpen] = useState(false)
-  const [createOwner, setCreateOwner] = useState<RosterRow | null>(null)
-  // Hold the id, not the record: the 20s poll replaces every job object, and
-  // an open inspector must follow the live row (next run, pause, last error)
-  // instead of freezing the snapshot that was on screen when it opened.
-  const [detailJobId, setDetailJobId] = useState<null | string>(null)
-  const createTarget = owner ? routineCreateTarget(createOwner, bot) : null
-
-  const openCreate = () => {
-    if (!owner) {
-      return
-    }
-
-    setCreateOwner(owner)
-    setCreateOpen(true)
-  }
-
-  if (!owner) {
-    return <PanelEmpty description={b.cron.needsRosterFirst} icon="hubot" title={c.title} />
-  }
-
-  const view = selectRoutineJobs(data, error, $lastJobs.get(), bot)
-
-  if (view.live) {
-    $lastJobs.set(view.live)
-  }
-
-  const jobs = view.jobs
-  const detailJob = detailJobId ? jobs.find(job => job.job_id === detailJobId) || null : null
-
-  const staleNotice = error && !view.live && view.all.length ? b.cron.staleNotice : null
-
-  const filterHint = routineFilterHint(view.all, jobs)
-
-  return (
-    <div className="flex h-full flex-col">
-      <div className="px-3 pt-3">
-        <BotComputerPanel bot={owner} meta={meta} />
-      </div>
-      <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-        <BotFace color={avatarColor(color, bot)} image={image} name={bot} shape={shape} size={22} />
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-baseline gap-1.5 truncate">
-            <div className="truncate text-xs font-semibold">
-              {displayName(
-                {
-                  name: bot
-                },
-                meta
-              )}
-            </div>
-            {showsHandle(bot, meta) ? (
-              <span className="shrink-0 font-mono text-[0.65rem] text-(--ui-text-quaternary)">{`@${botHandle(bot)}`}</span>
-            ) : null}
-          </div>
-          <div className="text-[0.65rem] uppercase tracking-wider text-(--ui-text-quaternary)">{c.title}</div>
-        </div>
-        <NewTaskButton bot={owner} />
-        <Tip label={c.newCron}>
-          <Button aria-label={c.newCron} onClick={openCreate} size="icon-xs" variant="ghost">
-            <Codicon name="add" />
-          </Button>
-        </Tip>
-      </div>
-      <div className="mx-3 border-t border-(--ui-stroke-secondary)" />
-      <BotSessionDeck owner={owner} />
-      <BotRunsSection jobs={jobs} onOpenRoutine={setDetailJobId} owner={owner} />
-      <BotDeliverablesSection owner={owner} />
-      {staleNotice ? (
-        <div className="mx-3 mt-2 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
-          {staleNotice}
-        </div>
-      ) : null}
-      {isLoading && !view.all.length ? (
-        <div className="flex flex-1 items-center justify-center">
-          <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
-        </div>
-      ) : error && !view.all.length ? (
-        <PanelEmpty
-          action={
-            <Button onClick={() => void refetch()} size="sm" variant="secondary">
-              {t.common.retry}
-            </Button>
-          }
-          description={b.cron.readFailure}
-          icon="warning"
-          title={c.failedLoad}
-        />
-      ) : jobs.length === 0 ? (
-        // `filterHint` is the informative case (jobs exist on the profile but
-        // none are tagged for this bot), so it wins the description slot.
-        <PanelEmpty
-          action={
-            <Button onClick={openCreate} size="sm">
-              {c.newCron}
-            </Button>
-          }
-          description={filterHint || c.emptyDescNew}
-          icon="watch"
-          title={c.emptyTitleNew}
-        />
-      ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="grid gap-1.5 px-2.5 py-2">
-            {jobs.map(job => (
-              <RoutineRow job={job} key={job.job_id} onOpen={opened => setDetailJobId(opened.job_id)} owner={owner} />
-            ))}
-          </div>
-        </div>
-      )}
-      <RoutineDetailDialog job={detailJob} onClose={() => setDetailJobId(null)} open={Boolean(detailJob)} owner={owner} />
-      <CreateRoutineDialog
-        // Non-null past the `!owner` early return above: `routineCreateTarget`
-        // falls back to the active profile name.
-        bot={createTarget!}
-        // TODO(bot-mode-types): `createTarget` is a roster row whenever a create
-        // owner is set, so this key stringifies to "[object Object]" instead of
-        // identifying the target bot. Cast to keep the as-written behavior.
-        key={createTarget as string}
-        onClose={() => {
-          setCreateOpen(false)
-          setCreateOwner(null)
-        }}
-        open={createOpen}
-      />
-    </div>
   )
 }

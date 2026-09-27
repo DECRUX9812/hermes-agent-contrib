@@ -16,6 +16,7 @@ import {
   parseRosterKey,
   saveSelectedRosterBot
 } from './bot-state'
+import type { BotTemplateId } from './bot-templates'
 import { BroadcastDialog } from './broadcast-dialog'
 /**
  * The Bots pane itself: the roster's selection reconciliation, the
@@ -44,6 +45,7 @@ import { useBots } from './i18n'
 import { $rosterSortMode, setRosterSortMode, useRosterAttentionCounts } from './live-status'
 import { mailboxOpenCountFor, useMailbox } from './mailbox'
 import { MailboxTaskDialog } from './mailbox-parts'
+import { MarketplaceDialog } from './marketplace-dialog'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
@@ -252,6 +254,9 @@ export function BotsPane() {
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
   const [broadcastOpen, setBroadcastOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [marketplaceOpen, setMarketplaceOpen] = useState(false)
+  // G6 — the template a marketplace starter card hands the create dialog.
+  const [createTemplate, setCreateTemplate] = useState<BotTemplateId | undefined>()
   const [editing, setEditing] = useState<null | RosterRow>(null)
   // `path` is the profile directory the gateway reports on a profiles.list row;
   // it is not part of the shared RosterRow model, so it rides as an extra here.
@@ -531,6 +536,7 @@ export function BotsPane() {
         setSortMode: setRosterSortMode,
         setBroadcastOpen,
         setCalendarOpen,
+        setMarketplaceOpen,
         viewMode,
         setViewMode: setRosterViewMode
       })}
@@ -572,11 +578,22 @@ export function BotsPane() {
       <MailboxTaskDialog member={assigningTask} onClose={() => setAssigningTask(null)} />
       <BroadcastDialog bots={roster} onClose={() => setBroadcastOpen(false)} open={broadcastOpen} />
       <RoutinesCalendarDialog bots={roster} onClose={() => setCalendarOpen(false)} open={calendarOpen} />
+      <MarketplaceDialog
+        onClose={() => setMarketplaceOpen(false)}
+        onPickTemplate={template => {
+          setMarketplaceOpen(false)
+          setCreateTemplate(template)
+          setCreateOpen(true)
+        }}
+        open={marketplaceOpen}
+      />
       {renderRosterDialogs({
         b,
         t,
         createOpen,
+        createTemplate,
         setCreateOpen,
+        setCreateTemplate,
         groupCreateOpen,
         setGroupCreateOpen,
         editing,

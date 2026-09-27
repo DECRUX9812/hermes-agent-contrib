@@ -697,6 +697,27 @@ type BotsMessages = {
     complete: string
     clearChecklist: string
   }
+  /** G1/G8 — the focused bot's context rail: profile card up top, then the
+   *  dated task log, computer panel, and routines as collapsible sections. */
+  rail: {
+    /** Empty-state title + tab label. */
+    title: string
+    /** The dated task-log section header. */
+    tasks: string
+    today: string
+    yesterday: string
+  }
+  /** G6 — the roster toolbar's marketplace stub: bundle import plus the C1
+   *  template catalog as installable starter cards. */
+  market: {
+    menuItem: string
+    title: string
+    desc: string
+    starters: string
+    importFile: string
+    importHint: string
+    add: string
+  }
   /** F1 — the session deck on the bot pane: every session the bot's profile
    *  owns, canonical chat first. */
   deck: {
@@ -1323,6 +1344,21 @@ const en: BotsMessages = {
     stepsDone: (done, total) => `${done}/${total} done`,
     complete: 'Complete',
     clearChecklist: 'Clear'
+  },
+  rail: {
+    title: 'Bot context',
+    tasks: 'Task log',
+    today: 'Today',
+    yesterday: 'Yesterday'
+  },
+  market: {
+    menuItem: 'Marketplace\u2026',
+    title: 'Bot marketplace',
+    desc: 'Bundle import and starter bots \u2014 no hosted registry yet.',
+    starters: 'Starter bots',
+    importFile: 'Import from file',
+    importHint: 'Install a bot bundle exported from another Hermes install.',
+    add: 'Add bot'
   },
   deck: {
     title: 'Sessions',
@@ -1961,6 +1997,22 @@ const ja: BotsMessages = {
     empty: 'セッションはまだありません。',
     untitled: '無題のセッション'
   }
+,
+  rail: {
+    title: 'ボットのコンテキスト',
+    tasks: 'タスクログ',
+    today: '今日',
+    yesterday: '昨日'
+  },
+  market: {
+    menuItem: 'マーケットプレイス…',
+    title: 'ボットマーケットプレイス',
+    desc: 'バンドルのインポートとスターターボット — ホスト型レジストリはまだありません。',
+    starters: 'スターターボット',
+    importFile: 'ファイルからインポート',
+    importHint: '別の Hermes インストールからエクスポートしたボットバンドルをインストールします。',
+    add: 'ボットを追加'
+  }
 }
 
 const zh: BotsMessages = {
@@ -2574,6 +2626,22 @@ const zh: BotsMessages = {
     empty: '还没有会话。',
     untitled: '未命名会话'
   }
+,
+  rail: {
+    title: '机器人上下文',
+    tasks: '任务日志',
+    today: '今天',
+    yesterday: '昨天'
+  },
+  market: {
+    menuItem: '市场…',
+    title: '机器人市场',
+    desc: '导入捆绑包或添加起始机器人 — 尚无托管注册表。',
+    starters: '起始机器人',
+    importFile: '从文件导入',
+    importHint: '安装从另一个 Hermes 导出的机器人捆绑包。',
+    add: '添加机器人'
+  }
 }
 
 const zhHant: BotsMessages = {
@@ -3186,6 +3254,22 @@ const zhHant: BotsMessages = {
     canonical: '正典',
     empty: '還沒有工作階段。',
     untitled: '未命名工作階段'
+  }
+,
+  rail: {
+    title: '機器人脈絡',
+    tasks: '任務日誌',
+    today: '今天',
+    yesterday: '昨天'
+  },
+  market: {
+    menuItem: '市集…',
+    title: '機器人市集',
+    desc: '匯入套件或加入起始機器人 — 尚無託管註冊表。',
+    starters: '起始機器人',
+    importFile: '從檔案匯入',
+    importHint: '安裝從另一個 Hermes 匯出的機器人套件。',
+    add: '加入機器人'
   }
 }
 

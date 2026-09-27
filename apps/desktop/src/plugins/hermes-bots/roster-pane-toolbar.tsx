@@ -54,6 +54,9 @@ interface renderRosterToolbarProps {
   /** G10 — the roster view: 'list' (default) or the 'cards' grid. */
   viewMode: RosterViewMode
   setViewMode: (value: RosterViewMode) => void
+  /** G6 — the marketplace stub is another way to add a bot, so it lives on
+   *  the New… menu. */
+  setMarketplaceOpen: (value: boolean) => void
 }
 
 export function renderRosterToolbar({
@@ -81,6 +84,7 @@ export function renderRosterToolbar({
   setSortMode,
   setBroadcastOpen,
   setCalendarOpen,
+  setMarketplaceOpen,
   viewMode,
   setViewMode
 }: renderRosterToolbarProps) {
@@ -144,6 +148,10 @@ export function renderRosterToolbar({
               >
                 <Codicon className="mr-1.5" name="organization" />
                 {b.group.newTitle}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setMarketplaceOpen(true)}>
+                <Codicon className="mr-1.5" name="extensions" />
+                {b.market.menuItem}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setSectionDialog({ mode: 'create' })}>
