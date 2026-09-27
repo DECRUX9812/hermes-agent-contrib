@@ -8,6 +8,7 @@
 
 import {
   $ownerNotifyModes,
+  $watchedSessionKeys,
   Badge,
   cn,
   Codicon,
@@ -23,6 +24,7 @@ import {
   GlyphSpinner,
   haptic,
   host,
+  isWatchedSessionId,
   ownerNotifyKey,
   queryClient,
   RowButton,
@@ -30,6 +32,7 @@ import {
   setOwnerNotifyMode,
   SidebarRowLead,
   Tip,
+  toggleSessionWatched,
   useI18n,
   useValue
 } from '@hermes/plugin-sdk'
@@ -178,6 +181,16 @@ export function BotRow({
   // Status keys off the canonical Bot Chat — the very session this row opens,
   // so the dot and the click can never describe different conversations.
   const canonicalSessionId = botCanonicalSessionId(bot)
+  // B5 — Watch: the row mirrors the session rail's watch strip, subscribed
+  //  to the same keys atom so the eye paints the moment the chip strip (or
+  //  this menu) flips it. Watched state keys off the canonical chat's stored
+  //  id — the toggle itself resolves the durable pin id.
+  const watchedMap = useValue($watchedSessionKeys)
+
+  const watched = Boolean(
+    canonicalSessionId && watchedMap && typeof isWatchedSessionId === 'function' && isWatchedSessionId(canonicalSessionId)
+  )
+
   // A2 — the attention rollup: inbox items + quiet unread/needs-input dots
   // counted under the bot's proven owner scope (never the ambient gateway —
   // a same-named bot on another connection inherits nothing), plus the
@@ -339,6 +352,11 @@ export function BotRow({
             {hidden ? (
               <Tip label={b.roster.hiddenFromRoster}>
                 <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="eye-closed" />
+              </Tip>
+            ) : null}
+            {watched ? (
+              <Tip label={b.bot.watching}>
+                <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-accent)" name="eye" />
               </Tip>
             ) : null}
             <Tip label={rowTooltip}>
@@ -533,6 +551,26 @@ export function BotRow({
         >
           {hidden ? b.bot.unhide : b.bot.hide}
         </ContextMenuItem>
+        {typeof toggleSessionWatched === 'function' ? (
+          <ContextMenuCheckboxItem
+            checked={watched}
+            disabled={!canonicalSessionId}
+            onSelect={() => {
+              if (!canonicalSessionId) {
+                return
+              }
+
+              const next = toggleSessionWatched(canonicalSessionId)
+
+              host.notify({
+                kind: 'info',
+                message: next ? b.bot.watchToast(displayName(bot, meta)) : b.bot.unwatchToast(displayName(bot, meta))
+              })
+            }}
+          >
+            {b.bot.watch}
+          </ContextMenuCheckboxItem>
+        ) : null}
         <ContextMenuSub>
           <ContextMenuSubTrigger>{b.bot.notifications}</ContextMenuSubTrigger>
           <ContextMenuSubContent>

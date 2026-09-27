@@ -17,7 +17,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
   return pluginSdkMock(host)
 })
 
-import { deriveBotRuns } from './bot-runs'
+import { deriveBotRuns, pickCronRunSessionId } from './bot-runs'
 import type { GroupChat, RosterRow } from './types'
 
 function room(log: GroupChat['log'], members: { name: string }[] = []): GroupChat {
@@ -107,5 +107,90 @@ describe('deriveBotRuns', () => {
 
     expect(idle.find(run => run.kind === 'chat')?.status).toBe('ok')
     expect(working.find(run => run.kind === 'chat')?.status).toBe('running')
+  })
+})
+
+describe('replay targets (B4)', () => {
+  it('chat and relay cards replay into the canonical session, never a side chat', () => {
+    const runs = deriveBotRuns({
+      attention: { at: 5_000, message: 'ping from @builder' },
+      bot: {
+        ...BOT,
+        // A fresher side chat must never supply the replay target.
+        last_session: { id: 's-side', last_active: 9_999, preview: 'side chat draft' }
+      },
+      now: 2_000_000
+    })
+
+    expect(runs.find(run => run.kind === 'chat')?.replay).toEqual({
+      at: 1_000_000,
+      sessionId: 's-canonical'
+    })
+    expect(runs.find(run => run.id === 'attention:5000')?.replay).toEqual({
+      at: 5_000,
+      sessionId: 's-canonical'
+    })
+  })
+
+  it('routine cards carry the instant but resolve their session lazily; group cards carry none', () => {
+    const at = Date.parse('2026-09-26T00:00:00Z')
+
+    const runs = deriveBotRuns({
+      bot: BOT,
+      jobs: [
+        {
+          job_id: 'j1',
+          last_run_at: '2026-09-26T00:00:00Z',
+          last_status: 'ok',
+          name: '[bot:research] Digest'
+        }
+      ],
+      now: at + 60_000,
+      rooms: {
+        Council: room(
+          [{ at: 1, from: { kind: 'member', name: 'research' }, text: 'round done' }],
+          [{ name: 'research' }]
+        )
+      }
+    })
+
+    const routine = runs.find(run => run.kind === 'routine')
+    // The run's transcript session is looked up on click — the feed must not
+    // list cron runs per job just to arm the affordance.
+    expect(routine?.replay?.at).toBe(at)
+    expect(routine?.replay?.sessionId).toBeUndefined()
+
+    // Room views are not transcript surfaces — no replay affordance.
+    expect(runs.find(run => run.kind === 'group')?.replay).toBeUndefined()
+  })
+})
+
+describe('pickCronRunSessionId', () => {
+  it('picks the run session whose start is nearest the card instant', () => {
+    expect(
+      pickCronRunSessionId(
+        [
+          { id: 'old', started_at: 100 },
+          { id: 'near', started_at: 205 },
+          { id: 'later', started_at: 400 }
+        ],
+        200_000
+      )
+    ).toBe('near')
+  })
+
+  it('skips script-output docs and unstamped rows; empty input stays null', () => {
+    expect(
+      pickCronRunSessionId(
+        [
+          { id: 'doc', source: 'cron_output', started_at: 200 },
+          { id: 'run', started_at: 300 },
+          { id: 'nostamp' }
+        ],
+        200_000
+      )
+    ).toBe('run')
+    expect(pickCronRunSessionId([{ id: 'doc', source: 'cron_output', started_at: 200 }], 1)).toBeNull()
+    expect(pickCronRunSessionId([], 1)).toBeNull()
   })
 })

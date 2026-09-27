@@ -5,6 +5,7 @@
  */
 
 import {
+  armTranscriptReplayJump,
   cn,
   Codicon,
   host,
@@ -14,7 +15,13 @@ import {
   useValue
 } from '@hermes/plugin-sdk'
 
-import { type BotRun, type BotRunKind, type BotRunStatus, deriveBotRuns } from './bot-runs'
+import {
+  type BotRun,
+  type BotRunKind,
+  type BotRunStatus,
+  deriveBotRuns,
+  pickCronRunSessionId
+} from './bot-runs'
 import { $focusedBotOwner, focusedRosterOwner } from './bot-state'
 import { $botAttention, $botMeta, botRosterKey, botSelectionKey, isActiveRosterBot } from './data'
 import { $groupActivity } from './group-activity'
@@ -23,7 +30,7 @@ import { openGroupChat } from './group-chat-view'
 import { useBots } from './i18n'
 import { useBotLiveStatus } from './live-status'
 import { openRosterBot } from './roster-actions'
-import { botRosterMeta } from './routing'
+import { botConnectionRoute, botRosterMeta } from './routing'
 import { rosterRowAge, useTurnBusy } from './row-helpers'
 import { retryBotDeliveries, stopBotTurn } from './run-controls'
 import type { RosterRow, RoutineJob } from './types'
@@ -151,6 +158,61 @@ export function BotRunsSection({ jobs, onOpenRoutine, owner }: BotRunsSectionPro
     }
   }
 
+  // B4 — Replay: arm the transcript-span jump on the run's own session,
+  // then open it — whichever transcript surface binds the id consumes the
+  // pending jump and scrolls to the turn covering `run.at`. Chat/relay cards
+  // already know their session (the canonical Bot Chat); routine cards
+  // resolve theirs from the job's run list on click. A run with no
+  // resolvable transcript falls back to the card's normal open.
+  const replay = async (run: BotRun) => {
+    const target = run.replay
+
+    if (!target) {
+      return
+    }
+
+    let route = null
+
+    try {
+      route = botConnectionRoute(owner)
+    } catch {
+      route = null
+    }
+
+    let sessionId = target.sessionId ?? null
+
+    if (!sessionId && run.jobId && typeof host.listCronJobRuns === 'function') {
+      try {
+        const runs = await host.listCronJobRuns(route, {
+          jobId: run.jobId,
+          limit: 50,
+          profile: owner.name
+        })
+
+        sessionId = pickCronRunSessionId(runs, run.at)
+      } catch {
+        sessionId = null
+      }
+    }
+
+    if (!sessionId) {
+      open(run)
+
+      return
+    }
+
+    if (typeof armTranscriptReplayJump === 'function') {
+      armTranscriptReplayJump(sessionId, run.at)
+    }
+
+    void host.openSession(sessionId, {
+      ...(route ? { route } : {}),
+      profile: owner.name,
+      // A run session opens beside the canonical chat, never in its place.
+      intent: 'tab'
+    })
+  }
+
   return (
     <div className="px-3 pb-1">
       <div className="pb-1 text-[0.65rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)">
@@ -199,6 +261,21 @@ export function BotRunsSection({ jobs, onOpenRoutine, owner }: BotRunsSectionPro
                     </span>
                   ) : null}
                 </span>
+                {run.replay ? (
+                  <Tip label={b.runs.replay}>
+                    <span
+                      aria-label={b.runs.replay}
+                      className="flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)"
+                      onClick={event => {
+                        event.stopPropagation()
+                        void replay(run)
+                      }}
+                      role="button"
+                    >
+                      <Codicon name="history" />
+                    </span>
+                  </Tip>
+                ) : null}
                 {stoppable(run) ? (
                   <Tip label={b.roster.stopRun}>
                     <span

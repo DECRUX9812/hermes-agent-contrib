@@ -11,12 +11,22 @@
 import type { GroupActivityEntry } from './group-activity'
 import { groupMemberKey } from './group-membership'
 import { stripPreviewMarkdown } from './labels'
-import { A2A_PREFIX_RE, previewKind } from './row-helpers'
+import { A2A_PREFIX_RE, botCanonicalSessionId, previewKind } from './row-helpers'
 import type { BotMeta, GroupChat, GroupMember, RosterRow, RoutineJob } from './types'
 
 export type BotRunKind = 'chat' | 'group' | 'relay' | 'routine'
 
 export type BotRunStatus = 'attention' | 'failed' | 'ok' | 'running'
+
+/** Where a Replay click lands: a stored session id when the card already
+ *  knows it (canonical-chat cards), else just the instant — routine cards
+ *  resolve their run session lazily through `host.listCronJobRuns`. Group
+ *  cards carry none: the room view is not a transcript surface. */
+export interface BotRunReplay {
+  /** ms epoch the replay should land on. */
+  at: number
+  sessionId?: string
+}
 
 export interface BotRun {
   /** ms epoch, the card's sort key. */
@@ -29,6 +39,8 @@ export interface BotRun {
   /** Routine job id — routine cards jump to the job's detail dialog. */
   jobId?: string
   kind: BotRunKind
+  /** Present when the run maps to a transcript span. */
+  replay?: BotRunReplay
   status: BotRunStatus
   /** One-line outcome: message preview, error first line, reply snippet. */
   summary: string
@@ -149,6 +161,10 @@ export function deriveBotRuns(signals: BotRunSignals, limit = BOT_RUNS_LIMIT): B
 
   const canonical = bot.canonical_session
   const lastActive = Number(canonical?.last_active || 0)
+  // Replay targets the canonical chat — the same stored id the row itself
+  // resolves (`resolved_id` tip, else the registry row's id); never a
+  // recency pick.
+  const canonicalSessionId = botCanonicalSessionId(bot)
 
   // Canonical identity is the ONLY chat signal the feed may read — never
   // last_session recency (src/AGENTS.md). An A2A-prefixed preview means the
@@ -165,17 +181,21 @@ export function deriveBotRuns(signals: BotRunSignals, limit = BOT_RUNS_LIMIT): B
       at: lastActive * 1000,
       status: signals.chatBusy || signals.chatWorking ? 'running' : 'ok',
       title: '',
+      replay: canonicalSessionId ? { at: lastActive * 1000, sessionId: canonicalSessionId } : undefined,
       summary: fromBot ? `@${fromBot}: ${summary}` : summary
     })
   }
 
   if (signals.attention && Number(signals.attention.at) > 0) {
+    const at = Number(signals.attention.at)
+
     runs.push({
       id: `attention:${signals.attention.at}`,
       kind: 'relay',
-      at: Number(signals.attention.at),
+      at,
       status: 'attention',
       title: '',
+      replay: canonicalSessionId ? { at, sessionId: canonicalSessionId } : undefined,
       summary: firstLine(signals.attention.message) || signals.attention.reason || ''
     })
   }
@@ -196,6 +216,9 @@ export function deriveBotRuns(signals: BotRunSignals, limit = BOT_RUNS_LIMIT): B
       status,
       title: routineRunTitle(job),
       summary: status === 'ok' ? '' : firstLine(job.last_fire_error) || firstLine(job.last_delivery_error),
+      // The run's transcript session is looked up on click — listing cron
+      // runs for every job in the feed just to arm a replay is not worth it.
+      replay: { at },
       jobId: job.job_id
     })
   }
@@ -224,4 +247,45 @@ export function deriveBotRuns(signals: BotRunSignals, limit = BOT_RUNS_LIMIT): B
   runs.sort((a, b) => b.at - a.at)
 
   return runs.slice(0, limit)
+}
+
+/** The transcript session a routine run fired as, picked from
+ *  `/api/cron/jobs/{id}/runs` rows: the session whose start time is nearest
+ *  the card's `at`. Script-only output docs (`source: 'cron_output'`) carry
+ *  no transcript and are skipped. Every row is already this job's own run,
+ *  so nearest-by-start is the right identity — no tolerance cap. */
+export function pickCronRunSessionId(
+  runs: readonly {
+    id?: null | string
+    last_active?: null | number
+    source?: null | string
+    started_at?: null | number
+  }[],
+  atMs: number
+): null | string {
+  let best: null | string = null
+  let bestDelta = Number.POSITIVE_INFINITY
+
+  for (const run of runs) {
+    if (!run?.id || run.source === 'cron_output') {
+      continue
+    }
+
+    const started = Number(run.started_at) || Number(run.last_active)
+
+    if (!Number.isFinite(started) || started <= 0) {
+      continue
+    }
+
+    // Persisted stamps are unix seconds; a millisecond value stays as-is.
+    const startedMs = started < 10_000_000_000 ? started * 1000 : started
+    const delta = Math.abs(startedMs - atMs)
+
+    if (delta < bestDelta) {
+      bestDelta = delta
+      best = run.id
+    }
+  }
+
+  return best
 }
