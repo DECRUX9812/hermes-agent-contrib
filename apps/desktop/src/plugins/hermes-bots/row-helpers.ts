@@ -69,6 +69,30 @@ export function botCanonicalSessionId(bot: null | RosterRow | undefined): null |
   return bot?.canonical_session?.resolved_id ?? bot?.canonical_session?.id ?? null
 }
 
+/** The gateway's LIVE runtime id for the bot's canonical chat, from the
+ *  runtime→stored bridge (`host.state.storedSessionByRuntimeId`). Turn-scoped
+ *  RPCs (session.interrupt, status streams) speak runtime ids while durable
+ *  surfaces key by stored id — this is the only permitted crossing, and only
+ *  ever through the canonical stored id, never a session list or recency. */
+export function botCanonicalRuntimeId(
+  bot: null | RosterRow | undefined,
+  storedByRuntime: Readonly<Record<string, string>>
+): null | string {
+  const canonicalId = botCanonicalSessionId(bot)
+
+  if (!canonicalId) {
+    return null
+  }
+
+  for (const runtimeId of Object.keys(storedByRuntime || {})) {
+    if (storedByRuntime[runtimeId] === canonicalId) {
+      return runtimeId
+    }
+  }
+
+  return null
+}
+
 /** Worker liveness window: kanban/tool workers heartbeat last_activity_at
  *  at least every 60s while running (agent/session_activity.py), so a
  *  worker whose stamp is older than this is finished or stalled. Wider

@@ -21,9 +21,11 @@ import { $groupActivity } from './group-activity'
 import { $groupChats } from './group-chat'
 import { openGroupChat } from './group-chat-view'
 import { useBots } from './i18n'
+import { useBotLiveStatus } from './live-status'
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
 import { rosterRowAge, useTurnBusy } from './row-helpers'
+import { retryBotDeliveries, stopBotTurn } from './run-controls'
 import type { RosterRow, RoutineJob } from './types'
 
 const RUN_KIND_GLYPHS: Record<BotRunKind, string> = {
@@ -100,15 +102,44 @@ export function BotRunsSection({ jobs, onOpenRoutine, owner }: BotRunsSectionPro
 
   const chatBusy = Boolean(turnBusy && focusedOwner && isActiveRosterBot(owner, focusedOwner))
 
+  // E1 — the canonical chat's dot carries a live turn even when the chat is
+  // not the focused tile (a relay-delivered or routine turn on the hidden
+  // chat), so the feed's 'running' claim and its stop affordance follow the
+  // live status, not the tile.
+  const live = useBotLiveStatus(owner)
+  const chatWorking = live.kind === 'working' || live.kind === 'stalled'
+
   const runs = deriveBotRuns({
     attention,
     bot: owner,
     chatBusy,
+    chatWorking,
     groupActivity,
     jobs,
     meta: owner ? botRosterMeta(owner, allMeta) : null,
     rooms
   })
+
+  // E1/E3 card affordances: stop interrupts the canonical chat's in-flight
+  // turn (the only runtime id a 'running' chat/relay card can mean); retry
+  // kicks the relay outbox drain for a failed delivery card.
+  const stoppable = (run: BotRun) =>
+    run.status === 'running' && (run.kind === 'chat' || run.kind === 'relay')
+
+  const retryable = (run: BotRun) =>
+    run.kind === 'relay' && (run.status === 'attention' || run.status === 'failed')
+
+  const stopRun = () => {
+    void stopBotTurn(owner).then(result => {
+      if (result === 'failed') {
+        host.notifyError?.(new Error('session.interrupt rejected'), b.roster.stopRunFailed)
+      }
+    })
+  }
+
+  const retryOutbox = () => {
+    retryBotDeliveries()
+  }
 
   const open = (run: BotRun) => {
     if (run.kind === 'group' && run.group) {
@@ -168,6 +199,36 @@ export function BotRunsSection({ jobs, onOpenRoutine, owner }: BotRunsSectionPro
                     </span>
                   ) : null}
                 </span>
+                {stoppable(run) ? (
+                  <Tip label={b.roster.stopRun}>
+                    <span
+                      aria-label={b.roster.stopRun}
+                      className="flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-destructive"
+                      onClick={event => {
+                        event.stopPropagation()
+                        stopRun()
+                      }}
+                      role="button"
+                    >
+                      <Codicon name="debug-stop" />
+                    </span>
+                  </Tip>
+                ) : null}
+                {retryable(run) ? (
+                  <Tip label={b.roster.retryDeliveries}>
+                    <span
+                      aria-label={b.roster.retryDeliveries}
+                      className="flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-(--ui-accent)"
+                      onClick={event => {
+                        event.stopPropagation()
+                        retryOutbox()
+                      }}
+                      role="button"
+                    >
+                      <Codicon name="refresh" />
+                    </span>
+                  </Tip>
+                ) : null}
                 <Tip label={statusLabel}>
                   <Codicon
                     aria-label={statusLabel}

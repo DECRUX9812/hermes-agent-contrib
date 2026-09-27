@@ -141,6 +141,17 @@ type BotsMessages = {
     retryNow: string
     rosterUnavailable: (reason: string) => string
     waitingForGateway: string
+    /** E1 — the row's run-stop affordance (chip + context menu). */
+    stopRun: string
+    /** E2 — the health chip's label when a canonical-chat work item failed. */
+    lastRunFailed: string
+    /** E3 — row tooltip suffix while a relay delivery to this bot is in flight. */
+    deliveryInFlight: string
+    /** E3 — row context menu: force a relay outbox drain now. */
+    retryDeliveries: string
+    /** E1/E3 — action-failure toast fallbacks. */
+    stopRunFailed: string
+    retryDeliveriesFailed: string
     /** A1 — the row's live status line: what the bot is doing right now.
      *  'idle'/'unknown' are the honest floor; recency is never one of them. */
     liveIdle: string
@@ -657,6 +668,12 @@ const en: BotsMessages = {
       `Roster unavailable: ${reason}. If your gateway predates profiles.list, update Hermes and restart the gateway.`,
     waitingForGateway:
       'Waiting for the gateway connection… (remote gateways can take a few seconds; retries automatically)',
+    stopRun: 'Stop run',
+    lastRunFailed: 'Last run failed',
+    deliveryInFlight: 'Delivery in flight',
+    retryDeliveries: 'Retry pending deliveries',
+    stopRunFailed: 'Could not stop the run',
+    retryDeliveriesFailed: 'Could not retry the deliveries',
     liveIdle: 'Idle',
     liveWorking: 'Working',
     liveWorkingTool: tool => `Working · ${tool}`,
@@ -1147,6 +1164,12 @@ const ja: BotsMessages = {
     rosterUnavailable: reason =>
       `名簿を取得できません: ${reason}。ゲートウェイが profiles.list より前の場合は、Hermes を更新してゲートウェイを再起動してください。`,
     waitingForGateway: 'ゲートウェイ接続を待っています…（リモートは数秒かかることがあります。自動で再試行します）',
+    stopRun: '実行を停止',
+    lastRunFailed: '前回の実行が失敗しました',
+    deliveryInFlight: '配信中',
+    retryDeliveries: '保留中の配信を再試行',
+    stopRunFailed: '実行を停止できませんでした',
+    retryDeliveriesFailed: '配信を再試行できませんでした',
     liveIdle: 'アイドル',
     liveWorking: '実行中',
     liveWorkingTool: tool => `実行中 · ${tool}`,
@@ -1633,6 +1656,12 @@ const zh: BotsMessages = {
     retryNow: '立即重试',
     rosterUnavailable: reason => `无法获取名单：${reason}。如果网关早于 profiles.list，请更新 Hermes 并重启网关。`,
     waitingForGateway: '正在等待网关连接…（远程网关可能需要几秒；会自动重试）',
+    stopRun: '停止运行',
+    lastRunFailed: '上次运行失败',
+    deliveryInFlight: '投递中',
+    retryDeliveries: '重试待投递的消息',
+    stopRunFailed: '无法停止运行',
+    retryDeliveriesFailed: '无法重试投递',
     liveIdle: '空闲',
     liveWorking: '运行中',
     liveWorkingTool: tool => `运行中 · ${tool}`,
@@ -2110,6 +2139,12 @@ const zhHant: BotsMessages = {
     retryNow: '立即重試',
     rosterUnavailable: reason => `無法取得名單：${reason}。如果閘道早於 profiles.list，請更新 Hermes 並重新啟動閘道。`,
     waitingForGateway: '正在等待閘道連線…（遠端閘道可能需要幾秒；會自動重試）',
+    stopRun: '停止執行',
+    lastRunFailed: '上次執行失敗',
+    deliveryInFlight: '遞送中',
+    retryDeliveries: '重試待遞送的訊息',
+    stopRunFailed: '無法停止執行',
+    retryDeliveriesFailed: '無法重試遞送',
     liveIdle: '閒置',
     liveWorking: '執行中',
     liveWorkingTool: tool => `執行中 · ${tool}`,
