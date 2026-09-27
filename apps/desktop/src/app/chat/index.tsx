@@ -7,6 +7,7 @@ import type * as React from 'react'
 import { memo, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
+import { ChatHeaderSlot } from '@/app/chat/chat-header-slot'
 import { RegionCaptureOverlay } from '@/app/region-capture/overlay'
 import type { SubmitTextOptions } from '@/app/session/hooks/use-prompt-actions/utils'
 import { sessionShouldHaveTranscript } from '@/app/session/hooks/use-session-actions/utils'
@@ -20,6 +21,7 @@ import { PromptOverlays } from '@/components/prompt-overlays'
 import { TitleMenuTrigger } from '@/components/ui/title-menu-trigger'
 import { type HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { CHAT_HEADER_AREAS } from '@/lib/chat-header-slots'
 import type { ChatMessage } from '@/lib/chat-messages'
 import { NEW_SESSION_TITLE, quickModelOptions, sessionTitle } from '@/lib/chat-runtime'
 import { useIncrementalExternalStoreRuntime } from '@/lib/incremental-external-store-runtime'
@@ -190,6 +192,14 @@ function ChatHeader({
         >
           <TitleMenuTrigger>{title}</TitleMenuTrigger>
         </SessionActionsMenu>
+        {activeStoredSession ? (
+          <ChatHeaderSlot
+            area={CHAT_HEADER_AREAS.title}
+            profile={activeStoredSession.profile ?? null}
+            sessionId={sessionPinId(activeStoredSession)}
+            title={title}
+          />
+        ) : null}
       </div>
     </header>
   )

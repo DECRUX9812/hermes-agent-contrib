@@ -17,6 +17,7 @@ import type { RosterSortMode } from './live-status'
 import { setActivityToasts } from './roster-actions'
 import { GatewayKindGlyph } from './roster-sections'
 import type { rosterGatewayOptions } from './roster-sections'
+import type { RosterViewMode } from './roster-view'
 import type { RosterActivityFilter, RosterKindFilter, RosterRow } from './types'
 
 interface renderRosterToolbarProps {
@@ -50,6 +51,9 @@ interface renderRosterToolbarProps {
   /** D1/D3 — fleet surfaces open from the toolbar. */
   setBroadcastOpen: (value: boolean) => void
   setCalendarOpen: (value: boolean) => void
+  /** G10 — the roster view: 'list' (default) or the 'cards' grid. */
+  viewMode: RosterViewMode
+  setViewMode: (value: RosterViewMode) => void
 }
 
 export function renderRosterToolbar({
@@ -76,7 +80,9 @@ export function renderRosterToolbar({
   sortMode,
   setSortMode,
   setBroadcastOpen,
-  setCalendarOpen
+  setCalendarOpen,
+  viewMode,
+  setViewMode
 }: renderRosterToolbarProps) {
   return (
     <>
@@ -85,6 +91,21 @@ export function renderRosterToolbar({
           Bots
         </span>
         <div className="flex items-center gap-0.5">
+          <Tip label={viewMode === 'cards' ? b.roster.listView : b.roster.cardView}>
+            <Button
+              aria-label={viewMode === 'cards' ? b.roster.listView : b.roster.cardView}
+              aria-pressed={viewMode === 'cards'}
+              className={cn(
+                'rounded-md hover:text-foreground',
+                viewMode === 'cards' ? 'text-(--ui-text-secondary)' : 'text-(--ui-text-tertiary)'
+              )}
+              onClick={() => setViewMode(viewMode === 'cards' ? 'list' : 'cards')}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name={viewMode === 'cards' ? 'list-flat' : 'layout'} />
+            </Button>
+          </Tip>
           <Tip
             label={activityToasts ? 'Activity toasts on — click to silence' : 'Activity toasts off — click to enable'}
           >

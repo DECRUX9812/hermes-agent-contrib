@@ -56,6 +56,9 @@ type BotsMessages = {
     name: string
     title: string
     description: string
+    /** G3 — the persona role one-liner (roster subtitle + chat header). */
+    role: string
+    rolePlaceholder: string
     createOn: string
     general: string
     capabilities: string
@@ -181,6 +184,11 @@ type BotsMessages = {
     sortRecent: string
     sortAttention: string
     sortAlpha: string
+    /** G10 — the list/card view toggle's labels, and the card's recency line. */
+    listView: string
+    cardView: string
+    cardActive: (ago: string) => string
+    openChat: string
   }
   /** Sessions-rail Agents fold — the compact roster beside the sessions. */
   agents: {
@@ -294,6 +302,8 @@ type BotsMessages = {
     modelUnavailable: string
     modelSetTo: (model: string) => string
     modelInheritSet: string
+    /** G7 — the header/card model chip's label when nothing is pinned. */
+    modelDefault: string
     deleteTitle: string
     removeFromAllGroups: string
     createFirstHint: string
@@ -711,6 +721,8 @@ const en: BotsMessages = {
     name: 'Name',
     title: 'Title',
     description: 'Description',
+    role: 'Role',
+    rolePlaceholder: 'e.g. Head of Research',
     createOn: 'Create on',
     general: 'General',
     capabilities: 'Capabilities',
@@ -839,7 +851,11 @@ const en: BotsMessages = {
     attentionItems: count => (count === 1 ? '1 item needs attention' : `${count} items need attention`),
     sortRecent: 'Recent activity',
     sortAttention: 'Attention first',
-    sortAlpha: 'A–Z'
+    sortAlpha: 'A–Z',
+    listView: 'List view',
+    cardView: 'Card view',
+    cardActive: ago => `Active ${ago} ago`,
+    openChat: 'Open chat'
   },
   agents: {
     allBots: count => `All ${count} ${count === 1 ? 'bot' : 'bots'}`,
@@ -938,6 +954,7 @@ const en: BotsMessages = {
     modelUnavailable: 'Model list unavailable',
     modelSetTo: model => `Model set to ${model}`,
     modelInheritSet: 'Model follows the launch profile',
+    modelDefault: 'default',
     deleteTitle: 'Delete bot and profile?',
     removeFromAllGroups: 'Remove from all groups',
     createFirstHint: 'Open the Bots pane and hit “New Bot”.',
@@ -1321,6 +1338,8 @@ const ja: BotsMessages = {
       '独自のメモリ、スキル、チャットを持つ名前付きの仲間です。他のエージェントとメッセージをやり取りできます。',
     name: '名前',
     title: '表示名',
+    role: '役割',
+    rolePlaceholder: '例: リサーチ責任者',
     description: '説明',
     createOn: '作成先',
     general: '一般',
@@ -1450,7 +1469,11 @@ const ja: BotsMessages = {
     attentionItems: count => `${count} 件の項目に対応が必要です`,
     sortRecent: '最近のアクティビティ順',
     sortAttention: '要対応を先に',
-    sortAlpha: '名前順'
+    sortAlpha: '名前順',
+    listView: 'リスト表示',
+    cardView: 'カード表示',
+    cardActive: ago => `${ago}前にアクティブ`,
+    openChat: 'チャットを開く'
   },
   agents: {
     allBots: count => `すべてのボット（${count}）`,
@@ -1549,6 +1572,7 @@ const ja: BotsMessages = {
     modelUnavailable: 'モデル一覧を取得できません',
     modelSetTo: model => `モデルを ${model} に設定しました`,
     modelInheritSet: '起動プロファイルのモデルを継承します',
+    modelDefault: 'デフォルト',
     deleteTitle: 'ボットとプロファイルを削除しますか？',
     removeFromAllGroups: 'すべてのグループから外す',
     createFirstHint: 'ボットパネルを開いて「新しいボット」を押してください。',
@@ -1933,6 +1957,8 @@ const zh: BotsMessages = {
     newDescription: '拥有独立记忆、技能和聊天的具名队友，可以与你的其他智能体互发消息。',
     name: '名称',
     title: '显示名称',
+    role: '角色',
+    rolePlaceholder: '例如：研究负责人',
     description: '描述',
     createOn: '创建位置',
     general: '常规',
@@ -2057,7 +2083,11 @@ const zh: BotsMessages = {
     attentionItems: count => `${count} 个项目需要处理`,
     sortRecent: '按最近活动',
     sortAttention: '需处理优先',
-    sortAlpha: '按名称排序'
+    sortAlpha: '按名称排序',
+    listView: '列表视图',
+    cardView: '卡片视图',
+    cardActive: ago => `${ago}前活跃`,
+    openChat: '打开聊天'
   },
   agents: {
     allBots: count => `全部 ${count} 个机器人`,
@@ -2153,6 +2183,7 @@ const zh: BotsMessages = {
     modelUnavailable: '无法获取模型列表',
     modelSetTo: model => `模型已设为 ${model}`,
     modelInheritSet: '模型将继承启动配置',
+    modelDefault: '默认',
     deleteTitle: '删除机器人和配置档案？',
     removeFromAllGroups: '从所有群组中移除',
     createFirstHint: '打开机器人面板，点击“新建机器人”。',
@@ -2531,6 +2562,8 @@ const zhHant: BotsMessages = {
     newDescription: '擁有獨立記憶、技能和聊天的具名隊友，可以與你的其他智慧代理互傳訊息。',
     name: '名稱',
     title: '顯示名稱',
+    role: '角色',
+    rolePlaceholder: '例如：研究負責人',
     description: '描述',
     createOn: '建立位置',
     general: '一般',
@@ -2655,7 +2688,11 @@ const zhHant: BotsMessages = {
     attentionItems: count => `${count} 個項目需要處理`,
     sortRecent: '依最近活動',
     sortAttention: '需處理優先',
-    sortAlpha: '依名稱排序'
+    sortAlpha: '依名稱排序',
+    listView: '清單檢視',
+    cardView: '卡片檢視',
+    cardActive: ago => `${ago}前活躍`,
+    openChat: '開啟聊天'
   },
   agents: {
     allBots: count => `全部 ${count} 個機器人`,
@@ -2751,6 +2788,7 @@ const zhHant: BotsMessages = {
     modelUnavailable: '無法取得模型清單',
     modelSetTo: model => `模型已設為 ${model}`,
     modelInheritSet: '模型將沿用啟動設定檔',
+    modelDefault: '預設',
     deleteTitle: '刪除機器人和設定檔？',
     removeFromAllGroups: '從所有群組中移除',
     createFirstHint: '開啟機器人面板，點「新增機器人」。',

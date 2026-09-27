@@ -36,6 +36,11 @@ export type SectionDialogState =
 
 export const UNASSIGNED_SECTION_KEY = 'section:unassigned'
 export const BOT_SECTIONS_KEY = 'bot-sections-v1'
+/** Collapsed header ids — section blocks, gateway buckets, and the group-chats
+ *  fold alike (the roster keys them `user-section:<id>`, `gateway:<id>`,
+ *  'group-chats', 'mailbox'). Persisted: a folded section should still be
+ *  folded next launch (G4). */
+export const BOT_SECTIONS_COLLAPSED_KEY = 'bot-sections-collapsed-v1'
 
 export interface BotSection {
   id: string
@@ -44,6 +49,10 @@ export interface BotSection {
 
 /** `[{ id, name }]`, in display order. */
 export const $botSections = atom<BotSection[]>([])
+
+/** Roster-section keys currently folded. Device-local — one machine's folded
+ *  rail shouldn't unfold another's. */
+export const $collapsedBotSections = atom<Set<string>>(new Set())
 
 /** Sections whose delete is still clearing its members. A delete clears them
  *  one profile write at a time, and a slow write (a remote gateway, a pooled
@@ -100,12 +109,45 @@ function persistBotSections(next: BotSection[]): void {
   }
 }
 
+function normalizeCollapsedSections(value: unknown): Set<string> {
+  return new Set(Array.isArray(value) ? value.filter(id => typeof id === 'string' && id) : [])
+}
+
+function persistCollapsedBotSections(next: Set<string>): void {
+  $collapsedBotSections.set(next)
+
+  try {
+    getPluginCtx()?.storage?.set?.(BOT_SECTIONS_COLLAPSED_KEY, [...next])
+  } catch {
+    // Same storage-less degradation as persistBotSections.
+  }
+}
+
+export function isBotSectionCollapsed(id: string): boolean {
+  return $collapsedBotSections.get().has(id)
+}
+
+export function toggleBotSectionCollapsed(id: string): void {
+  const next = new Set($collapsedBotSections.get())
+
+  if (next.has(id)) {
+    next.delete(id)
+  } else {
+    next.add(id)
+  }
+
+  persistCollapsedBotSections(next)
+}
+
 /** Read the persisted list back at plugin start. */
 export function loadBotSections(): void {
   try {
-    $botSections.set(normalizeBotSections(getPluginCtx()?.storage?.get?.(BOT_SECTIONS_KEY, [])))
+    const storage = getPluginCtx()?.storage
+    $botSections.set(normalizeBotSections(storage?.get?.(BOT_SECTIONS_KEY, [])))
+    $collapsedBotSections.set(normalizeCollapsedSections(storage?.get?.(BOT_SECTIONS_COLLAPSED_KEY, [])))
   } catch {
     $botSections.set([])
+    $collapsedBotSections.set(new Set())
   }
 }
 

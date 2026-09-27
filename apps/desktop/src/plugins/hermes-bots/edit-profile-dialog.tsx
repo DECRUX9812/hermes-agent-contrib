@@ -73,6 +73,7 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
   const [color, setColor] = useState<null | string>(appearance.color)
   const [image, setImage] = useState<null | string>(appearance.image ?? null)
   const [title, setTitle] = useState(meta?.title || '')
+  const [role, setRole] = useState(meta?.role || '')
   const [description, setDescription] = useState(bot?.description || '')
   const [busy, setBusy] = useState(false)
   const [advanced, setAdvanced] = useState(false)
@@ -115,6 +116,7 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
       setColor(appearance.color)
       setImage(appearance.image ?? null)
       setTitle(meta?.title || '')
+      setRole(meta?.role || '')
       setDescription(bot.description || '')
       setBusy(false)
       setAdvanced(false)
@@ -140,6 +142,7 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
       image,
       imageKind: image ? 'photo' : 'shape',
       title: title.trim(),
+      role: role.trim() || undefined,
       custom: true
     })
 
@@ -249,6 +252,14 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
               onChange={event => setTitle(event.target.value)}
               placeholder={displayName(bot, null)}
               value={title}
+            />
+          )}
+          {labeled(
+            b.editor.role,
+            <Input
+              onChange={event => setRole(event.target.value)}
+              placeholder={b.editor.rolePlaceholder}
+              value={role}
             />
           )}
           {labeled(
