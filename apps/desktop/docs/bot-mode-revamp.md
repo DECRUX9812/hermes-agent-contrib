@@ -187,6 +187,22 @@ missing pieces the shots reveal. All renderer.
 - **G7 Header model chip** — the bot chat header shows the bot's model
   (the "Claude Sonnet 5" chip in the shots) beside the screen/settings
   affordances; click opens the C3 quick-swap.
+- **G8 Profile card + dated task log** (Muse shot) — the context rail's
+  top is a bot profile card: avatar, name, connection/status chip, and
+  quick actions (edit, invite/share). Below it, the A3 runs feed renders
+  as a *dated task log* — day headers, each row a checkmarked completed
+  action with time — not a feed of cards. Glanceable "what it did today".
+- **G9 Teaching moments** (Muse shot) — tip/onboarding cards in a bot's
+  first-run chat ("I can use websites, not just search them") with action
+  buttons that do the thing ("Show me how it works"). A small set of
+  dismissible capability cards, rendered from a local list; also the hook
+  where Ideas/Feed-style prompt suggestions live later.
+- **G10 Hermes-native styling** — all of G1–G9 executes inside DESIGN.md:
+  the Hermes voice stays mythic and restrained — mono accents, hairline
+  borders, the existing color/spacing tokens. This phase restyles the
+  plugin within our design language; it does not import a competitor's
+  skin. Per-bot theming stays inside the token system (accent hue varies,
+  the rest is shared).
 
 ## Cutover note
 
