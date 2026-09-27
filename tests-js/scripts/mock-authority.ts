@@ -574,7 +574,9 @@ export async function startMockAuthority(options: MockAuthorityOptions = {}): Pr
         return admitPrompt(socket, params)
       }
 
-      return { accepted: true }
+      // Busy turns decline the steer (wire shape: { status, text }); the client
+      // restores its draft and re-submits once the turn settles.
+      return { status: 'rejected', text: typeof params.text === 'string' ? params.text : '' }
     },
     'session.title': (_socket, params) => {
       const s = getSession(params)

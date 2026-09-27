@@ -75,6 +75,7 @@ import {
   updateGroupChat
 } from './group-chat'
 import { groupWorkspaceOwnerKey } from './group-membership'
+import { bindGroupReadTracking } from './group-unread'
 import { isBotHidden } from './hidden-bots'
 import { annotateOrphanedGroupChatMembers } from './hygiene'
 import { BOTS_LOCALES } from './i18n'
@@ -396,6 +397,9 @@ export default {
     // clock before its onDispose hook — these kept firing until app restart).
     const unbindProfileListener = bindProfileSync($focusedBotOwner)
     const unbindGatewayListener = host.state.gateway.listen(handleSessionsGatewayTransition)
+    // Roster unread badges track room read marks renderer-locally; the bound
+    // listener seeds first-sight rooms and keeps the open room marked read.
+    const unbindGroupReadTracking = bindGroupReadTracking()
 
     // The composer's @ picker reads the roster cache synchronously; fill it on
     // the first gateway open so cross-connection bots complete before the Bots
@@ -446,6 +450,10 @@ export default {
 
         if (typeof unbindRosterPrime === 'function') {
           unbindRosterPrime()
+        }
+
+        if (typeof unbindGroupReadTracking === 'function') {
+          unbindGroupReadTracking()
         }
 
         if (typeof unbindConnectionsChanged === 'function') {

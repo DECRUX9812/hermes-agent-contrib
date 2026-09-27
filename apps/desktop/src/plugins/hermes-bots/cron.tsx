@@ -40,6 +40,7 @@ import {
 import { useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
+import { BotRunsSection } from './bot-runs-section'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { $botMeta, $lastRoster, botHandle, botRosterKey, botSelectionKey, isActiveRosterBot } from './data'
 import { labeled } from './dialog-parts'
@@ -1284,6 +1285,7 @@ export function RoutinesPane() {
         </Tip>
       </div>
       <div className="mx-3 border-t border-(--ui-stroke-secondary)" />
+      <BotRunsSection jobs={jobs} onOpenRoutine={setDetailJobId} owner={owner} />
       {staleNotice ? (
         <div className="mx-3 mt-2 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
           {staleNotice}

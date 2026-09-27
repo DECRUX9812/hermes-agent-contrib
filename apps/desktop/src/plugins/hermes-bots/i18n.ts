@@ -369,6 +369,8 @@ type BotsMessages = {
     wantsToRunCommand: (handle: string) => string
     asks: (handle: string) => string
     answerTo: (member: string) => string
+    /** Roster badge: member messages since the room was last opened. */
+    unreadCount: (count: number) => string
   }
   /** Skills hub + MCP setup surfaces embedded in the bot editor. */
   tools: {
@@ -516,6 +518,20 @@ type BotsMessages = {
     runsInterval: (count: number, unit: string) => string
     runsRaw: string
     timesTotal: (count: number) => string
+  }
+  runs: {
+    title: string
+    empty: string
+    kindChat: string
+    kindRoutine: string
+    kindRelay: string
+    kindGroup: string
+    ok: string
+    running: string
+    failed: string
+    attention: string
+    tookSeconds: (seconds: number) => string
+    tookMinutes: (minutes: number) => string
   }
 }
 
@@ -840,7 +856,8 @@ const en: BotsMessages = {
     answerFailed: (handle, error) => `Could not send the answer to @${handle}: ${error}`,
     wantsToRunCommand: handle => `@${handle} wants to run a command:`,
     asks: handle => `@${handle} asks:`,
-    answerTo: member => `Answer @${member}`
+    answerTo: member => `Answer @${member}`,
+    unreadCount: count => `${count} unread`
   },
   tools: {
     installHint: name => `Install "${name}" and add it to the list above`,
@@ -981,6 +998,20 @@ const en: BotsMessages = {
     runsInterval: (count, unit) => `Runs every ${count} ${unit}`,
     runsRaw: 'Raw schedule — every Nm/Nh/Nd or 5-field cron',
     timesTotal: count => `, ${count} time(s) total`
+  },
+  runs: {
+    title: 'Runs',
+    empty: 'No recent activity.',
+    kindChat: 'Chat turn',
+    kindRoutine: 'Routine run',
+    kindRelay: 'Relay delivery',
+    kindGroup: 'Group round',
+    ok: 'Completed',
+    running: 'Running',
+    failed: 'Failed',
+    attention: 'Needs attention',
+    tookSeconds: seconds => `${seconds}s`,
+    tookMinutes: minutes => `${minutes}m`
   }
 }
 
@@ -1306,7 +1337,8 @@ const ja: BotsMessages = {
     answerFailed: (handle, error) => `@${handle}に回答を送信できませんでした: ${error}`,
     wantsToRunCommand: handle => `@${handle}がコマンドを実行しようとしています:`,
     asks: handle => `@${handle}からの質問:`,
-    answerTo: member => `@${member}に回答`
+    answerTo: member => `@${member}に回答`,
+    unreadCount: count => `未読 ${count} 件`
   },
   tools: {
     installHint: name => `「${name}」をインストールして上の一覧に追加`,
@@ -1450,6 +1482,20 @@ const ja: BotsMessages = {
     runsInterval: (count, unit) => `${count}${unit}ごとに実行します`,
     runsRaw: '生のスケジュール — Nm/Nh/Nd または5フィールドのcron',
     timesTotal: count => `、合計${count}回`
+  },
+  runs: {
+    title: '実行',
+    empty: '最近のアクティビティはありません。',
+    kindChat: 'チャットターン',
+    kindRoutine: '定期実行',
+    kindRelay: 'リレー配信',
+    kindGroup: 'グループラウンド',
+    ok: '完了',
+    running: '実行中',
+    failed: '失敗',
+    attention: '要対応',
+    tookSeconds: seconds => `${seconds}秒`,
+    tookMinutes: minutes => `${minutes}分`
   }
 }
 
@@ -1762,7 +1808,8 @@ const zh: BotsMessages = {
     answerFailed: (handle, error) => `无法将回答发送给 @${handle}：${error}`,
     wantsToRunCommand: handle => `@${handle} 想执行一个命令：`,
     asks: handle => `@${handle} 的提问：`,
-    answerTo: member => `回答 @${member}`
+    answerTo: member => `回答 @${member}`,
+    unreadCount: count => `${count} 条未读`
   },
   tools: {
     installHint: name => `安装“${name}”并添加到上方列表`,
@@ -1903,6 +1950,20 @@ const zh: BotsMessages = {
     runsInterval: (count, unit) => `每 ${count} ${unit}运行`,
     runsRaw: '原始计划 — every Nm/Nh/Nd 或 5 段 cron',
     timesTotal: count => `，共 ${count} 次`
+  },
+  runs: {
+    title: '运行记录',
+    empty: '暂无最近活动。',
+    kindChat: '聊天回合',
+    kindRoutine: '定时任务',
+    kindRelay: '中继投递',
+    kindGroup: '群组轮次',
+    ok: '已完成',
+    running: '运行中',
+    failed: '失败',
+    attention: '需要注意',
+    tookSeconds: seconds => `${seconds}秒`,
+    tookMinutes: minutes => `${minutes}分钟`
   }
 }
 
@@ -2215,7 +2276,8 @@ const zhHant: BotsMessages = {
     answerFailed: (handle, error) => `無法將回答傳送給 @${handle}：${error}`,
     wantsToRunCommand: handle => `@${handle} 想執行一個命令：`,
     asks: handle => `@${handle} 的提問：`,
-    answerTo: member => `回覆 @${member}`
+    answerTo: member => `回覆 @${member}`,
+    unreadCount: count => `${count} 則未讀`
   },
   tools: {
     installHint: name => `安裝「${name}」並新增至上方清單`,
@@ -2356,6 +2418,20 @@ const zhHant: BotsMessages = {
     runsInterval: (count, unit) => `每 ${count} ${unit}執行`,
     runsRaw: '原始排程 — every Nm/Nh/Nd 或 5 段 cron',
     timesTotal: count => `，共 ${count} 次`
+  },
+  runs: {
+    title: '執行紀錄',
+    empty: '沒有最近的活動。',
+    kindChat: '聊天回合',
+    kindRoutine: '例行工作',
+    kindRelay: '中繼遞送',
+    kindGroup: '群組回合',
+    ok: '已完成',
+    running: '執行中',
+    failed: '失敗',
+    attention: '需要注意',
+    tookSeconds: seconds => `${seconds}秒`,
+    tookMinutes: minutes => `${minutes}分鐘`
   }
 }
 

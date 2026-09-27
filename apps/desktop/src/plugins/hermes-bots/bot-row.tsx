@@ -8,6 +8,7 @@
 
 import {
   $ownerNotifyModes,
+  Badge,
   cn,
   Codicon,
   ContextMenu,
@@ -59,10 +60,11 @@ import {
   ROSTER_KEY,
   saveBotMeta
 } from './data'
-import { $groupChats, $groupChatWorkspace } from './group-chat'
+import { $groupChats, $groupChatWorkspace, groupChatRoomKey } from './group-chat'
 import { botGroups, groupLastActivity } from './group-membership'
 import { toggleGroupChatPinned } from './group-pin'
 import { $activeGroupMemberKeys } from './group-presence'
+import { $groupReadAt, groupLastRoundSummary, groupUnreadCount } from './group-unread'
 import { fallbackSelectionAfterHide, isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
 import { displayName, stripPreviewMarkdown } from './labels'
@@ -554,6 +556,9 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
   const log = Array.isArray(room.log) ? room.log : []
   const last = log.length ? log[log.length - 1] : null
   const lastAt = groupLastActivity(room)
+  const readAt = useValue($groupReadAt)[groupChatRoomKey(group, room)] || 0
+  const unread = groupUnreadCount(log, readAt)
+  const { text: roundText } = groupLastRoundSummary(room)
   // Room previews speak the same handle vocabulary as the roster, mentions
   // and the group prompt: the primary profile is @hermes, not @default.
   const lastFrom = last?.from?.name || ''
@@ -564,7 +569,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
   )
 
   const preview = last
-    ? `${last.from?.kind === 'user' ? b.group.you : `@${lastHandle}`}: ${stripPreviewMarkdown(last.text) || '…'}`
+    ? `${last.from?.kind === 'user' ? b.group.you : `@${lastHandle}`}: ${stripPreviewMarkdown(roundText) || '…'}`
     : b.group.memberCount(members.length)
 
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
@@ -639,6 +644,16 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             <Tip label={b.group.needsYourInput}>
               <Codicon aria-label={b.roster.needsInput} className="shrink-0 text-(--ui-accent)" name="question" />
             </Tip>
+          ) : null}
+          {unread > 0 ? (
+            <Badge
+              aria-label={b.group.unreadCount(unread)}
+              className="shrink-0"
+              size="xs"
+              variant="solid"
+            >
+              {unread > 99 ? '99+' : unread}
+            </Badge>
           ) : null}
           {lastAt ? (
             <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">

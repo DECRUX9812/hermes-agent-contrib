@@ -125,6 +125,29 @@ computer view):
 - **E3 Relay retry** — one-click retry for refused/expired envelopes from
   the run card.
 
+### Phase F — Bot console & virtual computer (Grok/Manus-style machine view)
+
+The ask: inside the Electron app, a bot's *computer* — sessions, screen,
+and parallel tasks — should be as neat as the virtual-computer views in
+Manus/Grok-class agents, not a hidden screen pane.
+
+- **F1 Bot session deck** — the bot pane shows every session the bot owns
+  (canonical chat, side-chats, routine-run sessions) as live tiles with
+  status; click to open, drag into a pane. Side-chats stay visible here
+  even though canonical chats stay hidden in the Sessions sidebar (that
+  invariant is for the sidebar, not the console).
+- **F2 Computer panel** — the screen hero graduates to a docked computer
+  panel beside the bot's chat: live frame, status chip
+  (running / paused / not installed), one-click take over / hand back,
+  resizable. Built on the existing `screen-pane.tsx` lease + thumbnail
+  plumbing — presentation upgrade, no new backend protocol.
+- **F3 Parallel tasks per bot** — "New task" on a bot row/pane spawns a
+  side-chat session and opens it in a second tile, so one bot runs
+  several tasks at once; pooled backends already multiplex sessions per
+  profile.
+- **F4 Computer quick actions** — from the computer panel: open in full
+  pane, copy screenshot, restart screen session, link to the bot's workdir.
+
 ## Cutover note
 
 Everything in Phases B–E that touches backend semantics respects the
