@@ -4,7 +4,9 @@ import { $selectedStoredSessionId } from '@/store/session'
 
 import {
   $transcriptSearchJumps,
+  armTranscriptReplayJump,
   armTranscriptSearchJump,
+  locateTranscriptReplayRow,
   locateTranscriptSearchHit,
   resetTranscriptFindForTest,
   searchTranscriptRows,
@@ -152,5 +154,68 @@ describe('locateTranscriptSearchHit', () => {
 
   it('returns null when nothing matches', () => {
     expect(locateTranscriptSearchHit(jumpRows, { query: 'nope', snippet: '>>>nope<<<' })).toBeNull()
+  })
+})
+
+describe('armTranscriptReplayJump', () => {
+  it('arms a replay jump keyed by stored id and consumed once', () => {
+    armTranscriptReplayJump('sess-9', 1_700_000_000_000)
+
+    const armed = $transcriptSearchJumps.get()['sess-9']
+    expect(armed?.atMs).toBe(1_700_000_000_000)
+    expect(armed?.issuedAt).toBeGreaterThan(0)
+
+    const taken = takeTranscriptSearchJump('sess-9')
+    expect(taken?.atMs).toBe(1_700_000_000_000)
+    expect(takeTranscriptSearchJump('sess-9')).toBeNull()
+  })
+
+  it('does not clobber a search jump armed for another session', () => {
+    armTranscriptSearchJump('sess-1', { query: 'a', snippet: '>>>a<<<' })
+    armTranscriptReplayJump('sess-2', 1_000)
+
+    expect(takeTranscriptSearchJump('sess-1')?.query).toBe('a')
+    expect(takeTranscriptSearchJump('sess-2')?.atMs).toBe(1_000)
+  })
+})
+
+describe('locateTranscriptReplayRow', () => {
+  const stamped: TranscriptFindRow[] = [
+    { rowId: 10, role: 'user', text: 'first', timestamp: 1_000 },
+    { rowId: 11, role: 'assistant', text: 'one', timestamp: 1_500 },
+    { rowId: 12, role: 'user', text: 'second', timestamp: 2_000 },
+    { rowId: 13, role: 'assistant', text: 'two', timestamp: 2_500 },
+    { rowId: 14, role: 'user', text: 'third', timestamp: 3_000 }
+  ]
+
+  it('returns the last stamped row at-or-before the target instant', () => {
+    expect(locateTranscriptReplayRow(stamped, 2_500)?.rowId).toBe(13)
+  })
+
+  it('lands inside a turn when the instant sits between stamps', () => {
+    expect(locateTranscriptReplayRow(stamped, 2_200)?.rowId).toBe(12)
+  })
+
+  it('returns the first stamped row when the instant predates the corpus', () => {
+    expect(locateTranscriptReplayRow(stamped, 500)?.rowId).toBe(10)
+  })
+
+  it('returns the last stamped row when the instant postdates the corpus', () => {
+    expect(locateTranscriptReplayRow(stamped, 9_999)?.rowId).toBe(14)
+  })
+
+  it('skips rows that carry no timestamp', () => {
+    const rows: TranscriptFindRow[] = [
+      { rowId: 1, role: 'user', text: 'a', timestamp: 100 },
+      { rowId: 2, role: 'assistant', text: 'unstamped' },
+      { rowId: 3, role: 'user', text: 'b', timestamp: 400 }
+    ]
+
+    expect(locateTranscriptReplayRow(rows, 300)?.rowId).toBe(1)
+  })
+
+  it('returns null when no row carries a timestamp or the corpus is empty', () => {
+    expect(locateTranscriptReplayRow([row(1, 'a'), row(2, 'b')], 100)).toBeNull()
+    expect(locateTranscriptReplayRow([], 100)).toBeNull()
   })
 })

@@ -456,10 +456,14 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
     // and fall back when absent, but vitest rejects a namespace access with
     // no matching export at all — so they have to be present and undefined.
     BOT_CHAT_SESSION_HYDRATION_TIMEOUT_MS: undefined,
+    $watchedSessionKeys: nanostores.atom({}),
+    armTranscriptReplayJump: undefined,
     blobatarSvg: undefined,
     computed: nanostores.computed,
     createBudgetedLoop: undefined,
     host,
+    isWatchedSessionId: undefined,
+    toggleSessionWatched: undefined,
     CapabilitiesView: undefined,
     MessageTextContent: undefined,
     Streamdown: undefined,

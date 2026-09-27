@@ -5,6 +5,7 @@
  */
 
 import {
+  armTranscriptReplayJump,
   atom,
   Button,
   Checkbox,
@@ -29,6 +30,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  type SessionInfo,
   Switch,
   Textarea,
   Tip,
@@ -37,9 +39,10 @@ import {
   useQuery,
   useValue
 } from '@hermes/plugin-sdk'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
+import { BotDeliverablesSection } from './bot-deliverables'
 import { BotRunsSection } from './bot-runs-section'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { $botMeta, $lastRoster, botHandle, botRosterKey, botSelectionKey, isActiveRosterBot } from './data'
@@ -47,6 +50,7 @@ import { labeled } from './dialog-parts'
 import { botsText, type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
 import { botConnectionRoute, botRosterMeta, requestForBot } from './routing'
+import { rosterRowAge } from './row-helpers'
 import { ScreenHero } from './screen-hero'
 import { ID } from './shared'
 import type { BotMeta, RosterRow, RoutineJob } from './types'
@@ -417,16 +421,173 @@ export function routineDetailIssue(job: RoutineJob | null | undefined): null | s
   return first ? first.trim() : null
 }
 
+// Script-only (no_agent) jobs produce output docs, not sessions — the runs
+// endpoint marks them `source: 'cron_output'` (same marker the core cron
+// page's run history reads), and they have no transcript to jump to.
+function isRoutineOutputRun(run: SessionInfo): boolean {
+  return run.source === 'cron_output'
+}
+
+/** ms epoch a run row fired at — persisted stamps are unix seconds. */
+function routineRunAtMs(run: SessionInfo): number {
+  const at = Number(run.started_at) || Number(run.last_active) || 0
+
+  return at > 0 && at < 10_000_000_000 ? at * 1000 : at
+}
+
+function routineRunDurationMs(run: SessionInfo): number | null {
+  const start = Number(run.started_at)
+  const end = Number(run.ended_at)
+
+  return start > 0 && end > start ? Math.round((end - start) * 1000) : null
+}
+
+const RUN_HISTORY_LIMIT = 8
+
+/** The job's past fires, newest first — the rows `/api/cron/jobs/{id}/runs`
+ *  already serves the core cron page, fetched per open dialog. A run's card
+ *  replays into its transcript session (the Runs feed's B4 plumbing); output
+ *  docs render read-only, no click-through. */
+function RoutineRunHistory({ job, owner }: { job: RoutineJob; owner: RosterRow }) {
+  const b = useBots()
+  const { t } = useI18n()
+  const [runs, setRuns] = useState<null | SessionInfo[]>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    let route = null
+
+    try {
+      route = botConnectionRoute(owner)
+    } catch {
+      route = null
+    }
+
+    if (typeof host.listCronJobRuns !== 'function' || !job.job_id) {
+      setRuns([])
+
+      return undefined
+    }
+
+    void host
+      .listCronJobRuns(route, { jobId: job.job_id, limit: RUN_HISTORY_LIMIT, profile: owner.name })
+      .then(result => {
+        if (!cancelled) {
+          setRuns(result)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setRuns([])
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [job.job_id, owner])
+
+  const openRun = (run: SessionInfo) => {
+    let route = null
+
+    try {
+      route = botConnectionRoute(owner)
+    } catch {
+      route = null
+    }
+
+    const atMs = routineRunAtMs(run)
+
+    if (atMs && typeof armTranscriptReplayJump === 'function') {
+      armTranscriptReplayJump(run.id, atMs)
+    }
+
+    void host.openSession(run.id, {
+      ...(route ? { route } : {}),
+      profile: owner.name,
+      intent: 'tab'
+    })
+  }
+
+  if (runs === null) {
+    return <div className="py-1 text-xs text-(--ui-text-quaternary)">{b.cron.loadingRuns}</div>
+  }
+
+  if (!runs.length) {
+    return <div className="py-1 text-xs text-(--ui-text-quaternary)">{b.cron.noRuns}</div>
+  }
+
+  return (
+    <div className="grid gap-0.5">
+      {runs.map(run => {
+        const atMs = routineRunAtMs(run)
+        const durationMs = routineRunDurationMs(run)
+        const output = isRoutineOutputRun(run)
+        const label = String(run.title || run.preview || '').trim() || run.id
+        const statusIcon = run.is_active ? 'sync' : output ? 'file' : 'check'
+        const statusLabel = run.is_active ? b.cron.runActive : output ? b.cron.runOutput : b.cron.runDone
+
+        if (output) {
+          return (
+            <div
+              className="flex items-center gap-2 rounded-md px-1.5 py-1.5 text-xs text-(--ui-text-tertiary)"
+              key={run.id}
+            >
+              <Codicon aria-label={statusLabel} className="shrink-0 text-[0.6875rem]" name={statusIcon} />
+              <span className="min-w-0 flex-1 truncate">{label}</span>
+              <span className="shrink-0 text-[0.65rem] text-(--ui-text-quaternary)">
+                {atMs ? rosterRowAge(atMs, t.sidebar.row) : ''}
+              </span>
+            </div>
+          )
+        }
+
+        return (
+          <RowButton
+            aria-label={label}
+            className={cn(
+              'flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors',
+              'hover:bg-(--chrome-action-hover)'
+            )}
+            key={run.id}
+            onClick={() => openRun(run)}
+          >
+            <Codicon
+              aria-label={statusLabel}
+              className={cn('shrink-0 text-[0.6875rem]', run.is_active ? 'text-(--ui-accent)' : 'text-(--ui-text-tertiary)')}
+              name={statusIcon}
+              spinning={Boolean(run.is_active)}
+            />
+            <span className="min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)">{label}</span>
+            {durationMs !== null ? (
+              <span className="shrink-0 text-[0.65rem] tabular-nums text-(--ui-text-quaternary)">
+                {Math.round(durationMs / 1000)}s
+              </span>
+            ) : null}
+            <span className="shrink-0 text-[0.65rem] text-(--ui-text-quaternary)">
+              {atMs ? rosterRowAge(atMs, t.sidebar.row) : ''}
+            </span>
+          </RowButton>
+        )
+      })}
+    </div>
+  )
+}
+
 interface RoutineDetailDialogProps {
   job: RoutineJob | null
   onClose: () => void
   open: boolean
+  /** The pane's resolved owner — routes the run-history read and replay
+   *  opens to the bot's own backend (a remote-source bot's history does not
+   *  live on the active gateway). */
+  owner: null | RosterRow
 }
 
 /** Read-only inspector for one cronjob, rendered from the list payload the
  *  pane already holds — no extra RPC, and no second mutation path beside the
  *  row's own switch and delete. */
-export function RoutineDetailDialog({ job, onClose, open }: RoutineDetailDialogProps) {
+export function RoutineDetailDialog({ job, onClose, open, owner }: RoutineDetailDialogProps) {
   const b = useBots()
   const { t } = useI18n()
   const rows = job ? routineDetailRows(job, b.cron) : []
@@ -469,6 +630,7 @@ export function RoutineDetailDialog({ job, onClose, open }: RoutineDetailDialogP
                 </div>
               )
             : null}
+          {job && owner ? labeled(b.cron.runHistory, <RoutineRunHistory job={job} owner={owner} />) : null}
         </div>
         <DialogFooter>
           <Button onClick={onClose} variant="secondary">
@@ -1286,6 +1448,7 @@ export function RoutinesPane() {
       </div>
       <div className="mx-3 border-t border-(--ui-stroke-secondary)" />
       <BotRunsSection jobs={jobs} onOpenRoutine={setDetailJobId} owner={owner} />
+      <BotDeliverablesSection owner={owner} />
       {staleNotice ? (
         <div className="mx-3 mt-2 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
           {staleNotice}
@@ -1328,7 +1491,7 @@ export function RoutinesPane() {
           </div>
         </div>
       )}
-      <RoutineDetailDialog job={detailJob} onClose={() => setDetailJobId(null)} open={Boolean(detailJob)} />
+      <RoutineDetailDialog job={detailJob} onClose={() => setDetailJobId(null)} open={Boolean(detailJob)} owner={owner} />
       <CreateRoutineDialog
         // Non-null past the `!owner` early return above: `routineCreateTarget`
         // falls back to the active profile name.

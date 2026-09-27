@@ -22,6 +22,7 @@ import { atom, computed, type ReadableAtom } from 'nanostores'
 import type { ReactNode } from 'react'
 
 import { capabilityScoped } from '@/api/client'
+import { loadArtifactsForSessions } from '@/app/artifacts/artifact-utils'
 import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
 import { openSession, type OpenSessionIntent } from '@/app/open-session'
 import { syncWorkspaceRoute } from '@/app/routes'
@@ -46,8 +47,10 @@ import {
 import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
-import { deleteProfile, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { deleteProfile, getAllSessionMessages, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
+import { mergeRailArtifacts, type RailArtifactItem, registryArtifactsForSessions } from '@/store/artifact-rail'
+import { $artifactRegistry } from '@/store/artifacts'
 import { $attentionItems, type AttentionItem } from '@/store/attention-inbox'
 import { $attentionCountsByOwner } from '@/store/attention-owner-counts'
 import { $statusItemsBySession, type ComposerStatusItem } from '@/store/composer-status'
@@ -92,6 +95,7 @@ import {
   $selectedStoredSessionId,
   $sessions,
   getSessionOwnerHints,
+  ownerLookupSessionRows,
   rememberedSessionProfile,
   requestSessionResume,
   sessionMatchesStoredId,
@@ -112,7 +116,7 @@ import {
 } from '@/store/session-states'
 import { knownOwnerForSession } from '@/store/session-states-routing'
 import { runGatewayRestart } from '@/store/system-actions'
-import type { CronJob, PaginatedSessions, UsageStats } from '@/types/hermes'
+import type { CronJob, PaginatedSessions, SessionInfo, UsageStats } from '@/types/hermes'
 
 import { pluginDecisions, profiles, skills, toolsets } from './bridge'
 import { composerHost } from './composer'
@@ -1644,6 +1648,92 @@ export const host = {
     })
   },
 
+  /** Run history for one cron job — agent sessions AND script-only output
+   *  docs, newest first (GET /api/cron/jobs/{id}/runs). `profile` is the
+   *  owner hint the endpoint validates against (a same-named job on another
+   *  profile must not leak its runs); omit to let the backend resolve the
+   *  owner itself. Read-only. */
+  listCronJobRuns: async (
+    route: PluginProfileRoute | null,
+    options: { jobId: string; limit?: number; profile?: string }
+  ): Promise<SessionInfo[]> => {
+    if (route && (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim())) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    const jobId = options.jobId.trim()
+
+    if (!jobId) {
+      throw new Error('Cron run reads require a job id')
+    }
+
+    const limit = Math.min(100, Math.max(1, options.limit ?? 20))
+
+    const query = new URLSearchParams({ limit: String(limit) })
+    const profile = (options.profile ?? route?.targetProfile ?? '').trim()
+
+    if (profile) {
+      query.set('profile', profile)
+    }
+
+    const { runs } = await hermesApi<{ runs?: SessionInfo[] }>({
+      ...(route ? { connectionId: route.connectionId } : {}),
+      path: `/api/cron/jobs/${encodeURIComponent(jobId)}/runs?${query.toString()}`,
+      timeoutMs: 60_000
+    })
+
+    return runs ?? []
+  },
+
+  /** The artifact-rail derivation across EVERY persisted session a profile
+   *  owns — canonical chat, side-chats, cron-run sessions alike. Registry
+   *  records are unioned over each session's compression-lineage aliases;
+   *  transcript artifacts are scraped for the `transcriptLimit` most recently
+   *  active sessions only (each scrape is a full paged transcript read, so a
+   *  huge profile must not pay N transcripts for one pane). Read-only —
+   *  nothing is promoted, registered, or written. */
+  listProfileArtifacts: async (
+    route: PluginProfileRoute | null,
+    options: { profile: string; sessionLimit?: number; transcriptLimit?: number }
+  ): Promise<{ failures: number; items: RailArtifactItem[]; sessions: SessionInfo[] }> => {
+    if (route && (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim())) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    const profile = options.profile.trim()
+
+    if (!profile) {
+      throw new Error('Profile artifact reads require a profile')
+    }
+
+    const { sessions } = await host.listPersistedSessions(route, { profile, limit: options.sessionLimit ?? 200 })
+
+    // The lookup rows widen the lineage alias map beyond the recent window
+    // (unlisted owner stubs ride along), so alias expansion still resolves
+    // registry keys stamped under an older compression tip.
+    const lookupRows = [...ownerLookupSessionRows(), ...sessions]
+
+    const registry = registryArtifactsForSessions(
+      sessions.map(session => session.id),
+      $artifactRegistry.get(),
+      lookupRows
+    )
+
+    const transcriptLimit = Math.min(50, Math.max(0, options.transcriptLimit ?? 12))
+
+    const recentFirst = [...sessions].sort(
+      (a, b) => Math.max(b.last_active ?? 0, b.started_at ?? 0) - Math.max(a.last_active ?? 0, a.started_at ?? 0)
+    )
+
+    const { artifacts: transcript, failures } = await loadArtifactsForSessions(
+      recentFirst.slice(0, transcriptLimit),
+      async session =>
+        (await getAllSessionMessages(session.id, { connectionId: route?.connectionId, profile })).messages
+    )
+
+    return { failures: failures.length, items: mergeRailArtifacts(registry, transcript), sessions }
+  },
+
   /** Gateway JSON-RPC — sessions, config, skills, cron, kanban, everything
    *  the app itself uses. Lazy: resolves the LIVE socket per call. `timeoutMs`
    *  overrides the socket's 30 s default for RPCs that legitimately run longer
@@ -2030,6 +2120,7 @@ export {
   type TranscriptDirectiveProps
 } from '@/lib/transcript-directives'
 export { cn } from '@/lib/utils'
+export type { RailArtifactItem } from '@/store/artifact-rail'
 export type { AttentionItem } from '@/store/attention-inbox'
 export type { ComposerStatusItem } from '@/store/composer-status'
 export type { SessionDotState } from '@/store/session-dot-state'
@@ -2057,12 +2148,27 @@ export {
  *  is gone. Pass the owning profile — a hidden session has no row to read it
  *  from, and the persisted half is bucketed per profile. */
 export { ackStoredSessionId, forgetSessionUnread, markSessionUnreadFinished } from '@/store/session-unread'
+/** THE watch-chip store behind the Sessions rail's watch strip. Call
+ *  `toggleSessionWatched` with any id for the conversation (stored, live, or
+ *  lineage tip — the store resolves the durable pin id itself); it returns the
+ *  resulting watched state. `isWatchedSessionId` is the matching read and
+ *  `$watchedSessionKeys` the live map for list surfaces that need to repaint
+ *  on change. Watching pins a chip and routes the session's attention signals
+ *  the same way the session-row Watch menu item does — don't keep a parallel
+ *  watched set. */
+export { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } from '@/store/session-watch'
 /** `sidebarNav.prefs`: hide / re-order the sidebar's nav rows by CONTRIBUTING a
  *  preference (union of hides, `capabilities` never hidden; the first order
  *  in registry area order — lowest `order`, then registration — wins). A
  *  contribution, not a `host.sidebar` verb, so it is attributed and dropped
  *  on disable. */
 export { SIDEBAR_NAV_PREFS_AREA, type SidebarNavPrefsContribution } from '@/store/sidebar-nav'
+/** Arms a transcript-span replay on the stored session id: whichever transcript
+ *  surface next binds that id consumes the jump and scrolls to the row covering
+ *  `atMs` (epoch ms). Arm BEFORE `host.openSession` so the surface finds the
+ *  pending jump on hydration; a session already open consumes it on the next
+ *  microtask. */
+export { armTranscriptReplayJump } from '@/store/transcript-find'
 /** Live accent override — set a hex and the ACTIVE theme repaints with its
  *  accent family re-seeded from it (see `retintTheme`); `null` restores the
  *  authored palette. Deliberately not persisted: it is an authoring knob, not
@@ -2094,7 +2200,7 @@ export { requestTheme } from '@/themes/request'
 export { retintTheme, themeHue } from '@/themes/retint'
 export type { DesktopTheme, DesktopThemeColors } from '@/themes/types'
 export { THEMES_AREA } from '@/themes/user-themes'
-export type { CronJob, StatusResponse } from '@/types/hermes'
+export type { CronJob, SessionInfo, StatusResponse } from '@/types/hermes'
 /** Public SDK name for the shared gateway wire event; kept stable for plugins. */
 export type { GatewayEvent as RpcEvent } from '@hermes/shared'
 /** Bot Screen wire shapes, generated from `tui_gateway/contracts/display.py`. */

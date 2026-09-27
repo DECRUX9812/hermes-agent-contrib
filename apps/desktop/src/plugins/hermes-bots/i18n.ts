@@ -294,6 +294,12 @@ type BotsMessages = {
     notifications: string
     muteAll: string
     muteQuiet: string
+    /** Watch (B5): context-menu checkbox, the row's eye tooltip, and the
+     *  toggle toasts. Subscribes the canonical chat to the watch-chips strip. */
+    watch: string
+    watching: string
+    watchToast: (name: string) => string
+    unwatchToast: (name: string) => string
   }
   /** Avatar picker: shapes, blobs, pets, uploads, generation. */
   avatar: {
@@ -548,6 +554,20 @@ type BotsMessages = {
     runsInterval: (count: number, unit: string) => string
     runsRaw: string
     timesTotal: (count: number) => string
+    /** B6 — past-run history inside the routine detail dialog. */
+    runHistory: string
+    loadingRuns: string
+    noRuns: string
+    runActive: string
+    runDone: string
+    /** A script-only run's output doc — no transcript to open. */
+    runOutput: string
+  }
+  /** B3 — the pane's per-bot artifact rail across all owned sessions. */
+  deliverables: {
+    title: string
+    empty: string
+    refresh: string
   }
   runs: {
     title: string
@@ -560,6 +580,8 @@ type BotsMessages = {
     running: string
     failed: string
     attention: string
+    /** B4 — jump a run card into its transcript span. */
+    replay: string
     tookSeconds: (seconds: number) => string
     tookMinutes: (minutes: number) => string
   }
@@ -818,7 +840,11 @@ const en: BotsMessages = {
     kickoff: 'Hey, tell me about yourself!',
     notifications: 'Notifications',
     muteAll: 'Mute all notifications',
-    muteQuiet: 'Mute during quiet hours'
+    muteQuiet: 'Mute during quiet hours',
+    watch: 'Watch',
+    watching: 'Watching this bot',
+    watchToast: name => `Watching ${name}`,
+    unwatchToast: name => `Stopped watching ${name}`
   },
   avatar: {
     classicShapes: 'Classic shapes',
@@ -1062,7 +1088,18 @@ const en: BotsMessages = {
     runsMonthly: (day, time) => `Runs on day ${day} of each month at ${time}`,
     runsInterval: (count, unit) => `Runs every ${count} ${unit}`,
     runsRaw: 'Raw schedule — every Nm/Nh/Nd or 5-field cron',
-    timesTotal: count => `, ${count} time(s) total`
+    timesTotal: count => `, ${count} time(s) total`,
+    runHistory: 'Run history',
+    loadingRuns: 'Loading runs…',
+    noRuns: 'No runs yet.',
+    runActive: 'Running',
+    runDone: 'Finished',
+    runOutput: 'Script output'
+  },
+  deliverables: {
+    title: 'Deliverables',
+    empty: 'No deliverables yet.',
+    refresh: 'Refresh'
   },
   runs: {
     title: 'Runs',
@@ -1075,6 +1112,7 @@ const en: BotsMessages = {
     running: 'Running',
     failed: 'Failed',
     attention: 'Needs attention',
+    replay: 'Replay',
     tookSeconds: seconds => `${seconds}s`,
     tookMinutes: minutes => `${minutes}m`
   }
@@ -1334,7 +1372,11 @@ const ja: BotsMessages = {
     kickoff: 'こんにちは、自己紹介をしてください！',
     notifications: '通知',
     muteAll: 'すべての通知をミュート',
-    muteQuiet: '静寂時間帯はミュート'
+    muteQuiet: '静寂時間帯はミュート',
+    watch: 'ウォッチ',
+    watching: 'このボットをウォッチ中',
+    watchToast: name => `${name} をウォッチしています`,
+    unwatchToast: name => `${name} のウォッチを解除しました`
   },
   avatar: {
     classicShapes: 'クラシックシェイプ',
@@ -1581,7 +1623,18 @@ const ja: BotsMessages = {
     runsMonthly: (day, time) => `毎月${day}日の${time}に実行します`,
     runsInterval: (count, unit) => `${count}${unit}ごとに実行します`,
     runsRaw: '生のスケジュール — Nm/Nh/Nd または5フィールドのcron',
-    timesTotal: count => `、合計${count}回`
+    timesTotal: count => `、合計${count}回`,
+    runHistory: '実行履歴',
+    loadingRuns: '実行履歴を読み込み中…',
+    noRuns: 'まだ実行されていません。',
+    runActive: '実行中',
+    runDone: '完了',
+    runOutput: 'スクリプト出力'
+  },
+  deliverables: {
+    title: '成果物',
+    empty: '成果物はまだありません。',
+    refresh: '更新'
   },
   runs: {
     title: '実行',
@@ -1594,6 +1647,7 @@ const ja: BotsMessages = {
     running: '実行中',
     failed: '失敗',
     attention: '要対応',
+    replay: 'リプレイ',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分`
   }
@@ -1843,7 +1897,11 @@ const zh: BotsMessages = {
     kickoff: '你好，介绍一下你自己吧！',
     notifications: '通知',
     muteAll: '静音所有通知',
-    muteQuiet: '免打扰时段内静音'
+    muteQuiet: '免打扰时段内静音',
+    watch: '关注',
+    watching: '正在关注此机器人',
+    watchToast: name => `正在关注 ${name}`,
+    unwatchToast: name => `已停止关注 ${name}`
   },
   avatar: {
     classicShapes: '经典形状',
@@ -2084,7 +2142,18 @@ const zh: BotsMessages = {
     runsMonthly: (day, time) => `每月 ${day} 日 ${time} 运行`,
     runsInterval: (count, unit) => `每 ${count} ${unit}运行`,
     runsRaw: '原始计划 — every Nm/Nh/Nd 或 5 段 cron',
-    timesTotal: count => `，共 ${count} 次`
+    timesTotal: count => `，共 ${count} 次`,
+    runHistory: '运行历史',
+    loadingRuns: '正在加载运行记录…',
+    noRuns: '暂无运行记录。',
+    runActive: '运行中',
+    runDone: '已完成',
+    runOutput: '脚本输出'
+  },
+  deliverables: {
+    title: '交付物',
+    empty: '暂无交付物。',
+    refresh: '刷新'
   },
   runs: {
     title: '运行记录',
@@ -2097,6 +2166,7 @@ const zh: BotsMessages = {
     running: '运行中',
     failed: '失败',
     attention: '需要注意',
+    replay: '回放',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分钟`
   }
@@ -2346,7 +2416,11 @@ const zhHant: BotsMessages = {
     kickoff: '你好，介紹一下你自己吧！',
     notifications: '通知',
     muteAll: '靜音所有通知',
-    muteQuiet: '免打擾時段內靜音'
+    muteQuiet: '免打擾時段內靜音',
+    watch: '關注',
+    watching: '正在關注此機器人',
+    watchToast: name => `正在關注 ${name}`,
+    unwatchToast: name => `已停止關注 ${name}`
   },
   avatar: {
     classicShapes: '經典形狀',
@@ -2587,7 +2661,18 @@ const zhHant: BotsMessages = {
     runsMonthly: (day, time) => `每月 ${day} 日 ${time} 執行`,
     runsInterval: (count, unit) => `每 ${count} ${unit}執行`,
     runsRaw: '原始排程 — every Nm/Nh/Nd 或 5 段 cron',
-    timesTotal: count => `，共 ${count} 次`
+    timesTotal: count => `，共 ${count} 次`,
+    runHistory: '執行歷史',
+    loadingRuns: '正在載入執行記錄…',
+    noRuns: '暫無執行記錄。',
+    runActive: '執行中',
+    runDone: '已完成',
+    runOutput: '指令碼輸出'
+  },
+  deliverables: {
+    title: '交付物',
+    empty: '暫無交付物。',
+    refresh: '重新整理'
   },
   runs: {
     title: '執行紀錄',
@@ -2600,6 +2685,7 @@ const zhHant: BotsMessages = {
     running: '執行中',
     failed: '失敗',
     attention: '需要注意',
+    replay: '重播',
     tookSeconds: seconds => `${seconds}秒`,
     tookMinutes: minutes => `${minutes}分鐘`
   }
