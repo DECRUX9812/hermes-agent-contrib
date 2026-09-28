@@ -62,7 +62,7 @@ export const TEAM_EN = {
   paused: 'Paused',
   budgetLine: (spent: string, limit: string) => `${spent} of ${limit} this month`,
   budgetUncapped: 'No spending cap',
-  budgetExhausted: 'Budget used up — paused from new work',
+  budgetExhausted: 'Budget used up',
   goalNone: 'No tasks yet',
   addGoal: 'Add a goal',
   goalTitle: 'Goal',

@@ -94,3 +94,11 @@ Not done (honest list):
   the messaging gateway, and a Team Bot behaves as its profile does there. No new adapter.
 - Locales beyond English for the Team page (falls back to `en`).
 - Auto-creation of approvals from tool calls (today teammates call `bots_team.approval.request`).
+
+## Visual check
+
+Rendered from the real components in Chromium against a fixture gateway (org chart with a paused
+seat, an exhausted budget and an open seat; approvals; goal roll-up): desktop
+`revamp/evidence/team-page-desktop.png`, phone width `revamp/evidence/team-page-mobile.png` (page
+fits; the org chart scrolls horizontally by design). Dark mode was not visually checked — the
+harness had no theme provider.

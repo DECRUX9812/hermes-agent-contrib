@@ -61,7 +61,7 @@ function GoalRow({ depth, goal, progress, t, team }: { depth: number; goal: Team
             </Button>
           </span>
         </div>
-        <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-(--ui-control-background)">
+        <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)">
           <div className="h-full rounded-full bg-(--ui-accent) transition-[width] duration-300" style={{ width: `${percent}%` }} />
         </div>
         {adding && (
@@ -133,7 +133,7 @@ export function GoalsSection({ progress, t, team }: { progress: Record<string, G
     <section aria-label={t.section.goals} data-slot="team-goals">
       <h3 className="mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)">{t.section.goals}</h3>
       {team.mission && <p className="mb-2 px-2 text-[0.75rem] text-(--ui-text-tertiary)">{team.mission}</p>}
-      <ul className="grid gap-0.5">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-0.5">
         {outline.map(({ depth, goal }) => (
           <GoalRow depth={depth} goal={goal} key={goal.id} progress={progress[goal.id]} t={t} team={team} />
         ))}

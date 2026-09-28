@@ -113,9 +113,9 @@ function Approvals({ t, team }: { t: TeamText; team: Team }) {
       data-slot="team-approvals"
     >
       <h3 className="mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)">{t.section.approvals}</h3>
-      <ul className="grid gap-2">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-2">
         {pending.map(a => (
-          <li className="flex items-center gap-3" key={a.id}>
+          <li className="flex flex-wrap items-center gap-x-3 gap-y-1" key={a.id}>
             <span className="rounded bg-(--ui-control-active-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary)">
               {t.kind[a.kind as keyof typeof t.kind] ?? a.kind}
             </span>
@@ -162,7 +162,7 @@ function Learnings({ t, team }: { t: TeamText; team: Team }) {
       {items.length === 0 ? (
         <p className="text-[0.75rem] text-(--ui-text-tertiary)">{t.learningsEmpty}</p>
       ) : (
-        <ul className="grid gap-1">
+        <ul className="grid grid-cols-[minmax(0,1fr)] gap-1">
           {items.map(l => (
             <li className="group/l flex items-baseline gap-2 text-[0.8125rem] text-(--ui-text-secondary)" key={l.id}>
               <span className="min-w-0 flex-1">{l.text}</span>
@@ -309,7 +309,7 @@ function TeamDetail({ id, t }: { id: string; t: TeamText }) {
   const open = team.members.filter(m => !m.profile).length
 
   return (
-    <div className="mx-auto grid w-full max-w-4xl gap-6 p-6" data-slot="team-detail">
+    <div className="mx-auto grid w-full max-w-4xl grid-cols-[minmax(0,1fr)] gap-6 p-4 sm:p-6" data-slot="team-detail">
       <header>
         <h2 className="text-lg font-semibold text-(--ui-text-primary)">{team.name}</h2>
         {team.mission && <p className="mt-1 text-[0.8125rem] text-(--ui-text-secondary)">{team.mission}</p>}
@@ -323,7 +323,7 @@ function TeamDetail({ id, t }: { id: string; t: TeamText }) {
             <span>{t.overall}</span>
             <span className="tabular-nums">{rollup.overall.total ? `${rollup.overall.done}/${rollup.overall.total} · ${rollup.overall.percent}%` : t.goalNone}</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-(--ui-control-background)">
+          <div className="h-1.5 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)">
             <div className="h-full rounded-full bg-(--ui-accent) transition-[width] duration-500" style={{ width: `${rollup.overall.percent}%` }} />
           </div>
         </div>

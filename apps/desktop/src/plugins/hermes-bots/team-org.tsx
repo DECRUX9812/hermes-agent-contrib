@@ -49,7 +49,7 @@ function BudgetMeter({ member, t }: { member: TeamMember; t: TeamText }) {
 
   return (
     <div className="mt-2 min-w-0" data-slot="team-budget" data-tone={tone}>
-      <div className="h-1 overflow-hidden rounded-full bg-(--ui-control-background)">
+      <div className="h-1 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)">
         <div
           className={cn('h-full rounded-full transition-[width] duration-300', TONE_BAR[tone])}
           style={{ width: `${percent ?? 0}%` }}
@@ -130,11 +130,16 @@ function SeatCard({ node, onEdit, team, t }: { node: TeamOrgNode; onEdit: (m: Te
   )
 }
 
-function OrgBranch({ nodes, ...rest }: { nodes: TeamOrgNode[]; onEdit: (m: TeamMember) => void; team: Team; t: TeamText }) {
+// Connectors are drawn per child: a stub down from the rail, and a rail segment that stops at the
+// middle for the first/last child so the line spans exactly from the first to the last sibling.
+const RAIL =
+  "relative px-2 pt-4 before:absolute before:left-0 before:right-0 before:top-0 before:h-px before:bg-(--ui-stroke-secondary) after:absolute after:left-1/2 after:top-0 after:h-4 after:w-px after:bg-(--ui-stroke-secondary) first:before:left-1/2 last:before:right-1/2 only:before:hidden"
+
+function OrgBranch({ nodes, root, ...rest }: { nodes: TeamOrgNode[]; onEdit: (m: TeamMember) => void; root?: boolean; team: Team; t: TeamText }) {
   return (
-    <ul className="flex justify-center gap-4">
+    <ul className="flex justify-center">
       {nodes.map(node => (
-        <li className="flex flex-col items-center" key={node.slot}>
+        <li className={cn('flex flex-col items-center', !root && RAIL)} key={node.slot}>
           <SeatCard node={node} {...rest} />
           {node.reports.length > 0 && (
             <>
@@ -165,7 +170,7 @@ export function OrgChart({ team, tree, t }: { team: Team; tree: TeamOrgNode[]; t
       ) : (
         <div className="overflow-x-auto pb-2 pt-3">
           <div className="mx-auto w-max">
-            <OrgBranch nodes={tree} onEdit={setEditing} t={t} team={team} />
+            <OrgBranch nodes={tree} onEdit={setEditing} root t={t} team={team} />
           </div>
         </div>
       )}
