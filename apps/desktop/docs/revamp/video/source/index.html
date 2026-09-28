@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hermes Team Bots</title>
+<style>
+@font-face { font-family: Inter; src: url(fonts/inter-latin-wght-normal.woff2) format('woff2'); font-weight: 100 900; }
+@font-face { font-family: JBM; src: url(fonts/JetBrainsMono-Regular.woff2) format('woff2'); font-weight: 400; }
+@font-face { font-family: JBM; src: url(fonts/JetBrainsMono-Bold.woff2) format('woff2'); font-weight: 700; }
+:root {
+  --bg: #04050d; --ink: #f4f6ff; --dim: #9aa3c7; --faint: #5b638a;
+  --blue: #4f7cff; --cyan: #22d3ee; --violet: #a78bfa; --pink: #f472b6;
+  --amber: #fbbf24; --red: #fb4a6a; --green: #34d399;
+  --glass: rgba(255,255,255,0.055); --stroke: rgba(255,255,255,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+body { font-family: Inter, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+#world { position: absolute; inset: 0; overflow: hidden; }
+.layer { position: absolute; inset: 0; }
+.c, .c.bot { position: absolute; transform-origin: center; will-change: transform, opacity; }
+.scene { position: absolute; inset: 0; transform-origin: 960px 540px; }
+
+/* background */
+#bg { background: var(--bg); }
+.blob { position: absolute; width: 1400px; height: 1400px; border-radius: 50%; filter: blur(40px); opacity: .55; }
+#grid { position: absolute; left: -50%; right: -50%; top: 55%; height: 140%;
+  background-image: linear-gradient(rgba(120,140,255,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(120,140,255,.14) 1px, transparent 1px);
+  background-size: 80px 80px; transform-origin: top center; transform: perspective(700px) rotateX(64deg);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), transparent 70%); mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), transparent 70%); }
+#vignette { background: radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,.75) 100%); pointer-events: none; }
+#grain { opacity: .09; mix-blend-mode: overlay; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+#flash { background: #fff; opacity: 0; mix-blend-mode: screen; }
+#scan { background: repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px); opacity: .5; pointer-events: none; }
+
+/* type */
+.kicker { font-family: JBM; font-size: 22px; letter-spacing: .32em; text-transform: uppercase; color: var(--cyan); }
+.h1 { font-weight: 800; letter-spacing: -.04em; line-height: .92; }
+.grad { background: linear-gradient(100deg, #fff 0%, #b9c8ff 30%, var(--blue) 50%, var(--violet) 70%, var(--pink) 100%);
+  background-size: 250% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; }
+.word { display: inline-block; will-change: transform, opacity, filter; }
+.cap { position: absolute; left: 120px; top: 96px; }
+.cap .kicker { margin-bottom: 18px; }
+.cap .t { font-size: 64px; font-weight: 750; letter-spacing: -.03em; line-height: 1.05; }
+.cap .t b { font-weight: 800; }
+
+/* cards */
+.glass { background: linear-gradient(180deg, rgba(255,255,255,.085), rgba(255,255,255,.03)); border: 1px solid var(--stroke);
+  border-radius: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.12); backdrop-filter: blur(12px); }
+.seat { width: 300px; height: 150px; padding: 22px 24px; }
+.seat .row { display: flex; gap: 16px; align-items: center; }
+.seat .name { font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+.seat .role { font-size: 19px; color: var(--dim); margin-top: 2px; }
+.bar { height: 8px; border-radius: 8px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: 18px; }
+.bar > i { display: block; height: 100%; width: 0; border-radius: 8px; }
+.meta { font-family: JBM; font-size: 15px; color: var(--dim); margin-top: 9px; }
+.lead { position: absolute; top: -16px; left: 22px; font-family: JBM; font-size: 14px; font-weight: 700; letter-spacing: .2em;
+  padding: 6px 12px; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--violet)); color: #fff; box-shadow: 0 0 30px rgba(79,124,255,.8); }
+.open { border-style: dashed; border-width: 2px; background: rgba(255,255,255,.02); }
+
+.bot { width: 64px; height: 64px; border-radius: 20px; position: relative; flex: none; box-shadow: 0 0 30px var(--glow, rgba(79,124,255,.6)), inset 0 2px 0 rgba(255,255,255,.35); }
+.bot::before, .bot::after { content: ''; position: absolute; top: 24px; width: 10px; height: 14px; background: #fff; border-radius: 6px; }
+.bot::before { left: 17px; } .bot::after { right: 17px; }
+.bot.lg { width: 110px; height: 110px; border-radius: 34px; }
+.bot.lg::before, .bot.lg::after { top: 40px; width: 16px; height: 24px; border-radius: 9px; }
+.bot.lg::before { left: 29px; } .bot.lg::after { right: 29px; }
+.bot.empty { background: transparent !important; border: 2px dashed rgba(255,255,255,.35); box-shadow: none; }
+.bot.empty::before, .bot.empty::after { display: none; }
+.atlas { background: linear-gradient(135deg, #6d8dff, #2c49d8); --glow: rgba(79,124,255,.7); }
+.quill { background: linear-gradient(135deg, #c4b1ff, #7c4ddf); --glow: rgba(167,139,250,.7); }
+.forge { background: linear-gradient(135deg, #ffd66b, #e08a0b); --glow: rgba(251,191,36,.7); }
+.lens  { background: linear-gradient(135deg, #7ff0ff, #0e9fb8); --glow: rgba(34,211,238,.7); }
+
+svg.wires { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: visible; }
+.pill { display: inline-flex; align-items: center; gap: 14px; padding: 16px 28px; border-radius: 99px; font-size: 28px; font-weight: 650; }
+.goal { width: 980px; height: 96px; padding: 0 30px; display: flex; align-items: center; gap: 22px; }
+.goal .gt { font-size: 30px; font-weight: 650; flex: 1; letter-spacing: -.01em; }
+.goal .gp { font-family: JBM; font-size: 22px; color: var(--dim); width: 170px; text-align: right; }
+.goal .gbar { position: absolute; left: 30px; right: 30px; bottom: 14px; height: 5px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; }
+.goal .gbar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--cyan)); box-shadow: 0 0 16px var(--cyan); }
+.status { font-family: JBM; font-size: 15px; letter-spacing: .12em; text-transform: uppercase; padding: 7px 12px; border-radius: 8px; background: rgba(255,255,255,.08); color: var(--dim); }
+
+.col { width: 330px; height: 560px; padding: 22px; }
+.col h4 { font-family: JBM; font-size: 18px; letter-spacing: .2em; color: var(--dim); text-transform: uppercase; display: flex; justify-content: space-between; }
+.card { width: 290px; padding: 20px 22px; border-radius: 16px; background: linear-gradient(180deg, #1a1f3d, #121630); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 20px 50px rgba(0,0,0,.6); }
+.card .ct { font-size: 25px; font-weight: 700; letter-spacing: -.01em; }
+.card .crumb { font-family: JBM; font-size: 13px; color: var(--cyan); margin-top: 10px; line-height: 1.45; }
+.card .who { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 17px; color: var(--dim); }
+.card .who .bot { width: 30px; height: 30px; border-radius: 10px; }
+.card .who .bot::before, .card .who .bot::after { top: 11px; width: 5px; height: 7px; border-radius: 3px; }
+.card .who .bot::before { left: 8px; } .card .who .bot::after { right: 8px; }
+
+.gauge { width: 300px; height: 360px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.gauge svg { width: 200px; height: 200px; }
+.gauge .gv { position: absolute; top: 118px; width: 100%; text-align: center; font-size: 44px; font-weight: 800; letter-spacing: -.03em; }
+.gauge .gn { font-size: 26px; font-weight: 700; margin-top: 18px; }
+.gauge .gs { font-family: JBM; font-size: 16px; color: var(--dim); margin-top: 6px; }
+
+.btn { padding: 16px 30px; border-radius: 14px; font-size: 24px; font-weight: 700; }
+.btn.pri { background: linear-gradient(180deg, #5b86ff, #2f5cf2); box-shadow: 0 10px 30px rgba(79,124,255,.5); }
+.btn.ghost { background: rgba(255,255,255,.07); color: var(--dim); }
+.cursor { width: 44px; height: 44px; }
+.cursor-tag { position: absolute; left: 34px; top: 34px; font-size: 18px; font-weight: 700; padding: 6px 12px; border-radius: 10px; white-space: nowrap; }
+.toast { padding: 20px 28px; border-radius: 16px; font-size: 24px; font-weight: 650; display: flex; gap: 14px; align-items: center; }
+.stamp { font-family: JBM; font-weight: 700; font-size: 64px; letter-spacing: .12em; color: var(--green); border: 6px solid var(--green); padding: 8px 26px; border-radius: 14px; text-shadow: 0 0 30px rgba(52,211,153,.7); box-shadow: 0 0 40px rgba(52,211,153,.5), inset 0 0 30px rgba(52,211,153,.3); }
+.bubble { padding: 14px 22px; border-radius: 18px; font-size: 24px; font-weight: 600; white-space: nowrap; }
+.orb { width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #9fb6ff 18%, #4f7cff 42%, #6d28d9 75%, transparent 76%);
+  box-shadow: 0 0 120px rgba(79,124,255,.9), 0 0 260px rgba(167,139,250,.6); }
+.chip { padding: 14px 26px; border-radius: 99px; font-size: 26px; font-weight: 700; white-space: nowrap; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); }
+.window { width: 1000px; height: 640px; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255,255,255,.2); box-shadow: 0 60px 140px rgba(0,0,0,.8), 0 0 120px rgba(79,124,255,.35); background: #fff; }
+.window .bar2 { height: 40px; background: #e9ebf2; display: flex; gap: 9px; align-items: center; padding-left: 16px; }
+.window .bar2 i { width: 13px; height: 13px; border-radius: 50%; background: #ff5f57; } .window .bar2 i:nth-child(2) { background: #febc2e; } .window .bar2 i:nth-child(3) { background: #28c840; }
+.window img { display: block; width: 100%; }
+.phone { width: 330px; height: 690px; border-radius: 48px; padding: 14px; background: #0c0e18; border: 2px solid rgba(255,255,255,.25); box-shadow: 0 50px 120px rgba(0,0,0,.8), 0 0 90px rgba(167,139,250,.4); overflow: hidden; }
+.phone .scr { width: 100%; height: 100%; border-radius: 36px; overflow: hidden; background: #fff; }
+.phone img { width: 100%; display: block; }
+.mono { font-family: JBM; }
+</style>
+</head>
+<body>
+<div id="world">
+  <div id="bg" class="layer">
+    <div class="blob" id="b1" style="background: radial-gradient(circle, rgba(79,124,255,.55), transparent 62%)"></div>
+    <div class="blob" id="b2" style="background: radial-gradient(circle, rgba(167,139,250,.45), transparent 62%)"></div>
+    <div class="blob" id="b3" style="background: radial-gradient(circle, rgba(34,211,238,.32), transparent 62%)"></div>
+    <div id="grid"></div>
+  </div>
+  <canvas id="fx" class="layer" width="1920" height="1080"></canvas>
+  <div id="stage" class="layer"></div>
+  <canvas id="fx2" class="layer" width="1920" height="1080" style="pointer-events:none"></canvas>
+  <div id="scan" class="layer"></div>
+  <div id="vignette" class="layer"></div>
+  <div id="grain" class="layer"></div>
+  <div id="flash" class="layer"></div>
+</div>
+<script>
+// ───────────────────────── helpers ─────────────────────────
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x))
+const lerp = (a, b, p) => a + (b - a) * p
+const E = {
+  lin: p => p,
+  out3: p => 1 - Math.pow(1 - p, 3),
+  out5: p => 1 - Math.pow(1 - p, 5),
+  in3: p => p * p * p,
+  io3: p => (p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
+  expo: p => (p === 1 ? 1 : 1 - Math.pow(2, -10 * p)),
+  back: p => { const c1 = 1.9, c3 = c1 + 1; return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2) },
+  elastic: p => (p === 0 || p === 1 ? p : Math.pow(2, -10 * p) * Math.sin((p * 10 - .75) * (2 * Math.PI) / 3) + 1)
+}
+const P = (t, a, b) => clamp((t - a) / (b - a))
+const tw = (t, a, b, from, to, e = E.out3) => lerp(from, to, e(P(t, a, b)))
+function rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296) }
+const $ = id => document.getElementById(id)
+const stage = $('stage')
+function el(parent, cls, html = '', css = {}) {
+  const d = document.createElement('div'); d.className = cls; d.innerHTML = html
+  Object.assign(d.style, css); parent.appendChild(d); return d
+}
+function S(e, o) {
+  const x = o.x ?? 0, y = o.y ?? 0, s = o.s ?? 1, r = o.r ?? 0, sx = o.sx ?? 1, sy = o.sy ?? 1
+  const ry = o.ry ?? 0, rx = o.rx ?? 0
+  e.style.transform = `translate(-50%,-50%) translate(${x}px,${y}px) perspective(1400px) rotateX(${rx}deg) rotateY(${ry}deg) rotate(${r}deg) scale(${s * sx},${s * sy})`
+  e.style.opacity = o.o ?? 1
+  e.style.filter = o.blur ? `blur(${o.blur}px)` : (o.filter || 'none')
+  e.style.visibility = (o.o ?? 1) <= 0.001 ? 'hidden' : 'visible'
+}
+function at(e, x, y) { e.style.left = x + 'px'; e.style.top = y + 'px' }
+function words(e, text, cls = '') {
+  let g = false
+  e.innerHTML = text.split(' ').map(w => {
+    const open = w.startsWith('*'), close = w.endsWith('*')
+    if (open) g = true
+    const html = `<span class="word ${cls} ${g ? 'grad' : ''}">${w.replace(/\*/g, '')}</span>`
+    if (close) g = false
+    return html
+  }).join(' ')
+  return [...e.querySelectorAll('.word')]
+}
+// Scale a scene's content (not its caption) about a focal point.
+function zoom(s, z, ox, oy) {
+  const box = document.createElement('div'); box.className = 'layer'
+  box.style.transformOrigin = `${ox}px ${oy}px`; box.style.transform = `scale(${z})`
+  ;[...s.children].filter(c => !c.classList.contains('cap')).forEach(c => box.appendChild(c)); s.appendChild(box)
+}
+// Blur-rise reveal for a list of word spans.
+function reveal(ws, t, t0, gap = .07, dur = .45, dy = 40) {
+  ws.forEach((w, i) => {
+    const p = E.out5(P(t, t0 + i * gap, t0 + i * gap + dur))
+    w.style.opacity = p; w.style.transform = `translateY(${(1 - p) * dy}px)`; w.style.filter = `blur(${(1 - p) * 14}px)`
+  })
+}
+function scene(a, b, inDur = .35, outDur = .3) {
+  const s = el(stage, 'scene'); s._a = a; s._b = b; s._in = inDur; s._out = outDur; scenes.push(s); return s
+}
+const scenes = []
+// Whip transition: in from the right with blur, out to the left with blur.
+function envelope(s, t) {
+  const pin = E.out5(P(t, s._a, s._a + s._in)), pout = E.in3(P(t, s._b - s._out, s._b))
+  const vis = t >= s._a - .001 && t < s._b
+  s.style.display = vis ? 'block' : 'none'
+  const x = (1 - pin) * 260 - pout * 320
+  const blur = (1 - pin) * 18 + pout * 22
+  s.style.opacity = vis ? Math.min(pin * 1.4, 1 - pout) : 0
+  s.style.transform = `translateX(${x}px) scale(${1 + (1 - pin) * .04 - pout * .03})`
+  s.style.filter = blur > .2 ? `blur(${blur}px)` : 'none'
+  return vis
+}
+
+// ───────────────────────── particles ─────────────────────────
+const fx = $('fx').getContext('2d'), fx2 = $('fx2').getContext('2d')
+const DUST = (() => { const r = rng(7); return Array.from({ length: 140 }, () => ({ x: r() * 1920, y: r() * 1080, z: .3 + r() * .9, p: r() * 6.28 })) })()
+const bursts = []
+function burst(t0, x, y, n = 160, speed = 900, hue = [220, 280], seed = 1, ctx = 2) {
+  const r = rng(seed); bursts.push({ t0, x, y, ctx, parts: Array.from({ length: n }, () => ({ a: r() * 6.283, v: speed * (.25 + r() * .9), h: lerp(hue[0], hue[1], r()), sz: 1 + r() * 3.5, life: .7 + r() * 1.1 })) })
+}
+function drawFx(t) {
+  fx.clearRect(0, 0, 1920, 1080); fx2.clearRect(0, 0, 1920, 1080)
+  fx.globalCompositeOperation = 'lighter'
+  for (const d of DUST) {
+    const x = (d.x + t * 18 * d.z) % 1920, y = (d.y - t * 10 * d.z + 1080) % 1080
+    const a = .18 + .18 * Math.sin(t * 1.3 + d.p)
+    fx.fillStyle = `rgba(160,180,255,${a * d.z})`; fx.beginPath(); fx.arc(x, y, 1.4 * d.z, 0, 6.283); fx.fill()
+  }
+  for (const b of bursts) {
+    const dt = t - b.t0; if (dt < 0 || dt > 2.4) continue
+    const c = b.ctx === 2 ? fx2 : fx; c.globalCompositeOperation = 'lighter'
+    for (const q of b.parts) {
+      if (dt > q.life) continue
+      const k = 1 - Math.exp(-dt * 3.2)
+      const d = q.v * k / 3.2
+      const x = b.x + Math.cos(q.a) * d, y = b.y + Math.sin(q.a) * d + dt * dt * 40
+      const al = (1 - dt / q.life) ** 1.5
+      c.fillStyle = `hsla(${q.h},95%,70%,${al})`; c.beginPath(); c.arc(x, y, q.sz * (1 - dt / q.life * .5), 0, 6.283); c.fill()
+      c.fillStyle = `hsla(${q.h},95%,70%,${al * .15})`; c.beginPath(); c.arc(x, y, q.sz * 5, 0, 6.283); c.fill()
+    }
+  }
+}
+
+// ───────────────────────── background ─────────────────────────
+function drawBg(t) {
+  const b1 = $('b1'), b2 = $('b2'), b3 = $('b3')
+  b1.style.transform = `translate(${-300 + Math.sin(t * .31) * 260}px, ${-500 + Math.cos(t * .27) * 180}px)`
+  b2.style.transform = `translate(${900 + Math.cos(t * .23) * 300}px, ${-200 + Math.sin(t * .35) * 220}px)`
+  b3.style.transform = `translate(${300 + Math.sin(t * .19 + 2) * 400}px, ${200 + Math.cos(t * .29) * 200}px)`
+  $('grid').style.backgroundPosition = `0 ${t * 60}px`
+  $('grid').style.opacity = .55 + .25 * Math.sin(t * .5)
+  const r = rng(Math.floor(t * 24) + 1)
+  $('grain').style.backgroundPosition = `${Math.floor(r() * 300)}px ${Math.floor(r() * 300)}px`
+}
+
+// ───────────────────────── scenes ─────────────────────────
+// Beat grid: 120 BPM → one bar every 2s. Cuts land on bar lines; the drop is at 4.0s.
+
+// 1 · HOOK (0–4)
+const s1 = scene(0, 4, .01, .12)
+const h1a = el(s1, 'c h1', '', { fontSize: '118px', left: '960px', top: '470px', whiteSpace: 'nowrap' })
+const h1aw = words(h1a, 'Your AI works <span class="word" id="alone">alone.</span>')
+h1a.innerHTML = 'Your AI works <span class="word" id="alone" style="position:relative">alone.<i id="strike" style="position:absolute;left:-6px;right:-6px;top:52%;height:12px;background:var(--red);border-radius:6px;transform-origin:left;transform:scaleX(0);box-shadow:0 0 30px var(--red)"></i></span>'
+const h1words = [...h1a.childNodes].filter(n => n.nodeType === 3 ? false : true)
+const h1text = words(el(s1, 'c', '', { display: 'none' }), 'x')
+const h1b = el(s1, 'c h1', '', { fontSize: '118px', left: '960px', top: '620px', whiteSpace: 'nowrap' })
+h1b.innerHTML = 'What if it had a <span class="grad" id="teamword">team?</span>'
+const hookWords = (() => { const ws = []; h1a.innerHTML = ['Your', 'AI', 'works'].map(w => `<span class="word">${w}</span>`).join(' ') + ' <span class="word" style="position:relative">alone.<i id="strike" style="position:absolute;left:-6px;right:-6px;top:54%;height:12px;background:var(--red);border-radius:6px;transform-origin:left;transform:scaleX(0);box-shadow:0 0 30px var(--red)"></i></span>'; return [...h1a.querySelectorAll('.word')] })()
+const hookB = (() => { h1b.innerHTML = ['What', 'if', 'it', 'had', 'a'].map(w => `<span class="word">${w}</span>`).join(' ') + ' <span class="word grad" style="padding-right:6px">team?</span>'; return [...h1b.querySelectorAll('.word')] })()
+function r1(t) {
+  reveal(hookWords, t, .15, .16, .5)
+  $('strike').style.transform = `scaleX(${tw(t, 1.35, 1.6, 0, 1, E.out3)})`
+  const shake = t > 1.35 && t < 1.7 ? Math.sin(t * 90) * 10 * (1 - P(t, 1.35, 1.7)) : 0
+  S(h1a, { x: shake, y: tw(t, 1.8, 2.3, 0, -40), o: tw(t, 1.8, 2.3, 1, .35) })
+  reveal(hookB, t, 2.0, .12, .5, 50)
+  const g = hookB[hookB.length - 1]; g.style.backgroundPosition = `${tw(t, 2.6, 3.6, 100, 0, E.io3)}% 0`
+  const zoom = tw(t, 3.45, 4, 1, 9, E.in3)
+  S(h1b, { s: zoom, x: -(zoom - 1) * 190, o: tw(t, 3.8, 4, 1, 0, E.lin) })
+}
+
+// 2 · TITLE (4–8)
+const s2 = scene(4, 8, .01, .35)
+const tKick = el(s2, 'c kicker', 'Introducing', { left: '960px', top: '330px', fontSize: '26px' })
+const tMain = el(s2, 'c h1', '', { left: '960px', top: '505px', fontSize: '250px', whiteSpace: 'nowrap' })
+tMain.innerHTML = [...'TEAM BOTS'].map(ch => `<span class="word grad" style="background-size:1200% 100%">${ch === ' ' ? '&nbsp;' : ch}</span>`).join('')
+const tLetters = [...tMain.querySelectorAll('.word')]
+const tSub = el(s2, 'c', '', { left: '960px', top: '700px', fontSize: '40px', fontWeight: 500, color: 'var(--dim)', whiteSpace: 'nowrap' })
+const tSubW = words(tSub, 'AI teammates that plan, work, spend and learn — together.')
+const tBrand = el(s2, 'c mono', 'HERMES AGENT', { left: '960px', top: '820px', fontSize: '22px', letterSpacing: '.5em', color: 'var(--faint)' })
+const ring = el(s2, 'c', '', { left: '960px', top: '520px', width: '300px', height: '300px', borderRadius: '50%', border: '3px solid rgba(160,180,255,.9)', boxShadow: '0 0 60px rgba(79,124,255,.9), inset 0 0 60px rgba(79,124,255,.6)' })
+function r2(t) {
+  S(ring, { s: tw(t, 4, 5.2, .2, 7, E.out3), o: tw(t, 4, 5.2, 1, 0, E.lin) })
+  S(tKick, { o: tw(t, 4.35, 4.8, 0, 1), y: tw(t, 4.35, 4.8, 20, 0) })
+  tLetters.forEach((l, i) => {
+    const p = E.back(P(t, 4.05 + i * .045, 4.6 + i * .045))
+    l.style.transform = `translateY(${(1 - p) * 160}px) scale(${.6 + .4 * p})`; l.style.opacity = clamp(p * 1.3)
+    l.style.backgroundPosition = `${(i / tLetters.length) * 100 * 0.12 + t * 22}% 0`
+  })
+  S(tMain, { s: tw(t, 4, 8, 1.0, 1.08, E.lin) })
+  reveal(tSubW, t, 5.0, .05, .5, 26)
+  S(tBrand, { o: tw(t, 5.8, 6.4, 0, 1) })
+}
+
+// 3 · ORG CHART (8–14)
+const s3 = scene(8, 14)
+const cap3 = el(s3, 'cap', '<div class="kicker">01 · The org chart</div><div class="t"></div>')
+const cap3t = cap3.querySelector('.t')
+const wires3 = el(s3, '', '<svg class="wires" viewBox="0 0 1920 1080"><defs><linearGradient id="wg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8fa6ff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient><marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#fb4a6a"/></marker></defs>' +
+  '<path id="w0" d="M1100 400 L1100 470" /><path id="w1" d="M700 470 L1500 470" /><path id="w2" d="M700 470 L700 520"/><path id="w3" d="M1100 470 L1100 520"/><path id="w4" d="M1500 470 L1500 520"/><path id="w5" d="M700 670 L700 740"/>' +
+  '<path id="wbad" d="M1250 300 C 1500 300, 1000 900, 850 820" fill="none" stroke="#fb4a6a" stroke-width="5" stroke-dasharray="14 12" marker-end="url(#ah)"/></svg>', { position: 'absolute', inset: 0 })
+const wpaths = ['w0', 'w1', 'w2', 'w3', 'w4', 'w5'].map(id => { const p = wires3.querySelector('#' + id); p.setAttribute('stroke', 'url(#wg)'); p.setAttribute('stroke-width', '4'); p.setAttribute('fill', 'none'); p.style.filter = 'drop-shadow(0 0 8px rgba(143,166,255,.9))'; return p })
+const wbad = wires3.querySelector('#wbad')
+function seat(parent, x, y, cls, name, role, color, meta, extra = '') {
+  const d = el(parent, 'c glass seat' + (cls === 'empty' ? ' open' : ''), `${extra}<div class="row"><div class="bot ${cls}"></div><div><div class="name">${name}</div><div class="role">${role}</div></div></div>` +
+    (cls === 'empty' ? '<div class="meta" style="margin-top:22px">Open seat — hire a bot</div>' : `<div class="bar"><i style="background:${color};box-shadow:0 0 14px ${color}"></i></div><div class="meta">${meta}</div>`))
+  at(d, x, y); return d
+}
+const seats3 = [
+  seat(s3, 1100, 325, 'atlas', 'atlas', 'Chief of staff', 'var(--blue)', 'no spending cap', '<div class="lead">LEAD</div>'),
+  seat(s3, 700, 595, 'quill', 'quill', 'Content writer', 'var(--violet)', '$17.50 of $20'),
+  seat(s3, 1100, 595, 'forge', 'forge', 'Engineer', 'var(--amber)', '$24.00 of $30'),
+  seat(s3, 1500, 595, 'empty', 'Designer', 'Open seat', '', ''),
+  seat(s3, 700, 815, 'lens', 'lens', 'Analyst', 'var(--cyan)', '$2.00 of $10')
+]
+const barFill3 = [.0, .875, .8, 0, .2]
+const blocked = el(s3, 'c toast glass', '<svg width="34" height="34" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fb4a6a"/><path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>Reporting loop blocked', { left: '1450px', top: '790px', color: '#ffd1da', borderColor: 'rgba(251,74,106,.6)' })
+const cap3w1 = 'Every bot gets a *role* and a boss.'
+const cap3w2 = 'One lead. Clear lines. *Zero loops.*'
+function r3(t) {
+  const phase2 = t > 11.2
+  if (cap3t._p !== phase2) { cap3t._p = phase2; cap3t._w = words(cap3t, phase2 ? cap3w2 : cap3w1) }
+  reveal(cap3t._w, t, phase2 ? 11.2 : 8.35, .06, .45, 30)
+  const order = [8.45, 9.25, 9.4, 9.55, 10.05]
+  seats3.forEach((d, i) => {
+    const p = P(t, order[i], order[i] + .55)
+    const shake = i === 0 && t > 12.1 && t < 12.5 ? Math.sin(t * 80) * 6 : 0
+    S(d, { s: .4 + .6 * E.back(p), o: clamp(p * 2), y: (1 - E.out3(p)) * 40, x: shake })
+    const bar = d.querySelector('.bar i'); if (bar) bar.style.width = (tw(t, order[i] + .4, order[i] + 1.4, 0, barFill3[i]) * 100) + '%'
+  })
+  const wt = [[8.95, 9.2], [9.1, 9.4], [9.2, 9.4], [9.3, 9.5], [9.4, 9.6], [9.85, 10.1]]
+  wpaths.forEach((p, i) => { const L = p.getTotalLength(); p.style.strokeDasharray = L; p.style.strokeDashoffset = L * (1 - E.io3(P(t, wt[i][0], wt[i][1]))) })
+  const Lb = wbad.getTotalLength ? 1400 : 0
+  const pb = E.io3(P(t, 11.9, 12.5))
+  wbad.style.opacity = t < 11.9 ? 0 : Math.min(pb * 1.5, tw(t, 13.0, 13.4, 1, 0, E.lin)); wbad.setAttribute('stroke-dashoffset', -t * 70)
+  const pk = P(t, 12.45, 12.8)
+  S(blocked, { o: t < 12.45 ? 0 : tw(t, 13.3, 13.7, 1, 0, E.lin), s: .7 + .3 * E.back(pk), x: t > 12.45 && t < 12.8 ? Math.sin(t * 90) * 8 : 0 })
+}
+
+// 4 · GOALS (14–20)
+const s4 = scene(14, 20)
+const cap4 = el(s4, 'cap', '<div class="kicker">02 · Goals</div><div class="t"></div>')
+const cap4t = cap4.querySelector('.t')
+const mission = el(s4, 'c pill glass', '<span class="mono" style="font-size:18px;letter-spacing:.3em;color:var(--cyan)">MISSION</span><span>Reach 10,000 weekly users by Q4</span>', { left: '830px', top: '330px' })
+function goal(y, x, title, status, statusColor, pct) {
+  const d = el(s4, 'c glass goal', `<span class="status" style="color:${statusColor}">${status}</span><span class="gt">${title}</span><span class="gp">—</span><div class="gbar"><i></i></div>`, { borderRadius: '18px' })
+  at(d, x, y); d._pct = pct; return d
+}
+const goals4 = [
+  goal(470, 830, 'Grow the blog to 50k visits', 'Active', 'var(--cyan)', .6),
+  goal(590, 890, '↳  Ship 5 launch posts', 'Active', 'var(--cyan)', 1),
+  goal(710, 830, 'Fix onboarding drop-off', 'Blocked', 'var(--red)', 0),
+  goal(830, 830, 'Weekly metrics digest', 'Open', 'var(--dim)', .25)
+]
+const counts4 = ['3/5', '1/1', '0/1', '1/4']
+const big4 = el(s4, 'c', '<div class="mono" style="font-size:20px;letter-spacing:.3em;color:var(--dim);text-align:center">OVERALL</div><div id="bignum" class="h1 grad" style="font-size:150px;text-align:center">0%</div>', { left: '1600px', top: '600px' })
+const chain4 = el(s4, 'c mono', '', { left: '830px', top: '960px', fontSize: '26px', whiteSpace: 'nowrap', color: 'var(--dim)' })
+chain4.innerHTML = ['Reach 10k users', '→', 'Grow the blog', '→', 'Ship 5 posts', '→', '<span style="color:#fff">Write post #1</span>'].map(w => `<span class="word">${w}</span>`).join(' ')
+const chain4w = [...chain4.querySelectorAll('.word')]
+const cap4w1 = 'Progress rolls up from *real work.*'
+const cap4w2 = 'Every task knows *why* it exists.'
+function r4(t) {
+  const ph = t > 17.3
+  if (cap4t._p !== ph) { cap4t._p = ph; cap4t._w = words(cap4t, ph ? cap4w2 : cap4w1) }
+  reveal(cap4t._w, t, ph ? 17.3 : 14.3, .06, .45, 30)
+  const pm = P(t, 14.3, 14.9)
+  S(mission, { s: .8 + .2 * E.back(pm), o: pm * 1.5 })
+  mission.style.boxShadow = `0 0 ${40 + 30 * Math.sin(t * 4)}px rgba(34,211,238,.35), 0 30px 80px rgba(0,0,0,.5)`
+  let overall = 0
+  goals4.forEach((g, i) => {
+    const t0 = 14.7 + i * .18, p = P(t, t0, t0 + .6)
+    const lit = t > 17.4 && (i === 0 || i === 1)
+    S(g, { o: clamp(p * 1.6) * (t > 17.4 && !lit ? .35 : 1), x: (1 - E.out5(p)) * -260 })
+    const f = tw(t, t0 + .4, t0 + 2.0, 0, g._pct, E.io3)
+    g.querySelector('.gbar i').style.width = (f * 100) + '%'
+    g.querySelector('.gp').textContent = `${counts4[i]} · ${Math.round(f * 100)}%`
+    if (i === 2) g.style.borderColor = `rgba(251,74,106,${.35 + .35 * Math.sin(t * 6)})`
+    g.style.boxShadow = lit ? `0 0 50px rgba(79,124,255,${.5 * P(t, 17.4, 17.8)}), 0 30px 80px rgba(0,0,0,.5)` : ''
+    overall += f
+  })
+  $('bignum').textContent = Math.round(tw(t, 15.1, 17.0, 0, 50, E.io3)) + '%'
+  S(big4, { o: P(t, 15.0, 15.4), s: .9 + .1 * E.back(P(t, 15.0, 15.5)) })
+  reveal(chain4w, t, 17.6, .16, .4, 20)
+  chain4w.forEach((w, i) => { if (w.textContent !== '→') w.style.color = t > 17.6 + i * .16 + .3 ? (i === 6 ? '#fff' : 'var(--cyan)') : '' })
+}
+
+// 5 · DELEGATION (20–26)
+const s5 = scene(20, 26)
+const cap5 = el(s5, 'cap', '<div class="kicker">03 · Delegation</div><div class="t"></div>')
+const cap5t = cap5.querySelector('.t')
+const goal5 = el(s5, 'c glass goal', '<span class="status" style="color:var(--cyan)">Active</span><span class="gt" style="font-size:27px">Ship 5 launch posts</span><span class="btn pri" style="font-size:20px;padding:12px 20px">Assign work →</span>', { width: '600px', borderRadius: '18px' })
+at(goal5, 420, 420)
+const cols = ['Ready', 'Running', 'Done'].map((n, i) => { const c = el(s5, 'c glass col', `<h4><span>${n}</span><span>${i === 1 ? '●' : ''}</span></h4>`); at(c, 930 + i * 360, 640); return c })
+const card5 = el(s5, 'c card', '<div class="ct">Write post #1</div><div class="crumb">Reach 10k → Grow the blog →<br>Ship 5 posts</div><div class="who"><div class="bot quill"></div><span id="whotext">quill</span></div>')
+const ringSvg = el(s5, 'c', '<svg width="120" height="120" viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" stroke="rgba(255,255,255,.12)" stroke-width="8" fill="none"/><circle id="spin" cx="60" cy="60" r="50" stroke="url(#sg)" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="90 400"/><defs><linearGradient id="sg"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg>')
+const check5 = el(s5, 'c', '<svg width="110" height="110" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#34d399"/><path d="M6.5 12.5l3.5 3.5 7.5-8" stroke="#04150d" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>', { filter: 'drop-shadow(0 0 30px rgba(52,211,153,.9))' })
+const cursor5 = el(s5, 'c', '<svg class="cursor" viewBox="0 0 24 24"><path d="M3 2l7 19 2.6-7.4L20 11z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg><span class="cursor-tag" style="background:var(--blue)">You</span>')
+const typing5 = el(s5, 'c mono', '', { fontSize: '20px', color: 'var(--violet)', whiteSpace: 'nowrap' })
+const prog5 = el(s5, 'c glass', '<div class="mono" style="font-size:18px;color:var(--dim);letter-spacing:.2em">GOAL PROGRESS</div><div id="p5" class="h1" style="font-size:72px;margin-top:6px">1/5</div>', { left: '420px', top: '720px', padding: '26px 40px', borderRadius: '20px' })
+const cap5w1 = 'Goals become *cards.*'
+const cap5w2 = 'Cards become *done.*'
+function bez(p, a, c1, c2, b) { const u = 1 - p; return u * u * u * a + 3 * u * u * p * c1 + 3 * u * p * p * c2 + p * p * p * b }
+function r5(t) {
+  const ph = t > 23.3
+  if (cap5t._p !== ph) { cap5t._p = ph; cap5t._w = words(cap5t, ph ? cap5w2 : cap5w1) }
+  reveal(cap5t._w, t, ph ? 23.3 : 20.3, .06, .45, 30)
+  S(goal5, { o: P(t, 20.2, 20.6), x: (1 - E.out5(P(t, 20.2, 20.7))) * -200 })
+  cols.forEach((c, i) => S(c, { o: P(t, 20.35 + i * .1, 20.8 + i * .1), y: (1 - E.out5(P(t, 20.35 + i * .1, 20.9 + i * .1))) * 80 }))
+  // cursor glides to the button, clicks
+  const cp = E.io3(P(t, 20.5, 21.1))
+  S(cursor5, { x: lerp(-200, 0, cp), y: lerp(300, 0, cp), s: t > 21.1 && t < 21.25 ? .85 : 1, o: t < 22 ? P(t, 20.4, 20.6) : tw(t, 22, 22.3, 1, 0) })
+  at(cursor5, 650, 432)
+  if (t > 21.12 && !goal5._b) { goal5._b = 1 }
+  // card flies from the button into Ready, then Running, then Done
+  const fly = E.io3(P(t, 21.2, 22.0))
+  let cx = bez(fly, 630, 760, 850, 930), cy = bez(fly, 420, 250, 360, 500), rot = Math.sin(fly * 3.14) * -10, sc = lerp(.3, 1, E.back(P(t, 21.2, 21.6)))
+  const m1 = E.io3(P(t, 22.9, 23.4)), m2 = E.io3(P(t, 24.6, 25.1))
+  cx += m1 * 360 + m2 * 360; cy -= Math.sin(m1 * 3.14) * 50 + Math.sin(m2 * 3.14) * 50
+  rot += Math.sin(m1 * 3.14) * 6 + Math.sin(m2 * 3.14) * 6
+  at(card5, cx, cy); S(card5, { o: t < 21.2 ? 0 : 1, s: sc, r: rot })
+  const running = t > 23.4 && t < 24.6
+  card5.style.borderColor = running ? `rgba(167,139,250,${.6 + .3 * Math.sin(t * 8)})` : (t >= 25.1 ? 'rgba(52,211,153,.8)' : 'rgba(255,255,255,.14)')
+  card5.style.boxShadow = running ? '0 0 60px rgba(167,139,250,.55), 0 20px 50px rgba(0,0,0,.6)' : t >= 25.1 ? '0 0 60px rgba(52,211,153,.5), 0 20px 50px rgba(0,0,0,.6)' : ''
+  at(ringSvg, cx + 125, cy - 70); S(ringSvg, { o: running ? 1 : 0, s: .5 }); $('spin').setAttribute('transform', `rotate(${t * 520} 60 60)`)
+  const txt = 'quill is writing…'; const n = Math.floor(clamp((t - 23.5) * 22, 0, txt.length))
+  typing5.textContent = running ? txt.slice(0, n) + (Math.floor(t * 4) % 2 ? '▍' : '') : ''
+  at(typing5, cx, cy + 110)
+  at(check5, cx + 130, cy - 70); S(check5, { o: t > 25.1 ? 1 : 0, s: E.back(P(t, 25.1, 25.4)) })
+  $('p5').textContent = t > 25.1 ? '2/5' : '1/5'
+  S(prog5, { o: P(t, 20.6, 21.0), s: t > 25.1 && t < 25.4 ? 1.08 : 1 })
+  $('p5').style.color = t > 25.1 ? 'var(--green)' : ''
+}
+
+// 6 · BUDGETS (26–30)
+const s6 = scene(26, 30)
+const cap6 = el(s6, 'cap', '<div class="kicker">04 · Budgets</div><div class="t"></div>')
+const cap6t = cap6.querySelector('.t')
+function gauge(x, cls, name, sub, color) {
+  const g = el(s6, 'c gauge glass', `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="80" stroke="rgba(255,255,255,.1)" stroke-width="16" fill="none"/><circle class="arc" cx="100" cy="100" r="80" stroke="${color}" stroke-width="16" fill="none" stroke-linecap="round" transform="rotate(-90 100 100)" stroke-dasharray="0 600" style="filter:drop-shadow(0 0 10px ${color})"/></svg><div class="gv">0%</div><div class="gn">${name}</div><div class="gs">${sub}</div>`, { borderRadius: '26px' })
+  at(g, x, 520); g._c = color; return g
+}
+const gauges6 = [gauge(560, 'atlas', 'atlas', 'no cap', '#4f7cff'), gauge(900, 'quill', 'quill', '$17.50 / $20', '#a78bfa'), gauge(1240, 'forge', 'forge', '$30 / $30', '#fbbf24'), gauge(1580, 'lens', 'lens', 'paused', '#22d3ee')]
+const gv6 = [0, .875, 1, .2]
+const gate = el(s6, 'c', '<div style="width:14px;height:260px;border-radius:10px;background:linear-gradient(180deg,#fb4a6a,#ff8aa0);box-shadow:0 0 50px #fb4a6a, 0 0 120px rgba(251,74,106,.6)"></div>', { left: '1240px', top: '900px' })
+const gateLbl = el(s6, 'c mono', 'HELD · BUDGET USED UP', { left: '1240px', top: '750px', fontSize: '20px', letterSpacing: '.2em', color: '#ff9fb2', whiteSpace: 'nowrap' })
+const card6 = el(s6, 'c card', '<div class="ct" style="font-size:22px">Refactor signup flow</div><div class="who"><div class="bot forge"></div><span>forge · ready</span></div>', { width: '300px' })
+const note6 = el(s6, 'c mono', 'waiting — not failed', { fontSize: '20px', color: 'var(--dim)' })
+const cap6w = 'Hard budgets. *Held, never lost.*'
+function r6(t) {
+  if (!cap6t._w) cap6t._w = words(cap6t, cap6w)
+  reveal(cap6t._w, t, 26.25, .06, .45, 30)
+  gauges6.forEach((g, i) => {
+    const p = P(t, 26.2 + i * .1, 26.7 + i * .1)
+    const f = tw(t, 26.5 + i * .1, 27.3 + i * .1, 0, gv6[i], E.io3)
+    const over = i === 2 && f > .995
+    S(g, { o: clamp(p * 1.5) * (i === 3 ? .55 : 1), y: (1 - E.out5(p)) * 90 + (i === 3 ? 0 : 0) - 60, x: over && t < 27.9 ? Math.sin(t * 80) * 7 * (1 - P(t, 27.4, 27.9)) : 0 })
+    const L = 2 * Math.PI * 80
+    g.querySelector('.arc').setAttribute('stroke-dasharray', `${f * L} ${L}`)
+    g.querySelector('.arc').setAttribute('stroke', over ? '#fb4a6a' : g._c)
+    g.querySelector('.gv').textContent = i === 0 ? '∞' : i === 3 ? '‖' : Math.round(f * 100) + '%'
+    g.querySelector('.gv').style.color = over ? '#fb4a6a' : ''
+    g.style.borderColor = over ? 'rgba(251,74,106,.7)' : ''
+    g.style.boxShadow = over ? '0 0 60px rgba(251,74,106,.45)' : ''
+  })
+  const gp = P(t, 27.6, 27.9)
+  S(gate, { o: gp, sy: E.back(gp) })
+  S(gateLbl, { o: P(t, 27.8, 28.1) })
+  // card slides from the left toward the gate, hits it, bounces back
+  const a = E.out3(P(t, 27.9, 28.5)), hit = t > 28.5
+  const back = hit ? E.elastic(P(t, 28.5, 29.4)) : 0
+  const cx = lerp(560, 1060, a) - back * 140
+  at(card6, cx, 900); S(card6, { o: P(t, 27.9, 28.1), r: hit ? -Math.sin(P(t, 28.5, 28.8) * 3.14) * 5 : 0 })
+  card6.style.borderColor = hit ? 'rgba(251,74,106,.7)' : ''
+  at(note6, cx, 990); S(note6, { o: P(t, 28.9, 29.2) })
+}
+
+// 7 · GOVERNANCE (30–34)
+const s7 = scene(30, 34)
+const cap7 = el(s7, 'cap', '<div class="kicker">05 · Approvals</div><div class="t"></div>')
+const cap7t = cap7.querySelector('.t')
+const appr = el(s7, 'c glass', '<div style="display:flex;gap:18px;align-items:center"><span class="status" style="color:var(--amber)">Spend</span><span class="mono" style="color:var(--dim);font-size:18px">needs your approval</span></div><div class="h1" style="font-size:58px;margin-top:20px;letter-spacing:-.03em">$50 for launch-week ads</div><div style="display:flex;align-items:center;gap:12px;margin-top:16px;color:var(--dim);font-size:24px"><div class="bot quill" style="width:40px;height:40px;border-radius:12px"></div>asked by quill</div><div style="display:flex;gap:16px;margin-top:34px;justify-content:flex-end"><span class="btn ghost">Decline</span><span class="btn pri" id="apbtn">Approve</span></div>', { left: '1060px', top: '560px', width: '860px', padding: '40px 46px', borderRadius: '28px' })
+const curQ = el(s7, 'c', '<svg class="cursor" viewBox="0 0 24 24"><path d="M3 2l7 19 2.6-7.4L20 11z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg><span class="cursor-tag" style="background:var(--violet)">quill</span>')
+const curY = el(s7, 'c', '<svg class="cursor" viewBox="0 0 24 24"><path d="M3 2l7 19 2.6-7.4L20 11z" fill="#fff" stroke="#000" stroke-width="1.2"/></svg><span class="cursor-tag" style="background:var(--blue)">You</span>')
+const deny = el(s7, 'c toast glass', '<svg width="34" height="34" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#fb4a6a"/><path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>A bot can’t approve its own request', { left: '1060px', top: '880px', color: '#ffd1da', borderColor: 'rgba(251,74,106,.6)' })
+const stamp = el(s7, 'c stamp', 'APPROVED', { left: '1180px', top: '470px' })
+const cap7w = 'Bots propose. *You decide.*'
+function r7(t) {
+  if (!cap7t._w) cap7t._w = words(cap7t, cap7w)
+  reveal(cap7t._w, t, 30.25, .08, .45, 30)
+  const pa = P(t, 30.2, 30.7)
+  const shake = t > 31.1 && t < 31.5 ? Math.sin(t * 95) * 16 * (1 - P(t, 31.1, 31.5)) : 0
+  S(appr, { o: pa, s: .85 + .15 * E.back(pa), x: shake })
+  appr.style.borderColor = t > 31.1 && t < 31.9 ? 'rgba(251,74,106,.8)' : t > 32.55 ? 'rgba(52,211,153,.8)' : ''
+  appr.style.boxShadow = t > 32.55 ? '0 0 90px rgba(52,211,153,.35), 0 30px 80px rgba(0,0,0,.55)' : ''
+  const q = E.io3(P(t, 30.5, 31.05))
+  at(curQ, lerp(1700, 1340, q), lerp(950, 725, q)); S(curQ, { o: t < 31.6 ? P(t, 30.4, 30.6) : tw(t, 31.6, 31.9, 1, 0), s: t > 31.05 && t < 31.18 ? .85 : 1 })
+  S(deny, { o: t < 31.1 ? 0 : tw(t, 32.1, 32.4, 1, 0), y: (1 - E.back(P(t, 31.1, 31.45))) * 40 })
+  const y = E.io3(P(t, 31.8, 32.45))
+  at(curY, lerp(400, 1340, y), lerp(1000, 725, y)); S(curY, { o: t < 33.4 ? P(t, 31.8, 32.0) : 0, s: t > 32.45 && t < 32.6 ? .85 : 1 })
+  const sp = P(t, 32.55, 32.8)
+  S(stamp, { o: sp > 0 ? clamp(sp * 3) : 0, s: lerp(2.6, 1, E.out5(sp)), r: -12 })
+  $('apbtn').style.background = t > 32.55 ? 'linear-gradient(180deg,#4ae3a8,#10b981)' : ''
+}
+
+// 8 · LEARNING (34–38)
+const s8 = scene(34, 38)
+const cap8 = el(s8, 'cap', '<div class="kicker">06 · Shared memory</div><div class="t"></div>')
+const cap8t = cap8.querySelector('.t')
+const orb = el(s8, 'c orb', '', { left: '1060px', top: '600px' })
+const orbLbl = el(s8, 'c mono', 'TEAM MEMORY', { left: '1060px', top: '765px', fontSize: '20px', letterSpacing: '.3em', color: '#c9d4ff' })
+const bots8 = [['atlas', -540, -100], ['quill', -380, 230], ['forge', 380, 230], ['lens', 540, -100]].map(([c, dx, dy]) => { const b = el(s8, 'c bot lg ' + c); b._dx = dx; b._dy = dy; return b })
+const lessons = [['Always cite sources', 1, 'var(--violet)'], ['Ship on Tuesdays', 3, 'var(--cyan)'], ['Always cite sources', 2, 'var(--amber)'], ['Tests before merge', 0, 'var(--blue)']]
+const bubbles8 = lessons.map(([txt, bi, col]) => { const b = el(s8, 'c bubble glass', txt, { color: '#fff', borderColor: col }); b._bi = bi; return b })
+const kept = el(s8, 'c glass', '', { left: '1060px', top: '870px', padding: '18px 30px', borderRadius: '18px', fontSize: '26px', whiteSpace: 'nowrap' })
+const cap8w = 'Learn once. *Every teammate knows.*'
+const beams = el(s8, '', '<svg class="wires" viewBox="0 0 1920 1080">' + [0, 1, 2, 3].map(i => `<line id="bm${i}" x1="1060" y1="600" x2="1060" y2="600" stroke="url(#bmg)" stroke-width="5" stroke-linecap="round"/>`).join('') + '<defs><linearGradient id="bmg"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs></svg>', { position: 'absolute', inset: 0 })
+function r8(t) {
+  if (!cap8t._w) cap8t._w = words(cap8t, cap8w)
+  reveal(cap8t._w, t, 34.25, .06, .45, 30)
+  const po = P(t, 34.2, 34.8)
+  const pulse = 1 + .04 * Math.sin(t * 5) + (t > 36.0 && t < 36.4 ? .12 * Math.sin(P(t, 36, 36.4) * 3.14) : 0) + (t > 35.6 && t < 35.9 ? .08 : 0)
+  S(orb, { s: E.back(po) * pulse, o: po, r: t * 20 })
+  S(orbLbl, { o: P(t, 34.6, 35) })
+  bots8.forEach((b, i) => { const p = P(t, 34.3 + i * .08, 34.8 + i * .08); at(b, 1060 + b._dx, 600 + b._dy); S(b, { s: E.back(p), o: p, y: Math.sin(t * 2 + i) * 8 }) })
+  bubbles8.forEach((bb, i) => {
+    const b = bots8[bb._bi]; const t0 = 34.9 + i * .28
+    const rise = E.out3(P(t, t0, t0 + .35)), go = E.in3(P(t, t0 + .6, t0 + 1.05))
+    const sx = 1060 + b._dx, sy = 600 + b._dy - 110
+    at(bb, lerp(sx, 1060, go), lerp(sy, 600, go))
+    S(bb, { o: t < t0 ? 0 : (go > .95 ? 0 : 1), s: lerp(.4, 1, rise) * lerp(1, .25, go), y: (1 - rise) * 30 })
+  })
+  const n = t > 36.6 ? 3 : t > 35.8 ? 2 : t > 35.3 ? 1 : 0
+  kept.innerHTML = `<span style="color:#fff;font-weight:700">Always cite sources</span> <span class="mono" style="color:var(--green);margin-left:12px">confirmed ×${Math.max(1, n)}</span>`
+  S(kept, { o: P(t, 35.4, 35.7), s: t > 36.55 && t < 36.8 ? 1.08 : 1 })
+  const bp = E.out3(P(t, 36.8, 37.3))
+  bots8.forEach((b, i) => { const L = beams.querySelector('#bm' + i); L.setAttribute('x2', 1060 + b._dx * bp); L.setAttribute('y2', 600 + b._dy * bp); L.style.opacity = t < 36.8 ? 0 : tw(t, 37.5, 37.9, 1, 0) })
+}
+
+// 9 · MONTAGE (38–44)
+const s9 = scene(38, 44)
+const win = el(s9, 'c window', '<div class="bar2"><i></i><i></i><i></i></div><img src="team-page-desktop.png">', { left: '760px', top: '650px' })
+win.querySelector('img').style.marginTop = '0px'
+const phone = el(s9, 'c phone', '<div class="scr"><img src="team-page-mobile.png"></div>', { left: '1530px', top: '560px' })
+const cap9 = el(s9, 'c h1', '', { left: '960px', top: '150px', fontSize: '84px', whiteSpace: 'nowrap', textAlign: 'center' })
+const cap9w = words(cap9, 'Built into Hermes. <span class="grad">Runs everywhere.</span>')
+cap9.innerHTML = ['Built', 'into', 'Hermes.'].map(w => `<span class="word">${w}</span>`).join(' ') + ' ' + ['Runs', 'everywhere.'].map(w => `<span class="word grad">${w}</span>`).join(' ')
+const cap9words = [...cap9.querySelectorAll('.word')]
+const chipDefs = [['Desktop', 'var(--blue)'], ['Web', 'var(--cyan)'], ['Slack', 'var(--violet)'], ['Kanban', 'var(--amber)'], ['Budgets', 'var(--green)'], ['Approvals', 'var(--pink)'], ['Audit log', 'var(--dim)'], ['Team Packs', 'var(--cyan)']]
+const chips = chipDefs.map(([txt, c], i) => { const d = el(s9, 'c chip', `<span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${c};box-shadow:0 0 14px ${c};margin-right:12px"></span>${txt}`); return d })
+const chipPos = [[200, 420], [230, 880], [1250, 300], [1790, 280], [1760, 960], [1180, 990], [420, 300], [1250, 900]]
+function r9(t) {
+  reveal(cap9words, t, 38.2, .09, .5, 36)
+  const pw = E.out5(P(t, 38.1, 38.9))
+  S(win, { o: pw, y: (1 - pw) * 200 + Math.sin(t * 1.2) * 8, ry: lerp(24, 7, pw) + Math.sin(t * .6) * 2, rx: 3, s: .82 })
+  win.querySelector('img').style.transform = `translateY(${-tw(t, 39.2, 43.4, 0, 700, E.io3)}px)`
+  const pp = E.out5(P(t, 38.6, 39.4))
+  S(phone, { o: pp, x: (1 - pp) * 400, y: Math.sin(t * 1.4 + 1) * 10, ry: -14, s: .82 })
+  phone.querySelector('img').style.transform = `translateY(${-tw(t, 39.8, 43.6, 0, 700, E.io3)}px)`
+  chips.forEach((c, i) => {
+    const p = P(t, 39.4 + i * .18, 39.9 + i * .18)
+    at(c, chipPos[i][0], chipPos[i][1])
+    S(c, { o: clamp(p * 1.5), s: .5 + .5 * E.back(p), y: Math.sin(t * 1.6 + i) * 10 })
+  })
+}
+
+// 10 · END (44–48)
+const s10 = scene(44, 48.2, .01, .01)
+const e1 = el(s10, 'c kicker', 'Hermes Agent', { left: '960px', top: '360px', fontSize: '26px' })
+const e2 = el(s10, 'c h1', '', { left: '960px', top: '500px', fontSize: '150px', whiteSpace: 'nowrap' })
+e2.innerHTML = ['Build', 'your'].map(w => `<span class="word">${w}</span>`).join(' ') + ' ' + ['AI', 'team.'].map(w => `<span class="word grad" style="background-size:300% 100%">${w}</span>`).join(' ')
+const e2w = [...e2.querySelectorAll('.word')]
+const e3 = el(s10, 'c', '<span class="chip" style="font-size:24px">Team Bots · now in the desktop app</span>', { left: '960px', top: '680px' })
+const e4 = el(s10, 'c mono', 'open source · github.com/NousResearch/hermes-agent', { left: '960px', top: '780px', fontSize: '22px', color: 'var(--faint)', letterSpacing: '.08em' })
+function r10(t) {
+  S(e1, { o: P(t, 44.1, 44.5) })
+  reveal(e2w, t, 44.15, .12, .55, 60)
+  e2w.forEach(w => { if (w.classList.contains('grad')) w.style.backgroundPosition = `${100 - P(t, 44.6, 46.5) * 100}% 0` })
+  S(e2, { s: tw(t, 44, 48, 1, 1.05, E.lin) })
+  S(e3, { o: P(t, 45.0, 45.4), y: (1 - E.out3(P(t, 45.0, 45.5))) * 30 })
+  S(e4, { o: P(t, 45.5, 45.9) })
+  stage.style.opacity = tw(t, 47.5, 48.1, 1, 0, E.lin)
+}
+
+// bursts on the big beats
+burst(4.0, 960, 520, 260, 1400, [205, 290], 11)
+burst(9.25, 1100, 400, 80, 500, [215, 260], 3)
+burst(25.1, 1880, 520, 120, 700, [140, 170], 5)
+burst(27.4, 1240, 460, 90, 600, [340, 360], 9)
+burst(32.55, 1180, 470, 160, 900, [140, 175], 13)
+burst(36.55, 1060, 600, 140, 800, [220, 290], 17)
+burst(44.05, 960, 500, 220, 1200, [200, 300], 19)
+
+zoom(s3, 1.15, 1100, 17)
+zoom(s4, 1.08, 960, 300)
+zoom(s5, 1.08, 1000, 330)
+zoom(s6, 1.1, 1070, 330)
+zoom(s7, 1.12, 1060, 560)
+zoom(s8, 1.1, 1060, 520)
+document.querySelectorAll('.c').forEach(e => { if (!e.style.transform) S(e, {}) })
+const wipe = el($('world'), 'layer', '', { pointerEvents: 'none' })
+const hud = el($('world'), 'mono', 'HERMES · TEAM BOTS', { position: 'absolute', right: '56px', top: '46px', fontSize: '17px', letterSpacing: '.35em', color: 'rgba(200,210,255,.45)' })
+const hudbar = el($('world'), '', '', { position: 'absolute', left: 0, bottom: 0, height: '4px', background: 'linear-gradient(90deg,#4f7cff,#a78bfa,#f472b6)', boxShadow: '0 0 18px #7c8cff' })
+const CUTS = [8, 14, 20, 26, 30, 34, 38, 44]
+function drawWipe(t) {
+  let html = ''
+  for (const c of CUTS) {
+    const p = P(t, c - .28, c + .22); if (p <= 0 || p >= 1) continue
+    const x = lerp(-900, 2500, E.io3(p))
+    html += `<div style="position:absolute;top:-300px;left:${x}px;width:260px;height:1700px;transform:rotate(14deg);background:linear-gradient(90deg,transparent,rgba(120,150,255,.0),rgba(170,190,255,.55),rgba(255,255,255,.9),rgba(167,139,250,.5),transparent);filter:blur(6px);mix-blend-mode:screen"></div>`
+  }
+  wipe.innerHTML = html
+  hud.style.opacity = t > 4.3 && t < 43.8 ? .9 : 0
+  hudbar.style.width = (clamp(t / 48) * 100) + '%'
+}
+const renders = [[s1, r1], [s2, r2], [s3, r3], [s4, r4], [s5, r5], [s6, r6], [s7, r7], [s8, r8], [s9, r9], [s10, r10]]
+window.render = t => {
+  drawBg(t); drawFx(t); drawWipe(t)
+  if (t < 47.5) stage.style.opacity = 1
+  for (const [s, r] of renders) if (envelope(s, t)) r(t)
+  // flashes on the drop and a few hits
+  const f = Math.max(tw(t, 4.0, 4.45, .9, 0, E.out3) * (t >= 4 ? 1 : 0), t >= 44 ? tw(t, 44, 44.35, .55, 0) : 0, t >= 3.85 && t < 4 ? P(t, 3.85, 4) * .6 : 0)
+  $('flash').style.opacity = f
+  // global camera breathing
+  const cam = 1 + .012 * Math.sin(t * .8)
+  $('stage').style.transform = `scale(${cam}) rotate(${Math.sin(t * .37) * .25}deg)`
+}
+window.DURATION = 48.2
+window.ready = document.fonts.ready.then(() => Promise.all([...document.images].map(i => i.decode().catch(() => {}))))
+render(0)
+</script>
+</body>
+</html>
