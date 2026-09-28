@@ -5530,6 +5530,10 @@ export const en: Translations = {
           title: 'This message is too large',
           body: 'The request was too big for the model. Compress the conversation or start a new chat, then send again.'
         },
+        no_provider_configured: {
+          title: 'No AI model is set up yet',
+          body: 'Choose a model or sign in, then send your message again.'
+        },
         model_not_found: {
           title: 'This model is not available',
           body: provider =>

@@ -4770,6 +4770,10 @@ export const ja = defineLocale({
           title: 'このメッセージは大きすぎます',
           body: 'リクエストがモデルの上限を超えました。会話を圧縮するか新しいチャットを開始してから、再送信してください。'
         },
+        no_provider_configured: {
+          title: 'AIモデルがまだ設定されていません',
+          body: 'モデルを選ぶかサインインしてから、もう一度メッセージを送信してください。'
+        },
         model_not_found: {
           title: 'このモデルは利用できません',
           body: provider =>

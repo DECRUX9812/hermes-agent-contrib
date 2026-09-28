@@ -5136,6 +5136,10 @@ export const zh = defineLocale({
         streaming: '回复完成前连接已断开。请重试以重新发送。'
       },
       errorCodes: {
+        no_provider_configured: {
+          title: '尚未设置 AI 模型',
+          body: '请选择模型或登录，然后重新发送消息。'
+        },
         provider_policy_blocked: {
           title: '账户设置阻止了此模型',
           body: provider => `${provider} 无法按你账户的数据或隐私设置路由此请求。请选择其他模型或切换服务商。`

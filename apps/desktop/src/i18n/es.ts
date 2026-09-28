@@ -5902,6 +5902,10 @@ export const esOverrides = {
           title: 'Este mensaje es demasiado grande',
           body: 'La solicitud era demasiado grande para el modelo. Comprime la conversación o empieza un chat nuevo y vuelve a enviarlo.'
         },
+        no_provider_configured: {
+          title: 'Aún no hay un modelo de IA configurado',
+          body: 'Elige un modelo o inicia sesión y vuelve a enviar tu mensaje.'
+        },
         model_not_found: {
           title: 'Este modelo no está disponible',
           body: (provider: string) =>

@@ -5912,6 +5912,10 @@ export const deOverrides = {
           title: 'Diese Nachricht ist zu groß',
           body: 'Die Anfrage war zu groß für das Modell. Komprimieren Sie das Gespräch oder starten Sie einen neuen Chat und senden Sie erneut.'
         },
+        no_provider_configured: {
+          title: 'Noch kein KI-Modell eingerichtet',
+          body: 'Wähle ein Modell oder melde dich an und sende deine Nachricht dann erneut.'
+        },
         model_not_found: {
           title: 'Dieses Modell ist nicht verfügbar',
           body: provider =>

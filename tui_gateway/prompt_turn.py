@@ -163,7 +163,8 @@ def _admit_prompt_turn(
         logger.info("Refusing turn for session %s: no agent attached (%s)", session.get("session_key") or sid, reason)
         _emit_terminal_turn_error(
             sid, session, reason,
-            error_surface={"layer": "runtime", "code": "agent_init_failed", "retryable": True})
+            error_surface=session.get("agent_error_surface")
+            or {"layer": "runtime", "code": "agent_init_failed", "retryable": True})
         return None
     return images, agent
 

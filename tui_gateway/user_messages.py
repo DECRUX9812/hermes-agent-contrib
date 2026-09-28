@@ -92,6 +92,9 @@ def busy_message(command: str) -> str:
 
 
 def agent_init_failed_message(exc: Any) -> str:
+    if getattr(exc, "code", None) == "no_provider_configured":
+        # A missing provider is fixed in the app (model picker / sign-in), not by a terminal command.
+        return "No AI model is set up yet. Choose a model or sign in, then send your message again."
     return (f"Hermes could not start the assistant for this session. Details: {exc}. "
             "Check the model and provider with /model, or run `hermes setup` in a terminal to reconfigure.")
 

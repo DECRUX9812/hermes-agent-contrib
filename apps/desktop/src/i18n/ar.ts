@@ -4533,6 +4533,10 @@ export const ar = defineLocale({
         streaming: 'انقطع الاتصال قبل اكتمال الرد. أعد المحاولة لإرساله مجددًا.'
       },
       errorCodes: {
+        no_provider_configured: {
+          title: 'لم يتم إعداد أي نموذج ذكاء اصطناعي بعد',
+          body: 'اختر نموذجًا أو سجّل الدخول ثم أعد إرسال رسالتك.'
+        },
         auth: {
           title: provider => `رفض ${provider} تسجيل دخولك`,
           body: provider =>

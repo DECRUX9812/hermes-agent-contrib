@@ -4470,6 +4470,10 @@ export const zhHant = defineLocale({
         runtime: 'Hermes 在開始回覆時遇到內部問題。請重新傳送訊息；若持續發生，請傳送診斷資訊。'
       },
       errorCodes: {
+        no_provider_configured: {
+          title: '尚未設定 AI 模型',
+          body: '請選擇模型或登入，然後重新傳送訊息。'
+        },
         provider_policy_blocked: {
           title: '帳戶設定封鎖了此模型',
           body: provider => `${provider} 無法依你帳戶的資料或隱私設定路由此請求。請選擇其他模型或切換服務商。`

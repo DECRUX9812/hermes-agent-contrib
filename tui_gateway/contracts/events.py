@@ -84,9 +84,12 @@ event("setup.ready", SetupReadyPayload,
 
 
 class ErrorPayload(Payload):
-    """Every ``_emit("error", …)`` site sets exactly ``message``."""
+    """Every ``_emit("error", …)`` site sets ``message``; agent-init failures also carry the
+    classified ``error_surface`` (``agent/error_surface.py::agent_init_error_surface``) so a client
+    can show one actionable card instead of guessing from the text."""
 
     message: str
+    error_surface: ErrorSurface | None = None
 
 
 event("error", ErrorPayload, doc="A session-level failure outside a turn (agent init, model switch, compression, resume).")

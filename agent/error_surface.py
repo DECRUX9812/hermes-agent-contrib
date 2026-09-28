@@ -101,6 +101,19 @@ def _surface(layer: str, code: str, retryable: bool, provider: str = "", model: 
     return surface
 
 
+NO_PROVIDER_CODE = "no_provider_configured"
+
+
+def agent_init_error_surface(exc: Any) -> dict:
+    """Surface for a session whose agent could not be built. A missing provider (fresh install,
+    or the configured one removed) is an account-setup problem with one fix — choose a model or
+    sign in — not a retryable runtime failure; everything else stays ``agent_init_failed``.
+    Keyed on the auth error's own ``code``, never on its message text."""
+    if getattr(exc, "code", None) == NO_PROVIDER_CODE:
+        return _surface(LAYER_AUTH, NO_PROVIDER_CODE, False)
+    return {"layer": "runtime", "code": "agent_init_failed", "retryable": True}
+
+
 def _provider_label(provider: str) -> str:
     try:
         from hermes_cli.models import provider_label

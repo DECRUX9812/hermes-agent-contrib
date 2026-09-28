@@ -5923,6 +5923,10 @@ export const frOverrides = {
           title: 'Ce message est trop volumineux',
           body: 'La demande était trop grande pour le modèle. Compressez la conversation ou démarrez-en une nouvelle, puis réessayez.'
         },
+        no_provider_configured: {
+          title: 'Aucun modèle d\'IA n\'est encore configuré',
+          body: 'Choisissez un modèle ou connectez-vous, puis renvoyez votre message.'
+        },
         model_not_found: {
           title: "Ce modèle n'est pas disponible",
           body: provider =>

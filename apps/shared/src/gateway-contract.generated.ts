@@ -4909,9 +4909,20 @@ export interface SetupReadyPayload {
   finished_at: number
   [key: string]: unknown
 }
-/** Every ``_emit("error", …)`` site sets exactly ``message``. */
+/** Every ``_emit("error", …)`` site sets ``message``; agent-init failures also carry the classified ``error_surface`` (``agent/error_surface.py::agent_init_error_surface``) so a client can show one actionable card instead of guessing from the text. */
 export interface ErrorPayload {
   message: string
+  error_surface?: ErrorSurface | null
+}
+/** ``agent/error_surface.py::_surface`` — advisory {layer, code, retryable} (+ identity, + auth hint, + ``resets_at`` epoch seconds when the provider named when its limit lifts). */
+export interface ErrorSurface {
+  layer: string
+  code: string
+  retryable: boolean
+  provider?: string | null
+  model?: string | null
+  resets_at?: number | null
+  [key: string]: unknown
 }
 /** ``tui_gateway/model_switch.py`` capability-refresh notice. */
 export interface NoticePayload {
@@ -4957,16 +4968,6 @@ export interface BillingBlock {
   is_nous: boolean
   message: string
   unverified?: boolean | null
-}
-/** ``agent/error_surface.py::_surface`` — advisory {layer, code, retryable} (+ identity, + auth hint, + ``resets_at`` epoch seconds when the provider named when its limit lifts). */
-export interface ErrorSurface {
-  layer: string
-  code: string
-  retryable: boolean
-  provider?: string | null
-  model?: string | null
-  resets_at?: number | null
-  [key: string]: unknown
 }
 /** Committed SQLite row addresses for the agent's current-turn suffix. Missing ids are unproven, never negative acknowledgements. ``complete`` permits retiring the whole local turn only when the original turn boundary, every row and final body are still accounted for; compaction, redirects and partial writes conservatively leave it false. Row ids are scoped to the owning profile's store, as in ``SessionMessage.row_id``. */
 export interface PersistedTurn {

@@ -15479,11 +15479,22 @@
       },
       "ErrorPayload": {
         "additionalProperties": false,
-        "description": "Every ``_emit(\"error\", \u2026)`` site sets exactly ``message``.",
+        "description": "Every ``_emit(\"error\", \u2026)`` site sets ``message``; agent-init failures also carry the\nclassified ``error_surface`` (``agent/error_surface.py::agent_init_error_surface``) so a client\ncan show one actionable card instead of guessing from the text.",
         "properties": {
           "message": {
             "title": "Message",
             "type": "string"
+          },
+          "error_surface": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorSurface"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
