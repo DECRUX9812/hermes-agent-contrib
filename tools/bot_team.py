@@ -721,7 +721,8 @@ def remove_learning(root: Path | str, team_id: str, learning_id: str, *, actor: 
 # ── briefing ──────────────────────────────────────────────────────────────────────────────
 
 
-def build_brief(team: dict, ref: str, *, goal_id: Optional[str] = None, max_learnings: int = 12) -> str:
+def build_brief(team: dict, ref: str, *, goal_id: Optional[str] = None, max_learnings: int = 12,
+                include_goals: bool = True) -> str:
     """The context a teammate starts a session with: who they are on this team, who they
     report to, the mission→goal chain for their work, and the team's most-confirmed lessons.
 
@@ -747,7 +748,7 @@ def build_brief(team: dict, ref: str, *, goal_id: Optional[str] = None, max_lear
     if goal_id:
         chain = goal_ancestry(team, goal_id)
         lines.append("Why this work matters: " + " → ".join(c["title"] for c in chain))
-    else:
+    elif include_goals:
         mine = [g for g in team["goals"] if g.get("owner") == m["slot"] and g["status"] not in _GOAL_SETTLED]
         if mine:
             lines.append("Your open goals: " + "; ".join(g["title"] for g in mine[:8]))
@@ -905,3 +906,36 @@ def held_profiles(root: Path | str, *, reader: Optional[Callable[[Any, str], Opt
     except Exception:
         return held
     return held
+
+
+# ── system-prompt surface ─────────────────────────────────────────────────────────────────
+
+PROMPT_MAX_TEAMS = 2
+PROMPT_LEARNINGS = 8
+
+
+def teams_for_profile(root: Path | str, profile: str) -> list[dict]:
+    """Teams on which ``profile`` holds a seat, oldest first (stable order)."""
+    out = []
+    for path in sorted(_teams_dir(root).glob("*.json")):
+        with contextlib.suppress(Exception):
+            team = json.loads(path.read_text(encoding="utf-8"))
+            if any(m.get("profile") == profile for m in team.get("members", [])):
+                out.append(team)
+    return sorted(out, key=lambda t: (t.get("created_at", 0), t.get("id", "")))
+
+
+def prompt_section(root: Path | str, profile: str) -> str:
+    """The team context a profile carries into a NEW session's system prompt — empty when the
+    profile sits on no team.
+
+    Deliberately the *stable* part of the brief: role, boss, mission, teammates and the top
+    lessons. Goals are left out (they change daily and reach a worker through its Kanban task),
+    so the text — and the Bot Chat capability fingerprint that hashes it — moves only when the
+    team's shape or its top lessons do. Built once per session; never patched into a live one.
+    """
+    blocks = [
+        build_brief(team, profile, max_learnings=PROMPT_LEARNINGS, include_goals=False)
+        for team in teams_for_profile(root, profile)[:PROMPT_MAX_TEAMS]
+    ]
+    return ("## Team\n" + "\n\n".join(blocks)) if blocks else ""

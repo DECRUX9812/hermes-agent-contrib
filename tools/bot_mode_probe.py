@@ -426,6 +426,17 @@ def capability_fingerprint(home: str | os.PathLike | None = None) -> str:
         surface["roster_roles"] = sorted(f"{n}:{_profile_role(d)}" for n, d in roster)
     except Exception:
         surface["roster"] = []
+    # Team membership is part of what the prompt says about "who I am": a change to the team's
+    # shape or top lessons refreshes an eternal Bot Chat once. Absent (not "") for profiles on no
+    # team, so installs without teams keep their existing epoch.
+    def _team_surface() -> str:
+        from tools.bot_team import prompt_section
+
+        return prompt_section(root, _profile_name(resolved))
+
+    team_text = _swallow(_team_surface, "")
+    if team_text:
+        surface["team"] = team_text
     # Protocol-text version salt: bumping it refreshes every eternal Bot Chat
     # prompt ONCE so existing bots adopt a new protocol section.
     surface["protocol_version"] = 2

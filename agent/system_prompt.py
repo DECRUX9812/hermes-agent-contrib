@@ -365,6 +365,22 @@ def _bot_mode_parts(agent: Any) -> List[str]:
     return parts
 
 
+def _team_parts(agent: Any) -> List[str]:
+    """Team context (role, boss, mission, teammates, top lessons) for a profile that holds a seat
+    on a team (tools/bot_team.py). Any surface — Desktop, Slack, CLI — since the seat belongs to
+    the profile, not the chat. Part of the session-start prompt only, like every other block here,
+    so it never touches the cache mid-conversation; Bot Chat's epoch refreshes it on change."""
+    try:
+        from tools.bot_mode_probe import _hermes_root, _profile_name, _resolve_home
+        from tools.bot_team import prompt_section
+
+        home = _resolve_home(_agent_home(agent))
+        section = prompt_section(_hermes_root(home), _profile_name(home))
+        return [section] if section else []
+    except Exception:
+        return []
+
+
 def _ambient_file_safety_profile_name() -> str:
     from agent.file_safety import _resolve_active_profile_name
     return _resolve_active_profile_name()
@@ -706,6 +722,7 @@ def _post_workspace_parts(agent: Any) -> List[str]:
             pass  # Probe failure must never block prompt build.
     if getattr(agent, "_bot_mode_protocol", True):
         parts.extend(_bot_mode_parts(agent))
+        parts.extend(_team_parts(agent))
     parts.append(platform_hint(agent))
     return parts
 

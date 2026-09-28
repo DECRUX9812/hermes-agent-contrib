@@ -48,6 +48,17 @@ spans profiles. Profiles stay islands: the team stores *references*, never confi
   (read-only, throttled to 60 s) from that profile's own session ledger (`state.db`, actual
   cost over estimate); hand-recorded spend adds on top.
 
+## Session-start context (cache-safe)
+
+A profile that holds a seat carries the team's stable context into every NEW session's system
+prompt on any surface (Desktop, Slack, CLI): `agent/system_prompt.py::_team_parts` →
+`tools/bot_team.prompt_section` (role, boss, mission, teammates, top-8 lessons; goals are left
+out because they change daily and reach a worker through its task). It is built once per
+session like every other prompt block. For a canonical Bot Chat — an eternal session — the text
+is hashed into `bot_mode_probe.capability_fingerprint`, so the existing once-per-change epoch
+rebuild refreshes it when the team's shape or top lessons move (and only then). Profiles on no
+team keep their existing epoch.
+
 ## Surfaces
 
 - Backend: `tools/bot_team.py`, `tui_gateway/methods_bot_team.py`, contract
@@ -74,6 +85,4 @@ Not done (honest list):
 - Slack/Grok-Bot **routing** — `channels` stores the binding names; delivery still belongs to
   the messaging gateway, and a Team Bot behaves as its profile does there. No new adapter.
 - Locales beyond English for the Team page (falls back to `en`).
-- Automatic brief injection at session start (the RPC exists; wiring it into `AIAgent` prompt
-  assembly is a separate core change that needs its own cache-safety review).
 - Auto-creation of approvals from tool calls (today teammates call `bots_team.approval.request`).
