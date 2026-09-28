@@ -217,6 +217,8 @@
     --theme-neutral-chrome: #f3f3f3;
     --theme-neutral-sidebar: #f3f3f3;
     --theme-neutral-card: #fcfcfc;
+    --theme-mix-text-tertiary: 64%;
+    --theme-mix-text-quaternary: 50%;
     --theme-mix-chrome: 92%;
     --theme-mix-sidebar: 100%;
     --theme-mix-card: 22%;
@@ -363,8 +365,10 @@
     );
     --ui-text-primary: color-mix(in srgb, var(--ui-base) 94%, transparent);
     --ui-text-secondary: color-mix(in srgb, var(--ui-base) 74%, transparent);
-    --ui-text-tertiary: color-mix(in srgb, var(--ui-base) 54%, transparent);
-    --ui-text-quaternary: color-mix(in srgb, var(--ui-base) 36%, transparent);
+    /* Muted tiers: share of the foreground, resolved per skin by applyTheme (themes/text-ramp.ts)
+       so faint text clears its contrast floor. Light needs more ink than dark. */
+    --ui-text-tertiary: color-mix(in srgb, var(--ui-base) var(--theme-mix-text-tertiary), transparent);
+    --ui-text-quaternary: color-mix(in srgb, var(--ui-base) var(--theme-mix-text-quaternary), transparent);
     /* Transcript scaffolding — thinking headers, settled tool runs, the live
        activity ticker. One colour for all of them (see `ScaffoldRow`), pitched
        between the secondary and tertiary greys those lines used to pick
@@ -586,6 +590,8 @@
 
   :root.dark {
     /* Per-mode mix knobs — overridden inline by `applyTheme()` per skin. */
+    --theme-mix-text-tertiary: 54%;
+    --theme-mix-text-quaternary: 36%;
     --theme-mix-chrome: 74%;
     --theme-mix-card: 38%;
     --theme-mix-elevated: 46%;
