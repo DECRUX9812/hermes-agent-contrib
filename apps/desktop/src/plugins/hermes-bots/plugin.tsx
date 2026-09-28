@@ -17,6 +17,7 @@
 
 import {
   CHAT_EMPTY_AREA,
+  CHAT_HEADER_AREAS,
   Codicon,
   COMPOSER_AREAS,
   host,
@@ -25,12 +26,24 @@ import {
   type PaneContribution,
   SIDEBAR_LIST_TOP_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
+  TRANSCRIPT_DIRECTIVE_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
-import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@hermes/plugin-sdk'
+import type {
+  ChatEmptyProps,
+  ChatHeaderSlotContribution,
+  PluginContext,
+  ProfileGroupRoute,
+  TranscriptDirectiveProps
+} from '@hermes/plugin-sdk'
 
 import { AgentsSection } from './agents-section'
 import { startFaceClock, stopFaceClock } from './avatar'
+import { BotInboundCards } from './bot-events-view'
+import { BotHeaderIdentity } from './bot-header-chip'
+import { BOT_PLAN_DIRECTIVE, rewritePlanDraft } from './bot-plan'
+import { BotPlanCard, canonicalBotChatOnScreen } from './bot-plan-card'
+import { BotPlanChecklist } from './bot-plan-checklist'
 import {
   $agentsSectionOpen,
   $botChatFocused,
@@ -42,9 +55,11 @@ import {
   $selectedRosterKey,
   focusedMentionProfile
 } from './bot-state'
+import { hydrateDismissedBotTips } from './bot-tips'
+import { BotChatTips } from './bot-tips-view'
 import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
 import { BotChatEmpty } from './chat-empty'
-import { bindProfileSync, RoutinesPane } from './cron'
+import { bindProfileSync } from './cron'
 import {
   $botMeta,
   $lastRoster,
@@ -75,10 +90,14 @@ import {
   updateGroupChat
 } from './group-chat'
 import { groupWorkspaceOwnerKey } from './group-membership'
+import { bindGroupReadTracking } from './group-unread'
 import { isBotHidden } from './hidden-bots'
 import { annotateOrphanedGroupChatMembers } from './hygiene'
-import { BOTS_LOCALES } from './i18n'
+import { BOTS_LOCALES, botsText, useBots } from './i18n'
 import { displayName } from './labels'
+import { hydrateRosterSortMode } from './live-status'
+import { MissionRail } from './mission-rail'
+import { hydrateRailSections } from './rail-state'
 import { startBotRelay, stopBotRelay } from './relay'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import {
@@ -88,6 +107,7 @@ import {
   selectedRosterBot,
   sessionOwnsWorkspace
 } from './roster-pane'
+import { hydrateRosterViewMode } from './roster-view'
 import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
 import { startScreenAutoRaise } from './screen-autoraise'
 import { ProfileGroupScreenPortal } from './screen-portal'
@@ -109,7 +129,16 @@ interface MentionCompletionItem {
  *  cancels (this plugin never cancels). */
 interface ComposerDraftPayload {
   attachments?: unknown[]
+  /** Bubble text for a rewritten draft (plan mode shows '/plan …', not the
+   *  model-facing scaffold it sends). */
+  displayText?: string
   text: string
+}
+
+/** Reactive tab label for the routines/context rail — `LocalizedTabTitle`
+ *  only reaches core translations, so the plugin block needs `useBots`. */
+function RailTabTitle() {
+  return <>{useBots().rail.title}</>
 }
 
 export default {
@@ -254,6 +283,16 @@ export default {
       /* no storage — default (silent) stays */
     }
 
+    // Hydrate the roster sort pref (default 'recent'; 'attention' floats
+    // bots with open items — self-contained in live-status.ts).
+    hydrateRosterSortMode()
+    hydrateRosterViewMode()
+    // Hydrate the mission rail's per-section fold state (default expanded).
+    hydrateRailSections()
+
+    // Hydrate dismissed tip cards (G9) — per bot, this device only.
+    hydrateDismissedBotTips()
+
     // Hydrate the Sessions-rail Agents fold (default open).
     try {
       // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
@@ -382,6 +421,9 @@ export default {
     // clock before its onDispose hook — these kept firing until app restart).
     const unbindProfileListener = bindProfileSync($focusedBotOwner)
     const unbindGatewayListener = host.state.gateway.listen(handleSessionsGatewayTransition)
+    // Roster unread badges track room read marks renderer-locally; the bound
+    // listener seeds first-sight rooms and keeps the open room marked read.
+    const unbindGroupReadTracking = bindGroupReadTracking()
 
     // The composer's @ picker reads the roster cache synchronously; fill it on
     // the first gateway open so cross-connection bots complete before the Bots
@@ -434,6 +476,10 @@ export default {
           unbindRosterPrime()
         }
 
+        if (typeof unbindGroupReadTracking === 'function') {
+          unbindGroupReadTracking()
+        }
+
         if (typeof unbindConnectionsChanged === 'function') {
           unbindConnectionsChanged()
         }
@@ -463,6 +509,17 @@ export default {
       area: SIDEBAR_LIST_TOP_AREA,
       data: { render: () => <AgentsSection />, searchable: true }
     })
+    // G3/G7 — the canonical Bot Chat's header carries the bot's persona:
+    // the role one-liner beside the title, and the pinned model as a chip
+    // whose click opens the same quick-swap menu the row context menu has.
+    // The contribution decides per header — only (profile, 'Bot Chat') gets
+    // it; every other chat renders nothing.
+    ctx.register({
+      id: 'bot-header-identity',
+      area: CHAT_HEADER_AREAS.title,
+      data: { render: props => <BotHeaderIdentity {...props} /> } as ChatHeaderSlotContribution
+    })
+
     ctx.register({
       id: 'pane',
       area: 'panes',
@@ -523,13 +580,14 @@ export default {
       const dispose = ctx.register({
         id: 'routines',
         area: 'panes',
-        // The app's noun for these, so the tab agrees with the pane header and
-        // with the core Scheduled jobs surface. `translateNow`, not `useI18n`:
-        // a pane title is read at registration, outside React.
-        title: translateNow('cron.title'),
+        // The rail hosts profile card / task log / computer / deliverables —
+        // `rail.title`, not `cron.title`, so the tab reads 'Bot context' instead
+        // of duplicating the 'Scheduled jobs' section inside it. `botsText`,
+        // not `useI18n`: a pane title is read at registration, outside React.
+        title: botsText().rail.title,
         data: {
-          tabTitle: () => <LocalizedTabTitle select={t => t.cron.title} />,
-          tabTitleText: () => translateNow('cron.title'),
+          tabTitle: () => <RailTabTitle />,
+          tabTitleText: () => botsText().rail.title,
           placement: 'main',
           // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
           dock: {
@@ -537,13 +595,13 @@ export default {
             pos: 'right',
             enforce: true
           },
-          // A bot's schedule is glanceable, not something you sit in — it
+          // A bot's context rail is glanceable, not something you sit in — it
           // arrives as the right edge's vertical tab and takes no width off the
           // chat until the user opens it.
           defaultCollapsed: true,
           width: '250px'
         } satisfies PaneContribution,
-        render: () => <RoutinesPane />
+        render: () => <MissionRail />
       })
 
       // The pane's ✕ remembers a Close across launches, and nothing else ever
@@ -751,6 +809,26 @@ export default {
       }
     })
 
+    // G9 — capability tip cards under the empty-state hero, on the same
+    // claim the hero makes (canonical chat, empty transcript = first run).
+    ctx.register({
+      id: 'chat-empty-tips',
+      area: CHAT_EMPTY_AREA,
+      data: {
+        render: ({ sessionId }: ChatEmptyProps) => <BotChatTips sessionId={sessionId} />
+      }
+    })
+
+    // G5 — inbound events bound to the bot (mailbox notes, relay deliveries,
+    // routine completions) as compact cards inside its canonical chat. The
+    // contribution answers for itself: null when the focused chat is not a
+    // canonical Bot Chat.
+    ctx.register({
+      id: 'bot-inbound-cards',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotInboundCards />
+    })
+
     ctx.register({
       id: 'new-agent',
       area: PALETTE_AREA,
@@ -801,6 +879,49 @@ export default {
           }))
         }
       }
+    })
+
+    // `/plan` in a canonical Bot Chat (B1): the draft is rewritten into a
+    // plan-mode prompt — the reply's numbered plan + trailing `::botplan`
+    // marker render as an approval card (botplan directive below) instead of
+    // a normal turn. Everywhere else `/plan` passes through to the backend's
+    // own planner (.hermes/plans/*.md). Registered BEFORE the mention
+    // middleware so a `@bot` inside the task still resolves, appending its
+    // note after the scaffold rather than inside the brief.
+    ctx.register({
+      id: 'plan-mode-middleware',
+      area: COMPOSER_AREAS.middleware,
+      data: {
+        handler: (draft: ComposerDraftPayload): ComposerDraftPayload => {
+          const rewritten = rewritePlanDraft(
+            draft.text || '',
+            canonicalBotChatOnScreen(host.state.focusedStoredSessionId.get())
+          )
+
+          return rewritten ? { ...draft, text: rewritten.text, displayText: rewritten.displayText } : draft
+        }
+      }
+    })
+
+    // The plan reply's `::botplan` paragraph becomes the approval card — the
+    // numbered list above it stays normal transcript text, so an unclaimed
+    // marker (streaming, non-canonical chat) degrades to a plain line.
+    ctx.register({
+      id: 'botplan-directive',
+      area: TRANSCRIPT_DIRECTIVE_AREA,
+      data: {
+        name: BOT_PLAN_DIRECTIVE,
+        render: (props: TranscriptDirectiveProps) => <BotPlanCard {...props} />
+      }
+    })
+
+    // B2 — the live checklist pinned above a canonical chat's composer while
+    // an approved plan runs. Fully transcript-derived (bot-plan.ts); clear is
+    // cosmetic and in-memory.
+    ctx.register({
+      id: 'bot-plan-checklist',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotPlanChecklist />
     })
 
     // @-mention middleware: "@<bot> do the thing" in any chat gets an

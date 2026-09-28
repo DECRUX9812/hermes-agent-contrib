@@ -4,7 +4,13 @@ import type { ArtifactRecord as TranscriptArtifact } from '@/app/artifacts/artif
 import { getAllSessionMessages } from '@/hermes'
 import type { SessionInfo, SessionMessage } from '@/types/hermes'
 
-import { $railArtifacts, $railItems, mergeRailArtifacts, refreshArtifactRail } from './artifact-rail'
+import {
+  $railArtifacts,
+  $railItems,
+  mergeRailArtifacts,
+  refreshArtifactRail,
+  registryArtifactsForSessions
+} from './artifact-rail'
 import { type ArtifactRecord, clearArtifactRegistry, upsertArtifact } from './artifacts'
 import { $selectedStoredSessionId, setSessions } from './session'
 
@@ -146,5 +152,29 @@ describe('refreshArtifactRail', () => {
     await refreshArtifactRail()
 
     expect($railArtifacts.get()).toEqual([])
+  })
+})
+
+describe('registryArtifactsForSessions', () => {
+  it('unions records across every owned session id and skips strangers', () => {
+    const registry = {
+      s1: [registryRecord('a')],
+      s2: [registryRecord('b')],
+      stranger: [registryRecord('c')]
+    }
+
+    const out = registryArtifactsForSessions(['s1', 's2'], registry, [])
+
+    expect(out.map(record => record.id).sort()).toEqual(['a', 'b'])
+  })
+
+  it('expands lineage aliases so records keyed under a rotated tip still count', () => {
+    // A compression chain: the record was stamped while 'mid' was the tip,
+    // the profile's session list now reports 'tip'.
+    const sessions = [session('tip', { _lineage_ids: ['root', 'mid', 'tip'], _lineage_root_id: 'root' })]
+    const registry = { mid: [registryRecord('a')] }
+
+    expect(registryArtifactsForSessions(['tip'], registry, sessions).map(r => r.id)).toEqual(['a'])
+    expect(registryArtifactsForSessions([], registry, sessions)).toEqual([])
   })
 })

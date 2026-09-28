@@ -32,6 +32,9 @@ export interface TranscriptFindRow {
   /** Message role — the reveal endpoint anchors only on user prompts, so a
    *  hit on any other role resolves the enclosing prompt first. */
   role?: string
+  /** ms epoch, normalized from the backend's unix-seconds stamp — replay
+   *  jumps (`atMs`) locate their span through this. */
+  timestamp?: number
 }
 
 export interface TranscriptFindTarget {
@@ -67,6 +70,19 @@ const corpusCache = new Map<string, Corpus>()
 const corpusRequests = new Map<string, Promise<Corpus | null>>()
 
 const corpusKey = (storedId: string, scope: ProfileScope) => JSON.stringify([storedId, scope])
+
+/** Persisted message timestamps are unix seconds; anything already past the
+ *  plausible seconds range is taken as milliseconds. Same normalization the
+ *  artifact scrape applies (artifact-utils). */
+const MAX_UNIX_SECONDS = 10_000_000_000
+
+function transcriptRowTimestampMs(timestamp: number | undefined): number | undefined {
+  if (typeof timestamp !== 'number' || !Number.isFinite(timestamp) || timestamp <= 0) {
+    return undefined
+  }
+
+  return timestamp < MAX_UNIX_SECONDS ? timestamp * 1000 : timestamp
+}
 
 /**
  * Resolve the session a captured chat surface is bound to, plus the profile
@@ -153,7 +169,12 @@ export function loadTranscriptFindCorpus(target: TranscriptFindTarget, signal: A
         const text = messageContentText(message.parts)
 
         if (text) {
-          rows.push({ rowId: message.rowId, role: message.role, text })
+          rows.push({
+            rowId: message.rowId,
+            role: message.role,
+            text,
+            timestamp: transcriptRowTimestampMs(message.timestamp)
+          })
         }
       }
 
@@ -232,11 +253,16 @@ export function searchTranscriptRows(
  * row. Keyed by the stored id the resume targets so the click and whichever
  * surface renders the transcript agree on the session.
  */
-export interface TranscriptSearchJump {
-  query: string
-  snippet: string
-  issuedAt: number
-}
+export type TranscriptSearchJump = { issuedAt: number } & (
+  | { atMs?: undefined; query: string; snippet: string }
+  | {
+      /** Replay jump: land on the transcript span covering this instant (ms
+       *  epoch), instead of matching a query. */
+      atMs: number
+      query?: undefined
+      snippet?: undefined
+    }
+)
 
 export const $transcriptSearchJumps = atom<Record<string, TranscriptSearchJump>>({})
 
@@ -245,6 +271,43 @@ export function armTranscriptSearchJump(storedId: string, jump: { query: string;
     ...$transcriptSearchJumps.get(),
     [storedId]: { ...jump, issuedAt: Date.now() }
   })
+}
+
+/** A run-card Replay click arms the same seam the FTS jump uses: whichever
+ *  transcript surface binds `storedId` consumes the entry and lands on the
+ *  turn covering `atMs` (ms epoch). */
+export function armTranscriptReplayJump(storedId: string, atMs: number): void {
+  $transcriptSearchJumps.set({
+    ...$transcriptSearchJumps.get(),
+    [storedId]: { atMs, issuedAt: Date.now() }
+  })
+}
+
+/** The stored row the replay instant lands in: the last row stamped
+ *  at-or-before `atMs`. Corpus order is chronological; rows without a
+ *  timestamp cannot be placed and are skipped. When every stamped row is
+ *  newer (a transcript that grew past the run, or a truncated tail corpus)
+ *  the nearest stamped row answers — a replay that silently lands nowhere is
+ *  worse than landing one row off. */
+export function locateTranscriptReplayRow(
+  rows: readonly TranscriptFindRow[],
+  atMs: number
+): TranscriptFindRow | null {
+  let best: TranscriptFindRow | null = null
+
+  for (const row of rows) {
+    if (row.timestamp === undefined) {
+      continue
+    }
+
+    if (row.timestamp <= atMs) {
+      best = row
+    } else {
+      return best ?? row
+    }
+  }
+
+  return best
 }
 
 export function takeTranscriptSearchJump(storedId: string): TranscriptSearchJump | null {

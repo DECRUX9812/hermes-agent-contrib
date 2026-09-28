@@ -7,10 +7,11 @@
  */
 
 import {
+  $watchedSessionKeys,
+  Badge,
   cn,
   Codicon,
   ContextMenu,
-  ContextMenuCheckboxItem,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
@@ -21,7 +22,7 @@ import {
   GlyphSpinner,
   haptic,
   host,
-  queryClient,
+  isWatchedSessionId,
   RowButton,
   SessionStatusDot,
   SidebarRowLead,
@@ -30,43 +31,36 @@ import {
   useValue
 } from '@hermes/plugin-sdk'
 
-import { avatarColor, botAppearance, BotFace } from './avatar'
+import { botAccentColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
+import { BotRowMenu } from './bot-menu'
 import {
   $botChatFocused,
   $focusedBotOwner,
   $pendingBotOpen,
   $selectedRosterKey,
-  focusedRosterOwner,
-  saveSelectedRosterBot
+  focusedRosterOwner
 } from './bot-state'
-import { ensureBotMetadata } from './canonical-chat'
 import {
-  $botAttention,
   $botMeta,
-  $lastRoster,
   botActivitySession,
   botAttentionHint,
   botHandle,
   botRosterKey,
-  botSelectionKey,
-  botSourceStatus,
-  isDefaultBot,
-  newBotChat,
-  ROSTER_KEY,
-  saveBotMeta
+  botSourceStatus
 } from './data'
-import { $groupChats, $groupChatWorkspace } from './group-chat'
-import { botGroups, groupLastActivity } from './group-membership'
+import { $groupChats, $groupChatWorkspace, groupChatRoomKey } from './group-chat'
+import { groupLastActivity } from './group-membership'
 import { toggleGroupChatPinned } from './group-pin'
 import { $activeGroupMemberKeys } from './group-presence'
-import { fallbackSelectionAfterHide, isBotHidden, isBotPinned } from './hidden-bots'
+import { $groupReadAt, groupLastRoundSummary, groupUnreadCount } from './group-unread'
+import { isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
-import { displayName, stripPreviewMarkdown } from './labels'
-import { duplicateBot } from './profile-ops'
-import { botRecentSession, openBotRecentSession } from './recent-session'
+import { botRole, displayName, stripPreviewMarkdown } from './labels'
+import { botLiveStatusLabel, useBotAttention, useBotHealth, useBotLiveStatus } from './live-status'
+import { $relayInflight, relayLaneKey } from './relay'
 import { openRosterBot } from './roster-actions'
-import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
+import { botRosterMeta } from './routing'
 import {
   A2A_PREFIX_RE,
   botCanonicalSessionId,
@@ -78,16 +72,14 @@ import {
   warmRosterBot,
   workerActiveAt
 } from './row-helpers'
-import { openBotScreen } from './screen-open'
+import { stopBotTurn } from './run-controls'
 import type { GroupMember, RosterRow } from './types'
 import {
   $botSections,
   $draggingBot,
   BOT_DRAG_MIME,
-  botSectionId,
   groupChatSectionId,
   groupDragKey,
-  moveBotsToSection,
   moveGroupChatsToSection
 } from './user-sections'
 
@@ -130,7 +122,6 @@ export function BotRow({
   const hidden = isBotHidden(bot, allMeta)
   const pinned = isBotPinned(bot, allMeta)
   const sourceStatus = botSourceStatus(bot)
-  const groups = botGroups(meta)
   const last = bot.last_session
   // Highlight follows the chat on screen (focused session's owner), not the
   // gateway socket's home — a focused tab doesn't swap the socket, and on the
@@ -170,19 +161,47 @@ export function BotRow({
   // Status keys off the canonical Bot Chat — the very session this row opens,
   // so the dot and the click can never describe different conversations.
   const canonicalSessionId = botCanonicalSessionId(bot)
-  // Needs-attention badge (#93091 item 3): background failures record under
-  // the selection key (group turns) or the route key (relay deliveries) —
-  // check both. Local/unannotated rows carry no connectionId, so their relay
-  // failures live under `<activeConnectionId>::<name>` — resolve that shape
-  // too or active-gateway bots never badge. Hidden bots keep their entry;
-  // hiding is display-only.
-  const attentionByKey = useValue($botAttention)
+  // B5 — Watch: the row mirrors the session rail's watch strip, subscribed
+  //  to the same keys atom so the eye paints the moment the chip strip (or
+  //  this menu) flips it. Watched state keys off the canonical chat's stored
+  //  id — the toggle itself resolves the durable pin id.
+  const watchedMap = useValue($watchedSessionKeys)
 
-  const attention =
-    attentionByKey[botSelectionKey(bot)] ||
-    attentionByKey[botRosterKey(bot)] ||
-    attentionByKey[`${bot?.connectionId || activeConnectionId}::${bot?.name || 'default'}`] ||
-    null
+  const watched = Boolean(
+    canonicalSessionId && watchedMap && typeof isWatchedSessionId === 'function' && isWatchedSessionId(canonicalSessionId)
+  )
+
+  // A2 — the attention rollup: inbox items + quiet unread/needs-input dots
+  // counted under the bot's proven owner scope (never the ambient gateway —
+  // a same-named bot on another connection inherits nothing), plus the
+  // recorded failure flag whose reason still drives the tooltip.
+  const attention = useBotAttention(bot)
+  // A1 — the live status line: needs-input > live turn > routine > group >
+  // background > delegated worker > honest floor. Built from signals that
+  // expire (dot claims, job state, round keys, heartbeat) — never the clock.
+  const live = useBotLiveStatus(bot)
+  // E1 — the stop affordance keys off the same live-turn claim the status
+  // line makes; the action resolves the canonical chat's runtime id at click
+  // time (run-controls.stopBotTurn), never a remembered session pointer.
+  const canStop = live.kind === 'working' || live.kind === 'stalled'
+  // E2 — the health chip: unreachable source > recorded failure flag > a
+  // failed work item on the canonical runtime. Renderer-side derivation over
+  // existing atoms only.
+  const health = useBotHealth(bot)
+  // E3 — a delivery queued or in flight to this bot shows on the row tooltip.
+  const inflight = useValue($relayInflight)
+
+  const deliveryInflight = inflight.has(
+    relayLaneKey(String(bot?.connectionId || activeConnectionId), String(bot?.name || 'default'))
+  )
+
+  const stopRun = () => {
+    void stopBotTurn(bot).then(result => {
+      if (result === 'failed') {
+        host.notifyError?.(new Error('session.interrupt rejected'), b.roster.stopRunFailed)
+      }
+    })
+  }
 
   // WHO sent the last message (bot-to-bot DM vs human) — the full stored
   // history lives in the canonical chat, not inline.
@@ -199,11 +218,54 @@ export function BotRow({
 
   const handle = botHandle(bot.name, bot)
   const gatewayLabel = bot.connectionLabel || (bot.connectionId === 'local' ? b.bot.thisDevice : '')
-  const showDetailsRow = Boolean(showHandle || displayPreview || fromBot)
 
-  const rowTooltip = [displayName(bot, meta), `@${handle}`, gatewayLabel, sourceStatus.label]
+  // The live claim outranks the preview — a stale message tail under an
+  // actively working bot reads as frozen. 'Idle' only fills the line when
+  // nothing else would render (the floor, not a permanent caption); an
+  // unreachable source shows its preview, or nothing — never a guess.
+  const liveText =
+    live.kind === 'idle' || live.kind === 'unknown' ? null : botLiveStatusLabel(live, b.roster)
+
+  const detailText = liveText || displayPreview || (live.kind === 'idle' ? b.roster.liveIdle : '')
+
+  const liveTone =
+    live.kind === 'needs-input' || live.kind === 'stalled'
+      ? 'amber'
+      : liveText
+        ? 'live'
+        : null
+
+  const showDetailsRow = Boolean(showHandle || detailText || fromBot)
+
+  // G3 — persona: role subtitle (explicit `meta.role` or the description's
+  // first sentence) and the accent color = the avatar's own color —
+  // deterministic from the name when unset, and the AvatarPicker's existing
+  // color choice IS the override, so no second palette exists to drift.
+  const role = botRole(bot, meta)
+  const accent = botAccentColor(bot, meta)
+
+  const rowTooltip = [
+    displayName(bot, meta),
+    `@${handle}`,
+    gatewayLabel,
+    sourceStatus.label,
+    deliveryInflight ? b.roster.deliveryInFlight : ''
+  ]
     .filter(Boolean)
     .join(' · ')
+
+  // E2 — the chip's tooltip: the source label when unreachable, the flagged
+  // reason's hint otherwise, with the generic "last run failed" fallback.
+  const healthLabel =
+    health.kind === 'unreachable'
+      ? sourceStatus.label
+      : health.detail === 'last_run_failed'
+        ? b.roster.lastRunFailed
+        : health.detail === 'stalled'
+          ? b.roster.liveStalled
+          : health.detail
+            ? botAttentionHint(health.detail)
+            : b.roster.needsAttention
 
   // Pointer-over pre-warm (see row-helpers.warmRosterBot): dials the bot's
   // own backend — its own source when source-scoped — before the click lands.
@@ -218,9 +280,7 @@ export function BotRow({
   // gestures. The drag carries the roster key under a private MIME type, so
   // only a section block can accept it.
   const rosterKey = botRosterKey(bot)
-  const sections = useValue($botSections)
   const dragging = useValue($draggingBot) === rosterKey
-  const currentSectionId = botSectionId(bot, allMeta)
 
   const row = (
     <RowButton
@@ -244,10 +304,18 @@ export function BotRow({
         $draggingBot.set(rosterKey)
       }}
       onPointerEnter={warm}
+      style={{
+        // Faint accent tint bleeding in from the row's left edge — hairline
+        // subtlety, not a skinned fill.
+        backgroundImage: `linear-gradient(90deg, ${accent}0d, transparent 55%)`
+      }}
     >
-      <div className={cn('shrink-0', !sourceStatus.available && 'grayscale opacity-60')}>
+      <div
+        className={cn('shrink-0 rounded-lg', !sourceStatus.available && 'grayscale opacity-60')}
+        style={{ boxShadow: `0 0 0 1px ${accent}80` }}
+      >
         <BotFace
-          color={avatarColor(color, bot.name)}
+          color={accent}
           image={photo ? image : null}
           mood={botMood}
           name={bot.name}
@@ -273,17 +341,66 @@ export function BotRow({
                 <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="eye-closed" />
               </Tip>
             ) : null}
+            {watched ? (
+              <Tip label={b.bot.watching}>
+                <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-accent)" name="eye" />
+              </Tip>
+            ) : null}
             <Tip label={rowTooltip}>
               <span className="min-w-0 truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
             </Tip>
           </div>
-          {attention ? (
-            <Tip label={botAttentionHint(attention.reason)}>
-              <Codicon
-                aria-label={b.roster.needsAttention}
-                className="shrink-0 text-[0.6875rem] text-amber-600 dark:text-amber-300"
-                name="warning"
-              />
+          {canStop ? (
+            <Tip label={b.roster.stopRun}>
+              <span
+                aria-label={b.roster.stopRun}
+                className="flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-destructive"
+                onClick={event => {
+                  event.stopPropagation()
+                  stopRun()
+                }}
+                role="button"
+              >
+                <Codicon name="debug-stop" />
+              </span>
+            </Tip>
+          ) : null}
+          {health.kind !== 'ok' ? (
+            <Tip label={healthLabel}>
+              <span
+                aria-label={healthLabel}
+                className={cn(
+                  'flex shrink-0 items-center text-[0.6875rem]',
+                  health.kind === 'unreachable' ? 'text-destructive' : 'text-amber-600 dark:text-amber-300'
+                )}
+              >
+                <Codicon name={health.kind === 'unreachable' ? 'debug-disconnect' : 'warning'} />
+              </span>
+            </Tip>
+          ) : null}
+          {attention.count > 0 ? (
+            <Tip
+              label={
+                attention.reason
+                  ? botAttentionHint(attention.reason)
+                  : b.roster.attentionItems(attention.count)
+              }
+            >
+              <span
+                aria-label={
+                  attention.reason
+                    ? `${b.roster.needsAttention}: ${botAttentionHint(attention.reason)}`
+                    : b.roster.attentionItems(attention.count)
+                }
+                className="flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums text-amber-600 dark:text-amber-300"
+                onClick={event => {
+                  event.stopPropagation()
+                  open()
+                }}
+              >
+                <Codicon name="warning" />
+                {attention.count}
+              </span>
             </Tip>
           ) : null}
           {openTasks ? (
@@ -303,14 +420,26 @@ export function BotRow({
             </span>
           ) : null}
         </div>
+        {role ? (
+          <div className="min-w-0 truncate text-[0.6875rem] leading-snug text-(--ui-text-quaternary)">{role}</div>
+        ) : null}
         {showDetailsRow ? (
           <div className="flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-tertiary)">
             {showHandle ? (
               <span className="shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)">{`@${handle}`}</span>
             ) : null}
-            {showHandle && displayPreview ? <span className="shrink-0 text-(--ui-text-quaternary)">·</span> : null}
-            {displayPreview ? (
-              <span className={cn('min-w-0 truncate', fromBot && 'italic')}>{displayPreview}</span>
+            {showHandle && detailText ? <span className="shrink-0 text-(--ui-text-quaternary)">·</span> : null}
+            {detailText ? (
+              <span
+                className={cn(
+                  'min-w-0 truncate',
+                  liveTone === 'amber' && 'text-amber-600 dark:text-amber-300',
+                  liveTone === 'live' && 'text-(--ui-text-secondary)',
+                  !liveText && fromBot && 'italic'
+                )}
+              >
+                {detailText}
+              </span>
             ) : null}
           </div>
         ) : null}
@@ -319,181 +448,16 @@ export function BotRow({
   )
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onSelect={() => void openRosterBot(bot)}>{b.bot.openBotChat}</ContextMenuItem>
-        {onAssignTask ? (
-          <ContextMenuItem onSelect={() => onAssignTask(bot)}>{b.mailbox.assignTask}</ContextMenuItem>
-        ) : null}
-        <ContextMenuItem onSelect={() => openBotScreen(bot, meta)}>{b.screen.menu}</ContextMenuItem>
-        {/* Phone parity (#40): Messaging scoped to this bot's profile — the
-            platform cards there carry the deep link + QR. Remote-source bots
-            have no platforms on this backend, so the item hides for them. */}
-        {!bot.remoteSource && typeof host.navigate === 'function' && (
-          <ContextMenuItem onSelect={() => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`)}>
-            {b.bot.continueOnPhone}
-          </ContextMenuItem>
-        )}
-        <ContextMenuCheckboxItem
-          checked={Boolean(meta?.screenAutoOpen)}
-          onSelect={() => {
-            void ensureBotMetadata(bot)
-              .then(current => {
-                const next = !current.screenAutoOpen
-                void saveBotMeta(bot, { screenAutoOpen: next })
-                host.notify({
-                  kind: 'info',
-                  message: next
-                    ? b.screen.autoOpenOnToast(displayName(bot, current))
-                    : b.screen.autoOpenOffToast(displayName(bot, current))
-                })
-              })
-              .catch(error => host.notifyError?.(error, b.bot.metadataLoadFailed))
-          }}
-        >
-          {b.screen.autoOpenMenu}
-        </ContextMenuCheckboxItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onSelect={() => {
-            void ensureBotMetadata(bot)
-              .then(current => {
-                const pinned = Boolean(current.pinned)
-                void saveBotMeta(bot, {
-                  pinned: !pinned
-                })
-                host.notify({
-                  kind: 'info',
-                  message: pinned
-                    ? b.bot.unpinnedToast(displayName(bot, current))
-                    : b.bot.pinnedToast(displayName(bot, current))
-                })
-              })
-              .catch(error => host.notifyError?.(error, b.bot.metadataLoadFailed))
-          }}
-        >
-          {pinned ? b.bot.unpin : b.bot.pinToTop}
-        </ContextMenuItem>
-        <ContextMenuItem
-          onSelect={() => {
-            void ensureBotMetadata(bot)
-              .then(current => {
-                const hidden = Boolean(current.hidden)
-                void saveBotMeta(bot, {
-                  hidden: !hidden
-                })
-
-                if (!hidden) {
-                  fallbackSelectionAfterHide(botSelectionKey(bot))
-                }
-
-                host.notify({
-                  kind: 'info',
-                  message: hidden
-                    ? b.bot.unhiddenToast(displayName(bot, current))
-                    : b.bot.hiddenToast(displayName(bot, current))
-                })
-              })
-              .catch(error => host.notifyError?.(error, b.bot.metadataLoadFailed))
-          }}
-        >
-          {hidden ? b.bot.unhide : b.bot.hide}
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onSelect={() =>
-            void ensureBotMetadata(bot)
-              .then(() => onEdit(bot))
-              .catch(error => host.notifyError?.(error, b.bot.loadFailed))
-          }
-        >
-          {b.bot.editMenu}
-        </ContextMenuItem>
-        <ContextMenuItem
-          onSelect={() =>
-            void ensureBotMetadata(bot)
-              .then(() => onGroup(bot))
-              .catch(error => host.notifyError?.(error, b.bot.groupsLoadFailed))
-          }
-        >
-          {groups.length ? b.bot.groupsMenu(groups.join(', ')) : b.bot.manageGroups}
-        </ContextMenuItem>
-        <ContextMenuItem
-          onSelect={() => {
-            host.notify({
-              kind: 'info',
-              message: `Duplicating ${displayName(bot, meta)}…`
-            })
-            duplicateBot(bot, $lastRoster.get())
-              .then(name => {
-                queryClient.invalidateQueries({
-                  queryKey: ROSTER_KEY
-                })
-                host.notify({
-                  kind: 'success',
-                  message: `Created ${name} — full copy of ${bot.name}`
-                })
-              })
-              .catch(err => host.notifyError(err, b.bot.duplicateFailed))
-          }}
-        >
-          {b.bot.duplicate}
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          onSelect={() => {
-            saveSelectedRosterBot(bot)
-            setBotsWorkspaceOwner(botWorkspaceOwnerKey(bot), bot)
-            newBotChat(bot)
-          }}
-        >
-          {b.bot.newChatWith}
-        </ContextMenuItem>
-        {/* Click-to-latest (#93054): the freshest listed session — a cron run,
-            a delegated job, a side thread — without moving the row click off
-            the canonical Bot Chat. */}
-        <ContextMenuItem disabled={!botRecentSession(bot)} onSelect={() => void openBotRecentSession(bot)}>
-          Open recent session
-        </ContextMenuItem>
-        <ContextMenuSeparator />
-        {/* Filing. Membership is one field on the bot's meta (`sectionId`), so
-            this is a one-field write and no list anywhere has to be kept in
-            sync with it. */}
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>{b.sections.moveTo}</ContextMenuSubTrigger>
-          <ContextMenuSubContent>
-            {sections.map(section => (
-              <ContextMenuItem
-                disabled={section.id === currentSectionId}
-                key={section.id}
-                onSelect={() => void moveBotsToSection([bot], section.id)}
-              >
-                <Codicon className="mr-1.5" name="folder" />
-                {section.name}
-              </ContextMenuItem>
-            ))}
-            {sections.length ? <ContextMenuSeparator /> : null}
-            <ContextMenuItem onSelect={() => onNewSection(bot)}>
-              <Codicon className="mr-1.5" name="new-folder" />
-              {b.sections.newSectionEllipsis}
-            </ContextMenuItem>
-            {currentSectionId ? (
-              <ContextMenuItem onSelect={() => void moveBotsToSection([bot], null)}>
-                <Codicon className="mr-1.5" name="inbox" />
-                {b.sections.removeFromSection}
-              </ContextMenuItem>
-            ) : null}
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        {isDefaultBot(bot) ? null : <ContextMenuSeparator />}
-        {isDefaultBot(bot) ? null : (
-          <ContextMenuItem onSelect={() => onDelete(bot)} variant="destructive">
-            {t.common.delete}
-          </ContextMenuItem>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+    <BotRowMenu
+      bot={bot}
+      onAssignTask={onAssignTask}
+      onDelete={onDelete}
+      onEdit={onEdit}
+      onGroup={onGroup}
+      onNewSection={onNewSection}
+    >
+      {row}
+    </BotRowMenu>
   )
 }
 
@@ -525,6 +489,9 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
   const log = Array.isArray(room.log) ? room.log : []
   const last = log.length ? log[log.length - 1] : null
   const lastAt = groupLastActivity(room)
+  const readAt = useValue($groupReadAt)[groupChatRoomKey(group, room)] || 0
+  const unread = groupUnreadCount(log, readAt)
+  const { text: roundText } = groupLastRoundSummary(room)
   // Room previews speak the same handle vocabulary as the roster, mentions
   // and the group prompt: the primary profile is @hermes, not @default.
   const lastFrom = last?.from?.name || ''
@@ -535,7 +502,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
   )
 
   const preview = last
-    ? `${last.from?.kind === 'user' ? b.group.you : `@${lastHandle}`}: ${stripPreviewMarkdown(last.text) || '…'}`
+    ? `${last.from?.kind === 'user' ? b.group.you : `@${lastHandle}`}: ${stripPreviewMarkdown(roundText) || '…'}`
     : b.group.memberCount(members.length)
 
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
@@ -610,6 +577,16 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             <Tip label={b.group.needsYourInput}>
               <Codicon aria-label={b.roster.needsInput} className="shrink-0 text-(--ui-accent)" name="question" />
             </Tip>
+          ) : null}
+          {unread > 0 ? (
+            <Badge
+              aria-label={b.group.unreadCount(unread)}
+              className="shrink-0"
+              size="xs"
+              variant="solid"
+            >
+              {unread > 99 ? '99+' : unread}
+            </Badge>
           ) : null}
           {lastAt ? (
             <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">

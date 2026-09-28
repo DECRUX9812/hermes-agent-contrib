@@ -56,9 +56,16 @@ type BotsMessages = {
     name: string
     title: string
     description: string
+    /** G3 — the persona role one-liner (roster subtitle + chat header). */
+    role: string
+    rolePlaceholder: string
     createOn: string
     general: string
     capabilities: string
+    /** Collapsed Capabilities header read: enabled counts or, before the
+     *  describe lands, the hint naming what the section holds. */
+    capabilitiesSummary: (skills: number, toolsets: number, mcp: number) => string
+    capabilitiesHint: string
     skills: string
     tools: string
     cloneFrom: string
@@ -102,6 +109,15 @@ type BotsMessages = {
     updated: (name: string) => string
     created: (name: string) => string
     createdOn: (name: string, target: string) => string
+    /** Create-dialog preset picker (C1). Soul stubs stay out of here — they
+     *  are agent-facing SOUL.md content and live in `bot-templates.ts`. */
+    templates: {
+      label: string
+      custom: { name: string }
+      engineer: { description: string; name: string; title: string }
+      ops: { description: string; name: string; title: string }
+      researcher: { description: string; name: string; title: string }
+    }
   }
   roster: {
     search: string
@@ -141,6 +157,38 @@ type BotsMessages = {
     retryNow: string
     rosterUnavailable: (reason: string) => string
     waitingForGateway: string
+    /** E1 — the row's run-stop affordance (chip + context menu). */
+    stopRun: string
+    /** E2 — the health chip's label when a canonical-chat work item failed. */
+    lastRunFailed: string
+    /** E3 — row tooltip suffix while a relay delivery to this bot is in flight. */
+    deliveryInFlight: string
+    /** E3 — row context menu: force a relay outbox drain now. */
+    retryDeliveries: string
+    /** E1/E3 — action-failure toast fallbacks. */
+    stopRunFailed: string
+    retryDeliveriesFailed: string
+    /** A1 — the row's live status line: what the bot is doing right now.
+     *  'idle'/'unknown' are the honest floor; recency is never one of them. */
+    liveIdle: string
+    liveWorking: string
+    liveWorkingTool: (tool: string) => string
+    liveStalled: string
+    liveRoutine: (title: string) => string
+    liveRoutineUnnamed: string
+    liveGroup: string
+    liveBackground: string
+    liveDelegated: string
+    /** A2 — the attention badge tooltip, and the sort menu's options. */
+    attentionItems: (count: number) => string
+    sortRecent: string
+    sortAttention: string
+    sortAlpha: string
+    /** G10 — the list/card view toggle's labels, and the card's recency line. */
+    listView: string
+    cardView: string
+    cardActive: (ago: string) => string
+    openChat: string
   }
   /** Sessions-rail Agents fold — the compact roster beside the sessions. */
   agents: {
@@ -203,6 +251,8 @@ type BotsMessages = {
     helpPromptPlaceholder: string
     descriptionHint: string
     newChatWith: string
+    /** Pane/row affordance: spawn a side-chat in a second tile — never the canonical Bot Chat. */
+    newTask: string
     /** Re-opens the forever-chat on purpose. A plain row click only returns to
      *  the tabs already open, so a closed Bot Chat needs an explicit ask. */
     openBotChat: string
@@ -233,6 +283,27 @@ type BotsMessages = {
     attentionBlocked: string
     duplicate: string
     duplicateFailed: string
+    /** Duplicate progress + success toasts. */
+    duplicating: (name: string) => string
+    duplicated: (name: string, source: string) => string
+    /** Export/import bot bundles (C5). `exportBot` is the save dialog's title;
+     *  `exportBotMenu` the row context-menu label. */
+    exportBotMenu: string
+    exportBot: (name: string) => string
+    exported: (path: string) => string
+    exportFailed: string
+    importBot: string
+    imported: (name: string) => string
+    importFailed: string
+    /** Model quick-swap submenu (C3). Failure copy reuses
+     *  `editor.modelSwitchFailed`. */
+    modelMenu: string
+    modelLoading: string
+    modelUnavailable: string
+    modelSetTo: (model: string) => string
+    modelInheritSet: string
+    /** G7 — the header/card model chip's label when nothing is pinned. */
+    modelDefault: string
     deleteTitle: string
     removeFromAllGroups: string
     createFirstHint: string
@@ -255,6 +326,16 @@ type BotsMessages = {
     chatEmpty: string
     /** First line of a brand-new bot's forever-chat — see `kickoffText`. */
     kickoff: string
+    /** Per-bot notification controls (A4) — context-menu submenu + items. */
+    notifications: string
+    muteAll: string
+    muteQuiet: string
+    /** Watch (B5): context-menu checkbox, the row's eye tooltip, and the
+     *  toggle toasts. Subscribes the canonical chat to the watch-chips strip. */
+    watch: string
+    watching: string
+    watchToast: (name: string) => string
+    unwatchToast: (name: string) => string
   }
   /** Avatar picker: shapes, blobs, pets, uploads, generation. */
   avatar: {
@@ -360,6 +441,14 @@ type BotsMessages = {
     wantsToRunCommand: (handle: string) => string
     asks: (handle: string) => string
     answerTo: (member: string) => string
+    /** Roster badge: member messages since the room was last opened. */
+    unreadCount: (count: number) => string
+    /** D2 — the room's stated objective (settings field + header line). */
+    goal: string
+    goalHint: string
+    goalPlaceholder: string
+    /** D2 — the card that lands after a completed round. */
+    roundSummaryTitle: string
   }
   /** Skills hub + MCP setup surfaces embedded in the bot editor. */
   tools: {
@@ -405,6 +494,19 @@ type BotsMessages = {
     noPackageManager: string
     portalTitle: string
     portalOpen: string
+    /** Computer panel (the docked upgrade of the screen hero): header title,
+     *  quick actions and the resize handle. */
+    panelTitle: string
+    openFullPane: string
+    copyScreenshot: string
+    screenshotCopied: string
+    screenshotFailed: string
+    restartScreen: string
+    restartFailed: string
+    openWorkdir: string
+    workdirUnavailable: string
+    workdirFailed: string
+    resizePanel: string
     heroStopped: string
     heroNotInstalled: string
     heroConnecting: string
@@ -507,6 +609,141 @@ type BotsMessages = {
     runsInterval: (count: number, unit: string) => string
     runsRaw: string
     timesTotal: (count: number) => string
+    /** B6 — past-run history inside the routine detail dialog. */
+    runHistory: string
+    loadingRuns: string
+    noRuns: string
+    runActive: string
+    runDone: string
+    /** A script-only run's output doc — no transcript to open. */
+    runOutput: string
+  }
+  /** B3 — the pane's per-bot artifact rail across all owned sessions. */
+  deliverables: {
+    title: string
+    empty: string
+    refresh: string
+  }
+  runs: {
+    title: string
+    empty: string
+    kindChat: string
+    kindRoutine: string
+    kindRelay: string
+    kindGroup: string
+    ok: string
+    running: string
+    failed: string
+    attention: string
+    /** B4 — jump a run card into its transcript span. */
+    replay: string
+    tookSeconds: (seconds: number) => string
+    tookMinutes: (minutes: number) => string
+  }
+  /** D1 — the fleet broadcast dialog. */
+  broadcast: {
+    menuItem: string
+    title: string
+    desc: string
+    promptLabel: string
+    promptPlaceholder: string
+    selectAll: string
+    clearAll: string
+    send: (count: number) => string
+    statusSending: string
+    statusWorking: string
+    statusFailed: string
+    emptyReply: string
+    noBotSelected: string
+  }
+  /** D3 — the cross-bot routines schedule view. */
+  calendar: {
+    menuItem: string
+    title: string
+    desc: string
+    nextUp: string
+    overdue: string
+    paused: string
+    empty: string
+    loadFailed: string
+    untitledJob: string
+  }
+  /** D4 — the stuck-work triage strip on the roster. */
+  triage: {
+    title: string
+    needsInput: (name: string) => string
+    turnFailed: (name: string) => string
+    deliveryFailed: (name: string) => string
+    routineOverdue: (name: string) => string
+    unreachable: (name: string) => string
+    attention: (name: string, reason: string) => string
+    openItem: (name: string) => string
+  }
+  /** B1+B2 — the `/plan` proposal card + live checklist above the composer.
+   *  Model-bound strings (the mode prefix, the execute prompt, the `::botplan`
+   *  and `DONE:` markers) stay English in bot-plan.ts — this section is only
+   *  the chrome the user reads. */
+  plan: {
+    proposedTitle: string
+    stepsCount: (count: number) => string
+    approve: string
+    edit: string
+    dismiss: string
+    /** Shown inline once the plan is taken up (approved, edited, or replied
+     *  to) — the card's buttons collapse to this state line. */
+    settledNote: string
+    checklistTitle: string
+    stepsDone: (done: number, total: number) => string
+    complete: string
+    clearChecklist: string
+  }
+  /** G1/G8 — the focused bot's context rail: profile card up top, then the
+   *  dated task log, computer panel, and routines as collapsible sections. */
+  rail: {
+    /** Empty-state title + tab label. */
+    title: string
+    /** The dated task-log section header. */
+    tasks: string
+    today: string
+    yesterday: string
+  }
+  /** G6 — the roster toolbar's marketplace stub: bundle import plus the C1
+   *  template catalog as installable starter cards. */
+  market: {
+    menuItem: string
+    title: string
+    desc: string
+    starters: string
+    importFile: string
+    importHint: string
+    add: string
+  }
+  /** F1 — the session deck on the bot pane: every session the bot's profile
+   *  owns, canonical chat first. */
+  deck: {
+    title: string
+    newChat: string
+    refresh: string
+    canonical: string
+    empty: string
+    untitled: string
+  }
+  /** G5 — the inbound-event strip inside a bot's canonical chat. */
+  events: {
+    /** Link affordance that opens the thing a card came from. */
+    open: string
+    /** Live relay-delivery line. */
+    inflight: string
+  }
+  /** G9 — dismissible capability tips on a bot's first-run canonical chat. */
+  tips: {
+    computer: string
+    delegate: string
+    dismiss: string
+    openBots: string
+    openComputer: string
+    openRoutines: string
+    schedule: string
   }
 }
 
@@ -532,9 +769,13 @@ const en: BotsMessages = {
     name: 'Name',
     title: 'Title',
     description: 'Description',
+    role: 'Role',
+    rolePlaceholder: 'e.g. Head of Research',
     createOn: 'Create on',
     general: 'General',
     capabilities: 'Capabilities',
+    capabilitiesSummary: (skills, toolsets, mcp) => `${skills} skills · ${toolsets} toolsets · ${mcp} MCP servers`,
+    capabilitiesHint: 'model · skills · toolsets · MCP · SOUL.md',
     skills: 'Skills',
     tools: 'Tools',
     cloneFrom: 'Clone from profile',
@@ -582,7 +823,26 @@ const en: BotsMessages = {
     sectionsFailed: sections => `Some sections failed: ${sections}`,
     updated: name => `${name} updated`,
     created: name => `Bot "${name}" created`,
-    createdOn: (name, target) => `Bot "${name}" created on ${target}`
+    createdOn: (name, target) => `Bot "${name}" created on ${target}`,
+    templates: {
+      label: 'Template',
+      custom: { name: 'Custom' },
+      engineer: {
+        description: 'Writes, reviews, and debugs code in small verified steps.',
+        name: 'Engineer',
+        title: 'Engineer'
+      },
+      ops: {
+        description: 'Watches systems and schedules, investigates anomalies, escalates clearly.',
+        name: 'Ops',
+        title: 'Ops'
+      },
+      researcher: {
+        description: 'Deep research with cited sources, cross-checked claims, open questions tracked.',
+        name: 'Researcher',
+        title: 'Researcher'
+      }
+    }
   },
   roster: {
     search: 'Search bots and group chats',
@@ -620,7 +880,30 @@ const en: BotsMessages = {
     rosterUnavailable: reason =>
       `Roster unavailable: ${reason}. If your gateway predates profiles.list, update Hermes and restart the gateway.`,
     waitingForGateway:
-      'Waiting for the gateway connection… (remote gateways can take a few seconds; retries automatically)'
+      'Waiting for the gateway connection… (remote gateways can take a few seconds; retries automatically)',
+    stopRun: 'Stop run',
+    lastRunFailed: 'Last run failed',
+    deliveryInFlight: 'Delivery in flight',
+    retryDeliveries: 'Retry pending deliveries',
+    stopRunFailed: 'Could not stop the run',
+    retryDeliveriesFailed: 'Could not retry the deliveries',
+    liveIdle: 'Idle',
+    liveWorking: 'Working',
+    liveWorkingTool: tool => `Working · ${tool}`,
+    liveStalled: 'Stalled',
+    liveRoutine: title => `Running ${title}`,
+    liveRoutineUnnamed: 'Running a routine',
+    liveGroup: 'In a group round',
+    liveBackground: 'Background task running',
+    liveDelegated: 'On a task',
+    attentionItems: count => (count === 1 ? '1 item needs attention' : `${count} items need attention`),
+    sortRecent: 'Recent activity',
+    sortAttention: 'Attention first',
+    sortAlpha: 'A–Z',
+    listView: 'List view',
+    cardView: 'Card view',
+    cardActive: ago => `Active ${ago} ago`,
+    openChat: 'Open chat'
   },
   agents: {
     allBots: count => `All ${count} ${count === 1 ? 'bot' : 'bots'}`,
@@ -680,6 +963,7 @@ const en: BotsMessages = {
     helpPromptPlaceholder: 'What should this bot help with?',
     descriptionHint: 'Leave blank to generate from the bot’s name and description.',
     newChatWith: 'New chat with this bot',
+    newTask: 'New task',
     openBotChat: 'Open Bot Chat',
     continueOnPhone: 'Continue on phone…',
     openingChat: 'Opening chat…',
@@ -704,6 +988,21 @@ const en: BotsMessages = {
     attentionBlocked: 'Bot is blocked — see its last message',
     duplicate: 'Duplicate',
     duplicateFailed: 'Duplicate failed',
+    duplicating: name => `Duplicating ${name}…`,
+    duplicated: (name, source) => `Created ${name} — full copy of ${source}`,
+    exportBotMenu: 'Export bot…',
+    exportBot: name => `Export ${name}…`,
+    exported: path => `Exported to ${path}`,
+    exportFailed: 'Export failed',
+    importBot: 'Import bot…',
+    imported: name => `Imported ${name}`,
+    importFailed: 'Import failed',
+    modelMenu: 'Model',
+    modelLoading: 'Loading models…',
+    modelUnavailable: 'Model list unavailable',
+    modelSetTo: model => `Model set to ${model}`,
+    modelInheritSet: 'Model follows the launch profile',
+    modelDefault: 'default',
     deleteTitle: 'Delete bot and profile?',
     removeFromAllGroups: 'Remove from all groups',
     createFirstHint: 'Open the Bots pane and hit “New Bot”.',
@@ -721,7 +1020,14 @@ const en: BotsMessages = {
     openChatFailedMessage: 'Try again.',
     openGateways: 'Open Gateways',
     chatEmpty: 'Say something to get started.',
-    kickoff: 'Hey, tell me about yourself!'
+    kickoff: 'Hey, tell me about yourself!',
+    notifications: 'Notifications',
+    muteAll: 'Mute all notifications',
+    muteQuiet: 'Mute during quiet hours',
+    watch: 'Watch',
+    watching: 'Watching this bot',
+    watchToast: name => `Watching ${name}`,
+    unwatchToast: name => `Stopped watching ${name}`
   },
   avatar: {
     classicShapes: 'Classic shapes',
@@ -824,7 +1130,12 @@ const en: BotsMessages = {
     answerFailed: (handle, error) => `Could not send the answer to @${handle}: ${error}`,
     wantsToRunCommand: handle => `@${handle} wants to run a command:`,
     asks: handle => `@${handle} asks:`,
-    answerTo: member => `Answer @${member}`
+    answerTo: member => `Answer @${member}`,
+    unreadCount: count => `${count} unread`,
+    goal: 'Goal',
+    goalHint: 'What this room is trying to accomplish — shown under the title.',
+    goalPlaceholder: 'e.g. Compare retrieval strategies for the docs search',
+    roundSummaryTitle: 'Round summary'
   },
   tools: {
     installHint: name => `Install "${name}" and add it to the list above`,
@@ -856,7 +1167,7 @@ const en: BotsMessages = {
     title: 'Screen',
     menu: 'Open Screen',
     unsupportedTitle: 'No bot screen on this host',
-    unsupportedBody: 'Bot screens run on Linux gateway hosts. This bot uses the host\u2019s own display.',
+    unsupportedBody: 'Bot screens run on Linux gateway hosts. This bot uses the host’s own display.',
     notInstalledTitle: 'Screen packages missing',
     notInstalledBody: 'The gateway host needs TigerVNC and the Xfce core to give this bot a screen. Run on the host:',
     installHint: 'Runs on the gateway host as the user Hermes runs as; sudo is asked for once, through Hermes.',
@@ -867,6 +1178,17 @@ const en: BotsMessages = {
     noPackageManager: 'No supported package manager (apt, dnf, pacman) was found on the gateway host.',
     portalTitle: 'Screen',
     portalOpen: 'Open',
+    panelTitle: 'Computer',
+    openFullPane: 'Open full pane',
+    copyScreenshot: 'Copy screenshot',
+    screenshotCopied: 'Screenshot copied',
+    screenshotFailed: 'Couldn’t copy the screenshot',
+    restartScreen: 'Restart screen',
+    restartFailed: 'Couldn’t restart the screen',
+    openWorkdir: 'Open workdir',
+    workdirUnavailable: 'The bot’s workdir isn’t reachable from here',
+    workdirFailed: 'Couldn’t open the workdir',
+    resizePanel: 'Drag to resize',
     heroStopped: 'Screen is off',
     heroNotInstalled: 'Not installed on this host',
     heroConnecting: 'Checking the screen…',
@@ -881,13 +1203,13 @@ const en: BotsMessages = {
     portalStopped: 'Stopped',
     portalNotInstalled: 'Not installed on host',
     portalUnsupported: 'Not available on this host',
-    portalUnavailable: 'Update the bot\u2019s Hermes to use Screen',
+    portalUnavailable: 'Update the bot’s Hermes to use Screen',
     unavailableTitle: 'Screen needs a newer Hermes',
     autoOpenMenu: 'Open Screen when the bot uses it',
     autoOpenOnToast: name => `${name}’s Screen opens when it starts using its desktop`,
     autoOpenOffToast: name => `${name}’s Screen stays closed until you open it`,
     stoppedTitle: 'Screen is off',
-    stoppedBody: 'Start this bot\u2019s desktop to watch what it does and take over when it needs you.',
+    stoppedBody: 'Start this bot’s desktop to watch what it does and take over when it needs you.',
     start: 'Start screen',
     attaching: 'Connecting to the screen\u2026',
     streamLost: 'Screen stream ended',
@@ -964,7 +1286,117 @@ const en: BotsMessages = {
     runsMonthly: (day, time) => `Runs on day ${day} of each month at ${time}`,
     runsInterval: (count, unit) => `Runs every ${count} ${unit}`,
     runsRaw: 'Raw schedule — every Nm/Nh/Nd or 5-field cron',
-    timesTotal: count => `, ${count} time(s) total`
+    timesTotal: count => `, ${count} time(s) total`,
+    runHistory: 'Run history',
+    loadingRuns: 'Loading runs…',
+    noRuns: 'No runs yet.',
+    runActive: 'Running',
+    runDone: 'Finished',
+    runOutput: 'Script output'
+  },
+  deliverables: {
+    title: 'Deliverables',
+    empty: 'No deliverables yet.',
+    refresh: 'Refresh'
+  },
+  runs: {
+    title: 'Runs',
+    empty: 'No recent activity.',
+    kindChat: 'Chat turn',
+    kindRoutine: 'Routine run',
+    kindRelay: 'Relay delivery',
+    kindGroup: 'Group round',
+    ok: 'Completed',
+    running: 'Running',
+    failed: 'Failed',
+    attention: 'Needs attention',
+    replay: 'Replay',
+    tookSeconds: seconds => `${seconds}s`,
+    tookMinutes: minutes => `${minutes}m`
+  },
+  broadcast: {
+    menuItem: 'Broadcast to bots…',
+    title: 'Broadcast to bots',
+    desc: 'One prompt goes to each selected bot’s chat; replies collect below.',
+    promptLabel: 'Prompt',
+    promptPlaceholder: 'Ask every selected bot…',
+    selectAll: 'Select all',
+    clearAll: 'Clear',
+    send: count => `Send to ${count} bot${count === 1 ? '' : 's'}`,
+    statusSending: 'Sending…',
+    statusWorking: 'Still working…',
+    statusFailed: 'Failed',
+    emptyReply: 'No reply text',
+    noBotSelected: 'Select at least one bot.'
+  },
+  calendar: {
+    menuItem: 'Routines calendar…',
+    title: 'Routines calendar',
+    desc: 'Every bot’s scheduled routines, in one list.',
+    nextUp: 'Next up',
+    overdue: 'Overdue',
+    paused: 'Paused',
+    empty: 'No routines scheduled.',
+    loadFailed: 'Could not load routines from some gateways.',
+    untitledJob: 'Untitled routine'
+  },
+  triage: {
+    title: 'Needs attention',
+    needsInput: name => `${name} needs input`,
+    turnFailed: name => `${name}’s last turn failed`,
+    deliveryFailed: name => `${name} has a failed delivery`,
+    routineOverdue: name => `${name} has an overdue routine`,
+    unreachable: name => `${name}’s gateway is unreachable`,
+    attention: (name, reason) => `${name}: ${reason}`,
+    openItem: name => `Open ${name}`
+  },
+  plan: {
+    proposedTitle: 'Proposed plan',
+    stepsCount: count => `${count} ${count === 1 ? 'step' : 'steps'}`,
+    approve: 'Approve & run',
+    edit: 'Edit',
+    dismiss: 'Dismiss',
+    settledNote: 'Plan handled.',
+    checklistTitle: 'Plan',
+    stepsDone: (done, total) => `${done}/${total} done`,
+    complete: 'Complete',
+    clearChecklist: 'Clear'
+  },
+  rail: {
+    title: 'Bot context',
+    tasks: 'Task log',
+    today: 'Today',
+    yesterday: 'Yesterday'
+  },
+  market: {
+    menuItem: 'Marketplace\u2026',
+    title: 'Bot marketplace',
+    desc: 'Bundle import and starter bots \u2014 no hosted registry yet.',
+    starters: 'Starter bots',
+    importFile: 'Import from file',
+    importHint: 'Install a bot bundle exported from another Hermes install.',
+    add: 'Add bot'
+  },
+  deck: {
+    title: 'Sessions',
+    newChat: 'New chat',
+    refresh: 'Refresh',
+    canonical: 'canonical',
+    empty: 'No sessions yet.',
+    untitled: 'Untitled session'
+  },
+  events: {
+    open: 'Open',
+    inflight: 'A message is on its way'
+  },
+  tips: {
+    computer: 'I can use websites, not just search them',
+    delegate: 'I can hand work to other bots and work in a group',
+    dismiss: 'Dismiss',
+    openBots: 'Open Agents',
+    openComputer: 'Open computer',
+    openRoutines: 'Open routines',
+    schedule: 'I can run on a schedule'
   }
 }
 
@@ -990,10 +1422,14 @@ const ja: BotsMessages = {
       '独自のメモリ、スキル、チャットを持つ名前付きの仲間です。他のエージェントとメッセージをやり取りできます。',
     name: '名前',
     title: '表示名',
+    role: '役割',
+    rolePlaceholder: '例: リサーチ責任者',
     description: '説明',
     createOn: '作成先',
     general: '一般',
     capabilities: '機能',
+    capabilitiesSummary: (skills, toolsets, mcp) => `スキル ${skills} · ツールセット ${toolsets} · MCP サーバー ${mcp}`,
+    capabilitiesHint: 'モデル · スキル · ツールセット · MCP · SOUL.md',
     skills: 'スキル',
     tools: 'ツール',
     cloneFrom: '複製元のプロファイル',
@@ -1042,7 +1478,26 @@ const ja: BotsMessages = {
     sectionsFailed: sections => `一部の設定に失敗しました: ${sections}`,
     updated: name => `${name} を更新しました`,
     created: name => `ボット「${name}」を作成しました`,
-    createdOn: (name, target) => `${target} にボット「${name}」を作成しました`
+    createdOn: (name, target) => `${target} にボット「${name}」を作成しました`,
+    templates: {
+      label: 'テンプレート',
+      custom: { name: 'カスタム' },
+      engineer: {
+        description: '小さな検証済みステップでコードを書き、レビューし、デバッグします。',
+        name: 'エンジニア',
+        title: 'エンジニア'
+      },
+      ops: {
+        description: 'システムやスケジュールを監視し、異常を調査して、明確にエスカレーションします。',
+        name: 'オプス',
+        title: 'オプス'
+      },
+      researcher: {
+        description: '引用付きの出典で深く調査し、主張を相互確認し、未解決の問いを追跡します。',
+        name: 'リサーチャー',
+        title: 'リサーチャー'
+      }
+    }
   },
   roster: {
     search: 'ボットとグループチャットを検索',
@@ -1079,7 +1534,30 @@ const ja: BotsMessages = {
     retryNow: '今すぐ再試行',
     rosterUnavailable: reason =>
       `名簿を取得できません: ${reason}。ゲートウェイが profiles.list より前の場合は、Hermes を更新してゲートウェイを再起動してください。`,
-    waitingForGateway: 'ゲートウェイ接続を待っています…（リモートは数秒かかることがあります。自動で再試行します）'
+    waitingForGateway: 'ゲートウェイ接続を待っています…（リモートは数秒かかることがあります。自動で再試行します）',
+    stopRun: '実行を停止',
+    lastRunFailed: '前回の実行が失敗しました',
+    deliveryInFlight: '配信中',
+    retryDeliveries: '保留中の配信を再試行',
+    stopRunFailed: '実行を停止できませんでした',
+    retryDeliveriesFailed: '配信を再試行できませんでした',
+    liveIdle: 'アイドル',
+    liveWorking: '実行中',
+    liveWorkingTool: tool => `実行中 · ${tool}`,
+    liveStalled: '停滞中',
+    liveRoutine: title => `${title} を実行中`,
+    liveRoutineUnnamed: 'ルーチンを実行中',
+    liveGroup: 'グループラウンド中',
+    liveBackground: 'バックグラウンドタスク実行中',
+    liveDelegated: 'タスク実行中',
+    attentionItems: count => `${count} 件の項目に対応が必要です`,
+    sortRecent: '最近のアクティビティ順',
+    sortAttention: '要対応を先に',
+    sortAlpha: '名前順',
+    listView: 'リスト表示',
+    cardView: 'カード表示',
+    cardActive: ago => `${ago}前にアクティブ`,
+    openChat: 'チャットを開く'
   },
   agents: {
     allBots: count => `すべてのボット（${count}）`,
@@ -1139,6 +1617,7 @@ const ja: BotsMessages = {
     helpPromptPlaceholder: 'このボットは何を手伝いますか？',
     descriptionHint: '空欄のままにすると、ボットの名前と説明から生成します。',
     newChatWith: 'このボットと新しいチャット',
+    newTask: '新しいタスク',
     openBotChat: 'ボットチャットを開く',
     continueOnPhone: 'スマホで続ける…',
     openingChat: 'チャットを開いています…',
@@ -1163,6 +1642,21 @@ const ja: BotsMessages = {
     attentionBlocked: 'ボットがブロックされています — 最後のメッセージを確認してください',
     duplicate: '複製',
     duplicateFailed: '複製に失敗しました',
+    duplicating: name => `${name} を複製中…`,
+    duplicated: (name, source) => `作成しました ${name} — ${source} の完全なコピー`,
+    exportBotMenu: 'ボットをエクスポート…',
+    exportBot: name => `${name} をエクスポート…`,
+    exported: path => `${path} にエクスポートしました`,
+    exportFailed: 'エクスポートに失敗しました',
+    importBot: 'ボットをインポート…',
+    imported: name => `${name} をインポートしました`,
+    importFailed: 'インポートに失敗しました',
+    modelMenu: 'モデル',
+    modelLoading: 'モデルを読み込み中…',
+    modelUnavailable: 'モデル一覧を取得できません',
+    modelSetTo: model => `モデルを ${model} に設定しました`,
+    modelInheritSet: '起動プロファイルのモデルを継承します',
+    modelDefault: 'デフォルト',
     deleteTitle: 'ボットとプロファイルを削除しますか？',
     removeFromAllGroups: 'すべてのグループから外す',
     createFirstHint: 'ボットパネルを開いて「新しいボット」を押してください。',
@@ -1180,7 +1674,14 @@ const ja: BotsMessages = {
     openChatFailedMessage: 'もう一度お試しください。',
     openGateways: 'ゲートウェイを開く',
     chatEmpty: '何か書いて始めましょう。',
-    kickoff: 'こんにちは、自己紹介をしてください！'
+    kickoff: 'こんにちは、自己紹介をしてください！',
+    notifications: '通知',
+    muteAll: 'すべての通知をミュート',
+    muteQuiet: '静寂時間帯はミュート',
+    watch: 'ウォッチ',
+    watching: 'このボットをウォッチ中',
+    watchToast: name => `${name} をウォッチしています`,
+    unwatchToast: name => `${name} のウォッチを解除しました`
   },
   avatar: {
     classicShapes: 'クラシックシェイプ',
@@ -1283,7 +1784,12 @@ const ja: BotsMessages = {
     answerFailed: (handle, error) => `@${handle}に回答を送信できませんでした: ${error}`,
     wantsToRunCommand: handle => `@${handle}がコマンドを実行しようとしています:`,
     asks: handle => `@${handle}からの質問:`,
-    answerTo: member => `@${member}に回答`
+    answerTo: member => `@${member}に回答`,
+    unreadCount: count => `未読 ${count} 件`,
+    goal: '目標',
+    goalHint: 'このルームが達成したいこと — タイトルの下に表示されます。',
+    goalPlaceholder: '例：ドキュメント検索の検索戦略を比較する',
+    roundSummaryTitle: 'ラウンドの要約'
   },
   tools: {
     installHint: name => `「${name}」をインストールして上の一覧に追加`,
@@ -1329,6 +1835,17 @@ const ja: BotsMessages = {
     noPackageManager: 'ゲートウェイホストに対応するパッケージマネージャー (apt, dnf, pacman) が見つかりません。',
     portalTitle: 'スクリーン',
     portalOpen: '開く',
+    panelTitle: 'コンピューター',
+    openFullPane: 'フルペインで開く',
+    copyScreenshot: 'スクリーンショットをコピー',
+    screenshotCopied: 'スクリーンショットをコピーしました',
+    screenshotFailed: 'スクリーンショットをコピーできませんでした',
+    restartScreen: '画面を再起動',
+    restartFailed: '画面を再起動できませんでした',
+    openWorkdir: '作業ディレクトリを開く',
+    workdirUnavailable: 'このボットの作業ディレクトリはここから開けません',
+    workdirFailed: '作業ディレクトリを開けませんでした',
+    resizePanel: 'ドラッグでサイズ変更',
     heroStopped: '画面は停止中',
     heroNotInstalled: 'このホストには未インストール',
     heroConnecting: '画面を確認中…',
@@ -1426,7 +1943,118 @@ const ja: BotsMessages = {
     runsMonthly: (day, time) => `毎月${day}日の${time}に実行します`,
     runsInterval: (count, unit) => `${count}${unit}ごとに実行します`,
     runsRaw: '生のスケジュール — Nm/Nh/Nd または5フィールドのcron',
-    timesTotal: count => `、合計${count}回`
+    timesTotal: count => `、合計${count}回`,
+    runHistory: '実行履歴',
+    loadingRuns: '実行履歴を読み込み中…',
+    noRuns: 'まだ実行されていません。',
+    runActive: '実行中',
+    runDone: '完了',
+    runOutput: 'スクリプト出力'
+  },
+  deliverables: {
+    title: '成果物',
+    empty: '成果物はまだありません。',
+    refresh: '更新'
+  },
+  runs: {
+    title: '実行',
+    empty: '最近のアクティビティはありません。',
+    kindChat: 'チャットターン',
+    kindRoutine: '定期実行',
+    kindRelay: 'リレー配信',
+    kindGroup: 'グループラウンド',
+    ok: '完了',
+    running: '実行中',
+    failed: '失敗',
+    attention: '要対応',
+    replay: 'リプレイ',
+    tookSeconds: seconds => `${seconds}秒`,
+    tookMinutes: minutes => `${minutes}分`
+  },
+  broadcast: {
+    menuItem: 'ボットへ一括送信…',
+    title: 'ボットへ一括送信',
+    desc: '選択した各ボットのチャットへ同じプロンプトを送り、返信を下に集めます。',
+    promptLabel: 'プロンプト',
+    promptPlaceholder: '選択したすべてのボットへ質問…',
+    selectAll: 'すべて選択',
+    clearAll: 'クリア',
+    send: count => `${count}件のボットへ送信`,
+    statusSending: '送信中…',
+    statusWorking: 'まだ実行中…',
+    statusFailed: '失敗',
+    emptyReply: '返信テキストなし',
+    noBotSelected: 'ボットを1つ以上選択してください。'
+  },
+  calendar: {
+    menuItem: 'ルーチンカレンダー…',
+    title: 'ルーチンカレンダー',
+    desc: 'すべてのボットの定期実行を一覧で表示します。',
+    nextUp: '次の実行',
+    overdue: '期限超過',
+    paused: '一時停止',
+    empty: '定期実行はありません。',
+    loadFailed: '一部のゲートウェイからルーチンを読み込めませんでした。',
+    untitledJob: '無題のルーチン'
+  },
+  triage: {
+    title: '要対応',
+    needsInput: name => `${name}が入力待ちです`,
+    turnFailed: name => `${name}の前回の実行が失敗しました`,
+    deliveryFailed: name => `${name}に失敗した配信があります`,
+    routineOverdue: name => `${name}に期限超過のルーチンがあります`,
+    unreachable: name => `${name}のゲートウェイに到達できません`,
+    attention: (name, reason) => `${name}: ${reason}`,
+    openItem: name => `${name}を開く`
+  },
+  plan: {
+    proposedTitle: '提案されたプラン',
+    stepsCount: count => `${count} ステップ`,
+    approve: '承認して実行',
+    edit: '編集',
+    dismiss: '閉じる',
+    settledNote: 'プランは処理済みです。',
+    checklistTitle: 'プラン',
+    stepsDone: (done, total) => `${done}/${total} 完了`,
+    complete: '完了',
+    clearChecklist: 'クリア'
+  },
+  deck: {
+    title: 'セッション',
+    newChat: '新しいチャット',
+    refresh: '更新',
+    canonical: '正規',
+    empty: 'セッションはまだありません。',
+    untitled: '無題のセッション'
+  },
+  events: {
+    open: '開く',
+    inflight: 'メッセージを配信中です'
+  },
+  tips: {
+    computer: '検索するだけでなく、サイトを実際に操作できます',
+    delegate: 'ほかのボットに作業を渡してグループで動けます',
+    dismiss: '閉じる',
+    openBots: 'エージェントを開く',
+    openComputer: 'コンピューターを開く',
+    openRoutines: 'ルーティンを開く',
+    schedule: 'スケジュールで自動実行できます'
+  }
+,
+  rail: {
+    title: 'ボットのコンテキスト',
+    tasks: 'タスクログ',
+    today: '今日',
+    yesterday: '昨日'
+  },
+  market: {
+    menuItem: 'マーケットプレイス…',
+    title: 'ボットマーケットプレイス',
+    desc: 'バンドルのインポートとスターターボット — ホスト型レジストリはまだありません。',
+    starters: 'スターターボット',
+    importFile: 'ファイルからインポート',
+    importHint: '別の Hermes インストールからエクスポートしたボットバンドルをインストールします。',
+    add: 'ボットを追加'
   }
 }
 
@@ -1450,10 +2078,14 @@ const zh: BotsMessages = {
     newDescription: '拥有独立记忆、技能和聊天的具名队友，可以与你的其他智能体互发消息。',
     name: '名称',
     title: '显示名称',
+    role: '角色',
+    rolePlaceholder: '例如：研究负责人',
     description: '描述',
     createOn: '创建位置',
     general: '常规',
     capabilities: '能力',
+    capabilitiesSummary: (skills, toolsets, mcp) => `${skills} 项技能 · ${toolsets} 个工具集 · ${mcp} 个 MCP 服务器`,
+    capabilitiesHint: '模型 · 技能 · 工具集 · MCP · SOUL.md',
     skills: '技能',
     tools: '工具',
     cloneFrom: '从配置档案克隆',
@@ -1498,7 +2130,26 @@ const zh: BotsMessages = {
     sectionsFailed: sections => `部分设置失败：${sections}`,
     updated: name => `已更新 ${name}`,
     created: name => `已创建机器人“${name}”`,
-    createdOn: (name, target) => `已在 ${target} 上创建机器人“${name}”`
+    createdOn: (name, target) => `已在 ${target} 上创建机器人“${name}”`,
+    templates: {
+      label: '模板',
+      custom: { name: '自定义' },
+      engineer: {
+        description: '以小步可验证的方式编写、审查和调试代码。',
+        name: '工程师',
+        title: '工程师'
+      },
+      ops: {
+        description: '监视系统与计划任务，排查异常，并清晰地升级汇报。',
+        name: '运维',
+        title: '运维'
+      },
+      researcher: {
+        description: '深入调研并注明出处，交叉核实论断，持续追踪待解问题。',
+        name: '研究员',
+        title: '研究员'
+      }
+    }
   },
   roster: {
     search: '搜索机器人和群聊',
@@ -1534,7 +2185,30 @@ const zh: BotsMessages = {
     unavailable: '不可用',
     retryNow: '立即重试',
     rosterUnavailable: reason => `无法获取名单：${reason}。如果网关早于 profiles.list，请更新 Hermes 并重启网关。`,
-    waitingForGateway: '正在等待网关连接…（远程网关可能需要几秒；会自动重试）'
+    waitingForGateway: '正在等待网关连接…（远程网关可能需要几秒；会自动重试）',
+    stopRun: '停止运行',
+    lastRunFailed: '上次运行失败',
+    deliveryInFlight: '投递中',
+    retryDeliveries: '重试待投递的消息',
+    stopRunFailed: '无法停止运行',
+    retryDeliveriesFailed: '无法重试投递',
+    liveIdle: '空闲',
+    liveWorking: '运行中',
+    liveWorkingTool: tool => `运行中 · ${tool}`,
+    liveStalled: '已停滞',
+    liveRoutine: title => `正在运行 ${title}`,
+    liveRoutineUnnamed: '正在运行例程',
+    liveGroup: '正在参与群聊回合',
+    liveBackground: '后台任务运行中',
+    liveDelegated: '正在处理任务',
+    attentionItems: count => `${count} 个项目需要处理`,
+    sortRecent: '按最近活动',
+    sortAttention: '需处理优先',
+    sortAlpha: '按名称排序',
+    listView: '列表视图',
+    cardView: '卡片视图',
+    cardActive: ago => `${ago}前活跃`,
+    openChat: '打开聊天'
   },
   agents: {
     allBots: count => `全部 ${count} 个机器人`,
@@ -1591,6 +2265,7 @@ const zh: BotsMessages = {
     helpPromptPlaceholder: '这个机器人应该帮你做什么？',
     descriptionHint: '留空则根据机器人的名称和描述生成。',
     newChatWith: '与此机器人开新聊天',
+    newTask: '新任务',
     openBotChat: '打开机器人聊天',
     continueOnPhone: '在手机上继续…',
     openingChat: '正在打开聊天…',
@@ -1615,6 +2290,21 @@ const zh: BotsMessages = {
     attentionBlocked: '机器人已被阻止 — 请查看其最后一条消息',
     duplicate: '复制',
     duplicateFailed: '复制失败',
+    duplicating: name => `正在复制 ${name}…`,
+    duplicated: (name, source) => `已创建 ${name} — ${source} 的完整副本`,
+    exportBotMenu: '导出机器人…',
+    exportBot: name => `导出 ${name}…`,
+    exported: path => `已导出到 ${path}`,
+    exportFailed: '导出失败',
+    importBot: '导入机器人…',
+    imported: name => `已导入 ${name}`,
+    importFailed: '导入失败',
+    modelMenu: '模型',
+    modelLoading: '正在加载模型…',
+    modelUnavailable: '无法获取模型列表',
+    modelSetTo: model => `模型已设为 ${model}`,
+    modelInheritSet: '模型将继承启动配置',
+    modelDefault: '默认',
     deleteTitle: '删除机器人和配置档案？',
     removeFromAllGroups: '从所有群组中移除',
     createFirstHint: '打开机器人面板，点击“新建机器人”。',
@@ -1632,7 +2322,14 @@ const zh: BotsMessages = {
     openChatFailedMessage: '请重试。',
     openGateways: '打开网关',
     chatEmpty: '说点什么开始吧。',
-    kickoff: '你好，介绍一下你自己吧！'
+    kickoff: '你好，介绍一下你自己吧！',
+    notifications: '通知',
+    muteAll: '静音所有通知',
+    muteQuiet: '免打扰时段内静音',
+    watch: '关注',
+    watching: '正在关注此机器人',
+    watchToast: name => `正在关注 ${name}`,
+    unwatchToast: name => `已停止关注 ${name}`
   },
   avatar: {
     classicShapes: '经典形状',
@@ -1732,7 +2429,12 @@ const zh: BotsMessages = {
     answerFailed: (handle, error) => `无法将回答发送给 @${handle}：${error}`,
     wantsToRunCommand: handle => `@${handle} 想执行一个命令：`,
     asks: handle => `@${handle} 的提问：`,
-    answerTo: member => `回答 @${member}`
+    answerTo: member => `回答 @${member}`,
+    unreadCount: count => `${count} 条未读`,
+    goal: '目标',
+    goalHint: '此房间要达成的目标 — 显示在标题下方。',
+    goalPlaceholder: '例如：比较文档搜索的检索策略',
+    roundSummaryTitle: '轮次总结'
   },
   tools: {
     installHint: name => `安装“${name}”并添加到上方列表`,
@@ -1775,6 +2477,17 @@ const zh: BotsMessages = {
     noPackageManager: '网关主机上未找到受支持的包管理器（apt、dnf、pacman）。',
     portalTitle: '屏幕',
     portalOpen: '打开',
+    panelTitle: '计算机',
+    openFullPane: '打开完整窗格',
+    copyScreenshot: '复制屏幕截图',
+    screenshotCopied: '截图已复制',
+    screenshotFailed: '无法复制截图',
+    restartScreen: '重启屏幕',
+    restartFailed: '无法重启屏幕',
+    openWorkdir: '打开工作目录',
+    workdirUnavailable: '无法从这里访问该机器人的工作目录',
+    workdirFailed: '无法打开工作目录',
+    resizePanel: '拖动调整大小',
     heroStopped: '屏幕已关闭',
     heroNotInstalled: '此主机未安装',
     heroConnecting: '正在检查屏幕…',
@@ -1872,7 +2585,118 @@ const zh: BotsMessages = {
     runsMonthly: (day, time) => `每月 ${day} 日 ${time} 运行`,
     runsInterval: (count, unit) => `每 ${count} ${unit}运行`,
     runsRaw: '原始计划 — every Nm/Nh/Nd 或 5 段 cron',
-    timesTotal: count => `，共 ${count} 次`
+    timesTotal: count => `，共 ${count} 次`,
+    runHistory: '运行历史',
+    loadingRuns: '正在加载运行记录…',
+    noRuns: '暂无运行记录。',
+    runActive: '运行中',
+    runDone: '已完成',
+    runOutput: '脚本输出'
+  },
+  deliverables: {
+    title: '交付物',
+    empty: '暂无交付物。',
+    refresh: '刷新'
+  },
+  runs: {
+    title: '运行记录',
+    empty: '暂无最近活动。',
+    kindChat: '聊天回合',
+    kindRoutine: '定时任务',
+    kindRelay: '中继投递',
+    kindGroup: '群组轮次',
+    ok: '已完成',
+    running: '运行中',
+    failed: '失败',
+    attention: '需要注意',
+    replay: '回放',
+    tookSeconds: seconds => `${seconds}秒`,
+    tookMinutes: minutes => `${minutes}分钟`
+  },
+  broadcast: {
+    menuItem: '向机器人广播…',
+    title: '向机器人广播',
+    desc: '向每个所选机器人的聊天发送同一提示，回复收集在下方。',
+    promptLabel: '提示词',
+    promptPlaceholder: '询问所有已选机器人…',
+    selectAll: '全选',
+    clearAll: '清除',
+    send: count => `发送给 ${count} 个机器人`,
+    statusSending: '发送中…',
+    statusWorking: '仍在运行…',
+    statusFailed: '失败',
+    emptyReply: '无回复内容',
+    noBotSelected: '请至少选择一个机器人。'
+  },
+  calendar: {
+    menuItem: '例行任务日历…',
+    title: '例行任务日历',
+    desc: '在一个列表中查看所有机器人的例行任务。',
+    nextUp: '接下来',
+    overdue: '已过期',
+    paused: '已暂停',
+    empty: '没有已安排的例行任务。',
+    loadFailed: '无法从部分网关加载例行任务。',
+    untitledJob: '未命名任务'
+  },
+  triage: {
+    title: '需要注意',
+    needsInput: name => `${name} 需要输入`,
+    turnFailed: name => `${name} 的上次运行失败`,
+    deliveryFailed: name => `${name} 有投递失败`,
+    routineOverdue: name => `${name} 有过期的例行任务`,
+    unreachable: name => `无法访问 ${name} 的网关`,
+    attention: (name, reason) => `${name}：${reason}`,
+    openItem: name => `打开 ${name}`
+  },
+  plan: {
+    proposedTitle: '建议方案',
+    stepsCount: count => `${count} 个步骤`,
+    approve: '批准并运行',
+    edit: '编辑',
+    dismiss: '忽略',
+    settledNote: '方案已处理。',
+    checklistTitle: '方案',
+    stepsDone: (done, total) => `已完成 ${done}/${total}`,
+    complete: '已完成',
+    clearChecklist: '清除'
+  },
+  deck: {
+    title: '会话',
+    newChat: '新聊天',
+    refresh: '刷新',
+    canonical: '规范',
+    empty: '还没有会话。',
+    untitled: '未命名会话'
+  },
+  events: {
+    open: '打开',
+    inflight: '消息正在送达'
+  },
+  tips: {
+    computer: '我不只能搜索网站，还能实际操作它们',
+    delegate: '我可以把任务交给其他机器人，也能参与群组协作',
+    dismiss: '关闭',
+    openBots: '打开代理',
+    openComputer: '打开电脑面板',
+    openRoutines: '打开例程',
+    schedule: '我可以按计划自动运行'
+  }
+,
+  rail: {
+    title: '机器人上下文',
+    tasks: '任务日志',
+    today: '今天',
+    yesterday: '昨天'
+  },
+  market: {
+    menuItem: '市场…',
+    title: '机器人市场',
+    desc: '导入捆绑包或添加起始机器人 — 尚无托管注册表。',
+    starters: '起始机器人',
+    importFile: '从文件导入',
+    importHint: '安装从另一个 Hermes 导出的机器人捆绑包。',
+    add: '添加机器人'
   }
 }
 
@@ -1896,10 +2720,14 @@ const zhHant: BotsMessages = {
     newDescription: '擁有獨立記憶、技能和聊天的具名隊友，可以與你的其他智慧代理互傳訊息。',
     name: '名稱',
     title: '顯示名稱',
+    role: '角色',
+    rolePlaceholder: '例如：研究負責人',
     description: '描述',
     createOn: '建立位置',
     general: '一般',
     capabilities: '功能',
+    capabilitiesSummary: (skills, toolsets, mcp) => `${skills} 項技能 · ${toolsets} 個工具組 · ${mcp} 個 MCP 伺服器`,
+    capabilitiesHint: '模型 · 技能 · 工具組 · MCP · SOUL.md',
     skills: '技能',
     tools: '工具',
     cloneFrom: '從設定檔複製',
@@ -1944,7 +2772,26 @@ const zhHant: BotsMessages = {
     sectionsFailed: sections => `部分設定失敗：${sections}`,
     updated: name => `已更新 ${name}`,
     created: name => `已建立機器人「${name}」`,
-    createdOn: (name, target) => `已在 ${target} 上建立機器人「${name}」`
+    createdOn: (name, target) => `已在 ${target} 上建立機器人「${name}」`,
+    templates: {
+      label: '範本',
+      custom: { name: '自訂' },
+      engineer: {
+        description: '以小步可驗證的方式撰寫、審查並除錯程式碼。',
+        name: '工程師',
+        title: '工程師'
+      },
+      ops: {
+        description: '監視系統與排程工作，排查異常，並清楚地升級回報。',
+        name: '維運',
+        title: '維運'
+      },
+      researcher: {
+        description: '深入調研並註明出處，交叉核實論斷，持續追蹤待解問題。',
+        name: '研究員',
+        title: '研究員'
+      }
+    }
   },
   roster: {
     search: '搜尋機器人和群組聊天',
@@ -1980,7 +2827,30 @@ const zhHant: BotsMessages = {
     unavailable: '不可用',
     retryNow: '立即重試',
     rosterUnavailable: reason => `無法取得名單：${reason}。如果閘道早於 profiles.list，請更新 Hermes 並重新啟動閘道。`,
-    waitingForGateway: '正在等待閘道連線…（遠端閘道可能需要幾秒；會自動重試）'
+    waitingForGateway: '正在等待閘道連線…（遠端閘道可能需要幾秒；會自動重試）',
+    stopRun: '停止執行',
+    lastRunFailed: '上次執行失敗',
+    deliveryInFlight: '遞送中',
+    retryDeliveries: '重試待遞送的訊息',
+    stopRunFailed: '無法停止執行',
+    retryDeliveriesFailed: '無法重試遞送',
+    liveIdle: '閒置',
+    liveWorking: '執行中',
+    liveWorkingTool: tool => `執行中 · ${tool}`,
+    liveStalled: '已停滯',
+    liveRoutine: title => `正在執行 ${title}`,
+    liveRoutineUnnamed: '正在執行例程',
+    liveGroup: '正在群組回合中',
+    liveBackground: '背景任務執行中',
+    liveDelegated: '正在處理任務',
+    attentionItems: count => `${count} 個項目需要處理`,
+    sortRecent: '依最近活動',
+    sortAttention: '需處理優先',
+    sortAlpha: '依名稱排序',
+    listView: '清單檢視',
+    cardView: '卡片檢視',
+    cardActive: ago => `${ago}前活躍`,
+    openChat: '開啟聊天'
   },
   agents: {
     allBots: count => `全部 ${count} 個機器人`,
@@ -2037,6 +2907,7 @@ const zhHant: BotsMessages = {
     helpPromptPlaceholder: '這個機器人應該幫你做什麼？',
     descriptionHint: '留空則依機器人的名稱和描述產生。',
     newChatWith: '與此機器人開新聊天',
+    newTask: '新任務',
     openBotChat: '開啟機器人聊天',
     continueOnPhone: '在手機上繼續…',
     openingChat: '正在開啟聊天…',
@@ -2061,6 +2932,21 @@ const zhHant: BotsMessages = {
     attentionBlocked: '機器人已被封鎖 — 請查看其最後一則訊息',
     duplicate: '複製',
     duplicateFailed: '複製失敗',
+    duplicating: name => `正在複製 ${name}…`,
+    duplicated: (name, source) => `已建立 ${name} — ${source} 的完整複本`,
+    exportBotMenu: '匯出機器人…',
+    exportBot: name => `匯出 ${name}…`,
+    exported: path => `已匯出至 ${path}`,
+    exportFailed: '匯出失敗',
+    importBot: '匯入機器人…',
+    imported: name => `已匯入 ${name}`,
+    importFailed: '匯入失敗',
+    modelMenu: '模型',
+    modelLoading: '正在載入模型…',
+    modelUnavailable: '無法取得模型清單',
+    modelSetTo: model => `模型已設為 ${model}`,
+    modelInheritSet: '模型將沿用啟動設定檔',
+    modelDefault: '預設',
     deleteTitle: '刪除機器人和設定檔？',
     removeFromAllGroups: '從所有群組中移除',
     createFirstHint: '開啟機器人面板，點「新增機器人」。',
@@ -2078,7 +2964,14 @@ const zhHant: BotsMessages = {
     openChatFailedMessage: '請再試一次。',
     openGateways: '開啟閘道',
     chatEmpty: '說點什麼開始吧。',
-    kickoff: '你好，介紹一下你自己吧！'
+    kickoff: '你好，介紹一下你自己吧！',
+    notifications: '通知',
+    muteAll: '靜音所有通知',
+    muteQuiet: '免打擾時段內靜音',
+    watch: '關注',
+    watching: '正在關注此機器人',
+    watchToast: name => `正在關注 ${name}`,
+    unwatchToast: name => `已停止關注 ${name}`
   },
   avatar: {
     classicShapes: '經典形狀',
@@ -2178,7 +3071,12 @@ const zhHant: BotsMessages = {
     answerFailed: (handle, error) => `無法將回答傳送給 @${handle}：${error}`,
     wantsToRunCommand: handle => `@${handle} 想執行一個命令：`,
     asks: handle => `@${handle} 的提問：`,
-    answerTo: member => `回覆 @${member}`
+    answerTo: member => `回覆 @${member}`,
+    unreadCount: count => `${count} 則未讀`,
+    goal: '目標',
+    goalHint: '此房間要達成的目標 — 顯示在標題下方。',
+    goalPlaceholder: '例如：比較文件搜尋的檢索策略',
+    roundSummaryTitle: '回合總結'
   },
   tools: {
     installHint: name => `安裝「${name}」並新增至上方清單`,
@@ -2221,6 +3119,17 @@ const zhHant: BotsMessages = {
     noPackageManager: '閘道主機上找不到受支援的套件管理器（apt、dnf、pacman）。',
     portalTitle: '螢幕',
     portalOpen: '開啟',
+    panelTitle: '電腦',
+    openFullPane: '開啟完整窗格',
+    copyScreenshot: '複製螢幕截圖',
+    screenshotCopied: '已複製螢幕截圖',
+    screenshotFailed: '無法複製螢幕截圖',
+    restartScreen: '重新啟動螢幕',
+    restartFailed: '無法重新啟動螢幕',
+    openWorkdir: '開啟工作目錄',
+    workdirUnavailable: '無法從這裡存取此機器人的工作目錄',
+    workdirFailed: '無法開啟工作目錄',
+    resizePanel: '拖曳調整大小',
     heroStopped: '螢幕已關閉',
     heroNotInstalled: '此主機未安裝',
     heroConnecting: '正在檢查螢幕…',
@@ -2318,7 +3227,118 @@ const zhHant: BotsMessages = {
     runsMonthly: (day, time) => `每月 ${day} 日 ${time} 執行`,
     runsInterval: (count, unit) => `每 ${count} ${unit}執行`,
     runsRaw: '原始排程 — every Nm/Nh/Nd 或 5 段 cron',
-    timesTotal: count => `，共 ${count} 次`
+    timesTotal: count => `，共 ${count} 次`,
+    runHistory: '執行歷史',
+    loadingRuns: '正在載入執行記錄…',
+    noRuns: '暫無執行記錄。',
+    runActive: '執行中',
+    runDone: '已完成',
+    runOutput: '指令碼輸出'
+  },
+  deliverables: {
+    title: '交付物',
+    empty: '暫無交付物。',
+    refresh: '重新整理'
+  },
+  runs: {
+    title: '執行紀錄',
+    empty: '沒有最近的活動。',
+    kindChat: '聊天回合',
+    kindRoutine: '例行工作',
+    kindRelay: '中繼遞送',
+    kindGroup: '群組回合',
+    ok: '已完成',
+    running: '執行中',
+    failed: '失敗',
+    attention: '需要注意',
+    replay: '重播',
+    tookSeconds: seconds => `${seconds}秒`,
+    tookMinutes: minutes => `${minutes}分鐘`
+  },
+  broadcast: {
+    menuItem: '向機器人廣播…',
+    title: '向機器人廣播',
+    desc: '向每個所選機器人的聊天發送同一提示，回覆收集於下方。',
+    promptLabel: '提示詞',
+    promptPlaceholder: '詢問所有已選機器人…',
+    selectAll: '全選',
+    clearAll: '清除',
+    send: count => `傳送給 ${count} 個機器人`,
+    statusSending: '傳送中…',
+    statusWorking: '仍在執行…',
+    statusFailed: '失敗',
+    emptyReply: '無回覆內容',
+    noBotSelected: '請至少選擇一個機器人。'
+  },
+  calendar: {
+    menuItem: '例行任務日曆…',
+    title: '例行任務日曆',
+    desc: '在一個列表中檢視所有機器人的例行任務。',
+    nextUp: '接下來',
+    overdue: '已過期',
+    paused: '已暫停',
+    empty: '沒有已排定的例行任務。',
+    loadFailed: '無法從部分閘道載入例行任務。',
+    untitledJob: '未命名任務'
+  },
+  triage: {
+    title: '需要注意',
+    needsInput: name => `${name} 需要輸入`,
+    turnFailed: name => `${name} 的上次執行失敗`,
+    deliveryFailed: name => `${name} 有遞送失敗`,
+    routineOverdue: name => `${name} 有過期的例行任務`,
+    unreachable: name => `無法連接 ${name} 的閘道`,
+    attention: (name, reason) => `${name}：${reason}`,
+    openItem: name => `開啟 ${name}`
+  },
+  plan: {
+    proposedTitle: '建議方案',
+    stepsCount: count => `${count} 個步驟`,
+    approve: '核准並執行',
+    edit: '編輯',
+    dismiss: '關閉',
+    settledNote: '方案已處理。',
+    checklistTitle: '方案',
+    stepsDone: (done, total) => `已完成 ${done}/${total}`,
+    complete: '已完成',
+    clearChecklist: '清除'
+  },
+  deck: {
+    title: '工作階段',
+    newChat: '新聊天',
+    refresh: '重新整理',
+    canonical: '正典',
+    empty: '還沒有工作階段。',
+    untitled: '未命名工作階段'
+  },
+  events: {
+    open: '開啟',
+    inflight: '訊息正在送達'
+  },
+  tips: {
+    computer: '我不只能搜尋網站，還能實際操作它們',
+    delegate: '我可以把工作交給其他機器人，也能參與群組協作',
+    dismiss: '關閉',
+    openBots: '開啟代理',
+    openComputer: '開啟電腦面板',
+    openRoutines: '開啟例程',
+    schedule: '我可以按排程自動執行'
+  }
+,
+  rail: {
+    title: '機器人脈絡',
+    tasks: '任務日誌',
+    today: '今天',
+    yesterday: '昨天'
+  },
+  market: {
+    menuItem: '市集…',
+    title: '機器人市集',
+    desc: '匯入套件或加入起始機器人 — 尚無託管註冊表。',
+    starters: '起始機器人',
+    importFile: '從檔案匯入',
+    importHint: '安裝從另一個 Hermes 匯出的機器人套件。',
+    add: '加入機器人'
   }
 }
 

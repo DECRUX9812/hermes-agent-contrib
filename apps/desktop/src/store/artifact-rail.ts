@@ -9,6 +9,7 @@ import { matchesQuery } from '@/hooks/use-media-query'
 import { Codecs, persistentAtom } from '@/lib/persisted'
 import { $artifactRegistry, type ArtifactRecord } from '@/store/artifacts'
 import { modeBound } from '@/store/interface-mode'
+import type { SessionInfo } from '@/types/hermes'
 
 import { $busy, $sessions, lineageAliases, sessionMatchesStoredId } from './session'
 import { $focusedRuntimeId, $focusedSessionState, $focusedStoredSessionId } from './session-states'
@@ -137,6 +138,20 @@ export async function refreshArtifactRail({ rescan = false }: { rescan?: boolean
       $railArtifactsLoading.set(false)
     }
   }
+}
+
+/** Registry records across a SET of owned session ids — each id expanded
+ *  through its compression-lineage aliases, since a record is keyed under
+ *  whichever tip was live when it was written. The per-bot Deliverables rail
+ *  and the focused rail share this expansion. */
+export function registryArtifactsForSessions(
+  sessionIds: readonly string[],
+  registry: Record<string, ArtifactRecord[]>,
+  sessions: readonly Pick<SessionInfo, '_lineage_ids' | '_lineage_root_id' | 'id'>[]
+): ArtifactRecord[] {
+  const ids = new Set(sessionIds.flatMap(id => lineageAliases(id, sessions)))
+
+  return [...ids].flatMap(id => registry[id] ?? [])
 }
 
 /** The rail's merged item list for the focused session: registry records may

@@ -1,0 +1,68 @@
+name: E2E Desktop Perf
+
+# Perf measurement lane for apps/desktop/e2e/perf. Non-blocking by
+# construction: manual dispatch only, never part of the PR gate — the specs
+# report numbers (PERF[metric]=value log lines), not pass/fail assertions.
+# Numbers feed apps/desktop/docs/revamp/baseline.md.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-desktop-perf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  perf:
+    name: Playwright Perf (Linux)
+    # Same runner class as the correctness lane so numbers stay comparable
+    # across waves.
+    runs-on: ubuntu-latest-32-core
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      # Electron needs GTK, NSS, etc. even under xvfb (same list as
+      # e2e-desktop.yml).
+      - name: Install system dependencies for Electron
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            xvfb \
+            libgtk-3-0 libnotify4 libnss3 libxss1 libxtst6 \
+            xdg-utils libatspi2.0-0 libdrm2 libgbm1 libasound2t64
+
+      - name: Set up the locked desktop toolchain
+        uses: ./.github/actions/setup-pm
+        with:
+          toolchain: all
+          extras: '["all"]'
+          test-environment: 'true'
+          prune-python-cache: true
+
+      - uses: ./.github/actions/retry
+        with:
+          command: npm ci
+
+      - name: Run Playwright perf specs
+        working-directory: apps/desktop
+        run: |
+          npm run build && xvfb-run -a --server-args="-screen 0 1280x1024x24" \
+            npx playwright test --config e2e/perf/playwright.config.ts --reporter=list
+        env:
+          CI: 'true'
+          OPENROUTER_API_KEY: ''
+          OPENAI_API_KEY: ''
+          NOUS_API_KEY: ''
+
+      - name: Upload perf test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: perf-test-results-${{ github.sha }}
+          path: apps/desktop/test-results/perf
+          retention-days: 14
+          overwrite: true

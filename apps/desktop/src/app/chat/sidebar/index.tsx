@@ -27,10 +27,9 @@ import {
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
-import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/hermes'
+import { type SessionInfo } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { comboTokens } from '@/lib/keybinds/combo'
-import { sessionMatchesSearch } from '@/lib/session-search'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
@@ -52,13 +51,11 @@ import {
   $sidebarMessagingOpenIds,
   $sidebarOrdering,
   $sidebarPinsOpen,
-  $sidebarPrDataWanted,
   $sidebarPrFilter,
   $sidebarProfileFilter,
   $sidebarProjectFilter,
   $sidebarProjectOrderIds,
   $sidebarRecentsOpen,
-  $sidebarSearchQuery,
   $sidebarSessionOrderIds,
   $sidebarSessionOrderManual,
   $sidebarShowAllSessions,
@@ -69,7 +66,6 @@ import {
   $sidebarWorkspaceParentOrderIds,
   filterVisibleProjects,
   pinSession,
-  SESSION_SEARCH_FOCUS_EVENT,
   setPinnedSessionOrder,
   setSidebarAttentionOpen,
   setSidebarBrowseOpen,
@@ -77,7 +73,6 @@ import {
   setSidebarPinsOpen,
   setSidebarProjectOrderIds,
   setSidebarRecentsOpen,
-  setSidebarSearchQuery,
   setSidebarSessionOrderIds,
   setSidebarSessionOrderManual,
   setSidebarWorkspaceOrderIds,
@@ -116,11 +111,9 @@ import {
   scanAndRecordRepos
 } from '@/store/projects'
 import {
-  $prBranchBySession,
   $pullRequestsByBranch,
   pullRequestBucket,
   recoverSessionPullRequests,
-  refreshPullRequests,
   sessionPrKey
 } from '@/store/pull-requests'
 import { openRouteTile } from '@/store/route-tiles'
@@ -148,7 +141,6 @@ import { markSessionUnread } from '@/store/session-unread-remote'
 import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive'
 import { applySidebarNavPrefs, SIDEBAR_NAV_PREFS_AREA } from '@/store/sidebar-nav'
 import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
-import { armTranscriptSearchJump } from '@/store/transcript-find'
 
 import {
   type AppView,
@@ -207,6 +199,8 @@ import { buildSessionByAnyId, resolvePinnedSessions } from './session-index'
 import { SidebarSessionsSection, VIRTUALIZE_THRESHOLD } from './sessions-section'
 import { CONTEXT_SPLIT_KIT, SplitSubmenu } from './split-submenu'
 import { useEnteredProjectSessions } from './use-entered-project-sessions'
+import { useSidebarPrData } from './use-sidebar-pr-data'
+import { useSidebarSearch } from './use-sidebar-search'
 import { SessionWatchStrip } from './watch-strip'
 
 // Non-session groups (messaging platforms) stay compact: show a few rows up
@@ -297,92 +291,6 @@ const HEADER_ACTION_BTN =
 // a hover-revealed action.
 const HEADER_NAV_BTN =
   'text-(--ui-text-tertiary) opacity-70 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground hover:opacity-100 focus-visible:opacity-100'
-
-// FTS results cover sessions that aren't in the loaded page; synthesize a
-// minimal SessionInfo so they render in the same row component (resume works
-// by id; the snippet stands in for the preview).
-
-// The backend's FTS layer wraps matched terms in literal '>>>' / '<<<'
-// highlight markers (sqlite snippet() delimiters — see hermes_state_search.py).
-// The sidebar renders the snippet as plain text, so the markers must be
-// stripped or a search for "foo" paints rows titled ">>>foo<<<".
-// Exported for tests.
-export function stripFtsMarkers(snippet: string): string {
-  return snippet.replaceAll('>>>', '').replaceAll('<<<', '')
-}
-
-function searchResultToSession(result: SessionSearchResult): SessionInfo {
-  const ts = result.session_started ?? Date.now() / 1000
-
-  return {
-    archived: false,
-    cwd: null,
-    ended_at: null,
-    id: result.session_id,
-    _lineage_root_id: result.lineage_root ?? null,
-    input_tokens: 0,
-    is_active: false,
-    last_active: result.last_active ?? ts,
-    message_count: 0,
-    model: result.model ?? null,
-    output_tokens: 0,
-    preview: stripFtsMarkers(result.snippet ?? '').trim() || null,
-    source: result.source ?? null,
-    started_at: ts,
-    title: null,
-    tool_call_count: 0
-  }
-}
-
-export function mergeSearchResults(
-  sortedSessions: readonly SessionInfo[],
-  query: string,
-  serverMatches: readonly SessionSearchResult[],
-  sessionByAnyId: ReadonlyMap<string, SessionInfo>,
-  searchPending: boolean
-): SessionInfo[] {
-  if (!query) {
-    return []
-  }
-
-  // While the request is in flight the client's own recency-ordered matches
-  // are all there is — instant feedback while typing, and no leftovers from
-  // whatever the previous query's request returned. Once the ranked server
-  // response lands, it decides the order: the backend runs direct id matches
-  // before FTS content hits, so pasting a session's exact id must keep that
-  // hit on top instead of letting newer quoting sessions bury it.
-  const out = new Map<string, SessionInfo>()
-
-  if (searchPending) {
-    for (const s of sortedSessions) {
-      if (sessionMatchesSearch(s, query)) {
-        out.set(s.id, s)
-      }
-    }
-
-    return [...out.values()]
-  }
-
-  for (const match of serverMatches) {
-    if (out.has(match.session_id)) {
-      continue
-    }
-
-    const loaded = sessionByAnyId.get(match.session_id)
-    out.set(match.session_id, loaded ?? searchResultToSession(match))
-  }
-
-  // Client-only matches that the server didn't return (e.g. cwd/git-branch
-  // fields the FTS index doesn't cover) still deserve a row — after the
-  // ranked hits, in recency order.
-  for (const s of sortedSessions) {
-    if (!out.has(s.id) && sessionMatchesSearch(s, query)) {
-      out.set(s.id, s)
-    }
-  }
-
-  return [...out.values()]
-}
 
 interface ChatSidebarProps extends React.ComponentProps<typeof Sidebar> {
   currentView: AppView
@@ -482,8 +390,6 @@ export function ChatSidebar({
   const prFilter = useStore($sidebarPrFilter)
   const tagFilter = useStore($sidebarTagFilter)
   const sessionTags = useStore($sessionTags)
-  const prDataWanted = useStore($sidebarPrDataWanted)
-  const prBranchOverrides = useStore($prBranchBySession)
   const pullRequests = useStore($pullRequestsByBranch)
   const filtersActive = useStore($sidebarFiltersActive)
   const showArchived = useStore($sidebarShowArchived)
@@ -567,29 +473,12 @@ export function ChatSidebar({
   const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const newSessionCombo = useStore($bindings)['session.new']?.[0]
   const newSessionKbd = newSessionCombo ? comboTokens(newSessionCombo) : []
-  // Live search text rides a store atom (`$sidebarSearchQuery`) so a
-  // searchable listTop contribution reads the same query.
-  const searchQuery = useStore($sidebarSearchQuery)
-  const setSearchQuery = setSidebarSearchQuery
-  const [serverMatches, setServerMatches] = useState<SessionSearchResult[]>([])
-  const [searchPending, setSearchPending] = useState(false)
   const [newSessionKbdFlash, setNewSessionKbdFlash] = useState(false)
   const [messagingLoadMorePending, setMessagingLoadMorePending] = useState<Record<string, boolean>>({})
   const [recentsLoadMorePending, setRecentsLoadMorePending] = useState(false)
   const messagingOpenIds = useStore($sidebarMessagingOpenIds)
   // Per-platform count of rows currently revealed (starts at NON_SESSION_INITIAL_ROWS).
   const [messagingVisible, setMessagingVisible] = useState<Record<string, number>>({})
-  const searchInputRef = useRef<HTMLInputElement>(null)
-  const trimmedQuery = searchQuery.trim()
-
-  // Hotkey (session.focusSearch) → focus the field once it's mounted.
-  useEffect(() => {
-    const onFocus = () => searchInputRef.current?.focus({ preventScroll: true })
-
-    window.addEventListener(SESSION_SEARCH_FOCUS_EVENT, onFocus)
-
-    return () => window.removeEventListener(SESSION_SEARCH_FOCUS_EVENT, onFocus)
-  }, [])
 
   // Flash the ⌘N hint full-opacity (no transition) for the press, so hitting
   // the shortcut visibly pings its affordance in the sidebar.
@@ -848,62 +737,15 @@ export function ChatSidebar({
     [isPinnedSession, attentionIdSet, filtersNarrow, sessionMatchesFilters]
   )
 
-  // Full-text search across *all* sessions (not just the loaded page) so 699
-  // sessions stay findable. Debounced; loaded sessions are matched instantly
-  // client-side and merged ahead of the server hits.
-  useEffect(() => {
-    if (!trimmedQuery) {
-      setServerMatches([])
-      setSearchPending(false)
-
-      return
-    }
-
-    let cancelled = false
-
-    setSearchPending(true)
-
-    const id = window.setTimeout(() => {
-      void searchSessions(trimmedQuery)
-        .then(res => {
-          if (!cancelled) {
-            setServerMatches(res.results)
-          }
-        })
-        .catch(() => undefined)
-        .finally(() => {
-          if (!cancelled) {
-            setSearchPending(false)
-          }
-        })
-    }, 200)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(id)
-    }
-  }, [trimmedQuery])
-
-  const searchResults = useMemo(
-    () => mergeSearchResults(sortedSessions, trimmedQuery, serverMatches, sessionByAnyId, searchPending),
-    [sortedSessions, trimmedQuery, serverMatches, sessionByAnyId, searchPending]
-  )
-
-  // FTS hits carry the '>>>'-marked snippet that proves the match came from
-  // message content (id matches synthesize a plain preview snippet instead) —
-  // arm the transcript jump so the opened session scrolls to the hit row.
-  const resumeSearchedSession = useCallback(
-    (sessionId: string, session?: SessionInfo) => {
-      const match = serverMatches.find(m => m.session_id === sessionId)
-
-      if (match?.snippet.includes('>>>')) {
-        armTranscriptSearchJump(sessionId, { query: trimmedQuery, snippet: match.snippet })
-      }
-
-      onResumeSession(sessionId, session)
-    },
-    [serverMatches, trimmedQuery, onResumeSession]
-  )
+  const {
+    resumeSearchedSession,
+    searchInputRef,
+    searchPending,
+    searchQuery,
+    searchResults,
+    setSearchQuery,
+    trimmedQuery
+  } = useSidebarSearch({ onResumeSession, sessionByAnyId, sortedSessions })
 
   const unpinnedAgentSessions = useMemo(
     () => sortedSessions.filter(s => !isPinnedSession(s) && !attentionIdSet.has(s.id)),
@@ -1020,66 +862,7 @@ export function ChatSidebar({
     return () => window.clearTimeout(warm)
   }, [gatewayReady, scopedSessions])
 
-  // PR state is only fetched for someone who asked to see it — the badge or the
-  // filter — and it asks about the branches on screen, so the answer can't be
-  // crowded out by a busy repo's newer PRs.
-  const prLookupsByRepo = useMemo(() => {
-    if (!prDataWanted) {
-      return {}
-    }
-
-    const byRepo: Record<string, string[]> = {}
-
-    for (const session of scopedSessions) {
-      // The row's own key, so a session bound to a branch (or a PR number) it
-      // was stamped with asks about THAT, not the branch it started on.
-      const [root, lookup] = sessionPrKey(session)?.split('\n') ?? []
-
-      if (root && lookup && !byRepo[root]?.includes(lookup)) {
-        byRepo[root] = [...(byRepo[root] ?? []), lookup]
-      }
-    }
-
-    return byRepo
-    // prBranchOverrides is what `sessionPrKey` reads through — a recovered PR
-    // has to re-ask with the key it just learned.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prDataWanted, scopedSessions, prBranchOverrides])
-
-  // A stable identity for "the same question as last time", so a re-render that
-  // rebuilds the map doesn't re-ask GitHub.
-  const prQueryKey = JSON.stringify(
-    Object.entries(prLookupsByRepo)
-      .map(([root, lookups]) => [root, [...lookups].sort()] as const)
-      .sort(([a], [b]) => a.localeCompare(b))
-  )
-
-  useEffect(() => {
-    if (prQueryKey === '[]') {
-      return
-    }
-
-    const byRepo = Object.fromEntries(JSON.parse(prQueryKey) as [string, string[]][])
-
-    void refreshPullRequests(byRepo)
-
-    // A PR opens, merges or gets closed on github.com, not in here — so like
-    // the project tree, re-pull when the window comes back. The store's own
-    // staleness window keeps a flurry of focus events to one call per repo.
-    const onActive = () => {
-      if (document.visibilityState !== 'hidden') {
-        void refreshPullRequests(byRepo)
-      }
-    }
-
-    window.addEventListener('focus', onActive)
-    document.addEventListener('visibilitychange', onActive)
-
-    return () => {
-      window.removeEventListener('focus', onActive)
-      document.removeEventListener('visibilitychange', onActive)
-    }
-  }, [prQueryKey])
+  useSidebarPrData(scopedSessions)
 
   // Out-of-band repo changes (a `git init` / `rm -rf` in another terminal) emit
   // no git events, so — like every git GUI — re-pull on window focus / tab

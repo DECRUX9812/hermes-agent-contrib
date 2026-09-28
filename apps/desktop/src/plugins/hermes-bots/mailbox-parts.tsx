@@ -18,14 +18,17 @@ import {
   host,
   Input,
   Textarea,
-  useI18n
+  useI18n,
+  useValue
 } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
+import { $botMeta } from './data'
 import { useBots } from './i18n'
 import { displayName } from './labels'
 import type { MailboxNote, MailboxNoteStatus } from './mailbox'
 import { sendMailboxNote, updateMailboxNote } from './mailbox'
+import { botRosterMeta } from './routing'
 import type { GroupMember } from './types'
 
 const STATUS_ICONS: Record<MailboxNoteStatus, string> = {
@@ -141,6 +144,8 @@ export function MailboxNoteCard({ note, members }: { note: MailboxNote; members:
 export function MailboxTaskDialog({ member, onClose }: { member: GroupMember | null; onClose: () => void }) {
   const b = useBots()
   const { t } = useI18n()
+  const metaByName = useValue($botMeta)
+  const label = member ? displayName(member, botRosterMeta(member, metaByName) || null) : null
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
@@ -153,7 +158,7 @@ export function MailboxTaskDialog({ member, onClose }: { member: GroupMember | n
     setSending(true)
     void sendMailboxNote(member, { title: title.trim(), body: body.trim() })
       .then(() => {
-        host.notify({ kind: 'success', message: b.mailbox.sent(displayName(member)) })
+        host.notify({ kind: 'success', message: b.mailbox.sent(label ?? displayName(member)) })
         onClose()
       })
       .catch(error => host.notify({ kind: 'error', message: b.mailbox.sendFailed(String(error?.message || error)) }))
@@ -165,7 +170,7 @@ export function MailboxTaskDialog({ member, onClose }: { member: GroupMember | n
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {member ? b.mailbox.assignTitle(displayName(member)) : b.mailbox.assignTitleGeneric}
+            {label ? b.mailbox.assignTitle(label) : b.mailbox.assignTitleGeneric}
           </DialogTitle>
           <DialogDescription>{b.mailbox.assignDescription}</DialogDescription>
         </DialogHeader>

@@ -1131,6 +1131,15 @@ export function avatarColor(color: null | string | undefined, name: string): str
   return color || profileColor(name) || PRIMARY_AVATAR_COLOR
 }
 
+/** G3 — the persona accent: exactly the avatar's own resolved color — the
+ *  picked color when set (the AvatarPicker's choice IS the Edit Profile
+ *  override), else the name-derived deterministic hue (with botAppearance's
+ *  primary-profile violet), else the primary fallback. One color means the
+ *  roster ring, the card tint, and the avatar can never disagree. */
+export function botAccentColor(bot: { name?: string }, meta: BotMeta | null | undefined): string {
+  return avatarColor(botAppearance(bot.name || '', meta).color, bot.name || '')
+}
+
 export function botAppearance(name: string, meta: BotMeta | null | undefined): AvatarAppearance {
   // The primary profile is literally named "default"; the SDK's profileColor
   // can hand it a near-black that renders as an ugly black square, and any

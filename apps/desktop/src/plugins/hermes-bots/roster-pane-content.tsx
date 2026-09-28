@@ -40,6 +40,8 @@ interface RosterContentProps {
   mailboxNotes: MailboxNote[]
   mailboxCollapsed: boolean
   toggleMailboxSection: () => void
+  /** G10 — card-grid layout for bot rows (group/hidden structure unchanged). */
+  cardMode: boolean
   renderBotRow: (bot: RosterRow, keyPrefix?: string) => ReactNode
   renderGroupChatSection: ReturnType<typeof rosterSectionRenderers>['renderGroupChatSection']
   renderGatewaySection: ReturnType<typeof rosterSectionRenderers>['renderGatewaySection']
@@ -74,6 +76,7 @@ export function renderRosterContent({
   mailboxNotes,
   mailboxCollapsed,
   toggleMailboxSection,
+  cardMode,
   renderBotRow,
   renderGroupChatSection,
   renderGatewaySection,
@@ -177,6 +180,10 @@ export function renderRosterContent({
                   matchingHiddenBots.length ? (
                     hiddenGatewaySections.sectioned ? (
                       hiddenGatewaySections.sections.map(renderHiddenGatewaySection)
+                    ) : cardMode ? (
+                      <div className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5 px-1.5 py-1">
+                        {matchingHiddenBots.map((bot: RosterRow) => renderBotRow(bot, 'hidden:'))}
+                      </div>
                     ) : (
                       matchingHiddenBots.map((bot: RosterRow) => renderBotRow(bot, 'hidden:'))
                     )

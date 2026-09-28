@@ -79,6 +79,10 @@ export interface BotMeta {
   imageKind?: 'photo' | 'shape'
   /** Legacy single-group scalar, projected alongside `groups`. */
   group?: null | string
+  /** G3 — the 'role' one-liner under the bot's name ("Head of Research"),
+   *  shown in the roster row and the canonical chat header. Absent it, the
+   *  subtitle derives from the description's first sentence (`botRole`). */
+  role?: string
   pinned?: boolean
   /** Raise this bot's Screen tab when it starts driving its desktop (`screen-autoraise.ts`). Opt-in per bot. */
   screenAutoOpen?: boolean
@@ -188,6 +192,10 @@ export interface GroupHold {
 }
 
 export interface GroupChat {
+  /** The room's stated objective (Bot Mode D2) — set from group settings,
+   *  shown under the room title, and what a completed round's summary card is
+   *  measuring contributions against. */
+  goal?: string
   /** Whether user text may create sticky member holds. Defaults to true for
    *  rooms written by older builds; the room settings switch can disable it. */
   holdDetection?: boolean

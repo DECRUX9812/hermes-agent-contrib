@@ -55,7 +55,7 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
 const { host } = await import('@hermes/plugin-sdk')
 const { $lastRoster } = await import('./data')
 const { $selectedBot } = await import('./bot-state')
-const { RoutinesPane } = await import('./cron')
+const { MissionRail } = await import('./mission-rail')
 
 /** The SDK store the pane's owner ladder reads. */
 const $focused = host.state.focusedSessionOwner as unknown as ReturnType<typeof atom>
@@ -67,7 +67,7 @@ function renderPane() {
 
   return render(
     <QueryClientProvider client={client}>
-      <RoutinesPane />
+      <MissionRail />
     </QueryClientProvider>
   )
 }

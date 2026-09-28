@@ -26,7 +26,7 @@ const FACE_BLOCK = FACE_SIZE + FACE_GAP
 /** The bot whose canonical chat this session is, if it is one. Matches the
  *  durable registry id or the compression-lineage tip, the same pair the
  *  roster's click and preview identity resolve through. */
-function botForStoredId(roster: readonly RosterRow[], storedId: string): null | RosterRow {
+export function botForStoredId(roster: readonly RosterRow[], storedId: string): null | RosterRow {
   if (!storedId || !Array.isArray(roster)) {
     return null
   }
@@ -48,7 +48,7 @@ function focusedStoredId(): string {
   return String(host.state.focusedStoredSessionId?.get?.() ?? '')
 }
 
-function botForChat(roster: readonly RosterRow[], sessionId: string): null | RosterRow {
+export function botForChat(roster: readonly RosterRow[], sessionId: string): null | RosterRow {
   // Stored ids pass straight through, so a shell that hands us one still
   // resolves; otherwise the focused chat is the empty one being looked at.
   return botForStoredId(roster, sessionId) ?? botForStoredId(roster, focusedStoredId())

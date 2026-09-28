@@ -1,7 +1,7 @@
 import { connectionScopedAtom } from '@/lib/connection-scoped'
-import { Codecs } from '@/lib/persisted'
+import { Codecs, persistentAtom } from '@/lib/persisted'
 
-import { $sessions, lineageAliases, sessionMatchesStoredId, sessionPinId } from './session'
+import { $sessions, knownSessionOwner, lineageAliases, sessionMatchesStoredId, sessionPinId } from './session'
 
 // Per-session notification mute (Industry 2.10): the quiet set is persisted
 // per profile via the same connection scope as pins — remote connections key
@@ -55,4 +55,136 @@ export function toggleSessionMuted(storedSessionId: string): boolean {
   $mutedSessionIds.set([...muted])
 
   return true
+}
+
+// ── Owner-scoped notification modes (Bot Mode A4) ──────────────────────────
+// A bot's sessions — its canonical Bot Chat, side-chats, and cron runs — all
+// share one owner: `${connectionId}::${profile}`. Muting that key silences the
+// whole profile, including sessions minted after the toggle. The key carries
+// its own connection scope, so the map lives under one flat storage key.
+
+export type OwnerNotifyMode = 'muted' | 'quiet'
+
+const OWNER_NOTIFY_MODES_KEY = 'sidebar.ownerNotifyModes'
+
+export const $ownerNotifyModes = persistentAtom<Record<string, OwnerNotifyMode>>(
+  OWNER_NOTIFY_MODES_KEY,
+  {},
+  Codecs.json<Record<string, OwnerNotifyMode>>(value =>
+    Object.fromEntries(
+      Object.entries(value && typeof value === 'object' && !Array.isArray(value) ? value : {}).filter(
+        (entry): entry is [string, OwnerNotifyMode] => entry[1] === 'muted' || entry[1] === 'quiet'
+      )
+    )
+  )
+)
+
+/** `connectionId` may be empty/'local' for the local connection; `profile`
+ *  falls back to 'default' so bare names and explicit 'default' collide. */
+export function ownerNotifyKey(connectionId: null | string | undefined, profile: null | string | undefined): string {
+  return `${String(connectionId ?? '').trim() || 'local'}::${String(profile ?? '').trim() || 'default'}`
+}
+
+/** The owner keys a session could be muted under: its backend profile, and —
+ *  for remote-override routes — the Desktop-side alias the roster shows. */
+function sessionOwnerNotifyKeys(sessionId: string): string[] {
+  const owner = knownSessionOwner($sessions.get(), sessionId)
+
+  if (!owner) {
+    return []
+  }
+
+  if (typeof owner === 'string') {
+    return [ownerNotifyKey('local', owner)]
+  }
+
+  const keys = [ownerNotifyKey(owner.connectionId, owner.profile)]
+
+  if (owner.targetProfile && owner.targetProfile !== owner.profile) {
+    keys.push(ownerNotifyKey(owner.connectionId, owner.targetProfile))
+  }
+
+  return keys
+}
+
+/** The mode recorded for the session's owner, if any. */
+export function ownerNotifyModeForSession(sessionId: null | string | undefined): OwnerNotifyMode | undefined {
+  if (!sessionId) {
+    return undefined
+  }
+
+  const modes = $ownerNotifyModes.get()
+
+  for (const key of sessionOwnerNotifyKeys(sessionId)) {
+    const mode = modes[key]
+
+    if (mode) {
+      return mode
+    }
+  }
+
+  return undefined
+}
+
+export function ownerNotifyMode(ownerKey: string): OwnerNotifyMode | undefined {
+  return $ownerNotifyModes.get()[ownerKey]
+}
+
+export function setOwnerNotifyMode(ownerKey: string, mode: OwnerNotifyMode | null): void {
+  const next = { ...$ownerNotifyModes.get() }
+
+  if (mode) {
+    next[ownerKey] = mode
+  } else {
+    delete next[ownerKey]
+  }
+
+  $ownerNotifyModes.set(next)
+}
+
+/** Session mute OR a hard owner mute. Quiet mode is excluded — it only gates
+ *  native dispatch while the quiet-hours window is open. */
+export function isSessionNotificationMuted(sessionId: string): boolean {
+  return isSessionMuted(sessionId) || ownerNotifyModeForSession(sessionId) === 'muted'
+}
+
+/** Rename counterpart: `local::<old>` modes move to `local::<new>`, matching
+ *  the local-connection-only rule of the other profile-keyed families. */
+export function migrateOwnerNotifyModesForProfile(oldProfile: string, newProfile: string): void {
+  const modes = $ownerNotifyModes.get()
+  const from = ownerNotifyKey('local', oldProfile)
+
+  if (!modes[from]) {
+    return
+  }
+
+  const next = { ...modes }
+  next[ownerNotifyKey('local', newProfile)] = next[from]!
+  delete next[from]
+  $ownerNotifyModes.set(next)
+}
+
+/** Delete counterpart: drop the deleted profile's key under its owning
+ *  connection only — a same-named bot on another connection keeps its mode. */
+export function dropOwnerNotifyModesForProfile(
+  profile: string,
+  route?: { connectionId?: string; profile?: string; targetProfile?: string }
+): void {
+  const connectionId = String(route?.connectionId ?? '').trim() || 'local'
+
+  const names = new Set(
+    [route?.profile, route?.targetProfile, profile].map(value => String(value ?? '').trim()).filter(Boolean)
+  )
+
+  const next = Object.fromEntries(
+    Object.entries($ownerNotifyModes.get()).filter(([key]) => {
+      const [conn, name] = key.split('::')
+
+      return !(conn === connectionId && names.has(name))
+    })
+  )
+
+  if (Object.keys(next).length !== Object.keys($ownerNotifyModes.get()).length) {
+    $ownerNotifyModes.set(next)
+  }
 }
