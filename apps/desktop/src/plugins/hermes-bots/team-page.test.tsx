@@ -139,6 +139,25 @@ describe('TeamPage', () => {
     )
   })
 
+  it('delegates a goal to a teammate through spawn_task, defaulting to the goal owner', async () => {
+    mount()
+    await screen.findByText('Ship posts')
+
+    // second goal ("Ship posts") is owned by the writer seat
+    fireEvent.click(screen.getAllByLabelText('Assign work')[1]!)
+    fireEvent.change(screen.getByPlaceholderText('What should they do?'), { target: { value: 'Write post 1' } })
+    fireEvent.submit(screen.getByPlaceholderText('What should they do?').closest('form')!)
+
+    await waitFor(() =>
+      expect(mocks.request).toHaveBeenCalledWith('bots_team.goal.spawn_task', {
+        assignee: 'seat_w',
+        goal_id: 'g2',
+        team_id: 'team_1',
+        title: 'Write post 1'
+      })
+    )
+  })
+
   it('offers to start a team when none exists, and treats an older gateway as no teams', async () => {
     mocks.request.mockImplementation(async () => {
       throw new Error('unknown method')

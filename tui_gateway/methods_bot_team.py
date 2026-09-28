@@ -143,6 +143,18 @@ def _(rid, params: dict) -> dict:
     return _run(rid, go)
 
 
+@method("bots_team.goal.spawn_task")
+def _(rid, params: dict) -> dict:
+    def go(root, bt):
+        _need(params, "team_id", "goal_id", "title")
+        made = bt.spawn_goal_task(root, params["team_id"], params["goal_id"], title=params["title"],
+                                  body=params.get("body") or "", assignee=params.get("assignee") or None,
+                                  actor=str(params.get("actor") or "you"))
+        return {**made, **_view(root, bt, params["team_id"])}
+
+    return _run(rid, go)
+
+
 @method("bots_team.approval.request")
 def _(rid, params: dict) -> dict:
     def go(root, bt):

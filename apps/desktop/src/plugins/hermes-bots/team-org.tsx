@@ -22,6 +22,7 @@ import {
 } from '@hermes/plugin-sdk'
 import { type ReactNode, useState } from 'react'
 
+import { useRoster } from './data'
 import {
   budgetState,
   type BudgetTone,
@@ -191,6 +192,9 @@ function SeatForm({ member, onClose, t, team }: { member: Partial<TeamMember>; o
   const [boss, setBoss] = useState(member.reports_to ?? '')
   const [busy, setBusy] = useState(false)
   const others = team.members.filter(m => m.slot !== member.slot)
+  // Hire from the bots this install already has; the field still takes any name.
+  const { data: roster } = useRoster()
+  const hireable = (roster?.profiles ?? []).map(r => r.name).filter(n => !team.members.some(m => m.profile === n && m.slot !== member.slot))
 
   const save = async () => {
     setBusy(true)
@@ -225,7 +229,12 @@ function SeatForm({ member, onClose, t, team }: { member: Partial<TeamMember>; o
         <DialogTitle>{member.slot ? t.edit : t.addSeat}</DialogTitle>
       </DialogHeader>
       <Field label={t.seatProfile}>
-        <Input onChange={e => setProfile(e.target.value)} placeholder={t.seatProfilePlaceholder} value={profile} />
+        <Input list="team-hireable" onChange={e => setProfile(e.target.value)} placeholder={t.seatProfilePlaceholder} value={profile} />
+        <datalist id="team-hireable">
+          {hireable.map(n => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
       </Field>
       <Field label={t.seatRole}>
         <Input onChange={e => setRole(e.target.value)} placeholder={t.seatRolePlaceholder} value={role} />

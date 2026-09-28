@@ -94,3 +94,40 @@ def test_a_broken_team_store_never_stops_the_board(home):
     with kbc.connect() as conn:
         card = kb.create_task(conn, title="x", assignee="default")
         assert [t for t, _a, _w in kbd.dispatch_once(conn, dry_run=True).spawned] == [card]
+
+
+def test_delegated_goal_task_carries_the_why_lands_on_the_board_and_rolls_up(home):
+    tid = _team(home, limit=100)
+    goal = bt.upsert_goal(home, tid, title="Grow blog", owner="default")
+    sub = bt.upsert_goal(home, tid, title="Ship 5 posts", parent_id=goal["id"], owner="default")
+
+    made = bt.spawn_goal_task(home, tid, sub["id"], title="Write post 1", body="800 words on caching")
+    again = bt.spawn_goal_task(home, tid, sub["id"], title="Write post 1")
+    assert made["task_id"] == again["task_id"]  # idempotent per (goal, title)
+
+    with kbc.connect() as conn:
+        task = kb.get_task(conn, made["task_id"])
+        assert task.assignee == "default" and task.created_by == f"team:{tid}"
+        assert "keep it running → Grow blog → Ship 5 posts" in task.body  # ancestry travels with the work
+        assert "800 words on caching" in task.body and "Operator" in task.body
+
+        team = bt.get_team(home, tid)
+        assert made["task_id"] in next(g for g in team["goals"] if g["id"] == sub["id"])["task_ids"]
+        rolled = bt.rollup(team)
+        assert rolled["goals"][goal["id"]]["total"] == 1  # child task counted in the parent's progress
+
+        res = kbd.dispatch_once(conn, dry_run=True)
+        assert [t for t, _a, _w in res.spawned] == [made["task_id"]]
+
+        assert kb.complete_task(conn, made["task_id"], result="shipped")
+    assert bt.rollup(bt.get_team(home, tid))["goals"][goal["id"]]["done"] == 1  # real board status flows up
+
+
+def test_delegation_needs_a_hired_owner_and_a_real_seat(home):
+    tid = _team(home, limit=100)
+    goal = bt.upsert_goal(home, tid, title="g")  # no owner
+    with pytest.raises(bt.TeamError, match="pick a teammate"):
+        bt.spawn_goal_task(home, tid, goal["id"], title="x")
+    open_seat = bt.upsert_member(home, tid, role="Designer")
+    with pytest.raises(bt.TeamError, match="open"):
+        bt.spawn_goal_task(home, tid, goal["id"], title="x", assignee=open_seat["slot"])

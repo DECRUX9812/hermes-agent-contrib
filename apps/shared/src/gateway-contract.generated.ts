@@ -668,6 +668,21 @@ export interface BotsTeamGoalLinkTaskParams {
   task_id: string
   unlink?: boolean | null
 }
+export interface BotsTeamGoalSpawnTaskParams {
+  team_id: string
+  actor?: string | null
+  goal_id: string
+  title: string
+  body?: string | null
+  assignee?: string | null
+}
+export interface BotsTeamGoalSpawnTaskResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  task_id: string
+  assignee: string
+}
 export interface BotsTeamApprovalRequestParams {
   team_id: string
   kind: string
@@ -5299,6 +5314,8 @@ export interface RpcMethods {
   'bots_team.get': { params: TeamIdParams; result: TeamView }
   /** Attach or detach a Kanban task id on a goal (the task itself is untouched). */
   'bots_team.goal.link_task': { params: BotsTeamGoalLinkTaskParams; result: BotsTeamGoalResult }
+  /** Delegate work: create a Kanban card for a teammate (default: the goal's owner) whose body opens with their brief and the mission→goal chain, and link it to the goal. Idempotent per title. */
+  'bots_team.goal.spawn_task': { params: BotsTeamGoalSpawnTaskParams; result: BotsTeamGoalSpawnTaskResult }
   /** Create (goal_id omitted) or edit a goal; parent_id null hangs it under the mission. */
   'bots_team.goal.upsert': { params: BotsTeamGoalUpsertParams; result: BotsTeamGoalResult }
   /** Record a short team lesson; a repeat of the same lesson bumps its count instead of duplicating. */
@@ -5822,6 +5839,7 @@ export const RPC_METHODS = [
   'bots_team.delete',
   'bots_team.get',
   'bots_team.goal.link_task',
+  'bots_team.goal.spawn_task',
   'bots_team.goal.upsert',
   'bots_team.learning.add',
   'bots_team.learning.remove',

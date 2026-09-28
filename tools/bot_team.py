@@ -517,17 +517,16 @@ def default_task_status_lookup(task_ids: list[str]) -> dict[str, Optional[str]]:
     out: dict[str, Optional[str]] = {t: None for t in task_ids}
     try:
         from hermes_cli import kanban_db
+        from hermes_cli import kanban_db_connect as kbc
 
-        conn = kanban_db.connect()
-        try:
+        with kbc.connect() as conn:
             for t in task_ids:
                 task = kanban_db.get_task(conn, t)
                 if task is not None:
-                    out[t] = getattr(task, "status", None) or (task.get("status") if isinstance(task, dict) else None)
-        finally:
-            conn.close()
+                    out[t] = getattr(task, "status", None)
     except Exception:
         return out
+    return out
     return out
 
 
@@ -939,3 +938,53 @@ def prompt_section(root: Path | str, profile: str) -> str:
         for team in teams_for_profile(root, profile)[:PROMPT_MAX_TEAMS]
     ]
     return ("## Team\n" + "\n\n".join(blocks)) if blocks else ""
+
+
+# ── goal → task delegation ────────────────────────────────────────────────────────────────
+
+TaskCreator = Callable[..., str]
+
+
+def default_task_creator(*, title: str, body: str, assignee: str, created_by: str, idempotency_key: str) -> str:
+    """Create the card on this home's default Kanban board (the engine that already does claims,
+    runs and dispatch). Raises if Kanban is unavailable — delegating work is not best-effort."""
+    from hermes_cli import kanban_db_connect as kbc
+    from hermes_cli import kanban_db as kb
+
+    with kbc.connect() as conn:
+        return kb.create_task(conn, title=title, body=body, assignee=assignee, created_by=created_by,
+                              idempotency_key=idempotency_key)
+
+
+def spawn_goal_task(root: Path | str, team_id: str, goal_id: str, *, title: str, body: str = "",
+                    assignee: Optional[str] = None, actor: str = BOARD_ACTOR,
+                    creator: Optional[TaskCreator] = None) -> dict:
+    """Delegate a piece of a goal: create a Kanban card for a teammate and link it to the goal.
+
+    The card's body opens with that teammate's brief — role, boss, and the mission→goal chain
+    that says WHY the work exists — so a worker that has never seen the team still knows what it
+    is for. ``assignee`` defaults to the goal's owner; it must be a hired seat. A paused or
+    over-budget seat still receives the card; the dispatcher holds it until the seat may work.
+    Idempotent per (team, goal, title): re-delegating the same title returns the same card.
+    """
+    title = _text(title, 200)
+    if not title:
+        raise TeamError("task title required")
+    with _lock_for(team_id):
+        team = _load(root, team_id)
+        goal = _goal(team, goal_id)
+        ref = assignee or goal.get("owner")
+        member = _find_member(team, ref) if ref else None
+        if member is None:
+            raise TeamError("pick a teammate to assign this to (the goal has no owner yet)")
+        if not member.get("profile"):
+            raise TeamError("that seat is open — hire a bot into it first")
+        text = build_brief(team, member["slot"], goal_id=goal_id, include_goals=False)
+        text += f"\n\n## Task\n{title}" + (f"\n\n{_text(body, TEXT_MAX)}" if body.strip() else "")
+        slug = re.sub(r"\W+", "-", title.lower())[:80]
+        key = f"{team_id}:{goal_id}:{slug}"
+    task_id = (creator or default_task_creator)(
+        title=title, body=text, assignee=member["profile"], created_by=f"team:{team_id}", idempotency_key=key)
+    link_task(root, team_id, goal_id, task_id, actor=actor)
+    audit(root, team_id, actor, "goal.delegate", {"goal": goal_id, "task": task_id, "assignee": member["profile"]})
+    return {"task_id": task_id, "assignee": member["profile"]}

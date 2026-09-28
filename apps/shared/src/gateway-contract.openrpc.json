@@ -475,6 +475,24 @@
       }
     },
     {
+      "name": "bots_team.goal.spawn_task",
+      "summary": "Delegate work: create a Kanban card for a teammate (default: the goal's owner) whose body opens with their brief and the mission\u2192goal chain, and link it to the goal. Idempotent per title.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamGoalSpawnTaskParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamGoalSpawnTaskResult"
+        }
+      }
+    },
+    {
       "name": "bots_team.goal.upsert",
       "summary": "Create (goal_id omitted) or edit a goal; parent_id null hangs it under the mission.",
       "params": [
@@ -8310,6 +8328,101 @@
           "goal"
         ],
         "title": "BotsTeamGoalResult",
+        "type": "object"
+      },
+      "BotsTeamGoalSpawnTaskParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "goal_id": {
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Body"
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assignee"
+          }
+        },
+        "required": [
+          "team_id",
+          "goal_id",
+          "title"
+        ],
+        "title": "BotsTeamGoalSpawnTaskParams",
+        "type": "object"
+      },
+      "BotsTeamGoalSpawnTaskResult": {
+        "additionalProperties": false,
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "tree": {
+            "items": {
+              "$ref": "#/components/schemas/TeamOrgNode"
+            },
+            "title": "Tree",
+            "type": "array"
+          },
+          "rollup": {
+            "$ref": "#/components/schemas/TeamRollup"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "assignee": {
+            "title": "Assignee",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team",
+          "tree",
+          "rollup",
+          "task_id",
+          "assignee"
+        ],
+        "title": "BotsTeamGoalSpawnTaskResult",
         "type": "object"
       },
       "BotsTeamGoalUpsertParams": {

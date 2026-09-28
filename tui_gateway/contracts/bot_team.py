@@ -231,6 +231,23 @@ method("bots_team.goal.link_task", params=BotsTeamGoalLinkTaskParams, result=Bot
        doc="Attach or detach a Kanban task id on a goal (the task itself is untouched).")
 
 
+class BotsTeamGoalSpawnTaskParams(TeamActorParams):
+    goal_id: str
+    title: str
+    body: str | None = None
+    assignee: str | None = None
+
+
+class BotsTeamGoalSpawnTaskResult(TeamView):
+    task_id: str
+    assignee: str
+
+
+method("bots_team.goal.spawn_task", params=BotsTeamGoalSpawnTaskParams, result=BotsTeamGoalSpawnTaskResult,
+       doc="Delegate work: create a Kanban card for a teammate (default: the goal's owner) whose body opens "
+           "with their brief and the mission→goal chain, and link it to the goal. Idempotent per title.")
+
+
 class BotsTeamApprovalRequestParams(TeamIdParams):
     kind: str
     subject: str

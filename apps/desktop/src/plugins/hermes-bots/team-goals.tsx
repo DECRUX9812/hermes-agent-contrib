@@ -10,7 +10,9 @@ import { type TeamText } from './team-i18n'
 const STATUS_ORDER = ['open', 'active', 'blocked', 'done', 'cancelled'] as const
 
 function GoalRow({ depth, goal, progress, t, team }: { depth: number; goal: TeamGoal; progress?: GoalProgress; t: TeamText; team: Team }) {
-  const [adding, setAdding] = useState<'' | 'sub' | 'task'>('')
+  const [adding, setAdding] = useState<'' | 'sub' | 'task' | 'work'>('')
+  const hired = team.members.filter(m => m.profile)
+  const [assignee, setAssignee] = useState(goal.owner ?? hired[0]?.slot ?? '')
   const [draft, setDraft] = useState('')
   const settled = goal.status === 'done' || goal.status === 'cancelled'
   const owner = team.members.find(m => m.slot === goal.owner)
@@ -51,6 +53,9 @@ function GoalRow({ depth, goal, progress, t, team }: { depth: number; goal: Team
             <Button aria-label={t.subGoal} className="size-6" onClick={() => setAdding('sub')} size="icon" variant="ghost">
               <Codicon name="add" size="0.75rem" />
             </Button>
+            <Button aria-label={t.assignWork} className="size-6" onClick={() => setAdding('work')} size="icon" variant="ghost">
+              <Codicon name="rocket" size="0.75rem" />
+            </Button>
             <Button aria-label={t.linkTask} className="size-6" onClick={() => setAdding('task')} size="icon" variant="ghost">
               <Codicon name="link" size="0.75rem" />
             </Button>
@@ -69,11 +74,32 @@ function GoalRow({ depth, goal, progress, t, team }: { depth: number; goal: Team
               if (value) {
                 void (adding === 'sub'
                   ? run('bots_team.goal.upsert', { title: value, parent_id: goal.id })
-                  : run('bots_team.goal.link_task', { goal_id: goal.id, task_id: value }))
+                  : adding === 'work'
+                    ? run('bots_team.goal.spawn_task', { assignee, goal_id: goal.id, title: value })
+                    : run('bots_team.goal.link_task', { goal_id: goal.id, task_id: value }))
               }
             }}
           >
-            <Input autoFocus onChange={e => setDraft(e.target.value)} placeholder={adding === 'sub' ? t.goalTitlePlaceholder : t.taskId} value={draft} />
+            {adding === 'work' && (
+              <select
+                aria-label={t.assignTo}
+                className="h-8 max-w-40 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-control-background) px-2 text-[0.8125rem]"
+                onChange={e => setAssignee(e.target.value)}
+                value={assignee}
+              >
+                {hired.map(m => (
+                  <option key={m.slot} value={m.slot}>
+                    {seatName(m, t.openSeat)}
+                  </option>
+                ))}
+              </select>
+            )}
+            <Input
+              autoFocus
+              onChange={e => setDraft(e.target.value)}
+              placeholder={adding === 'sub' ? t.goalTitlePlaceholder : adding === 'work' ? t.assignWorkPlaceholder : t.taskId}
+              value={draft}
+            />
             <Button size="sm" type="submit">
               {t.save}
             </Button>

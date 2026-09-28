@@ -37,6 +37,14 @@ spans profiles. Profiles stay islands: the team stores *references*, never confi
 - **Brief** — `bots_team.brief`: role, boss, mission→goal chain, top lessons. **Injected at
   session start only** — never rewritten into a running conversation (prompt cache).
 
+## Delegation: goal → card → teammate
+
+`bots_team.goal.spawn_task` turns a goal into real work: it creates a Kanban card assigned to a
+hired seat (default: the goal's owner), links it to the goal, and opens the card's body with that
+teammate's brief — role, boss and the mission→goal chain ("Reach 10k → Grow blog → Ship 5 posts")
+— so a worker that has never seen the team still knows *why*. Idempotent per (goal, title).
+Roll-up reads the card's real board status back, so completing the card moves the goal's bar.
+
 ## Enforcement (not just bookkeeping)
 
 - **Dispatcher gate.** `hermes_cli/kanban_db_dispatch._dispatch_lane_task` asks
@@ -62,7 +70,7 @@ team keep their existing epoch.
 ## Surfaces
 
 - Backend: `tools/bot_team.py`, `tui_gateway/methods_bot_team.py`, contract
-  `tui_gateway/contracts/bot_team.py` (generated to `apps/shared`). 19 `bots_team.*` methods.
+  `tui_gateway/contracts/bot_team.py` (generated to `apps/shared`). 20 `bots_team.*` methods.
 - Desktop: `/team` page in the bundled Bots plugin (`team-page.tsx`, `team-org.tsx`,
   `team-goals.tsx`), sidebar row and palette entry. **Simple**: org, goals+progress,
   approvals, learnings. **Advanced** (`host.state.showsAdvancedChrome`): + audit trail,
