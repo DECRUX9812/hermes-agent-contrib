@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes — Mission Control · Needs you (target)</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"></head>
+<body>
+<div class="win two">
+  <div id="rail"></div>
+  <main class="mc">
+    <header class="mc-head">
+      <h2>Mission Control</h2>
+      <div class="lens"><span class="on">Needs you <i class="n amber">3</i></span><span>Running <i class="n">4</i></span><span>Review <i class="n">2</i></span><span>Map</span><span>Board</span></div>
+      <span class="grow"></span>
+      <div class="keys"><span><kbd>J</kbd><kbd>K</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>A</kbd> approve</span><span><kbd>E</kbd> archive</span></div>
+    </header>
+    <div class="mc-body">
+      <div class="qlist">
+        <div class="qitem sel">
+          <div id="a1"></div>
+          <div>
+            <h4>Push 2 commits to <span class="code">origin/feat/digest</span>?</h4>
+            <div class="qmeta"><span class="tagk appr">Approval</span>Atlas · Engineer · waiting 1m</div>
+            <div class="qact"><button class="btn btn-primary sm">Allow once</button><button class="btn btn-ghost sm">Always for this repo</button><button class="btn btn-ghost sm">Not now</button></div>
+          </div>
+        </div>
+        <div class="qitem">
+          <div id="a3"></div>
+          <div>
+            <h4>Publish the newsletter to 2,140 subscribers?</h4>
+            <div class="qmeta"><span class="tagk appr">Approval</span>Sage · Writer · 2m</div>
+            <div class="qact"><button class="btn btn-soft sm">Review draft</button><button class="btn btn-ghost sm">Publish</button><button class="btn btn-ghost sm">Not now</button></div>
+          </div>
+        </div>
+        <div class="qitem">
+          <div id="a2"></div>
+          <div>
+            <h4>Which venue for Friday's dinner?</h4>
+            <div class="qmeta"><span class="tagk ques">Question</span>Scout · Researcher · 9m</div>
+            <div class="qact"><button class="btn btn-soft sm">Pastel Bistro</button><button class="btn btn-soft sm">Rooftop 39</button><button class="btn btn-ghost sm">Ask me later</button></div>
+          </div>
+        </div>
+        <div class="qitem done">
+          <div id="a4"></div>
+          <div>
+            <h4>Renew <span class="code">hermes-labs.dev</span></h4>
+            <div class="qmeta"><span class="okc" id="okc"></span>Approved from your phone · just now</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card detail">
+        <div style="display:flex;gap:12px;align-items:center"><span class="tagk appr">Approval</span><span class="fine">Atlas is paused on this step</span></div>
+        <h3>Push 2 commits to origin/feat/digest?</h3>
+        <div class="kv">
+          <div><b>What it does</b>Publishes my fix so CI can run on the PR.</div>
+          <div><b>What it won't do</b>Touch <span class="code">main</span> or force-push.</div>
+          <div><b>Where</b>~/code/hermes · worktree feat/digest</div>
+        </div>
+        <div><div class="sect">The command</div><div class="cmd"><span style="color:#6f7aa3">$</span> git push origin feat/digest</div></div>
+        <div><div class="sect">Where Atlas is</div>
+          <div class="rowmini"><span class="pulse"></span><b style="color:var(--v2-text)">Step 3 of 5</b> · Fix it and re-run CI<span class="grow"></span><span class="fine">4m in</span></div></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-ghost sm" id="open-c"></button><button class="btn btn-ghost sm" id="ask-c"></button></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="mock.js"></script>
+<script>
+  const $ = id => document.getElementById(id)
+  $('rail').outerHTML = rail('', { needs: false })
+  $('a1').outerHTML = av('atlas', 44, 'needs'); $('a2').outerHTML = av('scout', 44, 'needs'); $('a3').outerHTML = av('sage', 44, 'needs'); $('a4').outerHTML = av('nova', 44)
+  $('okc').innerHTML = ic('phone', 14) + ' '
+  $('okc').style.cssText = 'display:inline-flex;align-items:center'
+  $('open-c').innerHTML = ic('chevronR', 14) + 'Open the conversation'
+  $('ask-c').innerHTML = ic('sparkle', 14) + 'Ask about this'
+</script>
+</body></html>

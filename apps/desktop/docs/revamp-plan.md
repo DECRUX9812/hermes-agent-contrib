@@ -22,6 +22,13 @@ It has two goals that must land together:
 [#106742]: https://github.com/NousResearch/hermes-agent/pull/106742
 [#122491]: https://github.com/NousResearch/hermes-agent/pull/122491
 
+> **Status update (2026-09-28).** A recording of the shipped build showed the visuals and feature quality are
+> well short of this plan's goals (an app that fails five ways when a bot has no model; a shipped Assign-task
+> feature that fails 100% of the time; tiny grey all-caps type; no visible teammates). The follow-up plan is
+> **[`revamp-visual-plan.md`](./revamp-visual-plan.md) (Wave V)**, with rendered targets in
+> [`revamp/mockups/png/`](./revamp/mockups/png/). It runs **before** Wave 3 and supersedes Wave 3's visual
+> scope; Wave 2 (`store/fleet`, Mission Control data) still feeds it.
+
 ---
 
 ## 1. Diagnosis — why ~50 shipped features didn't make a dent

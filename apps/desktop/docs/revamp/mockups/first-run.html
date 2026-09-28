@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes — First run: give Hermes a brain (target)</title>
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"></head>
+<body>
+<div class="stage">
+  <div class="topbar"><div class="brand" id="brand"></div><span class="link">Skip for now</span></div>
+  <div class="center">
+    <div class="steps">
+      <span class="step-pill on"><i>1</i>Brain</span>
+      <span class="step-pill"><i>2</i>Reach you</span>
+      <span class="step-pill"><i>3</i>First task</span>
+    </div>
+    <h1 class="display">Give Hermes a brain.</h1>
+    <p class="sub">Pick how it thinks. Every teammate you create starts with this brain — you can change it any time, per teammate.</p>
+
+    <div class="choices">
+      <div class="card choice rec">
+        <span class="badge-rec">Recommended</span>
+        <div class="ico" id="i1"></div>
+        <h3>Start free</h3>
+        <p>Nous free tier. No key, no card — Hermes is ready in a few seconds.</p>
+        <div class="foot"><span class="fine">Great for trying things out. Upgrade whenever you like.</span><button class="btn btn-primary wide" id="b1">Continue free</button></div>
+      </div>
+
+      <div class="card choice">
+        <div class="ico teal" id="i2"></div>
+        <h3>Bring your own key</h3>
+        <p>Use any provider or compatible endpoint. Keys stay in your Mac's keychain.</p>
+        <div class="provs"><span>OpenRouter</span><span>Anthropic</span><span>OpenAI</span><span>Google</span><span>+20 more</span></div>
+        <div class="foot"><div class="field"><span>Paste an API key</span><button class="btn btn-soft sm">Connect</button></div></div>
+      </div>
+
+      <div class="card choice">
+        <div class="ico amber" id="i3"></div>
+        <h3>Run it on this Mac</h3>
+        <p>We found Ollama running locally. Nothing leaves your machine.</p>
+        <div style="display:grid;gap:8px">
+          <div class="model sel"><span class="radio"></span>qwen3<em>8B · 4.9 GB</em></div>
+          <div class="model"><span class="radio"></span>gemma3<em>12B · 8.1 GB</em></div>
+        </div>
+        <div class="foot"><button class="btn btn-ghost wide">Use local model</button></div>
+      </div>
+    </div>
+
+    <div class="say">
+      <div id="hav"></div>
+      <div class="bubble">Hi — I'm Hermes. I can write code, watch your inbox, and text you when something needs a decision. Pick a brain and I'll get to work.</div>
+    </div>
+  </div>
+  <div class="bottomnote"><span id="tgnote"></span><span>You can change any of this later in Settings → Models</span></div>
+</div>
+<script src="mock.js"></script>
+<script>
+  const $ = id => document.getElementById(id)
+  $('brand').innerHTML = av('hermes', 30) + 'Hermes'
+  $('hav').outerHTML = av('hermes', 44)
+  $('i1').innerHTML = ic('bolt', 22); $('i2').innerHTML = ic('key', 22); $('i3').innerHTML = ic('cpu', 22)
+  $('b1').innerHTML = 'Continue free ' + ic('chevronR', 16)
+  $('tgnote').innerHTML = ic('telegram', 14, 'x') + ' Next: link Telegram so Hermes can text you — optional'
+  $('tgnote').style.cssText = 'display:inline-flex;gap:8px;align-items:center'
+</script>
+</body></html>
