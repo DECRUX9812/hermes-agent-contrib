@@ -183,28 +183,6 @@ export default {
       ctx.onDispose(stopScreenAutoRaise)
     }
 
-    // Team Bots: the `/team` home, its sidebar row and a palette entry. All SDK-only, so the
-    // same registration works when this plugin runs inside a web-hosted client.
-    ctx.registerMany([
-      { id: 'team-page', area: ROUTES_AREA, data: { path: '/team' } satisfies RouteContribution, render: () => <TeamPage /> },
-      {
-        id: 'team-nav',
-        area: SIDEBAR_NAV_AREA,
-        order: 40,
-        data: { codicon: 'organization', label: ctx.i18n.t('team.nav'), path: '/team' } satisfies SidebarNavContribution
-      },
-      {
-        id: 'team-open',
-        area: PALETTE_AREA,
-        data: {
-          id: 'team.open',
-          label: ctx.i18n.t('team.title'),
-          keywords: ['team', 'org', 'goals', 'budget', 'approvals'],
-          run: () => host.navigate('/team')
-        } satisfies PaletteContribution
-      }
-    ])
-
     // @-mention autocomplete: typing "@rese…" in ANY composer offers the
     // roster's handles (issue #88060). Reads the roster straight from the
     // query cache — useRoster keeps it ≤5s stale and the popover must answer
@@ -1110,5 +1088,29 @@ export default {
         }
       }
     })
+
+    // Team Bots: the `/team` home, its sidebar row and a palette entry. All SDK-only, so the
+    // same registration works when this plugin runs inside a web-hosted client.
+    for (const contribution of [
+      { id: 'team-page', area: ROUTES_AREA, data: { path: '/team' } satisfies RouteContribution, render: () => <TeamPage /> },
+      {
+        id: 'team-nav',
+        area: SIDEBAR_NAV_AREA,
+        order: 40,
+        data: { codicon: 'organization', label: ctx.i18n.t('team.nav'), path: '/team' } satisfies SidebarNavContribution
+      },
+      {
+        id: 'team-open',
+        area: PALETTE_AREA,
+        data: {
+          id: 'team.open',
+          label: ctx.i18n.t('team.title'),
+          keywords: ['team', 'org', 'goals', 'budget', 'approvals'],
+          run: () => host.navigate('/team')
+        } satisfies PaletteContribution
+      }
+    ]) {
+      ctx.register(contribution)
+    }
   }
 }
