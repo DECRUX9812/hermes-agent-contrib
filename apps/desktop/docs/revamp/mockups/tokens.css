@@ -1,93 +1,35 @@
-/* Hermes Desktop — design language v2 tokens (PROPOSAL).
+/* v2 DELTAS — the only NEW tokens Wave V adds. Everything else is the real pipeline in real-tokens.css.
  *
- * Spec: docs/revamp-visual-plan.md §4. Reuses existing token NAMES where they exist
- * (--theme-primary, --ui-*); everything new is prefixed --v2- so Devin can map each one
- * onto src/styles.css deliberately (and update DESIGN.md's named-contract entries in the
- * same PR, per its checklist). Nothing here ships as-is — it is the numbers to implement.
- */
+ * Rule: every new token is an ALIAS of an existing one, so built-in skins, dark mode, user themes,
+ * VS Code imports and per-profile themes carry through with no extra work. There is deliberately no
+ * parallel palette. Ship these in src/styles.css next to the tokens they alias; update DESIGN.md's
+ * "Stroke & color tokens" table in the same PR. */
 :root {
-  color-scheme: light;
+  /* Run-state ramp — ONE meaning per hue, read by avatar rings, dots, pills, rows, tray and HUD.
+     Aliases of the semantic palette (--ui-* has a dark override already). */
+  --state-working: var(--ui-accent);
+  --state-needs: var(--ui-yellow);   /* amber = waiting on you; red stays for failure */
+  --state-done: var(--ui-green);
+  --state-failed: var(--ui-red);
+  --state-unknown: var(--ui-purple);
+  --state-idle: var(--ui-text-quaternary);
 
-  /* ── brand (already in styles.css) ── */
-  --theme-primary: #0053fd;
-  --ui-red: #cf2d56;
-  --ui-green: #1f8a65;
+  /* Type floor. The app's real sizes stay (transcript 13px/18px, tools 11px, captions 12px, tabs 11px);
+     v2 only sets a floor and retires ALL-CAPS micro labels in favour of sentence case. */
+  --type-floor: 0.6875rem;   /* 11px — nothing smaller ships */
+  --type-meta: 0.75rem;      /* 12px — timestamps, captions, secondary rows */
+  --type-ui: 0.8125rem;      /* 13px — rows, titles (== --conversation-text-font-size) */
+  --type-title: 0.9375rem;   /* 15px — card + page titles */
 
-  /* ── surfaces: a tinted canvas + white "work objects" (single level, never nested) ── */
-  --v2-canvas: #f5f7fc;
-  --v2-rail: #eef2fa;
-  --v2-surface: #ffffff;
-  --v2-surface-2: #f2f5fb;
-  --v2-line: rgb(18 28 60 / 0.08);
-  --v2-line-strong: rgb(18 28 60 / 0.14);
-  --v2-text: #12151c;
-  --v2-text-2: #4b5468;
-  --v2-text-3: #858ea2;
-  --v2-accent: #0053fd;
-  --v2-accent-soft: #e7efff;
-  --v2-on-accent: #ffffff;
+  /* Teammate face sizes (the existing BotFace, larger on primary lists) */
+  --face-row: 2rem;          /* 32px — sidebar + roster rows (today ~20px) */
+  --face-hero: 6rem;         /* 96px — chat empty state (already FACE_SIZE) */
 
-  /* ── run-state ramp: ONE set used by dots, rings, pills, cards, tray, HUD ── */
-  --v2-working: #0053fd;
-  --v2-needs: #d97706;
-  --v2-done: #1f8a65;
-  --v2-failed: #cf2d56;
-  --v2-unknown: #7c5cf0;
-  --v2-idle: #a3abbd;
+  /* Work-object lift: WIDGET_SHELL_CLASS fill + a hairline + a whisper of shadow. One level only. */
+  --work-object-ring: 0 0 0 0.0625rem var(--ui-stroke-tertiary);
+  --work-object-shadow: var(--work-object-ring), var(--shadow-xs);
 
-  /* ── persona palette: each teammate gets one pair (light → deep), never free-form ── */
-  --p-atlas-1: #7aa5ff; --p-atlas-2: #0053fd;
-  --p-scout-1: #55d9bf; --p-scout-2: #0f9d86;
-  --p-juno-1: #bb9bff;  --p-juno-2: #7c4df0;
-  --p-sage-1: #ffc873;  --p-sage-2: #e58a12;
-  --p-nova-1: #ff9db9;  --p-nova-2: #e0456f;
-  --p-hermes-1: #a99bff; --p-hermes-2: #5b3fd6;
-
-  /* ── shape & elevation: chrome stays flat; only WORK OBJECTS (plan, needs-you, receipt,
-        run, composer) lift, one level deep ── */
-  --v2-r-sm: 8px;
-  --v2-r-md: 12px;
-  --v2-r-lg: 16px;
-  --v2-r-xl: 22px;
-  --v2-shadow-card: 0 1px 2px rgb(16 24 56 / 0.05), 0 8px 24px -10px rgb(16 24 56 / 0.12);
-  --v2-shadow-pop: 0 2px 4px rgb(16 24 56 / 0.06), 0 18px 44px -14px rgb(16 24 56 / 0.28);
-  --v2-shadow-composer: 0 1px 2px rgb(16 24 56 / 0.06), 0 14px 36px -14px rgb(16 24 56 / 0.2);
-
-  /* ── type: sentence-case labels; ALL-CAPS micro text is retired (one "overline" style max) ── */
-  --v2-font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
-  --v2-font-display: 'Collapse', 'DM Serif Display', 'Iowan Old Style', Georgia, serif; /* Collapse ships in @nous-research/ui; serif here is a stand-in */
-  --v2-font-mono: 'JetBrains Mono', ui-monospace, Menlo, 'DejaVu Sans Mono', monospace;
-  --v2-fs-micro: 12px;   /* meta, timestamps — never below 12 */
-  --v2-fs-ui: 13.5px;    /* rail rows, chips, buttons */
-  --v2-fs-body: 15px;    /* transcript */
-  --v2-fs-title: 17px;   /* card + pane titles */
-  --v2-fs-display: 44px; /* greetings, first-run, empty states — the brand moment */
-
-  /* ── motion ── */
-  --v2-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --v2-dur: 180ms;
-}
-
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --v2-canvas: #0c0e13;
-  --v2-rail: #10131a;
-  --v2-surface: #161a24;
-  --v2-surface-2: #1c212d;
-  --v2-line: rgb(255 255 255 / 0.07);
-  --v2-line-strong: rgb(255 255 255 / 0.14);
-  --v2-text: #eceff6;
-  --v2-text-2: #a6afc2;
-  --v2-text-3: #6f7990;
-  --v2-accent: #4d86ff;
-  --v2-accent-soft: #14264d;
-  --v2-working: #5b91ff;
-  --v2-needs: #f0a13a;
-  --v2-done: #3fbf95;
-  --v2-failed: #f0607f;
-  --v2-unknown: #9b82ff;
-  --v2-idle: #59627a;
-  --v2-shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -12px rgb(0 0 0 / 0.6);
-  --v2-shadow-pop: 0 2px 4px rgb(0 0 0 / 0.4), 0 20px 48px -14px rgb(0 0 0 / 0.7);
-  --v2-shadow-composer: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -14px rgb(0 0 0 / 0.65);
+  /* Ambient state bands (sidebar "Needs you" group etc.) */
+  --band-needs: color-mix(in srgb, var(--state-needs) 9%, transparent);
+  --band-working: color-mix(in srgb, var(--state-working) 7%, transparent);
 }

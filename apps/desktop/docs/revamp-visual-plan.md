@@ -1,327 +1,262 @@
-# Wave V — make the desktop look and work like the product we described
+# Wave V — the visual and quality pass, built on the desktop that exists
 
-The brief for Devin (or any agent) to take the desktop from "a lot of features that look sad" to the
-teammate-first agent OS described in [`revamp-plan.md`](./revamp-plan.md) §3 and
-[`harness-research-2026.md`](./harness-research-2026.md). Companion to those docs; it **runs first**
-(V0–V2, V4 don't depend on Wave 2's `store/fleet`) and replaces Wave 3's visual scope.
+The brief for Devin (or any agent) to take the desktop from "a lot of features that look sad" to a product
+that is calm for everyday users and complete for developers. Companion to [`revamp-plan.md`](./revamp-plan.md)
+(architecture + upstream gateway), [`harness-research-2026.md`](./harness-research-2026.md) (market), and
+[`bot-mode-plan.md`](./bot-mode-plan.md) (the flagship surface, **Wave B**).
 
-Every screen below has a rendered target in [`revamp/mockups/png/`](./revamp/mockups/png/) (source in
-[`revamp/mockups/`](./revamp/mockups/)), and the "before" is in [`revamp/evidence/`](./revamp/evidence/).
+> **What changed from the previous version of this doc.** The first draft drew a *parallel* design language
+> (soft-rounded cards, a new `--v2-*` palette, 15px body text) and a shell that didn't exist. After reading
+> the code, this version is a **delta on the shipped app**: it rides the real token/skin pipeline, the real
+> primitives, the real **Simple / Advanced** interface modes, and the real pane-shell. Every mockup was
+> re-rendered from the app's own `styles.css` tokens and theme seeds (`revamp/mockups/real-tokens.css`).
 
-| Target | |
+| Simple mode | Advanced mode (developers) |
 |---|---|
-| Team · conversation · Desk | ![team-desk](./revamp/mockups/png/team-desk.png) |
-| Dark parity | ![team-desk-dark](./revamp/mockups/png/team-desk-dark.png) |
-| First run | ![first-run](./revamp/mockups/png/first-run.png) |
-| Mission Control | ![mission-control](./revamp/mockups/png/mission-control.png) |
-| Honest states | ![states](./revamp/mockups/png/states.png) |
+| ![simple](./revamp/mockups/png/simple.png) | ![advanced](./revamp/mockups/png/advanced.png) |
+| Sidebar + chat; the run's state is one badge and a **Watch** button (offer, don't hijack) | Same session, plus the right zone (**Now** · Work · Profile · Files · Review · Terminal), statusbar, chips |
 
 ---
 
 ## 1. What the recording shows
 
-Source: a 3-minute macOS screen recording of a Devin QA pass on the Bots surface (dev build `v0.21.5+3504`,
-1600×1200). I sampled a frame every 6 seconds (30 frames) — no audio, and motion between samples is not
-judged. Timestamps are `mm:ss` into the video; the "before" frames are in `revamp/evidence/`. Sizes below are
-measured on those frames (1200px-wide samples of the capture), so treat pixel figures as **relative**, not CSS px.
+Source: a 3-minute macOS recording of a Devin QA pass on the Bots surface (dev build `v0.21.5+3504`). I sampled
+one frame every 6 seconds (30 frames), no audio; motion between samples isn't judged. Timestamps are `mm:ss`;
+the "before" frames are in [`revamp/evidence/`](./revamp/evidence/). Pixel figures are relative (frame scale).
 
-**What works and stays:** the blob avatars have charm; the Work / Unassigned sections and drag-to-section;
-the filter menu logic; the New-group-chat dialog; "Create with QR" for Telegram; "New chat with this bot".
+**Keep:** blob avatars; Work/Unassigned sections; the filter menu logic; the New-group-chat dialog; Telegram
+"Create with QR"; "New chat with this bot"; the chat empty state's 96px face + wordmark.
 
-### Findings
-
-| # | Seen | Sev | Evidence |
+| # | Seen | Sev | Root cause (verified) |
 |---|---|---|---|
-| F1 | **One failure, announced five ways.** A bot with no model produces: three stacked red banners (four buttons each), a toast quoting CLI steps (`Run hermes model … put OPENROUTER_API_KEY in ~/.hermes/profiles/test-bot/.env`), a **NEEDS ATTENTION** box printing the raw enum `missing_config`, `⚠2` / `⚠5` badges on rail rows, and `⚠` entries in the right panel's Task log. Nothing says what to *do* in the UI. | P0 | 0:18, 0:54, 2:42, 2:54 · `before-01`, `before-05` |
-| F2 | **Assign task is broken for every local bot:** toast `Couldn't send the task: name '_local_roster' is not defined`. Root cause in §3 P0-1. | P0 | 1:54–2:18 · `before-03` |
-| F3 | **A bot with no model is presented as a normal, ready bot.** The profile `test-bot` has no provider, yet the UI lets you message it, broadcast to it, and duplicate it (`Engineer (copy) (copy)`) with no hint. Profiles are islands by design, so a new bot must be *offered* a copy of the default brain, not silently left empty. (Whether it was created in the UI or via the CLI isn't visible — check the create flow.) | P0 | 0:18–2:54 |
-| F4 | **Dead ends in prime positions.** The centre canvas says *"No bot screen on this host — Bot screens run on Linux gateway hosts"*; the right panel stacks *Computer: Not available on this host*, *No scheduled jobs yet*, *No deliverables yet*, *No artifacts in this session*. Four or five empty/negative panels on one screen, on a Mac. | P1 | 0:00, 0:42 · `before-02` |
-| F5 | **No hierarchy.** Almost all text is tiny, grey, and ALL-CAPS: tab titles, section labels, three *rotated* pane labels (`SCHEDULED JOBS`, `ARTIFACTS`, `TERMINAL`). Avatars are ~20px at frame scale. The left rail is ≈14% of the window, the two right panes ≈27%, and the centre ≈58% with content pinned to the top-left of a mostly empty canvas. | P1 | every frame |
-| F6 | **A 19-item context menu on a bot row** (Open Bot Chat, Stop run, Assign task…, Open Screen, Continue on phone…, Open Screen when the bot uses it, Pin to top, Hide, Watch, Notifications ▸, Edit…, Groups…, Model ▸, Duplicate, Export bot…, New chat with this bot, Open recent session, Move to section ▸, Delete). Features exposed as menu rows instead of moments. | P1 | 2:18 · `before-04` |
-| F7 | **The composer is a row of riddles:** `Refine the request`, `Glm 5.2`, `Med`, an unlabeled circle, `Smart`, a mic, and a black waveform button. | P1 | every frame |
-| F8 | **Error banner persists in an empty `UNTITLED SESSION`** (no message sent) for at least 80 seconds across other actions. *Unverified:* may be leaked state or a real earlier failure — Devin must check per-session scoping. | P1 | 0:54–2:18 |
-| F9 | **The one moment with character is a wordmark:** a huge blue serif `ENGINEER` with a 40px blob above it. It proves the brand can speak, but it's a title, not a teammate. | — | 0:42 · `before-02` |
-| F10 | Messaging settings: 25 platforms as a flat list with tiny status dots; "Applies to" chips overflow (`default · Engineer · Engineer (copy) · Engineer (copy) (co…`). The good thing (QR quick setup) sits under the fold. | P2 | 2:42–2:54 · `before-05` |
+| F1 | **One failure, announced five ways** — three stacked red banners, a toast quoting CLI steps, a **NEEDS ATTENTION** box printing raw `missing_config`, `⚠2`/`⚠5` badges, `⚠` rows in the side panel (0:18, 0:54, 2:42, 2:54; `before-01`, `before-05`) | P0 | The backend *already* raises `AuthError(..., code="no_provider_configured")` (`hermes_cli/auth.py:1634`; asserted in `tests/hermes_cli/test_cli_first_run_setup.py:370`), but the desktop's `ERROR_CODE_KEYS` (`src/lib/error-surface.ts:27-63`) has **no entry** for it. It falls to the generic layer and the raw CLI message. Nothing dedupes. |
+| F2 | **Assign task fails for every local bot:** `name '_local_roster' is not defined` (1:54–2:18; `before-03`) | P0 | `tui_gateway/methods_bot_mailbox.py:63` — `method_ctx.rebind()` re-creates handlers against **server.py's globals**, so bare module helpers don't resolve; `register()` (line 190) only calls `_registry.install`. `update` (160–162) has the same bug swallowed by `logger.debug`. **No test references `bots_mailbox`.** |
+| F3 | **Bots with no model look ready.** `test-bot` can be messaged, broadcast to, duplicated (`Engineer (copy) (copy)`) | P0 | Docs: a new bot *copies static API keys only*; OAuth logins aren't copied and the remedy is a CLI command (`hermes -p <name> auth add …`); the free-tier identity is per-home. Whether the tester's default used OAuth/free tier isn't visible — **likely**. |
+| F4 | **Dead ends in prime positions:** centre says *"No bot screen on this host"*; right panel stacks *Computer: Not available on this host*, *No scheduled jobs yet*, *No deliverables yet*, *No artifacts…* (0:00, 0:42; `before-02`) | P1 | Screens need a Linux gateway host (`tools/bot_desktop/`); the UI shows the absence instead of hiding it. |
+| F5 | **Faint, tiny type.** All-caps 10–11px grey labels; rotated pane labels; ~20px avatars | P1 | *Computed from the real tokens (nous light):* `--ui-text-tertiary` on chrome = **3.5:1** (AA needs 4.5:1); `--ui-text-quaternary` = **2.2:1**. The rotated labels are the **vertical restore rails** for minimized zones (`pane-tab.tsx` `TAB_VERTICAL`) — intentional, but illegible. |
+| F6 | **19-item context menu** on a bot row (2:18; `before-04`) | P1 | Features exposed as rows, not moments. |
+| F7 | **Composer riddles:** `Refine the request`, `Glm 5.2`, `Med`, an unlabeled circle, `Smart`, mic, black waveform | P1 | `Smart` is the **approval mode** (`approvals.mode`: manual/smart/off, profile-scoped) — unlabeled. |
+| F8 | **Error banner persists in an empty `UNTITLED SESSION`** for ≥ 80 s (0:54–2:18) | P1 | *Unverified* — leaked state or a real earlier failure; check per-session scoping. |
+| F9 | Bot empty state is a wordmark + small face | — | `plugins/hermes-bots/chat-empty.tsx` already renders a **96px face + Wordmark** — the target *extends* it (role line, starters, facts), it doesn't replace it. |
+| F10 | Messaging settings: 25 platforms flat; overflowing "Applies to" chips; QR quick-setup below the fold | P2 | — |
+| **F11** | **The recording was in Advanced mode** (statusbar, terminal rail, right panes). New users get this by default | P1 | `DEFAULT_INTERFACE_MODE = 'advanced'`, encoded as *no key* (`store/interface-mode.ts`). Only first-launch onboarding (`LAYOUTS` in `onboarding-chat/options.tsx`) offers Simple. |
 
-**Important caveat.** The tester's profile had no provider, so every bot fails. That's partly the
-environment — and exactly why it matters: the app let a user reach a dead end and then said so five times.
-A healthy setup would look calmer, but F2, F4–F7, F9 stand regardless.
-
-### Verified in code (not just seen)
-
-- `tui_gateway/methods_bot_mailbox.py:63` — `bots_mailbox.send` calls `_local_roster(root)` as its first real
-  statement. `method_ctx.rebind()` re-creates every handler against **server.py's globals**, so bare
-  module-level helpers don't resolve. `_root=_mailbox_root` works only because it's a *default argument*
-  (survives `FunctionType`). `register()` (line 190) only calls `_registry.install(server)` — it never
-  publishes `_local_roster` / `_notify_sender_status`, and `grep _local_roster tui_gateway/server.py` is empty.
-  The generic `except Exception → _err(rid, 5102, str(e))` turns the `NameError` into the toast verbatim.
-  **No test in `tests/` references `bots_mailbox`** — #48 shipped without a real-path check.
-- `bots_mailbox.update` (lines 160–162) has the *same* bug inside `try: … except Exception: logger.debug(...)`:
-  the sender bot never receives its status line, and nothing surfaces it.
-- `plugins/hermes-bots/i18n.ts:703` — the localized hint for a missing provider is
-  *"Provider not configured — run hermes model"*: a terminal instruction shown to desktop users, in every locale.
-- `components/ui/pane-tab.tsx` and `plugins/kanban/board.tsx` are the `writing-mode` (rotated label) sites.
-- *Not located:* the component that prints the raw `Engineer: missing_config` line. Start from
-  `grep -rn "attention" src/plugins/hermes-bots src/app/chat/sidebar`; `botAttentionHint` (`data.ts:68`) is
-  used for tooltips only.
+Part of F1/F3 is the test profile having no provider. That's exactly why they matter: the app let a user reach
+a dead end and then said so five times. A healthy setup is calmer, but F2, F4–F7, F11 stand regardless.
 
 ---
 
-## 2. Why it feels sad
+## 2. Ground truth — how the desktop is built (what v2 must ride)
 
-1. **Every state is an error or a void.** Healthy states are missing; failure states are loud and repeated.
-2. **No hierarchy.** One size, one weight, one grey — so nothing is *the* thing. A new user can't tell who is
-   working, what they're doing, or what needs them.
-3. **The product's promise isn't visible.** We sell *teammates*; the UI shows 20px icons and jargon
-   (`UNASSIGNED`, `Canonical`, `Task log`, `Deliverables`).
-4. **Chrome is louder than content** — rotated labels, uppercase micro-type, two right columns; content gets
-   <50% of the canvas.
-5. **Features are menu rows, not moments.** 19 items on one right-click; the best ideas (broadcast, routines
-   calendar, continue on phone) are buried.
-6. **Process:** features merged with green unit tests but never *driven in the real app with a working
-   model* (F2 is proof). Fixing the pixels without fixing this repeats the problem — see §8 QA protocol.
+**Interface modes** (`src/store/interface-mode.ts`). `'simple' | 'advanced'`, persisted at
+`hermes.desktop.interfaceMode.v1`. **A mode is a resolver input, not a preset:**
+`effective(surface) = sessionReveal ?? policy[mode] ?? userPreference`. Simple *shadows* preferences — it never
+overwrites them; a toggle pressed while shadowed lands in an in-memory session layer ("reveal"), so a mode is a
+default, not a lock. Mechanisms: `modeBound()` wraps a preference; `ModePolicy` keys today are `artifactsOpen`,
+`fileBrowserOpen`, `hideCodeDiffs`, `profileRailVisible`, `reasoningCollapsedByDefault`, `reviewOpen`,
+`sidebarRowMeta`, `statusbarVisible`, `terminalOpen`, `toolViewMode`; lists tag items with `tier` and filter with
+`shownInMode`; `$showsAdvancedChrome` for single elements. **Layouts persist per mode** (`modeLayout`), presets
+are tagged (`sidebar-left`/`sidebar-right` = simple; `default`, `basic`, `focus`, `terminal-deck`, `quad` =
+advanced — `app/contrib/layout-presets.ts`). Copy: *Simple — "for talking to Hermes"*; *Advanced — "for developers"*.
+
+**Shell** (`components/pane-shell`). A layout tree of zones holding panes: `sessions`, `workspace` (chat/session
+tiles), `review`, `files`, `terminal`, dynamic preview tiles, plus contributed panes. Tab strips live *inside*
+their zone (`pane-tab.tsx`: 11px, weight 500, 2px `--theme-primary` underline when active; minimized groups become
+vertical restore rails). Panels extend into the native titlebar band; the sidebar's tabs sit on a row *below* the
+window controls. Simple's titlebar shows only sidebar / settings / layout editor (`TITLEBAR_FIXED_TOOLS`).
+
+**Tokens, skins, glass.** `styles.css` derives everything from **seeds** (`--theme-foreground`, `-primary`,
+`-background-seed`, `-sidebar-seed`, `-card-seed`, …) via `color-mix`; `themes/context.tsx applyTheme()` sets the
+seeds from a skin; **11 built-in skins** (`nous` default, github, catppuccin, everforest, solarized, nous-alt,
+midnight, ember, mono, slate, cyberpunk) plus user themes, VS Code import, backend skins, per-profile themes.
+A skin controls **colours + font families only**; radius, sizing, type scale, line-height live in `styles.css`.
+`--radius-scalar: 0.2` makes controls near-square. The sidebar is **glass** by default (29% tint, macOS vibrancy).
+
+**Primitives (specs the mockups copy).** Button — text buttons 2.5px radius, 12px/16px, weight 500; icon buttons
+4px; variants `default/secondary/outline/ghost/chip/text/textStrong`; never `title=`. Badge — 3px radius, 0.65rem.
+Widgets — `WIDGET_SHELL_CLASS` = `rounded-3xl`, `--ui-widget-surface-background`, **no border**, actions *outside*
+below. Transcript text **13px/18px**, tool text 11px, captions 12px. Approvals use `CardStack`. Icons: **Tabler +
+Codicon only**. Errors: `ErrorState`; empty: `EmptyState`/`PanelEmpty`; confirm: `ConfirmDialog`.
+
+**Systems v2 must extend, not replace.**
+| System | Where | v2 relation |
+|---|---|---|
+| Error taxonomy: backend `code` + `layer` → i18n `errorCodes`/`errorLayers` → shared card + toast | `lib/error-surface*.ts`, `assistant-message.tsx`, `gateway-event/status.ts` | **Add codes** (`no_provider_configured`, `unknown_run`), dedupe, actions |
+| Bot faces: `BotFace`, blobatars, animated face clock, `avatarColor` | `plugins/hermes-bots/avatar.tsx` | Bigger on rows + **state ring**; no new avatar |
+| Composer status stack: todos, git row, preview, goal/loop, subagents | `app/chat/composer/status-stack/*` | The **plan card** *is* the todos group — restyle |
+| Memory-write tool row (gold→purple `--tool-memory-legendary-*`) | `assistant-ui/tool/fallback.tsx`, `styles.css` | Extend to skill create/patch + **Undo** |
+| Session digest + peek card; delegation reports; attention inbox | `store/session-digest.ts`, `session-peek.tsx`, `delegation-reports.tsx`, `store/attention-inbox.ts` | Data for rows and "Needs you" |
+| Tile zone strip: `SkillTag`, `SessionTabStatus`, `pr-tag` | `app/chat/session-tile.tsx` (`stripTrail`, `tabTrail`) | The **header strip** — add a state badge; no new header |
 
 ---
 
-## 3. V0 — P0 fixes (do these before any visual work)
+## 3. Design language v2, through those systems
 
-**P0-1 · `bots_mailbox` NameError (backend, ~10 lines + a real test).**
-Follow the file's own pattern: give the handlers the helpers as default args
-(`def _(rid, params, _root=_mailbox_root, _roster=_local_roster)`; same for `_notify_sender_status` in
-`update`), *or* whichever sibling-module convention `method_ctx` documents — check how the other
-`methods_*` files solve it and match them. Then:
-- Change the `logger.debug` in `update` to `logger.warning` so this failure class is visible.
-- **Test through the real dispatch**, temp `HERMES_HOME`, one real local profile: `bots_mailbox.send` returns
-  `{note, …}` not error 5102; `update` on a bot-sent note reaches `_notify_sender_status`.
-- Consider one contract test that walks every rebound handler's `LOAD_GLOBAL` names (via `dis`) and asserts
-  each resolves in `vars(server)` or builtins — this catches the whole *bug class* for all split modules.
-  (It reads bytecode names, not source text; judge against the "never read source in tests" rule.)
+Mockups: [`simple`](./revamp/mockups/png/simple.png), [`advanced`](./revamp/mockups/png/advanced.png),
+[dark](./revamp/mockups/png/advanced-dark.png), and the **ember skin** (proves skin-safety):
 
-**P0-2 · Never present a brainless bot as ready.** Decision needed in V2 (see §5.2): creating a bot offers
-"Start from my current setup" (clone model + provider — the sanctioned path, profiles stay islands) and defaults
-to it; if *no* profile has a brain, the first-run wizard runs. A bot without a model shows the
-"needs a model" card (states sheet #1), and the composer says so instead of letting a send fail.
-Verify first whether create-bot already passes `clone`; don't add a second mechanism.
+![ember](./revamp/mockups/png/advanced-ember.png)
 
-**P0-3 · Error system: one problem → one card.** Replace stacked banners + toast + list + badges:
+### 3.1 Identity that stays
+Square text buttons and near-square radii; hairline strokes; Tabler/Codicon; the Nous blue accent and Collapse
+wordmark; **13px transcript**; the glass sidebar; `CardStack`; `WIDGET_SHELL_CLASS`; pane tab strips.
 
-| Class | Title (sentence case, human) | Primary action | Never shown |
+### 3.2 What changes (each item is a token or primitive edit, not a rewrite)
+| # | Change | Where | Why |
 |---|---|---|---|
-| `no_model` | *‹Bot› needs a model before it can reply* | **Use my default · ‹model›** | CLI commands, env-var paths |
-| `auth_invalid` | *‹Provider› rejected the key* | **Update key** | raw HTTP status in the title |
-| `quota` | *‹Provider› is out of quota* | **Switch model** / **Add credit** | |
-| `network` | *Can't reach ‹provider›* | **Retry** (auto-backoff) | |
-| `tool_failed` | *‹Tool› failed* | **Retry** / **Ask ‹bot› to fix it** | stack traces |
-| `backend_down` | *Hermes is reconnecting…* | (soft row state; no card) | full-screen overlay |
-| `unknown_run` | *‹Bot› stopped mid-step — I can't tell if it finished* | **Check and resume** / **Mark as done** / **Discard** | any auto-retry |
-| `denied` | *Hermes needs permission to …* | **Allow once / this session / always** | |
+| D1 | **Contrast floor.** Raise light-mode `--ui-text-tertiary` alpha 54% → **~64%** and `--ui-text-quaternary` 36% → **~50%** (reserve quaternary for decoration). *Computed:* needs ≥ 0.63 for 4.5:1 and ≥ 0.49 for 3:1 on nous light chrome + sidebar. Dark already passes (5.3:1). | `styles.css` | F5. **Add a contract test** across all 11 built-in skins: tertiary ≥ 4.5:1 on chrome and sidebar (`themes/presets.test.ts` pattern). |
+| D2 | **Type floor 11px; sentence-case labels.** Route the 105 `uppercase` usages through the six label primitives (`sidebar-label.tsx`, `overlays/panel.tsx`, `pane-tab.tsx`, `empty-state.tsx`, `tree-group.tsx`, `dropdown-menu.tsx`) and remove caps there. Lint: no new `uppercase` outside them. | those files | F5 |
+| D3 | **Teammate faces 32px on rows + state ring** (`--face-row`), 96px stays for the empty state. | `avatar.tsx`, `bot-row.tsx` | Teammates are the product |
+| D4 | **Run-state ramp** as aliases (`--state-working/-needs/-done/-failed/-unknown/-idle` → `--ui-accent/-yellow/-green/-red/-purple/-text-quaternary`) — one meaning per hue for rings, dots, badges, tray, HUD. *Amber = waiting on you; red only for failure.* | `styles.css` | Skins and dark carry through automatically |
+| D5 | **Work-object hairline.** `WIDGET_SHELL_CLASS` gains a `--ui-stroke-tertiary` ring (`--work-object-ring`). In nous light the widget fill is almost the page colour, so widgets barely read as things. | `widget-shell.ts` | **Amends DESIGN.md** ("no border") — gate G7 |
+| D6 | **Legible restore rails.** Icon + label, 11px, on the existing vertical rail; no new mechanism. | `pane-tab.tsx` | F5 |
+| D7 | **Labelled controls.** `Smart` → an *Approvals* control with words (see B5); model pill shows provider + badge; every icon button has `aria-label`. | composer, `approval-mode-menu.tsx` | F7 |
 
-Rules: **dedupe** per (session, class) — a repeat updates the existing card's count, never adds one;
-**scope** to the session that failed (fix F8); toasts are for transient/non-blocking things only; rail
-rows show one quiet coloured dot with a tooltip, never numeric `⚠` piles; details (raw error, logs,
-diagnostics) live behind one "Details" disclosure; the message is durable at send — say so ("Your message
-is saved — it sends the moment this is fixed"; matches the `prompt.submit` guarantee in `AGENTS.md`).
-Copy comes from i18n in all 9 locales; `ar`/`ja`/`zh-hant` degrade honestly.
+New tokens are **only** D4's aliases plus `--type-*`, `--face-*`, `--work-object-*`, `--band-*`
+([`revamp/mockups/tokens.css`](./revamp/mockups/tokens.css)). There is deliberately **no parallel palette**.
 
-**P0-4 · Demo fixture.** `npm run dev:mock` already exists (`tests-js/scripts/mock-server.ts`,
-`mock-provider-config.ts`). Extend it into a **populated** fixture matching the mockups — five teammates
-(Atlas working, Scout working, Sage needs-you, Juno idle, Nova on Telegram), a mid-run plan, three
-needs-you items, a diff, a PR + CI, learned items, and one of each honest state. Every Wave V PR takes its
-screenshots from this, so reviews compare like with like (an empty app makes every design look sad).
+### 3.3 Skin and glass discipline
+Every PR is checked in **at least** nous (light+dark), one warm dark (ember) and one cool dark (midnight); the
+contract test in D1 runs over all 11. Glass: the sidebar stays translucent — v2 surfaces there use the existing
+sidebar tokens, never opaque hex. Mockups render the sidebar opaque for clarity; the real one composites glass.
 
 ---
 
-## 4. Design language v2
+## 4. Screen-by-screen integration map
 
-Tokens: [`revamp/mockups/tokens.css`](./revamp/mockups/tokens.css) (light + dark). Existing names are
-reused; new ones are `--v2-*`. **This amends `DESIGN.md` — see gate G7.**
+Legend — **EXISTS** ships today; **EXTEND** change existing code; **NEW** thin new code. Mode column: how it
+resolves in **S**imple / **A**dvanced.
 
-### 4.1 What changes vs `DESIGN.md`
-
-| Today | v2 | Why |
-|---|---|---|
-| Principle 1: *"Flat, not boxed"* | **Flat chrome, one-level work objects.** Plan, needs-you, receipt, approval, run and composer are raised cards (`--v2-shadow-card`); rails/headers/panes stay flat; **never nested** (the "no card-in-card" rule stays). | Work objects must read as *things*; flatness is what made everything equal. |
-| Micro ALL-CAPS grey labels | **Sentence-case, 12px minimum**; body 15px; one optional "overline" style. | Legibility; hierarchy. |
-| Rotated vertical pane labels | **Retired** → a segmented tab row in the Desk header. | Unreadable, wasteful. |
-| Grey blob icons at 20px | **Persona avatars ≥ 40px** on primary lists, with a state ring. | Teammates are the product. |
-| Ad-hoc badge counts | **One state ramp** (working / needs-you / done / failed / unknown / idle) used by dots, rings, pills, cards, tray, HUD. | One glance, one meaning. |
-| Dense only | **Comfortable (default) + Compact** (today's density kept for power users). | Don't punish existing users. |
-
-Unchanged and non-negotiable: tokens not literals; one primitive per concern (`Button`, `SearchField`,
-`CardStack`, `OverlayView`, `Tip`, `ListRow`, `ConfirmDialog`); Tips only where hover teaches; no native
-`title=`; i18n ×9; offer-don't-hijack; hot interactions stay cheap.
-
-### 4.2 Components to build (each with all states, light + dark, in a dev-only design sheet)
-
-| Component | States | Reads from (existing seam) |
-|---|---|---|
-| `PersonaAvatar` (+ ring) | working · needs-you · idle · done · failed; 30/40/84px | bot/profile identity, `session-digest`, `agent-notices` |
-| `TeammateRow` | + one-line live status; Telegram/Slack badge | `plugins/hermes-bots`, `store/session-digest.ts`, `fleet-runs` |
-| `NeedsYouCard` (rail + Mission Control) | approval · question · secret · interrupted · answered-elsewhere | `store/attention-inbox.ts`, `agent-notices.ts` |
-| `PlanCard` | pending · active · done · failed; progress; ETA | todos store / plan artifacts |
-| `ApprovalCard` | **Allow once / This session / Always for this pattern** / Not now; non-blocking note | existing approval `CardStack` — restyle, don't fork |
-| `LearnedReceipt` | remembered · skill created · skill patched · **Undo** (archive, never delete) | tool calls already in the transcript (`memory`, `skill_manage`) |
-| `RunReceipt` | plan · diff stat · commands · screenshots · PR · CI | report cards (`delegation-reports`), review pane |
-| `ErrorCard` | the §3 P0-3 taxonomy | one resolver; replaces banner + toast paths |
-| `EmptyHero` | teammate intro · no-brain · nothing scheduled | persona + role; ≤1 CTA |
-| `Desk` (Now · Files · Browser · Terminal + replay scrubber) | live · replay · idle · unavailable-hidden | preview/terminal panes, tool-call events |
-| `HeaderStrip` | state · PR/CI · branch · skills · context ring · Ask | `pr-tag.tsx`, `skill-tag.tsx`, context ring |
-| `Composer v2` | outcome-first placeholder; labelled mode/model popovers | `app/chat/composer/index.tsx` |
-
-Copy rules: first person and warm ("Hi, I'm Engineer."), no jargon (`Canonical`, `Task log`, `Deliverables`
-→ **Now / Next / Done**), no CLI instructions in primary text, no raw enums, ever.
-
----
-
-## 5. Signature screens (targets in `revamp/mockups/png/`)
-
-### 5.1 Team · Conversation · Desk — `team-desk.png`
-- **Rail:** search/⌘K, one filled **New task** button; *Needs you* (only when non-empty) as compact cards
-  with the one action; *Teammates* (avatar ring + name + role + **a sentence of what they're doing**);
-  *Recent*; footer says whether Hermes is running and on which model.
-- **Conversation:** header strip (state, PR/CI, branch, skills, context ring, Ask); the user's message is a
-  plain blue bubble (messaging-a-person feel); the teammate speaks without a bubble; **plan card** live-updates;
-  **learned receipt** appears when memory/skills change; **approval card** with three permission tiers and
-  *"Atlas keeps working on other steps while this waits."*; composer is outcome-first and every control is
-  labelled; the line under it states the return contract.
-- **Desk:** *Now* (a sentence + live terminal/browser), *Changes* (diff stat → Review), *Pull request + CI*,
-  *Learned from this run*, and a **replay scrubber** with *Live* and *Take over*.
-
-### 5.2 First run — `first-run.png`
-Three honest choices: **Start free** (recommended), **Bring your own key**, **Run it on this Mac** (detected local
-models). The line under the headline states the rule: *every teammate you create starts with this brain*.
-Hermes "speaks" in a bubble. Step 2 (*reach you* — Telegram/QR) and 3 (*first task* — a starter) follow.
-Free-tier copy and eligibility come from `free_tier.status`, never hard-coded; obey the ruled copy in
-`src/AGENTS.md`.
-
-### 5.3 Mission Control — `mission-control.png`
-One queue of everything that needs you (approval / question / interrupted), ordered by age, with the action
-inline, a detail pane, and keyboard triage (`J K ↵ A E`). *Answered elsewhere* rows fade and stay visible.
-Lenses: Needs you · Running · Review · Map · Board. (Route consolidation is gate G1 in `revamp-plan.md`.)
-
-### 5.4 Honest states — `states.png`
-1 *One problem, one card* · 2 *A teammate, not a wordmark* · 3 *Answered elsewhere* · 4 *Outcome unknown*.
-States 3–4 are the upstream one-gateway cases (`revamp-plan.md` §2.3); build them capability-gated so they're
-inert on today's pooled backend.
-
----
-
-## 6. "Best of" — translated into this app
-
-Patterns come from each product's documented behaviour (see `agentic-desktop-roadmap.md` §1 and
-`harness-research-2026.md`) — **not pixel copies**; where a reference matters, Devin should look at the current
-product and note deviations in the PR.
-
-| From | The pattern | Here | Data |
+| Target (mockup) | Current code | Δ | S / A |
 |---|---|---|---|
-| **Manus** | A live "computer" you can watch and **replay**; a step plan that ticks off; per-command *Allow once / Always*; a deliverables list; take over | **Desk › Now** + Terminal/Browser tabs + **replay scrubber** + **Take over**; **PlanCard**; **ApprovalCard** tiers; **Files** tab | tool-call events already in the transcript (replay = re-render stored events — verify feasibility; no new RPC) |
-| **Muse** | Feels like messaging a person; warm, first-person; goal → plan; proactive but consented | plain chat bubbles, no chrome; persona greeting; **outcome-first composer**; nudges as *offers*; Telegram parity badge | persona identity, plan, nudge store |
-| **Grok Bot** | Bots are teammates with a desk; they come back **only when done or needing you**; hand control back; secure asks; chaining | Team rail + persona rows; the return-contract line; **Take over**; masked-input card; "Atlas asked Scout" mailbox card | mailbox (after P0-1), approvals, secret asks |
-| **Hermes-only** | It **learns** | **Learned receipts** inline + Desk card + *What Hermes knows* page; the curator timeline | memory / `skill_manage` calls, curator state, insights |
+| **Team sidebar** — faces, live status sentence, *Needs you* band | `plugins/hermes-bots/agents-section.tsx`, `bot-row.tsx` (`SIDEBAR_LIST_TOP_AREA`), `chat/sidebar/*`, `session-row-details.ts`, `store/session-digest.ts` | EXTEND | both; A adds gateway/profile grouping + sections |
+| **Needs-you band** | `store/attention-inbox.ts`, `agent-notices.ts`, `app/attention-inbox/index.tsx` | EXTEND | both |
+| **Strip trail** — state badge + **Watch**; chips | `session-tile.tsx` `stripTrail` (`SkillTag`), `pr-tag.tsx`, `SessionTabStatus` | EXTEND | S: badge + Watch. A: + skills, PR chips (items get `tier:'advanced'`) |
+| **Plan card** | status-stack todos group (`status-stack/index.tsx`) | EXTEND (restyle) | both |
+| **Git/PR row** | `status-stack/coding-row.tsx` | EXTEND (+PR/CI) | both |
+| **Approval card** (3 tiers + non-blocking note) | `assistant-ui/tool/approval.tsx`, `ui/card-stack.tsx` | EXTEND | both |
+| **Learned receipt** + Undo | memory "legendary" row in `tool/fallback.tsx`; `gateway-event/tools.ts` (`skill_manage`) | EXTEND | both |
+| **Composer** | `app/chat/composer/index.tsx`, `approval-mode-menu.tsx` | EXTEND | S: model + mic + send. A: + Approvals, reasoning, context ring |
+| **Right zone** — Now · Work · Profile (+ Files · Review · Terminal) | `app/right-sidebar/*`, `plugins/hermes-bots` bot panel, `'panes'` contribution area | NEW panes (thin), reuse the rest | S: **rests closed**, **Watch** reveals (session layer); tabs Now/Work/Profile only. A: all tabs |
+| **Statusbar** | `app/shell/hooks/use-statusbar-items.tsx` | EXISTS (A only, `statusbarVisible`) | A |
+| **Teammate Work / Profile** | roster pane, `edit-profile-dialog.tsx`, `cron.tsx`, right-sidebar bot panel | EXTEND + consolidate | S: Brain · Trust · Where · Reachable. A: + Persona/tools + Developer |
+| **Hire a teammate** | `create-dialog.tsx` (1,368 lines), `PALETTE_AREA` `new-agent` | EXTEND (gallery front door; the current dialog becomes "Customize…") | S: gallery + 3 fields. A: + Customize |
+| **First-run: brain** | `components/onboarding/*`, `free-tier/*`, `onboarding-chat/*` | EXTEND | first launch only |
+| **Mission Control** | `app/attention-inbox`, `app/roster`, `app/agents`, `app/starmap`, `OverlaySplitLayout` | NEW route composing existing pieces (gate G1) | S: Needs you · Running. A: + Review · Map · Board |
+| **Honest states** | `lib/error-surface*.ts`, `ui/error-state.tsx`, `chat-empty.tsx` | EXTEND | both |
+
+![states](./revamp/mockups/png/states.png)
+
+**Persistence & migration hazards (each has bitten this repo):**
+1. **Don't change `DEFAULT_INTERFACE_MODE`.** Advanced is encoded as *no key*; flipping the default silently moves
+   every existing user who never touched the picker into Simple. Fresh installs are handled at onboarding (G14).
+2. **New panes must declare a resting state** in the Simple preset (like `BASIC_RESTING`). A tree that omits a pane
+   "adopts every missing pane back in as workspace tabs" (`layout-presets.ts` comment). Test with
+   `resting-presets.test.ts` / `mode-layout-memory.test.ts` patterns.
+3. Any new **profile-keyed** localStorage joins `migrateTilesForProfile` + `dropTilesForProfile`.
+4. New display prefs that the backend must know go through `store/display-toggles.ts` (config.set on connect, only
+   touched keys re-sent); non-secret settings live in `config.yaml`, **never** a new `HERMES_*` env var.
 
 ---
 
-## 7. Feature-quality sweep (V6) — what "good" means per surface
+## 5. Simple vs Advanced — the mode matrix
 
-| Surface (as recorded) | Target | Acceptance (testable in the demo fixture) |
+The rule stays the app's own: *"Changes what is shown, not what Hermes can do."* Every hidden thing still answers
+⌘K, its keybind, and the agent.
+
+| Element | Simple | Advanced | Mechanism |
+|---|---|---|---|
+| Sidebar | Sessions · Team; faces + sentences; Needs-you band | + profile rail, gateway groups, sections | `profileRailVisible`, tiers |
+| Strip trail | State badge + Watch | + skills, branch, PR chips | `tier` on items |
+| Right zone | Rests closed; Watch → Now · Work · Profile | Open per layout: + Files · Review · Terminal | new `ModePolicy.deskOpen`; existing `reviewOpen`/`terminalOpen` |
+| Composer | Model · mic · send | + Approvals · reasoning · context ring | tiered pills |
+| Tool rows | Product summaries, quiet "Thought for Ns" | Technical payloads | existing `toolViewMode`, `reasoningCollapsedByDefault` |
+| Plan / receipts / approvals | same | same | — |
+| Statusbar | hidden | shown | existing `statusbarVisible` |
+| Mission Control lenses | Needs you · Running | + Review · Map · Board | tier on lenses |
+| Teammate Profile | Brain · Trust · Where · Reachable | + Instructions · Skills/tools · Developer | tier on sections |
+| Errors | one card, one fix | + **Details**, raw error, logs, CLI hint | tier on the disclosure |
+
+![teammate simple](./revamp/mockups/png/teammate-work-simple.png)
+![teammate advanced](./revamp/mockups/png/teammate-profile-advanced.png)
+
+**Naming.** In the app it's *Simple* / *Advanced ("for developers")*, and onboarding says "the names learned here
+still apply later." Keep it: renaming to "Developer" costs 9 locales + docs. (If you want that label anyway, it's
+one copy change behind G14.)
+
+---
+
+## 6. Execution plan (Devin) — waves and lanes
+
+Parallelism ≤ 3 children (`swe-2-high`) of the 5-session cap. **Cutover-safe** (`revamp-plan.md` §2.4): no new RPC
+on `tui_gateway/server.py`; don't touch `store/gateway.ts`/boot/pool; renderer-first.
+
+| Wave | PRs | Notes |
 |---|---|---|
-| Bot row context menu (19) | **6 primary** — Message · Assign a task · Open desk · Pin · Edit · **More ▸** (the rest, grouped) | ≤ 7 top-level rows; `Delete` only under More with confirm |
-| Bot right panel: Task log · Sessions `Canonical` · Computer · Scheduled jobs · Deliverables | **Now / Next / Done** (Now = current step; Next = queued + scheduled; Done = receipts + files) | 0 empty-state panels on a healthy bot; unavailable capabilities **hidden**, never "Not available on this host" |
-| "No bot screen on this host" as the centre canvas | never a canvas; a disabled entry under More with a tooltip | centre canvas is always a conversation or launchpad |
-| Composer | labelled **Mode** popover (Smart = what?), model pill shows provider + local/free badge, reasoning inside the popover, mic labelled | every icon button has `aria-label` + Tip where discovery needs it; 0 unexplained pills |
-| NEEDS ATTENTION strip | the error-card sentence + its one fix; **no raw enums, no CLI text** | grep-able: `missing_config` and `run hermes model` absent from user-visible i18n |
-| Duplicate bot | ask for a name; default `Engineer 2` | no `(copy) (copy)` |
-| Rail filter menu | keep; rename *Attention first → Needs you first* | copy only |
-| Group chat dialog | keep; show role chips per member; optional purpose line | — |
-| Messaging settings | promote **Create with QR**; top 6 platforms as cards + "More"; single profile picker instead of overflowing "Applies to" chips | one primary action above the fold |
-| Bots roster header actions (`Broadcast to bots…`, `Routines calendar…`) | rail header: **Ask everyone**, **Schedule** | reachable in 1 click, labelled |
-| Assign task (after P0-1) | a real flow: teammate picker, outcome, check-in cadence; result lands as a **mailbox card** in both chats | e2e: send → target's Bot Chat receives it → `update` notifies the sender |
+| **V0 — P0s** | (a) `methods_bot_mailbox` fix + **real-dispatch test** · (b) **error codes**: add `no_provider_configured` (+`unknown_run`) to `ERROR_CODE_KEYS`, `errorCodes` copy ×9 locales, action = *Use my default / Choose model*; **dedupe per (session, code)**; scope banners per session (F8); retire the CLI-instruction copy `attentionMissingConfig` · (c) **demo fixture**: extend `npm run dev:mock` into a populated fixture matching the mockups | (b) touches `lib/error-surface.ts`, `assistant-message.tsx`, `gateway-event/status.ts`, i18n |
+| **V1 — tokens** | D1 contrast + per-skin contract test · D4 state ramp · D5 widget ring (G7) · D2 label primitives + lint | `styles.css`, primitives; run the skin matrix |
+| **V2 — modes & shell** | `ModePolicy.deskOpen`; Now/Work/Profile panes with Simple resting state; strip-trail badge + **Watch**; tiered chips/pills | follow hazards 1–3 |
+| **V3 — team & rows** | D3 faces + ring; Team sidebar; Needs-you band; live status sentence; context-menu 19 → 6 + More | `plugins/hermes-bots` (see Wave B) |
+| **V4 — chat** | Plan card restyle; PR/CI on the git row; approval tiers copy; learned receipt + Undo; composer labels (D7) | `status-stack/*`, `tool/approval.tsx`, `tool/fallback.tsx` |
+| **V5 — first-run & states** | brain screen; `chat-empty` extension; answered-elsewhere / unknown-run (capability-gated) | reuse onboarding/free-tier |
+| **V6 — Mission Control** | overlay route from existing pieces (G1) | after Wave 2 `store/fleet` if merged |
+| **V7 — finish** | motion, a11y, perf re-measure (Wave 0.2 harness), snapshots | all modes × 3 skins |
+
+### 6.1 Visual QA — every PR
+1. Screenshots from the **demo fixture** at 1440×900 and 1280×800: **Simple and Advanced × light and dark × nous,
+   ember, midnight** (12) for touched surfaces; healthy, empty, and the relevant error state.
+2. A 20–30 s **golden-path recording with a working model** (not a mock that skips the failure).
+3. **Side-by-side against the mockup PNG**, with "deviations and why".
+4. `npm run typecheck && npm run lint && npx vitest run <affected>` from `apps/desktop`; the mode/layout tests
+   (`interface-mode.test.ts`, `mode-layout-memory.test.ts`, `resting-presets.test.ts`) stay green.
+5. **Sad-meter** on the first screen: healthy-state error banners **0** · empty/negative panels **≤ 1** · ALL-CAPS
+   labels **≤ 1** · unlabeled icon buttons **0** · row faces **≥ 32px** · one `default` (filled) button per region ·
+   meta text **≥ 11px** with **≥ 4.5:1** contrast (D1).
+6. **5-second test** (someone unfamiliar): who is working / what they're doing / what needs me / how do I start.
+
+### 6.2 The rule that would have caught F2
+A feature isn't done until its golden path has run **in the real app with a working model** (or a real-path test
+through the actual dispatch). Green unit tests over mocks don't count (root `AGENTS.md`: *E2E validation, not just
+green unit mocks*).
 
 ---
 
-## 8. Execution plan and QA protocol
+## 7. Owner decision gates
 
-### 8.1 Order (parallelism ≤ 3 children, `swe-2-high`; ≤ 5 sessions total)
+- **G7 — Amend `DESIGN.md`** (narrowed): D1 contrast, D2 sentence-case/11px floor, D5 widget hairline ring, D6
+  restore-rail legibility, D3 face size. *Recommend yes.* Everything else in §3.1 stays.
+- **G9 — Rollout.** v2 ships **in place** (token/primitive edits behind the existing modes), **no "classic" toggle**
+  — a second look doubles the maintenance and the skin matrix. *Recommend yes.*
+- **G10 — Free tier first** on the brain screen; copy from `free_tier.status`, obeying the ruled copy in
+  `src/AGENTS.md` (never "guest", "anonymous", "claim", "Nous Portal"). *Recommend yes.*
+- **G14 — Fresh-install mode.** Keep the default (Advanced = no key) and change only onboarding's **ordering and
+  wording** so "Just chat" (Simple) is the first, pre-selected card? *Recommend yes.* Existing users are never moved.
+- Carried: G1 Mission Control merge, G3 default flips, G4 feature freeze, G5/G6.
 
-| Wave | PRs (one per line) | Depends on |
-|---|---|---|
-| **V0** | (a) P0-1 mailbox fix + real-dispatch test · (b) P0-4 populated demo fixture · (c) P0-3 error taxonomy + `ErrorCard`, dedupe, session scope | — |
-| **V1** | Design language v2 behind a display toggle (`ui.v2` in `config.yaml`, **not** an env var): tokens, `PersonaAvatar`, work-object `Card`, chips/pills, type scale, **dev-only design sheet route** rendering every component in every state, light + dark, with Playwright visual snapshots | V0(b), gate G7 |
-| **V2** | First-run brain screen; create-bot "start from my setup"; no-brain states (P0-2) | V1 |
-| **V3** | Team rail (rows, needs-you cards, live status lines); header strip; Composer v2. Read existing stores through two thin hooks (`useTeammates`, `useNeedsYou`) so Wave 2's `store/fleet` swaps the internals later | V1 |
-| **V4** | Honest states: `EmptyHero`, answered-elsewhere, unknown-run — capability-gated | V0(c), V1 |
-| **V5** | Desk (Now/Files/Browser/Terminal + replay), `PlanCard`, `RunReceipt`, `LearnedReceipt` | V1, V3 |
-| **V6** | §7 sweep, one PR per row group | V3 |
-| **V7** | Motion, dark-mode parity, a11y (focus order, `Esc`, reduced-motion), 9-locale audit, perf re-measure (Wave 0.2 harness), snapshot refresh | all |
+## 8. What I could not verify
+- 30 sampled frames, no audio; one QA pass on one profile. F8 is unverified; F3's cause is inferred from docs.
+- Contrast numbers are **computed** from token math with the nous palette (not measured on screen); D1's fix
+  must be validated on all 11 skins.
+- The mockups use Inter as an SF stand-in, a serif for Collapse, hand-drawn Tabler-like icons, and an opaque
+  sidebar (real: glass). They fix hierarchy, spacing and behaviour, not final typography.
+- Grok/Muse/Manus patterns come from documented behaviour, not their current UIs.
+- I did not find the component that prints raw `missing_config`; start at
+  `grep -rn "attention" src/plugins/hermes-bots src/app/chat/sidebar`.
+- Backend tests weren't run (no venv here): F2 is diagnosed from code, not reproduced.
 
-Cutover-safety (`revamp-plan.md` §2.4) applies to every PR: no new RPC on `tui_gateway/server.py`, no changes to
-`store/gateway.ts` / boot / pool code. P0-1 is a fork-only backend fix that the upstream sync will re-home.
+## 9. Brief for the orchestrating Devin session (copy-paste)
 
-### 8.2 Visual QA — every PR must include
-
-1. **Screenshots from the demo fixture** at 1600×1000 and 1280×800, **light and dark**, for: healthy, empty,
-   and the relevant error state.
-2. A **20–30 s recording** of the golden path *with a working model* (not a mock that skips the failure).
-3. A **side-by-side against the mockup PNG** with a short "deviations and why".
-4. Typecheck, lint, affected vitest; e2e visual snapshots updated **only** for intended changes.
-5. The two scores below.
-
-**Sad-meter** (count on the first screen; thresholds are pass/fail):
-healthy-state error banners **0** · empty/negative panels **≤ 1** · ALL-CAPS labels **≤ 1** · unlabeled icon buttons
-**0** · avatar size on primary lists **≥ 40px** · filled (primary) buttons **exactly 1 per region** · body text
-**≥ 14px**, meta **≥ 12px**.
-
-**5-second test** (someone unfamiliar, first screen only): can they say *who is working*, *what they're doing*,
-*what needs me*, and *how do I start*? Any "no" is a fail. Record who ran it.
-
-### 8.3 Process rule that would have caught F2
-A feature isn't done until its golden path has run **in the real app with a working model** (or a real-path
-test through the actual dispatch), and the PR shows it. Green unit tests over mocks don't count — this is the
-repo's own "E2E validation, not just green unit mocks" rule (root `AGENTS.md`), applied.
-
----
-
-## 9. Owner decision gates
-
-- **G7 — Amend `DESIGN.md`.** Approve §4.1 (flat chrome + one-level work objects; sentence-case 12px+ type;
-  retire rotated labels; persona avatars; comfortable default). *Recommend yes* — it's what "not sad" requires.
-- **G8 — Naming.** "Bots" → **Teammates** in user-facing copy (the `hermes-bots` plugin and Bot Mode identity
-  rules are unchanged). *Recommend yes.*
-- **G9 — v2 rollout.** Ship v2 as the default with a "classic" toggle for one release, or opt-in first?
-  *Recommend default-on with classic toggle* — opt-in features are how the last 50 PRs went unseen.
-- **G10 — Free-tier as the recommended first choice** in the brain screen (copy per `free_tier.status`).
-  *Recommend yes.*
-- Carried over from `revamp-plan.md`: G1 Mission Control merge, G3 default flips, G4 feature freeze, G5/G6.
-
----
-
-## 10. What I could not verify
-
-- Only 30 sampled frames, no audio; the recording is one QA pass on one profile.
-- Grok Bot / Muse / Manus visuals are inferred from documented behaviour; I have not seen their current UIs.
-- The mockups use stand-in fonts (Inter, a serif for Collapse) and hand-drawn icons — they fix hierarchy,
-  spacing and behaviour, not final typography or iconography.
-- I did not locate the component printing the raw `missing_config`, and I have not run the backend tests
-  (no venv here) — P0-1 is diagnosed from code, not reproduced.
-- F8 (error banner persisting in an empty session) is unverified.
-
----
-
-## 11. Brief for the orchestrating Devin session (copy-paste)
-
-> Implement `apps/desktop/docs/revamp-visual-plan.md` (Wave V). First read root `AGENTS.md`,
-> `apps/desktop/AGENTS.md`, `apps/desktop/src/AGENTS.md`, `DESIGN.md`, then `revamp-plan.md` §2 (upstream gateway)
-> and this doc §1–§4. Open the target PNGs in `docs/revamp/mockups/png/` and the "before" frames in
-> `docs/revamp/evidence/` — every PR is judged against those.
-> **Start with V0, three parallel lanes:** (a) fix `tui_gateway/methods_bot_mailbox.py` (`_local_roster` /
-> `_notify_sender_status` are unresolved names inside handlers that `method_ctx.rebind` re-creates against
-> server.py's globals; pass them as default args like `_root`), with a test through the real dispatch —
-> do not merge without it; (b) extend `npm run dev:mock` into the populated demo fixture; (c) build the
-> error taxonomy + `ErrorCard` with dedupe and per-session scope. **Then** wait for owner gate G7 before V1.
-> Rules: cutover-safe (no new RPC on `tui_gateway/server.py`; don't touch `store/gateway.ts`/boot/pool);
-> renderer-first; i18n ×9; offer-don't-hijack; one primitive per concern; small PRs off latest `main`;
-> `npm run typecheck && npm run lint && npx vitest run <affected>` from `apps/desktop` before each PR.
-> Every PR carries §8.2's screenshots (light + dark, demo fixture), a golden-path recording **with a working
-> model**, a side-by-side against the mockup, and the sad-meter + 5-second scores. Max 3 children
-> (`swe-2-high`). Escalate any UX fork instead of guessing. Report after each wave: PR links, sad-meter
-> before/after, and anything in this plan the code proved wrong.
+> Implement `apps/desktop/docs/revamp-visual-plan.md` (Wave V), then `bot-mode-plan.md` (Wave B). Read root
+> `AGENTS.md`, `apps/desktop/AGENTS.md`, `apps/desktop/src/AGENTS.md`, `DESIGN.md`, then `revamp-plan.md` §2 and this
+> doc §1–§5. **The mockups are the target and were rendered from the app's real tokens** — open
+> `docs/revamp/mockups/png/` and the "before" frames in `docs/revamp/evidence/`. This is a **delta on the shipped
+> app**: ride `store/interface-mode.ts` (Simple/Advanced are resolver inputs — never write preferences from a mode),
+> the pane-shell presets (declare resting states for new panes), the real token/skin pipeline (aliases only, no
+> parallel palette), and the existing primitives (Button, Badge, WIDGET_SHELL_CLASS, CardStack, ErrorState).
+> **Start with V0, three lanes:** (a) fix `tui_gateway/methods_bot_mailbox.py` (helpers unresolved under
+> `method_ctx.rebind`; pass them as default args like `_root`) with a test through the real dispatch; (b) add the
+> `no_provider_configured` error code end to end (desktop `ERROR_CODE_KEYS` + i18n ×9 + dedupe + one-fix card);
+> (c) extend `npm run dev:mock` into the populated demo fixture. Then wait for gate G7 before V1. Every PR carries
+> §6.1's evidence (Simple/Advanced × light/dark × 3 skins, golden-path recording with a working model,
+> side-by-side, sad-meter). Max 3 children. Escalate UX forks; don't guess. Report after each wave: PR links,
+> sad-meter before/after, and anything the code proved wrong in this plan.

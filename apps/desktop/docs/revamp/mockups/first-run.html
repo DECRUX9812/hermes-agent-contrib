@@ -1,63 +1,27 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hermes — First run: give Hermes a brain (target)</title>
-<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"></head>
-<body>
-<div class="stage">
-  <div class="topbar"><div class="brand" id="brand"></div><span class="link">Skip for now</span></div>
-  <div class="center">
-    <div class="steps">
-      <span class="step-pill on"><i>1</i>Brain</span>
-      <span class="step-pill"><i>2</i>Reach you</span>
-      <span class="step-pill"><i>3</i>First task</span>
-    </div>
-    <h1 class="display">Give Hermes a brain.</h1>
-    <p class="sub">Pick how it thinks. Every teammate you create starts with this brain — you can change it any time, per teammate.</p>
-
-    <div class="choices">
-      <div class="card choice rec">
-        <span class="badge-rec">Recommended</span>
-        <div class="ico" id="i1"></div>
-        <h3>Start free</h3>
-        <p>Nous free tier. No key, no card — Hermes is ready in a few seconds.</p>
-        <div class="foot"><span class="fine">Great for trying things out. Upgrade whenever you like.</span><button class="btn btn-primary wide" id="b1">Continue free</button></div>
-      </div>
-
-      <div class="card choice">
-        <div class="ico teal" id="i2"></div>
-        <h3>Bring your own key</h3>
-        <p>Use any provider or compatible endpoint. Keys stay in your Mac's keychain.</p>
-        <div class="provs"><span>OpenRouter</span><span>Anthropic</span><span>OpenAI</span><span>Google</span><span>+20 more</span></div>
-        <div class="foot"><div class="field"><span>Paste an API key</span><button class="btn btn-soft sm">Connect</button></div></div>
-      </div>
-
-      <div class="card choice">
-        <div class="ico amber" id="i3"></div>
-        <h3>Run it on this Mac</h3>
-        <p>We found Ollama running locally. Nothing leaves your machine.</p>
-        <div style="display:grid;gap:8px">
-          <div class="model sel"><span class="radio"></span>qwen3<em>8B · 4.9 GB</em></div>
-          <div class="model"><span class="radio"></span>gemma3<em>12B · 8.1 GB</em></div>
-        </div>
-        <div class="foot"><button class="btn btn-ghost wide">Use local model</button></div>
-      </div>
-    </div>
-
-    <div class="say">
-      <div id="hav"></div>
-      <div class="bubble">Hi — I'm Hermes. I can write code, watch your inbox, and text you when something needs a decision. Pick a brain and I'll get to work.</div>
-    </div>
-  </div>
-  <div class="bottomnote"><span id="tgnote"></span><span>You can change any of this later in Settings → Models</span></div>
-</div>
-<script src="mock.js"></script>
+<title>Hermes Desktop — First run: give Hermes a brain (target)</title>
+<link rel="stylesheet" href="real-tokens.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="app.css">
+</head><body>
+<script src="app.js"></script>
 <script>
-  const $ = id => document.getElementById(id)
-  $('brand').innerHTML = av('hermes', 30) + 'Hermes'
-  $('hav').outerHTML = av('hermes', 44)
-  $('i1').innerHTML = ic('bolt', 22); $('i2').innerHTML = ic('key', 22); $('i3').innerHTML = ic('cpu', 22)
-  $('b1').innerHTML = 'Continue free ' + ic('chevronR', 16)
-  $('tgnote').innerHTML = ic('telegram', 14, 'x') + ' Next: link Telegram so Hermes can text you — optional'
-  $('tgnote').style.cssText = 'display:inline-flex;gap:8px;align-items:center'
-</script>
-</body></html>
+  const ch = (rec, icn, tint, h, p, foot) => `<div class="widget" style="padding:1.125rem 1.125rem 1rem;display:flex;flex-direction:column;gap:0.5rem;min-height:15.5rem;position:relative;${rec ? 'box-shadow:inset 0 0 0 1.5px var(--ui-accent)' : ''}">
+    ${rec ? '<span class="badge default" style="position:absolute;top:0.875rem;right:0.875rem">Recommended</span>' : ''}
+    <div style="width:2.25rem;height:2.25rem;border-radius:8px;display:grid;place-items:center;background:color-mix(in srgb,${tint} 14%,transparent);color:${tint}">${ic(icn, 18)}</div>
+    <h3 style="font-size:var(--type-title);font-weight:600;margin-top:0.25rem">${h}</h3><p style="color:var(--ui-text-secondary)">${p}</p><div style="margin-top:auto;display:grid;gap:0.5rem">${foot}</div></div>`
+  mount(`<div class="stage">
+    <div class="top"><span style="display:flex;gap:0.5rem;align-items:center;color:var(--ui-text-primary);font-weight:600">${face('hermes', 22)}Hermes</span><span class="btn-text btn">Skip for now</span></div>
+    <div class="mid"><div style="width:min(58rem,92vw);display:grid;justify-items:center;gap:0.75rem">
+      <div class="pillsteps"><span class="on"><i>1</i>Brain</span><span><i>2</i>Reach you</span><span><i>3</i>First task</span></div>
+      <h1 class="disp" style="font-size:3.5rem;line-height:1.02;text-align:center;margin-top:0.25rem">Give Hermes a brain.</h1>
+      <p style="color:var(--ui-text-secondary);font-size:0.9375rem;text-align:center;max-width:32rem">Pick how it thinks. Every teammate you hire starts with this brain — change it any time, per teammate.</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.875rem;width:100%;margin-top:1rem">
+        ${ch(1, 'bolt', 'var(--ui-accent)', 'Start free', 'Nous free tier. No key, no card — ready in a few seconds.', '<span style="color:var(--ui-text-tertiary);font-size:var(--type-meta)">Great for trying things out.</span><button class="btn btn-default wide" style="padding:0.5rem">Continue free</button>')}
+        ${ch(0, 'key', 'var(--ui-cyan)', 'Bring your own key', 'Any provider or compatible endpoint. Keys stay in your keychain.', '<div class="chips"><span class="badge muted">OpenRouter</span><span class="badge muted">Anthropic</span><span class="badge muted">OpenAI</span><span class="badge muted">+20</span></div><div class="field"><span class="ph2 grow">Paste an API key</span><button class="btn btn-secondary xs">Connect</button></div>')}
+        ${ch(0, 'cpu', 'var(--ui-yellow)', 'Run it on this Mac', 'Found Ollama running locally. Nothing leaves your machine.', '<div class="field" style="box-shadow:inset 0 0 0 1.5px var(--ui-accent)"><span class="grow">qwen3</span><span class="ph2">8B · 4.9 GB</span></div><button class="btn btn-outline wide" style="padding:0.5rem">Use local model</button>')}
+      </div>
+      <div style="display:flex;gap:0.625rem;align-items:flex-end;margin-top:1.25rem;max-width:38rem">${face('hermes', 32)}<div class="usr" style="border-radius:12px 12px 12px 3px;background:var(--ui-widget-surface-background);box-shadow:var(--work-object-ring)">Hi — I'm Hermes. I can write code, watch your inbox, and text you when something needs a decision. Pick a brain and I'll get to work.</div></div>
+    </div></div>
+    <div class="top" style="padding-bottom:1rem"><span style="display:inline-flex;gap:6px;align-items:center">${ic('telegram', 12)}Next: link Telegram so Hermes can text you — optional</span><span>Change any of this later in Settings → Models</span></div>
+  </div>`)
+</script></body></html>

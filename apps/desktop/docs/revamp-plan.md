@@ -23,11 +23,14 @@ It has two goals that must land together:
 [#122491]: https://github.com/NousResearch/hermes-agent/pull/122491
 
 > **Status update (2026-09-28).** A recording of the shipped build showed the visuals and feature quality are
-> well short of this plan's goals (an app that fails five ways when a bot has no model; a shipped Assign-task
-> feature that fails 100% of the time; tiny grey all-caps type; no visible teammates). The follow-up plan is
-> **[`revamp-visual-plan.md`](./revamp-visual-plan.md) (Wave V)**, with rendered targets in
-> [`revamp/mockups/png/`](./revamp/mockups/png/). It runs **before** Wave 3 and supersedes Wave 3's visual
-> scope; Wave 2 (`store/fleet`, Mission Control data) still feeds it.
+> well short of this plan's goals (one missing-model failure announced five ways; a shipped Assign-task feature that
+> fails every time; faint tiny type; no visible teammates). Two follow-up plans now own the visible work, both built
+> **on the desktop that exists** (Simple/Advanced modes, the real token/skin pipeline, the pane-shell, the plugin
+> seams) with targets rendered from the app's real tokens:
+> **[`revamp-visual-plan.md`](./revamp-visual-plan.md) (Wave V)** — tokens, modes, error system, first-run, honest
+> states; and **[`bot-mode-plan.md`](./bot-mode-plan.md) (Wave B)** — Bot Mode → Teammates: navigation, features and
+> how the plugin is packaged and deployed. Mockups: [`revamp/mockups/png/`](./revamp/mockups/png/). They run
+> **before** Wave 3 and supersede its visual scope; Wave 2 (`store/fleet`, Mission Control data) still feeds them.
 
 ---
 

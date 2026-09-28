@@ -1,76 +1,36 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hermes — Mission Control · Needs you (target)</title>
-<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"></head>
-<body>
-<div class="win two">
-  <div id="rail"></div>
-  <main class="mc">
-    <header class="mc-head">
-      <h2>Mission Control</h2>
-      <div class="lens"><span class="on">Needs you <i class="n amber">3</i></span><span>Running <i class="n">4</i></span><span>Review <i class="n">2</i></span><span>Map</span><span>Board</span></div>
-      <span class="grow"></span>
-      <div class="keys"><span><kbd>J</kbd><kbd>K</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>A</kbd> approve</span><span><kbd>E</kbd> archive</span></div>
-    </header>
-    <div class="mc-body">
-      <div class="qlist">
-        <div class="qitem sel">
-          <div id="a1"></div>
-          <div>
-            <h4>Push 2 commits to <span class="code">origin/feat/digest</span>?</h4>
-            <div class="qmeta"><span class="tagk appr">Approval</span>Atlas · Engineer · waiting 1m</div>
-            <div class="qact"><button class="btn btn-primary sm">Allow once</button><button class="btn btn-ghost sm">Always for this repo</button><button class="btn btn-ghost sm">Not now</button></div>
-          </div>
-        </div>
-        <div class="qitem">
-          <div id="a3"></div>
-          <div>
-            <h4>Publish the newsletter to 2,140 subscribers?</h4>
-            <div class="qmeta"><span class="tagk appr">Approval</span>Sage · Writer · 2m</div>
-            <div class="qact"><button class="btn btn-soft sm">Review draft</button><button class="btn btn-ghost sm">Publish</button><button class="btn btn-ghost sm">Not now</button></div>
-          </div>
-        </div>
-        <div class="qitem">
-          <div id="a2"></div>
-          <div>
-            <h4>Which venue for Friday's dinner?</h4>
-            <div class="qmeta"><span class="tagk ques">Question</span>Scout · Researcher · 9m</div>
-            <div class="qact"><button class="btn btn-soft sm">Pastel Bistro</button><button class="btn btn-soft sm">Rooftop 39</button><button class="btn btn-ghost sm">Ask me later</button></div>
-          </div>
-        </div>
-        <div class="qitem done">
-          <div id="a4"></div>
-          <div>
-            <h4>Renew <span class="code">hermes-labs.dev</span></h4>
-            <div class="qmeta"><span class="okc" id="okc"></span>Approved from your phone · just now</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card detail">
-        <div style="display:flex;gap:12px;align-items:center"><span class="tagk appr">Approval</span><span class="fine">Atlas is paused on this step</span></div>
-        <h3>Push 2 commits to origin/feat/digest?</h3>
-        <div class="kv">
-          <div><b>What it does</b>Publishes my fix so CI can run on the PR.</div>
-          <div><b>What it won't do</b>Touch <span class="code">main</span> or force-push.</div>
-          <div><b>Where</b>~/code/hermes · worktree feat/digest</div>
-        </div>
-        <div><div class="sect">The command</div><div class="cmd"><span style="color:#6f7aa3">$</span> git push origin feat/digest</div></div>
-        <div><div class="sect">Where Atlas is</div>
-          <div class="rowmini"><span class="pulse"></span><b style="color:var(--v2-text)">Step 3 of 5</b> · Fix it and re-run CI<span class="grow"></span><span class="fine">4m in</span></div></div>
-        <div style="display:flex;gap:8px"><button class="btn btn-ghost sm" id="open-c"></button><button class="btn btn-ghost sm" id="ask-c"></button></div>
-      </div>
-    </div>
-  </main>
-</div>
-<script src="mock.js"></script>
+<title>Hermes Desktop — Mission Control (target)</title>
+<link rel="stylesheet" href="real-tokens.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="app.css">
+</head><body>
+<script src="app.js"></script>
 <script>
-  const $ = id => document.getElementById(id)
-  $('rail').outerHTML = rail('', { needs: false })
-  $('a1').outerHTML = av('atlas', 44, 'needs'); $('a2').outerHTML = av('scout', 44, 'needs'); $('a3').outerHTML = av('sage', 44, 'needs'); $('a4').outerHTML = av('nova', 44)
-  $('okc').innerHTML = ic('phone', 14) + ' '
-  $('okc').style.cssText = 'display:inline-flex;align-items:center'
-  $('open-c').innerHTML = ic('chevronR', 14) + 'Open the conversation'
-  $('ask-c').innerHTML = ic('sparkle', 14) + 'Ask about this'
-</script>
-</body></html>
+  const it = (k, title, tag, tagc, meta, acts, sel) => `<div style="display:grid;grid-template-columns:auto 1fr;gap:0.75rem;padding:0.75rem 0.75rem;border-radius:6px;${sel ? 'background:var(--ui-row-active-background);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ui-accent) 40%,transparent)' : ''}">${face(k, 36, 'needs')}
+    <div><div style="font-weight:600;font-size:var(--type-ui);line-height:1.35">${title}</div><div style="display:flex;gap:6px;align-items:center;margin-top:3px;font-size:var(--type-meta);color:var(--ui-text-tertiary)"><span class="badge ${tagc}">${tag}</span>${meta}</div>
+    <div style="display:flex;gap:6px;margin-top:8px">${acts}</div></div></div>`
+  mount(`${simpleApp()}<div class="scrim"></div>
+  <div class="panel">
+    <div class="phead"><b>Mission Control</b>
+      <div class="seg" style="margin-left:0.75rem"><span class="on">Needs you <span class="badge solid" style="margin-left:4px">3</span></span><span>Running 4</span><span>Review 2</span><span>Map</span><span>Board</span></div>
+      <span class="grow"></span><span style="display:inline-flex;gap:10px;font-size:0.6875rem"><span><kbd>J</kbd> <kbd>K</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>A</kbd> approve</span><span><kbd>E</kbd> archive</span></span>
+      <button class="icon-btn" aria-label="Close">${ic('x', 14)}</button></div>
+    <div class="pbody" style="grid-template-columns:27rem 1fr">
+      <section style="padding:0.5rem;box-shadow:inset -1px 0 0 var(--ui-stroke-tertiary);display:grid;align-content:start;gap:2px">
+        ${it('atlas', 'Push 2 commits to <span class="code">origin/feat/digest</span>?', 'Approval', 'warn', 'Atlas · 1m', '<button class="btn btn-default xs">Allow once</button><button class="btn btn-outline xs">Always for this repo</button><button class="btn btn-ghost xs">Not now</button>', 1)}
+        ${it('sage', 'Publish the newsletter to 2,140 subscribers?', 'Approval', 'warn', 'Sage · 2m', '<button class="btn btn-secondary xs">Review draft</button><button class="btn btn-outline xs">Publish</button>', 0)}
+        ${it('scout', "Which venue for Friday's dinner?", 'Question', 'default', 'Scout · 9m', '<button class="btn btn-secondary xs">Pastel Bistro</button><button class="btn btn-secondary xs">Rooftop 39</button><button class="btn btn-ghost xs">Later</button>', 0)}
+        <div style="display:grid;grid-template-columns:auto 1fr;gap:0.75rem;padding:0.75rem;opacity:0.65;box-shadow:inset 0 1px 0 var(--ui-stroke-quaternary);margin-top:4px">${face('nova', 36)}<div><div style="font-weight:600;font-size:var(--type-ui)">Renew <span class="code">hermes-labs.dev</span></div><div style="font-size:var(--type-meta);color:var(--ui-text-tertiary);margin-top:3px;display:flex;gap:6px;align-items:center"><span style="color:var(--state-done);display:inline-flex">${ic('phone', 12)}</span>Approved from your phone · just now</div></div></div>
+      </section>
+      <section style="padding:1rem 1.25rem;display:grid;align-content:start;gap:0.375rem;overflow:hidden">
+        <div style="display:flex;gap:8px;align-items:center"><span class="badge warn">Approval</span><span style="color:var(--ui-text-tertiary);font-size:var(--type-meta)">Atlas is paused on this step</span></div>
+        <h3 style="font-size:1.0625rem;font-weight:600;letter-spacing:-0.01em;margin:0.25rem 0">Push 2 commits to origin/feat/digest?</h3>
+        <div class="lrow"><div class="l">What it does</div><div class="rt" style="font-weight:400">Publishes my fix so CI can run on the PR</div></div>
+        <div class="lrow"><div class="l">What it won't do</div><div class="rt" style="font-weight:400">Touch <span class="code">main</span> or force-push</div></div>
+        <div class="lrow"><div class="l">Where</div><div class="rt" style="font-weight:400">~/code/hermes · worktree feat/digest</div></div>
+        <div class="h6">The command</div><div class="term"><span class="p">$</span> git push origin feat/digest</div>
+        <div class="h6">Where Atlas is</div><div class="card" style="display:flex;align-items:center;gap:8px"><span class="pulse"></span><b>Step 3 of 5</b><span style="color:var(--ui-text-secondary)">Fix it and re-run CI</span><span class="grow"></span><span style="color:var(--ui-text-tertiary);font-size:var(--type-meta)">4m in</span></div>
+        <div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-outline xs">${ic('chevronR', 11)}Open the conversation</button><button class="btn btn-outline xs">${ic('sparkle', 11)}Ask about this</button></div>
+      </section>
+    </div>
+  </div>`)
+</script></body></html>
