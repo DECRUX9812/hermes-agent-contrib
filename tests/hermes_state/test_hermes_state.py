@@ -2648,6 +2648,30 @@ class TestListSessionsRich:
             for row in db.find_orphaned_gateway_sessions()
         )
 
+    def test_created_source_preserved_across_cross_platform_resume(self, db):
+        """``created_source`` is immutable provenance (#56439): stamped at creation and never
+        rewritten by gateway peer recording, which must keep ``source`` as live routing state."""
+        db.create_session("tui-sess", "tui")
+        db.append_message("tui-sess", "user", "created on desktop")
+
+        # /resume from Telegram: routing state moves, provenance does not.
+        db.record_gateway_session_peer(
+            "tui-sess", source="telegram", session_key="agent:main:telegram:dm:1", chat_id="1"
+        )
+        row = db.get_session("tui-sess")
+        assert row["source"] == "telegram"
+        assert row["created_source"] == "tui"
+
+        # Later upserts (any surface) never clobber the stamped provenance.
+        db.ensure_session("tui-sess", "discord")
+        assert db.get_session("tui-sess")["created_source"] == "tui"
+
+        # Self-healing insert stamps provenance from the first writer.
+        db.record_gateway_session_peer(
+            "slack-sess", source="slack", session_key="agent:main:slack:ch:2", chat_id="2"
+        )
+        assert db.get_session("slack-sess")["created_source"] == "slack"
+
 
 
 
@@ -5208,6 +5232,50 @@ def test_peer_fallback_never_adopts_a_sibling_profiles_row(tmp_path, monkeypatch
             lambda c: c.execute("UPDATE sessions SET last_activity_at = 1 WHERE id = 'own'")
         )
         assert recover()["id"] == "own"  # older own row beats newer sibling row
+    finally:
+        store.close()
+
+
+def test_peer_fallback_reset_boundary_is_profile_fenced(tmp_path, monkeypatch):
+    """#119121: the recovery reset fence carries the same profile predicate as the candidate.
+
+    A Telegram DM peer tuple is identical for every bot, so a sibling profile's
+    newer session_reset row used to suppress THIS profile's recoverable session.
+    The profile's own reset must still fence.
+    """
+    import hermes_state
+
+    root = tmp_path / "hermes"
+    root.mkdir()
+    monkeypatch.setenv("HERMES_HOME", str(root))
+    monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", hermes_state._IMPORT_DEFAULT_DB_PATH)
+    store = SessionDB(db_path=root / "state.db")  # owner: default
+    try:
+        peer = {"user_id": "42", "chat_id": "42", "chat_type": "dm"}
+
+        def recover():
+            return store.find_latest_gateway_session_for_peer(
+                source="telegram", session_key="agent:main:telegram:dm:42", **peer
+            )
+
+        def reset(session_id, session_key, profile_name):
+            store.create_session(session_id, "telegram", session_key=session_key,
+                                 profile_name=profile_name, **peer)
+            store.append_message(session_id, "user", "/new")
+            store.end_session(session_id, "session_reset")
+
+        store.create_session("own", "telegram", session_key="agent:main:telegram:dm:42:old",
+                             profile_name="default", **peer)
+        store.append_message("own", "user", "default's conversation")
+        store._execute_write(
+            lambda c: c.execute("UPDATE sessions SET last_activity_at = 1 WHERE id = 'own'")
+        )
+
+        reset("sibling-reset", "agent:bot2:telegram:dm:42", "bot2")
+        assert recover()["id"] == "own"  # a sibling profile's reset is not this profile's boundary
+
+        reset("own-reset", "agent:main:telegram:dm:42:r2", "default")
+        assert recover() is None  # the profile's own reset still fences
     finally:
         store.close()
 

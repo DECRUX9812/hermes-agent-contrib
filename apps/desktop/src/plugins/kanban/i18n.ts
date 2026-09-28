@@ -125,6 +125,14 @@ type KanbanMessages = {
   metaCreatedBy: string
   metaCreated: string
   metaWorkerPid: string
+  /** #124391 — blocked-card detail: why it blocked and what it cost. */
+  blockKindTip: (kind: string) => string
+  blockReason: string
+  blockRecurrences: string
+  blockRecurrencesTip: string
+  consecutiveFailures: string
+  lastFailureError: string
+  unblockedMessage: (id: string) => string
   readyUnassignedTitle: string
   readyUnassignedBody: string
   diagnosticsN: (n: number) => string
@@ -345,6 +353,20 @@ export const en: KanbanMessages = {
   metaCreatedBy: 'Created by',
   metaCreated: 'Created',
   metaWorkerPid: 'Worker pid',
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? 'The worker asked for human input.'
+      : kind === 'capability'
+        ? 'The worker hit a capability wall it cannot get past.'
+        : kind === 'transient'
+          ? 'The worker failed on a transient error.'
+          : 'The worker reported a dependency it must wait on.',
+  blockReason: 'Block kind',
+  blockRecurrences: 'Block recurrences',
+  blockRecurrencesTip: 'Times this task re-blocked for the same reason after a human unblock.',
+  consecutiveFailures: 'Consecutive failures',
+  lastFailureError: 'Last failure',
+  unblockedMessage: id => `Unblocked ${id}. Task is ready for the next tick.`,
   readyUnassignedTitle: 'Ready, but unassigned — this card will never run.',
   readyUnassignedBody:
     'The dispatcher only claims Ready cards that have an assignee. Pick a profile in the Assignee field above (or set a default assignee in the orchestration settings) and it runs within a minute.',
@@ -560,6 +582,20 @@ const ja: KanbanMessages = {
   metaCreatedBy: '作成者',
   metaCreated: '作成',
   metaWorkerPid: 'ワーカー PID',
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? 'ワーカーが人間の入力を求めています。'
+      : kind === 'capability'
+        ? 'ワーカーが越えられない能力の壁に当たりました。'
+        : kind === 'transient'
+          ? 'ワーカーが一時的なエラーで失敗しました。'
+          : 'ワーカーが待機すべき依存関係を報告しました。',
+  blockReason: 'ブロック種別',
+  blockRecurrences: 'ブロック回数',
+  blockRecurrencesTip: '人間がブロック解除した後、同じ理由で再ブロックされた回数。',
+  consecutiveFailures: '連続失敗',
+  lastFailureError: '直近の失敗',
+  unblockedMessage: id => `${id} をブロック解除しました。次のティックで実行できます。`,
   readyUnassignedTitle: 'Ready ですが未割り当て — このカードは実行されません。',
   readyUnassignedBody:
     'ディスパッチャは担当のある Ready カードのみ取得します。上の担当フィールドでプロフィールを選ぶ（またはオーケストレーション設定でデフォルトの担当を設定する）と、1分以内に実行されます。',
@@ -774,6 +810,20 @@ const zh: KanbanMessages = {
   metaCreatedBy: '创建者',
   metaCreated: '创建于',
   metaWorkerPid: '工作单元 PID',
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? '工作单元正在等待人工输入。'
+      : kind === 'capability'
+        ? '工作单元遇到了无法逾越的能力限制。'
+        : kind === 'transient'
+          ? '工作单元因临时性错误失败。'
+          : '工作单元报告了需要等待的依赖。',
+  blockReason: '阻塞类型',
+  blockRecurrences: '阻塞次数',
+  blockRecurrencesTip: '人工解除阻塞后，该任务因同一原因再次阻塞的次数。',
+  consecutiveFailures: '连续失败',
+  lastFailureError: '最近失败',
+  unblockedMessage: id => `已解除 ${id} 的阻塞。任务将在下一轮调度中就绪。`,
   readyUnassignedTitle: '就绪但未分配 — 这张卡片永远不会运行。',
   readyUnassignedBody:
     '调度器只领取有负责人的就绪卡片。在上面的负责人字段选择一个配置档（或在编排设置中设置默认负责人），它会在一分钟内运行。',
@@ -986,6 +1036,20 @@ const zhHant: KanbanMessages = {
   metaCreatedBy: '建立者',
   metaCreated: '建立於',
   metaWorkerPid: '工作單元 PID',
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? '工作單元正在等待人工輸入。'
+      : kind === 'capability'
+        ? '工作單元遇到了無法跨越的能力限制。'
+        : kind === 'transient'
+          ? '工作單元因暫時性錯誤失敗。'
+          : '工作單元回報了需要等待的相依關係。',
+  blockReason: '封鎖類型',
+  blockRecurrences: '封鎖次數',
+  blockRecurrencesTip: '人工解除封鎖後，該任務因同一原因再次封鎖的次數。',
+  consecutiveFailures: '連續失敗',
+  lastFailureError: '最近失敗',
+  unblockedMessage: id => `已解除 ${id} 的封鎖。任務將在下一輪排程中就緒。`,
   readyUnassignedTitle: '就緒但未指派 — 這張卡片永遠不會執行。',
   readyUnassignedBody:
     '排程器只領取有負責人的就緒卡片。在上方的負責人欄位選擇一個設定檔（或在編排設定中設定預設負責人），它會在一分鐘內執行。',
@@ -1074,6 +1138,20 @@ const zhHant: KanbanMessages = {
 }
 
 const fr: KanbanMessages = {
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? 'Le worker a demandé une saisie humaine.'
+      : kind === 'capability'
+        ? 'Le worker a atteint une limite de capacité qu\'il ne peut pas franchir.'
+        : kind === 'transient'
+          ? 'Le worker a échoué sur une erreur transitoire.'
+          : 'Le worker a signalé une dépendance à attendre.',
+  blockReason: 'Type de blocage',
+  blockRecurrences: 'Récurrences du blocage',
+  blockRecurrencesTip: 'Nombre de fois où cette tâche a été rebloquée pour la même raison après un déblocage humain.',
+  consecutiveFailures: 'Échecs consécutifs',
+  lastFailureError: 'Dernier échec',
+  unblockedMessage: id => `${id} débloquée. La tâche est prête pour le prochain tick.`,
   nav: 'Kanban',
   openBoard: 'Kanban : ouvrir le tableau',
   newTaskCommand: 'Kanban : nouvelle tâche',
@@ -1294,6 +1372,20 @@ const fr: KanbanMessages = {
 }
 
 const de: KanbanMessages = {
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? 'Der Worker hat menschliche Eingabe angefordert.'
+      : kind === 'capability'
+        ? 'Der Worker ist an eine Fähigkeitsgrenze gestoßen, die er nicht überwinden kann.'
+        : kind === 'transient'
+          ? 'Der Worker ist an einem vorübergehenden Fehler gescheitert.'
+          : 'Der Worker hat eine Abhängigkeit gemeldet, auf die er warten muss.',
+  blockReason: 'Blockierungsart',
+  blockRecurrences: 'Wiederholte Blockierungen',
+  blockRecurrencesTip: 'Wie oft diese Aufgabe nach einer manuellen Freigabe aus demselben Grund erneut blockiert wurde.',
+  consecutiveFailures: 'Aufeinanderfolgende Fehler',
+  lastFailureError: 'Letzter Fehler',
+  unblockedMessage: id => `${id} freigegeben. Die Aufgabe ist für den nächsten Tick bereit.`,
   nav: 'Kanban',
   openBoard: 'Kanban: Board öffnen',
   newTaskCommand: 'Kanban: Neue Aufgabe',
@@ -1518,6 +1610,20 @@ const de: KanbanMessages = {
 }
 
 const es: KanbanMessages = {
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? 'El worker pidió intervención humana.'
+      : kind === 'capability'
+        ? 'El worker chocó con un límite de capacidad que no puede superar.'
+        : kind === 'transient'
+          ? 'El worker falló por un error transitorio.'
+          : 'El worker informó de una dependencia que debe esperar.',
+  blockReason: 'Tipo de bloqueo',
+  blockRecurrences: 'Reincidencias del bloqueo',
+  blockRecurrencesTip: 'Veces que esta tarea volvió a bloquearse por el mismo motivo tras un desbloqueo manual.',
+  consecutiveFailures: 'Fallos consecutivos',
+  lastFailureError: 'Último fallo',
+  unblockedMessage: id => `${id} desbloqueada. La tarea está lista para el siguiente tick.`,
   nav: 'Kanban',
   openBoard: 'Kanban: abrir el tablero',
   newTaskCommand: 'Kanban: nueva tarea',
@@ -1738,6 +1844,20 @@ const es: KanbanMessages = {
 }
 
 const ru: KanbanMessages = {
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? 'Исполнитель запросил ввод от человека.'
+      : kind === 'capability'
+        ? 'Исполнитель упёрся в ограничение возможностей, которое не может преодолеть.'
+        : kind === 'transient'
+          ? 'Исполнитель завершился с временной ошибкой.'
+          : 'Исполнитель сообщил о зависимости, которую нужно дождаться.',
+  blockReason: 'Тип блокировки',
+  blockRecurrences: 'Повторные блокировки',
+  blockRecurrencesTip: 'Сколько раз задача снова блокировалась по той же причине после ручной разблокировки.',
+  consecutiveFailures: 'Подряд неудач',
+  lastFailureError: 'Последний сбой',
+  unblockedMessage: id => `${id} разблокирована. Задача готова к следующему тику.`,
   nav: 'Канбан',
   openBoard: 'Канбан: открыть доску',
   newTaskCommand: 'Канбан: новая задача',
@@ -1954,6 +2074,20 @@ const ru: KanbanMessages = {
 }
 
 const ar: KanbanMessages = {
+  blockKindTip: kind =>
+    kind === 'needs_input'
+      ? 'طلب العامل مدخلات بشرية.'
+      : kind === 'capability'
+        ? 'اصطدم العامل بحدّ قدرات لا يستطيع تجاوزه.'
+        : kind === 'transient'
+          ? 'فشل العامل بسبب خطأ عابر.'
+          : 'أبلغ العامل عن تبعية عليه انتظارها.',
+  blockReason: 'نوع الحظر',
+  blockRecurrences: 'تكرارات الحظر',
+  blockRecurrencesTip: 'عدد مرات إعادة حظر هذه المهمة للسبب نفسه بعد فك الحظر يدويًا.',
+  consecutiveFailures: 'إخفاقات متتالية',
+  lastFailureError: 'آخر إخفاق',
+  unblockedMessage: id => `تم فك حظر ${id}. المهمة جاهزة للدورة التالية.`,
   nav: 'كانبان',
   openBoard: 'كانبان: فتح اللوحة',
   newTaskCommand: 'كانبان: مهمة جديدة',

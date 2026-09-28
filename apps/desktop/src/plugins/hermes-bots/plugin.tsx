@@ -23,9 +23,14 @@ import {
   host,
   LocalizedTabTitle,
   PALETTE_AREA,
+  type PaletteContribution,
   type PaneContribution,
+  type RouteContribution,
+  ROUTES_AREA,
   SIDEBAR_LIST_TOP_AREA,
+  SIDEBAR_NAV_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
+  type SidebarNavContribution,
   TRANSCRIPT_DIRECTIVE_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
@@ -113,6 +118,8 @@ import { startScreenAutoRaise } from './screen-autoraise'
 import { ProfileGroupScreenPortal } from './screen-portal'
 import { startHideSweepScheduler } from './session-sweep'
 import { bumpBotOpenGeneration, getBotOpenGeneration, ID, setPluginCtx } from './shared'
+import { TEAM_LOCALES } from './team-i18n'
+import { TeamPage } from './team-page'
 import type { GroupChat, RosterRow } from './types'
 import { loadBotSections } from './user-sections'
 
@@ -123,6 +130,11 @@ interface MentionCompletionItem {
   display: string
   insert: string
   meta: string
+  /** Handles that resolve to this same bot — the raw profile name and the
+   *  roster handle — so the popover can drop the gateway's own row for that
+   *  name instead of listing the bot twice (once under its title slug,
+   *  once under the raw name). */
+  handles?: string[]
 }
 
 /** The draft a `composer.middleware` handler rewrites, passes through, or
@@ -152,6 +164,7 @@ export default {
     // writes through.
     loadBotSections()
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES)
+    const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
     setGroupChatSyncDisposed(false)
     startFaceClock()
     // The cross-connection relay rides every gateway socket this Desktop
@@ -164,10 +177,33 @@ export default {
     // before this, the rAF loop + 1Hz document scan ran until app restart.
     if (typeof ctx.onDispose === 'function') {
       ctx.onDispose(disposeLocales)
+      ctx.onDispose(disposeTeamLocales)
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)
     }
+
+    // Team Bots: the `/team` home, its sidebar row and a palette entry. All SDK-only, so the
+    // same registration works when this plugin runs inside a web-hosted client.
+    ctx.registerMany([
+      { id: 'team-page', area: ROUTES_AREA, data: { path: '/team' } satisfies RouteContribution, render: () => <TeamPage /> },
+      {
+        id: 'team-nav',
+        area: SIDEBAR_NAV_AREA,
+        order: 40,
+        data: { codicon: 'organization', label: ctx.i18n.t('team.nav'), path: '/team' } satisfies SidebarNavContribution
+      },
+      {
+        id: 'team-open',
+        area: PALETTE_AREA,
+        data: {
+          id: 'team.open',
+          label: ctx.i18n.t('team.title'),
+          keywords: ['team', 'org', 'goals', 'budget', 'approvals'],
+          run: () => host.navigate('/team')
+        } satisfies PaletteContribution
+      }
+    ])
 
     // @-mention autocomplete: typing "@rese…" in ANY composer offers the
     // roster's handles (issue #88060). Reads the roster straight from the
@@ -229,7 +265,12 @@ export default {
             items.push({
               insert,
               display: insert,
-              meta: `Bot · ${display}${source}`
+              meta: `Bot · ${display}${source}`,
+              // The live gateway's own `@` rows list this backend's profiles
+              // by raw name; claim ours so the popover drops that twin row.
+              // Remote rows are NOT ours to claim — the local gateway's
+              // same-named row resolves locally, not to the remote bot.
+              ...(profile.remoteSource ? {} : { handles: [`@${profile.name}`] })
             })
           }
 
@@ -727,6 +768,11 @@ export default {
       // a failed re-resume (backend still down) leaves the lazy recovery on
       // next send as the backstop. Feature-detected — older shells have no
       // host.onEvent.
+      //
+      // This is a BACKGROUND wake: it refreshes in place (refreshInPlace
+      // through openBotCanonicalChat) and never navigates, so a user
+      // reading the Kanban board — or any other route — keeps their view
+      // (issue 121874).
       const stopReclaimSync =
         typeof host.onEvent === 'function'
           ? host.onEvent('session.reclaimed', event => {
@@ -759,7 +805,7 @@ export default {
               }
 
               const generation = getBotOpenGeneration()
-              void openBotCanonicalChat(bot)
+              void openBotCanonicalChat(bot, { background: true })
                 .then(opened => {
                   // A user action while the re-resume ran owns the center now.
                   if (!opened || generation !== getBotOpenGeneration()) {

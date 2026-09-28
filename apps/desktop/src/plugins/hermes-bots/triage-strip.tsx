@@ -125,6 +125,7 @@ export function TriageStrip({
 
         return (
           <button
+            aria-label={b.triage.openItem(name)}
             className={cn(
               'flex min-w-0 items-center gap-2 rounded px-1 py-0.5 text-left',
               'text-[0.75rem] text-(--ui-text-secondary) hover:bg-(--chrome-action-hover)'
@@ -132,7 +133,6 @@ export function TriageStrip({
             data-testid={`bot-triage:${item.key}`}
             key={item.key}
             onClick={() => onOpen(item.bot)}
-            title={b.triage.openItem(name)}
             type="button"
           >
             <BotFace color={avatarColor(color, item.bot.name)} image={image} name={item.bot.name} shape={shape} size={14} />

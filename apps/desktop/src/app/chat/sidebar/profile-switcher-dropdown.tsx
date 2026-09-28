@@ -13,10 +13,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  dropdownMenuSectionLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
@@ -25,7 +23,6 @@ import { Tip } from '@/components/ui/tooltip'
 import { getProfileSoul, updateProfileSoul } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { resolveProfileColor } from '@/lib/profile-color'
-import { cn } from '@/lib/utils'
 import { notify, notifyError } from '@/store/notifications'
 import {
   normalizeProfileKey,
@@ -34,7 +31,7 @@ import {
 import { runImportProfileFlow } from '@/store/profile-share'
 import type { ProfileInfo } from '@/types/hermes'
 
-import { ConnectionGlyph } from './connection-glyph'
+import { FleetGatewayMenuGroup } from './fleet-gateway-menu-group'
 import { type FleetAgent, type FleetGroup } from './fleet-rail'
 import { ProfileLaunchContextMenu } from './profile-launch-menu'
 import { ProfileStatusDot, profileStatusLabel, useProfileStatus } from './profile-switcher-status'
@@ -57,6 +54,7 @@ export function EditSoulDialog({
   const { t } = useI18n()
   const p = t.profiles
   const [content, setContent] = useState('')
+  const [missing, setMissing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -68,9 +66,15 @@ export function EditSoulDialog({
     let cancelled = false
     setLoading(true)
     setContent('')
+    setMissing(false)
 
     getProfileSoul(profileName, scope)
-      .then(soul => !cancelled && setContent(soul.content))
+      .then(soul => {
+        if (!cancelled) {
+          setContent(soul.content)
+          setMissing(soul.exists === false)
+        }
+      })
       .catch(err => !cancelled && notifyError(err, p.failedLoadSoul))
       .finally(() => !cancelled && setLoading(false))
 
@@ -103,6 +107,7 @@ export function EditSoulDialog({
             {gatewayLabel && profileName ? p.fleet.onGateway(profileName, gatewayLabel) : profileName} · SOUL.md
           </DialogTitle>
         </DialogHeader>
+        {missing && <p className="text-xs text-muted-foreground">{p.soulMissing}</p>}
         <div className="h-80">
           {!loading && profileName && (
             <CodeEditor
@@ -246,43 +251,22 @@ export function ProfileDropdown({
           ))}
         </DropdownMenuRadioGroup>
         {restGroups.map(group => (
-          <div data-connection-id={group.connectionId} data-slot="profile-dropdown-gateway" key={group.connectionId}>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className={cn(dropdownMenuSectionLabel, 'flex items-center gap-1.5')}>
-              <ConnectionGlyph connection={group} />
-              <span className="truncate">{group.label}</span>
-              {!group.reachable && <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />}
-            </DropdownMenuLabel>
-            {[group.defaultAgent, ...group.named].map(agent => {
-              const localDefault = agent.connectionKind === 'local' && agent.isDefault
-              const label = localDefault ? p.fleet.localDevice : p.fleet.onGateway(agent.profile, group.label)
-
-              return (
-                <ProfileLaunchContextMenu
-                  connectionId={agent.connectionId}
-                  key={agent.profile}
-                  label={label}
-                  profile={agent.profile}
-                >
-                  <DropdownMenuItem aria-label={label} className="min-w-0" onSelect={() => onSelectRest(agent)}>
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      {localDefault ? (
-                        <Codicon aria-hidden="true" name="device-desktop" size="0.875rem" />
-                      ) : (
-                        <ProfileGlyph
-                          aria-hidden="true"
-                          color={resolveProfileColor(agent.profile, colors)}
-                          isDefault={agent.isDefault}
-                          name={agent.profile}
-                        />
-                      )}
-                      <span className="truncate">{agent.profile}</span>
-                    </span>
-                  </DropdownMenuItem>
-                </ProfileLaunchContextMenu>
-              )
-            })}
-          </div>
+          <FleetGatewayMenuGroup
+            group={group}
+            key={group.connectionId}
+            onSelect={onSelectRest}
+            slot="profile-dropdown-gateway"
+            wrapRow={(row, agent, label) => (
+              <ProfileLaunchContextMenu
+                connectionId={agent.connectionId}
+                key={agent.profile}
+                label={label}
+                profile={agent.profile}
+              >
+                {row}
+              </ProfileLaunchContextMenu>
+            )}
+          />
         ))}
       </DropdownMenuContent>
     </DropdownMenu>

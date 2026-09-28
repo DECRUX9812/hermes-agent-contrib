@@ -128,8 +128,8 @@ export function BotModelChip({ bot }: { bot: RosterRow }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
+          aria-label={b.bot.modelMenu}
           className="pointer-events-auto inline-flex max-w-56 items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-0.5 font-mono text-[0.6875rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-(--ui-text-secondary)"
-          title={b.bot.modelMenu}
           type="button"
         >
           <span className="min-w-0 truncate">{model || b.bot.modelDefault}</span>

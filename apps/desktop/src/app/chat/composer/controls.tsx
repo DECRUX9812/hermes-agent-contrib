@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { Ear, EarOff, iconSize, Layers3, Loader2, Square } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import { recordAction } from '@/store/desktop-metrics'
 import { $hudMode, closeHud, resetHudLayout } from '@/store/hud'
 import { $wakeWord, toggleWakeWord } from '@/store/wake-word'
 
@@ -178,7 +179,13 @@ export function ComposerControls({
         <StartVoiceButton disabled={disabled} label={c.startVoice} onStart={conversation.onStart} />
       ) : (
         <Tip label={<TipKeybindLabel actionId="composer.send" text={sendLabel} />} placement="control">
-          <Button aria-label={sendLabel} className={PRIMARY_ICON_BTN} disabled={disabled || !canSubmit} type="submit">
+          <Button
+            aria-label={sendLabel}
+            className={PRIMARY_ICON_BTN}
+            disabled={disabled || !canSubmit}
+            onClick={() => recordAction(showStop ? 'composer.cancel' : 'composer.send', 'click')}
+            type="submit"
+          >
             {showStop ? (
               <span className="block size-2.5 rounded-[0.1875rem] bg-current" />
             ) : (

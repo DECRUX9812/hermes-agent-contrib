@@ -8,8 +8,12 @@ import { $activeGatewayProfile } from '@/store/profile'
 import {
   $currentBranch,
   $currentCwd,
+  $currentModel,
+  $currentProvider,
   setCurrentBranch,
   setCurrentCwd,
+  setCurrentModel,
+  setCurrentProvider,
   setSelectedStoredSessionId,
   workspaceCwdBelongsToSelectedSession
 } from '@/store/session'
@@ -2117,6 +2121,42 @@ describe('overlayConcurrentMessageChanges', () => {
 
     expect(overlayConcurrentMessageChanges(page, [page[0]], [page[0], errored]).at(-1)).toBe(errored)
   })
+
+  // The committed row and the settled live row capture the same reply at two
+  // moments while it kept streaming, so one is routinely a prefix of the
+  // other (#123993): accept either as a forward extension, as the sibling
+  // removeRepresentedLocalLiveProjection already does (2494b95929).
+  it('folds a settled live row that lags behind the committed row into one reply', () => {
+    const page = [
+      msg('3-user', 'user', 'prompt b', { rowId: 3 }),
+      msg('4-assistant', 'assistant', 'A2 finished while away', { rowId: 4 })
+    ]
+
+    const current = [page[0], msg('assistant-stream-1-2', 'assistant', 'A2 finished', { pending: false })]
+
+    const overlaid = overlayConcurrentMessageChanges(page, [], current)
+
+    expect(overlaid.map(message => [message.id, chatMessageText(message)])).toEqual([
+      ['3-user', 'prompt b'],
+      ['4-assistant', 'A2 finished while away']
+    ])
+  })
+
+  it('folds a settled live row that ran past the committed row into one reply', () => {
+    const page = [
+      msg('3-user', 'user', 'prompt b', { rowId: 3 }),
+      msg('4-assistant', 'assistant', 'A2 finished', { rowId: 4 })
+    ]
+
+    const current = [page[0], msg('assistant-stream-1-2', 'assistant', 'A2 finished while away', { pending: false })]
+
+    const overlaid = overlayConcurrentMessageChanges(page, [], current)
+
+    expect(overlaid.map(message => [message.id, chatMessageText(message)])).toEqual([
+      ['3-user', 'prompt b'],
+      ['4-assistant', 'A2 finished']
+    ])
+  })
 })
 
 describe('preserveEquivalentTranscript', () => {
@@ -2204,5 +2244,65 @@ describe('preserveLocalPendingTurnMessages attachment rewrites (#120978)', () =>
       '3-user-stored',
       'user-plain-repeat'
     ])
+  })
+
+  it('never tolerance-matches a rowId-bearing optimistic row it provably is not (#122079)', () => {
+    // The submit receipt binds user_row_id onto the optimistic row while the
+    // stored page still ends at the earlier paste, so the row reaches the
+    // dedupe compare carrying a rowId none of the committed candidates hold.
+    // The tolerant arm must stay inside the identity gate: pasting the same
+    // captioned screenshot twice is a genuine new turn, not a duplicate.
+    const previous = [
+      msg('1-user', 'user', 'first'),
+      msg('2-assistant', 'assistant', 'first answer'),
+      msg('user-1790168309-ab12cd', 'user', 'unable to publish', {
+        rowId: 901,
+        attachmentRefs: ['data:image/png;base64,AAAA']
+      })
+    ]
+
+    const next = [
+      msg('1-user-stored', 'user', 'first', { rowId: 1 }),
+      msg('2-assistant-stored', 'assistant', 'first answer', { rowId: 2 }),
+      msg('3-user-stored', 'user', 'unable to publish\n\n[Image attached at: C:\\img\\shot.png]\n[screenshot]', {
+        rowId: 3
+      })
+    ]
+
+    expect(preserveLocalPendingTurnMessages(next, previous).map(message => message.id)).toEqual([
+      '1-user-stored',
+      '2-assistant-stored',
+      '3-user-stored',
+      'user-1790168309-ab12cd'
+    ])
+  })
+})
+
+describe('applyStoredSessionPreviewRuntimeInfo does not persist the preview', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    setCurrentModel('user-pick')
+    setCurrentProvider('anthropic')
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+  })
+
+  // The preview is provisional: it paints while session.resume is still in
+  // flight. An abandoned resume never repairs the selection afterwards, so a
+  // persisting paint strands a manual model with an EMPTY provider in
+  // localStorage — every later session.create pairs that model with the
+  // profile provider and fails the coherence gate.
+  it('moves the visible model/provider without persisting them', () => {
+    applyStoredSessionPreviewRuntimeInfo({ cwd: '', model: 'claude-opus-5-5' }, 'session-next')
+
+    // Visible paint happened…
+    expect($currentModel.get()).toBe('claude-opus-5-5')
+    expect($currentProvider.get()).toBe('')
+
+    // …but nothing was persisted: the composer's sticky selection survives.
+    expect(localStorage.getItem('hermes.desktop.composer.model')).toBe('user-pick')
+    expect(localStorage.getItem('hermes.desktop.composer.provider')).toBe('anthropic')
   })
 })

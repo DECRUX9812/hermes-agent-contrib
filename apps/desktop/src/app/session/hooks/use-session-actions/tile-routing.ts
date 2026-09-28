@@ -4,8 +4,8 @@ import {defaultNewSessionTarget} from '@/app/session/new-session-route'
 import {useI18n} from '@/i18n'
 import {requestGatewayForAgent, retainGatewayForAgent} from '@/store/gateway'
 import {notify, notifyError} from '@/store/notifications'
-import {$activeGatewayProfile, $newChatProfile, $profiles, type AgentProfileRoute, normalizeProfileKey, resolveNewChatOwnerRoute} from '@/store/profile'
-import {resolveNewSessionCwd} from '@/store/projects'
+import {$activeGatewayProfile, $newChatProfile, $profiles, type AgentProfileRoute, normalizeProfileKey, resolveActiveSourceOwnerRoute, resolveNewChatOwnerRoute} from '@/store/profile'
+import {projectProfile, resolveNewSessionCwd} from '@/store/projects'
 import {$connection, setCurrentCwdExplicit, setCurrentCwdTransient, setSessionOwnerHint, setWorkspaceCwdOwner} from '@/store/session'
 import {focusOpenSession, holdSessionOwnerUntilForeground, openSessionTile, patchSessionTile, type SessionTileWorkspaceScope, type TileDock} from '@/store/session-states'
 import {broadcastSessionsChanged} from '@/store/session-sync'
@@ -47,6 +47,19 @@ export function useTileRoutingActions({ requestGateway, updateSessionState }: Se
       const listed = options?.listed ?? true
 
       try {
+        // A tile anchored at a project path belongs to the profile the project
+        // tree is rendered under — the same owner the fresh-draft "+" pins
+        // (#79005). The occupied-chat "+" and project-row drags reach this
+        // path instead, where a stale $newChatProfile pin would otherwise win
+        // and land the session in the wrong profile (#124265). All-profiles
+        // view has no owner and keeps the ordinary fallback.
+        const projectOwnerProfile =
+          options?.profile === undefined && typeof options?.cwd === 'string'
+            ? (projectProfile() ?? undefined)
+            : undefined
+
+        const optionProfile = options?.profile ?? projectOwnerProfile
+
         // Fresh tile → the caller's workspace when one was named (the sidebar
         // "+" on a project/worktree lane), explicit null means Home/detached,
         // else the resolved new-session cwd (project scope → configured default).
@@ -54,26 +67,29 @@ export function useTileRoutingActions({ requestGateway, updateSessionState }: Se
         // to fall through into the last project folder while main chat was
         // occupied (openTab path for "New session in Home").
         const explicitTarget =
-          options?.profile !== undefined ||
-          options?.cwd !== undefined ||
-          options?.workspaceScope?.ownerRoute !== undefined
+          optionProfile !== undefined || options?.cwd !== undefined || options?.workspaceScope?.ownerRoute !== undefined
 
         const defaultTarget = options?.route === undefined && !explicitTarget ? defaultNewSessionTarget() : null
 
+        // The project tree is rendered by the ACTIVE source: its profile pairs
+        // with that source, never with the source a stale new-chat pin captured
+        // on another connection (right profile, wrong host).
         const capturedRoute =
           options?.route !== undefined
             ? options.route
             : (options?.workspaceScope?.ownerRoute ??
-              (defaultTarget ? defaultTarget.route : resolveNewChatOwnerRoute(options?.profile)))
+              (defaultTarget
+                ? defaultTarget.route
+                : projectOwnerProfile
+                  ? resolveActiveSourceOwnerRoute(projectOwnerProfile)
+                  : resolveNewChatOwnerRoute(optionProfile)))
 
         // A named local profile uses the legacy profile-only transport (no
         // connectionId). Tab-strip "+" omits `options.profile`; the draft or
         // active profile is still the owner. Unique non-default local roster
         // names stay authoritative; default/remote/duplicate stay unresolved.
         const requestedProfile = normalizeProfileKey(
-          typeof options?.profile === 'string' && options.profile
-            ? options.profile
-            : defaultTarget?.profile || $newChatProfile.get() || $activeGatewayProfile.get()
+          optionProfile || defaultTarget?.profile || $newChatProfile.get() || $activeGatewayProfile.get()
         )
 
         const legacyOwnerProfile =

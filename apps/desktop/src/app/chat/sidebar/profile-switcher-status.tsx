@@ -11,25 +11,19 @@ import {
   REORDER_RAIL_TRANSITION
 } from '@/lib/reorder'
 import { useStoreSelector } from '@/lib/use-session-slice'
-import { cn } from '@/lib/utils'
 import {
   $profileDotStateByScope,
-  type ProfileDotState,
   type ProfileDotSummary,
   profileDotSummaryFor
 } from '@/store/profile-dot-state'
 
+import { sessionDotClassName } from '../session-status-dot'
+
 
 // #91710: a profile that finished (or blocked, or is still working) while
 // another was selected carries an indicator on its rail square and dropdown
-// row. The colors mirror the session status dot's palette — amber for "needs
-// your answer", accent for running, success green for unread — so a profile's
-// loudest state reads the same as its sessions' dots in the sidebar below.
-const PROFILE_STATUS_DOT_CLASS: Record<ProfileDotState, string> = {
-  'needs-input': 'bg-amber-500',
-  working: 'bg-(--ui-accent)',
-  unread: 'bg-(--ui-success)'
-}
+// row. It paints the session status dot's own class for the same state, so a
+// profile's loudest state reads the same as its sessions' dots below.
 
 /** The a11y/tooltip text for one square's summary — every non-zero count,
  *  most urgent first ("1 session needs your answer, 2 unread sessions"). The
@@ -65,13 +59,7 @@ export function useProfileStatus(profile: null | string, connectionId: null | st
 /** The dot a square/dropdown row paints for a summary. `status-dot` slot so
  *  tests (and tours) can find it without duplicating the class string. */
 export function ProfileStatusDot({ summary }: { summary: ProfileDotSummary }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn('size-1.5 rounded-full', PROFILE_STATUS_DOT_CLASS[summary.state])}
-      data-slot="profile-status-dot"
-    />
-  )
+  return <span aria-hidden="true" className={sessionDotClassName(summary.state)} data-slot="profile-status-dot" />
 }
 
 // Neighbors reflow on RAIL_TRANSITION; the dragged square glides between

@@ -458,6 +458,321 @@ export interface ProjectFacts {
   verifyCommands: string[]
   contextFiles: string[]
 }
+/** Client→server method params / server→client request params. Unknown keys are rejected. */
+export type Params = Record<string, never>
+export interface TeamListResult {
+  teams: TeamSummary[]
+}
+export interface TeamSummary {
+  id: string
+  name: string
+  mission?: string
+  member_count: number
+  open_seats: number
+  goal_count: number
+  pending_approvals: number
+  created_at: number
+  updated_at: number
+  [key: string]: unknown
+}
+export interface TeamIdParams {
+  team_id: string
+}
+/** What every mutating call returns: the fresh doc, its org tree and the goal roll-up, so a client re-renders from one response. */
+export interface TeamView {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+}
+export interface Team {
+  id: string
+  name: string
+  mission?: string
+  policy: TeamPolicy
+  channels?: Record<string, string>
+  members: TeamMember[]
+  goals: TeamGoal[]
+  approvals: TeamApproval[]
+  learnings: TeamLearning[]
+  created_at: number
+  updated_at: number
+  [key: string]: unknown
+}
+export interface TeamPolicy {
+  lead_decides?: boolean
+  [key: string]: unknown
+}
+/** One seat — ``tools/bot_team.py::upsert_member``. ``profile`` is null for an open seat; ``credentials`` are reference names, never values. */
+export interface TeamMember {
+  slot: string
+  profile?: string | null
+  role?: string
+  title?: string
+  reports_to?: string | null
+  lead?: boolean
+  status?: string
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  budget: TeamBudget
+  joined_at?: number
+  [key: string]: unknown
+}
+export interface TeamBudget {
+  monthly_usd?: number | null
+  hard_stop?: boolean
+  spent_usd?: number
+  period?: string
+  [key: string]: unknown
+}
+export interface TeamGoal {
+  id: string
+  title: string
+  detail?: string
+  parent_id?: string | null
+  owner?: string | null
+  status?: string
+  task_ids?: string[]
+  created_at?: number
+  updated_at?: number | null
+  [key: string]: unknown
+}
+export interface TeamApproval {
+  id: string
+  kind: string
+  subject: string
+  detail?: string
+  payload?: Record<string, unknown> | null
+  requested_by: string
+  status: string
+  decided_by?: string | null
+  decided_at?: number | null
+  note?: string
+  created_at?: number
+  [key: string]: unknown
+}
+export interface TeamLearning {
+  id: string
+  text: string
+  by: string
+  source?: string
+  count?: number
+  at?: number
+  last_at?: number
+  [key: string]: unknown
+}
+export interface TeamOrgNode {
+  slot: string
+  profile?: string | null
+  role?: string
+  title?: string
+  reports_to?: string | null
+  lead?: boolean
+  status?: string
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  budget: TeamBudget
+  joined_at?: number
+  reports?: TeamOrgNode[]
+  [key: string]: unknown
+}
+export interface TeamRollup {
+  goals: Record<string, GoalProgress>
+  overall: TeamRollupOverall
+  [key: string]: unknown
+}
+export interface GoalProgress {
+  done: number
+  total: number
+  percent: number
+  blocked?: boolean
+  status?: string
+  [key: string]: unknown
+}
+export interface TeamRollupOverall {
+  done: number
+  total: number
+  percent: number
+  [key: string]: unknown
+}
+export interface BotsTeamCreateParams {
+  name: string
+  mission?: string | null
+  lead_decides?: boolean | null
+  channels?: Record<string, string> | null
+  actor?: string | null
+}
+export interface BotsTeamUpdateParams {
+  team_id: string
+  actor?: string | null
+  name?: string | null
+  mission?: string | null
+  lead_decides?: boolean | null
+  channels?: Record<string, string> | null
+}
+export interface TeamActorParams {
+  team_id: string
+  actor?: string | null
+}
+export interface OkResult {
+  ok?: boolean
+}
+export interface BotsTeamMemberUpsertParams {
+  team_id: string
+  actor?: string | null
+  slot?: string | null
+  profile?: string | null
+  role?: string | null
+  title?: string | null
+  skills?: string[] | null
+  plugins?: string[] | null
+  credentials?: string[] | null
+  status?: string | null
+  monthly_usd?: number | null
+  hard_stop?: boolean | null
+  reports_to?: string | null
+  lead?: boolean | null
+}
+export interface BotsTeamMemberUpsertResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  member: TeamMember
+}
+export interface BotsTeamMemberRemoveParams {
+  team_id: string
+  actor?: string | null
+  member: string
+}
+export interface BotsTeamGoalUpsertParams {
+  team_id: string
+  actor?: string | null
+  goal_id?: string | null
+  title?: string | null
+  detail?: string | null
+  parent_id?: string | null
+  owner?: string | null
+  status?: string | null
+}
+export interface BotsTeamGoalResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  goal: TeamGoal
+}
+export interface BotsTeamGoalLinkTaskParams {
+  team_id: string
+  actor?: string | null
+  goal_id: string
+  task_id: string
+  unlink?: boolean | null
+}
+export interface BotsTeamApprovalRequestParams {
+  team_id: string
+  kind: string
+  subject: string
+  requested_by: string
+  detail?: string | null
+  payload?: Record<string, unknown> | null
+}
+export interface BotsTeamApprovalRequestResult {
+  approval: TeamApproval
+}
+export interface BotsTeamApprovalDecideParams {
+  team_id: string
+  actor?: string | null
+  approval_id: string
+  approve: boolean
+  note?: string | null
+}
+export interface BotsTeamApprovalDecideResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  approval: TeamApproval
+}
+export interface BotsTeamBudgetParams {
+  team_id: string
+  member: string
+}
+export interface BotsTeamBudgetResult {
+  allowed: boolean
+  reason?: string
+  remaining_usd?: number | null
+  over_budget?: boolean
+}
+export interface BotsTeamBudgetRecordParams {
+  team_id: string
+  member: string
+  usd: number
+  actor?: string | null
+}
+export interface BotsTeamLearningAddParams {
+  team_id: string
+  text: string
+  by: string
+  source?: string | null
+}
+export interface BotsTeamLearningResult {
+  learning: TeamLearning
+}
+export interface BotsTeamLearningRemoveParams {
+  team_id: string
+  actor?: string | null
+  learning_id: string
+}
+export interface BotsTeamBriefParams {
+  team_id: string
+  member: string
+  goal_id?: string | null
+}
+export interface BotsTeamBriefResult {
+  brief: string
+}
+export interface BotsTeamPackExportResult {
+  pack: TeamPack
+}
+export interface TeamPack {
+  pack_version: number
+  name: string
+  mission?: string
+  policy: TeamPolicy
+  seats: TeamPackSeat[]
+  [key: string]: unknown
+}
+export interface TeamPackSeat {
+  slot: string
+  role?: string
+  title?: string
+  reports_to_slot?: string | null
+  lead?: boolean
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  monthly_usd?: number | null
+  hard_stop?: boolean
+  [key: string]: unknown
+}
+export interface BotsTeamPackImportParams {
+  pack: TeamPack
+  name?: string | null
+  actor?: string | null
+}
+export interface BotsTeamAuditParams {
+  team_id: string
+  limit?: number | null
+}
+export interface BotsTeamAuditResult {
+  entries: TeamAuditEntry[]
+}
+export interface TeamAuditEntry {
+  at: number
+  actor: string
+  action: string
+  detail?: Record<string, unknown>
+  [key: string]: unknown
+}
 /** ``key`` selects one getter from ``_CONFIG_GETTERS``; ``cwd`` feeds the ``project`` getter, ``session_id`` lets ``reasoning`` / ``fast`` answer with the session's live pin. */
 export interface ConfigGetParams {
   profile?: string | null
@@ -642,6 +957,95 @@ export interface FreeTierProvisionResult {
 }
 export interface FreeTierAckNoticeResult {
   acked: boolean
+}
+/** The focused profile's ``telemetry.shared_metrics`` opt-ins. ``send`` is never true while ``enabled`` is false; ``decided`` = either key is written in config.yaml (the shipped defaults are not an answer). */
+export interface SharedMetricsConsentResult {
+  enabled: boolean
+  send: boolean
+  decided: boolean
+}
+/** ``send`` is ignored unless ``enabled``; ``first_run`` marks the Desktop first-run answer. */
+export interface SharedMetricsSetParams {
+  profile?: string | null
+  enabled: boolean
+  send?: boolean
+  first_run?: boolean
+}
+/** ``command`` is the raw typed name (no leading ``/``, no args); the backend canonicalizes it against the published registry. ``session_id`` scopes the count to that session's profile. */
+export interface SharedMetricsSlashCommandParams {
+  profile?: string | null
+  command: string
+  session_id?: string | null
+}
+export interface SharedMetricsSlashCommandResult {
+  ok: boolean
+}
+/** ``elapsed_ms`` = the client's own launch (TUI process start / Desktop app start) to ready (TUI gateway ready / Desktop backend attached), measured once per launch by the client. The client names its surface because a Desktop may attach to a URL/cloud backend where ``HERMES_DESKTOP`` is unset; without it the backend falls back to its own client detection. ``launch_id`` is an opaque per-launch token the backend latches on (never recorded), so a reconnect re-sending the same launch counts once while a new launch counts again. */
+export interface SharedMetricsStartupLatencyParams {
+  profile?: string | null
+  elapsed_ms: number
+  surface?: 'desktop_attach' | 'tui' | null
+  launch_id?: string | null
+}
+export interface SharedMetricsStartupLatencyResult {
+  ok: boolean
+}
+/** One Desktop PACKAGED self-update (electron-updater / App Installer / Store). Source-checkout hand-offs run ``hermes update`` and are counted from its receipt, never here. Raw words; the backend buckets them: ``outcome`` success|failed|noop|refused, ``failed_stage`` download|verify|apply|restart, ``mechanism`` the updater strategy kind, ``duration_ms`` wall time, ``from_commit_date`` the updated-from build's commit time (epoch seconds) when known. */
+export interface SharedMetricsUpdateRunParams {
+  profile?: string | null
+  outcome: string
+  failed_stage?: string | null
+  mechanism?: string | null
+  duration_ms?: number | null
+  from_commit_date?: number | null
+}
+export interface SharedMetricsUpdateRunResult {
+  ok: boolean
+}
+/** ``area`` is a Desktop surface id (``command_palette``, ``terminal_pane``, ``settings_<view>`` …); the backend collapses anything outside its closed set to ``other``. */
+export interface SharedMetricsDesktopFeatureUseParams {
+  profile?: string | null
+  area: string
+}
+/** ``kind`` notice_dismissed|error_toast|renderer_crash|backend_disconnect|slow_frame; ``detail`` a closed code-defined word for that kind (notice id, error category, crash reason, drop reason, frame duration bucket), never message text. */
+export interface SharedMetricsDesktopFrictionParams {
+  profile?: string | null
+  kind: string
+  detail: string
+}
+/** ``step`` a Desktop first-run step id; ``event`` reached|completed|abandoned. */
+export interface SharedMetricsDesktopOnboardingParams {
+  profile?: string | null
+  step: string
+  event: string
+}
+/** ``signal`` quick_close|cancelled|setting_off_default|rage_click|undo|feature_disabled; ``target`` a closed code-defined id for that signal (area, flow, action, undo path, feature toggle); ``setting`` a config key for setting_off_default only (the value is never sent — the backend compares it to the default). */
+export interface SharedMetricsDesktopDislikeParams {
+  profile?: string | null
+  signal: string
+  target?: string
+  setting?: string | null
+}
+/** One finished UTC day of Desktop use, aggregated on the client. ``day`` (YYYY-MM-DD) only latches a resend and is never recorded; the raw counts are bucketed by the backend. */
+export interface SharedMetricsDesktopDailyParams {
+  profile?: string | null
+  day: string
+  bot_count?: number
+  modes?: SharedMetricsDesktopModeDay[]
+  actions?: SharedMetricsDesktopActionDay[]
+}
+export interface SharedMetricsDesktopModeDay {
+  mode: 'bots' | 'sessions'
+  active_ms?: number
+  messages_sent?: number
+}
+export interface SharedMetricsDesktopActionDay {
+  action: string
+  via: 'click' | 'menu' | 'palette' | 'shortcut'
+  count: number
+}
+export interface SharedMetricsDesktopDailyResult {
+  recorded: boolean
 }
 export interface ModelOptionsParams {
   profile?: string | null
@@ -1170,8 +1574,16 @@ export interface DisplayStatus {
   blocker?: string | null
   memory_available_mb?: number | null
   memory_limit_mb?: number | null
+  placement?: string
+  image_switch?: DisplayImageSwitch | null
   lease: DisplayLease
   profile_key: string
+}
+/** A persisted Docker sandbox kept on the previous default image; the user decides the switch. */
+export interface DisplayImageSwitch {
+  current_image: string
+  target_image: string
+  containers: number
 }
 /** ``tools/bot_desktop/lease.py::Lease`` as clients may see it: the holder's viewer id is a capability and never leaves the gateway; ``viewer_hash`` lets the holder recognise itself. */
 export interface DisplayLease {
@@ -1207,6 +1619,8 @@ export interface DisplayStopResult {
   blocker?: string | null
   memory_available_mb?: number | null
   memory_limit_mb?: number | null
+  placement?: string
+  image_switch?: DisplayImageSwitch | null
   lease: DisplayLease
   profile_key: string
   stopped: boolean
@@ -1230,11 +1644,38 @@ export interface DisplayObserveResult {
   blocker?: string | null
   memory_available_mb?: number | null
   memory_limit_mb?: number | null
+  placement?: string
+  image_switch?: DisplayImageSwitch | null
   lease: DisplayLease
   profile_key: string
   ticket: string
   path: string
   viewer_id: string
+}
+export interface DisplaySwitchSandboxImageParams {
+  profile?: string | null
+  approve?: boolean
+}
+export interface DisplaySwitchSandboxImageResult {
+  profile: string
+  supported: boolean
+  installed: boolean
+  missing: string[]
+  running: boolean
+  pid?: number | null
+  display?: string | null
+  socket?: string | null
+  geometry: string
+  install_command?: string | null
+  browser?: string | null
+  blocker?: string | null
+  memory_available_mb?: number | null
+  memory_limit_mb?: number | null
+  placement?: string
+  image_switch?: DisplayImageSwitch | null
+  lease: DisplayLease
+  profile_key: string
+  docker_image: string
 }
 export interface DisplayInstallResult {
   started: boolean
@@ -1647,9 +2088,6 @@ export interface BotRelayReplyParams {
   error?: string | null
   reason?: string | null
 }
-export interface OkResult {
-  ok?: boolean
-}
 export interface BotsMailboxListParams {
   profile?: string | null
   handle?: string | null
@@ -1771,10 +2209,11 @@ export interface CompletionItem {
   meta?: string
   kind?: string | null
 }
-/** ``session_id`` binds skill completions to that session's profile and workspace (project skills). */
+/** ``session_id`` binds skill completions to that session's profile and workspace (project skills); ``profile`` scopes a session-less request (a new-chat draft). */
 export interface CompleteSlashParams {
   text?: string | null
   session_id?: string | null
+  profile?: string | null
 }
 /** ``replace_from`` is the column the accepted item replaces from. */
 export interface CompleteSlashResult {
@@ -2012,8 +2451,6 @@ export interface ProfilesRememberOnboardingResult {
   profile?: string
   target?: string
 }
-/** Client→server method params / server→client request params. Unknown keys are rejected. */
-export type Params = Record<string, never>
 /** ``created`` is false when an existing setup profile was found (and returned untouched). */
 export interface OnboardingEnsureSetupProfileResult {
   name: string
@@ -2142,10 +2579,10 @@ export interface SessionForeignImportResult {
   session_id: string
   already_imported?: boolean
 }
-/** ``delegations`` is reserved for async delegation records and is currently always empty. */
+/** ``delegations``: recently failed async delegation tasks for the session (durable store), newest first. */
 export interface SubagentListResult {
   subagents?: SubagentSnapshot[]
-  delegations?: Record<string, unknown>[]
+  delegations?: FailedDelegation[]
 }
 /** ``methods_subagents._SUBAGENT_SNAPSHOT_FIELDS`` projection of one live child record. */
 export interface SubagentSnapshot {
@@ -2163,6 +2600,16 @@ export interface SubagentSnapshot {
 }
 /** Lifecycle of one delegated child (``tools/delegate_tool_child_run.py``); ``failed`` / ``error`` / ``timeout`` / ``interrupted`` / ``completed`` are terminal. */
 export type SubagentStatus = 'queued' | 'running' | 'completed' | 'failed' | 'error' | 'timeout' | 'interrupted'
+/** ``async_delegation.failed_delegations_for_session`` row: one failed task of an async delegation. */
+export interface FailedDelegation {
+  delegation_id: string
+  task_index?: number
+  status: string
+  goal?: string
+  error?: string | null
+  dispatched_at?: number | null
+  completed_at?: number | null
+}
 export interface SubagentIdParams {
   session_id: string
   profile?: string | null
@@ -2925,6 +3372,7 @@ export interface SessionResumeParams {
   omit_messages?: boolean
   eager_build?: boolean
   close_on_disconnect?: boolean
+  inline_images?: boolean
 }
 export interface SessionResumeResult {
   session_id: string
@@ -3088,11 +3536,22 @@ export interface SessionTitleResult {
 /** ``session_id`` is a live runtime id first, else a stored id / key / title. */
 export interface SessionSetHiddenParams {
   session_id: string
-  hidden?: boolean
+  hidden: boolean
   profile?: string | null
 }
 export interface SessionSetHiddenResult {
   hidden: boolean
+  session_key: string
+}
+/** ``session_id`` (or its ``session_key`` alias) is a live runtime id first, else a stored id / key / title. */
+export interface SessionArchiveParams {
+  session_id?: string | null
+  session_key?: string | null
+  archived?: boolean
+  profile?: string | null
+}
+export interface SessionArchiveResult {
+  archived: boolean
   session_key: string
 }
 export interface SessionWorkspaceMoveParams {
@@ -3183,7 +3642,9 @@ export interface SessionBranchWholeResult {
 export interface SessionUndoParams {
   session_id: string
   profile?: string | null
+  intent?: UndoIntent | null
 }
+export type UndoIntent = 'retry' | 'undo'
 export interface SessionUndoResult {
   removed: number
 }
@@ -3874,9 +4335,10 @@ export interface SkillInspectInfo {
   skill_md_preview?: string | null
   [key: string]: unknown
 }
-/** ``session_id`` binds the rescan to that session's profile and workspace (project skills). */
+/** ``session_id`` binds the rescan to that session's profile and workspace (project skills); ``profile`` scopes a session-less rescan. */
 export interface SkillsReloadParams {
   session_id?: string | null
+  profile?: string | null
 }
 export interface SkillsReloadResult {
   output: string
@@ -4151,6 +4613,7 @@ export interface PluginsManageResult {
   warnings?: string[] | null
   missing_env?: string[] | null
   python_dependencies?: string[] | null
+  known_issues?: string[] | null
   after_install_path?: string | null
   enabled?: boolean | null
   sha?: string | null
@@ -4187,7 +4650,7 @@ export interface PluginServerRow {
   state: PluginServerState
   sentence: string
 }
-export type PluginServerState = 'connected' | 'app_not_running' | 'endpoint_unavailable' | 'no_interactive_session' | 'version_too_old' | 'missing_app' | 'unknown'
+export type PluginServerState = 'connected' | 'app_not_running' | 'hermes_not_connected' | 'endpoint_unavailable' | 'no_interactive_session' | 'version_too_old' | 'missing_app' | 'unknown'
 /** One ``config_schema`` key of a plugin manifest, rendered by the Plugins hub (``hermes_cli.plugins_settings.plugin_settings_fields``). ``secret`` fields carry no value: ``env`` names the ``.env`` variable and ``has_value`` whether it is set. */
 export interface PluginSettingField {
   key: string
@@ -4393,6 +4856,8 @@ export interface DisplayStatusPayload {
   blocker?: string | null
   memory_available_mb?: number | null
   memory_limit_mb?: number | null
+  placement?: string
+  image_switch?: DisplayImageSwitch | null
   lease: DisplayLease
   profile_key: string
 }
@@ -4813,6 +5278,44 @@ export interface RpcMethods {
   'bots_mailbox.send': { params: BotsMailboxSendParams; result: BotsMailboxSendResult }
   /** Flip a mailbox note's status (open→accepted/declined/done); live sender bots get a one-line ping. */
   'bots_mailbox.update': { params: BotsMailboxUpdateParams; result: BotsMailboxUpdateResult }
+  /** Board (or the lead, if the team's policy allows) decides; never the requester itself. */
+  'bots_team.approval.decide': { params: BotsTeamApprovalDecideParams; result: BotsTeamApprovalDecideResult }
+  /** A teammate asks the board for a hire, spend, credential grant or risky action. */
+  'bots_team.approval.request': { params: BotsTeamApprovalRequestParams; result: BotsTeamApprovalRequestResult }
+  /** The team's append-only audit trail, newest first. */
+  'bots_team.audit.list': { params: BotsTeamAuditParams; result: BotsTeamAuditResult }
+  /** The session-start context for a teammate: role, boss, mission→goal chain, team lessons. */
+  'bots_team.brief': { params: BotsTeamBriefParams; result: BotsTeamBriefResult }
+  /** May this teammate take on more work now? False when paused or hard-stopped over budget. */
+  'bots_team.budget.check': { params: BotsTeamBudgetParams; result: BotsTeamBudgetResult }
+  /** Add spend to a teammate's month; returns the fresh budget verdict. */
+  'bots_team.budget.record': { params: BotsTeamBudgetRecordParams; result: BotsTeamBudgetResult }
+  /** Create a team. */
+  'bots_team.create': { params: BotsTeamCreateParams; result: TeamView }
+  /** Delete a team (its audit trail is kept). */
+  'bots_team.delete': { params: TeamActorParams; result: OkResult }
+  /** One team with its org tree and goal roll-up (Kanban task status folded into goals). */
+  'bots_team.get': { params: TeamIdParams; result: TeamView }
+  /** Attach or detach a Kanban task id on a goal (the task itself is untouched). */
+  'bots_team.goal.link_task': { params: BotsTeamGoalLinkTaskParams; result: BotsTeamGoalResult }
+  /** Create (goal_id omitted) or edit a goal; parent_id null hangs it under the mission. */
+  'bots_team.goal.upsert': { params: BotsTeamGoalUpsertParams; result: BotsTeamGoalResult }
+  /** Record a short team lesson; a repeat of the same lesson bumps its count instead of duplicating. */
+  'bots_team.learning.add': { params: BotsTeamLearningAddParams; result: BotsTeamLearningResult }
+  /** Delete a lesson the team no longer wants to carry. */
+  'bots_team.learning.remove': { params: BotsTeamLearningRemoveParams; result: TeamView }
+  /** List this install's teams, newest first. */
+  'bots_team.list': { params: Params; result: TeamListResult }
+  /** Remove a seat by slot or profile; its reports re-attach to its boss, its goals become unowned. */
+  'bots_team.member.remove': { params: BotsTeamMemberRemoveParams; result: TeamView }
+  /** Add or edit a seat (slot omitted = add). Refuses reporting cycles; lead moves the lead badge. */
+  'bots_team.member.upsert': { params: BotsTeamMemberUpsertParams; result: BotsTeamMemberUpsertResult }
+  /** A shareable, data-only org design — no profiles, spend, credential values or learnings. */
+  'bots_team.pack.export': { params: TeamIdParams; result: BotsTeamPackExportResult }
+  /** Create a team from a pack (allow-listed keys only); every seat starts open. */
+  'bots_team.pack.import': { params: BotsTeamPackImportParams; result: TeamView }
+  /** Rename, re-mission, set the approval policy or the external channel bindings. */
+  'bots_team.update': { params: BotsTeamUpdateParams; result: TeamView }
   /** Hard-detach only the controller owned by this authenticated transport. */
   'browser.controller.detach': { params: BrowserControllerParams; result: BrowserControllerDetachResult }
   /** Acknowledge a heartbeat only for this transport's own attached controller. */
@@ -4893,6 +5396,8 @@ export interface RpcMethods {
   'display.status': { params: ProfileParams; result: DisplayStatus }
   /** Stop the screen. Refused (5300, code viewer_mismatch) while a human holds unless force. */
   'display.stop': { params: DisplayStopParams; result: DisplayStopResult }
+  /** Decide the pending default sandbox image switch for this profile; refused when none is pending. */
+  'display.switchSandboxImage': { params: DisplaySwitchSandboxImageParams; result: DisplaySwitchSandboxImageResult }
   /** One JPEG grab of the bot's screen; read-only, never changes the lease. */
   'display.thumbnail': { params: ProfileParams; result: DisplayThumbnailResult }
   /** Stage a non-image file into the session workspace and hand back its @file: ref. */
@@ -5119,6 +5624,8 @@ export interface RpcMethods {
   'session.activate': { params: SessionActivateParams; result: SessionActivateResult }
   /** Live sessions in this process, insertion order (not a DB browser). */
   'session.active_list': { params: SessionActiveListParams; result: SessionActiveListResult }
+  /** Set/clear archived (soft-hide, messages kept) on a session + lineage; Desktop PATCH parity. */
+  'session.archive': { params: SessionArchiveParams; result: SessionArchiveResult }
   /** One-shot utility-model answer about a session's transcript (companion thread); read-only, never touches the live conversation's context. */
   'session.ask': { params: SessionAskParams; result: SessionAskResult }
   /** Fork a live session into a new stored child that shares the parent's history so far. */
@@ -5185,6 +5692,26 @@ export interface RpcMethods {
   'setup.runtime_check': { params: SetupRuntimeCheckParams; result: SetupRuntimeCheckResult }
   /** Loose provider check: is ANY provider auth state discoverable for the (launch or named) profile. */
   'setup.status': { params: ProfileParams; result: SetupStatusResult }
+  /** Record one finished Desktop day (mode use + button presses); recorded=false keeps it for a retry. */
+  'shared_metrics.desktop_daily': { params: SharedMetricsDesktopDailyParams; result: SharedMetricsDesktopDailyResult }
+  /** Count one Desktop dislike signal (fire-and-forget; capped per signal per day; a no-op unless on). */
+  'shared_metrics.desktop_dislike': { params: SharedMetricsDesktopDislikeParams; result: OkResult }
+  /** Count one Desktop area used today (fire-and-forget; once per area per UTC day; a no-op unless on). */
+  'shared_metrics.desktop_feature_use': { params: SharedMetricsDesktopFeatureUseParams; result: OkResult }
+  /** Count one Desktop friction event (fire-and-forget; capped per day; a no-op unless on). */
+  'shared_metrics.desktop_friction': { params: SharedMetricsDesktopFrictionParams; result: OkResult }
+  /** Count one Desktop first-run step transition (fire-and-forget; once per step+event; a no-op unless on). */
+  'shared_metrics.desktop_onboarding': { params: SharedMetricsDesktopOnboardingParams; result: OkResult }
+  /** Write both shared-metrics opt-ins at once (send requires collection) and reconcile consent windows. */
+  'shared_metrics.set': { params: SharedMetricsSetParams; result: SharedMetricsConsentResult }
+  /** Count one user-typed slash command (fire-and-forget; a no-op unless shared metrics are on). */
+  'shared_metrics.slash_command': { params: SharedMetricsSlashCommandParams; result: SharedMetricsSlashCommandResult }
+  /** Record one client launch-to-ready latency (fire-and-forget; a no-op unless shared metrics are on). */
+  'shared_metrics.startup_latency': { params: SharedMetricsStartupLatencyParams; result: SharedMetricsStartupLatencyResult }
+  /** Pure read of the focused profile's shared-metrics opt-ins (collection, upload, answered). */
+  'shared_metrics.status': { params: ProfileParams; result: SharedMetricsConsentResult }
+  /** Count one Desktop packaged self-update outcome (fire-and-forget; a no-op unless shared metrics are on). */
+  'shared_metrics.update_run': { params: SharedMetricsUpdateRunParams; result: SharedMetricsUpdateRunResult }
   /** Run a safe (non-dangerous) shell command captured for ``!cmd`` / inline substitution. */
   'shell.exec': { params: ShellExecParams; result: ShellExecResult }
   /** Skills hub backend: list the profile's skills or search / browse / inspect / install from the hub. */
@@ -5284,6 +5811,25 @@ export const RPC_METHODS = [
   'bots_mailbox.list',
   'bots_mailbox.send',
   'bots_mailbox.update',
+  'bots_team.approval.decide',
+  'bots_team.approval.request',
+  'bots_team.audit.list',
+  'bots_team.brief',
+  'bots_team.budget.check',
+  'bots_team.budget.record',
+  'bots_team.create',
+  'bots_team.delete',
+  'bots_team.get',
+  'bots_team.goal.link_task',
+  'bots_team.goal.upsert',
+  'bots_team.learning.add',
+  'bots_team.learning.remove',
+  'bots_team.list',
+  'bots_team.member.remove',
+  'bots_team.member.upsert',
+  'bots_team.pack.export',
+  'bots_team.pack.import',
+  'bots_team.update',
   'browser.controller.detach',
   'browser.controller.heartbeat',
   'browser.controller.register',
@@ -5324,6 +5870,7 @@ export const RPC_METHODS = [
   'display.start',
   'display.status',
   'display.stop',
+  'display.switchSandboxImage',
   'display.thumbnail',
   'file.attach',
   'free_tier.ack_notice',
@@ -5437,6 +5984,7 @@ export const RPC_METHODS = [
   'rollback.restore',
   'session.activate',
   'session.active_list',
+  'session.archive',
   'session.ask',
   'session.branch',
   'session.branch_stored',
@@ -5470,6 +6018,16 @@ export const RPC_METHODS = [
   'session.workspace.move',
   'setup.runtime_check',
   'setup.status',
+  'shared_metrics.desktop_daily',
+  'shared_metrics.desktop_dislike',
+  'shared_metrics.desktop_feature_use',
+  'shared_metrics.desktop_friction',
+  'shared_metrics.desktop_onboarding',
+  'shared_metrics.set',
+  'shared_metrics.slash_command',
+  'shared_metrics.startup_latency',
+  'shared_metrics.status',
+  'shared_metrics.update_run',
   'shell.exec',
   'skills.manage',
   'skills.reload',
@@ -5643,7 +6201,7 @@ export interface BackendGatewayEventMap {
   'preview.restart.complete': SideAgentCompletePayload
   /** Progress line from the preview-restart agent. */
   'preview.restart.progress': PreviewRestartProgressPayload
-  /** projects.db moved; refetch the Projects sidebar. */
+  /** projects.db moved; refetch the project list + tree. */
   'projects.changed': ChangeSignalPayload
   /** Affection reaction detected in the user's message (hearts etc.). */
   reaction: ReactionPayload

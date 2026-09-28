@@ -1,4 +1,4 @@
-import { registryBackendScopeKey } from '@hermes/shared'
+import { backendScopeKey, registryBackendScopeKey } from '@hermes/shared'
 import { atom, computed } from 'nanostores'
 
 import type { ClientSessionState } from '@/app/types'
@@ -8,6 +8,7 @@ import { readJson, writeJson } from '@/lib/storage'
 import { $activeGatewayProfile, normalizeProfileKey } from './profile'
 import {
   $activeSessionId,
+  $connection,
   $selectedStoredSessionId,
   $sessions,
   knownSessionOwner,
@@ -184,12 +185,9 @@ export interface SessionTileWorkspaceScope {
 }
 
 
-// Tiles are persisted PER PROFILE: a session belongs to one profile, and the
-// single live gateway is scoped to one profile at a time, so a tile only makes
-// sense while its profile is active. Switching profiles swaps the visible set
-// (and drops runtime bindings so each tile re-resumes against the now-current
-// gateway — which also settles the "tile resumes against the wrong backend" and
-// "stale runtime after respawn" bugs by construction).
+// Tiles are persisted per connection and profile: same-named profiles on two
+// backends own different sessions. Switching either scope swaps the visible
+// set, with runtime bindings dropped so tiles re-resume on their own gateway.
 const TILES_KEY = 'hermes.desktop.sessionTiles.v2'
 
 const LEGACY_TILES_KEY = 'hermes.desktop.sessionTiles.v1'
@@ -277,20 +275,38 @@ function parseTileList(value: unknown): StoredTile[] {
 
 
 function loadTilesByProfile(): Record<string, StoredTile[]> {
-  const byProfile: Record<string, StoredTile[]> = {}
+  const byProfile: Record<string, StoredTile[]> = Object.create(null)
   const parsed = readJson<unknown>(TILES_KEY)
 
   if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
     for (const [profile, list] of Object.entries(parsed as Record<string, unknown>)) {
       const tiles = parseTileList(list)
-      const key = profile === BOTS_TILE_BUCKET ? BOTS_TILE_BUCKET : normalizeProfileKey(profile)
+      // Existing profile-only buckets belong to the local connection. New
+      // remote buckets carry the same backend scope key as the socket pool;
+      // never collapse them back into a same-named local profile on reload.
+      const separator = profile.lastIndexOf('::')
+      const isScopedBucket = profile.startsWith('conn:') && separator > 'conn:'.length
+
+      const key =
+        profile === BOTS_TILE_BUCKET
+          ? BOTS_TILE_BUCKET
+          : isScopedBucket
+            ? backendScopeKey(
+                profile.slice('conn:'.length, separator),
+                normalizeProfileKey(profile.slice(separator + 2))
+              )
+            : normalizeProfileKey(profile)
 
       if (tiles.length > 0) {
         const sessionTiles = tiles.filter(tile => tile.workspaceMode !== 'bots')
         const botTiles = tiles.filter(tile => tile.workspaceMode === 'bots')
 
-        if (sessionTiles.length > 0) {
-          byProfile[key] = [...(byProfile[key] ?? []), ...sessionTiles]
+        for (const tile of sessionTiles) {
+          // Old profile-only buckets can contain remote tiles whose owner was
+          // already recorded. Preserve those tabs on upgrade; unknown owners
+          // stay local rather than being guessed onto another backend.
+          const scope = isScopedBucket ? key : backendScopeKey(tile.ownerRoute?.connectionId, key)
+          byProfile[scope] = [...(byProfile[scope] ?? []), tile]
         }
 
         if (botTiles.length > 0) {
@@ -333,6 +349,22 @@ export const tilesByProfile = loadTilesByProfile()
 export const profileKey = () => normalizeProfileKey($activeGatewayProfile.get())
 
 
+const tileConnectionScopeId = (connection: ReturnType<typeof $connection.get>) => {
+  const id = connection?.connectionId?.trim()
+
+  if (id) {
+    return id
+  }
+
+  // Older direct remotes have no registry id. Keep them separate from local
+  // and from each other instead of writing into the local profile bucket.
+  return connection?.mode === 'remote' ? `url:${connection.baseUrl || 'remote'}` : null
+}
+
+export let tileConnectionId = tileConnectionScopeId($connection.get())
+const tileScopeKey = () => backendScopeKey(tileConnectionId, profileKey())
+export let visibleTileScope = tileScopeKey()
+
 // Runtime ids are process-scoped — never trust a persisted one, so the live
 // atom hydrates from the stored (runtime-less) tiles for the active profile.
 // A secondary window (single-chat pop-out) shows ONLY its routed session — no
@@ -371,7 +403,7 @@ export function setZoneParkedTiles(zoneKey: string, storedSessionIds: readonly s
 export const $sessionTiles = atom<SessionTile[]>(
   isSecondaryWindow() || isBrowserWindow()
     ? []
-    : [...(tilesByProfile[profileKey()] ?? []), ...(tilesByProfile[BOTS_TILE_BUCKET] ?? [])]
+    : [...(tilesByProfile[visibleTileScope] ?? []), ...(tilesByProfile[BOTS_TILE_BUCKET] ?? [])]
 )
 
 
@@ -392,9 +424,9 @@ export function saveTiles(tiles: SessionTile[]) {
   const botTiles = stored.filter(tile => tile.workspaceMode === 'bots')
 
   if (sessionTiles.length > 0) {
-    tilesByProfile[profileKey()] = sessionTiles
+    tilesByProfile[visibleTileScope] = sessionTiles
   } else {
-    delete tilesByProfile[profileKey()]
+    delete tilesByProfile[visibleTileScope]
   }
 
   if (botTiles.length > 0) {
@@ -420,13 +452,29 @@ function saveTileBucket(bucket: string, tiles: SessionTile[]) {
   persistTiles()
 }
 
-// Profile switch: surface the new profile's tiles with runtime ids cleared so
-// they re-resume against the now-current gateway. (Fires immediately on
-// subscribe; harmless — the init value already matches.) A secondary window
-// never carries tiles, so it stays out of this entirely.
+// Profile or connection switch: surface only this backend's stored tiles.
+// Null connection is a reconnect blip, not a switch; keep the last scope.
+// A secondary window never carries tiles, so it stays out entirely.
 if (!isSecondaryWindow() && !isBrowserWindow()) {
-  $activeGatewayProfile.subscribe(() => {
-    $sessionTiles.set([...(tilesByProfile[profileKey()] ?? []), ...(tilesByProfile[BOTS_TILE_BUCKET] ?? [])])
+  const restoreVisibleTiles = () => {
+    const nextScope = tileScopeKey()
+
+    if (nextScope === visibleTileScope) {
+      return
+    }
+
+    visibleTileScope = nextScope
+    $sessionTiles.set([...(tilesByProfile[nextScope] ?? []), ...(tilesByProfile[BOTS_TILE_BUCKET] ?? [])])
+  }
+
+  $activeGatewayProfile.subscribe(restoreVisibleTiles)
+  $connection.subscribe(connection => {
+    if (!connection) {
+      return
+    }
+
+    tileConnectionId = tileConnectionScopeId(connection)
+    restoreVisibleTiles()
   })
 }
 
@@ -758,7 +806,7 @@ export interface SessionTileDelegate {
   deleteSession(storedSessionId: string): Promise<void>
   /** Run a slash command against a tile's session (app-level effects — e.g.
    *  branch/handoff — act on the main surface, as they should). */
-  executeSlash(rawCommand: string, sessionId: string): Promise<void>
+  executeSlash(rawCommand: string, sessionId: string, options?: { typed?: boolean }): Promise<void>
   /** Interrupt a tile's running turn. */
   interruptSession(runtimeId: string): Promise<void>
   /** Drop the wiring cache's stored→runtime bindings. Called on gateway
@@ -811,9 +859,9 @@ export function sessionTileDelegate(): SessionTileDelegate | null {
 // Closed-tab stack for ⌘⇧T reopen (in-memory) — keyed PER PROFILE like the
 // tiles themselves, so ⌘⇧T after a profile switch never resurrects the other
 // profile's session. The tile's placement is remembered so it returns in place.
-const closedTilesByProfile: Record<string, SessionTile[]> = {}
+export const closedTilesByProfile: Record<string, SessionTile[]> = {}
 
-export const closedStack = (): SessionTile[] => (closedTilesByProfile[profileKey()] ??= [])
+export const closedStack = (): SessionTile[] => (closedTilesByProfile[visibleTileScope] ??= [])
 
 
 // ---------------------------------------------------------------------------

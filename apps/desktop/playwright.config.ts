@@ -1,3 +1,4 @@
+import './e2e/run-tmp'
 import './e2e/fix-electron-tracing'
 
 import { defineConfig, type ReporterDescription } from '@playwright/test'
@@ -34,7 +35,7 @@ export default defineConfig({
    * e2e/core/ has its own config (retries 0, one worker) and CI job.
    * e2e/perf/ is the measurement lane — its own config, not correctness
    * assertions, and deliberately off the default suite's runtime. */
-  testIgnore: ['**/*.unit.test.ts', 'core/**', 'perf/**'],
+  testIgnore: ['**/*.unit.test.ts', 'core/**', 'perf/**', 'update/**'],
   /* The desktop app can take a while to bootstrap on cold CI runners — 90 s
    * per test gives us headroom without masking real hangs. */
   timeout: 90_000,

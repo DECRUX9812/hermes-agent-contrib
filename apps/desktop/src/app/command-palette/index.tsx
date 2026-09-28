@@ -71,6 +71,7 @@ import {
   setCommandPaletteOpen
 } from '@/store/command-palette'
 import { $paletteFrecency, paletteSessionKey, recordPaletteUse } from '@/store/command-palette-frecency'
+import { completeFlow, recordAction } from '@/store/desktop-metrics'
 import { $bindings, bindingsFor } from '@/store/keybinds'
 import {
   $dismissedAutoProjectIds,
@@ -1481,6 +1482,9 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
 
       return
     }
+
+    completeFlow('command_palette')
+    recordAction(item.action ?? 'other', 'palette')
 
     if (item.runWithEvent) {
       item.runWithEvent(lastSelectMods.current)

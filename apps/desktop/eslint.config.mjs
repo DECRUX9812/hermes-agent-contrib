@@ -35,6 +35,23 @@ export default [
     }
   },
   {
+    // WEB-PORTABLE SURFACES: the Team pages must mount unchanged in a web-hosted client, where
+    // there is no Electron preload. They reach the backend through the SDK (`host.request`)
+    // only; anything that needs the shell goes behind a feature-detected SDK capability.
+    files: ['src/plugins/hermes-bots/team*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'window',
+          property: 'hermesDesktop',
+          message: 'Team surfaces are web-portable: use host.request / SDK capabilities, not the Electron preload bridge.'
+        }
+      ]
+    }
+  },
+  {
     files: ['**/*.test.tsx'],
     rules: {
       'no-restricted-globals': ['warn', 'document']

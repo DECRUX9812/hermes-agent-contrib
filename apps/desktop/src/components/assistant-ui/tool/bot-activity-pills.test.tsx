@@ -20,13 +20,13 @@ import {
 } from '@/components/assistant-ui/test-utils'
 import { Thread } from '@/components/assistant-ui/thread'
 import { clearAllPrompts } from '@/store/prompts'
-import { $showReasoning } from '@/store/reasoning-disclosure'
 import { $activeSessionId } from '@/store/session'
 import {
   $botChatSessionIds,
   $sessionTiles,
   setSessionTileWorkspaceScope
 } from '@/store/session-states'
+import { setShowToolActivityFromConfig } from '@/store/tool-activity'
 
 stubThreadEnvironment()
 stubThreadViewportSize()
@@ -106,14 +106,15 @@ function markBotChat() {
 beforeEach(() => {
   clearAllPrompts()
   $activeSessionId.set(SID)
-  $showReasoning.set(false)
+  // The tool feed follows display.tool_progress (not show_reasoning); off is the quiet policy.
+  setShowToolActivityFromConfig('off')
 })
 
 afterEach(() => {
   cleanup()
   clearAllPrompts()
   $activeSessionId.set(null)
-  $showReasoning.set(true)
+  setShowToolActivityFromConfig(undefined)
   $sessionTiles.set([])
   setSessionTileWorkspaceScope(STORED, { workspaceMode: 'sessions', workspaceOwnerKey: '' })
   $botChatSessionIds.set(new Set())

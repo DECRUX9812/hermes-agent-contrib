@@ -1,3 +1,5 @@
+import { backendScopeKey, LOCAL_CONNECTION_ID } from '@hermes/shared'
+
 import { dropComposerDraftsForProfile, migrateComposerDraftsForProfile } from './composer'
 import { dropStatusDrawersForProfile, migrateStatusDrawersForProfile } from './composer-status-drawer'
 import { dropPreviewTabsForProfile, migratePreviewTabsForProfile } from './preview'
@@ -12,7 +14,15 @@ import { dropOwnerNotifyModesForProfile, migrateOwnerNotifyModesForProfile } fro
 import {
   type SessionProfileRoute
 } from './session-request-router'
-import { $sessionTiles, BOTS_TILE_BUCKET, persistTiles, profileKey, tilesByProfile } from './session-states-tiles-core'
+import {
+  $sessionTiles,
+  BOTS_TILE_BUCKET,
+  closedTilesByProfile,
+  persistTiles,
+  tileConnectionId,
+  tilesByProfile,
+  visibleTileScope
+} from './session-states-tiles-core'
 import { dropSessionTagsForProfile, migrateSessionTagsForProfile } from './session-tags'
 import { dropWatchedSessionsForProfile, migrateWatchedSessionsForProfile } from './session-watch'
 import { migrateTranscriptTailsForProfile } from './transcript-tail-cache'
@@ -60,6 +70,11 @@ export function dropTilesForProfile(
   const routeProfile = route?.profile ? normalizeProfileKey(route.profile) : ''
   const routeTarget = route?.targetProfile ? normalizeProfileKey(route.targetProfile) : ''
   const routeConnection = String(route?.connectionId ?? '').trim()
+  // A route-less deletion targets the active backend, including legacy direct
+  // remotes whose tile key uses the URL fallback. Reuse the writer's resolved
+  // connection scope so deletion cannot erase same-named local tabs instead.
+  const ambientConnection = tileConnectionId || LOCAL_CONNECTION_ID
+  const removedScope = backendScopeKey(route ? routeConnection : ambientConnection, routeProfile || name)
 
   const ownerMatches = (owner: SessionProfileRoute | undefined): boolean => {
     if (!owner) {
@@ -84,20 +99,19 @@ export function dropTilesForProfile(
       return !routeConnection || ownerConnection === routeConnection
     }
 
-    // Desktop-local delete: also require the tile's owner connection to be the
-    // LOCAL connection. A same-named bot on another connection is a different
-    // agent — the deleted local profile never owned it, and dropping its tile
-    // would orphan a live conversation (hermes-agent#94235). Tiles persisted
-    // before ownerRoute.connectionId existed carry no id; that empty string IS
-    // the local connection (the only source a pre-connectionId tile could have
-    // been opened on), so treat it as 'local' — otherwise those legacy tiles
-    // survive every local delete and resurrect the profile on relaunch.
-    return (ownerProfile === name || ownerTarget === name) && (ownerConnection || 'local') === 'local'
+    // Ambient delete: only the active connection owns this profile. Legacy
+    // owner routes without an id can be matched to local, but not guessed onto
+    // an id-less remote — that would delete a same-named local Bot tab.
+    return (
+      (ownerProfile === name || ownerTarget === name) &&
+      (ownerConnection || LOCAL_CONNECTION_ID) === ambientConnection
+    )
   }
 
   // The profile's own sessions bucket (Bot tiles live in the shared bucket
   // and are keyed by ownerRoute, not by bucket).
-  delete tilesByProfile[name]
+  delete tilesByProfile[removedScope]
+  delete closedTilesByProfile[removedScope]
 
   const botTiles = tilesByProfile[BOTS_TILE_BUCKET]
 
@@ -123,7 +137,7 @@ export function dropTilesForProfile(
       ? !ownerMatches(tile.ownerRoute)
       : // Session tiles map to the owning profile's own bucket: drop only when
         // the deleted profile IS the live gateway's profile.
-        profileKey() !== name
+        visibleTileScope !== removedScope
   )
 
   if (next.length !== live.length) {
