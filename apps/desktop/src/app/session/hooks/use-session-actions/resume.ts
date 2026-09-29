@@ -1,44 +1,106 @@
-import {useCallback, useRef} from 'react'
+import { useCallback, useRef } from 'react'
 
-import {extendRefreshPageToOverlap, graftRefreshedTailOntoBackfill, olderPageReader} from '@/app/chat/transcript-backfill'
-import {fetchStoredTranscriptAcrossBackends, getLatestSessionMessages} from '@/hermes'
-import {useI18n} from '@/i18n'
-import {type ChatMessage, preserveLocalAssistantErrors, restorePendingClarifyToolCall, settlePendingClarifyToolCall, stripPendingClarifyProjectionForCache, toChatMessages} from '@/lib/chat-messages'
-import {markReasoningEffortPending} from '@/lib/chat-runtime'
-import {isMissingRpcMethod} from '@/lib/gateway-rpc'
-import {recoverInFlightTurnJournal} from '@/lib/inflight-turn-journal'
-import {latestSessionTodoSnapshot} from '@/lib/todos'
-import {$clarifyRequests} from '@/store/clarify'
-import {announceGoneSessionDraft} from '@/store/composer'
-import {$connectionRequests} from '@/store/connection-request'
-import {$gateway, openGatewayForAgent, openGatewayForProfile, pendingSessionReplay} from '@/store/gateway'
-import {$gatewaySwitching} from '@/store/gateway-switch'
-import {clearNotifications, notify, notifyError} from '@/store/notifications'
-import {$activeGatewayProfile, $gatewaySwapTarget, $showAllProfiles, ensureGatewayAgent, ensureGatewayProfile, normalizeProfileKey} from '@/store/profile'
-import {receiveApprovalRequest, replayPendingApproval} from '@/store/prompts'
-import {clearStoredTranscriptReadOnly, markStoredTranscriptReadOnly} from '@/store/read-only-transcript'
-import {$connection, $messages, $sessions, getSessionOwnerHint, setActiveSessionId, setAwaitingResponse, setBusy, setCurrentBranch, setCurrentCwdTransient, setCurrentUsage, setFreshDraftReady, setMessages, setResumeExhaustedSessionId, setResumeFailedSessionId, setSelectedStoredSessionId, setSessionStartedAt, setWorkspaceCwdOwner} from '@/store/session'
-import {isSessionOwnerResolutionError} from '@/store/session-owner-resolution'
-import {isSessionRemovalPending} from '@/store/session-removal'
-import {requestForSessionProfile, type SessionOwnerScope, type SessionProfileRoute} from '@/store/session-request-router'
-import {$sessionTiles, closeSessionTile, dropSessionState, publishSessionState} from '@/store/session-states'
-import {restoreSessionTodosFromSnapshot} from '@/store/todos'
-import {dropTranscriptTail, saveTranscriptTail} from '@/store/transcript-tail-cache'
-import {isWatchWindow} from '@/store/windows'
-import type {SessionMessage, SessionMessagesResponse, SessionResumeResult, UsageStats} from '@/types/hermes'
+import {
+  extendRefreshPageToOverlap,
+  graftRefreshedTailOntoBackfill,
+  olderPageReader
+} from '@/app/chat/transcript-backfill'
+import { fetchStoredTranscriptAcrossBackends, getLatestSessionMessages } from '@/hermes'
+import { useI18n } from '@/i18n'
+import {
+  type ChatMessage,
+  preserveLocalAssistantErrors,
+  restorePendingClarifyToolCall,
+  settlePendingClarifyToolCall,
+  stripPendingClarifyProjectionForCache,
+  toChatMessages
+} from '@/lib/chat-messages'
+import { markReasoningEffortPending } from '@/lib/chat-runtime'
+import { isMissingRpcMethod } from '@/lib/gateway-rpc'
+import { recoverInFlightTurnJournal } from '@/lib/inflight-turn-journal'
+import { latestSessionTodoSnapshot } from '@/lib/todos'
+import { $clarifyRequests } from '@/store/clarify'
+import { announceGoneSessionDraft } from '@/store/composer'
+import { $connectionRequests } from '@/store/connection-request'
+import { $gateway, openGatewayForAgent, openGatewayForProfile, pendingSessionReplay } from '@/store/gateway'
+import { $gatewaySwitching } from '@/store/gateway-switch'
+import { clearNotifications, notify, notifyError } from '@/store/notifications'
+import {
+  $activeGatewayProfile,
+  $gatewaySwapTarget,
+  $showAllProfiles,
+  ensureGatewayAgent,
+  ensureGatewayProfile,
+  normalizeProfileKey
+} from '@/store/profile'
+import { receiveApprovalRequest, replayPendingApproval } from '@/store/prompts'
+import { clearStoredTranscriptReadOnly, markStoredTranscriptReadOnly } from '@/store/read-only-transcript'
+import {
+  $connection,
+  $messages,
+  $sessions,
+  getSessionOwnerHint,
+  setActiveSessionId,
+  setAwaitingResponse,
+  setBusy,
+  setCurrentBranch,
+  setCurrentCwdTransient,
+  setCurrentUsage,
+  setFreshDraftReady,
+  setMessages,
+  setResumeExhaustedSessionId,
+  setResumeFailedSessionId,
+  setSelectedStoredSessionId,
+  setSessionStartedAt,
+  setWorkspaceCwdOwner
+} from '@/store/session'
+import { isSessionOwnerResolutionError } from '@/store/session-owner-resolution'
+import { isSessionRemovalPending } from '@/store/session-removal'
+import {
+  requestForSessionProfile,
+  type SessionOwnerScope,
+  type SessionProfileRoute
+} from '@/store/session-request-router'
+import { $sessionTiles, closeSessionTile, dropSessionState, publishSessionState } from '@/store/session-states'
+import { restoreSessionTodosFromSnapshot } from '@/store/todos'
+import { dropTranscriptTail, saveTranscriptTail } from '@/store/transcript-tail-cache'
+import { isWatchWindow } from '@/store/windows'
+import type { SessionMessage, SessionMessagesResponse, SessionResumeResult, UsageStats } from '@/types/hermes'
 
-import type {ClientSessionState} from '../../../types'
-import {singleFlightSessionResume} from '../use-prompt-actions/single-flight-resume'
+import type { ClientSessionState } from '../../../types'
+import { singleFlightSessionResume } from '../use-prompt-actions/single-flight-resume'
 
 import { createdThisRun } from './create'
-import {captureDisplayHydration} from './display-hydration'
+import { captureDisplayHydration } from './display-hydration'
 import type { SessionActionHandles, SessionActionsOptions } from './options'
-import {reconcilePersistedLiveTurn} from './persisted-live-turn'
-import {provisionalTranscriptPaint, transcriptRestScope} from './provisional-transcript'
-import {pendingClarifyToolPayload, restorePendingClarifyFromSnapshot} from './restore-pending-clarify'
-import {projectPendingConnection, restorePendingConnectionFromSnapshot} from './restore-pending-connection'
-import {createPersistedDisplayTranscriptProvenance, hasPersistedDisplayTranscriptProvenance, withoutTranscriptProvenance} from './transcript-provenance'
-import {appendLiveSessionProjection, applyRuntimeInfo, applyStoredSessionPreviewRuntimeInfo, chatMessageArraysEquivalent, dedupeInflightUserAgainstTranscript, goneSessionVerdict, isSessionGoneError, overlayConcurrentMessageChanges, patchSessionWorkspace, preserveEquivalentTranscript, preserveLocalPendingTurnMessages, reconcileDurableHistory, removeRepresentedLocalLiveProjection, resolveResumedBusy, resolveStoredSession, sessionMatchesStoredId, sessionShouldHaveTranscript} from './utils'
+import { reconcilePersistedLiveTurn } from './persisted-live-turn'
+import { provisionalTranscriptPaint, transcriptRestScope } from './provisional-transcript'
+import { pendingClarifyToolPayload, restorePendingClarifyFromSnapshot } from './restore-pending-clarify'
+import { projectPendingConnection, restorePendingConnectionFromSnapshot } from './restore-pending-connection'
+import {
+  createPersistedDisplayTranscriptProvenance,
+  hasPersistedDisplayTranscriptProvenance,
+  withoutTranscriptProvenance
+} from './transcript-provenance'
+import {
+  appendLiveSessionProjection,
+  applyRuntimeInfo,
+  applyStoredSessionPreviewRuntimeInfo,
+  chatMessageArraysEquivalent,
+  dedupeInflightUserAgainstTranscript,
+  goneSessionVerdict,
+  isSessionGoneError,
+  overlayConcurrentMessageChanges,
+  patchSessionWorkspace,
+  preserveEquivalentTranscript,
+  preserveLocalPendingTurnMessages,
+  reconcileDurableHistory,
+  removeRepresentedLocalLiveProjection,
+  resolveResumedBusy,
+  resolveStoredSession,
+  sessionMatchesStoredId,
+  sessionShouldHaveTranscript
+} from './utils'
 
 // Reflect a stored row's persisted token counts into the live usage atom
 // (total is derived, so callers can't drift it out of sync with input/output).
@@ -149,7 +211,19 @@ function withoutEarlyClarifyProjection(messages: ChatMessage[], requestId: strin
 }
 
 export function useResumeActions(
-  { activeSessionIdRef, busyRef, getRouteToken, holdSessionTranscriptView, requestGateway, resetViewSync, runtimeIdByStoredSessionIdRef, selectedStoredSessionIdRef, sessionStateByRuntimeIdRef, syncSessionStateToView, updateSessionState }: SessionActionsOptions,
+  {
+    activeSessionIdRef,
+    busyRef,
+    getRouteToken,
+    holdSessionTranscriptView,
+    requestGateway,
+    resetViewSync,
+    runtimeIdByStoredSessionIdRef,
+    selectedStoredSessionIdRef,
+    sessionStateByRuntimeIdRef,
+    syncSessionStateToView,
+    updateSessionState
+  }: SessionActionsOptions,
   { startFreshSessionDraft }: Pick<SessionActionHandles, 'startFreshSessionDraft'>
 ) {
   const { t } = useI18n()
@@ -506,7 +580,7 @@ export function useResumeActions(
               }
 
               if (usage) {
-                setCurrentUsage(current => ({ ...current, ...usage }))
+                setCurrentUsage(current => ({ ...current, ...usage, compressions: usage.compressions }))
               }
 
               publishDegradedWarmCache()
@@ -1548,6 +1622,6 @@ export function useResumeActions(
   )
 
   return {
-    resumeSession,
+    resumeSession
   }
 }

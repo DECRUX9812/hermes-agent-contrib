@@ -2,7 +2,7 @@ import { type ConnectionState, type GatewayEvent, registryBackendScopeKey, type 
 import { atom } from 'nanostores'
 
 import type { HermesConnection } from '@/global'
-import type { HermesGateway} from '@/hermes';
+import type { HermesGateway } from '@/hermes'
 import { setApiRequestConnection } from '@/hermes'
 import { markNativeNotifyBaseline } from '@/store/notify-baseline'
 import { setConnection, setGatewayState } from '@/store/session'
@@ -204,6 +204,9 @@ interface GatewayRegistryState {
   secondaries: Map<string, Secondary>
   // Auth rejection outlives the disposable socket, including background request leases.
   reauthFailures: Map<string, { connectionId: string | null; error: Error }>
+  // Dial failures outlive the disposable socket too: a background request lease disposes its
+  // entry on failure, so history kept on the entry reset on every poll (#121865).
+  dialFailures: Map<string, { at: number; streak: number; connectionId: string | null }>
   /** Scopes that opened in this renderer generation, even if later pruned. */
   openedSecondaryScopes?: Set<string>
   /** Scopes whose re-activation after a connection redial has not landed yet. */
@@ -229,6 +232,7 @@ function createRegistryState(): GatewayRegistryState {
     activationEpoch: 0,
     secondaries: new Map<string, Secondary>(),
     reauthFailures: new Map(),
+    dialFailures: new Map(),
     openedSecondaryScopes: new Set<string>(),
     reactivatingScopes: new Set<string>(),
     turnLeases: new Map<string, () => void>(),
@@ -261,6 +265,7 @@ function gatewayState(): GatewayRegistryState {
 
     // Existing dev-HMR containers predate whole-turn leases.
     store[STATE_KEY].reauthFailures ??= new Map()
+    store[STATE_KEY].dialFailures ??= new Map()
     store[STATE_KEY].turnLeases ??= new Map()
     store[STATE_KEY].turnLeaseReleaseTimers ??= new Map()
 

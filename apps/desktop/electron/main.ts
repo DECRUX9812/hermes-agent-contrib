@@ -332,9 +332,12 @@ import {
   executeManagedRemoteUpdate,
   fenceManagedSshBootstrapPublication,
   ManagedConnectionUpdateGate,
+  managedSshDrainBlocker,
   managedSshRecoveryScopes,
   managedSshScopeRole,
   managedSshTokenPersistencePlan,
+  managedSshUpdateAllRow,
+  MAX_MANAGED_SSH_RECOVERY_ATTEMPTS,
   recoverManagedSshScopes,
   refusedManagedSshUpdate,
   type RemoteUpdateTarget,
@@ -9788,6 +9791,7 @@ function readManagedSshRecoveryRecords(): any[] {
         record.source?.kind !== 'ssh' ||
         record.source?.id !== record.connectionId ||
         !['prepared', 'launching'].includes(record.phase) ||
+        (record.attempts !== undefined && (!Number.isSafeInteger(record.attempts) || record.attempts < 0)) ||
         !Array.isArray(record.scopes) ||
         record.scopes.length > 256
       ) {
@@ -9882,6 +9886,19 @@ function markManagedSshRecoveryLaunching(connectionId, correlationId) {
 
   records[index] = { ...records[index], phase: 'launching' }
   writeManagedSshRecoveryRecords(records)
+}
+
+function recordManagedSshRecoveryAttempt(connectionId, correlationId, attempts) {
+  const records = readManagedSshRecoveryRecords()
+
+  const index = records.findIndex(
+    record => record.connectionId === connectionId && record.correlationId === correlationId
+  )
+
+  if (index >= 0) {
+    records[index] = { ...records[index], attempts }
+    writeManagedSshRecoveryRecords(records)
+  }
 }
 
 function clearManagedSshRecovery(connectionId, correlationId) {
@@ -11822,6 +11839,12 @@ async function drainManagedSshScope(scope) {
 async function updateManagedSshConnection(source, correlationId) {
   const sourceSnapshot = { ...source }
   const scopes = await captureManagedSshScopes(sourceSnapshot)
+  const blocker = managedSshDrainBlocker(scopes)
+
+  if (blocker) {
+    return refusedManagedSshUpdate(source.id, correlationId, blocker.message, blocker.reason)
+  }
+
   let ephemeral: null | { close: () => Promise<void>; target: RemoteUpdateTarget } = null
   let launchAttempted = false
   const firstState = scopes.find(scope => scope.state)?.state
@@ -11903,7 +11926,8 @@ async function recoverManagedSshUpdate(record) {
     try {
       transport = await openManagedSshUpdateTransport(record.source)
 
-      const results = await recoverManagedSshScopes<any>({
+      const { attempts, disposition, results } = await recoverManagedSshScopes<any>({
+        attempts: record.attempts ?? 0,
         scopes: record.scopes,
         awaitClearance: () =>
           waitForManagedRemoteClearance(transport!.target, record.correlationId, {
@@ -11919,17 +11943,28 @@ async function recoverManagedSshUpdate(record) {
             : scope.kind === 'legacy'
               ? ensureManagedSshBackendAtKey(record.source, scope.profile, scope.key, recoveryCorrelation, 'profile')
               : ensureManagedSshBackend(record.source, scope.profile, recoveryCorrelation),
-        completeRecovery: async () => clearManagedSshRecovery(connectionId, record.correlationId)
+        completeRecovery: async () => clearManagedSshRecovery(connectionId, record.correlationId),
+        recordFailedAttempt: async next => recordManagedSshRecoveryAttempt(connectionId, record.correlationId, next)
       })
 
-      if (results.every(result => result.status === 'fulfilled')) {
+      const unrestored = record.scopes
+        .filter((_scope, index) => results[index]?.status === 'rejected')
+        .map(scope => scope.profile)
+
+      if (disposition === 'complete') {
         sshRememberLog(
           `[ssh-update] restored ${record.scopes.length} scope(s) from durable recovery for ${connectionId}`
         )
-      } else {
-        const failures = results.filter(result => result.status === 'rejected').length
+      } else if (disposition === 'abandon') {
         sshRememberLog(
-          `[ssh-update] durable recovery for ${connectionId} left ${failures} scope(s) pending; will retry next launch`
+          `[ssh-update] durable recovery for ${connectionId} stopped after ${attempts} attempt(s); ` +
+            `connection released with ${unrestored.length} scope(s) not restored (${unrestored.join(', ')}). ` +
+            'Reconnecting starts them again.'
+        )
+      } else {
+        sshRememberLog(
+          `[ssh-update] durable recovery for ${connectionId} left ${unrestored.length} scope(s) pending ` +
+            `(attempt ${attempts} of ${MAX_MANAGED_SSH_RECOVERY_ATTEMPTS}); will retry next launch`
         )
       }
     } catch (error: any) {
@@ -16545,15 +16580,7 @@ ipcMain.handle('hermes:connections:update-all', async (_event, payload) => {
           }
 
           if (connection.kind === 'ssh') {
-            const result = await requestManagedSshUpdate(connection.id)
-
-            return {
-              ...base,
-              ok: result.ok,
-              detail: result.message,
-              managed: result,
-              ...(result.ok ? {} : { error: result.error || result.outcome })
-            }
+            return managedSshUpdateAllRow(base, await requestManagedSshUpdate(connection.id))
           }
 
           // Claim-guarded (#90812): coalesce with a concurrent renderer dial

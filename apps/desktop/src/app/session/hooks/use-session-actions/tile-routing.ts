@@ -1,19 +1,40 @@
-import {useCallback} from 'react'
+import { useCallback } from 'react'
 
-import {defaultNewSessionTarget} from '@/app/session/new-session-route'
-import {useI18n} from '@/i18n'
-import {requestGatewayForAgent, retainGatewayForAgent} from '@/store/gateway'
-import {notify, notifyError} from '@/store/notifications'
-import {$activeGatewayProfile, $newChatProfile, $profiles, type AgentProfileRoute, normalizeProfileKey, resolveActiveSourceOwnerRoute, resolveNewChatOwnerRoute} from '@/store/profile'
-import {projectProfile, resolveNewSessionCwd} from '@/store/projects'
-import {$connection, setCurrentCwdExplicit, setCurrentCwdTransient, setSessionOwnerHint, setWorkspaceCwdOwner} from '@/store/session'
-import {focusOpenSession, holdSessionOwnerUntilForeground, openSessionTile, patchSessionTile, type SessionTileWorkspaceScope, type TileDock} from '@/store/session-states'
-import {broadcastSessionsChanged} from '@/store/session-sync'
-import type {SessionCreateResponse} from '@/types/hermes'
+import { defaultNewSessionTarget } from '@/app/session/new-session-route'
+import { useI18n } from '@/i18n'
+import { requestGatewayForAgent, retainGatewayForAgent } from '@/store/gateway'
+import { notify, notifyError } from '@/store/notifications'
+import {
+  $activeGatewayProfile,
+  $newChatProfile,
+  $profiles,
+  type AgentProfileRoute,
+  normalizeProfileKey,
+  resolveActiveSourceOwnerRoute,
+  resolveNewChatOwnerRoute
+} from '@/store/profile'
+import { projectProfile, resolveNewSessionCwd } from '@/store/projects'
+import {
+  $connection,
+  setCurrentCwdExplicit,
+  setCurrentCwdTransient,
+  setSessionOwnerHint,
+  setWorkspaceCwdOwner
+} from '@/store/session'
+import {
+  focusOpenSession,
+  holdSessionOwnerUntilForeground,
+  openSessionTile,
+  patchSessionTile,
+  type SessionTileWorkspaceScope,
+  type TileDock
+} from '@/store/session-states'
+import { broadcastSessionsChanged } from '@/store/session-sync'
+import type { SessionCreateResponse } from '@/types/hermes'
 
 import { createdThisRun, desktopSessionCreateParams } from './create'
 import type { SessionActionsOptions } from './options'
-import {applyRuntimeInfo, upsertOptimisticSession, upsertUnlistedSessionOwner} from './utils'
+import { applyRuntimeInfo, upsertOptimisticSession, upsertUnlistedSessionOwner } from './utils'
 
 export function useTileRoutingActions({ requestGateway, updateSessionState }: SessionActionsOptions) {
   const { t } = useI18n()
@@ -120,16 +141,27 @@ export function useTileRoutingActions({ requestGateway, updateSessionState }: Se
         // flag) into the bot's chat; omitting them lets the selected profile
         // supply its configured defaults. Ordinary Sessions tiles keep the
         // sticky composer override.
-        const params = {
-          ...(await desktopSessionCreateParams(
-            cwd,
-            capturedRoute,
-            requestedProfile,
-            options?.route === null || defaultTarget?.route === null,
-            workspaceScope.workspaceMode !== 'bots'
-          )),
-          ...(workspaceScope.workspaceMode === 'bots' ? { hidden: true } : {})
-        }
+        //
+        // No `hidden` here, in either mode. Only Bot Mode's PLUMBING sessions
+        // are born hidden, and each mints its own row: the canonical Bot Chat
+        // (`hermes-bots/canonical-chat.ts`) and group member sessions
+        // (`hermes-bots/group-turns.ts`). Every session this path creates is a
+        // side chat the user asked for by hand — "New chat with this bot" and
+        // the Bot Mode tab-strip "+" / ⌘T — so it is an ordinary conversation
+        // in the bot's profile and stays listed, exactly as
+        // `apps/desktop/src/AGENTS.md` and the hide sweep's title allow-list
+        // (`hermes-bots/session-sweep.ts`) already promise. Blanket-hiding the
+        // mode stranded them: unlisted in the Sessions sidebar, skipped by
+        // `/resume`, and reachable only while their tab stayed open, since the
+        // bot row opens the canonical chat and "Open recent session" reads
+        // `last_session`, which never reports a hidden row.
+        const params = await desktopSessionCreateParams(
+          cwd,
+          capturedRoute,
+          requestedProfile,
+          options?.route === null || defaultTarget?.route === null,
+          workspaceScope.workspaceMode !== 'bots'
+        )
 
         // Same lease chain as createBackendSessionForSend: owner socket held
         // across the create, then the foreground hold carries it until the
@@ -239,6 +271,6 @@ export function useTileRoutingActions({ requestGateway, updateSessionState }: Se
   )
 
   return {
-    openNewSessionTile,
+    openNewSessionTile
   }
 }

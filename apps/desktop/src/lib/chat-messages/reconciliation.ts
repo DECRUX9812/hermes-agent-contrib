@@ -513,10 +513,7 @@ export function preserveLocalAssistantErrors(
  * them, so the notice vanished on the next refresh (#126422). Stored rows own
  * a `rowId` and are left to the page. Idempotent by id and text.
  */
-export function preserveLocalSystemNotices(
-  nextMessages: ChatMessage[],
-  currentMessages: ChatMessage[]
-): ChatMessage[] {
+export function preserveLocalSystemNotices(nextMessages: ChatMessage[], currentMessages: ChatMessage[]): ChatMessage[] {
   const trailing: ChatMessage[] = []
 
   for (let index = currentMessages.length - 1; index >= 0; index -= 1) {

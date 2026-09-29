@@ -12,6 +12,7 @@ import {
 import { ThreadEditContext } from '@/components/assistant-ui/thread/edit-context'
 import { ReactionBadge, ReactionPicker } from '@/components/assistant-ui/thread/message-reactions'
 import { BackgroundResult } from '@/components/assistant-ui/thread/system-message'
+import { threadUserOrdinal } from '@/components/assistant-ui/thread/thread-message-index'
 import { MessageTimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
 import { type RestoreMessageTarget } from '@/components/assistant-ui/thread/types'
 import { useMessageReactions } from '@/components/assistant-ui/thread/use-message-reactions'
@@ -286,23 +287,7 @@ export const UserMessage: FC<{
     return null
   })
 
-  const runtimeUserOrdinal = useAuiState(s => {
-    let ordinal = 0
-
-    for (const message of s.thread.messages) {
-      if (message.role !== 'user') {
-        continue
-      }
-
-      if (message.id === s.message.id) {
-        return ordinal
-      }
-
-      ordinal += 1
-    }
-
-    return null
-  })
+  const runtimeUserOrdinal = useAuiState(s => threadUserOrdinal(s.thread.messages, s.message.id))
 
   const attachmentRefs = useAuiState(s => {
     const custom = (s.message.metadata?.custom ?? {}) as { attachmentRefs?: unknown }
