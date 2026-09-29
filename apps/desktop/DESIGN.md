@@ -273,6 +273,16 @@ A bot's profile rail carries its **reach card** (`app/messaging/reach-card.tsx`,
 exported through the plugin SDK): the bot's own Telegram/Slack address as a QR
 plus Open/Copy, or — before it has one — the single step that gives it one.
 It reads the same platform identity the Messaging page's phone-parity card uses.
+Under it, **"When should <bot> ask you?"** (`app/profiles/ask-rules-card.tsx`):
+ask first / use judgment / just do it plus plain-language house rules — the
+profile's own `approvals.mode` + `approvals.smart_policy`, written as a partial
+PUT the config route deep-merges, so the same rules hold in the app, on
+Telegram and in scheduled runs.
+
+A bot's empty chat opens on the bot (`BotHero` in `chat-empty.tsx`): its live
+face follows the pointer (`BotFace follow`, off under reduced motion) and works
+when the bot works. Soft shows the face large on a floor shadow with a plain
+name and "role · status"; Classic keeps the lettered name.
 
 ## Badges — one component
 

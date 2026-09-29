@@ -3991,6 +3991,35 @@ html[data-hud-window] [data-slot='popover-content'] {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 18%, transparent);
 }
 
+/* A bot's chat opens on the bot itself: Soft scales the live face up onto a
+   soft floor shadow and swaps the lettered name for a plain one with a
+   "role · status" line (chat-empty.tsx, BotHero). SVG scales crisply. */
+:root[data-look='soft'] [data-slot='bot-hero-face'] {
+  position: relative;
+  margin-block: 1.75rem 2.75rem !important;
+  transform: scale(1.45);
+}
+
+:root[data-look='soft'] [data-slot='bot-hero-face']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 18%;
+  bottom: -0.7rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ui-text-primary, #000) 16%, transparent), transparent);
+  filter: blur(1px);
+}
+
+:root[data-look='soft'] [data-slot='bot-hero-wordmark'] {
+  display: none;
+}
+
+:root[data-look='soft'] [data-slot='bot-hero-name'] {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
 /* Simple mode reads a size up: people there came to talk, not to scan logs. */
 :root[data-look='soft'][data-interface-mode='simple'] {
   --conversation-text-font-size: 0.9375rem;

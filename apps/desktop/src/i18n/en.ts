@@ -3335,6 +3335,25 @@ export const en: Translations = {
   },
 
   profiles: {
+    askRules: {
+      title: (name: string) => `When should ${name} ask you?`,
+      modes: {
+        manual: { label: 'Ask me first', description: (name: string) => `${name} stops and asks before anything risky.` },
+        smart: {
+          label: 'Use judgment',
+          description: (name: string) => `${name} handles routine work and asks when something looks risky.`
+        },
+        off: {
+          label: 'Just do it',
+          description: (name: string) => `${name} never waits for you. Blocked commands still stay blocked.`
+        }
+      },
+      rulesLabel: 'House rules',
+      rulesPlaceholder: 'House rules, in your words. e.g. Always ask before sending email or spending money.',
+      save: 'Save rules',
+      discard: 'Discard',
+      failed: "Couldn't save. Your previous rules are still in effect."
+    },
     close: 'Close profiles',
     nameHint: 'Lowercase letters, digits, hyphens, and underscores. Must start with a letter or digit.',
     title: 'Profiles',

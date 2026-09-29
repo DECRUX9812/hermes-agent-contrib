@@ -3705,6 +3705,25 @@ export const deOverrides = {
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `Wann soll ${name} dich fragen?`,
+      modes: {
+        manual: { label: 'Erst fragen', description: (name: string) => `${name} hält an und fragt vor allem Riskanten.` },
+        smart: {
+          label: 'Nach Ermessen',
+          description: (name: string) => `${name} erledigt Routine selbst und fragt, wenn etwas riskant wirkt.`
+        },
+        off: {
+          label: 'Einfach machen',
+          description: (name: string) => `${name} wartet nie auf dich. Gesperrte Befehle bleiben gesperrt.`
+        }
+      },
+      rulesLabel: 'Hausregeln',
+      rulesPlaceholder: 'Deine Regeln in deinen Worten, z. B.: Immer fragen, bevor E-Mails gesendet oder Geld ausgegeben wird.',
+      save: 'Regeln speichern',
+      discard: 'Verwerfen',
+      failed: 'Speichern fehlgeschlagen. Deine bisherigen Regeln gelten weiter.'
+    },
     close: 'Profile schließen',
     nameHint:
       'Kleinbuchstaben, Ziffern, Bindestriche und Unterstriche. Muss mit einem Buchstaben oder einer Ziffer beginnen.',

@@ -3712,6 +3712,25 @@ export const frOverrides = {
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `Quand ${name} doit-il vous demander ?`,
+      modes: {
+        manual: { label: 'Demander d’abord', description: (name: string) => `${name} s’arrête et demande avant toute action risquée.` },
+        smart: {
+          label: 'À son jugement',
+          description: (name: string) => `${name} gère le travail courant et demande quand quelque chose semble risqué.`
+        },
+        off: {
+          label: 'Faire sans demander',
+          description: (name: string) => `${name} n’attend jamais. Les commandes bloquées restent bloquées.`
+        }
+      },
+      rulesLabel: 'Règles maison',
+      rulesPlaceholder: 'Vos règles, avec vos mots. Ex. : toujours demander avant d’envoyer un e-mail ou de dépenser.',
+      save: 'Enregistrer',
+      discard: 'Annuler',
+      failed: 'Échec de l’enregistrement. Vos règles précédentes restent actives.'
+    },
     close: 'Fermer les profils',
     nameHint: 'Lettres minuscules, chiffres, tirets et underscores. Doit commencer par une lettre ou un chiffre.',
     title: 'Profils',

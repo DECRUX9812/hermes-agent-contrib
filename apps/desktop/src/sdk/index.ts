@@ -1998,6 +1998,7 @@ export {
   PanelRowMenu,
   PanelSectionLabel
 } from '@/app/overlays/panel'
+export { AskRulesCard } from '@/app/profiles/ask-rules-card'
 export {
   type ProfileGroupHeaderContribution,
   type ProfileGroupRoute,

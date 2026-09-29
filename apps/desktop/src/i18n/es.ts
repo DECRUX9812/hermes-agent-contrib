@@ -3697,6 +3697,25 @@ export const esOverrides = {
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `¿Cuándo debe preguntarte ${name}?`,
+      modes: {
+        manual: { label: 'Pregúntame primero', description: (name: string) => `${name} se detiene y pregunta antes de algo arriesgado.` },
+        smart: {
+          label: 'A su criterio',
+          description: (name: string) => `${name} hace el trabajo rutinario y pregunta cuando algo parece arriesgado.`
+        },
+        off: {
+          label: 'Hazlo sin preguntar',
+          description: (name: string) => `${name} nunca te espera. Los comandos bloqueados siguen bloqueados.`
+        }
+      },
+      rulesLabel: 'Reglas de la casa',
+      rulesPlaceholder: 'Tus reglas, con tus palabras. Ej.: pregunta siempre antes de enviar correos o gastar dinero.',
+      save: 'Guardar reglas',
+      discard: 'Descartar',
+      failed: 'No se pudo guardar. Tus reglas anteriores siguen vigentes.'
+    },
     close: 'Cerrar perfiles',
     nameHint: 'Letras minúsculas, dígitos, guiones y guiones bajos. Debe empezar con una letra o dígito.',
     title: 'Perfiles',

@@ -2803,6 +2803,15 @@ export interface Translations {
   }
 
   profiles: {
+    askRules: {
+      title: (name: string) => string
+      modes: Record<'manual' | 'smart' | 'off', { label: string; description: (name: string) => string }>
+      rulesLabel: string
+      rulesPlaceholder: string
+      save: string
+      discard: string
+      failed: string
+    }
     close: string
     nameHint: string
     title: string

@@ -12,6 +12,7 @@
  */
 
 import {
+  AskRulesCard,
   Button,
   cn,
   Codicon,
@@ -180,6 +181,7 @@ function BotProfileCard({
           profile={bot.name}
         />
       )}
+      {!bot.remoteSource && <AskRulesCard className="mt-2" name={name} profile={bot.name} />}
     </div>
   )
 }

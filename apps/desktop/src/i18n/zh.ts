@@ -3119,6 +3119,19 @@ export const zh = defineLocale({
   },
 
   profiles: {
+    askRules: {
+      title: (name: string) => `${name} 何时需要问你？`,
+      modes: {
+        manual: { label: '先问我', description: (name: string) => `遇到任何有风险的操作，${name} 都会先停下来问你。` },
+        smart: { label: '自行判断', description: (name: string) => `${name} 处理日常工作，遇到看起来有风险的操作时再问你。` },
+        off: { label: '直接去做', description: (name: string) => `${name} 从不等待你。被禁止的命令仍然会被阻止。` }
+      },
+      rulesLabel: '规则',
+      rulesPlaceholder: '用你自己的话写规则，例如：发送邮件或花钱之前一定要先问我。',
+      save: '保存规则',
+      discard: '放弃',
+      failed: '保存失败，之前的规则仍然有效。'
+    },
     close: '关闭配置档案',
     nameHint: '小写字母、数字、连字符和下划线。必须以字母或数字开头。',
     title: '配置档案',
