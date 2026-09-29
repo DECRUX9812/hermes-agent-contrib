@@ -8,13 +8,7 @@
 
 import { armTranscriptReplayJump, cn, Codicon, host, RowButton, Tip, useValue } from '@hermes/plugin-sdk'
 
-import {
-  type BotRun,
-  type BotRunKind,
-  type BotRunStatus,
-  deriveBotRuns,
-  pickCronRunSessionId
-} from './bot-runs'
+import { type BotRun, type BotRunKind, type BotRunStatus, deriveBotRuns, pickCronRunSessionId } from './bot-runs'
 import { $focusedBotOwner, focusedRosterOwner } from './bot-state'
 import { $botAttention, $botMeta, botRosterKey, botSelectionKey, isActiveRosterBot } from './data'
 import { $groupActivity } from './group-activity'
@@ -81,7 +75,11 @@ interface BotRunsFeed {
 /** The runs feed's full signal assembly + navigation handlers, shared by
  *  every rendering of the feed. Subscribes only to atoms the pane already
  *  watches — nothing here polls. */
-export function useBotRunsFeed(owner: RosterRow, jobs: RoutineJob[], onOpenRoutine: (jobId: string) => void): BotRunsFeed {
+export function useBotRunsFeed(
+  owner: RosterRow,
+  jobs: RoutineJob[],
+  onOpenRoutine: (jobId: string) => void
+): BotRunsFeed {
   const rooms = useValue($groupChats)
   const groupActivity = useValue($groupActivity)
   const attentionMap = useValue($botAttention)
@@ -118,11 +116,9 @@ export function useBotRunsFeed(owner: RosterRow, jobs: RoutineJob[], onOpenRouti
   // E1/E3 row affordances: stop interrupts the canonical chat's in-flight
   // turn (the only runtime id a 'running' chat/relay row can mean); retry
   // kicks the relay outbox drain for a failed delivery row.
-  const stoppable = (run: BotRun) =>
-    run.status === 'running' && (run.kind === 'chat' || run.kind === 'relay')
+  const stoppable = (run: BotRun) => run.status === 'running' && (run.kind === 'chat' || run.kind === 'relay')
 
-  const retryable = (run: BotRun) =>
-    run.kind === 'relay' && (run.status === 'attention' || run.status === 'failed')
+  const retryable = (run: BotRun) => run.kind === 'relay' && (run.status === 'attention' || run.status === 'failed')
 
   const stopRun = () => {
     void stopBotTurn(owner).then(result => {
@@ -221,8 +217,12 @@ export function BotTaskLog({ jobs, onOpenRoutine, owner }: BotTaskLogProps) {
     <div className="px-3 pb-2">
       {days.map(day => (
         <div key={day.at}>
-          <div className="pt-2 pb-1 text-[0.65rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-            {day.label === 'today' ? b.rail.today : day.label === 'yesterday' ? b.rail.yesterday : dayFormat.format(day.at)}
+          <div className="pt-2 pb-1 ui-section-label">
+            {day.label === 'today'
+              ? b.rail.today
+              : day.label === 'yesterday'
+                ? b.rail.yesterday
+                : dayFormat.format(day.at)}
           </div>
           <div className="grid gap-0.5">
             {day.runs.map(run => {

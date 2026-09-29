@@ -15,13 +15,45 @@ const mocks = vi.hoisted(() => ({ advanced: null as null | { set: (v: boolean) =
 const fixture = (): TeamView => {
   const budget = (limit: null | number, spent: number) => ({ hard_stop: true, monthly_usd: limit, spent_usd: spent })
 
-  const ceo = { budget: budget(null, 0), credentials: [], lead: true, plugins: [], profile: 'ceo', reports_to: null, role: 'Chief of staff', skills: [], slot: 'seat_ceo', status: 'active', title: '' }
-  const writer = { ...ceo, budget: budget(10, 9), lead: false, profile: 'writer', reports_to: 'seat_ceo', role: 'Content', skills: ['seo'], slot: 'seat_w' }
+  const ceo = {
+    budget: budget(null, 0),
+    credentials: [],
+    lead: true,
+    plugins: [],
+    profile: 'ceo',
+    reports_to: null,
+    role: 'Chief of staff',
+    skills: [],
+    slot: 'seat_ceo',
+    status: 'active',
+    title: ''
+  }
+  const writer = {
+    ...ceo,
+    budget: budget(10, 9),
+    lead: false,
+    profile: 'writer',
+    reports_to: 'seat_ceo',
+    role: 'Content',
+    skills: ['seo'],
+    slot: 'seat_w'
+  }
   const open = { ...ceo, lead: false, profile: null, reports_to: 'seat_ceo', role: 'Designer', slot: 'seat_o' }
 
   return {
     team: {
-      approvals: [{ created_at: 1, detail: '', id: 'apr1', kind: 'spend', note: '', requested_by: 'writer', status: 'pending', subject: '$50 on ads' }],
+      approvals: [
+        {
+          created_at: 1,
+          detail: '',
+          id: 'apr1',
+          kind: 'spend',
+          note: '',
+          requested_by: 'writer',
+          status: 'pending',
+          subject: '$50 on ads'
+        }
+      ],
       channels: {},
       goals: [
         { detail: '', id: 'g1', owner: null, parent_id: null, status: 'open', task_ids: ['t1'], title: 'Grow blog' },
@@ -35,8 +67,22 @@ const fixture = (): TeamView => {
       policy: { lead_decides: false },
       updated_at: 5
     },
-    tree: [{ ...ceo, reports: [{ ...writer, reports: [] }, { ...open, reports: [] }] }],
-    rollup: { goals: { g1: { blocked: false, done: 1, percent: 50, status: 'open', total: 2 }, g2: { blocked: false, done: 0, percent: 0, status: 'active', total: 0 } }, overall: { done: 1, percent: 50, total: 2 } }
+    tree: [
+      {
+        ...ceo,
+        reports: [
+          { ...writer, reports: [] },
+          { ...open, reports: [] }
+        ]
+      }
+    ],
+    rollup: {
+      goals: {
+        g1: { blocked: false, done: 1, percent: 50, status: 'open', total: 2 },
+        g2: { blocked: false, done: 0, percent: 0, status: 'active', total: 0 }
+      },
+      overall: { done: 1, percent: 50, total: 2 }
+    }
   }
 }
 
@@ -55,11 +101,16 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
       request: (...args: unknown[]) => mocks.request(...args),
       state: { ...sdk.host.state, connectionId: atom('c1'), showsAdvancedChrome }
     },
-    usePluginI18n: () => (key: string, ...args: unknown[]) => {
-      const leaf = key.split('.').slice(1).reduce<unknown>((n, k) => (n as Record<string, unknown>)?.[k], TEAM_EN)
+    usePluginI18n:
+      () =>
+      (key: string, ...args: unknown[]) => {
+        const leaf = key
+          .split('.')
+          .slice(1)
+          .reduce<unknown>((n, k) => (n as Record<string, unknown>)?.[k], TEAM_EN)
 
-      return typeof leaf === 'function' ? (leaf as (...a: unknown[]) => string)(...args) : String(leaf ?? key)
-    }
+        return typeof leaf === 'function' ? (leaf as (...a: unknown[]) => string)(...args) : String(leaf ?? key)
+      }
   }
 })
 
@@ -81,7 +132,20 @@ beforeEach(() => {
   mocks.request.mockReset()
   mocks.request.mockImplementation(async (method: string) => {
     if (method === 'bots_team.list') {
-      return { teams: [{ goal_count: 2, id: 'team_1', member_count: 3, mission: '', name: 'Growth', open_seats: 1, pending_approvals: 1, updated_at: 5 }] }
+      return {
+        teams: [
+          {
+            goal_count: 2,
+            id: 'team_1',
+            member_count: 3,
+            mission: '',
+            name: 'Growth',
+            open_seats: 1,
+            pending_approvals: 1,
+            updated_at: 5
+          }
+        ]
+      }
     }
 
     if (method === 'bots_team.get') {
@@ -135,7 +199,11 @@ describe('TeamPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
 
     await waitFor(() =>
-      expect(mocks.request).toHaveBeenCalledWith('bots_team.approval.decide', { approval_id: 'apr1', approve: true, team_id: 'team_1' })
+      expect(mocks.request).toHaveBeenCalledWith('bots_team.approval.decide', {
+        approval_id: 'apr1',
+        approve: true,
+        team_id: 'team_1'
+      })
     )
   })
 

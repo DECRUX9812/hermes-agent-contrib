@@ -224,10 +224,35 @@ context-dependent (e.g. "Show" / "Hide"). Never hardcode combos; always use
 `useKeybindHint` or `TipKeybindLabel`.
 
 Notes:
-- Text buttons are square (no radius) and sized by padding + line-height (no
-  fixed heights). Only icon buttons carry the shared 4px radius.
+- Buttons are sized by padding + line-height (no fixed heights). Their radius
+  is the look's: text buttons `--control-radius`, icon buttons
+  `--control-icon-radius` (see **Look** below) — never a literal `rounded-*`.
 - SVGs inherit `size-3.5` (`size-3` at `xs`). Don't re-set icon size.
 - Polymorph with `asChild` when the button must render as a link/Slot.
+
+## Look — Soft (default) and Classic
+
+Shape and label treatment are one presentation choice, painted as
+`<html data-look="soft|classic">` by `store/ui-look.ts` (Settings → Appearance →
+Theme → Look), alongside `data-interface-mode`. Components never branch on it;
+they read tokens whose values the attribute picks (`styles.css`, "LOOK TOKENS"
+and the Soft block):
+
+| Token | Classic | Soft |
+|---|---|---|
+| `--radius-scalar` (every `rounded-*`) | 0.2 | 1 — composer 24px, bubble 16px, rows 10px |
+| `--control-radius` / `--control-icon-radius` | 2.5px / 4px | 8px / 8px |
+| `--label-*` (`.ui-section-label`, `SidebarPanelLabel`) | 0.64rem uppercase accent caps + glyph | 0.75rem sentence case, `--ui-text-tertiary`, no glyph |
+| `--tab-label-*` (`.ui-tab-label`, `PaneTabLabel`) | 9px uppercase | 0.75rem as written |
+| `--status-idle-opacity` (idle/draft dots) | 1 | 0 — a dot shows when there is something to say |
+
+Soft + Simple mode also reads a size up (15px conversation text, looser
+leading). Rules: a section heading uses `.ui-section-label` (bundled plugins
+too — they cannot import core, the class is global), never a literal
+`uppercase tracking-*` string; a radius uses a token or a `rounded-*` step,
+never `rounded-[Npx]`; status that would steal a column rides the avatar's
+corner as a presence badge. Classic must keep rendering exactly as before —
+change a Classic default only on purpose.
 
 ## Badges — one component
 

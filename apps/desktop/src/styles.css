@@ -504,6 +504,25 @@
        to the value the app actually renders at. */
     --radius-scalar: 0.2;
 
+    /* LOOK TOKENS — shape and label treatment, keyed off <html data-look>
+       (store/ui-look.ts). These defaults are the Classic look (the original
+       crisp, square chrome); the Soft block below re-points them. Components
+       read the tokens and never branch on the look. */
+    --control-radius: 2.5px;
+    --control-icon-radius: 4px;
+    --label-size: 0.64rem;
+    --label-weight: 600;
+    --label-transform: uppercase;
+    --label-tracking: 0.16em;
+    --label-color: var(--theme-primary);
+    --label-glyph-display: inline-block;
+    --tab-label-size: 9px;
+    --tab-label-transform: uppercase;
+    --tab-label-tracking: 0.025em;
+    /* Idle status dots hold a row's left edge in Classic; Soft lets an idle
+       row rest (a dot appears only when there is something to say). */
+    --status-idle-opacity: 1;
+
     /* Space under last message vs overlay composer — driven by the measured composer DOCK height (see
        composer/index.tsx), which covers the micro-action strip, the status stack, the composer, and the
        underside strip in one number.
@@ -3893,4 +3912,62 @@ html[data-hud-window] [data-slot='popover-content'] {
    author `!important` rule beats the widget's inline non-important style. */
 [data-pane-hidden] * {
   visibility: inherit !important;
+}
+
+/* Look-driven text primitives. One class each so core components and bundled
+   plugins (which cannot import core) paint section labels and tab titles the
+   same way; the tokens above decide Classic caps vs Soft sentence case. */
+@layer components {
+  .ui-section-label {
+    font-size: var(--label-size);
+    font-weight: var(--label-weight);
+    text-transform: var(--label-transform);
+    letter-spacing: var(--label-tracking);
+    color: var(--label-color);
+  }
+
+  .ui-section-label-glyph {
+    display: var(--label-glyph-display);
+  }
+
+  .ui-tab-label {
+    font-size: var(--tab-label-size);
+    text-transform: var(--tab-label-transform);
+    letter-spacing: var(--tab-label-tracking);
+  }
+}
+
+/* ── Soft look (default) ─────────────────────────────────────────────────────
+   Rounded, roomy, calm: concentric radii (the composer is a 24px capsule, the
+   user bubble 16px, rows and controls 8–10px), sentence-case section labels in
+   a quiet grey instead of uppercase accent caps, readable tab titles, idle
+   dots that rest, and a size up in Simple mode. Every value is a token the
+   Classic defaults above also define — flip data-look and both hold. */
+:root[data-look='soft'] {
+  --radius-scalar: 1;
+  --control-radius: 0.5rem;
+  --control-icon-radius: 0.5rem;
+  --label-size: 0.75rem;
+  --label-weight: 500;
+  --label-transform: none;
+  --label-tracking: 0;
+  --label-color: var(--ui-text-tertiary);
+  --label-glyph-display: none;
+  --tab-label-size: 0.75rem;
+  --tab-label-transform: none;
+  --tab-label-tracking: 0;
+  --status-idle-opacity: 0;
+  --conversation-text-font-size: 0.875rem;
+  --composer-surface-pad-x: 0.75rem;
+  --composer-surface-pad-y: 0.5rem;
+  --composer-input-min-height: 2rem;
+  --composer-control-size: 1.75rem;
+  --composer-control-primary-size: 1.875rem;
+}
+
+/* Simple mode reads a size up: people there came to talk, not to scan logs. */
+:root[data-look='soft'][data-interface-mode='simple'] {
+  --conversation-text-font-size: 0.9375rem;
+  --dt-line-height: 1.6;
+  --paragraph-gap: 0.85rem;
 }

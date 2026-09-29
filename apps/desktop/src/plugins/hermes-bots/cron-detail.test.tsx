@@ -183,7 +183,12 @@ describe('the row is reachable', () => {
 describe('the inspector', () => {
   it('renders the job\u2019s instruction and its failure', () => {
     render(
-      <RoutineDetailDialog job={{ ...activeJob, last_fire_error: 'model timeout' }} onClose={() => undefined} open owner={null} />
+      <RoutineDetailDialog
+        job={{ ...activeJob, last_fire_error: 'model timeout' }}
+        onClose={() => undefined}
+        open
+        owner={null}
+      />
     )
 
     const dialog = screen.getByRole('dialog')

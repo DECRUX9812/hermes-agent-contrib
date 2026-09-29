@@ -957,6 +957,10 @@ export const ar = defineLocale({
         roamTitle: 'التجوال',
         roamDesc: 'دع الأليف يتجول في النافذة وحده أثناء الخمول.'
       },
+      lookTitle: 'المظهر',
+      lookDesc: 'الناعم: زوايا مستديرة ومساحات أوسع وعناوين هادئة؛ الكلاسيكي: الواجهة الأصلية الحادة والمربعة.',
+      lookSoft: 'ناعم',
+      lookClassic: 'كلاسيكي',
       uiScaleTitle: 'مقياس الواجهة',
       uiScaleDesc: (percent: number) =>
         `يُكبّر النصوص وعناصر التحكم في التطبيق كله. يعمل أيضًا Cmd/Ctrl مع + و- و0. الحالي: ${percent}%.`,

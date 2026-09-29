@@ -1172,6 +1172,10 @@ export const frOverrides = {
       reasoningCollapsedTitle: 'Réduire le raisonnement par défaut',
       reasoningCollapsedDesc:
         "Conserver le raisonnement diffusé en continu sans le développer tant que vous ne l'ouvrez pas.",
+      lookTitle: 'Apparence',
+      lookDesc: 'Doux : arrondi et aéré, libellés discrets. Classique : l’interface nette et carrée d’origine.',
+      lookSoft: 'Doux',
+      lookClassic: 'Classique',
       uiScaleTitle: "Échelle de l'interface",
       uiScaleDesc: (percent: number) =>
         `Redimensionne le texte et les contrôles dans toute l'application. Cmd/Ctrl avec +, - et 0 fonctionne aussi. Actuel : ${percent}%.`,

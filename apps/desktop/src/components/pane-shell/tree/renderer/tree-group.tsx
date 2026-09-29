@@ -92,7 +92,7 @@ import { useActiveTabVisible } from './tab-strip-scroll'
 import { paneChrome } from './track-model'
 
 /** Session tabs carry a conversation title (see PaneChrome.contentTitle). */
-const CONTENT_TAB_LABEL = 'normal-case tracking-normal text-[0.6875rem]'
+const CONTENT_TAB_LABEL = 'normal-case tracking-normal text-[length:max(var(--tab-label-size),0.6875rem)]'
 
 /** Right-click zone menu: the tab verbs (close this / others / to the right /
  *  all) plus the strip's own chrome toggles. Same items and icons as a session

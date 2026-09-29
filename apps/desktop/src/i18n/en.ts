@@ -1202,6 +1202,10 @@ export const en: Translations = {
       hideThreadTimelineDesc: 'Hide the navigation bars along the right edge of each conversation.',
       reasoningCollapsedTitle: 'Collapse thinking by default',
       reasoningCollapsedDesc: 'Keep streamed reasoning available without expanding it until you open it.',
+      lookTitle: 'Look',
+      lookDesc: 'Soft is rounded and roomy with quiet labels; Classic keeps the original crisp, square chrome.',
+      lookSoft: 'Soft',
+      lookClassic: 'Classic',
       uiScaleTitle: 'UI Scale',
       uiScaleDesc: (percent: number) =>
         `Scales text and controls across the whole app. Cmd/Ctrl with +, - and 0 also works. Current: ${percent}%.`,

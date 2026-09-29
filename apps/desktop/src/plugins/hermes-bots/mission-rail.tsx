@@ -70,9 +70,7 @@ function RailSection({
           type="button"
         >
           <Codicon className="text-(--ui-text-quaternary)" name={collapsed ? 'chevron-right' : 'chevron-down'} />
-          <span className="truncate text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-            {title}
-          </span>
+          <span className="truncate ui-section-label">{title}</span>
         </button>
         {action && !collapsed ? <span className="shrink-0 px-1">{action}</span> : null}
       </div>

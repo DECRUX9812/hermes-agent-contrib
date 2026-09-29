@@ -442,9 +442,7 @@ function Column({
         <span className="grid h-5 shrink-0 place-items-center">
           <span className="size-1.5 rounded-full" style={{ backgroundColor: meta.tone }} />
         </span>
-        <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary) [writing-mode:vertical-rl]">
-          {label}
-        </span>
+        <span className="ui-section-label [writing-mode:vertical-rl]">{label}</span>
         {column.tasks.length > 0 && (
           <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{column.tasks.length}</span>
         )}
@@ -460,9 +458,7 @@ function Column({
       <header className="mb-1.5 flex h-5 items-center gap-1.5 px-1">
         <span className="size-1.5 rounded-full" style={{ backgroundColor: meta.tone }} />
         <Tip label={columnHelp(k, column.name)}>
-          <span className="cursor-help text-[0.6875rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary)">
-            {label}
-          </span>
+          <span className="cursor-help ui-section-label">{label}</span>
         </Tip>
         <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{column.tasks.length}</span>
         <button
@@ -605,9 +601,7 @@ function TeamLane({
         <span className="grid h-5 shrink-0 place-items-center">
           {unassigned ? <Codicon name="inbox" size="0.75rem" /> : <Avatar name={lane} size="1rem" />}
         </span>
-        <span className="text-[0.6875rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary) [writing-mode:vertical-rl]">
-          {label}
-        </span>
+        <span className="ui-section-label [writing-mode:vertical-rl]">{label}</span>
         {tasks.length > 0 && (
           <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{tasks.length}</span>
         )}
@@ -626,9 +620,7 @@ function TeamLane({
         ) : (
           <Avatar name={lane} size="1rem" />
         )}
-        <span className="truncate text-[0.6875rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary)">
-          {label}
-        </span>
+        <span className="truncate ui-section-label">{label}</span>
         <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{tasks.length}</span>
         <button
           aria-label={k.collapse(label)}

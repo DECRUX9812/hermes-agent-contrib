@@ -182,29 +182,41 @@ function ComputerPanelContent({ bot, meta }: { bot: RosterRow; meta?: BotMeta | 
   // stream is blind (the thumbnail is suppressed while a human holds the lease),
   // so the one-click path goes straight to the surface that can drive.
   const takeOver = () =>
-    act('takeover', async () => {
-      await acquireScreenLease(bot)
-      openBotScreen(bot, meta ?? null)
-    }, t.screen.takeOver)
+    act(
+      'takeover',
+      async () => {
+        await acquireScreenLease(bot)
+        openBotScreen(bot, meta ?? null)
+      },
+      t.screen.takeOver
+    )
 
   const handBack = (force = false) => act('handback', () => releaseScreenLease(bot, force), t.screen.handBack)
 
   const copyShot = () =>
-    act('copy', async () => {
-      await copyBotScreenshot(bot)
-      host.notify({ kind: 'success', message: t.screen.screenshotCopied })
-    }, t.screen.screenshotFailed)
+    act(
+      'copy',
+      async () => {
+        await copyBotScreenshot(bot)
+        host.notify({ kind: 'success', message: t.screen.screenshotCopied })
+      },
+      t.screen.screenshotFailed
+    )
 
   const restart = () => act('restart', () => restartBotScreen(bot), t.screen.restartFailed)
 
   const openWorkdir = () =>
-    act('workdir', async () => {
-      const opened = await openBotWorkdir(bot)
+    act(
+      'workdir',
+      async () => {
+        const opened = await openBotWorkdir(bot)
 
-      if (!opened) {
-        host.notify({ kind: 'error', message: t.screen.workdirUnavailable })
-      }
-    }, t.screen.workdirFailed)
+        if (!opened) {
+          host.notify({ kind: 'error', message: t.screen.workdirUnavailable })
+        }
+      },
+      t.screen.workdirFailed
+    )
 
   const onDragStart = (event: ReactPointerEvent<HTMLDivElement>) => {
     const startY = event.clientY
@@ -230,7 +242,10 @@ function ComputerPanelContent({ bot, meta }: { bot: RosterRow; meta?: BotMeta | 
   const unsupported = tone === 'unsupported' || tone === 'unavailable'
 
   return (
-    <section aria-label={t.screen.panelTitle} className="overflow-hidden rounded-lg border border-(--ui-stroke-secondary)">
+    <section
+      aria-label={t.screen.panelTitle}
+      className="overflow-hidden rounded-lg border border-(--ui-stroke-secondary)"
+    >
       <div className="flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2 py-1">
         <Codicon className="text-(--ui-text-tertiary)" name="device-desktop" size="0.8rem" />
         <span className="text-[0.65rem] font-medium text-(--ui-text-secondary)">{t.screen.panelTitle}</span>
@@ -340,11 +355,7 @@ function ComputerPanelContent({ bot, meta }: { bot: RosterRow; meta?: BotMeta | 
                     </Button>
                   </Tip>
                 ) : null}
-                <Button
-                  disabled={busy !== null || !running}
-                  onClick={takeOver}
-                  size="sm"
-                >
+                <Button disabled={busy !== null || !running} onClick={takeOver} size="sm">
                   {busy === 'takeover' ? <GlyphSpinner /> : <Codicon name="record-keys" />} {t.screen.takeOver}
                 </Button>
               </>

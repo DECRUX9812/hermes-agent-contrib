@@ -289,10 +289,14 @@ export function BotRow({
       onPointerEnter={warm}
     >
       <div
-        className={cn('shrink-0 rounded-lg', !sourceStatus.available && 'grayscale opacity-60')}
+        className={cn('relative shrink-0 rounded-lg', !sourceStatus.available && 'grayscale opacity-60')}
         style={{ boxShadow: `0 0 0 1px ${accent}80` }}
       >
         <BotFace color={accent} image={photo ? image : null} mood={botMood} name={bot.name} shape={shape} size={34} />
+        {/* Status rides the avatar's corner like a presence badge (working,
+            waiting on you, unread), keyed off the canonical Bot Chat — the very
+            session this row opens — so the status line keeps the name's edge. */}
+        <SessionStatusDot className="absolute -right-0.5 -bottom-0.5" storedSessionId={canonicalSessionId} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
@@ -389,10 +393,6 @@ export function BotRow({
         </div>
         {showDetailsRow ? (
           <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-tertiary)">
-            {/* The status dot leads the status line it describes (working,
-                waiting on you, unread), keyed off the canonical Bot Chat —
-                the very session this row opens. */}
-            <SessionStatusDot className="shrink-0" storedSessionId={canonicalSessionId} />
             {showHandle ? (
               <span className="shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)">{`@${handle}`}</span>
             ) : null}

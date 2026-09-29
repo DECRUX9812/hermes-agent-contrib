@@ -25,6 +25,7 @@ import {
   type InterfaceMode,
   setInterfaceMode
 } from '@/store/interface-mode'
+import { $uiLook, setUiLook, UI_LOOKS, type UiLook } from '@/store/ui-look'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
 import { $fileBrowserOpen, setFileBrowserOpen } from '@/store/layout'
 import { $showModelPricing, setShowModelPricing } from '@/store/model-pricing'
@@ -514,6 +515,13 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
     { id: 'detailed', label: a.sessionDensityDetailed }
   ] as const satisfies readonly { id: SessionListDensity; label: string }[]
 
+  const uiLook = useStore($uiLook)
+
+  const lookOptions = UI_LOOKS.map(id => ({
+    id,
+    label: id === 'soft' ? a.lookSoft : a.lookClassic
+  })) satisfies readonly { id: UiLook; label: string }[]
+
   const interfaceModeOptions = INTERFACE_MODES.map(id => ({
     id,
     label: t.interfaceMode[id].label
@@ -572,6 +580,24 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
               description={isSavingLocale ? t.language.saving : t.language.description}
               id={settingElementId(ids.language)}
               title={t.language.label}
+            />
+          )}
+
+          {show('theme') && (
+            <ListRow
+              action={
+                <SegmentedControl
+                  onChange={id => {
+                    triggerHaptic('selection')
+                    setUiLook(id)
+                  }}
+                  options={lookOptions}
+                  value={uiLook}
+                />
+              }
+              description={a.lookDesc}
+              id={settingElementId(ids.look)}
+              title={a.lookTitle}
             />
           )}
 

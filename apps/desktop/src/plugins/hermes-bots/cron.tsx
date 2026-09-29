@@ -558,7 +558,10 @@ function RoutineRunHistory({ job, owner }: { job: RoutineJob; owner: RosterRow }
           >
             <Codicon
               aria-label={statusLabel}
-              className={cn('shrink-0 text-[0.6875rem]', run.is_active ? 'text-(--ui-accent)' : 'text-(--ui-text-tertiary)')}
+              className={cn(
+                'shrink-0 text-[0.6875rem]',
+                run.is_active ? 'text-(--ui-accent)' : 'text-(--ui-text-tertiary)'
+              )}
               name={statusIcon}
               spinning={Boolean(run.is_active)}
             />

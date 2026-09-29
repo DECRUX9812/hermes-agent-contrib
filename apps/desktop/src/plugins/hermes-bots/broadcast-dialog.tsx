@@ -73,7 +73,13 @@ function BroadcastResultCard({ entry }: { entry: BroadcastEntry }) {
       data-testid={`broadcast-result:${entry.key}`}
     >
       <div className="flex items-center gap-1.5">
-        <BotFace color={avatarColor(color, entry.bot.name)} image={image} name={entry.bot.name} shape={shape} size={16} />
+        <BotFace
+          color={avatarColor(color, entry.bot.name)}
+          image={image}
+          name={entry.bot.name}
+          shape={shape}
+          size={16}
+        />
         <span className="min-w-0 flex-1 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)">{name}</span>
         {statusLabel ? (
           <span className="flex items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary)">
@@ -95,15 +101,7 @@ function BroadcastResultCard({ entry }: { entry: BroadcastEntry }) {
   )
 }
 
-export function BroadcastDialog({
-  bots,
-  onClose,
-  open
-}: {
-  bots: RosterRow[]
-  onClose: () => void
-  open: boolean
-}) {
+export function BroadcastDialog({ bots, onClose, open }: { bots: RosterRow[]; onClose: () => void; open: boolean }) {
   const b = useBots()
   const allMeta = useValue($botMeta)
   const run = useValue($broadcastRun)
@@ -160,9 +158,7 @@ export function BroadcastDialog({
         </DialogHeader>
         <div className="flex min-h-0 flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-              {b.broadcast.send(selected.length)}
-            </span>
+            <span className="ui-section-label">{b.broadcast.send(selected.length)}</span>
             <div className="flex items-center gap-1">
               <Button
                 onClick={() => setChecked(new Set(eligible.map(bot => botRosterKey(bot) || bot.name)))}
@@ -183,19 +179,16 @@ export function BroadcastDialog({
               const { shape, color, image } = botAppearance(bot.name, meta)
 
               return (
-                <li className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-(--chrome-action-hover)" key={key}>
+                <li
+                  className="flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-(--chrome-action-hover)"
+                  key={key}
+                >
                   <Checkbox
                     aria-label={displayName(bot, meta)}
                     checked={checked.has(key)}
                     onCheckedChange={() => toggle(key)}
                   />
-                  <BotFace
-                    color={avatarColor(color, bot.name)}
-                    image={image}
-                    name={bot.name}
-                    shape={shape}
-                    size={18}
-                  />
+                  <BotFace color={avatarColor(color, bot.name)} image={image} name={bot.name} shape={shape} size={18} />
                   <span className="min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)">
                     {displayName(bot, meta)}
                   </span>
@@ -204,9 +197,7 @@ export function BroadcastDialog({
             })}
           </ul>
           <label className="flex flex-col gap-1">
-            <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-              {b.broadcast.promptLabel}
-            </span>
+            <span className="ui-section-label">{b.broadcast.promptLabel}</span>
             <Textarea
               aria-label={b.broadcast.promptLabel}
               onChange={event => setPrompt(event.target.value)}

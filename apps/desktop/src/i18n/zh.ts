@@ -885,6 +885,10 @@ export const zh = defineLocale({
       hideThreadTimelineDesc: '隐藏每个对话右侧边缘的导航条。',
       reasoningCollapsedTitle: '默认折叠推理过程',
       reasoningCollapsedDesc: '保留流式推理内容，但在您打开前保持折叠。',
+      lookTitle: '外观风格',
+      lookDesc: '柔和：圆角、留白充足、标签低调；经典：保留原来利落方正的界面。',
+      lookSoft: '柔和',
+      lookClassic: '经典',
       uiScaleTitle: '界面缩放',
       uiScaleDesc: (percent: number) =>
         `缩放整个应用的文字和界面。也可使用 Cmd/Ctrl 加 +、- 或 0 调整。当前：${percent}%`,

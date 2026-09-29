@@ -207,12 +207,16 @@ it('captions a suppressed thumbnail as hidden-while-controlled and never ages it
   vi.mocked(host.requestProfile).mockResolvedValue({ data_url: null, suppressed: 'human_has_control' })
   const view = render(<BotComputerPanel bot={botA} />)
   await act(async () => {})
-  expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).toContain('Hidden while someone has control')
+  expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).toContain(
+    'Hidden while someone has control'
+  )
 
   await act(async () => {
     await vi.advanceTimersByTimeAsync(20_000)
   })
-  expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).toContain('Hidden while someone has control')
+  expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).toContain(
+    'Hidden while someone has control'
+  )
   expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).not.toContain('Last seen')
   view.unmount()
 })

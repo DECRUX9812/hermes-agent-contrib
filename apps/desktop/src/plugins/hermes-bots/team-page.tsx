@@ -80,10 +80,20 @@ function CreateTeamDialog({ onClose, open, t }: { onClose: () => void; open: boo
             <DialogTitle>{t.createTitle}</DialogTitle>
           </DialogHeader>
           <Field label={t.createName}>
-            <Input autoFocus onChange={e => setName(e.target.value)} placeholder={t.createNamePlaceholder} value={name} />
+            <Input
+              autoFocus
+              onChange={e => setName(e.target.value)}
+              placeholder={t.createNamePlaceholder}
+              value={name}
+            />
           </Field>
           <Field label={t.createMission}>
-            <Textarea onChange={e => setMission(e.target.value)} placeholder={t.createMissionPlaceholder} rows={3} value={mission} />
+            <Textarea
+              onChange={e => setMission(e.target.value)}
+              placeholder={t.createMissionPlaceholder}
+              rows={3}
+              value={mission}
+            />
           </Field>
           <DialogFooter>
             <Button disabled={busy || !name.trim()} type="submit">
@@ -166,11 +176,15 @@ function Learnings({ t, team }: { t: TeamText; team: Team }) {
           {items.map(l => (
             <li className="group/l flex items-baseline gap-2 text-[0.8125rem] text-(--ui-text-secondary)" key={l.id}>
               <span className="min-w-0 flex-1">{l.text}</span>
-              {l.count > 1 && <span className="text-[0.6875rem] text-(--ui-text-quaternary)">{t.confirmed(l.count)}</span>}
+              {l.count > 1 && (
+                <span className="text-[0.6875rem] text-(--ui-text-quaternary)">{t.confirmed(l.count)}</span>
+              )}
               <Button
                 aria-label={t.remove}
                 className="hidden size-5 group-hover/l:inline-flex"
-                onClick={() => void mutateTeam('bots_team.learning.remove', { team_id: team.id, learning_id: l.id }).catch(fail)}
+                onClick={() =>
+                  void mutateTeam('bots_team.learning.remove', { team_id: team.id, learning_id: l.id }).catch(fail)
+                }
                 size="icon"
                 variant="ghost"
               >
@@ -199,7 +213,9 @@ function Learnings({ t, team }: { t: TeamText; team: Team }) {
 function Activity({ t, team }: { t: TeamText; team: Team }) {
   const { data } = useQuery({
     queryKey: ['hermes-bots', 'team-audit', team.id, team.updated_at],
-    queryFn: async () => (await host.request<{ entries: TeamAuditEntry[] }>('bots_team.audit.list', { team_id: team.id, limit: 50 })).entries
+    queryFn: async () =>
+      (await host.request<{ entries: TeamAuditEntry[] }>('bots_team.audit.list', { team_id: team.id, limit: 50 }))
+        .entries
   })
 
   return (
@@ -321,10 +337,17 @@ function TeamDetail({ id, t }: { id: string; t: TeamText }) {
         <div className="mt-3" data-slot="team-overall">
           <div className="mb-1 flex justify-between text-[0.6875rem] text-(--ui-text-tertiary)">
             <span>{t.overall}</span>
-            <span className="tabular-nums">{rollup.overall.total ? `${rollup.overall.done}/${rollup.overall.total} · ${rollup.overall.percent}%` : t.goalNone}</span>
+            <span className="tabular-nums">
+              {rollup.overall.total
+                ? `${rollup.overall.done}/${rollup.overall.total} · ${rollup.overall.percent}%`
+                : t.goalNone}
+            </span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)">
-            <div className="h-full rounded-full bg-(--ui-accent) transition-[width] duration-500" style={{ width: `${rollup.overall.percent}%` }} />
+            <div
+              className="h-full rounded-full bg-(--ui-accent) transition-[width] duration-500"
+              style={{ width: `${rollup.overall.percent}%` }}
+            />
           </div>
         </div>
       </header>

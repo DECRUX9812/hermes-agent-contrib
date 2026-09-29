@@ -168,6 +168,7 @@ import { filterSessionsByProfileScope } from './profile-scope'
 import { ProfileRail } from './profile-switcher'
 import { ProjectDialog } from './project-dialog'
 import { filterToSessionBearingProjects, resolveLiveProjectFilter } from './project-filter'
+import { ProjectSwitcher } from './project-switcher'
 import {
   excludeProjectSessions,
   orderProjectsByIds,
@@ -1715,6 +1716,13 @@ export function ChatSidebar({
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
+              {/* Workspace first (Codex/Antigravity): which project you are in,
+                  switchable in one click, above the actions scoped to it. */}
+              {gatewayState === 'open' ? (
+                <SidebarMenuItem className="pb-1">
+                  <ProjectSwitcher />
+                </SidebarMenuItem>
+              ) : null}
               {primaryNavItems.map(renderNavItem)}
               {/* Secondary rows fold under Browse — New session stays the one
                   primary action and the list below is what the rail is for.

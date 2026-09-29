@@ -999,6 +999,10 @@ export interface Translations {
       hideThreadTimelineDesc: string
       reasoningCollapsedTitle: string
       reasoningCollapsedDesc: string
+      lookTitle: string
+      lookDesc: string
+      lookSoft: string
+      lookClassic: string
       uiScaleTitle: string
       uiScaleDesc: (percent: number) => string
       sessionDensityTitle: string

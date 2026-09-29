@@ -9,7 +9,19 @@ import { type TeamText } from './team-i18n'
 
 const STATUS_ORDER = ['open', 'active', 'blocked', 'done', 'cancelled'] as const
 
-function GoalRow({ depth, goal, progress, t, team }: { depth: number; goal: TeamGoal; progress?: GoalProgress; t: TeamText; team: Team }) {
+function GoalRow({
+  depth,
+  goal,
+  progress,
+  t,
+  team
+}: {
+  depth: number
+  goal: TeamGoal
+  progress?: GoalProgress
+  t: TeamText
+  team: Team
+}) {
   const [adding, setAdding] = useState<'' | 'sub' | 'task' | 'work'>('')
   const hired = team.members.filter(m => m.profile)
   const [assignee, setAssignee] = useState(goal.owner ?? hired[0]?.slot ?? '')
@@ -45,24 +57,58 @@ function GoalRow({ depth, goal, progress, t, team }: { depth: number; goal: Team
               </option>
             ))}
           </select>
-          <span className={cn('min-w-0 flex-1 truncate text-[0.8125rem] text-(--ui-text-primary)', settled && 'line-through opacity-60')}>{goal.title}</span>
+          <span
+            className={cn(
+              'min-w-0 flex-1 truncate text-[0.8125rem] text-(--ui-text-primary)',
+              settled && 'line-through opacity-60'
+            )}
+          >
+            {goal.title}
+          </span>
           {progress?.blocked && <Badge variant="muted">{t.goalStatus.blocked}</Badge>}
-          {owner && <span className="hidden max-w-28 truncate text-[0.6875rem] text-(--ui-text-tertiary) sm:inline">{seatName(owner, t.openSeat)}</span>}
-          <span className="w-24 shrink-0 text-right text-[0.6875rem] tabular-nums text-(--ui-text-tertiary)">{progressLabel(progress, t.goalNone)}</span>
+          {owner && (
+            <span className="hidden max-w-28 truncate text-[0.6875rem] text-(--ui-text-tertiary) sm:inline">
+              {seatName(owner, t.openSeat)}
+            </span>
+          )}
+          <span className="w-24 shrink-0 text-right text-[0.6875rem] tabular-nums text-(--ui-text-tertiary)">
+            {progressLabel(progress, t.goalNone)}
+          </span>
           <span className="hidden gap-0.5 group-hover/goal:flex">
-            <Button aria-label={t.subGoal} className="size-6" onClick={() => setAdding('sub')} size="icon" variant="ghost">
+            <Button
+              aria-label={t.subGoal}
+              className="size-6"
+              onClick={() => setAdding('sub')}
+              size="icon"
+              variant="ghost"
+            >
               <Codicon name="add" size="0.75rem" />
             </Button>
-            <Button aria-label={t.assignWork} className="size-6" onClick={() => setAdding('work')} size="icon" variant="ghost">
+            <Button
+              aria-label={t.assignWork}
+              className="size-6"
+              onClick={() => setAdding('work')}
+              size="icon"
+              variant="ghost"
+            >
               <Codicon name="rocket" size="0.75rem" />
             </Button>
-            <Button aria-label={t.linkTask} className="size-6" onClick={() => setAdding('task')} size="icon" variant="ghost">
+            <Button
+              aria-label={t.linkTask}
+              className="size-6"
+              onClick={() => setAdding('task')}
+              size="icon"
+              variant="ghost"
+            >
               <Codicon name="link" size="0.75rem" />
             </Button>
           </span>
         </div>
         <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)">
-          <div className="h-full rounded-full bg-(--ui-accent) transition-[width] duration-300" style={{ width: `${percent}%` }} />
+          <div
+            className="h-full rounded-full bg-(--ui-accent) transition-[width] duration-300"
+            style={{ width: `${percent}%` }}
+          />
         </div>
         {adding && (
           <form
@@ -97,7 +143,9 @@ function GoalRow({ depth, goal, progress, t, team }: { depth: number; goal: Team
             <Input
               autoFocus
               onChange={e => setDraft(e.target.value)}
-              placeholder={adding === 'sub' ? t.goalTitlePlaceholder : adding === 'work' ? t.assignWorkPlaceholder : t.taskId}
+              placeholder={
+                adding === 'sub' ? t.goalTitlePlaceholder : adding === 'work' ? t.assignWorkPlaceholder : t.taskId
+              }
               value={draft}
             />
             <Button size="sm" type="submit">
@@ -110,7 +158,15 @@ function GoalRow({ depth, goal, progress, t, team }: { depth: number; goal: Team
   )
 }
 
-export function GoalsSection({ progress, t, team }: { progress: Record<string, GoalProgress>; t: TeamText; team: Team }) {
+export function GoalsSection({
+  progress,
+  t,
+  team
+}: {
+  progress: Record<string, GoalProgress>
+  t: TeamText
+  team: Team
+}) {
   const [title, setTitle] = useState('')
   const outline = goalOutline(team.goals)
 

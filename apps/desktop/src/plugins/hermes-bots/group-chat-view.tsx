@@ -1415,9 +1415,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               data-testid="group-round-summary"
               key={'round-summary'}
             >
-              <div className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-                {b.group.roundSummaryTitle}
-              </div>
+              <div className="mb-1 ui-section-label">{b.group.roundSummaryTitle}</div>
               <ul className="flex flex-col gap-0.5">
                 {roundContributions.map(entry => (
                   <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>

@@ -81,10 +81,7 @@ export function BotChatTips({ sessionId }: { sessionId: string }) {
   }
 
   return (
-    <div
-      className="pointer-events-auto flex w-full max-w-lg flex-col gap-1.5 px-6 pt-2"
-      data-slot="bot_chat_tips"
-    >
+    <div className="pointer-events-auto flex w-full max-w-lg flex-col gap-1.5 px-6 pt-2" data-slot="bot_chat_tips">
       {tips.map(tip => (
         <div
           className="flex items-center gap-2.5 rounded-lg border border-(--dt-composer-ring)/25 bg-accent/12 px-3 py-2 text-left"
@@ -92,9 +89,7 @@ export function BotChatTips({ sessionId }: { sessionId: string }) {
           key={tip.id}
         >
           <Codicon className="shrink-0 text-[0.8rem] text-(--ui-text-tertiary)" name={tip.icon} />
-          <p className="m-0 min-w-0 flex-1 text-[0.72rem] leading-snug text-muted-foreground/90">
-            {copy[tip.id].text}
-          </p>
+          <p className="m-0 min-w-0 flex-1 text-[0.72rem] leading-snug text-muted-foreground/90">{copy[tip.id].text}</p>
           <button
             className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-[0.7rem] font-medium text-(--ui-accent-primary, var(--primary)) transition-colors hover:bg-accent/40"
             onClick={tip.run}

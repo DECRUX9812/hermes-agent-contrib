@@ -1170,6 +1170,11 @@ export const deOverrides = {
       hideThreadTimelineDesc: 'Blendet die Navigationsbalken am rechten Rand jeder Unterhaltung aus.',
       reasoningCollapsedTitle: 'Gedanken standardmäßig einklappen',
       reasoningCollapsedDesc: 'Gestreamte Gedankengänge verfügbar halten, ohne sie aufzuklappen, bis Sie sie öffnen.',
+      lookTitle: 'Stil',
+      lookDesc:
+        'Weich ist abgerundet und luftig mit ruhigen Beschriftungen; Klassisch behält die ursprüngliche, kantige Oberfläche.',
+      lookSoft: 'Weich',
+      lookClassic: 'Klassisch',
       uiScaleTitle: 'UI-Skalierung',
       uiScaleDesc: (percent: number) =>
         `Skaliert Text und Bedienelemente in der gesamten App. Cmd/Ctrl mit +, - und 0 funktioniert ebenfalls. Aktuell: ${percent}%.`,

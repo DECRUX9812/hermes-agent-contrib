@@ -88,7 +88,17 @@ function useSeatBot(profile: null | string) {
   return { ...botAppearance(bot.name, meta), label: displayName(bot, meta) }
 }
 
-function SeatCard({ node, onEdit, team, t }: { node: TeamOrgNode; onEdit: (m: TeamMember) => void; team: Team; t: TeamText }) {
+function SeatCard({
+  node,
+  onEdit,
+  team,
+  t
+}: {
+  node: TeamOrgNode
+  onEdit: (m: TeamMember) => void
+  team: Team
+  t: TeamText
+}) {
   const open = !node.profile
   const face = useSeatBot(node.profile)
 
@@ -109,7 +119,13 @@ function SeatCard({ node, onEdit, team, t }: { node: TeamOrgNode; onEdit: (m: Te
       <div className="flex items-start gap-2">
         {face ? (
           <span aria-hidden="true" className="mt-0.5 shrink-0">
-            <BotFace color={avatarColor(face.color, node.profile ?? '')} image={face.image} name={node.profile ?? ''} shape={face.shape} size={28} />
+            <BotFace
+              color={avatarColor(face.color, node.profile ?? '')}
+              image={face.image}
+              name={node.profile ?? ''}
+              shape={face.shape}
+              size={28}
+            />
           </span>
         ) : (
           <span
@@ -120,25 +136,43 @@ function SeatCard({ node, onEdit, team, t }: { node: TeamOrgNode; onEdit: (m: Te
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">{face?.label || seatName(node, t.openSeat)}</p>
+          <p className="truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">
+            {face?.label || seatName(node, t.openSeat)}
+          </p>
           <p className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">{node.role || node.title || '—'}</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button aria-label={t.edit} className="-mr-1 size-6 opacity-0 group-hover/seat:opacity-100 focus-visible:opacity-100" size="icon" variant="ghost">
+            <Button
+              aria-label={t.edit}
+              className="-mr-1 size-6 opacity-0 group-hover/seat:opacity-100 focus-visible:opacity-100"
+              size="icon"
+              variant="ghost"
+            >
               <Codicon name="kebab-vertical" size="0.875rem" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => onEdit(node)}>{t.edit}</DropdownMenuItem>
-            {!node.lead && <DropdownMenuItem onSelect={() => call('bots_team.member.upsert', { slot: node.slot, lead: true })}>{t.makeLead}</DropdownMenuItem>}
+            {!node.lead && (
+              <DropdownMenuItem onSelect={() => call('bots_team.member.upsert', { slot: node.slot, lead: true })}>
+                {t.makeLead}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
-              onSelect={() => call('bots_team.member.upsert', { slot: node.slot, status: node.status === 'paused' ? 'active' : 'paused' })}
+              onSelect={() =>
+                call('bots_team.member.upsert', {
+                  slot: node.slot,
+                  status: node.status === 'paused' ? 'active' : 'paused'
+                })
+              }
             >
               {node.status === 'paused' ? t.resume : t.pause}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => call('bots_team.member.remove', { member: node.slot })}>{t.remove}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => call('bots_team.member.remove', { member: node.slot })}>
+              {t.remove}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -160,9 +194,19 @@ function SeatCard({ node, onEdit, team, t }: { node: TeamOrgNode; onEdit: (m: Te
 // Connectors are drawn per child: a stub down from the rail, and a rail segment that stops at the
 // middle for the first/last child so the line spans exactly from the first to the last sibling.
 const RAIL =
-  "relative px-2 pt-4 before:absolute before:left-0 before:right-0 before:top-0 before:h-px before:bg-(--ui-stroke-secondary) after:absolute after:left-1/2 after:top-0 after:h-4 after:w-px after:bg-(--ui-stroke-secondary) first:before:left-1/2 last:before:right-1/2 only:before:hidden"
+  'relative px-2 pt-4 before:absolute before:left-0 before:right-0 before:top-0 before:h-px before:bg-(--ui-stroke-secondary) after:absolute after:left-1/2 after:top-0 after:h-4 after:w-px after:bg-(--ui-stroke-secondary) first:before:left-1/2 last:before:right-1/2 only:before:hidden'
 
-function OrgBranch({ nodes, root, ...rest }: { nodes: TeamOrgNode[]; onEdit: (m: TeamMember) => void; root?: boolean; team: Team; t: TeamText }) {
+function OrgBranch({
+  nodes,
+  root,
+  ...rest
+}: {
+  nodes: TeamOrgNode[]
+  onEdit: (m: TeamMember) => void
+  root?: boolean
+  team: Team
+  t: TeamText
+}) {
   return (
     <ul className="flex justify-center">
       {nodes.map(node => (
@@ -206,17 +250,43 @@ export function OrgChart({ team, tree, t }: { team: Team; tree: TeamOrgNode[]; t
   )
 }
 
-const splitList = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean)
+const splitList = (s: string) =>
+  s
+    .split(',')
+    .map(x => x.trim())
+    .filter(Boolean)
 
-function SeatDialog({ member, onClose, t, team }: { member: null | Partial<TeamMember>; onClose: () => void; t: TeamText; team: Team }) {
+function SeatDialog({
+  member,
+  onClose,
+  t,
+  team
+}: {
+  member: null | Partial<TeamMember>
+  onClose: () => void
+  t: TeamText
+  team: Team
+}) {
   return (
     <Dialog onOpenChange={open => !open && onClose()} open={member !== null}>
-      <DialogContent className="max-w-md">{member && <SeatForm key={member.slot ?? 'new'} member={member} onClose={onClose} t={t} team={team} />}</DialogContent>
+      <DialogContent className="max-w-md">
+        {member && <SeatForm key={member.slot ?? 'new'} member={member} onClose={onClose} t={t} team={team} />}
+      </DialogContent>
     </Dialog>
   )
 }
 
-function SeatForm({ member, onClose, t, team }: { member: Partial<TeamMember>; onClose: () => void; t: TeamText; team: Team }) {
+function SeatForm({
+  member,
+  onClose,
+  t,
+  team
+}: {
+  member: Partial<TeamMember>
+  onClose: () => void
+  t: TeamText
+  team: Team
+}) {
   const [profile, setProfile] = useState(member.profile ?? '')
   const [role, setRole] = useState(member.role ?? '')
   const [budget, setBudget] = useState(member.budget?.monthly_usd?.toString() ?? '')
@@ -226,7 +296,9 @@ function SeatForm({ member, onClose, t, team }: { member: Partial<TeamMember>; o
   const others = team.members.filter(m => m.slot !== member.slot)
   // Hire from the bots this install already has; the field still takes any name.
   const { data: roster } = useRoster()
-  const hireable = (roster?.profiles ?? []).map(r => r.name).filter(n => !team.members.some(m => m.profile === n && m.slot !== member.slot))
+  const hireable = (roster?.profiles ?? [])
+    .map(r => r.name)
+    .filter(n => !team.members.some(m => m.profile === n && m.slot !== member.slot))
 
   const save = async () => {
     setBusy(true)
@@ -261,7 +333,12 @@ function SeatForm({ member, onClose, t, team }: { member: Partial<TeamMember>; o
         <DialogTitle>{member.slot ? t.edit : t.addSeat}</DialogTitle>
       </DialogHeader>
       <Field label={t.seatProfile}>
-        <Input list="team-hireable" onChange={e => setProfile(e.target.value)} placeholder={t.seatProfilePlaceholder} value={profile} />
+        <Input
+          list="team-hireable"
+          onChange={e => setProfile(e.target.value)}
+          placeholder={t.seatProfilePlaceholder}
+          value={profile}
+        />
         <datalist id="team-hireable">
           {hireable.map(n => (
             <option key={n} value={n} />
@@ -276,7 +353,12 @@ function SeatForm({ member, onClose, t, team }: { member: Partial<TeamMember>; o
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label={t.seatBudget}>
-          <Input inputMode="decimal" onChange={e => setBudget(e.target.value)} placeholder={t.seatBudgetPlaceholder} value={budget} />
+          <Input
+            inputMode="decimal"
+            onChange={e => setBudget(e.target.value)}
+            placeholder={t.seatBudgetPlaceholder}
+            value={budget}
+          />
         </Field>
         <Field label={t.seatReportsTo}>
           <select

@@ -7,6 +7,8 @@ import './store/power'
 import './store/translucency'
 // Side-effect: applies the persisted user-bubble transparency on load.
 import './store/user-bubble-transparency'
+// Side-effect: paints the look (Soft / Classic) and interface mode on <html>.
+import './store/ui-look'
 // Dev-only render/state churn counters. MUST precede the `react-dom` import
 // below: react-dom captures the devtools hook at module init, so bippy has to
 // install during THIS import's evaluation or every commit goes unseen
