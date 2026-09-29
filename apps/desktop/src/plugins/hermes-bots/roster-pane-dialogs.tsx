@@ -1,6 +1,7 @@
 import { ConfirmDialog, host } from '@hermes/plugin-sdk'
 import type { useI18n } from '@hermes/plugin-sdk'
 
+import type { BotStarter } from './bot-starters'
 import type { BotTemplateId } from './bot-templates'
 import { CreateAgentDialog, CreateGroupChatDialog, GroupDialog } from './create-dialog'
 import type { useRoster } from './data'
@@ -20,6 +21,9 @@ interface renderRosterDialogsProps {
   createTemplate?: BotTemplateId
   setCreateOpen: (value: boolean) => void
   setCreateTemplate: (value: BotTemplateId | undefined) => void
+  /** Hire-gallery starter the dialog should open pre-filled with, and its reset. */
+  createStarter: BotStarter | null
+  setCreateStarter: (value: BotStarter | null) => void
   groupCreateOpen: boolean
   setGroupCreateOpen: (value: boolean) => void
   editing: RosterRow | null
@@ -44,6 +48,8 @@ export function renderRosterDialogs({
   createTemplate,
   setCreateOpen,
   setCreateTemplate,
+  createStarter,
+  setCreateStarter,
   groupCreateOpen,
   setGroupCreateOpen,
   editing,
@@ -64,13 +70,18 @@ export function renderRosterDialogs({
     <>
       <CreateAgentDialog
         initialTemplate={createTemplate}
+        // Remount per open (and per starter): every form field initializes
+        // fresh, so a cancelled draft can never leak into the next "New bot".
+        key={createOpen ? `open:${createStarter?.id || createTemplate || ''}` : 'closed'}
         onClose={() => {
           setCreateOpen(false)
           setCreateTemplate(undefined)
+          setCreateStarter(null)
           void refetch()
         }}
         onConfigureModel={setEditing}
         open={createOpen}
+        starter={createStarter}
         roster={activeSourceRoster}
       />
       <CreateGroupChatDialog

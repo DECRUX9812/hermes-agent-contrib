@@ -44,6 +44,7 @@ import { isBackfilledFacePng } from './avatar-image'
 import { AvatarPicker } from './avatar-picker'
 import { importBot } from './bot-export'
 import { $selectedBot } from './bot-state'
+import { type BotStarter, starterDraft } from './bot-starters'
 import { BOT_TEMPLATE_IDS, BOT_TEMPLATES, disabledSkillNames, stagedSkillsForTemplate } from './bot-templates'
 import type { BotTemplateId } from './bot-templates'
 import { createCanonicalChat } from './canonical-chat'
@@ -121,13 +122,32 @@ interface CreateAgentDialogProps {
   /** Opens the editor for a just-created local bot whose model is not ready. */
   onConfigureModel?: (bot: RosterRow) => void
   open: boolean
+  /** A hire-gallery starter (or the empty roster's shortcut chips): the form
+   *  arrives pre-filled — name, role, persona, face, first-prompt starters —
+   *  and its C1 preset curates skills/model. The caller remounts this dialog
+   *  per open, so the starter is read once, on mount. */
+  starter?: BotStarter | null
   roster: RosterRow[]
 }
 
-export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemplate, roster }: CreateAgentDialogProps) {
+export function CreateAgentDialog({
+  open,
+  onClose,
+  onConfigureModel,
+  initialTemplate,
+  starter,
+  roster
+}: CreateAgentDialogProps) {
   const { t } = useI18n()
   const b = useBots()
-  const [name, setName] = useState('')
+  const initialDraft = starter ? starterDraft(starter) : null
+  const [name, setName] = useState(initialDraft?.name || '')
+  // Persona + starters + template id ride along silently: a gallery pick fills
+  // them, the form never shows them (the persona lands in the SOUL the form's
+  // Advanced editor can still override wholesale).
+  const [persona, setPersona] = useState(initialDraft?.persona || '')
+  const [starters, setStarters] = useState<null | string[]>(initialDraft?.starters || null)
+  const [templateId, setTemplateId] = useState<null | string>(initialDraft?.templateId || null)
   // Create mode: the profile is created LAZILY. Capability toggles are staged in
   // component state; the profile is materialized either on Create (submit) or on
   // the first MCP credential setup (ensureAgentCreated), whichever comes first —
@@ -137,11 +157,12 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
   // button + MCP setup buttons). Distinct from createdRef on purpose:
   // createdRef must stay a slug string for its sibling consumers.
   const flightRef = useRef<Promise<null | string> | null>(null)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [title, setTitle] = useState(initialDraft?.title || '')
+  const [description, setDescription] = useState(initialDraft?.description || '')
   // Default shapes mode: deterministic blob face drawn from the agent's name
-  // (falls back to the legacy shape vocabulary on older SDKs).
-  const [shape, setShape] = useState(blobatarSvg ? 'blobatar' : 'circle')
+  // (falls back to the legacy shape vocabulary on older SDKs). A preset's
+  // pinned silhouette still follows the name — its seed segment stays empty.
+  const [shape, setShape] = useState(initialDraft?.shape || (blobatarSvg ? 'blobatar' : 'circle'))
   const [color, setColor] = useState<null | string>(null)
   const [image, setImage] = useState<null | string>(null)
   const [advanced, setAdvanced] = useState(false)
@@ -275,6 +296,9 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
   }
 
   const reset = () => {
+    setPersona('')
+    setStarters(null)
+    setTemplateId(null)
     setName('')
     setTitle('')
     setDescription('')
@@ -435,9 +459,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
     if (spec.skills.length) {
       // Caps may not have loaded yet (the Advanced tab fetches lazily) — the
       // submit path's profiles.describe fallback covers that case.
-      setCaps(prev =>
-        prev ? { ...prev, skills: stagedSkillsForTemplate(prev.skills, spec) } : prev
-      )
+      setCaps(prev => (prev ? { ...prev, skills: stagedSkillsForTemplate(prev.skills, spec) } : prev))
       setDirtyCaps(prev => ({ ...prev, skills: true }))
     }
   }
@@ -450,6 +472,22 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- applyTemplate reads the reset form state at open time.
   }, [open, initialTemplate])
+
+  // A gallery starter hires through its C1 preset for skills + model only:
+  // its own role line, mission and persona already filled the form, and the
+  // preset's SOUL stub would shadow that persona (composeSoul prefers a
+  // custom soul), so the stub and seeds are put back to the starter's.
+  useEffect(() => {
+    if (!open || !initialDraft || initialDraft.preset === 'custom') {
+      return
+    }
+
+    applyTemplate(initialDraft.preset)
+    setTitle(initialDraft.title)
+    setDescription(initialDraft.description)
+    setSoul('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- read once per mount; the caller remounts per open.
+  }, [open])
 
   // Materialize the profile exactly once. createdRef stores the finished slug
   // (its consumers — the taken check, draft discard on cancel, the MCP setup
@@ -491,6 +529,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
           name: slug,
           title: botTitle,
           description,
+          persona,
           roster,
           customSoul: soul
         }),
@@ -560,6 +599,8 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
           image,
           imageKind: image ? 'photo' : 'shape',
           title: botTitle,
+          ...(templateId ? { template: templateId } : {}),
+          ...(starters?.length ? { starters } : {}),
           created: Date.now()
         }
 
@@ -588,6 +629,8 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
           image,
           imageKind: image ? 'photo' : 'shape',
           title: botTitle,
+          template: templateId ?? undefined,
+          starters: starters ?? undefined,
           created: Date.now()
         })
       }
@@ -769,7 +812,18 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
           />
           {labeled(
             b.editor.name,
-            <Input autoFocus onChange={event => setName(event.target.value)} placeholder="inbox-triage" value={name} />
+            <>
+              <Input
+                aria-label="Bot name"
+                autoFocus
+                onChange={event => setName(event.target.value)}
+                placeholder="Sage"
+                value={name}
+              />
+              {slug ? (
+                <div className="pt-1 text-[0.65rem] text-(--ui-text-quaternary)">{b.editor.savedAs(slug)}</div>
+              ) : null}
+            </>
           )}
           {taken ? (
             <div className="text-xs text-(--ui-accent)">
@@ -815,7 +869,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, initialTemp
           ) : null}
           {labeled(
             b.editor.title,
-            <Input onChange={event => setTitle(event.target.value)} placeholder="Inbox Triage" value={title} />
+            <Input onChange={event => setTitle(event.target.value)} placeholder="Research assistant" value={title} />
           )}
           {labeled(
             b.editor.description,

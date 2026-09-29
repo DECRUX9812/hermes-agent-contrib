@@ -88,6 +88,11 @@ export interface BotMeta {
   screenAutoOpen?: boolean
   shape?: string
   title?: string
+  /** Starter-template id the bot was created from (bot-templates.ts), so the
+   *  empty chat can offer its first-prompt suggestions again. */
+  template?: string
+  /** Clickable first-message suggestions shown in the empty chat. */
+  starters?: string[]
   /** Creation timestamp in ms. Deliberately not copied when duplicating a bot. */
   created?: number
 }

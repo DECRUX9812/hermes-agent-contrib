@@ -7,14 +7,16 @@
  * says whose it is.
  */
 
-import { host, useValue, Wordmark } from '@hermes/plugin-sdk'
+import { host, RowButton, useValue, Wordmark } from '@hermes/plugin-sdk'
+import { useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
+import { chatStarters } from './bot-starters'
 import { $botMeta, $lastRoster } from './data'
 import { useBots } from './i18n'
 import { displayName } from './labels'
-import { botRosterMeta } from './routing'
+import { botRosterMeta, requestForBot } from './routing'
 import type { RosterRow } from './types'
 
 const FACE_SIZE = 96
@@ -63,6 +65,8 @@ export function BotChatEmpty({ sessionId }: { sessionId: string }) {
   const roster = useValue($lastRoster)
   const allMeta = useValue($botMeta)
   useValue(host.state.focusedStoredSessionId)
+  // Hooks before the early return — a bot resolving late must not reorder them.
+  const [sent, setSent] = useState(false)
   const bot = botForChat(roster, sessionId)
 
   if (!bot) {
@@ -78,6 +82,34 @@ export function BotChatEmpty({ sessionId }: { sessionId: string }) {
   // Same rule the rows use: keep a real photo or pet, drop the SVG backfill so
   // the math face can animate.
   const photo = Boolean(image && !isBackfilledFacePng(image))
+
+  /** A starter chip is a real user turn: it submits into the LIVE runtime
+   *  session the transcript is showing (focused first — the prop can be the
+   *  stored id on shells that hand us that). One click locks the row; the
+   *  submitted message fills the transcript and unmounts this slot anyway.
+   *  `busy` is read at click time — the component doesn't subscribe to it. */
+  const submitStarter = (text: string) => {
+    if (sent || host.state.busy?.get?.()) {
+      return
+    }
+
+    const runtimeId = host.state.focusedSessionId?.get?.() || sessionId
+
+    if (!runtimeId) {
+      return
+    }
+
+    setSent(true)
+    void requestForBot(bot, 'prompt.submit', {
+      session_id: runtimeId,
+      text
+    }).catch(err => {
+      setSent(false)
+      host.notifyError(err, 'Could not send that message')
+    })
+  }
+
+  const starters = chatStarters(meta)
 
   return (
     <div
@@ -105,6 +137,23 @@ export function BotChatEmpty({ sessionId }: { sessionId: string }) {
         <Wordmark className="mb-1" text={name} width="calc(80% - 1rem)" />
 
         <p className="m-0 text-center leading-normal tracking-tight">{b.bot.chatEmpty}</p>
+
+        {/* Starter chips: the template's (or generic) first-message ideas.
+            pointer-events-auto re-enables clicks inside the pointer-events-none
+            splash stack; once a prompt lands the transcript fills and this
+            unmounts. */}
+        <div className="pointer-events-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-1.5">
+          {starters.map(text => (
+            <RowButton
+              className="rounded-full border border-(--ui-stroke-secondary) px-3 py-1.5 text-xs text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground disabled:opacity-50"
+              disabled={sent}
+              key={text}
+              onClick={() => submitStarter(text)}
+            >
+              {text}
+            </RowButton>
+          ))}
+        </div>
       </div>
     </div>
   )
