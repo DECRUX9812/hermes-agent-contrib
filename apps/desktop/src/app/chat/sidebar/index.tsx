@@ -279,6 +279,11 @@ const SCROLL_Y = 'overflow-y-auto overflow-x-hidden overscroll-contain scrollbar
 // outer one: nested scrollers would each reserve their own and stack the inset.
 const SCROLL_GUTTER = '[scrollbar-gutter:stable]'
 
+// The pinned-above-sessions boxes (contributed list-top sections, the
+// attention fold). Capped tighter on short windows: at 45% the nav, search and
+// a Bots list already filled a 680px sidebar and pushed the profile rail out.
+const LIST_TOP_BOX = 'scroll-edge-fade max-h-[45%] compact:max-h-[30%] shrink-0 overflow-y-auto pb-1'
+
 // A non-session group's scroll body: own scroller when tall, flattened when compact.
 const GROUP_BODY = cn(SCROLL_Y, COMPACT_FLAT)
 
@@ -1777,7 +1782,7 @@ export function ChatSidebar({
             column. The area is bounded and scrolls its own rows: a tall
             section can never starve the sessions column of a viewport. */}
         {listTopContribs.length > 0 && (
-          <div className="max-h-[45%] shrink-0 overflow-y-auto pb-1">
+          <div className={LIST_TOP_BOX}>
             {listTopContribs.map(c => {
               const data = c.data as SidebarListTopContribution | undefined
               const render = data?.render
@@ -1798,7 +1803,7 @@ export function ChatSidebar({
         {/* The rail's inbox: anything a dot already flags, pulled out of the
             list into a fold of its own so it can't scroll out of sight. */}
         {!trimmedQuery && !showArchived && attentionSessions.length > 0 && (
-          <div className="max-h-[45%] shrink-0 overflow-y-auto pb-1">
+          <div className={LIST_TOP_BOX}>
             <SidebarSessionsSection
               activeSessionId={activeSidebarSessionId}
               card={cardRows}

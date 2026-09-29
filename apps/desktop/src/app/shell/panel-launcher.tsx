@@ -25,6 +25,8 @@ import { $currentCwd } from '@/store/session'
 
 import { $terminalTakeover } from '../right-sidebar/store'
 
+import { CHAT_COMFORT_PX, keepChatRoomy, zoneWidthOf } from './chat-room'
+
 /** Whether the Panels popover is open (the titlebar button toggles it). */
 export const $panelLauncherOpen = atom(false)
 
@@ -88,6 +90,11 @@ const PANELS: readonly PanelSpec[] = [
  * would stack as a tab and hide the first. When the pane arrives in a zone
  * where it covers a panel that was on, dock it next to that panel instead
  * (dockPaneBeside respects a pane the user has placed themselves).
+ *
+ * The chat keeps a readable width on small windows: a panel that would
+ * squeeze it under CHAT_COMFORT_PX stays a tab beside the one it shares a zone
+ * with, and if the chat is still too narrow the sidebar folds away
+ * (chat-room.ts).
  */
 function turnOnBeside(spec: PanelSpec) {
   const shown = new Set(PANELS.flatMap(({ pane }) => (pane && isPaneVisible(pane) ? [pane] : [])))
@@ -96,18 +103,16 @@ function turnOnBeside(spec: PanelSpec) {
 
   const pane = spec.pane
 
-  if (!pane) {
-    return
-  }
-
   requestAnimationFrame(() => {
     const tree = $layoutTree.get()
-    const group = tree ? findGroupOfPane(tree, pane) : null
-    const covered = group?.panes.find(id => id !== pane && shown.has(id))
+    const group = pane && tree ? findGroupOfPane(tree, pane) : null
+    const covered = pane ? group?.panes.find(id => id !== pane && shown.has(id)) : undefined
 
-    if (covered && isPaneVisible(pane)) {
+    if (pane && covered && isPaneVisible(pane) && zoneWidthOf('workspace') - zoneWidthOf(pane) >= CHAT_COMFORT_PX) {
       dockPaneBeside(pane, covered)
     }
+
+    requestAnimationFrame(keepChatRoomy)
   })
 }
 

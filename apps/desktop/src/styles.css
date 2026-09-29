@@ -1960,9 +1960,12 @@ body.guest-pointer-lock :is(webview, iframe) {
 
 /* The dock column owns the composer's width; the composer keeps the 5px
    transparent grab margin that the peel-out drag needs. +10px width compensates
-   that padding so the visible surface keeps its exact width/position. */
+   that padding so the visible surface keeps its exact width/position.
+   The visible surface shares the transcript's TEXT edges (thread content is
+   the same measure minus its 1.5rem inline padding), so messages, tables and
+   the composer line up on one column at every window width. */
 [data-slot='composer-dock'] {
-  width: calc(min(var(--composer-width), calc(100% - 2rem)) + 10px);
+  width: calc(min(var(--composer-width), 100%) - 3rem + 10px);
   padding-bottom: var(--composer-shell-pad-block-end);
 }
 
@@ -4047,9 +4050,44 @@ html[data-hud-window] [data-slot='popover-content'] {
   box-shadow: none;
 }
 
+/* Pills float, so the strip needs a gutter: without it the first pill sat
+   flush against the window edge. 0.5rem + the pill's own px-2 puts its label
+   on the same x as the sidebar rows' text below. */
+:root[data-look='soft'] [data-zone-tabstrip] > [role='tablist'] {
+  padding-inline: 0.375rem;
+}
+
 /* Simple mode reads a size up: people there came to talk, not to scan logs. */
 :root[data-look='soft'][data-interface-mode='simple'] {
   --conversation-text-font-size: 0.9375rem;
   --dt-line-height: 1.6;
   --paragraph-gap: 0.85rem;
+}
+
+/* A capped list that has more below fades its last rows out instead of
+   slicing one mid-line. Scroll-driven: the fade shrinks to nothing as you
+   reach the end, and a list that doesn't scroll has no timeline, so it never
+   fades at all. */
+@property --scroll-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes scroll-edge-fade {
+  0%,
+  85% {
+    --scroll-fade-end: 1.75rem;
+  }
+
+  100% {
+    --scroll-fade-end: 0px;
+  }
+}
+
+.scroll-edge-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scroll-fade-end)), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scroll-fade-end)), transparent);
+  animation: scroll-edge-fade linear both;
+  animation-timeline: scroll(self);
 }

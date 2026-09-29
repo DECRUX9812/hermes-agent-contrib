@@ -283,7 +283,7 @@ export function Intro({ composer, personality, seed }: IntroProps) {
           accent + appearance changes for free. */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 -top-8 -z-10 h-72 bg-[radial-gradient(ellipse_58%_100%_at_50%_0%,color-mix(in_srgb,var(--theme-midground)_10%,transparent),transparent_72%)]"
+        className="absolute inset-x-0 -top-8 -z-10 h-72 bg-[radial-gradient(ellipse_50%_50%_at_50%_50%,color-mix(in_srgb,var(--theme-midground)_10%,transparent),transparent_100%)]"
       />
       <div className="w-full min-w-0">
         {look === 'soft' ? (

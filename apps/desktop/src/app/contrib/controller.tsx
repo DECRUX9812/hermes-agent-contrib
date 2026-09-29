@@ -9,6 +9,7 @@ import { SessionStatusDot } from '@/app/chat/session-status-dot'
 import { SessionTabStatus } from '@/app/chat/session-tab-status'
 import { SkillTag } from '@/app/chat/skill-tag'
 import { PALETTE_AREA, type PaletteContribution, paletteToggle } from '@/app/command-palette/contrib'
+import { installChatRoomGuard } from '@/app/shell/chat-room'
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
 import { AskDirective } from '@/components/assistant-ui/ask-directive'
 import { InlinePreviewDirective } from '@/components/assistant-ui/inline-preview-directive'
@@ -184,7 +185,8 @@ const idle = (node: ReactElement) => <IdleMount>{node}</IdleMount>
 
 // The Live pane reads command output, so it docks wider than the file rails
 // and may be dragged to half a laptop screen.
-const LIVE_PANE_WIDTH = '26rem'
+// Scales with the window: roomy on a desktop monitor, never a third of a laptop.
+const LIVE_PANE_WIDTH = 'clamp(18rem, 30vw, 26rem)'
 const LIVE_PANE_MAX_WIDTH = '44rem'
 // The main tab carries the same session context menu as tile tabs (targets
 // the loaded primary session; no menu on a fresh draft).
@@ -723,6 +725,8 @@ bindPaneVisibility(
 bindPaneVisibility('artifacts', $artifactsOpen, closeArtifactsRail, openArtifactsRail)
 // The live action feed, same shape: follows the focused session, no workspace gate.
 bindPaneVisibility(LIVE_PANE_ID, $liveOpen, closeLivePane, openLivePane)
+// Small windows: the sidebar folds before the chat gets unreadably narrow.
+installChatRoomGuard()
 // ⌃` / statusbar toggle — the terminal COLLAPSES to a rail (tab stays), not
 // hides; PTYs stay alive while collapsed (see PersistentTerminal). Simple has
 // no terminal: where chrome is off a closed one hides, rail and all, and ⌃`

@@ -19,11 +19,15 @@ const TAB =
 
 // Full height: with the strip's rule removed there is no last-pixel row to
 // leave uncovered, so tabs fill the bar and no sliver of gutter shows through.
-const TAB_HORIZONTAL = 'h-full min-w-0 max-w-(--pane-tab-max-width) not-first:border-l not-first:border-l-(--ui-stroke-quaternary)'
+// Tabs SHRINK like browser tabs when the zone narrows: a fixed-width tab was
+// clipped mid-word by the scrolling strip (and slid under the strip's trailing
+// chips) instead of ellipsizing its title.
+const TAB_HORIZONTAL =
+  'h-full min-w-0 shrink max-w-(--pane-tab-max-width) not-first:border-l not-first:border-l-(--ui-stroke-quaternary)'
 
-// A closeable tab's floor keeps short labels left of the close button.
-// A floor, not padding — a tab already wider than it pays nothing.
-const TAB_CLOSEABLE = 'min-w-13'
+// A closeable tab's floor keeps a few characters left of the close button, so
+// a squeezed strip still reads as tabs rather than a row of ×s.
+const TAB_CLOSEABLE = 'min-w-18'
 
 const TAB_VERTICAL =
   'w-full max-h-48 justify-center not-first:border-t not-first:border-t-(--ui-stroke-quaternary) [writing-mode:vertical-rl]'
