@@ -30,6 +30,15 @@ export function reachTargets(platforms: readonly MessagingPlatformInfo[]): Reach
   })
 }
 
+/** A profile's phone-reachable addresses; [] when none, or the bridge is absent.
+ *  Deferred so a missing API bridge (web host, tests) resolves instead of throwing. */
+export function fetchReachTargets(profile: string): Promise<ReachTarget[]> {
+  return Promise.resolve()
+    .then(() => getMessagingPlatforms(profile))
+    .then(result => reachTargets(result.platforms))
+    .catch(() => [])
+}
+
 /**
  * "Every agent, a QR code": the profile's own messaging address, scannable.
  * The pairing and deep links already live on the Messaging page's platform
@@ -60,11 +69,7 @@ export function ReachCard({
   useEffect(() => {
     let live = true
 
-    // Deferred so a missing API bridge (web host, tests) lands in .catch.
-    Promise.resolve()
-      .then(() => getMessagingPlatforms(profile))
-      .then(result => live && setTargets(reachTargets(result.platforms)))
-      .catch(() => live && setTargets([]))
+    void fetchReachTargets(profile).then(next => live && setTargets(next))
 
     return () => {
       live = false

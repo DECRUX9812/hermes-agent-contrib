@@ -4533,6 +4533,8 @@ export interface Translations {
     sourceLineTitle: string
     source: string
     renderedPreview: string
+    table: string
+    tableTruncated: (rows: number) => string
     diff: string
     unknownSize: string
     binaryTitle: string

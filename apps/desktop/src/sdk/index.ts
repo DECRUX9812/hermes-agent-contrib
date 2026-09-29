@@ -1971,7 +1971,8 @@ export { WorkspacePageHeaderControl } from '@/app/contrib/workspace-page-header'
  *  that prints a next run switches its label on this (`t.cron.next` →
  *  `t.cron.overdueSince`) so a dead scheduler never reads as "Next: 7 hr ago". */
 export { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
-export { ReachCard, type ReachTarget, reachTargets } from '@/app/messaging/reach-card'
+export { fetchReachTargets, ReachCard, type ReachTarget, reachTargets } from '@/app/messaging/reach-card'
+export { renderQr } from '@/app/messaging/telegram-qr-setup'
 /** THE master-detail toolkit core uses for list+inspector surfaces (Scheduled
  *  jobs, Kanban, …): a dense left `PanelList` of `PanelListRow`s beside a
  *  scrolling `PanelDetail` of `PanelSectionLabel` / `PanelMeta` / `PanelBlock`.
@@ -2221,6 +2222,7 @@ export { CHAT_HEADER_AREAS, type ChatHeaderSlotContribution, type ChatHeaderSlot
  *  check transcript cards share. */
 export { answeredAfter, chatMessageText } from '@/lib/chat-messages/parts'
 export type { ChatMessage } from '@/lib/chat-messages/types'
+export { FILE_VIEWERS_AREA, type FileViewerContribution, type FileViewerProps } from '@/lib/file-viewers'
 /** THE confirm flow for guarded model switches — when a gateway model-switch
  *  RPC answers `confirm_required` (data-policy / expensive-model guard),
  *  route it through this shared applier instead of forking a per-surface

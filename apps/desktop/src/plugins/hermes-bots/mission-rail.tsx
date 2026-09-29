@@ -28,7 +28,6 @@ import { type ReactNode, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { BotDeliverablesSection } from './bot-deliverables'
-import { exportBot } from './bot-export'
 import { BotSessionDeck } from './bot-session-deck'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { BotTaskLog } from './bot-task-log'
@@ -53,6 +52,8 @@ import { $railCollapsed, type RailSectionId, setRailSectionCollapsed } from './r
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
 import { BotComputerPanel } from './screen-panel'
+import { ShareBotDialog } from './share-dialog'
+import { useShareText } from './share-i18n'
 import type { RosterRow } from './types'
 
 /** One collapsible rail section: the slim header row carries the fold
@@ -114,6 +115,8 @@ function BotProfileCard({
   const subtitle = botRole(bot, meta)
   const where = bot.connectionLabel || (bot.connectionId && bot.connectionId !== 'local' ? '' : b.bot.thisDevice)
   const tone = LIVE_TONE[live.kind] ?? 'idle'
+  const share = useShareText()
+  const [sharing, setSharing] = useState(false)
 
   return (
     <div className="px-3 pt-3 pb-3" data-testid="rail-profile-card">
@@ -147,16 +150,12 @@ function BotProfileCard({
               <Codicon name="edit" />
             </Button>
           </Tip>
-          <Tip label={b.bot.exportBotMenu}>
-            <Button
-              aria-label={b.bot.exportBotMenu}
-              onClick={() => void exportBot(bot, meta ?? null)}
-              size="icon-xs"
-              variant="ghost"
-            >
+          <Tip label={share.title(name)}>
+            <Button aria-label={share.title(name)} onClick={() => setSharing(true)} size="icon-xs" variant="ghost">
               <Codicon name="share" />
             </Button>
           </Tip>
+          <ShareBotDialog bot={bot} meta={meta ?? null} onOpenChange={setSharing} open={sharing} />
         </div>
       </div>
       <div className="mt-2.5 flex flex-wrap items-center gap-1">

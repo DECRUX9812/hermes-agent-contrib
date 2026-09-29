@@ -20,6 +20,8 @@ import { chunkTextLines, useFixedRowWindow } from '@/components/chat/fixed-row-w
 import { LazyShiki as ShikiHighlighter } from '@/components/chat/shiki-highlighter'
 import { PageLoader } from '@/components/page-loader'
 import { Tip } from '@/components/ui/tooltip'
+import { useContributions } from '@/contrib'
+import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { translateNow, useI18n } from '@/i18n'
 import {
   desktopFileDiff,
@@ -30,6 +32,7 @@ import {
   writeDesktopFileText
 } from '@/lib/desktop-fs'
 import { ExternalLink } from '@/lib/external-link'
+import { FILE_VIEWERS_AREA, type ResolvedFileViewer, viewerLabel, viewersFor } from '@/lib/file-viewers'
 import { Check, Pencil, X } from '@/lib/icons'
 import { createMemoizedMathPlugin } from '@/lib/katex-memo'
 import { isComposerChord } from '@/lib/keybinds/chords'
@@ -501,13 +504,29 @@ export function MarkdownPreview({ filePath, text }: { filePath?: string; text: s
   )
 }
 
+/** A contributed viewer, mounted as a component inside its own error
+ *  boundary: its hooks stay its own, and a throw degrades to an inline error
+ *  rather than a dead preview. */
+function FileViewerMount({ filePath, text, viewer }: { filePath: string; text: string; viewer: ResolvedFileViewer }) {
+  const render = useMemo(() => () => viewer.render({ filePath, text }), [viewer, filePath, text])
+
+  return (
+    <ContribBoundary id={viewer.id}>
+      <ContribRender render={render} />
+    </ContribBoundary>
+  )
+}
+
 export function PreviewModeSwitcher({
   active,
+  labels,
   modes,
   onSelect,
   trailing
 }: {
   active: PreviewViewMode
+  /** Labels for contributed viewer modes (`viewer:<id>`). */
+  labels?: Record<string, string>
   modes: PreviewViewMode[]
   onSelect: (mode: PreviewViewMode) => void
   trailing?: ReactNode
@@ -519,10 +538,11 @@ export function PreviewModeSwitcher({
     return null
   }
 
-  const label: Record<PreviewViewMode, string> = {
+  const label: Record<string, string> = {
     diff: t.preview.diff,
     rendered: t.preview.renderedPreview,
-    source: t.preview.source
+    source: t.preview.source,
+    ...labels
   }
 
   return (
@@ -726,7 +746,8 @@ export function SourceView({ filePath, language, text }: { filePath?: string; la
   )
 }
 
-export type PreviewViewMode = 'diff' | 'rendered' | 'source'
+/** Built-in views, plus `viewer:<id>` for a contributed file viewer. */
+export type PreviewViewMode = 'diff' | 'rendered' | 'source' | `viewer:${string}`
 
 export function LocalFilePreview({
   onClose,
@@ -771,6 +792,8 @@ export function LocalFilePreview({
   const connection = useStore($connection)
   const fsCacheKey = desktopFsCacheKey(connection)
   const filePath = filePathForTarget(target)
+  const viewerContributions = useContributions(FILE_VIEWERS_AREA)
+  const viewers = useMemo(() => viewersFor(viewerContributions, filePath), [viewerContributions, filePath])
   const isImage = target.previewKind === 'image'
   const isPdf = target.previewKind === 'pdf'
 
@@ -1169,16 +1192,30 @@ export function LocalFilePreview({
       modes.push('rendered')
     }
 
+    for (const viewer of viewers) {
+      modes.push(`viewer:${viewer.id}`)
+    }
+
     modes.push('source')
 
     if (hasDiff) {
       modes.push('diff')
     }
 
-    const autoMode: PreviewViewMode = hasDiff ? 'diff' : isMarkdown ? 'rendered' : 'source'
+    const preferredViewer = viewers.find(viewer => viewer.preferred)
+
+    const autoMode: PreviewViewMode = hasDiff
+      ? 'diff'
+      : isMarkdown
+        ? 'rendered'
+        : preferredViewer
+          ? `viewer:${preferredViewer.id}`
+          : 'source'
+
     // The pane hands an HTML file over only once Source was picked; that pick
     // outranks the diff-first default.
     const mode = userMode && modes.includes(userMode) ? userMode : onSelectRendered ? 'source' : autoMode
+    const activeViewer = viewers.find(viewer => mode === `viewer:${viewer.id}`)
 
     const selectMode = (next: PreviewViewMode) => {
       if (next === 'rendered' && onSelectRendered) {
@@ -1206,6 +1243,7 @@ export function LocalFilePreview({
         )}
         <PreviewModeSwitcher
           active={mode}
+          labels={Object.fromEntries(viewers.map(viewer => [`viewer:${viewer.id}`, viewerLabel(viewer)]))}
           modes={modes}
           onSelect={selectMode}
           trailing={
@@ -1224,7 +1262,9 @@ export function LocalFilePreview({
           }
         />
         <div className="min-h-0 flex-1 overflow-auto">
-          {mode === 'rendered' ? (
+          {activeViewer ? (
+            <FileViewerMount filePath={filePath} text={state.text} viewer={activeViewer} />
+          ) : mode === 'rendered' ? (
             <MarkdownPreview filePath={filePath} text={state.text} />
           ) : mode === 'diff' ? (
             <FileDiffPanel

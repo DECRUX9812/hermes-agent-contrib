@@ -5660,6 +5660,8 @@ export const frOverrides = {
     sourceLineTitle: 'Clic pour sélectionner · shift-clic pour étendre · glisser vers le compositeur',
     source: 'SOURCE',
     renderedPreview: 'APERÇU',
+    table: 'TABLEAU',
+    tableTruncated: (rows: number) => `${rows.toLocaleString()} premières lignes affichées. La source contient tout le fichier.`,
     diff: 'DIFF',
     unknownSize: 'taille inconnue',
     binaryTitle: 'Cela ressemble à un fichier binaire',

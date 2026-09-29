@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 import { atom, computed } from 'nanostores'
 import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
 
+import { TableViewer } from '@/app/chat/right-rail/table-viewer'
 import { SessionDraftTitle } from '@/app/chat/session-draft-title'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
 import { SessionTabStatus } from '@/app/chat/session-tab-status'
@@ -47,6 +48,7 @@ import { registry } from '@/contrib/registry'
 import { discoverRuntimePlugins } from '@/contrib/runtime-loader'
 import { LocalizedTabTitle, translateNow } from '@/i18n'
 import { NEW_SESSION_TITLE, sessionTitle as storedSessionTitle } from '@/lib/chat-runtime'
+import { FILE_VIEWERS_AREA, type FileViewerContribution } from '@/lib/file-viewers'
 import {
   Activity,
   Archive,
@@ -944,6 +946,18 @@ registry.register({
   data: {
     render: ({ sessionId }) => <MutedSessionGlyph sessionId={sessionId} />
   } satisfies SessionRowSlotContribution
+})
+
+// The first file viewer: CSV/TSV as a table, through the same area plugins use.
+registry.register({
+  id: 'viewer.table',
+  area: FILE_VIEWERS_AREA,
+  data: {
+    label: () => translateNow('preview.table'),
+    matches: filePath => /\.(csv|tsv)$/i.test(filePath),
+    preferred: true,
+    render: ({ filePath, text }) => <TableViewer filePath={filePath} text={text} />
+  } satisfies FileViewerContribution
 })
 
 // ---------------------------------------------------------------------------

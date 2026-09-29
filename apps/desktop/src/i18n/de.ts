@@ -5650,6 +5650,8 @@ export const deOverrides = {
     sourceLineTitle: 'Zum Auswählen klicken · zum Erweitern Umschalt-Klick · zum Composer ziehen',
     source: 'QUELLE',
     renderedPreview: 'VORSCHAU',
+    table: 'TABELLE',
+    tableTruncated: (rows: number) => `Die ersten ${rows.toLocaleString()} Zeilen. Die Quelle enthält die ganze Datei.`,
     diff: 'DIFF',
     unknownSize: 'unbekannte Größe',
     binaryTitle: 'Das sieht wie eine Binärdatei aus',

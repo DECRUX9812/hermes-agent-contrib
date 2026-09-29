@@ -284,6 +284,21 @@ face follows the pointer (`BotFace follow`, off under reduced motion) and works
 when the bot works. Soft shows the face large on a floor shadow with a plain
 name and "role · status"; Classic keeps the lettered name.
 
+## Motion that carries meaning
+
+- **Streamed answers are paced, not dumped** (`lib/stream-pacing.ts`,
+  `lib/use-paced-text.ts`, adapted from Codex's TUI commit-tick policy): bursts
+  ease in at a steady cadence; a deep or stale backlog drains at once, with
+  hysteresis so the two gears never flap. Only appends are paced — opening a
+  chat mid-stream, settling, replaced text and reduced motion all show the
+  full text immediately.
+- **File viewers** are a contribution area (`preview.viewers`,
+  `lib/file-viewers.ts`): a viewer adds one mode to the preview switcher for
+  the files it matches. Core ships the first one, CSV/TSV as a table.
+- **Share a bot** (`plugins/hermes-bots/share-dialog.tsx`): the preview is the
+  exact PNG — face, name, role, "Ask me", QR when reachable — plus an invite
+  and the bot file.
+
 ## Badges — one component
 
 `src/components/ui/badge.tsx`. Variants: `default` (tinted primary), `muted`,

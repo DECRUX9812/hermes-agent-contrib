@@ -5644,6 +5644,8 @@ export const esOverrides = {
     sourceLineTitle: 'Haz clic para seleccionar · Mayús-clic para ampliar · arrastra al compositor',
     source: 'FUENTE',
     renderedPreview: 'VISTA PREVIA',
+    table: 'TABLA',
+    tableTruncated: (rows: number) => `Se muestran las primeras ${rows.toLocaleString()} filas. El código fuente tiene el archivo completo.`,
     diff: 'Diferencias',
     unknownSize: 'tamaño desconocido',
     binaryTitle: 'Esto parece un archivo binario',

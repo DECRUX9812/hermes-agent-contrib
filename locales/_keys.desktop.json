@@ -2293,6 +2293,8 @@
     "preview.source",
     "preview.sourceLineTitle",
     "preview.tab",
+    "preview.table",
+    "preview.tableTruncated",
     "preview.truncated",
     "preview.unavailable",
     "preview.unknownSize",

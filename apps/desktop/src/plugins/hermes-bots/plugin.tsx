@@ -118,6 +118,7 @@ import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './ro
 import { startScreenAutoRaise } from './screen-autoraise'
 import { ProfileGroupScreenPortal } from './screen-portal'
 import { startHideSweepScheduler } from './session-sweep'
+import { SHARE_LOCALES } from './share-i18n'
 import { bumpBotOpenGeneration, getBotOpenGeneration, ID, setPluginCtx } from './shared'
 import { TEAM_LOCALES } from './team-i18n'
 import { TeamPage } from './team-page'
@@ -167,6 +168,7 @@ export default {
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES)
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
+    const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
     setGroupChatSyncDisposed(false)
     startFaceClock()
     // The cross-connection relay rides every gateway socket this Desktop
@@ -181,6 +183,7 @@ export default {
       ctx.onDispose(disposeLocales)
       ctx.onDispose(disposeTeamLocales)
       ctx.onDispose(disposeHireLocales)
+      ctx.onDispose(disposeShareLocales)
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)

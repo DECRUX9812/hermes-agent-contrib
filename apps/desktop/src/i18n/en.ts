@@ -5274,6 +5274,8 @@ export const en: Translations = {
     sourceLineTitle: 'Click to select · shift-click to extend · drag to composer',
     source: 'SOURCE',
     renderedPreview: 'PREVIEW',
+    table: 'TABLE',
+    tableTruncated: (rows: number) => `Showing the first ${rows.toLocaleString()} rows. Source has the whole file.`,
     diff: 'DIFF',
     unknownSize: 'unknown size',
     binaryTitle: 'This looks like a binary file',
