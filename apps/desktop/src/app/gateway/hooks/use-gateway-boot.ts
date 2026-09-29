@@ -18,6 +18,7 @@ import {
   failDesktopBoot,
   setDesktopBootStep
 } from '@/store/boot'
+import { noteBackendDrop, noteBackendExited } from '@/store/desktop-metrics'
 import {
   $gateway,
   activeGateway,
@@ -387,6 +388,12 @@ export function useGatewayBoot({
           resetReconnectBackoff()
         }
 
+        // The connected→disconnected edge after a healthy boot, not a switch or our own manual close.
+        if (openedAt !== null && s.bootCompleted && !$gatewaySwitching.get() && s.ownCloseReason !== 'manual') {
+          noteBackendDrop(s.ownCloseReason === 'timeout' ? 'timeout' : null)
+        }
+
+        s.ownCloseReason = null
         openedAt = null
 
         if (s.bootCompleted && !$gatewaySwitching.get()) {
@@ -459,6 +466,7 @@ export function useGatewayBoot({
       // Only explicit recovery may retry a credential that requires sign-in.
       s.primaryReauthError = null
       s.reauthNotified = false
+      s.ownCloseReason = 'manual'
       gateway.close()
       clearReconnectTimer()
       resetReconnectBackoff()
@@ -601,6 +609,8 @@ export function useGatewayBoot({
       if ($gatewaySwitching.get()) {
         return
       }
+
+      noteBackendExited()
 
       // While the boot overlay is up it already shows the failure with its own
       // Retry, and the reconnect handler below is a no-op before boot completes

@@ -450,6 +450,8 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
   const { LruCache } = await import('../../lib/lru-cache')
 
   return {
+    // Real value: approval.respond forwards it as its client deadline (#60654).
+    APPROVAL_RESPOND_TIMEOUT_MS: 300_000,
     atom: nanostores.atom,
     LruCache,
     // Feature-detected SDK members: the modules read them off the namespace

@@ -1,4 +1,4 @@
-import { sameAttachmentTurn } from './attachment-turn'
+import { attachmentTolerantUserText, sameAttachmentTurn } from './attachment-turn'
 import { chatMessageText } from './parts'
 import type { ChatMessage, ChatMessagePart } from './types'
 
@@ -113,6 +113,12 @@ const tailTurnAssistantMatchIndex = (
  * settled assistant reply after the match is the durable twin of the failed
  * turn. Returns -1 when no rewrite-marker pair exists — plain turns keep the
  * conservative preserve path.
+ *
+ * #122079: two pastes of the SAME captioned screenshot strip to identical
+ * tolerant captions — the marker paths that tell them apart are removed by the
+ * compare — so a first-match fold pairs the second paste's error with the
+ * FIRST paste's settled reply. The pastes are ordered, so pair them by
+ * position: the n-th local captioned paste names the n-th stored one.
  */
 const attachmentTurnAssistantMatchIndex = (
   storedMessages: ChatMessage[],
@@ -128,13 +134,29 @@ const attachmentTurnAssistantMatchIndex = (
     return -1
   }
 
-  const storedUserIndex = storedMessages.findIndex(
-    stored => stored.role === 'user' && sameAttachmentTurn(stored, localUser)
-  )
+  // How many same-tolerant-caption user rows precede the local one, prompt
+  // included: the ordinal of this paste among its caption twins.
+  const localCaption = attachmentTolerantUserText(chatMessageText(localUser))
 
-  if (storedUserIndex === -1) {
+  const localCaptionOrdinal = localMessages
+    .slice(0, localMessages.indexOf(localUser))
+    .filter(
+      message => message.role === 'user' && attachmentTolerantUserText(chatMessageText(message)) === localCaption
+    ).length
+
+  const matchingStoredUserIndices: number[] = []
+
+  storedMessages.forEach((stored, index) => {
+    if (stored.role === 'user' && sameAttachmentTurn(stored, localUser)) {
+      matchingStoredUserIndices.push(index)
+    }
+  })
+
+  if (matchingStoredUserIndices.length <= localCaptionOrdinal) {
     return -1
   }
+
+  const storedUserIndex = matchingStoredUserIndices[localCaptionOrdinal]
 
   const reply = storedMessages
     .slice(storedUserIndex + 1)
@@ -325,11 +347,31 @@ function localAssistantErrorIdsToPreserve(
   // data: ref, with no rowId to bridge them (#120978). The tolerant arm is
   // gated on rewrite markers + local attachment evidence so plain repeats are
   // never swallowed.
+  //
+  // #122079: two pastes of the SAME caption strip to identical tolerant
+  // captions, so an untethered tolerant claim drops the SECOND paste's prompt
+  // as "already represented" by the FIRST paste's committed row — an orphaned
+  // error bubble. Only the same paste-ordinal is the same turn.
+  const tailUserTolerantText = tailUserInNext ? attachmentTolerantUserText(chatMessageText(tailUserInNext)) : ''
+
+  const captionOrdinal = (messages: ChatMessage[], target: ChatMessage): number =>
+    messages
+      .slice(0, messages.indexOf(target))
+      .filter(
+        message =>
+          message.role === 'user' && attachmentTolerantUserText(chatMessageText(message)) === tailUserTolerantText
+      ).length
+
+  const tailCaptionOrdinal = tailUserInNext ? captionOrdinal(mergedNextMessages, tailUserInNext) : 0
+
   const matchesTailUserInNext = (candidate: ChatMessage): boolean =>
     Boolean(tailUserInNext) &&
     ((normalizedMessageText(candidate) === tailUserText &&
       (candidate.attachmentRefs ?? []).join('\n') === tailUserRefs) ||
-      (tailUserInNext ? sameAttachmentTurn(tailUserInNext, candidate) : false))
+      (tailUserInNext
+        ? sameAttachmentTurn(tailUserInNext, candidate) &&
+          captionOrdinal(currentMessages, candidate) === tailCaptionOrdinal
+        : false))
 
   for (let index = 0; index < currentMessages.length; index += 1) {
     const message = currentMessages[index]
@@ -463,6 +505,41 @@ export function preserveLocalAssistantErrors(
   const preserveIds: Set<string> = localAssistantErrorIdsToPreserve(merged, currentMessages)
 
   return insertPreservedErrorRuns(merged, currentMessages, preserveIds)
+}
+
+/**
+ * Re-graft trailing client-local `system` notices (the fallback-switch notice
+ * from status.update): refreshes rebuild from stored rows, which never carry
+ * them, so the notice vanished on the next refresh (#126422). Stored rows own
+ * a `rowId` and are left to the page. Idempotent by id and text.
+ */
+export function preserveLocalSystemNotices(nextMessages: ChatMessage[], currentMessages: ChatMessage[]): ChatMessage[] {
+  const trailing: ChatMessage[] = []
+
+  for (let index = currentMessages.length - 1; index >= 0; index -= 1) {
+    const message = currentMessages[index]
+
+    if (message.role !== 'system') {
+      break
+    }
+
+    if (message.rowId === undefined) {
+      trailing.unshift(message)
+    }
+  }
+
+  if (!trailing.length) {
+    return nextMessages
+  }
+
+  const nextIds = new Set(nextMessages.map(message => message.id))
+  const nextTexts = new Set(nextMessages.map(message => chatMessageText(message).trim()))
+
+  const unstored = trailing.filter(
+    message => !nextIds.has(message.id) && !nextTexts.has(chatMessageText(message).trim())
+  )
+
+  return unstored.length ? [...nextMessages, ...unstored] : nextMessages
 }
 
 export function branchGroupForUser(userMessage: ChatMessage): string {

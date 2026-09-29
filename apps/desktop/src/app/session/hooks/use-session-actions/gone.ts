@@ -2,10 +2,12 @@ import {useCallback} from 'react'
 
 import {deleteSession} from '@/hermes'
 import {useI18n} from '@/i18n'
+import {clearClarifyRequest} from '@/store/clarify'
 import {clearQueuedPrompts} from '@/store/composer-queue'
 import {$pinnedSessionIds} from '@/store/layout'
 import {clearNotifications, notifyError} from '@/store/notifications'
 import {$profiles} from '@/store/profile'
+import {clearAllPrompts} from '@/store/prompts'
 import {$messages, sessionPinId, setActiveSessionId, setFreshDraftReady, setMessages, setSelectedStoredSessionId} from '@/store/session'
 import {clearSessionControl} from '@/store/session-control'
 import {beginSessionMutation, endSessionMutation, tombstoneSessions, untombstoneSessions} from '@/store/session-removal'
@@ -16,13 +18,14 @@ import {$archivedSessions} from '@/store/sidebar-archive'
 import {dropTranscriptTailEverywhere} from '@/store/transcript-tail-cache'
 
 import {sessionRoute} from '../../../routes'
+import type {ClientSessionState} from '../../../types'
 
 import type { SessionActionHandles, SessionActionsOptions } from './options'
 import { applyStoredUsage } from './resume'
-import {dropListedSession, findListedSession, resolveSessionProfile, restoreListedSession, sessionMatchesStoredId} from './utils'
+import {dropListedSession, findListedSession, isSessionGoneError, resolveSessionProfile, restoreListedSession, sessionMatchesStoredId} from './utils'
 
 export function useGoneActions(
-  { activeSessionIdRef, navigate, requestGateway, runtimeIdByStoredSessionIdRef, selectedStoredSessionIdRef, sessionStateByRuntimeIdRef }: SessionActionsOptions,
+  { activeSessionIdRef, navigate, requestGateway, runtimeIdByStoredSessionIdRef, selectedStoredSessionIdRef, sessionStateByRuntimeIdRef, updateSessionState }: SessionActionsOptions,
   { startFreshSessionDraft }: Pick<SessionActionHandles, 'startFreshSessionDraft'>
 ) {
   const { t } = useI18n()
@@ -66,7 +69,17 @@ export function useGoneActions(
       // delete lands in the same tick, which used to leave the doomed route in
       // place and let the generic 4001 recovery rebind it.
       const wasSelected = selectedStoredSessionIdRef.current === storedSessionId
-      const closingRuntimeId = wasSelected ? activeSessionIdRef.current : null
+
+      // Resolve the doomed session's live runtime from the SELECTION or the
+      // stored→runtime map. Deleting a NON-selected (sidebar/background) session
+      // used to skip this entirely, so its in-flight turn kept running and could
+      // surface an approval/clarify prompt for a conversation that no longer
+      // exists (#75587).
+      const closingRuntimeId =
+        (wasSelected ? activeSessionIdRef.current : null) ??
+        runtimeIdByStoredSessionIdRef.current.get(storedSessionId) ??
+        null
+
       const previousMessages = $messages.get()
       const previousPinned = $pinnedSessionIds.get()
 
@@ -101,6 +114,43 @@ export function useGoneActions(
 
       try {
         if (closingRuntimeId) {
+          // Deleting a session must END its turn, not just drop the row.
+          // `session.close` tears down the runtime but does not walk the
+          // interrupt path that releases approval / clarify / sudo / secret
+          // waits, so a blocked run could outlive its sidebar row and surface a
+          // blocking prompt (and native notification) for a conversation that is
+          // gone (#75587). Mark the runtime interrupted first so a
+          // blocking-input request already queued on the transport is dropped
+          // instead of parking its overlay, then interrupt, then close.
+          let previousInterruptState: Pick<ClientSessionState, 'interrupted' | 'needsInput'> | null = null
+
+          updateSessionState(closingRuntimeId, state => {
+            previousInterruptState = { interrupted: state.interrupted, needsInput: state.needsInput }
+
+            return { ...state, interrupted: true, needsInput: false }
+          })
+
+          try {
+            await requestForSessionProfile(removedOwner, requestGateway, 'session.interrupt', {
+              session_id: closingRuntimeId
+            })
+          } catch (error) {
+            // A missing runtime has no turn left to stop. Any other failure means
+            // deletion cannot safely continue: restore the live state and let the
+            // outer rollback put the conversation back in the sidebar.
+            if (!isSessionGoneError(error)) {
+              updateSessionState(closingRuntimeId, state =>
+                previousInterruptState ? { ...state, ...previousInterruptState } : state
+              )
+              throw error
+            }
+          }
+
+          // Catch a blocking-input request already queued before the interrupted
+          // flag became visible to this renderer.
+          clearAllPrompts(closingRuntimeId)
+          clearClarifyRequest(undefined, closingRuntimeId)
+
           await requestForSessionProfile(removedOwner, requestGateway, 'session.close', {
             session_id: closingRuntimeId
           }).catch(() => undefined)
@@ -176,7 +226,8 @@ export function useGoneActions(
       runtimeIdByStoredSessionIdRef,
       selectedStoredSessionIdRef,
       sessionStateByRuntimeIdRef,
-      startFreshSessionDraft
+      startFreshSessionDraft,
+      updateSessionState
     ]
   )
 

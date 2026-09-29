@@ -1,5 +1,6 @@
 import { isGatewayWebSocketUrl, reconnectBackoffDelayMs } from '@hermes/shared'
 
+import { reportStartupLatency } from '@/app/gateway/report-startup-latency'
 import type { HermesConnection } from '@/global'
 import type { HermesGateway } from '@/hermes'
 import { translateNow } from '@/i18n'
@@ -77,7 +78,7 @@ export function createGatewayBootPhases({ s, desktop, gateway, callbacksRef, pub
     const peer = isPeerInstanceWindow()
 
     const route = profile
-      ? { profile, connectionId: peer ? new URLSearchParams(window.location.search).get('connectionId') : null }
+      ? { profile, connectionId: new URLSearchParams(window.location.search).get('connectionId') }
       : startup && !peer
         ? await desktop.profile?.getDefault?.()
         : null
@@ -374,6 +375,8 @@ export function createGatewayBootPhases({ s, desktop, gateway, callbacksRef, pub
       if (s.cancelled) {
         return
       }
+
+      void reportStartupLatency(desktop, (method, params) => gateway.request(method, params))
 
       // Profile adoption must land first: refreshSessions scopes its fetch by
       // $profileScope ← $activeGatewayProfile. The remaining three fetches

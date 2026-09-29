@@ -1,43 +1,106 @@
-import {useCallback, useRef} from 'react'
+import { useCallback, useRef } from 'react'
 
-import {extendRefreshPageToOverlap, graftRefreshedTailOntoBackfill, olderPageReader} from '@/app/chat/transcript-backfill'
-import {fetchStoredTranscriptAcrossBackends, getLatestSessionMessages} from '@/hermes'
-import {useI18n} from '@/i18n'
-import {type ChatMessage, preserveLocalAssistantErrors, restorePendingClarifyToolCall, settlePendingClarifyToolCall, stripPendingClarifyProjectionForCache, toChatMessages} from '@/lib/chat-messages'
-import {markReasoningEffortPending} from '@/lib/chat-runtime'
-import {isMissingRpcMethod} from '@/lib/gateway-rpc'
-import {recoverInFlightTurnJournal} from '@/lib/inflight-turn-journal'
-import {$clarifyRequests} from '@/store/clarify'
-import {announceGoneSessionDraft} from '@/store/composer'
-import {$connectionRequests} from '@/store/connection-request'
-import {$gateway, openGatewayForAgent, openGatewayForProfile, pendingSessionReplay} from '@/store/gateway'
-import {$gatewaySwitching} from '@/store/gateway-switch'
-import {clearNotifications, notify, notifyError} from '@/store/notifications'
-import {$activeGatewayProfile, $gatewaySwapTarget, $showAllProfiles, ensureGatewayAgent, ensureGatewayProfile, normalizeProfileKey} from '@/store/profile'
-import {receiveApprovalRequest, replayPendingApproval} from '@/store/prompts'
-import {clearStoredTranscriptReadOnly, markStoredTranscriptReadOnly} from '@/store/read-only-transcript'
-import {$connection, $messages, $sessions, getSessionOwnerHint, setActiveSessionId, setAwaitingResponse, setBusy, setCurrentBranch, setCurrentCwdTransient, setCurrentUsage, setFreshDraftReady, setMessages, setResumeExhaustedSessionId, setResumeFailedSessionId, setSelectedStoredSessionId, setSessionStartedAt, setWorkspaceCwdOwner} from '@/store/session'
-import {isSessionOwnerResolutionError} from '@/store/session-owner-resolution'
-import {isSessionRemovalPending} from '@/store/session-removal'
-import {requestForSessionProfile, type SessionOwnerScope, type SessionProfileRoute} from '@/store/session-request-router'
-import {$sessionTiles, closeSessionTile, dropSessionState, publishSessionState} from '@/store/session-states'
-import {restoreSessionTodosFromSnapshot} from '@/store/todos'
-import {dropTranscriptTail, saveTranscriptTail} from '@/store/transcript-tail-cache'
-import {isWatchWindow} from '@/store/windows'
-import type {SessionMessage, SessionMessagesResponse, SessionResumeResult, UsageStats} from '@/types/hermes'
+import {
+  extendRefreshPageToOverlap,
+  graftRefreshedTailOntoBackfill,
+  olderPageReader
+} from '@/app/chat/transcript-backfill'
+import { fetchStoredTranscriptAcrossBackends, getLatestSessionMessages } from '@/hermes'
+import { useI18n } from '@/i18n'
+import {
+  type ChatMessage,
+  preserveLocalAssistantErrors,
+  restorePendingClarifyToolCall,
+  settlePendingClarifyToolCall,
+  stripPendingClarifyProjectionForCache,
+  toChatMessages
+} from '@/lib/chat-messages'
+import { markReasoningEffortPending } from '@/lib/chat-runtime'
+import { isMissingRpcMethod } from '@/lib/gateway-rpc'
+import { recoverInFlightTurnJournal } from '@/lib/inflight-turn-journal'
+import { latestSessionTodoSnapshot } from '@/lib/todos'
+import { $clarifyRequests } from '@/store/clarify'
+import { announceGoneSessionDraft } from '@/store/composer'
+import { $connectionRequests } from '@/store/connection-request'
+import { $gateway, openGatewayForAgent, openGatewayForProfile, pendingSessionReplay } from '@/store/gateway'
+import { $gatewaySwitching } from '@/store/gateway-switch'
+import { clearNotifications, notify, notifyError } from '@/store/notifications'
+import {
+  $activeGatewayProfile,
+  $gatewaySwapTarget,
+  $showAllProfiles,
+  ensureGatewayAgent,
+  ensureGatewayProfile,
+  normalizeProfileKey
+} from '@/store/profile'
+import { receiveApprovalRequest, replayPendingApproval } from '@/store/prompts'
+import { clearStoredTranscriptReadOnly, markStoredTranscriptReadOnly } from '@/store/read-only-transcript'
+import {
+  $connection,
+  $messages,
+  $sessions,
+  getSessionOwnerHint,
+  setActiveSessionId,
+  setAwaitingResponse,
+  setBusy,
+  setCurrentBranch,
+  setCurrentCwdTransient,
+  setCurrentUsage,
+  setFreshDraftReady,
+  setMessages,
+  setResumeExhaustedSessionId,
+  setResumeFailedSessionId,
+  setSelectedStoredSessionId,
+  setSessionStartedAt,
+  setWorkspaceCwdOwner
+} from '@/store/session'
+import { isSessionOwnerResolutionError } from '@/store/session-owner-resolution'
+import { isSessionRemovalPending } from '@/store/session-removal'
+import {
+  requestForSessionProfile,
+  type SessionOwnerScope,
+  type SessionProfileRoute
+} from '@/store/session-request-router'
+import { $sessionTiles, closeSessionTile, dropSessionState, publishSessionState } from '@/store/session-states'
+import { restoreSessionTodosFromSnapshot } from '@/store/todos'
+import { dropTranscriptTail, saveTranscriptTail } from '@/store/transcript-tail-cache'
+import { isWatchWindow } from '@/store/windows'
+import type { SessionMessage, SessionMessagesResponse, SessionResumeResult, UsageStats } from '@/types/hermes'
 
-import type {ClientSessionState} from '../../../types'
-import {singleFlightSessionResume} from '../use-prompt-actions/single-flight-resume'
+import type { ClientSessionState } from '../../../types'
+import { singleFlightSessionResume } from '../use-prompt-actions/single-flight-resume'
 
 import { createdThisRun } from './create'
-import {captureDisplayHydration} from './display-hydration'
+import { captureDisplayHydration } from './display-hydration'
 import type { SessionActionHandles, SessionActionsOptions } from './options'
-import {reconcilePersistedLiveTurn} from './persisted-live-turn'
-import {provisionalTranscriptPaint, transcriptRestScope} from './provisional-transcript'
-import {pendingClarifyToolPayload, restorePendingClarifyFromSnapshot} from './restore-pending-clarify'
-import {projectPendingConnection, restorePendingConnectionFromSnapshot} from './restore-pending-connection'
-import {createPersistedDisplayTranscriptProvenance, hasPersistedDisplayTranscriptProvenance, withoutTranscriptProvenance} from './transcript-provenance'
-import {appendLiveSessionProjection, applyRuntimeInfo, applyStoredSessionPreviewRuntimeInfo, chatMessageArraysEquivalent, dedupeInflightUserAgainstTranscript, goneSessionVerdict, isSessionGoneError, overlayConcurrentMessageChanges, patchSessionWorkspace, preserveEquivalentTranscript, preserveLocalPendingTurnMessages, reconcileDurableHistory, removeRepresentedLocalLiveProjection, resolveResumedBusy, resolveStoredSession, sessionMatchesStoredId, sessionShouldHaveTranscript} from './utils'
+import { reconcilePersistedLiveTurn } from './persisted-live-turn'
+import { provisionalTranscriptPaint, transcriptRestScope } from './provisional-transcript'
+import { pendingClarifyToolPayload, restorePendingClarifyFromSnapshot } from './restore-pending-clarify'
+import { projectPendingConnection, restorePendingConnectionFromSnapshot } from './restore-pending-connection'
+import {
+  createPersistedDisplayTranscriptProvenance,
+  hasPersistedDisplayTranscriptProvenance,
+  withoutTranscriptProvenance
+} from './transcript-provenance'
+import {
+  appendLiveSessionProjection,
+  applyRuntimeInfo,
+  applyStoredSessionPreviewRuntimeInfo,
+  chatMessageArraysEquivalent,
+  dedupeInflightUserAgainstTranscript,
+  goneSessionVerdict,
+  isSessionGoneError,
+  overlayConcurrentMessageChanges,
+  patchSessionWorkspace,
+  preserveEquivalentTranscript,
+  preserveLocalPendingTurnMessages,
+  reconcileDurableHistory,
+  removeRepresentedLocalLiveProjection,
+  resolveResumedBusy,
+  resolveStoredSession,
+  sessionMatchesStoredId,
+  sessionShouldHaveTranscript
+} from './utils'
 
 // Reflect a stored row's persisted token counts into the live usage atom
 // (total is derived, so callers can't drift it out of sync with input/output).
@@ -148,7 +211,19 @@ function withoutEarlyClarifyProjection(messages: ChatMessage[], requestId: strin
 }
 
 export function useResumeActions(
-  { activeSessionIdRef, busyRef, getRouteToken, holdSessionTranscriptView, requestGateway, resetViewSync, runtimeIdByStoredSessionIdRef, selectedStoredSessionIdRef, sessionStateByRuntimeIdRef, syncSessionStateToView, updateSessionState }: SessionActionsOptions,
+  {
+    activeSessionIdRef,
+    busyRef,
+    getRouteToken,
+    holdSessionTranscriptView,
+    requestGateway,
+    resetViewSync,
+    runtimeIdByStoredSessionIdRef,
+    selectedStoredSessionIdRef,
+    sessionStateByRuntimeIdRef,
+    syncSessionStateToView,
+    updateSessionState
+  }: SessionActionsOptions,
   { startFreshSessionDraft }: Pick<SessionActionHandles, 'startFreshSessionDraft'>
 ) {
   const { t } = useI18n()
@@ -505,7 +580,7 @@ export function useResumeActions(
               }
 
               if (usage) {
-                setCurrentUsage(current => ({ ...current, ...usage }))
+                setCurrentUsage(current => ({ ...current, ...usage, compressions: usage.compressions }))
               }
 
               publishDegradedWarmCache()
@@ -806,6 +881,14 @@ export function useResumeActions(
                 pendingClarifyProjection?.messages ??
                 clearedClarifyProjection?.messages ??
                 activatedMessages
+
+              if (!running) {
+                restoreSessionTodosFromSnapshot(
+                  cachedRuntimeId,
+                  latestSessionTodoSnapshot(visibleActivatedMessages),
+                  false
+                )
+              }
 
               releaseTranscriptView()
 
@@ -1159,6 +1242,14 @@ export function useResumeActions(
 
         restoreSessionTodosFromSnapshot(resumed.session_id, resumed.todo_state, resumedRunning)
 
+        if (!resumedRunning && prefetchApplied && prefetchMatchesResumedSession && prefetchedTranscriptMessages) {
+          restoreSessionTodosFromSnapshot(
+            resumed.session_id,
+            latestSessionTodoSnapshot(prefetchedTranscriptMessages),
+            false
+          )
+        }
+
         // Crash-survivable turn progress: fold a journaled in-flight tail
         // (persisted by use-session-state-cache while the turn streamed;
         // survives renderer/app death) back onto the restored transcript. The
@@ -1182,11 +1273,28 @@ export function useResumeActions(
         // must not mask a lost transcript (a retry that reloads real history
         // is safer than surfacing the in-flight turn alone). Recovery only
         // ever appends, so this matches the final transcript's emptiness.
-        if (sessionShouldHaveTranscript(stored) && preferredMessages.length === 0) {
+        //
+        // "Should have a transcript" is not the cached sessions-list row alone.
+        // That row is a cache of backend truth and lags the two flows that
+        // report a vanished thread: after a wake/reconnect the list can still
+        // carry the respawned backend's session at message_count 0, and a
+        // compression tip can show 0 rows while the stored transcript is
+        // intact. Conditioning the latch on it alone paints a blank thread
+        // UNLATCHED — no retry, no error, just an empty chat that looks like
+        // lost history. The resume RPC is authoritative and always reports the
+        // stored size (`message_count`, filled from state.db even when
+        // `messages_omitted`), so treat it — and a non-empty REST page — as the
+        // other rungs of the same ladder.
+        const saidToHaveTranscript =
+          sessionShouldHaveTranscript(stored) ||
+          (resumed.message_count || 0) > 0 ||
+          Boolean(prefetchedResult?.messages.length)
+
+        if (saidToHaveTranscript && preferredMessages.length === 0) {
           // Roll back a provisional cached-tail paint and drop its entry: the
-          // authoritative sources say this session has no transcript, so the
-          // cache no longer reflects backend truth and must not survive to
-          // mislead the retry (or the next wake).
+          // latched attempt painted no history from any source, so the
+          // display-only cache must not survive to mask the retry (or the next
+          // wake) as a transcript that loaded.
           if (cachedTailPaint !== null && $messages.get() === cachedTailPaint) {
             setMessages([])
             dropTranscriptTail(storedSessionId, sessionRestScope)
@@ -1514,6 +1622,6 @@ export function useResumeActions(
   )
 
   return {
-    resumeSession,
+    resumeSession
   }
 }

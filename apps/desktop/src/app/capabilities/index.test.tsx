@@ -43,7 +43,8 @@ vi.mock('@/hermes', async importOriginal => ({
 }))
 
 // Notifications hit nanostores/timers we don't care about here.
-vi.mock('@/store/notifications', () => ({
+vi.mock('@/store/notifications', async importOriginal => ({
+  ...(await importOriginal<typeof import('@/store/notifications')>()),
   notify: vi.fn(),
   notifyError: vi.fn()
 }))

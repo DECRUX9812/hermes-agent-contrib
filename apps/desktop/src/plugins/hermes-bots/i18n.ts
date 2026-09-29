@@ -54,6 +54,7 @@ type BotsMessages = {
     modelSwitchFailed: string
     newDescription: string
     name: string
+    savedAs: (slug: string) => string
     title: string
     description: string
     /** G3 — the persona role one-liner (roster subtitle + chat header). */
@@ -337,6 +338,18 @@ type BotsMessages = {
     watchToast: (name: string) => string
     unwatchToast: (name: string) => string
   }
+  /** The New Bot gallery: starter cards + the describe-your-own box that
+   *  leads the create dialog. */
+  gallery: {
+    desc: string
+    describePlaceholder: string
+    describeAction: string
+    startersLabel: string
+    blankTitle: string
+    blankDesc: string
+    backToStarters: string
+    fromTemplate: (id: string) => string
+  }
   /** Avatar picker: shapes, blobs, pets, uploads, generation. */
   avatar: {
     classicShapes: string
@@ -522,12 +535,19 @@ type BotsMessages = {
     portalNotInstalled: string
     portalUnsupported: string
     portalUnavailable: string
+    /** Managed runtimes (Hermes Cloud): updates are the platform's job, not the user's. */
+    portalUnavailableManaged: string
     unavailableTitle: string
     autoOpenMenu: string
     autoOpenOnToast: (name: string) => string
     autoOpenOffToast: (name: string) => string
     stoppedTitle: string
     stoppedBody: string
+    placementSandbox: (backend: string) => string
+    imageSwitchTitle: string
+    imageSwitchBody: (current: string, target: string) => string
+    imageSwitchApprove: string
+    imageSwitchKeep: string
     start: string
     attaching: string
     streamLost: string
@@ -767,6 +787,7 @@ const en: BotsMessages = {
     modelSwitchFailed: 'Model switch failed',
     newDescription: 'A named teammate with its own memory, skills, and chat. It can message your other agents.',
     name: 'Name',
+    savedAs: (slug: string) => `Saved as @${slug}`,
     title: 'Title',
     description: 'Description',
     role: 'Role',
@@ -850,7 +871,7 @@ const en: BotsMessages = {
     newBotOrGroup: 'New bot or group chat',
     groupChats: 'Group chats',
     emptyTitle: 'No bots yet',
-    emptyDesc: 'Create your first bot.',
+    emptyDesc: 'Create your first bot — pick a starter or describe your own.',
     noMatchQuery: query => `No bots or group chats match “${query}”`,
     noMatchQueryOn: (query, gateway) => `No bots or group chats match “${query}” on ${gateway}`,
     noMatchFiltersOn: gateway => `No bots or group chats match these filters on ${gateway}`,
@@ -1029,6 +1050,16 @@ const en: BotsMessages = {
     watchToast: name => `Watching ${name}`,
     unwatchToast: name => `Stopped watching ${name}`
   },
+  gallery: {
+    desc: 'Pick a starter or describe your own — you can tweak everything next.',
+    describePlaceholder: 'Describe the bot you want… e.g. “a skeptical code reviewer who catches edge cases”',
+    describeAction: 'Draft my bot',
+    startersLabel: 'Or pick a starter',
+    blankTitle: 'Blank bot',
+    blankDesc: 'Start from scratch',
+    backToStarters: 'Starters',
+    fromTemplate: id => `Starter: ${id}`
+  },
   avatar: {
     classicShapes: 'Classic shapes',
     blobFromName: 'Blob face — drawn from the bot’s name',
@@ -1204,12 +1235,19 @@ const en: BotsMessages = {
     portalNotInstalled: 'Not installed on host',
     portalUnsupported: 'Not available on this host',
     portalUnavailable: 'Update the bot’s Hermes to use Screen',
+    portalUnavailableManaged: 'Screen is not available on this managed Hermes release yet',
     unavailableTitle: 'Screen needs a newer Hermes',
     autoOpenMenu: 'Open Screen when the bot uses it',
     autoOpenOnToast: name => `${name}’s Screen opens when it starts using its desktop`,
     autoOpenOffToast: name => `${name}’s Screen stays closed until you open it`,
     stoppedTitle: 'Screen is off',
     stoppedBody: 'Start this bot’s desktop to watch what it does and take over when it needs you.',
+    placementSandbox: backend => `Screen runs inside the ${backend} sandbox, with the terminal`,
+    imageSwitchTitle: 'New sandbox image available',
+    imageSwitchBody: (current, target) =>
+      `Your sandbox still runs ${current}, which has no desktop. Switching to ${target} recreates the container the next time the bot uses its terminal: files in /root and /workspace stay on this machine, packages installed inside the container are reinstalled on demand.`,
+    imageSwitchApprove: 'Switch image',
+    imageSwitchKeep: 'Keep current image',
     start: 'Start screen',
     attaching: 'Connecting to the screen\u2026',
     streamLost: 'Screen stream ended',
@@ -1421,6 +1459,7 @@ const ja: BotsMessages = {
     newDescription:
       '独自のメモリ、スキル、チャットを持つ名前付きの仲間です。他のエージェントとメッセージをやり取りできます。',
     name: '名前',
+    savedAs: (slug: string) => `@{slug} として保存`,
     title: '表示名',
     role: '役割',
     rolePlaceholder: '例: リサーチ責任者',
@@ -1505,7 +1544,7 @@ const ja: BotsMessages = {
     newBotOrGroup: '新しいボットまたはグループチャット',
     groupChats: 'グループチャット',
     emptyTitle: 'ボットはまだありません',
-    emptyDesc: '最初のボットを作成しましょう。',
+    emptyDesc: '最初のボットを作成しましょう — スターターを選ぶか、自由に説明できます。',
     noMatchQuery: query => `「${query}」に一致するボットやグループチャットはありません`,
     noMatchQueryOn: (query, gateway) => `${gateway} に「${query}」に一致するボットやグループチャットはありません`,
     noMatchFiltersOn: gateway => `${gateway} にこれらのフィルタに一致するボットやグループチャットはありません`,
@@ -1682,6 +1721,16 @@ const ja: BotsMessages = {
     watching: 'このボットをウォッチ中',
     watchToast: name => `${name} をウォッチしています`,
     unwatchToast: name => `${name} のウォッチを解除しました`
+  },
+  gallery: {
+    desc: 'スターターを選ぶか、自由に説明してください — 細かい設定は次の画面で調整できます。',
+    describePlaceholder: '欲しいボットを説明… 例: 「エッジケースを見逃さない慎重なコードレビュアー」',
+    describeAction: 'ボットを下書き',
+    startersLabel: 'またはスターターを選択',
+    blankTitle: '空のボット',
+    blankDesc: 'ゼロから作成',
+    backToStarters: 'スターター',
+    fromTemplate: id => `スターター: ${id}`
   },
   avatar: {
     classicShapes: 'クラシックシェイプ',
@@ -1861,12 +1910,19 @@ const ja: BotsMessages = {
     portalNotInstalled: 'ホストに未インストール',
     portalUnsupported: 'このホストでは利用できません',
     portalUnavailable: 'Screen を使うにはボットの Hermes を更新してください',
+    portalUnavailableManaged: 'この管理された Hermes リリースではまだ Screen を利用できません',
     unavailableTitle: 'Screen には新しい Hermes が必要です',
     autoOpenMenu: 'ボットが画面を使い始めたら Screen を開く',
     autoOpenOnToast: name => `${name} がデスクトップを使い始めると Screen が開きます`,
     autoOpenOffToast: name => `${name} の Screen は手動で開くまで閉じたままです`,
     stoppedTitle: '画面はオフです',
     stoppedBody: 'このボットのデスクトップを起動すると、動作を見守り、必要なときに操作を引き継げます。',
+    placementSandbox: backend => `画面は ${backend} サンドボックス内（ターミナルと同じ場所）で動作します`,
+    imageSwitchTitle: '新しいサンドボックスイメージがあります',
+    imageSwitchBody: (current, target) =>
+      `サンドボックスはまだ ${current} で動作しており、デスクトップがありません。${target} に切り替えると、ボットが次にターミナルを使うときにコンテナが再作成されます。/root と /workspace のファイルはこのマシンに残り、コンテナ内にインストールしたパッケージは必要に応じて再インストールされます。`,
+    imageSwitchApprove: 'イメージを切り替える',
+    imageSwitchKeep: '現在のイメージを使い続ける',
     start: '画面を起動',
     attaching: '画面に接続中…',
     streamLost: '画面ストリームが終了しました',
@@ -2077,6 +2133,7 @@ const zh: BotsMessages = {
     modelSwitchFailed: '模型切换失败',
     newDescription: '拥有独立记忆、技能和聊天的具名队友，可以与你的其他智能体互发消息。',
     name: '名称',
+    savedAs: (slug: string) => `保存为 @${slug}`,
     title: '显示名称',
     role: '角色',
     rolePlaceholder: '例如：研究负责人',
@@ -2157,7 +2214,7 @@ const zh: BotsMessages = {
     newBotOrGroup: '新建机器人或群聊',
     groupChats: '群聊',
     emptyTitle: '还没有机器人',
-    emptyDesc: '创建你的第一个机器人。',
+    emptyDesc: '创建你的第一个机器人 — 选择起手模板或自由描述。',
     noMatchQuery: query => `没有机器人或群聊匹配“${query}”`,
     noMatchQueryOn: (query, gateway) => `${gateway} 上没有机器人或群聊匹配“${query}”`,
     noMatchFiltersOn: gateway => `${gateway} 上没有机器人或群聊匹配这些筛选条件`,
@@ -2331,6 +2388,16 @@ const zh: BotsMessages = {
     watchToast: name => `正在关注 ${name}`,
     unwatchToast: name => `已停止关注 ${name}`
   },
+  gallery: {
+    desc: '选择一个起手模板，或描述你想要的机器人 — 之后仍可随意调整。',
+    describePlaceholder: '描述你想要的机器人… 例如：“一个能发现边缘情况的严谨代码审查员”',
+    describeAction: '生成草稿',
+    startersLabel: '或选择一个起手模板',
+    blankTitle: '空白机器人',
+    blankDesc: '从零开始',
+    backToStarters: '起手模板',
+    fromTemplate: id => `起手模板：${id}`
+  },
   avatar: {
     classicShapes: '经典形状',
     blobFromName: '斑点脸 — 根据机器人名称绘制',
@@ -2503,12 +2570,19 @@ const zh: BotsMessages = {
     portalNotInstalled: '主机未安装',
     portalUnsupported: '此主机不可用',
     portalUnavailable: '更新机器人的 Hermes 以使用屏幕',
+    portalUnavailableManaged: '此托管 Hermes 版本尚不支持屏幕',
     unavailableTitle: '屏幕需要更新版的 Hermes',
     autoOpenMenu: '机器人使用屏幕时自动打开',
     autoOpenOnToast: name => `${name} 开始使用桌面时会自动打开屏幕`,
     autoOpenOffToast: name => `${name} 的屏幕将保持关闭，直到你手动打开`,
     stoppedTitle: '屏幕已关闭',
     stoppedBody: '启动此机器人的桌面，观看它的操作，并在需要时接管。',
+    placementSandbox: backend => `屏幕运行在 ${backend} 沙箱内，与终端同处`,
+    imageSwitchTitle: '有新的沙箱镜像',
+    imageSwitchBody: (current, target) =>
+      `沙箱仍在运行 ${current}，其中没有桌面。切换到 ${target} 后，机器人下次使用终端时会重建容器：/root 和 /workspace 中的文件保留在本机，容器内安装的软件包会按需重新安装。`,
+    imageSwitchApprove: '切换镜像',
+    imageSwitchKeep: '保留当前镜像',
     start: '启动屏幕',
     attaching: '正在连接屏幕…',
     streamLost: '屏幕流已结束',
@@ -2719,6 +2793,7 @@ const zhHant: BotsMessages = {
     modelSwitchFailed: '模型切換失敗',
     newDescription: '擁有獨立記憶、技能和聊天的具名隊友，可以與你的其他智慧代理互傳訊息。',
     name: '名稱',
+    savedAs: (slug: string) => `儲存為 @${slug}`,
     title: '顯示名稱',
     role: '角色',
     rolePlaceholder: '例如：研究負責人',
@@ -2799,7 +2874,7 @@ const zhHant: BotsMessages = {
     newBotOrGroup: '新增機器人或群組聊天',
     groupChats: '群組聊天',
     emptyTitle: '還沒有機器人',
-    emptyDesc: '建立你的第一個機器人。',
+    emptyDesc: '建立你的第一個機器人 — 選擇起手範本或自由描述。',
     noMatchQuery: query => `沒有機器人或群組聊天符合「${query}」`,
     noMatchQueryOn: (query, gateway) => `${gateway} 上沒有機器人或群組聊天符合「${query}」`,
     noMatchFiltersOn: gateway => `${gateway} 上沒有機器人或群組聊天符合這些篩選條件`,
@@ -2973,6 +3048,16 @@ const zhHant: BotsMessages = {
     watchToast: name => `正在關注 ${name}`,
     unwatchToast: name => `已停止關注 ${name}`
   },
+  gallery: {
+    desc: '選擇一個起手範本，或描述你想要的機器人 — 之後仍可自由調整。',
+    describePlaceholder: '描述你想要的機器人… 例如：「會抓出邊界案例的嚴謹程式碼審查員」',
+    describeAction: '產生草稿',
+    startersLabel: '或選擇起手範本',
+    blankTitle: '空白機器人',
+    blankDesc: '從零開始',
+    backToStarters: '起手範本',
+    fromTemplate: id => `起手範本：${id}`
+  },
   avatar: {
     classicShapes: '經典形狀',
     blobFromName: '斑點臉 — 依機器人名稱繪製',
@@ -3145,12 +3230,19 @@ const zhHant: BotsMessages = {
     portalNotInstalled: '主機未安裝',
     portalUnsupported: '此主機不可用',
     portalUnavailable: '更新機器人的 Hermes 以使用螢幕',
+    portalUnavailableManaged: '此託管 Hermes 版本尚不支援螢幕',
     unavailableTitle: '螢幕需要較新版的 Hermes',
     autoOpenMenu: '機器人使用螢幕時自動開啟',
     autoOpenOnToast: name => `${name} 開始使用桌面時會自動開啟螢幕`,
     autoOpenOffToast: name => `${name} 的螢幕將保持關閉，直到你手動開啟`,
     stoppedTitle: '螢幕已關閉',
     stoppedBody: '啟動此機器人的桌面，觀看它的操作，並在需要時接手。',
+    placementSandbox: backend => `畫面在 ${backend} 沙箱內執行，與終端同處`,
+    imageSwitchTitle: '有新的沙箱映像',
+    imageSwitchBody: (current, target) =>
+      `沙箱仍在執行 ${current}，其中沒有桌面。切換到 ${target} 後，機器人下次使用終端時會重建容器：/root 和 /workspace 中的檔案保留在本機，容器內安裝的套件會按需重新安裝。`,
+    imageSwitchApprove: '切換映像',
+    imageSwitchKeep: '保留目前映像',
     start: '啟動螢幕',
     attaching: '正在連線至螢幕…',
     streamLost: '螢幕串流已結束',

@@ -1,6 +1,13 @@
 import { expect, it } from 'vitest'
 
-import { type ChatMessage, chatMessageText, preserveLocalAssistantErrors, textPart, toChatMessages } from './index'
+import {
+  type ChatMessage,
+  chatMessageText,
+  preserveLocalAssistantErrors,
+  preserveLocalSystemNotices,
+  textPart,
+  toChatMessages
+} from './index'
 
 const row = (id: string, role: 'user' | 'assistant', text: string, extra: Partial<ChatMessage> = {}): ChatMessage => ({
   id,
@@ -320,6 +327,61 @@ it('never folds a captionless attachment error onto another paste\u2019s reply (
   expect(merged.find(message => message.id === 'assistant-stream-x')?.error).toBe('upstream timeout')
 })
 
+it('folds a repeated-caption attachment error onto its own paste\u2019s reply, not the earlier one (#122079)', () => {
+  // Two pastes of the same captioned screenshot are indistinguishable by
+  // tolerant caption alone — the marker paths that separate them strip out of
+  // the compare — so a first-match fold stamps the SECOND paste's error onto
+  // the FIRST paste's settled reply. The errored turn must pair with the
+  // stored row at the same position: the n-th local captioned paste folds
+  // onto the n-th stored one.
+  const merged = preserveLocalAssistantErrors(
+    [
+      row('9-0-user', 'user', 'run the migration\n\n[Image attached at: /tmp/first.png]', { rowId: 18711 }),
+      row('9-1-assistant', 'assistant', 'first answer', { rowId: 18712 }),
+      row('9-2-user', 'user', 'run the migration\n\n[Image attached at: /tmp/second.png]', { rowId: 18811 }),
+      row('9-3-assistant', 'assistant', 'second answer', { rowId: 18812 })
+    ],
+    [
+      row('9-0-user', 'user', 'run the migration\n\n[Image attached at: /tmp/first.png]', { rowId: 18711 }),
+      row('9-1-assistant', 'assistant', 'first answer', { rowId: 18712 }),
+      row('user-paste-2', 'user', 'run the migration', {
+        attachmentRefs: ['data:image/png;base64,AAAA']
+      }),
+      row('assistant-stream-x', 'assistant', 'never stored anywhere', { error: 'upstream timeout' })
+    ]
+  )
+
+  expect(merged.map(message => message.id)).toEqual(['9-0-user', '9-1-assistant', '9-2-user', '9-3-assistant'])
+  expect(merged.find(message => message.id === '9-1-assistant')?.error).toBeUndefined()
+  expect(merged.find(message => message.id === '9-3-assistant')?.error).toBe('upstream timeout')
+})
+
+it('keeps a repeated-caption attachment error local when its prompt never committed (#122079)', () => {
+  // The first paste committed and settled; the second paste errored before
+  // its prompt was saved. The tail user row of the refreshed page is the
+  // FIRST paste — same tolerant caption, different turn — so neither the
+  // error fold nor the tail prompt match may claim it: the failed pair
+  // survives locally and the first paste's settled reply stays clean.
+  const merged = preserveLocalAssistantErrors(
+    [
+      row('9-0-user', 'user', 'run the migration\n\n[Image attached at: /tmp/first.png]', { rowId: 18711 }),
+      row('9-1-assistant', 'assistant', 'first answer', { rowId: 18712 })
+    ],
+    [
+      row('9-0-user', 'user', 'run the migration\n\n[Image attached at: /tmp/first.png]', { rowId: 18711 }),
+      row('9-1-assistant', 'assistant', 'first answer', { rowId: 18712 }),
+      row('user-paste-2', 'user', 'run the migration', {
+        attachmentRefs: ['data:image/png;base64,AAAA']
+      }),
+      row('assistant-stream-x', 'assistant', 'never stored anywhere', { error: 'upstream timeout' })
+    ]
+  )
+
+  expect(merged.map(message => message.id)).toEqual(['9-0-user', '9-1-assistant', 'user-paste-2', 'assistant-stream-x'])
+  expect(merged.find(message => message.id === '9-1-assistant')?.error).toBeUndefined()
+  expect(merged.find(message => message.id === 'assistant-stream-x')?.error).toBe('upstream timeout')
+})
+
 it('splices an older-rowId preserved run in front of the first newer hydrated row (#120978)', () => {
   // The windowed hydrated page starts past the failed turn; the kept pair
   // (user 210 + errored assistant 211) must land ABOVE the newer turn, not
@@ -356,4 +418,40 @@ it('keeps a rowId-less preserved run trailing (#118002 behavior unchanged)', () 
   )
 
   expect(merged.map(message => message.id)).toEqual(['9-0-user', '9-1-assistant', 'user-no-row', 'assistant-stream-x'])
+})
+
+// #126422: the fallback-switch notice is a client-local `system` row the
+// stored page cannot carry; the post-turn refresh rebuilds from stored rows
+// and must re-graft it instead of silently dropping it.
+it('preserveLocalSystemNotices re-grafts trailing client-local system notices', () => {
+  const notice: ChatMessage = {
+    id: 'fallback-switch-1234',
+    parts: [textPart('Model fallback: using xiaomi/mimo via nous.')],
+    role: 'system',
+    timestamp: 1234
+  }
+
+  const refreshed = [row('s1', 'user', 'prompt'), row('s2', 'assistant', 'reply')]
+
+  const preserved = preserveLocalSystemNotices(refreshed, [...refreshed, notice])
+
+  expect(preserved.at(-1)?.id).toBe('fallback-switch-1234')
+})
+
+it('preserveLocalSystemNotices does not duplicate a notice the page already carries', () => {
+  const notice: ChatMessage = {
+    id: 'fallback-switch-1234',
+    parts: [textPart('Model fallback: using xiaomi/mimo via nous.')],
+    role: 'system',
+    timestamp: 1234
+  }
+
+  const refreshed = [
+    row('s1', 'user', 'prompt'),
+    row('s2', 'assistant', 'reply'),
+    { ...notice, id: 'fallback-switch-5678' }
+  ]
+
+  const preserved = preserveLocalSystemNotices(refreshed, [...refreshed, { ...notice, id: 'other' }])
+  expect(preserved).toBe(refreshed)
 })

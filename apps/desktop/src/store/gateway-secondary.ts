@@ -244,6 +244,12 @@ export function rearmSecondary(entry: Secondary, priority: SpawnPriority = 'fore
 
   g.reauthFailures.delete(entry.scope)
 
+  // Only an explicit (foreground) re-arm resets dial history: every background request rearms
+  // its scope before dialing, so clearing it here would lift the throttle on each poll.
+  if (priority === 'foreground') {
+    g.dialFailures.delete(entry.scope)
+  }
+
   if (entry.retiredByPool && priority !== 'foreground') {
     throw new Error(`Backend for "${entry.profile}" was retired; open it explicitly to reconnect.`)
   }
@@ -251,6 +257,56 @@ export function rearmSecondary(entry: Secondary, priority: SpawnPriority = 'fore
   entry.wantOpen = true
   entry.stalledDials = 0
   entry.retiredByPool = false
+}
+
+function recordDialFailure(entry: Secondary, error?: unknown): void {
+  // Auth rejection has its own ledger (reauthFailures) that already fails background callers fast.
+  if (error !== undefined && isGatewayReauthRequired(error)) {
+    return
+  }
+
+  const previous = g.dialFailures.get(entry.scope)
+
+  g.dialFailures.set(entry.scope, {
+    at: Date.now(),
+    streak: (previous?.streak ?? 0) + 1,
+    connectionId: entry.connectionId ?? null
+  })
+}
+
+/** True while a background caller must leave redialing to the ladder: the scope's last dial
+ *  failed (or its socket died before RECONNECT_STABLE_OPEN_MS) inside a window that widens with
+ *  the failure streak, on the same ceilings as the reconnect ladder. History clears on proof of
+ *  health (a served RPC, or a socket that lived) and on a fresh start (foreground re-arm, connection
+ *  removal, full teardown) — never on a bare open, so an accept-then-close backend keeps escalating. */
+export function backgroundDialCoolingDown(scope: string, now = Date.now()): boolean {
+  const failure = g.dialFailures.get(scope)
+
+  return failure !== undefined && now - failure.at < reconnectBackoffDelayMs(failure.streak - 1, { jitter: false })
+}
+
+/** Dial a request's secondary if it is down. Both request paths (a plain profile via
+ *  gatewayForProfile, a registry route via requestGatewayForAgent) used to dial straight past
+ *  the reconnect ladder, and openSecondary only coalesces CONCURRENT dials, so a poller against
+ *  a scope whose socket accepts and then dies redialed once per tick (session.control.read on a
+ *  cross-profile session, #121865). After a failure, background callers fail fast and leave
+ *  redialing to scheduleReconnect; a user action (foreground) still dials at once. */
+export async function openSecondaryForRequest(entry: Secondary, spawnPriority: SpawnPriority): Promise<void> {
+  if (isOpen(entry.gateway)) {
+    return
+  }
+
+  if (spawnPriority !== 'foreground' && backgroundDialCoolingDown(entry.scope)) {
+    scheduleReconnect(entry)
+    throw new Error(`Backend for "${entry.profile}" is reconnecting; retry after it settles.`)
+  }
+
+  try {
+    await openSecondary(entry, spawnPriority)
+  } catch (error) {
+    recordDialFailure(entry, error)
+    throw error
+  }
 }
 
 export function scheduleReconnect(entry: Secondary): void {
@@ -278,6 +334,10 @@ export async function reconnectSecondary(entry: Secondary): Promise<void> {
   try {
     await openSecondary(entry)
   } catch (error) {
+    // Restart the background-request cooldown from the ladder's own failure too, or a poll
+    // could slip a dial in between two ladder attempts on an older, expired window.
+    recordDialFailure(entry, error)
+
     if (isGatewayReauthRequired(error)) {
       notifyError(error, translateNow('boot.errors.gatewaySignInRequired'), { action: RECOVERY_ACTIONS.openGateways() })
 
@@ -400,6 +460,9 @@ export function createSecondary(profile: string, connectionId: null | string = n
       // is a failed attempt, so the ladder resets only after a socket that lived.
       if (isStableOpen(entry.openedAt)) {
         entry.reconnectAttempt = 0
+        g.dialFailures.delete(scope)
+      } else if (entry.openedAt !== null) {
+        recordDialFailure(entry)
       }
 
       entry.openedAt = null

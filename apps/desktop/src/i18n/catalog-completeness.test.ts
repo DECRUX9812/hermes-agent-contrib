@@ -4,12 +4,12 @@ import { TRANSLATIONS } from './catalog'
 import { deOverrides } from './de'
 import { esOverrides } from './es'
 import { frOverrides } from './fr'
-import type { Locale } from './types'
+import type { BundledLocale } from './types'
 
 // Locales that shipped fully translated. They are `defineLocale` overlays like
 // ja/ru, so an English key added later falls back to English instead of
 // failing typecheck; these checks keep the translated copy structurally sound.
-const COMPLETE_LOCALES = ['fr', 'de', 'es'] as const satisfies readonly Locale[]
+const COMPLETE_LOCALES = ['fr', 'de', 'es'] as const satisfies readonly BundledLocale[]
 const completeOverrides = { fr: frOverrides, de: deOverrides, es: esOverrides }
 
 type Leaf = { path: string; value: unknown }
@@ -32,7 +32,7 @@ const kindOf = (value: unknown) => (Array.isArray(value) ? 'array' : typeof valu
 
 // `intro` is display-only: English lives in intro-copy.jsonl, so its catalog
 // entry is an empty shell. intro.test.tsx covers the translated rotation.
-const catalogLeaves = (locale: Locale) =>
+const catalogLeaves = (locale: BundledLocale) =>
   new Map(
     leaves(TRANSLATIONS[locale])
       .filter(leaf => !leaf.path.startsWith('intro.'))
@@ -106,7 +106,7 @@ describe.each(COMPLETE_LOCALES)('%s desktop catalog', locale => {
 // locales or bump the baseline after weighing the visible cost — never let it
 // drift down unnoticed.
 const PARTIAL_LOCALE_BASELINE = { ar: 4368, ja: 4386, 'zh-hant': 4389 } as const satisfies Partial<
-  Record<Locale, number>
+  Record<BundledLocale, number>
 >
 
 describe.each(Object.keys(PARTIAL_LOCALE_BASELINE) as (keyof typeof PARTIAL_LOCALE_BASELINE)[])(

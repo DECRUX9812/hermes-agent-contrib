@@ -60,6 +60,10 @@ export interface GatewayBootState {
   reconnectTimer: ReturnType<typeof setTimeout> | null
   reconnectAttempt: number
   livenessProbeFailures: number
+  /** Why the next post-open close happens when this hook closes the socket
+   *  itself (friction telemetry): a liveness timeout is a real drop, a manual
+   *  reconnect is not. */
+  ownCloseReason: 'manual' | 'timeout' | null
   livenessReprobeTimer: ReturnType<typeof setTimeout> | null
   reconnectFailingSince: number | null
   reauthNotified: boolean
@@ -79,6 +83,7 @@ export function createGatewayBootState(): GatewayBootState {
     reconnectTimer: null,
     reconnectAttempt: 0,
     livenessProbeFailures: 0,
+    ownCloseReason: null,
     livenessReprobeTimer: null,
     reconnectFailingSince: null,
     reauthNotified: false,
@@ -414,6 +419,7 @@ export function createGatewayBootReconnect({ s, desktop, gateway, callbacksRef, 
       }
 
       s.livenessProbeFailures = 0
+      s.ownCloseReason = 'timeout'
       gateway.close()
     }
   }

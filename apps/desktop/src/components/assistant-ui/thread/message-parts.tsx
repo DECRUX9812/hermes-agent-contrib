@@ -38,6 +38,7 @@ import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
 import { $reasoningCollapsedByDefault, $showReasoning } from '@/store/reasoning-disclosure'
 import { useForcedTextDirection } from '@/store/text-direction'
+import { $showToolActivity } from '@/store/tool-activity'
 
 type TimelineToolCallProps = ToolCallMessagePartProps & { completedAt?: number; timestamp?: number }
 
@@ -92,7 +93,7 @@ const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
 }
 
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
-  const showReasoning = useStore($showReasoning)
+  const showToolActivity = useStore($showToolActivity)
   // Inside an expanded bot-chat activity pill (G2) quiet rows render — the
   // pill's summary stands in for them while collapsed. Everywhere else
   // answer-only applies unchanged.
@@ -162,10 +163,10 @@ const ChainToolFallback: FC<TimelineToolCallProps> = props => {
     return <ConnectorExecution {...props} />
   }
 
-  // Answer-only: process chrome (reads, searches, commands) stays off the
-  // transcript. Cards, approvals, and failed calls the user must act on remain.
-  // reasoning_effort is not a display switch.
-  if (!showReasoning && !pillExpanded && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
+  // The tool feed (reads, searches, commands) follows display.tool_progress,
+  // never show_reasoning. Cards, approvals, and failed calls the user must act
+  // on remain regardless.
+  if (!showToolActivity && !pillExpanded && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
     return null
   }
 

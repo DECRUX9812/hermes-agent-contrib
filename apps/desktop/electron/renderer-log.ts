@@ -15,43 +15,77 @@
  * tokens or PII we never want on disk.
  */
 
-/** Shape of the `Event<WebContentsConsoleMessageEventParams>` Electron
- *  delivers as the first argument of the `webContents` `console-message`
- *  event. Electron still appends the legacy positional arguments
- *  `(level, message, line, sourceId)` after the event object, but any
- *  listener that declares them triggers Electron's runtime deprecation
- *  warning, so handlers must read from the event object only. */
-interface RendererConsoleMessage {
-  /** Severity. Chromium's `ConsoleMessageLevel` arrives stringified:
-   *  verbose → `debug`, then `info`, `warning`, `error`. */
-  level: 'debug' | 'info' | 'warning' | 'error'
+type ConsoleMessageLevel = 'info' | 'warning' | 'error' | 'debug'
+
+interface ConsoleMessageEventLike {
+  level?: unknown
+  message?: unknown
+  sourceId?: unknown
+  lineNumber?: unknown
+}
+
+interface ConsoleMessageDetails {
+  level: ConsoleMessageLevel
   message: string
+  sourceId: string
   lineNumber: number
   sourceId: string
 }
 
 interface WebContentsLike {
-  on(event: 'console-message', listener: (event: RendererConsoleMessage) => void): unknown
+  on(event: 'console-message', listener: (event: ConsoleMessageEventLike) => void): unknown
 }
 
 interface WindowLike {
   webContents: WebContentsLike
 }
 
-/** Format a renderer console-message event into one desktop.log line, or
- *  null for non-error levels. */
-export function formatRendererConsoleLine(label: string, event: RendererConsoleMessage): string | null {
-  if (event.level !== 'error') {
+let didReportConsoleMessageSignatureDrift = false
+
+function isConsoleMessageDetails(value: unknown): value is ConsoleMessageDetails {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+
+  const event = value as ConsoleMessageEventLike
+
+  const isKnownLevel =
+    event.level === 'info' || event.level === 'warning' || event.level === 'error' || event.level === 'debug'
+
+  return (
+    isKnownLevel &&
+    typeof event.message === 'string' &&
+    typeof event.sourceId === 'string' &&
+    typeof event.lineNumber === 'number'
+  )
+}
+
+/** Format Electron's canonical console-message event object into one line, or
+ *  null for non-error or malformed events. Hermes's pinned Electron 40.x line
+ *  puts severity and source metadata on the event object itself; accepting one
+ *  listener argument also avoids Electron's deprecated positional
+ *  `(event, level, message, line, sourceId)` path. */
+export function formatRendererConsoleLine(label: string, details: ConsoleMessageEventLike): string | null {
+  if (!isConsoleMessageDetails(details) || details.level !== 'error') {
     return null
   }
 
-  return `[renderer console:${label}] ${event.message} (${event.sourceId}:${event.lineNumber})`
+  return `[renderer console:${label}] ${details.message} (${details.sourceId}:${String(details.lineNumber)})`
 }
 
 /** Attach the error-level console hook to a renderer window. `log` is the
  *  desktop.log sink (rememberLog in main.ts). */
 export function attachRendererConsoleCapture(win: WindowLike, label: string, log: (line: string) => void): void {
   win.webContents.on('console-message', event => {
+    if (!isConsoleMessageDetails(event)) {
+      if (!didReportConsoleMessageSignatureDrift) {
+        didReportConsoleMessageSignatureDrift = true
+        log('[renderer console] Electron console-message signature drift detected; renderer errors may not be captured')
+      }
+
+      return
+    }
+
     const formatted = formatRendererConsoleLine(label, event)
 
     if (formatted !== null) {

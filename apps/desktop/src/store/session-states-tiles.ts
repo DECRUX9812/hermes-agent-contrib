@@ -14,6 +14,7 @@ import { resolveRememberedActivePane, workspaceScopeKey } from '@/components/pan
 import { tileFocusStampOnFocusChange } from '@/lib/session-timer-since'
 import type { SessionInfo } from '@/types/hermes'
 
+import { recordDislike } from './desktop-metrics'
 import { normalizeProfileKey } from './profile'
 import {
   $selectedStoredSessionId,
@@ -551,6 +552,7 @@ export function reopenLastClosedTile(): void {
         ownerRoute: tile.ownerRoute
       })
       focusOpenSession(storedSessionId)
+      recordDislike('undo', 'closed_tab')
 
       return
     }

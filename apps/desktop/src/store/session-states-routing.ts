@@ -1,5 +1,7 @@
 import { type GatewayEvent, registryBackendScopeKey } from '@hermes/shared'
 
+import { setSessionOwnerResolver } from '@/api/client'
+
 import { setPreviewScope } from './preview'
 import { $activeGatewayProfile, normalizeProfileKey } from './profile'
 import {
@@ -99,6 +101,10 @@ export function knownOwnerForSession(sessionId: null | string | undefined): Sess
 
   return sessionOwnerByRuntimeId.get(sessionId) ?? durable
 }
+
+// Session-scoped REST reads (detail / messages / timeline) resolve their
+// connection pin through the SAME owner ladder as RPC dispatch (#125372).
+setSessionOwnerResolver(knownOwnerForSession)
 
 
 /** The profile whose chat is on screen — the rail's scope.

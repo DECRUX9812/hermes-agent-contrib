@@ -51,8 +51,8 @@ import { useStoresSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { recordPreviewArtifact } from '@/store/preview-status'
 import { sessionApprovalRequest } from '@/store/prompts'
-import { $showReasoning } from '@/store/reasoning-disclosure'
 import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
+import { $showToolActivity } from '@/store/tool-activity'
 import { $toolInlineDiff } from '@/store/tool-diffs'
 import { $toolRowDismissed, dismissToolRow } from '@/store/tool-dismiss'
 import {
@@ -1113,7 +1113,7 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   endIndex,
   startIndex
 }) => {
-  const showReasoning = useStore($showReasoning)
+  const showToolActivity = useStore($showToolActivity)
   const sessionId = useStore(useSessionView().$runtimeId)
 
   // A Bot Chat's transcript renders its tool runs as pills (G2); every other
@@ -1144,10 +1144,10 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   const items = useMemo(() => splitRunItems(toolNameKey.split('\u0000')), [toolNameKey])
   const rows = Children.toArray(children)
 
-  // Answer-only skips the run scaffold ("Explored N files"). Children still
-  // mount so clarify, diffs, and failed calls can render on their own.
-  // reasoning_effort is not a display switch.
-  if (!showReasoning) {
+  // The run scaffold ("Explored N files") is part of the tool feed and follows
+  // display.tool_progress. Children still mount so clarify, diffs, and failed
+  // calls can render on their own.
+  if (!showToolActivity) {
     if (!botChat) {
       return children
     }

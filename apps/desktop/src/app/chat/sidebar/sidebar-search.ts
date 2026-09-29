@@ -18,7 +18,9 @@ export function stripFtsMarkers(snippet: string): string {
 
 
 
-function searchResultToSession(result: SessionSearchResult): SessionInfo {
+// The backend ships the real session title on every search hit; map it so the
+// sidebar paints the actual name (snippet stays the preview). Exported for tests.
+export function searchResultToSession(result: SessionSearchResult): SessionInfo {
 
   const ts = result.session_started ?? Date.now() / 1000
 
@@ -54,7 +56,7 @@ function searchResultToSession(result: SessionSearchResult): SessionInfo {
 
     started_at: ts,
 
-    title: null,
+    title: result.title?.trim() || null,
 
     tool_call_count: 0
 
