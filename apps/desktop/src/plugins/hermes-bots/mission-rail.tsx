@@ -11,7 +11,7 @@
  * RailSection here plus one id in RAIL_SECTION_IDS.
  */
 
-import { Button, Codicon, GlyphSpinner, PanelEmpty, Tip, useI18n, useValue } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, GlyphSpinner, PanelEmpty, Tip, useI18n, useValue } from '@hermes/plugin-sdk'
 import { type ReactNode, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
@@ -38,6 +38,7 @@ import { botRole, displayName } from './labels'
 import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
 import { NewTaskButton } from './new-task'
 import { $railCollapsed, type RailSectionId, setRailSectionCollapsed } from './rail-state'
+import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
 import { BotComputerPanel } from './screen-panel'
 import type { RosterRow } from './types'
@@ -69,9 +70,7 @@ function RailSection({
           type="button"
         >
           <Codicon className="text-(--ui-text-quaternary)" name={collapsed ? 'chevron-right' : 'chevron-down'} />
-          <span className="truncate text-[0.65rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-            {title}
-          </span>
+          <span className="truncate text-[0.6875rem] font-medium text-(--ui-text-tertiary)">{title}</span>
         </button>
         {action && !collapsed ? <span className="shrink-0 px-1">{action}</span> : null}
       </div>
@@ -80,10 +79,19 @@ function RailSection({
   )
 }
 
-/** G8 — the rail's top card: face, name (+ @handle), the description line as
- *  the role subtitle until personas land, the live-status chip, and quick
- *  actions (new task, edit profile, export). */
-function BotProfileCard({ bot, meta, onEdit }: { bot: RosterRow; meta?: Parameters<typeof botAppearance>[1]; onEdit: () => void }) {
+/** The rail's top card (revamp "teammate" header): face, name, a state badge
+ *  in the live-status tone, what it is and where it lives, then the two things
+ *  you do with a teammate — message it, or hand it a task — with edit/export
+ *  as quiet icons. */
+function BotProfileCard({
+  bot,
+  meta,
+  onEdit
+}: {
+  bot: RosterRow
+  meta?: Parameters<typeof botAppearance>[1]
+  onEdit: () => void
+}) {
   const b = useBots()
   const live = useBotLiveStatus(bot)
   const { shape, color, image } = botAppearance(bot.name, meta)
@@ -92,35 +100,45 @@ function BotProfileCard({ bot, meta, onEdit }: { bot: RosterRow; meta?: Paramete
   // G3 persona role one-liner; falls back to the description's first
   // sentence, empty when nothing says what the bot is for.
   const subtitle = botRole(bot, meta)
+  const where = bot.connectionLabel || (bot.connectionId && bot.connectionId !== 'local' ? '' : b.bot.thisDevice)
+  const tone = LIVE_TONE[live.kind] ?? 'idle'
 
   return (
-    <div className="px-3 pt-3 pb-2" data-testid="rail-profile-card">
-      <div className="flex items-center gap-2">
-        <BotFace color={avatarColor(color, bot.name)} image={image} name={bot.name} shape={shape} size={30} />
+    <div className="px-3 pt-3 pb-3" data-testid="rail-profile-card">
+      <div className="flex items-center gap-2.5">
+        <BotFace color={avatarColor(color, bot.name)} image={image} name={bot.name} shape={shape} size={40} />
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-baseline gap-1.5">
-            <span className="truncate text-xs font-semibold text-(--ui-text-secondary)">{name}</span>
-            {name.trim().toLowerCase() !== handle.toLowerCase() ? (
-              <span className="shrink-0 font-mono text-[0.65rem] text-(--ui-text-quaternary)">{`@${handle}`}</span>
-            ) : null}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm font-semibold text-foreground">{name}</span>
+            <span
+              className={cn(
+                'flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[0.625rem] font-medium',
+                tone === 'working' && 'bg-(--ui-accent)/12 text-(--ui-accent)',
+                tone === 'waiting' && 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+                tone === 'idle' && 'bg-(--ui-inline-code-background) text-(--ui-text-tertiary)'
+              )}
+              data-tone={tone}
+            >
+              {tone !== 'idle' ? <span className="size-1.5 rounded-full bg-current" /> : null}
+              {botLiveStatusLabel(live, b.roster)}
+            </span>
           </div>
-          {subtitle ? (
-            <div className="truncate text-[0.65rem] text-(--ui-text-tertiary)">{subtitle}</div>
-          ) : null}
+          <div className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">
+            {[subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : '']
+              .filter(Boolean)
+              .join(' · ')}
+          </div>
         </div>
-        <span className="shrink-0 rounded-full border border-(--ui-stroke-secondary) px-1.5 py-0.5 text-[0.6rem] font-medium text-(--ui-text-tertiary)">
-          {botLiveStatusLabel(live, b.roster)}
-        </span>
       </div>
-      <div className="mt-1.5 flex items-center gap-0.5">
-        <NewTaskButton bot={bot} />
+      <div className="mt-2.5 flex items-center gap-1">
+        <Button onClick={() => void openRosterBot(bot)} size="xs">
+          <Codicon name="comment" />
+          {b.roster.openChat}
+        </Button>
+        <NewTaskButton bot={bot} labeled />
+        <span className="flex-1" />
         <Tip label={b.bot.editTitle}>
-          <Button
-            aria-label={b.bot.editTitle}
-            onClick={onEdit}
-            size="icon-xs"
-            variant="ghost"
-          >
+          <Button aria-label={b.bot.editTitle} onClick={onEdit} size="icon-xs" variant="ghost">
             <Codicon name="edit" />
           </Button>
         </Tip>
@@ -137,6 +155,18 @@ function BotProfileCard({ bot, meta, onEdit }: { bot: RosterRow; meta?: Paramete
       </div>
     </div>
   )
+}
+
+/** Badge tone per live-status kind: working (accent), waiting on you
+ *  (amber), everything else quiet. */
+const LIVE_TONE: Partial<Record<ReturnType<typeof useBotLiveStatus>['kind'], 'idle' | 'waiting' | 'working'>> = {
+  'needs-input': 'waiting',
+  stalled: 'waiting',
+  working: 'working',
+  routine: 'working',
+  group: 'working',
+  background: 'working',
+  delegated: 'working'
 }
 
 /** The rail's content for the bot the workspace currently belongs to —
@@ -268,7 +298,12 @@ export function MissionRail() {
       <div className="border-t border-(--ui-stroke-secondary)">
         <BotDeliverablesSection owner={owner} />
       </div>
-      <RoutineDetailDialog job={detailJob} onClose={() => setDetailJobId(null)} open={Boolean(detailJob)} owner={owner} />
+      <RoutineDetailDialog
+        job={detailJob}
+        onClose={() => setDetailJobId(null)}
+        open={Boolean(detailJob)}
+        owner={owner}
+      />
       <CreateRoutineDialog
         // Non-null past the `!owner` early return above: `routineCreateTarget`
         // falls back to the active profile name.

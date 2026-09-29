@@ -9,6 +9,19 @@ This is the layer a ticket board lacks. Kanban already does execution (atomic cl
 dispatch, decompose). Teams add **who / why / how much / who signs off / what we learned** on
 top of it, and reuse Kanban for the *what*.
 
+## Where this lives (plugin, backend, web)
+
+| Piece | Kind | Needs backend changes? | Web-portable? |
+|---|---|---|---|
+| Team Bots data: org chart, goals, budgets, approvals, learnings, packs | **Backend** (`tools/bot_team.py` + 20 `bots_team.*` RPCs) | Yes — this is the backend part. Ships with Hermes; an older gateway reports "Teams need a newer Hermes" instead of breaking. | n/a (server) |
+| Budget hard-stop, dispatcher hold, team context in the session-start prompt | **Backend** (kanban dispatcher + `agent/system_prompt.py`) | Yes, small and cache-safe (session start only). | n/a (server) |
+| `/team` page, Hire gallery, bot rows, "Needs you", teammate header | **Desktop plugin** (bundled `hermes-bots`) | No — uses existing RPCs only. | **Yes**: SDK + `host.request` only, no Electron bridge (ESLint-fenced for `team*`). |
+| Live pane (every tool call, raw) | **Desktop core** (`store/live-activity.ts`, `app/right-sidebar/live`) | No — reads the `tool.start`/`tool.complete` events every client already receives (full args, full result). | **Yes**: pure renderer state, no bridge. |
+
+In short: the *product surface* is a plugin plus one core pane; the *team model* is backend
+code, because budgets and approvals must be enforced where the agent runs, not in a window that
+might be closed. A web build of the desktop app needs nothing new for any of it.
+
 ## What we took from the field
 
 | Idea | From | Where it lives here |
@@ -85,6 +98,32 @@ the web, `/team` needs nothing: same route, same RPC, same store on the hosted g
 Checklist for any new page meant to be web-portable: (1) data via `host.request`/SDK only;
 (2) no preload bridge — feature-detect any shell capability behind the SDK; (3) no absolute
 file paths in UI state; (4) tier with `host.state.showsAdvancedChrome`, not a core import.
+
+## Bot Mode refresh (Sep 29)
+
+Matched to `revamp/mockups/simple.png`, `teammate-work-simple.png` and `hire.png`, inside the
+real app:
+
+- **Hire a teammate** (`hire-gallery.tsx`): the one door for new bots. Shelves, starter cards
+  (`bot-starters.ts`; each hires through a C1 preset's skills + model), a "describe the teammate
+  you want" box, and **Team Packs** (`team-packs.ts`) that create a whole team with open seats
+  via `bots_team.pack.import`. Hire opens the create form pre-filled — one creation path.
+- **Needs you** (`triage-strip.tsx`): a quiet section with an amber count and one action per
+  row (Answer / Review / Open) instead of an alarm banner.
+- **Bot rows**: two lines — name + role, then status dot + live status.
+- **Teammate header** in the bot's rail: state badge in the live tone, role · where it lives,
+  Message + New task.
+- **Live** pane (core): the raw record — every command, its full output, exit code, timing —
+  for people who want to watch the agent rather than read run summaries. A "Live" link on each
+  run summary opens it at that run; ⌘K "Toggle live activity" too.
+- Global polish: 46rem reading column (was full-bleed), conversation titles in tabs render in
+  their own case at reading size (chrome tabs keep the uppercase label style).
+
+From Wajo's Fo (launched Sep 2026), kept: proactive "needs you" queue, owning an outcome with
+a visible record of what was done (Live + task log + receipts), budgets as the agent's "card"
+with a hard stop, escalation to a *teammate* (Team delegation). Left out on purpose: hiring
+human assistants into the loop, and an agent-owned phone number/credit card — both are hosted
+services, not something a local-first agent should ship.
 
 ## Status
 

@@ -11,8 +11,17 @@ import { newBotChat } from './data'
 import { useBots } from './i18n'
 import type { RosterRow } from './types'
 
-export function NewTaskButton({ bot }: { bot: RosterRow }) {
+export function NewTaskButton({ bot, labeled = false }: { bot: RosterRow; labeled?: boolean }) {
   const b = useBots()
+
+  if (labeled) {
+    return (
+      <Button onClick={() => newBotChat(bot)} size="xs" variant="secondary">
+        <Codicon name="comment-add" />
+        {b.bot.newTask}
+      </Button>
+    )
+  }
 
   return (
     <Tip label={b.bot.newTask}>

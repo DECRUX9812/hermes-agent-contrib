@@ -91,6 +91,9 @@ import { tabStripVisibleForZone } from './strip-visibility'
 import { useActiveTabVisible } from './tab-strip-scroll'
 import { paneChrome } from './track-model'
 
+/** Session tabs carry a conversation title (see PaneChrome.contentTitle). */
+const CONTENT_TAB_LABEL = 'normal-case tracking-normal text-[0.6875rem]'
+
 /** Right-click zone menu: the tab verbs (close this / others / to the right /
  *  all) plus the strip's own chrome toggles. Same items and icons as a session
  *  tab's menu, so every tab in a strip answers a right-click the same way —
@@ -722,7 +725,9 @@ export function TreeGroup({
                           </TabKeyHint>
                         </span>
                       ) : null}
-                      <PaneTabLabel>{tabLabel(paneId)}</PaneTabLabel>
+                      <PaneTabLabel className={chrome.contentTitle ? CONTENT_TAB_LABEL : undefined}>
+                        {tabLabel(paneId)}
+                      </PaneTabLabel>
                       {chrome.tabTrail ? (
                         // Per-tab live status (a session tile's elapsed +
                         // current tool) — every tab carries it, so it yields

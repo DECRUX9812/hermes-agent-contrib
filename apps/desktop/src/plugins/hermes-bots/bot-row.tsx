@@ -25,7 +25,6 @@ import {
   isWatchedSessionId,
   RowButton,
   SessionStatusDot,
-  SidebarRowLead,
   Tip,
   useI18n,
   useValue
@@ -34,21 +33,8 @@ import {
 import { botAccentColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { BotRowMenu } from './bot-menu'
-import {
-  $botChatFocused,
-  $focusedBotOwner,
-  $pendingBotOpen,
-  $selectedRosterKey,
-  focusedRosterOwner
-} from './bot-state'
-import {
-  $botMeta,
-  botActivitySession,
-  botAttentionHint,
-  botHandle,
-  botRosterKey,
-  botSourceStatus
-} from './data'
+import { $botChatFocused, $focusedBotOwner, $pendingBotOpen, $selectedRosterKey, focusedRosterOwner } from './bot-state'
+import { $botMeta, botActivitySession, botAttentionHint, botHandle, botRosterKey, botSourceStatus } from './data'
 import { $groupChats, $groupChatWorkspace, groupChatRoomKey } from './group-chat'
 import { groupLastActivity } from './group-membership'
 import { toggleGroupChatPinned } from './group-pin'
@@ -168,7 +154,10 @@ export function BotRow({
   const watchedMap = useValue($watchedSessionKeys)
 
   const watched = Boolean(
-    canonicalSessionId && watchedMap && typeof isWatchedSessionId === 'function' && isWatchedSessionId(canonicalSessionId)
+    canonicalSessionId &&
+    watchedMap &&
+    typeof isWatchedSessionId === 'function' &&
+    isWatchedSessionId(canonicalSessionId)
   )
 
   // A2 — the attention rollup: inbox items + quiet unread/needs-input dots
@@ -223,17 +212,11 @@ export function BotRow({
   // actively working bot reads as frozen. 'Idle' only fills the line when
   // nothing else would render (the floor, not a permanent caption); an
   // unreachable source shows its preview, or nothing — never a guess.
-  const liveText =
-    live.kind === 'idle' || live.kind === 'unknown' ? null : botLiveStatusLabel(live, b.roster)
+  const liveText = live.kind === 'idle' || live.kind === 'unknown' ? null : botLiveStatusLabel(live, b.roster)
 
   const detailText = liveText || displayPreview || (live.kind === 'idle' ? b.roster.liveIdle : '')
 
-  const liveTone =
-    live.kind === 'needs-input' || live.kind === 'stalled'
-      ? 'amber'
-      : liveText
-        ? 'live'
-        : null
+  const liveTone = live.kind === 'needs-input' || live.kind === 'stalled' ? 'amber' : liveText ? 'live' : null
 
   const showDetailsRow = Boolean(showHandle || detailText || fromBot)
 
@@ -304,33 +287,16 @@ export function BotRow({
         $draggingBot.set(rosterKey)
       }}
       onPointerEnter={warm}
-      style={{
-        // Faint accent tint bleeding in from the row's left edge — hairline
-        // subtlety, not a skinned fill.
-        backgroundImage: `linear-gradient(90deg, ${accent}0d, transparent 55%)`
-      }}
     >
       <div
         className={cn('shrink-0 rounded-lg', !sourceStatus.available && 'grayscale opacity-60')}
         style={{ boxShadow: `0 0 0 1px ${accent}80` }}
       >
-        <BotFace
-          color={accent}
-          image={photo ? image : null}
-          mood={botMood}
-          name={bot.name}
-          shape={shape}
-          size={34}
-        />
+        <BotFace color={accent} image={photo ? image : null} mood={botMood} name={bot.name} shape={shape} size={34} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-1.5">
-            {/* The session row's own lead cell, so a bot's name sits on the
-                same left edge as every session name above it in the rail. */}
-            <SidebarRowLead>
-              <SessionStatusDot storedSessionId={canonicalSessionId} />
-            </SidebarRowLead>
+          <div className="flex min-w-0 items-baseline gap-1.5">
             {pinned ? (
               <Tip label={b.roster.pinned}>
                 <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
@@ -347,8 +313,13 @@ export function BotRow({
               </Tip>
             ) : null}
             <Tip label={rowTooltip}>
-              <span className="min-w-0 truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
+              <span className="min-w-0 shrink truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
             </Tip>
+            {/* Name and role read as one line ("Atlas Engineer"), so the row
+                is two lines — who, then what it is doing — not three. */}
+            {role ? (
+              <span className="min-w-0 shrink-[2] truncate text-[0.6875rem] text-(--ui-text-quaternary)">{role}</span>
+            ) : null}
           </div>
           {canStop ? (
             <Tip label={b.roster.stopRun}>
@@ -380,11 +351,7 @@ export function BotRow({
           ) : null}
           {attention.count > 0 ? (
             <Tip
-              label={
-                attention.reason
-                  ? botAttentionHint(attention.reason)
-                  : b.roster.attentionItems(attention.count)
-              }
+              label={attention.reason ? botAttentionHint(attention.reason) : b.roster.attentionItems(attention.count)}
             >
               <span
                 aria-label={
@@ -420,11 +387,12 @@ export function BotRow({
             </span>
           ) : null}
         </div>
-        {role ? (
-          <div className="min-w-0 truncate text-[0.6875rem] leading-snug text-(--ui-text-quaternary)">{role}</div>
-        ) : null}
         {showDetailsRow ? (
-          <div className="flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-tertiary)">
+          <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-tertiary)">
+            {/* The status dot leads the status line it describes (working,
+                waiting on you, unread), keyed off the canonical Bot Chat —
+                the very session this row opens. */}
+            <SessionStatusDot className="shrink-0" storedSessionId={canonicalSessionId} />
             {showHandle ? (
               <span className="shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)">{`@${handle}`}</span>
             ) : null}
@@ -579,12 +547,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             </Tip>
           ) : null}
           {unread > 0 ? (
-            <Badge
-              aria-label={b.group.unreadCount(unread)}
-              className="shrink-0"
-              size="xs"
-              variant="solid"
-            >
+            <Badge aria-label={b.group.unreadCount(unread)} className="shrink-0" size="xs" variant="solid">
               {unread > 99 ? '99+' : unread}
             </Badge>
           ) : null}

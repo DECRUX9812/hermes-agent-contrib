@@ -97,6 +97,7 @@ import {
 import { groupWorkspaceOwnerKey } from './group-membership'
 import { bindGroupReadTracking } from './group-unread'
 import { isBotHidden } from './hidden-bots'
+import { HIRE_LOCALES } from './hire-i18n'
 import { annotateOrphanedGroupChatMembers } from './hygiene'
 import { BOTS_LOCALES, botsText, useBots } from './i18n'
 import { displayName } from './labels'
@@ -165,6 +166,7 @@ export default {
     loadBotSections()
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES)
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
+    const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
     setGroupChatSyncDisposed(false)
     startFaceClock()
     // The cross-connection relay rides every gateway socket this Desktop
@@ -178,6 +180,7 @@ export default {
     if (typeof ctx.onDispose === 'function') {
       ctx.onDispose(disposeLocales)
       ctx.onDispose(disposeTeamLocales)
+      ctx.onDispose(disposeHireLocales)
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)
@@ -1092,7 +1095,12 @@ export default {
     // Team Bots: the `/team` home, its sidebar row and a palette entry. All SDK-only, so the
     // same registration works when this plugin runs inside a web-hosted client.
     for (const contribution of [
-      { id: 'team-page', area: ROUTES_AREA, data: { path: '/team' } satisfies RouteContribution, render: () => <TeamPage /> },
+      {
+        id: 'team-page',
+        area: ROUTES_AREA,
+        data: { path: '/team' } satisfies RouteContribution,
+        render: () => <TeamPage />
+      },
       {
         id: 'team-nav',
         area: SIDEBAR_NAV_AREA,

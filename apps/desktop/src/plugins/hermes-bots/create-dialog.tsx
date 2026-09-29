@@ -43,8 +43,8 @@ import { avatarColor, blobatarSvg, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { AvatarPicker } from './avatar-picker'
 import { importBot } from './bot-export'
+import type { BotDraft } from './bot-starters'
 import { $selectedBot } from './bot-state'
-import { type BotStarter, starterDraft } from './bot-starters'
 import { BOT_TEMPLATE_IDS, BOT_TEMPLATES, disabledSkillNames, stagedSkillsForTemplate } from './bot-templates'
 import type { BotTemplateId } from './bot-templates'
 import { createCanonicalChat } from './canonical-chat'
@@ -115,32 +115,22 @@ interface CapabilityCatalog {
   toolsets: CapabilityEntry[]
 }
 interface CreateAgentDialogProps {
-  /** G6 — a marketplace starter card opens the dialog already seeded with
-   *  that template (same seeding the template picker applies). */
-  initialTemplate?: BotTemplateId
   onClose: () => void
   /** Opens the editor for a just-created local bot whose model is not ready. */
   onConfigureModel?: (bot: RosterRow) => void
   open: boolean
-  /** A hire-gallery starter (or the empty roster's shortcut chips): the form
-   *  arrives pre-filled — name, role, persona, face, first-prompt starters —
-   *  and its C1 preset curates skills/model. The caller remounts this dialog
-   *  per open, so the starter is read once, on mount. */
-  starter?: BotStarter | null
+  /** A Hire-gallery pick (a starter card or a described bot, see
+   *  bot-starters.ts): the form arrives pre-filled — name, role, persona,
+   *  face, first-prompt starters — and its C1 preset curates skills/model.
+   *  The caller remounts this dialog per open, so it is read once, on mount. */
+  draft?: BotDraft | null
   roster: RosterRow[]
 }
 
-export function CreateAgentDialog({
-  open,
-  onClose,
-  onConfigureModel,
-  initialTemplate,
-  starter,
-  roster
-}: CreateAgentDialogProps) {
+export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, roster }: CreateAgentDialogProps) {
   const { t } = useI18n()
   const b = useBots()
-  const initialDraft = starter ? starterDraft(starter) : null
+  const initialDraft = draft ?? null
   const [name, setName] = useState(initialDraft?.name || '')
   // Persona + starters + template id ride along silently: a gallery pick fills
   // them, the form never shows them (the persona lands in the SOUL the form's
@@ -463,15 +453,6 @@ export function CreateAgentDialog({
       setDirtyCaps(prev => ({ ...prev, skills: true }))
     }
   }
-
-  // G6: a marketplace starter card seeds the dialog through the same
-  // applyTemplate path the in-dialog picker uses, once per open.
-  useEffect(() => {
-    if (open && initialTemplate && initialTemplate !== 'custom') {
-      applyTemplate(initialTemplate)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- applyTemplate reads the reset form state at open time.
-  }, [open, initialTemplate])
 
   // A gallery starter hires through its C1 preset for skills + model only:
   // its own role line, mission and persona already filled the form, and the

@@ -108,7 +108,7 @@ export function useTeamText(): TeamText {
   return bindTree(t, TEAM_EN, 'team') as TeamText
 }
 
-function bindTree(t: (key: string, ...args: unknown[]) => string, node: object, path: string): unknown {
+export function bindTree(t: (key: string, ...args: unknown[]) => string, node: object, path: string): unknown {
   const out: Record<string, unknown> = {}
 
   for (const [key, value] of Object.entries(node)) {

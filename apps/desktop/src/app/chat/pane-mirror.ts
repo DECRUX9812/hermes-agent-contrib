@@ -42,6 +42,8 @@ export interface PaneMirror<T> {
   /** Node the tile's TAB shows after its label on every tab (see
    *  PaneContribution.tabTrail) — e.g. a session's elapsed time + current tool. */
   tabTrail?: (key: string) => ReactNode
+  /** The tab label is a conversation title (see PaneChrome.contentTitle). */
+  contentTitle?: boolean
   /** Node the tile contributes to its zone strip's trailing edge while it is
    *  the ACTIVE pane (see PaneContribution.stripTrail) — e.g. a session's skill chip. */
   stripTrail?: (key: string) => ReactNode
@@ -97,6 +99,7 @@ export function paneMirror<T>(cfg: PaneMirror<T>): () => void {
           },
           lifecycleKeepAlive: cfg.lifecycleKeepAlive?.(key),
           tabTrail: cfg.tabTrail ? () => cfg.tabTrail!(key) : undefined,
+          contentTitle: cfg.contentTitle,
           stripTrail: cfg.stripTrail ? () => cfg.stripTrail!(key) : undefined,
           minWidth: cfg.minWidth,
           newTab: cfg.newTab?.(key),

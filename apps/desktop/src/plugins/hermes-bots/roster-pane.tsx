@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { BotCard } from './bot-card'
 import { BotRow } from './bot-row'
+import { type BotDraft, type BotStarter, starterDraft } from './bot-starters'
 import {
   $botChatFocused,
   $botsPaneVisible,
@@ -16,8 +17,6 @@ import {
   parseRosterKey,
   saveSelectedRosterBot
 } from './bot-state'
-import type { BotStarter } from './bot-starters'
-import type { BotTemplateId } from './bot-templates'
 import { BroadcastDialog } from './broadcast-dialog'
 /**
  * The Bots pane itself: the roster's selection reconciliation, the
@@ -42,11 +41,11 @@ import { groupChatMemberBots } from './group-membership'
 import { $groupMainTabsRev, shouldRenderGroupChatInPane } from './group-panes'
 import { $activeGroupMemberKeys } from './group-presence'
 import { $showHiddenBots, isBotHidden } from './hidden-bots'
+import { HireGallery } from './hire-gallery'
 import { useBots } from './i18n'
 import { $rosterSortMode, setRosterSortMode, useRosterAttentionCounts } from './live-status'
 import { mailboxOpenCountFor, useMailbox } from './mailbox'
 import { MailboxTaskDialog } from './mailbox-parts'
-import { MarketplaceDialog } from './marketplace-dialog'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
@@ -252,21 +251,21 @@ export function BotsPane() {
   const workingOwner = focusedRosterOwner(useValue($focusedBotOwner))
   const activeConnectionId = host.state.connectionId?.get?.() || 'local'
   const [createOpen, setCreateOpen] = useState(false)
-  // A starter card picked from the gallery/empty state — the dialog mounts
-  // pre-filled on it (remount keyed below, so state is read once per open).
-  const [createStarter, setCreateStarter] = useState<BotStarter | null>(null)
+  // A Hire-gallery pick (starter card or described bot) — the create dialog
+  // mounts pre-filled on it (remount keyed, so state is read once per open).
+  const [createDraft, setCreateDraft] = useState<BotDraft | null>(null)
 
-  const openCreate = (starter?: BotStarter) => {
-    setCreateStarter(starter || null)
+  const openCreate = (draft: BotDraft | null) => {
+    setCreateDraft(draft)
     setCreateOpen(true)
   }
+
+  // "New bot" leads with the Hire gallery: never a blank form first.
+  const [hireOpen, setHireOpen] = useState(false)
 
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
   const [broadcastOpen, setBroadcastOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
-  const [marketplaceOpen, setMarketplaceOpen] = useState(false)
-  // G6 — the template a marketplace starter card hands the create dialog.
-  const [createTemplate, setCreateTemplate] = useState<BotTemplateId | undefined>()
   const [editing, setEditing] = useState<null | RosterRow>(null)
   // `path` is the profile directory the gateway reports on a profiles.list row;
   // it is not part of the shared RosterRow model, so it rides as an extra here.
@@ -528,7 +527,7 @@ export function BotsPane() {
         roster,
         setCreateOpen: (value: boolean) => {
           if (value) {
-            openCreate()
+            setHireOpen(true)
           }
         },
         setGroupCreateOpen,
@@ -550,14 +549,13 @@ export function BotsPane() {
         setSortMode: setRosterSortMode,
         setBroadcastOpen,
         setCalendarOpen,
-        setMarketplaceOpen,
         viewMode,
         setViewMode: setRosterViewMode
       })}
       <TriageStrip bots={roster} onOpen={bot => void openRosterBot(bot)} />
       {renderRosterContent({
         b,
-        onNewBot: openCreate,
+        onNewBot: (starter?: BotStarter) => (starter ? openCreate(starterDraft(starter)) : setHireOpen(true)),
         staleNotice,
         isLoading,
         initialRosterLoading,
@@ -593,24 +591,21 @@ export function BotsPane() {
       <MailboxTaskDialog member={assigningTask} onClose={() => setAssigningTask(null)} />
       <BroadcastDialog bots={roster} onClose={() => setBroadcastOpen(false)} open={broadcastOpen} />
       <RoutinesCalendarDialog bots={roster} onClose={() => setCalendarOpen(false)} open={calendarOpen} />
-      <MarketplaceDialog
-        onClose={() => setMarketplaceOpen(false)}
-        onPickTemplate={template => {
-          setMarketplaceOpen(false)
-          setCreateTemplate(template)
-          setCreateOpen(true)
+      <HireGallery
+        onClose={() => setHireOpen(false)}
+        onHire={draft => {
+          setHireOpen(false)
+          openCreate(draft)
         }}
-        open={marketplaceOpen}
+        open={hireOpen}
       />
       {renderRosterDialogs({
         b,
         t,
         createOpen,
-        createTemplate,
         setCreateOpen,
-        setCreateTemplate,
-        createStarter,
-        setCreateStarter,
+        createDraft,
+        setCreateDraft,
         groupCreateOpen,
         setGroupCreateOpen,
         editing,

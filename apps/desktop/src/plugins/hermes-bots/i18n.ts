@@ -338,18 +338,6 @@ type BotsMessages = {
     watchToast: (name: string) => string
     unwatchToast: (name: string) => string
   }
-  /** The New Bot gallery: starter cards + the describe-your-own box that
-   *  leads the create dialog. */
-  gallery: {
-    desc: string
-    describePlaceholder: string
-    describeAction: string
-    startersLabel: string
-    blankTitle: string
-    blankDesc: string
-    backToStarters: string
-    fromTemplate: (id: string) => string
-  }
   /** Avatar picker: shapes, blobs, pets, uploads, generation. */
   avatar: {
     classicShapes: string
@@ -698,6 +686,10 @@ type BotsMessages = {
     unreachable: (name: string) => string
     attention: (name: string, reason: string) => string
     openItem: (name: string) => string
+    /** The row's one action, by what the item needs from you. */
+    actionAnswer: string
+    actionReview: string
+    actionOpen: string
   }
   /** B1+B2 — the `/plan` proposal card + live checklist above the composer.
    *  Model-bound strings (the mode prefix, the execute prompt, the `::botplan`
@@ -726,17 +718,6 @@ type BotsMessages = {
     tasks: string
     today: string
     yesterday: string
-  }
-  /** G6 — the roster toolbar's marketplace stub: bundle import plus the C1
-   *  template catalog as installable starter cards. */
-  market: {
-    menuItem: string
-    title: string
-    desc: string
-    starters: string
-    importFile: string
-    importHint: string
-    add: string
   }
   /** F1 — the session deck on the bot pane: every session the bot's profile
    *  owns, canonical chat first. */
@@ -1049,16 +1030,6 @@ const en: BotsMessages = {
     watching: 'Watching this bot',
     watchToast: name => `Watching ${name}`,
     unwatchToast: name => `Stopped watching ${name}`
-  },
-  gallery: {
-    desc: 'Pick a starter or describe your own — you can tweak everything next.',
-    describePlaceholder: 'Describe the bot you want… e.g. “a skeptical code reviewer who catches edge cases”',
-    describeAction: 'Draft my bot',
-    startersLabel: 'Or pick a starter',
-    blankTitle: 'Blank bot',
-    blankDesc: 'Start from scratch',
-    backToStarters: 'Starters',
-    fromTemplate: id => `Starter: ${id}`
   },
   avatar: {
     classicShapes: 'Classic shapes',
@@ -1379,14 +1350,17 @@ const en: BotsMessages = {
     untitledJob: 'Untitled routine'
   },
   triage: {
-    title: 'Needs attention',
+    title: 'Needs you',
     needsInput: name => `${name} needs input`,
     turnFailed: name => `${name}’s last turn failed`,
     deliveryFailed: name => `${name} has a failed delivery`,
     routineOverdue: name => `${name} has an overdue routine`,
     unreachable: name => `${name}’s gateway is unreachable`,
     attention: (name, reason) => `${name}: ${reason}`,
-    openItem: name => `Open ${name}`
+    openItem: name => `Open ${name}`,
+    actionAnswer: 'Answer',
+    actionReview: 'Review',
+    actionOpen: 'Open'
   },
   plan: {
     proposedTitle: 'Proposed plan',
@@ -1405,15 +1379,6 @@ const en: BotsMessages = {
     tasks: 'Task log',
     today: 'Today',
     yesterday: 'Yesterday'
-  },
-  market: {
-    menuItem: 'Marketplace\u2026',
-    title: 'Bot marketplace',
-    desc: 'Bundle import and starter bots \u2014 no hosted registry yet.',
-    starters: 'Starter bots',
-    importFile: 'Import from file',
-    importHint: 'Install a bot bundle exported from another Hermes install.',
-    add: 'Add bot'
   },
   deck: {
     title: 'Sessions',
@@ -1721,16 +1686,6 @@ const ja: BotsMessages = {
     watching: 'このボットをウォッチ中',
     watchToast: name => `${name} をウォッチしています`,
     unwatchToast: name => `${name} のウォッチを解除しました`
-  },
-  gallery: {
-    desc: 'スターターを選ぶか、自由に説明してください — 細かい設定は次の画面で調整できます。',
-    describePlaceholder: '欲しいボットを説明… 例: 「エッジケースを見逃さない慎重なコードレビュアー」',
-    describeAction: 'ボットを下書き',
-    startersLabel: 'またはスターターを選択',
-    blankTitle: '空のボット',
-    blankDesc: 'ゼロから作成',
-    backToStarters: 'スターター',
-    fromTemplate: id => `スターター: ${id}`
   },
   avatar: {
     classicShapes: 'クラシックシェイプ',
@@ -2061,7 +2016,10 @@ const ja: BotsMessages = {
     routineOverdue: name => `${name}に期限超過のルーチンがあります`,
     unreachable: name => `${name}のゲートウェイに到達できません`,
     attention: (name, reason) => `${name}: ${reason}`,
-    openItem: name => `${name}を開く`
+    openItem: name => `${name}を開く`,
+    actionAnswer: '回答',
+    actionReview: '確認',
+    actionOpen: '開く'
   },
   plan: {
     proposedTitle: '提案されたプラン',
@@ -2095,22 +2053,12 @@ const ja: BotsMessages = {
     openComputer: 'コンピューターを開く',
     openRoutines: 'ルーティンを開く',
     schedule: 'スケジュールで自動実行できます'
-  }
-,
+  },
   rail: {
     title: 'ボットのコンテキスト',
     tasks: 'タスクログ',
     today: '今日',
     yesterday: '昨日'
-  },
-  market: {
-    menuItem: 'マーケットプレイス…',
-    title: 'ボットマーケットプレイス',
-    desc: 'バンドルのインポートとスターターボット — ホスト型レジストリはまだありません。',
-    starters: 'スターターボット',
-    importFile: 'ファイルからインポート',
-    importHint: '別の Hermes インストールからエクスポートしたボットバンドルをインストールします。',
-    add: 'ボットを追加'
   }
 }
 
@@ -2387,16 +2335,6 @@ const zh: BotsMessages = {
     watching: '正在关注此机器人',
     watchToast: name => `正在关注 ${name}`,
     unwatchToast: name => `已停止关注 ${name}`
-  },
-  gallery: {
-    desc: '选择一个起手模板，或描述你想要的机器人 — 之后仍可随意调整。',
-    describePlaceholder: '描述你想要的机器人… 例如：“一个能发现边缘情况的严谨代码审查员”',
-    describeAction: '生成草稿',
-    startersLabel: '或选择一个起手模板',
-    blankTitle: '空白机器人',
-    blankDesc: '从零开始',
-    backToStarters: '起手模板',
-    fromTemplate: id => `起手模板：${id}`
   },
   avatar: {
     classicShapes: '经典形状',
@@ -2721,7 +2659,10 @@ const zh: BotsMessages = {
     routineOverdue: name => `${name} 有过期的例行任务`,
     unreachable: name => `无法访问 ${name} 的网关`,
     attention: (name, reason) => `${name}：${reason}`,
-    openItem: name => `打开 ${name}`
+    openItem: name => `打开 ${name}`,
+    actionAnswer: '回答',
+    actionReview: '查看',
+    actionOpen: '打开'
   },
   plan: {
     proposedTitle: '建议方案',
@@ -2755,22 +2696,12 @@ const zh: BotsMessages = {
     openComputer: '打开电脑面板',
     openRoutines: '打开例程',
     schedule: '我可以按计划自动运行'
-  }
-,
+  },
   rail: {
     title: '机器人上下文',
     tasks: '任务日志',
     today: '今天',
     yesterday: '昨天'
-  },
-  market: {
-    menuItem: '市场…',
-    title: '机器人市场',
-    desc: '导入捆绑包或添加起始机器人 — 尚无托管注册表。',
-    starters: '起始机器人',
-    importFile: '从文件导入',
-    importHint: '安装从另一个 Hermes 导出的机器人捆绑包。',
-    add: '添加机器人'
   }
 }
 
@@ -3047,16 +2978,6 @@ const zhHant: BotsMessages = {
     watching: '正在關注此機器人',
     watchToast: name => `正在關注 ${name}`,
     unwatchToast: name => `已停止關注 ${name}`
-  },
-  gallery: {
-    desc: '選擇一個起手範本，或描述你想要的機器人 — 之後仍可自由調整。',
-    describePlaceholder: '描述你想要的機器人… 例如：「會抓出邊界案例的嚴謹程式碼審查員」',
-    describeAction: '產生草稿',
-    startersLabel: '或選擇起手範本',
-    blankTitle: '空白機器人',
-    blankDesc: '從零開始',
-    backToStarters: '起手範本',
-    fromTemplate: id => `起手範本：${id}`
   },
   avatar: {
     classicShapes: '經典形狀',
@@ -3381,7 +3302,10 @@ const zhHant: BotsMessages = {
     routineOverdue: name => `${name} 有過期的例行任務`,
     unreachable: name => `無法連接 ${name} 的閘道`,
     attention: (name, reason) => `${name}：${reason}`,
-    openItem: name => `開啟 ${name}`
+    openItem: name => `開啟 ${name}`,
+    actionAnswer: '回答',
+    actionReview: '查看',
+    actionOpen: '開啟'
   },
   plan: {
     proposedTitle: '建議方案',
@@ -3415,22 +3339,12 @@ const zhHant: BotsMessages = {
     openComputer: '開啟電腦面板',
     openRoutines: '開啟例程',
     schedule: '我可以按排程自動執行'
-  }
-,
+  },
   rail: {
     title: '機器人脈絡',
     tasks: '任務日誌',
     today: '今天',
     yesterday: '昨天'
-  },
-  market: {
-    menuItem: '市集…',
-    title: '機器人市集',
-    desc: '匯入套件或加入起始機器人 — 尚無託管註冊表。',
-    starters: '起始機器人',
-    importFile: '從檔案匯入',
-    importHint: '安裝從另一個 Hermes 匯出的機器人套件。',
-    add: '加入機器人'
   }
 }
 
