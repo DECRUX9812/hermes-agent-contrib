@@ -75,6 +75,7 @@ it('puts the full-resolution .icns back after electron-builder packaged the laye
   const root = await mkdtemp(path.join(os.tmpdir(), 'hermes-mac-icon-'))
   try {
     const ctx = context(root)
+    await seedPackagedMain(ctx)
     const resources = ctx.packager.getResourcesDir(root)
     await mkdir(ctx.packager.getMacOsElectronFrameworkResourcesDir(root), { recursive: true })
     await mkdir(resources, { recursive: true })
