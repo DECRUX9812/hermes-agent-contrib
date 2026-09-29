@@ -4078,6 +4078,22 @@ export const esOverrides = {
     missingTitle: 'Artefacto no disponible',
     missingBody: 'Este artefacto ya no está en el registro local.'
   },
+  panels: {
+    button: 'Paneles',
+    title: 'Junto al chat',
+    subtitle: 'Activa lo que necesites. Cada panel se abre junto a la conversación.',
+    needsProject: 'Abre una carpeta para usarlo',
+    openFolder: 'Abrir una carpeta…',
+    arrange: 'Organizar…',
+    items: {
+      files: { label: 'Archivos', description: 'Explora y previsualiza tu proyecto' },
+      changes: { label: 'Cambios', description: 'Revisa lo que cambió el agente' },
+      browser: { label: 'Navegador', description: 'Abre páginas junto al chat' },
+      terminal: { label: 'Terminal', description: 'Ejecuta comandos tú mismo' },
+      live: { label: 'Actividad en vivo', description: 'Cada comando del agente, en tiempo real' },
+      artifacts: { label: 'Artefactos', description: 'Lo que este chat ha creado' }
+    }
+  },
   todayBrief: {
     greeting: {
       morning: 'Buenos días',

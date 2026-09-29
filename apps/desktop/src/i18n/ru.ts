@@ -2829,6 +2829,22 @@ export const ru = defineLocale({
     missingTitle: 'Артефакт недоступен',
     missingBody: 'Этот артефакт больше нет в локальном реестре.'
   },
+  panels: {
+    button: 'Панели',
+    title: 'Рядом с чатом',
+    subtitle: 'Включите то, что нужно. Каждая панель открывается рядом с разговором.',
+    needsProject: 'Откройте папку, чтобы использовать',
+    openFolder: 'Открыть папку…',
+    arrange: 'Расположить…',
+    items: {
+      files: { label: 'Файлы', description: 'Просмотр файлов проекта' },
+      changes: { label: 'Изменения', description: 'Что изменил агент' },
+      browser: { label: 'Браузер', description: 'Страницы прямо рядом с чатом' },
+      terminal: { label: 'Терминал', description: 'Выполняйте команды сами' },
+      live: { label: 'Активность', description: 'Каждая команда агента в реальном времени' },
+      artifacts: { label: 'Артефакты', description: 'Что создал этот чат' }
+    }
+  },
   todayBrief: {
     greeting: {
       morning: 'Доброе утро',

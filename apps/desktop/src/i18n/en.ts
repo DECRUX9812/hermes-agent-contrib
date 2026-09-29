@@ -3715,6 +3715,22 @@ export const en: Translations = {
     missingBody: 'This artifact is no longer in the local registry.'
   },
 
+  panels: {
+    button: 'Panels',
+    title: 'Beside the chat',
+    subtitle: 'Turn on what you need. Each opens next to the conversation.',
+    needsProject: 'Open a folder to use this',
+    openFolder: 'Open a folder…',
+    arrange: 'Arrange…',
+    items: {
+      files: { label: 'Files', description: 'Browse and preview your project' },
+      changes: { label: 'Changes', description: 'Review what the agent changed' },
+      browser: { label: 'Browser', description: 'Open pages right beside the chat' },
+      terminal: { label: 'Terminal', description: 'Run commands yourself' },
+      live: { label: 'Live activity', description: 'Every command the agent runs, as it runs' },
+      artifacts: { label: 'Artifacts', description: 'Things this chat has made' }
+    }
+  },
   todayBrief: {
     greeting: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Working late?' },
     needsYou: 'Needs you',

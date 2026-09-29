@@ -4087,6 +4087,22 @@ export const deOverrides = {
     missingTitle: 'Artifact nicht verfügbar',
     missingBody: 'Dieses Artifact ist nicht mehr in der lokalen Registry.'
   },
+  panels: {
+    button: 'Bereiche',
+    title: 'Neben dem Chat',
+    subtitle: 'Schalte ein, was du brauchst. Jeder Bereich öffnet sich neben der Unterhaltung.',
+    needsProject: 'Öffne einen Ordner, um das zu nutzen',
+    openFolder: 'Ordner öffnen…',
+    arrange: 'Anordnen…',
+    items: {
+      files: { label: 'Dateien', description: 'Projekt durchsuchen und ansehen' },
+      changes: { label: 'Änderungen', description: 'Prüfen, was der Agent geändert hat' },
+      browser: { label: 'Browser', description: 'Seiten direkt neben dem Chat öffnen' },
+      terminal: { label: 'Terminal', description: 'Befehle selbst ausführen' },
+      live: { label: 'Live-Aktivität', description: 'Jeder Befehl des Agenten, während er läuft' },
+      artifacts: { label: 'Artefakte', description: 'Was dieser Chat erstellt hat' }
+    }
+  },
   todayBrief: {
     greeting: { morning: 'Guten Morgen', afternoon: 'Guten Tag', evening: 'Guten Abend', night: 'Noch wach?' },
     needsYou: 'Wartet auf dich',

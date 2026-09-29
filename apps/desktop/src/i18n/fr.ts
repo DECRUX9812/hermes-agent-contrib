@@ -4095,6 +4095,22 @@ export const frOverrides = {
     missingTitle: 'Artefact indisponible',
     missingBody: 'Cet artefact ne figure plus dans le registre local.'
   },
+  panels: {
+    button: 'Panneaux',
+    title: 'À côté du chat',
+    subtitle: 'Activez ce dont vous avez besoin. Chaque panneau s’ouvre à côté de la conversation.',
+    needsProject: 'Ouvrez un dossier pour l’utiliser',
+    openFolder: 'Ouvrir un dossier…',
+    arrange: 'Organiser…',
+    items: {
+      files: { label: 'Fichiers', description: 'Parcourir et prévisualiser le projet' },
+      changes: { label: 'Modifications', description: 'Relire ce que l’agent a modifié' },
+      browser: { label: 'Navigateur', description: 'Ouvrir des pages à côté du chat' },
+      terminal: { label: 'Terminal', description: 'Lancer des commandes vous-même' },
+      live: { label: 'Activité en direct', description: 'Chaque commande de l’agent, en temps réel' },
+      artifacts: { label: 'Artefacts', description: 'Ce que ce chat a produit' }
+    }
+  },
   todayBrief: {
     greeting: { morning: 'Bonjour', afternoon: 'Bon après-midi', evening: 'Bonsoir', night: 'Encore au travail ?' },
     needsYou: 'Vous attend',

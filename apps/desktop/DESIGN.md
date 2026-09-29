@@ -303,6 +303,18 @@ name and "role · status"; Classic keeps the lettered name.
   the routine dialog — the person reviews the words and time before anything
   is scheduled. A preset the bot already runs is hidden.
 
+## Beside the chat — the Panels menu
+
+Everything that can sit next to a conversation (Files, Changes, Browser,
+Terminal, Live activity, Artifacts) is one table in `app/shell/panel-launcher.tsx`,
+opened from the titlebar's **Panels** button (untiered: Simple's one door to
+panes). Each row is a live switch that flips the SAME toggle its shortcut,
+palette entry and tab use; the popover stays open so several can be chosen.
+Turning one on never hides another: if it would stack as a tab over a panel
+that was showing, it is docked beside it (`dockPaneBeside`, which yields to
+panes the user placed). A right zone with no project shows the same choices
+(`BesideChatChooser`) instead of a dead "no project" label.
+
 ## Badges — one component
 
 `src/components/ui/badge.tsx`. Variants: `default` (tinted primary), `muted`,

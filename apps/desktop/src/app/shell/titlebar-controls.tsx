@@ -31,6 +31,7 @@ import { $titlebarAppActionsSide, TITLEBAR_FIXED_TOOLS } from '@/store/titlebar-
 
 import { appViewForPath, hidesFixedTitlebarClusters, isOverlayView } from '../routes'
 
+import { $panelLauncherOpen, PanelLauncher, togglePanelLauncher } from './panel-launcher'
 import {
   TITLEBAR_CHROME_CHANGED_EVENT,
   TITLEBAR_ICON_BADGE_SCALE,
@@ -145,6 +146,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   const unreadCount = useStore($unreadSessionCount)
   const appActionsSide = useStore($titlebarAppActionsSide)
   const interfaceMode = useStore($interfaceMode)
+  const panelLauncherOpen = useStore($panelLauncherOpen)
   const unreadBadge = unreadCount > 0 ? unreadCount : undefined
   const unreadHint = unreadBadge ? ` · ${t.titlebar.unreadSessions(unreadBadge)}` : ''
   // One filter for every cluster: a tool's own `hidden`, then the mode's tier.
@@ -206,6 +208,19 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       rightEdge.toggle()
     },
     tour: 'right-pane-toggle'
+  }
+
+  const panelsTool: TitlebarTool = {
+    ...TITLEBAR_FIXED_TOOLS.panels,
+    active: panelLauncherOpen,
+    icon: <TitlebarIcon name="multiple-windows" />,
+    id: 'panels',
+    label: t.panels.button,
+    onSelect: () => {
+      triggerHaptic('tap')
+      togglePanelLauncher()
+    },
+    tour: 'titlebar-panels'
   }
 
   // Static system tools — always pinned to the screen's right edge so the
@@ -315,7 +330,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
 
   const visibleSystemTools = appActionsSide === 'right' ? systemTools.filter(visibleTool) : []
   const visiblePaneTools = tools.filter(visibleTool)
-  const visibleRightFixedTools = [flipTool, rightSidebarTool].filter(visibleTool)
+  const visibleRightFixedTools = [flipTool, panelsTool, rightSidebarTool].filter(visibleTool)
 
   return (
     <>
@@ -354,6 +369,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         ))}
         <Slot area="titleBar.right" />
       </div>
+      <PanelLauncher />
     </>
   )
 }

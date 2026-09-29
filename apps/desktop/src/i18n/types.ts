@@ -3129,6 +3129,15 @@ export interface Translations {
     missingBody: string
   }
 
+  panels: {
+    button: string
+    title: string
+    subtitle: string
+    needsProject: string
+    openFolder: string
+    arrange: string
+    items: Record<'artifacts' | 'browser' | 'changes' | 'files' | 'live' | 'terminal', { label: string; description: string }>
+  }
   todayBrief: {
     greeting: { morning: string; afternoon: string; evening: string; night: string }
     needsYou: string

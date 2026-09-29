@@ -3477,6 +3477,22 @@ export const zh = defineLocale({
     missingBody: '此产物已不在本地注册表中。'
   },
 
+  panels: {
+    button: '面板',
+    title: '在聊天旁边',
+    subtitle: '打开你需要的面板，它会出现在对话旁边。',
+    needsProject: '打开一个文件夹后可用',
+    openFolder: '打开文件夹…',
+    arrange: '排列…',
+    items: {
+      files: { label: '文件', description: '浏览并预览项目' },
+      changes: { label: '更改', description: '查看智能体改了什么' },
+      browser: { label: '浏览器', description: '在聊天旁打开网页' },
+      terminal: { label: '终端', description: '自己运行命令' },
+      live: { label: '实时活动', description: '智能体运行的每条命令' },
+      artifacts: { label: '产物', description: '这个聊天生成的内容' }
+    }
+  },
   todayBrief: {
     greeting: { morning: '早上好', afternoon: '下午好', evening: '晚上好', night: '还在忙？' },
     needsYou: '需要你处理',
