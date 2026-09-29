@@ -18,11 +18,15 @@ import {
   DropdownMenuTrigger,
   host,
   Input,
-  Tip
+  Tip,
+  useValue
 } from '@hermes/plugin-sdk'
 import { type ReactNode, useState } from 'react'
 
-import { useRoster } from './data'
+import { avatarColor, botAppearance, BotFace } from './avatar'
+import { $botMeta, useRoster } from './data'
+import { displayName } from './labels'
+import { botRosterMeta } from './routing'
 import {
   budgetState,
   type BudgetTone,
@@ -33,6 +37,7 @@ import {
   type TeamOrgNode
 } from './team'
 import { type TeamText } from './team-i18n'
+import type { RosterRow } from './types'
 
 const TONE_BAR: Record<BudgetTone, string> = {
   exhausted: 'bg-(--ui-danger,#e5484d)',
@@ -68,8 +73,24 @@ function BudgetMeter({ member, t }: { member: TeamMember; t: TeamText }) {
   )
 }
 
+/** The seat's bot as the roster knows it: real face, colour and friendly name. */
+function useSeatBot(profile: null | string) {
+  const { data } = useRoster()
+  const allMeta = useValue($botMeta)
+  const bot = (data?.profiles ?? []).find((row: RosterRow) => row.name === profile) as RosterRow | undefined
+
+  if (!bot || !profile) {
+    return null
+  }
+
+  const meta = botRosterMeta(bot, allMeta)
+
+  return { ...botAppearance(bot.name, meta), label: displayName(bot, meta) }
+}
+
 function SeatCard({ node, onEdit, team, t }: { node: TeamOrgNode; onEdit: (m: TeamMember) => void; team: Team; t: TeamText }) {
   const open = !node.profile
+  const face = useSeatBot(node.profile)
 
   const call = (method: string, extra: Record<string, unknown>) =>
     void mutateTeam(method, { team_id: team.id, ...extra }).catch(err => host.notifyError(err, 'Team'))
@@ -86,14 +107,20 @@ function SeatCard({ node, onEdit, team, t }: { node: TeamOrgNode; onEdit: (m: Te
       data-slot="team-seat"
     >
       <div className="flex items-start gap-2">
-        <span
-          aria-hidden="true"
-          className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-(--ui-control-active-background) text-[0.75rem] font-semibold text-(--ui-text-secondary)"
-        >
-          {open ? <Codicon name="add" size="0.875rem" /> : (node.profile ?? '?').slice(0, 1).toUpperCase()}
-        </span>
+        {face ? (
+          <span aria-hidden="true" className="mt-0.5 shrink-0">
+            <BotFace color={avatarColor(face.color, node.profile ?? '')} image={face.image} name={node.profile ?? ''} shape={face.shape} size={28} />
+          </span>
+        ) : (
+          <span
+            aria-hidden="true"
+            className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full bg-(--ui-control-active-background) text-[0.75rem] font-semibold text-(--ui-text-secondary)"
+          >
+            {open ? <Codicon name="add" size="0.875rem" /> : (node.profile ?? '?').slice(0, 1).toUpperCase()}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">{seatName(node, t.openSeat)}</p>
+          <p className="truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">{face?.label || seatName(node, t.openSeat)}</p>
           <p className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">{node.role || node.title || '—'}</p>
         </div>
         <DropdownMenu>
