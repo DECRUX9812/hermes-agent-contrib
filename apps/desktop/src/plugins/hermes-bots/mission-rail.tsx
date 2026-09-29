@@ -26,6 +26,8 @@ import {
 } from '@hermes/plugin-sdk'
 import { type ReactNode, useState } from 'react'
 
+import { AUTOPILOT_ICONS, autopilotPresets, type RoutinePreset } from './autopilot'
+import { useAutopilotText } from './autopilot-i18n'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { BotDeliverablesSection } from './bot-deliverables'
 import { BotSessionDeck } from './bot-session-deck'
@@ -185,6 +187,49 @@ function BotProfileCard({
   )
 }
 
+/** "Put <bot> on autopilot": presets that prefill the routine dialog. A
+ *  preset whose title already names one of the bot's routines is hidden. */
+function AutopilotChips({
+  name,
+  onCustom,
+  onPick,
+  taken
+}: {
+  name: string
+  /** Offered when this card stands in for the empty state. */
+  onCustom?: () => void
+  onPick: (preset: RoutinePreset) => void
+  taken: string[]
+}) {
+  const a = useAutopilotText()
+  const presets = autopilotPresets(a).filter(({ label }) => !taken.some(title => title.endsWith(label)))
+
+  if (!presets.length) {
+    return null
+  }
+
+  return (
+    <div className="mx-2.5 mb-2 mt-1 rounded-xl bg-(--ui-widget-surface-background) p-2.5" data-slot="autopilot">
+      <p className="text-[0.75rem] font-medium text-foreground">{a.heading(name)}</p>
+      <p className="mb-2 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)">{a.hint}</p>
+      <div className="flex flex-wrap gap-1">
+        {presets.map(({ id, label, preset }) => (
+          <Button key={id} onClick={() => onPick(preset)} size="xs" variant="secondary">
+            <Codicon name={AUTOPILOT_ICONS[id]} />
+            {label}
+          </Button>
+        ))}
+        {onCustom && (
+          <Button onClick={onCustom} size="xs" variant="ghost">
+            <Codicon name="add" />
+            {a.custom}
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /** Badge tone per live-status kind: working (accent), waiting on you
  *  (amber), everything else quiet. */
 const LIVE_TONE: Partial<Record<ReturnType<typeof useBotLiveStatus>['kind'], 'idle' | 'waiting' | 'working'>> = {
@@ -224,11 +269,14 @@ export function MissionRail() {
   const [editing, setEditing] = useState(false)
   const createTarget = owner ? routineCreateTarget(createOwner, bot) : null
 
-  const openCreate = () => {
+  const [preset, setPreset] = useState<null | RoutinePreset>(null)
+
+  const openCreate = (seed: null | RoutinePreset = null) => {
     if (!owner) {
       return
     }
 
+    setPreset(seed)
     setCreateOwner(owner)
     setCreateOpen(true)
   }
@@ -271,7 +319,7 @@ export function MissionRail() {
       <RailSection
         action={
           <Tip label={c.newCron}>
-            <Button aria-label={c.newCron} onClick={openCreate} size="icon-xs" variant="ghost">
+            <Button aria-label={c.newCron} onClick={() => openCreate()} size="icon-xs" variant="ghost">
               <Codicon name="add" />
             </Button>
           </Tip>
@@ -299,12 +347,16 @@ export function MissionRail() {
             icon="warning"
             title={c.failedLoad}
           />
+        ) : jobs.length === 0 && !filterHint ? (
+          // Nothing scheduled and nothing hidden by the filter: the autopilot
+          // card below IS the empty state, with a way to write one from scratch.
+          <AutopilotChips name={displayName(owner, meta)} onCustom={() => openCreate()} onPick={openCreate} taken={[]} />
         ) : jobs.length === 0 ? (
           // `filterHint` is the informative case (jobs exist on the profile but
           // none are tagged for this bot), so it wins the description slot.
           <PanelEmpty
             action={
-              <Button onClick={openCreate} size="sm">
+              <Button onClick={() => openCreate()} size="sm">
                 {c.newCron}
               </Button>
             }
@@ -318,6 +370,13 @@ export function MissionRail() {
               <RoutineRow job={job} key={job.job_id} onOpen={opened => setDetailJobId(opened.job_id)} owner={owner} />
             ))}
           </div>
+        )}
+        {!isLoading && !error && jobs.length > 0 && (
+          <AutopilotChips
+            name={displayName(owner, meta)}
+            onPick={openCreate}
+            taken={jobs.map(job => String(job.name || ''))}
+          />
         )}
       </RailSection>
       {/* Deliverables keeps its own header row (count + refresh live in it),
@@ -343,8 +402,10 @@ export function MissionRail() {
         onClose={() => {
           setCreateOpen(false)
           setCreateOwner(null)
+          setPreset(null)
         }}
         open={createOpen}
+        preset={preset}
       />
       <EditProfileDialog bot={editing ? owner : null} onClose={() => setEditing(false)} open={editing} />
     </div>

@@ -298,6 +298,10 @@ name and "role · status"; Classic keeps the lettered name.
 - **Share a bot** (`plugins/hermes-bots/share-dialog.tsx`): the preview is the
   exact PNG — face, name, role, "Ask me", QR when reachable — plus an invite
   and the bot file.
+- **Autopilot** (`plugins/hermes-bots/autopilot.ts`): under a bot's Routines,
+  one-click presets (morning brief, weekly review, keep watch) that PREFILL
+  the routine dialog — the person reviews the words and time before anything
+  is scheduled. A preset the bot already runs is hidden.
 
 ## Badges — one component
 

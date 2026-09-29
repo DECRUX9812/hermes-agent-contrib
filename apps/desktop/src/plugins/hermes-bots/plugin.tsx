@@ -43,6 +43,7 @@ import type {
 } from '@hermes/plugin-sdk'
 
 import { AgentsSection } from './agents-section'
+import { AUTOPILOT_LOCALES } from './autopilot-i18n'
 import { startFaceClock, stopFaceClock } from './avatar'
 import { BotInboundCards } from './bot-events-view'
 import { BotHeaderIdentity } from './bot-header-chip'
@@ -169,6 +170,7 @@ export default {
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
+    const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
     setGroupChatSyncDisposed(false)
     startFaceClock()
     // The cross-connection relay rides every gateway socket this Desktop
@@ -184,6 +186,7 @@ export default {
       ctx.onDispose(disposeTeamLocales)
       ctx.onDispose(disposeHireLocales)
       ctx.onDispose(disposeShareLocales)
+      ctx.onDispose(disposeAutopilotLocales)
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)

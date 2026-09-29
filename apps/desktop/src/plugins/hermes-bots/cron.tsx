@@ -39,6 +39,7 @@ import {
 } from '@hermes/plugin-sdk'
 import { useEffect, useState } from 'react'
 
+import type { RoutinePreset } from './autopilot'
 import { $selectedBot } from './bot-state'
 import { $botMeta, botRosterKey, botSelectionKey, isActiveRosterBot } from './data'
 import { labeled } from './dialog-parts'
@@ -1120,9 +1121,11 @@ interface CreateRoutineDialogProps {
   bot: RosterRow | string
   onClose: () => void
   open: boolean
+  /** Prefill (an autopilot pick): seeded when the dialog opens, still editable. */
+  preset?: null | RoutinePreset
 }
 
-export function CreateRoutineDialog({ bot, open, onClose }: CreateRoutineDialogProps) {
+export function CreateRoutineDialog({ bot, open, onClose, preset = null }: CreateRoutineDialogProps) {
   const b = useBots()
   const { t } = useI18n()
   const c = t.cron
@@ -1145,6 +1148,16 @@ export function CreateRoutineDialog({ bot, open, onClose }: CreateRoutineDialogP
   const owner: RosterRow = typeof bot === 'string' ? { name: bot } : bot
   const profile = owner.name
   const schedule = composeSchedule(sched)
+
+  // An autopilot pick seeds the form each time the dialog opens with it.
+  useEffect(() => {
+    if (open && preset) {
+      setName(preset.title)
+      setInstruction(preset.instruction)
+      setSched({ ...defaultScheduleState(), ...preset.schedule })
+      setTarget(preset.deliverToChat ? 'bot-chat' : 'history')
+    }
+  }, [open, preset])
 
   const reset = () => {
     setName('')
