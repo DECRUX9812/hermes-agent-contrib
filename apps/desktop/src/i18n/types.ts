@@ -3109,6 +3109,23 @@ export interface Translations {
     missingBody: string
   }
 
+  live: {
+    title: string
+    noSession: string
+    emptyTitle: string
+    emptyBody: string
+    count: (total: number) => string
+    countRunning: (total: number, running: number) => string
+    follow: string
+    followHint: string
+    copy: string
+    exitCode: (code: number) => string
+    runningFor: (elapsed: string) => string
+    waitingForOutput: string
+    noOutput: string
+    openLive: string
+  }
+
   artifactRail: {
     empty: string
     noSession: string

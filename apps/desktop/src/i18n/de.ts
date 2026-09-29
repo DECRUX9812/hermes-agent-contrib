@@ -4056,6 +4056,24 @@ export const deOverrides = {
     missingTitle: 'Artifact nicht verfügbar',
     missingBody: 'Dieses Artifact ist nicht mehr in der lokalen Registry.'
   },
+  live: {
+    title: 'Live',
+    noSession: 'Keine Sitzung ausgewählt',
+    emptyTitle: 'Noch nichts ausgeführt',
+    emptyBody:
+      'Jeder Befehl, jeder Dateizugriff und jeder Tool-Aufruf erscheint hier, sobald er startet – mit der vollständigen Ausgabe. Nichts wird zusammengefasst.',
+    count: total => `${total} ${total === 1 ? 'Aktion' : 'Aktionen'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'Aktion' : 'Aktionen'} · ${running} laufen`,
+    follow: 'Folgen',
+    followHint: 'Zur neuesten Aktion springen und sie im Blick behalten',
+    copy: 'Befehl und Ausgabe kopieren',
+    exitCode: code => `Exit ${code}`,
+    runningFor: elapsed => `läuft seit ${elapsed}`,
+    waitingForOutput: 'Läuft – die Ausgabe erscheint am Ende',
+    noOutput: 'Keine Ausgabe',
+    openLive: 'Live'
+  },
+
   artifactRail: {
     empty: 'Noch keine Artefakte in dieser Session',
     noSession: 'Keine Session ausgewählt',

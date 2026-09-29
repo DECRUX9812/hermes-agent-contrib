@@ -4047,6 +4047,24 @@ export const esOverrides = {
     missingTitle: 'Artefacto no disponible',
     missingBody: 'Este artefacto ya no está en el registro local.'
   },
+  live: {
+    title: 'En vivo',
+    noSession: 'Ninguna sesión seleccionada',
+    emptyTitle: 'Aún no se ha ejecutado nada',
+    emptyBody:
+      'Cada comando, lectura de archivo y llamada a herramienta aparece aquí en cuanto empieza, con su salida completa. Nada se resume.',
+    count: total => `${total} ${total === 1 ? 'acción' : 'acciones'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'acción' : 'acciones'} · ${running} en curso`,
+    follow: 'Seguir',
+    followHint: 'Ir a la acción más reciente y mantenerla a la vista',
+    copy: 'Copiar comando y salida',
+    exitCode: code => `salida ${code}`,
+    runningFor: elapsed => `en curso ${elapsed}`,
+    waitingForOutput: 'En curso: la salida aparece al terminar',
+    noOutput: 'Sin salida',
+    openLive: 'En vivo'
+  },
+
   artifactRail: {
     empty: 'Aún no hay artefactos en esta sesión',
     noSession: 'No hay ninguna sesión seleccionada',

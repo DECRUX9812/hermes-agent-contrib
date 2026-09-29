@@ -1,6 +1,23 @@
 import { defineLocale } from './define-locale'
 
 export const ar = defineLocale({
+  live: {
+    title: 'مباشر',
+    noSession: 'لم يتم تحديد جلسة',
+    emptyTitle: 'لم يُشغَّل شيء بعد',
+    emptyBody: 'يظهر هنا كل أمر وكل قراءة ملف وكل استدعاء أداة لحظة بدئه، مع مخرجاته كاملة. لا يُختصر أي شيء.',
+    count: total => `${total} ${total === 1 ? 'إجراء' : 'إجراءات'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'إجراء' : 'إجراءات'} · ${running} قيد التشغيل`,
+    follow: 'متابعة',
+    followHint: 'الانتقال إلى أحدث إجراء وإبقاؤه ظاهرًا',
+    copy: 'نسخ الأمر والمخرجات',
+    exitCode: code => `رمز الخروج ${code}`,
+    runningFor: elapsed => `قيد التشغيل منذ ${elapsed}`,
+    waitingForOutput: 'قيد التشغيل — تظهر المخرجات عند الانتهاء',
+    noOutput: 'لا توجد مخرجات',
+    openLive: 'مباشر'
+  },
+
   connectors: {
     title: 'اربط تطبيقاتك',
     connect: 'ربط',

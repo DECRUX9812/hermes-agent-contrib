@@ -2799,6 +2799,24 @@ export const ru = defineLocale({
     missingTitle: 'Артефакт недоступен',
     missingBody: 'Этот артефакт больше нет в локальном реестре.'
   },
+  live: {
+    title: 'Лайв',
+    noSession: 'Сеанс не выбран',
+    emptyTitle: 'Пока ничего не запускалось',
+    emptyBody:
+      'Каждая команда, чтение файла и вызов инструмента появляются здесь сразу при запуске — с полным выводом. Ничего не сокращается.',
+    count: total => `${total} ${total === 1 ? 'действие' : 'действий'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'действие' : 'действий'} · ${running} выполняется`,
+    follow: 'Следить',
+    followHint: 'Перейти к последнему действию и держать его на виду',
+    copy: 'Копировать команду и вывод',
+    exitCode: code => `код ${code}`,
+    runningFor: elapsed => `выполняется ${elapsed}`,
+    waitingForOutput: 'Выполняется — вывод появится по завершении',
+    noOutput: 'Нет вывода',
+    openLive: 'Лайв'
+  },
+
   artifactRail: {
     empty: 'В этом сеансе пока нет артефактов',
     noSession: 'Сеанс не выбран',

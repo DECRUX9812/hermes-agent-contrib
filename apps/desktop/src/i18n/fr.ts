@@ -4065,6 +4065,24 @@ export const frOverrides = {
     missingTitle: 'Artefact indisponible',
     missingBody: 'Cet artefact ne figure plus dans le registre local.'
   },
+  live: {
+    title: 'Direct',
+    noSession: 'Aucune session sélectionnée',
+    emptyTitle: "Rien ne s'est encore exécuté",
+    emptyBody:
+      "Chaque commande, lecture de fichier et appel d'outil apparaît ici dès son démarrage, avec sa sortie complète. Rien n'est résumé.",
+    count: total => `${total} ${total === 1 ? 'action' : 'actions'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'action' : 'actions'} · ${running} en cours`,
+    follow: 'Suivre',
+    followHint: "Aller à l'action la plus récente et la garder visible",
+    copy: 'Copier la commande et la sortie',
+    exitCode: code => `sortie ${code}`,
+    runningFor: elapsed => `en cours depuis ${elapsed}`,
+    waitingForOutput: 'En cours — la sortie apparaît à la fin',
+    noOutput: 'Aucune sortie',
+    openLive: 'Direct'
+  },
+
   artifactRail: {
     empty: "Aucun artefact dans cette session pour l'instant",
     noSession: 'Aucune session sélectionnée',
@@ -5931,7 +5949,7 @@ export const frOverrides = {
           body: 'La demande était trop grande pour le modèle. Compressez la conversation ou démarrez-en une nouvelle, puis réessayez.'
         },
         no_provider_configured: {
-          title: 'Aucun modèle d\'IA n\'est encore configuré',
+          title: "Aucun modèle d'IA n'est encore configuré",
           body: 'Choisissez un modèle ou connectez-vous, puis renvoyez votre message.'
         },
         model_not_found: {

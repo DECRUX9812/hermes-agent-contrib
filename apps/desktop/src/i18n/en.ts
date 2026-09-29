@@ -3685,6 +3685,24 @@ export const en: Translations = {
     missingBody: 'This artifact is no longer in the local registry.'
   },
 
+  live: {
+    title: 'Live',
+    noSession: 'No session selected',
+    emptyTitle: 'Nothing has run yet',
+    emptyBody:
+      'Every command, file read and tool call shows up here the moment it starts, with its full output. Nothing is summarized.',
+    count: total => `${total} ${total === 1 ? 'action' : 'actions'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'action' : 'actions'} · ${running} running`,
+    follow: 'Follow',
+    followHint: 'Jump to the newest action and keep it in view',
+    copy: 'Copy command and output',
+    exitCode: code => `exit ${code}`,
+    runningFor: elapsed => `running ${elapsed}`,
+    waitingForOutput: 'Running — output appears when it finishes',
+    noOutput: 'No output',
+    openLive: 'Live'
+  },
+
   artifactRail: {
     empty: 'No artifacts in this session yet',
     noSession: 'No session selected',

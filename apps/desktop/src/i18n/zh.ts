@@ -3453,6 +3453,23 @@ export const zh = defineLocale({
     missingBody: '此产物已不在本地注册表中。'
   },
 
+  live: {
+    title: '实时',
+    noSession: '未选择会话',
+    emptyTitle: '尚未运行任何操作',
+    emptyBody: '每条命令、每次文件读取和工具调用都会在开始时显示在这里，并附带完整输出。不做任何摘要。',
+    count: total => `${total} 个操作`,
+    countRunning: (total, running) => `${total} 个操作 · ${running} 个运行中`,
+    follow: '跟随',
+    followHint: '跳到最新操作并保持可见',
+    copy: '复制命令和输出',
+    exitCode: code => `退出码 ${code}`,
+    runningFor: elapsed => `已运行 ${elapsed}`,
+    waitingForOutput: '运行中——完成后显示输出',
+    noOutput: '无输出',
+    openLive: '实时'
+  },
+
   artifactRail: {
     empty: '本会话尚无产物',
     noSession: '未选择会话',

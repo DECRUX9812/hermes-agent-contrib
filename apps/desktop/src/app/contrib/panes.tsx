@@ -14,6 +14,7 @@ import { atom } from 'nanostores'
 
 import { RightSidebarPane } from '@/app/right-sidebar'
 import { ArtifactsRailPane } from '@/app/right-sidebar/artifacts'
+import { LiveActivityPane } from '@/app/right-sidebar/live'
 import { ReviewPane } from '@/app/right-sidebar/review'
 import type { GroupSetter } from '@/app/shell/group-setter'
 import type { StatusbarItem } from '@/app/shell/statusbar-controls'
@@ -118,6 +119,18 @@ export function ArtifactsPane() {
   return (
     <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col')}>
       <ArtifactsRailPane />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Live — the focused session's tool calls, raw (store/live-activity)
+// ---------------------------------------------------------------------------
+
+export function LivePane() {
+  return (
+    <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col')}>
+      <LiveActivityPane />
     </div>
   )
 }

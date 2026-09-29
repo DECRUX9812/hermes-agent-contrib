@@ -4,6 +4,24 @@ import { defineLocale } from './define-locale'
 import { introJa } from './intro-ja'
 
 export const ja = defineLocale({
+  live: {
+    title: 'ライブ',
+    noSession: 'セッションが選択されていません',
+    emptyTitle: 'まだ何も実行されていません',
+    emptyBody:
+      'すべてのコマンド、ファイル読み取り、ツール呼び出しが開始と同時にここに表示され、出力もすべて表示されます。要約はしません。',
+    count: total => `${total} 件のアクション`,
+    countRunning: (total, running) => `${total} 件のアクション · ${running} 件実行中`,
+    follow: '追従',
+    followHint: '最新のアクションに移動して表示し続ける',
+    copy: 'コマンドと出力をコピー',
+    exitCode: code => `終了コード ${code}`,
+    runningFor: elapsed => `実行中 ${elapsed}`,
+    waitingForOutput: '実行中 — 完了すると出力が表示されます',
+    noOutput: '出力なし',
+    openLive: 'ライブ'
+  },
+
   connectors: {
     title: 'アプリを接続',
     connect: '接続',

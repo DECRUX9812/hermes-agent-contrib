@@ -4,6 +4,23 @@ import { defineLocale } from './define-locale'
 import { introZhHant } from './intro-zh-hant'
 
 export const zhHant = defineLocale({
+  live: {
+    title: '即時',
+    noSession: '未選擇工作階段',
+    emptyTitle: '尚未執行任何動作',
+    emptyBody: '每個指令、每次檔案讀取與工具呼叫都會在開始時顯示於此，並附上完整輸出。不做任何摘要。',
+    count: total => `${total} 個動作`,
+    countRunning: (total, running) => `${total} 個動作 · ${running} 個執行中`,
+    follow: '跟隨',
+    followHint: '跳到最新動作並保持可見',
+    copy: '複製指令與輸出',
+    exitCode: code => `結束碼 ${code}`,
+    runningFor: elapsed => `已執行 ${elapsed}`,
+    waitingForOutput: '執行中——完成後顯示輸出',
+    noOutput: '沒有輸出',
+    openLive: '即時'
+  },
+
   connectors: {
     title: '連接你的應用程式',
     connect: '連接',
