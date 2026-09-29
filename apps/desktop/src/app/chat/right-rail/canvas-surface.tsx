@@ -66,7 +66,24 @@ export default function CanvasSurface({ filePath, text }: { filePath: string; te
   )
 
   return (
-    <div className="h-full w-full" data-slot="canvas-surface">
+    <div
+      className="h-full w-full"
+      // Single-key tools (R, O, T…) are this surface's shortcuts: type-to-
+      // compose stands down while focus is inside (composer-focus-keys.ts).
+      data-keyboard-surface=""
+      data-slot="canvas-surface"
+      // Excalidraw's shortcuts (R, O, T, Delete…) listen on its focusable
+      // container, but pointer-down on the canvas doesn't move focus off the
+      // chat composer — so "R" typed into the message instead of picking the
+      // rectangle. Hand focus to the canvas when a press lands in it.
+      onPointerDownCapture={event => {
+        const host = event.currentTarget.querySelector<HTMLElement>('[tabindex="0"]')
+
+        if (host && !host.contains(document.activeElement)) {
+          host.focus({ preventScroll: true })
+        }
+      }}
+    >
       <Excalidraw
         excalidrawAPI={instance => {
           api.current = instance
