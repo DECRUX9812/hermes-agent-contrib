@@ -2716,6 +2716,13 @@ export interface Translations {
       copyLink: string
       copyFailed: string
     }
+    reach: {
+      title: (name: string) => string
+      scan: (name: string) => string
+      empty: (name: string) => string
+      connect: string
+      manage: string
+    }
     fieldCopy: Record<string, { label?: string; help?: string; placeholder?: string }>
     platformIntro: Record<string, string>
   }

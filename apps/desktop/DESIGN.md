@@ -245,6 +245,7 @@ and the Soft block):
 | `--label-*` (`.ui-section-label`, `SidebarPanelLabel`) | 0.64rem uppercase accent caps + glyph | 0.75rem sentence case, `--ui-text-tertiary`, no glyph |
 | `--tab-label-*` (`.ui-tab-label`, `PaneTabLabel`) | 9px uppercase | 0.75rem as written |
 | `--status-idle-opacity` (idle/draft dots) | 1 | 0 — a dot shows when there is something to say |
+| `--pane-tab-max-width` (horizontal tabs) | 12rem | 15rem — sentence-case titles need room |
 
 Soft + Simple mode also reads a size up (15px conversation text, looser
 leading). Rules: a section heading uses `.ui-section-label` (bundled plugins
@@ -259,7 +260,19 @@ of day (`intro-greeting`), Classic keeps the Hermes wordmark — a content choic
 not a token. Under it, both looks show the **Today** brief
 (`components/chat/today-brief.tsx` over `lib/today-brief.ts`): a handful of
 cards (needs you · running · finished while away · due today · or where you
-left off), each drawn only when it has something to say — never a feed.
+left off), each drawn only when it has something to say — never a feed. A
+running row shows the agent's plan progress (`$todoProgressBySession`) as a
+small bar + "X/Y".
+
+Soft also shapes the transcript (styles only, keyed on stable `data-slot`s):
+your turns are a right-aligned bubble that hugs its text
+(`aui_user-bubble-frame`), and the working pulse is a small accent orb instead
+of Classic's dithered square (`aui_turn-activity`).
+
+A bot's profile rail carries its **reach card** (`app/messaging/reach-card.tsx`,
+exported through the plugin SDK): the bot's own Telegram/Slack address as a QR
+plus Open/Copy, or — before it has one — the single step that gives it one.
+It reads the same platform identity the Messaging page's phone-parity card uses.
 
 ## Badges — one component
 

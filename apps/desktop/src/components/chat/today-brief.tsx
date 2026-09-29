@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { $cronJobs } from '@/store/cron'
 import { $sessions } from '@/store/session'
 import { $sessionDotStateById } from '@/store/session-dot-state'
+import { $todoProgressBySession } from '@/store/todos'
 import type { CronJob, SessionInfo } from '@/types/hermes'
 
 /** Card chrome per concern: the glyph and the tone its count badge wears. */
@@ -53,7 +54,26 @@ function BriefCard({
   )
 }
 
-function BriefRow({ meta, onOpen, title }: { meta: string; onOpen: () => void; title: string }) {
+/** "X/Y" from the plan the agent is following → a fraction for the bar. */
+function progressFraction(progress: string | undefined): null | number {
+  const [done, total] = (progress ?? '').split('/').map(Number)
+
+  return total > 0 && Number.isFinite(done) ? Math.min(1, done / total) : null
+}
+
+function BriefRow({
+  meta,
+  onOpen,
+  progress,
+  title
+}: {
+  meta: string
+  onOpen: () => void
+  progress?: string
+  title: string
+}) {
+  const fraction = progressFraction(progress)
+
   return (
     <button
       className="flex w-full min-w-0 items-center gap-2 rounded-lg px-1.5 py-1.5 text-left text-[0.8125rem] text-(--ui-text-secondary) transition-colors hover:bg-(--ui-control-hover-background) hover:text-foreground"
@@ -64,7 +84,21 @@ function BriefRow({ meta, onOpen, title }: { meta: string; onOpen: () => void; t
       type="button"
     >
       <span className="min-w-0 flex-1 truncate">{title}</span>
-      <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">{meta}</span>
+      {fraction !== null && (
+        <span
+          aria-hidden
+          className="h-1 w-10 shrink-0 overflow-hidden rounded-full bg-(--ui-bg-tertiary)"
+          data-slot="brief-progress"
+        >
+          <span
+            className="block h-full rounded-full bg-(--ui-accent) transition-[width] duration-500 motion-reduce:transition-none"
+            style={{ width: `${Math.max(8, fraction * 100)}%` }}
+          />
+        </span>
+      )}
+      <span className="shrink-0 text-[0.6875rem] tabular-nums text-(--ui-text-quaternary)">
+        {progress && fraction !== null ? progress : meta}
+      </span>
     </button>
   )
 }
@@ -84,17 +118,19 @@ export function TodayBrief() {
   const sessions = useStore($sessions)
   const dotById = useStore($sessionDotStateById)
   const cronJobs = useStore($cronJobs)
+  const progressById = useStore($todoProgressBySession)
   const brief = deriveTodayBrief({ cronJobs, dotById, sessions })
 
   const sessionTitle = (session: SessionInfo) =>
     session.title || session.preview || t.sidebar.row.untitledChat(session.id.slice(0, 8))
 
-  const sessionRows = (list: SessionInfo[]) =>
+  const sessionRows = (list: SessionInfo[], withProgress = false) =>
     list.map(session => (
       <BriefRow
         key={session.id}
         meta={relativeTime(sessionMs(session))}
         onOpen={() => openSession(session.id, navigate, 'in-place')}
+        progress={withProgress ? progressById[session.id] : undefined}
         title={sessionTitle(session)}
       />
     ))
@@ -111,7 +147,7 @@ export function TodayBrief() {
 
   const cards: { id: BriefCardId; rows: React.ReactNode[]; title: string }[] = [
     { id: 'needsYou', rows: sessionRows(brief.needsYou), title: b.needsYou },
-    { id: 'running', rows: sessionRows(brief.running), title: b.running },
+    { id: 'running', rows: sessionRows(brief.running, true), title: b.running },
     { id: 'finished', rows: sessionRows(brief.finished), title: b.finished },
     { id: 'scheduled', rows: jobRows(brief.scheduled), title: b.scheduled },
     { id: 'recent', rows: sessionRows(brief.recent), title: b.recent }

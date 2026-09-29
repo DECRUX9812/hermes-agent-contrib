@@ -11,7 +11,18 @@
  * RailSection here plus one id in RAIL_SECTION_IDS.
  */
 
-import { Button, cn, Codicon, GlyphSpinner, PanelEmpty, Tip, useI18n, useValue } from '@hermes/plugin-sdk'
+import {
+  Button,
+  cn,
+  Codicon,
+  GlyphSpinner,
+  host,
+  PanelEmpty,
+  ReachCard,
+  Tip,
+  useI18n,
+  useValue
+} from '@hermes/plugin-sdk'
 import { type ReactNode, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
@@ -154,6 +165,21 @@ function BotProfileCard({
         </Button>
         <NewTaskButton bot={bot} labeled />
       </div>
+      {/* Every bot, an address: its own Telegram/Slack link as a QR, or the
+          one step that gives it one. Remote-source bots have no platforms on
+          this backend (same rule as the menu's "Continue on phone"). */}
+      {!bot.remoteSource && (
+        <ReachCard
+          className="mt-3"
+          name={name}
+          onManage={
+            typeof host.navigate === 'function'
+              ? () => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`)
+              : undefined
+          }
+          profile={bot.name}
+        />
+      )}
     </div>
   )
 }

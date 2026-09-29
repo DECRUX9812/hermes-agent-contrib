@@ -522,6 +522,7 @@
     /* Idle status dots hold a row's left edge in Classic; Soft lets an idle
        row rest (a dot appears only when there is something to say). */
     --status-idle-opacity: 1;
+    --pane-tab-max-width: 12rem;
 
     /* Space under last message vs overlay composer — driven by the measured composer DOCK height (see
        composer/index.tsx), which covers the micro-action strip, the status stack, the composer, and the
@@ -3957,12 +3958,37 @@ html[data-hud-window] [data-slot='popover-content'] {
   --tab-label-transform: none;
   --tab-label-tracking: 0;
   --status-idle-opacity: 0;
+  --pane-tab-max-width: 15rem;
   --conversation-text-font-size: 0.875rem;
   --composer-surface-pad-x: 0.75rem;
   --composer-surface-pad-y: 0.5rem;
   --composer-input-min-height: 2rem;
   --composer-control-size: 1.75rem;
   --composer-control-primary-size: 1.875rem;
+}
+
+/* Your turns read as replies you sent, not banners: in Soft the bubble hugs
+   its text and sits on the right (OpenClaw's transcript, iMessage, Claude).
+   The sticky header behaviour and the edit composer are unchanged — only the
+   frame's width. */
+:root[data-look='soft'] [data-slot='aui_user-bubble-frame'] {
+  width: fit-content;
+  max-width: min(85%, 38rem);
+  margin-inline-start: auto;
+}
+
+:root[data-look='soft'] [data-slot='aui_user-bubble-frame'] .composer-human-message {
+  border-radius: 1.125rem;
+}
+
+/* The working pulse: Classic's dithered square is a terminal motif; Soft
+   draws a small accent orb that breathes (StatusPulse still drives the beat). */
+:root[data-look='soft'] [data-slot='aui_turn-activity'] .dither {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--ui-accent) 55%, white), var(--ui-accent));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 18%, transparent);
 }
 
 /* Simple mode reads a size up: people there came to talk, not to scan logs. */

@@ -2944,6 +2944,13 @@ export const zh = defineLocale({
       copyLink: '复制链接',
       copyFailed: '无法复制链接'
     },
+    reach: {
+      title: (name: string) => `随时随地联系 ${name}`,
+      scan: (name: string) => `扫码即可在手机上与 ${name} 聊天，或分享链接。`,
+      empty: (name: string) => `为 ${name} 连接 Telegram 或 Slack，即可在手机上聊天。`,
+      connect: '连接',
+      manage: '管理'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot 令牌',

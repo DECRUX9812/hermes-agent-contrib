@@ -2323,6 +2323,13 @@ export const ru = defineLocale({
       copyLink: 'Копировать ссылку',
       copyFailed: 'Не удалось скопировать ссылку'
     },
+    reach: {
+      title: (name: string) => `${name} на связи везде`,
+      scan: (name: string) => `Отсканируйте, чтобы писать ${name} с телефона, или поделитесь ссылкой.`,
+      empty: (name: string) => `Дайте ${name} свой адрес в Telegram или Slack, чтобы писать с телефона.`,
+      connect: 'Подключить',
+      manage: 'Управлять'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Токен бота',

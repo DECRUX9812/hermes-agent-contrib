@@ -3158,6 +3158,13 @@ export const en: Translations = {
       copyLink: 'Copy link',
       copyFailed: 'Could not copy the link'
     },
+    reach: {
+      title: (name: string) => `Reach ${name} anywhere`,
+      scan: (name: string) => `Scan to chat with ${name} from your phone, or share the link.`,
+      empty: (name: string) => `Give ${name} its own Telegram or Slack address to chat from your phone.`,
+      connect: 'Connect',
+      manage: 'Manage'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot token',

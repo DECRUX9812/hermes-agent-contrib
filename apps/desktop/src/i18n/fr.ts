@@ -3495,6 +3495,13 @@ export const frOverrides = {
       copyLink: 'Copier le lien',
       copyFailed: 'Impossible de copier le lien'
     },
+    reach: {
+      title: (name: string) => `Joindre ${name} partout`,
+      scan: (name: string) => `Scannez pour discuter avec ${name} depuis votre téléphone, ou partagez le lien.`,
+      empty: (name: string) => `Donnez à ${name} sa propre adresse Telegram ou Slack pour discuter depuis votre téléphone.`,
+      connect: 'Connecter',
+      manage: 'Gérer'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Jeton du bot',

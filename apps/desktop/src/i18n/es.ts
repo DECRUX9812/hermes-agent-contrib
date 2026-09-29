@@ -3480,6 +3480,13 @@ export const esOverrides = {
       copyLink: 'Copiar enlace',
       copyFailed: 'No se pudo copiar el enlace'
     },
+    reach: {
+      title: (name: string) => `Habla con ${name} desde cualquier lugar`,
+      scan: (name: string) => `Escanea para chatear con ${name} desde tu teléfono, o comparte el enlace.`,
+      empty: (name: string) => `Dale a ${name} su propia dirección de Telegram o Slack para chatear desde tu teléfono.`,
+      connect: 'Conectar',
+      manage: 'Gestionar'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Token del bot',

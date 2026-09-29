@@ -1971,6 +1971,7 @@ export { WorkspacePageHeaderControl } from '@/app/contrib/workspace-page-header'
  *  that prints a next run switches its label on this (`t.cron.next` →
  *  `t.cron.overdueSince`) so a dead scheduler never reads as "Next: 7 hr ago". */
 export { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
+export { ReachCard, type ReachTarget, reachTargets } from '@/app/messaging/reach-card'
 /** THE master-detail toolkit core uses for list+inspector surfaces (Scheduled
  *  jobs, Kanban, …): a dense left `PanelList` of `PanelListRow`s beside a
  *  scrolling `PanelDetail` of `PanelSectionLabel` / `PanelMeta` / `PanelBlock`.

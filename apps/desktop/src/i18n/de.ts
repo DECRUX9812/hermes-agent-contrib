@@ -3487,6 +3487,13 @@ export const deOverrides = {
       copyLink: 'Link kopieren',
       copyFailed: 'Der Link konnte nicht kopiert werden'
     },
+    reach: {
+      title: (name: string) => `${name} überall erreichen`,
+      scan: (name: string) => `Scannen, um vom Handy aus mit ${name} zu chatten, oder den Link teilen.`,
+      empty: (name: string) => `Gib ${name} eine eigene Telegram- oder Slack-Adresse, um vom Handy aus zu chatten.`,
+      connect: 'Verbinden',
+      manage: 'Verwalten'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot-Token',
