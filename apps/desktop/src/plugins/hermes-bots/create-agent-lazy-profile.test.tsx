@@ -113,7 +113,7 @@ async function renderDialog(hasCapabilitiesView: boolean, onConfigureModel?: (bo
     )
   )
 
-  fireEvent.change(screen.getByPlaceholderText('inbox-triage'), { target: { value: 'inbox-triage' } })
+  fireEvent.change(screen.getByLabelText('Bot name'), { target: { value: 'inbox-triage' } })
   fireEvent.click(screen.getByRole('button', { name: /Advanced/ }))
 
   return view
@@ -172,7 +172,7 @@ describe('materializing the draft profile', () => {
   ])('creates %s with an ASCII profile id and retains the display name', async (enteredName, profileName) => {
     await renderDialog(true)
 
-    fireEvent.change(screen.getByPlaceholderText('inbox-triage'), {
+    fireEvent.change(screen.getByLabelText('Bot name'), {
       target: { value: enteredName }
     })
 

@@ -1,6 +1,8 @@
 import { Button, Codicon, DisclosureCaret, GlyphSpinner, PanelEmpty, RowButton } from '@hermes/plugin-sdk'
 import type { ReactNode, RefObject } from 'react'
 
+import { avatarColor, blobShapeString, BotFace } from './avatar'
+import { BOT_STARTERS, type BotStarter } from './bot-starters'
 import type { useRoster } from './data'
 import { $showHiddenBots } from './hidden-bots'
 import type { useBots } from './i18n'
@@ -13,6 +15,8 @@ import type { RosterRow } from './types'
 
 interface RosterContentProps {
   b: ReturnType<typeof useBots>
+  /** Opens the create dialog — bare for "New bot", pre-filled on a starter pick. */
+  onNewBot: (starter?: BotStarter) => void
   staleNotice: string | number | null
   isLoading: boolean
   initialRosterLoading: boolean
@@ -51,6 +55,7 @@ interface RosterContentProps {
 
 export function renderRosterContent({
   b,
+  onNewBot,
   staleNotice,
   isLoading,
   initialRosterLoading,
@@ -106,7 +111,38 @@ export function renderRosterContent({
           </Button>
         </div>
       ) : roster.length === 0 ? (
-        <PanelEmpty description={b.roster.emptyDesc} icon="hubot" title={b.roster.emptyTitle} />
+        <PanelEmpty
+          action={
+            <div className="flex flex-col items-center gap-2.5">
+              <Button onClick={() => onNewBot()} size="sm">
+                <Codicon className="mr-1 text-[0.75rem]" name="add" />
+                {b.bot.newTitle}
+              </Button>
+              {/* One-tap starters: the first three gallery cards, so an empty
+                  roster can become a working bot in a single click chain. */}
+              <div className="flex flex-wrap items-center justify-center gap-1">
+                {BOT_STARTERS.slice(0, 3).map(template => (
+                  <RowButton
+                    className="flex items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) px-2 py-1 text-[0.6875rem] text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground"
+                    key={template.id}
+                    onClick={() => onNewBot(template)}
+                  >
+                    <BotFace
+                      color={avatarColor(null, template.name)}
+                      name={template.name}
+                      shape={blobShapeString('', template.blob)}
+                      size={14}
+                    />
+                    {template.name}
+                  </RowButton>
+                ))}
+              </div>
+            </div>
+          }
+          description={b.roster.emptyDesc}
+          icon="hubot"
+          title={b.roster.emptyTitle}
+        />
       ) : allBotsHidden && !hiddenExpanded ? (
         <div className="grid content-start gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)">
           <div className="flex items-center gap-1.5 font-medium text-(--ui-text-secondary)">

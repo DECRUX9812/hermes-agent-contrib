@@ -16,6 +16,7 @@ import {
   parseRosterKey,
   saveSelectedRosterBot
 } from './bot-state'
+import type { BotStarter } from './bot-starters'
 import type { BotTemplateId } from './bot-templates'
 import { BroadcastDialog } from './broadcast-dialog'
 /**
@@ -251,6 +252,15 @@ export function BotsPane() {
   const workingOwner = focusedRosterOwner(useValue($focusedBotOwner))
   const activeConnectionId = host.state.connectionId?.get?.() || 'local'
   const [createOpen, setCreateOpen] = useState(false)
+  // A starter card picked from the gallery/empty state — the dialog mounts
+  // pre-filled on it (remount keyed below, so state is read once per open).
+  const [createStarter, setCreateStarter] = useState<BotStarter | null>(null)
+
+  const openCreate = (starter?: BotStarter) => {
+    setCreateStarter(starter || null)
+    setCreateOpen(true)
+  }
+
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
   const [broadcastOpen, setBroadcastOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -516,7 +526,11 @@ export function BotsPane() {
         activityToasts,
         activeSourceRoster,
         roster,
-        setCreateOpen,
+        setCreateOpen: (value: boolean) => {
+          if (value) {
+            openCreate()
+          }
+        },
         setGroupCreateOpen,
         setSectionDialog,
         showRosterTools,
@@ -543,6 +557,7 @@ export function BotsPane() {
       <TriageStrip bots={roster} onOpen={bot => void openRosterBot(bot)} />
       {renderRosterContent({
         b,
+        onNewBot: openCreate,
         staleNotice,
         isLoading,
         initialRosterLoading,
@@ -594,6 +609,8 @@ export function BotsPane() {
         createTemplate,
         setCreateOpen,
         setCreateTemplate,
+        createStarter,
+        setCreateStarter,
         groupCreateOpen,
         setGroupCreateOpen,
         editing,

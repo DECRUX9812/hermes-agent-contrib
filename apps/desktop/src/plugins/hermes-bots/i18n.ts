@@ -54,6 +54,7 @@ type BotsMessages = {
     modelSwitchFailed: string
     newDescription: string
     name: string
+    savedAs: (slug: string) => string
     title: string
     description: string
     /** G3 — the persona role one-liner (roster subtitle + chat header). */
@@ -336,6 +337,18 @@ type BotsMessages = {
     watching: string
     watchToast: (name: string) => string
     unwatchToast: (name: string) => string
+  }
+  /** The New Bot gallery: starter cards + the describe-your-own box that
+   *  leads the create dialog. */
+  gallery: {
+    desc: string
+    describePlaceholder: string
+    describeAction: string
+    startersLabel: string
+    blankTitle: string
+    blankDesc: string
+    backToStarters: string
+    fromTemplate: (id: string) => string
   }
   /** Avatar picker: shapes, blobs, pets, uploads, generation. */
   avatar: {
@@ -774,6 +787,7 @@ const en: BotsMessages = {
     modelSwitchFailed: 'Model switch failed',
     newDescription: 'A named teammate with its own memory, skills, and chat. It can message your other agents.',
     name: 'Name',
+    savedAs: (slug: string) => `Saved as @${slug}`,
     title: 'Title',
     description: 'Description',
     role: 'Role',
@@ -857,7 +871,7 @@ const en: BotsMessages = {
     newBotOrGroup: 'New bot or group chat',
     groupChats: 'Group chats',
     emptyTitle: 'No bots yet',
-    emptyDesc: 'Create your first bot.',
+    emptyDesc: 'Create your first bot — pick a starter or describe your own.',
     noMatchQuery: query => `No bots or group chats match “${query}”`,
     noMatchQueryOn: (query, gateway) => `No bots or group chats match “${query}” on ${gateway}`,
     noMatchFiltersOn: gateway => `No bots or group chats match these filters on ${gateway}`,
@@ -1035,6 +1049,16 @@ const en: BotsMessages = {
     watching: 'Watching this bot',
     watchToast: name => `Watching ${name}`,
     unwatchToast: name => `Stopped watching ${name}`
+  },
+  gallery: {
+    desc: 'Pick a starter or describe your own — you can tweak everything next.',
+    describePlaceholder: 'Describe the bot you want… e.g. “a skeptical code reviewer who catches edge cases”',
+    describeAction: 'Draft my bot',
+    startersLabel: 'Or pick a starter',
+    blankTitle: 'Blank bot',
+    blankDesc: 'Start from scratch',
+    backToStarters: 'Starters',
+    fromTemplate: id => `Starter: ${id}`
   },
   avatar: {
     classicShapes: 'Classic shapes',
@@ -1435,6 +1459,7 @@ const ja: BotsMessages = {
     newDescription:
       '独自のメモリ、スキル、チャットを持つ名前付きの仲間です。他のエージェントとメッセージをやり取りできます。',
     name: '名前',
+    savedAs: (slug: string) => `@{slug} として保存`,
     title: '表示名',
     role: '役割',
     rolePlaceholder: '例: リサーチ責任者',
@@ -1519,7 +1544,7 @@ const ja: BotsMessages = {
     newBotOrGroup: '新しいボットまたはグループチャット',
     groupChats: 'グループチャット',
     emptyTitle: 'ボットはまだありません',
-    emptyDesc: '最初のボットを作成しましょう。',
+    emptyDesc: '最初のボットを作成しましょう — スターターを選ぶか、自由に説明できます。',
     noMatchQuery: query => `「${query}」に一致するボットやグループチャットはありません`,
     noMatchQueryOn: (query, gateway) => `${gateway} に「${query}」に一致するボットやグループチャットはありません`,
     noMatchFiltersOn: gateway => `${gateway} にこれらのフィルタに一致するボットやグループチャットはありません`,
@@ -1696,6 +1721,16 @@ const ja: BotsMessages = {
     watching: 'このボットをウォッチ中',
     watchToast: name => `${name} をウォッチしています`,
     unwatchToast: name => `${name} のウォッチを解除しました`
+  },
+  gallery: {
+    desc: 'スターターを選ぶか、自由に説明してください — 細かい設定は次の画面で調整できます。',
+    describePlaceholder: '欲しいボットを説明… 例: 「エッジケースを見逃さない慎重なコードレビュアー」',
+    describeAction: 'ボットを下書き',
+    startersLabel: 'またはスターターを選択',
+    blankTitle: '空のボット',
+    blankDesc: 'ゼロから作成',
+    backToStarters: 'スターター',
+    fromTemplate: id => `スターター: ${id}`
   },
   avatar: {
     classicShapes: 'クラシックシェイプ',
@@ -2098,6 +2133,7 @@ const zh: BotsMessages = {
     modelSwitchFailed: '模型切换失败',
     newDescription: '拥有独立记忆、技能和聊天的具名队友，可以与你的其他智能体互发消息。',
     name: '名称',
+    savedAs: (slug: string) => `保存为 @${slug}`,
     title: '显示名称',
     role: '角色',
     rolePlaceholder: '例如：研究负责人',
@@ -2178,7 +2214,7 @@ const zh: BotsMessages = {
     newBotOrGroup: '新建机器人或群聊',
     groupChats: '群聊',
     emptyTitle: '还没有机器人',
-    emptyDesc: '创建你的第一个机器人。',
+    emptyDesc: '创建你的第一个机器人 — 选择起手模板或自由描述。',
     noMatchQuery: query => `没有机器人或群聊匹配“${query}”`,
     noMatchQueryOn: (query, gateway) => `${gateway} 上没有机器人或群聊匹配“${query}”`,
     noMatchFiltersOn: gateway => `${gateway} 上没有机器人或群聊匹配这些筛选条件`,
@@ -2351,6 +2387,16 @@ const zh: BotsMessages = {
     watching: '正在关注此机器人',
     watchToast: name => `正在关注 ${name}`,
     unwatchToast: name => `已停止关注 ${name}`
+  },
+  gallery: {
+    desc: '选择一个起手模板，或描述你想要的机器人 — 之后仍可随意调整。',
+    describePlaceholder: '描述你想要的机器人… 例如：“一个能发现边缘情况的严谨代码审查员”',
+    describeAction: '生成草稿',
+    startersLabel: '或选择一个起手模板',
+    blankTitle: '空白机器人',
+    blankDesc: '从零开始',
+    backToStarters: '起手模板',
+    fromTemplate: id => `起手模板：${id}`
   },
   avatar: {
     classicShapes: '经典形状',
@@ -2747,6 +2793,7 @@ const zhHant: BotsMessages = {
     modelSwitchFailed: '模型切換失敗',
     newDescription: '擁有獨立記憶、技能和聊天的具名隊友，可以與你的其他智慧代理互傳訊息。',
     name: '名稱',
+    savedAs: (slug: string) => `儲存為 @${slug}`,
     title: '顯示名稱',
     role: '角色',
     rolePlaceholder: '例如：研究負責人',
@@ -2827,7 +2874,7 @@ const zhHant: BotsMessages = {
     newBotOrGroup: '新增機器人或群組聊天',
     groupChats: '群組聊天',
     emptyTitle: '還沒有機器人',
-    emptyDesc: '建立你的第一個機器人。',
+    emptyDesc: '建立你的第一個機器人 — 選擇起手範本或自由描述。',
     noMatchQuery: query => `沒有機器人或群組聊天符合「${query}」`,
     noMatchQueryOn: (query, gateway) => `${gateway} 上沒有機器人或群組聊天符合「${query}」`,
     noMatchFiltersOn: gateway => `${gateway} 上沒有機器人或群組聊天符合這些篩選條件`,
@@ -3000,6 +3047,16 @@ const zhHant: BotsMessages = {
     watching: '正在關注此機器人',
     watchToast: name => `正在關注 ${name}`,
     unwatchToast: name => `已停止關注 ${name}`
+  },
+  gallery: {
+    desc: '選擇一個起手範本，或描述你想要的機器人 — 之後仍可自由調整。',
+    describePlaceholder: '描述你想要的機器人… 例如：「會抓出邊界案例的嚴謹程式碼審查員」',
+    describeAction: '產生草稿',
+    startersLabel: '或選擇起手範本',
+    blankTitle: '空白機器人',
+    blankDesc: '從零開始',
+    backToStarters: '起手範本',
+    fromTemplate: id => `起手範本：${id}`
   },
   avatar: {
     classicShapes: '經典形狀',
