@@ -125,7 +125,9 @@ export function TriageStrip({
   return (
     <section className="mb-1 px-2" data-testid="bot-triage-strip">
       <div className="flex items-center justify-between px-1 pt-1 pb-1.5">
-        <span className="text-[0.6875rem] font-medium text-(--ui-text-tertiary)">{b.triage.title}</span>
+        <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
+          {b.triage.title}
+        </span>
         <span className="rounded-full bg-amber-500/15 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
           {items.length}
         </span>

@@ -70,7 +70,9 @@ function RailSection({
           type="button"
         >
           <Codicon className="text-(--ui-text-quaternary)" name={collapsed ? 'chevron-right' : 'chevron-down'} />
-          <span className="truncate text-[0.6875rem] font-medium text-(--ui-text-tertiary)">{title}</span>
+          <span className="truncate text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
+            {title}
+          </span>
         </button>
         {action && !collapsed ? <span className="shrink-0 px-1">{action}</span> : null}
       </div>
@@ -130,7 +132,7 @@ function BotProfileCard({
           </div>
         </div>
       </div>
-      <div className="mt-2.5 flex items-center gap-1">
+      <div className="mt-2.5 flex flex-wrap items-center gap-1">
         <Button onClick={() => void openRosterBot(bot)} size="xs">
           <Codicon name="comment" />
           {b.roster.openChat}

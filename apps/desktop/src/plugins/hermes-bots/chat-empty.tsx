@@ -13,7 +13,8 @@ import { useState } from 'react'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { chatStarters } from './bot-starters'
-import { $botMeta, $lastRoster } from './data'
+import { $openBotChat } from './bot-state'
+import { $botMeta, $lastRoster, botRosterKey } from './data'
 import { useBots } from './i18n'
 import { displayName } from './labels'
 import { botRosterMeta, requestForBot } from './routing'
@@ -56,6 +57,27 @@ export function botForChat(roster: readonly RosterRow[], sessionId: string): nul
   return botForStoredId(roster, sessionId) ?? botForStoredId(roster, focusedStoredId())
 }
 
+/** The bot this window just opened a chat for, while the chat on screen is
+ *  that chat. Covers the gap between opening a brand-new Bot Chat and the
+ *  roster poll that reports it as the bot's `canonical_session` — without it
+ *  a new bot's first chat was a blank page for up to a poll. Display only: it
+ *  never decides which session a row opens (that stays title-resolved). */
+export function botForOpenedChat(
+  roster: readonly RosterRow[],
+  opened: { key: string; openedRegistryId: string; openedSessionId?: string } | null,
+  storedId: string
+): null | RosterRow {
+  if (!opened || !storedId || !Array.isArray(roster)) {
+    return null
+  }
+
+  if (storedId !== opened.openedRegistryId && storedId !== opened.openedSessionId) {
+    return null
+  }
+
+  return roster.find(bot => botRosterKey(bot) === opened.key) ?? null
+}
+
 export function BotChatEmpty({ sessionId }: { sessionId: string }) {
   const b = useBots()
   // Subscribed, not read once: roster, metadata and focus all land after the
@@ -65,9 +87,10 @@ export function BotChatEmpty({ sessionId }: { sessionId: string }) {
   const roster = useValue($lastRoster)
   const allMeta = useValue($botMeta)
   useValue(host.state.focusedStoredSessionId)
+  const opened = useValue($openBotChat)
   // Hooks before the early return — a bot resolving late must not reorder them.
   const [sent, setSent] = useState(false)
-  const bot = botForChat(roster, sessionId)
+  const bot = botForChat(roster, sessionId) ?? botForOpenedChat(roster, opened, focusedStoredId())
 
   if (!bot) {
     return null
