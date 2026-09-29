@@ -4020,6 +4020,33 @@ html[data-hud-window] [data-slot='popover-content'] {
   margin-bottom: 0.5rem;
 }
 
+/* Pill tabs (Devin/Arc): in Soft a zone's horizontal tabs are rounded pills
+   floating in the strip — the active one filled, the rest quiet — instead of
+   flat cells with a 2px underline and hairline separators. Keyed on
+   `data-tree-tab` (tree tabs only; `data-slot` can be overwritten by the
+   context-menu trigger that wraps session tabs). */
+:root[data-look='soft'] [data-tree-tab]:not([data-vertical]) {
+  height: calc(100% - 0.5rem);
+  margin-block: 0.25rem;
+  margin-inline: 0.125rem;
+  border-left-color: transparent !important;
+  border-radius: 9999px;
+  --tab-bg: transparent;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+:root[data-look='soft'] [data-tree-tab][data-active='true']:not([data-vertical]) {
+  --tab-bg: color-mix(in srgb, var(--ui-accent) 11%, var(--ui-editor-surface-background));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-accent) 22%, transparent);
+}
+
+:root[data-look='soft'] [data-tree-tab][data-active='false']:not([data-vertical]):hover {
+  --tab-bg: var(--ui-control-hover-background);
+  box-shadow: none;
+}
+
 /* Simple mode reads a size up: people there came to talk, not to scan logs. */
 :root[data-look='soft'][data-interface-mode='simple'] {
   --conversation-text-font-size: 0.9375rem;
