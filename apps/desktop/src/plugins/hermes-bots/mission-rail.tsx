@@ -131,6 +131,23 @@ function BotProfileCard({
               .join(' · ')}
           </div>
         </div>
+        <div className="flex shrink-0 items-center self-start">
+          <Tip label={b.bot.editTitle}>
+            <Button aria-label={b.bot.editTitle} onClick={onEdit} size="icon-xs" variant="ghost">
+              <Codicon name="edit" />
+            </Button>
+          </Tip>
+          <Tip label={b.bot.exportBotMenu}>
+            <Button
+              aria-label={b.bot.exportBotMenu}
+              onClick={() => void exportBot(bot, meta ?? null)}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name="share" />
+            </Button>
+          </Tip>
+        </div>
       </div>
       <div className="mt-2.5 flex flex-wrap items-center gap-1">
         <Button onClick={() => void openRosterBot(bot)} size="xs">
@@ -138,22 +155,6 @@ function BotProfileCard({
           {b.roster.openChat}
         </Button>
         <NewTaskButton bot={bot} labeled />
-        <span className="flex-1" />
-        <Tip label={b.bot.editTitle}>
-          <Button aria-label={b.bot.editTitle} onClick={onEdit} size="icon-xs" variant="ghost">
-            <Codicon name="edit" />
-          </Button>
-        </Tip>
-        <Tip label={b.bot.exportBotMenu}>
-          <Button
-            aria-label={b.bot.exportBotMenu}
-            onClick={() => void exportBot(bot, meta ?? null)}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <Codicon name="share" />
-          </Button>
-        </Tip>
       </div>
     </div>
   )
