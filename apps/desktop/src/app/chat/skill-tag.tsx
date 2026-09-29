@@ -41,7 +41,9 @@ export function SkillTag({ className, storedSessionId }: { className?: string; s
           variant="chip"
         >
           <Codicon name="sparkle" size="0.6875rem" />
-          <span className="tabular-nums">{count}</span>
+          {/* Say what the number counts: a bare "53" beside a sparkle read as
+              a mystery badge. */}
+          <span className="tabular-nums">{label}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="z-(--z-modal-popover) w-56" side="bottom" variant="menu">

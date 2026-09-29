@@ -1,19 +1,20 @@
 import { useStore } from '@nanostores/react'
 import { type ReactNode, useState } from 'react'
-import { useInRouterContext, useNavigate } from 'react-router'
+import { useInRouterContext } from 'react-router'
 
 import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
-import { openSession } from '@/app/open-session'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { capitalize, normalize } from '@/lib/text'
-import { relativeTime } from '@/lib/time'
+import { greetingFor } from '@/lib/today-brief'
 import { $currentCwd, $sessions } from '@/store/session'
+import { $uiLook } from '@/store/ui-look'
 import type { SessionInfo } from '@/types/hermes'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
+import { TodayBrief } from './today-brief'
 import { Wordmark } from './wordmark'
 
 type IntroCopy = {
@@ -250,10 +251,11 @@ function sessionRecencyMs(session: SessionInfo): number {
 export function Intro({ composer, personality, seed }: IntroProps) {
   const { t } = useI18n()
   // Intro is mounted inside a Router in the app, but tests and other hosts
-  // render it bare — the resume rows (which need `useNavigate`) mount only
+  // render it bare — the Today brief (which needs `useNavigate`) mounts only
   // when a router actually exists.
   const inRouter = useInRouterContext()
   const sessions = useStore($sessions)
+  const look = useStore($uiLook)
   const currentCwd = useStore($currentCwd)
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
   const rotationSeed = mountSeed + (seed ?? 0)
@@ -284,11 +286,22 @@ export function Intro({ composer, personality, seed }: IntroProps) {
         className="absolute inset-x-0 -top-8 -z-10 h-72 bg-[radial-gradient(ellipse_58%_100%_at_50%_0%,color-mix(in_srgb,var(--theme-midground)_10%,transparent),transparent_72%)]"
       />
       <div className="w-full min-w-0">
-        <Wordmark
-          className="mb-1 bg-gradient-to-b from-(--theme-midground) to-[color-mix(in_srgb,var(--theme-midground)_58%,var(--ui-bg-chrome))] bg-clip-text text-transparent dark:text-transparent"
-          text={WORDMARK}
-          width="min(36rem, 82%)"
-        />
+        {look === 'soft' ? (
+          // Soft greets you like a person (Claude / ChatGPT home): the time of
+          // day, in the theme's midground, instead of a 36rem brand wordmark.
+          <h1
+            className="m-0 mb-2 bg-gradient-to-b from-(--theme-midground) to-[color-mix(in_srgb,var(--theme-midground)_62%,var(--ui-bg-chrome))] bg-clip-text text-[2rem] font-semibold leading-tight tracking-tight text-transparent sm:text-[2.25rem]"
+            data-slot="intro-greeting"
+          >
+            {t.todayBrief.greeting[greetingFor(new Date().getHours())]}
+          </h1>
+        ) : (
+          <Wordmark
+            className="mb-1 bg-gradient-to-b from-(--theme-midground) to-[color-mix(in_srgb,var(--theme-midground)_58%,var(--ui-bg-chrome))] bg-clip-text text-transparent dark:text-transparent"
+            text={WORDMARK}
+            width="min(36rem, 82%)"
+          />
+        )}
 
         <p className="m-0 text-center text-[0.9375rem] leading-normal tracking-tight text-(--ui-text-secondary)">
           {body}
@@ -326,40 +339,9 @@ export function Intro({ composer, personality, seed }: IntroProps) {
           )}
         </div>
 
-        {inRouter && recentSessions.length > 0 && <RecentSessionRows sessions={recentSessions} />}
-      </div>
-    </div>
-  )
-}
-
-function RecentSessionRows({ sessions }: { sessions: SessionInfo[] }) {
-  const { t } = useI18n()
-  const navigate = useNavigate()
-
-  return (
-    <div className="mt-5 w-full">
-      <p className="mb-1 w-full px-2.5 text-left text-[0.6875rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)">
-        {t.intro.recentSessions}
-      </p>
-      <div className="flex flex-col gap-0.5">
-        {sessions.map(session => (
-          <button
-            className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors duration-100 hover:bg-(--ui-control-hover-background) hover:text-(--ui-text-secondary)"
-            key={session.id}
-            onClick={() => {
-              triggerHaptic('selection')
-              openSession(session.id, navigate, 'in-place')
-            }}
-            type="button"
-          >
-            <span className="min-w-0 flex-1 truncate">
-              {session.title || session.preview || t.sidebar.row.untitledChat(session.id.slice(0, 8))}
-            </span>
-            <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
-              {relativeTime(sessionRecencyMs(session))}
-            </span>
-          </button>
-        ))}
+        {/* "Today": what needs you, what is running, what finished while you
+            were away, what runs next — or where you left off on a quiet day. */}
+        {inRouter && <TodayBrief />}
       </div>
     </div>
   )

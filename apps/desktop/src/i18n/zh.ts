@@ -3457,6 +3457,15 @@ export const zh = defineLocale({
     missingBody: '此产物已不在本地注册表中。'
   },
 
+  todayBrief: {
+    greeting: { morning: '早上好', afternoon: '下午好', evening: '晚上好', night: '还在忙？' },
+    needsYou: '需要你处理',
+    running: '正在运行',
+    finished: '你离开时已完成',
+    scheduled: '今天的安排',
+    recent: '从上次继续'
+  },
+
   live: {
     title: '实时',
     noSession: '未选择会话',

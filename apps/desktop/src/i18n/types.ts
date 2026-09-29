@@ -3113,6 +3113,15 @@ export interface Translations {
     missingBody: string
   }
 
+  todayBrief: {
+    greeting: { morning: string; afternoon: string; evening: string; night: string }
+    needsYou: string
+    running: string
+    finished: string
+    scheduled: string
+    recent: string
+  }
+
   live: {
     title: string
     noSession: string

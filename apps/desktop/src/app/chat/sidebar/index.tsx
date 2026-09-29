@@ -1864,7 +1864,10 @@ export function ChatSidebar({
               />
             )}
 
-            {!trimmedQuery && (
+            {/* Simple mode draws Pinned only once something is pinned: an empty
+                section whose whole content is a how-to hint is chrome for
+                someone who came to chat. Advanced keeps the hint. */}
+            {!trimmedQuery && (pinnedSessions.length > 0 || showsAdvancedChrome) && (
               <SidebarSessionsSection
                 activeSessionId={activeSidebarSessionId}
                 // Inbox style rides whichever view is active — pinned rows

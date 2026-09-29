@@ -4,6 +4,20 @@ import { defineLocale } from './define-locale'
 import { introJa } from './intro-ja'
 
 export const ja = defineLocale({
+  todayBrief: {
+    greeting: {
+      morning: 'おはようございます',
+      afternoon: 'こんにちは',
+      evening: 'こんばんは',
+      night: '夜遅くまでお疲れさまです'
+    },
+    needsYou: '対応待ち',
+    running: '実行中',
+    finished: '不在中に完了',
+    scheduled: '今日の予定',
+    recent: '前回の続きから'
+  },
+
   live: {
     title: 'ライブ',
     noSession: 'セッションが選択されていません',

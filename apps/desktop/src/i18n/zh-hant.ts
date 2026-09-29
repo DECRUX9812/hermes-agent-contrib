@@ -4,6 +4,15 @@ import { defineLocale } from './define-locale'
 import { introZhHant } from './intro-zh-hant'
 
 export const zhHant = defineLocale({
+  todayBrief: {
+    greeting: { morning: '早安', afternoon: '午安', evening: '晚安', night: '還在忙？' },
+    needsYou: '需要你處理',
+    running: '正在執行',
+    finished: '你離開時已完成',
+    scheduled: '今天的安排',
+    recent: '從上次繼續'
+  },
+
   live: {
     title: '即時',
     noSession: '未選擇工作階段',

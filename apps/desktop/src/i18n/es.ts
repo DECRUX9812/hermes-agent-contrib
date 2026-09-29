@@ -4052,6 +4052,20 @@ export const esOverrides = {
     missingTitle: 'Artefacto no disponible',
     missingBody: 'Este artefacto ya no está en el registro local.'
   },
+  todayBrief: {
+    greeting: {
+      morning: 'Buenos días',
+      afternoon: 'Buenas tardes',
+      evening: 'Buenas noches',
+      night: '¿Trabajando tarde?'
+    },
+    needsYou: 'Te necesita',
+    running: 'En curso',
+    finished: 'Terminado mientras no estabas',
+    scheduled: 'Próximo hoy',
+    recent: 'Continuar donde lo dejaste'
+  },
+
   live: {
     title: 'En vivo',
     noSession: 'Ninguna sesión seleccionada',

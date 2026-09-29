@@ -1,6 +1,15 @@
 import { defineLocale } from './define-locale'
 
 export const ar = defineLocale({
+  todayBrief: {
+    greeting: { morning: 'صباح الخير', afternoon: 'مساء الخير', evening: 'مساء الخير', night: 'تعمل حتى وقت متأخر؟' },
+    needsYou: 'بانتظارك',
+    running: 'قيد التشغيل',
+    finished: 'انتهى أثناء غيابك',
+    scheduled: 'القادم اليوم',
+    recent: 'تابع من حيث توقفت'
+  },
+
   live: {
     title: 'مباشر',
     noSession: 'لم يتم تحديد جلسة',

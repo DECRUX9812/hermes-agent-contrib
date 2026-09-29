@@ -2803,6 +2803,20 @@ export const ru = defineLocale({
     missingTitle: 'Артефакт недоступен',
     missingBody: 'Этот артефакт больше нет в локальном реестре.'
   },
+  todayBrief: {
+    greeting: {
+      morning: 'Доброе утро',
+      afternoon: 'Добрый день',
+      evening: 'Добрый вечер',
+      night: 'Работаете допоздна?'
+    },
+    needsYou: 'Ждёт вас',
+    running: 'Выполняется',
+    finished: 'Готово, пока вас не было',
+    scheduled: 'Сегодня по плану',
+    recent: 'Продолжить с того места'
+  },
+
   live: {
     title: 'Лайв',
     noSession: 'Сеанс не выбран',

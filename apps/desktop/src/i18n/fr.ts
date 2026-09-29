@@ -4069,6 +4069,15 @@ export const frOverrides = {
     missingTitle: 'Artefact indisponible',
     missingBody: 'Cet artefact ne figure plus dans le registre local.'
   },
+  todayBrief: {
+    greeting: { morning: 'Bonjour', afternoon: 'Bon après-midi', evening: 'Bonsoir', night: 'Encore au travail ?' },
+    needsYou: 'Vous attend',
+    running: 'En cours',
+    finished: 'Terminé pendant votre absence',
+    scheduled: 'Prévu aujourd’hui',
+    recent: 'Reprendre là où vous vous étiez arrêté'
+  },
+
   live: {
     title: 'Direct',
     noSession: 'Aucune session sélectionnée',

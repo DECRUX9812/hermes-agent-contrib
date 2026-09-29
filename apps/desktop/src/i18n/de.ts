@@ -4061,6 +4061,15 @@ export const deOverrides = {
     missingTitle: 'Artifact nicht verfügbar',
     missingBody: 'Dieses Artifact ist nicht mehr in der lokalen Registry.'
   },
+  todayBrief: {
+    greeting: { morning: 'Guten Morgen', afternoon: 'Guten Tag', evening: 'Guten Abend', night: 'Noch wach?' },
+    needsYou: 'Wartet auf dich',
+    running: 'Läuft gerade',
+    finished: 'Fertig, während du weg warst',
+    scheduled: 'Heute geplant',
+    recent: 'Weitermachen, wo du aufgehört hast'
+  },
+
   live: {
     title: 'Live',
     noSession: 'Keine Sitzung ausgewählt',

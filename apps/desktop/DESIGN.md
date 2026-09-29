@@ -254,6 +254,13 @@ never `rounded-[Npx]`; status that would steal a column rides the avatar's
 corner as a presence badge. Classic must keep rendering exactly as before —
 change a Classic default only on purpose.
 
+One component-level exception: the empty chat's headline. Soft greets by time
+of day (`intro-greeting`), Classic keeps the Hermes wordmark — a content choice,
+not a token. Under it, both looks show the **Today** brief
+(`components/chat/today-brief.tsx` over `lib/today-brief.ts`): a handful of
+cards (needs you · running · finished while away · due today · or where you
+left off), each drawn only when it has something to say — never a feed.
+
 ## Badges — one component
 
 `src/components/ui/badge.tsx`. Variants: `default` (tinted primary), `muted`,

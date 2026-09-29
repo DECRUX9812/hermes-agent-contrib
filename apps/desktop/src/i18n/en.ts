@@ -3689,6 +3689,15 @@ export const en: Translations = {
     missingBody: 'This artifact is no longer in the local registry.'
   },
 
+  todayBrief: {
+    greeting: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Working late?' },
+    needsYou: 'Needs you',
+    running: 'Running now',
+    finished: 'Finished while you were away',
+    scheduled: 'Coming up today',
+    recent: 'Pick up where you left off'
+  },
+
   live: {
     title: 'Live',
     noSession: 'No session selected',
