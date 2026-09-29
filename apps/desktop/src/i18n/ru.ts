@@ -2836,13 +2836,15 @@ export const ru = defineLocale({
     needsProject: 'Откройте папку, чтобы использовать',
     openFolder: 'Открыть папку…',
     arrange: 'Расположить…',
+    arrangements: { focus: 'Фокус', review: 'Проверка', watch: 'Наблюдать', build: 'Сборка' },
     items: {
       files: { label: 'Файлы', description: 'Просмотр файлов проекта' },
       changes: { label: 'Изменения', description: 'Что изменил агент' },
       browser: { label: 'Браузер', description: 'Страницы прямо рядом с чатом' },
       terminal: { label: 'Терминал', description: 'Выполняйте команды сами' },
       live: { label: 'Активность', description: 'Каждая команда агента в реальном времени' },
-      artifacts: { label: 'Артефакты', description: 'Что создал этот чат' }
+      artifacts: { label: 'Артефакты', description: 'Что создал этот чат' },
+      canvas: { label: 'Холст', description: 'Рисуйте на доске вместе с агентом' }
     }
   },
   todayBrief: {

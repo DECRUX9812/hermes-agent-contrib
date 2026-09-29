@@ -3136,7 +3136,8 @@ export interface Translations {
     needsProject: string
     openFolder: string
     arrange: string
-    items: Record<'artifacts' | 'browser' | 'changes' | 'files' | 'live' | 'terminal', { label: string; description: string }>
+    arrangements: Record<'build' | 'focus' | 'review' | 'watch', string>
+    items: Record<'artifacts' | 'browser' | 'canvas' | 'changes' | 'files' | 'live' | 'terminal', { label: string; description: string }>
   }
   todayBrief: {
     greeting: { morning: string; afternoon: string; evening: string; night: string }
@@ -4544,6 +4545,7 @@ export interface Translations {
     renderedPreview: string
     table: string
     tableTruncated: (rows: number) => string
+    canvas: string
     diff: string
     unknownSize: string
     binaryTitle: string

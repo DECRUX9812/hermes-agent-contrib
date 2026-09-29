@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 import { atom, computed } from 'nanostores'
 import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
 
+import { CanvasViewer } from '@/app/chat/right-rail/canvas-viewer'
 import { TableViewer } from '@/app/chat/right-rail/table-viewer'
 import { SessionDraftTitle } from '@/app/chat/session-draft-title'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
@@ -47,6 +48,7 @@ import { Slot } from '@/contrib/react/slot'
 import { registry } from '@/contrib/registry'
 import { discoverRuntimePlugins } from '@/contrib/runtime-loader'
 import { LocalizedTabTitle, translateNow } from '@/i18n'
+import { isCanvasPath } from '@/lib/canvas-file'
 import { NEW_SESSION_TITLE, sessionTitle as storedSessionTitle } from '@/lib/chat-runtime'
 import { FILE_VIEWERS_AREA, type FileViewerContribution } from '@/lib/file-viewers'
 import {
@@ -58,6 +60,7 @@ import {
   Package,
   PanelBottom,
   PanelTop,
+  Pencil,
   SlidersHorizontal,
   Upload,
   Users,
@@ -75,6 +78,7 @@ import {
   openArtifactsRail,
   toggleArtifactsRail
 } from '@/store/artifact-rail'
+import { createCanvas } from '@/store/canvas'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $interfaceMode, $showsAdvancedChrome, setModeContext, toggleSimpleMode } from '@/store/interface-mode'
 import {
@@ -946,6 +950,31 @@ registry.register({
   data: {
     render: ({ sessionId }) => <MutedSessionGlyph sessionId={sessionId} />
   } satisfies SessionRowSlotContribution
+})
+
+// `.excalidraw` files as a live canvas you and the agent share (the file is
+// the shared surface; the heavy editor loads only when one opens).
+registry.register({
+  id: 'viewer.canvas',
+  area: FILE_VIEWERS_AREA,
+  data: {
+    label: () => translateNow('preview.canvas'),
+    matches: isCanvasPath,
+    preferred: 'always',
+    render: ({ filePath, text }) => <CanvasViewer filePath={filePath} text={text} />
+  } satisfies FileViewerContribution
+})
+
+registry.register({
+  id: 'canvas.new',
+  area: PALETTE_AREA,
+  data: {
+    id: 'canvas.new',
+    label: 'New canvas',
+    icon: Pencil,
+    keywords: ['canvas', 'draw', 'sketch', 'whiteboard', 'diagram', 'excalidraw', 'tldraw'],
+    run: () => void createCanvas()
+  } satisfies PaletteContribution
 })
 
 // The first file viewer: CSV/TSV as a table, through the same area plugins use.

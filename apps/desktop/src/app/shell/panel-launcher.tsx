@@ -13,6 +13,7 @@ import { triggerHaptic } from '@/lib/haptics'
 import { useKeybindHint } from '@/lib/keybinds/use-keybind-hint'
 import { cn } from '@/lib/utils'
 import { ARTIFACTS_PANE_ID, toggleArtifactsRail } from '@/store/artifact-rail'
+import { createCanvas } from '@/store/canvas'
 import { $showsAdvancedChrome } from '@/store/interface-mode'
 import { toggleFileBrowserOpen } from '@/store/layout'
 import { $liveOpen, LIVE_PANE_ID, toggleLivePane } from '@/store/live-activity'
@@ -31,9 +32,11 @@ export function togglePanelLauncher() {
   $panelLauncherOpen.set(!$panelLauncherOpen.get())
 }
 
-type PanelId = 'artifacts' | 'browser' | 'changes' | 'files' | 'live' | 'terminal'
+type PanelId = 'artifacts' | 'browser' | 'canvas' | 'changes' | 'files' | 'live' | 'terminal'
 
 interface PanelSpec {
+  /** A one-shot action (make something new), not an on/off panel. */
+  action?: boolean
   /** Keybind whose live binding the row shows. */
   actionId?: string
   /** Advanced-only surfaces (the terminal) leave Simple's list. */
@@ -66,7 +69,17 @@ const PANELS: readonly PanelSpec[] = [
   { actionId: 'view.showBrowser', icon: 'globe', id: 'browser', toggle: toggleBrowserTab },
   { actionId: 'view.showTerminal', advanced: true, icon: 'terminal', id: 'terminal', toggle: toggleTerminalPane },
   { icon: 'pulse', id: 'live', pane: LIVE_PANE_ID, toggle: toggleLivePane },
-  { icon: 'package', id: 'artifacts', pane: ARTIFACTS_PANE_ID, toggle: toggleArtifactsRail }
+  { icon: 'package', id: 'artifacts', pane: ARTIFACTS_PANE_ID, toggle: toggleArtifactsRail },
+  {
+    action: true,
+    icon: 'edit',
+    id: 'canvas',
+    needsProject: true,
+    toggle: () => {
+      $panelLauncherOpen.set(false)
+      void createCanvas()
+    }
+  }
 ]
 
 /**
@@ -106,8 +119,8 @@ const browserPaneId = (tabs: ReturnType<typeof $previewTabs.get>) => {
 
 const NEVER: ReadableAtom<boolean> = atom(false)
 
-/** Live on/off per panel — the on-screen truth, not a stored preference. */
-function usePanelOn(id: PanelId): boolean {
+/** Live on/off for every panel — the on-screen truth, not a stored preference. */
+function usePanelStates(): Record<PanelId, boolean> {
   const browserId = browserPaneId(useStore($previewTabs))
   const files = useStore($paneVisible('files'))
   const review = useStore($paneVisible(REVIEW_PANE_ID))
@@ -115,14 +128,13 @@ function usePanelOn(id: PanelId): boolean {
   const terminal = useStore($terminalTakeover)
   const liveOpen = useStore($liveOpen)
   const liveShown = useStore($paneVisible(LIVE_PANE_ID))
-  const live = liveOpen && liveShown
   const artifacts = useStore($paneVisible(ARTIFACTS_PANE_ID))
 
-  return { artifacts, browser, changes: review, files, live, terminal }[id]
+  return { artifacts, browser, canvas: false, changes: review, files, live: liveOpen && liveShown, terminal }
 }
 
 function PanelRow({ copy, hasProject, spec }: { copy: Translations['panels']; hasProject: boolean; spec: PanelSpec }) {
-  const on = usePanelOn(spec.id)
+  const on = usePanelStates()[spec.id]
   const hint = useKeybindHint(spec.actionId ?? '')
   const blocked = Boolean(spec.needsProject && !hasProject)
   const text = copy.items[spec.id]
@@ -169,6 +181,14 @@ function PanelRow({ copy, hasProject, spec }: { copy: Translations['panels']; ha
           {hint}
         </kbd>
       )}
+      {spec.action ? (
+        <span
+          aria-hidden
+          className="grid size-6 shrink-0 place-items-center rounded-full bg-(--ui-accent)/12 text-(--ui-accent) transition-transform group-hover/panel:scale-110 motion-reduce:transition-none"
+        >
+          <Codicon name="add" size="0.75rem" />
+        </span>
+      ) : (
       <span
         aria-hidden
         className={cn(
@@ -183,7 +203,94 @@ function PanelRow({ copy, hasProject, spec }: { copy: Translations['panels']; ha
           )}
         />
       </span>
+      )}
     </button>
+  )
+}
+
+/** Non-reactive twin of usePanelOn, for the arrangement logic. */
+function panelOn(id: PanelId): boolean {
+  const browserId = browserPaneId($previewTabs.get())
+
+  const on: Record<PanelId, () => boolean> = {
+    artifacts: () => isPaneVisible(ARTIFACTS_PANE_ID),
+    browser: () => Boolean(browserId) && isPaneVisible(browserId),
+    canvas: () => false,
+    changes: () => isPaneVisible(REVIEW_PANE_ID),
+    files: () => isPaneVisible('files'),
+    live: () => $liveOpen.get() && isPaneVisible(LIVE_PANE_ID),
+    terminal: () => $terminalTakeover.get()
+  }
+
+  return on[id]()
+}
+
+type ArrangementId = 'build' | 'focus' | 'review' | 'watch'
+
+/** One-click workspaces: which panels sit beside the chat. Applying one flips
+ *  only what differs, and what it turns on lands side by side. */
+const ARRANGEMENTS: readonly { advanced?: boolean; icon: string; id: ArrangementId; panels: readonly PanelId[] }[] = [
+  { icon: 'screen-full', id: 'focus', panels: [] },
+  { icon: 'git-compare', id: 'review', panels: ['changes', 'files'] },
+  { icon: 'pulse', id: 'watch', panels: ['live', 'artifacts'] },
+  { advanced: true, icon: 'tools', id: 'build', panels: ['browser', 'terminal'] }
+]
+
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
+async function arrange(panels: readonly PanelId[], hasProject: boolean) {
+  for (const spec of PANELS) {
+    if (spec.action) {
+      continue
+    }
+
+    const want = panels.includes(spec.id) && (!spec.needsProject || hasProject)
+
+    if (panelOn(spec.id) !== want) {
+      if (want) {
+        turnOnBeside(spec)
+      } else {
+        spec.toggle()
+      }
+
+      await nextFrame()
+    }
+  }
+}
+
+function ArrangementChips({ advanced, copy, hasProject }: { advanced: boolean; copy: Translations['panels']; hasProject: boolean }) {
+  // Subscribe to everything panelOn reads so the active chip stays truthful.
+  const states = usePanelStates()
+  const current = new Set(PANELS.filter(spec => !spec.action && states[spec.id]).map(spec => spec.id))
+
+  return (
+    <div className="grid grid-cols-4 gap-1 px-1 pb-2" data-slot="panel-arrangements">
+      {ARRANGEMENTS.filter(item => advanced || !item.advanced).map(item => {
+        const active = current.size === item.panels.length && item.panels.every(id => current.has(id))
+
+        return (
+          <button
+            aria-pressed={active}
+            className={cn(
+              'flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[0.6875rem] font-medium transition-colors',
+              active
+                ? 'bg-(--ui-accent)/10 text-(--ui-accent) shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--ui-accent)_30%,transparent)]'
+                : 'text-(--ui-text-secondary) hover:bg-(--ui-control-hover-background) hover:text-foreground'
+            )}
+            data-arrangement={item.id}
+            key={item.id}
+            onClick={() => {
+              triggerHaptic('selection')
+              void arrange(item.panels, hasProject)
+            }}
+            type="button"
+          >
+            <Codicon name={item.icon} size="1rem" />
+            {copy.arrangements[item.id]}
+          </button>
+        )
+      })}
+    </div>
   )
 }
 
@@ -215,7 +322,8 @@ export function PanelLauncher() {
           <p className="text-[0.8125rem] font-semibold text-foreground">{p.title}</p>
           <p className="text-[0.6875rem] text-(--ui-text-tertiary)">{p.subtitle}</p>
         </div>
-        <div className="flex flex-col gap-0.5">
+        <ArrangementChips advanced={advanced} copy={p} hasProject={hasProject} />
+        <div className="flex flex-col gap-0.5 border-t border-(--ui-stroke-tertiary) pt-1.5">
           {rows.map(spec => (
             <PanelRow copy={p} hasProject={hasProject} key={spec.id} spec={spec} />
           ))}

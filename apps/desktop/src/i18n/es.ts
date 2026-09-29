@@ -4085,13 +4085,15 @@ export const esOverrides = {
     needsProject: 'Abre una carpeta para usarlo',
     openFolder: 'Abrir una carpeta…',
     arrange: 'Organizar…',
+    arrangements: { focus: 'Foco', review: 'Revisar', watch: 'Observar', build: 'Construir' },
     items: {
       files: { label: 'Archivos', description: 'Explora y previsualiza tu proyecto' },
       changes: { label: 'Cambios', description: 'Revisa lo que cambió el agente' },
       browser: { label: 'Navegador', description: 'Abre páginas junto al chat' },
       terminal: { label: 'Terminal', description: 'Ejecuta comandos tú mismo' },
       live: { label: 'Actividad en vivo', description: 'Cada comando del agente, en tiempo real' },
-      artifacts: { label: 'Artefactos', description: 'Lo que este chat ha creado' }
+      artifacts: { label: 'Artefactos', description: 'Lo que este chat ha creado' },
+      canvas: { label: 'Lienzo', description: 'Dibuja en una pizarra donde el agente también dibuja' }
     }
   },
   todayBrief: {
@@ -5662,6 +5664,7 @@ export const esOverrides = {
     renderedPreview: 'VISTA PREVIA',
     table: 'TABLA',
     tableTruncated: (rows: number) => `Se muestran las primeras ${rows.toLocaleString()} filas. El código fuente tiene el archivo completo.`,
+    canvas: 'LIENZO',
     diff: 'Diferencias',
     unknownSize: 'tamaño desconocido',
     binaryTitle: 'Esto parece un archivo binario',

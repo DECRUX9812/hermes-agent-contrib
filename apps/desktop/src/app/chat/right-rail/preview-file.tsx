@@ -1204,7 +1204,11 @@ export function LocalFilePreview({
 
     const preferredViewer = viewers.find(viewer => viewer.preferred)
 
-    const autoMode: PreviewViewMode = hasDiff
+    const alwaysViewer = viewers.find(viewer => viewer.preferred === 'always')
+
+    const autoMode: PreviewViewMode = alwaysViewer
+      ? `viewer:${alwaysViewer.id}`
+      : hasDiff
       ? 'diff'
       : isMarkdown
         ? 'rendered'

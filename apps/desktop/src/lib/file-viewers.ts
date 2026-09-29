@@ -21,8 +21,9 @@ export interface FileViewerContribution {
   label: (() => string) | string
   /** Whether this viewer can show `filePath` (usually by extension). */
   matches: (filePath: string) => boolean
-  /** Preferred over plain source when the file has no diff to show. */
-  preferred?: boolean
+  /** Preferred over plain source when the file has no diff to show;
+   *  `'always'` wins over the diff too (a JSON diff of a drawing says nothing). */
+  preferred?: 'always' | boolean
   render: (props: FileViewerProps) => ReactNode
 }
 

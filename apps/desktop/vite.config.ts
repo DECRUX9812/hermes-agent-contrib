@@ -118,9 +118,70 @@ const emojibaseAssets = () => ({
   }
 })
 
+// The canvas (Excalidraw) fetches its hand-drawn fonts from
+// `window.EXCALIDRAW_ASSET_PATH`, a CDN by default. Electron must work offline,
+// so serve the package's own font files at `excalidraw-assets/` — middleware in
+// dev, emitted assets in the build. Xiaolai (13 MB of CJK glyphs) is left out;
+// CJK text falls back to system fonts.
+const excalidrawFontsDir =
+  real(path.resolve(__dirname, 'node_modules/@excalidraw/excalidraw/dist/prod/fonts')) ??
+  real(path.resolve(__dirname, '../../node_modules/@excalidraw/excalidraw/dist/prod/fonts'))
+
+const EXCALIDRAW_FONT = /^fonts\/(?!Xiaolai\/)[A-Za-z]+\/[A-Za-z0-9._-]+\.woff2$/
+
+function excalidrawFontFiles(): string[] {
+  if (!excalidrawFontsDir) {
+    return []
+  }
+
+  return fs
+    .readdirSync(excalidrawFontsDir, { withFileTypes: true })
+    .filter((entry: { isDirectory: () => boolean; name: string }) => entry.isDirectory() && entry.name !== 'Xiaolai')
+    .flatMap((dir: { name: string }) =>
+      fs
+        .readdirSync(path.join(excalidrawFontsDir, dir.name))
+        .filter((file: string) => file.endsWith('.woff2'))
+        .map((file: string) => `fonts/${dir.name}/${file}`)
+    )
+}
+
+const excalidrawAssets = () => ({
+  name: 'hermes:excalidraw-assets',
+  configureServer(server: {
+    middlewares: { use: (route: string, handler: (req: any, res: any, next: () => void) => void) => void }
+  }) {
+    server.middlewares.use('/excalidraw-assets', (req, res, next) => {
+      const rel = (req.url ?? '').split('?')[0].replace(/^\/+/, '')
+
+      if (!excalidrawFontsDir || !EXCALIDRAW_FONT.test(rel)) {
+        return next()
+      }
+
+      fs.readFile(path.join(excalidrawFontsDir, rel.replace(/^fonts\//, '')), (err: unknown, buf: Buffer) => {
+        if (err) {
+          return next()
+        }
+
+        res.setHeader('Content-Type', 'font/woff2')
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+        res.end(buf)
+      })
+    })
+  },
+  generateBundle(this: { emitFile: (asset: { type: 'asset'; fileName: string; source: Uint8Array }) => void }) {
+    for (const rel of excalidrawFontFiles()) {
+      this.emitFile({
+        type: 'asset',
+        fileName: `excalidraw-assets/${rel}`,
+        source: fs.readFileSync(path.join(excalidrawFontsDir as string, rel.replace(/^fonts\//, '')))
+      })
+    }
+  }
+})
+
 export default defineConfig(({ command }) => ({
   base: './',
-  plugins: [react(), babel({ presets: [compilerPreset()] }), tailwindcss(), emojibaseAssets()],
+  plugins: [react(), babel({ presets: [compilerPreset()] }), tailwindcss(), emojibaseAssets(), excalidrawAssets()],
   css: {
     // Pin an explicit (empty) PostCSS config. Tailwind is handled entirely by
     // `@tailwindcss/vite`, so the renderer needs no PostCSS plugins — and

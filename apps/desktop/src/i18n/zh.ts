@@ -3484,13 +3484,15 @@ export const zh = defineLocale({
     needsProject: '打开一个文件夹后可用',
     openFolder: '打开文件夹…',
     arrange: '排列…',
+    arrangements: { focus: '专注', review: '审阅', watch: '观察', build: '构建' },
     items: {
       files: { label: '文件', description: '浏览并预览项目' },
       changes: { label: '更改', description: '查看智能体改了什么' },
       browser: { label: '浏览器', description: '在聊天旁打开网页' },
       terminal: { label: '终端', description: '自己运行命令' },
       live: { label: '实时活动', description: '智能体运行的每条命令' },
-      artifacts: { label: '产物', description: '这个聊天生成的内容' }
+      artifacts: { label: '产物', description: '这个聊天生成的内容' },
+      canvas: { label: '画布', description: '在智能体也能绘制的白板上画草图' }
     }
   },
   todayBrief: {

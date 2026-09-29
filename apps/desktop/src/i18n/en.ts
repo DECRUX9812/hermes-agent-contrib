@@ -3722,13 +3722,15 @@ export const en: Translations = {
     needsProject: 'Open a folder to use this',
     openFolder: 'Open a folder…',
     arrange: 'Arrange…',
+    arrangements: { focus: 'Focus', review: 'Review', watch: 'Watch', build: 'Build' },
     items: {
       files: { label: 'Files', description: 'Browse and preview your project' },
       changes: { label: 'Changes', description: 'Review what the agent changed' },
       browser: { label: 'Browser', description: 'Open pages right beside the chat' },
       terminal: { label: 'Terminal', description: 'Run commands yourself' },
       live: { label: 'Live activity', description: 'Every command the agent runs, as it runs' },
-      artifacts: { label: 'Artifacts', description: 'Things this chat has made' }
+      artifacts: { label: 'Artifacts', description: 'Things this chat has made' },
+      canvas: { label: 'Canvas', description: 'Sketch on a board the agent can draw on too' }
     }
   },
   todayBrief: {
@@ -5292,6 +5294,7 @@ export const en: Translations = {
     renderedPreview: 'PREVIEW',
     table: 'TABLE',
     tableTruncated: (rows: number) => `Showing the first ${rows.toLocaleString()} rows. Source has the whole file.`,
+    canvas: 'CANVAS',
     diff: 'DIFF',
     unknownSize: 'unknown size',
     binaryTitle: 'This looks like a binary file',

@@ -4102,13 +4102,15 @@ export const frOverrides = {
     needsProject: 'Ouvrez un dossier pour l’utiliser',
     openFolder: 'Ouvrir un dossier…',
     arrange: 'Organiser…',
+    arrangements: { focus: 'Focus', review: 'Relire', watch: 'Suivre', build: 'Construire' },
     items: {
       files: { label: 'Fichiers', description: 'Parcourir et prévisualiser le projet' },
       changes: { label: 'Modifications', description: 'Relire ce que l’agent a modifié' },
       browser: { label: 'Navigateur', description: 'Ouvrir des pages à côté du chat' },
       terminal: { label: 'Terminal', description: 'Lancer des commandes vous-même' },
       live: { label: 'Activité en direct', description: 'Chaque commande de l’agent, en temps réel' },
-      artifacts: { label: 'Artefacts', description: 'Ce que ce chat a produit' }
+      artifacts: { label: 'Artefacts', description: 'Ce que ce chat a produit' },
+      canvas: { label: 'Canevas', description: 'Esquissez sur un tableau où l’agent dessine aussi' }
     }
   },
   todayBrief: {
@@ -5678,6 +5680,7 @@ export const frOverrides = {
     renderedPreview: 'APERÇU',
     table: 'TABLEAU',
     tableTruncated: (rows: number) => `${rows.toLocaleString()} premières lignes affichées. La source contient tout le fichier.`,
+    canvas: 'CANEVAS',
     diff: 'DIFF',
     unknownSize: 'taille inconnue',
     binaryTitle: 'Cela ressemble à un fichier binaire',

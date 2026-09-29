@@ -4094,13 +4094,15 @@ export const deOverrides = {
     needsProject: 'Öffne einen Ordner, um das zu nutzen',
     openFolder: 'Ordner öffnen…',
     arrange: 'Anordnen…',
+    arrangements: { focus: 'Fokus', review: 'Prüfen', watch: 'Beobachten', build: 'Bauen' },
     items: {
       files: { label: 'Dateien', description: 'Projekt durchsuchen und ansehen' },
       changes: { label: 'Änderungen', description: 'Prüfen, was der Agent geändert hat' },
       browser: { label: 'Browser', description: 'Seiten direkt neben dem Chat öffnen' },
       terminal: { label: 'Terminal', description: 'Befehle selbst ausführen' },
       live: { label: 'Live-Aktivität', description: 'Jeder Befehl des Agenten, während er läuft' },
-      artifacts: { label: 'Artefakte', description: 'Was dieser Chat erstellt hat' }
+      artifacts: { label: 'Artefakte', description: 'Was dieser Chat erstellt hat' },
+      canvas: { label: 'Leinwand', description: 'Skizziere auf einer Tafel, auf der auch der Agent zeichnet' }
     }
   },
   todayBrief: {
@@ -5668,6 +5670,7 @@ export const deOverrides = {
     renderedPreview: 'VORSCHAU',
     table: 'TABELLE',
     tableTruncated: (rows: number) => `Die ersten ${rows.toLocaleString()} Zeilen. Die Quelle enthält die ganze Datei.`,
+    canvas: 'LEINWAND',
     diff: 'DIFF',
     unknownSize: 'unbekannte Größe',
     binaryTitle: 'Das sieht wie eine Binärdatei aus',

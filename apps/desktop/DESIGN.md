@@ -315,6 +315,20 @@ that was showing, it is docked beside it (`dockPaneBeside`, which yields to
 panes the user placed). A right zone with no project shows the same choices
 (`BesideChatChooser`) instead of a dead "no project" label.
 
+## Canvas — a board you and the agent share
+
+A canvas is a `.excalidraw` file in the project (`lib/canvas-file.ts`), shown by the
+`viewer.canvas` file viewer (Excalidraw, lazy-loaded; fonts served offline by vite's
+`excalidraw-assets` plugin). The FILE is the shared surface: your edits save back (debounced, and
+only when the scene's content changed — opening, panning or selecting never writes), and when the
+agent edits the file the preview re-reads it and the new scene merges in without a remount.
+**New canvas** (Panels menu, ⌘K) creates `canvas.excalidraw` at the project root, opens it, and
+attaches it to your next message. The agent draws through the optional `excalidraw` skill's
+`scripts/canvas.py` (`draw` a node/edge spec laid out beside existing strokes; `read` what is there).
+
+The Panels menu also offers **arrangements** — Focus, Review (changes + files), Watch (live +
+artifacts), Build (browser + terminal) — which flip only the panels that differ.
+
 ## Badges — one component
 
 `src/components/ui/badge.tsx`. Variants: `default` (tinted primary), `muted`,
