@@ -510,7 +510,7 @@ export function ProfileRail() {
       ) : (
         <>
           <div
-            className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="scroll-edge-fade-x flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             onScroll={measureScroll}
             ref={scrollRef}
             style={{ maskImage: dragging ? undefined : scrollMask }}

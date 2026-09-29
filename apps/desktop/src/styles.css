@@ -4091,3 +4091,12 @@ html[data-hud-window] [data-slot='popover-content'] {
   animation: scroll-edge-fade linear both;
   animation-timeline: scroll(self);
 }
+
+/* Same, across: a sideways strip fades its trailing edge while more is
+   hidden to the right. */
+.scroll-edge-fade-x {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-fade-end)), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-fade-end)), transparent);
+  animation: scroll-edge-fade linear both;
+  animation-timeline: scroll(self inline);
+}
