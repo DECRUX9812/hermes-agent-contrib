@@ -478,6 +478,10 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
   // relay.ts builds an LruCache at module scope, and group modules reach it
   // transitively (e.g. through mailbox.ts) — the real class keeps the mock honest.
   const { LruCache } = await import('../../lib/lru-cache')
+  // Real value too: avatar.tsx's `botAppearance` consults it for the
+  // name-derived hue; the room header's face pile now reaches it on every
+  // render with members, so the color has to resolve in tests.
+  const { profileColor } = await import('../../lib/profile-color')
 
   return {
     // Real value: approval.respond forwards it as its client deadline (#60654).
@@ -498,6 +502,7 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
     toggleSessionWatched: undefined,
     CapabilitiesView: undefined,
     MessageTextContent: undefined,
+    profileColor,
     Streamdown: undefined,
     queryClient: { invalidateQueries: () => undefined },
     useQuery: () => ({ data: [], isLoading: false }),
