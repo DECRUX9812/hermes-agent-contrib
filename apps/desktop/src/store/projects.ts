@@ -18,7 +18,7 @@ import { isMissingRestEndpoint, isMissingRpcMethod } from '@/lib/gateway-rpc'
 import { isUnderPath } from '@/lib/path-compare'
 import { revealFile } from '@/store/file-actions'
 import { $gateway, activeGateway, ensureActiveGatewayOpen } from '@/store/gateway'
-import { $sidebarShowAllSessions, setSidebarAgentsGrouped } from '@/store/layout'
+import { $sidebarShowAllSessions, revealFilesForNewWork, setSidebarAgentsGrouped } from '@/store/layout'
 import { notify } from '@/store/notifications'
 import {
   $activeGatewayProfile,
@@ -1505,6 +1505,7 @@ export function requestStartWorkSession(
   }
 
   startWorkToken += 1
+  revealFilesForNewWork()
   $startWorkSessionRequest.set({
     draft: draft?.trim() || undefined,
     openTab: options?.openTab || undefined,

@@ -715,3 +715,12 @@ Moving around a project is editor-grade without becoming an editor:
 - **Recent projects**: entering a project records it per profile; the home
   screen's "Your projects" row and the palette's project group lead with the
   most recent, one click from a new chat at the project root.
+- **The file tree is the project's map.** Opening a project opens Files
+  (Settings → Window & layout turns that off). One click previews a file; the
+  tree follows the active preview. The header (on hover) adds New file / New
+  folder — slashes make folders, into the selected folder — and a filter that
+  searches the whole project through the same `complete.path`. Files the agent
+  changed this session carry a dot. A change inside a folder the tree has never
+  seen re-reads the nearest folder it shows (`visibleChangeTarget`), so a new
+  `src/` appears the moment something is written into it. The preview header
+  shows the file's breadcrumbs (click one to reveal it in the tree).

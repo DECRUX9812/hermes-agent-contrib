@@ -118,6 +118,11 @@ export const SETTINGS_MANIFEST = {
       ['file browser', 'files', 'file tree', 'explorer', 'right sidebar', 'panel', 'startup'],
       'fileBrowser'
     ),
+    autoOpenFiles: appearanceSetting(
+      'window-layout',
+      ['file tree', 'files', 'explorer', 'open folder', 'project', 'automatic', 'show'],
+      'autoOpenFiles'
+    ),
     openInEditor: appearanceSetting(
       'window-layout',
       ['editor', 'vs code', 'vscode', 'cursor', 'zed', 'windsurf', 'open in', 'ide', 'external editor'],

@@ -28,7 +28,7 @@ import {
   setInterfaceMode
 } from '@/store/interface-mode'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
-import { $fileBrowserOpen, setFileBrowserOpen } from '@/store/layout'
+import { $autoOpenFilesOnProject, $fileBrowserOpen, setFileBrowserOpen } from '@/store/layout'
 import { $showModelPricing, setShowModelPricing } from '@/store/model-pricing'
 import { notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, $profiles, normalizeProfileKey } from '@/store/profile'
@@ -433,6 +433,7 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const composerPopoutGesturesEnabled = useStore($composerPopoutGesturesEnabled)
   const fileBrowserOpen = useStore($fileBrowserOpen)
   const preferredEditor = useStore($preferredEditor)
+  const autoOpenFiles = useStore($autoOpenFilesOnProject)
   const fileBrowserShadowed = useStore($modeShadowed('fileBrowserOpen'))
   const translucency = useStore($translucency)
   const glassMode = translucency.mode === 'glass' && GLASS_SUPPORTED
@@ -981,6 +982,16 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
               id={settingElementId(ids.fileBrowser)}
               label={a.fileBrowserTitle}
               onChange={setFileBrowserOpen}
+            />
+          )}
+
+          {show('window-layout') && (
+            <ToggleRow
+              checked={autoOpenFiles}
+              description={a.autoOpenFilesDesc}
+              id={settingElementId(ids.autoOpenFiles)}
+              label={a.autoOpenFilesTitle}
+              onChange={value => $autoOpenFilesOnProject.set(value)}
             />
           )}
 

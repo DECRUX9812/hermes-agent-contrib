@@ -54,6 +54,8 @@ import { $previewLineRequest } from '@/store/preview-line'
 import { $connection, $currentCwd } from '@/store/session'
 import { notifyWorkspaceChanged } from '@/store/workspace-events'
 
+import { OpenInEditorButton, PreviewBreadcrumbs } from './preview-breadcrumbs'
+
 const SHIKI_THEME = { dark: 'github-dark-default', light: 'github-light-default' } as const
 const TEXT_PREVIEW_MAX_BYTES = 512 * 1024
 const SOURCE_CHUNK_LINES = 200
@@ -521,11 +523,14 @@ function FileViewerMount({ filePath, text, viewer }: { filePath: string; text: s
 export function PreviewModeSwitcher({
   active,
   labels,
+  leading,
   modes,
   onSelect,
   trailing
 }: {
   active: PreviewViewMode
+  /** Left side of the header — the file's breadcrumbs. */
+  leading?: ReactNode
   /** Labels for contributed viewer modes (`viewer:<id>`). */
   labels?: Record<string, string>
   modes: PreviewViewMode[]
@@ -535,7 +540,7 @@ export function PreviewModeSwitcher({
   const { t } = useI18n()
   const showModes = modes.length > 1
 
-  if (!showModes && !trailing) {
+  if (!showModes && !trailing && !leading) {
     return null
   }
 
@@ -550,6 +555,7 @@ export function PreviewModeSwitcher({
     // Fixed height so the header is byte-identical between read and edit modes —
     // swapping the trailing controls must never move the body below it.
     <div className="flex h-7 shrink-0 items-center justify-end gap-3 border-b border-border/40 px-3">
+      {leading}
       {showModes &&
         modes.map(mode => (
           <button
@@ -1279,6 +1285,7 @@ export function LocalFilePreview({
         <PreviewModeSwitcher
           active={mode}
           labels={Object.fromEntries(viewers.map(viewer => [`viewer:${viewer.id}`, viewerLabel(viewer)]))}
+          leading={filePath ? <PreviewBreadcrumbs filePath={filePath} /> : null}
           modes={modes}
           onSelect={selectMode}
           trailing={
@@ -1293,6 +1300,8 @@ export function LocalFilePreview({
                   {t.preview.edit}
                 </button>
               </Tip>
+            ) : filePath ? (
+              <OpenInEditorButton filePath={filePath} />
             ) : null
           }
         />

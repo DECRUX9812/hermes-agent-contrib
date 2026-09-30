@@ -1257,6 +1257,8 @@ export const frOverrides = {
       composerPopoutTitle: 'Détacher la zone de saisie',
       composerPopoutDesc:
         'Permet de faire glisser la zone de saisie hors de son emplacement. Désactivé, elle reste ancrée en bas.',
+      autoOpenFilesTitle: 'Afficher les fichiers à l’ouverture d’un projet',
+      autoOpenFilesDesc: 'Ouvrir un dossier ou commencer dans un projet affiche l’arborescence à côté du chat.',
       openInEditorTitle: 'Ouvrir les fichiers dans',
       openInEditorDesc: 'L’éditeur utilisé par « Ouvrir dans… » depuis l’arborescence. Fonctionne aussi avec les backends SSH.',
       fileBrowserTitle: 'Navigateur de fichiers',
@@ -5639,6 +5641,19 @@ export const frOverrides = {
     }
   },
   rightSidebar: {
+    agentTouched: 'Modifié dans ce chat',
+    newFile: 'Nouveau fichier',
+    newFolder: 'Nouveau dossier',
+    filterFiles: 'Filtrer les fichiers',
+    newFileIn: label => `Nouveau fichier dans ${label}`,
+    newFolderIn: label => `Nouveau dossier dans ${label}`,
+    newFilePlaceholder: 'nom.ts — les barres créent des dossiers',
+    newFolderPlaceholder: 'nom-du-dossier',
+    newFileFailed: 'Impossible de créer le fichier',
+    newFolderFailed: 'Impossible de créer le dossier',
+    filterPlaceholder: 'Filtrer les fichiers…',
+    filterHint: 'Tapez une partie d’un nom. Cherche dans tout le projet, pas seulement les dossiers ouverts.',
+    filterNoMatch: 'Aucun fichier ne correspond',
     aria: 'Barre latérale droite',
     panelsAria: 'Panneaux de la barre latérale droite',
     files: 'Système de fichiers',

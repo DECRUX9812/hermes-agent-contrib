@@ -1257,6 +1257,8 @@ export const deOverrides = {
       composerPopoutTitle: 'Schwebender Composer',
       composerPopoutDesc:
         'Erlaubt, den Composer aus seiner Ablage herauszuziehen. Wenn aus, bleibt er unten angedockt.',
+      autoOpenFilesTitle: 'Dateien beim Öffnen eines Projekts zeigen',
+      autoOpenFilesDesc: 'Beim Öffnen eines Ordners oder Projekts erscheint der Dateibaum neben dem Chat.',
       openInEditorTitle: 'Dateien öffnen in',
       openInEditorDesc: 'Wohin „Öffnen in …“ eine Datei aus dem Dateibaum schickt. Funktioniert auch mit SSH-Backends.',
       fileBrowserTitle: 'Dateibrowser',
@@ -5629,6 +5631,19 @@ export const deOverrides = {
     }
   },
   rightSidebar: {
+    agentTouched: 'In diesem Chat bearbeitet',
+    newFile: 'Neue Datei',
+    newFolder: 'Neuer Ordner',
+    filterFiles: 'Dateien filtern',
+    newFileIn: label => `Neue Datei in ${label}`,
+    newFolderIn: label => `Neuer Ordner in ${label}`,
+    newFilePlaceholder: 'name.ts — Schrägstriche erzeugen Ordner',
+    newFolderPlaceholder: 'ordnername',
+    newFileFailed: 'Datei konnte nicht erstellt werden',
+    newFolderFailed: 'Ordner konnte nicht erstellt werden',
+    filterPlaceholder: 'Dateien filtern…',
+    filterHint: 'Tippe einen Teil eines Namens. Durchsucht das ganze Projekt, nicht nur geöffnete Ordner.',
+    filterNoMatch: 'Keine passenden Dateien',
     aria: 'Rechte Sidebar',
     panelsAria: 'Panels der rechten Sidebar',
     files: 'Dateisystem',
