@@ -40,7 +40,6 @@ import {
   focusedRosterOwner,
   setAgentsSectionOpen
 } from './bot-state'
-import { CreateAgentDialog } from './create-dialog'
 import {
   $botAttention,
   $botMeta,
@@ -59,6 +58,7 @@ import { $groupChatWorkspace } from './group-chat'
 import { isBotHidden } from './hidden-bots'
 import { useBots } from './i18n'
 import { displayName, stripPreviewMarkdown } from './labels'
+import { QuickCreateDialog } from './quick-create-dialog'
 import { openRosterBot } from './roster-actions'
 import { sortRosterBots } from './roster-pane-derivation'
 import { usePublishRosterSnapshot } from './roster-pane-lifecycle'
@@ -231,10 +231,14 @@ export function AgentsSection() {
         </div>
       )}
 
-      {/* The dialog lives here so "+" works without the pane mounted. It
-          portals to <body>, so its DOM position is display-only. Same
-          active-source roster the pane hands it — remote rows can't create. */}
-      <CreateAgentDialog
+      {/* The quick dialog lives here so "+" works without the pane mounted.
+          It portals to <body>, so its DOM position is display-only. Same
+          active-source roster the pane hands it — remote rows can't create.
+          No gallery link on this rail: the full flow is one click away via
+          "All bots" → the pane's own "+". */}
+      <QuickCreateDialog
+        // Remount per open, like the pane does.
+        key={createOpen ? 'open' : 'closed'}
         onClose={() => {
           setCreateOpen(false)
           void refetch()
