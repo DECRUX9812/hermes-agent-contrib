@@ -209,3 +209,39 @@ headline feature that ChatGPT can't match.
   protocol, so apps keep state.
 - Upstream: this is generic host infrastructure, not a vendor integration, so it fits the core
   rubric. Propose it to NousResearch/hermes-agent as slices after slice 1 proves it on the fork.
+
+## Artifacts across venues (design input, Sep 30 2026)
+
+From the Bot Mode UX discussion (Suzu) and the "canvas" theory account. These refine the
+slices above rather than add new ones.
+
+- **One artifact, many renditions.** An artifact's *content* is the same on every venue; only
+  its *display* changes. This is the canvas account's moment/rendition split: renditions share
+  truth, not pixels. In MCP Apps terms the tool result (`structuredContent`) is the moment, and
+  each host surface renders it for its venue. Desktop inline or panel, a phone chat as text or
+  image, and a future glanceable screen all read the same result. `hostContext.platform` /
+  `displayMode` tell the app which rendition it is drawing.
+- **Venues are not one UI stretched.** Continuity means *hand-off*: the same agent, the same
+  artifacts and the same conversation, reachable from whichever device is in hand. It does not
+  mean the same interface everywhere. Squish-and-hide responsive layouts preserve pixels when
+  they should preserve the subject. Each venue gets its own interface into the swarm.
+- **Guarding against malformed artifacts: a pool plus a check.** Free-form generated UI breaks
+  in venues it wasn't composed for. Two mechanisms:
+  1. *A pool of pre-composed elements* the model picks from and fills (cards, tables, diffs,
+     timelines, pickers), each with renditions per venue. This is the canvas account's
+     "ratified idiom": compressed, cacheable, and recognizable over time. MCP Apps from servers
+     and Hermes's own built-in elements live in the same pool.
+  2. *A way for the model to check its composition*: schema lint first (constrained element
+     trees can be linted where prose can't), then a render-and-inspect pass per target venue
+     (headless render → screenshot → vision check) before the artifact is shown.
+- **Fleet view.** No interface has cracked "what is my fleet doing". The target is a
+  UniFi-style overview (one tile per bot or run → drill-down) built from the same artifacts, so
+  a bot's status card is one element in the pool.
+- **Attention and sovereignty** (canvas invariants): no unprompted element may create a duty to
+  check. Venues are apertures the user opens and closes with no penalty, and ambient status is
+  "weather-like, never notification-like". Every nudge we ship (e.g. #121's long-context card)
+  is dismissible and suggestion-only for this reason.
+
+Next slices that follow from this: the element pool (a small built-in catalog with per-venue
+renditions, exposed through the same host bridge), and a composition check that renders an
+artifact headlessly for a target venue before it is shown.
