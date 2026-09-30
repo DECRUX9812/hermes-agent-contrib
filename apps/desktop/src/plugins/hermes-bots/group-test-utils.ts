@@ -31,7 +31,12 @@ export interface ScriptedMessage {
 }
 
 export interface ScriptedSession {
-  contracts?: { follow_profile_config: boolean; room_plumbing: boolean }
+  contracts?: {
+    follow_profile_config: boolean
+    room_plumbing: boolean
+    team_room?: boolean
+    team_room_lead?: string
+  }
   messages: ScriptedMessage[]
   profile: string
   runtime: string
@@ -99,6 +104,10 @@ export interface GatewayOptions {
   failAttach?: Record<string, unknown>
   /** Reject every prompt.submit with this — a fatal, non-recoverable failure. */
   failEverySubmitWith?: unknown
+  /** The `bots_team.room_lead` answer: the resolved org-tree lead. Omit for a
+   *  gateway that predates the RPC (rejects, the room falls back to fan-out);
+   *  `null` = known RPC, no covering team (also fan-out). */
+  teamLead?: { lead: string; lead_title?: string; team_id?: string; team_name?: string } | null
   /** Reject only the FIRST prompt.submit — the 4001 reap the retry recovers. */
   failFirstSubmitWith?: unknown
   /** Fired on each post-submit poll, so a test can land a stop mid-turn. */
@@ -228,6 +237,24 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
       return { applied: { ui_meta: true, ui_meta_revisions: { ...uiMetaRevisions } } }
     }
 
+    if (method === 'bots_team.room_lead') {
+      if (!Object.hasOwn(options, 'teamLead')) {
+        throw gatewayError('Method not found', -32601)
+      }
+
+      const resolved = options.teamLead
+
+      return resolved
+        ? {
+            lead: resolved.lead,
+            lead_slot: '',
+            lead_title: resolved.lead_title || '',
+            team_id: resolved.team_id || null,
+            team_name: resolved.team_name || ''
+          }
+        : { lead: null, lead_slot: '', lead_title: '', team_id: null, team_name: '' }
+    }
+
     if (method === 'session.create') {
       sequence += 1
       const profile = String(params.profile ?? '')
@@ -236,7 +263,10 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
       const session: ScriptedSession = {
         contracts: {
           follow_profile_config: params.follow_profile_config === true,
-          room_plumbing: params.room_plumbing === true
+          room_plumbing: params.room_plumbing === true,
+          ...(params.team_room === true
+            ? { team_room: true, team_room_lead: String(params.team_room_lead ?? '') }
+            : {})
         },
         messages: [],
         profile,

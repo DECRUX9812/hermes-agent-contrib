@@ -24,6 +24,9 @@ export interface GroupRoundMemberContext {
   binding: { isLive(): boolean }
   isCurrent(): boolean
   failedMembers?: Set<string>
+  /** The orchestrating lead's profile when this room is a team chat — every
+   *  member session born this drive carries it as the `team_room` marker. */
+  teamRoomLead?: null | string
 }
 
 /** #93129: a held member's skip must consume its delta exactly once —
@@ -146,7 +149,7 @@ async function runVisibleMemberTurn(
   updateGroupChat(context.group, (room: GroupChatRoom) => ({ ...room, turn }), { sync: false })
 
   try {
-    return await runGroupChatMemberTurn(context.group, member, prompt, context.thread, images)
+    return await runGroupChatMemberTurn(context.group, member, prompt, context.thread, images, context.teamRoomLead)
   } finally {
     if (context.binding.isLive() && $groupChats.get()[context.group]?.turn === turn) {
       updateGroupChat(context.group, (room: GroupChatRoom) => ({ ...room, turn: null }), { sync: false })
