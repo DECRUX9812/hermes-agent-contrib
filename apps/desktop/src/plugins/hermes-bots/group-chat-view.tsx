@@ -476,10 +476,7 @@ function GroupChatSettingsDialog({
     }
 
     if (limitOff !== currentLimitOff) {
-      setGroupChatLimits(
-        finalName,
-        limitOff ? { continuations: 'off', messages: 'off', rounds: 'off' } : undefined
-      )
+      setGroupChatLimits(finalName, limitOff ? { continuations: 'off', messages: 'off', rounds: 'off' } : undefined)
     }
 
     if (goal.trim() !== currentGoal) {
@@ -1322,30 +1319,31 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       </div>
     )
 
-    const attachments = Array.isArray(entry.images) && entry.images.length ? (
-      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-        {entry.images.map((img, imgIndex) =>
-          img.kind === 'pdf' || img.kind === 'file' ? (
-            <div
-              className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
-              key={`${entryKey}:img:${imgIndex}`}
-              title={img.name || 'attached file'}
-            >
-              <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
-              <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
-            </div>
-          ) : (
-            <img
-              alt={img.name || 'attached image'}
-              className="max-h-40 max-w-60 rounded-md border border-(--ui-stroke-secondary) object-contain"
-              key={`${entryKey}:img:${imgIndex}`}
-              src={img.data}
-              title={img.name || 'attached image'}
-            />
-          )
-        )}
-      </div>
-    ) : null
+    const attachments =
+      Array.isArray(entry.images) && entry.images.length ? (
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {entry.images.map((img, imgIndex) =>
+            img.kind === 'pdf' || img.kind === 'file' ? (
+              <div
+                className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
+                key={`${entryKey}:img:${imgIndex}`}
+                title={img.name || 'attached file'}
+              >
+                <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
+                <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
+              </div>
+            ) : (
+              <img
+                alt={img.name || 'attached image'}
+                className="max-h-40 max-w-60 rounded-md border border-(--ui-stroke-secondary) object-contain"
+                key={`${entryKey}:img:${imgIndex}`}
+                src={img.data}
+                title={img.name || 'attached image'}
+              />
+            )
+          )}
+        </div>
+      ) : null
 
     // Your own lines are right-aligned bubbles reusing the 1:1 thread's
     // user-bubble tokens so the room reads like the same chat surface.
@@ -1372,8 +1370,39 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       )
     }
 
+    // Every line keeps Reply + Copy: in the run header on a run's first line,
+    // floating over the line's top-right on continuations.
+    const actions = (
+      <div
+        className={cn(
+          'flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100',
+          runStart
+            ? 'ml-auto'
+            : 'absolute right-2 -top-1 z-10 rounded-md bg-(--ui-bg-primary) shadow-sm ring-1 ring-(--ui-stroke-secondary)'
+        )}
+      >
+        <Tip label={`Reply to @${replyMentionTag(entry, member)}`}>
+          <Button
+            aria-label={`Reply to ${display}`}
+            className="text-(--ui-text-tertiary) hover:text-foreground"
+            onClick={() => replyToMember(entry, member)}
+            size="icon"
+            variant="ghost"
+          >
+            <Codicon name="reply" />
+          </Button>
+        </Tip>
+        {entry.text.trim() ? (
+          <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
+        ) : null}
+      </div>
+    )
+
     return (
-      <div className={cn('group flex items-start gap-2.5 px-2', runStart && index > 0 && 'pt-1.5')} key={entryKey}>
+      <div
+        className={cn('group relative flex items-start gap-2.5 px-2', runStart && index > 0 && 'pt-1.5')}
+        key={entryKey}
+      >
         <div className="w-6.5 shrink-0 self-start">
           {runStart ? (
             <div className="mt-0.5">
@@ -1408,26 +1437,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                 </Button>
               </Tip>
               <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
-              {entry.text.trim() || !isUser ? (
-                <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
-                  <Tip label={`Reply to @${replyMentionTag(entry, member)}`}>
-                    <Button
-                      aria-label={`Reply to ${display}`}
-                      className="text-(--ui-text-tertiary) hover:text-foreground"
-                      onClick={() => replyToMember(entry, member)}
-                      size="icon"
-                      variant="ghost"
-                    >
-                      <Codicon name="reply" />
-                    </Button>
-                  </Tip>
-                  {entry.text.trim() ? (
-                    <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
-                  ) : null}
-                </div>
-              ) : null}
+              {actions}
             </div>
-          ) : null}
+          ) : (
+            actions
+          )}
           {body}
           {attachments}
         </div>
@@ -1634,7 +1648,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             </div>
           ) : null}
           {room.running ? (
-            <div className="flex items-center gap-2 px-2 pt-1 text-[0.7rem] text-(--ui-text-quaternary)" key={'working'}>
+            <div
+              className="flex items-center gap-2 px-2 pt-1 text-[0.7rem] text-(--ui-text-quaternary)"
+              key={'working'}
+            >
               {(() => {
                 // Typing indicator: the thinking member's mini face, or the
                 // classic three-dot pulse when the turn isn't attributable.

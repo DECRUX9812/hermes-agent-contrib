@@ -73,7 +73,9 @@ beforeEach(() => {
 
 describe('room lead resolution', () => {
   it('resolves the org-tree lead for the room, null when the team does not cover it', async () => {
-    const room = await loadRoom({ teamLead: { lead: 'research', lead_title: 'Chief', team_id: 't-1', team_name: 'Crew' } })
+    const room = await loadRoom({
+      teamLead: { lead: 'research', lead_title: 'Chief', team_id: 't-1', team_name: 'Crew' }
+    })
 
     await expect(room.team.resolveTeamRoomLead(MEMBERS)).resolves.toEqual({
       lead: 'research',
@@ -110,7 +112,9 @@ describe('room lead resolution', () => {
 
     expect(room.gateway.rpcFor('bots_team.room_lead')[0].params.members).toEqual(['research'])
     // A remote twin never counts as the room's lead seat.
-    expect(room.team.teamLeadKey({ lead: 'builder', leadTitle: '', teamId: '', teamName: '' }, [MEMBERS[0], remote])).toBeNull()
+    expect(
+      room.team.teamLeadKey({ lead: 'builder', leadTitle: '', teamId: '', teamName: '' }, [MEMBERS[0], remote])
+    ).toBeNull()
     expect(room.team.teamLeadKey('research', [MEMBERS[0], remote])).toBe('research')
   })
 })

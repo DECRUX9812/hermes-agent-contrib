@@ -274,9 +274,7 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
         contracts: {
           follow_profile_config: params.follow_profile_config === true,
           room_plumbing: params.room_plumbing === true,
-          ...(params.team_room === true
-            ? { team_room: true, team_room_lead: String(params.team_room_lead ?? '') }
-            : {})
+          ...(params.team_room === true ? { team_room: true, team_room_lead: String(params.team_room_lead ?? '') } : {})
         },
         messages: [],
         profile,

@@ -11,8 +11,18 @@ vi.mock('@hermes/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
   const base = await pluginSdkMock(createGroupGateway().host)
 
-  const Button = ({ children, onClick, title }: { children?: ReactNode; onClick?: () => void; title?: string }) => (
-    <button onClick={onClick} title={title}>
+  const Button = ({
+    'aria-label': ariaLabel,
+    children,
+    onClick,
+    title
+  }: {
+    'aria-label'?: string
+    children?: ReactNode
+    onClick?: () => void
+    title?: string
+  }) => (
+    <button aria-label={ariaLabel} onClick={onClick} title={title}>
       {children}
     </button>
   )
@@ -99,9 +109,7 @@ it('groups consecutive same-speaker entries under one header, breaking on thread
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  render(
-    <GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />
-  )
+  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
 
   const names = (want: string) =>
     screen.getAllByRole('button').filter(el => (el.textContent || '').trim().toLowerCase() === want)
@@ -109,6 +117,8 @@ it('groups consecutive same-speaker entries under one header, breaking on thread
   // builder: m1+m2 share one header; m3's thread change re-breaks the run.
   expect(names('builder')).toHaveLength(2)
   expect(names('reviewer')).toHaveLength(1)
+  // Grouping hides repeated headers, never actions: every member line stays replyable.
+  expect(screen.getAllByRole('button', { name: /^Reply to / })).toHaveLength(4)
 })
 
 it('removes Stop controls from historical working rows after the room settles', async () => {

@@ -141,9 +141,7 @@ export function teamLeadMember(lead: null | TeamRoomLead | string, members: Grou
     return null
   }
 
-  return (
-    (members || []).find(member => !member?.remoteSource && String(member?.name || '') === profile) || null
-  )
+  return (members || []).find(member => !member?.remoteSource && String(member?.name || '') === profile) || null
 }
 
 /** The gate key `resolveGroupResponders` compares against `groupMemberKey`. */
