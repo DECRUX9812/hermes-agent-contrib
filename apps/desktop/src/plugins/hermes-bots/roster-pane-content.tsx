@@ -1,8 +1,9 @@
-import { Button, Codicon, DisclosureCaret, GlyphSpinner, PanelEmpty, RowButton } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, DisclosureCaret, GlyphSpinner, PanelEmpty, RowButton } from '@hermes/plugin-sdk'
 import type { ReactNode, RefObject } from 'react'
 
 import { avatarColor, blobShapeString, BotFace } from './avatar'
-import { BOT_STARTERS, type BotStarter } from './bot-starters'
+import { type BotStarter, QUICK_STARTERS } from './bot-starters'
+import { BotsHowItWorks } from './bots-explainer'
 import type { useRoster } from './data'
 import { $showHiddenBots } from './hidden-bots'
 import type { useBots } from './i18n'
@@ -15,8 +16,11 @@ import type { RosterRow } from './types'
 
 interface RosterContentProps {
   b: ReturnType<typeof useBots>
-  /** Opens the create dialog — bare for "New bot", pre-filled on a starter pick. */
+  /** Opens the quick-create dialog — bare for "New bot"; a starter pick
+   *  creates immediately (one click, no form). */
   onNewBot: (starter?: BotStarter) => void
+  /** Starter whose one-click create is in flight — the chips disable under it. */
+  creatingStarter: null | string
   staleNotice: string | number | null
   isLoading: boolean
   initialRosterLoading: boolean
@@ -56,6 +60,7 @@ interface RosterContentProps {
 export function renderRosterContent({
   b,
   onNewBot,
+  creatingStarter,
   staleNotice,
   isLoading,
   initialRosterLoading,
@@ -118,25 +123,37 @@ export function renderRosterContent({
                 <Codicon className="mr-1 text-[0.75rem]" name="add" />
                 {b.bot.newTitle}
               </Button>
-              {/* One-tap starters: the first three gallery cards, so an empty
-                  roster can become a working bot in a single click chain. */}
+              {/* One-click starters: the general cards that carry a real
+                  preset, so an empty roster becomes a working bot in a
+                  single click — no form at all. */}
               <div className="flex flex-wrap items-center justify-center gap-1">
-                {BOT_STARTERS.slice(0, 3).map(template => (
+                {QUICK_STARTERS.map(template => (
                   <RowButton
-                    className="flex items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) px-2 py-1 text-[0.6875rem] text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground"
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) px-2 py-1 text-[0.6875rem] text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground',
+                      creatingStarter && 'pointer-events-none opacity-60'
+                    )}
                     key={template.id}
                     onClick={() => onNewBot(template)}
                   >
-                    <BotFace
-                      color={avatarColor(null, template.name)}
-                      name={template.name}
-                      shape={blobShapeString('', template.blob)}
-                      size={14}
-                    />
+                    {creatingStarter === template.id ? (
+                      <GlyphSpinner className="text-[0.75rem]" spinner="breathe" />
+                    ) : (
+                      <BotFace
+                        color={avatarColor(null, template.name)}
+                        name={template.name}
+                        shape={blobShapeString('', template.blob)}
+                        size={14}
+                      />
+                    )}
                     {template.name}
                   </RowButton>
                 ))}
               </div>
+              {/* The mental model, taught at first contact: Bot Chat is the
+                  inbox, New topic keeps context clean, @mentions summon
+                  teammates, a bot is a profile with an identity. */}
+              <BotsHowItWorks />
             </div>
           }
           description={b.roster.emptyDesc}

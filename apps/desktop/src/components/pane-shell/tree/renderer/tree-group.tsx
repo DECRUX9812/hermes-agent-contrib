@@ -318,7 +318,7 @@ export function TreeGroup({
   const newTab =
     ownNewTab(activeId) ??
     (shown.some(isSessionStripPane) && newSessionTabAction
-      ? { label: t.zones.newSessionTab, onSelect: newSessionTabAction }
+      ? { label: t.zones.newSessionTab, onSelect: () => newSessionTabAction() }
       : null) ??
     shown.map(ownNewTab).find(Boolean) ??
     null

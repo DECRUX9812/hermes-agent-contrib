@@ -114,6 +114,12 @@ export interface RosterRow {
    *  / `connectionLabel`, which are THIS Desktop's names for the connection. */
   installId?: string
   last_session?: SessionPreview | null
+  /** The profile's configured model pin ('' = inherits the launch model). */
+  model?: string
+  /** The profile's configured provider slug. */
+  provider?: string
+  /** Installed skills on the profile — the gateway's last known count. */
+  skill_count?: number
   remoteSource?: boolean
   route?: ProfileRoute
   sourceError?: null | string
@@ -196,6 +202,16 @@ export interface GroupHold {
   noted?: boolean
 }
 
+export interface GroupChatLimits {
+  /** Follow-up rounds granted to members another member @-cited and never
+   *  answered — the axis that bounds back-and-forth handoffs. */
+  continuations?: number | 'off'
+  /** Member messages one drive may publish before the cap ends it. */
+  messages?: number | 'off'
+  /** Round-robin rounds one user message may drive. */
+  rounds?: number | 'off'
+}
+
 export interface GroupChat {
   /** The room's stated objective (Bot Mode D2) — set from group settings,
    *  shown under the room title, and what a completed round's summary card is
@@ -204,6 +220,15 @@ export interface GroupChat {
   /** Whether user text may create sticky member holds. Defaults to true for
    *  rooms written by older builds; the room settings switch can disable it. */
   holdDetection?: boolean
+  /** Per-axis drive budget overrides (a number clamps to the hard ceiling,
+   *  'off' rides the ceiling itself — the runaway brake still binds). An
+   *  absent axis inherits the config.yaml `group_chat` block, else default. */
+  limits?: GroupChatLimits
+  /** Who hears a plain (un-@mentioned) user turn: unset = auto (the bot team's
+   *  lead when the room is one team, else everyone), 'everyone' = fan-out, or
+   *  one member's key — that bot alone listens and the rest wake on @mention
+   *  or its delegation. */
+  listener?: string
   /** Bumped to abandon in-flight member turns from a previous round. */
   epoch?: number
   /** Room-entry ids consumed while a member was held, replayed into that
@@ -296,6 +321,7 @@ export type GroupActivityKind =
   | 'passed'
   | 'queued'
   | 'replied'
+  | 'safety'
   | 'settled'
   | 'stopped'
   | 'timed-out'
@@ -311,6 +337,9 @@ export interface GroupActivityEvent {
    *  `slot_wait_timeout`, or the error's redacted first line (#117366);
    *  absent on non-failures. */
   reason?: string
+  /** Which budget axis ran out on a 'capped'/'safety' exit — the feed can
+   *  name the knob the user would raise ('rounds'/'messages'/'continuations'). */
+  detail?: string
 }
 
 /**

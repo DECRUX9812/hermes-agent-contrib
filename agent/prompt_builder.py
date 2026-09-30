@@ -550,12 +550,15 @@ STEER_MARKER_OPEN = (
 STEER_MARKER_CLOSE = "[/OUT-OF-BAND USER MESSAGE]"
 # Text after the "[" that opens one of Hermes' own control frames (the steer marker above, the compaction
 # handoff and its fallbacks, runtime/system notes, agent.context_compressor._SYNTHETIC_USER_ROW_PREFIXES,
-# agent.title_generator._MACHINE_PREFIXES). Consumers that republish model output as role=user text
-# (hosted rooms) relabel these so a reply cannot reproduce the exact trusted shape. Keep the regex literal in
+# agent.title_generator._MACHINE_PREFIXES — plus the room-prompt headers "Group chat:" / "Discussion:",
+# which a member reproducing would mint a fake transcript preamble). Consumers that republish model output
+# as role=user text (hosted rooms, desktop group turns) relabel these so a reply cannot reproduce the
+# exact trusted shape. Keep the regex literal in
 # apps/desktop/src/plugins/hermes-bots/group-round-prompt.ts byte-equivalent to this list.
 CONTROL_FRAME_OPENERS = (
     "/?OUT-OF-BAND USER MESSAGE", "CONTEXT COMPACTION", "CONTEXT SUMMARY]", "PRIOR CONTEXT", "Runtime note:",
     "System note:", "System:", "SYSTEM]", "IMPORTANT:", "Planning state preserved", "ASYNC DELEGATION",
+    "Group chat:", "Discussion:",
 )
 
 
@@ -646,6 +649,13 @@ _MEDIA_NATIVE = (
     "You can send files natively: write MEDIA:/absolute/path/to/file in your response. "
 )
 
+# Phone-first chat apps: people read these on a phone, where a code block is a sideways-scrolling
+# grey box. Code blocks only for text the user must copy verbatim.
+_PHONE_FIRST = (
+    "Most people read this on a phone: answer in short paragraphs or bullets, and use a code block only "
+    "for code, commands or config the user must copy exactly \u2014 never for prose, lists or results. "
+)
+
 _LOCAL_CRON_DELIVERY_NOTE = (
     "Cron jobs scheduled from this session are LOCAL-ONLY: their output is saved (viewable via cronjob "
     "action='list') but is NOT delivered back into this session — there is no live-delivery channel here. If "
@@ -656,6 +666,7 @@ _LOCAL_CRON_DELIVERY_NOTE = (
 
 PLATFORM_HINTS = {
     "whatsapp": (
+        _PHONE_FIRST +
         "You are on WhatsApp. Standard markdown auto-converts to WhatsApp syntax (*bold*, _italic_, ~strike~, "
         "monospace) \u2014 write markdown freely, bullets included. No tables \u2014 use bullets or labeled lines. "
         f"{_MEDIA_NATIVE}Images (.jpg, .png, .webp) send as photos, videos (.mp4, .mov) play "
@@ -669,6 +680,7 @@ PLATFORM_HINTS = {
         "24h (error 131047) \u2014 relevant only for delayed/scheduled sends."
     ),
     "telegram": (
+        _PHONE_FIRST +
         "You are on Telegram. Standard Markdown auto-converts: **bold**, "
         "*italic*, ~~strikethrough~~, ||spoiler||, `code`, ```blocks```, "
         "[links](url), ## headers. Prefer bullets or labeled lines for structured data (no tables). "
@@ -691,6 +703,7 @@ PLATFORM_HINTS = {
         "markdown format ![alt](url) and they will be uploaded as attachments."
     ),
     "signal": (
+        _PHONE_FIRST +
         "You are on Signal. Standard markdown (**bold**, *italic*, ~~strike~~, # headers, `code`) auto-converts to "
         "Signal formatting; bullets render as \u2022. No tables \u2014 use bullets or labeled lines. "
         f"{_MEDIA_NATIVE}Images (.png, .jpg, .webp) send as photos, other files as documents; ![alt](url) sends as photos."

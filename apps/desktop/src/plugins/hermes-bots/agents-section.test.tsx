@@ -57,6 +57,7 @@ vi.mock('./roster-pane-lifecycle', () => ({
   usePublishRosterSnapshot: vi.fn()
 }))
 
+vi.mock('./quick-create-dialog', () => ({ QuickCreateDialog: () => null }))
 vi.mock('./create-dialog', () => ({
   CreateAgentDialog: () => null,
   CreateGroupChatDialog: () => null,

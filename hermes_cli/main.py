@@ -2567,7 +2567,7 @@ def _coalesce_session_name_args(argv: list) -> list:
         "auth", "status", "cron", "doctor", "config", "pairing", "skills", "tools", "mcp",
         "sessions", "insights", "update", "uninstall", "profile", "dashboard", "serve",
         "desktop", "gui", "honcho", "claw", "plugins", "security", "acp", "webhook", "peer",
-        "memory", "dump", "debug", "backup", "import", "completion", "logs", "usage",
+        "memory", "dump", "debug", "backup", "import", "completion", "logs", "usage", "bots",
     }
     _SESSION_FLAGS = {"-c", "--continue", "-r", "--resume"}
 
@@ -2884,7 +2884,7 @@ def cmd_console(args):
 # entry would let a plugin command silently fail to parse.
 _BUILTIN_SUBCOMMANDS = frozenset(
     {
-        "acp", "approvals", "auth", "backup", "bundles", "checkpoints", "claw", "codex-runtime", "completion",
+        "acp", "approvals", "auth", "backup", "bots", "bundles", "checkpoints", "claw", "codex-runtime", "completion",
         "computer-use",
         "config", "console", "cron", "curator", "dashboard", "serve", "debug", "doctor",
         "dump", "egress", "fallback", "gateway", "hooks", "import", "import-agent", "insights",
@@ -3488,6 +3488,9 @@ def _build_cli_parser():
 
     from hermes_cli.subcommands.peer import build_peer_parser
     build_peer_parser(subparsers)
+
+    from hermes_cli.subcommands.bots import build_bots_parser
+    build_bots_parser(subparsers)
 
     from hermes_cli.portal_cli import add_parser as _add_portal_parser
     _add_portal_parser(subparsers)

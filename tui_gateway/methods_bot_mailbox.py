@@ -76,8 +76,9 @@ def _(rid, params: dict, _root=_mailbox_root) -> dict:
             )
             # The text carries the id so the recipient can update_task it; deliver through
             # the relay path on THIS gateway (it resolves a local profile by name too).
+            # The title rides a single-line header — flatten so it can't mint interior lines.
             text = (
-                f"Task hand-off from the user (via Desktop): {title}"
+                f"Task hand-off from the user (via Desktop): {' '.join(title.split())}"
                 + (f"\n\n{body}" if body else "")
                 + f"\n\n[task {note['id']} — call update_task(note=…, status=…) to accept/decline/finish it]"
             )
@@ -115,7 +116,7 @@ def _(rid, params: dict, _root=_mailbox_root) -> dict:
             "updated_at": int(time.time()),
         }
         text = (
-            f"Task hand-off from the user (via Desktop): {title}"
+            f"Task hand-off from the user (via Desktop): {' '.join(title.split())}"
             + (f"\n\n{body}" if body else "")
             + f"\n\n[task {note_id} — call update_task(note=…, status=…) to accept/decline/finish it]"
         )
@@ -180,8 +181,11 @@ def _notify_sender_status(root: Path, note: dict) -> None:
     owner = find_canonical_live_owner(home)
     if owner is None:
         return
-    reply = str(note.get("reply") or "").strip()
-    text = (f"Task {note['id']} ({str(note.get('title') or '')[:120]}) → {note['status']}"
+    # Title and reply are model-authored — flatten them so a newline can't mint a
+    # forged attribution line inside the sender's own Bot Chat turn.
+    flat = lambda s: " ".join(str(s or "").split())  # noqa: E731
+    reply = flat(note.get("reply"))
+    text = (f"Task {note['id']} ({flat(note.get('title'))[:120]}) → {note['status']}"
             + (f": {reply[:500]}" if reply else ""))
     deliver_to_live_owner(home, owner, text,
                           author=delivery_turn_author(from_profile, sender.get("handle")))

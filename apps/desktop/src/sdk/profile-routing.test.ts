@@ -17,6 +17,7 @@ vi.mock('@/contrib/events', () => ({ onGatewayEvent: vi.fn() }))
 vi.mock('@/hermes', () => ({ deleteProfile: vi.fn(), getLogs: vi.fn(), getStatus: vi.fn(), hermesApi: vi.fn() }))
 vi.mock('@/store/notifications', async () => {
   const { atom } = await import('nanostores')
+
   return { $notificationHistory: atom([]), notify: vi.fn(), notifyError: vi.fn() }
 })
 vi.mock('@/store/system-actions', () => ({ runGatewayRestart: vi.fn() }))
@@ -62,6 +63,7 @@ vi.mock('@/store/session-states', async () => {
     $focusedSessionState: atom(null),
     $focusedStoredSessionId: atom(null),
     $sessionTiles: atom([]),
+    $sessionWorkspaceScopes: atom({}),
     $sessionStates: atom({}),
     $stalledSessionIds: atom([]),
     $workingSessionIds: atom([]),

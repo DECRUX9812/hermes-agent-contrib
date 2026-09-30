@@ -45,6 +45,7 @@ import type {
 import { AgentsSection } from './agents-section'
 import { AUTOPILOT_LOCALES } from './autopilot-i18n'
 import { startFaceClock, stopFaceClock } from './avatar'
+import { BotDelegateHint } from './bot-delegate-hint-view'
 import { BotInboundCards } from './bot-events-view'
 import { BotHeaderIdentity } from './bot-header-chip'
 import { BOT_PLAN_DIRECTIVE, rewritePlanDraft } from './bot-plan'
@@ -65,6 +66,8 @@ import { hydrateDismissedBotTips } from './bot-tips'
 import { BotChatTips } from './bot-tips-view'
 import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
 import { BotChatEmpty } from './chat-empty'
+import { hydrateDismissedNudges } from './context-nudge'
+import { BotContextNudge } from './context-nudge-view'
 import { bindProfileSync } from './cron'
 import {
   $botMeta,
@@ -89,6 +92,7 @@ import {
   handleSessionsGatewayTransition,
   hydrateGroupChatTombstones,
   pullGroupChatServerState,
+  refreshGroupChatLimits,
   scheduleGroupChatServerSync,
   setGroupChatSyncDisposed,
   stopGroupChatServerSync,
@@ -320,6 +324,7 @@ export default {
 
     // Hydrate dismissed tip cards (G9) — per bot, this device only.
     hydrateDismissedBotTips()
+    hydrateDismissedNudges()
 
     // Hydrate the Sessions-rail Agents fold (default open).
     try {
@@ -352,6 +357,11 @@ export default {
       /* no storage — no remembered disbands this window */
     }
 
+    // The config.yaml `group_chat` block feeds every room that never set its
+    // own override — read it once at register; the per-room merge in
+    // getGroupChatLimits resolves the rest per drive.
+    void refreshGroupChatLimits()
+
     try {
       // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
       Promise.resolve(ctx.storage?.get?.('group-chats'))
@@ -373,6 +383,10 @@ export default {
                   // guard as the other maps — a held bot stays held across
                   // window restarts until explicitly released.
                   holds: room.holds && typeof room.holds === 'object' ? room.holds : {},
+                  // Per-axis drive-budget overrides ride the room record like
+                  // goal/image — a room set to run longer keeps its budget.
+                  limits: room.limits && typeof room.limits === 'object' ? room.limits : undefined,
+                  listener: typeof room.listener === 'string' && room.listener ? room.listener : undefined,
                   externalCursors:
                     room.externalCursors && typeof room.externalCursors === 'object' ? room.externalCursors : {},
                   members: Array.isArray(room.members) ? room.members : [],
@@ -860,6 +874,26 @@ export default {
       id: 'bot-inbound-cards',
       area: COMPOSER_AREAS.top,
       render: () => <BotInboundCards />
+    })
+
+    // Topics nudge — on a canonical chat grown long, one dismissible line
+    // suggesting a fresh topic (same powers, new context). Advisory only.
+    ctx.register({
+      id: 'bot-context-nudge',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotContextNudge />
+    })
+
+    // Bot-pane UX — a plain working session ON A BOT PROFILE is the one
+    // shape delegation can't reach; a dismissible chip over the composer
+    // offers to mint a fresh topic in the bot's workspace (powers are
+    // mint-time — the chat itself can never become one). The contribution
+    // answers for itself per surface: null on the canonical chat, on
+    // topics, and on non-bot sessions.
+    ctx.register({
+      id: 'bot-delegate-hint',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotDelegateHint />
     })
 
     ctx.register({

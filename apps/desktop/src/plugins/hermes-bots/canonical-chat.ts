@@ -155,7 +155,7 @@ async function openStoredBotChat(
 /** True when a session summary IS the canonical registry row. root_title is
  *  the durable lineage-root title reported by exact-lookup gateways; plain
  *  title covers windowed listings. */
-function isCanonicalBotChatHistory(history: CanonicalChatRow) {
+export function isCanonicalBotChatHistory(history: CanonicalChatRow) {
   const rootTitle = String(history?.root_title || '').trim()
   const title = String(history?.title || '').trim()
 

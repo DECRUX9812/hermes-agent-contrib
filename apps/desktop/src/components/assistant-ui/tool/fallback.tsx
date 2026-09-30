@@ -84,6 +84,7 @@ import {
   type ToolStatus,
   type ToolTitleAction
 } from './fallback-model'
+import { McpAppFrame } from './mcp-app'
 import { isToolCallPart, summarizeToolRun } from './run-summary'
 import { ToolRunTicker } from './run-ticker'
 
@@ -641,6 +642,12 @@ function ToolEntry({ part }: ToolEntryProps) {
           </span>
         </DisclosureRow>
       </div>
+      {part.toolResultMetadata?.mcp_app && !isPending && view.status !== 'error' && (
+        // The tool's own MCP App is the call's deliverable: shown whether or not the row is expanded.
+        <div className="w-full min-w-0 max-w-full p-1.5">
+          <McpAppFrame app={part.toolResultMetadata.mcp_app} args={part.args} result={part.result} />
+        </div>
+      )}
       {open && (
         <div className="relative grid w-full min-w-0 max-w-full gap-1.5 overflow-hidden p-1.5">
           {copyAction.text && (

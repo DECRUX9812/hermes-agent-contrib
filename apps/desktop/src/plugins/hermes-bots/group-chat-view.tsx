@@ -32,6 +32,7 @@ import {
   Tip,
   ToggleRow,
   useI18n,
+  useQuery,
   useValue
 } from '@hermes/plugin-sdk'
 import type { ClipboardEvent, DragEvent, ReactNode } from 'react'
@@ -71,6 +72,8 @@ import {
   setGroupChatGoal,
   setGroupChatHoldDetection,
   setGroupChatImage,
+  setGroupChatLimits,
+  setGroupChatListener,
   updateGroupChat
 } from './group-chat'
 import type { GroupChatRoom } from './group-chat'
@@ -103,6 +106,7 @@ import {
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
+import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
 import { markGroupRead } from './group-unread'
 import { botsText, useBots } from './i18n'
@@ -402,18 +406,26 @@ function GroupChatSettingsDialog({
   const rooms: Record<string, GroupChatRoom> = useValue($groupChats)
   const current = (rooms[group] || {}).image || null
   const currentHoldDetection = (rooms[group] || {}).holdDetection !== false
+  // 'off' on any axis means the room opted out of the inherited drive budget
+  // and rides the hard ceilings — one toggle covers all three axes.
+  const currentLimitOff = Object.values((rooms[group] || {}).limits || {}).some(value => value === 'off')
   const currentGoal = String((rooms[group] || {}).goal || '')
+  const currentListener = String((rooms[group] || {}).listener || '')
   const [name, setName] = useState(group)
   const [image, setImage] = useState(current)
   const [holdDetection, setHoldDetection] = useState(currentHoldDetection)
+  const [limitOff, setLimitOff] = useState(currentLimitOff)
   const [goal, setGoal] = useState(currentGoal)
+  const [listener, setListener] = useState(currentListener)
   const [compressing, setCompressing] = useState<null | string>(null)
   useEffect(() => {
     if (open) {
       setName(group)
       setImage(current)
       setHoldDetection(currentHoldDetection)
+      setLimitOff(currentLimitOff)
       setGoal(currentGoal)
+      setListener(currentListener)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, group])
@@ -463,8 +475,19 @@ function GroupChatSettingsDialog({
       setGroupChatHoldDetection(finalName, holdDetection)
     }
 
+    if (limitOff !== currentLimitOff) {
+      setGroupChatLimits(
+        finalName,
+        limitOff ? { continuations: 'off', messages: 'off', rounds: 'off' } : undefined
+      )
+    }
+
     if (goal.trim() !== currentGoal) {
       setGroupChatGoal(finalName, goal)
+    }
+
+    if (listener !== currentListener) {
+      setGroupChatListener(finalName, listener || null)
     }
 
     onClose()
@@ -514,6 +537,32 @@ function GroupChatSettingsDialog({
           label={b.group.holdDetection}
           onChange={setHoldDetection}
         />
+        <ToggleRow
+          checked={limitOff}
+          description={b.group.limitOffHint}
+          label={b.group.limitOff}
+          onChange={setLimitOff}
+        />
+        <div className="flex flex-col gap-1" data-testid="group-settings-listener">
+          <label className="text-[0.75rem] font-medium text-(--ui-text-secondary)" htmlFor="group-listener-select">
+            {b.group.listener}
+          </label>
+          <select
+            className="h-8 w-full rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-control-background) px-2 text-[0.8125rem]"
+            id="group-listener-select"
+            onChange={event => setListener(event.target.value)}
+            value={listener}
+          >
+            <option value="">{b.group.listenerAuto}</option>
+            <option value={ROOM_LISTENER_EVERYONE}>{b.group.listenerEveryone}</option>
+            {(members || []).map(member => (
+              <option key={groupMemberKey(member)} value={groupMemberKey(member)}>
+                {b.group.listenerOnly(member.name)}
+              </option>
+            ))}
+          </select>
+          <p className="text-[0.6875rem] text-(--ui-text-tertiary)">{b.group.listenerHint}</p>
+        </div>
         <div className="flex flex-col gap-1" data-testid="group-settings-goal">
           <label className="text-[0.75rem] font-medium text-(--ui-text-secondary)" htmlFor="group-goal-input">
             {b.group.goal}
@@ -786,6 +835,25 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
   const availabilityLabel = `${availableMembers} of ${members.length} available`
+
+  // Team-orchestrated room? The backend's org tree resolves a lead whose members
+  // alone hear plain user turns; null keeps the room on fan-out (no covering
+  // team, ambiguous teams, or an older gateway without bots_team.room_lead).
+  const roomListener = room.listener || ''
+
+  const teamLeadQuery = useQuery({
+    queryFn: () => resolveRoomListener(roomListener, members),
+    queryKey: [ID, 'group-team-lead', group, roomListener, ...localMemberProfiles(members)],
+    refetchInterval: 30000,
+    staleTime: 15000
+  })
+
+  const teamLead = teamLeadQuery.data || null
+  const leadMember = teamLeadMember(teamLead, members)
+
+  const leadName = leadMember
+    ? displayName(leadMember, botRosterMeta(leadMember, allMeta))
+    : teamLead?.leadTitle || (teamLead?.lead ? `@${teamLead.lead}` : '')
 
   const memberNames =
     members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat'
@@ -1384,6 +1452,15 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}
         members={members}
       />
+      {teamLead && leadName ? (
+        <div
+          className="flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.7rem] text-(--ui-text-quaternary)"
+          data-testid="group-team-listening"
+        >
+          <Codicon className="shrink-0 text-[0.65rem]" name="organization" />
+          <span className="min-w-0 flex-1 truncate">{b.group.teamListening(leadName)}</span>
+        </div>
+      ) : null}
       {activityPanel}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
@@ -1394,7 +1471,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             ? logChildren
             : [
                 <div className="px-2 py-4 text-center text-xs text-(--ui-text-tertiary)" key={'empty'}>
-                  {b.group.composerPlaceholder}
+                  {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
                 </div>
               ]}
           {roomClarifies.map(entry => (

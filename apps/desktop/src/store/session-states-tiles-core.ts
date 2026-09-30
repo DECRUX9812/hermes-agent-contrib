@@ -210,6 +210,18 @@ export interface SessionTileWorkspaceScope {
   workspaceTabTitle?: string
 }
 
+/** The workspace bucket a session was last opened under, read-only and
+ *  all-optional: the union of a tile's own record and a remembered
+ *  main-surface scope, where absent fields simply mean no bucket was
+ *  stamped. $sessionWorkspaceScopes answers with this shape. */
+export interface SessionWorkspaceScope {
+  ownerProfile?: string
+  ownerRoute?: SessionOwnerRoute
+  workspaceMode?: WorkspaceMode
+  workspaceOwnerKey?: string
+  workspaceTabTitle?: string
+}
+
 
 // Tiles are persisted per connection and profile: same-named profiles on two
 // backends own different sessions. Switching either scope swaps the visible
@@ -765,6 +777,20 @@ function rememberBotChatScope(storedSessionId: string, scope: SessionTileWorkspa
   writeJson(BOT_CHAT_SCOPE_KEY, next.size ? [...next] : null)
 }
 
+
+/** Every session's workspace scope, merged across surfaces: a tiled session
+ *  carries its scope on the tile; a session in MAIN has no tile, so its scope
+ *  is remembered in $botChatScopes. One map so a reader tells a workspace
+ *  chat from a working session without asking which surface holds it. */
+export const $sessionWorkspaceScopes = computed([$sessionTiles, $botChatScopes], (tiles, remembered) => {
+  const scopes: Record<string, SessionWorkspaceScope> = { ...remembered }
+
+  for (const tile of tiles) {
+    scopes[tile.storedSessionId] = tile
+  }
+
+  return scopes
+})
 
 /** True while this live session is a bot's chat rather than a working session.
  *  Surfaces read it to drop coding chrome that means nothing in a companion

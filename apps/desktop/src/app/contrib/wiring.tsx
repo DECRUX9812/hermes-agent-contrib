@@ -24,7 +24,7 @@ import { GatewayConnectingOverlay } from '@/components/gateway-connecting-overla
 import { NotificationStack } from '@/components/notifications'
 import { DesktopOnboardingOverlay } from '@/components/onboarding'
 import { OnboardingChatGate } from '@/components/onboarding-chat/gate'
-import { $newSessionTabAction, registerPaneCloser } from '@/components/pane-shell/tree/store'
+import { $newSessionTabAction, type NewSessionTabOptions, registerPaneCloser } from '@/components/pane-shell/tree/store'
 import {
   $workspaceMode,
   $workspaceNewSessionTarget,
@@ -1073,12 +1073,14 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // falls THROUGH to the ordinary session rather than refusing: the main strip
   // carries plain session tabs alongside bot chats, so a "+" there must never
   // be dead just because the sidebar's current selection has nowhere to route.
-  const openNewSessionTab = useCallback(() => {
+  const openNewSessionTab = useCallback((options?: NewSessionTabOptions) => {
     const workspaceOwnerKey = $workspaceOwnerKey.get()
     const workspaceNewSessionTarget = $workspaceNewSessionTarget.get()
+    const cwd = options?.cwd?.trim() ? { cwd: options.cwd.trim() } : {}
 
     if ($workspaceMode.get() === 'bots' && workspaceNewSessionTarget?.kind === 'route' && workspaceOwnerKey) {
       void openNewSessionTile('center', {
+        ...cwd,
         listed: false,
         route: workspaceNewSessionTarget.route,
         workspaceScope: {
@@ -1091,7 +1093,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       return
     }
 
-    void openNewSessionTile('center', { listed: false })
+    void openNewSessionTile('center', { ...cwd, listed: false })
   }, [openNewSessionTile])
 
   // Roadmap #21 — parallel fan-out: one prompt mints a sibling session tile

@@ -409,6 +409,9 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
             "parent_session_id": parent_session_id, "pending_title": _str_param(params, "title") or None,
             "pending_hidden": _flag(params, "hidden"), "room_plumbing": _flag(params, "room_plumbing"),
             "follow_profile_config": _flag(params, "follow_profile_config"),
+            "bot_topic": _flag(params, "bot_topic"),
+            "team_room": _flag(params, "team_room"),
+            "team_room_lead": _str_param(params, "team_room_lead") or None,
             "profile_home": str(profile_home) if profile_home is not None else None,
             "running": False, "session_key": key, "show_reasoning": _load_show_reasoning(), "source": source,
             "slash_worker": None, "tool_progress_mode": _load_tool_progress_mode(), "tool_started_at": {},
@@ -617,12 +620,11 @@ class _Resume:
     def record(self, source: str, cwd: str, history: list, overrides: dict | None = None, **extra) -> dict:
         """``_deferred_session_record`` with this resume's common fields (lease claimed lazily on turn 1);
         ``overrides`` restores the stored model/provider/reasoning/tier so the deferred build matches eager."""
+        model_config = _parse_model_config((self.found or {}).get("model_config"), quiet=True)
+        follows_profile = False
         if overrides is not None:
             extra.update(model_override=overrides.get("model_override"), resume_runtime_overrides=overrides or None)
-            model_config = _parse_model_config((self.found or {}).get("model_config"), quiet=True)
             follows_profile = _row_follows_profile(self.found)
-        else:
-            model_config, follows_profile = {}, False
         record = _deferred_session_record(
             self.target, cols=self.cols, cwd=cwd, history=history, lease=None, source=source,
             close_on_disconnect=_flag(self.params, "close_on_disconnect"),
@@ -633,6 +635,11 @@ class _Resume:
                 composer_override_profile=(model_config.get("composer_override_profile")
                                            if overrides and overrides.get("model_override") else None),
             )
+        if model_config.get("bot_topic"):
+            record["bot_topic"] = True
+        if model_config.get("team_room"):
+            record["team_room"] = True
+            record["team_room_lead"] = model_config.get("team_room_lead") or None
         return record
 
     def claim(self, sid: str, record: dict) -> dict | None:
@@ -950,6 +957,15 @@ def _resume_eager(ctx: _Resume) -> dict:
                     session["composer_override_profile"] = (
                         model_config.get("composer_override_profile")
                         if stored_runtime_overrides.get("model_override") else None)
+                if model_config.get("bot_topic"):
+                    session["bot_topic"] = True
+                    agent._bot_topic = True
+                if model_config.get("team_room"):
+                    session["team_room"] = True
+                    session["team_room_lead"] = model_config.get("team_room_lead") or None
+                    # The agent was already built above — stamp the same hint _attach_built_agent applies.
+                    agent._team_room = True
+                    agent._team_room_lead = session["team_room_lead"]
                 # Each turn re-binds HERMES_HOME (mid-turn memory/skills reads); lease claimed lazily on turn 1.
                 if ctx.profile_home is not None:
                     session["profile_home"] = str(ctx.profile_home)
@@ -2405,7 +2421,7 @@ def _legacy_spawn_tree_entry(p, session_dir_name: str) -> dict | None:
         return None
     raw = {}
     with contextlib.suppress(Exception):
-        raw = json.loads(p.read_text(encoding="utf-8"))
+        raw = json.loads(p.read_text(encoding="utf-8-sig"))
     if not isinstance(raw, dict):
         raw = {}
     subagents = raw.get("subagents") or []
@@ -2443,7 +2459,7 @@ def _(rid, params: dict) -> dict:
     except (ValueError, OSError) as exc:
         return _err(rid, 4030, f"path outside spawn-trees root: {exc}")
     try:
-        payload = json.loads(resolved.read_text(encoding="utf-8"))
+        payload = json.loads(resolved.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
         return _err(rid, 5000, f"spawn_tree.load failed: {exc}")
     if not isinstance(payload, dict):

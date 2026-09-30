@@ -35,11 +35,11 @@ vi.mock('@hermes/plugin-sdk', () => ({
 vi.mock('./data', () => ({ newBotChat: vi.fn() }))
 vi.mock('./i18n', () => ({
   useBots: () => ({
-    deck: { canonical: 'canonical', empty: 'empty', newChat: 'New chat', refresh: 'Refresh', title: 'Sessions', untitled: 'Untitled' }
+    deck: { empty: 'empty', inbox: 'Inbox', newTopic: 'New topic', refresh: 'Refresh', title: 'Sessions', untitled: 'Untitled' }
   })
 }))
 vi.mock('./roster-sections', () => ({ RosterSectionHeader: () => null }))
-vi.mock('./routing', () => ({ botConnectionRoute: () => null }))
+vi.mock('./routing', () => ({ botConnectionRoute: () => null, botWorkspaceOwnerKey: () => 'bot:porter' }))
 vi.mock('./row-helpers', () => ({ rosterRowAge: () => '' }))
 vi.mock('./shared', () => ({ getPluginCtx: () => null }))
 

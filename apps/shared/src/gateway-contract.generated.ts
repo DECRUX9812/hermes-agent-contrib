@@ -596,6 +596,18 @@ export interface TeamRollupOverall {
   percent: number
   [key: string]: unknown
 }
+/** Local member profiles of a group-chat room (remote members can't hold seats — the caller leaves them out). */
+export interface BotsTeamRoomLeadParams {
+  members?: string[]
+}
+/** ``lead`` is the room's orchestrator profile when one team covers the room and its lead is seated; ``None`` — not a team room, no seated lead, or several teams disagree — means the room keeps fan-out listening. */
+export interface BotsTeamRoomLeadResult {
+  lead?: string | null
+  lead_slot?: string
+  lead_title?: string
+  team_id?: string | null
+  team_name?: string
+}
 export interface BotsTeamCreateParams {
   name: string
   mission?: string | null
@@ -2241,6 +2253,48 @@ export interface ClientCapabilitiesResult {
   server_requests: string[]
   declines_not_shown?: boolean
 }
+export interface _AppScoped {
+  profile?: string | null
+  session_id?: string | null
+}
+export interface McpAppsListResult {
+  apps: McpApp[]
+}
+/** A tool with an app. ``registry_name`` is the model-facing tool name, ``None`` for an app-only tool (callable from its UI, never by the model). */
+export interface McpApp {
+  server: string
+  tool: string
+  title: string
+  description?: string
+  registry_name?: string | null
+  resourceUri: string
+  visibility: string[]
+  entrypoints?: unknown[]
+  icons?: unknown[]
+  [key: string]: unknown
+}
+export interface McpAppsReadUiParams {
+  profile?: string | null
+  session_id?: string | null
+  server: string
+  uri: string
+}
+/** ``meta`` is the content item's ``_meta`` (``ui.csp``, ``ui.prefersBorder``, ``openai/ui``). */
+export interface McpAppsReadUiResult {
+  uri: string
+  mimeType: string
+  html: string
+  meta?: Record<string, unknown>
+}
+export interface McpAppsCallParams {
+  profile?: string | null
+  session_id?: string | null
+  server: string
+  tool: string
+  arguments?: Record<string, unknown>
+}
+/** The MCP ``CallToolResult`` as JSON (``content``, ``structuredContent``, ``isError``, ``_meta``). */
+export type McpAppsCallResult = Record<string, unknown>
 /** ``word`` is the token under the cursor (``@`` prefix = context reference); ``cwd`` / ``session_id`` pick the directory the listing resolves against. */
 export interface CompletePathParams {
   profile?: string | null
@@ -3351,6 +3405,9 @@ export interface SessionCreateParams {
   hidden?: boolean
   room_plumbing?: boolean
   follow_profile_config?: boolean
+  bot_topic?: boolean
+  team_room?: boolean
+  team_room_lead?: string | null
 }
 /** One create-time transcript row (``session_history._coerce_seed_history``); ``text`` is the legacy alias of ``content``; only ``display_kind: "hidden"`` is accepted from the wire. Clients forward stored rows verbatim (``_row_id``, ``timestamp``, …) and the coercer drops what it does not use, so the row stays open. */
 export interface SeedMessage {
@@ -5363,6 +5420,8 @@ export interface RpcMethods {
   'bots_team.pack.export': { params: TeamIdParams; result: BotsTeamPackExportResult }
   /** Create a team from a pack (allow-listed keys only); every seat starts open. */
   'bots_team.pack.import': { params: BotsTeamPackImportParams; result: TeamView }
+  /** The org-tree lead for a group chat: the single team whose filled seats cover the room's local members, lead included. The room then listens through the lead alone and teammates wake only when addressed. */
+  'bots_team.room_lead': { params: BotsTeamRoomLeadParams; result: BotsTeamRoomLeadResult }
   /** Rename, re-mission, set the approval policy or the external channel bindings. */
   'bots_team.update': { params: BotsTeamUpdateParams; result: TeamView }
   /** Hard-detach only the controller owned by this authenticated transport. */
@@ -5549,6 +5608,12 @@ export interface RpcMethods {
   'mcp.servers.status': { params: ProfileParams; result: McpServersStatusResult }
   /** Connect, list tools, disconnect — an OAuth server with no token on disk is reported as not ok. */
   'mcp.servers.test': { params: McpServerNameParams; result: McpServersTestResult }
+  /** A tool call made by an app iframe: same server, the tool's visibility must include ``app``, and write-capable calls on an untrusted server are refused. */
+  'mcp_apps.call': { params: McpAppsCallParams; result: McpAppsCallResult }
+  /** Tools on the connected MCP servers that carry an MCP App (``_meta.ui.resourceUri``). */
+  'mcp_apps.list': { params: _AppScoped; result: McpAppsListResult }
+  /** The app document behind a ``ui://`` URI (other schemes are refused). */
+  'mcp_apps.read_ui': { params: McpAppsReadUiParams; result: McpAppsReadUiResult }
   /** Set/clear one author's emoji reaction on a message; returns the row's full reaction list. */
   'message.react': { params: MessageReactParams; result: MessageReactResult }
   /** Remove every credential (env keys and OAuth state) for a provider. */
@@ -5883,6 +5948,7 @@ export const RPC_METHODS = [
   'bots_team.member.upsert',
   'bots_team.pack.export',
   'bots_team.pack.import',
+  'bots_team.room_lead',
   'bots_team.update',
   'browser.controller.detach',
   'browser.controller.heartbeat',
@@ -5976,6 +6042,9 @@ export const RPC_METHODS = [
   'mcp.servers.set_api_key',
   'mcp.servers.status',
   'mcp.servers.test',
+  'mcp_apps.call',
+  'mcp_apps.list',
+  'mcp_apps.read_ui',
   'message.react',
   'model.disconnect',
   'model.options',

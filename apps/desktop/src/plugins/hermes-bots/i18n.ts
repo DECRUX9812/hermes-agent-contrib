@@ -127,6 +127,13 @@ type BotsMessages = {
     groupChats: string
     emptyTitle: string
     emptyDesc: string
+    /** The 'How bots work' explainer under the empty roster — the mental
+     *  model in four scannable lines. */
+    howTitle: string
+    howInbox: string
+    howTopic: string
+    howMention: string
+    howProfiles: string
     noMatchQuery: (query: string) => string
     noMatchQueryOn: (query: string, gateway: string) => string
     noMatchFiltersOn: (gateway: string) => string
@@ -252,8 +259,13 @@ type BotsMessages = {
     helpPromptPlaceholder: string
     descriptionHint: string
     newChatWith: string
-    /** Pane/row affordance: spawn a side-chat in a second tile — never the canonical Bot Chat. */
-    newTask: string
+    /** Pane/row affordance: spawn a powered side-chat in a second tile — a
+     *  fresh topic, never the canonical Bot Chat. */
+    newTopic: string
+    newTopicInProject: string
+    /** Ghost CTA beside 'New topic': the bot's one forever chat, framed as
+     *  its inbox. */
+    inbox: string
     /** Re-opens the forever-chat on purpose. A plain row click only returns to
      *  the tabs already open, so a closed Bot Chat needs an explicit ask. */
     openBotChat: string
@@ -373,6 +385,13 @@ type BotsMessages = {
     nameLabel: string
     holdDetection: string
     holdDetectionHint: string
+    limitOff: string
+    limitOffHint: string
+    listener: string
+    listenerAuto: string
+    listenerEveryone: string
+    listenerOnly: (name: string) => string
+    listenerHint: string
     compressHistory: string
     compressHistoryHint: (member: string) => string
     compressing: (member: string) => string
@@ -386,6 +405,8 @@ type BotsMessages = {
     deleteTitle: string
     deleteAction: string
     composerPlaceholder: string
+    /** Team-orchestrated room: only the org-tree lead hears plain turns. */
+    composerPlaceholderTeam: (lead: string) => string
     slashCommandsUnsupported: string
     attachHint: string
     newThread: string
@@ -413,6 +434,8 @@ type BotsMessages = {
     you: string
     /** How many of a room's members are reachable right now. */
     availableCount: (available: number, total: number) => string
+    /** Team-orchestrated room strip: only the org-tree lead hears the user. */
+    teamListening: (lead: string) => string
     settingsHint: (group: string) => string
     settingsLabel: (group: string) => string
     disbandHint: (group: string) => string
@@ -723,9 +746,11 @@ type BotsMessages = {
    *  owns, canonical chat first. */
   deck: {
     title: string
-    newChat: string
+    newTopic: string
     refresh: string
-    canonical: string
+    /** The canonical Bot Chat's row badge — 'Inbox', the mental model word,
+     *  not the plumbing word. */
+    inbox: string
     empty: string
     untitled: string
   }
@@ -745,6 +770,37 @@ type BotsMessages = {
     openComputer: string
     openRoutines: string
     schedule: string
+  }
+  nudge: {
+    action: string
+    dismiss: string
+    text: string
+  }
+  /** The one-click New Bot dialog and the empty roster's one-tap starters. */
+  quick: {
+    intro: string
+    /** "Start from a template" — the starter-chip row's label in the dialog. */
+    templates: string
+    /** Chip aria-label: the starter's name + role line. */
+    starter: (name: string, title: string) => string
+    /** Link into the Hire gallery, where the heavyweight create path lives. */
+    browse: string
+    /** Progress toast while a one-click starter create is in flight. */
+    creating: (name: string) => string
+  },
+  /** The bot card's compact meta line — pinned model, installed skills, and
+   *  org teammates. Each renders only when the field exists. */
+  card: {
+    skills: (count: number) => string
+    ledBy: (name: string) => string
+    leads: (names: string) => string
+  }
+  /** The dismissible hint on a plain chat running on a bot profile: start a
+   *  fresh bot topic, where the bot can delegate (powers are mint-time — a
+   *  plain session can never be re-scoped into one). */
+  hint: {
+    delegate: (bot: string) => string
+    openTopic: string
   }
 }
 
@@ -853,6 +909,11 @@ const en: BotsMessages = {
     groupChats: 'Group chats',
     emptyTitle: 'No bots yet',
     emptyDesc: 'Create your first bot — pick a starter or describe your own.',
+    howTitle: 'How bots work',
+    howInbox: 'Bot Chat is the bot’s inbox — one forever chat it always answers in.',
+    howTopic: 'New topic starts a fresh powered chat, so context stays clean.',
+    howMention: '@mention another bot in a topic to pull in teammates.',
+    howProfiles: 'Bots are just profiles with an identity — same skills, tools, and memory.',
     noMatchQuery: query => `No bots or group chats match “${query}”`,
     noMatchQueryOn: (query, gateway) => `No bots or group chats match “${query}” on ${gateway}`,
     noMatchFiltersOn: gateway => `No bots or group chats match these filters on ${gateway}`,
@@ -965,7 +1026,9 @@ const en: BotsMessages = {
     helpPromptPlaceholder: 'What should this bot help with?',
     descriptionHint: 'Leave blank to generate from the bot’s name and description.',
     newChatWith: 'New chat with this bot',
-    newTask: 'New task',
+    newTopic: 'New topic',
+    newTopicInProject: 'New topic in a project…',
+    inbox: 'Inbox',
     openBotChat: 'Open Bot Chat',
     continueOnPhone: 'Continue on phone…',
     openingChat: 'Opening chat…',
@@ -1063,6 +1126,13 @@ const en: BotsMessages = {
     nameLabel: 'Group name',
     holdDetection: 'Detect stop directives',
     holdDetectionHint: 'Let room messages put addressed members on hold until they are mentioned again.',
+    limitOff: 'No turn limit',
+    limitOffHint: 'Let a conversation run past the usual cap — a safety brake still ends a runaway.',
+    listener: 'Who listens',
+    listenerAuto: 'Auto — the team lead, or everyone',
+    listenerEveryone: 'Everyone (every bot answers)',
+    listenerOnly: name => `Only ${name} — others wake on @mention`,
+    listenerHint: 'One listener keeps token use low: the rest of the room stays asleep until addressed.',
     compressHistory: 'Compress history',
     compressHistoryHint: (member: string) =>
       `Compress ${member}'s hidden room history so the member stops failing with empty replies`,
@@ -1078,6 +1148,7 @@ const en: BotsMessages = {
     deleteTitle: 'Delete group chat?',
     deleteAction: 'Delete',
     composerPlaceholder: 'Say something — every bot in this group hears the room.',
+    composerPlaceholderTeam: lead => `Say something — only ${lead} hears the room; @mention teammates to wake them.`, 
     slashCommandsUnsupported:
       'Slash commands are not supported in group chats. Open an individual bot chat to use them.',
     attachHint: 'Attach files — every responding bot sees them',
@@ -1105,6 +1176,7 @@ const en: BotsMessages = {
     memberCount: count => `${count} bots`,
     you: 'You',
     availableCount: (available, total) => `${available} of ${total} available`,
+    teamListening: lead => `Only ${lead} is listening — @mention teammates to wake them`,
     settingsHint: group => `Group settings — rename ${group} or set a room picture`,
     settingsLabel: group => `Group settings for ${group}`,
     disbandHint: group => `Disband the ${group} group chat`,
@@ -1382,9 +1454,9 @@ const en: BotsMessages = {
   },
   deck: {
     title: 'Sessions',
-    newChat: 'New chat',
+    newTopic: 'New topic',
     refresh: 'Refresh',
-    canonical: 'canonical',
+    inbox: 'Inbox',
     empty: 'No sessions yet.',
     untitled: 'Untitled session'
   },
@@ -1400,6 +1472,27 @@ const en: BotsMessages = {
     openComputer: 'Open computer',
     openRoutines: 'Open routines',
     schedule: 'I can run on a schedule'
+  },
+  nudge: {
+    action: 'New topic',
+    dismiss: 'Dismiss',
+    text: 'This chat is carrying a lot of context. A topic starts fresh and keeps all my powers.'
+  },
+  quick: {
+    intro: 'A name is all it takes — the rest is optional.',
+    templates: 'Start from a template',
+    starter: (name, title) => `${name} — ${title}`,
+    browse: 'Browse all templates…',
+    creating: name => `Creating ${name}…`
+  },
+  card: {
+    skills: count => `${count} skill${count === 1 ? '' : 's'}`,
+    ledBy: name => `led by ${name}`,
+    leads: names => `leads ${names}`
+  },
+  hint: {
+    delegate: bot => `${bot} can delegate to teammates inside bot topics — this chat is a plain session.`,
+    openTopic: 'Start a topic'
   }
 }
 
@@ -1510,6 +1603,11 @@ const ja: BotsMessages = {
     groupChats: 'グループチャット',
     emptyTitle: 'ボットはまだありません',
     emptyDesc: '最初のボットを作成しましょう — スターターを選ぶか、自由に説明できます。',
+    howTitle: 'ボットの仕組み',
+    howInbox: 'Bot Chat はボットの受信トレイ — いつも応答する永続チャット。',
+    howTopic: '新しいトピックはコンテキストをきれいに保つ新規チャット。',
+    howMention: 'トピック内で他のボットを @メンションするとチームメイトを呼べます。',
+    howProfiles: 'ボットは identity を持つプロファイル — スキル・ツール・メモリは同じ。',
     noMatchQuery: query => `「${query}」に一致するボットやグループチャットはありません`,
     noMatchQueryOn: (query, gateway) => `${gateway} に「${query}」に一致するボットやグループチャットはありません`,
     noMatchFiltersOn: gateway => `${gateway} にこれらのフィルタに一致するボットやグループチャットはありません`,
@@ -1621,7 +1719,9 @@ const ja: BotsMessages = {
     helpPromptPlaceholder: 'このボットは何を手伝いますか？',
     descriptionHint: '空欄のままにすると、ボットの名前と説明から生成します。',
     newChatWith: 'このボットと新しいチャット',
-    newTask: '新しいタスク',
+    newTopic: '新しいトピック',
+    newTopicInProject: 'プロジェクトで新しいトピック…',
+    inbox: '受信トレイ',
     openBotChat: 'ボットチャットを開く',
     continueOnPhone: 'スマホで続ける…',
     openingChat: 'チャットを開いています…',
@@ -1719,6 +1819,13 @@ const ja: BotsMessages = {
     nameLabel: 'グループ名',
     holdDetection: '停止指示を検出',
     holdDetectionHint: 'ルームのメッセージで、再びメンションされるまで対象メンバーを保留にします。',
+    limitOff: 'ターン上限なし',
+    limitOffHint: '通常の上限を超えて会話を続けます。暴走を止める安全ブレーキは残ります。',
+    listener: '誰が聞くか',
+    listenerAuto: '自動 — チームリーダー、または全員',
+    listenerEveryone: '全員（すべてのボットが応答）',
+    listenerOnly: name => `${name} のみ — 他は @メンションで起動`,
+    listenerHint: '聞き手を一人にするとトークン使用量を抑えられます。他のボットは呼ばれるまで待機します。',
     compressHistory: '履歴を圧縮',
     compressHistoryHint: (member: string) =>
       `${member} の非表示のルーム履歴を圧縮し、空の応答で失敗しなくなるようにします`,
@@ -1734,6 +1841,7 @@ const ja: BotsMessages = {
     deleteTitle: 'グループチャットを削除しますか？',
     deleteAction: '削除',
     composerPlaceholder: '何か書いてください — このグループのすべてのボットが部屋の内容を受け取ります。',
+    composerPlaceholderTeam: lead => `何か書いてください — ${lead} だけが部屋の内容を受け取ります。@メンションでチームメイトを起こせます。`,
     slashCommandsUnsupported:
       'グループチャットではスラッシュコマンドを使用できません。個別のボットチャットを開いて使用してください。',
     attachHint: 'ファイルを添付 — 応答するすべてのボットが見ます',
@@ -1761,6 +1869,7 @@ const ja: BotsMessages = {
     memberCount: count => `ボット${count}体`,
     you: 'あなた',
     availableCount: (available, total) => `${total}体中${available}体が利用可能`,
+    teamListening: lead => `聞いているのは ${lead} だけです — @メンションでチームメイトを起こします`,
     settingsHint: group => `グループ設定 — ${group}の名前変更やルーム画像の設定`,
     settingsLabel: group => `${group}のグループ設定`,
     disbandHint: group => `${group}グループチャットを解散`,
@@ -2035,9 +2144,9 @@ const ja: BotsMessages = {
   },
   deck: {
     title: 'セッション',
-    newChat: '新しいチャット',
+    newTopic: '新しいトピック',
     refresh: '更新',
-    canonical: '正規',
+    inbox: '受信トレイ',
     empty: 'セッションはまだありません。',
     untitled: '無題のセッション'
   },
@@ -2054,11 +2163,32 @@ const ja: BotsMessages = {
     openRoutines: 'ルーティンを開く',
     schedule: 'スケジュールで自動実行できます'
   },
+  nudge: {
+    action: '新しいトピック',
+    dismiss: '閉じる',
+    text: 'このチャットは多くのコンテキストを抱えています。トピックなら新しく始められて、私の能力はそのままです。'
+  },
+  card: {
+    skills: count => `スキル ${count}`,
+    ledBy: name => `${name} が上司`,
+    leads: names => `${names} を率いる`
+  },
+  hint: {
+    delegate: bot => `${bot} はボットトピック内でチームメイトに委任できます — このチャットは通常セッションです。`,
+    openTopic: 'トピックを開始'
+  },
   rail: {
     title: 'ボットのコンテキスト',
     tasks: 'タスクログ',
     today: '今日',
     yesterday: '昨日'
+  },
+  quick: {
+    intro: '名前だけで作成できます — 他はすべて任意です。',
+    templates: 'テンプレートから始める',
+    starter: (name, title) => `${name} — ${title}`,
+    browse: 'すべてのテンプレートを見る…',
+    creating: name => `${name} を作成中…`
   }
 }
 
@@ -2163,6 +2293,11 @@ const zh: BotsMessages = {
     groupChats: '群聊',
     emptyTitle: '还没有机器人',
     emptyDesc: '创建你的第一个机器人 — 选择起手模板或自由描述。',
+    howTitle: '机器人如何工作',
+    howInbox: 'Bot Chat 是机器人的收件箱——它始终在同一个会话中回应。',
+    howTopic: '新话题会开启一个全新的完整功能会话，保持上下文干净。',
+    howMention: '在话题中 @ 提及其他机器人即可拉入队友。',
+    howProfiles: '机器人只是带有身份的配置文件——技能、工具和记忆都相同。',
     noMatchQuery: query => `没有机器人或群聊匹配“${query}”`,
     noMatchQueryOn: (query, gateway) => `${gateway} 上没有机器人或群聊匹配“${query}”`,
     noMatchFiltersOn: gateway => `${gateway} 上没有机器人或群聊匹配这些筛选条件`,
@@ -2270,7 +2405,9 @@ const zh: BotsMessages = {
     helpPromptPlaceholder: '这个机器人应该帮你做什么？',
     descriptionHint: '留空则根据机器人的名称和描述生成。',
     newChatWith: '与此机器人开新聊天',
-    newTask: '新任务',
+    newTopic: '新话题',
+    newTopicInProject: '在项目中新建话题…',
+    inbox: '收件箱',
     openBotChat: '打开机器人聊天',
     continueOnPhone: '在手机上继续…',
     openingChat: '正在打开聊天…',
@@ -2368,6 +2505,13 @@ const zh: BotsMessages = {
     nameLabel: '群组名称',
     holdDetection: '检测停止指令',
     holdDetectionHint: '允许房间消息将指定成员保持暂停，直到再次提及该成员。',
+    limitOff: '无回合上限',
+    limitOffHint: '让对话超出常规上限继续——安全制动仍会终止失控的对话。',
+    listener: '谁来聆听',
+    listenerAuto: '自动——团队负责人，或所有人',
+    listenerEveryone: '所有人（每个机器人都回复）',
+    listenerOnly: name => `仅 ${name}——其他人在被 @提及时唤醒`,
+    listenerHint: '只有一个聆听者可降低 token 用量：其余机器人在被点名前保持休眠。',
     compressHistory: '压缩历史',
     compressHistoryHint: (member: string) => `压缩 ${member} 隐藏的房间历史，避免该成员因空回复而失败`,
     compressing: (member: string) => `正在压缩 ${member} 的房间历史…`,
@@ -2382,6 +2526,7 @@ const zh: BotsMessages = {
     deleteTitle: '删除群聊？',
     deleteAction: '删除',
     composerPlaceholder: '说点什么 — 这个群里的每个机器人都会听到。',
+    composerPlaceholderTeam: lead => `说点什么 — 只有 ${lead} 会听到；@提及其他成员可以唤醒他们。`,
     slashCommandsUnsupported: '群聊不支持斜杠命令。请打开单个机器人的聊天来使用。',
     attachHint: '附加文件 — 每个回应的机器人都能看到',
     newThread: '新帖子',
@@ -2407,6 +2552,7 @@ const zh: BotsMessages = {
     memberCount: count => `${count} 个机器人`,
     you: '你',
     availableCount: (available, total) => `${total} 个中 ${available} 个可用`,
+    teamListening: lead => `只有 ${lead} 在听 — @提及队友即可唤醒它们`,
     settingsHint: group => `群聊设置 — 重命名 ${group} 或设置房间图片`,
     settingsLabel: group => `${group} 的群聊设置`,
     disbandHint: group => `解散 ${group} 群聊`,
@@ -2678,9 +2824,9 @@ const zh: BotsMessages = {
   },
   deck: {
     title: '会话',
-    newChat: '新聊天',
+    newTopic: '新话题',
     refresh: '刷新',
-    canonical: '规范',
+    inbox: '收件箱',
     empty: '还没有会话。',
     untitled: '未命名会话'
   },
@@ -2697,11 +2843,32 @@ const zh: BotsMessages = {
     openRoutines: '打开例程',
     schedule: '我可以按计划自动运行'
   },
+  nudge: {
+    action: '新话题',
+    dismiss: '关闭',
+    text: '这个聊天承载了大量上下文。开启一个话题可以从零开始，同时保留我的全部能力。'
+  },
+  card: {
+    skills: count => `${count} 个技能`,
+    ledBy: name => `汇报给 ${name}`,
+    leads: names => `带领 ${names}`
+  },
+  hint: {
+    delegate: bot => `${bot} 可以在机器人话题中委派给队友——此会话是普通会话。`,
+    openTopic: '开始话题'
+  },
   rail: {
     title: '机器人上下文',
     tasks: '任务日志',
     today: '今天',
     yesterday: '昨天'
+  },
+  quick: {
+    intro: '只需一个名字即可创建 — 其他都是可选的。',
+    templates: '从模板开始',
+    starter: (name, title) => `${name} — ${title}`,
+    browse: '浏览全部模板…',
+    creating: name => `正在创建 ${name}…`
   }
 }
 
@@ -2806,6 +2973,11 @@ const zhHant: BotsMessages = {
     groupChats: '群組聊天',
     emptyTitle: '還沒有機器人',
     emptyDesc: '建立你的第一個機器人 — 選擇起手範本或自由描述。',
+    howTitle: '機器人如何運作',
+    howInbox: 'Bot Chat 是機器人的收件匣——它始終在同一個工作階段中回應。',
+    howTopic: '新主題會開啟全新的完整功能工作階段，讓脈絡保持乾淨。',
+    howMention: '在主題中 @ 提及其他機器人即可拉入隊友。',
+    howProfiles: '機器人只是帶有身份的設定檔——技能、工具和記憶都相同。',
     noMatchQuery: query => `沒有機器人或群組聊天符合「${query}」`,
     noMatchQueryOn: (query, gateway) => `${gateway} 上沒有機器人或群組聊天符合「${query}」`,
     noMatchFiltersOn: gateway => `${gateway} 上沒有機器人或群組聊天符合這些篩選條件`,
@@ -2913,7 +3085,9 @@ const zhHant: BotsMessages = {
     helpPromptPlaceholder: '這個機器人應該幫你做什麼？',
     descriptionHint: '留空則依機器人的名稱和描述產生。',
     newChatWith: '與此機器人開新聊天',
-    newTask: '新任務',
+    newTopic: '新主題',
+    newTopicInProject: '在專案中新增主題…',
+    inbox: '收件匣',
     openBotChat: '開啟機器人聊天',
     continueOnPhone: '在手機上繼續…',
     openingChat: '正在開啟聊天…',
@@ -3011,6 +3185,13 @@ const zhHant: BotsMessages = {
     nameLabel: '群組名稱',
     holdDetection: '偵測停止指令',
     holdDetectionHint: '允許房間訊息暫停指定成員，直到再次提及該成員。',
+    limitOff: '無回合上限',
+    limitOffHint: '讓對話超過常規上限繼續——安全煞車仍會終止失控的對話。',
+    listener: '誰來聆聽',
+    listenerAuto: '自動——團隊負責人，或所有人',
+    listenerEveryone: '所有人（每個機器人都回覆）',
+    listenerOnly: name => `僅 ${name}——其他人在被 @提及時喚醒`,
+    listenerHint: '只有一個聆聽者可降低 token 用量：其餘機器人在被點名前保持休眠。',
     compressHistory: '壓縮歷史',
     compressHistoryHint: (member: string) => `壓縮 ${member} 隱藏的房間歷史，避免該成員因空回覆而失敗`,
     compressing: (member: string) => `正在壓縮 ${member} 的房間歷史…`,
@@ -3025,6 +3206,7 @@ const zhHant: BotsMessages = {
     deleteTitle: '刪除群組聊天？',
     deleteAction: '刪除',
     composerPlaceholder: '說點什麼 — 這個群組裡的每個機器人都會聽到。',
+    composerPlaceholderTeam: lead => `說點什麼 — 只有 ${lead} 會聽到；@提及其他成員可以喚醒他們。`,
     slashCommandsUnsupported: '群組聊天不支援斜線命令。請開啟個別機器人的聊天來使用。',
     attachHint: '附加檔案 — 每個回應的機器人都能看到',
     newThread: '新討論串',
@@ -3050,6 +3232,7 @@ const zhHant: BotsMessages = {
     memberCount: count => `${count} 個機器人`,
     you: '您',
     availableCount: (available, total) => `${total} 個中 ${available} 個可用`,
+    teamListening: lead => `只有 ${lead} 在聽 — @提及隊友即可喚醒它們`,
     settingsHint: group => `群組設定 — 重新命名 ${group} 或設定房間圖片`,
     settingsLabel: group => `${group} 的群組設定`,
     disbandHint: group => `解散 ${group} 群組聊天`,
@@ -3321,9 +3504,9 @@ const zhHant: BotsMessages = {
   },
   deck: {
     title: '工作階段',
-    newChat: '新聊天',
+    newTopic: '新主題',
     refresh: '重新整理',
-    canonical: '正典',
+    inbox: '收件匣',
     empty: '還沒有工作階段。',
     untitled: '未命名工作階段'
   },
@@ -3340,11 +3523,32 @@ const zhHant: BotsMessages = {
     openRoutines: '開啟例程',
     schedule: '我可以按排程自動執行'
   },
+  nudge: {
+    action: '新主題',
+    dismiss: '關閉',
+    text: '這個聊天承載了大量脈絡。開啟一個主題可以從零開始，同時保留我的全部能力。'
+  },
+  card: {
+    skills: count => `${count} 個技能`,
+    ledBy: name => `向 ${name} 報告`,
+    leads: names => `帶領 ${names}`
+  },
+  hint: {
+    delegate: bot => `${bot} 可以在機器人主題中委派給隊友——此工作階段是普通工作階段。`,
+    openTopic: '開始主題'
+  },
   rail: {
     title: '機器人脈絡',
     tasks: '任務日誌',
     today: '今天',
     yesterday: '昨天'
+  },
+  quick: {
+    intro: '只要一個名稱即可建立 — 其他都是選填。',
+    templates: '從範本開始',
+    starter: (name, title) => `${name} — ${title}`,
+    browse: '瀏覽所有範本…',
+    creating: name => `正在建立 ${name}…`
   }
 }
 

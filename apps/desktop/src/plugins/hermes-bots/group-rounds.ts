@@ -11,9 +11,8 @@ import {
   $groupChats,
   $groupNeedsYou,
   appendGroupChatEntry,
-  GROUP_CHAT_MAX_CONTINUATIONS,
-  GROUP_CHAT_MAX_MESSAGES,
-  GROUP_CHAT_MAX_ROUNDS,
+  getGroupChatLimits,
+  groupChatLimitAtCeiling,
   groupChatRoomKey,
   groupThreadOf,
   mintGroupThreadId,
@@ -29,6 +28,7 @@ import {
 } from './group-membership'
 import { runGroupContinuationMembers, runGroupRoundMember } from './group-round-members'
 import { rejectGroupSlashCommand } from './group-slash'
+import { resolveRoomListener, teamLeadKey, type TeamRoomLead } from './group-team'
 import { GROUP_TURN_HARD_CAP_MS, harvestStrandedGroupReply } from './group-turns'
 import { botsText } from './i18n'
 import { requestForBot } from './routing'
@@ -37,9 +37,10 @@ import type { Attachment, GroupMember, GroupMessage } from './types'
 // ── group chats: bounded round-robin coordination over a shared room log ─────
 //
 // Behavioral model (clean-room): a group conversation is ONE ordered room log
-// owned by the plugin. A user send triggers at most GROUP_CHAT_MAX_ROUNDS
-// serial round-robin rounds over the member roster — never parallel, no LLM
-// router. Who speaks each round is a deterministic @mention parse since the
+// owned by the plugin. A user send triggers at most `limits.rounds` serial
+// round-robin rounds over the member roster — never parallel, no LLM router —
+// with the budget resolved per drive from the room's overrides, the
+// config.yaml `group_chat` block, or the defaults. Who speaks each round is a deterministic @mention parse since the
 // last user message (mentioned members only, else everyone); whether a member
 // actually speaks is its own turn's choice — replying with exactly "(pass)"
 // (or nothing, or failing) is silence. Hard caps end every turn; a round in
@@ -167,11 +168,16 @@ export function groupReplyMentionTag(member: GroupMember, members: GroupMember[]
   )
 }
 
-/** Members that should take a turn this round: everyone when no member is
- *  @-mentioned in messages since the last user entry (or @everyone appears),
- *  otherwise only the mentioned members. Recomputed every round so a member
- *  pulled in mid-conversation joins the next round. */
-export function resolveGroupResponders(log: GroupMessage[], members: GroupMember[]) {
+/** Members that should take a turn this round. In an unorchestrated room
+ *  (`leadKey` null): everyone when no member is @-mentioned since the last user
+ *  entry (or @everyone appears), otherwise only the mentioned members. In a
+ *  team-orchestrated room the LEAD hears every user turn and speaks first;
+ *  teammates wake only when the turn explicitly addresses them — the same
+ *  @mention/lead-union rule the hosted planner applies, so the delegated path
+ *  (lead cites a member in its reply) wakes that member next round off the same
+ *  slice. Recomputed every round so a member pulled in mid-conversation joins
+ *  the next round. */
+export function resolveGroupResponders(log: GroupMessage[], members: GroupMember[], leadKey?: null | string) {
   let sinceLastUser: GroupMessage[] = []
 
   for (let i = log.length - 1; i >= 0; i--) {
@@ -197,11 +203,18 @@ export function resolveGroupResponders(log: GroupMessage[], members: GroupMember
     }
   }
 
-  if (everyone || mentioned.size === 0) {
+  if (everyone) {
     return members
   }
 
-  return members.filter(member => mentioned.has(groupMemberKey(member)))
+  const addressed = members.filter(member => mentioned.has(groupMemberKey(member)))
+  const lead = leadKey ? members.find(member => groupMemberKey(member) === leadKey) || null : null
+
+  if (!lead) {
+    return mentioned.size === 0 ? members : addressed
+  }
+
+  return [lead, ...addressed.filter(member => groupMemberKey(member) !== leadKey)]
 }
 
 /** Rotate the roster so a different member leads each round. */
@@ -575,7 +588,8 @@ export async function runGroupChatRounds(
   group: string,
   members: GroupMember[],
   thread: string,
-  failedMembers = new Set<string>()
+  failedMembers = new Set<string>(),
+  teamLead: null | TeamRoomLead = null
 ) {
   const binding = followGroupChat(group, name => {
     group = name
@@ -583,28 +597,48 @@ export async function runGroupChatRounds(
 
   const startEpoch = ($groupChats.get()[group] || {}).epoch || 0
   const isCurrent = () => binding.isLive() && (($groupChats.get()[group] || {}).epoch || 0) === startEpoch
+  // Resolved once per drain (the org tree can change between sends, never
+  // mid-drive): the lead's member key for the responder gate, its profile for
+  // the session marker every member session mints.
+  const leadKey = teamLeadKey(teamLead, members)
+
+  // Snapshot the room's drive budget once per drive: per-axis overrides from
+  // the room's own settings, else config.yaml's `group_chat` block, else the
+  // defaults — every axis already clamped to the hard ceilings, so the
+  // runaway brake always holds.
+  const limits = getGroupChatLimits(group)
 
   const context = {
     get group() {
       return group
     },
+    limits,
     members,
     thread,
     startEpoch,
     failedMembers,
     binding,
-    isCurrent
+    isCurrent,
+    teamRoomLead: leadKey ? teamLead?.lead || null : null
   }
 
   let posted = 0
   let continuations = 0
   // #94478: how this drive ended. 'settled' means quiet consensus (everyone
-  // passed with nothing pending); 'capped' means a round/message/continuation
-  // cap forced the exit — the activity feed must tell those apart.
-  let exitKind: 'capped' | 'settled' = 'settled'
+  // passed with nothing pending); 'capped' means a budget axis ran out — the
+  // user can still raise it in room settings or config.yaml; 'safety' means
+  // an axis sitting at its hard ceiling ran out anyway — the runaway brake
+  // fired, and the activity feed must tell all three apart.
+  let exitKind: 'capped' | 'safety' | 'settled' = 'settled'
+  let exitAxis: keyof typeof limits | null = null
+
+  const capExit = (axis: keyof typeof limits) => {
+    exitKind = groupChatLimitAtCeiling(limits, axis) ? 'safety' : 'capped'
+    exitAxis = axis
+  }
 
   try {
-    for (let round = 0; round < GROUP_CHAT_MAX_ROUNDS; round++) {
+    for (let round = 0; round < limits.rounds; round++) {
       // Deliver any replies that finished after their turn timed out —
       // every member, not just this round's responders, so long work is
       // late, never lost.
@@ -644,14 +678,14 @@ export async function runGroupChatRounds(
       // {before, thread} post-thread.
       const strandedNow = ($groupChats.get()[group] || {}).stranded || {}
 
-      const responders = rotateGroupSpeakers(resolveGroupResponders(roomLog, members), round).filter(
+      const responders = rotateGroupSpeakers(resolveGroupResponders(roomLog, members, leadKey), round).filter(
         (member: GroupMember) => !Object.prototype.hasOwnProperty.call(strandedNow, groupMemberKey(member))
       )
 
       let spokeThisRound = 0
 
       for (const member of responders) {
-        if (!isCurrent() || posted >= GROUP_CHAT_MAX_MESSAGES) {
+        if (!isCurrent() || posted >= limits.messages) {
           if (!isCurrent()) {
             recordGroupActivity(group, {
               kind: 'cancelled',
@@ -659,7 +693,7 @@ export async function runGroupChatRounds(
               thread
             })
           } else {
-            exitKind = 'capped' // message cap, not consensus (#94478)
+            capExit('messages') // message cap, not consensus (#94478)
           }
 
           return
@@ -707,11 +741,12 @@ export async function runGroupChatRounds(
           // cited members are STILL owed a turn and only the continuation /
           // message caps stopped us from driving them, this is a capped
           // exit, not consensus. (#94478)
-          if (
-            pendingKeys.length &&
-            (continuations > GROUP_CHAT_MAX_CONTINUATIONS || posted >= GROUP_CHAT_MAX_MESSAGES)
-          ) {
-            exitKind = 'capped'
+          if (pendingKeys.length) {
+            if (continuations > limits.continuations) {
+              capExit('continuations')
+            } else if (posted >= limits.messages) {
+              capExit('messages')
+            }
           }
 
           return
@@ -719,15 +754,16 @@ export async function runGroupChatRounds(
       }
     }
 
-    // All GROUP_CHAT_MAX_ROUNDS rounds ran with someone still speaking —
-    // the round cap ended the drive, not consensus. (#94478)
-    exitKind = 'capped'
+    // The round budget ran out with someone still speaking — the round cap
+    // ended the drive, not consensus. (#94478)
+    capExit('rounds')
   } finally {
     if (isCurrent()) {
       recordGroupActivity(group, {
         kind: exitKind,
         member: null,
-        thread
+        thread,
+        ...(exitAxis ? { detail: exitAxis } : {})
       })
       updateGroupChat(group, (r: GroupChatRoom) => {
         r.running = false
@@ -768,6 +804,9 @@ async function harvestStrandedUntilSettled(group: string, members: GroupMember[]
 
     for (let attempt = 0; attempt < HARVEST_MAX_TRIES; attempt++) {
       await new Promise(resolve => window.setTimeout(resolve, HARVEST_INTERVAL_MS))
+      // One more yield: a drive resuming in the same tick stamps `running`
+      // before we read it, so a fresh loop always wins the handoff.
+      await Promise.resolve()
       const room = $groupChats.get()[group]
 
       if (!binding.isLive() || !room || room.running) {
@@ -906,8 +945,16 @@ export function sendToGroupChat(
 
 interface GroupChatDrive {
   failedMembers: Set<string>
-  pending: Map<string, GroupMember[]>
+  pending: Map<string, QueuedGroupSend>
   binding: ReturnType<typeof followGroupChat>
+}
+
+/** One drained send: the roster at send time plus the lead resolution kicked
+ *  the same moment, so the drain loop awaits an already-settled promise and
+ *  never pauses mid-drive for the lookup. */
+interface QueuedGroupSend {
+  lead: Promise<null | TeamRoomLead>
+  members: GroupMember[]
 }
 
 // Keep the owner until its awaited member releases, even after Stop. A
@@ -917,11 +964,14 @@ const groupChatDrives = new Map<string, GroupChatDrive>()
 function queueGroupChatDrive(group: string, members: GroupMember[], thread: string) {
   let key = groupChatRoomKey(group, $groupChats.get()[group])
   const active = groupChatDrives.get(key)
+  // Kick the listener lookup at send time, alongside the send itself — the
+  // room's own pick, else a bot team's lead, listens alone; null keeps fan-out.
+  const lead = resolveRoomListener(($groupChats.get()[group] || {}).listener, members)
 
   if (active?.binding.isLive()) {
     // Only a new user action AFTER failure authorizes another attempt.
     active.failedMembers.clear()
-    active.pending.set(thread, members)
+    active.pending.set(thread, { lead, members })
 
     return
   }
@@ -933,7 +983,12 @@ function queueGroupChatDrive(group: string, members: GroupMember[], thread: stri
     groupChatDrives.set(key, drive)
   })
 
-  const drive: GroupChatDrive = { pending: new Map([[thread, members]]), failedMembers: new Set(), binding }
+  const drive: GroupChatDrive = {
+    pending: new Map([[thread, { lead, members }]]),
+    failedMembers: new Set(),
+    binding
+  }
+
   groupChatDrives.set(key, drive)
   // Queued threads share the activity epoch, so draining one cannot hide
   // unresolved failures from the preceding thread. Stop still invalidates it.
@@ -944,11 +999,17 @@ function queueGroupChatDrive(group: string, members: GroupMember[], thread: stri
 
     try {
       while (binding.isLive() && drive.pending.size) {
-        const [nextThread, nextMembers] = drive.pending.entries().next().value!
+        const [nextThread, nextSend] = drive.pending.entries().next().value!
         currentThread = nextThread
         drive.pending.delete(nextThread)
         updateGroupChat(group, room => ({ ...room, running: true }))
-        await runGroupChatRounds(group, nextMembers, nextThread, drive.failedMembers)
+        await runGroupChatRounds(
+          group,
+          nextSend.members,
+          nextThread,
+          drive.failedMembers,
+          await nextSend.lead
+        )
       }
     } catch (error) {
       if (binding.isLive()) {
