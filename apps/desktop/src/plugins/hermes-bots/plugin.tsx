@@ -65,6 +65,8 @@ import { hydrateDismissedBotTips } from './bot-tips'
 import { BotChatTips } from './bot-tips-view'
 import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
 import { BotChatEmpty } from './chat-empty'
+import { hydrateDismissedNudges } from './context-nudge'
+import { BotContextNudge } from './context-nudge-view'
 import { bindProfileSync } from './cron'
 import {
   $botMeta,
@@ -320,6 +322,7 @@ export default {
 
     // Hydrate dismissed tip cards (G9) — per bot, this device only.
     hydrateDismissedBotTips()
+    hydrateDismissedNudges()
 
     // Hydrate the Sessions-rail Agents fold (default open).
     try {
@@ -860,6 +863,14 @@ export default {
       id: 'bot-inbound-cards',
       area: COMPOSER_AREAS.top,
       render: () => <BotInboundCards />
+    })
+
+    // Topics nudge — on a canonical chat grown long, one dismissible line
+    // suggesting a fresh topic (same powers, new context). Advisory only.
+    ctx.register({
+      id: 'bot-context-nudge',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotContextNudge />
     })
 
     ctx.register({

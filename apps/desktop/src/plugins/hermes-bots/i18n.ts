@@ -746,6 +746,11 @@ type BotsMessages = {
     openRoutines: string
     schedule: string
   }
+  nudge: {
+    action: string
+    dismiss: string
+    text: string
+  }
 }
 
 const en: BotsMessages = {
@@ -1400,6 +1405,11 @@ const en: BotsMessages = {
     openComputer: 'Open computer',
     openRoutines: 'Open routines',
     schedule: 'I can run on a schedule'
+  },
+  nudge: {
+    action: 'New topic',
+    dismiss: 'Dismiss',
+    text: 'This chat is carrying a lot of context. A topic starts fresh and keeps all my powers.'
   }
 }
 
@@ -2054,6 +2064,11 @@ const ja: BotsMessages = {
     openRoutines: 'ルーティンを開く',
     schedule: 'スケジュールで自動実行できます'
   },
+  nudge: {
+    action: '新しいトピック',
+    dismiss: '閉じる',
+    text: 'このチャットは多くのコンテキストを抱えています。トピックなら新しく始められて、私の能力はそのままです。'
+  },
   rail: {
     title: 'ボットのコンテキスト',
     tasks: 'タスクログ',
@@ -2697,6 +2712,11 @@ const zh: BotsMessages = {
     openRoutines: '打开例程',
     schedule: '我可以按计划自动运行'
   },
+  nudge: {
+    action: '新话题',
+    dismiss: '关闭',
+    text: '这个聊天承载了大量上下文。开启一个话题可以从零开始，同时保留我的全部能力。'
+  },
   rail: {
     title: '机器人上下文',
     tasks: '任务日志',
@@ -3339,6 +3359,11 @@ const zhHant: BotsMessages = {
     openComputer: '開啟電腦面板',
     openRoutines: '開啟例程',
     schedule: '我可以按排程自動執行'
+  },
+  nudge: {
+    action: '新主題',
+    dismiss: '關閉',
+    text: '這個聊天承載了大量脈絡。開啟一個主題可以從零開始，同時保留我的全部能力。'
   },
   rail: {
     title: '機器人脈絡',
