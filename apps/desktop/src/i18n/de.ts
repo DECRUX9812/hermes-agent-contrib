@@ -421,6 +421,7 @@ export const deOverrides = {
     revealExplorer: 'Im Datei-Explorer anzeigen',
     revealFileManager: 'Enthaltenden Ordner öffnen',
     revealInSidebar: 'In Dateibaum anzeigen',
+    openInEditor: name => `In ${name} öffnen`,
     copyPath: 'Pfad kopieren',
     copyRelativePath: 'Relativen Pfad kopieren',
     download: 'Herunterladen',
@@ -695,6 +696,7 @@ export const deOverrides = {
     actions: {
       'keybinds.openPanel': 'Tastaturkürzel öffnen',
       'nav.commandPalette': 'Befehlspalette öffnen',
+      'nav.quickOpen': 'Datei schnell öffnen',
       'nav.commandCenter': 'Befehlszentrum öffnen',
       'nav.settings': 'Einstellungen öffnen',
       'nav.profiles': 'Profile öffnen',
@@ -1255,6 +1257,8 @@ export const deOverrides = {
       composerPopoutTitle: 'Schwebender Composer',
       composerPopoutDesc:
         'Erlaubt, den Composer aus seiner Ablage herauszuziehen. Wenn aus, bleibt er unten angedockt.',
+      openInEditorTitle: 'Dateien öffnen in',
+      openInEditorDesc: 'Wohin „Öffnen in …“ eine Datei aus dem Dateibaum schickt. Funktioniert auch mit SSH-Backends.',
       fileBrowserTitle: 'Dateibrowser',
       fileBrowserDesc:
         'Zeigt den Dateibrowser neben dem Chat, wenn ein Arbeitsbereich geöffnet ist. Der Schalter in der Titelleiste ändert diese Einstellung ebenfalls.',
@@ -4105,6 +4109,21 @@ export const deOverrides = {
       canvas: { label: 'Leinwand', description: 'Skizziere auf einer Tafel, auf der auch der Agent zeichnet' }
     }
   },
+  quickOpen: {
+    title: 'Schnell öffnen',
+    placeholder: project => `Dateien in ${project} suchen…`,
+    noProject: 'Öffne einen Ordner, um seine Dateien zu durchsuchen',
+    noProjectBody: 'Schnell öffnen durchsucht die Dateien des aktuellen Projekts.',
+    openFolder: 'Ordner öffnen…',
+    noMatch: query => `Keine Datei passt zu „${query}“`,
+    recent: 'Neben dem Chat geöffnet',
+    hint: 'Tippe einen Dateinamen. Mit :42 springst du zu einer Zeile.',
+    line: line => `Zeile ${line}`,
+    openHint: 'öffnen',
+    attachHint: 'zur Nachricht hinzufügen',
+    lineHint: 'name:42 springt zur Zeile'
+  },
+  recentProjects: { title: 'Deine Projekte', openFolder: 'Ordner öffnen…' },
   todayBrief: {
     greeting: { morning: 'Guten Morgen', afternoon: 'Guten Tag', evening: 'Guten Abend', night: 'Noch wach?' },
     needsYou: 'Wartet auf dich',

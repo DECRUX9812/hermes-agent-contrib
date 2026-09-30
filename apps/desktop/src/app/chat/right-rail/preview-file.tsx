@@ -50,6 +50,7 @@ import { previewTargetFromMarkdownHref } from '@/lib/preview-targets'
 import { cn } from '@/lib/utils'
 import { openPreview, type PreviewTarget } from '@/store/preview'
 import { setPreviewDirty } from '@/store/preview-edit'
+import { $previewLineRequest } from '@/store/preview-line'
 import { $connection, $currentCwd } from '@/store/session'
 import { notifyWorkspaceChanged } from '@/store/workspace-events'
 
@@ -704,6 +705,27 @@ export function SourceView({ filePath, language, text }: { filePath?: string; la
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true })
   }, [filePath, selection])
 
+  // Opened at a line (Quick Open `app.ts:42`): bring it to the middle of the
+  // view and select it, so the gutter's ⌘L / drag work on it straight away.
+  const lineRequest = useStore($previewLineRequest)
+
+   
+  useEffect(() => {
+    if (!lineRequest || !filePath || lineRequest.path !== filePath || totalLines === 0) {
+      return
+    }
+
+    const line = Math.min(lineRequest.line, totalLines)
+    const scroller = scrollerRef.current
+
+    $previewLineRequest.set(null)
+    setSelection({ end: line, start: line })
+
+    if (scroller) {
+      scroller.scrollTop = Math.max(0, (line - 1) * SOURCE_LINE_PX - scroller.clientHeight / 2 + SOURCE_LINE_PX)
+    }
+  }, [filePath, lineRequest, scrollerRef, totalLines])
+
   return (
     <div className="h-full overflow-auto" onScroll={onScroll} ref={scrollerRef}>
       <div className="grid min-w-max grid-cols-[auto_minmax(0,1fr)] font-mono text-[0.7rem] leading-relaxed">
@@ -792,6 +814,15 @@ export function LocalFilePreview({
   const connection = useStore($connection)
   const fsCacheKey = desktopFsCacheKey(connection)
   const filePath = filePathForTarget(target)
+  // Opened at a line (Quick Open `README.md:12`): only the source view has
+  // lines to land on, so a rendered file switches to it; SourceView scrolls.
+  const lineRequestPath = useStore($previewLineRequest)?.path
+
+  useEffect(() => {
+    if (lineRequestPath && lineRequestPath === filePath) {
+      setUserMode('source')
+    }
+  }, [filePath, lineRequestPath])
   const viewerContributions = useContributions(FILE_VIEWERS_AREA)
   const viewers = useMemo(() => viewersFor(viewerContributions, filePath), [viewerContributions, filePath])
   const isImage = target.previewKind === 'image'

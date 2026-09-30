@@ -448,6 +448,7 @@ export const ar = defineLocale({
     actions: {
       'keybinds.openPanel': 'فتح اختصارات لوحة المفاتيح',
       'nav.commandPalette': 'فتح لوحة الأوامر',
+      'nav.quickOpen': 'فتح ملف سريعًا',
       'nav.commandCenter': 'فتح مركز الأوامر',
       'nav.settings': 'فتح الإعدادات',
       'nav.profiles': 'فتح الملفات الشخصية',

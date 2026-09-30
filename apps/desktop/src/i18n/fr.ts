@@ -423,6 +423,7 @@ export const frOverrides = {
     revealExplorer: "Afficher dans l'Explorateur de fichiers",
     revealFileManager: 'Ouvrir le dossier parent',
     revealInSidebar: "Afficher dans l'arborescence",
+    openInEditor: name => `Ouvrir dans ${name}`,
     copyPath: 'Copier le chemin',
     copyRelativePath: 'Copier le chemin relatif',
     download: 'Télécharger',
@@ -695,6 +696,7 @@ export const frOverrides = {
     actions: {
       'keybinds.openPanel': 'Ouvrir les raccourcis clavier',
       'nav.commandPalette': 'Ouvrir la palette de commandes',
+      'nav.quickOpen': 'Ouverture rapide de fichier',
       'nav.commandCenter': 'Ouvrir le centre de commandes',
       'nav.settings': 'Ouvrir les paramètres',
       'nav.profiles': 'Ouvrir les profils',
@@ -1255,6 +1257,8 @@ export const frOverrides = {
       composerPopoutTitle: 'Détacher la zone de saisie',
       composerPopoutDesc:
         'Permet de faire glisser la zone de saisie hors de son emplacement. Désactivé, elle reste ancrée en bas.',
+      openInEditorTitle: 'Ouvrir les fichiers dans',
+      openInEditorDesc: 'L’éditeur utilisé par « Ouvrir dans… » depuis l’arborescence. Fonctionne aussi avec les backends SSH.',
       fileBrowserTitle: 'Navigateur de fichiers',
       fileBrowserDesc:
         "Affiche le navigateur de fichiers à côté du chat lorsqu'un espace de travail est ouvert. Le bouton de la barre de titre modifie aussi ce réglage.",
@@ -4113,6 +4117,21 @@ export const frOverrides = {
       canvas: { label: 'Canevas', description: 'Esquissez sur un tableau où l’agent dessine aussi' }
     }
   },
+  quickOpen: {
+    title: 'Ouverture rapide',
+    placeholder: project => `Rechercher des fichiers dans ${project}…`,
+    noProject: 'Ouvrez un dossier pour chercher ses fichiers',
+    noProjectBody: 'L’ouverture rapide cherche dans les fichiers du projet en cours.',
+    openFolder: 'Ouvrir un dossier…',
+    noMatch: query => `Aucun fichier ne correspond à « ${query} »`,
+    recent: 'Ouverts à côté du chat',
+    hint: 'Tapez un nom de fichier. Ajoutez :42 pour aller à une ligne.',
+    line: line => `ligne ${line}`,
+    openHint: 'ouvrir',
+    attachHint: 'ajouter au message',
+    lineHint: 'nom:42 va à une ligne'
+  },
+  recentProjects: { title: 'Vos projets', openFolder: 'Ouvrir un dossier…' },
   todayBrief: {
     greeting: { morning: 'Bonjour', afternoon: 'Bon après-midi', evening: 'Bonsoir', night: 'Encore au travail ?' },
     needsYou: 'Vous attend',

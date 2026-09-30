@@ -14,6 +14,7 @@ import { $uiLook } from '@/store/ui-look'
 import type { SessionInfo } from '@/types/hermes'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
+import { RecentProjects } from './recent-projects'
 import { TodayBrief } from './today-brief'
 import { Wordmark } from './wordmark'
 
@@ -338,6 +339,8 @@ export function Intro({ composer, personality, seed }: IntroProps) {
             )
           )}
         </div>
+
+        {inRouter && <RecentProjects />}
 
         {/* "Today": what needs you, what is running, what finished while you
             were away, what runs next — or where you left off on a quiet day. */}

@@ -118,6 +118,11 @@ export const SETTINGS_MANIFEST = {
       ['file browser', 'files', 'file tree', 'explorer', 'right sidebar', 'panel', 'startup'],
       'fileBrowser'
     ),
+    openInEditor: appearanceSetting(
+      'window-layout',
+      ['editor', 'vs code', 'vscode', 'cursor', 'zed', 'windsurf', 'open in', 'ide', 'external editor'],
+      'openInEditor'
+    ),
     composerPopout: appearanceSetting(
       'window-layout',
       ['composer', 'floating', 'drag', 'popout', 'pop out', 'dock', 'lock', 'peel', 'input'],

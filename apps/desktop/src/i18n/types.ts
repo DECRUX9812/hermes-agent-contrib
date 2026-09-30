@@ -504,6 +504,7 @@ export interface Translations {
     revealExplorer: string
     revealFileManager: string
     revealInSidebar: string
+    openInEditor: (name: string) => string
     copyPath: string
     copyRelativePath: string
     download: string
@@ -1070,6 +1071,8 @@ export interface Translations {
       toursDesc: string
       composerPopoutTitle: string
       composerPopoutDesc: string
+      openInEditorTitle: string
+      openInEditorDesc: string
       fileBrowserTitle: string
       fileBrowserDesc: string
       vibeHeartsTitle: string
@@ -3139,6 +3142,21 @@ export interface Translations {
     arrangements: Record<'build' | 'focus' | 'review' | 'watch', string>
     items: Record<'artifacts' | 'browser' | 'canvas' | 'changes' | 'files' | 'live' | 'terminal', { label: string; description: string }>
   }
+  quickOpen: {
+    title: string
+    placeholder: (project: string) => string
+    noProject: string
+    noProjectBody: string
+    openFolder: string
+    noMatch: (query: string) => string
+    recent: string
+    hint: string
+    line: (line: number) => string
+    openHint: string
+    attachHint: string
+    lineHint: string
+  }
+  recentProjects: { title: string; openFolder: string }
   todayBrief: {
     greeting: { morning: string; afternoon: string; evening: string; night: string }
     needsYou: string

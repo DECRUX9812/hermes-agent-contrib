@@ -467,6 +467,7 @@ export const en: Translations = {
     revealExplorer: 'Reveal in File Explorer',
     revealFileManager: 'Open containing folder',
     revealInSidebar: 'Reveal in filetree',
+    openInEditor: name => `Open in ${name}`,
     copyPath: 'Copy path',
     copyRelativePath: 'Copy relative path',
     download: 'Download',
@@ -752,6 +753,7 @@ export const en: Translations = {
     actions: {
       'keybinds.openPanel': 'Open keyboard shortcuts',
       'nav.commandPalette': 'Open command palette',
+      'nav.quickOpen': 'Quick open file',
       'nav.commandCenter': 'Open command center',
       'nav.settings': 'Open settings',
       'nav.profiles': 'Open profiles',
@@ -1281,6 +1283,8 @@ export const en: Translations = {
         'Let Hermes spotlight each step as it guides you through the app. Turns off automatically after your first 30 days; you can turn it back on.',
       composerPopoutTitle: 'Floating Composer',
       composerPopoutDesc: 'Allow dragging the composer out of its dock. When off, it stays docked at the bottom.',
+      openInEditorTitle: 'Open files in',
+      openInEditorDesc: 'Where “Open in …” sends a file from the file tree. Works for SSH backends too.',
       fileBrowserTitle: 'File Browser',
       fileBrowserDesc:
         'Show the file browser beside the chat when a workspace is open. The titlebar toggle changes this too.',
@@ -3733,6 +3737,21 @@ export const en: Translations = {
       canvas: { label: 'Canvas', description: 'Sketch on a board the agent can draw on too' }
     }
   },
+  quickOpen: {
+    title: 'Quick open',
+    placeholder: project => `Search files in ${project}…`,
+    noProject: 'Open a folder to search its files',
+    noProjectBody: 'Quick open searches the files of the project you are in.',
+    openFolder: 'Open a folder…',
+    noMatch: query => `No file matches “${query}”`,
+    recent: 'Open beside the chat',
+    hint: 'Type a file name. Add :42 to jump to a line.',
+    line: line => `line ${line}`,
+    openHint: 'open',
+    attachHint: 'add to message',
+    lineHint: 'name:42 goes to a line'
+  },
+  recentProjects: { title: 'Your projects', openFolder: 'Open folder…' },
   todayBrief: {
     greeting: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Working late?' },
     needsYou: 'Needs you',

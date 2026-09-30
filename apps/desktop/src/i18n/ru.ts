@@ -201,6 +201,7 @@ export const ru = defineLocale({
     revealExplorer: 'Показать в Проводнике',
     revealFileManager: 'Открыть содержащую папку',
     revealInSidebar: 'Показать в дереве файлов',
+    openInEditor: name => `Открыть в ${name}`,
     copyPath: 'Копировать путь',
     copyRelativePath: 'Копировать относительный путь',
     download: 'Скачать',
@@ -409,6 +410,7 @@ export const ru = defineLocale({
     actions: {
       'keybinds.openPanel': 'Открыть горячие клавиши',
       'nav.commandPalette': 'Открыть палитру команд',
+      'nav.quickOpen': 'Быстро открыть файл',
       'nav.commandCenter': 'Открыть центр команд',
       'nav.settings': 'Открыть настройки',
       'nav.profiles': 'Открыть профили',
@@ -833,6 +835,8 @@ export const ru = defineLocale({
       composerPopoutTitle: 'Плавающий композер',
       composerPopoutDesc:
         'Позволяет вытягивать композер из его док-зоны. Когда выключено, он остаётся закреплённым внизу.',
+      openInEditorTitle: 'Открывать файлы в',
+      openInEditorDesc: 'Куда «Открыть в…» отправляет файл из дерева. Работает и с SSH-бэкендами.',
       fileBrowserTitle: 'Файловый браузер',
       fileBrowserDesc:
         'Показывает файловый браузер рядом с чатом, когда открыто рабочее пространство. Кнопка в заголовке окна меняет эту настройку.',
@@ -2847,6 +2851,21 @@ export const ru = defineLocale({
       canvas: { label: 'Холст', description: 'Рисуйте на доске вместе с агентом' }
     }
   },
+  quickOpen: {
+    title: 'Быстрое открытие',
+    placeholder: project => `Поиск файлов в ${project}…`,
+    noProject: 'Откройте папку, чтобы искать в её файлах',
+    noProjectBody: 'Быстрое открытие ищет по файлам текущего проекта.',
+    openFolder: 'Открыть папку…',
+    noMatch: query => `Нет файлов, подходящих под «${query}»`,
+    recent: 'Открыты рядом с чатом',
+    hint: 'Введите имя файла. Добавьте :42, чтобы перейти к строке.',
+    line: line => `строка ${line}`,
+    openHint: 'открыть',
+    attachHint: 'добавить в сообщение',
+    lineHint: 'имя:42 — переход к строке'
+  },
+  recentProjects: { title: 'Ваши проекты', openFolder: 'Открыть папку…' },
   todayBrief: {
     greeting: {
       morning: 'Доброе утро',

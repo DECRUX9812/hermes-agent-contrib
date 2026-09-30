@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider'
 import type { DesktopMarketplaceSearchItem } from '@/global'
 import { saveHermesConfig } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { EDITORS } from '@/lib/editor-handoff'
 import { triggerHaptic } from '@/lib/haptics'
 import { Check, Download, Loader2, Palette, Trash2 } from '@/lib/icons'
 import { selectableCardClass } from '@/lib/selectable-card'
@@ -17,6 +18,7 @@ import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
 import { $backdrop, setBackdrop } from '@/store/backdrop'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
+import { $preferredEditor } from '@/store/editor-handoff'
 import { $embedAllowed, $embedMode, clearEmbedAllowed, type EmbedMode, setEmbedMode } from '@/store/embed-consent'
 import {
   $interfaceMode,
@@ -25,7 +27,6 @@ import {
   type InterfaceMode,
   setInterfaceMode
 } from '@/store/interface-mode'
-import { $uiLook, setUiLook, UI_LOOKS, type UiLook } from '@/store/ui-look'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
 import { $fileBrowserOpen, setFileBrowserOpen } from '@/store/layout'
 import { $showModelPricing, setShowModelPricing } from '@/store/model-pricing'
@@ -66,6 +67,7 @@ import {
   TRANSLUCENCY_STEP,
   TRANSLUCENCY_SUPPORTED
 } from '@/store/translucency'
+import { $uiLook, setUiLook, UI_LOOKS, type UiLook } from '@/store/ui-look'
 import { $userBubbleTransparency, setUserBubbleTransparency } from '@/store/user-bubble-transparency'
 import { $vibeHeartsEnabled, setVibeHeartsEnabled } from '@/store/vibe-hearts-enabled'
 import { $zoomPercent, setZoomPercent } from '@/store/zoom'
@@ -430,6 +432,7 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const embedAllowed = useStore($embedAllowed)
   const composerPopoutGesturesEnabled = useStore($composerPopoutGesturesEnabled)
   const fileBrowserOpen = useStore($fileBrowserOpen)
+  const preferredEditor = useStore($preferredEditor)
   const fileBrowserShadowed = useStore($modeShadowed('fileBrowserOpen'))
   const translucency = useStore($translucency)
   const glassMode = translucency.mode === 'glass' && GLASS_SUPPORTED
@@ -978,6 +981,24 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
               id={settingElementId(ids.fileBrowser)}
               label={a.fileBrowserTitle}
               onChange={setFileBrowserOpen}
+            />
+          )}
+
+          {show('window-layout') && (
+            <ListRow
+              action={
+                <SegmentedControl
+                  onChange={id => {
+                    triggerHaptic('selection')
+                    $preferredEditor.set(id)
+                  }}
+                  options={EDITORS.map(editor => ({ id: editor.id, label: editor.label }))}
+                  value={preferredEditor}
+                />
+              }
+              description={a.openInEditorDesc}
+              id={settingElementId(ids.openInEditor)}
+              title={a.openInEditorTitle}
             />
           )}
 

@@ -696,3 +696,22 @@ The detailed state contract lives in the scoped
 - [ ] `cursor-pointer`, focus ring, and `Esc`-to-close behave?
 - [ ] Touched a primitive, token, or variant? Its named-contract entry in this
       file is updated in the same change.
+
+## Developer navigation
+
+Moving around a project is editor-grade without becoming an editor:
+
+- **⌘P Quick Open** (`app/quick-open`) searches the project's files through
+  the backend's `complete.path` — the composer's `@file:` search — so it
+  answers for local, SSH and remote backends alike. `name:42` opens at a line
+  (the preview switches to Source and selects it), ⌘↵ adds the file to the
+  message, a folder reveals in the tree, and an empty query lists the files
+  already open beside the chat. ⌘K stays the command palette.
+- **Open in your editor** (`lib/editor-handoff.ts`): the file tree's menu
+  hands a file to VS Code, Cursor, Windsurf or Zed (Settings → Window &
+  layout), through the editor's `file` route locally and its remote-SSH route
+  for an SSH backend. The main process opens only those shapes on the editor
+  schemes (`isEditorHandoffUrl`), never an extension or settings deep link.
+- **Recent projects**: entering a project records it per profile; the home
+  screen's "Your projects" row and the palette's project group lead with the
+  most recent, one click from a new chat at the project root.

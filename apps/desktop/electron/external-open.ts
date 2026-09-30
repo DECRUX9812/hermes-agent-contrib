@@ -59,6 +59,30 @@ export interface ExternalOpenDeps {
 
 const SUPPORTED_WEB = ['http:', 'https:', 'mailto:']
 
+const EDITOR_SCHEMES = new Set(['vscode:', 'cursor:', 'windsurf:', 'zed:'])
+
+/**
+ * "Open in VS Code / Cursor / Windsurf / Zed" (src/lib/editor-handoff.ts).
+ * Only the open-a-file shapes pass: `<scheme>://file/…`, the VS Code-family
+ * remote-SSH route, and Zed's `zed://ssh/…`. Anything else on these schemes
+ * (an extension URI handler, a settings deep link) is not ours to open.
+ */
+export function isEditorHandoffUrl(parsed: URL): boolean {
+  if (!EDITOR_SCHEMES.has(parsed.protocol)) {
+    return false
+  }
+
+  if (parsed.host === 'file') {
+    return parsed.pathname.length > 1
+  }
+
+  if (parsed.protocol === 'zed:') {
+    return parsed.host === 'ssh'
+  }
+
+  return parsed.host === 'vscode-remote' && parsed.pathname.startsWith('/ssh-remote+')
+}
+
 export function externalOpenErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
@@ -94,7 +118,7 @@ export async function openExternalUrl(rawUrl: string, deps: ExternalOpenDeps): P
     return { ok: true }
   }
 
-  if (!SUPPORTED_WEB.includes(parsed.protocol)) {
+  if (!SUPPORTED_WEB.includes(parsed.protocol) && !isEditorHandoffUrl(parsed)) {
     return { ok: false, reason: 'invalid' }
   }
 

@@ -49,6 +49,7 @@ import {
 import type { ProjectInfo, ProjectsPayload } from '@/types/hermes'
 
 import { recordFeatureUse } from './desktop-metrics'
+import { noteProjectOpened } from './recent-projects'
 
 // First-class, per-profile Projects (named, multi-folder workspaces). State is
 // served by the live gateway's `projects.*` JSON-RPC methods, which wrap the
@@ -97,6 +98,10 @@ export const $reposScanning = atom(false)
 export function enterProject(id: string): void {
   $projectScope.set(id)
   recordFeatureUse('projects')
+
+  if (id !== NO_PROJECT_ID && id !== ALL_PROJECTS) {
+    noteProjectOpened(id)
+  }
 
   // Only explicit, persisted projects (ids are `p_<hex>`) become active. Auto
   // projects (ids are filesystem paths) and the Home bucket have no durable row

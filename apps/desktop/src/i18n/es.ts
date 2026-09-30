@@ -425,6 +425,7 @@ export const esOverrides = {
     revealExplorer: 'Mostrar en el Explorador de archivos',
     revealFileManager: 'Abrir carpeta contenedora',
     revealInSidebar: 'Mostrar en el árbol de archivos',
+    openInEditor: name => `Abrir en ${name}`,
     copyPath: 'Copiar ruta',
     copyRelativePath: 'Copiar ruta relativa',
     download: 'Descargar',
@@ -696,6 +697,7 @@ export const esOverrides = {
     actions: {
       'keybinds.openPanel': 'Abrir atajos de teclado',
       'nav.commandPalette': 'Abrir paleta de comandos',
+      'nav.quickOpen': 'Abrir archivo rápidamente',
       'nav.commandCenter': 'Abrir Centro de comandos',
       'nav.settings': 'Abrir configuración',
       'nav.profiles': 'Abrir perfiles',
@@ -1254,6 +1256,8 @@ export const esOverrides = {
       composerPopoutTitle: 'Compositor flotante',
       composerPopoutDesc:
         'Permite arrastrar el compositor fuera de su posición fija. Si está desactivado, permanece anclado abajo.',
+      openInEditorTitle: 'Abrir archivos en',
+      openInEditorDesc: 'A dónde envía «Abrir en…» un archivo del árbol. También funciona con backends SSH.',
       fileBrowserTitle: 'Explorador de archivos',
       fileBrowserDesc:
         'Muestra el explorador de archivos junto al chat cuando hay un espacio de trabajo abierto. El botón de la barra de título también cambia este ajuste.',
@@ -4096,6 +4100,21 @@ export const esOverrides = {
       canvas: { label: 'Lienzo', description: 'Dibuja en una pizarra donde el agente también dibuja' }
     }
   },
+  quickOpen: {
+    title: 'Apertura rápida',
+    placeholder: project => `Buscar archivos en ${project}…`,
+    noProject: 'Abre una carpeta para buscar sus archivos',
+    noProjectBody: 'La apertura rápida busca en los archivos del proyecto actual.',
+    openFolder: 'Abrir una carpeta…',
+    noMatch: query => `Ningún archivo coincide con «${query}»`,
+    recent: 'Abiertos junto al chat',
+    hint: 'Escribe un nombre de archivo. Añade :42 para ir a una línea.',
+    line: line => `línea ${line}`,
+    openHint: 'abrir',
+    attachHint: 'añadir al mensaje',
+    lineHint: 'nombre:42 va a una línea'
+  },
+  recentProjects: { title: 'Tus proyectos', openFolder: 'Abrir carpeta…' },
   todayBrief: {
     greeting: {
       morning: 'Buenos días',

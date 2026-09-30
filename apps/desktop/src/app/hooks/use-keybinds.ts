@@ -29,7 +29,7 @@ import { actionAllowedInInput, comboFromEvent, isEditableTarget } from '@/lib/ke
 import { composerFocusKeysAllowed, isComposerFocusSoftCombo, typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
 import { stepReasoningEffort, writeSessionReasoningEffort } from '@/lib/reasoning-step'
 import { openWorktreeDialog } from '@/store/coding-status'
-import { $commandPaletteOpen, openCommandPalettePage, toggleCommandPalette } from '@/store/command-palette'
+import { $commandPaletteOpen, closeCommandPalette, openCommandPalettePage, toggleCommandPalette } from '@/store/command-palette'
 import { recordAction, recordDislike } from '@/store/desktop-metrics'
 import {
   $findInPage,
@@ -61,6 +61,7 @@ import {
 } from '@/store/profile'
 import { toggleProfileRailVisible } from '@/store/profile-rail-prefs'
 import { openFolderAsProject } from '@/store/projects'
+import { toggleQuickOpen } from '@/store/quick-open'
 import { toggleReview } from '@/store/review'
 import {
   $activeSessionId,
@@ -338,6 +339,10 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     // ⌘O: native folder picker → open the folder as a project (upsert) with a
     // fresh session anchored there.
     'workspace.openFolder': () => void openFolderAsProject(),
+    'nav.quickOpen': () => {
+      closeCommandPalette()
+      toggleQuickOpen()
+    },
 
     // Narrow-viewport reveal is handled inside the store toggles now.
     'view.toggleSidebar': toggleSidebarOpen,
