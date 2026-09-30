@@ -1422,7 +1422,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             ? logChildren
             : [
                 <div className="px-2 py-4 text-center text-xs text-(--ui-text-tertiary)" key={'empty'}>
-                  {b.group.composerPlaceholder}
+                  {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
                 </div>
               ]}
           {roomClarifies.map(entry => (

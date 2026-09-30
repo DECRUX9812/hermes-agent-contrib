@@ -386,6 +386,8 @@ type BotsMessages = {
     deleteTitle: string
     deleteAction: string
     composerPlaceholder: string
+    /** Team-orchestrated room: only the org-tree lead hears plain turns. */
+    composerPlaceholderTeam: (lead: string) => string
     slashCommandsUnsupported: string
     attachHint: string
     newThread: string
@@ -1080,6 +1082,7 @@ const en: BotsMessages = {
     deleteTitle: 'Delete group chat?',
     deleteAction: 'Delete',
     composerPlaceholder: 'Say something — every bot in this group hears the room.',
+    composerPlaceholderTeam: lead => `Say something — only ${lead} hears the room; @mention teammates to wake them.`, 
     slashCommandsUnsupported:
       'Slash commands are not supported in group chats. Open an individual bot chat to use them.',
     attachHint: 'Attach files — every responding bot sees them',
@@ -1737,6 +1740,7 @@ const ja: BotsMessages = {
     deleteTitle: 'グループチャットを削除しますか？',
     deleteAction: '削除',
     composerPlaceholder: '何か書いてください — このグループのすべてのボットが部屋の内容を受け取ります。',
+    composerPlaceholderTeam: lead => `何か書いてください — ${lead} だけが部屋の内容を受け取ります。@メンションでチームメイトを起こせます。`,
     slashCommandsUnsupported:
       'グループチャットではスラッシュコマンドを使用できません。個別のボットチャットを開いて使用してください。',
     attachHint: 'ファイルを添付 — 応答するすべてのボットが見ます',
@@ -2386,6 +2390,7 @@ const zh: BotsMessages = {
     deleteTitle: '删除群聊？',
     deleteAction: '删除',
     composerPlaceholder: '说点什么 — 这个群里的每个机器人都会听到。',
+    composerPlaceholderTeam: lead => `说点什么 — 只有 ${lead} 会听到；@提及其他成员可以唤醒他们。`,
     slashCommandsUnsupported: '群聊不支持斜杠命令。请打开单个机器人的聊天来使用。',
     attachHint: '附加文件 — 每个回应的机器人都能看到',
     newThread: '新帖子',
@@ -3030,6 +3035,7 @@ const zhHant: BotsMessages = {
     deleteTitle: '刪除群組聊天？',
     deleteAction: '刪除',
     composerPlaceholder: '說點什麼 — 這個群組裡的每個機器人都會聽到。',
+    composerPlaceholderTeam: lead => `說點什麼 — 只有 ${lead} 會聽到；@提及其他成員可以喚醒他們。`,
     slashCommandsUnsupported: '群組聊天不支援斜線命令。請開啟個別機器人的聊天來使用。',
     attachHint: '附加檔案 — 每個回應的機器人都能看到',
     newThread: '新討論串',
