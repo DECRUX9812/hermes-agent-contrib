@@ -130,7 +130,7 @@ def _new_id(prefix: str) -> str:
 def _load(root: Path | str, team_id: str) -> dict:
     path = _team_path(root, team_id)
     try:
-        team = json.loads(path.read_text(encoding="utf-8"))
+        team = json.loads(path.read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
         raise TeamNotFound(team_id) from None
     if not isinstance(team, dict):
@@ -148,7 +148,7 @@ def audit(root: Path | str, team_id: str, actor: str, action: str, detail: Optio
     """Append one trail line. Append-only by construction: there is no rewrite path."""
     line = json.dumps({"at": _now(), "actor": actor or "unknown", "action": action,
                        "detail": detail or {}}, ensure_ascii=False, default=str)
-    with _lock_for(team_id), open(_audit_path(root, team_id), "a", encoding="utf-8") as fh:
+    with _lock_for(team_id), _audit_path(root, team_id).open("a", encoding="utf-8") as fh:
         fh.write(line + "\n")
 
 
@@ -159,7 +159,7 @@ def list_audit(root: Path | str, team_id: str, limit: int = AUDIT_TAIL_DEFAULT) 
     if not path.exists():
         return []
     rows: list[dict] = []
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    for raw in path.read_text(encoding="utf-8-sig").splitlines():
         with contextlib.suppress(ValueError):
             rows.append(json.loads(raw))
     return rows[::-1][: max(1, min(int(limit or AUDIT_TAIL_DEFAULT), 1000))]
@@ -260,7 +260,7 @@ def list_teams(root: Path | str) -> list[dict]:
     out = []
     for path in _teams_dir(root).glob("*.json"):
         with contextlib.suppress(Exception):
-            t = json.loads(path.read_text(encoding="utf-8"))
+            t = json.loads(path.read_text(encoding="utf-8-sig"))
             out.append({
                 "id": t["id"], "name": t.get("name", ""), "mission": t.get("mission", ""),
                 "member_count": len(t.get("members", [])),
@@ -970,7 +970,7 @@ def teams_for_profile(root: Path | str, profile: str) -> list[dict]:
     out = []
     for path in sorted(_teams_dir(root).glob("*.json")):
         with contextlib.suppress(Exception):
-            team = json.loads(path.read_text(encoding="utf-8"))
+            team = json.loads(path.read_text(encoding="utf-8-sig"))
             if any(m.get("profile") == profile for m in team.get("members", [])):
                 out.append(team)
     return sorted(out, key=lambda t: (t.get("created_at", 0), t.get("id", "")))

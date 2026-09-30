@@ -2414,7 +2414,7 @@ def _legacy_spawn_tree_entry(p, session_dir_name: str) -> dict | None:
         return None
     raw = {}
     with contextlib.suppress(Exception):
-        raw = json.loads(p.read_text(encoding="utf-8"))
+        raw = json.loads(p.read_text(encoding="utf-8-sig"))
     if not isinstance(raw, dict):
         raw = {}
     subagents = raw.get("subagents") or []
@@ -2452,7 +2452,7 @@ def _(rid, params: dict) -> dict:
     except (ValueError, OSError) as exc:
         return _err(rid, 4030, f"path outside spawn-trees root: {exc}")
     try:
-        payload = json.loads(resolved.read_text(encoding="utf-8"))
+        payload = json.loads(resolved.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError) as exc:
         return _err(rid, 5000, f"spawn_tree.load failed: {exc}")
     if not isinstance(payload, dict):
