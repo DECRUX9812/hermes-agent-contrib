@@ -29,6 +29,7 @@ import { type ReactNode, useState } from 'react'
 import { AUTOPILOT_ICONS, autopilotPresets, type RoutinePreset } from './autopilot'
 import { useAutopilotText } from './autopilot-i18n'
 import { avatarColor, botAppearance, BotFace } from './avatar'
+import { BotCardMeta } from './bot-card-meta'
 import { BotDeliverablesSection } from './bot-deliverables'
 import { BotSessionDeck } from './bot-session-deck'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
@@ -44,12 +45,11 @@ import {
   selectRoutineJobs,
   useRoutines
 } from './cron'
-import { $botMeta, $lastRoster, botHandle } from './data'
+import { $botMeta, $lastRoster, botHandle, newBotChat } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { useBots } from './i18n'
 import { botRole, displayName } from './labels'
 import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
-import { NewTaskButton } from './new-task'
 import { $railCollapsed, type RailSectionId, setRailSectionCollapsed } from './rail-state'
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
@@ -145,6 +145,7 @@ function BotProfileCard({
               .filter(Boolean)
               .join(' · ')}
           </div>
+          <BotCardMeta bot={bot} />
         </div>
         <div className="flex shrink-0 items-center self-start">
           <Tip label={b.bot.editTitle}>
@@ -161,11 +162,14 @@ function BotProfileCard({
         </div>
       </div>
       <div className="mt-2.5 flex flex-wrap items-center gap-1">
-        <Button onClick={() => void openRosterBot(bot)} size="xs">
-          <Codicon name="comment" />
-          {b.roster.openChat}
+        <Button onClick={() => void newBotChat(bot)} size="xs">
+          <Codicon name="comment-add" />
+          {b.bot.newTopic}
         </Button>
-        <NewTaskButton bot={bot} labeled />
+        <Button onClick={() => void openRosterBot(bot)} size="xs" variant="ghost">
+          <Codicon name="inbox" />
+          {b.bot.inbox}
+        </Button>
       </div>
       {/* Every bot, an address: its own Telegram/Slack link as a QR, or the
           one step that gives it one. Remote-source bots have no platforms on

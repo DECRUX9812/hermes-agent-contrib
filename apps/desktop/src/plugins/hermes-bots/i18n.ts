@@ -127,6 +127,13 @@ type BotsMessages = {
     groupChats: string
     emptyTitle: string
     emptyDesc: string
+    /** The 'How bots work' explainer under the empty roster — the mental
+     *  model in four scannable lines. */
+    howTitle: string
+    howInbox: string
+    howTopic: string
+    howMention: string
+    howProfiles: string
     noMatchQuery: (query: string) => string
     noMatchQueryOn: (query: string, gateway: string) => string
     noMatchFiltersOn: (gateway: string) => string
@@ -252,8 +259,12 @@ type BotsMessages = {
     helpPromptPlaceholder: string
     descriptionHint: string
     newChatWith: string
-    /** Pane/row affordance: spawn a side-chat in a second tile — never the canonical Bot Chat. */
-    newTask: string
+    /** Pane/row affordance: spawn a powered side-chat in a second tile — a
+     *  fresh topic, never the canonical Bot Chat. */
+    newTopic: string
+    /** Ghost CTA beside 'New topic': the bot's one forever chat, framed as
+     *  its inbox. */
+    inbox: string
     /** Re-opens the forever-chat on purpose. A plain row click only returns to
      *  the tabs already open, so a closed Bot Chat needs an explicit ask. */
     openBotChat: string
@@ -723,9 +734,11 @@ type BotsMessages = {
    *  owns, canonical chat first. */
   deck: {
     title: string
-    newChat: string
+    newTopic: string
     refresh: string
-    canonical: string
+    /** The canonical Bot Chat's row badge — 'Inbox', the mental model word,
+     *  not the plumbing word. */
+    inbox: string
     empty: string
     untitled: string
   }
@@ -762,6 +775,20 @@ type BotsMessages = {
     browse: string
     /** Progress toast while a one-click starter create is in flight. */
     creating: (name: string) => string
+  },
+  /** The bot card's compact meta line — pinned model, installed skills, and
+   *  org teammates. Each renders only when the field exists. */
+  card: {
+    skills: (count: number) => string
+    ledBy: (name: string) => string
+    leads: (names: string) => string
+  }
+  /** The dismissible hint on a plain chat running on a bot profile: start a
+   *  fresh bot topic, where the bot can delegate (powers are mint-time — a
+   *  plain session can never be re-scoped into one). */
+  hint: {
+    delegate: (bot: string) => string
+    openTopic: string
   }
 }
 
@@ -870,6 +897,11 @@ const en: BotsMessages = {
     groupChats: 'Group chats',
     emptyTitle: 'No bots yet',
     emptyDesc: 'Create your first bot — pick a starter or describe your own.',
+    howTitle: 'How bots work',
+    howInbox: 'Bot Chat is the bot’s inbox — one forever chat it always answers in.',
+    howTopic: 'New topic starts a fresh powered chat, so context stays clean.',
+    howMention: '@mention another bot in a topic to pull in teammates.',
+    howProfiles: 'Bots are just profiles with an identity — same skills, tools, and memory.',
     noMatchQuery: query => `No bots or group chats match “${query}”`,
     noMatchQueryOn: (query, gateway) => `No bots or group chats match “${query}” on ${gateway}`,
     noMatchFiltersOn: gateway => `No bots or group chats match these filters on ${gateway}`,
@@ -982,7 +1014,8 @@ const en: BotsMessages = {
     helpPromptPlaceholder: 'What should this bot help with?',
     descriptionHint: 'Leave blank to generate from the bot’s name and description.',
     newChatWith: 'New chat with this bot',
-    newTask: 'New task',
+    newTopic: 'New topic',
+    inbox: 'Inbox',
     openBotChat: 'Open Bot Chat',
     continueOnPhone: 'Continue on phone…',
     openingChat: 'Opening chat…',
@@ -1399,9 +1432,9 @@ const en: BotsMessages = {
   },
   deck: {
     title: 'Sessions',
-    newChat: 'New chat',
+    newTopic: 'New topic',
     refresh: 'Refresh',
-    canonical: 'canonical',
+    inbox: 'Inbox',
     empty: 'No sessions yet.',
     untitled: 'Untitled session'
   },
@@ -1422,13 +1455,22 @@ const en: BotsMessages = {
     action: 'New topic',
     dismiss: 'Dismiss',
     text: 'This chat is carrying a lot of context. A topic starts fresh and keeps all my powers.'
-  }
+  },
   quick: {
     intro: 'A name is all it takes — the rest is optional.',
     templates: 'Start from a template',
     starter: (name, title) => `${name} — ${title}`,
     browse: 'Browse all templates…',
     creating: name => `Creating ${name}…`
+  },
+  card: {
+    skills: count => `${count} skill${count === 1 ? '' : 's'}`,
+    ledBy: name => `led by ${name}`,
+    leads: names => `leads ${names}`
+  },
+  hint: {
+    delegate: bot => `${bot} can delegate to teammates inside bot topics — this chat is a plain session.`,
+    openTopic: 'Start a topic'
   }
 }
 
@@ -1539,6 +1581,11 @@ const ja: BotsMessages = {
     groupChats: 'グループチャット',
     emptyTitle: 'ボットはまだありません',
     emptyDesc: '最初のボットを作成しましょう — スターターを選ぶか、自由に説明できます。',
+    howTitle: 'ボットの仕組み',
+    howInbox: 'Bot Chat はボットの受信トレイ — いつも応答する永続チャット。',
+    howTopic: '新しいトピックはコンテキストをきれいに保つ新規チャット。',
+    howMention: 'トピック内で他のボットを @メンションするとチームメイトを呼べます。',
+    howProfiles: 'ボットは identity を持つプロファイル — スキル・ツール・メモリは同じ。',
     noMatchQuery: query => `「${query}」に一致するボットやグループチャットはありません`,
     noMatchQueryOn: (query, gateway) => `${gateway} に「${query}」に一致するボットやグループチャットはありません`,
     noMatchFiltersOn: gateway => `${gateway} にこれらのフィルタに一致するボットやグループチャットはありません`,
@@ -1650,7 +1697,8 @@ const ja: BotsMessages = {
     helpPromptPlaceholder: 'このボットは何を手伝いますか？',
     descriptionHint: '空欄のままにすると、ボットの名前と説明から生成します。',
     newChatWith: 'このボットと新しいチャット',
-    newTask: '新しいタスク',
+    newTopic: '新しいトピック',
+    inbox: '受信トレイ',
     openBotChat: 'ボットチャットを開く',
     continueOnPhone: 'スマホで続ける…',
     openingChat: 'チャットを開いています…',
@@ -2064,9 +2112,9 @@ const ja: BotsMessages = {
   },
   deck: {
     title: 'セッション',
-    newChat: '新しいチャット',
+    newTopic: '新しいトピック',
     refresh: '更新',
-    canonical: '正規',
+    inbox: '受信トレイ',
     empty: 'セッションはまだありません。',
     untitled: '無題のセッション'
   },
@@ -2087,6 +2135,15 @@ const ja: BotsMessages = {
     action: '新しいトピック',
     dismiss: '閉じる',
     text: 'このチャットは多くのコンテキストを抱えています。トピックなら新しく始められて、私の能力はそのままです。'
+  },
+  card: {
+    skills: count => `スキル ${count}`,
+    ledBy: name => `${name} が上司`,
+    leads: names => `${names} を率いる`
+  },
+  hint: {
+    delegate: bot => `${bot} はボットトピック内でチームメイトに委任できます — このチャットは通常セッションです。`,
+    openTopic: 'トピックを開始'
   },
   rail: {
     title: 'ボットのコンテキスト',
@@ -2204,6 +2261,11 @@ const zh: BotsMessages = {
     groupChats: '群聊',
     emptyTitle: '还没有机器人',
     emptyDesc: '创建你的第一个机器人 — 选择起手模板或自由描述。',
+    howTitle: '机器人如何工作',
+    howInbox: 'Bot Chat 是机器人的收件箱——它始终在同一个会话中回应。',
+    howTopic: '新话题会开启一个全新的完整功能会话，保持上下文干净。',
+    howMention: '在话题中 @ 提及其他机器人即可拉入队友。',
+    howProfiles: '机器人只是带有身份的配置文件——技能、工具和记忆都相同。',
     noMatchQuery: query => `没有机器人或群聊匹配“${query}”`,
     noMatchQueryOn: (query, gateway) => `${gateway} 上没有机器人或群聊匹配“${query}”`,
     noMatchFiltersOn: gateway => `${gateway} 上没有机器人或群聊匹配这些筛选条件`,
@@ -2311,7 +2373,8 @@ const zh: BotsMessages = {
     helpPromptPlaceholder: '这个机器人应该帮你做什么？',
     descriptionHint: '留空则根据机器人的名称和描述生成。',
     newChatWith: '与此机器人开新聊天',
-    newTask: '新任务',
+    newTopic: '新话题',
+    inbox: '收件箱',
     openBotChat: '打开机器人聊天',
     continueOnPhone: '在手机上继续…',
     openingChat: '正在打开聊天…',
@@ -2719,9 +2782,9 @@ const zh: BotsMessages = {
   },
   deck: {
     title: '会话',
-    newChat: '新聊天',
+    newTopic: '新话题',
     refresh: '刷新',
-    canonical: '规范',
+    inbox: '收件箱',
     empty: '还没有会话。',
     untitled: '未命名会话'
   },
@@ -2742,6 +2805,15 @@ const zh: BotsMessages = {
     action: '新话题',
     dismiss: '关闭',
     text: '这个聊天承载了大量上下文。开启一个话题可以从零开始，同时保留我的全部能力。'
+  },
+  card: {
+    skills: count => `${count} 个技能`,
+    ledBy: name => `汇报给 ${name}`,
+    leads: names => `带领 ${names}`
+  },
+  hint: {
+    delegate: bot => `${bot} 可以在机器人话题中委派给队友——此会话是普通会话。`,
+    openTopic: '开始话题'
   },
   rail: {
     title: '机器人上下文',
@@ -2859,6 +2931,11 @@ const zhHant: BotsMessages = {
     groupChats: '群組聊天',
     emptyTitle: '還沒有機器人',
     emptyDesc: '建立你的第一個機器人 — 選擇起手範本或自由描述。',
+    howTitle: '機器人如何運作',
+    howInbox: 'Bot Chat 是機器人的收件匣——它始終在同一個工作階段中回應。',
+    howTopic: '新主題會開啟全新的完整功能工作階段，讓脈絡保持乾淨。',
+    howMention: '在主題中 @ 提及其他機器人即可拉入隊友。',
+    howProfiles: '機器人只是帶有身份的設定檔——技能、工具和記憶都相同。',
     noMatchQuery: query => `沒有機器人或群組聊天符合「${query}」`,
     noMatchQueryOn: (query, gateway) => `${gateway} 上沒有機器人或群組聊天符合「${query}」`,
     noMatchFiltersOn: gateway => `${gateway} 上沒有機器人或群組聊天符合這些篩選條件`,
@@ -2966,7 +3043,8 @@ const zhHant: BotsMessages = {
     helpPromptPlaceholder: '這個機器人應該幫你做什麼？',
     descriptionHint: '留空則依機器人的名稱和描述產生。',
     newChatWith: '與此機器人開新聊天',
-    newTask: '新任務',
+    newTopic: '新主題',
+    inbox: '收件匣',
     openBotChat: '開啟機器人聊天',
     continueOnPhone: '在手機上繼續…',
     openingChat: '正在開啟聊天…',
@@ -3374,9 +3452,9 @@ const zhHant: BotsMessages = {
   },
   deck: {
     title: '工作階段',
-    newChat: '新聊天',
+    newTopic: '新主題',
     refresh: '重新整理',
-    canonical: '正典',
+    inbox: '收件匣',
     empty: '還沒有工作階段。',
     untitled: '未命名工作階段'
   },
@@ -3397,6 +3475,15 @@ const zhHant: BotsMessages = {
     action: '新主題',
     dismiss: '關閉',
     text: '這個聊天承載了大量脈絡。開啟一個主題可以從零開始，同時保留我的全部能力。'
+  },
+  card: {
+    skills: count => `${count} 個技能`,
+    ledBy: name => `向 ${name} 報告`,
+    leads: names => `帶領 ${names}`
+  },
+  hint: {
+    delegate: bot => `${bot} 可以在機器人主題中委派給隊友——此工作階段是普通工作階段。`,
+    openTopic: '開始主題'
   },
   rail: {
     title: '機器人脈絡',

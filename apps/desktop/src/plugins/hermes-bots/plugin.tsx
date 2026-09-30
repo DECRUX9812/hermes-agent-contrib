@@ -45,6 +45,7 @@ import type {
 import { AgentsSection } from './agents-section'
 import { AUTOPILOT_LOCALES } from './autopilot-i18n'
 import { startFaceClock, stopFaceClock } from './avatar'
+import { BotDelegateHint } from './bot-delegate-hint-view'
 import { BotInboundCards } from './bot-events-view'
 import { BotHeaderIdentity } from './bot-header-chip'
 import { BOT_PLAN_DIRECTIVE, rewritePlanDraft } from './bot-plan'
@@ -871,6 +872,18 @@ export default {
       id: 'bot-context-nudge',
       area: COMPOSER_AREAS.top,
       render: () => <BotContextNudge />
+    })
+
+    // Bot-pane UX — a plain working session ON A BOT PROFILE is the one
+    // shape delegation can't reach; a dismissible chip over the composer
+    // offers to mint a fresh topic in the bot's workspace (powers are
+    // mint-time — the chat itself can never become one). The contribution
+    // answers for itself per surface: null on the canonical chat, on
+    // topics, and on non-bot sessions.
+    ctx.register({
+      id: 'bot-delegate-hint',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotDelegateHint />
     })
 
     ctx.register({

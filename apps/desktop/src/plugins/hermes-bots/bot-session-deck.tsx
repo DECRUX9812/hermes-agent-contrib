@@ -35,7 +35,7 @@ import { CANONICAL_CHAT_TITLE, isCanonicalChatOnScreen } from './canonical-chat'
 import { newBotChat } from './data'
 import { useBots } from './i18n'
 import { RosterSectionHeader } from './roster-sections'
-import { botConnectionRoute } from './routing'
+import { botConnectionRoute, botWorkspaceOwnerKey } from './routing'
 import { rosterRowAge } from './row-helpers'
 import type { CanonicalSession, RosterRow } from './types'
 
@@ -180,6 +180,10 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
     void host.openSession(row.id, {
       ...(route ? { route } : {}),
       profile: owner.name,
+      // Every deck row is a bots-workspace chat (canonical inbox or a topic);
+      // opening one plainly would strip its recorded scope.
+      workspaceMode: 'bots',
+      workspaceOwnerKey: botWorkspaceOwnerKey(owner),
       // Beside the canonical chat, never in its place.
       intent: 'tab'
     })
@@ -208,9 +212,9 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
                 <Codicon name="refresh" spinning={refreshing} />
               </span>
             </Tip>
-            <Tip label={b.deck.newChat}>
+            <Tip label={b.deck.newTopic}>
               <span
-                aria-label={b.deck.newChat}
+                aria-label={b.deck.newTopic}
                 className="flex cursor-pointer items-center text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)"
                 onClick={newChat}
                 role="button"
@@ -253,7 +257,7 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
                 </span>
                 {canonical ? (
                   <span className="shrink-0 rounded-full border border-(--ui-stroke-secondary) px-1.5 text-[0.6rem] uppercase tracking-wider text-(--ui-text-quaternary)">
-                    {b.deck.canonical}
+                    {b.deck.inbox}
                   </span>
                 ) : null}
                 <span className="shrink-0 text-[0.65rem] text-(--ui-text-quaternary)">

@@ -109,13 +109,14 @@ import {
   setSessionOwnerHint
 } from '@/store/session'
 import { $sessionDotStateById, type SessionDotState } from '@/store/session-dot-state'
-import { isSessionOwnerRoute } from '@/store/session-request-router'
+import { isSessionOwnerRoute, type SessionOwnerRoute } from '@/store/session-request-router'
 import {
   $focusedRuntimeId,
   $focusedSessionState,
   $focusedStoredSessionId,
   $sessionStates,
   $sessionTiles,
+  $sessionWorkspaceScopes,
   dropTilesForProfile,
   focusWorkspaceOwnerSessionTile,
   sessionTileDelegate
@@ -239,6 +240,18 @@ export interface PluginProfileRoute {
   profile: string
   /** Backend Hermes profile served by that route. */
   targetProfile: string
+}
+
+/** The workspace bucket a session was opened under — the tile record for a
+ *  tiled session, the remembered main-surface scope otherwise. Absent fields
+ *  mean a plain 'sessions' working chat; 'bots' chats always name their
+ *  owner (`workspaceOwnerKey`, `bot:<roster key>`). */
+export interface PluginSessionWorkspaceScope {
+  ownerProfile?: string
+  ownerRoute?: SessionOwnerRoute
+  workspaceMode?: WorkspaceMode
+  workspaceOwnerKey?: string
+  workspaceTabTitle?: string
 }
 
 /** Window geometry + the app's responsive posture, one readonly rect. */
@@ -772,6 +785,14 @@ export const host = {
     /** The sessions rail's live search text ('' when idle). A `sidebar.listTop`
      *  contribution marked `searchable` filters its own rows by this. */
     sidebarSearchQuery: readonlyAtom<string>($sidebarSearchQuery),
+    /** Stored session id → the workspace scope it was last opened under — a
+     *  tile's own record when tiled, the remembered main-surface scope
+     *  otherwise. The single read for "is this chat inside a workspace":
+     *  `workspaceMode: 'bots'` chats carry their owner key; working sessions
+     *  carry 'sessions' or nothing. */
+    sessionWorkspaceScopes: readonlyAtom<Record<string, PluginSessionWorkspaceScope>>(
+      $sessionWorkspaceScopes
+    ),
     /** True in Advanced mode (the developer surface). Simple mode hides the
      *  audit trail, raw ids and policy switches — a plugin gates its own tiers on this
      *  rather than reading the core mode store. */
