@@ -751,6 +751,18 @@ type BotsMessages = {
     dismiss: string
     text: string
   }
+  /** The one-click New Bot dialog and the empty roster's one-tap starters. */
+  quick: {
+    intro: string
+    /** "Start from a template" — the starter-chip row's label in the dialog. */
+    templates: string
+    /** Chip aria-label: the starter's name + role line. */
+    starter: (name: string, title: string) => string
+    /** Link into the Hire gallery, where the heavyweight create path lives. */
+    browse: string
+    /** Progress toast while a one-click starter create is in flight. */
+    creating: (name: string) => string
+  }
 }
 
 const en: BotsMessages = {
@@ -1410,6 +1422,13 @@ const en: BotsMessages = {
     action: 'New topic',
     dismiss: 'Dismiss',
     text: 'This chat is carrying a lot of context. A topic starts fresh and keeps all my powers.'
+  }
+  quick: {
+    intro: 'A name is all it takes — the rest is optional.',
+    templates: 'Start from a template',
+    starter: (name, title) => `${name} — ${title}`,
+    browse: 'Browse all templates…',
+    creating: name => `Creating ${name}…`
   }
 }
 
@@ -2074,6 +2093,13 @@ const ja: BotsMessages = {
     tasks: 'タスクログ',
     today: '今日',
     yesterday: '昨日'
+  },
+  quick: {
+    intro: '名前だけで作成できます — 他はすべて任意です。',
+    templates: 'テンプレートから始める',
+    starter: (name, title) => `${name} — ${title}`,
+    browse: 'すべてのテンプレートを見る…',
+    creating: name => `${name} を作成中…`
   }
 }
 
@@ -2722,6 +2748,13 @@ const zh: BotsMessages = {
     tasks: '任务日志',
     today: '今天',
     yesterday: '昨天'
+  },
+  quick: {
+    intro: '只需一个名字即可创建 — 其他都是可选的。',
+    templates: '从模板开始',
+    starter: (name, title) => `${name} — ${title}`,
+    browse: '浏览全部模板…',
+    creating: name => `正在创建 ${name}…`
   }
 }
 
@@ -3370,6 +3403,13 @@ const zhHant: BotsMessages = {
     tasks: '任務日誌',
     today: '今天',
     yesterday: '昨天'
+  },
+  quick: {
+    intro: '只要一個名稱即可建立 — 其他都是選填。',
+    templates: '從範本開始',
+    starter: (name, title) => `${name} — ${title}`,
+    browse: '瀏覽所有範本…',
+    creating: name => `正在建立 ${name}…`
   }
 }
 

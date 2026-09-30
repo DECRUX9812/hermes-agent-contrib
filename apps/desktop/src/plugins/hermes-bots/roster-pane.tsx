@@ -46,6 +46,8 @@ import { useBots } from './i18n'
 import { $rosterSortMode, setRosterSortMode, useRosterAttentionCounts } from './live-status'
 import { mailboxOpenCountFor, useMailbox } from './mailbox'
 import { MailboxTaskDialog } from './mailbox-parts'
+import { createQuickBot } from './quick-create'
+import { QuickCreateDialog } from './quick-create-dialog'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
@@ -260,8 +262,28 @@ export function BotsPane() {
     setCreateOpen(true)
   }
 
-  // "New bot" leads with the Hire gallery: never a blank form first.
+  // "New bot" leads with the one-click dialog — a name is all it takes. The
+  // Hire gallery (and the heavyweight form behind it) is the link INSIDE it.
+  const [quickOpen, setQuickOpen] = useState(false)
   const [hireOpen, setHireOpen] = useState(false)
+  // The empty-state starter chips create in ONE click — no dialog — so the
+  // click is guarded against a second tap while the first create is in flight.
+  const [creatingStarter, setCreatingStarter] = useState<null | string>(null)
+
+  const quickStarter = (starter: BotStarter) => {
+    if (creatingStarter) {
+      return
+    }
+
+    setCreatingStarter(starter.id)
+    host.notify({ kind: 'info', message: b.quick.creating(starter.name) })
+    void createQuickBot(starterDraft(starter), {
+      roster: activeSourceRoster,
+      onConfigureModel: setEditing
+    })
+      .catch(err => host.notifyError(err, b.bot.createFailed))
+      .finally(() => setCreatingStarter(null))
+  }
 
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
   const [broadcastOpen, setBroadcastOpen] = useState(false)
@@ -527,7 +549,7 @@ export function BotsPane() {
         roster,
         setCreateOpen: (value: boolean) => {
           if (value) {
-            setHireOpen(true)
+            setQuickOpen(true)
           }
         },
         setGroupCreateOpen,
@@ -555,7 +577,8 @@ export function BotsPane() {
       <TriageStrip bots={roster} onOpen={bot => void openRosterBot(bot)} />
       {renderRosterContent({
         b,
-        onNewBot: (starter?: BotStarter) => (starter ? openCreate(starterDraft(starter)) : setHireOpen(true)),
+        onNewBot: (starter?: BotStarter) => (starter ? quickStarter(starter) : setQuickOpen(true)),
+        creatingStarter,
         staleNotice,
         isLoading,
         initialRosterLoading,
@@ -598,6 +621,19 @@ export function BotsPane() {
           openCreate(draft)
         }}
         open={hireOpen}
+      />
+      <QuickCreateDialog
+        // Remount per open: starter picks and typed fields never leak into
+        // the next "New bot".
+        key={quickOpen ? 'open' : 'closed'}
+        onBrowseGallery={() => {
+          setQuickOpen(false)
+          setHireOpen(true)
+        }}
+        onClose={() => setQuickOpen(false)}
+        onConfigureModel={setEditing}
+        open={quickOpen}
+        roster={activeSourceRoster}
       />
       {renderRosterDialogs({
         b,

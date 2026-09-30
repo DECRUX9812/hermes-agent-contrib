@@ -173,6 +173,12 @@ export function findStarter(id: string | null | undefined): BotStarter | undefin
   return BOT_STARTERS.find(t => t.id === id)
 }
 
+/** The general starters offered where a full six-card shelf would crowd the
+ *  chrome — the empty roster's one-tap row and the quick-create dialog's
+ *  "start from a template" row. The ones carrying a real C1 preset (research,
+ *  coding, ops), so the pick hires skills/model too, not just a persona. */
+export const QUICK_STARTERS: readonly BotStarter[] = BOT_STARTERS.filter(starter => starter.preset !== 'custom')
+
 export function starterDraft(template: BotStarter): BotDraft {
   return {
     name: template.name,
