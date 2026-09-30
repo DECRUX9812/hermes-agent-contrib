@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react'
-import type { ComponentProps } from 'react'
+import { type ComponentProps, useState } from 'react'
 
 import { TreeSkeleton } from '@/components/chat/skeletons'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -10,15 +10,17 @@ import { useDelayedTrue } from '@/hooks/use-delayed-true'
 import { useI18n } from '@/i18n'
 import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
 import { cn } from '@/lib/utils'
-import { $panesFlipped } from '@/store/layout'
+import { newEntryBase } from '@/store/file-tree'
+import { $panesFlipped, revealFileInTree } from '@/store/layout'
 import { notifyError } from '@/store/notifications'
 import { openPreview } from '@/store/preview'
-import { $currentCwd, $selectedStoredSessionId, $workspaceCwdOwner } from '@/store/session'
+import { $currentBranch, $currentCwd, $selectedStoredSessionId, $workspaceCwdOwner } from '@/store/session'
 
 import { BesideChatChooser } from '../shell/panel-launcher'
 import { SidebarPanelLabel } from '../shell/sidebar-label'
 
 import { ProjectTree } from './files/tree'
+import { NewEntryField, TreeFilter, type TreeToolMode } from './files/tree-tools'
 import { useProjectTree } from './files/use-project-tree'
 
 interface RightSidebarPaneProps {
@@ -120,6 +122,24 @@ interface FilesystemTabProps extends FileTreeBodyProps {
   showIgnored: boolean
 }
 
+/** The tree header's tools, in order. Each toggles its inline field. */
+const TREE_TOOLS: readonly {
+  icon: string
+  label: 'filterFiles' | 'newFile' | 'newFolder'
+  mode: TreeToolMode
+}[] = [
+  { icon: 'new-file', label: 'newFile', mode: 'new-file' },
+  { icon: 'new-folder', label: 'newFolder', mode: 'new-folder' },
+  { icon: 'filter', label: 'filterFiles', mode: 'filter' }
+]
+
+/** `src/utils` for a folder under the root, the root's own name for the root. */
+function relativeLabel(root: string, folder: string, rootName: string): string {
+  const rel = folder.slice(root.replace(/[\\/]+$/, '').length).replace(/^[\\/]+/, '')
+
+  return rel || rootName
+}
+
 // Sidebar palette + hover-reveal: header actions stay reachable while moving
 // from the project label to the action buttons.
 const HEADER_ACTION_CLASS =
@@ -149,6 +169,8 @@ function FilesystemTab({
 }: FilesystemTabProps) {
   const { t } = useI18n()
   const r = t.rightSidebar
+  const branch = useStore($currentBranch).trim()
+  const [mode, setMode] = useState<null | TreeToolMode>(null)
 
   // No working directory (a bare/detached chat) → no tree, but keep a way back
   // into a folder (#53004): the projects paradigm removed the old folder picker,
@@ -163,9 +185,34 @@ function FilesystemTab({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <RightSidebarSectionHeader>
-        <div className="flex min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
           <SidebarPanelLabel>{cwdName}</SidebarPanelLabel>
+          {branch && (
+            <span
+              className="flex min-w-0 items-center gap-0.5 truncate rounded-full bg-(--ui-bg-tertiary) px-1.5 py-px text-[0.625rem] text-(--ui-text-tertiary)"
+              data-slot="tree-branch"
+              title={branch}
+            >
+              <Codicon name="git-branch" size="0.625rem" />
+              <span className="truncate">{branch}</span>
+            </span>
+          )}
         </div>
+        {TREE_TOOLS.map(tool => (
+          <Tip key={tool.mode} label={r[tool.label]}>
+            <Button
+              aria-label={r[tool.label]}
+              aria-pressed={mode === tool.mode}
+              className={mode === tool.mode ? HEADER_ACTION_CLASS : HEADER_ACTION_LABEL_REVEAL}
+              data-tree-tool={tool.mode}
+              onClick={() => setMode(mode === tool.mode ? null : tool.mode)}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name={tool.icon} size="0.8125rem" />
+            </Button>
+          </Tip>
+        ))}
         <Tip label={showIgnored ? r.hideIgnored : r.showIgnored}>
           <Button
             aria-label={showIgnored ? r.hideIgnored : r.showIgnored}
@@ -205,6 +252,25 @@ function FilesystemTab({
           </Button>
         </Tip>
       </RightSidebarSectionHeader>
+      {(mode === 'new-file' || mode === 'new-folder') && (
+        <NewEntryField
+          base={newEntryBase(cwd)}
+          baseLabel={relativeLabel(cwd, newEntryBase(cwd), cwdName)}
+          key={mode}
+          kind={mode === 'new-file' ? 'file' : 'folder'}
+          onCreated={(path, kind) => {
+            revealFileInTree(path)
+
+            if (kind === 'file') {
+              onPreviewFile?.(path)
+            }
+          }}
+          onDone={() => setMode(null)}
+        />
+      )}
+      {mode === 'filter' ? (
+        <TreeFilter cwd={cwd} onClose={() => setMode(null)} onOpenFile={path => onPreviewFile?.(path)} />
+      ) : (
       <FileTreeBody
         collapseNonce={collapseNonce}
         cwd={cwd}
@@ -219,6 +285,7 @@ function FilesystemTab({
         onRetry={onRefresh}
         openState={openState}
       />
+      )}
     </div>
   )
 }

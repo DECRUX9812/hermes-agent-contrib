@@ -1256,6 +1256,10 @@ export const esOverrides = {
       composerPopoutTitle: 'Compositor flotante',
       composerPopoutDesc:
         'Permite arrastrar el compositor fuera de su posición fija. Si está desactivado, permanece anclado abajo.',
+      autoOpenFilesTitle: 'Mostrar archivos al abrir un proyecto',
+      autoOpenFilesDesc: 'Abrir una carpeta o empezar en un proyecto muestra el árbol de archivos junto al chat.',
+      activityRailTitle: 'Barra de iconos',
+      activityRailDesc: 'Una columna estrecha de iconos en el borde izquierdo: sesiones, bots y cada página a un clic, incluso con la barra lateral plegada.',
       openInEditorTitle: 'Abrir archivos en',
       openInEditorDesc: 'A dónde envía «Abrir en…» un archivo del árbol. También funciona con backends SSH.',
       fileBrowserTitle: 'Explorador de archivos',
@@ -4220,6 +4224,7 @@ export const esOverrides = {
       browse: 'Explorar'
     },
     searchAria: 'Buscar sesiones',
+    railAria: 'Navegación de la app',
     searchPlaceholder: 'Buscar sesiones…',
     clearSearch: 'Limpiar búsqueda',
     noMatch: query => `Ninguna sesión coincide con “${query}”.`,
@@ -5623,6 +5628,19 @@ export const esOverrides = {
     }
   },
   rightSidebar: {
+    agentTouched: 'Editado en este chat',
+    newFile: 'Nuevo archivo',
+    newFolder: 'Nueva carpeta',
+    filterFiles: 'Filtrar archivos',
+    newFileIn: label => `Nuevo archivo en ${label}`,
+    newFolderIn: label => `Nueva carpeta en ${label}`,
+    newFilePlaceholder: 'nombre.ts — las barras crean carpetas',
+    newFolderPlaceholder: 'nombre-de-carpeta',
+    newFileFailed: 'No se pudo crear el archivo',
+    newFolderFailed: 'No se pudo crear la carpeta',
+    filterPlaceholder: 'Filtrar archivos…',
+    filterHint: 'Escribe parte de un nombre. Busca en todo el proyecto, no solo en carpetas abiertas.',
+    filterNoMatch: 'Ningún archivo coincide',
     aria: 'Barra lateral derecha',
     panelsAria: 'Paneles de la barra lateral derecha',
     files: 'Sistema de archivos',

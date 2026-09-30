@@ -1071,6 +1071,10 @@ export interface Translations {
       toursDesc: string
       composerPopoutTitle: string
       composerPopoutDesc: string
+      autoOpenFilesTitle: string
+      autoOpenFilesDesc: string
+      activityRailTitle: string
+      activityRailDesc: string
       openInEditorTitle: string
       openInEditorDesc: string
       fileBrowserTitle: string
@@ -3256,6 +3260,7 @@ export interface Translations {
       toSimple: string
     }
     searchAria: string
+    railAria: string
     searchPlaceholder: string
     clearSearch: string
     noMatch: (query: string) => string
@@ -4502,6 +4507,19 @@ export interface Translations {
   }
 
   rightSidebar: {
+    agentTouched: string
+    newFile: string
+    newFolder: string
+    filterFiles: string
+    newFileIn: (label: string) => string
+    newFolderIn: (label: string) => string
+    newFilePlaceholder: string
+    newFolderPlaceholder: string
+    newFileFailed: string
+    newFolderFailed: string
+    filterPlaceholder: string
+    filterHint: string
+    filterNoMatch: string
     aria: string
     panelsAria: string
     files: string

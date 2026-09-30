@@ -116,6 +116,21 @@ export async function createRemoteDir(path: string): Promise<string> {
   return result.path || path
 }
 
+/** Create one folder, locally or on the connected backend (file tree "New folder"). */
+export async function createDesktopDir(path: string): Promise<string> {
+  if (isDesktopFsRemoteMode()) {
+    return createRemoteDir(path)
+  }
+
+  const desktop = bridge()
+
+  if (!desktop.makeDirectory) {
+    throw new Error('Creating folders is not available')
+  }
+
+  return (await desktop.makeDirectory(path)).path
+}
+
 export async function readDesktopFileDataUrl(path: string): Promise<string> {
   if (!isDesktopFsRemoteMode()) {
     return bridge().readFileDataUrl(path)

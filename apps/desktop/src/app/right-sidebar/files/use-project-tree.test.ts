@@ -287,6 +287,28 @@ describe('useProjectTree', () => {
     expect(result.current.data.map(n => n.name)).toEqual(['README.md'])
   })
 
+  it('shows a folder a change created, through the nearest shown ancestor', async () => {
+    readDir.mockResolvedValueOnce(ok([{ name: 'README.md', path: '/p/README.md', isDirectory: false }]))
+    readDir.mockResolvedValue(
+      ok([
+        { name: 'README.md', path: '/p/README.md', isDirectory: false },
+        { name: 'src', path: '/p/src', isDirectory: true }
+      ])
+    )
+
+    const { result } = renderHook(() => useProjectTree('/p'))
+
+    await waitFor(() => expect(result.current.data.map(n => n.name)).toEqual(['README.md']))
+
+    // A write into folders that did not exist yet: `src/` must appear at the root.
+    act(() => {
+      notifyWorkspaceChanged('/p/src/api/handlers.ts')
+    })
+
+    await waitFor(() => expect(result.current.data.map(n => n.name)).toEqual(['README.md', 'src']))
+    expect(readDir).toHaveBeenLastCalledWith('/p')
+  })
+
   it('discards a stale live refresh after the active registered connection changes', async () => {
     let resolveRefreshFromA: ((result: HermesReadDirResult) => void) | undefined
     readDir.mockResolvedValueOnce(ok([{ name: 'from-a', path: '/shared/from-a', isDirectory: false }]))

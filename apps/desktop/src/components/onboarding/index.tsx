@@ -668,7 +668,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
 
   return (
     <div className="grid gap-2">
-      <div className="grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
+      <div className="scroll-edge-fade grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
         {featured ? <FeaturedProviderRow onSelect={select} provider={featured} /> : null}
         {/* The no-account path: everything runs on this machine. Shipped
             behind the --local launch flag. (Fireworks moved into the
@@ -861,7 +861,7 @@ export function ApiKeyForm({
         </Button>
       ) : null}
 
-      <div className="grid max-h-[42dvh] gap-2 overflow-y-auto p-1 sm:grid-cols-2">
+      <div className="scroll-edge-fade grid max-h-[42dvh] gap-2 overflow-y-auto p-1 sm:grid-cols-2">
         {options.map(o => (
           <button
             className={cn(

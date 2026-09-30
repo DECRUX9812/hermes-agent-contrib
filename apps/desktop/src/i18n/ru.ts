@@ -835,6 +835,10 @@ export const ru = defineLocale({
       composerPopoutTitle: 'Плавающий композер',
       composerPopoutDesc:
         'Позволяет вытягивать композер из его док-зоны. Когда выключено, он остаётся закреплённым внизу.',
+      autoOpenFilesTitle: 'Показывать файлы при открытии проекта',
+      autoOpenFilesDesc: 'При открытии папки или проекта рядом с чатом открывается дерево файлов.',
+      activityRailTitle: 'Панель значков',
+      activityRailDesc: 'Узкая колонка значков у левого края — сессии, боты и все страницы в один клик, даже при свёрнутой боковой панели.',
       openInEditorTitle: 'Открывать файлы в',
       openInEditorDesc: 'Куда «Открыть в…» отправляет файл из дерева. Работает и с SSH-бэкендами.',
       fileBrowserTitle: 'Файловый браузер',
@@ -2979,6 +2983,7 @@ export const ru = defineLocale({
       toSimple: 'Вернуться к простому интерфейсу с упором на чат.'
     },
     searchAria: 'Поиск сеансов',
+    railAria: 'Навигация приложения',
     searchPlaceholder: 'Поиск сеансов…',
     clearSearch: 'Очистить поиск',
     noMatch: query => `Нет сеансов по запросу «${query}».`,
@@ -4217,6 +4222,19 @@ export const ru = defineLocale({
     }
   },
   rightSidebar: {
+    agentTouched: 'Изменён в этом чате',
+    newFile: 'Новый файл',
+    newFolder: 'Новая папка',
+    filterFiles: 'Фильтр файлов',
+    newFileIn: label => `Новый файл в ${label}`,
+    newFolderIn: label => `Новая папка в ${label}`,
+    newFilePlaceholder: 'имя.ts — слэши создают папки',
+    newFolderPlaceholder: 'имя-папки',
+    newFileFailed: 'Не удалось создать файл',
+    newFolderFailed: 'Не удалось создать папку',
+    filterPlaceholder: 'Фильтр файлов…',
+    filterHint: 'Введите часть имени. Поиск по всему проекту, а не только по открытым папкам.',
+    filterNoMatch: 'Нет подходящих файлов',
     aria: 'Правая боковая панель',
     panelsAria: 'Панели правой боковой панели',
     files: 'Файловая система',

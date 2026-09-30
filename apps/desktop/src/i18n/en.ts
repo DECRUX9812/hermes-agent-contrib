@@ -1283,6 +1283,10 @@ export const en: Translations = {
         'Let Hermes spotlight each step as it guides you through the app. Turns off automatically after your first 30 days; you can turn it back on.',
       composerPopoutTitle: 'Floating Composer',
       composerPopoutDesc: 'Allow dragging the composer out of its dock. When off, it stays docked at the bottom.',
+      autoOpenFilesTitle: 'Show files when opening a project',
+      autoOpenFilesDesc: 'Opening a folder or starting work in a project opens the file tree beside the chat.',
+      activityRailTitle: 'Icon rail',
+      activityRailDesc: 'A slim column of icons at the left edge — sessions, bots and every page one click away, even with the sidebar folded.',
       openInEditorTitle: 'Open files in',
       openInEditorDesc: 'Where “Open in …” sends a file from the file tree. Works for SSH backends too.',
       fileBrowserTitle: 'File Browser',
@@ -3860,6 +3864,7 @@ export const en: Translations = {
       toSimple: 'Back to the clean, chat-first interface.'
     },
     searchAria: 'Search sessions',
+    railAria: 'App navigation',
     searchPlaceholder: 'Search sessions…',
     clearSearch: 'Clear search',
     noMatch: query => `No sessions match “${query}”.`,
@@ -4888,7 +4893,7 @@ export const en: Translations = {
   },
 
   onboarding: {
-    headerTitle: "Let's get you setup with Hermes Agent",
+    headerTitle: "Let's get you set up with Hermes Agent",
     headerDesc: 'Connect a model provider to start chatting. Most options take one click.',
     preparingInstall: 'Hermes is finishing install. This usually takes under a minute on first run.',
     starting: 'Starting Hermes…',
@@ -5252,6 +5257,19 @@ export const en: Translations = {
   },
 
   rightSidebar: {
+    agentTouched: 'Edited in this chat',
+    newFile: 'New file',
+    newFolder: 'New folder',
+    filterFiles: 'Filter files',
+    newFileIn: label => `New file in ${label}`,
+    newFolderIn: label => `New folder in ${label}`,
+    newFilePlaceholder: 'name.ts — slashes make folders',
+    newFolderPlaceholder: 'folder-name',
+    newFileFailed: 'Could not create the file',
+    newFolderFailed: 'Could not create the folder',
+    filterPlaceholder: 'Filter files…',
+    filterHint: 'Type part of a file or folder name. Matches the whole project, not just open folders.',
+    filterNoMatch: 'No files match',
     aria: 'Right sidebar',
     panelsAria: 'Right sidebar panels',
     files: 'File system',

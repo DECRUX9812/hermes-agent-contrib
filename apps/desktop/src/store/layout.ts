@@ -626,6 +626,21 @@ export function toggleFileBrowserOpen() {
   trackArea('file_pane', open)
 }
 
+/** Open the file tree when the user starts work in a folder (Open folder…,
+ *  a project's "+", a recent project) — a project is files, so show them.
+ *  Settings → Window & layout can turn it off; closing the tree later is
+ *  respected until the next time work starts somewhere. */
+export const $autoOpenFilesOnProject = persistentAtom('hermes.desktop.autoOpenFilesOnProject', true, Codecs.bool)
+
+/** The icon rail at the window's left edge (app/shell/activity-rail.tsx). */
+export const $activityRailVisible = persistentAtom('hermes.desktop.activityRail', true, Codecs.bool)
+
+export function revealFilesForNewWork(): void {
+  if ($autoOpenFilesOnProject.get() && !$fileBrowserOpen.get()) {
+    setFileBrowserOpen(true)
+  }
+}
+
 export function setFileBrowserOpen(open: boolean) {
   $fileBrowserOpen.set(open)
   setTreeSideCollapsed(fileBrowserSide(), !open)

@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 
 import { requestComposerFocus, requestComposerInsertRefs } from '@/app/chat/composer/focus'
 import { droppedFileInlineRef } from '@/app/chat/composer/inline-refs'
@@ -10,58 +10,16 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useI18n } from '@/i18n'
 import { pathLeaf } from '@/lib/display-path'
 import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
-import { parseQuickOpenQuery, type QuickOpenItem, quickOpenItems, quickOpenPath } from '@/lib/quick-open'
+import { parseQuickOpenQuery, quickOpenPath } from '@/lib/quick-open'
 import { cn } from '@/lib/utils'
-import { $gateway } from '@/store/gateway'
 import { revealFileInTree } from '@/store/layout'
 import { $previewTabs, openPreview } from '@/store/preview'
 import { requestPreviewLine } from '@/store/preview-line'
 import { openFolderAsProject } from '@/store/projects'
 import { $quickOpenOpen, setQuickOpenOpen } from '@/store/quick-open'
-import { $activeSessionId, $currentCwd } from '@/store/session'
+import { $currentCwd } from '@/store/session'
 
-/** Keystroke pause before asking the backend (it walks the repo per call). */
-const SEARCH_DEBOUNCE_MS = 70
-
-interface CompletionResponse {
-  items?: { text?: string }[]
-}
-
-/** Ask the backend's fuzzy path search — the composer's `@file:` search, so it
- *  answers for local, SSH and remote projects alike. Latest query wins. */
-function useFileSearch(query: string, cwd: string): { items: QuickOpenItem[]; loading: boolean } {
-  const gateway = useStore($gateway)
-  const sessionId = useStore($activeSessionId)
-
-  const [state, setState] = useState<{ items: QuickOpenItem[]; loading: boolean; query: string }>({
-    items: [],
-    loading: false,
-    query: ''
-  })
-
-  useEffect(() => {
-    if (!query || !cwd || !gateway) {
-      return
-    }
-
-    let live = true
-
-    const timer = window.setTimeout(() => {
-      setState(prev => ({ ...prev, loading: true }))
-      gateway
-        .request<CompletionResponse>('complete.path', { cwd, session_id: sessionId ?? '', word: `@file:${query}` })
-        .then(response => live && setState({ items: quickOpenItems(response?.items ?? []), loading: false, query }))
-        .catch(() => live && setState({ items: [], loading: false, query }))
-    }, SEARCH_DEBOUNCE_MS)
-
-    return () => {
-      live = false
-      window.clearTimeout(timer)
-    }
-  }, [cwd, gateway, query, sessionId])
-
-  return query ? { items: state.query === query ? state.items : [], loading: state.loading || state.query !== query } : { items: [], loading: false }
-}
+import { useFileSearch } from './use-file-search'
 
 async function openFile(path: string, cwd: string, line: null | number) {
   const target = await normalizeOrLocalPreviewTarget(path, cwd)
