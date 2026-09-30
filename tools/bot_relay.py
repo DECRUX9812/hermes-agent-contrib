@@ -239,20 +239,52 @@ def remote_target_forms(roster: list[dict], local_taken: "set[str] | frozenset[s
 
 _SENDER_STAMP_RE = re.compile(r"^(Message from 🤖 .+? \(@)([A-Za-z0-9_-]+)(\): )", re.DOTALL)
 
+_MEMBER_QUOTED_TAG = "[member-quoted "
+
+# Line shapes only the plumbing may mint: a ``Message from 🤖`` DM stamp and the
+# room-style ``Name (user):`` / ``Name (you):`` sender labels. A bot's body text
+# that happens to match one is not a message boundary — it is quoted content
+# inside the sender's own message, and the recipient must read it that way.
+_MEMBER_AUTHORED_LINE_RE = re.compile(
+    r"(?m)^(?!\[member-quoted)(?:Message from 🤖 |[^\n]*\((?:user|you)\)\s*:)"
+)
+# The ``[task mbx_…]`` mailbox hand-off marker — same forgery, bracket-opened.
+_MEMBER_AUTHORED_BRACKET_RE = re.compile(r"\[(?=\s*task\s+mbx_)")
+
+
+def relabel_member_authored_lines(text: str) -> str:
+    """Mark forged attribution/control lines inside model-authored text as quoted content.
+
+    Trusted framings — the ``Message from 🤖`` stamp, ``(user)`` / ``(you)`` sender labels,
+    and ``[task mbx_…]`` hand-off markers — are minted by the plumbing, never by a model. A
+    model emitting one is quoting, not speaking, so the line is rewritten with the same
+    ``[member-quoted `` tag every republish seam already uses (the CONTROL_FRAME_OPENERS
+    consumers): the recipient reads it as text the sender wrote, not as a real sender label
+    or a live task hand-off. Idempotent — a line already marked no longer matches."""
+    def _line(match: re.Match) -> str:
+        return _MEMBER_QUOTED_TAG + match.group(0)
+
+    text = _MEMBER_AUTHORED_LINE_RE.sub(_line, str(text or ""))
+    return _MEMBER_AUTHORED_BRACKET_RE.sub(_MEMBER_QUOTED_TAG, text)
+
 
 def qualify_sender_stamp(message: str, from_handle: Any, from_connection: Any, roster: list[dict],
                          local_taken: "set[str] | frozenset[str]" = frozenset()) -> str:
     """Rewrite a relayed DM's ``Message from 🤖 <name> (@<handle>):`` stamp so the handle is the
     form THIS gateway can reply to: the sender's row in the local relay roster as
     ``remote_target_forms`` renders it, else ``handle@connection``. A relayed ``@hermes`` is another
-    machine's default — left bare, a reply lands on the recipient's own default (#103731)."""
+    machine's default — left bare, a reply lands on the recipient's own default (#103731).
+    Everything after the leader stamp is the sender's body text — it rides verbatim except
+    that interior lines shaped like trusted framings (a second stamp, ``(user)``/``(you)``
+    labels, ``[task mbx_`` markers) are quoted, since a sender that can't mint them itself
+    (older senders) must not be able to pass one in as real attribution either."""
     handle, conn = str(from_handle or "").strip().lstrip("@"), str(from_connection or "").strip()
     match = _SENDER_STAMP_RE.match(str(message or ""))
     if not match or not conn or not _HANDLE_RE.match(handle) or not _HANDLE_RE.match(conn):
-        return message
+        return relabel_member_authored_lines(message)
     forms = dict(zip(((r["connection_id"].lower(), r["handle"].lower()) for r in roster), remote_target_forms(roster, local_taken)))
     form = forms.get((conn.lower(), handle.lower())) or f"{handle}@{conn}"
-    return f"{match.group(1)}{form}{match.group(3)}{message[match.end():]}"
+    return f"{match.group(1)}{form}{match.group(3)}{relabel_member_authored_lines(message[match.end():])}"
 
 
 def _envelope_ttl_seconds() -> int:

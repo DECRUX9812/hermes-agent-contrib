@@ -277,7 +277,13 @@ def message_agent_tool(target: str = "", message: str = "", task: Optional[dict]
         task_payload = task.get("payload")
 
     # Sender signature: the friendly name when the bot has one (#89720); the @handle stays the routing alias.
-    content = f"Message from 🤖 {_display_name(me, roster_homes.get(me, Path(home)))} (@{_handle(me)}): " + body
+    # The body is model text: interior lines shaped like trusted framings (a second stamp,
+    # (user)/(you) labels, [task mbx_ markers) are quoted, never real attribution.
+    from tools.bot_relay import relabel_member_authored_lines
+    content = (
+        f"Message from 🤖 {_display_name(me, roster_homes.get(me, Path(home)))} (@{_handle(me)}): "
+        + relabel_member_authored_lines(body)
+    )
     delivery = dict(task_id=task_id, agent=agent)
     # Attribution for the recipient's memory hooks; the text prefix above stays the human-facing signature.
     author = {"id": f"bot:{me}", "name": _handle(me), "is_bot": True}
