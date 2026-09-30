@@ -70,7 +70,7 @@ What the Sep 29 X thread and the Discord thread asked for, and where each landed
 | 4 | Impersonation | **Shipped** | #126 attribution comes from the plumbing, and forged `Name (user):` / DM stamps / `[task …]` lines arrive quoted; follow-up narrowed the match so code like `def f(user):` passes through untouched |
 | 5 | Turn cap mid-flow | **Shipped** | #125 per-room budget + `group_chat` config block; running out pauses ("send a message to keep going") and only the hard ceiling stops a runaway |
 | 6 | 6 bots in a chat | **Mitigated** | #3 above: the other bots stay asleep until addressed, so size no longer multiplies cost |
-| 7 | Model switching is clunky | Open | The Bot Chat composer model picker exists; next: a one-click model switch on the bot card |
+| 7 | Model switching is clunky | **Shipped** | One-click model chip in the Bot Chat header and roster card (G7); the Bots-pane card's model is now the same switcher (no config files) |
 | 8 | Starter bots | **Shipped** | #123 Scout / Forge / Pilot one-tap starters in the empty roster |
 | 9 | Mobile, desktop↔VM handoff | Open (larger) | Existing pieces: `hermes://session/open` handoff (#77), `hermes peer`; a mobile client is out of scope for this pass |
 | 10 | Extra-simple mode | Partial | #123 / #124 cut the path to a working bot to one click; a dedicated simple mode is still open |

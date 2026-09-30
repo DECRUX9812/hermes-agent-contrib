@@ -13,6 +13,7 @@
 import type { BotTeammates } from './bot-teammates'
 import { useBotTeammates } from './bot-teammates'
 import { useBots } from './i18n'
+import { BotModelChip } from './model-menu'
 import type { RosterRow } from './types'
 
 export interface BotCardMetaItem {
@@ -77,7 +78,12 @@ export function BotCardMeta({ bot }: { bot: RosterRow }) {
       {items.map((item, index) => (
         <span className="flex min-w-0 items-center gap-1.5" key={item.key}>
           {index > 0 ? <span className="text-(--ui-text-quaternary)">·</span> : null}
-          <span className={item.mono ? 'truncate font-mono' : 'truncate'}>{item.text}</span>
+          {item.key === 'model' ? (
+            // The model reads as the one-click switcher, same chip as the Bot Chat header.
+            <BotModelChip bot={bot} />
+          ) : (
+            <span className={item.mono ? 'truncate font-mono' : 'truncate'}>{item.text}</span>
+          )}
         </span>
       ))}
     </div>
