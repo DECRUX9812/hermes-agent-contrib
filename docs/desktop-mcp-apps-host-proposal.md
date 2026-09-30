@@ -1,6 +1,6 @@
 # Desktop as an MCP Apps host — OpenAI MCP Extensions parity and beyond
 
-Status: proposal · Sep 30 2026 · owner: desktop
+Status: slice 1 shipped on the fork (inline apps) · Sep 30 2026 · owner: desktop
 
 ## Why
 
@@ -190,6 +190,13 @@ tests).
 8. **Web Apps.** Add-by-URL, per-app partitions, the context bridge, and pip for any app.
 9. **Catalog.** `plugin-catalog/` entries can declare that they ship an MCP App; the
    Capabilities catalog shows a preview and one-click install (existing `hermes://mcp/install`).
+
+**Slice 1 status (shipped):** `tools/mcp_apps.py` (registry, `ui://` reads, app calls with the
+visibility and trust gates, app-only tools out of the model schema), `mcp_apps.*` RPC, the
+`mcp_app` descriptor persisted on tool results, and the Desktop's sandboxed inline frame
+(`components/assistant-ui/tool/mcp-app.tsx`, bridge + CSP in `src/lib/mcp-apps/`). Proven live
+against a stdio server built on the SDK's `Apps` extension, and in Chromium: the handshake,
+`tools/call` through the host, a blocked parent reach and a CSP-refused undeclared script.
 
 Slices 1–3 are the minimum to call it "ChatGPT plugins work in Hermes". Slice 8 is the
 headline feature that ChatGPT can't match.
