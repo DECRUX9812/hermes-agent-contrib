@@ -44,11 +44,15 @@ export function BotContextNudge() {
   const botKey = bot ? botSelectionKey(bot) : ''
   const cacheKey = `${botKey}:${storedId}`
 
-  const [size, setSize] = useState<CanonicalChatSize | null>(() => {
+  // The read is keyed to the chat it was taken from — switching sessions must
+  // never flash a nudge measured on the previous chat.
+  const [reading, setReading] = useState<{ key: string; size: CanonicalChatSize | null }>(() => {
     const hit = sizeCache.get(cacheKey)
 
-    return hit && Date.now() - hit.at < SIZE_TTL_MS ? hit.size : null
+    return { key: cacheKey, size: hit && Date.now() - hit.at < SIZE_TTL_MS ? hit.size : null }
   })
+
+  const size = reading.key === cacheKey ? reading.size : null
 
   useEffect(() => {
     if (!bot || !canonical) {
@@ -58,7 +62,7 @@ export function BotContextNudge() {
     const hit = sizeCache.get(cacheKey)
 
     if (hit && Date.now() - hit.at < SIZE_TTL_MS) {
-      setSize(hit.size)
+      setReading({ key: cacheKey, size: hit.size })
 
       return
     }
@@ -68,7 +72,7 @@ export function BotContextNudge() {
       sizeCache.set(cacheKey, { at: Date.now(), size: next })
 
       if (alive) {
-        setSize(next)
+        setReading({ key: cacheKey, size: next })
       }
     })
 
