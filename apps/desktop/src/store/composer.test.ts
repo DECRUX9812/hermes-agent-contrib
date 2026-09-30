@@ -24,6 +24,7 @@ import {
   removeComposerAttachment,
   requestVoiceConversationStart,
   revokeAttachmentPreviewUrls,
+  rotateFreshDraftKey,
   SESSION_DRAFTS_STORAGE_KEY,
   stageSessionDraftAttachments,
   stashSessionDraft,
@@ -274,7 +275,7 @@ describe('session drafts', () => {
   afterEach(() => {
     draftProfile = 'default'
 
-    for (const scope of ['session-a', 'session-b', 'session-new', null, '__new__:alpha', '__new__:beta']) {
+    for (const scope of ['session-a', 'session-b', 'session-new', null, '__new__:alpha', '__new__:beta', '__new__:first', '__new__:second']) {
       clearSessionDraft(scope)
     }
 
@@ -297,6 +298,14 @@ describe('session drafts', () => {
     expect(takeSessionDraft(null).text).toBe('new chat draft')
     expect(takeSessionDraft(undefined).text).toBe('new chat draft')
     expect(takeSessionDraft('session-a').text).toBe('session draft')
+  })
+
+  it('keeps separate fresh-chat lifecycle drafts isolated', () => {
+    stashSessionDraft('__new__:first', 'first unsent chat', [])
+    stashSessionDraft('__new__:second', 'second unsent chat', [])
+
+    expect(takeSessionDraft('__new__:first').text).toBe('first unsent chat')
+    expect(takeSessionDraft('__new__:second').text).toBe('second unsent chat')
   })
 
   it('persists draft text and path-backed chips to localStorage', () => {
@@ -487,6 +496,25 @@ describe('session drafts', () => {
 
     dropComposerDraftsForProfile('beta')
     expect(takeSessionDraft('__new__:beta').text).toBe('')
+  })
+
+  it('gives every new chat its own bucket without letting profiles share one', () => {
+    draftProfile = 'alpha'
+    stashSessionDraft(null, 'first alpha chat', [])
+    rotateFreshDraftKey()
+    expect(takeSessionDraft(null).text).toBe('')
+    stashSessionDraft(null, 'second alpha chat', [])
+
+    draftProfile = 'beta'
+    expect(takeSessionDraft(null).text).toBe('')
+
+    draftProfile = 'alpha'
+    expect(takeSessionDraft(null).text).toBe('second alpha chat')
+    expect(takeSessionDraft('__new__:alpha').text).toBe('first alpha chat')
+
+    dropComposerDraftsForProfile('alpha')
+    expect(takeSessionDraft(null).text).toBe('')
+    expect(takeSessionDraft('__new__:alpha').text).toBe('')
   })
 })
 

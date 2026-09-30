@@ -9,7 +9,7 @@ import {clearNotifications} from '@/store/notifications'
 import {$activeGatewayProfile, $newChatProfile, ensureGatewayAgent, ensureGatewayProfile, isLegacyNewChatProfile, normalizeProfileKey, resolveNewChatOwnerRoute} from '@/store/profile'
 import {$projectScope} from '@/store/project-scope'
 import {resolveNewSessionCwd} from '@/store/projects'
-import {$currentCwd, $currentCwdExplicit, $currentFastMode, $currentModel, $currentProvider, $currentReasoningEffort, $newChatWorkspaceTarget, $yoloActive, getCurrentModelSource, type NewChatWorkspaceTarget, setActiveSessionId, setAwaitingResponse, setBusy, setCurrentBranch, setCurrentCwd, setCurrentCwdExplicit, setCurrentCwdTransient, setCurrentServiceTier, setCurrentUsage, setFreshDraftReady, setIntroSeed, setMessages, setNewChatWorkspaceTarget, setSelectedStoredSessionId, setSessionOwnerHint, setSessionStartedAt, setTurnStartedAt, setWorkspaceCwdOwner, setYoloActive} from '@/store/session'
+import {$currentCwd, $currentCwdExplicit, $currentFastMode, $currentModel, $currentProvider, $currentReasoningEffort, $newChatWorkspaceTarget, $yoloActive, getCurrentModelSource, type NewChatWorkspaceTarget, rotateFreshDraftKey, setActiveSessionId, setAwaitingResponse, setBusy, setCurrentBranch, setCurrentCwd, setCurrentCwdExplicit, setCurrentCwdTransient, setCurrentServiceTier, setCurrentUsage, setFreshDraftReady, setIntroSeed, setMessages, setNewChatWorkspaceTarget, setSelectedStoredSessionId, setSessionOwnerHint, setSessionStartedAt, setTurnStartedAt, setWorkspaceCwdOwner, setYoloActive} from '@/store/session'
 import {holdSessionOwnerUntilForeground, releaseSessionOwnerHold} from '@/store/session-states'
 import {broadcastSessionsChanged} from '@/store/session-sync'
 import type {SessionCreateResponse} from '@/types/hermes'
@@ -117,6 +117,10 @@ export function useCreateActions({ activeSessionIdRef, busyRef, creatingSessionR
       const workspaceTarget = hasWorkspaceTarget
         ? normalizeNewChatWorkspaceTarget(draftOptions.workspaceTarget)
         : undefined
+
+      if (draftOptions.rotateFreshDraftKey !== false) {
+        rotateFreshDraftKey()
+      }
 
       resetViewSync()
       busyRef.current = false
@@ -352,6 +356,7 @@ export function useCreateActions({ activeSessionIdRef, busyRef, creatingSessionR
           // Anything still parked under the pre-session draft bucket belongs
           // to this chat now (#114122); the composer moves it on scope swap.
           announceNewSessionDraftKey(stored)
+          createOverrides?.onComposerScopeAssigned?.(stored)
           navigate(sessionRoute(stored), { replace: true })
           // Other windows (e.g. the main window when this is the pop-out) can't
           // see this session until they re-pull the shared list.

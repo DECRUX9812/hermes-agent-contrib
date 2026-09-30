@@ -47,7 +47,7 @@ import {
 import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
-import { deleteProfile, getAllSessionMessages, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { deleteProfile, getLogs, getSessionMessages, getStatus, hermesApi, type HermesGateway } from '@/hermes'
 import { selectDesktopPaths } from '@/lib/desktop-fs'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
 import { mergeRailArtifacts, type RailArtifactItem, registryArtifactsForSessions } from '@/store/artifact-rail'
@@ -1790,8 +1790,12 @@ export const host = {
 
     const { artifacts: transcript, failures } = await loadArtifactsForSessions(
       recentFirst.slice(0, transcriptLimit),
-      async session =>
-        (await getAllSessionMessages(session.id, { connectionId: route?.connectionId, profile })).messages
+      (session, page) =>
+        getSessionMessages(
+          session.id,
+          { connectionId: route?.connectionId, profile },
+          { ...page, includeCompacted: true, order: 'oldest' }
+        )
     )
 
     return { failures: failures.length, items: mergeRailArtifacts(registry, transcript), sessions }

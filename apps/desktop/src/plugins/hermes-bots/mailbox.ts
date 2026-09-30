@@ -11,7 +11,7 @@
 
 import { host, queryClient, useQuery } from '@hermes/plugin-sdk'
 
-import { RELAY_DELIVER_TIMEOUT_MS } from './relay'
+import { RELAY_DELIVER_TIMEOUT_MS } from './relay-budget'
 import { ID } from './shared'
 import type { GroupMember, ProfileRoute } from './types'
 

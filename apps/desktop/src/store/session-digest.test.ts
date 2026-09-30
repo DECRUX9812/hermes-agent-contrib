@@ -65,9 +65,7 @@ describe('deriveSessionDigest', () => {
   it('leads needs-input with the pending question', () => {
     const digest = deriveSessionDigest('needs-input', {
       clarify: {
-        choices: null,
-        multiSelect: false,
-        question: 'Which environment should I target?\nPick one',
+        questions: [{ choices: null, multiSelect: false, qid: 'q1', question: 'Which environment should I target?\nPick one' }],
         requestId: 'r1',
         sessionId: 'rt1'
       }

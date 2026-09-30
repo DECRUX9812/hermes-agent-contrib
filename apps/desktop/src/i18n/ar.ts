@@ -4748,16 +4748,8 @@ export const ar = defineLocale({
       other: 'غير ذلك',
       placeholder: 'اكتب إجابتك...',
       skip: 'تخطي',
-      continueLabel: 'متابعة',
       confirmAndContinueLabel: 'تأكيد ومتابعة',
-      answeredBadge: 'تمت الإجابة',
-      singleSelectHint: 'اختر واحدا',
-      multiSelectHint: 'حدد كل ما ينطبق',
-      questionProgress: (answered, total) => `تمت الإجابة على ${answered} من ${total}`,
-      skipped: 'تخطّى',
-      lateAnswer: (question, choice) => `ردًا على: «${question}» — إجابتي: ${choice}`,
-      lateAnswerTip: 'صياغة هذه الإجابة كرسالة متابعة',
-      lateAnswerHint: 'لم يعد هذا الطلب بانتظار. اختر خيارًا لصياغته كرسالة متابعة.'
+      questionProgress: (answered, total) => `تمت الإجابة على ${answered} من ${total}`
     },
     tool: {
       copyCode: 'نسخ الكود',
