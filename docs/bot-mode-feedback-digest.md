@@ -78,3 +78,17 @@ What the Sep 29 X thread and the Discord thread asked for, and where each landed
 | 12 | Slow / glitchy | Needs repro | Not reproducible in CI sandboxes; needs traces from affected installs (roster spin and routing classes in #94726 are the likely causes) |
 | — | Bots can't be pointed at projects | **Shipped** | "New topic in a project…" on the bot card starts a bot topic in a chosen project folder |
 | — | Plugins that feel native (OpenAI MCP Extensions parity) | Designed | `docs/desktop-mcp-apps-host-proposal.md`; building next |
+
+## Interface principles (community input, Sep 30 2026)
+
+From Suzu (paraphrased, their own opinions): "our UX paradigms for interacting with agents are
+a mess", and open source is universally weak at UX. What that asks of Hermes, and where each
+stands:
+
+| Principle | What it means for Hermes | Status |
+|---|---|---|
+| Continuity across venues | One bot, one conversation, whether the user is on the Desktop, a phone chat app, or a future surface | Partial: bot identity is venue-independent (Bot Chat title identity; `hermes://session/open` handoff; live-owner delivery). A mobile client is still open |
+| Output shaped by the venue | No code blocks by default on phones; tables only where they render | **Shipped for chat apps**: WhatsApp / Telegram / Signal hints now carry a phone-first rule (code blocks only for text to copy). Existing conversations keep their stored prompt; new ones get it |
+| Venue awareness per turn | When one conversation is reached from several venues, the agent should know where THIS turn came from | Open. Must ride the turn's user message as a short marker, never the system prompt (prompt caching) |
+| Artifacts as composable interface | Agents take in and emit UI pieces, and can verify what they composed | In progress: MCP Apps inline (slice 1 shipped); next slices add model context from apps, panels and forms (`docs/desktop-mcp-apps-host-proposal.md`) |
+| Fleet view | One easy screen for what every bot is doing (UniFi-style: device grid → drill-down) | Open. Building blocks exist (roster presence, HUD run cards, Team rollups, cost analytics); needs one overview page |
