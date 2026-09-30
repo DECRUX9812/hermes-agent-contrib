@@ -44,6 +44,7 @@ export function relabelMemberAttributionLines(text: string, group?: null | strin
     .replace(MEMBER_TASK_MARK_RE, '[member-quoted ')
 
   const members = group ? $groupChats.get()[group]?.members || [] : []
+
   const labels = [
     ...new Set(
       members
