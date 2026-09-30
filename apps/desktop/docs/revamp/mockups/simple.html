@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes Desktop — Simple mode (target)</title>
+<link rel="stylesheet" href="real-tokens.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="app.css">
+</head><body>
+<script src="app.js"></script>
+<script>
+  mount(`<div class="app" data-ui="simple">
+    ${sidebar({ mode: 'simple' })}
+    <main class="center">
+      ${tabstrip([{ t: 'Atlas', on: true, face: face('atlas', 14, 'working', 'on-chrome') + '&nbsp;' }, { t: 'Lisbon trip — plan' }],
+        `<span class="badge default"><span class="pulse" style="width:5px;height:5px;box-shadow:none"></span>Working · step 3 of 5</span><button class="btn btn-outline xs">${ic('eye', 12)}Watch</button>`)}
+      <div class="thread"><div class="thread-in">${story()}</div></div>
+      ${dock({ mode: 'simple' })}
+    </main></div>`)
+</script></body></html>

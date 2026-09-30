@@ -4,6 +4,38 @@ import { defineLocale } from './define-locale'
 import { introJa } from './intro-ja'
 
 export const ja = defineLocale({
+  todayBrief: {
+    greeting: {
+      morning: 'おはようございます',
+      afternoon: 'こんにちは',
+      evening: 'こんばんは',
+      night: '夜遅くまでお疲れさまです'
+    },
+    needsYou: '対応待ち',
+    running: '実行中',
+    finished: '不在中に完了',
+    scheduled: '今日の予定',
+    recent: '前回の続きから'
+  },
+
+  live: {
+    title: 'ライブ',
+    noSession: 'セッションが選択されていません',
+    emptyTitle: 'まだ何も実行されていません',
+    emptyBody:
+      'すべてのコマンド、ファイル読み取り、ツール呼び出しが開始と同時にここに表示され、出力もすべて表示されます。要約はしません。',
+    count: total => `${total} 件のアクション`,
+    countRunning: (total, running) => `${total} 件のアクション · ${running} 件実行中`,
+    follow: '追従',
+    followHint: '最新のアクションに移動して表示し続ける',
+    copy: 'コマンドと出力をコピー',
+    exitCode: code => `終了コード ${code}`,
+    runningFor: elapsed => `実行中 ${elapsed}`,
+    waitingForOutput: '実行中 — 完了すると出力が表示されます',
+    noOutput: '出力なし',
+    openLive: 'ライブ'
+  },
+
   connectors: {
     title: 'アプリを接続',
     connect: '接続',
@@ -803,6 +835,10 @@ export const ja = defineLocale({
       hideThreadTimelineDesc: '各会話の右端にあるナビゲーションバーを非表示にします。',
       reasoningCollapsedTitle: '思考ブロックをデフォルトで折りたたむ',
       reasoningCollapsedDesc: 'ストリーミング中の推論を、開くまで折りたたんだまま利用できるようにします。',
+      lookTitle: 'スタイル',
+      lookDesc: 'ソフトは角が丸く余白があり、ラベルも控えめです。クラシックは従来のシャープで角ばった表示です。',
+      lookSoft: 'ソフト',
+      lookClassic: 'クラシック',
       uiScaleTitle: 'UI スケール',
       uiScaleDesc: (percent: number) =>
         `アプリ全体の文字と UI を拡大縮小します。Cmd/Ctrl と +、-、0 でも変更できます。現在: ${percent}%`,
@@ -4775,6 +4811,10 @@ export const ja = defineLocale({
           title: 'このメッセージは大きすぎます',
           body: 'リクエストがモデルの上限を超えました。会話を圧縮するか新しいチャットを開始してから、再送信してください。'
         },
+        no_provider_configured: {
+          title: 'AIモデルがまだ設定されていません',
+          body: 'モデルを選ぶかサインインしてから、もう一度メッセージを送信してください。'
+        },
         model_not_found: {
           title: 'このモデルは利用できません',
           body: provider =>
@@ -4925,16 +4965,9 @@ export const ja = defineLocale({
       placeholder: '回答を入力…',
       skip: 'スキップ',
       skipped: 'スキップ済み',
-      continueLabel: '続行',
+      noAnswer: '回答なし',
       confirmAndContinueLabel: '確定して続行',
-      answeredBadge: '回答済み',
-      singleSelectHint: '1つ選ぶ',
-      multiSelectHint: '該当するものをすべて選択',
       questionProgress: (answered, total) => `${total}問中${answered}問回答済み`,
-      lateAnswer: (question, choice) => `「${question}」について — 私の回答: ${choice}`,
-      lateAnswerTip: 'この回答をフォローアップメッセージとして下書きします',
-      lateAnswerHint:
-        'この質問はもう回答を待っていません。選択肢を選ぶとフォローアップメッセージとして下書きされます。',
       notDelivered:
         'この質問はアプリに届かなかったため、ここでは回答できません。停止を押してターンを終了し、チャットで返信してください。'
     },

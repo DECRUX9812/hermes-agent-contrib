@@ -10,6 +10,7 @@ import { Slider } from '@/components/ui/slider'
 import type { DesktopMarketplaceSearchItem } from '@/global'
 import { saveHermesConfig } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { EDITORS } from '@/lib/editor-handoff'
 import { triggerHaptic } from '@/lib/haptics'
 import { Check, Download, Loader2, Palette, Trash2 } from '@/lib/icons'
 import { selectableCardClass } from '@/lib/selectable-card'
@@ -17,6 +18,7 @@ import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
 import { $backdrop, setBackdrop } from '@/store/backdrop'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
+import { $preferredEditor } from '@/store/editor-handoff'
 import { $embedAllowed, $embedMode, clearEmbedAllowed, type EmbedMode, setEmbedMode } from '@/store/embed-consent'
 import {
   $interfaceMode,
@@ -65,6 +67,7 @@ import {
   TRANSLUCENCY_STEP,
   TRANSLUCENCY_SUPPORTED
 } from '@/store/translucency'
+import { $uiLook, setUiLook, UI_LOOKS, type UiLook } from '@/store/ui-look'
 import { $userBubbleTransparency, setUserBubbleTransparency } from '@/store/user-bubble-transparency'
 import { $vibeHeartsEnabled, setVibeHeartsEnabled } from '@/store/vibe-hearts-enabled'
 import { $zoomPercent, setZoomPercent } from '@/store/zoom'
@@ -170,11 +173,6 @@ function ThemePreview({ name, mode }: { name: string; mode: 'light' | 'dark' }) 
   )
 }
 
-// UI scale presets, as zoom percentages. 100 is Chromium's actual-size
-// baseline; the shipped default is the 90% preset. Ids double as the percent
-// values sent to the main process. A Cmd/Ctrl +/- step landing between
-// presets highlights nothing, and the row description keeps showing the
-// exact current percent.
 const UI_SCALE_PRESETS = ['90', '100', '110', '125', '150', '175'] as const
 const ids = SETTING_IDS.appearance
 type UiScalePreset = (typeof UI_SCALE_PRESETS)[number]
@@ -434,6 +432,7 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const embedAllowed = useStore($embedAllowed)
   const composerPopoutGesturesEnabled = useStore($composerPopoutGesturesEnabled)
   const fileBrowserOpen = useStore($fileBrowserOpen)
+  const preferredEditor = useStore($preferredEditor)
   const fileBrowserShadowed = useStore($modeShadowed('fileBrowserOpen'))
   const translucency = useStore($translucency)
   const glassMode = translucency.mode === 'glass' && GLASS_SUPPORTED
@@ -514,6 +513,13 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
     { id: 'detailed', label: a.sessionDensityDetailed }
   ] as const satisfies readonly { id: SessionListDensity; label: string }[]
 
+  const uiLook = useStore($uiLook)
+
+  const lookOptions = UI_LOOKS.map(id => ({
+    id,
+    label: id === 'soft' ? a.lookSoft : a.lookClassic
+  })) satisfies readonly { id: UiLook; label: string }[]
+
   const interfaceModeOptions = INTERFACE_MODES.map(id => ({
     id,
     label: t.interfaceMode[id].label
@@ -572,6 +578,24 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
               description={isSavingLocale ? t.language.saving : t.language.description}
               id={settingElementId(ids.language)}
               title={t.language.label}
+            />
+          )}
+
+          {show('theme') && (
+            <ListRow
+              action={
+                <SegmentedControl
+                  onChange={id => {
+                    triggerHaptic('selection')
+                    setUiLook(id)
+                  }}
+                  options={lookOptions}
+                  value={uiLook}
+                />
+              }
+              description={a.lookDesc}
+              id={settingElementId(ids.look)}
+              title={a.lookTitle}
             />
           )}
 
@@ -957,6 +981,24 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
               id={settingElementId(ids.fileBrowser)}
               label={a.fileBrowserTitle}
               onChange={setFileBrowserOpen}
+            />
+          )}
+
+          {show('window-layout') && (
+            <ListRow
+              action={
+                <SegmentedControl
+                  onChange={id => {
+                    triggerHaptic('selection')
+                    $preferredEditor.set(id)
+                  }}
+                  options={EDITORS.map(editor => ({ id: editor.id, label: editor.label }))}
+                  value={preferredEditor}
+                />
+              }
+              description={a.openInEditorDesc}
+              id={settingElementId(ids.openInEditor)}
+              title={a.openInEditorTitle}
             />
           )}
 

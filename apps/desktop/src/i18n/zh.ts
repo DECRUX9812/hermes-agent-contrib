@@ -216,6 +216,7 @@ export const zh = defineLocale({
     revealExplorer: '在文件资源管理器中显示',
     revealFileManager: '打开所在文件夹',
     revealInSidebar: '在文件树中显示',
+    openInEditor: name => `在 ${name} 中打开`,
     copyPath: '复制路径',
     copyRelativePath: '复制相对路径',
     download: '下载',
@@ -460,6 +461,7 @@ export const zh = defineLocale({
     actions: {
       'keybinds.openPanel': '打开键盘快捷键',
       'nav.commandPalette': '打开命令面板',
+      'nav.quickOpen': '快速打开文件',
       'nav.commandCenter': '打开命令中心',
       'nav.settings': '打开设置',
       'nav.profiles': '打开配置',
@@ -885,6 +887,10 @@ export const zh = defineLocale({
       hideThreadTimelineDesc: '隐藏每个对话右侧边缘的导航条。',
       reasoningCollapsedTitle: '默认折叠推理过程',
       reasoningCollapsedDesc: '保留流式推理内容，但在您打开前保持折叠。',
+      lookTitle: '外观风格',
+      lookDesc: '柔和：圆角、留白充足、标签低调；经典：保留原来利落方正的界面。',
+      lookSoft: '柔和',
+      lookClassic: '经典',
       uiScaleTitle: '界面缩放',
       uiScaleDesc: (percent: number) =>
         `缩放整个应用的文字和界面。也可使用 Cmd/Ctrl 加 +、- 或 0 调整。当前：${percent}%`,
@@ -955,6 +961,8 @@ export const zh = defineLocale({
       toursDesc: '让 Hermes 逐步高亮每个位置，带你熟悉应用。开始使用满30天后自动关闭，你可以重新开启。',
       composerPopoutTitle: '悬浮输入框',
       composerPopoutDesc: '允许将输入框拖出底部停靠区。关闭时，输入框停靠在底部。',
+      openInEditorTitle: '用以下编辑器打开文件',
+      openInEditorDesc: '文件树中“在…中打开”使用的编辑器。也适用于 SSH 后端。',
       fileBrowserTitle: '文件浏览器',
       fileBrowserDesc: '打开工作区时，在聊天旁显示文件浏览器。标题栏的切换按钮也会更改此设置。',
       vibeHeartsTitle: '心情爱心',
@@ -2940,6 +2948,13 @@ export const zh = defineLocale({
       copyLink: '复制链接',
       copyFailed: '无法复制链接'
     },
+    reach: {
+      title: (name: string) => `随时随地联系 ${name}`,
+      scan: (name: string) => `扫码即可在手机上与 ${name} 聊天，或分享链接。`,
+      empty: (name: string) => `为 ${name} 连接 Telegram 或 Slack，即可在手机上聊天。`,
+      connect: '连接',
+      manage: '管理'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot 令牌',
@@ -3108,6 +3123,19 @@ export const zh = defineLocale({
   },
 
   profiles: {
+    askRules: {
+      title: (name: string) => `${name} 何时需要问你？`,
+      modes: {
+        manual: { label: '先问我', description: (name: string) => `遇到任何有风险的操作，${name} 都会先停下来问你。` },
+        smart: { label: '自行判断', description: (name: string) => `${name} 处理日常工作，遇到看起来有风险的操作时再问你。` },
+        off: { label: '直接去做', description: (name: string) => `${name} 从不等待你。被禁止的命令仍然会被阻止。` }
+      },
+      rulesLabel: '规则',
+      rulesPlaceholder: '用你自己的话写规则，例如：发送邮件或花钱之前一定要先问我。',
+      save: '保存规则',
+      discard: '放弃',
+      failed: '保存失败，之前的规则仍然有效。'
+    },
     close: '关闭配置档案',
     nameHint: '小写字母、数字、连字符和下划线。必须以字母或数字开头。',
     title: '配置档案',
@@ -3451,6 +3479,65 @@ export const zh = defineLocale({
     openInBrowserFailed: '无法在浏览器中打开',
     missingTitle: '产物不可用',
     missingBody: '此产物已不在本地注册表中。'
+  },
+
+  panels: {
+    button: '面板',
+    title: '在聊天旁边',
+    subtitle: '打开你需要的面板，它会出现在对话旁边。',
+    needsProject: '打开一个文件夹后可用',
+    openFolder: '打开文件夹…',
+    arrange: '排列…',
+    arrangements: { focus: '专注', review: '审阅', watch: '观察', build: '构建' },
+    items: {
+      files: { label: '文件', description: '浏览并预览项目' },
+      changes: { label: '更改', description: '查看智能体改了什么' },
+      browser: { label: '浏览器', description: '在聊天旁打开网页' },
+      terminal: { label: '终端', description: '自己运行命令' },
+      live: { label: '实时活动', description: '智能体运行的每条命令' },
+      artifacts: { label: '产物', description: '这个聊天生成的内容' },
+      canvas: { label: '画布', description: '在智能体也能绘制的白板上画草图' }
+    }
+  },
+  quickOpen: {
+    title: '快速打开',
+    placeholder: project => `在 ${project} 中搜索文件…`,
+    noProject: '打开一个文件夹以搜索其中的文件',
+    noProjectBody: '快速打开会搜索当前项目中的文件。',
+    openFolder: '打开文件夹…',
+    noMatch: query => `没有与“${query}”匹配的文件`,
+    recent: '已在聊天旁打开',
+    hint: '输入文件名。加上 :42 可跳到指定行。',
+    line: line => `第 ${line} 行`,
+    openHint: '打开',
+    attachHint: '添加到消息',
+    lineHint: '名称:42 跳到该行'
+  },
+  recentProjects: { title: '你的项目', openFolder: '打开文件夹…' },
+  todayBrief: {
+    greeting: { morning: '早上好', afternoon: '下午好', evening: '晚上好', night: '还在忙？' },
+    needsYou: '需要你处理',
+    running: '正在运行',
+    finished: '你离开时已完成',
+    scheduled: '今天的安排',
+    recent: '从上次继续'
+  },
+
+  live: {
+    title: '实时',
+    noSession: '未选择会话',
+    emptyTitle: '尚未运行任何操作',
+    emptyBody: '每条命令、每次文件读取和工具调用都会在开始时显示在这里，并附带完整输出。不做任何摘要。',
+    count: total => `${total} 个操作`,
+    countRunning: (total, running) => `${total} 个操作 · ${running} 个运行中`,
+    follow: '跟随',
+    followHint: '跳到最新操作并保持可见',
+    copy: '复制命令和输出',
+    exitCode: code => `退出码 ${code}`,
+    runningFor: elapsed => `已运行 ${elapsed}`,
+    waitingForOutput: '运行中——完成后显示输出',
+    noOutput: '无输出',
+    openLive: '实时'
   },
 
   artifactRail: {
@@ -5141,6 +5228,10 @@ export const zh = defineLocale({
         streaming: '回复完成前连接已断开。请重试以重新发送。'
       },
       errorCodes: {
+        no_provider_configured: {
+          title: '尚未设置 AI 模型',
+          body: '请选择模型或登录，然后重新发送消息。'
+        },
         provider_policy_blocked: {
           title: '账户设置阻止了此模型',
           body: provider => `${provider} 无法按你账户的数据或隐私设置路由此请求。请选择其他模型或切换服务商。`
@@ -5264,15 +5355,9 @@ export const zh = defineLocale({
       placeholder: '输入你的答案…',
       skip: '跳过',
       skipped: '已跳过',
-      continueLabel: '继续',
+      noAnswer: '未回答',
       confirmAndContinueLabel: '确认并继续',
-      answeredBadge: '已回答',
-      singleSelectHint: '选一个',
-      multiSelectHint: '可多选',
       questionProgress: (answered, total) => `已回答 ${answered}/${total}`,
-      lateAnswer: (question, choice) => `关于"${question}" — 我的回答: ${choice}`,
-      lateAnswerTip: '将此回答起草为后续消息',
-      lateAnswerHint: '此问题已不再等待回答。选择一个选项会将其起草为后续消息。',
       notDelivered: '此问题未送达应用，无法在此回答。请按停止结束本轮，然后在聊天中回复。'
     },
     catalogInstall: {

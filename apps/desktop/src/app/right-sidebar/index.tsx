@@ -13,9 +13,9 @@ import { cn } from '@/lib/utils'
 import { $panesFlipped } from '@/store/layout'
 import { notifyError } from '@/store/notifications'
 import { openPreview } from '@/store/preview'
-import { openFolderAsProject } from '@/store/projects'
 import { $currentCwd, $selectedStoredSessionId, $workspaceCwdOwner } from '@/store/session'
 
+import { BesideChatChooser } from '../shell/panel-launcher'
 import { SidebarPanelLabel } from '../shell/sidebar-label'
 
 import { ProjectTree } from './files/tree'
@@ -157,15 +157,7 @@ function FilesystemTab({
   // which upserts/enters the project and anchors a fresh session at the picked
   // folder — entirely decoupled from $currentCwd.
   if (!hasWorkspace) {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-        <SidebarPanelLabel className="pl-0 text-(--ui-text-quaternary)">{r.noProjectOpen}</SidebarPanelLabel>
-        <Button className="h-7 gap-1.5 text-xs" onClick={() => void openFolderAsProject()} size="sm" variant="outline">
-          <Codicon name="folder-opened" size="0.8125rem" />
-          {r.openFolder}
-        </Button>
-      </div>
-    )
+    return <BesideChatChooser />
   }
 
   return (

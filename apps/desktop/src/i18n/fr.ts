@@ -423,6 +423,7 @@ export const frOverrides = {
     revealExplorer: "Afficher dans l'Explorateur de fichiers",
     revealFileManager: 'Ouvrir le dossier parent',
     revealInSidebar: "Afficher dans l'arborescence",
+    openInEditor: name => `Ouvrir dans ${name}`,
     copyPath: 'Copier le chemin',
     copyRelativePath: 'Copier le chemin relatif',
     download: 'Télécharger',
@@ -695,6 +696,7 @@ export const frOverrides = {
     actions: {
       'keybinds.openPanel': 'Ouvrir les raccourcis clavier',
       'nav.commandPalette': 'Ouvrir la palette de commandes',
+      'nav.quickOpen': 'Ouverture rapide de fichier',
       'nav.commandCenter': 'Ouvrir le centre de commandes',
       'nav.settings': 'Ouvrir les paramètres',
       'nav.profiles': 'Ouvrir les profils',
@@ -1172,6 +1174,10 @@ export const frOverrides = {
       reasoningCollapsedTitle: 'Réduire le raisonnement par défaut',
       reasoningCollapsedDesc:
         "Conserver le raisonnement diffusé en continu sans le développer tant que vous ne l'ouvrez pas.",
+      lookTitle: 'Apparence',
+      lookDesc: 'Doux : arrondi et aéré, libellés discrets. Classique : l’interface nette et carrée d’origine.',
+      lookSoft: 'Doux',
+      lookClassic: 'Classique',
       uiScaleTitle: "Échelle de l'interface",
       uiScaleDesc: (percent: number) =>
         `Redimensionne le texte et les contrôles dans toute l'application. Cmd/Ctrl avec +, - et 0 fonctionne aussi. Actuel : ${percent}%.`,
@@ -1251,6 +1257,8 @@ export const frOverrides = {
       composerPopoutTitle: 'Détacher la zone de saisie',
       composerPopoutDesc:
         'Permet de faire glisser la zone de saisie hors de son emplacement. Désactivé, elle reste ancrée en bas.',
+      openInEditorTitle: 'Ouvrir les fichiers dans',
+      openInEditorDesc: 'L’éditeur utilisé par « Ouvrir dans… » depuis l’arborescence. Fonctionne aussi avec les backends SSH.',
       fileBrowserTitle: 'Navigateur de fichiers',
       fileBrowserDesc:
         "Affiche le navigateur de fichiers à côté du chat lorsqu'un espace de travail est ouvert. Le bouton de la barre de titre modifie aussi ce réglage.",
@@ -3491,6 +3499,13 @@ export const frOverrides = {
       copyLink: 'Copier le lien',
       copyFailed: 'Impossible de copier le lien'
     },
+    reach: {
+      title: (name: string) => `Joindre ${name} partout`,
+      scan: (name: string) => `Scannez pour discuter avec ${name} depuis votre téléphone, ou partagez le lien.`,
+      empty: (name: string) => `Donnez à ${name} sa propre adresse Telegram ou Slack pour discuter depuis votre téléphone.`,
+      connect: 'Connecter',
+      manage: 'Gérer'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Jeton du bot',
@@ -3701,6 +3716,25 @@ export const frOverrides = {
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `Quand ${name} doit-il vous demander ?`,
+      modes: {
+        manual: { label: 'Demander d’abord', description: (name: string) => `${name} s’arrête et demande avant toute action risquée.` },
+        smart: {
+          label: 'À son jugement',
+          description: (name: string) => `${name} gère le travail courant et demande quand quelque chose semble risqué.`
+        },
+        off: {
+          label: 'Faire sans demander',
+          description: (name: string) => `${name} n’attend jamais. Les commandes bloquées restent bloquées.`
+        }
+      },
+      rulesLabel: 'Règles maison',
+      rulesPlaceholder: 'Vos règles, avec vos mots. Ex. : toujours demander avant d’envoyer un e-mail ou de dépenser.',
+      save: 'Enregistrer',
+      discard: 'Annuler',
+      failed: 'Échec de l’enregistrement. Vos règles précédentes restent actives.'
+    },
     close: 'Fermer les profils',
     nameHint: 'Lettres minuscules, chiffres, tirets et underscores. Doit commencer par une lettre ou un chiffre.',
     title: 'Profils',
@@ -4065,6 +4099,66 @@ export const frOverrides = {
     missingTitle: 'Artefact indisponible',
     missingBody: 'Cet artefact ne figure plus dans le registre local.'
   },
+  panels: {
+    button: 'Panneaux',
+    title: 'À côté du chat',
+    subtitle: 'Activez ce dont vous avez besoin. Chaque panneau s’ouvre à côté de la conversation.',
+    needsProject: 'Ouvrez un dossier pour l’utiliser',
+    openFolder: 'Ouvrir un dossier…',
+    arrange: 'Organiser…',
+    arrangements: { focus: 'Focus', review: 'Relire', watch: 'Suivre', build: 'Construire' },
+    items: {
+      files: { label: 'Fichiers', description: 'Parcourir et prévisualiser le projet' },
+      changes: { label: 'Modifications', description: 'Relire ce que l’agent a modifié' },
+      browser: { label: 'Navigateur', description: 'Ouvrir des pages à côté du chat' },
+      terminal: { label: 'Terminal', description: 'Lancer des commandes vous-même' },
+      live: { label: 'Activité en direct', description: 'Chaque commande de l’agent, en temps réel' },
+      artifacts: { label: 'Artefacts', description: 'Ce que ce chat a produit' },
+      canvas: { label: 'Canevas', description: 'Esquissez sur un tableau où l’agent dessine aussi' }
+    }
+  },
+  quickOpen: {
+    title: 'Ouverture rapide',
+    placeholder: project => `Rechercher des fichiers dans ${project}…`,
+    noProject: 'Ouvrez un dossier pour chercher ses fichiers',
+    noProjectBody: 'L’ouverture rapide cherche dans les fichiers du projet en cours.',
+    openFolder: 'Ouvrir un dossier…',
+    noMatch: query => `Aucun fichier ne correspond à « ${query} »`,
+    recent: 'Ouverts à côté du chat',
+    hint: 'Tapez un nom de fichier. Ajoutez :42 pour aller à une ligne.',
+    line: line => `ligne ${line}`,
+    openHint: 'ouvrir',
+    attachHint: 'ajouter au message',
+    lineHint: 'nom:42 va à une ligne'
+  },
+  recentProjects: { title: 'Vos projets', openFolder: 'Ouvrir un dossier…' },
+  todayBrief: {
+    greeting: { morning: 'Bonjour', afternoon: 'Bon après-midi', evening: 'Bonsoir', night: 'Encore au travail ?' },
+    needsYou: 'Vous attend',
+    running: 'En cours',
+    finished: 'Terminé pendant votre absence',
+    scheduled: 'Prévu aujourd’hui',
+    recent: 'Reprendre là où vous vous étiez arrêté'
+  },
+
+  live: {
+    title: 'Direct',
+    noSession: 'Aucune session sélectionnée',
+    emptyTitle: "Rien ne s'est encore exécuté",
+    emptyBody:
+      "Chaque commande, lecture de fichier et appel d'outil apparaît ici dès son démarrage, avec sa sortie complète. Rien n'est résumé.",
+    count: total => `${total} ${total === 1 ? 'action' : 'actions'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'action' : 'actions'} · ${running} en cours`,
+    follow: 'Suivre',
+    followHint: "Aller à l'action la plus récente et la garder visible",
+    copy: 'Copier la commande et la sortie',
+    exitCode: code => `sortie ${code}`,
+    runningFor: elapsed => `en cours depuis ${elapsed}`,
+    waitingForOutput: 'En cours — la sortie apparaît à la fin',
+    noOutput: 'Aucune sortie',
+    openLive: 'Direct'
+  },
+
   artifactRail: {
     empty: "Aucun artefact dans cette session pour l'instant",
     noSession: 'Aucune session sélectionnée',
@@ -5603,6 +5697,9 @@ export const frOverrides = {
     sourceLineTitle: 'Clic pour sélectionner · shift-clic pour étendre · glisser vers le compositeur',
     source: 'SOURCE',
     renderedPreview: 'APERÇU',
+    table: 'TABLEAU',
+    tableTruncated: (rows: number) => `${rows.toLocaleString()} premières lignes affichées. La source contient tout le fichier.`,
+    canvas: 'CANEVAS',
     diff: 'DIFF',
     unknownSize: 'taille inconnue',
     binaryTitle: 'Cela ressemble à un fichier binaire',
@@ -5908,6 +6005,10 @@ export const frOverrides = {
           body: provider =>
             `${provider} est injoignable ou n'a pas répondu à temps. Vérifiez votre connexion internet, puis réessayez.`
         },
+        no_reply: {
+          title: "La réponse n'a pas abouti",
+          body: 'Hermes a terminé ce tour sans réponse. Réessayez pour la renvoyer.'
+        },
         stream_drop: {
           title: 'La réponse a été interrompue',
           body: 'La connexion a été coupée avant la fin de la réponse. Réessayez pour la renvoyer.'
@@ -5929,6 +6030,10 @@ export const frOverrides = {
         payload_too_large: {
           title: 'Ce message est trop volumineux',
           body: 'La demande était trop grande pour le modèle. Compressez la conversation ou démarrez-en une nouvelle, puis réessayez.'
+        },
+        no_provider_configured: {
+          title: "Aucun modèle d'IA n'est encore configuré",
+          body: 'Choisissez un modèle ou connectez-vous, puis renvoyez votre message.'
         },
         model_not_found: {
           title: "Ce modèle n'est pas disponible",
@@ -6096,14 +6201,9 @@ export const frOverrides = {
       placeholder: 'Saisissez votre réponse…',
       skip: 'Passer',
       skipped: 'Ignoré',
-      continueLabel: 'Continuer',
+      noAnswer: 'Pas de réponse',
       confirmAndContinueLabel: 'Confirmer et continuer',
-      answeredBadge: 'Répondu',
       questionProgress: (answered, total) => `${answered} réponse${answered === 1 ? '' : 's'} sur ${total}`,
-      lateAnswer: (question, choice) => `Re : « ${question} » — ma réponse : ${choice}`,
-      lateAnswerTip: 'Rédiger cette réponse comme message de suivi',
-      lateAnswerHint:
-        "Cette invite n'attend plus de réponse. Choisissez une option pour la rédiger comme message de suivi.",
       notDelivered:
         "Cette question n'a pas atteint l'app, elle ne peut donc pas être répondue ici. Appuyez sur Arrêter pour terminer le tour, puis répondez dans le chat."
     },

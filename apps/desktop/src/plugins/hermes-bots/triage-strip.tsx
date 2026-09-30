@@ -53,6 +53,16 @@ const TRIAGE_GLYPHS: Record<TriageItem['kind'], string> = {
   unreachable: 'plug'
 }
 
+/** What the row's button says: what you are about to do, by what the bot needs. */
+const TRIAGE_ACTION: Record<TriageItem['kind'], (b: BotsText) => string> = {
+  attention: b => b.triage.actionReview,
+  delivery: b => b.triage.actionOpen,
+  'needs-input': b => b.triage.actionAnswer,
+  overdue: b => b.triage.actionOpen,
+  'turn-failed': b => b.triage.actionReview,
+  unreachable: b => b.triage.actionOpen
+}
+
 export function TriageStrip({
   bots,
   jobs,
@@ -109,38 +119,62 @@ export function TriageStrip({
     return null
   }
 
+  // Revamp "Needs you": a quiet section, not an alarm banner — the amber
+  // count carries the urgency, each row names the bot and the one thing it
+  // needs, and its button says what you are about to do.
   return (
-    <div
-      className="mx-2 mb-1 flex flex-col gap-0.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5"
-      data-testid="bot-triage-strip"
-    >
-      <div className="flex items-center gap-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-        <Codicon name="warning" />
-        {b.triage.title}
+    <section className="mb-1 px-2" data-testid="bot-triage-strip">
+      <div className="flex items-center justify-between px-1 pt-1 pb-1.5">
+        <span className="ui-section-label">{b.triage.title}</span>
+        <span className="rounded-full bg-amber-500/15 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+          {items.length}
+        </span>
       </div>
-      {items.map(item => {
-        const meta = botRosterMeta(item.bot, allMeta)
-        const { shape, color, image } = botAppearance(item.bot.name, meta)
-        const name = displayName(item.bot, meta)
+      <div className="grid gap-0.5 rounded-lg bg-amber-500/[0.06] p-1">
+        {items.map(item => {
+          const meta = botRosterMeta(item.bot, allMeta)
+          const { shape, color, image } = botAppearance(item.bot.name, meta)
+          const name = displayName(item.bot, meta)
 
-        return (
-          <button
-            aria-label={b.triage.openItem(name)}
-            className={cn(
-              'flex min-w-0 items-center gap-2 rounded px-1 py-0.5 text-left',
-              'text-[0.75rem] text-(--ui-text-secondary) hover:bg-(--chrome-action-hover)'
-            )}
-            data-testid={`bot-triage:${item.key}`}
-            key={item.key}
-            onClick={() => onOpen(item.bot)}
-            type="button"
-          >
-            <BotFace color={avatarColor(color, item.bot.name)} image={image} name={item.bot.name} shape={shape} size={14} />
-            <Codicon name={TRIAGE_GLYPHS[item.kind]} />
-            <span className="min-w-0 flex-1 truncate">{triageLabel(b, item, name)}</span>
-          </button>
-        )
-      })}
-    </div>
+          return (
+            <button
+              aria-label={b.triage.openItem(name)}
+              className={cn(
+                'group/triage flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 text-left',
+                'hover:bg-(--chrome-action-hover)'
+              )}
+              data-testid={`bot-triage:${item.key}`}
+              key={item.key}
+              onClick={() => onOpen(item.bot)}
+              type="button"
+            >
+              <span className="shrink-0 rounded-md ring-1 ring-amber-500/50">
+                <BotFace
+                  color={avatarColor(color, item.bot.name)}
+                  image={image}
+                  name={item.bot.name}
+                  shape={shape}
+                  size={26}
+                />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex min-w-0 items-center gap-1 text-xs font-medium text-foreground">
+                  <Codicon
+                    className="shrink-0 text-amber-600 dark:text-amber-300"
+                    name={TRIAGE_GLYPHS[item.kind]}
+                    size="0.7rem"
+                  />
+                  <span className="truncate">{triageLabel(b, item, name)}</span>
+                </span>
+                <span className="block truncate text-[0.6875rem] text-(--ui-text-tertiary)">{name}</span>
+              </span>
+              <span className="shrink-0 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary) group-hover/triage:border-(--ui-stroke-primary) group-hover/triage:text-foreground">
+                {TRIAGE_ACTION[item.kind](b)}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </section>
   )
 }

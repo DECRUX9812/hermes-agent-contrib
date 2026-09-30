@@ -44,11 +44,11 @@ import { useI18n } from '@/i18n'
 import { connectorCalls, mcpTargets } from '@/lib/connector-tools'
 import { PrettyLink, LinkifiedText as SharedLinkifiedText, urlSlugTitleLabel } from '@/lib/external-link'
 import { AlertCircle, CheckCircle2 } from '@/lib/icons'
-import { isOnboardingEnabled } from '@/lib/onboarding-enabled'
 import { toolResultRecord } from '@/lib/tool-result-metadata'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { useStoresSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
+import { revealLivePane } from '@/store/live-activity'
 import { recordPreviewArtifact } from '@/store/preview-status'
 import { sessionApprovalRequest } from '@/store/prompts'
 import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
@@ -841,8 +841,31 @@ export function splitRunItems(toolNames: readonly string[]): RunItem[] {
 // The one grey line that stands in for a run of tool calls — "Explored 3
 // files, ran 5 commands". Live, it narrates in the present tense above the
 // ticker by default; its toggle can reveal the activity before it settles.
+/** "Live" on a run's summary line: the raw record of the run (every command
+ *  and its full output) in the Live pane, scrolled to the run's first call.
+ *  The summary stays the transcript's presentation; this is the door past it. */
+function LiveRunLink({ callId }: { callId?: string }) {
+  const { t } = useI18n()
+
+  return (
+    <button
+      className="mr-1.5 inline-flex items-center gap-0.5 rounded px-1 text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)"
+      data-slot="live-run-link"
+      onClick={event => {
+        event.stopPropagation()
+        revealLivePane(callId)
+      }}
+      type="button"
+    >
+      <Codicon name="pulse" size="0.7rem" />
+      {t.live.openLive}
+    </button>
+  )
+}
+
 function ToolRunHeader({
   completedAt,
+  firstCallId,
   live,
   onToggle,
   open,
@@ -850,6 +873,7 @@ function ToolRunHeader({
   summary
 }: {
   completedAt?: number
+  firstCallId?: string
   live: boolean
   onToggle?: () => void
   open: boolean
@@ -861,7 +885,12 @@ function ToolRunHeader({
       <ScaffoldRow
         onToggle={onToggle}
         open={open}
-        trailing={<TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />}
+        trailing={
+          <>
+            <LiveRunLink callId={firstCallId} />
+            <TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />
+          </>
+        }
       >
         <FadeText className={cn(SCAFFOLD_LABEL_CLASS, 'truncate')}>
           {live ? <span className="shimmer">{summary}</span> : summary}
@@ -877,6 +906,8 @@ interface ToolRunState {
   count: number
   /** Disclosure id of each row in the run, so the run can tell when one is open. */
   entryIds: readonly string[]
+  /** The run's first tool call — where the Live pane scrolls to. */
+  firstCallId?: string
   key: string
   live: boolean
   startedAt?: number
@@ -946,6 +977,7 @@ function useToolRun(startIndex: number, endIndex: number): ToolRunState {
           count: tools.length,
           approvalActivity: tools.length > 0 && tools.every(isApprovalActivity),
           entryIds: tools.map(tool => toolEntryDisclosureId(state.message.id, tool)),
+          firstCallId: tools[0]?.toolCallId,
           key: `${state.message.id}:${tools[0]?.toolCallId ?? ''}`,
           live,
           startedAt: timelineTools.reduce<number | undefined>(
@@ -987,7 +1019,7 @@ const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> =
 }) => {
   const messageRunning = useAuiState(selectMessageRunning)
 
-  const { completedAt, count, entryIds, key, live, startedAt, summary, approvalActivity } = useToolRun(
+  const { completedAt, count, entryIds, firstCallId, key, live, startedAt, summary, approvalActivity } = useToolRun(
     startIndex,
     endIndex
   )
@@ -1023,6 +1055,7 @@ const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> =
         {count > 1 && !representedByApproval && (
           <ToolRunHeader
             completedAt={completedAt}
+            firstCallId={firstCallId}
             live={live}
             onToggle={() => setToolDisclosureOpen(disclosureId, !expanded)}
             open={expanded}
@@ -1066,7 +1099,7 @@ const BotActivityPill: FC<PropsWithChildren<{ endIndex: number; startIndex: numb
 }) => {
   const messageRunning = useAuiState(selectMessageRunning)
 
-  const { approvalActivity, completedAt, entryIds, key, live, startedAt, summary } = useToolRun(
+  const { approvalActivity, completedAt, entryIds, firstCallId, key, live, startedAt, summary } = useToolRun(
     startIndex,
     endIndex
   )
@@ -1082,7 +1115,7 @@ const BotActivityPill: FC<PropsWithChildren<{ endIndex: number; startIndex: numb
   // Pills start collapsed — the one-line summary IS the presentation — but a
   // persisted disclosure (or a row the user opened inside) wins, matching the
   // same disclosure id the full transcript would use.
-  const expanded = (persistedOpen ?? rowOpen) ?? false
+  const expanded = persistedOpen ?? rowOpen ?? false
 
   return (
     <ToolRunDisclosureContext.Provider value={disclosureId}>
@@ -1093,7 +1126,12 @@ const BotActivityPill: FC<PropsWithChildren<{ endIndex: number; startIndex: numb
               <ScaffoldRow
                 onToggle={() => setToolDisclosureOpen(disclosureId, !expanded)}
                 open={expanded}
-                trailing={<TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />}
+                trailing={
+                  <>
+                    <LiveRunLink callId={firstCallId} />
+                    <TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />
+                  </>
+                }
               >
                 <FadeText className={cn(SCAFFOLD_LABEL_CLASS, 'truncate')}>
                   {live ? <span className="shimmer">{summary}</span> : summary}
@@ -1132,8 +1170,7 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
       .slice(Math.max(0, startIndex), endIndex + 1)
       .map(part =>
         part.type === 'tool-call'
-          ? (isOnboardingEnabled() && connectorCalls(part.toolName, part.args).length) ||
-            mcpTargets(part.toolName, part.args).length
+          ? connectorCalls(part.toolName, part.args).length || mcpTargets(part.toolName, part.args).length
             ? CONNECTION_CARD_KEY
             : part.toolName
           : ''

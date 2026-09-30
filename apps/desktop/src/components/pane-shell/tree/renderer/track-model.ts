@@ -135,6 +135,10 @@ export interface PaneContribution extends PaneSizing {
    *  Self-subscribing like `tabLead`; absent/empty renders nothing. Hidden on
    *  vertical rails — the rail has no room for text next to the label. */
   tabTrail?: () => React.ReactNode
+  /** The TAB LABEL is user content (a conversation's title), not chrome: it
+   *  renders in its own case at reading size instead of the 9px uppercase
+   *  chrome label, which turned a chat title into an unreadable shout. */
+  contentTitle?: boolean
   /** A node the ACTIVE pane contributes to its zone strip's pinned trailing
    *  edge — a per-pane affordance that answers "what is this surface" at a
    *  glance (a session's skill chip). Read only for the zone's active pane,

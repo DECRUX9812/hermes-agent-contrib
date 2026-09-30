@@ -137,7 +137,10 @@ export function SidebarDateDivider({
     </span>
   )
 
-  const rule = <span aria-hidden="true" className="h-px min-w-4 flex-1 bg-(--ui-stroke-tertiary)" />
+  // A caption, no trailing rule: the hover-only caret and "+" hold their space
+  // while invisible, so a flex rule started and ended at a different x under
+  // every label. The spacer keeps the action pinned right.
+  const rule = <span aria-hidden="true" className="min-w-0 flex-1" />
 
   return (
     // group/workspace: a divider heads a group the same way a repo header does,

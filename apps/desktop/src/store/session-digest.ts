@@ -132,7 +132,7 @@ function liveDigest(dot: SessionDotState, src: SessionDigestSources): string {
 /** The digest for one session, or `null` when the row has nothing to say. */
 export function deriveSessionDigest(dot: SessionDotState, src: SessionDigestSources): null | string {
   if (dot === 'needs-input') {
-    const question = oneLine(src.clarify?.questions?.[0]?.question) || oneLine(src.clarify?.question)
+    const question = oneLine(src.clarify?.questions?.[0]?.question)
 
     if (question) {
       return question

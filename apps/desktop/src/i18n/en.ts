@@ -467,6 +467,7 @@ export const en: Translations = {
     revealExplorer: 'Reveal in File Explorer',
     revealFileManager: 'Open containing folder',
     revealInSidebar: 'Reveal in filetree',
+    openInEditor: name => `Open in ${name}`,
     copyPath: 'Copy path',
     copyRelativePath: 'Copy relative path',
     download: 'Download',
@@ -752,6 +753,7 @@ export const en: Translations = {
     actions: {
       'keybinds.openPanel': 'Open keyboard shortcuts',
       'nav.commandPalette': 'Open command palette',
+      'nav.quickOpen': 'Quick open file',
       'nav.commandCenter': 'Open command center',
       'nav.settings': 'Open settings',
       'nav.profiles': 'Open profiles',
@@ -1202,6 +1204,10 @@ export const en: Translations = {
       hideThreadTimelineDesc: 'Hide the navigation bars along the right edge of each conversation.',
       reasoningCollapsedTitle: 'Collapse thinking by default',
       reasoningCollapsedDesc: 'Keep streamed reasoning available without expanding it until you open it.',
+      lookTitle: 'Look',
+      lookDesc: 'Soft is rounded and roomy with quiet labels; Classic keeps the original crisp, square chrome.',
+      lookSoft: 'Soft',
+      lookClassic: 'Classic',
       uiScaleTitle: 'UI Scale',
       uiScaleDesc: (percent: number) =>
         `Scales text and controls across the whole app. Cmd/Ctrl with +, - and 0 also works. Current: ${percent}%.`,
@@ -1277,6 +1283,8 @@ export const en: Translations = {
         'Let Hermes spotlight each step as it guides you through the app. Turns off automatically after your first 30 days; you can turn it back on.',
       composerPopoutTitle: 'Floating Composer',
       composerPopoutDesc: 'Allow dragging the composer out of its dock. When off, it stays docked at the bottom.',
+      openInEditorTitle: 'Open files in',
+      openInEditorDesc: 'Where “Open in …” sends a file from the file tree. Works for SSH backends too.',
       fileBrowserTitle: 'File Browser',
       fileBrowserDesc:
         'Show the file browser beside the chat when a workspace is open. The titlebar toggle changes this too.',
@@ -3154,6 +3162,13 @@ export const en: Translations = {
       copyLink: 'Copy link',
       copyFailed: 'Could not copy the link'
     },
+    reach: {
+      title: (name: string) => `Reach ${name} anywhere`,
+      scan: (name: string) => `Scan to chat with ${name} from your phone, or share the link.`,
+      empty: (name: string) => `Give ${name} its own Telegram or Slack address to chat from your phone.`,
+      connect: 'Connect',
+      manage: 'Manage'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot token',
@@ -3324,6 +3339,25 @@ export const en: Translations = {
   },
 
   profiles: {
+    askRules: {
+      title: (name: string) => `When should ${name} ask you?`,
+      modes: {
+        manual: { label: 'Ask me first', description: (name: string) => `${name} stops and asks before anything risky.` },
+        smart: {
+          label: 'Use judgment',
+          description: (name: string) => `${name} handles routine work and asks when something looks risky.`
+        },
+        off: {
+          label: 'Just do it',
+          description: (name: string) => `${name} never waits for you. Blocked commands still stay blocked.`
+        }
+      },
+      rulesLabel: 'House rules',
+      rulesPlaceholder: 'House rules, in your words. e.g. Always ask before sending email or spending money.',
+      save: 'Save rules',
+      discard: 'Discard',
+      failed: "Couldn't save. Your previous rules are still in effect."
+    },
     close: 'Close profiles',
     nameHint: 'Lowercase letters, digits, hyphens, and underscores. Must start with a letter or digit.',
     title: 'Profiles',
@@ -3683,6 +3717,66 @@ export const en: Translations = {
     openInBrowserFailed: 'Could not open in browser',
     missingTitle: 'Artifact unavailable',
     missingBody: 'This artifact is no longer in the local registry.'
+  },
+
+  panels: {
+    button: 'Panels',
+    title: 'Beside the chat',
+    subtitle: 'Turn on what you need. Each opens next to the conversation.',
+    needsProject: 'Open a folder to use this',
+    openFolder: 'Open a folder…',
+    arrange: 'Arrange…',
+    arrangements: { focus: 'Focus', review: 'Review', watch: 'Watch', build: 'Build' },
+    items: {
+      files: { label: 'Files', description: 'Browse and preview your project' },
+      changes: { label: 'Changes', description: 'Review what the agent changed' },
+      browser: { label: 'Browser', description: 'Open pages right beside the chat' },
+      terminal: { label: 'Terminal', description: 'Run commands yourself' },
+      live: { label: 'Live activity', description: 'Every command the agent runs, as it runs' },
+      artifacts: { label: 'Artifacts', description: 'Things this chat has made' },
+      canvas: { label: 'Canvas', description: 'Sketch on a board the agent can draw on too' }
+    }
+  },
+  quickOpen: {
+    title: 'Quick open',
+    placeholder: project => `Search files in ${project}…`,
+    noProject: 'Open a folder to search its files',
+    noProjectBody: 'Quick open searches the files of the project you are in.',
+    openFolder: 'Open a folder…',
+    noMatch: query => `No file matches “${query}”`,
+    recent: 'Open beside the chat',
+    hint: 'Type a file name. Add :42 to jump to a line.',
+    line: line => `line ${line}`,
+    openHint: 'open',
+    attachHint: 'add to message',
+    lineHint: 'name:42 goes to a line'
+  },
+  recentProjects: { title: 'Your projects', openFolder: 'Open folder…' },
+  todayBrief: {
+    greeting: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Working late?' },
+    needsYou: 'Needs you',
+    running: 'Running now',
+    finished: 'Finished while you were away',
+    scheduled: 'Coming up today',
+    recent: 'Pick up where you left off'
+  },
+
+  live: {
+    title: 'Live',
+    noSession: 'No session selected',
+    emptyTitle: 'Nothing has run yet',
+    emptyBody:
+      'Every command, file read and tool call shows up here the moment it starts, with its full output. Nothing is summarized.',
+    count: total => `${total} ${total === 1 ? 'action' : 'actions'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'action' : 'actions'} · ${running} running`,
+    follow: 'Follow',
+    followHint: 'Jump to the newest action and keep it in view',
+    copy: 'Copy command and output',
+    exitCode: code => `exit ${code}`,
+    runningFor: elapsed => `running ${elapsed}`,
+    waitingForOutput: 'Running — output appears when it finishes',
+    noOutput: 'No output',
+    openLive: 'Live'
   },
 
   artifactRail: {
@@ -5217,6 +5311,9 @@ export const en: Translations = {
     sourceLineTitle: 'Click to select · shift-click to extend · drag to composer',
     source: 'SOURCE',
     renderedPreview: 'PREVIEW',
+    table: 'TABLE',
+    tableTruncated: (rows: number) => `Showing the first ${rows.toLocaleString()} rows. Source has the whole file.`,
+    canvas: 'CANVAS',
     diff: 'DIFF',
     unknownSize: 'unknown size',
     binaryTitle: 'This looks like a binary file',
@@ -5518,6 +5615,10 @@ export const en: Translations = {
           title: 'The reply was cut off',
           body: 'The connection dropped before the reply finished. Retry to send it again.'
         },
+        no_reply: {
+          title: "The reply didn't finish",
+          body: 'Hermes ended this turn without a reply. Retry to send it again.'
+        },
         upstream_blocked: {
           title: 'A firewall blocked the request',
           body: provider =>
@@ -5535,6 +5636,10 @@ export const en: Translations = {
         payload_too_large: {
           title: 'This message is too large',
           body: 'The request was too big for the model. Compress the conversation or start a new chat, then send again.'
+        },
+        no_provider_configured: {
+          title: 'No AI model is set up yet',
+          body: 'Choose a model or sign in, then send your message again.'
         },
         model_not_found: {
           title: 'This model is not available',
@@ -5705,15 +5810,9 @@ export const en: Translations = {
       placeholder: 'Type your answer…',
       skip: 'Skip',
       skipped: 'Skipped',
-      continueLabel: 'Continue',
+      noAnswer: 'No answer',
       confirmAndContinueLabel: 'Confirm and continue',
-      answeredBadge: 'Answered',
-      singleSelectHint: 'Pick one',
-      multiSelectHint: 'Select all that apply',
       questionProgress: (answered, total) => `${answered} of ${total} answered`,
-      lateAnswer: (question, choice) => `Re: "${question}" — my answer: ${choice}`,
-      lateAnswerTip: 'Draft this answer as a follow-up message',
-      lateAnswerHint: 'This prompt is no longer waiting. Pick an option to draft it as a follow-up message.',
       notDelivered:
         "This question didn't reach the app, so it can't be answered here. Press Stop to end the turn, then reply in chat."
     },

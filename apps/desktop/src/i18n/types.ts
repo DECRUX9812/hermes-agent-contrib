@@ -504,6 +504,7 @@ export interface Translations {
     revealExplorer: string
     revealFileManager: string
     revealInSidebar: string
+    openInEditor: (name: string) => string
     copyPath: string
     copyRelativePath: string
     download: string
@@ -999,6 +1000,10 @@ export interface Translations {
       hideThreadTimelineDesc: string
       reasoningCollapsedTitle: string
       reasoningCollapsedDesc: string
+      lookTitle: string
+      lookDesc: string
+      lookSoft: string
+      lookClassic: string
       uiScaleTitle: string
       uiScaleDesc: (percent: number) => string
       sessionDensityTitle: string
@@ -1066,6 +1071,8 @@ export interface Translations {
       toursDesc: string
       composerPopoutTitle: string
       composerPopoutDesc: string
+      openInEditorTitle: string
+      openInEditorDesc: string
       fileBrowserTitle: string
       fileBrowserDesc: string
       vibeHeartsTitle: string
@@ -2712,6 +2719,13 @@ export interface Translations {
       copyLink: string
       copyFailed: string
     }
+    reach: {
+      title: (name: string) => string
+      scan: (name: string) => string
+      empty: (name: string) => string
+      connect: string
+      manage: string
+    }
     fieldCopy: Record<string, { label?: string; help?: string; placeholder?: string }>
     platformIntro: Record<string, string>
   }
@@ -2792,6 +2806,15 @@ export interface Translations {
   }
 
   profiles: {
+    askRules: {
+      title: (name: string) => string
+      modes: Record<'manual' | 'smart' | 'off', { label: string; description: (name: string) => string }>
+      rulesLabel: string
+      rulesPlaceholder: string
+      save: string
+      discard: string
+      failed: string
+    }
     close: string
     nameHint: string
     title: string
@@ -3107,6 +3130,57 @@ export interface Translations {
     openInBrowserFailed: string
     missingTitle: string
     missingBody: string
+  }
+
+  panels: {
+    button: string
+    title: string
+    subtitle: string
+    needsProject: string
+    openFolder: string
+    arrange: string
+    arrangements: Record<'build' | 'focus' | 'review' | 'watch', string>
+    items: Record<'artifacts' | 'browser' | 'canvas' | 'changes' | 'files' | 'live' | 'terminal', { label: string; description: string }>
+  }
+  quickOpen: {
+    title: string
+    placeholder: (project: string) => string
+    noProject: string
+    noProjectBody: string
+    openFolder: string
+    noMatch: (query: string) => string
+    recent: string
+    hint: string
+    line: (line: number) => string
+    openHint: string
+    attachHint: string
+    lineHint: string
+  }
+  recentProjects: { title: string; openFolder: string }
+  todayBrief: {
+    greeting: { morning: string; afternoon: string; evening: string; night: string }
+    needsYou: string
+    running: string
+    finished: string
+    scheduled: string
+    recent: string
+  }
+
+  live: {
+    title: string
+    noSession: string
+    emptyTitle: string
+    emptyBody: string
+    count: (total: number) => string
+    countRunning: (total: number, running: number) => string
+    follow: string
+    followHint: string
+    copy: string
+    exitCode: (code: number) => string
+    runningFor: (elapsed: string) => string
+    waitingForOutput: string
+    noOutput: string
+    openLive: string
   }
 
   artifactRail: {
@@ -4487,6 +4561,9 @@ export interface Translations {
     sourceLineTitle: string
     source: string
     renderedPreview: string
+    table: string
+    tableTruncated: (rows: number) => string
+    canvas: string
     diff: string
     unknownSize: string
     binaryTitle: string
@@ -4837,15 +4914,9 @@ export interface Translations {
       placeholder: string
       skip: string
       skipped: string
-      continueLabel: string
+      noAnswer: string
       confirmAndContinueLabel: string
-      answeredBadge: string
-      singleSelectHint: string
-      multiSelectHint: string
       questionProgress: (answered: number, total: number) => string
-      lateAnswer: (question: string, choice: string) => string
-      lateAnswerTip: string
-      lateAnswerHint: string
       notDelivered: string
     }
     catalogInstall: {

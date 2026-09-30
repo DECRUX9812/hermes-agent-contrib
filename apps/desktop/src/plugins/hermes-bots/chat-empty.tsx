@@ -13,9 +13,11 @@ import { useState } from 'react'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { chatStarters } from './bot-starters'
-import { $botMeta, $lastRoster } from './data'
+import { $openBotChat } from './bot-state'
+import { $botMeta, $lastRoster, botRosterKey } from './data'
 import { useBots } from './i18n'
-import { displayName } from './labels'
+import { botRole, displayName } from './labels'
+import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
 import { botRosterMeta, requestForBot } from './routing'
 import type { RosterRow } from './types'
 
@@ -56,6 +58,83 @@ export function botForChat(roster: readonly RosterRow[], sessionId: string): nul
   return botForStoredId(roster, sessionId) ?? botForStoredId(roster, focusedStoredId())
 }
 
+/** The bot this window just opened a chat for, while the chat on screen is
+ *  that chat. Covers the gap between opening a brand-new Bot Chat and the
+ *  roster poll that reports it as the bot's `canonical_session` — without it
+ *  a new bot's first chat was a blank page for up to a poll. Display only: it
+ *  never decides which session a row opens (that stays title-resolved). */
+export function botForOpenedChat(
+  roster: readonly RosterRow[],
+  opened: { key: string; openedRegistryId: string; openedSessionId?: string } | null,
+  storedId: string
+): null | RosterRow {
+  if (!opened || !storedId || !Array.isArray(roster)) {
+    return null
+  }
+
+  if (storedId !== opened.openedRegistryId && storedId !== opened.openedSessionId) {
+    return null
+  }
+
+  return roster.find(bot => botRosterKey(bot) === opened.key) ?? null
+}
+
+const WORKING_KINDS = new Set(['working', 'routine', 'group', 'background', 'delegated'])
+
+/**
+ * The bot, present: its face (looking at you, and at work when it is) over
+ * its name. Classic letters the name in the splash wordmark; the Soft look
+ * trades that for a larger character on a floor shadow with a plain name and
+ * a "role · status" line (styles.css, `bot-hero`) — the character is the
+ * identity, the way a person's face is.
+ */
+function BotHero({
+  bot,
+  color,
+  image,
+  name,
+  role,
+  shape
+}: {
+  bot: RosterRow
+  color: string
+  image: null | string
+  name: string
+  role: string
+  shape: string
+}) {
+  const b = useBots()
+  const live = useBotLiveStatus(bot)
+  const status = botLiveStatusLabel(live, b.roster)
+
+  return (
+    <div className="flex flex-col items-center" data-slot="bot-hero">
+      <div className="flex justify-center" data-slot="bot-hero-face" style={{ marginBottom: FACE_GAP }}>
+        <BotFace
+          color={color}
+          follow
+          image={image}
+          mood={WORKING_KINDS.has(live.kind) ? 'work' : 'idle'}
+          name={bot.name}
+          shape={shape}
+          size={FACE_SIZE}
+        />
+      </div>
+
+      <div className="w-full" data-slot="bot-hero-wordmark">
+        <Wordmark className="mb-1" text={name} width="calc(80% - 1rem)" />
+      </div>
+      <div className="hidden flex-col items-center gap-1" data-slot="bot-hero-name">
+        <h1 className="m-0 text-2xl font-semibold tracking-tight text-foreground">{name}</h1>
+        <p className="m-0 flex items-center gap-1.5 text-[0.8125rem] text-(--ui-text-tertiary)">
+          {WORKING_KINDS.has(live.kind) && <span className="size-1.5 rounded-full bg-(--ui-accent)" />}
+          {[role, status].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export function BotChatEmpty({ sessionId }: { sessionId: string }) {
   const b = useBots()
   // Subscribed, not read once: roster, metadata and focus all land after the
@@ -65,9 +144,10 @@ export function BotChatEmpty({ sessionId }: { sessionId: string }) {
   const roster = useValue($lastRoster)
   const allMeta = useValue($botMeta)
   useValue(host.state.focusedStoredSessionId)
+  const opened = useValue($openBotChat)
   // Hooks before the early return — a bot resolving late must not reorder them.
   const [sent, setSent] = useState(false)
-  const bot = botForChat(roster, sessionId)
+  const bot = botForChat(roster, sessionId) ?? botForOpenedChat(roster, opened, focusedStoredId())
 
   if (!bot) {
     return null
@@ -123,18 +203,14 @@ export function BotChatEmpty({ sessionId }: { sessionId: string }) {
       style={{ transform: `translateY(-${FACE_BLOCK / 2}px)` }}
     >
       <div className="w-full min-w-0">
-        <div className="flex justify-center" style={{ marginBottom: FACE_GAP }}>
-          <BotFace
-            color={avatarColor(color, bot.name)}
-            image={photo ? image : null}
-            mood="idle"
-            name={bot.name}
-            shape={shape}
-            size={FACE_SIZE}
-          />
-        </div>
-
-        <Wordmark className="mb-1" text={name} width="calc(80% - 1rem)" />
+        <BotHero
+          bot={bot}
+          color={avatarColor(color, bot.name)}
+          image={photo ? image : null}
+          name={name}
+          role={botRole(bot, meta)}
+          shape={shape}
+        />
 
         <p className="m-0 text-center leading-normal tracking-tight">{b.bot.chatEmpty}</p>
 

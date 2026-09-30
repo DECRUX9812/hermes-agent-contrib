@@ -2,11 +2,14 @@ import { useStore } from '@nanostores/react'
 import { atom, computed } from 'nanostores'
 import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
 
+import { CanvasViewer } from '@/app/chat/right-rail/canvas-viewer'
+import { TableViewer } from '@/app/chat/right-rail/table-viewer'
 import { SessionDraftTitle } from '@/app/chat/session-draft-title'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
 import { SessionTabStatus } from '@/app/chat/session-tab-status'
 import { SkillTag } from '@/app/chat/skill-tag'
 import { PALETTE_AREA, type PaletteContribution, paletteToggle } from '@/app/command-palette/contrib'
+import { installChatRoomGuard } from '@/app/shell/chat-room'
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
 import { AskDirective } from '@/components/assistant-ui/ask-directive'
 import { InlinePreviewDirective } from '@/components/assistant-ui/inline-preview-directive'
@@ -46,8 +49,11 @@ import { Slot } from '@/contrib/react/slot'
 import { registry } from '@/contrib/registry'
 import { discoverRuntimePlugins } from '@/contrib/runtime-loader'
 import { LocalizedTabTitle, translateNow } from '@/i18n'
+import { isCanvasPath } from '@/lib/canvas-file'
 import { NEW_SESSION_TITLE, sessionTitle as storedSessionTitle } from '@/lib/chat-runtime'
+import { FILE_VIEWERS_AREA, type FileViewerContribution } from '@/lib/file-viewers'
 import {
+  Activity,
   Archive,
   Download,
   FileText,
@@ -55,6 +61,7 @@ import {
   Package,
   PanelBottom,
   PanelTop,
+  Pencil,
   SlidersHorizontal,
   Upload,
   Users,
@@ -72,6 +79,7 @@ import {
   openArtifactsRail,
   toggleArtifactsRail
 } from '@/store/artifact-rail'
+import { createCanvas } from '@/store/canvas'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $interfaceMode, $showsAdvancedChrome, setModeContext, toggleSimpleMode } from '@/store/interface-mode'
 import {
@@ -87,6 +95,7 @@ import {
   SIDEBAR_MAX_WIDTH,
   sidebarSide
 } from '@/store/layout'
+import { $liveOpen, closeLivePane, LIVE_PANE_ID, openLivePane, toggleLivePane } from '@/store/live-activity'
 import { $profiles } from '@/store/profile'
 import { $profileRailVisible } from '@/store/profile-rail-prefs'
 import { runExportProfileFlow, runImportProfileFlow } from '@/store/profile-share'
@@ -137,7 +146,7 @@ import { $workspaceIsPage, WORKSPACE_PAGE_HEADER_AREA } from '../routes'
 
 import { BASIC_TREE, DEFAULT_TREE, registerLayoutPresets } from './layout-presets'
 import { bindLayoutSides } from './layout-sides'
-import { ArtifactsPane, FilesPane, LogsPane, ReviewPaneContent } from './panes'
+import { ArtifactsPane, FilesPane, LivePane, LogsPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
 import { WorkspacePageHeaderHostContext } from './workspace-page-header'
 
@@ -173,6 +182,12 @@ const renderWorkspacePane = () => (
 // Boot-hidden panes mount behind display:none (instant-toggle contract) — defer
 // them to idle so they're off the first-paint path, warm before reveal.
 const idle = (node: ReactElement) => <IdleMount>{node}</IdleMount>
+
+// The Live pane reads command output, so it docks wider than the file rails
+// and may be dragged to half a laptop screen.
+// Scales with the window: roomy on a desktop monitor, never a third of a laptop.
+const LIVE_PANE_WIDTH = 'clamp(18rem, 30vw, 26rem)'
+const LIVE_PANE_MAX_WIDTH = '44rem'
 // The main tab carries the same session context menu as tile tabs (targets
 // the loaded primary session; no menu on a fresh draft).
 const wrapWorkspaceTab = (tab: ReactElement) => <WorkspaceTabMenu>{tab}</WorkspaceTabMenu>
@@ -321,6 +336,24 @@ registry.registerMany([
       tabTitleText: () => translateNow('sidebar.artifacts')
     },
     render: () => idle(<ArtifactsPane />)
+  },
+  {
+    id: LIVE_PANE_ID,
+    area: 'panes',
+    title: translateNow('live.title'),
+    // Follows the focused session like the artifacts rail: every tool call,
+    // raw, as it happens. Hidden until summoned (palette, a run's "Live").
+    // Docks wider than the file rails: it shows command output, not names.
+    data: {
+      placement: 'right',
+      collapsible: true,
+      width: LIVE_PANE_WIDTH,
+      minWidth: FILE_BROWSER_MIN_WIDTH,
+      maxWidth: LIVE_PANE_MAX_WIDTH,
+      tabTitle: () => <LocalizedTabTitle select={t => t.live.title} />,
+      tabTitleText: () => translateNow('live.title')
+    },
+    render: () => idle(<LivePane />)
   }
 ])
 
@@ -598,6 +631,7 @@ const syncWorkspaceTitle = () => {
       // The same per-tab status the session tiles carry — the workspace tab
       // is a session tab too, so it shows elapsed + what it's doing.
       tabTrail: () => <SessionTabStatus storedSessionId={selected} />,
+      contentTitle: true,
       // A draft's name lives in its composer, not in any session row, so the
       // label subscribes to it directly — typing renames the tab without
       // re-registering the pane.
@@ -689,6 +723,10 @@ bindPaneVisibility(
 )
 // The artifacts rail follows the focused session — no workspace gate.
 bindPaneVisibility('artifacts', $artifactsOpen, closeArtifactsRail, openArtifactsRail)
+// The live action feed, same shape: follows the focused session, no workspace gate.
+bindPaneVisibility(LIVE_PANE_ID, $liveOpen, closeLivePane, openLivePane)
+// Small windows: the sidebar folds before the chat gets unreadably narrow.
+installChatRoomGuard()
 // ⌃` / statusbar toggle — the terminal COLLAPSES to a rail (tab stays), not
 // hides; PTYs stay alive while collapsed (see PersistentTerminal). Simple has
 // no terminal: where chrome is off a closed one hides, rail and all, and ⌃`
@@ -716,6 +754,18 @@ registry.register(
     // On-screen truth, same contract as the logs toggle below.
     get: () => isPaneVisible(ARTIFACTS_PANE_ID),
     set: () => toggleArtifactsRail()
+  })
+)
+
+// ⌘K door for the live action feed (a run summary's "Live" is the other).
+registry.register(
+  paletteToggle({
+    id: 'live.toggle',
+    label: 'Toggle live activity',
+    icon: Activity,
+    keywords: ['live', 'activity', 'actions', 'commands', 'terminal', 'output', 'tool calls', 'watch', 'verbose'],
+    get: () => isPaneVisible(LIVE_PANE_ID),
+    set: () => toggleLivePane()
   })
 )
 
@@ -904,6 +954,43 @@ registry.register({
   data: {
     render: ({ sessionId }) => <MutedSessionGlyph sessionId={sessionId} />
   } satisfies SessionRowSlotContribution
+})
+
+// `.excalidraw` files as a live canvas you and the agent share (the file is
+// the shared surface; the heavy editor loads only when one opens).
+registry.register({
+  id: 'viewer.canvas',
+  area: FILE_VIEWERS_AREA,
+  data: {
+    label: () => translateNow('preview.canvas'),
+    matches: isCanvasPath,
+    preferred: 'always',
+    render: ({ filePath, text }) => <CanvasViewer filePath={filePath} text={text} />
+  } satisfies FileViewerContribution
+})
+
+registry.register({
+  id: 'canvas.new',
+  area: PALETTE_AREA,
+  data: {
+    id: 'canvas.new',
+    label: 'New canvas',
+    icon: Pencil,
+    keywords: ['canvas', 'draw', 'sketch', 'whiteboard', 'diagram', 'excalidraw', 'tldraw'],
+    run: () => void createCanvas()
+  } satisfies PaletteContribution
+})
+
+// The first file viewer: CSV/TSV as a table, through the same area plugins use.
+registry.register({
+  id: 'viewer.table',
+  area: FILE_VIEWERS_AREA,
+  data: {
+    label: () => translateNow('preview.table'),
+    matches: filePath => /\.(csv|tsv)$/i.test(filePath),
+    preferred: true,
+    render: ({ filePath, text }) => <TableViewer filePath={filePath} text={text} />
+  } satisfies FileViewerContribution
 })
 
 // ---------------------------------------------------------------------------

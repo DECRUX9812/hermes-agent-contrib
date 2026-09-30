@@ -217,6 +217,8 @@
     --theme-neutral-chrome: #f3f3f3;
     --theme-neutral-sidebar: #f3f3f3;
     --theme-neutral-card: #fcfcfc;
+    --theme-mix-text-tertiary: 64%;
+    --theme-mix-text-quaternary: 50%;
     --theme-mix-chrome: 92%;
     --theme-mix-sidebar: 100%;
     --theme-mix-card: 22%;
@@ -363,8 +365,10 @@
     );
     --ui-text-primary: color-mix(in srgb, var(--ui-base) 94%, transparent);
     --ui-text-secondary: color-mix(in srgb, var(--ui-base) 74%, transparent);
-    --ui-text-tertiary: color-mix(in srgb, var(--ui-base) 54%, transparent);
-    --ui-text-quaternary: color-mix(in srgb, var(--ui-base) 36%, transparent);
+    /* Muted tiers: share of the foreground, resolved per skin by applyTheme (themes/text-ramp.ts)
+       so faint text clears its contrast floor. Light needs more ink than dark. */
+    --ui-text-tertiary: color-mix(in srgb, var(--ui-base) var(--theme-mix-text-tertiary), transparent);
+    --ui-text-quaternary: color-mix(in srgb, var(--ui-base) var(--theme-mix-text-quaternary), transparent);
     /* Transcript scaffolding — thinking headers, settled tool runs, the live
        activity ticker. One colour for all of them (see `ScaffoldRow`), pitched
        between the secondary and tertiary greys those lines used to pick
@@ -500,6 +504,26 @@
        to the value the app actually renders at. */
     --radius-scalar: 0.2;
 
+    /* LOOK TOKENS — shape and label treatment, keyed off <html data-look>
+       (store/ui-look.ts). These defaults are the Classic look (the original
+       crisp, square chrome); the Soft block below re-points them. Components
+       read the tokens and never branch on the look. */
+    --control-radius: 2.5px;
+    --control-icon-radius: 4px;
+    --label-size: 0.64rem;
+    --label-weight: 600;
+    --label-transform: uppercase;
+    --label-tracking: 0.16em;
+    --label-color: var(--theme-primary);
+    --label-glyph-display: inline-block;
+    --tab-label-size: 9px;
+    --tab-label-transform: uppercase;
+    --tab-label-tracking: 0.025em;
+    /* Idle status dots hold a row's left edge in Classic; Soft lets an idle
+       row rest (a dot appears only when there is something to say). */
+    --status-idle-opacity: 1;
+    --pane-tab-max-width: 12rem;
+
     /* Space under last message vs overlay composer — driven by the measured composer DOCK height (see
        composer/index.tsx), which covers the micro-action strip, the status stack, the composer, and the
        underside strip in one number.
@@ -534,7 +558,11 @@
     --sticky-human-top: 0.23rem;
     --file-tree-row-height: 1.375rem;
 
-    --composer-width: 100%;
+    /* Reading measure for the transcript and composer (one token, so they
+       share an edge). Full-bleed lines on a wide window ran past 200 characters
+       and made tables span the screen; the revamp target (docs/revamp/mockups)
+       reads at 46rem. Custom CSS can set it back to 100%. */
+    --composer-width: 46rem;
     --composer-control-size: 1.5rem;
     --composer-control-primary-size: 1.625rem;
     --composer-control-gap: 0.25rem;
@@ -586,6 +614,8 @@
 
   :root.dark {
     /* Per-mode mix knobs — overridden inline by `applyTheme()` per skin. */
+    --theme-mix-text-tertiary: 54%;
+    --theme-mix-text-quaternary: 36%;
     --theme-mix-chrome: 74%;
     --theme-mix-card: 38%;
     --theme-mix-elevated: 46%;
@@ -1930,9 +1960,12 @@ body.guest-pointer-lock :is(webview, iframe) {
 
 /* The dock column owns the composer's width; the composer keeps the 5px
    transparent grab margin that the peel-out drag needs. +10px width compensates
-   that padding so the visible surface keeps its exact width/position. */
+   that padding so the visible surface keeps its exact width/position.
+   The visible surface shares the transcript's TEXT edges (thread content is
+   the same measure minus its 1.5rem inline padding), so messages, tables and
+   the composer line up on one column at every window width. */
 [data-slot='composer-dock'] {
-  width: calc(min(var(--composer-width), calc(100% - 2rem)) + 10px);
+  width: calc(min(var(--composer-width), 100%) - 3rem + 10px);
   padding-bottom: var(--composer-shell-pad-block-end);
 }
 
@@ -3883,4 +3916,187 @@ html[data-hud-window] [data-slot='popover-content'] {
    author `!important` rule beats the widget's inline non-important style. */
 [data-pane-hidden] * {
   visibility: inherit !important;
+}
+
+/* Look-driven text primitives. One class each so core components and bundled
+   plugins (which cannot import core) paint section labels and tab titles the
+   same way; the tokens above decide Classic caps vs Soft sentence case. */
+@layer components {
+  .ui-section-label {
+    font-size: var(--label-size);
+    font-weight: var(--label-weight);
+    text-transform: var(--label-transform);
+    letter-spacing: var(--label-tracking);
+    color: var(--label-color);
+  }
+
+  .ui-section-label-glyph {
+    display: var(--label-glyph-display);
+  }
+
+  .ui-tab-label {
+    font-size: var(--tab-label-size);
+    text-transform: var(--tab-label-transform);
+    letter-spacing: var(--tab-label-tracking);
+  }
+}
+
+/* ── Soft look (default) ─────────────────────────────────────────────────────
+   Rounded, roomy, calm: concentric radii (the composer is a 24px capsule, the
+   user bubble 16px, rows and controls 8–10px), sentence-case section labels in
+   a quiet grey instead of uppercase accent caps, readable tab titles, idle
+   dots that rest, and a size up in Simple mode. Every value is a token the
+   Classic defaults above also define — flip data-look and both hold. */
+:root[data-look='soft'] {
+  --radius-scalar: 1;
+  --control-radius: 0.5rem;
+  --control-icon-radius: 0.5rem;
+  --label-size: 0.75rem;
+  --label-weight: 500;
+  --label-transform: none;
+  --label-tracking: 0;
+  --label-color: var(--ui-text-tertiary);
+  --label-glyph-display: none;
+  --tab-label-size: 0.75rem;
+  --tab-label-transform: none;
+  --tab-label-tracking: 0;
+  --status-idle-opacity: 0;
+  --pane-tab-max-width: 15rem;
+  --conversation-text-font-size: 0.875rem;
+  --composer-surface-pad-x: 0.75rem;
+  --composer-surface-pad-y: 0.5rem;
+  --composer-input-min-height: 2rem;
+  --composer-control-size: 1.75rem;
+  --composer-control-primary-size: 1.875rem;
+}
+
+/* Your turns read as replies you sent, not banners: in Soft the bubble hugs
+   its text and sits on the right (OpenClaw's transcript, iMessage, Claude).
+   The sticky header behaviour and the edit composer are unchanged — only the
+   frame's width. */
+:root[data-look='soft'] [data-slot='aui_user-bubble-frame'] {
+  width: fit-content;
+  max-width: min(85%, 38rem);
+  margin-inline-start: auto;
+}
+
+:root[data-look='soft'] [data-slot='aui_user-bubble-frame'] .composer-human-message {
+  border-radius: 1.125rem;
+}
+
+/* The working pulse: Classic's dithered square is a terminal motif; Soft
+   draws a small accent orb that breathes (StatusPulse still drives the beat). */
+:root[data-look='soft'] [data-slot='aui_turn-activity'] .dither {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--ui-accent) 55%, white), var(--ui-accent));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 18%, transparent);
+}
+
+/* A bot's chat opens on the bot itself: Soft scales the live face up onto a
+   soft floor shadow and swaps the lettered name for a plain one with a
+   "role · status" line (chat-empty.tsx, BotHero). SVG scales crisply. */
+:root[data-look='soft'] [data-slot='bot-hero-face'] {
+  position: relative;
+  margin-block: 1.75rem 2.75rem !important;
+  transform: scale(1.45);
+}
+
+:root[data-look='soft'] [data-slot='bot-hero-face']::after {
+  content: '';
+  position: absolute;
+  inset-inline: 18%;
+  bottom: -0.7rem;
+  height: 0.55rem;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--ui-text-primary, #000) 16%, transparent), transparent);
+  filter: blur(1px);
+}
+
+:root[data-look='soft'] [data-slot='bot-hero-wordmark'] {
+  display: none;
+}
+
+:root[data-look='soft'] [data-slot='bot-hero-name'] {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+/* Pill tabs (Devin/Arc): in Soft a zone's horizontal tabs are rounded pills
+   floating in the strip — the active one filled, the rest quiet — instead of
+   flat cells with a 2px underline and hairline separators. Keyed on
+   `data-tree-tab` (tree tabs only; `data-slot` can be overwritten by the
+   context-menu trigger that wraps session tabs). */
+:root[data-look='soft'] [data-tree-tab]:not([data-vertical]) {
+  height: calc(100% - 0.5rem);
+  margin-block: 0.25rem;
+  margin-inline: 0.125rem;
+  border-left-color: transparent !important;
+  border-radius: 9999px;
+  --tab-bg: transparent;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+:root[data-look='soft'] [data-tree-tab][data-active='true']:not([data-vertical]) {
+  --tab-bg: color-mix(in srgb, var(--ui-accent) 11%, var(--ui-editor-surface-background));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-accent) 22%, transparent);
+}
+
+:root[data-look='soft'] [data-tree-tab][data-active='false']:not([data-vertical]):hover {
+  --tab-bg: var(--ui-control-hover-background);
+  box-shadow: none;
+}
+
+/* Pills float, so the strip needs a gutter: without it the first pill sat
+   flush against the window edge. 0.5rem + the pill's own px-2 puts its label
+   on the same x as the sidebar rows' text below. */
+:root[data-look='soft'] [data-zone-tabstrip] > [role='tablist'] {
+  padding-inline: 0.375rem;
+}
+
+/* Simple mode reads a size up: people there came to talk, not to scan logs. */
+:root[data-look='soft'][data-interface-mode='simple'] {
+  --conversation-text-font-size: 0.9375rem;
+  --dt-line-height: 1.6;
+  --paragraph-gap: 0.85rem;
+}
+
+/* A capped list that has more below fades its last rows out instead of
+   slicing one mid-line. Scroll-driven: the fade shrinks to nothing as you
+   reach the end, and a list that doesn't scroll has no timeline, so it never
+   fades at all. */
+@property --scroll-fade-end {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes scroll-edge-fade {
+  0%,
+  85% {
+    --scroll-fade-end: 1.75rem;
+  }
+
+  100% {
+    --scroll-fade-end: 0px;
+  }
+}
+
+.scroll-edge-fade {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scroll-fade-end)), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scroll-fade-end)), transparent);
+  animation: scroll-edge-fade linear both;
+  animation-timeline: scroll(self);
+}
+
+/* Same, across: a sideways strip fades its trailing edge while more is
+   hidden to the right. */
+.scroll-edge-fade-x {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-fade-end)), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-fade-end)), transparent);
+  animation: scroll-edge-fade linear both;
+  animation-timeline: scroll(self inline);
 }

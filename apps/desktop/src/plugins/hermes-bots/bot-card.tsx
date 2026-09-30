@@ -23,13 +23,7 @@ import {
 import { botAccentColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { BotRowMenu, type BotRowMenuProps } from './bot-menu'
-import {
-  $botChatFocused,
-  $focusedBotOwner,
-  $pendingBotOpen,
-  $selectedRosterKey,
-  focusedRosterOwner
-} from './bot-state'
+import { $botChatFocused, $focusedBotOwner, $pendingBotOpen, $selectedRosterKey, focusedRosterOwner } from './bot-state'
 import { $botMeta, botActivitySession, botAttentionHint, botRosterKey, botSourceStatus } from './data'
 import { $groupChatWorkspace } from './group-chat'
 import { useBots } from './i18n'
@@ -81,7 +75,10 @@ export function BotCard({
   const watchedMap = useValue($watchedSessionKeys)
 
   const watched = Boolean(
-    canonicalSessionId && watchedMap && typeof isWatchedSessionId === 'function' && isWatchedSessionId(canonicalSessionId)
+    canonicalSessionId &&
+    watchedMap &&
+    typeof isWatchedSessionId === 'function' &&
+    isWatchedSessionId(canonicalSessionId)
   )
 
   const attention = useBotAttention(bot)
@@ -93,8 +90,7 @@ export function BotCard({
     fromBot ? (previewSession?.preview || '').replace(A2A_PREFIX_RE, '').trim() || '…' : previewSession?.preview || ''
   )
 
-  const liveText =
-    live.kind === 'idle' || live.kind === 'unknown' ? null : botLiveStatusLabel(live, b.roster)
+  const liveText = live.kind === 'idle' || live.kind === 'unknown' ? null : botLiveStatusLabel(live, b.roster)
 
   const detailText = liveText || displayPreview || (live.kind === 'idle' ? b.roster.liveIdle : '')
 
@@ -104,8 +100,7 @@ export function BotCard({
   const open = () => void openRosterBot(bot)
   const warm = () => warmRosterBot(bot)
 
-  const liveTone =
-    live.kind === 'needs-input' || live.kind === 'stalled' ? 'amber' : liveText ? 'live' : null
+  const liveTone = live.kind === 'needs-input' || live.kind === 'stalled' ? 'amber' : liveText ? 'live' : null
 
   return (
     <BotRowMenu
@@ -170,9 +165,7 @@ export function BotCard({
               ) : null}
             </div>
             {role ? (
-              <div className="min-w-0 truncate text-[0.6875rem] leading-snug text-(--ui-text-quaternary)">
-                {role}
-              </div>
+              <div className="min-w-0 truncate text-[0.6875rem] leading-snug text-(--ui-text-quaternary)">{role}</div>
             ) : null}
           </div>
         </div>

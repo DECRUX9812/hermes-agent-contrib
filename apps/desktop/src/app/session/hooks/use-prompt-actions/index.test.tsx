@@ -42,6 +42,9 @@ import { uploadComposerAttachment, usePromptActions } from '.'
 // never-settling in-flight promise from one test into the next.
 beforeEach(() => {
   clearSingleFlightSessionResumeState()
+  // Queue mutations build on the persisted map, not the atom — a queue an
+  // earlier test left in storage would otherwise sit ahead of this test's send.
+  window.localStorage.removeItem('hermes.desktop.composerQueue.v1')
   vi.mocked(getLatestSessionMessages).mockReset()
   vi.mocked(getLatestSessionMessages).mockImplementation(async () => ({ messages: [], session_id: 'session' }))
 })
@@ -4683,6 +4686,53 @@ describe('usePromptActions submit session-context isolation (#54527)', () => {
     })
   })
 
+  it('sends the first message of a new chat when the composer names its fresh draft scope', async () => {
+    // The real ChatBar passes its scope with every send; on a new chat that is
+    // the fresh-draft key (`__new__…`), which can never equal the session the
+    // create step is about to mint. Once create re-homes onto that session it
+    // IS the composer's scope — reading the fresh key as "the composer showed
+    // another chat" aborted every first message (no prompt.submit, no row).
+    const calls: { method: string; params?: Record<string, unknown> }[] = []
+    const selectedStoredSessionIdRef: MutableRefObject<string | null> = { current: null }
+    const activeSessionIdRef: MutableRefObject<string | null> = { current: null }
+    let routeToken = '/'
+
+    const requestGateway = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+      calls.push({ method, params })
+
+      return {} as never
+    })
+
+    const createBackendSessionForSend = vi.fn(async () => {
+      activeSessionIdRef.current = 'rt-new-chat'
+      selectedStoredSessionIdRef.current = 'stored-new-chat'
+      routeToken = '/stored-new-chat'
+
+      return 'rt-new-chat'
+    })
+
+    let handle: HarnessHandle | null = null
+    render(
+      <Harness
+        activeSessionId={null}
+        activeSessionIdRef={activeSessionIdRef}
+        createBackendSessionForSend={createBackendSessionForSend}
+        getRouteToken={() => routeToken}
+        onReady={h => (handle = h)}
+        refreshSessions={async () => undefined}
+        requestGateway={requestGateway}
+        selectedStoredSessionIdRef={selectedStoredSessionIdRef}
+        storedSessionId={null}
+      />
+    )
+    await waitFor(() => expect(handle).not.toBeNull())
+
+    expect(await handle!.submitText('hello from a new chat', { composerScope: '__new__:default~lifecycle-1' })).toBe(
+      true
+    )
+    expect(calls.find(c => c.method === 'prompt.submit')?.params).toMatchObject({ session_id: 'rt-new-chat' })
+  })
+
   it('aborts when the user switches sessions during the tail of a successful create', async () => {
     // createBackendSessionForSend awaits once more (armed-YOLO apply) AFTER
     // committing the refs and returning a real id, so a switch in that window
@@ -5645,14 +5695,16 @@ describe('uploadComposerAttachment remote read failures', () => {
   })
 })
 
-describe('uploadComposerAttachment preview reuse', () => {
+describe('uploadComposerAttachment image cache contract', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('reuses the chip previewUrl instead of re-reading the image off disk', async () => {
-    // attachImagePath already read the full file for the thumbnail; submit
-    // must not pay the disk read + IPC round-trip a second time.
+  it('always re-reads the image from disk, even when a stale previewUrl is cached', async () => {
+    // attachImagePath drops `previewUrl` as soon as a thumbnail exists, so a
+    // populated `previewUrl` here does not mean it holds full-resolution
+    // bytes (#93324) — the upload must never trust it and must always read
+    // the on-disk file for the bytes the model receives.
     const readFileDataUrl = vi.fn(async () => 'data:image/png;base64,ZnJvbS1kaXNr')
     Object.defineProperty(window, 'hermesDesktop', {
       configurable: true,
@@ -5673,44 +5725,7 @@ describe('uploadComposerAttachment preview reuse', () => {
         kind: 'image',
         label: 'shot.png',
         path: '/local/shot.png',
-        previewUrl: 'data:image/png;base64,ZnJvbS1wcmV2aWV3'
-      },
-      { remote: true, requestGateway, sessionId: RUNTIME_SESSION_ID }
-    )
-
-    expect(readFileDataUrl).not.toHaveBeenCalled()
-    expect(requestGateway).toHaveBeenCalledWith('image.attach_bytes', {
-      content_base64: 'ZnJvbS1wcmV2aWV3',
-      filename: 'shot.png',
-      session_id: RUNTIME_SESSION_ID
-    })
-    expect(uploaded.path).toBe('/gw/images/shot.png')
-  })
-
-  it('falls back to the disk read when previewUrl is not a base64 data URL', async () => {
-    // A non-data previewUrl (e.g. a gateway media URL) carries no bytes —
-    // the upload must still read the real file.
-    const readFileDataUrl = vi.fn(async () => 'data:image/png;base64,ZnJvbS1kaXNr')
-    Object.defineProperty(window, 'hermesDesktop', {
-      configurable: true,
-      value: { readFileDataUrl }
-    })
-
-    const requestGateway = vi.fn(async (method: string) => {
-      if (method === 'image.attach_bytes') {
-        return { attached: true, path: '/gw/images/shot.png' } as never
-      }
-
-      return {} as never
-    })
-
-    await uploadComposerAttachment(
-      {
-        id: 'image:shot.png',
-        kind: 'image',
-        label: 'shot.png',
-        path: '/local/shot.png',
-        previewUrl: 'https://gateway.example/media/shot.png'
+        previewUrl: 'data:image/png;base64,c3RhbGUtY2FjaGVk'
       },
       { remote: true, requestGateway, sessionId: RUNTIME_SESSION_ID }
     )
@@ -5721,6 +5736,7 @@ describe('uploadComposerAttachment preview reuse', () => {
       filename: 'shot.png',
       session_id: RUNTIME_SESSION_ID
     })
+    expect(uploaded.path).toBe('/gw/images/shot.png')
   })
 })
 

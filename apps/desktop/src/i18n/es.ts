@@ -425,6 +425,7 @@ export const esOverrides = {
     revealExplorer: 'Mostrar en el Explorador de archivos',
     revealFileManager: 'Abrir carpeta contenedora',
     revealInSidebar: 'Mostrar en el árbol de archivos',
+    openInEditor: name => `Abrir en ${name}`,
     copyPath: 'Copiar ruta',
     copyRelativePath: 'Copiar ruta relativa',
     download: 'Descargar',
@@ -696,6 +697,7 @@ export const esOverrides = {
     actions: {
       'keybinds.openPanel': 'Abrir atajos de teclado',
       'nav.commandPalette': 'Abrir paleta de comandos',
+      'nav.quickOpen': 'Abrir archivo rápidamente',
       'nav.commandCenter': 'Abrir Centro de comandos',
       'nav.settings': 'Abrir configuración',
       'nav.profiles': 'Abrir perfiles',
@@ -1170,6 +1172,11 @@ export const esOverrides = {
       hideThreadTimelineDesc: 'Oculta las barras de navegación del borde derecho de cada conversación.',
       reasoningCollapsedTitle: 'Contraer el razonamiento por defecto',
       reasoningCollapsedDesc: 'Mantiene disponible el razonamiento transmitido sin expandirlo hasta que lo abras.',
+      lookTitle: 'Estilo',
+      lookDesc:
+        'Suave es redondeado y espacioso, con etiquetas discretas; Clásico mantiene la interfaz nítida y cuadrada original.',
+      lookSoft: 'Suave',
+      lookClassic: 'Clásico',
       uiScaleTitle: 'Escala de la interfaz',
       uiScaleDesc: percent =>
         `Escala el texto y los controles de toda la app. También funciona Cmd/Ctrl con +, - y 0. Actual: ${percent}%.`,
@@ -1249,6 +1256,8 @@ export const esOverrides = {
       composerPopoutTitle: 'Compositor flotante',
       composerPopoutDesc:
         'Permite arrastrar el compositor fuera de su posición fija. Si está desactivado, permanece anclado abajo.',
+      openInEditorTitle: 'Abrir archivos en',
+      openInEditorDesc: 'A dónde envía «Abrir en…» un archivo del árbol. También funciona con backends SSH.',
       fileBrowserTitle: 'Explorador de archivos',
       fileBrowserDesc:
         'Muestra el explorador de archivos junto al chat cuando hay un espacio de trabajo abierto. El botón de la barra de título también cambia este ajuste.',
@@ -3475,6 +3484,13 @@ export const esOverrides = {
       copyLink: 'Copiar enlace',
       copyFailed: 'No se pudo copiar el enlace'
     },
+    reach: {
+      title: (name: string) => `Habla con ${name} desde cualquier lugar`,
+      scan: (name: string) => `Escanea para chatear con ${name} desde tu teléfono, o comparte el enlace.`,
+      empty: (name: string) => `Dale a ${name} su propia dirección de Telegram o Slack para chatear desde tu teléfono.`,
+      connect: 'Conectar',
+      manage: 'Gestionar'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Token del bot',
@@ -3685,6 +3701,25 @@ export const esOverrides = {
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `¿Cuándo debe preguntarte ${name}?`,
+      modes: {
+        manual: { label: 'Pregúntame primero', description: (name: string) => `${name} se detiene y pregunta antes de algo arriesgado.` },
+        smart: {
+          label: 'A su criterio',
+          description: (name: string) => `${name} hace el trabajo rutinario y pregunta cuando algo parece arriesgado.`
+        },
+        off: {
+          label: 'Hazlo sin preguntar',
+          description: (name: string) => `${name} nunca te espera. Los comandos bloqueados siguen bloqueados.`
+        }
+      },
+      rulesLabel: 'Reglas de la casa',
+      rulesPlaceholder: 'Tus reglas, con tus palabras. Ej.: pregunta siempre antes de enviar correos o gastar dinero.',
+      save: 'Guardar reglas',
+      discard: 'Descartar',
+      failed: 'No se pudo guardar. Tus reglas anteriores siguen vigentes.'
+    },
     close: 'Cerrar perfiles',
     nameHint: 'Letras minúsculas, dígitos, guiones y guiones bajos. Debe empezar con una letra o dígito.',
     title: 'Perfiles',
@@ -4047,6 +4082,71 @@ export const esOverrides = {
     missingTitle: 'Artefacto no disponible',
     missingBody: 'Este artefacto ya no está en el registro local.'
   },
+  panels: {
+    button: 'Paneles',
+    title: 'Junto al chat',
+    subtitle: 'Activa lo que necesites. Cada panel se abre junto a la conversación.',
+    needsProject: 'Abre una carpeta para usarlo',
+    openFolder: 'Abrir una carpeta…',
+    arrange: 'Organizar…',
+    arrangements: { focus: 'Foco', review: 'Revisar', watch: 'Observar', build: 'Construir' },
+    items: {
+      files: { label: 'Archivos', description: 'Explora y previsualiza tu proyecto' },
+      changes: { label: 'Cambios', description: 'Revisa lo que cambió el agente' },
+      browser: { label: 'Navegador', description: 'Abre páginas junto al chat' },
+      terminal: { label: 'Terminal', description: 'Ejecuta comandos tú mismo' },
+      live: { label: 'Actividad en vivo', description: 'Cada comando del agente, en tiempo real' },
+      artifacts: { label: 'Artefactos', description: 'Lo que este chat ha creado' },
+      canvas: { label: 'Lienzo', description: 'Dibuja en una pizarra donde el agente también dibuja' }
+    }
+  },
+  quickOpen: {
+    title: 'Apertura rápida',
+    placeholder: project => `Buscar archivos en ${project}…`,
+    noProject: 'Abre una carpeta para buscar sus archivos',
+    noProjectBody: 'La apertura rápida busca en los archivos del proyecto actual.',
+    openFolder: 'Abrir una carpeta…',
+    noMatch: query => `Ningún archivo coincide con «${query}»`,
+    recent: 'Abiertos junto al chat',
+    hint: 'Escribe un nombre de archivo. Añade :42 para ir a una línea.',
+    line: line => `línea ${line}`,
+    openHint: 'abrir',
+    attachHint: 'añadir al mensaje',
+    lineHint: 'nombre:42 va a una línea'
+  },
+  recentProjects: { title: 'Tus proyectos', openFolder: 'Abrir carpeta…' },
+  todayBrief: {
+    greeting: {
+      morning: 'Buenos días',
+      afternoon: 'Buenas tardes',
+      evening: 'Buenas noches',
+      night: '¿Trabajando tarde?'
+    },
+    needsYou: 'Te necesita',
+    running: 'En curso',
+    finished: 'Terminado mientras no estabas',
+    scheduled: 'Próximo hoy',
+    recent: 'Continuar donde lo dejaste'
+  },
+
+  live: {
+    title: 'En vivo',
+    noSession: 'Ninguna sesión seleccionada',
+    emptyTitle: 'Aún no se ha ejecutado nada',
+    emptyBody:
+      'Cada comando, lectura de archivo y llamada a herramienta aparece aquí en cuanto empieza, con su salida completa. Nada se resume.',
+    count: total => `${total} ${total === 1 ? 'acción' : 'acciones'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'acción' : 'acciones'} · ${running} en curso`,
+    follow: 'Seguir',
+    followHint: 'Ir a la acción más reciente y mantenerla a la vista',
+    copy: 'Copiar comando y salida',
+    exitCode: code => `salida ${code}`,
+    runningFor: elapsed => `en curso ${elapsed}`,
+    waitingForOutput: 'En curso: la salida aparece al terminar',
+    noOutput: 'Sin salida',
+    openLive: 'En vivo'
+  },
+
   artifactRail: {
     empty: 'Aún no hay artefactos en esta sesión',
     noSession: 'No hay ninguna sesión seleccionada',
@@ -5581,6 +5681,9 @@ export const esOverrides = {
     sourceLineTitle: 'Haz clic para seleccionar · Mayús-clic para ampliar · arrastra al compositor',
     source: 'FUENTE',
     renderedPreview: 'VISTA PREVIA',
+    table: 'TABLA',
+    tableTruncated: (rows: number) => `Se muestran las primeras ${rows.toLocaleString()} filas. El código fuente tiene el archivo completo.`,
+    canvas: 'LIENZO',
     diff: 'Diferencias',
     unknownSize: 'tamaño desconocido',
     binaryTitle: 'Esto parece un archivo binario',
@@ -5887,6 +5990,10 @@ export const esOverrides = {
           body: (provider: string) =>
             `No se pudo conectar con ${provider} o no respondió a tiempo. Revisa tu conexión a internet y vuelve a intentarlo.`
         },
+        no_reply: {
+          title: 'La respuesta no terminó',
+          body: 'Hermes terminó este turno sin respuesta. Reinténtalo para enviarla de nuevo.'
+        },
         stream_drop: {
           title: 'La respuesta se cortó',
           body: 'La conexión se cortó antes de que terminara la respuesta. Reinténtalo para enviarla de nuevo.'
@@ -5908,6 +6015,10 @@ export const esOverrides = {
         payload_too_large: {
           title: 'Este mensaje es demasiado grande',
           body: 'La solicitud era demasiado grande para el modelo. Comprime la conversación o empieza un chat nuevo y vuelve a enviarlo.'
+        },
+        no_provider_configured: {
+          title: 'Aún no hay un modelo de IA configurado',
+          body: 'Elige un modelo o inicia sesión y vuelve a enviar tu mensaje.'
         },
         model_not_found: {
           title: 'Este modelo no está disponible',
@@ -6076,14 +6187,9 @@ export const esOverrides = {
       placeholder: 'Escribe tu respuesta…',
       skip: 'Omitir',
       skipped: 'Omitido',
-      continueLabel: 'Continuar',
+      noAnswer: 'Sin respuesta',
       confirmAndContinueLabel: 'Confirmar y continuar',
-      answeredBadge: 'Respondido',
       questionProgress: (answered, total) => `${answered} de ${total} respondidas`,
-      lateAnswer: (question, choice) => `Con respecto a “${question}”: mi respuesta es ${choice}`,
-      lateAnswerTip: 'Redactar esta respuesta como mensaje de seguimiento',
-      lateAnswerHint:
-        'Este prompt ya no espera una respuesta. Elige una opción para redactarla como mensaje de seguimiento.',
       notDelivered:
         'Esta pregunta no llegó a la app, así que no se puede responder aquí. Pulsa Detener para terminar el turno y luego responde en el chat.'
     },

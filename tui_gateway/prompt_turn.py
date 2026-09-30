@@ -163,7 +163,8 @@ def _admit_prompt_turn(
         logger.info("Refusing turn for session %s: no agent attached (%s)", session.get("session_key") or sid, reason)
         _emit_terminal_turn_error(
             sid, session, reason,
-            error_surface={"layer": "runtime", "code": "agent_init_failed", "retryable": True})
+            error_surface=session.get("agent_error_surface")
+            or {"layer": "runtime", "code": "agent_init_failed", "retryable": True})
         return None
     return images, agent
 
@@ -445,6 +446,8 @@ def _run_post_turn_followups(
         with _session_turn_admission(session) as admitted:
             if not admitted or session.get("running"):
                 return  # user already sent something — their turn wins
+            if session.get("_turn_cancel_requested"):
+                return  # the user pressed Stop; the goal resumes after their next prompt
             session["running"] = True
         _dispatch_followup_turn(rid, sid, session, goal_followup, "goal continuation dispatch")
     # Safety net for completion events that arrived mid-turn.  Ownership is positive-proof

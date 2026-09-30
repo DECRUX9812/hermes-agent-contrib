@@ -47,7 +47,7 @@ import {
 import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
-import { deleteProfile, getAllSessionMessages, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { deleteProfile, getLogs, getSessionMessages, getStatus, hermesApi, type HermesGateway } from '@/hermes'
 import { selectDesktopPaths } from '@/lib/desktop-fs'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
 import { mergeRailArtifacts, type RailArtifactItem, registryArtifactsForSessions } from '@/store/artifact-rail'
@@ -68,6 +68,7 @@ import {
   retireLocalProfileGateways,
   type SpawnPriority
 } from '@/store/gateway'
+import { $showsAdvancedChrome } from '@/store/interface-mode'
 import { $sidebarSearchQuery } from '@/store/layout'
 import { notify, notifyError } from '@/store/notifications'
 import {
@@ -771,6 +772,10 @@ export const host = {
     /** The sessions rail's live search text ('' when idle). A `sidebar.listTop`
      *  contribution marked `searchable` filters its own rows by this. */
     sidebarSearchQuery: readonlyAtom<string>($sidebarSearchQuery),
+    /** True in Advanced mode (the developer surface). Simple mode hides the
+     *  audit trail, raw ids and policy switches — a plugin gates its own tiers on this
+     *  rather than reading the core mode store. */
+    showsAdvancedChrome: readonlyAtom<boolean>($showsAdvancedChrome),
     /** Runtime session id → live composer work items (todo / background /
      *  subagent / goal) — `currentTool` names the tool a running item is
      *  executing. Empty for a session with no live turn machinery. */
@@ -1785,8 +1790,12 @@ export const host = {
 
     const { artifacts: transcript, failures } = await loadArtifactsForSessions(
       recentFirst.slice(0, transcriptLimit),
-      async session =>
-        (await getAllSessionMessages(session.id, { connectionId: route?.connectionId, profile })).messages
+      (session, page) =>
+        getSessionMessages(
+          session.id,
+          { connectionId: route?.connectionId, profile },
+          { ...page, includeCompacted: true, order: 'oldest' }
+        )
     )
 
     return { failures: failures.length, items: mergeRailArtifacts(registry, transcript), sessions }
@@ -1966,6 +1975,8 @@ export { WorkspacePageHeaderControl } from '@/app/contrib/workspace-page-header'
  *  that prints a next run switches its label on this (`t.cron.next` →
  *  `t.cron.overdueSince`) so a dead scheduler never reads as "Next: 7 hr ago". */
 export { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
+export { fetchReachTargets, ReachCard, type ReachTarget, reachTargets } from '@/app/messaging/reach-card'
+export { renderQr } from '@/app/messaging/telegram-qr-setup'
 /** THE master-detail toolkit core uses for list+inspector surfaces (Scheduled
  *  jobs, Kanban, …): a dense left `PanelList` of `PanelListRow`s beside a
  *  scrolling `PanelDetail` of `PanelSectionLabel` / `PanelMeta` / `PanelBlock`.
@@ -1992,6 +2003,7 @@ export {
   PanelRowMenu,
   PanelSectionLabel
 } from '@/app/overlays/panel'
+export { AskRulesCard } from '@/app/profiles/ask-rules-card'
 export {
   type ProfileGroupHeaderContribution,
   type ProfileGroupRoute,
@@ -2214,6 +2226,7 @@ export { CHAT_HEADER_AREAS, type ChatHeaderSlotContribution, type ChatHeaderSlot
  *  check transcript cards share. */
 export { answeredAfter, chatMessageText } from '@/lib/chat-messages/parts'
 export type { ChatMessage } from '@/lib/chat-messages/types'
+export { FILE_VIEWERS_AREA, type FileViewerContribution, type FileViewerProps } from '@/lib/file-viewers'
 /** THE confirm flow for guarded model switches — when a gateway model-switch
  *  RPC answers `confirm_required` (data-policy / expensive-model guard),
  *  route it through this shared applier instead of forking a per-surface

@@ -3,7 +3,7 @@ import { type MutableRefObject, useCallback } from 'react'
 
 import { PROMPT_SUBMIT_REQUEST_TIMEOUT_MS } from '@/hermes'
 import type { Translations } from '@/i18n'
-import { type ChatMessage, textPart } from '@/lib/chat-messages'
+import { type ChatMessage, finalizeInterruptedMessages, textPart } from '@/lib/chat-messages'
 import { optimisticAttachmentRef } from '@/lib/chat-runtime'
 import { sanitizeComposerInput } from '@/lib/composer-input-sanitize'
 import { setMutableRef } from '@/lib/mutable-ref'
@@ -17,6 +17,7 @@ import {
 import {
   $composerAttachments,
   type ComposerAttachment,
+  isFreshDraftScope,
   mainComposerScope,
   revokeDiscardedAttachmentPreviews,
   terminalContextBlocksFromDraft
@@ -45,9 +46,9 @@ import {
 } from '../../../contrib/hooks/use-background-sync'
 import type { ClientSessionState } from '../../../types'
 import { sessionContextDrift } from '../session-context-drift'
+import type { CreateBackendSessionForSend } from '../use-session-actions/create-overrides'
 import { resolveSessionProfile } from '../use-session-actions/utils'
 
-import { finalizeInterruptedMessages } from './rewind'
 import { registerRecoveredRuntime, singleFlightSessionResume, takeRecoveredRuntime } from './single-flight-resume'
 import {
   acquireSubmitInFlight,
@@ -68,7 +69,7 @@ interface SubmitPromptDeps {
   activeSessionIdRef: MutableRefObject<string | null>
   busyRef: MutableRefObject<boolean>
   copy: Translations['desktop']
-  createBackendSessionForSend: (preview?: string | null) => Promise<string | null>
+  createBackendSessionForSend: CreateBackendSessionForSend
   getRoutedStoredSessionId: () => null | string
   getRuntimeIdForStoredSession: (storedSessionId: string) => null | string
   getRouteToken: () => string
@@ -369,6 +370,11 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
       // the created chat after createBackendSessionForSend. submitTargetStoredId
       // is the stored session this submit targets, so a move ONTO it (the
       // pipeline's own re-home) is never counted as drift.
+      // The composer's snapshot of what it had loaded. A fresh chat's scope
+      // (`__new__…`) names the session this submit is about to create, so once
+      // create re-homes onto it (below) that session IS the composer's scope.
+      let submitComposerScope = options?.composerScope
+
       const sessionDriftReason = (): string | null =>
         targetStartedInCurrentView
           ? sessionContextDrift({
@@ -377,7 +383,7 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
               startSelectedStoredId: startingSelectedStoredSessionId,
               nowSelectedStoredId: selectedStoredSessionIdRef.current,
               submitTargetStoredId: startingStoredSessionId,
-              composerScope: options?.composerScope,
+              composerScope: submitComposerScope,
               // The composer keys drafts/attachments on the durable lineage
               // root (survives auto-compression tip rotation), while
               // startingStoredSessionId is the live tip — resolve the target
@@ -732,7 +738,9 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
 
       if (!sessionId) {
         try {
-          sessionId = await createBackendSessionForSend(bubbleText)
+          sessionId = await createBackendSessionForSend(bubbleText, undefined, {
+            onComposerScopeAssigned: options?.onComposerScopeAssigned
+          })
         } catch (err) {
           dropOptimistic(null)
           releaseBusy()
@@ -783,6 +791,11 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
         startingStoredSessionId = selectedStoredSessionIdRef.current
         startingSelectedStoredSessionId = selectedStoredSessionIdRef.current
         startingRouteToken = getRouteToken()
+
+        if (isFreshDraftScope(submitComposerScope)) {
+          submitComposerScope = resolveComposerSessionKey(startingStoredSessionId, $sessions.get())
+        }
+
         // The target too: it was captured BEFORE the create (null for a fresh
         // draft) and seedOptimistic hands it to updateSessionState as the
         // stored id, which the state cache reads as a deliberate DETACH — so

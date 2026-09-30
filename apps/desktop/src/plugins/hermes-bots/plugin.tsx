@@ -23,9 +23,14 @@ import {
   host,
   LocalizedTabTitle,
   PALETTE_AREA,
+  type PaletteContribution,
   type PaneContribution,
+  type RouteContribution,
+  ROUTES_AREA,
   SIDEBAR_LIST_TOP_AREA,
+  SIDEBAR_NAV_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
+  type SidebarNavContribution,
   TRANSCRIPT_DIRECTIVE_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
@@ -38,6 +43,7 @@ import type {
 } from '@hermes/plugin-sdk'
 
 import { AgentsSection } from './agents-section'
+import { AUTOPILOT_LOCALES } from './autopilot-i18n'
 import { startFaceClock, stopFaceClock } from './avatar'
 import { BotInboundCards } from './bot-events-view'
 import { BotHeaderIdentity } from './bot-header-chip'
@@ -92,6 +98,7 @@ import {
 import { groupWorkspaceOwnerKey } from './group-membership'
 import { bindGroupReadTracking } from './group-unread'
 import { isBotHidden } from './hidden-bots'
+import { HIRE_LOCALES } from './hire-i18n'
 import { annotateOrphanedGroupChatMembers } from './hygiene'
 import { BOTS_LOCALES, botsText, useBots } from './i18n'
 import { displayName } from './labels'
@@ -112,7 +119,10 @@ import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './ro
 import { startScreenAutoRaise } from './screen-autoraise'
 import { ProfileGroupScreenPortal } from './screen-portal'
 import { startHideSweepScheduler } from './session-sweep'
+import { SHARE_LOCALES } from './share-i18n'
 import { bumpBotOpenGeneration, getBotOpenGeneration, ID, setPluginCtx } from './shared'
+import { TEAM_LOCALES } from './team-i18n'
+import { TeamPage } from './team-page'
 import type { GroupChat, RosterRow } from './types'
 import { loadBotSections } from './user-sections'
 
@@ -157,6 +167,10 @@ export default {
     // writes through.
     loadBotSections()
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES)
+    const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
+    const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
+    const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
+    const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
     setGroupChatSyncDisposed(false)
     startFaceClock()
     // The cross-connection relay rides every gateway socket this Desktop
@@ -169,6 +183,10 @@ export default {
     // before this, the rAF loop + 1Hz document scan ran until app restart.
     if (typeof ctx.onDispose === 'function') {
       ctx.onDispose(disposeLocales)
+      ctx.onDispose(disposeTeamLocales)
+      ctx.onDispose(disposeHireLocales)
+      ctx.onDispose(disposeShareLocales)
+      ctx.onDispose(disposeAutopilotLocales)
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)
@@ -1079,5 +1097,34 @@ export default {
         }
       }
     })
+
+    // Team Bots: the `/team` home, its sidebar row and a palette entry. All SDK-only, so the
+    // same registration works when this plugin runs inside a web-hosted client.
+    for (const contribution of [
+      {
+        id: 'team-page',
+        area: ROUTES_AREA,
+        data: { path: '/team' } satisfies RouteContribution,
+        render: () => <TeamPage />
+      },
+      {
+        id: 'team-nav',
+        area: SIDEBAR_NAV_AREA,
+        order: 40,
+        data: { codicon: 'organization', label: ctx.i18n.t('team.nav'), path: '/team' } satisfies SidebarNavContribution
+      },
+      {
+        id: 'team-open',
+        area: PALETTE_AREA,
+        data: {
+          id: 'team.open',
+          label: ctx.i18n.t('team.title'),
+          keywords: ['team', 'org', 'goals', 'budget', 'approvals'],
+          run: () => host.navigate('/team')
+        } satisfies PaletteContribution
+      }
+    ]) {
+      ctx.register(contribution)
+    }
   }
 }

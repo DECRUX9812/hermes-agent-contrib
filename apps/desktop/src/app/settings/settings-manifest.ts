@@ -67,6 +67,11 @@ export const SETTINGS_MANIFEST = {
     ),
     tips: appearanceSetting('general', ['tips', 'hints', 'coach marks', 'onboarding', 'help'], 'tips'),
     tours: appearanceSetting('general', ['tour', 'walkthrough', 'guide', 'onboarding', 'help'], 'tours'),
+    look: appearanceSetting(
+      'theme',
+      ['look', 'style', 'rounded', 'round corners', 'soft', 'classic', 'square', 'macos', 'modern'],
+      'look'
+    ),
     theme: appearanceSetting('theme', ['color mode', 'skin', 'light', 'dark'], 'theme'),
     uiScale: appearanceSetting('typography', ['zoom', 'size'], 'uiScale'),
     chatFont: appearanceSetting('typography', ['font', 'typeface', 'family', 'text'], 'chatFont'),
@@ -112,6 +117,11 @@ export const SETTINGS_MANIFEST = {
       'window-layout',
       ['file browser', 'files', 'file tree', 'explorer', 'right sidebar', 'panel', 'startup'],
       'fileBrowser'
+    ),
+    openInEditor: appearanceSetting(
+      'window-layout',
+      ['editor', 'vs code', 'vscode', 'cursor', 'zed', 'windsurf', 'open in', 'ide', 'external editor'],
+      'openInEditor'
     ),
     composerPopout: appearanceSetting(
       'window-layout',

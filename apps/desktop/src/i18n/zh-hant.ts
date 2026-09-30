@@ -4,6 +4,32 @@ import { defineLocale } from './define-locale'
 import { introZhHant } from './intro-zh-hant'
 
 export const zhHant = defineLocale({
+  todayBrief: {
+    greeting: { morning: '早安', afternoon: '午安', evening: '晚安', night: '還在忙？' },
+    needsYou: '需要你處理',
+    running: '正在執行',
+    finished: '你離開時已完成',
+    scheduled: '今天的安排',
+    recent: '從上次繼續'
+  },
+
+  live: {
+    title: '即時',
+    noSession: '未選擇工作階段',
+    emptyTitle: '尚未執行任何動作',
+    emptyBody: '每個指令、每次檔案讀取與工具呼叫都會在開始時顯示於此，並附上完整輸出。不做任何摘要。',
+    count: total => `${total} 個動作`,
+    countRunning: (total, running) => `${total} 個動作 · ${running} 個執行中`,
+    follow: '跟隨',
+    followHint: '跳到最新動作並保持可見',
+    copy: '複製指令與輸出',
+    exitCode: code => `結束碼 ${code}`,
+    runningFor: elapsed => `已執行 ${elapsed}`,
+    waitingForOutput: '執行中——完成後顯示輸出',
+    noOutput: '沒有輸出',
+    openLive: '即時'
+  },
+
   connectors: {
     title: '連接你的應用程式',
     connect: '連接',
@@ -744,6 +770,10 @@ export const zhHant = defineLocale({
       hideThreadTimelineDesc: '隱藏每個對話右側邊緣的導覽列。',
       reasoningCollapsedTitle: '預設摺疊推理過程',
       reasoningCollapsedDesc: '保留串流推理內容，但在您開啟前維持摺疊。',
+      lookTitle: '外觀風格',
+      lookDesc: '柔和：圓角、留白充足、標籤低調；經典：保留原本俐落方正的介面。',
+      lookSoft: '柔和',
+      lookClassic: '經典',
       uiScaleTitle: '介面縮放',
       uiScaleDesc: (percent: number) =>
         `縮放整個應用程式的文字與介面。也可使用 Cmd/Ctrl 加 +、- 或 0 調整。目前：${percent}%`,
@@ -4473,6 +4503,10 @@ export const zhHant = defineLocale({
         runtime: 'Hermes 在開始回覆時遇到內部問題。請重新傳送訊息；若持續發生，請傳送診斷資訊。'
       },
       errorCodes: {
+        no_provider_configured: {
+          title: '尚未設定 AI 模型',
+          body: '請選擇模型或登入，然後重新傳送訊息。'
+        },
         provider_policy_blocked: {
           title: '帳戶設定封鎖了此模型',
           body: provider => `${provider} 無法依你帳戶的資料或隱私設定路由此請求。請選擇其他模型或切換服務商。`
@@ -4694,15 +4728,9 @@ export const zhHant = defineLocale({
       placeholder: '輸入您的答案…',
       skip: '略過',
       skipped: '已略過',
-      continueLabel: '繼續',
+      noAnswer: '未回答',
       confirmAndContinueLabel: '確認並繼續',
-      answeredBadge: '已回答',
-      singleSelectHint: '選一個',
-      multiSelectHint: '可多選',
       questionProgress: (answered, total) => `已回答 ${answered}/${total}`,
-      lateAnswer: (question, choice) => `關於「${question}」 — 我的回答: ${choice}`,
-      lateAnswerTip: '將此回答起草為後續訊息',
-      lateAnswerHint: '此問題已不再等待回答。選擇一個選項會將其起草為後續訊息。',
       notDelivered: '此問題未送達應用程式，無法在此回答。請按停止結束本輪，然後在聊天中回覆。'
     },
     tool: {

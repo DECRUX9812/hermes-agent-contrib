@@ -120,7 +120,7 @@ export function collectAttentionItems(src: AttentionSources): AttentionItem[] {
       id: `clarify:${key}:${request.requestId}`,
       kind: 'clarify',
       sessionId: request.sessionId,
-      title: request.question,
+      title: request.questions[0]?.question ?? '',
       ...(request.questions?.length ? { detail: `${request.questions.length} questions` } : {})
     })
   }

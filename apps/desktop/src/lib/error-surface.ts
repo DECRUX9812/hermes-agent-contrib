@@ -41,6 +41,9 @@ export const ERROR_CODE_KEYS = [
   'context_overflow',
   'payload_too_large',
   'model_not_found',
+  // No provider is configured at all (fresh install, or the configured one was removed):
+  // the one fix is choosing a model or signing in, not retrying.
+  'no_provider_configured',
   'provider_policy_blocked',
   'content_policy_blocked',
   'format_error',
@@ -50,6 +53,9 @@ export const ERROR_CODE_KEYS = [
   'loop_error',
   'SESSION_NOT_OWNED',
   'disk_full',
+  // Raised by the desktop, never by the backend: the backend reported a turn
+  // over after its events stopped, and no reply reached this window.
+  'no_reply',
   // The Nous free tier refused or could not serve the turn (agent/error_surface.py
   // `free_tier_<kind>`). The backend's sentence rides in `message` and is the card body.
   'free_tier_disabled',
@@ -269,6 +275,7 @@ const CODE_PLANS: Partial<Record<ErrorCodeKey, Partial<ErrorRecoveryPlan>>> = {
   disk_full: { openHermesFolder: true, retry: true },
   loop_error: { startNewSession: true },
   model_not_found: { chooseModel: true, retry: false },
+  no_provider_configured: { chooseModel: true, retry: false, switchProvider: false },
   payload_too_large: { compress: true, retry: false, startNewSession: true }
 }
 

@@ -89,7 +89,10 @@ export function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGr
   const watchedMap = useValue($watchedSessionKeys)
 
   const watched = Boolean(
-    canonicalSessionId && watchedMap && typeof isWatchedSessionId === 'function' && isWatchedSessionId(canonicalSessionId)
+    canonicalSessionId &&
+    watchedMap &&
+    typeof isWatchedSessionId === 'function' &&
+    isWatchedSessionId(canonicalSessionId)
   )
 
   // E3 — a delivery queued or in flight to this bot.
@@ -343,4 +346,3 @@ export function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGr
     </ContextMenu>
   )
 }
-

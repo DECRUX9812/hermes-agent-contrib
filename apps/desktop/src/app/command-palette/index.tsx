@@ -60,6 +60,7 @@ import {
   Zap
 } from '@/lib/icons'
 import { getServers } from '@/lib/mcp-servers'
+import { byRecency } from '@/lib/recent-projects'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
 import { $repoWorktrees } from '@/store/coding-status'
@@ -82,6 +83,7 @@ import {
 import { openPetGenerate } from '@/store/pet-generate'
 import { toggleBrowserTab } from '@/store/preview'
 import { $projectTree, goToProject, openFolderAsProject, requestStartWorkSession } from '@/store/projects'
+import { $recentProjectIds } from '@/store/recent-projects'
 import { $connection, $cronSessions, $messagingSessions, $sessions } from '@/store/session'
 import { $unconfirmedPinWrites } from '@/store/session-pin-sync'
 import { $removedSessionIds } from '@/store/session-removal'
@@ -438,6 +440,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   const bindings = useStore($bindings)
   const worktrees = useStore($repoWorktrees)
   const projectTree = useStore($projectTree)
+  const recentProjectIds = useStore($recentProjectIds)
   const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
   const navigate = useNavigate()
 
@@ -703,7 +706,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
           label: cc.openFolder,
           run: () => void openFolderAsProject()
         },
-        ...filterVisibleProjects(projectTree, dismissedAutoProjects).map(project => ({
+        ...byRecency(filterVisibleProjects(projectTree, dismissedAutoProjects), recentProjectIds, project => project.id).map(project => ({
           comboHint: 'mod+enter',
           icon: codiconIcon(project.icon || (project.isNoProject ? 'home' : 'folder-library')),
           id: `project-${project.id}`,
@@ -953,6 +956,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     dismissedAutoProjects,
     go,
     projectTree,
+    recentProjectIds,
     selectTick,
     settingsSectionLabel,
     t,

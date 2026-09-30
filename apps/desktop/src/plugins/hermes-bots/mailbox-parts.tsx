@@ -169,9 +169,7 @@ export function MailboxTaskDialog({ member, onClose }: { member: GroupMember | n
     <Dialog onOpenChange={open => !open && onClose()} open={Boolean(member)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {label ? b.mailbox.assignTitle(label) : b.mailbox.assignTitleGeneric}
-          </DialogTitle>
+          <DialogTitle>{label ? b.mailbox.assignTitle(label) : b.mailbox.assignTitleGeneric}</DialogTitle>
           <DialogDescription>{b.mailbox.assignDescription}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-2 py-1">

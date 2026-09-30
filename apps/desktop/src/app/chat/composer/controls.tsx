@@ -10,6 +10,7 @@ import { Ear, EarOff, iconSize, Layers3, Loader2, Square } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { recordAction } from '@/store/desktop-metrics'
 import { $hudMode, closeHud, resetHudLayout } from '@/store/hud'
+import { $showsAdvancedChrome } from '@/store/interface-mode'
 import { $wakeWord, toggleWakeWord } from '@/store/wake-word'
 
 import { ApprovalPill } from './approval-pill'
@@ -82,6 +83,7 @@ export function ComposerControls({
   const { t } = useI18n()
   const c = t.composer
   const hudMode = useStore($hudMode)
+  const showsAdvancedChrome = useStore($showsAdvancedChrome)
 
   if (conversation.active) {
     return <ConversationPill {...conversation} disabled={disabled} />
@@ -92,7 +94,7 @@ export function ComposerControls({
   // only when the composer is empty and a turn is running.
   const showStop = busy && !hasComposerPayload
   const sendLabel = showStop ? c.stop : busyAction === 'steer' ? c.steerTurn : c.send
-  const showQueueButton = busyAction !== 'stop' && hasComposerPayload
+  const showQueueButton = busy && busyAction !== 'stop' && hasComposerPayload
   // The HUD is a Spotlight bar a few hundred pixels wide, so the four separate
   // voice toggles fold into one menu there and leave the row to the input. A
   // narrow tile hits the same wall from the other direction and folds for the
@@ -132,8 +134,13 @@ export function ComposerControls({
           {hideModelPill ? null : (
             <>
               <ModelPill compact={compactModelPill} disabled={disabled} model={state.model} />
-              {compactModelPill ? null : <ReasoningPill disabled={disabled} model={state.model} />}
-              <ContextRing disabled={disabled} gateway={gateway} />
+              {/* Simple keeps the row to what a conversation needs — model, voice,
+                  send. Reasoning effort and the context gauge are tuning; they
+                  stay in Advanced and in Settings. */}
+              {compactModelPill || !showsAdvancedChrome ? null : (
+                <ReasoningPill disabled={disabled} model={state.model} />
+              )}
+              {showsAdvancedChrome ? <ContextRing disabled={disabled} gateway={gateway} /> : null}
             </>
           )}
           <ApprovalPill compact={compactModelPill} disabled={disabled} />

@@ -25,7 +25,14 @@ vi.mock('@hermes/plugin-sdk', async () => {
   })
 })
 
-import { BOT_STARTERS, chatStarters, draftFromDescription, starterDraft, suggestedName } from './bot-starters'
+import {
+  BOT_STARTERS,
+  chatStarters,
+  draftFromDescription,
+  STARTER_CATEGORIES,
+  starterDraft,
+  suggestedName
+} from './bot-starters'
 import { BOT_TEMPLATE_IDS } from './bot-templates'
 import { slugifyProfileName } from './labels'
 
@@ -43,6 +50,8 @@ describe('BOT_STARTERS', () => {
       expect(template.blob).toBeTruthy()
       // Every card hires through a real C1 preset, so its curation exists.
       expect(BOT_TEMPLATE_IDS).toContain(template.preset)
+      // …and sits on a shelf the gallery rail actually lists.
+      expect(STARTER_CATEGORIES).toContain(template.category)
       // A template name must survive the profile-name slugger.
       expect(slugifyProfileName(template.name)).toBeTruthy()
     }

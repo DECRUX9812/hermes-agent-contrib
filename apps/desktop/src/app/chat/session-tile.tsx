@@ -985,6 +985,7 @@ export const watchSessionTiles = paneMirror<SessionTile>({
   // The session's live status on the tab itself (elapsed + what it's doing),
   // so every tile reads live — not just the zone's active pane.
   tabTrail: storedSessionId => <SessionTabStatus storedSessionId={storedSessionId} />,
+  contentTitle: true,
   // The focused conversation's skill count, in the zone strip's trailing
   // edge — the tab strip is a session pane's header in the pane-shell layout.
   stripTrail: storedSessionId => <SkillTag storedSessionId={storedSessionId} />,

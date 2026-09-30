@@ -23,7 +23,6 @@ import {
   RowButton,
   SessionStatusDot,
   SidebarPanelLabel,
-  SidebarRowLead,
   SidebarSectionMeta,
   Tip,
   useI18n,
@@ -304,7 +303,7 @@ function AgentRow({ bot }: { bot: RosterRow }) {
       onPointerEnter={() => warmRosterBot(bot)}
       tabIndex={-1}
     >
-      <div className={cn('shrink-0', !sourceStatus.available && 'grayscale opacity-60')}>
+      <div className={cn('relative shrink-0', !sourceStatus.available && 'grayscale opacity-60')}>
         <BotFace
           color={avatarColor(color, bot.name)}
           image={photo ? image : null}
@@ -312,13 +311,13 @@ function AgentRow({ bot }: { bot: RosterRow }) {
           shape={shape}
           size={26}
         />
+        {/* Status rides the avatar's corner like a presence badge — the name
+            keeps the row's left edge instead of a reserved dot column. */}
+        <SessionStatusDot className="absolute -right-0.5 -bottom-0.5" storedSessionId={canonicalSessionId} />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <div className="flex min-w-0 items-center gap-1.5">
-            <SidebarRowLead>
-              <SessionStatusDot storedSessionId={canonicalSessionId} />
-            </SidebarRowLead>
             <Tip label={rowTooltip}>
               <span className="min-w-0 truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
             </Tip>

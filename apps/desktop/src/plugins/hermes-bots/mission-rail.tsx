@@ -11,12 +11,25 @@
  * RailSection here plus one id in RAIL_SECTION_IDS.
  */
 
-import { Button, Codicon, GlyphSpinner, PanelEmpty, Tip, useI18n, useValue } from '@hermes/plugin-sdk'
+import {
+  AskRulesCard,
+  Button,
+  cn,
+  Codicon,
+  GlyphSpinner,
+  host,
+  PanelEmpty,
+  ReachCard,
+  Tip,
+  useI18n,
+  useValue
+} from '@hermes/plugin-sdk'
 import { type ReactNode, useState } from 'react'
 
+import { AUTOPILOT_ICONS, autopilotPresets, type RoutinePreset } from './autopilot'
+import { useAutopilotText } from './autopilot-i18n'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { BotDeliverablesSection } from './bot-deliverables'
-import { exportBot } from './bot-export'
 import { BotSessionDeck } from './bot-session-deck'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { BotTaskLog } from './bot-task-log'
@@ -38,8 +51,11 @@ import { botRole, displayName } from './labels'
 import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
 import { NewTaskButton } from './new-task'
 import { $railCollapsed, type RailSectionId, setRailSectionCollapsed } from './rail-state'
+import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
 import { BotComputerPanel } from './screen-panel'
+import { ShareBotDialog } from './share-dialog'
+import { useShareText } from './share-i18n'
 import type { RosterRow } from './types'
 
 /** One collapsible rail section: the slim header row carries the fold
@@ -69,9 +85,7 @@ function RailSection({
           type="button"
         >
           <Codicon className="text-(--ui-text-quaternary)" name={collapsed ? 'chevron-right' : 'chevron-down'} />
-          <span className="truncate text-[0.65rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-            {title}
-          </span>
+          <span className="truncate ui-section-label">{title}</span>
         </button>
         {action && !collapsed ? <span className="shrink-0 px-1">{action}</span> : null}
       </div>
@@ -80,10 +94,19 @@ function RailSection({
   )
 }
 
-/** G8 — the rail's top card: face, name (+ @handle), the description line as
- *  the role subtitle until personas land, the live-status chip, and quick
- *  actions (new task, edit profile, export). */
-function BotProfileCard({ bot, meta, onEdit }: { bot: RosterRow; meta?: Parameters<typeof botAppearance>[1]; onEdit: () => void }) {
+/** The rail's top card (revamp "teammate" header): face, name, a state badge
+ *  in the live-status tone, what it is and where it lives, then the two things
+ *  you do with a teammate — message it, or hand it a task — with edit/export
+ *  as quiet icons. */
+function BotProfileCard({
+  bot,
+  meta,
+  onEdit
+}: {
+  bot: RosterRow
+  meta?: Parameters<typeof botAppearance>[1]
+  onEdit: () => void
+}) {
   const b = useBots()
   const live = useBotLiveStatus(bot)
   const { shape, color, image } = botAppearance(bot.name, meta)
@@ -92,51 +115,131 @@ function BotProfileCard({ bot, meta, onEdit }: { bot: RosterRow; meta?: Paramete
   // G3 persona role one-liner; falls back to the description's first
   // sentence, empty when nothing says what the bot is for.
   const subtitle = botRole(bot, meta)
+  const where = bot.connectionLabel || (bot.connectionId && bot.connectionId !== 'local' ? '' : b.bot.thisDevice)
+  const tone = LIVE_TONE[live.kind] ?? 'idle'
+  const share = useShareText()
+  const [sharing, setSharing] = useState(false)
 
   return (
-    <div className="px-3 pt-3 pb-2" data-testid="rail-profile-card">
-      <div className="flex items-center gap-2">
-        <BotFace color={avatarColor(color, bot.name)} image={image} name={bot.name} shape={shape} size={30} />
+    <div className="px-3 pt-3 pb-3" data-testid="rail-profile-card">
+      <div className="flex items-center gap-2.5">
+        <BotFace color={avatarColor(color, bot.name)} image={image} name={bot.name} shape={shape} size={40} />
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-baseline gap-1.5">
-            <span className="truncate text-xs font-semibold text-(--ui-text-secondary)">{name}</span>
-            {name.trim().toLowerCase() !== handle.toLowerCase() ? (
-              <span className="shrink-0 font-mono text-[0.65rem] text-(--ui-text-quaternary)">{`@${handle}`}</span>
-            ) : null}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm font-semibold text-foreground">{name}</span>
+            <span
+              className={cn(
+                'flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[0.625rem] font-medium',
+                tone === 'working' && 'bg-(--ui-accent)/12 text-(--ui-accent)',
+                tone === 'waiting' && 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+                tone === 'idle' && 'bg-(--ui-inline-code-background) text-(--ui-text-tertiary)'
+              )}
+              data-tone={tone}
+            >
+              {tone !== 'idle' ? <span className="size-1.5 rounded-full bg-current" /> : null}
+              {botLiveStatusLabel(live, b.roster)}
+            </span>
           </div>
-          {subtitle ? (
-            <div className="truncate text-[0.65rem] text-(--ui-text-tertiary)">{subtitle}</div>
-          ) : null}
+          <div className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">
+            {[subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : '']
+              .filter(Boolean)
+              .join(' · ')}
+          </div>
         </div>
-        <span className="shrink-0 rounded-full border border-(--ui-stroke-secondary) px-1.5 py-0.5 text-[0.6rem] font-medium text-(--ui-text-tertiary)">
-          {botLiveStatusLabel(live, b.roster)}
-        </span>
+        <div className="flex shrink-0 items-center self-start">
+          <Tip label={b.bot.editTitle}>
+            <Button aria-label={b.bot.editTitle} onClick={onEdit} size="icon-xs" variant="ghost">
+              <Codicon name="edit" />
+            </Button>
+          </Tip>
+          <Tip label={share.title(name)}>
+            <Button aria-label={share.title(name)} onClick={() => setSharing(true)} size="icon-xs" variant="ghost">
+              <Codicon name="share" />
+            </Button>
+          </Tip>
+          <ShareBotDialog bot={bot} meta={meta ?? null} onOpenChange={setSharing} open={sharing} />
+        </div>
       </div>
-      <div className="mt-1.5 flex items-center gap-0.5">
-        <NewTaskButton bot={bot} />
-        <Tip label={b.bot.editTitle}>
-          <Button
-            aria-label={b.bot.editTitle}
-            onClick={onEdit}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <Codicon name="edit" />
+      <div className="mt-2.5 flex flex-wrap items-center gap-1">
+        <Button onClick={() => void openRosterBot(bot)} size="xs">
+          <Codicon name="comment" />
+          {b.roster.openChat}
+        </Button>
+        <NewTaskButton bot={bot} labeled />
+      </div>
+      {/* Every bot, an address: its own Telegram/Slack link as a QR, or the
+          one step that gives it one. Remote-source bots have no platforms on
+          this backend (same rule as the menu's "Continue on phone"). */}
+      {!bot.remoteSource && (
+        <ReachCard
+          className="mt-3"
+          name={name}
+          onManage={
+            typeof host.navigate === 'function'
+              ? () => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`)
+              : undefined
+          }
+          profile={bot.name}
+        />
+      )}
+      {!bot.remoteSource && <AskRulesCard className="mt-2" name={name} profile={bot.name} />}
+    </div>
+  )
+}
+
+/** "Put <bot> on autopilot": presets that prefill the routine dialog. A
+ *  preset whose title already names one of the bot's routines is hidden. */
+function AutopilotChips({
+  name,
+  onCustom,
+  onPick,
+  taken
+}: {
+  name: string
+  /** Offered when this card stands in for the empty state. */
+  onCustom?: () => void
+  onPick: (preset: RoutinePreset) => void
+  taken: string[]
+}) {
+  const a = useAutopilotText()
+  const presets = autopilotPresets(a).filter(({ label }) => !taken.some(title => title.endsWith(label)))
+
+  if (!presets.length) {
+    return null
+  }
+
+  return (
+    <div className="mx-2.5 mb-2 mt-1 rounded-xl bg-(--ui-widget-surface-background) p-2.5" data-slot="autopilot">
+      <p className="text-[0.75rem] font-medium text-foreground">{a.heading(name)}</p>
+      <p className="mb-2 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)">{a.hint}</p>
+      <div className="flex flex-wrap gap-1">
+        {presets.map(({ id, label, preset }) => (
+          <Button key={id} onClick={() => onPick(preset)} size="xs" variant="secondary">
+            <Codicon name={AUTOPILOT_ICONS[id]} />
+            {label}
           </Button>
-        </Tip>
-        <Tip label={b.bot.exportBotMenu}>
-          <Button
-            aria-label={b.bot.exportBotMenu}
-            onClick={() => void exportBot(bot, meta ?? null)}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <Codicon name="share" />
+        ))}
+        {onCustom && (
+          <Button onClick={onCustom} size="xs" variant="ghost">
+            <Codicon name="add" />
+            {a.custom}
           </Button>
-        </Tip>
+        )}
       </div>
     </div>
   )
+}
+
+/** Badge tone per live-status kind: working (accent), waiting on you
+ *  (amber), everything else quiet. */
+const LIVE_TONE: Partial<Record<ReturnType<typeof useBotLiveStatus>['kind'], 'idle' | 'waiting' | 'working'>> = {
+  'needs-input': 'waiting',
+  stalled: 'waiting',
+  working: 'working',
+  routine: 'working',
+  group: 'working',
+  background: 'working',
+  delegated: 'working'
 }
 
 /** The rail's content for the bot the workspace currently belongs to —
@@ -166,11 +269,14 @@ export function MissionRail() {
   const [editing, setEditing] = useState(false)
   const createTarget = owner ? routineCreateTarget(createOwner, bot) : null
 
-  const openCreate = () => {
+  const [preset, setPreset] = useState<null | RoutinePreset>(null)
+
+  const openCreate = (seed: null | RoutinePreset = null) => {
     if (!owner) {
       return
     }
 
+    setPreset(seed)
     setCreateOwner(owner)
     setCreateOpen(true)
   }
@@ -213,7 +319,7 @@ export function MissionRail() {
       <RailSection
         action={
           <Tip label={c.newCron}>
-            <Button aria-label={c.newCron} onClick={openCreate} size="icon-xs" variant="ghost">
+            <Button aria-label={c.newCron} onClick={() => openCreate()} size="icon-xs" variant="ghost">
               <Codicon name="add" />
             </Button>
           </Tip>
@@ -241,12 +347,16 @@ export function MissionRail() {
             icon="warning"
             title={c.failedLoad}
           />
+        ) : jobs.length === 0 && !filterHint ? (
+          // Nothing scheduled and nothing hidden by the filter: the autopilot
+          // card below IS the empty state, with a way to write one from scratch.
+          <AutopilotChips name={displayName(owner, meta)} onCustom={() => openCreate()} onPick={openCreate} taken={[]} />
         ) : jobs.length === 0 ? (
           // `filterHint` is the informative case (jobs exist on the profile but
           // none are tagged for this bot), so it wins the description slot.
           <PanelEmpty
             action={
-              <Button onClick={openCreate} size="sm">
+              <Button onClick={() => openCreate()} size="sm">
                 {c.newCron}
               </Button>
             }
@@ -261,6 +371,13 @@ export function MissionRail() {
             ))}
           </div>
         )}
+        {!isLoading && !error && jobs.length > 0 && (
+          <AutopilotChips
+            name={displayName(owner, meta)}
+            onPick={openCreate}
+            taken={jobs.map(job => String(job.name || ''))}
+          />
+        )}
       </RailSection>
       {/* Deliverables keeps its own header row (count + refresh live in it),
           so it isn't folded into a RailSection — RailSection headers exist to
@@ -268,7 +385,12 @@ export function MissionRail() {
       <div className="border-t border-(--ui-stroke-secondary)">
         <BotDeliverablesSection owner={owner} />
       </div>
-      <RoutineDetailDialog job={detailJob} onClose={() => setDetailJobId(null)} open={Boolean(detailJob)} owner={owner} />
+      <RoutineDetailDialog
+        job={detailJob}
+        onClose={() => setDetailJobId(null)}
+        open={Boolean(detailJob)}
+        owner={owner}
+      />
       <CreateRoutineDialog
         // Non-null past the `!owner` early return above: `routineCreateTarget`
         // falls back to the active profile name.
@@ -280,8 +402,10 @@ export function MissionRail() {
         onClose={() => {
           setCreateOpen(false)
           setCreateOwner(null)
+          setPreset(null)
         }}
         open={createOpen}
+        preset={preset}
       />
       <EditProfileDialog bot={editing ? owner : null} onClose={() => setEditing(false)} open={editing} />
     </div>

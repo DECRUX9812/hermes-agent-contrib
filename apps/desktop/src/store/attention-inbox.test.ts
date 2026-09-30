@@ -53,7 +53,11 @@ describe('collectAttentionItems', () => {
     const items = collectAttentionItems({
       ...emptySources,
       clarify: {
-        'sess-2': { choices: ['a', 'b'], multiSelect: false, question: 'which?', requestId: 'c1', sessionId: 'sess-2' }
+        'sess-2': {
+          questions: [{ choices: ['a', 'b'], multiSelect: false, qid: 'q1', question: 'which?' }],
+          requestId: 'c1',
+          sessionId: 'sess-2'
+        }
       },
       secrets: {
         'sess-1': { envVar: 'OPENAI_API_KEY', prompt: 'paste key', requestId: 's1', sessionId: 'sess-1' }

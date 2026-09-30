@@ -2,6 +2,7 @@ import { atom } from 'nanostores'
 
 import { deriveDraftTitle } from '@/lib/draft-title'
 import { triggerHaptic } from '@/lib/haptics'
+import { persistString, storedString } from '@/lib/storage'
 
 import { recordDislike, recordFriction } from './desktop-metrics'
 
@@ -308,8 +309,39 @@ export function registerComposerNewDraftProfileResolver(resolver: () => string):
   resolveNewDraftProfile = resolver
 }
 
-const newSessionDraftKey = (): string => {
-  const key = `${NEW_SESSION_DRAFT_KEY}:${(resolveNewDraftProfile() || '').trim() || 'default'}`
+// Each fresh chat gets its OWN bucket (#66662): the shared bucket let a second
+// New Chat inherit the first one's unsent text. The bucket also keys on the
+// profile the chat would be created on, so one profile's unsent text never
+// surfaces in another's composer. Shape: `__new__:<profile>~<lifecycle>`; the
+// bare `__new__:<profile>` is a profile's bucket before its first rotation (and
+// what older payloads stored), so nothing written earlier is orphaned.
+// The per-profile current key persists, so a reload restores that exact draft.
+const FRESH_DRAFT_STORAGE_KEY = 'hermes.desktop.freshDraftKeys'
+
+const profileBucket = (profile: string): string => `${NEW_SESSION_DRAFT_KEY}:${profile}`
+
+const readFreshKeys = (): Record<string, string> => {
+  try {
+    const parsed: unknown = JSON.parse(storedString(FRESH_DRAFT_STORAGE_KEY) ?? '{}')
+
+    return parsed && typeof parsed === 'object' ? { ...(parsed as Record<string, string>) } : {}
+  } catch {
+    return {}
+  }
+}
+
+const freshKeys = readFreshKeys()
+
+const persistFreshKeys = () => persistString(FRESH_DRAFT_STORAGE_KEY, JSON.stringify(freshKeys))
+
+const currentDraftProfile = (): string => (resolveNewDraftProfile() || '').trim() || 'default'
+
+export const $freshDraftKey = atom<string>(freshKeys.default ?? profileBucket('default'))
+
+/** The current fresh chat's draft key for the profile a new chat would use. */
+export const freshDraftScope = (): string => {
+  const profile = currentDraftProfile()
+  const key = freshKeys[profile] ?? profileBucket(profile)
 
   // A pre-profile payload's shared `__new__` entry folds into the resolved
   // bucket on first access — the only home its text can have now.
@@ -330,16 +362,38 @@ const newSessionDraftKey = (): string => {
     persistDraftTexts()
   }
 
+  if ($freshDraftKey.get() !== key) {
+    $freshDraftKey.set(key)
+  }
+
   return key
 }
 
-// `null`, empty, and the bare `__new__` sentinel all name the current
-// profile's pre-session bucket; a literal `__new__:<profile>` key is an
-// explicit reference to that profile's bucket (rename/delete sweeps).
+/** Start a new fresh-chat lifecycle: abandoned unsent text stays behind. */
+export const rotateFreshDraftKey = (): string => {
+  const profile = currentDraftProfile()
+  const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const key = `${profileBucket(profile)}~${id}`
+
+  freshKeys[profile] = key
+  persistFreshKeys()
+  $freshDraftKey.set(key)
+
+  return key
+}
+
+// A draft key belongs to a fresh-chat lifecycle when it is the legacy shared
+// bucket or one of its per-profile / per-instance successors (#66662).
+export const isFreshDraftScope = (key: string | null | undefined): boolean =>
+  typeof key === 'string' && (key === NEW_SESSION_DRAFT_KEY || (key.startsWith(NEW_SESSION_DRAFT_KEY) && key.length > NEW_SESSION_DRAFT_KEY.length))
+
+// `null`, empty, and the bare `__new__` sentinel all name the current fresh
+// chat's bucket; any other key (a session id, an explicit `__new__:…` bucket
+// in a rename/delete sweep) is taken literally.
 const draftKey = (scope: string | null | undefined): string => {
   const key = scope?.trim()
 
-  return !key || key === NEW_SESSION_DRAFT_KEY ? newSessionDraftKey() : key
+  return !key || key === NEW_SESSION_DRAFT_KEY ? freshDraftScope() : key
 }
 
 /** Inline "Restored your unsent message" notice for the fresh draft (see
@@ -683,7 +737,7 @@ export function stashSessionDraft(scope: string | null | undefined, text: string
 
   if (text.trim() || attachments.length > 0) {
     draftsBySession.set(key, cloneDraft({ attachments, text }))
-  } else if (key === newSessionDraftKey()) {
+  } else if (isFreshDraftScope(key)) {
     // The fresh draft was sent or emptied — a restore notice has nothing left
     // to undo.
     $restoredDraftNotice.set(null)
@@ -738,27 +792,44 @@ export function migrateSessionDraft(fromKey: string | null | undefined, toKey: s
   return true
 }
 
+/** Every fresh-draft bucket a profile owns: its base bucket and each lifecycle. */
+const profileBuckets = (profile: string): string[] => {
+  const base = profileBucket(profile)
+
+  return [...draftsBySession.keys()].filter(key => key === base || key.startsWith(`${base}~`))
+}
+
 /**
- * A profile rename carries its `__new__:<name>` fresh-draft bucket to the new
+ * A profile rename carries its `__new__:<name>` fresh-draft buckets to the new
  * name. `migrateSessionDraft` never clobbers a non-empty destination; the old
- * key is dropped either way so a later same-name profile inherits nothing.
+ * keys are dropped either way so a later same-name profile inherits nothing.
  */
 export function migrateComposerDraftsForProfile(from: string, to: string): void {
-  const oldKey = `${NEW_SESSION_DRAFT_KEY}:${from}`
+  let dropped = false
 
-  if (migrateSessionDraft(oldKey, `${NEW_SESSION_DRAFT_KEY}:${to}`)) {
-    return
+  for (const oldKey of profileBuckets(from)) {
+    const newKey = profileBucket(to) + oldKey.slice(profileBucket(from).length)
+
+    if (!migrateSessionDraft(oldKey, newKey) && draftsBySession.delete(oldKey)) {
+      publishDraftTitle(oldKey, '')
+      publishDraftAttachmentCount(oldKey, 0)
+      dropped = true
+    }
   }
 
-  if (draftsBySession.delete(oldKey)) {
-    publishDraftTitle(oldKey, '')
-    publishDraftAttachmentCount(oldKey, 0)
+  if (freshKeys[from]) {
+    freshKeys[to] ??= profileBucket(to) + freshKeys[from].slice(profileBucket(from).length)
+    delete freshKeys[from]
+    persistFreshKeys()
+  }
+
+  if (dropped) {
     persistDraftTexts()
   }
 }
 
 /**
- * Drop the deleted profile's fresh-draft bucket. Local deletes only: the
+ * Drop the deleted profile's fresh-draft buckets. Local deletes only: the
  * bucket keys on the profile name alone, so a remote connection's delete
  * can't be told apart from a same-named local profile and leaves it alone.
  */
@@ -770,14 +841,23 @@ export function dropComposerDraftsForProfile(
     return
   }
 
-  const key = `${NEW_SESSION_DRAFT_KEY}:${profile}`
+  if (freshKeys[profile]) {
+    delete freshKeys[profile]
+    persistFreshKeys()
+  }
 
-  if (!draftsBySession.delete(key)) {
+  const keys = profileBuckets(profile)
+
+  if (keys.length === 0) {
     return
   }
 
-  publishDraftTitle(key, '')
-  publishDraftAttachmentCount(key, 0)
+  for (const key of keys) {
+    draftsBySession.delete(key)
+    publishDraftTitle(key, '')
+    publishDraftAttachmentCount(key, 0)
+  }
+
   persistDraftTexts()
 }
 
@@ -841,8 +921,9 @@ export function adoptNewSessionDraft(toKey: string | null | undefined): boolean 
 
   // A profile re-aim mid-typing stashes the text under a different profile's
   // bucket than the send resolves — the draft still belongs to the send, so
-  // take whichever fresh bucket holds it.
-  const other = [...draftsBySession.keys()].find(key => key.startsWith(NEW_SESSION_DRAFT_KEY))
+  // take the fresh bucket written most recently (drafts are kept in MRU order;
+  // older buckets are abandoned new chats, not this send's text).
+  const other = [...draftsBySession.keys()].findLast(key => key.startsWith(NEW_SESSION_DRAFT_KEY))
   const adopted = Boolean(other) && migrateSessionDraft(other, toKey)
 
   if (adopted && other) {
@@ -900,7 +981,7 @@ export function adoptGoneSessionDraft(): boolean {
     return false
   }
 
-  const dest = draftsBySession.get(newSessionDraftKey())
+  const dest = draftsBySession.get(freshDraftScope())
 
   if (dest && (dest.text.trim() || dest.attachments.length > 0)) {
     return false
@@ -934,7 +1015,7 @@ export function undoRestoredDraft(liveText: string): boolean {
     return false
   }
 
-  const current = draftsBySession.get(newSessionDraftKey())
+  const current = draftsBySession.get(freshDraftScope())
   stashSessionDraft(notice.fromKey, notice.text, current?.attachments ?? [])
   clearSessionDraft(null)
   recordDislike('undo', 'restored_draft')

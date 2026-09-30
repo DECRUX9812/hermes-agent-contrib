@@ -222,7 +222,7 @@ export function rosterSectionRenderers({
 
   const renderHiddenGatewaySection = (section: ResolvedRosterGatewaySection) => (
     <div className="min-w-0" key={`hidden-gateway:${section.id}`}>
-      <div className="flex min-w-0 items-center gap-1.5 px-2 py-1 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
+      <div className="flex min-w-0 items-center gap-1.5 px-2 py-1 ui-section-label">
         <GatewayKindGlyph kind={section.option?.kind} />
         <span className="min-w-0 flex-1 truncate">
           {section.option?.label || section.option?.connectionId || 'Current gateway'}

@@ -1,7 +1,7 @@
 import { registryBackendScopeKey } from '@hermes/shared'
 
 import type { HermesGateway } from '@/hermes'
-import { RECONNECT_ATTEMPT_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout'
+import { RECONNECT_ATTEMPT_TIMEOUT_MS, SOURCE_SWITCH_DIAL_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout'
 
 import {
   applyActive,
@@ -669,10 +669,19 @@ export async function retainGatewayForSessionTurn(
   return release
 }
 
-// How long a mid-dial activation holds its prune lease: covers a cold pool
-// backend spawn + socket connect with margin, while still letting a leaked
-// lease expire quickly enough for the reaper to reclaim the entry.
-const ACTIVATION_LEASE_MS = 30_000
+// How long a mid-dial activation holds its prune lease: it must outlast every
+// dial the renderer still treats as in flight, or the pruner reaps the switch
+// target mid-dial and the click resolves on a socket that is already closed
+// (#89622's mechanism, one budget change later). The activation dials now carry
+// SOURCE_SWITCH_DIAL_TIMEOUT_MS — the whole remote bring-up chain (ssh connect,
+// the platform/locate/version probes, the remote spawn's ready sentinel, the
+// forward) — so this is DERIVED from it rather than picked independently: at
+// the old 30 s literal, raising the dial budget to 135 s left the switch target
+// prunable for the last ~105 s of a *healthy* dial. The margin covers the
+// settle that releases the lease (the renderer's switch commit). Bounded on
+// purpose: a leaked lease still expires on its own and the reaper reclaims the
+// entry.
+const ACTIVATION_LEASE_MS = SOURCE_SWITCH_DIAL_TIMEOUT_MS + 15_000
 
 // Open `profile`'s socket WITHOUT making it active — the hover-intent pre-warm
 // (store/profile). Runs the same spawn + connect chain as a real switch, so by

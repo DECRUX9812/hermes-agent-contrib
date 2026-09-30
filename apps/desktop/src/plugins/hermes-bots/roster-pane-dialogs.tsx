@@ -1,8 +1,7 @@
 import { ConfirmDialog, host } from '@hermes/plugin-sdk'
 import type { useI18n } from '@hermes/plugin-sdk'
 
-import type { BotStarter } from './bot-starters'
-import type { BotTemplateId } from './bot-templates'
+import type { BotDraft } from './bot-starters'
 import { CreateAgentDialog, CreateGroupChatDialog, GroupDialog } from './create-dialog'
 import type { useRoster } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
@@ -17,13 +16,10 @@ interface renderRosterDialogsProps {
   b: ReturnType<typeof useBots>
   t: ReturnType<typeof useI18n>['t']
   createOpen: boolean
-  /** G6 — marketplace starter template to seed the create dialog with. */
-  createTemplate?: BotTemplateId
   setCreateOpen: (value: boolean) => void
-  setCreateTemplate: (value: BotTemplateId | undefined) => void
-  /** Hire-gallery starter the dialog should open pre-filled with, and its reset. */
-  createStarter: BotStarter | null
-  setCreateStarter: (value: BotStarter | null) => void
+  /** Hire-gallery pick the dialog should open pre-filled with, and its reset. */
+  createDraft: BotDraft | null
+  setCreateDraft: (value: BotDraft | null) => void
   groupCreateOpen: boolean
   setGroupCreateOpen: (value: boolean) => void
   editing: RosterRow | null
@@ -45,11 +41,9 @@ export function renderRosterDialogs({
   b,
   t,
   createOpen,
-  createTemplate,
   setCreateOpen,
-  setCreateTemplate,
-  createStarter,
-  setCreateStarter,
+  createDraft,
+  setCreateDraft,
   groupCreateOpen,
   setGroupCreateOpen,
   editing,
@@ -69,19 +63,17 @@ export function renderRosterDialogs({
   return (
     <>
       <CreateAgentDialog
-        initialTemplate={createTemplate}
-        // Remount per open (and per starter): every form field initializes
+        draft={createDraft}
+        // Remount per open (and per pick): every form field initializes
         // fresh, so a cancelled draft can never leak into the next "New bot".
-        key={createOpen ? `open:${createStarter?.id || createTemplate || ''}` : 'closed'}
+        key={createOpen ? `open:${createDraft?.templateId || createDraft?.name || ''}` : 'closed'}
         onClose={() => {
           setCreateOpen(false)
-          setCreateTemplate(undefined)
-          setCreateStarter(null)
+          setCreateDraft(null)
           void refetch()
         }}
         onConfigureModel={setEditing}
         open={createOpen}
-        starter={createStarter}
         roster={activeSourceRoster}
       />
       <CreateGroupChatDialog

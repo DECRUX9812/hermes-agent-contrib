@@ -54,9 +54,6 @@ interface renderRosterToolbarProps {
   /** G10 — the roster view: 'list' (default) or the 'cards' grid. */
   viewMode: RosterViewMode
   setViewMode: (value: RosterViewMode) => void
-  /** G6 — the marketplace stub is another way to add a bot, so it lives on
-   *  the New… menu. */
-  setMarketplaceOpen: (value: boolean) => void
 }
 
 export function renderRosterToolbar({
@@ -84,16 +81,13 @@ export function renderRosterToolbar({
   setSortMode,
   setBroadcastOpen,
   setCalendarOpen,
-  setMarketplaceOpen,
   viewMode,
   setViewMode
 }: renderRosterToolbarProps) {
   return (
     <>
       <div className="flex items-center justify-between gap-2 px-2.5 pt-2.5 pb-1.5">
-        <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-          Bots
-        </span>
+        <span className="ui-section-label">Bots</span>
         <div className="flex items-center gap-0.5">
           <Tip label={viewMode === 'cards' ? b.roster.listView : b.roster.cardView}>
             <Button
@@ -148,10 +142,6 @@ export function renderRosterToolbar({
               >
                 <Codicon className="mr-1.5" name="organization" />
                 {b.group.newTitle}
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setMarketplaceOpen(true)}>
-                <Codicon className="mr-1.5" name="extensions" />
-                {b.market.menuItem}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setSectionDialog({ mode: 'create' })}>

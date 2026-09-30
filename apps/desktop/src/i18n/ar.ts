@@ -1,6 +1,32 @@
 import { defineLocale } from './define-locale'
 
 export const ar = defineLocale({
+  todayBrief: {
+    greeting: { morning: 'صباح الخير', afternoon: 'مساء الخير', evening: 'مساء الخير', night: 'تعمل حتى وقت متأخر؟' },
+    needsYou: 'بانتظارك',
+    running: 'قيد التشغيل',
+    finished: 'انتهى أثناء غيابك',
+    scheduled: 'القادم اليوم',
+    recent: 'تابع من حيث توقفت'
+  },
+
+  live: {
+    title: 'مباشر',
+    noSession: 'لم يتم تحديد جلسة',
+    emptyTitle: 'لم يُشغَّل شيء بعد',
+    emptyBody: 'يظهر هنا كل أمر وكل قراءة ملف وكل استدعاء أداة لحظة بدئه، مع مخرجاته كاملة. لا يُختصر أي شيء.',
+    count: total => `${total} ${total === 1 ? 'إجراء' : 'إجراءات'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'إجراء' : 'إجراءات'} · ${running} قيد التشغيل`,
+    follow: 'متابعة',
+    followHint: 'الانتقال إلى أحدث إجراء وإبقاؤه ظاهرًا',
+    copy: 'نسخ الأمر والمخرجات',
+    exitCode: code => `رمز الخروج ${code}`,
+    runningFor: elapsed => `قيد التشغيل منذ ${elapsed}`,
+    waitingForOutput: 'قيد التشغيل — تظهر المخرجات عند الانتهاء',
+    noOutput: 'لا توجد مخرجات',
+    openLive: 'مباشر'
+  },
+
   connectors: {
     title: 'اربط تطبيقاتك',
     connect: 'ربط',
@@ -422,6 +448,7 @@ export const ar = defineLocale({
     actions: {
       'keybinds.openPanel': 'فتح اختصارات لوحة المفاتيح',
       'nav.commandPalette': 'فتح لوحة الأوامر',
+      'nav.quickOpen': 'فتح ملف سريعًا',
       'nav.commandCenter': 'فتح مركز الأوامر',
       'nav.settings': 'فتح الإعدادات',
       'nav.profiles': 'فتح الملفات الشخصية',
@@ -940,6 +967,10 @@ export const ar = defineLocale({
         roamTitle: 'التجوال',
         roamDesc: 'دع الأليف يتجول في النافذة وحده أثناء الخمول.'
       },
+      lookTitle: 'المظهر',
+      lookDesc: 'الناعم: زوايا مستديرة ومساحات أوسع وعناوين هادئة؛ الكلاسيكي: الواجهة الأصلية الحادة والمربعة.',
+      lookSoft: 'ناعم',
+      lookClassic: 'كلاسيكي',
       uiScaleTitle: 'مقياس الواجهة',
       uiScaleDesc: (percent: number) =>
         `يُكبّر النصوص وعناصر التحكم في التطبيق كله. يعمل أيضًا Cmd/Ctrl مع + و- و0. الحالي: ${percent}%.`,
@@ -4539,6 +4570,10 @@ export const ar = defineLocale({
         streaming: 'انقطع الاتصال قبل اكتمال الرد. أعد المحاولة لإرساله مجددًا.'
       },
       errorCodes: {
+        no_provider_configured: {
+          title: 'لم يتم إعداد أي نموذج ذكاء اصطناعي بعد',
+          body: 'اختر نموذجًا أو سجّل الدخول ثم أعد إرسال رسالتك.'
+        },
         auth: {
           title: provider => `رفض ${provider} تسجيل دخولك`,
           body: provider =>
@@ -4714,16 +4749,8 @@ export const ar = defineLocale({
       other: 'غير ذلك',
       placeholder: 'اكتب إجابتك...',
       skip: 'تخطي',
-      continueLabel: 'متابعة',
       confirmAndContinueLabel: 'تأكيد ومتابعة',
-      answeredBadge: 'تمت الإجابة',
-      singleSelectHint: 'اختر واحدا',
-      multiSelectHint: 'حدد كل ما ينطبق',
-      questionProgress: (answered, total) => `تمت الإجابة على ${answered} من ${total}`,
-      skipped: 'تخطّى',
-      lateAnswer: (question, choice) => `ردًا على: «${question}» — إجابتي: ${choice}`,
-      lateAnswerTip: 'صياغة هذه الإجابة كرسالة متابعة',
-      lateAnswerHint: 'لم يعد هذا الطلب بانتظار. اختر خيارًا لصياغته كرسالة متابعة.'
+      questionProgress: (answered, total) => `تمت الإجابة على ${answered} من ${total}`
     },
     tool: {
       copyCode: 'نسخ الكود',

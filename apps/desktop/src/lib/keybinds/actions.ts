@@ -144,7 +144,9 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   { id: 'workspace.openFolder', category: 'session', defaults: ['mod+o'] },
 
   // ── Navigation ───────────────────────────────────────────────────────────
-  { id: 'nav.commandPalette', category: 'navigation', defaults: ['mod+k', 'mod+p'] },
+  { id: 'nav.commandPalette', category: 'navigation', defaults: ['mod+k'] },
+  // ⌘P — Quick Open, the editor-standard file finder (VS Code, Zed, Cursor).
+  { id: 'nav.quickOpen', category: 'navigation', defaults: ['mod+p'] },
   { id: 'nav.commandCenter', category: 'navigation', defaults: ['mod+.'] },
   { id: 'nav.settings', category: 'navigation', defaults: ['mod+,'] },
   { id: 'nav.profiles', category: 'navigation', defaults: [] },

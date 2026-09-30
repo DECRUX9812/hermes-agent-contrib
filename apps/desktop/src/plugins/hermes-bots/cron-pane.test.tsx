@@ -108,12 +108,13 @@ describe('the pane follows the roster hydrating after mount', () => {
 
     // The reported "create silently no-ops" symptom starts here: while the
     // owner is stuck unresolved the pane never offers any create control.
-    expect(await screen.findByText('No scheduled jobs yet')).toBeTruthy()
-
-    // Both doors: the header action and the empty state's own call to action.
+    // Both doors: the header action and the empty state's own call to action
+    // (the autopilot card, whose "write your own" opens a blank routine).
+    const custom = await screen.findByRole('button', { name: 'Write your own…' })
     const create = screen.getAllByRole('button', { name: 'New cron' })
 
-    expect(create).toHaveLength(2)
+    expect(create).toHaveLength(1)
+    expect(custom).toBeTruthy()
 
     act(() => create[0].click())
 

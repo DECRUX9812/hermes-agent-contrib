@@ -93,9 +93,7 @@ export function BotInboundCards() {
     notes: Array.isArray(notesQuery.data) ? notesQuery.data : [],
     now: Date.now(),
     relayInflight: Boolean(
-      inflight?.has?.(
-        relayLaneKey(String(bot.connectionId || activeConnectionId), String(bot.name || 'default'))
-      )
+      inflight?.has?.(relayLaneKey(String(bot.connectionId || activeConnectionId), String(bot.name || 'default')))
     )
   })
 

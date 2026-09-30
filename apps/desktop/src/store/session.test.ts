@@ -25,6 +25,7 @@ import {
   $currentCwd,
   $currentModel,
   $currentProvider,
+  $freshDraftKey,
   $messagingSessions,
   $selectedStoredSessionId,
   $sessions,
@@ -52,6 +53,7 @@ import {
   mergeSessionPage,
   rememberedSessionProfile,
   resolveComposerSessionKey,
+  rotateFreshDraftKey,
   sessionBelongsToProfile,
   sessionMatchesStoredId,
   sessionOwnerRouteFromRow,
@@ -326,6 +328,20 @@ describe('knownSessionOwner', () => {
     setSessionOwnerHint('hidden', route)
 
     expect(knownSessionOwner([], 'hidden')).toEqual(route)
+  })
+})
+
+describe('fresh draft identity', () => {
+  it('rotates for each new-chat lifecycle and persists the current key', () => {
+    const previous = $freshDraftKey.get()
+    const first = rotateFreshDraftKey()
+    const second = rotateFreshDraftKey()
+
+    expect(first).not.toBe(previous)
+    expect(second).not.toBe(first)
+    expect($freshDraftKey.get()).toBe(second)
+    // Persisted (per profile) so a reload restores this exact fresh draft.
+    expect(Object.values(JSON.parse(window.localStorage.getItem('hermes.desktop.freshDraftKeys') ?? '{}'))).toContain(second)
   })
 })
 

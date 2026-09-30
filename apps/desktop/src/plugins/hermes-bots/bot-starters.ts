@@ -18,6 +18,11 @@ import type { BotTemplateId } from './bot-templates'
 import { slugifyProfileName } from './labels'
 import type { BotMeta } from './types'
 
+/** Hire-gallery shelves, in rail order. */
+export const STARTER_CATEGORIES = ['research', 'coding', 'writing', 'creative', 'ops', 'review'] as const
+
+export type StarterCategory = (typeof STARTER_CATEGORIES)[number]
+
 export interface BotStarter {
   /** Stable id — recorded on the bot's meta as `template` so the empty chat
    *  can offer the same starters after creation. */
@@ -25,6 +30,8 @@ export interface BotStarter {
   /** The C1 preset whose skill curation and model default this card hires
    *  with; 'custom' leaves the clone source's capabilities untouched. */
   preset: BotTemplateId
+  /** The Hire gallery's shelf this card sits on. */
+  category: StarterCategory
   /** Display name pre-filled into the form. */
   name: string
   /** Role line ("Research assistant") — becomes the bot's title. */
@@ -42,6 +49,7 @@ export interface BotStarter {
 export const BOT_STARTERS: readonly BotStarter[] = [
   {
     id: 'scout',
+    category: 'research',
     preset: 'researcher',
     name: 'Scout',
     title: 'Research assistant',
@@ -58,6 +66,7 @@ export const BOT_STARTERS: readonly BotStarter[] = [
   },
   {
     id: 'forge',
+    category: 'coding',
     preset: 'engineer',
     name: 'Forge',
     title: 'Coding partner',
@@ -74,6 +83,7 @@ export const BOT_STARTERS: readonly BotStarter[] = [
   },
   {
     id: 'quill',
+    category: 'writing',
     preset: 'custom',
     name: 'Quill',
     title: 'Writer',
@@ -90,6 +100,7 @@ export const BOT_STARTERS: readonly BotStarter[] = [
   },
   {
     id: 'muse',
+    category: 'creative',
     preset: 'custom',
     name: 'Muse',
     title: 'Creative companion',
@@ -106,6 +117,7 @@ export const BOT_STARTERS: readonly BotStarter[] = [
   },
   {
     id: 'pilot',
+    category: 'ops',
     preset: 'ops',
     name: 'Pilot',
     title: 'Ops & routines',
@@ -122,6 +134,7 @@ export const BOT_STARTERS: readonly BotStarter[] = [
   },
   {
     id: 'critique',
+    category: 'review',
     preset: 'custom',
     name: 'Critique',
     title: 'Skeptical reviewer',
@@ -221,6 +234,7 @@ export function suggestedName(text: string): string {
   }
 
   const words = stripped.split(/\s+/).filter(Boolean).slice(0, 3).join(' ')
+
   const candidate = titleCase(words.replace(/[.,;:!?]+$/, ''))
     .slice(0, 32)
     .trim()

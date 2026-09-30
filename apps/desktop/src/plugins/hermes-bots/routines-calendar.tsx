@@ -154,9 +154,7 @@ export function RoutinesCalendarDialog({
             <>
               {groups.nextUp.length ? (
                 <div>
-                  <div className="px-1 pb-0.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-                    {b.calendar.nextUp}
-                  </div>
+                  <div className="px-1 pb-0.5 ui-section-label">{b.calendar.nextUp}</div>
                   {groups.nextUp.map(item => (
                     <FleetJobRow bot={item.bot} job={item.job} key={`${botRosterKey(item.bot)}:${item.job.job_id}`} />
                   ))}
@@ -164,9 +162,7 @@ export function RoutinesCalendarDialog({
               ) : null}
               {groups.days.map(group => (
                 <div key={group.label}>
-                  <div className="px-1 pb-0.5 pt-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-                    {group.label}
-                  </div>
+                  <div className="px-1 pb-0.5 pt-1 ui-section-label">{group.label}</div>
                   {group.items.map(item => (
                     <FleetJobRow bot={item.bot} job={item.job} key={`${botRosterKey(item.bot)}:${item.job.job_id}`} />
                   ))}
@@ -174,9 +170,7 @@ export function RoutinesCalendarDialog({
               ))}
               {groups.dormant.length ? (
                 <div>
-                  <div className="px-1 pb-0.5 pt-1 text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
-                    {b.calendar.paused}
-                  </div>
+                  <div className="px-1 pb-0.5 pt-1 ui-section-label">{b.calendar.paused}</div>
                   {groups.dormant.map(item => (
                     <FleetJobRow bot={item.bot} job={item.job} key={`${botRosterKey(item.bot)}:${item.job.job_id}:d`} />
                   ))}

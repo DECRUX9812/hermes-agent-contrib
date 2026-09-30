@@ -201,6 +201,7 @@ export const ru = defineLocale({
     revealExplorer: 'Показать в Проводнике',
     revealFileManager: 'Открыть содержащую папку',
     revealInSidebar: 'Показать в дереве файлов',
+    openInEditor: name => `Открыть в ${name}`,
     copyPath: 'Копировать путь',
     copyRelativePath: 'Копировать относительный путь',
     download: 'Скачать',
@@ -409,6 +410,7 @@ export const ru = defineLocale({
     actions: {
       'keybinds.openPanel': 'Открыть горячие клавиши',
       'nav.commandPalette': 'Открыть палитру команд',
+      'nav.quickOpen': 'Быстро открыть файл',
       'nav.commandCenter': 'Открыть центр команд',
       'nav.settings': 'Открыть настройки',
       'nav.profiles': 'Открыть профили',
@@ -759,6 +761,10 @@ export const ru = defineLocale({
       reasoningCollapsedTitle: 'Сворачивать «мышление» по умолчанию',
       reasoningCollapsedDesc:
         'Стриминговое рассуждение остаётся доступным, но не разворачивается, пока вы его не откроете.',
+      lookTitle: 'Стиль',
+      lookDesc: 'Мягкий — скругления, простор и спокойные подписи; Классический — прежний чёткий угловатый интерфейс.',
+      lookSoft: 'Мягкий',
+      lookClassic: 'Классический',
       uiScaleTitle: 'Масштаб интерфейса',
       uiScaleDesc: percent =>
         `Масштабирует текст и элементы управления во всём приложении. Также работает Cmd/Ctrl с +, − и 0. Сейчас: ${percent}%.`,
@@ -829,6 +835,8 @@ export const ru = defineLocale({
       composerPopoutTitle: 'Плавающий композер',
       composerPopoutDesc:
         'Позволяет вытягивать композер из его док-зоны. Когда выключено, он остаётся закреплённым внизу.',
+      openInEditorTitle: 'Открывать файлы в',
+      openInEditorDesc: 'Куда «Открыть в…» отправляет файл из дерева. Работает и с SSH-бэкендами.',
       fileBrowserTitle: 'Файловый браузер',
       fileBrowserDesc:
         'Показывает файловый браузер рядом с чатом, когда открыто рабочее пространство. Кнопка в заголовке окна меняет эту настройку.',
@@ -2319,6 +2327,13 @@ export const ru = defineLocale({
       copyLink: 'Копировать ссылку',
       copyFailed: 'Не удалось скопировать ссылку'
     },
+    reach: {
+      title: (name: string) => `${name} на связи везде`,
+      scan: (name: string) => `Отсканируйте, чтобы писать ${name} с телефона, или поделитесь ссылкой.`,
+      empty: (name: string) => `Дайте ${name} свой адрес в Telegram или Slack, чтобы писать с телефона.`,
+      connect: 'Подключить',
+      manage: 'Управлять'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Токен бота',
@@ -2493,6 +2508,25 @@ export const ru = defineLocale({
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `Когда ${name} должен спрашивать вас?`,
+      modes: {
+        manual: { label: 'Сначала спросить', description: (name: string) => `${name} останавливается и спрашивает перед рискованными действиями.` },
+        smart: {
+          label: 'По ситуации',
+          description: (name: string) => `${name} делает рутину сам и спрашивает, если что-то выглядит рискованно.`
+        },
+        off: {
+          label: 'Просто делать',
+          description: (name: string) => `${name} никогда не ждёт вас. Запрещённые команды остаются запрещены.`
+        }
+      },
+      rulesLabel: 'Правила',
+      rulesPlaceholder: 'Ваши правила своими словами. Например: всегда спрашивай перед отправкой писем или тратой денег.',
+      save: 'Сохранить',
+      discard: 'Отменить',
+      failed: 'Не удалось сохранить. Действуют прежние правила.'
+    },
     close: 'Закрыть профили',
     nameHint: 'Строчные буквы, цифры, дефисы и подчёркивания. Должно начинаться с буквы или цифры.',
     title: 'Профили',
@@ -2799,6 +2833,71 @@ export const ru = defineLocale({
     missingTitle: 'Артефакт недоступен',
     missingBody: 'Этот артефакт больше нет в локальном реестре.'
   },
+  panels: {
+    button: 'Панели',
+    title: 'Рядом с чатом',
+    subtitle: 'Включите то, что нужно. Каждая панель открывается рядом с разговором.',
+    needsProject: 'Откройте папку, чтобы использовать',
+    openFolder: 'Открыть папку…',
+    arrange: 'Расположить…',
+    arrangements: { focus: 'Фокус', review: 'Проверка', watch: 'Наблюдать', build: 'Сборка' },
+    items: {
+      files: { label: 'Файлы', description: 'Просмотр файлов проекта' },
+      changes: { label: 'Изменения', description: 'Что изменил агент' },
+      browser: { label: 'Браузер', description: 'Страницы прямо рядом с чатом' },
+      terminal: { label: 'Терминал', description: 'Выполняйте команды сами' },
+      live: { label: 'Активность', description: 'Каждая команда агента в реальном времени' },
+      artifacts: { label: 'Артефакты', description: 'Что создал этот чат' },
+      canvas: { label: 'Холст', description: 'Рисуйте на доске вместе с агентом' }
+    }
+  },
+  quickOpen: {
+    title: 'Быстрое открытие',
+    placeholder: project => `Поиск файлов в ${project}…`,
+    noProject: 'Откройте папку, чтобы искать в её файлах',
+    noProjectBody: 'Быстрое открытие ищет по файлам текущего проекта.',
+    openFolder: 'Открыть папку…',
+    noMatch: query => `Нет файлов, подходящих под «${query}»`,
+    recent: 'Открыты рядом с чатом',
+    hint: 'Введите имя файла. Добавьте :42, чтобы перейти к строке.',
+    line: line => `строка ${line}`,
+    openHint: 'открыть',
+    attachHint: 'добавить в сообщение',
+    lineHint: 'имя:42 — переход к строке'
+  },
+  recentProjects: { title: 'Ваши проекты', openFolder: 'Открыть папку…' },
+  todayBrief: {
+    greeting: {
+      morning: 'Доброе утро',
+      afternoon: 'Добрый день',
+      evening: 'Добрый вечер',
+      night: 'Работаете допоздна?'
+    },
+    needsYou: 'Ждёт вас',
+    running: 'Выполняется',
+    finished: 'Готово, пока вас не было',
+    scheduled: 'Сегодня по плану',
+    recent: 'Продолжить с того места'
+  },
+
+  live: {
+    title: 'Лайв',
+    noSession: 'Сеанс не выбран',
+    emptyTitle: 'Пока ничего не запускалось',
+    emptyBody:
+      'Каждая команда, чтение файла и вызов инструмента появляются здесь сразу при запуске — с полным выводом. Ничего не сокращается.',
+    count: total => `${total} ${total === 1 ? 'действие' : 'действий'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'действие' : 'действий'} · ${running} выполняется`,
+    follow: 'Следить',
+    followHint: 'Перейти к последнему действию и держать его на виду',
+    copy: 'Копировать команду и вывод',
+    exitCode: code => `код ${code}`,
+    runningFor: elapsed => `выполняется ${elapsed}`,
+    waitingForOutput: 'Выполняется — вывод появится по завершении',
+    noOutput: 'Нет вывода',
+    openLive: 'Лайв'
+  },
+
   artifactRail: {
     empty: 'В этом сеансе пока нет артефактов',
     noSession: 'Сеанс не выбран',
@@ -4451,15 +4550,9 @@ export const ru = defineLocale({
       placeholder: 'Введите ваш ответ…',
       skip: 'Пропустить',
       skipped: 'Пропущено',
-      continueLabel: 'Продолжить',
+      noAnswer: 'Нет ответа',
       confirmAndContinueLabel: 'Подтвердить и продолжить',
-      answeredBadge: 'Ответ дан',
-      singleSelectHint: 'Выберите один',
-      multiSelectHint: 'Выберите все подходящие',
       questionProgress: (answered, total) => `Ответ дан на ${answered} из ${total}`,
-      lateAnswer: (question, choice) => `Re: «${question}» — мой ответ: ${choice}`,
-      lateAnswerTip: 'Составить этот ответ как продолжение',
-      lateAnswerHint: 'Этот промпт больше не ждёт. Выберите вариант, чтобы составить его как сообщение-продолжение.',
       notDelivered:
         'Этот вопрос не дошёл до приложения, поэтому ответить здесь нельзя. Нажмите «Стоп», чтобы завершить ход, и ответьте в чате.'
     },

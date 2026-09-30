@@ -516,7 +516,12 @@ export function restoreMinimizedTreeSide(side: TreeSide): boolean {
     }
 
     for (const id of groupLeafIds(child)) {
-      if (findGroup(next, id)?.minimized) {
+      const group = findGroup(next, id)
+
+      // A tool panel (the terminal) owns its collapse through its store and
+      // toggle. Revealing the side for Files must not also open an empty
+      // terminal body under it.
+      if (group?.minimized && !group.panes.every(isCollapsePane)) {
         next = setGroupMinimized(next, id, false)
       }
     }

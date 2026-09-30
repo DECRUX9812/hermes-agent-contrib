@@ -32,11 +32,11 @@ export interface UsageBar {
   fill_fraction: number
 }
 export type UsageBarKind = 'plan' | 'topup'
-/** ``_serialize_billing_state`` (money as strings); the ``except`` fallback emits only ``ok / logged_in / free_tier / error``, so everything else is optional. */
+/** ``_serialize_billing_state`` (money as strings); the ``except`` fallback emits only ``ok / logged_in / free_tier_account / error``, so everything else is optional. */
 export interface BillingStateResult {
   ok: boolean
   logged_in: boolean
-  free_tier?: boolean
+  free_tier_account?: boolean
   free_tier_model?: string | null
   org_name?: string | null
   org_slug?: string | null
@@ -458,6 +458,336 @@ export interface ProjectFacts {
   verifyCommands: string[]
   contextFiles: string[]
 }
+/** Client→server method params / server→client request params. Unknown keys are rejected. */
+export type Params = Record<string, never>
+export interface TeamListResult {
+  teams: TeamSummary[]
+}
+export interface TeamSummary {
+  id: string
+  name: string
+  mission?: string
+  member_count: number
+  open_seats: number
+  goal_count: number
+  pending_approvals: number
+  created_at: number
+  updated_at: number
+  [key: string]: unknown
+}
+export interface TeamIdParams {
+  team_id: string
+}
+/** What every mutating call returns: the fresh doc, its org tree and the goal roll-up, so a client re-renders from one response. */
+export interface TeamView {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+}
+export interface Team {
+  id: string
+  name: string
+  mission?: string
+  policy: TeamPolicy
+  channels?: Record<string, string>
+  members: TeamMember[]
+  goals: TeamGoal[]
+  approvals: TeamApproval[]
+  learnings: TeamLearning[]
+  created_at: number
+  updated_at: number
+  [key: string]: unknown
+}
+export interface TeamPolicy {
+  lead_decides?: boolean
+  [key: string]: unknown
+}
+/** One seat — ``tools/bot_team.py::upsert_member``. ``profile`` is null for an open seat; ``credentials`` are reference names, never values. */
+export interface TeamMember {
+  slot: string
+  profile?: string | null
+  role?: string
+  title?: string
+  reports_to?: string | null
+  lead?: boolean
+  status?: string
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  budget: TeamBudget
+  joined_at?: number
+  [key: string]: unknown
+}
+export interface TeamBudget {
+  monthly_usd?: number | null
+  hard_stop?: boolean
+  spent_usd?: number
+  period?: string
+  [key: string]: unknown
+}
+export interface TeamGoal {
+  id: string
+  title: string
+  detail?: string
+  parent_id?: string | null
+  owner?: string | null
+  status?: string
+  task_ids?: string[]
+  created_at?: number
+  updated_at?: number | null
+  [key: string]: unknown
+}
+export interface TeamApproval {
+  id: string
+  kind: string
+  subject: string
+  detail?: string
+  payload?: Record<string, unknown> | null
+  requested_by: string
+  status: string
+  decided_by?: string | null
+  decided_at?: number | null
+  note?: string
+  created_at?: number
+  [key: string]: unknown
+}
+export interface TeamLearning {
+  id: string
+  text: string
+  by: string
+  source?: string
+  count?: number
+  at?: number
+  last_at?: number
+  [key: string]: unknown
+}
+export interface TeamOrgNode {
+  slot: string
+  profile?: string | null
+  role?: string
+  title?: string
+  reports_to?: string | null
+  lead?: boolean
+  status?: string
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  budget: TeamBudget
+  joined_at?: number
+  reports?: TeamOrgNode[]
+  [key: string]: unknown
+}
+export interface TeamRollup {
+  goals: Record<string, GoalProgress>
+  overall: TeamRollupOverall
+  [key: string]: unknown
+}
+export interface GoalProgress {
+  done: number
+  total: number
+  percent: number
+  blocked?: boolean
+  status?: string
+  [key: string]: unknown
+}
+export interface TeamRollupOverall {
+  done: number
+  total: number
+  percent: number
+  [key: string]: unknown
+}
+export interface BotsTeamCreateParams {
+  name: string
+  mission?: string | null
+  lead_decides?: boolean | null
+  channels?: Record<string, string> | null
+  actor?: string | null
+}
+export interface BotsTeamUpdateParams {
+  team_id: string
+  actor?: string | null
+  name?: string | null
+  mission?: string | null
+  lead_decides?: boolean | null
+  channels?: Record<string, string> | null
+}
+export interface TeamActorParams {
+  team_id: string
+  actor?: string | null
+}
+export interface OkResult {
+  ok?: boolean
+}
+export interface BotsTeamMemberUpsertParams {
+  team_id: string
+  actor?: string | null
+  slot?: string | null
+  profile?: string | null
+  role?: string | null
+  title?: string | null
+  skills?: string[] | null
+  plugins?: string[] | null
+  credentials?: string[] | null
+  status?: string | null
+  monthly_usd?: number | null
+  hard_stop?: boolean | null
+  reports_to?: string | null
+  lead?: boolean | null
+}
+export interface BotsTeamMemberUpsertResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  member: TeamMember
+}
+export interface BotsTeamMemberRemoveParams {
+  team_id: string
+  actor?: string | null
+  member: string
+}
+export interface BotsTeamGoalUpsertParams {
+  team_id: string
+  actor?: string | null
+  goal_id?: string | null
+  title?: string | null
+  detail?: string | null
+  parent_id?: string | null
+  owner?: string | null
+  status?: string | null
+}
+export interface BotsTeamGoalResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  goal: TeamGoal
+}
+export interface BotsTeamGoalLinkTaskParams {
+  team_id: string
+  actor?: string | null
+  goal_id: string
+  task_id: string
+  unlink?: boolean | null
+}
+export interface BotsTeamGoalSpawnTaskParams {
+  team_id: string
+  actor?: string | null
+  goal_id: string
+  title: string
+  body?: string | null
+  assignee?: string | null
+}
+export interface BotsTeamGoalSpawnTaskResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  task_id: string
+  assignee: string
+}
+export interface BotsTeamApprovalRequestParams {
+  team_id: string
+  kind: string
+  subject: string
+  requested_by: string
+  detail?: string | null
+  payload?: Record<string, unknown> | null
+}
+export interface BotsTeamApprovalRequestResult {
+  approval: TeamApproval
+}
+export interface BotsTeamApprovalDecideParams {
+  team_id: string
+  actor?: string | null
+  approval_id: string
+  approve: boolean
+  note?: string | null
+}
+export interface BotsTeamApprovalDecideResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  approval: TeamApproval
+}
+export interface BotsTeamBudgetParams {
+  team_id: string
+  member: string
+}
+export interface BotsTeamBudgetResult {
+  allowed: boolean
+  reason?: string
+  remaining_usd?: number | null
+  over_budget?: boolean
+}
+export interface BotsTeamBudgetRecordParams {
+  team_id: string
+  member: string
+  usd: number
+  actor?: string | null
+}
+export interface BotsTeamLearningAddParams {
+  team_id: string
+  text: string
+  by: string
+  source?: string | null
+}
+export interface BotsTeamLearningResult {
+  learning: TeamLearning
+}
+export interface BotsTeamLearningRemoveParams {
+  team_id: string
+  actor?: string | null
+  learning_id: string
+}
+export interface BotsTeamBriefParams {
+  team_id: string
+  member: string
+  goal_id?: string | null
+}
+export interface BotsTeamBriefResult {
+  brief: string
+}
+export interface BotsTeamPackExportResult {
+  pack: TeamPack
+}
+export interface TeamPack {
+  pack_version: number
+  name: string
+  mission?: string
+  policy: TeamPolicy
+  seats: TeamPackSeat[]
+  [key: string]: unknown
+}
+export interface TeamPackSeat {
+  slot: string
+  role?: string
+  title?: string
+  reports_to_slot?: string | null
+  lead?: boolean
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  monthly_usd?: number | null
+  hard_stop?: boolean
+  [key: string]: unknown
+}
+export interface BotsTeamPackImportParams {
+  pack: TeamPack
+  name?: string | null
+  actor?: string | null
+}
+export interface BotsTeamAuditParams {
+  team_id: string
+  limit?: number | null
+}
+export interface BotsTeamAuditResult {
+  entries: TeamAuditEntry[]
+}
+export interface TeamAuditEntry {
+  at: number
+  actor: string
+  action: string
+  detail?: Record<string, unknown>
+  [key: string]: unknown
+}
 /** ``key`` selects one getter from ``_CONFIG_GETTERS``; ``cwd`` feeds the ``project`` getter, ``session_id`` lets ``reasoning`` / ``fast`` answer with the session's live pin. */
 export interface ConfigGetParams {
   profile?: string | null
@@ -588,29 +918,33 @@ export interface McpServerStatus {
   error?: string | null
   [key: string]: unknown
 }
-/** ``provider_configured`` is the loose answer; the boot record's fields (``ready``, ``free_tier``, ``other_providers``, ``inference_provider``) ride along on the launch profile. An unknown ``profile`` answers ``ok=False`` + ``error``. */
+/** ``provider_configured`` is the loose answer; the boot record's fields (``ready``, ``free_tier_account``, ``free_tier_route``, ``other_providers``, ``inference_provider``) ride along on the launch profile. An unknown ``profile`` answers ``ok=False`` + ``error``. */
 export interface SetupStatusResult {
   provider_configured?: boolean | null
   ready?: boolean | null
-  free_tier?: boolean | null
+  free_tier_account?: boolean | null
+  free_tier_route?: boolean | null
   other_providers?: boolean | null
   inference_provider?: string | null
   profile?: string | null
   ok?: boolean | null
   error?: string | null
+  error_code?: string | null
+  retryable?: boolean | null
+  retry_after?: number | null
 }
 export interface SetupRuntimeCheckParams {
   profile?: string | null
   provider?: string | null
 }
-/** ``ok=False`` + ``error`` when the resolved model can't be served; ``free_tier`` says the selected route is the welcome host. */
+/** ``ok=False`` + ``error`` when the resolved model can't be served; ``free_tier_route`` says the selected route is the welcome host. */
 export interface SetupRuntimeCheckResult {
   ok: boolean
   provider?: string | null
   model?: string | null
   source?: string | null
   error?: string | null
-  free_tier?: boolean | null
+  free_tier_route?: boolean | null
   profile?: string | null
 }
 export interface DiagnosticsShareNousParams {
@@ -626,7 +960,7 @@ export interface DiagnosticsShareNousResult {
   expires_at?: string | null
   error?: string | null
 }
-/** ``available`` = an identity exists AND the tier is on; whether inference runs on it is ``setup.runtime_check.free_tier``'s question. */
+/** ``available`` = an identity exists AND the tier is on; whether inference runs on it is ``setup.runtime_check.free_tier_route``'s question. */
 export interface FreeTierStatusResult {
   has_guest: boolean
   enabled: boolean
@@ -634,11 +968,18 @@ export interface FreeTierStatusResult {
   notice_pending: boolean
   model: string
   label: string
+  error?: string | null
+  error_code?: string | null
+  retryable?: boolean | null
+  retry_after?: number | null
 }
 export interface FreeTierProvisionResult {
   has_guest: boolean
   enabled: boolean
   error?: string | null
+  error_code?: string | null
+  retryable?: boolean | null
+  retry_after?: number | null
 }
 export interface FreeTierAckNoticeResult {
   acked: boolean
@@ -691,9 +1032,6 @@ export interface SharedMetricsUpdateRunResult {
 export interface SharedMetricsDesktopFeatureUseParams {
   profile?: string | null
   area: string
-}
-export interface OkResult {
-  ok?: boolean
 }
 /** ``kind`` notice_dismissed|error_toast|renderer_crash|backend_disconnect|slow_frame; ``detail`` a closed code-defined word for that kind (notice id, error category, crash reason, drop reason, frame duration bucket), never message text. */
 export interface SharedMetricsDesktopFrictionParams {
@@ -2162,8 +2500,6 @@ export interface ProfilesRememberOnboardingResult {
   profile?: string
   target?: string
 }
-/** Client→server method params / server→client request params. Unknown keys are rejected. */
-export type Params = Record<string, never>
 /** ``created`` is false when an existing setup profile was found (and returned untouched). */
 export interface OnboardingEnsureSetupProfileResult {
   name: string
@@ -4412,14 +4748,11 @@ export interface OnboardingCatalogPlugin {
   app_state: CatalogAppState
   sentence: string
 }
-/** Single question: ``question`` / ``choices`` (/ ``multi_select``); batch: ``questions``. ``answers`` rides only on a reconnect replay (locks the server already accepted). */
+/** ``answers`` rides only on a reconnect replay (locks the server already accepted; null = skipped). */
 export interface ClarifyRequestParams {
   session_id: string
-  question?: string | null
-  choices?: string[] | null
-  multi_select?: boolean | null
-  questions?: ClarifyQuestion[] | null
-  answers?: Record<string, string> | null
+  questions: ClarifyQuestion[]
+  answers?: Record<string, string | null> | null
 }
 export interface ClarifyQuestion {
   qid: string
@@ -4427,10 +4760,9 @@ export interface ClarifyQuestion {
   choices?: string[] | null
   multi_select?: boolean
 }
-/** Single: ``{answer}`` ('' = skip). Batch: ``{answers}`` for the whole set (early locks go through the ``clarify.lock`` RPC); a response with neither is cancel-all. */
+/** ``{answers}`` for the whole set (early locks go through the ``clarify.lock`` RPC); a response without ``answers`` is cancel-all. */
 export interface ClarifyResult {
-  answer?: string | null
-  answers?: Record<string, string> | null
+  answers?: Record<string, string | null> | null
 }
 /** ``tui_gateway/server.py::_approval_request_payload`` — the command is redacted server-side. */
 export interface ApprovalRequestParams {
@@ -4612,7 +4944,8 @@ export interface SkinPayload {
 export interface SetupReadyPayload {
   provider_configured: boolean
   inference_provider: string
-  free_tier: boolean
+  free_tier_account: boolean
+  free_tier_route: boolean
   has_identity: boolean
   other_providers: boolean
   error?: string
@@ -4622,9 +4955,20 @@ export interface SetupReadyPayload {
   finished_at: number
   [key: string]: unknown
 }
-/** Every ``_emit("error", …)`` site sets exactly ``message``. */
+/** Every ``_emit("error", …)`` site sets ``message``; agent-init failures also carry the classified ``error_surface`` (``agent/error_surface.py::agent_init_error_surface``) so a client can show one actionable card instead of guessing from the text. */
 export interface ErrorPayload {
   message: string
+  error_surface?: ErrorSurface | null
+}
+/** ``agent/error_surface.py::_surface`` — advisory {layer, code, retryable} (+ identity, + auth hint, + ``resets_at`` epoch seconds when the provider named when its limit lifts). */
+export interface ErrorSurface {
+  layer: string
+  code: string
+  retryable: boolean
+  provider?: string | null
+  model?: string | null
+  resets_at?: number | null
+  [key: string]: unknown
 }
 /** ``tui_gateway/model_switch.py`` capability-refresh notice. */
 export interface NoticePayload {
@@ -4670,16 +5014,6 @@ export interface BillingBlock {
   is_nous: boolean
   message: string
   unverified?: boolean | null
-}
-/** ``agent/error_surface.py::_surface`` — advisory {layer, code, retryable} (+ identity, + auth hint, + ``resets_at`` epoch seconds when the provider named when its limit lifts). */
-export interface ErrorSurface {
-  layer: string
-  code: string
-  retryable: boolean
-  provider?: string | null
-  model?: string | null
-  resets_at?: number | null
-  [key: string]: unknown
 }
 /** Committed SQLite row addresses for the agent's current-turn suffix. Missing ids are unproven, never negative acknowledgements. ``complete`` permits retiring the whole local turn only when the original turn boundary, every row and final body are still accounted for; compaction, redirects and partial writes conservatively leave it false. Row ids are scoped to the owning profile's store, as in ``SessionMessage.row_id``. */
 export interface PersistedTurn {
@@ -4991,6 +5325,46 @@ export interface RpcMethods {
   'bots_mailbox.send': { params: BotsMailboxSendParams; result: BotsMailboxSendResult }
   /** Flip a mailbox note's status (open→accepted/declined/done); live sender bots get a one-line ping. */
   'bots_mailbox.update': { params: BotsMailboxUpdateParams; result: BotsMailboxUpdateResult }
+  /** Board (or the lead, if the team's policy allows) decides; never the requester itself. */
+  'bots_team.approval.decide': { params: BotsTeamApprovalDecideParams; result: BotsTeamApprovalDecideResult }
+  /** A teammate asks the board for a hire, spend, credential grant or risky action. */
+  'bots_team.approval.request': { params: BotsTeamApprovalRequestParams; result: BotsTeamApprovalRequestResult }
+  /** The team's append-only audit trail, newest first. */
+  'bots_team.audit.list': { params: BotsTeamAuditParams; result: BotsTeamAuditResult }
+  /** The session-start context for a teammate: role, boss, mission→goal chain, team lessons. */
+  'bots_team.brief': { params: BotsTeamBriefParams; result: BotsTeamBriefResult }
+  /** May this teammate take on more work now? False when paused or hard-stopped over budget. */
+  'bots_team.budget.check': { params: BotsTeamBudgetParams; result: BotsTeamBudgetResult }
+  /** Add spend to a teammate's month; returns the fresh budget verdict. */
+  'bots_team.budget.record': { params: BotsTeamBudgetRecordParams; result: BotsTeamBudgetResult }
+  /** Create a team. */
+  'bots_team.create': { params: BotsTeamCreateParams; result: TeamView }
+  /** Delete a team (its audit trail is kept). */
+  'bots_team.delete': { params: TeamActorParams; result: OkResult }
+  /** One team with its org tree and goal roll-up (Kanban task status folded into goals). */
+  'bots_team.get': { params: TeamIdParams; result: TeamView }
+  /** Attach or detach a Kanban task id on a goal (the task itself is untouched). */
+  'bots_team.goal.link_task': { params: BotsTeamGoalLinkTaskParams; result: BotsTeamGoalResult }
+  /** Delegate work: create a Kanban card for a teammate (default: the goal's owner) whose body opens with their brief and the mission→goal chain, and link it to the goal. Idempotent per title. */
+  'bots_team.goal.spawn_task': { params: BotsTeamGoalSpawnTaskParams; result: BotsTeamGoalSpawnTaskResult }
+  /** Create (goal_id omitted) or edit a goal; parent_id null hangs it under the mission. */
+  'bots_team.goal.upsert': { params: BotsTeamGoalUpsertParams; result: BotsTeamGoalResult }
+  /** Record a short team lesson; a repeat of the same lesson bumps its count instead of duplicating. */
+  'bots_team.learning.add': { params: BotsTeamLearningAddParams; result: BotsTeamLearningResult }
+  /** Delete a lesson the team no longer wants to carry. */
+  'bots_team.learning.remove': { params: BotsTeamLearningRemoveParams; result: TeamView }
+  /** List this install's teams, newest first. */
+  'bots_team.list': { params: Params; result: TeamListResult }
+  /** Remove a seat by slot or profile; its reports re-attach to its boss, its goals become unowned. */
+  'bots_team.member.remove': { params: BotsTeamMemberRemoveParams; result: TeamView }
+  /** Add or edit a seat (slot omitted = add). Refuses reporting cycles; lead moves the lead badge. */
+  'bots_team.member.upsert': { params: BotsTeamMemberUpsertParams; result: BotsTeamMemberUpsertResult }
+  /** A shareable, data-only org design — no profiles, spend, credential values or learnings. */
+  'bots_team.pack.export': { params: TeamIdParams; result: BotsTeamPackExportResult }
+  /** Create a team from a pack (allow-listed keys only); every seat starts open. */
+  'bots_team.pack.import': { params: BotsTeamPackImportParams; result: TeamView }
+  /** Rename, re-mission, set the approval policy or the external channel bindings. */
+  'bots_team.update': { params: BotsTeamUpdateParams; result: TeamView }
   /** Hard-detach only the controller owned by this authenticated transport. */
   'browser.controller.detach': { params: BrowserControllerParams; result: BrowserControllerDetachResult }
   /** Acknowledge a heartbeat only for this transport's own attached controller. */
@@ -5490,6 +5864,26 @@ export const RPC_METHODS = [
   'bots_mailbox.list',
   'bots_mailbox.send',
   'bots_mailbox.update',
+  'bots_team.approval.decide',
+  'bots_team.approval.request',
+  'bots_team.audit.list',
+  'bots_team.brief',
+  'bots_team.budget.check',
+  'bots_team.budget.record',
+  'bots_team.create',
+  'bots_team.delete',
+  'bots_team.get',
+  'bots_team.goal.link_task',
+  'bots_team.goal.spawn_task',
+  'bots_team.goal.upsert',
+  'bots_team.learning.add',
+  'bots_team.learning.remove',
+  'bots_team.list',
+  'bots_team.member.remove',
+  'bots_team.member.upsert',
+  'bots_team.pack.export',
+  'bots_team.pack.import',
+  'bots_team.update',
   'browser.controller.detach',
   'browser.controller.heartbeat',
   'browser.controller.register',
@@ -5736,7 +6130,7 @@ export const RPC_METHODS = [
 export interface ServerRequestMap {
   /** A dangerous command awaits the user's decision. */
   approval: { params: ApprovalRequestParams; result: ApprovalResult }
-  /** The clarify tool: ask the user one question or a batch. */
+  /** The clarify tool: ask the user 1-5 questions. */
   clarify: { params: ClarifyRequestParams; result: ClarifyResult }
   /** Masked sudo password for the Bot Screen package install; app-level (empty session). */
   'display.install.sudo': { params: DisplayInstallSudoParams; result: ValueResult }

@@ -68,7 +68,7 @@ test.describe('batch clarify card', () => {
     await expect(confirmButton).toBeDisabled()
 
     await batchCard.getByRole('button', { name: /Coffee/ }).click()
-    await expect(confirmButton).toBeDisabled()
+    await expect(confirmButton).toBeEnabled()
 
     await batchCard.getByRole('button', { name: /Morning/ }).click()
     await expect(confirmButton).toBeEnabled()

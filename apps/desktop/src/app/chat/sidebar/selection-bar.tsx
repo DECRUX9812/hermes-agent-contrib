@@ -27,6 +27,10 @@ import { isSessionMuted, toggleSessionMuted } from '@/store/session-mute'
 import { $selectedSessions, clearSessionSelection } from '@/store/session-selection'
 import { addSessionTag } from '@/store/session-tags'
 
+// A default-width sidebar can't fit four labelled verbs plus the count, so
+// the bar drops to icons (aria-labels carry the verb) until there's room.
+const BAR_LABEL = 'hidden @[20rem]:inline'
+
 const BAR_BUTTON =
   'inline-flex items-center gap-1 rounded-full px-2 py-1 text-[0.6875rem] leading-none text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-(--ui-text-primary)'
 
@@ -97,10 +101,10 @@ export function SessionSelectionBar() {
   return (
     <div
       aria-label={sel.ariaLabel}
-      className="pointer-events-none sticky bottom-1 z-20 mt-auto flex justify-center"
+      className="@container pointer-events-none sticky bottom-1 z-20 mt-auto flex justify-center"
       role="toolbar"
     >
-      <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background) py-1 pl-2.5 pr-1.5 shadow-lg">
+      <div className="pointer-events-auto flex max-w-full min-w-0 items-center gap-0.5 rounded-full border border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background) py-1 pl-2.5 pr-1.5 shadow-lg">
         <span className="whitespace-nowrap pr-1 text-[0.6875rem] tabular-nums text-(--ui-text-secondary)">
           {sel.count(count)}
         </span>
@@ -114,7 +118,7 @@ export function SessionSelectionBar() {
           type="button"
         >
           <Codicon name="pin" size="0.6875rem" />
-          {allPinned ? sel.unpin : sel.pin}
+          <span className={BAR_LABEL}>{allPinned ? sel.unpin : sel.pin}</span>
         </button>
         <button
           aria-label={allMuted ? sel.unmute : sel.mute}
@@ -126,7 +130,7 @@ export function SessionSelectionBar() {
           type="button"
         >
           <Codicon name={allMuted ? 'bell' : 'bell-slash'} size="0.6875rem" />
-          {allMuted ? sel.unmute : sel.mute}
+          <span className={BAR_LABEL}>{allMuted ? sel.unmute : sel.mute}</span>
         </button>
         <button
           aria-label={sel.tag}
@@ -138,7 +142,7 @@ export function SessionSelectionBar() {
           type="button"
         >
           <Codicon name="tag" size="0.6875rem" />
-          {sel.tag}
+          <span className={BAR_LABEL}>{sel.tag}</span>
         </button>
         <button
           aria-label={sel.archive}
@@ -150,7 +154,7 @@ export function SessionSelectionBar() {
           type="button"
         >
           <Codicon name="archive" size="0.6875rem" />
-          {sel.archive}
+          <span className={BAR_LABEL}>{sel.archive}</span>
         </button>
         <button
           aria-label={sel.clear}

@@ -280,9 +280,7 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
             <DisclosureCaret open={advanced} />
             {b.editor.capabilities}
             <span className="font-normal text-(--ui-text-quaternary)">
-              {caps
-                ? b.editor.capabilitiesSummary(caps.skills, caps.toolsets, caps.mcp)
-                : b.editor.capabilitiesHint}
+              {caps ? b.editor.capabilitiesSummary(caps.skills, caps.toolsets, caps.mcp) : b.editor.capabilitiesHint}
             </span>
           </Button>
           {advanced ? (

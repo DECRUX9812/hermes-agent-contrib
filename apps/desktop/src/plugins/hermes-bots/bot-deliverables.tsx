@@ -137,9 +137,7 @@ export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
   return (
     <div className="px-3 pb-1">
       <div className="flex items-baseline justify-between gap-2 pb-1">
-        <span className="text-[0.65rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)">
-          {b.deliverables.title}
-        </span>
+        <span className="ui-section-label">{b.deliverables.title}</span>
         <span className="flex items-center gap-1.5">
           {items.length ? (
             <span className="text-[0.65rem] tabular-nums text-(--ui-text-quaternary)">{items.length}</span>

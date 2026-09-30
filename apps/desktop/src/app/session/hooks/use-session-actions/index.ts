@@ -6,11 +6,12 @@ import { migrateQueuedPrompts } from '@/store/composer-queue'
 import {
   $activeSessionStoredIdRotation,
   $sessions,
+  idsShareLineage,
   resolveComposerSessionKey,
   setActiveSessionStoredIdRotation,
   setSelectedStoredSessionId
 } from '@/store/session'
-import { isSessionInForeground } from '@/store/session-states'
+import { $focusedStoredSessionId, isSessionInForeground } from '@/store/session-states'
 
 import { sessionRoute } from '../../../routes'
 
@@ -26,7 +27,14 @@ import { useTileRoutingActions } from './tile-routing'
 export type { SessionActionsOptions } from './options'
 
 export function useSessionActions(options: SessionActionsOptions) {
-  const { activeSessionIdRef, getRoutedStoredSessionId, navigate, selectedStoredSessionIdRef } = options
+  const {
+    activeSessionId,
+    activeSessionIdRef,
+    getRoutedStoredSessionId,
+    navigate,
+    selectedStoredSessionId,
+    selectedStoredSessionIdRef
+  } = options
 
   // Follow auto-compression's stored-id rotation only while the exact runtime,
   // selection, and route intent still belong to the rotating conversation.
@@ -34,6 +42,9 @@ export function useSessionActions(options: SessionActionsOptions) {
   // unconditionally; a fast A → B → C switch could therefore be overwritten
   // by A's delayed session.info event and visibly jump back to A.
   const storedIdRotation = useStore($activeSessionStoredIdRotation)
+  const storedSessions = useStore($sessions)
+  const focusedStoredSessionId = useStore($focusedStoredSessionId)
+  const routedStoredSessionId = getRoutedStoredSessionId()
 
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
@@ -41,21 +52,39 @@ export function useSessionActions(options: SessionActionsOptions) {
       return
     }
 
-    // Consume the event even when it is stale. Rotation is an edge, not durable
-    // state; replaying it after a later remount/selection would steal focus.
-    setActiveSessionStoredIdRotation(current => (current === storedIdRotation ? null : current))
+    const selectedAtEffect = selectedStoredSessionIdRef.current
+    const previousId = storedIdRotation.previousStoredSessionId
+    const nextId = storedIdRotation.nextStoredSessionId
 
-    const selectedStoredSessionId = selectedStoredSessionIdRef.current
-    const routedStoredSessionId = getRoutedStoredSessionId()
+    // A tile can adopt the exact successor before the refreshed sessions list
+    // contains it. The rotation itself proves that this focus is the same live
+    // runtime; unrelated focused chats still fail the foreground check.
+    const focusedOnRotatedLineage = Boolean(
+      focusedStoredSessionId &&
+      (focusedStoredSessionId === nextId || idsShareLineage(focusedStoredSessionId, nextId, storedSessions))
+    )
 
-    if (
+    const rotationIsStale =
       activeSessionIdRef.current !== storedIdRotation.runtimeSessionId ||
-      selectedStoredSessionId !== storedIdRotation.previousStoredSessionId ||
-      (routedStoredSessionId !== null && routedStoredSessionId !== storedIdRotation.previousStoredSessionId) ||
-      !isSessionInForeground(storedIdRotation.previousStoredSessionId)
-    ) {
+      selectedAtEffect !== previousId ||
+      (routedStoredSessionId !== null && routedStoredSessionId !== previousId)
+
+    if (rotationIsStale) {
+      // The user moved to another conversation, so this proof must not replay.
+      setActiveSessionStoredIdRotation(current => (current === storedIdRotation ? null : current))
+
       return
     }
+
+    if (!isSessionInForeground(previousId) && !focusedOnRotatedLineage) {
+      // Focus moved to an unrelated tile, but route and selection still name
+      // this conversation. Keep the proof so steering can use it until focus
+      // or the session list catches up.
+      return
+    }
+
+    // Consume only once the successor can safely take over the visible session.
+    setActiveSessionStoredIdRotation(current => (current === storedIdRotation ? null : current))
 
     // Park unsent draft/queue on the durable lineage key (not the new tip).
     // ChatBar scopes composer state on resolveComposerSessionKey(); migrating
@@ -63,15 +92,12 @@ export function useSessionActions(options: SessionActionsOptions) {
     // live editor text on a brief remount. If the new tip row is not in
     // $sessions yet, resolveComposerSessionKey falls back to the tip id — prefer
     // the previous id (usually the lineage root) in that gap.
-    const previousId = storedIdRotation.previousStoredSessionId
-    const nextId = storedIdRotation.nextStoredSessionId
-    const sessions = $sessions.get()
-    const resolvedNext = resolveComposerSessionKey(nextId, sessions)
+    const resolvedNext = resolveComposerSessionKey(nextId, storedSessions)
 
     const durableKey =
       resolvedNext && resolvedNext !== nextId
         ? resolvedNext
-        : (resolveComposerSessionKey(previousId, sessions) ?? previousId)
+        : (resolveComposerSessionKey(previousId, storedSessions) ?? previousId)
 
     migrateSessionDraft(previousId, durableKey)
     migrateSessionDraft(nextId, durableKey)
@@ -87,7 +113,18 @@ export function useSessionActions(options: SessionActionsOptions) {
     if (routedStoredSessionId === previousId) {
       navigate(sessionRoute(nextId), { replace: true })
     }
-  }, [activeSessionIdRef, getRoutedStoredSessionId, navigate, selectedStoredSessionIdRef, storedIdRotation])
+  }, [
+    activeSessionId,
+    activeSessionIdRef,
+    focusedStoredSessionId,
+    getRoutedStoredSessionId,
+    navigate,
+    routedStoredSessionId,
+    selectedStoredSessionId,
+    selectedStoredSessionIdRef,
+    storedIdRotation,
+    storedSessions
+  ])
 
   const { startFreshSessionDraft, createBackendSessionForSend } = useCreateActions(options)
   const { openNewSessionTile } = useTileRoutingActions(options)
