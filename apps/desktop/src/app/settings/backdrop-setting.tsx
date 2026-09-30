@@ -34,12 +34,11 @@ async function downscaled(file: File): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.82)
 }
 
-/** The Chat Background picker: scene tiles (live swatches), your own image, and strength. */
-export function BackdropSetting() {
+/** The Chat Background scene grid: live swatches, plus your own image. */
+export function BackdropSceneGrid() {
   const { t } = useI18n()
   const a = t.settings.appearance
   const scene = useStore($backdropScene)
-  const strength = useStore($backdropStrength)
   const image = useStore($backdropImage)
   const { renderedMode } = useTheme()
   const input = useRef<HTMLInputElement>(null)
@@ -69,7 +68,7 @@ export function BackdropSetting() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="mt-3">
       <div className="grid grid-cols-4 gap-2">
         {BACKDROP_SCENES.map(id => {
           const active = scene === id
@@ -123,15 +122,26 @@ export function BackdropSetting() {
         ref={input}
         type="file"
       />
-      <SegmentedControl
-        disabled={scene === 'off'}
-        onChange={id => {
-          triggerHaptic('selection')
-          setBackdropStrength(id)
-        }}
-        options={BACKDROP_STRENGTHS.map(id => ({ id, label: a.backdropStrengths[id] }))}
-        value={strength}
-      />
     </div>
+  )
+}
+
+/** Strength for the chosen scene (title-line control; idle while the background is off). */
+export function BackdropStrengthControl() {
+  const { t } = useI18n()
+  const a = t.settings.appearance
+  const scene = useStore($backdropScene)
+  const strength = useStore($backdropStrength)
+
+  return (
+    <SegmentedControl
+      disabled={scene === 'off'}
+      onChange={id => {
+        triggerHaptic('selection')
+        setBackdropStrength(id)
+      }}
+      options={BACKDROP_STRENGTHS.map(id => ({ id, label: a.backdropStrengths[id] }))}
+      value={strength}
+    />
   )
 }

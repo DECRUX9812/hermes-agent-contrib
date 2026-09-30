@@ -22,6 +22,15 @@ describe('chat background scenes', () => {
     expect(backdropLayer('custom', 'vivid', 'dark', null, '/statue.jpg')).toBeNull()
   })
 
+  it('blends so text keeps its contrast: multiply on light surfaces, screen on dark ones', () => {
+    for (const scene of BACKDROP_SCENES.filter(s => s !== 'off' && s !== 'statue')) {
+      expect(backdropLayer(scene, 'vivid', 'light', 'data:x', '')!.blend).toBe('multiply')
+      expect(backdropLayer(scene, 'vivid', 'dark', 'data:x', '')!.blend).toBe('screen')
+    }
+
+    expect(backdropLayer('statue', 'balanced', 'light', null, '/s.jpg')!.blend).toBe('difference')
+  })
+
   it('strength only ever turns a scene up', () => {
     for (const scene of BACKDROP_SCENES.filter(s => s !== 'off')) {
       for (const mode of MODES) {

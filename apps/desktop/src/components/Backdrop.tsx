@@ -37,10 +37,14 @@ export function Backdrop() {
     )
   }
 
-  // Scenes paint BEHIND the conversation: -z-1 inside the chat surface's
-  // isolated stacking context sits above its background, below its content.
+  // A wash OVER the conversation, blended so text keeps its contrast (see backdrop-scenes.ts).
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 -z-1 overflow-hidden" data-backdrop-scene={scene}>
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 z-2 overflow-hidden"
+      data-backdrop-scene={scene}
+      style={{ mixBlendMode: layer.blend }}
+    >
       <div
         className={cn('absolute', layer.drift ? 'backdrop-drift -inset-[12%]' : 'inset-0')}
         style={{

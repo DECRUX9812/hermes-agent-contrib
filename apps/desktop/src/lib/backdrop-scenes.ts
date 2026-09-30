@@ -1,10 +1,12 @@
 /**
  * Chat background scenes — what paints behind the conversation.
  *
- * Every gradient scene is TRANSPARENT blobs over nothing: the theme's own chat
- * surface color shows through, so a scene tints any theme instead of replacing
- * it. Strength is one opacity per (kind, mode): light surfaces need less
- * pigment than dark ones for the same presence.
+ * A scene is a wash laid OVER the conversation (the thread repaints an opaque
+ * surface, so nothing behind it would show), blended so text keeps its
+ * contrast: `multiply` on a light surface (white takes the tint, dark text
+ * stays dark), `screen` on a dark one (the dark glows, light text stays light).
+ * Every gradient scene is transparent blobs, so a scene tints any theme
+ * instead of replacing it. Strength is one opacity per (kind, mode).
  */
 
 export const BACKDROP_SCENES = ['off', 'aurora', 'dusk', 'ocean', 'meadow', 'grid', 'statue', 'custom'] as const
@@ -58,6 +60,7 @@ export interface BackdropLayer {
   background?: string
   image?: string
   opacity: number
+  blend: 'difference' | 'multiply' | 'screen'
   /** Glow scenes drift slowly (disabled under reduced motion by the stylesheet). */
   drift: boolean
 }
@@ -76,22 +79,29 @@ export function backdropLayer(
 
   const kind = KIND[scene]
   const opacity = OPACITY[kind][mode][BACKDROP_STRENGTHS.indexOf(strength)]
+  const blend = mode === 'dark' ? 'screen' : 'multiply'
 
   if (kind === 'glow') {
-    return { kind, background: GLOWS[scene as keyof typeof GLOWS], opacity, drift: true }
+    return { kind, background: GLOWS[scene as keyof typeof GLOWS], opacity, blend, drift: true }
   }
 
   if (kind === 'pattern') {
     const dot = mode === 'dark' ? 'rgba(255,255,255,0.14)' : 'rgba(15,23,42,0.12)'
 
-    return { kind, background: `radial-gradient(${dot} 1px, transparent 1.4px) 0 0 / 22px 22px`, opacity, drift: false }
+    return {
+      kind,
+      background: `radial-gradient(${dot} 1px, transparent 1.4px) 0 0 / 22px 22px`,
+      opacity,
+      blend,
+      drift: false
+    }
   }
 
   if (kind === 'image') {
-    return customImage ? { kind, image: customImage, opacity, drift: false } : null
+    return customImage ? { kind, image: customImage, opacity, blend, drift: false } : null
   }
 
-  return { kind, image: statueUrl, opacity, drift: false }
+  return { kind, image: statueUrl, opacity, blend: 'difference', drift: false }
 }
 
 /** The pre-picker setting was one boolean: on meant the statue. */

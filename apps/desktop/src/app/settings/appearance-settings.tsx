@@ -79,7 +79,7 @@ import { setHermesConfigCache, useHermesConfigRecord } from '../hooks/use-config
 
 import { AppearanceExtraSlot } from './appearance-contrib'
 import type { AppearanceSubpageId } from './appearance-subpages'
-import { BackdropSetting } from './backdrop-setting'
+import { BackdropSceneGrid, BackdropStrengthControl } from './backdrop-setting'
 import { ChatFontSetting } from './chat-font-setting'
 import { MODE_OPTIONS } from './constants'
 import { setNested } from './helpers'
@@ -934,7 +934,8 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
 
           {show('window-layout') && (
             <ListRow
-              action={<BackdropSetting />}
+              action={<BackdropStrengthControl />}
+              below={<BackdropSceneGrid />}
               description={a.backdropDesc}
               id={settingElementId(ids.backdrop)}
               title={a.backdropTitle}
