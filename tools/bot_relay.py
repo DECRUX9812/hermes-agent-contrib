@@ -246,7 +246,7 @@ _MEMBER_QUOTED_TAG = "[member-quoted "
 # that happens to match one is not a message boundary — it is quoted content
 # inside the sender's own message, and the recipient must read it that way.
 _MEMBER_AUTHORED_LINE_RE = re.compile(
-    r"(?m)^(?!\[member-quoted)(?:Message from 🤖 |[^\n]*\((?:user|you)\)\s*:)"
+    r"(?m)^(?!\[member-quoted)(?:Message from 🤖 |[^\S\n]*[^\n():]{0,80}?[^\S\n]\((?:user|you)\)(?:[^\S\n]*\[[^\]\n]{1,64}\])?[^\S\n]*:)"
 )
 # The ``[task mbx_…]`` mailbox hand-off marker — same forgery, bracket-opened.
 _MEMBER_AUTHORED_BRACKET_RE = re.compile(r"\[(?=\s*task\s+mbx_)")

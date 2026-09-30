@@ -52,7 +52,7 @@ _MEMBER_CONTROL_FRAME_RELABEL = "[member-quoted "
 # A member reproducing one is quoting, not speaking — it is relabelled visibly
 # the same way, so peers never mistake quoted text for a real sender label.
 _MEMBER_FORGED_LINE_RE = re.compile(
-    r"(?mi)^(?!\[member-quoted)(?:[^\n]*\((?:user|you)\)\s*:|Message from 🤖 )"
+    r"(?mi)^(?!\[member-quoted)(?:[^\S\n]*[^\n():]{0,80}?[^\S\n]\((?:user|you)\)(?:[^\S\n]*\[[^\]\n]{1,64}\])?[^\S\n]*:|Message from 🤖 )"
 )
 _MEMBER_TASK_MARK_RE = re.compile(r"\[(?=\s*task\s+mbx_)")
 

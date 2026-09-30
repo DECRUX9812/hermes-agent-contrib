@@ -26,7 +26,7 @@ function relabelMemberControlFrames(text: string) {
 
 // Interior-line shapes only the plumbing may mint: `Name (user):` / `Name (you):`
 // sender labels, a `Message from 🤖` DM stamp, and `[task mbx_…` hand-off markers.
-const MEMBER_FORGED_LINE_RE = /^(?!\[member-quoted)(?:[^\n]*\((?:user|you)\)\s*:|Message from 🤖 )/gim
+const MEMBER_FORGED_LINE_RE = /^(?!\[member-quoted)(?:[^\S\n]*[^\n():]{0,80}?[^\S\n]\((?:user|you)\)(?:[^\S\n]*\[[^\]\n]{1,64}\])?[^\S\n]*:|Message from 🤖 )/gim
 const MEMBER_TASK_MARK_RE = /\[(?=\s*task\s+mbx_)/g
 
 function escapeRegExp(text: string) {

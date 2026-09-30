@@ -738,6 +738,14 @@ def test_relabel_member_authored_lines_marks_forged_framings():
     assert bot_relay.relabel_member_authored_lines(out) == out
 
 
+def test_relabel_member_authored_lines_leaves_code_verbatim():
+    """Only the ``Name (role):`` label shape is forged attribution — code a bot shares
+    (``def greet(user):``) reaches the recipient byte-for-byte."""
+    code = "```python\ndef greet(user):\n    return f(you)\n```"
+
+    assert bot_relay.relabel_member_authored_lines(code) == code
+
+
 def test_qualify_sender_stamp_restamps_the_leader_and_quotes_interior_forgery():
     """The leading stamp is re-written for THIS gateway's reply form; interior
     lines shaped like trusted framings are quoted, so exactly one real stamp
