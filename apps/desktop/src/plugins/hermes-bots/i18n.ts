@@ -766,8 +766,9 @@ type BotsMessages = {
     ledBy: (name: string) => string
     leads: (names: string) => string
   }
-  /** The dismissible hint on a plain chat running on a bot profile: re-open
-   *  it under the bot's workspace so it can delegate. */
+  /** The dismissible hint on a plain chat running on a bot profile: start a
+   *  fresh bot topic, where the bot can delegate (powers are mint-time — a
+   *  plain session can never be re-scoped into one). */
   hint: {
     delegate: (bot: string) => string
     openTopic: string
@@ -1439,8 +1440,8 @@ const en: BotsMessages = {
     leads: names => `leads ${names}`
   },
   hint: {
-    delegate: bot => `${bot} can delegate to teammates in a bot topic — this chat is running as a plain session.`,
-    openTopic: 'Open as topic'
+    delegate: bot => `${bot} can delegate to teammates inside bot topics — this chat is a plain session.`,
+    openTopic: 'Start a topic'
   }
 }
 
@@ -2107,8 +2108,8 @@ const ja: BotsMessages = {
     leads: names => `${names} を率いる`
   },
   hint: {
-    delegate: bot => `${bot} はボットトピック内でチームメイトに委任できます — このチャットは通常セッションとして実行中です。`,
-    openTopic: 'トピックとして開く'
+    delegate: bot => `${bot} はボットトピック内でチームメイトに委任できます — このチャットは通常セッションです。`,
+    openTopic: 'トピックを開始'
   },
   rail: {
     title: 'ボットのコンテキスト',
@@ -2765,8 +2766,8 @@ const zh: BotsMessages = {
     leads: names => `带领 ${names}`
   },
   hint: {
-    delegate: bot => `${bot} 可以在机器人话题中委派给队友——此会话当前是普通会话。`,
-    openTopic: '以话题打开'
+    delegate: bot => `${bot} 可以在机器人话题中委派给队友——此会话是普通会话。`,
+    openTopic: '开始话题'
   },
   rail: {
     title: '机器人上下文',
@@ -3423,8 +3424,8 @@ const zhHant: BotsMessages = {
     leads: names => `帶領 ${names}`
   },
   hint: {
-    delegate: bot => `${bot} 可以在機器人主題中委派給隊友——此工作階段目前是普通工作階段。`,
-    openTopic: '以主題開啟'
+    delegate: bot => `${bot} 可以在機器人主題中委派給隊友——此工作階段是普通工作階段。`,
+    openTopic: '開始主題'
   },
   rail: {
     title: '機器人脈絡',

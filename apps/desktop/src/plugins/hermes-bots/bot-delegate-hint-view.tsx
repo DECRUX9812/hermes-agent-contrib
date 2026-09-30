@@ -2,10 +2,10 @@
  * The delegation hint card (bot-pane UX): one dismissible chip over the
  * composer on a session that runs ON A BOT PROFILE outside the bot's
  * workspace — a plain working chat, where Bot Mode's delegation can't
- * reach it. The action re-opens the SAME session scoped under the bot
- * (`workspaceMode: 'bots'` + its owner key), which is what makes a chat a
- * bot topic; nothing is minted and nothing is titled, so the session keeps
- * its history and stays listed.
+ * reach it. The action mints a NEW topic in the bot's workspace
+ * (`newBotChat`): powers are mint-time (`bot_topic` on the session's
+ * model_config), so re-scoping this chat could never grant them — a topic
+ * is born a topic.
  *
  * Mounted in the uniform `composer.top` slot so it covers the main chat and
  * every tile, reading its own surface's stored id off useSessionView — the
@@ -18,10 +18,9 @@ import { Codicon, host, useSessionView, useValue } from '@hermes/plugin-sdk'
 
 import { DELEGATE_HINT_TIP_ID, delegateHintBot } from './bot-delegate-hint'
 import { $dismissedBotTips, dismissBotTip } from './bot-tips'
-import { $lastRoster, botSelectionKey } from './data'
+import { $lastRoster, botSelectionKey, newBotChat } from './data'
 import { useBots } from './i18n'
 import { displayName } from './labels'
-import { botConnectionRoute, botWorkspaceOwnerKey } from './routing'
 
 export function BotDelegateHint() {
   const b = useBots()
@@ -48,23 +47,11 @@ export function BotDelegateHint() {
     }
   }
 
-  const openAsTopic = () => {
-    let route = null
-
-    try {
-      route = botConnectionRoute(bot)
-    } catch {
-      // An orphaned row degrades to a plain re-scope: the chat still joins
-      // the bot's workspace under its name key, it just can't route to a
-      // specific connection.
-    }
-
-    void host.openSession(storedId, {
-      ...(route ? { route } : {}),
-      profile: bot.name,
-      workspaceMode: 'bots',
-      workspaceOwnerKey: botWorkspaceOwnerKey(bot)
-    })
+  const startTopic = () => {
+    // Mint a fresh topic — never re-scope this session. An existing chat's
+    // toolset/system prompt are fixed for its life (prompt caching), so it
+    // can never gain topic powers mid-flight.
+    newBotChat(bot)
     dismiss()
   }
 
@@ -77,7 +64,7 @@ export function BotDelegateHint() {
         </p>
         <button
           className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-[0.7rem] font-medium text-(--ui-accent-primary, var(--primary)) transition-colors hover:bg-accent/40"
-          onClick={openAsTopic}
+          onClick={startTopic}
           type="button"
         >
           {b.hint.openTopic}
