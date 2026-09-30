@@ -56,3 +56,25 @@ Standing maintainer rulings (per #94726): canonical identity = (profile, title "
 - Roster hangs/spins classes (#2) — likely invisible to users as "glitchy" (theme 12).
 - No way to see what a bot WILL do with your message before it does (transparency) — implied by "polished bot experience" asks.
 - Group @mention continuation never runs the cited member (#94478) — directly contradicts the feature's promise.
+
+## Status on the fork (Sep 30 2026)
+
+What the Sep 29 X thread and the Discord thread asked for, and where each landed. "Fork" means
+`DECRUX9812/hermes-agent-contrib`, merged on branch `claude/trusting-euler-pcr2bv`.
+
+| # | Theme | Status | Where |
+|---|-------|--------|-------|
+| 1 | Fresh chat, same bot powers; forever-chat bloat | **Shipped** | #120 bot topics (powers set once at create — cache-safe), #121 long-context "New topic" nudge, #124 "New topic" is the main action |
+| 2 | Setup friction / mental model | **Shipped (desktop)** | #123 one-click "New bot" (name only, clones a working model), #124 "How bots work" explainer and a card showing model, skills and teammates |
+| 3 | Only one bot should listen | **Shipped** | #127 team rooms listen through the lead; follow-up: any room can pick "Who listens" (one bot, everyone, or auto) |
+| 4 | Impersonation | **Shipped** | #126 attribution comes from the plumbing, and forged `Name (user):` / DM stamps / `[task …]` lines arrive quoted; follow-up narrowed the match so code like `def f(user):` passes through untouched |
+| 5 | Turn cap mid-flow | **Shipped** | #125 per-room budget + `group_chat` config block; running out pauses ("send a message to keep going") and only the hard ceiling stops a runaway |
+| 6 | 6 bots in a chat | **Mitigated** | #3 above: the other bots stay asleep until addressed, so size no longer multiplies cost |
+| 7 | Model switching is clunky | Open | The Bot Chat composer model picker exists; next: a one-click model switch on the bot card |
+| 8 | Starter bots | **Shipped** | #123 Scout / Forge / Pilot one-tap starters in the empty roster |
+| 9 | Mobile, desktop↔VM handoff | Open (larger) | Existing pieces: `hermes://session/open` handoff (#77), `hermes peer`; a mobile client is out of scope for this pass |
+| 10 | Extra-simple mode | Partial | #123 / #124 cut the path to a working bot to one click; a dedicated simple mode is still open |
+| 11 | Lead bot creates the team | **Shipped** | `hermes bots create/list` + `hermes bots team create/add/show` and the bundled `bot-team-builder` skill (the main bot proposes a team, from history when the ask is vague, then builds it) |
+| 12 | Slow / glitchy | Needs repro | Not reproducible in CI sandboxes; needs traces from affected installs (roster spin and routing classes in #94726 are the likely causes) |
+| — | Bots can't be pointed at projects | **Shipped** | "New topic in a project…" on the bot card starts a bot topic in a chosen project folder |
+| — | Plugins that feel native (OpenAI MCP Extensions parity) | Designed | `docs/desktop-mcp-apps-host-proposal.md`; building next |
