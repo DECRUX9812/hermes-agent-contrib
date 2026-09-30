@@ -85,6 +85,32 @@ it('renders member replies through the shell message renderer, resolving media o
   ])
 })
 
+it('groups consecutive same-speaker entries under one header, breaking on thread and speaker', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'go', at: 1 },
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'first', at: 2 },
+    { id: 'm2', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'second', at: 3 },
+    { id: 'm3', thread: 'b', from: { kind: 'member' as const, name: 'builder' }, text: 'other thread', at: 4 },
+    { id: 'm4', thread: 'b', from: { kind: 'member' as const, name: 'reviewer' }, text: 'other voice', at: 5 }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  render(
+    <GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />
+  )
+
+  const names = (want: string) =>
+    screen.getAllByRole('button').filter(el => (el.textContent || '').trim().toLowerCase() === want)
+
+  // builder: m1+m2 share one header; m3's thread change re-breaks the run.
+  expect(names('builder')).toHaveLength(2)
+  expect(names('reviewer')).toHaveLength(1)
+})
+
 it('removes Stop controls from historical working rows after the room settles', async () => {
   Element.prototype.scrollIntoView = vi.fn()
 

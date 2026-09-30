@@ -883,6 +883,42 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           </div>
         ) : null}
       </div>
+      {/* Face pile: the member count alone reads as a number; overlapping
+          faces read as a ROOM. Click opens the member manager. */}
+      {members.length ? (
+        <Button
+          aria-label="Manage group members"
+          className="flex shrink-0 items-center -space-x-1 rounded-full p-0.5"
+          onClick={() => setMemberPickerOpen(true)}
+          size="inline"
+          variant="text"
+        >
+          {members.slice(0, 5).map((member, faceIndex) => {
+            const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
+            const faceImage = faceAppearance.image
+
+            return (
+              <span
+                className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                key={`face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
+              >
+                <BotFace
+                  color={avatarColor(faceAppearance.color, member.name)}
+                  image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                  name={member.name}
+                  shape={faceAppearance.shape}
+                  size={18}
+                />
+              </span>
+            )
+          })}
+          {members.length > 5 ? (
+            <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-(--chrome-action-hover) text-[0.55rem] font-medium text-(--ui-text-tertiary) ring-1 ring-(--ui-bg-primary)">
+              {`+${members.length - 5}`}
+            </span>
+          ) : null}
+        </Button>
+      ) : null}
       <Tip label={memberNames}>
         <span
           aria-label={availabilityLabel}
@@ -1253,45 +1289,127 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     const image = appearance?.image ?? null
     const photo = Boolean(image && !isBackfilledFacePng(image))
 
-    return (
+    // Speaker runs: consecutive entries from the same voice share one header
+    // (avatar + name on the run's first line only) so the room reads as voices
+    // taking turns, not a flat ledger of identical rows.
+    const previous = index > 0 ? room.log[index - 1] : null
+
+    const runStart =
+      !previous ||
+      previous.from?.kind !== entry.from?.kind ||
+      previous.from?.name !== entry.from?.name ||
+      (previous.from?.source || '') !== (entry.from?.source || '') ||
+      groupThreadOf(previous) !== groupThreadOf(entry)
+
+    // The member's own avatar color keys the speaker name — the fastest
+    // "who is talking" scan in a multi-voice room.
+    const speakerColor = appearance ? avatarColor(appearance.color, entry.from.name) : null
+
+    const body = (
       <div
-        className={cn(
-          'group flex items-start gap-2',
-          isUser ? 'rounded-md bg-(--chrome-action-hover) px-2 py-1.5' : 'px-2 py-1'
-        )}
-        key={entryKey}
+        className="min-w-0 text-xs text-foreground/90 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:overflow-x-auto" // The app shell sets user-select: none globally; message bodies opt
+        // back in so drag-select and ⌘C work in group chat logs.
+        data-selectable-text="true"
+        data-slot="group-chat-message-content"
       >
-        {appearance ? (
-          <div className="mt-0.5 shrink-0">
-            <BotFace
-              color={avatarColor(appearance.color, entry.from.name)}
-              image={photo ? image : null}
-              name={entry.from.name}
-              shape={appearance.shape}
-              size={24}
+        {MessageTextContent ? (
+          <MessageTextContent decorateText={mentionText} media={!member?.remoteSource} text={entry.text} />
+        ) : Streamdown ? (
+          <Streamdown components={mentionComponents}>{entry.text}</Streamdown>
+        ) : (
+          entry.text
+        )}
+      </div>
+    )
+
+    const attachments = Array.isArray(entry.images) && entry.images.length ? (
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+        {entry.images.map((img, imgIndex) =>
+          img.kind === 'pdf' || img.kind === 'file' ? (
+            <div
+              className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
+              key={`${entryKey}:img:${imgIndex}`}
+              title={img.name || 'attached file'}
+            >
+              <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
+              <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
+            </div>
+          ) : (
+            <img
+              alt={img.name || 'attached image'}
+              className="max-h-40 max-w-60 rounded-md border border-(--ui-stroke-secondary) object-contain"
+              key={`${entryKey}:img:${imgIndex}`}
+              src={img.data}
+              title={img.name || 'attached image'}
             />
+          )
+        )}
+      </div>
+    ) : null
+
+    // Your own lines are right-aligned bubbles reusing the 1:1 thread's
+    // user-bubble tokens so the room reads like the same chat surface.
+    if (isUser) {
+      return (
+        <div
+          className={cn('group flex flex-col items-end gap-0.5 px-2', runStart && index > 0 && 'pt-1.5')}
+          key={entryKey}
+        >
+          <div className="flex items-baseline gap-1.5 px-1 text-[0.625rem] text-(--ui-text-quaternary)">
+            {entry.text.trim() ? (
+              <span className="opacity-0 pointer-events-none transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
+                <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
+              </span>
+            ) : null}
+            {runStart ? <span className="font-semibold text-(--ui-text-tertiary)">{label}</span> : null}
+            <span>{relativeTime(entry.at)}</span>
           </div>
-        ) : null}
+          <div className="max-w-[85%] rounded-xl border border-(--dt-user-bubble-border) bg-(--dt-user-bubble) px-3 py-1.5">
+            {body}
+            {attachments}
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className={cn('group flex items-start gap-2.5 px-2', runStart && index > 0 && 'pt-1.5')} key={entryKey}>
+        <div className="w-6.5 shrink-0 self-start">
+          {runStart ? (
+            <div className="mt-0.5">
+              <BotFace
+                color={speakerColor || ''}
+                image={photo ? image : null}
+                name={entry.from.name}
+                shape={appearance ? appearance.shape : 'squircle'}
+                size={26}
+              />
+            </div>
+          ) : (
+            // Continuation lines reveal their timestamp in the avatar gutter
+            // on hover (the Slack idiom) — the run header stays uncluttered.
+            <div className="pt-1 text-center text-[0.5rem] leading-3 text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover:opacity-100">
+              {relativeTime(entry.at)}
+            </div>
+          )}
+        </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {isUser ? (
-              <span className="text-[0.7rem] font-semibold text-foreground">{label}</span>
-            ) : (
+          {runStart ? (
+            <div className="flex items-center gap-2">
               <Tip label={revealed ? 'Hide full handle' : 'Show full handle'}>
                 <Button
-                  className="text-left text-[0.7rem] font-semibold text-(--ui-accent)"
+                  className="text-left text-[0.7rem] font-semibold"
                   onClick={() => setRevealedSpeaker(revealed ? null : entryKey)}
                   size="inline"
+                  style={{ color: speakerColor || undefined }}
                   variant="text"
                 >
                   {label}
                 </Button>
               </Tip>
-            )}
-            <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
-            {entry.text.trim() || !isUser ? (
-              <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
-                {isUser ? null : (
+              <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
+              {entry.text.trim() || !isUser ? (
+                <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
                   <Tip label={`Reply to @${replyMentionTag(entry, member)}`}>
                     <Button
                       aria-label={`Reply to ${display}`}
@@ -1303,54 +1421,15 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                       <Codicon name="reply" />
                     </Button>
                   </Tip>
-                )}
-                {entry.text.trim() ? (
-                  <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          <div
-            className="min-w-0 text-xs text-(--ui-text-secondary) [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:overflow-x-auto" // The app shell sets user-select: none globally; message bodies opt
-            // back in so drag-select and ⌘C work in group chat logs.
-            data-selectable-text="true"
-            data-slot="group-chat-message-content"
-          >
-            {MessageTextContent ? (
-              <MessageTextContent decorateText={mentionText} media={!member?.remoteSource} text={entry.text} />
-            ) : Streamdown ? (
-              <Streamdown components={mentionComponents}>{entry.text}</Streamdown>
-            ) : (
-              entry.text
-            )}
-          </div>
-          {/* User attachments: what every responding bot was */
-          /* shown — image previews, or a named chip for */
-          /* PDFs/files. */}
-          {Array.isArray(entry.images) && entry.images.length ? (
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              {entry.images.map((img, imgIndex) =>
-                img.kind === 'pdf' || img.kind === 'file' ? (
-                  <div
-                    className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
-                    key={`${entryKey}:img:${imgIndex}`}
-                    title={img.name || 'attached file'}
-                  >
-                    <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
-                    <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
-                  </div>
-                ) : (
-                  <img
-                    alt={img.name || 'attached image'}
-                    className="max-h-40 max-w-60 rounded-md border border-(--ui-stroke-secondary) object-contain"
-                    key={`${entryKey}:img:${imgIndex}`}
-                    src={img.data}
-                    title={img.name || 'attached image'}
-                  />
-                )
-              )}
+                  {entry.text.trim() ? (
+                    <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
+          {body}
+          {attachments}
         </div>
       </div>
     )
@@ -1375,7 +1454,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     logChildren.push(
       replyThread === id ? (
         <form
-          className="grid gap-0 px-2 pb-1"
+          className="grid gap-0 px-2 pb-1 pl-11"
           key={`replybox:${id}`}
           onSubmit={event => {
             event.preventDefault()
@@ -1407,7 +1486,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         </form>
       ) : (
         <Button
-          className="w-fit px-2 pb-1 text-left text-[0.65rem] text-(--ui-accent) transition-colors"
+          className="mt-0.5 w-fit pb-1 pl-11 text-left text-[0.65rem] text-(--ui-accent) transition-colors"
           key={`replylink:${id}`}
           onClick={() => setReplyThread(id)}
           size="inline"
@@ -1466,50 +1545,134 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
         {/* unbreakable code line widened every entry to its own width and the */}
         {/* log scrolled sideways as a whole instead of the code block (#91878). */}
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-1.5 px-2.5 pb-2">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-1 px-2.5 pb-2 pt-1">
           {room.log.length
             ? logChildren
             : [
-                <div className="px-2 py-4 text-center text-xs text-(--ui-text-tertiary)" key={'empty'}>
-                  {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
+                <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center" key={'empty'}>
+                  {room.image ? (
+                    <img
+                      alt=""
+                      className="size-11 rounded-xl object-cover ring-1 ring-(--ui-stroke-secondary)"
+                      src={room.image}
+                    />
+                  ) : (
+                    <span className="flex size-11 items-center justify-center rounded-xl bg-(--chrome-action-hover) text-lg text-(--ui-text-tertiary)">
+                      <Codicon name="organization" />
+                    </span>
+                  )}
+                  {members.length ? (
+                    <span aria-hidden className="flex -space-x-1">
+                      {members.slice(0, 6).map((member, faceIndex) => {
+                        const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
+                        const faceImage = faceAppearance.image
+
+                        return (
+                          <span
+                            className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                            key={`empty-face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
+                          >
+                            <BotFace
+                              color={avatarColor(faceAppearance.color, member.name)}
+                              image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                              name={member.name}
+                              shape={faceAppearance.shape}
+                              size={22}
+                            />
+                          </span>
+                        )
+                      })}
+                    </span>
+                  ) : null}
+                  <div className="max-w-72 text-xs text-(--ui-text-tertiary)">
+                    {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
+                  </div>
                 </div>
               ]}
           {roomClarifies.map(entry => (
-            <GroupClarifyCard
-              entry={entry}
-              key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}
-              members={members}
-            />
+            <div className="pt-1" key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}>
+              <GroupClarifyCard entry={entry} members={members} />
+            </div>
           ))}
           {mailboxNotes.map(note => (
-            <MailboxNoteCard key={`mailbox:${note.connectionId || ''}:${note.id}`} members={members} note={note} />
+            <div className="pt-1" key={`mailbox:${note.connectionId || ''}:${note.id}`}>
+              <MailboxNoteCard members={members} note={note} />
+            </div>
           ))}
           {/* D2 — after a round settles, one card per member's first line */
           /* (pure derivation over the log; no LLM call). */}
           {!room.running && roundContributions.length ? (
             <div
-              className="rounded-md border border-(--ui-stroke-secondary) px-2.5 py-2"
+              className="mt-1.5 rounded-r-md border-y border-r border-l-2 border-(--ui-stroke-secondary) border-l-(--ui-accent) bg-(--chrome-action-hover)/40 px-3 py-2"
               data-testid="group-round-summary"
               key={'round-summary'}
             >
               <div className="mb-1 ui-section-label">{b.group.roundSummaryTitle}</div>
               <ul className="flex flex-col gap-0.5">
-                {roundContributions.map(entry => (
-                  <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>
-                    <span className="shrink-0 font-medium text-(--ui-text-secondary)">{entry.name}</span>
-                    <span className="min-w-0 flex-1 truncate text-(--ui-text-tertiary)">{entry.line}</span>
-                  </li>
-                ))}
+                {roundContributions.map(entry => {
+                  const summaryMember = members.find(member => member.name === entry.name)
+
+                  const summaryAppearance = summaryMember
+                    ? botAppearance(summaryMember.name, botRosterMeta(summaryMember, allMeta))
+                    : null
+
+                  return (
+                    <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>
+                      <span
+                        className="shrink-0 font-medium"
+                        style={{
+                          color: summaryAppearance ? avatarColor(summaryAppearance.color, entry.name) : undefined
+                        }}
+                      >
+                        {summaryMember ? displayName(summaryMember, botRosterMeta(summaryMember, allMeta)) : entry.name}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-(--ui-text-tertiary)">{entry.line}</span>
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           ) : null}
           {room.running ? (
-            <div className="px-2 py-1 text-[0.7rem] italic text-(--ui-text-quaternary)" key={'working'}>
-              {roomClarifies.length
-                ? b.group.waitingForAnswer
-                : room.turn
-                  ? b.group.memberThinking(displayName(room.turn, botRosterMeta(room.turn, allMeta)))
-                  : b.group.roomWorking}
+            <div className="flex items-center gap-2 px-2 pt-1 text-[0.7rem] text-(--ui-text-quaternary)" key={'working'}>
+              {(() => {
+                // Typing indicator: the thinking member's mini face, or the
+                // classic three-dot pulse when the turn isn't attributable.
+                const turnAppearance = room.turn
+                  ? botAppearance(room.turn.name, botRosterMeta(room.turn, allMeta))
+                  : null
+
+                const turnImage = turnAppearance?.image
+
+                return turnAppearance ? (
+                  <span className="shrink-0 overflow-hidden rounded-[22%]">
+                    <BotFace
+                      color={avatarColor(turnAppearance.color, room.turn ? room.turn.name : 'agent')}
+                      image={turnImage && !isBackfilledFacePng(turnImage) ? turnImage : null}
+                      name={room.turn ? room.turn.name : 'agent'}
+                      shape={turnAppearance.shape}
+                      size={16}
+                    />
+                  </span>
+                ) : (
+                  <span aria-hidden className="flex items-center gap-0.5 px-1 py-1">
+                    {[0, 1, 2].map(dot => (
+                      <span
+                        className="size-1 animate-pulse rounded-full bg-(--ui-text-tertiary)"
+                        key={dot}
+                        style={{ animationDelay: `${dot * 200}ms` }}
+                      />
+                    ))}
+                  </span>
+                )
+              })()}
+              <span>
+                {roomClarifies.length
+                  ? b.group.waitingForAnswer
+                  : room.turn
+                    ? b.group.memberThinking(displayName(room.turn, botRosterMeta(room.turn, allMeta)))
+                    : b.group.roomWorking}
+              </span>
             </div>
           ) : null}
           {/* Scroll anchor (#89835): rooms opened at scroll position 0, mid- */
