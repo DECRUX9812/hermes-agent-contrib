@@ -397,21 +397,18 @@ def _apply_switch_reasoning(sid: str, session, agent, effort: str, *, persist_gl
 
 
 def _sync_bot_capabilities(sid: str, session: dict) -> None:
-    """Rebuild a Bot Chat session's agent when its capability surface changed. Bot Chats are
-    eternal sessions with toolsets/MCP baked in at construction, so a capability edit would
-    otherwise wait for /new: fingerprint at turn start and on change swap in a fresh agent for
-    the SAME session (history is DB-backed)."""
+    """Rebuild a bot-powered session's agent when its capability surface changed. Bot Chats
+    and bot topics are eternal sessions with toolsets/MCP baked in at construction, so a
+    capability edit would otherwise wait for /new: fingerprint at turn start and on change
+    swap in a fresh agent for the SAME session (history is DB-backed)."""
     agent = session.get("agent")
     if agent is None:
         return
     try:
-        title = str(getattr(agent, "_session_title_hint", "") or "").strip()
-        if not title:
-            db, key = getattr(agent, "_session_db", None), session.get("session_key") or ""
-            title = str((db.get_session_title(key) if (db and key) else None) or "").strip()
-        if title != "Bot Chat":
+        from tools.bot_mode_probe import bot_powered_session, canonical_bot_chat, capability_fingerprint
+        if not bot_powered_session(agent):
             return
-        from tools.bot_mode_probe import capability_fingerprint
+        canonical = canonical_bot_chat(agent)
         current = capability_fingerprint(session.get("profile_home") or None)
         if current == "unavailable":
             return
@@ -428,7 +425,10 @@ def _sync_bot_capabilities(sid: str, session: dict) -> None:
                                                platform_override=_session_source(session))
         finally:
             _clear_session_context(tokens)
-        new_agent._session_title_hint = "Bot Chat"
+        if canonical:
+            new_agent._session_title_hint = "Bot Chat"
+        else:
+            new_agent._bot_topic = True
         _emit("notice", sid, {"message": "Capabilities updated — this bot's tools and prompt were refreshed."})
     except Exception as e:
         logger.warning("Bot capability sync failed for %s: %s", sid, e)

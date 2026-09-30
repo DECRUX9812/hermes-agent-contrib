@@ -399,7 +399,7 @@ def _workdir_row_model_config(session: dict) -> tuple[str, dict]:
         model_config["_branched_from"] = parent_session_id
     # Room plumbing always follows the member profile. Canonical Bot Chats do too until the composer records an
     # explicit chat-scoped pick plus the profile model it diverged from (see _stored_session_runtime_overrides).
-    for flag in ("room_plumbing", "follow_profile_config"):
+    for flag in ("room_plumbing", "follow_profile_config", "bot_topic"):
         if session.get(flag):
             model_config[flag] = True
     if isinstance(composer_profile := session.get("composer_override_profile"), dict):

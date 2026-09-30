@@ -133,6 +133,10 @@ class SessionCreateParams(ProfileParams):
     hidden: bool = False
     room_plumbing: bool = False
     follow_profile_config: bool = False
+    # Born a bot topic: a user-visible side chat of a bot that carries the canonical
+    # Bot Chat's powers (message_agent, update_task, teammate protocol). Persisted
+    # into the row's model_config, fixed for the session's life.
+    bot_topic: bool = False
 
 
 class SessionCreateResult(Result):

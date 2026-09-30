@@ -31936,6 +31936,11 @@
             "default": false,
             "title": "Follow Profile Config",
             "type": "boolean"
+          },
+          "bot_topic": {
+            "default": false,
+            "title": "Bot Topic",
+            "type": "boolean"
           }
         },
         "title": "SessionCreateParams",
