@@ -34,6 +34,15 @@ Ordered by the maintainer tracker's own classes (umbrella #94726) intersected wi
 5. **Onboarding simplification** — create-bot button already exists in the editor; the gap is *starter bots* (a couple of bundled general-purpose profiles at first launch) and an "extra simple" mode that hides profiles/groups behind a single roster. Both are desktop-plugin scope, not core.
 6. **Remote/multi-connection** — connection-scoped routing audit (#4 cluster); remote bots are second-class today.
 
+### Open seam: "open as topic" on an existing plain session
+
+PR #124 ships a hint on plain sessions running on a bot profile offering "open as topic". Two implementations were possible:
+
+- **(a) Re-scope the same session into the bots workspace.** Rejected as load-bearing: a session's toolset/prompt are fixed at creation for prompt-cache byte-identity; granting powers mid-life would invalidate the cached prefix — the exact invariant the marker design exists to preserve.
+- **(b) Mint a NEW topic seeded with the session's context.** The consistent answer: the hint should open a fresh `bot_topic` chat (full powers from birth) rather than relabel the old one. Recommended follow-up on #124.
+
+A session must never gain or lose `bot_topic` after creation — the flag is written once at `session.create` and read back identically forever.
+
 ## Explicitly NOT proposed
 
 - Multiple listeners per room turn (the "5× tokens" complaint) — orchestrator-only reading is the fix, not parallel fans.
