@@ -318,8 +318,8 @@ def _prepare_tool_result_metadata(sid: str, tool_call_id: str, name: str, args: 
             metadata["inline_diff"] = "\n".join(rendered)
     with contextlib.suppress(Exception):
         # MCP Apps: the Desktop mounts the tool's own UI inline (history rehydrates it from here).
-        from tools.mcp_apps import app_for_registry_name
-        if app := app_for_registry_name(name):
+        from tools.mcp_apps import app_for_tool_call
+        if app := app_for_tool_call(name, args):
             metadata["mcp_app"] = app
     if session is not None:
         session.setdefault("tool_result_metadata", {})[tool_call_id] = metadata

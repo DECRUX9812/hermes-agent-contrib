@@ -76,3 +76,13 @@ def test_a_completed_app_tool_carries_its_app_into_result_metadata(gateway):
         "server": "notes", "tool": "show_notes", "resourceUri": "ui://notes/app.html", "title": "show_notes"}
     assert gateway._tool_lifecycle_required_for_ui("mcp__notes__show_notes")
     assert not _prepare_tool_result_metadata("no-session", "call-2", "terminal", {}, "ok")
+
+
+def test_an_app_tool_reached_through_the_deferred_tool_bridge_still_mounts(gateway):
+    """With tool search on, MCP tools arrive as ``tool_call({calls: [...]})``; the row is the
+    bridge, so the app must be peeled from its arguments."""
+    meta = gateway._prepare_tool_result_metadata(
+        "no-session", "call-3", "tool_call", {"calls": [{"name": "mcp__notes__show_notes", "arguments": {}}]}, "{}")
+    assert meta["tool_result_metadata"]["mcp_app"]["tool"] == "show_notes"
+    two = {"calls": [{"name": "mcp__notes__show_notes", "arguments": {}}, {"name": "terminal", "arguments": {}}]}
+    assert not gateway._prepare_tool_result_metadata("no-session", "call-4", "tool_call", two, "{}")

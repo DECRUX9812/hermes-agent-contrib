@@ -111,6 +111,20 @@ def app_for_registry_name(name: str) -> Optional[dict]:
     return None
 
 
+def app_for_tool_call(name: str, args: Any) -> Optional[dict]:
+    """The app behind a completed call, peeling the deferred-tools ``tool_call`` bridge: with
+    tool search on, MCP tools are reached as ``tool_call({calls: [{name, arguments}]})``, so the
+    row's own name is the bridge. A bridge wrapping exactly one app tool is that tool's app."""
+    from tools.tool_search_catalog import TOOL_CALL_NAME
+    if name != TOOL_CALL_NAME:
+        return app_for_registry_name(name)
+    if not isinstance(args, dict):
+        return None
+    from tools.tool_search_validation import normalize_tool_call_entries
+    entries, error = normalize_tool_call_entries(args)
+    return app_for_registry_name(str(entries[0]["name"])) if not error and len(entries) == 1 else None
+
+
 def _jsonable(value: Any) -> Any:
     dump = getattr(value, "model_dump", None)
     if callable(dump):
