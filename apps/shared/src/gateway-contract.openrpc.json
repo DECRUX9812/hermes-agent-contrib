@@ -637,6 +637,24 @@
       }
     },
     {
+      "name": "bots_team.room_lead",
+      "summary": "The org-tree lead for a group chat: the single team whose filled seats cover the room's local members, lead included. The room then listens through the lead alone and teammates wake only when addressed.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamRoomLeadParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamRoomLeadResult"
+        }
+      }
+    },
+    {
       "name": "bots_team.update",
       "summary": "Rename, re-mission, set the approval policy or the external channel bindings.",
       "params": [
@@ -8926,6 +8944,69 @@
           "pack"
         ],
         "title": "BotsTeamPackImportParams",
+        "type": "object"
+      },
+      "BotsTeamRoomLeadParams": {
+        "additionalProperties": false,
+        "description": "Local member profiles of a group-chat room (remote members can't hold seats \u2014 the\ncaller leaves them out).",
+        "properties": {
+          "members": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Members",
+            "type": "array"
+          }
+        },
+        "title": "BotsTeamRoomLeadParams",
+        "type": "object"
+      },
+      "BotsTeamRoomLeadResult": {
+        "additionalProperties": false,
+        "description": "``lead`` is the room's orchestrator profile when one team covers the room and its lead\nis seated; ``None`` \u2014 not a team room, no seated lead, or several teams disagree \u2014 means\nthe room keeps fan-out listening.",
+        "properties": {
+          "lead": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lead"
+          },
+          "lead_slot": {
+            "default": "",
+            "title": "Lead Slot",
+            "type": "string"
+          },
+          "lead_title": {
+            "default": "",
+            "title": "Lead Title",
+            "type": "string"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team Id"
+          },
+          "team_name": {
+            "default": "",
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "title": "BotsTeamRoomLeadResult",
         "type": "object"
       },
       "BotsTeamUpdateParams": {
@@ -31941,6 +32022,23 @@
             "default": false,
             "title": "Bot Topic",
             "type": "boolean"
+          },
+          "team_room": {
+            "default": false,
+            "title": "Team Room",
+            "type": "boolean"
+          },
+          "team_room_lead": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team Room Lead"
           }
         },
         "title": "SessionCreateParams",

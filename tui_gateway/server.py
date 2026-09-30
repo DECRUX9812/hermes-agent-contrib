@@ -1087,6 +1087,10 @@ def _attach_built_agent(current: dict, agent) -> None:
     # the row, so the session-dict flag is the hint until then.
     if current.get("bot_topic"):
         agent._bot_topic = True
+    # Team-room marker: same session-lifetime hint — the prompt builds before the row may be re-read.
+    if current.get("team_room"):
+        agent._team_room = True
+        agent._team_room_lead = current.get("team_room_lead") or None
     current["agent"] = agent
     # A workspace move can land while construction is still in flight.
     _register_session_cwd(current)

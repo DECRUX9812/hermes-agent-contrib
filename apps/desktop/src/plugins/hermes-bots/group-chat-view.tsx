@@ -32,6 +32,7 @@ import {
   Tip,
   ToggleRow,
   useI18n,
+  useQuery,
   useValue
 } from '@hermes/plugin-sdk'
 import type { ClipboardEvent, DragEvent, ReactNode } from 'react'
@@ -104,6 +105,7 @@ import {
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
+import { localMemberProfiles, resolveTeamRoomLead, teamLeadMember } from './group-team'
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
 import { markGroupRead } from './group-unread'
 import { botsText, useBots } from './i18n'
@@ -806,6 +808,23 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
   const availabilityLabel = `${availableMembers} of ${members.length} available`
 
+  // Team-orchestrated room? The backend's org tree resolves a lead whose members
+  // alone hear plain user turns; null keeps the room on fan-out (no covering
+  // team, ambiguous teams, or an older gateway without bots_team.room_lead).
+  const teamLeadQuery = useQuery({
+    queryFn: () => resolveTeamRoomLead(members),
+    queryKey: [ID, 'group-team-lead', group, ...localMemberProfiles(members)],
+    refetchInterval: 30000,
+    staleTime: 15000
+  })
+
+  const teamLead = teamLeadQuery.data || null
+  const leadMember = teamLeadMember(teamLead, members)
+
+  const leadName = leadMember
+    ? displayName(leadMember, botRosterMeta(leadMember, allMeta))
+    : teamLead?.leadTitle || (teamLead?.lead ? `@${teamLead.lead}` : '')
+
   const memberNames =
     members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat'
 
@@ -1403,6 +1422,15 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}
         members={members}
       />
+      {teamLead && leadName ? (
+        <div
+          className="flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.7rem] text-(--ui-text-quaternary)"
+          data-testid="group-team-listening"
+        >
+          <Codicon className="shrink-0 text-[0.65rem]" name="organization" />
+          <span className="min-w-0 flex-1 truncate">{b.group.teamListening(leadName)}</span>
+        </div>
+      ) : null}
       {activityPanel}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
@@ -1413,7 +1441,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             ? logChildren
             : [
                 <div className="px-2 py-4 text-center text-xs text-(--ui-text-tertiary)" key={'empty'}>
-                  {b.group.composerPlaceholder}
+                  {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
                 </div>
               ]}
           {roomClarifies.map(entry => (

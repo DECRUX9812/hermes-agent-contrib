@@ -406,6 +406,22 @@ class HostedRoomService:
                 "discussion_event_id": decision.discussion_event_id},
             authority_gateway_id=gateway_id, authority_epoch=epoch)
 
+    def _team_lead_profile(self, room: Mapping[str, Any]) -> str | None:
+        """The org-tree lead for this room's LOCAL members (``tools/bot_team.room_lead``) when
+        the room is one bot team — the orchestrator that hears every user turn. ``None`` keeps
+        fan-out listening (not a team room, ambiguous, or the team store is unreadable)."""
+        try:
+            from tools import bot_team
+
+            local = set(self.local_profiles())
+            profiles = [
+                str(m.get("profile") or "") for m in room.get("members") or []
+                if not m.get("target") and str(m.get("profile") or "") in local]
+            resolved = bot_team.room_lead(self.root, profiles)
+            return str((resolved or {}).get("lead") or "").strip() or None
+        except Exception:
+            return None
+
     def prepare_room(self, binding: HostedRoomBinding) -> None:
         with self._policy_lock:
             room = self._room(binding.room_id)
@@ -420,7 +436,8 @@ class HostedRoomService:
                 return
             decision = discussion.plan_next_task(
                 room, list(snapshot.events), local_profiles=self.local_profiles(),
-                initial_watermarks=snapshot.watermarks)
+                initial_watermarks=snapshot.watermarks,
+                lead_profile=self._team_lead_profile(room))
             if decision.status == "task" and decision.task is not None:
                 driver.admit_task(
                     self.db_path, decision.task.identity, payload=decision.task.payload,

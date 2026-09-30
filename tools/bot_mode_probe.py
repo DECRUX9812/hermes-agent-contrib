@@ -422,6 +422,69 @@ def get_bot_mode_protocol_section(home: str | os.PathLike | None = None, *, forc
         return _cached[resolved]
 
 
+# ── team-room session marker ────────────────────────────────────────────────
+# A member session minted inside a team-orchestrated group room carries ``team_room`` + the
+# lead's profile: session.create params → the live session dict → the row's ``model_config`` →
+# every resume path restores both, and _attach_built_agent stamps them on the agent as hints.
+# These predicates read the agent hint first, then the row — the marker is resolved once at
+# create and never recomputed mid-conversation (the prompt cache is sacred).
+
+TEAM_ROOM_FLAG = "team_room"
+TEAM_ROOM_LEAD_KEY = "team_room_lead"
+
+
+def _team_room_row_config(agent) -> dict:
+    """The session row's ``model_config`` as a dict; ``{}`` when unreadable. Never raises."""
+    import json
+
+    def _row() -> dict:
+        db, sid = getattr(agent, "_session_db", None), getattr(agent, "session_id", None)
+        if db is None or not sid:
+            return {}
+        raw = (db.get_session(sid) or {}).get("model_config")
+        if isinstance(raw, dict):
+            return raw
+        parsed = json.loads(raw) if isinstance(raw, str) and raw.strip() else {}
+        return parsed if isinstance(parsed, dict) else {}
+
+    return _swallow(_row, {})
+
+
+def team_room_session(agent) -> bool:
+    """True when this session was minted for a member of a team-orchestrated group room."""
+    if getattr(agent, "_team_room", None):
+        return True
+    return bool(_team_room_row_config(agent).get(TEAM_ROOM_FLAG))
+
+
+def team_room_lead(agent) -> str:
+    """The orchestrating lead's profile name; ``""`` when the session is not a team room."""
+    hint = str(getattr(agent, "_team_room_lead", None) or "").strip()
+    if hint:
+        return hint
+    return str(_team_room_row_config(agent).get(TEAM_ROOM_LEAD_KEY) or "").strip()
+
+
+def team_room_section(lead: str, me: str) -> str:
+    """Prompt text for a team-room member session — lead hears the user directly and delegates;
+    everyone else wakes only when addressed. ``me`` is the session's own profile name."""
+    lead_ref = f"@{lead}" if lead else "the team lead"
+    if me == lead:
+        return (
+            "This conversation is your team's group chat. You are its orchestrator: only YOU "
+            "hear the user directly — your teammates do not read user messages unless the user "
+            "@mentions them by name. Answer the user yourself when you can; delegate work to a "
+            "teammate with message_agent or a Kanban task, and report back what they returned. "
+            "When a teammate replies, relay it to the user attributed to that teammate — never "
+            "speak as another bot.")
+    return (
+        "This conversation is your team's group chat, orchestrated by "
+        f"{lead_ref}. Only the lead hears the user directly — you were woken because "
+        "the user @mentioned you or the lead delegated to you. Answer what was asked "
+        "and stop; never impersonate the lead or another teammate. When the lead delegates, "
+        "reply through the normal message_agent / kanban channels.")
+
+
 # ── capability epoch ─────────────────────────────────────────────────────────
 # Bot Chat sessions are effectively eternal, so "build the prompt once" would strand
 # capability changes (skills, toolsets, MCP, SOUL, roster, peers, model capability

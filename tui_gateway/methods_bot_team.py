@@ -63,6 +63,19 @@ def _(rid, params: dict) -> dict:
     return _run(rid, go)
 
 
+@method("bots_team.room_lead")
+def _(rid, params: dict) -> dict:
+    """The org-tree lead for a group-chat room of local member profiles — ``lead`` null keeps
+    the room on fan-out listening (no covering team, no seated/paused lead, or ambiguity)."""
+    def go(root, bt):
+        members = params.get("members")
+        resolved = bt.room_lead(root, members if isinstance(members, list) else [])
+        return resolved or {
+            "lead": None, "lead_slot": "", "lead_title": "", "team_id": None, "team_name": ""}
+
+    return _run(rid, go)
+
+
 @method("bots_team.create")
 def _(rid, params: dict) -> dict:
     def go(root, bt):

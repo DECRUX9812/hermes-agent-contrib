@@ -278,7 +278,8 @@ interface GroupMemberSessionHandle {
 export async function ensureGroupChatSession(
   group: string,
   member: GroupMember,
-  thread: string
+  thread: string,
+  teamRoomLead?: null | string
 ): Promise<GroupMemberSessionHandle> {
   const binding = followGroupChat(group, name => {
     group = name
@@ -396,7 +397,11 @@ export async function ensureGroupChatSession(
         // stored model/provider pin. Older gateways ignore the unknown params;
         // the server's hidden + "Group: " title fallback then covers legacy.
         room_plumbing: true,
-        follow_profile_config: true
+        follow_profile_config: true,
+        // Team-orchestrated room: every member session mints with the
+        // lead-who-listens marker — a create-time contract, persisted and
+        // restored on every resume (bots_team.room_lead resolved the room).
+        ...(teamRoomLead ? { team_room: true, team_room_lead: teamRoomLead } : {})
       },
       GROUP_SESSION_CREATE_OPTIONS
     )) as { session_id?: string; stored_session_id?: string }
@@ -861,7 +866,8 @@ export async function runGroupChatMemberTurn(
   member: GroupMember,
   prompt: string,
   thread: string,
-  images?: Attachment[]
+  images?: Attachment[],
+  teamRoomLead?: null | string
 ): Promise<null | string> {
   // #93602: hold the member's route socket for the whole turn. Without the
   // lease, every RPC below rides its own request-scoped socket lease; the
@@ -876,7 +882,9 @@ export async function runGroupChatMemberTurn(
   try {
     releaseTurnLease = await retainGroupTurnRoute(member)
 
-    return binding.isLive() ? await runGroupChatMemberTurnLeased(group, member, prompt, thread, images) : null
+    return binding.isLive()
+      ? await runGroupChatMemberTurnLeased(group, member, prompt, thread, images, teamRoomLead)
+      : null
   } finally {
     releaseTurnLease?.()
     binding.dispose()
@@ -1184,14 +1192,15 @@ async function runGroupChatMemberTurnLeased(
   member: GroupMember,
   prompt: string,
   thread: string,
-  images?: Attachment[]
+  images?: Attachment[],
+  teamRoomLead?: null | string
 ): Promise<null | string> {
   const binding = followGroupChat(group, name => {
     group = name
   })
 
   try {
-    const { runtime, stored } = await ensureGroupChatSession(group, member, thread)
+    const { runtime, stored } = await ensureGroupChatSession(group, member, thread, teamRoomLead)
 
     if (!runtime || !binding.isLive()) {
       return null
