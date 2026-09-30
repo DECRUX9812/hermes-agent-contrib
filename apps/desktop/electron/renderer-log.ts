@@ -29,7 +29,6 @@ interface ConsoleMessageDetails {
   message: string
   sourceId: string
   lineNumber: number
-  sourceId: string
 }
 
 interface WebContentsLike {
