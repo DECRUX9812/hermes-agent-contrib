@@ -1285,6 +1285,8 @@ export const en: Translations = {
       composerPopoutDesc: 'Allow dragging the composer out of its dock. When off, it stays docked at the bottom.',
       autoOpenFilesTitle: 'Show files when opening a project',
       autoOpenFilesDesc: 'Opening a folder or starting work in a project opens the file tree beside the chat.',
+      activityRailTitle: 'Icon rail',
+      activityRailDesc: 'A slim column of icons at the left edge — sessions, bots and every page one click away, even with the sidebar folded.',
       openInEditorTitle: 'Open files in',
       openInEditorDesc: 'Where “Open in …” sends a file from the file tree. Works for SSH backends too.',
       fileBrowserTitle: 'File Browser',
@@ -3862,6 +3864,7 @@ export const en: Translations = {
       toSimple: 'Back to the clean, chat-first interface.'
     },
     searchAria: 'Search sessions',
+    railAria: 'App navigation',
     searchPlaceholder: 'Search sessions…',
     clearSearch: 'Clear search',
     noMatch: query => `No sessions match “${query}”.`,

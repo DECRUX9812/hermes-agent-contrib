@@ -28,7 +28,7 @@ import {
   setInterfaceMode
 } from '@/store/interface-mode'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
-import { $autoOpenFilesOnProject, $fileBrowserOpen, setFileBrowserOpen } from '@/store/layout'
+import { $activityRailVisible, $autoOpenFilesOnProject, $fileBrowserOpen, setFileBrowserOpen } from '@/store/layout'
 import { $showModelPricing, setShowModelPricing } from '@/store/model-pricing'
 import { notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, $profiles, normalizeProfileKey } from '@/store/profile'
@@ -434,6 +434,7 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const fileBrowserOpen = useStore($fileBrowserOpen)
   const preferredEditor = useStore($preferredEditor)
   const autoOpenFiles = useStore($autoOpenFilesOnProject)
+  const activityRail = useStore($activityRailVisible)
   const fileBrowserShadowed = useStore($modeShadowed('fileBrowserOpen'))
   const translucency = useStore($translucency)
   const glassMode = translucency.mode === 'glass' && GLASS_SUPPORTED
@@ -982,6 +983,16 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
               id={settingElementId(ids.fileBrowser)}
               label={a.fileBrowserTitle}
               onChange={setFileBrowserOpen}
+            />
+          )}
+
+          {show('window-layout') && (
+            <ToggleRow
+              checked={activityRail}
+              description={a.activityRailDesc}
+              id={settingElementId(ids.activityRail)}
+              label={a.activityRailTitle}
+              onChange={value => $activityRailVisible.set(value)}
             />
           )}
 

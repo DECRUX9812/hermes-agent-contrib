@@ -1073,6 +1073,8 @@ export interface Translations {
       composerPopoutDesc: string
       autoOpenFilesTitle: string
       autoOpenFilesDesc: string
+      activityRailTitle: string
+      activityRailDesc: string
       openInEditorTitle: string
       openInEditorDesc: string
       fileBrowserTitle: string
@@ -3258,6 +3260,7 @@ export interface Translations {
       toSimple: string
     }
     searchAria: string
+    railAria: string
     searchPlaceholder: string
     clearSearch: string
     noMatch: (query: string) => string

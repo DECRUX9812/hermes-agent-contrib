@@ -1259,6 +1259,8 @@ export const deOverrides = {
         'Erlaubt, den Composer aus seiner Ablage herauszuziehen. Wenn aus, bleibt er unten angedockt.',
       autoOpenFilesTitle: 'Dateien beim Öffnen eines Projekts zeigen',
       autoOpenFilesDesc: 'Beim Öffnen eines Ordners oder Projekts erscheint der Dateibaum neben dem Chat.',
+      activityRailTitle: 'Symbolleiste links',
+      activityRailDesc: 'Eine schmale Symbolspalte am linken Rand – Sitzungen, Bots und alle Seiten mit einem Klick, auch bei eingeklappter Seitenleiste.',
       openInEditorTitle: 'Dateien öffnen in',
       openInEditorDesc: 'Wohin „Öffnen in …“ eine Datei aus dem Dateibaum schickt. Funktioniert auch mit SSH-Backends.',
       fileBrowserTitle: 'Dateibrowser',
@@ -4226,6 +4228,7 @@ export const deOverrides = {
       browse: 'Durchsuchen'
     },
     searchAria: 'Sessions durchsuchen',
+    railAria: 'App-Navigation',
     searchPlaceholder: 'Sessions durchsuchen…',
     clearSearch: 'Suche löschen',
     noMatch: query => `Keine Sessions passen zu “${query}”.`,

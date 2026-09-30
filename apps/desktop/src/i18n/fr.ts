@@ -1259,6 +1259,8 @@ export const frOverrides = {
         'Permet de faire glisser la zone de saisie hors de son emplacement. Désactivé, elle reste ancrée en bas.',
       autoOpenFilesTitle: 'Afficher les fichiers à l’ouverture d’un projet',
       autoOpenFilesDesc: 'Ouvrir un dossier ou commencer dans un projet affiche l’arborescence à côté du chat.',
+      activityRailTitle: 'Barre d’icônes',
+      activityRailDesc: 'Une fine colonne d’icônes au bord gauche : sessions, bots et chaque page à un clic, même barre latérale repliée.',
       openInEditorTitle: 'Ouvrir les fichiers dans',
       openInEditorDesc: 'L’éditeur utilisé par « Ouvrir dans… » depuis l’arborescence. Fonctionne aussi avec les backends SSH.',
       fileBrowserTitle: 'Navigateur de fichiers',
@@ -4234,6 +4236,7 @@ export const frOverrides = {
       browse: 'Explorer'
     },
     searchAria: 'Rechercher des sessions',
+    railAria: 'Navigation de l’app',
     searchPlaceholder: 'Rechercher des sessions…',
     clearSearch: 'Effacer la recherche',
     noMatch: query => `Aucune session ne correspond à « ${query} ».`,

@@ -632,6 +632,9 @@ export function toggleFileBrowserOpen() {
  *  respected until the next time work starts somewhere. */
 export const $autoOpenFilesOnProject = persistentAtom('hermes.desktop.autoOpenFilesOnProject', true, Codecs.bool)
 
+/** The icon rail at the window's left edge (app/shell/activity-rail.tsx). */
+export const $activityRailVisible = persistentAtom('hermes.desktop.activityRail', true, Codecs.bool)
+
 export function revealFilesForNewWork(): void {
   if ($autoOpenFilesOnProject.get() && !$fileBrowserOpen.get()) {
     setFileBrowserOpen(true)

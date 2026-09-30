@@ -83,6 +83,7 @@ import { createCanvas } from '@/store/canvas'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $interfaceMode, $showsAdvancedChrome, setModeContext, toggleSimpleMode } from '@/store/interface-mode'
 import {
+  $activityRailVisible,
   $fileBrowserOpen,
   $sidebarOpen,
   FILE_BROWSER_DEFAULT_WIDTH,
@@ -998,6 +999,7 @@ registry.register({
 export function ContribController() {
   const sidebarOpen = useStore($sidebarOpen)
   const statusbarVisible = useStore($statusbarVisible)
+  const activityRail = useStore($activityRailVisible)
 
   // HUD mode is the SAME app with its frame removed: the wiring (gateway,
   // sessions, streams, submit) mounts identically, and only the shell around
@@ -1039,7 +1041,10 @@ export function ContribController() {
           data-contrib-shell=""
           style={{ '--titlebar-height': '0px' } as CSSProperties}
         >
-          <LayoutTreeRoot titlebar />
+          <div className="flex min-h-0 flex-1">
+            {activityRail && <WiredPane part="rail" />}
+            <LayoutTreeRoot titlebar />
+          </div>
 
           {/* "Close running tab?" — the busy/input-blocked tile close gate. */}
           <SessionTileCloseConfirm />

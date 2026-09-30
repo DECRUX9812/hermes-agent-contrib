@@ -1339,6 +1339,23 @@
     opacity: 1;
   }
 }
+/* Icon rail: the glyph of the entry you land on gives one small spring. */
+@keyframes rail-pop {
+  0% {
+    transform: scale(0.8);
+  }
+  55% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot='activity-rail'] [data-active='true'] > .rail-glyph {
+    animation: rail-pop 340ms cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+}
 @keyframes starmap-twinkle {
   0%,
   100% {

@@ -177,7 +177,7 @@ import { useOnboardingHandoff } from './onboarding-handoff'
 import { useOnboardingKickoff } from './onboarding-kickoff'
 import { $restartPreviewServer, useTitlebarToolContributions } from './panes'
 import { type AmbientGatewayRequest, createSessionRpcDispatcher } from './session-rpc-dispatcher'
-import { ChatRoutesSurface, SidebarSurface, StatusbarSurface, TerminalSurface } from './surfaces'
+import { ChatRoutesSurface, RailSurface, SidebarSurface, StatusbarSurface, TerminalSurface } from './surfaces'
 import type { WiringActions, WiringApi } from './types'
 import { POOL_LIMITS_SETTINGS_ROUTE } from './wiring-routing'
 
@@ -1291,6 +1291,8 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     [actions, currentView]
   )
 
+  const railNode = useMemo(() => <RailSurface actions={actions} currentView={currentView} />, [actions, currentView])
+
   const terminalNode = useMemo(() => <TerminalSurface />, [])
 
   const statusbarNode = useMemo(
@@ -1315,11 +1317,12 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const api = useMemo<WiringApi>(
     () => ({
       chatRoutes: chatRoutesNode,
+      rail: railNode,
       sidebar: sidebarNode,
       statusbar: statusbarNode,
       terminal: terminalNode
     }),
-    [chatRoutesNode, sidebarNode, statusbarNode, terminalNode]
+    [chatRoutesNode, railNode, sidebarNode, statusbarNode, terminalNode]
   )
 
   // The REAL titlebar tool clusters (sidebar/flip toggles, haptics, keybinds,

@@ -37,9 +37,10 @@ import { $activeConnectionId } from '@/store/connections'
 import { $cronJobs } from '@/store/cron'
 import { refreshDelegationReports } from '@/store/delegation-reports'
 import { recordAction } from '@/store/desktop-metrics'
-import { $interfaceMode, $showsAdvancedChrome, shownInMode } from '@/store/interface-mode'
+import { $interfaceMode, $showsAdvancedChrome } from '@/store/interface-mode'
 import { $bindings } from '@/store/keybinds'
 import {
+  $activityRailVisible,
   $dismissedAutoProjectIds,
   $panesFlipped,
   $pinnedSessionIds,
@@ -140,19 +141,12 @@ import { $sessionTags, sessionTagsFor } from '@/store/session-tags'
 import { ackAllSessionsRead } from '@/store/session-unread'
 import { markSessionUnread } from '@/store/session-unread-remote'
 import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive'
-import { applySidebarNavPrefs, SIDEBAR_NAV_PREFS_AREA } from '@/store/sidebar-nav'
 import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
 
 import {
   type AppView,
-  ARTIFACTS_ROUTE,
-  CAPABILITIES_ROUTE,
-  CRON_ROUTE,
-  MESSAGING_ROUTE,
   SIDEBAR_LIST_TOP_AREA,
-  SIDEBAR_NAV_AREA,
-  type SidebarListTopContribution,
-  type SidebarNavContribution
+  type SidebarListTopContribution
 } from '../../routes'
 import type { SidebarNavItem } from '../../types'
 import { type NewSessionSplitHandler, startNewSessionDrag } from '../new-session-drag'
@@ -163,6 +157,7 @@ import { SidebarDelegationReports } from './delegation-reports'
 import { SidebarFilterMenu } from './filter-menu'
 import { buildGatewaySessionGroups, scopeGatewaySessionGroups, useGatewaySessionGroups } from './gateway-group-model'
 import { SidebarLoadMoreRow } from './load-more-row'
+import { navItemActive, useSidebarNavItems } from './nav-items'
 import { orderByIds, reconcileOrderIds, resolveManualSessionOrderIds, sameIds } from './order'
 import { filterSessionsByProfileScope } from './profile-scope'
 import { ProfileRail } from './profile-switcher'
@@ -215,53 +210,6 @@ const NON_SESSION_LOAD_STEP = 10
 // the grouped view. Long enough that the flat list — the thing actually on
 // screen — has the connection to itself first.
 const PROJECT_TREE_WARM_MS = 2_000
-
-// A row's `tier` is the one mode it belongs to (Simple keeps the setup rows,
-// Advanced adds the readouts); the list filters once, nothing is passed down.
-const SIDEBAR_NAV: SidebarNavItem[] = [
-  {
-    id: 'new-session',
-    label: '',
-    icon: props => <Codicon name="robot" {...props} />,
-    action: 'new-session',
-    keybindActionId: 'session.new'
-  },
-  {
-    id: 'capabilities',
-    label: '',
-    icon: props => <Codicon name="symbol-misc" {...props} />,
-    route: CAPABILITIES_ROUTE,
-    keybindActionId: 'nav.capabilities',
-    tier: 'advanced'
-  },
-  {
-    // No tier: the rail's messaging sections render in Simple too, so the
-    // door they open must ride every mode or a whole slice is stranded.
-    id: 'messaging',
-    label: '',
-    icon: props => <Codicon name="comment" {...props} />,
-    route: MESSAGING_ROUTE,
-    keybindActionId: 'nav.messaging'
-  },
-  // Artifacts and Scheduled jobs are outputs of running Hermes the developer
-  // way; Capabilities and Messaging are how anyone sets it up.
-  {
-    id: 'artifacts',
-    label: '',
-    icon: props => <Codicon name="files" {...props} />,
-    route: ARTIFACTS_ROUTE,
-    keybindActionId: 'nav.artifacts',
-    tier: 'advanced'
-  },
-  {
-    id: 'cron',
-    label: '',
-    icon: props => <Codicon name="watch" {...props} />,
-    route: CRON_ROUTE,
-    keybindActionId: 'nav.cron',
-    tier: 'advanced'
-  }
-]
 
 // Two modes via the `compact` height variant (styles.css):
 //   tall    → each section is shrink-0, capped, its own scroller; Sessions is flex-1.
@@ -339,42 +287,9 @@ export function ChatSidebar({
   const { t } = useI18n()
   const s = t.sidebar
   const { pathname } = useLocation()
-  // Contributed nav rows (plugins pairing a page with a sidebar entry) render
-  // below the built-ins with the same chrome; active = at their route.
-  const navContributions = useContributions(SIDEBAR_NAV_AREA)
-
-  const contributedNav = useMemo<SidebarNavItem[]>(
-    () =>
-      navContributions.flatMap(c => {
-        const data = c.data as Partial<SidebarNavContribution> | undefined
-
-        if (!data?.path?.startsWith('/') || !data.label) {
-          return []
-        }
-
-        const codicon = data.codicon || 'plug'
-
-        return [
-          {
-            id: c.id,
-            label: data.label,
-            icon: (props: { className?: string }) => <Codicon name={codicon} {...props} />,
-            route: data.path,
-            tier: data.tier
-          }
-        ]
-      }),
-    [navContributions]
-  )
-
   const interfaceMode = useStore($interfaceMode)
   const showsAdvancedChrome = useStore($showsAdvancedChrome)
 
-  // Nav preferences (`sidebarNav.prefs` contributions): a plugin may hide rows
-  // or re-order them. Merged here, at render, from the registry — so the
-  // preference never mutates the default list, and a plugin's disable/reload
-  // disposes its contribution and the rows come straight back.
-  const navPrefs = useContributions(SIDEBAR_NAV_PREFS_AREA)
 
   // Contributed list-top sections (`sidebar.listTop`) render inside the
   // sessions column, above Pinned — the bots plugin's Agents section folds the
@@ -616,14 +531,7 @@ export function ChatSidebar({
     [messagingSessions, profileScope]
   )
 
-  const navItems = useMemo(
-    () =>
-      applySidebarNavPrefs(
-        [...SIDEBAR_NAV, ...contributedNav].filter(item => shownInMode(interfaceMode)(item)),
-        navPrefs
-      ),
-    [contributedNav, interfaceMode, navPrefs]
-  )
+  const navItems = useSidebarNavItems()
 
   // One rail, one mental model: New session is the single primary action.
   // Every other nav row folds into the "Browse" disclosure (per-mode persisted
@@ -631,6 +539,8 @@ export function ChatSidebar({
   const primaryNavItems = useMemo(() => navItems.filter(item => item.id === 'new-session'), [navItems])
   const browseNavItems = useMemo(() => navItems.filter(item => item.id !== 'new-session'), [navItems])
   const browseOpen = useStore($sidebarBrowseOpen)
+  // The icon rail lists every page; the Browse fold would only repeat it.
+  const railCarriesNav = useStore($activityRailVisible)
 
   // The one row behind the Browse fold carrying urgent state is Scheduled
   // jobs — a job past its slot or mid-run deserves a passive dot on the
@@ -1495,13 +1405,7 @@ export function ChatSidebar({
   const renderNavItem = (item: SidebarNavItem) => {
     const isInteractive = Boolean(item.action) || Boolean(item.route)
 
-    const active =
-      (item.id === 'capabilities' && currentView === 'capabilities') ||
-      (item.id === 'messaging' && currentView === 'messaging') ||
-      (item.id === 'artifacts' && currentView === 'artifacts') ||
-      (item.id === 'cron' && currentView === 'cron') ||
-      // Contributed rows light up at their own route.
-      (currentView === 'extension' && Boolean(item.route) && pathname === item.route)
+    const active = navItemActive(item, currentView, pathname)
 
     const isNewSession = item.id === 'new-session'
 
@@ -1732,7 +1636,7 @@ export function ChatSidebar({
               {/* Secondary rows fold under Browse — New session stays the one
                   primary action and the list below is what the rail is for.
                   The caret stays visible: it is the fold's discoverability. */}
-              {browseNavItems.length > 0 && (
+              {!railCarriesNav && browseNavItems.length > 0 && (
                 <SidebarMenuItem>
                   <button
                     aria-expanded={browseOpen}
@@ -1752,7 +1656,7 @@ export function ChatSidebar({
                   </button>
                 </SidebarMenuItem>
               )}
-              {browseOpen && browseNavItems.map(renderNavItem)}
+              {!railCarriesNav && browseOpen && browseNavItems.map(renderNavItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

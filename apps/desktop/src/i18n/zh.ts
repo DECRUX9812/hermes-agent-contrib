@@ -963,6 +963,8 @@ export const zh = defineLocale({
       composerPopoutDesc: '允许将输入框拖出底部停靠区。关闭时，输入框停靠在底部。',
       autoOpenFilesTitle: '打开项目时显示文件',
       autoOpenFilesDesc: '打开文件夹或在项目中开始工作时，在聊天旁显示文件树。',
+      activityRailTitle: '图标栏',
+      activityRailDesc: '左侧边缘的一列窄图标——会话、机器人和每个页面一键可达，侧边栏折叠时也在。',
       openInEditorTitle: '用以下编辑器打开文件',
       openInEditorDesc: '文件树中“在…中打开”使用的编辑器。也适用于 SSH 后端。',
       fileBrowserTitle: '文件浏览器',
@@ -3622,6 +3624,7 @@ export const zh = defineLocale({
       toSimple: '返回清爽的聊天优先界面。'
     },
     searchAria: '搜索会话',
+    railAria: '应用导航',
     searchPlaceholder: '搜索会话…',
     clearSearch: '清除搜索',
     noMatch: query => `没有会话匹配"${query}"。`,
