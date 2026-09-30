@@ -12,6 +12,14 @@ describe('isProviderSetupErrorMessage', () => {
     expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.hermes/.env')).toBe(true)
   })
 
+  it('matches the backend\'s CLI-worded not-connected message', () => {
+    expect(
+      isProviderSetupErrorMessage(
+        'Hermes is not connected to any AI provider yet. Run `hermes model` to pick one (the free Nous tier needs no API key).'
+      )
+    ).toBe(true)
+  })
+
   it('matches the exact empty-key warning emitted in session.info', () => {
     expect(
       isProviderSetupErrorMessage("No API key configured for provider 'openrouter'. First message will fail.")
