@@ -73,6 +73,7 @@ import {
   setGroupChatHoldDetection,
   setGroupChatImage,
   setGroupChatLimits,
+  setGroupChatListener,
   updateGroupChat
 } from './group-chat'
 import type { GroupChatRoom } from './group-chat'
@@ -105,7 +106,7 @@ import {
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
-import { localMemberProfiles, resolveTeamRoomLead, teamLeadMember } from './group-team'
+import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
 import { markGroupRead } from './group-unread'
 import { botsText, useBots } from './i18n'
@@ -409,11 +410,13 @@ function GroupChatSettingsDialog({
   // and rides the hard ceilings — one toggle covers all three axes.
   const currentLimitOff = Object.values((rooms[group] || {}).limits || {}).some(value => value === 'off')
   const currentGoal = String((rooms[group] || {}).goal || '')
+  const currentListener = String((rooms[group] || {}).listener || '')
   const [name, setName] = useState(group)
   const [image, setImage] = useState(current)
   const [holdDetection, setHoldDetection] = useState(currentHoldDetection)
   const [limitOff, setLimitOff] = useState(currentLimitOff)
   const [goal, setGoal] = useState(currentGoal)
+  const [listener, setListener] = useState(currentListener)
   const [compressing, setCompressing] = useState<null | string>(null)
   useEffect(() => {
     if (open) {
@@ -422,6 +425,7 @@ function GroupChatSettingsDialog({
       setHoldDetection(currentHoldDetection)
       setLimitOff(currentLimitOff)
       setGoal(currentGoal)
+      setListener(currentListener)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, group])
@@ -482,6 +486,10 @@ function GroupChatSettingsDialog({
       setGroupChatGoal(finalName, goal)
     }
 
+    if (listener !== currentListener) {
+      setGroupChatListener(finalName, listener || null)
+    }
+
     onClose()
 
     if (finalName !== group) {
@@ -535,6 +543,26 @@ function GroupChatSettingsDialog({
           label={b.group.limitOff}
           onChange={setLimitOff}
         />
+        <div className="flex flex-col gap-1" data-testid="group-settings-listener">
+          <label className="text-[0.75rem] font-medium text-(--ui-text-secondary)" htmlFor="group-listener-select">
+            {b.group.listener}
+          </label>
+          <select
+            className="h-8 w-full rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-control-background) px-2 text-[0.8125rem]"
+            id="group-listener-select"
+            onChange={event => setListener(event.target.value)}
+            value={listener}
+          >
+            <option value="">{b.group.listenerAuto}</option>
+            <option value={ROOM_LISTENER_EVERYONE}>{b.group.listenerEveryone}</option>
+            {(members || []).map(member => (
+              <option key={groupMemberKey(member)} value={groupMemberKey(member)}>
+                {b.group.listenerOnly(member.name)}
+              </option>
+            ))}
+          </select>
+          <p className="text-[0.6875rem] text-(--ui-text-tertiary)">{b.group.listenerHint}</p>
+        </div>
         <div className="flex flex-col gap-1" data-testid="group-settings-goal">
           <label className="text-[0.75rem] font-medium text-(--ui-text-secondary)" htmlFor="group-goal-input">
             {b.group.goal}
@@ -811,9 +839,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // Team-orchestrated room? The backend's org tree resolves a lead whose members
   // alone hear plain user turns; null keeps the room on fan-out (no covering
   // team, ambiguous teams, or an older gateway without bots_team.room_lead).
+  const roomListener = room.listener || ''
+
   const teamLeadQuery = useQuery({
-    queryFn: () => resolveTeamRoomLead(members),
-    queryKey: [ID, 'group-team-lead', group, ...localMemberProfiles(members)],
+    queryFn: () => resolveRoomListener(roomListener, members),
+    queryKey: [ID, 'group-team-lead', group, roomListener, ...localMemberProfiles(members)],
     refetchInterval: 30000,
     staleTime: 15000
   })

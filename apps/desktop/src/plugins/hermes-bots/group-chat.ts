@@ -66,6 +66,8 @@ interface GroupChatSyncRoom {
   /** Per-axis drive-budget overrides — an identity field like `goal`, so the
    *  budget a user set on one device follows the room to every mirror. */
   limits?: GroupChatLimits
+  /** Room listener (see GroupChat.listener) — identity like `goal`. */
+  listener?: string
   log: GroupMessage[]
   members?: GroupMember[]
   name?: string
@@ -371,6 +373,11 @@ export function groupChatSyncSnapshot(
             limits: room.limits
           }
         : {}),
+      ...(typeof room?.listener === 'string' && room.listener
+        ? {
+            listener: room.listener.slice(0, 256)
+          }
+        : {}),
       members: (Array.isArray(room.members) ? room.members : []).slice(0, GROUP_CHAT_MAX_MEMBERS).map(member => ({
         name: String(member?.name || '').slice(0, 128),
         ...(member?.handle
@@ -563,6 +570,7 @@ export function mergeGroupChatSyncSnapshots(
     let holdDetection = true
     let goal: string | undefined
     let limits: GroupChatLimits | undefined
+    let listener: string | undefined
 
     if (localRevision > remoteRevision) {
       identity = localRoom
@@ -571,6 +579,7 @@ export function mergeGroupChatSyncSnapshots(
       holdDetection = localRoom?.holdDetection !== false
       goal = localRoom?.goal
       limits = localRoom?.limits
+      listener = localRoom?.listener
     } else if (remoteRevision > localRevision) {
       identity = remoteRoom
       members = [...(remoteRoom?.members || [])]
@@ -578,6 +587,7 @@ export function mergeGroupChatSyncSnapshots(
       holdDetection = remoteRoom?.holdDetection !== false
       goal = remoteRoom?.goal
       limits = remoteRoom?.limits
+      listener = remoteRoom?.listener
     } else {
       identity = localRoom || remoteRoom
       const byId = new Map<string, GroupMember>()
@@ -593,6 +603,9 @@ export function mergeGroupChatSyncSnapshots(
         : remoteRoom?.holdDetection !== false
       goal = Object.prototype.hasOwnProperty.call(localRoom || {}, 'goal') ? localRoom?.goal : remoteRoom?.goal
       limits = Object.prototype.hasOwnProperty.call(localRoom || {}, 'limits') ? localRoom?.limits : remoteRoom?.limits
+      listener = Object.prototype.hasOwnProperty.call(localRoom || {}, 'listener')
+        ? localRoom?.listener
+        : remoteRoom?.listener
     }
 
     rooms[key] = {
@@ -632,6 +645,11 @@ export function mergeGroupChatSyncSnapshots(
       ...(limits && typeof limits === 'object'
         ? {
             limits
+          }
+        : {}),
+      ...(typeof listener === 'string' && listener
+        ? {
+            listener
           }
         : {})
     }
@@ -882,6 +900,11 @@ export function mergeRemoteGroupChatSnapshotIntoRooms(
         : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'limits')
           ? projected.limits || undefined
           : existing.limits,
+      listener: isPreserved
+        ? existing.listener
+        : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'listener')
+          ? projected.listener || undefined
+          : existing.listener,
       syncRevision: isPreserved ? localRevision : Math.max(remoteRevision, localRevision),
       epoch: Number(existing.epoch || 0),
       running: Boolean(existing.running)
@@ -966,6 +989,7 @@ export function durableGroupChatRooms(all: Record<string, GroupChat> = $groupCha
       image: room.image || null,
       goal: room.goal,
       limits: room.limits,
+      listener: room.listener,
       rosterOrder: room.rosterOrder,
       pinned: room.pinned,
       // Sidebar filing (user-sections) is room-local; keep it across sync.
@@ -1559,6 +1583,16 @@ export function setGroupChatLimits(group: string, limits: null | undefined | Rec
   })
 }
 
+/** Set who hears plain user turns: a member key, 'everyone', or null for auto
+ *  (the bot team's lead when the room is one team, else everyone). */
+export function setGroupChatListener(group: string, listener: null | string | undefined) {
+  updateGroupChat(group, (room: GroupChatRoom) => {
+    room.listener = listener ? String(listener).slice(0, 256) : undefined
+
+    return room
+  })
+}
+
 /** Re-read `group_chat` out of the served profile's config.yaml. Called at
  *  register so a config edit applies to the NEXT drive without a window
  *  reload; a backend too old for `config.get 'full'` keeps the defaults. */
@@ -1811,6 +1845,7 @@ export function updateGroupChat(
         image: room.image || null,
         goal: room.goal,
         limits: room.limits,
+        listener: room.listener,
         rosterOrder: room.rosterOrder,
         pinned: room.pinned,
         // Sidebar filing (user-sections) is room-local; keep it durable.

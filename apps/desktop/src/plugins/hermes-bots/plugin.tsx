@@ -386,6 +386,7 @@ export default {
                   // Per-axis drive-budget overrides ride the room record like
                   // goal/image — a room set to run longer keeps its budget.
                   limits: room.limits && typeof room.limits === 'object' ? room.limits : undefined,
+                  listener: typeof room.listener === 'string' && room.listener ? room.listener : undefined,
                   externalCursors:
                     room.externalCursors && typeof room.externalCursors === 'object' ? room.externalCursors : {},
                   members: Array.isArray(room.members) ? room.members : [],

@@ -224,6 +224,11 @@ export interface GroupChat {
    *  'off' rides the ceiling itself — the runaway brake still binds). An
    *  absent axis inherits the config.yaml `group_chat` block, else default. */
   limits?: GroupChatLimits
+  /** Who hears a plain (un-@mentioned) user turn: unset = auto (the bot team's
+   *  lead when the room is one team, else everyone), 'everyone' = fan-out, or
+   *  one member's key — that bot alone listens and the rest wake on @mention
+   *  or its delegation. */
+  listener?: string
   /** Bumped to abandon in-flight member turns from a previous round. */
   epoch?: number
   /** Room-entry ids consumed while a member was held, replayed into that

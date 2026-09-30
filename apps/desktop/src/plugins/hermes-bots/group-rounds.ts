@@ -28,7 +28,7 @@ import {
 } from './group-membership'
 import { runGroupContinuationMembers, runGroupRoundMember } from './group-round-members'
 import { rejectGroupSlashCommand } from './group-slash'
-import { resolveTeamRoomLead, teamLeadKey, type TeamRoomLead } from './group-team'
+import { resolveRoomListener, teamLeadKey, type TeamRoomLead } from './group-team'
 import { GROUP_TURN_HARD_CAP_MS, harvestStrandedGroupReply } from './group-turns'
 import { botsText } from './i18n'
 import { requestForBot } from './routing'
@@ -964,9 +964,9 @@ const groupChatDrives = new Map<string, GroupChatDrive>()
 function queueGroupChatDrive(group: string, members: GroupMember[], thread: string) {
   let key = groupChatRoomKey(group, $groupChats.get()[group])
   const active = groupChatDrives.get(key)
-  // Kick the org-tree lead lookup at send time, alongside the send itself — a
-  // room that IS a bot team listens through its lead alone; null keeps fan-out.
-  const lead = resolveTeamRoomLead(members)
+  // Kick the listener lookup at send time, alongside the send itself — the
+  // room's own pick, else a bot team's lead, listens alone; null keeps fan-out.
+  const lead = resolveRoomListener(($groupChats.get()[group] || {}).listener, members)
 
   if (active?.binding.isLive()) {
     // Only a new user action AFTER failure authorizes another attempt.

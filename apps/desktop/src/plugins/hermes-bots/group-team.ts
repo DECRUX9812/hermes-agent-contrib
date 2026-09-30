@@ -16,8 +16,35 @@ import type { GroupMember } from './types'
 export interface TeamRoomLead {
   lead: string
   leadTitle: string
+  /** Set when the room's own `listener` picked the lead: its durable member
+   *  key, which may name a remote member (team leads are always local). */
+  memberKey?: string
   teamId: string
   teamName: string
+}
+
+/** `GroupChat.listener` value that forces fan-out even in a team room. */
+export const ROOM_LISTENER_EVERYONE = 'everyone'
+
+/** Who hears a plain user turn in this room. The room's own pick wins:
+ *  'everyone' keeps fan-out, a member key makes that member the sole listener.
+ *  Unset — or a pick whose member has since left — defers to the bot team's
+ *  org-tree lead, and null (no team) keeps fan-out. */
+export async function resolveRoomListener(
+  listener: null | string | undefined,
+  members: GroupMember[]
+): Promise<null | TeamRoomLead> {
+  if (listener === ROOM_LISTENER_EVERYONE) {
+    return null
+  }
+
+  const picked = listener ? (members || []).find(member => groupMemberKey(member) === listener) : undefined
+
+  if (picked) {
+    return { lead: String(picked.name || ''), leadTitle: '', memberKey: listener!, teamId: '', teamName: '' }
+  }
+
+  return resolveTeamRoomLead(members)
 }
 
 /** The room's LOCAL member profiles — the only seats a team can hold. Remote members
@@ -69,6 +96,10 @@ export async function resolveTeamRoomLead(members: GroupMember[]): Promise<null 
 /** The room member the resolved lead occupies. Only a LOCAL member can lead
  *  (team seats are profiles); a stored lead that no local seat matches is no lead. */
 export function teamLeadMember(lead: null | TeamRoomLead | string, members: GroupMember[]): GroupMember | null {
+  if (typeof lead === 'object' && lead?.memberKey) {
+    return (members || []).find(member => groupMemberKey(member) === lead.memberKey) || null
+  }
+
   const profile = typeof lead === 'string' ? lead : lead?.lead
 
   if (!profile) {

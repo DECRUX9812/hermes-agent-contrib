@@ -223,3 +223,29 @@ describe('orchestrated drive', () => {
     expect(new Set(submitProfiles(room))).toEqual(new Set(['research', 'builder', 'ops']))
   })
 })
+
+describe('room listener (any room, team or not)', () => {
+  it('a picked listener hears plain turns alone in a room that is no bot team', async () => {
+    const room = await loadRoom({ teamLead: null, turn: () => 'Done.' })
+
+    room.chat.updateGroupChat('Crew', current => ({ ...current, members: MEMBERS }))
+    room.chat.setGroupChatListener('Crew', 'builder')
+    room.rounds.sendToGroupChat('Crew', MEMBERS, 'status update please')
+    await settle(room, 'Crew')
+
+    expect(submitProfiles(room)).toEqual(['builder'])
+    // The team store was never needed — the room's own pick decided.
+    expect(room.gateway.rpcFor('bots_team.room_lead')).toHaveLength(0)
+  })
+
+  it("'everyone' keeps fan-out even when the room is a bot team", async () => {
+    const room = await loadRoom({ teamLead: { lead: 'research' }, turn: () => '(pass)' })
+
+    room.chat.updateGroupChat('Crew', current => ({ ...current, members: MEMBERS }))
+    room.chat.setGroupChatListener('Crew', room.team.ROOM_LISTENER_EVERYONE)
+    room.rounds.sendToGroupChat('Crew', MEMBERS, 'hello all')
+    await settle(room, 'Crew')
+
+    expect(new Set(submitProfiles(room))).toEqual(new Set(['research', 'builder', 'ops']))
+  })
+})
