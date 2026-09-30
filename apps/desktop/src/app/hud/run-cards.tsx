@@ -58,11 +58,13 @@ export function HudRunCards() {
 
 function HudRunCard({ run, session }: { run: FleetRun; session: null | SessionInfo | undefined }) {
   const { t } = useI18n()
+
   const elapsed = useElapsedSeconds(
     Boolean(run.startedMs),
     `hud-run:${run.sessionId ?? run.title}`,
     run.startedMs ?? undefined
   )
+
   const openable = run.sessionId !== null
   const needsYou = run.dot === 'needs-input'
   const title = run.title || t.roster.untitledRun

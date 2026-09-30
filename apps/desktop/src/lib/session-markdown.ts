@@ -62,8 +62,10 @@ function persistedToolCalls(value: unknown): { args: string; name: string }[] {
 
   return value.flatMap(entry => {
     const call = (entry ?? {}) as PersistedToolCall
+
     const name =
       typeof call.name === 'string' ? call.name : typeof call.function?.name === 'string' ? call.function.name : ''
+
     const args = call.args ?? call.arguments ?? call.function?.arguments
 
     return name ? [{ args: args === undefined ? '' : show(args), name }] : []

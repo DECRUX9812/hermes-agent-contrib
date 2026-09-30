@@ -148,6 +148,7 @@ describe('settle detection', () => {
       ['coding', true],
       ['git', true]
     ])
+
     const next = new Map([
       ['coding', false],
       ['git', true]

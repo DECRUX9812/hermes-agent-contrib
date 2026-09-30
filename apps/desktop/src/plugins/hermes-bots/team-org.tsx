@@ -296,6 +296,7 @@ function SeatForm({
   const others = team.members.filter(m => m.slot !== member.slot)
   // Hire from the bots this install already has; the field still takes any name.
   const { data: roster } = useRoster()
+
   const hireable = (roster?.profiles ?? [])
     .map(r => r.name)
     .filter(n => !team.members.some(m => m.profile === n && m.slot !== member.slot))
