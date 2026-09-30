@@ -114,6 +114,12 @@ export interface RosterRow {
    *  / `connectionLabel`, which are THIS Desktop's names for the connection. */
   installId?: string
   last_session?: SessionPreview | null
+  /** The profile's configured model pin ('' = inherits the launch model). */
+  model?: string
+  /** The profile's configured provider slug. */
+  provider?: string
+  /** Installed skills on the profile — the gateway's last known count. */
+  skill_count?: number
   remoteSource?: boolean
   route?: ProfileRoute
   sourceError?: null | string

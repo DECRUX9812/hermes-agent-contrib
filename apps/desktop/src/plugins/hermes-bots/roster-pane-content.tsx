@@ -3,6 +3,7 @@ import type { ReactNode, RefObject } from 'react'
 
 import { avatarColor, blobShapeString, BotFace } from './avatar'
 import { BOT_STARTERS, type BotStarter } from './bot-starters'
+import { BotsHowItWorks } from './bots-explainer'
 import type { useRoster } from './data'
 import { $showHiddenBots } from './hidden-bots'
 import type { useBots } from './i18n'
@@ -137,6 +138,10 @@ export function renderRosterContent({
                   </RowButton>
                 ))}
               </div>
+              {/* The mental model, taught at first contact: Bot Chat is the
+                  inbox, New topic keeps context clean, @mentions summon
+                  teammates, a bot is a profile with an identity. */}
+              <BotsHowItWorks />
             </div>
           }
           description={b.roster.emptyDesc}
