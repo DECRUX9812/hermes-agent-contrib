@@ -29,6 +29,7 @@ vi.mock('@/store/session-states', () => ({
 vi.mock('@/store/profile', () => ({
   // The layout store reads the sidebar's profile scope; this suite only cares
   // about the fresh-session call.
+  $activeGatewayProfile: atom('default'),
   $showAllProfiles: atom(false),
   requestFreshSession: () => requestFreshSession(),
   setShowAllProfiles: () => {}
