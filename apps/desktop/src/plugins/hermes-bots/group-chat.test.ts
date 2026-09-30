@@ -1289,3 +1289,89 @@ describe('sync worker', () => {
     expect(room.chat.$groupChats.get().Core?.log.map(entry => entry.text)).toEqual(['fresh start'])
   })
 })
+
+describe('drive budget', () => {
+  it('config.yaml group_chat block clamps each axis to its hard ceiling and defaults the rest', async () => {
+    const { chat } = await loadRoom()
+
+    expect(chat.resolveGroupChatLimits({})).toEqual({
+      continuations: chat.GROUP_CHAT_MAX_CONTINUATIONS,
+      messages: chat.GROUP_CHAT_MAX_MESSAGES,
+      rounds: chat.GROUP_CHAT_MAX_ROUNDS
+    })
+
+    // Set axes clamp to the ceilings; junk and absent axes keep the defaults.
+    const resolved = chat.resolveGroupChatLimits({
+      group_chat: { max_continuations: 'two', max_messages: 500, max_rounds: 8 }
+    })
+
+    expect(resolved).toEqual({
+      continuations: chat.GROUP_CHAT_MAX_CONTINUATIONS,
+      messages: chat.GROUP_CHAT_HARD_CAP_MESSAGES,
+      rounds: 8
+    })
+  })
+
+  it('a room override wins per-axis, off rides the ceiling, absent axes inherit config', async () => {
+    const { chat } = await loadRoom()
+
+    chat.$groupChatConfigLimits.set({ continuations: 5, messages: 30, rounds: 6 })
+    chat.$groupChats.set({
+      Other: { log: [], watermarks: {} },
+      Room: { limits: { messages: 'off', rounds: 4 }, log: [], watermarks: {} }
+    })
+
+    expect(chat.getGroupChatLimits('Room')).toEqual({
+      continuations: 5,
+      messages: chat.GROUP_CHAT_HARD_CAP_MESSAGES,
+      rounds: 4
+    })
+    // A room that never overrides inherits the whole config block.
+    expect(chat.getGroupChatLimits('Other')).toEqual({ continuations: 5, messages: 30, rounds: 6 })
+    // An axis resolved AT its ceiling reports the runaway brake, not a cap the
+    // user can still raise.
+    expect(chat.groupChatLimitAtCeiling(chat.getGroupChatLimits('Room'), 'messages')).toBe(true)
+    expect(chat.groupChatLimitAtCeiling(chat.getGroupChatLimits('Room'), 'continuations')).toBe(false)
+  })
+
+  it('setGroupChatLimits sanitizes junk, clears an empty map, and persists + mirrors like goal', async () => {
+    const room = await loadRoom()
+
+    room.chat.appendGroupChatEntry('Room', { kind: 'user', name: 'You' }, 'hi', 't1')
+    room.chat.setGroupChatLimits('Room', { continuations: 'lots', messages: 'off', rounds: 6 })
+
+    expect(room.chat.$groupChats.get().Room.limits).toEqual({ messages: 'off', rounds: 6 })
+    expect(durable(room).Room?.limits).toEqual({ messages: 'off', rounds: 6 })
+
+    await drain(() => room.gateway.rpcFor('profiles.configure').length < 1, 50)
+    expect((published(room).rooms as Record<string, { limits?: unknown }>)['name:Room']?.limits).toEqual({
+      messages: 'off',
+      rounds: 6
+    })
+
+    room.chat.setGroupChatLimits('Room', undefined)
+    expect(room.chat.$groupChats.get().Room.limits).toBeUndefined()
+    expect(durable(room).Room?.limits).toBeUndefined()
+  })
+
+  it('limits ride the sync projection through merge like the other identity fields', async () => {
+    const { chat } = await loadRoom()
+
+    const merged = chat.mergeGroupChatSyncSnapshots(
+      { rooms: {}, version: 3 },
+      {
+        rooms: {
+          'name:Room': {
+            limits: { rounds: 'off' },
+            log: [{ at: 1, from: { kind: 'user', name: 'You' }, text: 'hi' }],
+            members: [{ name: 'research' }],
+            revision: 3
+          }
+        },
+        version: 3
+      }
+    )
+
+    expect(merged.rooms['name:Room']?.limits).toEqual({ rounds: 'off' })
+  })
+})

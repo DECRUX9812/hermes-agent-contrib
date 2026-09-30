@@ -358,6 +358,7 @@ describe('round lifecycle', () => {
 
       const context = {
         group: 'Room',
+        limits: room.chat.getGroupChatLimits('Room'),
         members: [member],
         thread: 't1',
         startEpoch: 1,
@@ -1467,5 +1468,78 @@ describe('stopGroupThread (#91868/#94569)', () => {
     const reply = await room.turns.runGroupChatMemberTurn('Room', { name: 'helper', title: '' }, 'long task', 't1', [])
 
     expect(reply).toBe('finished anyway')
+  })
+})
+
+// ── drive budget ─────────────────────────────────────────────────────────────
+// The complaint "the turn cap stops you mid-flow" had two legs: the budget was
+// too small to raise, and the stop looked like the end of the conversation.
+// These cover both: a raised budget lets the SAME discussion settle, a spent
+// budget pauses and names its axis so the next user message resumes it, and
+// an axis pushed to its hard ceiling still reports the runaway brake.
+
+describe('drive budget', () => {
+  it('a raised room budget lets a longer discussion settle instead of capping', async () => {
+    // Three members each speak for three rounds, then pass — a flow that only
+    // needs ONE round more than the default budget used to die capped.
+    const room = await loadRoom({ turn: ({ n }) => (n <= 9 ? `reply ${n} — @everyone` : '(pass)') })
+
+    room.chat.setGroupChatLimits('Room', { rounds: 6 })
+    room.rounds.sendToGroupChat('Room', MEMBERS, 'keep it moving')
+    await settle(room, 'Room')
+
+    expect(log(room, 'Room').filter(entry => entry.from.kind === 'member')).toHaveLength(9)
+    expect(
+      room.activity
+        .currentGroupActivity('Room')
+        .filter(event => event.kind === 'settled' || event.kind === 'capped' || event.kind === 'safety')
+        .map(event => event.kind)
+    ).toEqual(['settled'])
+  })
+
+  it('a raiseable cap pauses mid-flow and names its axis — the next user message resumes', async () => {
+    const room = await loadRoom({ turn: ({ n }) => (n <= 12 ? `reply ${n} — @everyone` : '(pass)') })
+
+    room.rounds.sendToGroupChat('Room', MEMBERS, 'keep it moving')
+    await settle(room, 'Room')
+
+    const exit = room.activity
+      .currentGroupActivity('Room')
+      .find(event => event.kind === 'capped' || event.kind === 'safety')
+
+    expect(exit?.kind).toBe('capped')
+    expect(exit?.detail).toBe('rounds')
+    expect(room.activity.groupActivityLabel(exit!)).toContain('round cap')
+
+    // The conversation resumes on the next send instead of dead-ending: the
+    // remaining three replies (n 10–12) land, then everyone passes.
+    room.rounds.sendToGroupChat('Room', MEMBERS, 'and then?')
+    await settle(room, 'Room')
+
+    expect(log(room, 'Room').filter(entry => entry.from.kind === 'member')).toHaveLength(12)
+  })
+
+  it('the safety brake still stops a runaway when the room asks for no limit', async () => {
+    // Distinct reply text per turn — identical adjacent posts would exercise
+    // the duplicate guard instead of the ceiling this test measures.
+    const room = await loadRoom({ turn: ({ n, profile }) => `${profile} replies ${n} — @everyone keep going` })
+
+    room.chat.setGroupChatLimits('Room', { continuations: 'off', messages: 'off', rounds: 'off' })
+    room.rounds.sendToGroupChat('Room', MEMBERS, 'go wild')
+    await settle(room, 'Room')
+
+    // 'off' rides the ceilings, not infinity: the round axis runs out at the
+    // hard cap and the feed calls it the brake, not a knob to raise further.
+    expect(log(room, 'Room').filter(entry => entry.from.kind === 'member')).toHaveLength(
+      room.chat.GROUP_CHAT_HARD_CAP_ROUNDS * MEMBERS.length
+    )
+
+    const exit = room.activity
+      .currentGroupActivity('Room')
+      .find(event => event.kind === 'capped' || event.kind === 'safety')
+
+    expect(exit?.kind).toBe('safety')
+    expect(exit?.detail).toBe('rounds')
+    expect(room.activity.groupActivityLabel(exit!)).toContain('safety brake')
   })
 })

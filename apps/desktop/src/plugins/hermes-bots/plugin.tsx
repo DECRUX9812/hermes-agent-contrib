@@ -92,6 +92,7 @@ import {
   handleSessionsGatewayTransition,
   hydrateGroupChatTombstones,
   pullGroupChatServerState,
+  refreshGroupChatLimits,
   scheduleGroupChatServerSync,
   setGroupChatSyncDisposed,
   stopGroupChatServerSync,
@@ -356,6 +357,11 @@ export default {
       /* no storage — no remembered disbands this window */
     }
 
+    // The config.yaml `group_chat` block feeds every room that never set its
+    // own override — read it once at register; the per-room merge in
+    // getGroupChatLimits resolves the rest per drive.
+    void refreshGroupChatLimits()
+
     try {
       // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
       Promise.resolve(ctx.storage?.get?.('group-chats'))
@@ -377,6 +383,9 @@ export default {
                   // guard as the other maps — a held bot stays held across
                   // window restarts until explicitly released.
                   holds: room.holds && typeof room.holds === 'object' ? room.holds : {},
+                  // Per-axis drive-budget overrides ride the room record like
+                  // goal/image — a room set to run longer keeps its budget.
+                  limits: room.limits && typeof room.limits === 'object' ? room.limits : undefined,
                   externalCursors:
                     room.externalCursors && typeof room.externalCursors === 'object' ? room.externalCursors : {},
                   members: Array.isArray(room.members) ? room.members : [],

@@ -71,6 +71,7 @@ import {
   setGroupChatGoal,
   setGroupChatHoldDetection,
   setGroupChatImage,
+  setGroupChatLimits,
   updateGroupChat
 } from './group-chat'
 import type { GroupChatRoom } from './group-chat'
@@ -402,10 +403,14 @@ function GroupChatSettingsDialog({
   const rooms: Record<string, GroupChatRoom> = useValue($groupChats)
   const current = (rooms[group] || {}).image || null
   const currentHoldDetection = (rooms[group] || {}).holdDetection !== false
+  // 'off' on any axis means the room opted out of the inherited drive budget
+  // and rides the hard ceilings — one toggle covers all three axes.
+  const currentLimitOff = Object.values((rooms[group] || {}).limits || {}).some(value => value === 'off')
   const currentGoal = String((rooms[group] || {}).goal || '')
   const [name, setName] = useState(group)
   const [image, setImage] = useState(current)
   const [holdDetection, setHoldDetection] = useState(currentHoldDetection)
+  const [limitOff, setLimitOff] = useState(currentLimitOff)
   const [goal, setGoal] = useState(currentGoal)
   const [compressing, setCompressing] = useState<null | string>(null)
   useEffect(() => {
@@ -413,6 +418,7 @@ function GroupChatSettingsDialog({
       setName(group)
       setImage(current)
       setHoldDetection(currentHoldDetection)
+      setLimitOff(currentLimitOff)
       setGoal(currentGoal)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -461,6 +467,13 @@ function GroupChatSettingsDialog({
 
     if (holdDetection !== currentHoldDetection) {
       setGroupChatHoldDetection(finalName, holdDetection)
+    }
+
+    if (limitOff !== currentLimitOff) {
+      setGroupChatLimits(
+        finalName,
+        limitOff ? { continuations: 'off', messages: 'off', rounds: 'off' } : undefined
+      )
     }
 
     if (goal.trim() !== currentGoal) {
@@ -513,6 +526,12 @@ function GroupChatSettingsDialog({
           description={b.group.holdDetectionHint}
           label={b.group.holdDetection}
           onChange={setHoldDetection}
+        />
+        <ToggleRow
+          checked={limitOff}
+          description={b.group.limitOffHint}
+          label={b.group.limitOff}
+          onChange={setLimitOff}
         />
         <div className="flex flex-col gap-1" data-testid="group-settings-goal">
           <label className="text-[0.75rem] font-medium text-(--ui-text-secondary)" htmlFor="group-goal-input">
