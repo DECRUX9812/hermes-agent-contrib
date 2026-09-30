@@ -2329,6 +2329,60 @@
       }
     },
     {
+      "name": "mcp_apps.call",
+      "summary": "A tool call made by an app iframe: same server, the tool's visibility must include ``app``, and write-capable calls on an untrusted server are refused.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/McpAppsCallParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/McpAppsCallResult"
+        }
+      }
+    },
+    {
+      "name": "mcp_apps.list",
+      "summary": "Tools on the connected MCP servers that carry an MCP App (``_meta.ui.resourceUri``).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/_AppScoped"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/McpAppsListResult"
+        }
+      }
+    },
+    {
+      "name": "mcp_apps.read_ui",
+      "summary": "The app document behind a ``ui://`` URI (other schemes are refused).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/McpAppsReadUiParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/McpAppsReadUiResult"
+        }
+      }
+    },
+    {
       "name": "message.react",
       "summary": "Set/clear one author's emoji reaction on a message; returns the row's full reaction list.",
       "params": [
@@ -19479,6 +19533,220 @@
           "deferred_by_goal"
         ],
         "title": "LoopSnapshot",
+        "type": "object"
+      },
+      "McpApp": {
+        "additionalProperties": true,
+        "description": "A tool with an app. ``registry_name`` is the model-facing tool name, ``None`` for an\napp-only tool (callable from its UI, never by the model).",
+        "properties": {
+          "server": {
+            "title": "Server",
+            "type": "string"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "registry_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Registry Name"
+          },
+          "resourceUri": {
+            "title": "Resourceuri",
+            "type": "string"
+          },
+          "visibility": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Visibility",
+            "type": "array"
+          },
+          "entrypoints": {
+            "default": [],
+            "items": {},
+            "title": "Entrypoints",
+            "type": "array"
+          },
+          "icons": {
+            "default": [],
+            "items": {},
+            "title": "Icons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "server",
+          "tool",
+          "title",
+          "resourceUri",
+          "visibility"
+        ],
+        "title": "McpApp",
+        "type": "object"
+      },
+      "McpAppsCallParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "server": {
+            "title": "Server",
+            "type": "string"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Arguments",
+            "type": "object"
+          }
+        },
+        "required": [
+          "server",
+          "tool"
+        ],
+        "title": "McpAppsCallParams",
+        "type": "object"
+      },
+      "McpAppsCallResult": {
+        "additionalProperties": true,
+        "description": "The MCP ``CallToolResult`` as JSON (``content``, ``structuredContent``, ``isError``, ``_meta``).",
+        "properties": {},
+        "title": "McpAppsCallResult",
+        "type": "object"
+      },
+      "McpAppsListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "apps": {
+            "items": {
+              "$ref": "#/components/schemas/McpApp"
+            },
+            "title": "Apps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "apps"
+        ],
+        "title": "McpAppsListResult",
+        "type": "object"
+      },
+      "McpAppsReadUiParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "server": {
+            "title": "Server",
+            "type": "string"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "server",
+          "uri"
+        ],
+        "title": "McpAppsReadUiParams",
+        "type": "object"
+      },
+      "McpAppsReadUiResult": {
+        "additionalProperties": false,
+        "description": "``meta`` is the content item's ``_meta`` (``ui.csp``, ``ui.prefersBorder``, ``openai/ui``).",
+        "properties": {
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          },
+          "mimeType": {
+            "title": "Mimetype",
+            "type": "string"
+          },
+          "html": {
+            "title": "Html",
+            "type": "string"
+          },
+          "meta": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Meta",
+            "type": "object"
+          }
+        },
+        "required": [
+          "uri",
+          "mimeType",
+          "html"
+        ],
+        "title": "McpAppsReadUiResult",
         "type": "object"
       },
       "McpCatalogEntry": {
@@ -42136,6 +42404,37 @@
           "disabled_persisted"
         ],
         "title": "WakeStopResult",
+        "type": "object"
+      },
+      "_AppScoped": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          }
+        },
+        "title": "_AppScoped",
         "type": "object"
       },
       "_SessionScoped": {

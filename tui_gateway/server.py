@@ -2130,7 +2130,11 @@ def _tool_lifecycle_required_for_ui(name: str) -> bool:
     The start and complete guards both consult this set, so a card's
     `tool.complete` can never arrive without its `tool.start`.
     """
-    return name in _TOOL_LIFECYCLE_UI_TOOLS
+    if name in _TOOL_LIFECYCLE_UI_TOOLS:
+        return True
+    # An MCP App tool draws its own UI in the row (tools/mcp_apps.py).
+    from tools.mcp_apps import app_for_registry_name
+    return name.startswith("mcp__") and app_for_registry_name(name) is not None
 
 
 def _restart_slash_worker(sid: str, session: dict):
@@ -3642,7 +3646,7 @@ from . import (  # noqa: E402
     methods_connectors as _methods_connectors, methods_connectors_account as _methods_connectors_account,
     methods_display as _methods_display, methods_display_watch as _methods_display_watch,
     methods_onboarding as _methods_onboarding, methods_i18n as _methods_i18n,
-    methods_shared_metrics as _methods_shared_metrics)
+    methods_shared_metrics as _methods_shared_metrics, methods_mcp_apps as _methods_mcp_apps)
 
 for _m in (
     _session_transports, _session_reaper, _session_lifecycle, _session_workdir, _compute_host_bridge, _model_switch,
@@ -3654,6 +3658,6 @@ for _m in (
     _methods_bot_relay, _methods_bot_mailbox, _methods_bot_team, _prompt_turn, _billing_view, _methods_projects, _methods_session_foreign,
     _methods_session_control, _methods_subagents, _methods_delegation_reports, _methods_session_ask, _methods_vault, _methods_free_tier, _methods_connectors,
     _methods_connectors_account, _methods_display, _methods_display_watch, _methods_onboarding,
-    _methods_i18n, _methods_shared_metrics):
+    _methods_i18n, _methods_shared_metrics, _methods_mcp_apps):
     _m.register(sys.modules[__name__])
 del _m

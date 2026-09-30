@@ -2253,6 +2253,48 @@ export interface ClientCapabilitiesResult {
   server_requests: string[]
   declines_not_shown?: boolean
 }
+export interface _AppScoped {
+  profile?: string | null
+  session_id?: string | null
+}
+export interface McpAppsListResult {
+  apps: McpApp[]
+}
+/** A tool with an app. ``registry_name`` is the model-facing tool name, ``None`` for an app-only tool (callable from its UI, never by the model). */
+export interface McpApp {
+  server: string
+  tool: string
+  title: string
+  description?: string
+  registry_name?: string | null
+  resourceUri: string
+  visibility: string[]
+  entrypoints?: unknown[]
+  icons?: unknown[]
+  [key: string]: unknown
+}
+export interface McpAppsReadUiParams {
+  profile?: string | null
+  session_id?: string | null
+  server: string
+  uri: string
+}
+/** ``meta`` is the content item's ``_meta`` (``ui.csp``, ``ui.prefersBorder``, ``openai/ui``). */
+export interface McpAppsReadUiResult {
+  uri: string
+  mimeType: string
+  html: string
+  meta?: Record<string, unknown>
+}
+export interface McpAppsCallParams {
+  profile?: string | null
+  session_id?: string | null
+  server: string
+  tool: string
+  arguments?: Record<string, unknown>
+}
+/** The MCP ``CallToolResult`` as JSON (``content``, ``structuredContent``, ``isError``, ``_meta``). */
+export type McpAppsCallResult = Record<string, unknown>
 /** ``word`` is the token under the cursor (``@`` prefix = context reference); ``cwd`` / ``session_id`` pick the directory the listing resolves against. */
 export interface CompletePathParams {
   profile?: string | null
@@ -5566,6 +5608,12 @@ export interface RpcMethods {
   'mcp.servers.status': { params: ProfileParams; result: McpServersStatusResult }
   /** Connect, list tools, disconnect — an OAuth server with no token on disk is reported as not ok. */
   'mcp.servers.test': { params: McpServerNameParams; result: McpServersTestResult }
+  /** A tool call made by an app iframe: same server, the tool's visibility must include ``app``, and write-capable calls on an untrusted server are refused. */
+  'mcp_apps.call': { params: McpAppsCallParams; result: McpAppsCallResult }
+  /** Tools on the connected MCP servers that carry an MCP App (``_meta.ui.resourceUri``). */
+  'mcp_apps.list': { params: _AppScoped; result: McpAppsListResult }
+  /** The app document behind a ``ui://`` URI (other schemes are refused). */
+  'mcp_apps.read_ui': { params: McpAppsReadUiParams; result: McpAppsReadUiResult }
   /** Set/clear one author's emoji reaction on a message; returns the row's full reaction list. */
   'message.react': { params: MessageReactParams; result: MessageReactResult }
   /** Remove every credential (env keys and OAuth state) for a provider. */
@@ -5994,6 +6042,9 @@ export const RPC_METHODS = [
   'mcp.servers.set_api_key',
   'mcp.servers.status',
   'mcp.servers.test',
+  'mcp_apps.call',
+  'mcp_apps.list',
+  'mcp_apps.read_ui',
   'message.react',
   'model.disconnect',
   'model.options',

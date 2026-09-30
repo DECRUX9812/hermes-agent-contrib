@@ -3,7 +3,7 @@ import type { ToolLabel } from '@hermes/shared'
 import { TOOL_LABELS_ARG } from '@/lib/connector-tools'
 import { firstStringField, normalize } from '@/lib/text'
 import { isTodoToolName, parseTodos } from '@/lib/todos'
-import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
+import { mcpAppRef, type ToolResultMetadata } from '@/lib/tool-result-metadata'
 import type { SessionMessage, StoredToolCallLabels } from '@/types/hermes'
 
 import type { ChatMessage, ChatMessagePart, GatewayEventPayload } from './types'
@@ -298,6 +298,7 @@ function toolResultMetadata(
   return {
     ...previous,
     ...(payload?.inline_diff !== undefined ? { inline_diff: payload.inline_diff } : {}),
+    ...(mcpAppRef(payload?.mcp_app) ? { mcp_app: mcpAppRef(payload?.mcp_app) } : {}),
     ...(payload?.summary !== undefined ? { summary: payload.summary } : {}),
     ...(payload?.message !== undefined ? { message: payload.message } : {}),
     ...(payload?.preview !== undefined ? { preview: payload.preview } : {}),
@@ -803,7 +804,12 @@ function storedToolResultMetadata(toolMessage: SessionMessage): ToolResultMetada
   const display = parseMaybeJsonObject(toolMessage.display_metadata)
   const metadata = parseMaybeJsonObject(display.tool_result_metadata)
 
-  return typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : undefined
+  const stored: ToolResultMetadata = {
+    ...(typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : {}),
+    ...(mcpAppRef(metadata.mcp_app) ? { mcp_app: mcpAppRef(metadata.mcp_app) } : {})
+  }
+
+  return Object.keys(stored).length ? stored : undefined
 }
 
 export function applyStoredToolResult(messages: ChatMessage[], toolMessage: SessionMessage): boolean {
