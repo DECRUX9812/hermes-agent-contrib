@@ -91,6 +91,7 @@ import {
   exportProfileBundle,
   importProfileBundle
 } from '@/store/profile-share'
+import { $projectTree, projectRootCwd } from '@/store/projects'
 import {
   $activeSessionId,
   $connection,
@@ -137,6 +138,13 @@ export type { DesktopSettingKey, DesktopSettingValues } from './settings'
 // -- state: readonly views over the app's live atoms -------------------------
 
 const readonlyAtom = <T>(atomLike: ReadableAtom<T>): ReadableAtom<T> => atomLike
+
+const $pluginProjects = computed($projectTree, tree =>
+  tree
+    .filter(project => !project.archived && !project.isNoProject)
+    .map(project => ({ color: project.color ?? null, cwd: projectRootCwd(project), id: project.id, label: project.label }))
+    .filter(project => project.cwd)
+)
 
 /**
  * Turn flag for the FOCUSED chat — same semantics as the statusbar's busy
@@ -473,8 +481,20 @@ export interface PluginOpenSessionOptions {
 }
 
 export interface PluginNewChatOptions {
+  /** Folder the chat runs in (a bot topic started in a project). Bots
+   *  workspace only; other chats follow the project scope. */
+  cwd?: string
   workspaceMode?: WorkspaceMode
   workspaceOwnerKey?: string
+}
+
+/** A project the user can point a chat at — the sidebar's project list,
+ *  archived and the synthetic Home bucket excluded. */
+export interface PluginProject {
+  color: null | string
+  cwd: string
+  id: string
+  label: string
 }
 
 // Raise the "Syncing…" affordance for a paint-first wake (#89843) and tear it
@@ -793,6 +813,8 @@ export const host = {
     sessionWorkspaceScopes: readonlyAtom<Record<string, PluginSessionWorkspaceScope>>(
       $sessionWorkspaceScopes
     ),
+    /** Projects a chat can be started in (`newChat({ cwd })`). */
+    projects: readonlyAtom<PluginProject[]>($pluginProjects),
     /** True in Advanced mode (the developer surface). Simple mode hides the
      *  audit trail, raw ids and policy switches — a plugin gates its own tiers on this
      *  rather than reading the core mode store. */
@@ -1504,7 +1526,7 @@ export const host = {
         return
       }
 
-      openTab()
+      openTab(options.cwd ? { cwd: options.cwd } : undefined)
 
       return
     }

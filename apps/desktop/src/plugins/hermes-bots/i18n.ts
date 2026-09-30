@@ -262,6 +262,7 @@ type BotsMessages = {
     /** Pane/row affordance: spawn a powered side-chat in a second tile — a
      *  fresh topic, never the canonical Bot Chat. */
     newTopic: string
+    newTopicInProject: string
     /** Ghost CTA beside 'New topic': the bot's one forever chat, framed as
      *  its inbox. */
     inbox: string
@@ -1026,6 +1027,7 @@ const en: BotsMessages = {
     descriptionHint: 'Leave blank to generate from the bot’s name and description.',
     newChatWith: 'New chat with this bot',
     newTopic: 'New topic',
+    newTopicInProject: 'New topic in a project…',
     inbox: 'Inbox',
     openBotChat: 'Open Bot Chat',
     continueOnPhone: 'Continue on phone…',
@@ -1718,6 +1720,7 @@ const ja: BotsMessages = {
     descriptionHint: '空欄のままにすると、ボットの名前と説明から生成します。',
     newChatWith: 'このボットと新しいチャット',
     newTopic: '新しいトピック',
+    newTopicInProject: 'プロジェクトで新しいトピック…',
     inbox: '受信トレイ',
     openBotChat: 'ボットチャットを開く',
     continueOnPhone: 'スマホで続ける…',
@@ -2403,6 +2406,7 @@ const zh: BotsMessages = {
     descriptionHint: '留空则根据机器人的名称和描述生成。',
     newChatWith: '与此机器人开新聊天',
     newTopic: '新话题',
+    newTopicInProject: '在项目中新建话题…',
     inbox: '收件箱',
     openBotChat: '打开机器人聊天',
     continueOnPhone: '在手机上继续…',
@@ -3082,6 +3086,7 @@ const zhHant: BotsMessages = {
     descriptionHint: '留空則依機器人的名稱和描述產生。',
     newChatWith: '與此機器人開新聊天',
     newTopic: '新主題',
+    newTopicInProject: '在專案中新增主題…',
     inbox: '收件匣',
     openBotChat: '開啟機器人聊天',
     continueOnPhone: '在手機上繼續…',

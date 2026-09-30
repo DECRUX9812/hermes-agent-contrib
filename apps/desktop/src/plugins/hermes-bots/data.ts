@@ -1131,7 +1131,9 @@ export function isDefaultBot(bot: Partial<RosterRow> | null | undefined): boolea
   )
 }
 
-export function newBotChat(bot: RosterRow) {
+/** Open a fresh bot topic. `cwd` starts it in a project folder (local bots
+ *  only — the path is this machine's). */
+export function newBotChat(bot: RosterRow, options: { cwd?: string } = {}) {
   if (typeof host.newChat !== 'function') {
     host.notify?.({
       kind: 'error',
@@ -1157,6 +1159,7 @@ export function newBotChat(bot: RosterRow) {
   const ownerKey = botWorkspaceOwnerKey(bot)
   setBotsWorkspaceOwner(ownerKey, bot)
   host.newChat(route, {
+    ...(options.cwd ? { cwd: options.cwd } : {}),
     workspaceMode: 'bots',
     workspaceOwnerKey: ownerKey
   })

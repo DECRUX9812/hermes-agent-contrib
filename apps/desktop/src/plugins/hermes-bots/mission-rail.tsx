@@ -34,6 +34,7 @@ import { BotDeliverablesSection } from './bot-deliverables'
 import { BotSessionDeck } from './bot-session-deck'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { BotTaskLog } from './bot-task-log'
+import { BotTopicProjectMenu } from './bot-topic-project-menu'
 import {
   $lastJobs,
   CreateRoutineDialog,
@@ -166,6 +167,7 @@ function BotProfileCard({
           <Codicon name="comment-add" />
           {b.bot.newTopic}
         </Button>
+        <BotTopicProjectMenu bot={bot} />
         <Button onClick={() => void openRosterBot(bot)} size="xs" variant="ghost">
           <Codicon name="inbox" />
           {b.bot.inbox}

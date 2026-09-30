@@ -263,6 +263,18 @@ describe('host workspace scope', () => {
     expect(opened).toEqual(['tab'])
     expect($workspaceNewSessionTarget.get()).toEqual({ kind: 'route', route })
   })
+  it('starts a Bot topic in the picked project folder', async () => {
+    const tree = await import('@/components/pane-shell/tree/store')
+    const seen: unknown[] = []
+    const route = { connectionId: 'local', mode: 'local' as const, profile: 'scout', targetProfile: 'scout' }
+
+    tree.$newSessionTabAction.set(options => seen.push(options))
+    host.newChat(route, { cwd: '/work/app', workspaceMode: 'bots', workspaceOwnerKey: 'bot:local::scout' })
+    host.newChat(route, { workspaceMode: 'bots', workspaceOwnerKey: 'bot:local::scout' })
+
+    // The folder rides to the tab action; without one, project scope decides as before.
+    expect(seen).toEqual([{ cwd: '/work/app' }, undefined])
+  })
 })
 
 describe('host.composer draft facade', () => {
