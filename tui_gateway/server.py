@@ -1083,6 +1083,10 @@ def _attach_built_agent(current: dict, agent) -> None:
     # Bot Mode gate hint: the DB title lands post-first-turn but the system prompt builds at turn START.
     if _title_hint := str(current.get("pending_title") or "").strip():
         agent._session_title_hint = _title_hint
+    # Same pre-row window for a bot topic: the durable model_config marker lands with
+    # the row, so the session-dict flag is the hint until then.
+    if current.get("bot_topic"):
+        agent._bot_topic = True
     current["agent"] = agent
     # A workspace move can land while construction is still in flight.
     _register_session_cwd(current)

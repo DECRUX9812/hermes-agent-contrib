@@ -1440,6 +1440,9 @@ def _apply_agent_section(agent, _agent_cfg):
 
     # "Bot Chat" gate hint for hosts that defer the DB title write past the first prompt build.
     agent._session_title_hint = None
+    # Same pre-row window for a bot topic: set by the gateway attach path when the
+    # session record carries the durable bot_topic marker.
+    agent._bot_topic = False
 
     # platform_hints: <platform>: {append|replace}, stored verbatim (agent/system_prompt.py).
     agent._platform_hint_overrides = _cfg_dict(_agent_cfg, "platform_hints")

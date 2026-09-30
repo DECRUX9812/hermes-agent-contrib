@@ -1,17 +1,20 @@
 """Bot Mode roster probe — canonical Bot Chat system prompt section.
 
 When any profile carries ``ui_meta['hermes-bots']`` in profile.yaml (Bot-Mode-managed),
-a bot's canonical "Bot Chat" session — ONLY that session (agent/system_prompt.py enforces
-the ``BOT_CHAT_TITLE`` gate) — gets a "Messaging other agents" section. Silent (``""``)
-when no profile is managed or on any error. Older desktop builds appended a frozen copy of
-the section to SOUL.md; ``strip_legacy_protocol`` drops it at load time so the live roster
-here is the only copy any session sees. Cached per (process, home) so compression rebuilds
-produce identical bytes. Toggle: ``agent.bot_mode_protocol``. Also hosts path/roster
-helpers shared by ``bot_mode_dm`` and ``bot_relay``.
+a bot's canonical "Bot Chat" session or a marked bot topic gets a "Messaging other
+agents" section (``bot_powered_session`` is the single identity gate every consumer
+shares). Silent (``""``) when no profile is managed or on any error. Older desktop
+builds appended a frozen copy of the section to SOUL.md; ``strip_legacy_protocol``
+drops it at load time so the live roster here is the only copy any session sees.
+Cached per (process, home) so compression rebuilds produce identical bytes. Toggle:
+``agent.bot_mode_protocol``. Also hosts path/roster helpers shared by ``bot_mode_dm``
+and ``bot_relay``.
 """
 
 from __future__ import annotations
 
+import contextlib
+import json
 import os
 import re
 import threading
@@ -30,8 +33,90 @@ def strip_legacy_protocol(text: str) -> str:
 # desktop plugin's createCanonicalChat title and the `-c "Bot Chat"` resume target.
 BOT_CHAT_TITLE = "Bot Chat"
 
+# The durable "born a bot topic" marker: a session-dict flag set once at
+# ``session.create`` (tui_gateway/methods_session.py) and persisted into the row's
+# ``model_config`` (tui_gateway/session_workdir.py::_workdir_row_model_config).
+# Fixed for the session's whole life, so the tool list and system prompt stay
+# byte-identical across turns. A bot topic is a user-visible side chat of a bot;
+# the canonical Bot Chat stays the bot's ONE identity and inbox — the marker
+# grants powers, never identity.
+BOT_TOPIC_FLAG = "bot_topic"
+
 _lock = threading.Lock()
 _cached: dict[str, str] = {}
+
+
+def _model_config_dict(raw) -> dict:
+    """A row's ``model_config`` (dict or JSON text) as a dict; ``{}`` when absent/invalid."""
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _session_row(agent):
+    """The agent's stored session row, or None when unreadable/absent."""
+    sdb, sid = getattr(agent, "_session_db", None), getattr(agent, "session_id", None)
+    if not sdb or not sid:
+        return None
+    get = getattr(sdb, "get_session", None)
+    if not callable(get):
+        return None
+    with contextlib.suppress(Exception):
+        return get(sid)
+    return None
+
+
+def canonical_bot_chat(agent) -> bool:
+    """This agent's session IS the canonical Bot Chat (the title identity).
+
+    Hint first (``pending_title`` lands before the row does), then the stored
+    row's title. Never raises."""
+    title = str(getattr(agent, "_session_title_hint", "") or "").strip()
+    if title:
+        return title == BOT_CHAT_TITLE
+    row = _session_row(agent)
+    if row is not None:
+        return str(row.get("title") or "").strip() == BOT_CHAT_TITLE
+    sdb, sid = getattr(agent, "_session_db", None), getattr(agent, "session_id", None)
+    if not sdb or not sid:
+        return False
+    with contextlib.suppress(Exception):
+        return str(sdb.get_session_title(sid) or "").strip() == BOT_CHAT_TITLE
+    return False
+
+
+def bot_powered_session(agent) -> bool:
+    """Canonical Bot Chat OR a bot-marked topic — the session class that carries
+    Bot Mode powers (``message_agent``, ``update_task``, the "Messaging other
+    agents" prompt section, capability refresh).
+
+    Both identities are fixed for the session's life — title for the canonical
+    chat, the ``BOT_TOPIC_FLAG`` model_config marker for a topic — so gates may
+    re-evaluate on every tool-snapshot rebuild; the result is stable and the
+    prompt/tool list stays byte-identical. Never raises."""
+    try:
+        if getattr(agent, "_bot_topic", None) is True:
+            return True
+        if str(getattr(agent, "_session_title_hint", "") or "").strip() == BOT_CHAT_TITLE:
+            return True
+        row = _session_row(agent)
+        if row is not None:
+            if str(row.get("title") or "").strip() == BOT_CHAT_TITLE:
+                return True
+            return bool(_model_config_dict(row.get("model_config")).get(BOT_TOPIC_FLAG))
+        # A minimal session-db stub may expose only the title read.
+        sdb, sid = getattr(agent, "_session_db", None), getattr(agent, "session_id", None)
+        if not sdb or not sid:
+            return False
+        return str(sdb.get_session_title(sid) or "").strip() == BOT_CHAT_TITLE
+    except Exception:
+        return False
 
 
 # ── shared path / roster helpers ─────────────────────────────────────────────

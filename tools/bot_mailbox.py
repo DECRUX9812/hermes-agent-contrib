@@ -285,7 +285,7 @@ def update_task_tool_schema() -> dict:
 
 
 def ensure_update_task_tool(agent: Any) -> bool:
-    """Inject ``update_task`` beside ``message_agent`` under the same Bot Chat gate.
+    """Inject ``update_task`` beside ``message_agent`` under the same bot-powered gate.
     Session-stable from first turn, idempotent — prompt-cache safe like the DM tool."""
     try:
         from tools.bot_mode_dm import message_agent_authorized
@@ -311,13 +311,13 @@ def ensure_update_task_tool(agent: Any) -> bool:
 
 
 def update_task_tool(note: str = "", status: str = "", reply: str = "", agent: Any = None) -> str:
-    """Flip a mailbox note's status from inside a Bot Chat. Same dispatch re-gate as
-    message_agent: a forged call outside a managed Bot Chat returns a structured error."""
+    """Flip a mailbox note's status from inside a bot-powered session. Same dispatch re-gate
+    as message_agent: a forged call outside a managed bot session returns a structured error."""
     from tools.bot_mode_dm import _agent_home, message_agent_authorized
     from tools.bot_mode_probe import _hermes_root
 
     if not message_agent_authorized(agent):
-        return json.dumps({"error": "update_task is only available in a Bot Mode 'Bot Chat' session.",
+        return json.dumps({"error": "update_task is only available in a bot's 'Bot Chat' or a bot topic.",
                            "reason": "not_authorized"})
     root = _hermes_root(Path(_agent_home(agent)))
     note_id = str(note or "").strip()

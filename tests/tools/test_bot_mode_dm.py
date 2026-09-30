@@ -52,19 +52,24 @@ def _managed_home(tmp_path, *, teammates=("researcher",), peers=()) -> Path:
 
 
 class _FakeDB:
-    def __init__(self, home: Path, title: str):
+    def __init__(self, home: Path, title: str, model_config=None):
         self.db_path = str(home / "state.db")
         self._title = title
+        self._model_config = model_config
 
     def get_session_title(self, _sid):
         return self._title
 
+    def get_session(self, _sid):
+        return {"title": self._title, "model_config": self._model_config}
+
 
 class _FakeAgent:
-    def __init__(self, home: Path, title: str = "Bot Chat"):
-        self._session_db = _FakeDB(home, title)
+    def __init__(self, home: Path, title: str = "Bot Chat", model_config=None, bot_topic: bool = False):
+        self._session_db = _FakeDB(home, title, model_config)
         self.session_id = "sess-1"
         self._session_title_hint = None
+        self._bot_topic = bot_topic
         self._bot_mode_protocol = True
         self.tools: list = []
         self.valid_tool_names: set = set()
@@ -128,6 +133,72 @@ def test_never_injects_on_unmanaged_install(tmp_path):
     home = tmp_path / ".hermes"
     home.mkdir()
     agent = _FakeAgent(home, title="Bot Chat")
+    assert bot_mode_dm.ensure_message_agent_tool(agent) is False
+    assert agent.tools == []
+
+
+# ── bot topics: side chats born with the bot_topic marker ────────────────────
+
+
+def test_marked_bot_topic_gets_message_agent(tmp_path):
+    """A session whose row carries the durable ``bot_topic`` marker (minted by
+    \"New chat with this bot\") gets the same DM powers as the canonical
+    Bot Chat — under its own title, so it is never mistaken for the inbox."""
+    home = _managed_home(tmp_path)
+    agent = _FakeAgent(home, title="Weekly digest thread", model_config={"bot_topic": True})
+    assert bot_mode_dm.ensure_message_agent_tool(agent) is True
+    names = [t["function"]["name"] for t in agent.tools]
+    assert names == [bot_mode_dm.MESSAGE_AGENT_TOOL_NAME]
+    assert bot_mode_dm.MESSAGE_AGENT_TOOL_NAME in agent.valid_tool_names
+
+
+def test_marked_bot_topic_gets_update_task(tmp_path):
+    """The mailbox tool shares the same gate: a marked topic can flip notes."""
+    from tools.bot_mailbox import UPDATE_TASK_TOOL_NAME, ensure_update_task_tool
+
+    home = _managed_home(tmp_path)
+    agent = _FakeAgent(home, title="Weekly digest thread", model_config={"bot_topic": True})
+    assert ensure_update_task_tool(agent) is True
+    assert UPDATE_TASK_TOOL_NAME in [t["function"]["name"] for t in agent.tools]
+    assert UPDATE_TASK_TOOL_NAME in agent.valid_tool_names
+
+
+def test_topic_hint_covers_the_pre_row_window(tmp_path):
+    """Before the session's first turn materializes its row, the in-memory
+    ``_bot_topic`` hint (set when the built agent is attached) is the marker."""
+    home = _managed_home(tmp_path)
+    agent = _FakeAgent(home, title="", bot_topic=True)
+    assert bot_mode_dm.ensure_message_agent_tool(agent) is True
+
+
+def test_marked_topic_dispatch_reaches_the_roster(tmp_path):
+    """Dispatch on a marked topic passes the session gate: an unknown target
+    fails with the roster error, not the 'Bot Chat' refusal."""
+    home = _managed_home(tmp_path, teammates=("researcher", "coder"))
+    agent = _FakeAgent(home, title="Weekly digest thread", model_config={"bot_topic": True})
+    result = json.loads(
+        bot_mode_dm.message_agent_tool(target="nosuchbot", message="hi", agent=agent)
+    )
+    assert "error" in result
+    assert "Bot Chat" not in result["error"]
+    assert set(result["teammates"]) == {"researcher", "coder"}
+
+
+def test_marked_topic_needs_a_managed_install(tmp_path):
+    """The marker grants powers only where Bot Mode exists: a marked topic on
+    a plain install is still an ordinary chat."""
+    home = tmp_path / ".hermes"
+    home.mkdir()
+    agent = _FakeAgent(home, title="Weekly digest thread", model_config={"bot_topic": True})
+    assert bot_mode_dm.ensure_message_agent_tool(agent) is False
+    assert agent.tools == []
+
+
+@pytest.mark.parametrize("model_config", [None, {}, {"bot_topic": False}])
+def test_unmarked_side_chat_has_no_bot_powers(tmp_path, model_config):
+    """A plain session on the bot's profile — no marker — stays powerless."""
+    home = _managed_home(tmp_path)
+    agent = _FakeAgent(home, title="Weekly digest thread", model_config=model_config)
     assert bot_mode_dm.ensure_message_agent_tool(agent) is False
     assert agent.tools == []
 

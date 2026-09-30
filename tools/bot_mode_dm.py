@@ -144,23 +144,24 @@ def message_agent_tool_schema() -> dict:
 
 def message_agent_authorized(agent: Any) -> bool:
     """The ``message_agent`` gate: a protocol-enabled agent whose session is a managed
-    Bot-Mode canonical Bot Chat. Session-stable, so it is prompt-cache safe to re-evaluate
-    on every tool-snapshot rebuild. Never raises."""
+    Bot-Mode bot-powered session — the canonical Bot Chat or a marked bot topic.
+    Session-stable, so it is prompt-cache safe to re-evaluate on every tool-snapshot
+    rebuild. Never raises."""
     try:
         if not getattr(agent, "_bot_mode_protocol", True):
             return False
-        from tools.bot_mode_probe import BOT_CHAT_TITLE, is_bot_mode_managed
+        from tools.bot_mode_probe import bot_powered_session, is_bot_mode_managed
 
         # Managed-install check, NOT section non-emptiness: a SOUL.md carrying the
         # legacy protocol text gets an empty section but must still get the tool.
-        return _session_title(agent) == BOT_CHAT_TITLE and is_bot_mode_managed(_agent_home(agent))
+        return bot_powered_session(agent) and is_bot_mode_managed(_agent_home(agent))
     except Exception:  # pragma: no cover — must never break a turn
         logger.debug("message_agent_authorized failed", exc_info=True)
         return False
 
 
 def ensure_message_agent_tool(agent: Any) -> bool:
-    """Inject the ``message_agent`` schema into a Bot Chat agent's tool list (once per turn).
+    """Inject the ``message_agent`` schema into a bot-powered agent's tool list (once per turn).
     Idempotent and deterministic for the session's life (the gate is stable from the
     first turn), so the tool list is byte-identical across turns — prompt-cache safe. Never raises."""
     try:
@@ -225,17 +226,17 @@ def message_agent_tool(target: str = "", message: str = "", task: Optional[dict]
     """Deliver ``message`` to ``target``'s Bot Chat. Returns a JSON ack/error.
     ``task`` (``{title, payload?}``) additionally files a mailbox note (tools/bot_mailbox.py) —
     a tracked hand-off the recipient flips via ``update_task``. ``agent`` is the calling AIAgent
-    — used for the Bot Chat gate and sender identity."""
+    — used for the bot-powered-session gate and sender identity."""
     home = _agent_home(agent)
     try:
         from tools.bot_mode_probe import (
-            BOT_CHAT_TITLE, _display_name, _handle, _hermes_root, _peers, _profile_name as _self_profile_name,
-            _roster, is_bot_mode_managed,
+            _display_name, _handle, _hermes_root, _peers, _profile_name as _self_profile_name,
+            _roster, bot_powered_session, is_bot_mode_managed,
         )
         from tools.bot_relay import BOT_CHAT_TURN_ARGS, _hermes_cli
 
-        if _session_title(agent) != BOT_CHAT_TITLE:
-            return _err("message_agent is only available in a Bot Mode 'Bot Chat' session. "
+        if not bot_powered_session(agent):
+            return _err("message_agent is only available in a bot's 'Bot Chat' or a bot topic. "
                         "This session is not one; do not retry.")
         if not is_bot_mode_managed(home):
             return _err("This install is not Bot-Mode-managed (no bot roster); "
@@ -911,17 +912,6 @@ def _agent_home(agent: Any) -> str:
         if db_path:
             return str(Path(db_path).parent)
     return _default_home()
-
-
-def _session_title(agent: Any) -> str:
-    title = str(getattr(agent, "_session_title_hint", "") or "").strip()
-    if title:
-        return title
-    with contextlib.suppress(Exception):
-        sdb, sid = getattr(agent, "_session_db", None), getattr(agent, "session_id", None)
-        if sdb and sid:
-            return str(sdb.get_session_title(sid) or "").strip()
-    return ""
 
 
 if __name__ == "__main__":  # pragma: no cover - exercised as a background process
