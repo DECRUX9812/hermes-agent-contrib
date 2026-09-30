@@ -373,6 +373,8 @@ type BotsMessages = {
     nameLabel: string
     holdDetection: string
     holdDetectionHint: string
+    limitOff: string
+    limitOffHint: string
     compressHistory: string
     compressHistoryHint: (member: string) => string
     compressing: (member: string) => string
@@ -1063,6 +1065,8 @@ const en: BotsMessages = {
     nameLabel: 'Group name',
     holdDetection: 'Detect stop directives',
     holdDetectionHint: 'Let room messages put addressed members on hold until they are mentioned again.',
+    limitOff: 'No turn limit',
+    limitOffHint: 'Let a conversation run past the usual cap — a safety brake still ends a runaway.',
     compressHistory: 'Compress history',
     compressHistoryHint: (member: string) =>
       `Compress ${member}'s hidden room history so the member stops failing with empty replies`,
@@ -1719,6 +1723,8 @@ const ja: BotsMessages = {
     nameLabel: 'グループ名',
     holdDetection: '停止指示を検出',
     holdDetectionHint: 'ルームのメッセージで、再びメンションされるまで対象メンバーを保留にします。',
+    limitOff: 'ターン上限なし',
+    limitOffHint: '通常の上限を超えて会話を続けます。暴走を止める安全ブレーキは残ります。',
     compressHistory: '履歴を圧縮',
     compressHistoryHint: (member: string) =>
       `${member} の非表示のルーム履歴を圧縮し、空の応答で失敗しなくなるようにします`,
@@ -2368,6 +2374,8 @@ const zh: BotsMessages = {
     nameLabel: '群组名称',
     holdDetection: '检测停止指令',
     holdDetectionHint: '允许房间消息将指定成员保持暂停，直到再次提及该成员。',
+    limitOff: '无回合上限',
+    limitOffHint: '让对话超出常规上限继续——安全制动仍会终止失控的对话。',
     compressHistory: '压缩历史',
     compressHistoryHint: (member: string) => `压缩 ${member} 隐藏的房间历史，避免该成员因空回复而失败`,
     compressing: (member: string) => `正在压缩 ${member} 的房间历史…`,
@@ -3011,6 +3019,8 @@ const zhHant: BotsMessages = {
     nameLabel: '群組名稱',
     holdDetection: '偵測停止指令',
     holdDetectionHint: '允許房間訊息暫停指定成員，直到再次提及該成員。',
+    limitOff: '無回合上限',
+    limitOffHint: '讓對話超過常規上限繼續——安全煞車仍會終止失控的對話。',
     compressHistory: '壓縮歷史',
     compressHistoryHint: (member: string) => `壓縮 ${member} 隱藏的房間歷史，避免該成員因空回覆而失敗`,
     compressing: (member: string) => `正在壓縮 ${member} 的房間歷史…`,

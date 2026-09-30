@@ -1037,6 +1037,22 @@ max_concurrent_sessions: null
 group_sessions_per_user: true
 
 # =============================================================================
+# Group-chat room budget (Desktop "Bot Mode" group chats)
+# =============================================================================
+# How much conversation ONE user message may drive in a desktop group-chat room
+# before the turn ends. Raise these when a group keeps stalling mid-discussion;
+# lower them to trim token spend. Every axis is clamped to a hard ceiling
+# (rounds 20, messages 100, continuations 20) — the ceilings are the runaway
+# brake and cannot be raised from config. A room's own settings can also mark
+# its budget "no limit", which rides those same ceilings rather than removing
+# them. Values outside the valid range fall back to the defaults shown.
+# group_chat:
+#   max_rounds: 3          # round-robin rounds per user message
+#   max_messages: 10       # member replies one drive may publish
+#   max_continuations: 2   # follow-up rounds granted to @-cited members that
+#                          # never answered (bounds mention-chain handoffs)
+
+# =============================================================================
 # Session Storage Retention (state.db)
 # =============================================================================
 # ~/.hermes/state.db keeps every session, message, and tool call, plus the
