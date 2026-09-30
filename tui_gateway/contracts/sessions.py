@@ -133,6 +133,11 @@ class SessionCreateParams(ProfileParams):
     hidden: bool = False
     room_plumbing: bool = False
     follow_profile_config: bool = False
+    # Born a member session of a team-orchestrated group room (Bot Mode): the lead alone hears
+    # plain user turns; teammates wake on @mention or the lead's delegation. Session-lifetime
+    # marker — set once, persisted in model_config, restored on every resume path.
+    team_room: bool = False
+    team_room_lead: str | None = None
 
 
 class SessionCreateResult(Result):

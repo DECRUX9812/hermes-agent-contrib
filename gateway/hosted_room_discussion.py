@@ -614,11 +614,32 @@ def _effective_watermarks(
     return watermarks
 
 
+def _round_zero_responders(
+    text: str, members: Sequence[DiscussionMember], lead: DiscussionMember | None
+) -> list[DiscussionMember]:
+    """Who a fresh user turn wakes. Orchestrated rooms (a team lead seated, ``lead`` set): the
+    lead always hears the user; teammates wake only when the message explicitly @mentions them
+    (or @everyone/@all — a broadcast beats the gate). Unled rooms keep fan-out listening, where
+    an unaddressed send wakes the whole roster."""
+    mentioned = resolve_mentions((text,), members, default_all=lead is None)
+    if lead is None:
+        return mentioned
+    return [lead, *[m for m in mentioned if m.member_id != lead.member_id]]
+
+
 def plan_next_task(
     room_value: Any, events: Sequence[Mapping[str, Any]], *, local_profiles: Iterable[str],
-    initial_watermarks: Mapping[tuple[str, str], int] | None = None) -> DiscussionDecision:
-    """Replay the complete room log and return at most one next member task."""
+    initial_watermarks: Mapping[tuple[str, str], int] | None = None,
+    lead_profile: str | None = None) -> DiscussionDecision:
+    """Replay the complete room log and return at most one next member task.
+
+    ``lead_profile`` names the team's org-tree lead when the room is orchestrated (resolved by
+    the caller per send — ``tools/bot_team.room_lead``): only it and explicitly @mentioned
+    members run on an unaddressed user turn."""
     room = validate_room(room_value, local_profiles=local_profiles)
+    lead = next(
+        (m for m in room.members
+         if lead_profile and m.profile == lead_profile and m.target.get("kind") == "local"), None)
     validated = _validated_events(events, room=room)
     if (discussion := _pending_discussion(validated)) is None:
         return DiscussionDecision(status="idle", reason="no_pending_user_event")
@@ -636,12 +657,13 @@ def plan_next_task(
     seen_through_seq = max(event.seq for event in thread_messages)
     for round_index in range(MAX_DISCUSSION_ROUNDS):
         # The user's message selects the first round, with no mention meaning
-        # everyone. Later rounds are opt-in: only a peer explicitly cited by a
-        # Bot and not heard from afterward gets another turn. Every member's
-        # watermark remains intact, so a peer cited later still receives the
-        # complete bounded transcript delta without consuming turns meanwhile.
+        # everyone (or just the lead, when the room is orchestrated). Later
+        # rounds are opt-in: only a peer explicitly cited by a Bot and not heard
+        # from afterward gets another turn. Every member's watermark remains
+        # intact, so a peer cited later still receives the complete bounded
+        # transcript delta without consuming turns meanwhile.
         responders = (
-            resolve_mentions((str(discussion.payload["text"]),), room.members) if round_index == 0
+            _round_zero_responders(str(discussion.payload["text"]), room.members, lead) if round_index == 0
             else _unaddressed_member_mentions(discussion_messages, room))
         for member_index, member in enumerate(_rotate(responders, round_index)):
             if (round_index, member.member_id) in terminals:

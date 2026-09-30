@@ -596,6 +596,18 @@ export interface TeamRollupOverall {
   percent: number
   [key: string]: unknown
 }
+/** Local member profiles of a group-chat room (remote members can't hold seats — the caller leaves them out). */
+export interface BotsTeamRoomLeadParams {
+  members?: string[]
+}
+/** ``lead`` is the room's orchestrator profile when one team covers the room and its lead is seated; ``None`` — not a team room, no seated lead, or several teams disagree — means the room keeps fan-out listening. */
+export interface BotsTeamRoomLeadResult {
+  lead?: string | null
+  lead_slot?: string
+  lead_title?: string
+  team_id?: string | null
+  team_name?: string
+}
 export interface BotsTeamCreateParams {
   name: string
   mission?: string | null
@@ -3351,6 +3363,8 @@ export interface SessionCreateParams {
   hidden?: boolean
   room_plumbing?: boolean
   follow_profile_config?: boolean
+  team_room?: boolean
+  team_room_lead?: string | null
 }
 /** One create-time transcript row (``session_history._coerce_seed_history``); ``text`` is the legacy alias of ``content``; only ``display_kind: "hidden"`` is accepted from the wire. Clients forward stored rows verbatim (``_row_id``, ``timestamp``, …) and the coercer drops what it does not use, so the row stays open. */
 export interface SeedMessage {
@@ -5363,6 +5377,8 @@ export interface RpcMethods {
   'bots_team.pack.export': { params: TeamIdParams; result: BotsTeamPackExportResult }
   /** Create a team from a pack (allow-listed keys only); every seat starts open. */
   'bots_team.pack.import': { params: BotsTeamPackImportParams; result: TeamView }
+  /** The org-tree lead for a group chat: the single team whose filled seats cover the room's local members, lead included. The room then listens through the lead alone and teammates wake only when addressed. */
+  'bots_team.room_lead': { params: BotsTeamRoomLeadParams; result: BotsTeamRoomLeadResult }
   /** Rename, re-mission, set the approval policy or the external channel bindings. */
   'bots_team.update': { params: BotsTeamUpdateParams; result: TeamView }
   /** Hard-detach only the controller owned by this authenticated transport. */
@@ -5883,6 +5899,7 @@ export const RPC_METHODS = [
   'bots_team.member.upsert',
   'bots_team.pack.export',
   'bots_team.pack.import',
+  'bots_team.room_lead',
   'bots_team.update',
   'browser.controller.detach',
   'browser.controller.heartbeat',

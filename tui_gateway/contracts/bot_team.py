@@ -149,6 +149,31 @@ method("bots_team.get", params=TeamIdParams, result=TeamView,
        doc="One team with its org tree and goal roll-up (Kanban task status folded into goals).")
 
 
+class BotsTeamRoomLeadParams(Params):
+    """Local member profiles of a group-chat room (remote members can't hold seats — the
+    caller leaves them out)."""
+
+    members: list[str] = []
+
+
+class BotsTeamRoomLeadResult(Result):
+    """``lead`` is the room's orchestrator profile when one team covers the room and its lead
+    is seated; ``None`` — not a team room, no seated lead, or several teams disagree — means
+    the room keeps fan-out listening."""
+
+    lead: str | None = None
+    lead_slot: str = ""
+    lead_title: str = ""
+    team_id: str | None = None
+    team_name: str = ""
+
+
+method("bots_team.room_lead", params=BotsTeamRoomLeadParams, result=BotsTeamRoomLeadResult,
+       doc="The org-tree lead for a group chat: the single team whose filled seats cover the "
+           "room's local members, lead included. The room then listens through the lead alone "
+           "and teammates wake only when addressed.")
+
+
 class BotsTeamCreateParams(Params):
     name: str
     mission: str | None = None

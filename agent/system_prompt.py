@@ -381,6 +381,22 @@ def _team_parts(agent: Any) -> List[str]:
         return []
 
 
+def _team_room_parts(agent: Any) -> List[str]:
+    """The orchestrated-team-room rule for a member session minted inside one (``team_room``
+    marker — tools/bot_mode_probe.py). Tells the lead it alone hears the user and must delegate,
+    and tells everyone else it woke only because it was addressed."""
+    try:
+        from tools.bot_mode_probe import (
+            _profile_name, _resolve_home, team_room_lead, team_room_section, team_room_session)
+
+        if not team_room_session(agent):
+            return []
+        section = team_room_section(team_room_lead(agent), _profile_name(_resolve_home(_agent_home(agent))))
+        return [section] if section else []
+    except Exception:
+        return []
+
+
 def _ambient_file_safety_profile_name() -> str:
     from agent.file_safety import _resolve_active_profile_name
     return _resolve_active_profile_name()
@@ -723,6 +739,7 @@ def _post_workspace_parts(agent: Any) -> List[str]:
     if getattr(agent, "_bot_mode_protocol", True):
         parts.extend(_bot_mode_parts(agent))
         parts.extend(_team_parts(agent))
+        parts.extend(_team_room_parts(agent))
     parts.append(platform_hint(agent))
     return parts
 

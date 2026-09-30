@@ -1083,6 +1083,10 @@ def _attach_built_agent(current: dict, agent) -> None:
     # Bot Mode gate hint: the DB title lands post-first-turn but the system prompt builds at turn START.
     if _title_hint := str(current.get("pending_title") or "").strip():
         agent._session_title_hint = _title_hint
+    # Team-room marker: same session-lifetime hint — the prompt builds before the row may be re-read.
+    if current.get("team_room"):
+        agent._team_room = True
+        agent._team_room_lead = current.get("team_room_lead") or None
     current["agent"] = agent
     # A workspace move can land while construction is still in flight.
     _register_session_cwd(current)

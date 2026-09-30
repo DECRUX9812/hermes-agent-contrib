@@ -415,6 +415,58 @@ def org_tree(team: dict) -> list[dict]:
     return [build(m) for m in by_boss.get(None, [])]
 
 
+def lead_member(team: dict) -> Optional[dict]:
+    """The seat the org tree names as lead: the explicit ``lead`` badge first, else the single
+    root member (``reports_to=None``) — the same rule ``org_tree`` applies. ``None`` when the
+    top of the chart forks with no badge: several co-roots means no one voice to listen through."""
+    explicit = next((m for m in team["members"] if m.get("lead")), None)
+    if explicit is not None:
+        return explicit
+    roots = [m for m in team["members"] if not m.get("reports_to")]
+    return roots[0] if len(roots) == 1 else None
+
+
+def room_lead(root: Path | str, profiles: Any) -> Optional[dict]:
+    """The team lead for a group-chat room, or ``None`` when the room is not a team chat.
+
+    ``profiles`` is the room's LOCAL member profiles (remote members can't hold seats, so callers
+    never pass them). A room is orchestrated when exactly one leadership covers it: every profile
+    holds a filled seat on the same team AND that team's lead is itself one of the seated profiles.
+    Deterministic refusals — several teams leading the room differently stays ambiguous (``None``,
+    never guessed), as does a covered room whose lead is paused (a paused orchestrator can't
+    listen; the room falls back to fan-out)."""
+    want = {str(p).strip() for p in profiles or () if str(p).strip()}
+    if not want:
+        return None
+    candidates: list[tuple[dict, dict]] = []
+    for summary in list_teams(root):
+        with contextlib.suppress(Exception):
+            team = get_team(root, summary["id"])
+            filled = {m.get("profile") for m in team.get("members", []) if m.get("profile")}
+            if not want.issubset(filled):
+                continue
+            lead = lead_member(team)
+            if (
+                lead is None
+                or not lead.get("profile")
+                or lead["profile"] not in want
+                or lead.get("status") == "paused"
+            ):
+                continue
+            candidates.append((team, lead))
+    if len({lead["profile"] for _team, lead in candidates}) != 1:
+        return None
+    # Several teams may agree on the same lead — prefer the tightest cover (fewest filled seats),
+    # team id the stable tiebreak.
+    team, lead = min(
+        candidates,
+        key=lambda tl: (sum(1 for m in tl[0].get("members", []) if m.get("profile")), str(tl[0].get("id"))))
+    return {
+        "team_id": team.get("id"), "team_name": team.get("name") or "",
+        "lead": lead.get("profile"), "lead_slot": lead.get("slot") or "",
+        "lead_title": lead.get("title") or ""}
+
+
 # ── goals ─────────────────────────────────────────────────────────────────────────────────
 
 
