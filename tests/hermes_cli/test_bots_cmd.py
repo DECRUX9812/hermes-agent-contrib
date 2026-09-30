@@ -32,7 +32,7 @@ def _run(capsys, monkeypatch, *argv) -> dict:
 
 
 def test_cli_bots_are_bot_mode_bots_with_a_working_model(profile_env, capsys, monkeypatch):
-    _run(capsys, monkeypatch, "create", "scout", "--title", "Scout", "--role", "Researcher")
+    _run(capsys, monkeypatch, "create", "scout", "--title", "Scout", "--role", "Researcher", "--color", "#35d49a")
 
     from tools.bot_mode_probe import _is_bot_managed
     scout = profile_env / "profiles" / "scout"
@@ -40,6 +40,9 @@ def test_cli_bots_are_bot_mode_bots_with_a_working_model(profile_env, capsys, mo
     # Cloned from the active profile: the bot answers on the same model from its first message.
     assert "test/model" in (scout / "config.yaml").read_text(encoding="utf-8")
     assert [b["name"] for b in _run(capsys, monkeypatch, "list")["bots"]] == ["scout"]
+    # The avatar color rides the same ui_meta the Desktop overlays onto its bot meta.
+    from hermes_cli.profile_ui_meta import read_profile_yaml
+    assert read_profile_yaml(scout)["ui_meta"]["hermes-bots"]["color"] == "#35d49a"
 
 
 def test_cli_team_lead_is_the_room_listener(profile_env, capsys, monkeypatch):

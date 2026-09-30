@@ -38,7 +38,7 @@ Everything goes through `terminal`. Add `--json` for machine-readable output.
 
 ```
 hermes bots list
-hermes bots create <name> --title <Display> --role "<one-line role>" --persona "<how it behaves>"
+hermes bots create <name> --title <Display> --role "<one-line role>" --persona "<how it behaves>" --color "#35d49a"
 hermes bots team create <Team> --mission "<what the team is for>"
 hermes bots team add <Team> <name> --lead --title "<seat title>"
 hermes bots team add <Team> <name> --reports-to <lead-name>
@@ -67,7 +67,8 @@ Names are lowercase profile names (letters, digits, `-`, `_`). Titles are what t
 3. **Check what exists:** `hermes bots list --json`. Reuse existing bots; never create a
    duplicate name.
 4. **Create each bot** with `hermes bots create`. Keep `--persona` to 1–2 sentences of
-   behavior, not a biography.
+   behavior, not a biography. Give each bot a distinct `--color` so the roster and a group
+   room tell the voices apart at a glance.
 5. **Make the team:** `hermes bots team create`, then seat the lead first with `--lead`, then the
    rest with `--reports-to <lead>`. The lead should be the generalist the user will talk to.
 6. **Tell the user how to use it** in three lines: open the Bots pane; talk to the lead (it

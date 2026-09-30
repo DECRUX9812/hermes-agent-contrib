@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -70,10 +71,15 @@ def _persona_soul(existing: str, persona: str) -> str:
     return f"{existing.rstrip()}\n\n## Style\n\n{persona}\n" if existing.strip() else f"## Style\n\n{persona}\n"
 
 
+_HEX_COLOR = re.compile(r"#[0-9a-fA-F]{6}")
+
+
 def _cmd_create(args) -> None:
     from hermes_cli.profile_ui_meta import merge_ui_meta
     from hermes_cli.profiles import create_profile, get_active_profile_name
 
+    if args.color and not _HEX_COLOR.fullmatch(args.color):
+        _die(args, f"--color must be a hex color like #7c5cff, not '{args.color}'")
     source = args.clone_from or get_active_profile_name()
     try:
         # Clone the source's config/.env/SOUL/skills: the new bot answers on the same model and
@@ -89,6 +95,8 @@ def _cmd_create(args) -> None:
     meta = {"title": (args.title or args.name).strip()}
     if args.role:
         meta["description"] = args.role.strip()
+    if args.color:
+        meta["color"] = args.color
     merge_ui_meta(profile_dir, {BOTS_META_KEY: meta})
     _out(args, {"ok": True, "name": args.name, "path": str(profile_dir), "cloned_from": source, **meta},
          f"Bot '{args.name}' created (cloned from {source}). It appears in the Desktop Bots pane; "
@@ -161,6 +169,7 @@ def build_bots_parser(subparsers) -> None:
     create.add_argument("--title", default="", help="Display name, e.g. 'Scout'")
     create.add_argument("--role", default="", help="One-line role, e.g. 'Researcher — finds and cites sources'")
     create.add_argument("--persona", default="", help="How the bot should behave (written to SOUL.md ## Style)")
+    create.add_argument("--color", default="", help="Avatar color as hex, e.g. '#35d49a' (default: derived from the name)")
     create.add_argument("--from", dest="clone_from", default=None, metavar="PROFILE",
                         help="Profile to clone config from (default: the active profile)")
 

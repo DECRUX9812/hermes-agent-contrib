@@ -534,7 +534,7 @@ hermes send --list telegram         # filter by platform
 
 ```bash
 hermes bots list [--json]
-hermes bots create <name> [--title Scout] [--role "Researcher"] [--persona "Cite every claim."] [--from <profile>]
+hermes bots create <name> [--title Scout] [--role "Researcher"] [--persona "Cite every claim."] [--color "#35d49a"] [--from <profile>]
 hermes bots team create <Team> [--mission "..."]
 hermes bots team add <Team> <bot> [--lead] [--title "..."] [--reports-to <bot>]
 hermes bots team show <Team>
