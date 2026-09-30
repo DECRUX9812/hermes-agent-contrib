@@ -163,6 +163,15 @@ export function useTileRoutingActions({ requestGateway, updateSessionState }: Se
           workspaceScope.workspaceMode !== 'bots'
         )
 
+        // Bots-workspace mints are bot topics: mark the session once at create so
+        // the gateway keeps it bot-powered (message_agent, update_task, teammate
+        // protocol) for its whole life. Only this path mints them — the canonical
+        // Bot Chat and plain chats on a bot profile are created elsewhere and
+        // carry no marker.
+        if (workspaceScope.workspaceMode === 'bots') {
+          Object.assign(params, { bot_topic: true })
+        }
+
         // Same lease chain as createBackendSessionForSend: owner socket held
         // across the create, then the foreground hold carries it until the
         // tile is mounted ($sessionTiles names the owner from then on). Same
