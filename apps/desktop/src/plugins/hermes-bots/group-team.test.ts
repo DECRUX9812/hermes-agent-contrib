@@ -205,6 +205,29 @@ describe('orchestrated drive', () => {
     expect(new Set(submitProfiles(room))).toEqual(new Set(['research', 'builder']))
   })
 
+  it('a gateway reconnecting mid-lookup never wakes the whole team', async () => {
+    // Every lookup after the first drops (the socket bouncing under a profile
+    // switch): the room keeps the lead it last resolved, retries included.
+    const room = await loadRoom({ teamLead: { lead: 'research' }, teamLeadDropsOn: [2, 3, 4], turn: () => 'Done.' })
+
+    room.rounds.sendToGroupChat('Crew', MEMBERS, 'first')
+    await settle(room, 'Crew')
+    room.rounds.sendToGroupChat('Crew', MEMBERS, 'second, mid-reconnect')
+    await settle(room, 'Crew')
+
+    expect(submitProfiles(room)).toEqual(['research', 'research'])
+    expect(room.gateway.rpcFor('bots_team.room_lead')).toHaveLength(4)
+  })
+
+  it('a single dropped lookup retries into the lead', async () => {
+    const room = await loadRoom({ teamLead: { lead: 'research' }, teamLeadDropsOn: [1], turn: () => 'Done.' })
+
+    room.rounds.sendToGroupChat('Crew', MEMBERS, 'status update please')
+    await settle(room, 'Crew')
+
+    expect(submitProfiles(room)).toEqual(['research'])
+  })
+
   it('keeps every member listening when the room is not a team', async () => {
     const room = await loadRoom({ teamLead: null, turn: () => '(pass)' })
 

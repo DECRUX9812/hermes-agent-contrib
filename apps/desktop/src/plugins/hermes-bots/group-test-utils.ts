@@ -108,6 +108,9 @@ export interface GatewayOptions {
    *  gateway that predates the RPC (rejects, the room falls back to fan-out);
    *  `null` = known RPC, no covering team (also fan-out). */
   teamLead?: { lead: string; lead_title?: string; team_id?: string; team_name?: string } | null
+  /** Fail `bots_team.room_lead` with a transport error on these calls (1-based)
+   *  — the socket reconnecting under a profile switch. */
+  teamLeadDropsOn?: number[]
   /** Reject only the FIRST prompt.submit — the 4001 reap the retry recovers. */
   failFirstSubmitWith?: unknown
   /** Fired on each post-submit poll, so a test can land a stop mid-turn. */
@@ -170,6 +173,7 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
   const uiMeta: Record<string, unknown> = {}
   const uiMetaRevisions: Record<string, number> = {}
   let sequence = 0
+  let teamLeadCalls = 0
   let submits = 0
   let polls = 0
   let refcount = 0
@@ -238,6 +242,12 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
     }
 
     if (method === 'bots_team.room_lead') {
+      teamLeadCalls += 1
+
+      if (options.teamLeadDropsOn?.includes(teamLeadCalls)) {
+        throw new Error('gateway socket closed')
+      }
+
       if (!Object.hasOwn(options, 'teamLead')) {
         throw gatewayError('Method not found', -32601)
       }

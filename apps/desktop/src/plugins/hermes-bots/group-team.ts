@@ -4,6 +4,9 @@
  * that is, and every teammate stays asleep until addressed (@mention or the lead's delegation).
  * Unresolved — no covering team, ambiguity between teams, a paused lead, or an older gateway
  * that predates `bots_team.room_lead` — means the room keeps fan-out listening, unchanged.
+ * A TRANSIENT failure (the socket reconnecting after a profile switch) is not "no team": it
+ * retries, then keeps the lead this member set last resolved to, so a blip never wakes the
+ * whole team for one turn.
  */
 
 import { host } from '@hermes/plugin-sdk'
@@ -60,9 +63,25 @@ export function localMemberProfiles(members: GroupMember[]): string[] {
   ]
 }
 
+/** Waits between `bots_team.room_lead` attempts after a transient failure. */
+const ROOM_LEAD_RETRY_MS = [400, 1200]
+
+/** The last answer per member set (sorted local profiles). The team store is
+ *  install-wide, so one answer holds for every room seating the same bots. */
+const lastRoomLead = new Map<string, null | TeamRoomLead>()
+
+/** An older gateway that predates the RPC: fan-out, never a retry. */
+function isMethodNotFound(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code
+  const message = String((error as { message?: unknown } | null)?.message || '').toLowerCase()
+
+  return code === -32601 || message.includes('method not found')
+}
+
 /** `bots_team.room_lead` on the active gateway (the team store is install-wide).
- *  Every failure — older gateway without the method, transport errors — is `null`,
- *  never a change in listening behavior. */
+ *  A gateway without the method is `null` (fan-out). A transient failure retries,
+ *  then falls back to the member set's last answer — never to a silent fan-out
+ *  that wakes every teammate because the socket was reconnecting. */
 export async function resolveTeamRoomLead(members: GroupMember[]): Promise<null | TeamRoomLead> {
   const profiles = localMemberProfiles(members)
 
@@ -70,26 +89,42 @@ export async function resolveTeamRoomLead(members: GroupMember[]): Promise<null 
     return null
   }
 
-  try {
-    const res = await host.request<{
-      lead?: null | string
-      lead_title?: string
-      team_id?: null | string
-      team_name?: string
-    }>('bots_team.room_lead', { members: profiles })
+  const memberSet = [...profiles].sort().join('\n')
 
-    const lead = String(res?.lead || '').trim()
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await host.request<{
+        lead?: null | string
+        lead_title?: string
+        team_id?: null | string
+        team_name?: string
+      }>('bots_team.room_lead', { members: profiles })
 
-    return lead
-      ? {
-          lead,
-          leadTitle: String(res?.lead_title || ''),
-          teamId: String(res?.team_id || ''),
-          teamName: String(res?.team_name || '')
-        }
-      : null
-  } catch {
-    return null
+      const lead = String(res?.lead || '').trim()
+
+      const resolved = lead
+        ? {
+            lead,
+            leadTitle: String(res?.lead_title || ''),
+            teamId: String(res?.team_id || ''),
+            teamName: String(res?.team_name || '')
+          }
+        : null
+
+      lastRoomLead.set(memberSet, resolved)
+
+      return resolved
+    } catch (error) {
+      if (isMethodNotFound(error)) {
+        return null
+      }
+
+      if (attempt >= ROOM_LEAD_RETRY_MS.length) {
+        return lastRoomLead.get(memberSet) ?? null
+      }
+
+      await new Promise(resolve => setTimeout(resolve, ROOM_LEAD_RETRY_MS[attempt]))
+    }
   }
 }
 
