@@ -1231,7 +1231,25 @@ export const esOverrides = {
         sidebar: 'Solo la barra lateral'
       },
       backdropTitle: 'Fondo del chat',
-      backdropDesc: 'La tenue imagen de la estatua detrás de la conversación.',
+      backdropDesc: 'Una escena detrás de la conversación, o tu propia imagen. El texto siempre queda encima.',
+      backdropScenes: {
+        off: 'Desactivado',
+        aurora: 'Aurora',
+        dusk: 'Atardecer',
+        ocean: 'Océano',
+        meadow: 'Pradera',
+        grid: 'Puntos',
+        statue: 'Estatua',
+        custom: 'Tu imagen'
+      },
+      backdropUpload: 'Elegir imagen…',
+      backdropRemoveImage: 'Quitar imagen',
+      backdropStrengths: {
+        subtle: 'Sutil',
+        balanced: 'Equilibrado',
+        vivid: 'Intenso'
+      },
+      backdropImageError: 'No se pudo leer esa imagen.',
       userBubbleTitle: 'Burbuja de mensaje',
       userBubbleDesc: 'Cuánta transparencia tienen tus propios mensajes. Opaca en 0; en 100 solo queda el contorno.',
       textDirectionTitle: 'Dirección del texto',
@@ -1259,7 +1277,8 @@ export const esOverrides = {
       autoOpenFilesTitle: 'Mostrar archivos al abrir un proyecto',
       autoOpenFilesDesc: 'Abrir una carpeta o empezar en un proyecto muestra el árbol de archivos junto al chat.',
       activityRailTitle: 'Barra de iconos',
-      activityRailDesc: 'Una columna estrecha de iconos en el borde izquierdo: sesiones, bots y cada página a un clic, incluso con la barra lateral plegada.',
+      activityRailDesc:
+        'Una columna estrecha de iconos en el borde izquierdo: sesiones, bots y cada página a un clic, incluso con la barra lateral plegada.',
       openInEditorTitle: 'Abrir archivos en',
       openInEditorDesc: 'A dónde envía «Abrir en…» un archivo del árbol. También funciona con backends SSH.',
       fileBrowserTitle: 'Explorador de archivos',
@@ -3708,7 +3727,10 @@ export const esOverrides = {
     askRules: {
       title: (name: string) => `¿Cuándo debe preguntarte ${name}?`,
       modes: {
-        manual: { label: 'Pregúntame primero', description: (name: string) => `${name} se detiene y pregunta antes de algo arriesgado.` },
+        manual: {
+          label: 'Pregúntame primero',
+          description: (name: string) => `${name} se detiene y pregunta antes de algo arriesgado.`
+        },
         smart: {
           label: 'A su criterio',
           description: (name: string) => `${name} hace el trabajo rutinario y pregunta cuando algo parece arriesgado.`
@@ -5700,7 +5722,8 @@ export const esOverrides = {
     source: 'FUENTE',
     renderedPreview: 'VISTA PREVIA',
     table: 'TABLA',
-    tableTruncated: (rows: number) => `Se muestran las primeras ${rows.toLocaleString()} filas. El código fuente tiene el archivo completo.`,
+    tableTruncated: (rows: number) =>
+      `Se muestran las primeras ${rows.toLocaleString()} filas. El código fuente tiene el archivo completo.`,
     canvas: 'LIENZO',
     diff: 'Diferencias',
     unknownSize: 'tamaño desconocido',

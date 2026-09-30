@@ -112,7 +112,7 @@ export const SETTINGS_MANIFEST = {
       ...appearanceSetting('window-layout', ['opacity', 'transparent', 'glass', 'blur'], 'translucency'),
       available: () => TRANSLUCENCY_SUPPORTED
     },
-    backdrop: appearanceSetting('window-layout', ['background', 'blur'], 'backdrop'),
+    backdrop: appearanceSetting('window-layout', ['background', 'blur', 'wallpaper', 'image', 'scene'], 'backdrop'),
     fileBrowser: appearanceSetting(
       'window-layout',
       ['file browser', 'files', 'file tree', 'explorer', 'right sidebar', 'panel', 'startup'],

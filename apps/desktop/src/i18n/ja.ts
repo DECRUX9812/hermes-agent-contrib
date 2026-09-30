@@ -891,7 +891,7 @@ export const ja = defineLocale({
         sidebar: 'サイドバーのみ'
       },
       backdropTitle: 'チャット背景',
-      backdropDesc: '会話の背後に表示される淡い彫像の画像。',
+      backdropDesc: '会話の背後に表示するシーン、または自分の画像。テキストは常に前面に表示されます。',
       userBubbleTitle: 'メッセージの吹き出し',
       userBubbleDesc: '自分のメッセージの透け具合。0 で不透明、100 で枠線だけが残ります。',
       textDirectionTitle: 'テキストの方向',

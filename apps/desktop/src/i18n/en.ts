@@ -1260,8 +1260,26 @@ export const en: Translations = {
         window: 'Whole window',
         sidebar: 'Sidebar only'
       },
-      backdropTitle: 'Chat Backdrop',
-      backdropDesc: 'The faint statue image behind the conversation.',
+      backdropTitle: 'Chat Background',
+      backdropDesc: 'A scene behind the conversation, or your own image. Text always stays on top.',
+      backdropScenes: {
+        off: 'Off',
+        aurora: 'Aurora',
+        dusk: 'Dusk',
+        ocean: 'Ocean',
+        meadow: 'Meadow',
+        grid: 'Dots',
+        statue: 'Statue',
+        custom: 'Your image'
+      },
+      backdropUpload: 'Choose image…',
+      backdropRemoveImage: 'Remove image',
+      backdropStrengths: {
+        subtle: 'Subtle',
+        balanced: 'Balanced',
+        vivid: 'Vivid'
+      },
+      backdropImageError: "That image couldn't be read.",
       userBubbleTitle: 'Message Bubble',
       userBubbleDesc: 'How see-through your own messages are. Solid at 0; only the outline remains at 100.',
       textDirectionTitle: 'Text direction',
@@ -1286,7 +1304,8 @@ export const en: Translations = {
       autoOpenFilesTitle: 'Show files when opening a project',
       autoOpenFilesDesc: 'Opening a folder or starting work in a project opens the file tree beside the chat.',
       activityRailTitle: 'Icon rail',
-      activityRailDesc: 'A slim column of icons at the left edge — sessions, bots and every page one click away, even with the sidebar folded.',
+      activityRailDesc:
+        'A slim column of icons at the left edge — sessions, bots and every page one click away, even with the sidebar folded.',
       openInEditorTitle: 'Open files in',
       openInEditorDesc: 'Where “Open in …” sends a file from the file tree. Works for SSH backends too.',
       fileBrowserTitle: 'File Browser',
@@ -3346,7 +3365,10 @@ export const en: Translations = {
     askRules: {
       title: (name: string) => `When should ${name} ask you?`,
       modes: {
-        manual: { label: 'Ask me first', description: (name: string) => `${name} stops and asks before anything risky.` },
+        manual: {
+          label: 'Ask me first',
+          description: (name: string) => `${name} stops and asks before anything risky.`
+        },
         smart: {
           label: 'Use judgment',
           description: (name: string) => `${name} handles routine work and asks when something looks risky.`

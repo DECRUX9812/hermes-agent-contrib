@@ -941,7 +941,7 @@ export const zh = defineLocale({
         sidebar: '仅侧边栏'
       },
       backdropTitle: '聊天背景',
-      backdropDesc: '对话后方那张淡淡的雕像图片。',
+      backdropDesc: '对话后方的场景，或你自己的图片。文字始终显示在最上层。',
       userBubbleTitle: '消息气泡',
       userBubbleDesc: '你自己的消息有多透明。0 为不透明，100 时只保留边框。',
       textDirectionTitle: '文本方向',
@@ -3131,7 +3131,10 @@ export const zh = defineLocale({
       title: (name: string) => `${name} 何时需要问你？`,
       modes: {
         manual: { label: '先问我', description: (name: string) => `遇到任何有风险的操作，${name} 都会先停下来问你。` },
-        smart: { label: '自行判断', description: (name: string) => `${name} 处理日常工作，遇到看起来有风险的操作时再问你。` },
+        smart: {
+          label: '自行判断',
+          description: (name: string) => `${name} 处理日常工作，遇到看起来有风险的操作时再问你。`
+        },
         off: { label: '直接去做', description: (name: string) => `${name} 从不等待你。被禁止的命令仍然会被阻止。` }
       },
       rulesLabel: '规则',

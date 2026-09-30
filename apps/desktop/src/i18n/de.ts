@@ -1232,7 +1232,25 @@ export const deOverrides = {
         sidebar: 'Nur Seitenleiste'
       },
       backdropTitle: 'Chat-Hintergrund',
-      backdropDesc: 'Das zarte Statuenbild hinter der Konversation.',
+      backdropDesc: 'Eine Szene hinter der Konversation oder Ihr eigenes Bild. Der Text bleibt immer im Vordergrund.',
+      backdropScenes: {
+        off: 'Aus',
+        aurora: 'Polarlicht',
+        dusk: 'Abendrot',
+        ocean: 'Ozean',
+        meadow: 'Wiese',
+        grid: 'Punkte',
+        statue: 'Statue',
+        custom: 'Eigenes Bild'
+      },
+      backdropUpload: 'Bild auswählen…',
+      backdropRemoveImage: 'Bild entfernen',
+      backdropStrengths: {
+        subtle: 'Dezent',
+        balanced: 'Ausgewogen',
+        vivid: 'Kräftig'
+      },
+      backdropImageError: 'Das Bild konnte nicht gelesen werden.',
       userBubbleTitle: 'Nachrichten-Blase',
       userBubbleDesc:
         'Wie durchsichtig Ihre eigenen Nachrichten sind. Bei 0 deckend; bei 100 bleibt nur die Kontur übrig.',
@@ -1260,7 +1278,8 @@ export const deOverrides = {
       autoOpenFilesTitle: 'Dateien beim Öffnen eines Projekts zeigen',
       autoOpenFilesDesc: 'Beim Öffnen eines Ordners oder Projekts erscheint der Dateibaum neben dem Chat.',
       activityRailTitle: 'Symbolleiste links',
-      activityRailDesc: 'Eine schmale Symbolspalte am linken Rand – Sitzungen, Bots und alle Seiten mit einem Klick, auch bei eingeklappter Seitenleiste.',
+      activityRailDesc:
+        'Eine schmale Symbolspalte am linken Rand – Sitzungen, Bots und alle Seiten mit einem Klick, auch bei eingeklappter Seitenleiste.',
       openInEditorTitle: 'Dateien öffnen in',
       openInEditorDesc: 'Wohin „Öffnen in …“ eine Datei aus dem Dateibaum schickt. Funktioniert auch mit SSH-Backends.',
       fileBrowserTitle: 'Dateibrowser',
@@ -3716,7 +3735,10 @@ export const deOverrides = {
     askRules: {
       title: (name: string) => `Wann soll ${name} dich fragen?`,
       modes: {
-        manual: { label: 'Erst fragen', description: (name: string) => `${name} hält an und fragt vor allem Riskanten.` },
+        manual: {
+          label: 'Erst fragen',
+          description: (name: string) => `${name} hält an und fragt vor allem Riskanten.`
+        },
         smart: {
           label: 'Nach Ermessen',
           description: (name: string) => `${name} erledigt Routine selbst und fragt, wenn etwas riskant wirkt.`
@@ -3727,7 +3749,8 @@ export const deOverrides = {
         }
       },
       rulesLabel: 'Hausregeln',
-      rulesPlaceholder: 'Deine Regeln in deinen Worten, z. B.: Immer fragen, bevor E-Mails gesendet oder Geld ausgegeben wird.',
+      rulesPlaceholder:
+        'Deine Regeln in deinen Worten, z. B.: Immer fragen, bevor E-Mails gesendet oder Geld ausgegeben wird.',
       save: 'Regeln speichern',
       discard: 'Verwerfen',
       failed: 'Speichern fehlgeschlagen. Deine bisherigen Regeln gelten weiter.'

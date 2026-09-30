@@ -1330,6 +1330,27 @@
 .decode-cursor-blink {
   animation: decode-cursor 1s step-end infinite;
 }
+/* Chat background scenes drift like weather — slow enough to never pull the eye. */
+@keyframes backdrop-drift {
+  0% {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(3%, 2%, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(-2%, 3%, 0) scale(1.02);
+  }
+}
+.backdrop-drift {
+  animation: backdrop-drift 48s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .backdrop-drift {
+    animation: none;
+  }
+}
 /* 0.001 start mirrors ZonesOverlay::GetAnimationAlpha's clamp(t / 200ms, 0.001, 1). */
 @keyframes hermes-zone-fade {
   from {

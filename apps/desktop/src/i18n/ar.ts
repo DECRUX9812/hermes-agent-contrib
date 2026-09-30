@@ -879,7 +879,7 @@ export const ar = defineLocale({
         sidebar: 'الشريط الجانبي فقط'
       },
       backdropTitle: 'خلفية النافذة',
-      backdropDesc: 'اختيار مقدار مزج خلفية سطح المكتب مع سطح Hermes.',
+      backdropDesc: 'مشهد خلف المحادثة أو صورتك الخاصة. يبقى النص دائمًا في الأعلى.',
       userBubbleTitle: 'فقاعة الرسالة',
       userBubbleDesc: 'مدى شفافية رسائلك. معتمة عند 0؛ يبقى الإطار فقط عند 100.',
       textDirectionTitle: 'اتجاه النص',

@@ -16,7 +16,6 @@ import { Check, Download, Loader2, Palette, Trash2 } from '@/lib/icons'
 import { selectableCardClass } from '@/lib/selectable-card'
 import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
-import { $backdrop, setBackdrop } from '@/store/backdrop'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
 import { $preferredEditor } from '@/store/editor-handoff'
 import { $embedAllowed, $embedMode, clearEmbedAllowed, type EmbedMode, setEmbedMode } from '@/store/embed-consent'
@@ -80,6 +79,7 @@ import { setHermesConfigCache, useHermesConfigRecord } from '../hooks/use-config
 
 import { AppearanceExtraSlot } from './appearance-contrib'
 import type { AppearanceSubpageId } from './appearance-subpages'
+import { BackdropSetting } from './backdrop-setting'
 import { ChatFontSetting } from './chat-font-setting'
 import { MODE_OPTIONS } from './constants'
 import { setNested } from './helpers'
@@ -445,7 +445,6 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const toursEnabled = useStore($toursEnabled)
   const spentTips = useStore($spentTipCount)
   const vibeHeartsEnabled = useStore($vibeHeartsEnabled)
-  const backdrop = useStore($backdrop)
   const introSplash = useStore($introSplash)
   const showModelPricing = useStore($showModelPricing)
   const installs = useStore($marketplaceInstalls)
@@ -934,12 +933,12 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
           )}
 
           {show('window-layout') && (
-            <ToggleRow
-              checked={backdrop}
+            <ListRow
+              action={<BackdropSetting />}
               description={a.backdropDesc}
               id={settingElementId(ids.backdrop)}
-              label={a.backdropTitle}
-              onChange={setBackdrop}
+              title={a.backdropTitle}
+              wide
             />
           )}
 
