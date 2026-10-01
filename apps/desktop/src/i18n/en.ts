@@ -1268,6 +1268,8 @@ export const en: Translations = {
         dusk: 'Dusk',
         ocean: 'Ocean',
         meadow: 'Meadow',
+        cyanotype: 'Cyanotype',
+        ink: 'Ink',
         grid: 'Dots',
         statue: 'Statue',
         custom: 'Your image'

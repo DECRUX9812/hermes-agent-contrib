@@ -1059,6 +1059,8 @@ export interface Translations {
         dusk: string
         ocean: string
         meadow: string
+        cyanotype: string
+        ink: string
         grid: string
         statue: string
         custom: string

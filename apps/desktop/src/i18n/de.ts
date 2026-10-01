@@ -1239,6 +1239,8 @@ export const deOverrides = {
         dusk: 'Abendrot',
         ocean: 'Ozean',
         meadow: 'Wiese',
+        cyanotype: 'Cyanotypie',
+        ink: 'Tusche',
         grid: 'Punkte',
         statue: 'Statue',
         custom: 'Eigenes Bild'

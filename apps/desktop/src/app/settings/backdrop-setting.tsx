@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useRef } from 'react'
 
+import { backdropAsset } from '@/components/Backdrop'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { useI18n } from '@/i18n'
 import { BACKDROP_SCENES, BACKDROP_STRENGTHS, type BackdropScene, sceneSwatch } from '@/lib/backdrop-scenes'
@@ -72,7 +73,7 @@ export function BackdropSceneGrid() {
       <div className="grid grid-cols-4 gap-2">
         {BACKDROP_SCENES.map(id => {
           const active = scene === id
-          const swatch = sceneSwatch(id, renderedMode, image)
+          const swatch = sceneSwatch(id, renderedMode, image, backdropAsset)
 
           return (
             <div className="group relative" key={id}>
@@ -83,10 +84,13 @@ export function BackdropSceneGrid() {
                 onClick={() => pick(id)}
                 type="button"
               >
-                <div
-                  className="grid h-14 place-items-center overflow-hidden rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-chat-surface-background) text-(--ui-text-quaternary)"
-                  style={swatch === 'none' ? undefined : { background: `${swatch}, var(--ui-chat-surface-background)` }}
-                >
+                <div className="relative grid h-14 place-items-center overflow-hidden rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-chat-surface-background) text-(--ui-text-quaternary)">
+                  {swatch ? (
+                    <div
+                      className="absolute inset-0"
+                      style={{ background: swatch.background, filter: swatch.invert ? 'invert(1)' : undefined }}
+                    />
+                  ) : null}
                   {id === 'off' ? <X className="size-4" /> : null}
                   {id === 'statue' ? <span className="font-serif text-lg italic opacity-60">Ω</span> : null}
                   {id === 'custom' && !image ? <FileImage className="size-4" /> : null}

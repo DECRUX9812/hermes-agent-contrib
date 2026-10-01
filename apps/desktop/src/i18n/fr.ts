@@ -1240,6 +1240,8 @@ export const frOverrides = {
         dusk: 'Crépuscule',
         ocean: 'Océan',
         meadow: 'Prairie',
+        cyanotype: 'Cyanotype',
+        ink: 'Encre',
         grid: 'Points',
         statue: 'Statue',
         custom: 'Votre image'

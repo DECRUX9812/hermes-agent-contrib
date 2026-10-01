@@ -1238,6 +1238,8 @@ export const esOverrides = {
         dusk: 'Atardecer',
         ocean: 'Océano',
         meadow: 'Pradera',
+        cyanotype: 'Cianotipia',
+        ink: 'Tinta',
         grid: 'Puntos',
         statue: 'Estatua',
         custom: 'Tu imagen'

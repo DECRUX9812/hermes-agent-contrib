@@ -5,7 +5,8 @@ import { cn } from '@/lib/utils'
 import { $backdropImage, $backdropScene, $backdropStrength } from '@/store/backdrop'
 import { useTheme } from '@/themes/context'
 
-const assetPath = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
+/** Shipped backdrop art (public/ds-assets), resolved against the app's base URL. */
+export const backdropAsset = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, '')}`
 
 export function Backdrop() {
   const scene = useStore($backdropScene)
@@ -13,7 +14,7 @@ export function Backdrop() {
   const image = useStore($backdropImage)
   // Surface-bound: the pigment a scene needs depends on the painted surface, not the toggle.
   const { renderedMode } = useTheme()
-  const layer = backdropLayer(scene, strength, renderedMode, image, assetPath('ds-assets/filler-bg0.jpg'))
+  const layer = backdropLayer(scene, strength, renderedMode, image, backdropAsset)
 
   if (!layer) {
     return null
@@ -49,7 +50,8 @@ export function Backdrop() {
         className={cn('absolute', layer.drift ? 'backdrop-drift -inset-[12%]' : 'inset-0')}
         style={{
           opacity: layer.opacity,
-          background: layer.image ? `center / cover no-repeat url("${layer.image}")` : layer.background
+          background: layer.image ? `center / cover no-repeat url("${layer.image}")` : layer.background,
+          filter: layer.invert ? 'invert(1)' : undefined
         }}
       />
     </div>
