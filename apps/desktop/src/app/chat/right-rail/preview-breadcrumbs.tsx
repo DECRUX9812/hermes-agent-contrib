@@ -18,7 +18,9 @@ const MAX_SEGMENTS = 4
  * segment reveals the file. Files outside the project show their full path.
  */
 export function PreviewBreadcrumbs({ filePath }: { filePath: string }) {
-  const root = useStore($currentCwd).trim().replace(/[\\/]+$/, '')
+  const root = useStore($currentCwd)
+    .trim()
+    .replace(/[\\/]+$/, '')
   const normalized = filePath.replace(/\\/g, '/')
   const inside = Boolean(root) && normalized.startsWith(`${root}/`)
   const rel = inside ? normalized.slice(root.length + 1) : normalized.replace(/^\/+/, '')
@@ -45,19 +47,22 @@ export function PreviewBreadcrumbs({ filePath }: { filePath: string }) {
 
         return (
           <Fragment key={absAt(index)}>
-            {(offset > 0 || first > 0) && <Codicon className="shrink-0 opacity-60" name="chevron-right" size="0.625rem" />}
-            <button
-              className={
-                last
-                  ? 'min-w-0 truncate font-medium text-foreground hover:underline'
-                  : 'max-w-[8rem] shrink truncate hover:text-foreground hover:underline'
-              }
-              onClick={() => inside && revealFileInTree(absAt(index))}
-              title={absAt(index)}
-              type="button"
-            >
-              {part}
-            </button>
+            {(offset > 0 || first > 0) && (
+              <Codicon className="shrink-0 opacity-60" name="chevron-right" size="0.625rem" />
+            )}
+            <Tip label={absAt(index)}>
+              <button
+                className={
+                  last
+                    ? 'min-w-0 truncate font-medium text-foreground hover:underline'
+                    : 'max-w-[8rem] shrink truncate hover:text-foreground hover:underline'
+                }
+                onClick={() => inside && revealFileInTree(absAt(index))}
+                type="button"
+              >
+                {part}
+              </button>
+            </Tip>
           </Fragment>
         )
       })}

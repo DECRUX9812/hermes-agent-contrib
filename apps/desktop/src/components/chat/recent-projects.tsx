@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { byRecency } from '@/lib/recent-projects'
@@ -36,21 +37,21 @@ export function RecentProjects() {
       <span className="text-[0.6875rem] font-medium text-(--ui-text-tertiary)">{t.recentProjects.title}</span>
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {projects.map(project => (
-          <Button
-            className="max-w-48 rounded-full"
-            key={project.id}
-            onClick={() => {
-              triggerHaptic('selection')
-              goToProject(project.id, { newSession: true })
-            }}
-            size="sm"
-            title={projectRootCwd(project)}
-            type="button"
-            variant="outline"
-          >
-            <Codicon className="opacity-70" name={project.icon || 'folder-library'} />
-            <span className="truncate">{project.label}</span>
-          </Button>
+          <Tip key={project.id} label={projectRootCwd(project)}>
+            <Button
+              className="max-w-48 rounded-full"
+              onClick={() => {
+                triggerHaptic('selection')
+                goToProject(project.id, { newSession: true })
+              }}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              <Codicon className="opacity-70" name={project.icon || 'folder-library'} />
+              <span className="truncate">{project.label}</span>
+            </Button>
+          </Tip>
         ))}
         <Button
           className="rounded-full text-(--ui-text-tertiary)"
