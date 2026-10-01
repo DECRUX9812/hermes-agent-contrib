@@ -25,11 +25,17 @@
 // Everything here is pure so it can be unit-tested without Electron; the side
 // effects (writing the script, spawning) live in main.ts.
 
-/** Argv for resuming a session in the TUI, profile-pinned when we know it. */
-export function tuiResumeArgs(sessionId: string, profile?: string): string[] {
+/** Argv for the TUI, resuming `sessionId` when given, profile-pinned when we know it. */
+export function tuiArgs(sessionId: string, profile?: string): string[] {
   const head = profile ? ['--profile', profile] : []
 
-  return [...head, '--tui', '--resume', sessionId]
+  return [...head, '--tui', ...(sessionId ? ['--resume', sessionId] : [])]
+}
+
+/** Argv for the classic CLI the in-app pane runs: no Node build to prepare, so it
+ *  starts at once and fits a short pane. Same resume and profile pinning. */
+export function cliArgs(sessionId: string, profile?: string): string[] {
+  return tuiArgs(sessionId, profile).filter(arg => arg !== '--tui')
 }
 
 /** Single-quote a value for /bin/sh (the POSIX launcher script). */
@@ -103,6 +109,11 @@ export function buildTerminalScript({ command, args, cwd, env = {}, platform = p
     `exec ${[command, ...args].map(posixQuote).join(' ')}`,
     ''
   ].join('\n')
+}
+
+/** The line the in-app terminal types to run a launcher script in its own shell. */
+export function paneRunLine(scriptPath: string, platform: NodeJS.Platform = process.platform): string {
+  return platform === 'win32' ? `cmd /d /c ${windowsQuote(scriptPath)}` : `sh ${posixQuote(scriptPath)}`
 }
 
 export function terminalScriptExtension(platform: NodeJS.Platform = process.platform): string {

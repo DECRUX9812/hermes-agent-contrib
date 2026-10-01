@@ -55,6 +55,7 @@ import { FILE_VIEWERS_AREA, type FileViewerContribution } from '@/lib/file-viewe
 import {
   Activity,
   Archive,
+  BrandVscode,
   Download,
   FileText,
   LayoutDashboard,
@@ -63,6 +64,7 @@ import {
   PanelTop,
   Pencil,
   SlidersHorizontal,
+  Terminal,
   Upload,
   Users,
   Zap
@@ -80,6 +82,7 @@ import {
   toggleArtifactsRail
 } from '@/store/artifact-rail'
 import { createCanvas } from '@/store/canvas'
+import { $codeOpen, closeCodePane, CODE_PANE_ID, openCodePane, toggleCodePane } from '@/store/code-pane'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $interfaceMode, $showsAdvancedChrome, setModeContext, toggleSimpleMode } from '@/store/interface-mode'
 import {
@@ -142,12 +145,13 @@ import {
 import { AppContextMenu } from '../context-menu/app-context-menu'
 import { HudShell } from '../hud/hud-shell'
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
+import { continueInHermesCli } from '../right-sidebar/terminal/hermes-cli'
 import { terminalPaletteToggle } from '../right-sidebar/terminal/reveal-focus'
 import { $workspaceIsPage, WORKSPACE_PAGE_HEADER_AREA } from '../routes'
 
 import { BASIC_TREE, DEFAULT_TREE, registerLayoutPresets } from './layout-presets'
 import { bindLayoutSides } from './layout-sides'
-import { ArtifactsPane, FilesPane, LivePane, LogsPane, ReviewPaneContent } from './panes'
+import { ArtifactsPane, CodePane, FilesPane, LivePane, LogsPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
 import { WorkspacePageHeaderHostContext } from './workspace-page-header'
 
@@ -189,6 +193,8 @@ const idle = (node: ReactElement) => <IdleMount>{node}</IdleMount>
 // Scales with the window: roomy on a desktop monitor, never a third of a laptop.
 const LIVE_PANE_WIDTH = 'clamp(18rem, 30vw, 26rem)'
 const LIVE_PANE_MAX_WIDTH = '44rem'
+const CODE_PANE_WIDTH = 'clamp(26rem, 42vw, 48rem)'
+const CODE_PANE_MAX_WIDTH = '72rem'
 // The main tab carries the same session context menu as tile tabs (targets
 // the loaded primary session; no menu on a fresh draft).
 const wrapWorkspaceTab = (tab: ReactElement) => <WorkspaceTabMenu>{tab}</WorkspaceTabMenu>
@@ -355,6 +361,26 @@ registry.registerMany([
       tabTitleText: () => translateNow('live.title')
     },
     render: () => idle(<LivePane />)
+  },
+  {
+    id: CODE_PANE_ID,
+    area: 'panes',
+    title: translateNow('codePane.title'),
+    // The user's own VS Code on the chat's project, served on this machine.
+    // An editor wants width: it docks as wide as the live feed and drags to
+    // most of the window. Kept alive while hidden so open files and undo
+    // history survive a toggle.
+    data: {
+      placement: 'right',
+      collapsible: true,
+      lifecycleKeepAlive: true,
+      width: CODE_PANE_WIDTH,
+      minWidth: FILE_BROWSER_MIN_WIDTH,
+      maxWidth: CODE_PANE_MAX_WIDTH,
+      tabTitle: () => <LocalizedTabTitle select={t => t.codePane.title} />,
+      tabTitleText: () => translateNow('codePane.title')
+    },
+    render: () => <CodePane />
   }
 ])
 
@@ -726,6 +752,8 @@ bindPaneVisibility(
 bindPaneVisibility('artifacts', $artifactsOpen, closeArtifactsRail, openArtifactsRail)
 // The live action feed, same shape: follows the focused session, no workspace gate.
 bindPaneVisibility(LIVE_PANE_ID, $liveOpen, closeLivePane, openLivePane)
+// VS Code beside the chat, same shape: on until closed, no workspace gate (the pane explains a bare chat).
+bindPaneVisibility(CODE_PANE_ID, $codeOpen, closeCodePane, openCodePane)
 // Small windows: the sidebar folds before the chat gets unreadably narrow.
 installChatRoomGuard()
 // ⌃` / statusbar toggle — the terminal COLLAPSES to a rail (tab stays), not
@@ -769,6 +797,29 @@ registry.register(
     set: () => toggleLivePane()
   })
 )
+
+// ⌘K doors for the developer pair: VS Code beside the chat, Hermes CLI below it.
+registry.register(
+  paletteToggle({
+    id: 'code.toggle',
+    label: 'Toggle VS Code',
+    icon: BrandVscode,
+    keywords: ['vscode', 'vs code', 'editor', 'code', 'ide', 'open files', 'edit'],
+    get: () => isPaneVisible(CODE_PANE_ID),
+    set: () => toggleCodePane()
+  })
+)
+registry.register({
+  id: 'cli.here',
+  area: PALETTE_AREA,
+  data: {
+    id: 'cli.here',
+    label: 'Continue in Hermes CLI',
+    icon: Terminal,
+    keywords: ['cli', 'tui', 'terminal', 'hermes', 'resume', 'command line'],
+    run: () => void continueInHermesCli($selectedStoredSessionId.get(), { cwd: $currentCwd.get().trim() || undefined })
+  } satisfies PaletteContribution
+})
 
 // Logs are ⌘K-ONLY chrome: the pane contribution EXISTS only while $logsOpen
 // is on. Off (the default) keeps logs out of the registry and the tree

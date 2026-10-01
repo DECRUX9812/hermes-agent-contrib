@@ -310,16 +310,19 @@ method("slash.exec", params=SlashExecParams, result=SlashExecResult,
 class InsightsGetParams(Params):
     days: int | None = None
     profile: str | None = None
+    report: bool | None = None
 
 
 class InsightsGetResult(Result):
     days: int
     sessions: int
     messages: int
+    report: dict[str, JsonValue] | None = None
 
 
 method("insights.get", params=InsightsGetParams, result=InsightsGetResult,
-       doc="Session/message counts over the last ``days`` for the (optionally scoped) profile store.")
+       doc="Session/message counts over the last ``days`` for the (optionally scoped) profile store; "
+           "``report`` adds the /insights token + cost breakdown (``empty``, ``overview``, ``models``).")
 
 
 class ConfigShowParams(Params):

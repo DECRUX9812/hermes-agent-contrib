@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { atom, type ReadableAtom } from 'nanostores'
 
+import { continueInHermesCli } from '@/app/right-sidebar/terminal/hermes-cli'
 import { toggleTerminalPane } from '@/app/right-sidebar/terminal/reveal-focus'
 import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { findGroupOfPane } from '@/components/pane-shell/tree/model'
@@ -14,6 +15,7 @@ import { useKeybindHint } from '@/lib/keybinds/use-keybind-hint'
 import { cn } from '@/lib/utils'
 import { ARTIFACTS_PANE_ID, toggleArtifactsRail } from '@/store/artifact-rail'
 import { createCanvas } from '@/store/canvas'
+import { CODE_PANE_ID, toggleCodePane } from '@/store/code-pane'
 import { $showsAdvancedChrome } from '@/store/interface-mode'
 import { toggleFileBrowserOpen } from '@/store/layout'
 import { $liveOpen, LIVE_PANE_ID, toggleLivePane } from '@/store/live-activity'
@@ -21,7 +23,7 @@ import { $previewTabs, toggleBrowserTab } from '@/store/preview'
 import { PREVIEW_TILE_PREFIX } from '@/store/preview-explicit'
 import { openFolderAsProject } from '@/store/projects'
 import { REVIEW_PANE_ID, toggleReview } from '@/store/review'
-import { $currentCwd } from '@/store/session'
+import { $currentCwd, $selectedStoredSessionId } from '@/store/session'
 
 import { $terminalTakeover } from '../right-sidebar/store'
 
@@ -34,7 +36,7 @@ export function togglePanelLauncher() {
   $panelLauncherOpen.set(!$panelLauncherOpen.get())
 }
 
-type PanelId = 'artifacts' | 'browser' | 'canvas' | 'changes' | 'files' | 'live' | 'terminal'
+type PanelId = 'artifacts' | 'browser' | 'canvas' | 'changes' | 'cli' | 'code' | 'files' | 'live' | 'terminal'
 
 interface PanelSpec {
   /** A one-shot action (make something new), not an on/off panel. */
@@ -59,7 +61,14 @@ interface PanelSpec {
  * in its own zone and several open side by side.
  */
 const PANELS: readonly PanelSpec[] = [
-  { actionId: 'view.showFiles', icon: 'files', id: 'files', needsProject: true, pane: 'files', toggle: toggleFileBrowserOpen },
+  {
+    actionId: 'view.showFiles',
+    icon: 'files',
+    id: 'files',
+    needsProject: true,
+    pane: 'files',
+    toggle: toggleFileBrowserOpen
+  },
   {
     actionId: 'view.toggleReview',
     icon: 'git-compare',
@@ -70,6 +79,17 @@ const PANELS: readonly PanelSpec[] = [
   },
   { actionId: 'view.showBrowser', icon: 'globe', id: 'browser', toggle: toggleBrowserTab },
   { actionId: 'view.showTerminal', advanced: true, icon: 'terminal', id: 'terminal', toggle: toggleTerminalPane },
+  { advanced: true, icon: 'vscode', id: 'code', needsProject: true, pane: CODE_PANE_ID, toggle: toggleCodePane },
+  {
+    action: true,
+    advanced: true,
+    icon: 'debug-console',
+    id: 'cli',
+    toggle: () => {
+      $panelLauncherOpen.set(false)
+      void continueInHermesCli($selectedStoredSessionId.get(), { cwd: $currentCwd.get().trim() || undefined })
+    }
+  },
   { icon: 'pulse', id: 'live', pane: LIVE_PANE_ID, toggle: toggleLivePane },
   { icon: 'package', id: 'artifacts', pane: ARTIFACTS_PANE_ID, toggle: toggleArtifactsRail },
   {
@@ -134,8 +154,19 @@ function usePanelStates(): Record<PanelId, boolean> {
   const liveOpen = useStore($liveOpen)
   const liveShown = useStore($paneVisible(LIVE_PANE_ID))
   const artifacts = useStore($paneVisible(ARTIFACTS_PANE_ID))
+  const code = useStore($paneVisible(CODE_PANE_ID))
 
-  return { artifacts, browser, canvas: false, changes: review, files, live: liveOpen && liveShown, terminal }
+  return {
+    artifacts,
+    browser,
+    canvas: false,
+    changes: review,
+    cli: false,
+    code,
+    files,
+    live: liveOpen && liveShown,
+    terminal
+  }
 }
 
 function PanelRow({ copy, hasProject, spec }: { copy: Translations['panels']; hasProject: boolean; spec: PanelSpec }) {
@@ -194,20 +225,20 @@ function PanelRow({ copy, hasProject, spec }: { copy: Translations['panels']; ha
           <Codicon name="add" size="0.75rem" />
         </span>
       ) : (
-      <span
-        aria-hidden
-        className={cn(
-          'relative h-4 w-7 shrink-0 rounded-full transition-colors',
-          on ? 'bg-(--ui-accent)' : 'bg-(--ui-stroke-secondary)'
-        )}
-      >
         <span
+          aria-hidden
           className={cn(
-            'absolute top-0.5 size-3 rounded-full bg-white shadow-sm transition-[left] duration-200 motion-reduce:transition-none',
-            on ? 'left-3.5' : 'left-0.5'
+            'relative h-4 w-7 shrink-0 rounded-full transition-colors',
+            on ? 'bg-(--ui-accent)' : 'bg-(--ui-stroke-secondary)'
           )}
-        />
-      </span>
+        >
+          <span
+            className={cn(
+              'absolute top-0.5 size-3 rounded-full bg-white shadow-sm transition-[left] duration-200 motion-reduce:transition-none',
+              on ? 'left-3.5' : 'left-0.5'
+            )}
+          />
+        </span>
       )}
     </button>
   )
@@ -222,6 +253,8 @@ function panelOn(id: PanelId): boolean {
     browser: () => Boolean(browserId) && isPaneVisible(browserId),
     canvas: () => false,
     changes: () => isPaneVisible(REVIEW_PANE_ID),
+    cli: () => false,
+    code: () => isPaneVisible(CODE_PANE_ID),
     files: () => isPaneVisible('files'),
     live: () => $liveOpen.get() && isPaneVisible(LIVE_PANE_ID),
     terminal: () => $terminalTakeover.get()
@@ -230,7 +263,7 @@ function panelOn(id: PanelId): boolean {
   return on[id]()
 }
 
-type ArrangementId = 'build' | 'focus' | 'review' | 'watch'
+type ArrangementId = 'build' | 'code' | 'focus' | 'review' | 'watch'
 
 /** One-click workspaces: which panels sit beside the chat. Applying one flips
  *  only what differs, and what it turns on lands side by side. */
@@ -238,7 +271,9 @@ const ARRANGEMENTS: readonly { advanced?: boolean; icon: string; id: Arrangement
   { icon: 'screen-full', id: 'focus', panels: [] },
   { icon: 'git-compare', id: 'review', panels: ['changes', 'files'] },
   { icon: 'pulse', id: 'watch', panels: ['live', 'artifacts'] },
-  { advanced: true, icon: 'tools', id: 'build', panels: ['browser', 'terminal'] }
+  { advanced: true, icon: 'tools', id: 'build', panels: ['browser', 'terminal'] },
+  // The developer seat: your editor and a terminal beside the conversation.
+  { advanced: true, icon: 'vscode', id: 'code', panels: ['code', 'terminal'] }
 ]
 
 const nextFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
@@ -263,14 +298,28 @@ async function arrange(panels: readonly PanelId[], hasProject: boolean) {
   }
 }
 
-function ArrangementChips({ advanced, copy, hasProject }: { advanced: boolean; copy: Translations['panels']; hasProject: boolean }) {
+function ArrangementChips({
+  advanced,
+  copy,
+  hasProject
+}: {
+  advanced: boolean
+  copy: Translations['panels']
+  hasProject: boolean
+}) {
   // Subscribe to everything panelOn reads so the active chip stays truthful.
   const states = usePanelStates()
   const current = new Set(PANELS.filter(spec => !spec.action && states[spec.id]).map(spec => spec.id))
 
+  const items = ARRANGEMENTS.filter(item => advanced || !item.advanced)
+
   return (
-    <div className="grid grid-cols-4 gap-1 px-1 pb-2" data-slot="panel-arrangements">
-      {ARRANGEMENTS.filter(item => advanced || !item.advanced).map(item => {
+    <div
+      className="grid gap-1 px-1 pb-2"
+      data-slot="panel-arrangements"
+      style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+    >
+      {items.map(item => {
         const active = current.size === item.panels.length && item.panels.every(id => current.has(id))
 
         return (
@@ -315,7 +364,10 @@ export function PanelLauncher() {
   return (
     <Popover onOpenChange={next => $panelLauncherOpen.set(next)} open={open}>
       <PopoverAnchor asChild>
-        <span aria-hidden className="pointer-events-none fixed top-[calc(var(--titlebar-height,2.25rem)+0.25rem)] right-3 size-px" />
+        <span
+          aria-hidden
+          className="pointer-events-none fixed top-[calc(var(--titlebar-height,2.25rem)+0.25rem)] right-3 size-px"
+        />
       </PopoverAnchor>
       <PopoverContent
         align="end"

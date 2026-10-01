@@ -6,6 +6,7 @@ import { SessionTagChip } from '@/app/chat/session-tag'
 import { SessionAskDialog } from '@/app/chat/sidebar/session-ask-dialog'
 import { SessionDeviceDialog } from '@/app/chat/sidebar/session-device-dialog'
 import { openSession } from '@/app/open-session'
+import { continueInHermesCli } from '@/app/right-sidebar/terminal/hermes-cli'
 import {
   closeAllTreeTabs,
   closeOtherTreeTabs,
@@ -483,6 +484,23 @@ function useSessionActions({
                   ?.cwd?.trim() || undefined
 
               void openSessionInTerminal(sessionId, { cwd, profile })
+            }
+          }),
+          // The same TUI, in the app's own terminal pane under the chat.
+          spec({
+            disabled: !sessionId,
+            icon: 'debug-console',
+            label: r.continueInCli,
+            onSelect: () => {
+              triggerHaptic('selection')
+
+              const cwd =
+                $sessions
+                  .get()
+                  .find(s => sessionMatchesStoredId(s, sessionId))
+                  ?.cwd?.trim() || undefined
+
+              void continueInHermesCli(sessionId, { cwd, profile })
             }
           })
         ]

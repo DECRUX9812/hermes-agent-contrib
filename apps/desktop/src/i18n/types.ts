@@ -3165,11 +3165,28 @@ export interface Translations {
     needsProject: string
     openFolder: string
     arrange: string
-    arrangements: Record<'build' | 'focus' | 'review' | 'watch', string>
+    arrangements: Record<'build' | 'code' | 'focus' | 'review' | 'watch', string>
     items: Record<
-      'artifacts' | 'browser' | 'canvas' | 'changes' | 'files' | 'live' | 'terminal',
+      'artifacts' | 'browser' | 'canvas' | 'changes' | 'cli' | 'code' | 'files' | 'live' | 'terminal',
       { label: string; description: string }
     >
+  }
+  codePane: {
+    title: string
+    cli: string
+    cliHint: string
+    reload: string
+    starting: string
+    startingBody: string
+    noProject: string
+    noProjectBody: string
+    missingTitle: string
+    missingBody: string
+    failedTitle: string
+    failedBody: string
+    remoteTitle: string
+    remoteBody: string
+    retry: string
   }
   quickOpen: {
     title: string
@@ -3430,6 +3447,7 @@ export interface Translations {
       unarchive: string
       newWindow: string
       openInTerminal: string
+      continueInCli: string
       hideTabBar: string
       openInNewTab: string
       openInSplit: string

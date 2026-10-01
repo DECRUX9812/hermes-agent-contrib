@@ -3757,7 +3757,7 @@ export const en: Translations = {
     needsProject: 'Open a folder to use this',
     openFolder: 'Open a folder…',
     arrange: 'Arrange…',
-    arrangements: { focus: 'Focus', review: 'Review', watch: 'Watch', build: 'Build' },
+    arrangements: { focus: 'Focus', review: 'Review', watch: 'Watch', build: 'Build', code: 'Code' },
     items: {
       files: { label: 'Files', description: 'Browse and preview your project' },
       changes: { label: 'Changes', description: 'Review what the agent changed' },
@@ -3765,8 +3765,29 @@ export const en: Translations = {
       terminal: { label: 'Terminal', description: 'Run commands yourself' },
       live: { label: 'Live activity', description: 'Every command the agent runs, as it runs' },
       artifacts: { label: 'Artifacts', description: 'Things this chat has made' },
-      canvas: { label: 'Canvas', description: 'Sketch on a board the agent can draw on too' }
+      canvas: { label: 'Canvas', description: 'Sketch on a board the agent can draw on too' },
+      code: { label: 'VS Code', description: 'Your editor on this project, beside the chat' },
+      cli: { label: 'Hermes CLI', description: 'Continue this chat in the terminal' }
     }
+  },
+  codePane: {
+    title: 'VS Code',
+    cli: 'Hermes CLI',
+    cliHint: 'Continue this chat in Hermes CLI, in the terminal below',
+    reload: 'Reload editor',
+    starting: 'Starting VS Code…',
+    startingBody: 'Serving your own VS Code on this computer. The first start can take a moment.',
+    noProject: 'No project yet',
+    noProjectBody: 'Open a folder and VS Code opens on it here.',
+    missingTitle: 'VS Code not found',
+    missingBody:
+      'Install VS Code and its `code` command (Command Palette → "Shell Command: Install \'code\' command in PATH"), or openvscode-server, then try again.',
+    failedTitle: 'VS Code did not start',
+    failedBody: 'The editor server stopped before it was ready.',
+    remoteTitle: 'Runs on this computer',
+    remoteBody:
+      "This chat's project lives on the remote host, and this editor runs on your computer. Open VS Code on that host instead.",
+    retry: 'Try again'
   },
   quickOpen: {
     title: 'Quick open',
@@ -4041,6 +4062,7 @@ export const en: Translations = {
       unarchive: 'Unarchive',
       newWindow: 'New window',
       openInTerminal: 'Open in terminal',
+      continueInCli: 'Continue in Hermes CLI',
       hideTabBar: 'Hide tab bar',
       openInNewTab: 'Open in new tab',
       openInSplit: 'Open in split',

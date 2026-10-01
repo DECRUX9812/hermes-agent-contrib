@@ -50,6 +50,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   getAgentRoster: () => ipcRenderer.invoke('hermes:agents:roster'),
   openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('hermes:window:openSession', sessionId, opts),
   openSessionInTerminal: (sessionId, opts) => ipcRenderer.invoke('hermes:window:openInTerminal', sessionId, opts),
+  openVsCode: folder => ipcRenderer.invoke('hermes:vscode:open', folder),
   openWindow: (options?: DesktopProfileRoute) => ipcRenderer.invoke('hermes:window:openInstance', options),
   openBrowserWindow: tabId => ipcRenderer.invoke('hermes:window:openBrowser', tabId),
   onBrowserPopoutClosed: callback => {

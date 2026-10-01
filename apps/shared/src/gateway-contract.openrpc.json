@@ -2024,7 +2024,7 @@
     },
     {
       "name": "insights.get",
-      "summary": "Session/message counts over the last ``days`` for the (optionally scoped) profile store.",
+      "summary": "Session/message counts over the last ``days`` for the (optionally scoped) profile store; ``report`` adds the /insights token + cost breakdown (``empty``, ``overview``, ``models``).",
       "params": [
         {
           "name": "params",
@@ -18711,6 +18711,18 @@
             ],
             "default": null,
             "title": "Profile"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Report"
           }
         },
         "title": "InsightsGetParams",
@@ -18730,6 +18742,19 @@
           "messages": {
             "title": "Messages",
             "type": "integer"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Report"
           }
         },
         "required": [

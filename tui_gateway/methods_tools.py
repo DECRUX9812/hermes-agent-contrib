@@ -1088,7 +1088,13 @@ def _(rid, params: dict) -> dict:
             return _db_unavailable_error(rid, code=5017)
         cutoff = time.time() - days * 86400
         rows = [s for s in db.list_sessions_rich(limit=500, compact_rows=True) if (s.get("started_at") or 0) >= cutoff]
-    return _ok(rid, {"days": days, "sessions": len(rows), "messages": sum(s.get("message_count", 0) for s in rows)})
+        payload = {"days": days, "sessions": len(rows), "messages": sum(s.get("message_count", 0) for s in rows)}
+        # ``report`` adds the /insights token + cost breakdown (overview, per model) for desktop surfaces.
+        if params.get("report"):
+            from agent.insights import InsightsEngine
+            report = InsightsEngine(db).generate(days=days)
+            payload["report"] = {k: report.get(k) for k in ("empty", "overview", "models")}
+    return _ok(rid, payload)
 
 
 @_rpc("rollback.list", live_session=True, fail_code=5020)

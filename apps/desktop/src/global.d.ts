@@ -88,12 +88,22 @@ declare global {
         sessionId: string,
         opts?: { connectionId?: null | string; profile?: null | string; watch?: boolean }
       ) => Promise<{ ok: boolean; error?: string }>
-      // Resume this session in the user's own terminal emulator (`hermes --tui
-      // --resume <id>`) — the external terminal, not the in-app pane.
+      // Resume this session in the TUI (`hermes --tui --resume <id>`): in the
+      // user's own terminal emulator, or with target 'pane' a `run` line for the
+      // in-app terminal to type.
       openSessionInTerminal: (
         sessionId: string,
-        opts?: { cwd?: string; profile?: string }
-      ) => Promise<{ ok: boolean; error?: string }>
+        opts?: { cwd?: string; profile?: string; target?: 'external' | 'pane' }
+      ) => Promise<{ ok: boolean; error?: string; run?: string }>
+      // Serve the user's VS Code (code serve-web / openvscode-server) on
+      // loopback for the Code pane; the URL opens `folder` and carries the
+      // server's one-run token.
+      openVsCode: (
+        folder?: string
+      ) => Promise<
+        | { ok: true; kind: 'code' | 'code-insiders' | 'openvscode-server'; url: string }
+        | { ok: false; error: 'failed' | 'not-installed'; detail?: string }
+      >
       // Open a new full-chrome app window — a peer instance of the primary that
       // renders the complete app on an explicit connection/profile, or inherits
       // the calling window's route when no options are supplied.

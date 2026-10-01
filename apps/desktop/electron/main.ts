@@ -243,10 +243,12 @@ import { createAmbientClaimArbiter } from './event-dedupe'
 import { openExternalUrl as externalOpen, type ExternalOpenDeps, reportPreOpenStatFailure } from './external-open'
 import {
   buildTerminalScript,
+  cliArgs,
+  paneRunLine,
   resolveTerminalLaunch,
   terminalScriptEnv,
   terminalScriptExtension,
-  tuiResumeArgs
+  tuiArgs
 } from './external-terminal'
 import { f12ShortcutDecision, toF12KeyboardEventPayload } from './f12-shortcut'
 import { type FaviconIo, resolveFavicon } from './favicon'
@@ -556,6 +558,7 @@ import { createSshTeardownTracker } from './ssh-teardown'
 import { createStreamThrottle } from './stream-throttle'
 import { installSystemCaTrust } from './system-ca'
 import { registerTerminalIpc } from './terminal-ipc'
+import { registerVsCodeIpc } from './vscode-ipc'
 import { nativeOverlayWidth as computeNativeOverlayWidth, titleBarOverlayOptions } from './titlebar-overlay-width'
 import {
   backgroundMaterialFor,
@@ -16074,13 +16077,17 @@ ipcMain.handle('hermes:window:openBrowser', async (_event, tabId) => {
 // never ensureRuntime(), which would kick off a first-run install from a menu
 // click; an unresolved runtime is reported instead.
 ipcMain.handle('hermes:window:openInTerminal', async (_event, sessionId, opts) => {
-  if (typeof sessionId !== 'string' || !sessionId.trim()) {
+  const pane = opts?.target === 'pane'
+  const id = typeof sessionId === 'string' ? sessionId.trim() : ''
+
+  // The in-app pane may also open a fresh TUI (a chat with no stored row yet).
+  if (!id && !pane) {
     return { ok: false, error: 'invalid-session-id' }
   }
 
   try {
     const profile = typeof opts?.profile === 'string' ? opts.profile.trim() : ''
-    const backend = await resolveHermesBackend(tuiResumeArgs(sessionId.trim(), profile || undefined))
+    const backend = await resolveHermesBackend((pane ? cliArgs : tuiArgs)(id, profile || undefined))
 
     if (!backend.command) {
       return { ok: false, error: 'Hermes is not installed yet' }
@@ -16106,13 +16113,19 @@ ipcMain.handle('hermes:window:openInTerminal', async (_event, sessionId, opts) =
       { mode: 0o700 }
     )
 
+    // The in-app terminal runs the same script in its own shell: same runtime,
+    // same profile, no emulator to find.
+    if (pane) {
+      return { ok: true, run: paneRunLine(scriptPath) }
+    }
+
     const launch = resolveTerminalLaunch({ findOnPath, scriptPath })
 
     if (!launch) {
       return { ok: false, error: 'No terminal emulator found' }
     }
 
-    rememberLog(`[terminal] opening session ${sessionId} via ${launch.command}`)
+    rememberLog(`[terminal] opening session ${id} via ${launch.command}`)
 
     // Detached + unref'd: the terminal window outlives the desktop app, and
     // never inherits our stdio (a closed pipe would kill the TUI).
@@ -18809,6 +18822,9 @@ const terminalIpc = registerTerminalIpc({
 
 const disposeTerminalSession = terminalIpc.disposeTerminalSession
 
+// The Code pane's VS Code server (hermes:vscode:*) — see vscode-ipc.ts.
+const vsCodeIpc = registerVsCodeIpc({ findOnPath, rememberLog })
+
 ipcMain.handle(
   'hermes:updates:check',
   async (_event: Electron.IpcMainInvokeEvent, opts?: { force?: boolean }): Promise<UpdaterStatusWire> =>
@@ -19904,6 +19920,7 @@ app.on('before-quit', event => {
   // Kill open PTYs before environment teardown to avoid the node-pty#904
   // ThreadSafeFunction SIGABRT race.
   terminalIpc.disposeAllTerminalSessions()
+  vsCodeIpc.dispose()
 
   void backendShutdown.run()
 })
