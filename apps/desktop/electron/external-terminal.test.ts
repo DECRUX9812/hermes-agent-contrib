@@ -1,26 +1,59 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 
 import { test } from 'vitest'
 
 import {
   buildTerminalScript,
+  paneRunLine,
   posixQuote,
   resolveTerminalLaunch,
   terminalScriptEnv,
   terminalScriptExtension,
-  tuiResumeArgs,
+  tuiArgs,
   windowsQuote
 } from './external-terminal'
 
 const never = () => null
 const always = (command: string) => `/usr/bin/${command}`
 
-test('tuiResumeArgs resumes the session in the TUI', () => {
-  assert.deepEqual(tuiResumeArgs('20260814_101010_abc123'), ['--tui', '--resume', '20260814_101010_abc123'])
+test('tuiArgs resumes the session in the TUI', () => {
+  assert.deepEqual(tuiArgs('20260814_101010_abc123'), ['--tui', '--resume', '20260814_101010_abc123'])
 })
 
-test('tuiResumeArgs pins the profile ahead of the mode flag', () => {
-  assert.deepEqual(tuiResumeArgs('sess', 'work'), ['--profile', 'work', '--tui', '--resume', 'sess'])
+test('tuiArgs pins the profile ahead of the mode flag', () => {
+  assert.deepEqual(tuiArgs('sess', 'work'), ['--profile', 'work', '--tui', '--resume', 'sess'])
+})
+
+test('tuiArgs without a session opens a fresh TUI', () => {
+  assert.deepEqual(tuiArgs('', 'work'), ['--profile', 'work', '--tui'])
+})
+
+test.skipIf(process.platform === 'win32')('the pane run line executes the launcher script with its cwd and env', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hermes pane o'brien "))
+  const script = path.join(dir, 'hermes.sh')
+
+  fs.writeFileSync(
+    script,
+    buildTerminalScript({
+      command: '/bin/sh',
+      args: ['-c', 'printf "%s|%s" "$PWD" "$HERMES_HOME"'],
+      cwd: dir,
+      env: { HERMES_HOME: '/h' },
+      platform: 'linux'
+    })
+  )
+
+  const out = execFileSync('/bin/sh', ['-c', paneRunLine(script, 'linux')], { cwd: os.tmpdir() }).toString()
+
+  assert.equal(out, `${fs.realpathSync(dir)}|/h`)
+})
+
+test('the Windows pane run line hands the .cmd launcher to cmd.exe', () => {
+  assert.equal(paneRunLine('C:\\Users\\a b\\hermes.cmd', 'win32'), 'cmd /d /c "C:\\Users\\a b\\hermes.cmd"')
 })
 
 test('posixQuote survives embedded single quotes', () => {

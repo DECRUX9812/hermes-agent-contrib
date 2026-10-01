@@ -15,6 +15,7 @@ import { useMemo } from 'react'
 
 import { RightSidebarPane } from '@/app/right-sidebar'
 import { ArtifactsRailPane } from '@/app/right-sidebar/artifacts'
+import { CodePane as VsCodePane } from '@/app/right-sidebar/code'
 import { LiveActivityPane } from '@/app/right-sidebar/live'
 import { ReviewPane } from '@/app/right-sidebar/review'
 import type { GroupSetter } from '@/app/shell/group-setter'
@@ -215,3 +216,11 @@ export function registryGroupSetter<T>(prefix: string): GroupSetter<T> {
  *  take as props, backed by the registry instead of component state. */
 export const setStatusbarItemGroup = registryGroupSetter<StatusbarItem>('statusBar')
 export const setTitlebarToolGroup = registryGroupSetter<TitlebarTool>('titleBar.tools')
+
+export function CodePane() {
+  return (
+    <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col')}>
+      <VsCodePane />
+    </div>
+  )
+}

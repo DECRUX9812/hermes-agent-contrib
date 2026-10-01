@@ -2,6 +2,8 @@ import { atom } from 'nanostores'
 
 import { persistBoolean, storedBoolean } from '@/lib/storage'
 import { modeBound } from '@/store/interface-mode'
+import { notifyError } from '@/store/notifications'
+import { canOpenSessionInTerminal } from '@/store/windows'
 
 const TAKEOVER_KEY = 'hermes.desktop.terminalTakeover'
 
@@ -34,4 +36,31 @@ export const runInTerminal = (command: string) => {
 
   setTerminalTakeover(true)
   $terminalInjection.set(trimmed)
+}
+
+/**
+ * Continue a chat in Hermes CLI inside the app's own terminal pane: the same
+ * `hermes --tui --resume <id>` the external verb runs, typed into the
+ * embedded terminal, so the conversation, its history and its project sit in
+ * one window. With no stored session yet it opens a fresh TUI.
+ */
+export async function continueInHermesCli(
+  sessionId: null | string,
+  opts?: { cwd?: string; profile?: string }
+): Promise<void> {
+  if (!canOpenSessionInTerminal()) {
+    return
+  }
+
+  try {
+    const result = await window.hermesDesktop.openSessionInTerminal(sessionId ?? '', { ...opts, target: 'pane' })
+
+    if (!result?.ok || !result.run) {
+      throw new Error(result?.error || 'unknown error')
+    }
+
+    runInTerminal(result.run)
+  } catch (err) {
+    notifyError(err, 'Could not open Hermes CLI')
+  }
 }
