@@ -223,3 +223,21 @@ def test_foreign_profile_poller_requeues_event_owned_through_another_profiles_li
         with server._sessions_lock:
             server._sessions.clear()
             server._sessions.update(saved)
+
+
+def test_insights_get_report_carries_the_recorded_token_and_cost_breakdown(launch_db_env):
+    """``insights.get {report: true}`` hands desktop surfaces the same per-model token and cost
+    totals ``/insights`` computes, so a spend view never re-derives them from session rows."""
+    db = server._get_db()
+    db.create_session("spend", source="tui", model="deepseek-chat")
+    db.update_token_counts("spend", input_tokens=1200, output_tokens=300, cache_read_tokens=9000,
+                           model="deepseek-chat", billing_provider="deepseek", api_call_count=2)
+
+    plain = server._methods["insights.get"]("rid", {"days": 7})["result"]
+    report = server._methods["insights.get"]("rid", {"days": 7, "report": True})["result"]["report"]
+
+    assert "report" not in plain
+    overview = report["overview"]
+    assert (overview["total_input_tokens"], overview["total_output_tokens"], overview["total_cache_read_tokens"]) == (1200, 300, 9000)
+    assert sum(m["input_tokens"] for m in report["models"]) == overview["total_input_tokens"]
+    assert overview["estimated_cost"] == pytest.approx(sum(m["cost"] for m in report["models"]))

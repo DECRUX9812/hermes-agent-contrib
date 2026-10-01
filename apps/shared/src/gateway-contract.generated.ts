@@ -4181,11 +4181,13 @@ export interface SlashExecResult {
 export interface InsightsGetParams {
   days?: number | null
   profile?: string | null
+  report?: boolean | null
 }
 export interface InsightsGetResult {
   days: number
   sessions: number
   messages: number
+  report?: Record<string, unknown> | null
 }
 export interface ConfigShowParams {
   profile?: string | null
@@ -5584,7 +5586,7 @@ export interface RpcMethods {
   'image.generate': { params: ImageGenerateParams; result: ImageGenerateResult }
   /** Recognise a terminal file drop pasted into the composer and turn it into an attachment. */
   'input.detect_drop': { params: InputDetectDropParams; result: InputDetectDropResult }
-  /** Session/message counts over the last ``days`` for the (optionally scoped) profile store. */
+  /** Session/message counts over the last ``days`` for the (optionally scoped) profile store; ``report`` adds the /insights token + cost breakdown (``empty``, ``overview``, ``models``). */
   'insights.get': { params: InsightsGetParams; result: InsightsGetResult }
   /** Archive a skill (restorable via curator) or remove a memory chunk. */
   'learning.delete': { params: LearningNodeParams; result: LearningMutationResult }
