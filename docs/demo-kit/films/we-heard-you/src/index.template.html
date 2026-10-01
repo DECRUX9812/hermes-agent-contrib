@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Hermes Agent — We heard you</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #070c22; }
+      #main { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: Montserrat, sans-serif; }
+      .layer { position: absolute; inset: 0; }
+      /* The app window: real footage (1920x1200 px) shown 1280x800 in its slot, camera inside. */
+      #halo { position: absolute; left: 420px; top: 40px; width: 1520px; height: 1020px; opacity: 0;
+        background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255, 43, 214, 0.2) 0%, rgba(255, 43, 214, 0) 70%); }
+      #window { position: absolute; left: 540px; top: 150px; width: 1280px; height: 800px; overflow: hidden; border-radius: 18px; opacity: 0;
+        border: 1px solid rgba(255, 255, 255, 0.16); background: #0d0221; transform-origin: 50% 50%;
+        box-shadow: 0 50px 140px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.4); }
+      #cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1200px; transform-origin: 0 0; }
+      #cam video { position: absolute; left: 0; top: 0; width: 1920px; height: 1200px; }
+      /* A complaint, big and centered, before it flies into the composer and becomes the prompt. */
+      .cc { position: absolute; left: 960px; top: 500px; width: 1040px; padding: 40px 56px 46px; border-radius: 26px; opacity: 0;
+        background: rgba(12, 19, 48, 0.94); border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 40px 120px rgba(0, 0, 0, 0.6); color: #f3ecdc; }
+      .cc-tag { font-family: 'Space Mono', monospace; font-size: 22px; letter-spacing: 0.18em; text-transform: uppercase; color: #f2b53b; margin-bottom: 14px; }
+      .cc-text { font-size: 64px; font-weight: 800; letter-spacing: -0.035em; line-height: 1.08; text-wrap: balance; }
+    </style>
+  </head>
+  <body>
+    <div id="main" data-composition-id="main" data-start="0" data-duration="{{END}}" data-width="1920" data-height="1080">
+      <div id="bg" class="layer" data-composition-id="bg" data-composition-src="compositions/bg.html" data-start="0" data-duration="{{END}}" data-track-index="0" data-width="1920" data-height="1080"></div>
+
+      <div id="halo"></div>
+      <div id="window" data-layout-allow-overflow>
+        <div id="cam">
+          <!-- Real Hermes Desktop footage, three cuts per scene: typing, build (fast), result. -->
+          {{VIDEOS}}
+        </div>
+      </div>
+
+      <div id="words" class="layer" data-composition-id="words" data-composition-src="compositions/words.html" data-start="0" data-duration="{{END}}" data-track-index="2" data-width="1920" data-height="1080"></div>
+      <div id="cards" class="layer" data-layout-allow-overflow>
+{{CARDS}}
+      </div>
+      <div id="story" class="layer" data-composition-id="story" data-composition-src="compositions/story.html" data-start="0" data-duration="8.4" data-track-index="3" data-width="1920" data-height="1080"></div>
+      <div id="lockup" class="layer" data-composition-id="lockup" data-composition-src="compositions/lockup.html" data-start="{{LOCKUP}}" data-duration="{{LOCKUP_DUR}}" data-track-index="4" data-width="1920" data-height="1080"></div>
+      <div id="fx" class="layer" data-composition-id="fx" data-composition-src="compositions/fx.html" data-start="0" data-duration="{{END}}" data-track-index="5" data-width="1920" data-height="1080"></div>
+
+      <audio id="score" src="assets/score.wav" data-start="0" data-duration="{{END}}" data-track-index="6" data-volume="1"></audio>
+    </div>
+
+    <script>
+      (() => {
+        const W = 1280, H = 800, K = W / 1920
+        const SCENES = {{SCENES}}
+        const sc = Object.fromEntries(SCENES.map(s => [s.id, s]))
+        // Camera: frame footage point (px, py) at zoom z, never showing past the footage edge.
+        const cam = (z, px = 960, py = 600) => {
+          const s = K * z
+          const clamp = (v, lo) => Math.min(0, Math.max(lo, v))
+          return { scale: s, x: clamp(W / 2 - px * s, W - 1920 * s), y: clamp(H / 2 - py * s, H - 1200 * s) }
+        }
+        // Screen position of a footage point under a camera state (window in its slot).
+        const onScreen = (c, px, py) => ({ x: 540 + c.x + px * c.scale, y: 150 + c.y + py * c.scale })
+        const tl = gsap.timeline({ paused: true })
+
+        // The window arrives under the first complaint and stays for the six answers.
+        tl.fromTo('#window', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.7, ease: 'expo.out', immediateRender: false }, sc.vibe.s)
+        tl.fromTo('#halo', { opacity: 0 }, { opacity: 1, duration: 1.2, ease: 'power2.out', immediateRender: false }, sc.vibe.s + 0.6)
+
+        // Each scene opens on its complaint over a dimmed app. The card then flies into the composer
+        // and shrinks away as the prompt it became is typed: the complaint IS the prompt.
+        SCENES.forEach(s => {
+          const typing = cam(1.7, ...s.point)
+          tl.set('#cam', typing, s.s)
+          tl.to('#cam', { ...cam(1.8, ...s.point), duration: s.b - s.s, ease: 'none' }, s.s)
+          tl.set('#window', { filter: 'brightness(0.3) blur(6px)' }, s.s)
+          tl.to('#window', { filter: 'brightness(1) blur(0px)', duration: 0.45, ease: 'power2.out' }, s.s + 0.95)
+          const card = '#cc-' + s.id, at = onScreen(typing, ...s.point)
+          tl.set(card, { xPercent: -50, yPercent: -50 }, 0)
+          tl.fromTo(card, { scale: 0.72, opacity: 0, filter: 'blur(14px)' },
+            { scale: 1, opacity: 1, filter: 'blur(0px)', duration: 0.38, ease: 'expo.out', immediateRender: false }, s.s)
+          tl.to(card, { x: at.x - 960, y: at.y - 500, scale: 0.18, opacity: 0, duration: 0.5, ease: 'power3.in' }, s.s + 0.92)
+        })
+
+        // 1 · Synthwave: pull back while the build runs so the whole app flips, then drift in.
+        tl.to('#cam', { ...cam(1), duration: 0.45, ease: 'expo.out' }, sc.vibe.b)
+        tl.to('#cam', { ...cam(1.12, 960, 560), duration: sc.vibe.cdur, ease: 'none' }, sc.vibe.c)
+
+        // 2 · Focus timer: the card in the chat, pushing in as Start is pressed.
+        tl.set('#cam', cam(1.25, 995, 700), sc.timer.b)
+        tl.set('#cam', cam(1.55, 999, 648), sc.timer.c)
+        tl.to('#cam', { ...cam(1.85, 999, 648), duration: sc.timer.cdur, ease: 'none' }, sc.timer.c)
+
+        // 3 · Remix: straight onto the orb as it turns gold.
+        tl.set('#cam', cam(1.2, 1100, 600), sc.remix.b)
+        tl.set('#cam', cam(2.4, 1716, 284), sc.remix.c)
+        tl.to('#cam', { ...cam(2.75, 1716, 284), duration: sc.remix.cdur, ease: 'none' }, sc.remix.c)
+
+        // 4 · Flow: close on the drawing while a step is added and named.
+        tl.set('#cam', cam(1.25, 995, 640), sc.flow.b)
+        tl.set('#cam', cam(1.75, 999, 700), sc.flow.c)
+        tl.to('#cam', { ...cam(1.95, 990, 712), duration: sc.flow.cdur, ease: 'none' }, sc.flow.c)
+
+        // 5 · Spend: the page opens wide, then the camera lands on the donut and the total.
+        tl.set('#cam', cam(1.2, 995, 700), sc.spend.b)
+        tl.set('#cam', cam(1), sc.spend.c)
+        tl.to('#cam', { ...cam(1.45, 740, 440), duration: 0.9, ease: 'expo.inOut' }, sc.spend.c + 1.0)
+        tl.to('#cam', { ...cam(1.58, 740, 440), duration: sc.spend.len - (sc.spend.c - sc.spend.s) - 1.9, ease: 'none' }, sc.spend.c + 1.9)
+
+        // 6 · Mission Control: the constellation, wide, drifting in on the core. Then the window bows out.
+        tl.set('#cam', cam(1.2, 995, 640), sc.mission.b)
+        tl.set('#cam', cam(1), sc.mission.c)
+        tl.to('#cam', { ...cam(1.16, 995, 610), duration: 6, ease: 'none' }, sc.mission.c + 0.8)
+        tl.to('#window', { scale: 0.38, y: -230, x: -220, opacity: 0, duration: 0.75, ease: 'expo.in' }, {{LOCKUP}} - 0.75)
+        tl.to('#halo', { opacity: 0, duration: 0.6 }, {{LOCKUP}} - 0.6)
+
+        window.__timelines['main'] = tl
+      })()
+    </script>
+  </body>
+</html>

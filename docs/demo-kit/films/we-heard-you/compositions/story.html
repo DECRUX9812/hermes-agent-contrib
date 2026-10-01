@@ -1,0 +1,80 @@
+<!doctype html>
+<html><head><meta charset="UTF-8" /></head><body><template>
+      <style>
+        #story-root { position: absolute; inset: 0; pointer-events: none; font-family: Montserrat, sans-serif; overflow: hidden; }
+        #wall { position: absolute; inset: 0; transform-origin: 50% 50%; }
+        /* Anonymous, paraphrased complaints: plain quote cards, no names, no site chrome. */
+        .wc { position: absolute; left: 0; top: 0; padding: 20px 26px 22px; border-radius: 16px; opacity: 0; color: #f3ecdc; font-weight: 700;
+          letter-spacing: -0.02em; line-height: 1.15; background: rgba(15, 24, 58, 0.93); border: 1px solid rgba(255, 255, 255, 0.14);
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55); }
+        .wc::before { content: '\201C'; display: block; height: 0.5em; margin-bottom: 0.15em; font-size: 1.6em; line-height: 0.9; color: #f2b53b; }
+        #flash { position: absolute; inset: 0; background: #f3efe2; opacity: 0; }
+        #heard { position: absolute; left: 0; right: 0; top: 360px; text-align: center; font-size: 176px; font-weight: 900; letter-spacing: -0.055em; color: #f3ecdc; }
+        #heard span { display: inline-block; opacity: 0; margin: 0 0.12em; }
+        #heard .gold { color: #f2b53b; }
+        #heard-sub { position: absolute; left: 0; right: 0; top: 640px; text-align: center; font-size: 40px; font-weight: 700; letter-spacing: -0.02em; color: rgba(243, 236, 220, 0.82); opacity: 0; }
+      </style>
+      <div id="story-root" data-composition-id="story" data-width="1920" data-height="1080">
+        <div id="wall" data-layout-allow-overflow></div>
+        <div id="flash" data-layout-allow-occlusion></div>
+        <div id="heard" data-layout-allow-occlusion><span>We</span><span>heard</span><span class="gold">you.</span></div>
+        <div id="heard-sub" data-layout-allow-occlusion>Six complaints. Six fixes. Built live, by asking.</div>
+      </div>
+      <script>
+        (() => {
+          const BEAT = 60 / 118, BAR = 4 * BEAT, DROP = 3 * BAR
+          // [text, centre x, centre y, width, tilt, font size]; the first card holds long enough to read.
+          const CARDS = [
+            ['Every AI app looks exactly the same.', 960, 520, 760, -1.5, 46],
+            ['Why is the plugin API so bad?', 430, 215, 470, 3, 30],
+            ['Plugins break every single update.', 1480, 235, 500, -2.5, 30],
+            ["I can't see what my agents are doing.", 400, 830, 520, -3, 30],
+            ['I have no idea what this is costing me.', 1490, 845, 540, 2, 30],
+            ["It's a black box.", 1180, 400, 340, 4, 30],
+            ['Half the plugins are abandoned.', 700, 340, 420, -4, 26],
+            ['I just want it to do one thing.', 1260, 660, 460, -1, 28],
+            ['Can I please just change the colors?', 570, 660, 470, 2.5, 26],
+            ['AI charts are dead pictures.', 1620, 500, 400, 3.5, 26],
+            ['Is it even working right now?', 300, 480, 400, -2, 26],
+            ['Too many settings. None I need.', 980, 150, 440, 1.5, 26],
+            ['Why do I need to learn an API to change anything?', 980, 920, 620, -1.5, 26],
+            ['My bill doubled. No idea why.', 1700, 120, 380, -3, 24],
+            ['Where did that chat go?', 210, 140, 330, 3, 24],
+            ['I just want it to do the thing.', 1700, 990, 380, -2, 24]
+          ]
+          const wall = document.getElementById('wall')
+          const els = CARDS.map(([text, x, y, w, rot, size]) => {
+            const el = document.createElement('div')
+            el.className = 'wc'
+            el.textContent = text
+            el.style.width = w + 'px'
+            el.style.fontSize = size + 'px'
+            wall.appendChild(el)
+            return { el, x, y, rot }
+          })
+          const tl = gsap.timeline({ paused: true })
+          // They pile up faster and faster, on sixteenth notes.
+          els.forEach(({ el, x, y, rot }, i) => {
+            const at = Math.round((0.3 + 4.5 * Math.pow(i / (els.length - 1), 0.6)) / (BEAT / 4)) * (BEAT / 4)
+            tl.set(el, { x, y, xPercent: -50, yPercent: -50, rotation: rot }, 0)
+            tl.fromTo(el, { opacity: 0, scale: 0.6, y: y + 40 }, { opacity: 1, scale: 1, y, duration: 0.34, ease: 'back.out(2)', immediateRender: false }, at)
+          })
+          tl.fromTo('#wall', { scale: 1 }, { scale: 1.08, duration: DROP, ease: 'none' }, 0)
+          // Glitch: the wall jitters and splits into colour before it is pulled into one point.
+          const G = DROP - 1.1
+          tl.to('#wall', { keyframes: { x: [0, -14, 10, -6, 18, -10, 0], opacity: [1, 0.7, 1, 0.5, 1, 0.8, 1] }, duration: 0.6, ease: 'none' }, G)
+          tl.to('.wc', { keyframes: { textShadow: ['0 0 0 rgba(0,0,0,0)', '5px 0 0 #ff2bd6, -5px 0 0 #00e5ff', '-3px 0 0 #ff2bd6, 3px 0 0 #00e5ff', '7px 0 0 #ff2bd6, -7px 0 0 #00e5ff'] }, duration: 0.6, ease: 'none' }, G)
+          els.forEach(({ el }, i) => {
+            tl.to(el, { x: 960, y: 540, scale: 0, opacity: 0, rotation: 0, duration: 0.32, ease: 'power3.in' }, DROP - 0.42 + (i % 5) * 0.015)
+          })
+          tl.fromTo('#flash', { opacity: 0 }, { keyframes: { opacity: [0, 0.9, 0] }, duration: 0.45, ease: 'power2.out', immediateRender: false }, DROP - 0.05)
+          // The answer, on the drop.
+          document.querySelectorAll('#heard span').forEach((w, i) => {
+            tl.fromTo(w, { opacity: 0, scale: 1.5, filter: 'blur(18px)' }, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.5, ease: 'expo.out', immediateRender: false }, DROP + i * BEAT / 2)
+          })
+          tl.fromTo('#heard-sub', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.5, ease: 'expo.out', immediateRender: false }, DROP + 1.0)
+          tl.to(['#heard', '#heard-sub'], { y: -40, opacity: 0, filter: 'blur(10px)', duration: 0.32, ease: 'power2.in' }, 4 * BAR - 0.34)
+          window.__timelines['story'] = tl
+        })()
+      </script>
+</template></body></html>
