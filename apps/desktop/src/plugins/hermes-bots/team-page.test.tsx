@@ -28,6 +28,7 @@ const fixture = (): TeamView => {
     status: 'active',
     title: ''
   }
+
   const writer = {
     ...ceo,
     budget: budget(10, 9),
@@ -38,6 +39,7 @@ const fixture = (): TeamView => {
     skills: ['seo'],
     slot: 'seat_w'
   }
+
   const open = { ...ceo, lead: false, profile: null, reports_to: 'seat_ceo', role: 'Designer', slot: 'seat_o' }
 
   return {

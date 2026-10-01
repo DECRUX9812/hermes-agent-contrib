@@ -1004,6 +1004,8 @@ export interface Translations {
       lookDesc: string
       lookSoft: string
       lookClassic: string
+      chatTextScaleTitle: string
+      chatTextScaleDesc: string
       uiScaleTitle: string
       uiScaleDesc: (percent: number) => string
       sessionDensityTitle: string
@@ -1053,6 +1055,26 @@ export interface Translations {
       }
       backdropTitle: string
       backdropDesc: string
+      backdropScenes: {
+        off: string
+        aurora: string
+        dusk: string
+        ocean: string
+        meadow: string
+        cyanotype: string
+        ink: string
+        grid: string
+        statue: string
+        custom: string
+      }
+      backdropUpload: string
+      backdropRemoveImage: string
+      backdropStrengths: {
+        subtle: string
+        balanced: string
+        vivid: string
+      }
+      backdropImageError: string
       userBubbleTitle: string
       userBubbleDesc: string
       textDirectionTitle: string
@@ -3144,7 +3166,10 @@ export interface Translations {
     openFolder: string
     arrange: string
     arrangements: Record<'build' | 'focus' | 'review' | 'watch', string>
-    items: Record<'artifacts' | 'browser' | 'canvas' | 'changes' | 'files' | 'live' | 'terminal', { label: string; description: string }>
+    items: Record<
+      'artifacts' | 'browser' | 'canvas' | 'changes' | 'files' | 'live' | 'terminal',
+      { label: string; description: string }
+    >
   }
   quickOpen: {
     title: string
@@ -4344,6 +4369,10 @@ export interface Translations {
       editModels: string
       followDefault: string
       refreshModels: string
+      favorites: string
+      addFavorite: string
+      removeFavorite: string
+      favoriteShortcut: string
       fast: string
       free: string
       cacheRead: string
@@ -4558,6 +4587,9 @@ export interface Translations {
     terminalHide: string
     terminalsAria: string
     terminalNew: string
+    terminalReadOnly: string
+    terminalReadOnlyHelp: string
+    terminalOpenInteractive: string
     terminalCloseOthers: string
     terminalCloseAll: string
     addToChat: string
@@ -4568,6 +4600,7 @@ export interface Translations {
     closePane: string
     loading: string
     unavailable: string
+    missingTarget: string
     opening: string
     hide: string
     openPreview: string

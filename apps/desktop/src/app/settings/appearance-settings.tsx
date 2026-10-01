@@ -16,7 +16,7 @@ import { Check, Download, Loader2, Palette, Trash2 } from '@/lib/icons'
 import { selectableCardClass } from '@/lib/selectable-card'
 import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
-import { $backdrop, setBackdrop } from '@/store/backdrop'
+import { $chatTextScale, CHAT_TEXT_SCALE_PRESETS, setChatTextScale } from '@/store/chat-text-scale'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
 import { $preferredEditor } from '@/store/editor-handoff'
 import { $embedAllowed, $embedMode, clearEmbedAllowed, type EmbedMode, setEmbedMode } from '@/store/embed-consent'
@@ -80,6 +80,7 @@ import { setHermesConfigCache, useHermesConfigRecord } from '../hooks/use-config
 
 import { AppearanceExtraSlot } from './appearance-contrib'
 import type { AppearanceSubpageId } from './appearance-subpages'
+import { BackdropSceneGrid, BackdropStrengthControl } from './backdrop-setting'
 import { ChatFontSetting } from './chat-font-setting'
 import { MODE_OPTIONS } from './constants'
 import { setNested } from './helpers'
@@ -428,6 +429,7 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const tabStripDefault = useStore($tabStripDefault)
   const titlebarAppActionsSide = useStore($titlebarAppActionsSide)
   const zoomPercent = useStore($zoomPercent)
+  const chatTextScale = useStore($chatTextScale)
   const embedMode = useStore($embedMode)
   const embedAllowed = useStore($embedAllowed)
   const composerPopoutGesturesEnabled = useStore($composerPopoutGesturesEnabled)
@@ -445,7 +447,6 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const toursEnabled = useStore($toursEnabled)
   const spentTips = useStore($spentTipCount)
   const vibeHeartsEnabled = useStore($vibeHeartsEnabled)
-  const backdrop = useStore($backdrop)
   const introSplash = useStore($introSplash)
   const showModelPricing = useStore($showModelPricing)
   const installs = useStore($marketplaceInstalls)
@@ -717,6 +718,22 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
                 title={a.uiScaleTitle}
               />
 
+              <ListRow
+                action={
+                  <SegmentedControl
+                    onChange={value => {
+                      triggerHaptic('selection')
+                      setChatTextScale(Number(value))
+                    }}
+                    options={CHAT_TEXT_SCALE_PRESETS.map(value => ({ id: String(value), label: `${value}%` }))}
+                    value={String(chatTextScale)}
+                  />
+                }
+                description={a.chatTextScaleDesc}
+                id={settingElementId(ids.chatTextScale)}
+                title={a.chatTextScaleTitle}
+              />
+
               <div id={settingElementId(ids.chatFont)}>
                 <ChatFontSetting />
               </div>
@@ -934,12 +951,13 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
           )}
 
           {show('window-layout') && (
-            <ToggleRow
-              checked={backdrop}
+            <ListRow
+              action={<BackdropStrengthControl />}
+              below={<BackdropSceneGrid />}
               description={a.backdropDesc}
               id={settingElementId(ids.backdrop)}
-              label={a.backdropTitle}
-              onChange={setBackdrop}
+              title={a.backdropTitle}
+              wide
             />
           )}
 

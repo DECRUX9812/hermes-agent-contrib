@@ -1159,6 +1159,9 @@ export const deOverrides = {
       }
     },
     appearance: {
+      chatTextScaleTitle: 'Chat-Textgröße',
+      chatTextScaleDesc:
+        'Skaliert Unterhaltungstext und Nachrichteneingabe relativ zur UI-Skalierung. Seitenleisten und Bedienelemente behalten ihre Größe.',
       title: 'Darstellung',
       intro: 'Nur für Desktop. Modus ist die Helligkeit; Theme ist Farbpalette und Chat-Design.',
       colorMode: 'Farbmodus',
@@ -1232,7 +1235,27 @@ export const deOverrides = {
         sidebar: 'Nur Seitenleiste'
       },
       backdropTitle: 'Chat-Hintergrund',
-      backdropDesc: 'Das zarte Statuenbild hinter der Konversation.',
+      backdropDesc: 'Eine Szene hinter der Konversation oder Ihr eigenes Bild. Der Text bleibt immer im Vordergrund.',
+      backdropScenes: {
+        off: 'Aus',
+        aurora: 'Polarlicht',
+        dusk: 'Abendrot',
+        ocean: 'Ozean',
+        meadow: 'Wiese',
+        cyanotype: 'Cyanotypie',
+        ink: 'Tusche',
+        grid: 'Punkte',
+        statue: 'Statue',
+        custom: 'Eigenes Bild'
+      },
+      backdropUpload: 'Bild auswählen…',
+      backdropRemoveImage: 'Bild entfernen',
+      backdropStrengths: {
+        subtle: 'Dezent',
+        balanced: 'Ausgewogen',
+        vivid: 'Kräftig'
+      },
+      backdropImageError: 'Das Bild konnte nicht gelesen werden.',
       userBubbleTitle: 'Nachrichten-Blase',
       userBubbleDesc:
         'Wie durchsichtig Ihre eigenen Nachrichten sind. Bei 0 deckend; bei 100 bleibt nur die Kontur übrig.',
@@ -1260,7 +1283,8 @@ export const deOverrides = {
       autoOpenFilesTitle: 'Dateien beim Öffnen eines Projekts zeigen',
       autoOpenFilesDesc: 'Beim Öffnen eines Ordners oder Projekts erscheint der Dateibaum neben dem Chat.',
       activityRailTitle: 'Symbolleiste links',
-      activityRailDesc: 'Eine schmale Symbolspalte am linken Rand – Sitzungen, Bots und alle Seiten mit einem Klick, auch bei eingeklappter Seitenleiste.',
+      activityRailDesc:
+        'Eine schmale Symbolspalte am linken Rand – Sitzungen, Bots und alle Seiten mit einem Klick, auch bei eingeklappter Seitenleiste.',
       openInEditorTitle: 'Dateien öffnen in',
       openInEditorDesc: 'Wohin „Öffnen in …“ eine Datei aus dem Dateibaum schickt. Funktioniert auch mit SSH-Backends.',
       fileBrowserTitle: 'Dateibrowser',
@@ -3716,7 +3740,10 @@ export const deOverrides = {
     askRules: {
       title: (name: string) => `Wann soll ${name} dich fragen?`,
       modes: {
-        manual: { label: 'Erst fragen', description: (name: string) => `${name} hält an und fragt vor allem Riskanten.` },
+        manual: {
+          label: 'Erst fragen',
+          description: (name: string) => `${name} hält an und fragt vor allem Riskanten.`
+        },
         smart: {
           label: 'Nach Ermessen',
           description: (name: string) => `${name} erledigt Routine selbst und fragt, wenn etwas riskant wirkt.`
@@ -3727,7 +3754,8 @@ export const deOverrides = {
         }
       },
       rulesLabel: 'Hausregeln',
-      rulesPlaceholder: 'Deine Regeln in deinen Worten, z. B.: Immer fragen, bevor E-Mails gesendet oder Geld ausgegeben wird.',
+      rulesPlaceholder:
+        'Deine Regeln in deinen Worten, z. B.: Immer fragen, bevor E-Mails gesendet oder Geld ausgegeben wird.',
       save: 'Regeln speichern',
       discard: 'Verwerfen',
       failed: 'Speichern fehlgeschlagen. Deine bisherigen Regeln gelten weiter.'
@@ -5477,6 +5505,10 @@ export const deOverrides = {
       editModels: 'Modelle bearbeiten…',
       followDefault: 'Standard aus den Einstellungen verwenden',
       refreshModels: 'Modelle aktualisieren',
+      favorites: 'Favoriten',
+      addFavorite: 'Zu Favoriten hinzufügen',
+      removeFavorite: 'Aus Favoriten entfernen',
+      favoriteShortcut: '⇧ Klick',
       fast: 'Schnell',
       free: 'kostenlos',
       cacheRead: 'Cache-Lesung',
@@ -6037,10 +6069,6 @@ export const deOverrides = {
         payload_too_large: {
           title: 'Diese Nachricht ist zu groß',
           body: 'Die Anfrage war zu groß für das Modell. Komprimieren Sie das Gespräch oder starten Sie einen neuen Chat und senden Sie erneut.'
-        },
-        no_provider_configured: {
-          title: 'Noch kein KI-Modell eingerichtet',
-          body: 'Wähle ein Modell oder melde dich an und sende deine Nachricht dann erneut.'
         },
         model_not_found: {
           title: 'Dieses Modell ist nicht verfügbar',

@@ -385,7 +385,9 @@ export const rotateFreshDraftKey = (): string => {
 // A draft key belongs to a fresh-chat lifecycle when it is the legacy shared
 // bucket or one of its per-profile / per-instance successors (#66662).
 export const isFreshDraftScope = (key: string | null | undefined): boolean =>
-  typeof key === 'string' && (key === NEW_SESSION_DRAFT_KEY || (key.startsWith(NEW_SESSION_DRAFT_KEY) && key.length > NEW_SESSION_DRAFT_KEY.length))
+  typeof key === 'string' &&
+  (key === NEW_SESSION_DRAFT_KEY ||
+    (key.startsWith(NEW_SESSION_DRAFT_KEY) && key.length > NEW_SESSION_DRAFT_KEY.length))
 
 // `null`, empty, and the bare `__new__` sentinel all name the current fresh
 // chat's bucket; any other key (a session id, an explicit `__new__:…` bucket

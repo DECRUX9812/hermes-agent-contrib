@@ -108,6 +108,9 @@ export interface GatewayOptions {
    *  gateway that predates the RPC (rejects, the room falls back to fan-out);
    *  `null` = known RPC, no covering team (also fan-out). */
   teamLead?: { lead: string; lead_title?: string; team_id?: string; team_name?: string } | null
+  /** Fail `bots_team.room_lead` with a transport error on these calls (1-based)
+   *  — the socket reconnecting under a profile switch. */
+  teamLeadDropsOn?: number[]
   /** Reject only the FIRST prompt.submit — the 4001 reap the retry recovers. */
   failFirstSubmitWith?: unknown
   /** Fired on each post-submit poll, so a test can land a stop mid-turn. */
@@ -170,6 +173,7 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
   const uiMeta: Record<string, unknown> = {}
   const uiMetaRevisions: Record<string, number> = {}
   let sequence = 0
+  let teamLeadCalls = 0
   let submits = 0
   let polls = 0
   let refcount = 0
@@ -238,6 +242,12 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
     }
 
     if (method === 'bots_team.room_lead') {
+      teamLeadCalls += 1
+
+      if (options.teamLeadDropsOn?.includes(teamLeadCalls)) {
+        throw new Error('gateway socket closed')
+      }
+
       if (!Object.hasOwn(options, 'teamLead')) {
         throw gatewayError('Method not found', -32601)
       }
@@ -264,9 +274,7 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
         contracts: {
           follow_profile_config: params.follow_profile_config === true,
           room_plumbing: params.room_plumbing === true,
-          ...(params.team_room === true
-            ? { team_room: true, team_room_lead: String(params.team_room_lead ?? '') }
-            : {})
+          ...(params.team_room === true ? { team_room: true, team_room_lead: String(params.team_room_lead ?? '') } : {})
         },
         messages: [],
         profile,
@@ -478,6 +486,10 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
   // relay.ts builds an LruCache at module scope, and group modules reach it
   // transitively (e.g. through mailbox.ts) — the real class keeps the mock honest.
   const { LruCache } = await import('../../lib/lru-cache')
+  // Real value too: avatar.tsx's `botAppearance` consults it for the
+  // name-derived hue; the room header's face pile now reaches it on every
+  // render with members, so the color has to resolve in tests.
+  const { profileColor } = await import('../../lib/profile-color')
 
   return {
     // Real value: approval.respond forwards it as its client deadline (#60654).
@@ -498,6 +510,7 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
     toggleSessionWatched: undefined,
     CapabilitiesView: undefined,
     MessageTextContent: undefined,
+    profileColor,
     Streamdown: undefined,
     queryClient: { invalidateQueries: () => undefined },
     useQuery: () => ({ data: [], isLoading: false }),

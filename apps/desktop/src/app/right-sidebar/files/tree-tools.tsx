@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useFileSearch } from '@/app/quick-open/use-file-search'
 import { Codicon } from '@/components/ui/codicon'
 import { FileTypeIcon } from '@/components/ui/file-type-icon'
+import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
 import { quickOpenPath } from '@/lib/quick-open'
 import { createTreeEntry } from '@/store/file-tree'
@@ -142,23 +143,23 @@ export function TreeFilter({
         ) : (
           items.map(item => {
             return (
-              <button
-                className="flex h-[1.375rem] w-full min-w-0 items-center gap-1.5 px-4 text-left text-xs text-(--ui-text-secondary) hover:bg-(--ui-control-hover-background) hover:text-foreground"
-                data-slot="tree-filter-row"
-                key={item.rel}
-                onClick={() => open(item.rel, item.isDir)}
-                role="listitem"
-                title={item.rel}
-                type="button"
-              >
-                {item.isDir ? (
-                  <Codicon className="shrink-0 text-(--ui-text-tertiary)" name="folder" size="0.875rem" />
-                ) : (
-                  <FileTypeIcon className="shrink-0" path={item.name} size="0.875rem" />
-                )}
-                <span className="shrink-0 text-foreground">{item.name}</span>
-                <span className="min-w-0 truncate text-(--ui-text-quaternary)">{item.dir}</span>
-              </button>
+              <Tip key={item.rel} label={item.rel}>
+                <button
+                  className="flex h-[1.375rem] w-full min-w-0 items-center gap-1.5 px-4 text-left text-xs text-(--ui-text-secondary) hover:bg-(--ui-control-hover-background) hover:text-foreground"
+                  data-slot="tree-filter-row"
+                  onClick={() => open(item.rel, item.isDir)}
+                  role="listitem"
+                  type="button"
+                >
+                  {item.isDir ? (
+                    <Codicon className="shrink-0 text-(--ui-text-tertiary)" name="folder" size="0.875rem" />
+                  ) : (
+                    <FileTypeIcon className="shrink-0" path={item.name} size="0.875rem" />
+                  )}
+                  <span className="shrink-0 text-foreground">{item.name}</span>
+                  <span className="min-w-0 truncate text-(--ui-text-quaternary)">{item.dir}</span>
+                </button>
+              </Tip>
             )
           })
         )}

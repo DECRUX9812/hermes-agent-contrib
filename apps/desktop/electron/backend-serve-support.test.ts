@@ -53,6 +53,7 @@ test('a CLI without serve routes through dashboard only after its help command s
     .spyOn(probes, 'execProbe')
     .mockRejectedValueOnce(new Error('unknown serve'))
     .mockResolvedValueOnce(undefined)
+
   const supportsServe = createBackendServeSupportResolver('/unused', () => {})
   const backend = { command: '/unused/hermes', args: ['serve'] }
 

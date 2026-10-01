@@ -45,13 +45,18 @@ export function delegateHintBot(
 
   const connectionId = String(owner?.connectionId || '').trim()
 
-  const row = (Array.isArray(roster) ? roster : []).find(
+  const rows = Array.isArray(roster) ? roster : []
+
+  const row = rows.find(
     candidate =>
       candidate?.name === profile &&
       (!connectionId || !candidate?.connectionId || candidate.connectionId === connectionId)
   )
 
-  if (!row) {
+  // Delegation needs someone to hand work to: a lone bot (a new install's
+  // first chat with its main bot) has no teammates, so the chip would point
+  // at a power that can't do anything yet.
+  if (!row || !rows.some(candidate => candidate !== row)) {
     return null
   }
 

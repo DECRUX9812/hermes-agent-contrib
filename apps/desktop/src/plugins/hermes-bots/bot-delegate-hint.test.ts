@@ -12,6 +12,7 @@
  *  3. An unproven or unrostered owner never hints — a profile name that
  *     matches no row (or a session with no owner) isn't a bot session we can
  *     name.
+ *  4. A bot with no teammates never hints — there is no one to delegate to.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -25,13 +26,19 @@ const BOT: RosterRow = {
   name: 'porter'
 }
 
+const MATE: RosterRow = { connectionId: 'local', name: 'scout' }
+
 const owner = { connectionId: 'local', profile: 'porter' }
 
 describe('delegateHintBot', () => {
   it('names the bot for a plain session proven to run on its profile', () => {
-    const bot = delegateHintBot([BOT], owner, 'side-1', { 'side-1': { workspaceMode: 'sessions' } })
+    const bot = delegateHintBot([BOT, MATE], owner, 'side-1', { 'side-1': { workspaceMode: 'sessions' } })
 
     expect(bot).toBe(BOT)
+  })
+
+  it('is silent for a lone bot — a first chat with no teammates has no one to delegate to', () => {
+    expect(delegateHintBot([BOT], owner, 'side-1', { 'side-1': { workspaceMode: 'sessions' } })).toBeNull()
   })
 
   it('is silent for a session already scoped into the bots workspace', () => {
@@ -54,11 +61,11 @@ describe('delegateHintBot', () => {
     expect(delegateHintBot([], owner, 'side-1', {})).toBeNull()
   })
 
-  it('follows the owner\'s connection, so a same-named profile on another gateway is not the bot', () => {
+  it("follows the owner's connection, so a same-named profile on another gateway is not the bot", () => {
     const foreign: RosterRow = { connectionId: 'ssh-box', name: 'porter' }
 
     expect(delegateHintBot([foreign], owner, 'side-1', {})).toBeNull()
     // An owner with no connection qualifier still matches a local-shaped row.
-    expect(delegateHintBot([BOT], { connectionId: '', profile: 'porter' }, 'side-1', {})).toBe(BOT)
+    expect(delegateHintBot([BOT, MATE], { connectionId: '', profile: 'porter' }, 'side-1', {})).toBe(BOT)
   })
 })

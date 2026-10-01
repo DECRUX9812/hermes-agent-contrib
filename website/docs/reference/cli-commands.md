@@ -534,11 +534,14 @@ hermes send --list telegram         # filter by platform
 
 ```bash
 hermes bots list [--json]
-hermes bots create <name> [--title Scout] [--role "Researcher"] [--persona "Cite every claim."] [--from <profile>]
+hermes bots create <name> [--title Scout] [--role "Researcher"] [--persona "Cite every claim."] [--color "#35d49a"] [--from <profile>]
 hermes bots team create <Team> [--mission "..."]
 hermes bots team add <Team> <bot> [--lead] [--title "..."] [--reports-to <bot>]
 hermes bots team show <Team>
 hermes bots team list
+hermes bots lesson add <bot> "<lesson>"          # or: --team <Team> "<lesson>"
+hermes bots lesson list <bot>                    # or: --team <Team>
+hermes bots lesson remove <bot> <number>
 ```
 
 Create bots and teams without the Desktop. A bot is a profile carrying the Bot Mode
@@ -547,6 +550,13 @@ answers on the same model from its first message. A team's `--lead` is the one b
 listens in the team's group chats; the rest wake when @mentioned or delegated to. The
 main bot uses these commands through the bundled `bot-team-builder` skill when you ask
 it to set up a team.
+
+`lesson` keeps what a bot has learned in that bot's own memory (`MEMORY.md`), marked as
+approved by you. It takes effect from the bot's next chat (memory is a snapshot taken when a
+chat starts, so an open chat is never re-prompted). `--team` writes the lesson to every bot
+seated on the team; `list` numbers them and `remove` takes one back. The bundled
+`bot-team-retro` skill runs a short retro: it reads what your bots recently did, proposes a
+few lessons with evidence, and writes only the ones you approve.
 
 ## `hermes peer`
 
@@ -1100,7 +1110,7 @@ Upload a debug report (system info + recent logs) to a paste service and get a s
 | `--local` | Print the report locally instead of uploading. |
 | `--no-redact` | Disable upload-time secret redaction. By default, uploads are redacted. |
 
-The report includes system info (OS, Python version, Hermes version), recent agent, gateway, GUI/dashboard, and desktop logs (512 KB limit per file), and redacted API key status. By default, uploads are redacted so secrets are not included; this covers the system dump (including config values such as `fallback_providers` entries and credentials in their URLs) as well as the logs, and the gateway `/debug` report too.
+The report includes system info (OS, Python version, Hermes version), recent agent, gateway, GUI/dashboard, and desktop logs (512 KB limit per file), plus the update and Desktop update hand-off logs when present, and redacted API key status. By default, uploads are redacted so secrets are not included; this covers the system dump (including config values such as `fallback_providers` entries and credentials in their URLs) as well as the logs, and the gateway `/debug` report too.
 
 Default uploads use public paste services tried in order: paste.rs, dpaste.com. `--nous` uploads the same debug bundle to private Nous diagnostics storage instead; the returned viewer link is for the Nous team and auto-deletes after 14 days.
 
@@ -1247,12 +1257,14 @@ View, tail, and filter Hermes log files. All logs are stored in `~/.hermes/logs/
 | `gui` | `gui.log` | Dashboard / TUI-gateway / PTY-bridge / websocket events |
 | `desktop` | `desktop.log` | Electron desktop app — boot, backend spawn output, and recent Python tracebacks |
 | `mcp` | `mcp-stderr.log` | stderr of every stdio MCP server, one `starting MCP server` banner per launch |
+| `update` | `update.log` | Full stdout/stderr mirror of `hermes update` runs (append-only) — the root cause of update/dependency failures |
+| `handoff` | `desktop-update-handoff.log` | Desktop-driven update hand-off stages, including the Desktop rebuild retry output |
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
-| `log_name` | Which log to view: `agent` (default), `errors`, `gateway`, or `list` to show available files with sizes. |
+| `log_name` | Which log to view: `agent` (default), `errors`, `gateway`, `gui`, `desktop`, `update`, `handoff`, or `list` to show available files with sizes. |
 | `-n`, `--lines <N>` | Number of lines to show (default: 50). |
 | `-f`, `--follow` | Follow the log in real time, like `tail -f`. Press Ctrl+C to stop. |
 | `--level <LEVEL>` | Minimum log level to show: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. |

@@ -181,6 +181,7 @@ const sidebars: SidebarsConfig = {
                   collapsed: true,
                   items: [
                     'user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-bot-team-builder',
+                    'user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-bot-team-retro',
                     'user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code',
                     'user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex',
                     'user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-computer-use',

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -70,10 +71,15 @@ def _persona_soul(existing: str, persona: str) -> str:
     return f"{existing.rstrip()}\n\n## Style\n\n{persona}\n" if existing.strip() else f"## Style\n\n{persona}\n"
 
 
+_HEX_COLOR = re.compile(r"#[0-9a-fA-F]{6}")
+
+
 def _cmd_create(args) -> None:
     from hermes_cli.profile_ui_meta import merge_ui_meta
     from hermes_cli.profiles import create_profile, get_active_profile_name
 
+    if args.color and not _HEX_COLOR.fullmatch(args.color):
+        _die(args, f"--color must be a hex color like #7c5cff, not '{args.color}'")
     source = args.clone_from or get_active_profile_name()
     try:
         # Clone the source's config/.env/SOUL/skills: the new bot answers on the same model and
@@ -89,6 +95,8 @@ def _cmd_create(args) -> None:
     meta = {"title": (args.title or args.name).strip()}
     if args.role:
         meta["description"] = args.role.strip()
+    if args.color:
+        meta["color"] = args.color
     merge_ui_meta(profile_dir, {BOTS_META_KEY: meta})
     _out(args, {"ok": True, "name": args.name, "path": str(profile_dir), "cloned_from": source, **meta},
          f"Bot '{args.name}' created (cloned from {source}). It appears in the Desktop Bots pane; "
@@ -142,8 +150,103 @@ def _cmd_team(args) -> None:
     _die(args, f"unknown action '{action}'")
 
 
+# A lesson is a line in the bot's own MEMORY.md, so it rides the frozen memory snapshot into the
+# bot's NEXT session (never a live prompt rebuild). The prefix marks it as the user's call: the
+# retro skill proposes, the user approves, and `lesson list/remove` keeps every one vetoable.
+LESSON_PREFIX = "Team lesson (approved by the user):"
+
+
+def _lesson_targets(args) -> list[str]:
+    """The bots a lesson command addresses: one bot, or every seated bot on ``--team``."""
+    if args.team:
+        from tools import bot_team as bt
+        try:
+            team = _team_ref(_team_root(), args.who)
+        except bt.TeamError as e:
+            _die(args, str(e))
+        names = [m["profile"] for m in team["members"] if m.get("profile")]
+        if not names:
+            _die(args, f"team '{team['name']}' has no bots seated yet")
+        return names
+    if args.who not in {r["name"] for r in _bot_rows()}:
+        _die(args, f"'{args.who}' is not a bot (see: hermes bots list)")
+    return [args.who]
+
+
+def _with_bot_memory(name: str, fn):
+    """Run ``fn(store)`` against BOT's own MEMORY.md, not the caller's profile."""
+    from hermes_cli.profiles import get_profile_dir
+    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from tools.memory_tool import load_on_disk_store
+
+    token = set_hermes_home_override(get_profile_dir(name))
+    try:
+        return fn(load_on_disk_store())
+    finally:
+        reset_hermes_home_override(token)
+
+
+def _lessons(store) -> list[str]:
+    return [e for e in store.memory_entries if e.startswith(LESSON_PREFIX)]
+
+
+def _lesson_add(args) -> None:
+    text = " ".join(args.text.split())
+    if not text:
+        _die(args, "a lesson needs text")
+    results = {name: _with_bot_memory(name, lambda store: store.add("memory", f"{LESSON_PREFIX} {text}"))
+               for name in _lesson_targets(args)}
+    failed = {name: r.get("error", "") for name, r in results.items() if not r.get("success")}
+    lines = [f"- {name}: " + ("added" if name not in failed else f"not added — {failed[name]}") for name in results]
+    payload = {"ok": not failed, "lesson": text, "added": [n for n in results if n not in failed], "failed": failed}
+    _out(args, payload, "\n".join(lines) + "\nIt applies from each bot's next chat.")
+    if failed:
+        sys.exit(1)
+
+
+def _lesson_list(args) -> None:
+    found = {name: _with_bot_memory(name, _lessons) for name in _lesson_targets(args)}
+    lines = []
+    for name, entries in found.items():
+        lines.append(f"{name}:" if entries else f"{name}: no lessons")
+        lines += [f"  {i}. {e[len(LESSON_PREFIX):].strip()}" for i, e in enumerate(entries, 1)]
+    _out(args, {"ok": True, "lessons": {n: [e[len(LESSON_PREFIX):].strip() for e in v] for n, v in found.items()}},
+         "\n".join(lines))
+
+
+def _lesson_remove(args) -> None:
+    if args.team:
+        _die(args, "remove works on one bot at a time: hermes bots lesson remove <bot> <number>")
+    name = _lesson_targets(args)[0]
+
+    def _remove(store):
+        entries = _lessons(store)
+        if not 1 <= args.number <= len(entries):
+            return None
+        entry = entries[args.number - 1]
+        return entry, store.remove("memory", entry, matched_entry=entry)
+
+    found = _with_bot_memory(name, _remove)
+    if found is None:
+        _die(args, f"{name} has no lesson #{args.number} (see: hermes bots lesson list {name})")
+    entry, result = found
+    if not result.get("success"):
+        _die(args, result.get("error") or "could not remove the lesson")
+    text = entry[len(LESSON_PREFIX):].strip()
+    _out(args, {"ok": True, "bot": name, "removed": text}, f"Removed from {name}: {text}")
+
+
+def _cmd_lesson(args) -> None:
+    handlers = {"add": _lesson_add, "list": _lesson_list, "ls": _lesson_list, "remove": _lesson_remove,
+                "rm": _lesson_remove}
+    handler = handlers.get(args.lesson_action or "")
+    if handler is None:
+        _die(args, "usage: hermes bots lesson {add,list,remove} ...")
+    handler(args)
+
+
 def cmd_bots(args) -> None:
-    handlers = {"list": _cmd_list, "ls": _cmd_list, "create": _cmd_create, "team": _cmd_team}
+    handlers = {"list": _cmd_list, "ls": _cmd_list, "create": _cmd_create, "team": _cmd_team, "lesson": _cmd_lesson}
     handlers.get(args.bots_action or "list", _cmd_list)(args)
 
 
@@ -161,6 +264,7 @@ def build_bots_parser(subparsers) -> None:
     create.add_argument("--title", default="", help="Display name, e.g. 'Scout'")
     create.add_argument("--role", default="", help="One-line role, e.g. 'Researcher — finds and cites sources'")
     create.add_argument("--persona", default="", help="How the bot should behave (written to SOUL.md ## Style)")
+    create.add_argument("--color", default="", help="Avatar color as hex, e.g. '#35d49a' (default: derived from the name)")
     create.add_argument("--from", dest="clone_from", default=None, metavar="PROFILE",
                         help="Profile to clone config from (default: the active profile)")
 
@@ -180,7 +284,21 @@ def build_bots_parser(subparsers) -> None:
     t_show = team_sub.add_parser("show", help="Show a team's seats")
     t_show.add_argument("team")
 
+    lesson = sub.add_parser("lesson", help="Lessons a bot keeps in its memory (you approve every one)")
+    lesson_sub = lesson.add_subparsers(dest="lesson_action")
+    l_add = lesson_sub.add_parser("add", help="Add a lesson to a bot (or to every bot on a team with --team)")
+    l_add.add_argument("who", help="Bot profile name, or a team name with --team")
+    l_add.add_argument("text", help="The lesson, one short instruction")
+    l_list = lesson_sub.add_parser("list", aliases=["ls"], help="List a bot's (or a team's) lessons")
+    l_list.add_argument("who", help="Bot profile name, or a team name with --team")
+    l_remove = lesson_sub.add_parser("remove", aliases=["rm"], help="Remove one of a bot's lessons by number")
+    l_remove.add_argument("who", help="Bot profile name")
+    l_remove.add_argument("number", type=int, help="Lesson number from `hermes bots lesson list`")
+    for p in (l_add, l_list, l_remove):
+        p.add_argument("--team", action="store_true", help="WHO names a team: apply to every bot seated on it")
+
     # `--json` after the action too (`hermes bots create x --json`); aliases share a parser.
-    for p in {id(p): p for p in (*sub.choices.values(), *team_sub.choices.values())}.values():
+    for p in {id(p): p for p in (*sub.choices.values(), *team_sub.choices.values(),
+                                 *lesson_sub.choices.values())}.values():
         p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     parser.set_defaults(func=cmd_bots)

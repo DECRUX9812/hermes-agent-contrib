@@ -68,7 +68,10 @@ def _find_user_turn_by_row_id(history: list, target_row_id: int):
 def _load_durable_truncation_history(
     session: dict, fallback_sid: str = "", repair_alternation: bool = True):
     """Load the durable live-replay transcript, or None when it cannot be proven safe."""
-    session_key = str(session.get("session_key") or fallback_sid or "")
+    # Same stale-key hazard as the submit row and the out-of-band probe: a compression rotation moves the
+    # live tip off session_key, and this is the load every adoption path replays from — reading the parent
+    # returns a transcript without the continuation (#123545).
+    session_key = _submit_row_target_key(session) or str(fallback_sid or "")
     if not session_key:
         return []
     try:
@@ -501,8 +504,7 @@ def _run_after_agent_ready(
         # the only way resume shows this to a disconnected client.
         _emit_terminal_turn_error(
             sid, session, (err.get("error") or {}).get("message", "agent initialization failed"),
-            error_surface=session.get("agent_error_surface")
-            or {"layer": "runtime", "code": "agent_init_failed", "retryable": True})
+            error_surface={"layer": "runtime", "code": "agent_init_failed", "retryable": True})
         with session["history_lock"]:
             session["running"] = False
             session["last_active"] = time.time()

@@ -73,7 +73,9 @@ beforeEach(() => {
 
 describe('room lead resolution', () => {
   it('resolves the org-tree lead for the room, null when the team does not cover it', async () => {
-    const room = await loadRoom({ teamLead: { lead: 'research', lead_title: 'Chief', team_id: 't-1', team_name: 'Crew' } })
+    const room = await loadRoom({
+      teamLead: { lead: 'research', lead_title: 'Chief', team_id: 't-1', team_name: 'Crew' }
+    })
 
     await expect(room.team.resolveTeamRoomLead(MEMBERS)).resolves.toEqual({
       lead: 'research',
@@ -110,7 +112,9 @@ describe('room lead resolution', () => {
 
     expect(room.gateway.rpcFor('bots_team.room_lead')[0].params.members).toEqual(['research'])
     // A remote twin never counts as the room's lead seat.
-    expect(room.team.teamLeadKey({ lead: 'builder', leadTitle: '', teamId: '', teamName: '' }, [MEMBERS[0], remote])).toBeNull()
+    expect(
+      room.team.teamLeadKey({ lead: 'builder', leadTitle: '', teamId: '', teamName: '' }, [MEMBERS[0], remote])
+    ).toBeNull()
     expect(room.team.teamLeadKey('research', [MEMBERS[0], remote])).toBe('research')
   })
 })
@@ -203,6 +207,29 @@ describe('orchestrated drive', () => {
     await settle(room, 'Crew')
 
     expect(new Set(submitProfiles(room))).toEqual(new Set(['research', 'builder']))
+  })
+
+  it('a gateway reconnecting mid-lookup never wakes the whole team', async () => {
+    // Every lookup after the first drops (the socket bouncing under a profile
+    // switch): the room keeps the lead it last resolved, retries included.
+    const room = await loadRoom({ teamLead: { lead: 'research' }, teamLeadDropsOn: [2, 3, 4], turn: () => 'Done.' })
+
+    room.rounds.sendToGroupChat('Crew', MEMBERS, 'first')
+    await settle(room, 'Crew')
+    room.rounds.sendToGroupChat('Crew', MEMBERS, 'second, mid-reconnect')
+    await settle(room, 'Crew')
+
+    expect(submitProfiles(room)).toEqual(['research', 'research'])
+    expect(room.gateway.rpcFor('bots_team.room_lead')).toHaveLength(4)
+  })
+
+  it('a single dropped lookup retries into the lead', async () => {
+    const room = await loadRoom({ teamLead: { lead: 'research' }, teamLeadDropsOn: [1], turn: () => 'Done.' })
+
+    room.rounds.sendToGroupChat('Crew', MEMBERS, 'status update please')
+    await settle(room, 'Crew')
+
+    expect(submitProfiles(room)).toEqual(['research'])
   })
 
   it('keeps every member listening when the room is not a team', async () => {

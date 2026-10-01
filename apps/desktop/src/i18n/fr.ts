@@ -1158,6 +1158,9 @@ export const frOverrides = {
       }
     },
     appearance: {
+      chatTextScaleTitle: 'Taille du texte du chat',
+      chatTextScaleDesc:
+        'Ajuste le texte des conversations et de la saisie par rapport à l’échelle de l’interface. Les barres latérales et les contrôles gardent leur taille.',
       title: 'Apparence',
       intro:
         'Exclusif au desktop. Le mode contrôle la luminosité ; le thème contrôle la palette et le chrome de la conversation.',
@@ -1232,7 +1235,28 @@ export const frOverrides = {
         sidebar: 'Barre latérale uniquement'
       },
       backdropTitle: 'Arrière-plan de la conversation',
-      backdropDesc: "L'image de statue discrète derrière la conversation.",
+      backdropDesc:
+        'Une ambiance derrière la conversation, ou votre propre image. Le texte reste toujours au premier plan.',
+      backdropScenes: {
+        off: 'Aucun',
+        aurora: 'Aurore',
+        dusk: 'Crépuscule',
+        ocean: 'Océan',
+        meadow: 'Prairie',
+        cyanotype: 'Cyanotype',
+        ink: 'Encre',
+        grid: 'Points',
+        statue: 'Statue',
+        custom: 'Votre image'
+      },
+      backdropUpload: 'Choisir une image…',
+      backdropRemoveImage: "Retirer l'image",
+      backdropStrengths: {
+        subtle: 'Discret',
+        balanced: 'Équilibré',
+        vivid: 'Intense'
+      },
+      backdropImageError: 'Impossible de lire cette image.',
       userBubbleTitle: 'Bulle des messages',
       userBubbleDesc: 'Transparence de vos messages : fond opaque à 0 ; seul le contour reste visible à 100.',
       textDirectionTitle: 'Sens du texte',
@@ -1260,9 +1284,11 @@ export const frOverrides = {
       autoOpenFilesTitle: 'Afficher les fichiers à l’ouverture d’un projet',
       autoOpenFilesDesc: 'Ouvrir un dossier ou commencer dans un projet affiche l’arborescence à côté du chat.',
       activityRailTitle: 'Barre d’icônes',
-      activityRailDesc: 'Une fine colonne d’icônes au bord gauche : sessions, bots et chaque page à un clic, même barre latérale repliée.',
+      activityRailDesc:
+        'Une fine colonne d’icônes au bord gauche : sessions, bots et chaque page à un clic, même barre latérale repliée.',
       openInEditorTitle: 'Ouvrir les fichiers dans',
-      openInEditorDesc: 'L’éditeur utilisé par « Ouvrir dans… » depuis l’arborescence. Fonctionne aussi avec les backends SSH.',
+      openInEditorDesc:
+        'L’éditeur utilisé par « Ouvrir dans… » depuis l’arborescence. Fonctionne aussi avec les backends SSH.',
       fileBrowserTitle: 'Navigateur de fichiers',
       fileBrowserDesc:
         "Affiche le navigateur de fichiers à côté du chat lorsqu'un espace de travail est ouvert. Le bouton de la barre de titre modifie aussi ce réglage.",
@@ -3506,7 +3532,8 @@ export const frOverrides = {
     reach: {
       title: (name: string) => `Joindre ${name} partout`,
       scan: (name: string) => `Scannez pour discuter avec ${name} depuis votre téléphone, ou partagez le lien.`,
-      empty: (name: string) => `Donnez à ${name} sa propre adresse Telegram ou Slack pour discuter depuis votre téléphone.`,
+      empty: (name: string) =>
+        `Donnez à ${name} sa propre adresse Telegram ou Slack pour discuter depuis votre téléphone.`,
       connect: 'Connecter',
       manage: 'Gérer'
     },
@@ -3723,7 +3750,10 @@ export const frOverrides = {
     askRules: {
       title: (name: string) => `Quand ${name} doit-il vous demander ?`,
       modes: {
-        manual: { label: 'Demander d’abord', description: (name: string) => `${name} s’arrête et demande avant toute action risquée.` },
+        manual: {
+          label: 'Demander d’abord',
+          description: (name: string) => `${name} s’arrête et demande avant toute action risquée.`
+        },
         smart: {
           label: 'À son jugement',
           description: (name: string) => `${name} gère le travail courant et demande quand quelque chose semble risqué.`
@@ -5487,6 +5517,10 @@ export const frOverrides = {
       editModels: 'Modifier les modèles…',
       followDefault: 'Utiliser le modèle par défaut des Réglages',
       refreshModels: 'Actualiser les modèles',
+      favorites: 'Favoris',
+      addFavorite: 'Ajouter aux favoris',
+      removeFavorite: 'Retirer des favoris',
+      favoriteShortcut: '⇧ Clic',
       fast: 'Rapide',
       free: 'gratuit',
       cacheRead: 'lecture en cache',
@@ -5716,7 +5750,8 @@ export const frOverrides = {
     source: 'SOURCE',
     renderedPreview: 'APERÇU',
     table: 'TABLEAU',
-    tableTruncated: (rows: number) => `${rows.toLocaleString()} premières lignes affichées. La source contient tout le fichier.`,
+    tableTruncated: (rows: number) =>
+      `${rows.toLocaleString()} premières lignes affichées. La source contient tout le fichier.`,
     canvas: 'CANEVAS',
     diff: 'DIFF',
     unknownSize: 'taille inconnue',
@@ -6048,10 +6083,6 @@ export const frOverrides = {
         payload_too_large: {
           title: 'Ce message est trop volumineux',
           body: 'La demande était trop grande pour le modèle. Compressez la conversation ou démarrez-en une nouvelle, puis réessayez.'
-        },
-        no_provider_configured: {
-          title: "Aucun modèle d'IA n'est encore configuré",
-          body: 'Choisissez un modèle ou connectez-vous, puis renvoyez votre message.'
         },
         model_not_found: {
           title: "Ce modèle n'est pas disponible",

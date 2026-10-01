@@ -11,8 +11,18 @@ vi.mock('@hermes/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
   const base = await pluginSdkMock(createGroupGateway().host)
 
-  const Button = ({ children, onClick, title }: { children?: ReactNode; onClick?: () => void; title?: string }) => (
-    <button onClick={onClick} title={title}>
+  const Button = ({
+    'aria-label': ariaLabel,
+    children,
+    onClick,
+    title
+  }: {
+    'aria-label'?: string
+    children?: ReactNode
+    onClick?: () => void
+    title?: string
+  }) => (
+    <button aria-label={ariaLabel} onClick={onClick} title={title}>
       {children}
     </button>
   )
@@ -83,6 +93,32 @@ it('renders member replies through the shell message renderer, resolving media o
     ['MEDIA:/tmp/local.png', 'true'],
     ['MEDIA:/tmp/remote.png', 'false']
   ])
+})
+
+it('groups consecutive same-speaker entries under one header, breaking on thread and speaker', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'go', at: 1 },
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'first', at: 2 },
+    { id: 'm2', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'second', at: 3 },
+    { id: 'm3', thread: 'b', from: { kind: 'member' as const, name: 'builder' }, text: 'other thread', at: 4 },
+    { id: 'm4', thread: 'b', from: { kind: 'member' as const, name: 'reviewer' }, text: 'other voice', at: 5 }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
+
+  const names = (want: string) =>
+    screen.getAllByRole('button').filter(el => (el.textContent || '').trim().toLowerCase() === want)
+
+  // builder: m1+m2 share one header; m3's thread change re-breaks the run.
+  expect(names('builder')).toHaveLength(2)
+  expect(names('reviewer')).toHaveLength(1)
+  // Grouping hides repeated headers, never actions: every member line stays replyable.
+  expect(screen.getAllByRole('button', { name: /^Reply to / })).toHaveLength(4)
 })
 
 it('removes Stop controls from historical working rows after the room settles', async () => {

@@ -1189,6 +1189,9 @@ export const en: Translations = {
       system: { label: 'System', description: 'Follow OS appearance' }
     },
     appearance: {
+      chatTextScaleTitle: 'Chat Text Size',
+      chatTextScaleDesc:
+        'Scales conversation text and the message editor relative to UI Scale. Sidebars and controls stay the same size.',
       title: 'Appearance',
       intro: 'Desktop-only. Mode is brightness; theme is palette and chat chrome.',
       simpleModeTitle: 'Simple mode',
@@ -1260,8 +1263,28 @@ export const en: Translations = {
         window: 'Whole window',
         sidebar: 'Sidebar only'
       },
-      backdropTitle: 'Chat Backdrop',
-      backdropDesc: 'The faint statue image behind the conversation.',
+      backdropTitle: 'Chat Background',
+      backdropDesc: 'A scene behind the conversation, or your own image. Text always stays on top.',
+      backdropScenes: {
+        off: 'Off',
+        aurora: 'Aurora',
+        dusk: 'Dusk',
+        ocean: 'Ocean',
+        meadow: 'Meadow',
+        cyanotype: 'Cyanotype',
+        ink: 'Ink',
+        grid: 'Dots',
+        statue: 'Statue',
+        custom: 'Your image'
+      },
+      backdropUpload: 'Choose image…',
+      backdropRemoveImage: 'Remove image',
+      backdropStrengths: {
+        subtle: 'Subtle',
+        balanced: 'Balanced',
+        vivid: 'Vivid'
+      },
+      backdropImageError: "That image couldn't be read.",
       userBubbleTitle: 'Message Bubble',
       userBubbleDesc: 'How see-through your own messages are. Solid at 0; only the outline remains at 100.',
       textDirectionTitle: 'Text direction',
@@ -1286,7 +1309,8 @@ export const en: Translations = {
       autoOpenFilesTitle: 'Show files when opening a project',
       autoOpenFilesDesc: 'Opening a folder or starting work in a project opens the file tree beside the chat.',
       activityRailTitle: 'Icon rail',
-      activityRailDesc: 'A slim column of icons at the left edge — sessions, bots and every page one click away, even with the sidebar folded.',
+      activityRailDesc:
+        'A slim column of icons at the left edge — sessions, bots and every page one click away, even with the sidebar folded.',
       openInEditorTitle: 'Open files in',
       openInEditorDesc: 'Where “Open in …” sends a file from the file tree. Works for SSH backends too.',
       fileBrowserTitle: 'File Browser',
@@ -3346,7 +3370,10 @@ export const en: Translations = {
     askRules: {
       title: (name: string) => `When should ${name} ask you?`,
       modes: {
-        manual: { label: 'Ask me first', description: (name: string) => `${name} stops and asks before anything risky.` },
+        manual: {
+          label: 'Ask me first',
+          description: (name: string) => `${name} stops and asks before anything risky.`
+        },
         smart: {
           label: 'Use judgment',
           description: (name: string) => `${name} handles routine work and asks when something looks risky.`
@@ -5094,6 +5121,10 @@ export const en: Translations = {
       editModels: 'Edit models…',
       followDefault: 'Use Settings default',
       refreshModels: 'Refresh models',
+      favorites: 'Favorites',
+      addFavorite: 'Add to favorites',
+      removeFavorite: 'Remove from favorites',
+      favoriteShortcut: '⇧ Click',
       fast: 'Fast',
       free: 'free',
       cacheRead: 'cached read',
@@ -5270,6 +5301,10 @@ export const en: Translations = {
     filterPlaceholder: 'Filter files…',
     filterHint: 'Type part of a file or folder name. Matches the whole project, not just open folders.',
     filterNoMatch: 'No files match',
+    terminalReadOnly: 'Read-only output',
+    terminalReadOnlyHelp:
+      'To answer prompts, stop the background command and run it in a new terminal. The new terminal opens a separate shell; it does not connect to this process.',
+    terminalOpenInteractive: 'Open new terminal',
     aria: 'Right sidebar',
     panelsAria: 'Right sidebar panels',
     files: 'File system',
@@ -5318,6 +5353,7 @@ export const en: Translations = {
     closePane: 'Close preview pane',
     loading: 'Loading preview',
     unavailable: 'Preview unavailable',
+    missingTarget: 'That path does not exist on this computer',
     opening: 'Opening...',
     hide: 'Hide',
     openPreview: 'Open preview',
@@ -5654,10 +5690,6 @@ export const en: Translations = {
         payload_too_large: {
           title: 'This message is too large',
           body: 'The request was too big for the model. Compress the conversation or start a new chat, then send again.'
-        },
-        no_provider_configured: {
-          title: 'No AI model is set up yet',
-          body: 'Choose a model or sign in, then send your message again.'
         },
         model_not_found: {
           title: 'This model is not available',

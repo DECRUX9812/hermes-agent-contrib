@@ -16,6 +16,19 @@ See [Profiles, agents, and bots](./profiles.md#profiles-agents-and-bots) for how
 Bot Mode relates to messaging bots and delegated subagents.
 :::
 
+## Coming from profiles?
+
+Your profiles keep working exactly as they did; Bot Mode adds the parts a profile alone does not have:
+
+| With plain profiles | With Bot Mode |
+|---|---|
+| A pile of sessions per profile; you pick one or start another | One permanent **Bot Chat** per Bot. Click the Bot and you are back in the same conversation; `/new` compacts it instead of forking it |
+| Switch profiles to talk to a different specialist | Every Bot sits in one roster with its avatar, latest message, and unread state |
+| Profiles never talk to each other | Bots [message each other](#bot-to-bot-messaging) and share [group chats](#groups-and-group-chats) |
+| Scheduled jobs live in `hermes cron`, apart from any chat | Each Bot's [routines](#routines) are scheduled and edited beside its chat |
+
+Nothing moves: config, memory, skills, and credentials stay in `~/.hermes/profiles/<name>/`, and `hermes -p <bot> chat` still opens the same agent.
+
 ## The Bots pane
 
 The roster shows one row per agent profile: avatar, latest-message preview, and timestamp.
@@ -367,6 +380,19 @@ Bot Mode is a bundled desktop plugin. Flip its **Desktop** switch off in **Capab
 
 There is also a preference to hide the canonical Bot Chats from the regular sidebar session list, so they only appear inside the Bots pane. (This uses the core hidden-session flag; on older gateways the chats simply stay visible.)
 
+## Teaching your Bots
+
+Ask the main Bot or a team lead for a **retro** ("how could the team do better this week?").
+It reads what each Bot recently did, then proposes a few lessons, each with the evidence behind
+it, such as "Forge said *done* twice before the tests ran." Nothing is written until you approve.
+Approved lessons go into that Bot's own memory, so they apply from its next chat. You can also
+tell a lead how its part of the team should work ("every change ships with a test") and it
+writes that down the same way.
+
+You stay in charge: a lesson is a note, never a rule a Bot can hold against you, and what you
+ask in the moment always wins. `hermes bots lesson list <bot>` shows every lesson, and
+`hermes bots lesson remove <bot> <number>` takes one back.
+
 ## CLI parity
 
 Because Bots are profiles, everything has a terminal equivalent:
@@ -377,5 +403,6 @@ Because Bots are profiles, everything has a terminal equivalent:
 | A Bot's files, skills, memory | `~/.hermes/profiles/<bot>/` |
 | Routines | `hermes cron list` (jobs named `[bot:<name>] …`) |
 | Create / inspect profiles | `hermes profile create`, `hermes profile list` |
+| Teach a Bot (or a whole team) a lesson | `hermes bots lesson add <bot> "…"`, `hermes bots lesson list <bot>` |
 
 See [Profiles](./profiles.md) for the underlying primitive and [Profile Commands](../reference/profile-commands.md) for the full CLI reference.

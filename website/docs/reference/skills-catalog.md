@@ -26,6 +26,7 @@ If a skill is missing from this list but present in the repo, the catalog is reg
 | Skill | Description | Path |
 |-------|-------------|------|
 | [`bot-team-builder`](../user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-bot-team-builder.md) | Create Bot Mode bots and a team for the user. | `autonomous-ai-agents/bot-team-builder` |
+| [`bot-team-retro`](../user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-bot-team-retro.md) | Run a short retro so the user's bots learn lessons. | `autonomous-ai-agents/bot-team-retro` |
 | [`claude-code`](../user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-claude-code.md) | Delegate coding to Claude Code CLI (features, PRs). | `autonomous-ai-agents/claude-code` |
 | [`codex`](../user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-codex.md) | Delegate coding to OpenAI Codex CLI (features, PRs). | `autonomous-ai-agents/codex` |
 | [`computer-use`](../user-guide/skills/bundled/autonomous-ai-agents/autonomous-ai-agents-computer-use.md) | Drive the desktop background-first; escalate on signal. | `autonomous-ai-agents/computer-use` |

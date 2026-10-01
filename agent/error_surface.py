@@ -98,20 +98,20 @@ def _surface(layer: str, code: str, retryable: bool, provider: str = "", model: 
         # OAuth providers are fixed by signing in again; API-key providers by
         # replacing the key. The client's one-click recovery needs to know which.
         surface["auth_kind"] = auth_kind(provider)
+        if surface["auth_kind"] == "api_key" and (env_var := _api_key_env(provider)):
+            surface["api_key_env"] = env_var
     return surface
 
 
-NO_PROVIDER_CODE = "no_provider_configured"
+def _api_key_env(provider: str) -> str:
+    """The env var holding ``provider``'s API key, so the client can open that row."""
+    try:
+        from hermes_cli.provider_catalog import provider_catalog_by_slug
 
-
-def agent_init_error_surface(exc: Any) -> dict:
-    """Surface for a session whose agent could not be built. A missing provider (fresh install,
-    or the configured one removed) is an account-setup problem with one fix — choose a model or
-    sign in — not a retryable runtime failure; everything else stays ``agent_init_failed``.
-    Keyed on the auth error's own ``code``, never on its message text."""
-    if getattr(exc, "code", None) == NO_PROVIDER_CODE:
-        return _surface(LAYER_AUTH, NO_PROVIDER_CODE, False)
-    return {"layer": "runtime", "code": "agent_init_failed", "retryable": True}
+        descriptor = provider_catalog_by_slug().get(provider.strip().lower())
+        return descriptor.api_key_env_vars[0] if descriptor and descriptor.api_key_env_vars else ""
+    except Exception:  # pragma: no cover — advisory only
+        return ""
 
 
 def _provider_label(provider: str) -> str:

@@ -339,6 +339,7 @@ export function ChatBar({
   // and bounded auto-drain. Consumes the draft API and writes `queueEditRef`.
   const {
     beginQueuedEdit,
+    deliverQueuedNow,
     drainNextQueued,
     editingQueuedPrompt,
     exitQueuedEdit,
@@ -396,7 +397,8 @@ export function ChatBar({
   // into a tool result) and never for a slash command (those execute inline).
   // A blocking prompt (approval/sudo/secret) also rules it out: the tool batch
   // is parked on the user, so a steer can't reach the model — text queues.
-  const steerEligible = busy && !compacting && !blockingPrompt && !!onSteer && isSteerableText
+  // Compaction does not block a steer: the gateway holds the correction until it finishes.
+  const steerEligible = busy && !blockingPrompt && !!onSteer && isSteerableText
   const canSteer = steerEligible && attachments.length === 0
   // Steer-eligible but for the attachment chips: the only reason the turn
   // can't take this message is the tool-result image carriage, so the queue
@@ -418,7 +420,6 @@ export function ChatBar({
     activeQueueSessionKeyRef,
     attachments,
     busy,
-    compacting,
     clearDraft,
     disabled,
     draftScopeRef,
@@ -501,11 +502,11 @@ export function ChatBar({
     draft: { draftRef, editorRef, loadIntoComposer, setComposerText },
     queue: {
       beginQueuedEdit,
+      deliverQueuedNow,
       drainNextQueued,
       exitQueuedEdit,
       queueEdit,
       queuedPrompts,
-      sendQueuedNow,
       stepQueuedEdit
     },
     submit: { queueDraft, submitDraft },
