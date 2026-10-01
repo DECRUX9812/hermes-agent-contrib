@@ -32,6 +32,12 @@ export function tuiArgs(sessionId: string, profile?: string): string[] {
   return [...head, '--tui', ...(sessionId ? ['--resume', sessionId] : [])]
 }
 
+/** Argv for the classic CLI the in-app pane runs: no Node build to prepare, so it
+ *  starts at once and fits a short pane. Same resume and profile pinning. */
+export function cliArgs(sessionId: string, profile?: string): string[] {
+  return tuiArgs(sessionId, profile).filter(arg => arg !== '--tui')
+}
+
 /** Single-quote a value for /bin/sh (the POSIX launcher script). */
 export function posixQuote(value: string): string {
   return `'${String(value ?? '').replaceAll("'", `'\\''`)}'`

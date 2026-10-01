@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 
-import { continueInHermesCli } from '@/app/right-sidebar/store'
+import { continueInHermesCli } from '@/app/right-sidebar/terminal/hermes-cli'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'

@@ -8,6 +8,7 @@ import { test } from 'vitest'
 
 import {
   buildTerminalScript,
+  cliArgs,
   paneRunLine,
   posixQuote,
   resolveTerminalLaunch,
@@ -26,6 +27,11 @@ test('tuiArgs resumes the session in the TUI', () => {
 
 test('tuiArgs pins the profile ahead of the mode flag', () => {
   assert.deepEqual(tuiArgs('sess', 'work'), ['--profile', 'work', '--tui', '--resume', 'sess'])
+})
+
+test('the pane CLI resumes the same session and profile as the TUI, without the TUI', () => {
+  assert.deepEqual(cliArgs('sess', 'work'), ['--profile', 'work', '--resume', 'sess'])
+  assert.deepEqual(cliArgs(''), [])
 })
 
 test('tuiArgs without a session opens a fresh TUI', () => {

@@ -243,6 +243,7 @@ import { createAmbientClaimArbiter } from './event-dedupe'
 import { openExternalUrl as externalOpen, type ExternalOpenDeps, reportPreOpenStatFailure } from './external-open'
 import {
   buildTerminalScript,
+  cliArgs,
   paneRunLine,
   resolveTerminalLaunch,
   terminalScriptEnv,
@@ -16086,7 +16087,7 @@ ipcMain.handle('hermes:window:openInTerminal', async (_event, sessionId, opts) =
 
   try {
     const profile = typeof opts?.profile === 'string' ? opts.profile.trim() : ''
-    const backend = await resolveHermesBackend(tuiArgs(id, profile || undefined))
+    const backend = await resolveHermesBackend((pane ? cliArgs : tuiArgs)(id, profile || undefined))
 
     if (!backend.command) {
       return { ok: false, error: 'Hermes is not installed yet' }

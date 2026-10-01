@@ -6,7 +6,7 @@ import { SessionTagChip } from '@/app/chat/session-tag'
 import { SessionAskDialog } from '@/app/chat/sidebar/session-ask-dialog'
 import { SessionDeviceDialog } from '@/app/chat/sidebar/session-device-dialog'
 import { openSession } from '@/app/open-session'
-import { continueInHermesCli } from '@/app/right-sidebar/store'
+import { continueInHermesCli } from '@/app/right-sidebar/terminal/hermes-cli'
 import {
   closeAllTreeTabs,
   closeOtherTreeTabs,

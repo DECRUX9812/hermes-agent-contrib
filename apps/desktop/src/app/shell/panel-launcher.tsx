@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { atom, type ReadableAtom } from 'nanostores'
 
-import { continueInHermesCli } from '@/app/right-sidebar/store'
+import { continueInHermesCli } from '@/app/right-sidebar/terminal/hermes-cli'
 import { toggleTerminalPane } from '@/app/right-sidebar/terminal/reveal-focus'
 import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { findGroupOfPane } from '@/components/pane-shell/tree/model'
