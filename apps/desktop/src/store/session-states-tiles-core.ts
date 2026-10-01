@@ -15,7 +15,7 @@ import {
   lineageAliases,
   ownerLookupSessionRows
 } from './session'
-import { $focusedTreePaneId } from './session-focus'
+import { $focusedSessionIsTile, $focusedStoredSessionId, TILE_PANE_PREFIX } from './session-focus'
 import {
   isSessionOwnerRoute,
   type SessionOwnerRoute,
@@ -230,7 +230,9 @@ const TILES_KEY = 'hermes.desktop.sessionTiles.v2'
 
 const LEGACY_TILES_KEY = 'hermes.desktop.sessionTiles.v1'
 
-export const TILE_PANE_PREFIX = 'session-tile:'
+// Re-exported from session-focus.ts so existing consumers keep their import
+// path; the definitions live there (see the note on that module).
+export { $focusedSessionIsTile, $focusedStoredSessionId, TILE_PANE_PREFIX }
 
 export const BOTS_TILE_BUCKET = '__bots_workspace__'
 
@@ -854,6 +856,8 @@ export interface SessionTileDelegate {
   archiveSession(storedSessionId: string): Promise<void>
   /** Branch a stored session into a new chat (the sidebar's branch). */
   branchSession(storedSessionId: string): Promise<void>
+  /** Branch a tile's live transcript through the clicked message. */
+  branchSessionAtMessage(storedSessionId: string, runtimeId: string, messageId: string): Promise<boolean>
   /** Delete a stored session (the sidebar's delete, incl. tile cleanup). */
   deleteSession(storedSessionId: string): Promise<void>
   /** Run a slash command against a tile's session (app-level effects — e.g.
@@ -889,11 +893,23 @@ export interface SessionTileDelegate {
    *  without writing when the cache never held it (no phantom entries); the
    *  caller writes the mirror itself. */
   updateHeldSession?(runtimeId: string, updater: (state: ClientSessionState) => ClientSessionState): boolean
-  /** Submit a prompt to a tile's live session. */
-  submitToSession(runtimeId: string, text: string): Promise<void>
+  /**
+   * Resolves with the EXACT identity that ACCEPTED the prompt. A
+   * session-not-found recovery can rebind the runtime, so the accepted runtime
+   * id may differ from the input id; `storedSessionId` is the durable session
+   * the accepted runtime is bound to, or null when that binding is unknown. A
+   * caller that reports delivery must prove the requested target from this.
+   */
+  submitToSession(runtimeId: string, text: string): Promise<AcceptedSessionIdentity>
   /** THE session-state write path — routes through the wiring cache so the
    *  cache, the primary view (when active), and every tile mirror agree. */
   updateSession(runtimeId: string, updater: (state: ClientSessionState) => ClientSessionState): ClientSessionState
+}
+
+/** Exact identity a prompt was accepted into: live runtime id + durable stored id. */
+export interface AcceptedSessionIdentity {
+  runtimeSessionId: string
+  storedSessionId: null | string
 }
 
 
@@ -930,15 +946,6 @@ export const closedStack = (): SessionTile[] => (closedTilesByProfile[visibleTil
 // follow the user between tiles (titlebar session title, statusbar context /
 // timer / model) reads these instead of the primary-only atoms.
 // ---------------------------------------------------------------------------
-
-export const $focusedSessionIsTile = computed($focusedTreePaneId, active =>
-  Boolean(active?.startsWith(TILE_PANE_PREFIX))
-)
-
-
-export const $focusedStoredSessionId = computed([$focusedTreePaneId, $selectedStoredSessionId], (active, selected) =>
-  active?.startsWith(TILE_PANE_PREFIX) ? active.slice(TILE_PANE_PREFIX.length) : selected
-)
 
 
 /** Every session currently OPEN as a surface: the primary's selection plus

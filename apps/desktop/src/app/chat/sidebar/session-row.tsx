@@ -15,6 +15,7 @@ import { openSession } from '@/app/open-session'
 import { formatMessageTimestamp } from '@/components/assistant-ui/thread/timestamp'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { RowButton } from '@/components/ui/row-button'
 import { OverflowTip, Tip } from '@/components/ui/tooltip'
 import type { SessionInfo } from '@/hermes'
 import { type Translations, useI18n } from '@/i18n'
@@ -54,7 +55,7 @@ import { SessionStatusDot } from '../session-status-dot'
 import {
   SIDEBAR_ROW_CARD_MIN_H,
   SIDEBAR_TRUNCATED_LEADING,
-  SidebarRowBody,
+  SidebarRowCluster,
   SidebarRowGrab,
   SidebarRowLabel,
   SidebarRowLead,
@@ -587,7 +588,15 @@ function SidebarSessionRowImpl({
       >
         {showsRunningArc(dotState) && <span aria-hidden="true" className="arc-border arc-row" />}
         <SessionPeek onOpenChange={setPeekOpen} session={session}>
-          <SidebarRowBody
+          {/* #38072 finding 3: the row's body is a DIV, not a button — the
+              reorder grabber (dnd-kit role="button" + tabIndex, kept for
+              keyboard reorder, #83617) and the ⋯ trigger must be SIBLINGS of
+              the row's primary action, never nested inside it (axe
+              nested-interactive). The title below is the row's real button:
+              its click bubbles to this div's handlers, so pointer users keep
+              click-anywhere-on-the-row, and keyboard users get one clean tab
+              stop per row instead of an ambiguous nested one. */}
+          <SidebarRowCluster
             // Every trailing figure lives in the actions slot, which the row
             // measures — so the title needs a gap from it and nothing else. Hover
             // changes what you can see in that slot, never how wide it is. The
@@ -595,7 +604,10 @@ function SidebarSessionRowImpl({
             // ending at the shell's own trailing inset), and keeping the gap
             // would pull the header in past every line below it.
             className={cn(
-              'z-0',
+              // cursor-pointer: the body is a div now (see #38072 note above);
+              // buttons earn this from the base layer's interactive-control
+              // rule, a div doesn't.
+              'z-0 w-full cursor-pointer',
               card && 'pr-0',
               branchStem && 'pl-3.5',
               // The card is a grid with ONE spacing knob: --card-gap. Every row
@@ -703,19 +715,27 @@ function SidebarSessionRowImpl({
                     {!condensed && handoffBadge}
                     {!condensed && continuationBadge}
                     <span className="min-w-0 flex-1 self-center">
-                      {condensed && condensedMeta.length > 0 ? (
-                        // Always-on tip: in condensed the title may not
-                        // overflow yet the folded-in meta still needs a door.
-                        <Tip label={condensedTip} placement="row">
-                          {titleLabel}
-                        </Tip>
-                      ) : (
-                        // Remount while the peek is open: OverflowTip's `open` is
-                        // internal state that would otherwise restore itself.
-                        <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
-                          {titleLabel}
-                        </OverflowTip>
-                      )}
+                      {/* The row's primary action (#38072 finding 3): the title
+                          is the session row's real button — the grabber and ⋯
+                          sit beside it as siblings, never inside it. No onClick
+                          of its own: the click bubbles to the body div's
+                          resolver, so modifier-clicks and plain clicks behave
+                          exactly as they did on the old full-row button. */}
+                      <RowButton className="block w-full text-left">
+                        {condensed && condensedMeta.length > 0 ? (
+                          // Always-on tip: in condensed the title may not
+                          // overflow yet the folded-in meta still needs a door.
+                          <Tip label={condensedTip} placement="row">
+                            {titleLabel}
+                          </Tip>
+                        ) : (
+                          // Remount while the peek is open: OverflowTip's `open` is
+                          // internal state that would otherwise restore itself.
+                          <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
+                            {titleLabel}
+                          </OverflowTip>
+                        )}
+                      </RowButton>
                       {/* Session-list density (#68119): comfortable adds one
                         deterministic metadata line; detailed adds the initial
                         request preview. Compact keeps today's one-line row,
@@ -775,18 +795,23 @@ function SidebarSessionRowImpl({
                   {/* Title + preview: ONE grouped cell with its own tight
                     internal gap — it does not inherit the card's rhythm. */}
                   <div className="flex min-w-0 flex-col gap-[0.15rem]">
-                    <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
-                      <SidebarRowLabel
-                        className={cn(
-                          'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                        onPointerEnter={armMarquee}
-                        onPointerLeave={disarmMarquee}
-                      >
-                        <span className="hover-marquee-inner">{title}</span>
-                      </SidebarRowLabel>
-                    </OverflowTip>
+                    {/* #38072 finding 3: the card's title line is the row's real
+                        button (same contract as the flat row: no onClick of its
+                        own — the click bubbles to the body div's resolver). */}
+                    <RowButton className="block w-full text-left">
+                      <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
+                        <SidebarRowLabel
+                          className={cn(
+                            'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
+                            SIDEBAR_TRUNCATED_LEADING
+                          )}
+                          onPointerEnter={armMarquee}
+                          onPointerLeave={disarmMarquee}
+                        >
+                          <span className="hover-marquee-inner">{title}</span>
+                        </SidebarRowLabel>
+                      </OverflowTip>
+                    </RowButton>
                     {rowMeta.includes('preview') && (digest ?? session.preview) ? (
                       <span
                         className={cn(
@@ -817,7 +842,7 @@ function SidebarSessionRowImpl({
                 </>
               )
             })()}
-          </SidebarRowBody>
+          </SidebarRowCluster>
         </SessionPeek>
       </SidebarRowShell>
     </SessionContextMenu>

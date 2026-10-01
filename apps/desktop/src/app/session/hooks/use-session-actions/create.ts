@@ -15,8 +15,9 @@ import {broadcastSessionsChanged} from '@/store/session-sync'
 import type {SessionCreateResponse} from '@/types/hermes'
 
 import {NEW_CHAT_ROUTE, sessionRoute} from '../../../routes'
-import {sessionContextDrift} from '../session-context-drift'
+import {pinStoredSessionForOwner, releaseStoredSessionPins, sessionContextDrift} from '../session-context-drift'
 
+import type {CreateGuard} from './create-guard'
 import {sessionCreateOverrideParams, type SessionCreateOverrides, type SessionSeedMessage} from './create-overrides'
 import { markSessionCreatedThisRun } from './created-this-run'
 import type { FreshSessionDraftOptions, SessionActionsOptions } from './options'
@@ -97,7 +98,10 @@ function normalizeNewChatWorkspaceTarget(target: NewChatWorkspaceTarget): NewCha
   return typeof target === 'string' ? target.trim() || null : target
 }
 
-export function useCreateActions({ activeSessionIdRef, busyRef, creatingSessionRef, ensureSessionState, getRouteToken, navigate, onFreshDraftRouteIntent, requestGateway, resetViewSync, selectedStoredSessionIdRef, updateSessionState }: SessionActionsOptions) {
+export function useCreateActions(
+  { activeSessionIdRef, busyRef, creatingSessionRef, ensureSessionState, getRouteToken, navigate, onFreshDraftRouteIntent, requestGateway, resetViewSync, runtimeIdByStoredSessionIdRef, selectedStoredSessionIdRef, updateSessionState }: SessionActionsOptions,
+  { createGuard }: { createGuard: CreateGuard }
+) {
   const startFreshSessionDraft = useCallback(
     (options: boolean | FreshSessionDraftOptions = false) => {
       const draftOptions = typeof options === 'boolean' ? { replaceRoute: options } : options
@@ -340,7 +344,17 @@ export function useCreateActions({ activeSessionIdRef, busyRef, creatingSessionR
           // to this chat now (#114122); the composer moves it on scope swap.
           announceNewSessionDraftKey(stored)
           createOverrides?.onComposerScopeAssigned?.(stored)
-          navigate(sessionRoute(stored), { replace: true })
+          // Hold creatingSessionRef until the route lands on `stored` (release
+          // effect in create-guard). setTimeout(0) raced use-route-resume back
+          // onto the previous session (#66057).
+          createGuard.armPendingCreatedSession(stored)
+
+          try {
+            navigate(sessionRoute(stored), { replace: true })
+          } catch {
+            createGuard.releaseCreatingSessionGuard()
+          }
+
           // Other windows (e.g. the main window when this is the pop-out) can't
           // see this session until they re-pull the shared list.
           broadcastSessionsChanged()
@@ -369,13 +383,16 @@ export function useCreateActions({ activeSessionIdRef, busyRef, creatingSessionR
 
         return created.session_id
       } finally {
-        window.setTimeout(() => {
+        // Keep the guard up while a navigate to the new stored id is pending;
+        // otherwise clear immediately (abort, error, or create without stored id).
+        if (!createGuard.pendingCreatedStoredSessionIdRef.current) {
           creatingSessionRef.current = false
-        }, 0)
+        }
       }
     },
     [
       activeSessionIdRef,
+      createGuard,
       creatingSessionRef,
       ensureSessionState,
       getRouteToken,
@@ -387,8 +404,74 @@ export function useCreateActions({ activeSessionIdRef, busyRef, creatingSessionR
     ]
   )
 
+  const submitTextToNewSession = useCallback(
+    async (text: string, owner?: string): Promise<{ runtimeSessionId: string; sessionId: string }> => {
+      // IPC delivers the quick-entry submit as one task, and the drift guard
+      // classifies by route/selection tokens. Capture them BEFORE the create:
+      // the session.create round-trip is seconds long, and this call's own
+      // re-home onto the created session must never read as user drift
+      // (same contract as createBackendSessionForSend's starting tokens).
+      const startingRouteToken = getRouteToken()
+      const startingSelectedStoredId = selectedStoredSessionIdRef.current
+      const params = await desktopSessionCreateParams(resolveNewSessionCwd())
+      const created = await requestGateway<SessionCreateResponse>('session.create', params)
+      const stored = created.stored_session_id
+
+      if (!stored) {
+        throw new Error('The new session did not return a stored id.')
+      }
+
+      // Only a genuine user move to a DIFFERENT chat mid-create orphans the
+      // minted session; our own re-home below names it, so it is not drift.
+      const drift = sessionContextDrift({
+        startRouteToken: startingRouteToken,
+        nowRouteToken: getRouteToken(),
+        startSelectedStoredId: startingSelectedStoredId,
+        nowSelectedStoredId: selectedStoredSessionIdRef.current,
+        submitTargetStoredId: stored
+      })
+
+      if (drift) {
+        console.warn('[submit-drift-abort]', drift, { phase: 'quick-entry-new' })
+        throw new Error(`Quick Entry destination changed mid-create: ${drift}`)
+      }
+
+      // The owner is the requesting submit's correlation when the caller knows
+      // it (quick entry); otherwise this call owns its own generation.
+      const pinOwner = owner ?? `new-session-${created.session_id}`
+      pinStoredSessionForOwner(pinOwner, stored)
+
+      try {
+        markSessionCreatedThisRun(stored)
+        runtimeIdByStoredSessionIdRef.current.set(stored, created.session_id)
+        ensureSessionState(created.session_id, stored)
+        upsertOptimisticSession(created, stored, null, text.trim())
+        // Submit the exact runtime id returned by session.create so this
+        // atomic path cannot fall back to a route token (#85590).
+        await requestGateway('prompt.submit', { session_id: created.session_id, text })
+        navigate(sessionRoute(stored), { replace: true })
+
+        return { runtimeSessionId: created.session_id, sessionId: stored }
+      } finally {
+        // Terminal transition for this owner: accepted, failed, or cancelled.
+        // Owner-scoped pins cannot strand another request, so no tick budget is
+        // needed to force-release.
+        releaseStoredSessionPins(pinOwner)
+      }
+    },
+    [
+      ensureSessionState,
+      getRouteToken,
+      navigate,
+      requestGateway,
+      runtimeIdByStoredSessionIdRef,
+      selectedStoredSessionIdRef
+    ]
+  )
+
   return {
     startFreshSessionDraft,
     createBackendSessionForSend,
+    submitTextToNewSession,
   }
 }

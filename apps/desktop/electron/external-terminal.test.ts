@@ -170,3 +170,15 @@ test('Linux falls down the emulator ladder and omits a flagless terminal', () =>
 test('Linux with no emulator installed reports no launch', () => {
   assert.equal(resolveTerminalLaunch({ findOnPath: never, platform: 'linux', scriptPath: '/tmp/x.sh' }), null)
 })
+
+test('tuiArgs drops a profile value that is not a valid profile id', () => {
+  // A non-slug (numeric roster id, display label) must never cross into the
+  // TUI launch argv — the CLI used to str()-coerce it into profiles/0 (#88842).
+  assert.deepEqual(tuiArgs('sess', 0 as unknown as string), ['--tui', '--resume', 'sess'])
+  assert.deepEqual(tuiArgs('sess', ''), ['--tui', '--resume', 'sess'])
+  assert.deepEqual(tuiArgs('sess', 'Not A Slug!'), ['--tui', '--resume', 'sess'])
+})
+
+test('tuiArgs normalizes a valid profile id like the CLI', () => {
+  assert.deepEqual(tuiArgs('sess', 'Work'), ['--profile', 'work', '--tui', '--resume', 'sess'])
+})

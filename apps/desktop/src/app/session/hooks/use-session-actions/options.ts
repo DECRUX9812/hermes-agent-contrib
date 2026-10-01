@@ -1,6 +1,7 @@
 import type { MutableRefObject } from 'react'
 import type { NavigateFunction } from 'react-router'
 
+import type { ChatMessage } from '@/lib/chat-messages'
 import type { AgentProfileRoute } from '@/store/profile'
 import type { NewChatWorkspaceTarget } from '@/store/session'
 import type { SessionOwnerRoute, SessionProfileRoute } from '@/store/session-request-router'
@@ -24,6 +25,10 @@ export interface SessionActionsOptions {
   onFreshDraftRouteIntent?: () => void
   requestGateway: <T>(method: string, params?: Record<string, unknown>) => Promise<T>
   resetViewSync: () => void
+  // Live route session id from the router. Used to drop creatingSessionRef only
+  // after navigate to a freshly created/forked stored id has actually landed
+  // (setTimeout(0) cleared the guard before the route caught up — #66057).
+  routedSessionId: string | null
   runtimeIdByStoredSessionIdRef: MutableRefObject<Map<string, string>>
   selectedStoredSessionId: string | null
   selectedStoredSessionIdRef: MutableRefObject<string | null>
@@ -34,6 +39,16 @@ export interface SessionActionsOptions {
     updater: (state: ClientSessionState) => ClientSessionState,
     storedSessionId?: string | null
   ) => ClientSessionState
+}
+
+export interface BranchLoadedSessionOptions {
+  busy: boolean
+  contextDrift?: () => null | string
+  cwd?: string
+  messageId?: string
+  messages: ChatMessage[]
+  runtimeId: null | string
+  storedSessionId: null | string
 }
 
 export interface FreshSessionDraftOptions {
@@ -87,7 +102,8 @@ export interface SessionActionHandles {
     cwd?: string,
     profile?: null | string,
     branchCount?: number,
-    ownerRoute?: SessionOwnerRoute
+    ownerRoute?: SessionOwnerRoute,
+    idempotencyKey?: string
   ) => Promise<boolean>
   branchCurrentSession: (messageId?: string) => Promise<boolean>
   branchStoredSession: (storedSessionId: string, sessionProfile?: string | null) => Promise<boolean>

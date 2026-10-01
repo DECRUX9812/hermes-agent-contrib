@@ -157,6 +157,6 @@ def write_wav(path, mix):
 
 
 if __name__ == "__main__":
-    out, plan = sys.argv[1], json.load(open(sys.argv[2]))
+    out, plan = sys.argv[1], json.load(open(sys.argv[2], encoding="utf-8"))
     write_wav(out, render(plan["duration"], plan["drop"], plan.get("hits", []), plan["stop"]))
     print("score", out, plan["duration"], "s")

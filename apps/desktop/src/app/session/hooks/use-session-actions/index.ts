@@ -17,6 +17,7 @@ import { sessionRoute } from '../../../routes'
 
 import { useArchiveActions } from './archive'
 import { useCreateActions } from './create'
+import { useCreateGuard } from './create-guard'
 import { useForkActions } from './fork'
 import { useGoneActions } from './gone'
 import { useOpenActions } from './open'
@@ -24,7 +25,7 @@ import type { SessionActionsOptions } from './options'
 import { useResumeActions } from './resume'
 import { useTileRoutingActions } from './tile-routing'
 
-export type { SessionActionsOptions } from './options'
+export type { BranchLoadedSessionOptions, SessionActionsOptions } from './options'
 
 export function useSessionActions(options: SessionActionsOptions) {
   const {
@@ -126,17 +127,19 @@ export function useSessionActions(options: SessionActionsOptions) {
     storedSessions
   ])
 
-  const { startFreshSessionDraft, createBackendSessionForSend } = useCreateActions(options)
+  const createGuard = useCreateGuard(options)
+  const { startFreshSessionDraft, createBackendSessionForSend, submitTextToNewSession } = useCreateActions(options, { createGuard })
   const { openNewSessionTile } = useTileRoutingActions(options)
   const { selectSidebarItem, openSettings, closeSettings } = useOpenActions(options, { startFreshSessionDraft })
   const { resumeSession } = useResumeActions(options, { startFreshSessionDraft })
   const { removeSession } = useGoneActions(options, { startFreshSessionDraft })
   const { archiveSession, unarchiveSession } = useArchiveActions(options, { startFreshSessionDraft })
-  const { forkBranch, branchCurrentSession, branchStoredSession } = useForkActions(options, { resumeSession })
+  const { forkBranch, branchCurrentSession, branchLoadedSession, branchStoredSession } = useForkActions(options, { createGuard, resumeSession })
 
   return {
     archiveSession,
     branchCurrentSession,
+    branchLoadedSession,
     branchStoredSession,
     closeSettings,
     createBackendSessionForSend,
@@ -146,6 +149,7 @@ export function useSessionActions(options: SessionActionsOptions) {
     resumeSession,
     selectSidebarItem,
     startFreshSessionDraft,
+    submitTextToNewSession,
     unarchiveSession
   }
 }
