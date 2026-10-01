@@ -539,6 +539,9 @@ hermes bots team create <Team> [--mission "..."]
 hermes bots team add <Team> <bot> [--lead] [--title "..."] [--reports-to <bot>]
 hermes bots team show <Team>
 hermes bots team list
+hermes bots lesson add <bot> "<lesson>"          # or: --team <Team> "<lesson>"
+hermes bots lesson list <bot>                    # or: --team <Team>
+hermes bots lesson remove <bot> <number>
 ```
 
 Create bots and teams without the Desktop. A bot is a profile carrying the Bot Mode
@@ -547,6 +550,13 @@ answers on the same model from its first message. A team's `--lead` is the one b
 listens in the team's group chats; the rest wake when @mentioned or delegated to. The
 main bot uses these commands through the bundled `bot-team-builder` skill when you ask
 it to set up a team.
+
+`lesson` keeps what a bot has learned in that bot's own memory (`MEMORY.md`), marked as
+approved by you. It takes effect from the bot's next chat (memory is a snapshot taken when a
+chat starts, so an open chat is never re-prompted). `--team` writes the lesson to every bot
+seated on the team; `list` numbers them and `remove` takes one back. The bundled
+`bot-team-retro` skill runs a short retro: it reads what your bots recently did, proposes a
+few lessons with evidence, and writes only the ones you approve.
 
 ## `hermes peer`
 

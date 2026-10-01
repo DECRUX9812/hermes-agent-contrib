@@ -54,3 +54,34 @@ def test_cli_team_lead_is_the_room_listener(profile_env, capsys, monkeypatch):
 
     from tools import bot_team
     assert bot_team.room_lead(profile_env, ["scout", "forge"])["lead"] == "scout"
+
+
+def _bot_prompt_memory(profile_env, name: str) -> str:
+    """The memory block the bot's NEXT session freezes into its prompt (what agent init loads)."""
+    from hermes_constants import reset_hermes_home_override, set_hermes_home_override
+    from tools.memory_tool import load_on_disk_store
+
+    token = set_hermes_home_override(profile_env / "profiles" / name)
+    try:
+        return load_on_disk_store().format_for_system_prompt("memory") or ""
+    finally:
+        reset_hermes_home_override(token)
+
+
+def test_team_lesson_reaches_each_seated_bot_and_stays_removable(profile_env, capsys, monkeypatch):
+    """A retro lesson the user approves lands in every seated bot's own memory snapshot — never the
+    caller's — and the user can take it back from one bot without touching the others."""
+    for name in ("scout", "forge"):
+        _run(capsys, monkeypatch, "create", name)
+    _run(capsys, monkeypatch, "team", "create", "Crew")
+    _run(capsys, monkeypatch, "team", "add", "Crew", "scout", "--lead")
+    _run(capsys, monkeypatch, "team", "add", "Crew", "forge", "--reports-to", "scout")
+
+    lesson = "Run the tests before saying a change is done."
+    assert _run(capsys, monkeypatch, "lesson", "add", "--team", "Crew", lesson)["added"] == ["scout", "forge"]
+    assert all(lesson in _bot_prompt_memory(profile_env, name) for name in ("scout", "forge"))
+    assert not (profile_env / "memories" / "MEMORY.md").exists()
+
+    assert _run(capsys, monkeypatch, "lesson", "remove", "forge", "1")["removed"] == lesson
+    assert lesson not in _bot_prompt_memory(profile_env, "forge")
+    assert lesson in _bot_prompt_memory(profile_env, "scout")

@@ -21,7 +21,7 @@ Create Bot Mode bots and a team for the user.
 | License | MIT |
 | Platforms | linux, macos, windows |
 | Tags | `Bot-Mode`, `Bots`, `Teams`, `Onboarding`, `Delegation` |
-| Related skills | [`hermes-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent.md) |
+| Related skills | [`hermes-agent`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-hermes-agent.md), [`bot-team-retro`](../../bundled/autonomous-ai-agents/autonomous-ai-agents-bot-team-retro.md) |
 
 ## Reference: full SKILL.md
 
@@ -90,7 +90,8 @@ Names are lowercase profile names (letters, digits, `-`, `_`). Titles are what t
    rest with `--reports-to <lead>`. The lead should be the generalist the user will talk to.
 6. **Tell the user how to use it** in three lines: open the Bots pane; talk to the lead (it
    delegates); @mention a teammate to pull them in directly. Mention "New topic" starts a fresh
-   chat with the same bot when context gets long.
+   chat with the same bot when context gets long. Once the team has done some work, the
+   `bot-team-retro` skill turns what went wrong into lessons the user approves.
 
 ## Pitfalls
 
