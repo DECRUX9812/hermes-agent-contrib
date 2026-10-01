@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import { sourceDeclaresServe } from './backend-command'
 import { execProbe, isTimeoutError, PROBE_TIMEOUT_MS } from './backend-probes'
+import { windowsShellCommand } from './windows-child-options'
 
 interface ServeCandidate {
   command?: string | null
@@ -73,7 +74,11 @@ export function createBackendServeSupportResolver(hermesHome: string, rememberLo
           // (#61764/#72632/#72707): `serve --help` imports at least as much as
           // `hermes --version` (~10.5s measured cold), and a false negative here
           // must not be cached as a missing command. Share the probe budget.
-          await execProbe(backend.command, [...prefix, 'serve', '--help'], probeOptions)
+          await execProbe(
+            windowsShellCommand(backend.command, Boolean(backend.shell)),
+            [...prefix, 'serve', '--help'],
+            probeOptions
+          )
           supportsServe = true
         } catch (err) {
           if (isTimeoutError(err)) {
@@ -99,7 +104,11 @@ export function createBackendServeSupportResolver(hermesHome: string, rememberLo
       // An older runtime may have dashboard but not serve. A version-only CLI
       // has neither, so never turn a failed serve check into an invalid spawn.
       try {
-        await execProbe(backend.command, [...prefix, 'dashboard', '--help'], probeOptions)
+        await execProbe(
+          windowsShellCommand(backend.command, Boolean(backend.shell)),
+          [...prefix, 'dashboard', '--help'],
+          probeOptions
+        )
         rememberLog(`[backend] \`serve\` unsupported → routing via legacy \`dashboard\` for ${backend.label || key}`)
 
         return 'dashboard'

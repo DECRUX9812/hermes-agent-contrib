@@ -872,6 +872,8 @@ export const zh = defineLocale({
       system: { label: '跟随系统', description: '跟随系统外观' }
     },
     appearance: {
+      chatTextScaleTitle: '聊天文字大小',
+      chatTextScaleDesc: '相对于界面缩放调整对话文字和消息输入框的字号。侧边栏和控件大小保持不变。',
       title: '外观',
       intro: '这些是仅桌面端的显示偏好。模式控制明暗；主题控制强调色与对话界面样式。',
       simpleModeTitle: '简洁模式',
@@ -4776,6 +4778,10 @@ export const zh = defineLocale({
       editModels: '编辑模型…',
       followDefault: '使用设置中的默认模型',
       refreshModels: '刷新模型',
+      favorites: '收藏',
+      addFavorite: '添加到收藏',
+      removeFavorite: '从收藏中移除',
+      favoriteShortcut: '⇧ 单击',
       fast: '快速',
       free: '免费',
       cacheRead: '缓存读取',
@@ -4952,6 +4958,10 @@ export const zh = defineLocale({
     filterPlaceholder: '筛选文件…',
     filterHint: '输入文件或文件夹名称的一部分。搜索整个项目，而不仅是已展开的文件夹。',
     filterNoMatch: '没有匹配的文件',
+    terminalReadOnly: '只读输出',
+    terminalReadOnlyHelp:
+      '如需回应提示，请停止后台命令，再在新终端中运行。新终端会打开独立的 shell，不会连接到此进程。',
+    terminalOpenInteractive: '打开新终端',
     aria: '右侧边栏',
     panelsAria: '右侧边栏面板',
     files: '文件系统',
@@ -5249,10 +5259,6 @@ export const zh = defineLocale({
         streaming: '回复完成前连接已断开。请重试以重新发送。'
       },
       errorCodes: {
-        no_provider_configured: {
-          title: '尚未设置 AI 模型',
-          body: '请选择模型或登录，然后重新发送消息。'
-        },
         provider_policy_blocked: {
           title: '账户设置阻止了此模型',
           body: provider => `${provider} 无法按你账户的数据或隐私设置路由此请求。请选择其他模型或切换服务商。`

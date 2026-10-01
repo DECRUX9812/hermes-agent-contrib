@@ -32,8 +32,10 @@ import {
 import { broadcastSessionsChanged } from '@/store/session-sync'
 import type { SessionCreateResponse } from '@/types/hermes'
 
-import { createdThisRun, desktopSessionCreateParams } from './create'
+import { desktopSessionCreateParams } from './create'
+import { markSessionCreatedThisRun } from './created-this-run'
 import type { SessionActionsOptions } from './options'
+import { createGatewaySession } from './session-create-request'
 import { applyRuntimeInfo, upsertOptimisticSession, upsertUnlistedSessionOwner } from './utils'
 
 export function useTileRoutingActions({ requestGateway, updateSessionState }: SessionActionsOptions) {
@@ -187,17 +189,7 @@ export function useTileRoutingActions({ requestGateway, updateSessionState }: Se
         let stored: string | undefined
 
         try {
-          created = capturedRoute
-            ? await requestGatewayForAgent<SessionCreateResponse>(
-                capturedRoute.connectionId,
-                capturedRoute.profile,
-                'session.create',
-                params,
-                undefined,
-                undefined,
-                { spawnPriority: 'foreground' }
-              )
-            : await requestGateway<SessionCreateResponse>('session.create', params)
+          created = await createGatewaySession(capturedRoute, params, requestGateway)
 
           stored = created.stored_session_id
 
@@ -229,7 +221,7 @@ export function useTileRoutingActions({ requestGateway, updateSessionState }: Se
           return
         }
 
-        createdThisRun.add(stored)
+        markSessionCreatedThisRun(stored)
 
         // Seed the per-runtime cache so the tile renders immediately without a
         // redundant resume. Only add the row to the SIDEBAR when `listed` — an

@@ -5430,6 +5430,44 @@
         "title": "AgentsListResult",
         "type": "object"
       },
+      "ApprovalCancelledPayload": {
+        "additionalProperties": false,
+        "description": "``session_lifecycle._announce_cancelled_gateway_approvals`` (broadcast).\n\nOne frame for every pending approval dropped by an interrupt / reap / teardown (#106678) \u2014 the\ndeny-resolve is silent without it, so a reconnecting client's prompt looks lost rather than cancelled.\n``cancelled_count`` is the number of dropped entries; ``request_ids`` omits empty/missing ids, so the\ntwo can disagree when an entry has no request_id.",
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "stored_session_id": {
+            "title": "Stored Session Id",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "cancelled_count": {
+            "title": "Cancelled Count",
+            "type": "integer"
+          },
+          "request_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Request Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "session_id",
+          "stored_session_id",
+          "reason",
+          "cancelled_count",
+          "request_ids"
+        ],
+        "title": "ApprovalCancelledPayload",
+        "type": "object"
+      },
       "ApprovalChoice": {
         "enum": [
           "once",
@@ -15724,22 +15762,11 @@
       },
       "ErrorPayload": {
         "additionalProperties": false,
-        "description": "Every ``_emit(\"error\", \u2026)`` site sets ``message``; agent-init failures also carry the\nclassified ``error_surface`` (``agent/error_surface.py::agent_init_error_surface``) so a client\ncan show one actionable card instead of guessing from the text.",
+        "description": "Every ``_emit(\"error\", \u2026)`` site sets exactly ``message``.",
         "properties": {
           "message": {
             "title": "Message",
             "type": "string"
-          },
-          "error_surface": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ErrorSurface"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
           }
         },
         "required": [
@@ -25739,6 +25766,18 @@
             "default": 0,
             "title": "Message Count",
             "type": "integer"
+          },
+          "live_message_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Live Message Count"
           }
         },
         "required": [
@@ -26040,6 +26079,18 @@
             "default": 0,
             "title": "Message Count",
             "type": "integer"
+          },
+          "live_message_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Live Message Count"
           }
         },
         "required": [
@@ -33221,6 +33272,18 @@
             "default": 0,
             "title": "Message Count",
             "type": "integer"
+          },
+          "live_message_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Live Message Count"
           },
           "source": {
             "default": "",
@@ -42750,6 +42813,18 @@
           "name": "payload",
           "schema": {
             "$ref": "#/components/schemas/TerminalOutputPayload"
+          }
+        }
+      ]
+    },
+    {
+      "name": "approval.cancelled",
+      "summary": "Pending gateway approvals were dropped by interrupt/reap/teardown; the wait resolved as deny (not a user refusal).",
+      "params": [
+        {
+          "name": "payload",
+          "schema": {
+            "$ref": "#/components/schemas/ApprovalCancelledPayload"
           }
         }
       ]

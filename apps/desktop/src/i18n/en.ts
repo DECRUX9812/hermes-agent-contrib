@@ -1189,6 +1189,9 @@ export const en: Translations = {
       system: { label: 'System', description: 'Follow OS appearance' }
     },
     appearance: {
+      chatTextScaleTitle: 'Chat Text Size',
+      chatTextScaleDesc:
+        'Scales conversation text and the message editor relative to UI Scale. Sidebars and controls stay the same size.',
       title: 'Appearance',
       intro: 'Desktop-only. Mode is brightness; theme is palette and chat chrome.',
       simpleModeTitle: 'Simple mode',
@@ -5118,6 +5121,10 @@ export const en: Translations = {
       editModels: 'Edit models…',
       followDefault: 'Use Settings default',
       refreshModels: 'Refresh models',
+      favorites: 'Favorites',
+      addFavorite: 'Add to favorites',
+      removeFavorite: 'Remove from favorites',
+      favoriteShortcut: '⇧ Click',
       fast: 'Fast',
       free: 'free',
       cacheRead: 'cached read',
@@ -5294,6 +5301,10 @@ export const en: Translations = {
     filterPlaceholder: 'Filter files…',
     filterHint: 'Type part of a file or folder name. Matches the whole project, not just open folders.',
     filterNoMatch: 'No files match',
+    terminalReadOnly: 'Read-only output',
+    terminalReadOnlyHelp:
+      'To answer prompts, stop the background command and run it in a new terminal. The new terminal opens a separate shell; it does not connect to this process.',
+    terminalOpenInteractive: 'Open new terminal',
     aria: 'Right sidebar',
     panelsAria: 'Right sidebar panels',
     files: 'File system',
@@ -5342,6 +5353,7 @@ export const en: Translations = {
     closePane: 'Close preview pane',
     loading: 'Loading preview',
     unavailable: 'Preview unavailable',
+    missingTarget: 'That path does not exist on this computer',
     opening: 'Opening...',
     hide: 'Hide',
     openPreview: 'Open preview',
@@ -5678,10 +5690,6 @@ export const en: Translations = {
         payload_too_large: {
           title: 'This message is too large',
           body: 'The request was too big for the model. Compress the conversation or start a new chat, then send again.'
-        },
-        no_provider_configured: {
-          title: 'No AI model is set up yet',
-          body: 'Choose a model or sign in, then send your message again.'
         },
         model_not_found: {
           title: 'This model is not available',

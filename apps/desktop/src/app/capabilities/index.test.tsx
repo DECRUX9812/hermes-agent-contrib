@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as HermesApi from '@/hermes'
 import { queryClient } from '@/lib/query-client'
 import type * as HubActions from '@/store/hub-actions'
+import type * as NotificationsModule from '@/store/notifications'
 
 import { parseCatalog } from './catalog/catalog-data'
 import { $catalogCardView } from './catalog/store'
@@ -44,7 +45,7 @@ vi.mock('@/hermes', async importOriginal => ({
 
 // Notifications hit nanostores/timers we don't care about here.
 vi.mock('@/store/notifications', async importOriginal => ({
-  ...(await importOriginal<typeof import('@/store/notifications')>()),
+  ...(await importOriginal<typeof NotificationsModule>()),
   notify: vi.fn(),
   notifyError: vi.fn()
 }))
@@ -502,5 +503,43 @@ describe('CapabilitiesView toolset management', { timeout: 60_000 }, () => {
     await waitFor(() =>
       expect(vi.mocked(installHubSkill)).toHaveBeenCalledWith('official/gifs/gif-search', expect.anything())
     )
+  })
+
+  it('drops community feed rows that only share a name with an installed skill', async () => {
+    // Installs are name-keyed, so a community lookalike of an installed skill
+    // can neither be added beside it nor is it the installed skill itself —
+    // it must not surface as a second "installed" row under the same name.
+    getSkills.mockResolvedValue([
+      {
+        name: 'docx',
+        description: 'Bundled document tools',
+        category: 'documents',
+        enabled: true,
+        usage: 0,
+        provenance: 'bundled'
+      }
+    ])
+    queryClient.setQueryData(
+      ['public-catalog', 'skills'],
+      parseCatalog('skills', [
+        { name: 'docx', source: 'ClawHub', identifier: 'wordpro' },
+        { name: 'gif-search', source: 'ClawHub', identifier: 'gif-raccoon' }
+      ])
+    )
+
+    await act(async () => {
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={['/capabilities?tab=skills']}>
+            <CapabilitiesView />
+          </MemoryRouter>
+        </QueryClientProvider>
+      )
+    })
+
+    // The feed settles first; then only the installed row keeps the name,
+    // while the distinct community skill stays installable.
+    await screen.findByRole('switch', { name: 'Add gif-search' })
+    expect(screen.getAllByRole('button', { name: 'docx' })).toHaveLength(1)
   })
 })

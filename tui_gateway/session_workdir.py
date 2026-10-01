@@ -514,9 +514,11 @@ def _persist_branch_seed(session: dict) -> None:
     if not (key := session.get("session_key")) or not session.get("seeded") or session.get("_branch_seed_persisted"):
         return
     from agent.message_metadata import message_identity
+    from agent.transcript_repair import sync_flushed_message_markers
     with session["history_lock"]:  # message_identity stamps the live dicts
+        live = list(session.get("history") or [])
         seed = [{"role": msg.get("role", "user"), **{f: msg.get(f) for f in _WORKDIR_SEED_FIELDS},
-                 **message_identity(msg)} for msg in (session.get("history") or [])]
+                 **message_identity(msg)} for msg in live]
     if not seed:
         return
     with _session_db(session) as db:
@@ -528,6 +530,8 @@ def _persist_branch_seed(session: dict) -> None:
             # Bounded-chunk transactions (see #23254): a branch seed can be hundreds of rows; chunking keeps
             # each BEGIN IMMEDIATE short so concurrent writers aren't starved.
             db.append_messages_batch(key, seed, chunk_rows=500)
+            with session["history_lock"]:
+                sync_flushed_message_markers(live, seed)
             session["_branch_seed_persisted"] = True
         except Exception as exc:
             _workdir_reraise_disk_full(exc, "branch seed persist failed")
@@ -550,9 +554,10 @@ def _submit_row_target_key(session: dict) -> str:
     against this handle (``_persist_live_session_system_prompt``). Do NOT re-resolve through the lineage
     here: ``resolve_resume_session_id`` returns the deepest node that has MESSAGES, so the freshly-minted
     child of a just-published rotation resolves back to the parent and the fix would no-op exactly when
-    it is needed. The choice is made ONCE here and recorded on the staged dict (``_session_id``) so
-    every later addresser of that row — the @-expansion rewrite, the queue merge, the drain deactivation
-    — reads the same key instead of re-deriving one that a rotation can invalidate mid-turn.
+    it is needed. The choice is made ONCE here and recorded on the staged dict under
+    ``_SUBMIT_ROW_SESSION_KEY`` so every later addresser of that row — the @-expansion rewrite, the
+    queue merge, the drain deactivation — reads the same key instead of re-deriving one that a rotation
+    can invalidate mid-turn.
     """
     return str(getattr(session.get("agent"), "session_id", None) or "") or str(session.get("session_key") or "")
 
@@ -562,13 +567,12 @@ def _submit_row_target_key(session: dict) -> str:
 _SUBMIT_ROW_SESSION_KEY = "_submit_row_session_id"
 
 
-def _submit_row_owner_key(staged: Any, session: dict) -> str:
-    """The session id a staged submit row lives under: recorded at write time, else the current best."""
-    if isinstance(staged, dict):
-        recorded = str(staged.get(_SUBMIT_ROW_SESSION_KEY) or "")
-        if recorded:
-            return recorded
-    return _submit_row_target_key(session)
+def _submit_row_owner_key(staged: dict, session: dict) -> str:
+    """The session id a staged submit row lives under: recorded at write time, else the current best.
+    Every caller narrows to a dict (and checks ``_row_id``) immediately before, so the recorded value is
+    the answer whenever the row exists; the re-derivation only covers a dict that predates the stamp."""
+    recorded = str(staged.get(_SUBMIT_ROW_SESSION_KEY) or "")
+    return recorded or _submit_row_target_key(session)
 
 
 def _write_submit_user_row(session: dict, text: Any, display_kind: str | None,
@@ -580,8 +584,10 @@ def _write_submit_user_row(session: dict, text: Any, display_kind: str | None,
     ``accept_metadata`` merges into ``display_metadata`` (the busy-queue accept's never-drained
     marker, retired by ``reopen_session`` — #125577).
     Returns None when nothing was written (no key / non-text / store unavailable / failed write)."""
-    key = session.get("session_key")
-    if not key or not isinstance(text, str) or not text.strip():
+    # ``session_key`` is only an "is this a real session" probe — the row is written to ``target`` below,
+    # which a rotation can already have moved off ``session_key`` (#123545). One guard, one value: the
+    # writer must not read a different key than the one it checks.
+    if not session.get("session_key") or not isinstance(text, str) or not text.strip():
         return None
     from agent.context_compressor import _DB_PERSISTED_MARKER
     from agent.message_metadata import stamp_message_timestamp, stamp_message_uid

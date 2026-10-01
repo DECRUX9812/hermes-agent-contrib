@@ -1004,6 +1004,8 @@ export interface Translations {
       lookDesc: string
       lookSoft: string
       lookClassic: string
+      chatTextScaleTitle: string
+      chatTextScaleDesc: string
       uiScaleTitle: string
       uiScaleDesc: (percent: number) => string
       sessionDensityTitle: string
@@ -4367,6 +4369,10 @@ export interface Translations {
       editModels: string
       followDefault: string
       refreshModels: string
+      favorites: string
+      addFavorite: string
+      removeFavorite: string
+      favoriteShortcut: string
       fast: string
       free: string
       cacheRead: string
@@ -4581,6 +4587,9 @@ export interface Translations {
     terminalHide: string
     terminalsAria: string
     terminalNew: string
+    terminalReadOnly: string
+    terminalReadOnlyHelp: string
+    terminalOpenInteractive: string
     terminalCloseOthers: string
     terminalCloseAll: string
     addToChat: string
@@ -4591,6 +4600,7 @@ export interface Translations {
     closePane: string
     loading: string
     unavailable: string
+    missingTarget: string
     opening: string
     hide: string
     openPreview: string

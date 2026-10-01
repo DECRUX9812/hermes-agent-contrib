@@ -196,7 +196,7 @@ describe('useComposerDraft — attachment scope stays coherent with the committe
     clearSessionDraft(null)
   })
 
-  it('isolates two concurrent new-chat lifecycles: the second fresh draft never shows the first one\'s text (#66662)', () => {
+  it("isolates two concurrent new-chat lifecycles: the second fresh draft never shows the first one's text (#66662)", () => {
     const firstKey = rotateFreshDraftKey()
     const secondKey = rotateFreshDraftKey()
 
@@ -220,7 +220,7 @@ describe('useComposerDraft — attachment scope stays coherent with the committe
     clearSessionDraft(secondKey)
   })
 
-  it('re-homes the ACTIVE lifecycle\'s draft onto the session its first send creates (#66662)', () => {
+  it("re-homes the ACTIVE lifecycle's draft onto the session its first send creates (#66662)", () => {
     const key = rotateFreshDraftKey()
 
     // The user typed in the current new chat; the swap cleanup stashed it
@@ -252,7 +252,7 @@ describe('useComposerDraft — attachment scope stays coherent with the committe
     clearSessionDraft('session-created')
   })
 
-  it('keys a fresh chat\'s live stash under its lifecycle key, not the shared bucket (#66662)', () => {
+  it("keys a fresh chat's live stash under its lifecycle key, not the shared bucket (#66662)", () => {
     const key = rotateFreshDraftKey()
 
     const { unmount } = render(

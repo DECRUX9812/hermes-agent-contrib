@@ -68,6 +68,20 @@ def _rows(db, key):
             db.get_messages_as_conversation(key, include_inactive=True)]
 
 
+def _rotated_session(monkeypatch, db):
+    """A live desktop session whose agent already rotated onto a continuation while ``session_key``
+    still names the (reopened) parent — the state every turn after a compression rotation sees."""
+    sid, key = _desktop_session(monkeypatch, db)
+    session = server._sessions[sid]
+    with session["history_lock"]:
+        session["running"] = True
+        server._start_inflight_turn(session, "earlier turn")
+    assert server._ensure_session_db_row(session) is not False
+    agent = _flush_agent(db, key)
+    session["agent"] = agent
+    return sid, key, session, agent, _rotate_to_compression_child(db, key, agent, reopen_parent=True)
+
+
 def test_submit_user_row_lands_where_the_turns_tool_rows_land(monkeypatch, tmp_path):
     """The reporter's exact shape: one typed message, a tool result and the final text — all one session."""
     db = SessionDB(db_path=tmp_path / "state.db")
@@ -147,6 +161,10 @@ def test_expanded_submit_row_is_rewritten_on_the_session_that_owns_it(monkeypatc
         db.close()
 
 
+def _full_rows(db, key):
+    return [(r["role"], str(r["content"])) for r in db.get_messages_as_conversation(key, include_inactive=True)]
+
+
 def test_model_switch_marker_lands_in_the_live_session(monkeypatch, tmp_path):
     """``_append_model_switch_marker`` writes a DURABLE ``role=user`` pivot under ``session_key`` while the
     live agent writes to ``agent.session_id``. On a rotated session the notice is filed under a parent the
@@ -156,12 +174,131 @@ def test_model_switch_marker_lands_in_the_live_session(monkeypatch, tmp_path):
     sid, key, session, agent, child = _rotated_session(monkeypatch, db)
     try:
         server._append_model_switch_marker(session, model="test-model-2", provider="test-provider")
-        full = lambda k: [(r["role"], str(r["content"])) for r in  # noqa: E731
-                           db.get_messages_as_conversation(k, include_inactive=True)]
         prefix = server._MODEL_SWITCH_MARKER_PREFIX
-        assert [r for r in full(child) if prefix in r[1]], f"marker not in the live session: {full(child)}"
-        assert not [r for r in full(key) if prefix in r[1]], (
-            f"marker filed under the rotated-away parent: {full(key)}")
+        assert [r for r in _full_rows(db, child) if prefix in r[1]], f"marker not in the live session: {_full_rows(db, child)}"
+        assert not [r for r in _full_rows(db, key) if prefix in r[1]], (
+            f"marker filed under the rotated-away parent: {_full_rows(db, key)}")
+    finally:
+        server._sessions.pop(sid, None)
+        db.close()
+
+
+def test_model_switch_markers_do_not_accumulate_across_switches(monkeypatch, tmp_path):
+    """The in-memory path is self-replacing: each switch strips the prior marker so N switches leave ONE
+    marker, not N re-sent on every API call (#65891). The DURABLE write had no counterpart, so N switches
+    left N active rows that all replay on resume — the invariant held in memory only. Filed in the live
+    session (see the test above), those rows are exactly the reporter's 130 stray markers."""
+    db = SessionDB(db_path=tmp_path / "state.db")
+    sid, key = _desktop_session(monkeypatch, db)
+    session = server._sessions[sid]
+    try:
+        with session["history_lock"]:
+            session["running"] = True
+            server._start_inflight_turn(session, "earlier turn")
+        assert server._ensure_session_db_row(session) is not False
+        agent = _flush_agent(db, key)
+        session["agent"] = agent
+        for i in range(3):
+            server._append_model_switch_marker(session, model=f"model-{i}", provider="test-provider")
+        prefix = server._MODEL_SWITCH_MARKER_PREFIX
+        # LIVE rows only (get_messages defaults to active=1), and full content: the marker prefix is
+        # longer than the _rows() helper's 48-char preview.
+        live = [r for r in db.get_messages(key) if prefix in str(r.get("content") or "")]
+        assert len(live) == 1, (
+            f"3 switches must leave 1 live durable marker, not {len(live)}: "
+            f"{[str(r.get('content'))[:60] for r in live]}")
+        # The superseded rows are preserved inactive, never deleted (same contract as deactivate_message).
+        kept = [r for r in db.get_messages(key, include_inactive=True)
+                if prefix in str(r.get("content") or "")]
+        assert len(kept) == 3, f"superseded markers must be kept inactive, not deleted: {len(kept)}"
+    finally:
+        server._sessions.pop(sid, None)
+        db.close()
+
+
+def test_message_react_targets_the_row_in_the_session_that_owns_it(monkeypatch, tmp_path):
+    """``message.react`` with ``newest_role`` resolves the row via ``latest_message_row_id``, which filters
+    on one session_id. On a rotated session the newest user row lives in the continuation, so a stale
+    ``session_key`` reacts to the PARENT's last user row — the previous turn — or 404s when the parent
+    has no text row. Same defect class as the submit row: an off-turn write addressed by a key a
+    rotation invalidated (#123545)."""
+    db = SessionDB(db_path=tmp_path / "state.db")
+    sid, key, session, agent, child = _rotated_session(monkeypatch, db)
+    try:
+        # The continuation's newest user row is the rotated turn's own submit row.
+        db.append_message(child, "user", content="the turn the user just reacted to")
+        # The parent still holds the PREVIOUS turn's last user row.
+        db.append_message(key, "user", content="the previous turn")
+
+        got = server.handle_request({"id": "r1", "method": "message.react", "params": {
+            "session_id": sid, "newest_role": "user", "emoji": "thumbsup"}})
+        assert "result" in got, got
+        want = db._read_one("SELECT id FROM messages WHERE session_id = ? AND content = ?",
+                            (child, "the turn the user just reacted to"))
+        assert want is not None
+        row_id = int(got["result"]["row_id"])
+        assert row_id == want[0], (
+            f"reaction landed on row {row_id} (session "
+            f"{db._read_one('SELECT session_id FROM messages WHERE id = ?', (row_id,))[0]}), "
+            f"not the newest user row {want[0]} in the live session {child}")
+    finally:
+        server._sessions.pop(sid, None)
+        db.close()
+
+
+def test_session_history_reads_the_continuation_after_a_rotation(monkeypatch, tmp_path):
+    """``session.history`` addresses the durable transcript by session. ``include_ancestors`` walks PARENT
+    pointers, so a stale ``session_key`` materializes root..parent and never the continuation — a
+    reconnect in the post-rotation window renders a transcript missing every turn since the rotation."""
+    db = SessionDB(db_path=tmp_path / "state.db")
+    sid, key, session, agent, child = _rotated_session(monkeypatch, db)
+    try:
+        db.append_message(child, "user", content="sent after the rotation")
+        got = server.handle_request({"id": "h1", "method": "session.history", "params": {"session_id": sid}})
+        assert "result" in got, got
+        texts = [m.get("text") or m.get("content") for m in got["result"]["messages"]]
+        assert "sent after the rotation" in texts, (
+            f"session.history served the stale parent {key}, not the live {child}: {got['result']['messages']}")
+    finally:
+        server._sessions.pop(sid, None)
+        db.close()
+
+
+def test_out_of_band_probe_reads_the_continuation_after_a_rotation(monkeypatch, tmp_path):
+    """``_adopt_out_of_band_turns`` keyset-probes for foreign rows (a Telegram reply, a cron delivery)
+    written since the turn started. On a rotated session the parent holds none of them, so the probe
+    returns nothing and the model never sees the out-of-band turn — a regression of the contract this
+    function exists for (#42962/#86588)."""
+    db = SessionDB(db_path=tmp_path / "state.db")
+    sid, key, session, agent, child = _rotated_session(monkeypatch, db)
+    try:
+        from tui_gateway import prompt_turn
+        # _adopt_out_of_band_turns reads _message_row_id, which methods_prompt publishes onto server's
+        # globals at bind_module time (prompt_turn's own module never imports it). Importing the module
+        # here runs that binding — the same order server.py's own import loop produces.
+        from tui_gateway import methods_prompt  # noqa: F401
+        assert hasattr(server, "_message_row_id"), "the bind seam must publish _message_row_id"
+        # Stamp the in-memory history with the row ids the rotation actually created, so `seen` is the
+        # newest row the agent's own flush wrote and the foreign row is strictly newer.
+        with session["history_lock"]:
+            session["history"] = [
+                dict(r, _row_id=r["_row_id"]) for r in db.get_messages_as_conversation(child, include_row_ids=True)
+            ]
+            session["history_version"] = 1
+        stamped = [m["_row_id"] for m in session["history"]]
+        assert stamped, "the rotation must have created rows to stamp"
+        seen = max(stamped)
+        # Another surface appends to the session the LIVE agent writes to, after those rows.
+        foreign = db.append_message(child, "user", content="a Telegram reply that arrived mid-turn")
+        assert foreign > seen, f"the foreign row {foreign} must sort after the in-flight rows {stamped}"
+
+        # Call the REBOUND copy on server: bind_module re-creates each body against server's globals, and
+        # that copy is what production runs. prompt_turn's original still points at its own module dict,
+        # where _message_row_id (published by methods_prompt) was never bound.
+        server._adopt_out_of_band_turns(session)
+        texts = [str(m.get("content")) for m in session["history"]]
+        assert "a Telegram reply that arrived mid-turn" in texts, (
+            f"the out-of-band probe read the stale parent {key} and adopted nothing: {texts}")
     finally:
         server._sessions.pop(sid, None)
         db.close()
@@ -185,18 +322,6 @@ def test_unrotated_session_keeps_writing_to_session_key(monkeypatch, tmp_path):
         db.close()
 
 
-def _rotated_session(monkeypatch, db):
-    """A live desktop session whose agent already rotated onto a continuation while ``session_key``
-    still names the (reopened) parent — the state every turn after a compression rotation sees."""
-    sid, key = _desktop_session(monkeypatch, db)
-    session = server._sessions[sid]
-    with session["history_lock"]:
-        session["running"] = True
-        server._start_inflight_turn(session, "earlier turn")
-    assert server._ensure_session_db_row(session) is not False
-    agent = _flush_agent(db, key)
-    session["agent"] = agent
-    return sid, key, session, agent, _rotate_to_compression_child(db, key, agent, reopen_parent=True)
 
 
 def test_busy_queue_accept_row_lands_with_the_turn_and_is_addressed_there(monkeypatch, tmp_path):

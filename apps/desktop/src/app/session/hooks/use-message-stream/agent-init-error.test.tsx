@@ -137,28 +137,4 @@ describe('useMessageStream agent-init error surfacing (#63078)', () => {
     expect(errorRows[0]!.error).toContain('could not start the assistant')
     expect(errorRows[0]!.errorSurface?.code).toBe('agent_init_failed')
   })
-
-  it('shows a missing provider as ONE classified card — no toast, however many frames report it', async () => {
-    mountStream()
-    seedOptimisticFirstMessage()
-
-    const surface = { code: 'no_provider_configured', layer: 'auth', retryable: false }
-    const message = 'No AI model is set up yet. Choose a model or sign in, then send your message again.'
-
-    act(() => stream.handleEvent({ payload: { error_surface: surface, message }, session_id: SID, type: 'error' }))
-
-    act(() =>
-      stream.handleEvent({
-        payload: { error: message, error_surface: surface, status: 'error', text: message },
-        session_id: SID,
-        type: 'message.complete'
-      })
-    )
-
-    const errorRows = stream.state().messages.filter(m => m.role === 'assistant' && m.error)
-    expect(errorRows).toHaveLength(1)
-    expect(errorRows[0]!.errorSurface?.code).toBe('no_provider_configured')
-    // The card is the one place it shows: no toast for the same failure.
-    expect($notifications.get().filter(n => n.kind === 'error')).toHaveLength(0)
-  })
 })

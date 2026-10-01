@@ -18,17 +18,10 @@ import {NEW_CHAT_ROUTE, sessionRoute} from '../../../routes'
 import {sessionContextDrift} from '../session-context-drift'
 
 import {sessionCreateOverrideParams, type SessionCreateOverrides, type SessionSeedMessage} from './create-overrides'
+import { markSessionCreatedThisRun } from './created-this-run'
 import type { FreshSessionDraftOptions, SessionActionsOptions } from './options'
+import { createGatewaySession } from './session-create-request'
 import {applyRuntimeInfo, upsertOptimisticSession} from './utils'
-
-// Stored ids created in THIS renderer run. A brand-new session lives only in the
-// gateway's in-memory map until its first turn persists a state.db row — so if a
-// respawning/flapping backend drops it, both resume RPC and the REST transcript
-// 404 even though the user just made it. We must NOT treat that as "gone" (which
-// yanks them to a fresh draft — the "new sessions clear themselves" bug); the
-// bounded retry rebinds it when the backend returns. Boot-into-a-stale-last-id
-// (NOT in this set) still legitimately drops to a draft.
-export const createdThisRun = new Set<string>()
 
 // `session.create` params from the current profile + sticky-UI model/effort/fast,
 // ensuring the gateway is on that profile first. Shared by the primary send path
@@ -268,17 +261,7 @@ export function useCreateActions({ activeSessionIdRef, busyRef, creatingSessionR
         let stored: null | string
 
         try {
-          created = capturedRoute
-            ? await requestGatewayForAgent<SessionCreateResponse>(
-                capturedRoute.connectionId,
-                capturedRoute.profile,
-                'session.create',
-                params,
-                undefined,
-                undefined,
-                { spawnPriority: 'foreground' }
-              )
-            : await requestGateway<SessionCreateResponse>('session.create', params)
+          created = await createGatewaySession(capturedRoute, params, requestGateway)
 
           stored = created.stored_session_id ?? null
 
@@ -345,7 +328,7 @@ export function useCreateActions({ activeSessionIdRef, busyRef, creatingSessionR
         ensureSessionState(created.session_id, stored)
 
         if (stored) {
-          createdThisRun.add(stored)
+          markSessionCreatedThisRun(stored)
           // Seed the sidebar preview with the user's first message so the row
           // reads meaningfully while the turn is in flight, instead of flashing
           // "Untitled session" until the turn persists and auto-title runs. The

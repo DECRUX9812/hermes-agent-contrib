@@ -70,7 +70,7 @@ import type { SessionMessage, SessionMessagesResponse, SessionResumeResult, Usag
 import type { ClientSessionState } from '../../../types'
 import { singleFlightSessionResume } from '../use-prompt-actions/single-flight-resume'
 
-import { createdThisRun } from './create'
+import { sessionCreatedThisRun } from './created-this-run'
 import { captureDisplayHydration } from './display-hydration'
 import type { SessionActionHandles, SessionActionsOptions } from './options'
 import { reconcilePersistedLiveTurn } from './persisted-live-turn'
@@ -1548,7 +1548,7 @@ export function useResumeActions(
           }
 
           const verdict = goneSessionVerdict({
-            createdThisRun: createdThisRun.has(storedSessionId),
+            createdThisRun: sessionCreatedThisRun(storedSessionId),
             stillListed,
             switchInFlight:
               $gatewaySwitching.get() ||

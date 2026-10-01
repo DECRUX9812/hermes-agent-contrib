@@ -1159,6 +1159,9 @@ export const esOverrides = {
       }
     },
     appearance: {
+      chatTextScaleTitle: 'Tamaño del texto del chat',
+      chatTextScaleDesc:
+        'Ajusta el texto de la conversación y del editor respecto a la escala de la interfaz. Las barras laterales y los controles mantienen su tamaño.',
       title: 'Apariencia',
       intro: 'Solo escritorio. El modo es el brillo; el tema es la paleta y el marco del chat.',
       colorMode: 'Modo de color',
@@ -5496,6 +5499,10 @@ export const esOverrides = {
       editModels: 'Editar modelos…',
       followDefault: 'Usar el predeterminado de Ajustes',
       refreshModels: 'Actualizar modelos',
+      favorites: 'Favoritos',
+      addFavorite: 'Añadir a favoritos',
+      removeFavorite: 'Quitar de favoritos',
+      favoriteShortcut: '⇧ Clic',
       fast: 'Rápido',
       free: 'gratis',
       cacheRead: 'lectura en caché',
@@ -6058,10 +6065,6 @@ export const esOverrides = {
         payload_too_large: {
           title: 'Este mensaje es demasiado grande',
           body: 'La solicitud era demasiado grande para el modelo. Comprime la conversación o empieza un chat nuevo y vuelve a enviarlo.'
-        },
-        no_provider_configured: {
-          title: 'Aún no hay un modelo de IA configurado',
-          body: 'Elige un modelo o inicia sesión y vuelve a enviar tu mensaje.'
         },
         model_not_found: {
           title: 'Este modelo no está disponible',

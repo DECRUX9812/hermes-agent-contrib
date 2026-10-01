@@ -2,9 +2,9 @@ import { isSessionNotOwnedError } from '@/app/session/hooks/use-prompt-actions/u
 import { runtimeTranslations, translateNow } from '@/i18n'
 import { textPart } from '@/lib/chat-messages'
 import { coerceGatewayText } from '@/lib/chat-runtime'
-import { type ErrorSurface, parseErrorSurface } from '@/lib/error-surface'
+import type { ErrorSurface } from '@/lib/error-surface'
 import { errorCardText } from '@/lib/error-surface-copy'
-import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
+import { isProviderSetupErrorCode, isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import { type AgentNoticePayload, clearAgentNotice, nativeNoticeInput, showAgentNotice } from '@/store/agent-notices'
 import { clearSettledClarifyRequest } from '@/store/clarify'
 import { reconcileSessionCompacting, setSessionCompacting, takeCompressDeferred } from '@/store/compaction'
@@ -282,27 +282,21 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
   if (event.type === 'error') {
     const errorMessage = payload?.message || 'Hermes reported an error'
 
-    // Agent-init failures arrive classified (`error_surface`, see
-    // agent/error_surface.py::agent_init_error_surface). A missing provider is
-    // then ONE inline card with one fix — not a toast, a native alert AND an
-    // onboarding takeover for the same problem.
-    const wireSurface = parseErrorSurface(payload?.error_surface)
-    const noProvider = wireSurface?.code === 'no_provider_configured'
-    const looksLikeProviderSetup = !noProvider && isProviderSetupErrorMessage(errorMessage)
+    // The gateway's own verdict when it sent one (agent init with no usable provider), else the
+    // sentence: a blank install must reach onboarding, not a toast it cannot act on.
+    const looksLikeProviderSetup = isProviderSetupErrorCode(payload?.code) || isProviderSetupErrorMessage(errorMessage)
 
-    // Older backends send no error_surface on this event. Recover the two codes
-    // the text can still mean so the card and toast get the same plain copy +
-    // button gating as a classified turn: a live-owner refusal
-    // (SESSION_NOT_OWNED, #106217) is deterministic — Retry hits the same wall,
-    // only a new chat helps — and disk-full is a machine problem, not a
-    // provider one.
-    const surface: ErrorSurface | null =
-      wireSurface ??
-      (isSessionNotOwnedError(new Error(errorMessage))
-        ? { code: 'SESSION_NOT_OWNED', layer: 'gateway', retryable: false }
-        : isDiskFullErrorMessage(errorMessage)
-          ? { code: 'disk_full', layer: 'disk', retryable: false }
-          : null)
+    // The gateway's `error` event carries no error_surface (prompt_turn.py
+    // emits it for pre-turn refusals). Recover the two codes it CAN mean from
+    // the text so the card and toast get the same plain copy + button gating
+    // as a classified turn: a live-owner refusal (SESSION_NOT_OWNED, #106217)
+    // is deterministic — Retry hits the same wall, only a new chat helps —
+    // and disk-full is a machine problem, not a provider one.
+    const surface: ErrorSurface | null = isSessionNotOwnedError(new Error(errorMessage))
+      ? { code: 'SESSION_NOT_OWNED', layer: 'gateway', retryable: false }
+      : isDiskFullErrorMessage(errorMessage)
+        ? { code: 'disk_full', layer: 'disk', retryable: false }
+        : null
 
     // When a code was recovered, the glossed card sentence explains it better
     // than the raw refusal. When none was, the server's own text IS the plain
@@ -338,8 +332,6 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
 
     if (looksLikeProviderSetup) {
       requestDesktopOnboarding(errorMessage)
-    } else if (noProvider) {
-      // The inline card below is the one place this is shown.
     } else if (surface?.code === 'disk_full') {
       notifyError(new Error(errorMessage), translateNow('notifications.errors.diskFull'))
     } else {

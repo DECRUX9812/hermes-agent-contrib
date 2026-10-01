@@ -844,6 +844,9 @@ export const ar = defineLocale({
       }
     },
     appearance: {
+      chatTextScaleTitle: 'حجم نص المحادثة',
+      chatTextScaleDesc:
+        'يضبط حجم نص المحادثة ومحرر الرسائل نسبةً إلى مقياس الواجهة. يبقى حجم الأشرطة الجانبية وعناصر التحكم كما هو.',
       title: 'المظهر',
       intro: 'خصص مظهر Hermes Desktop.',
       simpleModeTitle: 'الوضع المبسّط',
@@ -4147,6 +4150,10 @@ export const ar = defineLocale({
       editModels: 'تحرير النماذج',
       followDefault: 'استخدام الافتراضي من الإعدادات',
       refreshModels: 'تحديث النماذج',
+      favorites: 'المفضلة',
+      addFavorite: 'إضافة إلى المفضلة',
+      removeFavorite: 'إزالة من المفضلة',
+      favoriteShortcut: '⇧ نقرة',
       fast: 'سريع',
       free: 'مجاني',
       cacheRead: 'قراءة من الذاكرة المؤقتة',
@@ -4242,6 +4249,10 @@ export const ar = defineLocale({
     }
   },
   rightSidebar: {
+    terminalReadOnly: 'مخرجات للقراءة فقط',
+    terminalReadOnlyHelp:
+      'للرد على المطالبات، أوقف الأمر الذي يعمل في الخلفية وشغّله في طرفية جديدة. تفتح الطرفية الجديدة صدفة منفصلة ولا تتصل بهذه العملية.',
+    terminalOpenInteractive: 'فتح طرفية جديدة',
     aria: 'الشريط الجانبي الأيمن',
     panelsAria: 'لوحات الشريط الأيمن',
     files: 'الملفات',
@@ -4570,10 +4581,6 @@ export const ar = defineLocale({
         streaming: 'انقطع الاتصال قبل اكتمال الرد. أعد المحاولة لإرساله مجددًا.'
       },
       errorCodes: {
-        no_provider_configured: {
-          title: 'لم يتم إعداد أي نموذج ذكاء اصطناعي بعد',
-          body: 'اختر نموذجًا أو سجّل الدخول ثم أعد إرسال رسالتك.'
-        },
         auth: {
           title: provider => `رفض ${provider} تسجيل دخولك`,
           body: provider =>

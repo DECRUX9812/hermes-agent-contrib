@@ -1159,6 +1159,9 @@ export const deOverrides = {
       }
     },
     appearance: {
+      chatTextScaleTitle: 'Chat-Textgröße',
+      chatTextScaleDesc:
+        'Skaliert Unterhaltungstext und Nachrichteneingabe relativ zur UI-Skalierung. Seitenleisten und Bedienelemente behalten ihre Größe.',
       title: 'Darstellung',
       intro: 'Nur für Desktop. Modus ist die Helligkeit; Theme ist Farbpalette und Chat-Design.',
       colorMode: 'Farbmodus',
@@ -5502,6 +5505,10 @@ export const deOverrides = {
       editModels: 'Modelle bearbeiten…',
       followDefault: 'Standard aus den Einstellungen verwenden',
       refreshModels: 'Modelle aktualisieren',
+      favorites: 'Favoriten',
+      addFavorite: 'Zu Favoriten hinzufügen',
+      removeFavorite: 'Aus Favoriten entfernen',
+      favoriteShortcut: '⇧ Klick',
       fast: 'Schnell',
       free: 'kostenlos',
       cacheRead: 'Cache-Lesung',
@@ -6062,10 +6069,6 @@ export const deOverrides = {
         payload_too_large: {
           title: 'Diese Nachricht ist zu groß',
           body: 'Die Anfrage war zu groß für das Modell. Komprimieren Sie das Gespräch oder starten Sie einen neuen Chat und senden Sie erneut.'
-        },
-        no_provider_configured: {
-          title: 'Noch kein KI-Modell eingerichtet',
-          body: 'Wähle ein Modell oder melde dich an und sende deine Nachricht dann erneut.'
         },
         model_not_found: {
           title: 'Dieses Modell ist nicht verfügbar',

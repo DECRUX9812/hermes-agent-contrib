@@ -755,6 +755,8 @@ export const zhHant = defineLocale({
       system: { label: '跟隨系統', description: '跟隨作業系統外觀' }
     },
     appearance: {
+      chatTextScaleTitle: '聊天文字大小',
+      chatTextScaleDesc: '相對於介面縮放調整對話文字和訊息輸入框的字級。側邊欄與控制項大小保持不變。',
       title: '外觀',
       intro: '這些是僅限桌面端的顯示偏好。模式控制亮度；主題控制強調色與聊天介面樣式。',
       simpleModeTitle: '簡潔模式',
@@ -4079,6 +4081,10 @@ export const zhHant = defineLocale({
       editModels: '編輯模型…',
       followDefault: '使用設定中的預設模型',
       refreshModels: '重新整理模型',
+      favorites: '我的最愛',
+      addFavorite: '加入我的最愛',
+      removeFavorite: '從我的最愛移除',
+      favoriteShortcut: '⇧ 點擊',
       fast: '快速',
       free: '免費',
       cacheRead: '快取讀取',
@@ -4220,6 +4226,10 @@ export const zhHant = defineLocale({
   },
 
   rightSidebar: {
+    terminalReadOnly: '唯讀輸出',
+    terminalReadOnlyHelp:
+      '如需回應提示，請停止背景命令，再於新終端機中執行。新終端機會開啟獨立的 shell，不會連線至此程序。',
+    terminalOpenInteractive: '開啟新終端機',
     aria: '右側邊欄',
     panelsAria: '右側邊欄面板',
     files: '檔案系統',
@@ -4503,10 +4513,6 @@ export const zhHant = defineLocale({
         runtime: 'Hermes 在開始回覆時遇到內部問題。請重新傳送訊息；若持續發生，請傳送診斷資訊。'
       },
       errorCodes: {
-        no_provider_configured: {
-          title: '尚未設定 AI 模型',
-          body: '請選擇模型或登入，然後重新傳送訊息。'
-        },
         provider_policy_blocked: {
           title: '帳戶設定封鎖了此模型',
           body: provider => `${provider} 無法依你帳戶的資料或隱私設定路由此請求。請選擇其他模型或切換服務商。`

@@ -9,6 +9,8 @@ import './store/translucency'
 import './store/user-bubble-transparency'
 // Side-effect: paints the look (Soft / Classic) and interface mode on <html>.
 import './store/ui-look'
+// Side-effect: restores chat typography before the first conversation paints.
+import './store/chat-text-scale'
 // Dev-only render/state churn counters. MUST precede the `react-dom` import
 // below: react-dom captures the devtools hook at module init, so bippy has to
 // install during THIS import's evaluation or every commit goes unseen

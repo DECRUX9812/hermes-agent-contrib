@@ -59,11 +59,11 @@ type DraftApi = Pick<
 type QueueApi = Pick<
   ReturnType<typeof useComposerQueue>,
   | 'beginQueuedEdit'
+  | 'deliverQueuedNow'
   | 'drainNextQueued'
   | 'exitQueuedEdit'
   | 'queueEdit'
   | 'queuedPrompts'
-  | 'sendQueuedNow'
   | 'stepQueuedEdit'
 >
 type SubmitApi = Pick<ReturnType<typeof useComposerSubmit>, 'queueDraft' | 'submitDraft'>
@@ -130,11 +130,11 @@ export function useComposerEditorHandlers(options: ComposerEditorHandlersOptions
 
   const {
     beginQueuedEdit,
+    deliverQueuedNow,
     drainNextQueued,
     exitQueuedEdit,
     queueEdit,
     queuedPrompts,
-    sendQueuedNow,
     stepQueuedEdit
   } = options.queue
 
@@ -683,8 +683,9 @@ export function useComposerEditorHandlers(options: ComposerEditorHandlersOptions
       }
 
       // Empty Enter while busy. With prompts queued this is the double-send:
-      // the first Enter put the words in the queue, a second sends them now
-      // (promote + interrupt + drain on settle), mirroring the idle empty-Enter
+      // the first Enter put the words in the queue, a second delivers them
+      // now — steered into the live turn when a steer can carry them, else
+      // promote + interrupt + drain on settle — mirroring the idle empty-Enter
       // drain above. With nothing queued it stays a no-op — interrupting is
       // explicit (Stop/Esc), never a stray Enter after sending. Gate on the live
       // DOM payload (not the render-lagged composer state) so a message typed
@@ -694,7 +695,7 @@ export function useComposerEditorHandlers(options: ComposerEditorHandlersOptions
         const head = queuedPrompts.find(entry => entry.id !== queueEdit?.entryId)
 
         if (head) {
-          sendQueuedNow(head.id)
+          void deliverQueuedNow(head.id)
         }
 
         return
