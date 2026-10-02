@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DiffCount } from '@/components/ui/diff-count'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { Tip } from '@/components/ui/tooltip'
+import type { HermesReviewScope } from '@/global'
 import { useDelayedTrue } from '@/hooks/use-delayed-true'
 import { useI18n } from '@/i18n'
 import { displayPath } from '@/lib/display-path'
@@ -23,7 +24,11 @@ import {
   $reviewIsRepo,
   $reviewLoading,
   $reviewRevertTarget,
+<<<<<<< HEAD
   $reviewScopeMode,
+=======
+  $reviewScope,
+>>>>>>> origin/main
   $reviewSelectedPath,
   $reviewTreeMode,
   cancelRevert,
@@ -65,10 +70,17 @@ export function ReviewPane() {
   const diffLoading = useStore($reviewDiffLoading)
   const revertTarget = useStore($reviewRevertTarget)
   const treeMode = useStore($reviewTreeMode)
+<<<<<<< HEAD
   const selfReview = useStore($selfReview)
   const selfReviewRunning = useStore($selfReviewRunning)
   const scopeMode = useStore($reviewScopeMode)
   const sessionScope = scopeMode === 'session'
+=======
+  const scope = useStore($reviewScope)
+  // Stage / unstage / revert and the ship bar act on the working tree, so they
+  // only apply to the uncommitted scope; branch / last-turn are read-only.
+  const isUncommitted = scope === 'uncommitted'
+>>>>>>> origin/main
 
   const selectedFile = files.find(file => file.path === selectedPath)
   const selectedComments = selectedFile ? selfReviewForFile(selectedFile.path, diff) : []
@@ -100,6 +112,20 @@ export function ReviewPane() {
                 says "review", so the zone header hides it (styles.css). */}
             <SidebarPanelLabel data-pane-self-label="">{c.review}</SidebarPanelLabel>
           </div>
+          <SegmentedControl<HermesReviewScope>
+            className="mr-1"
+            onChange={id => {
+              $reviewScope.set(id)
+              clearReviewSelection()
+              void refreshReview()
+            }}
+            options={[
+              { id: 'uncommitted', label: c.scopeUncommitted },
+              { id: 'branch', label: c.scopeBranch },
+              { id: 'lastTurn', label: c.scopeLastTurn }
+            ]}
+            value={scope}
+          />
           <Tip label={treeMode === 'tree' ? c.viewAsList : c.viewAsTree}>
             <Button
               aria-label={treeMode === 'tree' ? c.viewAsList : c.viewAsTree}
@@ -112,6 +138,7 @@ export function ReviewPane() {
               <Codicon name={treeMode === 'tree' ? 'list-flat' : 'list-tree'} size="0.8125rem" />
             </Button>
           </Tip>
+<<<<<<< HEAD
           {/* Whole-tree actions stay on the working-tree scope: "stage all"
               against a session-filtered list would quietly stage files the
               view isn't showing. Agent review ships the whole-tree diff
@@ -177,6 +204,32 @@ export function ReviewPane() {
               </Tip>
             </>
           )}
+=======
+          <Tip label={c.stageAll}>
+            <Button
+              aria-label={c.stageAll}
+              className={ACTION_BTN}
+              disabled={!hasFiles || !isUncommitted}
+              onClick={() => void stageReviewFile(null).catch(err => notifyError(err, c.stageAll))}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name="add" size="0.8125rem" />
+            </Button>
+          </Tip>
+          <Tip label={c.revertAll}>
+            <Button
+              aria-label={c.revertAll}
+              className={ACTION_BTN}
+              disabled={!hasFiles || !isUncommitted}
+              onClick={() => requestRevert(null)}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name="discard" size="0.8125rem" />
+            </Button>
+          </Tip>
+>>>>>>> origin/main
           <Tip label={t.rightSidebar.refreshTree}>
             <Button
               aria-label={t.rightSidebar.refreshTree}
@@ -254,6 +307,7 @@ export function ReviewPane() {
               </Tip>
             )}
             <DiffCount added={selectedFile.added} className="text-[0.64rem] leading-4" removed={selectedFile.removed} />
+<<<<<<< HEAD
             {/* Open-in-editor: the file itself in the preview pane. */}
             <Tip label={c.openFile}>
               <Button
@@ -293,6 +347,25 @@ export function ReviewPane() {
                 <Codicon name={selectedFile.staged ? 'remove' : 'add'} size="0.8rem" />
               </Button>
             </Tip>
+=======
+            {isUncommitted && (
+              <Tip label={selectedFile.staged ? c.unstage : c.stage}>
+                <Button
+                  aria-label={selectedFile.staged ? c.unstage : c.stage}
+                  className={ACTION_BTN}
+                  onClick={() =>
+                    void (
+                      selectedFile.staged ? unstageReviewFile(selectedFile.path) : stageReviewFile(selectedFile.path)
+                    ).catch(err => notifyError(err, c.stage))
+                  }
+                  size="icon-xs"
+                  variant="ghost"
+                >
+                  <Codicon name={selectedFile.staged ? 'remove' : 'add'} size="0.8rem" />
+                </Button>
+              </Tip>
+            )}
+>>>>>>> origin/main
             <Button
               aria-label={c.close}
               className={ACTION_BTN}

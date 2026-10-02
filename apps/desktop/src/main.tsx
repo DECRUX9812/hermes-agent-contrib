@@ -7,8 +7,11 @@ import './store/power'
 import './store/translucency'
 // Side-effect: applies the persisted user-bubble transparency on load.
 import './store/user-bubble-transparency'
+<<<<<<< HEAD
 // Side-effect: paints the look (Soft / Classic) and interface mode on <html>.
 import './store/ui-look'
+=======
+>>>>>>> origin/main
 // Side-effect: restores chat typography before the first conversation paints.
 import './store/chat-text-scale'
 // Dev-only render/state churn counters. MUST precede the `react-dom` import

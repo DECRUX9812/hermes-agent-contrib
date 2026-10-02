@@ -1004,7 +1004,11 @@ from hermes_cli.web_routers import (  # noqa: E402
     chat_ws as _chat_ws_routes,
     chat_workspaces as _chat_workspaces_routes,
     dashboard_ui as _dashboard_ui_routes,
+<<<<<<< HEAD
     mobile as _mobile_routes,
+=======
+    shared_metrics as _shared_metrics_routes,
+>>>>>>> origin/main
 )
 
 app.include_router(_files_routes.router)
@@ -1037,7 +1041,11 @@ app.include_router(_analytics_routes.router)
 app.include_router(_chat_ws_routes.router)
 app.include_router(_chat_workspaces_routes.router)
 app.include_router(_dashboard_ui_routes.router)
+<<<<<<< HEAD
 app.include_router(_mobile_routes.router)
+=======
+app.include_router(_shared_metrics_routes.router)
+>>>>>>> origin/main
 
 # Plugin API routes and the dashboard auth routes (/login, /auth/*, /api/auth/*)
 # mount before the SPA catch-all so /{full_path:path} doesn't swallow them. Auth

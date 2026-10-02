@@ -145,10 +145,13 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
     try {
       const sessions = (await listAllProfileSessions(30, 1)).sessions
 
+<<<<<<< HEAD
       // Plan→build handoff anchors a fresh session to the plan's workspace; a
       // cwd-relative plan path resolves against the session that wrote it.
       setSessionCwdById(Object.fromEntries(sessions.map(session => [session.id, session.cwd ?? undefined])))
 
+=======
+>>>>>>> origin/main
       const { artifacts: nextArtifacts, failures } = await loadArtifactsForSessions(sessions, (session, page) =>
         getSessionMessages(session.id, session.profile, {
           ...page,

@@ -26,8 +26,11 @@ from gateway.config import Platform
 from gateway.media_repair import repair_explicit_computer_use_media_paths
 from gateway.platforms.base import BasePlatformAdapter
 from gateway.platforms.base_exec_approval import ea_default_reason_text
+<<<<<<< HEAD
 from gateway.session import SessionSource
 from gateway.session_identity import replace_source
+=======
+>>>>>>> origin/main
 from gateway.turn_context import TurnContext
 from hermes_cli.config import cfg_get
 from utils import is_truthy_value
@@ -871,8 +874,8 @@ class TurnRunner:
                 "Gateway auto-title failure suppressed (not user-visible): %s: %s", task, exc,
             )
             session_id = getattr(agent, "session_id", None)
-            source = ctx.source
             runner = self._runner
+<<<<<<< HEAD
             # Native Discord only stamps auto-thread markers on the opening parent-channel event. A
             # title retry arrives as an ordinary in-thread event; when the agent was rebuilt, there
             # is no first-turn callback left to rename it. Recover only those immutable markers from
@@ -896,6 +899,9 @@ class TurnRunner:
                             auto_thread_created=True,
                             auto_thread_initial_name=origin.auto_thread_initial_name,
                         )
+=======
+            source = runner._recover_discord_auto_thread_source(ctx.source, ctx.session_key)
+>>>>>>> origin/main
             # Both lanes spend a rate-limited platform call per title, so they use the model's title
             # only (TitleCallback); renaming twice burns Discord's 2-per-10-min budget on a throwaway.
             # Relay Discord predicate is shape-only: whether the connector auto-threaded our reply is

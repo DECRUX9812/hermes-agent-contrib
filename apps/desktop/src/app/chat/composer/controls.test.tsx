@@ -158,6 +158,7 @@ describe('ComposerControls shortcut tooltips', () => {
 
     await expectShortcutTooltip('Queue message', 'Ctrl+↵')
   })
+<<<<<<< HEAD
 
   it('names the queue path when steer is blocked only by attachments', async () => {
     const onQueue = vi.fn()
@@ -172,6 +173,8 @@ describe('ComposerControls shortcut tooltips', () => {
 
     await expectShortcutTooltip('Queue with attachments', 'Ctrl+↵')
   })
+=======
+>>>>>>> origin/main
 
   it('hides Queue while idle even if the composer has a payload', () => {
     renderControls({ busy: false, busyAction: 'queue', hasComposerPayload: true })
