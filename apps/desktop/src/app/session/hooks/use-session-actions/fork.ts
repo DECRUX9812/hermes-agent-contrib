@@ -17,7 +17,8 @@ import type {SessionCreateResponse} from '@/types/hermes'
 import {sessionRoute} from '../../../routes'
 import {sessionContextDrift} from '../session-context-drift'
 
-import type { SessionActionHandles, SessionActionsOptions } from './options'
+import type {CreateGuard} from './create-guard'
+import type { BranchLoadedSessionOptions, SessionActionHandles, SessionActionsOptions } from './options'
 import {applyRuntimeInfo, type BranchMessage, cachedSessionRow, patchSessionWorkspace, resolveSessionProfile, resolveStoredSession, selectBranchMessages, sessionMatchesStoredId, toBranchMessages, upsertOptimisticSession} from './utils'
 
 // Identity of one branch create, so a re-entered branch action (a retried
@@ -58,7 +59,7 @@ const branchMessagesFingerprint = (messages: BranchMessage[]): string =>
 
 export function useForkActions(
   { activeSessionIdRef, busyRef, creatingSessionRef, ensureSessionState, getRouteToken, navigate, requestGateway, selectedStoredSessionIdRef, updateSessionState }: SessionActionsOptions,
-  { resumeSession }: Pick<SessionActionHandles, 'resumeSession'>
+  { createGuard, resumeSession }: Pick<SessionActionHandles, 'resumeSession'> & { createGuard: CreateGuard }
 ) {
   const { t } = useI18n()
   const copy = t.desktop
@@ -67,6 +68,9 @@ export function useForkActions(
   // Shared fork: create a child session seeded with `branchMessages`, linked to
   // `parentStoredId` so it nests under its parent, then open it as its own tab
   // and switch to it — the parent chat stays put (mirrors openNewSessionTile).
+  // `idempotencyKey` lets a caller-driven retry reuse the SAME key so the
+  // backend can dedupe (without it, every call generates a fresh key and a
+  // response-lost retry would spawn a duplicate child).
   const forkBranch = useCallback(
     async (
       branchMessages: BranchMessage[],
@@ -75,9 +79,15 @@ export function useForkActions(
       cwd?: string,
       profile?: null | string,
       branchCount?: number,
-      ownerRoute?: SessionOwnerRoute
+      ownerRoute?: SessionOwnerRoute,
+      idempotencyKey?: string
     ): Promise<boolean> => {
       creatingSessionRef.current = true
+
+      // Stable per-attempt key so a backend retry after a lost response returns
+      // the SAME child session instead of spawning a duplicate. Generated here
+      // for first-time calls; supplied by the retry action on subsequent tries.
+      const key = idempotencyKey ?? `branch-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 
       try {
         // A branch belongs to its parent's OWNING backend. Two facets, and both
@@ -128,6 +138,9 @@ export function useForkActions(
         if (!createFlight) {
           const branchParams = {
             session_id: sourceSessionId,
+            // Stable per-attempt key: a lost-response retry of session.branch /
+            // session.branch_whole returns the SAME child (#65410).
+            idempotency_key: key,
             ...(branchCount !== undefined ? { count: branchCount } : {})
           }
 
@@ -136,7 +149,10 @@ export function useForkActions(
             source: 'desktop',
             ...(cwd && { cwd }),
             ...(profile ? { profile } : {}),
-            ...(parentStoredId && { parent_session_id: parentStoredId })
+            ...(parentStoredId && { parent_session_id: parentStoredId }),
+            // Stable per-attempt key: a backend retry after a lost response
+            // returns the SAME child instead of spawning a duplicate (#65410).
+            idempotency_key: key
           }
 
           createFlight = (
@@ -283,47 +299,77 @@ export function useForkActions(
 
         return true
       } catch (err) {
-        notifyError(err, copy.branchFailed)
+        // Navigate throw or earlier failure after arming pending — never leave
+        // creatingSessionRef stuck true.
+        createGuard.releaseCreatingSessionGuard()
+        // Backend restart / WS drop mid-RPC leaves the branch uncreated with no
+        // recovery path. Surface a persistent error with a retry action so the
+        // user can re-attempt without re-doing the whole branch flow. The retry
+        // passes the SAME idempotency key so the backend can dedupe if the
+        // first create actually committed but its response was lost.
+        notifyError(err, copy.branchFailed, {
+          action: {
+            label: t.common.retry,
+            onClick: () => {
+              void forkBranch(
+                branchMessages,
+                sourceSessionId,
+                parentStoredId,
+                cwd,
+                profile,
+                branchCount,
+                ownerRoute,
+                key
+              )
+            }
+          }
+        })
 
         return false
       } finally {
-        window.setTimeout(() => {
+        if (!createGuard.pendingCreatedStoredSessionIdRef.current) {
           creatingSessionRef.current = false
-        }, 0)
+        }
       }
     },
     [
       copy,
+      createGuard,
       creatingSessionRef,
       ensureSessionState,
       navigate,
       requestGateway,
       resumeSession,
       selectedStoredSessionIdRef,
+      t,
       updateSessionState
     ]
   )
 
-  // Branch the open chat — optionally from a specific message — off its live transcript.
-  const branchCurrentSession = useCallback(
-    async (messageId?: string): Promise<boolean> => {
-      if (!activeSessionIdRef.current) {
+  // Branch a session whose live transcript is already loaded in this renderer.
+  // Both the main chat and session tiles use this path so a clicked message id
+  // is resolved against the exact message array that rendered the action bar.
+  const branchLoadedSession = useCallback(
+    async ({
+      busy,
+      contextDrift,
+      cwd,
+      messageId,
+      messages,
+      runtimeId,
+      storedSessionId
+    }: BranchLoadedSessionOptions) => {
+      if (!runtimeId) {
         notify({ kind: 'warning', title: copy.nothingToBranch, message: copy.branchNeedsChat })
 
         return false
       }
 
-      if (busyRef.current) {
+      if (busy) {
         notify({ kind: 'warning', title: copy.sessionBusy, message: copy.branchStopCurrent })
 
         return false
       }
-
-      const startingActiveSessionId = activeSessionIdRef.current
-      const messages = $messages.get()
-      const storedSessionId = selectedStoredSessionIdRef.current
-      const startingRouteToken = getRouteToken()
-      const startingCwd = $currentCwd.get().trim()
 
       // Message-level branches still need the local message id to choose their
       // prefix. Whole-chat branches send only the parent identity below; the
@@ -351,18 +397,10 @@ export function useForkActions(
         }
       }
 
-      const drift = sessionContextDrift({
-        startRouteToken: startingRouteToken,
-        nowRouteToken: getRouteToken(),
-        startSelectedStoredId: storedSessionId,
-        nowSelectedStoredId: selectedStoredSessionIdRef.current
-      })
+      const drift = contextDrift?.()
 
-      const runtimeChanged = activeSessionIdRef.current !== startingActiveSessionId
-      const selectionChanged = selectedStoredSessionIdRef.current !== storedSessionId
-
-      if (drift || runtimeChanged || selectionChanged) {
-        console.warn('[branch-drift-abort]', drift ?? 'runtime-or-selection-changed', {
+      if (drift) {
+        console.warn('[branch-drift-abort]', drift, {
           phase: 'transcript-hydration'
         })
 
@@ -379,20 +417,54 @@ export function useForkActions(
 
       clearNotifications()
 
-      // The open chat's owning profile, NOT the picker's / launch profile —
-      // /profile only retargets new chats, so a branch of an existing thread
-      // must stay on that thread's backend (cache hit for an open session).
       return forkBranch(
         branchMessages,
-        startingActiveSessionId,
+        runtimeId,
         storedSessionId,
-        startingCwd,
+        cwd?.trim(),
         profile,
         messageId ? branchMessages.length : undefined,
         ownerRoute
       )
     },
-    [activeSessionIdRef, busyRef, copy, forkBranch, getRouteToken, selectedStoredSessionIdRef]
+    [copy, forkBranch]
+  )
+
+  // Branch the open chat — optionally from a specific message — off its live transcript.
+  const branchCurrentSession = useCallback(
+    (messageId?: string): Promise<boolean> => {
+      const runtimeId = activeSessionIdRef.current
+      const storedSessionId = selectedStoredSessionIdRef.current
+      const routeToken = getRouteToken()
+
+      return branchLoadedSession({
+        busy: busyRef.current,
+        contextDrift: () => {
+          const drift = sessionContextDrift({
+            startRouteToken: routeToken,
+            nowRouteToken: getRouteToken(),
+            startSelectedStoredId: storedSessionId,
+            nowSelectedStoredId: selectedStoredSessionIdRef.current
+          })
+
+          if (drift) {
+            return drift
+          }
+
+          if (activeSessionIdRef.current !== runtimeId) {
+            return 'runtime-changed'
+          }
+
+          return selectedStoredSessionIdRef.current === storedSessionId ? null : 'selection-changed'
+        },
+        cwd: $currentCwd.get(),
+        messageId,
+        messages: $messages.get(),
+        runtimeId,
+        storedSessionId
+      })
+    },
+    [activeSessionIdRef, branchLoadedSession, busyRef, getRouteToken, selectedStoredSessionIdRef]
   )
 
   // Branch any listed session, not just the open one. Reads the target's stored
@@ -447,6 +519,7 @@ export function useForkActions(
   return {
     forkBranch,
     branchCurrentSession,
+    branchLoadedSession,
     branchStoredSession,
   }
 }

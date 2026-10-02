@@ -7,7 +7,7 @@ import json, re, sys, time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 18999
-LOG = open(sys.argv[2] if len(sys.argv) > 2 else "/dev/null", "a")
+LOG = open(sys.argv[2] if len(sys.argv) > 2 else "/dev/null", "a", encoding="utf-8")
 
 def text_of(m):
     c = m.get("content")
