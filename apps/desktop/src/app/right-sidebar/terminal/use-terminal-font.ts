@@ -1,14 +1,13 @@
 import { useStore } from '@nanostores/react'
 import type { WebglAddon } from '@xterm/addon-webgl'
 import type { Terminal } from '@xterm/xterm'
-import { useEffect, useRef } from 'react'
-import type { RefObject } from 'react'
+import { useEffect, useRef, RefObject } from 'react'
 
 import { $terminalFontFamily, applyTerminalFontFamily, resolveTerminalFontFamily } from './terminal-font'
 import { redrawAllTerminals } from './terminals'
 
 interface TerminalFontControllerOptions {
-  fitRef: RefObject<((visible: boolean) => void) | null>
+  fitRef: RefObject<(() => void) | null>
   termRef: RefObject<Terminal | null>
   webglRef: RefObject<WebglAddon | null>
 }
@@ -39,7 +38,7 @@ export function useTerminalFontController({ fitRef, termRef, webglRef }: Termina
 
     void applyTerminalFontFamily({
       clearTextureAtlas: () => webglRef.current?.clearTextureAtlas(),
-      fit: () => fitRef.current?.(true),
+      fit: () => fitRef.current?.(),
       fontFamily,
       isCurrent: () => !cancelled && generationRef.current === generation,
       term

@@ -44,8 +44,7 @@ import { setSessionDraftingTool } from '@/store/tool-drafting'
 import type { SessionInfo } from '@/types/hermes'
 
 import type { GatewayRequester } from '../contrib/types'
-import { uploadComposerAttachment } from '../session/hooks/use-prompt-actions'
-import { isStaleTargetError } from '../session/hooks/use-prompt-actions'
+import { uploadComposerAttachment, isStaleTargetError } from '../session/hooks/use-prompt-actions'
 import {
   appendMidTurnUserMessage,
   applyBranchVisibility,
@@ -266,6 +265,7 @@ export function useSessionTileActions({ requestGateway, runtimeId, scope, stored
                 label: next.label,
                 path: next.path,
                 refText: next.refText,
+                stagedUpload: next.stagedUpload,
                 uploadState: next.uploadState
               })
             } else {

@@ -35,8 +35,7 @@ import {
   useQuery,
   useValue
 } from '@hermes/plugin-sdk'
-import type { ClipboardEvent, DragEvent, ReactNode } from 'react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { ClipboardEvent, DragEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
@@ -51,34 +50,10 @@ import {
   ROSTER_KEY,
   saveBotMeta
 } from './data'
-import {
-  $groupActivity,
-  currentGroupActivity,
-  GROUP_ACTIVITY_GLYPHS,
-  groupActivityLabel,
-  groupActivityTone
-} from './group-activity'
-import type { GroupActivityEntry } from './group-activity'
+import { $groupActivity, currentGroupActivity, GROUP_ACTIVITY_GLYPHS, groupActivityLabel, groupActivityTone, GroupActivityEntry } from './group-activity'
 import { filesToGroupAttachments, pickGroupAttachments } from './group-attachments'
-import {
-  $groupChats,
-  $groupChatWorkspace,
-  $groupClarify,
-  $groupNeedsYou,
-  groupRoundContributions,
-  groupThreadOf,
-  rememberGroupChatTombstone,
-  scheduleGroupChatServerSync,
-  setGroupChatGoal,
-  setGroupChatHoldDetection,
-  setGroupChatImage,
-  setGroupChatLimits,
-  setGroupChatListener,
-  updateGroupChat
-} from './group-chat'
-import type { GroupChatRoom } from './group-chat'
-import { GroupClarifyCard, GroupImageControls, GroupMentionInput } from './group-chat-parts'
-import type { GroupRoomPrompt } from './group-chat-parts'
+import { $groupChats, $groupChatWorkspace, $groupClarify, $groupNeedsYou, groupRoundContributions, groupThreadOf, rememberGroupChatTombstone, scheduleGroupChatServerSync, setGroupChatGoal, setGroupChatHoldDetection, setGroupChatImage, setGroupChatLimits, setGroupChatListener, updateGroupChat, GroupChatRoom } from './group-chat'
+import { GroupClarifyCard, GroupImageControls, GroupMentionInput, GroupRoomPrompt } from './group-chat-parts'
 import { GroupMemberPicker } from './group-chat-view-members'
 import { compressGroupMemberHistory } from './group-compress'
 import { sweepExternalGroupWrites } from './group-external-writes'
@@ -92,19 +67,7 @@ import {
   liveGroupChatNames
 } from './group-membership'
 import { groupMentionComponents, groupMentionText } from './group-mention-text'
-import {
-  clearGroupComposerDraft,
-  closeGroupChatMainTab,
-  dropGroupMainTab,
-  groupChatMainTabs,
-  groupComposerDraftKey,
-  groupComposerDraftSnapshot,
-  migrateGroupComposerDraft,
-  recordGroupMainTab,
-  restoreGroupComposerDraft,
-  updateGroupComposerDraft
-} from './group-panes'
-import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
+import { clearGroupComposerDraft, closeGroupChatMainTab, dropGroupMainTab, groupChatMainTabs, groupComposerDraftKey, groupComposerDraftSnapshot, migrateGroupComposerDraft, recordGroupMainTab, restoreGroupComposerDraft, updateGroupComposerDraft, GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
@@ -1556,68 +1519,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               </Tip>
               <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
               {actions}
-            )}
-            <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
-            {entry.text.trim() || !isUser ? (
-              <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
-                {isUser ? null : (
-                  <Tip label={`Reply to @${replyMentionTag(entry, member)}`}>
-                    <Button
-                      aria-label={`Reply to ${display}`}
-                      className="text-(--ui-text-tertiary) hover:text-foreground"
-                      onClick={() => replyToMember(entry, member)}
-                      size="icon"
-                      variant="ghost"
-                    >
-                      <Codicon name="reply" />
-                    </Button>
-                  </Tip>
-                )}
-                {entry.text.trim() ? (
-                  <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          <div
-            className="min-w-0 text-xs text-(--ui-text-secondary) [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere" // The app shell sets user-select: none globally; message bodies opt
-            // back in so drag-select and ⌘C work in group chat logs.
-            data-selectable-text="true"
-            data-slot="group-chat-message-content"
-          >
-            {MessageTextContent ? (
-              <MessageTextContent decorateText={mentionText} media={!member?.remoteSource} text={entry.text} />
-            ) : Streamdown ? (
-              <Streamdown components={mentionComponents}>{entry.text}</Streamdown>
-            ) : (
-              entry.text
-            )}
-          </div>
-          {/* User attachments: what every responding bot was */
-          /* shown — image previews, or a named chip for */
-          /* PDFs/files. */}
-          {Array.isArray(entry.images) && entry.images.length ? (
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              {entry.images.map((img, imgIndex) =>
-                img.kind === 'pdf' || img.kind === 'file' ? (
-                  <div
-                    className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
-                    key={`${entryKey}:img:${imgIndex}`}
-                    title={img.name || 'attached file'}
-                  >
-                    <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
-                    <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
-                  </div>
-                ) : (
-                  <img
-                    alt={img.name || 'attached image'}
-                    className="max-h-40 max-w-60 rounded-md border border-(--ui-stroke-secondary) object-contain"
-                    key={`${entryKey}:img:${imgIndex}`}
-                    src={img.data}
-                    title={img.name || 'attached image'}
-                  />
-                )
-              )}
             </div>
           ) : (
             actions

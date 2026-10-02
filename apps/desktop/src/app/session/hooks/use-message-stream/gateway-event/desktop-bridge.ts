@@ -64,7 +64,6 @@ const DESKTOP_BRIDGE_HANDLERS: Record<string, (ctx: GatewayEventContext) => void
     }
   },
 
-  'message.reaction': ({ payload }) => {
   'message.reaction': ({ payload, isActiveEvent, fromActiveSource, event }) => {
     // The agent reacted to a message via the desktop-gated
     // react_to_message tool. Already persisted — this only paints it now

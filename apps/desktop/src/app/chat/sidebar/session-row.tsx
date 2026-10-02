@@ -15,7 +15,6 @@ import { openSession } from '@/app/open-session'
 import { formatMessageTimestamp } from '@/components/assistant-ui/thread/timestamp'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
-import { RowButton } from '@/components/ui/row-button'
 import { OverflowTip, Tip } from '@/components/ui/tooltip'
 import type { SessionInfo } from '@/hermes'
 import { type Translations, useI18n } from '@/i18n'
@@ -55,7 +54,7 @@ import { SessionStatusDot } from '../session-status-dot'
 import {
   SIDEBAR_ROW_CARD_MIN_H,
   SIDEBAR_TRUNCATED_LEADING,
-  SidebarRowCluster,
+  SidebarRowBody,
   SidebarRowGrab,
   SidebarRowLabel,
   SidebarRowLead,
@@ -607,66 +606,6 @@ function SidebarSessionRowImpl({
             // Middle-click = open in a new tab (browser muscle memory).
             {...middleClickHandlers(() => {
               triggerHaptic('selection')
-        {/* #38072 finding 3: the row's body is a DIV, not a button — the
-            reorder grabber (dnd-kit role="button" + tabIndex, kept for
-            keyboard reorder, #83617) and the ⋯ trigger must be SIBLINGS of
-            the row's primary action, never nested inside it (axe
-            nested-interactive). The title below is the row's real button:
-            its click bubbles to this div's handlers, so pointer users keep
-            click-anywhere-on-the-row, and keyboard users get one clean tab
-            stop per row instead of an ambiguous nested one. */}
-        <SidebarRowCluster
-          // Every trailing figure lives in the actions slot, which the row
-          // measures — so the title needs a gap from it and nothing else. Hover
-          // changes what you can see in that slot, never how wide it is. The
-          // card has no such column to clear (its cluster is INSIDE the body,
-          // ending at the shell's own trailing inset), and keeping the gap
-          // would pull the header in past every line below it.
-          className={cn(
-            // cursor-pointer: the body is a div now (see #38072 note above);
-            // buttons earn this from the base layer's interactive-control
-            // rule, a div doesn't.
-            'z-0 w-full cursor-pointer',
-            card && 'pr-0',
-            branchStem && 'pl-3.5',
-            // The card is a grid with ONE spacing knob: --card-gap. Every row
-            // gap is gap-y-(--card-gap); the title/preview group opts out
-            // with its own tighter internal flex gap.
-            card && 'flex-col items-stretch justify-center py-1.5 [--card-gap:0.4rem] gap-(--card-gap)'
-          )}
-          // Middle-click = open in a new tab (browser muscle memory).
-          {...middleClickHandlers(() => {
-            triggerHaptic('selection')
-            openSession(session.id, () => undefined, 'tab')
-          })}
-          onClick={event => {
-            // Modifier-click gestures on a row (see `resolveSessionRowClick`):
-            //   ⇧          → pin / unpin
-            //   ⌘/⌃        → open in a new tab (stack into main)
-            //   ⌘/⌃ + ⇧    → pop into its own window (needs standalone windows)
-            //   ⌥ + ⇧      → archive
-            // A plain click resumes. Archive also lives in the row's ⋯ and
-            // right-click menus and as a rebindable hotkey (`session.archive`).
-            // `openSession`'s 'window' intent already falls back to 'tab' when
-            // the bridge lacks standalone windows, so the resolver can always
-            // offer the window action here.
-            const action = resolveSessionRowClick(event, { canOpenWindow: true })
-
-            if (action === 'resume') {
-              onResume()
-
-              return
-            }
-
-            event.preventDefault()
-            event.stopPropagation()
-            triggerHaptic('selection')
-
-            if (action === 'archive') {
-              onArchive()
-            } else if (action === 'pin') {
-              onPin()
-            } else if (action === 'newTab') {
               openSession(session.id, () => undefined, 'tab')
             })}
             onClick={event => {
@@ -849,34 +788,6 @@ function SidebarSessionRowImpl({
                       </SidebarRowLabel>
                     </OverflowTip>
                     {rowMeta.includes('preview') && (digest ?? session.preview) ? (
-                  {leadNode}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
-                  {handoffBadge}
-                  {continuationBadge}
-                  <span className="min-w-0 flex-1 self-center">
-                    {/* The row's primary action (#38072 finding 3): the title
-                        is the session row's real button — the grabber and ⋯
-                        sit beside it as siblings, never inside it. No onClick
-                        of its own: the click bubbles to the body div's
-                        resolver, so modifier-clicks and plain clicks behave
-                        exactly as they did on the old full-row button. The
-                        OverflowTip stays on the truncating label so its
-                        scrollWidth measurement is unchanged. */}
-                    <RowButton className="block w-full text-left">
-                      <OverflowTip label={title} placement="row">
-                        <SidebarRowLabel
-                          className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
-                          onPointerEnter={armMarquee}
-                          onPointerLeave={disarmMarquee}
-                        >
-                          <span className="hover-marquee-inner">{title}</span>
-                        </SidebarRowLabel>
-                      </OverflowTip>
-                    </RowButton>
-                    {/* Session-list density (#68119): comfortable adds one
-                        deterministic metadata line; detailed adds the initial
-                        request preview. Compact keeps today's one-line row. */}
-                    {density !== 'compact' && details.metadata && (
                       <span
                         className={cn(
                           'min-w-0 truncate text-[0.625rem] text-(--ui-text-quaternary)',
@@ -908,99 +819,6 @@ function SidebarSessionRowImpl({
             })()}
           </SidebarRowBody>
         </SessionPeek>
-                        {details.metadata}
-                      </span>
-                    )}
-                    {density === 'detailed' && details.preview && (
-                      <span
-                        className={cn(
-                          'mt-1 block truncate text-[0.625rem] text-(--ui-text-quaternary)',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                      >
-                        {details.preview}
-                      </span>
-                    )}
-                  </span>
-                  <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
-                </>
-              )
-            }
-
-            return (
-              <>
-                {/* Header row — ONE div: dot, context, then the age/kebab
-                    cluster in flow at its right edge. Keeping the cluster
-                    inside this line (instead of the shell's full-height side
-                    column) means title/preview/meta below span the card's
-                    entire width — nothing truncates against the kebab. */}
-                <div className="flex min-w-0 items-center gap-1.5">
-                  {leadNode}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
-                  <span
-                    className={cn(
-                      'min-w-0 flex-1 truncate text-[0.6875rem] text-(--ui-text-tertiary)',
-                      SIDEBAR_TRUNCATED_LEADING
-                    )}
-                  >
-                    {context}
-                  </span>
-                  {handoffBadge}
-                  {continuationBadge}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
-                  {actionsNode}
-                </div>
-                {/* Title + preview: ONE grouped cell with its own tight
-                    internal gap — it does not inherit the card's rhythm. */}
-                <div className="flex min-w-0 flex-col gap-[0.15rem]">
-                  {/* #38072 finding 3: the card's title line is the row's real
-                      button (same contract as the flat row: no onClick of its
-                      own — the click bubbles to the body div's resolver). */}
-                  <RowButton className="block w-full text-left">
-                    <OverflowTip label={title} placement="row">
-                      <SidebarRowLabel
-                        className={cn(
-                          'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                        onPointerEnter={armMarquee}
-                        onPointerLeave={disarmMarquee}
-                      >
-                        <span className="hover-marquee-inner">{title}</span>
-                      </SidebarRowLabel>
-                    </OverflowTip>
-                  </RowButton>
-                  {session.preview && rowMeta.includes('preview') ? (
-                    <span
-                      className={cn(
-                        'min-w-0 truncate text-[0.625rem] text-(--ui-text-quaternary)',
-                        SIDEBAR_TRUNCATED_LEADING
-                      )}
-                    >
-                      {session.preview}
-                    </span>
-                  ) : null}
-                </div>
-                {model || size || todoProgress ? (
-                  <span
-                    className={cn(
-                      'flex min-w-0 items-baseline gap-2 text-[0.625rem] text-(--ui-text-tertiary)',
-                      SIDEBAR_TRUNCATED_LEADING
-                    )}
-                  >
-                    {model ? <span className="min-w-0 truncate">{model}</span> : null}
-                    {size ? <span className="shrink-0 tabular-nums">{size}</span> : null}
-                    {todoProgress ? (
-                      <span className="ml-auto shrink-0 tabular-nums" title={r.todoProgress}>
-                        {todoProgress}
-                      </span>
-                    ) : null}
-                  </span>
-                ) : null}
-              </>
-            )
-          })()}
-        </SidebarRowCluster>
       </SidebarRowShell>
     </SessionContextMenu>
   )

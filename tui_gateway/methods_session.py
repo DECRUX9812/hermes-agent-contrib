@@ -84,11 +84,12 @@ def _make_agent_in_context(sid: str, key: str, **kwargs):
         _clear_session_context(tokens)
 
 
-def _profile_session_db(profile_home):
+def _profile_session_db(profile_home, expected_profile_incarnation=None):
     """``(db, owns)``: a DEDICATED handle on ``profile_home``'s state.db, else the shared launch db."""
     if profile_home:
         from hermes_state_registry import acquire
-        return acquire(Path(profile_home) / "state.db"), True
+        return acquire(Path(profile_home) / "state.db",
+                       expected_profile_incarnation=expected_profile_incarnation), True
     return _get_db(), False
 
 
@@ -397,6 +398,47 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
                 # The session was closed between the original create and the retry —
                 # fall through and create a fresh one under the same key.
                 _idempotency_keys.pop(idem_key, None)
+    # Idempotency: a client retrying a create whose first response was lost
+    # should get back the SAME session, not a fresh one (which would leave a
+    # duplicate child). The caller supplies a stable key per logical create.
+    idem_key = _str_param(params, "idempotency_key") or None
+    if idem_key is not None:
+        with _sessions_lock:
+            # Drop expired entries while we're here.
+            now_for_gc = time.time()
+            expired = [k for k, (_, ts) in _idempotency_keys.items() if now_for_gc - ts > _IDEMPOTENCY_KEY_TTL]
+            for k in expired:
+                _idempotency_keys.pop(k, None)
+            existing = _idempotency_keys.get(idem_key)
+            if existing is not None:
+                existing_sid, _ = existing
+                session = _sessions.get(existing_sid)
+                if session is not None and not _profile_home_rejected(
+                    session.get("profile_home"), session.get("profile_incarnation"), require_incarnation=True,
+                ):
+                    # Refresh the TTL so back-to-back retries don't age out mid-flight.
+                    _idempotency_keys[idem_key] = (existing_sid, now_for_gc)
+                    history = session["history"]
+                    override = session.get("model_override") or {}
+                    # Same result shape as the fresh-create path below: branch_stored
+                    # (copy_parent_history) answers messages_omitted and NEVER puts the
+                    # copied transcript on the wire — its result contract forbids
+                    # ``messages``, and serializing the parent's history through the
+                    # renderer is exactly what the method exists to avoid.
+                    return _ok(rid, {
+                        "session_id": existing_sid, "stored_session_id": session["session_key"],
+                        "message_count": len(history),
+                        **({"messages_omitted": True} if copy_parent_history
+                           else {"messages": _history_to_messages(history, profile_home=session.get("profile_home"))}),
+                        "info": {"model": override.get("model") if override else _session_default_model(session),
+                                 **({"provider": override["provider"]} if override.get("provider") else {}),
+                                 "tools": {}, "skills": {}, "cwd": session["cwd"], "branch": git_probe.branch(session["cwd"]),
+                                 "project": _project_info_for_cwd(session["cwd"]), "lazy": True,
+                                 "desktop_contract": DESKTOP_BACKEND_CONTRACT,
+                                 "profile_name": _response_profile_name(profile)}})
+                # Closed or replaced-profile runtimes cannot satisfy a retry —
+                # fall through and create a fresh one under the same key.
+                _idempotency_keys.pop(idem_key, None)
     (sid, source), key = _new_runtime_ids(params), _new_session_key()
     history = _coerce_seed_history(params.get("messages"))
     # Branch: links back so list_sessions_rich keeps it visible and the sidebar nests it.
@@ -425,6 +467,7 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
     with contextlib.suppress(Exception):
         explicit_cwd = bool(raw_cwd) and (remote_cwd or os.path.isdir(os.path.abspath(os.path.expanduser(raw_cwd))))
     _enable_gateway_prompts()
+    profile_incarnation = _capture_profile_incarnation(profile_home)
     session_model_override, create_reasoning_override, create_service_tier_override = _create_overrides(params)
     composer_override_profile = None
     if session_model_override and _flag(params, "follow_profile_config"):
@@ -435,6 +478,11 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
         composer_override_profile = {"model": profile_model, "provider": profile_provider}
     now = time.time()
     with _sessions_lock:
+        if _profile_home_rejected(profile_home, profile_incarnation, require_incarnation=True):
+            raise FileNotFoundError(
+                "Profile incarnation is stale or home is missing or being deleted: "
+                f"{profile_home or _hermes_home}"
+            )
         _sessions[sid] = {
             "agent": None, "agent_error": None, "agent_ready": threading.Event(), "attached_images": [],
             "close_on_disconnect": _flag(params, "close_on_disconnect"),
@@ -455,6 +503,7 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
             "team_room": _flag(params, "team_room"),
             "team_room_lead": _str_param(params, "team_room_lead") or None,
             "profile_home": str(profile_home) if profile_home is not None else None,
+            "profile_incarnation": profile_incarnation,
             "running": False, "session_key": key, "show_reasoning": _load_show_reasoning(), "source": source,
             "slash_worker": None, "tool_progress_mode": _load_tool_progress_mode(), "tool_started_at": {},
             "transport": current_transport() or _stdio_transport,
@@ -651,6 +700,7 @@ class _Resume:
         # ``profile`` (app-global remote mode): resume from another local profile's state.db.
         self.profile = (params.get("profile") or "").strip() or None
         self.profile_home = _profile_home(self.profile)
+        self.profile_incarnation = _capture_profile_incarnation(self.profile_home)
         self.lazy, self.defer_history = _flag(params, "lazy"), _flag(params, "defer_history")
         # Desktop hydrates over REST; suppress the duplicate WS copy only when asked.
         self.omit_messages, self.eager_build = _flag(params, "omit_messages"), _flag(params, "eager_build")
@@ -724,12 +774,11 @@ class _Resume:
         return [] if self.omit_messages else self.db.get_ancestor_display_prefix(self.target)
 
 
-def _find_live_unpersisted(needle: str, home) -> str:
+def _find_live_unpersisted(needle: str, home, profile_incarnation) -> str:
     """Runtime sid of a live, not-yet-persisted session matched by stored key or pending title."""
-    want_home = str(home) if home is not None else None
     return next((
         live_sid for live_sid, record in list(_sessions.items())
-        if isinstance(record, dict) and (record.get("profile_home") or None) == want_home
+        if isinstance(record, dict) and _session_profile_identity_matches(record, home, profile_incarnation)
         and (str(record.get("session_key") or "") == needle or (record.get("pending_title") or "") == needle)), "")
 
 
@@ -832,7 +881,7 @@ def _resume_locate(ctx: _Resume) -> dict | None:
         # with empty history — the live mirror streams the turn and the row exists by upgrade time.
         ctx.found = {}
         return None
-    live_sid = _find_live_unpersisted(ctx.target, ctx.profile_home)
+    live_sid = _find_live_unpersisted(ctx.target, ctx.profile_home, ctx.profile_incarnation)
     if (live := _sessions.get(live_sid) if live_sid else None) is not None:
         return _resume_live_unpersisted(ctx, live_sid, live)
     if ctx.owns_db:
@@ -1011,15 +1060,16 @@ def _resume_eager(ctx: _Resume) -> dict:
         except Exception as e:
             return _err(ctx.rid, 5000, resume_failed_message(e))
     with _session_resume_lock:
-        live = _find_live_session_by_key(ctx.target, ctx.profile_home)
+        live = _find_live_session_by_key(ctx.target, ctx.profile_home, ctx.profile_incarnation)
         if live is not None:
-            with contextlib.suppress(Exception):
-                agent.close()
+            _discard_agent(agent)
             return _resume_reuse_live_locked(ctx, *live)
         try:
             with _profile_build_scope(ctx.profile_home):
                 _init_session(sid, ctx.target, agent, history, cols=ctx.cols, cwd=ctx.profile_resume_cwd,
-                              session_db=ctx.db, source=source, explicit_cwd=bool(ctx.profile_resume_cwd))
+                              session_db=ctx.db, source=source, explicit_cwd=bool(ctx.profile_resume_cwd),
+                              profile_home=str(ctx.profile_home) if ctx.profile_home is not None else None,
+                              profile_incarnation=ctx.profile_incarnation)
                 # Ownership TRANSFER: the agent holds the handle for life (AIAgent.close() releases it). The
                 # owns_db drop is UNCONDITIONAL — the session is registered against the handle, so the finally
                 # must not close it even if the transfer was refused (a leak beats "closed database" every
@@ -1069,7 +1119,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4006, "session_id required")
     ctx = _Resume(rid, params, target)
     # Profile scope: a DEDICATED handle we own until the agent takes it; else the shared launch db.
-    ctx.db, ctx.owns_db = _profile_session_db(ctx.profile_home)
+    ctx.db, ctx.owns_db = _profile_session_db(ctx.profile_home, ctx.profile_incarnation)
     try:
         if ctx.db is None:
             return _db_unavailable_error(rid, code=5000)
@@ -1081,7 +1131,7 @@ def _(rid, params: dict) -> dict:
         ctx.profile_resume_cwd = _str_param(ctx.found, "cwd") or _profile_workspace_cwd(ctx.profile_home)
         # Fast path: reuse a session live IN THIS PROFILE (never another profile's runtime).
         with _session_resume_lock:
-            live = _find_live_session_by_key(ctx.target, ctx.profile_home)
+            live = _find_live_session_by_key(ctx.target, ctx.profile_home, ctx.profile_incarnation)
         if live is not None:
             return _resume_reuse_live(ctx, *live)
         if ctx.lazy:
@@ -1182,6 +1232,7 @@ def _(rid, params: dict, session: dict) -> dict:
             _rebind_live_transport(sid, session, current_transport() or _stdio_transport)
     return _ok(rid, _live_session_payload(
         sid, session, touch=True, omit_messages=is_truthy_value(params.get("omit_messages", False))))
+
 
 
 @method("session.delete")
@@ -2231,8 +2282,11 @@ def _build_branch_agent(session: dict, new_sid: str, new_key: str, history: list
     """Build + register the branched agent in the parent's profile; the DEDICATED db handle is ours until
     ``_transfer_db_to_agent`` (released here on failure)."""
     parent_home = session.get("profile_home")
+    parent_incarnation = session.get("profile_incarnation")
+    if _profile_home_rejected(parent_home, parent_incarnation, require_incarnation=True):
+        raise FileNotFoundError("Parent session belongs to a stale profile incarnation")
     parent_user_id = _session_auth_user_id(session)
-    branch_db, branch_owns_db = _profile_session_db(parent_home) if parent_home else (None, False)
+    branch_db, branch_owns_db = _profile_session_db(parent_home, parent_incarnation) if parent_home else (None, False)
     try:
         with _profile_build_scope(parent_home):
             agent = _make_agent_in_context(new_sid, new_key, session_db=branch_db, platform_override=source,
@@ -2241,7 +2295,7 @@ def _build_branch_agent(session: dict, new_sid: str, new_key: str, history: list
                                            auth_user_id=parent_user_id)
             _init_session(new_sid, new_key, agent, list(history), cols=session.get("cols", 80),
                           cwd=_session_cwd(session), session_db=branch_db, source=source, profile_home=parent_home,
-                          explicit_cwd=bool(session.get("explicit_cwd")))
+                          explicit_cwd=bool(session.get("explicit_cwd")), profile_incarnation=parent_incarnation)
             _transfer_db_to_agent(agent, branch_db)
             branch_owns_db = False
         if new_sid in _sessions:
@@ -2298,6 +2352,25 @@ def _branch_live(rid, params: dict, session: dict, *, omit_messages: bool = Fals
                     return _ok(rid, _branch_idempotent_hit(existing_sid, _sessions[existing_sid], omit_messages))
                 _idempotency_keys.pop(idem_key, None)
             # Stale key (child closed) or first attempt: fall through to a fresh
+            # branch, which re-registers the key below.
+    # Idempotency (#65410, same registry as session.create): a client retrying a
+    # branch whose first response was lost gets the SAME child, not a duplicate.
+    idem_key = _str_param(params, "idempotency_key") or None
+    if idem_key is not None:
+        with _sessions_lock:
+            now_gc = time.time()
+            existing_sid, ts = _idempotency_keys.get(idem_key, (None, 0.0))
+            existing_session = _sessions.get(existing_sid)
+            if existing_session is not None:
+                if now_gc - ts <= _IDEMPOTENCY_KEY_TTL and not _profile_home_rejected(
+                    existing_session.get("profile_home"), existing_session.get("profile_incarnation"),
+                    require_incarnation=True,
+                ):
+                    # Refresh the TTL so back-to-back retries don't age out mid-flight.
+                    _idempotency_keys[idem_key] = (existing_sid, now_gc)
+                    return _ok(rid, _branch_idempotent_hit(existing_sid, existing_session, omit_messages))
+                _idempotency_keys.pop(idem_key, None)
+            # Stale key (child closed/profile replaced) or first attempt: fall through to a fresh
             # branch, which re-registers the key below.
     # Write into the parent's profile-scoped state.db; the launch handle would orphan rows.
     with _session_db(session) as db:

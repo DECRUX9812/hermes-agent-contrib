@@ -15,6 +15,7 @@ from typing import Any, Union
 from urllib.parse import urlparse
 
 import hermes_yaml as yaml
+from pm.filesystem import hard_link_refused
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +205,54 @@ def atomic_replace(tmp_path: Union[str, Path], target: Union[str, Path]) -> str:
         # The rewrite re-raises its own error, so an ACL denial is reported as such, not as contention.
         (_rewrite_in_place if contended else _copy_fallback)(tmp_str, real_path)
     return real_path
+
+
+def _publish_path(target_str: str) -> str:
+    """The path :func:`atomic_replace` renames onto: a symlink's real file, else the target itself."""
+    return os.path.realpath(target_str) if os.path.islink(target_str) else target_str
+
+
+def mkstemp_beside(target: Union[str, Path], **kw: Any) -> tuple[int, str]:
+    """``tempfile.mkstemp`` in the directory :func:`atomic_replace` will rename into.
+
+    A temp staged next to a symlink whose target lives on another filesystem turns the publish
+    rename into EXDEV, and atomic_replace's copy fallback then rewrites the file in place (torn on
+    a crash). Staging beside the resolved target keeps the rename atomic. If that directory is not
+    writable to us (the file itself may still be), stage beside the link instead: the save keeps
+    working through the non-atomic copy fallback, exactly as before.
+    """
+    target_str = str(target)
+    link_dir = str(Path(target_str).parent)
+    stage_dir = os.path.dirname(_publish_path(target_str)) or link_dir
+    try:
+        return tempfile.mkstemp(dir=stage_dir, **kw)
+    except PermissionError:
+        if stage_dir == link_dir:
+            raise
+        return tempfile.mkstemp(dir=link_dir, **kw)
+
+
+def publish_no_clobber(tmp_path: Union[str, Path], target: Union[str, Path]) -> None:
+    """Publish the complete file *tmp_path* at *target*; ``FileExistsError`` if *target* exists.
+
+    A hard link is atomic and never replaces a concurrent winner. Where the filesystem refuses
+    hard links, an ``O_EXCL`` reservation keeps the no-clobber contract and :func:`atomic_replace`
+    then moves the complete bytes over it, consuming *tmp_path*; until then a racing reader sees
+    an empty file.
+    """
+    try:
+        os.link(tmp_path, target)
+        return
+    except OSError as exc:
+        if not hard_link_refused(exc):
+            raise
+    os.close(os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
+    try:
+        atomic_replace(tmp_path, target)
+    except BaseException:
+        with suppress(OSError):
+            os.unlink(target)
+        raise
 
 
 def _publish_path(target_str: str) -> str:

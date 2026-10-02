@@ -1216,7 +1216,6 @@ def _(rid, params: dict, session) -> dict:
         if not mgr.enabled:
             return _ok(rid, {"enabled": False, "checkpoints": []})
         # The TUI renders ``message``; the manager calls it ``reason``.
-<<<<<<< HEAD
         rows = []
         for c in mgr.list_checkpoints(cwd):
             row = {"hash": c.get("hash", ""), "timestamp": c.get("timestamp", ""), "message": c.get("reason", "")}
@@ -1224,10 +1223,6 @@ def _(rid, params: dict, session) -> dict:
                 if c.get(tagged) is not None:
                     row[tagged] = c[tagged]
             rows.append(row)
-=======
-        rows = [{"hash": c.get("hash", ""), "timestamp": c.get("timestamp", ""), "message": c.get("reason", "")}
-                for c in mgr.list_checkpoints(cwd)]
->>>>>>> origin/main
         return _ok(rid, {"enabled": True, "checkpoints": rows})
     return _with_checkpoints(session, go)
 

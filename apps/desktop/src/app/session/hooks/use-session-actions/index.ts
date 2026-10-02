@@ -1,8 +1,7 @@
 import { useStore } from '@nanostores/react'
-import { useEffect } from 'react'
+import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
+import type { NavigateFunction } from 'react-router'
 
-import { migrateSessionDraft } from '@/store/composer'
-import { migrateQueuedPrompts } from '@/store/composer-queue'
 import { NO_PROJECT_ID } from '@/app/chat/sidebar/projects/workspace-groups'
 import {
   extendRefreshPageToOverlap,
@@ -68,42 +67,47 @@ import { clearAllPrompts, receiveApprovalRequest, replayPendingApproval } from '
 import { clearStoredTranscriptReadOnly, markStoredTranscriptReadOnly } from '@/store/read-only-transcript'
 import {
   $activeSessionStoredIdRotation,
+  $connection,
+  $currentCwd,
+  $currentCwdExplicit,
+  $currentFastMode,
+  $currentModel,
+  $currentProvider,
+  $currentReasoningEffort,
+  $messages,
+  $newChatWorkspaceTarget,
   $sessions,
   $yoloActive,
   getCurrentModelSource,
   getSessionOwnerHint,
   idsShareLineage,
+  type NewChatWorkspaceTarget,
   resolveComposerSessionKey,
   rotateFreshDraftKey,
   sessionPinId,
   setActiveSessionId,
   setActiveSessionStoredIdRotation,
-  setSelectedStoredSessionId
+  setAwaitingResponse,
+  setBusy,
+  setCurrentBranch,
+  setCurrentCwd,
+  setCurrentCwdExplicit,
+  setCurrentCwdTransient,
+  setCurrentServiceTier,
+  setCurrentUsage,
+  setFreshDraftReady,
+  setIntroSeed,
+  setMessages,
+  setNewChatWorkspaceTarget,
+  setResumeExhaustedSessionId,
+  setResumeFailedSessionId,
+  setSelectedStoredSessionId,
+  setSessionOwnerHint,
+  setSessionStartedAt,
+  setTurnStartedAt,
+  setWorkspaceCwdOwner,
+  setYoloActive
 } from '@/store/session'
-import { $focusedStoredSessionId, isSessionInForeground } from '@/store/session-states'
-
-import { sessionRoute } from '../../../routes'
-
-import { useArchiveActions } from './archive'
-import { useCreateActions } from './create'
-import { useForkActions } from './fork'
-import { useGoneActions } from './gone'
-import { useOpenActions } from './open'
-import type { SessionActionsOptions } from './options'
-import { useResumeActions } from './resume'
-import { useTileRoutingActions } from './tile-routing'
-
-export type { SessionActionsOptions } from './options'
-
-export function useSessionActions(options: SessionActionsOptions) {
-  const {
-    activeSessionId,
-    activeSessionIdRef,
-    getRoutedStoredSessionId,
-    navigate,
-    selectedStoredSessionId,
-    selectedStoredSessionIdRef
-  } = options
 import { clearSessionControl } from '@/store/session-control'
 import { isSessionOwnerResolutionError } from '@/store/session-owner-resolution'
 import {
@@ -177,6 +181,7 @@ import {
   dedupeInflightUserAgainstTranscript,
   dropListedSession,
   findListedSession,
+  finiteTurnStartedAt,
   goneSessionVerdict,
   isSessionGoneError,
   overlayConcurrentMessageChanges,
@@ -285,14 +290,70 @@ function applyStoredUsage(stored: { input_tokens?: number | null; output_tokens?
   setCurrentUsage(current => ({ ...current, input, output, total: input + output }))
 }
 
+function reconcilePersistedSessionTurn(
+  messages: ChatMessage[],
+  previous: ChatMessage[],
+  rows: SessionMessage[],
+  projection: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id' | 'turn_started_at'>
+): ChatMessage[] | null {
+  const startedAt = finiteTurnStartedAt(projection)
+  const hasBoundary = startedAt !== null
+
+  const currentStart = hasBoundary
+    ? rows.findIndex(row => row.timestamp !== undefined && row.timestamp >= startedAt)
+    : 0
+
+  if (currentStart < 0) {
+    return null
+  }
+
+  const currentRows = rows.slice(currentStart)
+
+  // The occurrence resolver predates canonical user provenance. Do not let a
+  // runtime notice occupy a human prompt slot, even when its prose is equal.
+  if (
+    projection.inflight?.user_originated !== false &&
+    currentRows.some(row => row.role === 'user' && row.user_originated === false)
+  ) {
+    return null
+  }
+
+  const reconciled = reconcilePersistedLiveTurn(messages, previous, currentRows, projection)
+
+  if (!reconciled || projection.inflight?.user_originated !== false || !hasBoundary) {
+    return reconciled
+  }
+
+  // A visible runtime wake can use source-row occurrence reconciliation too,
+  // but its projected reply must retain the journal's backend-owned boundary.
+  // Hidden/system wakes have no user anchor and use the legacy projection path.
+  const boundary = reconciled.findIndex(
+    message =>
+      message.role === 'user' &&
+      message.userOriginated === false &&
+      message.timestamp !== undefined &&
+      message.timestamp >= startedAt
+  )
+
+  if (boundary < 0) {
+    return null
+  }
+
+  return reconciled.map((message, index) =>
+    index >= boundary && message.id !== `user-queued-${projection.session_id}`
+      ? { ...message, runtimeTurnStartedAt: startedAt }
+      : message
+  )
+}
+
 function reconcileAuthoritativeChatMessages(
   authoritativeMessages: ChatMessage[],
   previousMessages: ChatMessage[],
-  liveProjection?: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id'>,
+  liveProjection?: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id' | 'turn_started_at'>,
   sourceRows?: SessionMessage[]
 ): ChatMessage[] {
   if (liveProjection && sourceRows) {
-    const reconciled = reconcilePersistedLiveTurn(authoritativeMessages, previousMessages, sourceRows, liveProjection)
+    const reconciled = reconcilePersistedSessionTurn(authoritativeMessages, previousMessages, sourceRows, liveProjection)
 
     if (reconciled) {
       return reconciled
@@ -308,7 +369,7 @@ function reconcileAuthoritativeChatMessages(
 function reconcileAuthoritativeMessages(
   authoritativeMessages: SessionResumeResult['messages'],
   previousMessages: ChatMessage[],
-  liveProjection?: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id'>
+  liveProjection?: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id' | 'turn_started_at'>
 ): ChatMessage[] {
   return reconcileAuthoritativeChatMessages(
     toChatMessages(authoritativeMessages),
@@ -674,13 +735,6 @@ export function useSessionActions({
     storedSessions
   ])
 
-  const { startFreshSessionDraft, createBackendSessionForSend } = useCreateActions(options)
-  const { openNewSessionTile } = useTileRoutingActions(options)
-  const { selectSidebarItem, openSettings, closeSettings } = useOpenActions(options, { startFreshSessionDraft })
-  const { resumeSession } = useResumeActions(options, { startFreshSessionDraft })
-  const { removeSession } = useGoneActions(options, { startFreshSessionDraft })
-  const { archiveSession, unarchiveSession } = useArchiveActions(options, { startFreshSessionDraft })
-  const { forkBranch, branchCurrentSession, branchStoredSession } = useForkActions(options, { resumeSession })
   const startFreshSessionDraft = useCallback(
     (options: boolean | FreshSessionDraftOptions = false) => {
       const draftOptions = typeof options === 'boolean' ? { replaceRoute: options } : options
@@ -1273,6 +1327,10 @@ export function useSessionActions({
         if (listed) {
           broadcastSessionsChanged()
         }
+
+        // The roster fan-out needs the runtime id of the session it just
+        // minted so it can push the prompt into the right tile.
+        return { runtimeId: created.session_id }
       } catch (error) {
         notifyError(error, copy.createSessionFailed)
       }
@@ -1902,7 +1960,8 @@ export function useSessionActions({
                   const liveProjection = dedupeInflightUserAgainstTranscript(
                     persistedMessages,
                     runtimeMessages,
-                    activated
+                    activated,
+                    cachedViewState.messages
                   )
 
                   const latestCachedMessages = sessionStateByRuntimeIdRef.current.get(cachedRuntimeId)?.messages
@@ -1912,7 +1971,7 @@ export function useSessionActions({
                       ? withoutEarlyClarifyProjection(latestCachedMessages, pendingClarify.requestId)
                       : latestCachedMessages
 
-                  const currentLiveTurn = reconcilePersistedLiveTurn(
+                  const currentLiveTurn = reconcilePersistedSessionTurn(
                     persistedMessages,
                     cachedWithoutEarlyClarify ?? previousMessages,
                     persisted.messages,
@@ -2267,16 +2326,16 @@ export function useSessionActions({
               const runtimeMessages = toChatMessages(resumed.messages)
               const previousMessages = removeRepresentedLocalLiveProjection(currentMessages, resumed)
 
-              // Omitted-messages resumes stay safe here: `resumed.messages`
-              // is empty, so `runtimeMessages` has no anchor and the dedupe
-              // helper returns the projection unchanged, while the REST
-              // prefetch below remains the authoritative transcript — the
-              // same "graft, don't rebuild" outcome the pre-restructure
-              // messages_omitted branch produced.
+              // Omitted-messages resumes stay safe here: when runtime history
+              // is empty, the dedupe helper can prove the current turn from an
+              // exact local optimistic-user + stream pair and anchor the
+              // remaining committed prefix in the REST transcript. Without
+              // either proof it leaves the projection unchanged.
               const liveProjection = dedupeInflightUserAgainstTranscript(
                 prefetchedTranscriptMessages,
                 runtimeMessages,
-                resumed
+                resumed,
+                currentMessages
               )
 
               const resumedMessages = reconcileAuthoritativeChatMessages(

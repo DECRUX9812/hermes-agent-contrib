@@ -664,14 +664,11 @@ def _project_for_display(messages: list, *, home=None, inline_images: bool = Tru
             message.get("role"), message.get("content"))
         if failed_turn:
             message = {**message, "display_kind": failed_turn}
-<<<<<<< HEAD
-=======
         if _is_untyped_scaffold_notice(message):
             projected = message.copy()
             projected["display_kind"] = "hidden"
             projected_messages.append(projected)
             continue
->>>>>>> origin/main
         # Mid-turn steer: the user's own words, not the model-facing marker (same as session.resume).
         if message.get("role") == "user" and message.get("display_kind") == STEER_DISPLAY_KIND and (
                 steer_text := _extract_steer_text_from_message(message)):

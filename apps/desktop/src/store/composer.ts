@@ -1,5 +1,6 @@
 import { atom } from 'nanostores'
 
+import type { HermesStagedUpload } from '@/global'
 import { deriveDraftTitle } from '@/lib/draft-title'
 import { triggerHaptic } from '@/lib/haptics'
 import { persistString, storedString } from '@/lib/storage'
@@ -70,6 +71,8 @@ export interface ComposerAttachment {
   /** Downscaled data URL for the attachment card and optimistic bubble only. */
   thumbnailUrl?: string
   path?: string
+  /** Ownership of browser-staged bytes; survives failed uploads and draft clones. */
+  stagedUpload?: HermesStagedUpload
   /** Bounded source text from a Hermes-generated large paste, sent only to the title path. */
   titlePreview?: string
   attachedSessionId?: string
@@ -265,7 +268,6 @@ interface PersistedComposerAttachment {
 // the key (rather than just its text) lets a reload restore that exact fresh
 // draft; starting another new chat rotates the key so abandoned unsent drafts
 // cannot bleed into the next lifecycle.
-const FRESH_DRAFT_STORAGE_KEY = 'hermes.desktop.freshDraftKey'
 
 interface PersistedSessionDraft {
   attachments?: PersistedComposerAttachment[]
@@ -407,7 +409,6 @@ const draftKey = (scope: string | null | undefined): string => {
 // A null/empty scope IS the current fresh-chat lifecycle — resolve it to that
 // lifecycle's own key so every stash/read/migrate consumer below addresses the
 // active fresh bucket instead of the shared legacy one.
-const draftKey = (scope: string | null | undefined) => scope?.trim() || freshDraftScope()
 
 /** Inline "Restored your unsent message" notice for the fresh draft (see
  *  `adoptGoneSessionDraft`). `null` = nothing to show. */

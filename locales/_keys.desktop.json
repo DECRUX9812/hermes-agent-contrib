@@ -2310,13 +2310,9 @@
     "preview.largeTitle",
     "preview.linkHint",
     "preview.loading",
-<<<<<<< HEAD
-    "preview.missingTarget",
-=======
     "preview.missingBody",
     "preview.missingTarget",
     "preview.missingTitle",
->>>>>>> origin/main
     "preview.noInlineBody",
     "preview.noInlineTitle",
     "preview.openInBrowser",

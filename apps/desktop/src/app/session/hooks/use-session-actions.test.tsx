@@ -1,8 +1,7 @@
 import { registryBackendScopeKey } from '@hermes/shared'
 import { useStore } from '@nanostores/react'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
-import type { MutableRefObject } from 'react'
-import { useEffect, useRef } from 'react'
+import { MutableRefObject, useEffect, useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
@@ -113,12 +112,7 @@ import { pinnedOwnerCount, pinnedStoredSessionIdsForOwner, releaseStoredSessionP
 import { applySessionInfoStatePatch, sessionInfoStatePatch } from './use-message-stream/utils'
 import { captureSteeringSession } from './use-prompt-actions/steering-session'
 import { useSessionActions } from './use-session-actions'
-import {
-  createPersistedDisplayTranscriptProvenance,
-  suppressTranscriptForView,
-  transcriptRowContentKey
-} from './use-session-actions/transcript-provenance'
-import type { TranscriptViewCutoff } from './use-session-actions/transcript-provenance'
+import { createPersistedDisplayTranscriptProvenance, suppressTranscriptForView, transcriptRowContentKey, TranscriptViewCutoff } from './use-session-actions/transcript-provenance'
 import { useSessionStateCache } from './use-session-state-cache'
 
 vi.mock('@/hermes', async importOriginal => ({
@@ -5485,7 +5479,7 @@ describe('resumeSession warm-cache mapping integrity', () => {
     expect(streamingAssistantRows?.[0].id).toBe('assistant-stream-live-123')
   })
 
-  it('does not duplicate an in-flight user prompt already present in the persisted suffix', async () => {
+  it('keeps an attached in-flight prompt anchored before a persisted background notice', async () => {
     const runtimeIdByStoredSessionIdRef: MutableRefObject<Map<string, string>> = {
       current: new Map([['stored-A', 'rt-A']])
     }
@@ -5505,7 +5499,8 @@ describe('resumeSession warm-cache mapping integrity', () => {
       {
         id: 'user-optimistic',
         role: 'user',
-        parts: [{ type: 'text', text: 'current prompt' }]
+        parts: [{ type: 'text', text: 'current prompt' }],
+        attachmentRefs: ['@image:/tmp/screenshot.png']
       },
       {
         id: 'assistant-stream-rt-A',
@@ -5528,7 +5523,13 @@ describe('resumeSession warm-cache mapping integrity', () => {
       { content: 'older prompt removed by compression', role: 'user', timestamp: -1 },
       { content: 'older answer removed by compression', role: 'assistant', timestamp: 0 },
       ...compressedRuntimeMessages,
-      { content: 'current prompt', role: 'user', timestamp: 3 }
+      { content: 'current prompt\n@image:/tmp/screenshot.png', role: 'user', timestamp: 3 },
+      { content: 'partial tool activity', role: 'assistant', timestamp: 4 },
+      {
+        content: '[IMPORTANT: Background process proc_123 completed normally with exit code 0.]',
+        role: 'user',
+        timestamp: 5
+      }
     ]
 
     vi.mocked(getLatestSessionMessages).mockResolvedValue({
@@ -5543,8 +5544,10 @@ describe('resumeSession warm-cache mapping integrity', () => {
           session_key: 'stored-A',
           resumed: 'stored-A',
           message_count: compressedRuntimeMessages.length,
-          messages: compressedRuntimeMessages,
+          messages: [],
+          messages_omitted: true,
           running: true,
+          turn_started_at: 3,
           inflight: {
             user: 'current prompt',
             assistant: 'partial answer',
@@ -5577,6 +5580,8 @@ describe('resumeSession warm-cache mapping integrity', () => {
     )
 
     expect(currentPromptRows).toHaveLength(1)
+    expect(currentPromptRows[0]).toMatchObject({ attachmentRefs: ['@image:/tmp/screenshot.png'] })
+    expect(currentPromptRows[0].id).not.toContain('inflight')
     expect(JSON.stringify(resumedState?.messages)).toContain('partial answer')
   })
 

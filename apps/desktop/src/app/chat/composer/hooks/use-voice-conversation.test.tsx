@@ -198,7 +198,6 @@ describe('useVoiceConversation full-duplex barge-in', () => {
   })
 
   it('interrupts the in-flight turn once the captured speech is known not to be a status ask', async () => {
-  it('interrupts the in-flight turn when speech trips mid-generation', async () => {
     const { hook, onInterrupt } = renderConversation()
 
     await act(async () => {

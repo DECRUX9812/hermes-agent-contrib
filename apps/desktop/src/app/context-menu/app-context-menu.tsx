@@ -1,6 +1,5 @@
 import { useStore } from '@nanostores/react'
-import type { ReactNode } from 'react'
-import { useEffect } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 
 import { terminalMenuHandleFor } from '@/app/right-sidebar/terminal/terminal-context-menu'
@@ -21,6 +20,7 @@ import { type Translations, useI18n } from '@/i18n'
 import { hostPathLabel, hudForcesNativeLinks, normalizeExternalUrl, openExternalLink } from '@/lib/external-link'
 import { formatCombo } from '@/lib/keybinds/combo'
 import { isRemoteGateway } from '@/lib/media'
+import { isBrowserHostedDesktop } from '@/lib/platform'
 import { reachablePreviewUrl } from '@/lib/preview-reach'
 import { openCommandPalette } from '@/store/command-palette'
 import { openPreview } from '@/store/preview'
@@ -58,6 +58,12 @@ const EDIT_SHORTCUTS = {
   paste: formatCombo('mod+v'),
   selectAll: formatCombo('mod+a')
 } as const
+
+function isNativeMediaContextMenu(event: MouseEvent): boolean {
+  const path = typeof event.composedPath === 'function' ? event.composedPath() : []
+
+  return [event.target, ...path].some(target => target instanceof HTMLMediaElement)
+}
 
 function isLoopbackUrl(url: string): boolean {
   try {
@@ -618,10 +624,9 @@ export function AppContextMenu() {
   const open = useStore($contextMenu)
 
   useEffect(() => {
-    // stopPropagation beats other renderer handlers; preventDefault is never
-    // called because Chromium emits the main-process context-menu event (the
-    // spellcheck + image-coordinate source) only for unprevented gestures —
-    // and with no Menu.popup anywhere, "default" means no menu at all.
+    // Electron needs unprevented gestures for main-process spellcheck and
+    // image coordinates. Webapp must cancel the browser's native menu when
+    // we own the gesture, or it opens alongside the app menu.
     const onContextMenu = (event: MouseEvent) => {
       const element = event.target instanceof Element ? event.target : null
 
@@ -643,11 +648,32 @@ export function AppContextMenu() {
         return
       }
 
+      // Browser-owned media controls need their native context menu, including
+      // save and picture-in-picture actions. Chromium can retarget a control
+      // hit through the media element's UA shadow tree, so inspect the whole
+      // composed path instead of relying only on event.target.
+      if (isBrowserHostedDesktop() && isNativeMediaContextMenu(event)) {
+        return
+      }
+
+      // The Star Map owns node hits, but empty canvas space still reaches the
+      // shell fallback below. A canvas-wide opt-out would lose that fallback.
+      if (openStarMapNodeMenuFor(element, event.clientX, event.clientY)) {
+        event.preventDefault()
+        event.stopPropagation()
+
+        return
+      }
+
       // A terminal's canvas has no DOM to resolve; its registered handle
       // carries the xterm selection and paste path instead.
       const terminal = terminalMenuHandleFor(element)
 
       if (terminal) {
+        if (isBrowserHostedDesktop()) {
+          event.preventDefault()
+        }
+
         event.stopPropagation()
         openTerminalContextMenu(event.clientX, event.clientY, terminal)
 
@@ -661,6 +687,10 @@ export function AppContextMenu() {
       // opens the link menu.
       if (!owned && element?.closest(`[${CONTEXT_MENU_SKIP_ATTR}]`)) {
         return
+      }
+
+      if (isBrowserHostedDesktop()) {
+        event.preventDefault()
       }
 
       event.stopPropagation()

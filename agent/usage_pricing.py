@@ -341,10 +341,6 @@ for _provider, _alias, _canonical in (
     *((("openai", f"{m}-{suffix}", m)
        for m in ("gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-6-sol", "gpt-6-luna", "gpt-6.1-sol")
        for suffix in ("pro", "900k"))),
-<<<<<<< HEAD
-    ("openai", "gpt-6.1-sol-pro", "gpt-6.1-sol"),  # no -900k: not verified above 272K on Codex
-=======
->>>>>>> origin/main
     ("google", "gemini-3.1-pro-preview", "gemini-3.1-pro"),
     ("google", "gemini-3.1-flash-lite-preview", "gemini-3.1-flash-lite"),
 ):

@@ -1,6 +1,5 @@
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, useState } from 'react'
-import { type ComponentProps, useCallback, useEffect } from 'react'
+import { type ComponentProps, useState, useCallback, useEffect } from 'react'
 
 import { TreeSkeleton } from '@/components/chat/skeletons'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -17,9 +16,6 @@ import { notifyError } from '@/store/notifications'
 import { openPreview } from '@/store/preview'
 import { $currentBranch, $currentCwd, $selectedStoredSessionId, $workspaceCwdOwner } from '@/store/session'
 import { refreshRepoStatus, registerRepoStatusCwd } from '@/store/coding-status'
-import { $panesFlipped } from '@/store/layout'
-import { notifyError } from '@/store/notifications'
-import { openPreview } from '@/store/preview'
 import { openFolderAsProject } from '@/store/projects'
 import { $focusedWorkspaceCwd } from '@/store/session-states'
 

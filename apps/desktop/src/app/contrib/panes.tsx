@@ -11,8 +11,7 @@
 import { useStore } from '@nanostores/react'
 import { useQuery } from '@tanstack/react-query'
 import { atom } from 'nanostores'
-import { useMemo } from 'react'
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useEffect, useRef } from 'react'
 
 import { RightSidebarPane } from '@/app/right-sidebar'
 import { ArtifactsRailPane } from '@/app/right-sidebar/artifacts'

@@ -40,7 +40,6 @@ import {
   touchSecondaryGateways
 } from '@/store/gateway'
 import { type GatewayReconnectOptions, registerGatewayReconnect } from '@/store/gateway-reconnect'
-import { type GatewayReconnectOptions, reconnectGateway, registerGatewayReconnect } from '@/store/gateway-reconnect'
 import {
   $gatewaySwitching,
   endGatewaySwitch,
@@ -452,7 +451,6 @@ export function useGatewayBoot({
 
     const offGatewayReconnect = registerGatewayReconnect(async (options?: GatewayReconnectOptions) => {
       if (s.cancelled || !s.bootCompleted || $gatewaySwitching.get()) {
-      if (cancelled || !bootCompleted || $gatewaySwitching.get()) {
         return
       }
 
@@ -528,7 +526,6 @@ export function useGatewayBoot({
       }
 
       s.ownCloseReason = 'manual'
-      ownCloseReason = 'manual'
       gateway.close()
       clearReconnectTimer()
       resetReconnectBackoff()

@@ -1234,3 +1234,10 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
 }
 
 export const ThreadMessageList = memo(ThreadMessageListInner)
+
+
+// Helpers were split into their own modules; re-exported here so consumers keep
+// one stable import path.
+export { buildGroups, firstVisibleGroupIndex, HIDDEN_TRANSCRIPT_RENDER_BUDGET, LIVE_TAIL_MIN_GROUPS, LIVE_TAIL_PARTS, liveTailStart, shouldClampTranscriptBudget, transcriptPaneBudget } from './list-groups'
+export type { MessageGroup } from './list-groups'
+export { hasTranscriptTextSelection, resolveThreadScrollTarget, RUN_START_SNAP_THRESHOLD_PX, shouldAnchorBeforePrepend, shouldRePinOnTranscriptReload, shouldSnapOnRunStart, subscribeToThreadForeground } from './list-scroll'

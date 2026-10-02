@@ -4159,3 +4159,24 @@ html[data-hud-window] [data-slot='popover-content'] {
   animation: scroll-edge-fade linear both;
   animation-timeline: scroll(self inline);
 }
+
+/* CSS zoom scales viewport units too; browser shells must fit their parent. */
+html[data-hermes-desktop-host='browser'] [data-contrib-shell] {
+  width: 100%;
+  height: 100%;
+}
+
+html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
+  height: 100%;
+}
+
+/* Keep-alive hidden panes (see pane-visibility.ts) hide with `visibility:
+   hidden` so the layout box — and with it scroll positions — survives a tab
+   round-trip. But `visibility` is inherited-and-overridable: third-party
+   widget scripts (Twitter's embed injects its rendered card with an inline
+   `visibility: visible`) can paint through the hidden pane over the active
+   view (#79833). Force every descendant to follow the pane's visibility; an
+   author `!important` rule beats the widget's inline non-important style. */
+[data-pane-hidden] * {
+  visibility: inherit !important;
+}

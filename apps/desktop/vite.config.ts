@@ -181,7 +181,16 @@ const excalidrawAssets = () => ({
 
 export default defineConfig(({ command }) => ({
   base: './',
-  plugins: [react(), babel({ presets: [compilerPreset()] }), tailwindcss(), emojibaseAssets(), excalidrawAssets()],
+  plugins: [
+    react(),
+    // Babel resolves the compiler preset's plugin from its cwd. Pin it here: the
+    // Webapp build runs Vite from the checkout root, which a fresh clone leaves
+    // without node_modules (its dependencies live in the private workspace).
+    babel({ cwd: __dirname, presets: [compilerPreset()] }),
+    tailwindcss(),
+    emojibaseAssets(),
+      excalidrawAssets()
+  ],
   css: {
     // Pin an explicit (empty) PostCSS config. Tailwind is handled entirely by
     // `@tailwindcss/vite`, so the renderer needs no PostCSS plugins — and

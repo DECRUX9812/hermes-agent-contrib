@@ -25,7 +25,6 @@ import {
   $workspaceCwdOwner,
   workspaceCwdBelongsToSelectedSession
 } from './session'
-import { $busy, $currentCwd, $selectedStoredSessionId, $sessions } from './session'
 import { $sessionStates } from './session-states'
 import { $workspaceChangeTick } from './workspace-events'
 
@@ -239,20 +238,11 @@ function reviewReadParams(): { scope: HermesReviewScope; baseRef: null | string 
 
 // ── Reads ────────────────────────────────────────────────────────────────────
 
-export async function refreshReview({ rescanSession = false }: { rescanSession?: boolean } = {}): Promise<void> {
-export async function refreshReview(): Promise<boolean> {
-  // A direct refresh supersedes an already-queued debounce for the same live
-  // context. Without this, openReviewForPath() can start a list request only
-  // for the timer to overtake it before the requested file is selected.
-  if (reviewRefreshTimer) {
-    clearTimeout(reviewRefreshTimer)
-    reviewRefreshTimer = null
-  }
-
-  const intentCwd = repoCwd()
+export async function refreshReview({ rescanSession = false }: { rescanSession?: boolean } = {}): Promise<boolean> {
   const ctx = reviewCtx()
   const seq = (reviewRefreshSeq += 1)
   const selectionSeq = reviewSelectionSeq
+  const intentCwd = repoCwd()
   const ownsList = () => seq === reviewRefreshSeq && repoCwd() === intentCwd
 
   if (!$reviewOpen.get() || !ctx) {
@@ -296,7 +286,7 @@ export async function refreshReview(): Promise<boolean> {
       const touched = storedId ? await sessionTouchedPaths(cwd, storedId, { rescan: rescanSession }) : []
 
       if (seq !== reviewRefreshSeq || repoCwd() !== cwd) {
-        return
+        return false
       }
 
       files = sessionReviewFiles(files, touched)

@@ -77,9 +77,6 @@ def test_gpt61_sol_resolves_context_and_pricing_like_its_tier():
     base = _OFFICIAL_DOCS_PRICING[("openai", "gpt-6.1-sol")]
     assert _OFFICIAL_DOCS_PRICING[("openai", "gpt-6.1-sol-pro")] is base
     assert base.cache_read_cost_per_million == base.input_cost_per_million / 20  # 5%, not 6 Sol's 10%
-<<<<<<< HEAD
-    assert not is_codex_900k_base("gpt-6.1-sol")  # not verified above 272K on Codex
-=======
 
 
 def test_gpt61_sol_900k_is_opt_in_exact_and_billed_as_the_base():
@@ -97,4 +94,3 @@ def test_gpt61_sol_900k_is_opt_in_exact_and_billed_as_the_base():
     assert _CODEX_OAUTH_STALE_ADVERTISED_CTX < _verified_codex_ctx_for_slug("gpt-6.1-sol-900k") < 922_000  # 1.05M context - 128K max output
     assert _OFFICIAL_DOCS_PRICING[("openai", "gpt-6.1-sol-900k")] is _OFFICIAL_DOCS_PRICING[("openai", "gpt-6.1-sol")]
     assert _compression_threshold_for_model("gpt-6.1-sol-900k", provider="openai-codex") is None
->>>>>>> origin/main

@@ -3,8 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as groupActivity from './group-activity'
 import type * as groupChat from './group-chat'
 import type * as groupRounds from './group-rounds'
-import { createGroupGateway, drain, runTimersInline, scriptedStorage } from './group-test-utils'
-import type { GatewayOptions, ScriptedGateway } from './group-test-utils'
+import { createGroupGateway, drain, runTimersInline, scriptedStorage, GatewayOptions, ScriptedGateway } from './group-test-utils'
 import type * as groupTurns from './group-turns'
 import type { Attachment, GroupChat, GroupMember, GroupMessage } from './types'
 
@@ -520,6 +519,7 @@ describe('round lifecycle', () => {
     room.rounds.sendToGroupChat('Escalate', member, 'use the ops account')
 
     expect(room.chat.$groupNeedsYou.get().Escalate).toBe(false)
+    await settle(room, 'Escalate')
   })
 
   it('converts an "(empty)" member reply like the gateway does, never appending it raw', async () => {

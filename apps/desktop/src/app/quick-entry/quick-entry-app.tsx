@@ -86,6 +86,8 @@ export function QuickEntryApp() {
     // chip can pop in a beat after the window paints.
     const offContext = api?.onContext(context => {
       dispatch({ context: context ?? null, type: 'context' })
+    })
+
     const offLateResult = api?.onLateResult(payload => {
       dispatch({
         message: payload?.result?.message ?? 'Hermes could not deliver the prompt.',

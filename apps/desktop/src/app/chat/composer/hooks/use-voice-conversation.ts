@@ -659,8 +659,7 @@ export function useVoiceConversation({
         }
       }
     },
-    [consumePendingResponse, onSubmit, onTranscribeAudio, speakStatusReply, voiceCopy.transcriptionFailed]
-    [consumePendingResponse, focusInput, onTranscribeAudio, parkText, voiceCopy.transcriptionFailed]
+    [consumePendingResponse, onSubmit, focusInput, onTranscribeAudio, parkText, voiceCopy.transcriptionFailed]
   )
 
   /**

@@ -1,7 +1,6 @@
 import { atom } from 'nanostores'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { $activeSessionId, $selectedStoredSessionId } from '@/store/session'
 import { $activeSessionId, $selectedStoredSessionId, $sessions } from '@/store/session'
 import { $sessionStates, $sessionTiles } from '@/store/session-states'
 

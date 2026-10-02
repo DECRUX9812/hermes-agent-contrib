@@ -133,7 +133,6 @@ class SessionCreateParams(ProfileParams):
     hidden: bool = False
     room_plumbing: bool = False
     follow_profile_config: bool = False
-<<<<<<< HEAD
     # Born a bot topic: a user-visible side chat of a bot that carries the canonical
     # Bot Chat's powers (message_agent, update_task, teammate protocol). Persisted
     # into the row's model_config, fixed for the session's life.
@@ -143,11 +142,9 @@ class SessionCreateParams(ProfileParams):
     # marker — set once, persisted in model_config, restored on every resume path.
     team_room: bool = False
     team_room_lead: str | None = None
-=======
     # #65410: stable caller-chosen key so a retried create (response lost in
     # transit) returns the SAME session instead of a duplicate child.
     idempotency_key: str | None = None
->>>>>>> origin/main
 
 
 class SessionCreateResult(Result):

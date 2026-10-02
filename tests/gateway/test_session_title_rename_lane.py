@@ -60,35 +60,9 @@ def test_the_rename_waits_for_the_model_title(lane):
     assert renames == ["Fix flaky auth test"]
 
 
-<<<<<<< HEAD
-def _recovery_runner(scheduled):
-    """Fake runner binding the REAL lane predicate, like NativeRenameRunner below."""
-
-    class RecoveryRunner:
-        _is_telegram_topic_lane = lambda self, source: False  # noqa: E731
-        _is_relay_discord_channel_lane = lambda self, source: False  # noqa: E731
-        _is_discord_auto_thread_lane = GatewayRunner._is_discord_auto_thread_lane
-
-        def _schedule_discord_semantic_thread_rename(self, source, session_id, title):
-            scheduled.append((source, session_id, title))
-
-    return RecoveryRunner()
-
-
-def _recover_agent(session_db, origin):
-    return types.SimpleNamespace(
-        session_id="sess-1",
-        _session_db=session_db
-        or types.SimpleNamespace(
-            get_session=lambda session_id: {
-                "origin_json": json.dumps(origin.to_dict()) if origin else "{}",
-            }
-        ),
-=======
 def _thread_source(thread_id="thread-1", **fields):
     return SessionSource(
         platform=Platform.DISCORD, chat_id=thread_id, chat_type="thread", thread_id=thread_id, **fields,
->>>>>>> origin/main
     )
 
 

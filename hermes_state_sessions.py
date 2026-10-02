@@ -19,11 +19,7 @@ from hermes_state_errors import SessionActiveWriteGuardError
 from hermes_state_common import (
     _LISTABLE_CHILD_SQL, _RECOVERABLE_END_REASONS,
     _RECOVERABLE_END_REASONS_SQL, _RESET_CHILD_SQL, _RESET_END_REASONS, _legacy_reset_child_sql, _non_continuation_child_sql,
-<<<<<<< HEAD
-    _shape_preview, QUEUED_PROMPT_METADATA_KEY,
-=======
     _shape_preview, _sql_preview_raw, QUEUED_PROMPT_METADATA_KEY,
->>>>>>> origin/main
     _sql_in_window, _sql_json_extract, _sql_session_last_active, _sql_session_last_active_by_id,
     escape_like as _escape_like, _SQL_IN_CHUNK, _id_chunks, _placeholders as _session_ids_placeholders,
 )

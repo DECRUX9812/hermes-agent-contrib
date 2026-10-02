@@ -304,6 +304,8 @@ describe('quickComposerReducer', () => {
 
     expect(state.strings.contextLabel).toBe('Kontext')
     expect(state.strings.contextRemove).toBe('Kontext entfernen')
+  })
+
   it('keeps the correlation and draft when dismissed mid-submit', () => {
     const { state } = run([
       connect,

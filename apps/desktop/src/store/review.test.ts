@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClientSessionState } from '@/app/types'
 import type { HermesReviewFile, HermesReviewShipInfo } from '@/global'
 
+import { $busy } from './session'
+import { $sessionStates } from './session-states'
+
 import {
   $reviewCommitDefault,
   $reviewCommitMsgBusy,
@@ -40,8 +43,6 @@ import {
   unstageReviewFile
 } from './review'
 import { $currentCwd, $selectedStoredSessionId, $workspaceCwdOwner, releaseWorkspaceCwdOwner } from './session'
-import { $busy, $currentCwd } from './session'
-import { $sessionStates } from './session-states'
 
 // requestOneShot is the only cross-module dependency that must be faked (it
 // reaches the gateway); everything else routes through window.hermesDesktop.git,
@@ -277,6 +278,8 @@ describe('refreshReview', () => {
     expect($reviewIsRepo.get()).toBe(true)
 
     vi.useRealTimers()
+  })
+
   it('keeps a new repository loading when the previous request rejects during the debounce gap', async () => {
     vi.useFakeTimers()
 

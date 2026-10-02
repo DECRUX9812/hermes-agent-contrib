@@ -100,14 +100,8 @@ export function useQuickEntryBridge({ submitText, submitTextToNewSession }: Quic
       return
     }
 
-    setQuickEntrySubmitHandler((payload: QuickEntrySubmitPayload) => {
-      // The context chip the quick window still held at submit rides along as
-      // a metadata line ahead of the typed text — the model sees what the user
-      // was working in without the transcript bubble gaining noise.
-      const text = payload.context ? `${quickEntryContextBlock(payload.context)}\n\n${payload.text}` : payload.text
-
-      const target = payload.target
-    setQuickEntrySubmitHandler(async ({ correlationId, target, text }) => {
+    setQuickEntrySubmitHandler(async (payload: QuickEntrySubmitPayload & { correlationId: string }) => {
+      const correlationId = payload.correlationId
       let acknowledged = false
 
       const ack = (result: QuickEntrySubmitResult) => {
@@ -116,8 +110,15 @@ export function useQuickEntryBridge({ submitText, submitTextToNewSession }: Quic
         }
 
         acknowledged = true
-        window.hermesDesktop?.quickEntry.ackSubmit(correlationId, result)
+        window.hermesDesktop?.quickEntry?.ackSubmit(correlationId, result)
       }
+
+      // The context chip the quick window still held at submit rides along as
+      // a metadata line ahead of the typed text — the model sees what the user
+      // was working in without the transcript bubble gaining noise.
+      const text = payload.context ? `${quickEntryContextBlock(payload.context)}\n\n${payload.text}` : payload.text
+
+      const target = payload.target
 
       if (target === QUICK_TARGET_NEW) {
         // Create and submit as one route-neutral operation so drift cannot
