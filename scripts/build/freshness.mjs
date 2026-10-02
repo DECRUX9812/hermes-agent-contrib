@@ -21,17 +21,6 @@ const osMetadata = name => {
     || base === 'Thumbs.db' || base === 'Desktop.ini' || base.startsWith('._')
 }
 
-// OS file-manager metadata is never a build input, and it can land in ANY hashed
-// tree (source, output or a prepared dir) the moment the checkout is opened in
-// Finder or Explorer mid-build — .DS_Store, AppleDouble ._* sidecars and
-// .localized on macOS, Thumbs.db and Desktop.ini on Windows. Skip it everywhere
-// so it can't flip a freshness hash and abort `hermes update` (#122632, #122803).
-const osMetadata = name => {
-  const base = name.split('/').pop()
-  return base === '.DS_Store' || base === '.localized'
-    || base === 'Thumbs.db' || base === 'Desktop.ini' || base.startsWith('._')
-}
-
 // buildTui bundles these source roots (including the Ink source alias), not
 // the workspaces' documentation, test runners or other product recipes.
 const tuiInputs = [
@@ -42,23 +31,6 @@ const tuiInputs = [
   'scripts/build/tui.mjs', 'scripts/build/frontend-common.mjs', 'scripts/build/freshness.mjs',
 ]
 
-function treeHash(root, inputs, skip, contents = () => true) {
-  const hash = createHash('sha256')
-  function visit(name) {
-    if (osMetadata(name) || skip(name)) return
-    const file = join(root, name)
-    hash.update(name.replaceAll('\\', '/')).update('\0')
-    if (!existsSync(file)) { hash.update('missing\0'); return }
-    if (statSync(file).isDirectory()) {
-      hash.update('directory\0')
-      for (const child of readdirSync(file).sort()) visit(`${name}/${child}`)
-    } else {
-      hash.update(contents(name) ? readFileSync(file) : 'file').update('\0')
-    }
-  }
-  for (const input of inputs) visit(input)
-  return hash.digest('hex')
-}
 // The browser renderer compiles Desktop and its shared package in a prepared
 // workspace. Release metadata (pyproject.toml, uv.lock, icons) is not its input.
 const webappInputs = [
