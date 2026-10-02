@@ -44,12 +44,14 @@ describe('quickComposerReducer', () => {
   it('starts visible, empty, DISCONNECTED, and targeting the current chat', () => {
     expect(initialQuickComposerState).toEqual({
       connected: false,
+      context: null,
       draft: '',
       error: null,
       lastSubmitText: '',
       orphanedFailure: null,
       pendingSubmitId: null,
       sessions: [],
+      strings: { contextLabel: 'Context', contextRemove: 'Remove context' },
       submitting: false,
       target: QUICK_TARGET_CURRENT,
       unknownSubmitId: null,
