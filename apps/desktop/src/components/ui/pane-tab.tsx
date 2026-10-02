@@ -228,6 +228,7 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
       <span
         className={cn(
           'ui-tab-label block min-w-0 truncate font-medium group-data-[closeable]/tab:text-clip',
+          'block min-w-0 truncate font-medium tracking-wide uppercase group-data-[closeable]/tab:text-clip',
           className
         )}
       >

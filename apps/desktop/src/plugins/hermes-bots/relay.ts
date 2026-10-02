@@ -188,6 +188,7 @@ function relayEligibleRoutes(routes: ProfileRoute[]): ProfileRoute[] {
 /** A queued cross-connection message drained from a gateway's outbox.
  *  `note` rides the envelope when the DM is a mailbox task hand-off (#48) —
  *  forwarded to `bot_relay.deliver`, which files it on the target install. */
+/** A queued cross-connection message drained from a gateway's outbox. */
 interface RelayEnvelope {
   id?: string
   message?: string
