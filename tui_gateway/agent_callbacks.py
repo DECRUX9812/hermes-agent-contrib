@@ -169,8 +169,11 @@ def _agent_cbs(sid: str) -> dict:
         # The probe ladder lives in server.py (_preview_action_request) so an
         # absent renderer fails fast instead of burning 45s per action (#94272).
         "drive_preview_callback": lambda payload: _preview_action_request(sid, dict(payload)),
+<<<<<<< HEAD
         # verify_preview (desktop GUI): settle window + console read + card write.
         "verify_preview_callback": lambda payload: _ask("preview.verify", sid, dict(payload), timeout=60),
+=======
+>>>>>>> origin/main
         # read_window_below (desktop GUI): main process enumerates native windows.
         "read_window_below_callback": lambda: _ask("window.read", sid, {}, timeout=30),
         # manage_connections card. Fire-and-forget: the tool thread waits on its own operation

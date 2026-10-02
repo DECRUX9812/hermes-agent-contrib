@@ -68,9 +68,13 @@ import {
   sessionPinId
 } from '@/store/session'
 import { $sessionColorOverrides, setSessionColorOverride } from '@/store/session-color'
+<<<<<<< HEAD
 import { $mutedSessionIds, isSessionMuted, toggleSessionMuted } from '@/store/session-mute'
 import { $sessionStates, $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
 import { $sessionTags, addSessionTag, removeSessionTag, sessionTagKey } from '@/store/session-tags'
+=======
+import { $sessionStates, $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
+>>>>>>> origin/main
 import { ackStoredSessionId } from '@/store/session-unread'
 import { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } from '@/store/session-watch'
 import { isolateSessionToWorktree, mergeSessionWorktree, sessionWorktreeInfo } from '@/store/session-worktree'
@@ -134,6 +138,14 @@ export async function renameSessionPreferringRpc(
   title: string,
   profile?: string
 ): Promise<{ title?: string }> {
+<<<<<<< HEAD
+=======
+  const resolvedProfile =
+    (profile ?? '').trim() ||
+    $sessions.get().find(s => sessionMatchesStoredId(s, storedSessionId))?.profile ||
+    undefined
+
+>>>>>>> origin/main
   const runtimeId = resolveRuntimeIdForStored(storedSessionId)
   const gateway = activeGateway()
 
@@ -154,7 +166,7 @@ export async function renameSessionPreferringRpc(
     }
   }
 
-  return renameSession(storedSessionId, title, profile)
+  return renameSession(storedSessionId, title, resolvedProfile)
 }
 
 interface SessionActions {
@@ -1102,7 +1114,10 @@ function RenameSessionDialog({ open, onOpenChange, sessionId, currentTitle, prof
     setSubmitting(true)
 
     try {
-      const result = await renameSessionPreferringRpc(sessionId, next, profile)
+      const targetProfile =
+        (profile ?? '').trim() || $sessions.get().find(s => sessionMatchesStoredId(s, sessionId))?.profile || undefined
+
+      const result = await renameSessionPreferringRpc(sessionId, next, targetProfile)
       const finalTitle = result.title || next || ''
       // One write, every list: patch the main store AND the project surfaces.
       // Bare-id patching only the recents slice left project-scoped rows

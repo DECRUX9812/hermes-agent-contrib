@@ -39,7 +39,11 @@ import {
   setPrimaryGateway,
   touchSecondaryGateways
 } from '@/store/gateway'
+<<<<<<< HEAD
 import { type GatewayReconnectOptions, registerGatewayReconnect } from '@/store/gateway-reconnect'
+=======
+import { type GatewayReconnectOptions, reconnectGateway, registerGatewayReconnect } from '@/store/gateway-reconnect'
+>>>>>>> origin/main
 import {
   $gatewaySwitching,
   endGatewaySwitch,
@@ -450,7 +454,11 @@ export function useGatewayBoot({
     const offConnectionApplied = desktop.onConnectionApplied?.(() => void softSwitch())
 
     const offGatewayReconnect = registerGatewayReconnect(async (options?: GatewayReconnectOptions) => {
+<<<<<<< HEAD
       if (s.cancelled || !s.bootCompleted || $gatewaySwitching.get()) {
+=======
+      if (cancelled || !bootCompleted || $gatewaySwitching.get()) {
+>>>>>>> origin/main
         return
       }
 
@@ -525,7 +533,11 @@ export function useGatewayBoot({
         s.livenessProbeFailures = 0
       }
 
+<<<<<<< HEAD
       s.ownCloseReason = 'manual'
+=======
+      ownCloseReason = 'manual'
+>>>>>>> origin/main
       gateway.close()
       clearReconnectTimer()
       resetReconnectBackoff()

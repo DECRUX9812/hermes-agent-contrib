@@ -101,7 +101,14 @@ export function useAgentTerminal({ active, id, procId }: { active: boolean; id: 
       getSelection: () => term.getSelection(),
       paste: null,
       reload: () => {},
+<<<<<<< HEAD
       selectAll: () => term.selectAll()
+=======
+      selectAll: () => term.selectAll(),
+      // No PTY input, and the mirror's tab stays deliberately closeable, so
+      // the close-tab chord keeps its close meaning here.
+      wordErase: null
+>>>>>>> origin/main
     })
 
     term.attachCustomKeyEventHandler(event => {

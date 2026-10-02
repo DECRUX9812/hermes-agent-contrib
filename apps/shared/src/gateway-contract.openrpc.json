@@ -9969,6 +9969,21 @@
             ],
             "default": null,
             "title": "Desktop"
+          },
+          "desktop_subcommands": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Desktop Subcommands"
           }
         },
         "title": "CommandCatalogMeta",
@@ -31266,6 +31281,18 @@
             ],
             "default": null,
             "title": "Count"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Idempotency Key"
           }
         },
         "required": [
@@ -31375,6 +31402,18 @@
             ],
             "default": null,
             "title": "Cwd"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Idempotency Key"
           }
         },
         "required": [
@@ -31446,6 +31485,18 @@
             ],
             "default": null,
             "title": "Name"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Idempotency Key"
           }
         },
         "required": [
@@ -32337,6 +32388,7 @@
             "title": "Follow Profile Config",
             "type": "boolean"
           },
+<<<<<<< HEAD
           "bot_topic": {
             "default": false,
             "title": "Bot Topic",
@@ -32348,6 +32400,9 @@
             "type": "boolean"
           },
           "team_room_lead": {
+=======
+          "idempotency_key": {
+>>>>>>> origin/main
             "anyOf": [
               {
                 "type": "string"
@@ -32357,7 +32412,11 @@
               }
             ],
             "default": null,
+<<<<<<< HEAD
             "title": "Team Room Lead"
+=======
+            "title": "Idempotency Key"
+>>>>>>> origin/main
           }
         },
         "title": "SessionCreateParams",

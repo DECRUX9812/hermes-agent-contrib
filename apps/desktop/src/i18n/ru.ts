@@ -3062,6 +3062,8 @@ export const ru = defineLocale({
       reveal: 'Показать в папке',
       copyPath: 'Копировать путь',
       removeFromSidebar: 'Скрыть из боковой панели',
+      createdInPreviousContext:
+        'Проект создан в прежнем подключении или профиле. Вернитесь к нему; файл IDEA.md не был записан.',
       createFailed: 'Не удалось создать проект',
       staleBackend:
         'Обновите бэкенд Hermes, чтобы создавать проекты — ваш бэкенд старше этого desktop-приложения (Настройки → Обновления → Бэкенд).',
@@ -4234,6 +4236,7 @@ export const ru = defineLocale({
     }
   },
   rightSidebar: {
+<<<<<<< HEAD
     agentTouched: 'Изменён в этом чате',
     newFile: 'Новый файл',
     newFolder: 'Новая папка',
@@ -4247,6 +4250,8 @@ export const ru = defineLocale({
     filterPlaceholder: 'Фильтр файлов…',
     filterHint: 'Введите часть имени. Поиск по всему проекту, а не только по открытым папкам.',
     filterNoMatch: 'Нет подходящих файлов',
+=======
+>>>>>>> origin/main
     terminalReadOnly: 'Вывод только для чтения',
     terminalReadOnlyHelp:
       'Чтобы ответить на запрос, остановите фоновую команду и запустите её в новом терминале. Он откроет отдельную оболочку и не подключится к этому процессу.',
@@ -4320,6 +4325,7 @@ export const ru = defineLocale({
     editing: 'Изменение',
     unsavedChanges: 'Несохранённые изменения',
     saveFailed: message => `Не удалось сохранить: ${message}`,
+    saveScopeChanged: 'Чтобы сохранить этот черновик, вернитесь к исходному подключению и профилю.',
     diskChangedTitle: 'Файл изменился на диске',
     diskChangedBody:
       'Этот файл изменился с момента открытия. Перезаписать его вашей версией или сбросить правки и перезагрузить?',
@@ -4586,6 +4592,8 @@ export const ru = defineLocale({
       skipped: 'Пропущено',
       noAnswer: 'Нет ответа',
       confirmAndContinueLabel: 'Подтвердить и продолжить',
+      singleSelectHint: 'Выберите один',
+      multiSelectHint: 'Выберите все подходящие',
       questionProgress: (answered, total) => `Ответ дан на ${answered} из ${total}`,
       notDelivered:
         'Этот вопрос не дошёл до приложения, поэтому ответить здесь нельзя. Нажмите «Стоп», чтобы завершить ход, и ответьте в чате.'

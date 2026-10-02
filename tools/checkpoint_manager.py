@@ -1573,10 +1573,15 @@ class CheckpointManager:
                 line.strip() for line in reason.splitlines() if line.strip()
             ) + _uncaptured_note(nested_repos)
 
+<<<<<<< HEAD
         # Build commit (parent = current ref tip, if any).  A user-turn
         # context rides as git trailers in a second paragraph so
         # list_checkpoints can answer "which prompt does this precede?".
         commit_args = ["commit-tree", tree_sha]
+=======
+        # Build commit (parent = current ref tip, if any).
+        commit_args = ["commit-tree", tree_sha, "-m", reason, "--no-gpg-sign"]
+>>>>>>> origin/main
         if has_ref:
             commit_args += ["-p", ref_commit]
         commit_args += ["-m", reason]
