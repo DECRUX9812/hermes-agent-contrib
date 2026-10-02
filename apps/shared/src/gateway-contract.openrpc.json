@@ -32422,7 +32422,6 @@
             "type": "boolean"
           },
           "team_room_lead": {
-          "idempotency_key": {
             "anyOf": [
               {
                 "type": "string"
@@ -32433,7 +32432,6 @@
             ],
             "default": null,
             "title": "Team Room Lead"
-            "title": "Idempotency Key"
           },
           "idempotency_key": {
             "anyOf": [
