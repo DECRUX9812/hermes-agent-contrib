@@ -47,29 +47,41 @@ describe('sortRosterBots', () => {
   })
 
   it('attention-first lifts flagged bots above recent quiet ones', () => {
-    const { roster: sorted } = sortRosterBots(roster, {}, {
-      attentionOf: attentionOf({ flagged: 2, 'quiet-new': 1 }),
-      mode: 'attention'
-    })
+    const { roster: sorted } = sortRosterBots(
+      roster,
+      {},
+      {
+        attentionOf: attentionOf({ flagged: 2, 'quiet-new': 1 }),
+        mode: 'attention'
+      }
+    )
 
     expect(sorted.map(b => b.name)).toEqual(['flagged', 'quiet-new', 'quiet-old'])
   })
 
   it('a pin still outranks attention', () => {
-    const { roster: sorted } = sortRosterBots(roster, { 'quiet-old': { pinned: true } }, {
-      attentionOf: attentionOf({ flagged: 9 }),
-      mode: 'attention'
-    })
+    const { roster: sorted } = sortRosterBots(
+      roster,
+      { 'quiet-old': { pinned: true } },
+      {
+        attentionOf: attentionOf({ flagged: 9 }),
+        mode: 'attention'
+      }
+    )
 
     expect(sorted[0].name).toBe('quiet-old')
     expect(sorted[1].name).toBe('flagged')
   })
 
   it('equal attention falls back to activity', () => {
-    const { roster: sorted } = sortRosterBots(roster, {}, {
-      attentionOf: attentionOf({ flagged: 1, 'quiet-new': 1 }),
-      mode: 'attention'
-    })
+    const { roster: sorted } = sortRosterBots(
+      roster,
+      {},
+      {
+        attentionOf: attentionOf({ flagged: 1, 'quiet-new': 1 }),
+        mode: 'attention'
+      }
+    )
 
     expect(sorted.map(b => b.name)).toEqual(['quiet-new', 'flagged', 'quiet-old'])
   })

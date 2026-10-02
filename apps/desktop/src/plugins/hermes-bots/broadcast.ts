@@ -66,7 +66,10 @@ function messageText(message: NonNullable<BroadcastSnapshot['messages']>[number]
   }
 
   if (Array.isArray(content)) {
-    return content.map(part => (typeof part === 'string' ? part : part?.text || '')).join('').trim()
+    return content
+      .map(part => (typeof part === 'string' ? part : part?.text || ''))
+      .join('')
+      .trim()
   }
 
   return ''
@@ -289,12 +292,7 @@ export function broadcastPrompt(bots: RosterRow[], prompt: string) {
 
         const baselineCount = resumed.message_count ?? resumed.messages?.length ?? 0
 
-        await requestForBot(
-          entry.bot,
-          'prompt.submit',
-          { session_id: runtime, text },
-          { spawnPriority: 'foreground' }
-        )
+        await requestForBot(entry.bot, 'prompt.submit', { session_id: runtime, text }, { spawnPriority: 'foreground' })
 
         setEntry(entry.key, { status: 'working' })
         await collectReply(entry.bot, stored, baselineCount, part => setEntry(entry.key, part))

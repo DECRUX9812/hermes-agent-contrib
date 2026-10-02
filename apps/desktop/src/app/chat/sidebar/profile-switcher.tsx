@@ -28,10 +28,7 @@ import { useI18n } from '@/i18n'
 import { sortConnectionsForDisplay } from '@/lib/connection-display'
 import { triggerHaptic } from '@/lib/haptics'
 import { resolveProfileColor } from '@/lib/profile-color'
-import {
-  reorderCommitHaptic,
-  reorderStepHaptic
-} from '@/lib/reorder'
+import { reorderCommitHaptic, reorderStepHaptic } from '@/lib/reorder'
 import {
   $activeConnectionId,
   $connectionsRegistry,

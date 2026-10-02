@@ -324,7 +324,10 @@ describe('useComposerDraft — attachment scope stays coherent with the committe
 
     // Persisted under the lifecycle's own key — never the shared `__new__`
     // bucket every fresh chat used to inherit from.
-    const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<string, unknown>
+    const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >
 
     expect(Object.keys(persisted)).toContain(key)
     expect(Object.keys(persisted)).not.toContain(NEW_SESSION_DRAFT_KEY)

@@ -16,12 +16,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 
-import {
-  botAttentionCount,
-  botLiveStatus,
-  runningRoutineTitles,
-  sessionOwnerMatchesBot
-} from './live-status'
+import { botAttentionCount, botLiveStatus, runningRoutineTitles, sessionOwnerMatchesBot } from './live-status'
 import type { RosterRow } from './types'
 
 vi.mock('@hermes/plugin-sdk', async () => {
@@ -45,9 +40,9 @@ const bot = (fields: Partial<RosterRow>) => fields as RosterRow
 
 describe('botLiveStatus', () => {
   it('needs-input outranks a live turn and an in-flight routine', () => {
-    expect(
-      botLiveStatus({ dot: 'needs-input', group: true, routines: ['Sweep'], tool: 'terminal' }).kind
-    ).toBe('needs-input')
+    expect(botLiveStatus({ dot: 'needs-input', group: true, routines: ['Sweep'], tool: 'terminal' }).kind).toBe(
+      'needs-input'
+    )
   })
 
   it('reports the turn phase the canonical dot carries, with the tool when known', () => {
@@ -134,7 +129,7 @@ describe('botAttentionCount', () => {
     ).toBe(2)
   })
 
-  it('adds the hidden canonical chat\'s unread dot only when the ladder missed it', () => {
+  it("adds the hidden canonical chat's unread dot only when the ladder missed it", () => {
     const local = bot({ connectionId: 'local', name: 'ops' })
 
     // Owner ladder never sees the hidden chat: the dot counts here.

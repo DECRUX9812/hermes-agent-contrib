@@ -143,11 +143,7 @@ import { markSessionUnread } from '@/store/session-unread-remote'
 import { $archivedSessions, loadArchivedSessions } from '@/store/sidebar-archive'
 import { $sidebarSessionRankIds } from '@/store/sidebar-sort'
 
-import {
-  type AppView,
-  SIDEBAR_LIST_TOP_AREA,
-  type SidebarListTopContribution
-} from '../../routes'
+import { type AppView, SIDEBAR_LIST_TOP_AREA, type SidebarListTopContribution } from '../../routes'
 import type { SidebarNavItem } from '../../types'
 import { type NewSessionSplitHandler, startNewSessionDrag } from '../new-session-drag'
 
@@ -289,7 +285,6 @@ export function ChatSidebar({
   const { pathname } = useLocation()
   const interfaceMode = useStore($interfaceMode)
   const showsAdvancedChrome = useStore($showsAdvancedChrome)
-
 
   // Contributed list-top sections (`sidebar.listTop`) render inside the
   // sessions column, above Pinned — the bots plugin's Agents section folds the

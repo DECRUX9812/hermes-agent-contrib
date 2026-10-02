@@ -128,13 +128,18 @@ export function useSessionActions(options: SessionActionsOptions) {
   ])
 
   const createGuard = useCreateGuard(options)
-  const { startFreshSessionDraft, createBackendSessionForSend, submitTextToNewSession } = useCreateActions(options, { createGuard })
+  const { startFreshSessionDraft, createBackendSessionForSend, submitTextToNewSession } = useCreateActions(options, {
+    createGuard
+  })
   const { openNewSessionTile } = useTileRoutingActions(options)
   const { selectSidebarItem, openSettings, closeSettings } = useOpenActions(options, { startFreshSessionDraft })
   const { resumeSession } = useResumeActions(options, { startFreshSessionDraft })
   const { removeSession } = useGoneActions(options, { startFreshSessionDraft })
   const { archiveSession, unarchiveSession } = useArchiveActions(options, { startFreshSessionDraft })
-  const { forkBranch, branchCurrentSession, branchLoadedSession, branchStoredSession } = useForkActions(options, { createGuard, resumeSession })
+  const { forkBranch, branchCurrentSession, branchLoadedSession, branchStoredSession } = useForkActions(options, {
+    createGuard,
+    resumeSession
+  })
 
   return {
     archiveSession,

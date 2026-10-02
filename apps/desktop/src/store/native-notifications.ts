@@ -7,12 +7,7 @@ import { isSessionNotificationMuted, ownerNotifyModeForSession } from '@/store/s
 
 import { recordFeatureToggle } from './desktop-metrics'
 import { $gateway } from './gateway'
-import {
-  $notificationRules,
-  enqueueDigestEntry,
-  gateNativeByRules,
-  quietHoursActive
-} from './notification-rules'
+import { $notificationRules, enqueueDigestEntry, gateNativeByRules, quietHoursActive } from './notification-rules'
 import { withinNativeNotifyBaseline } from './notify-baseline'
 import {
   answerApproval,

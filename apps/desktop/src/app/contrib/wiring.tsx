@@ -1077,28 +1077,31 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // falls THROUGH to the ordinary session rather than refusing: the main strip
   // carries plain session tabs alongside bot chats, so a "+" there must never
   // be dead just because the sidebar's current selection has nowhere to route.
-  const openNewSessionTab = useCallback((options?: NewSessionTabOptions) => {
-    const workspaceOwnerKey = $workspaceOwnerKey.get()
-    const workspaceNewSessionTarget = $workspaceNewSessionTarget.get()
-    const cwd = options?.cwd?.trim() ? { cwd: options.cwd.trim() } : {}
+  const openNewSessionTab = useCallback(
+    (options?: NewSessionTabOptions) => {
+      const workspaceOwnerKey = $workspaceOwnerKey.get()
+      const workspaceNewSessionTarget = $workspaceNewSessionTarget.get()
+      const cwd = options?.cwd?.trim() ? { cwd: options.cwd.trim() } : {}
 
-    if ($workspaceMode.get() === 'bots' && workspaceNewSessionTarget?.kind === 'route' && workspaceOwnerKey) {
-      void openNewSessionTile('center', {
-        ...cwd,
-        listed: false,
-        route: workspaceNewSessionTarget.route,
-        workspaceScope: {
-          ownerRoute: workspaceNewSessionTarget.route,
-          workspaceMode: 'bots',
-          workspaceOwnerKey
-        }
-      })
+      if ($workspaceMode.get() === 'bots' && workspaceNewSessionTarget?.kind === 'route' && workspaceOwnerKey) {
+        void openNewSessionTile('center', {
+          ...cwd,
+          listed: false,
+          route: workspaceNewSessionTarget.route,
+          workspaceScope: {
+            ownerRoute: workspaceNewSessionTarget.route,
+            workspaceMode: 'bots',
+            workspaceOwnerKey
+          }
+        })
 
-      return
-    }
+        return
+      }
 
-    void openNewSessionTile('center', { ...cwd, listed: false })
-  }, [openNewSessionTile])
+      void openNewSessionTile('center', { ...cwd, listed: false })
+    },
+    [openNewSessionTile]
+  )
 
   // Roadmap #21 — parallel fan-out: one prompt mints a sibling session tile
   // on EVERY explicitly-picked profile/bot. Each create rides the pick's own

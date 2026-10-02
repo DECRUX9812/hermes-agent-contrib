@@ -1,8 +1,4 @@
-import {
-  isGatewayReauthRequired,
-  JsonRpcGatewayError,
-  reconnectBackoffDelayMs
-} from '@hermes/shared'
+import { isGatewayReauthRequired, JsonRpcGatewayError, reconnectBackoffDelayMs } from '@hermes/shared'
 
 import type { HermesConnection } from '@/global'
 import type { HermesGateway } from '@/hermes'
@@ -27,11 +23,7 @@ import {
 import { reconnectGateway } from '@/store/gateway-reconnect'
 import { $gatewaySwitching } from '@/store/gateway-switch'
 import { notify, RECOVERY_ACTIONS } from '@/store/notifications'
-import {
-  $workingSessionIds,
-  reconcileBusyStatesOnReconnect,
-  resetTileRuntimeBindings
-} from '@/store/session-states'
+import { $workingSessionIds, reconcileBusyStatesOnReconnect, resetTileRuntimeBindings } from '@/store/session-states'
 
 import {
   primaryRuntimeConnectionId,

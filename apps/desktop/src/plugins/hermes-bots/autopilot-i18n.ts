@@ -19,8 +19,7 @@ export const AUTOPILOT_EN = {
   },
   review: {
     label: 'Weekly review',
-    instruction:
-      'Review this week: what got done, what slipped and why, and propose my top 3 priorities for next week.'
+    instruction: 'Review this week: what got done, what slipped and why, and propose my top 3 priorities for next week.'
   },
   watch: {
     label: 'Keep watch',

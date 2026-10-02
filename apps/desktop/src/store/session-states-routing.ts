@@ -14,16 +14,11 @@ import {
 } from './session'
 import { secondaryProfileOwnerForEvent } from './session-event-provenance'
 import { assertSessionOwnerResolved } from './session-owner-resolution'
-import {
-  isSessionOwnerRoute,
-  requestForSessionProfile,
-  type SessionOwnerScope
-} from './session-request-router'
+import { isSessionOwnerRoute, requestForSessionProfile, type SessionOwnerScope } from './session-request-router'
 import { $sessionStates } from './session-states-live'
 import { ownerConnectionMode, sessionOwnerByRuntimeId, sessionScopeByRuntimeId } from './session-states-owners'
-import type { SessionTile} from './session-states-tiles-core';
+import type { SessionTile } from './session-states-tiles-core'
 import { $sessionTiles, sessionTileDelegate, sessionTileOwner, toStored } from './session-states-tiles-core'
-
 
 export function recordSessionEventScope(event: { connectionId?: string; profile?: string; session_id?: string }): void {
   if (!event.session_id) {
@@ -56,7 +51,6 @@ export function recordSessionEventScope(event: { connectionId?: string; profile?
 
   syncPreviewScope()
 }
-
 
 /**
  * Sync owner resolution for a session id that may be a RUNTIME or a STORED id.
@@ -108,7 +102,6 @@ export function knownOwnerForSession(sessionId: null | string | undefined): Sess
 // connection pin through the SAME owner ladder as RPC dispatch (#125372).
 setSessionOwnerResolver(knownOwnerForSession)
 
-
 /** The profile whose chat is on screen — the rail's scope.
  *
  *  NOT `$activeGatewayProfile`: a focused tab does not swap the gateway socket,
@@ -123,17 +116,14 @@ function railScopeForActiveSession(): string {
   return normalizeProfileKey(profile || $activeGatewayProfile.get())
 }
 
-
 /** Keep the rail on the chat in view, so switching agents re-homes it. */
 function syncPreviewScope() {
   setPreviewScope(railScopeForActiveSession())
 }
 
-
 $activeSessionId.subscribe(syncPreviewScope)
 
 syncPreviewScope()
-
 
 /**
  * Whether the connection that OWNS `sessionId` is remote — never the ambient
@@ -150,7 +140,6 @@ export function isSessionRemote(sessionId: null | string | undefined): boolean {
 
   return mode === 'remote'
 }
-
 
 /**
  * Dispatch a session-scoped RPC through the OWNER of `sessionId` (tile route →
@@ -184,7 +173,6 @@ export function requestForOwnedSession<T>(
 
   return requestForSessionProfile<T>(owner, ambientRequest, method, params, timeoutMs, signal)
 }
-
 
 /** Resolve a session id THAT MAY BE A RUNTIME ID to the stored id its tile
  *  keys on. Session-scoped RPC params carry the runtime id, while tile owner
@@ -232,7 +220,6 @@ export function storedSessionIdForRuntimeId(sessionId: string): null | string {
   return sessionId === $activeSessionId.get() && selected ? selected : null
 }
 
-
 /** Drop live runtime bindings so every tile re-resumes — used on gateway
  *  reconnect, where a respawned backend re-mints (recycles) runtime ids.
  *  Also invalidates the wiring cache's stored→runtime map: clearing only the
@@ -244,7 +231,6 @@ export interface RuntimeReconnectScope {
   profile?: null | string
 }
 
-
 /** Fallback scope for a restarted connection whose registry identity is
  *  unknown (a legacy remote primary with no connectionId). We cannot name the
  *  dead owner, so instead preserve only Bot runtimes whose owner is provably
@@ -253,7 +239,6 @@ export interface RuntimeReconnectScope {
 export interface UnknownRuntimeReconnectScope {
   liveConnectionIds: ReadonlySet<string>
 }
-
 
 export function resetTileRuntimeBindings(
   reconnectedScope?: null | string | RuntimeReconnectScope | UnknownRuntimeReconnectScope
@@ -316,7 +301,6 @@ export function resetTileRuntimeBindings(
   }
 }
 
-
 /** Reset for a pooled secondary route that reopened while it was NOT the
  *  window's ambient gateway. Only tiles whose exact owner route names that
  *  runtime can hold ids it minted; un-owned tiles and the main thread ride the
@@ -353,7 +337,6 @@ export function resetRouteOwnedTileRuntimeBindings(scope: RuntimeReconnectScope)
     $sessionTiles.set(tiles.map(tile => (ownedStoredIds.has(tile.storedSessionId) ? toStored(tile) : tile)))
   }
 }
-
 
 /** Unbind ONE reclaimed runtime from whichever tile holds it — the targeted
  *  sibling of resetTileRuntimeBindings. The reconnect-time reset can't cover a

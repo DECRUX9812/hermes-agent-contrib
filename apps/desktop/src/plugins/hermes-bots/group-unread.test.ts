@@ -17,12 +17,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
 })
 
 import { $groupChats } from './group-chat'
-import {
-  $groupReadAt,
-  bindGroupReadTracking,
-  groupUnreadCount,
-  markGroupRead
-} from './group-unread'
+import { $groupReadAt, bindGroupReadTracking, groupUnreadCount, markGroupRead } from './group-unread'
 import type { GroupChat, GroupMessage } from './types'
 
 function entry(at: number, kind: 'member' | 'user'): GroupMessage {
@@ -62,7 +57,15 @@ describe('group unread badges', () => {
       expect(groupUnreadCount($groupChats.get().Council!.log, $groupReadAt.get()['id:r1'] || 0)).toBe(0)
 
       // New member traffic badges; the user's own reply does not.
-      $groupChats.set({ Council: room([entry(10, 'member'), entry(20, 'user'), entry(30, 'member'), entry(40, 'user'), entry(50, 'member')]) })
+      $groupChats.set({
+        Council: room([
+          entry(10, 'member'),
+          entry(20, 'user'),
+          entry(30, 'member'),
+          entry(40, 'user'),
+          entry(50, 'member')
+        ])
+      })
       const readAt = $groupReadAt.get()['id:r1'] || 0
       expect(groupUnreadCount($groupChats.get().Council!.log, readAt)).toBe(2)
 

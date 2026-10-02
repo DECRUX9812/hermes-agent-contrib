@@ -725,7 +725,6 @@ export function SourceView({ filePath, language, text }: { filePath?: string; la
   // view and select it, so the gutter's ⌘L / drag work on it straight away.
   const lineRequest = useStore($previewLineRequest)
 
-   
   useEffect(() => {
     if (!lineRequest || !filePath || lineRequest.path !== filePath || totalLines === 0) {
       return
@@ -1273,12 +1272,12 @@ export function LocalFilePreview({
     const autoMode: PreviewViewMode = alwaysViewer
       ? `viewer:${alwaysViewer.id}`
       : hasDiff
-      ? 'diff'
-      : isMarkdown
-        ? 'rendered'
-        : preferredViewer
-          ? `viewer:${preferredViewer.id}`
-          : 'source'
+        ? 'diff'
+        : isMarkdown
+          ? 'rendered'
+          : preferredViewer
+            ? `viewer:${preferredViewer.id}`
+            : 'source'
 
     // The pane hands an HTML file over only once Source was picked; that pick
     // outranks the diff-first default.

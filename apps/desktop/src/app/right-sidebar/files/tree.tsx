@@ -224,7 +224,9 @@ export function ProjectTree({
           onSelect={nodes => {
             const picked = nodes[0]?.data
 
-            $treeSelection.set(picked && !picked.placeholder ? { isDirectory: picked.isDirectory, path: picked.id } : null)
+            $treeSelection.set(
+              picked && !picked.placeholder ? { isDirectory: picked.isDirectory, path: picked.id } : null
+            )
           }}
           onToggle={handleToggle}
           openByDefault={false}

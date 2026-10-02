@@ -87,10 +87,7 @@ import {
   setActiveProfile,
   setShowAllProfiles
 } from '@/store/profile'
-import {
-  exportProfileBundle,
-  importProfileBundle
-} from '@/store/profile-share'
+import { exportProfileBundle, importProfileBundle } from '@/store/profile-share'
 import { $projectTree, projectRootCwd } from '@/store/projects'
 import {
   $activeSessionId,
@@ -142,7 +139,12 @@ const readonlyAtom = <T>(atomLike: ReadableAtom<T>): ReadableAtom<T> => atomLike
 const $pluginProjects = computed($projectTree, tree =>
   tree
     .filter(project => !project.archived && !project.isNoProject)
-    .map(project => ({ color: project.color ?? null, cwd: projectRootCwd(project), id: project.id, label: project.label }))
+    .map(project => ({
+      color: project.color ?? null,
+      cwd: projectRootCwd(project),
+      id: project.id,
+      label: project.label
+    }))
     .filter(project => project.cwd)
 )
 
@@ -812,9 +814,7 @@ export const host = {
      *  otherwise. The single read for "is this chat inside a workspace":
      *  `workspaceMode: 'bots'` chats carry their owner key; working sessions
      *  carry 'sessions' or nothing. */
-    sessionWorkspaceScopes: readonlyAtom<Record<string, PluginSessionWorkspaceScope>>(
-      $sessionWorkspaceScopes
-    ),
+    sessionWorkspaceScopes: readonlyAtom<Record<string, PluginSessionWorkspaceScope>>($sessionWorkspaceScopes),
     /** Projects a chat can be started in (`newChat({ cwd })`). */
     projects: readonlyAtom<PluginProject[]>($pluginProjects),
     /** True in Advanced mode (the developer surface). Simple mode hides the
@@ -1851,11 +1851,13 @@ export const host = {
    *  filesystem the backend sees — for a remote connection that is the remote
    *  host, so pair it with a route-scoped export/import call, not a local fs
    *  read. */
-  pickSavePath: async (options: {
-    defaultPath?: string
-    filters?: Array<{ extensions: string[]; name: string }>
-    title?: string
-  } = {}): Promise<null | string> => window.hermesDesktop?.selectSavePath?.(options) ?? null,
+  pickSavePath: async (
+    options: {
+      defaultPath?: string
+      filters?: Array<{ extensions: string[]; name: string }>
+      title?: string
+    } = {}
+  ): Promise<null | string> => window.hermesDesktop?.selectSavePath?.(options) ?? null,
 
   /** Open-path dialog (files or directories), remote-aware via the remote
    *  picker for directory selections. Returns the chosen paths (empty on

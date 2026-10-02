@@ -1,33 +1,60 @@
-import {useCallback} from 'react'
+import { useCallback } from 'react'
 
-import {deleteSession} from '@/hermes'
-import {useI18n} from '@/i18n'
-import {purgeInFlightTurnJournals} from '@/lib/inflight-turn-journal'
-import {clearClarifyRequest} from '@/store/clarify'
-import {clearQueuedPrompts} from '@/store/composer-queue'
-import {$pinnedSessionIds} from '@/store/layout'
-import {clearNotifications, notifyError} from '@/store/notifications'
-import {prunePreviewTabsForSession} from '@/store/preview'
-import {$profiles} from '@/store/profile'
-import {clearAllPrompts} from '@/store/prompts'
-import {$messages, sessionPinId, setActiveSessionId, setFreshDraftReady, setMessages, setSelectedStoredSessionId} from '@/store/session'
-import {clearSessionControl} from '@/store/session-control'
-import {beginSessionMutation, endSessionMutation, tombstoneSessions, untombstoneSessions} from '@/store/session-removal'
-import {requestForSessionProfile, type SessionOwnerScope} from '@/store/session-request-router'
-import {closeSessionTile, dropSessionState} from '@/store/session-states'
-import {forgetSessionUnread} from '@/store/session-unread'
-import {$archivedSessions} from '@/store/sidebar-archive'
-import {dropTranscriptTailEverywhere} from '@/store/transcript-tail-cache'
+import { deleteSession } from '@/hermes'
+import { useI18n } from '@/i18n'
+import { purgeInFlightTurnJournals } from '@/lib/inflight-turn-journal'
+import { clearClarifyRequest } from '@/store/clarify'
+import { clearQueuedPrompts } from '@/store/composer-queue'
+import { $pinnedSessionIds } from '@/store/layout'
+import { clearNotifications, notifyError } from '@/store/notifications'
+import { prunePreviewTabsForSession } from '@/store/preview'
+import { $profiles } from '@/store/profile'
+import { clearAllPrompts } from '@/store/prompts'
+import {
+  $messages,
+  sessionPinId,
+  setActiveSessionId,
+  setFreshDraftReady,
+  setMessages,
+  setSelectedStoredSessionId
+} from '@/store/session'
+import { clearSessionControl } from '@/store/session-control'
+import {
+  beginSessionMutation,
+  endSessionMutation,
+  tombstoneSessions,
+  untombstoneSessions
+} from '@/store/session-removal'
+import { requestForSessionProfile, type SessionOwnerScope } from '@/store/session-request-router'
+import { closeSessionTile, dropSessionState } from '@/store/session-states'
+import { forgetSessionUnread } from '@/store/session-unread'
+import { $archivedSessions } from '@/store/sidebar-archive'
+import { dropTranscriptTailEverywhere } from '@/store/transcript-tail-cache'
 
-import {sessionRoute} from '../../../routes'
-import type {ClientSessionState} from '../../../types'
+import { sessionRoute } from '../../../routes'
+import type { ClientSessionState } from '../../../types'
 
 import type { SessionActionHandles, SessionActionsOptions } from './options'
 import { applyStoredUsage } from './resume'
-import {dropListedSession, findListedSession, isSessionGoneError, resolveSessionProfile, restoreListedSession, sessionMatchesStoredId} from './utils'
+import {
+  dropListedSession,
+  findListedSession,
+  isSessionGoneError,
+  resolveSessionProfile,
+  restoreListedSession,
+  sessionMatchesStoredId
+} from './utils'
 
 export function useGoneActions(
-  { activeSessionIdRef, navigate, requestGateway, runtimeIdByStoredSessionIdRef, selectedStoredSessionIdRef, sessionStateByRuntimeIdRef, updateSessionState }: SessionActionsOptions,
+  {
+    activeSessionIdRef,
+    navigate,
+    requestGateway,
+    runtimeIdByStoredSessionIdRef,
+    selectedStoredSessionIdRef,
+    sessionStateByRuntimeIdRef,
+    updateSessionState
+  }: SessionActionsOptions,
   { startFreshSessionDraft }: Pick<SessionActionHandles, 'startFreshSessionDraft'>
 ) {
   const { t } = useI18n()
@@ -249,6 +276,6 @@ export function useGoneActions(
   )
 
   return {
-    removeSession,
+    removeSession
   }
 }
