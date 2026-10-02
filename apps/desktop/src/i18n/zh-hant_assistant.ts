@@ -400,6 +400,6 @@ export const zhHantAssistant = {
       sendFailed: '無法傳送 MCP 設定回應',
       reloadFailed: '伺服器已保存，但重新載入 MCP 工具失敗 — 將在下個工作階段載入',
       gatewayDisconnected: 'Hermes 閘道未連線'
-  }
+    }
   }
 } satisfies Pick<TranslationOverrides, 'assistant'>

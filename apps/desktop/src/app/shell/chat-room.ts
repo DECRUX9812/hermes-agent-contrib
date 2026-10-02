@@ -37,7 +37,11 @@ export function chatRoomAction(chat: number, state: ChatRoomState): 'fold' | 'un
     return 'fold'
   }
 
-  if (!state.sidebarOpen && state.foldedWidth !== null && chat - state.foldedWidth >= CHAT_COMFORT_PX + UNFOLD_SLACK_PX) {
+  if (
+    !state.sidebarOpen &&
+    state.foldedWidth !== null &&
+    chat - state.foldedWidth >= CHAT_COMFORT_PX + UNFOLD_SLACK_PX
+  ) {
     return 'unfold'
   }
 

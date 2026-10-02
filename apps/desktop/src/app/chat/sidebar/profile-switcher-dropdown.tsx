@@ -1,7 +1,3 @@
-
-
-
-
 import { useEffect, useState } from 'react'
 
 import type { ProfileScope } from '@/api/client'
@@ -24,10 +20,7 @@ import { getProfileSoul, updateProfileSoul } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { resolveProfileColor } from '@/lib/profile-color'
 import { notify, notifyError } from '@/store/notifications'
-import {
-  normalizeProfileKey,
-  profileLabel
-} from '@/store/profile'
+import { normalizeProfileKey, profileLabel } from '@/store/profile'
 import { runImportProfileFlow } from '@/store/profile-share'
 import type { ProfileInfo } from '@/types/hermes'
 

@@ -289,10 +289,7 @@ export function armTranscriptReplayJump(storedId: string, atMs: number): void {
  *  newer (a transcript that grew past the run, or a truncated tail corpus)
  *  the nearest stamped row answers — a replay that silently lands nowhere is
  *  worse than landing one row off. */
-export function locateTranscriptReplayRow(
-  rows: readonly TranscriptFindRow[],
-  atMs: number
-): TranscriptFindRow | null {
+export function locateTranscriptReplayRow(rows: readonly TranscriptFindRow[], atMs: number): TranscriptFindRow | null {
   let best: TranscriptFindRow | null = null
 
   for (const row of rows) {

@@ -91,7 +91,8 @@ export function BotContextNudge() {
     return null
   }
 
-  const messages = typeof size?.message_count === 'number' && Number.isFinite(size.message_count) ? size.message_count : 0
+  const messages =
+    typeof size?.message_count === 'number' && Number.isFinite(size.message_count) ? size.message_count : 0
 
   return (
     <div

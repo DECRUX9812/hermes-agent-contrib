@@ -38,10 +38,7 @@ describe('per-bot (owner-scoped) notification modes', () => {
   })
 
   it('keeps quiet-hours mode distinct from mute and scopes by connection', () => {
-    $sessions.set([
-      row('local-s', { profile: 'nova' }),
-      row('remote-s', { profile: 'nova', connection_id: 'ssh-1' })
-    ])
+    $sessions.set([row('local-s', { profile: 'nova' }), row('remote-s', { profile: 'nova', connection_id: 'ssh-1' })])
 
     setOwnerNotifyMode('ssh-1::nova', 'quiet')
 

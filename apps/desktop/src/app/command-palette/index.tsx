@@ -706,7 +706,11 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
           label: cc.openFolder,
           run: () => void openFolderAsProject()
         },
-        ...byRecency(filterVisibleProjects(projectTree, dismissedAutoProjects), recentProjectIds, project => project.id).map(project => ({
+        ...byRecency(
+          filterVisibleProjects(projectTree, dismissedAutoProjects),
+          recentProjectIds,
+          project => project.id
+        ).map(project => ({
           comboHint: 'mod+enter',
           icon: codiconIcon(project.icon || (project.isNoProject ? 'home' : 'folder-library')),
           id: `project-${project.id}`,

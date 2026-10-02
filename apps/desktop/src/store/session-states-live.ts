@@ -1,12 +1,7 @@
 import { atom, computed } from 'nanostores'
 
 import type { ClientSessionState } from '@/app/types'
-import {
-  type ChatMessage,
-  chatMessageText,
-  finalizeInterruptedMessages,
-  sealOpenToolParts
-} from '@/lib/chat-messages'
+import { type ChatMessage, chatMessageText, finalizeInterruptedMessages, sealOpenToolParts } from '@/lib/chat-messages'
 import type { ErrorSurface } from '@/lib/error-surface'
 import { stableArray, stableRecord } from '@/lib/stable-array'
 import type { SessionInfo } from '@/types/hermes'
@@ -29,16 +24,21 @@ import {
 } from './session'
 import { runtimeSessionOwner, sessionOwnerByRuntimeId, sessionScopeByRuntimeId } from './session-states-owners'
 import { requestForOwnedSession } from './session-states-routing'
-import { $focusedRuntimeId, $focusedStoredSessionId, $sessionTiles, isSessionInForeground, rekeySessionTile, sessionTileDelegate } from './session-states-tiles-core'
+import {
+  $focusedRuntimeId,
+  $focusedStoredSessionId,
+  $sessionTiles,
+  isSessionInForeground,
+  rekeySessionTile,
+  sessionTileDelegate
+} from './session-states-tiles-core'
 import { markSessionUnreadFinished } from './session-unread'
-
 
 // ---------------------------------------------------------------------------
 // Reactive per-runtime session state (view mirror of the wiring cache).
 // ---------------------------------------------------------------------------
 
 export const $sessionStates = atom<Record<string, ClientSessionState>>({})
-
 
 // A session's reported skill set by STORED id — the zone-strip skill chip's
 // lookup. `state.skills` is already reference-stable per session (the ingest
@@ -63,13 +63,11 @@ export const $skillsByStoredId = computed([$sessionStates, $sessions], (states, 
   return (skillsByStoredId = stableRecord(skillsByStoredId, next))
 })
 
-
 // Stored session ids whose authoritative state is still busy, but whose
 // runtime has produced no state publish for the watchdog window. Silence is
 // not completion: long tool calls can legitimately stay quiet, so this is a
 // presentation hint and never mutates the backend-derived busy state.
 export const $stalledSessionIds = atom<string[]>([])
-
 
 export function setSessionStalled(storedSessionId: string | null | undefined, stalled: boolean) {
   if (!storedSessionId) {
@@ -85,7 +83,6 @@ export function setSessionStalled(storedSessionId: string | null | undefined, st
     $stalledSessionIds.set(current.filter(id => id !== storedSessionId))
   }
 }
-
 
 // --- Watchdog: marks busy sessions quiet after a long stream silence -------
 // Tuned against what this app actually does rather than a round number: a
@@ -158,7 +155,10 @@ interface LiveTurnStatusResponse {
 /** What one `session.active_list` snapshot says about `runtimeId`'s turn. A
  *  runtime missing from a well-formed list has been reaped: its turn is over.
  *  `starting` is an agent build for a turn the backend accepted. */
-export function liveTurnVerdict(response: LiveTurnStatusResponse | null | undefined, runtimeId: string): LiveTurnVerdict {
+export function liveTurnVerdict(
+  response: LiveTurnStatusResponse | null | undefined,
+  runtimeId: string
+): LiveTurnVerdict {
   if (!Array.isArray(response?.sessions)) {
     return 'unknown'
   }
@@ -371,9 +371,7 @@ export function noteSessionEvent(runtimeId: string) {
   )
 }
 
-
 const sessionWatchdogTimers = new Map<string, ReturnType<typeof setTimeout>>()
-
 
 function armWatchdog(runtimeId: string) {
   const existing = sessionWatchdogTimers.get(runtimeId)
@@ -395,7 +393,6 @@ function armWatchdog(runtimeId: string) {
   )
 }
 
-
 function clearWatchdog(runtimeId: string) {
   const t = sessionWatchdogTimers.get(runtimeId)
 
@@ -405,22 +402,18 @@ function clearWatchdog(runtimeId: string) {
   }
 }
 
-
 // --- Settle grace: keeps a just-finished session in the sidebar merge set ---
 const SESSION_SETTLE_GRACE_MS = 30 * 1000
 
 const settledExpiry = new Map<string, number>()
 
-
 function markSettled(storedId: string) {
   settledExpiry.set(storedId, Date.now() + SESSION_SETTLE_GRACE_MS)
 }
 
-
 function clearSettled(storedId: string) {
   settledExpiry.delete(storedId)
 }
-
 
 /** Stored ids whose turn ended within the grace window. Prunes expired. */
 export function getRecentlySettledSessionIds(now: number = Date.now()): string[] {
@@ -436,7 +429,6 @@ export function getRecentlySettledSessionIds(now: number = Date.now()): string[]
 
   return live
 }
-
 
 // --- Transition detection (called automatically from publishSessionState) ---
 function handleTransition(previous: ClientSessionState | null, next: ClientSessionState, runtimeId: string) {
@@ -523,7 +515,6 @@ function handleTransition(previous: ClientSessionState | null, next: ClientSessi
   }
 }
 
-
 /** Mark a completed turn unread unless the user is already looking at it. */
 function lightUnreadCompletion(storedId: string, runtimeId?: string) {
   // FOCUSED, not selected: a session finishing in the tile the user is
@@ -558,7 +549,6 @@ function lightUnreadCompletion(storedId: string, runtimeId?: string) {
   }
 }
 
-
 /** Stored ids whose busy claim a PRIMARY reconnect reconcile retired without
  *  any proof the turn ended — mapped to their runtime id so a later confirm
  *  can still consult the socket-proven owner (the unread marker's profile
@@ -568,7 +558,6 @@ function lightUnreadCompletion(storedId: string, runtimeId?: string) {
 const unconfirmedReconnectSettles = new Map<string, string>()
 
 let deferringReconcileUnread = false
-
 
 /** A fresh authoritative snapshot arrived: every parked completion whose
  *  session it does not report as still working is over and earns its unread
@@ -586,7 +575,6 @@ export function confirmReconnectSettlesExcept(workingStoredIds: ReadonlySet<stri
   }
 }
 
-
 /** Is any surface on THIS window still holding the runtime — the primary view
  *  or an open tile? (A tile mid-resume references by stored id only; its
  *  runtime binding is patched in after `resumeTile` returns.) */
@@ -600,7 +588,6 @@ function runtimeReferenced(runtimeId: string, storedSessionId: null | string): b
     .some(t => t.runtimeId === runtimeId || (storedSessionId !== null && t.storedSessionId === storedSessionId))
 }
 
-
 /** A state no surface needs anymore: its turn is over (not busy, not waiting
  *  on the user) and neither the primary view nor any tile holds the runtime.
  *  `needsInput` states stay — the sidebar's attention dot reads them. */
@@ -609,7 +596,6 @@ export function evictable(runtimeId: string, state: ClientSessionState): boolean
     !state.busy && !state.needsInput && !state.awaitingResponse && !runtimeReferenced(runtimeId, state.storedSessionId)
   )
 }
-
 
 /** Publish one session's state. Automatically fires transition side-effects
  *  (watchdog arm/disarm, settle grace, unread marker, compression id rotation)
@@ -651,7 +637,6 @@ export function publishSessionState(runtimeId: string, state: ClientSessionState
   handleTransition(prev, state, runtimeId)
 }
 
-
 /** Keep the cheap status projection for a cold session while releasing its
  * transcript. Unread completion is stored separately, so it survives too. */
 export function releaseSessionTranscript(runtimeId: string, state?: ClientSessionState) {
@@ -676,7 +661,6 @@ export function releaseSessionTranscript(runtimeId: string, state?: ClientSessio
   $sessionStates.set({ ...current, [runtimeId]: lightweight })
 }
 
-
 export function dropSessionState(runtimeId: string) {
   // Disarm the watchdog — a dropped runtime must not fire a stale clear later.
   // Settle-grace entries are keyed by stored id and self-expire; leave them so
@@ -698,7 +682,6 @@ export function dropSessionState(runtimeId: string) {
   const { [runtimeId]: _dropped, ...rest } = current
   $sessionStates.set(rest)
 }
-
 
 /** Drop every cached session state — used on soft gateway-mode apply so the
  *  computed working / attention sets drain to empty alongside the session list.
@@ -726,7 +709,6 @@ export function clearAllSessionStates() {
   $stalledSessionIds.set([])
   $sessionStates.set({})
 }
-
 
 /** Downgrade cached busy/awaiting states after a gateway reconnect.
  *
@@ -823,7 +805,6 @@ export function reconcileBusyStatesOnReconnect(scope?: string) {
   }
 }
 
-
 // Derived per-session status sets — pure projections of `$sessionStates` (which
 // holds `busy`/`needsInput` per runtime), keeping the data flow one-directional:
 // gateway event → cache → $sessionStates → computed views.
@@ -863,7 +844,6 @@ const storedIds = (
   return [...ids]
 }
 
-
 let workingIds: readonly string[] = []
 
 export const $workingSessionIds = computed(
@@ -875,7 +855,6 @@ export const $workingSessionIds = computed(
     ))
 )
 
-
 let attentionIds: readonly string[] = []
 
 export const $attentionSessionIds = computed(
@@ -886,7 +865,6 @@ export const $attentionSessionIds = computed(
       storedIds(states, sessions, s => s.needsInput)
     ))
 )
-
 
 // An open session nothing has ever been sent to — the ⌘T tab whose backend
 // session exists but is unlisted, or a tile still waiting on its first send.
@@ -921,12 +899,10 @@ export const $draftSessionIds = computed([$sessionStates, $sessions], (states, s
   return (draftIds = stableArray(draftIds, storedIds(states, sessions, unsent)))
 })
 
-
 /** The focused session's state slice (undefined while unresolved/unbound). */
 export const $focusedSessionState = computed([$focusedRuntimeId, $sessionStates], (runtimeId, states) =>
   runtimeId ? states[runtimeId] : undefined
 )
-
 
 /** The workspace CWD of the currently focused session (the focused tile's cwd,
  *  else the primary session's confirmed workspace cwd, with fallback to historical session cwd). */

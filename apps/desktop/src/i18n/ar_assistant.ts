@@ -489,6 +489,6 @@ export const arAssistant = {
       sendFailed: 'تعذّر إرسال رد إعداد MCP',
       reloadFailed: 'حُفظ الخادم، لكن فشلت إعادة تحميل أدوات MCP — تُحمَّل الجلسة المقبلة',
       gatewayDisconnected: 'Hermes غير متصل الآن. أعد الاتصال ثم أرسلها مجددًا.'
-  }
+    }
   }
 } satisfies Pick<TranslationOverrides, 'assistant'>

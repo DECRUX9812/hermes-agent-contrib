@@ -84,14 +84,18 @@ export function contextNudgeEligible(size: CanonicalChatSize | null | undefined)
   }
 
   const tokens = typeof size.input_tokens === 'number' && Number.isFinite(size.input_tokens) ? size.input_tokens : 0
-  const messages = typeof size.message_count === 'number' && Number.isFinite(size.message_count) ? size.message_count : 0
+  const messages =
+    typeof size.message_count === 'number' && Number.isFinite(size.message_count) ? size.message_count : 0
 
   return tokens >= NUDGE_MIN_INPUT_TOKENS || messages >= NUDGE_MIN_MESSAGES
 }
 
 /** Should the card render for this bot right now? Not when it was dismissed
  *  at a size the transcript has not yet grown meaningfully past. */
-export function contextNudgeSuppressed(dismissedAt: number | null | undefined, size: CanonicalChatSize | null | undefined): boolean {
+export function contextNudgeSuppressed(
+  dismissedAt: number | null | undefined,
+  size: CanonicalChatSize | null | undefined
+): boolean {
   if (dismissedAt == null) {
     return false
   }
