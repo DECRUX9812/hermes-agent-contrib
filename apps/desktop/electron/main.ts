@@ -15403,11 +15403,6 @@ function createWindow() {
         }
       }
 
-      // #38216: clear the mid-boot marker only after a window is actually usable.
-      // Keep sticky `fallback` when we launched with --no-sandbox so the next
-      // Start Menu click does not re-enter the GPU FATAL crash loop. The marker
-      // records the app version so the next update re-probes the sandbox.
-      if (IS_WINDOWS) {
       // #38216/#121954: clear the mid-boot marker only after a window is
       // actually usable. Keep sticky `fallback` when we launched with
       // --no-sandbox so the next launcher click does not re-enter the GPU
