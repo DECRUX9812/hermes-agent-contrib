@@ -85,9 +85,9 @@ export function FeedTicker({ store }: { store: SimStore }) {
   )
 }
 
-export function Controls({ scene, autoAnswer, setAutoAnswer }: { scene: StudioScene; autoAnswer: boolean; setAutoAnswer: (v: boolean) => void }) {
-  const [speed, setSpeed] = useState(1.6)
-  const [time, setTime] = useState<'day' | 'golden' | 'night'>('golden')
+export function Controls({ scene, autoAnswer, setAutoAnswer, initialTime = 'golden', initialSpeed = 1.6 }: { scene: StudioScene; autoAnswer: boolean; setAutoAnswer: (v: boolean) => void; initialTime?: 'day' | 'golden' | 'night'; initialSpeed?: number }) {
+  const [speed, setSpeed] = useState(initialSpeed)
+  const [time, setTime] = useState<'day' | 'golden' | 'night'>(initialTime)
 
   return (
     <div className="ac-controls">

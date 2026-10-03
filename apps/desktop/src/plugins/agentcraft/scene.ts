@@ -41,7 +41,7 @@ export const CAMERA_PRESETS: CameraPreset[] = [
   { name: 'exterior_hero', pos: [18, 72.5, 46], look: [-3, 75.5, 10] },
   { name: 'entrance_atrium', pos: [-1.5, FEET + 2.2, AZ + 6.8], look: [2, FEET + 3.8, AZ - 2] },
   { name: 'wide_interior', pos: [-5, FEET + 1.7, -4.6], look: [-18, FEET + 1.0, -2.8] },
-  { name: 'task_wall', pos: [AX - 4.6, FEET + 3.0, AZ + 0.5], look: [AX - 7.9, FEET + 3.0, AZ + 0.5] },
+  { name: 'task_wall', pos: [AX - 0.8, FEET + 3.2, AZ + 0.5], look: [AX - 7.9, FEET + 2.4, AZ + 0.5] },
   { name: 'decision_podium', pos: [AX + 3.0, FEET + 1.5, AZ + 2.3], look: [AX + 6.8, FEET + 1.9, AZ - 0.8] },
   { name: 'library', pos: [-14, FEET + 2.8, 4.0], look: [-21.5, FEET + 1.2, -1.5] },
   { name: 'console', pos: [AX + 2.5, FEET + 2.2, AZ + 6.5], look: [AX + 7.5, FEET + 1.0, AZ + 2.5] },

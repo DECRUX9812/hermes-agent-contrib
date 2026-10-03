@@ -170,6 +170,7 @@ export class SimDirector {
   private nextTaskId = 0
   /** task key → fake worktree file map (starts as a copy of the repo) */
   private worktrees = new Map<string, Record<string, string>>()
+  private dirtyFiles = new Map<string, Set<string>>()
   private waiters: Waiter[] = []
   /** speed divisor: sleep(ms / speed) */
   speed = 1
@@ -297,6 +298,10 @@ export class SimDirector {
       const r = applyPatch(files, p)
 
       if (r.changed) {
+        let dirty = this.dirtyFiles.get(taskKey)
+
+        if (!dirty) {dirty = new Set(); this.dirtyFiles.set(taskKey, dirty)}
+        dirty.add(p.file)
         this.log(agentId, 'diff', miniDiff(r.before, r.after))
       } else {
         this.log(agentId, 'text', `(no change) ${p.file}`)
@@ -455,7 +460,13 @@ export class SimDirector {
   }
 
   awaitDecision(key: string): Promise<{ status: DecisionStatus; answer?: { option?: string; text?: string } }> {
-    const d = this.st.decisions.get(key)!
+    const d = this.st.decisions.get(key)
+
+    if (!d) {
+      console.error(`sim: decision '${key}' was never opened`)
+
+      return Promise.resolve({ status: 'answered' as DecisionStatus, answer: {} })
+    }
 
     return new Promise(resolve => {
       const done = () => resolve({ status: d.status, answer: d.answer })
@@ -507,6 +518,14 @@ export class SimDirector {
     this.st.setLamp('merge', Lamp.OFF)
 
     if (opt === 'Merge') {
+      // land the worktree's changed files on main so later tasks spawn from
+      // merged content — never clobber main with files the task didn't touch
+      const merged = this.worktrees.get(taskKey)
+
+      if (merged) {
+        for (const f of this.dirtyFiles.get(taskKey) ?? []) {REPO_FILES[f] = merged[f]}
+      }
+
       this.setTask(taskKey, 'done', { summary: `merged by ${USER}` })
       this.log(agentId, 'result', `${t.id} merged into main`)
       this.st.pushFeed('merge', `${t.id} merged`, agentId)

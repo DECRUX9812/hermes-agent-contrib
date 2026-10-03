@@ -57,9 +57,10 @@ export function StudioPage() {
         const follow = params.get('follow')
 
         if (follow) {s.followAgent(follow)}
-        const aa = params.get('auto')
+        const aa = params.get('auto') === '1'
 
-        if (aa === '1') {s.setAutoAnswer(true)}
+        if (aa) {s.setAutoAnswer(true)}
+        setAutoAnswer(aa)
         const spd = Number(params.get('speed'))
 
         if (spd > 0) {s.setSpeed(spd)}
@@ -102,7 +103,17 @@ export function StudioPage() {
             <GoalChip onClick={() => sceneRef.current?.flyTo('entrance_atrium')} store={store} />
           </div>
           <div className="ac-top-right">
-            <Controls autoAnswer={autoAnswer} scene={sceneRef.current} setAutoAnswer={setAutoAnswer} />
+            <Controls
+              autoAnswer={autoAnswer}
+              initialSpeed={Number(new URLSearchParams(location.search).get('speed')) || 1.6}
+              initialTime={(() => {
+                const t = new URLSearchParams(location.search).get('time')
+
+                return t === 'day' || t === 'night' ? t : 'golden'
+              })()}
+              scene={sceneRef.current}
+              setAutoAnswer={setAutoAnswer}
+            />
           </div>
           <div className="ac-right">
             <AgentChips
