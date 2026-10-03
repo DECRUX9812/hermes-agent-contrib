@@ -1173,8 +1173,10 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
       {/* Plugin-provided appearance controls — the sanctioned seam for a
           plugin that used to inject nodes into this page. Top-level page only:
           a deep-link subpage shows one built-in section, and a plugin card is
-          not that section. */}
-      {subpage === undefined && <AppearanceExtraSlot />}
+          not that section. The overview render (subpage === undefined) is
+          unreachable while every view resolves a subpage, so extras also mount
+          on 'general' — the landing subpage the Appearance nav opens. */}
+      {(subpage === undefined || subpage === 'general') && <AppearanceExtraSlot />}
     </SettingsContent>
   )
 }

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { onPersistenceEvent } from '@/lib/storage'
 import { host } from '@/sdk'
-import { $backdrop, setBackdrop } from '@/store/backdrop'
+import { $backdrop, $backdropImage, $backdropScene, $backdropStrength, setBackdrop, setBackdropImage, setBackdropStrength } from '@/store/backdrop'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
 import { $reasoningCollapsedByDefault, setReasoningCollapsedByDefault } from '@/store/reasoning-disclosure'
@@ -13,6 +13,8 @@ const resetSettings = () => {
   setSessionListDensity('compact')
   setTabStripDefault('auto')
   setBackdrop(false)
+  setBackdropStrength('balanced')
+  setBackdropImage(null)
   setIntroSplash(true)
   setReasoningCollapsedByDefault(false)
   setComposerPopoutGesturesEnabled(true)
@@ -32,6 +34,8 @@ describe('host.settings', () => {
     host.settings.set('intro-splash.v1', false)
     host.settings.set('reasoning.collapsedByDefault', true)
     host.settings.set('composerPopout.gesturesEnabled', false)
+    host.settings.set('backdrop.strength', 'vivid')
+    host.settings.set('backdrop.scene', 'aurora')
 
     expect(host.settings.get('sessionListDensity')).toBe('detailed')
     expect(host.settings.get('tabStripDefault')).toBe('always')
@@ -39,10 +43,14 @@ describe('host.settings', () => {
     expect(host.settings.get('intro-splash.v1')).toBe(false)
     expect(host.settings.get('reasoning.collapsedByDefault')).toBe(true)
     expect(host.settings.get('composerPopout.gesturesEnabled')).toBe(false)
+    expect(host.settings.get('backdrop.strength')).toBe('vivid')
+    expect(host.settings.get('backdrop.scene')).toBe('aurora')
 
     expect($sessionListDensity.get()).toBe('detailed')
     expect($tabStripDefault.get()).toBe('always')
     expect($backdrop.get()).toBe(true)
+    expect($backdropStrength.get()).toBe('vivid')
+    expect($backdropScene.get()).toBe('aurora')
     expect($introSplash.get()).toBe(false)
     expect($reasoningCollapsedByDefault.get()).toBe(true)
     expect($composerPopoutGesturesEnabled.get()).toBe(false)
@@ -110,7 +118,29 @@ describe('host.settings', () => {
     expect(() => (host.settings.set as (key: string, value: unknown) => void)('backdrop.v1', 'on')).toThrow(
       'Invalid value for desktop setting: backdrop.v1'
     )
+    expect(() =>
+      (host.settings.set as (key: string, value: unknown) => void)('backdrop.scene', 'nebula')
+    ).toThrow('Invalid value for desktop setting: backdrop.scene')
+    expect(() =>
+      (host.settings.set as (key: string, value: unknown) => void)('backdrop.strength', 'loud')
+    ).toThrow('Invalid value for desktop setting: backdrop.strength')
+    expect(() => (host.settings.set as (key: string, value: unknown) => void)('backdrop.image', 42)).toThrow(
+      'Invalid value for desktop setting: backdrop.image'
+    )
 
     expect($backdrop.get()).toBe(false)
+  })
+
+  it('writes backdrop.image like the native upload tile: image switches the scene to custom, null clears it', () => {
+    host.settings.set('backdrop.image', 'https://example.com/wall.jpg')
+
+    expect($backdropImage.get()).toBe('https://example.com/wall.jpg')
+    expect($backdropScene.get()).toBe('custom')
+    expect($backdrop.get()).toBe(true)
+
+    host.settings.set('backdrop.image', null)
+
+    expect($backdropImage.get()).toBeNull()
+    expect($backdropScene.get()).toBe('off')
   })
 })
