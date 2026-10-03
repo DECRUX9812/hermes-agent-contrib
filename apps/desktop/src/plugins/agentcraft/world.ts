@@ -49,7 +49,7 @@ export const TIME_PRESETS: Record<string, TimePreset> = {
     lampColor: 0xffcf8e,
     sunDir: [-0.6, 0.35, 0.55],
     sunColor: 0xffd9a0,
-    ambient: 0.16,
+    ambient: 0.26,
     stars: false,
   },
   night: {
@@ -91,6 +91,7 @@ uniform float uFogNear;
 uniform float uFogFar;
 uniform float uAlpha;      // translucency (1 for opaque layers)
 uniform float uCut;        // alpha test (0.5 for cutout, else 0)
+uniform float uAmbient;    // ambient light floor for the preset
 varying vec2 vUv;
 varying vec3 vLight;       // r=sky g=block b=ao*faceShade
 varying float vFogDepth;
@@ -100,6 +101,7 @@ void main() {
   float skyL = vLight.r * uSky;
   float blkL = vLight.g;
   vec3 illum = uSkyTint * skyL + uLampTint * blkL * 1.35 * (1.0 - min(skyL, 0.85) * 0.55);
+  illum += vec3(uAmbient);
   illum = clamp(illum, vec3(0.055), vec3(1.05));
   vec3 col = tex.rgb * illum * vLight.b;
   float f = smoothstep(uFogNear, uFogFar, vFogDepth);
@@ -127,6 +129,8 @@ export interface WorldBuild {
   plan: Plan
   group: THREE.Group
   atlas: Atlas
+  /** drifting cloud texture — advance offset each frame */
+  cloudTex: THREE.Texture | null
   lampCells: Map<number, { x: number; y: number; z: number; binding: string }>
   lampGroup: THREE.Group
   lampMeshes: Map<number, THREE.Mesh[]>
@@ -159,6 +163,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
   const light = computeLight(plan)
   const atlas = await buildAtlas()
   const atlasTex = new THREE.CanvasTexture(atlas.canvas)
+  atlasTex.flipY = false // uv rects are stored top-origin; CanvasTexture defaults to flipY
   atlasTex.magFilter = THREE.NearestFilter
   atlasTex.minFilter = THREE.NearestFilter
   atlasTex.generateMipmaps = false
@@ -177,10 +182,11 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
     uFogFar: { value: 160 },
     uAlpha: { value: 1 },
     uCut: { value: 0 },
+    uAmbient: { value: 0.16 },
   }
 
   const makeMat = (alpha: number, cut: number, emissive = false) => {
-    const u = { ...uniforms, uMap: uniforms.uMap, uSky: uniforms.uSky, uSkyTint: uniforms.uSkyTint, uLampTint: uniforms.uLampTint, uFogColor: uniforms.uFogColor, uFogNear: uniforms.uFogNear, uFogFar: uniforms.uFogFar }
+    const u = { ...uniforms, uMap: uniforms.uMap, uSky: uniforms.uSky, uSkyTint: uniforms.uSkyTint, uLampTint: uniforms.uLampTint, uFogColor: uniforms.uFogColor, uFogNear: uniforms.uFogNear, uFogFar: uniforms.uFogFar, uAmbient: uniforms.uAmbient }
     u.uAlpha = { value: alpha }
     u.uCut = { value: cut }
 
@@ -325,8 +331,51 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
   skyMesh.frustumCulled = false
   group.add(skyMesh)
 
+  // ---------------------------------------------- blocky drifting clouds
+  const cloudCanvas = document.createElement('canvas')
+  cloudCanvas.width = 128
+  cloudCanvas.height = 128
+  const cctx = cloudCanvas.getContext('2d')!
+
+  for (let i = 0; i < 64; i++) {
+    const w = 10 + Math.floor(Math.random() * 5) * 10
+    const h = 6 + Math.floor(Math.random() * 4) * 6
+    const x = Math.floor(Math.random() * 128)
+    const y = Math.floor(Math.random() * 128)
+    const a = 0.65 + Math.random() * 0.3
+    cctx.fillStyle = `rgba(255,255,255,${a.toFixed(2)})`
+
+    // draw wrapped so the cloud field tiles seamlessly
+    for (const ox of [-128, 0, 128]) {
+      for (const oy of [-128, 0, 128]) {
+        cctx.fillRect(x + ox, y + oy, w, h)
+      }
+    }
+  }
+
+  const cloudTex = new THREE.CanvasTexture(cloudCanvas)
+  cloudTex.wrapS = THREE.RepeatWrapping
+  cloudTex.wrapT = THREE.RepeatWrapping
+  cloudTex.repeat.set(3, 3)
+  cloudTex.magFilter = THREE.NearestFilter
+
+  const cloudMat = new THREE.MeshBasicMaterial({
+    map: cloudTex,
+    transparent: true,
+    depthWrite: false,
+    fog: false,
+    side: THREE.DoubleSide,
+  })
+
+  const cloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(560, 560), cloudMat)
+  cloudMesh.rotation.x = -Math.PI / 2
+  cloudMesh.position.set(0, 106, 15)
+  cloudMesh.frustumCulled = false
+  group.add(cloudMesh)
+
   const applyTime = (preset: TimePreset) => {
     uniforms.uSky.value = preset.skyLight
+    uniforms.uAmbient.value = preset.ambient
     uniforms.uSkyTint.value.setHex(preset.name === 'night' ? 0x8fa2c8 : preset.name === 'golden' ? 0xfff0d0 : 0xffffff)
     uniforms.uLampTint.value.setHex(preset.lampColor)
     uniforms.uFogColor.value.setHex(preset.fog)
@@ -335,6 +384,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
     skyMat.uniforms.uTop.value.setHex(preset.skyTop)
     skyMat.uniforms.uBottom.value.setHex(preset.skyBottom)
     skyMat.uniforms.uStars.value = preset.stars ? 1 : 0
+    cloudMat.color.setHex(preset.name === 'night' ? 0x2c3c5e : preset.name === 'golden' ? 0xffe8c8 : 0xffffff)
   }
 
   applyTime(TIME_PRESETS.golden)
@@ -360,6 +410,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
     plan,
     group,
     atlas,
+    cloudTex,
     lampCells: mesh.lamps,
     lampGroup,
     lampMeshes,
@@ -377,6 +428,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
           else {m?.dispose()}
         }
       })
+      cloudTex?.dispose()
       atlasTex.dispose()
     },
   }

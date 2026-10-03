@@ -50,7 +50,16 @@ export function StudioPage() {
         const params = new URLSearchParams(location.search)
         const cam = params.get('cam')
 
-        if (cam) {s.flyTo(cam)}
+        if (cam) {
+          const raw = cam.split(',').map(Number)
+
+          if (raw.length === 6 && raw.every(n => Number.isFinite(n))) {
+            s.flyToPos([raw[0], raw[1], raw[2]], [raw[3], raw[4], raw[5]])
+          } else {
+            s.flyTo(cam)
+          }
+        }
+
         const t = params.get('time')
 
         if (t === 'day' || t === 'golden' || t === 'night') {s.setTime(t)}

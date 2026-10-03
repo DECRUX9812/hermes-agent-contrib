@@ -1074,11 +1074,18 @@ export const AC_EXTRA = [
 ]
 
 const blockUrls: Record<string, string> = import.meta.glob('./assets/block/*.png', { eager: true, query: '?url', import: 'default' })
+const vanillaUrls: Record<string, string> = import.meta.glob('./assets/vanilla/*.png', { eager: true, query: '?url', import: 'default' })
 
 function acUrl(name: string): string | null {
   const key = `./assets/block/${name}.png`
 
   return blockUrls[key] ?? null
+}
+
+function vanillaUrl(name: string): string | null {
+  const key = `./assets/vanilla/${name}.png`
+
+  return vanillaUrls[key] ?? null
 }
 
 export interface Atlas {
@@ -1108,11 +1115,9 @@ export async function buildAtlas(): Promise<Atlas> {
     const ty = Math.floor(i / cols) * TILE
     uv.set(key, [tx / canvas.width, ty / canvas.height, (tx + TILE) / canvas.width, (ty + TILE) / canvas.height])
 
-    if (key.startsWith('ac:')) {
-      const name = key.slice(3)
-      const url = acUrl(name)
+    const url = key.startsWith('ac:') ? acUrl(key.slice(3)) : vanillaUrl(key)
 
-      if (!url) {return}
+    if (url) {
       jobs.push(
         new Promise<void>(resolve => {
           const img = new Image()

@@ -38,7 +38,7 @@ export interface CameraPreset {
 
 /** Fallback list for the controls before the world loads. */
 export const CAMERA_PRESETS: CameraPreset[] = [
-  { name: 'exterior_hero', pos: [18, 72.5, 46], look: [-3, 75.5, 10] },
+  { name: 'exterior_hero', pos: [-50, 88, 34], look: [-4, 76, -2] },
   { name: 'entrance_atrium', pos: [-1.5, FEET + 2.2, AZ + 6.8], look: [2, FEET + 3.8, AZ - 2] },
   { name: 'wide_interior', pos: [-5, FEET + 1.7, -4.6], look: [-18, FEET + 1.0, -2.8] },
   { name: 'task_wall', pos: [AX - 0.8, FEET + 3.2, AZ + 0.5], look: [AX - 7.9, FEET + 2.4, AZ + 0.5] },
@@ -61,6 +61,7 @@ export interface StudioScene {
   setAutoAnswer(on: boolean): void
   setTime(name: 'day' | 'golden' | 'night'): void
   flyTo(preset: string): void
+  flyToPos(pos: [number, number, number], look: [number, number, number]): void
   followAgent(id: string | null): void
   openDecisionFocus(): void
   /** pause the render loop when hidden */
@@ -237,6 +238,13 @@ export async function createStudio(opts: {
     camTargetLook.set(...p.look)
   }
 
+  const flyToPos = (pos: [number, number, number], look: [number, number, number]) => {
+    autoCycle = false
+    followId = null
+    camTargetPos.set(...pos)
+    camTargetLook.set(...look)
+  }
+
   const followAgent = (id: string | null) => {
     followId = id
     autoCycle = false
@@ -344,6 +352,11 @@ export async function createStudio(opts: {
     actors.update(t, dt)
     screens.flush()
 
+    if (world.cloudTex) {
+      world.cloudTex.offset.x = (t * 0.004) % 1
+      world.cloudTex.offset.y = (t * 0.0013) % 1
+    }
+
     // hologram bob + face camera
     if (holoMesh) {
       holoMesh.position.y = world.screens.hologram.y + Math.sin(t * 1.3) * 0.15
@@ -424,6 +437,7 @@ export async function createStudio(opts: {
       world.applyTime(currentPreset)
     },
     flyTo,
+    flyToPos,
     followAgent,
     openDecisionFocus() {
       flyTo('decision_podium')
