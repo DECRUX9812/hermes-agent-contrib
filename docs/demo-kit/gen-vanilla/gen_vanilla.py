@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import random
 import sys
+import tempfile
 from pathlib import Path
 
 try:
@@ -24,7 +25,7 @@ except ImportError:  # pragma: no cover
     raise SystemExit('pip install pillow')
 
 OUT = Path(__file__).resolve().parents[3] / 'apps/desktop/src/plugins/agentcraft/assets/vanilla'
-REF = Path('/tmp/mc/block')
+REF = Path(os.environ.get('GEN_VANILLA_REF', Path(tempfile.gettempdir()) / 'mc' / 'block'))
 
 
 class Img:
@@ -993,8 +994,10 @@ def sheet():
     for i, p in enumerate(imgs):
         im = Image.open(p).convert('RGBA').resize((32, 32), Image.NEAREST)
         s.paste(im, ((i % cols) * 34 + 1, (i // cols) * 34 + 1), im)
-    s.save('/tmp/mc/sheet.png')
-    print('sheet -> /tmp/mc/sheet.png')
+    sheet = Path(tempfile.gettempdir()) / 'mc' / 'sheet.png'
+    sheet.parent.mkdir(parents=True, exist_ok=True)
+    s.save(sheet)
+    print(f'sheet -> {sheet}')
 
 
 if __name__ == '__main__':

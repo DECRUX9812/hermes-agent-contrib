@@ -1,7 +1,7 @@
 const { chromium } = require('playwright-core');
 const cam = process.argv[2] || 'exterior_hero';
 const time = process.argv[3] || 'golden';
-const out = process.argv[4] || `/tmp/ac-${cam}-${time}.png`;
+const out = process.argv[4] || `${require('os').tmpdir()}/ac-${cam}-${time}.png`;
 const wait = parseInt(process.argv[5] || '6000');
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', args: ['--use-angle=swiftshader','--enable-unsafe-swiftshader','--disable-gpu'] });
