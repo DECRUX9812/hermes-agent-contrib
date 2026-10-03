@@ -1,0 +1,23 @@
+name: backdrops
+repo: https://github.com/DECRUX9812/hermes-backdrops
+sha: f89e16791419a4456013a89fea3c53b7efb40784
+description: >-
+  A picture behind your Hermes Desktop chat without changing your theme. A status-bar
+  picker offers Plain, Daily inspiration, your own uploaded photo, and a gallery whose new
+  drops arrive as data (a backdrops.json manifest of images), never as code. Bundled art,
+  a cached gallery, and your stored photo keep it working offline. Paints only through the
+  documented [data-chat-surface] styling hook; state lives in plugin storage.
+maintainer: DECRUX9812
+tier: community
+category: desktop
+docs_url: https://github.com/DECRUX9812/hermes-backdrops#readme
+version: "1.0.0"
+image: https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/f89e16791419a4456013a89fea3c53b7efb40784/docs/hero.jpg
+screenshots:
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/f89e16791419a4456013a89fea3c53b7efb40784/docs/picker.png
+platforms: []
+capabilities:
+  provides_tools: []
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []
