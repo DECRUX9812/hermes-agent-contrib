@@ -319,3 +319,6 @@ native/fts5_cjk/*.so
 /pm/.lock.json.lock
 
 apps/desktop/.dist-build*
+
+# Devin demo-kit render outputs (regenerate via docs/demo-kit/*/render)
+renders/
