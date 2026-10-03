@@ -60,6 +60,11 @@ export function StudioPage() {
         const aa = params.get('auto')
 
         if (aa === '1') {s.setAutoAnswer(true)}
+        const spd = Number(params.get('speed'))
+
+        if (spd > 0) {s.setSpeed(spd)}
+        // demo/test hook: lets harnesses drive the scene (flyTo/setTime/follow)
+        ;(window as unknown as Record<string, unknown>).__studio = s
         setReady(true)
       })
       .catch(err => setError(String(err)))
