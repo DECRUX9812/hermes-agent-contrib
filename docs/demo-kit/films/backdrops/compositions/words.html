@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="UTF-8" /></head><body><template>
+      <style>
+        @font-face { font-family: 'Avenir Next Condensed'; src: local('Avenir Next Condensed'); }
+        #words-root { position: absolute; inset: 0; pointer-events: none; font-family: 'Avenir Next Condensed', 'Avenir Next', 'Helvetica Neue', sans-serif; }
+        .w-block { position: absolute; left: 90px; top: 0; width: 500px; height: 1080px; display: flex; flex-direction: column; justify-content: center; }
+        .w-line { display: block; font-size: 82px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.0; color: #f3ecdc; opacity: 0; text-transform: lowercase; }
+        .w-gold { color: #f2b53b; }
+      </style>
+      <div id="words-root" data-composition-id="words" data-width="1920" data-height="1080">
+        <div class="w-block" id="w-plain"><span class="w-line" data-layout-allow-occlusion>every chat wears</span><span class="w-line" data-layout-allow-occlusion>the same gray.</span></div>
+        <div class="w-block" id="w-wall"><span class="w-line w-gold" data-layout-allow-occlusion>give it a wall.</span></div>
+        <div class="w-block" id="w-dive"><span class="w-line" data-layout-allow-occlusion>deep</span><span class="w-line w-gold" data-layout-allow-occlusion>dive.</span></div>
+        <div class="w-block" id="w-neon"><span class="w-line" data-layout-allow-occlusion>neon</span><span class="w-line w-gold" data-layout-allow-occlusion>rain.</span></div>
+        <div class="w-block" id="w-ember"><span class="w-line" data-layout-allow-occlusion>desert</span><span class="w-line w-gold" data-layout-allow-occlusion>glow.</span></div>
+        <div class="w-block" id="w-yours"><span class="w-line" data-layout-allow-occlusion>or bring</span><span class="w-line w-gold" data-layout-allow-occlusion>your own.</span></div>
+        <div class="w-block" id="w-fresh"><span class="w-line" data-layout-allow-occlusion>fresh drops</span><span class="w-line w-gold" data-layout-allow-occlusion>land here.</span></div>
+      </div>
+      <script>
+        (() => {
+          const tl = gsap.timeline({ paused: true })
+          const say = (id, at, out) => {
+            const lines = document.getElementById(id).querySelectorAll('.w-line')
+            lines.forEach((line, i) => {
+              tl.fromTo(line, { y: 60, opacity: 0, filter: 'blur(10px)' },
+                { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.4, ease: 'expo.out', immediateRender: false }, at + i * 0.16)
+            })
+            tl.to(lines, { y: -30, opacity: 0, filter: 'blur(8px)', duration: 0.28, ease: 'power2.in' }, out)
+          }
+          say('w-plain', 0.15, 1.85)
+          say('w-wall', 2.25, 3.95)
+          say('w-dive', 5.3, 7.9)
+          say('w-neon', 9.35, 11.95)
+          say('w-ember', 13.4, 16.0)
+          say('w-yours', 17.5, 20.1)
+          say('w-fresh', 20.7, 26.2)
+          window.__timelines['words'] = tl
+        })()
+      </script>
+</template></body></html>

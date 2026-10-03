@@ -1141,6 +1141,9 @@ wins (no plugin "owns" the value afterwards, nothing to tear down for `set`).
 ```ts
 type DesktopSettingValues = {
   'backdrop.v1': boolean
+  'backdrop.scene': BackdropScene    // 'off' | 'aurora' | 'dusk' | 'ocean' | 'meadow' | 'cyanotype' | 'ink' | 'grid' | 'statue' | 'custom'
+  'backdrop.strength': 'subtle' | 'balanced' | 'vivid'
+  'backdrop.image': null | string  // the 'custom' scene's art — data URL or image URL; null clears it
   'composerPopout.gesturesEnabled': boolean
   'intro-splash.v1': boolean
   'reasoning.collapsedByDefault': boolean
@@ -1150,6 +1153,19 @@ type DesktopSettingValues = {
 host.settings.get<K extends DesktopSettingKey>(key: K): DesktopSettingValues[K]
 host.settings.set<K extends DesktopSettingKey>(key: K, value: DesktopSettingValues[K]): void
 host.settings.subscribe<K extends DesktopSettingKey>(key: K, fn: (value: DesktopSettingValues[K]) => void): () => void
+```
+
+The `backdrop.*` keys drive the same Chat Background the Appearance page
+offers: `'backdrop.scene'` selects a scene (`'off'` paints nothing),
+`'backdrop.image'` stores the art the `'custom'` scene paints — a data URL or
+any reachable image URL — and setting a non-null image switches the scene to
+`'custom'` (setting `null` switches it back off), exactly like the native
+upload tile. A plugin that ships gallery art therefore needs no backdrop
+machinery of its own:
+
+```ts
+// Hang your own photo behind the conversation, blended at the picked strength.
+host.settings.set('backdrop.image', 'https://example.com/my-wall.jpg')
 ```
 
 ```ts
