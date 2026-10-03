@@ -653,10 +653,10 @@ def copper_bulb(seed: int, lit=True):
 def cut_copper(seed: int):
     """Weathered cut copper: salmon-brick 2x2 tiles — real texture ~(191,106,80)."""
     im = Img()
-    frame = C('#bd6a50')
-    tile = C('#c97458')
-    hi = C('#d98a68')
-    lo = C('#8e503a')
+    frame = C('#a85f48')
+    tile = C('#b2684e')
+    hi = C('#c47c5c')
+    lo = C('#7e4834')
     r = rng(seed)
     for y in range(16):
         for x in range(16):
