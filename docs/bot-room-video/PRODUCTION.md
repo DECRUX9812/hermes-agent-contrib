@@ -1,7 +1,12 @@
 # Bot Room launch video — production plan
 
-Companion to `storyboard.md`. Target: 78s, 120 BPM, hard cuts on bar boundaries.
+Companion to `storyboard.md` (v2 meta cut). Target: 88s, 120 BPM, hard cuts on bar boundaries.
 Ships two masters: **1920x1080 (16:9)** and **1080x1920 (9:16)**.
+
+This cut is a hybrid film: an **AI-generated world ("the Hexfield")** wraps around the real
+screen recordings — the mascots are characters who present their own product on a
+pane-within-the-world. The AI layer is therefore the *spine* of the edit, not garnish —
+but it still never carries a product claim (every capability is proven in [REC] footage).
 
 ## 1. Toolchain
 
@@ -12,7 +17,7 @@ Ships two masters: **1920x1080 (16:9)** and **1080x1920 (9:16)**.
 | Bot replies | Mock backend on `127.0.0.1` serving canned responses (pattern: `docs/demo-kit/harness/demo_mock.py`) | Deterministic timing, zero flakiness mid-take. Page actions must be real. |
 | Compositing / edit | HyperFrames project at `docs/demo-kit` — `#frame` 1728x960 inside 1920x1080, `cam()` punch-ins in source coords, `.frz` stills + `.fring` rings, helpers `type/scramble/slam/whip/flash/freeze/liveMark` | `npx hyperframes check .` before every render; render takes ~1min on hardware GPU. |
 | Score | `films/<name>/score.py` — numpy WAV synth | 120 BPM, bar = 2s; risers+rolls before cuts, subdrop+impact on finale, `boom()` for mascot landings. `/tmp/score-venv/bin/python` has numpy+pillow. |
-| AI B-roll | **Veo 3.1 via Gemini API** (primary), **Kling 3.0** (fallback / alternate takes) | See §3. Sora is dead (below). |
+| AI film layer | **Veo 3.1 via Gemini API** (primary — asset-image character continuity + native dialogue), **Kling 3.0** (cheap iteration / alternate takes) | See §3. Sora is dead (below). |
 | QA | ffmpeg frame extraction + PIL pixel-scans for ring/still placement | Measure, never guess — every guessed position costs a render. |
 
 ## 2. Capture session checklist
@@ -25,9 +30,9 @@ Ships two masters: **1920x1080 (16:9)** and **1080x1920 (9:16)**.
 6. Keep mascot ≥ ~300px on screen during capture where possible; a 40px mascot never reads at any punch — use `liveMark` (ring+stamp over live footage) rather than `freeze` when motion is the sell.
 7. Cursor: capture it (`-capture_cursor 1`) — the cursor visibly *not* moving while the bot clicks is part of the flex.
 
-## 3. AI-generated B-roll — provider + verbatim prompts
+## 3. AI film layer — provider, prompts, continuity
 
-### Provider status (as of Oct 2026)
+### 3.0 Provider status (as of Oct 2026)
 
 | Model | API? | Approx cost / 10s | Verdict |
 |---|---|---|---|
@@ -37,9 +42,9 @@ Ships two masters: **1920x1080 (16:9)** and **1080x1920 (9:16)**.
 | **Pika 2.2** | ✅ | ~$0.12/s → **~$1.20** (5s max) | Niche: creative melt/expand effects only; 5s cap is limiting. |
 | **Sora 2** | ❌ **API shut down 2026-09-24** | was $0.10/s | Not usable. Do not plan around it. |
 
-Cost plan: ~6 B-roll shots × ≤8s on **Veo 3.1 Fast @1080p ≈ $1/clip** → ~$6–10 with retries. Iterate prompts on **Kling** (cheaper), final renders on Veo.
+Cost plan (v2 meta cut): ~9 AI shots in the spine × ≤8s. Iterate prompts + continuity on **Kling 3.0** (~$0.50–1.50/10s), final renders on **Veo 3.1 Fast @1080p** (~$1/clip). Budget **$25–60** including retries — dialogue shots and character shots need 2–4 re-rolls each. Worst case is still cheaper than one afternoon of mocap.
 
-### Prompt-engineering rules for product-demo footage
+### 3.2 Prompt-engineering rules for product-demo footage
 
 - **Never ask the model to render real UI/text.** Generated "screens" still smear; keep UI abstract (glowing panels, blurred dashboards) and let the [REC] footage carry the product.
 - **Image-to-video when a mascot must emerge from a real page**: feed the actual screenshot as first frame, prompt only for the emergence motion. Veo 3.1 first+last-frame interpolation is the reliable path for "sprouts out of the header."
@@ -47,9 +52,37 @@ Cost plan: ~6 B-roll shots × ≤8s on **Veo 3.1 Fast @1080p ≈ $1/clip** → ~
 - **One motion per prompt**: "slow push-in" OR "object rises" — stacking motions is the #1 cause of morphing artifacts.
 - **9:16 natives, not crops**: regenerate the B-roll in 9:16 for the vertical master rather than cropping 16:9.
 
-### Verbatim prompts (one per storyboard shot)
+### 3.1 Verbatim prompts (one per storyboard shot)
 
-**Shot 3 — "the seed" (8s, 16:9 + 9:16)**
+**Shot 1 — the Hexfield, cold open (8s, 16:9 + 9:16)**
+> Vast dark interior world inside a computer screen: an infinite floor of softly glowing hexagonal tiles stretches to the horizon under a translucent glass ceiling showing the blurry underside of a web page, small sleeping pod-lights dot the hexagons, slow drifting camera move, deep blue-black palette with faint amber accents, cinematic sci-fi minimalism, volumetric light, no text, no logos.
+
+**Shot 2 — "it noticed you" (8s, 16:9 + 9:16)**
+> Inside the dark hexagonal-tile world under a glass ceiling: a large translucent mouse cursor glides slowly across the ceiling like a shadow on the other side of glass; below, one small rounded chrome mascot character (use attached reference image) wakes in its pod, its eyes widen and track the cursor playfully like a cat watching a laser pointer, warm amber light grows, whimsical cinematic tone, shallow depth of field, no text.
+
+**Shot 3 — "it's been waiting" (8s, 16:9 + 9:16) — dialogue shot**
+> Same small chrome mascot (reference image) presses both stubby hands flat against the glass ceiling from inside the dark hexagonal world, looks directly into camera and smirks with playful confidence, says "we live here now" in a tiny cheerful robotic voice, warm amber rim light, close-up, cinematic, clean dark negative space upper third, no captions, no other text.
+
+**Shot 3b — alt beat (8s)**
+> Macro shot: a small glowing chrome droplet falls in slow motion onto a matte black glass surface shaped like a browser window, ripples of amber light spread outward, dark studio environment, shallow depth of field, cinematic product-film lighting, clean dark negative space in the upper third, no text, no logos.
+
+**Shot 10 — "meanwhile, outside" (8s, 16:9 + 9:16)**
+> View from inside the warm hexagonal world looking UP through the glass ceiling: outside the glass is a cold desaturated gray wasteland where a sad boxy remote-cloud robot repeatedly bonks its head against a floating frosted-glass checkbox wall it cannot pass, muffled distant thuds, our warm mascots (reference image) silhouetted below watching, melancholic comedy, cinematic, no readable text.
+
+**Shot 11 — the graveyard freeze (6s, 16:9 + 9:16)**
+> Still tableau for freeze-frame: the cold gray outside world — a dusty boxy robot frozen mid-motion holding a camera taking a screenshot of itself, cobwebs on its shoulders; beside it a terminal-shaped green-screen ghost trapped inside a text box; all under dim cold light, museum-diorama feel, deadpan comedy, wide shot, no readable text.
+
+**Shot 12 — the glass high-five (8s, 16:9 + 9:16) — dialogue shot**
+> Warm side of the glass: three small chrome mascots (reference image, three color variants) shrug sympathetically, one turns and gives a slow-motion high-five through the glass to a giant translucent human cursor on the other side — the cursor tilts as if smiling; one mascot says "he can't come in — no session" in a tiny pitying robot voice, warm amber lighting, gentle comedic tone, no readable text.
+
+**Shot 14 — harness parade (8s, 16:9 + 9:16)**
+> Wide shot of the hexagonal-tile world: six glowing doorways open in a row along the horizon — amber, cyan, violet, green, white, orange — and from each doorway a small unique chrome mascot (reference image, variant colors) steps out and joins a growing crowd walking toward camera, festival-parade energy, warm triumphant lighting, cinematic wide shot, no text on the doorways.
+
+**Shot 16 — the face pile (8s, 16:9 + 9:16)**
+> The whole cast of small chrome mascots (reference image, many color variants) tumbles into a joyful pile in the center of the hexagonal floor, the glass ceiling above shows a blurry real web page still glowing, camera slowly pulls back and rises, warm cozy lighting like a campfire scene, bittersweet-finale mood, no text.
+
+**Shot 18 — post-credit peek (4s, 16:9 + 9:16)**
+> A single small chrome mascot (reference image) peeks out from behind a floating dark logo card in the void of the hexagonal world, waves once at camera, ducks back, playful post-credits energy, warm single spotlight, no readable text.
 > Macro shot: a small glowing chrome droplet falls in slow motion onto a matte black glass surface shaped like a browser window, ripples of amber light spread outward, dark studio environment, shallow depth of field, cinematic product-film lighting, clean dark negative space in the upper third, no text, no logos.
 
 **Shot 6 — "CAPTCHA death wall" (4s, 16:9 + 9:16)**
@@ -66,6 +99,32 @@ Cost plan: ~6 B-roll shots × ≤8s on **Veo 3.1 Fast @1080p ≈ $1/clip** → ~
 
 **Alt — office/hands ambience (6s, if a human-hands beat is wanted before the cold open)**
 > Close-up of hands resting beside a keyboard, motionless, while the monitor beyond them glows and subtly shifts on its own, shallow focus on the still hands, dark room, amber screen glow, cinematic, no readable text on screen.
+
+### 3.3 Mascot continuity (the hard part)
+
+The whole meta cut fails if the generated mascot doesn't match the real three.js mascot.
+Workflow:
+
+1. **Bake a reference sheet**: render the real mascot (screenshot the extension, transparent
+   bg via `dom_hide` of the page or a solid-void dev page) → clean 1024px turntable
+   (front, 3/4, side) on a neutral dark background.
+2. Feed it as a **first-frame / asset image** on every mascot shot — Veo 3.1 supports
+   image-to-video and multi-asset references on Vertex; use it every time, no exceptions.
+3. **Lock a look-prompt suffix** reused verbatim in every prompt: `small rounded chrome
+   mascot character, stubby arms, large simple eyes, toy-like proportions, warm amber
+   accent light`.
+4. Re-roll any take where the design morphs; budget 2–4 rolls per mascot shot.
+5. Color variants (Hermes amber, Grok cyan, etc.) via the same reference + `variant in
+   <color>` — deterministic color is the product's actual identity system, mirror it.
+
+### 3.4 Mascot voice
+
+- Max **3 spoken lines**, ≤8 words each: `we live here now` · `he can't come in — no session` · `roll it`.
+- Veo 3.1 generates native dialogue — put the line in quotes in the prompt and describe the
+  voice ("tiny cheerful robotic voice"). Generate the dialogue shots on **Standard**, not Fast —
+  lip-sync/speech quality is where the money goes.
+- Fallback if speech is flaky: silent performances + text chips, or a tiny synthesized
+  chirp + subtitle card (still charming, zero lip-sync risk).
 
 ## 4. Motion-graphic / text card specs
 
@@ -94,15 +153,20 @@ Cost plan: ~6 B-roll shots × ≤8s on **Veo 3.1 Fast @1080p ≈ $1/clip** → ~
 
 ## 7. Build order
 
-1. Capture all [REC] shots against the mock backend (one mp4 per shot).
-2. Score first (score.py) — the edit cuts TO the track, not the reverse.
-3. HyperFrames assembly on the 16:9 master → `check` → render → frame QA.
-4. AI B-roll last, only for the 4 dramatization shots; drop into the same timeline.
-5. 9:16 reframe pass; re-check text safe areas.
-6. Deliver both masters via `upload_attachment` (direct download links — not local paths).
+1. **Mascot reference sheet first** (§3.3) — it gates every AI shot.
+2. Capture all [REC] shots against the mock backend (one mp4 per shot).
+3. Score first (score.py) — the edit cuts TO the track, not the reverse; reserve the two
+   dead-stops (shots 10–11) in the arrangement.
+4. AI layer: iterate prompts on Kling → final on Veo 3.1; dialogue shots on Standard.
+   Lock shot 1 (the Hexfield establishing shot) first — every other AI shot inherits its grade.
+5. HyperFrames assembly on the 16:9 master → `check` → render → frame QA. The [REC]-in-pane
+   shots (7/8) composite real footage inside an AI-gen or MG pane frame.
+6. 9:16 reframe pass; regenerate B-roll natively 9:16; re-check text safe areas.
+7. Deliver both masters via `upload_attachment` (direct download links — not local paths).
 
 ## Risk notes
 
 - **If the extension isn't camera-ready**: shots 4/8 degrade gracefully — capture the mascot on any live page and the compose-into-comment flow on a GitHub test repo. Do NOT fake the logged-in state; that beat is the claim.
+- **If mascot continuity fails** (3+ failed re-rolls per shot): ship the v1 fallback cut (storyboard.md bottom) — same REC spine, MG cards instead of AI world. The film survives; the meta layer doesn't ship broken.
 - **Mock only the replies**: `demo_mock.py`-style canned turns keep timing deterministic; all `page_action`s stay real so motion on screen is honest.
 - **Sora is off the table** (API shut down Sept 2026) — anyone citing Sora pricing in a plan is working from stale info.

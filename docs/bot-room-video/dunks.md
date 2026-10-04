@@ -16,6 +16,16 @@ kill shot (row 4).
 | **8. Party trick** | Bots pass each other notes and split the work in parallel on live pages | One button: branch → PR | Watches an agent book flights in ~7 seconds | Orders groceries *for* you (after you log it in) | Once got distracted by Yellowstone photos mid-demo — real, endearing | `TimeoutError: waiting for selector` |
 | **9. The honest asterisk** | Chrome MV3, needs the unpacked load or store listing; mutating actions are serialized per tab so bots don't stomp | It's a control *surface* — the agents still live in terminals | A framework, not a product — bring your own everything | Killed/absorbed into ChatGPT agent — the remote-browser model itself got retired | A capability API, not a product you install | You built it, you maintain it |
 
+## In the film — the mock beat personified
+
+The video's Act III turns this table into characters on the cold side of the glass
+(archetypes, not logos — the caption does the tagging):
+
+- **The cloud-bot** (Operator/Mariner archetype) — repeatedly bonks into a CAPTCHA wall it can't pass; holds up a blurry checkbox grid like a hostage sign.
+- **The pixel-reader** (computer-use archetype) — frozen mid-screenshot of itself, cobwebbed, one photo of Yellowstone in hand.
+- **The terminal ghost** (bare agent-in-a-tab) — trapped inside a green text box, muttering `TimeoutError`.
+- **Inside the glass:** our mascots, warm, logged in, passing notes. One waves sympathetically: `he can't come in — no session`.
+
 ## The one-liner, for comments and captions
 
 > Everyone else built a better room for the agent to sit in. We moved the agent into yours.
