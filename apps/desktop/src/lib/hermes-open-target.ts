@@ -29,7 +29,6 @@ const RESERVED_DEEP_LINK_KINDS = new Set([
   'session',
   'settings',
   'skill'
-  'settings'
 ])
 
 function appendSearch(path: string, params: URLSearchParams | Record<string, string> | undefined): string {

@@ -1761,7 +1761,6 @@ export const esOverrides = {
       keepAwakeOff: 'Desactivado',
       keepAwakeWhileWorking: 'Mientras trabaja',
       keepAwakeAlways: 'Siempre',
-        'Impide que este equipo entre en reposo para que las ejecuciones largas o nocturnas continúen. La pantalla puede seguir atenuándose.',
       proactiveNudgesTitle: 'Sugerencias proactivas',
       proactiveNudgesDesc:
         'Al terminar un turno, ofrece chips de siguientes pasos sobre el editor — abrir un PR, programar un seguimiento. Solo redactan texto; nada se envía solo.',

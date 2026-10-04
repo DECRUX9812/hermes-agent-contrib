@@ -5,7 +5,6 @@ import { traceIdentityChange } from '@/lib/identity-trace'
 import { RECONNECT_ATTEMPT_TIMEOUT_MS, SOURCE_SWITCH_DIAL_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout'
 
 import {
-  activeGatewayConnectionId,
   applyActive,
   beginGatewayActivation,
   dialPriority,

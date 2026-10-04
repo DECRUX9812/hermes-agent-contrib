@@ -6,9 +6,9 @@
  * touches the page; that's `desktop_preview` / `drive_preview`'s job.
  */
 
+import { resolveActivePreviewTab } from '@/app/chat/right-rail/preview-active-tab'
 import type { ConsoleEntry } from '@/app/chat/right-rail/preview-console-state'
 import { previewConsoleState } from '@/app/chat/right-rail/preview-console-store'
-import { resolveActivePreviewTab } from '@/app/chat/right-rail/preview-reader'
 
 export interface PreviewVerifyError {
   level: number

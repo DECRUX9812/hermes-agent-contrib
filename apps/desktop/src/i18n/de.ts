@@ -1761,7 +1761,6 @@ export const deOverrides = {
       keepAwakeOff: 'Aus',
       keepAwakeWhileWorking: 'Während der Arbeit',
       keepAwakeAlways: 'Immer',
-        'Verhindert, dass dieser Rechner in den Ruhezustand wechselt, damit Läufe über Nacht oder länger weiterlaufen. Der Bildschirm kann trotzdem abdunkeln.',
       proactiveNudgesTitle: 'Proaktive Hinweise',
       proactiveNudgesDesc:
         'Bietet nach Abschluss einer Runde nächste Schritte als Chips über dem Composer an — etwa einen PR öffnen oder eine Nachverfolgung einplanen. Sie schreiben nur Entwürfe; nichts wird automatisch gesendet.',

@@ -1506,7 +1506,6 @@ export const en: Translations = {
       keepAwakeOff: 'Off',
       keepAwakeWhileWorking: 'While working',
       keepAwakeAlways: 'Always',
-      keepAwakeDesc: 'Stop this machine from sleeping so long or overnight runs keep going. The display can still dim.',
       proactiveNudgesTitle: 'Proactive nudges',
       proactiveNudgesDesc:
         'When a chat finishes a turn, offer next-step chips above the composer — open a PR, schedule a follow-up. They only draft text; nothing sends itself.',

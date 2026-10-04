@@ -1766,7 +1766,6 @@ export const frOverrides = {
       keepAwakeOff: 'Désactivé',
       keepAwakeWhileWorking: 'Pendant le travail',
       keepAwakeAlways: 'Toujours',
-        "Empêcher cette machine de se mettre en veille pendant les exécutions longues ou nocturnes. L'écran peut toujours s'obscurcir.",
       proactiveNudgesTitle: 'Suggestions proactives',
       proactiveNudgesDesc:
         "À la fin d'un tour, propose des puces d'étapes suivantes au-dessus du compositeur — ouvrir une PR, planifier un suivi. Elles ne rédigent que des brouillons ; rien ne part tout seul.",
