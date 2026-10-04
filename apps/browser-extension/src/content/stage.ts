@@ -3,6 +3,7 @@ import type { Bot, Room, RoomMsg, SwToContent } from '../shared/types'
 import { runPageAction, setWindowManager, uniqueSelector } from './actions'
 import { faceDataUrl } from './face'
 import { type MascotAction, OverlayScene } from './mascot3d'
+import { type PaletteSection, showContextMenu, showPalette } from './menu'
 import { type ElementInfo, Panel, roomMsgToPanel } from './panel'
 import { OVERLAY_CSS } from './styles'
 import { WindowManager } from './windows'
@@ -27,6 +28,7 @@ export class Stage {
   private hidden = false
   private windows: WindowManager
   private siteBot: Bot | null = null
+  private sleeping = new Set<string>()
 
   constructor(send: (msg: unknown) => void) {
     this.send = send
@@ -64,6 +66,15 @@ export class Stage {
     addBtn.addEventListener('click', () => this.createRoom())
     tray.appendChild(addBtn)
     this.root.appendChild(tray)
+
+    // floating orb launcher — click opens the command palette (Raycast-style)
+    const launcher = document.createElement('button')
+    launcher.className = 'hr-launcher'
+    launcher.title = 'Bot Room — commands (click)'
+    launcher.innerHTML =
+      '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" opacity=".55"/><circle cx="8.8" cy="11" r="1.5" fill="currentColor"/><circle cx="15.2" cy="11" r="1.5" fill="currentColor"/><path d="M9 15.4c.8.8 5.2.8 6 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+    launcher.addEventListener('click', () => this.openPalette())
+    this.root.appendChild(launcher)
 
     this.dropzone = document.createElement('div')
     this.dropzone.className = 'hr-dropzone'
@@ -339,6 +350,10 @@ export class Stage {
 
     hit.addEventListener('pointerenter', () => this.scene.get(b.id)?.setHover(true))
     hit.addEventListener('pointerleave', () => this.scene.get(b.id)?.setHover(false))
+    hit.addEventListener('contextmenu', (e) => {
+      e.preventDefault()
+      this.openBotMenu(b, e.clientX, e.clientY)
+    })
     hit.addEventListener('pointerdown', (e) => {
       dragging = true
       moved = false
@@ -380,7 +395,7 @@ export class Stage {
         const panel = this.openPanel(`solo:${b.id}`, b)
         panel.setTarget(this.dropTarget)
         this.dropTarget = null
-      } else if (!moved) {
+      } else if (!moved && e.button === 0) {
         this.togglePanel(b)
       }
 
@@ -499,6 +514,56 @@ export class Stage {
 
     if (!name) {return}
     this.send({ type: 'room.create', name })
+  }
+
+  /** Right-click on a mascot: quick actions without opening a panel. */
+  private openBotMenu(b: Bot, x: number, y: number) {
+    const m = () => this.scene.get(b.id)
+    const asleep = this.sleeping.has(b.id)
+
+    showContextMenu(this.root, x, y, [
+      { icon: '◉', label: `Give ${b.name} a task`, run: () => this.togglePanel(b) },
+      { separator: true, label: '' },
+      { icon: '♪', label: 'Dance', run: () => m()?.play('dance', 2.2) },
+      { icon: '↺', label: 'Spin', run: () => m()?.play('spin', 1.1) },
+      { icon: '↥', label: 'Jump', run: () => m()?.play('jump', 0.8) },
+      { icon: '✦', label: 'Celebrate', run: () => m()?.play('celebrate', 1.4) },
+      { icon: '◐', label: asleep ? 'Wake' : 'Sleep', run: () => {
+        if (this.sleeping.delete(b.id)) {m()?.play('idle', Infinity)}
+        else {this.sleeping.add(b.id); m()?.play('sleep', Infinity)}
+      } },
+      { separator: true, label: '' },
+      { icon: '▦', label: 'Open in room', hint: 'drag onto a room chip' },
+      { icon: '◌', label: 'Hide overlay (this page)', run: () => this.setHidden(true) },
+    ])
+  }
+
+  /** Raycast-style command palette from the launcher. */
+  private openPalette() {
+    const botItems = [...this.bots.values()].map((b) => ({
+      icon: '◉',
+      label: `Give ${b.name} a task`,
+      hint: b.status,
+      run: () => {
+        this.openPanel(`solo:${b.id}`, b)
+        this.scene.get(b.id)?.play('wave', 1)
+      },
+    }))
+
+    const sections: PaletteSection[] = [
+      { title: 'Bots', items: botItems },
+      {
+        title: 'Actions',
+        items: [
+          { icon: '♪', label: 'Everyone dance', run: () => [...this.bots.keys()].forEach((id) => this.scene.get(id)?.play('dance', 2.2)) },
+          { icon: '✦', label: 'Everyone celebrate', run: () => [...this.bots.keys()].forEach((id) => this.scene.get(id)?.play('celebrate', 1.4)) },
+          { icon: '▣', label: 'New room', run: () => this.createRoom() },
+          { icon: '◌', label: 'Hide overlay (this page)', run: () => this.setHidden(true) },
+        ],
+      },
+    ]
+
+    showPalette(this.root, sections)
   }
 
   private setRooms(rooms: Room[]) {
