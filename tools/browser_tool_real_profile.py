@@ -45,6 +45,10 @@ def _real_profile_daemon_env() -> dict:
     _bt = _origin()
     socket_dir = _session._prepare_session_socket_dir(_bt._REAL_PROFILE_SESSION)
     env = _session._agent_browser_command_env(socket_dir)
+    # apparmor_restrict_unprivileged_userns=1 (Ubuntu 24.04+ / VMs) makes Chrome's
+    # sandbox fail at launch — every other lane applies this bypass (see skill
+    # hermes-browser-stack-repair, gap #2).
+    _session._apply_chromium_sandbox_args(env)
     env.pop("AGENT_BROWSER_IDLE_TIMEOUT_MS", None)
     return env
 
