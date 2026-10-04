@@ -96,7 +96,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     bots: [{ name: 'Muse', systemPrompt: 'You are Muse: playful, dramatic, performs dances when excited.' }],
   },
   {
-    kind: 'cli-relay',
+    kind: 'cli-relay:opencode',
     name: 'OpenCode',
     blurb: 'The OpenCode TUI agent via the local relay — real agent, real harness.',
     baseUrl: 'ws://127.0.0.1:9933',
@@ -104,7 +104,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     bots: [{ name: 'OpenCode', systemPrompt: '' }],
   },
   {
-    kind: 'cli-relay',
+    kind: 'cli-relay:claude',
     name: 'Claude Code',
     blurb: 'claude CLI via the relay — Anthropic\'s coding agent in your tab.',
     baseUrl: 'ws://127.0.0.1:9933',
@@ -112,7 +112,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     bots: [{ name: 'Claude', systemPrompt: '' }],
   },
   {
-    kind: 'cli-relay',
+    kind: 'cli-relay:gemini',
     name: 'Gemini CLI',
     blurb: 'gemini CLI via the relay — Google\'s agent alongside the others.',
     baseUrl: 'ws://127.0.0.1:9933',
@@ -120,7 +120,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     bots: [{ name: 'Gemini', systemPrompt: '' }],
   },
   {
-    kind: 'cli-relay',
+    kind: 'cli-relay:codex',
     name: 'Codex CLI',
     blurb: 'codex CLI via the relay — OpenAI\'s coding agent in the room.',
     baseUrl: 'ws://127.0.0.1:9933',
@@ -129,16 +129,8 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
   },
   {
     kind: 'cli-relay',
-    name: 'Aider',
-    blurb: 'aider CLI via the relay — the classic pair-programmer mascot.',
-    baseUrl: 'ws://127.0.0.1:9933',
-    needsKey: false,
-    bots: [{ name: 'Aider', systemPrompt: '' }],
-  },
-  {
-    kind: 'cli-relay',
     name: 'Any CLI',
-    blurb: 'Bring your own: any CLI agent that can read stdin and write stdout.',
+    blurb: 'Bring your own: any CLI agent behind a ws relay (BRRP/1 spec in HARNESSES.md).',
     baseUrl: 'ws://127.0.0.1:9933',
     needsKey: false,
     bots: [{ name: 'Cli', systemPrompt: '' }],

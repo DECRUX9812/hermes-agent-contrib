@@ -12,10 +12,10 @@ import type {
 } from '../shared/types'
 import { DEFAULT_SETTINGS } from '../shared/types'
 
+import { makeHarness } from './adapters'
 import { PageBridge } from './bridge'
 import type { Harness } from './harness'
 import { HermesHarness } from './hermes'
-import { makeOpenAIHarness } from './openai'
 import { RoomEngine } from './rooms'
 import { GatewayRpc } from './rpc'
 import { siteAvatarFor, sitePromptPrefix } from './sitebot'
@@ -97,7 +97,7 @@ class BotRoomService {
     }
 
     for (const cfg of this.settings.harnesses) {
-      const h = makeOpenAIHarness(cfg)
+      const h = makeHarness(cfg)
       this.harnesses.set(h.id, h)
     }
   }

@@ -97,13 +97,16 @@ async function main() {
         return { name: (n ?? 'Bot').trim(), systemPrompt: rest.join(':').trim() || `You are ${n?.trim()}, a helpful browser agent.` }
       })
 
-    if (!name || !baseUrl || !model || bots.length === 0) {
-      alert('Need name, base URL, model, and at least one bot line.')
+    const kind = ($('#newHarness') as HTMLElement).dataset.kind || 'openai'
+    const modelOptional = kind === 'acp' || kind === 'muse' || kind.startsWith('cli-relay')
+
+    if (!name || !baseUrl || (!model && !modelOptional) || bots.length === 0) {
+      alert(modelOptional
+        ? 'Need name, base URL, and at least one bot line (model is optional for this kind).'
+        : 'Need name, base URL, model, and at least one bot line.')
 
       return
     }
-
-    const kind = ($('#newHarness') as HTMLElement).dataset.kind || 'openai'
 
     harnesses.push({ id: `gx${Date.now().toString(36)}`, kind, name, baseUrl, apiKey, model, bots })
 
