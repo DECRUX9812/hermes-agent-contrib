@@ -946,43 +946,12 @@ const ChatViewContent = memo(function ChatViewContent({
               settling in the background — subtle badge, not an overlay. */}
           {isPrimary && !gatewaySwapTarget && <ChatSyncBadge profile={hydrationSyncProfile} />}
         </div>
-        {/* Docked composers overlay their pane; the shared float escapes pane
-            clipping through a stable portal host without remounting its editor. */}
+        {/* Exactly one composer: `composerDock` is the single ChatBar element —
+            rendered inside the intro column while the splash is up, in the dock
+            otherwise. A second inline ChatBar here mounted a duplicate editor
+            (two input bars, one of them an unreachable ghost at the pane
+            bottom), so the dock must stay the same element. */}
         {showChatBar && !showIntro && composerDock}
-        {showChatBar && (
-          <FloatingComposerSurface>
-            <Suspense fallback={<ChatBarFallback />}>
-              <ChatBar
-                busy={busy}
-                cwd={currentCwd}
-                disabled={!gatewayOpen}
-                focusKey={activeSessionId}
-                freshDraftKey={freshDraftKey}
-                gateway={gateway}
-                maxRecordingSeconds={maxVoiceRecordingSeconds}
-                onAddContextRef={onAddContextRef}
-                onAddUrl={onAddUrl}
-                onAttachDroppedItems={onAttachDroppedItems}
-                onAttachImageBlob={onAttachImageBlob}
-                onAttachPastedText={onAttachPastedText}
-                onCancel={onCancel}
-                onPasteClipboardImage={onPasteClipboardImage}
-                onPickFiles={onPickFiles}
-                onPickFolders={onPickFolders}
-                onPickImages={onPickImages}
-                onRemoveAttachment={onRemoveAttachment}
-                onSteer={onSteer}
-                onSteerHidden={onSteerHidden}
-                onSubmit={onSubmit}
-                onTranscribeAudio={onTranscribeAudio}
-                profile={modelOptionsProfile || activeGatewayProfile}
-                queueSessionKey={queueSessionKey}
-                sessionId={activeSessionId}
-                state={chatBarState}
-              />
-            </Suspense>
-          </FloatingComposerSurface>
-        )}
       </ChatRuntimeBoundary>
     </div>
   )
