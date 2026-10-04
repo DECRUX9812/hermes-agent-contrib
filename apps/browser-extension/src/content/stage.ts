@@ -233,6 +233,7 @@ export class Stage {
     if (!m) {return}
     const hit = this.hits.get(b.id)
     hit?.classList.toggle('working', b.status === 'working')
+    m.setWorking(b.status === 'working')
 
     if (b.status === 'working') {m.play('talk', 1)}
     else if (b.status === 'sleeping') {m.play('sleep', Infinity)}
@@ -301,6 +302,8 @@ export class Stage {
     let sx = 0
     let sy = 0
 
+    hit.addEventListener('pointerenter', () => this.scene.get(b.id)?.setHover(true))
+    hit.addEventListener('pointerleave', () => this.scene.get(b.id)?.setHover(false))
     hit.addEventListener('pointerdown', (e) => {
       dragging = true
       moved = false

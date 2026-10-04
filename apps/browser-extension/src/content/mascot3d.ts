@@ -34,6 +34,26 @@ function mulberry32(seed: number) {
   }
 }
 
+// shared soft radial-gradient texture — contact shadows + working halos
+let _softTex: THREE.CanvasTexture | null = null
+
+function softTexture(): THREE.CanvasTexture {
+  if (_softTex) {return _softTex}
+  const c = document.createElement('canvas')
+  c.width = 128
+  c.height = 128
+  const ctx = c.getContext('2d')!
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64)
+  g.addColorStop(0, 'rgba(255,255,255,1)')
+  g.addColorStop(0.55, 'rgba(255,255,255,.5)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, 128, 128)
+  _softTex = new THREE.CanvasTexture(c)
+
+  return _softTex
+}
+
 type BodyKind = 'round' | 'boxy' | 'capsule' | 'blob' | 'cone' | 'bean'
 
 const BODY_KINDS: BodyKind[] = ['round', 'boxy', 'capsule', 'blob', 'cone', 'bean']
@@ -89,10 +109,15 @@ export class OverlayScene {
     this.resize()
     window.addEventListener('resize', () => this.resize())
 
-    const key = new THREE.DirectionalLight(0xffffff, 2.2)
+    const key = new THREE.DirectionalLight(0xfff4e0, 2.0)
     key.position.set(0.6, 1.4, 2.2)
     this.scene.add(key)
-    this.scene.add(new THREE.AmbientLight(0xffffff, 1.5))
+    // cool rim from behind-left separates the body from the page
+    const rim = new THREE.DirectionalLight(0x9db4ff, 1.15)
+    rim.position.set(-1.6, -0.6, -1.8)
+    this.scene.add(rim)
+    this.scene.add(new THREE.HemisphereLight(0xffffff, 0x4a4480, 1.0))
+    this.scene.add(new THREE.AmbientLight(0xffffff, 0.5))
 
     document.addEventListener('visibilitychange', () => {
       this.visible = !document.hidden
@@ -146,7 +171,7 @@ export class OverlayScene {
     const rnd = mulberry32(hash32(`${x},${y},${performance.now()}`))
 
     for (let i = 0; i < 26; i++) {
-      const g = new THREE.BoxGeometry(3, 3, 3)
+      const g = new THREE.SphereGeometry(2.6, 8, 8)
 
       const mat = new THREE.MeshBasicMaterial({
         color: new THREE.Color().setHSL(rnd(), 0.9, 0.6),
@@ -234,6 +259,11 @@ export class Mascot {
   private size = 34
   private speakAmount = 0
   private asleep = false
+  private hoverOn = false
+  private hoverT = 0
+  private working = false
+  private halo: THREE.Mesh
+  private shadow: THREE.Mesh
 
   constructor(id: string, name: string, parent: THREE.Scene, private stage: OverlayScene) {
     this.id = id
@@ -246,10 +276,12 @@ export class Mascot {
     const hue = this.rnd()
     const color = new THREE.Color().setHSL(hue, 0.62, 0.56)
 
-    this.matBody = new THREE.MeshStandardMaterial({
+    this.matBody = new THREE.MeshPhysicalMaterial({
       color,
-      roughness: 0.55,
-      metalness: 0.08,
+      roughness: 0.42,
+      metalness: 0.05,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.55,
     })
     this.body = new THREE.Mesh(this.bodyGeometry(kind), this.matBody)
     this.body.castShadow = false
@@ -270,7 +302,7 @@ export class Mascot {
       ;(this.face.material as THREE.MeshBasicMaterial).needsUpdate = true
     })
 
-    const limbMat = new THREE.MeshStandardMaterial({ color: color.clone().offsetHSL(0, 0, -0.08), roughness: 0.7 })
+    const limbMat = new THREE.MeshPhysicalMaterial({ color: color.clone().offsetHSL(0, 0, -0.08), roughness: 0.6, clearcoat: 0.35, clearcoatRoughness: 0.7 })
     const armGeo = new THREE.CapsuleGeometry(3.4, 14, 4, 8)
     this.armL = new THREE.Mesh(armGeo, limbMat)
     this.armR = new THREE.Mesh(armGeo, limbMat)
@@ -286,6 +318,21 @@ export class Mascot {
     this.legL.position.set(-this.size * 0.3, this.size * 0.78, 0)
     this.legR.position.set(this.size * 0.3, this.size * 0.78, 0)
     this.group.add(this.legL, this.legR)
+
+    // soft drop shadow pinned to the "ground" + a halo that glows while working
+    this.shadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(this.size * 2.7, this.size * 1.0),
+      new THREE.MeshBasicMaterial({ map: softTexture(), color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }),
+    )
+    this.shadow.position.set(0, this.size * 0.95, -30)
+    this.group.add(this.shadow)
+
+    this.halo = new THREE.Mesh(
+      new THREE.PlaneGeometry(this.size * 3.4, this.size * 3.4),
+      new THREE.MeshBasicMaterial({ map: softTexture(), color, transparent: true, opacity: 0, depthWrite: false }),
+    )
+    this.halo.position.set(0, this.size * 0.05, -40)
+    this.group.add(this.halo)
 
     parent.add(this.group)
   }
@@ -334,24 +381,42 @@ export class Mascot {
     this.speakAmount = v ? 1 : 0
   }
 
+  setHover(v: boolean) {
+    this.hoverOn = v
+  }
+
+  setWorking(v: boolean) {
+    this.working = v
+  }
+
   pointAt(x: number, y: number) {
     this.play('point', 1.6, { x, y })
   }
 
   update(dt: number) {
     const g = this.group
-    const ud = g.userData as { tx?: number; ty?: number }
+    const ud = g.userData as { tx?: number; ty?: number; vx?: number; vy?: number }
+    let stretch = 0
 
-    // Approach drag target with spring; walk-bob while traveling.
+    // Damped spring toward the drag target — soft overshoot, no linear glide.
     if (ud.tx !== undefined) {
       const dx = ud.tx - g.position.x
       const dy = ud.ty! - this.baseY
-      g.position.x += dx * Math.min(1, dt * 12)
-      this.baseY += dy * Math.min(1, dt * 12)
+      const vx = (ud.vx ?? 0) + (dx * 90 - (ud.vx ?? 0) * 12) * dt
+      const vy = (ud.vy ?? 0) + (dy * 90 - (ud.vy ?? 0) * 12) * dt
+      g.position.x += vx * dt
+      this.baseY += vy * dt
+      ud.vx = vx
+      ud.vy = vy
+      const speed = Math.hypot(vx, vy)
 
-      if (Math.abs(dx) + Math.abs(dy) > 4) {
+      if (speed > 30) {
         this.walkBob(dt)
       }
+
+      // squash-and-stretch along travel — the bigger the pull, the longer the body
+      stretch = Math.min(0.22, speed / 2600)
+      g.rotation.z = Math.max(-0.3, Math.min(0.3, -vx / 2400))
     }
 
     const a = this.anim
@@ -359,8 +424,13 @@ export class Mascot {
     const t = a.t
     const done = t >= a.dur
 
+    // ease-in over ~160ms so action cuts never pop
+    const e = Math.min(1, t / 0.16)
+    const ease = e * e * (3 - 2 * e)
+
     // reset transient transforms every frame, then apply current action
-    g.rotation.set(0, 0, 0)
+    const dragLean = g.rotation.z
+    g.rotation.set(0, 0, dragLean)
     let y = 0
     let sx = 1
     let sy = 1
@@ -375,9 +445,11 @@ export class Mascot {
 
     switch (a.name) {
       case 'idle':
-        y = wob * 3
-        sy = 1 + wob * 0.03
-        sx = 1 - wob * 0.02
+        // calm breathing + micro forward tilt so it reads alive, not bobbing
+        y = wob * 2.6
+        sy = 1 + wob * 0.028
+        sx = 1 - wob * 0.018
+        g.rotation.x = wob * 0.035
 
         break
 
@@ -456,6 +528,9 @@ export class Mascot {
         break
     }
 
+    // smooth-in for the action envelope
+    y *= ease
+
     // talking pulse on the face
     if (this.speakAmount > 0) {
       const s = 1 + Math.abs(Math.sin(t * 11)) * 0.1 * this.speakAmount
@@ -469,8 +544,30 @@ export class Mascot {
       this.face.scale.set(1, Math.max(0.25, 1 - Math.min(1, a.t)), 1)
     }
 
-    g.position.y = this.baseY + y
+    // hover: gentle lift + scale; travel: squash-stretch
+    this.hoverT += ((this.hoverOn ? 1 : 0) - this.hoverT) * Math.min(1, dt * 10)
+    const lift = this.hoverT * -6
+    sy *= 1 + this.hoverT * 0.08 + stretch
+    sx *= (1 + this.hoverT * 0.08) * (1 - stretch * 0.55)
+
+    g.position.y = this.baseY + y + lift
     g.scale.set(sx, sy, 1)
+
+    // shadow stays glued to the ground plane; fades as the mascot gains height
+    const height = Math.max(0, -(y + lift))
+    this.shadow.position.y = this.size * 0.95 + height
+    const shk = 1 / (1 + height / 200)
+    this.shadow.scale.set(shk, shk, 1)
+    ;(this.shadow.material as THREE.MeshBasicMaterial).opacity = 0.3 * shk
+
+    // halo: soft glow pulse while working, faint presence on hover
+    const haloMat = this.halo.material as THREE.MeshBasicMaterial
+
+    const haloTarget = this.working
+      ? 0.32 + Math.abs(Math.sin(t * 3.2 + this.phase)) * 0.2
+      : this.hoverT * 0.18
+
+    haloMat.opacity += (haloTarget - haloMat.opacity) * Math.min(1, dt * 7)
 
     if (done && a.name !== 'idle' && a.name !== 'sleep') {
       this.anim = { name: this.asleep ? 'sleep' : 'idle', t: 0, dur: Infinity }
