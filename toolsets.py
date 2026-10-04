@@ -66,8 +66,10 @@ def _core_without(*excluded, kanban=True):
 
 
 # Coding posture: everything you reach for while pairing on code; drops messaging,
-# tts, image_gen, home-assistant, cron, kanban and computer-use.
-_CODING_TOOLS = _core_without("image_generate", "text_to_speech", "cronjob_manage", "computer_use", *_HA_TOOLS, kanban=False)
+# tts, image_gen, home-assistant, cron, kanban and computer-use. git_ship/open_pr
+# live in the named `git` toolset for platform expansion and are named here so
+# the collapsed coding posture keeps the ship flow too.
+_CODING_TOOLS = _core_without("image_generate", "text_to_speech", "cronjob_manage", "computer_use", *_HA_TOOLS, kanban=False) + ["git_ship", "open_pr"]
 
 # Toolsets a CLIENT adds to its own sessions (tui_gateway/server.py::_gui_surface_toolsets), never
 # config: another surface lacking them made no configuration choice.
@@ -103,6 +105,10 @@ TOOLSETS = {
         ["computer_use"],
     ),
     "terminal": _ts("Terminal/command execution and process management tools", ["terminal", "process_manage"]),
+    "git": _ts(
+        "Git ship tools — stage/commit/push the session repo and open a GitHub PR via gh",
+        ["git_ship", "open_pr"],
+    ),
     "skills": _ts(
         "Access, create, edit, and manage skill documents with specialized "
         "instructions and knowledge",
