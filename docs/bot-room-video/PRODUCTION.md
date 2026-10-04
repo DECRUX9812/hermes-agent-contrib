@@ -17,7 +17,7 @@ but it still never carries a product claim (every capability is proven in [REC] 
 | Bot replies | Mock backend on `127.0.0.1` serving canned responses (pattern: `docs/demo-kit/harness/demo_mock.py`) | Deterministic timing, zero flakiness mid-take. Page actions must be real. |
 | Compositing / edit | HyperFrames project at `docs/demo-kit` — `#frame` 1728x960 inside 1920x1080, `cam()` punch-ins in source coords, `.frz` stills + `.fring` rings, helpers `type/scramble/slam/whip/flash/freeze/liveMark` | `npx hyperframes check .` before every render; render takes ~1min on hardware GPU. |
 | Score | `films/<name>/score.py` — numpy WAV synth | 120 BPM, bar = 2s; risers+rolls before cuts, subdrop+impact on finale, `boom()` for mascot landings. `/tmp/score-venv/bin/python` has numpy+pillow. |
-| AI film layer | **Higgsfield API** (backbone — one key, 50+ models, Lipsync Studio for talking mascot), **Veo 3.1 via Gemini API** (asset-image continuity shots), **OpenRouter `POST /api/v1/videos`** (single-billing fallback: Veo 3.1 family, Kling 3.0, Seedance 2.x, Wan) | See §3. Sora direct is dead (below) — Sora 2 Pro still routes via OpenRouter. |
+| AI film layer | **Nous Portal `$50` via Hermes `video_gen`** (funded lane — Tool Gateway → FAL families), **Higgsfield API** (Lipsync Studio for the talking mascot), **OpenRouter** (fallback single key) | See §3. Sora direct is dead; Sora 2 Pro still routes via OpenRouter. |
 | QA | ffmpeg frame extraction + PIL pixel-scans for ring/still placement | Measure, never guess — every guessed position costs a render. |
 
 ## 2. Capture session checklist
@@ -40,8 +40,9 @@ but it still never carries a product claim (every capability is proven in [REC] 
 | **Kling 3.0** (Kling API / fal / Replicate) | ✅ | Units-billed; ~$0.05–0.15/s → **$0.50–1.50** | **Fallback + alt takes.** 3–15s native clips, up to 4K, optional native audio. Cheapest for iteration. |
 | **Runway Gen-4.5 / Aleph 2.0** | ✅ | ~$0.50/s Gen-4-class → **~$5.00** | Skip for B-roll cost; Aleph is useful if we need to *edit* real footage (e.g. restyle a capture). |
 | **Pika 2.2** | ✅ | ~$0.12/s → **~$1.20** (5s max) | Niche: creative melt/expand effects only; 5s cap is limiting. |
-| **Higgsfield API** | ✅ self-serve, `api.higgsfield.ai`, key + top-up balance | Kling 3.0 **$0.084–0.112/s**, Seedance 2.0 ~$0.14/s, MiniMax H3 ~$0.065/s, Wan ~$0.05–0.20/s; DoP camera model $0.125/gen | **The backbone.** One key → 50+ models. Plus: Soul/Soul ID (character images), **Lipsync Studio** (image→video talking), DoP signature camera moves, native 9:16/16:9. |
-| **OpenRouter** | ✅ `POST /api/v1/videos`, existing key/credits | Veo 3.1 / Fast / Lite, Kling v3.0 std/pro, Seedance 2.0/Fast, Wan 2.6/2.7, Hailuo 2.3, Sora 2 Pro — per-second pass-through | Single-billing fallback if we don't want per-provider accounts; also the only way to reach `sora-2-pro` post-shutdown. |
+| **Nous Portal (funded — $50 credit)** | ✅ Tool Gateway — `video_gen` toolset in hermes-agent (`hermes tools` → Video Generation → provider `nous`) | Families live in-repo at `plugins/video_gen/fal/`: **Veo 3.1** (4/6/8s), **Seedance 2.0 / 2.5** (audio + lip-sync; 2.5 does 30s single-pass), **Kling v3 / Pro / 4K / O3** (3–15s), **PixVerse v6** (cheap), **Happy Horse** (multilingual lip-sync), plus **BFL FLUX 3** via `bfl_flux3_*`; OpenRouter/DeepInfra/xAI backends also in-repo | **Spend the existing $50 first.** Same balance as models/tools, no new account. Seedance 2.x + Happy Horse give us lip-sync without leaving Portal. |
+| **Higgsfield API** | ✅ self-serve, `api.higgsfield.ai`, key + top-up balance | Kling 3.0 **$0.084–0.112/s**, Seedance 2.0 ~$0.14/s, MiniMax H3 ~$0.065/s, Wan ~$0.05–0.20/s; DoP camera model $0.125/gen | **Specialty lane:** Lipsync Studio (image→video talking on our real mascot render), Soul/Soul ID character images, DoP signature camera moves. |
+| **OpenRouter** | ✅ `POST /api/v1/videos`, existing key/credits | Veo 3.1 / Fast / Lite, Kling v3.0 std/pro, Seedance 2.0/Fast, Wan 2.6/2.7, Hailuo 2.3, Sora 2 Pro — per-second pass-through | Fallback if Portal entitlements bite; also the only way to reach `sora-2-pro` post-shutdown. |
 | **Sora 2 (direct)** | ❌ **API shut down 2026-09-24** | was $0.10/s | Not usable directly; still reachable via OpenRouter as `openai/sora-2-pro`. |
 
 Cost plan (v2 meta cut): ~9 AI shots in the spine × ≤8s. Iterate prompts + continuity on **Kling 3.0 on **Higgsfield** (~$0.09/s — cheapest Kling seat), final world shots on **Veo 3.1 Fast @1080p** (~$1/clip) or Seedance 2.0. Dialogue shots go through **Higgsfield Lipsync** on our real mascot render (see §3.3/3.4 — cheap, and continuity is guaranteed because we animate *the actual asset*). Budget **$25–60** including retries — inside the user's existing credits if the "Nova Portal" balance covers a video gateway, otherwise a $50 Higgsfield/OpenRouter top-up covers the whole film with room for re-rolls.
@@ -112,11 +113,12 @@ Workflow:
    (front, 3/4, side) on a neutral dark background. Design polish is a build-side input —
    the mascot surface has to be camera-ready before this sheet exists.
 2. **Two continuity paths, by shot type:**
-   - *Speaking shots (3, 12, 18)*: **Higgsfield Lipsync Studio** — animate the real mascot
-     render itself with the dialogue line. Zero drift: the output IS our character.
-   - *Acting shots (2, 10, 14, 16)*: feed the reference as **first-frame / asset image** —
-     Veo 3.1 image-to-video + multi-asset references on Vertex, or image→video on Kling/
-     Seedance via Higgsfield. No exceptions.
+   - *Speaking shots (3, 12, 18)*: **image→video on Seedance 2.x / Happy Horse via Portal**
+     (native lip-sync), or **Higgsfield Lipsync Studio** as specialty alt — animate the real
+     mascot render itself. Zero drift: the output IS our character.
+   - *Acting shots (2, 10, 14, 16)*: feed the reference as **first-frame image** — every
+     Portal family supports image-to-video (`image_param_key` per family), Veo 3.1 also
+     takes multi-asset references on Vertex. No exceptions.
 3. **Lock a look-prompt suffix** reused verbatim in every prompt: `small rounded chrome
    mascot character, stubby arms, large simple eyes, toy-like proportions, warm amber
    accent light`.
@@ -127,18 +129,21 @@ Workflow:
 ### 3.4 Mascot voice
 
 - Max **3 spoken lines**, ≤8 words each: `we live here now` · `he can't come in — no session` · `roll it`.
-- **Primary: Higgsfield Lipsync Studio** — feed the real mascot render (or a captured
-  `wave`/`celebrate` clip from the extension), give it the line + "tiny cheerful robotic
-  voice". This is the whole point of the tool: consistent character *and* lip-sync.
-- Alt: Veo 3.1 native dialogue on **Standard** tier (line in quotes + voice description).
+- **Primary: Seedance 2.x / Happy Horse via Nous Portal** — image→video on the real mascot
+  render, line in quotes + voice description ("tiny cheerful robotic voice"); both families
+  ship native lip-sync and bill to the existing balance.
+- Alt: **Higgsfield Lipsync Studio** (the specialist tool), or Veo 3.1 native dialogue on
+  **Standard** tier.
 - Fallback if speech is flaky: silent performances + text chips, or a tiny synthesized
   chirp + subtitle card (still charming, zero lip-sync risk).
 
 ### 3.5 Driving it from this session
 
-Generation is scriptable: one API key (Higgsfield or OpenRouter) → `curl` the job, poll,
-download to the film dir. When we're ready to shoot, drop the key in as a session secret
-and I can run the full B-roll batch myself — same loop as the rest of the pipeline.
+Generation is scriptable two ways: (a) **Hermes itself** — sign into Nous Portal
+(`hermes model` / `hermes setup --portal`), enable `video_gen` in `hermes tools`, call
+`video_generate` per shot — spends the $50; or (b) one API key (OpenRouter/Higgsfield) →
+`curl` the job, poll, download to the film dir. Either way I can run the full B-roll
+batch from this session when we're ready to shoot — same loop as the rest of the pipeline.
 
 ## 4. Motion-graphic / text card specs
 
@@ -162,7 +167,7 @@ and I can run the full B-roll batch myself — same loop as the rest of the pipe
 |---|---|
 | 16:9 | 1920x1080, 30fps, H.264 High@L4.2, ~12 Mbps, AAC 320k, −14 LUFS |
 | 9:16 | 1080x1920, same codec/audio; reframe — don't letterbox. Mascots + callouts re-composed per shot; B-roll regenerated natively 9:16. |
-| Duration | 78s (±2s fine); every cut on a 2s bar boundary |
+| Duration | 88s (±2s fine); every cut on a 2s bar boundary |
 | Loops | First frame = black + silence for clean social autoplay-in |
 
 ## 7. Build order
@@ -171,7 +176,8 @@ and I can run the full B-roll batch myself — same loop as the rest of the pipe
 2. Capture all [REC] shots against the mock backend (one mp4 per shot).
 3. Score first (score.py) — the edit cuts TO the track, not the reverse; reserve the two
    dead-stops (shots 10–11) in the arrangement.
-4. AI layer: iterate prompts on Kling → final on Veo 3.1; dialogue shots on Standard.
+4. AI layer via Nous Portal $50: iterate on PixVerse v6 (cheap) → finals on Veo 3.1 /
+   Kling v3-4K; dialogue shots on Seedance 2.x lip-sync.
    Lock shot 1 (the Hexfield establishing shot) first — every other AI shot inherits its grade.
 5. HyperFrames assembly on the 16:9 master → `check` → render → frame QA. The [REC]-in-pane
    shots (7/8) composite real footage inside an AI-gen or MG pane frame.
