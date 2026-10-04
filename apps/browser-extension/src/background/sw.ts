@@ -18,6 +18,7 @@ import { HermesHarness } from './hermes'
 import { makeOpenAIHarness } from './openai'
 import { RoomEngine } from './rooms'
 import { GatewayRpc } from './rpc'
+import { siteAvatarFor, sitePromptPrefix } from './sitebot'
 
 const SETTINGS_KEY = 'bot-room.settings'
 
@@ -39,6 +40,8 @@ class BotRoomService {
   private bridge = new PageBridge()
   private rooms: RoomEngine
   private bots = new Map<string, Bot>()
+  /** site:host → the synthetic avatar + which tab it belongs to. */
+  private siteBots = new Map<string, { bot: Bot; url: string; title: string; tabId: number }>()
   private rosterTimer: ReturnType<typeof setInterval> | null = null
 
   constructor() {
@@ -185,6 +188,18 @@ class BotRoomService {
         const enabled =
           this.settings.enabled && !this.settings.disabledHosts.includes(host)
 
+        // the tab's own site avatar (Repo, Tube, Birdsite…) — rides the
+        // first page-capable bot so it can actually drive this page
+        const siteBot = siteAvatarFor(msg.url, () => {
+          const all = [...this.bots.values()]
+
+          return all.find((b) => b.pageControl) ?? all[0]
+        })
+
+        if (siteBot && tabId !== undefined) {
+          this.siteBots.set(siteBot.id, { bot: siteBot, url: msg.url, title: msg.title, tabId })
+        }
+
         return {
           type: 'init',
           enabled,
@@ -192,6 +207,7 @@ class BotRoomService {
           rooms: this.rooms.list(),
           backendOk: this.rpc?.isOpen ?? this.settings.hermes == null,
           note: this.status().connected ? undefined : 'backend not connected',
+          siteBot: siteBot ?? undefined,
         }
       }
 
@@ -202,11 +218,18 @@ class BotRoomService {
           return
         }
 
-        const bot = msg.botId ? this.bots.get(msg.botId) : undefined
+        if (!msg.botId) {break}
+
+        // site avatar: real harness bot + site context injected
+        const site = msg.botId.startsWith('site:') ? this.siteBots.get(msg.botId) : undefined
+        const bot = site?.bot ?? this.bots.get(msg.botId)
         const harness = bot && this.harnesses.get(bot.harnessId)
 
         if (!bot || !harness) {break}
-        void harness.send(bot.ref, msg.text, {
+
+        const text = site ? sitePromptPrefix(bot, site.url, site.title) + msg.text : msg.text
+
+        void harness.send(bot.ref, text, {
           onDelta: () => undefined,
           onStatus: line => this.rooms.onBotStatus?.(bot.id, 'working', line),
           onPageAction: (action, args, reply) => {
@@ -227,6 +250,10 @@ class BotRoomService {
             } satisfies RoomMsg,
           })
         })
+
+        if (site) {
+          this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working' } })
+        }
 
         return
       }

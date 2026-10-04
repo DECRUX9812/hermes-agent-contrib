@@ -4,6 +4,15 @@
  * works whether it arrives from a Hermes bot or a generic harness.
  */
 
+import type { WindowManager } from './windows'
+
+/** The stage registers its WindowManager so `window.*` actions open panes. */
+let wm: WindowManager | null = null
+
+export function setWindowManager(m: WindowManager) {
+  wm = m
+}
+
 interface ActionArgs {
   selector?: string
   text?: string
@@ -364,6 +373,46 @@ export async function runPageAction(action: string, a: ActionArgs): Promise<unkn
       setTimeout(() => tag.remove(), a.ms ?? 4000)
 
       return { ok: true, element: describe(el) }
+    }
+
+    case 'window.open':
+    case 'widget.open': {
+      if (!wm) {return { ok: false, error: 'no window manager' }}
+
+      const id = wm.open({
+        title: (a.label as string) ?? a.title,
+        kind: a.kind as 'thought' | 'embed' | 'html' | 'feed' | 'search' | undefined,
+        content: a.text ?? a.html,
+        url: a.url,
+        items: a.items as { title: string; subtitle?: string; image?: string; url?: string; badge?: string }[] | undefined,
+        placeholder: a.placeholder as string | undefined,
+        size: a.size as 'sm' | 'md' | 'lg' | 'full' | undefined,
+      })
+
+      return { ok: true, windowId: id }
+    }
+
+    case 'window.close': {
+      wm?.close(String(a.id ?? ''))
+
+      return { ok: true }
+    }
+
+    case 'window.fullscreen': {
+      // toggled via grow button in the window itself; bots just reopen bigger.
+      if (a.id) {
+        wm?.close(String(a.id))
+        wm?.open({
+          id: String(a.id),
+          title: a.title as string | undefined,
+          kind: a.kind as 'thought' | 'embed' | 'html' | undefined,
+          content: a.text ?? a.html,
+          url: a.url,
+          size: 'full',
+        })
+      }
+
+      return { ok: true }
     }
 
     default:

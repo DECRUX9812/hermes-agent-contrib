@@ -1,10 +1,11 @@
 import type { Bot, Room, RoomMsg, SwToContent } from '../shared/types'
 
-import { runPageAction, uniqueSelector } from './actions'
+import { runPageAction, setWindowManager, uniqueSelector } from './actions'
 import { faceDataUrl } from './face'
 import { type MascotAction, OverlayScene } from './mascot3d'
 import { type ElementInfo, Panel, roomMsgToPanel } from './panel'
 import { OVERLAY_CSS } from './styles'
+import { WindowManager } from './windows'
 
 const GRID_GAP = 110
 
@@ -24,6 +25,8 @@ export class Stage {
   private roomBar: HTMLElement
   private dropTarget: ElementInfo | null = null
   private hidden = false
+  private windows: WindowManager
+  private siteBot: Bot | null = null
 
   constructor(send: (msg: unknown) => void) {
     this.send = send
@@ -60,13 +63,85 @@ export class Stage {
     this.ghost.style.display = 'none'
     this.root.appendChild(this.ghost)
 
+    this.windows = new WindowManager(this.root)
+    setWindowManager(this.windows)
+    this.windows.onFullscreen = (full) => this.setDocked(full)
+
+    this.windows.onCard = (_winId, item) => {
+      if (item.url) {
+        const embed = item.url.includes('youtube.com/watch')
+          ? item.url.replace('youtube.com/watch?v=', 'youtube.com/embed/')
+          : item.url
+
+        this.windows.open({ title: item.title, kind: 'embed', url: embed, size: 'lg' })
+      }
+    }
+
+    this.windows.onSearch = (_winId, query) => {
+      const bot = this.siteBot ?? [...this.bots.values()][0]
+
+      if (bot) {
+        this.send({ type: 'task', botId: bot.id, text: `Search request: ${query}` })
+      }
+    }
+
     document.documentElement.appendChild(this.host)
+  }
+
+  /** Fullscreen window open → mascots dock to the right edge as chips. */
+  private setDocked(dock: boolean) {
+    let i = 0
+
+    for (const [id, p] of this.pos) {
+      const m = this.scene.get(id)
+
+      if (!m) {
+        continue
+      }
+
+      if (dock) {
+        m.group.userData.undockX = p.x
+        m.group.userData.undockY = p.y
+        const x = innerWidth - 40
+        const y = 90 + i * 72
+
+        p.x = x
+        p.y = y
+        m.moveTo(x, y)
+        m.group.scale.setScalar(0.5)
+        const hit = this.hits.get(id)
+
+        if (hit) {
+          hit.style.left = x + 'px'
+          hit.style.top = y + 'px'
+          hit.style.transform = 'translate(-50%,-50%) scale(.55)'
+        }
+      } else {
+        const ux = (m.group.userData.undockX as number) ?? p.x
+        const uy = (m.group.userData.undockY as number) ?? p.y
+
+        p.x = ux
+        p.y = uy
+        m.moveTo(ux, uy)
+        m.group.scale.setScalar(1)
+        const hit = this.hits.get(id)
+
+        if (hit) {
+          hit.style.left = ux + 'px'
+          hit.style.top = uy + 'px'
+          hit.style.transform = ''
+        }
+      }
+
+      i++
+    }
   }
 
   handle(msg: SwToContent) {
     switch (msg.type) {
       case 'init':
         this.setHidden(!msg.enabled)
+        this.siteBot = msg.siteBot ?? null
         this.setBots(msg.bots)
         this.setRooms(msg.rooms)
 
@@ -110,10 +185,12 @@ export class Stage {
   }
 
   private setBots(bots: Bot[]) {
+    // the site avatar rides this tab's URL — it survives roster refreshes
+    const all = this.siteBot ? [...bots, this.siteBot] : bots
     const seen = new Set<string>()
     let idx = 0
 
-    for (const b of bots) {
+    for (const b of all) {
       seen.add(b.id)
       const prev = this.bots.get(b.id)
       this.bots.set(b.id, b)

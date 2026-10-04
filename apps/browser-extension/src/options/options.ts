@@ -1,4 +1,5 @@
 import type { GenericHarnessConfig, Settings } from '../shared/types'
+import { HARNESS_PRESETS } from '../shared/types'
 
 const DEFAULT_SETTINGS: Settings = {
   enabled: true,
@@ -26,6 +27,33 @@ async function save(s: Settings) {
 
 let harnesses: GenericHarnessConfig[] = []
 
+function renderCatalog() {
+  const cat = $('#catalog')
+  cat.innerHTML = ''
+
+  for (const p of HARNESS_PRESETS) {
+    const card = document.createElement('div')
+    card.className = 'preset'
+    card.innerHTML = `<b></b><span></span>`
+    card.querySelector('b')!.textContent = p.name
+    card.querySelector('span')!.textContent = p.blurb
+    card.addEventListener('click', () => {
+      $<HTMLInputElement>('#hName').value = p.name
+      $<HTMLInputElement>('#hUrl').value = p.baseUrl ?? ''
+      $<HTMLInputElement>('#hModel').value = p.model ?? ''
+      $<HTMLTextAreaElement>('#hBots').value = p.bots.map((b) => `${b.name}: ${b.systemPrompt}`).join('\n')
+      ;($('#newHarness') as HTMLElement).dataset.kind = p.kind
+
+      if (p.needsKey) {
+        $<HTMLInputElement>('#hKey').focus()
+      }
+
+      $('#newHarness').scrollIntoView({ behavior: 'smooth', block: 'center' })
+    })
+    cat.appendChild(card)
+  }
+}
+
 function renderHarnesses() {
   const list = $('#harnessList')
   list.innerHTML = ''
@@ -50,6 +78,7 @@ async function main() {
   $<HTMLInputElement>('#hermesToken').value = s.hermes?.token ?? ''
   $<HTMLTextAreaElement>('#disabledHosts').value = s.disabledHosts.join('\n')
   harnesses = s.harnesses
+  renderCatalog()
   renderHarnesses()
 
   $('#addHarness').addEventListener('click', () => {
@@ -74,7 +103,9 @@ async function main() {
       return
     }
 
-    harnesses.push({ id: `gx${Date.now().toString(36)}`, name, baseUrl, apiKey, model, bots })
+    const kind = ($('#newHarness') as HTMLElement).dataset.kind || 'openai'
+
+    harnesses.push({ id: `gx${Date.now().toString(36)}`, kind, name, baseUrl, apiKey, model, bots })
 
     for (const id of ['#hName', '#hUrl', '#hKey', '#hModel', '#hBots']) {$<HTMLInputElement>(id).value = ''}
     renderHarnesses()

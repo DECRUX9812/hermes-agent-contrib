@@ -41,14 +41,22 @@ const PAGE_ACTION_TOOL = {
           type: 'string',
           enum: [
             'navigate', 'click', 'type', 'press', 'scroll', 'back',
-            'tabs', 'tab_activate', 'snapshot', 'screenshot',
+            'tabs', 'tab_activate', 'snapshot', 'screenshot', 'read',
+            'compose', 'dom_hide', 'dom_insert', 'dom_style', 'highlight', 'annotate',
+            'window.open', 'window.close', 'widget.open', 'mascot.perform', 'web.fetch',
           ],
         },
         arguments: {
           type: 'object',
           description:
             'navigate:{url} click:{selector|x,y|text} type:{selector?,text} press:{key} ' +
-            'scroll:{dx,dy|selector} tabs:{} tab_activate:{tabId} snapshot:{} screenshot:{}',
+            'scroll:{dx,dy|selector} tabs:{} tab_activate:{tabId} snapshot:{} screenshot:{} ' +
+            'read:{selector|text} compose:{selector?,text,mode} dom_hide:{selector|text} ' +
+            'dom_insert:{selector,position,html} dom_style:{selector,css} highlight:{selector,ms} ' +
+            'annotate:{selector,label} window.open:{title,kind,url|items|content,size} ' +
+            'window.close:{id} widget.open:(same as window.open) ' +
+            'mascot.perform:{action:dance|wave|spin|jump|celebrate|sleep|point|talk,x?,y?,ms?} ' +
+            'web.fetch:{url,method?,headers?,body?} — fetch any URL with the user’s cookies',
         },
       },
       required: ['action'],

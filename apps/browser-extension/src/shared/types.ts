@@ -21,7 +21,10 @@ export interface HermesBackendConfig {
 export interface GenericHarnessConfig {
   id: string
   name: string
-  /** OpenAI-compatible base, e.g. https://api.x.ai/v1 */
+  /** Adapter kind: 'openai' chat-completions | 'acp' | 'cli-relay' | 'muse'.
+   *  Presets set this; adapters resolve by kind. */
+  kind?: string
+  /** OpenAI-compatible base, e.g. https://api.x.ai/v1 — or ws://127.0.0.1 relay. */
   baseUrl: string
   apiKey: string
   /** "Model" field shared by every bot on this harness. */
@@ -29,6 +32,68 @@ export interface GenericHarnessConfig {
   /** displayName -> system prompt. One entry per virtual bot. */
   bots: { name: string; systemPrompt: string }[]
 }
+
+/** One-click presets shown on the options catalog. */
+export interface HarnessPreset {
+  kind: string
+  name: string
+  blurb: string
+  baseUrl?: string
+  model?: string
+  needsKey: boolean
+  bots: { name: string; systemPrompt: string }[]
+}
+
+export const HARNESS_PRESETS: HarnessPreset[] = [
+  {
+    kind: 'openai',
+    name: 'Grok (xAI)',
+    blurb: 'api.x.ai chat completions — Grokbot in your sidebar.',
+    baseUrl: 'https://api.x.ai/v1',
+    model: 'grok-3',
+    needsKey: true,
+    bots: [{ name: 'Grokbot', systemPrompt: 'You are Grokbot: fast, witty, slightly unhinged but helpful. Keep replies punchy.' }],
+  },
+  {
+    kind: 'openai',
+    name: 'OpenAI',
+    blurb: 'api.openai.com — GPT agents with page control.',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4o',
+    needsKey: true,
+    bots: [{ name: 'Scout', systemPrompt: 'You are Scout, a precise browsing assistant living in the user\'s tab.' }],
+  },
+  {
+    kind: 'openai',
+    name: 'OpenClaw / custom',
+    blurb: 'Any OpenAI-compatible endpoint — self-hosted agents, OpenClaw, ollama, OpenRouter.',
+    needsKey: false,
+    bots: [{ name: 'Claw', systemPrompt: 'You are Claw, a helpful agent hanging out in the browser.' }],
+  },
+  {
+    kind: 'muse',
+    name: 'Muse persona',
+    blurb: 'A character endpoint — replies map to mascot.perform actions.',
+    needsKey: false,
+    bots: [{ name: 'Muse', systemPrompt: 'You are Muse: playful, dramatic, performs dances when excited.' }],
+  },
+  {
+    kind: 'acp',
+    name: 'ACP agent',
+    blurb: 'Any Agent Client Protocol server over a relay or WebSocket.',
+    baseUrl: 'ws://127.0.0.1:9944',
+    needsKey: false,
+    bots: [{ name: 'Acp', systemPrompt: '' }],
+  },
+  {
+    kind: 'cli-relay',
+    name: 'CLI relay',
+    blurb: 'Codex / Claude Code / OpenCode / Gemini CLI on your machine via the local relay.',
+    baseUrl: 'ws://127.0.0.1:9933',
+    needsKey: false,
+    bots: [{ name: 'Cli', systemPrompt: '' }],
+  },
+]
 
 export interface Settings {
   enabled: boolean
@@ -64,6 +129,10 @@ export interface Bot {
   pageControl: boolean
   /** Hermes: profile name. Generic: system-prompt key. */
   ref: string
+  /** Site avatars only: the host this bot embodies (e.g. github.com). */
+  siteHost?: string
+  /** Site avatars only: human label for context injection. */
+  siteLabel?: string
 }
 
 // ── rooms ───────────────────────────────────────────────────────────────────
@@ -123,7 +192,7 @@ export type ContentToSw =
   | { type: 'settings.apply'; settings: Settings }
 
 export type SwToContent =
-  | { type: 'init'; enabled: boolean; bots: Bot[]; rooms: Room[]; backendOk: boolean; note?: string }
+  | { type: 'init'; enabled: boolean; bots: Bot[]; rooms: Room[]; backendOk: boolean; note?: string; siteBot?: Bot }
   | { type: 'bots'; bots: Bot[] }
   | { type: 'bot.status'; bot: Bot }
   | { type: 'room.msg'; msg: RoomMsg }

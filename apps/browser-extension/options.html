@@ -40,6 +40,14 @@
   .conn { font-size: 12px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: #0b0d13; }
   .conn.ok { color: #3dd68c; }
   .conn.err { color: #ff8ba0; }
+  .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .preset {
+    border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px;
+    cursor: pointer; background: rgba(255,255,255,.03); transition: all .15s;
+  }
+  .preset:hover { border-color: #5470ff; background: rgba(84,112,255,.1); transform: translateY(-2px); }
+  .preset b { display: block; font-size: 13px; margin-bottom: 4px; }
+  .preset span { font-size: 11px; opacity: .6; line-height: 1.35; display: block; }
   code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
 </style>
 </head>
@@ -66,8 +74,9 @@
   </div>
 
   <div class="card">
-    <h2>Other harnesses <span style="opacity:.5;font-weight:400">— the multi-harness layer</span></h2>
-    <p class="hint">Any OpenAI-compatible endpoint becomes a bot roster. Add Grok (xAI), OpenClaw, a local model, a Muse-style persona — one <code>name: system prompt</code> per line. They get mascots, rooms, and the <code>page_action</code> tool that drives your tab.</p>
+    <h2>Bot catalog <span style="opacity:.5;font-weight:400">— click one, it comes alive</span></h2>
+    <p class="hint">Preset harnesses prefill the form below. Any OpenAI-compatible endpoint works too — Grok (xAI), OpenClaw, a local model, a Muse-style persona, an ACP agent, a CLI relay. They all get mascots, rooms, and the <code>page_action</code> tool that drives your tab.</p>
+    <div class="catalog" id="catalog"></div>
     <div id="harnessList"></div>
     <div class="harness" id="newHarness">
       <div class="row">

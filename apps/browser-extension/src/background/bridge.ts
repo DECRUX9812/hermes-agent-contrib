@@ -24,7 +24,7 @@ const MUTATING = new Set([
 const TIMEOUT_MS = 45000
 
 /** Actions the service worker answers itself (need chrome.tabs, not DOM). */
-const SW_LEVEL = new Set(['browser_tabs', 'tabs', 'browser_tab_activate', 'tab_activate', 'browser_screenshot', 'screenshot'])
+const SW_LEVEL = new Set(['browser_tabs', 'tabs', 'browser_tab_activate', 'tab_activate', 'browser_screenshot', 'screenshot', 'web.fetch'])
 
 interface Pending {
   resolve: (r: PageActionResult) => void
@@ -107,6 +107,32 @@ export class PageBridge {
           const dataUrl = await chrome.tabs.captureVisibleTab(chrome.windows.WINDOW_ID_CURRENT, { format: 'jpeg', quality: 60 })
 
           return { commandId: '', ok: true, result: { dataUrl } }
+        }
+
+        case 'web.fetch': {
+          // "Already logged in as you" — SW fetch carries the user's cookies
+          // for any host the extension has permission for.
+          const url = String(args.url ?? '')
+
+          if (!/^https?:\/\//.test(url)) {
+            return { commandId: '', ok: false, error: 'bad url' }
+          }
+
+          const res = await fetch(url, {
+            method: (args.method as string) ?? 'GET',
+            headers: args.headers as Record<string, string> | undefined,
+            body: args.body as string | undefined,
+            credentials: 'include',
+            redirect: 'follow',
+          })
+
+          const text = (await res.text()).slice(0, 40000)
+
+          return {
+            commandId: '',
+            ok: true,
+            result: { status: res.status, contentType: res.headers.get('content-type'), text, url: res.url },
+          }
         }
 
         default:
