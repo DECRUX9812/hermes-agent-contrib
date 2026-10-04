@@ -53,6 +53,7 @@ def main():
     ap.add_argument("--aspect", default="16:9")
     ap.add_argument("--out", default="out.mp4")
     ap.add_argument("--negative", default="")
+    ap.add_argument("--audio", action="store_true", help="generate_audio=true (native sound)")
     args = ap.parse_args()
 
     token = load_token()
@@ -63,6 +64,8 @@ def main():
         "duration": args.duration,
         "seed": 42,
     }
+    if args.audio:
+        payload["generate_audio"] = True
     if args.negative:
         payload["negative_prompt"] = args.negative
     if args.image:
