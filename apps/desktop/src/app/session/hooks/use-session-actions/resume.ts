@@ -73,7 +73,7 @@ import { singleFlightSessionResume } from '../use-prompt-actions/single-flight-r
 import { sessionCreatedThisRun } from './created-this-run'
 import { captureDisplayHydration } from './display-hydration'
 import type { SessionActionHandles, SessionActionsOptions } from './options'
-import { reconcilePersistedLiveTurn } from './persisted-live-turn'
+import { reconcilePersistedSessionTurn } from './persisted-live-turn'
 import { provisionalTranscriptPaint, transcriptRestScope } from './provisional-transcript'
 import { pendingClarifyToolPayload, restorePendingClarifyFromSnapshot } from './restore-pending-clarify'
 import { projectPendingConnection, restorePendingConnectionFromSnapshot } from './restore-pending-connection'
@@ -123,11 +123,11 @@ function livePromptStreamId(
 function reconcileAuthoritativeChatMessages(
   authoritativeMessages: ChatMessage[],
   previousMessages: ChatMessage[],
-  liveProjection?: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id'>,
+  liveProjection?: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id' | 'turn_started_at'>,
   sourceRows?: SessionMessage[]
 ): ChatMessage[] {
   if (liveProjection && sourceRows) {
-    const reconciled = reconcilePersistedLiveTurn(authoritativeMessages, previousMessages, sourceRows, liveProjection)
+    const reconciled = reconcilePersistedSessionTurn(authoritativeMessages, previousMessages, sourceRows, liveProjection)
 
     if (reconciled) {
       return reconciled
@@ -143,7 +143,7 @@ function reconcileAuthoritativeChatMessages(
 function reconcileAuthoritativeMessages(
   authoritativeMessages: SessionResumeResult['messages'],
   previousMessages: ChatMessage[],
-  liveProjection?: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id'>
+  liveProjection?: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id' | 'turn_started_at'>
 ): ChatMessage[] {
   return reconcileAuthoritativeChatMessages(
     toChatMessages(authoritativeMessages),
@@ -840,7 +840,8 @@ export function useResumeActions(
                   const liveProjection = dedupeInflightUserAgainstTranscript(
                     persistedMessages,
                     runtimeMessages,
-                    activated
+                    activated,
+                    cachedViewState.messages
                   )
 
                   const latestCachedMessages = sessionStateByRuntimeIdRef.current.get(cachedRuntimeId)?.messages
@@ -850,7 +851,7 @@ export function useResumeActions(
                       ? withoutEarlyClarifyProjection(latestCachedMessages, pendingClarify.requestId)
                       : latestCachedMessages
 
-                  const currentLiveTurn = reconcilePersistedLiveTurn(
+                  const currentLiveTurn = reconcilePersistedSessionTurn(
                     persistedMessages,
                     cachedWithoutEarlyClarify ?? previousMessages,
                     persisted.messages,
@@ -1205,16 +1206,16 @@ export function useResumeActions(
               const runtimeMessages = toChatMessages(resumed.messages)
               const previousMessages = removeRepresentedLocalLiveProjection(currentMessages, resumed)
 
-              // Omitted-messages resumes stay safe here: `resumed.messages`
-              // is empty, so `runtimeMessages` has no anchor and the dedupe
-              // helper returns the projection unchanged, while the REST
-              // prefetch below remains the authoritative transcript — the
-              // same "graft, don't rebuild" outcome the pre-restructure
-              // messages_omitted branch produced.
+              // Omitted-messages resumes stay safe here: when runtime history
+              // is empty, the dedupe helper can prove the current turn from an
+              // exact local optimistic-user + stream pair and anchor the
+              // remaining committed prefix in the REST transcript. Without
+              // either proof it leaves the projection unchanged.
               const liveProjection = dedupeInflightUserAgainstTranscript(
                 prefetchedTranscriptMessages,
                 runtimeMessages,
-                resumed
+                resumed,
+                currentMessages
               )
 
               const resumedMessages = reconcileAuthoritativeChatMessages(

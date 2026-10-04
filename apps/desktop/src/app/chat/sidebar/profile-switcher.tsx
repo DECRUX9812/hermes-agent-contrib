@@ -27,6 +27,7 @@ import { useResizeObserver } from '@/hooks/use-resize-observer'
 import { useI18n } from '@/i18n'
 import { sortConnectionsForDisplay } from '@/lib/connection-display'
 import { triggerHaptic } from '@/lib/haptics'
+import { isBrowserHostedDesktop } from '@/lib/platform'
 import { resolveProfileColor } from '@/lib/profile-color'
 import {
   reorderCommitHaptic,
@@ -85,6 +86,10 @@ const RAIL_GAP = 4 // px — matches gap-1 between squares.
 // drag targets, endless horizontal scroll), so the rail collapses to a compact
 // menu. Drag-reorder and long-press-recolor live only on the squares path.
 const PROFILE_DROPDOWN_THRESHOLD = 13
+
+// The Webapp always takes the dropdown: squares are a native-window gesture
+// surface (drag, hold-to-recolor), and in a browser tab they read as chrome.
+const ALWAYS_CONDENSED = isBrowserHostedDesktop()
 
 // The rail is a single horizontal strip of fixed cells. Pin drags to the x-axis
 // (no cross-axis scrollbar), snap to whole cells so a square steps slot-to-slot
@@ -203,7 +208,7 @@ export function ProfileRail() {
   // ahead of the wheel effect, which re-binds when the strip mounts/unmounts.
   // The threshold counts the whole fleet: fourteen squares are fourteen
   // squares wherever they live.
-  const condensed = profiles.length + countRestAgents(restGroups) > PROFILE_DROPDOWN_THRESHOLD
+  const condensed = ALWAYS_CONDENSED || profiles.length + countRestAgents(restGroups) > PROFILE_DROPDOWN_THRESHOLD
 
   const measureScroll = useCallback(() => {
     const el = scrollRef.current

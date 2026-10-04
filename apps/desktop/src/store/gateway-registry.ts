@@ -159,6 +159,8 @@ export interface Secondary {
   // While true the entry auto-reconnects on drop; pruning flips it off so a
   // deliberate close doesn't trigger the backoff loop.
   wantOpen: boolean
+  /** Explicit teardown is separate from parking, which also clears wantOpen. */
+  disposed: boolean
   /**
    * Main retired this scope's pooled backend for a foreground open elsewhere
    * (electron/pool-retire.ts). A parked-by-stall entry re-arms on the

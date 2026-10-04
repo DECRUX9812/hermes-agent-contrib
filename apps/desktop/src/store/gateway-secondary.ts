@@ -444,6 +444,7 @@ export function createSecondary(profile: string, connectionId: null | string = n
     retained: false,
     relayRetainCount: 0,
     wantOpen: true,
+    disposed: false,
     retiredByPool: false,
     activationLeaseUntil: 0
   }
@@ -830,10 +831,11 @@ export function parkSecondariesForRetiredBackend(poolKey: string): string[] {
 // Tear a secondary down: stop its reconnect loop, detach listeners, close the
 // socket. Caller handles removal from the map.
 export function disposeSecondary(entry: Secondary): void {
-  if (!entry.wantOpen) {
+  if (entry.disposed) {
     return
   }
 
+  entry.disposed = true
   entry.wantOpen = false
   entry.pendingConnectionRedial = false
   clearTimer(entry)
@@ -842,8 +844,8 @@ export function disposeSecondary(entry: Secondary): void {
   entry.offRequest()
   entry.offState()
   entry.gateway.close()
-  // Release can re-enter disposal at refcount zero. wantOpen is already false,
-  // and listeners are detached, so explicit teardown never rearms reconnect.
+  // Release can re-enter disposal at refcount zero. The disposal guard is already
+  // set and listeners are detached, so teardown closes once and never rearms reconnect.
   releaseTurnLeasesForScope(entry.scope)
 }
 
