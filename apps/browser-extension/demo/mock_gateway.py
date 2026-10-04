@@ -48,6 +48,13 @@ PROFILES = [
         "worker_session": None,
         "canonical_session": {"id": "canon-scout", "resolved_id": None, "last_active": 0},
     },
+    {
+        "name": "Grok",
+        "display_name": "Grok",
+        "ui_meta": {"color": "#e8e8ee"},
+        "worker_session": None,
+        "canonical_session": {"id": "canon-grok", "resolved_id": None, "last_active": 0},
+    },
 ]
 
 # live runtime session ids, minted on resume
@@ -107,6 +114,10 @@ SNARKY = {
     "Scout": {
         "greet": "Scanning…",
         "done": "Sweep complete — page understood, action executed where applicable.",
+    },
+    "Grok": {
+        "greet": "Based. Moving.",
+        "done": "Handled. Next time ask for something with stakes.",
     },
 }
 
