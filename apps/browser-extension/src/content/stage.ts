@@ -33,6 +33,12 @@ export class Stage {
     this.host = document.createElement('div')
     this.host.id = 'hermes-bot-room'
     this.root = this.host.attachShadow({ mode: 'open' })
+    // KeyboardEvents are composed:true — they cross the shadow boundary and
+    // reach the page (GitHub's "/" palette opened while typing in our composer).
+    // The overlay is a separate app surface: swallow keys at the shadow root.
+    for (const type of ['keydown', 'keyup', 'keypress']) {
+      this.root.addEventListener(type, (e) => e.stopPropagation())
+    }
     const style = document.createElement('style')
     style.textContent = OVERLAY_CSS
     this.root.appendChild(style)
