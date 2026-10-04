@@ -17,6 +17,13 @@ def load_token() -> str:
     tok = os.getenv("TOOL_GATEWAY_USER_TOKEN", "").strip()
     if tok:
         return tok
+    try:  # live OAuth token w/ auto-refresh (expired static ones 401 on the gateway)
+        from hermes_cli.auth import resolve_nous_access_token
+        tok = resolve_nous_access_token().strip()
+        if tok:
+            return tok
+    except Exception as exc:
+        print(f"[auth] resolver unavailable ({exc}); falling back to auth.json", file=sys.stderr)
     path = os.path.expanduser("~/.hermes/auth.json")
     with open(path) as f:
         data = json.load(f)
