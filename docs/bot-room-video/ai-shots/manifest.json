@@ -1,0 +1,113 @@
+{
+  "lane": "Nous Portal Tool Gateway (fal-queue-gateway.nousresearch.com) — Ritesh's $50 credit",
+  "auth": "OAuth access token via hermes_cli.auth.resolve_nous_access_token() (auto-refresh); script: scripts/nous_video_gen.py",
+  "cap_usd": 35,
+  "est_spend_usd": 17.5,
+  "cost_note": "Gateway returns no per-job billing; costs are estimates from family tier + duration. Two kling-v3 submits failed at billing resolver (unsupported_pricing_meter) and were NOT charged.",
+  "cast": {
+    "muse": "lavender-purple phantom half-mask, violet star eye — docs extension icon mascots/muse.png",
+    "grok": "black visor face, '>-' eyes, xAI horn antennae — mascots/grok.png",
+    "scout": "white-teal, spiral forehead mark, big teal eyes — mascots/openai.png",
+    "cloud-bot": "sad lumpy gray cloud robot (outsider archetype, generated in-scene)",
+    "pixel-reader": "cobwebbed CRT-monitor-head robot holding mountain photo (outsider archetype)",
+    "openclaw": "copper-orange lobster-clawed suited mascot (generated in-scene)",
+    "cli-blob": "tiny green blob, monospace >_ eye-screen, keyboard briefcase (generated in-scene)"
+  },
+  "pipeline": "brand icon PNG (apps/browser-extension/icons/mascots) -> gpt-image composed scene still -> i2v. Continuity gate PASSED on shot02 draft (all brand marks hold through motion).",
+  "shots": [
+    {
+      "shot": 1, "timecode": "0:00-0:04", "file": "clips/shot01-hexfield-pixverse.mp4",
+      "status": "draft", "model": "fal-ai/pixverse/v6/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 0.9,
+      "still": "stills/still-s01-hexfield.png",
+      "prompt": "slow cinematic drift across the dark hexagonal floor toward the glowing capsule pods, volumetric light shifting through the luminous webpage glass ceiling above, pods gently pulsing with sleep-breath light, deep ambient atmosphere",
+      "caption": "there's a world under this page"
+    },
+    {
+      "shot": 2, "timecode": "0:04-0:08", "file": "clips/shot02-wake-pixverse.mp4",
+      "status": "draft", "model": "fal-ai/pixverse/v6/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 0.9,
+      "still": "stills/still-s02-wake.png",
+      "prompt": "the purple mascot stirs awake inside the pod, sits up slowly, her starry eye tracks the glowing cursor light drifting past the ceiling, she blinks and tilts her head curiously",
+      "caption": "it noticed you",
+      "alt": "clips/shot02-wake-continuity-540p.mp4 (raw-icon i2v continuity test, 540p 1:1, mask-lift gag at 1.5s — usable as alternate)"
+    },
+    {
+      "shot": 3, "timecode": "0:08-0:12", "file": "clips/shot03-glass-seedance-FINAL.mp4",
+      "status": "FINAL", "model": "bytedance/seedance-2.0/mini/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 1.5,
+      "still": "stills/still-s03-glass.png",
+      "prompt": "the purple phantom-masked mascot presses her hands against the glass ceiling, looks directly at the camera and says clearly 'we live here now', lip-synced, then smirks; warm light glows around her palms",
+      "voice_line": "we live here now",
+      "caption": "it's been waiting",
+      "alt": "clips/shot03-glass-pixverse.mp4 (same staging, silent smirk version)"
+    },
+    {
+      "shot": 4, "timecode": "0:12-0:16", "file": "clips/shot04-through-veo-FINAL.mp4",
+      "status": "FINAL", "model": "fal-ai/veo3.1/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 2.5,
+      "still": "stills/still-s04-through.png",
+      "prompt": "the mascot pushes up through the rippling liquid glass surface, emerging into the bright webpage world above, liquid ripples spreading outward in slow motion, she looks around amazed, cinematic",
+      "caption": "the page just grew a bot",
+      "alt": "clips/shot04-through-pixverse.mp4"
+    },
+    {
+      "shot": 10, "timecode": "0:44-0:48", "file": "clips/shot10-lookup-pixverse.mp4",
+      "status": "draft", "model": "fal-ai/pixverse/v6/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 0.9,
+      "still": "stills/still-s10-lookup.png",
+      "prompt": "the three mascots look up through the glass ceiling; above them the sad cloud robot bonks its head against the invisible wall repeatedly making the CAPTCHA grid wobble; the mascots exchange glances",
+      "caption": "meanwhile, outside…"
+    },
+    {
+      "shot": 11, "timecode": "0:48-0:52", "file": "clips/shot11-mock-pixverse.mp4",
+      "status": "draft", "model": "fal-ai/pixverse/v6/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 0.9,
+      "still": "stills/still-s11-mock.png",
+      "prompt": "the sad cloud robot lifts the cardboard CAPTCHA sign higher toward the camera; the cobwebbed monitor-head robot creaks and tilts its faded mountain photo; dust drifts, cobwebs sway, cold gray world",
+      "caption": "every other demo ends here"
+    },
+    {
+      "shot": 12, "timecode": "0:52-0:56", "file": "clips/shot12-highfive-veo-FINAL.mp4",
+      "status": "FINAL", "model": "fal-ai/veo3.1/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 2.5,
+      "still": "stills/still-s12-highfive.png",
+      "prompt": "the trio shrug warmly; the white-teal mascot waves up; the huge glowing cursor arrow descends through the glass and touches the raised hand, a burst of warm sparkling light where they meet, cinematic",
+      "caption": "sorry. residents only.",
+      "voice_line_option": "he can't come in — no session",
+      "alt": "clips/shot12-highfive-pixverse.mp4"
+    },
+    {
+      "shot": "14a", "timecode": "0:58-1:02", "file": "clips/shot14a-parade-pixverse.mp4",
+      "status": "draft", "model": "fal-ai/pixverse/v6/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 0.9,
+      "still": "stills/still-s14a-parade.png",
+      "prompt": "the black visor mascot strides confidently out of the golden portal onto the hexagonal floor; the white-teal mascot steps out of the teal portal; the purple host mascot gestures welcome; portals shimmer",
+      "caption": "tag any harness"
+    },
+    {
+      "shot": "14b", "timecode": "1:02-1:06", "file": "clips/shot14b-parade-pixverse.mp4",
+      "status": "draft", "model": "fal-ai/pixverse/v6/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 0.9,
+      "still": "stills/still-s14b-parade.png",
+      "prompt": "the copper lobster-clawed mascot swaggers out of the amber portal adjusting his collar; the tiny green blob mascot waddles out of the green terminal portal hugging his little keyboard; the purple mascot nods approvingly",
+      "caption": "tag any harness"
+    },
+    {
+      "shot": 16, "timecode": "1:14-1:20", "file": "clips/shot16-pile-pixverse.mp4",
+      "status": "draft", "model": "fal-ai/pixverse/v6/image-to-video", "res": "720p", "dur_s": 6, "audio": true, "est_usd": 1.3,
+      "still": "stills/still-s16-pile.png",
+      "prompt": "the piled-up mascots wiggle and laugh in their dogpile, the little green blob on top bounces, through the ceiling the webpage glows brighter, warm joyful energy",
+      "caption": "your agents. living in the browser."
+    },
+    {
+      "shot": 18, "timecode": "1:24-1:28", "file": "clips/shot18-peek-pixverse.mp4",
+      "status": "draft", "model": "fal-ai/pixverse/v6/image-to-video", "res": "720p", "dur_s": 4, "audio": true, "est_usd": 0.9,
+      "still": "stills/still-s18-peek.png",
+      "prompt": "the mascot waves excitedly at the camera and holds up the little paper sign higher, then tilts her head and waves again, playful",
+      "caption": "this film was rendered by its cast"
+    }
+  ],
+  "failed": [
+    {"shot": 4, "model": "fal-ai/kling-video/v3/standard/image-to-video", "error": "BILLING_ERROR unsupported_pricing_meter (kling v3 not priced on Portal)", "charged": 0},
+    {"shot": 12, "model": "fal-ai/kling-video/v3/standard/image-to-video", "error": "BILLING_ERROR unsupported_pricing_meter", "charged": 0}
+  ],
+  "negative_prompt_used": "text,watermark,glitch,deformed,extra-limbs",
+  "next_rungs": [
+    "shot12 talking version ('he can't come in — no session') on seedance-2.0-mini: ~$1.5",
+    "shot18 talking version ('roll it') on seedance-2.0-mini: ~$1.5",
+    "any shot upgraded to seedance-2.0 full / veo3.1 8s / minimax-h3-max if a draft disappoints in the cut",
+    "veo3.1 native resolutions are 720p/1080p/4k — a 1080p pass on shot04 is +$2 est"
+  ]
+}

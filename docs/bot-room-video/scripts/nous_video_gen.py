@@ -79,9 +79,16 @@ def main():
         ext = os.path.splitext(args.image)[1].lstrip(".").lower() or "png"
         mime = "jpeg" if ext in ("jpg", "jpeg") else ext
         with open(args.image, "rb") as f:
-            payload["image_url"] = f"data:image/{mime};base64,{base64.b64encode(f.read()).decode()}"
+            data_uri = f"data:image/{mime};base64,{base64.b64encode(f.read()).decode()}"
+        if "kling" in args.model:
+            payload["start_image_url"] = data_uri
+        else:
+            payload["image_url"] = data_uri
         if "/text-to-video" in args.model:
             args.model = args.model.replace("/text-to-video", "/image-to-video")
+    if "kling" in args.model:  # v3 i2v derives aspect from image; no resolution/seed keys
+        for k in ("aspect_ratio", "resolution", "seed"):
+            payload.pop(k, None)
 
     url = f"{ORIGIN}/{args.model}"
     for scheme in ("Key", "Bearer"):
