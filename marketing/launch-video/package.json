@@ -1,0 +1,23 @@
+{
+  "name": "hermes-launch-video",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render HermesLaunch-9x16 out/hermes-launch-9x16.mp4",
+    "render:wide": "remotion render HermesLaunch-16x9 out/hermes-launch-16x9.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.390",
+    "@remotion/bundler": "4.0.390",
+    "@remotion/renderer": "4.0.390",
+    "remotion": "4.0.390",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/react": "^19.0.0",
+    "@types/web": "^0.0.166"
+  }
+}
