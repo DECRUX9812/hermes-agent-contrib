@@ -26,9 +26,9 @@ const RECIPES: SiteRecipe[] = [
   {
     match: /^github\.com$/,
     name: (u) => {
-      const repo = u.pathname.split('/').filter(Boolean).slice(0, 2).join('/')
+      const parts = u.pathname.split('/').filter(Boolean)
 
-      return repo ? `Repo-${repo.split('/')[1]}` : 'GitHub'
+      return parts.length >= 2 ? `Repo-${parts[1]}` : 'GitHub'
     },
     label: (u) => u.pathname.split('/').filter(Boolean).slice(0, 2).join('/') || 'github.com',
     kind: 'a GitHub repository',

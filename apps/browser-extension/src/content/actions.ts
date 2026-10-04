@@ -147,6 +147,9 @@ async function typeInto(el: Element, text: string, append: boolean) {
 }
 
 export async function runPageAction(action: string, a: ActionArgs): Promise<unknown> {
+  // Hermes sends browser_-prefixed names; harnesses send short names — same verb.
+  if (action.startsWith('browser_')) {action = action.slice(8)}
+
   switch (action) {
     case 'controller.noop':
 

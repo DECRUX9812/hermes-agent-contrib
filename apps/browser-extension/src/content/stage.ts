@@ -360,10 +360,11 @@ export class Stage {
   }
 
   private updateDropTarget(x: number, y: number) {
-    // elementFromPoint sees the host element; temporarily hide it to peek under.
-    this.host.style.display = 'none'
+    // elementFromPoint sees the host; pointer-events:none peeks under it
+    // without flickering display (which would kill focus inside the shadow).
+    this.host.style.pointerEvents = 'none'
     const el = document.elementFromPoint(x, y)
-    this.host.style.display = ''
+    this.host.style.pointerEvents = ''
     this.clearOutline()
 
     if (el && el !== document.documentElement && el !== document.body) {
@@ -444,6 +445,7 @@ export class Stage {
     const py = Math.min(Math.max((p?.y ?? 200) + 60, 10), innerHeight - 380)
     panel.el.style.left = px + 'px'
     panel.el.style.top = py + 'px'
+    panel.focus()
 
     return panel
   }

@@ -115,6 +115,17 @@ export class Panel {
     if (this.target) {this.setTarget(null)}
   }
 
+  /** Grab the composer — click-mascot-and-type should just work.
+   *  Retried: pointer-up focus settle and host display flicker can eat
+   *  the first attempt. */
+  focus() {
+    const go = () => this.input.focus({ preventScroll: true })
+
+    requestAnimationFrame(go)
+    setTimeout(go, 60)
+    setTimeout(go, 180)
+  }
+
   setTarget(t: ElementInfo | null) {
     this.target = t
     this.targetChip.style.display = t ? 'flex' : 'none'
