@@ -41,6 +41,7 @@ import { previewTargetFromMarkdownHref } from '@/lib/preview-targets'
 import { remarkSoftBreaks } from '@/lib/remark-soft-breaks'
 import { sessionRefFromMarkdownHref } from '@/lib/session-refs'
 import { isDirectiveInProgress } from '@/lib/transcript-directives'
+import { usePacedText } from '@/lib/use-paced-text'
 import { cn } from '@/lib/utils'
 import { useForcedTextDirection } from '@/store/text-direction'
 
@@ -578,6 +579,11 @@ function MarkdownParagraph({
 }: ComponentProps<'p'> & { scratchpad?: boolean; streaming?: boolean }) {
   const plain = paragraphPlainText(children)
   const resolved = useResolvedParagraph(scratchpad ? null : plain)
+  // Marker-style directives (`::botplan`, a plan card) read the whole reply —
+  // this paragraph is only ever the marker's own line. Only called inside a
+  // TextMessagePartProvider (MarkdownTextSurface), so the part text is always
+  // available here.
+  const { text: partText } = useMessagePartText()
 
   // Vertical rhythm is owned by styles.css (`--paragraph-gap`), which must
   // out-specify Tailwind Typography's `prose` margins — so no `my-*` here.
@@ -590,7 +596,12 @@ function MarkdownParagraph({
       <>
         {resolved.map((segment, index) =>
           segment.kind === 'directive' ? (
-            <TranscriptDirectiveLeaf key={index} streaming={streaming} text={segment.source} />
+            <TranscriptDirectiveLeaf
+              key={index}
+              messageText={partText}
+              streaming={streaming}
+              text={segment.source}
+            />
           ) : (
             <p className={paragraphClass} key={index} {...props}>
               {segment.text.trim()}
@@ -861,8 +872,17 @@ export function MarkdownTextContent({ isRunning, text, ...surfaceProps }: Markdo
 
 const MarkdownTextImpl = () => {
   const textDirection = useForcedTextDirection()
+  const { status, text } = useMessagePartText()
+  const running = status.type === 'running'
+  // Codex-style pacing: bursts from the network ease in at a steady cadence
+  // (lib/stream-pacing.ts). Settled text passes through untouched.
+  const paced = usePacedText(text, running)
 
-  return <MarkdownTextSurface defer textDirection={textDirection} />
+  return (
+    <TextMessagePartProvider isRunning={running} text={paced}>
+      <MarkdownTextSurface defer textDirection={textDirection} />
+    </TextMessagePartProvider>
+  )
 }
 
 export const MarkdownText = memo(MarkdownTextImpl)

@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react'
 
+import { subscribeRuntimeI18nLocale, translateNow } from '@/i18n/runtime'
 import {
   initQuickEntryBridge,
   QUICK_TARGET_CURRENT,
   QUICK_TARGET_NEW,
+  quickEntryContextBlock,
   type QuickEntrySessionOption,
   type QuickEntrySubmitResult,
   setQuickEntrySubmitHandler
@@ -97,7 +99,12 @@ export function useQuickEntryBridge({ submitText, submitTextToNewSession }: Quic
       return
     }
 
-    setQuickEntrySubmitHandler(async ({ correlationId, target, text }) => {
+    setQuickEntrySubmitHandler(async ({ context, correlationId, target, text: typed }) => {
+      // The context chip the quick window still held at submit rides along as
+      // a metadata line ahead of the typed text — the model sees what the user
+      // was working in without the transcript bubble gaining noise.
+      const text = context ? `${quickEntryContextBlock(context)}\n\n${typed}` : typed
+
       let acknowledged = false
 
       const ack = (result: QuickEntrySubmitResult) => {
@@ -231,17 +238,30 @@ export function useQuickEntryBridge({ submitText, submitTextToNewSession }: Quic
     }
 
     const push = () => {
-      api.pushState({ connected: $gatewayState.get() === 'open', sessions: sessionOptions() })
+      // The quick window has no i18n provider, so its chip copy is resolved
+      // here in the primary renderer and pushed along with the session list.
+      api.pushState({
+        connected: $gatewayState.get() === 'open',
+        sessions: sessionOptions(),
+        strings: {
+          contextLabel: translateNow('quickEntry.contextLabel'),
+          contextRemove: translateNow('quickEntry.contextRemove')
+        }
+      })
     }
 
     push()
 
     const offGateway = $gatewayState.listen(push)
     const offSessions = $sessions.listen(push)
+    // A locale switch mid-session should relabel the chip, not wait for the
+    // next connection change to refresh the pushed copy.
+    const offLocale = subscribeRuntimeI18nLocale(push)
 
     return () => {
       offGateway()
       offSessions()
+      offLocale()
     }
   }, [])
 }

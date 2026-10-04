@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, List, Optional
 from tools.mcp_tool_common import _parse_boolish, _core, _resolve_tool_timeout, mcp_field, mcp_server_enabled
+from tools.mcp_apps import model_visible
 from tools import mcp_tool_config as _config
 from tools import mcp_tool_handlers as _handlers
 from tools import mcp_tool_schema as _schema
@@ -258,6 +259,9 @@ def _tool_candidates(name: str, tools: Iterable[Any], should_register: Callable[
         if not should_register(t.name):
             logger.debug("MCP server '%s': skipping tool '%s' (filtered by config)", name, t.name)
             continue
+        if not model_visible(t):  # MCP Apps: an app-only tool is callable from its UI, never by the model
+            logger.debug("MCP server '%s': tool '%s' is app-only (_meta.ui.visibility)", name, t.name)
+            continue
         _schema._scan_mcp_description(name, t.name, t.description or "")
         schema = _schema._convert_mcp_schema(name, t)
         handler = _handlers._make_tool_handler(name, t.name, tool_timeout)
@@ -370,7 +374,7 @@ def _write_schema_cache(name: str, server: "MCPServerTask", config: dict, should
         from tools.mcp_schema_cache import config_fingerprint, write_cache_entry
         tools_payload = []
         for t in server._tools:
-            if not should_register(t.name):
+            if not should_register(t.name) or not model_visible(t):
                 continue
             # mcp 2.0 renamed every Tool model field to snake_case and left camelCase as a
             # *serialization* alias only, which pydantic does not apply to attribute access: a bare

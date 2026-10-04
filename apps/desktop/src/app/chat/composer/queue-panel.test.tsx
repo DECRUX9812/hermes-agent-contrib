@@ -22,6 +22,7 @@ function renderPanel(entries: QueuedPromptEntry[]) {
         entries={entries}
         onDelete={vi.fn()}
         onEdit={vi.fn()}
+        onMove={vi.fn()}
         onResume={vi.fn()}
         onSendNow={vi.fn()}
         parked={false}

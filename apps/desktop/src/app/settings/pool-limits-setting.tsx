@@ -5,6 +5,7 @@ import { ListRow } from '@/app/settings/primitives'
 import { SETTING_IDS, settingElementId } from '@/app/settings/settings-manifest'
 import { Input } from '@/components/ui/input'
 import { useI18n } from '@/i18n'
+import { $backendCapabilities } from '@/store/backend-capabilities'
 import { $poolLimits, loadPoolLimits, savePoolLimits } from '@/store/pool-limits'
 
 // Bounds imported from main's clamp module so the advertised input ranges
@@ -19,6 +20,9 @@ const IDLE_MS_MAX = POOL_LIMITS_BOUNDS.idleMsMax
  *  changes apply live — main evicts/reaps to converge without a restart. */
 export function PoolLimitsSetting() {
   const { t } = useI18n()
+  // Backend pools only exist while serves are pooled per (connection,
+  // profile); under a canonical authority there is no pool to size.
+  const { canonicalAuthority } = useStore($backendCapabilities)
   const limits = useStore($poolLimits)
   const [maxDraft, setMaxDraft] = useState(String(limits.maxBackends))
   const [idleDraft, setIdleDraft] = useState(String(limits.idleMs))
@@ -58,6 +62,10 @@ export function PoolLimitsSetting() {
     void savePoolLimits({ idleMs: parsed })
       .then(() => undefined)
       .catch(() => setIdleDraft(String($poolLimits.get().idleMs)))
+  }
+
+  if (canonicalAuthority) {
+    return null
   }
 
   return (

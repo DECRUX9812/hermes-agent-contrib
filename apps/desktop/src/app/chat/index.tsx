@@ -7,6 +7,8 @@ import type * as React from 'react'
 import { memo, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
+import { ChatHeaderSlot } from '@/app/chat/chat-header-slot'
+import { RegionCaptureOverlay } from '@/app/region-capture/overlay'
 import type { SubmitTextOptions } from '@/app/session/hooks/use-prompt-actions/utils'
 import { sessionShouldHaveTranscript } from '@/app/session/hooks/use-session-actions/utils'
 import { Thread } from '@/components/assistant-ui/thread'
@@ -19,6 +21,7 @@ import { PromptOverlays } from '@/components/prompt-overlays'
 import { TitleMenuTrigger } from '@/components/ui/title-menu-trigger'
 import { type HermesGateway, type ResolvedOwner } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { CHAT_HEADER_AREAS } from '@/lib/chat-header-slots'
 import type { ChatMessage } from '@/lib/chat-messages'
 import { NEW_SESSION_TITLE, quickModelOptions, sessionTitle } from '@/lib/chat-runtime'
 import { useIncrementalExternalStoreRuntime } from '@/lib/incremental-external-store-runtime'
@@ -79,6 +82,7 @@ import { ResumeExhaustedOverlay } from './resume-exhausted-overlay'
 import { isRouteSessionMismatch } from './route-session-state'
 import { useRuntimeMessageRepository } from './runtime-repository'
 import { ScrollToBottomButton } from './scroll-to-bottom-button'
+import { SessionRecapCard } from './session-recap'
 import { useSessionView } from './session-view'
 import { SessionActionsMenu } from './sidebar/session-actions-menu'
 import { composerStaysMounted, routedSessionIsLoading, threadLoadingState } from './thread-loading'
@@ -193,6 +197,14 @@ function ChatHeader({
         >
           <TitleMenuTrigger>{title}</TitleMenuTrigger>
         </SessionActionsMenu>
+        {activeStoredSession ? (
+          <ChatHeaderSlot
+            area={CHAT_HEADER_AREAS.title}
+            profile={activeStoredSession.profile ?? null}
+            sessionId={sessionPinId(activeStoredSession)}
+            title={title}
+          />
+        ) : null}
       </div>
     </header>
   )
@@ -797,6 +809,45 @@ const ChatViewContent = memo(function ChatViewContent({
 
   const overlayKind: DragKind = dragKind === 'files' ? 'files' : sessionDragging && !sessionEdgeHover ? 'session' : null
 
+  // One prompt surface on the empty canvas: while the intro is up the real
+  // composer renders inside the intro column and the dock below stays empty, so
+  // the landing has a single input that carries the composer's own controls
+  // (model, attachments, approval mode, schedule) instead of a look-alike.
+  const composerDock = (
+    <FloatingComposerSurface>
+      <Suspense fallback={<ChatBarFallback />}>
+        <ChatBar
+          busy={busy}
+          cwd={currentCwd}
+          disabled={!gatewayOpen}
+          focusKey={activeSessionId}
+          freshDraftKey={freshDraftKey}
+          gateway={gateway}
+          maxRecordingSeconds={maxVoiceRecordingSeconds}
+          onAddContextRef={onAddContextRef}
+          onAddUrl={onAddUrl}
+          onAttachDroppedItems={onAttachDroppedItems}
+          onAttachImageBlob={onAttachImageBlob}
+          onAttachPastedText={onAttachPastedText}
+          onCancel={onCancel}
+          onPasteClipboardImage={onPasteClipboardImage}
+          onPickFiles={onPickFiles}
+          onPickFolders={onPickFolders}
+          onPickImages={onPickImages}
+          onRemoveAttachment={onRemoveAttachment}
+          onSteer={onSteer}
+          onSteerHidden={onSteerHidden}
+          onSubmit={onSubmit}
+          onTranscribeAudio={onTranscribeAudio}
+          profile={modelOptionsProfile || activeGatewayProfile}
+          queueSessionKey={queueSessionKey}
+          sessionId={activeSessionId}
+          state={chatBarState}
+        />
+      </Suspense>
+    </FloatingComposerSurface>
+  )
+
   return (
     <div
       className={cn(
@@ -846,7 +897,7 @@ const ChatViewContent = memo(function ChatViewContent({
               clampToComposer={showChatBar}
               cwd={currentCwd}
               gateway={gateway}
-              intro={showIntro ? { personality: introPersonality, seed: introSeed } : undefined}
+              intro={showIntro ? { composer: composerDock, personality: introPersonality, seed: introSeed } : undefined}
               loading={threadLoading}
               onBranchInNewChat={onBranchInNewChat}
               onCancel={haltRun}
@@ -857,6 +908,17 @@ const ChatViewContent = memo(function ChatViewContent({
               sessionKey={threadKey}
             />
           )}
+          {/* "Where it left off" recap (#13) — only once the transcript is
+              settled: gating on loadingSession/routeSessionMismatch/
+              resumeExhausted/messagesEmpty keeps it dark through resume and
+              hydration flicker; SessionRecapCard reads view.$messages
+              one-shot at mount (the atom is far too hot to subscribe here). */}
+          {!guideOpening &&
+            !loadingSession &&
+            !routeSessionMismatch &&
+            !resumeExhausted &&
+            !messagesEmpty &&
+            storedId && <SessionRecapCard storedSessionId={storedId} />}
           {resumeExhausted && routedSessionId && (
             <ResumeExhaustedOverlay onRetryResume={onRetryResume} sessionId={routedSessionId} />
           )}
@@ -877,46 +939,17 @@ const ChatViewContent = memo(function ChatViewContent({
               target; the link overlay shows only for the center region. */}
           <ChatDropOverlay kind={overlayKind} />
           <ChatSwapOverlay profile={gatewaySwapTarget} />
+          {/* Region capture (#34): in-app select + markup overlay; stores its
+              frame on $regionCapture and lands on whichever composer was
+              active when the menu kicked it. */}
+          <RegionCaptureOverlay />
           {/* Paint-first wake (#89843): transcript is live, profile gate still
               settling in the background — subtle badge, not an overlay. */}
           {isPrimary && !gatewaySwapTarget && <ChatSyncBadge profile={hydrationSyncProfile} />}
         </div>
         {/* Docked composers overlay their pane; the shared float escapes pane
             clipping through a stable portal host without remounting its editor. */}
-        {showChatBar && (
-          <FloatingComposerSurface>
-            <Suspense fallback={<ChatBarFallback />}>
-              <ChatBar
-                busy={busy}
-                cwd={currentCwd}
-                disabled={!gatewayOpen}
-                focusKey={activeSessionId}
-                freshDraftKey={freshDraftKey}
-                gateway={gateway}
-                maxRecordingSeconds={maxVoiceRecordingSeconds}
-                onAddContextRef={onAddContextRef}
-                onAddUrl={onAddUrl}
-                onAttachDroppedItems={onAttachDroppedItems}
-                onAttachImageBlob={onAttachImageBlob}
-                onAttachPastedText={onAttachPastedText}
-                onCancel={onCancel}
-                onPasteClipboardImage={onPasteClipboardImage}
-                onPickFiles={onPickFiles}
-                onPickFolders={onPickFolders}
-                onPickImages={onPickImages}
-                onRemoveAttachment={onRemoveAttachment}
-                onSteer={onSteer}
-                onSteerHidden={onSteerHidden}
-                onSubmit={onSubmit}
-                onTranscribeAudio={onTranscribeAudio}
-                profile={modelOptionsProfile || activeGatewayProfile}
-                queueSessionKey={queueSessionKey}
-                sessionId={activeSessionId}
-                state={chatBarState}
-              />
-            </Suspense>
-          </FloatingComposerSurface>
-        )}
+        {showChatBar && !showIntro && composerDock}
       </ChatRuntimeBoundary>
     </div>
   )

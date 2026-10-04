@@ -121,6 +121,8 @@ class DispatchResult:
     tick before spawning, so telemetry/CLI/dashboard can show the dispatcher
     acting on the fallback rule rather than explicit assignments."""
     skipped_nonspawnable: list[str] = field(default_factory=list)
+    # Assignee is on a team that is holding it back (paused seat / budget exhausted).
+    skipped_team_held: list[tuple[str, str]] = field(default_factory=list)
     """Ready task ids whose assignee names a control-plane lane (e.g. a Claude
     Code terminal like ``orion-cc``), not a Hermes profile. Expected steady-state
     on multi-lane setups, NOT operator-actionable; tracked apart so health
@@ -1664,6 +1666,32 @@ def _is_handoff_event(kind: str, payload: Optional[str]) -> bool:
     return bool(to) and "from" in data and data["from"] != to
 
 
+_TEAM_HELD_TTL = 5.0
+_team_held_cache: tuple = (0.0, "", {})
+
+
+def _team_held_profiles() -> dict:
+    """``{profile: reason}`` from ``tools.bot_team.held_profiles`` (install-wide team store), or
+    ``{}`` when there are no teams or the store cannot be read. Memoized for a few seconds per
+    install root: a tick asks once per candidate card, and the answer cannot change that fast."""
+    global _team_held_cache
+    try:
+        import time as _time
+
+        from tools.bot_mode_probe import _default_home, _hermes_root
+        from tools.bot_team import held_profiles
+
+        root = _hermes_root(Path(_default_home()))
+        at, cached_root, cached = _team_held_cache
+        if cached_root == str(root) and _time.monotonic() - at < _TEAM_HELD_TTL:
+            return cached
+        held = held_profiles(root)
+        _team_held_cache = (_time.monotonic(), str(root), held)
+        return held
+    except Exception:
+        return {}
+
+
 def _profile_exists_fn() -> Optional[Callable[[str], bool]]:
     """``hermes_cli.profiles.profile_exists``, or ``None`` when it cannot be
     imported (local import avoids a cycle; callers fall back to trusting the
@@ -2062,6 +2090,12 @@ def _dispatch_lane_task(
                 if (last is None or last["kind"] != "skipped_nonspawnable"
                         or last["payload"] != _kb._json_or_null({"assignee": assignee})):
                     _kb._append_event(conn, task_id, "skipped_nonspawnable", {"assignee": assignee})
+        return False
+    # Team governance: a paused or budget-exhausted teammate takes no NEW work. The card stays
+    # ready — nothing fails — and resumes when the seat does. Fail-open by construction.
+    held = _team_held_profiles().get(assignee)
+    if held is not None:
+        result.skipped_team_held.append((task_id, held))
         return False
     # Per-profile cap: one profile's local model / API quota / browser pool
     # must not be overwhelmed by a fan-out even with global headroom.

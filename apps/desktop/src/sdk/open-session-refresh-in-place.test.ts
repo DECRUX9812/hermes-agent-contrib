@@ -26,12 +26,13 @@ vi.mock('@/app/chat/session-view', async () => {
   return { PRIMARY_SESSION_VIEW: { $awaitingResponse: atom(false), $busy: atom(false) } }
 })
 vi.mock('@/app/open-session', () => ({ openSession: vi.fn() }))
-vi.mock('@/components/pane-shell/tree/store', async () => {
+vi.mock('@/components/pane-shell/tree/store', async importOriginal => {
   const { atom } = await import('nanostores')
 
   // session-focus.ts (reached via the preview store) and the layout store
   // read these at import time; a mock without them crashes before any test.
   return {
+    ...(await importOriginal<Record<string, unknown>>()),
     $activeTreeGroup: atom(null),
     $collapsedTreeSides: atom(new Set()),
     $hiddenTreePanes: atom(new Set()),
@@ -41,7 +42,11 @@ vi.mock('@/components/pane-shell/tree/store', async () => {
 })
 vi.mock('@/contrib/events', () => ({ onGatewayEvent: vi.fn() }))
 vi.mock('@/hermes', () => ({ deleteProfile: vi.fn(), getLogs: vi.fn(), getStatus: vi.fn(), hermesApi: vi.fn() }))
-vi.mock('@/store/notifications', () => ({ notify: vi.fn(), notifyError: vi.fn() }))
+vi.mock('@/store/notifications', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  notify: vi.fn(),
+  notifyError: vi.fn()
+}))
 vi.mock('@/store/system-actions', () => ({ runGatewayRestart: vi.fn() }))
 vi.mock('@/store/session', async () => {
   const { atom } = await import('nanostores')
@@ -50,6 +55,7 @@ vi.mock('@/store/session', async () => {
 
   return {
     $activeSessionId: atom(null),
+    $busy: atom(false),
     $connection: atom(null),
     $cronSessions: atom([]),
     $currentCwd: atom(''),
@@ -60,6 +66,7 @@ vi.mock('@/store/session', async () => {
     $selectedStoredSessionId: atom(null),
     $sessions: atom([]),
     $unreadFinishedSessionIds: atom([]),
+    $workspaceCwdOwner: atom(null),
     lineageAliases: (storedId: string) => [storedId],
     rememberedSessionProfile: (_sessions: unknown, _sessionId: null | string, activeProfile: null | string) =>
       (activeProfile ?? '').trim() || 'default',
@@ -80,6 +87,7 @@ vi.mock('@/store/session-states', async () => {
     $focusedRuntimeId: atom(null),
     $focusedSessionState: atom(null),
     $sessionTiles: atom([]),
+    $sessionWorkspaceScopes: atom({}),
     $sessionStates: atom({}),
     $stalledSessionIds: atom([]),
     $workingSessionIds: atom([]),

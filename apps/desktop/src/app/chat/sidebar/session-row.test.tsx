@@ -12,7 +12,9 @@ import type * as ChatRuntime from '@/lib/chat-runtime'
 import { SESSION_ROW_AREAS, type SessionRowSlotProps } from '@/lib/session-row-slots'
 import type * as Time from '@/lib/time'
 import type * as ComposerStatusStore from '@/store/composer-status'
+import { $sidebarRowMeta } from '@/store/layout'
 import type * as SessionStore from '@/store/session'
+import { setSessionListDensity } from '@/store/session-list-density'
 import { clearAllSessionStates, publishSessionState } from '@/store/session-states'
 import type * as SessionStatesStore from '@/store/session-states'
 import type * as WindowsStore from '@/store/windows'
@@ -22,10 +24,47 @@ import { SidebarSessionRow } from './session-row'
 
 afterEach(cleanup)
 
+// The live digest line (store/session-digest.ts) resolves its labels through
+// module-level `translateNow`, outside useI18n — so the mock has to answer the
+// same key set that `t.sidebar.row` carries below.
+const digestStrings = vi.hoisted((): Record<string, string | ((...args: unknown[]) => string)> => ({
+  'sidebar.row.backgroundRunning': 'Running in background',
+  'sidebar.row.digest.agents': count => `${count} agents running`,
+  'sidebar.row.digest.approve': command => `Approve: ${command}`,
+  'sidebar.row.digest.compacting': 'Summarizing thread',
+  'sidebar.row.digest.replying': 'Writing a reply',
+  'sidebar.row.digest.stalled': 'Still running — quiet for a while',
+  'sidebar.row.digest.todo': (done, total, task) => `${done}/${total} · ${task}`,
+  'sidebar.row.finishedUnread': 'Finished',
+  'sidebar.row.sessionRunning': 'Running',
+  'sidebar.row.waitingForAnswer': 'Waiting for answer'
+}))
+
 vi.mock('@/i18n', () => ({
+  translateNow: (key: string, ...args: unknown[]) => {
+    const value = digestStrings[key]
+
+    return typeof value === 'function' ? value(...args) : String(value ?? key)
+  },
   useI18n: () => ({
     t: {
       sidebar: {
+        peek: {
+          agents: 'Delegated agents',
+          agentsRunning: (count: number) => `${count} running`,
+          agentsSummary: (count: number) => `${count} agents`,
+          archived: 'Archived',
+          branch: 'Branch',
+          idle: 'Idle',
+          model: 'Model',
+          profile: 'Profile',
+          source: 'Source',
+          started: 'Started',
+          stats: 'Stats',
+          tokens: (count: string) => `${count} tokens`,
+          updated: 'Updated',
+          workspace: 'Workspace'
+        },
         messageCount: (count: number) => `${count} messages`,
         toolCallCount: (count: number) => `${count} tool calls`,
         projects: {
@@ -203,6 +242,65 @@ describe('SidebarSessionRow running arc', () => {
   })
 })
 
+// The digest line claims the row's lowest sub-line while the session has
+// something to say and returns the slot to the static text when it doesn't.
+// Only non-compact densities carry the line; the store defaults to compact.
+describe('SidebarSessionRow live digest', () => {
+  afterEach(() => {
+    clearAllSessionStates()
+    setSessionListDensity('compact')
+  })
+
+  const workingOn = (command: string) =>
+    publishSessionState('rt1', {
+      ...createClientSessionState('s1', [
+        {
+          id: 'a1',
+          parts: [{ type: 'tool-call', toolCallId: 't1', toolName: 'terminal', args: { command } }],
+          pending: true,
+          role: 'assistant'
+        } as never
+      ]),
+      busy: true
+    })
+
+  it("paints the session's current action on the row's second line", () => {
+    setSessionListDensity('comfortable')
+    workingOn('npm test')
+
+    const { container } = renderRow(makeSession({ id: 's1', title: 'Working row' }))
+
+    expect(container.textContent).toContain('Running npm test')
+  })
+
+  it('keeps the metadata line for a session with nothing to say', () => {
+    setSessionListDensity('comfortable')
+
+    const { container } = renderRow(makeSession({ id: 's1', message_count: 3, title: 'Quiet row' }))
+
+    expect(container.textContent).toContain('3 messages')
+  })
+
+  it('swaps the action line for the finished preview when the turn settles', () => {
+    setSessionListDensity('comfortable')
+    workingOn('npm test')
+
+    const { container } = renderRow(makeSession({ id: 's1', message_count: 3, title: 'Settling row' }))
+
+    expect(container.textContent).toContain('Running npm test')
+
+    // A settled turn the user wasn't watching is unread. Sessions nothing
+    // references release their transcript on settle, so the line switches to
+    // the unread marker — not back to the stale action or the metadata.
+    act(() => {
+      publishSessionState('rt1', { ...createClientSessionState('s1'), busy: false })
+    })
+
+    expect(container.textContent).not.toContain('Running npm test')
+    expect(container.textContent).toContain('Finished')
+  })
+})
+
 describe('SidebarSessionRow', () => {
   afterEach(() => {
     vi.useRealTimers()
@@ -287,6 +385,82 @@ describe('SidebarSessionRow', () => {
     renderRow(makeSession({ title: 'Live row' }))
 
     expect(menuProps).toHaveBeenCalledWith(expect.objectContaining({ archived: false }))
+  })
+})
+
+// Condensed (roadmap #5): the one-line row collapses to dot + title, and the
+// meta the fuller densities paint folds into the title's tooltip so nothing
+// becomes unreachable.
+describe('SidebarSessionRow condensed density', () => {
+  afterEach(() => {
+    setSessionListDensity('compact')
+    $sidebarRowMeta.set(['preview', 'updated'])
+    vi.useRealTimers()
+  })
+
+  const condensedSession = () =>
+    makeSession({
+      continuation_kind: 'compression',
+      git_branch: 'main',
+      handoff_platform: 'telegram',
+      handoff_state: 'active',
+      message_count: 4,
+      model: 'vendor/claude-big',
+      title: 'Condensed row'
+    })
+
+  it('renders dot + title only — no meta line, no badges, still the ⋯ menu', () => {
+    setSessionListDensity('condensed')
+
+    const { container } = renderRow(condensedSession())
+
+    // Comfortable would paint "main · claude-big · 4 messages" under the title.
+    expect(screen.queryByText('main · claude-big · 4 messages')).toBeNull()
+    expect(container.querySelector('.codicon-layers')).toBeNull()
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Session actions' })).toBeTruthy()
+  })
+
+  it('still reaches the hidden meta through the title tooltip', () => {
+    vi.useFakeTimers()
+    setSessionListDensity('condensed')
+    renderRow(condensedSession())
+
+    const trigger = screen.getByText('Condensed row').closest('[data-slot="tooltip-trigger"]') as HTMLElement
+
+    act(() => {
+      fireEvent.pointerMove(trigger)
+      fireEvent.pointerEnter(trigger)
+      vi.advanceTimersByTime(300)
+    })
+
+    const tip = screen.getByRole('tooltip')
+    expect(tip.textContent).toContain('Condensed row')
+    expect(tip.textContent).toContain('main · claude-big · 4 messages')
+    expect(tip.textContent).toContain('Started on telegram')
+    expect(tip.textContent).toContain('compressed and continued')
+  })
+
+  it('keeps the overflow-only title tooltip when there is no meta to fold in', () => {
+    vi.useFakeTimers()
+    setSessionListDensity('condensed')
+    // Bare meta prefs leave nothing hidden, so the title keeps its
+    // overflow-only OverflowTip instead of the always-on condensed tip.
+    $sidebarRowMeta.set([])
+    const title = 'A very long session title that the sidebar cannot possibly fit'
+    renderRow(makeSession({ title }))
+
+    const trigger = screen.getByText(title).closest('[data-slot="tooltip-trigger"]') as HTMLElement
+    Object.defineProperty(trigger, 'scrollWidth', { configurable: true, value: 300 })
+    Object.defineProperty(trigger, 'clientWidth', { configurable: true, value: 100 })
+
+    act(() => {
+      fireEvent.pointerMove(trigger)
+      fireEvent.pointerEnter(trigger)
+      vi.advanceTimersByTime(700)
+    })
+
+    expect(screen.getByRole('tooltip').textContent).toContain(title)
   })
 })
 

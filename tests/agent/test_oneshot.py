@@ -27,6 +27,21 @@ class TestRenderTemplate:
         assert "feat: prior" in regen
         assert "feat: prior" not in plain
 
+    def test_code_review_includes_diff_and_json_contract(self):
+        instructions, user = render_template(
+            "code_review",
+            {"diff": "diff --git a/x.py b/x.py\n+new_line"},
+        )
+        assert "JSON array" in instructions
+        assert "new-file line" in instructions.lower() or "NEW-file line" in instructions
+        assert "diff --git a/x.py b/x.py" in user
+
+    def test_code_review_truncates_oversize_diff(self):
+        _, user = render_template("code_review", {"diff": "d" * 50000})
+        assert user.endswith("…(truncated)")
+        assert len(user) < 50000
+
+
 class TestRunOneshot:
     def _mock_response(self, content):
         resp = MagicMock()

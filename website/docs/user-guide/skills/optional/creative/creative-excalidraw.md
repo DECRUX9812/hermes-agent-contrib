@@ -43,6 +43,29 @@ Generate `.excalidraw` files for architecture diagrams, flowcharts, sequence dia
 3. **Save the file** using `write_file` to create a `.excalidraw` file
 4. **Optionally upload** for a shareable link using `scripts/upload.py` via `terminal`
 
+### Drawing on a Hermes Desktop canvas
+
+When the user shares a canvas (a `.excalidraw` file attached to their message, opened beside
+the chat in Hermes Desktop), draw ON that file — the app re-reads it and shows your strokes live,
+next to theirs. Don't hand-write element JSON for this; use the layout helper via `terminal`:
+
+```bash
+# What is on the canvas now (their shapes and text included)
+python optional-skills/creative/excalidraw/scripts/canvas.py read canvas.excalidraw
+
+# Add a laid-out diagram to the right of what is there (never moves their strokes)
+python optional-skills/creative/excalidraw/scripts/canvas.py draw canvas.excalidraw - <<'SPEC'
+{"direction": "right",
+ "nodes": [{"id": "idea", "label": "Idea"}, {"id": "draft", "label": "Draft", "color": "violet"},
+           {"id": "ship", "label": "Ship", "shape": "ellipse", "color": "green"}],
+ "edges": [{"from": "idea", "to": "draft"}, {"from": "draft", "to": "ship", "label": "Tuesday"}],
+ "notes": ["Ask quill for the edit pass"]}
+SPEC
+```
+
+Shapes: `box`, `ellipse`, `diamond`. Colors: `blue`, `violet`, `green`, `amber`, `red`, `gray`.
+Read before you draw when the user refers to "this" or "my sketch", and describe what you added.
+
 ### Saving a Diagram
 
 Wrap your elements array in the standard `.excalidraw` envelope and save with `write_file`:

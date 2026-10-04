@@ -57,6 +57,7 @@ The install also ships `hermes-agent`, a minimal runner that sends one query and
 | `hermes setup` | Interactive setup wizard for all or part of the configuration. |
 | `hermes whatsapp` | Configure and pair the WhatsApp bridge. |
 | `hermes whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct from `hermes whatsapp` (Baileys personal-account bridge). |
+| `hermes bots` | Create Bot Mode bots and organize them into teams (the agent's door; see the `bot-team-builder` skill). |
 | `hermes slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
 | `hermes auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nous/Anthropic. |
 | `hermes login` / `logout` | **Deprecated** — use `hermes auth` instead. |
@@ -528,6 +529,34 @@ hermes send --list telegram         # filter by platform
 ```
 
 
+
+## `hermes bots`
+
+```bash
+hermes bots list [--json]
+hermes bots create <name> [--title Scout] [--role "Researcher"] [--persona "Cite every claim."] [--color "#35d49a"] [--from <profile>]
+hermes bots team create <Team> [--mission "..."]
+hermes bots team add <Team> <bot> [--lead] [--title "..."] [--reports-to <bot>]
+hermes bots team show <Team>
+hermes bots team list
+hermes bots lesson add <bot> "<lesson>"          # or: --team <Team> "<lesson>"
+hermes bots lesson list <bot>                    # or: --team <Team>
+hermes bots lesson remove <bot> <number>
+```
+
+Create bots and teams without the Desktop. A bot is a profile carrying the Bot Mode
+marker; `create` clones the active (or `--from`) profile's config and keys, so the bot
+answers on the same model from its first message. A team's `--lead` is the one bot that
+listens in the team's group chats; the rest wake when @mentioned or delegated to. The
+main bot uses these commands through the bundled `bot-team-builder` skill when you ask
+it to set up a team.
+
+`lesson` keeps what a bot has learned in that bot's own memory (`MEMORY.md`), marked as
+approved by you. It takes effect from the bot's next chat (memory is a snapshot taken when a
+chat starts, so an open chat is never re-prompted). `--team` writes the lesson to every bot
+seated on the team; `list` numbers them and `remove` takes one back. The bundled
+`bot-team-retro` skill runs a short retro: it reads what your bots recently did, proposes a
+few lessons with evidence, and writes only the ones you approve.
 
 ## `hermes peer`
 

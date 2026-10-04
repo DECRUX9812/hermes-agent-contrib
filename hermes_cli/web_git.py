@@ -425,7 +425,23 @@ def review_ship_info(cwd: str) -> dict:
 # page. Aliases carry many branches per request; 50 stays inside GitHub's node budget.
 _PR_QUERY_BRANCH_CHUNK = 50
 _PR_QUERY_BRANCH_CAP = 300
-_PR_NODE_FIELDS = "number state isDraft isCrossRepository title url headRefName"
+_PR_NODE_FIELDS = ("number state isDraft isCrossRepository title url headRefName "
+                   "commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }")
+
+
+def _pr_check_state(pr: dict) -> str | None:
+    """GitHub folds a commit's checks into one rollup state; keep the three
+    buckets a row chip can show and omit the field when the head commit has no
+    checks at all."""
+    nodes = ((pr.get("commits") or {}).get("nodes") or [])
+    rollup = ((nodes[0].get("commit") or {}).get("statusCheckRollup") or {}).get("state") if nodes else None
+    if rollup == "SUCCESS":
+        return "success"
+    if rollup in ("FAILURE", "ERROR"):
+        return "failure"
+    if rollup in ("EXPECTED", "PENDING"):
+        return "pending"
+    return None
 
 
 def _pr_query(owner: str, name: str, branches: list[str], numbers: list[int]) -> str:
@@ -443,9 +459,13 @@ def _pr_query(owner: str, name: str, branches: list[str], numbers: list[int]) ->
 
 
 def _pr_payload(pr: dict) -> dict:
-    return {"branch": str(pr.get("headRefName")), "draft": bool(pr.get("isDraft")),
-            "number": int(pr.get("number") or 0), "state": str(pr.get("state") or "").lower(),
-            "title": str(pr.get("title") or ""), "url": str(pr.get("url") or "")}
+    payload = {"branch": str(pr.get("headRefName")), "draft": bool(pr.get("isDraft")),
+               "number": int(pr.get("number") or 0), "state": str(pr.get("state") or "").lower(),
+               "title": str(pr.get("title") or ""), "url": str(pr.get("url") or "")}
+    checks = _pr_check_state(pr)
+    if checks:
+        payload["checks"] = checks
+    return payload
 
 
 def _own_pr(key: str, field: dict) -> dict | None:
@@ -685,6 +705,45 @@ def worktree_add(cwd: str, options: dict) -> dict:
 def worktree_remove(cwd: str, worktree_path: str, force: bool) -> dict:
     _git_ok(_main_root(cwd), ["worktree", "remove", *(["--force"] if force else []), worktree_path])
     return {"removed": worktree_path}
+
+
+def worktree_ensure(cwd: str, worktree_path: str, branch: str) -> dict:
+    """Recreate a session worktree whose directory is gone (roadmap #47:
+    "restore recreates missing worktrees"). Idempotent — an existing dir is a
+    no-op. `git worktree prune` clears the stale registration a deleted dir
+    leaves behind; a branch that itself was deleted re-seeds at the same path
+    from HEAD so the session's cwd exists again either way.
+    """
+    root = _main_root(cwd)
+    if _is_dir(worktree_path):
+        return {"path": worktree_path, "branch": branch, "repoRoot": root, "restored": False}
+    _git(root, ["worktree", "prune"])
+    name = _sanitize_branch(branch) or _slugify(os.path.basename(worktree_path))
+    if not name:
+        raise RuntimeError("worktree path has no usable branch name")
+    code, _, _ = _git(root, ["worktree", "add", worktree_path, name])
+    if code != 0:
+        # The branch ref is gone (deleted after the worktree was) — recreate it
+        # from the repo's HEAD so the directory (and the session's cwd) is
+        # restored rather than erroring the open.
+        _git_ok(root, ["worktree", "add", "-b", name, worktree_path])
+    return {"path": worktree_path, "branch": name, "repoRoot": root, "restored": True}
+
+
+def worktree_merge(cwd: str, worktree_path: str) -> dict:
+    """Merge a session worktree's branch back into the repo's MAIN checkout
+    (roadmap #47 "merge back"). Asks git for the worktree's live branch — the
+    stored session value can be stale if the user switched inside it. A dirty
+    main checkout fails the merge exactly as `git merge` does; the error text
+    reaches the desktop toast unchanged.
+    """
+    root = _main_root(cwd)
+    branch = _git_line(worktree_path, ["rev-parse", "--abbrev-ref", "HEAD"])
+    if not branch or branch == "HEAD":
+        raise RuntimeError(f"no branch checked out in {worktree_path}")
+    into = _git_line(root, ["rev-parse", "--abbrev-ref", "HEAD"])
+    _git_ok(root, ["merge", "--no-edit", branch])
+    return {"merged": True, "branch": branch, "into": into, "repoRoot": root}
 
 
 def _ref_names(cwd: str, *patterns: str, fmt: str = "%(refname:short)") -> list[str]:

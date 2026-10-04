@@ -597,55 +597,31 @@ def _bots_title(ui_meta: dict):
 
 
 def _configure_ui_meta(profile_dir, params, applied) -> None:
-    """Merge ``params["ui_meta"]`` key-wise into profile.yaml (None deletes). 64KB cap (rides
-    every roster paint). ``ui_meta_expected_revisions``: per-key CAS, any mismatch rejects the
-    whole write; revisions survive deletion so a stale client cannot recreate a removed key."""
+    """Merge ``params["ui_meta"]`` key-wise into profile.yaml (``hermes_cli/profile_ui_meta.py``:
+    None deletes, 64KB cap, per-key CAS via ``ui_meta_expected_revisions``)."""
     applied["ui_meta"] = False
     try:
+        from hermes_cli.profile_ui_meta import merge_ui_meta
         incoming = params["ui_meta"]
-        if len(json.dumps(incoming)) > 65536:
-            return
-        expected = params.get("ui_meta_expected_revisions")
-        if expected is not None and not isinstance(expected, dict):
-            raise ValueError("ui_meta_expected_revisions must be an object")
+        watch = isinstance(incoming, dict) and "hermes-bots" in incoming
         with _profile_ui_meta_lock:
-            existing = _read_profile_yaml(profile_dir)
-            raw_revisions = existing.get("_ui_meta_revisions")
-            revisions = _clean_revisions(raw_revisions if isinstance(raw_revisions, dict) else {})
-            conflicts = {}
-            for key in incoming if isinstance(expected, dict) else ():
-                wanted, actual = expected.get(key), revisions.get(key, 0)
-                if not isinstance(wanted, int) or isinstance(wanted, bool) or wanted < 0 or wanted != actual:
-                    conflicts[key] = {"expected": wanted, "actual": actual}
-            if conflicts:
-                applied["ui_meta_conflicts"] = conflicts
-                applied["ui_meta_revisions"] = {key: revisions.get(key, 0) for key in incoming}
-                return
-            current = existing.get("ui_meta")
-            current = current if isinstance(current, dict) else {}
-            old_title = _bots_title(current)
-            for key, value in incoming.items():
-                if value is None:
-                    current.pop(key, None)
-                else:
-                    current[key] = value
-                revisions[key] = revisions.get(key, 0) + 1
-            if current:
-                existing["ui_meta"] = current
-            else:
-                existing.pop("ui_meta", None)
-            existing["_ui_meta_revisions"] = revisions
-            from utils import atomic_yaml_write
-            atomic_yaml_write(profile_dir / "profile.yaml", existing, sort_keys=False)
+            old_title = _bots_title((_read_profile_yaml(profile_dir) or {}).get("ui_meta") or {}) if watch else None
+            outcome = merge_ui_meta(profile_dir, incoming, params.get("ui_meta_expected_revisions"))
+            if watch and outcome.get("applied") and "conflicts" not in outcome:
+                new_title = _bots_title((_read_profile_yaml(profile_dir) or {}).get("ui_meta") or {})
+                if new_title != old_title:
+                    # A client writing another machine's bot title lands here; the Desktop's
+                    # `[bot-meta win=…]` desktop.log line at the same time names the window.
+                    logging.getLogger(__name__).info(
+                        "ui_meta hermes-bots title for profile %s: %r -> %r (revision %s)",
+                        params.get("name") or profile_dir.name, old_title, new_title,
+                        (outcome.get("revisions") or {}).get("hermes-bots"))
+        if "conflicts" in outcome:
+            applied["ui_meta_conflicts"] = outcome["conflicts"]
+            applied["ui_meta_revisions"] = outcome["revisions"]
+        elif outcome["applied"]:
             applied["ui_meta"] = True
-            applied["ui_meta_revisions"] = {key: revisions[key] for key in incoming}
-            if _bots_title(current) != old_title:
-                # A client writing another machine's bot title lands here; the Desktop's
-                # `[bot-meta win=…]` desktop.log line at the same time names the window.
-                logging.getLogger(__name__).info(
-                    "ui_meta hermes-bots title for profile %s: %r -> %r (revision %s)",
-                    params.get("name") or profile_dir.name, old_title, _bots_title(current),
-                    revisions.get("hermes-bots"))
+            applied["ui_meta_revisions"] = outcome["revisions"]
     except Exception:
         applied["ui_meta"] = False
 

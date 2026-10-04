@@ -280,6 +280,34 @@ describe('generic new session default routing', () => {
   )
 
   it.each([
+    { workspaceMode: 'bots' as const, marked: true },
+    { workspaceMode: 'sessions' as const, marked: false }
+  ])(
+    'mints $workspaceMode tiles with bot_topic: $marked — the session-lifetime marker that gates bot powers',
+    async ({ workspaceMode, marked }) => {
+      // "New chat with this bot" / Bot Mode tab-strip "+" both route through
+      // openNewSessionTile with a bots workspace scope. The marker is the
+      // contract the backend persists in model_config and reads to gate
+      // message_agent / update_task / the teammate prompt section.
+      const { result } = mountActions()
+      const route = { connectionId: 'previous', profile: 'bot-profile' }
+      await act(() =>
+        result.current.openNewSessionTile('right', {
+          route,
+          workspaceScope: { workspaceMode, ownerRoute: route, workspaceOwnerKey: 'bot-profile' }
+        })
+      )
+      const params = vi.mocked(requestGatewayForAgent).mock.calls[0]?.[3] as Record<string, unknown>
+
+      if (marked) {
+        expect(params).toEqual(expect.objectContaining({ bot_topic: true }))
+      } else {
+        expect(params.bot_topic).toBeUndefined()
+      }
+    }
+  )
+
+  it.each([
     { connectionId: 'lab', profile: 'research' },
     { connectionId: 'local', profile: 'personal' }
   ])('uses the saved exact owner only for a new draft: $connectionId/$profile', async saved => {

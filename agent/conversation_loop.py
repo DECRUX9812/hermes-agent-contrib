@@ -657,7 +657,7 @@ def _bot_chat_prompt_stale(agent, stored_prompt: str | None) -> bool:
         return False
     try:
         from tools.bot_mode_probe import (
-            BOT_CHAT_TITLE,
+            bot_powered_session,
             stored_bot_chat_prompt_needs_upgrade,
             stored_prompt_capability_stale,
         )
@@ -671,13 +671,7 @@ def _bot_chat_prompt_stale(agent, stored_prompt: str | None) -> bool:
             return True
         if not getattr(agent, "_bot_mode_protocol", True):
             return False
-        title = str(getattr(agent, "_session_title_hint", "") or "").strip()
-        if not title and agent._session_db and agent.session_id:
-            try:
-                title = str(agent._session_db.get_session_title(agent.session_id) or "").strip()
-            except Exception:
-                title = ""
-        return title == BOT_CHAT_TITLE and bool(stored_bot_chat_prompt_needs_upgrade(stored_prompt, home))
+        return bot_powered_session(agent) and bool(stored_bot_chat_prompt_needs_upgrade(stored_prompt, home))
     except Exception:
         return False
 
@@ -773,7 +767,16 @@ def _restore_or_build_system_prompt(agent, system_message, conversation_history)
                 "adopt the new capability surface (one-time prefix-cache break).",
                 agent.session_id,
             )
-            agent._session_title_hint = "Bot Chat"
+            # The rebuild below re-evaluates the bot-power gate on this agent; give it
+            # the same identity evidence the row carries (canonical title vs topic mark).
+            try:
+                from tools.bot_mode_probe import canonical_bot_chat
+                if canonical_bot_chat(agent):
+                    agent._session_title_hint = "Bot Chat"
+                else:
+                    agent._bot_topic = True
+            except Exception:
+                pass
             # The skills index cache (LRU + disk snapshot) does not watch the skills
             # dir; a capability refresh must rebuild THROUGH it or new skills are lost.
             try:

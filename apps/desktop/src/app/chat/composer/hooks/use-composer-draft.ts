@@ -3,7 +3,9 @@
 // event-driven and registers through the gateway stream instead.
 import '@/store/suggestion-providers/cron'
 import '@/store/suggestion-providers/github'
+import '@/store/suggestion-providers/goal'
 import '@/store/suggestion-providers/mcp'
+import '@/store/suggestion-providers/nudges'
 import '@/store/suggestion-providers/skill'
 
 import { useAui, useAuiState, useComposerRuntime } from '@assistant-ui/react'
@@ -21,6 +23,7 @@ import {
   freshDraftScope,
   isFreshDraftScope,
   onComposerDraftSyncRequest,
+  registerComposerAttachmentScope,
   reloadPersistedDrafts,
   stashSessionDraft,
   takeSessionDraft
@@ -135,6 +138,14 @@ export function useComposerDraft({
   sessionIdRef.current = sessionId
   const queueEditStateRef = useRef<QueueEditState | null>(queueEditRef.current)
   queueEditStateRef.current = queueEditRef.current
+  // Suppresses the debounced stash while the swap effect is actively resuming
+  // a different session. Without this, `resumeSession` paints the selection
+  // and syncs the (empty initial) composer runtime before the swap effect's
+  // `takeSessionDraft` runs — the runtime's `sync()` schedules `stashAt(scope, '')`
+  // which fires 250 ms later and clobbers the draft the swap cleanup already
+  // saved (#104995). Set by the swap effect on entry, cleared by the effect's
+  // cleanup synchronously before it reads `syncDraftFromEditor()`.
+  const resumingSessionRef = useRef(false)
 
   const [focusRequestId, setFocusRequestId] = useState(0)
 
@@ -418,6 +429,10 @@ export function useComposerDraft({
         return
       }
 
+      if (resumingSessionRef.current) {
+        return
+      }
+
       const scope = draftScopeRef.current
       const entry = { scope, text }
       pendingDraftPersistRef.current = entry
@@ -532,11 +547,16 @@ export function useComposerDraft({
     }
 
     draftScopeRef.current = activeQueueSessionKey
+    resumingSessionRef.current = true
 
     const { attachments, text } = takeSessionDraft(activeQueueSessionKey)
     loadIntoComposer(text, attachments)
+    // Sample the restored draft so context-shaped offers (the goal chips on
+    // an empty new-session box) don't wait for the first keystroke.
+    sampleComposerDraft(sessionIdRef.current ?? null, text)
 
     return () => {
+      resumingSessionRef.current = false
       const latestText = syncDraftFromEditor()
       const editing = queueEditStateRef.current
 
@@ -553,6 +573,16 @@ export function useComposerDraft({
       clearDraftSuggestions(sessionIdRef.current)
     }
   }, [activeQueueSessionKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Publish this composer's live attachment set under its draft scope so a
+  // file dropped on the session's sidebar row stages chips straight into it.
+  // Passive effect: its cleanup runs after the swap's layout cleanup has
+  // stashed the outgoing scope, so unregistering republishes the stash's
+  // count — not a pre-stash snapshot.
+  useEffect(
+    () => registerComposerAttachmentScope(activeQueueSessionKey, attachmentScope),
+    [activeQueueSessionKey, attachmentScope]
+  )
 
   // The HUD handoff's two verbs. Entering HUD mode flushes this editor's text
   // into the shared stash so the HUD's composer boots with it; leaving repaints

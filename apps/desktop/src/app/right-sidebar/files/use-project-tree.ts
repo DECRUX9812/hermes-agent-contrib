@@ -68,6 +68,27 @@ function findNode(nodes: TreeNode[], id: string): null | TreeNode {
   return null
 }
 
+/** The loaded dir that must be re-read for a change in `dir` to show, or null
+ *  when the change is hidden (inside a folder that exists but is collapsed).
+ *  A dir the tree has never seen — a folder the change itself created, like
+ *  `src/api/` for a first `src/api/x.ts` — surfaces through its nearest
+ *  ancestor that is shown, so the new folder appears there. */
+export function visibleChangeTarget(dir: string, rootPath: string, data: TreeNode[]): null | string {
+  let current = dir.replace(/[\\/]+$/, '')
+
+  while (current.length > rootPath.length && current.startsWith(rootPath)) {
+    const node = findNode(data, current)
+
+    if (node) {
+      return node.children ? current : null
+    }
+
+    current = current.replace(/[\\/][^\\/]*$/, '')
+  }
+
+  return current === rootPath ? rootPath : null
+}
+
 // Merge a freshly-read dir's entries into its existing children: keep surviving
 // nodes (subtrees intact), add new, drop deleted. Non-recursive — a grandchild
 // dir only re-reads when it's itself in the change set.
@@ -314,9 +335,13 @@ async function revalidateTree(
   const filterAtRead = showsIgnoredFiles(rootPath)
 
   if (!change.full && change.dirs.length) {
-    // Only re-read changed dirs that are actually loaded (root, or an expanded
-    // folder); a change inside a collapsed/absent dir isn't visible → skip.
-    const targets = change.dirs.filter(dir => dir === rootPath || findNode(state.data, dir)?.children)
+    // Only re-read dirs that are actually loaded (root, or an expanded folder);
+    // a change inside a collapsed folder isn't visible → skip.
+    const targets = [
+      ...new Set(
+        change.dirs.map(dir => visibleChangeTarget(dir, rootPath, state.data)).filter((d): d is string => d !== null)
+      )
+    ]
 
     if (!targets.length) {
       return

@@ -140,7 +140,8 @@ export function useBackgroundQueueDrain({
               id: `composer-background-queue-stuck-${sessionKey}`,
               kind: 'info',
               title: t.composer.queueDroppedTitle,
-              message: t.composer.queueDroppedBody
+              message: t.composer.queueDroppedBody,
+              sessionId: sessionKey
             })
 
             return
@@ -156,7 +157,8 @@ export function useBackgroundQueueDrain({
             id: `composer-background-queue-stuck-${sessionKey}`,
             kind: 'info',
             title: t.composer.queueStuckTitle,
-            message: t.composer.queueStuckBody
+            message: t.composer.queueStuckBody,
+            sessionId: sessionKey
           })
 
           return

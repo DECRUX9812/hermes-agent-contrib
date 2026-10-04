@@ -4917,6 +4917,53 @@ describe('usePromptActions submit session-context isolation (#54527)', () => {
     })
   })
 
+  it('sends the first message of a new chat when the composer names its fresh draft scope', async () => {
+    // The real ChatBar passes its scope with every send; on a new chat that is
+    // the fresh-draft key (`__new__…`), which can never equal the session the
+    // create step is about to mint. Once create re-homes onto that session it
+    // IS the composer's scope — reading the fresh key as "the composer showed
+    // another chat" aborted every first message (no prompt.submit, no row).
+    const calls: { method: string; params?: Record<string, unknown> }[] = []
+    const selectedStoredSessionIdRef: MutableRefObject<string | null> = { current: null }
+    const activeSessionIdRef: MutableRefObject<string | null> = { current: null }
+    let routeToken = '/'
+
+    const requestGateway = vi.fn(async (method: string, params?: Record<string, unknown>) => {
+      calls.push({ method, params })
+
+      return {} as never
+    })
+
+    const createBackendSessionForSend = vi.fn(async () => {
+      activeSessionIdRef.current = 'rt-new-chat'
+      selectedStoredSessionIdRef.current = 'stored-new-chat'
+      routeToken = '/stored-new-chat'
+
+      return 'rt-new-chat'
+    })
+
+    let handle: HarnessHandle | null = null
+    render(
+      <Harness
+        activeSessionId={null}
+        activeSessionIdRef={activeSessionIdRef}
+        createBackendSessionForSend={createBackendSessionForSend}
+        getRouteToken={() => routeToken}
+        onReady={h => (handle = h)}
+        refreshSessions={async () => undefined}
+        requestGateway={requestGateway}
+        selectedStoredSessionIdRef={selectedStoredSessionIdRef}
+        storedSessionId={null}
+      />
+    )
+    await waitFor(() => expect(handle).not.toBeNull())
+
+    expect(await handle!.submitText('hello from a new chat', { composerScope: '__new__:default~lifecycle-1' })).toBe(
+      true
+    )
+    expect(calls.find(c => c.method === 'prompt.submit')?.params).toMatchObject({ session_id: 'rt-new-chat' })
+  })
+
   it('still submits the first message when a background event retargets only the active runtime during create', async () => {
     // A live session's stream retargets activeSessionIdRef while session.create
     // is in flight (#47709). Route and selection still name the chat create

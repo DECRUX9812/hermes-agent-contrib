@@ -123,6 +123,8 @@ const LAYOUT_GROWTH = new Map<string, LayoutGrowth>([
   ['terminal-deck', { bottom: 200, left: 220, right: 240 }]
 ])
 
+/** Re-picks must reset persisted dismissals, docks, and sidebar visibility:
+ *  swapping only the tree left Advanced's terminal dismissed after Simple. */
 function reconcileLayout(id: string, tree: LayoutNode): void {
   applyLayoutPreset(id, tree)
 
@@ -146,6 +148,8 @@ function reconcileLayout(id: string, tree: LayoutNode): void {
   resetEnforcedDocks()
   adoptContributedPanes()
 
+  // Showing the sidebar can register more plugin panes synchronously. Dismiss last so those panes are dismissed as
+  // well; Simple otherwise gained an empty Cronjobs column.
   dismissUndeclared()
 }
 
@@ -166,6 +170,8 @@ export function assembleChatOnboarding(id: string, tree: LayoutNode, mode?: Inte
       bottom: growth.bottom ?? 0,
       left: growth.left ?? 0,
       right: growth.right ?? 0,
+      // Pane deltas can leave Simple below the sidebar's docking breakpoint at
+      // the user's zoom. Main applies this viewport floor, then the display clamp.
       minWidth: DOCKED_SIDEBAR_MIN_PX,
       top: growth.top ?? 0
     })

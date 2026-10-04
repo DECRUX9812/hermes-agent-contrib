@@ -141,10 +141,10 @@ describe('narrow tiles', () => {
 })
 
 describe('ComposerControls shortcut tooltips', () => {
-  it('keeps Send (not Steer) while a turn is running if there is a payload', async () => {
+  it('labels the send control Steer turn while a turn is running if there is a payload', async () => {
     renderControls({ busy: true, busyAction: 'steer' })
 
-    await expectShortcutTooltip('Send', '↵')
+    await expectShortcutTooltip('Steer turn', '↵')
   })
 
   it('shows Stop only when the composer is empty mid-turn', async () => {
@@ -157,6 +157,20 @@ describe('ComposerControls shortcut tooltips', () => {
     renderControls({ busy: true, busyAction: 'queue' })
 
     await expectShortcutTooltip('Queue message', 'Ctrl+↵')
+  })
+
+  it('names the queue path when steer is blocked only by attachments', async () => {
+    const onQueue = vi.fn()
+    renderControls({ busy: true, busyAction: 'queue', onQueue, queueWithAttachments: true })
+
+    const button = screen.getByRole('button', { name: 'Queue with attachments' })
+    expect(button.textContent).toContain('Queue with attachments')
+    expect(screen.queryByLabelText('Queue message')).toBeNull()
+
+    fireEvent.click(button)
+    expect(onQueue).toHaveBeenCalledTimes(1)
+
+    await expectShortcutTooltip('Queue with attachments', 'Ctrl+↵')
   })
 
   it('hides Queue while idle even if the composer has a payload', () => {

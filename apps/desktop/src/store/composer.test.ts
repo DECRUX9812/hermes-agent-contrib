@@ -2,24 +2,34 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   $composerAttachments,
+  $draftAttachmentCounts,
   $restoredDraftNotice,
   $voiceConversationStartRequest,
   addComposerAttachment,
   adoptGoneSessionDraft,
+  adoptNewSessionDraft,
   announceGoneSessionDraft,
+  announceNewSessionDraftKey,
   clearComposerTerminalSelections,
   clearSessionDraft,
   type ComposerAttachment,
   createComposerAttachmentOccurrenceId,
   createComposerAttachmentScope,
+  draftAttachmentCountIn,
+  dropComposerDraftsForProfile,
   freezeComposerTransportPayload,
   mainComposerScope,
+  migrateComposerDraftsForProfile,
   migrateSessionDraft,
+  registerComposerAttachmentScope,
+  registerComposerNewDraftProfileResolver,
   removeComposerAttachment,
   requestVoiceConversationStart,
   revokeAttachmentPreviewUrls,
+  rotateFreshDraftKey,
   SESSION_DRAFTS_STORAGE_KEY,
   setComposerTerminalSelection,
+  stageSessionDraftAttachments,
   stashSessionDraft,
   takeSessionDraft,
   takeVoiceConversationStart,
@@ -261,8 +271,14 @@ describe('updateComposerAttachment', () => {
 })
 
 describe('session drafts', () => {
+  let draftProfile = 'default'
+
+  registerComposerNewDraftProfileResolver(() => draftProfile)
+
   afterEach(() => {
-    for (const scope of ['session-a', 'session-b', null]) {
+    draftProfile = 'default'
+
+    for (const scope of ['session-a', 'session-b', 'session-new', null, '__new__:alpha', '__new__:beta', '__new__:first', '__new__:second']) {
       clearSessionDraft(scope)
     }
 
@@ -295,15 +311,62 @@ describe('session drafts', () => {
     expect(takeSessionDraft('__new__:second').text).toBe('second unsent chat')
   })
 
-  it('persists draft text (not attachments) to localStorage', () => {
-    stashSessionDraft('session-a', 'survives reload', [attachment({ id: 'file:a' })])
+  it('persists draft text and path-backed chips to localStorage', () => {
+    stashSessionDraft('session-a', 'survives reload', [
+      attachment({ id: 'file:a', detail: 'src', path: '/work/doc.pdf', refText: '@file:doc.pdf' })
+    ])
 
     const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<
       string,
-      string
+      { attachments?: unknown[]; text: string }
     >
 
-    expect(persisted['session-a']).toBe('survives reload')
+    expect(persisted['session-a']).toEqual({
+      attachments: [
+        { detail: 'src', id: 'file:a', kind: 'file', label: 'doc.pdf', path: '/work/doc.pdf', refText: '@file:doc.pdf' }
+      ],
+      text: 'survives reload'
+    })
+  })
+
+  it('drops blob and terminal chips — and upload/preview state — from persisted payloads', () => {
+    stashSessionDraft('session-a', 'with chips', [
+      attachment({
+        id: 'image:a',
+        kind: 'image',
+        previewUrl: 'blob:x',
+        thumbnailUrl: 'data:y',
+        uploadState: 'uploading'
+      }),
+      attachment({ id: 'terminal:t', kind: 'terminal' }),
+      attachment({
+        id: 'url:u',
+        kind: 'url',
+        label: 'site',
+        path: 'https://x.test',
+        previewUrl: 'blob:z',
+        uploadState: 'error'
+      })
+    ])
+
+    const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      { attachments?: { id: string; kind: string; previewUrl?: string; uploadState?: string }[]; text: string }
+    >
+
+    expect(persisted['session-a']?.attachments).toEqual([
+      { id: 'url:u', kind: 'url', label: 'site', path: 'https://x.test' }
+    ])
+  })
+
+  it('still restores a legacy v3 key→text payload', async () => {
+    window.localStorage.setItem('hermes:composer-drafts:v3', JSON.stringify({ 'session-a': 'legacy draft' }))
+    vi.resetModules()
+
+    const reloaded = await import('./composer')
+
+    expect(reloaded.takeSessionDraft('session-a').text).toBe('legacy draft')
+    expect(window.localStorage.getItem('hermes:composer-drafts:v3')).toBeNull()
   })
 
   it('evicts empty drafts instead of leaving stale entries behind', () => {
@@ -386,6 +449,131 @@ describe('session drafts', () => {
 
     clearSessionDraft(null)
     clearSessionDraft('to')
+  })
+
+  it('scopes the pre-session bucket per profile so a fresh chat cannot bleed across profiles', () => {
+    draftProfile = 'alpha'
+    stashSessionDraft(null, 'alpha draft', [])
+
+    draftProfile = 'beta'
+    expect(takeSessionDraft(null).text).toBe('')
+
+    stashSessionDraft(null, 'beta draft', [])
+
+    draftProfile = 'alpha'
+    expect(takeSessionDraft(null).text).toBe('alpha draft')
+
+    const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      { text: string }
+    >
+
+    expect(persisted['__new__:alpha']?.text).toBe('alpha draft')
+    expect(persisted['__new__:beta']?.text).toBe('beta draft')
+    expect(persisted['__new__']).toBeUndefined()
+  })
+
+  it('moves the sent fresh draft even when the profile re-aimed mid-typing', () => {
+    draftProfile = 'alpha'
+    stashSessionDraft(null, 'typed before the switch', [])
+
+    draftProfile = 'beta'
+    announceNewSessionDraftKey('session-new')
+
+    expect(adoptNewSessionDraft('session-new')).toBe(true)
+    expect(takeSessionDraft('session-new').text).toBe('typed before the switch')
+  })
+
+  it('migrates the profile bucket on rename and drops it on local delete only', () => {
+    draftProfile = 'alpha'
+    stashSessionDraft(null, 'alpha draft', [])
+
+    migrateComposerDraftsForProfile('alpha', 'beta')
+    expect(takeSessionDraft('__new__:beta').text).toBe('alpha draft')
+    expect(takeSessionDraft('__new__:alpha').text).toBe('')
+
+    // A remote connection's delete cannot be told apart from a same-named
+    // local profile — leave the bucket alone.
+    dropComposerDraftsForProfile('beta', { connectionId: 'remote-conn', profile: 'beta' })
+    expect(takeSessionDraft('__new__:beta').text).toBe('alpha draft')
+
+    dropComposerDraftsForProfile('beta')
+    expect(takeSessionDraft('__new__:beta').text).toBe('')
+  })
+
+  it('gives every new chat its own bucket without letting profiles share one', () => {
+    draftProfile = 'alpha'
+    stashSessionDraft(null, 'first alpha chat', [])
+    rotateFreshDraftKey()
+    expect(takeSessionDraft(null).text).toBe('')
+    stashSessionDraft(null, 'second alpha chat', [])
+
+    draftProfile = 'beta'
+    expect(takeSessionDraft(null).text).toBe('')
+
+    draftProfile = 'alpha'
+    expect(takeSessionDraft(null).text).toBe('second alpha chat')
+    expect(takeSessionDraft('__new__:alpha').text).toBe('first alpha chat')
+
+    dropComposerDraftsForProfile('alpha')
+    expect(takeSessionDraft(null).text).toBe('')
+    expect(takeSessionDraft('__new__:alpha').text).toBe('')
+  })
+})
+
+describe('row-drop attachment staging', () => {
+  afterEach(() => {
+    for (const scope of ['session-a', 'session-b', null]) {
+      clearSessionDraft(scope)
+    }
+
+    window.localStorage.clear()
+  })
+
+  it('stages chips into an unmounted session draft and publishes the badge count', () => {
+    expect(stageSessionDraftAttachments('session-a', [attachment({ id: 'file:a' })])).toBe(1)
+
+    expect(takeSessionDraft('session-a').attachments.map(a => a.id)).toEqual(['file:a'])
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(1)
+
+    // A second drop merges instead of replacing; the badge tracks the total.
+    expect(stageSessionDraftAttachments('session-a', [attachment({ id: 'file:b' })])).toBe(2)
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(2)
+    expect(takeSessionDraft('session-a').attachments.map(a => a.id)).toEqual(['file:a', 'file:b'])
+  })
+
+  it('dedupes a repeat drop of the same path under the same attachment id', () => {
+    stageSessionDraftAttachments('session-a', [attachment({ id: 'file:a' })])
+    expect(stageSessionDraftAttachments('session-a', [attachment({ id: 'file:a' })])).toBe(1)
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(1)
+  })
+
+  it('writes into a mounted composer scope so its next stash keeps the dropped chips', () => {
+    const scope = createComposerAttachmentScope()
+    scope.$attachments.set([attachment({ id: 'file:existing' })])
+    const unregister = registerComposerAttachmentScope('session-a', scope)
+
+    // The live set publishes its count without waiting for a stash debounce.
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(1)
+
+    stageSessionDraftAttachments('session-a', [attachment({ id: 'file:dropped' })])
+
+    expect(scope.$attachments.get().map(a => a.id)).toEqual(['file:existing', 'file:dropped'])
+    expect(takeSessionDraft('session-a').attachments.map(a => a.id)).toEqual(['file:existing', 'file:dropped'])
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(2)
+
+    unregister()
+
+    // After the composer swaps away the badge falls back to the stash count.
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(2)
+  })
+
+  it('clears the badge count when the staged draft is emptied', () => {
+    stageSessionDraftAttachments('session-a', [attachment({ id: 'file:a' })])
+    clearSessionDraft('session-a')
+
+    expect(draftAttachmentCountIn($draftAttachmentCounts.get(), 'session-a')).toBe(0)
+    expect($draftAttachmentCounts.get()['session-a']).toBeUndefined()
   })
 })
 

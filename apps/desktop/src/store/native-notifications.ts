@@ -3,9 +3,16 @@ import { atom } from 'nanostores'
 import { translateNow } from '@/i18n'
 import { type HermesOpenTarget, resolveHermesOpenPath } from '@/lib/hermes-open-target'
 import { persistString, storedString } from '@/lib/storage'
+import { isSessionNotificationMuted, ownerNotifyModeForSession } from '@/store/session-mute'
 
 import { recordFeatureToggle } from './desktop-metrics'
 import { $gateway } from './gateway'
+import {
+  $notificationRules,
+  enqueueDigestEntry,
+  gateNativeByRules,
+  quietHoursActive
+} from './notification-rules'
 import { withinNativeNotifyBaseline } from './notify-baseline'
 import {
   answerApproval,
@@ -230,6 +237,34 @@ export function dispatchNativeNotification(input: NativeNotificationInput): bool
   }
 
   if (withinNativeNotifyBaseline()) {
+    return false
+  }
+
+  // A muted session's turn ends, background exits, and attention pings never
+  // leave the app — same for every session owned by a muted bot (Bot Mode A4).
+  // The checks work on stored ids, so translate a runtime id first.
+  if (input.sessionId) {
+    const storedId = storedSessionIdForRuntimeId(input.sessionId) ?? input.sessionId
+
+    if (isSessionNotificationMuted(storedId)) {
+      return false
+    }
+
+    // Quiet-hours-aware bots hold EVERYTHING for the digest while the global
+    // quiet window is open — even kinds that would otherwise break through.
+    if (ownerNotifyModeForSession(storedId) === 'quiet' && quietHoursActive($notificationRules.get())) {
+      enqueueDigestEntry(input)
+
+      return false
+    }
+  }
+
+  // Notification rules (#39): quiet hours and digest mode hold ambient kinds
+  // for the next batched summary; approval/input/turnError always break
+  // through. Held entries report false — they never surface individually.
+  if (gateNativeByRules(input.kind) === 'hold') {
+    enqueueDigestEntry(input)
+
     return false
   }
 

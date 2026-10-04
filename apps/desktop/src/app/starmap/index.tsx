@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { PageLoader } from '@/components/page-loader'
 import { useI18n } from '@/i18n'
 import { $starmapError, $starmapGraph, $starmapLoading, loadStarmapGraph } from '@/store/starmap'
+import { stopStarmapLive } from '@/store/starmap-live'
 import type { StarmapGraph } from '@/types/hermes'
 
 import { Panel, PanelEmpty } from '../overlays/panel'
@@ -29,6 +30,10 @@ export function StarmapView({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     void loadStarmapGraph()
   }, [])
+
+  // The live poll + settle watch die with the overlay — toggling live back on
+  // after a close starts them fresh.
+  useEffect(() => () => stopStarmapLive(), [])
 
   // Drop a stale import when the underlying profile graph changes out from under it.
   useEffect(() => {

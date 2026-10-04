@@ -63,7 +63,8 @@ describe('ReviewPane header gating', () => {
   it('renders the three scope options and switches scope on selection', () => {
     renderPane()
 
-    expect(screen.getByText('Uncommitted')).toBeTruthy()
+    // 'Uncommitted' labels both scope controls (diff scope + file-set mode).
+    expect(screen.getAllByText('Uncommitted').length).toBeGreaterThan(0)
     expect(screen.getByText('Branch')).toBeTruthy()
     expect(screen.getByText('Last turn')).toBeTruthy()
 

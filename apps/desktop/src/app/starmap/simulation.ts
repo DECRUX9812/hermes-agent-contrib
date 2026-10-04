@@ -256,16 +256,28 @@ function buildLayout(
 // Build the radial time simulation: a node's distance from the core encodes its
 // timestamp bucket (radial force dominates; charge/collide only spread nodes
 // around their date ring). Rings are dated, equal-width gridlines.
-export function buildSimulation(graph: StarmapGraph, onTick: () => void): BuiltSim {
+// `prior` seeds positions/velocities from a previous build (a live refresh)
+// so settled nodes stay put and the sim only settles the delta.
+export function buildSimulation(graph: StarmapGraph, onTick: () => void, prior?: Map<string, SimNode>): BuiltSim {
   const { maxTs, minTs, rec: recById, timed } = computeRecency(graph.nodes)
   const { index, rec: recOf, rings, tr: trOf } = buildLayout(graph, recById, minTs, maxTs, timed)
 
   const nodes: SimNode[] = graph.nodes.map(n => {
     const rec = recOf(n)
     const tr = trOf(n)
+    const kept = prior?.get(n.id)
     const angle = ((hash(n.id) % 3600) / 3600) * Math.PI * 2
 
-    return { ...n, outerRingIndex: index(n), rec, tr, vx: 0, vy: 0, x: Math.cos(angle) * tr, y: Math.sin(angle) * tr }
+    return {
+      ...n,
+      outerRingIndex: index(n),
+      rec,
+      tr,
+      vx: kept?.vx ?? 0,
+      vy: kept?.vy ?? 0,
+      x: kept?.x ?? Math.cos(angle) * tr,
+      y: kept?.y ?? Math.sin(angle) * tr
+    }
   })
 
   const byId = new Map(nodes.map(n => [n.id, n]))
@@ -293,6 +305,12 @@ export function buildSimulation(graph: StarmapGraph, onTick: () => void): BuiltS
     )
     .force('radial', forceRadial<SimNode>(n => (n as SimNode).tr, 0, 0).strength(0.92))
     .on('tick', onTick)
+
+  // A seeded rebuild starts cool — the kept positions are already near
+  // equilibrium, so only the delta needs the energy to move.
+  if (prior) {
+    sim.alpha(0.35)
+  }
 
   return { byId, links, nodes, rings, sim }
 }

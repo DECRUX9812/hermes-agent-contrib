@@ -35,6 +35,29 @@ export default [
     }
   },
   {
+    // WEB-PORTABLE SURFACES: the Team pages, the Hire gallery and the Live pane must mount unchanged in a web-hosted client, where
+    // there is no Electron preload. They reach the backend through the SDK (`host.request`)
+    // only; anything that needs the shell goes behind a feature-detected SDK capability.
+    files: [
+      'src/plugins/hermes-bots/team*.{ts,tsx}',
+      'src/plugins/hermes-bots/hire*.{ts,tsx}',
+      'src/app/right-sidebar/live/**/*.{ts,tsx}',
+      'src/store/live-activity.ts',
+      'src/lib/live-actions.ts'
+    ],
+    ignores: ['**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'window',
+          property: 'hermesDesktop',
+          message: 'Team surfaces are web-portable: use host.request / SDK capabilities, not the Electron preload bridge.'
+        }
+      ]
+    }
+  },
+  {
     files: ['**/*.test.tsx'],
     rules: {
       'no-restricted-globals': ['warn', 'document']

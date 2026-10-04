@@ -37,7 +37,7 @@ import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button
 import { formatElapsed } from '@/components/chat/activity-timer'
 import { PreviewAttachment } from '@/components/chat/preview-attachment'
 import { Codicon } from '@/components/ui/codicon'
-import { CopyButton } from '@/components/ui/copy-button'
+import { CopyButton, writeClipboardText } from '@/components/ui/copy-button'
 import { useI18n } from '@/i18n'
 import {
   errorRecoveryPlan,
@@ -53,6 +53,7 @@ import { errorCardText } from '@/lib/error-surface-copy'
 import { triggerHaptic } from '@/lib/haptics'
 import {
   AudioLines,
+  FileText,
   GitForkIcon,
   KeyRound,
   Loader2Icon,
@@ -63,6 +64,7 @@ import {
   XIcon
 } from '@/lib/icons'
 import { extractPreviewTargets } from '@/lib/preview-targets'
+import { contentToMarkdown, markdownLabels } from '@/lib/session-markdown'
 import { markAssistantIdSpoken } from '@/lib/spoken-reply'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
@@ -102,6 +104,10 @@ interface MessageActionProps {
    *  explicit full-response copy/read-aloud scope (#118864). Identical to
    *  `getMessageText` on a solo reply. */
   getFullResponseText: () => string
+  /** Lazy accessor for this message rendered as Markdown — same live-read
+   *  contract as {@link MessageActionProps.getMessageText}; tool-call parts
+   *  collapse into `<details>` blocks (roadmap #8). */
+  getMessageMarkdown: () => string
   /** True when the response group carries more than one text-bearing reply, so
    *  the current-reply and full-response scopes actually differ. */
   fullResponseAvailable: boolean
@@ -269,6 +275,12 @@ const AssistantMessageBody: FC<AssistantMessageProps & { collapsedNotice?: null 
     [messageRuntime, responseIds, threadRuntime]
   )
 
+  // Labels resolve at click time so the copied doc follows the live locale.
+  const getMessageMarkdown = useCallback(
+    () => contentToMarkdown(messageRuntime.getState().content, markdownLabels()),
+    [messageRuntime]
+  )
+
   const fullResponseAvailable = responseIds.length > 1
 
   // useEnterAnimation consults `enabled` ONLY when its callback ref fires,
@@ -349,6 +361,7 @@ const AssistantMessageBody: FC<AssistantMessageProps & { collapsedNotice?: null 
                 durationS={turnDurationS}
                 fullResponseAvailable={fullResponseAvailable}
                 getFullResponseText={getFullResponseText}
+                getMessageMarkdown={getMessageMarkdown}
                 getMessageText={getMessageText}
                 messageId={messageId}
                 onBranchInNewChat={onBranchInNewChat}
@@ -1002,6 +1015,7 @@ const AssistantActionBar: FC<MessageActionProps & { durationS?: number }> = ({
   durationS,
   fullResponseAvailable,
   getFullResponseText,
+  getMessageMarkdown,
   messageId,
   getMessageText,
   onBranchInNewChat
@@ -1019,6 +1033,15 @@ const AssistantActionBar: FC<MessageActionProps & { durationS?: number }> = ({
     },
     [react]
   )
+
+  const copyMarkdown = useCallback(async () => {
+    try {
+      await writeClipboardText(getMessageMarkdown())
+      triggerHaptic('selection')
+    } catch (error) {
+      notifyError(error, t.common.copyFailed)
+    }
+  }, [getMessageMarkdown, t.common.copyFailed])
 
   return (
     <div className="relative flex w-full shrink-0 items-center justify-end gap-1.5">
@@ -1066,6 +1089,9 @@ const AssistantActionBar: FC<MessageActionProps & { durationS?: number }> = ({
         {fullResponseAvailable && (
           <CopyButton appearance="icon" buttonSize="icon" label={copy.copyFullResponse} text={getFullResponseText} />
         )}
+        <TooltipIconButton onClick={() => void copyMarkdown()} tooltip={copy.copyMarkdown}>
+          <FileText className="size-3.5" />
+        </TooltipIconButton>
         <ReadAloudButton
           fullResponseAvailable={fullResponseAvailable}
           getFullText={getFullResponseText}

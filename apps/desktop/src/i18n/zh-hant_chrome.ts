@@ -39,6 +39,22 @@ export const zhHantChrome = {
 
   sidebar: {
     profileRail: '設定檔列',
+    peek: {
+      idle: '閒置',
+      archived: '已封存',
+      workspace: '工作區',
+      branch: '分支',
+      model: '模型',
+      stats: '統計',
+      tokens: count => `${count} 個 token`,
+      agents: '委派的代理人',
+      agentsSummary: count => `${count} 個代理人`,
+      agentsRunning: count => `${count} 個執行中`,
+      profile: '設定檔',
+      source: '來源',
+      started: '開始時間',
+      updated: '更新時間'
+    },
     markAllRead: '全部標示為已讀',
     filter: {
       grouping: '分組',
@@ -87,7 +103,15 @@ export const zhHantChrome = {
       capabilities: '技能與工具',
       messaging: '訊息平台',
       artifacts: '成品',
-      cron: '排程工作'
+      cron: '排程工作',
+      browse: '瀏覽'
+    },
+    interfaceMode: {
+      label: '介面',
+      simple: '簡潔',
+      full: '完整',
+      toFull: '簡潔模式會隱藏進階面板和控制項。點擊切換到完整介面。',
+      toSimple: '返回清爽的聊天優先介面。'
     },
     searchAria: '搜尋工作階段',
     searchPlaceholder: '搜尋工作階段…',
@@ -95,6 +119,15 @@ export const zhHantChrome = {
     noMatch: query => `沒有工作階段符合「${query}」。`,
     results: '結果',
     pinned: '已釘選',
+    needsAttention: '需要注意',
+    delegationReports: {
+      done: '已完成',
+      needsDecision: '需要決定',
+      failed: '失敗',
+      openSubagent: '開啟子代理',
+      dismiss: '關閉報告',
+      tasks: (count, completed) => `${count} 個任務中已完成 ${completed} 個`
+    },
     sessions: '工作階段',
     terminal: '終端機',
     files: '檔案',
@@ -194,6 +227,9 @@ export const zhHantChrome = {
       unpin: '取消釘選',
       markUnread: '標記為未讀',
       markRead: '標記為已讀',
+      muteNotifications: '通知靜音',
+      unmuteNotifications: '取消靜音',
+      mutedTooltip: '此工作階段的通知已靜音',
       unreadFailed: '無法更新未讀狀態',
       copyId: '複製 ID',
       export: '匯出',
@@ -224,6 +260,14 @@ export const zhHantChrome = {
       deleting: '正在刪除…',
       deleted: '會話已刪除',
       untitledChat: id => `工作階段 ${id}`,
+      digest: {
+        agents: count => `${count} 個子代理正在執行`,
+        approve: command => `核准：${command}`,
+        compacting: '正在摘要對話',
+        replying: '正在撰寫回覆',
+        stalled: '仍在執行 — 已有一段時間沒有輸出',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
       ageNow: '剛才',
       ageDay: '天',
       ageHour: '時',
@@ -235,6 +279,16 @@ export const zhHantChrome = {
       thisWeek: '本週',
       lastWeek: '上週',
       thisMonth: '本月'
+    },
+    archive: {
+      finished: '封存已完成的工作階段',
+      olderThan: '封存早於以下時間的工作階段…',
+      days: (days: number) => `${days} 天`,
+      confirmTitle: (count: number) => `封存 ${count} 個工作階段？`,
+      confirmBody: '釘選的聊天永不會被封存，也不會刪除任何內容——已封存的工作階段會移至「已封存」檢視。',
+      confirmAction: '封存',
+      done: (count: number) => `已封存 ${count} 個工作階段`,
+      none: '沒有可封存的工作階段'
     },
     statusDivider: {
       working: '進行中',
@@ -327,6 +381,8 @@ export const zhHantChrome = {
       branch: branch => `分支 ${branch}`,
       closeCommandCenter: '關閉命令中心',
       openCommandCenter: '開啟命令中心',
+      toggleNotices: '通知',
+      noticesTitle: '最近的通知',
       showTerminal: '顯示終端機',
       hideTerminal: '隱藏終端機',
       gateway: '閘道',
@@ -348,6 +404,11 @@ export const zhHantChrome = {
       openCron: '開啟排程工作',
       starmap: '記憶圖譜',
       openStarmap: '開啟記憶圖譜',
+      artifacts: '成品',
+      artifactsTitle: '本工作階段產生的交付物 — 選擇一個在對話旁開啟',
+      artifactsCount: count => `${count} 個成品`,
+      browseAllArtifacts: '瀏覽全部成品',
+      toggleArtifacts: '成品',
       turnRunning: '執行中',
       contextUsage: '上下文使用量',
       compressions: count => `壓縮次數：${count}`,

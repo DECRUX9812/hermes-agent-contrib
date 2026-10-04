@@ -28,6 +28,8 @@ export const zhHantChat = {
     startVoice: '開始語音對話',
     openDirective: '開啟',
     queueMessage: '排隊訊息',
+    queueWithAttachments: '與附件一起排隊',
+    steerTurn: '引導目前回合',
     stop: '停止',
     send: '傳送',
     speaking: '說話中',
@@ -137,6 +139,7 @@ export const zhHantChat = {
       'composer.help': '此快速說明（刪除以關閉）',
       'composer.sendNewline': '傳送 · Shift+Enter 換行',
       'composer.sendQueued': '傳送下一個排隊的回合',
+      'composer.modelPicker': '模型選擇器',
       'keybinds.openPanel': '所有鍵盤快捷鍵',
       'composer.cancel': '關閉彈出視窗 · 取消執行',
       'composer.history': '循環彈出視窗 / 歷史記錄'
@@ -190,6 +193,8 @@ export const zhHantChat = {
     pasteImage: '貼上圖片',
     url: 'URL…',
     promptSnippets: '提示詞片段…',
+    scheduleJob: '定時執行…',
+    slashCommands: '斜線指令…',
     tipPre: '提示：輸入 ',
     tipPost: ' 以行內參照檔案。',
     snippetsTitle: '提示詞片段',
@@ -489,6 +494,7 @@ export const zhHantChat = {
     imageAttach: '附加圖片',
     imageWriteFailed: '無法將圖片寫入磁碟。',
     imageAttachFailed: '附加圖片失敗',
+    pastedAsFile: '已貼上為檔案',
     pastedContent: '貼上內容',
     pasteAttachFailed: '無法附加貼上的文字',
     attachImages: '附加圖片',
@@ -553,6 +559,10 @@ export const zhHantChat = {
       'right-pane': {
         title: '工作面板',
         text: '檔案、終端機、審閱與內建瀏覽器都在側邊面板裡。'
+      },
+      'advanced-mode': {
+        title: '進階模式裡還有更多',
+        text: '面板、排程工作、功能與狀態列都在進階模式中 — 設定 › 外觀 › 視窗與佈局 可隨時切換。'
       }
     }
   }

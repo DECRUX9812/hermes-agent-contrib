@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as HermesApi from '@/hermes'
 import { queryClient } from '@/lib/query-client'
 import type * as HubActions from '@/store/hub-actions'
+import type * as NotificationsModule from '@/store/notifications'
 
 const getSkills = vi.fn()
 const getToolsets = vi.fn()
@@ -40,7 +41,8 @@ vi.mock('@/hermes', async importOriginal => ({
 }))
 
 // Notifications hit nanostores/timers we don't care about here.
-vi.mock('@/store/notifications', () => ({
+vi.mock('@/store/notifications', async importOriginal => ({
+  ...(await importOriginal<typeof NotificationsModule>()),
   notify: vi.fn(),
   notifyError: vi.fn()
 }))

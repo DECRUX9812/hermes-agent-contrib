@@ -241,6 +241,438 @@
       }
     },
     {
+      "name": "bots_mailbox.list",
+      "summary": "List this install's agent-mailbox notes, newest first; 'handle' narrows to one bot.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsMailboxListParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsMailboxListResult"
+        }
+      }
+    },
+    {
+      "name": "bots_mailbox.send",
+      "summary": "File a user-authored task note and deliver it into the target's Bot Chat (local: blocking turn via bot_relay.deliver; remote: queued for the Desktop relay).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsMailboxSendParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsMailboxSendResult"
+        }
+      }
+    },
+    {
+      "name": "bots_mailbox.update",
+      "summary": "Flip a mailbox note's status (open\u2192accepted/declined/done); live sender bots get a one-line ping.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsMailboxUpdateParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsMailboxUpdateResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.approval.decide",
+      "summary": "Board (or the lead, if the team's policy allows) decides; never the requester itself.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamApprovalDecideParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamApprovalDecideResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.approval.request",
+      "summary": "A teammate asks the board for a hire, spend, credential grant or risky action.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamApprovalRequestParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamApprovalRequestResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.audit.list",
+      "summary": "The team's append-only audit trail, newest first.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamAuditParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamAuditResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.brief",
+      "summary": "The session-start context for a teammate: role, boss, mission\u2192goal chain, team lessons.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamBriefParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamBriefResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.budget.check",
+      "summary": "May this teammate take on more work now? False when paused or hard-stopped over budget.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamBudgetParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamBudgetResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.budget.record",
+      "summary": "Add spend to a teammate's month; returns the fresh budget verdict.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamBudgetRecordParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamBudgetResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.create",
+      "summary": "Create a team.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamCreateParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/TeamView"
+        }
+      }
+    },
+    {
+      "name": "bots_team.delete",
+      "summary": "Delete a team (its audit trail is kept).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/TeamActorParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/OkResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.get",
+      "summary": "One team with its org tree and goal roll-up (Kanban task status folded into goals).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/TeamIdParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/TeamView"
+        }
+      }
+    },
+    {
+      "name": "bots_team.goal.link_task",
+      "summary": "Attach or detach a Kanban task id on a goal (the task itself is untouched).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamGoalLinkTaskParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamGoalResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.goal.spawn_task",
+      "summary": "Delegate work: create a Kanban card for a teammate (default: the goal's owner) whose body opens with their brief and the mission\u2192goal chain, and link it to the goal. Idempotent per title.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamGoalSpawnTaskParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamGoalSpawnTaskResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.goal.upsert",
+      "summary": "Create (goal_id omitted) or edit a goal; parent_id null hangs it under the mission.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamGoalUpsertParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamGoalResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.learning.add",
+      "summary": "Record a short team lesson; a repeat of the same lesson bumps its count instead of duplicating.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamLearningAddParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamLearningResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.learning.remove",
+      "summary": "Delete a lesson the team no longer wants to carry.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamLearningRemoveParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/TeamView"
+        }
+      }
+    },
+    {
+      "name": "bots_team.list",
+      "summary": "List this install's teams, newest first.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/Params"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/TeamListResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.member.remove",
+      "summary": "Remove a seat by slot or profile; its reports re-attach to its boss, its goals become unowned.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamMemberRemoveParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/TeamView"
+        }
+      }
+    },
+    {
+      "name": "bots_team.member.upsert",
+      "summary": "Add or edit a seat (slot omitted = add). Refuses reporting cycles; lead moves the lead badge.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamMemberUpsertParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamMemberUpsertResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.pack.export",
+      "summary": "A shareable, data-only org design \u2014 no profiles, spend, credential values or learnings.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/TeamIdParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamPackExportResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.pack.import",
+      "summary": "Create a team from a pack (allow-listed keys only); every seat starts open.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamPackImportParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/TeamView"
+        }
+      }
+    },
+    {
+      "name": "bots_team.room_lead",
+      "summary": "The org-tree lead for a group chat: the single team whose filled seats cover the room's local members, lead included. The room then listens through the lead alone and teammates wake only when addressed.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamRoomLeadParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BotsTeamRoomLeadResult"
+        }
+      }
+    },
+    {
+      "name": "bots_team.update",
+      "summary": "Rename, re-mission, set the approval policy or the external channel bindings.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BotsTeamUpdateParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/TeamView"
+        }
+      }
+    },
+    {
       "name": "browser.controller.detach",
       "summary": "Hard-detach only the controller owned by this authenticated transport.",
       "params": [
@@ -777,6 +1209,24 @@
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/DelegationPauseResult"
+        }
+      }
+    },
+    {
+      "name": "delegation.reports",
+      "summary": "Terminal delegations routed to this session, newest first \u2014 the sidebar report cards.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/SessionParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/DelegationReportsResult"
         }
       }
     },
@@ -1574,7 +2024,7 @@
     },
     {
       "name": "insights.get",
-      "summary": "Session/message counts over the last ``days`` for the (optionally scoped) profile store.",
+      "summary": "Session/message counts over the last ``days`` for the (optionally scoped) profile store; ``report`` adds the /insights token + cost breakdown (``empty``, ``overview``, ``models``).",
       "params": [
         {
           "name": "params",
@@ -1875,6 +2325,60 @@
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/McpServersTestResult"
+        }
+      }
+    },
+    {
+      "name": "mcp_apps.call",
+      "summary": "A tool call made by an app iframe: same server, the tool's visibility must include ``app``, and write-capable calls on an untrusted server are refused.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/McpAppsCallParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/McpAppsCallResult"
+        }
+      }
+    },
+    {
+      "name": "mcp_apps.list",
+      "summary": "Tools on the connected MCP servers that carry an MCP App (``_meta.ui.resourceUri``).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/_AppScoped"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/McpAppsListResult"
+        }
+      }
+    },
+    {
+      "name": "mcp_apps.read_ui",
+      "summary": "The app document behind a ``ui://`` URI (other schemes are refused).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/McpAppsReadUiParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/McpAppsReadUiResult"
         }
       }
     },
@@ -2960,7 +3464,7 @@
     },
     {
       "name": "rollback.list",
-      "summary": "Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off.",
+      "summary": "Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off. Entries may carry ``sid``/``turn``/``user_row_id`` identifying the user prompt the snapshot precedes.",
       "params": [
         {
           "name": "params",
@@ -3045,6 +3549,24 @@
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/SessionArchiveResult"
+        }
+      }
+    },
+    {
+      "name": "session.ask",
+      "summary": "One-shot utility-model answer about a session's transcript (companion thread); read-only, never touches the live conversation's context.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/SessionAskParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/SessionAskResult"
         }
       }
     },
@@ -6900,9 +7422,160 @@
         "title": "BillingStepUpVerificationPayload",
         "type": "object"
       },
+      "BotMailboxNote": {
+        "additionalProperties": true,
+        "description": "A stored mailbox note \u2014 ``tools/bot_mailbox.py::append_note``.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "to": {
+            "$ref": "#/components/schemas/BotMailboxParty"
+          },
+          "sender": {
+            "$ref": "#/components/schemas/BotMailboxParty"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Payload"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "reply": {
+            "title": "Reply",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "integer"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Room"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "to",
+          "sender",
+          "title",
+          "body",
+          "status",
+          "reply",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BotMailboxNote",
+        "type": "object"
+      },
+      "BotMailboxParty": {
+        "additionalProperties": true,
+        "description": "One end of a note \u2014 ``tools/bot_mailbox.py::_normalize_party``. ``kind`` is 'bot' or\n'user'; ``connection`` is the sender-side connection id (display only).",
+        "properties": {
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Kind"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Handle"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "connection": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Connection"
+          }
+        },
+        "title": "BotMailboxParty",
+        "type": "object"
+      },
       "BotRelayDeliverParams": {
         "additionalProperties": false,
-        "description": "``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds).",
+        "description": "``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds).\n``note`` is an optional mailbox task hand-off (``{id, title, body, payload?}``) filed on\nthis install before delivery.",
         "properties": {
           "profile": {
             "title": "Profile",
@@ -6947,6 +7620,19 @@
             ],
             "default": null,
             "title": "From Connection"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
           }
         },
         "required": [
@@ -7114,6 +7800,1382 @@
           "count"
         ],
         "title": "BotRelayRosterSyncResult",
+        "type": "object"
+      },
+      "BotsMailboxListParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "handle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Handle"
+          }
+        },
+        "title": "BotsMailboxListParams",
+        "type": "object"
+      },
+      "BotsMailboxListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/BotMailboxNote"
+            },
+            "title": "Notes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "notes"
+        ],
+        "title": "BotsMailboxListResult",
+        "type": "object"
+      },
+      "BotsMailboxSendParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "to": {
+            "title": "To",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Body"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Payload"
+          }
+        },
+        "required": [
+          "to",
+          "title"
+        ],
+        "title": "BotsMailboxSendParams",
+        "type": "object"
+      },
+      "BotsMailboxSendResult": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "$ref": "#/components/schemas/BotMailboxNote"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reply"
+          },
+          "queued": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Queued"
+          },
+          "delivery_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Delivery Error"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "BotsMailboxSendResult",
+        "type": "object"
+      },
+      "BotsMailboxUpdateParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reply"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "BotsMailboxUpdateParams",
+        "type": "object"
+      },
+      "BotsMailboxUpdateResult": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "$ref": "#/components/schemas/BotMailboxNote"
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "title": "BotsMailboxUpdateResult",
+        "type": "object"
+      },
+      "BotsTeamApprovalDecideParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "approval_id": {
+            "title": "Approval Id",
+            "type": "string"
+          },
+          "approve": {
+            "title": "Approve",
+            "type": "boolean"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          }
+        },
+        "required": [
+          "team_id",
+          "approval_id",
+          "approve"
+        ],
+        "title": "BotsTeamApprovalDecideParams",
+        "type": "object"
+      },
+      "BotsTeamApprovalDecideResult": {
+        "additionalProperties": false,
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "tree": {
+            "items": {
+              "$ref": "#/components/schemas/TeamOrgNode"
+            },
+            "title": "Tree",
+            "type": "array"
+          },
+          "rollup": {
+            "$ref": "#/components/schemas/TeamRollup"
+          },
+          "approval": {
+            "$ref": "#/components/schemas/TeamApproval"
+          }
+        },
+        "required": [
+          "team",
+          "tree",
+          "rollup",
+          "approval"
+        ],
+        "title": "BotsTeamApprovalDecideResult",
+        "type": "object"
+      },
+      "BotsTeamApprovalRequestParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "requested_by": {
+            "title": "Requested By",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Detail"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Payload"
+          }
+        },
+        "required": [
+          "team_id",
+          "kind",
+          "subject",
+          "requested_by"
+        ],
+        "title": "BotsTeamApprovalRequestParams",
+        "type": "object"
+      },
+      "BotsTeamApprovalRequestResult": {
+        "additionalProperties": false,
+        "properties": {
+          "approval": {
+            "$ref": "#/components/schemas/TeamApproval"
+          }
+        },
+        "required": [
+          "approval"
+        ],
+        "title": "BotsTeamApprovalRequestResult",
+        "type": "object"
+      },
+      "BotsTeamAuditParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Limit"
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "title": "BotsTeamAuditParams",
+        "type": "object"
+      },
+      "BotsTeamAuditResult": {
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/TeamAuditEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "title": "BotsTeamAuditResult",
+        "type": "object"
+      },
+      "BotsTeamBriefParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "member": {
+            "title": "Member",
+            "type": "string"
+          },
+          "goal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Goal Id"
+          }
+        },
+        "required": [
+          "team_id",
+          "member"
+        ],
+        "title": "BotsTeamBriefParams",
+        "type": "object"
+      },
+      "BotsTeamBriefResult": {
+        "additionalProperties": false,
+        "properties": {
+          "brief": {
+            "title": "Brief",
+            "type": "string"
+          }
+        },
+        "required": [
+          "brief"
+        ],
+        "title": "BotsTeamBriefResult",
+        "type": "object"
+      },
+      "BotsTeamBudgetParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "member": {
+            "title": "Member",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_id",
+          "member"
+        ],
+        "title": "BotsTeamBudgetParams",
+        "type": "object"
+      },
+      "BotsTeamBudgetRecordParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "member": {
+            "title": "Member",
+            "type": "string"
+          },
+          "usd": {
+            "title": "Usd",
+            "type": "number"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          }
+        },
+        "required": [
+          "team_id",
+          "member",
+          "usd"
+        ],
+        "title": "BotsTeamBudgetRecordParams",
+        "type": "object"
+      },
+      "BotsTeamBudgetResult": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          },
+          "remaining_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Remaining Usd"
+          },
+          "over_budget": {
+            "default": false,
+            "title": "Over Budget",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "allowed"
+        ],
+        "title": "BotsTeamBudgetResult",
+        "type": "object"
+      },
+      "BotsTeamCreateParams": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "mission": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mission"
+          },
+          "lead_decides": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lead Decides"
+          },
+          "channels": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Channels"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "BotsTeamCreateParams",
+        "type": "object"
+      },
+      "BotsTeamGoalLinkTaskParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "goal_id": {
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "unlink": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Unlink"
+          }
+        },
+        "required": [
+          "team_id",
+          "goal_id",
+          "task_id"
+        ],
+        "title": "BotsTeamGoalLinkTaskParams",
+        "type": "object"
+      },
+      "BotsTeamGoalResult": {
+        "additionalProperties": false,
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "tree": {
+            "items": {
+              "$ref": "#/components/schemas/TeamOrgNode"
+            },
+            "title": "Tree",
+            "type": "array"
+          },
+          "rollup": {
+            "$ref": "#/components/schemas/TeamRollup"
+          },
+          "goal": {
+            "$ref": "#/components/schemas/TeamGoal"
+          }
+        },
+        "required": [
+          "team",
+          "tree",
+          "rollup",
+          "goal"
+        ],
+        "title": "BotsTeamGoalResult",
+        "type": "object"
+      },
+      "BotsTeamGoalSpawnTaskParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "goal_id": {
+            "title": "Goal Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Body"
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assignee"
+          }
+        },
+        "required": [
+          "team_id",
+          "goal_id",
+          "title"
+        ],
+        "title": "BotsTeamGoalSpawnTaskParams",
+        "type": "object"
+      },
+      "BotsTeamGoalSpawnTaskResult": {
+        "additionalProperties": false,
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "tree": {
+            "items": {
+              "$ref": "#/components/schemas/TeamOrgNode"
+            },
+            "title": "Tree",
+            "type": "array"
+          },
+          "rollup": {
+            "$ref": "#/components/schemas/TeamRollup"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "assignee": {
+            "title": "Assignee",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team",
+          "tree",
+          "rollup",
+          "task_id",
+          "assignee"
+        ],
+        "title": "BotsTeamGoalSpawnTaskResult",
+        "type": "object"
+      },
+      "BotsTeamGoalUpsertParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "goal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Goal Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Detail"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parent Id"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Owner"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "title": "BotsTeamGoalUpsertParams",
+        "type": "object"
+      },
+      "BotsTeamLearningAddParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source"
+          }
+        },
+        "required": [
+          "team_id",
+          "text",
+          "by"
+        ],
+        "title": "BotsTeamLearningAddParams",
+        "type": "object"
+      },
+      "BotsTeamLearningRemoveParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "learning_id": {
+            "title": "Learning Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_id",
+          "learning_id"
+        ],
+        "title": "BotsTeamLearningRemoveParams",
+        "type": "object"
+      },
+      "BotsTeamLearningResult": {
+        "additionalProperties": false,
+        "properties": {
+          "learning": {
+            "$ref": "#/components/schemas/TeamLearning"
+          }
+        },
+        "required": [
+          "learning"
+        ],
+        "title": "BotsTeamLearningResult",
+        "type": "object"
+      },
+      "BotsTeamMemberRemoveParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "member": {
+            "title": "Member",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_id",
+          "member"
+        ],
+        "title": "BotsTeamMemberRemoveParams",
+        "type": "object"
+      },
+      "BotsTeamMemberUpsertParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "slot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Slot"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Role"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "skills": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Skills"
+          },
+          "plugins": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Plugins"
+          },
+          "credentials": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Credentials"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "monthly_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Monthly Usd"
+          },
+          "hard_stop": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Hard Stop"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reports To"
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lead"
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "title": "BotsTeamMemberUpsertParams",
+        "type": "object"
+      },
+      "BotsTeamMemberUpsertResult": {
+        "additionalProperties": false,
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "tree": {
+            "items": {
+              "$ref": "#/components/schemas/TeamOrgNode"
+            },
+            "title": "Tree",
+            "type": "array"
+          },
+          "rollup": {
+            "$ref": "#/components/schemas/TeamRollup"
+          },
+          "member": {
+            "$ref": "#/components/schemas/TeamMember"
+          }
+        },
+        "required": [
+          "team",
+          "tree",
+          "rollup",
+          "member"
+        ],
+        "title": "BotsTeamMemberUpsertResult",
+        "type": "object"
+      },
+      "BotsTeamPackExportResult": {
+        "additionalProperties": false,
+        "properties": {
+          "pack": {
+            "$ref": "#/components/schemas/TeamPack"
+          }
+        },
+        "required": [
+          "pack"
+        ],
+        "title": "BotsTeamPackExportResult",
+        "type": "object"
+      },
+      "BotsTeamPackImportParams": {
+        "additionalProperties": false,
+        "properties": {
+          "pack": {
+            "$ref": "#/components/schemas/TeamPack"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          }
+        },
+        "required": [
+          "pack"
+        ],
+        "title": "BotsTeamPackImportParams",
+        "type": "object"
+      },
+      "BotsTeamRoomLeadParams": {
+        "additionalProperties": false,
+        "description": "Local member profiles of a group-chat room (remote members can't hold seats \u2014 the\ncaller leaves them out).",
+        "properties": {
+          "members": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Members",
+            "type": "array"
+          }
+        },
+        "title": "BotsTeamRoomLeadParams",
+        "type": "object"
+      },
+      "BotsTeamRoomLeadResult": {
+        "additionalProperties": false,
+        "description": "``lead`` is the room's orchestrator profile when one team covers the room and its lead\nis seated; ``None`` \u2014 not a team room, no seated lead, or several teams disagree \u2014 means\nthe room keeps fan-out listening.",
+        "properties": {
+          "lead": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lead"
+          },
+          "lead_slot": {
+            "default": "",
+            "title": "Lead Slot",
+            "type": "string"
+          },
+          "lead_title": {
+            "default": "",
+            "title": "Lead Title",
+            "type": "string"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team Id"
+          },
+          "team_name": {
+            "default": "",
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "title": "BotsTeamRoomLeadResult",
+        "type": "object"
+      },
+      "BotsTeamUpdateParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "mission": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mission"
+          },
+          "lead_decides": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lead Decides"
+          },
+          "channels": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Channels"
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "title": "BotsTeamUpdateParams",
         "type": "object"
       },
       "BrowserAction": {
@@ -12171,6 +14233,144 @@
         "title": "DelegationPauseResult",
         "type": "object"
       },
+      "DelegationReport": {
+        "additionalProperties": false,
+        "description": "One settled background delegation awaiting report-back to its origin session.",
+        "properties": {
+          "delegation_id": {
+            "title": "Delegation Id",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/DelegationReportOutcome"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "summary_source": {
+            "$ref": "#/components/schemas/DelegationReportSummarySource"
+          },
+          "task_count": {
+            "title": "Task Count",
+            "type": "integer"
+          },
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "failed_count": {
+            "title": "Failed Count",
+            "type": "integer"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Duration Seconds"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Completed At"
+          },
+          "delivery_state": {
+            "default": "",
+            "title": "Delivery State",
+            "type": "string"
+          },
+          "child_session_ids": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Child Session Ids",
+            "type": "object"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Group"
+          }
+        },
+        "required": [
+          "delegation_id",
+          "state",
+          "outcome",
+          "title",
+          "summary",
+          "summary_source",
+          "task_count",
+          "completed_count",
+          "failed_count"
+        ],
+        "title": "DelegationReport",
+        "type": "object"
+      },
+      "DelegationReportOutcome": {
+        "description": "done = every task finished cleanly; failed = nothing completed; needs_decision =\nthe mixed middle (interrupted, truncated, partly failed, stalled) \u2014 a human should look.",
+        "enum": [
+          "done",
+          "needs_decision",
+          "failed"
+        ],
+        "title": "DelegationReportOutcome",
+        "type": "string"
+      },
+      "DelegationReportSummarySource": {
+        "description": "``model`` = the cached utility-model one-liner; ``heuristic`` = first substantive line of\nthe result, always available when no auxiliary model is configured.",
+        "enum": [
+          "model",
+          "heuristic"
+        ],
+        "title": "DelegationReportSummarySource",
+        "type": "string"
+      },
+      "DelegationReportsResult": {
+        "additionalProperties": false,
+        "properties": {
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/DelegationReport"
+            },
+            "title": "Reports",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reports"
+        ],
+        "title": "DelegationReportsResult",
+        "type": "object"
+      },
       "DelegationStatusResult": {
         "additionalProperties": false,
         "properties": {
@@ -14221,6 +16421,40 @@
           "attempts"
         ],
         "title": "GoalGateSnapshot",
+        "type": "object"
+      },
+      "GoalProgress": {
+        "additionalProperties": true,
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "percent": {
+            "title": "Percent",
+            "type": "integer"
+          },
+          "blocked": {
+            "default": false,
+            "title": "Blocked",
+            "type": "boolean"
+          },
+          "status": {
+            "default": "open",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "done",
+          "total",
+          "percent"
+        ],
+        "title": "GoalProgress",
         "type": "object"
       },
       "GoalSnapshot": {
@@ -16520,6 +18754,18 @@
             ],
             "default": null,
             "title": "Profile"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Report"
           }
         },
         "title": "InsightsGetParams",
@@ -16539,6 +18785,19 @@
           "messages": {
             "title": "Messages",
             "type": "integer"
+          },
+          "report": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Report"
           }
         },
         "required": [
@@ -17369,6 +19628,220 @@
           "deferred_by_goal"
         ],
         "title": "LoopSnapshot",
+        "type": "object"
+      },
+      "McpApp": {
+        "additionalProperties": true,
+        "description": "A tool with an app. ``registry_name`` is the model-facing tool name, ``None`` for an\napp-only tool (callable from its UI, never by the model).",
+        "properties": {
+          "server": {
+            "title": "Server",
+            "type": "string"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "title": "Description",
+            "type": "string"
+          },
+          "registry_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Registry Name"
+          },
+          "resourceUri": {
+            "title": "Resourceuri",
+            "type": "string"
+          },
+          "visibility": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Visibility",
+            "type": "array"
+          },
+          "entrypoints": {
+            "default": [],
+            "items": {},
+            "title": "Entrypoints",
+            "type": "array"
+          },
+          "icons": {
+            "default": [],
+            "items": {},
+            "title": "Icons",
+            "type": "array"
+          }
+        },
+        "required": [
+          "server",
+          "tool",
+          "title",
+          "resourceUri",
+          "visibility"
+        ],
+        "title": "McpApp",
+        "type": "object"
+      },
+      "McpAppsCallParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "server": {
+            "title": "Server",
+            "type": "string"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          },
+          "arguments": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Arguments",
+            "type": "object"
+          }
+        },
+        "required": [
+          "server",
+          "tool"
+        ],
+        "title": "McpAppsCallParams",
+        "type": "object"
+      },
+      "McpAppsCallResult": {
+        "additionalProperties": true,
+        "description": "The MCP ``CallToolResult`` as JSON (``content``, ``structuredContent``, ``isError``, ``_meta``).",
+        "properties": {},
+        "title": "McpAppsCallResult",
+        "type": "object"
+      },
+      "McpAppsListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "apps": {
+            "items": {
+              "$ref": "#/components/schemas/McpApp"
+            },
+            "title": "Apps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "apps"
+        ],
+        "title": "McpAppsListResult",
+        "type": "object"
+      },
+      "McpAppsReadUiParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "server": {
+            "title": "Server",
+            "type": "string"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "server",
+          "uri"
+        ],
+        "title": "McpAppsReadUiParams",
+        "type": "object"
+      },
+      "McpAppsReadUiResult": {
+        "additionalProperties": false,
+        "description": "``meta`` is the content item's ``_meta`` (``ui.csp``, ``ui.prefersBorder``, ``openai/ui``).",
+        "properties": {
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          },
+          "mimeType": {
+            "title": "Mimetype",
+            "type": "string"
+          },
+          "html": {
+            "title": "Html",
+            "type": "string"
+          },
+          "meta": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Meta",
+            "type": "object"
+          }
+        },
+        "required": [
+          "uri",
+          "mimeType",
+          "html"
+        ],
+        "title": "McpAppsReadUiResult",
         "type": "object"
       },
       "McpCatalogEntry": {
@@ -22860,6 +25333,33 @@
         "title": "PreviewRestartProgressPayload",
         "type": "object"
       },
+      "PreviewVerifyRequestParams": {
+        "additionalProperties": false,
+        "description": "``tools/verify_preview_tool.py`` field set.",
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "settle_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Settle Ms"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "PreviewVerifyRequestParams",
+        "type": "object"
+      },
       "ProcessEntry": {
         "additionalProperties": true,
         "description": "``tools/process_registry.py::list_sessions`` row plus the gateway's ``output_tail``.",
@@ -26652,7 +29152,7 @@
       },
       "RelayEnvelope": {
         "additionalProperties": true,
-        "description": "``tools/bot_relay.py::enqueue_envelope``.",
+        "description": "``tools/bot_relay.py::enqueue_envelope``. ``note`` rides along when the DM is a\ntask hand-off (#48) \u2014 ``bot_relay.deliver`` files it into the target's mailbox.",
         "properties": {
           "id": {
             "title": "Id",
@@ -26692,6 +29192,19 @@
           "message": {
             "title": "Message",
             "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
           }
         },
         "required": [
@@ -27081,6 +29594,42 @@
             "default": "",
             "title": "Message",
             "type": "string"
+          },
+          "turn": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Turn"
+          },
+          "sid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Sid"
+          },
+          "user_row_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "User Row Id"
           }
         },
         "title": "RollbackCheckpoint",
@@ -27215,6 +29764,16 @@
             ],
             "default": null,
             "title": "File Path"
+          },
+          "files_only": {
+            "default": false,
+            "title": "Files Only",
+            "type": "boolean"
+          },
+          "safe": {
+            "default": false,
+            "title": "Safe",
+            "type": "boolean"
           },
           "profile": {
             "anyOf": [
@@ -28646,6 +31205,104 @@
         "title": "SessionArchiveResult",
         "type": "object"
       },
+      "SessionAskExchange": {
+        "additionalProperties": false,
+        "description": "One prior companion Q/A the client holds, replayed for thread continuity.",
+        "properties": {
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "question",
+          "answer"
+        ],
+        "title": "SessionAskExchange",
+        "type": "object"
+      },
+      "SessionAskParams": {
+        "additionalProperties": false,
+        "description": "``session_id`` takes a stored id/prefix OR a live runtime id; ``history`` is the\nclient's companion thread so far (bounded server-side).",
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "question": {
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "history": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SessionAskExchange"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "History"
+          }
+        },
+        "required": [
+          "session_id",
+          "question"
+        ],
+        "title": "SessionAskParams",
+        "type": "object"
+      },
+      "SessionAskResult": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "resolved_id": {
+            "title": "Resolved Id",
+            "type": "string"
+          },
+          "messages_considered": {
+            "title": "Messages Considered",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "resolved_id",
+          "messages_considered",
+          "truncated"
+        ],
+        "title": "SessionAskResult",
+        "type": "object"
+      },
       "SessionBranchParams": {
         "additionalProperties": false,
         "properties": {
@@ -29806,6 +32463,28 @@
             "default": false,
             "title": "Follow Profile Config",
             "type": "boolean"
+          },
+          "bot_topic": {
+            "default": false,
+            "title": "Bot Topic",
+            "type": "boolean"
+          },
+          "team_room": {
+            "default": false,
+            "title": "Team Room",
+            "type": "boolean"
+          },
+          "team_room_lead": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team Room Lead"
           },
           "idempotency_key": {
             "anyOf": [
@@ -35631,6 +38310,859 @@
         "title": "TaskIdResult",
         "type": "object"
       },
+      "Team": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "mission": {
+            "default": "",
+            "title": "Mission",
+            "type": "string"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/TeamPolicy"
+          },
+          "channels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Channels",
+            "type": "object"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/TeamMember"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "goals": {
+            "items": {
+              "$ref": "#/components/schemas/TeamGoal"
+            },
+            "title": "Goals",
+            "type": "array"
+          },
+          "approvals": {
+            "items": {
+              "$ref": "#/components/schemas/TeamApproval"
+            },
+            "title": "Approvals",
+            "type": "array"
+          },
+          "learnings": {
+            "items": {
+              "$ref": "#/components/schemas/TeamLearning"
+            },
+            "title": "Learnings",
+            "type": "array"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "policy",
+          "members",
+          "goals",
+          "approvals",
+          "learnings",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "Team",
+        "type": "object"
+      },
+      "TeamActorParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "actor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Actor"
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "title": "TeamActorParams",
+        "type": "object"
+      },
+      "TeamApproval": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Payload"
+          },
+          "requested_by": {
+            "title": "Requested By",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "decided_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decided By"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decided At"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "created_at": {
+            "default": 0,
+            "title": "Created At",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "subject",
+          "requested_by",
+          "status"
+        ],
+        "title": "TeamApproval",
+        "type": "object"
+      },
+      "TeamAuditEntry": {
+        "additionalProperties": true,
+        "properties": {
+          "at": {
+            "title": "At",
+            "type": "integer"
+          },
+          "actor": {
+            "title": "Actor",
+            "type": "string"
+          },
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "detail": {
+            "additionalProperties": true,
+            "default": {},
+            "title": "Detail",
+            "type": "object"
+          }
+        },
+        "required": [
+          "at",
+          "actor",
+          "action"
+        ],
+        "title": "TeamAuditEntry",
+        "type": "object"
+      },
+      "TeamBudget": {
+        "additionalProperties": true,
+        "properties": {
+          "monthly_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Monthly Usd"
+          },
+          "hard_stop": {
+            "default": true,
+            "title": "Hard Stop",
+            "type": "boolean"
+          },
+          "spent_usd": {
+            "default": 0.0,
+            "title": "Spent Usd",
+            "type": "number"
+          },
+          "period": {
+            "default": "",
+            "title": "Period",
+            "type": "string"
+          }
+        },
+        "title": "TeamBudget",
+        "type": "object"
+      },
+      "TeamGoal": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "detail": {
+            "default": "",
+            "title": "Detail",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Parent Id"
+          },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Owner"
+          },
+          "status": {
+            "default": "open",
+            "title": "Status",
+            "type": "string"
+          },
+          "task_ids": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Task Ids",
+            "type": "array"
+          },
+          "created_at": {
+            "default": 0,
+            "title": "Created At",
+            "type": "integer"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Updated At"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "TeamGoal",
+        "type": "object"
+      },
+      "TeamIdParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "title": "TeamIdParams",
+        "type": "object"
+      },
+      "TeamLearning": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "by": {
+            "title": "By",
+            "type": "string"
+          },
+          "source": {
+            "default": "",
+            "title": "Source",
+            "type": "string"
+          },
+          "count": {
+            "default": 1,
+            "title": "Count",
+            "type": "integer"
+          },
+          "at": {
+            "default": 0,
+            "title": "At",
+            "type": "integer"
+          },
+          "last_at": {
+            "default": 0,
+            "title": "Last At",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "by"
+        ],
+        "title": "TeamLearning",
+        "type": "object"
+      },
+      "TeamListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/TeamSummary"
+            },
+            "title": "Teams",
+            "type": "array"
+          }
+        },
+        "required": [
+          "teams"
+        ],
+        "title": "TeamListResult",
+        "type": "object"
+      },
+      "TeamMember": {
+        "additionalProperties": true,
+        "description": "One seat \u2014 ``tools/bot_team.py::upsert_member``. ``profile`` is null for an open seat;\n``credentials`` are reference names, never values.",
+        "properties": {
+          "slot": {
+            "title": "Slot",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "role": {
+            "default": "",
+            "title": "Role",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "title": "Title",
+            "type": "string"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reports To"
+          },
+          "lead": {
+            "default": false,
+            "title": "Lead",
+            "type": "boolean"
+          },
+          "status": {
+            "default": "active",
+            "title": "Status",
+            "type": "string"
+          },
+          "skills": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Skills",
+            "type": "array"
+          },
+          "plugins": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Plugins",
+            "type": "array"
+          },
+          "credentials": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Credentials",
+            "type": "array"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/TeamBudget"
+          },
+          "joined_at": {
+            "default": 0,
+            "title": "Joined At",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "slot",
+          "budget"
+        ],
+        "title": "TeamMember",
+        "type": "object"
+      },
+      "TeamOrgNode": {
+        "additionalProperties": true,
+        "properties": {
+          "slot": {
+            "title": "Slot",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "role": {
+            "default": "",
+            "title": "Role",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "title": "Title",
+            "type": "string"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reports To"
+          },
+          "lead": {
+            "default": false,
+            "title": "Lead",
+            "type": "boolean"
+          },
+          "status": {
+            "default": "active",
+            "title": "Status",
+            "type": "string"
+          },
+          "skills": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Skills",
+            "type": "array"
+          },
+          "plugins": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Plugins",
+            "type": "array"
+          },
+          "credentials": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Credentials",
+            "type": "array"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/TeamBudget"
+          },
+          "joined_at": {
+            "default": 0,
+            "title": "Joined At",
+            "type": "integer"
+          },
+          "reports": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/TeamOrgNode"
+            },
+            "title": "Reports",
+            "type": "array"
+          }
+        },
+        "required": [
+          "slot",
+          "budget"
+        ],
+        "title": "TeamOrgNode",
+        "type": "object"
+      },
+      "TeamPack": {
+        "additionalProperties": true,
+        "properties": {
+          "pack_version": {
+            "title": "Pack Version",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "mission": {
+            "default": "",
+            "title": "Mission",
+            "type": "string"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/TeamPolicy"
+          },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/TeamPackSeat"
+            },
+            "title": "Seats",
+            "type": "array"
+          }
+        },
+        "required": [
+          "pack_version",
+          "name",
+          "policy",
+          "seats"
+        ],
+        "title": "TeamPack",
+        "type": "object"
+      },
+      "TeamPackSeat": {
+        "additionalProperties": true,
+        "properties": {
+          "slot": {
+            "title": "Slot",
+            "type": "string"
+          },
+          "role": {
+            "default": "",
+            "title": "Role",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "title": "Title",
+            "type": "string"
+          },
+          "reports_to_slot": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reports To Slot"
+          },
+          "lead": {
+            "default": false,
+            "title": "Lead",
+            "type": "boolean"
+          },
+          "skills": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Skills",
+            "type": "array"
+          },
+          "plugins": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Plugins",
+            "type": "array"
+          },
+          "credentials": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Credentials",
+            "type": "array"
+          },
+          "monthly_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Monthly Usd"
+          },
+          "hard_stop": {
+            "default": true,
+            "title": "Hard Stop",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "slot"
+        ],
+        "title": "TeamPackSeat",
+        "type": "object"
+      },
+      "TeamPolicy": {
+        "additionalProperties": true,
+        "properties": {
+          "lead_decides": {
+            "default": false,
+            "title": "Lead Decides",
+            "type": "boolean"
+          }
+        },
+        "title": "TeamPolicy",
+        "type": "object"
+      },
+      "TeamRollup": {
+        "additionalProperties": true,
+        "properties": {
+          "goals": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/GoalProgress"
+            },
+            "title": "Goals",
+            "type": "object"
+          },
+          "overall": {
+            "$ref": "#/components/schemas/TeamRollupOverall"
+          }
+        },
+        "required": [
+          "goals",
+          "overall"
+        ],
+        "title": "TeamRollup",
+        "type": "object"
+      },
+      "TeamRollupOverall": {
+        "additionalProperties": true,
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "percent": {
+            "title": "Percent",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "done",
+          "total",
+          "percent"
+        ],
+        "title": "TeamRollupOverall",
+        "type": "object"
+      },
+      "TeamSummary": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "mission": {
+            "default": "",
+            "title": "Mission",
+            "type": "string"
+          },
+          "member_count": {
+            "title": "Member Count",
+            "type": "integer"
+          },
+          "open_seats": {
+            "title": "Open Seats",
+            "type": "integer"
+          },
+          "goal_count": {
+            "title": "Goal Count",
+            "type": "integer"
+          },
+          "pending_approvals": {
+            "title": "Pending Approvals",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "member_count",
+          "open_seats",
+          "goal_count",
+          "pending_approvals",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TeamSummary",
+        "type": "object"
+      },
+      "TeamView": {
+        "additionalProperties": false,
+        "description": "What every mutating call returns: the fresh doc, its org tree and the goal roll-up, so\na client re-renders from one response.",
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "tree": {
+            "items": {
+              "$ref": "#/components/schemas/TeamOrgNode"
+            },
+            "title": "Tree",
+            "type": "array"
+          },
+          "rollup": {
+            "$ref": "#/components/schemas/TeamRollup"
+          }
+        },
+        "required": [
+          "team",
+          "tree",
+          "rollup"
+        ],
+        "title": "TeamView",
+        "type": "object"
+      },
       "TerminalClosePayload": {
         "additionalProperties": false,
         "properties": {
@@ -39076,6 +42608,37 @@
         "title": "WakeStopResult",
         "type": "object"
       },
+      "_AppScoped": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          }
+        },
+        "title": "_AppScoped",
+        "type": "object"
+      },
       "_SessionScoped": {
         "additionalProperties": false,
         "description": "Handlers that look a live session up with ``_sessions.get(params.get(\"session_id\"))``: an\nabsent / unknown id falls back to the launch profile's config, so it is never required.",
@@ -39207,6 +42770,24 @@
           "name": "params",
           "schema": {
             "$ref": "#/components/schemas/ReadRangeRequestParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ValueResult"
+        }
+      }
+    },
+    {
+      "name": "preview.verify",
+      "summary": "Read the in-app preview's console errors and answer a pass/fail (JSON).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/PreviewVerifyRequestParams"
           }
         }
       ],

@@ -32,6 +32,7 @@ import {
   Tip,
   ToggleRow,
   useI18n,
+  useQuery,
   useValue
 } from '@hermes/plugin-sdk'
 import type { ClipboardEvent, DragEvent, ReactNode } from 'react'
@@ -64,11 +65,15 @@ import {
   $groupChatWorkspace,
   $groupClarify,
   $groupNeedsYou,
+  groupRoundContributions,
   groupThreadOf,
   rememberGroupChatTombstone,
   scheduleGroupChatServerSync,
+  setGroupChatGoal,
   setGroupChatHoldDetection,
   setGroupChatImage,
+  setGroupChatLimits,
+  setGroupChatListener,
   updateGroupChat
 } from './group-chat'
 import type { GroupChatRoom } from './group-chat'
@@ -101,9 +106,13 @@ import {
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
+import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
+import { markGroupRead } from './group-unread'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
+import { roomMailboxNotes, useMailbox } from './mailbox'
+import { MailboxNoteCard } from './mailbox-parts'
 import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
 import { bumpBotOpenGeneration, getPluginCtx, ID } from './shared'
 import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage, RosterRow } from './types'
@@ -397,15 +406,26 @@ function GroupChatSettingsDialog({
   const rooms: Record<string, GroupChatRoom> = useValue($groupChats)
   const current = (rooms[group] || {}).image || null
   const currentHoldDetection = (rooms[group] || {}).holdDetection !== false
+  // 'off' on any axis means the room opted out of the inherited drive budget
+  // and rides the hard ceilings — one toggle covers all three axes.
+  const currentLimitOff = Object.values((rooms[group] || {}).limits || {}).some(value => value === 'off')
+  const currentGoal = String((rooms[group] || {}).goal || '')
+  const currentListener = String((rooms[group] || {}).listener || '')
   const [name, setName] = useState(group)
   const [image, setImage] = useState(current)
   const [holdDetection, setHoldDetection] = useState(currentHoldDetection)
+  const [limitOff, setLimitOff] = useState(currentLimitOff)
+  const [goal, setGoal] = useState(currentGoal)
+  const [listener, setListener] = useState(currentListener)
   const [compressing, setCompressing] = useState<null | string>(null)
   useEffect(() => {
     if (open) {
       setName(group)
       setImage(current)
       setHoldDetection(currentHoldDetection)
+      setLimitOff(currentLimitOff)
+      setGoal(currentGoal)
+      setListener(currentListener)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, group])
@@ -455,6 +475,18 @@ function GroupChatSettingsDialog({
       setGroupChatHoldDetection(finalName, holdDetection)
     }
 
+    if (limitOff !== currentLimitOff) {
+      setGroupChatLimits(finalName, limitOff ? { continuations: 'off', messages: 'off', rounds: 'off' } : undefined)
+    }
+
+    if (goal.trim() !== currentGoal) {
+      setGroupChatGoal(finalName, goal)
+    }
+
+    if (listener !== currentListener) {
+      setGroupChatListener(finalName, listener || null)
+    }
+
     onClose()
 
     if (finalName !== group) {
@@ -502,6 +534,46 @@ function GroupChatSettingsDialog({
           label={b.group.holdDetection}
           onChange={setHoldDetection}
         />
+        <ToggleRow
+          checked={limitOff}
+          description={b.group.limitOffHint}
+          label={b.group.limitOff}
+          onChange={setLimitOff}
+        />
+        <div className="flex flex-col gap-1" data-testid="group-settings-listener">
+          <label className="text-[0.75rem] font-medium text-(--ui-text-secondary)" htmlFor="group-listener-select">
+            {b.group.listener}
+          </label>
+          <select
+            className="h-8 w-full rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-control-background) px-2 text-[0.8125rem]"
+            id="group-listener-select"
+            onChange={event => setListener(event.target.value)}
+            value={listener}
+          >
+            <option value="">{b.group.listenerAuto}</option>
+            <option value={ROOM_LISTENER_EVERYONE}>{b.group.listenerEveryone}</option>
+            {(members || []).map(member => (
+              <option key={groupMemberKey(member)} value={groupMemberKey(member)}>
+                {b.group.listenerOnly(member.name)}
+              </option>
+            ))}
+          </select>
+          <p className="text-[0.6875rem] text-(--ui-text-tertiary)">{b.group.listenerHint}</p>
+        </div>
+        <div className="flex flex-col gap-1" data-testid="group-settings-goal">
+          <label className="text-[0.75rem] font-medium text-(--ui-text-secondary)" htmlFor="group-goal-input">
+            {b.group.goal}
+          </label>
+          <Input
+            aria-label={b.group.goal}
+            id="group-goal-input"
+            maxLength={200}
+            onChange={event => setGoal(event.target.value)}
+            placeholder={b.group.goalPlaceholder}
+            value={goal}
+          />
+          <span className="text-[0.6875rem] text-(--ui-text-quaternary)">{b.group.goalHint}</span>
+        </div>
         {(members || []).length > 0 ? (
           <ul className="flex flex-col gap-1" data-testid="group-settings-members">
             {(members || []).map(member => {
@@ -621,124 +693,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       ...current,
       pendingAttachments: typeof value === 'function' ? value(current.pendingAttachments || {}) : value
     }))
-
-  // Browser Comment Mode can live in its own Electron pop-out on another
-  // monitor. The ordinary composer bus is window-local and this room uses its
-  // own New Thread composer anyway, so accept only batches explicitly pinned to
-  // THIS room + THIS renderer. Packaged Electron windows use the preload IPC
-  // relay; BroadcastChannel stays only as a browser/dev fallback. The protocol
-  // strings remain literal here to preserve the plugin fence (Bot Mode imports
-  // only the SDK + its own files). A stale route gets no ACK, leaving the
-  // annotations intact.
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    const desktopBridge = window.hermesDesktop?.windowRelay
-
-    const channel =
-      !desktopBridge && typeof BroadcastChannel !== 'undefined'
-        ? new BroadcastChannel('hermes.desktop.preview-annotate-handoff.v1')
-        : null
-
-    if (!desktopBridge && !channel) {
-      return
-    }
-
-    const send = (payload: unknown) => {
-      if (desktopBridge) {
-        desktopBridge.send(payload)
-      } else {
-        channel?.postMessage(payload)
-      }
-    }
-
-    const onMessage = (data: unknown) => {
-      if (!data || typeof data !== 'object') {
-        return
-      }
-
-      const request = data as {
-        count?: unknown
-        destination?: { composerKey?: unknown; group?: unknown; kind?: unknown; windowId?: unknown }
-        images?: unknown
-        prompt?: unknown
-        requestId?: unknown
-        type?: unknown
-      }
-
-      const destination = request.destination
-      const sourceWindowId = window.sessionStorage.getItem('hermes.desktop.previewAnnotate.windowId')?.trim()
-
-      if (
-        !sourceWindowId ||
-        request.type !== 'preview-annotate-handoff' ||
-        typeof request.requestId !== 'string' ||
-        typeof request.prompt !== 'string' ||
-        !Array.isArray(request.images) ||
-        destination?.kind !== 'group' ||
-        destination.windowId !== sourceWindowId ||
-        destination.group !== group ||
-        destination.composerKey !== composerKeyRef.current
-      ) {
-        return
-      }
-
-      try {
-        const prompt = request.prompt
-
-        const attachments: Attachment[] = request.images
-          .filter((image): image is { dataUrl: string; name: string; number?: number } =>
-            Boolean(
-              image &&
-              typeof image === 'object' &&
-              typeof (image as { dataUrl?: unknown }).dataUrl === 'string' &&
-              typeof (image as { name?: unknown }).name === 'string'
-            )
-          )
-          .map(image => ({ data: image.dataUrl, kind: 'image' as const, name: image.name }))
-
-        const next = updateGroupComposerDraft(composerKeyRef.current, current => ({
-          ...current,
-          activeReplyThread: null,
-          main: current.main.trim() ? `${current.main.trimEnd()}\n\n${prompt}` : prompt,
-          pendingAttachments: {
-            ...(current.pendingAttachments || {}),
-            main: [...(current.pendingAttachments?.main || []), ...attachments]
-          }
-        }))
-
-        setComposerDraft(next)
-        host.notify({
-          kind: 'success',
-          message: `${Number(request.count) || attachments.length} Browser comment${Number(request.count) === 1 ? '' : 's'} added to ${group}. Review the New Thread draft before sending.`
-        })
-        send({
-          ok: true,
-          requestId: request.requestId,
-          type: 'preview-annotate-handoff-ack'
-        })
-      } catch (error) {
-        send({
-          error: error instanceof Error ? error.message : String(error),
-          ok: false,
-          requestId: request.requestId,
-          type: 'preview-annotate-handoff-ack'
-        })
-      }
-    }
-
-    const stopDesktop = desktopBridge?.onMessage(onMessage)
-    const onBroadcast = (event: MessageEvent<unknown>) => onMessage(event.data)
-    channel?.addEventListener('message', onBroadcast)
-
-    return () => {
-      stopDesktop?.()
-      channel?.removeEventListener('message', onBroadcast)
-      channel?.close()
-    }
-  }, [composerKey, group])
 
   const [confirmDisband, setConfirmDisband] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -868,8 +822,35 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     .filter(entry => entry?.group === group)
     .sort((a, b) => (a.at || 0) - (b.at || 0))
 
+  // Mailbox notes touching this room's members (#48) — task hand-offs the
+  // bots filed, or the user assigned, rendered under the log as status cards.
+  const mailboxNotes = roomMailboxNotes(useMailbox().data || [], members)
+
+  // D2 — the completed round's contribution one-liners (empty while a round
+  //  is running or no round has landed yet).
+  const roundContributions = room.running ? [] : groupRoundContributions(room)
+
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
   const availabilityLabel = `${availableMembers} of ${members.length} available`
+
+  // Team-orchestrated room? The backend's org tree resolves a lead whose members
+  // alone hear plain user turns; null keeps the room on fan-out (no covering
+  // team, ambiguous teams, or an older gateway without bots_team.room_lead).
+  const roomListener = room.listener || ''
+
+  const teamLeadQuery = useQuery({
+    queryFn: () => resolveRoomListener(roomListener, members),
+    queryKey: [ID, 'group-team-lead', group, roomListener, ...localMemberProfiles(members)],
+    refetchInterval: 30000,
+    staleTime: 15000
+  })
+
+  const teamLead = teamLeadQuery.data || null
+  const leadMember = teamLeadMember(teamLead, members)
+
+  const leadName = leadMember
+    ? displayName(leadMember, botRosterMeta(leadMember, allMeta))
+    : teamLead?.leadTitle || (teamLead?.lead ? `@${teamLead.lead}` : '')
 
   const memberNames =
     members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat'
@@ -891,7 +872,50 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           <Codicon name="organization" />
         </span>
       )}
-      <div className="min-w-0 flex-1 truncate text-sm font-semibold">{group}</div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold">{group}</div>
+        {room.goal ? (
+          <div className="truncate text-[0.6875rem] text-(--ui-text-tertiary)" data-testid="group-goal">
+            {room.goal}
+          </div>
+        ) : null}
+      </div>
+      {/* Face pile: the member count alone reads as a number; overlapping
+          faces read as a ROOM. Click opens the member manager. */}
+      {members.length ? (
+        <Button
+          aria-label="Manage group members"
+          className="flex shrink-0 items-center -space-x-1 rounded-full p-0.5"
+          onClick={() => setMemberPickerOpen(true)}
+          size="inline"
+          variant="text"
+        >
+          {members.slice(0, 5).map((member, faceIndex) => {
+            const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
+            const faceImage = faceAppearance.image
+
+            return (
+              <span
+                className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                key={`face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
+              >
+                <BotFace
+                  color={avatarColor(faceAppearance.color, member.name)}
+                  image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                  name={member.name}
+                  shape={faceAppearance.shape}
+                  size={18}
+                />
+              </span>
+            )
+          })}
+          {members.length > 5 ? (
+            <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-(--chrome-action-hover) text-[0.55rem] font-medium text-(--ui-text-tertiary) ring-1 ring-(--ui-bg-primary)">
+              {`+${members.length - 5}`}
+            </span>
+          ) : null}
+        </Button>
+      ) : null}
       <Tip label={memberNames}>
         <span
           aria-label={availabilityLabel}
@@ -1262,104 +1286,164 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     const image = appearance?.image ?? null
     const photo = Boolean(image && !isBackfilledFacePng(image))
 
-    return (
+    // Speaker runs: consecutive entries from the same voice share one header
+    // (avatar + name on the run's first line only) so the room reads as voices
+    // taking turns, not a flat ledger of identical rows.
+    const previous = index > 0 ? room.log[index - 1] : null
+
+    const runStart =
+      !previous ||
+      previous.from?.kind !== entry.from?.kind ||
+      previous.from?.name !== entry.from?.name ||
+      (previous.from?.source || '') !== (entry.from?.source || '') ||
+      groupThreadOf(previous) !== groupThreadOf(entry)
+
+    // The member's own avatar color keys the speaker name — the fastest
+    // "who is talking" scan in a multi-voice room.
+    const speakerColor = appearance ? avatarColor(appearance.color, entry.from.name) : null
+
+    const body = (
+      <div
+        className="min-w-0 text-xs text-foreground/90 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere" // The app shell sets user-select: none globally; message bodies opt
+        // back in so drag-select and ⌘C work in group chat logs.
+        data-selectable-text="true"
+        data-slot="group-chat-message-content"
+      >
+        {MessageTextContent ? (
+          <MessageTextContent decorateText={mentionText} media={!member?.remoteSource} text={entry.text} />
+        ) : Streamdown ? (
+          <Streamdown components={mentionComponents}>{entry.text}</Streamdown>
+        ) : (
+          entry.text
+        )}
+      </div>
+    )
+
+    const attachments =
+      Array.isArray(entry.images) && entry.images.length ? (
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {entry.images.map((img, imgIndex) =>
+            img.kind === 'pdf' || img.kind === 'file' ? (
+              <div
+                className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
+                key={`${entryKey}:img:${imgIndex}`}
+                title={img.name || 'attached file'}
+              >
+                <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
+                <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
+              </div>
+            ) : (
+              <img
+                alt={img.name || 'attached image'}
+                className="max-h-40 max-w-60 rounded-md border border-(--ui-stroke-secondary) object-contain"
+                key={`${entryKey}:img:${imgIndex}`}
+                src={img.data}
+                title={img.name || 'attached image'}
+              />
+            )
+          )}
+        </div>
+      ) : null
+
+    // Your own lines are right-aligned bubbles reusing the 1:1 thread's
+    // user-bubble tokens so the room reads like the same chat surface.
+    if (isUser) {
+      return (
+        <div
+          className={cn('group flex flex-col items-end gap-0.5 px-2', runStart && index > 0 && 'pt-1.5')}
+          key={entryKey}
+        >
+          <div className="flex items-baseline gap-1.5 px-1 text-[0.625rem] text-(--ui-text-quaternary)">
+            {entry.text.trim() ? (
+              <span className="opacity-0 pointer-events-none transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
+                <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
+              </span>
+            ) : null}
+            {runStart ? <span className="font-semibold text-(--ui-text-tertiary)">{label}</span> : null}
+            <span>{relativeTime(entry.at)}</span>
+          </div>
+          <div className="max-w-[85%] rounded-xl border border-(--dt-user-bubble-border) bg-(--dt-user-bubble) px-3 py-1.5">
+            {body}
+            {attachments}
+          </div>
+        </div>
+      )
+    }
+
+    // Every line keeps Reply + Copy: in the run header on a run's first line,
+    // floating over the line's top-right on continuations.
+    const actions = (
       <div
         className={cn(
-          'group flex items-start gap-2',
-          isUser ? 'rounded-md bg-(--chrome-action-hover) px-2 py-1.5' : 'px-2 py-1'
+          'flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100',
+          runStart
+            ? 'ml-auto'
+            : 'absolute right-2 -top-1 z-10 rounded-md bg-(--ui-bg-primary) shadow-sm ring-1 ring-(--ui-stroke-secondary)'
         )}
+      >
+        <Tip label={`Reply to @${replyMentionTag(entry, member)}`}>
+          <Button
+            aria-label={`Reply to ${display}`}
+            className="text-(--ui-text-tertiary) hover:text-foreground"
+            onClick={() => replyToMember(entry, member)}
+            size="icon"
+            variant="ghost"
+          >
+            <Codicon name="reply" />
+          </Button>
+        </Tip>
+        {entry.text.trim() ? (
+          <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
+        ) : null}
+      </div>
+    )
+
+    return (
+      <div
+        className={cn('group relative flex items-start gap-2.5 px-2', runStart && index > 0 && 'pt-1.5')}
         key={entryKey}
       >
-        {appearance ? (
-          <div className="mt-0.5 shrink-0">
-            <BotFace
-              color={avatarColor(appearance.color, entry.from.name)}
-              image={photo ? image : null}
-              name={entry.from.name}
-              shape={appearance.shape}
-              size={24}
-            />
-          </div>
-        ) : null}
+        <div className="w-6.5 shrink-0 self-start">
+          {runStart ? (
+            <div className="mt-0.5">
+              <BotFace
+                color={speakerColor || ''}
+                image={photo ? image : null}
+                name={entry.from.name}
+                shape={appearance ? appearance.shape : 'squircle'}
+                size={26}
+              />
+            </div>
+          ) : (
+            // Continuation lines reveal their timestamp in the avatar gutter
+            // on hover (the Slack idiom) — the run header stays uncluttered.
+            <div className="pt-1 text-center text-[0.5rem] leading-3 text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover:opacity-100">
+              {relativeTime(entry.at)}
+            </div>
+          )}
+        </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {isUser ? (
-              <span className="text-[0.7rem] font-semibold text-foreground">{label}</span>
-            ) : (
+          {runStart ? (
+            <div className="flex items-center gap-2">
               <Tip label={revealed ? 'Hide full handle' : 'Show full handle'}>
                 <Button
-                  className="text-left text-[0.7rem] font-semibold text-(--ui-accent)"
+                  className="text-left text-[0.7rem] font-semibold"
                   onClick={() => setRevealedSpeaker(revealed ? null : entryKey)}
                   size="inline"
+                  style={{ color: speakerColor || undefined }}
                   variant="text"
                 >
                   {label}
                 </Button>
               </Tip>
-            )}
-            <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
-            {entry.text.trim() || !isUser ? (
-              <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
-                {isUser ? null : (
-                  <Tip label={`Reply to @${replyMentionTag(entry, member)}`}>
-                    <Button
-                      aria-label={`Reply to ${display}`}
-                      className="text-(--ui-text-tertiary) hover:text-foreground"
-                      onClick={() => replyToMember(entry, member)}
-                      size="icon"
-                      variant="ghost"
-                    >
-                      <Codicon name="reply" />
-                    </Button>
-                  </Tip>
-                )}
-                {entry.text.trim() ? (
-                  <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          <div
-            className="min-w-0 text-xs text-(--ui-text-secondary) [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere" // The app shell sets user-select: none globally; message bodies opt
-            // back in so drag-select and ⌘C work in group chat logs.
-            data-selectable-text="true"
-            data-slot="group-chat-message-content"
-          >
-            {MessageTextContent ? (
-              <MessageTextContent decorateText={mentionText} media={!member?.remoteSource} text={entry.text} />
-            ) : Streamdown ? (
-              <Streamdown components={mentionComponents}>{entry.text}</Streamdown>
-            ) : (
-              entry.text
-            )}
-          </div>
-          {/* User attachments: what every responding bot was */
-          /* shown — image previews, or a named chip for */
-          /* PDFs/files. */}
-          {Array.isArray(entry.images) && entry.images.length ? (
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              {entry.images.map((img, imgIndex) =>
-                img.kind === 'pdf' || img.kind === 'file' ? (
-                  <div
-                    className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
-                    key={`${entryKey}:img:${imgIndex}`}
-                    title={img.name || 'attached file'}
-                  >
-                    <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
-                    <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
-                  </div>
-                ) : (
-                  <img
-                    alt={img.name || 'attached image'}
-                    className="max-h-40 max-w-60 rounded-md border border-(--ui-stroke-secondary) object-contain"
-                    key={`${entryKey}:img:${imgIndex}`}
-                    src={img.data}
-                    title={img.name || 'attached image'}
-                  />
-                )
-              )}
+              <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
+              {actions}
             </div>
-          ) : null}
+          ) : (
+            actions
+          )}
+          {body}
+          {attachments}
         </div>
       </div>
     )
@@ -1384,7 +1468,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     logChildren.push(
       replyThread === id ? (
         <form
-          className="grid gap-0 px-2 pb-1"
+          className="grid gap-0 px-2 pb-1 pl-11"
           key={`replybox:${id}`}
           onSubmit={event => {
             event.preventDefault()
@@ -1416,7 +1500,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         </form>
       ) : (
         <Button
-          className="w-fit px-2 pb-1 text-left text-[0.65rem] text-(--ui-accent) transition-colors"
+          className="mt-0.5 w-fit pb-1 pl-11 text-left text-[0.65rem] text-(--ui-accent) transition-colors"
           key={`replylink:${id}`}
           onClick={() => setReplyThread(id)}
           size="inline"
@@ -1431,10 +1515,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   return (
     <div
       className="relative flex h-full flex-col"
-      data-preview-annotate-composer-key={composerKey}
-      data-preview-annotate-destination="group"
-      data-preview-annotate-group={group}
-      data-preview-annotate-owner-key={groupWorkspaceOwnerKey(group)}
       onDragLeave={event => {
         // Only clear when leaving the room container itself, not when the
         // cursor moves between its children. React types relatedTarget as a
@@ -1465,33 +1545,151 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}
         members={members}
       />
+      {teamLead && leadName ? (
+        <div
+          className="flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.7rem] text-(--ui-text-quaternary)"
+          data-testid="group-team-listening"
+        >
+          <Codicon className="shrink-0 text-[0.65rem]" name="organization" />
+          <span className="min-w-0 flex-1 truncate">{b.group.teamListening(leadName)}</span>
+        </div>
+      ) : null}
       {activityPanel}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
         {/* unbreakable code line widened every entry to its own width and the */}
         {/* log scrolled sideways as a whole instead of the code block (#91878). */}
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-1.5 px-2.5 pb-2">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-1 px-2.5 pb-2 pt-1">
           {room.log.length
             ? logChildren
             : [
-                <div className="px-2 py-4 text-center text-xs text-(--ui-text-tertiary)" key={'empty'}>
-                  {b.group.composerPlaceholder}
+                <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center" key={'empty'}>
+                  {room.image ? (
+                    <img
+                      alt=""
+                      className="size-11 rounded-xl object-cover ring-1 ring-(--ui-stroke-secondary)"
+                      src={room.image}
+                    />
+                  ) : (
+                    <span className="flex size-11 items-center justify-center rounded-xl bg-(--chrome-action-hover) text-lg text-(--ui-text-tertiary)">
+                      <Codicon name="organization" />
+                    </span>
+                  )}
+                  {members.length ? (
+                    <span aria-hidden className="flex -space-x-1">
+                      {members.slice(0, 6).map((member, faceIndex) => {
+                        const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
+                        const faceImage = faceAppearance.image
+
+                        return (
+                          <span
+                            className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                            key={`empty-face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
+                          >
+                            <BotFace
+                              color={avatarColor(faceAppearance.color, member.name)}
+                              image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                              name={member.name}
+                              shape={faceAppearance.shape}
+                              size={22}
+                            />
+                          </span>
+                        )
+                      })}
+                    </span>
+                  ) : null}
+                  <div className="max-w-72 text-xs text-(--ui-text-tertiary)">
+                    {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
+                  </div>
                 </div>
               ]}
           {roomClarifies.map(entry => (
-            <GroupClarifyCard
-              entry={entry}
-              key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}
-              members={members}
-            />
+            <div className="pt-1" key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}>
+              <GroupClarifyCard entry={entry} members={members} />
+            </div>
           ))}
+          {mailboxNotes.map(note => (
+            <div className="pt-1" key={`mailbox:${note.connectionId || ''}:${note.id}`}>
+              <MailboxNoteCard members={members} note={note} />
+            </div>
+          ))}
+          {/* D2 — after a round settles, one card per member's first line */
+          /* (pure derivation over the log; no LLM call). */}
+          {!room.running && roundContributions.length ? (
+            <div
+              className="mt-1.5 rounded-r-md border-y border-r border-l-2 border-(--ui-stroke-secondary) border-l-(--ui-accent) bg-(--chrome-action-hover)/40 px-3 py-2"
+              data-testid="group-round-summary"
+              key={'round-summary'}
+            >
+              <div className="mb-1 ui-section-label">{b.group.roundSummaryTitle}</div>
+              <ul className="flex flex-col gap-0.5">
+                {roundContributions.map(entry => {
+                  const summaryMember = members.find(member => member.name === entry.name)
+
+                  const summaryAppearance = summaryMember
+                    ? botAppearance(summaryMember.name, botRosterMeta(summaryMember, allMeta))
+                    : null
+
+                  return (
+                    <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>
+                      <span
+                        className="shrink-0 font-medium"
+                        style={{
+                          color: summaryAppearance ? avatarColor(summaryAppearance.color, entry.name) : undefined
+                        }}
+                      >
+                        {summaryMember ? displayName(summaryMember, botRosterMeta(summaryMember, allMeta)) : entry.name}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-(--ui-text-tertiary)">{entry.line}</span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ) : null}
           {room.running ? (
-            <div className="px-2 py-1 text-[0.7rem] italic text-(--ui-text-quaternary)" key={'working'}>
-              {roomClarifies.length
-                ? b.group.waitingForAnswer
-                : room.turn
-                  ? b.group.memberThinking(displayName(room.turn, botRosterMeta(room.turn, allMeta)))
-                  : b.group.roomWorking}
+            <div
+              className="flex items-center gap-2 px-2 pt-1 text-[0.7rem] text-(--ui-text-quaternary)"
+              key={'working'}
+            >
+              {(() => {
+                // Typing indicator: the thinking member's mini face, or the
+                // classic three-dot pulse when the turn isn't attributable.
+                const turnAppearance = room.turn
+                  ? botAppearance(room.turn.name, botRosterMeta(room.turn, allMeta))
+                  : null
+
+                const turnImage = turnAppearance?.image
+
+                return turnAppearance ? (
+                  <span className="shrink-0 overflow-hidden rounded-[22%]">
+                    <BotFace
+                      color={avatarColor(turnAppearance.color, room.turn ? room.turn.name : 'agent')}
+                      image={turnImage && !isBackfilledFacePng(turnImage) ? turnImage : null}
+                      name={room.turn ? room.turn.name : 'agent'}
+                      shape={turnAppearance.shape}
+                      size={16}
+                    />
+                  </span>
+                ) : (
+                  <span aria-hidden className="flex items-center gap-0.5 px-1 py-1">
+                    {[0, 1, 2].map(dot => (
+                      <span
+                        className="size-1 animate-pulse rounded-full bg-(--ui-text-tertiary)"
+                        key={dot}
+                        style={{ animationDelay: `${dot * 200}ms` }}
+                      />
+                    ))}
+                  </span>
+                )
+              })()}
+              <span>
+                {roomClarifies.length
+                  ? b.group.waitingForAnswer
+                  : room.turn
+                    ? b.group.memberThinking(displayName(room.turn, botRosterMeta(room.turn, allMeta)))
+                    : b.group.roomWorking}
+              </span>
             </div>
           ) : null}
           {/* Scroll anchor (#89835): rooms opened at scroll position 0, mid- */
@@ -1624,6 +1822,7 @@ export function openGroupChat(group: string): void {
     ...$groupNeedsYou.get(),
     [group]: false
   })
+  markGroupRead(group)
   const ownerKey = groupWorkspaceOwnerKey(group)
   setBotsWorkspaceOwner(ownerKey, null, 'New group conversations start in the group composer.')
   // #93813: what reached the members' room sessions while nobody drove them

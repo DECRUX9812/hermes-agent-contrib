@@ -8,6 +8,7 @@ import {
   COMMAND_CENTER_ROUTE,
   isOverlayView,
   NEW_CHAT_ROUTE,
+  ROSTER_ROUTE,
   STARMAP_ROUTE
 } from '@/app/routes'
 
@@ -20,10 +21,12 @@ export function useOverlayRouting() {
   const currentView = appViewForPath(location.pathname)
   const settingsOpen = currentView === 'settings'
   const commandCenterOpen = currentView === 'command-center'
+  const inboxOpen = currentView === 'inbox'
   const agentsOpen = currentView === 'agents'
   const starmapOpen = currentView === 'starmap'
   const cronOpen = currentView === 'cron'
   const profilesOpen = currentView === 'profiles'
+  const rosterOpen = currentView === 'roster'
   const webhooksOpen = currentView === 'webhooks'
   const chatOpen = currentView === 'chat'
   const overlayOpen = isOverlayView(currentView)
@@ -67,6 +70,7 @@ export function useOverlayRouting() {
   }, [closeOverlayToPreviousRoute, commandCenterOpen, navigate])
 
   const openAgents = useCallback(() => navigate(AGENTS_ROUTE), [navigate])
+  const openRoster = useCallback(() => navigate(ROSTER_ROUTE), [navigate])
   const openStarmap = useCallback(() => navigate(STARMAP_ROUTE), [navigate])
 
   return {
@@ -77,10 +81,13 @@ export function useOverlayRouting() {
     commandCenterOpen,
     cronOpen,
     currentView,
+    inboxOpen,
     openAgents,
     openCommandCenterSection,
+    openRoster,
     openStarmap,
     profilesOpen,
+    rosterOpen,
     resetOverlayReturnRoute,
     settingsOpen,
     starmapOpen,

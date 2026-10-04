@@ -1207,7 +1207,13 @@ def _(rid, params: dict) -> dict:
             return _db_unavailable_error(rid, code=5017)
         cutoff = time.time() - days * 86400
         rows = [s for s in db.list_sessions_rich(limit=500, compact_rows=True) if (s.get("started_at") or 0) >= cutoff]
-    return _ok(rid, {"days": days, "sessions": len(rows), "messages": sum(s.get("message_count", 0) for s in rows)})
+        payload = {"days": days, "sessions": len(rows), "messages": sum(s.get("message_count", 0) for s in rows)}
+        # ``report`` adds the /insights token + cost breakdown (overview, per model) for desktop surfaces.
+        if params.get("report"):
+            from agent.insights import InsightsEngine
+            report = InsightsEngine(db).generate(days=days)
+            payload["report"] = {k: report.get(k) for k in ("empty", "overview", "models")}
+    return _ok(rid, payload)
 
 
 @_rpc("rollback.list", live_session=True, fail_code=5020)
@@ -1216,8 +1222,13 @@ def _(rid, params: dict, session) -> dict:
         if not mgr.enabled:
             return _ok(rid, {"enabled": False, "checkpoints": []})
         # The TUI renders ``message``; the manager calls it ``reason``.
-        rows = [{"hash": c.get("hash", ""), "timestamp": c.get("timestamp", ""), "message": c.get("reason", "")}
-                for c in mgr.list_checkpoints(cwd)]
+        rows = []
+        for c in mgr.list_checkpoints(cwd):
+            row = {"hash": c.get("hash", ""), "timestamp": c.get("timestamp", ""), "message": c.get("reason", "")}
+            for tagged in ("turn", "sid", "user_row_id"):
+                if c.get(tagged) is not None:
+                    row[tagged] = c[tagged]
+            rows.append(row)
         return _ok(rid, {"enabled": True, "checkpoints": rows})
     return _with_checkpoints(session, go)
 
@@ -1229,14 +1240,20 @@ def _(rid, params: dict, session) -> dict:
         return _err(rid, 4014, "hash required")
     # Full-history rollback mutates session history → rejected mid-turn (prompt.submit
     # would drop the agent's output or clobber it). File-scoped only touches disk.
+    # ``files_only`` reverts the tree without rewinding the transcript (the
+    # per-message "revert files" affordance), but still refuses mid-turn.
     if not file_path and session.get("running"):
         return _err(rid, 4009, busy_message("rollback restore"))
+
+    files_only = bool(params.get("files_only"))
+    safe = bool(params.get("safe"))
 
     def go(mgr, cwd):
         if reason := _container_checkpoint_refusal(session, mgr, cwd):
             return {"success": False, "error": reason}
-        result = mgr.restore(cwd, _resolve_checkpoint_hash(mgr, cwd, target), file_path=file_path or None)
-        if result.get("success") and not file_path:
+        result = mgr.restore(cwd, _resolve_checkpoint_hash(mgr, cwd, target),
+                             file_path=file_path or None, safe=safe)
+        if result.get("success") and not file_path and not files_only:
             removed = 0
             with session["history_lock"]:
                 _history, user_indices = _user_turn_indices(session)

@@ -8,6 +8,8 @@ import type { MachineProfile } from '../electron/machine-profile'
 import type { HermesNotification } from '../electron/notification-types'
 import type { PoolLimits } from '../electron/pool-limits'
 import type { KeepAwakeMode } from '../electron/power-save'
+import type { RegionCaptureApi } from '../electron/region-capture-types'
+import type { TrayStatusPush } from '../electron/tray-status'
 import type { UpdateRunReport } from '../electron/updater/update-metrics'
 import type { GrowRequest } from '../electron/window-growth'
 
@@ -19,6 +21,7 @@ import type {
   PetOverlayStatePayload
 } from './store/pet-overlay'
 import type {
+  QuickEntryContext,
   QuickEntryStatePush,
   QuickEntryStatus,
   QuickEntrySubmitPayload,
@@ -89,12 +92,22 @@ declare global {
         sessionId: string,
         opts?: { connectionId?: null | string; profile?: null | string; watch?: boolean }
       ) => Promise<{ ok: boolean; error?: string }>
-      // Resume this session in the user's own terminal emulator (`hermes --tui
-      // --resume <id>`) — the external terminal, not the in-app pane.
+      // Resume this session in the TUI (`hermes --tui --resume <id>`): in the
+      // user's own terminal emulator, or with target 'pane' a `run` line for the
+      // in-app terminal to type.
       openSessionInTerminal: (
         sessionId: string,
-        opts?: { cwd?: string; profile?: string }
-      ) => Promise<{ ok: boolean; error?: string }>
+        opts?: { cwd?: string; profile?: string; target?: 'external' | 'pane' }
+      ) => Promise<{ ok: boolean; error?: string; run?: string }>
+      // Serve the user's VS Code (code serve-web / openvscode-server) on
+      // loopback for the Code pane; the URL opens `folder` and carries the
+      // server's one-run token.
+      openVsCode: (
+        folder?: string
+      ) => Promise<
+        | { ok: true; kind: 'code' | 'code-insiders' | 'openvscode-server'; url: string }
+        | { ok: false; error: 'failed' | 'not-installed'; detail?: string }
+      >
       // Open a new full-chrome app window — a peer instance of the primary that
       // renders the complete app on an explicit connection/profile, or inherits
       // the calling window's route when no options are supplied.
@@ -178,6 +191,9 @@ declare global {
       }
       // macOS native screenshot gesture; absent on other platforms.
       screenshot?: ScreenshotApi
+      /** Full-frame capture of the display under the window, for the
+       *  region-capture + markup overlay (roadmap #34). All platforms. */
+      regionCapture?: RegionCaptureApi
       hudModifier?: HudModifierApi
       // Quick Entry: a global-hotkey mini composer window. Main owns the OS
       // shortcut registration + the persisted preference (it must restore the
@@ -209,6 +225,9 @@ declare global {
         // Quick window subscribes to "you were just summoned" so it can reset
         // its draft and re-focus the input on every open.
         onShown: (callback: () => void) => () => void
+        // Main → quick window: the frontmost-app context captured at summon
+        // time; null when the platform cannot answer (no chip then).
+        onContext: (callback: (context: QuickEntryContext | null) => void) => () => void
         // Quick window subscribes to the outcome of a submit whose relay timed
         // out (delivery is unknown until this arrives).
         onLateResult: (
@@ -390,9 +409,22 @@ declare global {
       setTranslucency?: (payload: TranslucencyState) => void
       setKeepAwake?: (mode: KeepAwakeMode) => void
       minimizeToTray?: {
-        get: () => Promise<{ enabled: boolean; available: boolean }>
-        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean }>
-        onChanged: (callback: (status: { enabled: boolean; available: boolean }) => void) => () => void
+        get: () => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        onChanged: (
+          callback: (status: { enabled: boolean; available: boolean; statusEnabled: boolean }) => void
+        ) => () => void
+      }
+      /** Menu-bar status surface (#38): renderer pushes live session status for
+       *  the tray menu/badge; `onNewSession` is the tray's new-chat action. */
+      menuBarStatus?: {
+        get: () => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        push: (payload: TrayStatusPush) => void
+        onChanged: (
+          callback: (status: { enabled: boolean; available: boolean; statusEnabled: boolean }) => void
+        ) => () => void
+        onNewSession: (callback: () => void) => () => void
       }
       setDisableF12?: (blocked: boolean) => void
       setF12ShortcutActive?: (active: boolean) => void
@@ -477,6 +509,7 @@ declare global {
       renamePath?: (path: string, newName: string) => Promise<{ path: string }>
       // Write a small UTF-8 text file (hardened path, parent must exist).
       writeTextFile?: (path: string, content: string) => Promise<{ path: string }>
+      makeDirectory?: (path: string) => Promise<{ path: string }>
       // Move a file/folder to the OS trash (recoverable).
       trashPath?: (path: string) => Promise<boolean>
       // Git-driven worktree management for the "Start work" flow.
@@ -491,6 +524,18 @@ declare global {
           worktreePath: string,
           options?: { force?: boolean }
         ) => Promise<{ removed: string }>
+        // Session-worktree affordances (roadmap #47): recreate a missing
+        // worktree dir on session open, merge its branch back into the main
+        // checkout.
+        worktreeEnsure: (
+          repoPath: string,
+          worktreePath: string,
+          branch: string
+        ) => Promise<{ branch: string; path: string; repoRoot: string; restored: boolean }>
+        worktreeMerge: (
+          repoPath: string,
+          worktreePath: string
+        ) => Promise<{ branch: string; into: string; merged: boolean; repoRoot: string }>
         branchSwitch: (repoPath: string, branch: string) => Promise<{ branch: string }>
         // The local branches, plus the remote-tracking refs that have no local
         // branch, for the "convert a branch into a worktree" picker.
@@ -563,6 +608,9 @@ declare global {
       onPreviewNav?: (callback: (command: 'back' | 'forward' | 'reload') => void) => () => void
       onOpenFolderRequested?: (callback: () => void) => () => void
       onOpenUpdatesRequested?: (callback: () => void) => () => void
+      /** Native-menu door items send the keybind action id; the renderer
+       *  dispatches it through the same handler a keypress would use. */
+      onMenuActionRequested?: (callback: (actionId: string) => void) => () => void
       onDeepLink?: (
         callback: (payload: { kind: string; name: string; params: Record<string, string> }) => void
       ) => () => void
@@ -1646,6 +1694,9 @@ export interface HermesReviewPr {
 // opened from — how a session row finds its own PR.
 export interface HermesBranchPullRequest {
   branch: string
+  /** Head commit's check rollup folded to `failure` | `pending` | `success`;
+   *  absent on pre-checks backends and on PRs whose head has no checks. */
+  checks?: 'failure' | 'pending' | 'success'
   draft: boolean
   number: number
   /** `open` | `closed` | `merged`, lowercased from gh. */

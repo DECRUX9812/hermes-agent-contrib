@@ -5,12 +5,17 @@ import { type NodeApi, type NodeRendererProps, type RowRendererProps, Tree, type
 
 import { TreeSkeleton } from '@/components/chat/skeletons'
 import { Codicon } from '@/components/ui/codicon'
+import { FileTypeIcon } from '@/components/ui/file-type-icon'
 import { markRightPanePerf } from '@/debug/right-pane-events'
 import { useResizeObserver } from '@/hooks/use-resize-observer'
+import { translateNow } from '@/i18n'
 import { cn } from '@/lib/utils'
+import { $agentTouchedPaths } from '@/store/agent-touched'
 import { type RepoChangeKind, repoChangeKindForPath } from '@/store/coding-status'
 import { $renamingPath, beginInlineRename } from '@/store/file-actions'
+import { $treeSelection } from '@/store/file-tree'
 import { $revealInTreeRequest } from '@/store/layout'
+import { $previewTarget } from '@/store/preview'
 
 import { FileEntryContextMenu, InlineRenameInput, isRenameShortcut } from '../file-actions'
 
@@ -61,6 +66,7 @@ export function ProjectTree({
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   const treeRef = useRef<TreeApi<TreeNode> | null>(null)
+  const agentTouched = useStore($agentTouchedPaths)
   const [size, setSize] = useState({ height: 0, width: 0 })
 
   const syncTreeSize = useCallback((entries: readonly ResizeObserverEntry[]) => {
@@ -104,7 +110,7 @@ export function ProjectTree({
   // children first so the node exists), then select + scroll to the target. The
   // pane is opened by the caller; this drives the tree to the file.
   const revealNode = useCallback(
-    async (absPath: string) => {
+    async (absPath: string, align: 'smart' | 'start' = 'start') => {
       const root = cwd.replace(/[\\/]+$/, '')
       const target = absPath.replace(/[\\/]+$/, '')
       const rel = target.startsWith(root) ? target.slice(root.length).replace(/^[\\/]+/, '') : ''
@@ -127,8 +133,9 @@ export function ProjectTree({
 
       treeRef.current?.select(target)
       // 'start' lands the file at/near the top (instant — arborist sets scrollTop
-      // directly, no smooth scroll).
-      treeRef.current?.scrollTo(target, 'start')
+      // directly, no smooth scroll); 'smart' (follow) only scrolls when the row
+      // is out of view, so a row you just clicked never jumps.
+      treeRef.current?.scrollTo(target, align)
     },
     [cwd, onLoadChildren, onNodeOpenChange]
   )
@@ -144,6 +151,23 @@ export function ProjectTree({
         void revealNode(path)
       }),
     [revealNode]
+  )
+
+  // Follow the active file (VS Code's explorer.autoReveal): whatever opens in
+  // the preview — from chat, ⌘P, a diff — is shown and selected here too.
+  useEffect(
+    () =>
+      $previewTarget.subscribe(target => {
+        const path = target?.kind === 'file' ? target.path : undefined
+        const root = cwd.replace(/[\\/]+$/, '')
+
+        if (!path || !root || !path.startsWith(`${root}/`) || treeRef.current?.get(path)?.isSelected) {
+          return
+        }
+
+        void revealNode(path, 'smart')
+      }),
+    [cwd, revealNode]
   )
 
   const handleActivate = useCallback(
@@ -197,6 +221,11 @@ export function ProjectTree({
           initialOpenState={openState}
           key={`${cwd}:${collapseNonce}`}
           onActivate={handleActivate}
+          onSelect={nodes => {
+            const picked = nodes[0]?.data
+
+            $treeSelection.set(picked && !picked.placeholder ? { isDirectory: picked.isDirectory, path: picked.id } : null)
+          }}
           onToggle={handleToggle}
           openByDefault={false}
           padding={0}
@@ -208,6 +237,7 @@ export function ProjectTree({
           {props => (
             <ProjectTreeRow
               {...props}
+              agentTouched={Boolean(props.node.data && agentTouched.has(props.node.data.id))}
               onAttachFile={onActivateFile}
               onAttachFolder={onActivateFolder}
               onPreviewFile={onPreviewFile}
@@ -274,6 +304,7 @@ const CHANGE_TINT: Record<RepoChangeKind, string> = {
 }
 
 function ProjectTreeRow({
+  agentTouched,
   dragHandle,
   node,
   onAttachFile,
@@ -282,6 +313,8 @@ function ProjectTreeRow({
   relativeTo,
   style
 }: NodeRendererProps<TreeNode> & {
+  /** The focused chat's agent edited this file. */
+  agentTouched: boolean
   onAttachFile: (path: string) => void
   onAttachFolder: (path: string) => void
   onPreviewFile?: (path: string) => void
@@ -332,7 +365,10 @@ function ProjectTreeRow({
         if (isFolder) {
           node.toggle()
         } else {
+          // One click opens the file beside the chat (VS Code / Codex); a
+          // double-click used to be the only way in.
           node.select()
+          onPreviewFile?.(node.data.id)
         }
       }}
       onDoubleClick={event => {
@@ -372,7 +408,7 @@ function ProjectTreeRow({
         ) : isFolder ? (
           <Codicon name={node.isOpen ? 'folder-opened' : 'folder'} size="0.875rem" />
         ) : (
-          <Codicon name="file" size="0.875rem" />
+          <FileTypeIcon path={node.data.name} size="0.875rem" />
         )}
       </span>
       {editing ? (
@@ -381,6 +417,14 @@ function ProjectTreeRow({
         // Git decoration (VS Code-style): tint changed files; the explicit color
         // wins over the row's hover/selected text color, so it persists.
         <span className={cn('min-w-0 flex-1 truncate', changeKind && CHANGE_TINT[changeKind])}>{node.data.name}</span>
+      )}
+      {agentTouched && !editing && (
+        <span
+          aria-label={translateNow('rightSidebar.agentTouched')}
+          className="mr-1 size-1.5 shrink-0 rounded-full bg-(--ui-accent)"
+          data-agent-touched=""
+          title={translateNow('rightSidebar.agentTouched')}
+        />
       )}
     </div>
   )

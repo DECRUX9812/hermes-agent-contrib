@@ -19,6 +19,7 @@ import { getPluginCtx } from './shared'
 import type {
   Attachment,
   GroupChat,
+  GroupChatLimits,
   GroupHold,
   GroupMember,
   GroupMessage,
@@ -59,8 +60,14 @@ let groupChatSyncTimer: ReturnType<typeof setTimeout> | null = null
 /** One room inside the bounded ui_meta projection: a compacted log plus the
  *  identity fields, without any of `GroupChat`'s runtime/orchestration state. */
 interface GroupChatSyncRoom {
+  goal?: string
   holdDetection?: boolean
   image?: null | string
+  /** Per-axis drive-budget overrides — an identity field like `goal`, so the
+   *  budget a user set on one device follows the room to every mirror. */
+  limits?: GroupChatLimits
+  /** Room listener (see GroupChat.listener) — identity like `goal`. */
+  listener?: string
   log: GroupMessage[]
   members?: GroupMember[]
   name?: string
@@ -356,6 +363,21 @@ export function groupChatSyncSnapshot(
       log,
       holdDetection: room.holdDetection !== false,
       revision: Math.max(0, Number(room?.syncRevision ?? room?.revision ?? 0)),
+      ...(typeof room?.goal === 'string' && room.goal.trim()
+        ? {
+            goal: room.goal.trim().slice(0, 200)
+          }
+        : {}),
+      ...(room?.limits && typeof room.limits === 'object' && Object.keys(room.limits).length
+        ? {
+            limits: room.limits
+          }
+        : {}),
+      ...(typeof room?.listener === 'string' && room.listener
+        ? {
+            listener: room.listener.slice(0, 256)
+          }
+        : {}),
       members: (Array.isArray(room.members) ? room.members : []).slice(0, GROUP_CHAT_MAX_MEMBERS).map(member => ({
         name: String(member?.name || '').slice(0, 128),
         ...(member?.handle
@@ -546,17 +568,26 @@ export function mergeGroupChatSyncSnapshots(
     let members: GroupMember[]
     let image: null | string | undefined
     let holdDetection = true
+    let goal: string | undefined
+    let limits: GroupChatLimits | undefined
+    let listener: string | undefined
 
     if (localRevision > remoteRevision) {
       identity = localRoom
       members = [...(localRoom?.members || [])]
       image = localRoom?.image
       holdDetection = localRoom?.holdDetection !== false
+      goal = localRoom?.goal
+      limits = localRoom?.limits
+      listener = localRoom?.listener
     } else if (remoteRevision > localRevision) {
       identity = remoteRoom
       members = [...(remoteRoom?.members || [])]
       image = remoteRoom?.image
       holdDetection = remoteRoom?.holdDetection !== false
+      goal = remoteRoom?.goal
+      limits = remoteRoom?.limits
+      listener = remoteRoom?.listener
     } else {
       identity = localRoom || remoteRoom
       const byId = new Map<string, GroupMember>()
@@ -570,6 +601,11 @@ export function mergeGroupChatSyncSnapshots(
       holdDetection = Object.prototype.hasOwnProperty.call(localRoom || {}, 'holdDetection')
         ? localRoom?.holdDetection !== false
         : remoteRoom?.holdDetection !== false
+      goal = Object.prototype.hasOwnProperty.call(localRoom || {}, 'goal') ? localRoom?.goal : remoteRoom?.goal
+      limits = Object.prototype.hasOwnProperty.call(localRoom || {}, 'limits') ? localRoom?.limits : remoteRoom?.limits
+      listener = Object.prototype.hasOwnProperty.call(localRoom || {}, 'listener')
+        ? localRoom?.listener
+        : remoteRoom?.listener
     }
 
     rooms[key] = {
@@ -599,6 +635,21 @@ export function mergeGroupChatSyncSnapshots(
       ...(typeof image === 'string' && image
         ? {
             image
+          }
+        : {}),
+      ...(typeof goal === 'string' && goal
+        ? {
+            goal
+          }
+        : {}),
+      ...(limits && typeof limits === 'object'
+        ? {
+            limits
+          }
+        : {}),
+      ...(typeof listener === 'string' && listener
+        ? {
+            listener
           }
         : {})
     }
@@ -839,6 +890,21 @@ export function mergeRemoteGroupChatSnapshotIntoRooms(
         : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'image')
           ? projected.image || null
           : existing.image || null,
+      goal: isPreserved
+        ? existing.goal
+        : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'goal')
+          ? projected.goal || undefined
+          : existing.goal,
+      limits: isPreserved
+        ? existing.limits
+        : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'limits')
+          ? projected.limits || undefined
+          : existing.limits,
+      listener: isPreserved
+        ? existing.listener
+        : remoteRevision >= localRevision && Object.prototype.hasOwnProperty.call(projected, 'listener')
+          ? projected.listener || undefined
+          : existing.listener,
       syncRevision: isPreserved ? localRevision : Math.max(remoteRevision, localRevision),
       epoch: Number(existing.epoch || 0),
       running: Boolean(existing.running)
@@ -921,6 +987,9 @@ export function durableGroupChatRooms(all: Record<string, GroupChat> = $groupCha
       // already carries.
       roomId: typeof room.roomId === 'string' && room.roomId ? room.roomId : null,
       image: room.image || null,
+      goal: room.goal,
+      limits: room.limits,
+      listener: room.listener,
       rosterOrder: room.rosterOrder,
       pinned: room.pinned,
       // Sidebar filing (user-sections) is room-local; keep it across sync.
@@ -1385,18 +1454,158 @@ export function setGroupChatSyncDisposed(disposed: boolean) {
 }
 
 // ── one room's budget ────────────────────────────────────────────────────────
-// Every ceiling a single user send can spend, in one block on purpose: making
-// them configurable (per room, or model-aware from config.yaml) is live
-// contributor work — #92213 (per-room limits) and #96842 (config + token
-// budget) — and both need exactly one seam to hook. Carried over at the same
-// values the old plugin.js shipped so neither rebase inherits a behavior
-// change on top of a rewrite; deciding the shape of the override belongs to
-// those PRs, not to a design-system pass.
+// Drive-budget defaults — one user send may spend at most this many
+// round-robin rounds, member posts, and @-cited follow-up rounds. Two
+// overrides land below: the config.yaml `group_chat` block
+// (refreshGroupChatLimits → $groupChatConfigLimits) and a room's own per-axis
+// `limits` — every source clamped to the GROUP_CHAT_HARD_CAP_* ceilings, so a
+// raiseable budget and the un-raiseable runaway brake stay one resolved map
+// apart.
 export const GROUP_CHAT_MAX_ROUNDS = 3
 
 // #94478 review: continuation rounds are bounded independently of the message cap so a pathological mention chain can't consume the room's whole budget on handoffs.
 export const GROUP_CHAT_MAX_MESSAGES = 10
 export const GROUP_CHAT_MAX_CONTINUATIONS = 2
+
+// The runaway brake: the absolute ceilings every budget source (config.yaml's
+// `group_chat` block, a room's own overrides) clamps to — nothing, not even a
+// room set to 'off', outruns them. What the complaint "the turn cap stops you
+// mid-flow" needed is a way to RAISE the budget, not to remove the brake.
+export const GROUP_CHAT_HARD_CAP_ROUNDS = 20
+export const GROUP_CHAT_HARD_CAP_MESSAGES = 100
+export const GROUP_CHAT_HARD_CAP_CONTINUATIONS = 20
+
+/** One drive's budget after every override resolved. */
+export interface ResolvedGroupChatLimits {
+  continuations: number
+  messages: number
+  rounds: number
+}
+
+// The three budget axes, each with its config.yaml `group_chat` key, its
+// default and its hard ceiling — one table drives config resolution, room
+// overrides and clamping, so they cannot drift.
+const GROUP_CHAT_LIMIT_AXES = [
+  { axis: 'rounds', configKey: 'max_rounds', cap: GROUP_CHAT_HARD_CAP_ROUNDS, fallback: GROUP_CHAT_MAX_ROUNDS },
+  { axis: 'messages', configKey: 'max_messages', cap: GROUP_CHAT_HARD_CAP_MESSAGES, fallback: GROUP_CHAT_MAX_MESSAGES },
+  {
+    axis: 'continuations',
+    configKey: 'max_continuations',
+    cap: GROUP_CHAT_HARD_CAP_CONTINUATIONS,
+    fallback: GROUP_CHAT_MAX_CONTINUATIONS
+  }
+] as const
+
+/** The `group_chat` block of config.yaml resolved to drive budgets — refreshed
+ *  from `config.get 'full'` at plugin register; every room that never
+ *  overrides an axis inherits these values. */
+export const $groupChatConfigLimits = atom<ResolvedGroupChatLimits>({
+  continuations: GROUP_CHAT_MAX_CONTINUATIONS,
+  messages: GROUP_CHAT_MAX_MESSAGES,
+  rounds: GROUP_CHAT_MAX_ROUNDS
+})
+
+/** Integer ≥1 clamped to the hard ceiling; anything else reads as `fallback`
+ *  (unset, junk, a yaml type that isn't a count). */
+function groupChatLimitValue(raw: unknown, cap: number, fallback: number): number {
+  const value = Math.floor(Number(raw))
+
+  return Number.isFinite(value) && value >= 1 ? Math.min(value, cap) : fallback
+}
+
+/** config.yaml's `group_chat` block → the drive budget every room inherits:
+ *  `{max_rounds, max_messages, max_continuations}` clamped to the hard
+ *  ceilings; missing keys and junk keep the default for that axis. */
+export function resolveGroupChatLimits(config: unknown): ResolvedGroupChatLimits {
+  const block =
+    config && typeof config === 'object' && typeof (config as Record<string, unknown>).group_chat === 'object'
+      ? ((config as Record<string, Record<string, unknown>>).group_chat || {})
+      : {}
+
+  const resolved = {} as ResolvedGroupChatLimits
+
+  for (const { axis, configKey, cap, fallback } of GROUP_CHAT_LIMIT_AXES) {
+    resolved[axis] = groupChatLimitValue(block[configKey], cap, fallback)
+  }
+
+  return resolved
+}
+
+/** The drive budget ONE room runs under, resolved axis by axis: a room's own
+ *  number wins (clamped to the ceiling), `'off'` rides the ceiling itself —
+ *  the brake still binds — and an absent axis inherits the config block. */
+export function getGroupChatLimits(group: string): ResolvedGroupChatLimits {
+  const inherited = $groupChatConfigLimits.get()
+  const limits = ($groupChats.get()[group] || {}).limits || {}
+  const resolved = {} as ResolvedGroupChatLimits
+
+  for (const { axis, cap, fallback } of GROUP_CHAT_LIMIT_AXES) {
+    const raw = limits[axis]
+
+    resolved[axis] = raw === 'off' ? cap : groupChatLimitValue(raw, cap, inherited[axis])
+  }
+
+  return resolved
+}
+
+/** Whether axis `key` sits AT its hard ceiling — a drive that exhausts it
+ *  hit the runaway brake ('safety'), not a budget the user can still raise. */
+export function groupChatLimitAtCeiling(limits: ResolvedGroupChatLimits, key: keyof ResolvedGroupChatLimits) {
+  const axis = GROUP_CHAT_LIMIT_AXES.find(entry => entry.axis === key)
+
+  return axis ? limits[key] >= axis.cap : false
+}
+
+/** Persist a room's per-axis budget overrides beside its other durable meta
+ *  (goal, holdDetection): numbers clamp to the ceilings, `'off'` keeps, and
+ *  an empty map clears the override back to inherit-everything. */
+export function setGroupChatLimits(group: string, limits: null | undefined | Record<string, unknown>) {
+  updateGroupChat(group, (room: GroupChatRoom) => {
+    const cleaned = {} as NonNullable<GroupChatRoom['limits']>
+
+    for (const { axis, cap } of GROUP_CHAT_LIMIT_AXES) {
+      const raw = limits?.[axis]
+
+      if (raw === 'off') {
+        cleaned[axis] = 'off'
+      } else {
+        const value = Math.floor(Number(raw))
+
+        if (Number.isFinite(value) && value >= 1) {
+          cleaned[axis] = Math.min(value, cap)
+        }
+      }
+    }
+
+    room.limits = Object.keys(cleaned).length ? cleaned : undefined
+
+    return room
+  })
+}
+
+/** Set who hears plain user turns: a member key, 'everyone', or null for auto
+ *  (the bot team's lead when the room is one team, else everyone). */
+export function setGroupChatListener(group: string, listener: null | string | undefined) {
+  updateGroupChat(group, (room: GroupChatRoom) => {
+    room.listener = listener ? String(listener).slice(0, 256) : undefined
+
+    return room
+  })
+}
+
+/** Re-read `group_chat` out of the served profile's config.yaml. Called at
+ *  register so a config edit applies to the NEXT drive without a window
+ *  reload; a backend too old for `config.get 'full'` keeps the defaults. */
+export async function refreshGroupChatLimits() {
+  try {
+    const res = await host.request<{ config?: Record<string, unknown> }>('config.get', { key: 'full' })
+
+    $groupChatConfigLimits.set(resolveGroupChatLimits(res?.config))
+  } catch {
+    /* offline or an older backend — the defaults still apply */
+  }
+}
+
 // Per-turn room window (#114341 follow-up): a member sees every message since
 // its last turn, up to BOTH ceilings — oldest dropped first, the cut named
 // exactly. Room lines are short by construction (the rules ask for 1-3
@@ -1639,6 +1848,9 @@ export function updateGroupChat(
         roomId: typeof room.roomId === 'string' && room.roomId ? room.roomId : null,
         // Room picture (small data URL, same normalization as bot avatars).
         image: room.image || null,
+        goal: room.goal,
+        limits: room.limits,
+        listener: room.listener,
         rosterOrder: room.rosterOrder,
         pinned: room.pinned,
         // Sidebar filing (user-sections) is room-local; keep it durable.
@@ -1700,6 +1912,68 @@ export function setGroupChatImage(group: string, image: null | string | undefine
 
     return room
   })
+}
+
+/** The room's stated objective (D2) — persisted with the room record like
+ *  every other group meta field, so it rides the same bounded sync. */
+export function setGroupChatGoal(group: string, goal: null | string | undefined) {
+  updateGroupChat(group, (room: GroupChatRoom) => {
+    room.goal = String(goal || '').trim() || undefined
+
+    return room
+  })
+}
+
+/** One member's line in a completed round's summary card: their name plus a
+ *  one-line excerpt of what they contributed. */
+export interface GroupRoundContribution {
+  /** Display name of the contributing member. */
+  name: string
+  /** First substantive line of the member's first reply this round. */
+  line: string
+}
+
+/** Derive a completed round's per-member contribution lines for the summary
+ *  card (D2): the round is the contiguous tail of the log after the last
+ *  `user` entry, and each member contributes the first line of their FIRST
+ *  message in it — the answer a reader skims the round for. Pure: never
+ *  mints data, returns [] when nothing followed the last prompt. */
+export function groupRoundContributions(room: Pick<GroupChat, 'log'>): GroupRoundContribution[] {
+  const log = Array.isArray(room?.log) ? room.log : []
+  let boundary = -1
+
+  for (let i = log.length - 1; i >= 0; i--) {
+    if (log[i]?.from?.kind === 'user') {
+      boundary = i
+
+      break
+    }
+  }
+
+  const seen = new Set<string>()
+  const out: GroupRoundContribution[] = []
+
+  for (const entry of log.slice(boundary + 1)) {
+    const from = entry?.from
+
+    if (from?.kind !== 'member' || !from.name || seen.has(from.name)) {
+      continue
+    }
+
+    const line = String(entry?.text || '')
+      .split('\n')
+      .map(row => row.trim())
+      .find(row => row.length > 0)
+
+    if (!line) {
+      continue
+    }
+
+    seen.add(from.name)
+    out.push({ line, name: from.name })
+  }
+
+  return out
 }
 
 function groupChatEntryId(): string {

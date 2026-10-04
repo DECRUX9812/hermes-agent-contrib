@@ -75,9 +75,23 @@ export const arCommandCenter = {
     archivedChats: 'المحادثات المؤرشفة',
     commands: 'الأوامر',
     sections: {
+      notices: 'الإشعارات',
       sessions: 'الجلسات',
       system: 'النظام',
       usage: 'الاستخدام'
+    },
+    sectionDescriptions: {
+      notices: 'الإشعارات والتنبيهات الأخيرة',
+      sessions: 'البحث في الجلسات وإدارتها',
+      system: 'الحالة والسجلات وإجراءات النظام',
+      usage: 'نشاط الرموز والتكلفة والمهارات عبر الزمن'
+    },
+    notices: {
+      empty: 'لا إشعارات بعد — تُسجَّل التنبيهات المنبثقة هنا فور ظهورها.',
+      clear: 'مسح',
+      mutedTag: 'مكتوم',
+      destCenter: 'تنبيه وسط الشاشة',
+      destCorner: 'تنبيه في الزاوية'
     },
     nav: {
       newChat: {

@@ -1,16 +1,23 @@
 interface OrderRow {
   activity: number
+  /** A2 rollup — only consulted when the caller opts into attention sort. */
+  attention?: number
   kind: 'bot' | 'group'
   name?: string
   pinned: boolean
 }
 
-/** Reorder room slots, not bots or folders. Pinning remains the outer band. */
+/** Reorder room slots, not bots or folders. Pinning remains the outer band.
+ *  `compareRows` overrides the inner (post-pin) order — the roster passes an
+ *  attention-first comparator there; the default stays pinned-then-activity. */
 export function sortGroupRosterRows<T extends OrderRow>(
   rows: T[],
-  rooms: Record<string, { rosterOrder?: number }>
+  rooms: Record<string, { rosterOrder?: number }>,
+  compareRows?: (a: T, b: T) => number
 ): T[] {
-  const legacy = rows.slice().sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.activity - a.activity)
+  const legacy = rows
+    .slice()
+    .sort(compareRows ?? ((a, b) => Number(b.pinned) - Number(a.pinned) || b.activity - a.activity))
 
   const groups = legacy
     .filter(row => row.kind === 'group')

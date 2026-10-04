@@ -3,15 +3,18 @@ module is listed here so the generator and the runtime see the same catalog."""
 
 from . import (  # noqa: F401
     billing_delegation_pets,
+    bot_team,
     common,
     config_free_tier_control,
     connectors,
     connectors_operation,
+    delegation_reports,
     display,
     events,
     groups_bot_relay,
     i18n,
     liveness,
+    mcp_apps,
     profiles_vault_complete_foreign_subagents,
     projects_pets,
     prompt_voice,

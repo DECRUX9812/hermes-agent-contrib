@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   getAgentRoster: () => ipcRenderer.invoke('hermes:agents:roster'),
   openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('hermes:window:openSession', sessionId, opts),
   openSessionInTerminal: (sessionId, opts) => ipcRenderer.invoke('hermes:window:openInTerminal', sessionId, opts),
+  openVsCode: folder => ipcRenderer.invoke('hermes:vscode:open', folder),
   openWindow: (options?: DesktopProfileRoute) => ipcRenderer.invoke('hermes:window:openInstance', options),
   openBrowserWindow: tabId => ipcRenderer.invoke('hermes:window:openBrowser', tabId),
   windowRelay: {
@@ -225,6 +226,11 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
           }
         }
       : undefined,
+  // Region capture: one-shot full-frame grab of the window's display for the
+  // markup overlay (roadmap #34); the overlay does crop + markup itself.
+  regionCapture: {
+    capture: () => ipcRenderer.invoke('hermes:region-capture:capture')
+  },
   // Quick Entry: the global-hotkey mini composer window. Main owns the OS
   // shortcut + the persisted preference; the quick window only captures text
   // and hands it back, and the primary renderer submits it through the normal
@@ -261,6 +267,14 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.on('hermes:quick-entry:shown', listener)
 
       return () => ipcRenderer.removeListener('hermes:quick-entry:shown', listener)
+    },
+    // Main → quick window: the frontmost-app context captured at summon time
+    // (null when the platform can't answer — Wayland, missing xprop, …).
+    onContext: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('hermes:quick-entry:context', listener)
+
+      return () => ipcRenderer.removeListener('hermes:quick-entry:context', listener)
     },
     // Main → quick window: the outcome of a submit whose relay already timed
     // out. Delivery is now KNOWN — reconcile the unknown state instead of
@@ -398,6 +412,25 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       return () => ipcRenderer.removeListener('hermes:minimize-to-tray:changed', listener)
     }
   },
+  // Menu-bar status (#38): the renderer pushes live session status into main
+  // for the tray menu/badge, and receives the New Session quick action back.
+  menuBarStatus: {
+    get: () => ipcRenderer.invoke('hermes:menu-bar-status:get'),
+    set: on => ipcRenderer.invoke('hermes:menu-bar-status:set', on),
+    push: payload => ipcRenderer.send('hermes:menu-bar-status:push', payload),
+    onChanged: callback => {
+      const listener = (_event, status) => callback(status)
+      ipcRenderer.on('hermes:minimize-to-tray:changed', listener)
+
+      return () => ipcRenderer.removeListener('hermes:minimize-to-tray:changed', listener)
+    },
+    onNewSession: callback => {
+      const listener = () => callback()
+      ipcRenderer.on('hermes:menu-bar:new-session', listener)
+
+      return () => ipcRenderer.removeListener('hermes:menu-bar:new-session', listener)
+    }
+  },
   setDisableF12: blocked => ipcRenderer.send('hermes:devtools:disable-f12', blocked),
   setF12ShortcutActive: active => ipcRenderer.send('hermes:f12ShortcutActive', Boolean(active)),
   onF12Shortcut: callback => {
@@ -460,12 +493,16 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   logsRoot: (profile?: string) => ipcRenderer.invoke('hermes:fs:logsRoot', profile),
   renamePath: (targetPath, newName) => ipcRenderer.invoke('hermes:fs:rename', targetPath, newName),
   writeTextFile: (filePath, content) => ipcRenderer.invoke('hermes:fs:writeText', filePath, content),
+  makeDirectory: dirPath => ipcRenderer.invoke('hermes:fs:mkdir', dirPath),
   trashPath: targetPath => ipcRenderer.invoke('hermes:fs:trash', targetPath),
   git: {
     worktreeList: repoPath => ipcRenderer.invoke('hermes:git:worktreeList', repoPath),
     worktreeAdd: (repoPath, options) => ipcRenderer.invoke('hermes:git:worktreeAdd', repoPath, options),
     worktreeRemove: (repoPath, worktreePath, options) =>
       ipcRenderer.invoke('hermes:git:worktreeRemove', repoPath, worktreePath, options),
+    worktreeEnsure: (repoPath, worktreePath, branch) =>
+      ipcRenderer.invoke('hermes:git:worktreeEnsure', repoPath, worktreePath, branch),
+    worktreeMerge: (repoPath, worktreePath) => ipcRenderer.invoke('hermes:git:worktreeMerge', repoPath, worktreePath),
     branchSwitch: (repoPath, branch) => ipcRenderer.invoke('hermes:git:branchSwitch', repoPath, branch),
     branchList: repoPath => ipcRenderer.invoke('hermes:git:branchList', repoPath),
     baseBranchList: repoPath => ipcRenderer.invoke('hermes:git:baseBranchList', repoPath),
@@ -534,6 +571,12 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     ipcRenderer.on('hermes:open-updates', listener)
 
     return () => ipcRenderer.removeListener('hermes:open-updates', listener)
+  },
+  onMenuActionRequested: callback => {
+    const listener = (_event, actionId) => callback(actionId)
+    ipcRenderer.on('hermes:menu-action', listener)
+
+    return () => ipcRenderer.removeListener('hermes:menu-action', listener)
   },
   onDeepLink: callback => {
     const listener = (_event, payload) => callback(payload)

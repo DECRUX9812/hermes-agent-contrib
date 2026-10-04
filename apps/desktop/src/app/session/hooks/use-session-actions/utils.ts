@@ -10,7 +10,7 @@ import {
   textPart,
   toChatMessages
 } from '@/lib/chat-messages'
-import { normalizePersonalityValue } from '@/lib/chat-runtime'
+import { normalizePersonalityValue, normalizeSessionSkills } from '@/lib/chat-runtime'
 import { embeddedImageUrls, textWithoutEmbeddedImages } from '@/lib/embedded-images'
 import { parseErrorSurface } from '@/lib/error-surface'
 import { isMessagingSource, normalizeSessionSource } from '@/lib/session-source'
@@ -2332,6 +2332,7 @@ type SessionRuntimeStatePatch = Partial<
     | 'reasoningEffortPending'
     | 'reasoningEffortWire'
     | 'serviceTier'
+    | 'skills'
     | 'usage'
     | 'yolo'
   >
@@ -2472,6 +2473,10 @@ export function applyRuntimeInfo(
 
   if (typeof info.yolo === 'boolean') {
     sessionState.yolo = info.yolo
+  }
+
+  if (info.skills !== undefined) {
+    sessionState.skills = normalizeSessionSkills(info.skills)
   }
 
   if (info.usage) {

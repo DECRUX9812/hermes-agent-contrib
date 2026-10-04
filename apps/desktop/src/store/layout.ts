@@ -23,7 +23,7 @@ import { connectionScopedAtom } from '@/lib/connection-scoped'
 import { LAYOUT_KEYS } from '@/lib/layout-persistence'
 import { type Codec, Codecs, persistentAtom } from '@/lib/persisted'
 import { arraysEqual, insertUniqueId, readKey } from '@/lib/storage'
-import { modeBound, modeLayout } from '@/store/interface-mode'
+import { $interfaceMode, modeBound, modeLayout } from '@/store/interface-mode'
 
 import { trackArea } from './desktop-metrics'
 import { $paneStates, ensurePaneRegistered, setPaneOpen, setPaneWidthOverride } from './panes'
@@ -64,6 +64,7 @@ const SIDEBAR_SHOW_ARCHIVED_STORAGE_KEY = 'hermes.desktop.sidebarShowArchived'
 const SIDEBAR_PROJECT_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarProjectFilter'
 const SIDEBAR_PROFILE_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarProfileFilter'
 const SIDEBAR_PR_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarPrFilter'
+const SIDEBAR_TAG_FILTER_STORAGE_KEY = 'hermes.desktop.sidebarTagFilter'
 const SIDEBAR_WORKSPACE_ORDER_STORAGE_KEY = 'hermes.desktop.workspaceOrder'
 const SIDEBAR_WORKSPACE_PARENT_ORDER_STORAGE_KEY = 'hermes.desktop.workspaceParentOrder'
 const SIDEBAR_PROJECT_ORDER_STORAGE_KEY = 'hermes.desktop.projectOrder'
@@ -236,6 +237,26 @@ export const $dismissedWorktreeIds = persistentAtom(
 export const $removedWorktreeIds = persistentAtom('hermes.desktop.removedWorktrees', [] as string[], Codecs.stringArray)
 export const $sidebarPinsOpen = atom(true)
 export const $sidebarRecentsOpen = atom(true)
+
+// The rail's live search text. Kept in a store (not component state) so a
+// searchable `sidebar.listTop` contribution — the Agents fold — filters its
+// own rows against the same query the sessions list is searching with.
+export const $sidebarSearchQuery = atom('')
+export const setSidebarSearchQuery = (query: string) => $sidebarSearchQuery.set(query)
+
+// "Needs attention" fold — sessions a surface already flags (needs-input /
+// stalled / unread) gathered at the top of the list. Persisted like the other
+// disclosure prefs; defaults open — it exists to surface, not to be found.
+export const $sidebarAttentionOpen = persistentAtom('hermes.desktop.sidebarAttentionOpen', true, Codecs.bool)
+export const setSidebarAttentionOpen = (open: boolean) => $sidebarAttentionOpen.set(open)
+// The "Browse" fold holding every secondary nav row below New session. Kept
+// per interface mode through modeLayout, so Simple opens collapsed (the rail
+// is its leanest) while Advanced defaults to the full row set.
+export const $sidebarBrowseOpen = modeLayout.atom(
+  'hermes.desktop.sidebarBrowseOpen',
+  () => $interfaceMode.get() !== 'simple',
+  Codecs.bool
+)
 // Cron-job sessions live in their own section below recents, collapsed by
 // default (it only renders at all when cron sessions exist) so the
 // scheduler's `[IMPORTANT: …]` first-message previews don't spam recents.
@@ -404,6 +425,11 @@ export const $sidebarPrFilter = persistentAtom<PullRequestBucket[]>(
   listOf(PR_FILTERS)
 )
 
+// User-assigned session tag labels (store/session-tags). Values are the label
+// strings as applied in the tags dialog; matching is case-sensitive against
+// each session's stored list, so the facet dedupes label-siblings by key.
+export const $sidebarTagFilter = persistentAtom<string[]>(SIDEBAR_TAG_FILTER_STORAGE_KEY, [], Codecs.stringArray)
+
 export const $sidebarGrouping: ReadableAtom<SidebarGrouping> = computed(
   [$sidebarAgentsGrouped, $sidebarFlatGrouping, $sidebarAllProfilesGrouping, $showAllProfiles],
   (grouped, flat, allProfiles, showAll) => (grouped ? 'project' : showAll ? allProfiles : flat)
@@ -417,9 +443,16 @@ export const $sidebarOrdering: ReadableAtom<SidebarOrdering> = computed(
 )
 
 export const $sidebarFiltersActive: ReadableAtom<boolean> = computed(
-  [$sidebarStatusFilter, $sidebarProjectFilter, $sidebarProfileFilter, $sidebarPrFilter, $sidebarShowArchived],
-  (statuses, projects, profiles, prs, archived) =>
-    statuses.length > 0 || projects.length > 0 || profiles.length > 0 || prs.length > 0 || archived
+  [
+    $sidebarStatusFilter,
+    $sidebarProjectFilter,
+    $sidebarProfileFilter,
+    $sidebarPrFilter,
+    $sidebarTagFilter,
+    $sidebarShowArchived
+  ],
+  (statuses, projects, profiles, prs, tags, archived) =>
+    statuses.length > 0 || projects.length > 0 || profiles.length > 0 || prs.length > 0 || tags.length > 0 || archived
 )
 
 /** Anything at all moved off the shipped view — what makes a reset worth
@@ -645,6 +678,21 @@ export function toggleFileBrowserOpen() {
   trackArea('file_pane', open)
 }
 
+/** Open the file tree when the user starts work in a folder (Open folder…,
+ *  a project's "+", a recent project) — a project is files, so show them.
+ *  Settings → Window & layout can turn it off; closing the tree later is
+ *  respected until the next time work starts somewhere. */
+export const $autoOpenFilesOnProject = persistentAtom('hermes.desktop.autoOpenFilesOnProject', true, Codecs.bool)
+
+/** The icon rail at the window's left edge (app/shell/activity-rail.tsx). */
+export const $activityRailVisible = persistentAtom('hermes.desktop.activityRail', true, Codecs.bool)
+
+export function revealFilesForNewWork(): void {
+  if ($autoOpenFilesOnProject.get() && !$fileBrowserOpen.get()) {
+    setFileBrowserOpen(true)
+  }
+}
+
 export function setFileBrowserOpen(open: boolean) {
   $fileBrowserOpen.set(open)
   setTreeSideCollapsed(fileBrowserSide(), !open)
@@ -818,6 +866,10 @@ export function setSidebarRecentsOpen(open: boolean) {
   $sidebarRecentsOpen.set(open)
 }
 
+export function setSidebarBrowseOpen(open: boolean) {
+  $sidebarBrowseOpen.set(open)
+}
+
 export function setSidebarCronOpen(open: boolean) {
   $sidebarCronOpen.set(open)
 }
@@ -913,11 +965,16 @@ export function toggleSidebarPrFilter(bucket: PullRequestBucket) {
   toggleIn($sidebarPrFilter, bucket)
 }
 
+export function toggleSidebarTagFilter(tag: string) {
+  toggleIn($sidebarTagFilter, tag)
+}
+
 function clearSidebarFilters() {
   $sidebarStatusFilter.set([])
   $sidebarProjectFilter.set([])
   $sidebarProfileFilter.set([])
   $sidebarPrFilter.set([])
+  $sidebarTagFilter.set([])
   $sidebarShowArchived.set(false)
 }
 

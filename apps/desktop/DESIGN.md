@@ -224,10 +224,110 @@ context-dependent (e.g. "Show" / "Hide"). Never hardcode combos; always use
 `useKeybindHint` or `TipKeybindLabel`.
 
 Notes:
-- Text buttons are square (no radius) and sized by padding + line-height (no
-  fixed heights). Only icon buttons carry the shared 4px radius.
+- Buttons are sized by padding + line-height (no fixed heights). Their radius
+  is the look's: text buttons `--control-radius`, icon buttons
+  `--control-icon-radius` (see **Look** below) — never a literal `rounded-*`.
 - SVGs inherit `size-3.5` (`size-3` at `xs`). Don't re-set icon size.
 - Polymorph with `asChild` when the button must render as a link/Slot.
+
+## Look — Soft (default) and Classic
+
+Shape and label treatment are one presentation choice, painted as
+`<html data-look="soft|classic">` by `store/ui-look.ts` (Settings → Appearance →
+Theme → Look), alongside `data-interface-mode`. Components never branch on it;
+they read tokens whose values the attribute picks (`styles.css`, "LOOK TOKENS"
+and the Soft block):
+
+| Token | Classic | Soft |
+|---|---|---|
+| `--radius-scalar` (every `rounded-*`) | 0.2 | 1 — composer 24px, bubble 16px, rows 10px |
+| `--control-radius` / `--control-icon-radius` | 2.5px / 4px | 8px / 8px |
+| `--label-*` (`.ui-section-label`, `SidebarPanelLabel`) | 0.64rem uppercase accent caps + glyph | 0.75rem sentence case, `--ui-text-tertiary`, no glyph |
+| `--tab-label-*` (`.ui-tab-label`, `PaneTabLabel`) | 9px uppercase | 0.75rem as written |
+| `--status-idle-opacity` (idle/draft dots) | 1 | 0 — a dot shows when there is something to say |
+| `--pane-tab-max-width` (horizontal tabs) | 12rem | 15rem — sentence-case titles need room |
+
+Soft + Simple mode also reads a size up (15px conversation text, looser
+leading). Rules: a section heading uses `.ui-section-label` (bundled plugins
+too — they cannot import core, the class is global), never a literal
+`uppercase tracking-*` string; a radius uses a token or a `rounded-*` step,
+never `rounded-[Npx]`; status that would steal a column rides the avatar's
+corner as a presence badge. Classic must keep rendering exactly as before —
+change a Classic default only on purpose.
+
+One component-level exception: the empty chat's headline. Soft greets by time
+of day (`intro-greeting`), Classic keeps the Hermes wordmark — a content choice,
+not a token. Under it, both looks show the **Today** brief
+(`components/chat/today-brief.tsx` over `lib/today-brief.ts`): a handful of
+cards (needs you · running · finished while away · due today · or where you
+left off), each drawn only when it has something to say — never a feed. A
+running row shows the agent's plan progress (`$todoProgressBySession`) as a
+small bar + "X/Y".
+
+Soft also shapes the transcript (styles only, keyed on stable `data-slot`s):
+your turns are a right-aligned bubble that hugs its text
+(`aui_user-bubble-frame`), and the working pulse is a small accent orb instead
+of Classic's dithered square (`aui_turn-activity`).
+
+A bot's profile rail carries its **reach card** (`app/messaging/reach-card.tsx`,
+exported through the plugin SDK): the bot's own Telegram/Slack address as a QR
+plus Open/Copy, or — before it has one — the single step that gives it one.
+It reads the same platform identity the Messaging page's phone-parity card uses.
+Under it, **"When should <bot> ask you?"** (`app/profiles/ask-rules-card.tsx`):
+ask first / use judgment / just do it plus plain-language house rules — the
+profile's own `approvals.mode` + `approvals.smart_policy`, written as a partial
+PUT the config route deep-merges, so the same rules hold in the app, on
+Telegram and in scheduled runs.
+
+A bot's empty chat opens on the bot (`BotHero` in `chat-empty.tsx`): its live
+face follows the pointer (`BotFace follow`, off under reduced motion) and works
+when the bot works. Soft shows the face large on a floor shadow with a plain
+name and "role · status"; Classic keeps the lettered name.
+
+## Motion that carries meaning
+
+- **Streamed answers are paced, not dumped** (`lib/stream-pacing.ts`,
+  `lib/use-paced-text.ts`, adapted from Codex's TUI commit-tick policy): bursts
+  ease in at a steady cadence; a deep or stale backlog drains at once, with
+  hysteresis so the two gears never flap. Only appends are paced — opening a
+  chat mid-stream, settling, replaced text and reduced motion all show the
+  full text immediately.
+- **File viewers** are a contribution area (`preview.viewers`,
+  `lib/file-viewers.ts`): a viewer adds one mode to the preview switcher for
+  the files it matches. Core ships the first one, CSV/TSV as a table.
+- **Share a bot** (`plugins/hermes-bots/share-dialog.tsx`): the preview is the
+  exact PNG — face, name, role, "Ask me", QR when reachable — plus an invite
+  and the bot file.
+- **Autopilot** (`plugins/hermes-bots/autopilot.ts`): under a bot's Routines,
+  one-click presets (morning brief, weekly review, keep watch) that PREFILL
+  the routine dialog — the person reviews the words and time before anything
+  is scheduled. A preset the bot already runs is hidden.
+
+## Beside the chat — the Panels menu
+
+Everything that can sit next to a conversation (Files, Changes, Browser,
+Terminal, Live activity, Artifacts) is one table in `app/shell/panel-launcher.tsx`,
+opened from the titlebar's **Panels** button (untiered: Simple's one door to
+panes). Each row is a live switch that flips the SAME toggle its shortcut,
+palette entry and tab use; the popover stays open so several can be chosen.
+Turning one on never hides another: if it would stack as a tab over a panel
+that was showing, it is docked beside it (`dockPaneBeside`, which yields to
+panes the user placed). A right zone with no project shows the same choices
+(`BesideChatChooser`) instead of a dead "no project" label.
+
+## Canvas — a board you and the agent share
+
+A canvas is a `.excalidraw` file in the project (`lib/canvas-file.ts`), shown by the
+`viewer.canvas` file viewer (Excalidraw, lazy-loaded; fonts served offline by vite's
+`excalidraw-assets` plugin). The FILE is the shared surface: your edits save back (debounced, and
+only when the scene's content changed — opening, panning or selecting never writes), and when the
+agent edits the file the preview re-reads it and the new scene merges in without a remount.
+**New canvas** (Panels menu, ⌘K) creates `canvas.excalidraw` at the project root, opens it, and
+attaches it to your next message. The agent draws through the optional `excalidraw` skill's
+`scripts/canvas.py` (`draw` a node/edge spec laid out beside existing strokes; `read` what is there).
+
+The Panels menu also offers **arrangements** — Focus, Review (changes + files), Watch (live +
+artifacts), Build (browser + terminal) — which flip only the panels that differ.
 
 ## Badges — one component
 
@@ -574,3 +674,31 @@ The detailed state contract lives in the scoped
 - [ ] `cursor-pointer`, focus ring, and `Esc`-to-close behave?
 - [ ] Touched a primitive, token, or variant? Its named-contract entry in this
       file is updated in the same change.
+
+## Developer navigation
+
+Moving around a project is editor-grade without becoming an editor:
+
+- **⌘P Quick Open** (`app/quick-open`) searches the project's files through
+  the backend's `complete.path` — the composer's `@file:` search — so it
+  answers for local, SSH and remote backends alike. `name:42` opens at a line
+  (the preview switches to Source and selects it), ⌘↵ adds the file to the
+  message, a folder reveals in the tree, and an empty query lists the files
+  already open beside the chat. ⌘K stays the command palette.
+- **Open in your editor** (`lib/editor-handoff.ts`): the file tree's menu
+  hands a file to VS Code, Cursor, Windsurf or Zed (Settings → Window &
+  layout), through the editor's `file` route locally and its remote-SSH route
+  for an SSH backend. The main process opens only those shapes on the editor
+  schemes (`isEditorHandoffUrl`), never an extension or settings deep link.
+- **Recent projects**: entering a project records it per profile; the home
+  screen's "Your projects" row and the palette's project group lead with the
+  most recent, one click from a new chat at the project root.
+- **The file tree is the project's map.** Opening a project opens Files
+  (Settings → Window & layout turns that off). One click previews a file; the
+  tree follows the active preview. The header (on hover) adds New file / New
+  folder — slashes make folders, into the selected folder — and a filter that
+  searches the whole project through the same `complete.path`. Files the agent
+  changed this session carry a dot. A change inside a folder the tree has never
+  seen re-reads the nearest folder it shows (`visibleChangeTarget`), so a new
+  `src/` appears the moment something is written into it. The preview header
+  shows the file's breadcrumbs (click one to reveal it in the tree).

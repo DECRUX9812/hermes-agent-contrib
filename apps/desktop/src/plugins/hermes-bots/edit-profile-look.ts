@@ -4,6 +4,7 @@ import type { BotMeta } from './types'
 export interface EditProfileLook {
   color: null | string
   image: null | string
+  role: string
   shape: BotMeta['shape']
   title: string
 }
@@ -35,6 +36,10 @@ export function editedLook(opened: EditProfileLook, current: EditProfileLook): B
 
   if (current.title.trim() !== opened.title.trim()) {
     patch.title = current.title.trim()
+  }
+
+  if (current.role.trim() !== opened.role.trim()) {
+    patch.role = current.role.trim() || undefined
   }
 
   return Object.keys(patch).length > 0 ? patch : null

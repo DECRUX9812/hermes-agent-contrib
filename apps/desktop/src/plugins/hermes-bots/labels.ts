@@ -127,6 +127,24 @@ export function botProfileIdentity(name: string, title: string) {
   }
 }
 
+/** G3 — the 'role' one-liner under a bot's name. An explicit `meta.role` wins;
+ *  absent it, the subtitle derives from the description's first sentence (the
+ *  title already IS the display name, so it can't subtitle itself). Empty
+ *  string when nothing says what the bot is for — callers render no line. */
+export function botRole(bot: Partial<RosterRow>, meta?: BotMeta | null): string {
+  const explicit = meta?.role?.trim()
+
+  if (explicit) {
+    return explicit
+  }
+
+  const first = stripPreviewMarkdown(meta?.description || bot?.description || '')
+    .split(/[.!?]\s|\n/)[0]
+    ?.trim()
+
+  return (first || '').slice(0, 60)
+}
+
 /** Flatten markdown syntax out of a one-line roster preview so rows read
  *  like Discord's — no raw **bold**, `code`, > quotes, or [link](url)
  *  characters in the preview line. */

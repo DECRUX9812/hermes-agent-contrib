@@ -37,7 +37,7 @@ const BLOB_MIME_EXTENSION: Record<string, string> = {
   'image/x-icon': '.ico'
 }
 
-function blobExtension(blob: Blob): string {
+export function blobExtension(blob: Blob): string {
   const mime = normalize(blob.type.split(';')[0])
 
   return BLOB_MIME_EXTENSION[mime] || '.png'
@@ -698,7 +698,7 @@ export function useComposerActions({
           id: attachmentId('file', savedPath),
           kind: 'file',
           label: `${copy.pastedContent} (${pasteSizeLabel(text)})`,
-          detail: contextPath(savedPath, currentCwd),
+          detail: copy.pastedAsFile,
           refText: `@file:${formatRefValue(savedPath)}`,
           path: savedPath,
           titlePreview: text.slice(0, LARGE_PASTE_TITLE_PREVIEW_CHARS)
@@ -711,7 +711,7 @@ export function useComposerActions({
         return false
       }
     },
-    [attachToMain, copy.pasteAttachFailed, copy.pastedContent, currentCwd]
+    [attachToMain, copy.pasteAttachFailed, copy.pastedAsFile, copy.pastedContent]
   )
 
   const attachContextFolderPath = useCallback(

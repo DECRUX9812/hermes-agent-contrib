@@ -342,18 +342,13 @@ def _auto_load_parts(agent: Any) -> List[str]:
 
 
 def _bot_mode_parts(agent: Any) -> List[str]:
-    """Bot Mode teammate protocol — only in a bot's canonical "Bot Chat" session.
-    Marks the prompt timeless (the volatile date line is dropped) since a birth
+    """Bot Mode teammate protocol — in a bot's canonical "Bot Chat" or a marked bot
+    topic. Marks the prompt timeless (the volatile date line is dropped) since a birth
     date pinned in a months-long session is misinformation."""
     parts: List[str] = []
     try:
-        from tools.bot_mode_probe import BOT_CHAT_TITLE, epoch_line, get_bot_mode_protocol_section
-        _title = str(getattr(agent, "_session_title_hint", "") or "").strip()
-        if not _title:
-            _sdb = getattr(agent, "_session_db", None)
-            _sid = getattr(agent, "session_id", None)
-            _title = str((_sdb.get_session_title(_sid) if (_sdb and _sid) else None) or "").strip()
-        _bot_section = get_bot_mode_protocol_section(_agent_home(agent)) if _title == BOT_CHAT_TITLE else None
+        from tools.bot_mode_probe import bot_powered_session, epoch_line, get_bot_mode_protocol_section
+        _bot_section = get_bot_mode_protocol_section(_agent_home(agent)) if bot_powered_session(agent) else None
         if _bot_section:
             parts.append(_bot_section)
             # Capability epoch lets the restore path rebuild ONCE per
@@ -363,6 +358,38 @@ def _bot_mode_parts(agent: Any) -> List[str]:
     except Exception:
         pass
     return parts
+
+
+def _team_parts(agent: Any) -> List[str]:
+    """Team context (role, boss, mission, teammates, top lessons) for a profile that holds a seat
+    on a team (tools/bot_team.py). Any surface — Desktop, Slack, CLI — since the seat belongs to
+    the profile, not the chat. Part of the session-start prompt only, like every other block here,
+    so it never touches the cache mid-conversation; Bot Chat's epoch refreshes it on change."""
+    try:
+        from tools.bot_mode_probe import _hermes_root, _profile_name, _resolve_home
+        from tools.bot_team import prompt_section
+
+        home = _resolve_home(_agent_home(agent))
+        section = prompt_section(_hermes_root(home), _profile_name(home))
+        return [section] if section else []
+    except Exception:
+        return []
+
+
+def _team_room_parts(agent: Any) -> List[str]:
+    """The orchestrated-team-room rule for a member session minted inside one (``team_room``
+    marker — tools/bot_mode_probe.py). Tells the lead it alone hears the user and must delegate,
+    and tells everyone else it woke only because it was addressed."""
+    try:
+        from tools.bot_mode_probe import (
+            _profile_name, _resolve_home, team_room_lead, team_room_section, team_room_session)
+
+        if not team_room_session(agent):
+            return []
+        section = team_room_section(team_room_lead(agent), _profile_name(_resolve_home(_agent_home(agent))))
+        return [section] if section else []
+    except Exception:
+        return []
 
 
 def _ambient_file_safety_profile_name() -> str:
@@ -706,6 +733,8 @@ def _post_workspace_parts(agent: Any) -> List[str]:
             pass  # Probe failure must never block prompt build.
     if getattr(agent, "_bot_mode_protocol", True):
         parts.extend(_bot_mode_parts(agent))
+        parts.extend(_team_parts(agent))
+        parts.extend(_team_room_parts(agent))
     parts.append(platform_hint(agent))
     return parts
 

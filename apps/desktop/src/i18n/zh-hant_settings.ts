@@ -76,8 +76,69 @@ export const zhHantSettings = {
         toolsConnected: n => `已連線 ${n} 個工具`,
         skillsReady: names => (names.length === 1 ? `技能 ${names[0]} 已就緒` : `${names.length} 個技能已就緒`),
         nextChat: '更多工具將在下一次聊天中可用',
-        serverNotConnected: (server, reason) => `MCP 伺服器 ${server} 未連線${reason ? `：${reason}` : '。'}`
-      }
+        serverNotConnected: (server, reason) => `MCP 伺服器 ${server} 未連線${reason ? `：${reason}` : '。'}`,
+        title: '安裝外掛',
+        description: '在安裝前查看此倉庫包含哪些組件。',
+        repoLabel: '倉庫',
+        includesHeading: '此包包含',
+        agentLabel: '代理外掛',
+        desktopLabel: '桌面 UI',
+        profileLabel: '安裝到配置文件',
+        agentTargetLocal: (profile, dir) => `安裝到 ${profile} 後端（${dir}）`,
+        agentTargetRemote: profile => `安裝到已連線的 ${profile} 後端`,
+        catalogPinned: (name, sha) =>
+          `Hermes 目錄條目「${name}」— agent 部分將安裝在經過審覈的釘選提交${sha ? ` ${sha}` : ''}，而不是分支最新程式碼。`,
+        reviewedHeading: '經過審覈的目錄條目',
+        reviewedIntro: '此條目已在其釘選提交處經過人工審覈。你仍可在下方檢查確切程式碼。',
+        missingEnvAction: '去設定',
+        alreadyInstalled: (name: string) => `${name} 已安裝。`,
+        desktopTarget: '安裝到此應用的本地 desktop-plugins 資料夾',
+        desktopTargetFromPackage: '從上方的包載入到本應用 — 所有配置相同',
+        desktopOnlyNote: '僅桌面包不會安裝後端代理外掛。',
+        insecureWarning: '此 URL 使用了不安全的本地 scheme。生產環境請優先使用 https:// 或 git@。',
+        securityHeading: '安裝前須知',
+        securityIntro: '請僅安裝你信任的來源 — 如需瞭解將添加的內容，可先查看下方倉庫。',
+        sourceHeading: '源程式碼',
+        viewRepository: '查看倉庫',
+        viewPluginFiles: '查看外掛文件',
+        gitCloneLabel: 'Git 克隆地址',
+        enableAgent: '安裝後啟用代理外掛',
+        forceReinstall: '強制重裝（替換已存在的安裝）',
+        pinToCommit: '釘選到提交（可選）',
+        pinToCommitPlaceholder: '完整的 40 位提交 SHA',
+        pinToCommitHint:
+          '安裝同一 SHA 的所有人都會得到相同的程式碼；釘選後外掛將拒絕更新，直到重新釘選。留空則安裝最新提交。',
+        pinToCommitInvalid: '必須是完整的 40 位提交 SHA（不接受分支和標籤）。',
+        install: '安裝',
+        installing: '正在安裝…',
+        probing: '正在檢查倉庫…',
+        probeUnavailable: '目前環境無法檢查外掛倉庫。',
+        desktopUnavailable: '目前環境無法安裝桌面外掛。',
+        selectComponent: '請至少選擇一個要安裝的組件。',
+        agentSuccess: name => `代理外掛 ${name} 已安裝`,
+        desktopSuccess: name => `桌面外掛 ${name} 已安裝`,
+        agentFailed: '代理外掛安裝失敗',
+        desktopFailed: '桌面外掛安裝失敗',
+        missingEnv: (_name, vars) => `缺少環境變數：${vars}。請在設定 → 金鑰中添加。`
+      },
+      title: '桌面外掛',
+      blurb:
+        '載入到此應用中的介面擴展——隨構建捆綁，或放入 desktop-plugins 資料夾（包括 Hermes 編寫的外掛）。禁用會即時解除安裝外掛並在重新啟動後保持。',
+      count: n => `已安裝 ${n} 個`,
+      rescan: '重新掃描',
+      reveal: '在文件管理器中顯示',
+      enable: '啟用',
+      disable: '禁用',
+      failed: '失敗',
+      empty: '尚未安裝桌面外掛。',
+      kinds: {
+        bundled: '內建',
+        disk: '磁盤',
+        runtime: '執行時'
+      },
+      agentHalfMissing: '此處缺少 agent 部分',
+      agentHalfMissingTip:
+        '這是捆綁外掛的桌面部分，但其 agent 部分未安裝在目前連線的後端/配置上。請在 能力 → 外掛 中安裝。'
     },
     closeSettings: '關閉設定',
     exportConfig: '匯出設定',
@@ -175,7 +236,7 @@ export const zhHantSettings = {
         unlockTitle: name => `解鎖 ${name}`,
         unlockDescription: '輸入主密碼。它會交給本機的密碼管理器後立即捨棄，不會被儲存、記錄或顯示給代理。',
         masterPasswordPlaceholder: '主密碼'
-      }
+      },
     },
     notifications: {
       title: '通知',
@@ -211,7 +272,7 @@ export const zhHantSettings = {
         plugin: {
           label: '外掛通知',
           description: 'Hermes 在背景時，桌面外掛傳送了通知。'
-        }
+      },
       },
       test: '傳送測試通知',
       testTitle: 'Hermes',
@@ -250,6 +311,9 @@ export const zhHantSettings = {
       chatTextScaleDesc: '相對於介面縮放調整對話文字和訊息輸入框的字級。側邊欄與控制項大小保持不變。',
       title: '外觀',
       intro: '這些是僅限桌面端的顯示偏好。模式控制亮度；主題控制強調色與聊天介面樣式。',
+      simpleModeTitle: '簡潔模式',
+      simpleModeDesc:
+        '更清爽、以聊天為主的介面：隱藏進階面板、工具和狀態項目。所有功能仍可隨時透過「設定」和 ⌘K 存取，可隨時切換回來。',
       colorMode: '色彩模式',
       colorModeDesc: '選擇固定模式，或讓 Hermes 跟隨系統設定。',
       toolViewTitle: '工具呼叫顯示',
@@ -260,6 +324,10 @@ export const zhHantSettings = {
       hideThreadTimelineDesc: '隱藏每個對話右側邊緣的導覽列。',
       reasoningCollapsedTitle: '預設摺疊推理過程',
       reasoningCollapsedDesc: '保留串流推理內容，但在您開啟前維持摺疊。',
+      lookTitle: '外觀風格',
+      lookDesc: '柔和：圓角、留白充足、標籤低調；經典：保留原本俐落方正的介面。',
+      lookSoft: '柔和',
+      lookClassic: '經典',
       uiScaleTitle: '介面縮放',
       uiScaleDesc: (percent: number) =>
         `縮放整個應用程式的文字與介面。也可使用 Cmd/Ctrl 加 +、- 或 0 調整。目前：${percent}%`,
@@ -309,7 +377,7 @@ export const zhHantSettings = {
         sidebar: '僅側邊欄'
       },
       backdropTitle: '聊天背景',
-      backdropDesc: '對話後方那張淡淡的雕像圖片。',
+      backdropDesc: '對話後方的場景，或你自己的圖片。文字始終顯示在最上層。',
       userBubbleTitle: '訊息氣泡',
       userBubbleDesc: '你自己的訊息有多透明。0 為不透明，100 時只保留邊框。',
       textDirectionTitle: '文字方向',
@@ -394,7 +462,86 @@ export const zhHantSettings = {
         noneAvailable: '目前沒有可開啟的寵物。',
         turnOnFailed: '無法開啟寵物。',
         turnOffFailed: '無法關閉寵物。'
-      }
+      },
+      sessionDensityCondensed: '極簡',
+    },
+    connections: {
+      title: '已註冊閘道',
+      intro: '管理本機以及通過遠端、SSH 或 Hermes Cloud 連線可訪問的每個 Hermes 閘道。',
+      stagedNote:
+        '可在“工作階段”側邊欄切換閘道。配置檔案、聊天、訊息和定時任務歸屬於各自閘道；其他閘道上的工作會繼續執行。',
+      launchModeTitle: '啟動時返回上次使用閘道的工作階段檢視',
+      launchModeDesc: '關閉時，工作階段將在主閘道上打開。',
+      searchPlaceholder: '搜尋閘道…',
+      noSearchResults: '沒有與搜尋匹配的閘道。',
+      loadFailed: '無法載入連線',
+      currentPill: '目前',
+      primaryPill: '主連線',
+      managedPill: '應用管理',
+      addConnection: '添加連線',
+      editConnection: '編輯',
+      removeConnection: '移除',
+      removeConfirmTitle: '移除此連線？',
+      removeConfirmDesc: (label: string) => `“${label}”將從本應用移除。執行個體本身不受影響——你可以隨時重新添加。`,
+      makePrimary: '設為主連線',
+      testConnection: '測試',
+      testOk: '可訪問',
+      testFailed: '連線測試失敗',
+      saveFailed: '無法保存連線',
+      removeFailed: '無法移除連線',
+      updateAll: '更新所有執行個體',
+      updateAllRunning: '正在更新所有執行個體…',
+      updateAllDone: '更新已分發',
+      updateAllFailed: '批量更新失敗',
+      updateSkippedCloud: '由 Hermes Cloud 託管',
+      kindLocal: '本地',
+      kindRemote: '遠端閘道',
+      kindLocalDesc: '由本應用管理的 Hermes 執行時。',
+      kindRemoteDesc: '可通過 HTTP(S) 訪問的 Hermes 閘道——局域網、Tailscale 或互聯網。',
+      kindCloudDesc: '通過你的 Hermes Cloud 帳戶發現的託管執行個體。',
+      kindSshDesc: '通過 SSH 訪問的 Hermes 安裝。',
+      labelTitle: '名稱',
+      labelDesc: '必填。此執行個體出現的所有位置都會顯示該名稱；必須唯一（例如“家庭伺服器”、“工作筆記本”）。',
+      labelPlaceholder: '家庭伺服器',
+      urlTitle: '閘道 URL',
+      sshHostTitle: 'SSH 主機',
+      headersTitle: '額外閘道請求頭',
+      headersDesc:
+        '隨發往此閘道的每個 HTTP 和 WebSocket 請求一起傳送——用於 Cloudflare Access 等訪問代理（CF-Access-Client-Id / CF-Access-Client-Secret）。值加密存儲。由 Hermes 管理的請求頭（Authorization、Cookie、Host 等）會被忽略。',
+      headerValuePlaceholder: '值',
+      headerValueSaved: '已保存——留空以保留',
+      headerAdd: '添加請求頭',
+      headerRemove: '移除',
+      duplicateLocal: '本應用已管理一個本地連線——只能有一個。',
+      duplicateUrl: (label: string) => `已存在指向此閘道 URL 的連線（“${label}”）。`,
+      duplicateSsh: (label: string) => `已存在指向此 SSH 主機的連線（“${label}”）。`,
+      sameBackendHint: (label: string) => `與“${label}”是同一後端`,
+      localAddHint: '“本地”不可用：應用管理的本地連線已存在（永遠只有一個）。',
+      cloudAddHint: '提示：在上方登入 Hermes Cloud 可自動發現你的代理——此表單僅用於手動註冊已知的執行個體 URL。',
+      save: '保存連線',
+      saving: '保存中…',
+      cancel: '取消',
+      empty: '尚未註冊任何連線。',
+      kindCloud: 'Hermes Cloud',
+      kindSsh: 'SSH'
+    },
+    managedUpdates: {
+      title: '託管更新',
+      intro:
+        '以事務方式更新由桌面端託管的 SSH 安裝：先排空工作階段，再更新遠端檢出，最後恢復每個 profile，並生成關聯回執。',
+      sshConnection: '桌面端託管的 SSH 安裝',
+      update: '更新',
+      updating: '更新中…',
+      progress: '正在排空工作階段、更新遠端安裝並恢復 profile…',
+      updated: '已更新',
+      partial: '已更新 — 恢復失敗',
+      refused: '已拒絕',
+      failed: '更新失敗',
+      alreadyRunning: '更新已在進行中',
+      receipt: (id: string, outcome: string) => `回執 ${id} · ${outcome}`,
+      scopesRestored: (profiles: string) => `已恢復的 profile：${profiles}`,
+      scopeNotRestored: (profile: string, error: string) => `Profile“${profile}”未恢復：${error}`,
+      receiptVersions: (pre: string, post: string) => `${pre} → ${post}`
     },
     fieldLabels: defineFieldCopy({
       model: '預設模型',
@@ -784,7 +931,19 @@ export const zhHantSettings = {
       voiceShortcutHintTitle: '語音錄製快捷鍵',
       voiceShortcutHintDesc:
         '請在「設定 → 鍵盤快捷鍵」中設定語音錄製快捷鍵（「Start / stop voice conversation」）。voice.record_key 設定僅適用於 CLI 和 TUI。',
-      showOptions: '顯示選項'
+      showOptions: '顯示選項',
+      toolsetsWipeConfirm:
+        '確定移除所有已啟用的工具集嗎？這將禁用記憶、終端、網路搜尋、委派以及大多數其他工具，直到你重新啟用它們。',
+      disableF12Title: '禁用 F12 開發者工具',
+      disableF12Desc: '阻止 F12 打開開發者工具。Ctrl+Shift+I（Mac 上為 Cmd+Opt+I）仍然可用。',
+      alwaysExternalLinksTitle: '始終在外部瀏覽器中打開鏈接',
+      alwaysExternalLinksDesc:
+        '點擊的每個鏈接都在系統瀏覽器中打開，而不是應用內瀏覽器。右鍵菜單中的“在應用內瀏覽器中打開”仍然可用。',
+      attachmentSizeTitle: '預覽 / 圖片載入大小上限',
+      attachmentSizeDesc:
+        '桌面端為預覽和圖片附件載入本地文件的大小上限（MB）。預設為 16。遠端非圖片附件使用單獨的 256 MB 上限。設定過大會將整個文件讀入記憶體，可能導致應用卡死或崩潰。',
+      attachmentSizeLabel: '預覽 / 圖片載入大小上限（MB）',
+      attachmentSizeUnit: 'MB'
     },
     hudModifier: {
       title: '輕按叫出 HUD',
@@ -934,6 +1093,7 @@ export const zhHantSettings = {
       sshPortDesc: '留空 = 22 或 ~/.ssh/config 中的連接埠。',
       sshKeyTitle: '金鑰檔案',
       sshKeyDesc: '私密金鑰路徑。留空 = ssh-agent 或 ~/.ssh/config。',
+      sshKeyPlaceholder: '來自 ssh-agent 或 ~/.ssh/config',
       sshHermesPathTitle: 'Hermes 路徑（選用）',
       sshHermesPathDesc: '遠端 hermes 執行檔的完整路徑。留空 = 自動偵測。',
       sshHermesPathPlaceholder: '自動偵測',
@@ -951,7 +1111,45 @@ export const zhHantSettings = {
       sshErrPlatform: '不支援的遠端平台。Hermes Desktop 的 SSH 模式支援 Linux、macOS 和 Windows 遠端主機。',
       sshErrTimeout: 'SSH 連線逾時。主機可能無法存取或處於睡眠狀態。',
       sshErrUpdateRequired: '使用 Desktop SSH 連線前，請更新遠端主機上的 Hermes。',
-      sshErrUnknown: 'SSH 連線失敗。'
+      sshErrUnknown: 'SSH 連線失敗。',
+      modeTitle: '連線模式',
+      remoteAuthHint: '託管閘道使用 OAuth 或使用者名稱密碼；自託管閘道也可能使用工作階段 token。',
+      cloudDesc: '只需登入 Hermes Cloud 一次，即可從你帳戶下的代理中選擇——無需貼上 URL。',
+      cloudSignIn: '登入 Hermes Cloud',
+      cloudSignedIn: '已登入 Hermes Cloud',
+      cloudNeedsSignIn: '登入 Hermes Cloud 以發現你帳戶下的代理。',
+      cloudSignedInDesc: '你已登入。在下方選擇一個代理；工作階段會自動重新整理。',
+      cloudAgentsTitle: '你的代理',
+      cloudOrgPickerTitle: '選擇一個組織',
+      cloudOrgSelect: '選擇',
+      cloudOrgChange: '切換組織',
+      cloudOrgRole: role => `角色：${role}`,
+      cloudLoadingAgents: '正在載入你的代理…',
+      cloudNoAgents: {
+        before: '此帳戶下未找到代理。請在',
+        linkText: 'Nous 門戶',
+        after: '中創建一個，然後重新整理。'
+      },
+      cloudRefresh: '重新整理',
+      cloudConnect: '連線',
+      cloudSavedTitle: '已保存的雲閘道',
+      cloudSavedDesc:
+        '使用已保存的閘道，不更改預設閘道。在下方登入以添加執行個體。在已保存的連線列表中管理名稱和登入。',
+      cloudUseSaved: '使用閘道',
+      cloudActive: '目前視窗正在使用',
+      cloudConnecting: '正在連線…',
+      cloudDiscoverFailed: '無法載入你的 Hermes Cloud 代理',
+      cloudConnectFailed: '無法連線到該代理',
+      cloudSignInFailed: 'Hermes Cloud 登入失敗',
+      cloudSignedOutTitle: '已退出 Hermes Cloud',
+      cloudSignedOutMessage: '已清除 Hermes Cloud 工作階段。',
+      cloudConnectedTitle: '已連線',
+      cloudConnectedPill: '已連線',
+      cloudConnectedTo: name => `已連線到 ${name}。`,
+      cloudAgentProvisioning: '正在配置…',
+      cloudStatusLabel: status => `狀態：${status}`,
+      cloudTitle: 'Hermes Cloud',
+      cloudSignInTitle: 'Hermes Cloud'
     },
     keys: {
       loading: '正在載入 API 金鑰和憑證...',
@@ -1002,7 +1200,11 @@ export const zhHantSettings = {
       deepLinkErrorConfig: '連結中的設定不是有效的 base64 編碼 JSON。',
       deepLinkErrorShape: '設定必須是包含字串 `url` 或 `command` 欄位的 JSON 物件。',
       deepLinkErrorUrl: '僅允許 http:// 和 https:// 伺服器網址。',
-      deepLinkErrorTooLarge: '設定內容超過 32KB 上限。'
+      deepLinkErrorTooLarge: '設定內容超過 32KB 上限。',
+      test: '測試連線',
+      catalogLoading: '正在載入 MCP 目錄…',
+      catalogInstallFailed: name => `安裝 ${name} 失敗`,
+      catalogEnvRequired: '安裝前請填寫必需的值。'
     },
     model: {
       setupProviderFallback: '提供方',
@@ -1059,7 +1261,14 @@ export const zhHantSettings = {
         kanban_decomposer: { label: '看板分解', hint: '任務拆解' },
         profile_describer: { label: '設定檔描述', hint: '自動生成設定檔描述' },
         curator: { label: '策展器', hint: '技能使用審查' }
-      }
+      },
+      defaultsLabel: '預設值',
+      reasoning: '推理',
+      reasoningOff: '關閉',
+      defaultsFailed: '保存模型預設值失敗',
+      fallbackAdd: '添加備用模型',
+      fallbackEmpty: '未配置備用模型 — 預設模型失敗時纔會使用備用模型。',
+      notInCatalog: '不在該提供方的模型列表中 — 調用可能回退到備用模型。',
     },
     localModels: {
       connectionChanged: '本地模型連線已變更',
@@ -1166,7 +1375,23 @@ export const zhHantSettings = {
       deleteAction: '刪除模型',
       deleteConfirm: model => `從磁碟刪除 ${model}？`,
       deleted: model => `已刪除 ${model}。`,
-      deleteFailed: '刪除失敗'
+      deleteFailed: '刪除失敗',
+      quickstartTitle: '在本機執行模型',
+      quickstartDetail: (model, size) =>
+        `一鍵完成所有設定：本地引擎、${model}（需下載 ${size}），並設為新工作階段的預設模型。資料不會離開這臺電腦。`,
+      quickstartDetailReady: model => `一鍵將 ${model} 設為新工作階段的預設模型。所有內容都在本機執行。`,
+      quickstartAction: '為我設定',
+      quickstartDoneToast: model => `${model} 已就緒——新工作階段將在本機執行。`,
+      quickstartFailed: '本地模型設定失敗',
+      quickstartStageEngine: '引擎',
+      quickstartStageModel: '模型',
+      quickstartStageFinish: '完成',
+      downloadEtaSeconds: (count: number) => `${count} 秒`,
+      downloadEtaMinutes: (count: number) => `${count} 分鐘`,
+      downloadEtaHours: (hours: number, minutes: number) =>
+        minutes ? `${hours} 小時 ${minutes} 分鐘` : `${hours} 小時`,
+      downloadPauseFailed: (model: string) => `無法暫停 ${model} 的下載`,
+      downloadResumeFailed: (model: string) => `無法繼續 ${model} 的下載`
     },
     billing: {
       perMonth: amount => `${amount}/月`,
@@ -1412,7 +1637,12 @@ export const zhHantSettings = {
         title: '本地 / 自訂端點',
         description: '將 Hermes 指向任意 OpenAI 相容端點（Zyphra、vLLM、llama.cpp、Ollama 等）。'
       },
-      loading: '正在載入提供方...'
+      loading: '正在載入提供方...',
+      disconnect: '斷開連線',
+      disconnectInTerminal: '斷開連線（在終端中執行移除命令）',
+      removeExternalGeneric: provider => `${provider} 由其自身的 CLI 管理 — 請在那裡移除。`,
+      removeTerminalConfirm: (provider, command) => `斷開 ${provider}？這將在終端中執行 "${command}" 以清除憑證。`,
+      removeTerminalRunning: provider => `正在終端中斷開 ${provider}…`
     },
     sessions: {
       loading: '正在載入已封存工作階段…',
@@ -1516,7 +1746,13 @@ export const zhHantSettings = {
           `${detail} 此變更生效後啟動的工作階段在設定完成前將沒有終端或檔案工具。`,
         needsSetupConfirmDescriptionGeneric:
           '此後端尚未完成設定。此變更生效後啟動的工作階段在設定完成前將沒有終端或檔案工具。',
-        needsSetupConfirmAction: '仍然選擇'
+        needsSetupConfirmAction: '仍然選擇',
+        unavailableTitle: '終端指令目前無法使用',
+        unavailableMessage: (backend: string) =>
+          `Hermes 目前無法執行 shell 指令：${backend} 尚未就緒。請切換至本機，或完成 ${backend} 的設定後重試。`,
+        openBackendSettings: '開啟終端設定',
+        useLocal: '使用本機',
+        switchedToLocal: '終端指令現在在本機執行。適用於新工作階段。'
       },
       browserRealProfile: {
         label: '使用我的真實瀏覽器設定檔',
@@ -1537,7 +1773,20 @@ export const zhHantSettings = {
           notNow: '暫不',
           enable: '使用我的設定檔'
         }
-      }
+      },
+      loadingModels: '正在載入模型目錄…',
+      modelSectionTitle: '模型',
+      modelCount: count => `${count} 個模型`,
+      modelInUse: '使用中',
+      modelDefault: '預設',
+      modelInactiveHint: '請先選擇此後端，然後再更改其模型。',
+      modelSelectedTitle: '模型已選擇',
+      modelSelectedMessage: model => `${model} 將應用於新工作階段。`,
+      failedSelectModel: model => `選擇 ${model} 失敗`,
+      nousAuthFailedMessage: '請重試。',
+      nousAuthTryAgain: '重試',
+      postSetupOpenLogs: '開啟記錄',
+      postSetupRunAgain: '再跑一次',
     }
   },
 

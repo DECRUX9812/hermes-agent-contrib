@@ -458,6 +458,348 @@ export interface ProjectFacts {
   verifyCommands: string[]
   contextFiles: string[]
 }
+/** Client→server method params / server→client request params. Unknown keys are rejected. */
+export type Params = Record<string, never>
+export interface TeamListResult {
+  teams: TeamSummary[]
+}
+export interface TeamSummary {
+  id: string
+  name: string
+  mission?: string
+  member_count: number
+  open_seats: number
+  goal_count: number
+  pending_approvals: number
+  created_at: number
+  updated_at: number
+  [key: string]: unknown
+}
+export interface TeamIdParams {
+  team_id: string
+}
+/** What every mutating call returns: the fresh doc, its org tree and the goal roll-up, so a client re-renders from one response. */
+export interface TeamView {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+}
+export interface Team {
+  id: string
+  name: string
+  mission?: string
+  policy: TeamPolicy
+  channels?: Record<string, string>
+  members: TeamMember[]
+  goals: TeamGoal[]
+  approvals: TeamApproval[]
+  learnings: TeamLearning[]
+  created_at: number
+  updated_at: number
+  [key: string]: unknown
+}
+export interface TeamPolicy {
+  lead_decides?: boolean
+  [key: string]: unknown
+}
+/** One seat — ``tools/bot_team.py::upsert_member``. ``profile`` is null for an open seat; ``credentials`` are reference names, never values. */
+export interface TeamMember {
+  slot: string
+  profile?: string | null
+  role?: string
+  title?: string
+  reports_to?: string | null
+  lead?: boolean
+  status?: string
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  budget: TeamBudget
+  joined_at?: number
+  [key: string]: unknown
+}
+export interface TeamBudget {
+  monthly_usd?: number | null
+  hard_stop?: boolean
+  spent_usd?: number
+  period?: string
+  [key: string]: unknown
+}
+export interface TeamGoal {
+  id: string
+  title: string
+  detail?: string
+  parent_id?: string | null
+  owner?: string | null
+  status?: string
+  task_ids?: string[]
+  created_at?: number
+  updated_at?: number | null
+  [key: string]: unknown
+}
+export interface TeamApproval {
+  id: string
+  kind: string
+  subject: string
+  detail?: string
+  payload?: Record<string, unknown> | null
+  requested_by: string
+  status: string
+  decided_by?: string | null
+  decided_at?: number | null
+  note?: string
+  created_at?: number
+  [key: string]: unknown
+}
+export interface TeamLearning {
+  id: string
+  text: string
+  by: string
+  source?: string
+  count?: number
+  at?: number
+  last_at?: number
+  [key: string]: unknown
+}
+export interface TeamOrgNode {
+  slot: string
+  profile?: string | null
+  role?: string
+  title?: string
+  reports_to?: string | null
+  lead?: boolean
+  status?: string
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  budget: TeamBudget
+  joined_at?: number
+  reports?: TeamOrgNode[]
+  [key: string]: unknown
+}
+export interface TeamRollup {
+  goals: Record<string, GoalProgress>
+  overall: TeamRollupOverall
+  [key: string]: unknown
+}
+export interface GoalProgress {
+  done: number
+  total: number
+  percent: number
+  blocked?: boolean
+  status?: string
+  [key: string]: unknown
+}
+export interface TeamRollupOverall {
+  done: number
+  total: number
+  percent: number
+  [key: string]: unknown
+}
+/** Local member profiles of a group-chat room (remote members can't hold seats — the caller leaves them out). */
+export interface BotsTeamRoomLeadParams {
+  members?: string[]
+}
+/** ``lead`` is the room's orchestrator profile when one team covers the room and its lead is seated; ``None`` — not a team room, no seated lead, or several teams disagree — means the room keeps fan-out listening. */
+export interface BotsTeamRoomLeadResult {
+  lead?: string | null
+  lead_slot?: string
+  lead_title?: string
+  team_id?: string | null
+  team_name?: string
+}
+export interface BotsTeamCreateParams {
+  name: string
+  mission?: string | null
+  lead_decides?: boolean | null
+  channels?: Record<string, string> | null
+  actor?: string | null
+}
+export interface BotsTeamUpdateParams {
+  team_id: string
+  actor?: string | null
+  name?: string | null
+  mission?: string | null
+  lead_decides?: boolean | null
+  channels?: Record<string, string> | null
+}
+export interface TeamActorParams {
+  team_id: string
+  actor?: string | null
+}
+export interface OkResult {
+  ok?: boolean
+}
+export interface BotsTeamMemberUpsertParams {
+  team_id: string
+  actor?: string | null
+  slot?: string | null
+  profile?: string | null
+  role?: string | null
+  title?: string | null
+  skills?: string[] | null
+  plugins?: string[] | null
+  credentials?: string[] | null
+  status?: string | null
+  monthly_usd?: number | null
+  hard_stop?: boolean | null
+  reports_to?: string | null
+  lead?: boolean | null
+}
+export interface BotsTeamMemberUpsertResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  member: TeamMember
+}
+export interface BotsTeamMemberRemoveParams {
+  team_id: string
+  actor?: string | null
+  member: string
+}
+export interface BotsTeamGoalUpsertParams {
+  team_id: string
+  actor?: string | null
+  goal_id?: string | null
+  title?: string | null
+  detail?: string | null
+  parent_id?: string | null
+  owner?: string | null
+  status?: string | null
+}
+export interface BotsTeamGoalResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  goal: TeamGoal
+}
+export interface BotsTeamGoalLinkTaskParams {
+  team_id: string
+  actor?: string | null
+  goal_id: string
+  task_id: string
+  unlink?: boolean | null
+}
+export interface BotsTeamGoalSpawnTaskParams {
+  team_id: string
+  actor?: string | null
+  goal_id: string
+  title: string
+  body?: string | null
+  assignee?: string | null
+}
+export interface BotsTeamGoalSpawnTaskResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  task_id: string
+  assignee: string
+}
+export interface BotsTeamApprovalRequestParams {
+  team_id: string
+  kind: string
+  subject: string
+  requested_by: string
+  detail?: string | null
+  payload?: Record<string, unknown> | null
+}
+export interface BotsTeamApprovalRequestResult {
+  approval: TeamApproval
+}
+export interface BotsTeamApprovalDecideParams {
+  team_id: string
+  actor?: string | null
+  approval_id: string
+  approve: boolean
+  note?: string | null
+}
+export interface BotsTeamApprovalDecideResult {
+  team: Team
+  tree: TeamOrgNode[]
+  rollup: TeamRollup
+  approval: TeamApproval
+}
+export interface BotsTeamBudgetParams {
+  team_id: string
+  member: string
+}
+export interface BotsTeamBudgetResult {
+  allowed: boolean
+  reason?: string
+  remaining_usd?: number | null
+  over_budget?: boolean
+}
+export interface BotsTeamBudgetRecordParams {
+  team_id: string
+  member: string
+  usd: number
+  actor?: string | null
+}
+export interface BotsTeamLearningAddParams {
+  team_id: string
+  text: string
+  by: string
+  source?: string | null
+}
+export interface BotsTeamLearningResult {
+  learning: TeamLearning
+}
+export interface BotsTeamLearningRemoveParams {
+  team_id: string
+  actor?: string | null
+  learning_id: string
+}
+export interface BotsTeamBriefParams {
+  team_id: string
+  member: string
+  goal_id?: string | null
+}
+export interface BotsTeamBriefResult {
+  brief: string
+}
+export interface BotsTeamPackExportResult {
+  pack: TeamPack
+}
+export interface TeamPack {
+  pack_version: number
+  name: string
+  mission?: string
+  policy: TeamPolicy
+  seats: TeamPackSeat[]
+  [key: string]: unknown
+}
+export interface TeamPackSeat {
+  slot: string
+  role?: string
+  title?: string
+  reports_to_slot?: string | null
+  lead?: boolean
+  skills?: string[]
+  plugins?: string[]
+  credentials?: string[]
+  monthly_usd?: number | null
+  hard_stop?: boolean
+  [key: string]: unknown
+}
+export interface BotsTeamPackImportParams {
+  pack: TeamPack
+  name?: string | null
+  actor?: string | null
+}
+export interface BotsTeamAuditParams {
+  team_id: string
+  limit?: number | null
+}
+export interface BotsTeamAuditResult {
+  entries: TeamAuditEntry[]
+}
+export interface TeamAuditEntry {
+  at: number
+  actor: string
+  action: string
+  detail?: Record<string, unknown>
+  [key: string]: unknown
+}
 /** ``key`` selects one getter from ``_CONFIG_GETTERS``; ``cwd`` feeds the ``project`` getter, ``session_id`` lets ``reasoning`` / ``fast`` answer with the session's live pin. */
 export interface ConfigGetParams {
   profile?: string | null
@@ -702,9 +1044,6 @@ export interface SharedMetricsUpdateRunResult {
 export interface SharedMetricsDesktopFeatureUseParams {
   profile?: string | null
   area: string
-}
-export interface OkResult {
-  ok?: boolean
 }
 /** ``kind`` notice_dismissed|error_toast|renderer_crash|backend_disconnect|slow_frame; ``detail`` a closed code-defined word for that kind (notice id, error category, crash reason, drop reason, frame duration bucket), never message text. */
 export interface SharedMetricsDesktopFrictionParams {
@@ -1234,6 +1573,30 @@ export interface ConnectorPolicySetResult {
   revision: string
   effective: ConnectorPolicyEffectiveUnrestricted | ConnectorPolicyEffectiveDenyAll | ConnectorPolicyEffectiveAllow | ConnectorPolicyEffectiveDeny
 }
+export interface DelegationReportsResult {
+  reports: DelegationReport[]
+}
+/** One settled background delegation awaiting report-back to its origin session. */
+export interface DelegationReport {
+  delegation_id: string
+  state: string
+  outcome: DelegationReportOutcome
+  title: string
+  summary: string
+  summary_source: DelegationReportSummarySource
+  task_count: number
+  completed_count: number
+  failed_count: number
+  duration_seconds?: number | null
+  completed_at?: number | null
+  delivery_state?: string
+  child_session_ids?: Record<string, string>
+  group?: string | null
+}
+/** done = every task finished cleanly; failed = nothing completed; needs_decision = the mixed middle (interrupted, truncated, partly failed, stalled) — a human should look. */
+export type DelegationReportOutcome = 'done' | 'needs_decision' | 'failed'
+/** ``model`` = the cached utility-model one-liner; ``heuristic`` = first substantive line of the result, always available when no auxiliary model is configured. */
+export type DelegationReportSummarySource = 'model' | 'heuristic'
 /** ``tools/bot_desktop/runtime.py::DesktopStatus`` plus the lease and the profile it speaks for. */
 export interface DisplayStatus {
   profile: string
@@ -1732,7 +2095,7 @@ export interface BotRelayOutboxDrainParams {
 export interface BotRelayOutboxDrainResult {
   envelopes: RelayEnvelope[]
 }
-/** ``tools/bot_relay.py::enqueue_envelope``. */
+/** ``tools/bot_relay.py::enqueue_envelope``. ``note`` rides along when the DM is a task hand-off (#48) — ``bot_relay.deliver`` files it into the target's mailbox. */
 export interface RelayEnvelope {
   id: string
   created_at: number
@@ -1742,15 +2105,17 @@ export interface RelayEnvelope {
   target_profile: string
   target_handle: string
   message: string
+  note?: Record<string, unknown> | null
   [key: string]: unknown
 }
-/** ``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds). */
+/** ``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds). ``note`` is an optional mailbox task hand-off (``{id, title, body, payload?}``) filed on this install before delivery. */
 export interface BotRelayDeliverParams {
   profile: string
   message: string
   from_profile?: string | null
   from_handle?: string | null
   from_connection?: string | null
+  note?: Record<string, unknown> | null
 }
 export interface BotRelayDeliverResult {
   reply: string
@@ -1761,6 +2126,60 @@ export interface BotRelayReplyParams {
   reply?: string | null
   error?: string | null
   reason?: string | null
+}
+export interface BotsMailboxListParams {
+  profile?: string | null
+  handle?: string | null
+}
+export interface BotsMailboxListResult {
+  notes: BotMailboxNote[]
+}
+/** A stored mailbox note — ``tools/bot_mailbox.py::append_note``. */
+export interface BotMailboxNote {
+  id: string
+  kind: string
+  to: BotMailboxParty
+  sender: BotMailboxParty
+  title: string
+  body: string
+  payload?: Record<string, unknown> | null
+  status: string
+  reply: string
+  created_at: number
+  updated_at: number
+  room?: string | null
+  [key: string]: unknown
+}
+/** One end of a note — ``tools/bot_mailbox.py::_normalize_party``. ``kind`` is 'bot' or 'user'; ``connection`` is the sender-side connection id (display only). */
+export interface BotMailboxParty {
+  kind?: string | null
+  profile?: string | null
+  handle?: string | null
+  name?: string | null
+  connection?: string | null
+  [key: string]: unknown
+}
+export interface BotsMailboxSendParams {
+  profile?: string | null
+  to: string
+  title: string
+  body?: string | null
+  payload?: Record<string, unknown> | null
+}
+export interface BotsMailboxSendResult {
+  note: BotMailboxNote
+  reply?: string | null
+  queued?: boolean | null
+  delivery_error?: string | null
+}
+export interface BotsMailboxUpdateParams {
+  profile?: string | null
+  id: string
+  status: string
+  reply?: string | null
+}
+export interface BotsMailboxUpdateResult {
+  note: BotMailboxNote
 }
 export interface BrowserControllerRegisterParams {
   session_id: string
@@ -1835,6 +2254,48 @@ export interface ClientCapabilitiesResult {
   server_requests: string[]
   declines_not_shown?: boolean
 }
+export interface _AppScoped {
+  profile?: string | null
+  session_id?: string | null
+}
+export interface McpAppsListResult {
+  apps: McpApp[]
+}
+/** A tool with an app. ``registry_name`` is the model-facing tool name, ``None`` for an app-only tool (callable from its UI, never by the model). */
+export interface McpApp {
+  server: string
+  tool: string
+  title: string
+  description?: string
+  registry_name?: string | null
+  resourceUri: string
+  visibility: string[]
+  entrypoints?: unknown[]
+  icons?: unknown[]
+  [key: string]: unknown
+}
+export interface McpAppsReadUiParams {
+  profile?: string | null
+  session_id?: string | null
+  server: string
+  uri: string
+}
+/** ``meta`` is the content item's ``_meta`` (``ui.csp``, ``ui.prefersBorder``, ``openai/ui``). */
+export interface McpAppsReadUiResult {
+  uri: string
+  mimeType: string
+  html: string
+  meta?: Record<string, unknown>
+}
+export interface McpAppsCallParams {
+  profile?: string | null
+  session_id?: string | null
+  server: string
+  tool: string
+  arguments?: Record<string, unknown>
+}
+/** The MCP ``CallToolResult`` as JSON (``content``, ``structuredContent``, ``isError``, ``_meta``). */
+export type McpAppsCallResult = Record<string, unknown>
 /** ``word`` is the token under the cursor (``@`` prefix = context reference); ``cwd`` / ``session_id`` pick the directory the listing resolves against. */
 export interface CompletePathParams {
   profile?: string | null
@@ -2097,8 +2558,6 @@ export interface ProfilesRememberOnboardingResult {
   profile?: string
   target?: string
 }
-/** Client→server method params / server→client request params. Unknown keys are rejected. */
-export type Params = Record<string, never>
 /** ``created`` is false when an existing setup profile was found (and returned untouched). */
 export interface OnboardingEnsureSetupProfileResult {
   name: string
@@ -2951,6 +3410,9 @@ export interface SessionCreateParams {
   hidden?: boolean
   room_plumbing?: boolean
   follow_profile_config?: boolean
+  bot_topic?: boolean
+  team_room?: boolean
+  team_room_lead?: string | null
   idempotency_key?: string | null
 }
 /** One create-time transcript row (``session_history._coerce_seed_history``); ``text`` is the legacy alias of ``content``; only ``display_kind: "hidden"`` is accepted from the wire. Clients forward stored rows verbatim (``_row_id``, ``timestamp``, …) and the coercer drops what it does not use, so the row stays open. */
@@ -3325,6 +3787,24 @@ export interface SessionHistoryParams {
 export interface SessionHistoryResult {
   count: number
   messages: TranscriptMessage[]
+}
+/** ``session_id`` takes a stored id/prefix OR a live runtime id; ``history`` is the client's companion thread so far (bounded server-side). */
+export interface SessionAskParams {
+  profile?: string | null
+  session_id: string
+  question: string
+  history?: SessionAskExchange[] | null
+}
+/** One prior companion Q/A the client holds, replayed for thread continuity. */
+export interface SessionAskExchange {
+  question: string
+  answer: string
+}
+export interface SessionAskResult {
+  answer: string
+  resolved_id: string
+  messages_considered: number
+  truncated: boolean
 }
 export interface SessionUsageParams {
   session_id: string
@@ -3709,11 +4189,13 @@ export interface SlashExecResult {
 export interface InsightsGetParams {
   days?: number | null
   profile?: string | null
+  report?: boolean | null
 }
 export interface InsightsGetResult {
   days: number
   sessions: number
   messages: number
+  report?: Record<string, unknown> | null
 }
 export interface ConfigShowParams {
   profile?: string | null
@@ -3738,11 +4220,16 @@ export interface RollbackCheckpoint {
   hash?: string
   timestamp?: string
   message?: string
+  turn?: number | null
+  sid?: string | null
+  user_row_id?: number | null
 }
 export interface RollbackRestoreParams {
   session_id: string
   hash: string
   file_path?: string | null
+  files_only?: boolean
+  safe?: boolean
   profile?: string | null
 }
 /** ``tools/checkpoint_manager.py::restore`` outcome; ``history_removed`` is added for a full (non-file) restore that also rewound the live transcript. */
@@ -4420,6 +4907,11 @@ export interface PreviewActRequestParams {
   max?: number | null
   allow_shortcut?: boolean | null
 }
+/** ``tools/verify_preview_tool.py`` field set. */
+export interface PreviewVerifyRequestParams {
+  session_id: string
+  settle_ms?: number | null
+}
 /** ``tools/tour_tool.py`` field set. */
 export interface TourRequestParams {
   session_id: string
@@ -4906,6 +5398,54 @@ export interface RpcMethods {
   'bot_relay.reply': { params: BotRelayReplyParams; result: OkResult }
   /** Replace this gateway's view of agents on other connections; answers the accepted row count. */
   'bot_relay.roster.sync': { params: BotRelayRosterSyncParams; result: BotRelayRosterSyncResult }
+  /** List this install's agent-mailbox notes, newest first; 'handle' narrows to one bot. */
+  'bots_mailbox.list': { params: BotsMailboxListParams; result: BotsMailboxListResult }
+  /** File a user-authored task note and deliver it into the target's Bot Chat (local: blocking turn via bot_relay.deliver; remote: queued for the Desktop relay). */
+  'bots_mailbox.send': { params: BotsMailboxSendParams; result: BotsMailboxSendResult }
+  /** Flip a mailbox note's status (open→accepted/declined/done); live sender bots get a one-line ping. */
+  'bots_mailbox.update': { params: BotsMailboxUpdateParams; result: BotsMailboxUpdateResult }
+  /** Board (or the lead, if the team's policy allows) decides; never the requester itself. */
+  'bots_team.approval.decide': { params: BotsTeamApprovalDecideParams; result: BotsTeamApprovalDecideResult }
+  /** A teammate asks the board for a hire, spend, credential grant or risky action. */
+  'bots_team.approval.request': { params: BotsTeamApprovalRequestParams; result: BotsTeamApprovalRequestResult }
+  /** The team's append-only audit trail, newest first. */
+  'bots_team.audit.list': { params: BotsTeamAuditParams; result: BotsTeamAuditResult }
+  /** The session-start context for a teammate: role, boss, mission→goal chain, team lessons. */
+  'bots_team.brief': { params: BotsTeamBriefParams; result: BotsTeamBriefResult }
+  /** May this teammate take on more work now? False when paused or hard-stopped over budget. */
+  'bots_team.budget.check': { params: BotsTeamBudgetParams; result: BotsTeamBudgetResult }
+  /** Add spend to a teammate's month; returns the fresh budget verdict. */
+  'bots_team.budget.record': { params: BotsTeamBudgetRecordParams; result: BotsTeamBudgetResult }
+  /** Create a team. */
+  'bots_team.create': { params: BotsTeamCreateParams; result: TeamView }
+  /** Delete a team (its audit trail is kept). */
+  'bots_team.delete': { params: TeamActorParams; result: OkResult }
+  /** One team with its org tree and goal roll-up (Kanban task status folded into goals). */
+  'bots_team.get': { params: TeamIdParams; result: TeamView }
+  /** Attach or detach a Kanban task id on a goal (the task itself is untouched). */
+  'bots_team.goal.link_task': { params: BotsTeamGoalLinkTaskParams; result: BotsTeamGoalResult }
+  /** Delegate work: create a Kanban card for a teammate (default: the goal's owner) whose body opens with their brief and the mission→goal chain, and link it to the goal. Idempotent per title. */
+  'bots_team.goal.spawn_task': { params: BotsTeamGoalSpawnTaskParams; result: BotsTeamGoalSpawnTaskResult }
+  /** Create (goal_id omitted) or edit a goal; parent_id null hangs it under the mission. */
+  'bots_team.goal.upsert': { params: BotsTeamGoalUpsertParams; result: BotsTeamGoalResult }
+  /** Record a short team lesson; a repeat of the same lesson bumps its count instead of duplicating. */
+  'bots_team.learning.add': { params: BotsTeamLearningAddParams; result: BotsTeamLearningResult }
+  /** Delete a lesson the team no longer wants to carry. */
+  'bots_team.learning.remove': { params: BotsTeamLearningRemoveParams; result: TeamView }
+  /** List this install's teams, newest first. */
+  'bots_team.list': { params: Params; result: TeamListResult }
+  /** Remove a seat by slot or profile; its reports re-attach to its boss, its goals become unowned. */
+  'bots_team.member.remove': { params: BotsTeamMemberRemoveParams; result: TeamView }
+  /** Add or edit a seat (slot omitted = add). Refuses reporting cycles; lead moves the lead badge. */
+  'bots_team.member.upsert': { params: BotsTeamMemberUpsertParams; result: BotsTeamMemberUpsertResult }
+  /** A shareable, data-only org design — no profiles, spend, credential values or learnings. */
+  'bots_team.pack.export': { params: TeamIdParams; result: BotsTeamPackExportResult }
+  /** Create a team from a pack (allow-listed keys only); every seat starts open. */
+  'bots_team.pack.import': { params: BotsTeamPackImportParams; result: TeamView }
+  /** The org-tree lead for a group chat: the single team whose filled seats cover the room's local members, lead included. The room then listens through the lead alone and teammates wake only when addressed. */
+  'bots_team.room_lead': { params: BotsTeamRoomLeadParams; result: BotsTeamRoomLeadResult }
+  /** Rename, re-mission, set the approval policy or the external channel bindings. */
+  'bots_team.update': { params: BotsTeamUpdateParams; result: TeamView }
   /** Hard-detach only the controller owned by this authenticated transport. */
   'browser.controller.detach': { params: BrowserControllerParams; result: BrowserControllerDetachResult }
   /** Acknowledge a heartbeat only for this transport's own attached controller. */
@@ -4966,6 +5506,8 @@ export interface RpcMethods {
   'cron.manage': { params: CronManageParams; result: CronManageResult }
   /** Block/unblock NEW spawns globally (active children keep running); returns the new state. */
   'delegation.pause': { params: DelegationPauseParams; result: DelegationPauseResult }
+  /** Terminal delegations routed to this session, newest first — the sidebar report cards. */
+  'delegation.reports': { params: SessionParams; result: DelegationReportsResult }
   /** Running subagent tree plus the spawn pause flag and limits. */
   'delegation.status': { params: ProfileParams; result: DelegationStatusResult }
   /** Upload a force-redacted debug bundle to Nous-internal diagnostics storage. */
@@ -5054,7 +5596,7 @@ export interface RpcMethods {
   'image.generate': { params: ImageGenerateParams; result: ImageGenerateResult }
   /** Recognise a terminal file drop pasted into the composer and turn it into an attachment. */
   'input.detect_drop': { params: InputDetectDropParams; result: InputDetectDropResult }
-  /** Session/message counts over the last ``days`` for the (optionally scoped) profile store. */
+  /** Session/message counts over the last ``days`` for the (optionally scoped) profile store; ``report`` adds the /insights token + cost breakdown (``empty``, ``overview``, ``models``). */
   'insights.get': { params: InsightsGetParams; result: InsightsGetResult }
   /** Archive a skill (restorable via curator) or remove a memory chunk. */
   'learning.delete': { params: LearningNodeParams; result: LearningMutationResult }
@@ -5088,6 +5630,12 @@ export interface RpcMethods {
   'mcp.servers.status': { params: ProfileParams; result: McpServersStatusResult }
   /** Connect, list tools, disconnect — an OAuth server with no token on disk is reported as not ok. */
   'mcp.servers.test': { params: McpServerNameParams; result: McpServersTestResult }
+  /** A tool call made by an app iframe: same server, the tool's visibility must include ``app``, and write-capable calls on an untrusted server are refused. */
+  'mcp_apps.call': { params: McpAppsCallParams; result: McpAppsCallResult }
+  /** Tools on the connected MCP servers that carry an MCP App (``_meta.ui.resourceUri``). */
+  'mcp_apps.list': { params: _AppScoped; result: McpAppsListResult }
+  /** The app document behind a ``ui://`` URI (other schemes are refused). */
+  'mcp_apps.read_ui': { params: McpAppsReadUiParams; result: McpAppsReadUiResult }
   /** Set/clear one author's emoji reaction on a message; returns the row's full reaction list. */
   'message.react': { params: MessageReactParams; result: MessageReactResult }
   /** Remove every credential (env keys and OAuth state) for a provider. */
@@ -5208,7 +5756,7 @@ export interface RpcMethods {
   'request.answer': { params: RequestAnswerParams; result: RequestAnswerResult }
   /** Diff between a checkpoint and the working tree, with an ANSI rendering sized to the TUI. */
   'rollback.diff': { params: RollbackDiffParams; result: RollbackDiffResult }
-  /** Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off. */
+  /** Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off. Entries may carry ``sid``/``turn``/``user_row_id`` identifying the user prompt the snapshot precedes. */
   'rollback.list': { params: RollbackListParams; result: RollbackListResult }
   /** Restore the working tree (or one file) to a checkpoint by hash or 1-based index. */
   'rollback.restore': { params: RollbackRestoreParams; result: RollbackRestoreResult }
@@ -5218,6 +5766,8 @@ export interface RpcMethods {
   'session.active_list': { params: SessionActiveListParams; result: SessionActiveListResult }
   /** Set/clear archived (soft-hide, messages kept) on a session + lineage; Desktop PATCH parity. */
   'session.archive': { params: SessionArchiveParams; result: SessionArchiveResult }
+  /** One-shot utility-model answer about a session's transcript (companion thread); read-only, never touches the live conversation's context. */
+  'session.ask': { params: SessionAskParams; result: SessionAskResult }
   /** Fork a live session into a new stored child that shares the parent's history so far. */
   'session.branch': { params: SessionBranchParams; result: SessionBranchResult }
   /** Whole-session branch of a stored parent: the owning backend reads and copies the transcript, which never crosses the wire (a separate method so an older gateway fails loudly, not with an empty branch). */
@@ -5398,6 +5948,30 @@ export const RPC_METHODS = [
   'bot_relay.outbox.drain',
   'bot_relay.reply',
   'bot_relay.roster.sync',
+  'bots_mailbox.list',
+  'bots_mailbox.send',
+  'bots_mailbox.update',
+  'bots_team.approval.decide',
+  'bots_team.approval.request',
+  'bots_team.audit.list',
+  'bots_team.brief',
+  'bots_team.budget.check',
+  'bots_team.budget.record',
+  'bots_team.create',
+  'bots_team.delete',
+  'bots_team.get',
+  'bots_team.goal.link_task',
+  'bots_team.goal.spawn_task',
+  'bots_team.goal.upsert',
+  'bots_team.learning.add',
+  'bots_team.learning.remove',
+  'bots_team.list',
+  'bots_team.member.remove',
+  'bots_team.member.upsert',
+  'bots_team.pack.export',
+  'bots_team.pack.import',
+  'bots_team.room_lead',
+  'bots_team.update',
   'browser.controller.detach',
   'browser.controller.heartbeat',
   'browser.controller.register',
@@ -5428,6 +6002,7 @@ export const RPC_METHODS = [
   'connectors.tools',
   'cron.manage',
   'delegation.pause',
+  'delegation.reports',
   'delegation.status',
   'diagnostics.share_nous',
   'display.install',
@@ -5489,6 +6064,9 @@ export const RPC_METHODS = [
   'mcp.servers.set_api_key',
   'mcp.servers.status',
   'mcp.servers.test',
+  'mcp_apps.call',
+  'mcp_apps.list',
+  'mcp_apps.read_ui',
   'message.react',
   'model.disconnect',
   'model.options',
@@ -5554,6 +6132,7 @@ export const RPC_METHODS = [
   'session.activate',
   'session.active_list',
   'session.archive',
+  'session.ask',
   'session.branch',
   'session.branch_stored',
   'session.branch_whole',
@@ -5650,6 +6229,8 @@ export interface ServerRequestMap {
   'preview.act': { params: PreviewActRequestParams; result: ValueResult }
   /** Read the in-app browser preview's text (JSON text answer). */
   'preview.read': { params: ReadRangeRequestParams; result: ValueResult }
+  /** Read the in-app preview's console errors and answer a pass/fail (JSON). */
+  'preview.verify': { params: PreviewVerifyRequestParams; result: ValueResult }
   /** Masked value for a named env var (skills / setup flows). */
   secret: { params: SecretRequestParams; result: ValueResult }
   /** Masked sudo password for the terminal tool. */
@@ -5674,6 +6255,7 @@ export const SERVER_REQUEST_METHODS = [
   'display.install.sudo',
   'preview.act',
   'preview.read',
+  'preview.verify',
   'secret',
   'sudo',
   'terminal.read',

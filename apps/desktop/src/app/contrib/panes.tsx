@@ -14,6 +14,9 @@ import { atom } from 'nanostores'
 import { useEffect, useMemo, useRef } from 'react'
 
 import { RightSidebarPane } from '@/app/right-sidebar'
+import { ArtifactsRailPane } from '@/app/right-sidebar/artifacts'
+import { CodePane as VsCodePane } from '@/app/right-sidebar/code'
+import { LiveActivityPane } from '@/app/right-sidebar/live'
 import { ReviewPane } from '@/app/right-sidebar/review'
 import type { GroupSetter } from '@/app/shell/group-setter'
 import type { StatusbarItem } from '@/app/shell/statusbar-controls'
@@ -146,6 +149,30 @@ export function ReviewPaneContent() {
 }
 
 // ---------------------------------------------------------------------------
+// Artifacts — the per-session rail (#32)
+// ---------------------------------------------------------------------------
+
+export function ArtifactsPane() {
+  return (
+    <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col')}>
+      <ArtifactsRailPane />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Live — the focused session's tool calls, raw (store/live-activity)
+// ---------------------------------------------------------------------------
+
+export function LivePane() {
+  return (
+    <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col')}>
+      <LiveActivityPane />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Statusbar composability: plugins contribute DATA items into
 // `statusBar.left` / `statusBar.right`; the wiring feeds them into the REAL
 // useStatusbarItems as extraLeftItems/extraRightItems. No core filler here —
@@ -224,3 +251,11 @@ export function registryGroupSetter<T>(prefix: string): GroupSetter<T> {
  *  take as props, backed by the registry instead of component state. */
 export const setStatusbarItemGroup = registryGroupSetter<StatusbarItem>('statusBar')
 export const setTitlebarToolGroup = registryGroupSetter<TitlebarTool>('titleBar.tools')
+
+export function CodePane() {
+  return (
+    <div className={cn(ZONE_CONTENT, 'flex min-h-0 flex-col')}>
+      <VsCodePane />
+    </div>
+  )
+}

@@ -14,6 +14,7 @@ import {
   mainComposerScope,
   NEW_SESSION_DRAFT_KEY,
   rotateFreshDraftKey,
+  SESSION_DRAFTS_STORAGE_KEY,
   stashSessionDraft,
   takeSessionDraft
 } from '@/store/composer'
@@ -320,7 +321,13 @@ describe('useComposerDraft — attachment scope stays coherent with the committe
     stashSessionDraft(null, 'typed in this lifecycle', [])
 
     expect(takeSessionDraft(key).text).toBe('typed in this lifecycle')
-    expect(takeSessionDraft(NEW_SESSION_DRAFT_KEY).text).toBe('')
+
+    // Persisted under the lifecycle's own key — never the shared `__new__`
+    // bucket every fresh chat used to inherit from.
+    const persisted = JSON.parse(window.localStorage.getItem(SESSION_DRAFTS_STORAGE_KEY) ?? '{}') as Record<string, unknown>
+
+    expect(Object.keys(persisted)).toContain(key)
+    expect(Object.keys(persisted)).not.toContain(NEW_SESSION_DRAFT_KEY)
 
     unmount()
     clearSessionDraft(key)

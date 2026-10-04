@@ -20,13 +20,16 @@ import { displayPath, pathLeaf } from '@/lib/display-path'
 import {
   Activity,
   AlertCircle,
+  Bell,
   Clock,
   Command,
   FolderOpen,
   Globe,
   Hash,
+  Inbox,
   Layers3,
   Loader2,
+  Package,
   Terminal,
   Zap
 } from '@/lib/icons'
@@ -37,6 +40,8 @@ import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
 import type { ApprovalModeRequester } from '@/store/approval-mode'
+import { $artifactRegistry, type ArtifactRecord, openArtifact } from '@/store/artifacts'
+import { $attentionItemCount } from '@/store/attention-inbox'
 import { copyFilePath, revealFile, shouldOfferLocalReveal } from '@/store/file-actions'
 import { $freeTierStatus, FREE_TIER_MODEL } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
@@ -46,6 +51,7 @@ import { $onboardingGate, guidedOnboardingActive } from '@/store/onboarding-gate
 import { $activeGatewayProfile } from '@/store/profile'
 import { $profileRailVisible } from '@/store/profile-rail-prefs'
 import { $projectTree, projectNameForCwd } from '@/store/projects'
+import { openRouteTile } from '@/store/route-tiles'
 import {
   $activeSessionId,
   $busy,
@@ -75,10 +81,12 @@ import {
 } from '@/store/updates'
 import type { StatusResponse, UsageStats } from '@/types/hermes'
 
-import { CRON_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
+import { ARTIFACTS_ROUTE, CRON_ROUTE, INBOX_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
 import type { StatusbarItem } from '../statusbar-controls'
 
 const EMPTY_USAGE: UsageStats = { calls: 0, input: 0, output: 0, total: 0 }
+
+const NO_ARTIFACTS: readonly ArtifactRecord[] = []
 
 interface StatusbarItemsOptions {
   agentsOpen: boolean
@@ -170,6 +178,7 @@ export function useStatusbarItems({
   const backendUpdateApply = useStore($backendUpdateApply)
   const desktopVersion = useStore($desktopVersion)
   const connection = useStore($connection)
+  const attentionCount = useStore($attentionItemCount)
 
   // The FOCUSED session (interacted tile, else the primary — the same
   // derivation the titlebar title follows): every session-scoped readout
@@ -271,6 +280,16 @@ export function useStatusbarItems({
       !focusedStateStoredId ||
       focusedStateStoredId === focusedStoredSessionId ||
       liveCwdSharesFocusLineage)
+
+  // Registry is keyed by the same id artifact cards register under
+  // (stored id, falling back to the live runtime id on drafts). The atom's
+  // per-session array is referentially stable between writes, so the selector
+  // only re-renders when THIS session's artifacts actually change.
+  const artifactSessionId = focusedStoredSessionId || focusedRuntimeId || ''
+
+  const sessionArtifacts = useStoreSelector($artifactRegistry, registry =>
+    artifactSessionId ? (registry[artifactSessionId] ?? NO_ARTIFACTS) : NO_ARTIFACTS
+  )
 
   const currentCwd = (
     (liveCwdBelongsToFocus ? focusedStateCwd : '') ||
@@ -487,6 +506,32 @@ export function useStatusbarItems({
         variant: 'action'
       },
       {
+        // The pull surface for toast history — hidden by default like the
+        // other route shortcuts; the right-click menu (or ⌘K) brings it on.
+        className: 'w-7 justify-center px-0',
+        icon: <Bell className="size-3.5" />,
+        id: 'notices',
+        onSelect: () => openCommandCenterSection('notices'),
+        title: copy.noticesTitle,
+        toggleLabel: copy.toggleNotices,
+        variant: 'action'
+      },
+      {
+        // The attention inbox's door (roadmap #16): every pending approval,
+        // clarify, and error across sessions in one overlay. Surfaces on its
+        // own only while something is actually waiting; the right-click menu
+        // can pin it on permanently.
+        className: 'w-7 justify-center px-0',
+        detail: attentionCount > 0 ? attentionCount : undefined,
+        hidden: attentionCount === 0,
+        icon: <Inbox className="size-3.5" />,
+        id: 'attention-inbox',
+        to: INBOX_ROUTE,
+        title: copy.attentionInboxTitle,
+        toggleLabel: copy.toggleAttentionInbox,
+        variant: 'action'
+      },
+      {
         hidden: !sessionsShowing,
         id: 'gateway-switcher',
         lockedVisible: true,
@@ -631,10 +676,43 @@ export function useStatusbarItems({
         to: WEBHOOKS_ROUTE,
         toggleLabel: copy.webhooks,
         variant: 'action'
+      },
+      {
+        detail: sessionArtifacts.length > 0 ? copy.artifactsCount(sessionArtifacts.length) : undefined,
+        hidden: sessionArtifacts.length === 0,
+        icon: <Package className="size-3" />,
+        id: 'artifacts',
+        label: copy.artifacts,
+        menuItems: [
+          // Newest first — the artifact the user just watched generate is the
+          // one they reach for. More than the cap → the full list is one
+          // click away in the docked artifacts page.
+          ...[...sessionArtifacts]
+            .reverse()
+            .slice(0, 8)
+            .map(artifact => ({
+              id: `artifact-${artifact.id}`,
+              label: artifact.title,
+              onSelect: () => openArtifact(artifact.id),
+              title:
+                artifact.versions.length > 1
+                  ? `${t.artifactCard.kind[artifact.kind]} · ${t.artifactCard.versionBadge(artifact.versions.length)}`
+                  : t.artifactCard.kind[artifact.kind]
+            })),
+          {
+            id: 'artifacts-browse-all',
+            label: copy.browseAllArtifacts,
+            onSelect: () => openRouteTile(ARTIFACTS_ROUTE)
+          }
+        ],
+        title: copy.artifactsTitle,
+        toggleLabel: copy.toggleArtifacts,
+        variant: 'menu'
       }
     ],
     [
       agentsOpen,
+      attentionCount,
       botsShowing,
       commandCenterOpen,
       copy,
@@ -655,11 +733,14 @@ export function useStatusbarItems({
       inferenceReady,
       inferenceStatus?.reason,
       openAgents,
+      openCommandCenterSection,
       profileRailVisible,
       projectName,
       sessionsShowing,
+      sessionArtifacts,
       subagentsFailed,
       subagentsRunning,
+      t,
       toggleCommandCenter
     ]
   )

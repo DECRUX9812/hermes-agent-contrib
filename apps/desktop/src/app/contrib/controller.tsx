@@ -2,9 +2,14 @@ import { useStore } from '@nanostores/react'
 import { atom, computed } from 'nanostores'
 import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
 
+import { CanvasViewer } from '@/app/chat/right-rail/canvas-viewer'
+import { TableViewer } from '@/app/chat/right-rail/table-viewer'
 import { SessionDraftTitle } from '@/app/chat/session-draft-title'
 import { SessionStatusDot } from '@/app/chat/session-status-dot'
+import { SessionTabStatus } from '@/app/chat/session-tab-status'
+import { SkillTag } from '@/app/chat/skill-tag'
 import { PALETTE_AREA, type PaletteContribution, paletteToggle } from '@/app/command-palette/contrib'
+import { installChatRoomGuard } from '@/app/shell/chat-room'
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
 import { AskDirective } from '@/components/assistant-ui/ask-directive'
 import { InlinePreviewDirective } from '@/components/assistant-ui/inline-preview-directive'
@@ -13,6 +18,7 @@ import { OnboardingChatDirective } from '@/components/onboarding-chat/directive'
 import { $layoutEditMode, toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { allPaneIds } from '@/components/pane-shell/tree/model'
 import { LayoutTreeRoot } from '@/components/pane-shell/tree/renderer'
+import { paneChrome } from '@/components/pane-shell/tree/renderer/track-model'
 import {
   $layoutTree,
   bindPaneVisibility,
@@ -35,32 +41,53 @@ import {
   toggleTargetZoneTabStrip
 } from '@/components/pane-shell/tree/store'
 import { $workspaceOwnerLabels, workspaceOwnerTitle } from '@/components/pane-shell/workspace-scope'
+import { Codicon } from '@/components/ui/codicon'
 import { SidebarProvider } from '@/components/ui/sidebar'
+import { Tip } from '@/components/ui/tooltip'
 import { discoverBundledPlugins } from '@/contrib/plugins'
 import { Slot } from '@/contrib/react/slot'
 import { registry } from '@/contrib/registry'
 import { discoverRuntimePlugins } from '@/contrib/runtime-loader'
 import { LocalizedTabTitle, translateNow } from '@/i18n'
+import { isCanvasPath } from '@/lib/canvas-file'
 import { NEW_SESSION_TITLE, sessionTitle as storedSessionTitle } from '@/lib/chat-runtime'
+import { FILE_VIEWERS_AREA, type FileViewerContribution } from '@/lib/file-viewers'
 import {
+  Activity,
+  Archive,
+  BrandVscode,
   Download,
   FileText,
   LayoutDashboard,
+  Package,
   PanelBottom,
   PanelTop,
+  Pencil,
   SlidersHorizontal,
+  Terminal,
   Upload,
   Users,
   Zap
 } from '@/lib/icons'
 import { type KeybindContribution, KEYBINDS_AREA } from '@/lib/keybinds/actions'
 import { isOnboardingEnabled } from '@/lib/onboarding-enabled'
+import { SESSION_ROW_AREAS, type SessionRowSlotContribution, type SessionRowSlotProps } from '@/lib/session-row-slots'
 import { TRANSCRIPT_DIRECTIVE_AREA, type TranscriptDirectiveContribution } from '@/lib/transcript-directives'
 import { setYoloEnabled } from '@/lib/yolo-session'
+import {
+  $artifactsOpen,
+  ARTIFACTS_PANE_ID,
+  closeArtifactsRail,
+  openArtifactsRail,
+  toggleArtifactsRail
+} from '@/store/artifact-rail'
+import { createCanvas } from '@/store/canvas'
+import { $codeOpen, closeCodePane, CODE_PANE_ID, openCodePane, toggleCodePane } from '@/store/code-pane'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { watchDeadSessionPrune } from '@/store/dead-session-prune'
 import { $interfaceMode, $showsAdvancedChrome, setModeContext, toggleSimpleMode } from '@/store/interface-mode'
 import {
+  $activityRailVisible,
   $fileBrowserOpen,
   $sidebarOpen,
   FILE_BROWSER_DEFAULT_WIDTH,
@@ -73,6 +100,7 @@ import {
   SIDEBAR_MAX_WIDTH,
   sidebarSide
 } from '@/store/layout'
+import { $liveOpen, closeLivePane, LIVE_PANE_ID, openLivePane, toggleLivePane } from '@/store/live-activity'
 import { $profiles } from '@/store/profile'
 import { $profileRailVisible } from '@/store/profile-rail-prefs'
 import { runExportProfileFlow, runImportProfileFlow } from '@/store/profile-share'
@@ -94,6 +122,8 @@ import {
   ownerLookupSessionRows,
   sessionMatchesStoredId
 } from '@/store/session'
+import { runBulkArchive } from '@/store/session-bulk-archive'
+import { $mutedSessionIds } from '@/store/session-mute'
 import { watchSessionPins } from '@/store/session-pin-sync'
 import { $botChatScopes } from '@/store/session-states'
 import { watchUnreadWriteGuard } from '@/store/session-unread-remote'
@@ -116,12 +146,13 @@ import {
 import { AppContextMenu } from '../context-menu/app-context-menu'
 import { HudShell } from '../hud/hud-shell'
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
+import { continueInHermesCli } from '../right-sidebar/terminal/hermes-cli'
 import { terminalPaletteToggle } from '../right-sidebar/terminal/reveal-focus'
 import { $workspaceIsPage, WORKSPACE_PAGE_HEADER_AREA } from '../routes'
 
 import { BASIC_TREE, DEFAULT_TREE, registerLayoutPresets } from './layout-presets'
 import { bindLayoutSides } from './layout-sides'
-import { FilesPane, LogsPane, ReviewPaneContent } from './panes'
+import { ArtifactsPane, CodePane, FilesPane, LivePane, LogsPane, ReviewPaneContent } from './panes'
 import { ContribWiring, WiredPane } from './wiring'
 import { WorkspacePageHeaderHostContext } from './workspace-page-header'
 
@@ -157,6 +188,14 @@ const renderWorkspacePane = () => (
 // Boot-hidden panes mount behind display:none (instant-toggle contract) — defer
 // them to idle so they're off the first-paint path, warm before reveal.
 const idle = (node: ReactElement) => <IdleMount>{node}</IdleMount>
+
+// The Live pane reads command output, so it docks wider than the file rails
+// and may be dragged to half a laptop screen.
+// Scales with the window: roomy on a desktop monitor, never a third of a laptop.
+const LIVE_PANE_WIDTH = 'clamp(18rem, 30vw, 26rem)'
+const LIVE_PANE_MAX_WIDTH = '44rem'
+const CODE_PANE_WIDTH = 'clamp(26rem, 42vw, 48rem)'
+const CODE_PANE_MAX_WIDTH = '72rem'
 // The main tab carries the same session context menu as tile tabs (targets
 // the loaded primary session; no menu on a fresh draft).
 const wrapWorkspaceTab = (tab: ReactElement) => <WorkspaceTabMenu>{tab}</WorkspaceTabMenu>
@@ -287,6 +326,62 @@ registry.registerMany([
       tabTitleText: () => translateNow('sidebar.review')
     },
     render: () => idle(<ReviewPaneContent />)
+  },
+  {
+    id: ARTIFACTS_PANE_ID,
+    area: 'panes',
+    title: translateNow('sidebar.artifacts'),
+    // The per-session artifact rail (#32): follows the focused session, so
+    // unlike files/review it is NOT workspace-gated — a detached chat can
+    // still produce artifacts.
+    data: {
+      placement: 'right',
+      collapsible: true,
+      width: FILE_BROWSER_DEFAULT_WIDTH,
+      minWidth: FILE_BROWSER_MIN_WIDTH,
+      maxWidth: FILE_BROWSER_MAX_WIDTH,
+      tabTitle: () => <LocalizedTabTitle select={t => t.sidebar.artifacts} />,
+      tabTitleText: () => translateNow('sidebar.artifacts')
+    },
+    render: () => idle(<ArtifactsPane />)
+  },
+  {
+    id: LIVE_PANE_ID,
+    area: 'panes',
+    title: translateNow('live.title'),
+    // Follows the focused session like the artifacts rail: every tool call,
+    // raw, as it happens. Hidden until summoned (palette, a run's "Live").
+    // Docks wider than the file rails: it shows command output, not names.
+    data: {
+      placement: 'right',
+      collapsible: true,
+      width: LIVE_PANE_WIDTH,
+      minWidth: FILE_BROWSER_MIN_WIDTH,
+      maxWidth: LIVE_PANE_MAX_WIDTH,
+      tabTitle: () => <LocalizedTabTitle select={t => t.live.title} />,
+      tabTitleText: () => translateNow('live.title')
+    },
+    render: () => idle(<LivePane />)
+  },
+  {
+    id: CODE_PANE_ID,
+    area: 'panes',
+    title: translateNow('codePane.title'),
+    // The user's own VS Code on the chat's project, served on this machine.
+    // An editor wants width: it docks as wide as the live feed and drags to
+    // most of the window. Kept alive while hidden so open files and undo
+    // history survive a toggle.
+    data: {
+      placement: 'right',
+      collapsible: true,
+      lifecycleKeepAlive: true,
+      width: CODE_PANE_WIDTH,
+      minWidth: FILE_BROWSER_MIN_WIDTH,
+      maxWidth: CODE_PANE_MAX_WIDTH,
+      tabTitle: () => <LocalizedTabTitle select={t => t.codePane.title} />,
+      tabTitleText: () => translateNow('codePane.title')
+    },
+    render: () => <CodePane />
   }
 ])
 
@@ -334,6 +429,39 @@ registry.registerMany([
       label: 'Reload desktop plugins',
       keywords: ['plugins', 'reload', 'refresh', 'desktop'],
       run: () => void discoverRuntimePlugins()
+    } satisfies PaletteContribution
+  },
+  // Bulk rail filing (the filter menu runs the same sweep): candidates are
+  // the rail's idle + read + unpinned rows; each takes the row's own archive
+  // path after one shared confirmation.
+  {
+    id: 'sessions.archiveFinished',
+    area: PALETTE_AREA,
+    data: {
+      id: 'sessions.archiveFinished',
+      label: 'Archive finished sessions',
+      icon: Archive,
+      keywords: ['archive', 'sessions', 'finished', 'cleanup', 'tidy'],
+      run: () => void runBulkArchive()
+    } satisfies PaletteContribution
+  },
+  {
+    id: 'sessions.archiveOlder',
+    area: PALETTE_AREA,
+    data: {
+      id: 'sessions.archiveOlder',
+      label: 'Archive sessions older than…',
+      icon: Archive,
+      keywords: ['archive', 'sessions', 'old', 'stale', 'cleanup'],
+      // The bare row runs the sensible default; a day-count row per preset
+      // expands beneath it on every palette open.
+      run: () => void runBulkArchive(30),
+      items: () =>
+        [7, 30, 90].map(days => ({
+          id: `sessions.archiveOlder.${days}`,
+          label: `${days} days`,
+          run: () => void runBulkArchive(days)
+        }))
     } satisfies PaletteContribution
   },
   // The core `::preview{file="…"}` transcript directive — the model (or a
@@ -532,10 +660,17 @@ const syncWorkspaceTitle = () => {
       // fresh draft has no session to key by, which IS its status: the dot
       // resolves to `draft` and marks the tab rather than leaving a hole.
       tabLead: () => <SessionStatusDot session={stored} storedSessionId={selected} />,
+      // The same per-tab status the session tiles carry — the workspace tab
+      // is a session tab too, so it shows elapsed + what it's doing.
+      tabTrail: () => <SessionTabStatus storedSessionId={selected} />,
+      contentTitle: true,
       // A draft's name lives in its composer, not in any session row, so the
       // label subscribes to it directly — typing renames the tab without
       // re-registering the pane.
       tabTitle: stored ? undefined : () => <SessionDraftTitle scope={selected} />,
+      // The focused conversation's skill count, pinned to the zone strip's
+      // trailing edge (the pane strip is the conversation's header here).
+      stripTrail: () => <SkillTag storedSessionId={selected} />,
       // Pages aren't tab-able: the main zone's bar stands down while one shows.
       headerVeto: $workspaceIsPage.get(),
       // Page-owned controls take the vetoed tab row. Deliberately NOT the
@@ -618,6 +753,14 @@ bindPaneVisibility(
   closeReview,
   () => openReview($reviewScopeCwd.get(), $reviewScopeTarget.get())
 )
+// The artifacts rail follows the focused session — no workspace gate.
+bindPaneVisibility('artifacts', $artifactsOpen, closeArtifactsRail, openArtifactsRail)
+// The live action feed, same shape: follows the focused session, no workspace gate.
+bindPaneVisibility(LIVE_PANE_ID, $liveOpen, closeLivePane, openLivePane)
+// VS Code beside the chat, same shape: on until closed, no workspace gate (the pane explains a bare chat).
+bindPaneVisibility(CODE_PANE_ID, $codeOpen, closeCodePane, openCodePane)
+// Small windows: the sidebar folds before the chat gets unreadably narrow.
+installChatRoomGuard()
 // ⌃` / statusbar toggle — the terminal COLLAPSES to a rail (tab stays), not
 // hides; PTYs stay alive while collapsed (see PersistentTerminal). Simple has
 // no terminal: where chrome is off a closed one hides, rail and all, and ⌃`
@@ -634,6 +777,54 @@ $profiles.subscribe(profiles => setModeContext({ profileCount: profiles.length }
 $connectionsRegistry.subscribe(registry => setModeContext({ connectionCount: registry?.connections.length ?? 0 }))
 // ⌘K door onto the same pane the keybind and statusbar pill flip.
 registry.register(terminalPaletteToggle)
+
+// ⌘K door for the artifact rail (the session-row menu is the other).
+registry.register(
+  paletteToggle({
+    id: 'artifacts.toggle',
+    label: 'Toggle artifacts rail',
+    icon: Package,
+    keywords: ['artifacts', 'deliverables', 'outputs', 'files', 'rail', 'show', 'hide'],
+    // On-screen truth, same contract as the logs toggle below.
+    get: () => isPaneVisible(ARTIFACTS_PANE_ID),
+    set: () => toggleArtifactsRail()
+  })
+)
+
+// ⌘K door for the live action feed (a run summary's "Live" is the other).
+registry.register(
+  paletteToggle({
+    id: 'live.toggle',
+    label: 'Toggle live activity',
+    icon: Activity,
+    keywords: ['live', 'activity', 'actions', 'commands', 'terminal', 'output', 'tool calls', 'watch', 'verbose'],
+    get: () => isPaneVisible(LIVE_PANE_ID),
+    set: () => toggleLivePane()
+  })
+)
+
+// ⌘K doors for the developer pair: VS Code beside the chat, Hermes CLI below it.
+registry.register(
+  paletteToggle({
+    id: 'code.toggle',
+    label: 'Toggle VS Code',
+    icon: BrandVscode,
+    keywords: ['vscode', 'vs code', 'editor', 'code', 'ide', 'open files', 'edit'],
+    get: () => isPaneVisible(CODE_PANE_ID),
+    set: () => toggleCodePane()
+  })
+)
+registry.register({
+  id: 'cli.here',
+  area: PALETTE_AREA,
+  data: {
+    id: 'cli.here',
+    label: 'Continue in Hermes CLI',
+    icon: Terminal,
+    keywords: ['cli', 'tui', 'terminal', 'hermes', 'resume', 'command line'],
+    run: () => void continueInHermesCli($selectedStoredSessionId.get(), { cwd: $currentCwd.get().trim() || undefined })
+  } satisfies PaletteContribution
+})
 
 // Logs are ⌘K-ONLY chrome: the pane contribution EXISTS only while $logsOpen
 // is on. Off (the default) keeps logs out of the registry and the tree
@@ -719,9 +910,7 @@ registry.register(
   const stripTabToggles = new Map<string, () => void>()
 
   const syncStripTabToggles = () => {
-    const hideOnlyPanes = registry
-      .getArea('panes')
-      .filter(c => (c.data as { hideOnly?: boolean } | undefined)?.hideOnly)
+    const hideOnlyPanes = registry.getArea('panes').filter(c => paneChrome(c).hideOnly)
 
     const wanted = new Set(hideOnlyPanes.map(c => c.id))
 
@@ -798,11 +987,75 @@ registerPaneCloser('files', () =>
   paneRootSide('files') === fileBrowserSide() ? setFileBrowserOpen(false) : dismissTreePane('files')
 )
 
+// A muted session's row carries a quiet bell-slash in the trailing seam —
+// passive state, same as the unread dot; the mute itself toggles from the
+// row's context menu. The slot's sessionId is the durable pin id, which is
+// exactly the key $mutedSessionIds stores.
+function MutedSessionGlyph({ sessionId }: SessionRowSlotProps) {
+  const mutedSessionIds = useStore($mutedSessionIds)
+
+  if (!mutedSessionIds.includes(sessionId)) {
+    return null
+  }
+
+  return (
+    <Tip label={translateNow('sidebar.row.mutedTooltip')}>
+      <Codicon className="text-(--ui-text-tertiary)" name="bell-slash" size="0.75rem" />
+    </Tip>
+  )
+}
+
+registry.register({
+  id: 'session-row.mutedGlyph',
+  area: SESSION_ROW_AREAS.trailing,
+  data: {
+    render: ({ sessionId }) => <MutedSessionGlyph sessionId={sessionId} />
+  } satisfies SessionRowSlotContribution
+})
+
+// `.excalidraw` files as a live canvas you and the agent share (the file is
+// the shared surface; the heavy editor loads only when one opens).
+registry.register({
+  id: 'viewer.canvas',
+  area: FILE_VIEWERS_AREA,
+  data: {
+    label: () => translateNow('preview.canvas'),
+    matches: isCanvasPath,
+    preferred: 'always',
+    render: ({ filePath, text }) => <CanvasViewer filePath={filePath} text={text} />
+  } satisfies FileViewerContribution
+})
+
+registry.register({
+  id: 'canvas.new',
+  area: PALETTE_AREA,
+  data: {
+    id: 'canvas.new',
+    label: 'New canvas',
+    icon: Pencil,
+    keywords: ['canvas', 'draw', 'sketch', 'whiteboard', 'diagram', 'excalidraw', 'tldraw'],
+    run: () => void createCanvas()
+  } satisfies PaletteContribution
+})
+
+// The first file viewer: CSV/TSV as a table, through the same area plugins use.
+registry.register({
+  id: 'viewer.table',
+  area: FILE_VIEWERS_AREA,
+  data: {
+    label: () => translateNow('preview.table'),
+    matches: filePath => /\.(csv|tsv)$/i.test(filePath),
+    preferred: true,
+    render: ({ filePath, text }) => <TableViewer filePath={filePath} text={text} />
+  } satisfies FileViewerContribution
+})
+
 // ---------------------------------------------------------------------------
 
 export function ContribController() {
   const sidebarOpen = useStore($sidebarOpen)
   const statusbarVisible = useStore($statusbarVisible)
+  const activityRail = useStore($activityRailVisible)
 
   // HUD mode is the SAME app with its frame removed: the wiring (gateway,
   // sessions, streams, submit) mounts identically, and only the shell around
@@ -844,7 +1097,10 @@ export function ContribController() {
           data-contrib-shell=""
           style={{ '--titlebar-height': '0px' } as CSSProperties}
         >
-          <LayoutTreeRoot titlebar />
+          <div className="flex min-h-0 flex-1">
+            {activityRail && <WiredPane part="rail" />}
+            <LayoutTreeRoot titlebar />
+          </div>
 
           {/* "Close running tab?" — the busy/input-blocked tile close gate. */}
           <SessionTileCloseConfirm />

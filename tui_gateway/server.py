@@ -670,6 +670,24 @@ def _default_session_cwd() -> str:
     return _launch_configured_cwd() or os.getenv("TERMINAL_CWD") or os.getcwd()
 
 
+def _headless_server_log_frame(obj: dict) -> dict:
+    """Return a log-safe copy of a headless server's fallback frame."""
+    if not os.getenv("HERMES_SERVE_HEADLESS") or obj.get("method") != "event":
+        return obj
+    params = obj.get("params")
+    if not isinstance(params, dict) or params.get("type") != "session.info":
+        return obj
+    payload = params.get("payload")
+    if not isinstance(payload, dict) or "system_prompt" not in payload:
+        return obj
+
+    safe_payload = dict(payload)
+    safe_payload["system_prompt"] = "[redacted from hermes serve log]"
+    safe_params = dict(params)
+    safe_params["payload"] = safe_payload
+    return {**obj, "params": safe_params}
+
+
 def write_json(obj: dict) -> bool:
     """Emit one JSON frame via the most-specific transport: (1) event frames with a session id → that
     session's transport (async events reach the owner even from threads with no contextvar binding);
@@ -687,7 +705,11 @@ def write_json(obj: dict) -> bool:
         sid = ((params or {}).get("session_id")) if isinstance(params, dict) else ""
         if sid and (t := (_sessions.get(sid) or {}).get("transport")) is not None:
             return t.write(obj)
-    return (current_transport() or _stdio_transport).write(obj)
+    if (transport := current_transport()) is not None:
+        return transport.write(obj)
+    # Under the headless `serve` command, stdio is a server log sink (systemd persists it in journald), not the
+    # authenticated client transport. Keep the frame intact for WS clients; make this last-resort path log-safe.
+    return _stdio_transport.write(_headless_server_log_frame(obj))
 
 
 def _event_frame(event: str, sid: str, payload: dict | None = None) -> dict:
@@ -1087,6 +1109,14 @@ def _attach_built_agent(sid: str, current: dict, agent) -> bool:
     with _sessions_lock:
         if _sessions.get(sid) is not current:
             return False
+        # Same pre-row window for a bot topic: the durable model_config marker lands with
+        # the row, so the session-dict flag is the hint until then.
+        if current.get("bot_topic"):
+            agent._bot_topic = True
+        # Team-room marker: same session-lifetime hint — the prompt builds before the row may be re-read.
+        if current.get("team_room"):
+            agent._team_room = True
+            agent._team_room_lead = current.get("team_room_lead") or None
         current["agent"] = agent
     # A workspace move can land while construction is still in flight.
     _register_session_cwd(current)
@@ -1850,6 +1880,9 @@ def _append_model_switch_marker(session: dict | None, *, model: str, provider: s
                 # switches leave N active rows that all replay on resume (#65891 kept it in memory only).
                 db.deactivate_messages_by_display_kind(target, "model_switch")
                 from agent.message_metadata import stamp_message_uid
+                # Same stale-key hazard as the submit row: this durable pivot must land in the session the
+                # live agent writes to, or a model switch between turns on a rotated session files the notice
+                # under a parent the conversation no longer reads from (#123545).
                 entry["_row_id"] = db.append_message(
                     session_id=target, role="user", content=marker, display_kind="model_switch",
                     message_uid=stamp_message_uid(entry))
@@ -2150,7 +2183,11 @@ def _tool_lifecycle_required_for_ui(name: str) -> bool:
     The start and complete guards both consult this set, so a card's
     `tool.complete` can never arrive without its `tool.start`.
     """
-    return name in _TOOL_LIFECYCLE_UI_TOOLS
+    if name in _TOOL_LIFECYCLE_UI_TOOLS:
+        return True
+    # An MCP App tool draws its own UI in the row (tools/mcp_apps.py).
+    from tools.mcp_apps import app_for_registry_name
+    return name.startswith("mcp__") and app_for_registry_name(name) is not None
 
 
 def _restart_slash_worker(sid: str, session: dict):
@@ -2409,8 +2446,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
                 name = t["function"]["name"]
                 info["tools"].setdefault(get_toolset_for_tool(name) or "other", []).append(name)
         with contextlib.suppress(Exception):
-            from hermes_cli.banner import get_available_skills
-            info["skills"] = get_available_skills()
+            info["skills"] = _session_skills(session_key, sess)
     info["mcp_servers"] = []
     with contextlib.suppress(Exception):
         from tools.mcp_tool_discovery import get_mcp_status
@@ -2428,6 +2464,40 @@ def _session_info(agent, session: dict | None = None) -> dict:
     if live_agent and (warn := _probe_credentials(agent)):
         info["credential_warning"] = warn
     return info
+
+
+# Per-session memo TTL for the skills map, mirroring tools.skills_tool._SKILLS_CACHE_TTL_SECONDS:
+# _find_all_skills' single signature slot thrashes between multiplexed sessions, so without a
+# per-session memo each broadcast would pay a full tree walk.
+_SESSION_SKILLS_TTL_SECONDS = 30.0
+
+
+def _session_skills(session_key: str, session: dict) -> dict:
+    """The session's skill set grouped by category, resolved under THIS session's cwd + profile
+    home — the same pin the agent build and _persist_live_session_system_prompt apply — so
+    broadcast/off-turn callers never leak the caller's context onto another session (#114359
+    pinned the same context for commands.catalog / complete.slash / skills.reload). Memoized on
+    the session record.
+
+    Scans _find_all_skills directly rather than banner.get_available_skills: the banner memo is
+    per-process, so under the launch profile the first session's (or the startup prefetch's)
+    result would answer every session — project skills would never differ by cwd."""
+    now = time.monotonic()
+    cached = session.get("_skills_info_cache")
+    if isinstance(cached, tuple) and now - cached[0] < _SESSION_SKILLS_TTL_SECONDS:
+        return dict(cached[1])
+    tokens = _set_session_context(session_key, cwd=_session_cwd(session))
+    try:
+        with _session_profile_runtime_scope(session, hydrate_secrets=False):
+            from tools.skills_tool import _find_all_skills
+            skills: dict = {}
+            for skill in _find_all_skills():
+                skills.setdefault(skill.get("category") or "general", []).append(skill["name"])
+    finally:
+        _clear_session_context(tokens)
+    if session:
+        session["_skills_info_cache"] = (now, skills)
+    return dict(skills)
 
 
 def _tool_ctx(name: str, args: dict) -> str:
@@ -3644,17 +3714,20 @@ from . import (  # noqa: E402
     session_lifecycle as _session_lifecycle, session_reaper as _session_reaper,
     session_transports as _session_transports,
     methods_browser_control as _methods_browser_control, methods_bot_relay as _methods_bot_relay,
+    methods_bot_mailbox as _methods_bot_mailbox, methods_bot_team as _methods_bot_team,
     methods_complete as _methods_complete, methods_config as _methods_config,
     methods_config_set as _methods_config_set, methods_images as _methods_images,
     methods_profiles as _methods_profiles, methods_prompt as _methods_prompt, methods_session as _methods_session,
     methods_tools as _methods_tools, prompt_turn as _prompt_turn, billing_view as _billing_view,
     methods_projects as _methods_projects, methods_session_foreign as _methods_session_foreign,
     methods_session_control as _methods_session_control, methods_subagents as _methods_subagents,
+    methods_delegation_reports as _methods_delegation_reports,
+    methods_session_ask as _methods_session_ask,
     methods_vault as _methods_vault, methods_free_tier as _methods_free_tier,
     methods_connectors as _methods_connectors, methods_connectors_account as _methods_connectors_account,
     methods_display as _methods_display, methods_display_watch as _methods_display_watch,
     methods_onboarding as _methods_onboarding, methods_i18n as _methods_i18n,
-    methods_shared_metrics as _methods_shared_metrics)
+    methods_shared_metrics as _methods_shared_metrics, methods_mcp_apps as _methods_mcp_apps)
 
 for _m in (
     _session_transports, _session_reaper, _session_lifecycle, _session_workdir, _compute_host_bridge, _model_switch,
@@ -3663,9 +3736,9 @@ for _m in (
     _methods_complete_helpers, _methods_slash, _methods_voice, _methods_browser,
     _methods_browser_control, _methods_session, _methods_prompt, _methods_config,
     _methods_config_set, _methods_complete, _methods_tools, _methods_profiles, _methods_images,
-    _methods_bot_relay, _prompt_turn, _billing_view, _methods_projects, _methods_session_foreign,
-    _methods_session_control, _methods_subagents, _methods_vault, _methods_free_tier, _methods_connectors,
+    _methods_bot_relay, _methods_bot_mailbox, _methods_bot_team, _prompt_turn, _billing_view, _methods_projects, _methods_session_foreign,
+    _methods_session_control, _methods_subagents, _methods_delegation_reports, _methods_session_ask, _methods_vault, _methods_free_tier, _methods_connectors,
     _methods_connectors_account, _methods_display, _methods_display_watch, _methods_onboarding,
-    _methods_i18n, _methods_shared_metrics):
+    _methods_i18n, _methods_shared_metrics, _methods_mcp_apps):
     _m.register(sys.modules[__name__])
 del _m

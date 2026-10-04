@@ -60,6 +60,11 @@ export const $introDismissed = atom<boolean>(false)
  *  profile"). Persisted. */
 export const $lanesByProfile = atom<boolean>(false)
 
+/** Team lanes: replace the status columns with one lane per profile —
+ *  dropping a card on a lane delegates it to that agent (reassign). The
+ *  status move stays on the card's context menu. Persisted. */
+export const $teamLanes = atom<boolean>(false)
+
 /** Per-lane collapse OVERRIDES (true=collapsed, false=expanded). Absence means
  *  auto: empty lanes collapse to a rail, occupied lanes expand. Persisted. */
 export const $collapsedLanes = atom<Record<string, boolean>>({})
@@ -72,6 +77,7 @@ const KANBAN_KEY_ROOT = ['kanban'] as const
 const BOARD_SLUG_KEY = 'boardSlug'
 const INTRO_KEY = 'introDismissed'
 const LANES_KEY = 'lanesByProfile'
+const TEAM_LANES_KEY = 'teamLanes'
 const COLLAPSED_KEY = 'collapsedLanes'
 
 // Last frame cursor per (connection, board) this plugin bind. The socket
@@ -224,6 +230,7 @@ export function bindApi(
 
   persist($introDismissed, INTRO_KEY, false)
   persist($lanesByProfile, LANES_KEY, false)
+  persist($teamLanes, TEAM_LANES_KEY, false)
   persist($collapsedLanes, COLLAPSED_KEY, {})
 
   eventCursorByBoard.clear()

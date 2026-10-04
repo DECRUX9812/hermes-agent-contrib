@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useI18n } from '@/i18n'
 import { sanitizeTextForSpeech } from '@/lib/speech-text'
 import { type LiveHistoryMessage, type LiveTranscriptFragment, VoiceLiveSession } from '@/lib/voice-live'
+import { isVoiceStatusQuestion } from '@/lib/voice-status'
 import { isVoiceStopCommand } from '@/lib/voice-stop-word'
 import { notify, notifyError } from '@/store/notifications'
 
@@ -30,6 +31,10 @@ interface VoiceLiveConversationOptions {
   /** Interrupt the in-flight Hermes turn (Stop-button seam). Fired when a new
    *  delegation supersedes one still running. */
   onInterrupt?: () => Promise<void> | void
+  /** A whole-utterance "what's it doing?" delegation is answered here —
+   *  composed from the session stores, never submitted as a turn. Return null
+   *  to let the delegation submit normally. */
+  onStatusQuestion?: () => null | string
   onStopWord?: () => void
   /** Submit a Hermes turn: `text` is the user's last words (the bubble and the
    *  persisted row), `voiceContext` the recent spoken exchange for the model. */
@@ -106,6 +111,7 @@ export function useVoiceLiveConversation({
   enabled,
   onFatalError,
   onInterrupt,
+  onStatusQuestion,
   onStopWord,
   onSubmit,
   pendingResponse,
@@ -154,6 +160,7 @@ export function useVoiceLiveConversation({
     beforeMicOpen,
     onFatalError,
     onInterrupt,
+    onStatusQuestion,
     onStopWord,
     onSubmit,
     pendingResponse,
@@ -166,6 +173,7 @@ export function useVoiceLiveConversation({
     beforeMicOpen,
     onFatalError,
     onInterrupt,
+    onStatusQuestion,
     onStopWord,
     onSubmit,
     pendingResponse,
@@ -304,6 +312,19 @@ export function useVoiceLiveConversation({
             latest.current.onStopWord?.()
 
             return
+          }
+
+          // A whole-utterance "what's it doing?" is answered from the stores
+          // and rides back as commentary — no Hermes turn, no interruption of
+          // the in-flight one.
+          if (prompt && isVoiceStatusQuestion(prompt)) {
+            const reply = latest.current.onStatusQuestion?.()
+
+            if (reply != null) {
+              session.speak(delegationId, reply)
+
+              return
+            }
           }
 
           // A newer request supersedes an in-flight turn: stop it so the answer

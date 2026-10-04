@@ -271,6 +271,37 @@ data: {
 `'top' | 'bottom' | 'left' | 'right' | 'center'`. Declare a `width`/`height` so
 the pane doesn't claim half the zone.
 
+The whole `data` payload is typed as **`PaneContribution`** (dock hints are
+`PaneDockHint`, placements `PanePlacementHint`) — in TypeScript, author it with
+`satisfies` so a misspelled flag is a compile error instead of a silently
+ignored hint:
+
+```typescript
+import { PANES_AREA, type PaneContribution } from '@hermes/plugin-sdk'
+
+ctx.register({
+  id: 'pane',
+  area: PANES_AREA,
+  title: 'my pane',
+  data: {
+    placement: 'right',
+    width: '260px',
+    collapsible: true, // leaves the grid on narrow viewports (edge overlay)
+    hideOnly: true, // no ✕/Close verb — Show/Hide instead (standing chrome)
+    tabTitle: () => jsx(MyTabLabel, {}), // live label, beats `title`
+    tabTitleText: () => 'my pane', // string form for menus/drag ghost
+    dock: { pane: 'sessions', pos: 'center', enforce: true }
+  } satisfies PaneContribution,
+  render: () => jsx(MyPane, {})
+})
+```
+
+`PaneContribution` also covers `lifecycleKeepAlive` (stay mounted while hidden),
+`headerVeto` + `headerContent` (page-owned chrome), `tabLead`/`tabTrail`/
+`stripTrail`/`newTab`/`tabWrap`/`tabMenuPrefix`/`tabDrag` (tab + strip
+behavior), `revealAliases`, floating `anchor`, and the `PaneSizing` fields
+(`width`/`height`/`minWidth`/`maxWidth`/`minHeight`/`maxHeight`).
+
 Closing the only pane contributed by a plugin disables that plugin, which can
 be re-enabled from **Capabilities → Plugins**. When a plugin contributes multiple
 panes, closing one dismisses only that pane and leaves the plugin's other panes,
@@ -420,6 +451,8 @@ Both doors persist per profile, so a plugin-driven switch sticks exactly like a
 manual pick. To tint the *active* theme rather than replace it, use
 `setAccentOverride(hex)` and clear it in `ctx.onDispose` — the standalone
 [Accent Picker](https://github.com/NousResearch/hermes-desktop-accent-picker)
+plugin is the worked example (it is also a complete, installable disk plugin).
+
 plugin is the worked example (it is also a complete, installable disk plugin).
 
 #### Styling the chat switch — `data-session-switching`
@@ -691,60 +724,6 @@ register(ctx) {
 
 The reasoning-pill visibility CSS the plugin also injected has no hook; it is
 only needed if the app ever hides that label at narrow widths.
-
-#### Model menu row decorations
-
-`MODEL_MENU_ROW_AREA` puts a per-model mark inside the native model menu — the
-one the composer's pill opens, and every other surface that renders
-`ModelCatalogMenu`. A contribution supplies `decorate(row)`; core paints what it
-returns in two fixed slots of the row: a **leading icon** before the model name
-and a **trailing badge** after core's own chips. The row's markup, name,
-star, submenu and click stay core's.
-
-```ts
-import { MODEL_MENU_ROW_AREA, type ModelMenuRowContribution } from '@hermes/plugin-sdk'
-
-interface ModelMenuRowContext {
-  provider: string  // provider slug: 'anthropic', 'openrouter', …
-  model: string     // the model id the row commits
-  label: string     // the display name core paints on the row
-}
-interface ModelMenuRowDecoration {
-  icon?: ReactNode  // element (<img>, <svg>, a component) or short text, drawn in a 1rem box
-  badge?: string    // plain text chip
-}
-
-ctx.register({
-  area: MODEL_MENU_ROW_AREA,
-  id: 'provider-marks',
-  data: {
-    decorate: ({ provider }) => {
-      const src = PROVIDER_ICONS[provider]   // data: URL of an SVG mark
-      return src ? { icon: <img alt="" src={src} /> } : null
-    }
-  } satisfies ModelMenuRowContribution
-})
-```
-
-**Arbitration.** Decorators run in registry order, **per slot**: the first one
-that returns a usable `icon` fills the icon slot, the first usable `badge` the
-badge slot, so an icon plugin and a pricing-badge plugin compose on the same
-row. `null` (or nothing usable) declines. Only a React element or a non-empty
-string is an icon and only a non-empty string is a badge; anything else is
-ignored rather than rendered. A decorator that **throws** declines too, and an
-icon component that throws while rendering blanks only its own slot (it sits
-in its own error boundary) — a broken plugin can never take the menu down.
-`decorate()` re-runs only when the registry or the row's provider/model/label
-changes, so keep it a pure lookup.
-
-**Teardown.** An ordinary data contribution: the `ctx.register` disposer (and
-plugin disable/reload) removes it and the rows repaint bare.
-
-**Migrating t3-code-theme.** Its provider marks were painted into the open menu
-by a `MutationObserver` that located the rows in the menu's DOM and wrote mask
-images onto them. The same marks come from `decorate({ provider })` returning
-`{ icon: <img alt="" src={providerSvgDataUrl(provider)} /> }` — no DOM reads,
-and the row keeps working when the menu's markup changes.
 
 ### Appearance settings
 
@@ -1020,6 +999,7 @@ host.state.cwd              // ReadableAtom<string>
 host.state.gateway          // ReadableAtom<string>  socket state ('idle' | 'connecting' | 'open' | …)
 host.state.model            // ReadableAtom<string>
 host.state.profile          // ReadableAtom<string>
+host.state.showsAdvancedChrome // ReadableAtom<boolean>  true in Advanced mode — gate developer-only tiers on this, not a core import
 host.state.viewport         // ReadableAtom<{ width, height, narrow }>
 ```
 
@@ -1728,8 +1708,8 @@ pipeline as a trust boundary.
 |----------|---------|
 | Host | `host` (`.state.*`, `.settings`, `.notify`, `.notifyError`, `.navigate`, `.onEvent`, `.logs`, `.status`, `.restartGateway`, `.request`, `.composer`, `.sessions`, `.skills`, `.toolsets`, `.profiles`, `.pluginDecisions`) |
 | Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `HermesOpenTarget`, `Contribution` |
-| Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `COMPOSER_AREAS`, `MODEL_MENU_ROW_AREA`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS` |
-| Area payloads | `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution` |
+| Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `LAYOUTS_AREA`, `COMPOSER_AREAS`, `MODEL_MENU_ROW_AREA`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS` |
+| Area payloads | `PaneContribution` (+ `PaneDockHint`, `PanePlacementHint`, `PaneSizing`), `LayoutNode`, `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `ComposerModelPillProvider`, `ChatEmptyContribution`, `TranscriptDirectiveContribution`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution`, `ProfileGroupHeaderContribution`, `SidebarListTopContribution` |
 | React / state | `useValue`, `atom`, `computed`, `useQuery`, `useMutation`, `useQueryClient`, `queryClient`, `Contribute`, `WorkspacePageHeaderControl` |
 | Theming | `useTheme`, `requestTheme`, `setAccentOverride`, `$accentOverride`, `retintTheme`, `themeHue`, `DesktopTheme`, `DesktopThemeColors`, plus OKLCH math (`hexToOklch`, `oklchToHex`, `oklchToSrgb255`, `mixOklab`, `maxChroma`, `hueDelta`, `normalizeHex`) and sRGB measures (`contrastRatio` — `number | null`, null for unparseable input — `readableOn`) |
 | UI kit | `Button`, `Input`, `Textarea`, `Select*`, `Switch`, `Checkbox`, `SegmentedControl`, `Tabs*`, `Dialog*`, `ConfirmDialog`, `DropdownMenu*`, `ContextMenu*`, `Popover*`, `Tip`/`Tooltip*`, `Badge`, `Kbd`/`KbdGroup`, `SearchField`, `ScrollArea`, `Separator`, `Skeleton`, `GlyphSpinner`, `Loader`, `EmptyState`, `ErrorState`, `CopyButton`, `StatusDot`, `LogView`, `Codicon`, `DecodeText`, `SandboxedFrame` |

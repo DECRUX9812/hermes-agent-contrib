@@ -92,6 +92,9 @@ import { tabStripVisibleForZone } from './strip-visibility'
 import { useActiveTabVisible } from './tab-strip-scroll'
 import { paneChrome } from './track-model'
 
+/** Session tabs carry a conversation title (see PaneChrome.contentTitle). */
+const CONTENT_TAB_LABEL = 'normal-case tracking-normal text-[length:max(var(--tab-label-size),0.6875rem)]'
+
 /** Right-click zone menu: the tab verbs (close this / others / to the right /
  *  all) plus the strip's own chrome toggles. Same items and icons as a session
  *  tab's menu, so every tab in a strip answers a right-click the same way —
@@ -306,6 +309,9 @@ export function TreeGroup({
   const tabsBelowControls = topEdge && (sidebarGroup || measuredBelowControls)
   const tabsInTitlebar = topEdge && !tabsBelowControls
   const pageHeader = paneChrome(active).headerContent
+  // The active pane's strip-trailing affordance (a session's skill chip) —
+  // pinned right of the tab list, never scrolled away.
+  const stripTrail = paneChrome(active).stripTrail
 
   // What the strip's "+" makes. The pane you are LOOKING AT answers first (a
   // Browser tab makes another Browser, even stacked into the chat strip), then
@@ -321,7 +327,7 @@ export function TreeGroup({
   const newTab =
     ownNewTab(activeId) ??
     (shown.some(isSessionStripPane) && newSessionTabAction
-      ? { label: t.zones.newSessionTab, onSelect: newSessionTabAction }
+      ? { label: t.zones.newSessionTab, onSelect: () => newSessionTabAction() }
       : null) ??
     shown.map(ownNewTab).find(Boolean) ??
     null
@@ -598,6 +604,16 @@ export function TreeGroup({
                 titlebar={tabsInTitlebar}
                 trailing={
                   <>
+                    {stripTrail && (
+                      // Pointerdown is claimed so the chip's click can't also
+                      // activate/drag a tab or move the window behind the strip.
+                      <span
+                        className="flex shrink-0 items-center self-center [-webkit-app-region:no-drag]"
+                        onPointerDown={event => event.stopPropagation()}
+                      >
+                        {stripTrail()}
+                      </span>
+                    )}
                     {minimizable && (
                       <button
                         aria-label={node.minimized ? t.zones.restore : minimizeLabel}
@@ -718,7 +734,17 @@ export function TreeGroup({
                           </TabKeyHint>
                         </span>
                       ) : null}
-                      <PaneTabLabel>{tabLabel(paneId)}</PaneTabLabel>
+                      <PaneTabLabel className={chrome.contentTitle ? CONTENT_TAB_LABEL : undefined}>
+                        {tabLabel(paneId)}
+                      </PaneTabLabel>
+                      {chrome.tabTrail ? (
+                        // Per-tab live status (a session tile's elapsed +
+                        // current tool) — every tab carries it, so it yields
+                        // space to the label and hides on the vertical rail.
+                        <span className="-ml-1 mr-2 flex min-w-0 items-center group-data-[vertical]/tab:hidden">
+                          {chrome.tabTrail()}
+                        </span>
+                      ) : null}
                     </PaneTab>
                   )
 

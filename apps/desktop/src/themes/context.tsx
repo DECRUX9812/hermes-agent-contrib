@@ -33,6 +33,7 @@ import { $chatFontFamily, resolveChatFontFamily } from './chat-font'
 import { harmonize, readableInk } from './color'
 import { BUILTIN_THEME_LIST, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme, RETIRED_SKINS } from './presets'
 import { retintTheme } from './retint'
+import { textMixKnobs } from './text-ramp'
 import type { DesktopTheme, DesktopThemeColors } from './types'
 import { $userThemes, listAllThemes, resolveTheme } from './user-themes'
 
@@ -296,7 +297,16 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
     '--noise-opacity-mul': isDark ? 'calc(0.04 / 0.21)' : 'calc(0.34 / 0.21)'
   }
 
-  for (const [k, v] of Object.entries({ ...seeds, ...mixesFor(isDark), ...palette })) {
+  // Muted-text share is resolved per skin so its faint tiers clear their contrast floors
+  // (themes/text-ramp.ts) — a low-contrast palette gets exactly the lift it needs.
+  const textSurfaces = [c.background, c.sidebarBackground].filter((s): s is string => Boolean(s))
+
+  for (const [k, v] of Object.entries({
+    ...seeds,
+    ...mixesFor(isDark),
+    ...textMixKnobs(c.foreground, textSurfaces, isDark),
+    ...palette
+  })) {
     root.style.setProperty(k, v)
   }
 

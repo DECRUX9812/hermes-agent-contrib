@@ -18,6 +18,7 @@ import {
   $composerAttachments,
   type ComposerAttachment,
   freezeComposerTransportPayload,
+  isFreshDraftScope,
   mainComposerScope,
   revokeDiscardedAttachmentPreviews
 } from '@/store/composer'
@@ -416,6 +417,11 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
       // the created chat after createBackendSessionForSend. submitTargetStoredId
       // is the stored session this submit targets, so a move ONTO it (the
       // pipeline's own re-home) is never counted as drift.
+      // The composer's snapshot of what it had loaded. A fresh chat's scope
+      // (`__new__…`) names the session this submit is about to create, so once
+      // create re-homes onto it (below) that session IS the composer's scope.
+      let submitComposerScope = options?.composerScope
+
       const sessionDriftReason = (): string | null =>
         targetStartedInCurrentView
           ? sessionContextDrift({
@@ -424,7 +430,7 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
               startSelectedStoredId: startingSelectedStoredSessionId,
               nowSelectedStoredId: selectedStoredSessionIdRef.current,
               submitTargetStoredId: startingStoredSessionId,
-              composerScope: options?.composerScope,
+              composerScope: submitComposerScope,
               // The composer keys drafts/attachments on the durable lineage
               // root (survives auto-compression tip rotation), while
               // startingStoredSessionId is the live tip — resolve the target
@@ -844,6 +850,11 @@ export function useSubmitPrompt(deps: SubmitPromptDeps) {
         startingStoredSessionId = selectedStoredSessionIdRef.current
         startingSelectedStoredSessionId = selectedStoredSessionIdRef.current
         startingRouteToken = getRouteToken()
+
+        if (isFreshDraftScope(submitComposerScope)) {
+          submitComposerScope = resolveComposerSessionKey(startingStoredSessionId, $sessions.get())
+        }
+
         // The target too: it was captured BEFORE the create (null for a fresh
         // draft) and seedOptimistic hands it to updateSessionState as the
         // stored id, which the state cache reads as a deliberate DETACH — so

@@ -76,6 +76,7 @@ export interface WiringActions extends SidebarActions, ChatActions {
  *  key inside a registered pane / chrome slot. */
 export interface WiringApi {
   sidebar: ReactNode
+  rail: ReactNode
   chatRoutes: ReactNode
   terminal: ReactNode
   statusbar: ReactNode

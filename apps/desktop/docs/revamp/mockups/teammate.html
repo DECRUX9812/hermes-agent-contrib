@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes Desktop — Teammate panel: Work + Profile (target)</title>
+<link rel="stylesheet" href="real-tokens.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="app.css">
+<style>.app { --right-w: 26rem; }</style>
+</head><body>
+<script src="app.js"></script>
+<script>
+  const q = new URLSearchParams(location.search), tab = q.get('tab') || 'work', adv = MODE === 'advanced'
+  const head = `
+    <div class="tm-head">${face('atlas', 44, 'working', 'on-widget')}
+      <div><h3>Atlas <span class="badge default"><span class="pulse" style="width:5px;height:5px;box-shadow:none"></span>Working</span></h3>
+      <div class="sub">Engineer · lives on this Mac · GLM 5.2 · 4 skills</div></div></div>
+    <div class="tm-actions"><button class="btn btn-secondary">Message</button><button class="btn btn-outline">${ic('plus', 12)}Assign a task</button><button class="icon-btn" aria-label="More">${ic('more', 14)}</button></div>`
+  const lr = (l, sub, rt) => `<div class="lrow"><div class="l">${l}${sub ? `<small>${sub}</small>` : ''}</div><div class="rt">${rt}</div></div>`
+  const work = `
+    <div class="h6">Now</div>
+    <div class="card"><div class="ov work"><span class="pulse"></span>Step 3 of 5</div><h5 style="margin-bottom:0">Fix it and re-run CI</h5>
+      <div class="progress"><i></i></div><div style="display:flex;justify-content:space-between;align-items:center;font-size:var(--type-meta);color:var(--ui-text-tertiary)">Started 4 min ago · about 6 min left<button class="btn btn-outline xs">${ic('eye', 11)}Watch</button></div></div>
+    <div class="h6">Next</div>
+    ${lr('Write the changelog entry', 'After this step', '')}
+    ${lr(`${ic('clock', 12)} Monday brief`, 'Routine · Mondays 8:00', '<span class="badge muted">Schedule</span>')}
+    ${lr(`${ic('clock', 12)} Dependency check`, 'Routine · nightly 2:00', '<span class="badge muted">Schedule</span>')}
+    <div><button class="btn btn-text xs">${ic('plus', 11)}Add a routine</button></div>
+    <div class="h6">Done</div>
+    ${lr('Fixed the flaky fixture in <span class="code">digest.test.ts</span>', 'Just now', '<button class="btn btn-text xs">Receipt</button>')}
+    ${lr('Merged #479 — session digest peek', 'Yesterday · 4 files · +212 −40', '<button class="btn btn-text xs">Receipt</button>')}`
+  const profile = `
+    <div class="h6">Brain</div>
+    ${lr('Model', 'Your default, ready to use', 'GLM 5.2 <span class="badge success">' + ic('check', 10) + 'Ready</span> <button class="btn btn-text xs">Change</button>')}
+    <div class="h6">How much should Atlas ask first?</div>
+    <div class="seg"><span>Careful</span><span class="on">Balanced</span><span>Trusting</span></div>
+    <div style="font-size:var(--type-meta);color:var(--ui-text-tertiary);margin-top:4px">Asks before pushing code, sending messages or deleting files. Reads, searches and runs tests on its own.${adv ? ' <button class="btn btn-text xs">Custom rules…</button>' : ''}</div>
+    <div class="h6">Where it lives</div>
+    ${lr('Runs on', '', `${ic('monitor', 13)} This Mac ${ic('chevron', 11)}`)}
+    ${lr('Computer screen', adv ? 'Needs a Linux host — Atlas can then use a desktop of its own' : 'Give Atlas a desktop of its own to work on', '<button class="btn btn-outline xs">Set up</button>')}
+    <div class="h6">Reachable on</div>
+    ${lr(`<span class="tg">${ic('telegram', 13)}</span> Telegram`, '@atlas_hermes_bot', `<span class="badge success">${ic('check', 10)}Linked</span>`)}
+    ${adv ? `<div class="h6">Persona and tools</div>
+    ${lr('Instructions (SOUL.md)', 'Role, tone, standing rules', '<button class="btn btn-outline xs">Edit</button>')}
+    ${lr('Skills and tools', '4 skills (2 written by Atlas) · 3 toolsets · 1 MCP server', '<button class="btn btn-outline xs">Manage</button>')}
+    <div class="h6">Developer</div>
+    ${lr('Chat from a terminal', '', '<span class="code">hermes -p atlas chat</span> <button class="btn btn-text xs">Copy</button>')}
+    ${lr('Profile folder', '~/.hermes/profiles/atlas', '<button class="btn btn-text xs">Reveal</button>')}
+    ${lr('Share this teammate', 'As a data-only pack — no code', '<button class="btn btn-outline xs">Export…</button>')}` : ''}`
+  const strip = adv ? rightStrip(tab === 'work' ? 'Work' : 'Profile', ['Work', 'Profile', 'Files', 'Review', 'Terminal'], ['Now']) : rightStrip(tab === 'work' ? 'Work' : 'Profile', ['Work', 'Profile'], ['Now'])
+  mount(`<div class="app adv" data-ui="${MODE}">
+    ${sidebar({ mode: MODE })}
+    <main class="center">
+      ${tabstrip([{ t: 'Atlas', on: true, face: face('atlas', 14, 'working', 'on-chrome') + '&nbsp;' }, { t: 'Lisbon trip — plan' }],
+        adv ? `<span class="badge muted">${ic('bolt', 10)}4 skills</span><span class="badge default">${ic('pr', 10)}#482</span>` : `<span class="badge default"><span class="pulse" style="width:5px;height:5px;box-shadow:none"></span>Working · step 3 of 5</span>`)}
+      <div class="thread"><div class="thread-in">${story()}</div></div>
+      ${dock({ mode: MODE })}
+    </main>
+    <aside class="right">${strip}<div class="pane-body" style="overflow:hidden;gap:0.125rem">${head}${tab === 'work' ? work : profile}</div></aside>
+    ${adv ? statusbar() : ''}
+  </div>`)
+  if (!adv) document.querySelector('.app').style.gridTemplateRows = '1fr'
+</script></body></html>

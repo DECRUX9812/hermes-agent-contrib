@@ -13,6 +13,7 @@
  * dialogs and the backend share the filesystem for local and pooled backends.
  */
 
+import type { ProfileScope } from '@/api/client'
 import { isLayoutNode, normalize } from '@/components/pane-shell/tree/model'
 import { $layoutTree, markActivePreset, persistTree } from '@/components/pane-shell/tree/store'
 import { exportProfileArchive, importProfileArchive } from '@/hermes'
@@ -68,13 +69,20 @@ export function buildDesktopOverlay(profile: string): ProfileDesktopOverlay {
 }
 
 /** Export `profile` (backend archive + desktop overlay) to `output` (or the
- *  backend's staging dir when omitted). Returns the archive path. */
-export async function exportProfileBundle(profile: string, output?: string): Promise<string> {
+ *  backend's staging dir when omitted). `extraFiles` stages additional
+ *  root-level files into the archive (a bot-pack manifest, say). `scope` pins
+ *  the request to the profile's owning backend — required for remote/
+ *  connection-scoped profiles. Returns the archive path. */
+export async function exportProfileBundle(
+  profile: string,
+  options: { extraFiles?: Record<string, string>; output?: string; scope?: ProfileScope } = {}
+): Promise<string> {
   const overlay = buildDesktopOverlay(profile)
 
   const { archive } = await exportProfileArchive(profile, {
-    extraFiles: { [DESKTOP_OVERLAY_FILENAME]: JSON.stringify(overlay, null, 2) },
-    output
+    extraFiles: { [DESKTOP_OVERLAY_FILENAME]: JSON.stringify(overlay, null, 2), ...options.extraFiles },
+    output: options.output,
+    scope: options.scope
   })
 
   return archive
@@ -134,9 +142,10 @@ export function applyDesktopOverlay(profile: string, overlay: null | ProfileDesk
   }
 }
 
-/** Import an archive, apply its desktop overlay, return the new profile name. */
-export async function importProfileBundle(archive: string, name?: string): Promise<string> {
-  const result = await importProfileArchive(archive, name)
+/** Import an archive, apply its desktop overlay, return the new profile name.
+ *  `scope` pins the request to the owning backend for remote scopes. */
+export async function importProfileBundle(archive: string, name?: string, scope?: ProfileScope): Promise<string> {
+  const result = await importProfileArchive(archive, name, scope)
   applyDesktopOverlay(result.name, result.desktop)
 
   return result.name
@@ -175,7 +184,7 @@ export async function runExportProfileFlow(profile?: string): Promise<null | str
   }
 
   try {
-    const archive = await exportProfileBundle(target, output)
+    const archive = await exportProfileBundle(target, { output })
     notify({ kind: 'success', title: translateNow('profiles.exported'), message: archive })
 
     return archive

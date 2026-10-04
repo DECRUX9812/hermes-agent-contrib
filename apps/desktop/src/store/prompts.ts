@@ -129,7 +129,9 @@ export interface VaultUnlockRequest extends KeyedPrompt {
 }
 
 const EMPTY_APPROVALS: ApprovalRequest[] = []
-const $approvalQueues = atom<Record<string, ApprovalRequest[]>>({})
+// Exported read-only for the attention inbox's aggregate view — writes stay
+// behind the `approval` controller below.
+export const $approvalQueues = atom<Record<string, ApprovalRequest[]>>({})
 const $approvalStackSizes = atom<Record<string, number>>({})
 // A replay started before a response/reset cannot resurrect the answered card.
 let approvalRevision = 0

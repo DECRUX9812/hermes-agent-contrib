@@ -210,6 +210,15 @@ class GitWorktreeRemoveBody(BaseModel):
     worktreePath: str
     force: bool = False
 
+class GitWorktreeMergeBody(BaseModel):
+    path: str
+    worktreePath: str
+
+class GitWorktreeEnsureBody(BaseModel):
+    path: str
+    worktreePath: str
+    branch: Optional[str] = None
+
 class GitBranchSwitchBody(BaseModel):
     path: str
     branch: str
@@ -541,3 +550,14 @@ class _PluginProvidersPutBody(BaseModel):
 class _PluginVisibilityBody(BaseModel):
     hidden: bool
 
+
+class MobilePairExchange(BaseModel):
+    code: str
+
+class MobileRespond(BaseModel):
+    request_id: str
+    result: dict
+
+class MobileReply(BaseModel):
+    session_id: str
+    text: str

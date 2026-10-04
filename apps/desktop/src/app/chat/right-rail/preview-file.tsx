@@ -21,6 +21,8 @@ import { chunkTextLines, useFixedRowWindow } from '@/components/chat/fixed-row-w
 import { LazyShiki as ShikiHighlighter } from '@/components/chat/shiki-highlighter'
 import { PageLoader } from '@/components/page-loader'
 import { Tip } from '@/components/ui/tooltip'
+import { useContributions } from '@/contrib'
+import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { translateNow, useI18n } from '@/i18n'
 import {
   desktopFileDiff,
@@ -33,6 +35,7 @@ import {
   writeDesktopFileText
 } from '@/lib/desktop-fs'
 import { ExternalLink } from '@/lib/external-link'
+import { FILE_VIEWERS_AREA, type ResolvedFileViewer, viewerLabel, viewersFor } from '@/lib/file-viewers'
 import { Check, Pencil, X } from '@/lib/icons'
 import { createMemoizedMathPlugin } from '@/lib/katex-memo'
 import { isComposerChord } from '@/lib/keybinds/chords'
@@ -50,8 +53,11 @@ import { previewTargetFromMarkdownHref } from '@/lib/preview-targets'
 import { cn } from '@/lib/utils'
 import { markPreviewTabMissing, openPreview, type PreviewTarget } from '@/store/preview'
 import { setPreviewDirty } from '@/store/preview-edit'
+import { $previewLineRequest } from '@/store/preview-line'
 import { $connection, $currentCwd } from '@/store/session'
 import { notifyWorkspaceChanged } from '@/store/workspace-events'
+
+import { OpenInEditorButton, PreviewBreadcrumbs } from './preview-breadcrumbs'
 
 const SHIKI_THEME = { dark: 'github-dark-default', light: 'github-light-default' } as const
 const TEXT_PREVIEW_MAX_BYTES = 512 * 1024
@@ -518,13 +524,32 @@ export function MarkdownPreview({ filePath, text }: { filePath?: string; text: s
   )
 }
 
+/** A contributed viewer, mounted as a component inside its own error
+ *  boundary: its hooks stay its own, and a throw degrades to an inline error
+ *  rather than a dead preview. */
+function FileViewerMount({ filePath, text, viewer }: { filePath: string; text: string; viewer: ResolvedFileViewer }) {
+  const render = useMemo(() => () => viewer.render({ filePath, text }), [viewer, filePath, text])
+
+  return (
+    <ContribBoundary id={viewer.id}>
+      <ContribRender render={render} />
+    </ContribBoundary>
+  )
+}
+
 export function PreviewModeSwitcher({
   active,
+  labels,
+  leading,
   modes,
   onSelect,
   trailing
 }: {
   active: PreviewViewMode
+  /** Left side of the header — the file's breadcrumbs. */
+  leading?: ReactNode
+  /** Labels for contributed viewer modes (`viewer:<id>`). */
+  labels?: Record<string, string>
   modes: PreviewViewMode[]
   onSelect: (mode: PreviewViewMode) => void
   trailing?: ReactNode
@@ -532,20 +557,22 @@ export function PreviewModeSwitcher({
   const { t } = useI18n()
   const showModes = modes.length > 1
 
-  if (!showModes && !trailing) {
+  if (!showModes && !trailing && !leading) {
     return null
   }
 
-  const label: Record<PreviewViewMode, string> = {
+  const label: Record<string, string> = {
     diff: t.preview.diff,
     rendered: t.preview.renderedPreview,
-    source: t.preview.source
+    source: t.preview.source,
+    ...labels
   }
 
   return (
     // Fixed height so the header is byte-identical between read and edit modes —
     // swapping the trailing controls must never move the body below it.
     <div className="flex h-7 shrink-0 items-center justify-end gap-3 border-b border-border/40 px-3">
+      {leading}
       {showModes &&
         modes.map(mode => (
           <button
@@ -701,6 +728,27 @@ export function SourceView({ filePath, language, text }: { filePath?: string; la
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true })
   }, [filePath, selection])
 
+  // Opened at a line (Quick Open `app.ts:42`): bring it to the middle of the
+  // view and select it, so the gutter's ⌘L / drag work on it straight away.
+  const lineRequest = useStore($previewLineRequest)
+
+   
+  useEffect(() => {
+    if (!lineRequest || !filePath || lineRequest.path !== filePath || totalLines === 0) {
+      return
+    }
+
+    const line = Math.min(lineRequest.line, totalLines)
+    const scroller = scrollerRef.current
+
+    $previewLineRequest.set(null)
+    setSelection({ end: line, start: line })
+
+    if (scroller) {
+      scroller.scrollTop = Math.max(0, (line - 1) * SOURCE_LINE_PX - scroller.clientHeight / 2 + SOURCE_LINE_PX)
+    }
+  }, [filePath, lineRequest, scrollerRef, totalLines])
+
   return (
     <div className="h-full overflow-auto" onScroll={onScroll} ref={scrollerRef}>
       <div className="grid min-w-max grid-cols-[auto_minmax(0,1fr)] font-mono text-[0.7rem] leading-relaxed">
@@ -743,7 +791,8 @@ export function SourceView({ filePath, language, text }: { filePath?: string; la
   )
 }
 
-export type PreviewViewMode = 'diff' | 'rendered' | 'source'
+/** Built-in views, plus `viewer:<id>` for a contributed file viewer. */
+export type PreviewViewMode = 'diff' | 'rendered' | 'source' | `viewer:${string}`
 
 export function LocalFilePreview({
   onClose,
@@ -789,6 +838,17 @@ export function LocalFilePreview({
   const connection = useStore($connection)
   const fsCacheKey = desktopFsCacheKey(connection)
   const filePath = filePathForTarget(target)
+  // Opened at a line (Quick Open `README.md:12`): only the source view has
+  // lines to land on, so a rendered file switches to it; SourceView scrolls.
+  const lineRequestPath = useStore($previewLineRequest)?.path
+
+  useEffect(() => {
+    if (lineRequestPath && lineRequestPath === filePath) {
+      setUserMode('source')
+    }
+  }, [filePath, lineRequestPath])
+  const viewerContributions = useContributions(FILE_VIEWERS_AREA)
+  const viewers = useMemo(() => viewersFor(viewerContributions, filePath), [viewerContributions, filePath])
   const isImage = target.previewKind === 'image'
   const isPdf = target.previewKind === 'pdf'
 
@@ -1220,16 +1280,34 @@ export function LocalFilePreview({
       modes.push('rendered')
     }
 
+    for (const viewer of viewers) {
+      modes.push(`viewer:${viewer.id}`)
+    }
+
     modes.push('source')
 
     if (hasDiff) {
       modes.push('diff')
     }
 
-    const autoMode: PreviewViewMode = hasDiff ? 'diff' : isMarkdown ? 'rendered' : 'source'
+    const preferredViewer = viewers.find(viewer => viewer.preferred)
+
+    const alwaysViewer = viewers.find(viewer => viewer.preferred === 'always')
+
+    const autoMode: PreviewViewMode = alwaysViewer
+      ? `viewer:${alwaysViewer.id}`
+      : hasDiff
+      ? 'diff'
+      : isMarkdown
+        ? 'rendered'
+        : preferredViewer
+          ? `viewer:${preferredViewer.id}`
+          : 'source'
+
     // The pane hands an HTML file over only once Source was picked; that pick
     // outranks the diff-first default.
     const mode = userMode && modes.includes(userMode) ? userMode : onSelectRendered ? 'source' : autoMode
+    const activeViewer = viewers.find(viewer => mode === `viewer:${viewer.id}`)
 
     const selectMode = (next: PreviewViewMode) => {
       if (next === 'rendered' && onSelectRendered) {
@@ -1257,6 +1335,8 @@ export function LocalFilePreview({
         )}
         <PreviewModeSwitcher
           active={mode}
+          labels={Object.fromEntries(viewers.map(viewer => [`viewer:${viewer.id}`, viewerLabel(viewer)]))}
+          leading={filePath ? <PreviewBreadcrumbs filePath={filePath} /> : null}
           modes={modes}
           onSelect={selectMode}
           trailing={
@@ -1271,11 +1351,15 @@ export function LocalFilePreview({
                   {t.preview.edit}
                 </button>
               </Tip>
+            ) : filePath ? (
+              <OpenInEditorButton filePath={filePath} />
             ) : null
           }
         />
         <div className="min-h-0 flex-1 overflow-auto">
-          {mode === 'rendered' ? (
+          {activeViewer ? (
+            <FileViewerMount filePath={filePath} text={state.text} viewer={activeViewer} />
+          ) : mode === 'rendered' ? (
             <MarkdownPreview filePath={filePath} text={state.text} />
           ) : mode === 'diff' ? (
             <FileDiffPanel

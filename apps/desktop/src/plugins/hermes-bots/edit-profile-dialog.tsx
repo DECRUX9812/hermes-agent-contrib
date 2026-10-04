@@ -17,6 +17,7 @@ import {
   queryClient,
   Textarea,
   useI18n,
+  useQuery,
   useValue
 } from '@hermes/plugin-sdk'
 import { useState } from 'react'
@@ -28,8 +29,14 @@ import { labeled } from './dialog-parts'
 import { editedLook, type EditProfileLook } from './edit-profile-look'
 import { useBots } from './i18n'
 import { displayName } from './labels'
-import { AdvancedProfileConfig, applyAdvancedConfig, emptyAdvancedState } from './profile-config'
-import { botRosterMeta, requestForBot } from './routing'
+import {
+  AdvancedProfileConfig,
+  applyAdvancedConfig,
+  capabilityCounts,
+  emptyAdvancedState,
+  type ProfileDescribeResponse
+} from './profile-config'
+import { botRosterMeta, requestForBot, resolveBotConnectionRoute } from './routing'
 import type { AvatarAppearance, RosterRow } from './types'
 
 // ── edit profile dialog ──────────────────────────────────────────────────────
@@ -69,20 +76,48 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
   // A thin row from another connection carries its backend's title on the
   // row itself; there may be no local record for it.
   const openingTitle = meta?.title || bot?.title || ''
+  const openingRole = meta?.role || ''
 
   const opening: EditProfileLook = {
     shape: appearance.shape,
     color: appearance.color,
     image: appearance.image ?? null,
+    role: openingRole,
     title: openingTitle
   }
 
   const [opened, setOpened] = useState(opening)
   const [title, setTitle] = useState(openingTitle)
+  const [role, setRole] = useState(openingRole)
   const [description, setDescription] = useState(bot?.description || '')
   const [busy, setBusy] = useState(false)
   const [advanced, setAdvanced] = useState(false)
   const [adv, setAdv] = useState(emptyAdvancedState())
+
+  // C2: enabled-count read for the Capabilities header — one lightweight
+  // profiles.describe while the dialog is open (the expanded surface keeps
+  // its own loader; this only feeds the collapsed summary).
+  const capsConnectionId = bot ? (resolveBotConnectionRoute(bot).route?.connectionId ?? '') : ''
+
+  const { data: capsData } = useQuery({
+    queryKey: ['bots-capabilities-summary', capsConnectionId, bot?.name ?? ''],
+    enabled: open && Boolean(bot),
+    retry: false,
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!bot) {
+        return null
+      }
+
+      try {
+        return (await requestForBot(bot, 'profiles.describe', { name: bot.name })) as ProfileDescribeResponse
+      } catch {
+        return null
+      }
+    }
+  })
+
+  const caps = capabilityCounts(capsData)
 
   // Re-seed local state each time a different bot opens the dialog.
   const [seedKey, setSeedKey] = useState<null | string>(null)
@@ -96,6 +131,7 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
       setColor(appearance.color)
       setImage(appearance.image ?? null)
       setTitle(openingTitle)
+      setRole(openingRole)
       setOpened(opening)
       setDescription(bot.description || '')
       setBusy(false)
@@ -116,7 +152,7 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
     setBusy(true)
     let advancedFailed = false
 
-    const look = editedLook(opened, { shape, color, image, title })
+    const look = editedLook(opened, { shape, color, image, role, title })
     const persistence = look ? await saveBotMeta(bot, look) : null
 
     // Only an explicit remote failure is an error — 'unsupported' is the
@@ -228,6 +264,14 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
             />
           )}
           {labeled(
+            b.editor.role,
+            <Input
+              onChange={event => setRole(event.target.value)}
+              placeholder={b.editor.rolePlaceholder}
+              value={role}
+            />
+          )}
+          {labeled(
             b.editor.description,
             <Textarea
               className="min-h-16"
@@ -243,7 +287,10 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
             variant="text"
           >
             <DisclosureCaret open={advanced} />
-            {b.bot.advancedHint}
+            {b.editor.capabilities}
+            <span className="font-normal text-(--ui-text-quaternary)">
+              {caps ? b.editor.capabilitiesSummary(caps.skills, caps.toolsets, caps.mcp) : b.editor.capabilitiesHint}
+            </span>
           </Button>
           {advanced ? (
             <div className="rounded-md border border-(--ui-stroke-secondary) p-3">

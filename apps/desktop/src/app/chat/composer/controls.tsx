@@ -3,14 +3,18 @@ import { useStore } from '@nanostores/react'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
+import type { HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { Ear, EarOff, iconSize, Layers3, Loader2, Square } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { recordAction } from '@/store/desktop-metrics'
 import { $hudMode, closeHud, resetHudLayout } from '@/store/hud'
+import { $showsAdvancedChrome } from '@/store/interface-mode'
 import { $wakeWord, toggleWakeWord } from '@/store/wake-word'
 
+import { ApprovalPill } from './approval-pill'
+import { ContextRing } from './context-ring'
 import { ACTIVE_ICON_BTN, GHOST_ICON_BTN, PRIMARY_ICON_BTN } from './control-classes'
 import type { ConversationStatus } from './hooks/use-voice-conversation'
 import { ModelPill } from './model-pill'
@@ -44,9 +48,11 @@ export function ComposerControls({
   conversation,
   disabled,
   foldVoice = false,
+  gateway,
   hasComposerPayload,
   hideModelPill = false,
   minimal = false,
+  queueWithAttachments = false,
   state,
   voiceStatus,
   onDictate,
@@ -61,9 +67,13 @@ export function ComposerControls({
   conversation: ConversationProps
   disabled: boolean
   foldVoice?: boolean
+  gateway?: HermesGateway | null
   hasComposerPayload: boolean
   hideModelPill?: boolean
   minimal?: boolean
+  /** Steer is eligible but for the attachment chips — label the queue path
+   *  with what it actually carries so the dead end reads as a choice. */
+  queueWithAttachments?: boolean
   state: ChatBarState
   voiceStatus: VoiceStatus
   onDictate: () => void
@@ -73,6 +83,7 @@ export function ComposerControls({
   const { t } = useI18n()
   const c = t.composer
   const hudMode = useStore($hudMode)
+  const showsAdvancedChrome = useStore($showsAdvancedChrome)
 
   if (conversation.active) {
     return <ConversationPill {...conversation} disabled={disabled} />
@@ -82,6 +93,7 @@ export function ComposerControls({
   // Steer is just send: a payload keeps the Send affordance mid-turn. Stop
   // only when the composer is empty and a turn is running.
   const showStop = busy && !hasComposerPayload
+  const sendLabel = showStop ? c.stop : busyAction === 'steer' ? c.steerTurn : c.send
   const showQueueButton = busy && busyAction !== 'stop' && hasComposerPayload
   // The HUD is a Spotlight bar a few hundred pixels wide, so the four separate
   // voice toggles fold into one menu there and leave the row to the input. A
@@ -105,8 +117,10 @@ export function ComposerControls({
     // One mic in the row; hovering it fans the other voice toggles out of it.
     <VoiceFan
       autoSpeak={autoSpeak}
+      busy={busy}
       disabled={disabled}
       onDictate={onDictate}
+      onStartConversation={conversation.onStart}
       onToggleAutoSpeak={onToggleAutoSpeak}
       state={state}
       voiceStatus={voiceStatus}
@@ -120,42 +134,60 @@ export function ComposerControls({
           {hideModelPill ? null : (
             <>
               <ModelPill compact={compactModelPill} disabled={disabled} model={state.model} />
-              {compactModelPill ? null : <ReasoningPill disabled={disabled} model={state.model} />}
+              {/* Simple keeps the row to what a conversation needs — model, voice,
+                  send. Reasoning effort and the context gauge are tuning; they
+                  stay in Advanced and in Settings. */}
+              {compactModelPill || !showsAdvancedChrome ? null : (
+                <ReasoningPill disabled={disabled} model={state.model} />
+              )}
+              {showsAdvancedChrome ? <ContextRing disabled={disabled} gateway={gateway} /> : null}
             </>
           )}
+          <ApprovalPill compact={compactModelPill} disabled={disabled} />
           {voiceControls}
         </>
       )}
       {showQueueButton ? (
-        <Tip label={<TipKeybindLabel actionId="composer.queue" text={c.queueMessage} />} placement="control">
-          <Button
-            aria-label={c.queueMessage}
-            className={GHOST_ICON_BTN}
-            disabled={disabled}
-            onClick={onQueue}
-            size="icon"
-            type="button"
-            variant="ghost"
-          >
-            <Layers3 className={iconSize.sm} />
-          </Button>
-        </Tip>
+        queueWithAttachments ? (
+          // Steer is text-only by contract — the gateway can't carry images
+          // into a tool result — so an attachment payload used to silently
+          // lose the steer affordance. Name the fallback instead: same queue
+          // path, labeled with what it carries.
+          <Tip label={<TipKeybindLabel actionId="composer.queue" text={c.queueWithAttachments} />} placement="control">
+            <Button
+              aria-label={c.queueWithAttachments}
+              className="h-(--composer-control-size) shrink-0 gap-1.5 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
+              disabled={disabled}
+              onClick={onQueue}
+              type="button"
+              variant="ghost"
+            >
+              <Layers3 className={iconSize.sm} />
+              <span>{c.queueWithAttachments}</span>
+            </Button>
+          </Tip>
+        ) : (
+          <Tip label={<TipKeybindLabel actionId="composer.queue" text={c.queueMessage} />} placement="control">
+            <Button
+              aria-label={c.queueMessage}
+              className={GHOST_ICON_BTN}
+              disabled={disabled}
+              onClick={onQueue}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <Layers3 className={iconSize.sm} />
+            </Button>
+          </Tip>
+        )
       ) : null}
       {showVoicePrimary ? (
         <StartVoiceButton disabled={disabled} label={c.startVoice} onStart={conversation.onStart} />
       ) : (
-        <Tip
-          label={
-            showStop ? (
-              <TipKeybindLabel actionId="composer.send" text={c.stop} />
-            ) : (
-              <TipKeybindLabel actionId="composer.send" text={c.send} />
-            )
-          }
-          placement="control"
-        >
+        <Tip label={<TipKeybindLabel actionId="composer.send" text={sendLabel} />} placement="control">
           <Button
-            aria-label={showStop ? c.stop : c.send}
+            aria-label={sendLabel}
             className={PRIMARY_ICON_BTN}
             disabled={disabled || !canSubmit}
             onClick={() => recordAction(showStop ? 'composer.cancel' : 'composer.send', 'click')}

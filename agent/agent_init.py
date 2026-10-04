@@ -1454,6 +1454,9 @@ def _apply_agent_section(agent, _agent_cfg):
 
     # "Bot Chat" gate hint for hosts that defer the DB title write past the first prompt build.
     agent._session_title_hint = None
+    # Same pre-row window for a bot topic: set by the gateway attach path when the
+    # session record carries the durable bot_topic marker.
+    agent._bot_topic = False
 
     # platform_hints: <platform>: {append|replace}, stored verbatim (agent/system_prompt.py).
     agent._platform_hint_overrides = _cfg_dict(_agent_cfg, "platform_hints")
@@ -2378,6 +2381,7 @@ _CALLBACK_PARAMS = (
     "tool_result_metadata_callback",
     "thinking_callback", "reasoning_callback", "clarify_callback",
     "read_terminal_callback", "read_preview_callback", "drive_preview_callback",
+    "verify_preview_callback",
     "read_window_below_callback", "connection_callback", "tour_callback",
     "step_callback", "stream_delta_callback", "interim_assistant_callback",
     "status_callback", "notice_callback", "notice_clear_callback",
@@ -2401,6 +2405,7 @@ def init_agent(
     thinking_callback: callable = None, reasoning_callback: callable = None,
     clarify_callback: callable = None, read_terminal_callback: callable = None,
     read_preview_callback: callable = None, drive_preview_callback: callable = None,
+    verify_preview_callback: callable = None,
     read_window_below_callback: callable = None, connection_callback: callable = None,
     tour_callback: callable = None, step_callback: callable = None,
     stream_delta_callback: callable = None, interim_assistant_callback: callable = None,

@@ -425,6 +425,7 @@ export const esOverrides = {
     revealExplorer: 'Mostrar en el Explorador de archivos',
     revealFileManager: 'Abrir carpeta contenedora',
     revealInSidebar: 'Mostrar en el árbol de archivos',
+    openInEditor: name => `Abrir en ${name}`,
     copyPath: 'Copiar ruta',
     copyRelativePath: 'Copiar ruta relativa',
     download: 'Descargar',
@@ -569,6 +570,10 @@ export const esOverrides = {
       rpcOutOfSync: 'La app y el backend están en versiones distintas. Actualiza ambos.',
       restartHermesFailed: 'No se pudo reiniciar Hermes'
     },
+    digest: {
+      title: count => `Resumen de Hermes — ${count} avisos`,
+      line: (count, label) => `${count} × ${label}`
+    },
     actions: {
       restartHermes: 'Reiniciar Hermes',
       openKeys: 'Abrir Claves',
@@ -692,6 +697,7 @@ export const esOverrides = {
     actions: {
       'keybinds.openPanel': 'Abrir atajos de teclado',
       'nav.commandPalette': 'Abrir paleta de comandos',
+      'nav.quickOpen': 'Abrir archivo rápidamente',
       'nav.commandCenter': 'Abrir Centro de comandos',
       'nav.settings': 'Abrir configuración',
       'nav.profiles': 'Abrir perfiles',
@@ -700,6 +706,8 @@ export const esOverrides = {
       'nav.artifacts': 'Abrir artefactos',
       'nav.cron': 'Abrir tareas programadas',
       'nav.agents': 'Abrir agentes',
+      'nav.starmap': 'Abrir grafo de memoria',
+      'nav.webhooks': 'Abrir webhooks',
       'session.new': 'Nueva sesión',
       'session.newTab': 'Nueva pestaña de sesión',
       'session.newWindow': 'Nueva ventana',
@@ -797,7 +805,9 @@ export const esOverrides = {
   },
   findInPage: {
     next: 'Siguiente coincidencia',
-    previous: 'Coincidencia anterior'
+    previous: 'Coincidencia anterior',
+    searchAll: 'Buscar en todo el historial',
+    searchAllShort: 'Historial'
   },
   language: {
     label: 'Idioma',
@@ -1099,7 +1109,22 @@ export const esOverrides = {
       completionSoundTitle: 'Sonido de finalización',
       completionSoundDesc:
         'Reproduce un sonido cuando termina el turno de un agente. Elige un ajuste predefinido y pruébalo aquí.',
-      completionSoundPreview: 'Vista previa'
+      completionSoundPreview: 'Vista previa',
+      quietHoursTitle: 'Horario de silencio',
+      quietHoursDesc:
+        'Retiene las notificaciones rutinarias durante un intervalo diario; llegan en un resumen cuando termina. Aprobaciones, preguntas y errores siguen llegando.',
+      quietHoursWindowTitle: 'Intervalo de silencio',
+      quietHoursWindowDesc:
+        'Las notificaciones se silencian desde la hora de inicio hasta la de fin — si el inicio es posterior al fin, abarca la noche.',
+      quietHoursFrom: 'Desde',
+      quietHoursTo: 'Hasta',
+      digestTitle: 'Resumen por hora',
+      digestDesc: 'Agrupa las notificaciones rutinarias en un solo resumen cada hora en lugar de emitirlas una a una.',
+      sessionOverridesTitle: 'Excepciones por sesión',
+      sessionOverridesDesc:
+        'Chats que silenciaste desde el menú de sesión de la barra lateral. Reactiva cualquiera desde aquí.',
+      sessionOverridesEmpty:
+        'No hay sesiones silenciadas. Silencia un chat desde su menú en la barra lateral para verlo aquí.'
     },
     sections: {
       model: 'Modelo',
@@ -1150,12 +1175,18 @@ export const esOverrides = {
       hideThreadTimelineDesc: 'Oculta las barras de navegación del borde derecho de cada conversación.',
       reasoningCollapsedTitle: 'Contraer el razonamiento por defecto',
       reasoningCollapsedDesc: 'Mantiene disponible el razonamiento transmitido sin expandirlo hasta que lo abras.',
+      lookTitle: 'Estilo',
+      lookDesc:
+        'Suave es redondeado y espacioso, con etiquetas discretas; Clásico mantiene la interfaz nítida y cuadrada original.',
+      lookSoft: 'Suave',
+      lookClassic: 'Clásico',
       uiScaleTitle: 'Escala de la interfaz',
       uiScaleDesc: percent =>
         `Escala el texto y los controles de toda la app. También funciona Cmd/Ctrl con +, - y 0. Actual: ${percent}%.`,
       sessionDensityTitle: 'Densidad de la lista de sesiones',
-      sessionDensityDesc: 'Elige cuánto contexto aparece bajo los títulos de las sesiones en la barra lateral.',
+      sessionDensityDesc: 'Elige cuánto muestra cada fila de sesión en la barra lateral.',
       sessionDensityCompact: 'Compacta',
+      sessionDensityCondensed: 'Condensada',
       sessionDensityComfortable: 'Cómoda',
       sessionDensityDetailed: 'Detallada',
       tabStripTitle: 'Barra de pestañas',
@@ -1203,7 +1234,27 @@ export const esOverrides = {
         sidebar: 'Solo la barra lateral'
       },
       backdropTitle: 'Fondo del chat',
-      backdropDesc: 'La tenue imagen de la estatua detrás de la conversación.',
+      backdropDesc: 'Una escena detrás de la conversación, o tu propia imagen. El texto siempre queda encima.',
+      backdropScenes: {
+        off: 'Desactivado',
+        aurora: 'Aurora',
+        dusk: 'Atardecer',
+        ocean: 'Océano',
+        meadow: 'Pradera',
+        cyanotype: 'Cianotipia',
+        ink: 'Tinta',
+        grid: 'Puntos',
+        statue: 'Estatua',
+        custom: 'Tu imagen'
+      },
+      backdropUpload: 'Elegir imagen…',
+      backdropRemoveImage: 'Quitar imagen',
+      backdropStrengths: {
+        subtle: 'Sutil',
+        balanced: 'Equilibrado',
+        vivid: 'Intenso'
+      },
+      backdropImageError: 'No se pudo leer esa imagen.',
       userBubbleTitle: 'Burbuja de mensaje',
       userBubbleDesc: 'Cuánta transparencia tienen tus propios mensajes. Opaca en 0; en 100 solo queda el contorno.',
       textDirectionTitle: 'Dirección del texto',
@@ -1228,6 +1279,13 @@ export const esOverrides = {
       composerPopoutTitle: 'Compositor flotante',
       composerPopoutDesc:
         'Permite arrastrar el compositor fuera de su posición fija. Si está desactivado, permanece anclado abajo.',
+      autoOpenFilesTitle: 'Mostrar archivos al abrir un proyecto',
+      autoOpenFilesDesc: 'Abrir una carpeta o empezar en un proyecto muestra el árbol de archivos junto al chat.',
+      activityRailTitle: 'Barra de iconos',
+      activityRailDesc:
+        'Una columna estrecha de iconos en el borde izquierdo: sesiones, bots y cada página a un clic, incluso con la barra lateral plegada.',
+      openInEditorTitle: 'Abrir archivos en',
+      openInEditorDesc: 'A dónde envía «Abrir en…» un archivo del árbol. También funciona con backends SSH.',
       fileBrowserTitle: 'Explorador de archivos',
       fileBrowserDesc:
         'Muestra el explorador de archivos junto al chat cuando hay un espacio de trabajo abierto. El botón de la barra de título también cambia este ajuste.',
@@ -1675,6 +1733,11 @@ export const esOverrides = {
         'Al minimizar las ventanas o cerrar la ventana principal, se ocultan en la bandeja del sistema (barra de menús en macOS) y Hermes sigue ejecutándose. Usa Salir de Hermes en el menú de la bandeja o Cmd+Q para salir. Desactivado por defecto; se aplica solo a este dispositivo.',
       minimizeToTrayUnavailable:
         'La bandeja del sistema no está disponible. Las ventanas se minimizarán y cerrarán con normalidad. Desactiva y vuelve a activar esta opción para reintentarlo.',
+      menuBarStatusTitle: 'Estado en la barra de menús',
+      menuBarStatusDesc:
+        'Muestra un icono de Hermes en la barra de menús de macOS (bandeja del sistema en Windows/Linux) con una insignia de estado, sesiones recientes y acciones rápidas. Desactivado por defecto; solo se aplica a este dispositivo.',
+      menuBarStatusUnavailable:
+        'La bandeja del sistema no está disponible en esta plataforma. Desactiva y vuelve a activar la opción para reintentarlo.',
       none: 'Ninguno',
       noneParen: '(ninguno)',
       builtinOnly: 'Solo integradas',
@@ -1698,6 +1761,10 @@ export const esOverrides = {
       keepAwakeOff: 'Desactivado',
       keepAwakeWhileWorking: 'Mientras trabaja',
       keepAwakeAlways: 'Siempre',
+        'Impide que este equipo entre en reposo para que las ejecuciones largas o nocturnas continúen. La pantalla puede seguir atenuándose.',
+      proactiveNudgesTitle: 'Sugerencias proactivas',
+      proactiveNudgesDesc:
+        'Al terminar un turno, ofrece chips de siguientes pasos sobre el editor — abrir un PR, programar un seguimiento. Solo redactan texto; nada se envía solo.',
       disableF12Title: 'Desactivar DevTools con F12',
       disableF12Desc:
         'Impide que F12 abra las herramientas para desarrolladores. Ctrl+Shift+I (o Cmd+Opt+I en Mac) sigue funcionando.',
@@ -2999,7 +3066,11 @@ export const esOverrides = {
     importEmpty: 'Pega un código de mapa para cargarlo.',
     importSuccess: nodes => `Se cargó un mapa con ${nodes} ${nodes === 1 ? 'nodo' : 'nodos'}.`,
     importedBadge: 'mapa importado',
-    resetToMine: 'Volver a mi mapa'
+    resetToMine: 'Volver a mi mapa',
+    live: 'En vivo',
+    liveHint: 'Ver en vivo: las skills pulsan mientras una sesión las usa y destellan al terminar',
+    liveOff: 'Detener actualizaciones en vivo',
+    openSession: 'Abrir sesión'
   },
   agents: {
     extendedTranscript: 'Transcripción ampliada',
@@ -3041,6 +3112,44 @@ export const esOverrides = {
     durationSeconds: seconds => `${seconds}s`,
     durationMinutes: (minutes, seconds) => `${minutes}m ${seconds}s`,
     tokens: value => `${value} tok`
+  },
+  roster: {
+    title: 'Ejecuciones activas',
+    subtitle: 'Cada ejecución en curso en todos los perfiles y gateways.',
+    emptyTitle: 'No hay ejecuciones activas',
+    emptyDesc: 'Cuando una sesión empieza a trabajar — en cualquier perfil o gateway — aparece aquí.',
+    untitledRun: 'Ejecución sin título',
+    railPill: count => (count === 1 ? '1 ejecución' : `${count} ejecuciones`),
+    close: 'Cerrar',
+    fanOut: 'Difundir',
+    fanOutTitle: 'Enviar un prompt a los agentes elegidos',
+    fanOutPlaceholder: 'Un prompt, cada agente elegido…',
+    fanOutNoAgents: 'No hay agentes accesibles para elegir',
+    fanOutClose: 'Contraer',
+    fanOutSend: count => (count === 1 ? 'Enviar a 1 agente' : `Enviar a ${count} agentes`),
+    fanOutFailed: 'No se pudo crear una sesión para uno de los agentes elegidos'
+  },
+
+  hud: {
+    needsYou: 'Te espera',
+    openRunInApp: title => `Abrir ${title} en la ventana de la app`
+  },
+  attentionInbox: {
+    title: 'Necesita atención',
+    empty: 'Nada está esperando tu respuesta.',
+    count: count => `${count} pendientes`,
+    appScope: 'Aplicación',
+    unknownSession: 'Sesión',
+    kinds: {
+      approval: 'Aprobación de herramienta',
+      clarify: 'Pregunta aclaratoria',
+      error: 'Error',
+      secret: 'Solicitud de secreto',
+      sudo: 'Solicitud de sudo',
+      vaultCode: 'Código de la bóveda',
+      vaultSave: 'Inicio de sesión en la bóveda',
+      vaultUnlock: 'Desbloqueo de la bóveda'
+    }
   },
   commandCenter: {
     close: 'Cerrar Centro de comandos',
@@ -3123,9 +3232,24 @@ export const esOverrides = {
     archivedChats: 'Chats archivados',
     sections: {
       maintenance: 'Mantenimiento',
+      notices: 'Notificaciones',
       sessions: 'Sesiones',
       system: 'Sistema',
       usage: 'Uso'
+    },
+    sectionDescriptions: {
+      maintenance: 'Diagnóstico, copias de seguridad, curador y datos de memoria',
+      notices: 'Notificaciones y avisos recientes',
+      sessions: 'Buscar y gestionar sesiones',
+      system: 'Estado, registros y acciones del sistema',
+      usage: 'Actividad de tokens, coste y skills a lo largo del tiempo'
+    },
+    notices: {
+      empty: 'Aún no hay notificaciones — los avisos se registran aquí al ocurrir.',
+      clear: 'Borrar',
+      mutedTag: 'Silenciado',
+      destCenter: 'Aviso centrado',
+      destCorner: 'Aviso en esquina'
     },
     nav: {
       newChat: {
@@ -3212,6 +3336,14 @@ export const esOverrides = {
     topSkills: 'Skills principales',
     noSkillActivity: 'Aún no hay actividad de skills.',
     actions: count => `${count} acciones`,
+    costAnalytics: 'Analítica de costes',
+    costAnalyticsHint: 'Solo se agregan en este dispositivo — los datos de gasto nunca se envían.',
+    dailySpend: 'Gasto diario',
+    estimatedCost: 'estimado',
+    perProfile: 'Por perfil',
+    topSessions: 'Sesiones principales',
+    loadedSessionsHint: 'sesiones cargadas',
+    noSpend: 'Sin gasto registrado',
     logFile: 'Archivo de registro',
     logLevel: 'Nivel',
     logSearchPlaceholder: 'Buscar en los registros…',
@@ -3377,6 +3509,22 @@ export const esOverrides = {
       stillWaiting: (detail: string) => `Seguimos esperando a Telegram. Reintentando tras: ${detail}`,
       savedRestarting: 'Telegram guardado; reiniciando el gateway…',
       savedRestartFailed: (detail: string) => `Telegram guardado; falló el reinicio del gateway${detail}`
+    },
+    phoneParity: {
+      title: 'Continuar en tu teléfono',
+      presence: 'Presencia de la puerta de enlace',
+      scanHint: 'Escanea con tu teléfono o abre el enlace en este dispositivo.',
+      linkPending: 'El enlace directo aparecerá aquí cuando el adaptador esté conectado.',
+      openLink: 'Abrir enlace',
+      copyLink: 'Copiar enlace',
+      copyFailed: 'No se pudo copiar el enlace'
+    },
+    reach: {
+      title: (name: string) => `Habla con ${name} desde cualquier lugar`,
+      scan: (name: string) => `Escanea para chatear con ${name} desde tu teléfono, o comparte el enlace.`,
+      empty: (name: string) => `Dale a ${name} su propia dirección de Telegram o Slack para chatear desde tu teléfono.`,
+      connect: 'Conectar',
+      manage: 'Gestionar'
     },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
@@ -3567,9 +3715,49 @@ export const esOverrides = {
       slack: 'Slack',
       email: 'Correo electrónico',
       github_comment: 'Comentario de GitHub'
+    },
+    mobile: {
+      title: 'Compañero móvil',
+      hint: 'Controla este backend desde un teléfono: estado, aprobaciones y respuestas rápidas.',
+      pairButton: 'Vincular un teléfono',
+      dialogTitle: 'Vincular un teléfono',
+      dialogDesc:
+        'Crea un código de vinculación de un solo uso, abre la página del compañero en el teléfono e introduce el código. La página puede leer el estado de las sesiones, responder aprobaciones pendientes y enviar respuestas rápidas en este backend.',
+      backendUrl: 'URL del backend',
+      backendUrlHint: 'Una dirección accesible desde el teléfono (LAN, túnel o conexión remota).',
+      create: 'Crear código de vinculación',
+      creating: 'Creando…',
+      createFailed: (detail: string) => `No se pudo crear el código de vinculación${detail ? `: ${detail}` : ''}`,
+      codeLabel: 'Código de vinculación',
+      openHint: (url: string) => `Abre ${url} en tu teléfono e introduce el código.`,
+      expires: (minutes: number) => `De un solo uso · caduca en ${minutes} min.`,
+      copy: 'Copiar',
+      done: 'Listo'
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `¿Cuándo debe preguntarte ${name}?`,
+      modes: {
+        manual: {
+          label: 'Pregúntame primero',
+          description: (name: string) => `${name} se detiene y pregunta antes de algo arriesgado.`
+        },
+        smart: {
+          label: 'A su criterio',
+          description: (name: string) => `${name} hace el trabajo rutinario y pregunta cuando algo parece arriesgado.`
+        },
+        off: {
+          label: 'Hazlo sin preguntar',
+          description: (name: string) => `${name} nunca te espera. Los comandos bloqueados siguen bloqueados.`
+        }
+      },
+      rulesLabel: 'Reglas de la casa',
+      rulesPlaceholder: 'Tus reglas, con tus palabras. Ej.: pregunta siempre antes de enviar correos o gastar dinero.',
+      save: 'Guardar reglas',
+      discard: 'Descartar',
+      failed: 'No se pudo guardar. Tus reglas anteriores siguen vigentes.'
+    },
     close: 'Cerrar perfiles',
     nameHint: 'Letras minúsculas, dígitos, guiones y guiones bajos. Debe empezar con una letra o dígito.',
     title: 'Perfiles',
@@ -3906,7 +4094,9 @@ export const esOverrides = {
     kindLink: 'enlace',
     chat: 'Chat',
     copyUrl: 'Copiar URL',
-    copyPath: 'Copiar ruta'
+    copyPath: 'Copiar ruta',
+    buildWithPlan: 'Construir con este plan',
+    buildWithPlanDraft: 'Implementa este plan:'
   },
   artifactCard: {
     kind: {
@@ -3930,6 +4120,79 @@ export const esOverrides = {
     missingTitle: 'Artefacto no disponible',
     missingBody: 'Este artefacto ya no está en el registro local.'
   },
+  panels: {
+    button: 'Paneles',
+    title: 'Junto al chat',
+    subtitle: 'Activa lo que necesites. Cada panel se abre junto a la conversación.',
+    needsProject: 'Abre una carpeta para usarlo',
+    openFolder: 'Abrir una carpeta…',
+    arrange: 'Organizar…',
+    arrangements: { focus: 'Foco', review: 'Revisar', watch: 'Observar', build: 'Construir' },
+    items: {
+      files: { label: 'Archivos', description: 'Explora y previsualiza tu proyecto' },
+      changes: { label: 'Cambios', description: 'Revisa lo que cambió el agente' },
+      browser: { label: 'Navegador', description: 'Abre páginas junto al chat' },
+      terminal: { label: 'Terminal', description: 'Ejecuta comandos tú mismo' },
+      live: { label: 'Actividad en vivo', description: 'Cada comando del agente, en tiempo real' },
+      artifacts: { label: 'Artefactos', description: 'Lo que este chat ha creado' },
+      canvas: { label: 'Lienzo', description: 'Dibuja en una pizarra donde el agente también dibuja' }
+    }
+  },
+  quickOpen: {
+    title: 'Apertura rápida',
+    placeholder: project => `Buscar archivos en ${project}…`,
+    noProject: 'Abre una carpeta para buscar sus archivos',
+    noProjectBody: 'La apertura rápida busca en los archivos del proyecto actual.',
+    openFolder: 'Abrir una carpeta…',
+    noMatch: query => `Ningún archivo coincide con «${query}»`,
+    recent: 'Abiertos junto al chat',
+    hint: 'Escribe un nombre de archivo. Añade :42 para ir a una línea.',
+    line: line => `línea ${line}`,
+    openHint: 'abrir',
+    attachHint: 'añadir al mensaje',
+    lineHint: 'nombre:42 va a una línea'
+  },
+  recentProjects: { title: 'Tus proyectos', openFolder: 'Abrir carpeta…' },
+  todayBrief: {
+    greeting: {
+      morning: 'Buenos días',
+      afternoon: 'Buenas tardes',
+      evening: 'Buenas noches',
+      night: '¿Trabajando tarde?'
+    },
+    needsYou: 'Te necesita',
+    running: 'En curso',
+    finished: 'Terminado mientras no estabas',
+    scheduled: 'Próximo hoy',
+    recent: 'Continuar donde lo dejaste'
+  },
+
+  live: {
+    title: 'En vivo',
+    noSession: 'Ninguna sesión seleccionada',
+    emptyTitle: 'Aún no se ha ejecutado nada',
+    emptyBody:
+      'Cada comando, lectura de archivo y llamada a herramienta aparece aquí en cuanto empieza, con su salida completa. Nada se resume.',
+    count: total => `${total} ${total === 1 ? 'acción' : 'acciones'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'acción' : 'acciones'} · ${running} en curso`,
+    follow: 'Seguir',
+    followHint: 'Ir a la acción más reciente y mantenerla a la vista',
+    copy: 'Copiar comando y salida',
+    exitCode: code => `salida ${code}`,
+    runningFor: elapsed => `en curso ${elapsed}`,
+    waitingForOutput: 'En curso: la salida aparece al terminar',
+    noOutput: 'Sin salida',
+    openLive: 'En vivo'
+  },
+
+  artifactRail: {
+    empty: 'Aún no hay artefactos en esta sesión',
+    noSession: 'No hay ninguna sesión seleccionada',
+    open: 'Abrir',
+    openFailed: 'No se pudo abrir el artefacto',
+    saveFailed: 'No se pudo guardar el artefacto',
+    saveToFile: 'Guardar en un archivo'
+  },
   sidebar: {
     filter: {
       grouping: 'Agrupación',
@@ -3938,6 +4201,7 @@ export const esOverrides = {
       filters: 'Filtros',
       status: 'Estado',
       pullRequest: 'Pull request',
+      tags: 'Etiquetas',
       profile: 'Perfil',
       project: 'Proyecto',
       archived: 'Archivados',
@@ -3962,6 +4226,17 @@ export const esOverrides = {
       closed: 'Cerrada',
       noPR: 'Sin PR'
     },
+    archive: {
+      finished: 'Archivar sesiones terminadas',
+      olderThan: 'Archivar sesiones de más de…',
+      days: (days: number) => `${days} días`,
+      confirmTitle: (count: number) => `¿Archivar ${count} ${count === 1 ? 'sesión' : 'sesiones'}?`,
+      confirmBody:
+        'Los chats fijados nunca se archivan y nada se borra: las sesiones archivadas pasan a la vista Archivadas.',
+      confirmAction: 'Archivar',
+      done: (count: number) => `${count} ${count === 1 ? 'sesión archivada' : 'sesiones archivadas'}`,
+      none: 'No hay sesiones que archivar'
+    },
     gatewayGroups: {
       grouping: 'Gateway y perfil',
       rename: 'Renombrar grupo',
@@ -3979,19 +4254,31 @@ export const esOverrides = {
       capabilities: 'Capacidades',
       messaging: 'Mensajería',
       artifacts: 'Artefactos',
-      cron: 'Tareas programadas'
+      cron: 'Tareas programadas',
+      browse: 'Explorar'
     },
     searchAria: 'Buscar sesiones',
+    railAria: 'Navegación de la app',
     searchPlaceholder: 'Buscar sesiones…',
     clearSearch: 'Limpiar búsqueda',
     noMatch: query => `Ninguna sesión coincide con “${query}”.`,
     results: 'Resultados',
     pinned: 'Fijadas',
+    needsAttention: 'Necesita atención',
+    delegationReports: {
+      done: 'Hecho',
+      needsDecision: 'Necesita decisión',
+      failed: 'Falló',
+      openSubagent: 'Abrir subagente',
+      dismiss: 'Descartar informe',
+      tasks: (count, completed) => `${completed} de ${count} tareas terminadas`
+    },
     sessions: 'Sesiones',
     terminal: 'Terminal',
     files: 'Archivos',
     review: 'Revisión',
     logs: 'Registros',
+    artifacts: 'Artefactos',
     cronJobs: 'Tareas cron',
     groupAriaGrouped: 'Mostrar sesiones como una sola lista',
     groupAriaUngrouped: 'Agrupar sesiones por espacio de trabajo',
@@ -4107,9 +4394,18 @@ export const esOverrides = {
       unpin: 'Desfijar',
       markUnread: 'Marcar como no leído',
       markRead: 'Marcar como leído',
+      muteNotifications: 'Silenciar notificaciones',
+      unmuteNotifications: 'Reactivar notificaciones',
+      mutedTooltip: 'Notificaciones silenciadas para esta sesión',
+      watch: 'Seguir',
+      stopWatching: 'Dejar de seguir',
       unreadFailed: 'No se pudo actualizar el estado de no leído',
       copyId: 'Copiar ID',
       export: 'Exportar',
+      exportMarkdown: 'Exportar como Markdown',
+      exportDeliverable: 'Exportar informe de entrega',
+      copyMarkdown: 'Copiar como Markdown',
+      artifacts: 'Artefactos',
       branchFrom: 'Rama',
       rename: 'Renombrar',
       archive: 'Archivar',
@@ -4127,6 +4423,24 @@ export const esOverrides = {
       finishedUnread: 'Finalizada — sin leer',
       backgroundRunning: 'Tarea en segundo plano en ejecución',
       draftSession: 'Borrador — aún no se ha enviado nada',
+      continueOnPhone: 'Continuar en el teléfono',
+      openOnDevice: 'Abrir en otro dispositivo',
+      openDeviceTitle: 'Abrir en otro dispositivo',
+      openDeviceDesc: home =>
+        `Escanea el código o envía el enlace a otro dispositivo Hermes cuyas conexiones lleguen a ${home}. La sesión permanece donde está: solo se mueve la vista.`,
+      openDeviceHomeFallback: 'su backend de origen',
+      openDeviceIncomingTitle: '¿Abrir la sesión en este dispositivo?',
+      openDeviceIncomingDesc: (title, label) =>
+        `“${title}” reside en ${label}. Al abrirla, esta ventana cambia a esa conexión; la sesión no se mueve de su origen.`,
+      openDeviceSwitchAndOpen: 'Cambiar y abrir',
+      openDeviceSwitching: 'Cambiando…',
+      openDeviceIncomingMissingTitle: 'Conexión no encontrada',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `“${id}” reside en ${endpoint}, que no es una conexión registrada en este dispositivo. Añádela en Configuración → Gateways y vuelve a abrir el enlace.`
+          : `“${id}” reside en un backend al que este dispositivo no puede acceder. Registra la conexión en Configuración → Gateways y vuelve a abrir el enlace.`,
+      openDeviceOpenConnections: 'Abrir Gateways',
+      handoffNone: 'Ninguna plataforma de mensajería está lista para el traspaso',
       handoffOrigin: platform => `Transferido desde ${platform}`,
       continuationOrigin: 'Continuación automática: esta conversación fue comprimida y continuada',
       ownedByProfile: profile => `Perfil: ${profile}`,
@@ -4135,6 +4449,25 @@ export const esOverrides = {
       renameTitle: 'Renombrar sesión',
       renameDesc: 'Déjalo vacío para limpiarlo.',
       untitledPlaceholder: 'Sesión sin título',
+      tags: 'Etiquetas',
+      tagsDialogTitle: 'Etiquetas de la sesión',
+      tagsDialogDesc: 'Añade etiquetas de color a esta sesión para la barra lateral y los filtros.',
+      tagsAddPlaceholder: 'Nueva etiqueta',
+      tagsAdd: 'Añadir',
+      tagsRemoveLabel: label => `Quitar etiqueta ${label}`,
+      askAbout: 'Preguntar sobre esta sesión',
+      ask: {
+        clear: 'Borrar hilo',
+        dialogDesc: title =>
+          `Las preguntas sobre ${title} se responden desde su transcripción guardada — nunca desde la conversación activa.`,
+        dialogTitle: 'Preguntar sobre esta sesión',
+        empty: 'Pregunta qué hizo, decidió o escribió esta sesión.',
+        failed: 'No se pudo obtener una respuesta',
+        placeholder: 'Pregunta sobre esta sesión…',
+        send: 'Preguntar',
+        thinking: 'Leyendo la transcripción…',
+        truncatedNote: 'Respondida desde el principio y el final de una transcripción larga.'
+      },
       deleteTitle: '¿Eliminar la sesión?',
       deleteDesc: (title: string) => `Se eliminará “${title}” de forma permanente. No se puede deshacer.`,
       deleting: 'Eliminando…',
@@ -4142,10 +4475,50 @@ export const esOverrides = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'mensaje' : 'mensajes'}`,
       todoProgress: 'Tareas completadas',
+      attachmentCount: count => `${count} adjunto${count === 1 ? '' : 's'}`,
+      isolateWorktree: 'Aislar en worktree',
+      isolateWorktreeDone: name => `Aislado en el worktree ${name}`,
+      mergeWorktree: 'Fusionar el worktree',
+      mergeWorktreeTitle: 'Fusionar el worktree',
+      mergeWorktreeDesc: (branch, repo) =>
+        `¿Fusionar la rama ${branch} de vuelta en el checkout de ${repo}? Debe estar limpio.`,
+      mergingWorktree: 'Fusionando…',
+      mergedWorktree: into => `Fusionado en ${into}`,
+      mergeWorktreeFailed: 'No se pudo fusionar el worktree',
+      worktreeTag: branch => `Worktree aislado · ${branch}`,
+      worktreeUnavailable: 'Los worktrees de git no están disponibles aquí',
+      digest: {
+        agents: count => (count === 1 ? 'Un agente en ejecución' : `${count} agentes en ejecución`),
+        approve: command => `Aprobar: ${command}`,
+        compacting: 'Resumiendo la conversación',
+        replying: 'Escribiendo una respuesta',
+        stalled: 'Sigue en ejecución — en pausa desde hace un rato',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
+      prCiPassing: 'CI en verde',
+      prCiFailing: 'CI fallando',
+      prCiPending: 'CI en curso',
       ageNow: 'ahora',
       ageDay: 'd',
       ageHour: 'h',
       ageMin: 'm'
+    },
+    watch: {
+      strip: 'Sesiones seguidas',
+      stop: 'Dejar de seguir'
+    },
+    selection: {
+      ariaLabel: 'Sesiones seleccionadas',
+      count: (count: number) => `${count} seleccionadas`,
+      pin: 'Fijar',
+      unpin: 'Desfijar',
+      mute: 'Silenciar',
+      unmute: 'Quitar silencio',
+      tag: 'Etiquetar',
+      archive: 'Archivar',
+      clear: 'Quitar selección',
+      tagDialogTitle: (count: number) => (count === 1 ? 'Etiquetar 1 sesión' : `Etiquetar ${count} sesiones`),
+      tagDialogDesc: 'Añade la etiqueta a todas las sesiones seleccionadas.'
     },
     dateDivider: {
       today: 'Hoy, más temprano',
@@ -4157,6 +4530,22 @@ export const esOverrides = {
     statusDivider: {
       working: 'En progreso',
       done: 'Completado'
+    },
+    peek: {
+      idle: 'Inactivo',
+      archived: 'Archivado',
+      workspace: 'Espacio de trabajo',
+      branch: 'Rama',
+      model: 'Modelo',
+      stats: 'Estadísticas',
+      tokens: count => `${count} tokens`,
+      agents: 'Agentes delegados',
+      agentsSummary: count => `${count} ${count === 1 ? 'agente' : 'agentes'}`,
+      agentsRunning: count => `${count} en ejecución`,
+      profile: 'Perfil',
+      source: 'Origen',
+      started: 'Iniciado',
+      updated: 'Actualizado'
     },
     markAllRead: 'Marcar todo como leído'
   },
@@ -4173,7 +4562,7 @@ export const esOverrides = {
       'Describe lo que necesitas',
       '¿Qué abordamos?',
       'Pregunta lo que quieras',
-      'Empieza con un objetivo'
+      'Di el resultado que quieres'
     ],
     followUpPlaceholders: [
       'Enviar seguimiento',
@@ -4187,7 +4576,9 @@ export const esOverrides = {
     startVoice: 'Iniciar conversación de voz',
     openDirective: 'Abrir',
     queueMessage: 'Poner mensaje en cola',
+    queueWithAttachments: 'Enviar a la cola con adjuntos',
     steer: 'Guiar la ejecución actual',
+    steerTurn: 'Guiar el turno',
     stop: 'Detener',
     send: 'Enviar',
     speaking: 'Hablando',
@@ -4309,6 +4700,7 @@ export const esOverrides = {
       'composer.help': 'esta ayuda rápida (eliminar para descartarla)',
       'composer.sendNewline': 'enviar · Shift+Enter para insertar una línea nueva',
       'composer.sendQueued': 'enviar el siguiente turno en cola',
+      'composer.modelPicker': 'selector de modelo',
       'keybinds.openPanel': 'todos los atajos de teclado',
       'composer.cancel': 'cerrar el menú emergente · cancelar la ejecución',
       'composer.history': 'recorrer el menú emergente o el historial'
@@ -4329,6 +4721,8 @@ export const esOverrides = {
     restoredDraftNotice: 'Se restauró tu mensaje sin enviar',
     restoredDraftUndo: 'Deshacer',
     queueEdit: 'Editar',
+    queueMoveUp: 'Mover antes',
+    queueMoveDown: 'Mover después',
     queueExpand: 'Expandir',
     queueCollapse: 'Contraer',
     queueSendNext: 'Próximo',
@@ -4359,8 +4753,10 @@ export const esOverrides = {
     folder: 'Carpeta…',
     images: 'Imágenes…',
     pasteImage: 'Pegar imagen',
+    captureRegion: 'Capturar zona de pantalla…',
     url: 'URL…',
     promptSnippets: 'Fragmentos de prompt…',
+    slashCommands: 'Comandos slash…',
     tipPre: 'Consejo: escribe ',
     tipPost: ' para referenciar archivos en línea.',
     snippetsTitle: 'Fragmentos de prompt',
@@ -4381,6 +4777,16 @@ export const esOverrides = {
       tip: skill => `Mencionaste "${skill}" — haz clic para empezar con esa habilidad`,
       done: skill => `Añadido /${skill}`,
       doneTip: 'La habilidad se carga cuando envíes'
+    },
+    goalChips: {
+      planLabel: 'Planificar primero',
+      planTip: 'Lo convierte en /plan — un plan paso a paso en .hermes/plans/ antes de empezar',
+      planDone: 'Plan listo',
+      planDoneTip: 'El plan se ejecuta al enviar',
+      goalLabel: 'Convertir en objetivo',
+      goalTip: 'Lo convierte en /goal — un resultado permanente hacia el que Hermes trabaja',
+      goalDone: 'Objetivo listo',
+      goalDoneTip: 'El objetivo se activa al enviar'
     },
     githubSuggestions: {
       label: 'Configurar GitHub',
@@ -4404,6 +4810,18 @@ export const esOverrides = {
       done: 'Marcado para programar',
       doneTip: 'Envíalo y el agente creará la tarea'
     },
+    nudges: {
+      prLabel: 'Abrir un PR',
+      prTip: 'La última respuesta suena a trabajo de código terminado — redactar la petición',
+      prDraft: 'Abre una pull request con los cambios que acabamos de hacer.',
+      prDone: 'Petición de PR redactada',
+      prDoneTip: 'Revisa el borrador y envíalo para que el agente abra el PR',
+      followupLabel: 'Programar seguimiento',
+      followupTip: 'Programa una revisión de este trabajo — redacta la petición por ti',
+      followupDraft: 'Configúralo como tarea programada: revisa este trabajo en una hora y dime qué cambió.',
+      followupDone: 'Seguimiento redactado',
+      followupDoneTip: 'Ajusta la hora en el borrador y envíalo'
+    },
     snippets: {
       codeReview: {
         label: 'Revisión de código',
@@ -4422,6 +4840,29 @@ export const esOverrides = {
       }
     }
   },
+  regionCapture: {
+    attach: 'Adjuntar',
+    cancel: 'Cancelar',
+    captureFailed: 'No se pudo capturar la pantalla.',
+    capturing: 'Capturando…',
+    clear: 'Empezar de nuevo',
+    notePlaceholder: 'Nota para el agente (opcional)…',
+    permissionDenied:
+      'La grabación de pantalla está desactivada: actívala en Ajustes → Privacidad y seguridad → Grabación de pantalla.',
+    selectHint: 'Arrastra para elegir una zona · Esc para cancelar',
+    toolTips: { arrow: 'Flecha', pen: 'Dibujar', rect: 'Rectángulo' },
+    unavailable: 'La captura de pantalla no está disponible aquí.',
+    undo: 'Deshacer'
+  },
+  voiceStatus: {
+    idle: 'Hermes está inactivo — no hay nada en marcha.',
+    working: 'Hermes sigue trabajando en ello.',
+    workingOn: detail => `Hermes está trabajando — ahora mismo en ${detail}.`,
+    stalled: 'Hermes parece atascado — lleva un rato sin responder.',
+    needsInput: 'Hermes está esperando tu respuesta.',
+    finished: 'El último turno terminó — la respuesta te está esperando.',
+    progress: (done, total) => `${done} de ${total} tareas hechas.`
+  },
   statusStack: {
     hideStack: 'Ocultar la pila de estado',
     showStack: 'Mostrar la pila de estado',
@@ -4439,6 +4880,10 @@ export const esOverrides = {
     stop: 'Detener',
     dismiss: 'Descartar',
     exit: code => `salida ${code}`,
+    verifyChecking: 'Comprobando la vista previa…',
+    verifyFailed: count => `La comprobación falló — ${count} ${count === 1 ? 'error' : 'errores'} de consola`,
+    verifyOpenConsole: 'Abrir la consola',
+    verifyPassed: 'Comprobación de la vista previa superada',
     control: {
       goalActiveTurns: (turn: number, maxTurns: number) => `Turno ${turn}/${maxTurns}`,
       goalDoneTurns: (turns: number) => `${turns} ${turns === 1 ? 'turno' : 'turnos'}`,
@@ -4557,6 +5002,8 @@ export const esOverrides = {
       notRepo: 'No es un repositorio Git',
       noDiff: 'No hay diferencias que mostrar',
       scopeUncommitted: 'Sin confirmar',
+      scopeSession: 'Sesión',
+      sessionEmpty: 'Sin cambios de sesión',
       scopeBranch: 'Rama',
       scopeLastTurn: 'Último turno',
       commit: 'Hacer commit',
@@ -4571,6 +5018,23 @@ export const esOverrides = {
       agentShipUnavailable: 'El chat al que pertenecen estos cambios no está en pantalla.',
       agentShipPrompt:
         'Revisa los cambios actuales, haz un commit con un mensaje convencional claro, envía la rama y abre un pull request.',
+      agentReview: 'Que un agente lo revise',
+      agentReviewPick: 'Revisar con',
+      agentReviewNoProfiles: 'No se encontraron perfiles',
+      agentReviewPrompt:
+        'Revisa el diff del archivo adjunto. Informa problemas concretos — errores, regresiones, casos sin manejar — antes que detalles de estilo.',
+      agentReviewAttachment: 'Diff del árbol de trabajo',
+      agentReviewUnavailable: 'Nada que revisar: no hay repositorio o no hay diff pendiente.',
+      agentReviewReportTitle: (reviewer: string) => `Revisión de ${reviewer}`,
+      selfReview: 'Revisar cambios',
+      selfReviewRunning: 'Revisando cambios…',
+      selfReviewClean: 'No se encontraron problemas',
+      selfReviewClear: 'Borrar comentarios de la revisión',
+      selfReviewComments: count => `${count} ${count === 1 ? 'comentario' : 'comentarios'}`,
+      commentOnLine: line => `Comentar la línea ${line}`,
+      diffCommentPlaceholder: 'Comentario sobre esta línea…',
+      diffCommentSend: 'Añadir comentario',
+      commentSeeded: 'Añadido al editor como borrador',
       newBranch: 'Nueva rama',
       branchOffFrom: base => `Nueva rama desde ${base}`,
       switchTo: branch => `Cambiar a ${branch}`,
@@ -5119,6 +5583,10 @@ export const esOverrides = {
       branch: branch => `rama ${branch}`,
       closeCommandCenter: 'Cerrar Centro de comandos',
       openCommandCenter: 'Abrir Centro de comandos',
+      toggleNotices: 'Notificaciones',
+      noticesTitle: 'Notificaciones recientes',
+      toggleAttentionInbox: 'Bandeja de atención',
+      attentionInboxTitle: 'Aprobaciones y preguntas pendientes',
       showTerminal: 'Mostrar terminal',
       hideTerminal: 'Ocultar terminal',
       gateway: 'Gateway',
@@ -5202,6 +5670,19 @@ export const esOverrides = {
     }
   },
   rightSidebar: {
+    agentTouched: 'Editado en este chat',
+    newFile: 'Nuevo archivo',
+    newFolder: 'Nueva carpeta',
+    filterFiles: 'Filtrar archivos',
+    newFileIn: label => `Nuevo archivo en ${label}`,
+    newFolderIn: label => `Nueva carpeta en ${label}`,
+    newFilePlaceholder: 'nombre.ts — las barras crean carpetas',
+    newFolderPlaceholder: 'nombre-de-carpeta',
+    newFileFailed: 'No se pudo crear el archivo',
+    newFolderFailed: 'No se pudo crear la carpeta',
+    filterPlaceholder: 'Filtrar archivos…',
+    filterHint: 'Escribe parte de un nombre. Busca en todo el proyecto, no solo en carpetas abiertas.',
+    filterNoMatch: 'Ningún archivo coincide',
     aria: 'Barra lateral derecha',
     panelsAria: 'Paneles de la barra lateral derecha',
     files: 'Sistema de archivos',
@@ -5262,6 +5743,10 @@ export const esOverrides = {
     sourceLineTitle: 'Haz clic para seleccionar · Mayús-clic para ampliar · arrastra al compositor',
     source: 'FUENTE',
     renderedPreview: 'VISTA PREVIA',
+    table: 'TABLA',
+    tableTruncated: (rows: number) =>
+      `Se muestran las primeras ${rows.toLocaleString()} filas. El código fuente tiene el archivo completo.`,
+    canvas: 'LIENZO',
     diff: 'Diferencias',
     unknownSize: 'tamaño desconocido',
     binaryTitle: 'Esto parece un archivo binario',
@@ -5357,7 +5842,27 @@ export const esOverrides = {
       commentPlaceholder: 'Añade un comentario...',
       commentTitle: (n: number) => `Comentario ${n}`,
       saveComment: 'Guardar',
-      cancelComment: 'Cancelar comentario'
+      cancelComment: 'Cancelar comentario',
+      record: 'Grabar tarea',
+      recordStop: 'Detener grabación',
+      recording: count => `Grabando · ${count}`,
+      recordNeedPage: 'Abre primero una página en el navegador integrado.',
+      recordFailed: 'No se pudo iniciar la grabación en esta página.',
+      recordTitle: 'Guardar grabación como skill',
+      recordDesc:
+        'Revisa los pasos capturados, pon nombre al skill y guárdalo como borrador. El agente podrá reproducirlo desde tus skills.',
+      recordName: 'Nombre',
+      recordNamePlaceholder: 'Pedir la compra',
+      recordNameHint: slug => `Se guardará como «${slug}» en ~/.hermes/skills/`,
+      recordDescLabel: 'Descripción (opcional)',
+      recordDescPlaceholder: 'Cuándo usar este flujo…',
+      recordDescHint: 'Una frase, 60 caracteres como máximo.',
+      recordSteps: count => `Pasos grabados (${count})`,
+      recordEmpty: 'No se capturaron pasos: la grabación estaba vacía.',
+      recordSave: 'Guardar skill',
+      recordSaving: 'Guardando…',
+      recordSaved: name => `«${name}» se guardó en tus skills.`,
+      recordSaveFailed: 'No se pudo guardar el skill.'
     }
   },
   interfaceMode: {
@@ -5365,6 +5870,8 @@ export const esOverrides = {
     hint: 'Cambia lo que se muestra, no lo que Hermes puede hacer.',
     sessionNote:
       'Definido por el modo Simple. Un cambio aquí dura esta sesión; cambia a Avanzado para que sea permanente.',
+    simpleNotice: 'Modo Simple — los paneles y las herramientas extra están ocultos.',
+    showAdvanced: 'Mostrar Avanzado',
     simple: {
       label: 'Simple',
       description: 'Para hablar con Hermes. Barra lateral y chat; sin paneles de terminal, archivos ni diferencias.'
@@ -5450,9 +5957,16 @@ export const esOverrides = {
     }
   },
   assistant: {
+    sessionRecap: {
+      title: 'Dónde quedó',
+      dismiss: 'Descartar',
+      turns: count => `${count} ${count === 1 ? 'turno' : 'turnos'}`,
+      todo: progress => `plan ${progress}`
+    },
     thread: {
       loadingSession: 'Cargando sesión',
       showEarlier: 'Mostrar mensajes anteriores',
+      timelineScrubber: 'Minimapa de la transcripción',
       loadingResponse: 'Hermes está cargando una respuesta',
       loadingLocalModel: (model: string) => `Cargando ${model} en memoria`,
       processingPrompt: 'Procesando el prompt',
@@ -5681,6 +6195,7 @@ export const esOverrides = {
       stopReading: 'Detener lectura',
       readAloud: 'Leer en voz alta',
       copyFullResponse: 'Copiar la respuesta completa',
+      copyMarkdown: 'Copiar como Markdown',
       readAloudFullResponseHint: 'Mayús+clic: leer la respuesta completa',
       editMessage: 'Editar mensaje',
       expandMessage: 'Expandir mensaje',
@@ -5694,6 +6209,12 @@ export const esOverrides = {
         'Todo lo que sigue a este mensaje se elimina de la conversación y el mensaje se ejecuta nuevamente desde aquí.',
       restoreConfirm: 'Restaurar y volver a ejecutar',
       restoreNext: 'Restaurar checkpoint siguiente',
+      revertFilesTip: 'Revertir archivos al estado anterior a este mensaje',
+      revertFilesTitle: '¿Revertir archivos?',
+      revertFilesBody:
+        'Los archivos que Hermes modificó en ese turno vuelven a su estado anterior; todo lo que editaste a mano se conserva. La conversación no cambia.',
+      revertFilesConfirm: 'Revertir archivos',
+      revertFilesFailed: 'No se pudieron revertir los archivos',
       goForward: 'Avanzar',
       sendEdited: 'Enviar edición',
       attachingFile: 'Adjuntando…'
@@ -5983,6 +6504,10 @@ export const esOverrides = {
     secretTitle: 'Se requiere un secreto',
     secretDesc: 'Hermes necesita una credencial para continuar.',
     secretPlaceholder: 'valor secreto',
+    secretCardSkip: 'Omitir',
+    secretCardSave: 'Guardar',
+    secretCardFootnote:
+      'Se guarda en los secretos de este perfil: el valor va directo al backend y nunca entra en la conversación.',
     vaultUnlockSendFailed: 'No se pudo enviar la contraseña maestra',
     vaultUnlockTitle: (name: string) => `Desbloquear ${name}`,
     vaultUnlockDesc: (name: string) =>
@@ -6077,6 +6602,19 @@ export const esOverrides = {
     hydrationSyncing: (profile: string) => `Sincronizando ${profile}\u2026`,
     sessionExported: 'Sesión exportada',
     sessionExportFailed: 'No se pudo exportar la sesión',
+    markdownUser: 'Usuario',
+    markdownAssistant: 'Asistente',
+    markdownSystem: 'Sistema',
+    markdownReasoning: 'Razonamiento',
+    markdownToolCall: 'Llamada a herramienta',
+    markdownToolResult: 'Resultado de herramienta',
+    deliverableArtifacts: 'Artefactos',
+    deliverableChanges: 'Cambios',
+    deliverableFilesLine: (files, added, removed) => `${files} archivos modificados · +${added} / −${removed}`,
+    deliverableNoSummary: 'No se registró ninguna respuesta del asistente',
+    deliverablePullRequest: 'Pull request',
+    deliverableSession: 'Sesión',
+    deliverableSummary: 'Resumen',
     imageSaved: 'Imagen guardada',
     downloadStarted: 'Descarga iniciada',
     restartToUseSaveImage: 'Reinicia Hermes Desktop para usar Guardar imagen.',
@@ -6089,6 +6627,7 @@ export const esOverrides = {
     imageAttach: 'Adjuntar imagen',
     imageWriteFailed: 'No se pudo escribir la imagen en disco.',
     imageAttachFailed: 'No se pudo adjuntar la imagen',
+    pastedAsFile: 'Pegado como archivo',
     pastedContent: 'Contenido pegado',
     pasteAttachFailed: 'No se pudo adjuntar el texto pegado',
     attachImages: 'Adjuntar imágenes',
@@ -6098,6 +6637,8 @@ export const esOverrides = {
     dropFiles: 'Soltar archivos',
     handoff: {
       pickPlatform: 'Elige un destino',
+      queued: (platform, home) => `Traspasando a ${platform} (${home})…`,
+      sessionUnavailable: 'Este chat no está activo en la puerta de enlace ahora mismo.',
       success: platform => `Transferido a ${platform}. Puedes reanudar aquí cuando quieras.`,
       systemNote: platform => `↻ Transferido a ${platform}; puedes reanudar aquí cuando quieras.`,
       failed: error => `La transferencia falló: ${error}`,
@@ -6106,6 +6647,21 @@ export const esOverrides = {
       startMessaging: 'Iniciar mensajería'
     }
   },
+  menuBar: {
+    newSession: 'Nueva sesión',
+    quickEntry: 'Entrada rápida',
+    quit: 'Salir de Hermes',
+    recentSessions: 'Sesiones recientes',
+    show: 'Mostrar Hermes',
+    statusIdle: 'Hermes — inactivo',
+    statusActive: (runs: number, needsYou: number) => `${runs} en ejecución · ${needsYou} te espera`
+  },
+
+  quickEntry: {
+    contextLabel: 'Contexto',
+    contextRemove: 'Quitar contexto'
+  },
+
   tips: {
     close: 'No volver a mostrar este consejo',
     items: {
@@ -6154,6 +6710,10 @@ export const esOverrides = {
       'right-pane': {
         title: 'El panel de trabajo',
         text: 'Archivos, terminal, revisión y el navegador integrado comparten el lado derecho.'
+      },
+      'advanced-mode': {
+        title: 'Más detrás de Avanzado',
+        text: 'Los paneles, las tareas programadas, las capacidades y la barra de estado descansan en el modo Avanzado — Configuración › Apariencia › Ventana y diseño cambia de modo.'
       }
     }
   },

@@ -18,10 +18,11 @@ import { isMissingRestEndpoint, isMissingRpcMethod } from '@/lib/gateway-rpc'
 import { isUnderPath } from '@/lib/path-compare'
 import { revealFile } from '@/store/file-actions'
 import { $gateway, activeGateway, ensureActiveGatewayOpen } from '@/store/gateway'
-import { $sidebarShowAllSessions, setSidebarAgentsGrouped } from '@/store/layout'
+import { $sidebarShowAllSessions, revealFilesForNewWork, setSidebarAgentsGrouped } from '@/store/layout'
 import { notify } from '@/store/notifications'
 import {
   $activeGatewayProfile,
+  $profiles,
   $profileScope,
   ALL_PROFILES,
   normalizeProfileKey,
@@ -48,6 +49,7 @@ import {
 import type { ProjectInfo, ProjectsPayload } from '@/types/hermes'
 
 import { recordFeatureUse } from './desktop-metrics'
+import { noteProjectOpened } from './recent-projects'
 
 // First-class, per-profile Projects (named, multi-folder workspaces). State is
 // served by the live gateway's `projects.*` JSON-RPC methods, which wrap the
@@ -96,6 +98,10 @@ export const $reposScanning = atom(false)
 export function enterProject(id: string): void {
   $projectScope.set(id)
   recordFeatureUse('projects')
+
+  if (id !== NO_PROJECT_ID && id !== ALL_PROJECTS) {
+    noteProjectOpened(id)
+  }
 
   // Only explicit, persisted projects (ids are `p_<hex>`) become active. Auto
   // projects (ids are filesystem paths) and the Home bucket have no durable row
@@ -297,10 +303,14 @@ async function gatewayRequest<T>(method: string, params: Record<string, unknown>
   return gateway.request<T>(method, params)
 }
 
+function viewingAllProfiles(): boolean {
+  return $profileScope.get() === ALL_PROFILES && $profiles.get().length > 1
+}
+
 export function projectProfile(): null | string {
   const profile = normalizeProfileKey($activeGatewayProfile.get())
 
-  return $profileScope.get() === ALL_PROFILES || profile === ALL_PROFILES ? null : profile
+  return viewingAllProfiles() || profile === ALL_PROFILES ? null : profile
 }
 
 // All profiles filters the sidebar. Writes still belong to the live gateway profile.
@@ -500,7 +510,7 @@ async function refreshProjectTreeOn(context: ActiveProjectsContext): Promise<voi
 // sessions + the scoped-session-id set). Best-effort: a failure leaves the
 // cached tree intact so the sidebar doesn't flicker.
 export async function refreshProjectTree(): Promise<void> {
-  if ($profileScope.get() === ALL_PROFILES) {
+  if (viewingAllProfiles()) {
     await refreshProjectTreeAcrossProfiles()
 
     return
@@ -529,7 +539,7 @@ async function refreshProjectTreeAcrossProfiles(): Promise<void> {
 
     // A profile switch mid-flight leaves this payload describing the wrong
     // scope; the newer refresh owns the tree.
-    if (generation !== projectTreeRefreshGeneration || $profileScope.get() !== ALL_PROFILES) {
+    if (generation !== projectTreeRefreshGeneration || !viewingAllProfiles()) {
       return
     }
 
@@ -1451,6 +1461,8 @@ export interface StartWorkSessionRequest {
   /** Stack the fresh session as a tab when main already holds a chat (palette/⌘O opens-from-nowhere). */
   openTab?: boolean
   path: string
+  /** `@kind:value` inline refs inserted as chips after `draft` (plan→build handoff). */
+  refs?: string[]
   token: number
 }
 
@@ -1502,7 +1514,11 @@ export function closeWorktreeDialog(): void {
 
 let startWorkToken = 0
 
-export function requestStartWorkSession(path: string, draft?: string, options?: { openTab?: boolean }): void {
+export function requestStartWorkSession(
+  path: string,
+  draft?: string,
+  options?: { openTab?: boolean; refs?: string[] }
+): void {
   const target = path.trim()
 
   if (!target) {
@@ -1510,10 +1526,12 @@ export function requestStartWorkSession(path: string, draft?: string, options?: 
   }
 
   startWorkToken += 1
+  revealFilesForNewWork()
   $startWorkSessionRequest.set({
     draft: draft?.trim() || undefined,
     openTab: options?.openTab || undefined,
     path: target,
+    refs: options?.refs?.length ? options.refs : undefined,
     token: startWorkToken
   })
 }

@@ -82,7 +82,9 @@ export function windowBackingOptions(state: TranslucencyState, themedColor: stri
 /**
  * Return the native Windows backdrop only when glass is actually active.
  * Electron treats even the `none` backdrop as a translucent-window opt-in,
- * which disables native maximize and resize commands on Windows.
+ * which disables native maximize and resize commands on Windows. This
+ * construction-time omission is different from the runtime reset path, which
+ * explicitly sends `none` when clearing an already-created window.
  */
 export function windowBackgroundMaterialOptions(
   state: TranslucencyState,

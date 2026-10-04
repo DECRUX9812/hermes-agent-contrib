@@ -28,6 +28,7 @@ import sys
 import tempfile
 import threading
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Optional
 
@@ -113,6 +114,30 @@ def message_agent_tool_schema() -> dict:
                             "'Message from …' prefix — it is added automatically."
                         ),
                     },
+                    "task": {
+                        "type": "object",
+                        "description": (
+                            "Optional task hand-off: writes a durable mailbox note beside "
+                            "the message — the recipient flips its status with update_task, "
+                            "and the note renders in the roster + group chats on the Desktop. "
+                            "Use it for work you want tracked (hand-offs with a clear ask), "
+                            "not for ordinary chat."
+                        ),
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "description": "Short task title shown on the note card.",
+                            },
+                            "payload": {
+                                "type": "object",
+                                "description": (
+                                    "Optional structured fields for the hand-off (links, ids, "
+                                    "acceptance criteria). Kept small."
+                                ),
+                            },
+                        },
+                        "required": ["title"],
+                    },
                 },
                 "required": ["target", "message"],
             },
@@ -122,23 +147,24 @@ def message_agent_tool_schema() -> dict:
 
 def message_agent_authorized(agent: Any) -> bool:
     """The ``message_agent`` gate: a protocol-enabled agent whose session is a managed
-    Bot-Mode canonical Bot Chat. Session-stable, so it is prompt-cache safe to re-evaluate
-    on every tool-snapshot rebuild. Never raises."""
+    Bot-Mode bot-powered session — the canonical Bot Chat or a marked bot topic.
+    Session-stable, so it is prompt-cache safe to re-evaluate on every tool-snapshot
+    rebuild. Never raises."""
     try:
         if not getattr(agent, "_bot_mode_protocol", True):
             return False
-        from tools.bot_mode_probe import BOT_CHAT_TITLE, is_bot_mode_managed
+        from tools.bot_mode_probe import bot_powered_session, is_bot_mode_managed
 
         # Managed-install check, NOT section non-emptiness: a SOUL.md carrying the
         # legacy protocol text gets an empty section but must still get the tool.
-        return _session_title(agent) == BOT_CHAT_TITLE and is_bot_mode_managed(_agent_home(agent))
+        return bot_powered_session(agent) and is_bot_mode_managed(_agent_home(agent))
     except Exception:  # pragma: no cover — must never break a turn
         logger.debug("message_agent_authorized failed", exc_info=True)
         return False
 
 
 def ensure_message_agent_tool(agent: Any) -> bool:
-    """Inject the ``message_agent`` schema into a Bot Chat agent's tool list (once per turn).
+    """Inject the ``message_agent`` schema into a bot-powered agent's tool list (once per turn).
     Idempotent and deterministic for the session's life (the gate is stable from the
     first turn), so the tool list is byte-identical across turns — prompt-cache safe. Never raises."""
     try:
@@ -198,19 +224,22 @@ def _err(message: str, *, roster: list[str] | None = None, peers: list[str] | No
     return json.dumps(payload)
 
 
-def message_agent_tool(target: str = "", message: str = "", task_id: Optional[str] = None, agent: Any = None) -> str:
+def message_agent_tool(target: str = "", message: str = "", task: Optional[dict] = None,
+                       task_id: Optional[str] = None, agent: Any = None) -> str:
     """Deliver ``message`` to ``target``'s Bot Chat. Returns a JSON ack/error.
-    ``agent`` is the calling AIAgent — used for the Bot Chat gate and sender identity."""
+    ``task`` (``{title, payload?}``) additionally files a mailbox note (tools/bot_mailbox.py) —
+    a tracked hand-off the recipient flips via ``update_task``. ``agent`` is the calling AIAgent
+    — used for the bot-powered-session gate and sender identity."""
     home = _agent_home(agent)
     try:
         from tools.bot_mode_probe import (
-            BOT_CHAT_TITLE, _display_name, _handle, _hermes_root, _peers, _profile_name as _self_profile_name,
-            _roster, is_bot_mode_managed,
+            _display_name, _handle, _hermes_root, _peers, _profile_name as _self_profile_name,
+            _roster, bot_powered_session, is_bot_mode_managed,
         )
         from tools.bot_relay import BOT_CHAT_TURN_ARGS, _hermes_cli
 
-        if _session_title(agent) != BOT_CHAT_TITLE:
-            return _err("message_agent is only available in a Bot Mode 'Bot Chat' session. "
+        if not bot_powered_session(agent):
+            return _err("message_agent is only available in a bot's 'Bot Chat' or a bot topic. "
                         "This session is not one; do not retry.")
         if not is_bot_mode_managed(home):
             return _err("This install is not Bot-Mode-managed (no bot roster); "
@@ -239,8 +268,26 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
     raw_target = str(target or "").strip().lstrip("@")
     if not raw_target:
         return _roster_err("target is required.")
+
+    # Mailbox hand-off (#48): ``task={title,payload?}`` files a durable note beside the
+    # delivered text; the note id rides a '[task mbx_…]' marker the recipient feeds to
+    # update_task. Peers are excluded — a peer gateway's mailbox is opaque to us.
+    task_title = ""
+    task_payload = None
+    if task is not None:
+        if not isinstance(task, dict) or not str(task.get("title") or "").strip():
+            return _err("task must be an object with a non-empty 'title'.")
+        task_title = str(task["title"]).strip()
+        task_payload = task.get("payload")
+
     # Sender signature: the friendly name when the bot has one (#89720); the @handle stays the routing alias.
-    content = f"Message from 🤖 {_display_name(me, roster_homes.get(me, Path(home)))} (@{_handle(me)}): " + body
+    # The body is model text: interior lines shaped like trusted framings (a second stamp,
+    # (user)/(you) labels, [task mbx_ markers) are quoted, never real attribution.
+    from tools.bot_relay import relabel_member_authored_lines
+    content = (
+        f"Message from 🤖 {_display_name(me, roster_homes.get(me, Path(home)))} (@{_handle(me)}): "
+        + relabel_member_authored_lines(body)
+    )
     delivery = dict(task_id=task_id, agent=agent)
     # Attribution for the recipient's memory hooks; the text prefix above stays the human-facing signature.
     author = {"id": f"bot:{me}", "name": _handle(me), "is_bot": True}
@@ -251,6 +298,10 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
         peer_name, peer_profile = peer_match.groups() if peer_match else (raw_target.lower(), None)
         if peer_name not in peers:
             return _roster_err(f"No registered peer named '{peer_name}'.")
+        if task_title:
+            return _err("Task hand-offs (task=…) aren't supported for peer gateway targets — "
+                        "the peer's mailbox is opaque to this install. Send a plain message, or hand "
+                        "off to a teammate on this install or a connected machine.")
         dm_target = f"{peer_name}/{peer_profile}" if peer_profile else peer_name
         # A peer dm crosses installs: qualify the id with this host so the peer's own '<me>' stays distinct.
         from agent.turn_author import bot_author_id, local_origin
@@ -271,7 +322,7 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
     # hands out for a colliding row, and stamps on replies. Resolved locally first, a local bot whose friendly
     # name slugs to 'hermes-mini' captured it. An '@' name no connection answers to still resolves locally.
     if "@" in raw_target.strip().lstrip("@"):
-        relayed = _try_relay_delivery(root, raw_target, content, me, **delivery)
+        relayed = _try_relay_delivery(root, raw_target, content, me, task=task_note(task_title, task_payload, body), **delivery)
         if relayed is not None:
             return relayed
     # Local teammate — folder id, or a friendly name / Desktop @-slug ('Scribe', 'Dr. Foo').
@@ -283,7 +334,7 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
         # Unknown locally, or same-name target on ANOTHER connection (this gateway's 'default'
         # messaging the cloud 'default'): every Desktop-connected gateway is reachable via the
         # relay roster, so try that before reporting a resolution failure / self-message.
-        relayed = _try_relay_delivery(root, raw_target, content, me, **delivery)
+        relayed = _try_relay_delivery(root, raw_target, content, me, task=task_note(task_title, task_payload, body), **delivery)
         if relayed is not None:
             return relayed
         if resolved == me:
@@ -291,12 +342,34 @@ def message_agent_tool(target: str = "", message: str = "", task_id: Optional[st
         return _roster_err(f"No teammate named '{raw_target}' on this install, on a connected "
                            "machine, or on a registered peer. Pick a name from the roster "
                            "(roles are listed in your system prompt).")
+    if task_title:
+        # The note lives on THIS install's mailbox — shared root, visible to the recipient's
+        # update_task and to the Desktop roster/group views.
+        from tools.bot_mailbox import append_note
+
+        note = append_note(
+            root,
+            to={"kind": "bot", "profile": resolved, "handle": _handle(resolved)},
+            sender={"kind": "bot", "profile": me, "handle": _handle(me),
+                    "name": _display_name(me, roster_homes.get(me, Path(home)))},
+            title=task_title,
+            body=body,
+            payload=task_payload,
+        )
+        content += f"\n\n[task {note['id']} — call update_task(note=…, status=…) to accept/decline/finish it]"
     return _start_delivery([_hermes_cli(), "-p", resolved, *BOT_CHAT_TURN_ARGS], content, f"@{_handle(resolved)}",
                            stdin_file=False, profile_home=roster_homes[resolved], author=author, **delivery)
 
 
+def task_note(title: str, payload: Any, body: str = "") -> Optional[dict]:
+    """Normalized task spec for the relay path, or None for a plain DM. The note body is
+    the model-authored message — the stamped prefix/marker stay transport text."""
+    title = str(title or "").strip()
+    return {"title": title, "payload": payload, "body": body} if title else None
+
+
 def _try_relay_delivery(root: Path, raw_target: str, content: str, me: str, *,
-                        task_id: Optional[str], agent: Any) -> Optional[str]:
+                        task: Optional[dict] = None, task_id: Optional[str], agent: Any) -> Optional[str]:
     """Cross-connection delivery via the Desktop relay; None when the target doesn't
     resolve against the relay roster. The envelope is queued on disk for the Desktop
     to drain; a background waiter is spawned immediately so the relayed reply wakes
@@ -317,8 +390,16 @@ def _try_relay_delivery(root: Path, raw_target: str, content: str, me: str, *,
             forms = ", ".join(form for r, form in zip(roster, remote_target_forms(roster, local_taken_forms(root)))
                               if want in _target_aliases(r))
             return _err(f"'{raw_target}' exists on several connected machines — disambiguate with one of: {forms}.")
+        if task:
+            # The note's canonical copy lands on the TARGET install — mint the id here so the
+            # marker in the text and the envelope's note payload name the same record.
+            from tools.bot_mailbox import new_note_id
+
+            task["id"] = new_note_id()
+            content += f"\n\n[task {task['id']} — call update_task(note=…, status=…) to accept/decline/finish it]"
         try:
-            envelope = enqueue_envelope(root, target=match, message=content, sender_profile=me, sender_handle=_handle(me))
+            envelope = enqueue_envelope(root, target=match, message=content, sender_profile=me, sender_handle=_handle(me),
+                                        note=task)
         except EnvelopeRefusedError as exc:
             # Fail fast: target definitively offline — nothing was queued.
             # Structured refusal so the agent can distinguish it from a resolution error ('runtime_offline'
@@ -869,17 +950,6 @@ def _agent_home(agent: Any) -> str:
         if db_path:
             return str(Path(db_path).parent)
     return _default_home()
-
-
-def _session_title(agent: Any) -> str:
-    title = str(getattr(agent, "_session_title_hint", "") or "").strip()
-    if title:
-        return title
-    with contextlib.suppress(Exception):
-        sdb, sid = getattr(agent, "_session_db", None), getattr(agent, "session_id", None)
-        if sdb and sid:
-            return str(sdb.get_session_title(sid) or "").strip()
-    return ""
 
 
 if __name__ == "__main__":  # pragma: no cover - exercised as a background process

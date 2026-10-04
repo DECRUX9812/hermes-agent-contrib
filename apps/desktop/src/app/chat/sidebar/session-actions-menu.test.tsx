@@ -10,7 +10,8 @@ afterEach(cleanup)
 // a broken asChild composition on the kebab trigger fails here — the menu
 // must still open on click.
 
-vi.mock('@/components/pane-shell/tree/store', () => ({
+vi.mock('@/components/pane-shell/tree/store', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   closeAllTreeTabs: vi.fn(),
   closeOtherTreeTabs: vi.fn(),
   closeTreeTabsToRight: vi.fn(),
@@ -45,6 +46,24 @@ vi.mock('@/i18n', () => ({
         },
         row: {
           archive: 'Archive',
+          ask: {
+            clear: 'Clear thread',
+            dialogDesc: (title: string) => `About ${title}`,
+            dialogTitle: 'Ask about this session',
+            empty: 'Ask a question about what this session did, decided, or wrote.',
+            failed: 'Could not get an answer',
+            placeholder: 'Ask about this session…',
+            send: 'Ask',
+            thinking: 'Reading the transcript…',
+            truncatedNote: 'Answered from the beginning and end of a long transcript.'
+          },
+          askAbout: 'Ask about this session',
+          continueOnPhone: 'Continue on phone',
+          handoffNone: 'No messaging platform is ready for a handoff',
+          openDeviceDesc: (home: string) => `Scan the code or send the link to ${home}.`,
+          openDeviceHomeFallback: 'its home backend',
+          openDeviceTitle: 'Open on another device',
+          openOnDevice: 'Open on another device',
           branchFrom: 'Branch from here',
           copyId: 'Copy ID',
           copyIdFailed: 'Failed to copy ID',
@@ -84,12 +103,15 @@ vi.mock('@/store/projects', () => ({
 }))
 vi.mock('@/store/session', () => ({
   $activeSessionId: atom<null | string>(null),
+  $busy: atom(false),
   $connection: atom<null | { mode: string }>(null),
   $cronSessions: atom<unknown[]>([]),
+  $currentCwd: atom(''),
   $messagingSessions: atom<unknown[]>([]),
   $selectedStoredSessionId: atom<null | string>(null),
   $sessions: atom<unknown[]>([]),
   $unreadFinishedSessionIds: atom<string[]>([]),
+  $workspaceCwdOwner: atom<null | string>(null),
   markSessionRead: vi.fn(),
   sessionMatchesStoredId: vi.fn(() => false),
   sessionPinId: vi.fn((s: { id: string }) => s.id),
@@ -99,7 +121,8 @@ vi.mock('@/store/session-color', () => ({
   $sessionColorOverrides: atom<Record<string, string>>({}),
   setSessionColorOverride: vi.fn()
 }))
-vi.mock('@/store/session-states', () => ({
+vi.mock('@/store/session-states', async importOriginal => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   $sessionStates: atom<Record<string, unknown>>({}),
   $sessionTiles: atom<unknown[]>([]),
   closeAllOpenSessionTiles: vi.fn(),
@@ -109,6 +132,7 @@ vi.mock('@/store/windows', () => ({
   canOpenSessionInTerminal: () => false,
   canOpenSessionWindow: () => false,
   isBrowserWindow: () => false,
+  isHudWindow: () => false,
   isSecondaryWindow: () => false,
   openSessionInNewWindow: vi.fn(),
   openSessionInTerminal: vi.fn()

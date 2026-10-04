@@ -23,6 +23,7 @@ import { ChatView } from '../chat'
 import { ChatSidebar } from '../chat/sidebar'
 import { TerminalPaneChrome } from '../right-sidebar/terminal/chrome'
 import { contributedRoutes, NEW_CHAT_ROUTE, ROUTES_AREA, sessionRoute } from '../routes'
+import { ActivityRail } from '../shell/activity-rail'
 import { useStatusSnapshot } from '../shell/hooks/use-status-snapshot'
 import { useStatusbarItems } from '../shell/hooks/use-statusbar-items'
 import { ModelMenuPanel } from '../shell/model-menu-panel'
@@ -56,6 +57,18 @@ export const SidebarSurface = memo(function SidebarSurface({
   const latestActions = useMemo(() => latestSidebarActions(actions), [actions])
 
   return <ChatSidebar currentView={currentView} {...latestActions} />
+})
+
+export const RailSurface = memo(function RailSurface({
+  actions,
+  currentView
+}: {
+  actions: SidebarActions
+  currentView: ComponentProps<typeof ActivityRail>['currentView']
+}) {
+  const latestActions = useMemo(() => latestSidebarActions(actions), [actions])
+
+  return <ActivityRail currentView={currentView} onNavigate={latestActions.onNavigate} />
 })
 
 export const TerminalSurface = memo(function TerminalSurface() {

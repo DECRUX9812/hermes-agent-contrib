@@ -2,7 +2,11 @@ import { useStore } from '@nanostores/react'
 import type * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 
+import { SessionTagChip } from '@/app/chat/session-tag'
+import { SessionAskDialog } from '@/app/chat/sidebar/session-ask-dialog'
+import { SessionDeviceDialog } from '@/app/chat/sidebar/session-device-dialog'
 import { openSession } from '@/app/open-session'
+import { continueInHermesCli } from '@/app/right-sidebar/terminal/hermes-cli'
 import {
   closeAllTreeTabs,
   closeOtherTreeTabs,
@@ -22,15 +26,28 @@ import { Codicon } from '@/components/ui/codicon'
 import { ColorSwatches } from '@/components/ui/color-swatches'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { CopyButton } from '@/components/ui/copy-button'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { renameSession } from '@/hermes'
+import { getMessagingPlatforms, type MessagingPlatformInfo, renameSession } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { desktopGit } from '@/lib/desktop-git'
 import { triggerHaptic } from '@/lib/haptics'
 import { ArchiveOff } from '@/lib/icons'
 import { isSubmitEnter } from '@/lib/ime'
 import { PROFILE_SWATCHES } from '@/lib/profile-color'
+import { exportSessionDeliverable } from '@/lib/session-deliverable'
 import { exportSession } from '@/lib/session-export'
+import { handoffTargets, runSessionHandoff } from '@/lib/session-handoff'
+import { exportSessionMarkdown, sessionMarkdownText } from '@/lib/session-markdown'
+import { useSessionSlice } from '@/lib/use-session-slice'
+import { revealArtifactsRail } from '@/store/artifact-rail'
 import { activeGateway } from '@/store/gateway'
 import { notify, notifyError } from '@/store/notifications'
 import {
@@ -52,8 +69,12 @@ import {
   sessionPinId
 } from '@/store/session'
 import { $sessionColorOverrides, setSessionColorOverride } from '@/store/session-color'
+import { $mutedSessionIds, isSessionMuted, toggleSessionMuted } from '@/store/session-mute'
 import { $sessionStates, $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
+import { $sessionTags, addSessionTag, removeSessionTag, sessionTagKey } from '@/store/session-tags'
 import { ackStoredSessionId } from '@/store/session-unread'
+import { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } from '@/store/session-watch'
+import { isolateSessionToWorktree, mergeSessionWorktree, sessionWorktreeInfo } from '@/store/session-worktree'
 import { canOpenSessionInTerminal, canOpenSessionWindow, openSessionInTerminal } from '@/store/windows'
 
 import type { SessionTitleResponse } from '../../types'
@@ -237,6 +258,126 @@ function MoveToProjectItems({ kit, sessionId, profile }: { kit: MenuKit; session
   )
 }
 
+// #47 worktree-per-session: the ⋯ menu's isolate / merge-back verbs. Its own
+// component so only an OPEN menu reads the sessions store (same reasoning as
+// MoveToProjectItems). Which verb shows is derived from the row's stored
+// cwd/git meta — a session parked under <repo>/.worktrees/ gets "merge back",
+// any other session with a workspace gets the opt-in "isolate".
+function SessionWorktreeItems({
+  kit,
+  onMerge,
+  sessionId
+}: {
+  kit: MenuKit
+  onMerge: (branch: string, repo: string) => void
+  sessionId: string
+}) {
+  const { t } = useI18n()
+  const r = t.sidebar.row
+  const session = useStore($sessions).find(s => sessionMatchesStoredId(s, sessionId))
+
+  // No cwd → nothing to isolate; no git bridge (browser preview) → the verb
+  // would only toast an error, so stay out of the menu entirely.
+  if (!session?.cwd?.trim() || !desktopGit()) {
+    return null
+  }
+
+  const worktree = sessionWorktreeInfo(session)
+
+  if (worktree) {
+    const branch = worktree.branch || worktree.worktreePath.split('/').pop() || ''
+    const repo = worktree.repoRoot.split(/[\\/]/).pop() || worktree.repoRoot
+
+    return (
+      <kit.Item
+        onSelect={() => {
+          triggerHaptic('selection')
+          onMerge(branch, repo)
+        }}
+      >
+        <Codicon name="git-merge" size="0.875rem" />
+        <span>{r.mergeWorktree}</span>
+      </kit.Item>
+    )
+  }
+
+  return (
+    <kit.Item
+      onSelect={() => {
+        triggerHaptic('selection')
+        isolateSessionToWorktree(sessionId)
+          .then(branch => notify({ durationMs: 3_000, kind: 'success', message: r.isolateWorktreeDone(branch) }))
+          .catch(err => notifyError(err, r.worktreeUnavailable))
+      }}
+    >
+      <Codicon name="git-branch" size="0.875rem" />
+      <span>{r.isolateWorktree}</span>
+    </kit.Item>
+  )
+}
+
+// The "Continue on phone" submenu — the per-session door to the platform
+// parity links (#40). Its own component so only an OPEN submenu fetches the
+// platform list. Only rendered for the row that IS the open session: the
+// handoff RPC needs a live runtime id, and the only runtime id this window
+// knows for sure is the active one.
+function HandoffPlatformItems({ kit, profile }: { kit: MenuKit; profile?: string }) {
+  const { t } = useI18n()
+  const r = t.sidebar.row
+  const [platforms, setPlatforms] = useState<MessagingPlatformInfo[] | null>(null)
+
+  useEffect(() => {
+    let live = true
+
+    void getMessagingPlatforms(profile)
+      .then(result => {
+        if (live) {
+          setPlatforms(handoffTargets(result.platforms))
+        }
+      })
+      .catch(() => {
+        if (live) {
+          setPlatforms([])
+        }
+      })
+
+    return () => {
+      live = false
+    }
+  }, [profile])
+
+  if (platforms === null) {
+    return <kit.Item disabled>{t.common.loading}</kit.Item>
+  }
+
+  if (platforms.length === 0) {
+    return <kit.Item disabled>{r.handoffNone}</kit.Item>
+  }
+
+  return (
+    <>
+      {platforms.map(platform => (
+        <kit.Item
+          key={platform.id}
+          onSelect={() => {
+            triggerHaptic('selection')
+            void runSessionHandoff(platform.id, {
+              failed: error => t.desktop.handoff.failed(error),
+              queued: (name, home) => t.desktop.handoff.queued(name, home),
+              sessionUnavailable: t.desktop.handoff.sessionUnavailable,
+              startMessaging: t.desktop.handoff.startMessaging,
+              success: name => t.desktop.handoff.success(name),
+              timedOut: t.desktop.handoff.timedOut
+            })
+          }}
+        >
+          {platform.identity?.label || platform.name}
+        </kit.Item>
+      ))}
+    </>
+  )
+}
+
 function useSessionActions({
   sessionId,
   title,
@@ -258,6 +399,9 @@ function useSessionActions({
   const { t } = useI18n()
   const r = t.sidebar.row
   const [renameOpen, setRenameOpen] = useState(false)
+  const [tagsOpen, setTagsOpen] = useState(false)
+  const [askOpen, setAskOpen] = useState(false)
+  const [deviceOpen, setDeviceOpen] = useState(false)
   // The rename item opens a Dialog. When a menu closes, Radix restores focus to
   // its trigger — for a sidebar row that trigger is the row's own <button>, so
   // focus lands there instead of the dialog's input: Space then activates the
@@ -267,12 +411,24 @@ function useSessionActions({
   // the project menu's appearance-popover guard.
   const suppressCloseFocusRef = useRef(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  // Merge-back confirm (#47): the branch/repo pair the item captured when it
+  // was clicked — the dialog must not re-derive it from a row that may have
+  // re-filed under new git meta mid-dialog.
+  const [mergeWorktreeTarget, setMergeWorktreeTarget] = useState<null | { branch: string; repo: string }>(null)
   const tiles = useStore($sessionTiles)
   const selectedStoredSessionId = useStore($selectedStoredSessionId)
   const isRemote = useStore($connection)?.mode === 'remote'
   // The row's finished-unread dot is cleared by opening the session (main or
   // tile) — this menu item is the explicit escape hatch for the rest.
   const isUnread = useStore($unreadFinishedSessionIds).includes(sessionId)
+  // Subscribe for freshness; the check itself resolves through lineage
+  // aliases (the row passes session.id, the store keys on the durable pin id).
+  const mutedSessionIds = useStore($mutedSessionIds)
+  const isMuted = mutedSessionIds.length > 0 && isSessionMuted(sessionId)
+  // Watched sessions render as live chips at the top of the rail — same
+  // lineage-safe lookup as mute (the row id resolves to the durable pin id).
+  const watchedSessionKeys = useStore($watchedSessionKeys)
+  const isWatched = Object.keys(watchedSessionKeys).length > 0 && isWatchedSessionId(sessionId)
 
   // Already showing as a tab somewhere (a tile, or loaded in main — main IS
   // a tab): offering "Open in new tab" again is noise.
@@ -334,9 +490,40 @@ function useSessionActions({
 
               void openSessionInTerminal(sessionId, { cwd, profile })
             }
+          }),
+          // The same TUI, in the app's own terminal pane under the chat.
+          spec({
+            disabled: !sessionId,
+            icon: 'debug-console',
+            label: r.continueInCli,
+            onSelect: () => {
+              triggerHaptic('selection')
+
+              const cwd =
+                $sessions
+                  .get()
+                  .find(s => sessionMatchesStoredId(s, sessionId))
+                  ?.cwd?.trim() || undefined
+
+              void continueInHermesCli(sessionId, { cwd, profile })
+            }
           })
         ]
-      : [])
+      : []),
+    // Cross-device handoff (#50): a hermes://session/open deep link + QR that
+    // another Hermes device opens as a VIEW — the session's home never moves.
+    spec({
+      disabled: !sessionId,
+      icon: 'device-desktop',
+      label: r.openOnDevice,
+      onSelect: () => {
+        triggerHaptic('selection')
+        // Same dialog-open focus dance as rename: the row's trigger must not
+        // steal the focus back when the menu closes.
+        suppressCloseFocusRef.current = true
+        setDeviceOpen(true)
+      }
+    })
   ]
 
   // IDENTITY — name/mark/reference the session. Rename is omitted (not
@@ -358,6 +545,16 @@ function useSessionActions({
           })
         ]
       : []),
+    spec({
+      disabled: !sessionId,
+      icon: 'tag',
+      label: r.tags,
+      onSelect: () => {
+        triggerHaptic('selection')
+        suppressCloseFocusRef.current = true
+        setTagsOpen(true)
+      }
+    }),
     spec({
       disabled: !onPin,
       icon: 'pin',
@@ -394,11 +591,45 @@ function useSessionActions({
           onToggleUnread?.()
         }
       }
+    }),
+    // Mute silences the session's toasts + OS notifications (turnDone,
+    // backgroundDone, compress notices); the in-app record keeps them.
+    spec({
+      disabled: !sessionId,
+      icon: isMuted ? 'bell' : 'bell-slash',
+      label: isMuted ? r.unmuteNotifications : r.muteNotifications,
+      onSelect: () => {
+        triggerHaptic('selection')
+        toggleSessionMuted(sessionId)
+      }
+    }),
+    // Watch pins a live status chip to the top of the Sessions rail — the
+    // quiet "keep an eye on it" counterpart to mute's "leave me alone".
+    spec({
+      disabled: !sessionId,
+      icon: isWatched ? 'eye-closed' : 'eye',
+      label: isWatched ? r.stopWatching : r.watch,
+      onSelect: () => {
+        triggerHaptic('selection')
+        toggleSessionWatched(sessionId)
+      }
     })
   ]
 
   // WORK — derive/extract from the session.
   const workItems: ActionItemSpec[] = [
+    // Companion thread (#44): "ask about this session" answers from the stored
+    // transcript in a side dialog — the live conversation is never touched.
+    spec({
+      disabled: !sessionId,
+      icon: 'comment-discussion',
+      label: r.askAbout,
+      onSelect: () => {
+        triggerHaptic('selection')
+        suppressCloseFocusRef.current = true
+        setAskOpen(true)
+      }
+    }),
     spec({
       disabled: !onBranch,
       // Fork glyph to match the inline message action's GitFork icon
@@ -418,6 +649,38 @@ function useSessionActions({
       onSelect: () => {
         triggerHaptic('selection')
         void exportSession(sessionId, { profile, title })
+      }
+    }),
+    spec({
+      disabled: !sessionId,
+      icon: 'markdown',
+      label: r.exportMarkdown,
+      onSelect: () => {
+        triggerHaptic('selection')
+        void exportSessionMarkdown(sessionId, { profile, title })
+      }
+    }),
+    // Per-session artifact rail (#32): open the chat (focus it if it's already
+    // on screen), then front the rail — it follows the focused session.
+    spec({
+      disabled: !sessionId,
+      icon: 'package',
+      label: r.artifacts,
+      onSelect: () => {
+        triggerHaptic('selection')
+        openSession(sessionId, () => undefined, 'in-place')
+        revealArtifactsRail()
+      }
+    }),
+    // One-file shareable outcome report (#35): summary + diff stat + artifacts
+    // + PR link — a deliverable, not the raw transcript exports above.
+    spec({
+      disabled: !sessionId,
+      icon: 'export',
+      label: r.exportDeliverable,
+      onSelect: () => {
+        triggerHaptic('selection')
+        void exportSessionDeliverable(sessionId, { profile, title })
       }
     })
   ]
@@ -555,6 +818,15 @@ function useSessionActions({
       />
       <kit.Separator />
       {workItems.map(item => renderActionItem(kit, item))}
+      <CopyButton
+        appearance={kit.copyAppearance}
+        disabled={!sessionId}
+        iconClassName="size-3.5 text-current"
+        key={r.copyMarkdown}
+        label={r.copyMarkdown}
+        onCopyError={err => notifyError(err, t.common.copyFailed)}
+        text={async () => sessionMarkdownText(sessionId, { profile, title })}
+      />
       <kit.Sub>
         <kit.SubTrigger disabled={!sessionId}>
           <Codicon name="folder" size="0.875rem" />
@@ -564,6 +836,23 @@ function useSessionActions({
           <MoveToProjectItems kit={kit} profile={profile} sessionId={sessionId} />
         </kit.SubContent>
       </kit.Sub>
+      <SessionWorktreeItems
+        kit={kit}
+        onMerge={(branch, repo) => setMergeWorktreeTarget({ branch, repo })}
+        sessionId={sessionId}
+      />
+      {/* Only the open session has a runtime id this window can hand off. */}
+      {sessionId === selectedStoredSessionId && (
+        <kit.Sub>
+          <kit.SubTrigger disabled={!sessionId}>
+            <Codicon name="device-mobile" size="0.875rem" />
+            <span>{r.continueOnPhone}</span>
+          </kit.SubTrigger>
+          <kit.SubContent>
+            <HandoffPlatformItems kit={kit} profile={profile} />
+          </kit.SubContent>
+        </kit.Sub>
+      )}
       {tabItems.length > 0 && (
         <>
           <kit.Separator />
@@ -619,7 +908,73 @@ function useSessionActions({
     />
   )
 
-  return { deleteDialog, onCloseAutoFocus, renameDialog, renderItems }
+  const mergeWorktreeDialog = mergeWorktreeTarget && (
+    <MergeWorktreeDialog
+      branch={mergeWorktreeTarget.branch}
+      onConfirm={async () => {
+        const into = await mergeSessionWorktree(sessionId)
+        notify({ durationMs: 3_000, kind: 'success', message: r.mergedWorktree(into) })
+      }}
+      onOpenChange={open => {
+        if (!open) {
+          setMergeWorktreeTarget(null)
+        }
+      }}
+      open
+      repo={mergeWorktreeTarget.repo}
+    />
+  )
+
+  const tagsDialog = (
+    <SessionTagsDialog onOpenChange={setTagsOpen} open={tagsOpen} profile={profile} sessionId={sessionId} />
+  )
+
+  const askDialog = (
+    <SessionAskDialog onOpenChange={setAskOpen} open={askOpen} profile={profile} sessionId={sessionId} title={title} />
+  )
+
+  const deviceDialog = (
+    <SessionDeviceDialog onOpenChange={setDeviceOpen} open={deviceOpen} sessionId={sessionId} title={title} />
+  )
+
+  return {
+    askDialog,
+    deleteDialog,
+    deviceDialog,
+    mergeWorktreeDialog,
+    onCloseAutoFocus,
+    renameDialog,
+    renderItems,
+    tagsDialog
+  }
+}
+
+interface MergeWorktreeDialogProps {
+  branch: string
+  onConfirm: () => Promise<void>
+  onOpenChange: (open: boolean) => void
+  open: boolean
+  repo: string
+}
+
+// Confirm before folding a worktree branch into the repo's main checkout —
+// a merge writes merge commits and can leave the main tree in conflict state,
+// so the row chip's affordance asks once (same guard shape as delete).
+function MergeWorktreeDialog({ branch, onConfirm, onOpenChange, open, repo }: MergeWorktreeDialogProps) {
+  const { t } = useI18n()
+  const r = t.sidebar.row
+
+  return (
+    <ConfirmDialog
+      busyLabel={r.mergingWorktree}
+      confirmLabel={r.mergeWorktree}
+      description={r.mergeWorktreeDesc(branch, repo)}
+      onClose={() => onOpenChange(false)}
+      onConfirm={onConfirm}
+      open={open}
+      title={r.mergeWorktreeTitle}
+    />
+  )
 }
 
 interface DeleteSessionDialogProps {
@@ -660,7 +1015,17 @@ interface SessionActionsMenuProps
 
 export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ...actions }: SessionActionsMenuProps) {
   const { t } = useI18n()
-  const { deleteDialog, onCloseAutoFocus, renameDialog, renderItems } = useSessionActions(actions)
+
+  const {
+    askDialog,
+    deleteDialog,
+    deviceDialog,
+    mergeWorktreeDialog,
+    onCloseAutoFocus,
+    renameDialog,
+    renderItems,
+    tagsDialog
+  } = useSessionActions(actions)
 
   return (
     <>
@@ -675,7 +1040,11 @@ export function SessionActionsMenu({ children, align = 'end', sideOffset = 6, ..
         {children}
       </ActionsMenu>
       {renameDialog}
+      {tagsDialog}
+      {askDialog}
+      {deviceDialog}
       {deleteDialog}
+      {mergeWorktreeDialog}
     </>
   )
 }
@@ -686,7 +1055,17 @@ interface SessionContextMenuProps extends SessionActions {
 
 export function SessionContextMenu({ children, ...actions }: SessionContextMenuProps) {
   const { t } = useI18n()
-  const { deleteDialog, onCloseAutoFocus, renameDialog, renderItems } = useSessionActions(actions)
+
+  const {
+    askDialog,
+    deleteDialog,
+    deviceDialog,
+    mergeWorktreeDialog,
+    onCloseAutoFocus,
+    renameDialog,
+    renderItems,
+    tagsDialog
+  } = useSessionActions(actions)
 
   return (
     <>
@@ -699,7 +1078,11 @@ export function SessionContextMenu({ children, ...actions }: SessionContextMenuP
         {children}
       </ActionsContextMenu>
       {renameDialog}
+      {tagsDialog}
+      {askDialog}
+      {deviceDialog}
       {deleteDialog}
+      {mergeWorktreeDialog}
     </>
   )
 }
@@ -790,6 +1173,110 @@ function RenameSessionDialog({ open, onOpenChange, sessionId, currentTitle, prof
           </Button>
           <Button disabled={submitting} onClick={() => void submit()} type="button">
             {t.common.save}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface SessionTagsDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  sessionId: string
+  profile?: string
+}
+
+// The tag editor behind the menu's Tags item — the desktop's Linear-labels
+// analogue. Add/remove mutate the store immediately (there is nothing to
+// submit), so the dialog only closes on Done/Escape. Tags key on the durable
+// lineage id under the row's owning profile, so they ride out compression and
+// stay inside their island; deleting the session leaves an orphaned entry the
+// next delete sweep or profile migration drops.
+function SessionTagsDialog({ open, onOpenChange, sessionId, profile }: SessionTagsDialogProps) {
+  const { t } = useI18n()
+  const r = t.sidebar.row
+  const session = useStore($sessions).find(s => sessionMatchesStoredId(s, sessionId))
+  const durableId = session ? sessionPinId(session) : sessionId
+  const ownerProfile = session?.profile ?? profile
+  const tags = useSessionSlice($sessionTags, sessionTagKey(ownerProfile, durableId))
+  const [label, setLabel] = useState('')
+  const [color, setColor] = useState<null | string>(PROFILE_SWATCHES[0] ?? null)
+
+  useEffect(() => {
+    if (open) {
+      setLabel('')
+      setColor(PROFILE_SWATCHES[0] ?? null)
+    }
+  }, [open])
+
+  const add = () => {
+    const trimmed = label.trim()
+
+    if (!trimmed || !color || !durableId) {
+      return
+    }
+
+    addSessionTag(ownerProfile, durableId, { color, label: trimmed })
+    setLabel('')
+  }
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{r.tagsDialogTitle}</DialogTitle>
+          <DialogDescription>{r.tagsDialogDesc}</DialogDescription>
+        </DialogHeader>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map(tag => (
+              <span className="inline-flex items-center gap-0.5 rounded-full py-0.5 pr-0.5 pl-0.5" key={tag.label}>
+                <SessionTagChip tag={tag} />
+                <button
+                  aria-label={r.tagsRemoveLabel(tag.label)}
+                  className="grid size-3.5 place-items-center rounded-full text-(--ui-text-tertiary) hover:bg-(--ui-control-hover-background) hover:text-foreground"
+                  onClick={() => removeSessionTag(ownerProfile, durableId, tag.label)}
+                  type="button"
+                >
+                  <Codicon name="close" size="0.625rem" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <ColorSwatches
+              clearLabel={t.sidebar.projects.noColor}
+              onChange={setColor}
+              swatches={PROFILE_SWATCHES}
+              value={color}
+            />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            autoFocus
+            onChange={event => setLabel(event.target.value)}
+            onKeyDown={event => {
+              if (isSubmitEnter(event)) {
+                event.preventDefault()
+                add()
+              } else if (event.key === 'Escape') {
+                onOpenChange(false)
+              }
+            }}
+            placeholder={r.tagsAddPlaceholder}
+            value={label}
+          />
+          <Button disabled={!label.trim() || !color} onClick={add} type="button">
+            {r.tagsAdd}
+          </Button>
+        </div>
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">
+            {t.common.done}
           </Button>
         </DialogFooter>
       </DialogContent>

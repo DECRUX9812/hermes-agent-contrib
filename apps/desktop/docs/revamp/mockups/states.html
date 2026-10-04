@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes Desktop — Honest states (target)</title>
+<link rel="stylesheet" href="real-tokens.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="app.css">
+</head><body>
+<script src="app.js"></script>
+<script>
+  const ic2 = (n, c) => `<span class="eicon" style="color:${c}">${ic(n, 20)}</span>`
+  mount(`<div class="sheet"><h1>Honest states <span>— the recording's failures, redone with the app's own primitives</span></h1>
+  <div class="g2">
+    <div class="cell"><div class="cap"><b>1 · One problem, one card</b><span>code <span class="code">no_provider_configured</span> replaces 3 banners + toast + list + ⚠</span></div>
+      <div class="frame"><div class="usr" style="width:14rem;align-self:flex-start">broadcast smoke test</div>
+        <div class="widget"><div class="estate">${ic2('cpu', 'var(--state-needs)')}<div><h4>Engineer needs a model before it can reply</h4><p>New teammates start with your default brain — Engineer was created without one. Your message is saved and sends the moment this is fixed.</p></div></div></div>
+        <div class="eacts"><button class="btn btn-default">${ic('bolt', 12)}Use my default · GLM 5.2</button><button class="btn btn-outline">Choose another model…</button><button class="btn btn-strong" style="margin-left:auto">Details</button></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:var(--type-meta);color:var(--ui-text-tertiary)">In the rail: ${face('atlas', 24)}<b style="color:var(--ui-text-primary)">Engineer</b><span class="dotn"></span><span style="color:var(--state-needs);font-weight:550">Needs a model</span></div></div></div>
+
+    <div class="cell"><div class="cap"><b>2 · Keep the wordmark, add the teammate</b><span>Extends <span class="code">chat-empty.tsx</span> (96px face + Wordmark already exist)</span></div>
+      <div class="frame"><div class="heroc">${face('atlas', 96)}<div class="disp word">Engineer</div><p>Writes, reviews and debugs code. Point me at a repo and a goal — I'll come back when it's done, or when I need you.</p>
+        <div class="starters"><span>Review my open PR</span><span>Fix the failing test in this repo</span><span>Set up a nightly dependency check</span></div>
+        <div class="facts"><span>${ic('cpu', 12)}GLM 5.2</span><span>${ic('bolt', 12)}4 skills</span><span>${ic('monitor', 12)}This Mac</span></div></div></div></div>
+
+    <div class="cell"><div class="cap"><b>3 · Answered elsewhere</b><span>Approve on the phone → settles everywhere; never an error</span></div>
+      <div class="frame"><div class="widget"><div class="estate">${ic2('phone', 'var(--state-done)')}<div><h4>Approved from your phone</h4><p>Atlas is pushing <span class="code">origin/feat/digest</span>. Nothing for you to do here.</p></div></div></div>
+        <div class="turn" style="margin-top:4px"><div style="padding-top:2px">${face('atlas', 22)}</div><div class="body"><p class="prose">Pushed. CI is running — I'll tell you when it's green.</p></div></div></div></div>
+
+    <div class="cell"><div class="cap"><b>4 · Outcome unknown</b><span>A restart interrupted a step — never auto-retried; your call</span></div>
+      <div class="frame"><div class="widget"><div class="estate">${ic2('undo', 'var(--state-unknown)')}<div><h4>Atlas stopped mid-step — I can't tell if it finished</h4><p>The last step was <span class="code">git push origin feat/digest</span>. Hermes restarted before confirming it. Nothing is retried automatically, so a push can't happen twice.</p></div></div></div>
+        <div class="eacts"><button class="btn btn-default">Check and resume</button><button class="btn btn-secondary">Mark as done</button><button class="btn btn-ghost">Discard</button></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px;font-size:var(--type-meta);color:var(--ui-text-tertiary)">In the rail: ${face('atlas', 24, 'unknown')}<b style="color:var(--ui-text-primary)">Atlas</b><span class="badge unknown">Interrupted</span></div></div></div>
+  </div></div>`)
+</script></body></html>

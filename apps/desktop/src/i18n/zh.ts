@@ -157,6 +157,7 @@ export const zh = defineLocale({
     revealExplorer: '在文件资源管理器中显示',
     revealFileManager: '打开所在文件夹',
     revealInSidebar: '在文件树中显示',
+    openInEditor: name => `在 ${name} 中打开`,
     copyPath: '复制路径',
     copyRelativePath: '复制相对路径',
     download: '下载',
@@ -277,6 +278,10 @@ export const zh = defineLocale({
       openaiTtsNeedsKey: 'OpenAI TTS 需要 VOICE_TOOLS_OPENAI_KEY 或 OPENAI_API_KEY。',
       codeSkewRestartRequired: '更新后此后端仍在运行旧代码。请重启以加载新代码。'
     },
+    digest: {
+      title: count => `Hermes 摘要 — ${count} 条通知`,
+      line: (count, label) => `${count} × ${label}`
+    },
     voice: {
       configureSpeechToText: '配置语音转文字后即可使用语音模式。',
       couldNotStartSession: '无法启动语音会话',
@@ -285,6 +290,7 @@ export const zh = defineLocale({
       microphoneFailed: '麦克风出错',
       microphoneInUse: '麦克风正被其他应用占用。',
       microphonePermissionDenied: '麦克风权限被拒绝。',
+      microphoneSecureContextRequired: '麦克风录音需要 HTTPS、localhost 或原生桌面应用。',
       microphoneStartFailed: '无法开始麦克风录音。',
       microphoneUnsupported: '当前运行环境不支持麦克风录音。',
       noMicrophone: '未找到麦克风。',
@@ -396,6 +402,7 @@ export const zh = defineLocale({
     actions: {
       'keybinds.openPanel': '打开键盘快捷键',
       'nav.commandPalette': '打开命令面板',
+      'nav.quickOpen': '快速打开文件',
       'nav.commandCenter': '打开命令中心',
       'nav.settings': '打开设置',
       'nav.profiles': '打开配置',
@@ -404,6 +411,8 @@ export const zh = defineLocale({
       'nav.artifacts': '打开制品',
       'nav.cron': '打开定时任务',
       'nav.agents': '打开智能体',
+      'nav.starmap': '打开记忆图谱',
+      'nav.webhooks': '打开 Webhook',
       'session.new': '新建会话',
       'session.newTab': '新建会话标签',
       'session.newWindow': '新建窗口',
@@ -489,7 +498,9 @@ export const zh = defineLocale({
 
   findInPage: {
     next: '下一个匹配',
-    previous: '上一个匹配'
+    previous: '上一个匹配',
+    searchAll: '搜索全部历史',
+    searchAllShort: '历史'
   },
 
   language: {
@@ -765,7 +776,18 @@ export const zh = defineLocale({
       testUnsupported: '此系统不支持原生通知。',
       completionSoundTitle: '完成提示音',
       completionSoundDesc: '智能体回合结束时播放。可在此选择预设并预览。',
-      completionSoundPreview: '预览'
+      completionSoundPreview: '预览',
+      quietHoursTitle: '免打扰时段',
+      quietHoursDesc: '在每日时段内暂缓普通通知；时段结束后以摘要形式送达。批准、提问和错误仍会照常提醒。',
+      quietHoursWindowTitle: '免打扰窗口',
+      quietHoursWindowDesc: '从开始时间到结束时间内静默通知 — 开始时间晚于结束时间时表示跨夜。',
+      quietHoursFrom: '从',
+      quietHoursTo: '至',
+      digestTitle: '每小时摘要',
+      digestDesc: '将普通通知合并为每小时一条摘要，而不是逐条弹出。',
+      sessionOverridesTitle: '会话级例外',
+      sessionOverridesDesc: '你在侧边栏会话菜单中静音的聊天。可在此重新开启。',
+      sessionOverridesEmpty: '没有已静音的会话。在会话的侧边栏菜单中选择静音后，它会出现在这里。'
     },
     sections: {
       model: '模型',
@@ -795,6 +817,9 @@ export const zh = defineLocale({
       chatTextScaleDesc: '相对于界面缩放调整对话文字和消息输入框的字号。侧边栏和控件大小保持不变。',
       title: '外观',
       intro: '这些是仅桌面端的显示偏好。模式控制明暗；主题控制强调色与对话界面样式。',
+      simpleModeTitle: '简洁模式',
+      simpleModeDesc:
+        '更清爽、以聊天为主的界面：隐藏高级面板、工具和状态项。所有功能仍可随时通过“设置”和 ⌘K 访问，可随时切换回来。',
       colorMode: '颜色模式',
       colorModeDesc: '选择固定模式，或让 Hermes 跟随系统设置。',
       toolViewTitle: '工具调用显示',
@@ -805,12 +830,17 @@ export const zh = defineLocale({
       hideThreadTimelineDesc: '隐藏每个对话右侧边缘的导航条。',
       reasoningCollapsedTitle: '默认折叠推理过程',
       reasoningCollapsedDesc: '保留流式推理内容，但在您打开前保持折叠。',
+      lookTitle: '外观风格',
+      lookDesc: '柔和：圆角、留白充足、标签低调；经典：保留原来利落方正的界面。',
+      lookSoft: '柔和',
+      lookClassic: '经典',
       uiScaleTitle: '界面缩放',
       uiScaleDesc: (percent: number) =>
         `缩放整个应用的文字和界面。也可使用 Cmd/Ctrl 加 +、- 或 0 调整。当前：${percent}%`,
       sessionDensityTitle: '会话列表密度',
-      sessionDensityDesc: '选择侧边栏会话标题下方显示的信息量。',
+      sessionDensityDesc: '选择侧边栏中每个会话行显示的信息量。',
       sessionDensityCompact: '紧凑',
+      sessionDensityCondensed: '极简',
       sessionDensityComfortable: '舒适',
       sessionDensityDetailed: '详细',
       tabStripTitle: '标签栏',
@@ -854,7 +884,7 @@ export const zh = defineLocale({
         sidebar: '仅侧边栏'
       },
       backdropTitle: '聊天背景',
-      backdropDesc: '对话后方那张淡淡的雕像图片。',
+      backdropDesc: '对话后方的场景，或你自己的图片。文字始终显示在最上层。',
       userBubbleTitle: '消息气泡',
       userBubbleDesc: '你自己的消息有多透明。0 为不透明，100 时只保留边框。',
       textDirectionTitle: '文本方向',
@@ -874,6 +904,12 @@ export const zh = defineLocale({
       toursDesc: '让 Hermes 逐步高亮每个位置，带你熟悉应用。开始使用满30天后自动关闭，你可以重新开启。',
       composerPopoutTitle: '悬浮输入框',
       composerPopoutDesc: '允许将输入框拖出底部停靠区。关闭时，输入框停靠在底部。',
+      autoOpenFilesTitle: '打开项目时显示文件',
+      autoOpenFilesDesc: '打开文件夹或在项目中开始工作时，在聊天旁显示文件树。',
+      activityRailTitle: '图标栏',
+      activityRailDesc: '左侧边缘的一列窄图标——会话、机器人和每个页面一键可达，侧边栏折叠时也在。',
+      openInEditorTitle: '用以下编辑器打开文件',
+      openInEditorDesc: '文件树中“在…中打开”使用的编辑器。也适用于 SSH 后端。',
       fileBrowserTitle: '文件浏览器',
       fileBrowserDesc: '打开工作区时，在聊天旁显示文件浏览器。标题栏的切换按钮也会更改此设置。',
       vibeHeartsTitle: '心情爱心',
@@ -1305,6 +1341,10 @@ export const zh = defineLocale({
       minimizeToTrayDesc:
         '最小化窗口或关闭主窗口时，将其隐藏到系统托盘（macOS 上为菜单栏），让 Hermes 继续运行。通过托盘菜单中的“退出 Hermes”或 Cmd+Q 退出。默认关闭，仅适用于此设备。',
       minimizeToTrayUnavailable: '系统托盘不可用。窗口将正常最小化和关闭。关闭此选项后重新开启即可重试。',
+      menuBarStatusTitle: '菜单栏状态',
+      menuBarStatusDesc:
+        '在 macOS 菜单栏（Windows/Linux 为系统托盘）显示 Hermes 图标，包含实时状态徽标、最近会话和快捷操作。默认关闭；仅适用于本设备。',
+      menuBarStatusUnavailable: '此平台的系统托盘不可用。关闭后重新开启即可重试。',
       none: '无',
       noneParen: '(无)',
       builtinOnly: '仅内置',
@@ -1328,6 +1368,10 @@ export const zh = defineLocale({
       keepAwakeOff: '关闭',
       keepAwakeWhileWorking: '运行期间',
       keepAwakeAlways: '始终',
+      keepAwakeDesc: '阻止本机休眠，让长时间或通宵运行继续进行。屏幕仍可变暗。',
+      proactiveNudgesTitle: '主动建议',
+      proactiveNudgesDesc:
+        '会话回合结束时，在输入框上方提供下一步建议条 — 比如发起 PR、安排跟进。它们只会起草文字，不会自动发送。',
       disableF12Title: '禁用 F12 开发者工具',
       disableF12Desc: '阻止 F12 打开开发者工具。Ctrl+Shift+I（Mac 上为 Cmd+Opt+I）仍然可用。',
       alwaysExternalLinksTitle: '始终在外部浏览器中打开链接',
@@ -1606,6 +1650,7 @@ export const zh = defineLocale({
       sshPortDesc: '留空 = 22 或 ~/.ssh/config 中的端口。',
       sshKeyTitle: '密钥文件',
       sshKeyDesc: '私钥路径。留空 = ssh-agent 或 ~/.ssh/config。',
+      sshKeyPlaceholder: '来自 ssh-agent 或 ~/.ssh/config',
       sshHermesPathTitle: 'Hermes 路径（可选）',
       sshHermesPathDesc: '远程 hermes 可执行文件的完整路径。留空 = 自动检测。',
       sshHermesPathPlaceholder: '自动检测',
@@ -2454,7 +2499,11 @@ export const zh = defineLocale({
     importEmpty: '粘贴图谱代码以加载。',
     importSuccess: nodes => `已加载包含 ${nodes} 个节点的图谱。`,
     importedBadge: '导入的图谱',
-    resetToMine: '返回我的图谱'
+    resetToMine: '返回我的图谱',
+    live: '实时',
+    liveHint: '实时查看：技能在会话使用中会脉动，结束时闪烁',
+    liveOff: '停止实时更新',
+    openSession: '打开会话'
   },
   agents: {
     extendedTranscript: '扩展记录',
@@ -2499,6 +2548,45 @@ export const zh = defineLocale({
     tokens: value => `${value} 词元`
   },
 
+  roster: {
+    title: '进行中的运行',
+    subtitle: '所有配置文件和网关上正在运行的任务。',
+    emptyTitle: '没有进行中的运行',
+    emptyDesc: '当会话开始工作时——在任何配置文件或网关上——它会出现在这里。',
+    untitledRun: '未命名运行',
+    railPill: count => `${count} 个运行`,
+    close: '关闭',
+    fanOut: '扇出',
+    fanOutTitle: '将同一条提示发送给所选代理',
+    fanOutPlaceholder: '一条提示，发给每个所选代理…',
+    fanOutNoAgents: '没有可连接的代理可供选择',
+    fanOutClose: '收起',
+    fanOutSend: count => `发送给 ${count} 个代理`,
+    fanOutFailed: '无法为其中一个所选代理创建会话'
+  },
+
+  hud: {
+    needsYou: '等待你',
+    openRunInApp: title => `在应用窗口中打开 ${title}`
+  },
+
+  attentionInbox: {
+    title: '需要处理',
+    empty: '没有待处理的事项。',
+    count: count => `${count} 项待处理`,
+    appScope: '应用',
+    unknownSession: '会话',
+    kinds: {
+      approval: '工具批准',
+      clarify: '澄清问题',
+      error: '错误',
+      secret: '密钥请求',
+      sudo: 'sudo 请求',
+      vaultCode: '保险库验证码',
+      vaultSave: '保险库登录',
+      vaultUnlock: '解锁保险库'
+    }
+  },
   commandCenter: {
     close: '关闭命令中心',
     paletteTitle: '命令面板',
@@ -2577,7 +2665,21 @@ export const zh = defineLocale({
     settingsFields: '设置字段',
     mcpServers: 'MCP 服务器',
     archivedChats: '已归档对话',
-    sections: { maintenance: '维护', sessions: '会话', system: '系统', usage: '用量' },
+    sections: { maintenance: '维护', notices: '通知', sessions: '会话', system: '系统', usage: '用量' },
+    sectionDescriptions: {
+      maintenance: '诊断、备份、维护器与记忆数据',
+      notices: '最近的通知与提醒',
+      sessions: '搜索与管理会话',
+      system: '状态、日志与系统操作',
+      usage: '一段时间内的词元、成本与技能活动'
+    },
+    notices: {
+      empty: '暂无通知——出现的提示与提醒会记录在这里。',
+      clear: '清空',
+      mutedTag: '已静音',
+      destCenter: '居中弹窗',
+      destCorner: '角落弹窗'
+    },
     nav: {
       newChat: { title: '新建会话', detail: '开始一个新会话' },
       settings: { title: '设置', detail: '配置 Hermes 桌面端' },
@@ -2638,6 +2740,14 @@ export const zh = defineLocale({
     topSkills: '常用技能',
     noSkillActivity: '暂无技能活动。',
     actions: count => `${count} 次操作`,
+    costAnalytics: '成本分析',
+    costAnalyticsHint: '仅在本设备上聚合——支出数据不会发送到任何地方。',
+    dailySpend: '每日支出',
+    estimatedCost: '估算',
+    perProfile: '按配置文件',
+    topSessions: '最高支出会话',
+    loadedSessionsHint: '已加载会话',
+    noSpend: '暂无支出记录',
     logFile: '日志文件',
     logLevel: '级别',
     logSearchPlaceholder: '搜索日志行…',
@@ -2794,6 +2904,22 @@ export const zh = defineLocale({
       savedRestarting: 'Telegram 已保存；网关正在重启…',
       savedRestartFailed: detail => `Telegram 已保存；网关重启失败${detail}`
     },
+    phoneParity: {
+      title: '在手机上继续',
+      presence: '网关状态',
+      scanHint: '用手机扫描，或在此设备上打开链接。',
+      linkPending: '适配器连接后，直接链接将显示在此处。',
+      openLink: '打开链接',
+      copyLink: '复制链接',
+      copyFailed: '无法复制链接'
+    },
+    reach: {
+      title: (name: string) => `随时随地联系 ${name}`,
+      scan: (name: string) => `扫码即可在手机上与 ${name} 聊天，或分享链接。`,
+      empty: (name: string) => `为 ${name} 连接 Telegram 或 Slack，即可在手机上聊天。`,
+      connect: '连接',
+      manage: '管理'
+    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot 令牌',
@@ -2940,10 +3066,44 @@ export const zh = defineLocale({
       slack: 'Slack',
       email: '电子邮件',
       github_comment: 'GitHub 评论'
+    },
+    mobile: {
+      title: '手机伴侣',
+      hint: '从手机操控此后端 —— 状态、审批、快速回复。',
+      pairButton: '配对手机',
+      dialogTitle: '配对手机',
+      dialogDesc:
+        '生成一次性配对码，然后在手机上打开伴侣页面并输入该码。该页面可查看会话状态、处理待审批项，并向此后端发送快速回复。',
+      backendUrl: '后端 URL',
+      backendUrlHint: '手机可访问的地址（局域网、隧道或远程连接）。',
+      create: '生成配对码',
+      creating: '正在生成…',
+      createFailed: (detail: string) => `无法生成配对码${detail ? `：${detail}` : ''}`,
+      codeLabel: '配对码',
+      openHint: (url: string) => `在手机上打开 ${url} 并输入配对码。`,
+      expires: (minutes: number) => `一次性使用 · ${minutes} 分钟后过期。`,
+      copy: '复制',
+      done: '完成'
     }
   },
 
   profiles: {
+    askRules: {
+      title: (name: string) => `${name} 何时需要问你？`,
+      modes: {
+        manual: { label: '先问我', description: (name: string) => `遇到任何有风险的操作，${name} 都会先停下来问你。` },
+        smart: {
+          label: '自行判断',
+          description: (name: string) => `${name} 处理日常工作，遇到看起来有风险的操作时再问你。`
+        },
+        off: { label: '直接去做', description: (name: string) => `${name} 从不等待你。被禁止的命令仍然会被阻止。` }
+      },
+      rulesLabel: '规则',
+      rulesPlaceholder: '用你自己的话写规则，例如：发送邮件或花钱之前一定要先问我。',
+      save: '保存规则',
+      discard: '放弃',
+      failed: '保存失败，之前的规则仍然有效。'
+    },
     close: '关闭配置档案',
     nameHint: '小写字母、数字、连字符和下划线。必须以字母或数字开头。',
     title: '配置档案',
@@ -3264,7 +3424,9 @@ export const zh = defineLocale({
     kindLink: '链接',
     chat: '对话',
     copyUrl: '复制 URL',
-    copyPath: '复制路径'
+    copyPath: '复制路径',
+    buildWithPlan: '使用此计划构建',
+    buildWithPlanDraft: '实现这个计划：'
   },
 
   artifactCard: {
@@ -3287,6 +3449,74 @@ export const zh = defineLocale({
     missingBody: '此产物已不在本地注册表中。'
   },
 
+  panels: {
+    button: '面板',
+    title: '在聊天旁边',
+    subtitle: '打开你需要的面板，它会出现在对话旁边。',
+    needsProject: '打开一个文件夹后可用',
+    openFolder: '打开文件夹…',
+    arrange: '排列…',
+    arrangements: { focus: '专注', review: '审阅', watch: '观察', build: '构建' },
+    items: {
+      files: { label: '文件', description: '浏览并预览项目' },
+      changes: { label: '更改', description: '查看智能体改了什么' },
+      browser: { label: '浏览器', description: '在聊天旁打开网页' },
+      terminal: { label: '终端', description: '自己运行命令' },
+      live: { label: '实时活动', description: '智能体运行的每条命令' },
+      artifacts: { label: '产物', description: '这个聊天生成的内容' },
+      canvas: { label: '画布', description: '在智能体也能绘制的白板上画草图' }
+    }
+  },
+  quickOpen: {
+    title: '快速打开',
+    placeholder: project => `在 ${project} 中搜索文件…`,
+    noProject: '打开一个文件夹以搜索其中的文件',
+    noProjectBody: '快速打开会搜索当前项目中的文件。',
+    openFolder: '打开文件夹…',
+    noMatch: query => `没有与“${query}”匹配的文件`,
+    recent: '已在聊天旁打开',
+    hint: '输入文件名。加上 :42 可跳到指定行。',
+    line: line => `第 ${line} 行`,
+    openHint: '打开',
+    attachHint: '添加到消息',
+    lineHint: '名称:42 跳到该行'
+  },
+  recentProjects: { title: '你的项目', openFolder: '打开文件夹…' },
+  todayBrief: {
+    greeting: { morning: '早上好', afternoon: '下午好', evening: '晚上好', night: '还在忙？' },
+    needsYou: '需要你处理',
+    running: '正在运行',
+    finished: '你离开时已完成',
+    scheduled: '今天的安排',
+    recent: '从上次继续'
+  },
+
+  live: {
+    title: '实时',
+    noSession: '未选择会话',
+    emptyTitle: '尚未运行任何操作',
+    emptyBody: '每条命令、每次文件读取和工具调用都会在开始时显示在这里，并附带完整输出。不做任何摘要。',
+    count: total => `${total} 个操作`,
+    countRunning: (total, running) => `${total} 个操作 · ${running} 个运行中`,
+    follow: '跟随',
+    followHint: '跳到最新操作并保持可见',
+    copy: '复制命令和输出',
+    exitCode: code => `退出码 ${code}`,
+    runningFor: elapsed => `已运行 ${elapsed}`,
+    waitingForOutput: '运行中——完成后显示输出',
+    noOutput: '无输出',
+    openLive: '实时'
+  },
+
+  artifactRail: {
+    empty: '本会话尚无产物',
+    noSession: '未选择会话',
+    open: '打开',
+    openFailed: '无法打开产物',
+    saveFailed: '无法保存产物',
+    saveToFile: '保存为文件'
+  },
+
   sidebar: {
     filter: {
       grouping: '分组',
@@ -3295,6 +3525,7 @@ export const zh = defineLocale({
       filters: '筛选',
       status: '状态',
       pullRequest: '拉取请求',
+      tags: '标签',
       profile: '配置档案',
       project: '项目',
       archived: '已归档',
@@ -3319,6 +3550,16 @@ export const zh = defineLocale({
       closed: '已关闭',
       noPR: '无PR'
     },
+    archive: {
+      finished: '归档已完成的会话',
+      olderThan: '归档早于以下时间的会话…',
+      days: (days: number) => `${days} 天`,
+      confirmTitle: (count: number) => `归档 ${count} 个会话？`,
+      confirmBody: '置顶聊天永远不会被归档，也不会删除任何内容——已归档的会话会移到"已归档"视图。',
+      confirmAction: '归档',
+      done: (count: number) => `已归档 ${count} 个会话`,
+      none: '没有可归档的会话'
+    },
     profileRail: '配置档案栏',
     gatewayGroups: {
       grouping: '网关与配置',
@@ -3336,19 +3577,38 @@ export const zh = defineLocale({
       capabilities: '技能与工具',
       messaging: '消息平台',
       artifacts: '产物',
-      cron: '定时任务'
+      cron: '定时任务',
+      browse: '浏览'
+    },
+    interfaceMode: {
+      label: '界面',
+      simple: '简洁',
+      full: '完整',
+      toFull: '简洁模式会隐藏高级面板和控件。点击切换到完整界面。',
+      toSimple: '返回清爽的聊天优先界面。'
     },
     searchAria: '搜索会话',
+    railAria: '应用导航',
     searchPlaceholder: '搜索会话…',
     clearSearch: '清除搜索',
     noMatch: query => `没有会话匹配"${query}"。`,
     results: '结果',
     pinned: '已置顶',
+    needsAttention: '需要注意',
+    delegationReports: {
+      done: '已完成',
+      needsDecision: '需要决定',
+      failed: '失败',
+      openSubagent: '打开子代理',
+      dismiss: '关闭报告',
+      tasks: (count, completed) => `${count} 个任务中已完成 ${completed} 个`
+    },
     sessions: '会话',
     terminal: '终端',
     files: '文件',
     review: '审查',
     logs: '日志',
+    artifacts: '产物',
     cronJobs: '定时任务',
     groupAriaGrouped: '以单一列表显示会话',
     groupAriaUngrouped: '按工作区分组会话',
@@ -3451,9 +3711,18 @@ export const zh = defineLocale({
       unpin: '取消置顶',
       markUnread: '标记为未读',
       markRead: '标记为已读',
+      muteNotifications: '静音通知',
+      unmuteNotifications: '取消静音',
+      mutedTooltip: '该会话的通知已静音',
+      watch: '关注',
+      stopWatching: '取消关注',
       unreadFailed: '无法更新未读状态',
       copyId: '复制 ID',
       export: '导出',
+      exportMarkdown: '导出为 Markdown',
+      exportDeliverable: '导出交付报告',
+      copyMarkdown: '复制为 Markdown',
+      artifacts: '产物',
       branchFrom: '分支',
       rename: '重命名…',
       archive: '归档',
@@ -3472,6 +3741,24 @@ export const zh = defineLocale({
       finishedUnread: '已完成 — 未读',
       backgroundRunning: '后台任务运行中',
       draftSession: '草稿 — 尚未发送',
+      continueOnPhone: '在手机上继续',
+      openOnDevice: '在另一台设备上打开',
+      openDeviceTitle: '在另一台设备上打开',
+      openDeviceDesc: home =>
+        `扫描二维码或将链接发送到另一台 Hermes 设备，只要其连接可以访问 ${home}。会话保留在原处——移动的只是视图。`,
+      openDeviceHomeFallback: '其所属后端',
+      openDeviceIncomingTitle: '在此设备上打开会话？',
+      openDeviceIncomingDesc: (title, label) =>
+        `“${title}”位于 ${label}。打开会将此窗口切换到该连接——会话的归属不会改变。`,
+      openDeviceSwitchAndOpen: '切换并打开',
+      openDeviceSwitching: '正在切换…',
+      openDeviceIncomingMissingTitle: '找不到连接',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `“${id}”位于 ${endpoint}，此设备上没有注册该连接。请在 设置 → Gateways 中添加它，然后重新打开链接。`
+          : `“${id}”位于此设备无法访问的后端。请在 设置 → Gateways 中注册该连接，然后重新打开链接。`,
+      openDeviceOpenConnections: '打开 Gateways',
+      handoffNone: '没有可用于移交的消息平台',
       handoffOrigin: platform => `从 ${platform} 转接`,
       continuationOrigin: '自动延续 — 此对话已压缩并延续',
       ownedByProfile: profile => `配置档：${profile}`,
@@ -3480,6 +3767,24 @@ export const zh = defineLocale({
       renameTitle: '重命名会话',
       renameDesc: '留空则清除。',
       untitledPlaceholder: '无标题会话',
+      tags: '标签',
+      tagsDialogTitle: '会话标签',
+      tagsDialogDesc: '为此会话添加彩色标签，用于侧边栏和筛选。',
+      tagsAddPlaceholder: '新标签名称',
+      tagsAdd: '添加',
+      tagsRemoveLabel: label => `移除标签 ${label}`,
+      askAbout: '询问此会话',
+      ask: {
+        clear: '清空线程',
+        dialogDesc: title => `关于 ${title} 的问题将根据其已保存的转录内容回答——不会触及正在进行的对话。`,
+        dialogTitle: '询问此会话',
+        empty: '询问此会话做了什么、决定了什么或写入了什么。',
+        failed: '无法获得回答',
+        placeholder: '就此会话提问…',
+        send: '提问',
+        thinking: '正在读取转录内容…',
+        truncatedNote: '回答基于长转录内容的开头和结尾部分。'
+      },
       deleteTitle: '删除会话？',
       deleteDesc: title => `这将永久删除“${title}”，且无法撤销。`,
       deleting: '正在删除…',
@@ -3487,10 +3792,49 @@ export const zh = defineLocale({
       untitledChat: id => `会话 ${id}`,
       messageCount: count => `${count} 条消息`,
       todoProgress: '任务完成度',
+      attachmentCount: count => `${count} 个附件`,
+      isolateWorktree: '隔离到 worktree',
+      isolateWorktreeDone: name => `已隔离到 worktree ${name}`,
+      mergeWorktree: '合并回 worktree',
+      mergeWorktreeTitle: '合并回 worktree',
+      mergeWorktreeDesc: (branch, repo) => `将分支 ${branch} 合并回 ${repo} 的检出？它必须处于干净状态。`,
+      mergingWorktree: '合并中…',
+      mergedWorktree: into => `已合并到 ${into}`,
+      mergeWorktreeFailed: '合并 worktree 失败',
+      worktreeTag: branch => `独立 worktree · ${branch}`,
+      worktreeUnavailable: '此处无法使用 git worktree',
+      digest: {
+        agents: count => `${count} 个子代理正在运行`,
+        approve: command => `批准：${command}`,
+        compacting: '正在总结会话',
+        replying: '正在撰写回复',
+        stalled: '仍在运行 — 已有一段时间没有输出',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
+      prCiPassing: 'CI 通过',
+      prCiFailing: 'CI 失败',
+      prCiPending: 'CI 进行中',
       ageNow: '刚刚',
       ageDay: '天',
       ageHour: '时',
       ageMin: '分'
+    },
+    watch: {
+      strip: '已关注的会话',
+      stop: '取消关注'
+    },
+    selection: {
+      ariaLabel: '已选中的会话',
+      count: (count: number) => `已选 ${count} 项`,
+      pin: '固定',
+      unpin: '取消固定',
+      mute: '静音',
+      unmute: '取消静音',
+      tag: '添加标签',
+      archive: '归档',
+      clear: '清除选择',
+      tagDialogTitle: (count: number) => `为 ${count} 个会话添加标签`,
+      tagDialogDesc: '标签会添加到所有选中的会话。'
     },
     dateDivider: {
       today: '今天早些时候',
@@ -3502,6 +3846,22 @@ export const zh = defineLocale({
     statusDivider: {
       working: '进行中',
       done: '已完成'
+    },
+    peek: {
+      idle: '空闲',
+      archived: '已归档',
+      workspace: '工作区',
+      branch: '分支',
+      model: '模型',
+      stats: '统计',
+      tokens: count => `${count} 个 token`,
+      agents: '委派的智能体',
+      agentsSummary: count => `${count} 个智能体`,
+      agentsRunning: count => `${count} 个运行中`,
+      profile: '配置文件',
+      source: '来源',
+      started: '开始时间',
+      updated: '更新时间'
     },
     markAllRead: '全部标记为已读'
   },
@@ -3519,7 +3879,7 @@ export const zh = defineLocale({
       '描述你需要什么',
       '我们该处理什么？',
       '随便问点什么',
-      '从一个目标开始'
+      '说出你想要的结果'
     ],
     followUpPlaceholders: [
       '发送后续消息',
@@ -3533,7 +3893,9 @@ export const zh = defineLocale({
     startVoice: '开始语音对话',
     openDirective: '打开',
     queueMessage: '排队消息',
+    queueWithAttachments: '与附件一起排队',
     steer: '引导当前运行',
+    steerTurn: '引导当前回合',
     stop: '停止',
     send: '发送',
     speaking: '讲话中',
@@ -3650,6 +4012,7 @@ export const zh = defineLocale({
       'composer.help': '此快速帮助 (删除以关闭)',
       'composer.sendNewline': '发送 · Shift+Enter 换行',
       'composer.sendQueued': '发送下一条排队的回合',
+      'composer.modelPicker': '模型选择器',
       'keybinds.openPanel': '所有键盘快捷键',
       'composer.cancel': '关闭弹窗 · 取消运行',
       'composer.history': '循环弹窗 / 历史'
@@ -3669,6 +4032,8 @@ export const zh = defineLocale({
     restoredDraftNotice: '已恢复你未发送的消息',
     restoredDraftUndo: '撤销',
     queueEdit: '编辑',
+    queueMoveUp: '上移',
+    queueMoveDown: '下移',
     queueExpand: '展开',
     queueCollapse: '收起',
     queueSendNext: '下一个',
@@ -3701,8 +4066,11 @@ export const zh = defineLocale({
     folder: '文件夹…',
     images: '图片…',
     pasteImage: '粘贴图片',
+    captureRegion: '屏幕区域截图…',
     url: 'URL…',
     promptSnippets: '提示词片段…',
+    scheduleJob: '定时运行…',
+    slashCommands: '斜杠命令…',
     tipPre: '提示：输入 ',
     tipPost: ' 以内联引用文件。',
     snippetsTitle: '提示词片段',
@@ -3723,6 +4091,16 @@ export const zh = defineLocale({
       tip: skill => `你提到了“${skill}” — 点击以该技能开头`,
       done: skill => `已添加 /${skill}`,
       doneTip: '发送时将加载该技能'
+    },
+    goalChips: {
+      planLabel: '先制定计划',
+      planTip: '将其变为 /plan — 在开始工作前把分步计划写入 .hermes/plans/',
+      planDone: '计划就绪',
+      planDoneTip: '发送时执行计划',
+      goalLabel: '设为目标',
+      goalTip: '将其变为 /goal — Hermes 会持续朝这个结果努力',
+      goalDone: '目标就绪',
+      goalDoneTip: '发送时目标生效'
     },
     githubSuggestions: {
       label: '设置 GitHub',
@@ -3746,6 +4124,18 @@ export const zh = defineLocale({
       done: '已标记为定时任务',
       doneTip: '发送后由智能体创建任务'
     },
+    nudges: {
+      prLabel: '发起 PR',
+      prTip: '上一条回复看起来是已完成的代码工作 — 帮你起草请求',
+      prDraft: '为刚才的改动发起一个 pull request。',
+      prDone: '已起草 PR 请求',
+      prDoneTip: '检查草稿并发送，让代理发起 PR',
+      followupLabel: '安排跟进',
+      followupTip: '为这项工作安排一次复查 — 为你起草请求',
+      followupDraft: '将此设置为定时任务：一小时后复查这项工作并告诉我有什么变化。',
+      followupDone: '已起草跟进请求',
+      followupDoneTip: '在草稿中调整时间后发送'
+    },
     snippets: {
       codeReview: {
         label: '代码审查',
@@ -3765,6 +4155,28 @@ export const zh = defineLocale({
     }
   },
 
+  regionCapture: {
+    attach: '附加',
+    cancel: '取消',
+    captureFailed: '无法捕获屏幕。',
+    capturing: '正在捕获…',
+    clear: '重新开始',
+    notePlaceholder: '给代理的备注（可选）…',
+    permissionDenied: '屏幕录制权限已关闭 — 请在系统设置 → 隐私与安全性 → 屏幕录制中启用。',
+    selectHint: '拖动以选择区域 · Esc 取消',
+    toolTips: { arrow: '箭头', pen: '画笔', rect: '矩形' },
+    unavailable: '此处无法进行屏幕捕获。',
+    undo: '撤销'
+  },
+  voiceStatus: {
+    idle: 'Hermes 空闲中 —— 没有正在运行的任务。',
+    working: 'Hermes 还在处理中。',
+    workingOn: detail => `Hermes 正在工作 —— 当前在${detail}。`,
+    stalled: 'Hermes 似乎卡住了 —— 已经有一会儿没有动静了。',
+    needsInput: 'Hermes 正在等待你的回复。',
+    finished: '上一轮已经结束 —— 回复在等你查看。',
+    progress: (done, total) => `${total} 项任务已完成 ${done} 项。`
+  },
   statusStack: {
     hideStack: '隐藏状态面板',
     showStack: '显示状态面板',
@@ -3782,6 +4194,10 @@ export const zh = defineLocale({
     stop: '停止',
     dismiss: '关闭',
     exit: code => `退出码 ${code}`,
+    verifyChecking: '正在检查预览…',
+    verifyFailed: count => `预览检查未通过 — 控制台有 ${count} 个错误`,
+    verifyOpenConsole: '打开控制台',
+    verifyPassed: '预览检查通过',
     control: {
       goalActiveTurns: (turn, maxTurns) => `第 ${turn}/${maxTurns} 轮`,
       goalDoneTurns: turns => `共 ${turns} 轮`,
@@ -3897,6 +4313,8 @@ export const zh = defineLocale({
       notRepo: '不是 Git 仓库',
       noDiff: '没有可显示的差异',
       scopeUncommitted: '未提交',
+      scopeSession: '会话',
+      sessionEmpty: '没有会话更改',
       scopeBranch: '分支',
       scopeLastTurn: '上一轮',
       readOnlyScope: '只读视图 — 暂存、还原和提交操作仅适用于“未提交”',
@@ -3911,6 +4329,22 @@ export const zh = defineLocale({
       agentShip: '让 Hermes 提交并开 PR',
       agentShipUnavailable: '拥有这些更改的会话当前不在屏幕上。',
       agentShipPrompt: '检查当前更改，使用清晰的约定式提交信息提交，推送分支，并开启一个拉取请求。',
+      agentReview: '让智能体审查',
+      agentReviewPick: '使用以下身份审查',
+      agentReviewNoProfiles: '未找到配置文件',
+      agentReviewPrompt: '审查附加文件中的 diff。优先报告具体问题——bug、回归、缺失的处理——而非风格细节。',
+      agentReviewAttachment: '工作区 diff',
+      agentReviewUnavailable: '无可审查内容：没有仓库或没有待处理的 diff。',
+      agentReviewReportTitle: (reviewer: string) => `${reviewer} 的审查`,
+      selfReview: '审查更改',
+      selfReviewRunning: '正在审查更改…',
+      selfReviewClean: '未发现问题',
+      selfReviewClear: '清除审查评论',
+      selfReviewComments: count => `${count} 条评论`,
+      commentOnLine: line => `评论第 ${line} 行`,
+      diffCommentPlaceholder: '评论此行…',
+      diffCommentSend: '添加评论',
+      commentSeeded: '已作为草稿添加到输入框',
       newBranch: '新建分支',
       branchOffFrom: base => `从 ${base} 新建分支`,
       switchTo: branch => `切换到 ${branch}`,
@@ -4384,6 +4818,10 @@ export const zh = defineLocale({
       branch: branch => `分支 ${branch}`,
       closeCommandCenter: '关闭命令中心',
       openCommandCenter: '打开命令中心',
+      toggleNotices: '通知',
+      noticesTitle: '近期通知',
+      toggleAttentionInbox: '待处理收件箱',
+      attentionInboxTitle: '待处理的批准与问题',
       showTerminal: '显示终端',
       hideTerminal: '隐藏终端',
       gateway: '网关',
@@ -4424,6 +4862,11 @@ export const zh = defineLocale({
       openWebhooks: '打开 Webhook',
       starmap: '记忆图谱',
       openStarmap: '打开记忆图谱',
+      artifacts: '产物',
+      artifactsTitle: '本会话生成的交付物 — 选择一个在对话旁打开',
+      artifactsCount: count => `${count} 个产物`,
+      browseAllArtifacts: '浏览全部产物',
+      toggleArtifacts: '产物',
       turnRunning: '运行中',
       contextUsage: '上下文用量',
       compressions: count => `压缩次数：${count}`,
@@ -4468,6 +4911,19 @@ export const zh = defineLocale({
   },
 
   rightSidebar: {
+    agentTouched: '在此对话中编辑过',
+    newFile: '新建文件',
+    newFolder: '新建文件夹',
+    filterFiles: '筛选文件',
+    newFileIn: label => `在 ${label} 中新建文件`,
+    newFolderIn: label => `在 ${label} 中新建文件夹`,
+    newFilePlaceholder: 'name.ts —— 斜杠会创建文件夹',
+    newFolderPlaceholder: '文件夹名称',
+    newFileFailed: '无法创建文件',
+    newFolderFailed: '无法创建文件夹',
+    filterPlaceholder: '筛选文件…',
+    filterHint: '输入文件或文件夹名称的一部分。搜索整个项目，而不仅是已展开的文件夹。',
+    filterNoMatch: '没有匹配的文件',
     terminalReadOnly: '只读输出',
     terminalReadOnlyHelp:
       '如需回应提示，请停止后台命令，再在新终端中运行。新终端会打开独立的 shell，不会连接到此进程。',
@@ -4625,7 +5081,26 @@ export const zh = defineLocale({
       commentPlaceholder: '添加批注…',
       commentTitle: n => `批注 ${n}`,
       saveComment: '保存',
-      cancelComment: '取消批注'
+      cancelComment: '取消批注',
+      record: '录制任务',
+      recordStop: '停止录制',
+      recording: count => `录制中 · ${count}`,
+      recordNeedPage: '请先在内置浏览器中打开一个页面。',
+      recordFailed: '无法在此页面上开始录制。',
+      recordTitle: '将录制内容保存为技能',
+      recordDesc: '检查已捕获的步骤、命名技能并保存为草稿。之后智能体可从你的技能中重放它。',
+      recordName: '名称',
+      recordNamePlaceholder: '订购生活用品',
+      recordNameHint: slug => `将以「${slug}」保存到 ~/.hermes/skills/`,
+      recordDescLabel: '描述（可选）',
+      recordDescPlaceholder: '何时使用此流程…',
+      recordDescHint: '一句话，最多 60 个字符。',
+      recordSteps: count => `已录制步骤（${count}）`,
+      recordEmpty: '未捕获任何步骤——录制为空。',
+      recordSave: '保存技能',
+      recordSaving: '正在保存…',
+      recordSaved: name => `已将「${name}」保存到你的技能。`,
+      recordSaveFailed: '无法保存技能。'
     }
   },
 
@@ -4633,6 +5108,8 @@ export const zh = defineLocale({
     title: '界面模式',
     hint: '只改变显示的内容，不改变 Hermes 的能力。',
     sessionNote: '由简洁模式设定。此处的更改仅在本次会话内生效；切换到高级模式即可保留为你的设置。',
+    simpleNotice: '简洁模式 — 面板和其他工具已隐藏。',
+    showAdvanced: '显示高级模式',
     simple: {
       label: '简洁',
       description: '用于与 Hermes 对话。只有侧边栏和聊天；没有终端、文件或差异面板。'
@@ -4717,9 +5194,16 @@ export const zh = defineLocale({
   },
 
   assistant: {
+    sessionRecap: {
+      title: '上次进度',
+      dismiss: '忽略',
+      turns: count => `${count} 个回合`,
+      todo: progress => `计划 ${progress}`
+    },
     thread: {
       loadingSession: '正在加载会话',
       showEarlier: '显示更早的消息',
+      timelineScrubber: '会话记录缩略图',
       loadingResponse: 'Hermes 正在加载回复',
       loadingLocalModel: model => `正在将 ${model} 载入内存`,
       processingPrompt: '正在处理提示词',
@@ -4823,6 +5307,7 @@ export const zh = defineLocale({
       stopReading: '停止朗读',
       readAloud: '朗读',
       copyFullResponse: '复制完整回复',
+      copyMarkdown: '复制为 Markdown',
       readAloudFullResponseHint: '按住 Shift 点击：朗读完整回复',
       editMessage: '编辑消息',
       expandMessage: '展开消息',
@@ -4835,6 +5320,11 @@ export const zh = defineLocale({
       restoreBody: '此提示之后的所有消息将从对话中移除，并从此处重新运行该提示。',
       restoreConfirm: '恢复并重新运行',
       restoreNext: '恢复下一个检查点',
+      revertFilesTip: '将文件还原到此提示之前的状态',
+      revertFilesTitle: '还原文件？',
+      revertFilesBody: 'Hermes 在该轮中修改的文件将恢复到之前的状态——你手动编辑过的内容会保留。对话不受影响。',
+      revertFilesConfirm: '还原文件',
+      revertFilesFailed: '无法还原文件',
       goForward: '前进',
       sendEdited: '发送编辑后的消息',
       attachingFile: '正在附加…'
@@ -5014,6 +5504,9 @@ export const zh = defineLocale({
     secretTitle: '需要密钥',
     secretDesc: 'Hermes 需要一个凭据才能继续。',
     secretPlaceholder: '密钥值',
+    secretCardSkip: '跳过',
+    secretCardSave: '保存',
+    secretCardFootnote: '存储在此配置文件的密钥中 — 值会直接发送到后端，绝不会进入会话内容。',
     vaultUnlockSendFailed: '无法发送主密码',
     vaultUnlockTitle: name => `解锁 ${name}`,
     vaultUnlockDesc: name =>
@@ -5106,6 +5599,19 @@ export const zh = defineLocale({
     hydrationSyncing: (profile: string) => `正在同步 ${profile}\u2026`,
     sessionExported: '会话已导出',
     sessionExportFailed: '无法导出会话',
+    markdownUser: '用户',
+    markdownAssistant: '助手',
+    markdownSystem: '系统',
+    markdownReasoning: '推理过程',
+    markdownToolCall: '工具调用',
+    markdownToolResult: '工具结果',
+    deliverableArtifacts: '产物',
+    deliverableChanges: '变更',
+    deliverableFilesLine: (files, added, removed) => `共修改 ${files} 个文件 · +${added} / −${removed}`,
+    deliverableNoSummary: '未记录助手回复',
+    deliverablePullRequest: 'Pull request',
+    deliverableSession: '会话',
+    deliverableSummary: '摘要',
     imageSaved: '图片已保存',
     downloadStarted: '下载已开始',
     restartToUseSaveImage: '重启 Hermes 桌面版后可使用保存图片。',
@@ -5121,6 +5627,7 @@ export const zh = defineLocale({
     imageAttach: '附加图片',
     imageWriteFailed: '无法将图片写入磁盘。',
     imageAttachFailed: '附加图片失败',
+    pastedAsFile: '已粘贴为文件',
     pastedContent: '粘贴内容',
     pasteAttachFailed: '无法附加粘贴的文本',
     attachImages: '附加图片',
@@ -5130,11 +5637,28 @@ export const zh = defineLocale({
     dropFiles: '拖放文件',
     handoff: {
       pickPlatform: '选择目标平台',
+      queued: (platform, home) => `正在移交到 ${platform}（${home}）…`,
+      sessionUnavailable: '此聊天当前未在网关上运行。',
       success: platform => `已移交到 ${platform}。随时可在此处恢复。`,
       systemNote: platform => `↻ 已移交到 ${platform} — 随时可在此处恢复。`,
       failed: error => `移交失败：${error}`,
       timedOut: '等待网关超时。`hermes gateway` 是否正在运行？'
     }
+  },
+
+  menuBar: {
+    newSession: '新会话',
+    quickEntry: '快速输入',
+    quit: '退出 Hermes',
+    recentSessions: '最近会话',
+    show: '显示 Hermes',
+    statusIdle: 'Hermes — 空闲',
+    statusActive: (runs: number, needsYou: number) => `${runs} 个运行中 · ${needsYou} 个待处理`
+  },
+
+  quickEntry: {
+    contextLabel: '上下文',
+    contextRemove: '移除上下文'
   },
 
   tips: {
@@ -5185,6 +5709,10 @@ export const zh = defineLocale({
       'right-pane': {
         title: '工作面板',
         text: '文件、终端、审阅和内置浏览器都在侧边面板里。'
+      },
+      'advanced-mode': {
+        title: '高级模式里还有更多',
+        text: '面板、定时任务、功能和状态栏都在高级模式中 — 设置 › 外观 › 窗口与布局 可随时切换。'
       }
     }
   },

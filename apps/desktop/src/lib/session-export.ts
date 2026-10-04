@@ -19,11 +19,11 @@ function sanitizeFilenamePart(value: string) {
     .slice(0, 48)
 }
 
-function sessionExportFilename(sessionId: string, title?: string | null) {
+export function sessionExportFilename(sessionId: string, title?: string | null, extension = 'json') {
   const titlePart = title ? sanitizeFilenamePart(title) : ''
   const idPart = sanitizeFilenamePart(sessionId).slice(0, 8) || 'session'
 
-  return `${titlePart || 'session'}-${idPart}.json`
+  return `${titlePart || 'session'}-${idPart}.${extension}`
 }
 
 export async function exportSession(sessionId: string, params: Omit<ExportSessionParams, 'sessionId'> = {}) {

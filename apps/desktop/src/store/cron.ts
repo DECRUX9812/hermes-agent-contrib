@@ -92,3 +92,10 @@ export const setCronFocusJobId = (id: null | string) => $cronFocusJobId.set(id)
 // focus id here: the cron overlay's first fetch may not have loaded that row.
 export const $cronReviewRequest = atom(0)
 export const requestCronReview = () => $cronReviewRequest.set($cronReviewRequest.get() + 1)
+
+// One-shot create-draft seed: the composer's "Run on a schedule" item stashes
+// the current draft here and routes to the cron overlay, which reads it once
+// to open the create dialog prefilled. Cleared after consumption so a plain
+// /cron visit doesn't resurrect an old prompt.
+export const $cronCreateDraft = atom<null | { prompt: string }>(null)
+export const setCronCreateDraft = (draft: null | { prompt: string }) => $cronCreateDraft.set(draft)

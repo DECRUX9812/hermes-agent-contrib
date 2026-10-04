@@ -1,17 +1,26 @@
 import { act, fireEvent, render, renderHook } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import type { RosterRow } from './types'
 
 vi.mock('@hermes/plugin-sdk', async () => {
   const { useStore } = await import('@nanostores/react')
+  const { atom } = await import('nanostores')
   const { onGatewayEvent } = await import('../../contrib/events')
 
   return {
+    atom,
+    coarseElapsed: () => ({ unit: 'm' as const, value: 0 }),
+    Button: ({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) => (
+      <button {...props}>{children}</button>
+    ),
     Codicon: () => null,
+    GlyphSpinner: () => null,
+    Tip: ({ children }: { children?: ReactNode }) => children,
     useValue: useStore,
     resolveSiblingWsUrl: vi.fn(),
-    host: { onEvent: vi.fn(onGatewayEvent), requestProfile: vi.fn() }
+    host: { notify: vi.fn(), notifyError: vi.fn(), onEvent: vi.fn(onGatewayEvent), requestProfile: vi.fn() }
   }
 })
 vi.mock('./data', async () => {
@@ -34,7 +43,25 @@ vi.mock('./i18n', () => ({
       heroStale: 'Last seen',
       heroSuppressed: 'Hidden while someone has control',
       portalUnavailable: 'Update the bot',
-      heroConnecting: 'Connecting'
+      heroConnecting: 'Connecting',
+      panelTitle: 'Computer',
+      openFullPane: 'Open full pane',
+      copyScreenshot: 'Copy screenshot',
+      screenshotCopied: 'Copied',
+      screenshotFailed: 'Copy failed',
+      restartScreen: 'Restart',
+      restartFailed: 'Restart failed',
+      openWorkdir: 'Workdir',
+      workdirUnavailable: 'No workdir',
+      workdirFailed: 'Workdir failed',
+      resizePanel: 'Resize',
+      portalStopped: 'Stopped',
+      portalNotInstalled: 'Not installed',
+      portalUnsupported: 'Unsupported',
+      takeOver: 'Take over',
+      handBack: 'Hand back',
+      handBackForce: 'Force hand back',
+      handBackForceHint: 'Another window holds control'
     }
   })
 }))
@@ -48,8 +75,8 @@ import { emitGatewayEvent } from '../../contrib/events'
 
 import { $lastRoster } from './data'
 import type { DisplayStatus } from './screen-connection'
-import { ScreenHero } from './screen-hero'
 import { openBotScreen } from './screen-open'
+import { BotComputerPanel } from './screen-panel'
 import { ProfileGroupScreenPortal, useScreenPortalState } from './screen-portal'
 import { $screenState, setScreenStatus } from './screen-state'
 
@@ -135,11 +162,11 @@ it.each(['pending', 'rejected'])('never displays host A pixels under host B whil
   vi.mocked(host.requestProfile)
     .mockResolvedValueOnce({ data_url: 'data:image/jpeg;base64,HOST_A' })
     .mockImplementationOnce(() => (state === 'pending' ? new Promise(() => {}) : Promise.reject(new Error('offline'))))
-  const view = render(<ScreenHero bot={botA} />)
+  const view = render(<BotComputerPanel bot={botA} />)
   await act(async () => {})
   expect(view.container.querySelector('img')?.getAttribute('src')).toContain('HOST_A')
 
-  view.rerender(<ScreenHero bot={botB} />)
+  view.rerender(<BotComputerPanel bot={botB} />)
   await act(async () => {})
   expect(view.container.querySelector('img')).toBeNull()
   view.unmount()
@@ -159,8 +186,8 @@ it('discards a late thumbnail from the previous owner and retains a same-owner f
     )
     .mockResolvedValueOnce({ data_url: 'data:image/jpeg;base64,HOST_B' })
     .mockRejectedValue(new Error('offline'))
-  const view = render(<ScreenHero bot={botA} />)
-  view.rerender(<ScreenHero bot={botB} />)
+  const view = render(<BotComputerPanel bot={botA} />)
+  view.rerender(<BotComputerPanel bot={botB} />)
   await act(async () => {})
   await act(async () => {
     finishA({ data_url: 'data:image/jpeg;base64,HOST_A' })
@@ -170,7 +197,7 @@ it('discards a late thumbnail from the previous owner and retains a same-owner f
     await vi.advanceTimersByTimeAsync(12_000)
   })
   expect(view.container.querySelector('img')?.getAttribute('src')).toContain('HOST_B')
-  expect(view.getByRole('button').getAttribute('aria-label')).toContain('Last seen')
+  expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).toContain('Last seen')
   view.unmount()
 })
 
@@ -178,19 +205,23 @@ it('captions a suppressed thumbnail as hidden-while-controlled and never ages it
   vi.useFakeTimers()
   setScreenStatus(botA, status)
   vi.mocked(host.requestProfile).mockResolvedValue({ data_url: null, suppressed: 'human_has_control' })
-  const view = render(<ScreenHero bot={botA} />)
+  const view = render(<BotComputerPanel bot={botA} />)
   await act(async () => {})
-  expect(view.getByRole('button').getAttribute('aria-label')).toContain('Hidden while someone has control')
+  expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).toContain(
+    'Hidden while someone has control'
+  )
 
   await act(async () => {
     await vi.advanceTimersByTimeAsync(20_000)
   })
-  expect(view.getByRole('button').getAttribute('aria-label')).toContain('Hidden while someone has control')
-  expect(view.getByRole('button').getAttribute('aria-label')).not.toContain('Last seen')
+  expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).toContain(
+    'Hidden while someone has control'
+  )
+  expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).not.toContain('Last seen')
   view.unmount()
 })
 
-it('settles on an older backend without display.*: portal tone is unavailable and the hero renders nothing', async () => {
+it('settles on an older backend without display.*: portal tone is unavailable and the panel shows no live frame', async () => {
   vi.mocked(host.requestProfile).mockRejectedValue(
     Object.assign(new Error('Method not found: display.status'), { code: -32601 })
   )
@@ -202,9 +233,10 @@ it('settles on an older backend without display.*: portal tone is unavailable an
   expect(vi.mocked(host.requestProfile)).toHaveBeenCalledTimes(1)
   hook.unmount()
 
-  const view = render(<ScreenHero bot={botA} />)
+  const view = render(<BotComputerPanel bot={botA} />)
   await act(async () => {})
-  expect(view.container.firstChild).toBeNull()
+  expect(view.queryByRole('button', { name: /^Screen/ })).toBeNull()
+  expect(view.container.querySelector('img')).toBeNull()
   view.unmount()
 })
 

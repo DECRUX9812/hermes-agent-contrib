@@ -14,6 +14,17 @@ export type DeepLinkAction =
   | { type: 'skill-install'; identifier: string }
   | { type: 'composer-blueprint'; name: string; params: Record<string, string> }
   | { type: 'connection-done'; op: string; status: string }
+  /** `hermes://session/open?id=…&install=…` — cross-device view re-home (#50):
+   *  open a stored session that lives on another registered connection. */
+  | {
+      type: 'session-open'
+      id: string
+      profile?: string
+      title?: string
+      install?: string
+      kind?: string
+      addr?: string
+    }
   | { type: 'ignore' }
 
 function truthyParam(value: string | undefined, defaultValue = false): boolean {
@@ -49,6 +60,28 @@ export function resolveDeepLinkAction(payload: DeepLinkPayload | null | undefine
   // never a git-path install of whatever else the link carried.
   if (payload.kind === 'plugin' && payload.name === 'install' && payload.params?.catalog !== undefined) {
     return { type: 'plugin-catalog-install', name: payload.params.catalog.trim() }
+  }
+
+  if (payload.kind === 'session' && payload.name === 'open') {
+    const id = (payload.params?.id || '').trim()
+
+    const text = (key: string): string | undefined => {
+      const value = payload.params?.[key]?.trim()
+
+      return value ? value : undefined
+    }
+
+    return id
+      ? {
+          type: 'session-open',
+          id,
+          profile: text('profile'),
+          title: text('title'),
+          install: text('install'),
+          kind: text('kind'),
+          addr: text('addr')
+        }
+      : { type: 'ignore' }
   }
 
   if (payload.kind === 'skill') {

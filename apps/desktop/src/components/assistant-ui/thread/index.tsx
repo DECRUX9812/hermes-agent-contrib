@@ -1,10 +1,13 @@
-import { createContext, memo, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useContext, useMemo, useRef, useState } from 'react'
 
 import { ChatEmptySlot } from '@/components/assistant-ui/chat-empty-slot'
 import { AssistantMessage } from '@/components/assistant-ui/thread/assistant-message'
+import { DelegationPill } from '@/components/assistant-ui/thread/delegation-pill'
+import { ThreadEditContext } from '@/components/assistant-ui/thread/edit-context'
 import { ThreadMessageList } from '@/components/assistant-ui/thread/list'
 import { BackgroundResumeNotice, CenteredThreadSpinner } from '@/components/assistant-ui/thread/status'
 import { SystemMessage } from '@/components/assistant-ui/thread/system-message'
+import { ThreadScrubber } from '@/components/assistant-ui/thread/thread-scrubber'
 import { ThreadTimeline } from '@/components/assistant-ui/thread/timeline'
 import { useTranscriptWindow } from '@/components/assistant-ui/thread/transcript-window'
 import { type RestoreMessageTarget } from '@/components/assistant-ui/thread/types'
@@ -14,25 +17,10 @@ import { Intro, type IntroProps } from '@/components/chat/intro'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { revertToCheckpoint } from '@/store/checkpoints'
 import { notifyError } from '@/store/notifications'
 
 type ThreadLoadingState = 'response' | 'session'
-
-interface ThreadEditContextValue {
-  cwd: string | null
-  gateway: HermesGateway | null
-  sessionId: string | null
-}
-
-// Edit-composer context. The composer only exists while a message is being
-// edited, and it mounts deep inside the memo'd ThreadMessageList, so the
-// edit context can neither ride the component-map memo deps (that remints
-// the component types on every session switch and remounts the outgoing
-// transcript) nor sit in a render-time ref (a mounted composer never
-// re-reads it when a same-session change leaves every list prop
-// referentially equal). Context solves both: the component type stays
-// stable, and a changed value propagates straight to the mounted consumer.
-const ThreadEditContext = createContext<ThreadEditContextValue>({ cwd: null, gateway: null, sessionId: null })
 
 interface ThreadProps {
   clampToComposer?: boolean
@@ -85,7 +73,28 @@ export const Thread = memo(function Thread({
     (RestoreMessageTarget & { messageId: string }) | null
   >(null)
 
+  // Checkpoint hash targeted by the "revert files" confirm — files-only
+  // restore, transcript untouched (roadmap #31).
+  const [revertTargetHash, setRevertTargetHash] = useState<null | string>(null)
+
   const closeRestoreConfirm = useCallback(() => setRestoreConfirmTarget(null), [])
+  const closeRevertConfirm = useCallback(() => setRevertTargetHash(null), [])
+
+  const confirmRevert = useCallback(() => {
+    const hash = revertTargetHash
+
+    closeRevertConfirm()
+
+    if (!hash || !sessionId) {
+      return
+    }
+
+    void revertToCheckpoint(sessionId, hash, copy.revertFilesFailed)
+  }, [closeRevertConfirm, copy.revertFilesFailed, revertTargetHash, sessionId])
+
+  const requestRevertConfirm = useCallback((hash: string) => {
+    setRevertTargetHash(hash)
+  }, [])
 
   const confirmRestore = useCallback(() => {
     if (!restoreConfirmTarget || !onRestoreToMessage) {
@@ -153,10 +162,19 @@ export const Thread = memo(function Thread({
         <UserMessage
           onCancel={hasCancel ? () => callbacksRef.current.onCancel?.() : undefined}
           onRequestRestoreConfirm={hasRestoreToMessage ? requestRestoreConfirm : undefined}
+          onRequestRevertConfirm={isHistorical ? undefined : requestRevertConfirm}
         />
       )
     }),
-    [hasBranchInNewChat, hasCancel, hasDismissError, hasRestoreToMessage, requestRestoreConfirm]
+    [
+      hasBranchInNewChat,
+      hasCancel,
+      hasDismissError,
+      hasRestoreToMessage,
+      isHistorical,
+      requestRestoreConfirm,
+      requestRevertConfirm
+    ]
   )
 
   // Core's splash belongs to a fresh draft; a session that exists but has
@@ -176,7 +194,15 @@ export const Thread = memo(function Thread({
   // element every render defeats the bail-out and drags the whole transcript
   // into the switch's render pass. It takes no props, so one element is
   // always correct.
-  const loadingIndicator = useMemo(() => <BackgroundResumeNotice />, [])
+  const loadingIndicator = useMemo(
+    () => (
+      <>
+        <DelegationPill />
+        <BackgroundResumeNotice />
+      </>
+    ),
+    []
+  )
 
   return (
     <ThreadEditContext.Provider value={editContext}>
@@ -193,6 +219,7 @@ export const Thread = memo(function Thread({
         />
         {loading === 'session' && <CenteredThreadSpinner />}
         <ThreadTimeline />
+        <ThreadScrubber />
         <ConfirmDialog
           confirmLabel={copy.restoreConfirm}
           description={copy.restoreBody}
@@ -201,6 +228,15 @@ export const Thread = memo(function Thread({
           onConfirm={confirmRestore}
           open={Boolean(restoreConfirmTarget)}
           title={copy.restoreTitle}
+        />
+        <ConfirmDialog
+          confirmLabel={copy.revertFilesConfirm}
+          description={copy.revertFilesBody}
+          destructive
+          onClose={closeRevertConfirm}
+          onConfirm={confirmRevert}
+          open={Boolean(revertTargetHash)}
+          title={copy.revertFilesTitle}
         />
       </div>
     </ThreadEditContext.Provider>

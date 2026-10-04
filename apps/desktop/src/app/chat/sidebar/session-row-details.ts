@@ -15,7 +15,7 @@ const modelLabel = (model: null | string) => model?.split('/').pop()?.trim() || 
 const oneLine = (value: null | string) => value?.replace(/\s+/g, ' ').trim() || null
 
 export const sessionRowEstimate = (density: SessionListDensity) =>
-  ({ compact: 28, comfortable: 45, detailed: 63 })[density]
+  ({ compact: 28, condensed: 22, comfortable: 45, detailed: 63 })[density]
 
 /** Virtual-list placement estimate for the Inbox-style card. A full card
  *  stacks four text lines (header, title, preview, model/size) where the

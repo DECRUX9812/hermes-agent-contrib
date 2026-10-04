@@ -12,6 +12,7 @@ export const SESSION_ROUTE_PREFIX = '/'
 export const NEW_CHAT_ROUTE = '/'
 export const SETTINGS_ROUTE = '/settings'
 export const COMMAND_CENTER_ROUTE = '/command-center'
+export const INBOX_ROUTE = '/inbox'
 export const SESSION_IMPORT_ROUTE = '/session-import'
 export const CAPABILITIES_ROUTE = '/capabilities'
 export const MESSAGING_ROUTE = '/messaging'
@@ -21,6 +22,7 @@ export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
 export const STARMAP_ROUTE = '/starmap'
+export const ROSTER_ROUTE = '/roster'
 
 export type AppView =
   | 'session-import'
@@ -35,8 +37,10 @@ export type AppView =
   // so the sidebar kept a session highlighted and the titlebar kept the
   // session-title dropdown while a plugin page was showing.
   | 'extension'
+  | 'inbox'
   | 'messaging'
   | 'profiles'
+  | 'roster'
   | 'settings'
   | 'starmap'
   | 'webhooks'
@@ -48,9 +52,11 @@ export type AppRouteId =
   | 'capabilities'
   | 'command-center'
   | 'cron'
+  | 'inbox'
   | 'messaging'
   | 'new'
   | 'profiles'
+  | 'roster'
   | 'settings'
   | 'starmap'
   | 'webhooks'
@@ -71,9 +77,11 @@ export const APP_ROUTES = [
   { id: 'webhooks', path: WEBHOOKS_ROUTE, view: 'webhooks' },
   { id: 'artifacts', path: ARTIFACTS_ROUTE, view: 'artifacts' },
   { id: 'cron', path: CRON_ROUTE, view: 'cron' },
+  { id: 'inbox', path: INBOX_ROUTE, view: 'inbox' },
   { id: 'profiles', path: PROFILES_ROUTE, view: 'profiles' },
   { id: 'agents', path: AGENTS_ROUTE, view: 'agents' },
-  { id: 'starmap', path: STARMAP_ROUTE, view: 'starmap' }
+  { id: 'starmap', path: STARMAP_ROUTE, view: 'starmap' },
+  { id: 'roster', path: ROSTER_ROUTE, view: 'roster' }
 ] as const satisfies readonly AppRoute[]
 
 const APP_VIEW_BY_PATH = new Map<string, AppView>(APP_ROUTES.map(route => [route.path, route.view]))
@@ -157,6 +165,26 @@ export interface ProfileGroupHeaderContribution {
   render: (route: ProfileGroupRoute) => ReactNode
 }
 
+// ── Contributed list-top section — the `sidebar.listTop` registry area ───────
+// A RENDER contribution mounted at the top of the Sessions sidebar's scroll
+// column, above Pinned, while the flat list is on screen. It unmounts while a
+// search query runs — the results column owns the space then — unless it
+// declares `searchable`, in which case it stays mounted and filters its own
+// rows by the live query (`host.state.sidebarSearchQuery`). The contribution
+// renders its own section chrome (label, collapse, actions) so it composes
+// with the lists it sits above without core knowing what it contains.
+// First consumer: the Bots plugin's compact agent section, which folds the
+// roster into the one nav column so reaching a bot never takes a tab switch.
+
+export const SIDEBAR_LIST_TOP_AREA = 'sidebar.listTop'
+
+/** Payload of a `sidebar.listTop` data contribution. */
+export interface SidebarListTopContribution {
+  render: () => ReactNode
+  /** Stay mounted during a search and filter own rows by the query. */
+  searchable?: boolean
+}
+
 // Views that render as a full-screen modal card (OverlayView) over the shell.
 // While one is open the app's titlebar control clusters must hide so they don't
 // bleed over the overlay (they sit at a higher z-index than the overlay card).
@@ -165,7 +193,9 @@ export const OVERLAY_VIEWS: ReadonlySet<AppView> = new Set([
   'agents',
   'command-center',
   'cron',
+  'inbox',
   'profiles',
+  'roster',
   'settings',
   'starmap',
   'webhooks'

@@ -15,6 +15,7 @@ import {
   storedStringRecord
 } from '@/lib/storage'
 import { withTimeout } from '@/lib/with-timeout'
+import { registerComposerNewDraftProfileResolver } from '@/store/composer'
 import { registryConnectionKind } from '@/store/connection-registry-state'
 import {
   $gateway,
@@ -417,6 +418,15 @@ export function resolveNewChatOwnerRoute(forProfile?: string): AgentProfileRoute
     profile: normalizeProfileKey(intentProfile || $activeGatewayProfile.get())
   }
 }
+
+// The composer's pre-session draft bucket keys on the profile the fresh chat
+// would be created on — route, intent, else the live gateway — matching the
+// session.create owner chain so one profile's unsent text can't surface in
+// another's composer. Registered here, not imported by store/composer.ts,
+// which stays leaf-level to keep the store graph acyclic.
+registerComposerNewDraftProfileResolver(
+  () => resolveNewChatOwnerRoute()?.profile || $newChatProfile.get() || normalizeProfileKey($activeGatewayProfile.get())
+)
 
 /**
  * The owner route for a surface anchored to a profile the ACTIVE source is

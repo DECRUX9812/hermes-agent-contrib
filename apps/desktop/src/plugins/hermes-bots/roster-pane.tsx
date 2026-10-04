@@ -1,7 +1,9 @@
 import { host, useI18n, useValue } from '@hermes/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 
+import { BotCard } from './bot-card'
 import { BotRow } from './bot-row'
+import { type BotDraft, type BotStarter, starterDraft } from './bot-starters'
 import {
   $botChatFocused,
   $botsPaneVisible,
@@ -15,6 +17,7 @@ import {
   parseRosterKey,
   saveSelectedRosterBot
 } from './bot-state'
+import { BroadcastDialog } from './broadcast-dialog'
 /**
  * The Bots pane itself: the roster's selection reconciliation, the
  * workspace-ownership reads its lifecycle keys off, and the pane that lists
@@ -38,8 +41,14 @@ import { groupChatMemberBots } from './group-membership'
 import { $groupMainTabsRev, shouldRenderGroupChatInPane } from './group-panes'
 import { $activeGroupMemberKeys } from './group-presence'
 import { $showHiddenBots, isBotHidden } from './hidden-bots'
+import { HireGallery } from './hire-gallery'
 import { useBots } from './i18n'
-import { $activityToasts } from './roster-actions'
+import { $rosterSortMode, setRosterSortMode, useRosterAttentionCounts } from './live-status'
+import { mailboxOpenCountFor, useMailbox } from './mailbox'
+import { MailboxTaskDialog } from './mailbox-parts'
+import { createQuickBot } from './quick-create'
+import { QuickCreateDialog } from './quick-create-dialog'
+import { $activityToasts, openRosterBot } from './roster-actions'
 import { renderRosterContent } from './roster-pane-content'
 import { deriveRosterPresentation, deriveRosterRows, sortRosterBots } from './roster-pane-derivation'
 import { renderRosterDialogs } from './roster-pane-dialogs'
@@ -48,15 +57,20 @@ import { $lastSources, usePublishRosterSnapshot } from './roster-pane-lifecycle'
 import { rosterSectionRenderers } from './roster-pane-sections'
 import { renderRosterToolbar } from './roster-pane-toolbar'
 import { botNeedsHandleLabel, rosterGatewayOptions } from './roster-sections'
+import { $rosterViewMode, setRosterViewMode } from './roster-view'
+import { RoutinesCalendarDialog } from './routines-calendar'
 import { botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
 import { activeBots, useTurnBusy } from './row-helpers'
+import { TriageStrip } from './triage-strip'
 import type { BotMeta, GatewaySource, GroupMember, RosterActivityFilter, RosterKindFilter, RosterRow } from './types'
 import {
   $botSections,
+  $collapsedBotSections,
   $draggingBot,
   adoptBotSectionsFromMeta,
   backfillBotSectionNames,
-  type SectionDialogState
+  type SectionDialogState,
+  toggleBotSectionCollapsed
 } from './user-sections'
 import { useEscapeCancelsBotDrag } from './user-sections-ui'
 
@@ -239,7 +253,41 @@ export function BotsPane() {
   const workingOwner = focusedRosterOwner(useValue($focusedBotOwner))
   const activeConnectionId = host.state.connectionId?.get?.() || 'local'
   const [createOpen, setCreateOpen] = useState(false)
+  // A Hire-gallery pick (starter card or described bot) — the create dialog
+  // mounts pre-filled on it (remount keyed, so state is read once per open).
+  const [createDraft, setCreateDraft] = useState<BotDraft | null>(null)
+
+  const openCreate = (draft: BotDraft | null) => {
+    setCreateDraft(draft)
+    setCreateOpen(true)
+  }
+
+  // "New bot" leads with the one-click dialog — a name is all it takes. The
+  // Hire gallery (and the heavyweight form behind it) is the link INSIDE it.
+  const [quickOpen, setQuickOpen] = useState(false)
+  const [hireOpen, setHireOpen] = useState(false)
+  // The empty-state starter chips create in ONE click — no dialog — so the
+  // click is guarded against a second tap while the first create is in flight.
+  const [creatingStarter, setCreatingStarter] = useState<null | string>(null)
+
+  const quickStarter = (starter: BotStarter) => {
+    if (creatingStarter) {
+      return
+    }
+
+    setCreatingStarter(starter.id)
+    host.notify({ kind: 'info', message: b.quick.creating(starter.name) })
+    void createQuickBot(starterDraft(starter), {
+      roster: activeSourceRoster,
+      onConfigureModel: setEditing
+    })
+      .catch(err => host.notifyError(err, b.bot.createFailed))
+      .finally(() => setCreatingStarter(null))
+  }
+
   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
+  const [broadcastOpen, setBroadcastOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const [editing, setEditing] = useState<null | RosterRow>(null)
   // `path` is the profile directory the gateway reports on a profiles.list row;
   // it is not part of the shared RosterRow model, so it rides as an extra here.
@@ -254,11 +302,17 @@ export function BotsPane() {
   const [sectionDialog, setSectionDialog] = useState<SectionDialogState>(null)
 
   const [grouping, setGrouping] = useState<null | RosterRow>(null)
+  // The mailbox (#48): notes the union mailbox query returned, plus the bot
+  // whose Assign-task dialog is open.
+  const mailboxNotes = useMailbox().data || []
+  const [assigningTask, setAssigningTask] = useState<null | RosterRow>(null)
   const [query, setQuery] = useState('')
   const [rowKindFilter, setRowKindFilter] = useState<RosterKindFilter>('all')
   const [activityFilter, setActivityFilter] = useState<RosterActivityFilter>('all')
   const [gatewayFilter, setGatewayFilter] = useState('all')
-  const [collapsedRosterSections, setCollapsedRosterSections] = useState<Set<string>>(() => new Set())
+  // Collapsed folds persist device-locally (G4) — $collapsedBotSections is
+  // loaded from plugin storage at register().
+  const collapsedRosterSections = useValue($collapsedBotSections)
   const hiddenSectionRef = useRef<null | HTMLDivElement>(null)
   const activityToasts = useValue($activityToasts)
   const groupChatName = useValue($groupChatWorkspace)
@@ -295,7 +349,19 @@ export function BotsPane() {
   const sourceWithSelectedOwner =
     selectionHydrated && rosterHydrated ? rosterWithSelectedOwner(source, sourceSnapshot, selectedRosterKey) : source
 
-  const { roster, activityOf, isPinned } = sortRosterBots(sourceWithSelectedOwner, allMeta)
+  // A2 — the attention rollup drives both the per-row badge and the
+  // 'attention-first' sort: flagged bots top their band while pinned stays
+  // the outer band (the user's own filing never loses to a count).
+  const sortMode = useValue($rosterSortMode)
+  const viewMode = useValue($rosterViewMode)
+  const cardMode = viewMode === 'cards'
+  const attentionCounts = useRosterAttentionCounts(sourceWithSelectedOwner)
+  const attentionOf = (bot: RosterRow): number => attentionCounts.get(botRosterKey(bot)) ?? 0
+
+  const { roster, activityOf, isPinned } = sortRosterBots(sourceWithSelectedOwner, allMeta, {
+    attentionOf,
+    mode: sortMode
+  })
 
   // Sections made on ANOTHER desktop arrive as id + name on each member's
   // ui_meta; rebuild the records this machine has never seen so the roster
@@ -350,6 +416,7 @@ export function BotsPane() {
     activeRosterKeys,
     gatewayOptions,
     activityOf,
+    attentionOf: sortMode === 'attention' ? attentionOf : undefined,
     isPinned
   })
 
@@ -380,19 +447,7 @@ export function BotsPane() {
 
   const rosterSectionCollapsed = (id: string): boolean => !hasRosterConstraint && collapsedRosterSections.has(id)
 
-  const toggleRosterSection = (id: string): void => {
-    setCollapsedRosterSections(previous => {
-      const next = new Set(previous)
-
-      if (next.has(id)) {
-        next.delete(id)
-      } else {
-        next.add(id)
-      }
-
-      return next
-    })
-  }
+  const toggleRosterSection = toggleBotSectionCollapsed
 
   useEffect(() => {
     if (!hiddenExpanded || hasRosterConstraint) {
@@ -423,17 +478,33 @@ export function BotsPane() {
     return <GroupChatWorkspace group={groupChatName} members={groupChatMembers} />
   }
 
-  const renderBotRow = (bot: RosterRow, keyPrefix = '') => (
-    <BotRow
-      bot={bot}
-      key={`${keyPrefix}${botRosterKey(bot)}`}
-      onDelete={setDeleting}
-      onEdit={setEditing}
-      onGroup={setGrouping}
-      onNewSection={target => setSectionDialog({ bot: target, mode: 'create' })}
-      showHandle={botNeedsHandleLabel(bot, roster, allMeta)}
-    />
-  )
+  // G10 — the card view is the SAME row through a different visual: one
+  // renderer switches per bot so section blocks, hidden rows, and filters
+  // all stay identical between views.
+  const renderBotRow = (bot: RosterRow, keyPrefix = '') =>
+    cardMode ? (
+      <BotCard
+        bot={bot}
+        key={`${keyPrefix}${botRosterKey(bot)}`}
+        onAssignTask={setAssigningTask}
+        onDelete={setDeleting}
+        onEdit={setEditing}
+        onGroup={setGrouping}
+        onNewSection={target => setSectionDialog({ bot: target, mode: 'create' })}
+      />
+    ) : (
+      <BotRow
+        bot={bot}
+        key={`${keyPrefix}${botRosterKey(bot)}`}
+        onAssignTask={setAssigningTask}
+        onDelete={setDeleting}
+        onEdit={setEditing}
+        onGroup={setGrouping}
+        onNewSection={target => setSectionDialog({ bot: target, mode: 'create' })}
+        openTasks={mailboxOpenCountFor(mailboxNotes, bot)}
+        showHandle={botNeedsHandleLabel(bot, roster, allMeta)}
+      />
+    )
 
   const renderGroupRow = (row: { members: GroupMember[]; name: string }) => (
     <RosterGroupRowView
@@ -463,6 +534,7 @@ export function BotsPane() {
       rosterSectionCollapsed,
       toggleRosterSection,
       setSectionDialog,
+      cardMode,
       renderBotRow,
       renderGroupRow,
       sortedGroupRows
@@ -475,7 +547,11 @@ export function BotsPane() {
         activityToasts,
         activeSourceRoster,
         roster,
-        setCreateOpen,
+        setCreateOpen: (value: boolean) => {
+          if (value) {
+            setQuickOpen(true)
+          }
+        },
         setGroupCreateOpen,
         setSectionDialog,
         showRosterTools,
@@ -490,10 +566,19 @@ export function BotsPane() {
         activityFilter,
         setActivityFilter,
         gatewayFilter,
-        setGatewayFilter
+        setGatewayFilter,
+        sortMode,
+        setSortMode: setRosterSortMode,
+        setBroadcastOpen,
+        setCalendarOpen,
+        viewMode,
+        setViewMode: setRosterViewMode
       })}
+      <TriageStrip bots={roster} onOpen={bot => void openRosterBot(bot)} />
       {renderRosterContent({
         b,
+        onNewBot: (starter?: BotStarter) => (starter ? quickStarter(starter) : setQuickOpen(true)),
+        creatingStarter,
         staleNotice,
         isLoading,
         initialRosterLoading,
@@ -516,17 +601,47 @@ export function BotsPane() {
         hiddenBots,
         showHiddenRows,
         hiddenGatewaySections,
+        mailboxNotes,
+        mailboxCollapsed: rosterSectionCollapsed('mailbox'),
+        toggleMailboxSection: () => toggleRosterSection('mailbox'),
+        cardMode,
         renderBotRow,
         renderGroupChatSection,
         renderGatewaySection,
         renderUserSections,
         renderHiddenGatewaySection
       })}
+      <MailboxTaskDialog member={assigningTask} onClose={() => setAssigningTask(null)} />
+      <BroadcastDialog bots={roster} onClose={() => setBroadcastOpen(false)} open={broadcastOpen} />
+      <RoutinesCalendarDialog bots={roster} onClose={() => setCalendarOpen(false)} open={calendarOpen} />
+      <HireGallery
+        onClose={() => setHireOpen(false)}
+        onHire={draft => {
+          setHireOpen(false)
+          openCreate(draft)
+        }}
+        open={hireOpen}
+      />
+      <QuickCreateDialog
+        // Remount per open: starter picks and typed fields never leak into
+        // the next "New bot".
+        key={quickOpen ? 'open' : 'closed'}
+        onBrowseGallery={() => {
+          setQuickOpen(false)
+          setHireOpen(true)
+        }}
+        onClose={() => setQuickOpen(false)}
+        onConfigureModel={setEditing}
+        open={quickOpen}
+        roster={activeSourceRoster}
+      />
       {renderRosterDialogs({
         b,
         t,
         createOpen,
         setCreateOpen,
+        createDraft,
+        setCreateDraft,
         groupCreateOpen,
         setGroupCreateOpen,
         editing,

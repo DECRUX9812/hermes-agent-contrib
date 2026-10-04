@@ -49,7 +49,12 @@ export const zhHantAssistant = {
         generic: 'Hermes 回覆時發生問題。請重試；若問題持續，請複製錯誤詳細資訊。',
         provider: 'AI 服務無法完成此請求。請稍後重試或切換服務商。',
         endpoint: 'Hermes 無法連線至你的自訂模型伺服器。請確認它正在執行，然後重新傳送訊息。',
-        streaming: '回覆完成前連線已中斷。請重試以重新傳送。'
+        streaming: '回覆完成前連線已中斷。請重試以重新傳送。',
+        auth: 'AI 服務拒絕了您的登入。請檢查此提供者的憑證，然後重新傳送訊息。',
+        billing: '您的帳戶在此提供者的額度已用完。請加值或切換提供者，然後重新傳送。',
+        disk: '磁碟已滿，Hermes 無法儲存此對話。請釋放一些空間後重試。',
+        gateway: 'Hermes 在開始回覆時遇到內部問題。請重新傳送訊息；若持續發生，請傳送診斷資訊。',
+        runtime: 'Hermes 在開始回覆時遇到內部問題。請重新傳送訊息；若持續發生，請傳送診斷資訊。'
       },
       errorCodes: {
         provider_policy_blocked: {
@@ -95,6 +100,84 @@ export const zhHantAssistant = {
         ssl_cert_verification: {
           title: '安全連線失敗',
           body: provider => `Hermes 無法驗證與 ${provider} 的安全連線。請檢查網路或代理設定，或切換服務商後重新傳送。`
+        },
+        auth: {
+          title: (provider: string) => `${provider} 拒絕了您的登入`,
+          body: (provider: string) =>
+            `為 ${provider} 儲存的憑證未被接受。請在設定中修正或切換提供者，然後重新傳送訊息。`
+        },
+        auth_permanent: {
+          title: (provider: string) => `${provider} 拒絕了您的登入`,
+          body: (provider: string) => `為 ${provider} 儲存的憑證無效或已被撤銷。請更新或切換提供者，然後重新傳送訊息。`
+        },
+        billing: {
+          title: '額度已用完',
+          body: (provider: string) => `您的 ${provider} 帳戶額度已用完。請加值或切換提供者，然後重新傳送。`
+        },
+        stream_drop: {
+          title: '回覆被中斷',
+          body: '連線在回覆完成前中斷。請重試以重新傳送。'
+        },
+        upstream_blocked: {
+          title: '防火牆阻擋了請求',
+          body: (provider: string) =>
+            `${provider} 前方的防火牆或 CDN 在請求到達模型前將其阻擋——您的金鑰可能沒問題。請在設定中透過該提供者的 extra_headers 設定 User-Agent 標頭，或切換提供者，然後重新傳送訊息。`
+        },
+        context_overflow: {
+          title: '此對話太長',
+          body: '對話內容已超出模型容量。請壓縮對話或開啟新聊天，然後重新傳送。'
+        },
+        payload_too_large: {
+          title: '此訊息太大',
+          body: '請求對模型而言過大。請壓縮對話或開啟新聊天，然後重新傳送。'
+        },
+        model_not_found: {
+          title: '此模型無法使用',
+          body: (provider: string) => `${provider} 在您的帳戶上不提供此模型。請選擇其他模型，然後重新傳送訊息。`
+        },
+        truncated: {
+          title: '回覆被截斷',
+          body: '模型在完成前停止。請重試以取得完整回覆。'
+        },
+        loop_error: {
+          title: 'Hermes 陷入迴圈',
+          body: '回覆不斷重複相同步驟，Hermes 已將其停止。請重試；若再次發生，請開啟新聊天。'
+        },
+        SESSION_NOT_OWNED: {
+          title: '此聊天已在其他地方開啟',
+          body: '此聊天目前在另一個 Hermes 視窗或終端中開啟。請關閉該處並重新傳送訊息，或在此開啟新聊天。'
+        },
+        disk_full: {
+          title: '磁碟已滿',
+          body: '磁碟已滿，Hermes 無法儲存此對話。請釋放一些空間後重試。'
+        },
+        free_tier_disabled: {
+          title: '未登入使用 Hermes 目前已被關閉',
+          body: '使用 Nous 帳戶登入即可繼續聊天，完全免費。'
+        },
+        free_tier_rate_limited: {
+          title: '未登入聊天的額度已用完',
+          body: '額度稍後會恢復。使用 Nous 帳戶登入可獲得更多額度，完全免費。'
+        },
+        free_tier_at_capacity: {
+          title: '未登入聊天目前非常繁忙',
+          body: '登入即可免費跳過佇列，或稍後再試。'
+        },
+        free_tier_model_not_free: {
+          title: '該模型需登入才能使用',
+          body: 'Hermes 暫時使用免費模型。使用 Nous 帳戶登入可選擇更多模型，完全免費。'
+        },
+        free_tier_route: {
+          title: 'Hermes 無法透過此路由連線免費模型',
+          body: '使用 Nous 帳戶登入（免費），或檢查 NOUS_INFERENCE_BASE_URL 設定。'
+        },
+        free_tier_outage: {
+          title: '免費模型目前無法正常回應',
+          body: '請稍後重新傳送訊息。'
+        },
+        free_tier_refused: {
+          title: 'Hermes 無法在未登入的情況下傳送該內容',
+          body: '使用 Nous 帳戶登入是免費的。'
         }
       },
       errorLayers: {
@@ -141,7 +224,31 @@ export const zhHantAssistant = {
       restoreNext: '還原至下一個檢查點',
       goForward: '前進',
       sendEdited: '傳送編輯後的訊息',
-      attachingFile: '正在附加…'
+      attachingFile: '正在附加…',
+      loadingLocalModel: model => `正在將 ${model} 載入記憶體`,
+      processingPrompt: '正在處理提示詞',
+      copyMarkdown: '複製為 Markdown',
+      expandMessage: '展開訊息',
+      scrollToBottom: '捲動到底部',
+      errorAuthKinds: {
+        api_key: {
+          title: (provider: string) => `${provider} 拒絕了您的 API 金鑰`,
+          body: (provider: string) => `為 ${provider} 儲存的金鑰無效或已被撤銷。請更新後重試。`
+        },
+        oauth: {
+          title: (provider: string) => `您的 ${provider} 登入已過期`
+        }
+      },
+      errorDetails: '詳細資訊',
+      errorToastTitle: 'Hermes 無法完成回覆',
+      errorChooseModel: '選擇模型',
+      errorCompressConversation: '壓縮對話',
+      errorCompressFailed: '無法壓縮對話',
+      errorOpenHermesFolder: '開啟 Hermes 資料夾',
+      errorOpenHermesFolderFailed: '無法開啟 Hermes 資料夾',
+      errorUpdateApiKey: '更新 API 金鑰',
+      errorSignInFreeTier: '使用 Nous 帳戶登入',
+      timelineScrubber: '記錄迷你地圖'
     },
     approval: {
       gatewayDisconnected: 'Hermes 閘道未連線',
@@ -156,7 +263,11 @@ export const zhHantAssistant = {
       alwaysTitle: '一律允許此指令？',
       alwaysDescription: pattern =>
         `這會將「${pattern}」模式加入永久允許清單（~/.hermes/config.yaml）。Hermes 對類似指令將不再詢問，包括目前工作階段和未來工作階段。`,
-      alwaysAllow: '一律允許'
+      alwaysAllow: '一律允許',
+      reconnect: '重新連線',
+      timedOutSystemLine: '核准逾時——指令未執行。請要求 Hermes 重試，或在設定 → 安全 → 核准逾時中提高上限。',
+      openSafetySettings: '開啟安全設定',
+      commandDetails: '指令詳細資訊'
     },
     clarify: {
       notReady: '澄清請求尚未就緒',
@@ -266,6 +377,29 @@ export const zhHantAssistant = {
         web_search: { done: '已搜尋網頁', pending: '正在搜尋網頁', pendingAction: '正在搜尋' },
         write_file: { done: '已編輯檔案', pending: '正在編輯檔案', pendingAction: '正在編輯' }
       }
-    }
+    },
+    sessionRecap: {
+      title: '上次進度',
+      dismiss: '忽略',
+      turns: count => `${count} 個回合`,
+      todo: progress => `計劃 ${progress}`
+    },
+    mcpSetup: {
+      installTitle: '添加 MCP 伺服器',
+      enableTitle: '啟用 MCP 伺服器',
+      authorizeTitle: '授權 MCP 伺服器',
+      installAction: '安裝',
+      enableAction: '啟用',
+      authorizeAction: '授權',
+      installed: server => `已安裝 ${server}`,
+      enabled: server => `已啟用 ${server}`,
+      authorized: server => `已授權 ${server}`,
+      failed: server => `${server} 設定失敗`,
+      toolCount: count => `${count} 個工具`,
+      envRequired: '請先填寫所需憑證',
+      sendFailed: '無法傳送 MCP 設定回應',
+      reloadFailed: '伺服器已保存，但重新載入 MCP 工具失敗 — 將在下個工作階段載入',
+      gatewayDisconnected: 'Hermes 閘道未連線'
+  }
   }
 } satisfies Pick<TranslationOverrides, 'assistant'>

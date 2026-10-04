@@ -4,13 +4,11 @@ import {
   $groupChats,
   appendGroupChatEntry,
   GROUP_CHAT_HISTORY_LIMIT,
-  GROUP_CHAT_MAX_CONTINUATIONS,
-  GROUP_CHAT_MAX_MESSAGES,
   groupThreadOf,
   shouldCommitMemberTurn,
   updateGroupChat
 } from './group-chat'
-import type { GroupChatRoom } from './group-chat'
+import type { GroupChatRoom, ResolvedGroupChatLimits } from './group-chat'
 import { groupMemberAuthor, groupMemberKey } from './group-membership'
 import { buildGroupChatTurnPrompt, formatGroupDeltaLines, isGroupChatSelf } from './group-round-prompt'
 import { isGroupPassText, runGroupChatMemberTurn } from './group-turns'
@@ -18,12 +16,18 @@ import type { Attachment, GroupMember, GroupMessage } from './types'
 
 export interface GroupRoundMemberContext {
   group: string
+  /** The drive's budget, snapshotted once by runGroupChatRounds — a per-room
+   *  override, else the config.yaml `group_chat` block, else the defaults. */
+  limits: ResolvedGroupChatLimits
   members: GroupMember[]
   thread: string
   startEpoch: number
   binding: { isLive(): boolean }
   isCurrent(): boolean
   failedMembers?: Set<string>
+  /** The orchestrating lead's profile when this room is a team chat — every
+   *  member session born this drive carries it as the `team_room` marker. */
+  teamRoomLead?: null | string
 }
 
 /** #93129: a held member's skip must consume its delta exactly once —
@@ -146,7 +150,7 @@ async function runVisibleMemberTurn(
   updateGroupChat(context.group, (room: GroupChatRoom) => ({ ...room, turn }), { sync: false })
 
   try {
-    return await runGroupChatMemberTurn(context.group, member, prompt, context.thread, images)
+    return await runGroupChatMemberTurn(context.group, member, prompt, context.thread, images, context.teamRoomLead)
   } finally {
     if (context.binding.isLive() && $groupChats.get()[context.group]?.turn === turn) {
       updateGroupChat(context.group, (room: GroupChatRoom) => ({ ...room, turn: null }), { sync: false })
@@ -311,13 +315,15 @@ export async function runGroupContinuationMembers(
   continuations: number,
   posted: number
 ): Promise<number | null> {
-  const { members, isCurrent } = context
+  const { limits, members, isCurrent } = context
+  const maxContinuations = limits.continuations
+  const maxMessages = limits.messages
   let spokeThisRound = 0
 
-  if (pendingKeys.length && continuations <= GROUP_CHAT_MAX_CONTINUATIONS) {
+  if (pendingKeys.length && continuations <= maxContinuations) {
     const citedMembers = members.filter((member: GroupMember) => pendingKeys.includes(groupMemberKey(member)))
 
-    if (citedMembers.length && posted < GROUP_CHAT_MAX_MESSAGES) {
+    if (citedMembers.length && posted < maxMessages) {
       const strandedNow = ($groupChats.get()[context.group] || {}).stranded || {}
 
       const continuationResponders = citedMembers.filter(
@@ -325,7 +331,7 @@ export async function runGroupContinuationMembers(
       )
 
       for (const member of continuationResponders) {
-        if (!isCurrent() || posted >= GROUP_CHAT_MAX_MESSAGES || continuations > GROUP_CHAT_MAX_CONTINUATIONS) {
+        if (!isCurrent() || posted >= maxMessages || continuations > maxContinuations) {
           break
         }
 

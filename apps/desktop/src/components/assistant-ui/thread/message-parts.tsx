@@ -7,7 +7,7 @@ import {
   useMessagePartText
 } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, type FC, type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ComponentProps, type FC, type ReactNode, useContext, useEffect, useRef, useState } from 'react'
 
 import { CatalogInstallTool } from '@/components/assistant-ui/catalog-install-tool'
 import { ClarifyTool } from '@/components/assistant-ui/clarify'
@@ -17,7 +17,11 @@ import { McpSetupTool } from '@/components/assistant-ui/mcp-setup-tool'
 import { AgentDeliveryNotice, deliveryTargetFromCommand } from '@/components/assistant-ui/thread/agent-delivery'
 import { TimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
 import { DelegateTool } from '@/components/assistant-ui/tool/delegate'
-import { ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
+import {
+  ActivityPillExpandedContext,
+  ToolFallback,
+  ToolGroupSlot
+} from '@/components/assistant-ui/tool/fallback'
 import { parseMaybeObject, toolCallFailed } from '@/components/assistant-ui/tool/fallback-model'
 import { formatElapsed, useElapsedSeconds, useMeasuredDuration } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
@@ -108,7 +112,7 @@ const TOOL_CARDS: Record<CardToolName, FC<TimelineToolCallProps>> = {
 // failure inside `result`, never as the top-level error that sets isError, so
 // this reads the body like the run summary does. A non-zero exit_code counts
 // too, matching the gateway's _tool_result_needs_user, which forwards terminal
-// {output, exit_code: 1, error: null} even with display.tool_progress off.
+// {output, exit_code: 1, error: null} in answer-only mode.
 const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
   const exitCode = parseMaybeObject(part.result).exit_code
 
@@ -117,6 +121,10 @@ const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
 
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   const showToolActivity = useStore($showToolActivity)
+  // Inside an expanded bot-chat activity pill (G2) quiet rows render — the
+  // pill's summary stands in for them while collapsed. Everywhere else
+  // answer-only applies unchanged.
+  const pillExpanded = useContext(ActivityPillExpandedContext)
 
   // todo parts are hoisted to a dedicated panel above the message content.
   if (isTodoToolName(props.toolName)) {
@@ -155,7 +163,7 @@ const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   // The tool feed (reads, searches, commands) follows display.tool_progress,
   // never show_reasoning. Cards, approvals, and failed calls the user must act
   // on remain regardless.
-  if (!showToolActivity && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
+  if (!showToolActivity && !pillExpanded && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
     return null
   }
 

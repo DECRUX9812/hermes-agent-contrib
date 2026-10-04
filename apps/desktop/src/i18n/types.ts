@@ -109,6 +109,7 @@ export interface Translations {
   intro: {
     stock: Record<string, string[]>
     custom: (label: string) => string[]
+    recentSessions: string
   }
   connectors: {
     title: string
@@ -444,6 +445,7 @@ export interface Translations {
     revealExplorer: string
     revealFileManager: string
     revealInSidebar: string
+    openInEditor: (name: string) => string
     copyPath: string
     copyRelativePath: string
     download: string
@@ -580,6 +582,12 @@ export interface Translations {
       rpcOutOfSync: string
       restartHermesFailed: string
     }
+    digest: {
+      /** OS notification title for the batched summary (rule #39). */
+      title: (count: number) => string
+      /** One per-kind count line inside the digest body ("2 × Response ready"). */
+      line: (count: number, label: string) => string
+    }
     actions: {
       restartHermes: string
       openKeys: string
@@ -594,6 +602,7 @@ export interface Translations {
       microphoneFailed: string
       microphoneInUse: string
       microphonePermissionDenied: string
+      microphoneSecureContextRequired: string
       microphoneStartFailed: string
       microphoneUnsupported: string
       noMicrophone: string
@@ -704,6 +713,10 @@ export interface Translations {
   findInPage: {
     next: string
     previous: string
+    /** Transcript-scoped mode toggle: tooltip/aria description. */
+    searchAll: string
+    /** Transcript-scoped mode toggle: the compact chip label in the bar. */
+    searchAllShort: string
   }
 
   language: {
@@ -898,6 +911,17 @@ export interface Translations {
       completionSoundTitle: string
       completionSoundDesc: string
       completionSoundPreview: string
+      quietHoursTitle: string
+      quietHoursDesc: string
+      quietHoursWindowTitle: string
+      quietHoursWindowDesc: string
+      quietHoursFrom: string
+      quietHoursTo: string
+      digestTitle: string
+      digestDesc: string
+      sessionOverridesTitle: string
+      sessionOverridesDesc: string
+      sessionOverridesEmpty: string
     }
     sections: Record<string, string>
     searchPlaceholder: Record<'about' | 'config' | 'gateway' | 'keys' | 'mcp' | 'sessions', string>
@@ -905,6 +929,8 @@ export interface Translations {
     appearance: {
       title: string
       intro: string
+      simpleModeTitle: string
+      simpleModeDesc: string
       colorMode: string
       colorModeDesc: string
       toolViewTitle: string
@@ -915,6 +941,10 @@ export interface Translations {
       hideThreadTimelineDesc: string
       reasoningCollapsedTitle: string
       reasoningCollapsedDesc: string
+      lookTitle: string
+      lookDesc: string
+      lookSoft: string
+      lookClassic: string
       chatTextScaleTitle: string
       chatTextScaleDesc: string
       uiScaleTitle: string
@@ -922,6 +952,7 @@ export interface Translations {
       sessionDensityTitle: string
       sessionDensityDesc: string
       sessionDensityCompact: string
+      sessionDensityCondensed: string
       sessionDensityComfortable: string
       sessionDensityDetailed: string
       tabStripTitle: string
@@ -965,6 +996,26 @@ export interface Translations {
       }
       backdropTitle: string
       backdropDesc: string
+      backdropScenes: {
+        off: string
+        aurora: string
+        dusk: string
+        ocean: string
+        meadow: string
+        cyanotype: string
+        ink: string
+        grid: string
+        statue: string
+        custom: string
+      }
+      backdropUpload: string
+      backdropRemoveImage: string
+      backdropStrengths: {
+        subtle: string
+        balanced: string
+        vivid: string
+      }
+      backdropImageError: string
       userBubbleTitle: string
       userBubbleDesc: string
       textDirectionTitle: string
@@ -983,6 +1034,12 @@ export interface Translations {
       toursDesc: string
       composerPopoutTitle: string
       composerPopoutDesc: string
+      autoOpenFilesTitle: string
+      autoOpenFilesDesc: string
+      activityRailTitle: string
+      activityRailDesc: string
+      openInEditorTitle: string
+      openInEditorDesc: string
       fileBrowserTitle: string
       fileBrowserDesc: string
       vibeHeartsTitle: string
@@ -1126,6 +1183,9 @@ export interface Translations {
       minimizeToTrayTitle: string
       minimizeToTrayDesc: string
       minimizeToTrayUnavailable: string
+      menuBarStatusTitle: string
+      menuBarStatusDesc: string
+      menuBarStatusUnavailable: string
       none: string
       noneParen: string
       builtinOnly: string
@@ -1147,6 +1207,8 @@ export interface Translations {
       keepAwakeOff: string
       keepAwakeWhileWorking: string
       keepAwakeAlways: string
+      proactiveNudgesTitle: string
+      proactiveNudgesDesc: string
       disableF12Title: string
       disableF12Desc: string
       alwaysExternalLinksTitle: string
@@ -1406,6 +1468,7 @@ export interface Translations {
       sshPortDesc: string
       sshKeyTitle: string
       sshKeyDesc: string
+      sshKeyPlaceholder: string
       sshHermesPathTitle: string
       sshHermesPathDesc: string
       sshHermesPathPlaceholder: string
@@ -2251,6 +2314,10 @@ export interface Translations {
     importSuccess: (nodes: number) => string
     importedBadge: string
     resetToMine: string
+    live: string
+    liveHint: string
+    liveOff: string
+    openSession: string
   }
   agents: {
     extendedTranscript: string
@@ -2292,6 +2359,48 @@ export interface Translations {
     durationSeconds: (seconds: string) => string
     durationMinutes: (minutes: number, seconds: number) => string
     tokens: (value: number | string) => string
+  }
+
+  roster: {
+    title: string
+    subtitle: string
+    emptyTitle: string
+    emptyDesc: string
+    untitledRun: string
+    railPill: (count: number) => string
+    close: string
+    fanOut: string
+    fanOutTitle: string
+    fanOutPlaceholder: string
+    fanOutNoAgents: string
+    fanOutClose: string
+    fanOutSend: (count: number) => string
+    fanOutFailed: string
+  }
+
+  hud: {
+    /** The "needs you" pill on a HUD run card whose session is blocked on input. */
+    needsYou: string
+    /** Aria label for a run card's click-through (hands the session to the app window). */
+    openRunInApp: (title: string) => string
+  }
+
+  attentionInbox: {
+    title: string
+    empty: string
+    count: (count: number) => string
+    appScope: string
+    unknownSession: string
+    kinds: {
+      approval: string
+      clarify: string
+      error: string
+      secret: string
+      sudo: string
+      vaultCode: string
+      vaultSave: string
+      vaultUnlock: string
+    }
   }
 
   commandCenter: {
@@ -2372,7 +2481,15 @@ export interface Translations {
     settingsFields: string
     mcpServers: string
     archivedChats: string
-    sections: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
+    sections: Record<'maintenance' | 'notices' | 'sessions' | 'system' | 'usage', string>
+    sectionDescriptions: Record<'maintenance' | 'notices' | 'sessions' | 'system' | 'usage', string>
+    notices: {
+      empty: string
+      clear: string
+      mutedTag: string
+      destCenter: string
+      destCorner: string
+    }
     nav: Record<'newChat' | 'settings' | 'capabilities' | 'messaging' | 'artifacts', { title: string; detail: string }>
     sectionEntries: Record<'sessions' | 'system' | 'usage', { title: string; detail: string }>
     providerNavigate: string
@@ -2423,6 +2540,15 @@ export interface Translations {
     topSkills: string
     noSkillActivity: string
     actions: (count: string) => string
+    /** Opt-in toggle that reveals the spend rows (local aggregation only). */
+    costAnalytics: string
+    costAnalyticsHint: string
+    dailySpend: string
+    estimatedCost: string
+    perProfile: string
+    topSessions: string
+    loadedSessionsHint: string
+    noSpend: string
     logFile: string
     logLevel: string
     logSearchPlaceholder: string
@@ -2566,6 +2692,24 @@ export interface Translations {
       savedRestarting: string
       savedRestartFailed: (detail: string) => string
     }
+    /** "Continue on your phone" card on a platform detail — QR + deep link +
+     *  gateway presence, fed by the adapter-published `identity` field (#40). */
+    phoneParity: {
+      title: string
+      presence: string
+      scanHint: string
+      linkPending: string
+      openLink: string
+      copyLink: string
+      copyFailed: string
+    }
+    reach: {
+      title: (name: string) => string
+      scan: (name: string) => string
+      empty: (name: string) => string
+      connect: string
+      manage: string
+    }
     fieldCopy: Record<string, { label?: string; help?: string; placeholder?: string }>
     platformIntro: Record<string, string>
   }
@@ -2626,9 +2770,35 @@ export interface Translations {
     createFailed: (detail: string) => string
     copy: string
     deliverOptions: Record<string, string>
+    mobile: {
+      title: string
+      hint: string
+      pairButton: string
+      dialogTitle: string
+      dialogDesc: string
+      backendUrl: string
+      backendUrlHint: string
+      create: string
+      creating: string
+      createFailed: (detail: string) => string
+      codeLabel: string
+      openHint: (url: string) => string
+      expires: (minutes: number) => string
+      copy: string
+      done: string
+    }
   }
 
   profiles: {
+    askRules: {
+      title: (name: string) => string
+      modes: Record<'manual' | 'smart' | 'off', { label: string; description: (name: string) => string }>
+      rulesLabel: string
+      rulesPlaceholder: string
+      save: string
+      discard: string
+      failed: string
+    }
     close: string
     nameHint: string
     title: string
@@ -2920,6 +3090,10 @@ export interface Translations {
     chat: string
     copyUrl: string
     copyPath: string
+    /** Plan→build handoff (#22): hover action on a plan artifact row. */
+    buildWithPlan: string
+    /** Composer draft seeded into the fresh build session. */
+    buildWithPlanDraft: string
   }
 
   artifactCard: {
@@ -2942,7 +3116,97 @@ export interface Translations {
     missingBody: string
   }
 
+  panels: {
+    button: string
+    title: string
+    subtitle: string
+    needsProject: string
+    openFolder: string
+    arrange: string
+    arrangements: Record<'build' | 'code' | 'focus' | 'review' | 'watch', string>
+    items: Record<
+      'artifacts' | 'browser' | 'canvas' | 'changes' | 'cli' | 'code' | 'files' | 'live' | 'terminal',
+      { label: string; description: string }
+    >
+  }
+  codePane: {
+    title: string
+    cli: string
+    cliHint: string
+    reload: string
+    starting: string
+    startingBody: string
+    noProject: string
+    noProjectBody: string
+    missingTitle: string
+    missingBody: string
+    failedTitle: string
+    failedBody: string
+    remoteTitle: string
+    remoteBody: string
+    retry: string
+  }
+  quickOpen: {
+    title: string
+    placeholder: (project: string) => string
+    noProject: string
+    noProjectBody: string
+    openFolder: string
+    noMatch: (query: string) => string
+    recent: string
+    hint: string
+    line: (line: number) => string
+    openHint: string
+    attachHint: string
+    lineHint: string
+  }
+  recentProjects: { title: string; openFolder: string }
+  todayBrief: {
+    greeting: { morning: string; afternoon: string; evening: string; night: string }
+    needsYou: string
+    running: string
+    finished: string
+    scheduled: string
+    recent: string
+  }
+
+  live: {
+    title: string
+    noSession: string
+    emptyTitle: string
+    emptyBody: string
+    count: (total: number) => string
+    countRunning: (total: number, running: number) => string
+    follow: string
+    followHint: string
+    copy: string
+    exitCode: (code: number) => string
+    runningFor: (elapsed: string) => string
+    waitingForOutput: string
+    noOutput: string
+    openLive: string
+  }
+
+  artifactRail: {
+    empty: string
+    noSession: string
+    open: string
+    openFailed: string
+    saveFailed: string
+    saveToFile: string
+  }
+
   sidebar: {
+    archive: {
+      finished: string
+      olderThan: string
+      days: (days: number) => string
+      confirmTitle: (count: number) => string
+      confirmBody: string
+      confirmAction: string
+      done: (count: number) => string
+      none: string
+    }
     filter: {
       grouping: string
       ordering: string
@@ -2950,6 +3214,7 @@ export interface Translations {
       filters: string
       status: string
       pullRequest: string
+      tags: string
       profile: string
       project: string
       archived: string
@@ -2987,17 +3252,35 @@ export interface Translations {
     }
     profileRail: string
     nav: Record<string, string>
+    interfaceMode: {
+      label: string
+      simple: string
+      full: string
+      toFull: string
+      toSimple: string
+    }
     searchAria: string
+    railAria: string
     searchPlaceholder: string
     clearSearch: string
     noMatch: (query: string) => string
     results: string
     pinned: string
+    needsAttention: string
+    delegationReports: {
+      done: string
+      needsDecision: string
+      failed: string
+      openSubagent: string
+      dismiss: string
+      tasks: (count: number, completed: number) => string
+    }
     sessions: string
     terminal: string
     files: string
     review: string
     logs: string
+    artifacts: string
     cronJobs: string
     groupAriaGrouped: string
     groupAriaUngrouped: string
@@ -3105,15 +3388,25 @@ export interface Translations {
       unpin: string
       markUnread: string
       markRead: string
+      muteNotifications: string
+      unmuteNotifications: string
+      mutedTooltip: string
+      watch: string
+      stopWatching: string
       unreadFailed: string
       copyId: string
       export: string
+      exportMarkdown: string
+      exportDeliverable: string
+      copyMarkdown: string
+      artifacts: string
       branchFrom: string
       rename: string
       archive: string
       unarchive: string
       newWindow: string
       openInTerminal: string
+      continueInCli: string
       hideTabBar: string
       openInNewTab: string
       openInSplit: string
@@ -3125,6 +3418,34 @@ export interface Translations {
       finishedUnread: string
       backgroundRunning: string
       draftSession: string
+      /** "Continue on phone" submenu — hand this session off to a messaging
+       *  platform (Telegram/Slack) via handoff.request; the phone-parity card
+       *  in Messaging carries the link/QR. */
+      continueOnPhone: string
+      /** "Open on another device" (#50) — emit a `hermes://session/open` deep
+       *  link / QR that re-homes a session VIEW to another Hermes device whose
+       *  connections reach the session's home backend. The session never moves. */
+      openOnDevice: string
+      openDeviceTitle: string
+      /** @param home — "<label> (<endpoint>)" of the session's home connection. */
+      openDeviceDesc: (home: string) => string
+      /** Home description fallback when the connection can't be resolved. */
+      openDeviceHomeFallback: string
+      /** Inbound link on a known-but-inactive connection: whole-window switch
+       *  confirm. @param title — the session's title; @param label — the
+       *  target connection label (suffixed with the profile when non-default). */
+      openDeviceIncomingTitle: string
+      openDeviceIncomingDesc: (title: string, label: string) => string
+      openDeviceSwitchAndOpen: string
+      openDeviceSwitching: string
+      /** Inbound link whose home backend matches no registered connection. */
+      openDeviceIncomingMissingTitle: string
+      /** @param id — session title or id; @param endpoint — the link's claimed
+       *  endpoint (may be empty). */
+      openDeviceIncomingMissingDesc: (id: string, endpoint: string) => string
+      openDeviceOpenConnections: string
+      /** Empty state inside the submenu when no platform can take a handoff. */
+      handoffNone: string
       handoffOrigin: (platform: string) => string
       continuationOrigin: string
       ownedByProfile: (profile: string) => string
@@ -3133,6 +3454,24 @@ export interface Translations {
       renameTitle: string
       renameDesc: string
       untitledPlaceholder: string
+      tags: string
+      tagsDialogTitle: string
+      tagsDialogDesc: string
+      tagsAddPlaceholder: string
+      tagsAdd: string
+      tagsRemoveLabel: (label: string) => string
+      askAbout: string
+      ask: {
+        clear: string
+        dialogDesc: (title: string) => string
+        dialogTitle: string
+        empty: string
+        failed: string
+        placeholder: string
+        send: string
+        thinking: string
+        truncatedNote: string
+      }
       deleteTitle: string
       deleteDesc: (title: string) => string
       deleting: string
@@ -3140,10 +3479,55 @@ export interface Translations {
       untitledChat: (id: string) => string
       messageCount: (count: number) => string
       todoProgress: string
+      attachmentCount: (count: number) => string
+      /** #47 worktree-per-session: the row's worktree chip plus the ⋯ menu
+       *  verbs — opt-in isolate, merge-back (with its confirm dialog). */
+      isolateWorktree: string
+      isolateWorktreeDone: (name: string) => string
+      mergeWorktree: string
+      mergeWorktreeTitle: string
+      mergeWorktreeDesc: (branch: string, repo: string) => string
+      mergingWorktree: string
+      mergedWorktree: (into: string) => string
+      mergeWorktreeFailed: string
+      worktreeTag: (branch: string) => string
+      worktreeUnavailable: string
+      digest: {
+        agents: (count: number) => string
+        approve: (command: string) => string
+        compacting: string
+        replying: string
+        stalled: string
+        todo: (done: number, total: number, task: string) => string
+      }
+      prCiPassing: string
+      prCiFailing: string
+      prCiPending: string
       ageNow: string
       ageDay: string
       ageHour: string
       ageMin: string
+    }
+    /** The watch strip: compact live chips for watched sessions, pinned at
+     *  the top of the sessions column. */
+    watch: {
+      strip: string
+      stop: string
+    }
+    /** ⌘/⇧-click multi-select: the floating bulk-action bar at the bottom of
+     *  the sessions column and its tag dialog. */
+    selection: {
+      ariaLabel: string
+      count: (count: number) => string
+      pin: string
+      unpin: string
+      mute: string
+      unmute: string
+      tag: string
+      archive: string
+      clear: string
+      tagDialogTitle: (count: number) => string
+      tagDialogDesc: string
     }
     dateDivider: {
       today: string
@@ -3155,6 +3539,24 @@ export interface Translations {
     statusDivider: {
       working: string
       done: string
+    }
+    /** The session hovercard ("peek") — inspect a row's full context without
+     *  resuming it. Labels for the card's detail rows. */
+    peek: {
+      idle: string
+      archived: string
+      workspace: string
+      branch: string
+      model: string
+      stats: string
+      tokens: (count: string) => string
+      agents: string
+      agentsSummary: (count: number) => string
+      agentsRunning: (count: number) => string
+      profile: string
+      source: string
+      started: string
+      updated: string
     }
     markAllRead: string
   }
@@ -3170,7 +3572,9 @@ export interface Translations {
     startVoice: string
     openDirective: string
     queueMessage: string
+    queueWithAttachments: string
     steer: string
+    steerTurn: string
     stop: string
     send: string
     speaking: string
@@ -3226,6 +3630,8 @@ export interface Translations {
     restoredDraftNotice: string
     restoredDraftUndo: string
     queueEdit: string
+    queueMoveUp: string
+    queueMoveDown: string
     queueExpand: string
     queueCollapse: string
     queueSendNext: string
@@ -3258,8 +3664,11 @@ export interface Translations {
     folder: string
     images: string
     pasteImage: string
+    captureRegion: string
     url: string
     promptSnippets: string
+    scheduleJob: string
+    slashCommands: string
     tipPre: string
     tipPost: string
     snippetsTitle: string
@@ -3281,6 +3690,16 @@ export interface Translations {
       tip: (skill: string) => string
       done: (skill: string) => string
       doneTip: string
+    }
+    goalChips: {
+      planLabel: string
+      planTip: string
+      planDone: string
+      planDoneTip: string
+      goalLabel: string
+      goalTip: string
+      goalDone: string
+      goalDoneTip: string
     }
     githubSuggestions: {
       label: string
@@ -3304,8 +3723,53 @@ export interface Translations {
       done: string
       doneTip: string
     }
+    /** Proactive next-step chips offered on session settle (#43, opt-in).
+     *  `*Draft` is the text inserted into the composer — never auto-sent. */
+    nudges: {
+      prLabel: string
+      prTip: string
+      prDraft: string
+      prDone: string
+      prDoneTip: string
+      followupLabel: string
+      followupTip: string
+      followupDraft: string
+      followupDone: string
+      followupDoneTip: string
+    }
   }
 
+  regionCapture: {
+    attach: string
+    cancel: string
+    captureFailed: string
+    capturing: string
+    clear: string
+    notePlaceholder: string
+    permissionDenied: string
+    selectHint: string
+    toolTips: { arrow: string; pen: string; rect: string }
+    unavailable: string
+    undo: string
+  }
+  /** Spoken "what's it doing?" replies — composed from the session stores, no
+   *  model call. Concatenated by `composeSessionStatusSpeech`. */
+  voiceStatus: {
+    /** No turn is running. */
+    idle: string
+    /** A turn or background job is running, nothing worth naming. */
+    working: string
+    /** A turn is running; `detail` names the in-progress todo or running tool. */
+    workingOn: (detail: string) => string
+    /** A turn is running but has been quiet a while. */
+    stalled: string
+    /** A blocking prompt needs the user's answer. */
+    needsInput: string
+    /** The last turn finished and the reply is unread. */
+    finished: string
+    /** Task progress tail: "{done} of {total} tasks done." */
+    progress: (done: number, total: number) => string
+  }
   statusStack: {
     hideStack: string
     showStack: string
@@ -3323,6 +3787,10 @@ export interface Translations {
     stop: string
     dismiss: string
     exit: (code: number) => string
+    verifyChecking: string
+    verifyFailed: (count: number) => string
+    verifyOpenConsole: string
+    verifyPassed: string
     control: {
       goalActiveTurns: (turn: number, maxTurns: number) => string
       goalDoneTurns: (turns: number) => string
@@ -3438,6 +3906,9 @@ export interface Translations {
       notRepo: string
       noDiff: string
       scopeUncommitted: string
+      scopeSession: string
+      /** Session-scope empty state: the session named no file-edit paths. */
+      sessionEmpty: string
       scopeBranch: string
       scopeLastTurn: string
       readOnlyScope: string
@@ -3452,6 +3923,23 @@ export interface Translations {
       agentShip: string
       agentShipUnavailable: string
       agentShipPrompt: string
+      agentReview: string
+      agentReviewPick: string
+      agentReviewNoProfiles: string
+      agentReviewPrompt: string
+      agentReviewAttachment: string
+      agentReviewUnavailable: string
+      agentReviewReportTitle: (reviewer: string) => string
+      selfReview: string
+      selfReviewRunning: string
+      selfReviewClean: string
+      selfReviewClear: string
+      selfReviewComments: (count: number) => string
+      commentOnLine: (line: number) => string
+      diffCommentPlaceholder: string
+      diffCommentSend: string
+      /** Toast after a diff comment lands in the composer as a draft. */
+      commentSeeded: string
       newBranch: string
       branchOffFrom: (base: string) => string
       switchTo: (branch: string) => string
@@ -3963,6 +4451,10 @@ export interface Translations {
       toggleTokensPerSecond: string
       toggleVersion: string
       toggleFreeTier: string
+      toggleNotices: string
+      noticesTitle: string
+      toggleAttentionInbox: string
+      attentionInboxTitle: string
       toggleWorkspace: string
       cacheHitRateTitle: string
       tokensPerSecondTitle: string
@@ -3978,6 +4470,11 @@ export interface Translations {
       openWebhooks: string
       starmap: string
       openStarmap: string
+      artifacts: string
+      artifactsTitle: string
+      artifactsCount: (count: number) => string
+      browseAllArtifacts: string
+      toggleArtifacts: string
       turnRunning: string
       contextUsage: string
       compressions: (count: number) => string
@@ -4022,6 +4519,19 @@ export interface Translations {
   }
 
   rightSidebar: {
+    agentTouched: string
+    newFile: string
+    newFolder: string
+    filterFiles: string
+    newFileIn: (label: string) => string
+    newFolderIn: (label: string) => string
+    newFilePlaceholder: string
+    newFolderPlaceholder: string
+    newFileFailed: string
+    newFolderFailed: string
+    filterPlaceholder: string
+    filterHint: string
+    filterNoMatch: string
     aria: string
     panelsAria: string
     files: string
@@ -4089,6 +4599,9 @@ export interface Translations {
     sourceLineTitle: string
     source: string
     renderedPreview: string
+    table: string
+    tableTruncated: (rows: number) => string
+    canvas: string
     diff: string
     unknownSize: string
     binaryTitle: string
@@ -4178,6 +4691,25 @@ export interface Translations {
       commentTitle: (n: number) => string
       saveComment: string
       cancelComment: string
+      record: string
+      recordStop: string
+      recording: (count: number) => string
+      recordNeedPage: string
+      recordFailed: string
+      recordTitle: string
+      recordDesc: string
+      recordName: string
+      recordNamePlaceholder: string
+      recordNameHint: (slug: string) => string
+      recordDescLabel: string
+      recordDescPlaceholder: string
+      recordDescHint: string
+      recordSteps: (count: number) => string
+      recordEmpty: string
+      recordSave: string
+      recordSaving: string
+      recordSaved: (name: string) => string
+      recordSaveFailed: string
     }
   }
 
@@ -4185,6 +4717,10 @@ export interface Translations {
     title: string
     hint: string
     sessionNote: string
+    /** Toast shown right after the interface switches to Simple — where the
+     *  panes went plus the door back. */
+    simpleNotice: string
+    showAdvanced: string
     simple: { label: string; description: string }
     advanced: { label: string; description: string }
   }
@@ -4263,9 +4799,17 @@ export interface Translations {
   }
 
   assistant: {
+    /** "Where it left off" strip on a settled stored-session transcript (#13). */
+    sessionRecap: {
+      title: string
+      dismiss: string
+      turns: (count: number) => string
+      todo: (progress: string) => string
+    }
     thread: {
       loadingSession: string
       showEarlier: string
+      timelineScrubber: string
       loadingResponse: string
       loadingLocalModel: (model: string) => string
       processingPrompt: string
@@ -4359,6 +4903,7 @@ export interface Translations {
       stopReading: string
       readAloud: string
       copyFullResponse: string
+      copyMarkdown: string
       readAloudFullResponseHint: string
       editMessage: string
       expandMessage: string
@@ -4371,6 +4916,13 @@ export interface Translations {
       restoreBody: string
       restoreConfirm: string
       restoreNext: string
+      /** Per-user-message affordance: revert workspace files to the checkpoint
+       *  taken before that prompt (transcript untouched). */
+      revertFilesTip: string
+      revertFilesTitle: string
+      revertFilesBody: string
+      revertFilesConfirm: string
+      revertFilesFailed: string
       goForward: string
       sendEdited: string
       attachingFile: string
@@ -4530,6 +5082,9 @@ export interface Translations {
     secretTitle: string
     secretDesc: string
     secretPlaceholder: string
+    secretCardSkip: string
+    secretCardSave: string
+    secretCardFootnote: string
     vaultUnlockSendFailed: string
     vaultUnlockTitle: (name: string) => string
     vaultUnlockDesc: (name: string) => string
@@ -4617,6 +5172,19 @@ export interface Translations {
     hydrationSyncing: (profile: string) => string
     sessionExported: string
     sessionExportFailed: string
+    markdownUser: string
+    markdownAssistant: string
+    markdownSystem: string
+    markdownReasoning: string
+    markdownToolCall: string
+    markdownToolResult: string
+    deliverableArtifacts: string
+    deliverableChanges: string
+    deliverableFilesLine: (files: number, added: number, removed: number) => string
+    deliverableNoSummary: string
+    deliverablePullRequest: string
+    deliverableSession: string
+    deliverableSummary: string
     imageSaved: string
     downloadStarted: string
     restartToUseSaveImage: string
@@ -4632,6 +5200,7 @@ export interface Translations {
     imageAttach: string
     imageWriteFailed: string
     imageAttachFailed: string
+    pastedAsFile: string
     pastedContent: string
     pasteAttachFailed: string
     attachImages: string
@@ -4641,12 +5210,43 @@ export interface Translations {
     dropFiles: string
     handoff: {
       pickPlatform: string
+      /** Immediate feedback when the session menu queues a handoff — the
+       *  composer flow stays silent until completion. */
+      queued: (platform: string, home: string) => string
+      /** The active session has no live runtime the gateway can move. */
+      sessionUnavailable: string
       success: (platform: string) => string
       systemNote: (platform: string) => string
       failed: (error: string) => string
       timedOut: string
       startMessaging: string
     }
+  }
+
+  /** The standalone quick-entry composer window (global shortcut). It runs
+   *  without an i18n provider of its own — the primary renderer resolves these
+   *  and pushes them to the window as part of its state payload. */
+  menuBar: {
+    /** Tray quick action starting a fresh chat (#38). */
+    newSession: string
+    /** Tray item summoning the quick-entry window (shown only when it's on). */
+    quickEntry: string
+    quit: string
+    /** Header over the recent-session rows in the tray menu. */
+    recentSessions: string
+    /** Tray item that restores and focuses the main window. */
+    show: string
+    /** Status line when nothing runs and nothing waits on the user. */
+    statusIdle: string
+    /** Status line with live counts — "2 running · 1 needs you". */
+    statusActive: (runs: number, needsYou: number) => string
+  }
+
+  quickEntry: {
+    /** Prefix on the frontmost-app context chip ("Context — Safari · …"). */
+    contextLabel: string
+    /** A11y label for the control that drops the chip before submitting. */
+    contextRemove: string
   }
 
   tips: {

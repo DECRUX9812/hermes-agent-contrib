@@ -67,6 +67,11 @@ export const SETTINGS_MANIFEST = {
     ),
     tips: appearanceSetting('general', ['tips', 'hints', 'coach marks', 'onboarding', 'help'], 'tips'),
     tours: appearanceSetting('general', ['tour', 'walkthrough', 'guide', 'onboarding', 'help'], 'tours'),
+    look: appearanceSetting(
+      'theme',
+      ['look', 'style', 'rounded', 'round corners', 'soft', 'classic', 'square', 'macos', 'modern'],
+      'look'
+    ),
     theme: appearanceSetting('theme', ['color mode', 'skin', 'light', 'dark'], 'theme'),
     uiScale: appearanceSetting('typography', ['zoom', 'size'], 'uiScale'),
     chatTextScale: appearanceSetting('typography', ['chat', 'text', 'font', 'size', 'scale', 'zoom'], 'chatTextScale'),
@@ -98,15 +103,36 @@ export const SETTINGS_MANIFEST = {
       available: () => Boolean(window.hermesDesktop?.minimizeToTray),
       copy: t => ({ label: t.settings.config.minimizeToTrayTitle, description: t.settings.config.minimizeToTrayDesc })
     },
+    menuBarStatus: {
+      subpage: 'window-layout',
+      keywords: ['tray', 'menu bar', 'status', 'badge', 'sessions', 'active'],
+      available: () => Boolean(window.hermesDesktop?.menuBarStatus),
+      copy: t => ({ label: t.settings.config.menuBarStatusTitle, description: t.settings.config.menuBarStatusDesc })
+    },
     translucency: {
       ...appearanceSetting('window-layout', ['opacity', 'transparent', 'glass', 'blur'], 'translucency'),
       available: () => TRANSLUCENCY_SUPPORTED
     },
-    backdrop: appearanceSetting('window-layout', ['background', 'blur'], 'backdrop'),
+    backdrop: appearanceSetting('window-layout', ['background', 'blur', 'wallpaper', 'image', 'scene'], 'backdrop'),
     fileBrowser: appearanceSetting(
       'window-layout',
       ['file browser', 'files', 'file tree', 'explorer', 'right sidebar', 'panel', 'startup'],
       'fileBrowser'
+    ),
+    activityRail: appearanceSetting(
+      'window-layout',
+      ['icon rail', 'activity bar', 'rail', 'icons', 'navigation', 'left', 'sidebar', 'codex'],
+      'activityRail'
+    ),
+    autoOpenFiles: appearanceSetting(
+      'window-layout',
+      ['file tree', 'files', 'explorer', 'open folder', 'project', 'automatic', 'show'],
+      'autoOpenFiles'
+    ),
+    openInEditor: appearanceSetting(
+      'window-layout',
+      ['editor', 'vs code', 'vscode', 'cursor', 'zed', 'windsurf', 'open in', 'ide', 'external editor'],
+      'openInEditor'
     ),
     composerPopout: appearanceSetting(
       'window-layout',
@@ -145,6 +171,11 @@ export const SETTINGS_MANIFEST = {
     }
   },
   chat: {
+    proactiveNudges: {
+      subpage: 'behavior',
+      keywords: ['nudge', 'proactive', 'suggestion', 'next step', 'chips', 'follow up', 'settle'],
+      copy: t => ({ label: t.settings.config.proactiveNudgesTitle, description: t.settings.config.proactiveNudgesDesc })
+    },
     attachmentSize: {
       subpage: 'attachments',
       keywords: ['attachment', 'image', 'preview', 'upload', 'file size', 'limit', 'MB'],
@@ -218,6 +249,38 @@ export const SETTINGS_MANIFEST = {
         } satisfies SettingDefinition
       ])
     ),
+    quietHours: {
+      subpage: 'alerts',
+      keywords: ['quiet', 'hours', 'sleep', 'night', 'do not disturb', 'silence'],
+      copy: t => ({
+        label: t.settings.notifications.quietHoursTitle,
+        description: t.settings.notifications.quietHoursDesc
+      })
+    },
+    quietHoursWindow: {
+      subpage: 'alerts',
+      keywords: ['quiet', 'hours', 'from', 'to', 'night', 'window'],
+      copy: t => ({
+        label: t.settings.notifications.quietHoursWindowTitle,
+        description: t.settings.notifications.quietHoursWindowDesc
+      })
+    },
+    digest: {
+      subpage: 'alerts',
+      keywords: ['digest', 'batch', 'hourly', 'bundle', 'summary'],
+      copy: t => ({
+        label: t.settings.notifications.digestTitle,
+        description: t.settings.notifications.digestDesc
+      })
+    },
+    sessionOverrides: {
+      subpage: 'alerts',
+      keywords: ['session', 'mute', 'unmute', 'override', 'per session'],
+      copy: t => ({
+        label: t.settings.notifications.sessionOverridesTitle,
+        description: t.settings.notifications.sessionOverridesDesc
+      })
+    },
     completionSound: {
       subpage: 'sounds',
       keywords: ['sound', 'chime', 'ding', 'audio', 'done', 'complete', 'mute'],
@@ -317,6 +380,9 @@ export function settingDefinition(view: SettingsView, id: string): SettingDefini
 export interface SettingSearchTarget extends SettingCopy {
   id: string
   keywords: string[]
+  /** The child page the control lives on, when its view has subpages — what
+   *  makes the palette hit's breadcrumb read "Appearance › Window layout". */
+  subpage?: string
   view: SettingsView
 }
 
@@ -328,6 +394,7 @@ export function settingSearchTargets(t: Translations): SettingSearchTarget[] {
       .map(([key, setting]) => ({
         id: SETTING_IDS[viewKey][key as keyof (typeof SETTING_IDS)[typeof viewKey]],
         keywords: [...setting.keywords],
+        subpage: setting.subpage,
         view: manifestView(viewKey),
         ...setting.copy(t)
       }))

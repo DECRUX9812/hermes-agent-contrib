@@ -29,16 +29,19 @@ def _bot_mode_delivery_text(response: Any, *, successful: bool) -> Any:
 
 
 def _is_bot_mode_session(session: dict) -> bool:
-    """Whether this completion belongs to the canonical Bot Chat surface.
+    """Whether this completion belongs to a bot-powered session — the canonical Bot
+    Chat or a marked bot topic.
 
-    Same resolution as the system-prompt gate: the agent's title hint first (the DB
-    title lands after turn 1 and ``pending_title`` is cleared once it does), then the
-    live title from the session store.
+    Same resolution as the system-prompt gate: the attached agent's identity
+    (hint, then stored row) decides while an agent exists; pre-build, the
+    session dict's ``bot_topic`` flag and the live title carry it.
     """
-    from tools.bot_mode_probe import BOT_CHAT_TITLE
-    hint = str(getattr(session.get("agent"), "_session_title_hint", "") or "").strip()
-    if hint:  # any explicit hint decides; only an empty one costs a session-store read
-        return hint == BOT_CHAT_TITLE
+    from tools.bot_mode_probe import BOT_CHAT_TITLE, bot_powered_session
+    agent = session.get("agent")
+    if agent is not None:
+        return bot_powered_session(agent)
+    if session.get("bot_topic"):
+        return True
     return _session_live_title(session, _session_lookup_key(session)) == BOT_CHAT_TITLE
 
 

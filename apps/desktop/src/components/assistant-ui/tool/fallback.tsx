@@ -46,9 +46,12 @@ import { PrettyLink, LinkifiedText as SharedLinkifiedText, urlSlugTitleLabel } f
 import { AlertCircle, CheckCircle2 } from '@/lib/icons'
 import { toolResultRecord } from '@/lib/tool-result-metadata'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
+import { useStoresSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
+import { revealLivePane } from '@/store/live-activity'
 import { recordPreviewArtifact } from '@/store/preview-status'
 import { sessionApprovalRequest } from '@/store/prompts'
+import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
 import { $showToolActivity } from '@/store/tool-activity'
 import { $toolRowDismissed, dismissToolRow } from '@/store/tool-dismiss'
 import {
@@ -79,6 +82,7 @@ import {
   type ToolStatus,
   type ToolTitleAction
 } from './fallback-model'
+import { McpAppFrame } from './mcp-app'
 import { isToolCallPart, summarizeToolRun } from './run-summary'
 import { ToolRunTicker } from './run-ticker'
 
@@ -88,6 +92,12 @@ import { ToolRunTicker } from './run-ticker'
 // future embedding surface.
 const ToolEmbedContext = createContext(false)
 const ToolRunDisclosureContext = createContext<string | null>(null)
+
+/** True while a bot-chat activity pill is expanded (bot-mode G2). The
+ *  answer-only gate in the tool fallback consults it so a collapsed pill
+ *  hides quiet rows — while failures, approvals and card tools still render
+ *  — and an expanded one reveals them in place. */
+export const ActivityPillExpandedContext = createContext(false)
 
 // A search hit's title is result *content* inside an expanded row, not one of
 // the scaffolding lines, so it keeps the brighter secondary grey.
@@ -650,6 +660,12 @@ function ToolEntry({ part }: ToolEntryProps) {
           </span>
         </DisclosureRow>
       </div>
+      {part.toolResultMetadata?.mcp_app && !isPending && view.status !== 'error' && (
+        // The tool's own MCP App is the call's deliverable: shown whether or not the row is expanded.
+        <div className="w-full min-w-0 max-w-full p-1.5">
+          <McpAppFrame app={part.toolResultMetadata.mcp_app} args={part.args} result={part.result} />
+        </div>
+      )}
       {open && (
         <div className="relative grid w-full min-w-0 max-w-full gap-1.5 overflow-hidden p-1.5">
           {copyAction.text && (
@@ -850,8 +866,31 @@ export function splitRunItems(toolNames: readonly string[]): RunItem[] {
 // The one grey line that stands in for a run of tool calls — "Explored 3
 // files, ran 5 commands". Live, it narrates in the present tense above the
 // ticker by default; its toggle can reveal the activity before it settles.
+/** "Live" on a run's summary line: the raw record of the run (every command
+ *  and its full output) in the Live pane, scrolled to the run's first call.
+ *  The summary stays the transcript's presentation; this is the door past it. */
+function LiveRunLink({ callId }: { callId?: string }) {
+  const { t } = useI18n()
+
+  return (
+    <button
+      className="mr-1.5 inline-flex items-center gap-0.5 rounded px-1 text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)"
+      data-slot="live-run-link"
+      onClick={event => {
+        event.stopPropagation()
+        revealLivePane(callId)
+      }}
+      type="button"
+    >
+      <Codicon name="pulse" size="0.7rem" />
+      {t.live.openLive}
+    </button>
+  )
+}
+
 function ToolRunHeader({
   completedAt,
+  firstCallId,
   live,
   onToggle,
   open,
@@ -859,6 +898,7 @@ function ToolRunHeader({
   summary
 }: {
   completedAt?: number
+  firstCallId?: string
   live: boolean
   onToggle?: () => void
   open: boolean
@@ -870,7 +910,12 @@ function ToolRunHeader({
       <ScaffoldRow
         onToggle={onToggle}
         open={open}
-        trailing={<TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />}
+        trailing={
+          <>
+            <LiveRunLink callId={firstCallId} />
+            <TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />
+          </>
+        }
       >
         <FadeText className={cn(SCAFFOLD_LABEL_CLASS, 'truncate')}>
           {live ? <span className="shimmer">{summary}</span> : summary}
@@ -886,6 +931,8 @@ interface ToolRunState {
   count: number
   /** Disclosure id of each row in the run, so the run can tell when one is open. */
   entryIds: readonly string[]
+  /** The run's first tool call — where the Live pane scrolls to. */
+  firstCallId?: string
   key: string
   live: boolean
   startedAt?: number
@@ -955,6 +1002,7 @@ function useToolRun(startIndex: number, endIndex: number): ToolRunState {
           count: tools.length,
           approvalActivity: tools.length > 0 && tools.every(isApprovalActivity),
           entryIds: tools.map(tool => toolEntryDisclosureId(state.message.id, tool)),
+          firstCallId: tools[0]?.toolCallId,
           key: `${state.message.id}:${tools[0]?.toolCallId ?? ''}`,
           live,
           startedAt: timelineTools.reduce<number | undefined>(
@@ -996,7 +1044,7 @@ const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> =
 }) => {
   const messageRunning = useAuiState(selectMessageRunning)
 
-  const { completedAt, count, entryIds, key, live, startedAt, summary, approvalActivity } = useToolRun(
+  const { completedAt, count, entryIds, firstCallId, key, live, startedAt, summary, approvalActivity } = useToolRun(
     startIndex,
     endIndex
   )
@@ -1032,6 +1080,7 @@ const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> =
         {count > 1 && !representedByApproval && (
           <ToolRunHeader
             completedAt={completedAt}
+            firstCallId={firstCallId}
             live={live}
             onToggle={() => setToolDisclosureOpen(disclosureId, !expanded)}
             open={expanded}
@@ -1057,12 +1106,86 @@ const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> =
  * for different ranges keeps the decision next to the rendering that depends
  * on it.
  */
+/**
+ * Bot-chat activity pill (bot-mode G2): in a Bot Chat's transcript a run of
+ * tool calls renders as one compact collapsed line — "› Reading 62 unread
+ * threads" — instead of the settled run's quiet chrome. Expanding it reveals
+ * the individual rows in place via `ActivityPillExpandedContext`.
+ *
+ * The pill owns only the summary line: children always mount, and each row
+ * still self-gates — failures, approvals and card tools render inside a
+ * collapsed pill exactly as answer-only renders them inline, so nothing the
+ * user must act on is ever hidden by the collapse.
+ */
+const BotActivityPill: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> = ({
+  children,
+  endIndex,
+  startIndex
+}) => {
+  const messageRunning = useAuiState(selectMessageRunning)
+
+  const { approvalActivity, completedAt, entryIds, firstCallId, key, live, startedAt, summary } = useToolRun(
+    startIndex,
+    endIndex
+  )
+
+  const sessionId = useStore(useSessionView().$runtimeId)
+  const approval = useStore(useMemo(() => sessionApprovalRequest(sessionId), [sessionId]))
+  const currentTurn = useAuiState(state => isCurrentTurnMessage(state.thread.messages, state.message.id))
+  const representedByApproval = !!approval && currentTurn && approvalActivity
+  const disclosureId = `tool-run:${key}`
+  const persistedOpen = useStore($toolDisclosureOpen(disclosureId))
+  const rowOpen = useStore(useMemo(() => $anyToolDisclosureOpen(entryIds), [entryIds]))
+  const enterRef = useEnterAnimation(messageRunning, `tool-run:${key}`)
+  // Pills start collapsed — the one-line summary IS the presentation — but a
+  // persisted disclosure (or a row the user opened inside) wins, matching the
+  // same disclosure id the full transcript would use.
+  const expanded = persistedOpen ?? rowOpen ?? false
+
+  return (
+    <ToolRunDisclosureContext.Provider value={disclosureId}>
+      <ActivityPillExpandedContext.Provider value={expanded}>
+        <div className="min-w-0 max-w-full" data-slot="bot-activity-pill" ref={enterRef}>
+          {!representedByApproval && (
+            <div data-conversation-scaffold="" data-tool-summary="">
+              <ScaffoldRow
+                onToggle={() => setToolDisclosureOpen(disclosureId, !expanded)}
+                open={expanded}
+                trailing={
+                  <>
+                    <LiveRunLink callId={firstCallId} />
+                    <TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />
+                  </>
+                }
+              >
+                <FadeText className={cn(SCAFFOLD_LABEL_CLASS, 'truncate')}>
+                  {live ? <span className="shimmer">{summary}</span> : summary}
+                </FadeText>
+              </ScaffoldRow>
+            </div>
+          )}
+          {children}
+        </div>
+      </ActivityPillExpandedContext.Provider>
+    </ToolRunDisclosureContext.Provider>
+  )
+}
+
 export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> = ({
   children,
   endIndex,
   startIndex
 }) => {
   const showToolActivity = useStore($showToolActivity)
+  const sessionId = useStore(useSessionView().$runtimeId)
+
+  // A Bot Chat's transcript renders its tool runs as pills (G2); every other
+  // session keeps the answer-only passthrough below. The same three-store
+  // resolution the composer uses — the scope set records the answer, and
+  // resolving this runtime id to its stored id reads the other two.
+  const botChat = useStoresSelector([$botChatSessionIds, $sessionStates, $sessionTiles], () =>
+    isBotChatSession(sessionId)
+  )
 
   // Joined rather than returned as an array: assistant-ui compares selector
   // results with `Object.is` and re-runs them on every store update, so a
@@ -1087,7 +1210,29 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   // display.tool_progress. Children still mount so clarify, diffs, and failed
   // calls can render on their own.
   if (!showToolActivity) {
-    return children
+    if (!botChat) {
+      return children
+    }
+
+    // A Bot Chat's runs become activity pills: the run's own summary line as
+    // a compact collapsible chip, cards still in place.
+    return (
+      <ToolEmbedContext.Provider value={false}>
+        {items.map(item =>
+          item.kind === 'card' ? (
+            <Fragment key={`card:${item.index}`}>{rows[item.index]}</Fragment>
+          ) : (
+            <BotActivityPill
+              endIndex={startIndex + item.end}
+              key={`run:${item.start}`}
+              startIndex={startIndex + item.start}
+            >
+              {rows.slice(item.start, item.end + 1)}
+            </BotActivityPill>
+          )
+        )}
+      </ToolEmbedContext.Provider>
+    )
   }
 
   return (

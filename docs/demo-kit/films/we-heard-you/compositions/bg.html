@@ -1,0 +1,64 @@
+<!doctype html>
+<html><head><meta charset="UTF-8" /></head><body><template>
+      <style>
+        #bg-root { position: absolute; inset: 0; overflow: hidden; }
+        #world { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 70% at 50% 42%, #162455 0%, #0b1334 55%, #070c22 100%); }
+        #statue-wrap { position: absolute; inset: -6%; overflow: hidden; }
+        #statue { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 62% 38%; mix-blend-mode: soft-light; opacity: 0.95;
+          -webkit-mask-image: radial-gradient(ellipse 72% 78% at 58% 44%, #000 42%, transparent 88%); mask-image: radial-gradient(ellipse 72% 78% at 58% 44%, #000 42%, transparent 88%); }
+        #dust { position: absolute; inset: 0; width: 1920px; height: 1080px; }
+      </style>
+      <div id="bg-root" data-composition-id="bg" data-width="1920" data-height="1080">
+        <div id="world"></div>
+        <div id="statue-wrap" data-layout-allow-overflow><img id="statue" src="assets/statue.jpg" alt="" data-layout-allow-overflow /></div>
+        <canvas id="dust" width="1920" height="1080" data-layout-allow-overflow></canvas>
+      </div>
+      <script>
+        (() => {
+// Seeded PRNG: every frame is a pure function of time.
+      function rng(seed) {
+        return function () {
+          seed |= 0; seed = (seed + 0x6d2b79f5) | 0
+          let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        }
+      }
+      const DUR = 48.814
+      const BAR = (60 / 118) * 4
+      const tl = gsap.timeline({ paused: true })
+
+      // Gold dust: 110 motes on slow upward drifts with a twinkle.
+      const dust = document.getElementById('dust').getContext('2d')
+      const r1 = rng(7)
+      const motes = Array.from({ length: 110 }, () => ({
+        x: r1() * 1920, y: r1() * 1080, vx: (r1() - 0.5) * 14, vy: -6 - r1() * 18,
+        s: 0.8 + r1() * 2.4, ph: r1() * 6.28, sp: 0.6 + r1() * 1.8, gold: r1() < 0.7
+      }))
+      const drawDust = t => {
+        dust.clearRect(0, 0, 1920, 1080)
+        for (const m of motes) {
+          const x = ((m.x + m.vx * t) % 1920 + 1920) % 1920
+          const y = ((m.y + m.vy * t) % 1080 + 1080) % 1080
+          const a = 0.18 + 0.5 * (0.5 + 0.5 * Math.sin(m.ph + t * m.sp))
+          dust.fillStyle = m.gold ? `rgba(242,181,59,${a})` : `rgba(160,190,255,${a * 0.7})`
+          dust.beginPath(); dust.arc(x, y, m.s, 0, 6.2832); dust.fill()
+        }
+      }
+
+
+      const clock = { t: 0 }
+      drawDust(0)
+      tl.to(clock, { t: DUR, duration: DUR, ease: 'none', onUpdate: () => drawDust(clock.t) }, 0)
+      // The statue plate: a slow Ken Burns across the film; strong under the logo moments, a whisper under statements.
+      tl.fromTo('#statue', { scale: 1.02, x: 0, y: 0 }, { scale: 1.16, x: -120, y: -40, duration: DUR, ease: 'none' }, 0)
+      // Strong under the complaint wall and the drop; a whisper while the app has the stage; back for the lockup.
+      tl.set('#statue', { opacity: 0.7 }, 0)
+      tl.to('#statue', { opacity: 1, duration: 0.4, ease: 'power2.out' }, 3 * BAR)
+      tl.to('#statue', { opacity: 0.45, duration: 1.4, ease: 'power2.inOut' }, 4 * BAR)
+      tl.to('#statue', { opacity: 1, duration: 1.2, ease: 'power2.out' }, 22 * BAR - 0.3)
+
+      window.__timelines['bg'] = tl
+        })()
+      </script>
+</template></body></html>

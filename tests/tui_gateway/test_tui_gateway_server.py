@@ -1141,6 +1141,55 @@ class _BrokenStdout:
         return None
 
 
+def test_write_json_redacts_session_prompt_from_headless_fallback_only(monkeypatch):
+    soul_marker = "SOUL_MARKER_MUST_NEVER_REACH_SERVER_LOGS_9d7f"
+    system_prompt = soul_marker + "\n" + ("private prompt bytes " * 1_000)
+    sid = "headless-log-sid"
+    frame = server._event_frame(
+        "session.info",
+        sid,
+        {
+            "model": "test-model",
+            "provider": "test-provider",
+            "system_prompt": system_prompt,
+        },
+    )
+    out = _ChunkyStdout()
+    monkeypatch.setenv("HERMES_SERVE_HEADLESS", "1")
+    monkeypatch.setattr(server, "_real_stdout", out)
+    monkeypatch.setattr(server, "current_transport", lambda: None)
+    server._sessions.pop(sid, None)
+
+    assert server.write_json(frame) is True
+
+    log_text = "".join(out.parts)
+    logged = json.loads(log_text)
+    assert soul_marker not in log_text
+    assert len(log_text.encode()) < 1_024
+    assert logged["params"]["type"] == "session.info"
+    assert logged["params"]["session_id"] == sid
+    assert logged["params"]["payload"]["model"] == "test-model"
+    assert logged["params"]["payload"]["provider"] == "test-provider"
+
+    class _ClientTransport:
+        def __init__(self):
+            self.frames = []
+
+        def write(self, obj):
+            self.frames.append(obj)
+            return True
+
+    client = _ClientTransport()
+    server._sessions[sid] = {"transport": client}
+    try:
+        assert server.write_json(frame) is True
+        assert client.frames == [frame]
+        assert client.frames[0]["params"]["payload"]["system_prompt"] == system_prompt
+        assert soul_marker in json.dumps(client.frames[0])
+    finally:
+        server._sessions.pop(sid, None)
+
+
 def test_write_json_serializes_concurrent_writes(monkeypatch):
     """Assert StdioTransport holds _stdout_lock across the full stream.write.
 
@@ -3258,6 +3307,31 @@ def test_complete_slash_and_skills_reload_are_bound_to_the_session_cwd(tmp_path,
     # Another session's reload resolves ITS repo, not the launch env.
     other = server._methods["skills.reload"]("r", {"session_id": "sid-b"})["result"]
     assert {i["name"] for i in other["result"]["added"]} == {"beta-skill"}, other["output"]
+
+
+def test_session_info_skills_are_bound_to_the_session_cwd(tmp_path, monkeypatch):
+    # session.info's live skills lookup ran unbound: every broadcast/off-turn caller reported the
+    # CALLER's context (launch env / ambient cwd) on every session, so the desktop header would
+    # show the launch repo's skills on a session rooted in a different trusted project — or none.
+    # _session_skills pins the session's cwd + profile scope like the agent build does, and its
+    # per-session memo must not let one session's set bleed into another under alternation.
+    import agent.skill_utils as skill_utils
+
+    _two_repo_project_skill_sessions(tmp_path, monkeypatch)
+    for sid, own, other in (("sid-a", "alpha-skill", "beta-skill"),
+                            ("sid-b", "beta-skill", "alpha-skill")):
+        session = server._sessions[sid]
+        skills = server._session_skills(session["session_key"], session)
+        flat = {name for names in skills.values() for name in names}
+        assert own in flat and other not in flat, skills
+    # Alternating A→B→A: the memo serves each session its own set (the signature cache's single
+    # slot has already thrashed by the second A call).
+    a = server._session_skills("key-a", server._sessions["sid-a"])
+    b = server._session_skills("key-b", server._sessions["sid-b"])
+    assert {n for names in a.values() for n in names} == {"alpha-skill"}
+    assert {n for names in b.values() for n in names} == {"beta-skill"}
+    # Nothing leaks past the lookup: the thread's logical cwd is unbound again.
+    assert skill_utils.find_project_root() is None
 
 
 def test_history_to_messages_types_a_legacy_auto_continue_row():
@@ -12529,7 +12603,7 @@ def test_rollback_restore_resolves_number_and_file_path():
         def list_checkpoints(self, cwd):
             return [{"hash": "aaa111"}, {"hash": "bbb222"}]
 
-        def restore(self, cwd, target, file_path=None):
+        def restore(self, cwd, target, file_path=None, safe=False):
             calls["args"] = (cwd, target, file_path)
             return {"success": True, "message": "done"}
 
@@ -12584,7 +12658,7 @@ def test_rollback_restore_truncates_from_real_user_turn_not_marker(monkeypatch):
         def list_checkpoints(self, cwd):
             return [{"hash": "abc123"}]
 
-        def restore(self, cwd, target, file_path=None):
+        def restore(self, cwd, target, file_path=None, safe=False):
             return {"success": True, "message": "restored"}
 
     history = [
@@ -12641,7 +12715,7 @@ def test_rollback_restore_skips_legacy_compaction_handoff(monkeypatch):
         def list_checkpoints(self, cwd):
             return [{"hash": "abc123"}]
 
-        def restore(self, cwd, target, file_path=None):
+        def restore(self, cwd, target, file_path=None, safe=False):
             return {"success": True, "message": "restored"}
 
     handoff = {
@@ -12702,7 +12776,7 @@ def test_rollback_restore_preserves_composite_carrier_scaffold(monkeypatch, tmp_
         def list_checkpoints(self, cwd):
             return [{"hash": "abc123"}]
 
-        def restore(self, cwd, target, file_path=None):
+        def restore(self, cwd, target, file_path=None, safe=False):
             return {"success": True, "message": "restored"}
 
     carrier = {

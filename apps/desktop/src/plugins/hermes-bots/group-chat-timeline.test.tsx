@@ -59,6 +59,9 @@ it('keeps every public member reply readable in room arrival order across interl
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
   const { container } = render(<GroupChatWorkspace group="Room" members={[]} />)
+  // The round summary card intentionally re-prints each member's one-liner —
+  // the unreadability invariant this test guards lives in the message log.
+  container.querySelector('[data-testid="group-round-summary"]')?.remove()
   const text = container.textContent || ''
   let previous = -1
 
