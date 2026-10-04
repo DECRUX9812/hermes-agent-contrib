@@ -149,7 +149,7 @@ export const OVERLAY_CSS = `
 
 /* ── overlay windows ── */
 .hr-window {
-  position: fixed; z-index: 20; pointer-events: auto; display: flex;
+  position: fixed; z-index: 2147483643; pointer-events: auto; display: flex;
   flex-direction: column; overflow: hidden; border-radius: 16px;
   background: rgba(14,16,24,.94); border: 1px solid rgba(255,255,255,.1);
   box-shadow: 0 20px 60px rgba(0,0,0,.55), 0 4px 16px rgba(0,0,0,.35);

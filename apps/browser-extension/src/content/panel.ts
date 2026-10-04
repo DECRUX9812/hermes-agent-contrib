@@ -9,7 +9,7 @@ interface SpeechRecognitionLike {
   onstart: (() => void) | null
   onend: (() => void) | null
   onresult: ((e: SpeechRecognitionEventLike) => void) | null
-  onerror: (() => void) | null
+  onerror: ((e?: { error?: string }) => void) | null
   start(): void
   stop(): void
   abort(): void
@@ -210,12 +210,21 @@ export class Panel {
       this.input.value = text
     }
 
-    rec.onerror = () => {
+    rec.onerror = (e?: { error?: string }) => {
+      this.recognizing = false
+      this.mic.classList.remove('on')
+
+      if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+        this.addMsg('', 'Mic permission denied — allow the mic for this page, then try again', 'sys')
+      }
+    }
+
+    try {
+      rec.start()
+    } catch {
       this.recognizing = false
       this.mic.classList.remove('on')
     }
-
-    rec.start()
   }
 
   close() {

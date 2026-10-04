@@ -29,6 +29,9 @@ interface RoomState extends Room {
   /** Currently-running member ids — prevents re-entrant relays. */
   busy: Set<string>
   stopped: boolean
+  /** Deliveries left in the current user-message cascade. Bounds TOTAL
+   *  fan-out (depth-capping alone is exponential with >=3 members). */
+  relayBudget: number
 }
 
 export class RoomEngine {
@@ -48,20 +51,20 @@ export class RoomEngine {
     const rows = (stored[STORAGE_KEY] ?? []) as Room[]
 
     for (const r of rows) {
-      this.rooms.set(r.id, { ...r, busy: new Set(), stopped: false })
+      this.rooms.set(r.id, { ...r, busy: new Set(), stopped: false, relayBudget: MAX_RELAY_TURNS })
     }
   }
 
   private persist() {
     if (this.persistTimer) {clearTimeout(this.persistTimer)}
     this.persistTimer = setTimeout(() => {
-      const rows = [...this.rooms.values()].map(({ busy: _b, stopped: _s, ...r }) => r)
+      const rows = [...this.rooms.values()].map(({ busy: _b, stopped: _s, relayBudget: _rb, ...r }) => r)
       void chrome.storage.local.set({ [STORAGE_KEY]: rows })
     }, 400)
   }
 
   private broadcastRooms() {
-    this.onRoomsChanged?.([...this.rooms.values()].map(({ busy: _b, stopped: _s, ...r }) => r))
+    this.onRoomsChanged?.([...this.rooms.values()].map(({ busy: _b, stopped: _s, relayBudget: _rb, ...r }) => r))
     this.persist()
   }
 
@@ -80,6 +83,7 @@ export class RoomEngine {
       anchor: null,
       busy: new Set(),
       stopped: false,
+      relayBudget: MAX_RELAY_TURNS,
     }
 
     this.rooms.set(room.id, room)
@@ -126,7 +130,7 @@ export class RoomEngine {
   }
 
   list(): Room[] {
-    return [...this.rooms.values()].map(({ busy: _b, stopped: _s, ...r }) => r)
+    return [...this.rooms.values()].map(({ busy: _b, stopped: _s, relayBudget: _rb, ...r }) => r)
   }
 
   /** User spoke in a room (or at a solo bot, roomId undefined). */
@@ -135,6 +139,9 @@ export class RoomEngine {
 
     if (!room) {return}
     this.emit(roomId, { author: 'user', authorName, text })
+    // fresh delivery budget per user message — a room of talkative bots can
+    // never deliver more than MAX_RELAY_TURNS replies per message, period.
+    room.relayBudget = MAX_RELAY_TURNS
     await this.relay(room, 'user', authorName, text, 0)
   }
 
@@ -142,7 +149,7 @@ export class RoomEngine {
    *  feed each reply back to the other members until the conversation settles
    *  or hits the turn cap. */
   private async relay(room: RoomState, author: string, authorName: string, text: string, depth: number) {
-    if (room.stopped || depth > MAX_RELAY_TURNS) {return}
+    if (room.stopped || depth > MAX_RELAY_TURNS || room.relayBudget <= 0) {return}
     const members = room.memberBotIds.filter(id => id !== author)
 
     let targets: string[]
@@ -189,7 +196,8 @@ export class RoomEngine {
   ): Promise<[string, string | null]> {
     const harness = this.getHarness(botId.split(':')[0]!)
 
-    if (!harness || room.busy.has(botId)) {return [botId, null]}
+    if (!harness || room.busy.has(botId) || room.relayBudget <= 0) {return [botId, null]}
+    room.relayBudget--
     room.busy.add(botId)
     const ref = botId.split(':').slice(1).join(':')
     const scratch = room.scratchpad.trim()

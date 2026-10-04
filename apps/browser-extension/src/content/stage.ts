@@ -278,10 +278,27 @@ export class Stage {
       result = await runPageAction(action, args).catch((e) => ({ ok: false, error: String(e) }))
     }
 
-    const r = result as { ok?: boolean; result?: unknown; error?: string }
+    const r = (result ?? {}) as Record<string, unknown>
+    // runPageAction returns {ok, ...payload} (url/title/elements/…) — forward
+    // the payload, not a 'result' field that doesn't exist, or agents always
+    // see "0 bytes of page structure".
+    let payload: unknown
+
+    if ('result' in r) {
+      payload = r.result
+    } else {
+      const { ok: _ok, error: _err, ...rest } = r
+      payload = Object.keys(rest).length > 0 ? rest : undefined
+    }
+
     this.send({
       type: 'action.result',
-      payload: { commandId, ok: r?.ok !== false, result: r?.result, error: r?.error },
+      payload: {
+        commandId,
+        ok: r.ok !== false,
+        result: payload,
+        error: r.error as string | undefined,
+      },
     })
   }
 
@@ -363,14 +380,16 @@ export class Stage {
   }
 
   private updateDropTarget(x: number, y: number) {
-    // elementFromPoint sees the host; pointer-events:none peeks under it
-    // without flickering display (which would kill focus inside the shadow).
-    this.host.style.pointerEvents = 'none'
-    const el = document.elementFromPoint(x, y)
-    this.host.style.pointerEvents = ''
+    // The dragged .hr-hit sits under the cursor — elementFromPoint returns
+    // our own host (shadow retargeting), so walk the full hit stack and take
+    // the first element that isn't ours.
+    const el = document
+      .elementsFromPoint(x, y)
+      .find(e => e !== this.host && e !== document.documentElement && e !== document.body)
+
     this.clearOutline()
 
-    if (el && el !== document.documentElement && el !== document.body) {
+    if (el) {
       const r = el.getBoundingClientRect()
       const o = document.createElement('div')
       o.className = 'hr-eloutline'
@@ -462,6 +481,14 @@ export class Stage {
 
   private setRooms(rooms: Room[]) {
     this.rooms = new Map(rooms.map((r) => [r.id, r]))
+
+    // close panels whose room was removed — they can never receive again
+    for (const key of [...this.panels.keys()]) {
+      if (!key.startsWith('solo:') && !this.rooms.has(key)) {
+        this.panels.get(key)?.close()
+      }
+    }
+
     this.renderRooms()
     this.layoutRoomMembers()
   }

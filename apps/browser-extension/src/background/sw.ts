@@ -231,7 +231,14 @@ class BotRoomService {
 
         void harness.send(bot.ref, text, {
           onDelta: () => undefined,
-          onStatus: line => this.rooms.onBotStatus?.(bot.id, 'working', line),
+          onStatus: line => {
+            // site avatars aren't in the roster — broadcast straight to tabs
+            if (site) {
+              this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working', statusLine: line } })
+            } else {
+              this.rooms.onBotStatus?.(bot.id, 'working', line)
+            }
+          },
           onPageAction: (action, args, reply) => {
             void this.bridge
               .run(`browser_${action}`, args, { tabId })
@@ -249,6 +256,11 @@ class BotRoomService {
               at: Date.now(),
             } satisfies RoomMsg,
           })
+        }).finally(() => {
+          // settle the avatar's badge — success or send failure alike
+          if (site) {
+            this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'idle' } })
+          }
         })
 
         if (site) {
