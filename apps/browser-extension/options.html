@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Bot Room — Settings</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; font-family: -apple-system, 'SF Pro', Inter, system-ui, sans-serif; }
+  body { margin: 0; background: #0b0d13; color: #e8eaf2; padding: 40px 20px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 12px; }
+  h1 img { width: 40px; height: 40px; }
+  .sub { opacity: .6; margin: 6px 0 32px; font-size: 14px; }
+  .card { background: #141724; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+  .card h2 { margin: 0 0 4px; font-size: 15px; }
+  .card .hint { font-size: 12px; opacity: .55; margin-bottom: 14px; }
+  label { display: block; font-size: 12px; font-weight: 600; opacity: .8; margin: 12px 0 5px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: #0b0d13; border: 1px solid rgba(255,255,255,.12); border-radius: 9px;
+    color: #e8eaf2; padding: 9px 11px; font-size: 13px; font-family: inherit; outline: none;
+  }
+  input:focus, textarea:focus, select:focus { border-color: #5470ff; }
+  textarea { min-height: 80px; resize: vertical; font-family: ui-monospace, monospace; font-size: 12px; }
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  button {
+    border: 0; border-radius: 9px; padding: 9px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; background: rgba(255,255,255,.09); color: #e8eaf2;
+  }
+  button:hover { background: rgba(255,255,255,.15); }
+  button.primary { background: #3b5bff; color: #fff; }
+  button.danger { background: rgba(255,77,109,.15); color: #ff8ba0; }
+  .harness { border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 14px; margin-top: 12px; }
+  .harness-head { display: flex; align-items: center; justify-content: space-between; }
+  .harness-head b { font-size: 13px; }
+  .toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .toggle input { width: 18px; height: 18px; accent-color: #3b5bff; }
+  .saved { color: #3dd68c; font-size: 12px; margin-left: 10px; opacity: 0; transition: opacity .3s; }
+  .saved.on { opacity: 1; }
+  .conn { font-size: 12px; margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: #0b0d13; }
+  .conn.ok { color: #3dd68c; }
+  .conn.err { color: #ff8ba0; }
+  code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><img src="icons/icon128.png" alt=""/> Bot Room</h1>
+  <p class="sub">Your agents, living in the browser. Plug in any harness — bots hang out on every page as 3D mascots, take tasks by click or voice, chat in rooms, and drive the tab for you.</p>
+
+  <div class="card">
+    <div class="toggle"><input type="checkbox" id="enabled"/> <label for="enabled" style="margin:0">Enable Bot Room on pages</label></div>
+    <label style="margin-top:14px">Disabled hosts (one per line — overlay won't render there)</label>
+    <textarea id="disabledHosts" placeholder="mail.google.com"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>Hermes backend</h2>
+    <p class="hint">Point at your running <code>hermes serve</code> / dashboard. Bots = your Hermes profiles; each gets its canonical hidden "Bot Chat" session. With a gated backend the extension mints <code>/api/auth/ws-ticket</code>s so <code>browser.controller.*</code> commands reach this tab.</p>
+    <label>Backend URL</label>
+    <input type="text" id="hermesUrl" placeholder="https://your-box.tailnet.ts.net:9443"/>
+    <label>Token (dashboard token or OAuth access token)</label>
+    <input type="password" id="hermesToken" placeholder="leave empty if backend is ungated"/>
+    <div class="conn" id="connStatus" style="display:none"></div>
+    <div style="margin-top:12px"><button id="testConn">Test connection</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Other harnesses <span style="opacity:.5;font-weight:400">— the multi-harness layer</span></h2>
+    <p class="hint">Any OpenAI-compatible endpoint becomes a bot roster. Add Grok (xAI), OpenClaw, a local model, a Muse-style persona — one <code>name: system prompt</code> per line. They get mascots, rooms, and the <code>page_action</code> tool that drives your tab.</p>
+    <div id="harnessList"></div>
+    <div class="harness" id="newHarness">
+      <div class="row">
+        <div><label>Name</label><input type="text" id="hName" placeholder="Grok"/></div>
+        <div><label>Base URL</label><input type="text" id="hUrl" placeholder="https://api.x.ai/v1"/></div>
+      </div>
+      <div class="row">
+        <div><label>API key</label><input type="password" id="hKey"/></div>
+        <div><label>Model</label><input type="text" id="hModel" placeholder="grok-3"/></div>
+      </div>
+      <label>Bots (one per line: <code>Name: system prompt</code>)</label>
+      <textarea id="hBots" placeholder="Grokbot: You are Grokbot, witty and fast."></textarea>
+      <div style="margin-top:10px"><button class="primary" id="addHarness">Add harness</button></div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center">
+    <button class="primary" id="save" style="padding:11px 26px">Save</button>
+    <span class="saved" id="saved">Saved ✓</span>
+  </div>
+</div>
+<script src="./options.js"></script>
+</body>
+</html>
