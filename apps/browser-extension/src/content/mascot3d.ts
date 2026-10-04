@@ -135,6 +135,22 @@ export class OverlayScene {
     this.camera.top = 0
     this.camera.bottom = h
     this.camera.updateProjectionMatrix()
+    // Re-clamp everyone into the new viewport — a shrunk window must not
+    // strand a mascot off-screen (drag targets and docked rails included).
+    const M = 70
+
+    for (const m of this.mascots.values()) {
+      const cx = Math.min(Math.max(m.group.position.x, M), w - M)
+      const cy = Math.min(Math.max(m.group.position.y, M), h - M)
+      m.group.position.x = cx
+      m.group.position.y = cy
+      m.baseY = cy
+      const ud = m.group.userData
+
+      if (typeof ud.tx === 'number') {ud.tx = Math.min(Math.max(ud.tx, M), w - M)}
+
+      if (typeof ud.ty === 'number') {ud.ty = Math.min(Math.max(ud.ty, M), h - M)}
+    }
   }
 
   add(id: string, name: string, x: number, y: number) {
