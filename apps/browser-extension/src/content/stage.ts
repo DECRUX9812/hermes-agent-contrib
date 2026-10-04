@@ -245,9 +245,15 @@ export class Stage {
 
   private onRoomMsg(msg: RoomMsg) {
     const panel = this.panels.get(msg.roomId)
+    const name = (id: string) => this.bots.get(id)?.displayName ?? id.split(':').pop() ?? id
 
     if (panel) {
-      roomMsgToPanel(panel, msg, (id) => this.bots.get(id)?.displayName ?? id.split(':').pop() ?? id)
+      if (msg.ephemeral) {
+        panel.showTyping(name(msg.author))
+      } else {
+        panel.clearTyping(name(msg.author))
+        roomMsgToPanel(panel, msg, name)
+      }
     }
 
     if (msg.ephemeral) {return}
@@ -454,7 +460,10 @@ export class Stage {
         }
 
         this.send(payload)
-        panel.addMsg('You', text, 'user')
+
+        // room sends come back through the room.msg broadcast — echoing them
+        // here too would render the user's bubble twice.
+        if (!room) {panel.addMsg('You', text, 'user')}
       },
       onClose: () => this.panels.delete(key),
     })

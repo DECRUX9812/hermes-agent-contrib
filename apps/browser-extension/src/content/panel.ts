@@ -85,6 +85,15 @@ export class Panel {
     this.mic = this.el.querySelector('.hr-btn.mic')!
 
     this.el.querySelector('.hr-panel-x')!.addEventListener('click', () => this.close())
+    // Real-mouse focus can get eaten between the drag handlers on mascot
+    // hit-rects and the host's pointer-events toggles — claim it explicitly.
+    const grab = () => this.input.focus({ preventScroll: true })
+    this.input.addEventListener('pointerdown', () => requestAnimationFrame(grab))
+    this.el.querySelector('.hr-composer')!.addEventListener('pointerdown', (e) => {
+      if ((e.target as HTMLElement).tagName !== 'TEXTAREA' && !(e.target as HTMLElement).closest('.hr-btn')) {
+        requestAnimationFrame(grab)
+      }
+    })
     this.el.querySelector('.hr-btn.send')!.addEventListener('click', () => this.submit())
     this.input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -139,6 +148,31 @@ export class Panel {
 
     if (dot) {dot.style.background = STATUS_COLOR[status] ?? '#6b7280'}
   }
+
+  /** Transient "typing" bubble for an ephemeral relay marker — kept out of
+   *  the persistent log and replaced by the real reply when it lands. */
+  showTyping(who: string) {
+    if (this.typing.has(who)) {return}
+    const div = document.createElement('div')
+    div.className = 'hr-msg bot typing'
+    const w = document.createElement('div')
+    w.className = 'hr-who'
+    w.textContent = who
+    const body = document.createElement('div')
+    body.className = 'hr-dots'
+    body.textContent = '…'
+    div.append(w, body)
+    this.logEl.appendChild(div)
+    this.logEl.scrollTop = this.logEl.scrollHeight
+    this.typing.set(who, div)
+  }
+
+  clearTyping(who: string) {
+    this.typing.get(who)?.remove()
+    this.typing.delete(who)
+  }
+
+  private typing = new Map<string, HTMLElement>()
 
   addMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys') {
     const list = logs.get(this.key) ?? []

@@ -61,6 +61,8 @@ export const OVERLAY_CSS = `
 .hr-msg.bot { align-self: flex-start; background: rgba(255,255,255,.08); border-bottom-left-radius: 4px; }
 .hr-msg .hr-who { font-size: 10px; opacity: .6; margin-bottom: 2px; font-weight: 650; }
 .hr-msg.sys { align-self: center; background: none; opacity: .55; font-size: 11px; padding: 2px; }
+.hr-msg.typing .hr-dots { letter-spacing: 3px; animation: hr-typing 1s infinite; }
+@keyframes hr-typing { 50% { opacity: .3; } }
 
 .hr-composer {
   display: flex; gap: 6px; padding: 10px; border-top: 1px solid rgba(255,255,255,.06);
@@ -70,6 +72,7 @@ export const OVERLAY_CSS = `
   flex: 1; resize: none; border: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.25);
   color: #e8eaf2; border-radius: 10px; padding: 8px 10px; font-size: 12.5px;
   font-family: inherit; outline: none; min-height: 36px; max-height: 90px;
+  user-select: text; -webkit-user-modify: read-write; caret-color: #8fb0ff;
 }
 .hr-composer textarea:focus { border-color: #5470ff; }
 .hr-btn {
