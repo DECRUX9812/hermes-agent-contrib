@@ -57,14 +57,22 @@ export class Panel {
     color: string,
     status: string,
     private hooks: PanelHooks,
+    avatar?: string,
   ) {
     this.el = document.createElement('div')
     this.el.className = 'hr-panel'
+
+    const avatarHtml = avatar
+      ? `<img class="hr-avatar" alt=""/>`
+      : `<span class="hr-avatar hr-avatar-txt" style="background:${color}33;border:1px solid ${color}66;color:${color}">${title.slice(0, 1).toUpperCase()}</span>`
+
     this.el.innerHTML = `
       <div class="hr-panel-head">
-        <span class="hr-dot" style="background:${STATUS_COLOR[status] ?? '#6b7280'}"></span>
-        <span class="hr-title"></span>
-        <span class="hr-status"></span>
+        ${avatarHtml}
+        <div class="hr-meta">
+          <div class="hr-title"></div>
+          <div class="hr-status"><span class="hr-dot" style="background:${STATUS_COLOR[status] ?? '#6b7280'};color:${STATUS_COLOR[status] ?? '#6b7280'}"></span><span class="hr-status-txt"></span></div>
+        </div>
         <button class="hr-panel-x" title="Close">✕</button>
       </div>
       <div class="hr-panel-log"></div>
@@ -72,12 +80,17 @@ export class Panel {
         <span>◎</span><span class="hr-target-label"></span><span class="hr-x">✕</span>
       </div>
       <div class="hr-composer">
-        <textarea rows="1" placeholder="Give ${title} a task…"></textarea>
-        <button class="hr-btn mic" title="Speak">🎙</button>
-        <button class="hr-btn send" title="Send">➤</button>
+        <div class="hr-compose-pill">
+          <textarea rows="1" placeholder="Give ${title} a task…"></textarea>
+          <button class="hr-btn mic" title="Speak">🎙</button>
+          <button class="hr-btn send" title="Send">➤</button>
+        </div>
       </div>`
+    const av = this.el.querySelector<HTMLImageElement>('img.hr-avatar')
+
+    if (av && avatar) {av.src = avatar}
     this.el.querySelector('.hr-title')!.textContent = title
-    this.statusEl = this.el.querySelector('.hr-status')!
+    this.statusEl = this.el.querySelector('.hr-status-txt')!
     this.statusEl.textContent = status
     this.logEl = this.el.querySelector('.hr-panel-log')!
     this.input = this.el.querySelector('textarea')!
@@ -103,7 +116,8 @@ export class Panel {
     })
     this.input.addEventListener('input', () => {
       this.input.style.height = 'auto'
-      this.input.style.height = Math.min(90, this.input.scrollHeight) + 'px'
+      this.input.style.height = Math.min(96, this.input.scrollHeight) + 'px'
+      this.el.querySelector('.hr-btn.send')!.classList.toggle('ready', this.input.value.trim().length > 0)
     })
     this.targetChip.querySelector('.hr-x')!.addEventListener('click', () => this.setTarget(null))
     this.mic.addEventListener('click', () => this.toggleMic())
@@ -146,7 +160,11 @@ export class Panel {
     this.statusEl.textContent = line || status
     const dot = this.el.querySelector<HTMLElement>('.hr-dot')
 
-    if (dot) {dot.style.background = STATUS_COLOR[status] ?? '#6b7280'}
+    if (dot) {
+      const c = STATUS_COLOR[status] ?? '#6b7280'
+      dot.style.background = c
+      dot.style.color = c
+    }
   }
 
   /** Transient "typing" bubble for an ephemeral relay marker — kept out of
@@ -160,7 +178,7 @@ export class Panel {
     w.textContent = who
     const body = document.createElement('div')
     body.className = 'hr-dots'
-    body.textContent = '…'
+    body.innerHTML = '<i></i><i></i><i></i>'
     div.append(w, body)
     this.logEl.appendChild(div)
     this.logEl.scrollTop = this.logEl.scrollHeight

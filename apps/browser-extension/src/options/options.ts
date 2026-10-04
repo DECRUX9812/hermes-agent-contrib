@@ -34,9 +34,18 @@ function renderCatalog() {
   for (const p of HARNESS_PRESETS) {
     const card = document.createElement('div')
     card.className = 'preset'
-    card.innerHTML = `<b></b><span></span>`
+    card.style.setProperty('--pc', p.color ?? '#7c5cff')
+    card.innerHTML = `<span class="glyph">${p.name.slice(0, 1)}</span><b></b><span></span>`
     card.querySelector('b')!.textContent = p.name
-    card.querySelector('span')!.textContent = p.blurb
+    card.querySelector('span:not(.glyph)')!.textContent = p.blurb
+
+    if (p.needsKey) {
+      const n = document.createElement('span')
+      n.className = 'needs'
+      n.textContent = 'KEY'
+      card.appendChild(n)
+    }
+
     card.addEventListener('click', () => {
       $<HTMLInputElement>('#hName').value = p.name
       $<HTMLInputElement>('#hUrl').value = p.baseUrl ?? ''

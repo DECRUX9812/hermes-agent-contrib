@@ -41,6 +41,8 @@ export interface HarnessPreset {
   baseUrl?: string
   model?: string
   needsKey: boolean
+  /** Brand accent for the catalog tile. */
+  color?: string
   bots: { name: string; systemPrompt: string }[]
 }
 
@@ -52,6 +54,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     baseUrl: 'https://api.x.ai/v1',
     model: 'grok-3',
     needsKey: true,
+    color: '#d4d4dc',
     bots: [{ name: 'Grokbot', systemPrompt: 'You are Grokbot: fast, witty, slightly unhinged but helpful. Keep replies punchy.' }],
   },
   {
@@ -61,6 +64,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     baseUrl: 'https://api.openai.com/v1',
     model: 'gpt-4o',
     needsKey: true,
+    color: '#10c9a5',
     bots: [{ name: 'Scout', systemPrompt: 'You are Scout, a precise browsing assistant living in the user\'s tab.' }],
   },
   {
@@ -70,6 +74,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     baseUrl: 'https://openrouter.ai/api/v1',
     model: 'anthropic/claude-sonnet-4',
     needsKey: true,
+    color: '#94a7ff',
     bots: [{ name: 'Router', systemPrompt: 'You are Router, an all-model assistant living in the user\'s tab.' }],
   },
   {
@@ -79,6 +84,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     baseUrl: 'http://localhost:11434/v1',
     model: 'llama3.1',
     needsKey: false,
+    color: '#e4e4ee',
     bots: [{ name: 'Olla', systemPrompt: 'You are Olla, a helpful local model hanging out in the browser.' }],
   },
   {
@@ -86,6 +92,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     name: 'OpenClaw / custom',
     blurb: 'Any OpenAI-compatible endpoint — self-hosted agents, OpenClaw, vLLM.',
     needsKey: false,
+    color: '#e0884f',
     bots: [{ name: 'Claw', systemPrompt: 'You are Claw, a helpful agent hanging out in the browser.' }],
   },
   {
@@ -93,6 +100,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     name: 'Muse persona',
     blurb: 'A character endpoint — replies map to mascot.perform actions.',
     needsKey: false,
+    color: '#ff6fb5',
     bots: [{ name: 'Muse', systemPrompt: 'You are Muse: playful, dramatic, performs dances when excited.' }],
   },
   {
@@ -101,6 +109,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     blurb: 'The OpenCode TUI agent via the local relay — real agent, real harness.',
     baseUrl: 'ws://127.0.0.1:9933',
     needsKey: false,
+    color: '#5eead4',
     bots: [{ name: 'OpenCode', systemPrompt: '' }],
   },
   {
@@ -109,6 +118,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     blurb: 'claude CLI via the relay — Anthropic\'s coding agent in your tab.',
     baseUrl: 'ws://127.0.0.1:9933',
     needsKey: false,
+    color: '#d97757',
     bots: [{ name: 'Claude', systemPrompt: '' }],
   },
   {
@@ -117,6 +127,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     blurb: 'gemini CLI via the relay — Google\'s agent alongside the others.',
     baseUrl: 'ws://127.0.0.1:9933',
     needsKey: false,
+    color: '#7aa8ff',
     bots: [{ name: 'Gemini', systemPrompt: '' }],
   },
   {
@@ -125,6 +136,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     blurb: 'codex CLI via the relay — OpenAI\'s coding agent in the room.',
     baseUrl: 'ws://127.0.0.1:9933',
     needsKey: false,
+    color: '#4ade80',
     bots: [{ name: 'Codex', systemPrompt: '' }],
   },
   {
@@ -133,6 +145,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     blurb: 'Bring your own: any CLI agent behind a ws relay (BRRP/1 spec in HARNESSES.md).',
     baseUrl: 'ws://127.0.0.1:9933',
     needsKey: false,
+    color: '#8b93b0',
     bots: [{ name: 'Cli', systemPrompt: '' }],
   },
   {
@@ -141,6 +154,7 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
     blurb: 'Any Agent Client Protocol server over a relay or WebSocket.',
     baseUrl: 'ws://127.0.0.1:9944',
     needsKey: false,
+    color: '#b48cff',
     bots: [{ name: 'Acp', systemPrompt: '' }],
   },
 ]

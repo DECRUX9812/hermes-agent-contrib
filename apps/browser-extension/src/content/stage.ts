@@ -33,12 +33,14 @@ export class Stage {
     this.host = document.createElement('div')
     this.host.id = 'hermes-bot-room'
     this.root = this.host.attachShadow({ mode: 'open' })
+
     // KeyboardEvents are composed:true — they cross the shadow boundary and
     // reach the page (GitHub's "/" palette opened while typing in our composer).
     // The overlay is a separate app surface: swallow keys at the shadow root.
     for (const type of ['keydown', 'keyup', 'keypress']) {
       this.root.addEventListener(type, (e) => e.stopPropagation())
     }
+
     const style = document.createElement('style')
     style.textContent = OVERLAY_CSS
     this.root.appendChild(style)
@@ -48,20 +50,24 @@ export class Stage {
     this.root.appendChild(canvas)
     this.scene = new OverlayScene(canvas)
 
+    // rooms + the new-room button live inside one floating pill tray
+    const tray = document.createElement('div')
+    tray.className = 'hr-tray'
     this.roomBar = document.createElement('div')
     this.roomBar.className = 'hr-roombar'
-    this.root.appendChild(this.roomBar)
+    tray.appendChild(this.roomBar)
 
     const addBtn = document.createElement('button')
     addBtn.className = 'hr-addroom'
     addBtn.textContent = '+'
     addBtn.title = 'New room'
     addBtn.addEventListener('click', () => this.createRoom())
-    this.root.appendChild(addBtn)
+    tray.appendChild(addBtn)
+    this.root.appendChild(tray)
 
     this.dropzone = document.createElement('div')
     this.dropzone.className = 'hr-dropzone'
-    this.dropzone.innerHTML = '<div class="hr-dz-label">Drop on an element or a room</div>'
+    this.dropzone.innerHTML = '<div class="hr-dz-label">Drop on <b>an element</b> to target it — or on <b>a room</b> to move in</div>'
     this.root.appendChild(this.dropzone)
 
     this.ghost = document.createElement('div')
@@ -472,14 +478,15 @@ export class Stage {
         if (!room) {panel.addMsg('You', text, 'user')}
       },
       onClose: () => this.panels.delete(key),
-    })
+    }, b ? faceDataUrl(b.name, 48) : undefined)
 
     this.panels.set(key, panel)
     // position near the mascot
     const botId = room ? room.memberBotIds[0] : b?.id
     const p = botId ? this.pos.get(botId) : undefined
-    const px = Math.min(Math.max((p?.x ?? innerWidth - 200) - 150, 10), innerWidth - 320)
-    const py = Math.min(Math.max((p?.y ?? 200) + 60, 10), innerHeight - 380)
+    const cascade = (this.panels.size - 1) * 26
+    const px = Math.min(Math.max((p?.x ?? innerWidth - 200) - 150 + cascade, 10), innerWidth - 330)
+    const py = Math.min(Math.max((p?.y ?? 200) + 60 + cascade, 10), innerHeight - 380)
     panel.el.style.left = px + 'px'
     panel.el.style.top = py + 'px'
     panel.focus()

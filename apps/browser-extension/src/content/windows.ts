@@ -37,7 +37,10 @@ const SIZES: Record<Exclude<WindowSize, 'full'>, { w: number; h: number }> = {
 }
 
 export class WindowManager {
-  private zTop = 20
+  // Windows must sit above every other overlay layer — the class stylesheet
+  // gives hr-window 2147483643 but the inline stacking counter replaces it,
+  // so it has to start above the mascot hit rects (2147483642) and dropzone.
+  private zTop = 2147483644
   private windows = new Map<string, { el: HTMLElement; size: WindowSize; restore?: string }>()
   onFullscreen: ((full: boolean) => void) | null = null
   /** Feed-card click → stage decides (default: open url in window or tab). */
@@ -61,15 +64,16 @@ export class WindowManager {
     el.className = `hr-window hr-win-${size}`
     el.innerHTML = `
       <div class="hr-win-head">
-        <span class="hr-win-title"></span>
-        <span class="hr-win-btns">
-          <button class="hr-win-btn" data-a="shrink" title="Smaller">–</button>
-          <button class="hr-win-btn" data-a="grow" title="Bigger">+</button>
-          <button class="hr-win-btn" data-a="full" title="Full screen">⛶</button>
-          <button class="hr-win-btn" data-a="close" title="Close">✕</button>
+        <span class="hr-win-dots">
+          <button class="hr-win-btn" data-a="close" data-g="✕" title="Close"></button>
+          <button class="hr-win-btn" data-a="shrink" data-g="–" title="Smaller"></button>
+          <button class="hr-win-btn" data-a="grow" data-g="+" title="Bigger"></button>
+          <button class="hr-win-btn" data-a="full" data-g="⤢" title="Full screen"></button>
         </span>
+        <span class="hr-win-title"></span>
       </div>
-      <div class="hr-win-body"></div>`
+      <div class="hr-win-body"></div>
+      <div class="hr-resize" title="Resize"></div>`
     el.querySelector('.hr-win-title')!.textContent = spec.title ?? 'Bot Room'
 
     const body = el.querySelector('.hr-win-body')!
@@ -94,12 +98,18 @@ export class WindowManager {
         const card = document.createElement('div')
         card.className = 'hr-card'
 
+        const thumb = document.createElement('span')
+        thumb.className = 'hr-thumb'
+        thumb.textContent = '▶'
+
         if (item.image) {
           const img = document.createElement('img')
           img.src = item.image
           img.loading = 'lazy'
-          card.appendChild(img)
+          img.onerror = () => img.remove()
+          thumb.appendChild(img)
         }
+        card.appendChild(thumb)
 
         const txt = document.createElement('div')
         txt.className = 'hr-card-txt'
@@ -201,6 +211,34 @@ export class WindowManager {
       else if (a === 'full') {this.setFull(el, !el.classList.contains('hr-win-full'))}
       else if (a === 'grow') {this.cycle(el, id, 1)}
       else if (a === 'shrink') {this.cycle(el, id, -1)}
+    })
+
+    // corner resize grip — freeform, floored at the sm preset
+    const grip = el.querySelector('.hr-resize') as HTMLElement
+    let rw = 0
+    let rh = 0
+    let rx = 0
+    let ry = 0
+    let resizing = false
+    grip.addEventListener('pointerdown', (e) => {
+      resizing = true
+      rx = e.clientX
+      ry = e.clientY
+      rw = el.offsetWidth
+      rh = el.offsetHeight
+      grip.setPointerCapture(e.pointerId)
+      e.stopPropagation()
+    })
+    grip.addEventListener('pointermove', (e) => {
+      if (!resizing) {return}
+      el.style.width = `${Math.max(220, rw + e.clientX - rx)}px`
+      el.style.height = `${Math.max(120, rh + e.clientY - ry)}px`
+    })
+    grip.addEventListener('pointerup', () => {
+      resizing = false
+    })
+    grip.addEventListener('pointercancel', () => {
+      resizing = false
     })
 
     this.root.appendChild(el)
