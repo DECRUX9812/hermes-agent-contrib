@@ -184,9 +184,36 @@ batch from this session when we're ready to shoot — same loop as the rest of t
 6. 9:16 reframe pass; regenerate B-roll natively 9:16; re-check text safe areas.
 7. Deliver both masters via `upload_attachment` (direct download links — not local paths).
 
+## 8. Craft notes — what actually makes launch videos land (researched Oct 2026)
+
+The classic reference is the original Devin demo (1.1M+ views, doubled the company valuation
+inside a month). The repeatable recipe: **hook → look → trust**, plus one secret-sauce layer.
+
+- **Hook = a disruptive claim, not a pitch.** "We built this thing, please check it out" is the
+  #1 fail mode. Our hook is structural envy: every other agent dies at the login wall — ours was
+  born behind it. Lead with the *claim*, never the feature list.
+- **Look = show the mechanism, don't call it magic.** AI demos die on "too good to be true."
+  The [REC] footage exists precisely to prove the mechanism — logged-in tab, real cursor, real
+  page actions. Never let an AI-generated shot *imply* a product behavior it can't do.
+- **Trust = real UI only.** Invented labels/buttons are the #1 tell of a fake demo. Every [REC]
+  shot uses the real extension on real pages; captions are burned in for muted viewers.
+- **Product on screen within 3 seconds** of the cold open — the Hexfield pane shows the real
+  demo at shot 7 but the *product claim* (logged-in drive) lands by ~0:14.
+- **Mascot consistency is the whole game** (the reference-sheet discipline): 3–5 distinctive
+  describable features per bot, flat bold color regions, no fine text/logos on the character
+  (small type is the most fragile element in generation), canonical turnaround sheet fed as
+  `image_url`/`reference_image_urls` to every AI shot. A mascot that drifts between shots reads
+  as clip art; one that holds becomes a recognition machine.
+- **Distribution is part of the video.** Ship both masters; the 9:16 reframe isn't a letterbox,
+  it's re-composed. First frame black+silent for clean autoplay.
+
 ## Risk notes
 
 - **If the extension isn't camera-ready**: shots 4/8 degrade gracefully — capture the mascot on any live page and the compose-into-comment flow on a GitHub test repo. Do NOT fake the logged-in state; that beat is the claim.
 - **If mascot continuity fails** (3+ failed re-rolls per shot): ship the v1 fallback cut (storyboard.md bottom) — same REC spine, MG cards instead of AI world. The film survives; the meta layer doesn't ship broken.
 - **Mock only the replies**: `demo_mock.py`-style canned turns keep timing deterministic; all `page_action`s stay real so motion on screen is honest.
 - **Sora is off the table** (API shut down Sept 2026) — anyone citing Sora pricing in a plan is working from stale info.
+- **Portal auth**: `sk-nous-*` inference keys do NOT authenticate the Tool Gateway video lane
+  (verified 401 Oct 2026) — generation needs the OAuth token from `hermes setup --portal`
+  (`~/.hermes/auth.json` → `access_token`, or `TOOL_GATEWAY_USER_TOKEN` env). Submit script:
+  `docs/bot-room-video/scripts/nous_video_gen.py`.
