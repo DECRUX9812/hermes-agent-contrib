@@ -489,11 +489,10 @@ import {
 } from './profile-session-routing'
 import {
   createQuickEntryShortcut,
+  createQuickEntrySubmitRelay,
   pickQuickEntryContext,
   quickEntryWindowBounds,
   sanitizeQuickEntryContext,
-  createQuickEntrySubmitRelay,
-  quickEntryWindowBounds,
   sanitizeQuickEntrySettings
 } from './quick-entry'
 import { createQuitFinalization } from './quit-finalization'
@@ -18608,29 +18607,31 @@ ipcMain.handle('hermes:quick-entry:submit', (event, payload) => {
   const target =
     typeof payload === 'object' && typeof payload?.target === 'string' && payload.target ? payload.target : 'current'
 
+  // The quick window's context chip is client-supplied and may be forged or
+  // legacy, so sanitize it before it crosses into the renderer. Forwarded here,
+  // on the one authorized submit path — the acknowledgement below is not a
+  // second delivery route.
+  const context = sanitizeQuickEntryContext(typeof payload === 'object' ? payload?.context : null)
+
   return quickEntrySubmitRelay.begin(correlationId => {
-    mainWindow.webContents.send('hermes:quick-entry:submit', { correlationId, target, text })
+    mainWindow.webContents.send('hermes:quick-entry:submit', {
+      correlationId,
+      target,
+      text,
+      ...(context ? { context } : {})
+    })
   })
 })
 
 // Main cannot invoke the primary renderer, so the primary returns by id. Stale
-// or duplicate acknowledgements are intentionally ignored (#85590).
+// or duplicate acknowledgements are intentionally ignored (#85590). This settles
+// the relay's pending promise ONLY — delivery already happened in the handler
+// above, so re-sending here would submit the prompt twice.
 ipcMain.on('hermes:quick-entry:ack', (event, payload) => {
   if (!mainWindow || event.sender !== mainWindow.webContents) {
     return
   }
 
-  // Deliberately does NOT raise/focus the main window — the user asked to fire
-  // a prompt from wherever they were, not to be yanked into the app. The
-  // optional `context` is the frontmost-app chip the quick window offered;
-  // sanitize here so a forged/legacy payload can't smuggle arbitrary fields.
-  const context = sanitizeQuickEntryContext(payload?.context)
-
-  mainWindow.webContents.send('hermes:quick-entry:submit', {
-    target: typeof payload?.target === 'string' && payload.target ? payload.target : 'current',
-    text,
-    ...(context ? { context } : {})
-  })
   quickEntrySubmitRelay.acknowledge(payload?.correlationId, payload?.result)
 })
 

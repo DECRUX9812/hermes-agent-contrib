@@ -73,7 +73,6 @@ export function createBackendServeSupportResolver(hermesHome: string, rememberLo
           // Same cold-Windows Python-startup class as the runtime probes
           // (#61764/#72632/#72707): `serve --help` imports at least as much as
           // `hermes --version` (~10.5s measured cold), and a false negative here
-          // must not be cached as a missing command. Share the probe budget.
           // is cached for the process lifetime, silently routing a modern
           // runtime through the legacy `dashboard` form. Share the probe budget
           // and its timeout-only retry instead of a thinner local bound.
@@ -83,7 +82,6 @@ export function createBackendServeSupportResolver(hermesHome: string, rememberLo
             probeOptions
           )
           supportsServe = true
-          supported = true
         } catch (err) {
           if (isTimeoutError(err)) {
             if (cache.get(key) === pending) {

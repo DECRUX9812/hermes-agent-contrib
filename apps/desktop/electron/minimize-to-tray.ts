@@ -400,7 +400,6 @@ export function createMinimizeToTray(options: Options) {
     statusPush = push
     syncTrayFace()
   })
-  app.on('will-quit', destroyTray)
   app.on('will-quit', () => {
     quitting = true
     destroyTray()
