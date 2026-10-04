@@ -787,7 +787,7 @@ type BotsMessages = {
     browse: string
     /** Progress toast while a one-click starter create is in flight. */
     creating: (name: string) => string
-  },
+  }
   /** The bot card's compact meta line — pinned model, installed skills, and
    *  org teammates. Each renders only when the field exists. */
   card: {
@@ -1148,7 +1148,7 @@ const en: BotsMessages = {
     deleteTitle: 'Delete group chat?',
     deleteAction: 'Delete',
     composerPlaceholder: 'Say something — every bot in this group hears the room.',
-    composerPlaceholderTeam: lead => `Say something — only ${lead} hears the room; @mention teammates to wake them.`, 
+    composerPlaceholderTeam: lead => `Say something — only ${lead} hears the room; @mention teammates to wake them.`,
     slashCommandsUnsupported:
       'Slash commands are not supported in group chats. Open an individual bot chat to use them.',
     attachHint: 'Attach files — every responding bot sees them',
@@ -1841,7 +1841,8 @@ const ja: BotsMessages = {
     deleteTitle: 'グループチャットを削除しますか？',
     deleteAction: '削除',
     composerPlaceholder: '何か書いてください — このグループのすべてのボットが部屋の内容を受け取ります。',
-    composerPlaceholderTeam: lead => `何か書いてください — ${lead} だけが部屋の内容を受け取ります。@メンションでチームメイトを起こせます。`,
+    composerPlaceholderTeam: lead =>
+      `何か書いてください — ${lead} だけが部屋の内容を受け取ります。@メンションでチームメイトを起こせます。`,
     slashCommandsUnsupported:
       'グループチャットではスラッシュコマンドを使用できません。個別のボットチャットを開いて使用してください。',
     attachHint: 'ファイルを添付 — 応答するすべてのボットが見ます',

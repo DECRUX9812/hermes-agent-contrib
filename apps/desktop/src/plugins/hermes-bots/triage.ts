@@ -98,7 +98,8 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
     const runtimeId = botCanonicalRuntimeId(bot, signals.storedByRuntime || {})
 
     const rows =
-      (runtimeId ? signals.statusItems?.[runtimeId] : undefined) || (storedId ? signals.statusItems?.[storedId] : undefined)
+      (runtimeId ? signals.statusItems?.[runtimeId] : undefined) ||
+      (storedId ? signals.statusItems?.[storedId] : undefined)
 
     if (rows?.some(item => item?.state === 'failed')) {
       add('turn-failed')

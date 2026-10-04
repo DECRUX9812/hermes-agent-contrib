@@ -72,22 +72,19 @@ describe('deriveTriageItems', () => {
     const overdue = bot('scheduler')
     const ghost = bot('gone', { ghost: true })
 
-    const items = deriveTriageItems(
-      [needsInput, failed, flagged, laneBot, overdue, ghost],
-      {
-        ...quiet,
-        activeConnectionId: 'local',
-        attention: {
-          'conn-b::remote': { reason: 'delivery_failed' },
-          flaky: { reason: 'agent_blocked' }
-        },
-        dotById: { 'stored-asker': 'needs-input' },
-        jobs: new Map([['legacy::scheduler', [overdueJob()]]]),
-        relayInflight: new Set(['conn-b::remote']),
-        statusItems: { 'rt-crasher': [{ state: 'failed' }] },
-        storedByRuntime: { 'rt-crasher': 'stored-crasher' }
-      }
-    )
+    const items = deriveTriageItems([needsInput, failed, flagged, laneBot, overdue, ghost], {
+      ...quiet,
+      activeConnectionId: 'local',
+      attention: {
+        'conn-b::remote': { reason: 'delivery_failed' },
+        flaky: { reason: 'agent_blocked' }
+      },
+      dotById: { 'stored-asker': 'needs-input' },
+      jobs: new Map([['legacy::scheduler', [overdueJob()]]]),
+      relayInflight: new Set(['conn-b::remote']),
+      statusItems: { 'rt-crasher': [{ state: 'failed' }] },
+      storedByRuntime: { 'rt-crasher': 'stored-crasher' }
+    })
 
     const kinds = Object.fromEntries(items.map(item => [item.bot.name, item.kind]))
 

@@ -30,9 +30,7 @@ export function groupUnreadCount(log: GroupMessage[], readAt: number): number {
 
 /** The roster row's one-line last-round summary: last speaker + the start of
  *  their text. Pure; the caller supplies the speaker label. */
-export function groupLastRoundSummary(
-  room: GroupChat | null | undefined
-): { last: GroupMessage | null; text: string } {
+export function groupLastRoundSummary(room: GroupChat | null | undefined): { last: GroupMessage | null; text: string } {
   const log = Array.isArray(room?.log) ? room.log : []
   const last = log.length ? log[log.length - 1] : null
 

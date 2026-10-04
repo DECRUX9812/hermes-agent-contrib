@@ -1,8 +1,8 @@
-import {type MutableRefObject, useCallback, useEffect, useRef} from 'react'
+import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 
-import {sessionRoute} from '../../../routes'
+import { sessionRoute } from '../../../routes'
 
-import type {SessionActionsOptions} from './options'
+import type { SessionActionsOptions } from './options'
 
 // How long we keep creatingSessionRef after create/fork navigate before giving up
 // if the router never lands on the pending stored id (stuck navigate / lost race).

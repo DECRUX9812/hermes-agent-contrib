@@ -240,7 +240,11 @@ describe('capabilityCounts (C2 summary)', () => {
     expect(
       capabilityCounts({
         mcp_servers: [{ name: 'web' }, { name: 'fs' }],
-        skills: [{ name: 'a', enabled: true }, { name: 'b', enabled: false }, { name: 'c', enabled: true }],
+        skills: [
+          { name: 'a', enabled: true },
+          { name: 'b', enabled: false },
+          { name: 'c', enabled: true }
+        ],
         toolsets: [{ name: 'core', enabled: true }, { name: 'browser' }]
       })
     ).toEqual({ mcp: 2, skills: 2, skillsTotal: 3, toolsets: 1, toolsetsTotal: 2 })

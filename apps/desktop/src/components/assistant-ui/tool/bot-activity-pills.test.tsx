@@ -13,19 +13,11 @@ import { type ThreadMessage } from '@assistant-ui/react'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import {
-  stubThreadEnvironment,
-  stubThreadViewportSize,
-  ThreadRuntime
-} from '@/components/assistant-ui/test-utils'
+import { stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '@/components/assistant-ui/test-utils'
 import { Thread } from '@/components/assistant-ui/thread'
 import { clearAllPrompts } from '@/store/prompts'
 import { $activeSessionId } from '@/store/session'
-import {
-  $botChatSessionIds,
-  $sessionTiles,
-  setSessionTileWorkspaceScope
-} from '@/store/session-states'
+import { $botChatSessionIds, $sessionTiles, setSessionTileWorkspaceScope } from '@/store/session-states'
 import { setShowToolActivityFromConfig } from '@/store/tool-activity'
 
 stubThreadEnvironment()

@@ -1,9 +1,4 @@
-import {
-  type GatewayEvent,
-  isStableOpen,
-  JSON_RPC_METHOD_NOT_FOUND,
-  JsonRpcGatewayError
-} from '@hermes/shared'
+import { type GatewayEvent, isStableOpen, JSON_RPC_METHOD_NOT_FOUND, JsonRpcGatewayError } from '@hermes/shared'
 import { useEffect, useRef } from 'react'
 
 import { createGatewayEventDedupe } from '@/app/gateway/gateway-event-dedupe'
@@ -40,18 +35,10 @@ import {
   touchSecondaryGateways
 } from '@/store/gateway'
 import { type GatewayReconnectOptions, registerGatewayReconnect } from '@/store/gateway-reconnect'
-import {
-  $gatewaySwitching,
-  endGatewaySwitch,
-  registerGatewaySwitchLifecycle
-} from '@/store/gateway-switch'
+import { $gatewaySwitching, endGatewaySwitch, registerGatewaySwitchLifecycle } from '@/store/gateway-switch'
 import { notify } from '@/store/notifications'
 import { loadPoolLimits } from '@/store/pool-limits'
-import {
-  $activeGatewayProfile,
-  normalizeProfileKey,
-  touchActiveGatewayBackend
-} from '@/store/profile'
+import { $activeGatewayProfile, normalizeProfileKey, touchActiveGatewayBackend } from '@/store/profile'
 import { requestBackendRestart } from '@/store/recovery-requests'
 import {
   $activeSessionId,
@@ -85,7 +72,6 @@ import { createGatewayBootReconnect, createGatewayBootState } from './use-gatewa
 
 // Re-exported for the tests that import this facade spec path directly.
 export { connectInitialGateway, primaryRuntimeConnectionId }
-
 
 interface GatewayBootOptions {
   beforeConnectionSwitch: () => void
@@ -133,7 +119,6 @@ export function useGatewayBoot({
   }
 
   useEffect(() => {
-
     const s = createGatewayBootState()
 
     const desktop = window.hermesDesktop
@@ -440,7 +425,6 @@ export function useGatewayBoot({
     // Secondary sockets reach the same handler through the registry's onServerRequest.
     const offRequest = gateway.onRequest(request => dispatchPrimaryServerRequest(request, sourceProfileNow()))
 
-
     // Wall-clock of the current socket's 'open'; null while not open.
     // reconnectAttempt, reconnectFailingSince and escalated reset only once an
     // open proves stable (isStableOpen), judged when the socket closes.
@@ -702,8 +686,6 @@ export function useGatewayBoot({
         }
       })
     })
-
-
 
     if (adoptedFromHmr) {
       void adoptBoot()

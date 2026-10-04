@@ -53,9 +53,9 @@ describe('context nudge eligibility', () => {
   it('fires on a long transcript or a heavy token prefix, not on small chats', () => {
     expect(contextNudgeEligible({ message_count: NUDGE_MIN_MESSAGES })).toBe(true)
     expect(contextNudgeEligible({ input_tokens: NUDGE_MIN_INPUT_TOKENS })).toBe(true)
-    expect(contextNudgeEligible({ message_count: NUDGE_MIN_MESSAGES - 1, input_tokens: NUDGE_MIN_INPUT_TOKENS - 1 })).toBe(
-      false
-    )
+    expect(
+      contextNudgeEligible({ message_count: NUDGE_MIN_MESSAGES - 1, input_tokens: NUDGE_MIN_INPUT_TOKENS - 1 })
+    ).toBe(false)
     expect(contextNudgeEligible({ message_count: 5 })).toBe(false)
     expect(contextNudgeEligible({})).toBe(false)
     expect(contextNudgeEligible(null)).toBe(false)

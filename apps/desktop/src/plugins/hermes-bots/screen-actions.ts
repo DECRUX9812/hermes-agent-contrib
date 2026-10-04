@@ -16,13 +16,7 @@ import {
   type ScreenViewer,
   viewerHash
 } from './screen-connection'
-import {
-  $screenState,
-  screenStateFor,
-  setScreenLease,
-  setScreenStatus,
-  setScreenViewer
-} from './screen-state'
+import { $screenState, screenStateFor, setScreenLease, setScreenStatus, setScreenViewer } from './screen-state'
 import type { RosterRow } from './types'
 
 /** Mint (or reuse) this window's viewer id for `bot`. The lease names its holder by
@@ -147,9 +141,7 @@ export function canOpenBotWorkdir(bot: RosterRow | null | undefined): boolean {
 export async function openBotWorkdir(bot: RosterRow): Promise<boolean> {
   const bridge = window.hermesDesktop
 
-  const project = await requestForBot<{ cwd?: null | string }>(bot, 'config.get', { key: 'project' }).catch(
-    () => null
-  )
+  const project = await requestForBot<{ cwd?: null | string }>(bot, 'config.get', { key: 'project' }).catch(() => null)
 
   const cwd = project?.cwd?.trim() || undefined
   const sessionId = botCanonicalSessionId(bot)

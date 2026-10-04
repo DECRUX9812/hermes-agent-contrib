@@ -73,7 +73,7 @@ const fetchBotTeams = async (bot: RosterRow): Promise<TeamView[]> => {
     return []
   }
 
-  const call = <T,>(method: string, params: Record<string, unknown>): Promise<T> =>
+  const call = <T>(method: string, params: Record<string, unknown>): Promise<T> =>
     local ? host.request<T>(method, params) : requestForBot<T>(bot, method, params)
 
   const res = await call<{ teams?: TeamSummary[] }>('bots_team.list', {})

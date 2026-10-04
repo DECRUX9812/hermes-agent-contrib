@@ -13,9 +13,8 @@
 
 import { beforeEach, describe, expect, it } from 'vitest'
 
-const { $botChatScopes, $sessionTiles, $sessionWorkspaceScopes, setSessionTileWorkspaceScope } = await import(
-  './session-states'
-)
+const { $botChatScopes, $sessionTiles, $sessionWorkspaceScopes, setSessionTileWorkspaceScope } =
+  await import('./session-states')
 
 const botScope = { workspaceMode: 'bots' as const, workspaceOwnerKey: 'bot:alpha' }
 

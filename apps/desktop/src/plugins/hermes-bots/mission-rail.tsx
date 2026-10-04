@@ -356,7 +356,12 @@ export function MissionRail() {
         ) : jobs.length === 0 && !filterHint ? (
           // Nothing scheduled and nothing hidden by the filter: the autopilot
           // card below IS the empty state, with a way to write one from scratch.
-          <AutopilotChips name={displayName(owner, meta)} onCustom={() => openCreate()} onPick={openCreate} taken={[]} />
+          <AutopilotChips
+            name={displayName(owner, meta)}
+            onCustom={() => openCreate()}
+            onPick={openCreate}
+            taken={[]}
+          />
         ) : jobs.length === 0 ? (
           // `filterHint` is the informative case (jobs exist on the profile but
           // none are tagged for this bot), so it wins the description slot.

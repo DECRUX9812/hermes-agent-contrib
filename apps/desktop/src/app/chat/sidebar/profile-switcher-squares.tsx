@@ -1,8 +1,4 @@
-
-
-import {
-  useSortable
-} from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useEffect, useRef, useState } from 'react'
 
@@ -25,7 +21,13 @@ import { runExportProfileFlow } from '@/store/profile-share'
 import { ConnectionGlyph } from './connection-glyph'
 import { type FleetAgent, type FleetGroup, fleetRouteKey } from './fleet-rail'
 import { ProfileLaunchContextMenu, ProfileLaunchMenuSection } from './profile-launch-menu'
-import { DRAG_TRANSITION, ProfileStatusDot, profileStatusLabel, RAIL_TRANSITION, useProfileStatus } from './profile-switcher-status'
+import {
+  DRAG_TRANSITION,
+  ProfileStatusDot,
+  profileStatusLabel,
+  RAIL_TRANSITION,
+  useProfileStatus
+} from './profile-switcher-status'
 import { useProfilePrewarm } from './use-profile-prewarm'
 
 interface ProfilePillProps {
