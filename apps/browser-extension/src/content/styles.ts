@@ -10,7 +10,7 @@ export const OVERLAY_CSS = `
 }
 
 .hr-hit {
-  position: fixed; width: 96px; height: 96px; z-index: 2147483642;
+  position: fixed; width: 80px; height: 80px; z-index: 2147483642;
   cursor: grab; pointer-events: auto; touch-action: none;
   transform: translate(-50%, -50%);
   border-radius: 50%;
