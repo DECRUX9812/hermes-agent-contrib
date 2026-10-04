@@ -17,7 +17,7 @@ but it still never carries a product claim (every capability is proven in [REC] 
 | Bot replies | Mock backend on `127.0.0.1` serving canned responses (pattern: `docs/demo-kit/harness/demo_mock.py`) | Deterministic timing, zero flakiness mid-take. Page actions must be real. |
 | Compositing / edit | HyperFrames project at `docs/demo-kit` — `#frame` 1728x960 inside 1920x1080, `cam()` punch-ins in source coords, `.frz` stills + `.fring` rings, helpers `type/scramble/slam/whip/flash/freeze/liveMark` | `npx hyperframes check .` before every render; render takes ~1min on hardware GPU. |
 | Score | `films/<name>/score.py` — numpy WAV synth | 120 BPM, bar = 2s; risers+rolls before cuts, subdrop+impact on finale, `boom()` for mascot landings. `/tmp/score-venv/bin/python` has numpy+pillow. |
-| AI film layer | **Veo 3.1 via Gemini API** (primary — asset-image character continuity + native dialogue), **Kling 3.0** (cheap iteration / alternate takes) | See §3. Sora is dead (below). |
+| AI film layer | **Higgsfield API** (backbone — one key, 50+ models, Lipsync Studio for talking mascot), **Veo 3.1 via Gemini API** (asset-image continuity shots), **OpenRouter `POST /api/v1/videos`** (single-billing fallback: Veo 3.1 family, Kling 3.0, Seedance 2.x, Wan) | See §3. Sora direct is dead (below) — Sora 2 Pro still routes via OpenRouter. |
 | QA | ffmpeg frame extraction + PIL pixel-scans for ring/still placement | Measure, never guess — every guessed position costs a render. |
 
 ## 2. Capture session checklist
@@ -40,9 +40,11 @@ but it still never carries a product claim (every capability is proven in [REC] 
 | **Kling 3.0** (Kling API / fal / Replicate) | ✅ | Units-billed; ~$0.05–0.15/s → **$0.50–1.50** | **Fallback + alt takes.** 3–15s native clips, up to 4K, optional native audio. Cheapest for iteration. |
 | **Runway Gen-4.5 / Aleph 2.0** | ✅ | ~$0.50/s Gen-4-class → **~$5.00** | Skip for B-roll cost; Aleph is useful if we need to *edit* real footage (e.g. restyle a capture). |
 | **Pika 2.2** | ✅ | ~$0.12/s → **~$1.20** (5s max) | Niche: creative melt/expand effects only; 5s cap is limiting. |
-| **Sora 2** | ❌ **API shut down 2026-09-24** | was $0.10/s | Not usable. Do not plan around it. |
+| **Higgsfield API** | ✅ self-serve, `api.higgsfield.ai`, key + top-up balance | Kling 3.0 **$0.084–0.112/s**, Seedance 2.0 ~$0.14/s, MiniMax H3 ~$0.065/s, Wan ~$0.05–0.20/s; DoP camera model $0.125/gen | **The backbone.** One key → 50+ models. Plus: Soul/Soul ID (character images), **Lipsync Studio** (image→video talking), DoP signature camera moves, native 9:16/16:9. |
+| **OpenRouter** | ✅ `POST /api/v1/videos`, existing key/credits | Veo 3.1 / Fast / Lite, Kling v3.0 std/pro, Seedance 2.0/Fast, Wan 2.6/2.7, Hailuo 2.3, Sora 2 Pro — per-second pass-through | Single-billing fallback if we don't want per-provider accounts; also the only way to reach `sora-2-pro` post-shutdown. |
+| **Sora 2 (direct)** | ❌ **API shut down 2026-09-24** | was $0.10/s | Not usable directly; still reachable via OpenRouter as `openai/sora-2-pro`. |
 
-Cost plan (v2 meta cut): ~9 AI shots in the spine × ≤8s. Iterate prompts + continuity on **Kling 3.0** (~$0.50–1.50/10s), final renders on **Veo 3.1 Fast @1080p** (~$1/clip). Budget **$25–60** including retries — dialogue shots and character shots need 2–4 re-rolls each. Worst case is still cheaper than one afternoon of mocap.
+Cost plan (v2 meta cut): ~9 AI shots in the spine × ≤8s. Iterate prompts + continuity on **Kling 3.0 on **Higgsfield** (~$0.09/s — cheapest Kling seat), final world shots on **Veo 3.1 Fast @1080p** (~$1/clip) or Seedance 2.0. Dialogue shots go through **Higgsfield Lipsync** on our real mascot render (see §3.3/3.4 — cheap, and continuity is guaranteed because we animate *the actual asset*). Budget **$25–60** including retries — inside the user's existing credits if the "Nova Portal" balance covers a video gateway, otherwise a $50 Higgsfield/OpenRouter top-up covers the whole film with room for re-rolls.
 
 ### 3.2 Prompt-engineering rules for product-demo footage
 
@@ -107,9 +109,14 @@ Workflow:
 
 1. **Bake a reference sheet**: render the real mascot (screenshot the extension, transparent
    bg via `dom_hide` of the page or a solid-void dev page) → clean 1024px turntable
-   (front, 3/4, side) on a neutral dark background.
-2. Feed it as a **first-frame / asset image** on every mascot shot — Veo 3.1 supports
-   image-to-video and multi-asset references on Vertex; use it every time, no exceptions.
+   (front, 3/4, side) on a neutral dark background. Design polish is a build-side input —
+   the mascot surface has to be camera-ready before this sheet exists.
+2. **Two continuity paths, by shot type:**
+   - *Speaking shots (3, 12, 18)*: **Higgsfield Lipsync Studio** — animate the real mascot
+     render itself with the dialogue line. Zero drift: the output IS our character.
+   - *Acting shots (2, 10, 14, 16)*: feed the reference as **first-frame / asset image** —
+     Veo 3.1 image-to-video + multi-asset references on Vertex, or image→video on Kling/
+     Seedance via Higgsfield. No exceptions.
 3. **Lock a look-prompt suffix** reused verbatim in every prompt: `small rounded chrome
    mascot character, stubby arms, large simple eyes, toy-like proportions, warm amber
    accent light`.
@@ -120,11 +127,18 @@ Workflow:
 ### 3.4 Mascot voice
 
 - Max **3 spoken lines**, ≤8 words each: `we live here now` · `he can't come in — no session` · `roll it`.
-- Veo 3.1 generates native dialogue — put the line in quotes in the prompt and describe the
-  voice ("tiny cheerful robotic voice"). Generate the dialogue shots on **Standard**, not Fast —
-  lip-sync/speech quality is where the money goes.
+- **Primary: Higgsfield Lipsync Studio** — feed the real mascot render (or a captured
+  `wave`/`celebrate` clip from the extension), give it the line + "tiny cheerful robotic
+  voice". This is the whole point of the tool: consistent character *and* lip-sync.
+- Alt: Veo 3.1 native dialogue on **Standard** tier (line in quotes + voice description).
 - Fallback if speech is flaky: silent performances + text chips, or a tiny synthesized
   chirp + subtitle card (still charming, zero lip-sync risk).
+
+### 3.5 Driving it from this session
+
+Generation is scriptable: one API key (Higgsfield or OpenRouter) → `curl` the job, poll,
+download to the film dir. When we're ready to shoot, drop the key in as a session secret
+and I can run the full B-roll batch myself — same loop as the rest of the pipeline.
 
 ## 4. Motion-graphic / text card specs
 

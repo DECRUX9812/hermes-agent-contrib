@@ -8,6 +8,12 @@ AI video inside AI video: generated characters watching real footage.
 
 Shot types: **[AI]** AI-generated cinematic · **[REC]** real screen recording · **[MG]** motion card.
 
+> **Note for the extension build (parent session):** Ritesh's mandate — "a personal AI
+> assistant, everything combined, Gmail to every layer of the browser," and the mascot
+> surface must be *camera-ready pretty*: expressive faces, strong per-bot color silhouette,
+> materials that read well as glossy/chrome in renders. The film's AI layer animates a
+> reference sheet baked from the real mascot (see PRODUCTION §3.3) — the design is the movie.
+
 ## Why the meta structure (and the fallback)
 
 The straight cut (v1, below) is a strong demo video. This cut is a *viral object*: the bots
