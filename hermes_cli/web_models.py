@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, SecretStr, StrictBool, field_validator
+from pydantic import BaseModel, Field, SecretStr, StrictBool, field_validator
 
 
 class ConfigUpdate(BaseModel):
@@ -568,3 +568,12 @@ class MobileRespond(BaseModel):
 class MobileReply(BaseModel):
     session_id: str
     text: str
+
+class ShareCreateBody(BaseModel):
+    session_id: str
+    profile: Optional[str] = None
+    ttl_seconds: Optional[float] = Field(default=None, ge=60)
+
+class ShareRevokeBody(BaseModel):
+    token: str
+    profile: Optional[str] = None
