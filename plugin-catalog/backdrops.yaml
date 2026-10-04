@@ -1,6 +1,6 @@
 name: backdrops
 repo: https://github.com/DECRUX9812/hermes-backdrops
-sha: f89e16791419a4456013a89fea3c53b7efb40784
+sha: d2073b7b330aecb494ff971f3ba9bcfc7c955fb6
 description: >-
   A picture behind your Hermes Desktop chat without changing your theme. A status-bar
   picker offers Plain, Daily inspiration, your own uploaded photo, and a gallery whose new
@@ -12,9 +12,14 @@ tier: community
 category: desktop
 docs_url: https://github.com/DECRUX9812/hermes-backdrops#readme
 version: "1.0.0"
-image: https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/f89e16791419a4456013a89fea3c53b7efb40784/docs/hero.jpg
+image: https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/d2073b7b330aecb494ff971f3ba9bcfc7c955fb6/docs/hero.jpg
 screenshots:
-  - https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/f89e16791419a4456013a89fea3c53b7efb40784/docs/picker.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/d2073b7b330aecb494ff971f3ba9bcfc7c955fb6/docs/demo.gif
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/d2073b7b330aecb494ff971f3ba9bcfc7c955fb6/docs/picker-dark.jpg
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/d2073b7b330aecb494ff971f3ba9bcfc7c955fb6/docs/daily.jpg
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/d2073b7b330aecb494ff971f3ba9bcfc7c955fb6/docs/your-photo.jpg
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/d2073b7b330aecb494ff971f3ba9bcfc7c955fb6/docs/rainline.jpg
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-backdrops/d2073b7b330aecb494ff971f3ba9bcfc7c955fb6/docs/picker.png
 platforms: []
 capabilities:
   provides_tools: []
