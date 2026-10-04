@@ -76,6 +76,16 @@ DEFAULT_CONFIG = {
         # Turn cap. null = unlimited (default; caps caused silent mid-task truncation). Positive int
         # caps; "none"/"unlimited"/"inf"/0/-1 also mean unlimited (resolve_turn_limit).
         "max_turns": None,
+        # Turn policies (agent/policies.py): caps that stop the loop without
+        # babysitting — resolved once per session, evaluated between iterations.
+        # max_cost_usd: hard cap on the session's estimated spend; null = off.
+        # retry_loop_detector: stop when one (name, args) tool call repeats
+        # retry_loop_max_identical times inside the trailing call window.
+        "policies": {
+            "max_cost_usd": None,
+            "retry_loop_detector": True,
+            "retry_loop_max_identical": 6,
+        },
         # Optional one-time model-visible checkpoint warning before a finite turn cap is exhausted.
         # null = off; set a ratio strictly between 0 and 1 (for example, 0.75).
         "budget_warning_ratio": None,

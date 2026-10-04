@@ -380,6 +380,17 @@ def begin_iteration(
             )
         return _verdict("break")
 
+    # Per-session policy caps (agent.policies): cost ceiling + retry-loop tripwire.
+    # Same position as the budget exits — evaluated between iterations so the
+    # crossing request's usage already landed; a trip only breaks the loop.
+    from agent.policies import evaluate as _evaluate_policies
+    _trip = _evaluate_policies(agent, messages)
+    if _trip is not None:
+        _turn_exit_reason = f"policy_{_trip.policy}"
+        if not agent.quiet_mode:
+            agent._safe_print(f"\n⏹️  Policy stop — {_trip.reason}", diagnostic=True)
+        return _verdict("break")
+
     api_call_count += 1
     agent._api_call_count = api_call_count
     agent._touch_activity(f"starting API call #{api_call_count}")
