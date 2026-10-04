@@ -35,7 +35,8 @@ import {
   useQuery,
   useValue
 } from '@hermes/plugin-sdk'
-import { ClipboardEvent, DragEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import type { ClipboardEvent, DragEvent, ReactNode} from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
@@ -50,10 +51,13 @@ import {
   ROSTER_KEY,
   saveBotMeta
 } from './data'
-import { $groupActivity, currentGroupActivity, GROUP_ACTIVITY_GLYPHS, groupActivityLabel, groupActivityTone, GroupActivityEntry } from './group-activity'
+import type { GroupActivityEntry } from './group-activity';
+import { $groupActivity, currentGroupActivity, GROUP_ACTIVITY_GLYPHS, groupActivityLabel, groupActivityTone } from './group-activity'
 import { filesToGroupAttachments, pickGroupAttachments } from './group-attachments'
-import { $groupChats, $groupChatWorkspace, $groupClarify, $groupNeedsYou, groupRoundContributions, groupThreadOf, rememberGroupChatTombstone, scheduleGroupChatServerSync, setGroupChatGoal, setGroupChatHoldDetection, setGroupChatImage, setGroupChatLimits, setGroupChatListener, updateGroupChat, GroupChatRoom } from './group-chat'
-import { GroupClarifyCard, GroupImageControls, GroupMentionInput, GroupRoomPrompt } from './group-chat-parts'
+import type { GroupChatRoom } from './group-chat';
+import { $groupChats, $groupChatWorkspace, $groupClarify, $groupNeedsYou, groupRoundContributions, groupThreadOf, rememberGroupChatTombstone, scheduleGroupChatServerSync, setGroupChatGoal, setGroupChatHoldDetection, setGroupChatImage, setGroupChatLimits, setGroupChatListener, updateGroupChat } from './group-chat'
+import type { GroupRoomPrompt } from './group-chat-parts';
+import { GroupClarifyCard, GroupImageControls, GroupMentionInput } from './group-chat-parts'
 import { GroupMemberPicker } from './group-chat-view-members'
 import { compressGroupMemberHistory } from './group-compress'
 import { sweepExternalGroupWrites } from './group-external-writes'
@@ -67,7 +71,8 @@ import {
   liveGroupChatNames
 } from './group-membership'
 import { groupMentionComponents, groupMentionText } from './group-mention-text'
-import { clearGroupComposerDraft, closeGroupChatMainTab, dropGroupMainTab, groupChatMainTabs, groupComposerDraftKey, groupComposerDraftSnapshot, migrateGroupComposerDraft, recordGroupMainTab, restoreGroupComposerDraft, updateGroupComposerDraft, GroupComposerDraft, GroupDraftSetter } from './group-panes'
+import type { GroupComposerDraft, GroupDraftSetter } from './group-panes';
+import { clearGroupComposerDraft, closeGroupChatMainTab, dropGroupMainTab, groupChatMainTabs, groupComposerDraftKey, groupComposerDraftSnapshot, migrateGroupComposerDraft, recordGroupMainTab, restoreGroupComposerDraft, updateGroupComposerDraft } from './group-panes'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { clearGroupClarify, renameGroupClarify } from './group-turns'

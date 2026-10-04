@@ -3,9 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ClientSessionState } from '@/app/types'
 import type { HermesReviewFile, HermesReviewShipInfo } from '@/global'
 
-import { $busy } from './session'
-import { $sessionStates } from './session-states'
-
 import {
   $reviewCommitDefault,
   $reviewCommitMsgBusy,
@@ -42,7 +39,9 @@ import {
   toggleReview,
   unstageReviewFile
 } from './review'
+import { $busy } from './session'
 import { $currentCwd, $selectedStoredSessionId, $workspaceCwdOwner, releaseWorkspaceCwdOwner } from './session'
+import { $sessionStates } from './session-states'
 
 // requestOneShot is the only cross-module dependency that must be faked (it
 // reaches the gateway); everything else routes through window.hermesDesktop.git,

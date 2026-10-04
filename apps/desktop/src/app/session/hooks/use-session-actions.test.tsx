@@ -1,7 +1,8 @@
 import { registryBackendScopeKey } from '@hermes/shared'
 import { useStore } from '@nanostores/react'
 import { act, cleanup, render, waitFor } from '@testing-library/react'
-import { MutableRefObject, useEffect, useRef } from 'react'
+import type { MutableRefObject} from 'react';
+import { useEffect, useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
@@ -112,7 +113,8 @@ import { pinnedOwnerCount, pinnedStoredSessionIdsForOwner, releaseStoredSessionP
 import { applySessionInfoStatePatch, sessionInfoStatePatch } from './use-message-stream/utils'
 import { captureSteeringSession } from './use-prompt-actions/steering-session'
 import { useSessionActions } from './use-session-actions'
-import { createPersistedDisplayTranscriptProvenance, suppressTranscriptForView, transcriptRowContentKey, TranscriptViewCutoff } from './use-session-actions/transcript-provenance'
+import type { TranscriptViewCutoff } from './use-session-actions/transcript-provenance';
+import { createPersistedDisplayTranscriptProvenance, suppressTranscriptForView, transcriptRowContentKey } from './use-session-actions/transcript-provenance'
 import { useSessionStateCache } from './use-session-state-cache'
 
 vi.mock('@/hermes', async importOriginal => ({

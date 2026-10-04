@@ -1,8 +1,8 @@
 import type { PromptSubmitResult } from '@hermes/shared'
 import { type MutableRefObject, useCallback } from 'react'
 
-import { PROMPT_SUBMIT_REQUEST_TIMEOUT_MS, getSession } from '@/hermes'
-import { type Translations, translateNow } from '@/i18n'
+import { getSession, PROMPT_SUBMIT_REQUEST_TIMEOUT_MS } from '@/hermes'
+import { translateNow, type Translations } from '@/i18n'
 import { type ChatMessage, finalizeInterruptedMessages, textPart } from '@/lib/chat-messages'
 import { optimisticAttachmentRef } from '@/lib/chat-runtime'
 import { sanitizeComposerInput } from '@/lib/composer-input-sanitize'
@@ -17,8 +17,8 @@ import {
 import {
   $composerAttachments,
   type ComposerAttachment,
-  isFreshDraftScope,
   freezeComposerTransportPayload,
+  isFreshDraftScope,
   mainComposerScope,
   revokeDiscardedAttachmentPreviews
 } from '@/store/composer'

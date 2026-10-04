@@ -21,6 +21,7 @@ export function PreviewBreadcrumbs({ filePath }: { filePath: string }) {
   const root = useStore($currentCwd)
     .trim()
     .replace(/[\\/]+$/, '')
+
   const normalized = filePath.replace(/\\/g, '/')
   const inside = Boolean(root) && normalized.startsWith(`${root}/`)
   const rel = inside ? normalized.slice(root.length + 1) : normalized.replace(/^\/+/, '')

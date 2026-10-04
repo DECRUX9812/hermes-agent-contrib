@@ -44,7 +44,7 @@ import { setSessionDraftingTool } from '@/store/tool-drafting'
 import type { SessionInfo } from '@/types/hermes'
 
 import type { GatewayRequester } from '../contrib/types'
-import { uploadComposerAttachment, isStaleTargetError } from '../session/hooks/use-prompt-actions'
+import { isStaleTargetError, uploadComposerAttachment } from '../session/hooks/use-prompt-actions'
 import {
   appendMidTurnUserMessage,
   applyBranchVisibility,

@@ -1,4 +1,5 @@
-import { ComponentProps, ReactNode, useEffect, useMemo, useState } from 'react'
+import type { ComponentProps, ReactNode} from 'react';
+import { useEffect, useMemo, useState } from 'react'
 
 import { ArrowUpRight } from '@/lib/icons'
 import { IS_MAC } from '@/lib/keybinds/combo'

@@ -1,14 +1,3 @@
-import { arArtifacts } from './ar_artifacts'
-import { arAssistant } from './ar_assistant'
-import { arBoot } from './ar_boot'
-import { arCapabilities } from './ar_capabilities'
-import { arChat } from './ar_chat'
-import { arChrome } from './ar_chrome'
-import { arCommandCenter } from './ar_command_center'
-import { arCommon } from './ar_common'
-import { arConnectors } from './ar_connectors'
-import { arDiagnostics } from './ar_diagnostics'
-import { arSettings } from './ar_settings'
 import { defineLocale } from './define-locale'
 
 export const ar = defineLocale({

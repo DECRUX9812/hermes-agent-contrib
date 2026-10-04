@@ -631,6 +631,7 @@ export function useVoiceConversation({
         dropSpeechSession()
         consumePendingResponse()
         await onSubmit(transcript)
+
         // Live busy never settled: submitting would be refused by the
         // composer's live-busy guard and the spoken interruption would be
         // lost. Park the transcript in the composer input instead — visible,

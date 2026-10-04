@@ -3,7 +3,8 @@
 import './preview-mind'
 
 import { useStore } from '@nanostores/react'
-import { PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { PointerEvent as ReactPointerEvent} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { requestComposerAttachImages, requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
 import { openGuestContextMenu } from '@/app/context-menu/store'

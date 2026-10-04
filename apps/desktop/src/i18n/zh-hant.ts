@@ -1,17 +1,7 @@
 import { defineFieldCopy } from '@/app/settings/field-copy'
+
 import { defineLocale } from './define-locale'
 import { introZhHant } from './intro-zh-hant'
-import { zhHantArtifacts } from './zh-hant_artifacts'
-import { zhHantAssistant } from './zh-hant_assistant'
-import { zhHantBoot } from './zh-hant_boot'
-import { zhHantCapabilities } from './zh-hant_capabilities'
-import { zhHantChat } from './zh-hant_chat'
-import { zhHantChrome } from './zh-hant_chrome'
-import { zhHantCommandCenter } from './zh-hant_command_center'
-import { zhHantCommon } from './zh-hant_common'
-import { zhHantConnectors } from './zh-hant_connectors'
-import { zhHantDiagnostics } from './zh-hant_diagnostics'
-import { zhHantSettings } from './zh-hant_settings'
 
 export const zhHant = defineLocale({
   todayBrief: {

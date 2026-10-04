@@ -1,5 +1,6 @@
 import { useStore } from '@nanostores/react'
-import { ReactNode, useEffect } from 'react'
+import type { ReactNode} from 'react';
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
 
 import { terminalMenuHandleFor } from '@/app/right-sidebar/terminal/terminal-context-menu'

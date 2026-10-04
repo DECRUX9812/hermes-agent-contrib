@@ -1,7 +1,7 @@
 import { resolveSessionRpcOwner } from '@/app/contrib/wiring-routing'
 import { textWithoutReferenceLines } from '@/components/assistant-ui/reference-kinds'
 import { getSession } from '@/hermes'
-import { assistantTextPart, type ChatMessage, chatMessageText, preserveLocalAssistantErrors, textPart, toChatMessages, sameAttachmentTurn, spliceOlderPreservedRows } from '@/lib/chat-messages'
+import { assistantTextPart, type ChatMessage, chatMessageText, preserveLocalAssistantErrors, sameAttachmentTurn, spliceOlderPreservedRows, textPart, toChatMessages } from '@/lib/chat-messages'
 import { normalizePersonalityValue, normalizeSessionSkills } from '@/lib/chat-runtime'
 import { embeddedImageUrls, textWithoutEmbeddedImages } from '@/lib/embedded-images'
 import { parseErrorSurface } from '@/lib/error-surface'
@@ -48,7 +48,8 @@ import {
   type SessionTombstoneGenerationSnapshot,
   tombstoneLifecycleChanged
 } from '@/store/session-removal'
-import { SessionProfileRoute, sessionOwnerRouteFromRow, type SessionOwnerScope } from '@/store/session-request-router'
+import type { SessionProfileRoute} from '@/store/session-request-router';
+import { sessionOwnerRouteFromRow, type SessionOwnerScope } from '@/store/session-request-router'
 import { runtimeSessionOwner, sessionTileOwnerRoute } from '@/store/session-states'
 
 // Re-exported for the many session-actions/tile call sites that already import

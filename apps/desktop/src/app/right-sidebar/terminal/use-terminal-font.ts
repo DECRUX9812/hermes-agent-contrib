@@ -1,7 +1,8 @@
 import { useStore } from '@nanostores/react'
 import type { WebglAddon } from '@xterm/addon-webgl'
 import type { Terminal } from '@xterm/xterm'
-import { useEffect, useRef, RefObject } from 'react'
+import type { RefObject } from 'react';
+import { useEffect, useRef } from 'react'
 
 import { $terminalFontFamily, applyTerminalFontFamily, resolveTerminalFontFamily } from './terminal-font'
 import { redrawAllTerminals } from './terminals'

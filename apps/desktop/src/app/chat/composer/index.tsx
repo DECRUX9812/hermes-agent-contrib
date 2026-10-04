@@ -37,9 +37,9 @@ import { useForcedTextDirection } from '@/store/text-direction'
 import { $threadScrolledUpBySession } from '@/store/thread-scroll'
 import { $autoSpeakReplies } from '@/store/voice-prefs'
 import { useTheme } from '@/themes'
-import { composerInputWidthClass } from './composer-utils'
 
 import { AttachmentList } from './attachments'
+import { composerInputWidthClass } from './composer-utils'
 import {
   COMPOSER_FADE_BACKGROUND,
   type QueueEditState,
