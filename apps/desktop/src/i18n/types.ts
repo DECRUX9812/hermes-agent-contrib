@@ -2496,6 +2496,11 @@ export interface Translations {
       toggleFailed: (enabled: boolean) => string
       noneAvailable: string
     }
+    pane3d: {
+      open: string
+      close: string
+      demo: string
+    }
     generatePet: {
       title: string
       placeholder: string

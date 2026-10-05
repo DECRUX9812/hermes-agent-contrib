@@ -27,6 +27,7 @@ import {
   AppWindow,
   Archive,
   BarChart3,
+  Box,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -80,6 +81,7 @@ import {
   filterVisibleProjects,
   requestSessionSearchFocus
 } from '@/store/layout'
+import { $pane3dOpen, playPane3dDemo, togglePane3d } from '@/store/pane3d'
 import { openPetGenerate } from '@/store/pet-generate'
 import { toggleBrowserTab } from '@/store/preview'
 import { $projectTree, goToProject, openFolderAsProject, requestStartWorkSession } from '@/store/projects'
@@ -442,6 +444,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
   const projectTree = useStore($projectTree)
   const recentProjectIds = useStore($recentProjectIds)
   const dismissedAutoProjects = useStore($dismissedAutoProjectIds)
+  const pane3dOpen = useStore($pane3dOpen)
   const navigate = useNavigate()
 
   const { availableThemes, clearThemePreview, mode, previewTheme, resolvedMode, setMode, setTheme, themeName } =
@@ -922,6 +925,20 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             keywords: ['pet', 'generate', 'create', 'make', 'new pet', 'mascot', 'hatch', 'ai'],
             label: cc.generatePet.title,
             run: () => openPetGenerate()
+          },
+          {
+            icon: Box,
+            id: 'appearance-3d-pane',
+            keywords: ['3d', 'pane', 'pane3d', 'avatar', 'assistant', 'muse', 'overlay', 'transparent', 'on top'],
+            label: pane3dOpen ? cc.pane3d.close : cc.pane3d.open,
+            run: () => void togglePane3d()
+          },
+          {
+            icon: Box,
+            id: 'appearance-3d-pane-demo',
+            keywords: ['3d', 'pane', 'pane3d', 'demo', 'launch', 'harness', 'dev', 'showcase'],
+            label: cc.pane3d.demo,
+            run: () => void playPane3dDemo('launch')
           }
         ]
       },
@@ -955,6 +972,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
     contributedItems,
     dismissedAutoProjects,
     go,
+    pane3dOpen,
     projectTree,
     recentProjectIds,
     selectTick,

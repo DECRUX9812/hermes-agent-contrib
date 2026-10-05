@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer, webFrame, webUtils } from 'electron'
 
+import type { AvatarId, DemoScript, NotifyRequest, PaneControl, PaneState } from '../src/app/pane3d/protocol'
+
 import type { DesktopProfileRoute } from './desktop-profile'
 import type { HudModifierApi, HudModifierStatus } from './hud-modifier-types'
 import { customWindowControlsEnabled } from './window-controls'
@@ -119,6 +121,35 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.on('hermes:pet-overlay:control', listener)
 
       return () => ipcRenderer.removeListener('hermes:pet-overlay:control', listener)
+    }
+  },
+  // The 3D Pane: a transparent, always-on-top window hosting the avatar scene
+  // (`?win=pane3d`). The main renderer opens it and sends notifications; the
+  // pane window itself reports control messages up and receives state down.
+  pane3d: {
+    open: () => ipcRenderer.invoke('hermes:pane3d:open'),
+    close: () => ipcRenderer.invoke('hermes:pane3d:close'),
+    isOpen: () => ipcRenderer.invoke('hermes:pane3d:is-open'),
+    playDemo: (script?: DemoScript) => ipcRenderer.invoke('hermes:pane3d:play-demo', script),
+    notify: (request: NotifyRequest) => ipcRenderer.invoke('hermes:pane3d:notify', request),
+    summon: (avatar: AvatarId) => ipcRenderer.invoke('hermes:pane3d:summon', avatar),
+    dismiss: (avatar: AvatarId) => ipcRenderer.invoke('hermes:pane3d:dismiss', avatar),
+    captureContext: () => ipcRenderer.invoke('hermes:pane3d:capture-context'),
+    // Pane → main: hit regions, focus, click-through, close and notify actions.
+    control: (message: PaneControl) => ipcRenderer.send('hermes:pane3d:panel', message),
+    // Main → pane: init/anchor/notify/demo/summon/dismiss.
+    onState: (callback: (state: PaneState) => void) => {
+      const listener = (_event, state) => callback(state)
+      ipcRenderer.on('hermes:pane3d:state', listener)
+
+      return () => ipcRenderer.removeListener('hermes:pane3d:state', listener)
+    },
+    // Main → host renderer: forwarded notify action / dismissed / close.
+    onControl: (callback: (control: PaneControl) => void) => {
+      const listener = (_event, control) => callback(control)
+      ipcRenderer.on('hermes:pane3d:control', listener)
+
+      return () => ipcRenderer.removeListener('hermes:pane3d:control', listener)
     }
   },
   // HUD mode: the chrome-free floating chat. A full app renderer (own gateway)

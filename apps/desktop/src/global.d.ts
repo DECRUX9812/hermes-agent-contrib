@@ -13,6 +13,7 @@ import type { TrayStatusPush } from '../electron/tray-status'
 import type { UpdateRunReport } from '../electron/updater/update-metrics'
 import type { GrowRequest } from '../electron/window-growth'
 
+import type { AvatarId, DemoScript, NotifyRequest, PageContext, PaneControl, PaneState } from './app/pane3d/protocol'
 import type { WakeIndicatorState } from './lib/wake-indicator'
 import type {
   PetOverlayBounds,
@@ -159,6 +160,23 @@ declare global {
         control: (payload: PetOverlayControl) => void
         onState: (callback: (payload: PetOverlayStatePayload) => void) => () => void
         onControl: (callback: (payload: PetOverlayControl) => void) => () => void
+      }
+      // The 3D Pane: a transparent, always-on-top window (`?win=pane3d`) hosting
+      // the avatar scene. The main renderer opens it and hands notifications to
+      // the real AvatarDirector entry point; the pane window itself reports
+      // control messages up and receives state down.
+      pane3d: {
+        open: () => Promise<{ ok: boolean }>
+        close: () => Promise<{ ok: boolean }>
+        isOpen: () => Promise<boolean>
+        playDemo: (script?: DemoScript) => Promise<{ ok: boolean }>
+        notify: (request: NotifyRequest) => Promise<{ id: string; ok: boolean }>
+        summon: (avatar: AvatarId) => Promise<{ ok: boolean }>
+        dismiss: (avatar: AvatarId) => Promise<{ ok: boolean }>
+        captureContext: () => Promise<PageContext>
+        control: (message: PaneControl) => void
+        onState: (callback: (state: PaneState) => void) => () => void
+        onControl: (callback: (control: PaneControl) => void) => () => void
       }
       // HUD mode: the chrome-free floating chat. A FULL app renderer with its
       // own gateway (like an instance window), sized and skinned as a floating

@@ -3191,6 +3191,11 @@ export const deOverrides = {
       toggleFailed: enabled => `Das Pet konnte nicht ${enabled ? 'eingeschaltet' : 'ausgeschaltet'} werden.`,
       noneAvailable: 'Keine Pets verfügbar — wählen Sie weiter unten eines zum Installieren aus.'
     },
+    pane3d: {
+      open: '3D-Pane öffnen',
+      close: '3D-Pane schließen',
+      demo: '3D-Pane: Start-Demo abspielen (Dev-Harness)'
+    },
     generatePet: {
       title: 'Ein Pet generieren',
       placeholder: 'Beschreiben Sie ein Pet zum Generieren…',

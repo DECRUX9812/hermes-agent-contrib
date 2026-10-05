@@ -34,7 +34,6 @@ import {
   host,
   useQuery
 } from '@hermes/plugin-sdk'
-import type { ElementType } from 'react'
 
 import { useBots } from './i18n'
 import { providerModelIds, useModelOptions } from './model-picker'
@@ -49,14 +48,17 @@ interface BotModelCurrentResult {
 }
 
 /** The menu primitives a render of the items runs on — ContextMenu for the
- *  roster row submenu, DropdownMenu for the header chip's dropdown. */
+ *  roster row submenu, DropdownMenu for the header chip's dropdown. Typed as the
+ *  two concrete Radix components rather than `ElementType`: the latter widens to
+ *  every intrinsic element, and the two roots share their item/sub prop surface
+ *  anyway, so the union is both tighter and correct. */
 export interface BotModelMenuKit {
-  CheckboxItem: ElementType
-  Item: ElementType
-  Separator: ElementType
-  Sub: ElementType
-  SubContent: ElementType
-  SubTrigger: ElementType
+  CheckboxItem: typeof ContextMenuCheckboxItem | typeof DropdownMenuCheckboxItem
+  Item: typeof ContextMenuItem | typeof DropdownMenuItem
+  Separator: typeof ContextMenuSeparator | typeof DropdownMenuSeparator
+  Sub: typeof ContextMenuSub | typeof DropdownMenuSub
+  SubContent: typeof ContextMenuSubContent | typeof DropdownMenuSubContent
+  SubTrigger: typeof ContextMenuSubTrigger | typeof DropdownMenuSubTrigger
 }
 
 const CONTEXT_MENU_KIT: BotModelMenuKit = {

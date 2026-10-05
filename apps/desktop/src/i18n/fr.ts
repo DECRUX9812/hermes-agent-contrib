@@ -3202,6 +3202,11 @@ export const frOverrides = {
       toggleFailed: enabled => `Impossible d'${enabled ? 'activer' : 'désactiver'} l'animal.`,
       noneAvailable: "Aucun animal disponible — choisissez-en un ci-dessous pour l'installer."
     },
+    pane3d: {
+      open: 'Ouvrir le volet 3D',
+      close: 'Fermer le volet 3D',
+      demo: 'Volet 3D : jouer la démo de lancement (harnais de dev)'
+    },
     generatePet: {
       title: 'Générer un animal',
       placeholder: 'Décrivez un animal à générer…',

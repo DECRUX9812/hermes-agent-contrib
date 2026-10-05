@@ -2904,6 +2904,11 @@ export const en: Translations = {
       toggleFailed: enabled => `Could not turn the pet ${enabled ? 'on' : 'off'}.`,
       noneAvailable: 'No pets available — pick one below to install.'
     },
+    pane3d: {
+      open: 'Open 3D Pane',
+      close: 'Close 3D Pane',
+      demo: '3D Pane: Play launch demo (dev harness)'
+    },
     generatePet: {
       title: 'Generate a pet',
       placeholder: 'Describe a pet to generate…',

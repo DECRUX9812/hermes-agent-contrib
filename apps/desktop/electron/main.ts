@@ -417,6 +417,8 @@ import {
 } from './oauth-rest-request'
 import { wireOauthSessionResponse } from './oauth-session-response'
 import { listWindowsProcesses, reapPackageRootedProcesses } from './package-process-reap'
+import { registerPane3dIpc } from './pane3d-ipc'
+import { createPane3dController } from './pane3d-window'
 import { createParentStartMarkerResolver, parentWatchdogEnv } from './parent-process-identity'
 import { bundledPayload, installIdForRoot, type PayloadInfo, payloadPythonPath } from './payload-backend'
 import { petOverlayClickThrough, shouldPopInOnOverlayClosed } from './pet-overlay'
@@ -14453,6 +14455,35 @@ function rehomePetOverlay() {
   }
 }
 
+// ── 3D Pane (transparent avatar layer) ──────────────────────────────────────
+//
+// One transparent, frameless, always-on-top window (`?win=pane3d`) covering the
+// work area of the display the anchor sits on. It hosts a single R3F canvas;
+// everything outside the avatars/cards is click-through (pane3d-window.ts starts
+// that before the window can paint). main.ts only wires the Electron-local
+// primitives below — all pane logic lives in electron/pane3d-*.ts.
+const pane3dController = createPane3dController({
+  attachConsole: win => attachRendererConsoleCapture(win, 'pane3d', rememberLog),
+  installLifecycle: win => installWindowRendererLifecycle(win, { kind: 'overlay', callbacks: { log: rememberLog } }),
+  isMac: IS_MAC,
+  loadWindowUrl,
+  // However the pane dies (palette, hover control, window close), the host
+  // renderer has to hear about it so the palette label can never go stale.
+  onClosed: () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('hermes:pane3d:control', { type: 'close' })
+    }
+  },
+  preloadPath: PRELOAD_PATH,
+  rendererBase: () => (DEV_SERVER ? DEV_SERVER : pathToFileURL(resolveRendererIndex()).toString()),
+  wireReveal: win => wireWindowReveal(win, { show: () => win.showInactive() }),
+  // Same zoom opt-out as the pet overlay (no zoom shortcuts, no persisted-zoom
+  // re-assert). Chromium still applies the session's per-origin UI zoom to this
+  // window — helper windows share the main renderer's origin — so pane-local CSS
+  // pixels are scaled by that factor; the hit-region math must divide by it.
+  wireWindow: win => wireCommonWindowHandlers(win, { zoom: false })
+})
+
 // ── HUD mode ────────────────────────────────────────────────────────────────
 //
 // The chrome-free floating chat: a transparent, frameless, always-on-top
@@ -16118,6 +16149,15 @@ registerPetOverlayIpc({
   getPetOverlayWindow: () => petOverlayWindow,
   openPetOverlay,
   closePetOverlay
+})
+
+// --- 3D Pane (transparent avatar layer) — see pane3d-ipc.ts. --------------
+registerPane3dIpc({
+  closePane3d: () => pane3dController.close(),
+  getMainWindow: () => mainWindow,
+  getPaneWindow: () => pane3dController.getWindow(),
+  isPane3dOpen: () => pane3dController.isOpen(),
+  openPane3d: () => void pane3dController.open()
 })
 
 // --- HUD mode (chrome-free floating chat) — see hud-ipc.ts. ---------------

@@ -3184,6 +3184,11 @@ export const esOverrides = {
       toggleFailed: enabled => `No se pudo ${enabled ? 'encender' : 'apagar'} la mascota.`,
       noneAvailable: 'No hay mascotas disponibles. Elige una de abajo para instalarla.'
     },
+    pane3d: {
+      open: 'Abrir el panel 3D',
+      close: 'Cerrar el panel 3D',
+      demo: 'Panel 3D: reproducir la demo de lanzamiento (entorno de desarrollo)'
+    },
     generatePet: {
       title: 'Generar una mascota',
       placeholder: 'Describe una mascota para generar…',

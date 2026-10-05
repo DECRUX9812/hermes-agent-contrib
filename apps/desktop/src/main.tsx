@@ -60,7 +60,7 @@ if (winParam === 'hud') {
 // window) and `browser` are ordinary opaque windows and are deliberately not
 // in here. index.html's pre-paint script skips exactly this list — keep the
 // two in step.
-const TRANSPARENT_WINDOWS = new Set(['hud', 'overlay', 'quick', 'wake'])
+const TRANSPARENT_WINDOWS = new Set(['hud', 'overlay', 'pane3d', 'quick', 'wake'])
 
 // Each transparent root used to force its host layers see-through when it
 // MOUNTED. That is far too late: `styles.css` above paints the theme's opaque
@@ -78,6 +78,10 @@ if (winParam && TRANSPARENT_WINDOWS.has(winParam)) {
 
 if (winParam === 'overlay') {
   void import('./app/pet-overlay/overlay-root').then(({ mountPetOverlay }) => mountPetOverlay())
+} else if (winParam === 'pane3d') {
+  // Lazy so no three.js/@react-three module reaches the main window bundle
+  // (VAL-PANE-007).
+  void import('./app/pane3d/pane3d-root').then(({ mountPane3d }) => mountPane3d())
 } else if (winParam === 'quick') {
   void import('./app/quick-entry/quick-entry-root').then(({ mountQuickEntry }) => mountQuickEntry())
 } else if (winParam === 'wake') {

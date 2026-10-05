@@ -217,12 +217,17 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
   { as = 'span', className, children, ...props },
   ref
 ) {
-  const Comp = as as React.ElementType
+  // `as` (a two-tag union) rather than `React.ElementType`: the latter widens to
+  // every intrinsic element, and `@react-three/fiber` augments
+  // JSX.IntrinsicElements with three's non-constructor exports (typed `never`),
+  // which collapses that union to `never`. The forwardRef element type is
+  // HTMLElement, so the DOM ref needs the concrete element here.
+  const Comp = as
 
   return (
     <Comp
       className="flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2"
-      ref={ref}
+      ref={ref as React.Ref<HTMLButtonElement>}
       {...props}
     >
       <span

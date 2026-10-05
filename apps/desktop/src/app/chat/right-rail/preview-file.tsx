@@ -7,7 +7,17 @@ import type {
   MouseEvent as ReactMouseEvent,
   ReactNode
 } from 'react'
-import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  createContext,
+  createElement,
+  Fragment,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { defaultRehypePlugins, defaultRemarkPlugins, Streamdown } from 'streamdown'
 
 import { getApiRequestConnection } from '@/api/client'
@@ -350,11 +360,12 @@ const MD_TAG_CLASSES = {
 function tagged<T extends keyof typeof MD_TAG_CLASSES>(Tag: T) {
   const base = MD_TAG_CLASSES[Tag]
 
-  const Component = (({ className, ...rest }: ComponentProps<T>) => {
-    const Element = Tag as React.ElementType
-
-    return <Element className={cn(base, className)} {...rest} />
-  }) as React.FC<ComponentProps<T>>
+  // `createElement` rather than JSX with `React.ElementType`: the latter widens
+  // to every intrinsic element, and `@react-three/fiber` augments
+  // JSX.IntrinsicElements with three's non-constructor exports (typed `never`),
+  // which collapses that union to `never`.
+  const Component = (({ className, ...rest }: ComponentProps<T>) =>
+    createElement(Tag, { className: cn(base, className), ...rest })) as React.FC<ComponentProps<T>>
 
   Component.displayName = `Md.${Tag}`
 
