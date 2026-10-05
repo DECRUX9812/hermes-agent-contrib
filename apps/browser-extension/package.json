@@ -1,0 +1,23 @@
+{
+  "name": "@hermes/browser-extension",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Bot Room — Hermes bots (and any harness) living as 3D mascots inside your browser pages.",
+  "type": "module",
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "dev": "node esbuild.config.mjs --watch",
+    "typecheck": "tsc -p . --noEmit",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "blobatar": "2.0.0",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.8",
+    "@types/three": "^0.186.0",
+    "esbuild": "0.28.1",
+    "typescript": "6.0.3"
+  }
+}

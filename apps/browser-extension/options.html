@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Bot Room — Settings</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; font-family: -apple-system, 'SF Pro', Inter, system-ui, sans-serif; }
+  body {
+    margin: 0; padding: 0; min-height: 100vh; color: #eceef6;
+    background:
+      radial-gradient(900px 480px at 15% -10%, rgba(124,92,255,.14), transparent 60%),
+      radial-gradient(800px 420px at 85% -10%, rgba(78,240,192,.08), transparent 60%),
+      #0a0c12;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 56px 24px 64px; }
+
+  header { margin-bottom: 34px; }
+  h1 {
+    font-size: 34px; font-weight: 760; letter-spacing: -.03em; margin: 0;
+    display: flex; align-items: center; gap: 14px;
+    background: linear-gradient(100deg, #fff 20%, #b6a5ff 55%, #6ee7c8 90%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  h1 img { width: 44px; height: 44px; -webkit-text-fill-color: initial; filter: drop-shadow(0 4px 14px rgba(124,92,255,.45)); }
+  .sub { color: #8b90a8; margin: 10px 0 0; font-size: 14.5px; line-height: 1.55; max-width: 560px; }
+
+  .card {
+    background: rgba(20, 23, 36, 0.66); border: 1px solid rgba(255,255,255,.07);
+    border-radius: 18px; padding: 22px 24px; margin-bottom: 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.05);
+    backdrop-filter: blur(14px);
+  }
+  .card h2 { margin: 0 0 4px; font-size: 15.5px; font-weight: 700; letter-spacing: -.01em; }
+  .card .hint { font-size: 12.5px; color: #8b90a8; line-height: 1.5; margin: 2px 0 14px; }
+
+  label { display: block; font-size: 11.5px; font-weight: 650; letter-spacing: .03em; text-transform: uppercase; color: #8b90a8; margin: 14px 0 6px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: rgba(6,8,14,.6); border: 1px solid rgba(255,255,255,.1); border-radius: 11px;
+    color: #eceef6; padding: 10px 13px; font-size: 13.5px; font-family: inherit; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, textarea:focus, select:focus { border-color: rgba(124,92,255,.65); box-shadow: 0 0 0 3px rgba(124,92,255,.16); }
+  input::placeholder, textarea::placeholder { color: #565c74; }
+  textarea { min-height: 84px; resize: vertical; font-family: ui-monospace, 'SF Mono', monospace; font-size: 12px; line-height: 1.5; }
+
+  .row { display: flex; gap: 12px; }
+  .row > * { flex: 1; min-width: 0; }
+
+  button {
+    border: 0; border-radius: 11px; padding: 10px 18px; font-size: 13px; font-weight: 650;
+    cursor: pointer; background: rgba(255,255,255,.08); color: #eceef6; transition: all .15s;
+  }
+  button:hover { background: rgba(255,255,255,.14); transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+  button.primary {
+    background: linear-gradient(135deg, #6a51ff, #8a5cff); color: #fff;
+    box-shadow: 0 4px 18px rgba(106,81,255,.35);
+  }
+  button.primary:hover { box-shadow: 0 6px 24px rgba(106,81,255,.5); }
+  button.danger { background: rgba(255,93,122,.13); color: #ff9db0; }
+  button.danger:hover { background: rgba(255,93,122,.22); }
+
+  /* real switch toggle */
+  .toggle { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; }
+  .toggle input { display: none; }
+  .toggle .sw {
+    width: 42px; height: 24px; border-radius: 12px; background: rgba(255,255,255,.12);
+    position: relative; transition: background .18s; flex-shrink: 0;
+  }
+  .toggle .sw::after {
+    content: ''; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px;
+    border-radius: 50%; background: #eceef6; transition: transform .18s cubic-bezier(.2,.9,.3,1.2);
+    box-shadow: 0 2px 6px rgba(0,0,0,.4);
+  }
+  .toggle input:checked + .sw { background: linear-gradient(135deg, #6a51ff, #8a5cff); }
+  .toggle input:checked + .sw::after { transform: translateX(18px); }
+
+  .harness {
+    border: 1px solid rgba(255,255,255,.08); border-radius: 13px; padding: 15px 16px; margin-top: 12px;
+    background: rgba(255,255,255,.025);
+  }
+  .harness-head { display: flex; align-items: center; justify-content: space-between; }
+  .harness-head b { font-size: 13.5px; }
+
+  .saved { color: #4ef0c0; font-size: 12.5px; font-weight: 650; margin-left: 12px; opacity: 0; transition: opacity .3s; }
+  .saved.on { opacity: 1; }
+
+  .conn { font-size: 12.5px; font-weight: 600; margin-top: 12px; padding: 9px 13px; border-radius: 10px; background: rgba(6,8,14,.6); border: 1px solid rgba(255,255,255,.08); }
+  .conn.ok { color: #4ef0c0; border-color: rgba(78,240,192,.3); }
+  .conn.err { color: #ff9db0; border-color: rgba(255,93,122,.3); }
+
+  /* catalog — branded tiles */
+  .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .preset {
+    border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 13px;
+    cursor: pointer; background: rgba(255,255,255,.025); transition: all .16s;
+    position: relative; overflow: hidden;
+  }
+  .preset::before {
+    content: ''; position: absolute; inset: 0 0 auto 0; height: 2.5px;
+    background: var(--pc, #7c5cff); opacity: .8;
+  }
+  .preset:hover { border-color: var(--pc, #7c5cff); background: rgba(255,255,255,.05); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.35); }
+  .preset .glyph {
+    width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 800; color: #0a0c12; margin-bottom: 9px;
+    background: var(--pc, #7c5cff); box-shadow: 0 3px 10px rgba(0,0,0,.35);
+  }
+  .preset b { display: block; font-size: 13px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 4px; }
+  .preset span { font-size: 11px; color: #8b90a8; line-height: 1.4; display: block; }
+  .preset .needs { position: absolute; top: 11px; right: 11px; font-size: 9.5px; color: #ffb224; font-weight: 700; letter-spacing: .04em; }
+
+  code { background: rgba(255,255,255,.09); padding: 1.5px 6px; border-radius: 5px; font-size: 11px; font-family: ui-monospace, 'SF Mono', monospace; }
+
+  .savebar { display: flex; align-items: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><img src="icons/icon128.png" alt=""/>Bot Room</h1>
+    <p class="sub">Your agents, living in the browser. Plug in any harness — bots hang out on every page as 3D mascots, take tasks by click or voice, chat in rooms, and drive the tab for you.</p>
+  </header>
+
+  <div class="card">
+    <label class="toggle"><input type="checkbox" id="enabled"/><span class="sw"></span>Enable Bot Room on pages</label>
+    <label for="disabledHosts">Disabled hosts (one per line — overlay won't render there)</label>
+    <textarea id="disabledHosts" placeholder="mail.google.com"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>Hermes backend</h2>
+    <p class="hint">Point at your running <code>hermes serve</code> / dashboard. Bots = your Hermes profiles; each gets its canonical hidden "Bot Chat" session. With a gated backend the extension mints <code>/api/auth/ws-ticket</code>s so <code>browser.controller.*</code> commands reach this tab.</p>
+    <label for="hermesUrl">Backend URL</label>
+    <input type="text" id="hermesUrl" placeholder="https://your-box.tailnet.ts.net:9443"/>
+    <label for="hermesToken">Token (dashboard token or OAuth access token)</label>
+    <input type="password" id="hermesToken" placeholder="leave empty if backend is ungated"/>
+    <div class="conn" id="connStatus" style="display:none"></div>
+    <div style="margin-top:14px"><button id="testConn">Test connection</button></div>
+  </div>
+
+  <div class="card">
+    <h2>Bot catalog <span style="color:#8b90a8;font-weight:450">— click one, it comes alive</span></h2>
+    <p class="hint">Preset harnesses prefill the form below. Any OpenAI-compatible endpoint works too — Grok (xAI), OpenClaw, a local model, a Muse-style persona, an ACP agent, a CLI relay. They all get mascots, rooms, and the <code>page_action</code> tool that drives your tab.</p>
+    <div class="catalog" id="catalog"></div>
+    <div id="harnessList"></div>
+    <div class="harness" id="newHarness">
+      <div class="row">
+        <div><label for="hName">Name</label><input type="text" id="hName" placeholder="Grok"/></div>
+        <div><label for="hUrl">Base URL</label><input type="text" id="hUrl" placeholder="https://api.x.ai/v1"/></div>
+      </div>
+      <div class="row">
+        <div><label for="hKey">API key</label><input type="password" id="hKey"/></div>
+        <div><label for="hModel">Model</label><input type="text" id="hModel" placeholder="grok-3"/></div>
+      </div>
+      <label for="hBots">Bots (one per line: <code>Name: system prompt</code>)</label>
+      <textarea id="hBots" placeholder="Grokbot: You are Grokbot, witty and fast."></textarea>
+      <div style="margin-top:12px"><button class="primary" id="addHarness">Add harness</button></div>
+    </div>
+  </div>
+
+  <div class="savebar">
+    <button class="primary" id="save" style="padding:12px 32px;font-size:14px">Save</button>
+    <span class="saved" id="saved">Saved ✓</span>
+  </div>
+</div>
+<script src="./options.js"></script>
+</body>
+</html>
