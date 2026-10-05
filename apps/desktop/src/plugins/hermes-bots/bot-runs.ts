@@ -55,8 +55,8 @@ export interface BotRunSignals {
   /** Whether the focused chat turn belongs to this bot. */
   chatBusy?: boolean
   /** The canonical chat's status dot claims a live turn (working or stalled)
- *  — broader than `chatBusy`, which only sees the focused tile, so a
- *  relay-delivered or cron turn on the hidden chat still reads 'running'. */
+   *  — broader than `chatBusy`, which only sees the focused tile, so a
+   *  relay-delivered or cron turn on the hidden chat still reads 'running'. */
   chatWorking?: boolean
   groupActivity?: null | Record<string, { events?: GroupActivityEntry[] }>
   /** Routine jobs already scoped to this bot by `selectRoutineJobs`. */

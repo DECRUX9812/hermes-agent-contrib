@@ -53,13 +53,17 @@ export function McpAppFrame({ app, args, result }: { app: McpAppRef; args: unkno
   const [height, setHeight] = useState(MIN_HEIGHT * 3)
 
   const doc = useQuery({
-    queryFn: () => requestMcpApps<McpAppDocument>(sessionId, 'mcp_apps.read_ui', { server: app.server, uri: app.resourceUri }),
+    queryFn: () =>
+      requestMcpApps<McpAppDocument>(sessionId, 'mcp_apps.read_ui', { server: app.server, uri: app.resourceUri }),
     queryKey: ['mcp-app-ui', sessionId, app.server, app.resourceUri],
     retry: false,
     staleTime: 60_000
   })
 
-  const srcDoc = useMemo(() => (doc.data ? composeMcpAppDocument(doc.data.html, doc.data.meta?.ui?.csp) : ''), [doc.data])
+  const srcDoc = useMemo(
+    () => (doc.data ? composeMcpAppDocument(doc.data.html, doc.data.meta?.ui?.csp) : ''),
+    [doc.data]
+  )
 
   useEffect(() => {
     const frame = frameRef.current

@@ -15,8 +15,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
   return pluginSdkMock(host)
 })
 
-const { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } =
-  await import('@/store/session-watch')
+const { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } = await import('@/store/session-watch')
 
 import { botCanonicalSessionId } from './row-helpers'
 import type { RosterRow } from './types'
@@ -47,8 +46,6 @@ describe('watch bot', () => {
   })
 
   it('a bot with no resolved canonical session offers no watch target', () => {
-    expect(
-      botCanonicalSessionId({ last_session: { id: 'x' }, name: 'beta' } as RosterRow)
-    ).toBeNull()
+    expect(botCanonicalSessionId({ last_session: { id: 'x' }, name: 'beta' } as RosterRow)).toBeNull()
   })
 })

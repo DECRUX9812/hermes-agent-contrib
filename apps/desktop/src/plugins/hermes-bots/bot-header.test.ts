@@ -16,11 +16,7 @@ vi.mock('./canonical-chat', () => ({ CANONICAL_CHAT_TITLE: 'Bot Chat' }))
 import { botHeaderRow } from './bot-header'
 import type { RosterRow } from './types'
 
-const roster = [
-  { name: 'alpha' },
-  { name: 'alpha@conn-2', targetProfile: 'alpha' },
-  { name: 'beta' }
-] as RosterRow[]
+const roster = [{ name: 'alpha' }, { name: 'alpha@conn-2', targetProfile: 'alpha' }, { name: 'beta' }] as RosterRow[]
 
 describe('botHeaderRow', () => {
   it('resolves the roster row for the canonical Bot Chat only', () => {

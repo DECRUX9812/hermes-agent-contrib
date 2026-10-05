@@ -8,7 +8,7 @@ vi.mock('@/app/chat/session-view', async () => {
   return { PRIMARY_SESSION_VIEW: { $awaitingResponse: atom(false), $busy: atom(false) } }
 })
 vi.mock('@/app/open-session', () => ({ openSession: vi.fn() }))
-vi.mock('@/components/pane-shell/tree/store', async (importOriginal) => {
+vi.mock('@/components/pane-shell/tree/store', async importOriginal => {
   const { atom } = await import('nanostores')
 
   // session-focus.ts (reached via the preview store) and the layout store

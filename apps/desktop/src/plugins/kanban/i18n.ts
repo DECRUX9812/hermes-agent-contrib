@@ -1142,7 +1142,7 @@ const fr: KanbanMessages = {
     kind === 'needs_input'
       ? 'Le worker a demandé une saisie humaine.'
       : kind === 'capability'
-        ? 'Le worker a atteint une limite de capacité qu\'il ne peut pas franchir.'
+        ? "Le worker a atteint une limite de capacité qu'il ne peut pas franchir."
         : kind === 'transient'
           ? 'Le worker a échoué sur une erreur transitoire.'
           : 'Le worker a signalé une dépendance à attendre.',
@@ -1382,7 +1382,8 @@ const de: KanbanMessages = {
           : 'Der Worker hat eine Abhängigkeit gemeldet, auf die er warten muss.',
   blockReason: 'Blockierungsart',
   blockRecurrences: 'Wiederholte Blockierungen',
-  blockRecurrencesTip: 'Wie oft diese Aufgabe nach einer manuellen Freigabe aus demselben Grund erneut blockiert wurde.',
+  blockRecurrencesTip:
+    'Wie oft diese Aufgabe nach einer manuellen Freigabe aus demselben Grund erneut blockiert wurde.',
   consecutiveFailures: 'Aufeinanderfolgende Fehler',
   lastFailureError: 'Letzter Fehler',
   unblockedMessage: id => `${id} freigegeben. Die Aufgabe ist für den nächsten Tick bereit.`,

@@ -69,9 +69,7 @@ describe('deriveBotRuns', () => {
   })
 
   it('keeps non-member rooms out of the feed and surfaces authored replies', () => {
-    const outsiderRoom = room([
-      { at: 50_000, from: { kind: 'member', name: 'research' }, text: 'not its room' }
-    ])
+    const outsiderRoom = room([{ at: 50_000, from: { kind: 'member', name: 'research' }, text: 'not its room' }])
 
     const memberRoom = room(
       [
@@ -182,11 +180,7 @@ describe('pickCronRunSessionId', () => {
   it('skips script-output docs and unstamped rows; empty input stays null', () => {
     expect(
       pickCronRunSessionId(
-        [
-          { id: 'doc', source: 'cron_output', started_at: 200 },
-          { id: 'run', started_at: 300 },
-          { id: 'nostamp' }
-        ],
+        [{ id: 'doc', source: 'cron_output', started_at: 200 }, { id: 'run', started_at: 300 }, { id: 'nostamp' }],
         200_000
       )
     ).toBe('run')

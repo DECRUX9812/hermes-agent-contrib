@@ -19,7 +19,11 @@ export interface McpAppCsp {
 
 function origins(value: unknown): string[] {
   return (Array.isArray(value) ? value : [])
-    .map(entry => String(entry ?? '').trim().replace(/\/+$/, ''))
+    .map(entry =>
+      String(entry ?? '')
+        .trim()
+        .replace(/\/+$/, '')
+    )
     .filter(entry => ORIGIN_RE.test(entry))
 }
 

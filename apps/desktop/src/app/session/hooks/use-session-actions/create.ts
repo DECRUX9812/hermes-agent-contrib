@@ -1,29 +1,68 @@
-import {useCallback} from 'react'
+import { useCallback } from 'react'
 
-import {NO_PROJECT_ID} from '@/app/chat/sidebar/projects/workspace-groups'
-import {revealTreePane} from '@/components/pane-shell/tree/store'
-import {setSessionYolo} from '@/lib/yolo-session'
-import {announceNewSessionDraftKey} from '@/store/composer'
-import {requestGatewayForAgent, retainGatewayForAgent} from '@/store/gateway'
-import {clearNotifications} from '@/store/notifications'
-import {adoptDraftPreviewTabs} from '@/store/preview'
-import {$activeGatewayProfile, $newChatProfile, ensureGatewayAgent, ensureGatewayProfile, isLegacyNewChatProfile, normalizeProfileKey, resolveNewChatOwnerRoute} from '@/store/profile'
-import {$projectScope} from '@/store/project-scope'
-import {resolveNewSessionCwd} from '@/store/projects'
-import {$currentCwd, $currentCwdExplicit, $currentFastMode, $currentModel, $currentProvider, $currentReasoningEffort, $currentServiceTier, $newChatWorkspaceTarget, $yoloActive, getCurrentModelSource, type NewChatWorkspaceTarget, rotateFreshDraftKey, setActiveSessionId, setAwaitingResponse, setBusy, setCurrentBranch, setCurrentCwd, setCurrentCwdExplicit, setCurrentCwdTransient, setCurrentUsage, setFreshDraftReady, setIntroSeed, setMessages, setNewChatWorkspaceTarget, setSelectedStoredSessionId, setSessionOwnerHint, setSessionStartedAt, setTurnStartedAt, setWorkspaceCwdOwner, setYoloActive} from '@/store/session'
-import {holdSessionOwnerUntilForeground, releaseSessionOwnerHold} from '@/store/session-states'
-import {broadcastSessionsChanged} from '@/store/session-sync'
-import type {SessionCreateResponse} from '@/types/hermes'
+import { NO_PROJECT_ID } from '@/app/chat/sidebar/projects/workspace-groups'
+import { revealTreePane } from '@/components/pane-shell/tree/store'
+import { setSessionYolo } from '@/lib/yolo-session'
+import { announceNewSessionDraftKey } from '@/store/composer'
+import { requestGatewayForAgent, retainGatewayForAgent } from '@/store/gateway'
+import { clearNotifications } from '@/store/notifications'
+import { adoptDraftPreviewTabs } from '@/store/preview'
+import {
+  $activeGatewayProfile,
+  $newChatProfile,
+  ensureGatewayAgent,
+  ensureGatewayProfile,
+  isLegacyNewChatProfile,
+  normalizeProfileKey,
+  resolveNewChatOwnerRoute
+} from '@/store/profile'
+import { $projectScope } from '@/store/project-scope'
+import { resolveNewSessionCwd } from '@/store/projects'
+import {
+  $currentCwd,
+  $currentCwdExplicit,
+  $currentFastMode,
+  $currentModel,
+  $currentProvider,
+  $currentReasoningEffort,
+  $currentServiceTier,
+  $newChatWorkspaceTarget,
+  $yoloActive,
+  getCurrentModelSource,
+  type NewChatWorkspaceTarget,
+  rotateFreshDraftKey,
+  setActiveSessionId,
+  setAwaitingResponse,
+  setBusy,
+  setCurrentBranch,
+  setCurrentCwd,
+  setCurrentCwdExplicit,
+  setCurrentCwdTransient,
+  setCurrentUsage,
+  setFreshDraftReady,
+  setIntroSeed,
+  setMessages,
+  setNewChatWorkspaceTarget,
+  setSelectedStoredSessionId,
+  setSessionOwnerHint,
+  setSessionStartedAt,
+  setTurnStartedAt,
+  setWorkspaceCwdOwner,
+  setYoloActive
+} from '@/store/session'
+import { holdSessionOwnerUntilForeground, releaseSessionOwnerHold } from '@/store/session-states'
+import { broadcastSessionsChanged } from '@/store/session-sync'
+import type { SessionCreateResponse } from '@/types/hermes'
 
-import {NEW_CHAT_ROUTE, sessionRoute} from '../../../routes'
-import {pinStoredSessionForOwner, releaseStoredSessionPins, sessionContextDrift} from '../session-context-drift'
+import { NEW_CHAT_ROUTE, sessionRoute } from '../../../routes'
+import { pinStoredSessionForOwner, releaseStoredSessionPins, sessionContextDrift } from '../session-context-drift'
 
-import type {CreateGuard} from './create-guard'
-import {sessionCreateOverrideParams, type SessionCreateOverrides, type SessionSeedMessage} from './create-overrides'
+import type { CreateGuard } from './create-guard'
+import { sessionCreateOverrideParams, type SessionCreateOverrides, type SessionSeedMessage } from './create-overrides'
 import { markSessionCreatedThisRun } from './created-this-run'
 import type { FreshSessionDraftOptions, SessionActionsOptions } from './options'
 import { createGatewaySession } from './session-create-request'
-import {applyRuntimeInfo, upsertOptimisticSession} from './utils'
+import { applyRuntimeInfo, upsertOptimisticSession } from './utils'
 
 // `session.create` params from the current profile + sticky-UI model/effort/fast,
 // ensuring the gateway is on that profile first. Shared by the primary send path
@@ -104,7 +143,20 @@ function normalizeNewChatWorkspaceTarget(target: NewChatWorkspaceTarget): NewCha
 }
 
 export function useCreateActions(
-  { activeSessionIdRef, busyRef, creatingSessionRef, ensureSessionState, getRouteToken, navigate, onFreshDraftRouteIntent, requestGateway, resetViewSync, runtimeIdByStoredSessionIdRef, selectedStoredSessionIdRef, updateSessionState }: SessionActionsOptions,
+  {
+    activeSessionIdRef,
+    busyRef,
+    creatingSessionRef,
+    ensureSessionState,
+    getRouteToken,
+    navigate,
+    onFreshDraftRouteIntent,
+    requestGateway,
+    resetViewSync,
+    runtimeIdByStoredSessionIdRef,
+    selectedStoredSessionIdRef,
+    updateSessionState
+  }: SessionActionsOptions,
   { createGuard }: { createGuard: CreateGuard }
 ) {
   const startFreshSessionDraft = useCallback(
@@ -478,6 +530,6 @@ export function useCreateActions(
   return {
     startFreshSessionDraft,
     createBackendSessionForSend,
-    submitTextToNewSession,
+    submitTextToNewSession
   }
 }

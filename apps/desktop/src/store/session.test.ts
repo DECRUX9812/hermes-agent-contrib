@@ -341,7 +341,9 @@ describe('fresh draft identity', () => {
     expect(second).not.toBe(first)
     expect($freshDraftKey.get()).toBe(second)
     // Persisted (per profile) so a reload restores this exact fresh draft.
-    expect(Object.values(JSON.parse(window.localStorage.getItem('hermes.desktop.freshDraftKeys') ?? '{}'))).toContain(second)
+    expect(Object.values(JSON.parse(window.localStorage.getItem('hermes.desktop.freshDraftKeys') ?? '{}'))).toContain(
+      second
+    )
   })
 })
 

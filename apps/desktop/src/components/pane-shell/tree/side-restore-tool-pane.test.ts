@@ -44,7 +44,12 @@ it('restores the side’s own zones and leaves a closed tool panel collapsed', (
   )
 
   const $terminal = atom(false)
-  bindToolPaneCollapse('terminal', $terminal, () => $terminal.set(false), () => $terminal.set(true))
+  bindToolPaneCollapse(
+    'terminal',
+    $terminal,
+    () => $terminal.set(false),
+    () => $terminal.set(true)
+  )
 
   restoreMinimizedTreeSide('right')
 

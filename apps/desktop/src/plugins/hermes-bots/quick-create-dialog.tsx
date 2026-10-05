@@ -52,7 +52,13 @@ interface QuickCreateDialogProps {
   roster: RosterRow[]
 }
 
-export function QuickCreateDialog({ open, onClose, onBrowseGallery, onConfigureModel, roster }: QuickCreateDialogProps) {
+export function QuickCreateDialog({
+  open,
+  onClose,
+  onBrowseGallery,
+  onConfigureModel,
+  roster
+}: QuickCreateDialogProps) {
   const { t } = useI18n()
   const b = useBots()
   const [name, setName] = useState('')

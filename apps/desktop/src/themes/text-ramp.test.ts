@@ -36,36 +36,46 @@ const surfacesOf = (colors: (typeof cases)[number]['colors']) =>
   [colors.background, colors.sidebarBackground].filter((c): c is string => Boolean(c) && parseColor(c!) !== null)
 
 describe('muted text ramp', () => {
-  it.each(cases)('$label: tertiary and quaternary clear their floors, or are as strong as the cap allows', ({ colors, rendered }) => {
-    if (!parseColor(colors.foreground)) {
-      return // expression-valued foreground: resolved by the browser, not judged here
-    }
+  it.each(cases)(
+    '$label: tertiary and quaternary clear their floors, or are as strong as the cap allows',
+    ({ colors, rendered }) => {
+      if (!parseColor(colors.foreground)) {
+        return // expression-valued foreground: resolved by the browser, not judged here
+      }
 
-    const surfaces = surfacesOf(colors)
+      const surfaces = surfacesOf(colors)
 
-    for (const tier of ['tertiary', 'quaternary'] as TextTier[]) {
-      for (const surface of surfaces) {
-        const share = resolveTextMix(colors.foreground, surfaces, tier, rendered === 'dark')
-        const ratio = contrastRatio(textInk(colors.foreground, surfaces, surface, tier, rendered === 'dark'), surface) ?? 0
-        const atCap = share >= TEXT_MIX_CAP[tier] - 1e-9
+      for (const tier of ['tertiary', 'quaternary'] as TextTier[]) {
+        for (const surface of surfaces) {
+          const share = resolveTextMix(colors.foreground, surfaces, tier, rendered === 'dark')
+          const ratio =
+            contrastRatio(textInk(colors.foreground, surfaces, surface, tier, rendered === 'dark'), surface) ?? 0
+          const atCap = share >= TEXT_MIX_CAP[tier] - 1e-9
 
-        expect(ratio >= TEXT_CONTRAST_FLOOR[tier] || atCap, `${tier} on ${surface}: ${ratio.toFixed(2)}:1 at ${share.toFixed(2)}`).toBe(true)
+          expect(
+            ratio >= TEXT_CONTRAST_FLOOR[tier] || atCap,
+            `${tier} on ${surface}: ${ratio.toFixed(2)}:1 at ${share.toFixed(2)}`
+          ).toBe(true)
+        }
       }
     }
-  })
+  )
 
-  it.each(cases)('$label keeps the hierarchy: quaternary quieter than tertiary, tertiary quieter than secondary text', ({ colors, rendered }) => {
-    if (!parseColor(colors.foreground)) {
-      return
+  it.each(cases)(
+    '$label keeps the hierarchy: quaternary quieter than tertiary, tertiary quieter than secondary text',
+    ({ colors, rendered }) => {
+      if (!parseColor(colors.foreground)) {
+        return
+      }
+
+      const surfaces = surfacesOf(colors)
+      const dark = rendered === 'dark'
+      const tertiary = resolveTextMix(colors.foreground, surfaces, 'tertiary', dark)
+      const quaternary = resolveTextMix(colors.foreground, surfaces, 'quaternary', dark)
+      expect(quaternary).toBeLessThanOrEqual(tertiary)
+      expect(tertiary).toBeLessThan(0.74) // --ui-text-secondary
     }
-
-    const surfaces = surfacesOf(colors)
-    const dark = rendered === 'dark'
-    const tertiary = resolveTextMix(colors.foreground, surfaces, 'tertiary', dark)
-    const quaternary = resolveTextMix(colors.foreground, surfaces, 'quaternary', dark)
-    expect(quaternary).toBeLessThanOrEqual(tertiary)
-    expect(tertiary).toBeLessThan(0.74) // --ui-text-secondary
-  })
+  )
 
   it('a strong palette keeps the baseline (the lift is only as large as needed)', () => {
     expect(resolveTextMix('#000000', ['#ffffff'], 'tertiary', false)).toBe(TEXT_MIX.light.tertiary)

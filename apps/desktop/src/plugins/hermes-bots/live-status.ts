@@ -38,15 +38,7 @@ import type { RosterRow } from './types'
 // ── A1: live status ──────────────────────────────────────────────────────────
 
 export type BotLiveKind =
-  | 'background'
-  | 'delegated'
-  | 'group'
-  | 'idle'
-  | 'needs-input'
-  | 'routine'
-  | 'stalled'
-  | 'unknown'
-  | 'working'
+  'background' | 'delegated' | 'group' | 'idle' | 'needs-input' | 'routine' | 'stalled' | 'unknown' | 'working'
 
 export interface BotLiveStatus {
   /** Tool label or routine title, when the kind carries one. */
@@ -136,22 +128,27 @@ export function botLiveStatusLabel(status: BotLiveStatus, c: BotsText['roster'])
 const ROUTINE_BOT_TAG = /^\[bot:([a-z0-9][a-z0-9_-]*)\]\s*/i
 
 function routineOwnerName(job: Pick<CronJob, 'name'>): null | string {
-  return String(job?.name || '').match(ROUTINE_BOT_TAG)?.[1]?.toLowerCase() ?? null
+  return (
+    String(job?.name || '')
+      .match(ROUTINE_BOT_TAG)?.[1]
+      ?.toLowerCase() ?? null
+  )
 }
 
 function routineDisplayTitle(job: Pick<CronJob, 'name'>): string {
-  return String(job?.name || '').replace(ROUTINE_BOT_TAG, '').trim()
+  return String(job?.name || '')
+    .replace(ROUTINE_BOT_TAG, '')
+    .trim()
 }
 
 /** Only jobs the bot's own tag claims AND the scheduler marks running — an
  *  untagged job is never guessed into a bot's row, and a finished run
  *  leaves no residue. An empty/missing jobs list (scope not loaded, remote
  *  scope uncovered) degrades to 'no routine', honest by construction. */
-export function runningRoutineTitles(
-  jobs: readonly CronJob[] | undefined,
-  bot: Pick<RosterRow, 'name'>
-): string[] {
-  const name = String(bot?.name || '').trim().toLowerCase()
+export function runningRoutineTitles(jobs: readonly CronJob[] | undefined, bot: Pick<RosterRow, 'name'>): string[] {
+  const name = String(bot?.name || '')
+    .trim()
+    .toLowerCase()
 
   if (!name) {
     return []
@@ -195,16 +192,16 @@ export function useBotLiveStatus(bot: RosterRow): BotLiveStatus {
 
 // ── A2: attention rollup ─────────────────────────────────────────────────────
 
-const ownerNameKey = (value: string | null | undefined): string => String(value || '').trim().toLowerCase()
+const ownerNameKey = (value: string | null | undefined): string =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
 
 /** Every scope key this bot's sessions can publish attention under: the
  *  `conn:<id>::<name>` route key (its own connection, or the ambient one for
  *  an unscoped row) plus the bare profile name — but only for local/unscoped
  *  bots, since a bare-owner session can only live on the primary socket. */
-export function botAttentionKeys(
-  bot: Pick<RosterRow, 'connectionId' | 'name'>,
-  activeConnectionId: string
-): string[] {
+export function botAttentionKeys(bot: Pick<RosterRow, 'connectionId' | 'name'>, activeConnectionId: string): string[] {
   const name = String(bot?.name || 'default').trim() || 'default'
   const connectionId = String(bot?.connectionId || '').trim()
   const connection = connectionId || String(activeConnectionId || '').trim()
@@ -262,10 +259,7 @@ export interface BotAttentionSignals {
   ownerCounts: Record<string, number>
 }
 
-export function botAttentionCount(
-  bot: Pick<RosterRow, 'connectionId' | 'name'>,
-  signals: BotAttentionSignals
-): number {
+export function botAttentionCount(bot: Pick<RosterRow, 'connectionId' | 'name'>, signals: BotAttentionSignals): number {
   let count = 0
 
   for (const key of botAttentionKeys(bot, signals.activeConnectionId)) {
@@ -311,7 +305,9 @@ export function useBotAttention(bot: RosterRow): BotAttention {
   const count = botAttentionCount(bot, {
     activeConnectionId,
     canonicalDot: canonicalId ? dotById?.[canonicalId] : undefined,
-    canonicalOwnedByBot: Boolean(canonicalId && sessionOwnerMatchesBot(host.sessionOwner?.(canonicalId), bot, activeConnectionId)),
+    canonicalOwnedByBot: Boolean(
+      canonicalId && sessionOwnerMatchesBot(host.sessionOwner?.(canonicalId), bot, activeConnectionId)
+    ),
     flagged: Boolean(flag),
     ownerCounts: ownerCounts || {}
   })
@@ -336,8 +332,8 @@ export function useRosterAttentionCounts(roster: readonly RosterRow[]): Readonly
 
       const flagged = Boolean(
         attentionMap?.[botSelectionKey(bot) || ''] ||
-          attentionMap?.[botRosterKey(bot)] ||
-          attentionMap?.[`${bot?.connectionId || activeConnectionId}::${bot?.name || 'default'}`]
+        attentionMap?.[botRosterKey(bot)] ||
+        attentionMap?.[`${bot?.connectionId || activeConnectionId}::${bot?.name || 'default'}`]
       )
 
       const count = botAttentionCount(bot, {

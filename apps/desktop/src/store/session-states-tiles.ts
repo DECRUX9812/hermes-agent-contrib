@@ -25,10 +25,21 @@ import {
   setTileSessionFocusStartedAt
 } from './session'
 import { $sessionStates, dropSessionState, evictable, publishSessionState } from './session-states-live'
-import type { SessionTile, SessionTileWorkspaceScope, TileDock} from './session-states-tiles-core';
-import { $botChatScopes, $focusedStoredSessionId, $sessionTiles, closedStack, patchSessionTile, saveTiles, selectionHomesToWorkspace, sessionTileDelegate, setSessionTileWorkspaceScope, TILE_PANE_PREFIX, toStored } from './session-states-tiles-core'
+import type { SessionTile, SessionTileWorkspaceScope, TileDock } from './session-states-tiles-core'
+import {
+  $botChatScopes,
+  $focusedStoredSessionId,
+  $sessionTiles,
+  closedStack,
+  patchSessionTile,
+  saveTiles,
+  selectionHomesToWorkspace,
+  sessionTileDelegate,
+  setSessionTileWorkspaceScope,
+  TILE_PANE_PREFIX,
+  toStored
+} from './session-states-tiles-core'
 import { ackStoredSessionId } from './session-unread'
-
 
 /**
  * Gateway keep-set scopes for currently open tiles. Bot chats (and any other
@@ -68,7 +79,6 @@ export function openTileGatewayScopes(): Set<string> {
 
   return scopes
 }
-
 
 /** Reorder tiles to match layout-tree encounter order (stored ids in the order
  *  their `session-tile:` panes are walked). Restore replays the array through
@@ -112,7 +122,6 @@ export function orderTilesByTree<T extends { storedSessionId: string }>(
   return next.some((t, i) => t !== tiles[i]) ? next : null
 }
 
-
 function syncTileStripOrder() {
   const next = orderTilesByTree($layoutTree.get(), $sessionTiles.get())
 
@@ -120,7 +129,6 @@ function syncTileStripOrder() {
     saveTiles(next)
   }
 }
-
 
 /** Open a tile for a stored session, or MOVE an existing one to the new dock
  *  (`dir`; `center` = stack into the anchor's zone, `before` = strip slot). The
@@ -220,7 +228,6 @@ export function openSessionTile(
   }
 }
 
-
 /** ⌘W on the MAIN tab: the next session tab stacked WITH the workspace, to
  *  shift into main. Walks the workspace group's strip from the workspace tab
  *  outward (the tab after it first, then wrapping to the ones before), and
@@ -262,7 +269,6 @@ export function nextSessionTileForWorkspace(): null | string {
 
   return null
 }
-
 
 /** If a session is already ON SCREEN — an open tile OR the one loaded in main —
  *  front its tab (and focus its zone) and report WHICH. A sidebar click on an
@@ -334,7 +340,6 @@ export function frontMainIfSelected(storedSessionId: string): boolean {
   return true
 }
 
-
 /** Front the tab a Bot Mode owner already has open and report its stored id:
  *  the tile the zone last had active for `workspaceOwnerKey` (the same
  *  window-local memory the strip restores on a scope switch), else the most
@@ -404,7 +409,6 @@ export function focusWorkspaceOwnerSessionTile(
     : null
 }
 
-
 /** Does a sidebar click still need to navigate after `focusOpenSession`? A miss
  *  always does. A `'main'` hit does too while the workspace pane is showing a
  *  full page (artifacts, skills, …): fronting the workspace tab doesn't put the
@@ -413,7 +417,6 @@ export function focusWorkspaceOwnerSessionTile(
 export function focusedSessionNeedsRoute(focused: 'main' | 'tile' | null, workspaceIsPage: boolean): boolean {
   return !focused || (focused === 'main' && workspaceIsPage)
 }
-
 
 /** Presentation scope of the session tab the user is currently acting from.
  * Picker actions must preserve this scope: a `/resume` opened from Bot Mode is
@@ -438,7 +441,6 @@ export function focusedSessionWorkspaceScope(): SessionTileWorkspaceScope {
   return { workspaceMode: 'sessions' }
 }
 
-
 /** The open tab that's still an empty "New session" draft, if there is one.
  *  That tab is the one the user would have typed into, so an open-from-nowhere
  *  spends it instead of stacking a second blank tab beside it. Most recent
@@ -456,7 +458,6 @@ export function blankDraftTile(
     }) ?? null
   )
 }
-
 
 /** Hand an open blank draft tab over to `storedSessionId`, keeping its slot.
  *  False when there's no such tab, so the caller can fall back. The spent draft
@@ -478,7 +479,6 @@ export function reuseBlankDraftTile(
 
   return true
 }
-
 
 export function closeSessionTile(storedSessionId: string) {
   const tile = $sessionTiles.get().find(t => t.storedSessionId === storedSessionId)
@@ -515,7 +515,6 @@ export function closeSessionTile(storedSessionId: string) {
   }
 }
 
-
 /** Persist-close every session tile whose pane lives in `paneId`'s group.
  *
  * Close All used to only dismiss layout-tree panes. Bot Mode tiles are
@@ -537,7 +536,6 @@ export function closeAllOpenSessionTiles(paneId: string): void {
   }
 }
 
-
 /** Drop a DEAD tile — a persisted tile whose session no longer exists on the
  *  backend (resume 404s). Unlike close, it leaves no ⌘⇧T undo (resurrecting it
  *  would just 404 again) and evicts any cached state. This is what clears the
@@ -551,7 +549,6 @@ export function discardSessionTile(storedSessionId: string) {
 
   saveTiles($sessionTiles.get().filter(t => t.storedSessionId !== storedSessionId))
 }
-
 
 /** ⌘⇧T — reopen the most recently closed tab where it was, then focus it.
  *  Adoption alone is silent (won't steal the active tab), so restore has to
@@ -582,7 +579,6 @@ export function reopenLastClosedTile(): void {
   }
 }
 
-
 // Statusbar timer: stamp "focused since" for non-primary tiles so they share
 // the primary's contract instead of the row's durable started_at (#103123).
 // Primary focus leaves the stamp alone; the next tile focus re-stamps.
@@ -593,7 +589,6 @@ function stampTileSessionFocus(focused: null | string) {
     setTileSessionFocusStartedAt(stamp)
   }
 }
-
 
 // Bringing a finished session to the front clears its green dot. Keyed on the
 // FOCUSED session, not the selected one: a tile is never $selectedStoredSessionId,
@@ -611,9 +606,7 @@ $focusedStoredSessionId.listen(focused => {
   stampTileSessionFocus(focused)
 })
 
-
 stampTileSessionFocus($focusedStoredSessionId.get())
-
 
 // Cold-start restore is the one selection change that is NOT a navigation: the
 // route already pointed at the primary session before the window loaded, and
@@ -624,11 +617,9 @@ stampTileSessionFocus($focusedStoredSessionId.get())
 // homing and the restored layout tree keeps its say.
 let selectionRestoreInFlight = false
 
-
 export function markSelectionRestore() {
   selectionRestoreInFlight = true
 }
-
 
 // Homing also FRONTS the workspace tab: the resumed chat loads in the workspace
 // pane, so a zone parked on a tile tab must switch back or the click looks dead.

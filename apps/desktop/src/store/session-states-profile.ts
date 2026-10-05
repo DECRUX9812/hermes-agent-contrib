@@ -5,15 +5,10 @@ import { dropStatusDrawersForProfile, migrateStatusDrawersForProfile } from './c
 import { dropPreviewTabsForProfile, migratePreviewTabsForProfile } from './preview'
 import { dropPreviewArtifactsForProfile, migratePreviewArtifactsForProfile } from './preview-status'
 import { normalizeProfileKey } from './profile'
-import {
-  migrateRememberedNavigationForProfile,
-  migrateSessionOwnerHintsForProfile
-} from './session'
+import { migrateRememberedNavigationForProfile, migrateSessionOwnerHintsForProfile } from './session'
 import { dropSessionAskForProfile, migrateSessionAskForProfile } from './session-ask'
 import { dropOwnerNotifyModesForProfile, migrateOwnerNotifyModesForProfile } from './session-mute'
-import {
-  type SessionProfileRoute
-} from './session-request-router'
+import { type SessionProfileRoute } from './session-request-router'
 import {
   $sessionTiles,
   BOTS_TILE_BUCKET,
@@ -26,7 +21,6 @@ import {
 import { dropSessionTagsForProfile, migrateSessionTagsForProfile } from './session-tags'
 import { dropWatchedSessionsForProfile, migrateWatchedSessionsForProfile } from './session-watch'
 import { migrateTranscriptTailsForProfile } from './transcript-tail-cache'
-
 
 /**
  * Drop every persisted tile owned by a profile that is being deleted — the
@@ -103,8 +97,7 @@ export function dropTilesForProfile(
     // owner routes without an id can be matched to local, but not guessed onto
     // an id-less remote — that would delete a same-named local Bot tab.
     return (
-      (ownerProfile === name || ownerTarget === name) &&
-      (ownerConnection || LOCAL_CONNECTION_ID) === ambientConnection
+      (ownerProfile === name || ownerTarget === name) && (ownerConnection || LOCAL_CONNECTION_ID) === ambientConnection
     )
   }
 
@@ -149,7 +142,6 @@ export function dropTilesForProfile(
   // outlive it, or a later profile of the same name inherits them.
   dropPreviewTabsForProfile(name)
 }
-
 
 /**
  * Rename counterpart of dropTilesForProfile: the profile's sessions still exist

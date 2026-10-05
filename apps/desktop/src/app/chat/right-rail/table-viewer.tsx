@@ -54,7 +54,9 @@ export function TableViewer({ filePath, text }: { filePath: string; text: string
         </tbody>
       </table>
       {body.length > TABLE_ROW_LIMIT && (
-        <p className="px-3 py-2 text-[0.6875rem] text-(--ui-text-tertiary)">{t.preview.tableTruncated(TABLE_ROW_LIMIT)}</p>
+        <p className="px-3 py-2 text-[0.6875rem] text-(--ui-text-tertiary)">
+          {t.preview.tableTruncated(TABLE_ROW_LIMIT)}
+        </p>
       )}
     </div>
   )

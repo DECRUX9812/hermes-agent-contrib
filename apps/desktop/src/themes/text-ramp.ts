@@ -73,8 +73,11 @@ export function resolveTextMix(
     for (let step = 0; step < 12; step += 1) {
       const midpoint = (lo + hi) / 2
 
-      if ((ratioAt(midpoint) ?? 0) >= floor) {hi = midpoint}
-      else {lo = midpoint}
+      if ((ratioAt(midpoint) ?? 0) >= floor) {
+        hi = midpoint
+      } else {
+        lo = midpoint
+      }
     }
 
     need = Math.max(need, hi)
@@ -95,5 +98,10 @@ export const textMixKnobs = (
 
 /** The colour a tier renders as over `background` for this skin (what
  *  `color-mix(fg N%, transparent)` paints). */
-export const textInk = (foreground: string, surfaces: readonly string[], background: string, tier: TextTier, isDark: boolean): string =>
-  inkAt(foreground, background, resolveTextMix(foreground, surfaces, tier, isDark))
+export const textInk = (
+  foreground: string,
+  surfaces: readonly string[],
+  background: string,
+  tier: TextTier,
+  isDark: boolean
+): string => inkAt(foreground, background, resolveTextMix(foreground, surfaces, tier, isDark))

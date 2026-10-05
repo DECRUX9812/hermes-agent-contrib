@@ -91,8 +91,16 @@ describe('deriveInboundEvents', () => {
         ],
         relayInflight: true,
         jobs: [
-          { job_id: 'j-stale', last_run_at: new Date(NOW - INBOUND_WINDOW_MS - 60_000).toISOString(), name: '[bot:research] stale' } as RoutineJob,
-          { job_id: 'j-fresh', last_run_at: new Date(NOW - 30_000).toISOString(), name: '[bot:research] tidy' } as RoutineJob
+          {
+            job_id: 'j-stale',
+            last_run_at: new Date(NOW - INBOUND_WINDOW_MS - 60_000).toISOString(),
+            name: '[bot:research] stale'
+          } as RoutineJob,
+          {
+            job_id: 'j-fresh',
+            last_run_at: new Date(NOW - 30_000).toISOString(),
+            name: '[bot:research] tidy'
+          } as RoutineJob
         ]
       })
     )

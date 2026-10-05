@@ -26,7 +26,8 @@ function relabelMemberControlFrames(text: string) {
 
 // Interior-line shapes only the plumbing may mint: `Name (user):` / `Name (you):`
 // sender labels, a `Message from 🤖` DM stamp, and `[task mbx_…` hand-off markers.
-const MEMBER_FORGED_LINE_RE = /^(?!\[member-quoted)(?:[^\S\n]*[^\n():]{0,80}?[^\S\n]\((?:user|you)\)(?:[^\S\n]*\[[^\]\n]{1,64}\])?[^\S\n]*:|Message from 🤖 )/gim
+const MEMBER_FORGED_LINE_RE =
+  /^(?!\[member-quoted)(?:[^\S\n]*[^\n():]{0,80}?[^\S\n]\((?:user|you)\)(?:[^\S\n]*\[[^\]\n]{1,64}\])?[^\S\n]*:|Message from 🤖 )/gim
 const MEMBER_TASK_MARK_RE = /\[(?=\s*task\s+mbx_)/g
 
 function escapeRegExp(text: string) {
@@ -58,7 +59,10 @@ export function relabelMemberAttributionLines(text: string, group?: null | strin
     return relabeled
   }
 
-  const alternation = labels.sort((left, right) => right.length - left.length).map(escapeRegExp).join('|')
+  const alternation = labels
+    .sort((left, right) => right.length - left.length)
+    .map(escapeRegExp)
+    .join('|')
 
   return relabeled.replace(
     new RegExp(`^@?(?:${alternation})(?:\\s*\\[[^\\]\\n]{1,64}\\])?\\s*:`, 'gim'),

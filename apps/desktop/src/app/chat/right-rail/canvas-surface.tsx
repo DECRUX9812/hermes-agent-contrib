@@ -88,7 +88,12 @@ export default function CanvasSurface({ filePath, text }: { filePath: string; te
         excalidrawAPI={instance => {
           api.current = instance
         }}
-        initialData={{ appState: { ...initial.appState, viewBackgroundColor: 'transparent' }, elements: initial.elements, files: initial.filesById, scrollToContent: true }}
+        initialData={{
+          appState: { ...initial.appState, viewBackgroundColor: 'transparent' },
+          elements: initial.elements,
+          files: initial.filesById,
+          scrollToContent: true
+        }}
         onChange={(elements, appState, files) => {
           const key = sceneKey(elements)
 

@@ -29,7 +29,12 @@ import { actionAllowedInInput, comboFromEvent, IS_MAC, isEditableTarget, isFocus
 import { composerFocusKeysAllowed, isComposerFocusSoftCombo, typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
 import { stepReasoningEffort, writeSessionReasoningEffort } from '@/lib/reasoning-step'
 import { openWorktreeDialog } from '@/store/coding-status'
-import { $commandPaletteOpen, closeCommandPalette, openCommandPalettePage, toggleCommandPalette } from '@/store/command-palette'
+import {
+  $commandPaletteOpen,
+  closeCommandPalette,
+  openCommandPalettePage,
+  toggleCommandPalette
+} from '@/store/command-palette'
 import { recordAction, recordDislike } from '@/store/desktop-metrics'
 import {
   $findInPage,

@@ -25,7 +25,10 @@ function uriPath(path: string): string {
   const slashed = path.replace(/\\/g, '/')
   const rooted = /^[a-zA-Z]:\//.test(slashed) ? `/${slashed}` : slashed
 
-  return rooted.split('/').map(segment => encodeURIComponent(segment).replace(/%3A/gi, ':')).join('/')
+  return rooted
+    .split('/')
+    .map(segment => encodeURIComponent(segment).replace(/%3A/gi, ':'))
+    .join('/')
 }
 
 /**

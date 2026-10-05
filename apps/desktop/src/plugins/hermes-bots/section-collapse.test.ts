@@ -18,7 +18,9 @@ const { storage } = vi.hoisted(() => ({ storage: new Map<string, unknown>() }))
 
 vi.mock('./data', () => ({ $botMeta: { get: () => ({}), set: vi.fn() }, saveBotMeta: vi.fn() }))
 vi.mock('./group-chat', () => ({ $groupChats: { get: () => ({}), set: vi.fn() }, updateGroupChat: vi.fn() }))
-vi.mock('./routing', () => ({ botRosterMeta: (bot: { name: string }, meta: Record<string, unknown>) => meta[bot.name] }))
+vi.mock('./routing', () => ({
+  botRosterMeta: (bot: { name: string }, meta: Record<string, unknown>) => meta[bot.name]
+}))
 vi.mock('./shared', () => ({
   getPluginCtx: () => ({
     storage: {

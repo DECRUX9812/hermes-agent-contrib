@@ -1,12 +1,6 @@
 import { ComposerPrimitive } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef
-} from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router'
 
 import { useTourMarker } from '@/app/chat/tour-marker'
@@ -76,10 +70,7 @@ import { useSessionStatusPresence } from './hooks/use-status-presence'
 import { ActionBadges } from './micro-actions'
 import { QueuePanel } from './queue-panel'
 import { RestoredDraftNotice } from './restored-draft-notice'
-import {
-  beginComposerComposition,
-  RICH_INPUT_SLOT
-} from './rich-editor'
+import { beginComposerComposition, RICH_INPUT_SLOT } from './rich-editor'
 import { useComposerScope, useComposerSurfaceId } from './scope'
 import { ComposerStatusStack } from './status-stack'
 import { CodingStatusRow } from './status-stack/coding-row'
@@ -158,7 +149,11 @@ export function ChatBar({
         return false
       }
 
-      return onSubmitProp(draft.text, { ...options, attachments: draft.attachments, displayText: draft.displayText ?? options?.displayText })
+      return onSubmitProp(draft.text, {
+        ...options,
+        attachments: draft.attachments,
+        displayText: draft.displayText ?? options?.displayText
+      })
     },
     [onSubmitProp]
   )

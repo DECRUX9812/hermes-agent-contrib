@@ -1519,7 +1519,7 @@ function groupChatLimitValue(raw: unknown, cap: number, fallback: number): numbe
 export function resolveGroupChatLimits(config: unknown): ResolvedGroupChatLimits {
   const block =
     config && typeof config === 'object' && typeof (config as Record<string, unknown>).group_chat === 'object'
-      ? ((config as Record<string, Record<string, unknown>>).group_chat || {})
+      ? (config as Record<string, Record<string, unknown>>).group_chat || {}
       : {}
 
   const resolved = {} as ResolvedGroupChatLimits

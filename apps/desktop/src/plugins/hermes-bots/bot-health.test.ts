@@ -23,9 +23,9 @@ import { botHealth } from './live-status'
 
 describe('botHealth', () => {
   it('reports unreachable ahead of every other signal', () => {
-    expect(
-      botHealth({ lastRunFailed: true, reachable: false, reason: 'provider_quota_limit' }).kind
-    ).toBe('unreachable')
+    expect(botHealth({ lastRunFailed: true, reachable: false, reason: 'provider_quota_limit' }).kind).toBe(
+      'unreachable'
+    )
   })
 
   it('carries the classified flag reason through as the chip detail', () => {

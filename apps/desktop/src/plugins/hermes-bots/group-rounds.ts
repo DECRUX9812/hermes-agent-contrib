@@ -1057,13 +1057,7 @@ function queueGroupChatDrive(group: string, members: GroupMember[], thread: stri
         currentThread = nextThread
         drive.pending.delete(nextThread)
         updateGroupChat(group, room => ({ ...room, running: true }))
-        await runGroupChatRounds(
-          group,
-          nextSend.members,
-          nextThread,
-          drive.failedMembers,
-          await nextSend.lead
-        )
+        await runGroupChatRounds(group, nextSend.members, nextThread, drive.failedMembers, await nextSend.lead)
       }
     } catch (error) {
       if (binding.isLive()) {

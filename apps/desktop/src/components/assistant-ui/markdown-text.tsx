@@ -596,12 +596,7 @@ function MarkdownParagraph({
       <>
         {resolved.map((segment, index) =>
           segment.kind === 'directive' ? (
-            <TranscriptDirectiveLeaf
-              key={index}
-              messageText={partText}
-              streaming={streaming}
-              text={segment.source}
-            />
+            <TranscriptDirectiveLeaf key={index} messageText={partText} streaming={streaming} text={segment.source} />
           ) : (
             <p className={paragraphClass} key={index} {...props}>
               {segment.text.trim()}

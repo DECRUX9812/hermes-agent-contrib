@@ -7,24 +7,14 @@ import { translateNow } from '@/i18n'
 import { desktopDefaultCwd } from '@/lib/desktop-fs'
 import { resolveDesktopGatewayWsUrl } from '@/lib/gateway-ws-url'
 import { BACKEND_BOOT_WAIT_TIMEOUT_MS, RECONNECT_ATTEMPT_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout'
-import {
-  completeDesktopBoot,
-  failDesktopBoot,
-  resumeDesktopBootForRetry,
-  setDesktopBootStep
-} from '@/store/boot'
+import { completeDesktopBoot, failDesktopBoot, resumeDesktopBootForRetry, setDesktopBootStep } from '@/store/boot'
 import {
   closeLegacySecondaryGateways,
   ensureGatewayForProfile,
   reportPrimaryGatewayState,
   setPrimaryGateway
 } from '@/store/gateway'
-import {
-  $gatewaySwitching,
-  beginGatewaySwitch,
-  endGatewaySwitch,
-  isCurrentGatewaySwitch
-} from '@/store/gateway-switch'
+import { $gatewaySwitching, beginGatewaySwitch, endGatewaySwitch, isCurrentGatewaySwitch } from '@/store/gateway-switch'
 import { watchLocalRuntimeJobs } from '@/store/local-runtime-jobs'
 import { notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, normalizeProfileKey, refreshActiveProfile } from '@/store/profile'
@@ -40,7 +30,11 @@ import { warnIfTerminalBackendUnavailable } from '@/store/terminal-backend-warni
 import { isPeerInstanceWindow, windowProfileOverride } from '@/store/windows'
 
 import type { GatewaySurvivor } from './gateway-hmr-survivor'
-import { BOOT_RETRY_BASE_DELAY_MS, BOOT_RETRY_MAX_ATTEMPTS, connectInitialGateway } from './use-gateway-boot-initial-connect'
+import {
+  BOOT_RETRY_BASE_DELAY_MS,
+  BOOT_RETRY_MAX_ATTEMPTS,
+  connectInitialGateway
+} from './use-gateway-boot-initial-connect'
 import {
   type GatewayBootCallbacksRef,
   type GatewayBootReconnect,
@@ -62,7 +56,15 @@ export interface GatewayBootPhaseDeps {
 // The boot phases: window-backend resolution, profile adoption, cwd seeding,
 // the soft connection-switch apply, the cold boot handshake (with its bounded
 // remote retry loop), and the HMR adopt path.
-export function createGatewayBootPhases({ s, desktop, gateway, callbacksRef, publish, survivor, reconnect }: GatewayBootPhaseDeps) {
+export function createGatewayBootPhases({
+  s,
+  desktop,
+  gateway,
+  callbacksRef,
+  publish,
+  survivor,
+  reconnect
+}: GatewayBootPhaseDeps) {
   const { clearBootRetryTimer, clearLivenessReprobeTimer, clearReconnectTimer, resetReconnectBackoff } = reconnect
   const { bootFailureIsRetryable } = reconnect
 

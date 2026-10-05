@@ -43,9 +43,7 @@ type CapabilityRequester = <T>(method: string, params?: Record<string, unknown>)
 /** Resolve against one backend and publish the verdict. The requester is the
  *  only seam a test (or a non-active gateway probe) needs; everything else is
  *  pure decode. */
-export async function resolveBackendCapabilities(
-  request: CapabilityRequester
-): Promise<BackendCapabilities> {
+export async function resolveBackendCapabilities(request: CapabilityRequester): Promise<BackendCapabilities> {
   try {
     const advertised = await request<Record<string, unknown>>('gateway.capabilities', {})
 

@@ -12,19 +12,9 @@ import { sanitizeComposerInput } from '@/lib/composer-input-sanitize'
 import { DATA_IMAGE_URL_RE } from '@/lib/embedded-images'
 import { triggerHaptic } from '@/lib/haptics'
 import { type ComposerAttachment } from '@/store/composer'
-import {
-  browseBackward,
-  browseForward,
-  deriveUserHistory,
-  isBrowsingHistory
-} from '@/store/composer-input-history'
+import { browseBackward, browseForward, deriveUserHistory, isBrowsingHistory } from '@/store/composer-input-history'
 
-import {
-  acceptsTriggerCompletion,
-  implicitSlashAcceptIndex,
-  liveComposerDraft,
-  slashArgStage
-} from '../composer-utils'
+import { acceptsTriggerCompletion, implicitSlashAcceptIndex, liveComposerDraft, slashArgStage } from '../composer-utils'
 import { shouldConvertPasteToAttachment } from '../large-paste'
 import { chipTypedPathOnSpace, pathifyRefs } from '../path-refs'
 import {
@@ -83,10 +73,7 @@ type TriggerApi = Pick<
   | 'triggerKeyConsumedRef'
   | 'triggerLoading'
 >
-type UndoApi = Pick<
-  ReturnType<typeof useComposerUndo>,
-  'recordUndoPoint' | 'redo' | 'undo' | 'withUndoPoint'
->
+type UndoApi = Pick<ReturnType<typeof useComposerUndo>, 'recordUndoPoint' | 'redo' | 'undo' | 'withUndoPoint'>
 
 export interface ComposerEditorHandlersOptions {
   attachments: ComposerAttachment[]

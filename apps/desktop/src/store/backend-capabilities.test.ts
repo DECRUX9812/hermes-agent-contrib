@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import {
-  $backendCapabilities,
-  POOLED_BACKEND_CAPABILITIES,
-  resolveBackendCapabilities
-} from './backend-capabilities'
+import { $backendCapabilities, POOLED_BACKEND_CAPABILITIES, resolveBackendCapabilities } from './backend-capabilities'
 
 describe('backend-capabilities', () => {
   beforeEach(() => {
@@ -24,8 +20,8 @@ describe('backend-capabilities', () => {
   })
 
   it('a backend advertising canonical authority resolves canonical, and a probe failure stays pooled', async () => {
-    const canonical = await resolveBackendCapabilities(async <T>(): Promise<T> =>
-      ({ canonical_authority: true, session_replay: true, shared_controls: true }) as T
+    const canonical = await resolveBackendCapabilities(
+      async <T>(): Promise<T> => ({ canonical_authority: true, session_replay: true, shared_controls: true }) as T
     )
 
     expect(canonical).toEqual({ canonicalAuthority: true, sessionReplay: true, sharedControls: true })

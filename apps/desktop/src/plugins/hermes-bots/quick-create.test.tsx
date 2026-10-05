@@ -133,13 +133,8 @@ describe('the minimal dialog', () => {
     expect(createCalls()[0][1]).not.toHaveProperty('model')
     expect(createCalls()[0][1]).not.toHaveProperty('provider')
     // The hermes-bots ui_meta marker — what makes the profile a roster bot.
-    expect(mocks.saveBotMeta).toHaveBeenCalledWith(
-      'inbox-triage',
-      expect.objectContaining({ imageKind: 'shape' })
-    )
-    await waitFor(() =>
-      expect(mocks.createCanonicalChat).toHaveBeenCalledWith('inbox-triage', { kickoff: true })
-    )
+    expect(mocks.saveBotMeta).toHaveBeenCalledWith('inbox-triage', expect.objectContaining({ imageKind: 'shape' }))
+    await waitFor(() => expect(mocks.createCanonicalChat).toHaveBeenCalledWith('inbox-triage', { kickoff: true }))
   })
 
   it('blocks Create on a taken name', async () => {

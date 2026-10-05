@@ -169,7 +169,9 @@ function isPlanMessage(message: ChatMessage): boolean {
 }
 
 function hasExecutePrefix(message: ChatMessage): boolean {
-  return message.role === 'user' && !message.hidden && chatMessageText(message).trimStart().startsWith(EXECUTE_PLAN_PREFIX)
+  return (
+    message.role === 'user' && !message.hidden && chatMessageText(message).trimStart().startsWith(EXECUTE_PLAN_PREFIX)
+  )
 }
 
 function collectDoneSteps(text: string, out: Set<number>): void {

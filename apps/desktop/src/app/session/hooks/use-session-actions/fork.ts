@@ -1,25 +1,36 @@
-import {useCallback, useRef} from 'react'
+import { useCallback, useRef } from 'react'
 
-import {revealTreePane} from '@/components/pane-shell/tree/store'
-import {getAllSessionMessages} from '@/hermes'
-import {useI18n} from '@/i18n'
-import {type ChatMessage, toChatMessages} from '@/lib/chat-messages'
-import {isMissingRpcMethod} from '@/lib/gateway-rpc'
-import {requestGatewayForAgent} from '@/store/gateway'
-import {clearNotifications, notify, notifyError} from '@/store/notifications'
-import {ensureGatewayAgent, ensureGatewayProfile} from '@/store/profile'
-import {$currentCwd, $messages, $sessions, setFreshDraftReady, setSessionOwnerHint} from '@/store/session'
-import {type SessionOwnerRoute, sessionOwnerRouteFromRow} from '@/store/session-request-router'
-import {holdSessionOwnerUntilForeground, openSessionTile, patchSessionTile} from '@/store/session-states'
-import {broadcastSessionsChanged} from '@/store/session-sync'
-import type {SessionCreateResponse} from '@/types/hermes'
+import { revealTreePane } from '@/components/pane-shell/tree/store'
+import { getAllSessionMessages } from '@/hermes'
+import { useI18n } from '@/i18n'
+import { type ChatMessage, toChatMessages } from '@/lib/chat-messages'
+import { isMissingRpcMethod } from '@/lib/gateway-rpc'
+import { requestGatewayForAgent } from '@/store/gateway'
+import { clearNotifications, notify, notifyError } from '@/store/notifications'
+import { ensureGatewayAgent, ensureGatewayProfile } from '@/store/profile'
+import { $currentCwd, $messages, $sessions, setFreshDraftReady, setSessionOwnerHint } from '@/store/session'
+import { type SessionOwnerRoute, sessionOwnerRouteFromRow } from '@/store/session-request-router'
+import { holdSessionOwnerUntilForeground, openSessionTile, patchSessionTile } from '@/store/session-states'
+import { broadcastSessionsChanged } from '@/store/session-sync'
+import type { SessionCreateResponse } from '@/types/hermes'
 
-import {sessionRoute} from '../../../routes'
-import {sessionContextDrift} from '../session-context-drift'
+import { sessionRoute } from '../../../routes'
+import { sessionContextDrift } from '../session-context-drift'
 
-import type {CreateGuard} from './create-guard'
+import type { CreateGuard } from './create-guard'
 import type { BranchLoadedSessionOptions, SessionActionHandles, SessionActionsOptions } from './options'
-import {applyRuntimeInfo, type BranchMessage, cachedSessionRow, patchSessionWorkspace, resolveSessionProfile, resolveStoredSession, selectBranchMessages, sessionMatchesStoredId, toBranchMessages, upsertOptimisticSession} from './utils'
+import {
+  applyRuntimeInfo,
+  type BranchMessage,
+  cachedSessionRow,
+  patchSessionWorkspace,
+  resolveSessionProfile,
+  resolveStoredSession,
+  selectBranchMessages,
+  sessionMatchesStoredId,
+  toBranchMessages,
+  upsertOptimisticSession
+} from './utils'
 
 // Identity of one branch create, so a re-entered branch action (a retried
 // renderer transition, a double right-click) rides the create already in
@@ -58,7 +69,17 @@ const branchMessagesFingerprint = (messages: BranchMessage[]): string =>
   JSON.stringify(messages.map(({ content, role }) => [role, content]))
 
 export function useForkActions(
-  { activeSessionIdRef, busyRef, creatingSessionRef, ensureSessionState, getRouteToken, navigate, requestGateway, selectedStoredSessionIdRef, updateSessionState }: SessionActionsOptions,
+  {
+    activeSessionIdRef,
+    busyRef,
+    creatingSessionRef,
+    ensureSessionState,
+    getRouteToken,
+    navigate,
+    requestGateway,
+    selectedStoredSessionIdRef,
+    updateSessionState
+  }: SessionActionsOptions,
   { createGuard, resumeSession }: Pick<SessionActionHandles, 'resumeSession'> & { createGuard: CreateGuard }
 ) {
   const { t } = useI18n()
@@ -520,6 +541,6 @@ export function useForkActions(
     forkBranch,
     branchCurrentSession,
     branchLoadedSession,
-    branchStoredSession,
+    branchStoredSession
   }
 }

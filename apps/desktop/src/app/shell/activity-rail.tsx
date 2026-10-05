@@ -44,7 +44,13 @@ interface RailEntry {
   onPress: () => void
 }
 
-function RailButton({ entry, register }: { entry: RailEntry; register: (key: string, el: HTMLElement | null) => void }) {
+function RailButton({
+  entry,
+  register
+}: {
+  entry: RailEntry
+  register: (key: string, el: HTMLElement | null) => void
+}) {
   return (
     <Tip label={entry.label} side="right" sideOffset={10}>
       <button

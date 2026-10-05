@@ -1,24 +1,9 @@
-
-
-
-
-
-
-
 import { type Translations } from '@/i18n'
-import {
-  REORDER_DRAG_TRANSITION_CSS,
-  REORDER_RAIL_TRANSITION
-} from '@/lib/reorder'
+import { REORDER_DRAG_TRANSITION_CSS, REORDER_RAIL_TRANSITION } from '@/lib/reorder'
 import { useStoreSelector } from '@/lib/use-session-slice'
-import {
-  $profileDotStateByScope,
-  type ProfileDotSummary,
-  profileDotSummaryFor
-} from '@/store/profile-dot-state'
+import { $profileDotStateByScope, type ProfileDotSummary, profileDotSummaryFor } from '@/store/profile-dot-state'
 
 import { sessionDotClassName } from '../session-status-dot'
-
 
 // #91710: a profile that finished (or blocked, or is still working) while
 // another was selected carries an indicator on its rail square and dropdown
@@ -50,7 +35,10 @@ export function profileStatusLabel(p: Translations['profiles'], summary: Profile
  *  (gateway, profile) the square names. `connectionId` is null for this
  *  machine's primary. The interned summaries keep the selector's bail-out
  *  intact: a square re-renders only when its own counts change. */
-export function useProfileStatus(profile: null | string, connectionId: null | string | undefined): ProfileDotSummary | null {
+export function useProfileStatus(
+  profile: null | string,
+  connectionId: null | string | undefined
+): ProfileDotSummary | null {
   return useStoreSelector($profileDotStateByScope, byScope =>
     profile ? (profileDotSummaryFor(byScope, connectionId, profile) ?? null) : null
   )

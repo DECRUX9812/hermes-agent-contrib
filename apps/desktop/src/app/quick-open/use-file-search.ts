@@ -45,6 +45,7 @@ export function useFileSearch(query: string, cwd: string): { items: QuickOpenIte
     }
   }, [cwd, gateway, query, sessionId])
 
-  return query ? { items: state.query === query ? state.items : [], loading: state.loading || state.query !== query } : { items: [], loading: false }
+  return query
+    ? { items: state.query === query ? state.items : [], loading: state.loading || state.query !== query }
+    : { items: [], loading: false }
 }
-
