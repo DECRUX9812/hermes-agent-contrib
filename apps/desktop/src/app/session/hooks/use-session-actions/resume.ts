@@ -87,6 +87,7 @@ import {
   appendLiveSessionProjection,
   applyRuntimeInfo,
   applyStoredSessionPreviewRuntimeInfo,
+  cachedSessionRow,
   chatMessageArraysEquivalent,
   dedupeInflightUserAgainstTranscript,
   goneSessionVerdict,
@@ -363,7 +364,30 @@ export function useResumeActions(
       // gateway call (no-op when it's already on that profile / single-profile).
       // resolveStoredSession finds the row by id (cheap), so an uncached pasted
       // id loads as fast as a sidebar click instead of hanging on a list scan.
-      const ownerRoute = capturedOwner || getSessionOwnerHint(storedSessionId)
+      //
+      // A persisted owner hint is only trustworthy when it agrees with the
+      // best cached row for the session. Comparing against the live foreground
+      // socket is wrong in exactly the case the hint exists for: hints are
+      // minted from the AMBIENT connection at create/open time, which in the
+      // all-profiles view is not the foreground. The row is the authority.
+      //
+      // An explicitly captured owner is authoritative as given; only the
+      // REMEMBERED hint is validated, never the caller capture.
+      const rememberedHint = capturedOwner ? undefined : getSessionOwnerHint(storedSessionId)
+      const rowOwnerRoute = sessionOwnerRouteFromRow(cachedSessionRow(storedSessionId))
+
+      const rememberedOwner =
+        rememberedHint && rowOwnerRoute && rememberedHint.connectionId === rowOwnerRoute.connectionId
+          ? rememberedHint
+          : undefined
+
+      if (rememberedHint && !rememberedOwner) {
+        forgetSessionOwnerHintsForSession(storedSessionId)
+      }
+
+      // An explicit capture outranks the remembered hint; the hint only
+      // fills in when the caller had no route to give.
+      const ownerRoute = capturedOwner || rememberedOwner
       // A connection switch clears/reloads the session rows before this path
       // runs, so an untagged row belongs to the connection that supplied the
       // current list. Capture that source before the async metadata lookup. If

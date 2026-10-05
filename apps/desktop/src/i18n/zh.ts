@@ -378,7 +378,7 @@ export const zh = defineLocale({
       inputTitleNamed: session => `需要输入 — ${session}`,
       inputBody: 'Hermes 正在等待你的回应。',
       turnDoneTitle: 'Hermes 已完成',
-      turnDoneBody: '',
+      turnDoneBody: '消息已完成。',
       turnErrorTitle: '本轮失败',
       backgroundDoneTitle: '后台任务已完成',
       backgroundFailedTitle: '后台任务失败',
@@ -1727,6 +1727,8 @@ export const zh = defineLocale({
       sshErrPlatform: '不支持的远程平台。Hermes Desktop 的 SSH 模式支持 Linux、macOS 和 Windows 远程主机。',
       sshErrTimeout: 'SSH 连接超时。主机可能无法访问或处于休眠状态。',
       sshErrUpdateRequired: '使用 Desktop SSH 连接前，请更新远程主机上的 Hermes。',
+      sshErrInteractiveAuth:
+        'Tailscale SSH 需要交互式浏览器验证。请在终端运行 `ssh <host> true` 完成验证后重试——Hermes 以非交互方式运行 SSH。',
       sshErrUnknown: 'SSH 连接失败。'
     },
     keys: {
@@ -4872,6 +4874,9 @@ export const zh = defineLocale({
       showTerminal: '显示终端',
       hideTerminal: '隐藏终端',
       gateway: '网关',
+      backend: '后端',
+      messagingStopped: '消息网关已停止',
+      messagingDegraded: name => `${name} 异常`,
       gatewayReady: '就绪',
       gatewayNeedsSetup: '需要设置',
       gatewayUnavailable: '推理不可用',

@@ -630,6 +630,40 @@ describe('GatewaySettings', () => {
     })
   })
 
+  it('surfaces the Tailscale browser-check guidance for an interactive-auth SSH test failure', async () => {
+    getConnectionConfig.mockResolvedValue({
+      ...localConnection,
+      mode: 'ssh',
+      sshHost: 'build-box',
+      sshUser: '',
+      sshPort: 22,
+      sshKeyPath: '',
+      sshRemoteHermesPath: '',
+      sshRemoteProfile: ''
+    })
+    const testConnectionConfig = vi.fn().mockResolvedValue({ reachable: false, sshError: 'interactive-auth' })
+    Object.assign(window.hermesDesktop, { testConnectionConfig })
+
+    render(<GatewaySettings />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Test SSH' }))
+
+    // interactive-auth is the Tailscale browser-check class: the notification
+    // must carry the "run ssh <host> true" guidance, not the generic
+    // "SSH connection failed." fallback the table previously collapsed to.
+    try {
+      await waitFor(() =>
+        expect($notifications.get()).toEqual(
+          expect.arrayContaining([expect.objectContaining({ kind: 'error', message: expect.stringContaining('ssh <host> true') })])
+        )
+      )
+      expect(
+        $notifications.get().some((n: { message?: string }) => n.message === 'SSH connection failed.')
+      ).toBe(false)
+    } finally {
+      $notifications.set([])
+    }
+  })
+
   it('opens a focused, typeable custom SSH host input on the first "Custom" selection', async () => {
     getConnectionConfig.mockResolvedValue({
       ...localConnection,

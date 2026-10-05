@@ -1395,6 +1395,8 @@ export const ru = defineLocale({
         'Неподдерживаемая удалённая платформа. SSH-режим Hermes Desktop поддерживает удалённые хосты Linux, macOS и Windows.',
       sshErrTimeout: 'SSH-соединение истекло. Хост может быть недоступен или «спит».',
       sshErrUpdateRequired: 'Перед подключением через SSH обновите Hermes на удалённой машине.',
+      sshErrInteractiveAuth:
+        'Tailscale SSH требует интерактивной проверки в браузере. Выполните `ssh <host> true` в терминале, завершите проверку и повторите попытку — Hermes запускает SSH неинтерактивно.',
       sshErrUnknown: 'SSH-соединение не удалось.'
     },
     keys: {
@@ -4114,6 +4116,9 @@ export const ru = defineLocale({
       showTerminal: 'Показать терминал',
       hideTerminal: 'Скрыть терминал',
       gateway: 'Шлюз',
+      backend: 'Бэкенд',
+      messagingStopped: 'шлюз сообщений остановлен',
+      messagingDegraded: name => `${name} недоступен`,
       gatewayReady: 'готов',
       gatewayNeedsSetup: 'нужна настройка',
       gatewayChecking: 'проверка',

@@ -667,7 +667,7 @@ export const en: Translations = {
       inputTitleNamed: session => `Input needed — ${session}`,
       inputBody: 'Hermes is waiting for your response.',
       turnDoneTitle: 'Hermes finished',
-      turnDoneBody: '',
+      turnDoneBody: 'Message complete.',
       turnErrorTitle: 'Turn failed',
       backgroundDoneTitle: 'Background task finished',
       backgroundFailedTitle: 'Background task failed',
@@ -1820,6 +1820,8 @@ export const en: Translations = {
         'Unsupported remote platform. Hermes Desktop SSH mode supports Linux, macOS, and Windows remote hosts.',
       sshErrTimeout: 'SSH connection timed out. The host may be unreachable or asleep.',
       sshErrUpdateRequired: 'Update Hermes on the remote host before connecting with Desktop SSH.',
+      sshErrInteractiveAuth:
+        'Tailscale SSH requires an interactive browser check. In Terminal, run `ssh <host> true`, complete the check, then retry — Hermes runs SSH non-interactively.',
       sshErrUnknown: 'SSH connection failed.'
     },
     keys: {
@@ -5238,6 +5240,9 @@ export const en: Translations = {
       showTerminal: 'Show terminal',
       hideTerminal: 'Hide terminal',
       gateway: 'Gateway',
+      backend: 'Backend',
+      messagingStopped: 'messaging stopped',
+      messagingDegraded: name => `${name} down`,
       gatewayReady: 'ready',
       gatewayNeedsSetup: 'needs setup',
       gatewayUnavailable: 'inference unavailable',

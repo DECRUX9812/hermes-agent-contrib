@@ -1150,6 +1150,8 @@ export const zhHantSettings = {
       cloudStatusLabel: status => `狀態：${status}`,
       cloudTitle: 'Hermes Cloud',
       cloudSignInTitle: 'Hermes Cloud'
+      sshErrInteractiveAuth:
+        'Tailscale SSH 需要互動式瀏覽器驗證。請在終端機執行 `ssh <host> true` 完成驗證後重試——Hermes 以非互動方式執行 SSH。',
     },
     keys: {
       loading: '正在載入 API 金鑰和憑證...',
