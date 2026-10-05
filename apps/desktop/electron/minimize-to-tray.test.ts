@@ -51,6 +51,7 @@ vi.mock('electron', () => ({
 vi.mock('./tray-host', () => ({ watchLinuxTrayHost: async () => () => {} }))
 
 import { createMinimizeToTray } from './minimize-to-tray'
+import { DEFAULT_TRAY_STATUS_STRINGS } from './tray-status'
 
 class Window extends EventEmitter {
   visible = true
@@ -375,7 +376,8 @@ test('linux reuses one tray when minimize-to-tray is toggled off and on (#126353
     main.minimize()
     await flushDeferredHide()
     expect(main.visible).toBe(false)
-    native.trays[0].menu[0].click()
+    // Item 0 is the disabled status line; find the show action by its label.
+    native.trays[0].menu.find(item => item.label === DEFAULT_TRAY_STATUS_STRINGS.show).click()
     expect(main.visible).toBe(true)
   } finally {
     restorePlatform()
