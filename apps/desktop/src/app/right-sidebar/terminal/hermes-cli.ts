@@ -21,7 +21,7 @@ export async function continueInHermesCli(
   }
 
   try {
-    const result = await window.hermesDesktop.openSessionInTerminal(sessionId ?? '', { ...opts, target: 'pane' })
+    const result = await window.hermesDesktop.openSessionInTerminal?.(sessionId ?? '', { ...opts, target: 'pane' })
 
     if (!result?.ok || !result.run) {
       throw new Error(result?.error || 'unknown error')

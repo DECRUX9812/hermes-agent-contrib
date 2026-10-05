@@ -13,6 +13,7 @@ import { useI18n } from '@/i18n'
 import { EDITORS } from '@/lib/editor-handoff'
 import { triggerHaptic } from '@/lib/haptics'
 import { Check, Download, Loader2, Palette, Trash2 } from '@/lib/icons'
+import { isBrowserHostedDesktop } from '@/lib/platform'
 import { selectableCardClass } from '@/lib/selectable-card'
 import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
@@ -452,6 +453,7 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const installs = useStore($marketplaceInstalls)
   const profiles = useStore($profiles)
   const activeProfileKey = normalizeProfileKey(useStore($activeGatewayProfile))
+  const browserHosted = isBrowserHostedDesktop()
   const a = t.settings.appearance
 
   // A pointer held on the intensity slider when this overlay closes (Escape
@@ -830,7 +832,7 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
 
           {/* Linux has neither half of this setting (see TRANSLUCENCY_SUPPORTED),
               so the row is absent there rather than offering a dead lever. */}
-          {show('window-layout') && TRANSLUCENCY_SUPPORTED && (
+          {show('window-layout') && TRANSLUCENCY_SUPPORTED && !browserHosted && (
             <ListRow
               action={
                 <div

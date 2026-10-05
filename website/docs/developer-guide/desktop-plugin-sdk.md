@@ -453,8 +453,6 @@ manual pick. To tint the *active* theme rather than replace it, use
 [Accent Picker](https://github.com/NousResearch/hermes-desktop-accent-picker)
 plugin is the worked example (it is also a complete, installable disk plugin).
 
-plugin is the worked example (it is also a complete, installable disk plugin).
-
 #### Styling the chat switch — `data-session-switching`
 
 Opening a chat places its transcript in steps: the session loads, the rows

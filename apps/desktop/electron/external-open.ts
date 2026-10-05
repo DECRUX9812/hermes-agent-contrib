@@ -15,6 +15,8 @@
 
 import type { ChildProcess, SpawnOptions } from 'node:child_process'
 
+import { externalUrlTarget } from '../../shared/src/external-url'
+
 import { absolutizeProtocolRelativeUrl, looksLikeLocalFilesystemPath } from './local-filesystem-path'
 
 export type ExternalOpenResult =
@@ -67,8 +69,6 @@ export interface ExternalOpenDeps {
   notifyFailure: (url: string, message: string) => void
   log: (line: string) => void
 }
-
-const SUPPORTED_WEB = ['http:', 'https:', 'mailto:']
 
 const EDITOR_SCHEMES = new Set(['vscode:', 'cursor:', 'windsurf:', 'zed:'])
 
@@ -134,29 +134,38 @@ export async function openExternalUrl(rawUrl: string, deps: ExternalOpenDeps): P
     return { ok: true }
   }
 
-  let parsed: URL
+  const target = externalUrlTarget(raw)
 
-  try {
-    parsed = new URL(raw)
-  } catch {
-    return { ok: false, reason: 'invalid' }
-  }
+  let url: string
 
-  if (parsed.protocol === 'file:') {
+  if (!target) {
+    // "Open in editor" deep links (src/lib/editor-handoff.ts) are a
+    // desktop-only route the shared web classifier refuses: re-parse and admit
+    // only the open-a-file shapes, which shell.openExternal sends to the editor.
+    let parsed: URL
+
     try {
-      await deps.openFile(raw)
+      parsed = new URL(raw)
+    } catch {
+      return { ok: false, reason: 'invalid' }
+    }
+
+    if (!isEditorHandoffUrl(parsed)) {
+      return { ok: false, reason: 'invalid' }
+    }
+
+    url = parsed.toString()
+  } else if (target.kind === 'file') {
+    try {
+      await deps.openFile(target.url)
     } catch {
       // main's openFile handles its own fallback; never surfaced here
     }
 
     return { ok: true }
+  } else {
+    url = target.url
   }
-
-  if (!SUPPORTED_WEB.includes(parsed.protocol) && !isEditorHandoffUrl(parsed)) {
-    return { ok: false, reason: 'invalid' }
-  }
-
-  const url = parsed.toString()
 
   if (deps.isWsl) {
     return openViaWsl(url, deps)

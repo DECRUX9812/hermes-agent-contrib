@@ -57,7 +57,7 @@ it('keeps background continuations in one response with one action bar and the o
     expect(
       [...container.querySelectorAll('[data-role="assistant"]')].map(e => e.getAttribute('data-message-id'))
     ).toEqual([messages[1]!.id, messages[3]!.id])
-    const actions = container.querySelector('[data-slot="aui_msg-actions"]') as HTMLElement
+    const actions = container.querySelector('[data-slot="aui_msg-actions"] .aui-message-actions-desktop') as HTMLElement
     // Default Copy reads only the tail reply; the full-response scope is a
     // separate explicit action (#118864).
     fireEvent.click(within(actions).getByRole('button', { name: /^copy$/i }))

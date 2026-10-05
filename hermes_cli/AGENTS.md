@@ -158,6 +158,8 @@ with tools (`TWILIO_`/`EMAIL_`, plus a plugin platform's `shared_env_prefixes`) 
 list; a platform that left core keeps its ownership from its `LEFT_CORE` row while the plugin is absent). `--clone-channels` opts in and its live-multiplexer refusal lives in `create_profile` (CLI, REST
 and TUI all go through it). Clones are built in `profiles/.<name>.staging-<pid>` (hidden → invisible to
 `_iter_named_profile_dirs` and the hot-serve rescan) and published by one `os.rename` after the strip;
+the copy leases only the TARGET name (every cold `SessionDB` open takes its name's lease): the source is
+pinned by incarnation and re-checked before publish, so a source deleted/replaced mid-copy fails the clone;
 symlinked `.env`/`config.yaml` are materialized first so a clone never writes through to its source. Multiplex
 (`gateway.multiplex_profiles`) secret-scope rules: `gateway/AGENTS.md`. The served set is
 `profiles.py::profiles_to_serve(multiplex=True)` = default + every live dir under `profiles/` — live =

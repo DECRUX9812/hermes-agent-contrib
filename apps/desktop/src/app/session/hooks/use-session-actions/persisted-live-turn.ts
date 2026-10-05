@@ -5,7 +5,7 @@ import { parseErrorSurface } from '@/lib/error-surface'
 import type { SessionMessage, SessionResumeResult } from '@/types/hermes'
 
 import { mergeLiveAssistantRun } from './live-turn-remainder'
-import { reconcileDurableHistory } from './utils'
+import { finiteTurnStartedAt, reconcileDurableHistory } from './utils'
 
 const rowId = (row: SessionMessage) => row.row_id ?? row.id
 const userText = (text: string) => textWithoutReferenceLines(text).trim()
@@ -327,4 +327,65 @@ export function reconcilePersistedLiveTurn(
   }
 
   return result
+}
+
+/**
+ * Turn-boundary-aware wrapper: slice source rows to the journal's
+ * backend-owned `turn_started_at` before occurrence reconciliation, and keep
+ * that boundary on a runtime wake's projected reply.
+ */
+export function reconcilePersistedSessionTurn(
+  messages: ChatMessage[],
+  previous: ChatMessage[],
+  rows: SessionMessage[],
+  projection: Pick<SessionResumeResult, 'inflight' | 'queued' | 'session_id' | 'turn_started_at'>
+): ChatMessage[] | null {
+  const startedAt = finiteTurnStartedAt(projection)
+  const hasBoundary = startedAt !== null
+
+  const currentStart = hasBoundary
+    ? rows.findIndex(row => row.timestamp !== undefined && row.timestamp >= startedAt)
+    : 0
+
+  if (currentStart < 0) {
+    return null
+  }
+
+  const currentRows = rows.slice(currentStart)
+
+  // The occurrence resolver predates canonical user provenance. Do not let a
+  // runtime notice occupy a human prompt slot, even when its prose is equal.
+  if (
+    projection.inflight?.user_originated !== false &&
+    currentRows.some(row => row.role === 'user' && row.user_originated === false)
+  ) {
+    return null
+  }
+
+  const reconciled = reconcilePersistedLiveTurn(messages, previous, currentRows, projection)
+
+  if (!reconciled || projection.inflight?.user_originated !== false || !hasBoundary) {
+    return reconciled
+  }
+
+  // A visible runtime wake can use source-row occurrence reconciliation too,
+  // but its projected reply must retain the journal's backend-owned boundary.
+  // Hidden/system wakes have no user anchor and use the legacy projection path.
+  const boundary = reconciled.findIndex(
+    message =>
+      message.role === 'user' &&
+      message.userOriginated === false &&
+      message.timestamp !== undefined &&
+      message.timestamp >= startedAt
+  )
+
+  if (boundary < 0) {
+    return null
+  }
+
+  return reconciled.map((message, index) =>
+    index >= boundary && message.id !== `user-queued-${projection.session_id}`
+      ? { ...message, runtimeTurnStartedAt: startedAt }
+      : message
+  )
 }
