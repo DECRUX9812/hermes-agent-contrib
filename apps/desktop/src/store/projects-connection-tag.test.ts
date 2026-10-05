@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SidebarProjectTree } from '@/app/chat/sidebar/projects/workspace-groups'
 import { hermesApi } from '@/hermes'
 import { $gateway, activeGateway, activeGatewayConnectionId, isActivePrimary } from '@/store/gateway'
-import { $activeGatewayProfile, setShowAllProfiles } from '@/store/profile'
+import { $activeGatewayProfile, $profiles, setShowAllProfiles } from '@/store/profile'
 import { $sessions } from '@/store/session'
 import { sessionOwnerRouteFromRow } from '@/store/session-request-router'
 import { deferred } from '@/test/deferred'
@@ -70,10 +70,17 @@ function connect(request = vi.fn()) {
   return request
 }
 
+// All-profiles mode is hidden while fewer than two profiles exist, so a test
+// that wants the cross-profile tree has to load a second one.
+function viewAllProfiles(on = true) {
+  $profiles.set(on ? [{ is_default: true, name: 'default' } as never, { is_default: false, name: 'work' } as never] : [])
+  setShowAllProfiles(on)
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   $activeGatewayProfile.set('default')
-  setShowAllProfiles(false)
+  viewAllProfiles(false)
   $sessions.set([])
   $projectTree.set([])
   selectConnection('home')
@@ -118,7 +125,7 @@ describe('project session connection provenance', () => {
 
       connect(request)
       vi.mocked(hermesApi).mockImplementation(request as never)
-      setShowAllProfiles(surface === 'all-profiles')
+      viewAllProfiles(surface === 'all-profiles')
 
       const result = surface === 'hydrated' ? fetchProjectSessions('project') : refreshProjectTree()
       await started.promise
@@ -140,7 +147,7 @@ describe('project session connection provenance', () => {
     project.previewSessions![0].profile = 'coder'
     vi.mocked(hermesApi).mockResolvedValue({ projects: [project], scoped_session_ids: [] })
     selectConnection('local')
-    setShowAllProfiles(true)
+    viewAllProfiles()
 
     await refreshProjectTree()
 
@@ -172,7 +179,7 @@ describe('project session connection provenance', () => {
 
     vi.mocked(hermesApi).mockResolvedValue({ projects: [project], scoped_session_ids: [] })
     selectConnection(active)
-    setShowAllProfiles(true)
+    viewAllProfiles()
 
     await refreshProjectTree()
 
