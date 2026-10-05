@@ -12,8 +12,9 @@ import { atom } from 'nanostores'
 
 import type { AvatarId, DemoScript, NotifyRequest, PaneAnchor, PaneState, ScreenRect } from '../protocol'
 import { AVATAR_IDS } from '../protocol'
+import { prewarmPlan, type PrewarmStage } from '../scene/prewarm'
 import { avatarFrames } from '../scene/projection'
-import { setReducedMotion } from '../scene/reduced-motion'
+import { prefersReducedMotion, setReducedMotion } from '../scene/reduced-motion'
 
 import { dismiss, summon } from './director'
 
@@ -183,6 +184,11 @@ export interface Pane3dDebugSnapshot {
   tasks: unknown[]
   chart: null
   lastDemo: DemoScript | null
+  /** Shader pre-warm lifecycle — 'warm' means the programs are linked and `ready` is imminent. */
+  prewarm: PrewarmStage
+  /** Every avatar id the pre-warm covered, registry-driven. */
+  prewarmed: AvatarId[]
+  reducedMotion: boolean
 }
 
 /**
@@ -192,6 +198,7 @@ export interface Pane3dDebugSnapshot {
 export function snapshotPane3d(): Pane3dDebugSnapshot {
   const avatars = $avatars.get()
   const visibleOrder = AVATAR_IDS.filter(id => avatars[id].visible)
+  const prewarm = prewarmPlan()
 
   return {
     anchor: pane3dRuntime.anchor,
@@ -217,6 +224,9 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
     frameloop: pane3dRuntime.frameloop,
     lastDemo: pane3dRuntime.lastDemo,
     pixelRatio: pane3dRuntime.pixelRatio,
+    prewarm: prewarm.stage,
+    prewarmed: [...prewarm.ids],
+    reducedMotion: prefersReducedMotion(),
     regions: [...pane3dRuntime.regions],
     renderCount: pane3dRuntime.renderCount,
     tasks: [],

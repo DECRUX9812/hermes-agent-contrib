@@ -7,7 +7,9 @@ import { $avatars, applyPaneState, pane3dRuntime } from './director/store'
 import { HitRegionPublisher } from './hit/publisher'
 import { PaneCamera } from './scene/camera'
 import { PaneLights } from './scene/lights'
+import { prewarmCompletion } from './scene/prewarm'
 import { Projector } from './scene/projector'
+import { ShaderPrewarm } from './scene/shader-prewarm'
 import { Stage } from './scene/stage'
 import { PaneOverlay } from './ui/pane-overlay'
 
@@ -64,14 +66,26 @@ export function PaneApp() {
       return undefined
     }
 
+    let cancelled = false
+
     // Subscribe BEFORE announcing readiness: a notification that opened this
     // pane is queued in main until our `ready` arrives, and it must land on a
     // listener that already exists.
     const off = api.onState(applyPaneState)
 
-    api.control({ type: 'ready' })
+    // `ready` also waits for the shader pre-warm. Main holds every state until
+    // it arrives, so a summon can never reach an avatar whose programs are not
+    // linked yet — the first emergence never pays the link (§8.4).
+    void prewarmCompletion().then(() => {
+      if (!cancelled) {
+        api.control({ type: 'ready' })
+      }
+    })
 
-    return off
+    return () => {
+      cancelled = true
+      off()
+    }
   }, [])
 
   return (
@@ -92,6 +106,8 @@ export function PaneApp() {
         <PaneCamera />
         <FrameCounter />
         <PaneLights />
+        {/* Off-screen, warmed by one draw and kept — see scene/prewarm.ts. */}
+        <ShaderPrewarm />
         <Stage />
         <Projector />
       </Canvas>

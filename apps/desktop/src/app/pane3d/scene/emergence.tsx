@@ -2,6 +2,7 @@ import { forwardRef, useMemo } from 'react'
 import * as THREE from 'three'
 
 import { SEAM_WIDTH } from './choreography'
+import { createSeamTexture } from './seam-texture'
 
 /**
  * The signature entrance (architecture §8.4): a shared horizontal clipping
@@ -51,8 +52,36 @@ function createContactShadowTexture(): THREE.CanvasTexture {
   return texture
 }
 
-/** Additive light seam along the perch edge; the rig drives width + opacity. */
+/**
+ * Both pane textures are generated once and shared: every avatar's edge group
+ * would otherwise create another canvas texture (and the pre-warm would leave
+ * one behind). They live for the pane's lifetime and are never disposed.
+ */
+let contactShadowTexture: THREE.CanvasTexture | null = null
+let seamTexture: THREE.CanvasTexture | null | undefined
+
+export function getContactShadowTexture(): THREE.CanvasTexture {
+  contactShadowTexture ??= createContactShadowTexture()
+
+  return contactShadowTexture
+}
+
+export function getSeamTexture(): THREE.CanvasTexture | null {
+  if (seamTexture === undefined) {
+    seamTexture = createSeamTexture()
+  }
+
+  return seamTexture
+}
+
+/**
+ * Additive light seam along the perch edge; the rig drives width + opacity.
+ * The generated alpha map fades both ends and the thin edges to zero, so the
+ * bar reads as a bloom of light instead of a rectangle (§8.4).
+ */
 export const EmergenceSeam = forwardRef<THREE.Mesh, { color: string }>(function EmergenceSeam({ color }, ref) {
+  const texture = useMemo(getSeamTexture, [])
+
   return (
     <mesh position={[0, 0, 0.02]} ref={ref} renderOrder={3}>
       <planeGeometry args={[SEAM_WIDTH, 0.035]} />
@@ -60,6 +89,7 @@ export const EmergenceSeam = forwardRef<THREE.Mesh, { color: string }>(function 
         blending={THREE.AdditiveBlending}
         color={color}
         depthWrite={false}
+        map={texture}
         opacity={0}
         toneMapped={false}
         transparent
@@ -70,7 +100,7 @@ export const EmergenceSeam = forwardRef<THREE.Mesh, { color: string }>(function 
 
 /** Soft blob contact shadow that settles as the avatar lands. */
 export const ContactShadow = forwardRef<THREE.Mesh, { scale?: number }>(function ContactShadow({ scale = 1 }, ref) {
-  const texture = useMemo(createContactShadowTexture, [])
+  const texture = useMemo(getContactShadowTexture, [])
 
   return (
     <mesh position={[0, -0.02, 0.015]} ref={ref} renderOrder={1}>
