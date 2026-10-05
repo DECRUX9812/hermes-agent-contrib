@@ -184,7 +184,10 @@ export type BudgetTone = 'exhausted' | 'ok' | 'paused' | 'warn'
 
 /** Traffic-light for a seat's month: paused wins; ≥100% is exhausted; ≥80% warns. No limit is
  *  always ok — an uncapped teammate is a choice, not a fault. */
-export function budgetState(member: Pick<TeamMember, 'budget' | 'status'>): { percent: null | number; tone: BudgetTone } {
+export function budgetState(member: Pick<TeamMember, 'budget' | 'status'>): {
+  percent: null | number
+  tone: BudgetTone
+} {
   if (member.status === 'paused') {
     return { percent: null, tone: 'paused' }
   }

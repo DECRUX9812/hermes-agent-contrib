@@ -15,7 +15,6 @@ import {
 const signature = (rows: [string, string, number][]) =>
   rows.map(([id, role, weight], index) => `${index}:${id}:${role}:${weight}`).join('\n')
 
-
 afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()

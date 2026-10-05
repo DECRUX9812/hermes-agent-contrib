@@ -868,7 +868,11 @@ function PlatformDetail({
       {hasPhoneParity(platform) && (
         <section>
           <SectionTitle>{m.phoneParity.title}</SectionTitle>
-          <PhoneParityCard platform={platform} stateLabel={stateLabel(platform.state, m)} tone={platformStatusTone(platform)} />
+          <PhoneParityCard
+            platform={platform}
+            stateLabel={stateLabel(platform.state, m)}
+            tone={platformStatusTone(platform)}
+          />
         </section>
       )}
 

@@ -1,18 +1,29 @@
-import {useCallback} from 'react'
+import { useCallback } from 'react'
 
-import {setSessionArchived} from '@/hermes'
-import {useI18n} from '@/i18n'
-import {$pinnedSessionIds} from '@/store/layout'
-import {clearNotifications, notify, notifyError} from '@/store/notifications'
-import {$profiles} from '@/store/profile'
-import {sessionPinId} from '@/store/session'
-import {beginSessionMutation, endSessionMutation, tombstoneSessions, untombstoneSessions} from '@/store/session-removal'
-import {closeSessionTile, dropSessionState} from '@/store/session-states'
-import {forgetSessionUnread} from '@/store/session-unread'
-import {$archivedSessions} from '@/store/sidebar-archive'
+import { setSessionArchived } from '@/hermes'
+import { useI18n } from '@/i18n'
+import { $pinnedSessionIds } from '@/store/layout'
+import { clearNotifications, notify, notifyError } from '@/store/notifications'
+import { $profiles } from '@/store/profile'
+import { sessionPinId } from '@/store/session'
+import {
+  beginSessionMutation,
+  endSessionMutation,
+  tombstoneSessions,
+  untombstoneSessions
+} from '@/store/session-removal'
+import { closeSessionTile, dropSessionState } from '@/store/session-states'
+import { forgetSessionUnread } from '@/store/session-unread'
+import { $archivedSessions } from '@/store/sidebar-archive'
 
 import type { SessionActionHandles, SessionActionsOptions } from './options'
-import {dropListedSession, findListedSession, resolveSessionProfile, restoreListedSession, sessionMatchesStoredId} from './utils'
+import {
+  dropListedSession,
+  findListedSession,
+  resolveSessionProfile,
+  restoreListedSession,
+  sessionMatchesStoredId
+} from './utils'
 
 export function useArchiveActions(
   { runtimeIdByStoredSessionIdRef, selectedStoredSessionIdRef, sessionStateByRuntimeIdRef }: SessionActionsOptions,
@@ -135,6 +146,6 @@ export function useArchiveActions(
 
   return {
     archiveSession,
-    unarchiveSession,
+    unarchiveSession
   }
 }

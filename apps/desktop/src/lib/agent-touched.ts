@@ -23,7 +23,8 @@ export function agentTouchedPaths(messages: readonly MessageLike[], cwd: string)
 
     for (const file of deriveChangedFiles(message.parts)) {
       const path = file.path.replace(/\\/g, '/')
-      const absolute = path.startsWith('/') || /^[a-zA-Z]:\//.test(path) || !root ? path : `${root}/${path.replace(/^\.\//, '')}`
+      const absolute =
+        path.startsWith('/') || /^[a-zA-Z]:\//.test(path) || !root ? path : `${root}/${path.replace(/^\.\//, '')}`
 
       touched.add(absolute)
     }

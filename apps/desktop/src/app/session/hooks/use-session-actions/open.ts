@@ -1,10 +1,10 @@
-import {useCallback} from 'react'
+import { useCallback } from 'react'
 
-import {prepareDefaultNewSession} from '@/app/session/new-session-route'
-import {setWorkspaceScope} from '@/components/pane-shell/workspace-scope'
+import { prepareDefaultNewSession } from '@/app/session/new-session-route'
+import { setWorkspaceScope } from '@/components/pane-shell/workspace-scope'
 
-import {navigateToWorkspacePage, NEW_CHAT_ROUTE, sessionRoute, SETTINGS_ROUTE} from '../../../routes'
-import type {SidebarNavItem} from '../../../types'
+import { navigateToWorkspacePage, NEW_CHAT_ROUTE, sessionRoute, SETTINGS_ROUTE } from '../../../routes'
+import type { SidebarNavItem } from '../../../types'
 
 import type { SessionActionHandles, SessionActionsOptions } from './options'
 
@@ -46,6 +46,6 @@ export function useOpenActions(
   return {
     selectSidebarItem,
     openSettings,
-    closeSettings,
+    closeSettings
   }
 }

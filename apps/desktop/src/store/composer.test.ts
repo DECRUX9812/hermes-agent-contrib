@@ -278,7 +278,16 @@ describe('session drafts', () => {
   afterEach(() => {
     draftProfile = 'default'
 
-    for (const scope of ['session-a', 'session-b', 'session-new', null, '__new__:alpha', '__new__:beta', '__new__:first', '__new__:second']) {
+    for (const scope of [
+      'session-a',
+      'session-b',
+      'session-new',
+      null,
+      '__new__:alpha',
+      '__new__:beta',
+      '__new__:first',
+      '__new__:second'
+    ]) {
       clearSessionDraft(scope)
     }
 

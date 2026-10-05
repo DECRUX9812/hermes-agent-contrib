@@ -17,7 +17,9 @@ describe('reachTargets', () => {
   it('keeps only enabled platforms that published a link, preferring a scannable https link', () => {
     const targets = reachTargets([
       platform('telegram', { identity: { deep_link: 'https://t.me/atlas_bot' } as never }),
-      platform('slack', { identity: { deep_link: 'slack://app?id=1', web_link: 'https://acme.slack.com/app' } as never }),
+      platform('slack', {
+        identity: { deep_link: 'slack://app?id=1', web_link: 'https://acme.slack.com/app' } as never
+      }),
       platform('discord', { enabled: false, identity: { deep_link: 'https://discord.com/x' } as never }),
       platform('telegram-pending', { id: 'telegram' })
     ])

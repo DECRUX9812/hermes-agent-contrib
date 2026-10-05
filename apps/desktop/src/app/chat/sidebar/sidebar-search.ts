@@ -11,23 +11,15 @@ import { sessionMatchesSearch } from '@/lib/session-search'
 // stripped or a search for "foo" paints rows titled ">>>foo<<<".
 // Exported for tests.
 export function stripFtsMarkers(snippet: string): string {
-
   return snippet.replaceAll('>>>', '').replaceAll('<<<', '')
-
 }
-
-
 
 // The backend ships the real session title on every search hit; map it so the
 // sidebar paints the actual name (snippet stays the preview). Exported for tests.
 export function searchResultToSession(result: SessionSearchResult): SessionInfo {
-
   const ts = result.session_started ?? Date.now() / 1000
 
-
-
   return {
-
     archived: false,
 
     cwd: null,
@@ -59,15 +51,10 @@ export function searchResultToSession(result: SessionSearchResult): SessionInfo 
     title: result.title?.trim() || null,
 
     tool_call_count: 0
-
   }
-
 }
 
-
-
 export function mergeSearchResults(
-
   sortedSessions: readonly SessionInfo[],
 
   query: string,
@@ -77,16 +64,10 @@ export function mergeSearchResults(
   sessionByAnyId: ReadonlyMap<string, SessionInfo>,
 
   searchPending: boolean
-
 ): SessionInfo[] {
-
   if (!query) {
-
     return []
-
   }
-
-
 
   // While the request is in flight the client's own recency-ordered matches
 
@@ -102,45 +83,25 @@ export function mergeSearchResults(
 
   const out = new Map<string, SessionInfo>()
 
-
-
   if (searchPending) {
-
     for (const s of sortedSessions) {
-
       if (sessionMatchesSearch(s, query)) {
-
         out.set(s.id, s)
-
       }
-
     }
-
-
 
     return [...out.values()]
-
   }
 
-
-
   for (const match of serverMatches) {
-
     if (out.has(match.session_id)) {
-
       continue
-
     }
-
-
 
     const loaded = sessionByAnyId.get(match.session_id)
 
     out.set(match.session_id, loaded ?? searchResultToSession(match))
-
   }
-
-
 
   // Client-only matches that the server didn't return (e.g. cwd/git-branch
 
@@ -149,17 +110,10 @@ export function mergeSearchResults(
   // ranked hits, in recency order.
 
   for (const s of sortedSessions) {
-
     if (!out.has(s.id) && sessionMatchesSearch(s, query)) {
-
       out.set(s.id, s)
-
     }
-
   }
 
-
-
   return [...out.values()]
-
 }

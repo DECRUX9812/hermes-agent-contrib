@@ -454,5 +454,4 @@ export const zhHant = defineLocale({
       }
     }
   }
-
 })

@@ -382,5 +382,4 @@ export const ar = defineLocale({
       }
     }
   }
-
 })

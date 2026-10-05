@@ -5,12 +5,8 @@ import { routeSessionId } from '@/app/routes'
 import { registryConnectionKind } from './connection-registry-state'
 import { dialedGatewayModeFor } from './gateway'
 import { normalizeProfileKey } from './profile'
-import {
-  isSessionOwnerRoute,
-  type SessionOwnerScope
-} from './session-request-router'
+import { isSessionOwnerRoute, type SessionOwnerScope } from './session-request-router'
 import { $sessionStates } from './session-states-live'
-
 
 // ---------------------------------------------------------------------------
 // Event-source scopes: which registry connection's socket (or local secondary
@@ -25,7 +21,6 @@ import { $sessionStates } from './session-states-live'
 
 export const sessionScopeByRuntimeId = new Map<string, string>()
 
-
 // Structured twin of the scope ledger: inbound events can carry either an
 // exact (connectionId, profile) owner or a producer-proven profile-only pool
 // owner. Consumed as the LAST rung of knownOwnerForSession so a runtime whose
@@ -33,7 +28,6 @@ export const sessionScopeByRuntimeId = new Map<string, string>()
 // (approval.respond) when every durable binding (tile / hint / row) is absent
 // — while durable stored identity keeps outranking it (#97511).
 export const sessionOwnerByRuntimeId = new Map<string, SessionOwnerScope>()
-
 
 /** The owner an inbound runtime EVENT proved for `sessionId` (#97511): the
  *  exact (connectionId, profile) of the socket that delivered its events, or
@@ -45,7 +39,6 @@ export function runtimeSessionOwner(sessionId: null | string | undefined): Sessi
 
   return id ? sessionOwnerByRuntimeId.get(id) : undefined
 }
-
 
 /** The composite source scope (connection + profile) a runtime's own events
  *  proved — `registryBackendScopeKey` of the socket that delivered them.
@@ -59,7 +52,6 @@ export function sessionEventScopeFor(runtimeId: null | string | undefined): stri
 
   return id ? sessionScopeByRuntimeId.get(id) : undefined
 }
-
 
 /** Forget only profile-pool runtime owners during permanent LOCAL profile
  * teardown. These string routes came exclusively from the legacy secondary
@@ -75,7 +67,6 @@ export function forgetProfileOnlyRuntimeOwners(profile: string): void {
     }
   }
 }
-
 
 /** Composite scopes of registry-sourced sessions that are live (busy or
  * waiting on input) — the (connectionId, profile) half of the gateway
@@ -98,7 +89,6 @@ export function liveSessionScopes(): Set<string> {
   return scopes
 }
 
-
 // ── Owner hold across the create → foreground gap ───────────────────────────
 // A routed session.create returns a stored id on the owner's socket, but the
 // surface that will PIN that socket (the selected primary thread, or a tile)
@@ -114,20 +104,16 @@ export function liveSessionScopes(): Set<string> {
 // or a bounded TTL expires — nothing latches.
 const SESSION_OWNER_HOLD_TTL_MS = 60_000
 
-
 export const sessionOwnerHolds = new Map<
   string,
   { owner: SessionOwnerScope; timer: ReturnType<typeof setTimeout>; until: number }
 >()
 
-
 export const $sessionOwnerHoldRevision = atom(0)
-
 
 function bumpSessionOwnerHoldRevision(): void {
   $sessionOwnerHoldRevision.set($sessionOwnerHoldRevision.get() + 1)
 }
-
 
 export function forgetSessionOwnerHold(storedSessionId: string, publish: boolean): boolean {
   const hold = sessionOwnerHolds.get(storedSessionId)
@@ -146,7 +132,6 @@ export function forgetSessionOwnerHold(storedSessionId: string, publish: boolean
   return true
 }
 
-
 export function holdSessionOwnerUntilForeground(storedSessionId: string, owner: SessionOwnerScope): () => void {
   const id = storedSessionId.trim()
 
@@ -164,11 +149,9 @@ export function holdSessionOwnerUntilForeground(storedSessionId: string, owner: 
   return () => releaseSessionOwnerHold(id)
 }
 
-
 export function releaseSessionOwnerHold(storedSessionId: string): void {
   forgetSessionOwnerHold(storedSessionId.trim(), true)
 }
-
 
 /** @internal Tests. */
 export function _resetSessionOwnerHoldsForTests(): void {
@@ -185,7 +168,6 @@ export function _resetSessionOwnerHoldsForTests(): void {
   }
 }
 
-
 /** The session id the live HashRouter route names, or null when the route has
  *  no session opinion (new-chat draft, reserved/overlay/contributed page, or
  *  no hash at all). Desktop mounts HashRouter, so the app route lives in
@@ -198,7 +180,6 @@ export function windowRouteSessionId(): string | null {
 
   return routeSessionId(window.location.hash.replace(/^#/, ''))
 }
-
 
 export function sameSessionOwner(left: SessionOwnerScope, right: SessionOwnerScope): boolean {
   if (isSessionOwnerRoute(left) && isSessionOwnerRoute(right)) {
@@ -217,7 +198,6 @@ export function sameSessionOwner(left: SessionOwnerScope, right: SessionOwnerSco
   return false
 }
 
-
 export function ownerProfileKey(owner: SessionOwnerScope): string | undefined {
   if (isSessionOwnerRoute(owner)) {
     return normalizeProfileKey(owner.profile)
@@ -225,7 +205,6 @@ export function ownerProfileKey(owner: SessionOwnerScope): string | undefined {
 
   return typeof owner === 'string' ? normalizeProfileKey(owner) : undefined
 }
-
 
 /** The mode of the backend that serves `owner`: the route's own `mode`, else
  *  its registry connection's kind, else the socket already dialed for it (a

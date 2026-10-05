@@ -16,15 +16,17 @@ import {
   ownerLookupSessionRows
 } from './session'
 import { $focusedSessionIsTile, $focusedStoredSessionId, TILE_PANE_PREFIX } from './session-focus'
+import { isSessionOwnerRoute, type SessionOwnerRoute, type SessionOwnerScope } from './session-request-router'
 import {
-  isSessionOwnerRoute,
-  type SessionOwnerRoute,
-  type SessionOwnerScope
-} from './session-request-router'
-import { forgetSessionOwnerHold, ownerProfileKey, sameSessionOwner, sessionOwnerHolds, sessionScopeByRuntimeId, windowRouteSessionId } from './session-states-owners'
+  forgetSessionOwnerHold,
+  ownerProfileKey,
+  sameSessionOwner,
+  sessionOwnerHolds,
+  sessionScopeByRuntimeId,
+  windowRouteSessionId
+} from './session-states-owners'
 import { knownOwnerForSession, storedSessionIdForRuntimeId } from './session-states-routing'
 import { isBrowserWindow, isSecondaryWindow } from './windows'
-
 
 /**
  * Registry scopes owned by an open foreground surface, when known.
@@ -125,7 +127,6 @@ export function foregroundSessionScopes(): Set<string> {
   return scopes
 }
 
-
 /** Whether the user is still focused on a session that belongs to the same
  *  durable lineage as the given stored id. Used to decide whether a
  *  backgrounded session's delayed id-rotation may follow the route/selection
@@ -158,7 +159,6 @@ export function isSessionInForeground(storedSessionId: string): boolean {
   return true
 }
 
-
 // ---------------------------------------------------------------------------
 // Session tiles.
 // ---------------------------------------------------------------------------
@@ -167,11 +167,9 @@ export function isSessionInForeground(storedSessionId: string): boolean {
  *  session tiles and route (page) tiles. */
 export type SplitDir = 'bottom' | 'left' | 'right' | 'top'
 
-
 /** Where a tile lands on adoption: an edge split, or `center` = stack into
  *  the anchor's zone as a tab (a drop on the zone's tab strip). */
 export type TileDock = 'center' | SplitDir
-
 
 export interface SessionTile {
   /** Stored session id — the durable identity (runtime ids are ephemeral). */
@@ -201,7 +199,6 @@ export interface SessionTile {
   workspaceTabTitle?: string
 }
 
-
 export interface SessionTileWorkspaceScope {
   ownerProfile?: string
   ownerRoute?: SessionOwnerRoute
@@ -222,7 +219,6 @@ export interface SessionWorkspaceScope {
   workspaceTabTitle?: string
 }
 
-
 // Tiles are persisted per connection and profile: same-named profiles on two
 // backends own different sessions. Switching either scope swaps the visible
 // set, with runtime bindings dropped so tiles re-resume on their own gateway.
@@ -235,7 +231,6 @@ const LEGACY_TILES_KEY = 'hermes.desktop.sessionTiles.v1'
 export { $focusedSessionIsTile, $focusedStoredSessionId, TILE_PANE_PREFIX }
 
 export const BOTS_TILE_BUCKET = '__bots_workspace__'
-
 
 /** Persisted placement — `dir` + strip slot (`before`) + dock `anchor` so a
  *  restart / profile swap re-adopts tiles in the same order, not all stacked
@@ -253,7 +248,6 @@ type StoredTile = Pick<
   | 'workspaceTabTitle'
 >
 
-
 export const toStored = (t: SessionTile): StoredTile => ({
   anchor: t.anchor,
   before: t.before,
@@ -265,7 +259,6 @@ export const toStored = (t: SessionTile): StoredTile => ({
   ...(t.workspaceOwnerKey ? { workspaceOwnerKey: t.workspaceOwnerKey } : {}),
   ...(t.workspaceTabTitle ? { workspaceTabTitle: t.workspaceTabTitle } : {})
 })
-
 
 function parseTileList(value: unknown): StoredTile[] {
   return Array.isArray(value)
@@ -312,7 +305,6 @@ function parseTileList(value: unknown): StoredTile[] {
         })
     : []
 }
-
 
 function loadTilesByProfile(): Record<string, StoredTile[]> {
   const byProfile: Record<string, StoredTile[]> = Object.create(null)
@@ -379,7 +371,6 @@ function loadTilesByProfile(): Record<string, StoredTile[]> {
   return byProfile
 }
 
-
 export const tilesByProfile = loadTilesByProfile()
 
 // Keyed by the GATEWAY profile: the rail's profile switch is a soft swap
@@ -387,7 +378,6 @@ export const tilesByProfile = loadTilesByProfile()
 // window's primary backend and never changes on a rail switch, so keying on
 // it left the previous profile's tiles registered (phantom "Session" tabs).
 export const profileKey = () => normalizeProfileKey($activeGatewayProfile.get())
-
 
 const tileConnectionScopeId = (connection: ReturnType<typeof $connection.get>) => {
   const id = connection?.connectionId?.trim()
@@ -417,9 +407,7 @@ export let visibleTileScope = tileScopeKey()
  *  backend on unpark exactly as a cold mount does. */
 export const $parkedTileStoredIds = atom<ReadonlySet<string>>(new Set())
 
-
 const parkedTilesByZone = new Map<string, readonly string[]>()
-
 
 /** Each pane zone reports its own parked session tiles; the atom is the union. */
 export function setZoneParkedTiles(zoneKey: string, storedSessionIds: readonly string[]): void {
@@ -439,13 +427,11 @@ export function setZoneParkedTiles(zoneKey: string, storedSessionIds: readonly s
   $parkedTileStoredIds.set(next)
 }
 
-
 export const $sessionTiles = atom<SessionTile[]>(
   isSecondaryWindow() || isBrowserWindow()
     ? []
     : [...(tilesByProfile[visibleTileScope] ?? []), ...(tilesByProfile[BOTS_TILE_BUCKET] ?? [])]
 )
-
 
 export function persistTiles() {
   // Shares the origin's storage; a secondary / browser pop-out holds no tiles,
@@ -456,7 +442,6 @@ export function persistTiles() {
 
   writeJson(TILES_KEY, Object.keys(tilesByProfile).length === 0 ? null : tilesByProfile)
 }
-
 
 export function saveTiles(tiles: SessionTile[]) {
   const stored = tiles.map(toStored)
@@ -478,7 +463,6 @@ export function saveTiles(tiles: SessionTile[]) {
   persistTiles()
   $sessionTiles.set(tiles)
 }
-
 
 function saveTileBucket(bucket: string, tiles: SessionTile[]) {
   const stored = tiles.map(toStored)
@@ -518,16 +502,13 @@ if (!isSecondaryWindow() && !isBrowserWindow()) {
   })
 }
 
-
 export function patchSessionTile(storedSessionId: string, patch: Partial<SessionTile>) {
   saveTiles($sessionTiles.get().map(t => (t.storedSessionId === storedSessionId ? { ...t, ...patch } : t)))
 }
 
-
 function tileWorkspaceMode(tile: SessionTile): WorkspaceMode {
   return tile.workspaceMode ?? 'sessions'
 }
-
 
 function tilesShareOwner(left: SessionTile, right: SessionTile): boolean {
   if (left.workspaceMode && right.workspaceMode && left.workspaceMode !== right.workspaceMode) {
@@ -555,7 +536,6 @@ function tilesShareOwner(left: SessionTile, right: SessionTile): boolean {
   return true
 }
 
-
 function tileBelongsToMain(tile: SessionTile, selectedStoredSessionId: string, tileProfile = profileKey()): boolean {
   if (tileWorkspaceMode(tile) === 'bots') {
     return false
@@ -569,7 +549,6 @@ function tileBelongsToMain(tile: SessionTile, selectedStoredSessionId: string, t
 
   return typeof mainOwner === 'string' && normalizeProfileKey(mainOwner) === normalizeProfileKey(tileProfile)
 }
-
 
 function mergeSessionTile(previous: SessionTile, next: SessionTile, storedSessionId: string): SessionTile {
   const merged: SessionTile = { ...previous, storedSessionId }
@@ -613,7 +592,6 @@ function mergeSessionTile(previous: SessionTile, next: SessionTile, storedSessio
   return merged
 }
 
-
 function rekeyTileList(
   tiles: SessionTile[],
   tileProfile: string,
@@ -647,7 +625,6 @@ function rekeyTileList(
 
   return tiles.map(t => (t === stale ? { ...t, storedSessionId: nextStoredSessionId } : t))
 }
-
 
 /**
  * Re-home an open tile after auto-compression rotates the conversation's stored
@@ -718,11 +695,9 @@ export function rekeySessionTile(
   }
 }
 
-
 export function sessionTileOwnerRoute(storedSessionId: string): SessionOwnerRoute | undefined {
   return $sessionTiles.get().find(tile => tile.storedSessionId === storedSessionId)?.ownerRoute
 }
-
 
 export function sessionTileOwner(storedSessionId: string): SessionOwnerScope {
   const tile = $sessionTiles.get().find(candidate => candidate.storedSessionId === storedSessionId)
@@ -730,9 +705,7 @@ export function sessionTileOwner(storedSessionId: string): SessionOwnerScope {
   return tile?.ownerRoute ?? tile?.ownerProfile
 }
 
-
 const BOT_CHAT_SCOPE_KEY = 'hermes.desktop.botChatSessions.v1'
-
 
 /** Stored ids last opened as a bot's chat. A tile carries `workspaceMode`, but
  *  a bot chat normally lands in MAIN — `in-place` mints no tile when there is
@@ -743,12 +716,10 @@ export const $botChatSessionIds = atom<ReadonlySet<string>>(
   new Set((readJson<unknown>(BOT_CHAT_SCOPE_KEY) as unknown[] | null)?.filter(id => typeof id === 'string') ?? [])
 )
 
-
 /** The bot-mode scope each stored id was last opened under, for the main tab
  *  (which has no tile to carry one). Window-local: the caption falls back to
  *  the stored title until the chat is opened again. */
 export const $botChatScopes = atom<Readonly<Record<string, SessionTileWorkspaceScope>>>({})
-
 
 function rememberBotChatScope(storedSessionId: string, scope: SessionTileWorkspaceScope): void {
   const isBotChat = scope.workspaceMode === 'bots'
@@ -779,7 +750,6 @@ function rememberBotChatScope(storedSessionId: string, scope: SessionTileWorkspa
   writeJson(BOT_CHAT_SCOPE_KEY, next.size ? [...next] : null)
 }
 
-
 /** Every session's workspace scope, merged across surfaces: a tiled session
  *  carries its scope on the tile; a session in MAIN has no tile, so its scope
  *  is remembered in $botChatScopes. One map so a reader tells a workspace
@@ -802,7 +772,6 @@ export function isBotChatSession(sessionId: null | string | undefined): boolean 
 
   return Boolean(stored && $botChatSessionIds.get().has(stored))
 }
-
 
 export function setSessionTileWorkspaceScope(storedSessionId: string, scope: SessionTileWorkspaceScope): boolean {
   // Before the tile lookup: openSession routes every open through here, and a
@@ -843,7 +812,6 @@ export function setSessionTileWorkspaceScope(storedSessionId: string, scope: Ses
 
   return true
 }
-
 
 // ---------------------------------------------------------------------------
 // Delegate — the wiring layer (which owns the gateway + session cache) plugs
@@ -912,22 +880,18 @@ export interface AcceptedSessionIdentity {
   storedSessionId: null | string
 }
 
-
 let delegate: SessionTileDelegate | null = null
 
 export const $sessionTileDelegateRevision = atom(0)
-
 
 export function setSessionTileDelegate(next: SessionTileDelegate) {
   delegate = next
   $sessionTileDelegateRevision.set($sessionTileDelegateRevision.get() + 1)
 }
 
-
 export function sessionTileDelegate(): SessionTileDelegate | null {
   return delegate
 }
-
 
 // Closed-tab stack for ⌘⇧T reopen (in-memory) — keyed PER PROFILE like the
 // tiles themselves, so ⌘⇧T after a profile switch never resurrects the other
@@ -935,7 +899,6 @@ export function sessionTileDelegate(): SessionTileDelegate | null {
 export const closedTilesByProfile: Record<string, SessionTile[]> = {}
 
 export const closedStack = (): SessionTile[] => (closedTilesByProfile[visibleTileScope] ??= [])
-
 
 // ---------------------------------------------------------------------------
 // The FOCUSED session — one derivation, not another hand-maintained
@@ -947,7 +910,6 @@ export const closedStack = (): SessionTile[] => (closedTilesByProfile[visibleTil
 // timer / model) reads these instead of the primary-only atoms.
 // ---------------------------------------------------------------------------
 
-
 /** Every session currently OPEN as a surface: the primary's selection plus
  *  every tile's stored id. The sidebar highlights all of them (the focused one
  *  at full strength, the rest dimmed) so a multi-pane workspace shows which
@@ -956,7 +918,6 @@ export const $openStoredSessionIds = computed(
   [$selectedStoredSessionId, $sessionTiles],
   (selected, tiles) => new Set([...(selected ? [selected] : []), ...tiles.map(t => t.storedSessionId)])
 )
-
 
 /** Live runtime id of the focused session (a tile's bound runtime, else the
  *  primary's active session). */
@@ -970,7 +931,6 @@ export const $focusedRuntimeId = computed(
     return primaryRuntime
   }
 )
-
 
 /** A PRIMARY navigation (sidebar resume, route change, new chat) homes focus to
  *  the workspace — UNLESS the selected id is already an open TILE, where

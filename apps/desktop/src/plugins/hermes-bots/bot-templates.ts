@@ -112,10 +112,7 @@ export function stagedSkillsForTemplate<T extends { enabled?: boolean; name: str
 
 /** The `disabled_skills` payload for a preset: every installed skill NOT in
  *  the suggested set. `null` when the preset curates nothing. */
-export function disabledSkillNames(
-  installed: Array<{ name: string }>,
-  spec: BotTemplateSpec
-): null | string[] {
+export function disabledSkillNames(installed: Array<{ name: string }>, spec: BotTemplateSpec): null | string[] {
   if (!spec.skills.length) {
     return null
   }

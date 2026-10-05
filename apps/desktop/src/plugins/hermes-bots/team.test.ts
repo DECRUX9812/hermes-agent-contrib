@@ -83,7 +83,11 @@ describe('goalOutline', () => {
 describe('approvals, learnings, labels', () => {
   it('lists only pending approvals, oldest first', () => {
     const a = (id: string, status: string, created_at: number) => ({ created_at, id, status }) as TeamApproval
-    expect(pendingApprovals({ approvals: [a('2', 'pending', 20), a('x', 'approved', 1), a('1', 'pending', 10)] }).map(x => x.id)).toEqual(['1', '2'])
+    expect(
+      pendingApprovals({ approvals: [a('2', 'pending', 20), a('x', 'approved', 1), a('1', 'pending', 10)] }).map(
+        x => x.id
+      )
+    ).toEqual(['1', '2'])
   })
 
   it('ranks learnings by confirmation count, then recency, capped', () => {

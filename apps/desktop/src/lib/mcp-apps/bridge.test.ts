@@ -23,7 +23,12 @@ describe('MCP App bridge', () => {
     const { bridge, deps, posted } = harness()
 
     await bridge.receive({ id: 1, jsonrpc: '2.0', method: 'ui/initialize', params: {} })
-    await bridge.receive({ id: 2, jsonrpc: '2.0', method: 'tools/call', params: { arguments: { n: 1 }, name: 'increment' } })
+    await bridge.receive({
+      id: 2,
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { arguments: { n: 1 }, name: 'increment' }
+    })
     await bridge.receive({ jsonrpc: '2.0', method: 'ui/notifications/initialized' })
 
     expect(posted[0].result).toMatchObject({ hostContext: { theme: 'dark' } })
@@ -37,7 +42,11 @@ describe('MCP App bridge', () => {
 
     await bridge.receive({ id: 1, method: 'ui/open-link', params: { url: 'https://example.com/a' } })
     await bridge.receive({ id: 2, method: 'ui/open-link', params: { url: 'file:///etc/passwd' } })
-    await bridge.receive({ id: 3, method: 'ui/message', params: { content: [{ text: 'Plan my trip', type: 'text' }], role: 'user' } })
+    await bridge.receive({
+      id: 3,
+      method: 'ui/message',
+      params: { content: [{ text: 'Plan my trip', type: 'text' }], role: 'user' }
+    })
 
     expect(deps.offerLink).toHaveBeenCalledExactlyOnceWith('https://example.com/a')
     expect(posted[1].error?.code).toBe(JSON_RPC_INVALID_PARAMS)
@@ -51,7 +60,11 @@ describe('MCP App bridge', () => {
     await bridge.receive({ method: 'something/else' })
 
     expect(posted).toEqual([
-      { error: { code: JSON_RPC_METHOD_NOT_FOUND, message: 'ui/update-model-context is not supported' }, id: 9, jsonrpc: '2.0' }
+      {
+        error: { code: JSON_RPC_METHOD_NOT_FOUND, message: 'ui/update-model-context is not supported' },
+        id: 9,
+        jsonrpc: '2.0'
+      }
     ])
   })
 })
@@ -59,7 +72,7 @@ describe('MCP App bridge', () => {
 describe('MCP App document', () => {
   it('is default-deny and admits only declared https origins', () => {
     const csp = mcpAppCsp({
-      connectDomains: ['https://api.example.com', "https://x.com; script-src *", 'http://insecure.example'],
+      connectDomains: ['https://api.example.com', 'https://x.com; script-src *', 'http://insecure.example'],
       resourceDomains: ['https://*.cdn.example.com']
     })
 

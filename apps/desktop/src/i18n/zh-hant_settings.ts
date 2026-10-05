@@ -236,7 +236,7 @@ export const zhHantSettings = {
         unlockTitle: name => `解鎖 ${name}`,
         unlockDescription: '輸入主密碼。它會交給本機的密碼管理器後立即捨棄，不會被儲存、記錄或顯示給代理。',
         masterPasswordPlaceholder: '主密碼'
-      },
+      }
     },
     notifications: {
       title: '通知',
@@ -272,7 +272,7 @@ export const zhHantSettings = {
         plugin: {
           label: '外掛通知',
           description: 'Hermes 在背景時，桌面外掛傳送了通知。'
-      },
+        }
       },
       test: '傳送測試通知',
       testTitle: 'Hermes',
@@ -463,7 +463,7 @@ export const zhHantSettings = {
         turnOnFailed: '無法開啟寵物。',
         turnOffFailed: '無法關閉寵物。'
       },
-      sessionDensityCondensed: '極簡',
+      sessionDensityCondensed: '極簡'
     },
     connections: {
       title: '已註冊閘道',
@@ -1268,7 +1268,7 @@ export const zhHantSettings = {
       defaultsFailed: '保存模型預設值失敗',
       fallbackAdd: '添加備用模型',
       fallbackEmpty: '未配置備用模型 — 預設模型失敗時纔會使用備用模型。',
-      notInCatalog: '不在該提供方的模型列表中 — 調用可能回退到備用模型。',
+      notInCatalog: '不在該提供方的模型列表中 — 調用可能回退到備用模型。'
     },
     localModels: {
       connectionChanged: '本地模型連線已變更',
@@ -1786,7 +1786,7 @@ export const zhHantSettings = {
       nousAuthFailedMessage: '請重試。',
       nousAuthTryAgain: '重試',
       postSetupOpenLogs: '開啟記錄',
-      postSetupRunAgain: '再跑一次',
+      postSetupRunAgain: '再跑一次'
     }
   },
 
