@@ -51,6 +51,8 @@ export interface Pane3dRelayDeps {
   setPaneIgnoreMouse: (ignore: boolean) => void
   /** Apply the renderer's region list (pane3d-hit.ts); called on change only. */
   applyHitRegions?: (regions: ScreenRect[]) => void
+  /** Fires once per pane renderer after its `ready` handshake. */
+  onReady?: () => void
   newId?: () => string
 }
 
@@ -126,6 +128,7 @@ export function createPane3dRelay(deps: Pane3dRelayDeps): Pane3dRelay {
         const queued = pending
         pending = []
         queued.forEach(state => deps.sendToPane(state))
+        deps.onReady?.()
 
         return
       }
@@ -188,6 +191,8 @@ export interface Pane3dIpcDeps {
   closePane3d: () => void
   /** Swapped for the real PageContextService in the context-tasks milestone. */
   captureContext?: () => Promise<PageContext>
+  /** The pane renderer is ready — start pushing anchors (architecture §7). */
+  onPaneReady?: () => void
   newId?: () => string
 }
 
@@ -210,6 +215,7 @@ export function registerPane3dIpc(deps: Pane3dIpcDeps): { relay: Pane3dRelay } {
     closePane: deps.closePane3d,
     isPaneOpen: deps.isPane3dOpen,
     newId: deps.newId,
+    onReady: deps.onPaneReady,
     openPane: deps.openPane3d,
     raiseMainWindow: () => {
       const win = deps.getMainWindow()

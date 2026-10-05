@@ -55,6 +55,7 @@ function relayHarness({ paneOpen = true } = {}) {
   let opened = 0
   let closed = 0
   let raised = 0
+  let ready = 0
 
   const relay = createPane3dRelay({
     applyHitRegions: regions => shapes.push(regions),
@@ -63,6 +64,9 @@ function relayHarness({ paneOpen = true } = {}) {
     },
     isPaneOpen: () => paneOpen,
     newId: () => 'notify-1',
+    onReady: () => {
+      ready += 1
+    },
     openPane: () => {
       opened += 1
     },
@@ -81,6 +85,7 @@ function relayHarness({ paneOpen = true } = {}) {
     ignored,
     opened: () => opened,
     raised: () => raised,
+    ready: () => ready,
     relay,
     sent,
     shapes,
@@ -194,6 +199,19 @@ test('playDemo opens a closed pane and waits for ready', () => {
   h.relay.onPaneControl({ type: 'ready' }, true)
 
   assert.deepEqual(h.sent, [{ type: 'demo', script: 'launch' }])
+})
+
+test('ready fires onReady once the pane renderer announces itself', () => {
+  const h = relayHarness({ paneOpen: true })
+
+  assert.equal(h.ready(), 0)
+
+  h.relay.onPaneControl({ type: 'ready' }, true)
+  assert.equal(h.ready(), 1)
+
+  // A ready from a foreign window is refused, like every pane control.
+  h.relay.onPaneControl({ type: 'ready' }, false)
+  assert.equal(h.ready(), 1)
 })
 
 test('isPaneSender accepts only a live pane window for the sender', () => {

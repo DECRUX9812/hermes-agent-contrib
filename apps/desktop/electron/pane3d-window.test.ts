@@ -13,6 +13,7 @@ import { test } from 'vitest'
 import { createPane3dController, type Pane3dWindowDeps } from './pane3d-window'
 
 interface FakeWindow {
+  bounds: { height: number; width: number; x: number; y: number }
   destroyed: boolean
   shown: number
   ignore: { ignore: boolean; options?: unknown } | null
@@ -26,8 +27,14 @@ interface FakeWindow {
 
 function makeWindow(order: string[], handlers: Map<string, Array<() => void>>): FakeWindow {
   const win: FakeWindow = {
+    bounds: { height: 1080, width: 1920, x: 0, y: 0 },
     destroyed: false,
+    getBounds: () => win.bounds,
     ignore: null,
+    setBounds: (next: FakeWindow['bounds']) => {
+      order.push('set-bounds')
+      win.bounds = next
+    },
     shape: null,
     shown: 0,
     close: () => {
@@ -64,7 +71,10 @@ function makeWindow(order: string[], handlers: Map<string, Array<() => void>>): 
   return win
 }
 
-function harness({ platform = 'linux' as NodeJS.Platform } = {}) {
+function harness({
+  platform = 'linux' as NodeJS.Platform,
+  displays = [{ workArea: { height: 1080, width: 1920, x: 0, y: 0 } }]
+} = {}) {
   const order: string[] = []
   const created: Array<Record<string, unknown>> = []
   const windows: FakeWindow[] = []
@@ -83,8 +93,8 @@ function harness({ platform = 'linux' as NodeJS.Platform } = {}) {
       return win as never
     },
     getAnchor: () => null,
-    getDisplays: () => [{ workArea: { height: 1080, width: 1920, x: 0, y: 0 } }],
-    getPrimaryDisplay: () => ({ workArea: { height: 1080, width: 1920, x: 0, y: 0 } }),
+    getDisplays: () => displays,
+    getPrimaryDisplay: () => displays[0],
     installLifecycle: () => order.push('lifecycle'),
     isMac: platform === 'darwin',
     loadWindowUrl: (_win, url) => order.push(`load:${url}`),
@@ -205,4 +215,33 @@ test('a close still in flight is destroyed before its replacement spawns', () =>
 
   assert.equal(h.order.includes('destroy'), true)
   assert.equal(h.created.length, 2)
+})
+
+test('rehome covers the work area of the display containing the anchor, once', () => {
+  const displays = [
+    { workArea: { height: 1080, width: 1920, x: 0, y: 0 } },
+    { workArea: { height: 1080, width: 1920, x: 1920, y: 0 } }
+  ]
+
+  const h = harness({ displays })
+
+  h.controller.open()
+  const win = h.windows[0]
+
+  // Spawn covered the primary display; an anchor on the second display moves it.
+  h.controller.rehome({ height: 800, width: 1000, x: 2100, y: 100 })
+  assert.deepEqual(win.bounds, { height: 1080, width: 1920, x: 1920, y: 0 })
+  assert.equal(h.order.filter(item => item === 'set-bounds').length, 1)
+
+  // Already on that display: no second call.
+  h.controller.rehome({ height: 800, width: 1000, x: 2500, y: 300 })
+  assert.equal(h.order.filter(item => item === 'set-bounds').length, 1)
+})
+
+test('rehome on a closed pane is a no-op', () => {
+  const h = harness()
+
+  h.controller.rehome({ height: 800, width: 1000, x: 100, y: 100 })
+
+  assert.equal(h.created.length, 0)
 })

@@ -35,6 +35,8 @@ export interface Pane3dController {
   isOpen: () => boolean
   open: () => BrowserWindow
   close: () => void
+  /** Cover the work area of the display containing the anchor (architecture §7). */
+  rehome: (anchor: ScreenRect) => void
 }
 
 const FALLBACK_BOUNDS: ScreenRect = { height: 720, width: 1280, x: 0, y: 0 }
@@ -160,10 +162,36 @@ export function createPane3dController(deps: Pane3dWindowDeps): Pane3dController
     }
   }
 
+  const rehome = (anchor: ScreenRect): void => {
+    if (!alive(paneWindow)) {
+      return
+    }
+
+    const bounds = resolvePaneBounds(getDisplays(), anchor, getPrimaryDisplay())
+
+    if (!bounds) {
+      return
+    }
+
+    const current = paneWindow.getBounds()
+
+    if (
+      current.x === bounds.x &&
+      current.y === bounds.y &&
+      current.width === bounds.width &&
+      current.height === bounds.height
+    ) {
+      return
+    }
+
+    paneWindow.setBounds(bounds)
+  }
+
   return {
     close,
     getWindow: () => (alive(paneWindow) ? paneWindow : null),
     isOpen: () => alive(paneWindow) && !closing,
-    open
+    open,
+    rehome
   }
 }
