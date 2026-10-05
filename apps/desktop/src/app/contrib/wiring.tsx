@@ -193,6 +193,7 @@ const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).
 const ProfilesView = lazy(async () => ({ default: (await import('../profiles')).ProfilesView }))
 const SettingsView = lazy(async () => ({ default: (await import('../settings')).SettingsView }))
 const StarmapView = lazy(async () => ({ default: (await import('../starmap')).StarmapView }))
+const ActivityView = lazy(async () => ({ default: (await import('../activity')).ActivityView }))
 const RosterView = lazy(async () => ({ default: (await import('../roster')).RosterView }))
 
 // Surfaces (the four wired panes), the render context + WiredPane, and the
@@ -351,6 +352,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     chatOpen,
     closeOverlayToPreviousRoute,
     commandCenterInitialSection,
+    activityOpen,
     commandCenterOpen,
     cronOpen,
     currentView,
@@ -1554,6 +1556,12 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       {starmapOpen && (
         <Suspense fallback={null}>
           <StarmapView onClose={closeOverlayToPreviousRoute} />
+        </Suspense>
+      )}
+
+      {activityOpen && (
+        <Suspense fallback={null}>
+          <ActivityView onClose={closeOverlayToPreviousRoute} />
         </Suspense>
       )}
 

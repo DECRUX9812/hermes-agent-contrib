@@ -20,12 +20,14 @@ export const WEBHOOKS_ROUTE = '/webhooks'
 export const ARTIFACTS_ROUTE = '/artifacts'
 export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
+export const ACTIVITY_ROUTE = '/activity'
 export const AGENTS_ROUTE = '/agents'
 export const STARMAP_ROUTE = '/starmap'
 export const ROSTER_ROUTE = '/roster'
 
 export type AppView =
   | 'session-import'
+  | 'activity'
   | 'agents'
   | 'artifacts'
   | 'capabilities'
@@ -47,6 +49,7 @@ export type AppView =
 
 export type AppRouteId =
   | 'session-import'
+  | 'activity'
   | 'agents'
   | 'artifacts'
   | 'capabilities'
@@ -70,6 +73,7 @@ export interface AppRoute {
 export const APP_ROUTES = [
   { id: 'session-import', path: SESSION_IMPORT_ROUTE, view: 'session-import' },
   { id: 'new', path: NEW_CHAT_ROUTE, view: 'chat' },
+  { id: 'activity', path: ACTIVITY_ROUTE, view: 'activity' },
   { id: 'settings', path: SETTINGS_ROUTE, view: 'settings' },
   { id: 'command-center', path: COMMAND_CENTER_ROUTE, view: 'command-center' },
   { id: 'capabilities', path: CAPABILITIES_ROUTE, view: 'capabilities' },
@@ -190,6 +194,7 @@ export interface SidebarListTopContribution {
 // bleed over the overlay (they sit at a higher z-index than the overlay card).
 export const OVERLAY_VIEWS: ReadonlySet<AppView> = new Set([
   'session-import',
+  'activity',
   'agents',
   'command-center',
   'cron',
