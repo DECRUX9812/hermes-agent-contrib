@@ -6,7 +6,8 @@
  *   when the shape actually changed. Main converts them to DIP.
  * - `focus` — the pane is non-focusable until a composer needs the keyboard.
  * - `ignore-mouse` — darwin/win32 only: the exact per-pixel test that turns
- *   click-through off over an avatar or a `[data-pane-hit]` element.
+ *   click-through off over an avatar or a `[data-pane-hit]` element. Padded
+ *   shape regions never take the mouse by themselves.
  *
  * A dedicated rAF loop, not a `useFrame`: regions must stay correct while the
  * canvas is idle (`frameloop='demand'`), or the dock and the hover chips would
@@ -22,7 +23,7 @@ import type { ScreenRect } from '../protocol'
 import { AVATAR_IDS } from '../protocol'
 import { avatarFrames } from '../scene/projection'
 
-import { decideIgnoreMouse } from './exact-hit'
+import { type ForwardHitCursor, stepForwardHit } from './exact-hit'
 import { buildHitRegions, domHitRects, regionsEqual } from './regions'
 
 /** Every DOM node that should stay clickable, plus the chart container (§12). */
@@ -31,9 +32,10 @@ const HIT_SELECTOR = '[data-pane-hit],[data-pane-chart]'
 /**
  * Forward-mode pointer state. Module-level and mutable: it is written by DOM
  * events at pointer rate and only read by the frame loop, so nothing here may
- * re-render React.
+ * re-render React. The exact target is deliberately NOT cached here — it is
+ * re-tested every tick (see `exactElementHit`).
  */
-const forwardPointer = { active: false, dragging: false, elementHit: false, x: 0, y: 0 }
+const forwardPointer = { active: false, dragging: false, x: 0, y: 0 }
 
 function currentRegions(): ScreenRect[] {
   const avatars = $avatars.get()
@@ -55,6 +57,19 @@ function isComposerOpen(): boolean {
   return AVATAR_IDS.some(id => avatars[id].state === 'listening')
 }
 
+/**
+ * The exact target test at a pointer position. Recomputed every frame rather
+ * than cached from the last `pointermove`: Chromium sends no move when the
+ * content changes UNDER a stationary pointer, so an element that disappears
+ * would otherwise leave the window taking clicks. `elementFromPoint` skips
+ * `pointer-events:none` layers, which is exactly the pane's click-through
+ * overlay, and it also ignores the zero-opacity handle wrapper — only a real
+ * interactive node matches.
+ */
+function exactElementHit(point: { x: number; y: number }): boolean {
+  return Boolean(document.elementFromPoint(point.x, point.y)?.closest(HIT_SELECTOR))
+}
+
 export function HitRegionPublisher(): null {
   const platform = useStore($platform)
 
@@ -71,9 +86,6 @@ export function HitRegionPublisher(): null {
       forwardPointer.active = true
       forwardPointer.x = event.clientX
       forwardPointer.y = event.clientY
-      forwardPointer.elementHit = Boolean(
-        document.elementFromPoint(event.clientX, event.clientY)?.closest(HIT_SELECTOR)
-      )
     }
 
     const onDown = () => {
@@ -123,7 +135,7 @@ export function HitRegionPublisher(): null {
     let frame = 0
     let lastRegions: ScreenRect[] = []
     let lastFocusable: boolean | null = null
-    let lastIgnore = true
+    const forwardCursor: ForwardHitCursor = { ignore: true }
 
     const tick = () => {
       frame = requestAnimationFrame(tick)
@@ -153,19 +165,21 @@ export function HitRegionPublisher(): null {
         return
       }
 
-      const ignore = decideIgnoreMouse({
+      const pointer = forwardPointer.active ? { x: forwardPointer.x, y: forwardPointer.y } : null
+
+      const step = stepForwardHit(forwardCursor, {
         composerOpen,
-        current: lastIgnore,
         dragging: forwardPointer.dragging,
-        elementHit: forwardPointer.elementHit,
+        elementHit: pointer !== null && exactElementHit(pointer),
         platform: pane3dRuntime.platform,
-        pointer: forwardPointer.active ? { x: forwardPointer.x, y: forwardPointer.y } : null,
-        regions: pane3dRuntime.regions
+        pointer,
+        regionsEmpty: regions.length === 0
       })
 
-      if (ignore !== lastIgnore) {
-        lastIgnore = ignore
-        api.control({ ignore, type: 'ignore-mouse' })
+      forwardCursor.ignore = step.ignore
+
+      if (step.message) {
+        api.control(step.message)
       }
     }
 

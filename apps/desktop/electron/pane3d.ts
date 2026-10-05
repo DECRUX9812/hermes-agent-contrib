@@ -77,9 +77,11 @@ export function paneUrl(base: string): string {
  * published any hit region.
  *
  * Linux/X11 has no `forward: true`, so the window is shaped down to a 1×1 rect
- * and made to ignore the mouse; the shape is what actually lets clicks reach
- * the window underneath. Everywhere else the window ignores the mouse but keeps
- * forwarding pointer moves so the renderer can re-arm interactivity.
+ * and the shape is what lets clicks reach the window underneath. The shape is
+ * the whole mechanism there: the pane never calls `setIgnoreMouseEvents` on
+ * Linux, because on X11 `(true)` is a one-way door that `(false)` cannot undo.
+ * Everywhere else the window ignores the mouse but keeps forwarding pointer
+ * moves so the renderer's exact test can re-arm interactivity.
  */
 export type PaneClickThroughStrategy = 'shape' | 'forward'
 
