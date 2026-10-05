@@ -72,6 +72,15 @@ def test_pair_rejects_wrong_code_and_locks_out(client):
     assert client.post("/api/mobile/pair", json={"code": code}).status_code == 429
 
 
+def test_pair_without_a_code_is_a_counted_rejection(client):
+    # A public route: a body with no code is a failed attempt like any wrong
+    # code (403, counted toward the lockout), not a 422 that dodges the limiter.
+    for _ in range(5):
+        assert client.post("/api/mobile/pair", json={}).status_code == 403
+    code = client.post("/api/mobile/pairing").json()["code"]
+    assert client.post("/api/mobile/pair", json={"code": code}).status_code == 429
+
+
 def test_pairing_refused_on_oauth_gated_deployment(client):
     client.app.state.auth_required = True
     assert client.post("/api/mobile/pairing").status_code == 409

@@ -17,8 +17,7 @@ import {
   closeLegacySecondaryGateways,
   ensureGatewayForProfile,
   reportPrimaryGatewayState,
-  setPrimaryGateway,
-  setPrimaryGatewayConnection
+  setPrimaryGateway
 } from '@/store/gateway'
 import {
   $gatewaySwitching,
@@ -42,7 +41,12 @@ import { isPeerInstanceWindow, windowProfileOverride } from '@/store/windows'
 
 import type { GatewaySurvivor } from './gateway-hmr-survivor'
 import { BOOT_RETRY_BASE_DELAY_MS, BOOT_RETRY_MAX_ATTEMPTS, connectInitialGateway } from './use-gateway-boot-initial-connect'
-import type { GatewayBootCallbacksRef, GatewayBootReconnect, GatewayBootState } from './use-gateway-boot-reconnect'
+import {
+  type GatewayBootCallbacksRef,
+  type GatewayBootReconnect,
+  type GatewayBootState,
+  recordPrimaryConnection
+} from './use-gateway-boot-reconnect'
 
 export interface GatewayBootPhaseDeps {
   s: GatewayBootState
@@ -182,7 +186,7 @@ export function createGatewayBootPhases({ s, desktop, gateway, callbacksRef, pub
       const conn = await withTimeout(
         getWindowBackend(),
         BACKEND_BOOT_WAIT_TIMEOUT_MS,
-        'Timed out s.reconnecting to Hermes backend'
+        'Timed out reconnecting to Hermes backend'
       )
 
       if (!ownsSwitch()) {
@@ -190,7 +194,7 @@ export function createGatewayBootPhases({ s, desktop, gateway, callbacksRef, pub
       }
 
       publish(conn)
-      setPrimaryGatewayConnection(conn)
+      recordPrimaryConnection(s, conn)
 
       // Bounded for the same reason as attemptReconnect() (#93454): a wedged
       // ticket mint would otherwise hang the gateway switch forever.
@@ -303,7 +307,7 @@ export function createGatewayBootPhases({ s, desktop, gateway, callbacksRef, pub
         progress: 95
       })
       publish(conn)
-      setPrimaryGatewayConnection(conn)
+      recordPrimaryConnection(s, conn)
 
       // Seed the workspace BEFORE the gateway opens: every session-restore
       // path is gated on gatewayState === 'open', so nothing can be active yet
@@ -466,7 +470,7 @@ export function createGatewayBootPhases({ s, desktop, gateway, callbacksRef, pub
 
     if (survivor?.connection) {
       publish(survivor.connection)
-      setPrimaryGatewayConnection(survivor.connection)
+      recordPrimaryConnection(s, survivor.connection)
     }
 
     const profile = survivor?.profile ?? $activeGatewayProfile.get()

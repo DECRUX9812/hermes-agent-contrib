@@ -2215,6 +2215,9 @@ export const ru = defineLocale({
     replaceValue: 'Заменить текущее значение',
     openDocs: 'Открыть документацию',
     clearField: key => `Очистить ${key}`,
+    addListEntry: 'Добавить ещё',
+    removeListEntry: 'Удалить',
+    listEntryPlaceholder: 'Введите ID',
     enableAria: name => `Включить ${name}`,
     disableAria: name => `Отключить ${name}`,
     platformEnabled: name => `${name} включено`,
@@ -2306,7 +2309,7 @@ export const ru = defineLocale({
       },
       TELEGRAM_ALLOWED_USERS: {
         label: 'Разрешённые ID пользователей Telegram',
-        help: 'Рекомендуется. Числовые ID через @userinfobot через запятую. Без этого писать вашему боту может кто угодно.'
+        help: 'Рекомендуется. Числовые ID через @userinfobot (по одному в поле). Без этого писать вашему боту может кто угодно.'
       },
       TELEGRAM_PROXY: { label: 'URL прокси', help: 'Нужен только в сетях, где Telegram заблокирован.' },
       DISCORD_BOT_TOKEN: {
@@ -2315,7 +2318,7 @@ export const ru = defineLocale({
       },
       DISCORD_ALLOWED_USERS: {
         label: 'Разрешённые ID пользователей Discord',
-        help: 'Рекомендуется. ID пользователей Discord через запятую.'
+        help: 'Рекомендуется. ID пользователей Discord (по одному в поле).'
       },
       DISCORD_REPLY_TO_MODE: { label: 'Стиль ответов', help: 'first, all или off.' },
       DISCORD_ALLOW_ALL_USERS: {
@@ -2351,20 +2354,20 @@ export const ru = defineLocale({
       },
       SLACK_ALLOWED_USERS: {
         label: 'Разрешённые ID пользователей Slack',
-        help: 'Рекомендуется. ID пользователей Slack через запятую.'
+        help: 'Рекомендуется. ID пользователей Slack (по одному в поле).'
       },
       MATTERMOST_URL: { label: 'URL сервера', placeholder: 'https://mattermost.example.com' },
       MATTERMOST_TOKEN: { label: 'Токен бота' },
       MATTERMOST_ALLOWED_USERS: {
         label: 'Разрешённые ID пользователей',
-        help: 'Рекомендуется. ID пользователей Mattermost через запятую.'
+        help: 'Рекомендуется. ID пользователей Mattermost (по одному в поле).'
       },
       MATRIX_HOMESERVER: { label: 'URL homeserver', placeholder: 'https://matrix.org' },
       MATRIX_ACCESS_TOKEN: { label: 'Токен доступа' },
       MATRIX_USER_ID: { label: 'ID пользователя бота', placeholder: '@hermes:example.org' },
       MATRIX_ALLOWED_USERS: {
         label: 'Разрешённые ID пользователей Matrix',
-        help: 'Рекомендуется. ID пользователей через запятую в формате @user:server.'
+        help: 'Рекомендуется. ID пользователей (по одному в поле) в формате @user:server.'
       },
       SIGNAL_HTTP_URL: {
         label: 'URL моста Signal',
@@ -2374,7 +2377,7 @@ export const ru = defineLocale({
       SIGNAL_ACCOUNT: { label: 'Номер телефона', help: 'Номер, зарегистрированный в вашем мосте signal-cli.' },
       SIGNAL_ALLOWED_USERS: {
         label: 'Разрешённые пользователи Signal',
-        help: 'Рекомендуется. Идентификаторы Signal через запятую.'
+        help: 'Рекомендуется. Идентификаторы Signal (по одному в поле).'
       },
       WHATSAPP_ENABLED: {
         label: 'Включить мост WhatsApp',
@@ -2383,7 +2386,7 @@ export const ru = defineLocale({
       WHATSAPP_MODE: { label: 'Режим моста' },
       WHATSAPP_ALLOWED_USERS: {
         label: 'Разрешённые пользователи WhatsApp',
-        help: 'Рекомендуется. Номера телефонов или ID WhatsApp через запятую.'
+        help: 'Рекомендуется. Номера телефонов или ID WhatsApp (по одному в поле).'
       }
     },
     platformIntro: {}

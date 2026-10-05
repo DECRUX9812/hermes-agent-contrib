@@ -186,7 +186,8 @@ it('hand back releases the lease with this window\u2019s minted viewer id', asyn
   fireEvent.click(view.getByRole('button', { name: 'Hand back' }))
 
   await waitFor(() => {
-    expect(rpcCalls()).toEqual([['display.lease.release', { viewer_id: 'v-ours' }]])
+    // Every Bot Screen RPC is scoped to the route's profile (#120966).
+    expect(rpcCalls()).toEqual([['display.lease.release', { viewer_id: 'v-ours', profile: botRemote.name }]])
   })
   view.unmount()
 })
@@ -207,8 +208,8 @@ it('restart bounces the screen: display.stop (forced) before display.start', asy
 
   await waitFor(() => {
     expect(rpcCalls()).toEqual([
-      ['display.stop', { force: true }],
-      ['display.start', {}]
+      ['display.stop', { force: true, profile: botRemote.name }],
+      ['display.start', { profile: botRemote.name }]
     ])
   })
   view.unmount()

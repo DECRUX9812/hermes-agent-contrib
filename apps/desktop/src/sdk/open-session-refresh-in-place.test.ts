@@ -85,6 +85,7 @@ vi.mock('@/store/session-states', async () => {
     $attentionSessionIds: atom([]),
     $draftSessionIds: atom([]),
     $focusedRuntimeId: atom(null),
+    $focusedStoredSessionId: atom(null),
     $focusedSessionState: atom(null),
     $sessionTiles: atom([]),
     $sessionWorkspaceScopes: atom({}),
@@ -92,6 +93,7 @@ vi.mock('@/store/session-states', async () => {
     $stalledSessionIds: atom([]),
     $workingSessionIds: atom([]),
     dropTilesForProfile: vi.fn(),
+    isSessionInForeground: vi.fn(() => true),
     sessionTileDelegate: vi.fn(() => null)
   }
 })

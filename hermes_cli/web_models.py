@@ -552,7 +552,10 @@ class _PluginVisibilityBody(BaseModel):
 
 
 class MobilePairExchange(BaseModel):
-    code: str
+    # Defaulted, not required: the route is public, so a body with no code must
+    # take the same counted 403 path as a wrong code, never a 422 that skips the
+    # failure limiter.
+    code: str = ""
 
 class MobileRespond(BaseModel):
     request_id: str
