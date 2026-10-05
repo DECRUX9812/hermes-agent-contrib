@@ -289,7 +289,7 @@ def test_relay_rewrite_precedes_sequential_policy_approval_checkpoint_and_dispat
     agent._checkpoint_mgr = SimpleNamespace(
         enabled=True,
         get_working_dir_for_path=lambda path: path,
-        ensure_checkpoint=lambda path, reason: observed["checkpoint"].append(
+        ensure_checkpoint=lambda path, reason, turn=None: observed["checkpoint"].append(
             (path, reason)
         ),
     )
