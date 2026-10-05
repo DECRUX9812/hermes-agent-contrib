@@ -41,6 +41,7 @@ export type SwToContent =
   | { type: 'bot.status'; bot: Bot }
   | { type: 'rooms'; rooms: Room[] }
   | { type: 'room.msg'; msg: RoomMsg }
+  | { type: 'bot.action'; botId: string; action: string }
 
 export type ContentToSw =
   | { type: 'ready' }
@@ -49,5 +50,6 @@ export type ContentToSw =
   | { type: 'room.move'; roomId: string; botId?: string }
   | { type: 'room.remove'; roomId: string }
   | { type: 'mascot.move'; botId: string; x: number; y: number }
+  | { type: 'mascot.action'; botId: string; action: string }
   | { type: 'open-app' }
   | { type: 'close' }

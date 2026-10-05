@@ -176,8 +176,28 @@ export function mountBotRoomMascotWindow(host: HTMLElement): void {
     }
   })
 
+  // Commanded performances — 'bot.action' pushes from the store (tasks
+  // landing, room relays, scripts). Same verb set the extension uses.
+  const offAction = bridge?.botroomMascot?.onAction?.((payload: { botId: string; action: string }) => {
+    if (!payload || payload.botId !== botId) {
+      return
+    }
+
+    const mascot = scene.get(botId)
+    const action = payload.action as MascotAction
+
+    if (action === 'point') {
+      // Point straight ahead — the canvas has no element targets the way
+      // the extension's page DOM does, so point reads as "attention here".
+      mascot?.pointAt?.(MASCOT_W * 0.62, MASCOT_H * 0.35)
+    } else {
+      mascot?.play(action, 1.4)
+    }
+  })
+
   window.addEventListener('beforeunload', () => {
     off?.()
+    offAction?.()
     scene.dispose()
   })
 }

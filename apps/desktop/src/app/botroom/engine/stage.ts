@@ -1,5 +1,5 @@
 import { faceDataUrl } from './face'
-import { OverlayScene } from './mascot3d'
+import { type MascotAction, OverlayScene } from './mascot3d'
 import { type PaletteSection, showContextMenu, showPalette } from './menu'
 import { type ElementInfo, Panel, roomMsgToPanel } from './panel'
 import { OVERLAY_CSS } from './styles'
@@ -112,6 +112,7 @@ export class Stage {
     // for both: 'mousemove' is the only probe that fires while ignored.
     const probe = (e: { clientX: number; clientY: number }) =>
       this.updateInteractivity(e.clientX, e.clientY)
+
     document.addEventListener('mousemove', probe, { passive: true })
     document.addEventListener('pointermove', probe, { passive: true })
 
@@ -137,6 +138,7 @@ export class Stage {
   private updateInteractivity(x: number, y: number) {
     const el =
       this.root.elementFromPoint?.(x, y) ?? document.elementFromPoint(x, y)
+
     const over =
       this.activeDrags > 0 || Boolean(el && this.hostContains(el) && el.closest(INTERACTIVE))
 
@@ -236,6 +238,21 @@ export class Stage {
         this.onRoomMsg(msg.msg)
 
         break
+      case 'bot.action': {
+        // Commanded performance on the overlay's copy of the mascot — the
+        // per-bot windows get the same push over their own channel, so a
+        // 'mascot.action' control animates whichever surface the bot is on.
+        const m = msg.botId ? this.scene.get(msg.botId) : undefined
+        const action = msg.action
+
+        if (m && action === 'point') {
+          m.pointAt(m.group.position.x + 60, m.group.position.y - 40)
+        } else if (m && action) {
+          m.play(action as MascotAction, 1.4)
+        }
+
+        break
+      }
     }
   }
 

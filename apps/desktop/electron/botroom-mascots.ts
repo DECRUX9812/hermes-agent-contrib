@@ -138,6 +138,15 @@ export function createBotRoomMascots({ spawnMascotWindow, forwardControl }: BotR
       return roster.get(botId)
     },
 
+    /** 'bot.action' push: tell one mascot window to run a performance. */
+    action(botId: string, action: string) {
+      const win = windows.get(botId)
+
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('hermes:botroom-mascot:action', { botId, action })
+      }
+    },
+
     /** The fullscreen overlay opened/closed — mascot windows step aside /
      *  come back so a bot never renders twice at once. */
     setOverlayOpen(open: boolean) {

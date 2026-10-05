@@ -158,6 +158,14 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
 
       return () => ipcRenderer.removeListener('hermes:botroom-mascot:state', listener)
     },
+    // 'bot.action' pushes land here as {botId, action} — the window plays
+    // the named performance on its own scene.
+    onAction: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('hermes:botroom-mascot:action', listener)
+
+      return () => ipcRenderer.removeListener('hermes:botroom-mascot:action', listener)
+    },
     // Renderer-driven window drag: streams {botId, phase, x, y} in screen
     // coordinates; main repositions the window (app-region drag can't engage
     // on a non-activating panel).

@@ -179,6 +179,7 @@ declare global {
       // shared BotRoomControl protocol through `botroom.control`.
       botroomMascot?: {
         onState: (callback: (bot: BotRoomBot) => void) => () => void
+        onAction: (callback: (payload: { botId: string; action: string }) => void) => () => void
         drag: (payload: { botId: string; phase: 'start' | 'move' | 'end'; x: number; y: number }) => void
       }
       // HUD mode: the chrome-free floating chat. A FULL app renderer with its

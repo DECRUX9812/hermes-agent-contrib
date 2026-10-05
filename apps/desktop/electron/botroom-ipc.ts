@@ -100,6 +100,8 @@ export function registerBotRoomIpc({
     } else if (payload && payload.type === 'bot.status' && payload.bot) {
       mascots.updateBot(payload.bot)
       pill.updateBot(payload.bot)
+    } else if (payload && payload.type === 'bot.action' && typeof payload.botId === 'string') {
+      mascots.action(payload.botId, String(payload.action ?? ''))
     }
   })
 

@@ -38,10 +38,13 @@ export interface BotRoomRoom {
 }
 
 export interface BotRoomStatePayload {
-  type: 'init' | 'bots' | 'bot.status' | 'rooms' | 'room.msg'
+  type: 'init' | 'bots' | 'bot.status' | 'rooms' | 'room.msg' | 'bot.action'
   enabled?: boolean
   bots?: BotRoomBot[]
   bot?: BotRoomBot
+  /** bot.action: the mascot to animate + which performance to run. */
+  botId?: string
+  action?: string
   rooms?: BotRoomRoom[]
   msg?: {
     roomId: string
@@ -59,6 +62,7 @@ export type BotRoomControl =
   | { type: 'room.move'; roomId: string; botId?: string }
   | { type: 'room.remove'; roomId: string }
   | { type: 'mascot.move'; botId: string; x: number; y: number }
+  | { type: 'mascot.action'; botId: string; action: string }
   | { type: 'open-pill'; botId: string }
   | { type: 'open-app' }
   | { type: 'close' }
@@ -338,6 +342,15 @@ async function handleControl(msg: BotRoomControl): Promise<void> {
 
     case 'mascot.move':
       break // positions are overlay-side state; persistence arrives with rooms v2
+    case 'mascot.action': {
+      // A bot (or the user, or a room relay) commanding a performance —
+      // the per-bot mascot window plays it. Same verb set as the
+      // extension's mascot.perform.
+      push({ type: 'bot.action', botId: msg.botId, action: msg.action })
+
+      break
+    }
+
     case 'ready': {
       // The overlay may have been opened straight through the bridge (the
       // roster-toolbar button) without openBotRoom() — latch the active flag
