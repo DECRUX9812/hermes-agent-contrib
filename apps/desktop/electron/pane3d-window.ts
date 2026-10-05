@@ -88,12 +88,15 @@ export function createPane3dController(deps: Pane3dWindowDeps): Pane3dController
 
     // Click-through BEFORE anything can show the window: if this page is slow,
     // blank or dead, a mouse-enabled transparent full-screen layer would eat
-    // every click on the desktop. On Linux/X11 the shape is what actually lets
-    // clicks through (there is no forward:true there); elsewhere the window
-    // ignores the mouse but keeps forwarding moves so the renderer can re-arm.
+    // every click on the desktop. On Linux/X11 the SHAPE is the input region —
+    // a 1x1 window is fully click-through — and `setIgnoreMouseEvents` is
+    // deliberately NOT called: there it empties the input region for good
+    // (`setIgnoreMouseEvents(false)` cannot restore it, the same one-way door
+    // the HUD vetoes in hud-ipc.ts), so the pane could never become
+    // interactive again. Elsewhere the window ignores the mouse but keeps
+    // forwarding moves so the renderer can re-arm.
     if (paneClickThroughStrategy(platform) === 'shape') {
       win.setShape([{ height: 1, width: 1, x: 0, y: 0 }])
-      win.setIgnoreMouseEvents(true)
     } else {
       win.setIgnoreMouseEvents(true, { forward: true })
     }

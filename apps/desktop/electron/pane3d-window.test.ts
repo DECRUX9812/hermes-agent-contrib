@@ -127,7 +127,7 @@ test('pane spawns transparent, frameless, non-focusable, over the work area', ()
   assert.equal(win.shown, 0)
 })
 
-test('on linux click-through is a 1x1 shape applied before reveal and load', () => {
+test('on linux click-through is a 1x1 shape applied before reveal and load, with no ignore call', () => {
   const h = harness({ platform: 'linux' })
 
   h.controller.open()
@@ -135,10 +135,12 @@ test('on linux click-through is a 1x1 shape applied before reveal and load', () 
   const window = h.windows[0]
 
   assert.deepEqual(window.shape, [{ height: 1, width: 1, x: 0, y: 0 }])
-  assert.deepEqual(window.ignore, { ignore: true, options: undefined })
   assert.equal(h.order.indexOf('set-shape') < h.order.indexOf('reveal'), true)
-  assert.equal(h.order.indexOf('ignore-mouse') < h.order.indexOf('reveal'), true)
-  assert.equal(h.order.indexOf('ignore-mouse') < h.order.indexOf('load:http://127.0.0.1:5174/?win=pane3d#/'), true)
+  assert.equal(h.order.indexOf('set-shape') < h.order.indexOf('load:http://127.0.0.1:5174/?win=pane3d#/'), true)
+  // X11's setIgnoreMouseEvents(true) empties the input region for good, so the
+  // spawn must reach click-through with the shape alone.
+  assert.equal(window.ignore, null)
+  assert.equal(h.order.includes('ignore-mouse'), false)
 })
 
 test('on macOS click-through forwards the mouse and never shapes the window', () => {

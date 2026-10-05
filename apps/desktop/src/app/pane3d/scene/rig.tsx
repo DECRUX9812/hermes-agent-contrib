@@ -8,7 +8,7 @@ import type { AvatarState } from '../director/store'
 
 import { ContactShadow, EmergenceSeam } from './emergence'
 import { getPointerGaze } from './pointer-gaze'
-import { avatarFrames, setAvatarRoot, type SlotTarget } from './projection'
+import { avatarFrames, setAvatarRoot, setEdgeObject, type SlotTarget } from './projection'
 
 export type RigCompletionEvent = 'EMERGED' | 'CELEBRATED' | 'HIDDEN'
 
@@ -135,8 +135,12 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     [definition.id]
   )
 
-  const endRef = useRef(onAnimationEnd)
+  // The seam + contact shadow group is a sibling of the body, so it registers
+  // separately: its rects join the hit regions (setShape would otherwise clip
+  // the shadow off) without inflating the body box the handle is sized from.
+  const attachEdge = useCallback((object: THREE.Group | null) => setEdgeObject(definition.id, object), [definition.id])
 
+  const endRef = useRef(onAnimationEnd)
   endRef.current = onAnimationEnd
 
   /**
@@ -354,7 +358,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
       <group ref={attachRoot}>
         <definition.Body rig={handle} state={state} />
       </group>
-      <group position={[target.x, target.perchY, 0]}>
+      <group position={[target.x, target.perchY, 0]} ref={attachEdge}>
         <EmergenceSeam color={definition.palette.glow} ref={seam} />
         <ContactShadow ref={shadow} scale={definition.height} />
       </group>

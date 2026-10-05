@@ -101,6 +101,8 @@ export const $feed = atom<FeedEntry[]>([])
 export const $cards = atom<Record<string, PaneCard>>({})
 export const $anchor = atom<PaneAnchor>(DEFAULT_ANCHOR)
 export const $transitions = atom<TransitionRecord[]>([])
+/** The host platform from `init`; decides who owns click-through (§6). */
+export const $platform = atom<NodeJS.Platform>('linux')
 
 export const TRANSITION_LIMIT = 200
 
@@ -120,6 +122,7 @@ export function applyPaneState(state: PaneState): void {
   switch (state.type) {
     case 'init':
       pane3dRuntime.platform = state.platform
+      $platform.set(state.platform)
       setReducedMotion(state.reducedMotion)
       setAnchor(state.anchor)
 

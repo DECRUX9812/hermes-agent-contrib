@@ -4,12 +4,16 @@ import type { PaneAnchor } from '../protocol'
 
 import {
   AVATAR_WIDTH_RATIO,
+  avatarFrames,
   boundingScreenRect,
   cameraDistance,
+  collectHitParts,
   computeSlotLayout,
   DOCK_MARGIN,
   dockRect,
+  type HitPartNode,
   PX_PER_UNIT,
+  resetAvatarFrame,
   screenToWorld,
   worldToScreen
 } from './projection'
@@ -121,5 +125,37 @@ describe('pane geometry', () => {
       ])
     ).toEqual({ height: 35, width: 20, x: 10, y: 5 })
     expect(boundingScreenRect([])).toBeNull()
+  })
+})
+
+describe('collectHitParts', () => {
+  const node = (hitPart = false, children: HitPartNode[] = []): HitPartNode => ({
+    children,
+    userData: hitPart ? { hitPart: true } : {}
+  })
+
+  it('collects the outermost flagged objects and stops descending', () => {
+    const group = node(true, [node(true), node(true)])
+    const root = node(false, [node(false, [node(true)]), group, node(false, [node(true, [node(true)])])])
+    const parts = collectHitParts(root)
+
+    // One leaf above the group, the group itself, and one leaf below it: the
+    // flagging group covers its subtree without counting its children.
+    expect(parts).toHaveLength(3)
+    expect(parts).toContain(group)
+  })
+
+  it('returns nothing when no part is flagged', () => {
+    expect(collectHitParts(node(false, [node(false)]))).toEqual([])
+  })
+})
+
+describe('avatar frame', () => {
+  it('resets to no projected hit rects, so a hidden avatar claims no region', () => {
+    avatarFrames.muse.hitRects = [{ height: 10, width: 10, x: 0, y: 0 }]
+    resetAvatarFrame('muse')
+
+    expect(avatarFrames.muse.hitRects).toEqual([])
+    expect(avatarFrames.muse.screenRect).toBeNull()
   })
 })

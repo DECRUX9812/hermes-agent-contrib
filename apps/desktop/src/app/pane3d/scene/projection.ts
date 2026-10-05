@@ -125,6 +125,13 @@ export function computeSlotLayout(input: SlotLayoutInput): Record<AvatarId, Slot
 
 export interface AvatarFrame {
   screenRect: ScreenRect | null
+  /**
+   * Projected world boxes of the avatar's hit parts plus its emergence edge
+   * (seam + contact shadow), pane CSS px, UNPADDED. The publisher pads and
+   * merges these into the regions main applies — one rect per part, so the
+   * clickable shape follows the silhouette instead of one fat box (§6).
+   */
+  hitRects: ScreenRect[]
   yawDeg: number
   gaze: { x: number; y: number }
   meshCount: number
@@ -132,7 +139,7 @@ export interface AvatarFrame {
 }
 
 function emptyFrame(): AvatarFrame {
-  return { gaze: { x: 0, y: 0 }, materialTypes: [], meshCount: 0, screenRect: null, yawDeg: 0 }
+  return { gaze: { x: 0, y: 0 }, hitRects: [], materialTypes: [], meshCount: 0, screenRect: null, yawDeg: 0 }
 }
 
 /**
@@ -171,6 +178,59 @@ export function setAvatarRoot(id: AvatarId, object: THREE.Object3D | null): void
 
 export function getAvatarRoots(): Map<AvatarId, THREE.Object3D> {
   return avatarRoots
+}
+
+/**
+ * The rig's emergence-edge group (seam + contact shadow) per avatar. It is a
+ * sibling of the body root, so it registers separately: the body root's box
+ * drives the handle and the perch math and must NOT grow by the shadow hanging
+ * below the perch line — but the seam and shadow still have to sit inside the
+ * input shape, or `setShape` clips them off.
+ */
+const edgeObjects = new Map<AvatarId, THREE.Object3D>()
+
+export function setEdgeObject(id: AvatarId, object: THREE.Object3D | null): void {
+  if (object) {
+    edgeObjects.set(id, object)
+
+    return
+  }
+
+  edgeObjects.delete(id)
+}
+
+export function getEdgeObjects(): Map<AvatarId, THREE.Object3D> {
+  return edgeObjects
+}
+
+/** Duck-typed, so the traversal tests without a three runtime. */
+export interface HitPartNode {
+  userData: { hitPart?: unknown }
+  children: HitPartNode[]
+}
+
+/**
+ * The outermost objects flagged `userData.hitPart`. A flagged object ends the
+ * descent, so flagging a group covers its whole subtree without counting a
+ * child twice — and flagging every top-level part of a body makes the union of
+ * their boxes equal the body's own box, which is what VAL-HIT-003 compares.
+ */
+export function collectHitParts<T extends HitPartNode>(root: T): T[] {
+  const out: T[] = []
+
+  const walk = (node: HitPartNode) => {
+    node.children.forEach(child => {
+      if (child.userData?.hitPart) {
+        out.push(child as T)
+      } else {
+        walk(child)
+      }
+    })
+  }
+
+  walk(root)
+
+  return out
 }
 
 export function setHandleElement(id: AvatarId, element: HTMLElement | null): void {

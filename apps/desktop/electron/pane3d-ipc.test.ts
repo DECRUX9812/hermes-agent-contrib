@@ -30,6 +30,8 @@ vi.mock('electron', () => ({
   screen: {}
 }))
 
+import type { ScreenRect } from '../src/app/pane3d/protocol'
+
 import { createPane3dRelay, isPaneSender, PANE3D_CHANNELS, registerPane3dIpc } from './pane3d-ipc'
 
 const paneWindow = {
@@ -49,11 +51,13 @@ function relayHarness({ paneOpen = true } = {}) {
   const toHost: Array<Record<string, unknown>> = []
   const focusable: boolean[] = []
   const ignored: boolean[] = []
+  const shapes: ScreenRect[][] = []
   let opened = 0
   let closed = 0
   let raised = 0
 
   const relay = createPane3dRelay({
+    applyHitRegions: regions => shapes.push(regions),
     closePane: () => {
       closed += 1
     },
@@ -79,6 +83,7 @@ function relayHarness({ paneOpen = true } = {}) {
     raised: () => raised,
     relay,
     sent,
+    shapes,
     toHost
   }
 }
@@ -157,6 +162,17 @@ test('the pane window may flip focus, ignore-mouse and forward notify actions', 
   assert.equal(h.closed(), 1)
 })
 
+test('hit regions reach the applier only from the pane window', () => {
+  const h = relayHarness({ paneOpen: true })
+  const regions: ScreenRect[] = [{ height: 10, width: 10, x: 1, y: 2 }]
+
+  h.relay.onPaneControl({ regions, type: 'hit-regions' }, false)
+  assert.deepEqual(h.shapes, [], 'a foreign window cannot shape the pane')
+
+  h.relay.onPaneControl({ regions, type: 'hit-regions' }, true)
+  assert.deepEqual(h.shapes, [regions])
+})
+
 test('summon and dismiss never open a closed pane', () => {
   const h = relayHarness({ paneOpen: false })
 
@@ -198,12 +214,17 @@ beforeEach(() => {
 test('registerPane3dIpc wires the documented channels and honors the pane sender check', async () => {
   const paneMessages: Array<Record<string, unknown>> = []
   const focusCalls: boolean[] = []
+  const shapeCalls: ScreenRect[][] = []
   let opened = 0
 
   const livePane = {
     ...paneWindow,
     setFocusable: (value: boolean) => focusCalls.push(value),
-    webContents: { send: (_channel: string, payload: Record<string, unknown>) => paneMessages.push(payload) }
+    setShape: (rects: ScreenRect[]) => shapeCalls.push(rects),
+    webContents: {
+      getZoomFactor: () => 0.9,
+      send: (_channel: string, payload: Record<string, unknown>) => paneMessages.push(payload)
+    }
   }
 
   registerPane3dIpc({
@@ -249,6 +270,21 @@ test('registerPane3dIpc wires the documented channels and honors the pane sender
   assert.equal(paneMessages.length, 1)
   assert.equal(paneMessages[0].type, 'notify')
   assert.deepEqual(focusCalls, [true])
+
+  // Hit regions: refused from a foreign sender, shaped for the pane with the
+  // zoom factor applied (10..110 CSS px at 0.9 -> 9..99 DIP), and a 1x1 shape
+  // — never setShape([]) — when nothing is interactive.
+  const panel = electron.listeners.get(PANE3D_CHANNELS.panel)!
+  const regions: ScreenRect[] = [{ height: 50, width: 100, x: 10, y: 20 }]
+
+  panel({ sender: { window: foreignWindow } }, { regions, type: 'hit-regions' })
+  assert.deepEqual(shapeCalls, [])
+
+  panel({ sender: { window: livePane } }, { regions, type: 'hit-regions' })
+  assert.deepEqual(shapeCalls, [[{ height: 45, width: 90, x: 9, y: 18 }]])
+
+  panel({ sender: { window: livePane } }, { regions: [], type: 'hit-regions' })
+  assert.deepEqual(shapeCalls[1], [{ height: 1, width: 1, x: 0, y: 0 }])
 })
 
 test('registerPane3dIpc capture-context resolves the none stub without a service', async () => {

@@ -16,10 +16,12 @@ import type {
   NotifyRequest,
   PageContext,
   PaneControl,
-  PaneState
+  PaneState,
+  ScreenRect
 } from '../src/app/pane3d/protocol'
 
 import { paneClickThroughStrategy } from './pane3d'
+import { applyHitRegions as applyPaneHitRegions } from './pane3d-hit'
 
 export const PANE3D_CHANNELS = {
   open: 'hermes:pane3d:open',
@@ -47,6 +49,8 @@ export interface Pane3dRelayDeps {
   raiseMainWindow: () => void
   setPaneFocusable: (focusable: boolean) => void
   setPaneIgnoreMouse: (ignore: boolean) => void
+  /** Apply the renderer's region list (pane3d-hit.ts); called on change only. */
+  applyHitRegions?: (regions: ScreenRect[]) => void
   newId?: () => string
 }
 
@@ -154,8 +158,8 @@ export function createPane3dRelay(deps: Pane3dRelayDeps): Pane3dRelay {
         return
 
       case 'hit-regions':
-        // Hit regions are applied by the click-through feature (pane3d-hit.ts);
-        // accepted here so the channel stays complete.
+        deps.applyHitRegions?.(message.regions)
+
         return
     }
   }
@@ -197,6 +201,12 @@ export function registerPane3dIpc(deps: Pane3dIpcDeps): { relay: Pane3dRelay } {
   }
 
   const relay = createPane3dRelay({
+    applyHitRegions: regions => {
+      // Regions arrive in pane CSS px; the window's zoom factor (Chromium UI
+      // zoom is per-origin, so the pane shares the session's factor) converts
+      // them to the DIP space `setShape` wants.
+      withPane(win => applyPaneHitRegions(win, regions, process.platform, win.webContents.getZoomFactor()))
+    },
     closePane: deps.closePane3d,
     isPaneOpen: deps.isPane3dOpen,
     newId: deps.newId,

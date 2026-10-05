@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 
 import { installPane3dDefaults } from './director/defaults'
 import { $avatars, applyPaneState, pane3dRuntime } from './director/store'
+import { HitRegionPublisher } from './hit/publisher'
 import { PaneCamera } from './scene/camera'
 import { PaneLights } from './scene/lights'
 import { Projector } from './scene/projector'
@@ -95,6 +96,9 @@ export function PaneApp() {
         <Projector />
       </Canvas>
       <PaneOverlay />
+      {/* Click-through: publishes what is interactive, the focus request the
+          composer needs, and the darwin/win32 per-pixel ignore toggle (§6). */}
+      <HitRegionPublisher />
     </>
   )
 }

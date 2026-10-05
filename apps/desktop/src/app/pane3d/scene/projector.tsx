@@ -2,13 +2,27 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo } from 'react'
 import * as THREE from 'three'
 
-import { avatarFrames, boundingScreenRect, getAvatarRoots, writeHandleRect } from './projection'
+import type { ScreenRect } from '../protocol'
+
+import {
+  avatarFrames,
+  boundingScreenRect,
+  collectHitParts,
+  getAvatarRoots,
+  getEdgeObjects,
+  writeHandleRect
+} from './projection'
 
 /**
- * Projects every registered avatar's world box to pane-local CSS px once per
- * frame and writes the result straight into the DOM handle and the snapshot
- * frame (architecture §12). No React state is touched, so the overlay never
- * re-renders while an avatar moves.
+ * Projects every registered avatar once per frame, straight into the DOM
+ * handle, the snapshot frame, and the hit-region source list. No React state is
+ * touched, so the overlay never re-renders while an avatar moves.
+ *
+ * Two projections per avatar: the body root (handle position, `screenRect`,
+ * perch math) and the per-part boxes the click-through shape is built from
+ * (architecture §6). The parts are the outermost `userData.hitPart` objects, so
+ * their union is the body's own box — silhouette-accurate rather than one fat
+ * rect.
  */
 export function Projector() {
   const { camera, size } = useThree()
@@ -21,16 +35,13 @@ export function Projector() {
   useFrame(() => {
     camera.updateMatrixWorld()
 
-    getAvatarRoots().forEach((root, id) => {
-      const { box, corner, points } = scratch
+    const { box, corner, points } = scratch
 
-      box.setFromObject(root)
+    const project = (object: THREE.Object3D): ScreenRect | null => {
+      box.setFromObject(object)
 
       if (box.isEmpty()) {
-        avatarFrames[id].screenRect = null
-        writeHandleRect(id, null)
-
-        return
+        return null
       }
 
       points.length = 0
@@ -47,10 +58,39 @@ export function Projector() {
         }
       }
 
-      const rect = boundingScreenRect(points)
+      return boundingScreenRect(points)
+    }
 
-      avatarFrames[id].screenRect = rect
+    getAvatarRoots().forEach((root, id) => {
+      const frame = avatarFrames[id]
+      const rect = project(root)
+
+      frame.screenRect = rect
       writeHandleRect(id, rect)
+
+      const hitRects: ScreenRect[] = []
+
+      collectHitParts(root).forEach(part => {
+        const partRect = project(part)
+
+        if (partRect) {
+          hitRects.push(partRect)
+        }
+      })
+
+      // The seam and contact shadow hang below the perch line, so they are not
+      // in the body root's box — but setShape would clip them without a region.
+      const edge = getEdgeObjects().get(id)
+
+      if (edge) {
+        const edgeRect = project(edge)
+
+        if (edgeRect) {
+          hitRects.push(edgeRect)
+        }
+      }
+
+      frame.hitRects = hitRects
     })
   })
 
