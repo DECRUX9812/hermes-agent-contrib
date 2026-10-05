@@ -33,7 +33,9 @@ if (typeof window !== 'undefined') {
 
   window.addEventListener('pagehide', markTearingDown)
   window.addEventListener('beforeunload', markTearingDown)
-  window.addEventListener('pageshow', () => { appTearingDown = false })
+  window.addEventListener('pageshow', () => {
+    appTearingDown = false
+  })
 }
 
 interface SessionAttemptOptions {
@@ -93,8 +95,8 @@ export function createSessionAttemptController(
     let current = true
     let attemptSessionId: string | null = null
 
-    const releaseSession = (sid: string) => persistent && terminalApi.detach
-      ? terminalApi.detach(sid) : terminalApi.dispose(sid)
+    const releaseSession = (sid: string) =>
+      persistent && terminalApi.detach ? terminalApi.detach(sid) : terminalApi.dispose(sid)
 
     const subscriptions: Array<() => void> = []
 
@@ -123,7 +125,9 @@ export function createSessionAttemptController(
         persistent = Boolean(session.persistent)
         resumeOnly = persistent
 
-        if (persistent) {markTerminalPersistent(id)}
+        if (persistent) {
+          markTerminalPersistent(id)
+        }
 
         if (isDisposed() || !current) {
           void releaseSession(session.id)
@@ -138,11 +142,15 @@ export function createSessionAttemptController(
 
         subscriptions.push(
           terminalApi.onData(session.id, (data, options) => {
-            if (!current || isDisposed()) {return}
+            if (!current || isDisposed()) {
+              return
+            }
 
             if (options?.replay) {
               ++replayWrites
-              term.write(data, () => { --replayWrites })
+              term.write(data, () => {
+                --replayWrites
+              })
             } else if (persistent) {
               term.write(data)
             } else {
@@ -160,7 +168,9 @@ export function createSessionAttemptController(
               setStatus('closed')
               resumeOnly = exit.signal !== 'expired'
               retrySession = startSession
-              term.write(`\r\n${TERMINAL_EXIT_MESSAGES[exit.signal] || 'Terminal disconnected. Press Enter to reconnect.'}\r\n`)
+              term.write(
+                `\r\n${TERMINAL_EXIT_MESSAGES[exit.signal] || 'Terminal disconnected. Press Enter to reconnect.'}\r\n`
+              )
 
               return
             }
@@ -179,14 +189,18 @@ export function createSessionAttemptController(
         )
 
         if (persistent && terminalApi.onState) {
-          subscriptions.push(terminalApi.onState(session.id, state => {
-            if (!current || isDisposed() || appTearingDown) {return}
-            setStatus(state === 'disconnected' ? 'closed' : state)
+          subscriptions.push(
+            terminalApi.onState(session.id, state => {
+              if (!current || isDisposed() || appTearingDown) {
+                return
+              }
+              setStatus(state === 'disconnected' ? 'closed' : state)
 
-            if (state === 'reconnecting') {
-              term.write('\r\nTerminal disconnected. Reconnecting to the same shell…\r\n')
-            }
-          }))
+              if (state === 'reconnecting') {
+                term.write('\r\nTerminal disconnected. Reconnecting to the same shell…\r\n')
+              }
+            })
+          )
         }
 
         // onExit may replay a buffered exit before returning its unsubscribe.
@@ -206,7 +220,9 @@ export function createSessionAttemptController(
           return
         }
 
-        if (!persistent) {setStatus('open')}
+        if (!persistent) {
+          setStatus('open')
+        }
 
         window.requestAnimationFrame(() => {
           if (current && !isDisposed()) {
@@ -228,13 +244,17 @@ export function createSessionAttemptController(
           resumeOnly = false
           term.write(`${TERMINAL_EXIT_MESSAGES.expired}\r\n`)
         } else {
-          term.write(`Terminal failed to start: ${error instanceof Error ? error.message : String(error)}. Press Enter to retry.\r\n`)
+          term.write(
+            `Terminal failed to start: ${error instanceof Error ? error.message : String(error)}. Press Enter to retry.\r\n`
+          )
         }
       })
   }
 
   const input = (data: string) => {
-    if (replayWrites || isReplayingHistory()) {return}
+    if (replayWrites || isReplayingHistory()) {
+      return
+    }
     const sessionId = sessionIdRef.current
 
     if (!sessionId && retrySession && data === '\r') {

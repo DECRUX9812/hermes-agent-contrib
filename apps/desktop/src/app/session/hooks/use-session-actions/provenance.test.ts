@@ -5,17 +5,25 @@ import { describe, expect, it } from 'vitest'
 import { type ChatMessage, chatMessageText, toChatMessages } from '@/lib/chat-messages'
 import type { SessionMessage, SessionResumeResult } from '@/types/hermes'
 
-import { appendLiveSessionProjection, chatMessagesEquivalent, overlayConcurrentMessageChanges, preserveLocalPendingTurnMessages } from './utils'
+import {
+  appendLiveSessionProjection,
+  chatMessagesEquivalent,
+  overlayConcurrentMessageChanges,
+  preserveLocalPendingTurnMessages
+} from './utils'
 
 const snapshot = (
-  user: string, userOriginated: boolean, startedAt = 10
+  user: string,
+  userOriginated: boolean,
+  startedAt = 10
 ): Pick<SessionResumeResult, 'session_id' | 'turn_started_at' | 'inflight'> => ({
   session_id: 'runtime',
   turn_started_at: startedAt,
   inflight: { user, user_originated: userOriginated, assistant: 'partial answer', streaming: true }
 })
 
-const withText = (messages: ChatMessage[], text: string) => messages.filter(message => chatMessageText(message) === text)
+const withText = (messages: ChatMessage[], text: string) =>
+  messages.filter(message => chatMessageText(message) === text)
 
 const todoHeader = '[Your active task list was preserved across context compression]'
 
@@ -54,7 +62,8 @@ describe('backend message provenance', () => {
     ])
 
     const restored = appendLiveSessionProjection(rows, {
-      session_id: 'runtime', turn_started_at: 10,
+      session_id: 'runtime',
+      turn_started_at: 10,
       inflight: { user: 'current prompt', assistant: 'partial answer', streaming: true }
     })
 
@@ -67,7 +76,13 @@ describe('backend message provenance', () => {
     const rows = toChatMessages([
       { role: 'user', content: 'repeat this', user_originated: true, timestamp: 1 },
       { role: 'assistant', content: 'finished answer', timestamp: 2 },
-      { role: 'user', content: 'runtime wake', display_kind: 'internal_notification', user_originated: false, timestamp: 3 }
+      {
+        role: 'user',
+        content: 'runtime wake',
+        display_kind: 'internal_notification',
+        user_originated: false,
+        timestamp: 3
+      }
     ])
 
     const restored = appendLiveSessionProjection(rows, snapshot('repeat this', true))
@@ -76,38 +91,60 @@ describe('backend message provenance', () => {
   })
 
   it('keeps human input distinct from an identical current runtime notice', () => {
-    const rows = toChatMessages([{
-      role: 'user', content: 'same text', display_kind: 'internal_notification', user_originated: false, timestamp: 11
-    }])
+    const rows = toChatMessages([
+      {
+        role: 'user',
+        content: 'same text',
+        display_kind: 'internal_notification',
+        user_originated: false,
+        timestamp: 11
+      }
+    ])
 
     const restored = appendLiveSessionProjection(rows, snapshot('same text', true))
     expect(withText(restored, 'same text').map(message => message.userOriginated)).toEqual([false, true])
   })
 
-  it.each(['internal_notification', 'auto_continue'])('deduplicates a current %s wake through the same hydration', displayKind => {
-    const notice = 'runtime wake'
+  it.each(['internal_notification', 'auto_continue'])(
+    'deduplicates a current %s wake through the same hydration',
+    displayKind => {
+      const notice = 'runtime wake'
 
-    const rows = toChatMessages([{
-      role: 'user', content: notice, display_kind: displayKind, user_originated: false, timestamp: 11
-    }])
+      const rows = toChatMessages([
+        {
+          role: 'user',
+          content: notice,
+          display_kind: displayKind,
+          user_originated: false,
+          timestamp: 11
+        }
+      ])
 
-    const live = snapshot(notice, false)
-    live.inflight = { ...live.inflight, display_kind: displayKind }
+      const live = snapshot(notice, false)
+      live.inflight = { ...live.inflight, display_kind: displayKind }
 
-    const restored = appendLiveSessionProjection(rows, live)
-    const markedRows = rows.map(message => ({ ...message, runtimeTurnStartedAt: live.turn_started_at }))
-    expect(restored.filter(message => message.userOriginated === false)).toEqual(markedRows)
-    expect(appendLiveSessionProjection(restored, live).filter(message => message.userOriginated === false)).toEqual(markedRows)
-  })
+      const restored = appendLiveSessionProjection(rows, live)
+      const markedRows = rows.map(message => ({ ...message, runtimeTurnStartedAt: live.turn_started_at }))
+      expect(restored.filter(message => message.userOriginated === false)).toEqual(markedRows)
+      expect(appendLiveSessionProjection(restored, live).filter(message => message.userOriginated === false)).toEqual(
+        markedRows
+      )
+    }
+  )
 
   it('reuses a legacy auto-continue timeline event without changing its canonical origin', () => {
     // Legacy auto-continue typing runs after canonical classification, so a
     // persisted untyped row can correctly have true provenance and display as
     // a system event. Its display role already excludes it from human ordinals.
-    const rows = toChatMessages([{
-      role: 'user', content: 'legacy recovery note', display_kind: 'auto_continue',
-      user_originated: true, timestamp: 11
-    }])
+    const rows = toChatMessages([
+      {
+        role: 'user',
+        content: 'legacy recovery note',
+        display_kind: 'auto_continue',
+        user_originated: true,
+        timestamp: 11
+      }
+    ])
 
     const live = snapshot('typed recovery note', false)
     live.inflight = { ...live.inflight, display_kind: 'auto_continue' }
@@ -121,7 +158,13 @@ describe('backend message provenance', () => {
 
   it('preserves repeated runtime wakes across turns while reconciling a repeated snapshot', () => {
     const rows = toChatMessages([
-      { role: 'user', content: 'same wake', display_kind: 'internal_notification', user_originated: false, timestamp: 1 },
+      {
+        role: 'user',
+        content: 'same wake',
+        display_kind: 'internal_notification',
+        user_originated: false,
+        timestamp: 1
+      },
       { role: 'assistant', content: 'finished answer', timestamp: 2 }
     ])
 
@@ -148,7 +191,9 @@ describe('backend message provenance', () => {
       { role: 'assistant', content: 'old answer', timestamp: 2 },
       { role: 'user', content: 'continue runtime', display_kind: 'hidden', user_originated: false, timestamp: 10.1 },
       {
-        role: 'assistant', content: '', timestamp: 11,
+        role: 'assistant',
+        content: '',
+        timestamp: 11,
         tool_calls: [{ id: 'tc', type: 'function', function: { name: 'terminal', arguments: '{}' } }]
       },
       { role: 'tool', content: 'tool output', tool_call_id: 'tc', name: 'terminal', timestamp: 12 }
@@ -167,9 +212,14 @@ describe('backend message provenance', () => {
   })
 
   it('reuses a hydrated structured answer when its runtime wake is hidden', () => {
-    const rows = toChatMessages([{
-      role: 'assistant', content: 'partial answer', reasoning: 'planning', timestamp: 11
-    }])
+    const rows = toChatMessages([
+      {
+        role: 'assistant',
+        content: 'partial answer',
+        reasoning: 'planning',
+        timestamp: 11
+      }
+    ])
 
     const live = snapshot('hidden scaffold', false)
     live.inflight = { ...live.inflight, display_kind: 'hidden' }
@@ -206,7 +256,9 @@ describe('backend message provenance', () => {
     ])
 
     const optimistic: ChatMessage = {
-      id: 'user-optimistic', role: 'user', parts: [{ type: 'text', text: 'current prompt' }]
+      id: 'user-optimistic',
+      role: 'user',
+      parts: [{ type: 'text', text: 'current prompt' }]
     }
 
     const reconciled = preserveLocalPendingTurnMessages(rows, [optimistic])
@@ -226,9 +278,13 @@ describe('backend message provenance', () => {
     const rest = toChatMessages(fixture.rest)
     const rpc = toChatMessages(fixture.rpc)
 
-    const signature = (messages: ChatMessage[]) => messages.map(message => ({
-      rowId: message.rowId, role: message.role, text: chatMessageText(message), userOriginated: message.userOriginated
-    }))
+    const signature = (messages: ChatMessage[]) =>
+      messages.map(message => ({
+        rowId: message.rowId,
+        role: message.role,
+        text: chatMessageText(message),
+        userOriginated: message.userOriginated
+      }))
 
     expect(signature(rest)).toEqual(signature(rpc))
 

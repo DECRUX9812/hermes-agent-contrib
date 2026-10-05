@@ -31,7 +31,7 @@ const DEMO_BOTS: Bot[] = [
   { id: 'profile:scout', name: 'scout', displayName: 'Scout', status: 'working', statusLine: 'summarizing diff' },
   { id: 'profile:openclaw', name: 'openclaw', displayName: 'OpenClaw', status: 'idle' },
   { id: 'profile:gemini', name: 'gemini', displayName: 'Gemini', status: 'idle' },
-  { id: 'profile:codex', name: 'codex', displayName: 'Codex CLI', status: 'idle' },
+  { id: 'profile:codex', name: 'codex', displayName: 'Codex CLI', status: 'idle' }
 ]
 
 /** A stand-in `hermesDesktop.botroom`: what the main renderer would have
@@ -40,7 +40,7 @@ function installDemoBridge(): void {
   const stateListeners = new Set<(p: BotRoomStatePayload) => void>()
   const rooms: { id: string; name: string; memberBotIds: string[] }[] = []
 
-  const emit = (p: BotRoomStatePayload) => stateListeners.forEach((l) => l(p))
+  const emit = (p: BotRoomStatePayload) => stateListeners.forEach(l => l(p))
 
   window.hermesDesktop = {
     ...window.hermesDesktop,
@@ -60,27 +60,24 @@ function installDemoBridge(): void {
         if (msg.type === 'ready') {
           emit({ type: 'init', enabled: true, bots: DEMO_BOTS, rooms: [] })
         } else if (msg.type === 'task' && msg.botId) {
-          const bot = DEMO_BOTS.find((b) => b.id === msg.botId)
+          const bot = DEMO_BOTS.find(b => b.id === msg.botId)
 
           if (bot) {
             emit({ type: 'bot.status', bot: { ...bot, status: 'working', statusLine: 'on it' } })
-            setTimeout(
-              () => emit({ type: 'bot.status', bot: { ...bot, status: 'idle', statusLine: undefined } }),
-              2600,
-            )
+            setTimeout(() => emit({ type: 'bot.status', bot: { ...bot, status: 'idle', statusLine: undefined } }), 2600)
           }
         } else if (msg.type === 'room.create') {
           rooms.push({ id: `room:${Date.now()}`, name: msg.name, memberBotIds: [] })
           emit({ type: 'rooms', rooms: [...rooms] })
         } else if (msg.type === 'room.move') {
-          const r = rooms.find((room) => room.id === msg.roomId)
+          const r = rooms.find(room => room.id === msg.roomId)
 
           if (r && msg.botId && !r.memberBotIds.includes(msg.botId)) {
             r.memberBotIds.push(msg.botId)
             emit({ type: 'rooms', rooms: [...rooms] })
           }
         } else if (msg.type === 'room.remove') {
-          const i = rooms.findIndex((room) => room.id === msg.roomId)
+          const i = rooms.findIndex(room => room.id === msg.roomId)
 
           if (i >= 0) {
             rooms.splice(i, 1)
@@ -88,7 +85,7 @@ function installDemoBridge(): void {
 
           emit({ type: 'rooms', rooms: [...rooms] })
         }
-      },
-    },
+      }
+    }
   } as typeof window.hermesDesktop
 }

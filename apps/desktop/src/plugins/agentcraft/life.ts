@@ -40,19 +40,25 @@ export class SlotAllocator {
     const prefix = `slot_${station}_`
 
     // already holding one?
-    for (const [slot, who] of this.used) {if (who === agent && slot.startsWith(prefix)) {
-      const a = this.plan.anchors.get(slot)
+    for (const [slot, who] of this.used) {
+      if (who === agent && slot.startsWith(prefix)) {
+        const a = this.plan.anchors.get(slot)
 
-      return a ? { x: a.x, y: a.y, z: a.z, yaw: a.yaw } : null
-    }}
+        return a ? { x: a.x, y: a.y, z: a.z, yaw: a.yaw } : null
+      }
+    }
 
     for (let i = 0; i < 8; i++) {
       const name = `${prefix}${i}`
       const a = this.plan.anchors.get(name)
 
-      if (!a) {continue}
+      if (!a) {
+        continue
+      }
 
-      if (this.used.get(name)) {continue}
+      if (this.used.get(name)) {
+        continue
+      }
       this.used.set(name, agent)
 
       return { x: a.x, y: a.y, z: a.z, yaw: a.yaw }
@@ -63,13 +69,21 @@ export class SlotAllocator {
 
   release(agent: string): void {
     for (const [slot, who] of [...this.used]) {
-      if (who === agent && slot !== `seat_${agent}`) {this.used.delete(slot)}
+      if (who === agent && slot !== `seat_${agent}`) {
+        this.used.delete(slot)
+      }
     }
   }
 }
 
 /** Manhattan path on the walkable grid — A* lite over the plan at FEET level. */
-export function findPath(walk: (x: number, z: number) => boolean, sx: number, sz: number, tx: number, tz: number): [number, number][] {
+export function findPath(
+  walk: (x: number, z: number) => boolean,
+  sx: number,
+  sz: number,
+  tx: number,
+  tz: number
+): [number, number][] {
   const key = (x: number, z: number) => (x + 8192) * 8192 + (z + 8192)
   const open: Array<[number, number, number]> = [[sx, sz, 0]] // x, z, g
   const came = new Map<number, number>()
@@ -79,11 +93,15 @@ export function findPath(walk: (x: number, z: number) => boolean, sx: number, sz
   let guard = 0
 
   while (open.length && guard++ < 4000) {
-    open.sort((a, b) => b[2] + Math.abs(b[0] - tx) + Math.abs(b[1] - tz) - (a[2] + Math.abs(a[0] - tx) + Math.abs(a[1] - tz)))
+    open.sort(
+      (a, b) => b[2] + Math.abs(b[0] - tx) + Math.abs(b[1] - tz) - (a[2] + Math.abs(a[0] - tx) + Math.abs(a[1] - tz))
+    )
     const [x, z, gCost] = open.pop()!
     const k = key(x, z)
 
-    if (visited.has(k)) {continue}
+    if (visited.has(k)) {
+      continue
+    }
     visited.add(k)
 
     if (x === tx && z === tz) {
@@ -96,15 +114,19 @@ export function findPath(walk: (x: number, z: number) => boolean, sx: number, sz
       [1, 0],
       [-1, 0],
       [0, 1],
-      [0, -1],
+      [0, -1]
     ] as const) {
       const nx = x + dx
       const nz = z + dz
       const nk = key(nx, nz)
 
-      if (visited.has(nk)) {continue}
+      if (visited.has(nk)) {
+        continue
+      }
 
-      if (!walk(nx, nz) && !(nx === tx && nz === tz)) {continue}
+      if (!walk(nx, nz) && !(nx === tx && nz === tz)) {
+        continue
+      }
 
       if (!g.has(nk) || g.get(nk)! > gCost + 1) {
         g.set(nk, gCost + 1)
@@ -114,7 +136,9 @@ export function findPath(walk: (x: number, z: number) => boolean, sx: number, sz
     }
   }
 
-  if (!found) {return []}
+  if (!found) {
+    return []
+  }
   const path: [number, number][] = []
   let cur = key(tx, tz)
   const startK = key(sx, sz)
@@ -124,7 +148,9 @@ export function findPath(walk: (x: number, z: number) => boolean, sx: number, sz
     path.unshift([Math.floor(cur / 8192) - 8192, (cur % 8192) - 8192])
     const p = came.get(cur)
 
-    if (p === undefined) {break}
+    if (p === undefined) {
+      break
+    }
     cur = p
   }
 
@@ -142,17 +168,21 @@ export class ActorManager {
     private st: SimStore,
     private plan: Plan,
     walk: (x: number, z: number) => boolean,
-    private skinFor: (id: string) => THREE.Texture | null,
+    private skinFor: (id: string) => THREE.Texture | null
   ) {
     this.slots = new SlotAllocator(plan)
     this.walk = walk
     st.on(ev => {
-      if (ev.type === 'agent') {this.onAgentChange(ev.id)}
+      if (ev.type === 'agent') {
+        this.onAgentChange(ev.id)
+      }
     })
   }
 
   spawnAll(): void {
-    for (const a of this.st.agents.values()) {this.spawn(a)}
+    for (const a of this.st.agents.values()) {
+      this.spawn(a)
+    }
   }
 
   private spawn(a: SimAgent): void {
@@ -170,7 +200,7 @@ export class ActorManager {
       path: [],
       pathI: 0,
       speed: 2.4 + Math.random() * 0.5,
-      seated: false,
+      seated: false
     }
 
     rig.root.position.set(seat.x, FEET, seat.z)
@@ -185,14 +215,22 @@ export class ActorManager {
     const a = this.st.agents.get(id)
     const actor = this.actors.get(id)
 
-    if (!a || !actor) {return}
+    if (!a || !actor) {
+      return
+    }
 
     if (a.station !== this.lastStation.get(id)) {
       this.lastStation.set(id, a.station)
       const slot = this.slots.claim(id, a.station)
 
       if (slot) {
-        const path = findPath(this.walk, Math.round(actor.x - 0.5) + 0, Math.round(actor.z - 0.5) + 0, Math.floor(slot.x), Math.floor(slot.z))
+        const path = findPath(
+          this.walk,
+          Math.round(actor.x - 0.5) + 0,
+          Math.round(actor.z - 0.5) + 0,
+          Math.floor(slot.x),
+          Math.floor(slot.z)
+        )
         actor.path = path
         actor.pathI = 0
         actor.seated = false
@@ -225,29 +263,45 @@ export class ActorManager {
         const targetYaw = Math.atan2(dx, dz)
         let dy = targetYaw - actor.yaw
 
-        while (dy > Math.PI) {dy -= Math.PI * 2}
+        while (dy > Math.PI) {
+          dy -= Math.PI * 2
+        }
 
-        while (dy < -Math.PI) {dy += Math.PI * 2}
+        while (dy < -Math.PI) {
+          dy += Math.PI * 2
+        }
         actor.yaw += dy * Math.min(1, dt * 8)
         actor.rig.setPosture('walk')
       } else {
         const ty = ((actor as Actor & { targetYaw?: number }).targetYaw ?? actor.yaw) * (Math.PI / 180)
         let dy = ty - actor.yaw
 
-        while (dy > Math.PI) {dy -= Math.PI * 2}
+        while (dy > Math.PI) {
+          dy -= Math.PI * 2
+        }
 
-        while (dy < -Math.PI) {dy += Math.PI * 2}
+        while (dy < -Math.PI) {
+          dy += Math.PI * 2
+        }
         actor.yaw += dy * Math.min(1, dt * 5)
         actor.rig.setPosture(postureFor(a.activity, a.station))
       }
 
-      actor.rig.root.position.set(actor.x, FEET + (actor.rig.posture === 'walk' ? Math.abs(Math.sin(actor.rig.walkPhase)) * 0.05 : 0), actor.z)
+      actor.rig.root.position.set(
+        actor.x,
+        FEET + (actor.rig.posture === 'walk' ? Math.abs(Math.sin(actor.rig.walkPhase)) * 0.05 : 0),
+        actor.z
+      )
       actor.rig.root.rotation.y = actor.yaw
       actor.rig.update(t, dt)
     }
   }
 
-  screenPositions(camera: THREE.Camera, w: number, h: number): Map<string, { x: number; y: number; speech: string | null; alert: boolean }> {
+  screenPositions(
+    camera: THREE.Camera,
+    w: number,
+    h: number
+  ): Map<string, { x: number; y: number; speech: string | null; alert: boolean }> {
     const out = new Map<string, { x: number; y: number; speech: string | null; alert: boolean }>()
     const v = new THREE.Vector3()
 
@@ -255,14 +309,16 @@ export class ActorManager {
       v.set(actor.x, FEET + 2.1, actor.z)
       v.project(camera)
 
-      if (v.z > 1) {continue}
+      if (v.z > 1) {
+        continue
+      }
       const a = this.st.agents.get(id)!
       const speech = a.speech && a.speech.until > Date.now() ? a.speech.text : null
       out.set(id, {
         x: (v.x * 0.5 + 0.5) * w,
         y: (-v.y * 0.5 + 0.5) * h,
         speech,
-        alert: a.activity === 'waiting_user' || a.activity === 'blocked' || a.activity === 'error',
+        alert: a.activity === 'waiting_user' || a.activity === 'blocked' || a.activity === 'error'
       })
     }
 
@@ -271,7 +327,9 @@ export class ActorManager {
 
   dispose(): void {
     this.group.traverse(o => {
-      if (o instanceof THREE.Mesh) {o.geometry.dispose()}
+      if (o instanceof THREE.Mesh) {
+        o.geometry.dispose()
+      }
     })
   }
 }

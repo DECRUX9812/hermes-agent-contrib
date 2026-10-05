@@ -13,6 +13,7 @@ vi.hoisted(() => {
 async function loadTranslucency(host: 'browser' | 'electron') {
   document.documentElement.dataset.hermesDesktopHost = host
   vi.resetModules()
+
   return import('@/store/translucency')
 }
 

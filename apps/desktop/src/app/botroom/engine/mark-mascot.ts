@@ -31,7 +31,9 @@ export interface MarkStage {
 let _soft: THREE.CanvasTexture | null = null
 
 function softTexture(): THREE.CanvasTexture {
-  if (_soft) {return _soft}
+  if (_soft) {
+    return _soft
+  }
   const c = document.createElement('canvas')
   c.width = c.height = 64
   const ctx = c.getContext('2d')!
@@ -67,7 +69,13 @@ export class MarkMascot {
   private nextBlink: number
   private blinkT = 0
 
-  constructor(id: string, name: string, spec: MarkSpec, parent: THREE.Scene, private stage: MarkStage) {
+  constructor(
+    id: string,
+    name: string,
+    spec: MarkSpec,
+    parent: THREE.Scene,
+    private stage: MarkStage
+  ) {
     this.id = id
     this.name = name
     const built = buildMark(spec, this.size)
@@ -80,14 +88,26 @@ export class MarkMascot {
 
     this.shadow = new THREE.Mesh(
       new THREE.PlaneGeometry(this.size * 1.35, this.size * 0.5),
-      new THREE.MeshBasicMaterial({ map: softTexture(), color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }),
+      new THREE.MeshBasicMaterial({
+        map: softTexture(),
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.3,
+        depthWrite: false
+      })
     )
     this.shadow.position.set(0, this.size * 0.55, -30)
     this.group.add(this.shadow)
 
     this.halo = new THREE.Mesh(
       new THREE.PlaneGeometry(this.size * 2.2, this.size * 2.2),
-      new THREE.MeshBasicMaterial({ map: softTexture(), color: this.tint, transparent: true, opacity: 0, depthWrite: false }),
+      new THREE.MeshBasicMaterial({
+        map: softTexture(),
+        color: this.tint,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      })
     )
     this.halo.position.set(0, 0, -40)
     this.group.add(this.halo)
@@ -126,7 +146,9 @@ export class MarkMascot {
   private rot(key: string, rad: number) {
     const p = this.parts.get(key)
 
-    if (p) {p.rotation.z = rad}
+    if (p) {
+      p.rotation.z = rad
+    }
   }
 
   update(dt: number) {
@@ -173,7 +195,7 @@ export class MarkMascot {
     // canonical float: 0→-5→0 over the 4s loop (keyTimes 0/.5/1)
     const fk = 0.5 - Math.cos(floatT * Math.PI * 2) / 2
     y += -5 * (this.size / 120) * fk * ease // ≈ -4% of height at peak
-    const wig = Math.sin((this.age % 2) / 2 * Math.PI * 2) * 0.052 // ±3°
+    const wig = Math.sin(((this.age % 2) / 2) * Math.PI * 2) * 0.052 // ±3°
     antL += wig
     antR += wig
     // canonical snap: rotate -8° during the 85–95% slice of each 4s loop
@@ -338,9 +360,7 @@ export class MarkMascot {
 
     const haloMat = this.halo.material as THREE.MeshBasicMaterial
 
-    const haloTarget = this.working
-      ? 0.32 + Math.abs(Math.sin(this.age * 3.2 + this.phase)) * 0.2
-      : this.hoverT * 0.18
+    const haloTarget = this.working ? 0.32 + Math.abs(Math.sin(this.age * 3.2 + this.phase)) * 0.2 : this.hoverT * 0.18
 
     haloMat.opacity += (haloTarget - haloMat.opacity) * Math.min(1, dt * 7)
 
@@ -356,8 +376,11 @@ export class MarkMascot {
         o.geometry.dispose()
         const m = o.material as THREE.Material | THREE.Material[]
 
-        if (Array.isArray(m)) {m.forEach((x) => x.dispose())}
-        else {m.dispose()}
+        if (Array.isArray(m)) {
+          m.forEach(x => x.dispose())
+        } else {
+          m.dispose()
+        }
       }
     })
   }

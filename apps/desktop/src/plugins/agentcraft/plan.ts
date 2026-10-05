@@ -30,7 +30,16 @@ export class Plan {
   readonly bindings = new Map<number, string>()
   readonly anchors = new Map<string, Anchor>()
 
-  constructor(minX: number, minY: number, minZ: number, maxX: number, maxY: number, maxZ: number, groundTop: number, ground: (y: number) => number) {
+  constructor(
+    minX: number,
+    minY: number,
+    minZ: number,
+    maxX: number,
+    maxY: number,
+    maxZ: number,
+    groundTop: number,
+    ground: (y: number) => number
+  ) {
     this.minX = minX
     this.minY = minY
     this.minZ = minZ
@@ -142,12 +151,17 @@ export class Plan {
           const s = this.cells[i]
           const isGrass = s === grass
 
-          if (!isGrass && s !== dirt) {continue}
+          if (!isGrass && s !== dirt) {
+            continue
+          }
           const above = this.cells[this.index(x, y + 1, z)]
           const lives = !isOpaque(above)
 
-          if (isGrass && !lives) {this.cells[i] = dirt}
-          else if (!isGrass && lives) {this.cells[i] = grass}
+          if (isGrass && !lives) {
+            this.cells[i] = dirt
+          } else if (!isGrass && lives) {
+            this.cells[i] = grass
+          }
         }
       }
     }

@@ -17,7 +17,10 @@ export interface BotRoomIpcDeps {
   mascots: BotRoomMascots
   pill: BotRoomPill
   /** The roster row each mascot/pill needs — main keeps the last pushed one. */
-  getBot: (botId: string) => { id: string; name: string; displayName?: string; status?: string; statusLine?: string; color?: string } | undefined
+  getBot: (
+    botId: string
+  ) =>
+    { id: string; name: string; displayName?: string; status?: string; statusLine?: string; color?: string } | undefined
 }
 
 export function registerBotRoomIpc({

@@ -95,9 +95,15 @@ export const BROWSER_BRIDGE_STUBS = {
   translucencySupported: false,
   windowControls: {
     custom: false,
-    minimize: () => { throw browserUnsupported('Native window controls') },
-    toggleMaximize: () => { throw browserUnsupported('Native window controls') },
-    close: () => { throw browserUnsupported('Native window controls') }
+    minimize: () => {
+      throw browserUnsupported('Native window controls')
+    },
+    toggleMaximize: () => {
+      throw browserUnsupported('Native window controls')
+    },
+    close: () => {
+      throw browserUnsupported('Native window controls')
+    }
   },
   getPathForFile: () => '',
   normalizePreviewTarget: async () => null,
@@ -162,8 +168,17 @@ export const BROWSER_BRIDGE_STUBS = {
     })
   },
   updates: {
-    apply: async () => ({ command: 'hermes update', manual: true, message: 'Run `hermes update` on the server host', ok: false }),
-    check: async () => ({ message: 'Use `hermes update` on the server host', reason: 'browser-hosted', supported: false }),
+    apply: async () => ({
+      command: 'hermes update',
+      manual: true,
+      message: 'Run `hermes update` on the server host',
+      ok: false
+    }),
+    check: async () => ({
+      message: 'Use `hermes update` on the server host',
+      reason: 'browser-hosted',
+      supported: false
+    }),
     getBranch: async () => ({ branch: '' }),
     onProgress: noopUnsubscribe,
     setBranch: async (branch: string) => ({ branch })

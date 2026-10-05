@@ -85,8 +85,7 @@ export function useMediaPlaybackSrc(path: string) {
       const element = event.currentTarget
       const failing = element.getAttribute('src') ?? ''
 
-      const fail = () =>
-        setMedia(current => (current.src === failing ? { ...current, failed: true } : current))
+      const fail = () => setMedia(current => (current.src === failing ? { ...current, failed: true } : current))
 
       // Only a source that has loaded can have expired; blob sources never do.
       if (loadedSrc.current !== failing || failing.startsWith('blob:')) {

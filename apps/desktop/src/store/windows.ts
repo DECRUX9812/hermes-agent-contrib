@@ -285,8 +285,5 @@ export async function openSessionInTerminal(
     return
   }
 
-  await runWindowOpen(
-    () => openInTerminal(sessionId, opts),
-    'Could not open chat in a terminal'
-  )
+  await runWindowOpen(() => openInTerminal(sessionId, opts), 'Could not open chat in a terminal')
 }

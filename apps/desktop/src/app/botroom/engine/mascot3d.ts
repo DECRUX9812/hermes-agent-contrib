@@ -3,7 +3,6 @@ import * as THREE from 'three'
 import { MarkMascot } from './mark-mascot'
 import { buildEmblem, characterMarkFor, emblemMarkFor } from './marks'
 
-
 /**
  * 3D mascot engine. ONE shared orthographic scene rendered over the whole
  * viewport; each bot is a THREE.Group positioned in CSS-pixel space so a
@@ -42,7 +41,9 @@ function mulberry32(seed: number) {
 let _softTex: THREE.CanvasTexture | null = null
 
 function softTexture(): THREE.CanvasTexture {
-  if (_softTex) {return _softTex}
+  if (_softTex) {
+    return _softTex
+  }
   const c = document.createElement('canvas')
   c.width = 128
   c.height = 128
@@ -76,27 +77,47 @@ interface Skin {
 function skinFor(name: string, fallbackHue: number): Skin {
   const n = name.toLowerCase()
 
-  if (n.includes('grok')) {return { color: 0xd9d9e3, accessory: 'visor' }}
+  if (n.includes('grok')) {
+    return { color: 0xd9d9e3, accessory: 'visor' }
+  }
 
-  if (n.includes('muse')) {return { color: 0xb48cf0, accessory: 'mask' }}
+  if (n.includes('muse')) {
+    return { color: 0xb48cf0, accessory: 'mask' }
+  }
 
-  if (n.includes('scout') || n.includes('openai')) {return { color: 0xeef4f4, accessory: 'halo' }}
+  if (n.includes('scout') || n.includes('openai')) {
+    return { color: 0xeef4f4, accessory: 'halo' }
+  }
 
-  if (n.includes('claw')) {return { color: 0xe0884f, accessory: 'claws' }}
+  if (n.includes('claw')) {
+    return { color: 0xe0884f, accessory: 'claws' }
+  }
 
-  if (n.includes('ollama') || n.includes('olla')) {return { color: 0xe4e4ee, accessory: 'ears', emblem: emblemMarkFor(name) }}
+  if (n.includes('ollama') || n.includes('olla')) {
+    return { color: 0xe4e4ee, accessory: 'ears', emblem: emblemMarkFor(name) }
+  }
 
-  if (n.includes('gemini')) {return { color: 0x7aa8ff, accessory: 'star', emblem: emblemMarkFor(name) }}
+  if (n.includes('gemini')) {
+    return { color: 0x7aa8ff, accessory: 'star', emblem: emblemMarkFor(name) }
+  }
 
-  if (n.includes('claude')) {return { color: 0xd97757, emblem: emblemMarkFor(name) }}
+  if (n.includes('claude')) {
+    return { color: 0xd97757, emblem: emblemMarkFor(name) }
+  }
 
-  if (n.includes('codex')) {return { color: 0x3d4a4a, accessory: 'faceplate' }}
+  if (n.includes('codex')) {
+    return { color: 0x3d4a4a, accessory: 'faceplate' }
+  }
 
-  if (n.includes('opencode') || n.includes('cli') || n.includes('acp')) {return { color: 0x2b3038, accessory: 'faceplate', emblem: emblemMarkFor(name) }}
+  if (n.includes('opencode') || n.includes('cli') || n.includes('acp')) {
+    return { color: 0x2b3038, accessory: 'faceplate', emblem: emblemMarkFor(name) }
+  }
 
   const emblem = emblemMarkFor(name)
 
-  if (emblem) {return { color: 0x2b3038, emblem }}
+  if (emblem) {
+    return { color: 0x2b3038, emblem }
+  }
 
   return { color: new THREE.Color().setHSL(fallbackHue, 0.62, 0.56).getHex() }
 }
@@ -105,7 +126,9 @@ function skinFor(name: string, fallbackHue: number): Skin {
 let _plateTex: THREE.CanvasTexture | null = null
 
 function faceplateTexture(): THREE.CanvasTexture {
-  if (_plateTex) {return _plateTex}
+  if (_plateTex) {
+    return _plateTex
+  }
   const c = document.createElement('canvas')
   c.width = c.height = 128
   const ctx = c.getContext('2d')!
@@ -113,23 +136,14 @@ function faceplateTexture(): THREE.CanvasTexture {
   ctx.fillStyle = '#7dffc9'
   ctx.font = '700 44px ui-monospace, monospace'
   ctx.textBaseline = 'middle'
-  ctx.fillText('>_' , 34, 66)
+  ctx.fillText('>_', 34, 66)
   _plateTex = new THREE.CanvasTexture(c)
 
   return _plateTex
 }
 
 export type MascotAction =
-  | 'idle'
-  | 'dance'
-  | 'wave'
-  | 'spin'
-  | 'jump'
-  | 'celebrate'
-  | 'sleep'
-  | 'point'
-  | 'talk'
-  | 'walk'
+  'idle' | 'dance' | 'wave' | 'spin' | 'jump' | 'celebrate' | 'sleep' | 'point' | 'talk' | 'walk'
 
 interface Anim {
   name: MascotAction
@@ -162,7 +176,7 @@ export class OverlayScene {
       canvas,
       alpha: true,
       antialias: true,
-      powerPreference: 'low-power',
+      powerPreference: 'low-power'
     })
     this.renderer.setClearColor(0x000000, 0)
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75))
@@ -170,7 +184,7 @@ export class OverlayScene {
     this.camera = new THREE.OrthographicCamera(0, 1, 0, 1, -500, 500)
     this.resize()
     window.addEventListener('resize', () => this.resize())
-    window.addEventListener('pointermove', (e) => {
+    window.addEventListener('pointermove', e => {
       this.pointer.x = e.clientX
       this.pointer.y = e.clientY
     })
@@ -213,9 +227,13 @@ export class OverlayScene {
       m.baseY = cy
       const ud = m.group.userData
 
-      if (typeof ud.tx === 'number') {ud.tx = Math.min(Math.max(ud.tx, M), w - M)}
+      if (typeof ud.tx === 'number') {
+        ud.tx = Math.min(Math.max(ud.tx, M), w - M)
+      }
 
-      if (typeof ud.ty === 'number') {ud.ty = Math.min(Math.max(ud.ty, M), h - M)}
+      if (typeof ud.ty === 'number') {
+        ud.ty = Math.min(Math.max(ud.ty, M), h - M)
+      }
     }
   }
 
@@ -268,7 +286,7 @@ export class OverlayScene {
       const g = new THREE.SphereGeometry(2.6, 8, 8)
 
       const mat = new THREE.MeshBasicMaterial({
-        color: new THREE.Color().setHSL(rnd(), 0.9, 0.6),
+        color: new THREE.Color().setHSL(rnd(), 0.9, 0.6)
       })
 
       const mesh = new THREE.Mesh(g, mat)
@@ -281,7 +299,7 @@ export class OverlayScene {
         vx: Math.cos(a) * sp,
         vy: -Math.abs(Math.sin(a)) * sp - 60,
         vz: (rnd() - 0.5) * 60,
-        life: 0.9 + rnd() * 0.7,
+        life: 0.9 + rnd() * 0.7
       })
     }
 
@@ -299,7 +317,9 @@ export class OverlayScene {
 
     const dt = Math.min(this.clock.getDelta(), 0.05)
 
-    for (const m of this.mascots.values()) {m.update(dt)}
+    for (const m of this.mascots.values()) {
+      m.update(dt)
+    }
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i]!
@@ -330,7 +350,9 @@ export class OverlayScene {
   dispose() {
     cancelAnimationFrame(this.raf)
 
-    for (const m of this.mascots.values()) {m.dispose()}
+    for (const m of this.mascots.values()) {
+      m.dispose()
+    }
     this.renderer.dispose()
   }
 }
@@ -366,7 +388,12 @@ export class Mascot {
   private nextBlink: number
   private blinkT = 0
 
-  constructor(id: string, name: string, parent: THREE.Scene, private stage: OverlayScene) {
+  constructor(
+    id: string,
+    name: string,
+    parent: THREE.Scene,
+    private stage: OverlayScene
+  ) {
     this.id = id
     this.name = name
     const h = hash32(name)
@@ -383,7 +410,7 @@ export class Mascot {
       roughness: 0.38,
       metalness: 0.06,
       clearcoat: 0.7,
-      clearcoatRoughness: 0.4,
+      clearcoatRoughness: 0.4
     })
     this.body = new THREE.Mesh(this.bodyGeometry(kind), this.matBody)
     this.group.add(this.body)
@@ -397,7 +424,7 @@ export class Mascot {
       // terminal bots: a raised dark screen face with an emissive ">_" glyph
       const plate = new THREE.Mesh(
         new THREE.SphereGeometry(this.size * 0.5, 24, 16, -0.6, 1.2, 0.9, 1.1),
-        new THREE.MeshBasicMaterial({ color: 0x0c1016 }),
+        new THREE.MeshBasicMaterial({ color: 0x0c1016 })
       )
 
       plate.rotation.x = -Math.PI / 2 + 0.4
@@ -406,10 +433,10 @@ export class Mascot {
 
       const glyph = new THREE.Mesh(
         new THREE.PlaneGeometry(this.size * 0.62, this.size * 0.62),
-        new THREE.MeshBasicMaterial({ map: faceplateTexture(), transparent: true }),
+        new THREE.MeshBasicMaterial({ map: faceplateTexture(), transparent: true })
       )
 
-      glyph.position.z = this.size * 0.30
+      glyph.position.z = this.size * 0.3
       this.head.add(glyph)
       // eyes still present, tucked behind the plate edge — subtle
       const { l, r } = this.buildEyes(true)
@@ -427,17 +454,22 @@ export class Mascot {
     // mouth — small capsule that opens while talking
     this.mouth = new THREE.Mesh(
       new THREE.CapsuleGeometry(2.2, 6, 4, 8),
-      new THREE.MeshStandardMaterial({ color: 0x3a2b33, roughness: 0.7 }),
+      new THREE.MeshStandardMaterial({ color: 0x3a2b33, roughness: 0.7 })
     )
     this.mouth.rotation.z = Math.PI / 2
     this.mouth.rotation.x = -0.25
-    this.mouth.position.set(0, this.size * 0.30, this.size * 0.42)
+    this.mouth.position.set(0, this.size * 0.3, this.size * 0.42)
     this.head.add(this.mouth)
 
     this.addAccessory(skin, color)
 
     // arms: shoulder-pivot groups (capsule + hand sphere), so wave/dance read
-    const limbMat = new THREE.MeshPhysicalMaterial({ color: color.clone().offsetHSL(0, 0, -0.1), roughness: 0.55, clearcoat: 0.4, clearcoatRoughness: 0.6 })
+    const limbMat = new THREE.MeshPhysicalMaterial({
+      color: color.clone().offsetHSL(0, 0, -0.1),
+      roughness: 0.55,
+      clearcoat: 0.4,
+      clearcoatRoughness: 0.6
+    })
     this.armL = this.buildArm(-1, limbMat)
     this.armR = this.buildArm(1, limbMat)
     this.group.add(this.armL, this.armR)
@@ -450,14 +482,20 @@ export class Mascot {
     // soft drop shadow pinned to the "ground" + a halo that glows while working
     this.shadow = new THREE.Mesh(
       new THREE.PlaneGeometry(this.size * 2.7, this.size * 1.0),
-      new THREE.MeshBasicMaterial({ map: softTexture(), color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }),
+      new THREE.MeshBasicMaterial({
+        map: softTexture(),
+        color: 0x000000,
+        transparent: true,
+        opacity: 0.3,
+        depthWrite: false
+      })
     )
     this.shadow.position.set(0, this.size * 0.95, -30)
     this.group.add(this.shadow)
 
     this.halo = new THREE.Mesh(
       new THREE.PlaneGeometry(this.size * 3.4, this.size * 3.4),
-      new THREE.MeshBasicMaterial({ map: softTexture(), color, transparent: true, opacity: 0, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ map: softTexture(), color, transparent: true, opacity: 0, depthWrite: false })
     )
     this.halo.position.set(0, this.size * 0.05, -40)
     this.group.add(this.halo)
@@ -471,18 +509,18 @@ export class Mascot {
 
       const sclera = new THREE.Mesh(
         new THREE.SphereGeometry(5.4, 16, 12),
-        new THREE.MeshStandardMaterial({ color: 0xf6f7ff, roughness: 0.25 }),
+        new THREE.MeshStandardMaterial({ color: 0xf6f7ff, roughness: 0.25 })
       )
 
       const pupil = new THREE.Mesh(
         new THREE.SphereGeometry(2.3, 12, 10),
-        new THREE.MeshStandardMaterial({ color: 0x14141c, roughness: 0.3 }),
+        new THREE.MeshStandardMaterial({ color: 0x14141c, roughness: 0.3 })
       )
 
       pupil.name = 'pupil'
       pupil.position.z = 3.4
       g.add(sclera, pupil)
-      g.position.set(side * this.size * 0.23, 0, this.size * 0.30)
+      g.position.set(side * this.size * 0.23, 0, this.size * 0.3)
       g.visible = !hidden
       this.head.add(g)
 
@@ -535,7 +573,7 @@ export class Mascot {
         // Grok — black visor band + twin antennae
         const visor = new THREE.Mesh(
           new THREE.SphereGeometry(this.size * 0.52, 24, 16, -0.9, 1.8, 0.75, 0.9),
-          new THREE.MeshStandardMaterial({ color: 0x0a0a0e, roughness: 0.15, metalness: 0.5 }),
+          new THREE.MeshStandardMaterial({ color: 0x0a0a0e, roughness: 0.15, metalness: 0.5 })
         )
 
         visor.rotation.x = -Math.PI / 2 + 0.38
@@ -560,13 +598,16 @@ export class Mascot {
         // Muse — phantom half-mask over the upper face + a star pin
         const mask = new THREE.Mesh(
           new THREE.SphereGeometry(this.size * 0.5, 24, 16, -0.7, 1.4, 0.6, 0.9),
-          new THREE.MeshStandardMaterial({ color: 0xf4f0ff, roughness: 0.35 }),
+          new THREE.MeshStandardMaterial({ color: 0xf4f0ff, roughness: 0.35 })
         )
 
         mask.rotation.x = -Math.PI / 2 + 0.45
         mask.position.set(3, -2, 3)
         this.head.add(mask)
-        const star = new THREE.Mesh(new THREE.OctahedronGeometry(4.5), new THREE.MeshStandardMaterial({ color: 0xffd76a, roughness: 0.25 }))
+        const star = new THREE.Mesh(
+          new THREE.OctahedronGeometry(4.5),
+          new THREE.MeshStandardMaterial({ color: 0xffd76a, roughness: 0.25 })
+        )
         star.scale.set(1, 1, 0.4)
         star.position.set(this.size * 0.34, -this.size * 0.55, this.size * 0.5)
         star.rotation.z = 0.4
@@ -579,7 +620,7 @@ export class Mascot {
         // Scout/OpenAI — floating teal halo ring above the head
         const ring = new THREE.Mesh(
           new THREE.TorusGeometry(this.size * 0.34, 1.6, 10, 28),
-          new THREE.MeshStandardMaterial({ color: 0x10c9a5, roughness: 0.3, emissive: 0x0a5a48 }),
+          new THREE.MeshStandardMaterial({ color: 0x10c9a5, roughness: 0.3, emissive: 0x0a5a48 })
         )
 
         ring.position.set(0, -this.size * 1.06, 0)
@@ -611,7 +652,10 @@ export class Mascot {
       case 'ears': {
         // Ollama — llama ears
         for (const side of [-1, 1] as const) {
-          const ear = new THREE.Mesh(new THREE.ConeGeometry(4.5, 13, 10), new THREE.MeshStandardMaterial({ color: color.clone().offsetHSL(0, 0, -0.05) }))
+          const ear = new THREE.Mesh(
+            new THREE.ConeGeometry(4.5, 13, 10),
+            new THREE.MeshStandardMaterial({ color: color.clone().offsetHSL(0, 0, -0.05) })
+          )
           ear.position.set(side * 10, -this.size * 0.95, 0)
           ear.rotation.z = side * -0.22
           this.group.add(ear)
@@ -622,7 +666,10 @@ export class Mascot {
 
       case 'star': {
         // Gemini — violet 4-point star floating at temple height
-        const s = new THREE.Mesh(new THREE.OctahedronGeometry(5), new THREE.MeshStandardMaterial({ color: 0xb48cff, roughness: 0.2, emissive: 0x3b2a66 }))
+        const s = new THREE.Mesh(
+          new THREE.OctahedronGeometry(5),
+          new THREE.MeshStandardMaterial({ color: 0xb48cff, roughness: 0.2, emissive: 0x3b2a66 })
+        )
         s.scale.set(1, 1.6, 0.4)
         s.position.set(this.size * 0.42, -this.size * 0.6, this.size * 0.45)
         this.group.add(s)
@@ -872,7 +919,7 @@ export class Mascot {
     // ── mouth: opens while talking, soft smile otherwise ──
     const mouthOpen = this.speakAmount > 0 ? 0.35 + Math.abs(Math.sin(t * 13)) * 0.65 : 0
     this.mouth.scale.set(1, 1 - mouthOpen * 0.55, 1 + mouthOpen * 0.8)
-    this.mouth.position.y = this.size * 0.30 + mouthOpen * 1.5
+    this.mouth.position.y = this.size * 0.3 + mouthOpen * 1.5
     this.head.position.y += this.speakAmount * Math.sin(t * 13) * 0.6
 
     // sleep: head droops
@@ -899,9 +946,7 @@ export class Mascot {
     // halo: soft glow pulse while working, faint presence on hover
     const haloMat = this.halo.material as THREE.MeshBasicMaterial
 
-    const haloTarget = this.working
-      ? 0.32 + Math.abs(Math.sin(t * 3.2 + this.phase)) * 0.2
-      : this.hoverT * 0.18
+    const haloTarget = this.working ? 0.32 + Math.abs(Math.sin(t * 3.2 + this.phase)) * 0.2 : this.hoverT * 0.18
 
     haloMat.opacity += (haloTarget - haloMat.opacity) * Math.min(1, dt * 7)
 
@@ -923,8 +968,11 @@ export class Mascot {
         o.geometry.dispose()
         const m = o.material as THREE.Material | THREE.Material[]
 
-        if (Array.isArray(m)) {m.forEach((x) => x.dispose())}
-        else {m.dispose()}
+        if (Array.isArray(m)) {
+          m.forEach(x => x.dispose())
+        } else {
+          m.dispose()
+        }
       }
     })
   }

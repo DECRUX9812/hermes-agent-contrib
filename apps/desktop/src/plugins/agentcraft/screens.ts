@@ -35,7 +35,7 @@ const MD = {
   diff_add: '#B8CBB3',
   diff_del: '#F4A585',
   diff_ctx: '#A39B8E',
-  attention: '#F4A585',
+  attention: '#F4A585'
 }
 
 const BOARD = { rule: '#C9A227', label: '#F4EFE6', chip: '#E9E1D3', chip_edge: '#C9BBA3' }
@@ -46,7 +46,7 @@ const LOG_COLORS: Record<string, string> = {
   result: MD.result,
   error: MD.error,
   diff: MD.diff_hunk,
-  memory: MD.path,
+  memory: MD.path
 }
 
 function css(c: number[] | [number, number, number]): string {
@@ -54,14 +54,19 @@ function css(c: number[] | [number, number, number]): string {
 }
 
 export class ScreenManager {
-  private monitors = new Map<string, { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; tex: THREE.CanvasTexture }>()
+  private monitors = new Map<
+    string,
+    { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; tex: THREE.CanvasTexture }
+  >()
   private taskWall!: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; tex: THREE.CanvasTexture }
   private holo!: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; tex: THREE.CanvasTexture }
   private agentTask = new Map<string, string | null>()
 
   constructor(private st: SimStore) {
     st.on(ev => {
-      if (ev.type === 'log' || ev.type === 'agent') {this.st.dirtyScreens.add('monitors')}
+      if (ev.type === 'log' || ev.type === 'agent') {
+        this.st.dirtyScreens.add('monitors')
+      }
     })
   }
 
@@ -123,7 +128,9 @@ export class ScreenManager {
   /** Redraw any dirty monitors + task wall + hologram. Call once per tick. */
   flush(): void {
     for (const id of [...this.st.dirtyScreens]) {
-      if (id === 'monitors' || this.monitors.has(id)) {this.redrawMonitor(id)}
+      if (id === 'monitors' || this.monitors.has(id)) {
+        this.redrawMonitor(id)
+      }
       this.st.dirtyScreens.delete(id)
     }
 
@@ -138,7 +145,9 @@ export class ScreenManager {
     const m = this.monitors.get(agentId)
     const a = this.st.agents.get(agentId)
 
-    if (!m || !a) {return}
+    if (!m || !a) {
+      return
+    }
     const { ctx, canvas } = m
     ctx.imageSmoothingEnabled = false
     // dark monitor screen + scanlines
@@ -146,7 +155,9 @@ export class ScreenManager {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.fillStyle = MD.scanline
 
-    for (let y = 0; y < canvas.height; y += 4) {ctx.fillRect(0, y, canvas.width, 1)}
+    for (let y = 0; y < canvas.height; y += 4) {
+      ctx.fillRect(0, y, canvas.width, 1)
+    }
     // header bar: agent color band + name + status badge
     ctx.fillStyle = MD.header_bg
     ctx.fillRect(0, 0, canvas.width, 22)
@@ -157,7 +168,14 @@ export class ScreenManager {
     drawText(ctx, a.name.toUpperCase(), 9, 5, 1, MD.badge_bg)
     const pill = a.activity.replace('_', ' ').toUpperCase()
     const pw = textWidth(pill, 1) + 10
-    const pillColor = a.activity === 'error' ? MD.error : a.activity === 'waiting_user' || a.activity === 'blocked' ? MD.attention : a.activity === 'done' ? MD.result : MD.tool
+    const pillColor =
+      a.activity === 'error'
+        ? MD.error
+        : a.activity === 'waiting_user' || a.activity === 'blocked'
+          ? MD.attention
+          : a.activity === 'done'
+            ? MD.result
+            : MD.tool
     ctx.fillStyle = MD.bg_top
     ctx.fillRect(canvas.width - pw - 6, 5, pw, 12)
     drawText(ctx, pill, canvas.width - pw - 1, 8, 1, pillColor)
@@ -171,7 +189,9 @@ export class ScreenManager {
     for (const l of this.st.logs.get(agentId) ?? []) {
       const col = LOG_COLORS[l.kind] ?? MD.text
 
-      for (const w of wrapText(l.text, canvas.width - 20, 1).slice(0, 3)) {lines.push(`${col}|${w}`)}
+      for (const w of wrapText(l.text, canvas.width - 20, 1).slice(0, 3)) {
+        lines.push(`${col}|${w}`)
+      }
     }
 
     const shown = lines.slice(-15)
@@ -190,7 +210,9 @@ export class ScreenManager {
   private redrawTaskWall(): void {
     const { canvas, ctx, tex } = this.taskWall
 
-    if (!ctx) {return}
+    if (!ctx) {
+      return
+    }
     ctx.imageSmoothingEnabled = false
     ctx.fillStyle = '#2B2521'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -203,7 +225,7 @@ export class ScreenManager {
       ['DOING', '#80D2CD', 'doing'],
       ['REVIEW', '#E6C659', 'review'],
       ['DONE', '#B8CBB3', 'done'],
-      ['BLOCKED', '#EA847B', 'blocked'],
+      ['BLOCKED', '#EA847B', 'blocked']
     ]
 
     const colW = Math.floor((canvas.width - 10) / cols.length)
@@ -217,9 +239,13 @@ export class ScreenManager {
       for (const t of this.st.tasks.values()) {
         const inCol = t.state === state || (state === 'blocked' && t.state === 'cancelled')
 
-        if (!inCol) {continue}
+        if (!inCol) {
+          continue
+        }
 
-        if (y > canvas.height - 16) {break}
+        if (y > canvas.height - 16) {
+          break
+        }
         const a = t.assignee ? this.st.agents.get(t.assignee) : undefined
         ctx.fillStyle = BOARD.chip
         ctx.fillRect(x + 1, y, colW - 4, 15)
@@ -238,14 +264,20 @@ export class ScreenManager {
   private redrawHolo(): void {
     const { canvas, ctx, tex } = this.holo
 
-    if (!ctx) {return}
+    if (!ctx) {
+      return
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     const g = this.st.goal
 
-    if (!g) {return}
+    if (!g) {
+      return
+    }
     drawText(ctx, 'GOAL', 6, 6, 1, '#E6C659')
 
-    for (const [i, line] of wrapText(g.text, canvas.width - 12, 1).slice(0, 4).entries()) {
+    for (const [i, line] of wrapText(g.text, canvas.width - 12, 1)
+      .slice(0, 4)
+      .entries()) {
       drawText(ctx, line, 6, 16 + i * 9, 1, css(hex(C.paper)))
     }
 

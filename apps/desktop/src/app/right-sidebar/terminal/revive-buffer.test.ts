@@ -53,14 +53,9 @@ describe('cleanReviveSnapshot', () => {
   })
 
   it('drops only the live Fish greeting and preserves the current prompt tail', () => {
-    const snapshot = [
-      ...FISH_GREETING,
-      FISH_PROMPT,
-      `${FISH_MARKER} echo hi`,
-      'hi',
-      FISH_PROMPT,
-      FISH_MARKER
-    ].join('\r\n')
+    const snapshot = [...FISH_GREETING, FISH_PROMPT, `${FISH_MARKER} echo hi`, 'hi', FISH_PROMPT, FISH_MARKER].join(
+      '\r\n'
+    )
 
     expect(cleanReviveSnapshot(snapshot, 'fish')).toBe(
       [FISH_PROMPT, `${FISH_MARKER} echo hi`, 'hi', FISH_PROMPT, FISH_MARKER].join('\r\n')
@@ -68,9 +63,7 @@ describe('cleanReviveSnapshot', () => {
   })
 
   it('preserves incomplete Fish output instead of guessing that its tail is a prompt', () => {
-    const snapshot = [...FISH_GREETING, FISH_PROMPT, `${FISH_MARKER} printf repeated`, 'same', 'same'].join(
-      '\r\n'
-    )
+    const snapshot = [...FISH_GREETING, FISH_PROMPT, `${FISH_MARKER} printf repeated`, 'same', 'same'].join('\r\n')
 
     expect(cleanReviveSnapshot(snapshot, 'fish')).toBe(
       [FISH_PROMPT, `${FISH_MARKER} printf repeated`, 'same', 'same'].join('\r\n')
@@ -89,9 +82,7 @@ describe('cleanReviveSnapshot', () => {
     ].join('\r\n')
 
     expect(cleanReviveSnapshot(snapshot, 'fish')).toBe(
-      [FISH_PROMPT, `${FISH_MARKER} printf greeting`, ...FISH_GREETING, 'done', FISH_PROMPT, FISH_MARKER].join(
-        '\r\n'
-      )
+      [FISH_PROMPT, `${FISH_MARKER} printf greeting`, ...FISH_GREETING, 'done', FISH_PROMPT, FISH_MARKER].join('\r\n')
     )
   })
 })
@@ -105,14 +96,9 @@ describe('mergeReviveSnapshot', () => {
       ...Array.from({ length: 8 }, () => FISH_PROMPT)
     ].join('\r\n')
 
-    const live = [
-      ...FISH_GREETING,
-      FISH_PROMPT,
-      `${FISH_MARKER} echo next`,
-      'next',
-      FISH_PROMPT,
-      FISH_MARKER
-    ].join('\r\n')
+    const live = [...FISH_GREETING, FISH_PROMPT, `${FISH_MARKER} echo next`, 'next', FISH_PROMPT, FISH_MARKER].join(
+      '\r\n'
+    )
 
     expect(mergeReviveSnapshot(restored, live, 'fish')).toBe(
       [restored, FISH_PROMPT, `${FISH_MARKER} echo next`, 'next', FISH_PROMPT, FISH_MARKER].join('\r\n')
@@ -120,9 +106,12 @@ describe('mergeReviveSnapshot', () => {
   })
 
   it('preserves arbitrary and repeated restored output byte-for-byte', () => {
-    const restored = ['same', '❯ decorative output', ...FISH_GREETING, ...Array.from({ length: 240 }, () => 'same')].join(
-      '\r\n'
-    )
+    const restored = [
+      'same',
+      '❯ decorative output',
+      ...FISH_GREETING,
+      ...Array.from({ length: 240 }, () => 'same')
+    ].join('\r\n')
 
     const live = [...FISH_GREETING, FISH_PROMPT, FISH_MARKER].join('\r\n')
     const merged = mergeReviveSnapshot(restored, live, 'fish')

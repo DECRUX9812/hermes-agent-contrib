@@ -73,17 +73,17 @@ export function mountBotRoomMascotWindow(host: HTMLElement): void {
   // The action dot is the one non-drag pixel — opens the task pill anchored
   // at this mascot. Everything else on the window body is -webkit-app-region:
   // drag, so native OS drag drives 'moved' → position persistence.
-  dot.addEventListener('click', (e) => {
+  dot.addEventListener('click', e => {
     e.stopPropagation()
     control({ type: 'open-pill', botId })
   })
 
-  stage.addEventListener('contextmenu', (e) => {
+  stage.addEventListener('contextmenu', e => {
     e.preventDefault()
     menu.classList.toggle('open')
   })
 
-  menu.addEventListener('click', (e) => {
+  menu.addEventListener('click', e => {
     const act = (e.target as HTMLElement).getAttribute('data-act')
 
     if (!act) {
@@ -104,7 +104,7 @@ export function mountBotRoomMascotWindow(host: HTMLElement): void {
     }
   })
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', e => {
     if (!menu.contains(e.target as Node)) {
       menu.classList.remove('open')
     }
@@ -116,7 +116,7 @@ export function mountBotRoomMascotWindow(host: HTMLElement): void {
   // clicks still reach them.
   let dragging = false
 
-  stage.addEventListener('pointerdown', (e) => {
+  stage.addEventListener('pointerdown', e => {
     const target = e.target as HTMLElement
 
     if (target.closest('.hr-mw-dot, .hr-mw-menu')) {
@@ -128,7 +128,7 @@ export function mountBotRoomMascotWindow(host: HTMLElement): void {
     e.preventDefault()
   })
 
-  window.addEventListener('pointermove', (e) => {
+  window.addEventListener('pointermove', e => {
     if (dragging) {
       bridge?.botroomMascot?.drag?.({ botId, phase: 'move', x: e.screenX, y: e.screenY })
     }

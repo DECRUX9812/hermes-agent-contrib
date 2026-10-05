@@ -23,7 +23,9 @@ export function StudioPage() {
   useEffect(() => {
     const host = hostRef.current
 
-    if (!host) {return}
+    if (!host) {
+      return
+    }
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let dead = false
     let scene: StudioScene | null = null
@@ -33,8 +35,10 @@ export function StudioPage() {
       reducedMotion: reduced,
       autoAnswer: 0,
       onEvent: kind => {
-        if (kind === 'decision') {forceTick(v => v + 1)}
-      },
+        if (kind === 'decision') {
+          forceTick(v => v + 1)
+        }
+      }
     })
       .then(s => {
         if (dead) {
@@ -62,17 +66,25 @@ export function StudioPage() {
 
         const t = params.get('time')
 
-        if (t === 'day' || t === 'golden' || t === 'night') {s.setTime(t)}
+        if (t === 'day' || t === 'golden' || t === 'night') {
+          s.setTime(t)
+        }
         const follow = params.get('follow')
 
-        if (follow) {s.followAgent(follow)}
+        if (follow) {
+          s.followAgent(follow)
+        }
         const aa = params.get('auto') === '1'
 
-        if (aa) {s.setAutoAnswer(true)}
+        if (aa) {
+          s.setAutoAnswer(true)
+        }
         setAutoAnswer(aa)
         const spd = Number(params.get('speed'))
 
-        if (spd > 0) {s.setSpeed(spd)}
+        if (spd > 0) {
+          s.setSpeed(spd)
+        }
         // demo/test hook: lets harnesses drive the scene (flyTo/setTime/follow)
         ;(window as unknown as Record<string, unknown>).__studio = s
         setReady(true)

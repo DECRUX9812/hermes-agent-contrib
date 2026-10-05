@@ -170,33 +170,40 @@ function commitPick(profile: string, field: AppearanceField, value: string, onRo
   const pick = Symbol()
   const owner = profileAppearanceOwner(profile)
   const pending = latestPick.get(key)
-  const picks = pending?.owner === owner ? pending : { owner, profile, field, latest: pick, confirmed: pref.own(profile) }
+  const picks =
+    pending?.owner === owner ? pending : { owner, profile, field, latest: pick, confirmed: pref.own(profile) }
 
   picks.latest = pick
   latestPick.set(key, picks)
   pref.put(profile, value)
 
-  saveProfileAppearance(profile, { [field]: value }).then(() => {
-    if (latestPick.get(key) !== picks) { return }
-    // Writes settle in FIFO order; an earlier success is the durable fallback
-    // even while the cache optimistically shows a later pick.
-    picks.confirmed = value
+  saveProfileAppearance(profile, { [field]: value })
+    .then(() => {
+      if (latestPick.get(key) !== picks) {
+        return
+      }
+      // Writes settle in FIFO order; an earlier success is the durable fallback
+      // even while the cache optimistically shows a later pick.
+      picks.confirmed = value
 
-    if (picks.latest === pick) { latestPick.delete(key) }
-  }).catch(error => {
-    if (latestPick.get(key) !== picks || picks.latest !== pick) {
-      return
-    }
+      if (picks.latest === pick) {
+        latestPick.delete(key)
+      }
+    })
+    .catch(error => {
+      if (latestPick.get(key) !== picks || picks.latest !== pick) {
+        return
+      }
 
-    pref.put(profile, picks.confirmed)
-    latestPick.delete(key)
+      pref.put(profile, picks.confirmed)
+      latestPick.delete(key)
 
-    if (profileAppearanceOwner(profile) === owner) {
-      onRollback()
-    }
+      if (profileAppearanceOwner(profile) === owner) {
+        onRollback()
+      }
 
-    notifyError(error, translateNow('settings.config.autosaveFailed'))
-  })
+      notifyError(error, translateNow('settings.config.autosaveFailed'))
+    })
 }
 
 /** Storage events carry the whole named-profile map, including inactive profiles. */
@@ -206,16 +213,21 @@ function changedAppearanceProfiles(event: StorageEvent): string[] {
       const parsed: unknown = JSON.parse(raw || 'null')
 
       return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-        ? Object.fromEntries(Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+        ? Object.fromEntries(
+            Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+          )
         : {}
-    } catch { return {} }
+    } catch {
+      return {}
+    }
   }
 
   const before = record(event.oldValue)
   const after = record(event.newValue)
 
-  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
-    .filter(profile => profile !== 'default' && before[profile] !== after[profile])
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
+    profile => profile !== 'default' && before[profile] !== after[profile]
+  )
 }
 
 // Profiles whose config was already checked for a local pick to upload.
@@ -646,7 +658,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // the OTHER windows, which is exactly the set that needs to catch up.
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if ((event.storageArea && event.storageArea !== window.localStorage) || (event.key !== null && !APPEARANCE_KEYS.has(event.key))) {
+      if (
+        (event.storageArea && event.storageArea !== window.localStorage) ||
+        (event.key !== null && !APPEARANCE_KEYS.has(event.key))
+      ) {
         return
       }
 
@@ -658,24 +673,32 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
         // The shared cache is per profile, but a pending request still belongs
         // to the connection captured when it began, even after navigation.
-        if (pending) { markLocalAppearanceChange(profile, pending.owner) }
+        if (pending) {
+          markLocalAppearanceChange(profile, pending.owner)
+        }
         latestPick.delete(key)
         markLocalAppearanceChange(profile)
       }
 
       if (event.key === null) {
-        for (const pending of latestPick.values()) { adopt(pending.profile, pending.field) }
+        for (const pending of latestPick.values()) {
+          adopt(pending.profile, pending.field)
+        }
         markLocalAppearanceChange(live)
       } else if (event.key === PROFILE_SKINS_KEY || event.key === PROFILE_MODES_KEY) {
         const field = event.key === PROFILE_SKINS_KEY ? 'theme' : 'theme_mode'
 
-        for (const profile of changedAppearanceProfiles(event)) { adopt(profile, field) }
+        for (const profile of changedAppearanceProfiles(event)) {
+          adopt(profile, field)
+        }
       } else {
         const field = event.key === SKIN_KEY ? 'theme' : 'theme_mode'
         adopt('default', field)
 
         // Unassigned named profiles inherit the legacy/default slot.
-        if (APPEARANCE_PREFS[field].own(live) === null) { markLocalAppearanceChange(live) }
+        if (APPEARANCE_PREFS[field].own(live) === null) {
+          markLocalAppearanceChange(live)
+        }
       }
 
       setThemeNameState(storedSkin(live))

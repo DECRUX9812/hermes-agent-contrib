@@ -26,7 +26,9 @@ describe('scenario', () => {
 
     const state = Object.fromEntries([...sim.store.tasks.values()].map(t => [t.id, t.state]))
 
-    for (const id of ['T-1', 'T-2', 'T-3', 'T-4', 'T-5', 'T-6', 'T-8']) {expect(state[id]).toBe('done')}
+    for (const id of ['T-1', 'T-2', 'T-3', 'T-4', 'T-5', 'T-6', 'T-8']) {
+      expect(state[id]).toBe('done')
+    }
 
     const decisions = [...sim.store.decisions.values()]
 
