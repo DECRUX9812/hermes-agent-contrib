@@ -41,6 +41,13 @@ describe('AppearanceSettings extra slot', () => {
     expect(screen.queryByText('Extra controls')).toBeNull()
     unmount()
 
+    // 'general' is the landing subpage the Appearance nav opens — the
+    // unreachable overview case lives below it.
+    const landing = renderPage('general')
+
+    expect(screen.getByText('Extra controls')).toBeTruthy()
+    landing.unmount()
+
     renderPage()
 
     expect(screen.getByText('Extra controls')).toBeTruthy()
