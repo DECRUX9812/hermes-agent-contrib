@@ -221,13 +221,23 @@ export interface AvatarFrame {
    */
   hitRects: ScreenRect[]
   yawDeg: number
+  /** Greeting bow pitch in degrees (architecture §8.6); 0 at rest. */
+  bowDeg: number
   gaze: { x: number; y: number }
   meshCount: number
   materialTypes: string[]
 }
 
 function emptyFrame(): AvatarFrame {
-  return { gaze: { x: 0, y: 0 }, hitRects: [], materialTypes: [], meshCount: 0, screenRect: null, yawDeg: 0 }
+  return {
+    bowDeg: 0,
+    gaze: { x: 0, y: 0 },
+    hitRects: [],
+    materialTypes: [],
+    meshCount: 0,
+    screenRect: null,
+    yawDeg: 0
+  }
 }
 
 /**

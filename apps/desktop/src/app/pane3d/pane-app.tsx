@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 
 import { installPane3dDefaults } from './director/defaults'
+import { startRoom } from './director/room-live'
 import { $avatars, applyPaneState, pane3dRuntime } from './director/store'
 import { HitRegionPublisher } from './hit/publisher'
 import { PaneCamera } from './scene/camera'
@@ -87,6 +88,10 @@ export function PaneApp() {
       off()
     }
   }, [])
+
+  // The AvatarRoom (§8.6): facing + rate-limited greetings. It installs the
+  // defaults' ConversationSource, so it starts after the effect above.
+  useEffect(() => startRoom(), [])
 
   return (
     <>

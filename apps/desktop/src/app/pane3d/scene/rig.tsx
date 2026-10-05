@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
 import type { AvatarDefinition, AvatarRigHandle } from '../avatars/types'
+import { bowPitch, facingPose } from '../director/room'
+import { getBowStart, getFacingTarget } from '../director/room-live'
 import { type AvatarState, pane3dRuntime } from '../director/store'
 
 import {
@@ -103,6 +105,12 @@ type Motion = {
   lastAnchorChangedAt: number
   lastFade: number
   yaw: number
+  /** Facing: a pure tween toward the AvatarRoom's target yaw (§8.6). */
+  yawFrom: number
+  yawTo: number
+  yawStartedAt: number
+  /** Greeting bow pitch, 0..10° — a pure envelope over BOW_MS (§8.6). */
+  bow: number
   gazeX: number
   gazeY: number
   lean: number
@@ -116,6 +124,7 @@ type Motion = {
 function createMotion(target: SlotTarget): Motion {
   return {
     baseY: target.y,
+    bow: 0,
     counted: false,
     gazeX: 0,
     gazeY: 0,
@@ -131,7 +140,10 @@ function createMotion(target: SlotTarget): Motion {
     startedAt: 0,
     widen: 1,
     x: target.x,
-    yaw: 0
+    yaw: 0,
+    yawFrom: 0,
+    yawStartedAt: 0,
+    yawTo: 0
   }
 }
 
@@ -317,7 +329,33 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
 
     damp(m, 'gazeX', pointer.active ? pointer.x : 0, 0.16, dt)
     damp(m, 'gazeY', pointer.active ? pointer.y : 0, 0.16, dt)
-    damp(m, 'yaw', 0, 0.3, dt)
+
+    // Facing (§8.6): the AvatarRoom publishes a target yaw (the nearest pair
+    // turns toward each other, everyone else faces the user). The turn is a
+    // PURE function of elapsed ms — a damped step would run at half speed on
+    // this software-GL pane and miss the 2 s "back to the user" bound.
+    const yawTarget = getFacingTarget(definition.id)
+
+    if (reducedMotion) {
+      m.yaw = yawTarget
+      m.yawFrom = yawTarget
+      m.yawTo = yawTarget
+      m.yawStartedAt = now
+    } else {
+      if (Math.abs(yawTarget - m.yawTo) > 1e-4) {
+        m.yawFrom = m.yaw
+        m.yawTo = yawTarget
+        m.yawStartedAt = now
+      }
+
+      m.yaw = facingPose(m.yawFrom, m.yawTo, now - m.yawStartedAt)
+    }
+
+    // The greeting bow is a one-shot envelope over BOW_MS, driven by a real
+    // event (a completed emergence) — never a loop (§8.6).
+    const bowStart = getBowStart(definition.id)
+
+    m.bow = bowStart === null ? 0 : bowPitch(now - bowStart, reducedMotion)
 
     // Idle cues: breathing is the only looping motion (§8.4).
     const breathing = state === 'idle' || listening || thinking || state === 'responding' || state === 'notifying'
@@ -334,7 +372,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     // Responding nods are one per token-burst signal from the task executor
     // (pane3d-task-executor); the rig must not schedule them on a loop.
     rootObject.position.set(m.x, m.baseY + pose.yOffset + drift, 0)
-    rootObject.rotation.x = -m.lean
+    rootObject.rotation.x = -m.lean - m.bow
     rootObject.rotation.y = m.yaw
     rootObject.rotation.z = pose.rotationZ
     rootObject.scale.set(pose.scale, pose.scale * (1 + 0.012 * breath), pose.scale)
@@ -382,6 +420,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     const frame = avatarFrames[definition.id]
 
     frame.yawDeg = THREE.MathUtils.radToDeg(m.yaw)
+    frame.bowDeg = THREE.MathUtils.radToDeg(m.bow)
     frame.gaze = { x: m.gazeX, y: m.gazeY }
 
     // Frame-side completion is idempotent with the deadline timer; it only

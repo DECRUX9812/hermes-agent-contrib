@@ -14,10 +14,12 @@ import {
 } from '../director/director'
 import { relativeTime } from '../director/feed'
 import { isHarnessRequest } from '../director/notify'
-import { $cards, type PaneCard } from '../director/store'
+import { $avatars, $cards, type PaneCard } from '../director/store'
+import { AVATAR_IDS } from '../protocol'
+import type { ScreenRect } from '../protocol'
 import { avatarFrames } from '../scene/projection'
 
-import { CARD_GAP, cardLayout, stackCards } from './card-layout'
+import { CARD_GAP, CARD_MARGIN, type CardBox, cardLayout, stackCards } from './card-layout'
 import { DevBadge } from './dev-badge'
 
 /** Fixed width keeps the placement math stable; the height is measured live. */
@@ -73,6 +75,13 @@ export function NotificationCards() {
 
       const viewport = { height: window.innerHeight, width: window.innerWidth }
       const nodes = [...document.querySelectorAll<HTMLDivElement>('[data-notify-id]')]
+      const avatars = $avatars.get()
+
+      // Every other visible avatar's projected rect: a card must never cover a
+      // neighbour's body either, not just another card (VAL-NOTIFY-005).
+      const avatarObstacles: CardBox[] = AVATAR_IDS.filter(id => avatars[id].visible)
+        .map(id => avatarFrames[id].screenRect)
+        .filter((rect): rect is ScreenRect => rect !== null)
 
       const measured: { element: HTMLDivElement; id: string; layout: ReturnType<typeof cardLayout>; height: number }[] =
         []
@@ -87,21 +96,27 @@ export function NotificationCards() {
 
         const height = element.offsetHeight || FALLBACK_HEIGHT
 
+        const obstacles: CardBox[] = AVATAR_IDS.filter(other => other !== avatarId && avatars[other].visible)
+          .map(other => avatarFrames[other].screenRect)
+          .filter((box): box is ScreenRect => box !== null)
+
         measured.push({
           element,
           height,
           id: element.getAttribute('data-notify-id') ?? '',
-          layout: cardLayout(rect, { height, width: CARD_WIDTH }, viewport)
+          layout: cardLayout(rect, { height, width: CARD_WIDTH }, viewport, CARD_GAP, CARD_MARGIN, obstacles)
         })
       })
 
       // One pass resolves collisions across every open card, so two cards can
       // never cover each other (VAL-NOTIFY-005) while each stays beside its own
-      // avatar (VAL-NOTIFY-007).
+      // avatar (VAL-NOTIFY-007) and clear of every other avatar's body.
       const positions = stackCards(
         measured.map(item => ({ height: item.height, width: CARD_WIDTH, x: item.layout.left, y: item.layout.top })),
         viewport,
-        CARD_GAP
+        CARD_GAP,
+        CARD_MARGIN,
+        avatarObstacles
       )
 
       measured.forEach((item, index) => {

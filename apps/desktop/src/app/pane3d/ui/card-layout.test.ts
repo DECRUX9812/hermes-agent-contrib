@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { ScreenRect } from '../protocol'
 
-import { cardLayout, stackCards } from './card-layout'
+import { boxesOverlap, bubbleLayout, type CardBox, cardLayout, stackCards } from './card-layout'
 
 const VIEWPORT = { height: 1000, width: 1920 }
 const CARD = { height: 150, width: 264 }
@@ -87,5 +87,72 @@ describe('stackCards — several open cards never cover each other', () => {
       expect(box.y).toBeGreaterThanOrEqual(8)
       expect(box.y + 150).toBeLessThanOrEqual(VIEWPORT.height - 8)
     }
+  })
+})
+
+describe('cardLayout — a card never covers another avatar (§8.6 orchestrator note)', () => {
+  const neighbour: CardBox = { height: 160, width: 120, x: 1000, y: 200 }
+
+  it('flips to the other side when the roomier side is a neighbour', () => {
+    // The avatar sits at x 800; a neighbour body occupies the right side, where
+    // the "more room" rule alone would put the card.
+    const layout = cardLayout(avatar({ x: 800 }), CARD, VIEWPORT, undefined, undefined, [neighbour])
+    const placed = { height: CARD.height, width: CARD.width, x: layout.left, y: layout.top }
+
+    expect(layout.side).toBe('left')
+    expect(boxesOverlap(placed, neighbour)).toBe(false)
+  })
+
+  it('pushes the card clear when both sides are occupied, staying in bounds', () => {
+    const left: CardBox = { height: 160, width: 120, x: 560, y: 200 }
+    const right: CardBox = { height: 160, width: 120, x: 1000, y: 200 }
+    const layout = cardLayout(avatar({ x: 800 }), CARD, VIEWPORT, undefined, undefined, [left, right])
+    const placed = { height: CARD.height, width: CARD.width, x: layout.left, y: layout.top }
+
+    expect(boxesOverlap(placed, left)).toBe(false)
+    expect(boxesOverlap(placed, right)).toBe(false)
+    expect(layout.top).toBeGreaterThanOrEqual(8)
+    expect(layout.top + CARD.height).toBeLessThanOrEqual(VIEWPORT.height - 8)
+  })
+
+  it('stackCards treats other avatars as obstacles, not just other cards', () => {
+    const boxes = [{ height: 150, width: 264, x: 100, y: 200 }]
+    const [placed] = stackCards(boxes, VIEWPORT, 8, 8, [{ height: 160, width: 120, x: 120, y: 180 }])
+
+    expect(placed.y).toBeGreaterThanOrEqual(180 + 160 + 8)
+    expect(placed.x).toBe(100)
+  })
+})
+
+describe('bubbleLayout — a speech bubble over the speaker, clear of neighbours (§8.6)', () => {
+  const BUBBLE = { height: 56, width: 220 }
+
+  it('sits above the speaker, horizontally centred, tail down', () => {
+    const layout = bubbleLayout(avatar({ x: 800, y: 400 }), BUBBLE, VIEWPORT)
+
+    expect(layout.placement).toBe('above')
+    expect(layout.top + BUBBLE.height).toBeLessThanOrEqual(400)
+    // Centred on the speaker's mid-line.
+    expect(layout.left + BUBBLE.width / 2).toBeCloseTo(800 + 60, 0)
+  })
+
+  it('climbs above a neighbour rather than covering its head', () => {
+    const neighbour: CardBox = { height: 160, width: 120, x: 960, y: 300 }
+    const layout = bubbleLayout(avatar({ x: 800, y: 400 }), BUBBLE, VIEWPORT, undefined, undefined, [neighbour])
+    const placed = { height: BUBBLE.height, width: BUBBLE.width, x: layout.left, y: layout.top }
+
+    expect(layout.placement).toBe('above')
+    expect(boxesOverlap(placed, neighbour)).toBe(false)
+  })
+
+  it('flips to the speaker side when there is no room above', () => {
+    const layout = bubbleLayout(avatar({ x: 900, y: 20 }), BUBBLE, VIEWPORT)
+    const placed = { height: BUBBLE.height, width: BUBBLE.width, x: layout.left, y: layout.top }
+
+    expect(layout.placement).not.toBe('above')
+    expect(placed.y).toBeGreaterThanOrEqual(8)
+    expect(placed.y + BUBBLE.height).toBeLessThanOrEqual(VIEWPORT.height - 8)
+    expect(placed.x).toBeGreaterThanOrEqual(8)
+    expect(placed.x + BUBBLE.width).toBeLessThanOrEqual(VIEWPORT.width - 8)
   })
 })

@@ -55,6 +55,17 @@ export interface PaneCard {
   shownAt: number
 }
 
+/** One spoken line over an avatar (architecture §8.6). At most one at a time. */
+export interface SpeechBubble {
+  id: string
+  /** Who is speaking — the bubble sits over this avatar. */
+  avatar: AvatarId
+  listener: AvatarId
+  text: string
+  at: number
+  source?: 'live' | 'dev-harness'
+}
+
 export interface TransitionRecord {
   avatar: AvatarId
   from: AvatarState
@@ -107,6 +118,8 @@ export const pane3dRuntime: Pane3dRuntime = {
 export const $avatars = atom<Record<AvatarId, AvatarRuntime>>(emptyAvatars())
 export const $feed = atom<FeedEntry[]>([])
 export const $cards = atom<Record<string, PaneCard>>({})
+/** The AvatarRoom's current speech bubble(s) (§8.6); a live exchange shows one. */
+export const $bubbles = atom<SpeechBubble[]>([])
 export const $anchor = atom<PaneAnchor>(DEFAULT_ANCHOR)
 export const $transitions = atom<TransitionRecord[]>([])
 /** The activity feed panel, toggled from the dock (§8.6). */
@@ -182,6 +195,8 @@ export interface Pane3dAvatarSnapshot {
   slot: number
   screenRect: ScreenRect | null
   yawDeg: number
+  /** Greeting bow pitch in degrees; 0 at rest (VAL-ROOM-001 evidence). */
+  bowDeg: number
   gaze: { x: number; y: number }
   meshCount: number
   materialTypes: string[]
@@ -197,6 +212,8 @@ export interface Pane3dDebugSnapshot {
   transitions: TransitionRecord[]
   feed: FeedEntry[]
   cards: PaneCard[]
+  /** The AvatarRoom's live speech bubbles (§8.6). */
+  bubbles: SpeechBubble[]
   tasks: unknown[]
   chart: null
   lastDemo: DemoScript | null
@@ -223,6 +240,7 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
       const frame = avatarFrames[id]
 
       return {
+        bowDeg: frame.bowDeg,
         gaze: { ...frame.gaze },
         id,
         materialTypes: [...frame.materialTypes],
@@ -234,6 +252,7 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
         yawDeg: frame.yawDeg
       }
     }),
+    bubbles: $bubbles.get().map(bubble => ({ ...bubble })),
     cards: Object.values($cards.get()),
     chart: null,
     feed: $feed.get(),

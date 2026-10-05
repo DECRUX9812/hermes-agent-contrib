@@ -8,6 +8,7 @@ import { AvatarHandle } from './avatar-handle'
 import { Dock } from './dock'
 import { FeedPanel } from './feed-panel'
 import { NotificationCards } from './notification-card'
+import { SpeechBubbles } from './speech-bubble'
 
 /**
  * The DOM layer above the canvas: one accessible handle per visible avatar, the
@@ -25,6 +26,7 @@ export function PaneOverlay() {
         <AvatarHandle definition={getAvatar(id)} key={id} state={avatars[id].state} />
       ))}
       <NotificationCards />
+      <SpeechBubbles />
       <FeedPanel />
       <Dock />
     </div>
