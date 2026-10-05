@@ -197,10 +197,15 @@ export function useGatewayBoot({
 
     let bootSnapshotSuperseded = false
 
-    const offBootProgress = desktop.onBootProgress(payload => {
-      bootSnapshotSuperseded = true
-      onBootProgress(payload)
-    })
+    // Defensive: older web bridge stubs may lack onBootProgress (stale build).
+    // Guard so a bridge mismatch degrades gracefully instead of hard-crashing.
+    const offBootProgress =
+      typeof desktop.onBootProgress === "function"
+        ? desktop.onBootProgress(payload => {
+            bootSnapshotSuperseded = true
+            onBootProgress(payload)
+          })
+        : () => undefined
 
     void desktop
       .getBootProgress()
