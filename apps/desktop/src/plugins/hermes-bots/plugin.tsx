@@ -108,7 +108,7 @@ import { BOTS_LOCALES, botsText, useBots } from './i18n'
 import { displayName } from './labels'
 import { hydrateRosterSortMode } from './live-status'
 import { MissionRail } from './mission-rail'
-import { hydrateRailSections } from './rail-state'
+import { hydrateRailSections, hydrateRailTab } from './rail-state'
 import { startBotRelay, stopBotRelay } from './relay'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import {
@@ -321,6 +321,7 @@ export default {
     hydrateRosterViewMode()
     // Hydrate the mission rail's per-section fold state (default expanded).
     hydrateRailSections()
+    hydrateRailTab()
 
     // Hydrate dismissed tip cards (G9) — per bot, this device only.
     hydrateDismissedBotTips()
@@ -641,7 +642,7 @@ export default {
           // arrives as the right edge's vertical tab and takes no width off the
           // chat until the user opens it.
           defaultCollapsed: true,
-          width: '250px'
+          width: '320px'
         } satisfies PaneContribution,
         render: () => <MissionRail />
       })

@@ -56,6 +56,7 @@ const { host } = await import('@hermes/plugin-sdk')
 const { $lastRoster } = await import('./data')
 const { $selectedBot } = await import('./bot-state')
 const { MissionRail } = await import('./mission-rail')
+const { setRailTab } = await import('./rail-state')
 
 /** The SDK store the pane's owner ladder reads. */
 const $focused = host.state.focusedSessionOwner as unknown as ReturnType<typeof atom>
@@ -63,6 +64,8 @@ const $focused = host.state.focusedSessionOwner as unknown as ReturnType<typeof 
 const job: RoutineJob = { enabled: true, job_id: 'j-1', name: 'Report', schedule: 'every 1h', state: 'scheduled' }
 
 function renderPane() {
+  // Routines live under the rail's Scheduled tab.
+  setRailTab('scheduled')
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return render(

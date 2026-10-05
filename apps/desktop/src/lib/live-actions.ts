@@ -29,7 +29,7 @@ export interface LiveAction {
   completedAt: null | number
 }
 
-type ToolCallPart = Extract<ChatMessagePart, { type: 'tool-call' }>
+export type ToolCallPart = Extract<ChatMessagePart, { type: 'tool-call' }>
 
 /** The arg that names a call's target, per tool family, most specific first.
  *  Data, not a switch: a tool not listed falls through to its raw args. */
@@ -109,7 +109,8 @@ function outputOf(tool: string, result: unknown): { exitCode: null | number; tex
   return { exitCode: null, text: pretty(value) }
 }
 
-function toAction(part: ToolCallPart, id: string): LiveAction {
+/** One tool-call part as a Live row; the Activity tasks reuse it for steps. */
+export function toLiveAction(part: ToolCallPart, id: string): LiveAction {
   const args = record(parsed(part.args))
   const target = targetOf(args)
   const rest = args && target ? Object.fromEntries(Object.entries(args).filter(([key]) => key !== target.key)) : args
@@ -140,7 +141,7 @@ export function deriveLiveActions(messages: readonly ChatMessage[] | undefined):
       if (part.type === 'tool-call') {
         const id = part.toolCallId || `${message.id}:${index}`
 
-        byId.set(id, toAction(part as ToolCallPart, id))
+        byId.set(id, toLiveAction(part as ToolCallPart, id))
       }
     })
   }

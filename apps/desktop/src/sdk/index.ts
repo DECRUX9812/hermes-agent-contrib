@@ -48,6 +48,7 @@ import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
 import { deleteProfile, getLogs, getSessionMessages, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { type ActivityTask, deriveActivityTasks } from '@/lib/activity-tasks'
 import { selectDesktopPaths } from '@/lib/desktop-fs'
 import { traceIdentityChange } from '@/lib/identity-trace'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
@@ -168,6 +169,12 @@ const focusedTurnFlag = (
   )
 
 const $focusedBusy = focusedTurnFlag(state => state.busy, PRIMARY_SESSION_VIEW.$busy)
+
+/** The focused chat read as tasks (one per request, its tool calls as steps)
+ *  — the Activity view's data. Busy keeps the newest task running between calls. */
+const $focusedActivity = computed([$focusedSessionState, $focusedBusy], (state, busy) =>
+  deriveActivityTasks(state?.messages, { busy })
+)
 
 const $focusedAwaitingResponse = focusedTurnFlag(
   state => state.awaitingResponse,
@@ -782,6 +789,9 @@ export const host = {
      *  so any alias of a conversation resolves — the backend need not report
      *  a turn for the key to exist. */
     dotStateBySession: readonlyAtom<Record<string, SessionDotState>>($sessionDotStateById),
+    /** The focused chat as tasks: each request with the tool calls that
+     *  answered it, status, timing and the reply's opening sentence. */
+    focusedActivity: readonlyAtom<readonly ActivityTask[]>($focusedActivity),
     /** Runtime id of the FOCUSED chat session — the interacted tile, else the
      *  primary. Prefer this over `activeSessionId` for any readout that
      *  should follow the user between tiles (context, tokens, cost). */
@@ -2278,6 +2288,16 @@ export {
   useI18n,
   usePluginI18n
 } from '@/i18n'
+/** Activity tasks: the types behind `host.state.focusedActivity`, plus the
+ *  verb a step maps to and the step a list row should name. */
+export {
+  type ActivityStatus,
+  type ActivityStep,
+  type ActivityTask,
+  type ActivityVerb,
+  activityVerb,
+  currentStep
+} from '@/lib/activity-tasks'
 /** THE way to run a decorative rAF animation (avatars, shimmer, sprites):
  *  fps budget + hidden/minimized/unfocused pause + idle dormancy + teardown.
  *  Plugins must route animation clocks through this instead of raw rAF loops

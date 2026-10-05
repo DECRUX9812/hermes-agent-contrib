@@ -24,11 +24,11 @@ export function AgentChips({ store, onFocus, onOpen }: { store: SimStore; onFocu
     <div className="ac-chips">
       {[...store.agents.values()].map(a => (
         <button
+          aria-label={`${a.name}: ${a.activity.replace('_', ' ')}${a.detail ? `, ${a.detail}` : ''}`}
           className={`ac-chip ac-act-${a.activity}`}
           key={a.id}
           onClick={() => onFocus(a.id)}
           onDoubleClick={() => onOpen(a.id)}
-          title={`${a.name} — ${a.activity.replace('_', ' ')}${a.detail ? ` · ${a.detail}` : ''}`}
         >
           <span className="ac-chip-dot" style={{ background: a.color }} />
           <span className="ac-chip-name">{a.name}</span>
@@ -46,7 +46,7 @@ export function GoalChip({ store, onClick }: { store: SimStore; onClick: () => v
   if (!g) {return null}
 
   return (
-    <button className="ac-goal" onClick={onClick} title={g.text}>
+    <button aria-label={g.text} className="ac-goal" onClick={onClick}>
       <span className="ac-goal-label">GOAL</span>
       <span className="ac-goal-text">{g.text.slice(0, 64)}{g.text.length > 64 ? '…' : ''}</span>
       <span className={`ac-goal-pill ac-goal-${g.status}`}>{g.status}</span>
