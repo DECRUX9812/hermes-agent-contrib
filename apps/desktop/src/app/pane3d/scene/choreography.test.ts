@@ -7,6 +7,9 @@ import {
   choreographyPose,
   EMERGE_MS,
   HIDE_MS,
+  PERCH_MS,
+  perchPose,
+  perchProgress,
   REDUCED_MS,
   REDUCED_RISE,
   SEAM_MS,
@@ -188,5 +191,60 @@ describe('springProgress', () => {
 
     expect(Math.max(...samples)).toBeGreaterThan(1) // it overshoots…
     expect(Math.max(...samples)).toBeLessThan(1.1) // …by roughly 4%, never wildly
+  })
+})
+
+// ── perch tween (VAL-ANCHOR-002) ────────────────────────────────────────────
+
+const tween = { fromX: -2, fromY: 1, startedAt: 0, toX: 4, toY: 3 }
+
+describe('perchPose — anchor/slot re-perch', () => {
+  it('is a pure function of elapsed ms, identical however the frames were sampled', () => {
+    // A damped step accumulates per frame, so its pose depends on how often it
+    // was stepped; this tween is indexed by elapsed time instead. The sparse
+    // schedule (a 5 fps pane) and the dense 16 ms trace must agree wherever they
+    // share a timestamp.
+    const spansSparse = [0, 180, 470]
+    const denseTimes = Array.from({ length: PERCH_MS / 16 + 1 }, (_, index) => index * 16)
+    const shared = [...new Set([...spansSparse, ...denseTimes])].sort((a, b) => a - b).filter(t => t <= 470)
+    const dense = new Map(shared.map(t => [t, perchPose(tween, t)]))
+    const sparse = new Map(spansSparse.map(t => [t, perchPose(tween, t)]))
+
+    spansSparse.forEach(t => {
+      const direct = perchPose(tween, t)
+
+      expect(sparse.get(t)).toEqual(dense.get(t))
+      expect(direct).toEqual(sparse.get(t)) // repeated calls never accumulate
+    })
+  })
+
+  it('starts at the previous perch and reaches the target by its duration, clamped after', () => {
+    expect(perchPose(tween, 0)).toEqual({ x: tween.fromX, y: tween.fromY })
+    expect(perchPose(tween, PERCH_MS)).toEqual({ x: tween.toX, y: tween.toY })
+    expect(perchPose(tween, PERCH_MS + 5_000)).toEqual({ x: tween.toX, y: tween.toY })
+  })
+
+  it('eases monotonically to the target without overshooting (calm, no bounce)', () => {
+    for (const axis of ['x', 'y'] as const) {
+      let previous = perchPose(tween, 0)[axis]
+
+      for (let elapsedMs = 16; elapsedMs <= PERCH_MS; elapsedMs += 16) {
+        const value = perchPose(tween, elapsedMs)[axis]
+
+        expect(value).toBeGreaterThanOrEqual(previous) // monotone toward an increasing target…
+        expect(value).toBeLessThanOrEqual(tween[axis === 'x' ? 'toX' : 'toY']) // …never past it
+        previous = value
+      }
+    }
+
+    expect(perchProgress(0)).toBe(0)
+    expect(perchProgress(PERCH_MS)).toBe(1)
+    // Ease-out: more than half the distance is covered by the halfway point.
+    expect(perchProgress(PERCH_MS / 2)).toBeGreaterThan(0.5)
+  })
+
+  it('finishes well inside the 1.5 s re-perch bound even on the slowest frames', () => {
+    expect(PERCH_MS).toBeLessThanOrEqual(600)
+    expect(perchPose(tween, 1_500)).toEqual({ x: tween.toX, y: tween.toY })
   })
 })

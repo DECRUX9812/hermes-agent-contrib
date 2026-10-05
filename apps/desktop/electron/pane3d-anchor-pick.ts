@@ -35,6 +35,15 @@ export interface AnchorHostCandidate {
   guests: AnchorGuestCandidate[]
 }
 
+/** One OS window from the front-to-back enumerator (window-below.ts). */
+export interface OsWindowCandidate {
+  app: string
+  id?: number
+  pid: number
+  title: string
+  bounds: ScreenRect
+}
+
 const usableGuest = (candidate: AnchorGuestCandidate): boolean =>
   candidate.visible && candidate.rect != null && candidate.rect.width > 0 && candidate.rect.height > 0
 
@@ -60,6 +69,25 @@ export function pickHermesGuest(
   const guest = guests.find(candidate => candidate.active) ?? guests[0]
 
   return { guest, host }
+}
+
+/**
+ * Frontmost OS window that is NOT ours — the `os-window` fallback (§7.2).
+ *
+ * `windows` arrives in front-to-back z-order. Every window owned by a Hermes
+ * PID is skipped: the browser (main) pid plus every child pid the app reports
+ * (renderer/GPU/utility), because an own window must never become the anchor —
+ * a child can own one too (e.g. a devtools window). Zero-area rows (minimized
+ * windows report those on some platforms) are unusable as an anchor. `null`
+ * means nothing foreign is on screen and the caller floats on the desktop.
+ */
+export function pickFrontmostForeignWindow(
+  windows: readonly OsWindowCandidate[],
+  ownPids: readonly number[]
+): OsWindowCandidate | null {
+  const own = new Set(ownPids)
+
+  return windows.find(win => !own.has(win.pid) && win.bounds.width > 0 && win.bounds.height > 0) ?? null
 }
 
 /**

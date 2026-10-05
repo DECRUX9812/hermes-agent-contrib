@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
 import type { AvatarDefinition, AvatarRigHandle } from '../avatars/types'
-import type { AvatarState } from '../director/store'
+import { type AvatarState, pane3dRuntime } from '../director/store'
 
 import {
   CELEBRATE_MS,
@@ -12,6 +12,8 @@ import {
   choreographyPose,
   EMERGE_MS,
   HIDE_MS,
+  perchPose,
+  type PerchTween,
   type Pose,
   REDUCED_MS,
   SEAM_OPACITY,
@@ -35,6 +37,14 @@ export interface RigProps {
 
 const BREATH_HZ = 0.22
 const TAU = Math.PI * 2
+/** Below this the perch target has not really moved — do not restart the tween. */
+const PERCH_EPSILON = 1e-4
+/**
+ * How long an anchor change stamp may still clock a re-perch. Only a guard
+ * against attributing a long-past anchor change to a later slot change; it must
+ * comfortably exceed one frame even at 2 fps.
+ */
+const ANCHOR_STAMP_WINDOW_MS = 2_000
 
 function phaseDuration(phase: ChoreographyPhase, reducedMotion: boolean): number {
   if (phase === 'celebrating') {
@@ -69,13 +79,26 @@ const COMPLETION: Record<ChoreographyPhase, RigCompletionEvent | null> = {
   rest: null
 }
 
+/**
+ * Emergence and hide own the y offset: the pose springs from the perch line, so
+ * the base perch y is pinned to the target and any re-perch is deferred. Rest
+ * and celebrate leave y to the re-perch tween.
+ */
+function phaseOwnsY(phase: ChoreographyPhase): boolean {
+  return phase === 'emerging' || phase === 'hiding'
+}
+
 type Motion = {
   phase: ChoreographyPhase
   lastState: AvatarState | null
   startedAt: number
   x: number
-  /** Damped base perch y; the pure pose adds its choreographed offset on top. */
+  /** Applied base perch y; the pure pose adds its choreographed offset on top. */
   baseY: number
+  /** Time-based re-perch when the anchor/slot target moves (VAL-ANCHOR-002). */
+  perch: PerchTween
+  /** Last `pane3dRuntime.anchorChangedAt` this rig has consumed. */
+  lastAnchorChangedAt: number
   lastFade: number
   yaw: number
   gazeX: number
@@ -95,9 +118,11 @@ function createMotion(target: SlotTarget): Motion {
     gazeX: 0,
     gazeY: 0,
     headTilt: 0,
+    lastAnchorChangedAt: pane3dRuntime.anchorChangedAt,
     lastFade: 1,
     lastState: null,
     lean: 0,
+    perch: { fromX: target.x, fromY: target.y, startedAt: 0, toX: target.x, toY: target.y },
     phase: 'rest',
     spin: 0,
     spinSpeed: 0.02,
@@ -221,12 +246,52 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
       // stretch a 250 ms fade into 500 ms of wall clock (§8.4).
       m.startedAt = startedAt > 0 ? startedAt : now
       m.phase = phaseForState(state, reducedMotion)
+
+      // A gesture owns y: the pose springs relative to the perch line, so pin any
+      // in-flight re-perch to the target first — no half-done tween to snap back from.
+      if (phaseOwnsY(m.phase)) {
+        m.perch.fromY = target.y
+        m.perch.toY = target.y
+      }
     }
 
     if (!m.counted && rootObject.children.length > 0) {
       countMeshes(rootObject, definition.id)
       m.counted = true
     }
+
+    // A moved anchor or slot starts a time-based re-perch. It is a PURE function
+    // of elapsed ms, not a damped step: a `damp` accumulates per frame, so with
+    // dt clamped to 0.05 s it runs at roughly half speed on the 10–18 fps
+    // software-GL pane and missed the ~1.5 s bound (VAL-ANCHOR-002).
+    const gesturing = phaseOwnsY(m.phase)
+    const anchorStamp = pane3dRuntime.anchorChangedAt
+
+    const targetChanged =
+      Math.abs(target.x - m.perch.toX) > PERCH_EPSILON || Math.abs(target.y - m.perch.toY) > PERCH_EPSILON
+
+    if (targetChanged) {
+      // An anchor change is stamped at the IPC, so measure the tween from when
+      // the host window really moved — a slow frame can land hundreds of ms
+      // later and would otherwise stretch the re-perch. A slot change (an
+      // avatar joined the row) has no stamp and measures from this frame.
+      const freshStamp = anchorStamp > m.lastAnchorChangedAt && now - anchorStamp <= ANCHOR_STAMP_WINDOW_MS
+      m.lastAnchorChangedAt = Math.max(m.lastAnchorChangedAt, anchorStamp)
+      m.perch = {
+        // While a gesture owns y, it is pinned to the target, so start the y
+        // tween there too (a no-op) and the gesture's end cannot jump.
+        fromX: m.x,
+        fromY: gesturing ? target.y : m.baseY,
+        startedAt: freshStamp ? anchorStamp : now,
+        toX: target.x,
+        toY: target.y
+      }
+    }
+
+    const perch = perchPose(m.perch, now - m.perch.startedAt)
+
+    m.x = perch.x
+    m.baseY = perch.y
 
     // The choreographed pose is a pure function of elapsed ms — never damped
     // toward a moving target — so it is already at its endpoint whenever either
@@ -240,21 +305,12 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
       restY: target.y
     })
 
-    // The base perch y is damped only between gestures, so slot/anchor moves
-    // ease; during a gesture it is pinned to the target and the pose owns y.
-    if (m.phase === 'rest' || m.phase === 'celebrating') {
-      damp(m, 'baseY', target.y, 0.16, dt)
-    } else {
-      m.baseY = target.y
-    }
-
     // Gaze follows the pointer over the handle, else eases to neutral (§8.4).
     const pointer = getPointerGaze(definition.id)
 
     damp(m, 'gazeX', pointer.active ? pointer.x : 0, 0.16, dt)
     damp(m, 'gazeY', pointer.active ? pointer.y : 0, 0.16, dt)
     damp(m, 'yaw', 0, 0.3, dt)
-    damp(m, 'x', target.x, 0.22, dt)
 
     // Idle cues: breathing is the only looping motion (§8.4).
     const breathing = state === 'idle' || listening || thinking || state === 'responding' || state === 'notifying'

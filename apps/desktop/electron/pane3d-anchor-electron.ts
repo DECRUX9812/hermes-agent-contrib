@@ -9,12 +9,12 @@
  * without it triggers the permission prompt (AGENTS.md).
  */
 
-import { BrowserWindow, systemPreferences, webContents } from 'electron'
+import { app, BrowserWindow, systemPreferences, webContents } from 'electron'
 
 import type { PaneState, ScreenRect } from '../src/app/pane3d/protocol'
 
 import { createAnchorService } from './pane3d-anchor'
-import { type AnchorGuestCandidate, titlesAvailableFor } from './pane3d-anchor-pick'
+import { type AnchorGuestCandidate, pickFrontmostForeignWindow, titlesAvailableFor } from './pane3d-anchor-pick'
 import type { AnchorHostWindow, AnchorOsWindow, AnchorService } from './pane3d-anchor-types'
 
 /** One record per `<webview>` element; ids come from the element itself. */
@@ -51,9 +51,9 @@ export function createElectronAnchorService(options: ElectronAnchorServiceOption
       return null
     }
 
-    const front = list.find(item => item.pid !== process.pid)
+    const front = pickFrontmostForeignWindow(list, hermesPids())
 
-    if (!front || !front.bounds.width || !front.bounds.height) {
+    if (!front) {
       return null
     }
 
@@ -130,6 +130,29 @@ function screenTitlesAvailable(): boolean {
   }
 
   return titlesAvailableFor(process.platform, access)
+}
+
+/**
+ * Every PID that belongs to this Hermes instance: the browser (main) process
+ * plus the renderer/GPU/utility children `app.getAppMetrics()` reports. On X11
+ * a window's `_NET_WM_PID` is normally the browser pid, but a child can own one
+ * too (devtools), and an own window must never become the anchor.
+ */
+function hermesPids(): number[] {
+  const pids = new Set<number>([process.pid])
+
+  try {
+    app.getAppMetrics().forEach(metric => {
+      if (Number.isFinite(metric?.pid) && metric.pid > 0) {
+        pids.add(metric.pid)
+      }
+    })
+  } catch {
+    // getAppMetrics can be unavailable very early; the main pid alone still
+    // excludes every Hermes window Electron itself creates.
+  }
+
+  return [...pids]
 }
 
 function wrapHost(win: Electron.BrowserWindow): AnchorHostWindow {

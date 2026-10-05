@@ -63,6 +63,8 @@ export type FrameloopMode = 'always' | 'demand' | 'never'
 
 export interface Pane3dRuntime {
   anchor: PaneAnchor
+  /** `performance.now()` when the anchor last changed — the re-perch clock (§7). */
+  anchorChangedAt: number
   frameloop: FrameloopMode
   renderCount: number
   regions: ScreenRect[]
@@ -89,6 +91,7 @@ function emptyAvatars(): Record<AvatarId, AvatarRuntime> {
 
 export const pane3dRuntime: Pane3dRuntime = {
   anchor: DEFAULT_ANCHOR,
+  anchorChangedAt: 0,
   frameloop: 'demand',
   lastDemo: null,
   pixelRatio: 1,
@@ -115,6 +118,10 @@ export function recordTransition(record: Omit<TransitionRecord, 'at'> & { at?: n
 
 export function setAnchor(anchor: PaneAnchor): void {
   pane3dRuntime.anchor = anchor
+  // Stamp at the IPC, not at the first frame that notices the move: on the slow
+  // software-GL pane the re-perch tween must be measured from the real anchor
+  // change or a late frame stretches it (VAL-ANCHOR-002).
+  pane3dRuntime.anchorChangedAt = performance.now()
   $anchor.set(anchor)
 }
 

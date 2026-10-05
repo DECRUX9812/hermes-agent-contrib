@@ -62,6 +62,11 @@ export const CELEBRATE_RISE = 0.08
 export const CELEBRATE_ROLL = (4 * Math.PI) / 180
 /** Extra clearance so the crown starts strictly under the clip plane. */
 export const BELOW_EDGE_MARGIN = 0.04
+/**
+ * Re-perch duration when the anchor (host window) moves or the slots change.
+ * Short enough to land inside the ~1.5 s bound (§7) on any frame rate.
+ */
+export const PERCH_MS = 500
 
 /** Critically-ish damped spring: single ~4% overshoot (§8.4). */
 const SPRING_OMEGA = 11
@@ -93,6 +98,59 @@ export function springProgress(elapsedMs: number, durationMs: number): number {
 /** The world-y offset that puts the whole avatar (crown included) under the edge. */
 export function belowEdgeOffset(perchY: number, restY: number, height: number): number {
   return perchY - height / 2 - BELOW_EDGE_MARGIN - restY
+}
+
+/**
+ * A re-perch: the anchor moved (host window move/resize) or the slots changed.
+ * `from` is where the avatar was, `to` where the new perch line is.
+ */
+export interface PerchTween {
+  fromX: number
+  fromY: number
+  toX: number
+  toY: number
+  /** `performance.now()` when `to` changed. */
+  startedAt: number
+}
+
+export interface PerchPose {
+  x: number
+  y: number
+}
+
+/**
+ * Ease-out cubic: arrives without overshoot, so the re-perch stays calm (no
+ * bounce). Clamped at both ends like every other choreographed value.
+ */
+export function perchProgress(elapsedMs: number, durationMs: number = PERCH_MS): number {
+  if (elapsedMs <= 0) {
+    return 0
+  }
+
+  if (elapsedMs >= durationMs) {
+    return 1
+  }
+
+  const t = elapsedMs / durationMs
+
+  return 1 - (1 - t) ** 3
+}
+
+/**
+ * The perch x/y at `elapsedMs` since the tween started — a PURE function of
+ * elapsed time, not a damped step. A `damp` accumulates per frame, so with `dt`
+ * clamped to 0.05 s it runs at roughly half real speed on the 10–18 fps
+ * software-GL pane, which is what pushed the re-perch past its 1.5 s bound
+ * (VAL-ANCHOR-002). Reading the pose straight from elapsed ms fixes it to the
+ * wall clock however sparsely the pane draws.
+ */
+export function perchPose(tween: PerchTween, elapsedMs: number): PerchPose {
+  const p = perchProgress(elapsedMs)
+
+  return {
+    x: tween.fromX + (tween.toX - tween.fromX) * p,
+    y: tween.fromY + (tween.toY - tween.fromY) * p
+  }
 }
 
 export function choreographyPose(input: ChoreographyInput): Pose {

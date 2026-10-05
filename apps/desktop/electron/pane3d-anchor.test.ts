@@ -2,12 +2,12 @@
  * Contract tests for the 3D-Pane AnchorService (architecture §7, VAL-ANCHOR-005,
  * VAL-CROSS-004).
  *
- * The selection rules are pure data (`pickHermesGuest`), the space conversion is
- * pure (`toPaneLocal`), change detection is pure (`anchorEqual`), the consent
- * rule is pure (`titlesAvailableFor`) and the probe budget is pure
- * (`withTimeout`). The service session is driven through injected window/guest
- * handles and injected timers, so re-entrancy, generation invalidation and
- * `stop()` cleanup are provable without booting Electron.
+ * The selection rules are pure data (`pickHermesGuest`, `pickFrontmostForeignWindow`),
+ * the space conversion is pure (`toPaneLocal`), change detection is pure
+ * (`anchorEqual`), the consent rule is pure (`titlesAvailableFor`) and the probe
+ * budget is pure (`withTimeout`). The service session is driven through injected
+ * window/guest handles and injected timers, so re-entrancy, generation
+ * invalidation and `stop()` cleanup are provable without booting Electron.
  */
 
 import assert from 'node:assert/strict'
@@ -21,6 +21,8 @@ import {
   anchorEqual,
   type AnchorGuestCandidate,
   type AnchorHostCandidate,
+  type OsWindowCandidate,
+  pickFrontmostForeignWindow,
   pickHermesGuest,
   titlesAvailableFor,
   toPaneLocal,
@@ -125,6 +127,51 @@ test('converts a screen rect to pane-local CSS px through the pane zoom and orig
 
 test('treats a broken zoom factor as 1 instead of collapsing the rect', () => {
   assert.deepEqual(toPaneLocal(rect(10, 20, 30, 40), { x: 0, y: 0 }, 0), rect(10, 20, 30, 40))
+})
+
+// ── pickFrontmostForeignWindow (VAL-ANCHOR-005) ─────────────────────────────
+
+const osWindow = (over: Partial<OsWindowCandidate> = {}): OsWindowCandidate => ({
+  app: 'Xterm',
+  bounds: rect(240, 300, 1000, 700),
+  pid: 4001,
+  title: 'Terminal',
+  ...over
+})
+
+test('skips Hermes OS windows (browser and child/renderer pids) and takes the frontmost foreign one', () => {
+  // A real Hermes instance owns windows through the main (browser) pid and can
+  // also have a child/renderer pid attached (app.getAppMetrics() lists them).
+  // The candidates arrive front-to-back, so the two Hermes windows lead.
+  const hermesBrowserPid = 1234
+  const hermesRendererPid = 1240
+
+  const picked = pickFrontmostForeignWindow(
+    [
+      osWindow({ app: 'Hermes', pid: hermesBrowserPid, title: 'Hermes' }),
+      osWindow({ app: 'Hermes', pid: hermesRendererPid, title: 'Hermes — 3D Pane' }),
+      osWindow({ app: 'Code', pid: 4100, title: 'main.ts' }),
+      osWindow({ app: 'Firefox', pid: 4200, title: 'Docs' })
+    ],
+    [hermesBrowserPid, hermesRendererPid]
+  )
+
+  assert.equal(picked?.title, 'main.ts')
+  assert.equal(picked?.pid, 4100)
+})
+
+test('skips a zero-area foreign window instead of adopting an unusable anchor', () => {
+  const picked = pickFrontmostForeignWindow(
+    [osWindow({ bounds: rect(0, 0, 0, 0), pid: 4100 }), osWindow({ pid: 4200, title: 'Docs' })],
+    [1234]
+  )
+
+  assert.equal(picked?.title, 'Docs')
+})
+
+test('returns null when only Hermes windows are on screen, so the anchor falls to the desktop', () => {
+  assert.equal(pickFrontmostForeignWindow([osWindow({ pid: 1234 }), osWindow({ pid: 1240 })], [1234, 1240]), null)
+  assert.equal(pickFrontmostForeignWindow([], [1234]), null)
 })
 
 // ── anchorEqual ────────────────────────────────────────────────────────────
