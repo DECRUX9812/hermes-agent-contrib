@@ -1,5 +1,8 @@
 import * as THREE from 'three'
 
+import { MarkMascot } from './mark-mascot'
+import { buildEmblem, characterMarkFor, emblemMarkFor } from './marks'
+
 
 /**
  * 3D mascot engine. ONE shared orthographic scene rendered over the whole
@@ -66,6 +69,8 @@ type Accessory = 'visor' | 'mask' | 'halo' | 'claws' | 'ears' | 'faceplate' | 's
 interface Skin {
   color: number
   accessory?: Accessory
+  /** real brand mark mounted as an extruded face emblem */
+  emblem?: ReturnType<typeof emblemMarkFor>
 }
 
 function skinFor(name: string, fallbackHue: number): Skin {
@@ -79,15 +84,19 @@ function skinFor(name: string, fallbackHue: number): Skin {
 
   if (n.includes('claw')) {return { color: 0xe0884f, accessory: 'claws' }}
 
-  if (n.includes('ollama') || n.includes('olla')) {return { color: 0xe4e4ee, accessory: 'ears' }}
+  if (n.includes('ollama') || n.includes('olla')) {return { color: 0xe4e4ee, accessory: 'ears', emblem: emblemMarkFor(name) }}
 
-  if (n.includes('gemini')) {return { color: 0x7aa8ff, accessory: 'star' }}
+  if (n.includes('gemini')) {return { color: 0x7aa8ff, accessory: 'star', emblem: emblemMarkFor(name) }}
 
-  if (n.includes('claude')) {return { color: 0xd97757 }}
+  if (n.includes('claude')) {return { color: 0xd97757, emblem: emblemMarkFor(name) }}
 
   if (n.includes('codex')) {return { color: 0x3d4a4a, accessory: 'faceplate' }}
 
-  if (n.includes('opencode') || n.includes('cli') || n.includes('acp')) {return { color: 0x2b3038, accessory: 'faceplate' }}
+  if (n.includes('opencode') || n.includes('cli') || n.includes('acp')) {return { color: 0x2b3038, accessory: 'faceplate', emblem: emblemMarkFor(name) }}
+
+  const emblem = emblemMarkFor(name)
+
+  if (emblem) {return { color: 0x2b3038, emblem }}
 
   return { color: new THREE.Color().setHSL(fallbackHue, 0.62, 0.56).getHex() }
 }
@@ -141,7 +150,7 @@ export class OverlayScene {
   private renderer: THREE.WebGLRenderer
   private scene: THREE.Scene
   private camera: THREE.OrthographicCamera
-  private mascots = new Map<string, Mascot>()
+  private mascots = new Map<string, Mascot | MarkMascot>()
   private particles: Particle[] = []
   private clock = new THREE.Clock()
   private raf = 0
@@ -211,7 +220,14 @@ export class OverlayScene {
   }
 
   add(id: string, name: string, x: number, y: number) {
-    const m = new Mascot(id, name, this.scene, this)
+    // character marks (OpenClaw's lobster) ARE the mascot — the canonical
+    // vector extruded, not a generic blob wearing a brand badge
+    const spec = characterMarkFor(name)
+
+    const m: Mascot | MarkMascot = spec
+      ? new MarkMascot(id, name, spec, this.scene, this)
+      : new Mascot(id, name, this.scene, this)
+
     m.group.position.set(x, y, 0)
     m.baseY = y
     this.mascots.set(id, m)
@@ -231,7 +247,7 @@ export class OverlayScene {
     return this.mascots.has(id)
   }
 
-  get(id: string): Mascot | undefined {
+  get(id: string): Mascot | MarkMascot | undefined {
     return this.mascots.get(id)
   }
 
@@ -503,6 +519,16 @@ export class Mascot {
   private addAccessory(skin: Skin, color: THREE.Color) {
     const dark = new THREE.MeshStandardMaterial({ color: 0x14161e, roughness: 0.4, metalness: 0.3 })
     const bright = new THREE.MeshStandardMaterial({ color: 0xf2f2fa, roughness: 0.3 })
+
+    if (skin.emblem) {
+      // the harness's real mark, extruded — mounted on the face like a
+      // faceplate, so e.g. the Anthropic asterisk or the Gemini star is
+      // the actual character's mark, not a drawn-on badge
+      const emblem = buildEmblem(skin.emblem, this.size * 0.52)
+      emblem.position.set(0, -this.size * 0.1, this.size * 0.56)
+      emblem.rotation.x = 0.12
+      this.head.add(emblem)
+    }
 
     switch (skin.accessory) {
       case 'visor': {
