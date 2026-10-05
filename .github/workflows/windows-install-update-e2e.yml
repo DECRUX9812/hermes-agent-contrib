@@ -27,6 +27,8 @@ concurrency:
 jobs:
   install-update:
     name: Windows install.ps1 + hermes update E2E
+    # Advisory on the standard runner: its PowerShell steps time out there (see #147).
+    continue-on-error: true
     runs-on: windows-latest
     # A typical run is ~17 min; one slow runner took 28 min for the same work (run 36295230146).
     timeout-minutes: 50

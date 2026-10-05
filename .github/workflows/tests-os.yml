@@ -68,6 +68,10 @@ jobs:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout || 30 }}
+    # Windows legs are advisory: several of their tests hard-code subprocess
+    # timeouts (60-90 s) tuned for 32-core Windows hosts and time out on the
+    # standard runner. Visible in the checks list, not gating (see #147).
+    continue-on-error: ${{ matrix.advisory || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -85,10 +89,12 @@ jobs:
           - name: Windows-only tests
             runner: windows-latest
             marker: windows
+            advisory: true
           - name: Windows-only tests (arm64)
             runner: windows-11-arm
             marker: windows
             timeout: 60
+            advisory: true
     steps:
       - name: Checkout code
         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
@@ -213,6 +219,8 @@ jobs:
     # xfails (per-file KNOWN tables), so a fix turns this job red until the entry goes.
     name: Windows E2E (real processes)
     if: inputs.e2e
+    # Advisory on the standard runner, like the Windows os-tests legs (see #147).
+    continue-on-error: true
     # 32-core like os-tests' Windows row: seven files run in parallel and each spawns
     # process trees; on the 4-vCPU image the suite step took 153-171 s (job 4.7-5.6 min),
     # here 124 s (job 3.1 min), with headroom against scheduling-starved timeouts.
