@@ -11,6 +11,9 @@ import './store/user-bubble-transparency'
 import './store/ui-look'
 // Side-effect: restores chat typography before the first conversation paints.
 import './store/chat-text-scale'
+// Bot Room controller — self-wires the overlay's IPC control channel in the
+// main window (skipped for `?win=` kinds by the store itself).
+import './store/botroom'
 // Dev-only render/state churn counters. MUST precede the `react-dom` import
 // below: react-dom captures the devtools hook at module init, so bippy has to
 // install during THIS import's evaluation or every commit goes unseen
@@ -60,7 +63,15 @@ if (winParam === 'hud') {
 // window) and `browser` are ordinary opaque windows and are deliberately not
 // in here. index.html's pre-paint script skips exactly this list — keep the
 // two in step.
-const TRANSPARENT_WINDOWS = new Set(['hud', 'overlay', 'quick', 'wake'])
+const TRANSPARENT_WINDOWS = new Set([
+  'hud',
+  'overlay',
+  'quick',
+  'wake',
+  'botroom',
+  'botroom-mascot',
+  'botroom-pill'
+])
 
 // Each transparent root used to force its host layers see-through when it
 // MOUNTED. That is far too late: `styles.css` above paints the theme's opaque
@@ -78,6 +89,16 @@ if (winParam && TRANSPARENT_WINDOWS.has(winParam)) {
 
 if (winParam === 'overlay') {
   void import('./app/pet-overlay/overlay-root').then(({ mountPetOverlay }) => mountPetOverlay())
+} else if (winParam === 'botroom') {
+  void import('./app/botroom/botroom-root').then(({ mountBotRoomWindow }) => mountBotRoomWindow())
+} else if (winParam === 'botroom-mascot') {
+  void import('./app/botroom/mascot-root').then(({ mountBotRoomMascotWindow }) => {
+    mountBotRoomMascotWindow(document.getElementById('root') ?? document.body)
+  })
+} else if (winParam === 'botroom-pill') {
+  void import('./app/botroom/pill-root').then(({ mountBotRoomPillWindow }) => {
+    mountBotRoomPillWindow(document.getElementById('root') ?? document.body)
+  })
 } else if (winParam === 'quick') {
   void import('./app/quick-entry/quick-entry-root').then(({ mountQuickEntry }) => mountQuickEntry())
 } else if (winParam === 'wake') {

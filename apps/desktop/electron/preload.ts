@@ -121,6 +121,48 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       return () => ipcRenderer.removeListener('hermes:pet-overlay:control', listener)
     }
   },
+  // Bot Room: the full-screen transparent overlay where bot mascots live on
+  // the desktop itself. Same puppet contract as petOverlay, one level up —
+  // the main renderer owns the state, the overlay renders it.
+  botroom: {
+    open: () => ipcRenderer.invoke('hermes:botroom:open'),
+    close: () => ipcRenderer.invoke('hermes:botroom:close'),
+    setIgnoreMouse: ignore => ipcRenderer.send('hermes:botroom:ignore-mouse', ignore),
+    // Flip the overlay focusable while a panel/composer holds text focus.
+    setFocusable: focusable => ipcRenderer.send('hermes:botroom:set-focusable', focusable),
+    // Main renderer → overlay: roster/status/rooms the overlay renders.
+    pushState: payload => ipcRenderer.send('hermes:botroom:state', payload),
+    // Overlay → main renderer: tasks, room ops, mascot moves, app control.
+    control: payload => ipcRenderer.send('hermes:botroom:control', payload),
+    onState: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('hermes:botroom:state', listener)
+
+      return () => ipcRenderer.removeListener('hermes:botroom:state', listener)
+    },
+    onControl: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('hermes:botroom:control', listener)
+
+      return () => ipcRenderer.removeListener('hermes:botroom:control', listener)
+    }
+  },
+  // Bot Room mascot/pill windows: the small always-on-top panels that put one
+  // bot on the desktop itself. They receive their bot row on
+  // 'hermes:botroom-mascot:state' and speak the same BotRoomControl protocol
+  // through the shared 'hermes:botroom:control' channel.
+  botroomMascot: {
+    onState: callback => {
+      const listener = (_event, payload) => callback(payload)
+      ipcRenderer.on('hermes:botroom-mascot:state', listener)
+
+      return () => ipcRenderer.removeListener('hermes:botroom-mascot:state', listener)
+    },
+    // Renderer-driven window drag: streams {botId, phase, x, y} in screen
+    // coordinates; main repositions the window (app-region drag can't engage
+    // on a non-activating panel).
+    drag: payload => ipcRenderer.send('hermes:botroom-mascot:drag', payload)
+  },
   // HUD mode: the chrome-free floating chat. A full app renderer (own gateway)
   // sized as a floating bar, so it mounts the real composer. Main owns the
   // window; `onChanged` keeps every window's toggle truthful.
