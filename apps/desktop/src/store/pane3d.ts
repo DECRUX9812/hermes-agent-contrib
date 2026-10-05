@@ -88,4 +88,16 @@ export function handlePane3dControl(control: PaneControl): void {
 
 if (typeof window !== 'undefined') {
   window.hermesDesktop?.pane3d?.onControl(handlePane3dControl)
+  // Seed once from main's authoritative state: reloading the main window while
+  // the pane is still open would otherwise leave the palette reading
+  // "Open 3D Pane" until the next toggle. Guarded exactly like the
+  // subscription above; a closed channel is a no-op, not a boot failure.
+  void window.hermesDesktop?.pane3d
+    ?.isOpen()
+    .then(open => {
+      if (open) {
+        $pane3dOpen.set(true)
+      }
+    })
+    .catch(() => undefined)
 }
