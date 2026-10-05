@@ -1,6 +1,8 @@
 import { forwardRef, useMemo } from 'react'
 import * as THREE from 'three'
 
+import { SEAM_WIDTH } from './choreography'
+
 /**
  * The signature entrance (architecture §8.4): a shared horizontal clipping
  * plane at the perch edge, an additive light seam that blooms along it, and a
@@ -53,7 +55,7 @@ function createContactShadowTexture(): THREE.CanvasTexture {
 export const EmergenceSeam = forwardRef<THREE.Mesh, { color: string }>(function EmergenceSeam({ color }, ref) {
   return (
     <mesh position={[0, 0, 0.02]} ref={ref} renderOrder={3}>
-      <planeGeometry args={[1.6, 0.035]} />
+      <planeGeometry args={[SEAM_WIDTH, 0.035]} />
       <meshBasicMaterial
         blending={THREE.AdditiveBlending}
         color={color}

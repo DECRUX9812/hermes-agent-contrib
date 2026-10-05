@@ -6,6 +6,17 @@ import * as THREE from 'three'
 import type { AvatarDefinition, AvatarRigHandle } from '../avatars/types'
 import type { AvatarState } from '../director/store'
 
+import {
+  CELEBRATE_MS,
+  type ChoreographyPhase,
+  choreographyPose,
+  EMERGE_MS,
+  HIDE_MS,
+  type Pose,
+  REDUCED_MS,
+  SEAM_OPACITY,
+  SHADOW_OPACITY
+} from './choreography'
 import { ContactShadow, EmergenceSeam } from './emergence'
 import { getPointerGaze } from './pointer-gaze'
 import { avatarFrames, setAvatarRoot, setEdgeObject, type SlotTarget } from './projection'
@@ -22,40 +33,49 @@ export interface RigProps {
   onAnimationEnd: (event: RigCompletionEvent) => void
 }
 
-const EMERGE_MS = 700
-const HIDE_MS = 500
-const CELEBRATE_MS = 900
-const REDUCED_MS = 250
 const BREATH_HZ = 0.22
 const TAU = Math.PI * 2
-const EMERGE_OMEGA = 11
-const EMERGE_ZETA = 0.72
 
-/** Critically-ish damped spring step with a single ~4% overshoot (§8.4). */
-function springProgress(elapsedMs: number, durationMs: number): number {
-  if (elapsedMs <= 0) {
-    return 0
+function phaseDuration(phase: ChoreographyPhase, reducedMotion: boolean): number {
+  if (phase === 'celebrating') {
+    return CELEBRATE_MS
   }
 
-  if (elapsedMs >= durationMs) {
-    return 1
+  if (reducedMotion) {
+    return REDUCED_MS
   }
 
-  const t = elapsedMs / 1000
-  const damped = EMERGE_OMEGA * Math.sqrt(1 - EMERGE_ZETA * EMERGE_ZETA)
-  const decay = Math.exp(-EMERGE_ZETA * EMERGE_OMEGA * t)
+  return phase === 'emerging' ? EMERGE_MS : HIDE_MS
+}
 
-  return 1 - decay * (Math.cos(damped * t) + ((EMERGE_ZETA * EMERGE_OMEGA) / damped) * Math.sin(damped * t))
+/** Which choreography a machine state starts (reduced motion never celebrates). */
+function phaseForState(state: AvatarState, reducedMotion: boolean): ChoreographyPhase {
+  if (state === 'emerging' || state === 'hiding') {
+    return state
+  }
+
+  if (state === 'celebrating') {
+    return reducedMotion ? 'rest' : 'celebrating'
+  }
+
+  return 'rest'
+}
+
+/** The machine event each phase reports once its pose is clamped at the end. */
+const COMPLETION: Record<ChoreographyPhase, RigCompletionEvent | null> = {
+  celebrating: 'CELEBRATED',
+  emerging: 'EMERGED',
+  hiding: 'HIDDEN',
+  rest: null
 }
 
 type Motion = {
-  phase: 'rest' | 'emerging' | 'hiding' | 'celebrating'
+  phase: ChoreographyPhase
   lastState: AvatarState | null
   startedAt: number
   x: number
-  y: number
-  scale: number
-  fade: number
+  /** Damped base perch y; the pure pose adds its choreographed offset on top. */
+  baseY: number
   lastFade: number
   yaw: number
   gazeX: number
@@ -65,31 +85,25 @@ type Motion = {
   headTilt: number
   spin: number
   spinSpeed: number
-  nod: number
-  nodAt: number
   counted: boolean
 }
 
 function createMotion(target: SlotTarget): Motion {
   return {
+    baseY: target.y,
     counted: false,
-    fade: 1,
     gazeX: 0,
     gazeY: 0,
     headTilt: 0,
     lastFade: 1,
     lastState: null,
     lean: 0,
-    nod: 0,
-    nodAt: 0,
     phase: 'rest',
-    scale: 1,
     spin: 0,
     spinSpeed: 0.02,
     startedAt: 0,
     widen: 1,
     x: target.x,
-    y: target.y,
     yaw: 0
   }
 }
@@ -99,6 +113,10 @@ function createMotion(target: SlotTarget): Motion {
  * Bodies are pure geometry; the rig owns breathing, gaze, facing, lean, the
  * state cues and the emergence/hide/celebrate choreography, and reports
  * animation completion so the machine can advance.
+ *
+ * The choreographed pose comes from the pure `scene/choreography.ts` (a
+ * function of elapsed ms, clamped at the end) and is applied directly. Ambient
+ * cues (breathing, gaze, lean) are damped loops and never gate completion.
  */
 export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, state, target }: RigProps) {
   const root = useRef<THREE.Group>(null)
@@ -150,6 +168,9 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
    * deadline timer reports at the animation's own duration, and both paths
    * funnel through the same idempotent `dispatch` (a repeated event is a
    * machine no-op). §8.1 wants completion from the rig, not a fixed cycle.
+   *
+   * Because every pose is clamped to its endpoint, the visible avatar already
+   * stands (or has already sunk) when this fires.
    */
   useEffect(() => {
     if (state !== 'emerging' && state !== 'hiding' && state !== 'celebrating') {
@@ -199,27 +220,32 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
       // Anchor to the transition, not to this frame: a late frame must not
       // stretch a 250 ms fade into 500 ms of wall clock (§8.4).
       m.startedAt = startedAt > 0 ? startedAt : now
-
-      if (state === 'emerging') {
-        m.phase = 'emerging'
-        m.y = target.perchY - definition.height / 2 - 0.04
-        m.scale = reducedMotion ? 1 : 0.85
-        m.fade = reducedMotion ? 0 : 1
-        m.lastFade = m.fade
-      } else if (state === 'hiding') {
-        m.phase = 'hiding'
-      } else if (state === 'celebrating' && reducedMotion) {
-        m.phase = 'rest'
-      } else if (state === 'celebrating') {
-        m.phase = 'celebrating'
-      } else {
-        m.phase = 'rest'
-      }
+      m.phase = phaseForState(state, reducedMotion)
     }
 
     if (!m.counted && rootObject.children.length > 0) {
       countMeshes(rootObject, definition.id)
       m.counted = true
+    }
+
+    // The choreographed pose is a pure function of elapsed ms — never damped
+    // toward a moving target — so it is already at its endpoint whenever either
+    // the deadline timer or the frame check below reports completion.
+    const pose = choreographyPose({
+      elapsedMs: now - m.startedAt,
+      height: definition.height,
+      perchY: target.perchY,
+      phase: m.phase,
+      reducedMotion,
+      restY: target.y
+    })
+
+    // The base perch y is damped only between gestures, so slot/anchor moves
+    // ease; during a gesture it is pinned to the target and the pose owns y.
+    if (m.phase === 'rest' || m.phase === 'celebrating') {
+      damp(m, 'baseY', target.y, 0.16, dt)
+    } else {
+      m.baseY = target.y
     }
 
     // Gaze follows the pointer over the handle, else eases to neutral (§8.4).
@@ -228,71 +254,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     damp(m, 'gazeX', pointer.active ? pointer.x : 0, 0.16, dt)
     damp(m, 'gazeY', pointer.active ? pointer.y : 0, 0.16, dt)
     damp(m, 'yaw', 0, 0.3, dt)
-
-    let yTarget = target.y
-    let fadeTarget = 1
-    let seamTarget = 0
-    let shadowTarget = 1
-    let scaleTarget = 1
-
-    if (m.phase === 'emerging') {
-      const elapsed = now - m.startedAt
-      const duration = reducedMotion ? REDUCED_MS : EMERGE_MS
-      const progress = reducedMotion ? Math.min(1, elapsed / duration) : springProgress(elapsed, duration)
-
-      yTarget = THREE.MathUtils.lerp(target.perchY - definition.height / 2 - 0.04, target.y, progress)
-      scaleTarget = reducedMotion ? 1 : THREE.MathUtils.lerp(0.85, 1, progress)
-      fadeTarget = reducedMotion ? progress : 1
-      seamTarget = reducedMotion ? 0 : Math.max(0, 1 - progress * 2)
-      shadowTarget = progress
-
-      if (elapsed >= duration) {
-        m.phase = 'rest'
-        onAnimationEnd('EMERGED')
-      }
-    } else if (m.phase === 'hiding') {
-      const elapsed = now - m.startedAt
-      const duration = reducedMotion ? REDUCED_MS : HIDE_MS
-      const raw = Math.min(1, elapsed / duration)
-      const eased = raw * raw * (3 - 2 * raw)
-
-      yTarget = THREE.MathUtils.lerp(target.y, target.perchY - definition.height / 2 - 0.04, eased)
-      fadeTarget = reducedMotion ? 1 - raw : 1
-      seamTarget = reducedMotion ? 0 : Math.min(1, raw * 2)
-      shadowTarget = 1 - raw
-
-      if (elapsed >= duration) {
-        m.phase = 'rest'
-        onAnimationEnd('HIDDEN')
-      }
-    } else if (m.phase === 'celebrating') {
-      const elapsed = now - m.startedAt
-      const progress = Math.min(1, elapsed / CELEBRATE_MS)
-
-      yTarget = target.y + 0.08 * Math.sin(Math.PI * progress)
-
-      if (elapsed >= CELEBRATE_MS) {
-        m.phase = 'rest'
-        onAnimationEnd('CELEBRATED')
-      }
-    }
-
-    // Position: the spring owns y during emergence, damp everywhere else.
     damp(m, 'x', target.x, 0.22, dt)
-
-    if (m.phase === 'emerging') {
-      m.y = yTarget
-      m.scale = scaleTarget
-    } else {
-      damp(m, 'y', yTarget, 0.16, dt)
-      damp(m, 'scale', 1, 0.2, dt)
-    }
-
-    if (m.phase === 'emerging' && reducedMotion) {
-      m.fade = fadeTarget
-    } else {
-      damp(m, 'fade', fadeTarget, 0.12, dt)
-    }
 
     // Idle cues: breathing is the only looping motion (§8.4).
     const breathing = state === 'idle' || listening || thinking || state === 'responding' || state === 'notifying'
@@ -302,23 +264,13 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     damp(m, 'lean', listening ? 0.1 : 0, 0.25, dt)
     damp(m, 'widen', listening ? 1.08 : 1, 0.25, dt)
 
-    // Responding: one small nod per burst, never faster than 2/s.
-    if (state === 'responding' && !reducedMotion) {
-      if (now - m.nodAt > 500) {
-        m.nodAt = now
-        m.nod = 1
-      }
-
-      m.nod = Math.max(0, m.nod - dt * 6)
-    } else {
-      m.nod = 0
-    }
-
-    rootObject.position.set(m.x, m.y + drift, 0)
-    rootObject.rotation.x = -m.lean + m.nod * 0.05
+    // Responding nods are one per token-burst signal from the task executor
+    // (pane3d-task-executor); the rig must not schedule them on a loop.
+    rootObject.position.set(m.x, m.baseY + pose.yOffset + drift, 0)
+    rootObject.rotation.x = -m.lean
     rootObject.rotation.y = m.yaw
-    rootObject.rotation.z = 0
-    rootObject.scale.set(m.scale, m.scale * (1 + 0.012 * breath), m.scale)
+    rootObject.rotation.z = pose.rotationZ
+    rootObject.scale.set(pose.scale, pose.scale * (1 + 0.012 * breath), pose.scale)
 
     // The avatar's own accent cue: Muse's halo speeds to 0.3 rev/s thinking.
     // At rest it STOPS — §8.4 allows breathing and nothing else while idle, and
@@ -328,7 +280,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
 
     if (handle.accent) {
       handle.accent.rotation.y = m.spin
-      handle.accent.scale.setScalar(m.phase === 'celebrating' ? 1 + 0.12 * glowPulse(now, m.startedAt) : 1)
+      handle.accent.scale.setScalar(1 + 0.12 * pose.accentPulse)
     }
 
     if (handle.head) {
@@ -344,13 +296,22 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
       handle.eyes.scale.setScalar(m.widen)
     }
 
-    applyFade(rootObject, m)
-    writeEdge(seam.current, shadow.current, seamTarget, shadowTarget)
+    applyFade(rootObject, pose.fade, m)
+    writeEdge(seam.current, shadow.current, pose)
 
     const frame = avatarFrames[definition.id]
 
     frame.yawDeg = THREE.MathUtils.radToDeg(m.yaw)
     frame.gaze = { x: m.gazeX, y: m.gazeY }
+
+    // Frame-side completion is idempotent with the deadline timer; it only
+    // fires once the pose is clamped at its endpoint, so it never cuts a motion.
+    const completion = COMPLETION[m.phase]
+
+    if (completion && now - m.startedAt >= phaseDuration(m.phase, reducedMotion)) {
+      m.phase = 'rest'
+      onAnimationEnd(completion)
+    }
   }, -1)
 
   return (
@@ -364,10 +325,6 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
       </group>
     </>
   )
-}
-
-function glowPulse(now: number, startedAt: number): number {
-  return Math.sin(Math.PI * Math.min(1, (now - startedAt) / CELEBRATE_MS))
 }
 
 function countMeshes(root: THREE.Object3D, id: AvatarDefinition['id']): void {
@@ -397,8 +354,8 @@ function countMeshes(root: THREE.Object3D, id: AvatarDefinition['id']): void {
   frame.materialTypes = [...types]
 }
 
-function applyFade(root: THREE.Object3D, m: Motion): void {
-  if (m.fade >= 0.999 && m.lastFade >= 0.999) {
+function applyFade(root: THREE.Object3D, fade: number, m: Motion): void {
+  if (fade >= 0.999 && m.lastFade >= 0.999) {
     return
   }
 
@@ -415,22 +372,23 @@ function applyFade(root: THREE.Object3D, m: Motion): void {
       if (material?.transparent) {
         const base = (material.userData?.baseOpacity as number | undefined) ?? 1
 
-        material.opacity = base * m.fade
+        material.opacity = base * fade
       }
     })
   })
-  m.lastFade = m.fade
+  m.lastFade = fade
 }
 
-function writeEdge(seam: THREE.Mesh | null, shadow: THREE.Mesh | null, seamTarget: number, shadowTarget: number): void {
+function writeEdge(seam: THREE.Mesh | null, shadow: THREE.Mesh | null, pose: Pose): void {
   if (seam) {
     const material = seam.material as THREE.MeshBasicMaterial
 
-    material.opacity = 0.9 * seamTarget
-    seam.scale.x = Math.max(0.001, seamTarget)
+    material.opacity = SEAM_OPACITY * pose.seam
+    // The plane geometry is SEAM_WIDTH wide, so the envelope is the width fraction.
+    seam.scale.x = Math.max(0.001, pose.seam)
   }
 
   if (shadow) {
-    ;(shadow.material as THREE.MeshBasicMaterial).opacity = 0.34 * shadowTarget
+    ;(shadow.material as THREE.MeshBasicMaterial).opacity = SHADOW_OPACITY * pose.shadow
   }
 }
