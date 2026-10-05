@@ -365,7 +365,7 @@ function logErrorToDesktopLog(error: unknown, fallback: string): void {
 export function notifyError(
   error: unknown,
   fallback: string,
-  options: { action?: NotificationAction; id?: string } = {}
+  options: { action?: NotificationAction; id?: string; placement?: NotificationPlacement } = {}
 ): string {
   const readable = readableError(error, fallback)
   const poolSlotTimeout = isLocalBackendSlotWaitTimeout(error)
@@ -388,6 +388,11 @@ export function notifyError(
       // A caller that can fire again for the same cause names its toast, so the repeat replaces it.
       id: options.id,
       kind: 'error',
+      // `kind: 'error'` defaults to the interrupting top-center stack. A caller
+      // that is ambient feedback rather than something to interrupt for (a
+      // voice-transcription failure while the user reads their editor, say)
+      // passes 'bottom-right' so the toast stops covering the work behind it.
+      placement: options.placement,
       title: fallback,
       message: poolSlotTimeout ? translateNow('desktop.poolSlotTimeoutBody') : readable.message,
       detail: poolSlotTimeout ? readable.message : readable.detail
