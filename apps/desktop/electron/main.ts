@@ -111,6 +111,11 @@ import {
 import { decideBootstrapRepair } from './bootstrap-repair-guard'
 import { runBootstrap } from './bootstrap-runner'
 import { bootstrapSnapshot } from './bootstrap-state'
+import { botroomClickThrough, resolveBotRoomBounds } from './botroom'
+import { registerBotRoomIpc } from './botroom-ipc'
+import { createMascotWindowSpawner } from './botroom-mascot-window'
+import { createBotRoomMascots, registerBotRoomMascotDragIpc } from './botroom-mascots'
+import { createPillWindowSpawner } from './botroom-pill-window'
 import {
   BROWSER_WINDOW_HEIGHT,
   BROWSER_WINDOW_MIN_HEIGHT,
@@ -14453,6 +14458,174 @@ function rehomePetOverlay() {
   }
 }
 
+// ── Bot Room overlay ───────────────────────────────────────────────────────
+//
+// Full-screen transparent layer (`?win=botroom`) where bot mascots live on the
+// desktop itself, above every app. Same puppet contract as the pet overlay at
+// one level up: the main renderer owns roster/rooms/tasks and pushes state
+// over IPC (hermes:botroom:state); the overlay renders it and returns control
+// (task submits, room ops, open-app) via hermes:botroom:control.
+let botroomWindow = null
+let botroomClosing = false
+
+function botroomUrl(extra = {}) {
+  const params = new URLSearchParams({ win: 'botroom', ...extra })
+
+  if (DEV_SERVER) {
+    return `${DEV_SERVER.endsWith('/') ? DEV_SERVER.slice(0, -1) : DEV_SERVER}/?${params.toString()}#/`
+  }
+
+  return `${pathToFileURL(resolveRendererIndex()).toString()}?${params.toString()}#/`
+}
+
+function spawnBotRoomWindow(bounds) {
+  const win = new BrowserWindow({
+    width: Math.max(80, Math.round(bounds?.width || 800)),
+    height: Math.max(80, Math.round(bounds?.height || 600)),
+    x: Number.isFinite(bounds?.x) ? Math.round(bounds.x) : undefined,
+    y: Number.isFinite(bounds?.y) ? Math.round(bounds.y) : undefined,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: !IS_MAC,
+    hasShadow: false,
+    alwaysOnTop: true,
+    type: IS_MAC ? 'panel' : undefined,
+    hiddenInMissionControl: IS_MAC,
+    // Non-activating by default — mascots live over your apps without stealing
+    // focus; the renderer flips this on while an overlay text field holds the
+    // keyboard (see hermes:botroom:set-focusable).
+    focusable: false,
+    show: false,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+      devTools: true,
+      backgroundThrottling: false
+    }
+  })
+
+  win.setAlwaysOnTop(true, IS_MAC ? 'floating' : 'screen-saver')
+  win.setHiddenInMissionControl?.(true)
+
+  // Same contract as the pet overlay: start click-through so a slow/blank/
+  // dead renderer can never leave an invisible pointer-eating layer over the
+  // desktop; the page re-arms interactivity per-pixel via forwarded
+  // mousemoves (hermes:botroom:ignore-mouse). Linux has no forward — there
+  // the overlay stays a solid window.
+  if (botroomClickThrough()) {
+    win.setIgnoreMouseEvents(true, { forward: true })
+  }
+
+  try {
+    win.setVisibleOnAllWorkspaces(
+      true,
+      IS_MAC ? { visibleOnFullScreen: true, skipTransformProcessType: true } : undefined
+    )
+  } catch {
+    // Not supported everywhere — best effort.
+  }
+
+  wireCommonWindowHandlers(win, zoomWiringForWindowKind('petOverlay'))
+
+  wireWindowReveal(win, { show: () => win.showInactive() })
+  installWindowRendererLifecycle(win, { kind: 'overlay', callbacks: { log: rememberLog } })
+
+  win.on('closed', () => {
+    if (botroomWindow !== win) {
+      return
+    }
+
+    botroomWindow = null
+    botroomClosing = false
+    botroomMascots.setOverlayOpen(false)
+
+    // The overlay went away on its own — tell the main renderer so its
+    // controller drops the active flag and stops the roster feed.
+    if (mainWindow && !mainWindow.isDestroyed() && !appQuitting) {
+      mainWindow.webContents.send('hermes:botroom:control', { type: 'close' })
+    }
+  })
+
+  attachRendererConsoleCapture(win, 'botroom', rememberLog)
+  loadWindowUrl(win, botroomUrl(), 'Bot Room overlay')
+
+  return win
+}
+
+// Per-bot mascot windows + the task pill — the cross-app interaction layer.
+// Small always-on-top, non-activating panels take real clicks/drags even
+// while another app is frontmost, which a fullscreen click-through layer
+// never gets on macOS. Synced off the roster the store pushes.
+const botroomMascots = createBotRoomMascots({
+  spawnMascotWindow: createMascotWindowSpawner({
+    preloadPath: PRELOAD_PATH,
+    botroomUrl,
+    isMac: IS_MAC
+  }),
+  forwardControl: (payload) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('hermes:botroom:control', payload)
+    }
+  }
+})
+
+const botroomPill = createPillWindowSpawner({
+  preloadPath: PRELOAD_PATH,
+  botroomUrl,
+  isMac: IS_MAC
+})
+
+// Renderer-driven mascot drags: the mascot window captures the pointer and
+// streams screen positions; moves land on the positions map and forward as
+// 'mascot.move' controls, same protocol as the overlay's internal drags.
+registerBotRoomMascotDragIpc(
+  (botId) => botroomMascots.window(botId),
+  (botId, x, y) => botroomMascots.place(botId, x, y)
+)
+
+function openBotRoom() {
+  if (botroomWindow && !botroomWindow.isDestroyed() && !botroomClosing) {
+    botroomWindow.showInactive()
+
+    return botroomWindow
+  }
+
+  if (botroomWindow && !botroomWindow.isDestroyed()) {
+    const stale = botroomWindow
+    botroomWindow = null
+    stale.destroy()
+  }
+
+  const displays = screen.getAllDisplays()
+  const primary = screen.getPrimaryDisplay()
+  const bounds = resolveBotRoomBounds(displays, displays.indexOf(primary))
+
+  botroomClosing = false
+  botroomWindow = spawnBotRoomWindow(bounds ?? undefined)
+  // The fullscreen stage owns the mascots while it's up — small windows
+  // step aside so a bot never renders in two places at once.
+  botroomMascots.setOverlayOpen(true)
+
+  return botroomWindow
+}
+
+function closeBotRoom() {
+  if (botroomWindow && !botroomWindow.isDestroyed()) {
+    botroomClosing = true
+    botroomWindow.close()
+  }
+
+  botroomMascots.setOverlayOpen(false)
+}
+
 // ── HUD mode ────────────────────────────────────────────────────────────────
 //
 // The chrome-free floating chat: a transparent, frameless, always-on-top
@@ -16118,6 +16291,16 @@ registerPetOverlayIpc({
   getPetOverlayWindow: () => petOverlayWindow,
   openPetOverlay,
   closePetOverlay
+})
+
+registerBotRoomIpc({
+  mascots: botroomMascots,
+  pill: botroomPill,
+  getBot: (botId) => botroomMascots.bot(botId),
+  getMainWindow: () => mainWindow,
+  getBotRoomWindow: () => botroomWindow,
+  openBotRoom,
+  closeBotRoom
 })
 
 // --- HUD mode (chrome-free floating chat) — see hud-ipc.ts. ---------------

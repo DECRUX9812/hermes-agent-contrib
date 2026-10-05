@@ -116,6 +116,21 @@ export function renderRosterToolbar({
               <Codicon name={activityToasts ? 'bell' : 'bell-slash'} />
             </Button>
           </Tip>
+          {/* Bot Room — the mascots-on-your-desktop overlay (`?win=botroom`).
+              Goes through the typed bridge (not the store) so the plugin
+              boundary stays clean; the store self-wires control + roster feed
+              when the overlay signals ready. */}
+          <Tip label="Bot Room on desktop">
+            <Button
+              aria-label="Bot Room on desktop"
+              className="rounded-md text-(--ui-text-tertiary) hover:text-foreground"
+              onClick={() => void window.hermesDesktop.botroom.open()}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name="device-desktop" />
+            </Button>
+          </Tip>
           <DropdownMenu>
             <Tip label="New…">
               <DropdownMenuTrigger asChild>

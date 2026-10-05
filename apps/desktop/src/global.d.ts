@@ -14,6 +14,7 @@ import type { UpdateRunReport } from '../electron/updater/update-metrics'
 import type { GrowRequest } from '../electron/window-growth'
 
 import type { WakeIndicatorState } from './lib/wake-indicator'
+import type { BotRoomControl, BotRoomStatePayload } from './store/botroom'
 import type {
   PetOverlayBounds,
   PetOverlayControl,
@@ -161,6 +162,27 @@ declare global {
         control: (payload: PetOverlayControl) => void
         onState: (callback: (payload: PetOverlayStatePayload) => void) => () => void
         onControl: (callback: (payload: PetOverlayControl) => void) => () => void
+      }
+      // Bot Room: the full-screen transparent overlay where bot mascots live
+      // on the desktop. Same puppet contract as petOverlay — the main renderer
+      // owns roster/status/rooms; the overlay renders and reports control.
+      botroom: {
+        open: () => Promise<{ ok: boolean }>
+        close: () => Promise<{ ok: boolean }>
+        setIgnoreMouse: (ignore: boolean) => void
+        setFocusable: (focusable: boolean) => void
+        pushState: (payload: BotRoomStatePayload) => void
+        control: (payload: BotRoomControl) => void
+        onState: (callback: (payload: BotRoomStatePayload) => void) => () => void
+        onControl: (callback: (payload: BotRoomControl) => void) => () => void
+      }
+      // Bot Room mascot/pill windows: one small always-on-top panel per bot.
+      // They receive their roster row on a dedicated channel and speak the
+      // shared BotRoomControl protocol through `botroom.control`.
+      botroomMascot?: {
+        onState: (callback: (bot: BotRoomBot) => void) => () => void
+        onAction: (callback: (payload: { botId: string; action: string }) => void) => () => void
+        drag: (payload: { botId: string; phase: 'start' | 'move' | 'end'; x: number; y: number }) => void
       }
       // HUD mode: the chrome-free floating chat. A FULL app renderer with its
       // own gateway (like an instance window), sized and skinned as a floating
