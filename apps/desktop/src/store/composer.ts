@@ -764,7 +764,7 @@ export const clearSessionDraft = (scope: string | null | undefined) => stashSess
  * exist on the backend; the new-chat draft is never a session reference.
  */
 export function stashedDraftScopes(): string[] {
-  return [...draftsBySession.keys()].filter(key => key !== NEW_SESSION_DRAFT_KEY)
+  return [...draftsBySession.keys()].filter(key => !isFreshDraftScope(key))
 }
 
 /**
