@@ -7,6 +7,8 @@ import {
   choreographyPose,
   EMERGE_MS,
   HIDE_MS,
+  NOTIFY_PULSE_MS,
+  notifyGlowPulse,
   PERCH_MS,
   perchPose,
   perchProgress,
@@ -246,5 +248,38 @@ describe('perchPose — anchor/slot re-perch', () => {
   it('finishes well inside the 1.5 s re-perch bound even on the slowest frames', () => {
     expect(PERCH_MS).toBeLessThanOrEqual(600)
     expect(perchPose(tween, 1_500)).toEqual({ x: tween.toX, y: tween.toY })
+  })
+})
+
+// ── notification glow (VAL-NOTIFY-001, architecture §8.5) ───────────────────
+
+describe('notifyGlowPulse — one pulse for the notification moment', () => {
+  it('starts and ends at zero and peaks once in the middle', () => {
+    expect(notifyGlowPulse(0, false)).toBe(0)
+    expect(notifyGlowPulse(NOTIFY_PULSE_MS, false)).toBeCloseTo(0, 10)
+    expect(notifyGlowPulse(NOTIFY_PULSE_MS + 5_000, false)).toBeCloseTo(0, 10)
+    expect(notifyGlowPulse(NOTIFY_PULSE_MS / 2, false)).toBeCloseTo(1, 10)
+
+    // Exactly one peak: the envelope rises to it and falls after, once.
+    const samples = Array.from({ length: 40 }, (_, index) => notifyGlowPulse((index / 39) * NOTIFY_PULSE_MS, false))
+    const peak = samples.indexOf(Math.max(...samples))
+
+    expect(peak).toBeGreaterThan(0)
+    expect(peak).toBeLessThan(samples.length - 1)
+    expect(Math.max(...samples)).toBeGreaterThan(0.99)
+
+    for (let index = 1; index <= peak; index += 1) {
+      expect(samples[index]).toBeGreaterThan(samples[index - 1])
+    }
+
+    for (let index = peak + 1; index < samples.length; index += 1) {
+      expect(samples[index]).toBeLessThan(samples[index - 1])
+    }
+  })
+
+  it('never pulses under reduced motion', () => {
+    for (const elapsedMs of [0, 100, NOTIFY_PULSE_MS / 2, NOTIFY_PULSE_MS]) {
+      expect(notifyGlowPulse(elapsedMs, true)).toBe(0)
+    }
   })
 })

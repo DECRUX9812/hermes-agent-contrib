@@ -7,7 +7,7 @@ import { Activity } from '@/lib/icons'
 import { getAvatar, hasAvatar, listAvatars } from '../avatars/registry'
 import { PANE_COPY } from '../copy'
 import { dispatch } from '../director/director'
-import { $avatars } from '../director/store'
+import { $avatars, $feedPanelOpen } from '../director/store'
 import { dockRect } from '../scene/projection'
 
 import { useViewport } from './use-viewport'
@@ -15,10 +15,11 @@ import { useViewport } from './use-viewport'
 /**
  * The collapsed tray, bottom-right (architecture §Milestone 1). One button per
  * REGISTERED avatar — so a dock button can never summon a body that does not
- * exist — plus the feed toggle placeholder.
+ * exist — plus the activity-feed toggle.
  */
 export function Dock() {
   const avatars = useStore($avatars)
+  const feedOpen = useStore($feedPanelOpen)
   const viewport = useViewport()
   const definitions = useMemo(() => listAvatars(), [])
   const rect = dockRect(definitions.length, viewport)
@@ -52,7 +53,15 @@ export function Dock() {
           </Button>
         )
       })}
-      <Button aria-label={PANE_COPY.feedTitle} data-pane-hit disabled size="icon-sm" type="button" variant="floating">
+      <Button
+        aria-label={PANE_COPY.feed}
+        aria-pressed={feedOpen}
+        data-pane-hit
+        onClick={() => $feedPanelOpen.set(!feedOpen)}
+        size="icon-sm"
+        type="button"
+        variant={feedOpen ? 'default' : 'floating'}
+      >
         <Activity />
       </Button>
     </div>

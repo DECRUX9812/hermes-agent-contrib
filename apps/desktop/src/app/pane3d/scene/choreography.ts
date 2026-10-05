@@ -68,6 +68,10 @@ export const BELOW_EDGE_MARGIN = 0.04
  */
 export const PERCH_MS = 500
 
+/** Notification moment: the avatar leans in 6° and its accent glows once (§8.5). */
+export const NOTIFY_LEAN = (6 * Math.PI) / 180
+export const NOTIFY_PULSE_MS = 520
+
 /** Critically-ish damped spring: single ~4% overshoot (§8.4). */
 const SPRING_OMEGA = 11
 const SPRING_ZETA = 0.72
@@ -76,6 +80,18 @@ export const REST_POSE: Pose = { accentPulse: 0, fade: 1, rotationZ: 0, scale: 1
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
+}
+
+/**
+ * One glow pulse over `NOTIFY_PULSE_MS`, 0 at both ends — the ambient accent
+ * cue for `notifying`. Reduced motion never pulses.
+ */
+export function notifyGlowPulse(elapsedMs: number, reducedMotion: boolean): number {
+  if (reducedMotion) {
+    return 0
+  }
+
+  return Math.sin(Math.PI * clamp01(Math.max(0, elapsedMs) / NOTIFY_PULSE_MS))
 }
 
 /** Damped spring step with a single overshoot, clamped to 1 at the deadline. */

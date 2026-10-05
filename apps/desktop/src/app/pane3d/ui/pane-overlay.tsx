@@ -6,11 +6,14 @@ import { AVATAR_IDS } from '../protocol'
 
 import { AvatarHandle } from './avatar-handle'
 import { Dock } from './dock'
+import { FeedPanel } from './feed-panel'
+import { NotificationCards } from './notification-card'
 
 /**
- * The DOM layer above the canvas: one accessible handle per visible avatar and
- * the dock. The layer itself is click-through; only its children take pointer
- * events.
+ * The DOM layer above the canvas: one accessible handle per visible avatar, the
+ * open notification cards, the activity feed panel and the dock. The layer
+ * itself is click-through; only its children take pointer events — each carries
+ * `data-pane-hit` so the hit-region publisher keeps it interactive (§6, §12).
  */
 export function PaneOverlay() {
   const avatars = useStore($avatars)
@@ -21,6 +24,8 @@ export function PaneOverlay() {
       {visibleIds.map(id => (
         <AvatarHandle definition={getAvatar(id)} key={id} state={avatars[id].state} />
       ))}
+      <NotificationCards />
+      <FeedPanel />
       <Dock />
     </div>
   )

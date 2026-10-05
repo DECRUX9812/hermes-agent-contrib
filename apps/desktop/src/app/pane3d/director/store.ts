@@ -16,7 +16,9 @@ import { prewarmPlan, type PrewarmStage } from '../scene/prewarm'
 import { avatarFrames } from '../scene/projection'
 import { prefersReducedMotion, setReducedMotion } from '../scene/reduced-motion'
 
-import { dismiss, summon } from './director'
+import { runDemoScript } from './demo'
+import { deliverNotification, dismiss, summon } from './director'
+import { appendFeed } from './feed'
 
 export type AvatarState =
   'hidden' | 'emerging' | 'idle' | 'listening' | 'thinking' | 'responding' | 'celebrating' | 'notifying' | 'hiding'
@@ -42,6 +44,8 @@ export interface FeedEntry {
   avatar: AvatarId
   text: string
   at: number
+  /** Where the entry came from; harness-sourced entries are badged (§11). */
+  source?: 'live' | 'dev-harness'
 }
 
 export interface PaneCard {
@@ -105,8 +109,15 @@ export const $feed = atom<FeedEntry[]>([])
 export const $cards = atom<Record<string, PaneCard>>({})
 export const $anchor = atom<PaneAnchor>(DEFAULT_ANCHOR)
 export const $transitions = atom<TransitionRecord[]>([])
+/** The activity feed panel, toggled from the dock (§8.6). */
+export const $feedPanelOpen = atom(false)
 /** The host platform from `init`; decides who owns click-through (§6). */
 export const $platform = atom<NodeJS.Platform>('linux')
+
+/** Newest first, capped at `FEED_CAP` (§8.5). */
+export function pushFeed(entry: FeedEntry): void {
+  $feed.set(appendFeed($feed.get(), entry))
+}
 
 export const TRANSITION_LIMIT = 200
 
@@ -140,17 +151,15 @@ export function applyPaneState(state: PaneState): void {
       setAnchor(state.anchor)
 
       return
-    case 'notify': {
-      $cards.set({
-        ...$cards.get(),
-        [state.id]: { avatar: state.request.avatar, id: state.id, request: state.request, shownAt: Date.now() }
-      })
+
+    case 'notify':
+      deliverNotification(state.id, state.request)
 
       return
-    }
 
     case 'demo':
       pane3dRuntime.lastDemo = state.script
+      runDemoScript(state.script)
 
       return
 

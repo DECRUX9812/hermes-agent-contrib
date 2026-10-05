@@ -12,6 +12,8 @@ import {
   choreographyPose,
   EMERGE_MS,
   HIDE_MS,
+  NOTIFY_LEAN,
+  notifyGlowPulse,
   perchPose,
   type PerchTween,
   type Pose,
@@ -240,6 +242,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     const dt = Math.min(rawDelta, 0.05)
     const now = performance.now()
     const listening = state === 'listening'
+    const notifying = state === 'notifying'
     const thinking = state === 'thinking'
 
     // A state change starts the matching choreography. Detected in the frame
@@ -321,8 +324,12 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     const breath = breathing ? Math.sin((now / 1000) * TAU * BREATH_HZ) : 0
     const drift = breathing ? 0.01 * breath : 0
 
-    damp(m, 'lean', listening ? 0.1 : 0, 0.25, dt)
+    damp(m, 'lean', listening ? 0.1 : notifying ? NOTIFY_LEAN : 0, 0.25, dt)
     damp(m, 'widen', listening ? 1.08 : 1, 0.25, dt)
+
+    // The notification moment adds ONE glow pulse on top of the celebrate pose
+    // (§8.5); `notifying` is a rest phase, so the pulse is its own envelope.
+    const glowPulse = Math.max(pose.accentPulse, notifying ? notifyGlowPulse(now - m.startedAt, reducedMotion) : 0)
 
     // Responding nods are one per token-burst signal from the task executor
     // (pane3d-task-executor); the rig must not schedule them on a loop.
@@ -340,7 +347,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
 
     if (handle.accent) {
       handle.accent.rotation.y = m.spin
-      handle.accent.scale.setScalar(1 + 0.12 * pose.accentPulse)
+      handle.accent.scale.setScalar(1 + 0.12 * glowPulse)
     }
 
     if (handle.head) {
@@ -368,7 +375,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
       fade: pose.fade,
       gazeX: m.gazeX,
       gazeY: m.gazeY,
-      pulse: pose.accentPulse,
+      pulse: glowPulse,
       state
     })
 
