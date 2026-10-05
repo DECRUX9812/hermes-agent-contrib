@@ -528,6 +528,141 @@ def review_create_pr(cwd: str) -> dict:
     return {"url": url}
 
 
+# ── agent ship flow (git_ship / open_pr tools) ──────────────────────────────
+# Same audited subprocess layer the review pane's REST routes use; the agent
+# surface returns richer payloads (sha, stats, upstream) instead of {"ok": true}.
+
+
+def _changed_paths(cwd: str) -> list[str]:
+    """Paths the next commit would touch: staged-or-dirty tracked plus untracked."""
+    code, raw = _status_z(cwd)
+    if code != 0:
+        return []
+    return [path for _tag, _xy, path in _walk_entries(raw)]
+
+
+def _conventional_fallback_message(cwd: str) -> str:
+    """Deterministic conventional-commit fallback when the caller gave no message.
+
+    The model almost always passes an explicit message; this exists so a bare
+    'ship it' still lands a readable subject rather than failing.
+    """
+    paths = _changed_paths(cwd)
+    lowered = [p.lower() for p in paths]
+    if paths and all(
+        p.endswith((".md", ".rst")) or "/docs/" in f"/{p}" or p.startswith(("docs/", "website/docs/"))
+        for p in lowered
+    ):
+        prefix = "docs"
+    elif paths and all("test" in p for p in lowered):
+        prefix = "test"
+    elif any(p.startswith(("tools/", "agent/", "gateway/", "hermes_cli/", "tui_gateway/", "apps/")) for p in lowered):
+        prefix = "feat"
+    else:
+        prefix = "chore"
+    scope = ""
+    if paths:
+        top = paths[0].split("/")[0]
+        if all(p.split("/")[0] == top for p in paths) and top != paths[0]:
+            scope = f"({top})"
+    count = len(paths) or 1
+    return f"{prefix}{scope}: ship {count} changed file{'s' if count != 1 else ''}"
+
+
+def ship_commit(cwd: str, message: str | None, branch: str | None,
+                files: list[str] | None, push: bool) -> dict:
+    """Stage → (optionally) branch → commit → (optionally) push. Returns the
+    committed sha, branch and change stats; raises RuntimeError on failure."""
+    if not _is_dir(cwd):
+        raise RuntimeError("not a git repository")
+
+    if branch:
+        # An existing branch name is refused rather than silently switched to —
+        # "ship onto a new branch" should never silently hijack someone's branch.
+        if _ref_exists(cwd, f"refs/heads/{branch}"):
+            raise RuntimeError(f"branch {branch!r} already exists")
+        _git_ok(cwd, ["switch", "-c", branch])
+
+    if files:
+        _git_ok(cwd, ["add", "--", *files])
+    elif not _has_staged(_status_z(cwd)[1]):
+        _git_ok(cwd, ["add", "-A"])
+
+    if not _has_staged(_status_z(cwd)[1]):
+        raise RuntimeError("nothing to commit — working tree is clean")
+
+    _git_ok(cwd, ["commit", "-m", message or _conventional_fallback_message(cwd)])
+
+    pushed = False
+    upstream = ""
+    if push:
+        _review_push(cwd)
+        pushed = True
+        upstream = _git_line(cwd, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+
+    stats = _git_out(cwd, ["show", "--numstat", "--format=", "HEAD"])
+    insertions = deletions = 0
+    for line in stats.splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3 and parts[0].isdigit():
+            insertions += int(parts[0])
+            deletions += int(parts[1])
+
+    return {
+        "ok": True,
+        "sha": _git_line(cwd, ["rev-parse", "HEAD"]),
+        "branch": _git_line(cwd, ["rev-parse", "--abbrev-ref", "HEAD"]),
+        "files": max(len(stats.splitlines()), 0) if stats.strip() else 0,
+        "insertions": insertions,
+        "deletions": deletions,
+        "pushed": pushed,
+        "upstream": upstream,
+        "subject": _git_line(cwd, ["log", "-1", "--pretty=format:%s"]),
+    }
+
+
+def open_pr(cwd: str, title: str | None, body: str | None,
+            base: str | None, draft: bool) -> dict:
+    """Push (best-effort) then ``gh pr create``. Generated title/body via
+    ``--fill`` unless the caller supplies them."""
+    if not _is_dir(cwd):
+        raise RuntimeError("not a git repository")
+    if not review_ship_info(cwd).get("ghReady"):
+        raise RuntimeError("gh is not installed or not authenticated (gh auth status failed)")
+
+    try:
+        _review_push(cwd)
+    except RuntimeError:
+        pass  # a PR can still be opened from already-pushed commits
+
+    args = ["pr", "create"]
+    if title or body:
+        if not title:
+            # gh refuses --body without --title; the head commit's subject is
+            # the same thing --fill would have picked.
+            title = _git_line(cwd, ["log", "-1", "--pretty=format:%s"]) or "Update"
+        args += ["--title", title]
+        if body:
+            args += ["--body", body]
+    else:
+        args += ["--fill"]
+    if base:
+        args += ["--base", base]
+    if draft:
+        args += ["--draft"]
+
+    created, out, err = _gh(cwd, args)
+    if not created:
+        detail = err.strip()[-_GH_ERR_TAIL_CHARS:] or "is gh installed and authenticated?"
+        raise RuntimeError(f"gh pr create failed: {detail}")
+    url = next((line for line in reversed(out.strip().splitlines()) if line.strip()), "")
+    number = None
+    match = re.search(r"/pull/(\d+)", url)
+    if match:
+        number = int(match[1])
+    return {"ok": True, "url": url, "number": number, "draft": draft}
+
+
 # ── worktrees & branches ─────────────────────────────────────────────────────
 
 
