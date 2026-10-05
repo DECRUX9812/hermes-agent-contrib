@@ -417,7 +417,8 @@ import {
 } from './oauth-rest-request'
 import { wireOauthSessionResponse } from './oauth-session-response'
 import { listWindowsProcesses, reapPackageRootedProcesses } from './package-process-reap'
-import { type AnchorService, createElectronAnchorService } from './pane3d-anchor'
+import { createElectronAnchorService } from './pane3d-anchor-electron'
+import { type AnchorService } from './pane3d-anchor-types'
 import { registerPane3dIpc } from './pane3d-ipc'
 import { createPane3dController } from './pane3d-window'
 import { createParentStartMarkerResolver, parentWatchdogEnv } from './parent-process-identity'
@@ -14474,13 +14475,22 @@ const pane3dController = createPane3dController({
   // Spawn over the display the current anchor is on (pane3d-anchor.ts §7).
   getAnchor: () => pane3dAnchorService?.currentScreenRect() ?? null,
   // However the pane dies (palette, hover control, window close), the host
-  // renderer has to hear about it so the palette label can never go stale.
+  // renderer has to hear about it so the palette label can never go stale, and
+  // the relay must stop treating the dead renderer as ready.
   onClosed: () => {
     pane3dAnchorService?.stop()
+    pane3dIpc.relay.resetReadiness()
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('hermes:pane3d:control', { type: 'close' })
     }
+  },
+  // A new pane renderer (fresh spawn or the replacement for a still-closing
+  // window) and an in-place reload both invalidate the previous `ready` and end
+  // the anchor session that was feeding it; `ready` starts a fresh one.
+  onRendererReset: () => {
+    pane3dAnchorService?.stop()
+    pane3dIpc.relay.resetReadiness()
   },
   preloadPath: PRELOAD_PATH,
   rendererBase: () => (DEV_SERVER ? DEV_SERVER : pathToFileURL(resolveRendererIndex()).toString()),

@@ -22,10 +22,15 @@ interface FakeWindow {
   destroy: () => void
   close: () => void
   showInactive: () => void
+  webContents: { on: (event: string, handler: () => void) => void }
   [key: string]: unknown
 }
 
-function makeWindow(order: string[], handlers: Map<string, Array<() => void>>): FakeWindow {
+function makeWindow(
+  order: string[],
+  handlers: Map<string, Array<() => void>>,
+  webHandlers: Map<string, Array<() => void>>
+): FakeWindow {
   const win: FakeWindow = {
     bounds: { height: 1080, width: 1920, x: 0, y: 0 },
     destroyed: false,
@@ -61,6 +66,11 @@ function makeWindow(order: string[], handlers: Map<string, Array<() => void>>): 
     showInactive: () => {
       order.push('show')
       win.shown += 1
+    },
+    webContents: {
+      on: (event: string, handler: () => void) => {
+        webHandlers.set(event, [...(webHandlers.get(event) ?? []), handler])
+      }
     }
   }
 
@@ -78,7 +88,9 @@ function harness({
   const order: string[] = []
   const created: Array<Record<string, unknown>> = []
   const windows: FakeWindow[] = []
+  const webEventHandlers: Array<Map<string, Array<() => void>>> = []
   let closedCount = 0
+  let rendererResets = 0
 
   const deps: Pane3dWindowDeps = {
     attachConsole: () => order.push('console'),
@@ -86,7 +98,11 @@ function harness({
       order.push('create')
       created.push(options)
       const handlers = new Map<string, Array<() => void>>()
-      const win = makeWindow(order, handlers)
+      const webHandlers = new Map<string, Array<() => void>>()
+
+      webEventHandlers.push(webHandlers)
+
+      const win = makeWindow(order, handlers, webHandlers)
 
       windows.push(win)
 
@@ -101,6 +117,9 @@ function harness({
     onClosed: () => {
       closedCount += 1
     },
+    onRendererReset: () => {
+      rendererResets += 1
+    },
     platform,
     preloadPath: '/tmp/preload.js',
     rendererBase: () => 'http://127.0.0.1:5174',
@@ -108,7 +127,15 @@ function harness({
     wireWindow: () => order.push('wire')
   }
 
-  return { closed: () => closedCount, controller: createPane3dController(deps), created, order, windows }
+  return {
+    closed: () => closedCount,
+    controller: createPane3dController(deps),
+    created,
+    fireLoad: (index: number) => webEventHandlers[index]?.get('did-start-loading')?.forEach(handler => handler()),
+    order,
+    rendererResets: () => rendererResets,
+    windows
+  }
 }
 
 test('pane spawns transparent, frameless, non-focusable, over the work area', () => {
@@ -215,6 +242,35 @@ test('a close still in flight is destroyed before its replacement spawns', () =>
 
   assert.equal(h.order.includes('destroy'), true)
   assert.equal(h.created.length, 2)
+})
+
+test('a spawn drops renderer readiness, and so does an in-place reload', () => {
+  const h = harness()
+
+  h.controller.open()
+  assert.equal(h.rendererResets(), 1, 'a fresh renderer has announced nothing yet')
+
+  h.fireLoad(0)
+  assert.equal(h.rendererResets(), 2, 'a reload drops readiness until ready arrives again')
+})
+
+test('a replacement spawn resets readiness even when the stale close is swallowed', () => {
+  const h = harness()
+
+  h.controller.open()
+
+  // The stale window never echoes 'closed', so its handler cannot reset state.
+  h.windows[0].close = () => {
+    h.order.push('close')
+  }
+
+  h.controller.close()
+  assert.equal(h.rendererResets(), 1)
+
+  h.controller.open()
+
+  assert.equal(h.created.length, 2)
+  assert.equal(h.rendererResets(), 2, 'the replacement resets readiness for the new renderer')
 })
 
 test('rehome covers the work area of the display containing the anchor, once', () => {

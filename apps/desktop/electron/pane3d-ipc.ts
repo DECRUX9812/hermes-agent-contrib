@@ -42,6 +42,13 @@ export const PANE3D_CHANNELS = {
 
 export interface Pane3dRelayDeps {
   isPaneOpen: () => boolean
+  /**
+   * Identity of the current pane renderer (its webContents, or null when there
+   * is none). Readiness belongs to one renderer: a replacement window has a new
+   * key, so a message sent right after reopening queues again instead of being
+   * delivered to a renderer that has not subscribed yet.
+   */
+  getPaneKey: () => unknown
   openPane: () => void
   closePane: () => void
   sendToPane: (state: PaneState) => void
@@ -65,6 +72,8 @@ export interface Pane3dRelay {
   summon: (avatar: AvatarId) => void
   dismiss: (avatar: AvatarId) => void
   onPaneControl: (message: PaneControl, fromPane: boolean) => void
+  /** Drop readiness without touching the queue — a fresh main-frame load. */
+  resetReadiness: () => void
 }
 
 /**
@@ -86,13 +95,28 @@ export function isPaneSender(
 /**
  * The pane-side protocol state machine. A state addressed to a closed pane opens
  * it and waits for the renderer's `ready`; notifications are queued, never
- * dropped (architecture §4). `summon`/`dismiss` are director commands that only
- * make sense while the pane is up, so they never open it.
+ * dropped (architecture §4).
+ *
+ * Readiness is keyed to the renderer that announced it (`getPaneKey`), so
+ * close→reopen and a stale-window replacement start unready again even though
+ * the previous renderer had said ready; `resetReadiness()` covers a reload of
+ * the same renderer. `summon`/`dismiss` are director commands that only make
+ * sense while the pane is up, so they never open it.
  */
 export function createPane3dRelay(deps: Pane3dRelayDeps): Pane3dRelay {
   const newId = deps.newId ?? (() => randomUUID())
-  let ready = false
+  let readyKey: unknown = null
   let pending: PaneState[] = []
+
+  const paneReady = (): boolean => {
+    const key = deps.getPaneKey()
+
+    return key !== null && key !== undefined && key === readyKey
+  }
+
+  const resetReadiness = () => {
+    readyKey = null
+  }
 
   const deliver = (state: PaneState, openIfClosed: boolean) => {
     if (!deps.isPaneOpen()) {
@@ -102,13 +126,13 @@ export function createPane3dRelay(deps: Pane3dRelayDeps): Pane3dRelay {
 
       deps.openPane()
       // A fresh pane has not announced itself yet, whatever the last one did.
-      ready = false
+      resetReadiness()
       pending.push(state)
 
       return
     }
 
-    if (ready) {
+    if (paneReady()) {
       deps.sendToPane(state)
 
       return
@@ -124,7 +148,7 @@ export function createPane3dRelay(deps: Pane3dRelayDeps): Pane3dRelay {
 
     switch (message.type) {
       case 'ready': {
-        ready = true
+        readyKey = deps.getPaneKey()
         const queued = pending
         pending = []
         queued.forEach(state => deps.sendToPane(state))
@@ -178,6 +202,7 @@ export function createPane3dRelay(deps: Pane3dRelayDeps): Pane3dRelay {
     },
     onPaneControl,
     playDemo: (script = 'launch') => deliver({ script, type: 'demo' }, true),
+    resetReadiness,
     send: state => deliver(state, false),
     summon: avatar => deliver({ type: 'summon', avatar }, false)
   }
@@ -213,6 +238,13 @@ export function registerPane3dIpc(deps: Pane3dIpcDeps): { relay: Pane3dRelay } {
       withPane(win => applyPaneHitRegions(win, regions, process.platform, win.webContents.getZoomFactor()))
     },
     closePane: deps.closePane3d,
+    getPaneKey: () => {
+      const win = deps.getPaneWindow()
+
+      // The webContents object itself is the renderer identity: a replacement
+      // window always has a new one, so readiness can never leak across it.
+      return win && !win.isDestroyed() ? win.webContents : null
+    },
     isPaneOpen: deps.isPane3dOpen,
     newId: deps.newId,
     onReady: deps.onPaneReady,

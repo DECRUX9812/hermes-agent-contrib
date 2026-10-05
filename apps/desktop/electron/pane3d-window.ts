@@ -22,6 +22,13 @@ export interface Pane3dWindowDeps {
   installLifecycle: (win: BrowserWindow) => void
   attachConsole: (win: BrowserWindow) => void
   onClosed: () => void
+  /**
+   * A pane renderer became non-authoritative: a new window spawned (including
+   * the replacement for a still-closing one) or the current renderer started a
+   * fresh main-frame load (dev reload). The relay must drop readiness so the
+   * next messages queue for the renderer that is actually coming up.
+   */
+  onRendererReset?: () => void
   getAnchor?: () => ScreenRect | null
   getDisplays?: () => DisplayLike[]
   getPrimaryDisplay?: () => DisplayLike | null
@@ -55,6 +62,10 @@ export function createPane3dController(deps: Pane3dWindowDeps): Pane3dController
   const alive = (win: BrowserWindow | null): win is BrowserWindow => Boolean(win && !win.isDestroyed())
 
   const spawn = (): BrowserWindow => {
+    // Whatever the previous renderer announced, this one has not spoken yet —
+    // and neither has a renderer that reloads in place (below).
+    deps.onRendererReset?.()
+
     const bounds = resolvePaneBounds(getDisplays(), deps.getAnchor?.() ?? null, getPrimaryDisplay()) ?? FALLBACK_BOUNDS
 
     const win = createWindow({
@@ -126,6 +137,10 @@ export function createPane3dController(deps: Pane3dWindowDeps): Pane3dController
       closing = false
       deps.onClosed()
     })
+
+    // A reload is a fresh renderer on the same window: drop readiness until it
+    // announces itself again (a spawn already reset it above).
+    win.webContents.on('did-start-loading', () => deps.onRendererReset?.())
 
     deps.attachConsole(win)
     deps.loadWindowUrl(win, paneUrl(deps.rendererBase()), 'Pane 3D')

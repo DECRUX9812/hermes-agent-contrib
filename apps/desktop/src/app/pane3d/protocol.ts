@@ -20,7 +20,7 @@ export type AnchorKind = 'hermes-browser' | 'os-window' | 'desktop'
 
 export interface PaneAnchor {
   kind: AnchorKind
-  /** Pane-window-local DIP. */
+  /** Pane-window-local CSS px (the pane's zoom factor is already applied). */
   rect: ScreenRect
   label: string
 }

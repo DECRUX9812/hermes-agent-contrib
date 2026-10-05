@@ -3,39 +3,30 @@
  * VAL-CROSS-004).
  *
  * The selection rules are pure data (`pickHermesGuest`), the space conversion is
- * pure (`toPaneLocal`) and change detection is pure (`anchorEqual`). The service
- * orchestration is driven through injected window/guest handles and injected
- * timers, so `stop()` cleanup is provable without booting Electron.
- *
- * `electron` is mocked because the module type-imports it; nothing here touches
- * a real Electron primitive.
+ * pure (`toPaneLocal`), change detection is pure (`anchorEqual`), the consent
+ * rule is pure (`titlesAvailableFor`) and the probe budget is pure
+ * (`withTimeout`). The service session is driven through injected window/guest
+ * handles and injected timers, so re-entrancy, generation invalidation and
+ * `stop()` cleanup are provable without booting Electron.
  */
 
 import assert from 'node:assert/strict'
 
 import { test, vi } from 'vitest'
 
-vi.mock('electron', () => ({
-  BrowserWindow: { fromWebContents: () => null, getAllWindows: () => [] },
-  screen: {},
-  systemPreferences: { getAnimationSettings: () => ({ prefersReducedMotion: false }) },
-  webContents: { getAllWebContents: () => [] }
-}))
-
 import type { PaneAnchor, PaneState, ScreenRect } from '../src/app/pane3d/protocol'
 
+import { createAnchorService } from './pane3d-anchor'
 import {
   anchorEqual,
   type AnchorGuestCandidate,
-  type AnchorGuestHandle,
   type AnchorHostCandidate,
-  type AnchorHostWindow,
-  type AnchorPaneWindow,
-  type AnchorServiceDeps,
-  createAnchorService,
   pickHermesGuest,
-  toPaneLocal
-} from './pane3d-anchor'
+  titlesAvailableFor,
+  toPaneLocal,
+  withTimeout
+} from './pane3d-anchor-pick'
+import type { AnchorGuestHandle, AnchorHostWindow, AnchorPaneWindow, AnchorServiceDeps } from './pane3d-anchor-types'
 
 const rect = (x: number, y: number, width: number, height: number): ScreenRect => ({ height, width, x, y })
 
@@ -53,6 +44,8 @@ const host = (over: Partial<AnchorHostCandidate> = {}): AnchorHostCandidate => (
   focused: false,
   guests: [guest()],
   lastFocusedAt: 0,
+  minimized: false,
+  visible: true,
   windowId: 1,
   zoom: 1,
   ...over
@@ -103,6 +96,20 @@ test('ignores a host whose only guest has zero size', () => {
   assert.equal(picked, null)
 })
 
+test('a hidden host loses even when it was the most recently focused one', () => {
+  const picked = pickHermesGuest([
+    host({ focused: true, guests: [guest({ webContentsId: 1 })], lastFocusedAt: 9_000, visible: false, windowId: 1 }),
+    host({ guests: [guest({ webContentsId: 2 })], lastFocusedAt: 1, windowId: 2 })
+  ])
+
+  assert.equal(picked?.host.windowId, 2)
+  assert.equal(picked?.guest.webContentsId, 2)
+})
+
+test('a minimized host is never eligible, even alone', () => {
+  assert.equal(pickHermesGuest([host({ focused: true, minimized: true })]), null)
+})
+
 // ── toPaneLocal ────────────────────────────────────────────────────────────
 
 test('converts a screen rect to pane-local CSS px through the pane zoom and origin', () => {
@@ -139,6 +146,40 @@ test('detects a kind or label change even when the rect is identical', () => {
   assert.equal(anchorEqual(anchor(), anchor({ label: 'other' })), false)
 })
 
+// ── titlesAvailableFor (platform as data) ──────────────────────────────────
+
+test('only macOS without the Screen Recording grant withholds titles', () => {
+  assert.equal(titlesAvailableFor('darwin', 'granted'), true)
+  assert.equal(titlesAvailableFor('darwin', 'denied'), false)
+  assert.equal(titlesAvailableFor('darwin', null), false)
+  assert.equal(titlesAvailableFor('darwin', 'restricted'), false)
+  assert.equal(titlesAvailableFor('linux', 'denied'), true)
+  assert.equal(titlesAvailableFor('linux', undefined), true)
+  assert.equal(titlesAvailableFor('win32', 'denied'), true)
+})
+
+// ── withTimeout ────────────────────────────────────────────────────────────
+
+test('withTimeout resolves the value when the promise is fast', async () => {
+  assert.equal(await withTimeout(Promise.resolve('ok'), 1000, 'fallback'), 'ok')
+})
+
+test('withTimeout resolves the fallback when the promise never settles or rejects', async () => {
+  vi.useFakeTimers()
+
+  try {
+    const hung = withTimeout(new Promise<string>(() => {}), 1000, 'fallback')
+    const rejected = withTimeout(Promise.reject(new Error('boom')), 1000, 'fallback')
+
+    await vi.advanceTimersByTimeAsync(1000)
+
+    assert.equal(await hung, 'fallback')
+    assert.equal(await rejected, 'fallback')
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
 // ── createAnchorService ────────────────────────────────────────────────────
 
 interface FakeHost extends AnchorHostWindow {
@@ -155,6 +196,8 @@ function makeHost(over: Partial<FakeHost> = {}): FakeHost {
     id: 1,
     isDestroyed: () => false,
     isFocused: () => false,
+    isMinimized: () => false,
+    isVisible: () => true,
     listeners,
     on: (event, listener) => listeners.set(event, [...(listeners.get(event) ?? []), listener]),
     probe: async () => [guest()],
@@ -206,7 +249,8 @@ function harness(over: Partial<AnchorServiceDeps> = {}) {
   const pane: AnchorPaneWindow = {
     getContentBounds: () => rect(240, 108, 1440, 864),
     getZoomFactor: () => 0.9,
-    isDestroyed: () => false
+    isDestroyed: () => false,
+    isVisible: () => true
   }
 
   const deps: AnchorServiceDeps = {
@@ -228,6 +272,20 @@ function harness(over: Partial<AnchorServiceDeps> = {}) {
   }
 
   return { cleared, deps, intervals, pane, rehomed, service: createAnchorService(deps), states }
+}
+
+const flush = () => new Promise(resolve => setTimeout(resolve, 0))
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  let reject!: (error: unknown) => void
+
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res
+    reject = rej
+  })
+
+  return { promise, reject, resolve }
 }
 
 test('hermes-browser guest wins and the anchor is pushed in init as pane-local CSS px', async () => {
@@ -294,6 +352,40 @@ test('floats on the desktop when there is neither a browser guest nor an OS wind
   harnessed.service.stop()
 })
 
+test('a hidden or minimized host is skipped after the probe even when most recently focused', async () => {
+  const hidden = makeHost({
+    isFocused: () => true,
+    isVisible: () => false,
+    probe: async () => [guest({ webContentsId: 11 })]
+  })
+
+  const hiddenGuest = makeGuest({ getHost: () => hidden, webContentsId: 11 })
+
+  const hiddenHarness = harness({
+    enumerateOsWindow: async () => ({ app: 'Xterm', bounds: rect(0, 0, 800, 600), title: 'Terminal' }),
+    listGuests: () => [hiddenGuest],
+    listHosts: () => [hidden]
+  })
+
+  await hiddenHarness.service.start()
+
+  const hiddenInit = hiddenHarness.states[0]
+
+  assert.equal(hiddenInit.type === 'init' && hiddenInit.anchor.kind, 'os-window')
+  hiddenHarness.service.stop()
+
+  const minimized = makeHost({ isFocused: () => true, isMinimized: () => true })
+  const minimizedGuest = makeGuest({ getHost: () => minimized })
+  const minimizedHarness = harness({ listGuests: () => [minimizedGuest], listHosts: () => [minimized] })
+
+  await minimizedHarness.service.start()
+
+  const minimizedInit = minimizedHarness.states[0]
+
+  assert.equal(minimizedInit.type === 'init' && minimizedInit.anchor.kind, 'desktop')
+  minimizedHarness.service.stop()
+})
+
 test('pushes an anchor update on a real move but ignores sub-pixel jitter', async () => {
   let rx = 100
   const h = makeHost({ probe: async () => [guest({ rect: rect(rx, 50, 900, 450), webContentsId: 11 })] })
@@ -309,17 +401,182 @@ test('pushes an anchor update on a real move but ignores sub-pixel jitter', asyn
 
   // The poll tick is what publishes changes.
   harnessed.intervals[0].fn()
-  await new Promise(resolve => setTimeout(resolve, 0))
+  await flush()
   assert.equal(harnessed.states.length, 1)
 
   // Real move: one push.
   rx = 140
   harnessed.intervals[0].fn()
-  await new Promise(resolve => setTimeout(resolve, 0))
+  await flush()
   assert.equal(harnessed.states.length, 2)
   assert.equal(harnessed.states[1].type, 'anchor')
 
   harnessed.service.stop()
+})
+
+test('a second ready while running refreshes init once, with no new poll or listeners', async () => {
+  const h = makeHost({ probe: async () => [guest({ webContentsId: 11 })] })
+  const g = makeGuest({ getHost: () => h })
+  const harnessed = harness({ listGuests: () => [g], listHosts: () => [h] })
+
+  await harnessed.service.start()
+  assert.equal(harnessed.states.length, 1)
+
+  const hostListenersBefore = [...h.listeners.values()].reduce((total, list) => total + list.length, 0)
+  const guestListenersBefore = [...g.listeners.values()].reduce((total, list) => total + list.length, 0)
+
+  // The renderer reloaded: same window, a new `ready`, a moved anchor.
+  h.probe = async () => [guest({ rect: rect(200, 60, 900, 450), webContentsId: 11 })]
+  await harnessed.service.start()
+
+  assert.equal(harnessed.states.length, 2)
+  assert.equal(harnessed.states[1].type, 'init')
+  assert.equal(harnessed.states[1].type === 'init' && harnessed.states[1].anchor.rect.x, 200)
+  assert.equal(harnessed.intervals.length, 1, 'no second poll may be added')
+  assert.equal(
+    [...h.listeners.values()].reduce((total, list) => total + list.length, 0),
+    hostListenersBefore
+  )
+  assert.equal(
+    [...g.listeners.values()].reduce((total, list) => total + list.length, 0),
+    guestListenersBefore
+  )
+
+  harnessed.service.stop()
+})
+
+test('a stop()+start() during an in-flight pick leaves one live poll and no stale init', async () => {
+  const first = deferred<AnchorGuestCandidate[]>()
+  const second = deferred<AnchorGuestCandidate[]>()
+  const probes: Array<ReturnType<typeof deferred<AnchorGuestCandidate[]>>> = []
+
+  const h = makeHost({
+    probe: () => {
+      const probe = probes.length === 0 ? first : second
+
+      probes.push(probe)
+
+      return probe.promise
+    }
+  })
+
+  const g = makeGuest({ getHost: () => h })
+  const harnessed = harness({ listGuests: () => [g], listHosts: () => [h] })
+
+  const startFirst = harnessed.service.start()
+  // The first start is suspended on its probe now.
+  assert.equal(probes.length, 1)
+
+  harnessed.service.stop()
+  const startSecond = harnessed.service.start()
+  assert.equal(probes.length, 2)
+
+  first.resolve([guest({ webContentsId: 11 })])
+  second.resolve([guest({ webContentsId: 11 })])
+  await startFirst
+  await startSecond
+
+  assert.equal(harnessed.intervals.length, 1, 'the aborted start must not leak a poll')
+  assert.equal(harnessed.states.length, 1, 'the aborted start must not push an init')
+  assert.equal(harnessed.states[0].type, 'init')
+
+  harnessed.service.stop()
+
+  assert.deepEqual(harnessed.cleared, [1])
+  assert.equal(harnessed.service.isRunning(), false)
+  ;[...h.listeners.values()].forEach(list => assert.equal(list.length, 0))
+  ;[...g.listeners.values()].forEach(list => assert.equal(list.length, 0))
+})
+
+test('poll ticks probe nothing while the pane is hidden and resume when it is visible', async () => {
+  let visible = true
+  let probes = 0
+  let osCalls = 0
+
+  const h = makeHost({
+    probe: async () => {
+      probes += 1
+
+      return [guest({ webContentsId: 11 })]
+    }
+  })
+
+  const g = makeGuest({ getHost: () => h })
+
+  const pane: AnchorPaneWindow = {
+    getContentBounds: () => rect(240, 108, 1440, 864),
+    getZoomFactor: () => 0.9,
+    isDestroyed: () => false,
+    isVisible: () => visible
+  }
+
+  const harnessed = harness({
+    enumerateOsWindow: async () => {
+      osCalls += 1
+
+      return null
+    },
+    getPane: () => pane,
+    listGuests: () => [g],
+    listHosts: () => [h]
+  })
+
+  await harnessed.service.start()
+  const probesAfterStart = probes
+
+  assert.ok(probesAfterStart > 0, 'the init anchor needs a probe')
+
+  visible = false
+  harnessed.intervals[0].fn()
+  await flush()
+  assert.equal(probes, probesAfterStart, 'a hidden pane must not be probed')
+  assert.equal(osCalls, 0, 'a hidden pane must not enumerate OS windows')
+
+  visible = true
+  harnessed.intervals[0].fn()
+  await flush()
+  assert.ok(probes > probesAfterStart, 'picking resumes once the pane is visible')
+
+  harnessed.service.stop()
+})
+
+test('a probe that never resolves times out and does not block the next pick', async () => {
+  vi.useFakeTimers()
+
+  try {
+    let hang = true
+    let probes = 0
+
+    const h = makeHost({
+      probe: () => {
+        probes += 1
+
+        return hang ? new Promise<AnchorGuestCandidate[]>(() => {}) : Promise.resolve([guest({ webContentsId: 11 })])
+      }
+    })
+
+    const g = makeGuest({ getHost: () => h })
+    const harnessed = harness({ listGuests: () => [g], listHosts: () => [h] })
+
+    const started = harnessed.service.start()
+
+    await vi.advanceTimersByTimeAsync(1000)
+    await started
+
+    assert.equal(harnessed.states[0].type === 'init' && harnessed.states[0].anchor.kind, 'desktop')
+    assert.equal(probes, 1)
+
+    // The hung host is gone: the next pick is not stuck behind it.
+    hang = false
+    const anchorNow = await harnessed.service.pick()
+
+    assert.equal(probes, 2)
+    assert.equal(anchorNow.kind, 'hermes-browser')
+
+    harnessed.service.stop()
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 test('stop() clears the poll and removes every window and guest listener', async () => {

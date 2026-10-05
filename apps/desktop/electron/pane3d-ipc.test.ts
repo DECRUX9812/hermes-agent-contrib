@@ -56,12 +56,14 @@ function relayHarness({ paneOpen = true } = {}) {
   let closed = 0
   let raised = 0
   let ready = 0
+  let key: unknown = paneOpen ? 'pane-1' : null
 
   const relay = createPane3dRelay({
     applyHitRegions: regions => shapes.push(regions),
     closePane: () => {
       closed += 1
     },
+    getPaneKey: () => key,
     isPaneOpen: () => paneOpen,
     newId: () => 'notify-1',
     onReady: () => {
@@ -88,6 +90,11 @@ function relayHarness({ paneOpen = true } = {}) {
     ready: () => ready,
     relay,
     sent,
+    /** Model a renderer swap: null while closed, a fresh key when it reopens. */
+    setRenderer: (next: string | null) => {
+      paneOpen = next !== null
+      key = next
+    },
     shapes,
     toHost
   }
@@ -133,6 +140,45 @@ test('notify sent after ready goes straight to the pane', () => {
 
   assert.equal(h.sent.length, 1)
   assert.equal(h.opened(), 0)
+})
+
+test('readiness belongs to one renderer: a replacement is not ready until it says so', () => {
+  const h = relayHarness({ paneOpen: true })
+
+  h.relay.onPaneControl({ type: 'ready' }, true)
+  h.relay.notify({ avatar: 'muse', title: 'One', body: '1' })
+  assert.equal(h.sent.length, 1)
+
+  // Close, then a fresh window spawns with its own renderer.
+  h.setRenderer(null)
+  h.setRenderer('pane-2')
+
+  // The old renderer's `ready` must not authorize delivery to the new one.
+  h.relay.notify({ avatar: 'muse', title: 'Two', body: '2' })
+  h.relay.playDemo('launch')
+  assert.equal(h.sent.length, 1, 'nothing may reach a renderer that has not said ready')
+
+  h.relay.onPaneControl({ type: 'ready' }, true)
+
+  assert.equal(h.sent.length, 3)
+  assert.equal(h.sent.filter(state => state.type === 'notify').length, 2, 'each notify delivered exactly once')
+  assert.equal(h.sent.filter(state => state.type === 'demo').length, 1)
+})
+
+test('resetReadiness makes the next message wait for the reloaded renderer', () => {
+  const h = relayHarness({ paneOpen: true })
+
+  h.relay.onPaneControl({ type: 'ready' }, true)
+  h.relay.notify({ avatar: 'muse', title: 'A', body: 'a' })
+  assert.equal(h.sent.length, 1)
+
+  // Same window, a fresh main-frame load: the old subscription is gone.
+  h.relay.resetReadiness()
+  h.relay.notify({ avatar: 'muse', title: 'B', body: 'b' })
+  assert.equal(h.sent.length, 1)
+
+  h.relay.onPaneControl({ type: 'ready' }, true)
+  assert.equal(h.sent.length, 2)
 })
 
 test('only the pane window may flip focus, ignore-mouse or forward control', () => {
