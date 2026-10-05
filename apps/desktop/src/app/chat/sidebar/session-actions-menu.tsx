@@ -46,6 +46,7 @@ import { exportSessionDeliverable } from '@/lib/session-deliverable'
 import { exportSession } from '@/lib/session-export'
 import { handoffTargets, runSessionHandoff } from '@/lib/session-handoff'
 import { exportSessionMarkdown, sessionMarkdownText } from '@/lib/session-markdown'
+import { shareSessionLink } from '@/lib/session-share'
 import { useSessionSlice } from '@/lib/use-session-slice'
 import { revealArtifactsRail } from '@/store/artifact-rail'
 import { activeGateway } from '@/store/gateway'
@@ -658,6 +659,17 @@ function useSessionActions({
       onSelect: () => {
         triggerHaptic('selection')
         void exportSessionMarkdown(sessionId, { profile, title })
+      }
+    }),
+    // Read-only live share link (#competitive): a revocable capability URL the
+    // session owner can hand to anyone — the viewer polls /api/share/view.
+    spec({
+      disabled: !sessionId,
+      icon: 'link',
+      label: r.shareLink,
+      onSelect: () => {
+        triggerHaptic('selection')
+        void shareSessionLink(sessionId, profile)
       }
     }),
     // Per-session artifact rail (#32): open the chat (focus it if it's already

@@ -29,4 +29,9 @@ PUBLIC_API_PATHS: frozenset[str] = frozenset({
     # /api/cron/fire: a phone has no credential until it redeems a short-lived,
     # single-use, rate-limited code minted by an authenticated operator. Every
     # other /api/mobile/* route stays gated.
-    "/api/mobile/pair"})
+    "/api/mobile/pair",
+    # Session share-link transcript read (web_routers/share.py). Self-secured:
+    # the ?t= capability token resolves to one (profile, session) grant minted
+    # by an authenticated owner and reads only that session's sanitized
+    # transcript. Owner operations (create/revoke/list) stay gated.
+    "/api/share/view"})

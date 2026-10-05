@@ -40,7 +40,10 @@ _GATE_PUBLIC_PREFIXES: tuple[str, ...] = (
     "/auth/login", "/auth/callback", "/auth/native/authorize", "/auth/native/token",
     "/auth/native/refresh", "/auth/password-login", "/auth/logout", "/login",
     "/api/auth/providers", "/api/mcp/oauth/callback/",
-    "/assets/", "/favicon.ico", "/ds-assets/", "/fonts/", "/fonts-terminal/")
+    "/assets/", "/favicon.ico", "/ds-assets/", "/fonts/", "/fonts-terminal/",
+    # Session share viewer (capability-token self-secured; web_routers/share.py):
+    # an unauthenticated external viewer must reach the page, not /login.
+    "/share")
 
 
 def _path_is_public(path: str) -> bool:

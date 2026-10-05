@@ -3459,6 +3459,7 @@ export interface Translations {
       copyId: string
       export: string
       exportMarkdown: string
+      shareLink: string
       exportDeliverable: string
       copyMarkdown: string
       artifacts: string
@@ -5235,6 +5236,8 @@ export interface Translations {
     hydrationSyncing: (profile: string) => string
     sessionExported: string
     sessionExportFailed: string
+    shareLinkCopied: string
+    shareLinkFailed: string
     markdownUser: string
     markdownAssistant: string
     markdownSystem: string
