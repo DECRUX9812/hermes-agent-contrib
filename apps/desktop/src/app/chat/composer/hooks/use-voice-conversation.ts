@@ -381,7 +381,10 @@ export function useVoiceConversation({
             return
           }
 
-          notifyError(error, voiceCopy.transcriptionFailed)
+          notifyError(error, voiceCopy.transcriptionFailed, {
+            id: 'voice.transcriptionFailed',
+            placement: 'bottom-right'
+          })
 
           if (enabledRef.current && !mutedRef.current && !busyRef.current) {
             pendingStartRef.current = true
@@ -650,7 +653,10 @@ export function useVoiceConversation({
         }
       } catch (error) {
         if (live()) {
-          notifyError(error, voiceCopy.transcriptionFailed)
+          notifyError(error, voiceCopy.transcriptionFailed, {
+            id: 'voice.transcriptionFailed',
+            placement: 'bottom-right'
+          })
           resumeListening()
         }
       }

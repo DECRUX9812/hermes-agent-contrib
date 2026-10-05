@@ -123,7 +123,10 @@ export function useVoiceRecorder({
       }
     } catch (error) {
       if (live()) {
-        notifyError(error, voiceCopy.transcriptionFailed)
+        notifyError(error, voiceCopy.transcriptionFailed, {
+          id: 'voice.transcriptionFailed',
+          placement: 'bottom-right'
+        })
       }
     } finally {
       if (live()) {
