@@ -232,7 +232,7 @@ export const arSettings = {
         desktopFailed: 'فشل تثبيت إضافة سطح المكتب',
         missingEnv: (name, vars) =>
           `${name} مثبّت لكنه يحتاج مفتاحًا ليعمل: ${vars}. أضفه الآن وإلا ستفشل أدوات الإضافة.`
-      },
+      }
     },
     notifications: {
       title: 'الإشعارات',

@@ -129,7 +129,7 @@ export const zhHantSettings = {
         bundled: '內建',
         disk: '磁盤',
         runtime: '執行時'
-      },
+      }
     },
     closeSettings: '關閉設定',
     exportConfig: '匯出設定',
