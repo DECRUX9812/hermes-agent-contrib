@@ -68,3 +68,38 @@ export function setRailSectionCollapsed(id: RailSectionId, collapsed: boolean): 
     /* persistence is best-effort — the choice applies either way */
   }
 }
+
+/** The rail's tabs (Muse-style): what the bot is doing, what it needs from
+ *  you, what runs on its own, and the bot itself. */
+export const RAIL_TAB_IDS = ['activity', 'approvals', 'scheduled', 'bot'] as const
+
+export type RailTabId = (typeof RAIL_TAB_IDS)[number]
+
+const RAIL_TAB_STORAGE_KEY = 'mission-rail-tab-v1'
+
+export const $railTab = atom<RailTabId>('activity')
+
+export function hydrateRailTab(): void {
+  try {
+    // @ts-expect-error same omitted fallback as hydrateRailSections above.
+    Promise.resolve(getPluginCtx()?.storage?.get?.(RAIL_TAB_STORAGE_KEY))
+      .then(value => {
+        if ((RAIL_TAB_IDS as readonly unknown[]).includes(value)) {
+          $railTab.set(value as RailTabId)
+        }
+      })
+      .catch(() => undefined)
+  } catch {
+    /* no storage — Activity stays */
+  }
+}
+
+export function setRailTab(id: RailTabId): void {
+  $railTab.set(id)
+
+  try {
+    void getPluginCtx()?.storage?.set?.(RAIL_TAB_STORAGE_KEY, id)
+  } catch {
+    /* persistence is best-effort — the tab switches either way */
+  }
+}

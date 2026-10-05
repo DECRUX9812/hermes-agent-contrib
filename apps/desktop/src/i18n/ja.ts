@@ -2,6 +2,8 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { defineLocale } from './define-locale'
 import { introJa } from './intro-ja'
+import { jaModelMenu } from './ja_model_menu'
+import { jaPluginSettings } from './ja_plugins'
 
 export const ja = defineLocale({
   todayBrief: {
@@ -568,23 +570,14 @@ export const ja = defineLocale({
           `${name} はインストールされましたが、動作にはキーが必要です：${vars}。今すぐ追加しないとプラグインのツールは失敗します。`
       },
       title: 'デスクトッププラグイン',
-      blurb:
-        'agent ではなくこのアプリを拡張 — どのプロファイル・ゲートウェイ・マシンに接続してもアプリ全体に一度だけインストールされます。同梱または desktop-plugins フォルダに配置。切替は即時反映されます。',
-      count: n => `${n} 件インストール済み`,
       rescan: '再スキャン',
       reveal: 'ファイルマネージャーで表示',
-      enable: '有効化',
-      disable: '無効化',
       failed: '失敗',
-      empty: 'デスクトッププラグインはまだインストールされていません。',
       kinds: {
         bundled: '同梱',
         disk: 'ディスク上',
         runtime: 'ランタイム'
       },
-      agentHalfMissing: 'ここには agent 側がありません',
-      agentHalfMissingTip:
-        'これは同梱プラグインのデスクトップ側ですが、agent 側は現在接続中のバックエンド/プロファイルにインストールされていません。機能 → プラグインからインストールしてください。'
     },
     closeSettings: '設定を閉じる',
     exportConfig: '設定を書き出す',
@@ -593,6 +586,7 @@ export const ja = defineLocale({
     resetConfirm: 'すべての設定を Hermes のデフォルトに戻しますか？',
     exportFailed: '書き出しに失敗しました',
     resetFailed: 'リセットに失敗しました',
+    pluginPages: jaPluginSettings.pluginPages,
     nav: {
       providers: 'プロバイダー',
       providerAccounts: 'アカウント',
@@ -610,7 +604,8 @@ export const ja = defineLocale({
       about: '情報',
       billing: '請求',
       notifications: '通知',
-      vault: 'パスワードとログイン'
+      vault: 'パスワードとログイン',
+      plugins: 'プラグイン'
     },
     vault: {
       title: 'パスワードとログイン',
@@ -2421,7 +2416,6 @@ export const ja = defineLocale({
         save: '設定を保存',
         saved: (name: string) => `${name} の設定を保存しました。`,
         saveFailed: (name: string) => `${name} の設定を保存できませんでした`,
-        optional: '（任意）',
         secretSet: '••••••••（設定済み）',
         secretStoredAs: (env: string) =>
           `プロファイルの .env に ${env} として保存され、config.yaml には保存されません。空欄のままなら現在の値を維持します。`
@@ -4255,22 +4249,7 @@ export const ja = defineLocale({
     windowControls: 'ウィンドウコントロール',
     paneControls: 'ペインコントロール',
     appControls: 'アプリコントロール',
-    modelMenu: {
-      search: 'モデルを検索',
-      noModels: 'モデルが見つかりません',
-      editModels: 'モデルを編集…',
-      followDefault: '設定のデフォルトを使用',
-      refreshModels: 'モデルを更新',
-      favorites: 'お気に入り',
-      addFavorite: 'お気に入りに追加',
-      removeFavorite: 'お気に入りから削除',
-      favoriteShortcut: '⇧ クリック',
-      fast: '高速',
-      free: '無料',
-      cacheRead: 'キャッシュ読み取り',
-      priceTitle: (input: string, output: string, cache: string) =>
-        `入力 ${input}/Mtok · 出力 ${output}/Mtok` + (cache ? ` · キャッシュ読み取り ${cache}/Mtok` : '')
-    },
+    modelMenu: jaModelMenu,
     modelOptions: {
       noOptions: 'このモデルにはオプションがありません',
       options: 'オプション',
@@ -5150,9 +5129,6 @@ export const ja = defineLocale({
     sessionUnavailable: 'セッションが利用できません',
     createSessionFailed: '新しいセッションを作成できませんでした',
     promptFailed: 'プロンプトに失敗しました',
-    staleSessionTitle: 'チャットが最新ではありません',
-    staleSessionBody:
-      'このウィンドウは同じチャットの別ビューより遅れています。最新のメッセージを読み込みました。送信する場合はもう一度送ってください。',
     providerCredentialRequired: '最初のメッセージを送信する前にプロバイダー認証情報を追加してください。',
     emptySlashCommand: '空のスラッシュコマンド',
     slashCommandIgnoredTitle: 'コマンドが送信されませんでした',

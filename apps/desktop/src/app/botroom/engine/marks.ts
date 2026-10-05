@@ -55,7 +55,7 @@ function extrudePart(part: MarkPart): THREE.Group {
     const stroke = part.stroke ?? style.stroke
     const color = new THREE.Color(fill && fill !== 'none' ? fill : (stroke ?? '#ffffff'))
 
-    for (const shape of p.toShapes()) {
+    for (const shape of SVGLoader.createShapes(p)) {
       const geo = new THREE.ExtrudeGeometry(shape, {
         depth: 6,
         bevelEnabled: true,

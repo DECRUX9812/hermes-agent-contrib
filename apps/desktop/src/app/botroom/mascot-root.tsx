@@ -47,7 +47,7 @@ export function mountBotRoomMascotWindow(host: HTMLElement): void {
   stage.innerHTML = `
     <canvas class="hr-mw-canvas" width="${MASCOT_W}" height="${MASCOT_H}"></canvas>
     <div class="hr-mw-status" data-kind="idle"></div>
-    <button class="hr-mw-dot" title="Ask ${esc(botName)}"></button>
+    <button class="hr-mw-dot" aria-label="Ask ${esc(botName)}"></button>
     <div class="hr-mw-name">${esc(botName)}</div>
     <div class="hr-mw-menu">
       <button data-act="task">Give task</button>

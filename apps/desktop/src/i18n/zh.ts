@@ -2,6 +2,7 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { defineLocale } from './define-locale'
 import { introZh } from './intro-zh'
+import { zhModelMenu } from './zh_model_menu'
 
 export const zh = defineLocale({
   externalOpenFailed: {
@@ -631,6 +632,14 @@ export const zh = defineLocale({
     resetConfirm: '将所有设置恢复为 Hermes 默认值？',
     exportFailed: '导出失败',
     resetFailed: '重置失败',
+    pluginPages: {
+      blurb: '已安装插件添加的选项。每个插件都有自己的页面，有些还带子页面。',
+      empty: '还没有插件提供设置。',
+      manage: '管理插件',
+      agentSettings: '智能体设置',
+      pageCount: (n: number) => `${n} 个页面`,
+      missing: '该插件没有设置页面，可能已被禁用或卸载。'
+    },
     nav: {
       providers: '提供方',
       providerAccounts: '账号',
@@ -648,7 +657,8 @@ export const zh = defineLocale({
       about: '关于',
       billing: '账单',
       notifications: '通知',
-      vault: '密码与登录'
+      vault: '密码与登录',
+      plugins: '插件'
     },
     vault: {
       title: '密码与登录',
@@ -724,20 +734,11 @@ export const zh = defineLocale({
     },
     plugins: {
       title: '桌面插件',
-      blurb:
-        '加载到此应用中的界面扩展——随构建捆绑，或放入 desktop-plugins 文件夹（包括 Hermes 编写的插件）。禁用会即时卸载插件并在重启后保持。',
-      count: n => `已安装 ${n} 个`,
       openFolder: '打开桌面插件文件夹',
       rescan: '重新扫描',
       reveal: '在文件管理器中显示',
-      enable: '启用',
-      disable: '禁用',
       failed: '失败',
-      empty: '尚未安装桌面插件。',
       kinds: { bundled: '内置', disk: '磁盘', runtime: '运行时' },
-      agentHalfMissing: '此处缺少 agent 部分',
-      agentHalfMissingTip:
-        '这是捆绑插件的桌面部分，但其 agent 部分未安装在当前连接的后端/配置上。请在 能力 → 插件 中安装。',
       installModal: {
         installFromGit: '从 Git 安装',
         reviewRepository: '检查仓库',
@@ -4797,22 +4798,7 @@ export const zh = defineLocale({
     windowControls: '窗口控件',
     paneControls: '面板控件',
     appControls: '应用控件',
-    modelMenu: {
-      search: '搜索模型',
-      noModels: '未找到模型',
-      editModels: '编辑模型…',
-      followDefault: '使用设置中的默认模型',
-      refreshModels: '刷新模型',
-      favorites: '收藏',
-      addFavorite: '添加到收藏',
-      removeFavorite: '从收藏中移除',
-      favoriteShortcut: '⇧ 单击',
-      fast: '快速',
-      free: '免费',
-      cacheRead: '缓存读取',
-      priceTitle: (input: string, output: string, cache: string) =>
-        `输入 ${input}/Mtok · 输出 ${output}/Mtok` + (cache ? ` · 缓存读取 ${cache}/Mtok` : '')
-    },
+    modelMenu: zhModelMenu,
     modelOptions: {
       noOptions: '此模型没有可用选项',
       options: '选项',
@@ -5601,8 +5587,6 @@ export const zh = defineLocale({
     sessionUnavailable: '会话不可用',
     createSessionFailed: '无法创建新会话',
     promptFailed: '提示词发送失败',
-    staleSessionTitle: '对话已过期',
-    staleSessionBody: '此窗口落后于同一对话的其他窗口。已加载最新消息。若仍要发送请再试一次。',
     providerCredentialRequired: '发送第一条消息前请先添加提供方凭据。',
     emptySlashCommand: '空 slash 命令',
     slashCommandIgnoredTitle: '命令未发送',

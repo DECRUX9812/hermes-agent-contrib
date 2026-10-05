@@ -48,6 +48,7 @@ import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
 import { deleteProfile, getLogs, getSessionMessages, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { type ActivityTask, deriveActivityTasks } from '@/lib/activity-tasks'
 import { selectDesktopPaths } from '@/lib/desktop-fs'
 import { traceIdentityChange } from '@/lib/identity-trace'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
@@ -131,7 +132,8 @@ import { planPluginOpenSession } from './plugin-open-session-plan'
 import { sessionsHost } from './sessions'
 import { desktopSettings } from './settings'
 
-export type { DesktopSettingKey, DesktopSettingValues } from './settings'
+/** Pane, status bar and titlebar slots; see `./areas` for the mount rules. */
+export { PANES_AREA, STATUSBAR_AREAS, TITLEBAR_AREAS } from './areas'
 
 // -- state: readonly views over the app's live atoms -------------------------
 
@@ -167,6 +169,12 @@ const focusedTurnFlag = (
   )
 
 const $focusedBusy = focusedTurnFlag(state => state.busy, PRIMARY_SESSION_VIEW.$busy)
+
+/** The focused chat read as tasks (one per request, its tool calls as steps)
+ *  — the Activity view's data. Busy keeps the newest task running between calls. */
+const $focusedActivity = computed([$focusedSessionState, $focusedBusy], (state, busy) =>
+  deriveActivityTasks(state?.messages, { busy })
+)
 
 const $focusedAwaitingResponse = focusedTurnFlag(
   state => state.awaitingResponse,
@@ -781,6 +789,9 @@ export const host = {
      *  so any alias of a conversation resolves — the backend need not report
      *  a turn for the key to exist. */
     dotStateBySession: readonlyAtom<Record<string, SessionDotState>>($sessionDotStateById),
+    /** The focused chat as tasks: each request with the tool calls that
+     *  answered it, status, timing and the reply's opening sentence. */
+    focusedActivity: readonlyAtom<readonly ActivityTask[]>($focusedActivity),
     /** Runtime id of the FOCUSED chat session — the interacted tile, else the
      *  primary. Prefer this over `activeSessionId` for any readout that
      *  should follow the user between tiles (context, tokens, cost). */
@@ -1958,6 +1969,10 @@ export const host = {
 
 // -- react bridge -------------------------------------------------------------
 
+export type { DesktopSettingKey, DesktopSettingValues } from './settings'
+
+// -- ui: the design language --------------------------------------------------
+
 /** THE whole Capabilities surface (Skills / Tools / MCP tabs, installed
  *  lists, full-skill detail pane, embedded hub picker with one-click
  *  installs). For plugin dialogs pass `embedded` (tab state stays local —
@@ -1968,9 +1983,6 @@ export const host = {
  *  builds without it would route the pin to the ACTIVE gateway. Bot Mode's
  *  Advanced section is the reference consumer. */
 export { CapabilitiesView } from '@/app/capabilities'
-
-// -- ui: the design language --------------------------------------------------
-
 /** THE Connectors tab core Capabilities renders — managed apps, the user's
  *  own MCP servers, plugin servers and the catalog, with per-server enable,
  *  sign-in and live probes. Renders anywhere under the app router (a plugin
@@ -2068,13 +2080,13 @@ export {
   type SidebarNavContribution,
   WORKSPACE_PAGE_HEADER_AREA
 } from '@/app/routes'
+
 /** Appearance settings' plugin seam: register a render contribution at
  *  `APPEARANCE_AREAS.extra` to add controls at the end of the Appearance page.
  *  `ColorSwatches` is the app's own swatch grid (profile rail / project dialog
  *  look) — use it for colour picking instead of driving app widgets through
  *  React internals; pair it with `host.sessions.setColor` for session colours. */
 export { APPEARANCE_AREAS } from '@/app/settings/appearance-contrib'
-
 /** THE settings rows: `ListRow` is label + description with the control beside
  *  it (wide) or under it (narrow); `ToggleRow` is the one on/off row — a Switch,
  *  never an Off/On pill pair. Use them for preference rows in plugin panes and
@@ -2230,6 +2242,8 @@ export type {
   PluginNotificationAction,
   PluginOs,
   PluginRestOptions,
+  PluginSettingsPage,
+  PluginSettingsSubpage,
   PluginStorage
 } from '@/contrib/plugin'
 /** Mount-scoped contribution: while the rendering component is mounted, its
@@ -2238,6 +2252,11 @@ export type {
  *  `ctx.register` stays the door for permanent contributions. Namespace the
  *  id with your plugin slug (`kanban:board-switcher`). */
 export { Contribute, type ContributeProps } from '@/contrib/react/contribute'
+
+// -- contracts ----------------------------------------------------------------
+
+/** Settings ▸ Plugins entries (`ctx.registerSettingsPage`); `pluginSettingsHref` deep-links one. */
+export { pluginSettingsHref, SETTINGS_PLUGINS_AREA } from '@/contrib/settings-pages'
 export type { Contribution } from '@/contrib/types'
 /** The live gateway instance type — for typing the `gateway` prop `ConnectorsTab`
  *  takes; obtain the instance from `host.getGateway()`. */
@@ -2269,6 +2288,16 @@ export {
   useI18n,
   usePluginI18n
 } from '@/i18n'
+/** Activity tasks: the types behind `host.state.focusedActivity`, plus the
+ *  verb a step maps to and the step a list row should name. */
+export {
+  type ActivityStatus,
+  type ActivityStep,
+  type ActivityTask,
+  type ActivityVerb,
+  activityVerb,
+  currentStep
+} from '@/lib/activity-tasks'
 /** THE way to run a decorative rAF animation (avatars, shimmer, sprites):
  *  fps budget + hidden/minimized/unfocused pause + idle dormancy + teardown.
  *  Plugins must route animation clocks through this instead of raw rAF loops
@@ -2306,7 +2335,6 @@ export type { HermesOpenTarget } from '@/lib/hermes-open-target'
 /** The app's lucide icon set (RefreshCw, LayoutDashboard, Activity, …). */
 export * as icons from '@/lib/icons'
 
-export const PANES_AREA = 'panes'
 /** IME-aware Enter: true only for a real submit Enter, never a CJK composition
  *  commit (`isComposing` or the legacy keyCode 229). Use it on every plugin
  *  text field whose bare Enter performs an action. */
@@ -2317,12 +2345,6 @@ export { formatModifierToken } from '@/lib/keybinds/combo'
  *  a renderer that stays open for days. Only for values that can be
  *  regenerated — eviction costs a recompute or a refetch, never correctness. */
 export { LruCache } from '@/lib/lru-cache'
-export const STATUSBAR_AREAS = { left: 'statusBar.left', right: 'statusBar.right' } as const
-/** Titlebar slots are PERMANENT mount points: a component registered here
- *  stays mounted across chat ↔ page navigation, so `useEffect` setup/cleanup
- *  runs once per registration, not once per route. Page-owned controls that
- *  should exist only while a page is up go to `WORKSPACE_PAGE_HEADER_AREA`. */
-export const TITLEBAR_AREAS = { center: 'titleBar.center', left: 'titleBar.left', right: 'titleBar.right' } as const
 
 /** Capture a gateway file download alongside a REST read (see the SDK guide). */
 export { captureGatewayFileDownload } from '@/lib/media'
@@ -2340,6 +2362,7 @@ export { PROFILE_SWATCHES, profileColor, profileColorSoft } from '@/lib/profile-
  *  `ctx.socket` frame invalidating a query). Inside components keep using
  *  `useQueryClient`. */
 export { queryClient } from '@/lib/query-client'
+
 /** Compact labels for the reasoning levels exported from @hermes/shared, so a
  *  plugin surfacing a thinking depth uses the same spelling as the app. */
 export { reasoningEffortLabel } from '@/lib/reasoning-effort'

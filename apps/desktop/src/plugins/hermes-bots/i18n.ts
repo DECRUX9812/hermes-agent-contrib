@@ -30,6 +30,7 @@
  */
 
 import { type PluginLocaleBundles, type PluginTranslate, usePluginI18n } from '@hermes/plugin-sdk'
+import type { ActivityVerb } from '@hermes/plugin-sdk'
 import { useMemo } from 'react'
 
 import { getPluginCtx } from './shared'
@@ -734,6 +735,37 @@ type BotsMessages = {
   }
   /** G1/G8 — the focused bot's context rail: profile card up top, then the
    *  dated task log, computer panel, and routines as collapsible sections. */
+  /** The Muse-style context rail: hero, tabs, and the Activity feed that
+   *  reads the bot's chat as tasks (see lib/activity-tasks). */
+  activity: {
+    tabs: { activity: string; approvals: string; scheduled: string; bot: string }
+    emptyTitle: string
+    emptyBody: (name: string) => string
+    onItsOwn: string
+    steps: (count: number) => string
+    status: { running: string; done: string; error: string; stopped: string }
+    /** Past tense, for a finished step: "Read bot-card.tsx". */
+    verbs: Record<ActivityVerb, string>
+    /** Present tense, for the hero's live line: "Reading bot-card.tsx". */
+    doing: Record<ActivityVerb, string>
+    thinking: string
+    started: string
+    working: string
+    finished: string
+    command: string
+    input: string
+    result: string
+    noOutput: string
+    waiting: string
+    exitCode: (code: number) => string
+    took: (duration: string) => string
+    copy: string
+    pickStep: string
+    approvalsEmpty: string
+    approvalsBody: string
+    openInbox: string
+    rules: string
+  }
   rail: {
     /** Empty-state title + tab label. */
     title: string
@@ -1445,6 +1477,66 @@ const en: BotsMessages = {
     stepsDone: (done, total) => `${done}/${total} done`,
     complete: 'Complete',
     clearChecklist: 'Clear'
+  },
+  activity: {
+    tabs: { activity: 'Activity', approvals: 'Approvals', scheduled: 'Scheduled', bot: 'Bot' },
+    emptyTitle: 'Nothing yet',
+    emptyBody: name =>
+      `Ask ${name} for something and each request shows up here as its own task, with every step it took.`,
+    onItsOwn: 'Started on its own',
+    steps: count => (count === 1 ? '1 step' : `${count} steps`),
+    status: { running: 'In progress', done: 'Done', error: 'Failed', stopped: 'Stopped' },
+    verbs: {
+      asked: 'Asked you',
+      browsed: 'Browsed',
+      created: 'Created',
+      delegated: 'Delegated',
+      edited: 'Edited',
+      looked: 'Looked at',
+      operated: 'Used the computer',
+      planned: 'Updated the plan',
+      ran: 'Ran',
+      read: 'Read',
+      remembered: 'Saved to memory',
+      scheduled: 'Scheduled',
+      searched: 'Searched',
+      tracked: 'Updated the board',
+      used: 'Used'
+    },
+    doing: {
+      asked: 'Asking you',
+      browsed: 'Browsing',
+      created: 'Creating',
+      delegated: 'Delegating',
+      edited: 'Editing',
+      looked: 'Looking at',
+      operated: 'Using the computer',
+      planned: 'Planning',
+      ran: 'Running',
+      read: 'Reading',
+      remembered: 'Saving to memory',
+      scheduled: 'Scheduling',
+      searched: 'Searching',
+      tracked: 'Updating the board',
+      used: 'Using'
+    },
+    thinking: 'Thinking',
+    started: 'Started',
+    working: 'Working…',
+    finished: 'Finished',
+    command: 'Command',
+    input: 'Input',
+    result: 'Result',
+    noOutput: 'No output',
+    waiting: 'Still running. The result shows up here when it finishes.',
+    exitCode: code => `Exit code ${code}`,
+    took: duration => `Took ${duration}`,
+    copy: 'Copy',
+    pickStep: 'Pick a step to see what it did.',
+    approvalsEmpty: 'Nothing is waiting on you',
+    approvalsBody: 'Approvals, questions and secrets this bot asks for land here.',
+    openInbox: 'Open inbox',
+    rules: 'Ask rules'
   },
   rail: {
     title: 'Bot context',
@@ -2178,6 +2270,66 @@ const ja: BotsMessages = {
     delegate: bot => `${bot} はボットトピック内でチームメイトに委任できます — このチャットは通常セッションです。`,
     openTopic: 'トピックを開始'
   },
+  activity: {
+    tabs: { activity: 'アクティビティ', approvals: '承認', scheduled: 'スケジュール', bot: 'ボット' },
+    emptyTitle: 'まだありません',
+    emptyBody: name =>
+      `${name} に何か頼むと、依頼ごとに 1 つのタスクとして、すべてのステップと一緒にここに表示されます。`,
+    onItsOwn: '自発的に開始',
+    steps: count => `${count} ステップ`,
+    status: { running: '進行中', done: '完了', error: '失敗', stopped: '停止' },
+    verbs: {
+      asked: '質問しました',
+      browsed: '閲覧しました',
+      created: '作成しました',
+      delegated: '委任しました',
+      edited: '編集しました',
+      looked: '確認しました',
+      operated: 'コンピューターを操作しました',
+      planned: '計画を更新しました',
+      ran: '実行しました',
+      read: '読みました',
+      remembered: 'メモリに保存しました',
+      scheduled: 'スケジュールしました',
+      searched: '検索しました',
+      tracked: 'ボードを更新しました',
+      used: '使用しました'
+    },
+    doing: {
+      asked: '質問中',
+      browsed: '閲覧中',
+      created: '作成中',
+      delegated: '委任中',
+      edited: '編集中',
+      looked: '確認中',
+      operated: 'コンピューターを操作中',
+      planned: '計画中',
+      ran: '実行中',
+      read: '読み込み中',
+      remembered: 'メモリに保存中',
+      scheduled: 'スケジュール中',
+      searched: '検索中',
+      tracked: 'ボードを更新中',
+      used: '使用中'
+    },
+    thinking: '考え中',
+    started: '開始',
+    working: '作業中…',
+    finished: '完了',
+    command: 'コマンド',
+    input: '入力',
+    result: '結果',
+    noOutput: '出力なし',
+    waiting: 'まだ実行中です。終わると結果がここに表示されます。',
+    exitCode: code => `終了コード ${code}`,
+    took: duration => `所要時間 ${duration}`,
+    copy: 'コピー',
+    pickStep: 'ステップを選ぶと内容が表示されます。',
+    approvalsEmpty: '対応待ちはありません',
+    approvalsBody: 'このボットが求める承認、質問、シークレットはここに届きます。',
+    openInbox: '受信箱を開く',
+    rules: '確認ルール'
+  },
   rail: {
     title: 'ボットのコンテキスト',
     tasks: 'タスクログ',
@@ -2858,6 +3010,65 @@ const zh: BotsMessages = {
     delegate: bot => `${bot} 可以在机器人话题中委派给队友——此会话是普通会话。`,
     openTopic: '开始话题'
   },
+  activity: {
+    tabs: { activity: '动态', approvals: '审批', scheduled: '计划任务', bot: '机器人' },
+    emptyTitle: '暂无内容',
+    emptyBody: name => `向 ${name} 提出请求后，每个请求都会作为一项任务显示在这里，并附上它做过的每一步。`,
+    onItsOwn: '自行开始',
+    steps: count => `${count} 步`,
+    status: { running: '进行中', done: '已完成', error: '失败', stopped: '已停止' },
+    verbs: {
+      asked: '向你提问',
+      browsed: '浏览了',
+      created: '创建了',
+      delegated: '委派了',
+      edited: '编辑了',
+      looked: '查看了',
+      operated: '操作了电脑',
+      planned: '更新了计划',
+      ran: '运行了',
+      read: '读取了',
+      remembered: '保存到记忆',
+      scheduled: '安排了',
+      searched: '搜索了',
+      tracked: '更新了看板',
+      used: '使用了'
+    },
+    doing: {
+      asked: '正在提问',
+      browsed: '正在浏览',
+      created: '正在创建',
+      delegated: '正在委派',
+      edited: '正在编辑',
+      looked: '正在查看',
+      operated: '正在操作电脑',
+      planned: '正在规划',
+      ran: '正在运行',
+      read: '正在读取',
+      remembered: '正在保存到记忆',
+      scheduled: '正在安排',
+      searched: '正在搜索',
+      tracked: '正在更新看板',
+      used: '正在使用'
+    },
+    thinking: '思考中',
+    started: '开始',
+    working: '工作中…',
+    finished: '已完成',
+    command: '命令',
+    input: '输入',
+    result: '结果',
+    noOutput: '无输出',
+    waiting: '仍在运行。完成后结果会显示在这里。',
+    exitCode: code => `退出码 ${code}`,
+    took: duration => `用时 ${duration}`,
+    copy: '复制',
+    pickStep: '选择一个步骤查看它做了什么。',
+    approvalsEmpty: '没有等你处理的事项',
+    approvalsBody: '这个机器人请求的审批、问题和密钥会显示在这里。',
+    openInbox: '打开收件箱',
+    rules: '询问规则'
+  },
   rail: {
     title: '机器人上下文',
     tasks: '任务日志',
@@ -3537,6 +3748,65 @@ const zhHant: BotsMessages = {
   hint: {
     delegate: bot => `${bot} 可以在機器人主題中委派給隊友——此工作階段是普通工作階段。`,
     openTopic: '開始主題'
+  },
+  activity: {
+    tabs: { activity: '動態', approvals: '審核', scheduled: '排程', bot: '機器人' },
+    emptyTitle: '尚無內容',
+    emptyBody: name => `向 ${name} 提出請求後，每個請求都會作為一項任務顯示在這裡，並附上它做過的每一步。`,
+    onItsOwn: '自行開始',
+    steps: count => `${count} 步`,
+    status: { running: '進行中', done: '已完成', error: '失敗', stopped: '已停止' },
+    verbs: {
+      asked: '向你提問',
+      browsed: '瀏覽了',
+      created: '建立了',
+      delegated: '委派了',
+      edited: '編輯了',
+      looked: '查看了',
+      operated: '操作了電腦',
+      planned: '更新了計畫',
+      ran: '執行了',
+      read: '讀取了',
+      remembered: '儲存到記憶',
+      scheduled: '排程了',
+      searched: '搜尋了',
+      tracked: '更新了看板',
+      used: '使用了'
+    },
+    doing: {
+      asked: '正在提問',
+      browsed: '正在瀏覽',
+      created: '正在建立',
+      delegated: '正在委派',
+      edited: '正在編輯',
+      looked: '正在查看',
+      operated: '正在操作電腦',
+      planned: '正在規劃',
+      ran: '正在執行',
+      read: '正在讀取',
+      remembered: '正在儲存到記憶',
+      scheduled: '正在排程',
+      searched: '正在搜尋',
+      tracked: '正在更新看板',
+      used: '正在使用'
+    },
+    thinking: '思考中',
+    started: '開始',
+    working: '工作中…',
+    finished: '已完成',
+    command: '命令',
+    input: '輸入',
+    result: '結果',
+    noOutput: '無輸出',
+    waiting: '仍在執行。完成後結果會顯示在這裡。',
+    exitCode: code => `結束代碼 ${code}`,
+    took: duration => `耗時 ${duration}`,
+    copy: '複製',
+    pickStep: '選擇一個步驟查看它做了什麼。',
+    approvalsEmpty: '沒有等你處理的事項',
+    approvalsBody: '這個機器人請求的審核、問題和密鑰會顯示在這裡。',
+    openInbox: '開啟收件匣',
+    rules: '詢問規則'
   },
   rail: {
     title: '機器人脈絡',

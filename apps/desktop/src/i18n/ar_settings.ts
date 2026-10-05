@@ -69,6 +69,14 @@ export const arSettings = {
     resetConfirm: 'هل تريد إعادة كل الإعدادات إلى افتراضيات Hermes؟',
     exportFailed: 'فشل التصدير',
     resetFailed: 'فشلت إعادة الضبط',
+    pluginPages: {
+      blurb: 'خيارات تضيفها الإضافات المثبّتة. لكل إضافة صفحتها الخاصة، وبعضها يضيف صفحات فرعية.',
+      empty: 'لا توجد إضافة لها إعدادات بعد.',
+      manage: 'إدارة الإضافات',
+      agentSettings: 'إعدادات الوكيل',
+      pageCount: (n: number) => `${n} صفحات`,
+      missing: 'هذه الإضافة ليس لها صفحة إعدادات. ربما عُطّلت أو أُزيلت.'
+    },
     nav: {
       providers: 'المزودون',
       providerAccounts: 'الحسابات',
@@ -86,7 +94,8 @@ export const arSettings = {
       vault: 'كلمات المرور وتسجيلات الدخول',
       providerCustomEndpoints: 'نقاط النهاية المخصصة',
       providerLocalModels: 'النماذج المحلية',
-      billing: 'الفوترة'
+      billing: 'الفوترة',
+      plugins: 'الإضافات'
     },
     vault: {
       title: 'كلمات المرور وتسجيلات الدخول',
@@ -164,16 +173,10 @@ export const arSettings = {
     },
     plugins: {
       title: 'إضافات سطح المكتب',
-      blurb:
-        'امتدادات واجهة تُحمّل داخل هذا التطبيق — إما مضمّنة مع البناء، أو موضوعة في مجلد desktop-plugins (بما فيها التي يكتبها Hermes). تعطيل الإضافة يفرغها مباشرة ويبقى بعد إعادة التشغيل.',
-      count: n => `${n} مثبتة`,
       openFolder: 'فتح مجلد إضافات سطح المكتب',
       rescan: 'إعادة الفحص',
       reveal: 'إظهار في مدير الملفات',
-      enable: 'تفعيل',
-      disable: 'تعطيل',
       failed: 'فشل',
-      empty: 'لا توجد إضافات سطح مكتب مثبتة بعد.',
       kinds: { bundled: 'مضمّنة', disk: 'على القرص', runtime: 'وقت التشغيل' },
       installModal: {
         installUncertain:
@@ -229,10 +232,7 @@ export const arSettings = {
         desktopFailed: 'فشل تثبيت إضافة سطح المكتب',
         missingEnv: (name, vars) =>
           `${name} مثبّت لكنه يحتاج مفتاحًا ليعمل: ${vars}. أضفه الآن وإلا ستفشل أدوات الإضافة.`
-      },
-      agentHalfMissing: 'نصف الوكيل مفقود هنا',
-      agentHalfMissingTip:
-        'هذا نصف سطح المكتب لإضافة مجمّعة، لكن نصف الوكيل غير مثبّت على الخلفية/الملف الشخصي المتصل حاليًا. ثبّته من القدرات ← الإضافات.'
+      }
     },
     notifications: {
       title: 'الإشعارات',

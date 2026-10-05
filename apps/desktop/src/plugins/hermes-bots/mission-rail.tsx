@@ -1,14 +1,14 @@
 /**
  * G1 — the mission rail: the context rail of the bot workspace triptych
- * (roster rail | bot chat | this rail). One rail section per concern —
- * profile card on top, then the dated task log (G8), the bot's computer
- * (F2's BotComputerPanel) above Routines, deliverables at the foot. Every
- * collapsible section persists its fold under `mission-rail-v1`; folding
- * the rail itself is the pane's own collapse (the vertical tab), which
- * returns the classic chat width.
- *
- * Section slots are additive — a future F1 'Sessions' deck drops in as one
- * RailSection here plus one id in RAIL_SECTION_IDS.
+ * (roster rail | bot chat | this rail), laid out like a teammate's profile:
+ * a hero (face with its live mood, name, what it is doing right now) over
+ * four tabs — Activity (the chat read as tasks, activity-feed.tsx),
+ * Approvals (what it is waiting on you for, plus its ask rules), Scheduled
+ * (task log + routines) and Bot (reach, sessions, computer, deliverables).
+ * The open tab persists under `mission-rail-tab-v1`; collapsible sections
+ * inside a tab keep their fold under `mission-rail-v1`. Folding the rail
+ * itself is the pane's own collapse (the vertical tab), which returns the
+ * classic chat width.
  */
 
 import {
@@ -26,6 +26,8 @@ import {
 } from '@hermes/plugin-sdk'
 import { type ReactNode, useState } from 'react'
 
+import { BotActivityFeed } from './activity-feed'
+import { activityNow } from './activity-format'
 import { AUTOPILOT_ICONS, autopilotPresets, type RoutinePreset } from './autopilot'
 import { useAutopilotText } from './autopilot-i18n'
 import { avatarColor, botAppearance, BotFace } from './avatar'
@@ -51,7 +53,15 @@ import { EditProfileDialog } from './edit-profile-dialog'
 import { useBots } from './i18n'
 import { botRole, displayName } from './labels'
 import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
-import { $railCollapsed, type RailSectionId, setRailSectionCollapsed } from './rail-state'
+import {
+  $railCollapsed,
+  $railTab,
+  RAIL_TAB_IDS,
+  type RailSectionId,
+  type RailTabId,
+  setRailSectionCollapsed,
+  setRailTab
+} from './rail-state'
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
 import { BotComputerPanel } from './screen-panel'
@@ -95,11 +105,13 @@ function RailSection({
   )
 }
 
-/** The rail's top card (revamp "teammate" header): face, name, a state badge
- *  in the live-status tone, what it is and where it lives, then the two things
- *  you do with a teammate — message it, or hand it a task — with edit/export
- *  as quiet icons. */
-function BotProfileCard({
+const WORKING_KINDS = new Set(['working', 'routine', 'group', 'background', 'delegated'])
+
+/** The rail's hero: the bot's face (its mood follows the work), name, and a
+ *  live line saying what it is doing right now — the running step when its
+ *  chat is mid-turn, else the roster's live status. Then the two things you
+ *  do with a teammate (message it, hand it a project) and quiet icons. */
+function BotHero({
   bot,
   meta,
   onEdit
@@ -110,85 +122,209 @@ function BotProfileCard({
 }) {
   const b = useBots()
   const live = useBotLiveStatus(bot)
+  const tasks = useValue(host.state.focusedActivity)
+  const now = activityNow(tasks, b.activity)
   const { shape, color, image } = botAppearance(bot.name, meta)
   const name = displayName({ name: bot.name }, meta)
   const handle = botHandle(bot.name, bot)
-  // G3 persona role one-liner; falls back to the description's first
-  // sentence, empty when nothing says what the bot is for.
   const subtitle = botRole(bot, meta)
   const where = bot.connectionLabel || (bot.connectionId && bot.connectionId !== 'local' ? '' : b.bot.thisDevice)
-  const tone = LIVE_TONE[live.kind] ?? 'idle'
+  const tone = now ? 'working' : (LIVE_TONE[live.kind] ?? 'idle')
+  const inFlight = tasks.at(-1)?.steps.some(step => step.action.status === 'running')
+  const mood = now ? (inFlight ? 'work' : 'think') : WORKING_KINDS.has(live.kind) ? 'work' : 'idle'
   const share = useShareText()
   const [sharing, setSharing] = useState(false)
 
   return (
-    <div className="px-3 pt-3 pb-3" data-testid="rail-profile-card">
-      <div className="flex items-center gap-2.5">
-        <BotFace color={avatarColor(color, bot.name)} image={image} name={bot.name} shape={shape} size={40} />
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate text-sm font-semibold text-foreground">{name}</span>
-            <span
-              className={cn(
-                'flex shrink-0 items-center gap-1 rounded-full px-1.5 py-px text-[0.625rem] font-medium',
-                tone === 'working' && 'bg-(--ui-accent)/12 text-(--ui-accent)',
-                tone === 'waiting' && 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-                tone === 'idle' && 'bg-(--ui-inline-code-background) text-(--ui-text-tertiary)'
-              )}
-              data-tone={tone}
-            >
-              {tone !== 'idle' ? <span className="size-1.5 rounded-full bg-current" /> : null}
-              {botLiveStatusLabel(live, b.roster)}
-            </span>
-          </div>
-          <div className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">
-            {[subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : '']
-              .filter(Boolean)
-              .join(' · ')}
-          </div>
-          <BotCardMeta bot={bot} />
-        </div>
-        <div className="flex shrink-0 items-center self-start">
-          <Tip label={b.bot.editTitle}>
-            <Button aria-label={b.bot.editTitle} onClick={onEdit} size="icon-xs" variant="ghost">
-              <Codicon name="edit" />
-            </Button>
-          </Tip>
-          <Tip label={share.title(name)}>
-            <Button aria-label={share.title(name)} onClick={() => setSharing(true)} size="icon-xs" variant="ghost">
-              <Codicon name="share" />
-            </Button>
-          </Tip>
-          <ShareBotDialog bot={bot} meta={meta ?? null} onOpenChange={setSharing} open={sharing} />
-        </div>
+    <div className="flex flex-col items-center px-4 pb-4 pt-5 text-center" data-testid="rail-profile-card">
+      <div className="relative">
+        <BotFace
+          color={avatarColor(color, bot.name)}
+          image={image}
+          mood={mood}
+          name={bot.name}
+          shape={shape}
+          size={84}
+        />
+        <Tip label={b.bot.editTitle}>
+          <Button
+            aria-label={b.bot.editTitle}
+            className="absolute -bottom-0.5 -right-0.5 size-7 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) shadow-sm hover:bg-(--chrome-action-hover)"
+            onClick={onEdit}
+            size="icon-xs"
+            variant="ghost"
+          >
+            <Codicon name="edit" size="0.8rem" />
+          </Button>
+        </Tip>
       </div>
-      <div className="mt-2.5 flex flex-wrap items-center gap-1">
+      <h2 className="mt-3 max-w-full truncate text-lg font-semibold leading-tight text-foreground">{name}</h2>
+      <p
+        className={cn(
+          'mt-1 flex max-w-full items-center gap-1.5 text-[0.8125rem]',
+          tone === 'waiting' ? 'text-amber-700 dark:text-amber-300' : 'text-(--ui-text-tertiary)'
+        )}
+        data-testid="rail-live-line"
+        data-tone={tone}
+      >
+        {tone === 'working' ? (
+          <GlyphSpinner className="shrink-0 text-[0.85rem] text-(--ui-accent)" spinner="breathe" />
+        ) : (
+          <span
+            aria-hidden
+            className={cn(
+              'size-1.5 shrink-0 rounded-full',
+              tone === 'waiting' ? 'bg-current' : 'bg-(--ui-text-quaternary)'
+            )}
+          />
+        )}
+        <span className="truncate">{now ?? botLiveStatusLabel(live, b.roster)}</span>
+      </p>
+      <p className="mt-0.5 max-w-full truncate text-[0.6875rem] text-(--ui-text-quaternary)">
+        {[subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : '']
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-1">
         <Button onClick={() => void newBotChat(bot)} size="xs">
           <Codicon name="comment-add" />
           {b.bot.newTopic}
         </Button>
         <BotTopicProjectMenu bot={bot} />
-        <Button onClick={() => void openRosterBot(bot)} size="xs" variant="ghost">
-          <Codicon name="inbox" />
-          {b.bot.inbox}
-        </Button>
+        <Tip label={b.bot.inbox}>
+          <Button aria-label={b.bot.inbox} onClick={() => void openRosterBot(bot)} size="icon-xs" variant="ghost">
+            <Codicon name="inbox" />
+          </Button>
+        </Tip>
+        <Tip label={share.title(name)}>
+          <Button aria-label={share.title(name)} onClick={() => setSharing(true)} size="icon-xs" variant="ghost">
+            <Codicon name="share" />
+          </Button>
+        </Tip>
+        <ShareBotDialog bot={bot} meta={meta ?? null} onOpenChange={setSharing} open={sharing} />
       </div>
-      {/* Every bot, an address: its own Telegram/Slack link as a QR, or the
-          one step that gives it one. Remote-source bots have no platforms on
-          this backend (same rule as the menu's "Continue on phone"). */}
-      {!bot.remoteSource && (
-        <ReachCard
-          className="mt-3"
-          name={name}
-          onManage={
-            typeof host.navigate === 'function'
-              ? () => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`)
-              : undefined
-          }
-          profile={bot.name}
-        />
+    </div>
+  )
+}
+
+const TAB_ICONS: Record<RailTabId, string> = {
+  activity: 'list-unordered',
+  approvals: 'shield',
+  scheduled: 'history',
+  bot: 'hubot'
+}
+
+/** Icon tabs in one pill track; the open tab lifts out of it. */
+function RailTabs({
+  badges,
+  onChange,
+  value
+}: {
+  badges: Partial<Record<RailTabId, number>>
+  onChange: (id: RailTabId) => void
+  value: RailTabId
+}) {
+  const a = useBots().activity
+
+  return (
+    <div
+      aria-label={useBots().rail.title}
+      className="mx-3 grid grid-cols-4 gap-0.5 rounded-full bg-(--ui-inline-code-background) p-1"
+      role="tablist"
+    >
+      {RAIL_TAB_IDS.map(id => {
+        const active = id === value
+        const badge = badges[id] ?? 0
+
+        return (
+          <Tip key={id} label={a.tabs[id]}>
+            <button
+              aria-controls={`rail-panel-${id}`}
+              aria-label={badge ? `${a.tabs[id]} (${badge})` : a.tabs[id]}
+              aria-selected={active}
+              className={cn(
+                'relative grid h-8 place-items-center rounded-full transition-[background-color,color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)/40',
+                active
+                  ? 'bg-(--ui-chat-bubble-background) text-foreground shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10'
+                  : 'text-(--ui-text-tertiary) hover:text-foreground'
+              )}
+              data-testid={`rail-tab:${id}`}
+              id={`rail-tab-${id}`}
+              onClick={() => onChange(id)}
+              role="tab"
+              type="button"
+            >
+              <Codicon name={TAB_ICONS[id]} size="0.95rem" />
+              {badge ? (
+                <span className="absolute right-[calc(50%-1.05rem)] top-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-amber-500 px-1 text-[0.5625rem] font-semibold leading-none text-white">
+                  {badge > 9 ? '9+' : badge}
+                </span>
+              ) : null}
+            </button>
+          </Tip>
+        )
+      })}
+    </div>
+  )
+}
+
+const ATTENTION_ICONS: Record<string, string> = {
+  approval: 'shield',
+  clarify: 'question',
+  error: 'error',
+  secret: 'key',
+  sudo: 'lock',
+  vaultCode: 'lock',
+  vaultSave: 'lock',
+  vaultUnlock: 'lock'
+}
+
+/** What the bot's chat is parked on, waiting for you, and the rules that
+ *  decide what it asks about. Answering happens where it always has (the
+ *  chat's own prompt, or the inbox); this tab is where you see it. */
+function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
+  const b = useBots()
+  const a = b.activity
+  const items = useValue(host.state.attentionItems)
+  const sessionId = useValue(host.state.focusedSessionId)
+  const mine = sessionId ? items.filter(item => item.sessionId === sessionId) : []
+
+  return (
+    <div className="grid gap-3 px-3 pb-3 pt-1">
+      {mine.length ? (
+        <ul className="grid gap-1.5" data-testid="rail-approvals">
+          {mine.map(item => (
+            <li className="flex gap-2.5 rounded-xl bg-amber-500/8 px-2.5 py-2" key={item.id}>
+              <Codicon
+                className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
+                name={ATTENTION_ICONS[item.kind] ?? 'bell'}
+                size="0.95rem"
+              />
+              <span className="grid min-w-0 gap-0.5">
+                <span className="text-[0.8125rem] font-medium leading-snug text-foreground [overflow-wrap:anywhere]">
+                  {item.title}
+                </span>
+                {item.detail ? (
+                  <span className="line-clamp-2 text-[0.75rem] text-(--ui-text-tertiary)">{item.detail}</span>
+                ) : null}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="grid gap-1 px-1 py-4 text-center">
+          <Codicon className="mx-auto text-(--ui-text-quaternary)" name="shield" size="1.2rem" />
+          <div className="text-[0.8125rem] font-medium text-(--ui-text-secondary)">{a.approvalsEmpty}</div>
+          <div className="text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)">{a.approvalsBody}</div>
+        </div>
       )}
-      {!bot.remoteSource && <AskRulesCard className="mt-2" name={name} profile={bot.name} />}
+      {typeof host.navigate === 'function' ? (
+        <Button className="justify-self-center" onClick={() => host.navigate('/inbox')} size="xs" variant="ghost">
+          <Codicon name="inbox" />
+          {a.openInbox}
+        </Button>
+      ) : null}
+      {!bot.remoteSource && <AskRulesCard name={name} profile={bot.name} />}
     </div>
   )
 }
@@ -273,6 +409,10 @@ export function MissionRail() {
   // instead of freezing the snapshot that was on screen when it opened.
   const [detailJobId, setDetailJobId] = useState<null | string>(null)
   const [editing, setEditing] = useState(false)
+  const tab = useValue($railTab)
+  const attention = useValue(host.state.attentionItems)
+  const focusedSessionId = useValue(host.state.focusedSessionId)
+  const approvalCount = focusedSessionId ? attention.filter(item => item.sessionId === focusedSessionId).length : 0
   const createTarget = owner ? routineCreateTarget(createOwner, bot) : null
 
   const [preset, setPreset] = useState<null | RoutinePreset>(null)
@@ -306,95 +446,130 @@ export function MissionRail() {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain">
-      <BotProfileCard bot={owner} meta={meta} onEdit={() => setEditing(true)} />
-      <RailSection id="tasks" title={b.rail.tasks}>
-        <BotTaskLog jobs={jobs} onOpenRoutine={setDetailJobId} owner={owner} />
-      </RailSection>
-      {/* F1's session deck owns its own section header (title + count +
-          refresh/new-chat live in its RosterSectionHeader) and fold state —
-          like the deliverables section it sits outside the RailSection
-          chrome rather than double-headering. */}
-      <div className="border-t border-(--ui-stroke-secondary)">
-        <BotSessionDeck owner={owner} />
-      </div>
-      <RailSection id="computer" title={b.screen.panelTitle}>
-        <div className="px-3 pb-2 pt-1">
-          <BotComputerPanel bot={owner} meta={meta} />
-        </div>
-      </RailSection>
-      <RailSection
-        action={
-          <Tip label={c.newCron}>
-            <Button aria-label={c.newCron} onClick={() => openCreate()} size="icon-xs" variant="ghost">
-              <Codicon name="add" />
-            </Button>
-          </Tip>
-        }
-        id="routines"
-        title={c.title}
+      <BotHero bot={owner} meta={meta} onEdit={() => setEditing(true)} />
+      <RailTabs badges={{ approvals: approvalCount }} onChange={setRailTab} value={tab} />
+      <div
+        aria-labelledby={`rail-tab-${tab}`}
+        className="mt-3 min-h-0"
+        data-testid={`rail-panel:${tab}`}
+        id={`rail-panel-${tab}`}
+        role="tabpanel"
       >
-        {staleNotice ? (
-          <div className="mx-3 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
-            {staleNotice}
-          </div>
+        {tab === 'activity' ? <BotActivityFeed name={displayName(owner, meta)} /> : null}
+        {tab === 'approvals' ? <ApprovalsPanel bot={owner} name={displayName(owner, meta)} /> : null}
+        {tab === 'scheduled' ? (
+          <>
+            <RailSection id="tasks" title={b.rail.tasks}>
+              <BotTaskLog jobs={jobs} onOpenRoutine={setDetailJobId} owner={owner} />
+            </RailSection>
+            <RailSection
+              action={
+                <Tip label={c.newCron}>
+                  <Button aria-label={c.newCron} onClick={() => openCreate()} size="icon-xs" variant="ghost">
+                    <Codicon name="add" />
+                  </Button>
+                </Tip>
+              }
+              id="routines"
+              title={c.title}
+            >
+              {staleNotice ? (
+                <div className="mx-3 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
+                  {staleNotice}
+                </div>
+              ) : null}
+              {isLoading && !view.all.length ? (
+                <div className="flex items-center justify-center py-4">
+                  <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
+                </div>
+              ) : error && !view.all.length ? (
+                <PanelEmpty
+                  action={
+                    <Button onClick={() => void refetch()} size="sm" variant="secondary">
+                      {t.common.retry}
+                    </Button>
+                  }
+                  description={b.cron.readFailure}
+                  icon="warning"
+                  title={c.failedLoad}
+                />
+              ) : jobs.length === 0 && !filterHint ? (
+                // Nothing scheduled and nothing hidden by the filter: the autopilot
+                // card below IS the empty state, with a way to write one from scratch.
+                <AutopilotChips
+                  name={displayName(owner, meta)}
+                  onCustom={() => openCreate()}
+                  onPick={openCreate}
+                  taken={[]}
+                />
+              ) : jobs.length === 0 ? (
+                // `filterHint` is the informative case (jobs exist on the profile but
+                // none are tagged for this bot), so it wins the description slot.
+                <PanelEmpty
+                  action={
+                    <Button onClick={() => openCreate()} size="sm">
+                      {c.newCron}
+                    </Button>
+                  }
+                  description={filterHint || c.emptyDescNew}
+                  icon="watch"
+                  title={c.emptyTitleNew}
+                />
+              ) : (
+                <div className="grid gap-1.5 px-2.5 pb-2 pt-1">
+                  {jobs.map(job => (
+                    <RoutineRow
+                      job={job}
+                      key={job.job_id}
+                      onOpen={opened => setDetailJobId(opened.job_id)}
+                      owner={owner}
+                    />
+                  ))}
+                </div>
+              )}
+              {!isLoading && !error && jobs.length > 0 && (
+                <AutopilotChips
+                  name={displayName(owner, meta)}
+                  onPick={openCreate}
+                  taken={jobs.map(job => String(job.name || ''))}
+                />
+              )}
+            </RailSection>
+          </>
         ) : null}
-        {isLoading && !view.all.length ? (
-          <div className="flex items-center justify-center py-4">
-            <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
-          </div>
-        ) : error && !view.all.length ? (
-          <PanelEmpty
-            action={
-              <Button onClick={() => void refetch()} size="sm" variant="secondary">
-                {t.common.retry}
-              </Button>
-            }
-            description={b.cron.readFailure}
-            icon="warning"
-            title={c.failedLoad}
-          />
-        ) : jobs.length === 0 && !filterHint ? (
-          // Nothing scheduled and nothing hidden by the filter: the autopilot
-          // card below IS the empty state, with a way to write one from scratch.
-          <AutopilotChips
-            name={displayName(owner, meta)}
-            onCustom={() => openCreate()}
-            onPick={openCreate}
-            taken={[]}
-          />
-        ) : jobs.length === 0 ? (
-          // `filterHint` is the informative case (jobs exist on the profile but
-          // none are tagged for this bot), so it wins the description slot.
-          <PanelEmpty
-            action={
-              <Button onClick={() => openCreate()} size="sm">
-                {c.newCron}
-              </Button>
-            }
-            description={filterHint || c.emptyDescNew}
-            icon="watch"
-            title={c.emptyTitleNew}
-          />
-        ) : (
-          <div className="grid gap-1.5 px-2.5 pb-2 pt-1">
-            {jobs.map(job => (
-              <RoutineRow job={job} key={job.job_id} onOpen={opened => setDetailJobId(opened.job_id)} owner={owner} />
-            ))}
-          </div>
-        )}
-        {!isLoading && !error && jobs.length > 0 && (
-          <AutopilotChips
-            name={displayName(owner, meta)}
-            onPick={openCreate}
-            taken={jobs.map(job => String(job.name || ''))}
-          />
-        )}
-      </RailSection>
-      {/* Deliverables keeps its own header row (count + refresh live in it),
-          so it isn't folded into a RailSection — RailSection headers exist to
-          carry the collapse affordance. */}
-      <div className="border-t border-(--ui-stroke-secondary)">
-        <BotDeliverablesSection owner={owner} />
+        {tab === 'bot' ? (
+          <>
+            <BotCardMeta bot={owner} />
+            {/* Every bot, an address: its own Telegram/Slack link as a QR, or the
+                one step that gives it one. Remote-source bots have no platforms on
+                this backend (same rule as the menu's "Continue on phone"). */}
+            {!owner.remoteSource && (
+              <ReachCard
+                className="mx-3 mb-3"
+                name={displayName(owner, meta)}
+                onManage={
+                  typeof host.navigate === 'function'
+                    ? () => host.navigate(`/messaging?profile=${encodeURIComponent(owner.name)}`)
+                    : undefined
+                }
+                profile={owner.name}
+              />
+            )}
+            {/* The session deck and deliverables own their section headers
+                (title + count + refresh), so they sit outside RailSection. */}
+            <div className="border-t border-(--ui-stroke-secondary)">
+              <BotSessionDeck owner={owner} />
+            </div>
+            <RailSection id="computer" title={b.screen.panelTitle}>
+              <div className="px-3 pb-2 pt-1">
+                <BotComputerPanel bot={owner} meta={meta} />
+              </div>
+            </RailSection>
+            <div className="border-t border-(--ui-stroke-secondary)">
+              <BotDeliverablesSection owner={owner} />
+            </div>
+          </>
+        ) : null}
       </div>
       <RoutineDetailDialog
         job={detailJob}

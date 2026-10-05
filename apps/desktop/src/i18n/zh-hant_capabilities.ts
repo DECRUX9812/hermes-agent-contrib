@@ -81,7 +81,6 @@ export const zhHantCapabilities = {
         save: '儲存設定',
         saved: (name: string) => `${name} 設定已儲存。`,
         saveFailed: (name: string) => `無法儲存 ${name} 設定`,
-        optional: '（選用）',
         secretSet: '••••••••（已設定）',
         secretStoredAs: (env: string) => `以 ${env} 儲存在設定檔的 .env 中，永不寫入 config.yaml；留空則保留目前值。`
       }
