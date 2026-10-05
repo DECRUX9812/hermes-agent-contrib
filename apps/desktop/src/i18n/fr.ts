@@ -3454,6 +3454,9 @@ export const frOverrides = {
     replaceValue: 'Remplacer la valeur actuelle',
     openDocs: 'Ouvrir la documentation',
     clearField: key => `Effacer ${key}`,
+    addListEntry: 'Ajouter',
+    removeListEntry: 'Retirer',
+    listEntryPlaceholder: 'Saisir un identifiant',
     enableAria: name => `Activer ${name}`,
     disableAria: name => `Désactiver ${name}`,
     platformEnabled: name => `${name} activé`,
@@ -3551,7 +3554,7 @@ export const frOverrides = {
       },
       TELEGRAM_ALLOWED_USERS: {
         label: "IDs d'utilisateurs Telegram autorisés",
-        help: "Recommandé. IDs numériques séparés par des virgules depuis @userinfobot. Sans cela, n'importe qui peut envoyer un message privé à votre bot."
+        help: "Recommandé. IDs numériques (un par case) depuis @userinfobot. Sans cela, n'importe qui peut envoyer un message privé à votre bot."
       },
       TELEGRAM_PROXY: {
         label: 'URL du proxy',
@@ -3563,7 +3566,7 @@ export const frOverrides = {
       },
       DISCORD_ALLOWED_USERS: {
         label: "IDs d'utilisateurs Discord autorisés",
-        help: "Recommandé. IDs d'utilisateurs Discord séparés par des virgules."
+        help: "Recommandé. IDs d'utilisateurs Discord (un par case)."
       },
       DISCORD_REPLY_TO_MODE: {
         label: 'Style de réponse',
@@ -3613,7 +3616,7 @@ export const frOverrides = {
       },
       SLACK_ALLOWED_USERS: {
         label: "IDs d'utilisateurs Slack autorisés",
-        help: "Recommandé. IDs d'utilisateurs Slack séparés par des virgules."
+        help: "Recommandé. IDs d'utilisateurs Slack (un par case)."
       },
       MATTERMOST_URL: {
         label: 'URL du serveur',
@@ -3624,7 +3627,7 @@ export const frOverrides = {
       },
       MATTERMOST_ALLOWED_USERS: {
         label: "IDs d'utilisateurs autorisés",
-        help: "Recommandé. IDs d'utilisateurs Mattermost séparés par des virgules."
+        help: "Recommandé. IDs d'utilisateurs Mattermost (un par case)."
       },
       MATRIX_HOMESERVER: {
         label: 'URL du homeserver',
@@ -3639,7 +3642,7 @@ export const frOverrides = {
       },
       MATRIX_ALLOWED_USERS: {
         label: "IDs d'utilisateurs Matrix autorisés",
-        help: "Recommandé. IDs d'utilisateurs séparés par des virgules au format @utilisateur:serveur."
+        help: "Recommandé. IDs d'utilisateurs (un par case) au format @utilisateur:serveur."
       },
       SIGNAL_HTTP_URL: {
         label: 'URL du pont Signal',
@@ -3652,7 +3655,7 @@ export const frOverrides = {
       },
       SIGNAL_ALLOWED_USERS: {
         label: 'Utilisateurs Signal autorisés',
-        help: 'Recommandé. Identifiants Signal séparés par des virgules.'
+        help: 'Recommandé. Identifiants Signal (un par case).'
       },
       WHATSAPP_ENABLED: {
         label: 'Activer le pont WhatsApp',
@@ -3663,7 +3666,7 @@ export const frOverrides = {
       },
       WHATSAPP_ALLOWED_USERS: {
         label: 'Utilisateurs WhatsApp autorisés',
-        help: 'Recommandé. Numéros de téléphone ou IDs WhatsApp séparés par des virgules.'
+        help: 'Recommandé. Numéros de téléphone ou IDs WhatsApp (un par case).'
       }
     },
     platformIntro: {}

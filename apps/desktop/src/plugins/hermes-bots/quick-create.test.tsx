@@ -210,8 +210,8 @@ describe('the one-click path', () => {
     expect(createCalls()[0][1]).toMatchObject({ name: 'pilot', model: 'auto', provider: 'auto' })
     expect(String(createCalls()[0][1].soul)).toContain(pilot.persona.split(',')[0])
     expect(mocks.createCanonicalChat).toHaveBeenCalledWith('pilot', { kickoff: true })
-    // The toast reads the bot's title-cased role line, same as the heavyweight dialog.
-    expect(mocks.notify).toHaveBeenLastCalledWith({ kind: 'success', message: 'Bot "Ops & Routines" created' })
+    // The toast names the bot by the starter's own title.
+    expect(mocks.notify).toHaveBeenLastCalledWith({ kind: 'success', message: `Bot "${pilot.title}" created` })
   })
 
   it('creates, skips the intro, and offers model setup when no provider is ready', async () => {

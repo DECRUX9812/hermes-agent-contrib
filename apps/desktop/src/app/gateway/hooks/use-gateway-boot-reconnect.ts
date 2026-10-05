@@ -71,6 +71,12 @@ export interface GatewayBootState {
   bootRetryAttempt: number
   bootRetryTimer: ReturnType<typeof setTimeout> | null
   lastForcedWakeReconnectAt: number
+  /** The route the primary socket was last recorded against; a reconnect
+   *  re-dials THIS route, not main's mutable foreground one. */
+  primaryConnection: HermesConnection | null
+  /** Bumped whenever the primary route is recorded, so a reconnect whose
+   *  lookup started before a boot/connection apply cannot re-own the primary. */
+  primaryRouteRevision: number
 }
 
 export function createGatewayBootState(): GatewayBootState {
@@ -90,8 +96,18 @@ export function createGatewayBootState(): GatewayBootState {
     escalated: false,
     bootRetryAttempt: 0,
     bootRetryTimer: null,
-    lastForcedWakeReconnectAt: 0
+    lastForcedWakeReconnectAt: 0,
+    primaryConnection: null,
+    primaryRouteRevision: 0
   }
+}
+
+// Every site that adopts a primary route goes through here so the revision
+// fence in attemptReconnect() sees it.
+export function recordPrimaryConnection(s: GatewayBootState, connection: HermesConnection) {
+  s.primaryConnection = connection
+  s.primaryRouteRevision += 1
+  setPrimaryGatewayConnection(connection)
 }
 
 export interface GatewayBootReconnectDeps {
@@ -200,21 +216,31 @@ export function createGatewayBootReconnect({ s, desktop, gateway, callbacksRef, 
         'Timed out revalidating the gateway connection'
       ).catch(() => undefined)
 
-      // Primary sleep/wake reconnect must dial the WINDOW-owned primary backend
-      // (same as boot/softSwitch). Passing $activeGatewayProfile would retarget
-      // this primary socket at a secondary profile's backend after a live swap.
-      // Secondaries reconnect via reconnectSecondaryGateways().
+      // Reconnect the socket's own route, not main's mutable foreground route.
+      // Profile-less resolution remains intentional for boot/connection apply.
+      // A registry primary needs both identity fields; a legacy primary uses
+      // its explicit profile so a foreground secondary cannot retarget it.
+      const lookupRevision = s.primaryRouteRevision
+      const primary = s.primaryConnection
+
       const conn = await withTimeout(
-        desktop.getConnection(),
+        primary?.registryScoped && primary.connectionId
+          ? (desktop.getConnectionFor?.({ connectionId: primary.connectionId, profile: primary.profile }) ??
+              Promise.reject(new Error('Registry gateway connection is unavailable')))
+          : desktop.getConnection(primary?.profile),
         RECONNECT_ATTEMPT_TIMEOUT_MS,
-        'Timed out s.reconnecting to Hermes backend'
+        'Timed out reconnecting to Hermes backend'
       )
 
-      setPrimaryGatewayConnection(conn)
-
-      if (s.cancelled) {
+      // A boot/connection apply that recorded a newer primary route during
+      // the lookup owns the socket; recording, publishing or dialing the old
+      // route would undo it and pin later reconnects to the old gateway.
+      if (s.cancelled || lookupRevision !== s.primaryRouteRevision) {
         return
       }
+
+      recordPrimaryConnection(s, conn)
+      const dialRevision = s.primaryRouteRevision
 
       // Only publish the primary descriptor when the primary is active.
       // Otherwise a background-profile view would inherit the primary's
@@ -223,7 +249,7 @@ export function createGatewayBootReconnect({ s, desktop, gateway, callbacksRef, 
         publish(conn)
       }
 
-      // Re-mint the WS URL before s.reconnecting. OAuth tickets are single-use
+      // Re-mint the WS URL before reconnecting. OAuth tickets are single-use
       // with a short TTL, so the ticket baked into the cached conn.wsUrl is
       // dead on every reconnect after the initial boot — reusing it surfaces
       // as an opaque "Could not connect to Hermes gateway". resolveGatewayWsUrl
@@ -236,6 +262,12 @@ export function createGatewayBootReconnect({ s, desktop, gateway, callbacksRef, 
         RECONNECT_ATTEMPT_TIMEOUT_MS,
         'Timed out re-minting the gateway WebSocket URL'
       )
+
+      // Same fence after the mint: an apply that landed while the ticket was
+      // in flight owns the socket, and its socket may already have dropped.
+      if (s.cancelled || dialRevision !== s.primaryRouteRevision) {
+        return
+      }
 
       await gateway.connect(wsUrl)
 

@@ -1,11 +1,13 @@
 import { useStore } from '@nanostores/react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
-import { searchSessions, type SessionInfo, type SessionSearchResult } from '@/hermes'
+import { type SessionInfo } from '@/hermes'
 import { $sidebarSearchQuery, SESSION_SEARCH_FOCUS_EVENT, setSidebarSearchQuery } from '@/store/layout'
+import { $profileScope } from '@/store/profile'
 import { armTranscriptSearchJump } from '@/store/transcript-find'
 
 import { mergeSearchResults } from './sidebar-search'
+import { useServerSessionSearch } from './use-server-session-search'
 
 export interface SidebarSearchOptions {
   sortedSessions: readonly SessionInfo[]
@@ -21,10 +23,9 @@ export function useSidebarSearch({ sortedSessions, sessionByAnyId, onResumeSessi
   // searchable listTop contribution reads the same query.
   const searchQuery = useStore($sidebarSearchQuery)
   const setSearchQuery = setSidebarSearchQuery
-  const [serverMatches, setServerMatches] = useState<SessionSearchResult[]>([])
-  const [searchPending, setSearchPending] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const trimmedQuery = searchQuery.trim()
+  const profileScope = useStore($profileScope)
 
   // Hotkey (session.focusSearch) → focus the field once it's mounted.
   useEffect(() => {
@@ -35,41 +36,9 @@ export function useSidebarSearch({ sortedSessions, sessionByAnyId, onResumeSessi
     return () => window.removeEventListener(SESSION_SEARCH_FOCUS_EVENT, onFocus)
   }, [])
 
-  // Full-text search across *all* sessions (not just the loaded page) so 699
-  // sessions stay findable. Debounced; loaded sessions are matched instantly
-  // client-side and merged ahead of the server hits.
-  useEffect(() => {
-    if (!trimmedQuery) {
-      setServerMatches([])
-      setSearchPending(false)
-
-      return
-    }
-
-    let cancelled = false
-
-    setSearchPending(true)
-
-    const id = window.setTimeout(() => {
-      void searchSessions(trimmedQuery)
-        .then(res => {
-          if (!cancelled) {
-            setServerMatches(res.results)
-          }
-        })
-        .catch(() => undefined)
-        .finally(() => {
-          if (!cancelled) {
-            setSearchPending(false)
-          }
-        })
-    }, 200)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(id)
-    }
-  }, [trimmedQuery])
+  // Loaded sessions match instantly client-side; the debounced server FTS
+  // (scoped to the profile on screen) covers sessions beyond the loaded page.
+  const { searchPending, serverMatches } = useServerSessionSearch(trimmedQuery, profileScope)
 
   const searchResults = useMemo(
     () => mergeSearchResults(sortedSessions, trimmedQuery, serverMatches, sessionByAnyId, searchPending),
