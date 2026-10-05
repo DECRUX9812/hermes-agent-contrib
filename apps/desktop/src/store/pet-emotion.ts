@@ -90,7 +90,8 @@ export function deriveEmotion(activity: PetActivity, sentiment: MessageSentiment
       return sentiment === 'concerned' ? 'concerned' : 'thinking'
     case 'idle':
     default:
-      if (sentiment === 'positive' || sentiment === 'proud') return sentiment
+      if (sentiment === 'positive') return 'happy'
+      if (sentiment === 'proud') return 'proud'
       if (sentiment === 'concerned') return 'concerned'
       if (sentiment === 'thinking') return 'thinking'
       return 'neutral'
