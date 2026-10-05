@@ -12,6 +12,10 @@ import { atom } from 'nanostores'
 
 import type { AvatarId, DemoScript, NotifyRequest, PaneAnchor, PaneState, ScreenRect } from '../protocol'
 import { AVATAR_IDS } from '../protocol'
+import { avatarFrames } from '../scene/projection'
+import { setReducedMotion } from '../scene/reduced-motion'
+
+import { dismiss, summon } from './director'
 
 export type AvatarState =
   'hidden' | 'emerging' | 'idle' | 'listening' | 'thinking' | 'responding' | 'celebrating' | 'notifying' | 'hiding'
@@ -20,11 +24,13 @@ export interface AvatarRuntime {
   id: AvatarId
   state: AvatarState
   visible: boolean
-  /** Perch slot index; layout is owned by the room (later milestone). */
-  slot: number
-  meshCount: number
-  materialTypes: string[]
   pendingNotify: number
+  /**
+   * `performance.now()` of the transition into `state`. The rig starts its
+   * choreography clock here rather than at its first rendered frame, so a slow
+   * frame cannot stretch an animation past its stated duration (§8.4).
+   */
+  changedAt: number
 }
 
 export type FeedKind = 'notify' | 'chat' | 'task'
@@ -61,7 +67,6 @@ export interface Pane3dRuntime {
   regions: ScreenRect[]
   pixelRatio: number
   platform: NodeJS.Platform
-  reducedMotion: boolean
   lastDemo: DemoScript | null
 }
 
@@ -74,8 +79,8 @@ export const DEFAULT_ANCHOR: PaneAnchor = {
 function emptyAvatars(): Record<AvatarId, AvatarRuntime> {
   const out = {} as Record<AvatarId, AvatarRuntime>
 
-  AVATAR_IDS.forEach((id, slot) => {
-    out[id] = { id, materialTypes: [], meshCount: 0, pendingNotify: 0, slot, state: 'hidden', visible: false }
+  AVATAR_IDS.forEach(id => {
+    out[id] = { changedAt: 0, id, pendingNotify: 0, state: 'hidden', visible: false }
   })
 
   return out
@@ -87,7 +92,6 @@ export const pane3dRuntime: Pane3dRuntime = {
   lastDemo: null,
   pixelRatio: 1,
   platform: 'linux',
-  reducedMotion: false,
   regions: [],
   renderCount: 0
 }
@@ -116,7 +120,7 @@ export function applyPaneState(state: PaneState): void {
   switch (state.type) {
     case 'init':
       pane3dRuntime.platform = state.platform
-      pane3dRuntime.reducedMotion = state.reducedMotion
+      setReducedMotion(state.reducedMotion)
       setAnchor(state.anchor)
 
       return
@@ -140,10 +144,13 @@ export function applyPaneState(state: PaneState): void {
       return
 
     case 'summon':
+      summon(state.avatar)
+
+      return
 
     case 'dismiss':
-      // Avatar visibility belongs to the avatar core (next milestone); the
-      // state row already exists so nothing else has to know yet.
+      dismiss(state.avatar)
+
       return
   }
 }
@@ -181,22 +188,24 @@ export interface Pane3dDebugSnapshot {
  */
 export function snapshotPane3d(): Pane3dDebugSnapshot {
   const avatars = $avatars.get()
+  const visibleOrder = AVATAR_IDS.filter(id => avatars[id].visible)
 
   return {
     anchor: pane3dRuntime.anchor,
     avatars: AVATAR_IDS.map(id => {
       const row = avatars[id]
+      const frame = avatarFrames[id]
 
       return {
-        gaze: { x: 0, y: 0 },
+        gaze: { ...frame.gaze },
         id,
-        materialTypes: [...row.materialTypes],
-        meshCount: row.meshCount,
-        screenRect: null,
-        slot: row.slot,
+        materialTypes: [...frame.materialTypes],
+        meshCount: frame.meshCount,
+        screenRect: frame.screenRect ? { ...frame.screenRect } : null,
+        slot: visibleOrder.indexOf(id),
         state: row.state,
         visible: row.visible,
-        yawDeg: 0
+        yawDeg: frame.yawDeg
       }
     }),
     cards: Object.values($cards.get()),

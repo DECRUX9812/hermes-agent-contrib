@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react'
 
 import { installPane3dDefaults } from './director/defaults'
 import { $avatars, applyPaneState, pane3dRuntime } from './director/store'
+import { PaneCamera } from './scene/camera'
 import { PaneLights } from './scene/lights'
+import { Projector } from './scene/projector'
+import { Stage } from './scene/stage'
+import { PaneOverlay } from './ui/pane-overlay'
 
 /**
  * Counts frames actually rendered and mirrors the live pixel ratio into the
@@ -35,9 +39,9 @@ function useDocumentHidden(): boolean {
 }
 
 /**
- * The pane's only React surface: one alpha WebGL canvas plus the DOM layer that
- * will sit above it. With no avatar registered the scene paints nothing, which
- * is the correct state for this milestone.
+ * The pane's only React surface: one alpha WebGL canvas plus the DOM layer
+ * above it. With no avatar summoned the scene paints nothing, which is the
+ * correct state when the pane is idle.
  */
 export function PaneApp() {
   const avatars = useStore($avatars)
@@ -63,27 +67,34 @@ export function PaneApp() {
     // pane is queued in main until our `ready` arrives, and it must land on a
     // listener that already exists.
     const off = api.onState(applyPaneState)
+
     api.control({ type: 'ready' })
 
     return off
   }, [])
 
   return (
-    <Canvas
-      camera={{ fov: 30, position: [0, 0, 8] }}
-      dpr={[1, 1.75]}
-      frameloop={frameloop}
-      gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
-      onCreated={({ gl }) => {
-        // Clip the emergence plane at the anchor edge and clear to full
-        // transparency so the desktop shows through.
-        gl.localClippingEnabled = true
-        gl.setClearAlpha(0)
-      }}
-      style={{ inset: 0, position: 'absolute' }}
-    >
-      <FrameCounter />
-      <PaneLights />
-    </Canvas>
+    <>
+      <Canvas
+        camera={{ fov: 30, position: [0, 0, 18] }}
+        dpr={[1, 1.75]}
+        frameloop={frameloop}
+        gl={{ alpha: true, antialias: true, powerPreference: 'low-power' }}
+        onCreated={({ gl }) => {
+          // Clip the emergence plane at the anchor edge and clear to full
+          // transparency so the desktop shows through.
+          gl.localClippingEnabled = true
+          gl.setClearAlpha(0)
+        }}
+        style={{ inset: 0, position: 'absolute' }}
+      >
+        <PaneCamera />
+        <FrameCounter />
+        <PaneLights />
+        <Stage />
+        <Projector />
+      </Canvas>
+      <PaneOverlay />
+    </>
   )
 }

@@ -1,3 +1,8 @@
+// Side-effect: registers Muse. Adding an avatar is one file plus one
+// `registerAvatar` call; importing it here is the pane's single composition
+// point for the cast.
+import './avatars/muse'
+
 import { createRoot } from 'react-dom/client'
 
 import { ErrorBoundary } from '@/components/error-boundary'

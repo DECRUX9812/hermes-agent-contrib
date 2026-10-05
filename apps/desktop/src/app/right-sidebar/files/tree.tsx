@@ -234,7 +234,7 @@ export function ProjectTree({
           rowHeight={ROW_HEIGHT}
           width={size.width}
         >
-          {props => (
+          {(props: NodeRendererProps<TreeNode>) => (
             <ProjectTreeRow
               {...props}
               agentTouched={Boolean(props.node.data && agentTouched.has(props.node.data.id))}
