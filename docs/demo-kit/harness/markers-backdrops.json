@@ -1,0 +1,74 @@
+[
+ {
+  "name": "start",
+  "t": 1.504
+ },
+ {
+  "name": "settings",
+  "t": 34.367
+ },
+ {
+  "name": "gallery",
+  "t": 35.814
+ },
+ {
+  "name": "apply1",
+  "t": 38.703
+ },
+ {
+  "name": "reveal1",
+  "t": 41.235
+ },
+ {
+  "name": "apply2",
+  "t": 47.633
+ },
+ {
+  "name": "reveal2",
+  "t": 50.153
+ },
+ {
+  "name": "apply3",
+  "t": 56.156
+ },
+ {
+  "name": "reveal3",
+  "t": 58.684
+ },
+ {
+  "name": "upload",
+  "t": 64.056
+ },
+ {
+  "name": "reveal4",
+  "t": 67.775
+ },
+ {
+  "name": "apply_m1",
+  "t": 73.95
+ },
+ {
+  "name": "reveal_m1",
+  "t": 76.272
+ },
+ {
+  "name": "apply_m2",
+  "t": 81.252
+ },
+ {
+  "name": "reveal_m2",
+  "t": 83.562
+ },
+ {
+  "name": "apply_m3",
+  "t": 88.528
+ },
+ {
+  "name": "reveal_m3",
+  "t": 90.843
+ },
+ {
+  "name": "end",
+  "t": 92.445
+ }
+]

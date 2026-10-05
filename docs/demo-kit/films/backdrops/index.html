@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Backdrops — a Hermes desktop plugin</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: 'Avenir Next Condensed'; src: local('Avenir Next Condensed'); }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #060a1d; }
+      #main { position: relative; width: 100%; height: 100%; overflow: hidden;
+        font-family: 'Avenir Next Condensed', 'Avenir Next', 'Helvetica Neue', sans-serif; }
+      .layer { position: absolute; inset: 0; }
+      /* The app window: real footage (1600x1200 px) in a near-full slot, camera inside. */
+      #halo { position: absolute; left: 60px; top: -20px; width: 1800px; height: 1120px;
+        background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(124, 92, 255, 0.20) 0%, rgba(124, 92, 255, 0) 70%); opacity: 0; }
+      #window { position: absolute; left: 110px; top: 8px; width: 1700px; height: 1063px; overflow: hidden; border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.14); background: #0b0f1e; transform-origin: 50% 50%;
+        box-shadow: 0 50px 140px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(0, 0, 0, 0.4);
+        --mr: 160%; --mx: 50%; --my: 50%;
+        -webkit-mask-image: radial-gradient(circle at var(--mx) var(--my), #000 var(--mr), transparent calc(var(--mr) + 22%));
+        mask-image: radial-gradient(circle at var(--mx) var(--my), #000 var(--mr), transparent calc(var(--mr) + 22%)); }
+      #cam { position: absolute; left: 0; top: 0; width: 1600px; height: 1200px; transform-origin: 0 0; }
+      #cam video { position: absolute; left: 0; top: 0; width: 1600px; height: 1200px; }
+      #flash { position: absolute; inset: 0; background: #f3efe2; opacity: 0; }
+      #spark { position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; opacity: 0;
+        background: radial-gradient(circle, #fff6d6 0%, #f2b53b 45%, rgba(242, 181, 59, 0) 72%); }
+    </style>
+  </head>
+  <body>
+    <div id="main" data-composition-id="main" data-start="0" data-duration="30.508" data-width="1920" data-height="1080">
+      <div id="bg" class="layer" data-composition-id="bg" data-composition-src="compositions/bg.html" data-start="0" data-duration="30.508" data-track-index="0" data-width="1920" data-height="1080"></div>
+
+      <div id="halo"></div>
+      <div id="window" data-layout-allow-overflow>
+        <div id="cam">
+          <!-- Real Hermes Desktop footage (1600x1200): plain → gallery → 4 reveals → upload → montage. -->
+          <video id="v1"  src="assets/seg-v1.mp4" data-start="0"      data-duration="2.034" data-media-start="0"  data-track-index="1" muted playsinline></video>
+          <video id="v2"  src="assets/seg-v2.mp4" data-start="2.034"  data-duration="2.034" data-media-start="0" data-playback-rate="1.3" data-track-index="1" muted playsinline></video>
+          <video id="v3"  src="assets/seg-v3.mp4" data-start="4.068"  data-duration="1.017" data-media-start="0" data-playback-rate="2.3" data-track-index="1" muted playsinline></video>
+          <video id="v4"  src="assets/seg-v4.mp4" data-start="5.085"  data-duration="3.051" data-media-start="0" data-track-index="1" muted playsinline></video>
+          <video id="v5"  src="assets/seg-v5.mp4" data-start="8.136"  data-duration="1.017" data-media-start="0" data-playback-rate="2.8" data-track-index="1" muted playsinline></video>
+          <video id="v6"  src="assets/seg-v6.mp4" data-start="9.153"  data-duration="3.051" data-media-start="0" data-track-index="1" muted playsinline></video>
+          <video id="v7"  src="assets/seg-v7.mp4" data-start="12.203" data-duration="1.017" data-media-start="0" data-playback-rate="2.5" data-track-index="1" muted playsinline></video>
+          <video id="v8"  src="assets/seg-v8.mp4" data-start="13.220" data-duration="3.051" data-media-start="0" data-track-index="1" muted playsinline></video>
+          <video id="v9"  src="assets/seg-v9.mp4" data-start="16.271" data-duration="1.017" data-media-start="0" data-playback-rate="1.6" data-track-index="1" muted playsinline></video>
+          <video id="v10" src="assets/seg-v10.mp4" data-start="17.288" data-duration="3.051" data-media-start="0" data-track-index="1" muted playsinline></video>
+          <video id="v11" src="assets/seg-v11.mp4" data-start="20.339" data-duration="2.034" data-media-start="0" data-track-index="1" muted playsinline></video>
+          <video id="v12" src="assets/seg-v12.mp4" data-start="22.373" data-duration="2.034" data-media-start="0" data-track-index="1" muted playsinline></video>
+          <video id="v13" src="assets/seg-v13.mp4" data-start="24.407" data-duration="2.034" data-media-start="0" data-track-index="1" muted playsinline></video>
+          <video id="v14" src="assets/seg-v14.mp4" data-start="26.441" data-duration="4.068" data-media-start="0" data-playback-rate="0.5" data-track-index="1" muted playsinline></video>
+        </div>
+        <div id="flash"></div>
+      </div>
+      <div id="spark"></div>
+
+      <div id="words" class="layer" data-composition-id="words" data-composition-src="compositions/words.html" data-start="0" data-duration="30.508" data-track-index="2" data-width="1920" data-height="1080"></div>
+      <div id="fx" class="layer" data-composition-id="fx" data-composition-src="compositions/fx.html" data-start="0" data-duration="30.508" data-track-index="3" data-width="1920" data-height="1080"></div>
+      <div id="lockup" class="layer" data-composition-id="lockup" data-composition-src="compositions/lockup.html" data-start="26.441" data-duration="4.068" data-track-index="4" data-width="1920" data-height="1080"></div>
+
+      <audio id="score" src="assets/score.wav" data-start="0" data-duration="30.508" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      (() => {
+        const W = 1700, H = 1063, K = W / 1600
+        // Camera: frame footage point (px, py) at zoom z, never past the footage edge.
+        const cam = (z, px = 800, py = 600) => {
+          const s = K * z
+          const clamp = (v, lo) => Math.min(0, Math.max(lo, v))
+          return { scale: s, x: clamp(W / 2 - px * s, W - 1600 * s), y: clamp(H / 2 - py * s, H - 1200 * s) }
+        }
+        const onScreen = (c, px, py) => ({ x: 110 + c.x + px * c.scale, y: 8 + c.y + py * c.scale })
+
+        // Footage landmarks (1600x1200 px).
+        const GREETING = [800, 520], WALL = [880, 780]
+        const TILE_A = [760, 670], TILE_R = [1290, 780], TILE_E = [1290, 670], TILE_U = [500, 670]
+        const ART_A = [700, 540], ART_R = [1050, 450], ART_E = [820, 620]
+        const DOG = [800, 420], WIDE = [800, 560]
+
+        const tl = gsap.timeline({ paused: true })
+
+        // Cold open: the plain gray chat, a slow uneasy push on the greeting.
+        const open = cam(1.3, ...GREETING)
+        tl.set('#window', { scale: 1.06, borderRadius: 0,
+          '--mx': `${open.x + GREETING[0] * open.scale}px`, '--my': `${open.y + GREETING[1] * open.scale}px`, '--mr': '30%' }, 0)
+        tl.fromTo('#cam', open, { ...cam(1.42, ...GREETING), duration: 2.034, ease: 'none' }, 0)
+        tl.to('#window', { '--mr': '160%', duration: 0.7, ease: 'power2.out' }, 1.9)
+
+        // Drop: the settings page lands, camera flies down the tile wall.
+        tl.set('#cam', cam(1.0, 800, 640), 2.034)
+        tl.to('#cam', { ...cam(1.32, ...WALL), duration: 1.9, ease: 'power2.inOut' }, 2.06)
+        tl.to('#window', { scale: 1, borderRadius: 18, duration: 1.0, ease: 'expo.out' }, 2.034)
+        tl.fromTo('#halo', { opacity: 0 }, { opacity: 1, duration: 1.0, ease: 'power2.out' }, 2.2)
+
+        const spark = (at, target) => {
+          tl.fromTo('#spark', { x: 300, y: 540, opacity: 0, scale: 0.6 },
+            { keyframes: { x: [300, 900, target.x], y: [540, 400, target.y], opacity: [0, 1, 1], scale: [0.6, 1, 1.2] },
+              duration: 0.5, ease: 'power2.inOut', immediateRender: false }, at)
+          tl.to('#spark', { opacity: 0, scale: 4, duration: 0.28, ease: 'power2.out' }, at + 0.5)
+        }
+
+        // Reveal helper: whip-zoom onto the painted art, then breathe out.
+        const reveal = (at, art, zIn = 1.35, zOut = 1.18, dur = 3.051) => {
+          tl.set('#cam', cam(1.5, ...art), at)
+          tl.to('#cam', { ...cam(zIn, ...art), duration: 0.4, ease: 'expo.out' }, at)
+          tl.to('#cam', { ...cam(zOut, ...art), duration: dur - 0.4, ease: 'none' }, at + 0.4)
+        }
+        const tile = (at, t) => tl.set('#cam', cam(1.55, ...t), at)
+
+        // Abyssal Garden.
+        tile(4.068, TILE_A)
+        spark(4.5, onScreen(cam(1.55, ...TILE_A), ...TILE_A))
+        reveal(5.085, ART_A)
+
+        // Rainline City.
+        tile(8.136, TILE_R)
+        reveal(9.153, ART_R)
+
+        // Ember Dunes.
+        tile(12.203, TILE_E)
+        reveal(13.220, ART_E)
+
+        // Your own photo — the dog.
+        tile(16.271, TILE_U)
+        spark(16.7, onScreen(cam(1.55, ...TILE_U), ...TILE_U))
+        reveal(17.288, DOG, 1.5, 1.12)
+
+        // Montage: three one-bar flips, wide + punch.
+        tl.set('#cam', cam(1.02, ...WIDE), 20.339)
+        tl.to('#cam', { ...cam(1.1, ...WIDE), duration: 2.034, ease: 'none' }, 20.339)
+        tl.set('#cam', cam(1.02, 800, 500), 22.373)
+        tl.to('#cam', { ...cam(1.1, 800, 500), duration: 2.034, ease: 'none' }, 22.373)
+        tl.set('#cam', cam(1.02, 800, 620), 24.407)
+        tl.to('#cam', { ...cam(1.1, 800, 620), duration: 2.034, ease: 'none' }, 24.407)
+
+        // Lockup: pull out on the dog, window bows out.
+        tl.set('#cam', cam(1.05, ...DOG), 26.441)
+        tl.to('#cam', { ...cam(0.95, ...DOG), duration: 2.2, ease: 'power2.inOut' }, 26.441)
+        tl.to('#window', { scale: 0.55, y: 60, opacity: 0.35, duration: 1.1, ease: 'expo.inOut' }, 27.6)
+        tl.to('#halo', { opacity: 0.6, duration: 1.0 }, 27.8)
+
+        window.__timelines['main'] = tl
+      })()
+    </script>
+  </body>
+</html>

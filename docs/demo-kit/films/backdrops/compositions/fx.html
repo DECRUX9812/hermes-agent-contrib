@@ -1,0 +1,38 @@
+<!doctype html>
+<html><head><meta charset="UTF-8" /></head><body><template>
+      <style>
+        @font-face { font-family: 'Avenir Next Condensed'; src: local('Avenir Next Condensed'); }
+        #fx-root { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+        #flash { position: absolute; inset: 0; background: #f3efe2; opacity: 0; }
+        #ring { position: absolute; left: 960px; top: 540px; width: 300px; height: 300px; margin: -150px 0 0 -150px; border-radius: 50%;
+          border: 3px solid rgba(143, 182, 255, 0.9); opacity: 0; }
+        .streak { position: absolute; left: -10%; width: 120%; height: 2px; opacity: 0;
+          background: linear-gradient(90deg, transparent, rgba(200,215,255,0.85) 30%, rgba(242,181,59,0.9) 50%, rgba(200,215,255,0.85) 70%, transparent); }
+        #st1 { top: 30%; } #st2 { top: 52%; } #st3 { top: 71%; }
+      </style>
+      <div id="fx-root" data-composition-id="fx" data-width="1920" data-height="1080">
+        <div id="flash"></div>
+        <div id="ring"></div>
+        <div class="streak" id="st1"></div>
+        <div class="streak" id="st2"></div>
+        <div class="streak" id="st3"></div>
+      </div>
+      <script>
+        (() => {
+          const tl = gsap.timeline({ paused: true })
+          // Percussive whip-lines across each reveal cut.
+          const whip = at => {
+            ['#st1', '#st2', '#st3'].forEach((id, i) => {
+              tl.fromTo(id, { xPercent: -110, opacity: 0 },
+                { keyframes: { xPercent: [-110, 0, 110], opacity: [0, 1, 0] }, duration: 0.38, ease: 'power2.in', immediateRender: false }, at + i * 0.05)
+            })
+          }
+          // Flash + ring kiss on the gallery drop and the dog reveal.
+          tl.fromTo('#flash', { opacity: 0 }, { keyframes: { opacity: [0, 0.7, 0] }, duration: 0.45, ease: 'power2.out', immediateRender: false }, 2.0)
+          tl.fromTo('#flash', { opacity: 0 }, { keyframes: { opacity: [0, 0.55, 0] }, duration: 0.4, ease: 'power2.out', immediateRender: false }, 17.25)
+          tl.fromTo('#ring', { scale: 0.4, opacity: 0.9 }, { scale: 5.0, opacity: 0, duration: 1.0, ease: 'power2.out', immediateRender: false }, 17.35)
+          whip(4.9); whip(8.95); whip(13.05); whip(17.15); whip(20.35); whip(22.4); whip(24.45)
+          window.__timelines['fx'] = tl
+        })()
+      </script>
+</template></body></html>

@@ -1,0 +1,12 @@
+{
+  "drops": [
+    { "id": "nebula-drift", "title": "Nebula Drift", "url": "backgrounds/nebula-drift.jpg", "thumb": "backgrounds/thumbs/nebula-drift.jpg", "added": "2026-10-03" },
+    { "id": "aurora-summit", "title": "Aurora Summit", "url": "backgrounds/aurora-summit.jpg", "thumb": "backgrounds/thumbs/aurora-summit.jpg", "added": "2026-10-03" },
+    { "id": "abyssal-garden", "title": "Abyssal Garden", "url": "backgrounds/abyssal-garden.jpg", "thumb": "backgrounds/thumbs/abyssal-garden.jpg", "added": "2026-10-03" },
+    { "id": "ember-dunes", "title": "Ember Dunes", "url": "backgrounds/ember-dunes.jpg", "thumb": "backgrounds/thumbs/ember-dunes.jpg", "added": "2026-10-03" },
+    { "id": "rainline-city", "title": "Rainline City", "url": "backgrounds/rainline-city.jpg", "thumb": "backgrounds/thumbs/rainline-city.jpg", "added": "2026-10-03" },
+    { "id": "ink-tide", "title": "Ink Tide", "url": "backgrounds/ink-tide.jpg", "thumb": "backgrounds/thumbs/ink-tide.jpg", "added": "2026-10-03" },
+    { "id": "glowcap-forest", "title": "Glowcap Forest", "url": "backgrounds/glowcap-forest.jpg", "thumb": "backgrounds/thumbs/glowcap-forest.jpg", "added": "2026-10-03" },
+    { "id": "topo-waves", "title": "Topo Waves", "url": "backgrounds/topo-waves.jpg", "thumb": "backgrounds/thumbs/topo-waves.jpg", "added": "2026-10-03" }
+  ]
+}

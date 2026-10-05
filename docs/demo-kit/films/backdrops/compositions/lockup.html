@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="UTF-8" /></head><body><template>
+      <style>
+        @font-face { font-family: 'Avenir Next Condensed'; src: local('Avenir Next Condensed'); }
+        #lk-root { position: absolute; inset: 0; font-family: 'Avenir Next Condensed', 'Avenir Next', 'Helvetica Neue', sans-serif; }
+        #lk-word { position: absolute; left: 0; right: 0; top: 300px; text-align: center; font-size: 190px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; color: #f3ecdc; opacity: 0; text-transform: lowercase; }
+        #lk-word .w-gold { color: #f2b53b; }
+        #lk-sub { position: absolute; left: 0; right: 0; top: 540px; text-align: center; font-size: 44px; font-weight: 800; letter-spacing: -0.01em; color: #f2b53b; opacity: 0; }
+        #lk-url { position: absolute; left: 0; right: 0; top: 880px; text-align: center; font-family: Menlo, monospace; font-size: 27px; color: rgba(243, 236, 220, 0.78); letter-spacing: 0.02em; opacity: 0; }
+      </style>
+      <div id="lk-root" data-composition-id="lockup" data-width="1920" data-height="1080">
+        <div id="lk-word" data-layout-allow-occlusion>back<span class="w-gold">drops</span></div>
+        <div id="lk-sub" data-layout-allow-occlusion>a Hermes desktop plugin — fresh drops + your photo</div>
+        <div id="lk-url" data-layout-allow-occlusion>settings → appearance · open source · DECRUX9812/hermes-agent-contrib</div>
+      </div>
+      <script>
+        (() => {
+          const tl = gsap.timeline({ paused: true })
+          tl.fromTo('#lk-word', { scale: 1.6, opacity: 0, filter: 'blur(16px)' }, { scale: 1, opacity: 1, filter: 'blur(0px)', duration: 0.6, ease: 'expo.out' }, 0.05)
+          tl.fromTo('#lk-sub', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'expo.out' }, 0.55)
+          tl.fromTo('#lk-url', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power2.out' }, 1.0)
+          tl.to('#lk-word', { scale: 1.03, duration: 3.4, ease: 'none' }, 0.65)
+          window.__timelines['lockup'] = tl
+        })()
+      </script>
+</template></body></html>
