@@ -6,6 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
 import { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
+import { AgentPresence } from './agent-presence'
+import { ColonyRoster } from './colony-roster'
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { SidebarPanelLabel } from '@/app/shell/sidebar-label'
 import { Button } from '@/components/ui/button'
@@ -1620,6 +1622,11 @@ export function ChatSidebar({
       >
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
           <SidebarGroupContent>
+            {/* Agent presence — who is here and what they are doing. */}
+            <div className="px-0 pb-2">
+              <AgentPresence />
+            </div>
+            <ColonyRoster />
             <SidebarMenu className="gap-px">
               {/* Workspace first (Codex/Antigravity): which project you are in,
                   switchable in one click, above the actions scoped to it. */}
