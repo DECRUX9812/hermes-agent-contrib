@@ -31,6 +31,16 @@ export function Stage() {
     [definitions]
   )
 
+  const widths = useMemo(
+    () =>
+      Object.fromEntries(
+        definitions
+          .filter(definition => definition.width !== undefined)
+          .map(definition => [definition.id, definition.width])
+      ) as Partial<Record<AvatarId, number>>,
+    [definitions]
+  )
+
   const visibleIds = AVATAR_IDS.filter(id => avatars[id].visible && hasAvatar(id))
   const viewport = { height: size.height, width: size.width }
 
@@ -39,7 +49,8 @@ export function Stage() {
     dock: dockRect(definitions.length, viewport),
     heights,
     ids: visibleIds,
-    viewport
+    viewport,
+    widths
   })
 
   const perchY = visibleIds.length > 0 ? slots[visibleIds[0]].perchY : 0

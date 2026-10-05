@@ -1,7 +1,11 @@
-// Side-effect: registers Muse. Adding an avatar is one file plus one
+// Side-effect: registers the whole cast. Adding an avatar is one file plus one
 // `registerAvatar` call; importing it here is the pane's single composition
 // point for the cast.
+import './avatars/claude'
+import './avatars/grok'
+import './avatars/hermes'
 import './avatars/muse'
+import './avatars/opencode'
 
 import { createRoot } from 'react-dom/client'
 

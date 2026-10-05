@@ -22,9 +22,11 @@ import {
  */
 const IDLE_RIG: AvatarRigHandle = {
   accent: null,
+  accentCue: null,
   eyes: null,
   head: null,
   registerAccent: () => undefined,
+  registerAccentCue: () => undefined,
   registerEyes: () => undefined,
   registerHead: () => undefined
 }

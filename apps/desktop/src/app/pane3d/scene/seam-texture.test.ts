@@ -94,4 +94,25 @@ describe('seamAlphaProfile', () => {
     expect(sampled[columns - 2]).toBeLessThan(peak * 0.4)
     expect(sampled[Math.floor(columns / 2)]).toBe(peak)
   })
+
+  it('tapers as a fraction of the length, so the shape scales with the bloom width', () => {
+    // The seam plane blooms from 1.6 units to 0; the texture stretches across
+    // whatever width it is drawn at. A taper expressed as a fraction of the
+    // length resamples to the same shape at any resolution — a fixed-pixel end
+    // taper would harden as the seam narrowed. Sample two very different texture
+    // widths and require the normalized profiles to agree.
+    const sampleAtFraction = (width: number, u: number) =>
+      seamAlphaProfile(width, SEAM_TEXTURE_HEIGHT)[middle * width + Math.round(u * (width - 1))]
+
+    for (const u of [0, 0.02, 0.05, 0.1, 0.25, 0.5, 0.75, 0.95]) {
+      // Tolerance covers the texel rounding at each width; a fixed-pixel taper
+      // would differ by tens of alpha units, not single digits.
+      expect(sampleAtFraction(64, u), `alpha at u=${u}`).toBeCloseTo(sampleAtFraction(SEAM_TEXTURE_WIDTH, u), -1)
+    }
+
+    // The end taper, measured in texels, grows with the strip: 5% in is still
+    // near zero at 64 texels and at 256.
+    expect(sampleAtFraction(64, 0.05)).toBeLessThan(32)
+    expect(sampleAtFraction(SEAM_TEXTURE_WIDTH, 0.05)).toBeLessThan(32)
+  })
 })

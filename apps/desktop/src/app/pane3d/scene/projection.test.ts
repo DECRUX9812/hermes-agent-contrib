@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { PaneAnchor } from '../protocol'
+import type { AvatarId, PaneAnchor } from '../protocol'
 
 import {
   AVATAR_WIDTH_RATIO,
@@ -15,6 +15,7 @@ import {
   PX_PER_UNIT,
   resetAvatarFrame,
   screenToWorld,
+  SLOT_WIDTH_MARGIN,
   worldToScreen
 } from './projection'
 
@@ -100,7 +101,8 @@ describe('pane geometry', () => {
     const slots = computeSlotLayout({ anchor: desktopAnchor, dock, heights, ids: ['muse', 'grok'], viewport: VIEWPORT })
     const muse = worldToScreen({ x: slots.muse.x, y: 0 }, VIEWPORT).x
     const grok = worldToScreen({ x: slots.grok.x, y: 0 }, VIEWPORT).x
-    const widthPx = 1.1 * AVATAR_WIDTH_RATIO * PX_PER_UNIT
+    // The budgeted width includes the perspective margin the layout applies.
+    const widthPx = 1.1 * AVATAR_WIDTH_RATIO * SLOT_WIDTH_MARGIN * PX_PER_UNIT
 
     // First listed is rightmost; the next sits 1.5 widths to its left.
     expect(muse).toBeGreaterThan(grok)
@@ -125,6 +127,113 @@ describe('pane geometry', () => {
       ])
     ).toEqual({ height: 35, width: 20, x: 10, y: 5 })
     expect(boundingScreenRect([])).toBeNull()
+  })
+})
+
+/** Real cast sizes (avatar definitions) — the layout must hold for these. */
+const CAST_HEIGHTS: Record<AvatarId, number> = { claude: 1.23, grok: 0.95, hermes: 1.08, muse: 1.1, opencode: 0.8 }
+const CAST_WIDTHS: Record<AvatarId, number> = { claude: 0.74, grok: 0.7, hermes: 1.22, muse: 1.35, opencode: 0.8 }
+const CAST_IDS: AvatarId[] = ['muse', 'hermes', 'grok', 'opencode', 'claude']
+
+/** Pane-px horizontal spans of a laid-out row, right-to-left as listed. */
+function rowSpans(ids: AvatarId[], slots: ReturnType<typeof computeSlotLayout>) {
+  return ids.map(id => {
+    const center = worldToScreen({ x: slots[id].x, y: 0 }, VIEWPORT).x
+    const width = CAST_WIDTHS[id] * SLOT_WIDTH_MARGIN * PX_PER_UNIT
+
+    return { center, left: center - width / 2, right: center + width / 2 }
+  })
+}
+
+describe('perch row layout (VAL-ROOM-003)', () => {
+  for (const count of [2, 3, 5]) {
+    it(`keeps ${count} avatars non-overlapping on the perch line`, () => {
+      const ids = CAST_IDS.slice(0, count)
+
+      const slots = computeSlotLayout({
+        anchor: browserAnchor,
+        dock: null,
+        heights: CAST_HEIGHTS,
+        ids,
+        viewport: VIEWPORT,
+        widths: CAST_WIDTHS
+      })
+
+      const spans = rowSpans(ids, slots)
+
+      for (let index = 1; index < spans.length; index += 1) {
+        expect(spans[index - 1].left, `${count} avatars: slot ${index - 1}/${index} gap`).toBeGreaterThan(
+          spans[index].right
+        )
+      }
+
+      // Every slot rests on the anchor's top edge (one shared perch line).
+      const perch = ids.map(id => worldToScreen({ x: 0, y: slots[id].perchY }, VIEWPORT).y)
+
+      expect(new Set(perch).size).toBe(1)
+      expect(perch[0]).toBeCloseTo(browserAnchor.rect.y, 6)
+    })
+
+    it(`keeps ${count} avatars non-overlapping on the desktop row`, () => {
+      const ids = CAST_IDS.slice(0, count)
+      const dock = dockRect(count, VIEWPORT)
+
+      const slots = computeSlotLayout({
+        anchor: desktopAnchor,
+        dock,
+        heights: CAST_HEIGHTS,
+        ids,
+        viewport: VIEWPORT,
+        widths: CAST_WIDTHS
+      })
+
+      const spans = rowSpans(ids, slots)
+
+      for (let index = 1; index < spans.length; index += 1) {
+        expect(spans[index - 1].left, `desktop ${count} avatars: slot ${index - 1}/${index} gap`).toBeGreaterThan(
+          spans[index].right
+        )
+      }
+
+      // Inside the work area and above the dock.
+      expect(Math.min(...spans.map(span => span.left))).toBeGreaterThanOrEqual(0)
+      expect(Math.max(...spans.map(span => span.right))).toBeLessThanOrEqual(VIEWPORT.width)
+
+      for (const id of ids) {
+        const feet = worldToScreen({ x: slots[id].x, y: slots[id].perchY }, VIEWPORT).y
+
+        expect(feet).toBeLessThan(dock.y)
+      }
+    })
+  }
+
+  it('still never overlaps when the row is wider than a narrow anchor', () => {
+    const narrow: PaneAnchor = {
+      kind: 'hermes-browser',
+      label: 'narrow',
+      rect: { height: 500, width: 320, x: 100, y: 200 }
+    }
+
+    const ids = CAST_IDS
+
+    const slots = computeSlotLayout({
+      anchor: narrow,
+      dock: null,
+      heights: CAST_HEIGHTS,
+      ids,
+      viewport: VIEWPORT,
+      widths: CAST_WIDTHS
+    })
+
+    const spans = rowSpans(ids, slots)
+
+    for (let index = 1; index < spans.length; index += 1) {
+      expect(spans[index - 1].left).toBeGreaterThan(spans[index].right)
+    }
+
+    // The row as a whole is shifted to stay inside the work area.
+    expect(Math.min(...spans.map(span => span.left))).toBeGreaterThanOrEqual(0)
+    expect(Math.max(...spans.map(span => span.right))).toBeLessThanOrEqual(VIEWPORT.width)
   })
 })
 

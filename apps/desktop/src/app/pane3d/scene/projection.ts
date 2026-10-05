@@ -39,6 +39,13 @@ export const CAMERA_FOV = 30
 /** Muse's pearl is r 0.42 → a width of ~0.84 at height 1.1. */
 export const AVATAR_WIDTH_RATIO = 0.82
 export const SLOT_SPACING_RATIO = 1.5
+/**
+ * Projected screen boxes run a few percent wider than the world silhouette
+ * (perspective spreads the near corners of a part with real depth), so the
+ * layout budgets a margin on each avatar's declared width. Without it Muse's
+ * halo and Hermes' wings overlap their neighbour by ~20 px.
+ */
+export const SLOT_WIDTH_MARGIN = 1.25
 /** Gap between the row of avatars and the dock / the edge. */
 export const PERCH_INSET = 12
 export const SLOT_START_RATIO = 0.8
@@ -76,10 +83,90 @@ export function dockRect(avatarCount: number, viewport: Viewport): ScreenRect {
 export interface SlotLayoutInput {
   ids: AvatarId[]
   heights: Record<AvatarId, number>
+  /**
+   * World-space silhouette widths (avatar definitions). Omitted ids fall back
+   * to `height * AVATAR_WIDTH_RATIO`.
+   */
+  widths?: Partial<Record<AvatarId, number>>
   anchor: PaneAnchor
   viewport: Viewport
   /** Dock rect when the anchor is `desktop` (avatars float above it). */
   dock: ScreenRect | null
+}
+
+export interface SlotEdge {
+  left: number
+  width: number
+}
+
+/**
+ * Centers a row of avatars in pane px, right-to-left from 80% of the edge
+ * (architecture §8.6). The row never overlaps: adjacent centers are always at
+ * least half of each width apart, and the desired half-width gap between them
+ * is shrunk (never inverted) when the row would not fit the viewport. A row
+ * that still fits is only shifted when it would leave the viewport margins.
+ *
+ * Pure and three-free: the slot layout contract (VAL-ROOM-003) is unit-tested
+ * at 2, 3 and 5 avatars.
+ */
+export function layoutSlotCenters(widths: number[], edge: SlotEdge, viewport: Viewport): number[] {
+  const count = widths.length
+
+  if (count === 0) {
+    return []
+  }
+
+  const desiredGap = (index: number) => (SLOT_SPACING_RATIO - 1) * Math.max(widths[index - 1], widths[index])
+
+  const centers = new Array<number>(count)
+
+  centers[0] = edge.left + SLOT_START_RATIO * edge.width - widths[0] / 2
+
+  for (let index = 1; index < count; index += 1) {
+    centers[index] = centers[index - 1] - widths[index - 1] / 2 - desiredGap(index) - widths[index] / 2
+  }
+
+  // If the row would not fit the work area, give up the gaps (down to zero)
+  // before it would ever overlap — the "never overlap" invariant wins.
+  const minLeft = PERCH_INSET
+  const maxRight = viewport.width - PERCH_INSET
+  const sumWidths = widths.reduce((total, width) => total + width, 0)
+  let desiredGaps = 0
+
+  for (let index = 1; index < count; index += 1) {
+    desiredGaps += desiredGap(index)
+  }
+
+  const rowWidth = sumWidths + desiredGaps
+
+  if (rowWidth > maxRight - minLeft && desiredGaps > 0) {
+    const scale = Math.max(0, Math.min(1, (maxRight - minLeft - sumWidths) / desiredGaps))
+
+    for (let index = 1; index < count; index += 1) {
+      centers[index] = centers[index - 1] - widths[index - 1] / 2 - desiredGap(index) * scale - widths[index] / 2
+    }
+  }
+
+  // A row that fits is nudged back inside the margins as a whole; a row wider
+  // than the work area keeps the first slot where the edge put it.
+  const left = centers[count - 1] - widths[count - 1] / 2
+  const right = centers[0] + widths[0] / 2
+
+  if (right - left <= maxRight - minLeft) {
+    if (left < minLeft) {
+      const shift = minLeft - left
+
+      return centers.map(center => center + shift)
+    }
+
+    if (right > maxRight) {
+      const shift = maxRight - right
+
+      return centers.map(center => center + shift)
+    }
+  }
+
+  return centers
 }
 
 /**
@@ -88,10 +175,10 @@ export interface SlotLayoutInput {
  * anchor's top edge; the desktop anchor floats the row above the dock.
  */
 export function computeSlotLayout(input: SlotLayoutInput): Record<AvatarId, SlotTarget> {
-  const { anchor, dock, heights, ids, viewport } = input
+  const { anchor, dock, heights, ids, viewport, widths } = input
   const out = {} as Record<AvatarId, SlotTarget>
 
-  const edge =
+  const edge: SlotEdge =
     anchor.kind === 'desktop' || anchor.rect.width <= 0
       ? { left: 0, width: viewport.width }
       : { left: anchor.rect.x, width: anchor.rect.width }
@@ -102,22 +189,23 @@ export function computeSlotLayout(input: SlotLayoutInput): Record<AvatarId, Slot
       : anchor.rect.y
 
   const perchY = screenToWorld({ x: 0, y: perchPx }, viewport).y
-  let cursorPx = edge.left + SLOT_START_RATIO * edge.width
 
-  ids.forEach(id => {
+  const widthPx = ids.map(id => {
+    const width = widths?.[id] ?? (heights[id] ?? 1.1) * AVATAR_WIDTH_RATIO
+
+    return width * SLOT_WIDTH_MARGIN * PX_PER_UNIT
+  })
+
+  const centers = layoutSlotCenters(widthPx, edge, viewport)
+
+  ids.forEach((id, index) => {
     const height = heights[id] ?? 1.1
-    const widthPx = height * AVATAR_WIDTH_RATIO * PX_PER_UNIT
-    const minCenter = PERCH_INSET + widthPx / 2
-    const maxCenter = viewport.width - PERCH_INSET - widthPx / 2
-    const centerPx = Math.min(maxCenter, Math.max(minCenter, cursorPx - widthPx / 2))
 
     out[id] = {
       perchY,
-      x: screenToWorld({ x: centerPx, y: 0 }, viewport).x,
+      x: screenToWorld({ x: centers[index], y: 0 }, viewport).x,
       y: perchY + height / 2
     }
-    // Center-to-center pitch = 1.5 avatar widths (gap = half a width).
-    cursorPx = centerPx - widthPx / 2 - (SLOT_SPACING_RATIO - 1) * widthPx
   })
 
   return out

@@ -86,7 +86,9 @@ export const muse: AvatarDefinition = {
   height: 1.1,
   id: 'muse',
   palette: { accent: '#ff8fc8', glow: '#ffc6e8', ink: '#2a1740', primary: '#e9d5ff' },
-  tagline: 'Muse — your creative partner'
+  tagline: 'Muse — your creative partner',
+  // The tilted halo torus dominates the silhouette (0.55 r, 12° tilt).
+  width: 1.35
 }
 
 registerAvatar(muse)

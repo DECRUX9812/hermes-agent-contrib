@@ -38,6 +38,11 @@ function smoothstep(edge0: number, edge1: number, value: number): number {
  * step. Written as `(1 - cos 2πx)/2` rather than `sin²(πx)` because it is
  * *exactly* 0 at the ends instead of 1e-24.
  *
+ * The falloff is a FRACTION of the length, not a fixed number of pixels: the
+ * seam plane blooms from 1.6 units to 0 and the texture stretches across it, so
+ * a fraction-based taper keeps the same soft shape at every width (a fixed
+ * ~10 px end on the 73 px strip would harden as the seam narrowed).
+ *
  * The thin axis uses a flat-topped ease instead of the same cosine: the strip
  * is only ~3 px tall on screen, so a full-height cosine would be sampled almost
  * entirely in its dark half and dim the seam by ~2×.

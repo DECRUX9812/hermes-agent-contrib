@@ -152,10 +152,14 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
   const handle = useMemo<AvatarRigHandle>(
     () => ({
       accent: null,
+      accentCue: null,
       eyes: null,
       head: null,
       registerAccent: object => {
         handle.accent = object
+      },
+      registerAccentCue: cue => {
+        handle.accentCue = cue
       },
       registerEyes: object => {
         handle.eyes = object
@@ -354,6 +358,19 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
 
     applyFade(rootObject, pose.fade, m)
     writeEdge(seam.current, shadow.current, pose)
+
+    // The avatar's own accent cue (§8.4). It runs after applyFade so a cue that
+    // scales a material's opacity can include the emergence fade itself; it is
+    // an ambient cue and never gates completion.
+    handle.accentCue?.({
+      dt,
+      elapsedMs: now - m.startedAt,
+      fade: pose.fade,
+      gazeX: m.gazeX,
+      gazeY: m.gazeY,
+      pulse: pose.accentPulse,
+      state
+    })
 
     const frame = avatarFrames[definition.id]
 
