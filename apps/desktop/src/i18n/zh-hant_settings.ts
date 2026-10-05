@@ -122,23 +122,14 @@ export const zhHantSettings = {
         missingEnv: (_name, vars) => `缺少環境變數：${vars}。請在設定 → 金鑰中添加。`
       },
       title: '桌面外掛',
-      blurb:
-        '載入到此應用中的介面擴展——隨構建捆綁，或放入 desktop-plugins 資料夾（包括 Hermes 編寫的外掛）。禁用會即時解除安裝外掛並在重新啟動後保持。',
-      count: n => `已安裝 ${n} 個`,
       rescan: '重新掃描',
       reveal: '在文件管理器中顯示',
-      enable: '啟用',
-      disable: '禁用',
       failed: '失敗',
-      empty: '尚未安裝桌面外掛。',
       kinds: {
         bundled: '內建',
         disk: '磁盤',
         runtime: '執行時'
       },
-      agentHalfMissing: '此處缺少 agent 部分',
-      agentHalfMissingTip:
-        '這是捆綁外掛的桌面部分，但其 agent 部分未安裝在目前連線的後端/配置上。請在 能力 → 外掛 中安裝。'
     },
     closeSettings: '關閉設定',
     exportConfig: '匯出設定',
@@ -147,6 +138,14 @@ export const zhHantSettings = {
     resetConfirm: '要將所有設定恢復為 Hermes 預設值嗎？',
     exportFailed: '匯出失敗',
     resetFailed: '重設失敗',
+    pluginPages: {
+      blurb: '已安裝外掛程式加入的選項。每個外掛程式都有自己的頁面，有些還有子頁面。',
+      empty: '還沒有外掛程式提供設定。',
+      manage: '管理外掛程式',
+      agentSettings: '代理程式設定',
+      pageCount: (n: number) => `${n} 個頁面`,
+      missing: '這個外掛程式沒有設定頁面，可能已停用或解除安裝。'
+    },
     nav: {
       providers: '提供方',
       providerAccounts: '帳號',
@@ -164,7 +163,8 @@ export const zhHantSettings = {
       about: '關於',
       billing: '帳單',
       notifications: '通知',
-      vault: '密碼與登入'
+      vault: '密碼與登入',
+      plugins: '外掛程式'
     },
     vault: {
       title: '密碼與登入',

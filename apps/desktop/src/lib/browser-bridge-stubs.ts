@@ -39,6 +39,18 @@ function browserUnsupported(feature: string): Error {
 // Bridge members that need no per-install state: native-only capabilities
 // answered with a fixed browser result, a refusal, or a no-op.
 export const BROWSER_BRIDGE_STUBS = {
+  // The Bot Room overlay is a transparent native window; a browser tab can't
+  // open one, so it reports not-ok and drops pushes/controls.
+  botroom: {
+    close: async () => ({ ok: false }),
+    control: () => undefined,
+    onControl: () => noopUnsubscribe(),
+    onState: () => noopUnsubscribe(),
+    open: async () => ({ ok: false }),
+    pushState: () => undefined,
+    setFocusable: () => undefined,
+    setIgnoreMouse: () => undefined
+  },
   applyConnectionConfig: async () => {
     throw browserUnsupported('Gateway reconfiguration')
   },

@@ -1,5 +1,6 @@
 import { FIELD_DESCRIPTIONS, FIELD_LABELS } from '@/app/settings/constants'
 
+import { enModelMenu } from './en_model_menu'
 import type { Translations } from './types'
 
 export const en: Translations = {
@@ -939,6 +940,14 @@ export const en: Translations = {
     resetConfirm: 'Reset all settings to Hermes defaults?',
     exportFailed: 'Export failed',
     resetFailed: 'Reset failed',
+    pluginPages: {
+      blurb: 'Options that installed plugins add. Each plugin gets its own page, and some add sub-pages under it.',
+      empty: 'No plugin has settings yet.',
+      manage: 'Manage plugins',
+      agentSettings: 'Agent settings',
+      pageCount: (n: number) => (n === 1 ? '1 page' : `${n} pages`),
+      missing: 'That plugin has no settings page. It may be disabled or uninstalled.'
+    },
     nav: {
       providers: 'Providers',
       providerAccounts: 'Accounts',
@@ -956,24 +965,16 @@ export const en: Translations = {
       about: 'About',
       billing: 'Billing',
       notifications: 'Notifications',
-      vault: 'Passwords & Logins'
+      vault: 'Passwords & Logins',
+      plugins: 'Plugins'
     },
     plugins: {
       title: 'Desktop plugins',
-      blurb:
-        'Extend this app, not an agent — installed once for the whole app, whichever profile, gateway, or machine you connect to. Bundled or dropped into the desktop-plugins folder; toggles apply live.',
-      count: n => `${n} installed`,
       openFolder: 'Open Desktop plugins folder',
       rescan: 'Rescan',
       reveal: 'Reveal in file manager',
-      enable: 'Enable',
-      disable: 'Disable',
       failed: 'failed',
-      empty: 'No desktop plugins installed yet.',
       kinds: { bundled: 'bundled', disk: 'on disk', runtime: 'runtime' },
-      agentHalfMissing: 'agent half missing here',
-      agentHalfMissingTip:
-        'This is the desktop half of a bundled plugin, but its agent half is not installed on the currently connected backend/profile. Install it from Capabilities → Plugins.',
       installModal: {
         installFromGit: 'Install from Git',
         reviewRepository: 'Review repository',
@@ -2687,7 +2688,7 @@ export const en: Translations = {
         save: 'Save settings',
         saved: (name: string) => `${name} settings saved.`,
         saveFailed: (name: string) => `Could not save ${name} settings`,
-        optional: '(optional)',
+        required: 'Required',
         secretSet: '•••••••• (set)',
         secretStoredAs: (env: string) =>
           `Stored in the profile's .env as ${env}, never in config.yaml; leave blank to keep the current value.`
@@ -5167,22 +5168,7 @@ export const en: Translations = {
     windowControls: 'Window controls',
     paneControls: 'Pane controls',
     appControls: 'App controls',
-    modelMenu: {
-      search: 'Search models',
-      noModels: 'No models found',
-      editModels: 'Edit models…',
-      followDefault: 'Use Settings default',
-      refreshModels: 'Refresh models',
-      favorites: 'Favorites',
-      addFavorite: 'Add to favorites',
-      removeFavorite: 'Remove from favorites',
-      favoriteShortcut: '⇧ Click',
-      fast: 'Fast',
-      free: 'free',
-      cacheRead: 'cached read',
-      priceTitle: (input: string, output: string, cache: string) =>
-        `Input ${input}/Mtok · Output ${output}/Mtok` + (cache ? ` · Cached read ${cache}/Mtok` : '')
-    },
+    modelMenu: enModelMenu,
     modelOptions: {
       noOptions: 'No options for this model',
       options: 'Options',
@@ -6126,9 +6112,6 @@ export const en: Translations = {
     sessionUnavailable: 'Session unavailable',
     createSessionFailed: 'Could not create a new session',
     promptFailed: 'Prompt failed',
-    staleSessionTitle: 'Chat out of date',
-    staleSessionBody:
-      'This window was behind another view of the same chat. Latest messages were loaded. Send again if you still want to.',
     providerCredentialRequired: 'Add a provider credential before sending your first message.',
     emptySlashCommand: 'empty slash command',
     slashCommandIgnoredTitle: 'Command not sent',

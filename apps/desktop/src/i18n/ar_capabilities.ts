@@ -93,7 +93,6 @@ export const arCapabilities = {
         save: 'حفظ الإعدادات',
         saved: (name: string) => `حُفظت إعدادات ${name}.`,
         saveFailed: (name: string) => `تعذّر حفظ إعدادات ${name}`,
-        optional: '(اختياري)',
         secretSet: '•••••••• (مضبوط)',
         secretStoredAs: (env: string) =>
           `يُخزَّن في ‎.env الخاص بالملف الشخصي كـ${env}، وليس في config.yaml أبدًا؛ اتركه فارغًا للإبقاء على القيمة الحالية.`
