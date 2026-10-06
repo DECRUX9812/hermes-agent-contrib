@@ -417,7 +417,7 @@ class PtySessionRegistry:
         # The requested chat is (profile, session): the same session id in
         # another profile's store is a different chat whose terminal stays.
         target = (_key_segments(keep_key)[0], resume)
-        async with self._attach_lock:
+        async with self._spawn_lock:
             doomed = [
                 key for key, session in self._sessions.items()
                 if key != keep_key and not session.attached

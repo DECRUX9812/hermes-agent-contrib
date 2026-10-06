@@ -278,6 +278,7 @@ class TestPtyBridgeClose:
         # recorded at spawn; the child leads its own group (pgid == pid)
         bridge._pgid = 12345
         bridge._closed = False
+        bridge._fd_lock = threading.Lock()
 
         bridge.close()
 
@@ -397,6 +398,7 @@ class TestPtyBridgeClose:
             # recorded at spawn: the child was found in OUR group (pgid != pid)
             bridge._pgid = os.getpgid(popen.pid)
             bridge._closed = False
+            bridge._fd_lock = threading.Lock()
 
             bridge.close()
         finally:
