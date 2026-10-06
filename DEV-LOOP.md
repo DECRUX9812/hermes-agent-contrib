@@ -32,9 +32,9 @@ Do not reuse the live profile. An isolated `HERMES_HOME` + user-data-dir keeps t
 dev instance off the running gateway/webapp on `:9119` / `:9129`.
 
 ```bash
-cat > /tmp/devloop-env.sh <<'EOF'
+cat > "$TMPDIR/devloop-env.sh" <<'EOF'
 export REPO=/home/decrux/.hermes/hermes-agent
-export D=/tmp/hermes-devloop
+export D="$TMPDIR/hermes-devloop"
 mkdir -p $D/.hermes/shared $D/userdata $D/work
 
 export DISPLAY=:103                       # any X display; see §5
@@ -51,7 +51,7 @@ export HERMES_GUEST_ONBOARDING=1
 export HERMES_DESKTOP_IGNORE_EXISTING=1
 export HERMES_DISABLE_LAZY_INSTALLS=1      # see "Backend" below
 EOF
-source /tmp/devloop-env.sh
+source "$TMPDIR/devloop-env.sh"
 ```
 
 `HERMES_DESKTOP_HERMES_ROOT` and `HERMES_DESKTOP_PYTHON` are what make the spawned
@@ -71,7 +71,7 @@ DISPLAY=:103 xdpyinfo | head -3
 ## 3. Start the loop
 
 ```bash
-source /tmp/devloop-env.sh
+source "$TMPDIR/devloop-env.sh"
 cd $REPO/apps/desktop
 npx tsc --build tsconfig.electron.json      # electron main -> build/electron-types
 node scripts/bundle-electron-main.mjs --dev # main/preload -> dist/
@@ -81,7 +81,7 @@ npx vite --host 127.0.0.1 --port 5174       # renderer dev server
 Then, in a second shell with the same env:
 
 ```bash
-source /tmp/devloop-env.sh
+source "$TMPDIR/devloop-env.sh"
 cd $REPO/apps/desktop
 XCURSOR_SIZE=24 HERMES_DESKTOP_DEV_SERVER=http://127.0.0.1:5174 \
   npx electron . --no-sandbox --disable-gpu --disable-dev-shm-usage
@@ -159,7 +159,7 @@ page over CDP:
 ```bash
 # add data-hmr-probe="9274" to a rendered element, e.g. the intro wrapper in
 # src/components/chat/intro.tsx (data-slot="aui_intro")
-node /tmp/cdp-eval.mjs \
+node "$TMPDIR/cdp-eval.mjs" \
   'document.querySelector(\'[data-hmr-probe="9274"]\') ? "HMR_OK" : "HMR_FAIL"'
 ```
 
@@ -178,7 +178,7 @@ edit there may not be the one currently rendered. Assert on a stable element, or
 confirm vite is serving the edit with
 `fetch('/src/i18n/en.ts').then(r => r.text()).then(t => t.includes('MARKER'))`.
 
-`/tmp/cdp-eval.mjs` is a ~40-line `Runtime.evaluate` client (uses `ws` from the
+`$TMPDIR/cdp-eval.mjs` is a ~40-line `Runtime.evaluate` client (uses `ws` from the
 repo's root `node_modules`). It is scratch tooling, not committed; use any CDP
 client against `HERMES_DESKTOP_CDP_PORT` instead.
 
