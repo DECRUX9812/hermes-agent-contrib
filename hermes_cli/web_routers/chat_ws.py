@@ -368,13 +368,6 @@ async def console_ws(ws: WebSocket) -> None:
                 pass
 
 
-    """Tell the user why chat could not start, then close 1011 so the SPA renders
-    "Start new session". The raw exception goes to the server log only."""
-    _log.warning("pty start failed: %s: %s", type(exc).__name__, exc)
-    await ws.send_text(f"\r\n\x1b[31m{chat_start_failure_message(exc)}\x1b[0m\r\n")
-    await ws.close(code=1011)
-
-
 def _lease_holder_pid(session_id: Optional[str], *, registry_home: Optional[str] = None) -> Optional[int]:
     """The live process holding ``session_id``'s single-writer lease, if any.
 

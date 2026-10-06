@@ -256,17 +256,33 @@ def _hermes_holder_subcommand(cmdline: str, *, module_only: bool = False) -> str
     if not cmdline:
         return None
     try:
-        tokens = shlex.split(cmdline, posix=False)
-    except Exception:
-        tokens = cmdline.split()
-    # ``python -c <src> … -m hermes_cli.main <subcommand>``: the entry token belongs to the argv the
-    # inline source carries for a LATER spawn, not to this holder (#107002) -- unless the source is a
-    # Hermes bootstrap running the entry point in this process (#124318).
-    from gateway.status_inline_source import command_line_runs_inline_source, inline_bootstrap_argv
-    normalized = [t.strip("\"'").replace("\\", "/") for t in tokens]
-    if command_line_runs_inline_source(normalized):
-        tokens = inline_bootstrap_argv(normalized)
-        if tokens is None:
+        tokens = [token.strip("\"'") for token in shlex.split(cmdline, posix=False)]
+    except ValueError:
+        return None
+    if not tokens:
+        return None
+
+    def _is_script(token: str) -> bool:
+        normalized = token.lower().replace("\\", "/")
+        return normalized.rsplit("/", 1)[-1] in ("hermes", "hermes.exe") or (
+            normalized == "hermes_cli/main.py" or normalized.endswith("/hermes_cli/main.py"))
+
+    entry_idx = 0
+    module_target = False
+    if not _is_script(tokens[0]):
+        from gateway.status_inline_source import command_line_runs_inline_source, inline_bootstrap_argv
+        from hermes_state_holders import _looks_like_python_executable, _python_execution_target
+
+        # ``python -c <src> … -m hermes_cli.main <subcommand>``: the trailing argv belongs to a LATER
+        # spawn, not this holder (#107002) -- unless the source is a Hermes bootstrap running the
+        # entry point in this process (#124318).
+        if command_line_runs_inline_source(tokens):
+            tokens = inline_bootstrap_argv(tokens)
+            if tokens is None:
+                return None
+
+        target = _python_execution_target(tokens) if _looks_like_python_executable(tokens[0]) else None
+        if target is None:
             return None
         kind, value, entry_idx = target
         module_target = kind == "module"
