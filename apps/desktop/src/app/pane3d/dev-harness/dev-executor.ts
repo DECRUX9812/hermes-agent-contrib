@@ -16,6 +16,7 @@
 import type { AvatarTask, TaskEvent, TaskExecutor, TaskResult } from '../director/tasks'
 
 import { DEMO_CHART } from './demo-data'
+import { LAUNCH_DEMO_DRAFT } from './launch-demo'
 
 export const DEV_PROGRESS_STEPS = ['Reading the post', 'Sketching the build', 'Rendering preview'] as const
 
@@ -31,9 +32,36 @@ export interface DevStep {
   event: TaskEvent
 }
 
+/** Dash characters a keyboard, autocorrect or a chat client can produce. */
+const DASH_VARIANTS = /[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uFE58\uFF0D]/g
+/** What a user may add to (or drop from) the end of the story line. */
+const TRAILING_PUNCTUATION = /[.!?…,;:'"”’)\]]+$/u
+
+/**
+ * The story line is the launch demo's own pre-filled request, but the demo is
+ * optional: a user who watched it (or was told about it) retypes the line, and
+ * a validator types it into Grok's composer directly. All three forms must ask
+ * for the same chart, so the comparison forgives dashes, case, spacing and the
+ * trailing question mark.
+ */
+function normalizeRequest(text: string): string {
+  return text
+    .replace(DASH_VARIANTS, '-')
+    .replace(/\s*-\s*/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(TRAILING_PUNCTUATION, '')
+    .trim()
+    .toLowerCase()
+}
+
+function isLaunchStoryRequest(text: string): boolean {
+  return normalizeRequest(text) === normalizeRequest(LAUNCH_DEMO_DRAFT)
+}
+
 /** The chart rides along when the request is about numbers, or the launch demo asks. */
 export function shouldAttachChart(text: string, demoRequested = false): boolean {
-  return demoRequested || /growth|chart|stats/i.test(text)
+  return demoRequested || isLaunchStoryRequest(text) || /growth|chart|stats/i.test(text)
 }
 
 function excerpt(text: string, max = EXCERPT_MAX): string {
@@ -128,8 +156,9 @@ export class DevHarnessExecutor implements TaskExecutor {
   readonly label = 'Dev harness'
 
   run(task: AvatarTask, emit: (event: TaskEvent) => void): () => void {
-    // The launch demo's own task carries the marker (§11), so the demo chart
-    // rides on that one task and can never reach a request the user made.
+    // Only the launch demo's own task carries the marker (§11), so the chart
+    // is automatic on that one task; a user's story-line request gets the same
+    // chart but keeps its card and reaches it through "Show chart" (§8.9).
     const steps = devScript(task)
     const timers = steps.map(step => setTimeout(() => emit(step.event), step.at))
 

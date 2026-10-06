@@ -21,6 +21,7 @@ import { AVATAR_IDS } from '../protocol'
 
 import { DEMO_CHART } from './demo-data'
 import { DevHarnessExecutor } from './dev-executor'
+import { LAUNCH_DEMO_DRAFT } from './launch-demo'
 
 // The pane installs the presenter once, at its composition point.
 installChartPresenter()
@@ -96,6 +97,23 @@ describe('launch demo scope', () => {
     expect(card.presentChart).toBeUndefined()
     expect($chartPresentation.get()).toBeNull()
     // The user reaches the chart through the card's "Show chart" (§8.9).
+    expect($feed.get()).toHaveLength(0)
+  })
+
+  it('gives the plain story line a chart the user presents by click (VAL-CROSS-001)', async () => {
+    // The manual end-to-end story types the demo's line itself, with no demo
+    // marker — the card must carry the chart and stay on screen.
+    perch('muse')
+
+    const id = submitTask('muse', LAUNCH_DEMO_DRAFT, context)
+
+    await vi.runAllTimersAsync()
+
+    const card = $taskCards.get()[`${id}-result`]
+
+    expect(card.chart).toEqual(DEMO_CHART)
+    expect(card.presentChart).toBeUndefined()
+    expect($chartPresentation.get()).toBeNull()
     expect($feed.get()).toHaveLength(0)
   })
 

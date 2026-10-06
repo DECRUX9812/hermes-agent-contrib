@@ -4,6 +4,7 @@ import type { AvatarTask, TaskEvent, TaskResult } from '../director/tasks'
 
 import { DEMO_CHART } from './demo-data'
 import { DEV_PROGRESS_STEPS, DevHarnessExecutor, devScript, shouldAttachChart } from './dev-executor'
+import { LAUNCH_DEMO_DRAFT } from './launch-demo'
 
 const task: AvatarTask = {
   avatar: 'muse',
@@ -53,14 +54,15 @@ describe('dev harness executor script', () => {
     expect(stream.trim().length).toBeGreaterThan(80)
   })
 
-  it('attaches the demo chart only when the request or the demo task asks for it', () => {
+  it('attaches the demo chart for a keyword request or the demo\u2019s own task', () => {
     expect(shouldAttachChart('can you show me the growth?')).toBe(true)
     expect(shouldAttachChart('add a chart please')).toBe(true)
     expect(shouldAttachChart('what do the stats look like')).toBe(true)
     expect(shouldAttachChart('build me a landing page')).toBe(false)
     expect(shouldAttachChart('build me a landing page', true)).toBe(true)
+    expect(shouldAttachChart('explain this page')).toBe(false)
 
-    const plain = events(devScript(task)).at(-1)
+    const plain = events(devScript({ ...task, text: 'build me a landing page' })).at(-1)
     const asked = events(devScript({ ...task, text: 'add a chart please' })).at(-1)
     const stats = events(devScript({ ...task, text: 'what do the stats look like' })).at(-1)
     const launch = events(devScript({ ...task, demo: 'launch' })).at(-1)
@@ -72,6 +74,25 @@ describe('dev harness executor script', () => {
     // The demo's pre-filled line carries no chart word: its task marker is what
     // attaches the chart (§11).
     expect(resultOf(launch).chart).toEqual(DEMO_CHART)
+  })
+
+  it('recognises the launch story line through any dash, case or extra space (VAL-CROSS-001)', () => {
+    const story = LAUNCH_DEMO_DRAFT
+
+    expect(shouldAttachChart(story)).toBe(true)
+    expect(shouldAttachChart(story.replace('\u2014', '\u2013'))).toBe(true)
+    expect(shouldAttachChart(story.replace('\u2014', '-'))).toBe(true)
+    expect(shouldAttachChart(story.toUpperCase())).toBe(true)
+    expect(shouldAttachChart(`  ${story.replace(/ /g, '   ')}  `)).toBe(true)
+    expect(shouldAttachChart(story.replace('?', ''))).toBe(true)
+    expect(shouldAttachChart('explain this page')).toBe(false)
+    expect(shouldAttachChart('can you build something for me?')).toBe(false)
+
+    const result = resultOf(events(devScript(task)).at(-1))
+
+    expect(result.chart).toEqual(DEMO_CHART)
+    // The card stays on screen: an ordinary request reaches the chart by click (§8.9).
+    expect(result.presentChart).toBeUndefined()
   })
 
   it('asks for the chart to be presented only on the demo\u2019s own task', () => {
