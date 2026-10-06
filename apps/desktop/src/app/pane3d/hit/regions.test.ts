@@ -147,6 +147,12 @@ describe('buildHitRegions', () => {
     expect(dom).toEqual([rect(2044, 1150, 72, 32)])
     expect(buildHitRegions({ dom })).toEqual([rect(2036, 1142, 88, 48)])
   })
+
+  it('pads projected chart geometry like avatar geometry, not like DOM', () => {
+    // The chart's bars are real geometry: without a region covering them,
+    // `setShape` would clip the chart off the screen on Linux (§6, §8.9).
+    expect(buildHitRegions({ chart: [rect(100, 100, 40, 40)] })).toEqual([rect(94, 94, 52, 52)])
+  })
 })
 
 describe('domHitRects', () => {

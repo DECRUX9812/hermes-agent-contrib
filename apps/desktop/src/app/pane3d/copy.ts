@@ -4,6 +4,7 @@
  */
 export const PANE_COPY = {
   ask: 'Ask',
+  closeChart: 'Close chart',
   closeComposer: 'Close composer',
   composerHint: 'Enter to send · Shift+Enter for a new line · Esc to close',
   composerPlaceholder: (name: string) => `Ask ${name} to build, copy or explain this…`,

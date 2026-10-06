@@ -173,12 +173,15 @@ export function regionsEqual(a: ScreenRect[], b: ScreenRect[], tolerance = EQUAL
 export interface HitRegionSources {
   /** Projected avatar part + edge boxes, pane CSS px, unpadded. */
   avatars?: ScreenRect[]
+  /** Projected Chart3D geometry boxes while a chart is presented (§8.9). */
+  chart?: ScreenRect[]
   /** DOM rects (`data-pane-hit`, `data-pane-chart`), pane CSS px, unpadded. */
   dom?: ScreenRect[]
 }
 
 export interface BuildHitRegionOptions {
   avatarPad?: number
+  chartPad?: number
   domPad?: number
   gap?: number
   cap?: number
@@ -186,10 +189,13 @@ export interface BuildHitRegionOptions {
 
 /** Pad each source by its own rule, then merge into the published list. */
 export function buildHitRegions(sources: HitRegionSources, options: BuildHitRegionOptions = {}): ScreenRect[] {
-  const { avatarPad = AVATAR_PAD, cap = REGION_CAP, domPad = DOM_PAD, gap = MERGE_GAP } = options
+  const { avatarPad = AVATAR_PAD, cap = REGION_CAP, chartPad = AVATAR_PAD, domPad = DOM_PAD, gap = MERGE_GAP } = options
 
   const padded = [
     ...(sources.avatars ?? []).map(rect => padRect(rect, avatarPad)),
+    // Chart geometry is real geometry, so it takes the glow padding the
+    // avatars' parts take, not the DOM shadow padding.
+    ...(sources.chart ?? []).map(rect => padRect(rect, chartPad)),
     ...(sources.dom ?? []).map(rect => padRect(rect, domPad))
   ]
 

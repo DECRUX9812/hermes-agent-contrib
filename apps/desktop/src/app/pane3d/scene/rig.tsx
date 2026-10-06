@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
 import type { AvatarDefinition, AvatarRigHandle } from '../avatars/types'
+import { getChartFacing } from '../director/chart-live'
 import { getNodStart } from '../director/nods'
 import { bowPitch, facingPose } from '../director/room'
 import { getBowStart, getFacingTarget } from '../director/room-live'
@@ -44,6 +45,9 @@ export interface RigProps {
 
 const BREATH_HZ = 0.22
 const TAU = Math.PI * 2
+/** Presenting a chart (§8.9): a 4° lean in and a 3.4° tilt toward its side. */
+const PRESENT_LEAN = (4 * Math.PI) / 180
+const PRESENT_ROLL = (3.4 * Math.PI) / 180
 /** Below this the perch target has not really moved — do not restart the tween. */
 const PERCH_EPSILON = 1e-4
 /**
@@ -119,6 +123,9 @@ type Motion = {
   lean: number
   widen: number
   headTilt: number
+  /** 0..1 presenting-a-chart blend; drives the lean and the side tilt (§8.9). */
+  present: number
+  presentRoll: number
   /** The generic accent's rotation; advances ONLY while thinking (§8.4). */
   accent: AccentSpinState
   counted: boolean
@@ -139,6 +146,8 @@ function createMotion(target: SlotTarget): Motion {
     lean: 0,
     perch: { fromX: target.x, fromY: target.y, startedAt: 0, toX: target.x, toY: target.y },
     phase: 'rest',
+    present: 0,
+    presentRoll: 0,
     startedAt: 0,
     widen: 1,
     x: target.x,
@@ -339,7 +348,14 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     // turns toward each other, everyone else faces the user). The turn is a
     // PURE function of elapsed ms — a damped step would run at half speed on
     // this software-GL pane and miss the 2 s "back to the user" bound.
-    const yawTarget = getFacingTarget(definition.id)
+    // Presenting a chart (§8.9) overrides it: the avatar turns toward the board
+    // the Stage placed, and turns back to the user when the chart closes.
+    const chartFacing = getChartFacing(definition.id, m.x)
+    const yawTarget = chartFacing ?? getFacingTarget(definition.id)
+
+    if (chartFacing !== null) {
+      m.presentRoll = -Math.sign(chartFacing) * PRESENT_ROLL
+    }
 
     if (reducedMotion) {
       m.yaw = yawTarget
@@ -369,6 +385,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
 
     damp(m, 'lean', listening ? 0.1 : notifying ? NOTIFY_LEAN : 0, 0.25, dt)
     damp(m, 'widen', listening ? 1.08 : 1, 0.25, dt)
+    damp(m, 'present', chartFacing !== null ? 1 : 0, 0.3, dt)
 
     // The notification moment adds ONE glow pulse on top of the celebrate pose
     // (§8.5); `notifying` is a rest phase, so the pulse is its own envelope.
@@ -382,9 +399,9 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     const nod = nodStart === null ? 0 : nodPitch(now - nodStart, reducedMotion)
 
     rootObject.position.set(m.x, m.baseY + pose.yOffset + drift, 0)
-    rootObject.rotation.x = -m.lean - m.bow - nod
+    rootObject.rotation.x = -m.lean - m.bow - nod - PRESENT_LEAN * m.present
     rootObject.rotation.y = m.yaw
-    rootObject.rotation.z = pose.rotationZ
+    rootObject.rotation.z = pose.rotationZ + m.presentRoll * m.present
     rootObject.scale.set(pose.scale, pose.scale * (1 + 0.012 * breath), pose.scale)
 
     // The avatar's own accent cue (§8.4): Muse's halo and Claude's spark speed

@@ -1,0 +1,186 @@
+/**
+ * Contract tests for the Chart3D geometry and placement (architecture §8.9).
+ *
+ * The chart is presented BESIDE the avatar row, on the side of the pane with
+ * more room, and it must fit inside the pane whatever the anchor edge does:
+ * these tests pin the bar spread, the board size, the side choice, the vertical
+ * fit, and the whole placement the stage renders from.
+ */
+
+import { describe, expect, it } from 'vitest'
+
+import {
+  barColumnX,
+  CHART_BAR_WIDTH,
+  CHART_BOARD_HEIGHT,
+  CHART_COLUMN_PITCH,
+  CHART_LIFT,
+  CHART_MIN_FIT,
+  CHART_TITLE_GUTTER_PX,
+  CHART_TOP_MARGIN_PX,
+  CHART_X_LABEL_GUTTER_PX,
+  chartBarSpan,
+  chartBoardWidth,
+  chartFit,
+  chartPlacement,
+  chartViewFor
+} from './chart-layout'
+import { CHART_MAX_BAR_HEIGHT } from './chart-scale'
+import { PX_PER_UNIT, screenToWorld } from './projection'
+
+const VIEWPORT = { height: 1080, width: 1920 }
+
+describe('bar columns', () => {
+  it('spreads the bars symmetrically about the board centre', () => {
+    expect(barColumnX(0, 8)).toBeCloseTo(-1.05)
+    expect(barColumnX(7, 8)).toBeCloseTo(1.05)
+    expect(barColumnX(3, 8) + barColumnX(4, 8)).toBeCloseTo(0)
+  })
+
+  it('centres a single bar', () => {
+    expect(barColumnX(0, 1)).toBe(0)
+  })
+
+  it('sizes the board wider than the bar span', () => {
+    expect(chartBarSpan(8)).toBeCloseTo(2.3)
+    expect(chartBoardWidth(8)).toBeCloseTo(2.9)
+    expect(chartBoardWidth(8)).toBeGreaterThan(chartBarSpan(8))
+  })
+
+  it('makes the board the axis span, so a bar at the top tick reaches the top gridline', () => {
+    // The gridlines and the Y ticks are drawn against the board; if the board
+    // were taller than the bar area the bars would float under their own axis.
+    expect(CHART_BOARD_HEIGHT).toBe(CHART_MAX_BAR_HEIGHT)
+  })
+
+  it('gives every bar its own hover strip, tiled across the row', () => {
+    // One strip per column, exactly one pitch wide: neighbouring strips meet at
+    // their edges (no dead gap between bars) and each strip covers its bar.
+    expect(CHART_COLUMN_PITCH).toBeGreaterThan(CHART_BAR_WIDTH)
+    expect(barColumnX(1, 8) - barColumnX(0, 8)).toBeCloseTo(CHART_COLUMN_PITCH)
+    expect(barColumnX(7, 8) + CHART_COLUMN_PITCH / 2).toBeGreaterThanOrEqual(chartBarSpan(8) / 2)
+  })
+})
+
+describe('chartPlacement', () => {
+  it('places the chart on the side of the row with more room', () => {
+    // The row hugs the right of the pane, so the room is on its left.
+    const placement = chartPlacement({
+      boardWidthPx: 348,
+      row: { height: 130, width: 400, x: 860, y: 0 },
+      viewport: VIEWPORT
+    })
+
+    expect(placement.side).toBe('left')
+    expect(placement.centerX).toBeCloseTo(860 - 60 - 174)
+  })
+
+  it('flips to the right when the row sits on the left', () => {
+    const placement = chartPlacement({
+      boardWidthPx: 348,
+      row: { height: 130, width: 400, x: 200, y: 0 },
+      viewport: VIEWPORT
+    })
+
+    expect(placement.side).toBe('right')
+    expect(placement.centerX).toBeCloseTo(600 + 60 + 174)
+  })
+
+  it('keeps the board inside the view margins when the row fills the pane', () => {
+    const placement = chartPlacement({
+      boardWidthPx: 348,
+      row: { height: 130, width: 1900, x: 0, y: 0 },
+      viewport: VIEWPORT
+    })
+
+    expect(placement.centerX - 174).toBeGreaterThanOrEqual(16)
+    expect(placement.centerX + 174).toBeLessThanOrEqual(VIEWPORT.width - 16)
+  })
+
+  it('centres a board wider than the viewport instead of hanging it off an edge', () => {
+    const placement = chartPlacement({
+      boardWidthPx: 500,
+      row: { height: 130, width: 100, x: 0, y: 0 },
+      viewport: { height: 1080, width: 300 }
+    })
+
+    expect(placement.centerX).toBe(150)
+  })
+})
+
+describe('chartFit', () => {
+  it('is full size when the perch line has room above it', () => {
+    expect(chartFit(600)).toBe(1)
+  })
+
+  it('shrinks the board so the whole panel clears the pane top', () => {
+    const perchY = 130
+    const fit = chartFit(perchY)
+
+    expect(fit).toBeLessThan(1)
+    expect(fit).toBeGreaterThanOrEqual(CHART_MIN_FIT)
+
+    const used =
+      CHART_TOP_MARGIN_PX +
+      CHART_LIFT * PX_PER_UNIT +
+      CHART_TITLE_GUTTER_PX +
+      CHART_X_LABEL_GUTTER_PX +
+      CHART_BOARD_HEIGHT * PX_PER_UNIT * fit
+
+    expect(used).toBeLessThanOrEqual(perchY + 0.001)
+  })
+
+  it('never shrinks below the floor', () => {
+    expect(chartFit(20)).toBe(CHART_MIN_FIT)
+  })
+})
+
+describe('chartViewFor', () => {
+  // The validation host's layout: the in-app browser's top edge at y 176.
+  const PERCH_Y = screenToWorld({ x: 0, y: 176 }, VIEWPORT).y
+  const MUSE = { height: 1.1, id: 'muse' as const, width: 1.35 }
+  const SLOTS = { muse: { perchY: PERCH_Y, x: 1.5, y: PERCH_Y + 0.55 } }
+
+  it('places the board beside the row, on the roomier side, sitting on the perch line', () => {
+    const view = chartViewFor({
+      avatars: { muse: { visible: true } },
+      chart: { avatar: 'muse', series: 8 },
+      definitions: [MUSE],
+      slots: SLOTS,
+      viewport: VIEWPORT
+    })
+
+    expect(view).not.toBeNull()
+    expect(view?.side).toBe('left')
+    expect(view?.position.y).toBeCloseTo(PERCH_Y + CHART_LIFT)
+    // 1038.75 (reserved left edge) - 60 (gap) - 174 (half a 2.9-unit board).
+    expect(view?.position.x).toBeCloseTo((1038.75 - 60 - 174 - 960) / PX_PER_UNIT)
+  })
+
+  it('keeps the whole panel inside the pane at the validation host perch line', () => {
+    const view = chartViewFor({
+      avatars: { muse: { visible: true } },
+      chart: { avatar: 'muse', series: 8 },
+      definitions: [MUSE],
+      slots: SLOTS,
+      viewport: VIEWPORT
+    })
+
+    // The panel's top edge (title above the board) must not leave the pane.
+    const panelTopPx = view!.position.y * -1 + VIEWPORT.height / 2 - CHART_LIFT * PX_PER_UNIT - CHART_TITLE_GUTTER_PX
+
+    expect(view?.fit).toBeLessThanOrEqual(1)
+    expect(view?.fit).toBeGreaterThanOrEqual(CHART_MIN_FIT)
+    expect(panelTopPx).toBeGreaterThanOrEqual(0)
+  })
+
+  it('returns null when nothing is presented, or the presenting avatar left the stage', () => {
+    const base = { avatars: { muse: { visible: true } }, definitions: [MUSE], slots: SLOTS, viewport: VIEWPORT }
+
+    expect(chartViewFor({ ...base, chart: null })).toBeNull()
+    expect(
+      chartViewFor({ ...base, chart: { avatar: 'muse', series: 8 }, avatars: { muse: { visible: false } } })
+    ).toBeNull()
+    expect(chartViewFor({ ...base, chart: { avatar: 'grok', series: 8 } })).toBeNull()
+  })
+})

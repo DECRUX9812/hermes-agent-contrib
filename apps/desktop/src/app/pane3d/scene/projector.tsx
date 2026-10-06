@@ -2,6 +2,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo } from 'react'
 import * as THREE from 'three'
 
+import { chartRuntime } from '../director/chart-state'
 import type { ScreenRect } from '../protocol'
 
 import {
@@ -9,6 +10,7 @@ import {
   boundingScreenRect,
   collectHitParts,
   getAvatarRoots,
+  getChartRoot,
   getEdgeObjects,
   writeHandleRect
 } from './projection'
@@ -92,6 +94,14 @@ export function Projector() {
 
       frame.hitRects = hitRects
     })
+
+    // The chart's projected bounds join the same source list while it is
+    // presented; on unmount the root is cleared and the rects go with it.
+    const chart = getChartRoot()
+    const chartRect = chart ? project(chart) : null
+
+    chartRuntime.screenRect = chartRect
+    chartRuntime.hitRects = chartRect ? [chartRect] : []
   })
 
   return null

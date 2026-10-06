@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useEffect, useState } from 'react'
 
+import { $chartPresentation } from './director/chart-state'
 import { installPane3dDefaults } from './director/defaults'
 import { startRoom } from './director/room-live'
 import { $avatars, applyPaneState, pane3dRuntime } from './director/store'
@@ -50,10 +51,12 @@ function useDocumentHidden(): boolean {
  */
 export function PaneApp() {
   const avatars = useStore($avatars)
+  const chart = useStore($chartPresentation)
   const documentHidden = useDocumentHidden()
   const anyAvatarVisible = Object.values(avatars).some(avatar => avatar.visible && avatar.state !== 'hidden')
-  // Never render continuously unless something is actually on screen (architecture §8.4).
-  const frameloop = documentHidden ? 'never' : anyAvatarVisible ? 'always' : 'demand'
+  // Never render continuously unless something is actually on screen
+  // (architecture §8.4): an avatar, or a presented chart that is turning.
+  const frameloop = documentHidden ? 'never' : anyAvatarVisible || chart !== null ? 'always' : 'demand'
 
   useEffect(() => {
     pane3dRuntime.frameloop = frameloop

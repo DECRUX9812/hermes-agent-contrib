@@ -2,6 +2,7 @@ import { scriptedConversation } from '../dev-harness/conversation-script'
 import { runDemoFeed } from '../dev-harness/demo-feed'
 import { DevHarnessExecutor } from '../dev-harness/dev-executor'
 
+import { installChartPresenter } from './chart-live'
 import { setTaskSubmitter } from './composer'
 import { setDemoScriptHandler } from './demo'
 import { setConversationSource } from './room'
@@ -22,6 +23,10 @@ export function installPane3dDefaults(): void {
   setTaskSubmitter((avatar, text, context) => {
     submitTask(avatar, text, context)
   })
+  // The result card's "Show chart" exists only while a presenter is registered
+  // (architecture §8.7/§8.9), and the launch demo's result presents its chart
+  // automatically through the same seam.
+  installChartPresenter()
   setDemoScriptHandler(script => {
     if (script === 'notify') {
       runDemoFeed()

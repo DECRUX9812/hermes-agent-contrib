@@ -317,6 +317,22 @@ export function getEdgeObjects(): Map<AvatarId, THREE.Object3D> {
   return edgeObjects
 }
 
+/**
+ * The presented chart's root group. There is at most one chart, so it registers
+ * as a single slot rather than a map; the Projector projects its whole box as
+ * the chart's hit region, which is what keeps `setShape` from clipping the
+ * board, the bars and the plinth off the screen (§6, §8.9).
+ */
+let chartRoot: THREE.Object3D | null = null
+
+export function setChartRoot(object: THREE.Object3D | null): void {
+  chartRoot = object
+}
+
+export function getChartRoot(): THREE.Object3D | null {
+  return chartRoot
+}
+
 /** Duck-typed, so the traversal tests without a three runtime. */
 export interface HitPartNode {
   userData: { hitPart?: unknown }

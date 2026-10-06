@@ -10,7 +10,7 @@ import type { AvatarId, ChartSpec } from '../protocol'
  * chart" button exists ONLY while a presenter is registered, and the card hides
  * it otherwise (the spec still travels with the result either way).
  */
-export type ChartPresenter = (avatar: AvatarId, spec: ChartSpec) => void
+export type ChartPresenter = (avatar: AvatarId, spec: ChartSpec, source?: 'live' | 'dev-harness') => void
 
 export const $chartPresenter = atom<ChartPresenter | null>(null)
 
@@ -19,14 +19,14 @@ export function setChartPresenter(next: ChartPresenter | null): void {
 }
 
 /** True when a presenter accepted the spec. */
-export function presentChart(avatar: AvatarId, spec: ChartSpec): boolean {
+export function presentChart(avatar: AvatarId, spec: ChartSpec, source?: 'live' | 'dev-harness'): boolean {
   const presenter = $chartPresenter.get()
 
   if (!presenter) {
     return false
   }
 
-  presenter(avatar, spec)
+  presenter(avatar, spec, source)
 
   return true
 }

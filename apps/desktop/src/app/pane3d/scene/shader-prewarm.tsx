@@ -5,6 +5,7 @@ import type * as THREE from 'three'
 import { listAvatars } from '../avatars/registry'
 import type { AvatarRigHandle } from '../avatars/types'
 
+import { ChartPrewarm } from './chart-prewarm'
 import { ContactShadow, EmergenceSeam } from './emergence'
 import {
   beginPrewarm,
@@ -109,6 +110,8 @@ export function ShaderPrewarm() {
       {/* Drawn with the first body, so their programs belong to the same warm-up. */}
       <EmergenceSeam color="#ffffff" />
       <ContactShadow />
+      {/* The chart's materials too: a first presentation must not hitch (§8.9). */}
+      <ChartPrewarm />
     </group>
   )
 }

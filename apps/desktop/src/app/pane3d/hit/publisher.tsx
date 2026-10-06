@@ -17,6 +17,7 @@
 import { useStore } from '@nanostores/react'
 import { useEffect } from 'react'
 
+import { chartRuntime } from '../director/chart-state'
 import { dispatch } from '../director/director'
 import { $avatars, $platform, pane3dRuntime } from '../director/store'
 import type { ScreenRect } from '../protocol'
@@ -47,7 +48,11 @@ function currentRegions(): ScreenRect[] {
     }
   })
 
-  return buildHitRegions({ avatars: avatarRects, dom: domHitRects(document.querySelectorAll(HIT_SELECTOR)) })
+  return buildHitRegions({
+    avatars: avatarRects,
+    chart: chartRuntime.hitRects,
+    dom: domHitRects(document.querySelectorAll(HIT_SELECTOR))
+  })
 }
 
 /** The composer enters `listening`; that is when the pane needs the keyboard. */

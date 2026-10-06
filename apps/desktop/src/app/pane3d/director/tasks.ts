@@ -283,7 +283,7 @@ export function dismissTaskCard(id: string): void {
 export function presentTaskCardChart(id: string): void {
   const card = $taskCards.get()[id]
 
-  if (!card?.chart || !presentChart(card.avatar, card.chart)) {
+  if (!card?.chart || !presentChart(card.avatar, card.chart, card.source)) {
     return
   }
 

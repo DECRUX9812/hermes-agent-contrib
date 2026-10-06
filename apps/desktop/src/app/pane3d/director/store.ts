@@ -25,6 +25,7 @@ import { prewarmPlan, type PrewarmStage } from '../scene/prewarm'
 import { avatarFrames } from '../scene/projection'
 import { prefersReducedMotion, setReducedMotion } from '../scene/reduced-motion'
 
+import { chartRuntime } from './chart-state'
 import { runDemoScript } from './demo'
 import { deliverNotification, dismiss, summon } from './director'
 import { appendFeed } from './feed'
@@ -301,7 +302,8 @@ export interface Pane3dDebugSnapshot {
   taskCards: TaskCard[]
   /** The live working pill per avatar while a task runs (§8.8). */
   taskProgress: TaskProgress[]
-  chart: null
+  /** The presented chart's yaw (§8.9); null when no chart is on screen. */
+  chart: { visible: boolean; rotationDeg: number } | null
   lastDemo: DemoScript | null
   /** Shader pre-warm lifecycle — 'warm' means the programs are linked and `ready` is imminent. */
   prewarm: PrewarmStage
@@ -343,7 +345,7 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
     }),
     bubbles: $bubbles.get().map(bubble => ({ ...bubble })),
     cards: Object.values($cards.get()),
-    chart: null,
+    chart: chartRuntime.visible ? { rotationDeg: chartRuntime.rotationDeg, visible: true } : null,
     composer: composer
       ? { avatar: composer.avatar, context: { ...composer.context }, removed: [...composer.removed] }
       : null,
