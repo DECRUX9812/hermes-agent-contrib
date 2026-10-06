@@ -1,13 +1,13 @@
 import type { ReadableAtom } from 'nanostores'
 
-import { $backdrop, $backdropImage, $backdropScene, $backdropStrength, setBackdrop, setBackdropImage, setBackdropScene, setBackdropStrength } from '@/store/backdrop'
-import { $chatTextScale, CHAT_TEXT_SCALE_PRESETS, type ChatTextScale, setChatTextScale } from '@/store/chat-text-scale'
 import {
   type BackdropScene,
   type BackdropStrength,
   isBackdropScene,
   isBackdropStrength
-} from '@/lib/backdrop-scenes' 
+} from '@/lib/backdrop-scenes'
+import { $backdrop, $backdropImage, $backdropScene, $backdropStrength, setBackdrop, setBackdropImage, setBackdropScene, setBackdropStrength } from '@/store/backdrop'
+import { $chatTextScale, CHAT_TEXT_SCALE_PRESETS, type ChatTextScale, setChatTextScale } from '@/store/chat-text-scale'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
 import { $reasoningCollapsedByDefault, setReasoningCollapsedByDefault } from '@/store/reasoning-disclosure'
