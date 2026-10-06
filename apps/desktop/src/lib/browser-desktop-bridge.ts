@@ -34,9 +34,20 @@ export function installBrowserDesktopBridge(): boolean {
 
   if (win.hermesDesktop) {return false}
 
-  const bootstrap = browserBootstrap()
+  let bootstrap = browserBootstrap()
 
-  if (!bootstrap) {return false}
+  // Fallback for plain static file servers (no injected bootstrap globals):
+  // install a degraded bridge so the UI loads instead of crashing with
+  // "Desktop IPC bridge is unavailable". API calls will fail gracefully.
+  if (!bootstrap) {
+    bootstrap = {
+      authRequired: false,
+      basePath: '',
+      privateSession: false,
+      token: '',
+      stagedUploads: new Map()
+    }
+  }
 
   if (bootstrap.privateSession) {
     watchWebappLaunchLink(() => window.location.reload())
