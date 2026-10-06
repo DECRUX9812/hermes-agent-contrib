@@ -84,8 +84,9 @@ src/app/pane3d/
   scene/               canvas, camera, lights, stage, rig, emergence, choreography, projection,
                        chart3d, chart-board, chart-labels, chart-scale, chart-layout, chart-motion
   avatars/             registry, types, muse, hermes, grok, opencode, claude, marks
-  ui/                  notification-card, result-card, speech-bubble, composer, task-pill, feed-panel,
-                       dock, hover-chips, avatar-handle, dev-badge, card-layout, card-geometry
+  ui/                  notification-card, result-card, speech-bubble, composer, composer-chips, task-pill,
+                       feed-panel, dock, hover-chips, avatar-handle, dev-badge, card-layout, card-geometry,
+                       avatar-obstacles
   hit/                 regions (pure merge/pad), publisher, exact-hit (darwin/win32)
   dev-harness/         demo-feed, conversation-script, dev-executor, demo-data, launch-demo
 ```
@@ -290,6 +291,32 @@ and `rehome()` moves it to a new display when the anchor moves there.
 
 ---
 
+## The presented chart (`scene/chart-layout.ts`)
+
+`chartViewFor` places the board beside the whole avatar **row** (never over a body), on the side
+with more room. `chartPlacement` clamps the complete label panel inside the pane, including the
+40 px Y-label gutter on the board's left. If the clamp pushes the panel back over the row, it flips
+to the other side; if neither side fits, the board shrinks horizontally (`fitX`, down to
+`CHART_MIN_FIT_X` = 0.5). Only a pane too narrow even for that keeps the panel inside and accepts
+the overlap. The X-label boxes (`chartXLabelBoxes`) are scaled by the same `fitX`, so each label
+stays under its bar. Vertically, `chartFit` shrinks the board (down to 0.62) when the perch line is
+high.
+
+On the `desktop` anchor the dock is a second obstacle: placement prefers a candidate whose panel
+clears the dock's x range, and when no side does, the whole chart is lifted until its X-label strip
+clears the dock's top edge.
+
+`chartPanelRect` computes the panel's pane-CSS-px box from the same numbers that place it. While a
+chart is presented, notification cards and speech bubbles treat that box (`chartObstacleBox` in
+`ui/avatar-obstacles.ts`) as a secondary obstacle: they avoid it when they can, but never at the
+cost of covering an avatar or leaving the pane.
+
+Hover values are exact (`scene/chart-scale.ts::formatHoverValue`): grouped with every significant
+digit and the unit, falling back to `String(value)` outside `[1e-6, 1e15)`. Axis ticks stay compact
+(`1.5k`, `2M`).
+
+---
+
 ## Avatar state machine (`director/machine.ts`, pure)
 
 States: `hidden`, `emerging`, `idle`, `listening`, `thinking`, `responding`, `celebrating`,
@@ -434,6 +461,16 @@ non-Hermes OS window → `{ source: 'os-window', title, app }` (no URL, shown as
 `{ source: 'none' }`. The whole read resolves within **800 ms**; a timeout yields `none`. The
 renderer calls it through `hermesDesktop.pane3d.captureContext()` before it focuses the pane.
 
+### The composer (`director/composer.ts`, `ui/composer.tsx`)
+
+`openComposer(id, options?)` captures the page context, then opens the composer only if the avatar
+is still `idle` and no newer request superseded it. There is one composer at a time: opening one
+closes any other avatar that is still `listening`. Each open starts a new session, and the view is
+keyed by `avatar:session`, so a handoff to another avatar remounts with that avatar's own draft and
+focus. The context shows as removable chips; an `os-window` context is a single "title only" chip
+that stands for the title (or the app name), and removing it drops both `title` and `app` from the
+submitted context.
+
 ### `AnchorService` (`electron/pane3d-anchor-types.ts`)
 
 ```ts
@@ -488,6 +525,12 @@ runtime watches the real signals):
    demo tag rides onto that one task, whose result carries `presentChart` and the demo chart, which
    the chart presenter shows automatically. `lastDemo` stays in the snapshot for observability but
    no longer decides anything, so a task asked for afterwards is an ordinary one.
+
+The demo is optional. When the user types the story line into a composer themselves
+(`isLaunchStoryRequest` in `dev-harness/dev-executor.ts` forgives case, spacing, dash variants and
+trailing punctuation), or asks about growth, a chart or stats, the result carries the same demo
+chart. Without the demo tag it has no `presentChart`, so the result card stays and the chart opens
+from its "Show chart" action.
 
 `cancelLaunchDemo()` runs on `pagehide` and on every restart, so closing the pane mid-flight runs no
 later effect.
