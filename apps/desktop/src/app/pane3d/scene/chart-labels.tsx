@@ -28,7 +28,7 @@ import {
   CHART_X_LABEL_GUTTER_PX,
   CHART_X_LABEL_STRIP_PX
 } from './chart-layout'
-import { type ChartDomain, formatTickLabel, formatValue } from './chart-scale'
+import { type ChartDomain, formatHoverValue, formatTickLabel } from './chart-scale'
 import { PX_PER_UNIT } from './projection'
 
 export interface ChartLabelsProps {
@@ -37,17 +37,19 @@ export interface ChartLabelsProps {
   hoverIndex: number | null
   boardWidth: number
   boardHeight: number
+  /** Horizontal board fit (0.5..1) — the 3D group is scaled by the same factor. */
+  fitX: number
   source?: 'live' | 'dev-harness'
 }
 
-export function ChartLabels({ boardHeight, boardWidth, domain, hoverIndex, source, spec }: ChartLabelsProps) {
+export function ChartLabels({ boardHeight, boardWidth, domain, fitX, hoverIndex, source, spec }: ChartLabelsProps) {
   const count = spec.series.length
-  const boardWpx = boardWidth * PX_PER_UNIT
+  const boardWpx = boardWidth * PX_PER_UNIT * fitX
   const boardHpx = boardHeight * PX_PER_UNIT
   const panelWidth = boardWpx + CHART_LABEL_GUTTER_PX
   const panelHeight = CHART_TITLE_GUTTER_PX + boardHpx + CHART_X_LABEL_GUTTER_PX
   const boardCenterPx = CHART_LABEL_GUTTER_PX + boardWpx / 2
-  const columnPx = (index: number) => boardCenterPx + barColumnX(index, count) * PX_PER_UNIT
+  const columnPx = (index: number) => boardCenterPx + barColumnX(index, count) * PX_PER_UNIT * fitX
   const topFor = (value: number) => CHART_TITLE_GUTTER_PX + boardHpx * (1 - value / domain.max)
 
   // The frame loop fades this panel in with the board; a separate React root
@@ -158,7 +160,7 @@ export function ChartLabels({ boardHeight, boardWidth, domain, hoverIndex, sourc
             data-pane-chart-value
             style={{ left: columnPx(hoverIndex ?? 0), top: topFor(hovered.value) - 26 }}
           >
-            {formatValue(hovered.value, spec.unit)}
+            {formatHoverValue(hovered.value, spec.unit)}
           </span>
         ) : null}
       </div>

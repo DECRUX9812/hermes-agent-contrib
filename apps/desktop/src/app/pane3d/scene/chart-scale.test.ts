@@ -15,8 +15,8 @@ import {
   CHART_MAX_BAR_HEIGHT,
   CHART_Y_TICK_COUNT,
   chartDomain,
+  formatHoverValue,
   formatTickLabel,
-  formatValue,
   niceTicks,
   scaleBarHeights
 } from './chart-scale'
@@ -110,23 +110,29 @@ describe('chartDomain', () => {
   })
 })
 
-describe('formatValue', () => {
+describe('formatHoverValue', () => {
   it('groups thousands and appends the unit', () => {
-    expect(formatValue(1968, 'followers')).toBe('1,968 followers')
-    expect(formatValue(1_234_567, 'visits')).toBe('1,234,567 visits')
+    expect(formatHoverValue(1968, 'followers')).toBe('1,968 followers')
+    expect(formatHoverValue(1_234_567, 'visits')).toBe('1,234,567 visits')
   })
 
   it('omits the unit when there is none', () => {
-    expect(formatValue(1968)).toBe('1,968')
+    expect(formatHoverValue(1968)).toBe('1,968')
   })
 
-  it('keeps a fractional value readable', () => {
-    expect(formatValue(12.5, 'kg')).toBe('12.5 kg')
-    expect(formatValue(3.25)).toBe('3.25')
+  it('shows the exact value, never a rounded one', () => {
+    // A hover label states the bar's real number: rounding 1234.567 to
+    // "1,234.57" would misreport the data. (Tick labels stay compact — see
+    // `formatTickLabel` below.)
+    expect(formatHoverValue(1234.567, 'kg')).toBe('1,234.567 kg')
+    expect(formatHoverValue(1234.567)).toBe('1,234.567')
+    expect(formatHoverValue(0.125)).toBe('0.125')
+    expect(formatHoverValue(12.5, 'kg')).toBe('12.5 kg')
+    expect(formatHoverValue(3.25)).toBe('3.25')
   })
 
   it('never renders NaN', () => {
-    expect(formatValue(Number.NaN, 'x')).toBe('0 x')
+    expect(formatHoverValue(Number.NaN, 'x')).toBe('0 x')
   })
 })
 

@@ -23,6 +23,12 @@ const NICE_STEPS = [1, 2, 2.5, 5, 10]
 const EPSILON = 1e-9
 
 const GROUPED = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+/**
+ * Hover values are NOT rounded: the label states the bar's real number, so a
+ * value like 1234.567 must not read "1,234.57". Tick labels stay compact via
+ * `formatTickLabel`, so the axis is unaffected.
+ */
+const EXACT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 20 })
 
 function clampTickCount(count: number): number {
   return Number.isFinite(count) ? Math.max(2, Math.floor(count)) : CHART_Y_TICK_COUNT
@@ -89,9 +95,9 @@ export function scaleBarHeights(
   return values.map(value => (Math.max(0, value) / top) * maxHeight)
 }
 
-/** An exact value with its unit, grouped for reading: `1,968 followers`. */
-export function formatValue(value: number, unit?: string): string {
-  const text = GROUPED.format(Number.isFinite(value) ? value : 0)
+/** The exact hover value with its unit, grouped for reading: `1,234.567 kg`. */
+export function formatHoverValue(value: number, unit?: string): string {
+  const text = EXACT.format(Number.isFinite(value) ? value : 0)
 
   return unit ? `${text} ${unit}` : text
 }

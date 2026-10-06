@@ -95,6 +95,7 @@ export function Stage() {
       {chartPresentation && chartView ? (
         <Chart3D
           fit={chartView.fit}
+          fitX={chartView.fitX}
           key={`${chartPresentation.avatar}-${chartPresentation.shownAt}`}
           position={chartView.position}
           presentation={chartPresentation}

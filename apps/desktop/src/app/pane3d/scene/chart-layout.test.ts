@@ -9,13 +9,18 @@
 
 import { describe, expect, it } from 'vitest'
 
+import type { AvatarId } from '../protocol'
+
 import {
   barColumnX,
   CHART_BAR_WIDTH,
   CHART_BOARD_HEIGHT,
   CHART_COLUMN_PITCH,
+  CHART_GAP_PX,
+  CHART_LABEL_GUTTER_PX,
   CHART_LIFT,
   CHART_MIN_FIT,
+  CHART_MIN_FIT_X,
   CHART_PLINTH_HEIGHT,
   CHART_TITLE_GUTTER_PX,
   CHART_TOP_MARGIN_PX,
@@ -29,9 +34,55 @@ import {
   chartViewFor
 } from './chart-layout'
 import { CHART_MAX_BAR_HEIGHT } from './chart-scale'
-import { PX_PER_UNIT, screenToWorld } from './projection'
+import {
+  computeSlotLayout,
+  PX_PER_UNIT,
+  reservedSlotRect,
+  screenToWorld,
+  unionScreenRects,
+  worldToScreen
+} from './projection'
 
 const VIEWPORT = { height: 1080, width: 1920 }
+
+/** The real registered silhouettes, in `AVATAR_IDS` order. */
+const SILHOUETTES = [
+  { height: 1.1, id: 'muse' as const, width: 1.35 },
+  { height: 1.08, id: 'hermes' as const, width: 1.22 },
+  { height: 0.95, id: 'grok' as const, width: 0.7 },
+  { height: 0.8, id: 'opencode' as const, width: 0.8 },
+  { height: 1.23, id: 'claude' as const, width: 0.74 }
+] as const
+
+/** The visible cast's real perch row, exactly as `Stage` derives it for a desktop anchor. */
+function castLayout(ids: AvatarId[], viewport: { height: number; width: number }) {
+  const heights = Object.fromEntries(SILHOUETTES.map(size => [size.id, size.height])) as Record<AvatarId, number>
+  const widths = Object.fromEntries(SILHOUETTES.map(size => [size.id, size.width])) as Partial<Record<AvatarId, number>>
+
+  const slots = computeSlotLayout({
+    anchor: { kind: 'desktop', label: '', rect: { height: viewport.height, width: viewport.width, x: 0, y: 0 } },
+    dock: null,
+    heights,
+    ids,
+    viewport,
+    widths
+  })
+
+  const avatars = Object.fromEntries(ids.map(id => [id, { visible: true }]))
+
+  const row = ids
+    .map(id => reservedSlotRect(slots[id], { height: heights[id], width: widths[id] }, viewport))
+    .reduce(unionScreenRects)
+
+  return { avatars, definitions: SILHOUETTES, row, slots, viewport }
+}
+
+/** The chart panel's pane-CSS-px box, from the same numbers the stage renders from. */
+function panelBox(centerX: number, fitX: number) {
+  const half = (chartBoardWidth(8) * PX_PER_UNIT * fitX) / 2
+
+  return { left: centerX - half - CHART_LABEL_GUTTER_PX, right: centerX + half }
+}
 
 describe('X-label gutter', () => {
   it('is exactly the plinth + gap + strip, so the strip clears the plinth', () => {
@@ -102,15 +153,17 @@ describe('chartPlacement', () => {
     expect(placement.centerX).toBeCloseTo(600 + 60 + 174)
   })
 
-  it('keeps the board inside the view margins when the row fills the pane', () => {
+  it('keeps the whole panel inside the pane when the row fills it', () => {
     const placement = chartPlacement({
       boardWidthPx: 348,
       row: { height: 130, width: 1900, x: 0, y: 0 },
       viewport: VIEWPORT
     })
 
-    expect(placement.centerX - 174).toBeGreaterThanOrEqual(16)
-    expect(placement.centerX + 174).toBeLessThanOrEqual(VIEWPORT.width - 16)
+    const panel = panelBox(placement.centerX, placement.fitX)
+
+    expect(panel.left).toBeGreaterThanOrEqual(0)
+    expect(panel.right).toBeLessThanOrEqual(VIEWPORT.width)
   })
 
   it('centres a board wider than the viewport instead of hanging it off an edge', () => {
@@ -121,6 +174,108 @@ describe('chartPlacement', () => {
     })
 
     expect(placement.centerX).toBe(150)
+  })
+})
+
+describe('chartPlacement on realistic narrow panes', () => {
+  it('clamps the complete label panel inside the pane, gutter included', () => {
+    // 1366 px with three avatars: the unclamped centre (175.55) is below the
+    // panel's own floor (16 + 40 + 174 = 230), so the clamp decides. It must
+    // account for the Y gutter, or the ticks start at x = -24 (the round-1 bug).
+    const layout = castLayout(['muse', 'hermes', 'grok'], { height: 800, width: 1366 })
+
+    const view = chartViewFor({
+      avatars: layout.avatars,
+      chart: { avatar: 'muse', series: 8 },
+      definitions: layout.definitions,
+      slots: layout.slots,
+      viewport: layout.viewport
+    })
+
+    expect(view).not.toBeNull()
+    expect(
+      panelBox(worldToScreen({ x: view!.position.x, y: 0 }, layout.viewport).x, view!.fitX).left
+    ).toBeGreaterThanOrEqual(0)
+  })
+
+  it('keeps the whole panel inside the pane and off the row at laptop widths with three avatars', () => {
+    for (const width of [1280, 1366, 1440, 1536, 1600]) {
+      const layout = castLayout(['muse', 'hermes', 'grok'], { height: 800, width })
+
+      const view = chartViewFor({
+        avatars: layout.avatars,
+        chart: { avatar: 'muse', series: 8 },
+        definitions: layout.definitions,
+        slots: layout.slots,
+        viewport: layout.viewport
+      })
+
+      expect(view).not.toBeNull()
+      expect(view!.fitX).toBeGreaterThanOrEqual(CHART_MIN_FIT_X)
+      expect(view!.fitX).toBeLessThanOrEqual(1)
+
+      const panel = panelBox(worldToScreen({ x: view!.position.x, y: 0 }, layout.viewport).x, view!.fitX)
+
+      expect(panel.left).toBeGreaterThanOrEqual(0)
+      expect(panel.right).toBeLessThanOrEqual(width)
+      // The panel clears the row on one side: no intersection at all.
+      expect(panel.right <= layout.row.x || panel.left >= layout.row.x + layout.row.width).toBe(true)
+    }
+  })
+
+  it('keeps the whole panel inside the pane and off the row with four avatars at 1422', () => {
+    const layout = castLayout(['muse', 'hermes', 'grok', 'opencode'], { height: 800, width: 1422 })
+
+    const view = chartViewFor({
+      avatars: layout.avatars,
+      chart: { avatar: 'muse', series: 8 },
+      definitions: layout.definitions,
+      slots: layout.slots,
+      viewport: layout.viewport
+    })
+
+    expect(view).not.toBeNull()
+
+    const panel = panelBox(worldToScreen({ x: view!.position.x, y: 0 }, layout.viewport).x, view!.fitX)
+
+    expect(panel.left).toBeGreaterThanOrEqual(0)
+    expect(panel.right).toBeLessThanOrEqual(1422)
+    expect(panel.right <= layout.row.x || panel.left >= layout.row.x + layout.row.width).toBe(true)
+  })
+
+  it('leaves the two-avatar launch-demo layout at 1920x1080 unchanged', () => {
+    const viewport = { height: 1080, width: 1920 }
+    const layout = castLayout(['muse', 'grok'], viewport)
+
+    const view = chartViewFor({
+      avatars: layout.avatars,
+      chart: { avatar: 'muse', series: 8 },
+      definitions: layout.definitions,
+      slots: layout.slots,
+      viewport
+    })
+
+    expect(view).not.toBeNull()
+    // Full size, same side, same centre as before the clamp learned the gutter.
+    expect(view!.fitX).toBe(1)
+    expect(view!.side).toBe('left')
+    expect(worldToScreen({ x: view!.position.x, y: 0 }, viewport).x).toBeCloseTo(
+      layout.row.x - CHART_GAP_PX - (chartBoardWidth(8) * PX_PER_UNIT) / 2
+    )
+  })
+
+  it('does not shrink the board when the pane has room', () => {
+    const layout = castLayout(['muse', 'hermes', 'grok'], { height: 800, width: 1600 })
+
+    const view = chartViewFor({
+      avatars: layout.avatars,
+      chart: { avatar: 'muse', series: 8 },
+      definitions: layout.definitions,
+      slots: layout.slots,
+      viewport: layout.viewport
+    })
+
+    expect(view!.fitX).toBe(1)
   })
 })
 

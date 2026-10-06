@@ -35,6 +35,8 @@ export interface Chart3DProps {
   position: { x: number; y: number }
   /** Vertical fit, 0.62..1 — see `chartFit`. */
   fit: number
+  /** Horizontal fit, 0.5..1 — see `chartPlacement`. */
+  fitX: number
   reducedMotion: boolean
 }
 
@@ -47,7 +49,7 @@ function setOpacity(mesh: THREE.Mesh | null, value: number): void {
   }
 }
 
-export function Chart3D({ fit, position, presentation, reducedMotion }: Chart3DProps) {
+export function Chart3D({ fit, fitX, position, presentation, reducedMotion }: Chart3DProps) {
   const definition = getAvatar(presentation.avatar)
   const { spec } = presentation
   const count = spec.series.length
@@ -117,7 +119,11 @@ export function Chart3D({ fit, position, presentation, reducedMotion }: Chart3DP
   }, -1)
 
   return (
-    <group position={[position.x, position.y, 0]} ref={attachRoot}>
+    // `scale.x = fitX` squeezes the whole board — bars, plinth, grid, spacing —
+    // as one unit when the pane is too narrow to fit the panel beside the row.
+    // The label layer is positioned from the same factor, and the `<Html>` anchor
+    // sits on x = 0, so the panel's own box never scales.
+    <group position={[position.x, position.y, 0]} ref={attachRoot} scale={[fitX, 1, 1]}>
       <ChartBoard
         barHeights={barHeights}
         boardHeight={boardHeight}
@@ -131,6 +137,7 @@ export function Chart3D({ fit, position, presentation, reducedMotion }: Chart3DP
         boardHeight={boardHeight}
         boardWidth={boardWidth}
         domain={domain}
+        fitX={fitX}
         hoverIndex={hoverIndex}
         source={presentation.source}
         spec={spec}

@@ -3,9 +3,10 @@
  *
  * The chart is a board: a row of bars standing on a plinth with a grid plane
  * behind them. This module owns its world-unit size, the column positions, the
- * pane-side choice for presenting it BESIDE the avatar row, and the vertical
- * fit that keeps the whole panel (title, board, X labels) inside the pane when
- * the anchor edge sits high on the screen.
+ * pane-side choice for presenting it BESIDE the avatar row, and the two fits
+ * that keep the whole panel inside the pane — the vertical fit for a high
+ * anchor edge, and the horizontal fit that squeezes the board when the pane is
+ * too narrow to hold the full panel (Y-label gutter included) beside the row.
  *
  * A horizontal floor grid would be invisible: the pane's camera looks straight
  * down -z (scene/camera.tsx), so the grid plane is VERTICAL, behind the bars —
@@ -68,6 +69,13 @@ export const CHART_GAP_PX = 60
 export const CHART_VIEW_MARGIN_PX = 16
 /** The smallest the board may shrink to before it is allowed to clip. */
 export const CHART_MIN_FIT = 0.62
+/**
+ * The smallest the board may shrink HORIZONTALLY when the pane is too narrow to
+ * fit the full panel beside the row. Shrinking is the last resort after
+ * flipping sides; below this the chart stops reading as a chart, so the panel
+ * stays inside the pane and accepts the overlap instead.
+ */
+export const CHART_MIN_FIT_X = 0.5
 /** How far the presenting avatar turns toward the chart (architecture §8.9). */
 export const CHART_PRESENT_YAW_DEG = 32
 
@@ -96,6 +104,34 @@ export interface ChartPlacement {
   side: 'left' | 'right'
   /** Board centre in pane CSS px. */
   centerX: number
+  /** Horizontal fit for the board, `CHART_MIN_FIT_X`..1. */
+  fitX: number
+}
+
+/** The board centre on `side`, clamped so the WHOLE label panel stays in the pane. */
+function boardCenterX(side: 'left' | 'right', row: ScreenRect, viewport: Viewport, half: number): number {
+  const margin = CHART_VIEW_MARGIN_PX
+  const unclamped = side === 'left' ? row.x - CHART_GAP_PX - half : row.x + row.width + CHART_GAP_PX + half
+  // The Y gutter sits to the LEFT of the board, so the left edge needs it too:
+  // clamping the bare board here would push the ticks off the pane (round-1 bug).
+  const min = margin + CHART_LABEL_GUTTER_PX + half
+  const max = viewport.width - margin - half
+
+  // A board wider than the viewport has no valid side: centre it rather than
+  // hanging it off one edge.
+  return max < min ? viewport.width / 2 : Math.min(Math.max(unclamped, min), max)
+}
+
+/** The label panel's x span in pane CSS px — the Y gutter on the board's left. */
+function panelSpan(centerX: number, half: number): { left: number; right: number } {
+  return { left: centerX - half - CHART_LABEL_GUTTER_PX, right: centerX + half }
+}
+
+/** The panel overlaps the row when their x spans intersect — both sit on the perch line. */
+function overlapsRow(centerX: number, half: number, row: ScreenRect): boolean {
+  const panel = panelSpan(centerX, half)
+
+  return panel.left < row.x + row.width && row.x < panel.right
 }
 
 /**
@@ -103,23 +139,53 @@ export interface ChartPlacement {
  * room. Measuring against the whole ROW (not just the presenting avatar) is
  * what guarantees the chart never covers a body: with two or more avatars the
  * side beside the presenting one may be another avatar.
+ *
+ * The clamp keeps the COMPLETE label panel — the 40 px Y gutter included —
+ * inside the pane. On a narrow pane that clamp can push the panel back over the
+ * row, so the row is re-checked afterwards: the placement flips to the other
+ * side, and if neither side fits, the board shrinks horizontally (down to
+ * `CHART_MIN_FIT_X`) until the panel clears the row. Only a pane too narrow for
+ * even that keeps the panel inside the pane and accepts the overlap.
  */
 export function chartPlacement(input: ChartPlacementInput): ChartPlacement {
   const { boardWidthPx, row, viewport } = input
-  const half = boardWidthPx / 2
   const margin = CHART_VIEW_MARGIN_PX
+  const half = boardWidthPx / 2
   const leftRoom = row.x - margin
   const rightRoom = viewport.width - (row.x + row.width) - margin
-  const side: 'left' | 'right' = rightRoom > leftRoom ? 'right' : 'left'
-  const unclamped = side === 'left' ? row.x - CHART_GAP_PX - half : row.x + row.width + CHART_GAP_PX + half
-  const min = margin + half
-  const max = viewport.width - margin - half
+  const preferred: 'left' | 'right' = rightRoom > leftRoom ? 'right' : 'left'
+  const other: 'left' | 'right' = preferred === 'left' ? 'right' : 'left'
 
-  // A board wider than the viewport has no valid side: centre it rather than
-  // hanging it off one edge.
-  const centerX = max < min ? viewport.width / 2 : Math.min(Math.max(unclamped, min), max)
+  const fits = (side: 'left' | 'right', fitHalf: number) => {
+    const centerX = boardCenterX(side, row, viewport, fitHalf)
+    const panel = panelSpan(centerX, fitHalf)
 
-  return { centerX, side }
+    return panel.left >= 0 && panel.right <= viewport.width && !overlapsRow(centerX, fitHalf, row)
+  }
+
+  if (fits(preferred, half)) {
+    return { centerX: boardCenterX(preferred, row, viewport, half), fitX: 1, side: preferred }
+  }
+
+  if (fits(other, half)) {
+    return { centerX: boardCenterX(other, row, viewport, half), fitX: 1, side: other }
+  }
+
+  const room = preferred === 'left' ? leftRoom : rightRoom
+  const fitX = Math.min(1, Math.max(CHART_MIN_FIT_X, (room - CHART_GAP_PX - CHART_LABEL_GUTTER_PX) / boardWidthPx))
+  const shrunkHalf = (boardWidthPx * fitX) / 2
+
+  if (fits(preferred, shrunkHalf)) {
+    return { centerX: boardCenterX(preferred, row, viewport, shrunkHalf), fitX, side: preferred }
+  }
+
+  if (fits(other, shrunkHalf)) {
+    return { centerX: boardCenterX(other, row, viewport, shrunkHalf), fitX, side: other }
+  }
+
+  // Nothing clears the row: keep the whole panel inside the pane on the side
+  // with more room and accept the overlap (the row fills the pane).
+  return { centerX: boardCenterX(preferred, row, viewport, shrunkHalf), fitX, side: preferred }
 }
 
 /**
@@ -154,6 +220,8 @@ export interface ChartViewInput {
 
 export interface ChartView {
   fit: number
+  /** Horizontal board fit, `CHART_MIN_FIT_X`..1 — see `chartPlacement`. */
+  fitX: number
   /** Board centre in world units (its base sits CHART_LIFT above the perch line). */
   position: { x: number; y: number }
   side: 'left' | 'right'
@@ -200,6 +268,7 @@ export function chartViewFor(input: ChartViewInput): ChartView | null {
 
   return {
     fit: chartFit(worldToScreen({ x: 0, y: presenting.perchY }, viewport).y),
+    fitX: placement.fitX,
     position: {
       x: screenToWorld({ x: placement.centerX, y: 0 }, viewport).x,
       y: presenting.perchY + CHART_LIFT

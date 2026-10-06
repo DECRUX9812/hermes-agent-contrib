@@ -569,6 +569,9 @@ the vitest `ui` project; main-process tests are the `electron` project. Platform
 
 - **Wayland.** `alwaysOnTop` and `setShape` are not guaranteed; the X11 strategy is the only
   validated click-through. Wayland is a documented follow-up.
+- **High anchor perch.** When the anchor perch sits within ~90 px of the pane top (for example a
+  maximized main window with the browser docked), the avatars and the chart title can be clipped at
+  the top; a perch policy for high anchors is a follow-up.
 - **macOS / Windows.** The forward-mode click-through strategy is implemented and unit-tested, but
   has not been validated on those hosts. On macOS, OS-window titles require Screen Recording consent
   (without it the app name is used) and the pane is a `panel` at the `floating` level.
