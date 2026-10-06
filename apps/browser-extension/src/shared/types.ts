@@ -159,6 +159,15 @@ export const HARNESS_PRESETS: HarnessPreset[] = [
   },
 ]
 
+/** The room decision model (TypeSafe Jev or a compatible loopback
+ *  endpoint — see background/decider.ts). A key with no baseUrl goes to
+ *  api.typesafe.ai. */
+export interface DeciderSettings {
+  enabled: boolean
+  key: string
+  baseUrl?: string
+}
+
 export interface Settings {
   enabled: boolean
   hermes: HermesBackendConfig | null
@@ -166,6 +175,9 @@ export interface Settings {
   harnesses: GenericHarnessConfig[]
   /** Per-site disable, hostname strings. */
   disabledHosts: string[]
+  /** Decision model for 'auto' rooms; unset means auto falls back to the
+   *  room's first member. */
+  decider?: DeciderSettings | null
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -210,6 +222,8 @@ export interface RoomMsg {
   at: number
   /** Ephemeral markers: "is typing", action results. Not relayed. */
   ephemeral?: boolean
+  /** The decision model picked this speaker (probability), auto rooms. */
+  pickedByJev?: number
 }
 
 export interface Room {
@@ -219,8 +233,9 @@ export interface Room {
   /** Per-room scratchpad the members can read/write ("hand notes"). */
   scratchpad: string
   createdAt: number
-  /** Turn-taking: 'mention' replies only when @named, 'roundrobin' fans out to all. */
-  relayMode: 'mention' | 'roundrobin'
+  /** Turn-taking: 'mention' replies only when @named, 'roundrobin' fans
+   *  out to all, 'auto' asks the decision model who should answer. */
+  relayMode: 'mention' | 'roundrobin' | 'auto'
   /** Browser pinned rect (logical px) — content script positions mascots. */
   anchor: { x: number; y: number } | null
 }
@@ -251,12 +266,13 @@ export type ContentToSw =
   /** botId: move a bot into a room. x/y: move the room's anchor point. */
   | { type: 'room.move'; roomId: string; botId?: string; x?: number; y?: number }
   | { type: 'room.remove'; roomId: string }
+  | { type: 'room.mode'; roomId: string; relayMode: Room['relayMode'] }
   | { type: 'mascot.move'; botId: string; x: number; y: number }
   | { type: 'action.result'; payload: PageActionResult }
   | { type: 'settings.apply'; settings: Settings }
 
 export type SwToContent =
-  | { type: 'init'; enabled: boolean; bots: Bot[]; rooms: Room[]; backendOk: boolean; note?: string; siteBot?: Bot }
+  | { type: 'init'; enabled: boolean; bots: Bot[]; rooms: Room[]; backendOk: boolean; note?: string; siteBot?: Bot; deciderReady?: boolean }
   | { type: 'bots'; bots: Bot[] }
   | { type: 'bot.status'; bot: Bot }
   | { type: 'room.msg'; msg: RoomMsg }

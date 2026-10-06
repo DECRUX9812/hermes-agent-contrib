@@ -14,8 +14,10 @@ import { DEFAULT_SETTINGS } from '../shared/types'
 
 import { makeHarness } from './adapters'
 import { PageBridge } from './bridge'
+import type { DeciderConfig } from './decider'
 import type { Harness } from './harness'
 import { HermesHarness } from './hermes'
+import type { RoomMemberDescriptor } from './rooms'
 import { RoomEngine } from './rooms'
 import { GatewayRpc } from './rpc'
 import { siteAvatarFor, sitePromptPrefix } from './sitebot'
@@ -45,7 +47,11 @@ class BotRoomService {
   private rosterTimer: ReturnType<typeof setInterval> | null = null
 
   constructor() {
-    this.rooms = new RoomEngine(id => this.harnesses.get(id))
+    this.rooms = new RoomEngine(
+      id => this.harnesses.get(id),
+      () => this.deciderConfig(),
+      botId => this.describeBot(botId),
+    )
     this.rooms.onRoomMsg = msg => this.broadcast({ type: 'room.msg', msg })
     this.rooms.onRoomsChanged = rooms => this.broadcast({ type: 'rooms', rooms })
 
@@ -164,6 +170,29 @@ class BotRoomService {
     return this.settings
   }
 
+  /** The decision model as one call can use it: the switch on AND a key
+   *  on file. Anything less means auto rooms fall back to their lead. */
+  private deciderConfig(): DeciderConfig | null {
+    const d = this.settings.decider
+
+    return d?.enabled && d.key.trim() ? { key: d.key.trim(), baseUrl: d.baseUrl } : null
+  }
+
+  /** What the decider reads about a member: its display name plus the
+   *  persona text the harness config carries (generic harnesses keep a
+   *  per-bot system prompt; Hermes bots pass a bare name). */
+  private describeBot(botId: string): RoomMemberDescriptor {
+    const bot = this.bots.get(botId)
+    const harnessId = botId.split(':')[0]
+    const ref = botId.split(':').slice(1).join(':')
+    const cfg = this.settings.harnesses.find(h => h.id === harnessId)
+
+    return {
+      name: bot?.displayName ?? ref,
+      description: cfg?.bots.find(b => b.name === ref)?.systemPrompt || undefined,
+    }
+  }
+
   /** Fan a message out to every live overlay. */
   private broadcast(msg: SwToContent) {
     void chrome.tabs.query({}, tabs => {
@@ -208,6 +237,7 @@ class BotRoomService {
           backendOk: this.rpc?.isOpen ?? this.settings.hermes == null,
           note: this.status().connected ? undefined : 'backend not connected',
           siteBot: siteBot ?? undefined,
+          deciderReady: this.deciderConfig() != null,
         }
       }
 
@@ -296,6 +326,11 @@ class BotRoomService {
 
       case 'room.remove':
         this.rooms.removeRoom(msg.roomId)
+
+        return
+
+      case 'room.mode':
+        this.rooms.setRelayMode(msg.roomId, msg.relayMode)
 
         return
 

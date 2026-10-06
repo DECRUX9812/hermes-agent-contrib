@@ -3,7 +3,7 @@ import type { Bot, Room, RoomMsg, SwToContent } from '../shared/types'
 import { runPageAction, setWindowManager, uniqueSelector } from './actions'
 import { faceDataUrl } from './face'
 import { type MascotAction, OverlayScene } from './mascot3d'
-import { type PaletteSection, showContextMenu, showPalette } from './menu'
+import { type MenuItem, type PaletteSection, showContextMenu, showPalette } from './menu'
 import { type ElementInfo, Panel, roomMsgToPanel } from './panel'
 import { OVERLAY_CSS } from './styles'
 import { WindowManager } from './windows'
@@ -29,6 +29,8 @@ export class Stage {
   private windows: WindowManager
   private siteBot: Bot | null = null
   private sleeping = new Set<string>()
+  /** Whether the SW has a decision-model key — auto rooms can route. */
+  private deciderReady = false
 
   constructor(send: (msg: unknown) => void) {
     this.send = send
@@ -165,6 +167,7 @@ export class Stage {
       case 'init':
         this.setHidden(!msg.enabled)
         this.siteBot = msg.siteBot ?? null
+        this.deciderReady = msg.deciderReady ?? false
         this.setBots(msg.bots)
         this.setRooms(msg.rooms)
 
@@ -617,14 +620,13 @@ export class Stage {
 
       chip.innerHTML = `<span class="hr-faces">${faces}</span><span></span>`
       chip.querySelector('span:last-child')!.textContent = room.name
-      chip.title = `${room.name} — ${room.memberBotIds.length} bot(s)${room.scratchpad ? ' · notes: ' + room.scratchpad : ''}`
+      chip.title = `${room.name} — ${room.memberBotIds.length} bot(s) · ${room.relayMode} relay${room.scratchpad ? ' · notes: ' + room.scratchpad : ''}`
       chip.addEventListener('click', () => {
         this.openPanel(room.id, undefined, room)
       })
       chip.addEventListener('contextmenu', (e) => {
         e.preventDefault()
-
-        if (window.confirm(`Remove room "${room.name}"?`)) {this.send({ type: 'room.remove', roomId: room.id })}
+        this.openRoomMenu(room, e.clientX, e.clientY)
       })
       this.roomBar.appendChild(chip)
       // anchor: chip position in page coords, computed after mount
@@ -638,6 +640,24 @@ export class Stage {
     }
 
     this.layoutRoomMembers()
+  }
+
+  /** Right-click on a room chip: pick who answers, or remove the room. */
+  private openRoomMenu(room: Room, x: number, y: number) {
+    const mode = (m: Room['relayMode'], label: string, hint: string): MenuItem => ({
+      icon: room.relayMode === m ? '●' : '○',
+      label,
+      hint,
+      run: () => this.send({ type: 'room.mode', roomId: room.id, relayMode: m }),
+    })
+
+    showContextMenu(this.root, x, y, [
+      mode('mention', 'Mention', 'answers only when @named'),
+      mode('roundrobin', 'Round robin', 'everyone answers'),
+      mode('auto', 'Auto · Jev', this.deciderReady ? 'decision model picks' : 'needs a key in Options'),
+      { separator: true, label: '' },
+      { icon: '✕', label: `Remove ${room.name}`, danger: true, run: () => this.send({ type: 'room.remove', roomId: room.id }) },
+    ])
   }
 }
 
