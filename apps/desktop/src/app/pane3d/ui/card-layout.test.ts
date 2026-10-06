@@ -225,3 +225,39 @@ describe('bubbleLayout — a speech bubble over the speaker, clear of neighbours
     expect(placed.x + BUBBLE.width).toBeLessThanOrEqual(VIEWPORT.width - 8)
   })
 })
+
+describe('bubbleLayout — a bubble avoids a presented chart (VAL-CHART-005)', () => {
+  const BUBBLE = { height: 60, width: 220 }
+
+  it('is pushed clear of a chart panel that blocks its natural spot', () => {
+    const speaker = avatar({ x: 700, y: 300 })
+    const chart: CardBox = { height: 160, width: 300, x: 560, y: 100 }
+
+    // Without the chart the bubble sits above the speaker, on the panel.
+    const plain = bubbleLayout(speaker, BUBBLE, VIEWPORT)
+    const plainBox = { height: BUBBLE.height, width: BUBBLE.width, x: plain.left, y: plain.top }
+
+    expect(plain.placement).toBe('above')
+    expect(boxesOverlap(plainBox, chart)).toBe(true)
+
+    const layout = bubbleLayout(speaker, BUBBLE, VIEWPORT, undefined, undefined, [], [chart])
+    const placed = { height: BUBBLE.height, width: BUBBLE.width, x: layout.left, y: layout.top }
+
+    expect(boxesOverlap(placed, chart)).toBe(false)
+    expect(placed.y).toBeGreaterThanOrEqual(CARD_MARGIN)
+    expect(placed.y + BUBBLE.height).toBeLessThanOrEqual(VIEWPORT.height - CARD_MARGIN)
+  })
+
+  it('still clears the speaker and the pane when the chart cannot be avoided', () => {
+    const speaker = avatar({ x: 700, y: 300 })
+    const chart: CardBox = { height: VIEWPORT.height, width: VIEWPORT.width, x: 0, y: 0 }
+    const layout = bubbleLayout(speaker, BUBBLE, VIEWPORT, undefined, undefined, [], [chart])
+    const placed = { height: BUBBLE.height, width: BUBBLE.width, x: layout.left, y: layout.top }
+
+    expect(boxesOverlap(placed, speaker)).toBe(false)
+    expect(placed.y).toBeGreaterThanOrEqual(CARD_MARGIN)
+    expect(placed.y + BUBBLE.height).toBeLessThanOrEqual(VIEWPORT.height - CARD_MARGIN)
+    // The chart is the only thing overlapped.
+    expect(boxesOverlap(placed, chart)).toBe(true)
+  })
+})

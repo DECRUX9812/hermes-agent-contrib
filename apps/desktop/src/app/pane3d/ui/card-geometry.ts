@@ -210,6 +210,12 @@ export function freeVerticalBands(
 export interface CardFit {
   /** True when no clear band reached the minimum and the least-overlap fallback was used. */
   degenerate: boolean
+  /**
+   * True when this fit also clears the SECONDARY obstacles (a presented chart).
+   * A chart-clearing fit beats one that only clears the avatars, but never at
+   * the cost of a primary overlap (VAL-CHART-005).
+   */
+  clearsAvoid: boolean
   /** The chosen clear band's height (0 when degenerate). Collapsed and expanded share it. */
   bandHeight: number
   /** Rendered height: min(naturalHeight, bandHeight), or the pane cap when degenerate. */
@@ -224,13 +230,14 @@ export interface CardFit {
 }
 
 /** Fit `naturalHeight` into one clear band, centred as close to `desiredTop` as the band allows. */
-function fitInBand(band: VerticalBand, naturalHeight: number, desiredTop: number): CardFit {
+function fitInBand(band: VerticalBand, naturalHeight: number, desiredTop: number, clearsAvoid: boolean): CardFit {
   const bandHeight = band.bottom - band.top
   const height = Math.min(naturalHeight, bandHeight)
   const top = clamp(desiredTop, band.top, Math.max(band.top, band.bottom - height))
 
   return {
     bandHeight,
+    clearsAvoid,
     degenerate: false,
     distance: Math.abs(top - desiredTop),
     height,
@@ -242,10 +249,11 @@ function fitInBand(band: VerticalBand, naturalHeight: number, desiredTop: number
 
 /**
  * Ordering between two fits of the same card: `a` beats `b`. A usable clear band
- * always beats the degenerate overlap fallback; between two bands, showing the
- * whole card beats forcing a scroll, then the taller band wins, then the one
- * nearest the avatar's mid-line (the "originally preferred side" tie is broken
- * by the caller, which tries the roomier side first).
+ * always beats the degenerate overlap fallback; between two bands, clearing the
+ * secondary obstacles (a presented chart) beats only clearing the avatars, then
+ * showing the whole card beats forcing a scroll, then the taller band wins, then
+ * the one nearest the avatar's mid-line (the "originally preferred side" tie is
+ * broken by the caller, which tries the roomier side first).
  */
 export function betterCardFit(a: CardFit, b: CardFit, naturalHeight: number): boolean {
   if (a.degenerate !== b.degenerate) {
@@ -258,6 +266,10 @@ export function betterCardFit(a: CardFit, b: CardFit, naturalHeight: number): bo
     }
 
     return a.distance < b.distance - 0.5
+  }
+
+  if (a.clearsAvoid !== b.clearsAvoid) {
+    return a.clearsAvoid
   }
 
   const aFull = a.bandHeight >= naturalHeight
@@ -287,6 +299,11 @@ export function betterCardFit(a: CardFit, b: CardFit, naturalHeight: number): bo
  * card itself. When neither side offers such a band, the caller gets the
  * degenerate fallback: the least-overlap position inside the pane, with the pane
  * height as the cap (expanded) or the card's own height (collapsed).
+ *
+ * `avoid` is the SECONDARY obstacle list (a presented chart, VAL-CHART-005): a
+ * band clear of it wins, but when none exists the card falls back to a band
+ * clear of the primary obstacles only — avatars and the pane bounds take
+ * precedence over the chart.
  */
 export function fitCardInColumn(
   x: number,
@@ -297,19 +314,23 @@ export function fitCardInColumn(
   viewport: CardSize,
   gap: number,
   margin: number,
-  expandable: boolean
+  expandable: boolean,
+  avoid: readonly CardBox[] = []
 ): CardFit {
   const minBand = expandable ? MIN_CARD_HEIGHT : naturalHeight
+  const box = { width, x }
+  const primaryBands = freeVerticalBands(box, obstacles, viewport, gap, margin)
 
-  const usable = freeVerticalBands({ width, x }, obstacles, viewport, gap, margin).filter(
-    band => band.bottom - band.top >= minBand - 0.5
-  )
+  const clearBands =
+    avoid.length > 0 ? freeVerticalBands(box, [...obstacles, ...avoid], viewport, gap, margin) : primaryBands
 
-  if (usable.length > 0) {
-    let chosen = fitInBand(usable[0], naturalHeight, desiredTop)
+  const usable = (bands: VerticalBand[]) => bands.filter(band => band.bottom - band.top >= minBand - 0.5)
 
-    for (const band of usable.slice(1)) {
-      const fit = fitInBand(band, naturalHeight, desiredTop)
+  const bestIn = (bands: VerticalBand[], clearsAvoid: boolean): CardFit => {
+    let chosen = fitInBand(bands[0], naturalHeight, desiredTop, clearsAvoid)
+
+    for (const band of bands.slice(1)) {
+      const fit = fitInBand(band, naturalHeight, desiredTop, clearsAvoid)
 
       if (betterCardFit(fit, chosen, naturalHeight)) {
         chosen = fit
@@ -319,6 +340,20 @@ export function fitCardInColumn(
     return chosen
   }
 
+  const clear = usable(clearBands)
+
+  if (clear.length > 0) {
+    return bestIn(clear, true)
+  }
+
+  if (avoid.length > 0) {
+    const primary = usable(primaryBands)
+
+    if (primary.length > 0) {
+      return bestIn(primary, false)
+    }
+  }
+
   const maxHeight = expandable ? expandedCardMaxHeight(viewport.height, margin) : naturalHeight
   const height = Math.min(naturalHeight, maxHeight)
   const desired = clamp(desiredTop, margin, Math.max(margin, viewport.height - margin - height))
@@ -326,6 +361,7 @@ export function fitCardInColumn(
 
   return {
     bandHeight: 0,
+    clearsAvoid: false,
     degenerate: true,
     distance: Math.abs(top - desiredTop),
     height,

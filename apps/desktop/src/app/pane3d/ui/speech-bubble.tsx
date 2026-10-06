@@ -6,7 +6,7 @@ import { $anchor, $avatars, $bubbles, type SpeechBubble } from '../director/stor
 import type { AvatarId, ScreenRect } from '../protocol'
 import { avatarFrames } from '../scene/projection'
 
-import { avatarObstacleBoxes } from './avatar-obstacles'
+import { avatarObstacleBoxes, chartObstacleBox } from './avatar-obstacles'
 import { CARD_GAP, CARD_MARGIN, type CardBox } from './card-geometry'
 import { type BubbleLayout, bubbleLayout } from './card-layout'
 import { DevBadge } from './dev-badge'
@@ -72,12 +72,25 @@ export function SpeechBubbles() {
 
         const obstacles: CardBox[] = [...avatarObstacles, ...cardObstacles]
 
+        // A presented chart's panel is a secondary obstacle: the bubble clears
+        // it when it can, but never at the cost of covering an avatar or leaving
+        // the pane (VAL-CHART-005).
+        const chartObstacle = chartObstacleBox()
+
         const size = {
           height: element.offsetHeight || 52,
           width: Math.min(BUBBLE_MAX_WIDTH, element.offsetWidth || BUBBLE_MAX_WIDTH)
         }
 
-        const layout = bubbleLayout(rect, size, viewport, CARD_GAP, CARD_MARGIN, obstacles)
+        const layout = bubbleLayout(
+          rect,
+          size,
+          viewport,
+          CARD_GAP,
+          CARD_MARGIN,
+          obstacles,
+          chartObstacle ? [chartObstacle] : []
+        )
 
         element.style.visibility = 'visible'
         element.style.left = `${Math.round(layout.left)}px`

@@ -68,6 +68,9 @@ export function Stage() {
       chartRuntime.side = chartView.side
       chartRuntime.x = chartView.position.x
       chartRuntime.y = chartView.position.y
+      chartRuntime.panelRect = chartView.panel
+    } else {
+      chartRuntime.panelRect = null
     }
   }, [chartView])
 

@@ -17,7 +17,7 @@ import { isHarnessRequest } from '../director/notify'
 import { $anchor, $avatars, $cards, type PaneCard } from '../director/store'
 import { avatarFrames } from '../scene/projection'
 
-import { avatarObstacleBoxes } from './avatar-obstacles'
+import { avatarObstacleBoxes, chartObstacleBox } from './avatar-obstacles'
 import { CARD_GAP, CARD_MARGIN, expandedCardMaxHeight } from './card-geometry'
 import { type CardRequest, placeCards } from './card-layout'
 import { DevBadge } from './dev-badge'
@@ -163,14 +163,20 @@ export function NotificationCards() {
       // ONE placement pass positions every open card: each is fitted against the
       // avatars AND every card already placed this frame, on both sides, so a
       // card whose preferred side is taken moves to the opposite side's clear
-      // band instead of overlapping (VAL-NOTIFY-005/007). The DOM takes left, top
-      // and cap straight from the result — no second vertical-only refit.
+      // band instead of overlapping (VAL-NOTIFY-005/007). A presented chart's
+      // panel is a secondary obstacle: avoided when possible, but never at the
+      // cost of covering an avatar or leaving the pane (VAL-CHART-005). The DOM
+      // takes left, top and cap straight from the result — no second vertical-only
+      // refit.
+      const chartObstacle = chartObstacleBox()
+
       const placements = placeCards(
         measured.map(item => item.request),
         viewport,
         CARD_GAP,
         CARD_MARGIN,
-        avatarObstacles
+        avatarObstacles,
+        chartObstacle ? [chartObstacle] : []
       )
 
       measured.forEach((item, index) => {

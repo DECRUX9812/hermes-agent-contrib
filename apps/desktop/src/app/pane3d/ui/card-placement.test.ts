@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { AvatarId, PaneAnchor, ScreenRect } from '../protocol'
+import { chartViewFor } from '../scene/chart-layout'
 import { computeSlotLayout, reservedSlotRect } from '../scene/projection'
 
 import { boxesOverlap, CARD_GAP, CARD_MARGIN, type CardBox } from './card-geometry'
@@ -316,5 +317,111 @@ describe('placeCards with the high-anchor headroom floor (VAL-ANCHOR-006)', () =
     expect(box.y).toBeGreaterThanOrEqual(CARD_MARGIN)
     expect(box.x + box.width).toBeLessThanOrEqual(PANE.width - CARD_MARGIN)
     expect(box.y + box.height).toBeLessThanOrEqual(PANE.height - CARD_MARGIN)
+  })
+})
+
+/**
+ * VAL-CHART-005: while a chart is presented, a notification card is placed off
+ * its panel. The panel is a SECONDARY obstacle — it never wins against an avatar
+ * or the pane bounds.
+ */
+describe('placeCards — a card avoids a presented chart (VAL-CHART-005)', () => {
+  // The live pane at 1920x1080 (main-window zoom 0.9): 2132x1198 CSS px. The
+  // anchor's horizontal extent is the full pane in both window states, so the
+  // two cases differ only in the perch line — the variable the defect turned on.
+  const PANE = { height: 1198, width: 2132 }
+  const MUSE = { height: 1.1, id: 'muse' as const, width: 1.35 }
+  const GROK = { height: 0.95, id: 'grok' as const, width: 0.7 }
+  const DEFINITIONS = [MUSE, GROK] as const
+
+  const HEIGHTS: Record<AvatarId, number> = {
+    claude: 1.23,
+    grok: GROK.height,
+    hermes: 1.08,
+    muse: MUSE.height,
+    opencode: 0.8
+  }
+
+  const WIDTHS: Partial<Record<AvatarId, number>> = { grok: GROK.width, muse: MUSE.width }
+  const CARD = { height: 156, width: 264 }
+
+  /** The real muse+grok row with Grok presenting the demo chart, for one perch line. */
+  function scene(anchorY: number) {
+    const anchor: PaneAnchor = {
+      kind: 'hermes-browser',
+      label: 'x',
+      rect: { height: 800, width: PANE.width, x: 0, y: anchorY }
+    }
+
+    const ids: AvatarId[] = ['muse', 'grok']
+    const slots = computeSlotLayout({ anchor, dock: null, heights: HEIGHTS, ids, viewport: PANE, widths: WIDTHS })
+    const row = DEFINITIONS.map(size => reservedSlotRect(slots[size.id], size, PANE))
+
+    const view = chartViewFor({
+      avatars: { grok: { visible: true }, muse: { visible: true } },
+      chart: { avatar: 'grok', series: 8 },
+      definitions: DEFINITIONS,
+      slots,
+      viewport: PANE
+    })
+
+    expect(view).not.toBeNull()
+
+    return { panel: view!.panel, row }
+  }
+
+  /** The card request for `id`, placed beside that avatar's reserved rect. */
+  function cardFor(id: 'muse' | 'grok', row: readonly ScreenRect[]): CardRequest {
+    return { avatar: row[id === 'muse' ? 0 : 1], card: CARD, expanded: false }
+  }
+
+  for (const [label, anchorY] of [
+    ['non-maximized', 200],
+    ['maximized', 68]
+  ] as const) {
+    it(`keeps a card off the chart with the window ${label}`, () => {
+      const { panel, row } = scene(anchorY)
+
+      for (const id of ['muse', 'grok'] as const) {
+        const request = cardFor(id, row)
+        const [placement] = placeCards([request], PANE, CARD_GAP, CARD_MARGIN, row, [panel])
+        const box = boxOf(request, placement)
+
+        expect(placement.degenerate, `${id} card degenerate`).toBe(false)
+        expect(boxesOverlap(box, panel), `${id} card covers the chart`).toBe(false)
+        expect(overlapsAny(box, row), `${id} card covers an avatar`).toBe(false)
+        expect(box.x).toBeGreaterThanOrEqual(CARD_MARGIN)
+        expect(box.x + box.width).toBeLessThanOrEqual(PANE.width - CARD_MARGIN)
+        expect(box.y).toBeGreaterThanOrEqual(CARD_MARGIN)
+        expect(box.y + box.height).toBeLessThanOrEqual(PANE.height - CARD_MARGIN)
+      }
+
+      // The defect: the chart sits over the left avatar's column, so without the
+      // panel as an obstacle that card lands on it (the reported y 29..184).
+      const left = cardFor('grok', row)
+      const [without] = placeCards([left], PANE, CARD_GAP, CARD_MARGIN, row)
+
+      expect(boxesOverlap(boxOf(left, without), panel)).toBe(true)
+    })
+  }
+
+  it('lets avatars and the pane win when the chart cannot be avoided', () => {
+    // A chart band that blocks every usable band in both columns: the card may
+    // overlap the chart, but never an avatar and never the pane (VAL-CHART-005).
+    const pane = { height: 600, width: 700 }
+    const row: ScreenRect[] = [{ height: 160, width: 120, x: 200, y: 300 }]
+    const chart: CardBox = { height: 400, width: 700, x: 0, y: 100 }
+    const request: CardRequest = { avatar: row[0], card: { height: 150, width: 264 }, expanded: false }
+    const [placement] = placeCards([request], pane, CARD_GAP, CARD_MARGIN, row, [chart])
+    const box = boxOf(request, placement)
+
+    expect(placement.degenerate).toBe(false)
+    expect(overlapsAny(box, row)).toBe(false)
+    expect(box.x).toBeGreaterThanOrEqual(CARD_MARGIN)
+    expect(box.y).toBeGreaterThanOrEqual(CARD_MARGIN)
+    expect(box.x + box.width).toBeLessThanOrEqual(pane.width - CARD_MARGIN)
+    expect(box.y + box.height).toBeLessThanOrEqual(pane.height - CARD_MARGIN)
+    // The chart is the only thing overlapped.
+    expect(boxesOverlap(box, chart)).toBe(true)
   })
 })

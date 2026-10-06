@@ -33,6 +33,12 @@ export const chartRuntime = {
   side: 'left' as 'left' | 'right',
   /** Projected chart box in pane CSS px; written by the Projector each frame. */
   screenRect: null as ScreenRect | null,
+  /**
+   * The DOM label panel's pane-CSS-px box, written by the Stage from the pure
+   * `chartViewFor` placement (never measured from the DOM). Card and bubble
+   * placement avoids it (VAL-CHART-005).
+   */
+  panelRect: null as ScreenRect | null,
   /** The projected chart geometry boxes — a hit-region source (§6). */
   hitRects: [] as ScreenRect[],
   /** The DOM label panel the frame loop fades in (it renders in drei's HTML root). */
@@ -46,6 +52,7 @@ export function setChartPresentation(next: ChartPresentation | null): void {
   if (!next) {
     chartRuntime.hitRects = []
     chartRuntime.panelElement = null
+    chartRuntime.panelRect = null
     chartRuntime.rotationDeg = 0
     chartRuntime.screenRect = null
   }

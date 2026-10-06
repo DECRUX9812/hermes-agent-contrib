@@ -30,6 +30,7 @@ import {
   chartBarSpan,
   chartBoardWidth,
   chartFit,
+  chartPanelRect,
   chartPlacement,
   chartViewFor
 } from './chart-layout'
@@ -394,5 +395,65 @@ describe('chartViewFor', () => {
       chartViewFor({ ...base, chart: { avatar: 'muse', series: 8 }, avatars: { muse: { visible: false } } })
     ).toBeNull()
     expect(chartViewFor({ ...base, chart: { avatar: 'grok', series: 8 } })).toBeNull()
+  })
+})
+
+describe('chartPanelRect — the DOM label panel box (VAL-CHART-005)', () => {
+  // The live pane at 1920x1080 (main-window zoom 0.9): 2132x1198 CSS px.
+  const PANE = { height: 1198, width: 2132 }
+
+  const HIGH_ANCHOR: PaneAnchor = {
+    kind: 'hermes-browser',
+    label: 'maximized',
+    rect: { height: 800, width: PANE.width, x: 0, y: 68 }
+  }
+
+  function highAnchorView() {
+    const heights = Object.fromEntries(SILHOUETTES.map(size => [size.id, size.height])) as Record<AvatarId, number>
+
+    const widths = Object.fromEntries(SILHOUETTES.map(size => [size.id, size.width])) as Partial<
+      Record<AvatarId, number>
+    >
+
+    const ids: AvatarId[] = ['muse', 'grok']
+    const slots = computeSlotLayout({ anchor: HIGH_ANCHOR, dock: null, heights, ids, viewport: PANE, widths })
+
+    return chartViewFor({
+      avatars: { grok: { visible: true }, muse: { visible: true } },
+      chart: { avatar: 'grok', series: 8 },
+      definitions: SILHOUETTES,
+      slots,
+      viewport: PANE
+    })
+  }
+
+  it('is the board plus the title strip, the Y gutter and the X-label strip', () => {
+    const position = { x: -0.026, y: 3.685 }
+    const panel = chartPanelRect({ fit: 1, fitX: 1, position, series: 8, viewport: VIEWPORT })
+    const boardWpx = chartBoardWidth(8) * PX_PER_UNIT
+    const boardHpx = CHART_BOARD_HEIGHT * PX_PER_UNIT
+    const centerX = worldToScreen(position, VIEWPORT).x
+    const boardTopPx = worldToScreen({ x: 0, y: position.y + boardHpx / PX_PER_UNIT }, VIEWPORT).y
+
+    expect(panel.width).toBeCloseTo(boardWpx + CHART_LABEL_GUTTER_PX)
+    expect(panel.height).toBeCloseTo(CHART_TITLE_GUTTER_PX + boardHpx + CHART_X_LABEL_GUTTER_PX)
+    expect(panel.x).toBeCloseTo(centerX - boardWpx / 2 - CHART_LABEL_GUTTER_PX)
+    // The title strip sits a title gutter above the board's top edge.
+    expect(panel.y).toBeCloseTo(boardTopPx - CHART_TITLE_GUTTER_PX)
+  })
+
+  it('is the same box chartViewFor reports, from the numbers that place the board', () => {
+    const view = highAnchorView()
+
+    expect(view).not.toBeNull()
+    expect(view!.panel).toEqual(
+      chartPanelRect({ fit: view!.fit, fitX: view!.fitX, position: view!.position, series: 8, viewport: PANE })
+    )
+    // The panel measured live at the maximized perch: 388 wide, ~126 tall at y ~52.
+    expect(view!.panel.width).toBeCloseTo(388)
+    expect(view!.panel.height).toBeCloseTo(126.4)
+    expect(view!.panel.y).toBeCloseTo(52.4, 0)
+    expect(view!.panel.y).toBeGreaterThanOrEqual(0)
+    expect(view!.panel.y + view!.panel.height).toBeLessThanOrEqual(PANE.height)
   })
 })

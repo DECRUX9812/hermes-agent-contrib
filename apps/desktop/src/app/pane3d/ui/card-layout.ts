@@ -67,7 +67,8 @@ function fitSide(
   obstacles: readonly CardBox[],
   viewport: CardSize,
   gap: number,
-  margin: number
+  margin: number,
+  avoid: readonly CardBox[]
 ): SideFit {
   const { avatar, card } = request
   const raw = side === 'right' ? avatar.x + avatar.width + gap : avatar.x - card.width - gap
@@ -84,7 +85,8 @@ function fitSide(
     viewport,
     gap,
     margin,
-    request.expanded
+    request.expanded,
+    avoid
   )
 
   return { fit, left, side }
@@ -109,21 +111,27 @@ function fitSide(
  * least-overlap position inside the pane; it may then cover an obstacle, but it
  * never leaves the pane. The returned `left`/`top`/`maxHeight` are final: the
  * caller applies them without a second placement pass.
+ *
+ * `avoid` is the SECONDARY obstacle list — a presented chart panel
+ * (VAL-CHART-005). A band that clears it wins, but when none exists the card
+ * takes a band clear of the primary obstacles only, so avatars and the pane
+ * bounds always take precedence over the chart.
  */
 export function placeCards(
   requests: readonly CardRequest[],
   viewport: CardSize,
   gap: number = CARD_GAP,
   margin: number = CARD_MARGIN,
-  obstacles: readonly CardBox[] = []
+  obstacles: readonly CardBox[] = [],
+  avoid: readonly CardBox[] = []
 ): CardPlacement[] {
   const placed: CardBox[] = [...obstacles]
   const out: CardPlacement[] = []
 
   for (const request of requests) {
     const [first, second] = sideOrder(request.avatar, viewport)
-    const preferred = fitSide(first, request, placed, viewport, gap, margin)
-    const other = fitSide(second, request, placed, viewport, gap, margin)
+    const preferred = fitSide(first, request, placed, viewport, gap, margin, avoid)
+    const other = fitSide(second, request, placed, viewport, gap, margin, avoid)
     // `betterCardFit` is strict, so an equal fit keeps the roomier side (first).
     const chosen = betterCardFit(other.fit, preferred.fit, request.card.height) ? other : preferred
 
@@ -159,9 +167,10 @@ export function cardLayout(
   viewport: CardSize,
   gap: number = CARD_GAP,
   margin: number = CARD_MARGIN,
-  obstacles: readonly CardBox[] = []
+  obstacles: readonly CardBox[] = [],
+  avoid: readonly CardBox[] = []
 ): CardLayout {
-  const [placement] = placeCards([{ avatar, card, expanded: false }], viewport, gap, margin, obstacles)
+  const [placement] = placeCards([{ avatar, card, expanded: false }], viewport, gap, margin, obstacles, avoid)
 
   return toCardLayout(placement)
 }
@@ -183,6 +192,11 @@ export interface BubbleLayout {
  * already-placed card. When the row is too close to the top of the pane for the
  * bubble to clear its neighbours, it flips to the speaker's side exactly like a
  * card.
+ *
+ * `avoid` is the SECONDARY obstacle list — a presented chart panel
+ * (VAL-CHART-005). A spot clear of the chart is preferred, but the chart never
+ * pushes the bubble over an avatar or out of the pane: avatars and the pane
+ * bounds take precedence.
  */
 export function bubbleLayout(
   speaker: ScreenRect,
@@ -190,7 +204,8 @@ export function bubbleLayout(
   viewport: CardSize,
   gap: number = CARD_GAP,
   margin: number = CARD_MARGIN,
-  obstacles: readonly CardBox[] = []
+  obstacles: readonly CardBox[] = [],
+  avoid: readonly CardBox[] = []
 ): BubbleLayout {
   const centerX = speaker.x + speaker.width / 2
 
@@ -201,22 +216,50 @@ export function bubbleLayout(
     y: speaker.y - bubble.height - gap
   }
 
-  // Push the bubble up over any neighbour's head; if that leaves the pane, fall
-  // back to the speaker's side rather than sitting on its own face.
-  const y = clearVertical(above, obstacles, gap, 'up')
-  const cleared = { ...above, y }
+  const clearOf = (box: CardBox, boxes: readonly CardBox[]) => !boxes.some(other => boxesOverlap(box, other, gap))
 
-  if (withinBounds(y, bubble.height, viewport, margin) && !obstacles.some(box => boxesOverlap(cleared, box, gap))) {
-    return { left: cleared.x, originX: 'left', originY: 'bottom', placement: 'above', top: y }
-  }
+  const asAbove = (box: CardBox): BubbleLayout => ({
+    left: box.x,
+    originX: 'left',
+    originY: 'bottom',
+    placement: 'above',
+    top: box.y
+  })
 
-  const beside = cardLayout(speaker, bubble, viewport, gap, margin, obstacles)
-
-  return {
+  const asBeside = (beside: CardLayout): BubbleLayout => ({
     left: beside.left,
     originX: beside.originX,
     originY: 'center',
     placement: beside.side,
     top: beside.top
+  })
+
+  // Push the bubble up over any neighbour's head; a spot clear of EVERYTHING
+  // (avatars, cards and a presented chart) is the first choice.
+  const clearAll = { ...above, y: clearVertical(above, [...obstacles, ...avoid], gap, 'up') }
+
+  if (
+    withinBounds(clearAll.y, bubble.height, viewport, margin) &&
+    clearOf(clearAll, obstacles) &&
+    clearOf(clearAll, avoid)
+  ) {
+    return asAbove(clearAll)
   }
+
+  const beside = cardLayout(speaker, bubble, viewport, gap, margin, obstacles, avoid)
+  const besideBox: CardBox = { height: bubble.height, width: bubble.width, x: beside.left, y: beside.top }
+
+  if (avoid.length === 0 || clearOf(besideBox, avoid)) {
+    return asBeside(beside)
+  }
+
+  // The chart is the only thing in the way: avatars and the pane bounds win, so
+  // an above spot that clears the avatars is allowed to overlap the chart.
+  const clearPrimary = { ...above, y: clearVertical(above, obstacles, gap, 'up') }
+
+  if (withinBounds(clearPrimary.y, bubble.height, viewport, margin) && clearOf(clearPrimary, obstacles)) {
+    return asAbove(clearPrimary)
+  }
+
+  return asBeside(beside)
 }

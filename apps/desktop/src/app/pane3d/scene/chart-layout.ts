@@ -222,9 +222,55 @@ export interface ChartView {
   fit: number
   /** Horizontal board fit, `CHART_MIN_FIT_X`..1 — see `chartPlacement`. */
   fitX: number
+  /**
+   * The whole DOM label panel's pane-CSS-px box (the `[data-pane-chart]`
+   * element) — the board plus the title strip, the Y-label gutter and the
+   * X-label strip. Cards and bubbles avoid it (VAL-CHART-005).
+   */
+  panel: ScreenRect
   /** Board centre in world units (its base sits CHART_LIFT above the perch line). */
   position: { x: number; y: number }
   side: 'left' | 'right'
+}
+
+export interface ChartPanelInput {
+  /** Board centre in world units, as `chartViewFor` places it. */
+  position: { x: number; y: number }
+  /** Vertical board fit, `CHART_MIN_FIT`..1 — see `chartFit`. */
+  fit: number
+  /** Horizontal board fit, `CHART_MIN_FIT_X`..1 — see `chartPlacement`. */
+  fitX: number
+  /** Bar count; the board's width follows from it. */
+  series: number
+  viewport: Viewport
+}
+
+/**
+ * The DOM label panel's pane-CSS-px box (VAL-CHART-005), computed from the SAME
+ * numbers `Stage` places the board with — never measured from the DOM, so card
+ * and bubble placement is deterministic and unit-testable.
+ *
+ * The label layer is anchored above the board's top edge on the board's centre
+ * axis (`chart-labels.tsx`), and it spans the board width plus the Y-label
+ * gutter, so this is the box the panel actually renders.
+ */
+export function chartPanelRect(input: ChartPanelInput): ScreenRect {
+  const { fit, fitX, position, series, viewport } = input
+  const boardHeight = CHART_BOARD_HEIGHT * fit
+  const boardHpx = boardHeight * PX_PER_UNIT
+  const boardWpx = chartBoardWidth(series) * PX_PER_UNIT * fitX
+
+  const anchor = worldToScreen(
+    { x: position.x, y: position.y + boardHeight + CHART_TITLE_GUTTER_PX / PX_PER_UNIT },
+    viewport
+  )
+
+  return {
+    height: CHART_TITLE_GUTTER_PX + boardHpx + CHART_X_LABEL_GUTTER_PX,
+    width: boardWpx + CHART_LABEL_GUTTER_PX,
+    x: anchor.x - (boardWpx / 2 + CHART_LABEL_GUTTER_PX),
+    y: anchor.y
+  }
 }
 
 /**
@@ -266,13 +312,18 @@ export function chartViewFor(input: ChartViewInput): ChartView | null {
     viewport
   })
 
+  const fit = chartFit(worldToScreen({ x: 0, y: presenting.perchY }, viewport).y)
+
+  const position = {
+    x: screenToWorld({ x: placement.centerX, y: 0 }, viewport).x,
+    y: presenting.perchY + CHART_LIFT
+  }
+
   return {
-    fit: chartFit(worldToScreen({ x: 0, y: presenting.perchY }, viewport).y),
+    fit,
     fitX: placement.fitX,
-    position: {
-      x: screenToWorld({ x: placement.centerX, y: 0 }, viewport).x,
-      y: presenting.perchY + CHART_LIFT
-    },
+    panel: chartPanelRect({ fit, fitX: placement.fitX, position, series: chart.series, viewport }),
+    position,
     side: placement.side
   }
 }

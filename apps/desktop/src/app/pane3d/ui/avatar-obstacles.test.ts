@@ -5,13 +5,14 @@ import '../avatars/muse'
 
 import { describe, expect, it } from 'vitest'
 
+import { chartRuntime } from '../director/chart-state'
 import type { AvatarState } from '../director/store'
 import type { AvatarId, PaneAnchor, ScreenRect } from '../protocol'
 import { AVATAR_IDS } from '../protocol'
 import { reservedSlotRect, unionScreenRects } from '../scene/projection'
 import { type AvatarSilhouette, visibleSlotLayout } from '../scene/slot-layout'
 
-import { avatarObstacleBoxes, isSettlingAvatar } from './avatar-obstacles'
+import { avatarObstacleBoxes, chartObstacleBox, isSettlingAvatar } from './avatar-obstacles'
 
 /**
  * The card/bubble obstacle source (VAL-NOTIFY-007). While an avatar emerges its
@@ -140,5 +141,25 @@ describe('avatarObstacleBoxes — reserve the perch an emerging avatar climbs in
     expect(avatarObstacleBoxes({ ...input, exclude: 'grok' })).toEqual([MUSE_RECT])
     expect(avatarObstacleBoxes({ ...input, exclude: 'muse' })).toEqual([perch])
     expect(avatarObstacleBoxes({ ...input, avatars: rows({}) })).toEqual([])
+  })
+})
+
+describe('chartObstacleBox — the presented chart panel as a secondary obstacle (VAL-CHART-005)', () => {
+  const PANEL: ScreenRect = { height: 127, width: 388, x: 1093, y: 52 }
+
+  it('is the runtime panel rect only while a chart is presented', () => {
+    chartRuntime.visible = false
+    chartRuntime.panelRect = null
+    expect(chartObstacleBox()).toBeNull()
+
+    chartRuntime.visible = true
+    chartRuntime.panelRect = PANEL
+    expect(chartObstacleBox()).toEqual(PANEL)
+
+    // A panel rect without a presentation (mid-teardown) is not an obstacle.
+    chartRuntime.visible = false
+    expect(chartObstacleBox()).toBeNull()
+
+    chartRuntime.panelRect = null
   })
 })

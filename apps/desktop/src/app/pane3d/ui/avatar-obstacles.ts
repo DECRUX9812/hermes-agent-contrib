@@ -1,3 +1,4 @@
+import { chartRuntime } from '../director/chart-state'
 import type { AvatarState } from '../director/store'
 import type { AvatarId, PaneAnchor, ScreenRect } from '../protocol'
 import { AVATAR_IDS } from '../protocol'
@@ -62,4 +63,21 @@ export function avatarObstacleBoxes(input: ObstacleInput): CardBox[] {
       return rect ? unionScreenRects(rect, reserved) : reserved
     })
     .filter((rect): rect is ScreenRect => rect !== null)
+}
+
+/**
+ * The presented chart panel's box, or null when no chart is up (VAL-CHART-005).
+ *
+ * A SECONDARY obstacle: a card or bubble avoids it when it can, but never at the
+ * cost of covering an avatar or leaving the pane — the caller passes it as
+ * `placeCards`/`bubbleLayout`'s `avoid` list, which keeps avatars and the pane
+ * bounds ahead of the chart. The rect comes from `chartViewFor` (via
+ * `chartRuntime.panelRect`), the same numbers that place the panel.
+ */
+export function chartObstacleBox(): CardBox | null {
+  if (!chartRuntime.visible || !chartRuntime.panelRect) {
+    return null
+  }
+
+  return chartRuntime.panelRect
 }
