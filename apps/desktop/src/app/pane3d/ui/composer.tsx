@@ -37,7 +37,11 @@ export function Composer() {
     return null
   }
 
-  return <ComposerView state={state} />
+  // A new session is a new textarea: the key remounts the view so B starts with
+  // its own draft and the mount-only focus effect runs against B's field. The
+  // pane keeps ONE composer, so an A→B handoff reaches here as a single batched
+  // state replacement and an unkeyed view would silently keep A's text.
+  return <ComposerView key={`${state.avatar}:${state.session}`} state={state} />
 }
 
 function ComposerView({ state }: { state: ComposerState }) {

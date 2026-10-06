@@ -24,9 +24,11 @@ import {
   CHART_LABEL_GUTTER_PX,
   CHART_PLINTH_HEIGHT,
   CHART_TITLE_GUTTER_PX,
+  CHART_X_LABEL_BOX_PX,
   CHART_X_LABEL_GAP_PX,
   CHART_X_LABEL_GUTTER_PX,
-  CHART_X_LABEL_STRIP_PX
+  CHART_X_LABEL_STRIP_PX,
+  chartXLabelBoxes
 } from './chart-layout'
 import { type ChartDomain, formatHoverValue, formatTickLabel } from './chart-scale'
 import { PX_PER_UNIT } from './projection'
@@ -50,6 +52,7 @@ export function ChartLabels({ boardHeight, boardWidth, domain, fitX, hoverIndex,
   const panelHeight = CHART_TITLE_GUTTER_PX + boardHpx + CHART_X_LABEL_GUTTER_PX
   const boardCenterPx = CHART_LABEL_GUTTER_PX + boardWpx / 2
   const columnPx = (index: number) => boardCenterPx + barColumnX(index, count) * PX_PER_UNIT * fitX
+  const xLabels = chartXLabelBoxes({ count, fitX })
   const topFor = (value: number) => CHART_TITLE_GUTTER_PX + boardHpx * (1 - value / domain.max)
 
   // The frame loop fades this panel in with the board; a separate React root
@@ -147,7 +150,13 @@ export function ChartLabels({ boardHeight, boardWidth, domain, fitX, hoverIndex,
               className="absolute text-center text-[11px] leading-3 text-(--ui-text-secondary)"
               data-pane-chart-xlabel
               key={`${point.label}-${index}`}
-              style={{ left: boardWpx / 2 + barColumnX(index, count) * PX_PER_UNIT - 20, width: 40 }}
+              // Strip-local offset of the panel-local box: the labels carry the
+              // SAME fitX as the board, or they drift off their compressed bars
+              // and the outermost box leaves the pane (round-2 fix).
+              style={{
+                left: (xLabels[index]?.left ?? 0) - CHART_LABEL_GUTTER_PX,
+                width: CHART_X_LABEL_BOX_PX
+              }}
             >
               {point.label}
             </span>

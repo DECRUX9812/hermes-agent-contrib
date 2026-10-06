@@ -188,6 +188,13 @@ export type ContextField = 'url' | 'title' | 'selection'
  */
 export interface ComposerState {
   avatar: AvatarId
+  /**
+   * The open request that produced this composer (`openComposer`'s token), unique
+   * per open even when the SAME avatar reopens. The DOM view is keyed by avatar +
+   * session: the pane keeps ONE composer, so an A→B handoff replaces this state in
+   * one batch and an unkeyed view would keep A's typed draft and mount-only focus.
+   */
+  session: number
   context: PageContext
   /** Chips the user removed — the task must not receive these fields. */
   removed: ContextField[]
@@ -369,6 +376,7 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
           demo: composer.demo,
           draft: composer.draft,
           removed: [...composer.removed],
+          session: composer.session,
           source: composer.source
         }
       : null,

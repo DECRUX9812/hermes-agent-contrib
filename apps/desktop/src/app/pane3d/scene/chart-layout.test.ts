@@ -24,6 +24,7 @@ import {
   CHART_PLINTH_HEIGHT,
   CHART_TITLE_GUTTER_PX,
   CHART_TOP_MARGIN_PX,
+  CHART_X_LABEL_BOX_PX,
   CHART_X_LABEL_GAP_PX,
   CHART_X_LABEL_GUTTER_PX,
   CHART_X_LABEL_STRIP_PX,
@@ -32,7 +33,8 @@ import {
   chartFit,
   chartPanelRect,
   chartPlacement,
-  chartViewFor
+  chartViewFor,
+  chartXLabelBoxes
 } from './chart-layout'
 import { CHART_MAX_BAR_HEIGHT } from './chart-scale'
 import {
@@ -455,5 +457,55 @@ describe('chartPanelRect — the DOM label panel box (VAL-CHART-005)', () => {
     expect(view!.panel.y).toBeCloseTo(52.4, 0)
     expect(view!.panel.y).toBeGreaterThanOrEqual(0)
     expect(view!.panel.y + view!.panel.height).toBeLessThanOrEqual(PANE.height)
+  })
+})
+
+describe('chartXLabelBoxes — the X labels on a compressed board (round-2 fix)', () => {
+  /**
+   * The real four-avatar narrow pane: `Chart3D` squeezes the whole board (bars
+   * included) by `fitX`, so the label offset must carry the SAME factor. With an
+   * unscaled offset every label drifts off its column and the outermost box
+   * lands past the pane edge, even though the panel's own box is clamped inside.
+   */
+  it('centres every label on its compressed bar, inside the 1422 px pane', () => {
+    const layout = castLayout(['muse', 'hermes', 'grok', 'opencode'], { height: 800, width: 1422 })
+
+    const view = chartViewFor({
+      avatars: layout.avatars,
+      chart: { avatar: 'muse', series: 8 },
+      definitions: layout.definitions,
+      slots: layout.slots,
+      viewport: layout.viewport
+    })!
+
+    expect(view).not.toBeNull()
+    expect(view.fitX).toBeCloseTo(CHART_MIN_FIT_X, 6)
+
+    const boardWpx = chartBoardWidth(8) * PX_PER_UNIT * view.fitX
+    const centerX = worldToScreen({ x: view.position.x, y: 0 }, layout.viewport).x
+    const panelLeft = centerX - boardWpx / 2 - CHART_LABEL_GUTTER_PX
+    const boxes = chartXLabelBoxes({ count: 8, fitX: view.fitX })
+
+    expect(boxes).toHaveLength(8)
+
+    boxes.forEach((box, index) => {
+      // The bar's pane x is the placement centre plus its column offset — the
+      // same offset `ChartBoard`'s hover strips stand on, scaled by fitX.
+      const barCenterX = centerX + barColumnX(index, 8) * PX_PER_UNIT * view.fitX
+
+      expect(Math.abs(panelLeft + box.center - barCenterX)).toBeLessThanOrEqual(2)
+      expect(box.right - box.left).toBeCloseTo(CHART_X_LABEL_BOX_PX, 6)
+      expect(panelLeft + box.left).toBeGreaterThanOrEqual(0)
+      expect(panelLeft + box.right).toBeLessThanOrEqual(1422)
+    })
+  })
+
+  it('is unchanged when the board is not compressed', () => {
+    const boxes = chartXLabelBoxes({ count: 8, fitX: 1 })
+    const boardWpx = chartBoardWidth(8) * PX_PER_UNIT
+
+    boxes.forEach((box, index) => {
+      expect(box.center).toBeCloseTo(CHART_LABEL_GUTTER_PX + boardWpx / 2 + barColumnX(index, 8) * PX_PER_UNIT, 6)
+    })
   })
 })

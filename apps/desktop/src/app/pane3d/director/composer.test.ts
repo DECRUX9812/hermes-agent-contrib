@@ -87,7 +87,8 @@ describe('composer session', () => {
     // could take focus and drop the selection.
     expect(stateAtCapture).toBe('idle')
     expect($avatars.get().muse.state).toBe('listening')
-    expect($composer.get()).toEqual({ avatar: 'muse', context, removed: [] })
+    expect($composer.get()).toMatchObject({ avatar: 'muse', context, removed: [] })
+    expect($composer.get()?.session).toBeTypeOf('number')
   })
 
   it('stores the full selection from the injected bridge', async () => {

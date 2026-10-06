@@ -134,6 +134,25 @@ describe('formatHoverValue', () => {
   it('never renders NaN', () => {
     expect(formatHoverValue(Number.NaN, 'x')).toBe('0 x')
   })
+
+  it('keeps a tiny nonzero magnitude instead of rounding it to zero', () => {
+    // Intl with twenty fraction digits formats 1e-21 as "0" — a bar with real
+    // height would report empty data. The Number's own representation survives
+    // the round trip (round-2 fix, VAL-CHART-002).
+    expect(formatHoverValue(1e-21)).not.toBe('0')
+    expect(Number(formatHoverValue(1e-21))).toBe(1e-21)
+    expect(formatHoverValue(1e-21, 'kg')).toBe(`${formatHoverValue(1e-21)} kg`)
+    expect(Number(formatHoverValue(5e-7))).toBe(5e-7)
+  })
+
+  it('keeps a magnitude at or above 1e15 in a non-rounding form', () => {
+    const huge = 1.2345678901234568e21
+    const text = formatHoverValue(huge, 'x')
+
+    expect(text.endsWith(' x')).toBe(true)
+    expect(Number(text.slice(0, -2))).toBe(huge)
+    expect(Number(formatHoverValue(1e15))).toBe(1e15)
+  })
 })
 
 describe('formatTickLabel', () => {

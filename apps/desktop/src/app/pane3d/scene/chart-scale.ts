@@ -29,6 +29,15 @@ const GROUPED = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
  * `formatTickLabel`, so the axis is unaffected.
  */
 const EXACT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 20 })
+/**
+ * Where `EXACT` stops being exact. It can only render 20 fraction digits, so
+ * every nonzero magnitude below 1e-6 collapses to "0" (1e-21 → "0"), and beyond
+ * double integer precision it prints a rounded decimal. Both are real ChartSpec
+ * numbers whose bars have real height, so they keep a representation that
+ * round-trips through `Number()` instead.
+ */
+const EXACT_MIN = 1e-6
+const EXACT_MAX = 1e15
 
 function clampTickCount(count: number): number {
   return Number.isFinite(count) ? Math.max(2, Math.floor(count)) : CHART_Y_TICK_COUNT
@@ -97,7 +106,10 @@ export function scaleBarHeights(
 
 /** The exact hover value with its unit, grouped for reading: `1,234.567 kg`. */
 export function formatHoverValue(value: number, unit?: string): string {
-  const text = EXACT.format(Number.isFinite(value) ? value : 0)
+  const safe = Number.isFinite(value) ? value : 0
+  const magnitude = Math.abs(safe)
+
+  const text = magnitude > 0 && (magnitude < EXACT_MIN || magnitude >= EXACT_MAX) ? String(safe) : EXACT.format(safe)
 
   return unit ? `${text} ${unit}` : text
 }

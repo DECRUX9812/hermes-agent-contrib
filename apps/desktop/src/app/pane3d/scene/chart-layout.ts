@@ -62,6 +62,8 @@ export const CHART_TITLE_GUTTER_PX = 30
 export const CHART_X_LABEL_GAP_PX = 2
 export const CHART_X_LABEL_STRIP_PX = 14
 export const CHART_X_LABEL_GUTTER_PX = CHART_X_LABEL_GAP_PX + CHART_X_LABEL_STRIP_PX + CHART_PLINTH_HEIGHT * PX_PER_UNIT
+/** The fixed width of one X-label box — wide enough for a week label, centred on its bar. */
+export const CHART_X_LABEL_BOX_PX = 40
 /** Room left of the board for the Y tick labels. */
 export const CHART_LABEL_GUTTER_PX = 40
 /** Gap between the avatar row and the board. */
@@ -91,6 +93,37 @@ export function chartBarSpan(count: number): number {
 
 export function chartBoardWidth(count: number): number {
   return chartBarSpan(count) + 2 * CHART_BOARD_MARGIN
+}
+
+export interface ChartXLabelBox {
+  /** Panel-local centre — the bar column the label belongs to. */
+  center: number
+  /** Panel-local edges of the fixed-width box. */
+  left: number
+  right: number
+}
+
+/**
+ * The X-label boxes in panel-local CSS px, one per bar, for `chart-labels.tsx`.
+ *
+ * The offset MUST carry the same `fitX` as the board geometry: `Chart3D` squeezes
+ * the whole board — columns included — when the pane is too narrow for the full
+ * panel beside the avatar row, so an unscaled offset leaves every label drifting
+ * off its bar and pushes the outermost box past the pane edge even though the
+ * panel's own box is clamped inside. Each centre lands on
+ * `barColumnX(index, count) * PX_PER_UNIT * fitX` from the board centre, which is
+ * exactly where the 3D bars and their hover strips stand.
+ */
+export function chartXLabelBoxes(input: { count: number; fitX: number }): ChartXLabelBox[] {
+  const { count, fitX } = input
+  const boardWpx = chartBoardWidth(count) * PX_PER_UNIT * fitX
+  const boardCenterPx = CHART_LABEL_GUTTER_PX + boardWpx / 2
+
+  return Array.from({ length: count }, (_, index) => {
+    const center = boardCenterPx + barColumnX(index, count) * PX_PER_UNIT * fitX
+
+    return { center, left: center - CHART_X_LABEL_BOX_PX / 2, right: center + CHART_X_LABEL_BOX_PX / 2 }
+  })
 }
 
 export interface ChartPlacementInput {

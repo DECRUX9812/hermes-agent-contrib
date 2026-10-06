@@ -132,6 +132,9 @@ export async function openComposer(
       demo: options.demo,
       draft: options.draft,
       removed: [],
+      // The view remounts on a new session, so the handoff to another avatar
+      // starts from ITS draft and refocuses instead of reusing the old textarea.
+      session: request,
       source: options.source
     })
   } finally {
