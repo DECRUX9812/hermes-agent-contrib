@@ -652,15 +652,17 @@ describe('GatewaySettings', () => {
     // "SSH connection failed." fallback the table previously collapsed to.
     try {
       await waitFor(() =>
-        expect($notifications.get()).toEqual(
-          expect.arrayContaining([expect.objectContaining({ kind: 'error', message: expect.stringContaining('ssh <host> true') })])
+        expect(notifyError).toHaveBeenCalledWith(
+          expect.objectContaining({ message: expect.stringContaining('ssh <host> true') }),
+          expect.anything()
         )
       )
-      expect(
-        $notifications.get().some((n: { message?: string }) => n.message === 'SSH connection failed.')
-      ).toBe(false)
+      expect(notifyError).not.toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'SSH connection failed.' }),
+        expect.anything()
+      )
     } finally {
-      $notifications.set([])
+      vi.mocked(notifyError).mockClear()
     }
   })
 
