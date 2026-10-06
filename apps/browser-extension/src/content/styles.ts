@@ -122,6 +122,11 @@ code, pre, .hr-mono { font-family: 'Geist Mono', 'SF Mono', ui-monospace, Menlo,
   box-shadow: 0 1px 2px rgba(10,10,10,.04);
 }
 .hr-msg .hr-who { font-size: 10px; margin-bottom: 2px; font-weight: 650; letter-spacing: .02em; color: var(--ink-dim); }
+.hr-msg .hr-picked {
+  font-size: 9.5px; font-weight: 620; letter-spacing: .03em; margin-top: 4px;
+  color: #8f96b8;
+}
+.hr-msg .hr-picked::before { content: '◆ '; color: #b6a5ff; font-size: 8px; }
 .hr-msg.sys {
   align-self: center; background: none; color: var(--ink-faint); font-size: 10.5px;
   padding: 2px 10px; border: 0; text-align: center;

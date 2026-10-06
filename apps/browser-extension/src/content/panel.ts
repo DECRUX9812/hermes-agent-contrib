@@ -37,7 +37,7 @@ const STATUS_COLOR: Record<string, string> = {
   sleeping: '#5e5e5b',
 }
 
-const logs = new Map<string, { who: string; text: string; kind: 'user' | 'bot' | 'sys' }[]>()
+const logs = new Map<string, { who: string; text: string; kind: 'user' | 'bot' | 'sys'; pickedByJev?: number }[]>()
 
 export class Panel {
   el: HTMLElement
@@ -122,7 +122,7 @@ export class Panel {
     this.targetChip.querySelector('.hr-x')!.addEventListener('click', () => this.setTarget(null))
     this.mic.addEventListener('click', () => this.toggleMic())
 
-    for (const m of logs.get(key) ?? []) {this.renderMsg(m.who, m.text, m.kind)}
+    for (const m of logs.get(key) ?? []) {this.renderMsg(m.who, m.text, m.kind, m.pickedByJev)}
     void color
     this.scope.appendChild(this.el)
   }
@@ -200,16 +200,16 @@ export class Panel {
 
   private typing = new Map<string, HTMLElement>()
 
-  addMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys') {
+  addMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys', pickedByJev?: number) {
     const list = logs.get(this.key) ?? []
-    list.push({ who, text, kind })
+    list.push({ who, text, kind, pickedByJev })
 
     if (list.length > 200) {list.shift()}
     logs.set(this.key, list)
-    this.renderMsg(who, text, kind)
+    this.renderMsg(who, text, kind, pickedByJev)
   }
 
-  private renderMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys') {
+  private renderMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys', pickedByJev?: number) {
     const div = document.createElement('div')
     div.className = `hr-msg ${kind}`
 
@@ -223,6 +223,15 @@ export class Panel {
     const body = document.createElement('div')
     body.textContent = text
     div.appendChild(body)
+
+    // auto rooms: "Picked by Jev · 94%" under the chosen speaker's reply
+    if (pickedByJev !== undefined) {
+      const p = document.createElement('div')
+      p.className = 'hr-picked'
+      p.textContent = `Picked by Jev · ${Math.round(pickedByJev * 100)}%`
+      div.appendChild(p)
+    }
+
     this.logEl.appendChild(div)
     this.logEl.scrollTop = this.logEl.scrollHeight
   }
@@ -296,7 +305,7 @@ export class Panel {
 
 export function roomMsgToPanel(panel: Panel, msg: RoomMsg, botName: (id: string) => string) {
   const who = msg.author === 'user' ? 'You' : msg.author === 'system' ? 'system' : botName(msg.author)
-  panel.addMsg(who, msg.text, msg.author === 'user' ? 'user' : msg.author === 'system' ? 'sys' : 'bot')
+  panel.addMsg(who, msg.text, msg.author === 'user' ? 'user' : msg.author === 'system' ? 'sys' : 'bot', msg.pickedByJev)
 }
 
 export function botAvatarUrl(bot: Bot): string {

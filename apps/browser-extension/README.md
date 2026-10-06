@@ -25,8 +25,10 @@ task and return text can live in the room.
 - **Drag-and-drop** — move mascots anywhere; drop a bot on a page element to
   attach it as task context ("reply to this tweet like…"); drop on a room
   chip to move the bot into that room.
-- **Rooms** — group chats with a relay engine (`@mention` or round-robin),
-  a shared scratchpad ("hand notes to each other"), and bots re-relaying in
+- **Rooms** — group chats with a relay engine (`@mention`, round-robin, or
+  **auto** — a TypeSafe Jev decision model picks who answers, ~300 ms,
+  falling back to the room's first member when it can't decide), a shared
+  scratchpad ("hand notes to each other"), and bots re-relaying in
   round-robin rooms. Rooms are extension-local so mixed-harness rooms work.
 - **Page control** — Hermes bots use the backend's `browser.controller.*`
   lane; other harnesses get the identical vocabulary through `page_action`:
