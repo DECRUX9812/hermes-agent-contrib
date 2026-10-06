@@ -33,7 +33,7 @@ def _grants_path(home: str | Path) -> Path:
 def _load(home: str | Path) -> dict[str, Any]:
     path = _grants_path(home)
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
     except (OSError, json.JSONDecodeError):
         return {"version": 1, "grants": []}
     if not isinstance(data, dict) or not isinstance(data.get("grants"), list):
