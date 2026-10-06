@@ -138,7 +138,12 @@ export function installBrowserDesktopBridge(): boolean {
       openWindow,
       requireConnection: requireBrowserConnection
     }),
-    zoom: createBrowserZoom(bootstrap.basePath)
+    zoom: createBrowserZoom(bootstrap.basePath),
+    updateHold: {
+      recheck: () => Promise.resolve({ ok: true }),
+      quit: () => Promise.resolve({ ok: true }),
+      startAnyway: () => Promise.resolve({ ok: true })
+    }
   }
 
   win.hermesDesktop = bridge

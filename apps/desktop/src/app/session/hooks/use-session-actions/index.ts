@@ -6,6 +6,8 @@ import { migrateQueuedPrompts } from '@/store/composer-queue'
 import {
   $activeSessionStoredIdRotation,
   $sessions,
+  $yoloActive,
+  getCurrentModelSource,
   idsShareLineage,
   resolveComposerSessionKey,
   setActiveSessionStoredIdRotation,
@@ -24,6 +26,49 @@ import { useOpenActions } from './open'
 import type { SessionActionsOptions } from './options'
 import { useResumeActions } from './resume'
 import { useTileRoutingActions } from './tile-routing'
+import { sessionCreateOverrideParams, type SessionCreateOverrides, type SessionSeedMessage } from './create-overrides'
+import { markSessionCreatedThisRun, sessionCreatedThisRun } from './created-this-run'
+import { captureDisplayHydration } from './display-hydration'
+import { reconcilePersistedLiveTurn } from './persisted-live-turn'
+import { provisionalTranscriptPaint, transcriptRestScope } from './provisional-transcript'
+import { rememberedOwnerForResume } from './remembered-owner'
+import { pendingClarifyToolPayload, restorePendingClarifyFromSnapshot } from './restore-pending-clarify'
+import { projectPendingConnection, restorePendingConnectionFromSnapshot } from './restore-pending-connection'
+import { createGatewaySession } from './session-create-request'
+import {
+  createPersistedDisplayTranscriptProvenance,
+  hasPersistedDisplayTranscriptProvenance,
+  withoutTranscriptProvenance
+} from './transcript-provenance'
+import {
+  appendLiveSessionProjection,
+  applyRuntimeInfo,
+  applyStoredSessionPreviewRuntimeInfo,
+  type BranchMessage,
+  cachedSessionRow,
+  chatMessageArraysEquivalent,
+  dedupeInflightUserAgainstTranscript,
+  dropListedSession,
+  findListedSession,
+  goneSessionVerdict,
+  isSessionGoneError,
+  overlayConcurrentMessageChanges,
+  patchSessionWorkspace,
+  preserveEquivalentTranscript,
+  preserveLocalPendingTurnMessages,
+  reconcileDurableHistory,
+  removeRepresentedLocalLiveProjection,
+  resolveResumedBusy,
+  resolveSessionProfile,
+  resolveStoredSession,
+  restoreListedSession,
+  selectBranchMessages,
+  sessionMatchesStoredId,
+  sessionShouldHaveTranscript,
+  toBranchMessages,
+  upsertOptimisticSession,
+  upsertUnlistedSessionOwner
+} from './utils'
 
 export type { BranchLoadedSessionOptions, SessionActionsOptions } from './options'
 
