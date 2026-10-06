@@ -642,7 +642,7 @@ async def _qqbot_api_json(client, headers: dict, method: str, path: str,
     resp = await client.request(method, f"{API_BASE}{path}", json=body, headers=headers, timeout=timeout)
     try:
         data = resp.json() if resp.content else {}
-    except Exception:
+    except ValueError:  # non-JSON error body; the status check below reports it
         data = {}
     if resp.status_code >= 400:
         raise RuntimeError(
@@ -657,11 +657,15 @@ async def _qqbot_upload_local_file(client, headers, chat_type, chat_id, media_pa
     from gateway.platforms.qqbot.chunked_upload import ChunkedUploader
     from gateway.platforms.qqbot.constants import FILE_UPLOAD_TIMEOUT
 
-    local_path = _Path(media_path).expanduser()
-    if not local_path.is_absolute():
-        local_path = (_Path.cwd() / local_path).resolve()
-    if not local_path.exists() or not local_path.is_file():
-        raise FileNotFoundError(f"Media file not found: {local_path}")
+    def _resolve_local_file() -> _Path:
+        local = _Path(media_path).expanduser()
+        if not local.is_absolute():
+            local = (_Path.cwd() / local).resolve()
+        if not local.is_file():
+            raise FileNotFoundError(f"Media file not found: {local}")
+        return local
+
+    local_path = await asyncio.to_thread(_resolve_local_file)
 
     async def _api_request(method, path, body=None, timeout=FILE_UPLOAD_TIMEOUT):
         return await _qqbot_api_json(client, headers, method, path, body, timeout=timeout)
@@ -725,6 +729,10 @@ async def _qqbot_deliver_one_media(client, headers, chat_id, media_path, is_voic
     from pathlib import Path as _Path
     from urllib.parse import urlparse
 
+    import httpx
+
+    from gateway.platforms.qqbot.chunked_upload import _UploadError
+
     file_type = _qqbot_media_file_type(media_path, is_voice)
     is_url = urlparse(str(media_path)).scheme in {"http", "https"}
     errors: list[str] = []
@@ -745,7 +753,7 @@ async def _qqbot_deliver_one_media(client, headers, chat_id, media_path, is_voic
             send_data = await _qqbot_send_media_message(
                 client, headers, chat_type, chat_id, file_info, caption=caption)
             return _success("qqbot", chat_id, message_id=send_data.get("id"), chat_type=chat_type)
-        except Exception as exc:
+        except (httpx.HTTPError, OSError, RuntimeError, ValueError, _UploadError) as exc:
             errors.append(f"{chat_type}: {exc}")
             continue
 
@@ -811,7 +819,7 @@ async def _send_qqbot(pconfig, chat_id, message, media_files=None, caption=None)
                     # Caption applies to the first bubble only (single-file
                     # caption split already enforced by the caller).
                     media_caption = caption if index == 0 else None
-                    if not os.path.exists(media_path):
+                    if not await asyncio.to_thread(os.path.exists, media_path):
                         from urllib.parse import urlparse as _urlparse
                         if _urlparse(str(media_path)).scheme not in {"http", "https"}:
                             warnings.append(f"QQBot media file not found, skipping: {media_path}")
