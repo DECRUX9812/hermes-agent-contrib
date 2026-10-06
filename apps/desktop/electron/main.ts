@@ -419,6 +419,7 @@ import { wireOauthSessionResponse } from './oauth-session-response'
 import { listWindowsProcesses, reapPackageRootedProcesses } from './package-process-reap'
 import { createElectronAnchorService } from './pane3d-anchor-electron'
 import { type AnchorService } from './pane3d-anchor-types'
+import { createElectronPageContextService } from './pane3d-context-electron'
 import { registerPane3dIpc } from './pane3d-ipc'
 import { createPane3dController } from './pane3d-window'
 import { createParentStartMarkerResolver, parentWatchdogEnv } from './parent-process-identity'
@@ -16170,7 +16171,12 @@ registerPetOverlayIpc({
 })
 
 // --- 3D Pane (transparent avatar layer) — see pane3d-ipc.ts. --------------
+// Page context for the composer: the in-app browser guest, else the frontmost
+// non-Hermes OS window, else none (pane3d-context.ts, bounded to 800 ms).
+const pane3dContext = createElectronPageContextService()
+
 const pane3dIpc = registerPane3dIpc({
+  captureContext: () => pane3dContext.capture(),
   closePane3d: () => pane3dController.close(),
   getMainWindow: () => mainWindow,
   getPaneWindow: () => pane3dController.getWindow(),

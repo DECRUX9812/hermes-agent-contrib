@@ -10,7 +10,7 @@
 
 import { atom } from 'nanostores'
 
-import type { AvatarId, DemoScript, NotifyRequest, PaneAnchor, PaneState, ScreenRect } from '../protocol'
+import type { AvatarId, DemoScript, NotifyRequest, PageContext, PaneAnchor, PaneState, ScreenRect } from '../protocol'
 import { AVATAR_IDS } from '../protocol'
 import { prewarmPlan, type PrewarmStage } from '../scene/prewarm'
 import { avatarFrames } from '../scene/projection'
@@ -118,6 +118,23 @@ export const pane3dRuntime: Pane3dRuntime = {
 export const $avatars = atom<Record<AvatarId, AvatarRuntime>>(emptyAvatars())
 export const $feed = atom<FeedEntry[]>([])
 export const $cards = atom<Record<string, PaneCard>>({})
+
+/** The context fields a composer chip can remove (architecture §8.8). */
+export type ContextField = 'url' | 'title' | 'selection'
+
+/**
+ * The open composer's captured page context (§8.8). Set only after
+ * `captureContext()` resolves and the avatar is `listening`; cleared the moment
+ * the avatar leaves `listening`.
+ */
+export interface ComposerState {
+  avatar: AvatarId
+  context: PageContext
+  /** Chips the user removed — the task must not receive these fields. */
+  removed: ContextField[]
+}
+
+export const $composer = atom<ComposerState | null>(null)
 /** The AvatarRoom's current speech bubble(s) (§8.6); a live exchange shows one. */
 export const $bubbles = atom<SpeechBubble[]>([])
 export const $anchor = atom<PaneAnchor>(DEFAULT_ANCHOR)
@@ -216,6 +233,8 @@ export interface Pane3dDebugSnapshot {
   cards: PaneCard[]
   /** The AvatarRoom's live speech bubbles (§8.6). */
   bubbles: SpeechBubble[]
+  /** The open composer's captured context + removed chips (§8.8); null when closed. */
+  composer: ComposerState | null
   tasks: unknown[]
   chart: null
   lastDemo: DemoScript | null
@@ -234,6 +253,7 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
   const avatars = $avatars.get()
   const visibleOrder = AVATAR_IDS.filter(id => avatars[id].visible)
   const prewarm = prewarmPlan()
+  const composer = $composer.get()
 
   return {
     anchor: pane3dRuntime.anchor,
@@ -258,6 +278,9 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
     bubbles: $bubbles.get().map(bubble => ({ ...bubble })),
     cards: Object.values($cards.get()),
     chart: null,
+    composer: composer
+      ? { avatar: composer.avatar, context: { ...composer.context }, removed: [...composer.removed] }
+      : null,
     feed: $feed.get(),
     frameloop: pane3dRuntime.frameloop,
     lastDemo: pane3dRuntime.lastDemo,

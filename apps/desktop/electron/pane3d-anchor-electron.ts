@@ -1,11 +1,14 @@
 /**
- * Electron wiring for the AnchorService (architecture §7): turns the real
- * BrowserWindows, `<webview>` guests and the OS-window enumerator into the
- * injected handles pane3d-anchor.ts watches. Kept apart from the session logic
- * so the service stays Electron-free and unit-testable.
+ * Electron wiring for the AnchorService and the PageContextService
+ * (architecture §7, §9): turns the real BrowserWindows, `<webview>` guests and
+ * the OS-window enumerator into the injected handles the two services watch.
+ *
+ * `createElectronBrowserSource` is the ONE place that knows how to ask Electron
+ * "which in-app-browser page is the user on" — both services consume it, so they
+ * can never disagree about the answer.
  *
  * Consent: `enumerateWindowsFrontToBack` is asked for titles only when macOS
- * Screen Recording is already granted (`titlesAvailableFor`) — enumerating
+ * Screen Recording is already granted (`screenTitlesAvailable`) — enumerating
  * without it triggers the permission prompt (AGENTS.md).
  */
 
@@ -16,6 +19,7 @@ import type { PaneState, ScreenRect } from '../src/app/pane3d/protocol'
 import { createAnchorService } from './pane3d-anchor'
 import { type AnchorGuestCandidate, pickFrontmostForeignWindow, titlesAvailableFor } from './pane3d-anchor-pick'
 import type { AnchorHostWindow, AnchorOsWindow, AnchorService } from './pane3d-anchor-types'
+import type { ContextGuestHandle } from './pane3d-context'
 
 /** One record per `<webview>` element; ids come from the element itself. */
 const WEBVIEW_PROBE = `(() => {
@@ -34,14 +38,15 @@ const WEBVIEW_PROBE = `(() => {
   return out
 })()`
 
-export interface ElectronAnchorServiceOptions {
-  getPaneWindow: () => BrowserWindow | null
-  pushState: (state: PaneState) => void
-  rehome?: (screenRect: ScreenRect) => void
+export interface ElectronBrowserSource {
+  listHosts: () => AnchorHostWindow[]
+  /** Live `<webview>` guests with the page reads the context service needs. */
+  listGuests: () => ContextGuestHandle[]
+  enumerateOsWindow: () => Promise<AnchorOsWindow | null>
 }
 
-/** Build the AnchorService against the real Electron windows and guests. */
-export function createElectronAnchorService(options: ElectronAnchorServiceOptions): AnchorService {
+/** The real Hermes windows, their browser guests and the frontmost foreign OS window. */
+export function createElectronBrowserSource(): ElectronBrowserSource {
   // Imported lazily so the pure helper tests never load the native enumerator.
   const enumerateOsWindow = async (): Promise<AnchorOsWindow | null> => {
     const { enumerateWindowsFrontToBack, enumerationFailed } = await import('./window-below')
@@ -60,8 +65,61 @@ export function createElectronAnchorService(options: ElectronAnchorServiceOption
     return { app: front.app, bounds: front.bounds, title: front.title }
   }
 
-  return createAnchorService({
+  return {
     enumerateOsWindow,
+    listGuests: () =>
+      webContents
+        .getAllWebContents()
+        .filter(contents => contents.getType() === 'webview' && !contents.isDestroyed())
+        .map(contents => {
+          const hostWebContents = contents.hostWebContents
+
+          return {
+            executeJavaScript: code => contents.executeJavaScript(code),
+            getHost: () => {
+              const win = hostWebContents ? BrowserWindow.fromWebContents(hostWebContents) : null
+
+              return win && !win.isDestroyed() ? wrapHost(win) : null
+            },
+            getTitle: () => {
+              try {
+                return contents.getTitle()
+              } catch {
+                return ''
+              }
+            },
+            getURL: () => {
+              try {
+                return contents.getURL()
+              } catch {
+                return ''
+              }
+            },
+            isDestroyed: () => contents.isDestroyed(),
+            on: (event, listener) => contents.on(event as never, listener),
+            removeListener: (event, listener) => contents.removeListener(event as never, listener),
+            webContentsId: contents.id
+          }
+        }),
+    listHosts: () =>
+      BrowserWindow.getAllWindows()
+        .filter(win => !win.isDestroyed())
+        .map(wrapHost)
+  }
+}
+
+export interface ElectronAnchorServiceOptions {
+  getPaneWindow: () => BrowserWindow | null
+  pushState: (state: PaneState) => void
+  rehome?: (screenRect: ScreenRect) => void
+}
+
+/** Build the AnchorService against the real Electron windows and guests. */
+export function createElectronAnchorService(options: ElectronAnchorServiceOptions): AnchorService {
+  const source = createElectronBrowserSource()
+
+  return createAnchorService({
+    enumerateOsWindow: source.enumerateOsWindow,
     getPane: () => {
       const win = options.getPaneWindow()
 
@@ -76,36 +134,8 @@ export function createElectronAnchorService(options: ElectronAnchorServiceOption
         isVisible: () => win.isVisible()
       }
     },
-    listGuests: () =>
-      webContents
-        .getAllWebContents()
-        .filter(contents => contents.getType() === 'webview' && !contents.isDestroyed())
-        .map(contents => {
-          const hostWebContents = contents.hostWebContents
-
-          return {
-            getHost: () => {
-              const win = hostWebContents ? BrowserWindow.fromWebContents(hostWebContents) : null
-
-              return win && !win.isDestroyed() ? wrapHost(win) : null
-            },
-            getTitle: () => {
-              try {
-                return contents.getTitle()
-              } catch {
-                return ''
-              }
-            },
-            isDestroyed: () => contents.isDestroyed(),
-            on: (event, listener) => contents.on(event as never, listener),
-            removeListener: (event, listener) => contents.removeListener(event as never, listener),
-            webContentsId: contents.id
-          }
-        }),
-    listHosts: () =>
-      BrowserWindow.getAllWindows()
-        .filter(win => !win.isDestroyed())
-        .map(wrapHost),
+    listGuests: source.listGuests,
+    listHosts: source.listHosts,
     platform: process.platform,
     pushState: options.pushState,
     reducedMotion: () => {

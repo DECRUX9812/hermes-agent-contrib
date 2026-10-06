@@ -5,6 +5,7 @@ import { $avatars } from '../director/store'
 import { AVATAR_IDS } from '../protocol'
 
 import { AvatarHandle } from './avatar-handle'
+import { Composer } from './composer'
 import { Dock } from './dock'
 import { FeedPanel } from './feed-panel'
 import { NotificationCards } from './notification-card'
@@ -27,6 +28,7 @@ export function PaneOverlay() {
       ))}
       <NotificationCards />
       <SpeechBubbles />
+      <Composer />
       <FeedPanel />
       <Dock />
     </div>

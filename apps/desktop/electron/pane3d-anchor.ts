@@ -40,7 +40,13 @@ import {
   toPaneLocal,
   withTimeout
 } from './pane3d-anchor-pick'
-import type { AnchorGuestHandle, AnchorPaneWindow, AnchorService, AnchorServiceDeps } from './pane3d-anchor-types'
+import type {
+  AnchorGuestHandle,
+  AnchorHostWindow,
+  AnchorPaneWindow,
+  AnchorService,
+  AnchorServiceDeps
+} from './pane3d-anchor-types'
 
 interface Subscription {
   listeners: Array<[string, () => void]>
@@ -55,6 +61,103 @@ interface ComputedAnchor {
 
 const HOST_EVENTS = ['blur', 'closed', 'focus', 'move', 'resize'] as const
 const GUEST_EVENTS = ['did-navigate', 'did-navigate-in-page', 'page-title-updated'] as const
+
+export interface AnchorHostCollection<G extends AnchorGuestHandle = AnchorGuestHandle> {
+  candidates: AnchorHostCandidate[]
+  /** The live guest handle behind each candidate, keyed by webContents id. */
+  guestHandles: Map<number, G>
+}
+
+/**
+ * One `AnchorHostCandidate` per host window that owns a live guest, with each
+ * host's DOM probed for the guest rectangles/visibility/focus that
+ * `pickHermesGuest` needs (architecture §7.1).
+ *
+ * Shared by the AnchorService and the PageContextService so both answer "which
+ * page is the user on" with the exact same rules: destroyed guests and hidden
+ * (HUD) or minimized hosts are never eligible, the probe is bounded, and a
+ * rejected probe reads as "no guest in this host". The guest handle type is
+ * preserved for the caller (`G`), so the PageContextService keeps its
+ * `executeJavaScript`/`getURL` reads on the selected guest.
+ */
+export async function collectHostCandidates<G extends AnchorGuestHandle>(
+  hosts: readonly AnchorHostWindow[],
+  guests: readonly G[],
+  options: { focusAt?: Map<number, number>; probeTimeoutMs?: number } = {}
+): Promise<AnchorHostCollection<G>> {
+  const probeTimeoutMs = options.probeTimeoutMs ?? PROBE_TIMEOUT_MS
+  const liveHosts = hosts.filter(host => !host.isDestroyed())
+  const hostById = new Map(liveHosts.map(host => [host.id, host]))
+  const guestsByHost = new Map<number, G[]>()
+
+  guests
+    .filter(guest => !guest.isDestroyed())
+    .forEach(guest => {
+      const host = guest.getHost()
+
+      if (!host || !hostById.has(host.id)) {
+        return
+      }
+
+      guestsByHost.set(host.id, [...(guestsByHost.get(host.id) ?? []), guest])
+    })
+
+  const candidates: AnchorHostCandidate[] = []
+  const guestHandles = new Map<number, G>()
+
+  for (const [hostId, handles] of guestsByHost) {
+    const host = hostById.get(hostId)
+
+    if (!host) {
+      continue
+    }
+
+    let probed: AnchorGuestCandidate[] = []
+
+    try {
+      // One hung host renderer must not stall the caller forever.
+      const result = await withTimeout(host.probeWebviews(), probeTimeoutMs, [])
+
+      probed = Array.isArray(result) ? result : []
+    } catch {
+      probed = []
+    }
+
+    const probedById = new Map(probed.map(item => [item.webContentsId, item]))
+
+    const guestCandidates = handles.map(handle => {
+      const info = probedById.get(handle.webContentsId)
+
+      guestHandles.set(handle.webContentsId, handle)
+
+      // Geometry and focus come from the host DOM probe; the title comes from
+      // the guest's own webContents, which knows it even before the page
+      // reports one (and survives the probe failing).
+      return {
+        active: info?.active ?? false,
+        rect: info?.rect ?? null,
+        title: handle.getTitle() || info?.title || '',
+        visible: info?.visible ?? false,
+        webContentsId: handle.webContentsId
+      }
+    })
+
+    // Read host visibility AFTER the async probe: HUD mode can hide the host
+    // between the guest handoff and the DOM answer.
+    candidates.push({
+      bounds: host.getContentBounds(),
+      focused: host.isFocused(),
+      guests: guestCandidates,
+      lastFocusedAt: options.focusAt?.get(host.id) ?? 0,
+      minimized: host.isMinimized(),
+      visible: host.isVisible(),
+      windowId: host.id,
+      zoom: host.getZoomFactor()
+    })
+  }
+
+  return { candidates, guestHandles }
+}
 
 export function createAnchorService(deps: AnchorServiceDeps): AnchorService {
   const now = deps.now ?? (() => Date.now())
@@ -174,73 +277,11 @@ export function createAnchorService(deps: AnchorServiceDeps): AnchorService {
   const computeAnchor = async (pane: AnchorPaneWindow): Promise<ComputedAnchor> => {
     const paneBounds = pane.getContentBounds()
     const paneZoom = pane.getZoomFactor()
-    const hosts = deps.listHosts().filter(host => !host.isDestroyed())
-    const hostById = new Map(hosts.map(host => [host.id, host]))
-    const guestsByHost = new Map<number, AnchorGuestHandle[]>()
 
-    deps
-      .listGuests()
-      .filter(guest => !guest.isDestroyed())
-      .forEach(guest => {
-        const host = guest.getHost()
-
-        if (!host || !hostById.has(host.id)) {
-          return
-        }
-
-        guestsByHost.set(host.id, [...(guestsByHost.get(host.id) ?? []), guest])
-      })
-
-    const candidates: AnchorHostCandidate[] = []
-
-    for (const [hostId, guestHandles] of guestsByHost) {
-      const host = hostById.get(hostId)
-
-      if (!host) {
-        continue
-      }
-
-      let probed: AnchorGuestCandidate[] = []
-
-      try {
-        // One hung host renderer must not stall the anchor forever.
-        const result = await withTimeout(host.probeWebviews(), probeTimeoutMs, [])
-
-        probed = Array.isArray(result) ? result : []
-      } catch {
-        probed = []
-      }
-
-      const probedById = new Map(probed.map(item => [item.webContentsId, item]))
-
-      const guests = guestHandles.map(handle => {
-        const info = probedById.get(handle.webContentsId)
-
-        // Geometry and focus come from the host DOM probe; the title comes from
-        // the guest's own webContents, which knows it even before the page
-        // reports one (and survives the probe failing).
-        return {
-          active: info?.active ?? false,
-          rect: info?.rect ?? null,
-          title: handle.getTitle() || info?.title || '',
-          visible: info?.visible ?? false,
-          webContentsId: handle.webContentsId
-        }
-      })
-
-      // Read host visibility AFTER the async probe: HUD mode can hide the host
-      // between the guest handoff and the DOM answer.
-      candidates.push({
-        bounds: host.getContentBounds(),
-        focused: host.isFocused(),
-        guests,
-        lastFocusedAt: focusAt.get(host.id) ?? 0,
-        minimized: host.isMinimized(),
-        visible: host.isVisible(),
-        windowId: host.id,
-        zoom: host.getZoomFactor()
-      })
-    }
+    const { candidates } = await collectHostCandidates(deps.listHosts(), deps.listGuests(), {
+      focusAt,
+      probeTimeoutMs
+    })
 
     const picked = pickHermesGuest(candidates)
 

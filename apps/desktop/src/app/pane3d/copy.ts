@@ -4,6 +4,9 @@
  */
 export const PANE_COPY = {
   ask: 'Ask',
+  closeComposer: 'Close composer',
+  composerHint: 'Enter to send · Shift+Enter for a new line · Esc to close',
+  composerPlaceholder: (name: string) => `Ask ${name} to build, copy or explain this…`,
   closeFeed: 'Close activity feed',
   devHarness: 'Dev harness',
   dismissNotification: 'Dismiss notification',
@@ -12,6 +15,7 @@ export const PANE_COPY = {
   hide: 'Hide',
   less: 'less',
   more: 'more',
+  removeContext: (label: string) => `Remove ${label} context`,
   summon: (name: string) => `Summon ${name}`,
   dismiss: (name: string) => `Hide ${name}`
 }

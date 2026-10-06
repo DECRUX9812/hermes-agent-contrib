@@ -1,6 +1,7 @@
 import { type KeyboardEvent, type PointerEvent, useCallback, useState } from 'react'
 
 import type { AvatarDefinition } from '../avatars/types'
+import { closeComposer, openComposer } from '../director/composer'
 import { dispatch } from '../director/director'
 import type { AvatarState } from '../director/store'
 import { clearPointerGaze, setPointerGaze } from '../scene/pointer-gaze'
@@ -46,7 +47,7 @@ export function AvatarHandle({ definition, state }: AvatarHandleProps) {
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.stopPropagation()
-      dispatch(id, 'COMPOSER_CLOSE')
+      closeComposer(id)
     }
   }
 
@@ -70,12 +71,10 @@ export function AvatarHandle({ definition, state }: AvatarHandleProps) {
         data-avatar-id={id}
         data-avatar-state={state}
         data-pane-hit
-        onClick={() => dispatch(id, 'COMPOSER_OPEN')}
+        onClick={() => void openComposer(id)}
         type="button"
       />
-      {hovered ? (
-        <HoverChips onAsk={() => dispatch(id, 'COMPOSER_OPEN')} onHide={() => dispatch(id, 'DISMISS')} />
-      ) : null}
+      {hovered ? <HoverChips onAsk={() => void openComposer(id)} onHide={() => dispatch(id, 'DISMISS')} /> : null}
     </div>
   )
 }
