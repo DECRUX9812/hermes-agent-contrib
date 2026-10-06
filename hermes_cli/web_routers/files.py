@@ -32,7 +32,7 @@ from hermes_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
 from hermes_cli.web_routers.uploads import _removed_on_failure, _resolve_upload_generation
 from hermes_cli.web_deps import late
 from hermes_cli.web_server_files import (
-    _fs_path, _managed_file_entry, _managed_response_meta, _resolve_managed_path,
+    _fs_path, _hosted_fs_read_guard, _managed_file_entry, _managed_response_meta, _resolve_managed_path,
 )
 from hermes_cli.web_models import (
     ChatImageUpload, FileTicketRequest, FsWriteText, ManagedDirectoryCreate, ManagedFileDelete,
@@ -883,7 +883,7 @@ _FS_LIST_ERRNO = (
 
 
 @router.get("/api/fs/list")
-async def fs_list(path: str, profile: Optional[str] = None):
+async def fs_list(path: str, request: Request, profile: Optional[str] = None):
     backend = await asyncio.to_thread(_fs_backend, profile)
     if backend is not None:
         try:
@@ -891,6 +891,7 @@ async def fs_list(path: str, profile: Optional[str] = None):
         except Exception as exc:
             _raise_fs_backend_error(exc)
     target = _fs_path(path)
+    _hosted_fs_read_guard(target, request)
     try:
         entries = []
         with os.scandir(target) as scan:
@@ -912,7 +913,7 @@ async def fs_list(path: str, profile: Optional[str] = None):
 
 
 @router.get("/api/fs/read-text")
-async def fs_read_text(path: str, profile: Optional[str] = None):
+async def fs_read_text(path: str, request: Request = None, profile: Optional[str] = None):
     backend = await asyncio.to_thread(_fs_backend, profile)
     if backend is not None:
         try:
@@ -934,7 +935,9 @@ async def fs_read_text(path: str, profile: Optional[str] = None):
             "text": data.decode("utf-8", errors="replace"),
             "truncated": size > _FS_TEXT_PREVIEW_MAX_BYTES,
         }
-    target, st = _fs_regular_file(_fs_path(path))
+    target = _fs_path(path)
+    _hosted_fs_read_guard(target, request)
+    target, st = _fs_regular_file(target)
     if st.st_size > _FS_TEXT_SOURCE_MAX_BYTES:
         raise HTTPException(status_code=413, detail="File too large")
     data = await asyncio.to_thread(
@@ -1026,7 +1029,7 @@ async def _fs_download_path(path: str, profile: Optional[str], session_id: Optio
 
 @router.get("/api/fs/read-data-url")
 async def fs_read_data_url(
-    path: str, profile: Optional[str] = None, session_id: Optional[str] = None,
+    path: str, request: Request, profile: Optional[str] = None, session_id: Optional[str] = None,
 ):
     from hermes_cli.web_server import _FS_DATA_URL_MAX_BYTES
     backend = await asyncio.to_thread(_fs_backend, profile)
@@ -1039,7 +1042,9 @@ async def fs_read_data_url(
             _raise_fs_backend_error(exc)
         encoded = base64.b64encode(data).decode("ascii")
         return {"dataUrl": f"data:{_fs_mime_type(Path(target))};base64,{encoded}"}
-    target, st = _fs_regular_file(await _fs_download_path(path, profile, session_id))
+    target = await _fs_download_path(path, profile, session_id)
+    _hosted_fs_read_guard(target, request)
+    target, st = _fs_regular_file(target)
     if st.st_size > _FS_DATA_URL_MAX_BYTES:
         raise HTTPException(status_code=413, detail="File too large")
     encoded = await asyncio.to_thread(
@@ -1050,7 +1055,7 @@ async def fs_read_data_url(
 
 @router.get("/api/fs/download")
 async def fs_download(
-    path: str, profile: Optional[str] = None, session_id: Optional[str] = None,
+    path: str, request: Request = None, profile: Optional[str] = None, session_id: Optional[str] = None,
 ):
     backend = await asyncio.to_thread(_fs_backend, profile)
     if backend is not None:
@@ -1067,7 +1072,9 @@ async def fs_download(
             media_type=_fs_mime_type(target_path),
             headers={"Content-Disposition": f"attachment; filename*=UTF-8''{filename}"},
         )
-    target, _st = _fs_regular_file(await _fs_download_path(path, profile, session_id))
+    target = await _fs_download_path(path, profile, session_id)
+    _hosted_fs_read_guard(target, request)
+    target, _st = _fs_regular_file(target)
     await asyncio.to_thread(_refuse_live_database, target)
     return FileResponse(
         path=str(target),
