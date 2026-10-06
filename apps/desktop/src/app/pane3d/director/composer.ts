@@ -7,6 +7,11 @@
  * focusable, and focusing steals the selection out of the page (§9,
  * VAL-CONTEXT-002).
  *
+ * There is exactly ONE composer: a newer `openComposer` request closes whatever
+ * other avatar was still listening, and a capture that resolves after a newer
+ * request started never opens at all. Otherwise the superseded avatar would stay
+ * stuck in `listening` with no composer, leaving the pane focusable forever.
+ *
  * The captured context lives in `$composer`; a chip's × records the field in
  * `removed`, so `composerEffectiveContext` is what a task ever receives. The
  * tasks feature installs the submitter through `setTaskSubmitter` at the
@@ -14,6 +19,7 @@
  */
 
 import type { AvatarId, DemoScript, PageContext } from '../protocol'
+import { AVATAR_IDS } from '../protocol'
 
 import { dispatch } from './director'
 import { $avatars, $composer, type ComposerState, type ContextField } from './store'
@@ -41,6 +47,13 @@ export function setTaskSubmitter(next: TaskSubmitter | null): void {
 
 /** Avatars whose capture is in flight — a double click must not double-capture. */
 const pending = new Set<AvatarId>()
+
+/**
+ * The most recent open request. Only that request may open: a capture that
+ * resolves after a newer one started (a second avatar, or a second click) is
+ * stale and must not open, close or replace anything (§8.8).
+ */
+let latestRequest = 0
 
 const emptyContext = (): PageContext => ({ capturedAt: Date.now(), source: 'none' })
 
@@ -71,7 +84,8 @@ async function capture(): Promise<PageContext> {
 /**
  * Capture, then open. Nothing happens when the avatar is not idle: the machine
  * only accepts `COMPOSER_OPEN` from `idle`, and a stale capture (the avatar was
- * dismissed while the read was in flight) must not resurrect a composer.
+ * dismissed while the read was in flight, or a newer request superseded it) must
+ * not resurrect a composer.
  *
  * `options` lets the launch demo pre-fill the draft, mark it as harness content
  * and tag the composer with its own script (§11); a plain click passes nothing.
@@ -86,15 +100,25 @@ export async function openComposer(
     return
   }
 
+  const request = (latestRequest += 1)
+
   pending.add(id)
 
   try {
     const context = await capture()
     const after = $avatars.get()[id]
 
-    if (!after || after.state !== 'idle') {
+    if (request !== latestRequest || !after || after.state !== 'idle') {
       return
     }
+
+    // One composer at a time: any other avatar still listening is closed first,
+    // or it would stay stuck with no composer and keep the pane focusable.
+    AVATAR_IDS.forEach(other => {
+      if (other !== id && $avatars.get()[other].state === 'listening') {
+        dispatch(other, 'COMPOSER_CLOSE')
+      }
+    })
 
     dispatch(id, 'COMPOSER_OPEN')
 
@@ -147,7 +171,9 @@ export function composerEffectiveContext(state: ComposerState): PageContext {
     out.selection = context.selection
   }
 
-  if (context.app !== undefined) {
+  // The OS-window chip stands for `title || app` (one chip, §8.8), so removing
+  // it drops the app too. Every other source keeps `app` as its own field.
+  if (context.app !== undefined && (context.source !== 'os-window' || keep('title'))) {
     out.app = context.app
   }
 

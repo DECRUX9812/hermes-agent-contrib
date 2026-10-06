@@ -170,6 +170,11 @@ function ComposerView({ state }: { state: ComposerState }) {
               key={chip.kind}
             >
               <span className="max-w-[190px] truncate">{chip.label}</span>
+              {chip.note ? (
+                <span className="shrink-0 text-(--ui-text-tertiary)" data-context-chip-note>
+                  {chip.note}
+                </span>
+              ) : null}
               {field ? (
                 <button
                   aria-label={PANE_COPY.removeContext(chip.kind)}

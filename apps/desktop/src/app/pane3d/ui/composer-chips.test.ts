@@ -78,9 +78,11 @@ describe('contextChips', () => {
       title: 'Generative shaders — MDN'
     })
 
-    expect(chips).toEqual([{ field: 'title', kind: 'title-only', label: 'Generative shaders — MDN' }])
+    expect(chips).toEqual([
+      { field: 'title', kind: 'title-only', label: 'Generative shaders — MDN', note: 'title only' }
+    ])
     expect(contextChips({ app: 'Firefox', capturedAt: 1, source: 'os-window' })).toEqual([
-      { field: 'title', kind: 'title-only', label: 'Firefox' }
+      { field: 'title', kind: 'title-only', label: 'Firefox', note: 'title only' }
     ])
   })
 

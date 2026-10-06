@@ -223,3 +223,110 @@ describe('composer session', () => {
     expect($composer.get()).toBeNull()
   })
 })
+
+describe('one composer at a time (§8.8)', () => {
+  const osWindowContext: PageContext = {
+    app: 'Firefox',
+    capturedAt: 7,
+    source: 'os-window',
+    title: 'Generative shaders — MDN'
+  }
+
+  beforeEach(() => {
+    resetAvatars()
+    setTaskSubmitter(null)
+    setBridge(undefined)
+  })
+
+  afterEach(() => {
+    setBridge(undefined)
+    vi.restoreAllMocks()
+  })
+
+  it('returns the first avatar to idle when a second avatar opens its composer', async () => {
+    setBridge({ pane3d: { captureContext: async () => context } })
+    perch('muse')
+    perch('grok')
+
+    await openComposer('muse')
+    expect($avatars.get().muse.state).toBe('listening')
+
+    await openComposer('grok')
+
+    expect($avatars.get().muse.state).toBe('idle')
+    expect($avatars.get().grok.state).toBe('listening')
+    expect($composer.get()?.avatar).toBe('grok')
+  })
+
+  it('lets only the latest overlapping capture open, and a late one never replaces it', async () => {
+    const resolvers: Array<(value: PageContext) => void> = []
+
+    setBridge({
+      pane3d: {
+        captureContext: () =>
+          new Promise<PageContext>(resolve => {
+            resolvers.push(resolve)
+          })
+      }
+    })
+    perch('muse')
+    perch('grok')
+
+    const first = openComposer('muse')
+    const second = openComposer('grok')
+
+    // Grok's capture resolves first: it owns the session.
+    resolvers[1](context)
+    await second
+    expect($avatars.get().grok.state).toBe('listening')
+    expect($composer.get()?.avatar).toBe('grok')
+
+    // Muse's superseded capture resolves late: it must not open or replace.
+    resolvers[0](context)
+    await first
+
+    expect($avatars.get().muse.state).toBe('idle')
+    expect($avatars.get().grok.state).toBe('listening')
+    expect($composer.get()?.avatar).toBe('grok')
+  })
+
+  it('leaves no avatar listening once the surviving composer closes', async () => {
+    setBridge({ pane3d: { captureContext: async () => context } })
+    perch('muse')
+    perch('grok')
+
+    await openComposer('muse')
+    await openComposer('grok')
+    closeComposer('grok')
+
+    expect(AVATAR_IDS.every(id => $avatars.get()[id].state !== 'listening')).toBe(true)
+    expect($composer.get()).toBeNull()
+  })
+
+  it('drops app along with the removed OS-window title chip', async () => {
+    const submitter = vi.fn()
+
+    setTaskSubmitter(submitter)
+    setBridge({ pane3d: { captureContext: async () => osWindowContext } })
+    perch('muse')
+
+    await openComposer('muse')
+    removeContextField('title')
+    submitComposer('muse', 'explain this')
+
+    expect(submitter.mock.calls[0][2]).toEqual({ capturedAt: 7, source: 'os-window' })
+  })
+
+  it('keeps both title and app when the OS-window chip is kept', async () => {
+    const submitter = vi.fn()
+
+    setTaskSubmitter(submitter)
+    setBridge({ pane3d: { captureContext: async () => osWindowContext } })
+    perch('muse')
+
+    await openComposer('muse')
+    submitComposer('muse', 'explain this')
+
+    expect(submitter.mock.calls[0][2]).toEqual(osWindowContext)
+  })
+})

@@ -242,6 +242,31 @@ describe('task sessions', () => {
     })
   })
 
+  it('records a replaced result card in the feed before the new card takes over', () => {
+    const harness = manualExecutor()
+
+    setTaskExecutor(harness.executor)
+    perch('muse')
+
+    submitTask('muse', 'build this', context)
+    harness.emit({ type: 'done', result: { body: 'the first build', title: 'Built a landing page' } })
+
+    // A follow-up on the same avatar settles while the first card is still open.
+    submitTask('muse', 'now restyle it', context)
+    harness.emit({ type: 'done', result: { body: 'the restyle', title: 'Restyled the landing page' } })
+
+    expect(Object.values($taskCards.get())).toHaveLength(1)
+    expect(Object.values($taskCards.get())[0].title).toBe('Restyled the landing page')
+    // The replaced card is not lost: it collapses into the feed like any other.
+    expect($feed.get()[0]).toMatchObject({
+      avatar: 'muse',
+      kind: 'task',
+      source: 'dev-harness',
+      text: 'Built a landing page'
+    })
+    expect($feed.get()).toHaveLength(1)
+  })
+
   it('drops a card whose avatar hides, and keeps the context it was given', () => {
     const harness = manualExecutor()
 

@@ -3,8 +3,9 @@
  * captured `PageContext` plus the fields the user removed.
  *
  * `hermes-browser` shows the domain, the page title and the quoted selection;
- * an OS window shows a single "title only" chip; nothing (or everything
- * removed) shows one non-removable "No page context" chip. VAL-CONTEXT-003.
+ * an OS window shows a single chip labelled "title only" (its `note`); nothing
+ * (or everything removed) shows one non-removable "No page context" chip.
+ * VAL-CONTEXT-003.
  */
 
 import type { ContextField } from '../director/store'
@@ -15,6 +16,11 @@ export type ComposerChipKind = 'url' | 'title' | 'selection' | 'none' | 'title-o
 export interface ComposerChip {
   kind: ComposerChipKind
   label: string
+  /**
+   * A short muted qualifier beside the label. The OS-window chip carries "title
+   * only"; it stays outside `label` so a long title cannot truncate it away.
+   */
+  note?: string
   /** The context field the × removes; absent on the non-removable empty chip. */
   field?: ContextField
 }
@@ -66,7 +72,7 @@ export function contextChips(context: PageContext, removed: readonly ContextFiel
     const label = context.title || context.app || ''
 
     if (label && keep('title')) {
-      chips.push({ field: 'title', kind: 'title-only', label })
+      chips.push({ field: 'title', kind: 'title-only', label, note: 'title only' })
     }
   }
 

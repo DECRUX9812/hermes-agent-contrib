@@ -251,10 +251,15 @@ interface TaskCardPayload {
 /** One card per avatar: a second settled task replaces the previous card. */
 function openTaskCard(session: Session, payload: TaskCardPayload): void {
   const cards = { ...$taskCards.get() }
+  const at = Date.now()
 
+  // The replaced card collapses into the feed first, exactly like a dismissal —
+  // a follow-up asked while the earlier result is still open must not lose it
+  // (§8.6 records results).
   Object.values(cards).forEach(card => {
     if (card.avatar === session.avatar) {
       delete cards[card.id]
+      pushFeed(taskFeedEntry(card, at))
     }
   })
 
