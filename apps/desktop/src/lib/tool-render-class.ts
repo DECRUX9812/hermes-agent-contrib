@@ -21,14 +21,14 @@ export function isFileEditTool(toolName: string): boolean {
 //   - File edits are the deliverable, not scaffolding. The diff is what the
 //     user reviews, so it stays visible at its place in the turn, live and
 //     settled, the way a PR shows its changes.
-//   - `clarify`, `image_generate` and `delegate_task` bypass ToolEntry to
+//   - `clarify`, `image_generate`, `create_visualization` and `delegate_task` bypass ToolEntry to
 //     render their own markup: a question the user has to answer, an image
 //     they asked for, the several agents a fan-out is running.
 //   - `manage_connections` and `manage_catalog` are consent cards; their controls must stay visible.
 //
 // Everything else is ephemeral activity — reads, searches, commands — which is
 // what a run summarizes and what the live ticker cycles through.
-const CARD_TOOL_NAMES = ['clarify', 'delegate_task', 'image_generate', 'manage_catalog', 'manage_connections'] as const
+const CARD_TOOL_NAMES = ['clarify', 'create_visualization', 'delegate_task', 'image_generate', 'manage_catalog', 'manage_connections'] as const
 
 export type CardToolName = (typeof CARD_TOOL_NAMES)[number]
 
