@@ -20,6 +20,7 @@ import {
   BOW_MS,
   chatFeedEntry,
   deriveQuiet,
+  exchangeDurationMs,
   exchangePlan,
   facingTargets,
   getConversationSource,
@@ -41,6 +42,20 @@ const scheduler = new RoomScheduler()
 const facingYawTargets = new Map<AvatarId, number>()
 /** `performance.now()` of each avatar's greeting bow; the rig reads the pitch. */
 const bows = new Map<AvatarId, number>()
+
+/**
+ * The pair a live exchange is speaking for. While set, its two members take
+ * facing priority over the nearest pair, so the avatars that are really talking
+ * face each other even when a third avatar sits closer to one of them (§8.6).
+ */
+let greetingPair: [AvatarId, AvatarId] | null = null
+
+/**
+ * The live exchange (one at a time — the global cooldown serializes them), kept
+ * so quiet mode or a dismissed participant can end it IMMEDIATELY rather than at
+ * the next scheduled line (§8.6, VAL-ROOM-004).
+ */
+let activeExchange: { abort: () => void; pair: [AvatarId, AvatarId] } | null = null
 
 let sequence = 0
 let timers: ReturnType<typeof setTimeout>[] = []
@@ -80,7 +95,7 @@ function idlePositions(avatars: Record<AvatarId, AvatarRuntime>): RoomPosition[]
 }
 
 function syncFacing(avatars: Record<AvatarId, AvatarRuntime>): void {
-  const targets = facingTargets(idlePositions(avatars))
+  const targets = facingTargets(idlePositions(avatars), greetingPair)
 
   AVATAR_IDS.forEach(id => {
     const next = targets[id] ?? 0
@@ -99,6 +114,29 @@ export function isRoomQuiet(): boolean {
     AVATAR_IDS.map(id => avatars[id].state),
     Object.keys($cards.get()).length
   ).quiet
+}
+
+/** Both participants must still be on stage AND idle for an exchange to run. */
+function participantsOnStage(pair: readonly [AvatarId, AvatarId]): boolean {
+  const avatars = $avatars.get()
+
+  return pair.every(id => avatars[id].visible && avatars[id].state === 'idle')
+}
+
+/**
+ * End the live exchange the moment the room goes quiet (composer, task, card)
+ * or either participant stops being a visible, idle avatar (dismissed, hiding,
+ * or busy). Called on every avatar/card change and on the slow poll, so the
+ * bubble comes down within one store notification — not at the next line.
+ */
+function enforceExchange(): void {
+  if (!activeExchange) {
+    return
+  }
+
+  if (isRoomQuiet() || !participantsOnStage(activeExchange.pair)) {
+    activeExchange.abort()
+  }
 }
 
 /**
@@ -163,6 +201,7 @@ function runExchange(speaker: AvatarId, listener: AvatarId): void {
   }
 
   const exchangeId = `room-exchange-${(sequence += 1)}`
+  const pair: [AvatarId, AvatarId] = [speaker, listener]
   const bowAt = performance.now()
 
   bows.set(speaker, bowAt)
@@ -174,9 +213,47 @@ function runExchange(speaker: AvatarId, listener: AvatarId): void {
     }, BOW_MS)
   )
 
-  // A composer or a card can appear mid-exchange; the room goes quiet at the
-  // next line rather than talking over it.
   let aborted = false
+
+  const clearBubble = () => {
+    const current = $bubbles.get()
+
+    if (current.some(bubble => bubble.id.startsWith(exchangeId))) {
+      $bubbles.set(current.filter(bubble => !bubble.id.startsWith(exchangeId)))
+    }
+  }
+
+  /**
+   * The exchange is over — normally, or cancelled. The bow is left to its own
+   * 400 ms envelope (never cut a visible motion short), but the bubble goes
+   * immediately and the pair gives up its facing priority.
+   */
+  const end = () => {
+    clearBubble()
+
+    if (activeExchange?.pair === pair) {
+      activeExchange = null
+    }
+
+    if (greetingPair === pair) {
+      greetingPair = null
+      syncFacing($avatars.get())
+    }
+  }
+
+  const abort = () => {
+    if (aborted) {
+      return
+    }
+
+    aborted = true
+    end()
+  }
+
+  activeExchange = { abort, pair }
+  greetingPair = pair
+  // The speaking pair faces each other from the first frame of the exchange.
+  syncFacing($avatars.get())
 
   exchangePlan(speaker, listener).forEach(step => {
     timers.push(
@@ -185,10 +262,12 @@ function runExchange(speaker: AvatarId, listener: AvatarId): void {
           return
         }
 
-        if (isRoomQuiet()) {
-          aborted = true
-          $bubbles.set([])
+        // A composer, card or dismissal may have landed since the last frame;
+        // re-check here so a scheduled line never speaks into quiet or for an
+        // avatar that is no longer on stage.
+        enforceExchange()
 
+        if (aborted) {
           return
         }
 
@@ -230,6 +309,9 @@ function runExchange(speaker: AvatarId, listener: AvatarId): void {
       }, step.atMs)
     )
   })
+
+  // The plan's last bubble ends here; release the facing priority and finish.
+  timers.push(setTimeout(end, exchangeDurationMs()))
 }
 
 /**
@@ -243,7 +325,7 @@ export function startRoom(): () => void {
 
   let previous = $avatars.get()
 
-  const unsubscribe = $avatars.subscribe(next => {
+  const unsubscribeAvatars = $avatars.subscribe(next => {
     const before = previous
 
     previous = next
@@ -254,17 +336,29 @@ export function startRoom(): () => void {
         maybeGreet(id, next)
       }
     })
+
+    enforceExchange()
   })
 
-  const interval = setInterval(() => syncFacing($avatars.get()), FACING_POLL_MS)
+  // A card opening or closing is a quiet clause and never touches $avatars, so
+  // it needs its own subscription to cut a live exchange immediately.
+  const unsubscribeCards = $cards.subscribe(() => enforceExchange())
+
+  const interval = setInterval(() => {
+    syncFacing($avatars.get())
+    enforceExchange()
+  }, FACING_POLL_MS)
 
   const stop = () => {
-    unsubscribe()
+    unsubscribeAvatars()
+    unsubscribeCards()
     clearInterval(interval)
     timers.forEach(clearTimeout)
     timers = []
     bows.clear()
     facingYawTargets.clear()
+    greetingPair = null
+    activeExchange = null
     scheduler.clear()
     $bubbles.set([])
 

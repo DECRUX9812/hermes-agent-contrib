@@ -6,8 +6,9 @@ import * as THREE from 'three'
 import type { AvatarDefinition, AvatarRigHandle } from '../avatars/types'
 import { bowPitch, facingPose } from '../director/room'
 import { getBowStart, getFacingTarget } from '../director/room-live'
-import { type AvatarState, pane3dRuntime } from '../director/store'
+import { $avatars, type AvatarState, pane3dRuntime } from '../director/store'
 
+import { type AccentSpinState, restAccentSpin, stepAccentSpin } from './accent-spin'
 import {
   CELEBRATE_MS,
   type ChoreographyPhase,
@@ -116,13 +117,14 @@ type Motion = {
   lean: number
   widen: number
   headTilt: number
-  spin: number
-  spinSpeed: number
+  /** The generic accent's rotation; advances ONLY while thinking (§8.4). */
+  accent: AccentSpinState
   counted: boolean
 }
 
 function createMotion(target: SlotTarget): Motion {
   return {
+    accent: restAccentSpin(),
     baseY: target.y,
     bow: 0,
     counted: false,
@@ -135,8 +137,6 @@ function createMotion(target: SlotTarget): Motion {
     lean: 0,
     perch: { fromX: target.x, fromY: target.y, startedAt: 0, toX: target.x, toY: target.y },
     phase: 'rest',
-    spin: 0,
-    spinSpeed: 0.02,
     startedAt: 0,
     widen: 1,
     x: target.x,
@@ -255,7 +255,10 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     const now = performance.now()
     const listening = state === 'listening'
     const notifying = state === 'notifying'
-    const thinking = state === 'thinking'
+    // The accent gate reads the MACHINE state, not the React prop: a store
+    // transition reaches the rig one commit later, and that residual "thinking"
+    // frame would otherwise add a few degrees after the task is already done.
+    const thinking = $avatars.get()[definition.id].state === 'thinking'
 
     // A state change starts the matching choreography. Detected in the frame
     // loop (not an effect) so the animation clock and the phase always agree.
@@ -377,14 +380,14 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     rootObject.rotation.z = pose.rotationZ
     rootObject.scale.set(pose.scale, pose.scale * (1 + 0.012 * breath), pose.scale)
 
-    // The avatar's own accent cue: Muse's halo speeds to 0.3 rev/s thinking.
-    // At rest it STOPS — §8.4 allows breathing and nothing else while idle, and
-    // a slowly turning tilted torus swings the avatar's screen box by ~60 px.
-    damp(m, 'spinSpeed', thinking ? 0.3 : 0, 0.4, dt)
-    m.spin += m.spinSpeed * TAU * dt
+    // The avatar's own accent cue (§8.4): Muse's halo and Claude's spark speed
+    // to 0.3 rev/s while thinking. The angular advance is gated on the state, so
+    // a residual speed can never keep them spinning through celebrating or idle
+    // — the taste rule bans spinning for no reason (§8.3).
+    m.accent = stepAccentSpin(m.accent, thinking, dt)
 
     if (handle.accent) {
-      handle.accent.rotation.y = m.spin
+      handle.accent.rotation.y = m.accent.spin
       handle.accent.scale.setScalar(1 + 0.12 * glowPulse)
     }
 
@@ -421,6 +424,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
 
     frame.yawDeg = THREE.MathUtils.radToDeg(m.yaw)
     frame.bowDeg = THREE.MathUtils.radToDeg(m.bow)
+    frame.accentDeg = THREE.MathUtils.radToDeg(m.accent.spin)
     frame.gaze = { x: m.gazeX, y: m.gazeY }
 
     // Frame-side completion is idempotent with the deadline timer; it only

@@ -197,6 +197,8 @@ export interface Pane3dAvatarSnapshot {
   yawDeg: number
   /** Greeting bow pitch in degrees; 0 at rest (VAL-ROOM-001 evidence). */
   bowDeg: number
+  /** Generic accent rotation in degrees (§8.4); advances only while thinking. */
+  accentDeg: number
   gaze: { x: number; y: number }
   meshCount: number
   materialTypes: string[]
@@ -240,6 +242,7 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
       const frame = avatarFrames[id]
 
       return {
+        accentDeg: frame.accentDeg,
         bowDeg: frame.bowDeg,
         gaze: { ...frame.gaze },
         id,

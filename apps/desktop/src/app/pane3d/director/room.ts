@@ -190,15 +190,28 @@ export function facingYaw(dx: number, maxYaw: number = TURN_YAW, fullPx: number 
  * toward each other, everyone else faces the user (yaw 0). Positive yaw is
  * toward screen-right (§12), so a partner to the left yields a negative yaw and
  * the two members of a pair always carry opposite signs.
+ *
+ * `priorityPair` is the pair of a LIVE greeting (the newcomer and the avatar it
+ * is actually talking to). When both members are still on stage it wins over
+ * the nearest pair, so the two speaking avatars always face each other even
+ * when a third avatar sits closer to one of them (§8.6, VAL-ROOM-001).
  */
-export function facingTargets(entries: readonly RoomPosition[]): Record<AvatarId, number> {
+export function facingTargets(
+  entries: readonly RoomPosition[],
+  priorityPair: readonly [AvatarId, AvatarId] | null = null
+): Record<AvatarId, number> {
   const out = {} as Record<AvatarId, number>
 
   entries.forEach(entry => {
     out[entry.id] = 0
   })
 
-  const pair = nearestPair(entries)
+  const priorityOnStage =
+    priorityPair !== null &&
+    entries.some(entry => entry.id === priorityPair[0]) &&
+    entries.some(entry => entry.id === priorityPair[1])
+
+  const pair = priorityOnStage ? priorityPair : nearestPair(entries)
 
   if (!pair) {
     return out

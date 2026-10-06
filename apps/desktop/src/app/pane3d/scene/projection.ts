@@ -223,6 +223,11 @@ export interface AvatarFrame {
   yawDeg: number
   /** Greeting bow pitch in degrees (architecture §8.6); 0 at rest. */
   bowDeg: number
+  /**
+   * The generic accent's rotation in degrees (§8.4). Advances only while the
+   * avatar is thinking; constant in every other state (VAL-AVATAR-005 taste).
+   */
+  accentDeg: number
   gaze: { x: number; y: number }
   meshCount: number
   materialTypes: string[]
@@ -230,6 +235,7 @@ export interface AvatarFrame {
 
 function emptyFrame(): AvatarFrame {
   return {
+    accentDeg: 0,
     bowDeg: 0,
     gaze: { x: 0, y: 0 },
     hitRects: [],

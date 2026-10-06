@@ -1,6 +1,15 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+// Register the cast: each body module calls `registerAvatar`, so the live room
+// can resolve display names when it logs an exchange to the feed.
+import '../avatars/claude'
+import '../avatars/grok'
+import '../avatars/hermes'
+import '../avatars/muse'
+import '../avatars/opencode'
 
-import type { AvatarId } from '../protocol'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { AVATAR_IDS, type AvatarId } from '../protocol'
+import { avatarFrames } from '../scene/projection'
 
 import {
   BOW_MS,
@@ -8,6 +17,7 @@ import {
   bowPitch,
   BUBBLE_MS,
   chatFeedEntry,
+  type ConversationLine,
   deriveQuiet,
   EXCHANGE_LINES,
   exchangeDurationMs,
@@ -20,10 +30,11 @@ import {
   PAIR_COOLDOWN_MS,
   pairKey,
   RoomScheduler,
+  setConversationSource,
   TURN_YAW
 } from './room'
-import { greetingPartner } from './room-live'
-import type { AvatarState } from './store'
+import { getFacingTarget, greetingPartner, startRoom } from './room-live'
+import { $avatars, $bubbles, $cards, $feed, type AvatarRuntime, type AvatarState } from './store'
 
 function pos(id: AvatarId, x: number) {
   return { id, x }
@@ -154,6 +165,26 @@ describe('nearestPair / facingTargets — facing math (§8.6)', () => {
     expect(facingYaw(400, TURN_YAW, 140)).toBeCloseTo(TURN_YAW, 5)
     expect(facingYaw(0)).toBe(0)
   })
+
+  it('faces a live greeting pair at each other when it is not the nearest pair', () => {
+    // Muse+Grok are nearest; the newcomer Claude greets Grok, which sits 500 px
+    // away from it and only 100 px from Muse.
+    const entries = [pos('muse', 100), pos('grok', 200), pos('claude', 700)]
+    const targets = facingTargets(entries, ['claude', 'grok'])
+
+    expect(targets.muse).toBe(0)
+    expect(targets.grok).toBeGreaterThan(0)
+    expect(targets.claude).toBeLessThan(0)
+    expect(targets.grok).toBeCloseTo(-targets.claude, 5)
+  })
+
+  it('falls back to the nearest pair once the greeting pair is no longer on stage', () => {
+    const entries = [pos('muse', 100), pos('grok', 200)]
+    const targets = facingTargets(entries, ['claude', 'grok'])
+
+    expect(targets.muse).toBeGreaterThan(0)
+    expect(targets.grok).toBeLessThan(0)
+  })
 })
 
 describe('facingPose — the turn is a bounded pure function (§8.6, VAL-ROOM-005)', () => {
@@ -242,5 +273,134 @@ describe('greetingPartner — who the newcomer greets (§8.6)', () => {
 
   it('has no partner when it is the only idle avatar', () => {
     expect(greetingPartner('muse', [pos('muse', 500)])).toBeNull()
+  })
+})
+
+describe('AvatarRoom lifecycle — quiet mode and dismissed participants (§8.6, VAL-ROOM-004)', () => {
+  let stop: (() => void) | null = null
+
+  function runtime(id: AvatarId, state: AvatarState): AvatarRuntime {
+    return { changedAt: 0, id, pendingNotify: 0, state, visible: state !== 'hidden' }
+  }
+
+  function setStates(states: Partial<Record<AvatarId, AvatarState>>): void {
+    const next = {} as Record<AvatarId, AvatarRuntime>
+
+    AVATAR_IDS.forEach(id => {
+      next[id] = runtime(id, states[id] ?? 'hidden')
+    })
+
+    $avatars.set(next)
+  }
+
+  function place(id: AvatarId, x: number): void {
+    avatarFrames[id].screenRect = { height: 130, width: 90, x: x - 45, y: 0 }
+  }
+
+  const scripted = {
+    isDevHarness: true,
+    label: 'test',
+    next: (speaker: AvatarId, listener: AvatarId): ConversationLine => ({
+      listener,
+      speaker,
+      text: `${speaker} to ${listener}`
+    })
+  }
+
+  /** Muse is already out; Grok's completed emergence triggers the greeting. */
+  function emergeGrok(): void {
+    setStates({ grok: 'emerging', muse: 'idle' })
+    setStates({ grok: 'idle', muse: 'idle' })
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    place('muse', 100)
+    place('grok', 200)
+    place('claude', 700)
+    place('hermes', 1100)
+    place('opencode', 1400)
+    $feed.set([])
+    $bubbles.set([])
+    $cards.set({})
+    setConversationSource(scripted)
+    setStates({ muse: 'idle' })
+    stop = startRoom()
+  })
+
+  afterEach(() => {
+    stop?.()
+    stop = null
+    setConversationSource(null)
+    $cards.set({})
+    $bubbles.set([])
+    $feed.set([])
+    vi.useRealTimers()
+  })
+
+  it('clears the live bubble the moment a composer opens and logs no further line', () => {
+    emergeGrok()
+    vi.advanceTimersByTime(BOW_MS)
+    expect($bubbles.get()).toHaveLength(1)
+    expect($feed.get()).toHaveLength(1)
+
+    // The composer opens on Muse mid-exchange → quiet mode.
+    setStates({ grok: 'idle', muse: 'listening' })
+
+    expect($bubbles.get()).toEqual([])
+    expect($feed.get()).toHaveLength(1)
+
+    vi.advanceTimersByTime(BUBBLE_MS)
+
+    expect($feed.get()).toHaveLength(1)
+    expect($bubbles.get()).toEqual([])
+  })
+
+  it('clears the live bubble the moment a notification card opens', () => {
+    emergeGrok()
+    vi.advanceTimersByTime(BOW_MS)
+    expect($bubbles.get()).toHaveLength(1)
+
+    $cards.set({ c1: { avatar: 'muse', id: 'c1', request: { avatar: 'muse', body: 'b', title: 't' }, shownAt: 0 } })
+
+    expect($bubbles.get()).toEqual([])
+
+    vi.advanceTimersByTime(BUBBLE_MS)
+
+    expect($feed.get()).toHaveLength(1)
+  })
+
+  it('cancels the exchange when a participant is dismissed — no hidden-speaker line', () => {
+    emergeGrok()
+    vi.advanceTimersByTime(BOW_MS)
+    expect($bubbles.get()).toHaveLength(1)
+
+    // Muse, the listener, leaves the stage mid-exchange.
+    setStates({ grok: 'idle' })
+
+    expect($bubbles.get()).toEqual([])
+
+    vi.advanceTimersByTime(BUBBLE_MS)
+
+    expect($feed.get()).toHaveLength(1)
+    expect($feed.get().some(entry => entry.text.startsWith('Muse →'))).toBe(false)
+    expect($bubbles.get().some(bubble => bubble.avatar === 'muse')).toBe(false)
+  })
+
+  it('faces the greeting pair at each other for the exchange, then reverts to the nearest pair', () => {
+    // Three idle avatars: Muse(100)+Grok(200) are nearest, but the newcomer
+    // Claude(700) greets Grok — the pair that actually speaks.
+    setStates({ claude: 'emerging', grok: 'idle', muse: 'idle' })
+    setStates({ claude: 'idle', grok: 'idle', muse: 'idle' })
+
+    expect(getFacingTarget('claude')).toBeLessThan(0)
+    expect(getFacingTarget('grok')).toBeGreaterThan(0)
+    expect(getFacingTarget('muse')).toBe(0)
+
+    vi.advanceTimersByTime(exchangeDurationMs())
+
+    expect(getFacingTarget('muse')).toBeGreaterThan(0)
+    expect(getFacingTarget('grok')).toBeLessThan(0)
+    expect(getFacingTarget('claude')).toBe(0)
   })
 })
