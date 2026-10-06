@@ -21,8 +21,8 @@ import { setTaskExecutor, submitTask } from './tasks'
 export function installPane3dDefaults(): void {
   setConversationSource(scriptedConversation)
   setTaskExecutor(new DevHarnessExecutor())
-  setTaskSubmitter((avatar, text, context) => {
-    submitTask(avatar, text, context)
+  setTaskSubmitter((avatar, text, context, demo) => {
+    submitTask(avatar, text, context, demo)
   })
   // The result card's "Show chart" exists only while a presenter is registered
   // (architecture §8.7/§8.9), and the launch demo's result presents its chart

@@ -14,12 +14,13 @@
  * `launchStep` is the whole choreography as a pure table, so the ordering and
  * both fallback paths are provable without a running pane; the runtime half
  * below turns each stage's effects into calls and watches the REAL signals
- * (a transition out of `notifying`, a logged greeting, the bubble clearing).
+ * (this run's card appearing and going away, a logged greeting, the bubble
+ * clearing).
  */
 
 import { openComposer } from '../director/composer'
 import { avatarDirector } from '../director/director'
-import { $avatars, $bubbles, $feed, $transitions, type FeedEntry, type SpeechBubble } from '../director/store'
+import { $avatars, $bubbles, $cards, $feed, type FeedEntry, type SpeechBubble } from '../director/store'
 import type { AvatarId } from '../protocol'
 
 import { INSTAGRAM_UPDATE } from './demo-feed'
@@ -30,7 +31,8 @@ export const LAUNCH_DEMO_DRAFT = 'this looks cool — can you build this for me?
 /**
  * The Muse card is the demo's clock: it settles on close or the 9 s timeout.
  * The deadline only covers a path where the card can never open (its avatar
- * stuck in a task), so the demo always advances.
+ * stuck in a task), so the demo always advances; it is disarmed the moment the
+ * card is up, so a card the presenter is still reading never gets cut off.
  */
 export const CARD_DEADLINE_MS = 15_000
 /** The greeting exchange runs ~6.8 s; a suppressed greeting must not stall the demo. */
@@ -97,6 +99,8 @@ interface LaunchSession {
   cancelled: boolean
   stage: LaunchStage
   startedAt: number
+  /** This run's Muse notification id; null until `notify-muse` has run (§11). */
+  notifyId: string | null
   disposers: (() => void)[]
 }
 
@@ -113,7 +117,13 @@ export function isLaunchDemoRunning(): boolean {
 export function playLaunchDemo(): void {
   cancelLaunchDemo()
 
-  const session: LaunchSession = { cancelled: false, disposers: [], stage: 'off', startedAt: Date.now() }
+  const session: LaunchSession = {
+    cancelled: false,
+    disposers: [],
+    notifyId: null,
+    stage: 'off',
+    startedAt: Date.now()
+  }
 
   active = session
 
@@ -163,9 +173,7 @@ function advance(session: LaunchSession, signal: LaunchSignal): void {
 
   session.stage = step.stage
 
-  if (step.stage === 'waiting-card') {
-    watchCardSettled(session)
-  } else if (step.stage === 'waiting-greeting') {
+  if (step.stage === 'waiting-greeting') {
     watchGreeting(session, step.greetingDeadlineMs)
   }
 
@@ -195,14 +203,18 @@ const EFFECTS: Record<LaunchEffect, (session: LaunchSession) => Promise<void> | 
     avatarDirector.dismiss('grok')
   },
   'summon-muse': session => summonWhenReady(session, 'muse'),
-  'notify-muse': () => {
+  'notify-muse': session => {
     // Muse is emerging here; the director's FIFO holds the request until the
     // machine accepts NOTIFY (hidden/idle), so it is never dropped (§8.5).
-    avatarDirector.notify(INSTAGRAM_UPDATE)
+    session.notifyId = avatarDirector.notify(INSTAGRAM_UPDATE)
+    // Watch only after this run's request exists, and only for its own card:
+    // a replay leaves an older Muse card open, and that card settling is not
+    // this run's card settling (§11).
+    watchCardSettled(session)
   },
   'summon-grok': session => summonWhenReady(session, 'grok'),
   'open-composer': async () => {
-    await openComposer('grok', { draft: LAUNCH_DEMO_DRAFT, source: 'dev-harness' })
+    await openComposer('grok', { demo: 'launch', draft: LAUNCH_DEMO_DRAFT, source: 'dev-harness' })
   }
 }
 
@@ -251,27 +263,71 @@ function whenReady(session: LaunchSession, id: AvatarId): Promise<void> {
   })
 }
 
+/**
+ * Wait for THIS run's Muse card. The card opens when Muse accepts the
+ * notification (`notifying`) and goes away when she leaves it — settle, close,
+ * dismissal or timeout are all `collapseNotification` paths, so watching the
+ * card id is exactly "Muse entered and then left `notifying` for this run's
+ * notification id". Watching anything broader (any `notifying` transition)
+ * would count the older card a replay dismisses (§11).
+ *
+ * The deadline only covers a card that can never open (its avatar stuck in a
+ * task). It is disarmed the moment the card is up, so a card the presenter is
+ * still hovering past 15 s never gets Grok summoned behind it (§8.5).
+ */
 function watchCardSettled(session: LaunchSession): void {
-  const unsubscribe = $transitions.subscribe(records => {
-    if (session.stage !== 'waiting-card') {
+  const notifyId = session.notifyId
+
+  if (notifyId === null) {
+    return
+  }
+
+  let opened = false
+  let deadline: ReturnType<typeof setTimeout> | null = null
+
+  const check = () => {
+    if (session.cancelled || session.stage !== 'waiting-card') {
       return
     }
 
-    // The card settles on close, timeout or a dismissal: every path leaves
-    // `notifying` (§8.1), which is exactly the demo's "card is gone" signal.
-    const settled = records.some(
-      record => record.avatar === 'muse' && record.from === 'notifying' && record.at >= session.startedAt
-    )
+    const onScreen = $cards.get()[notifyId] !== undefined
 
-    if (settled) {
+    if (!opened) {
+      if (!onScreen) {
+        return
+      }
+
+      opened = true
+
+      if (deadline !== null) {
+        clearTimeout(deadline)
+        deadline = null
+      }
+
+      return
+    }
+
+    if (!onScreen) {
       advance(session, 'card-settled')
     }
-  })
+  }
 
-  const timer = setTimeout(() => advance(session, 'card-timeout'), CARD_DEADLINE_MS)
+  const unsubscribe = $cards.subscribe(check)
+
+  if (!opened) {
+    deadline = setTimeout(() => {
+      if (!opened) {
+        advance(session, 'card-timeout')
+      }
+    }, CARD_DEADLINE_MS)
+  }
 
   track(session, unsubscribe)
-  track(session, () => clearTimeout(timer))
+  track(session, () => {
+    if (deadline !== null) {
+      clearTimeout(deadline)
+    }
+  })
 }
 
 function watchGreeting(session: LaunchSession, deadlineMs: number): void {

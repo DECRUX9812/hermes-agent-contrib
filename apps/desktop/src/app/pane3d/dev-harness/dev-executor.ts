@@ -13,7 +13,6 @@
  * unit-testable without timers.
  */
 
-import { pane3dRuntime } from '../director/store'
 import type { AvatarTask, TaskEvent, TaskExecutor, TaskResult } from '../director/tasks'
 
 import { DEMO_CHART } from './demo-data'
@@ -97,12 +96,13 @@ export function devResult(task: AvatarTask, chart: boolean): TaskResult {
     ].join(' '),
     chart: chart ? DEMO_CHART : undefined,
     links: task.context.url ? [{ label: 'Open the source page', url: task.context.url }] : undefined,
+    presentChart: chart && task.demo === 'launch' ? true : undefined,
     title: `A build for ${label}`
   }
 }
 
-export function devScript(task: AvatarTask, demoRequested: boolean): DevStep[] {
-  const chart = shouldAttachChart(task.text, demoRequested)
+export function devScript(task: AvatarTask): DevStep[] {
+  const chart = shouldAttachChart(task.text, task.demo === 'launch')
   const steps: DevStep[] = [{ at: 0, event: { type: 'accepted' } }]
 
   DEV_PROGRESS_STEPS.forEach((label, index) => {
@@ -128,9 +128,9 @@ export class DevHarnessExecutor implements TaskExecutor {
   readonly label = 'Dev harness'
 
   run(task: AvatarTask, emit: (event: TaskEvent) => void): () => void {
-    // The launch demo pre-fills a text with no chart word (§11), so demo mode is
-    // the out-of-band signal that its result should carry the demo chart.
-    const steps = devScript(task, pane3dRuntime.lastDemo === 'launch')
+    // The launch demo's own task carries the marker (§11), so the demo chart
+    // rides on that one task and can never reach a request the user made.
+    const steps = devScript(task)
     const timers = steps.map(step => setTimeout(() => emit(step.event), step.at))
 
     return () => {

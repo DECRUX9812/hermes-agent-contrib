@@ -345,7 +345,15 @@ is installed in dev as `window.__pane3dDebug.snapshot()` (see [Observability](#o
 ### `TaskExecutor` (`director/tasks.ts`)
 
 ```ts
-export interface AvatarTask { id: string; avatar: AvatarId; text: string; context: PageContext; createdAt: number }
+export interface AvatarTask {
+  id: string
+  avatar: AvatarId
+  text: string
+  context: PageContext
+  createdAt: number
+  /** The scripted demo whose composer submitted this task, if any (§11). */
+  demo?: DemoScript
+}
 
 export type TaskEvent =
   | { type: 'accepted' }
@@ -354,7 +362,14 @@ export type TaskEvent =
   | { type: 'done'; result: TaskResult }
   | { type: 'error'; message: string }
 
-export interface TaskResult { title: string; body: string; chart?: ChartSpec; links?: { label: string; url: string }[] }
+export interface TaskResult {
+  title: string
+  body: string
+  chart?: ChartSpec
+  links?: { label: string; url: string }[]
+  /** Present this chart without a click; the card collapses into the feed. */
+  presentChart?: boolean
+}
 
 export interface TaskExecutor {
   readonly label: string
@@ -364,12 +379,17 @@ export interface TaskExecutor {
 }
 ```
 
-`submitTask(avatar, text, context)` runs the one active executor (installed via `setTaskExecutor`) and
-maps events onto the machine: `accepted → TASK_ACCEPTED`, `progress → TASK_PROGRESS` (the working
-pill's label + bar), the first `token → STREAM_TOKEN` (`responding`), `done → TASK_DONE`
-(`celebrating`) then a result card, `error → TASK_ERROR` (error card). One running task per avatar;
-`cancelTask`/`cancelTasks` mark the session cancelled, call the executor's cancel function, drop the
-pill and return the avatar to `idle`. `pane-app.tsx` cancels every task on `pagehide` and unmount.
+`submitTask(avatar, text, context, demo?)` runs the one active executor (installed via
+`setTaskExecutor`; the composer passes its demo tag, if it has one) and maps events onto the machine:
+`accepted → TASK_ACCEPTED`, `progress → TASK_PROGRESS` (the working pill's label + bar), the first
+`token → STREAM_TOKEN` (`responding`), `done → TASK_DONE` (`celebrating`) then a result card,
+`error → TASK_ERROR` (error card). One running task per avatar; `cancelTask`/`cancelTasks` mark the
+session cancelled, call the executor's cancel function, drop the pill and return the avatar to
+`idle`. `pane-app.tsx` cancels every task on `pagehide` and unmount.
+A result that carries `presentChart` is presented immediately by the chart presenter — the same path
+as the card's "Show chart" — and its card collapses into the feed; every other result keeps its card.
+The presenter never learns which executor set the flag, so the demo's chart stays scoped to the one
+task whose composer carried the demo tag.
 
 The v1 active executor is `DevHarnessExecutor` (`dev-harness/dev-executor.ts`).
 
@@ -446,15 +466,20 @@ runtime watches the real signals):
 1. **Start** — `reset-cast` (dismiss both, a no-op when hidden), summon **Muse**, then notify her:
    *"Hey — there's an update for you"* / *"I posted that reel to your Instagram."*
    (`source: 'dev-harness'`). Muse emerges from the current anchor edge.
-2. **Waiting for the card** — the card settles when Muse leaves `notifying` (the close control, the
-   9 s timeout, or a dismissal); a 15 s deadline covers a path where the card can never open.
+2. **Waiting for the card** — the demo watches **this run's own notification id**: the card opening
+   is Muse entering `notifying` for it, and the card going away (the close control, the 9 s timeout,
+   a dismissal, a hide) is her leaving it. A 15 s deadline covers a path where the card can never
+   open; it is disarmed the moment the card is up, so a replay that dismisses an older card, or a
+   card the presenter is still reading, never counts as this run's settle.
 3. **Grok** — summon Grok; the room greeting fires naturally (it stays quiet while a card is open).
    The demo waits for the greeting to be logged and the last bubble to come down, with a 10 s
    deadline if the greeting is suppressed.
-4. **Composer** — `openComposer('grok', { draft, source: 'dev-harness' })`: the page context is
-   captured first, then Grok's composer opens pre-filled with
+4. **Composer** — `openComposer('grok', { draft, source: 'dev-harness', demo: 'launch' })`: the page
+   context is captured first, then Grok's composer opens pre-filled with
    `"this looks cool — can you build this for me?"`. The user (or a validator) presses Enter; the
-   result carries the demo chart, which the chart presenter shows automatically for the launch demo.
+   demo tag rides onto that one task, whose result carries `presentChart` and the demo chart, which
+   the chart presenter shows automatically. `lastDemo` stays in the snapshot for observability but
+   no longer decides anything, so a task asked for afterwards is an ordinary one.
 
 `cancelLaunchDemo()` runs on `pagehide` and on every restart, so closing the pane mid-flight runs no
 later effect.
@@ -466,7 +491,7 @@ later effect.
 In dev (`import.meta.env.DEV`) the pane installs a read-only `window.__pane3dDebug.snapshot()`:
 anchor, per-avatar state/visible/slot/screenRect/yaw/gaze/meshCount/materialTypes, `regions`,
 `frameloop`, `renderCount`, `pixelRatio`, `transitions` (last 200), `feed`, `cards`, `bubbles`,
-`composer` (context + removed chips + draft), `tasks`, `taskCards`, `taskProgress`,
+`composer` (context + removed chips + draft + demo tag), `tasks`, `taskCards`, `taskProgress`,
 `chart: { visible, rotationDeg }`, `lastDemo`, `prewarm`, `reducedMotion`.
 
 DOM hooks (all of them `data-*`, stable for tests):

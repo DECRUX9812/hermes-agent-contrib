@@ -10,7 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { dispatch, resetNotifications } from '../director/director'
+import { dismissNotification, dispatch, hoverNotification, resetNotifications } from '../director/director'
 import {
   $avatars,
   $bubbles,
@@ -146,10 +146,13 @@ describe('launch demo runtime', () => {
     // The rig reports the entrance; the queued card then opens, badged.
     dispatch('muse', 'EMERGED')
     expect($avatars.get().muse.state).toBe('notifying')
-    expect(Object.values($cards.get())[0]?.request).toEqual(INSTAGRAM_UPDATE)
 
-    // The card settles (close or the 9 s timeout) — the demo's real signal.
-    dispatch('muse', 'NOTIFY_SETTLED')
+    const cardId = Object.keys($cards.get())[0]
+
+    expect($cards.get()[cardId]?.request).toEqual(INSTAGRAM_UPDATE)
+
+    // The card settles — the close control, a dismissal or the 9 s timeout.
+    dismissNotification(cardId)
 
     await vi.waitFor(() => expect($avatars.get().grok.state).toBe('emerging'))
 
@@ -166,6 +169,66 @@ describe('launch demo runtime', () => {
     expect($avatars.get().grok.state).toBe('listening')
     // The demo hands over once the composer is up; nothing else is pending.
     expect(isLaunchDemoRunning()).toBe(false)
+  })
+
+  it('a replay waits for this run\u2019s card, not the older one\u2019s dismissal', async () => {
+    playLaunchDemo()
+
+    await vi.waitFor(() => expect($avatars.get().muse.state).toBe('emerging'))
+    dispatch('muse', 'EMERGED')
+
+    const firstCard = Object.keys($cards.get())[0]
+
+    expect(firstCard).toBeTruthy()
+
+    // The user restarts while the Instagram card is still on screen.
+    playLaunchDemo()
+    expect($cards.get()[firstCard]).toBeUndefined()
+    expect($avatars.get().muse.state).toBe('hiding')
+
+    // Muse is re-summoned; the new request opens a fresh card of its own.
+    dispatch('muse', 'HIDDEN')
+
+    await vi.waitFor(() => expect($avatars.get().muse.state).toBe('emerging'))
+    dispatch('muse', 'EMERGED')
+
+    const nextCard = Object.keys($cards.get())[0]
+
+    expect(nextCard).toBeTruthy()
+    expect(nextCard).not.toBe(firstCard)
+    // The old card\u2019s dismissal must not have summoned Grok.
+    expect($avatars.get().grok.state).toBe('hidden')
+
+    dismissNotification(nextCard)
+
+    await vi.waitFor(() => expect($avatars.get().grok.state).toBe('emerging'))
+  })
+
+  it('keeps waiting on this run\u2019s card well past the fallback deadline', async () => {
+    vi.useFakeTimers()
+    playLaunchDemo()
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect($avatars.get().muse.state).toBe('emerging')
+
+    dispatch('muse', 'EMERGED')
+
+    const card = Object.keys($cards.get())[0]
+
+    expect(card).toBeTruthy()
+
+    // The presenter holds the card open: hovering pauses the 9 s read timer,
+    // so settlement lands well past the demo\u2019s 15 s fallback.
+    hoverNotification(card)
+    await vi.advanceTimersByTimeAsync(CARD_DEADLINE_MS * 2)
+
+    expect($avatars.get().grok.state).toBe('hidden')
+    expect(isLaunchDemoRunning()).toBe(true)
+
+    dismissNotification(card)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect($avatars.get().grok.state).toBe('emerging')
   })
 
   it('advances on the fallback deadlines when the real signals never come', async () => {

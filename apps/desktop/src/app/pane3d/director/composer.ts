@@ -13,7 +13,7 @@
  * composition point; without one a submit just closes the composer.
  */
 
-import type { AvatarId, PageContext } from '../protocol'
+import type { AvatarId, DemoScript, PageContext } from '../protocol'
 
 import { dispatch } from './director'
 import { $avatars, $composer, type ComposerState, type ContextField } from './store'
@@ -25,7 +25,13 @@ import { $avatars, $composer, type ComposerState, type ContextField } from './st
 const CAPTURE_FALLBACK_MS = 1200
 
 /** Installed by the tasks milestone; owns the `SUBMIT` transition. */
-export type TaskSubmitter = (avatar: AvatarId, text: string, context: PageContext) => void
+export type TaskSubmitter = (
+  avatar: AvatarId,
+  text: string,
+  context: PageContext,
+  /** The scripted demo this composer belongs to, if any (§11). */
+  demo?: DemoScript
+) => void
 
 let submitter: TaskSubmitter | null = null
 
@@ -67,12 +73,12 @@ async function capture(): Promise<PageContext> {
  * only accepts `COMPOSER_OPEN` from `idle`, and a stale capture (the avatar was
  * dismissed while the read was in flight) must not resurrect a composer.
  *
- * `options` lets the launch demo pre-fill the draft and mark it as harness
- * content (§11); a plain click passes nothing.
+ * `options` lets the launch demo pre-fill the draft, mark it as harness content
+ * and tag the composer with its own script (§11); a plain click passes nothing.
  */
 export async function openComposer(
   id: AvatarId,
-  options: { draft?: string; source?: 'dev-harness' } = {}
+  options: { draft?: string; source?: 'dev-harness'; demo?: DemoScript } = {}
 ): Promise<void> {
   const row = $avatars.get()[id]
 
@@ -96,7 +102,14 @@ export async function openComposer(
       return
     }
 
-    $composer.set({ avatar: id, context, draft: options.draft, removed: [], source: options.source })
+    $composer.set({
+      avatar: id,
+      context,
+      demo: options.demo,
+      draft: options.draft,
+      removed: [],
+      source: options.source
+    })
   } finally {
     pending.delete(id)
   }
@@ -142,10 +155,10 @@ export function composerEffectiveContext(state: ComposerState): PageContext {
 }
 
 /**
- * Enter in the composer. The installed submitter receives the trimmed text and
- * the effective context, and the avatar enters `thinking`; without one the
- * composer simply closes, so a stray Enter cannot leave a listening avatar with
- * no task behind it.
+ * Enter in the composer. The installed submitter receives the trimmed text, the
+ * effective context and the composer's demo tag (if it has one), and the avatar
+ * enters `thinking`; without one the composer simply closes, so a stray Enter
+ * cannot leave a listening avatar with no task behind it.
  */
 export function submitComposer(id: AvatarId, text: string): void {
   const state = $composer.get()
@@ -172,7 +185,7 @@ export function submitComposer(id: AvatarId, text: string): void {
   }
 
   dispatch(id, 'SUBMIT')
-  submitter(id, clean, context)
+  submitter(id, clean, context, state.demo)
 }
 
 // Any path that ends `listening` — Esc, Hide, a dismiss — drops the composer

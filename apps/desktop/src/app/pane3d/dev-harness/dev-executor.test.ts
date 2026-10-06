@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { AvatarTask, TaskEvent } from '../director/tasks'
+import type { AvatarTask, TaskEvent, TaskResult } from '../director/tasks'
 
 import { DEMO_CHART } from './demo-data'
 import { DEV_PROGRESS_STEPS, DevHarnessExecutor, devScript, shouldAttachChart } from './dev-executor'
@@ -23,9 +23,18 @@ function events(script: { event: TaskEvent }[]): TaskEvent[] {
   return script.map(step => step.event)
 }
 
+/** The script's last event must be the result; anything else is a broken script. */
+function resultOf(event: TaskEvent | undefined): TaskResult {
+  if (event?.type !== 'done') {
+    throw new Error(`expected a done event, got ${event?.type ?? 'nothing'}`)
+  }
+
+  return event.result
+}
+
 describe('dev harness executor script', () => {
   it('runs the three deterministic progress steps in order', () => {
-    const progress = events(devScript(task, false)).filter(
+    const progress = events(devScript(task)).filter(
       (event): event is Extract<TaskEvent, { type: 'progress' }> => event.type === 'progress'
     )
 
@@ -34,7 +43,7 @@ describe('dev harness executor script', () => {
   })
 
   it('streams tokens that reference the captured title and selection', () => {
-    const stream = events(devScript(task, false))
+    const stream = events(devScript(task))
       .filter((event): event is Extract<TaskEvent, { type: 'token' }> => event.type === 'token')
       .map(event => event.text)
       .join('')
@@ -44,34 +53,47 @@ describe('dev harness executor script', () => {
     expect(stream.trim().length).toBeGreaterThan(80)
   })
 
-  it('attaches the demo chart only when the request or the launch demo asks for it', () => {
+  it('attaches the demo chart only when the request or the demo task asks for it', () => {
     expect(shouldAttachChart('can you show me the growth?')).toBe(true)
     expect(shouldAttachChart('add a chart please')).toBe(true)
     expect(shouldAttachChart('what do the stats look like')).toBe(true)
     expect(shouldAttachChart('build me a landing page')).toBe(false)
     expect(shouldAttachChart('build me a landing page', true)).toBe(true)
 
-    const plain = events(devScript(task, false)).at(-1)
-    const asked = events(devScript({ ...task, text: 'add a chart please' }, false)).at(-1)
-    const demo = events(devScript({ ...task, text: 'growth please' }, false)).at(-1)
-    const launch = events(devScript(task, true)).at(-1)
+    const plain = events(devScript(task)).at(-1)
+    const asked = events(devScript({ ...task, text: 'add a chart please' })).at(-1)
+    const stats = events(devScript({ ...task, text: 'what do the stats look like' })).at(-1)
+    const launch = events(devScript({ ...task, demo: 'launch' })).at(-1)
 
     expect(plain?.type).toBe('done')
-    expect((plain as Extract<TaskEvent, { type: 'done' }>).result.chart).toBeUndefined()
-    expect((asked as Extract<TaskEvent, { type: 'done' }>).result.chart).toEqual(DEMO_CHART)
-    expect((demo as Extract<TaskEvent, { type: 'done' }>).result.chart).toEqual(DEMO_CHART)
-    expect((launch as Extract<TaskEvent, { type: 'done' }>).result.chart).toEqual(DEMO_CHART)
+    expect(resultOf(plain).chart).toBeUndefined()
+    expect(resultOf(asked).chart).toEqual(DEMO_CHART)
+    expect(resultOf(stats).chart).toEqual(DEMO_CHART)
+    // The demo's pre-filled line carries no chart word: its task marker is what
+    // attaches the chart (§11).
+    expect(resultOf(launch).chart).toEqual(DEMO_CHART)
+  })
+
+  it('asks for the chart to be presented only on the demo\u2019s own task', () => {
+    const plain = events(devScript(task)).at(-1)
+    const asked = events(devScript({ ...task, text: 'add a chart please' })).at(-1)
+    const launch = events(devScript({ ...task, demo: 'launch' })).at(-1)
+
+    // An ordinary request keeps its card and reaches the chart by click (§8.9).
+    expect(resultOf(plain).presentChart).toBeUndefined()
+    expect(resultOf(asked).presentChart).toBeUndefined()
+    expect(resultOf(launch).presentChart).toBe(true)
   })
 
   it('results reference the captured page and stay ordered', () => {
-    const script = devScript(task, false)
+    const script = devScript(task)
     const times = script.map(step => step.at)
     const done = events(script).at(-1)
 
     expect(times).toEqual([...times].sort((a, b) => a - b))
     expect(done?.type).toBe('done')
 
-    const result = (done as Extract<TaskEvent, { type: 'done' }>).result
+    const result = resultOf(done)
 
     expect(result.title).toContain('Ada on X')
     expect(result.title).not.toContain('“Ada')
@@ -104,6 +126,23 @@ describe('dev harness executor script', () => {
 
     cancel()
     vi.useRealTimers()
+  })
+
+  it('carries the task\u2019s demo marker through the timer script', () => {
+    vi.useFakeTimers()
+
+    const run = (subject: AvatarTask): TaskEvent | undefined => {
+      const received: TaskEvent[] = []
+      const cancel = new DevHarnessExecutor().run(subject, event => received.push(event))
+
+      vi.runAllTimers()
+      cancel()
+
+      return received.at(-1)
+    }
+
+    expect(resultOf(run(task)).presentChart).toBeUndefined()
+    expect(resultOf(run({ ...task, demo: 'launch' })).presentChart).toBe(true)
   })
 
   it('is labelled as the dev harness', () => {

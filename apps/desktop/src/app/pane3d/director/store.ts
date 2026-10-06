@@ -115,6 +115,12 @@ export interface TaskCard {
   body: string
   chart?: ChartSpec
   links?: { label: string; url: string }[]
+  /**
+   * "Present this chart now" — a generic flag any executor may set on its
+   * result (§8.9). The launch demo's own task sets it, so the live presenter
+   * shows the chart without a click while every other result keeps its card.
+   */
+  presentChart?: boolean
   shownAt: number
   source?: 'live' | 'dev-harness'
 }
@@ -189,6 +195,12 @@ export interface ComposerState {
   draft?: string
   /** `dev-harness` when the draft came from the scripted demo; renders the badge. */
   source?: 'dev-harness'
+  /**
+   * The scripted demo that pre-filled this composer, if any (§11). It rides
+   * along with the ONE task the user submits from here, so the demo's own
+   * request is marked and no later task inherits the demo's chart.
+   */
+  demo?: DemoScript
 }
 
 export const $composer = atom<ComposerState | null>(null)
@@ -354,6 +366,7 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
       ? {
           avatar: composer.avatar,
           context: { ...composer.context },
+          demo: composer.demo,
           draft: composer.draft,
           removed: [...composer.removed],
           source: composer.source

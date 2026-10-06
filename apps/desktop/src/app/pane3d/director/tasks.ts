@@ -20,7 +20,7 @@
  */
 
 import { PANE_COPY } from '../copy'
-import type { AvatarId, ChartSpec, PageContext } from '../protocol'
+import type { AvatarId, ChartSpec, DemoScript, PageContext } from '../protocol'
 
 import { presentChart } from './chart'
 import { dispatch } from './director'
@@ -44,6 +44,12 @@ export interface AvatarTask {
   text: string
   context: PageContext
   createdAt: number
+  /**
+   * The scripted demo whose composer submitted this task, if any (§11). It
+   * marks exactly one task, so demo-only behaviour can never follow the demo
+   * into the tasks the user asks for afterwards.
+   */
+  demo?: DemoScript
 }
 
 export type TaskEvent =
@@ -58,6 +64,8 @@ export interface TaskResult {
   body: string
   chart?: ChartSpec
   links?: { label: string; url: string }[]
+  /** Set by an executor that wants its chart presented without a click (§8.9). */
+  presentChart?: boolean
 }
 
 export interface TaskExecutor {
@@ -90,7 +98,8 @@ interface Session {
 /** One running task per avatar; a second submit returns the running id. */
 const running = new Map<AvatarId, Session>()
 
-export function submitTask(avatar: AvatarId, text: string, context: PageContext): string {
+/** `demo` marks the task the scripted demo's own composer submitted (§11). */
+export function submitTask(avatar: AvatarId, text: string, context: PageContext, demo?: DemoScript): string {
   const current = running.get(avatar)
 
   if (current) {
@@ -138,7 +147,7 @@ export function submitTask(avatar: AvatarId, text: string, context: PageContext)
   running.set(avatar, session)
 
   try {
-    session.cancelFn = active.run({ avatar, context, createdAt: Date.now(), id, text }, emit)
+    session.cancelFn = active.run({ avatar, context, createdAt: Date.now(), demo, id, text }, emit)
   } catch (error) {
     emit({ message: error instanceof Error ? error.message : 'The task executor failed.', type: 'error' })
   }
@@ -181,6 +190,7 @@ function handleEvent(session: Session, event: TaskEvent): void {
         chart: event.result.chart,
         kind: 'result',
         links: event.result.links,
+        presentChart: event.result.presentChart,
         title: event.result.title
       })
 
@@ -235,6 +245,7 @@ interface TaskCardPayload {
   body: string
   chart?: ChartSpec
   links?: { label: string; url: string }[]
+  presentChart?: boolean
 }
 
 /** One card per avatar: a second settled task replaces the previous card. */
@@ -256,6 +267,7 @@ function openTaskCard(session: Session, payload: TaskCardPayload): void {
     id,
     kind: payload.kind,
     links: payload.links,
+    presentChart: payload.presentChart,
     shownAt: Date.now(),
     source: session.source,
     taskId: session.id,

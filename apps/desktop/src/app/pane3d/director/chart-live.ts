@@ -2,9 +2,9 @@
  * The live chart presentation (architecture §8.9).
  *
  * It installs the `ChartPresenter` the result card's "Show chart" button looks
- * for, presents a chart automatically when a launch-demo result carries one,
- * drops the chart when its avatar leaves the stage, and answers the Rig's
- * question "should this avatar turn toward the chart?".
+ * for, presents a chart automatically when a result asks for it
+ * (`presentChart`), drops the chart when its avatar leaves the stage, and
+ * answers the Rig's question "should this avatar turn toward the chart?".
  *
  * The presenter is registered at the single composition point
  * (`director/defaults.ts`), exactly like the task executor and the conversation
@@ -16,7 +16,7 @@ import { CHART_PRESENT_YAW_DEG } from '../scene/chart-layout'
 
 import { setChartPresenter } from './chart'
 import { $chartPresentation, chartRuntime, setChartPresentation } from './chart-state'
-import { $avatars, $taskCards, type AvatarRuntime, pane3dRuntime, type TaskCard } from './store'
+import { $avatars, $taskCards, type AvatarRuntime, type TaskCard } from './store'
 import { dismissTaskCard } from './tasks'
 
 const PRESENT_YAW_RAD = (CHART_PRESENT_YAW_DEG * Math.PI) / 180
@@ -47,20 +47,17 @@ export function getChartFacing(id: AvatarId, avatarX: number): number | null {
 }
 
 /**
- * The launch demo's result presents its chart without a click (architecture
- * §8.9, §11): the demo's own task text carries no chart keyword, so
- * `lastDemo === 'launch'` is the signal, and the card collapses into the feed
- * exactly as it does when the user presses "Show chart".
+ * A result that asks for its chart to be presented right away (architecture
+ * §8.9, §11): the launch demo's own task sets `presentChart` on its result, and
+ * the card collapses into the feed exactly as it does when the user presses
+ * "Show chart". The flag is generic — the director never learns which executor
+ * set it, and a plain task keeps its card and reaches the chart by click.
  */
 const autoPresented = new Set<string>()
 
 function autoPresent(cards: Record<string, TaskCard>): void {
-  if (pane3dRuntime.lastDemo !== 'launch') {
-    return
-  }
-
   Object.values(cards).forEach(card => {
-    if (!card.chart || card.source !== 'dev-harness' || autoPresented.has(card.id)) {
+    if (!card.chart || !card.presentChart || autoPresented.has(card.id)) {
       return
     }
 
