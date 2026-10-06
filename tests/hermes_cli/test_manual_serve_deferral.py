@@ -210,6 +210,7 @@ def test_historical_retention_failure_warns_and_survives_rotation(monkeypatch, c
     assert "900" not in capsys.readouterr().err
 
 
+def test_unsaved_manual_restart_warning_survives_a_running_and_a_killed_update(monkeypatch, capsys):
     """The durable running latest.json holds the prior rows as ``carried_manual_serves`` (no plan
     yet): the startup warning must read them while an update runs, after one is killed before its
     ``plan`` stage, and the next run must carry them forward again."""
