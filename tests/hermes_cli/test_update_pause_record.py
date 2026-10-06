@@ -287,7 +287,11 @@ print(subprocess.run([sys.executable, "-c", probe], capture_output=True, text=Tr
     (("hermes_cli.main", "status"), True),
 ])
 def test_update_started_from_a_relaunched_gateway_does_not_share_the_claim(tmp_path, host_argv, adopts):
-    script = tmp_path / "host.py"
+    # The holder matcher identifies Hermes by the interpreter's execution TARGET, so the
+    # stand-in host must sit at a hermes_cli/main.py path: a bare host.py with a
+    # `-m hermes_cli.main` tail is another script's arguments, not a Hermes holder (#107002).
+    script = tmp_path / "hermes_cli" / "main.py"
+    script.parent.mkdir(parents=True, exist_ok=True)
     script.write_text(_HOST, encoding="utf-8")
     holder = _child(_HOLDER, str(script), *host_argv, env={"HERMES_HOME": str(tmp_path)})
     out, _ = holder.communicate(timeout=60)
