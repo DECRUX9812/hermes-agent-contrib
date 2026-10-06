@@ -163,7 +163,15 @@ test('transcript oracle holds across every transition', async () => {
         window.location.hash = '#/'
       })
       await expect.poll(() => currentSessionId(page)).toBe('')
-      await expect(viewport(page)).not.toContainText(U(1))
+      // The empty-state intro's "pick up where you left off" list shows the away
+      // session's TITLE (its first user message), so a viewport-wide text check would
+      // match the new chat's own empty state. Assert on transcript message rows: the
+      // away session's content must not be rendered here.
+      await expect(
+        viewport(page)
+          .locator('[data-slot="aui_user-message-root"], [data-slot="aui_assistant-message-root"]')
+          .filter({ hasText: U(1) })
+      ).toHaveCount(0)
       const hold = gate()
       provider.script(U(6), [{ text: words(A(6), 'finished', 'while', 'away'), holdAfterFirstChunk: hold }])
       await send(page, `${U(6)} in session b`, 'Enter', ws)
