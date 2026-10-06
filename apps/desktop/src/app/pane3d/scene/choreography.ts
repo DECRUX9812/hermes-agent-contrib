@@ -72,6 +72,15 @@ export const PERCH_MS = 500
 export const NOTIFY_LEAN = (6 * Math.PI) / 180
 export const NOTIFY_PULSE_MS = 520
 
+/**
+ * One responding nod (§8.4, §8.7). The task executor signals a nod per token
+ * BURST (never per token), at most two per second (`director/nods.ts`); the rig
+ * reads the burst's start and applies this pure envelope, so a stalled stream
+ * leaves the avatar still and a late frame can never stretch the dip.
+ */
+export const NOD_MS = 480
+export const NOD_AMPLITUDE = (4 * Math.PI) / 180
+
 /** Critically-ish damped spring: single ~4% overshoot (§8.4). */
 const SPRING_OMEGA = 11
 const SPRING_ZETA = 0.72
@@ -94,8 +103,23 @@ export function notifyGlowPulse(elapsedMs: number, reducedMotion: boolean): numb
   return Math.sin(Math.PI * clamp01(Math.max(0, elapsedMs) / NOTIFY_PULSE_MS))
 }
 
-/** Damped spring step with a single overshoot, clamped to 1 at the deadline. */
-export function springProgress(elapsedMs: number, durationMs: number): number {
+/**
+ * One responding nod: a single dip forward and back over `NOD_MS`, 0 at both
+ * ends so consecutive bursts never stack. Negative pitch = forward, matching the
+ * greeting bow's sign. Reduced motion never nods.
+ */
+export function nodPitch(elapsedMs: number, reducedMotion: boolean): number {
+  if (reducedMotion || elapsedMs <= 0 || elapsedMs >= NOD_MS) {
+    return 0
+  }
+
+  return -NOD_AMPLITUDE * Math.sin(Math.PI * (elapsedMs / NOD_MS))
+}
+
+/** Damped spring step with a single overshoot, clamped to 1 at the deadline. */ export function springProgress(
+  elapsedMs: number,
+  durationMs: number
+): number {
   if (elapsedMs <= 0) {
     return 0
   }

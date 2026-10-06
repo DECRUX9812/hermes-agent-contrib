@@ -7,6 +7,9 @@ import {
   choreographyPose,
   EMERGE_MS,
   HIDE_MS,
+  NOD_AMPLITUDE,
+  NOD_MS,
+  nodPitch,
   NOTIFY_PULSE_MS,
   notifyGlowPulse,
   PERCH_MS,
@@ -280,6 +283,23 @@ describe('notifyGlowPulse — one pulse for the notification moment', () => {
   it('never pulses under reduced motion', () => {
     for (const elapsedMs of [0, 100, NOTIFY_PULSE_MS / 2, NOTIFY_PULSE_MS]) {
       expect(notifyGlowPulse(elapsedMs, true)).toBe(0)
+    }
+  })
+})
+
+describe('nodPitch — one subtle nod per token burst (§8.4/§8.7)', () => {
+  it('dips once and returns to rest, clamped at both ends', () => {
+    expect(nodPitch(-10, false)).toBe(0)
+    expect(nodPitch(0, false)).toBe(0)
+    expect(nodPitch(NOD_MS, false)).toBeCloseTo(0, 10)
+    expect(nodPitch(NOD_MS + 2_000, false)).toBeCloseTo(0, 10)
+    expect(nodPitch(NOD_MS / 2, false)).toBeCloseTo(-NOD_AMPLITUDE, 10)
+    expect(Math.abs(NOD_AMPLITUDE)).toBeLessThan((5 * Math.PI) / 180)
+  })
+
+  it('never nods under reduced motion', () => {
+    for (const elapsedMs of [0, 120, NOD_MS / 2, NOD_MS]) {
+      expect(nodPitch(elapsedMs, true)).toBe(0)
     }
   })
 })

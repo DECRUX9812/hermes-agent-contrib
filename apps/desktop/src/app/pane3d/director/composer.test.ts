@@ -191,8 +191,7 @@ describe('composer session', () => {
     })
   })
 
-  it('logs SUBMIT and returns to idle when no executor is installed yet', async () => {
-    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+  it('closes back to idle when no submitter is installed', async () => {
     setBridge({ pane3d: { captureContext: async () => context } })
     perch('muse')
 
@@ -201,7 +200,6 @@ describe('composer session', () => {
 
     expect($avatars.get().muse.state).toBe('idle')
     expect($composer.get()).toBeNull()
-    expect(info).toHaveBeenCalledWith('[pane3d] SUBMIT', expect.objectContaining({ text: 'hello' }))
   })
 
   it('closes back to idle and drops the composer state', async () => {

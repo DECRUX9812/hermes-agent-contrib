@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { installPane3dDefaults } from './director/defaults'
 import { startRoom } from './director/room-live'
 import { $avatars, applyPaneState, pane3dRuntime } from './director/store'
+import { cancelTasks } from './director/tasks'
 import { HitRegionPublisher } from './hit/publisher'
 import { PaneCamera } from './scene/camera'
 import { PaneLights } from './scene/lights'
@@ -92,6 +93,20 @@ export function PaneApp() {
   // The AvatarRoom (§8.6): facing + rate-limited greetings. It installs the
   // defaults' ConversationSource, so it starts after the effect above.
   useEffect(() => startRoom(), [])
+
+  // Closing the pane — or a dev reload, or any unmount — must stop every running
+  // task first: no executor timer may fire into a dead document and no exception
+  // may surface (§8.7, "Cancel on pane close, no exceptions").
+  useEffect(() => {
+    const cancel = () => cancelTasks()
+
+    window.addEventListener('pagehide', cancel)
+
+    return () => {
+      window.removeEventListener('pagehide', cancel)
+      cancel()
+    }
+  }, [])
 
   return (
     <>

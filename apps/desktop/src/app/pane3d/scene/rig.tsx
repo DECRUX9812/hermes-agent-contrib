@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
 import type { AvatarDefinition, AvatarRigHandle } from '../avatars/types'
+import { getNodStart } from '../director/nods'
 import { bowPitch, facingPose } from '../director/room'
 import { getBowStart, getFacingTarget } from '../director/room-live'
 import { $avatars, type AvatarState, pane3dRuntime } from '../director/store'
@@ -15,6 +16,7 @@ import {
   choreographyPose,
   EMERGE_MS,
   HIDE_MS,
+  nodPitch,
   NOTIFY_LEAN,
   notifyGlowPulse,
   perchPose,
@@ -372,10 +374,15 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
     // (§8.5); `notifying` is a rest phase, so the pulse is its own envelope.
     const glowPulse = Math.max(pose.accentPulse, notifying ? notifyGlowPulse(now - m.startedAt, reducedMotion) : 0)
 
-    // Responding nods are one per token-burst signal from the task executor
-    // (pane3d-task-executor); the rig must not schedule them on a loop.
+    // Responding nods: ONE small gesture per token-burst signal from the task
+    // executor (pane3d-task-executor), rate-limited to ≤2/s there. The rig must
+    // never schedule them on a loop — a stalled stream signals nothing and the
+    // avatar stays still. Pure envelope of elapsed ms, like every other gesture.
+    const nodStart = getNodStart(definition.id)
+    const nod = nodStart === null ? 0 : nodPitch(now - nodStart, reducedMotion)
+
     rootObject.position.set(m.x, m.baseY + pose.yOffset + drift, 0)
-    rootObject.rotation.x = -m.lean - m.bow
+    rootObject.rotation.x = -m.lean - m.bow - nod
     rootObject.rotation.y = m.yaw
     rootObject.rotation.z = pose.rotationZ
     rootObject.scale.set(pose.scale, pose.scale * (1 + 0.012 * breath), pose.scale)
@@ -424,6 +431,7 @@ export function Rig({ definition, onAnimationEnd, reducedMotion, startedAt, stat
 
     frame.yawDeg = THREE.MathUtils.radToDeg(m.yaw)
     frame.bowDeg = THREE.MathUtils.radToDeg(m.bow)
+    frame.nodDeg = THREE.MathUtils.radToDeg(nod)
     frame.accentDeg = THREE.MathUtils.radToDeg(m.accent.spin)
     frame.gaze = { x: m.gazeX, y: m.gazeY }
 

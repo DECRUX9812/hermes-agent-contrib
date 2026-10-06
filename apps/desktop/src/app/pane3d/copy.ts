@@ -16,6 +16,10 @@ export const PANE_COPY = {
   less: 'less',
   more: 'more',
   removeContext: (label: string) => `Remove ${label} context`,
+  showChart: 'Show chart',
+  taskClose: 'Close card',
+  taskErrorTitle: 'Could not finish that',
+  taskWorking: 'Working…',
   summon: (name: string) => `Summon ${name}`,
   dismiss: (name: string) => `Hide ${name}`
 }

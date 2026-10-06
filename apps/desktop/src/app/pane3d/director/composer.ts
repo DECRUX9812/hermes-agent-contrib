@@ -9,8 +9,8 @@
  *
  * The captured context lives in `$composer`; a chip's × records the field in
  * `removed`, so `composerEffectiveContext` is what a task ever receives. The
- * tasks milestone installs the real submitter through `setTaskSubmitter`; until
- * then submitting logs `SUBMIT` and closes, exactly as the feature describes.
+ * tasks feature installs the submitter through `setTaskSubmitter` at the
+ * composition point; without one a submit just closes the composer.
  */
 
 import type { AvatarId, PageContext } from '../protocol'
@@ -136,9 +136,10 @@ export function composerEffectiveContext(state: ComposerState): PageContext {
 }
 
 /**
- * Enter in the composer. With a submitter installed it receives the trimmed text
- * and the effective context and the avatar enters `thinking`; without one (this
- * milestone) the composer closes and the SUBMIT is logged.
+ * Enter in the composer. The installed submitter receives the trimmed text and
+ * the effective context, and the avatar enters `thinking`; without one the
+ * composer simply closes, so a stray Enter cannot leave a listening avatar with
+ * no task behind it.
  */
 export function submitComposer(id: AvatarId, text: string): void {
   const state = $composer.get()
@@ -158,15 +159,14 @@ export function submitComposer(id: AvatarId, text: string): void {
 
   $composer.set(null)
 
-  if (submitter) {
-    dispatch(id, 'SUBMIT')
-    submitter(id, clean, context)
+  if (!submitter) {
+    dispatch(id, 'COMPOSER_CLOSE')
 
     return
   }
 
-  console.info('[pane3d] SUBMIT', { avatar: id, context, text: clean })
-  dispatch(id, 'COMPOSER_CLOSE')
+  dispatch(id, 'SUBMIT')
+  submitter(id, clean, context)
 }
 
 // Any path that ends `listening` — Esc, Hide, a dismiss — drops the composer

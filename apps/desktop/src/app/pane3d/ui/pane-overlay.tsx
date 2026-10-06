@@ -9,7 +9,9 @@ import { Composer } from './composer'
 import { Dock } from './dock'
 import { FeedPanel } from './feed-panel'
 import { NotificationCards } from './notification-card'
+import { TaskCards } from './result-card'
 import { SpeechBubbles } from './speech-bubble'
+import { TaskPill } from './task-pill'
 
 /**
  * The DOM layer above the canvas: one accessible handle per visible avatar, the
@@ -28,6 +30,8 @@ export function PaneOverlay() {
       ))}
       <NotificationCards />
       <SpeechBubbles />
+      <TaskCards />
+      <TaskPill />
       <Composer />
       <FeedPanel />
       <Dock />

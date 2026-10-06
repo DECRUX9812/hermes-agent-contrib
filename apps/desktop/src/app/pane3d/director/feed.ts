@@ -1,4 +1,4 @@
-import type { FeedEntry, PaneCard } from './store'
+import type { FeedEntry, PaneCard, TaskCard } from './store'
 
 /** The activity feed keeps at most this many entries (§8.5). */
 export const FEED_CAP = 50
@@ -17,6 +17,18 @@ export function notificationFeedEntry(card: PaneCard, at: number): FeedEntry {
     kind: 'notify',
     source: card.request.source ?? 'live',
     text: card.request.title
+  }
+}
+
+/** The feed record a settled result/error card collapses into (§8.5, §8.7). */
+export function taskFeedEntry(card: TaskCard, at: number): FeedEntry {
+  return {
+    at,
+    avatar: card.avatar,
+    id: card.id,
+    kind: 'task',
+    source: card.source ?? 'live',
+    text: card.title
   }
 }
 

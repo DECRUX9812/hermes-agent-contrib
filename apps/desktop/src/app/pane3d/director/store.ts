@@ -10,7 +10,16 @@
 
 import { atom } from 'nanostores'
 
-import type { AvatarId, DemoScript, NotifyRequest, PageContext, PaneAnchor, PaneState, ScreenRect } from '../protocol'
+import type {
+  AvatarId,
+  ChartSpec,
+  DemoScript,
+  NotifyRequest,
+  PageContext,
+  PaneAnchor,
+  PaneState,
+  ScreenRect
+} from '../protocol'
 import { AVATAR_IDS } from '../protocol'
 import { prewarmPlan, type PrewarmStage } from '../scene/prewarm'
 import { avatarFrames } from '../scene/projection'
@@ -63,6 +72,49 @@ export interface SpeechBubble {
   listener: AvatarId
   text: string
   at: number
+  source?: 'live' | 'dev-harness'
+}
+
+/** A task's lifecycle status (architecture §8.7, §12). */
+export type TaskStatus = 'running' | 'done' | 'error' | 'cancelled'
+
+/**
+ * One submitted task, kept for the debug snapshot: what was asked, the context
+ * it was given and how it ended (architecture §8.7, §12).
+ */
+export interface TaskRecord {
+  id: string
+  avatar: AvatarId
+  text: string
+  context: PageContext
+  status: TaskStatus
+}
+
+export type TaskPhase = 'thinking' | 'responding'
+
+/** The live working pill's state for one avatar — it collapses out of the composer (§8.8). */
+export interface TaskProgress {
+  taskId: string
+  phase: TaskPhase
+  /** The executor's latest progress label, or null before the first one. */
+  label: string | null
+  pct?: number
+  /** Everything streamed so far; the pill renders its last two lines. */
+  stream: string
+  source?: 'live' | 'dev-harness'
+}
+
+/** A settled task's card: the result, or the failure (§8.7, §12). */
+export interface TaskCard {
+  id: string
+  taskId: string
+  avatar: AvatarId
+  kind: 'result' | 'error'
+  title: string
+  body: string
+  chart?: ChartSpec
+  links?: { label: string; url: string }[]
+  shownAt: number
   source?: 'live' | 'dev-harness'
 }
 
@@ -137,6 +189,12 @@ export interface ComposerState {
 export const $composer = atom<ComposerState | null>(null)
 /** The AvatarRoom's current speech bubble(s) (§8.6); a live exchange shows one. */
 export const $bubbles = atom<SpeechBubble[]>([])
+/** Submitted tasks, newest first — the snapshot's `tasks` (§8.7, §12). */
+export const $tasks = atom<TaskRecord[]>([])
+/** The working pill per avatar while a task runs; absent when nothing runs (§8.8). */
+export const $taskProgress = atom<Partial<Record<AvatarId, TaskProgress>>>({})
+/** Settled task cards (result/error), one per avatar at most (§8.7). */
+export const $taskCards = atom<Record<string, TaskCard>>({})
 export const $anchor = atom<PaneAnchor>(DEFAULT_ANCHOR)
 export const $transitions = atom<TransitionRecord[]>([])
 /** The activity feed panel, toggled from the dock (§8.6). */
@@ -214,6 +272,8 @@ export interface Pane3dAvatarSnapshot {
   yawDeg: number
   /** Greeting bow pitch in degrees; 0 at rest (VAL-ROOM-001 evidence). */
   bowDeg: number
+  /** Responding nod pitch in degrees; 0 unless a token burst just arrived (§8.4). */
+  nodDeg: number
   /** Generic accent rotation in degrees (§8.4); advances only while thinking. */
   accentDeg: number
   gaze: { x: number; y: number }
@@ -235,7 +295,12 @@ export interface Pane3dDebugSnapshot {
   bubbles: SpeechBubble[]
   /** The open composer's captured context + removed chips (§8.8); null when closed. */
   composer: ComposerState | null
-  tasks: unknown[]
+  /** Submitted tasks with the context they carried and how they ended (§8.7, §12). */
+  tasks: TaskRecord[]
+  /** Settled task cards (result/error) currently on screen. */
+  taskCards: TaskCard[]
+  /** The live working pill per avatar while a task runs (§8.8). */
+  taskProgress: TaskProgress[]
   chart: null
   lastDemo: DemoScript | null
   /** Shader pre-warm lifecycle — 'warm' means the programs are linked and `ready` is imminent. */
@@ -268,6 +333,7 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
         id,
         materialTypes: [...frame.materialTypes],
         meshCount: frame.meshCount,
+        nodDeg: frame.nodDeg,
         screenRect: frame.screenRect ? { ...frame.screenRect } : null,
         slot: visibleOrder.indexOf(id),
         state: row.state,
@@ -290,7 +356,11 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
     reducedMotion: prefersReducedMotion(),
     regions: [...pane3dRuntime.regions],
     renderCount: pane3dRuntime.renderCount,
-    tasks: [],
+    taskCards: Object.values($taskCards.get()).map(card => ({ ...card })),
+    taskProgress: Object.values($taskProgress.get())
+      .filter((progress): progress is TaskProgress => progress !== undefined)
+      .map(progress => ({ ...progress })),
+    tasks: $tasks.get().map(task => ({ ...task, context: { ...task.context } })),
     transitions: $transitions.get()
   }
 }
