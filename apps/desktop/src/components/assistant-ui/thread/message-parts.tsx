@@ -22,11 +22,13 @@ import { parseMaybeObject, toolCallFailed } from '@/components/assistant-ui/tool
 import { formatElapsed, useElapsedSeconds, useMeasuredDuration } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { GeneratedImage } from '@/components/chat/generated-image-result'
+import { VisualizationCard } from '@/components/chat/visualization-card'
 import { SCAFFOLD_LABEL_CLASS, SCAFFOLD_META_CLASS, ScaffoldRow } from '@/components/chat/scaffold-row'
 import { useOnboardingChatActive } from '@/components/onboarding-chat/assembly'
 import { useI18n } from '@/i18n'
 import { mcpTargets, toolLabels } from '@/lib/connector-tools'
 import { generatedImageFromResult } from '@/lib/generated-images'
+import { visualizationFromResult } from '@/lib/visualizations'
 import { separateGluedReasoningBlocks } from '@/lib/reasoning-blocks'
 import { isTodoToolName } from '@/lib/todos'
 import { type CardToolName, isCardTool, isCardToolName } from '@/lib/tool-render-class'
@@ -58,6 +60,23 @@ const ImageGenerateTool: FC<TimelineToolCallProps> = props => {
     <div className="mt-1.5">
       <TimelineTimestamp className="mb-0.5 block" completedAt={completedAt} timestamp={timestamp} />
       <GeneratedImage aspectRatio={aspectRatio} result={result} />
+    </div>
+  )
+}
+
+const VisualizationToolPart: FC<TimelineToolCallProps> = props => {
+  const { completedAt, result, timestamp } = props
+
+  // Failed or malformed results fall back to the normal tool row so the
+  // error stays visible and debuggable instead of silently dropping.
+  if (settledWithoutResult(props) || (result !== undefined && !visualizationFromResult(result))) {
+    return <ToolFallback {...props} />
+  }
+
+  return (
+    <div className="mt-1.5">
+      <TimelineTimestamp className="mb-0.5 block" completedAt={completedAt} timestamp={timestamp} />
+      <VisualizationCard result={result} />
     </div>
   )
 }
@@ -98,6 +117,7 @@ const ConnectionsToolPart: FC<TimelineToolCallProps> = props =>
 
 const TOOL_CARDS: Record<CardToolName, FC<TimelineToolCallProps>> = {
   clarify: ClarifyToolPart,
+  create_visualization: VisualizationToolPart,
   delegate_task: DelegateToolPart,
   image_generate: ImageGenerateTool,
   manage_catalog: CatalogInstallTool,
