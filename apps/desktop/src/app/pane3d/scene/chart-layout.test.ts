@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import type { AvatarId, PaneAnchor } from '../protocol'
+import type { AvatarId, PaneAnchor, ScreenRect } from '../protocol'
 
 import {
   barColumnX,
@@ -39,6 +39,7 @@ import {
 import { CHART_MAX_BAR_HEIGHT } from './chart-scale'
 import {
   computeSlotLayout,
+  dockRect,
   PX_PER_UNIT,
   reservedSlotRect,
   screenToWorld,
@@ -507,5 +508,140 @@ describe('chartXLabelBoxes — the X labels on a compressed board (round-2 fix)'
     boxes.forEach((box, index) => {
       expect(box.center).toBeCloseTo(CHART_LABEL_GUTTER_PX + boardWpx / 2 + barColumnX(index, 8) * PX_PER_UNIT, 6)
     })
+  })
+})
+
+/** True when two pane-CSS-px rects share any area (touching edges do not count). */
+function rectsIntersect(a: ScreenRect, b: ScreenRect): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+}
+
+/** The real desktop-anchor row + dock, from the same inputs `Stage` derives them. */
+function desktopLayout(ids: AvatarId[], viewport: { height: number; width: number }) {
+  const heights = Object.fromEntries(SILHOUETTES.map(size => [size.id, size.height])) as Record<AvatarId, number>
+  const widths = Object.fromEntries(SILHOUETTES.map(size => [size.id, size.width])) as Partial<Record<AvatarId, number>>
+  const dock = dockRect(SILHOUETTES.length, viewport)
+
+  const slots = computeSlotLayout({
+    anchor: { kind: 'desktop', label: '', rect: { height: viewport.height, width: viewport.width, x: 0, y: 0 } },
+    dock,
+    heights,
+    ids,
+    viewport,
+    widths
+  })
+
+  const avatars = Object.fromEntries(ids.map(id => [id, { visible: true }]))
+
+  const row = ids
+    .map(id => reservedSlotRect(slots[id], { height: heights[id], width: widths[id] }, viewport))
+    .reduce(unionScreenRects)
+
+  return { avatars, definitions: SILHOUETTES, dock, row, slots, viewport }
+}
+
+function desktopView(ids: AvatarId[], viewport: { height: number; width: number }) {
+  const layout = desktopLayout(ids, viewport)
+
+  return {
+    ...layout,
+    view: chartViewFor({
+      avatars: layout.avatars,
+      chart: { avatar: ids[0], series: 8 },
+      definitions: layout.definitions,
+      dock: layout.dock,
+      slots: layout.slots,
+      viewport: layout.viewport
+    })
+  }
+}
+
+describe('chart placement against the dock (desktop anchor)', () => {
+  const DESKTOP_SIZES = [
+    { height: 1080, width: 1920 },
+    { height: 768, width: 1366 }
+  ]
+
+  for (const viewport of DESKTOP_SIZES) {
+    for (const count of [1, 2, 3]) {
+      it(`keeps the panel off the dock and the row at ${viewport.width}x${viewport.height} with ${count} avatar(s)`, () => {
+        const ids = SILHOUETTES.slice(0, count).map(size => size.id) as AvatarId[]
+        const { dock, row, view } = desktopView(ids, viewport)
+
+        expect(view).not.toBeNull()
+
+        const panel = view!.panel
+
+        expect(rectsIntersect(panel, dock)).toBe(false)
+        expect(rectsIntersect(panel, row)).toBe(false)
+        expect(panel.x).toBeGreaterThanOrEqual(0)
+        expect(panel.x + panel.width).toBeLessThanOrEqual(viewport.width)
+        expect(panel.y).toBeGreaterThanOrEqual(0)
+        expect(panel.y + panel.height).toBeLessThanOrEqual(viewport.height)
+      })
+    }
+  }
+
+  it('flips the chart clear of the dock when the roomier side covers it (4 avatars at 1422)', () => {
+    // Live repro: the four-avatar row pushes the chart right at fitX 0.5 and the
+    // panel lands on the dock's avatar buttons (pre-fix x 1158..1372 over dock
+    // x 1174..1406). With the dock as a second obstacle it flips to the left.
+    const { dock, row, view } = desktopView(['muse', 'hermes', 'grok', 'opencode'], { height: 767, width: 1422 })
+
+    expect(view).not.toBeNull()
+    expect(rectsIntersect(view!.panel, dock)).toBe(false)
+    expect(rectsIntersect(view!.panel, row)).toBe(false)
+    expect(view!.side).toBe('left')
+  })
+
+  it('lifts the panel above the dock when the row leaves no side clear', () => {
+    // Three avatars at 1000 px: the row fills the pane, so no side clears the
+    // dock. The chart rises just enough that its X-label strip clears the dock
+    // top instead of sitting on the buttons.
+    const { dock, view } = desktopView(['muse', 'hermes', 'grok'], { height: 768, width: 1000 })
+
+    expect(view).not.toBeNull()
+    expect(rectsIntersect(view!.panel, dock)).toBe(false)
+    expect(view!.panel.y + view!.panel.height).toBeLessThanOrEqual(dock.y)
+    expect(view!.panel.y).toBeGreaterThanOrEqual(0)
+  })
+
+  it('leaves a panel that already clears the dock exactly where it was', () => {
+    const ids: AvatarId[] = ['muse', 'grok']
+    const layout = desktopLayout(ids, { height: 1080, width: 1920 })
+
+    const args = {
+      avatars: layout.avatars,
+      chart: { avatar: 'muse' as const, series: 8 },
+      definitions: layout.definitions,
+      slots: layout.slots,
+      viewport: layout.viewport
+    }
+
+    expect(chartViewFor({ ...args, dock: layout.dock })?.panel).toEqual(chartViewFor(args)?.panel)
+  })
+})
+
+describe('chartPlacement vs a dock', () => {
+  it('flips to the other side rather than covering the dock', () => {
+    const dock = { height: 32, width: 232, x: 1672, y: 1032 }
+    const row = { height: 130, width: 700, x: 600, y: 0 }
+
+    // Without the dock the roomier right side wins and the panel reaches x 1708.
+    expect(chartPlacement({ boardWidthPx: 348, row, viewport: VIEWPORT }).side).toBe('right')
+
+    // The dock covers that panel, so the chart flips to the left of the row.
+    const placement = chartPlacement({ boardWidthPx: 348, dock, row, viewport: VIEWPORT })
+
+    expect(placement.side).toBe('left')
+    expect(panelBox(placement.centerX, placement.fitX).right).toBeLessThanOrEqual(row.x)
+  })
+
+  it('is unchanged when no dock is passed', () => {
+    const row = { height: 130, width: 400, x: 860, y: 0 }
+
+    expect(chartPlacement({ boardWidthPx: 348, dock: null, row, viewport: VIEWPORT })).toEqual(
+      chartPlacement({ boardWidthPx: 348, row, viewport: VIEWPORT })
+    )
   })
 })

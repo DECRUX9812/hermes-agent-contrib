@@ -80,6 +80,12 @@ export const CHART_MIN_FIT = 0.62
 export const CHART_MIN_FIT_X = 0.5
 /** How far the presenting avatar turns toward the chart (architecture §8.9). */
 export const CHART_PRESENT_YAW_DEG = 32
+/**
+ * Gap kept between the panel's bottom edge and the dock's top edge when the
+ * avatar row leaves no side clear of the dock and the chart has to be lifted
+ * over it (`chartViewFor`).
+ */
+export const CHART_DOCK_CLEARANCE_PX = 4
 
 /** Centre of bar `index` along the board's x axis, chart-local world units. */
 export function barColumnX(index: number, count: number): number {
@@ -131,6 +137,12 @@ export interface ChartPlacementInput {
   row: ScreenRect
   viewport: Viewport
   boardWidthPx: number
+  /**
+   * The dock's pane-CSS-px box when the anchor is `desktop` (avatars float on
+   * its perch line), else null. A SECOND obstacle beside the row: the panel
+   * flips to the other side rather than covering the dock's buttons.
+   */
+  dock?: ScreenRect | null
 }
 
 export interface ChartPlacement {
@@ -167,6 +179,11 @@ function overlapsRow(centerX: number, half: number, row: ScreenRect): boolean {
   return panel.left < row.x + row.width && row.x < panel.right
 }
 
+/** True when two pane-CSS-px rects share any area (touching edges do not count). */
+function rectsIntersect(a: ScreenRect, b: ScreenRect): boolean {
+  return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+}
+
 /**
  * Place the board beyond the avatar row, on the side of the pane with more
  * room. Measuring against the whole ROW (not just the presenting avatar) is
@@ -179,9 +196,14 @@ function overlapsRow(centerX: number, half: number, row: ScreenRect): boolean {
  * side, and if neither side fits, the board shrinks horizontally (down to
  * `CHART_MIN_FIT_X`) until the panel clears the row. Only a pane too narrow for
  * even that keeps the panel inside the pane and accepts the overlap.
+ *
+ * On the desktop anchor the dock sits on the same perch line as the row, so a
+ * panel spanning its x range would cover its buttons: the placement prefers a
+ * candidate that clears the dock too, flipping sides before it accepts one that
+ * only clears the row.
  */
 export function chartPlacement(input: ChartPlacementInput): ChartPlacement {
-  const { boardWidthPx, row, viewport } = input
+  const { boardWidthPx, dock, row, viewport } = input
   const margin = CHART_VIEW_MARGIN_PX
   const half = boardWidthPx / 2
   const leftRoom = row.x - margin
@@ -196,29 +218,42 @@ export function chartPlacement(input: ChartPlacementInput): ChartPlacement {
     return panel.left >= 0 && panel.right <= viewport.width && !overlapsRow(centerX, fitHalf, row)
   }
 
-  if (fits(preferred, half)) {
-    return { centerX: boardCenterX(preferred, row, viewport, half), fitX: 1, side: preferred }
-  }
+  // Only the x spans decide a dock collision: the panel's X-label strip always
+  // dips a few px into the dock's band (the perch line is its top edge minus the
+  // perch inset), so any x overlap is a real overlap.
+  const clearsDock = (side: 'left' | 'right', fitHalf: number) => {
+    if (!dock) {
+      return true
+    }
 
-  if (fits(other, half)) {
-    return { centerX: boardCenterX(other, row, viewport, half), fitX: 1, side: other }
+    const panel = panelSpan(boardCenterX(side, row, viewport, fitHalf), fitHalf)
+
+    return panel.right <= dock.x || panel.left >= dock.x + dock.width
   }
 
   const room = preferred === 'left' ? leftRoom : rightRoom
   const fitX = Math.min(1, Math.max(CHART_MIN_FIT_X, (room - CHART_GAP_PX - CHART_LABEL_GUTTER_PX) / boardWidthPx))
   const shrunkHalf = (boardWidthPx * fitX) / 2
 
-  if (fits(preferred, shrunkHalf)) {
+  // The placements the pane had before the dock existed, in priority order: full
+  // size on the roomier side, the other side, then the horizontal shrink. With
+  // no dock the first fitting candidate is the old result, unchanged.
+  const candidates: { fitHalf: number; fitX: number; side: 'left' | 'right' }[] = [
+    { fitHalf: half, fitX: 1, side: preferred },
+    { fitHalf: half, fitX: 1, side: other },
+    { fitHalf: shrunkHalf, fitX, side: preferred },
+    { fitHalf: shrunkHalf, fitX, side: other }
+  ].filter(candidate => fits(candidate.side, candidate.fitHalf))
+
+  const chosen = candidates.find(candidate => clearsDock(candidate.side, candidate.fitHalf)) ?? candidates[0]
+
+  if (!chosen) {
+    // Nothing clears the row: keep the whole panel inside the pane on the side
+    // with more room and accept the overlap (the row fills the pane).
     return { centerX: boardCenterX(preferred, row, viewport, shrunkHalf), fitX, side: preferred }
   }
 
-  if (fits(other, shrunkHalf)) {
-    return { centerX: boardCenterX(other, row, viewport, shrunkHalf), fitX, side: other }
-  }
-
-  // Nothing clears the row: keep the whole panel inside the pane on the side
-  // with more room and accept the overlap (the row fills the pane).
-  return { centerX: boardCenterX(preferred, row, viewport, shrunkHalf), fitX, side: preferred }
+  return { centerX: boardCenterX(chosen.side, row, viewport, chosen.fitHalf), fitX: chosen.fitX, side: chosen.side }
 }
 
 /**
@@ -249,6 +284,8 @@ export interface ChartViewInput {
   definitions: readonly ChartAvatarSilhouette[]
   slots: Partial<Record<AvatarId, SlotTarget>>
   viewport: Viewport
+  /** The dock's pane-CSS-px box on the desktop anchor, else null — see `chartPlacement`. */
+  dock?: ScreenRect | null
 }
 
 export interface ChartView {
@@ -311,9 +348,14 @@ export function chartPanelRect(input: ChartPanelInput): ScreenRect {
  * where its centre lands in world units, and how far it must shrink to keep the
  * title and X labels inside the pane. Null when the chart cannot be placed (its
  * avatar left the stage, or nothing is visible).
+ *
+ * On the desktop anchor a `dock` is passed too: the placement flips the chart
+ * clear of it when it can, and when the row leaves no side clear the whole chart
+ * is lifted so the X-label strip clears the dock's top edge instead of covering
+ * its buttons.
  */
 export function chartViewFor(input: ChartViewInput): ChartView | null {
-  const { avatars, chart, definitions, slots, viewport } = input
+  const { avatars, chart, definitions, dock, slots, viewport } = input
 
   if (!chart) {
     return null
@@ -341,16 +383,34 @@ export function chartViewFor(input: ChartViewInput): ChartView | null {
 
   const placement = chartPlacement({
     boardWidthPx: chartBoardWidth(chart.series) * PX_PER_UNIT,
+    dock,
     row: rowRects.reduce(unionScreenRects),
     viewport
   })
 
-  const fit = chartFit(worldToScreen({ x: 0, y: presenting.perchY }, viewport).y)
+  const perchPx = worldToScreen({ x: 0, y: presenting.perchY }, viewport).y
+  const x = screenToWorld({ x: placement.centerX, y: 0 }, viewport).x
+  const restingPosition = { x, y: presenting.perchY + CHART_LIFT }
 
-  const position = {
-    x: screenToWorld({ x: placement.centerX, y: 0 }, viewport).x,
-    y: presenting.perchY + CHART_LIFT
-  }
+  const restingPanel = chartPanelRect({
+    fit: chartFit(perchPx),
+    fitX: placement.fitX,
+    position: restingPosition,
+    series: chart.series,
+    viewport
+  })
+
+  // The desktop perch line is the dock's top edge minus the perch inset, so the
+  // panel's X-label strip always dips a few px into the dock's band. When the
+  // row fills the pane and leaves no side clear of the dock, raise the whole
+  // chart just enough that the strip clears the dock instead of its buttons.
+  const liftPx =
+    dock && rectsIntersect(restingPanel, dock)
+      ? Math.max(0, restingPanel.y + restingPanel.height - dock.y + CHART_DOCK_CLEARANCE_PX)
+      : 0
+
+  const fit = chartFit(perchPx - liftPx)
+  const position = { x, y: presenting.perchY + CHART_LIFT + liftPx / PX_PER_UNIT }
 
   return {
     fit,

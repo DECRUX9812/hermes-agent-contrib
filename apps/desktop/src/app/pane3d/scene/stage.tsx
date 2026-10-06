@@ -11,6 +11,7 @@ import { AVATAR_IDS } from '../protocol'
 import { Chart3D } from './chart3d'
 import { chartViewFor } from './chart-layout'
 import { clearEmergenceEdge, setEmergenceEdge } from './emergence'
+import { dockRect } from './projection'
 import { $reducedMotion } from './reduced-motion'
 import { Rig, type RigCompletionEvent } from './rig'
 import { visibleSlotLayout } from './slot-layout'
@@ -47,6 +48,13 @@ export function Stage() {
 
   const perchY = visibleIds.length > 0 ? slots[visibleIds[0]].perchY : 0
 
+  // On the desktop anchor the dock sits on the perch line: pass its rect (the
+  // one `Dock` renders at) so a presented chart is never placed over its buttons.
+  const dock = useMemo(
+    () => (anchor.kind === 'desktop' ? dockRect(definitions.length, viewport) : null),
+    [anchor.kind, definitions, viewport]
+  )
+
   const chartView = useMemo(
     () =>
       chartViewFor({
@@ -55,10 +63,11 @@ export function Stage() {
           ? { avatar: chartPresentation.avatar, series: chartPresentation.spec.series.length }
           : null,
         definitions,
+        dock,
         slots,
         viewport
       }),
-    [avatars, chartPresentation, definitions, slots, viewport]
+    [avatars, chartPresentation, definitions, dock, slots, viewport]
   )
 
   // The Rig reads this to turn the presenting avatar toward the board; it must
