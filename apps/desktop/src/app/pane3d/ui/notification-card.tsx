@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-import { getAvatar } from '../avatars/registry'
+import { getAvatar, listAvatars } from '../avatars/registry'
 import { PANE_COPY } from '../copy'
 import {
   activateNotificationAction,
@@ -14,12 +14,11 @@ import {
 } from '../director/director'
 import { relativeTime } from '../director/feed'
 import { isHarnessRequest } from '../director/notify'
-import { $avatars, $cards, type PaneCard } from '../director/store'
-import { AVATAR_IDS } from '../protocol'
-import type { ScreenRect } from '../protocol'
+import { $anchor, $avatars, $cards, type PaneCard } from '../director/store'
 import { avatarFrames } from '../scene/projection'
 
-import { CARD_GAP, CARD_MARGIN, type CardBox, expandedCardMaxHeight } from './card-geometry'
+import { avatarObstacleBoxes } from './avatar-obstacles'
+import { CARD_GAP, CARD_MARGIN, expandedCardMaxHeight } from './card-geometry'
 import { type CardRequest, placeCards } from './card-layout'
 import { DevBadge } from './dev-badge'
 import { useViewport } from './use-viewport'
@@ -126,11 +125,17 @@ export function NotificationCards() {
       const nodes = [...document.querySelectorAll<HTMLDivElement>('[data-notify-id]:not([data-notify-leaving])')]
       const avatars = $avatars.get()
 
-      // Every visible avatar's projected rect: a card must never cover a body,
-      // not just another card (VAL-NOTIFY-005).
-      const avatarObstacles: CardBox[] = AVATAR_IDS.filter(id => avatars[id].visible)
-        .map(id => avatarFrames[id].screenRect)
-        .filter((rect): rect is ScreenRect => rect !== null)
+      // Every visible avatar's reserved rect: a card must never cover a body,
+      // not just another card, and an emerging avatar's final perch counts from
+      // the frame it becomes visible — before its rig climbs into it
+      // (VAL-NOTIFY-005/007).
+      const avatarObstacles = avatarObstacleBoxes({
+        anchor: $anchor.get(),
+        avatars,
+        frames: avatarFrames,
+        silhouettes: listAvatars(),
+        viewport
+      })
 
       const measured: { element: HTMLDivElement; id: string; request: CardRequest }[] = []
 

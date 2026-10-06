@@ -13,9 +13,11 @@ import {
   dockRect,
   type HitPartNode,
   PX_PER_UNIT,
+  reservedSlotRect,
   resetAvatarFrame,
   screenToWorld,
   SLOT_WIDTH_MARGIN,
+  unionScreenRects,
   worldToScreen
 } from './projection'
 
@@ -266,5 +268,50 @@ describe('avatar frame', () => {
 
     expect(avatarFrames.muse.hitRects).toEqual([])
     expect(avatarFrames.muse.screenRect).toBeNull()
+  })
+})
+
+describe('reservedSlotRect — the space the row reserves for an avatar at rest (VAL-NOTIFY-007)', () => {
+  const slots = computeSlotLayout({
+    anchor: browserAnchor,
+    dock: null,
+    heights: { muse: 1.1 } as never,
+    ids: ['muse'],
+    viewport: VIEWPORT
+  })
+
+  it('rests the rect on the perch line, centred on the slot, sized to the budgeted silhouette', () => {
+    const rect = reservedSlotRect(slots.muse, { height: 1.1, width: 1.35 }, VIEWPORT)
+    const perch = worldToScreen({ x: 0, y: slots.muse.perchY }, VIEWPORT).y
+    const center = worldToScreen({ x: slots.muse.x, y: 0 }, VIEWPORT).x
+
+    expect(rect.y + rect.height).toBeCloseTo(perch, 6)
+    expect(rect.x + rect.width / 2).toBeCloseTo(center, 6)
+    expect(rect.height).toBeCloseTo(1.1 * PX_PER_UNIT, 6)
+    expect(rect.width).toBeCloseTo(1.35 * SLOT_WIDTH_MARGIN * PX_PER_UNIT, 6)
+  })
+
+  it('falls back to the body ratio when the definition declares no width', () => {
+    const rect = reservedSlotRect(slots.muse, { height: 1.1 }, VIEWPORT)
+
+    expect(rect.width).toBeCloseTo(1.1 * AVATAR_WIDTH_RATIO * SLOT_WIDTH_MARGIN * PX_PER_UNIT, 6)
+  })
+})
+
+describe('unionScreenRects — the space an emerging avatar occupies now and next', () => {
+  it('is the bounding box of two rects', () => {
+    expect(unionScreenRects({ height: 10, width: 10, x: 0, y: 0 }, { height: 10, width: 10, x: 20, y: 30 })).toEqual({
+      height: 40,
+      width: 30,
+      x: 0,
+      y: 0
+    })
+  })
+
+  it('is the identity when one rect already contains the other', () => {
+    const perch = { height: 100, width: 100, x: 0, y: 0 }
+
+    expect(unionScreenRects(perch, { height: 10, width: 10, x: 10, y: 10 })).toEqual(perch)
+    expect(unionScreenRects({ height: 10, width: 10, x: 10, y: 10 }, perch)).toEqual(perch)
   })
 })

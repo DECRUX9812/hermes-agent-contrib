@@ -34,6 +34,13 @@ export interface SlotTarget {
   perchY: number
 }
 
+/** World-space silhouette of an avatar, as the slot layout budgets it. */
+export interface AvatarSize {
+  height: number
+  /** Omitted ids fall back to `height * AVATAR_WIDTH_RATIO`. */
+  width?: number
+}
+
 export const PX_PER_UNIT = 120
 export const CAMERA_FOV = 30
 /** Muse's pearl is r 0.42 → a width of ~0.84 at height 1.1. */
@@ -365,6 +372,35 @@ export function writeHandleRect(id: AvatarId, rect: ScreenRect | null): void {
   element.style.transform = `translate3d(${Math.round(rect.x)}px, ${Math.round(rect.y)}px, 0)`
   element.style.width = `${Math.round(rect.width)}px`
   element.style.height = `${Math.round(rect.height)}px`
+}
+
+/**
+ * The rect the slot layout reserves for an avatar at rest: centred on its slot,
+ * feet on the perch line, sized to the budgeted silhouette (§8.3/§8.6). It is
+ * the "final perch rect" a card or bubble must avoid from the moment the avatar
+ * becomes visible, because the rig spends the emergence below that perch and its
+ * animated `screenRect` would report the space as free (VAL-NOTIFY-007).
+ */
+export function reservedSlotRect(target: SlotTarget, size: AvatarSize, viewport: Viewport): ScreenRect {
+  const width = (size.width ?? size.height * AVATAR_WIDTH_RATIO) * SLOT_WIDTH_MARGIN * PX_PER_UNIT
+  const height = size.height * PX_PER_UNIT
+  const centerX = worldToScreen({ x: target.x, y: 0 }, viewport).x
+  const feet = worldToScreen({ x: 0, y: target.perchY }, viewport).y
+
+  return { height, width, x: centerX - width / 2, y: feet - height }
+}
+
+/** The bounding box of two rects — the space an emerging avatar occupies now AND will occupy. */
+export function unionScreenRects(a: ScreenRect, b: ScreenRect): ScreenRect {
+  const x = Math.min(a.x, b.x)
+  const y = Math.min(a.y, b.y)
+
+  return {
+    height: Math.max(a.y + a.height, b.y + b.height) - y,
+    width: Math.max(a.x + a.width, b.x + b.width) - x,
+    x,
+    y
+  }
 }
 
 /** Union of projected points, or null when nothing projected in front. */

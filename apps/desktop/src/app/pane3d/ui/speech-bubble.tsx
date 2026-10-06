@@ -1,12 +1,12 @@
 import { useStore } from '@nanostores/react'
 import { useEffect } from 'react'
 
-import { getAvatar } from '../avatars/registry'
-import { $avatars, $bubbles, type SpeechBubble } from '../director/store'
-import { AVATAR_IDS } from '../protocol'
-import type { ScreenRect } from '../protocol'
+import { getAvatar, listAvatars } from '../avatars/registry'
+import { $anchor, $avatars, $bubbles, type SpeechBubble } from '../director/store'
+import type { AvatarId, ScreenRect } from '../protocol'
 import { avatarFrames } from '../scene/projection'
 
+import { avatarObstacleBoxes } from './avatar-obstacles'
 import { CARD_GAP, CARD_MARGIN, type CardBox } from './card-geometry'
 import { type BubbleLayout, bubbleLayout } from './card-layout'
 import { DevBadge } from './dev-badge'
@@ -50,9 +50,14 @@ export function SpeechBubbles() {
           return
         }
 
-        const avatarObstacles: CardBox[] = AVATAR_IDS.filter(other => other !== id && avatars[other].visible)
-          .map(other => avatarFrames[other].screenRect)
-          .filter((other): other is ScreenRect => other !== null)
+        const avatarObstacles: CardBox[] = avatarObstacleBoxes({
+          anchor: $anchor.get(),
+          avatars,
+          exclude: id as AvatarId,
+          frames: avatarFrames,
+          silhouettes: listAvatars(),
+          viewport
+        })
 
         // Placed notification cards are obstacles too: a bubble must not cover a
         // card that is already open (§8.6).

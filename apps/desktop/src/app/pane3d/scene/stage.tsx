@@ -5,13 +5,12 @@ import { useEffect, useMemo } from 'react'
 import { getAvatar, hasAvatar, listAvatars } from '../avatars/registry'
 import { dispatch } from '../director/director'
 import { $anchor, $avatars } from '../director/store'
-import type { AvatarId } from '../protocol'
 import { AVATAR_IDS } from '../protocol'
 
 import { clearEmergenceEdge, setEmergenceEdge } from './emergence'
-import { computeSlotLayout, dockRect } from './projection'
 import { $reducedMotion } from './reduced-motion'
 import { Rig, type RigCompletionEvent } from './rig'
+import { visibleSlotLayout } from './slot-layout'
 
 /**
  * Composes the visible avatars for the current anchor (architecture §8.4/§8.6).
@@ -25,33 +24,20 @@ export function Stage() {
   const size = useThree(state => state.size)
   const definitions = useMemo(() => listAvatars(), [])
 
-  const heights = useMemo(
-    () =>
-      Object.fromEntries(definitions.map(definition => [definition.id, definition.height])) as Record<AvatarId, number>,
-    [definitions]
-  )
-
-  const widths = useMemo(
-    () =>
-      Object.fromEntries(
-        definitions
-          .filter(definition => definition.width !== undefined)
-          .map(definition => [definition.id, definition.width])
-      ) as Partial<Record<AvatarId, number>>,
-    [definitions]
-  )
-
   const visibleIds = AVATAR_IDS.filter(id => avatars[id].visible && hasAvatar(id))
-  const viewport = { height: size.height, width: size.width }
 
-  const slots = computeSlotLayout({
-    anchor,
-    dock: dockRect(definitions.length, viewport),
-    heights,
-    ids: visibleIds,
-    viewport,
-    widths
-  })
+  // The DOM layer derives the same row from the same source, so it can reserve
+  // an emerging avatar's perch before the rig climbs into it (VAL-NOTIFY-007).
+  const slots = useMemo(
+    () =>
+      visibleSlotLayout({
+        anchor,
+        avatars,
+        silhouettes: definitions,
+        viewport: { height: size.height, width: size.width }
+      }),
+    [anchor, avatars, definitions, size.height, size.width]
+  )
 
   const perchY = visibleIds.length > 0 ? slots[visibleIds[0]].perchY : 0
 

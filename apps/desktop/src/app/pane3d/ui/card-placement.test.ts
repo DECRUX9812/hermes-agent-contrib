@@ -229,3 +229,36 @@ describe('placeCards — randomized placement property (600 seeded layouts)', ()
     expect(cleanLayouts).toBeGreaterThan(300)
   })
 })
+
+describe('placeCards — an open card clears the perch an emerging avatar climbs into (VAL-NOTIFY-007)', () => {
+  const PANE = { height: 1198, width: 2132 }
+  // The live repro, at the reported geometry: Muse idles on the perch line at
+  // the right of the pane while Grok becomes visible in the slot immediately
+  // left of her and spends his emergence below that line.
+  const MUSE: ScreenRect = { height: 131, width: 195, x: 1425, y: 156 }
+  const GROK_PERCH: ScreenRect = { height: 126, width: 105, x: 1297, y: 161 }
+  const GROK_CLIMBING: ScreenRect = { ...GROK_PERCH, y: 251 }
+  // What the obstacle source publishes while Grok is still below the edge: the
+  // union of his animated rect and the perch he is rising into.
+  const GROK_OBSTACLE: CardBox = { height: 216, width: 105, x: 1297, y: 161 }
+
+  it('places the existing card on the clear side, overlapping neither body', () => {
+    const request: CardRequest = { avatar: MUSE, card: { height: 156, width: 264 }, expanded: false }
+    const [placement] = placeCards([request], PANE, CARD_GAP, CARD_MARGIN, [MUSE, GROK_OBSTACLE])
+    const box = boxOf(request, placement)
+
+    expect(placement.degenerate).toBe(false)
+    expect(overlapsAny(box, [MUSE, GROK_PERCH, GROK_CLIMBING])).toBe(false)
+    // The reserved perch pushes the card off the roomier (left) side, where it
+    // would otherwise sit and be crossed by the rising newcomer.
+    expect(placement.side).toBe('right')
+
+    // The defect the reservation closes: with the pre-fix obstacle list (the
+    // animated rects alone — Grok has not projected one yet) the card lands on
+    // the left, exactly over the perch he climbs into.
+    const [animatedOnly] = placeCards([request], PANE, CARD_GAP, CARD_MARGIN, [MUSE])
+
+    expect(animatedOnly.side).toBe('left')
+    expect(boxesOverlap(boxOf(request, animatedOnly), GROK_PERCH)).toBe(true)
+  })
+})
