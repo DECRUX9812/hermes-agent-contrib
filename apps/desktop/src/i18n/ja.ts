@@ -1531,6 +1531,10 @@ export const ja = defineLocale({
       provider: 'プロバイダー',
       model: 'モデル',
       applying: '適用中...',
+      defaultsLabel: '既定値',
+      reasoning: '推論',
+      reasoningOff: 'オフ',
+      defaultsFailed: 'モデル既定値の保存に失敗しました',
       loadFailed: 'モデルを読み込めませんでした',
       restartRequired:
         'アップデート後、このバックエンドは古いコードのままです。再起動して新しいコードを読み込んでください。',
@@ -1549,6 +1553,10 @@ export const ja = defineLocale({
       inheritsFrom: task => `${task} を継承`,
       followTask: task => `${task} に従う`,
       providerDefault: '(プロバイダーのデフォルト)',
+      fallbackAdd: 'フォールバックを追加',
+      fallbackEmpty: 'フォールバックモデルなし — 既定モデルが失敗しない限り使用されます。',
+      notInCatalog:
+        'はこのプロバイダーのモデルリストにありません — 呼び出しがバックアップにフォールバックする可能性があります。',
       tasks: jaAuxTasks
     },
     localModels: {
