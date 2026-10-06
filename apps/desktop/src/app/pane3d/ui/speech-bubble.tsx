@@ -7,7 +7,8 @@ import { AVATAR_IDS } from '../protocol'
 import type { ScreenRect } from '../protocol'
 import { avatarFrames } from '../scene/projection'
 
-import { type BubbleLayout, bubbleLayout, CARD_GAP, CARD_MARGIN, type CardBox } from './card-layout'
+import { CARD_GAP, CARD_MARGIN, type CardBox } from './card-geometry'
+import { type BubbleLayout, bubbleLayout } from './card-layout'
 import { DevBadge } from './dev-badge'
 
 /** A speech bubble is 13px and never wider than this (architecture §8.6). */

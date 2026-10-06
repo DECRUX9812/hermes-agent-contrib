@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { $cards, type PaneCard } from '../director/store'
 import type { NotifyRequest } from '../protocol'
 
-import { expandedCardMaxHeight } from './card-layout'
+import { expandedCardMaxHeight } from './card-geometry'
 import { NotificationCards } from './notification-card'
 
 function card(id: string, overrides: Partial<NotifyRequest> = {}): PaneCard {
@@ -129,5 +129,9 @@ describe('NotificationCards — an expanded long body (§8.5, VAL-NOTIFY-007)', 
     expect(body.contains(action)).toBe(false)
     expect(root.contains(close)).toBe(true)
     expect(root.contains(action)).toBe(true)
+    // The frame loop reads these hooks to measure the natural height and to
+    // re-fit the expanded cap against the clear band (§8.5).
+    expect(root.hasAttribute('data-notify-expanded')).toBe(true)
+    expect(root.querySelector('[data-notify-body]')).toBe(body)
   })
 })

@@ -19,7 +19,8 @@ import { AVATAR_IDS } from '../protocol'
 import type { ScreenRect } from '../protocol'
 import { avatarFrames } from '../scene/projection'
 
-import { CARD_GAP, CARD_MARGIN, type CardBox, cardLayout, expandedCardMaxHeight, stackCards } from './card-layout'
+import { CARD_GAP, CARD_MARGIN, type CardBox, expandedCardMaxHeight } from './card-geometry'
+import { cardLayout, expandedCardLayout, stackCards } from './card-layout'
 import { DevBadge } from './dev-badge'
 import { useViewport } from './use-viewport'
 
@@ -28,6 +29,21 @@ const CARD_WIDTH = 264
 const FALLBACK_HEIGHT = 150
 /** The collapse-into-the-feed fade (§8.5). */
 const EXIT_MS = 200
+
+/**
+ * The height the card would take if its body were not capped: the measured box
+ * plus the part of the body currently scrolled out of view. The layout uses it
+ * to pick a band tall enough to show the whole card (§8.5).
+ */
+function naturalCardHeight(element: HTMLDivElement, measured: number): number {
+  const body = element.querySelector<HTMLElement>('[data-notify-body]')
+
+  if (!body) {
+    return measured
+  }
+
+  return Math.max(measured, measured - body.clientHeight + body.scrollHeight)
+}
 
 /**
  * The DOM layer's notification cards (architecture §8.5). One card per open
@@ -116,8 +132,14 @@ export function NotificationCards() {
         .map(id => avatarFrames[id].screenRect)
         .filter((rect): rect is ScreenRect => rect !== null)
 
-      const measured: { element: HTMLDivElement; id: string; layout: ReturnType<typeof cardLayout>; height: number }[] =
-        []
+      const measured: {
+        element: HTMLDivElement
+        expanded: boolean
+        height: number
+        id: string
+        layout: ReturnType<typeof cardLayout>
+        top: number
+      }[] = []
 
       nodes.forEach(element => {
         const avatarId = element.getAttribute('data-avatar-id')
@@ -127,25 +149,49 @@ export function NotificationCards() {
           return
         }
 
-        const height = element.offsetHeight || FALLBACK_HEIGHT
+        const expanded = element.hasAttribute('data-notify-expanded')
+        const measuredHeight = element.offsetHeight || FALLBACK_HEIGHT
+        const height = expanded ? naturalCardHeight(element, measuredHeight) : measuredHeight
 
         const obstacles: CardBox[] = AVATAR_IDS.filter(other => other !== avatarId && avatars[other].visible)
           .map(other => avatarFrames[other].screenRect)
           .filter((box): box is ScreenRect => box !== null)
 
+        const layout = expanded
+          ? expandedCardLayout(rect, { height, width: CARD_WIDTH }, viewport, CARD_GAP, CARD_MARGIN, obstacles)
+          : cardLayout(rect, { height, width: CARD_WIDTH }, viewport, CARD_GAP, CARD_MARGIN, obstacles)
+
         measured.push({
           element,
+          expanded,
           height,
           id: element.getAttribute('data-notify-id') ?? '',
-          layout: cardLayout(rect, { height, width: CARD_WIDTH }, viewport, CARD_GAP, CARD_MARGIN, obstacles)
+          layout,
+          // An expanded card is re-fitted from its avatar's mid-line, so the band
+          // it lands in stays the one nearest the avatar.
+          top: expanded ? rect.y + rect.height / 2 - height / 2 : layout.top
         })
       })
 
       // One pass resolves collisions across every open card, so two cards can
       // never cover each other (VAL-NOTIFY-005) while each stays beside its own
-      // avatar (VAL-NOTIFY-007) and clear of every other avatar's body.
+      // avatar (VAL-NOTIFY-007) and clear of every other avatar's body. An
+      // expanded card also gets its cap re-derived against the cards already
+      // placed, so a long body shrinks to a clear band instead of growing over
+      // them.
       const positions = stackCards(
-        measured.map(item => ({ height: item.height, width: CARD_WIDTH, x: item.layout.left, y: item.layout.top })),
+        measured.map(item =>
+          item.expanded
+            ? {
+                expanded: true,
+                height: item.height,
+                naturalHeight: item.height,
+                width: CARD_WIDTH,
+                x: item.layout.left,
+                y: item.top
+              }
+            : { height: item.height, width: CARD_WIDTH, x: item.layout.left, y: item.layout.top }
+        ),
         viewport,
         CARD_GAP,
         CARD_MARGIN,
@@ -153,9 +199,15 @@ export function NotificationCards() {
       )
 
       measured.forEach((item, index) => {
+        const placement = positions[index]
+
         item.element.style.left = `${item.layout.left}px`
-        item.element.style.top = `${positions[index].y}px`
+        item.element.style.top = `${placement.y}px`
         item.element.style.transformOrigin = `${item.layout.originX} center`
+        // The loop owns the expanded cap: the band the card fits today decides
+        // how much of the body is visible, so it scrolls rather than growing the
+        // card over a neighbour (VAL-NOTIFY-007). Collapsed cards have no cap.
+        item.element.style.maxHeight = placement.maxHeight === undefined ? '' : `${placement.maxHeight}px`
       })
 
       if (measured.length > 0) {
@@ -229,6 +281,7 @@ function NotificationCard({ card, entered, leaving }: NotificationCardProps) {
         leaving && 'pointer-events-none'
       )}
       data-avatar-id={card.avatar}
+      data-notify-expanded={expanded ? '' : undefined}
       data-notify-id={card.id}
       data-notify-leaving={leaving ? '' : undefined}
       data-pane-card="notify"
@@ -278,6 +331,7 @@ function NotificationCard({ card, entered, leaving }: NotificationCardProps) {
           'mt-1.5 text-[14px] leading-[1.5] text-(--ui-text-secondary)',
           expanded ? 'min-h-0 overflow-y-auto' : 'line-clamp-3'
         )}
+        data-notify-body=""
         ref={body}
       >
         {card.request.body}
