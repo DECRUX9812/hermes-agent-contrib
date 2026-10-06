@@ -54,6 +54,10 @@ $script:live=@{};foreach($p in $case.live.PSObject.Properties){$script:live[[int
 
 const powershell = ['pwsh', 'powershell'].find(shell => spawnSync(shell, ['-NoProfile', '-Command', 'exit 0']).status === 0)
 
+// Both replays shell out to an interpreter and replay the whole 40+ case corpus,
+// so their budget tracks process startup, not logic: the PowerShell one measured
+// ~5 s of the 5 s default on a loaded CI runner (run 37544500288) while passing
+// upstream, and it is the only test in this project that starts a shell.
 test.skipIf(!powershell)('the Windows remote marker judge agrees with every corpus judge case', async () => {
   const corpus = JSON.parse(readFileSync(corpusPath, 'utf8'))
   const dir = mkdtempSync(path.join(os.tmpdir(), 'hermes-remote-ps-judge-'))
@@ -83,7 +87,7 @@ test.skipIf(!powershell)('the Windows remote marker judge agrees with every corp
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
-})
+}, 30_000)
 
 // A dead claim whose checkout lock is still flocked (a killed updater's completion
 // child) must be kept: the gate answers HELD instead of unlinking it (review G1).
