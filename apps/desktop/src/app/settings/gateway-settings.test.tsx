@@ -650,18 +650,18 @@ describe('GatewaySettings', () => {
     // interactive-auth is the Tailscale browser-check class: the notification
     // must carry the "run ssh <host> true" guidance, not the generic
     // "SSH connection failed." fallback the table previously collapsed to.
-    try {
-      await waitFor(() =>
-        expect($notifications.get()).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({ kind: 'error', message: expect.stringContaining('ssh <host> true') })
-          ])
-        )
+    // notifyError is mocked above, so the error it was handed is the contract.
+    await waitFor(() =>
+      expect(notifyError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining('ssh <host> true') }),
+        expect.any(String)
       )
-      expect($notifications.get().some((n: { message?: string }) => n.message === 'SSH connection failed.')).toBe(false)
-    } finally {
-      $notifications.set([])
-    }
+    )
+    expect(
+      vi
+        .mocked(notifyError)
+        .mock.calls.some(([err]) => (err as Error | undefined)?.message === 'SSH connection failed.')
+    ).toBe(false)
   })
 
   it('opens a focused, typeable custom SSH host input on the first "Custom" selection', async () => {
