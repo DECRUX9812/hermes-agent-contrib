@@ -1,17 +1,16 @@
 import type { ScreenRect } from '../protocol'
 
 import {
-  bestVertical,
-  betterFit,
+  betterCardFit,
   boxesOverlap,
   CARD_GAP,
   CARD_MARGIN,
   type CardBox,
+  type CardFit,
   type CardSize,
   clamp,
   clearVertical,
-  fitExpanded,
-  totalOverlap,
+  fitCardInColumn,
   withinBounds
 } from './card-geometry'
 
@@ -26,20 +25,133 @@ export interface CardLayout {
   originX: CardSide
 }
 
+/** One card to place: its avatar, the width and natural height it wants, and whether it scrolls. */
+export interface CardRequest {
+  avatar: ScreenRect
+  /** Card width and the natural (uncapped) height it wants. */
+  card: CardSize
+  /** An expanded card caps and scrolls in the chosen band; a collapsed card keeps its height. */
+  expanded: boolean
+}
+
+export interface CardPlacement {
+  left: number
+  top: number
+  side: CardSide
+  /** The transform origin nearest the avatar, so the card unfolds toward it. */
+  originX: CardSide
+  /** Height cap for an expanded card's scrollable body; absent for collapsed cards. */
+  maxHeight?: number
+  /** True when no clear band reached the minimum and least-overlap inside the pane was used. */
+  degenerate: boolean
+}
+
+interface SideFit {
+  fit: CardFit
+  left: number
+  side: CardSide
+}
+
+/** The side with more room comes first; ties keep the card on the right. */
+function sideOrder(avatar: ScreenRect, viewport: CardSize): [CardSide, CardSide] {
+  const spaceRight = viewport.width - (avatar.x + avatar.width)
+  const spaceLeft = avatar.x
+
+  return spaceRight >= spaceLeft ? ['right', 'left'] : ['left', 'right']
+}
+
+/** Fit a card's column on one side against the current obstacle set. */
+function fitSide(
+  side: CardSide,
+  request: CardRequest,
+  obstacles: readonly CardBox[],
+  viewport: CardSize,
+  gap: number,
+  margin: number
+): SideFit {
+  const { avatar, card } = request
+  const raw = side === 'right' ? avatar.x + avatar.width + gap : avatar.x - card.width - gap
+  const left = clamp(raw, margin, Math.max(margin, viewport.width - card.width - margin))
+  // Both sides aim at the same avatar mid-line, so the side comparison is fair.
+  const desiredTop = avatar.y + avatar.height / 2 - card.height / 2
+
+  const fit = fitCardInColumn(
+    left,
+    card.width,
+    card.height,
+    desiredTop,
+    obstacles,
+    viewport,
+    gap,
+    margin,
+    request.expanded
+  )
+
+  return { fit, left, side }
+}
+
 /**
- * Where a notification card sits for an avatar's projected rect: BESIDE it
- * (never over it) on the side with more room, clamped fully inside the pane
- * (architecture §8.5, VAL-NOTIFY-007).
+ * The single placement algorithm for every notification card, collapsed or
+ * expanded (architecture §8.5, VAL-NOTIFY-005/007). Cards are processed in the
+ * given (DOM) order; each is fitted against the avatars plus every card already
+ * placed this frame, so a card can never land on a neighbour and two expanded
+ * cards can never share a column.
  *
- * `obstacles` are the OTHER visible avatars' projected rects. With 3+ avatars a
- * card placed on the roomier side can land over a neighbour's face, so the side
- * choice prefers one that is clear of every obstacle, and a side that is blocked
- * has the card pushed clear vertically instead (flip side or push down, staying
- * inside the pane).
+ * For each card BOTH sides are scored against every obstacle-free vertical band
+ * of that column (`freeVerticalBands`) and the better fit wins: a usable clear
+ * band beats the degenerate fallback, showing the whole card beats scrolling,
+ * the taller band beats a shorter one, and a tie goes to the side with more room
+ * (`sideOrder`). Because the side is chosen HERE, a card whose preferred side is
+ * taken by a card already placed moves to the clear band on the opposite side
+ * instead of overlapping (the round-3 scrutiny defect in `stackCards`).
  *
- * Pure so the placement contract is unit-tested; the card's frame loop feeds it
- * the live avatar rect, which is what makes the card follow its avatar when the
- * anchor moves.
+ * Only when neither side has a usable band does the card fall back to the
+ * least-overlap position inside the pane; it may then cover an obstacle, but it
+ * never leaves the pane. The returned `left`/`top`/`maxHeight` are final: the
+ * caller applies them without a second placement pass.
+ */
+export function placeCards(
+  requests: readonly CardRequest[],
+  viewport: CardSize,
+  gap: number = CARD_GAP,
+  margin: number = CARD_MARGIN,
+  obstacles: readonly CardBox[] = []
+): CardPlacement[] {
+  const placed: CardBox[] = [...obstacles]
+  const out: CardPlacement[] = []
+
+  for (const request of requests) {
+    const [first, second] = sideOrder(request.avatar, viewport)
+    const preferred = fitSide(first, request, placed, viewport, gap, margin)
+    const other = fitSide(second, request, placed, viewport, gap, margin)
+    // `betterCardFit` is strict, so an equal fit keeps the roomier side (first).
+    const chosen = betterCardFit(other.fit, preferred.fit, request.card.height) ? other : preferred
+
+    // Later cards see this one exactly as it renders: a capped expanded card
+    // occupies its band, not its uncapped natural height.
+    placed.push({ height: chosen.fit.height, width: request.card.width, x: chosen.left, y: chosen.fit.top })
+    out.push({
+      degenerate: chosen.fit.degenerate,
+      left: chosen.left,
+      maxHeight: request.expanded ? chosen.fit.maxHeight : undefined,
+      originX: chosen.side === 'right' ? 'left' : 'right',
+      side: chosen.side,
+      top: chosen.fit.top
+    })
+  }
+
+  return out
+}
+
+function toCardLayout(placement: CardPlacement): CardLayout {
+  return { left: placement.left, originX: placement.originX, side: placement.side, top: placement.top }
+}
+
+/**
+ * Where a single collapsed card sits — a thin adapter over `placeCards` for the
+ * speech-bubble fallback and the placement contract tests. Beside its avatar on
+ * the roomier side, in the best clear band, clamped fully inside the pane
+ * (VAL-NOTIFY-007).
  */
 export function cardLayout(
   avatar: ScreenRect,
@@ -49,159 +161,9 @@ export function cardLayout(
   margin: number = CARD_MARGIN,
   obstacles: readonly CardBox[] = []
 ): CardLayout {
-  const spaceRight = viewport.width - (avatar.x + avatar.width)
-  const spaceLeft = avatar.x
-  const preference: CardSide[] = spaceRight >= spaceLeft ? ['right', 'left'] : ['left', 'right']
+  const [placement] = placeCards([{ avatar, card, expanded: false }], viewport, gap, margin, obstacles)
 
-  const boxFor = (side: CardSide): CardBox => {
-    const left = side === 'right' ? avatar.x + avatar.width + gap : avatar.x - card.width - gap
-
-    return {
-      height: card.height,
-      width: card.width,
-      x: clamp(left, margin, Math.max(margin, viewport.width - card.width - margin)),
-      y: clamp(
-        avatar.y + avatar.height / 2 - card.height / 2,
-        margin,
-        Math.max(margin, viewport.height - card.height - margin)
-      )
-    }
-  }
-
-  // Flip to the other side when the roomier one is occupied by a neighbour.
-  const preferred =
-    preference.find(candidate => !obstacles.some(box => boxesOverlap(boxFor(candidate), box, gap))) ?? preference[0]
-
-  // Resolve vertically on the preferred side; if that still cannot clear every
-  // obstacle, try the other side and take whichever placement is clearer.
-  const choices = [preferred, ...preference.filter(side => side !== preferred)].map(side => {
-    const box = boxFor(side)
-    const top = bestVertical(box, obstacles, viewport, gap, margin)
-
-    return { box, overlap: totalOverlap({ ...box, y: top }, obstacles, gap), side, top }
-  })
-
-  const chosen =
-    choices[0].overlap <= 0.5
-      ? choices[0]
-      : (choices.find(choice => choice.overlap <= 0.5) ??
-        choices.reduce((best, choice) => (choice.overlap < best.overlap ? choice : best)))
-
-  return {
-    left: chosen.box.x,
-    originX: chosen.side === 'right' ? 'left' : 'right',
-    side: chosen.side,
-    top: chosen.top
-  }
-}
-
-export interface ExpandedCardLayout extends CardLayout {
-  /** Height cap for the card: the chosen clear band's height. The body scrolls past it. */
-  maxHeight: number
-  /** True when no clear band reached MIN_CARD_HEIGHT and least-overlap was used. */
-  degenerate: boolean
-}
-
-/**
- * Where an expanded card sits: like `cardLayout` it hugs its avatar's side, but
- * it is placed in the best obstacle-free vertical band of that side (see
- * `freeVerticalBands`) and capped to it, so the scrollable body absorbs a long
- * host message instead of the card growing over a neighbouring avatar
- * (VAL-NOTIFY-007). Both sides are scored, and the side with the better band
- * wins; when neither side has a usable band the placement degrades to
- * least-overlap (documented on `fitExpanded`).
- *
- * Pure so the placement contract is unit-tested; the card's frame loop feeds it
- * the measured content height and the live avatar rects.
- */
-export function expandedCardLayout(
-  avatar: ScreenRect,
-  card: CardSize,
-  viewport: CardSize,
-  gap: number = CARD_GAP,
-  margin: number = CARD_MARGIN,
-  obstacles: readonly CardBox[] = []
-): ExpandedCardLayout {
-  const spaceRight = viewport.width - (avatar.x + avatar.width)
-  const spaceLeft = avatar.x
-  const preference: CardSide[] = spaceRight >= spaceLeft ? ['right', 'left'] : ['left', 'right']
-  const desiredTop = avatar.y + avatar.height / 2 - card.height / 2
-
-  const candidates = preference.map(side => {
-    const raw = side === 'right' ? avatar.x + avatar.width + gap : avatar.x - card.width - gap
-    const left = clamp(raw, margin, Math.max(margin, viewport.width - card.width - margin))
-
-    return { fit: fitExpanded(left, card.width, desiredTop, card.height, obstacles, viewport, gap, margin), left, side }
-  })
-
-  const chosen = candidates.reduce((best, candidate) =>
-    betterFit(candidate.fit, best.fit, card.height) ? candidate : best
-  )
-
-  return {
-    degenerate: chosen.fit.degenerate,
-    left: chosen.left,
-    maxHeight: chosen.fit.maxHeight,
-    originX: chosen.side === 'right' ? 'left' : 'right',
-    side: chosen.side,
-    top: chosen.fit.top
-  }
-}
-
-/** A card box with the extra facts an expanded card carries into `stackCards`. */
-export interface StackCardBox extends CardBox {
-  /** Expanded cards are capped to a clear band instead of overflowing onto a neighbour. */
-  expanded?: boolean
-  /** The expanded content height; the card is capped to the chosen band. */
-  naturalHeight?: number
-}
-
-export interface StackPlacement {
-  x: number
-  y: number
-  /** Height cap for an expanded card's scrollable body. Absent for collapsed cards. */
-  maxHeight?: number
-}
-
-/**
- * Keeps several open cards from covering each other — or a neighbouring
- * avatar. Each card is validated against every card already placed AND every
- * obstacle: the placement with the least overlap wins, so a card that would
- * otherwise be clamped onto a neighbour near the bottom edge stacks upward (or
- * into whatever clear band exists) instead. An expanded card additionally has
- * its cap re-derived against the cards already placed, so a long body shrinks
- * to a band that clears them (or its neighbours) rather than growing over them.
- * Horizontal position and the unfold origin are untouched — the card still sits
- * beside its own avatar, just higher or lower when that spot is taken.
- *
- * Pure and order-stable so the placement contract is unit-tested.
- */
-export function stackCards(
-  boxes: readonly StackCardBox[],
-  viewport: CardSize,
-  gap: number = CARD_GAP,
-  margin: number = CARD_MARGIN,
-  obstacles: readonly CardBox[] = []
-): StackPlacement[] {
-  const placed: CardBox[] = [...obstacles]
-  const out: StackPlacement[] = []
-
-  for (const box of boxes) {
-    if (box.expanded) {
-      const natural = box.naturalHeight ?? box.height
-      const fit = fitExpanded(box.x, box.width, box.y, natural, placed, viewport, gap, margin)
-
-      placed.push({ height: fit.height, width: box.width, x: box.x, y: fit.top })
-      out.push({ maxHeight: fit.maxHeight, x: box.x, y: fit.top })
-    } else {
-      const top = bestVertical(box, placed, viewport, gap, margin)
-
-      placed.push({ ...box, y: top })
-      out.push({ x: box.x, y: top })
-    }
-  }
-
-  return out
+  return toCardLayout(placement)
 }
 
 export type BubblePlacement = 'above' | 'left' | 'right'
@@ -217,9 +179,10 @@ export interface BubbleLayout {
 
 /**
  * Where a speech bubble sits for its speaker (architecture §8.6): above the
- * head, tail toward the speaker, and never over another avatar's body. When the
- * row is too close to the top of the pane for the bubble to clear its
- * neighbours, it flips to the speaker's side exactly like a card.
+ * head, tail toward the speaker, and never over another avatar's body or an
+ * already-placed card. When the row is too close to the top of the pane for the
+ * bubble to clear its neighbours, it flips to the speaker's side exactly like a
+ * card.
  */
 export function bubbleLayout(
   speaker: ScreenRect,

@@ -20,7 +20,7 @@ import type { ScreenRect } from '../protocol'
 import { avatarFrames } from '../scene/projection'
 
 import { CARD_GAP, CARD_MARGIN, type CardBox, expandedCardMaxHeight } from './card-geometry'
-import { cardLayout, expandedCardLayout, stackCards } from './card-layout'
+import { type CardRequest, placeCards } from './card-layout'
 import { DevBadge } from './dev-badge'
 import { useViewport } from './use-viewport'
 
@@ -126,20 +126,13 @@ export function NotificationCards() {
       const nodes = [...document.querySelectorAll<HTMLDivElement>('[data-notify-id]:not([data-notify-leaving])')]
       const avatars = $avatars.get()
 
-      // Every other visible avatar's projected rect: a card must never cover a
-      // neighbour's body either, not just another card (VAL-NOTIFY-005).
+      // Every visible avatar's projected rect: a card must never cover a body,
+      // not just another card (VAL-NOTIFY-005).
       const avatarObstacles: CardBox[] = AVATAR_IDS.filter(id => avatars[id].visible)
         .map(id => avatarFrames[id].screenRect)
         .filter((rect): rect is ScreenRect => rect !== null)
 
-      const measured: {
-        element: HTMLDivElement
-        expanded: boolean
-        height: number
-        id: string
-        layout: ReturnType<typeof cardLayout>
-        top: number
-      }[] = []
+      const measured: { element: HTMLDivElement; id: string; request: CardRequest }[] = []
 
       nodes.forEach(element => {
         const avatarId = element.getAttribute('data-avatar-id')
@@ -151,47 +144,24 @@ export function NotificationCards() {
 
         const expanded = element.hasAttribute('data-notify-expanded')
         const measuredHeight = element.offsetHeight || FALLBACK_HEIGHT
+        // An expanded card's natural height is what its body wants, so the layout
+        // can pick a band tall enough to show it without scrolling.
         const height = expanded ? naturalCardHeight(element, measuredHeight) : measuredHeight
-
-        const obstacles: CardBox[] = AVATAR_IDS.filter(other => other !== avatarId && avatars[other].visible)
-          .map(other => avatarFrames[other].screenRect)
-          .filter((box): box is ScreenRect => box !== null)
-
-        const layout = expanded
-          ? expandedCardLayout(rect, { height, width: CARD_WIDTH }, viewport, CARD_GAP, CARD_MARGIN, obstacles)
-          : cardLayout(rect, { height, width: CARD_WIDTH }, viewport, CARD_GAP, CARD_MARGIN, obstacles)
 
         measured.push({
           element,
-          expanded,
-          height,
           id: element.getAttribute('data-notify-id') ?? '',
-          layout,
-          // An expanded card is re-fitted from its avatar's mid-line, so the band
-          // it lands in stays the one nearest the avatar.
-          top: expanded ? rect.y + rect.height / 2 - height / 2 : layout.top
+          request: { avatar: rect, card: { height, width: CARD_WIDTH }, expanded }
         })
       })
 
-      // One pass resolves collisions across every open card, so two cards can
-      // never cover each other (VAL-NOTIFY-005) while each stays beside its own
-      // avatar (VAL-NOTIFY-007) and clear of every other avatar's body. An
-      // expanded card also gets its cap re-derived against the cards already
-      // placed, so a long body shrinks to a clear band instead of growing over
-      // them.
-      const positions = stackCards(
-        measured.map(item =>
-          item.expanded
-            ? {
-                expanded: true,
-                height: item.height,
-                naturalHeight: item.height,
-                width: CARD_WIDTH,
-                x: item.layout.left,
-                y: item.top
-              }
-            : { height: item.height, width: CARD_WIDTH, x: item.layout.left, y: item.layout.top }
-        ),
+      // ONE placement pass positions every open card: each is fitted against the
+      // avatars AND every card already placed this frame, on both sides, so a
+      // card whose preferred side is taken moves to the opposite side's clear
+      // band instead of overlapping (VAL-NOTIFY-005/007). The DOM takes left, top
+      // and cap straight from the result — no second vertical-only refit.
+      const placements = placeCards(
+        measured.map(item => item.request),
         viewport,
         CARD_GAP,
         CARD_MARGIN,
@@ -199,11 +169,11 @@ export function NotificationCards() {
       )
 
       measured.forEach((item, index) => {
-        const placement = positions[index]
+        const placement = placements[index]
 
-        item.element.style.left = `${item.layout.left}px`
-        item.element.style.top = `${placement.y}px`
-        item.element.style.transformOrigin = `${item.layout.originX} center`
+        item.element.style.left = `${placement.left}px`
+        item.element.style.top = `${placement.top}px`
+        item.element.style.transformOrigin = `${placement.originX} center`
         // The loop owns the expanded cap: the band the card fits today decides
         // how much of the body is visible, so it scrolls rather than growing the
         // card over a neighbour (VAL-NOTIFY-007). Collapsed cards have no cap.

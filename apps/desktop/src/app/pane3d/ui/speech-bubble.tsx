@@ -50,9 +50,22 @@ export function SpeechBubbles() {
           return
         }
 
-        const obstacles: CardBox[] = AVATAR_IDS.filter(other => other !== id && avatars[other].visible)
+        const avatarObstacles: CardBox[] = AVATAR_IDS.filter(other => other !== id && avatars[other].visible)
           .map(other => avatarFrames[other].screenRect)
           .filter((other): other is ScreenRect => other !== null)
+
+        // Placed notification cards are obstacles too: a bubble must not cover a
+        // card that is already open (§8.6).
+        const cardObstacles: CardBox[] = [
+          ...document.querySelectorAll<HTMLElement>('[data-pane-card="notify"]:not([data-notify-leaving])')
+        ].map(card => ({
+          height: card.offsetHeight,
+          width: card.offsetWidth,
+          x: card.offsetLeft,
+          y: card.offsetTop
+        }))
+
+        const obstacles: CardBox[] = [...avatarObstacles, ...cardObstacles]
 
         const size = {
           height: element.offsetHeight || 52,

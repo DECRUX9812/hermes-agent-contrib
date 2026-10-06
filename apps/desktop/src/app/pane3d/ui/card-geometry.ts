@@ -206,108 +206,131 @@ export function freeVerticalBands(
   return bands
 }
 
-export interface ExpandedFit {
+/** One way a card can sit in one side's column: a clear band, or the degenerate fallback. */
+export interface CardFit {
+  /** True when no clear band reached the minimum and the least-overlap fallback was used. */
   degenerate: boolean
-  /** Rendered height: min(naturalHeight, maxHeight). */
+  /** The chosen clear band's height (0 when degenerate). Collapsed and expanded share it. */
+  bandHeight: number
+  /** Rendered height: min(naturalHeight, bandHeight), or the pane cap when degenerate. */
   height: number
-  /** The chosen band's height (or the pane cap when degenerate). */
+  /** Height cap for the scrollable body (the band, or the pane cap when degenerate). */
   maxHeight: number
   /** Total obstacle overlap; 0 unless degenerate. */
   overlap: number
-  /** Distance of the chosen top from the avatar-centred desired top. */
+  /** Distance of `top` from the avatar-centred desired top. */
   distance: number
   top: number
 }
 
-/** Fit `naturalHeight` into one band, centred as close to `desiredTop` as the band allows. */
-function fitInBand(band: VerticalBand, naturalHeight: number, desiredTop: number): ExpandedFit {
-  const maxHeight = band.bottom - band.top
-  const height = Math.min(naturalHeight, maxHeight)
+/** Fit `naturalHeight` into one clear band, centred as close to `desiredTop` as the band allows. */
+function fitInBand(band: VerticalBand, naturalHeight: number, desiredTop: number): CardFit {
+  const bandHeight = band.bottom - band.top
+  const height = Math.min(naturalHeight, bandHeight)
   const top = clamp(desiredTop, band.top, Math.max(band.top, band.bottom - height))
 
-  return { degenerate: false, distance: Math.abs(top - desiredTop), height, maxHeight, overlap: 0, top }
+  return {
+    bandHeight,
+    degenerate: false,
+    distance: Math.abs(top - desiredTop),
+    height,
+    maxHeight: bandHeight,
+    overlap: 0,
+    top
+  }
 }
 
-/** Ordering for the band and side choice: `a` beats `b`. */
-export function betterFit(a: ExpandedFit, b: ExpandedFit, naturalHeight: number): boolean {
+/**
+ * Ordering between two fits of the same card: `a` beats `b`. A usable clear band
+ * always beats the degenerate overlap fallback; between two bands, showing the
+ * whole card beats forcing a scroll, then the taller band wins, then the one
+ * nearest the avatar's mid-line (the "originally preferred side" tie is broken
+ * by the caller, which tries the roomier side first).
+ */
+export function betterCardFit(a: CardFit, b: CardFit, naturalHeight: number): boolean {
   if (a.degenerate !== b.degenerate) {
     return !a.degenerate
   }
 
   if (a.degenerate) {
-    return a.overlap < b.overlap - 0.5
+    if (Math.abs(a.overlap - b.overlap) > 0.5) {
+      return a.overlap < b.overlap
+    }
+
+    return a.distance < b.distance - 0.5
   }
 
-  const aFull = a.maxHeight >= naturalHeight
-  const bFull = b.maxHeight >= naturalHeight
+  const aFull = a.bandHeight >= naturalHeight
+  const bFull = b.bandHeight >= naturalHeight
 
-  // A band that shows the whole card beats one that forces the body to scroll.
   if (aFull !== bFull) {
     return aFull
   }
 
-  if (aFull) {
-    if (Math.abs(a.distance - b.distance) > 0.5) {
-      return a.distance < b.distance
-    }
-
-    return a.maxHeight > b.maxHeight + 0.5
-  }
-
-  if (Math.abs(a.maxHeight - b.maxHeight) > 0.5) {
-    return a.maxHeight > b.maxHeight
+  if (Math.abs(a.bandHeight - b.bandHeight) > 0.5) {
+    return a.bandHeight > b.bandHeight
   }
 
   return a.distance < b.distance - 0.5
 }
 
 /**
- * Fit an expanded card into the clearest vertical band of its column. When the
- * column has a band at least MIN_CARD_HEIGHT tall the card is capped to that
- * band, so the body scrolls rather than the card growing over a neighbour. Only
- * when neither side has such a band does it fall back to the least-overlap
- * position — the degenerate case where the pane is too crowded for a usable
- * card; the card may then cover an obstacle, but it never leaves the pane.
+ * Fit a card into one side's column — the single placement primitive behind
+ * every card, collapsed or expanded (§8.5). The column's obstacle-free bands
+ * are the pane interior minus every avatar and every already-placed card that
+ * horizontally overlaps the column (within `gap`), so a fit chosen from a band
+ * never covers an obstacle.
+ *
+ * `expandable` is true for an expanded card: it needs a band at least
+ * MIN_CARD_HEIGHT tall and its scrollable body is capped to whatever it gets.
+ * A collapsed card has no scroll box, so it needs a band at least as tall as the
+ * card itself. When neither side offers such a band, the caller gets the
+ * degenerate fallback: the least-overlap position inside the pane, with the pane
+ * height as the cap (expanded) or the card's own height (collapsed).
  */
-export function fitExpanded(
+export function fitCardInColumn(
   x: number,
   width: number,
-  desiredTop: number,
   naturalHeight: number,
+  desiredTop: number,
   obstacles: readonly CardBox[],
   viewport: CardSize,
   gap: number,
-  margin: number
-): ExpandedFit {
+  margin: number,
+  expandable: boolean
+): CardFit {
+  const minBand = expandable ? MIN_CARD_HEIGHT : naturalHeight
+
   const usable = freeVerticalBands({ width, x }, obstacles, viewport, gap, margin).filter(
-    band => band.bottom - band.top >= MIN_CARD_HEIGHT
+    band => band.bottom - band.top >= minBand - 0.5
   )
 
-  if (usable.length === 0) {
-    const maxHeight = expandedCardMaxHeight(viewport.height, margin)
-    const height = Math.min(naturalHeight, maxHeight)
-    const desired = clamp(desiredTop, margin, Math.max(margin, viewport.height - margin - height))
-    const top = bestVertical({ height, width, x, y: desired }, obstacles, viewport, gap, margin)
+  if (usable.length > 0) {
+    let chosen = fitInBand(usable[0], naturalHeight, desiredTop)
 
-    return {
-      degenerate: true,
-      distance: Math.abs(top - desiredTop),
-      height,
-      maxHeight,
-      overlap: totalOverlap({ height, width, x, y: top }, obstacles, gap),
-      top
+    for (const band of usable.slice(1)) {
+      const fit = fitInBand(band, naturalHeight, desiredTop)
+
+      if (betterCardFit(fit, chosen, naturalHeight)) {
+        chosen = fit
+      }
     }
+
+    return chosen
   }
 
-  let chosen = fitInBand(usable[0], naturalHeight, desiredTop)
+  const maxHeight = expandable ? expandedCardMaxHeight(viewport.height, margin) : naturalHeight
+  const height = Math.min(naturalHeight, maxHeight)
+  const desired = clamp(desiredTop, margin, Math.max(margin, viewport.height - margin - height))
+  const top = bestVertical({ height, width, x, y: desired }, obstacles, viewport, gap, margin)
 
-  for (const band of usable.slice(1)) {
-    const fit = fitInBand(band, naturalHeight, desiredTop)
-
-    if (betterFit(fit, chosen, naturalHeight)) {
-      chosen = fit
-    }
+  return {
+    bandHeight: 0,
+    degenerate: true,
+    distance: Math.abs(top - desiredTop),
+    height,
+    maxHeight,
+    overlap: totalOverlap({ height, width, x, y: top }, obstacles, gap),
+    top
   }
-
-  return chosen
 }
