@@ -19,7 +19,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem
@@ -148,9 +147,7 @@ import { type AppView, SIDEBAR_LIST_TOP_AREA, type SidebarListTopContribution } 
 import type { SidebarNavItem } from '../../types'
 import { type NewSessionSplitHandler, startNewSessionDrag } from '../new-session-drag'
 
-import { AgentPresence } from './agent-presence'
 import { SidebarSectionAddButton } from './chrome'
-import { ColonyRoster } from './colony-roster'
 import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarDelegationReports } from './delegation-reports'
 import { SidebarFilterMenu } from './filter-menu'
@@ -158,6 +155,7 @@ import { buildGatewaySessionGroups, scopeGatewaySessionGroups, useGatewaySession
 import { SidebarLoadMoreRow } from './load-more-row'
 import { navItemActive, useSidebarNavItems } from './nav-items'
 import { orderByIds, reconcileOrderIds, resolveManualSessionOrderIds, sameIds } from './order'
+import { SidebarPresenceGroupContent } from './presence-header'
 import { filterSessionsByProfileScope } from './profile-scope'
 import { ProfileRail } from './profile-switcher'
 import { ProjectDialog } from './project-dialog'
@@ -1635,12 +1633,7 @@ export function ChatSidebar({
         onKeyDown={onSidebarKeyDown}
       >
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
-          <SidebarGroupContent>
-            {/* Agent presence — who is here and what they are doing. */}
-            <div className="px-0 pb-2">
-              <AgentPresence />
-            </div>
-            <ColonyRoster />
+          <SidebarPresenceGroupContent>
             <SidebarMenu className="gap-px">
               {/* Workspace first (Codex/Antigravity): which project you are in,
                   switchable in one click, above the actions scoped to it. */}
@@ -1675,7 +1668,7 @@ export function ChatSidebar({
               )}
               {!railCarriesNav && browseOpen && browseNavItems.map(renderNavItem)}
             </SidebarMenu>
-          </SidebarGroupContent>
+          </SidebarPresenceGroupContent>
         </SidebarGroup>
 
         <SidebarStorageCorruptNotice />

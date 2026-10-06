@@ -160,6 +160,7 @@ import { useTouchTitlebar } from '../shell/use-touch-titlebar'
 import { WslgWindowControls } from '../shell/wslg-window-controls'
 import { UpdatesOverlay } from '../updates-overlay'
 
+import { CloseOnlyOverlays } from './close-only-overlays'
 import { ContribWiringContext } from './context'
 import {
   hydrateStoredSessionTranscript,
@@ -1536,11 +1537,10 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         </Suspense>
       )}
 
-      {agentsOpen && (
-        <Suspense fallback={null}>
-          <AgentsView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
+      <CloseOnlyOverlays
+        onClose={closeOverlayToPreviousRoute}
+        overlays={[{ id: 'agents', open: agentsOpen, View: AgentsView }]}
+      />
 
       {cronOpen && (
         <Suspense fallback={null}>
@@ -1548,29 +1548,15 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         </Suspense>
       )}
 
-      {webhooksOpen && (
-        <Suspense fallback={null}>
-          <WebhooksView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
-
-      {profilesOpen && (
-        <Suspense fallback={null}>
-          <ProfilesView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
-
-      {starmapOpen && (
-        <Suspense fallback={null}>
-          <StarmapView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
-
-      {activityOpen && (
-        <Suspense fallback={null}>
-          <ActivityView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
+      <CloseOnlyOverlays
+        onClose={closeOverlayToPreviousRoute}
+        overlays={[
+          { id: 'webhooks', open: webhooksOpen, View: WebhooksView },
+          { id: 'profiles', open: profilesOpen, View: ProfilesView },
+          { id: 'starmap', open: starmapOpen, View: StarmapView },
+          { id: 'activity', open: activityOpen, View: ActivityView }
+        ]}
+      />
 
       {rosterOpen && (
         <Suspense fallback={null}>
