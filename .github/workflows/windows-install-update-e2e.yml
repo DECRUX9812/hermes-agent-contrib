@@ -30,8 +30,13 @@ jobs:
     # Advisory on the standard runner: its PowerShell steps time out there (see #147).
     continue-on-error: true
     runs-on: windows-latest
-    # A typical run is ~17 min; one slow runner took 28 min for the same work (run 36295230146).
-    timeout-minutes: 50
+    # The ~17 min typical run is a 32-core number. On the standard runner the
+    # suite's slowest file (test_crash_cells.py, HERMES_TEST_FILE_TIMEOUT 2400 s)
+    # still runs at 25 min with 3 of 9 files unfinished, so the 50-minute cap
+    # cancelled the job mid-suite (run 37528978396). A cancelled job is not a
+    # tolerated failure: continue-on-error absorbs a red job, not a cancelled
+    # one, so the lane has to reach its own verdict.
+    timeout-minutes: 90
     steps:
       - name: Checkout code
         uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
