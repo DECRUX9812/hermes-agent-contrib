@@ -15,11 +15,12 @@ import json
 import logging
 import threading
 import time
-import urllib.request
 import urllib.parse
-from contextlib import suppress
+import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from agent.memory_provider import spawn_context_thread
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,8 @@ _PREFETCH_WAIT_SECS = 3.0
 _SYNC_MSG_MAX_CHARS = 8000
 _BREAKER_THRESHOLD = 3
 _BREAKER_COOLDOWN_SECS = 60
+# urllib's URLError/HTTPError and socket timeouts are OSError; a non-JSON body is ValueError.
+_WORKER_ERRORS = (OSError, ValueError)
 
 _PROMPT_BODY = """You have persistent memory across sessions. Relevant memories are injected automatically.
 Use the `claudemem_search` tool to recall past work, decisions, and context when helpful.
@@ -68,9 +71,9 @@ def _load_config(hermes_home: Optional[str] = None) -> dict:
         p = Path(hermes_home) / "claude-mem.json"
         if p.exists():
             try:
-                cfg = json.loads(p.read_text())
-            except Exception:
-                pass
+                cfg = json.loads(p.read_text(encoding="utf-8-sig"))
+            except _WORKER_ERRORS as exc:
+                logger.warning("claude-mem: ignoring unreadable %s: %s", p, exc)
     cfg.setdefault("host", os.environ.get("CLAUDE_MEM_WORKER_HOST", _DEFAULT_HOST))
     cfg.setdefault("port", int(os.environ.get("CLAUDE_MEM_WORKER_PORT", _DEFAULT_PORT)))
     return cfg
@@ -94,48 +97,37 @@ class ClaudeMemBackend:
     def health(self) -> bool:
         try:
             r = self._req("GET", "/api/health")
-            return r.get("status") == "ok"
-        except Exception:
+        except _WORKER_ERRORS:
             return False
+        return isinstance(r, dict) and r.get("status") == "ok"
 
     def init_session(self, prompt: str = "") -> Optional[str]:
         try:
             r = self._req("POST", "/api/sessions/init", {"prompt": prompt})
-            self._session_id = r.get("session_id") or r.get("id")
-            return self._session_id
-        except Exception as e:
+        except _WORKER_ERRORS as e:
             logger.debug("claude-mem init_session failed: %s", e)
             return None
+        if isinstance(r, dict):
+            self._session_id = r.get("session_id") or r.get("id")
+        return self._session_id
 
     def add_observation(self, text: str) -> None:
         if not self._session_id:
             return
-        try:
-            self._req("POST", "/api/sessions/observations",
-                      {"session_id": self._session_id, "text": text[:_SYNC_MSG_MAX_CHARS]})
-        except Exception as e:
-            logger.debug("claude-mem add_observation failed: %s", e)
+        self._req("POST", "/api/sessions/observations",
+                  {"session_id": self._session_id, "text": text[:_SYNC_MSG_MAX_CHARS]})
 
     def search(self, query: str, top_k: int = 5) -> list:
-        try:
-            r = self._req("GET", "/api/search?" + urllib.parse.urlencode(
-                {"q": query, "limit": top_k}))
-            if isinstance(r, dict):
-                return r.get("results", []) or r.get("observations", [])
-            return r if isinstance(r, list) else []
-        except Exception as e:
-            logger.debug("claude-mem search failed: %s", e)
-            return []
+        r = self._req("GET", "/api/search?" + urllib.parse.urlencode({"q": query, "limit": top_k}))
+        if isinstance(r, dict):
+            return r.get("results", []) or r.get("observations", [])
+        return r if isinstance(r, list) else []
 
     def inject_context(self) -> str:
-        try:
-            r = self._req("GET", "/api/context/inject")
-            if isinstance(r, dict):
-                return r.get("context", "") or r.get("text", "")
-            return str(r)
-        except Exception as e:
-            logger.debug("claude-mem inject_context failed: %s", e)
-            return ""
+        r = self._req("GET", "/api/context/inject")
+        if isinstance(r, dict):
+            return r.get("context", "") or r.get("text", "")
+        return str(r)
 
 
 class ClaudeMemProvider:
@@ -163,10 +155,10 @@ class ClaudeMemProvider:
     def is_available(self) -> bool:
         cfg = _load_config()
         try:
-            b = ClaudeMemBackend(cfg["host"], int(cfg["port"]))
-            return b.health()
-        except Exception:
+            port = int(cfg["port"])
+        except ValueError:
             return False
+        return ClaudeMemBackend(cfg["host"], port).health()
 
     def get_config_schema(self):
         return [
@@ -179,11 +171,8 @@ class ClaudeMemProvider:
         self._config = _load_config(hermes_home)
         self._session_id = session_id
         self._backend = ClaudeMemBackend(self._config["host"], int(self._config["port"]))
-        # Register this Hermes session with the worker (best-effort)
-        try:
-            self._backend.init_session(prompt=kwargs.get("agent_identity") or "")
-        except Exception:
-            pass
+        # Register this Hermes session with the worker (best-effort; init_session logs its own failure).
+        self._backend.init_session(prompt=kwargs.get("agent_identity") or "")
 
     def _breaker_open(self) -> bool:
         with self._breaker_lock:
@@ -215,10 +204,10 @@ class ClaudeMemProvider:
                     self._record(True)
                     if ctx:
                         logger.debug("claude-mem primed %d chars", len(ctx))
-                except Exception:
+                except _WORKER_ERRORS as exc:
+                    logger.debug("claude-mem inject_context failed: %s", exc)
                     self._record(False)
-            t = threading.Thread(target=_prime, daemon=True, name="claudemem-prime")
-            t.start()
+            spawn_context_thread(_prime, name="claudemem-prime").start()
 
     def prefetch(self, query: str, *, session_id: str = "") -> str:
         if not query or not self._backend or self._breaker_open():
@@ -226,7 +215,8 @@ class ClaudeMemProvider:
         try:
             results = self._backend.search(query, top_k=5)
             self._record(True)
-        except Exception:
+        except _WORKER_ERRORS as exc:
+            logger.debug("claude-mem search failed: %s", exc)
             self._record(False)
             return ""
         lines = []
@@ -245,14 +235,15 @@ class ClaudeMemProvider:
                 combined = f"User: {user_content[:4000]}\nAssistant: {assistant_content[:4000]}"
                 self._backend.add_observation(combined)
                 self._record(True)
-            except Exception:
+            except _WORKER_ERRORS as exc:
+                logger.debug("claude-mem add_observation failed: %s", exc)
                 self._record(False)
 
         with self._sync_lock:
             prev = self._sync_thread
             if prev and prev.is_alive():
                 return  # skip if a sync is already running
-            self._sync_thread = threading.Thread(target=_sync, daemon=True, name="claudemem-sync")
+            self._sync_thread = spawn_context_thread(_sync, name="claudemem-sync")
             self._sync_thread.start()
 
     def get_tool_schemas(self) -> List[Dict[str, Any]]:
@@ -261,16 +252,20 @@ class ClaudeMemProvider:
     def handle_tool_call(self, tool_name: str, args: Dict[str, Any], **kwargs) -> str:
         if not self._backend:
             return json.dumps({"error": "claude-mem backend not initialized"})
-        if tool_name == "claudemem_search":
-            results = self._backend.search(args.get("query", ""), top_k=max(1, min(int(args.get("top_k", 5)), 20)))
-            items = [{"text": (r.get("text") or r.get("memory") or "")[:800]} for r in results or []]
-            return json.dumps({"results": items, "count": len(items)})
-        if tool_name == "claudemem_remember":
-            content = args.get("content", "")
-            if not content:
-                return json.dumps({"error": "missing content"})
-            self._backend.add_observation(f"[user-saved] {content}")
-            return json.dumps({"result": "Remembered."})
+        try:
+            if tool_name == "claudemem_search":
+                top_k = max(1, min(int(args.get("top_k", 5)), 20))
+                results = self._backend.search(args.get("query", ""), top_k=top_k)
+                items = [{"text": (r.get("text") or r.get("memory") or "")[:800]} for r in results or []]
+                return json.dumps({"results": items, "count": len(items)})
+            if tool_name == "claudemem_remember":
+                content = args.get("content", "")
+                if not content:
+                    return json.dumps({"error": "missing content"})
+                self._backend.add_observation(f"[user-saved] {content}")
+                return json.dumps({"result": "Remembered."})
+        except _WORKER_ERRORS as exc:
+            return json.dumps({"error": f"claude-mem worker unavailable: {exc}"})
         return json.dumps({"error": f"Unknown tool: {tool_name}"})
 
     def shutdown(self) -> None:
