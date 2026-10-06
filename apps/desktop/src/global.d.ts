@@ -22,6 +22,7 @@ import type {
   PetOverlayOpenRequest,
   PetOverlayStatePayload
 } from './store/pet-overlay'
+import type {
   QuickEntryContext,
   QuickEntryStatePush,
   QuickEntryStatus,

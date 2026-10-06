@@ -1438,7 +1438,7 @@ export const ja = defineLocale({
       cloudConnectedPill: '接続済み',
       cloudConnectedTo: name => `${name} に接続しました。`,
       cloudAgentProvisioning: 'プロビジョニング中…',
-      cloudStatusLabel: status => `ステータス：${status}`
+      cloudStatusLabel: status => `ステータス：${status}`,
       sshErrInteractiveAuth:
         'Tailscale SSH では対話的なブラウザー確認が必要です。ターミナルで `ssh <host> true` を実行して確認を完了し、再試行してください。Hermes は SSH を非対話的に実行します。',
     },
