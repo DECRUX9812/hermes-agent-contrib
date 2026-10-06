@@ -83,8 +83,18 @@ def _policies_for(agent: Any) -> AgentPolicies:
 
 def _tool_call_signature(call: dict) -> str:
     """Stable signature for one tool call — name + canonicalized args, hashed so
-    long tool payloads never accumulate in memory."""
-    args = call.get("arguments") or call.get("args") or {}
+    long tool payloads never accumulate in memory.
+
+    Live message lists store tool calls in the OpenAI shape
+    (``{"function": {"name", "arguments"}}``); internal/replayed shapes keep
+    ``name``/``arguments`` at the top level. Read both — a nested call read as
+    top-level collapses to the empty-args signature, and six calls of one tool
+    then look identical to the detector no matter their arguments.
+    """
+    fn = call.get("function") or {}
+    if not isinstance(fn, dict):
+        fn = {}
+    args = call.get("arguments") or call.get("args") or fn.get("arguments") or fn.get("args") or {}
     if isinstance(args, str):
         canonical = args[:4096]
     else:
@@ -93,7 +103,7 @@ def _tool_call_signature(call: dict) -> str:
         except (TypeError, ValueError):
             canonical = str(args)[:4096]
     digest = hashlib.sha256(canonical.encode("utf-8", "replace")).hexdigest()[:16]
-    name = call.get("name") or (call.get("function") or {}).get("name") or ""
+    name = call.get("name") or fn.get("name") or ""
     return f"{name}:{digest}"
 
 
