@@ -261,8 +261,8 @@ async function submitToBot(botId: string, text: string): Promise<void> {
   )
 }
 
-function roomPost(roomId: string, author: string, text: string): void {
-  push({ type: 'room.msg', msg: { roomId, author, text, at: Date.now() } })
+function roomPost(roomId: string, author: string, text: string, ephemeral = false): void {
+  push({ type: 'room.msg', msg: { roomId, author, text, ephemeral, at: Date.now() } })
 }
 
 async function roomRelay(room: BotRoomRoom, author: string, text: string): Promise<void> {
@@ -276,7 +276,9 @@ async function roomRelay(room: BotRoomRoom, author: string, text: string): Promi
       continue
     }
 
-    roomPost(room.id, memberId, '…')
+    // '…' is the working marker — ephemeral, so panels render it as the
+    // turn-presence row instead of leaving a literal "…" bubble behind.
+    roomPost(room.id, memberId, '…', true)
 
     try {
       await submitToBot(memberId, `[Room "${room.name}" — ${author}]: ${text}`)

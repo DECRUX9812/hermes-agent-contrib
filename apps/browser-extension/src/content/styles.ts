@@ -128,17 +128,60 @@ code, pre, .hr-mono { font-family: 'Geist Mono', 'SF Mono', ui-monospace, Menlo,
   font-family: 'Geist Mono', 'SF Mono', ui-monospace, monospace;
 }
 
-/* typing — three real dots on a card bubble */
-.hr-msg.typing { display: flex; align-items: center; gap: 7px; padding: 10px 13px; }
-.hr-msg.typing .hr-who { margin-bottom: 0; }
-.hr-dots { display: inline-flex; gap: 4px; }
-.hr-dots i {
-  width: 5px; height: 5px; border-radius: 50%; background: var(--ink-faint);
-  animation: hr-dot-bounce 1.1s infinite;
+
+/* message body — markdown-lite + mentions (OpenMausBot transcript port) */
+.hr-md code {
+  background: rgba(255,255,255,.1); padding: 1px 5px; border-radius: 5px;
+  font-size: 11px; font-family: ui-monospace, 'SF Mono', Menlo, monospace;
 }
-.hr-dots i:nth-child(2) { animation-delay: .15s; }
-.hr-dots i:nth-child(3) { animation-delay: .3s; }
-@keyframes hr-dot-bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+.hr-md pre {
+  background: rgba(0,0,0,.35); border: 1px solid var(--hairline-soft);
+  border-radius: 10px; padding: 8px 10px; margin: 6px 0; overflow-x: auto;
+  font-size: 11px; line-height: 1.45;
+}
+.hr-md pre code { background: none; padding: 0; font-size: inherit; }
+.hr-md a { color: #9d8cff; text-decoration: none; border-bottom: 1px dotted rgba(157,140,255,.5); }
+.hr-md a:hover { border-bottom-style: solid; }
+.hr-md .hr-h { font-weight: 700; margin: 2px 0; }
+.hr-md .hr-ul, .hr-md .hr-ol { margin: 4px 0; padding-left: 18px; display: flex; flex-direction: column; gap: 1px; }
+.hr-md .hr-quote { margin: 4px 0; padding: 2px 9px; border-left: 2px solid var(--accent); color: var(--ink-dim); }
+.hr-md hr { border: 0; border-top: 1px solid var(--hairline-soft); margin: 6px 0; }
+.hr-md .hr-p { margin: 0; }
+.hr-mention {
+  --mh: 260; color: hsl(var(--mh), 90%, 74%); background: hsla(var(--mh), 85%, 60%, .16);
+  border-radius: 5px; padding: 0 3px; font-weight: 600; white-space: nowrap;
+}
+
+/* turn presence — face pops in, shimmering label, live elapsed; the
+   landing answer grows up from where the mascot was */
+.hr-presence {
+  align-self: flex-start; display: flex; align-items: center; gap: 8px;
+  padding: 4px 2px; transform-origin: 16px 50%;
+  animation: hr-mascot-in .38s cubic-bezier(.16,1,.3,1) both;
+}
+.hr-presence.hr-presence-out { animation: hr-mascot-out .26s cubic-bezier(.16,1,.3,1) both; }
+.hr-presence-face {
+  width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  background: #22253a; color: #fff; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.hr-presence .hr-think {
+  font-size: 11.5px; font-weight: 600; color: transparent;
+  background: linear-gradient(100deg, var(--ink-dim) 20%, #fff 42%, var(--ink-dim) 64%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  animation: hr-shimmer 1.6s linear infinite;
+}
+.hr-presence .hr-elapsed { font-size: 10px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+@keyframes hr-mascot-in { from { opacity: 0; transform: scale(.82); } }
+@keyframes hr-mascot-out { to { opacity: 0; transform: scale(.88); } }
+@keyframes hr-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.hr-msg.bot.hr-answer {
+  transform-origin: 14px 100%;
+  animation: hr-answer-in .46s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes hr-answer-in { from { opacity: 0; transform: translateY(8px) scale(.84); } }
 
 /* target chip — lime staff badge */
 .hr-target-chip {
@@ -167,6 +210,18 @@ code, pre, .hr-mono { font-family: 'Geist Mono', 'SF Mono', ui-monospace, Menlo,
   user-select: text; -webkit-user-modify: read-write; caret-color: var(--ink);
 }
 .hr-compose-pill textarea::placeholder { color: var(--ink-faint); }
+
+/* mention mirror — an aria-hidden overlay paints @names while the real
+   textarea's text is transparent; identical metrics keep glyphs aligned */
+.hr-field { position: relative; flex: 1; min-width: 0; display: flex; }
+.hr-field .hr-mirror {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  padding: 4px 0 5px; font-size: 13px; line-height: 1.35; font-family: inherit;
+  white-space: pre-wrap; word-break: break-word; overflow-wrap: break-word;
+  color: var(--ink); user-select: none;
+}
+.hr-field textarea { color: transparent; }
+.hr-field.hr-composing textarea { color: var(--ink); }
 .hr-btn {
   border: 0; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; flex-shrink: 0;
   background: var(--hairline-soft); color: var(--ink-dim); font-size: 13px;
@@ -208,6 +263,14 @@ code, pre, .hr-mono { font-family: 'Geist Mono', 'SF Mono', ui-monospace, Menlo,
   background: var(--paper); border: 1px solid var(--hairline-soft);
   border-radius: 999px; color: var(--ink); font-size: 12px; font-weight: 600; cursor: pointer;
   transition: all .16s;
+  animation: hr-spot-in .3s var(--spring) both;
+  animation-delay: calc(40ms * var(--i, 0));
+}
+@keyframes hr-spot-in { from { transform: scale(.94); opacity: 0; } }
+.hr-room.hr-ping { animation: hr-chip-ping .8s ease-out; }
+@keyframes hr-chip-ping {
+  0% { box-shadow: 0 0 0 0 rgba(124,92,255,.55); }
+  100% { box-shadow: 0 0 0 12px rgba(124,92,255,0); }
 }
 .hr-room:hover { border-color: var(--ink); transform: translateY(-1px); box-shadow: 0 0 0 1px var(--ink); }
 .hr-room .hr-faces { display: flex; }
