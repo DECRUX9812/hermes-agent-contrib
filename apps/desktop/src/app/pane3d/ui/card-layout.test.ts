@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { ScreenRect } from '../protocol'
 
-import { boxesOverlap, bubbleLayout, type CardBox, cardLayout, stackCards } from './card-layout'
+import { boxesOverlap, bubbleLayout, type CardBox, cardLayout, expandedCardMaxHeight, stackCards } from './card-layout'
 
 const VIEWPORT = { height: 1000, width: 1920 }
 const CARD = { height: 150, width: 264 }
@@ -121,6 +121,77 @@ describe('cardLayout — a card never covers another avatar (§8.6 orchestrator 
 
     expect(placed.y).toBeGreaterThanOrEqual(180 + 160 + 8)
     expect(placed.x).toBe(100)
+  })
+})
+
+describe('stackCards — the final placement is revalidated after clamping (§8.5, VAL-NOTIFY-005/007)', () => {
+  const CARD_BOX = { height: 150, width: 264 }
+
+  const overlapsAny = (placed: { x: number; y: number }[], obstacles: readonly CardBox[]): boolean =>
+    placed.some((box, index) => {
+      const mine = { ...CARD_BOX, ...box }
+
+      return (
+        placed.some((other, otherIndex) => otherIndex !== index && boxesOverlap(mine, { ...CARD_BOX, ...other })) ||
+        obstacles.some(obstacle => boxesOverlap(mine, obstacle))
+      )
+    })
+
+  it('stacks two near-bottom cards upward instead of clamping them onto each other', () => {
+    const pane = { height: 1080, width: 1920 }
+
+    const boxes = [
+      { ...CARD_BOX, x: 100, y: 900 },
+      { ...CARD_BOX, x: 150, y: 920 }
+    ]
+
+    const placed = stackCards(boxes, pane, 8, 8)
+
+    expect(overlapsAny(placed, [])).toBe(false)
+
+    for (const box of placed) {
+      expect(box.y).toBeGreaterThanOrEqual(8)
+      expect(box.y + CARD_BOX.height).toBeLessThanOrEqual(pane.height - 8)
+    }
+  })
+
+  it('never overlaps a neighbour or any avatar with 3 cards and 5 avatars near the bottom edge', () => {
+    const pane = { height: 1000, width: 1920 }
+    const avatars: CardBox[] = [100, 400, 700, 1000, 1300].map(x => ({ height: 160, width: 120, x, y: 840 }))
+    const boxes = [120, 200, 280].map(x => ({ ...CARD_BOX, x, y: 850 }))
+
+    const placed = stackCards(boxes, pane, 14, 8, avatars)
+
+    expect(overlapsAny(placed, avatars)).toBe(false)
+
+    for (const box of placed) {
+      expect(box.y).toBeGreaterThanOrEqual(8)
+      expect(box.y + CARD_BOX.height).toBeLessThanOrEqual(pane.height - 8)
+    }
+  })
+
+  it('prefers a clear spot far above over a clamped overlap', () => {
+    const pane = { height: 1000, width: 1920 }
+    const avatar: CardBox = { height: 160, width: 1920, x: 0, y: 800 }
+    const [placed] = stackCards([{ ...CARD_BOX, x: 100, y: 900 }], pane, 14, 8, [avatar])
+
+    expect(boxesOverlap({ ...CARD_BOX, ...placed }, avatar)).toBe(false)
+    expect(placed.y + CARD_BOX.height).toBeLessThanOrEqual(800 - 14)
+  })
+})
+
+describe('expandedCardMaxHeight — an expanded body stays inside the pane (§8.5, VAL-NOTIFY-007)', () => {
+  it('leaves the top and bottom margins free', () => {
+    expect(expandedCardMaxHeight(1000)).toBe(1000 - 8 * 2)
+  })
+
+  it('lets cardLayout place a fully expanded card wholly inside the pane', () => {
+    const pane = { height: 720, width: 1280 }
+    const height = expandedCardMaxHeight(pane.height)
+    const layout = cardLayout(avatar({ x: 600, y: 300 }), { height, width: 264 }, pane)
+
+    expect(layout.top).toBeGreaterThanOrEqual(8)
+    expect(layout.top + height).toBeLessThanOrEqual(pane.height - 8)
   })
 })
 

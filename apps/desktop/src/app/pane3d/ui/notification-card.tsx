@@ -19,8 +19,9 @@ import { AVATAR_IDS } from '../protocol'
 import type { ScreenRect } from '../protocol'
 import { avatarFrames } from '../scene/projection'
 
-import { CARD_GAP, CARD_MARGIN, type CardBox, cardLayout, stackCards } from './card-layout'
+import { CARD_GAP, CARD_MARGIN, type CardBox, cardLayout, expandedCardMaxHeight, stackCards } from './card-layout'
 import { DevBadge } from './dev-badge'
+import { useViewport } from './use-viewport'
 
 /** Fixed width keeps the placement math stable; the height is measured live. */
 const CARD_WIDTH = 264
@@ -40,6 +41,11 @@ export function NotificationCards() {
   const [entered, setEntered] = useState<ReadonlySet<string>>(() => new Set())
   const [leaving, setLeaving] = useState<PaneCard[]>([])
   const previous = useRef<Record<string, PaneCard>>({})
+  // One exit timer per card. A single shared timer was cancelled by the next
+  // settlement, leaving an invisible card mounted forever — along with its
+  // descendant hit regions and its contribution to the layout obstacles. Each
+  // exiting card therefore owns its own cleanup.
+  const exitTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
   // A settled card is kept mounted for one short fade so it visibly collapses
   // into the feed rather than blinking out (§8.5). `previous` is a
@@ -52,17 +58,41 @@ export function NotificationCards() {
     previous.current = cards
 
     if (removed.length === 0) {
-      return undefined
+      return
     }
 
-    const ids = new Set(removed.map(card => card.id))
+    setLeaving(list => {
+      const known = new Set(list.map(card => card.id))
+      const added = removed.filter(card => !known.has(card.id))
 
-    setLeaving(list => [...list, ...removed])
+      return added.length === 0 ? list : [...list, ...added]
+    })
 
-    const timer = setTimeout(() => setLeaving(list => list.filter(card => !ids.has(card.id))), EXIT_MS)
+    removed.forEach(card => {
+      if (exitTimers.current.has(card.id)) {
+        return
+      }
 
-    return () => clearTimeout(timer)
+      exitTimers.current.set(
+        card.id,
+        setTimeout(() => {
+          exitTimers.current.delete(card.id)
+          setLeaving(list => list.filter(entry => entry.id !== card.id))
+        }, EXIT_MS)
+      )
+    })
   }, [cards])
+
+  // Exits deliberately outlive a single `cards` change, so they are cleared on
+  // unmount only — never by the effect above (that cancellation was the bug).
+  useEffect(() => {
+    const timers = exitTimers.current
+
+    return () => {
+      timers.forEach(clearTimeout)
+      timers.clear()
+    }
+  }, [])
 
   // One loop positions every mounted card. Reading the live DOM (rather than a
   // ref map) means an unmounting card needs no cleanup here, and the collision
@@ -74,7 +104,10 @@ export function NotificationCards() {
       frame = requestAnimationFrame(tick)
 
       const viewport = { height: window.innerHeight, width: window.innerWidth }
-      const nodes = [...document.querySelectorAll<HTMLDivElement>('[data-notify-id]')]
+      // A leaving card is excluded the moment it starts its exit: it must not
+      // position, and it must not act as an obstacle pushing the live cards
+      // around while it fades out.
+      const nodes = [...document.querySelectorAll<HTMLDivElement>('[data-notify-id]:not([data-notify-leaving])')]
       const avatars = $avatars.get()
 
       // Every other visible avatar's projected rect: a card must never cover a
@@ -181,19 +214,36 @@ function NotificationCard({ card, entered, leaving }: NotificationCardProps) {
   const action = card.request.action
   const harness = isHarnessRequest(card.request)
   const visible = entered && !leaving
+  const viewport = useViewport()
+  // A leaving card must stop being a hit target at once — on the card AND every
+  // descendant, since `data-pane-hit` is what the publisher turns into a region.
+  const hit = leaving ? undefined : ''
 
   return (
     <div
-      className="pointer-events-auto absolute w-[264px] rounded-xl border border-(--stroke-nous) bg-card p-3 text-foreground shadow-nous transition-[opacity,transform] duration-[220ms] ease-out"
+      className={cn(
+        'pointer-events-auto absolute w-[264px] rounded-xl border border-(--stroke-nous) bg-card p-3 text-foreground shadow-nous transition-[opacity,transform] duration-[220ms] ease-out',
+        // A flex column lets the expanded body shrink and scroll instead of
+        // growing the card past the pane.
+        expanded && 'flex flex-col',
+        leaving && 'pointer-events-none'
+      )}
       data-avatar-id={card.avatar}
       data-notify-id={card.id}
+      data-notify-leaving={leaving ? '' : undefined}
       data-pane-card="notify"
-      data-pane-hit={leaving ? undefined : ''}
+      data-pane-hit={hit}
       onPointerEnter={() => hoverNotification(card.id)}
       onPointerLeave={() => unhoverNotification(card.id)}
-      style={{ opacity: visible ? 1 : 0, transform: visible ? 'scale(1)' : 'scale(0.96)' }}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'scale(1)' : 'scale(0.96)',
+        // Caps the card inside the pane; the body below is the scroll container,
+        // so the title, action and close × always stay visible (§8.5).
+        ...(expanded ? { maxHeight: expandedCardMaxHeight(viewport.height) } : {})
+      }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         <span
           aria-hidden
           className="size-2.5 shrink-0 rounded-full"
@@ -209,8 +259,8 @@ function NotificationCard({ card, entered, leaving }: NotificationCardProps) {
         </time>
         <Button
           aria-label={PANE_COPY.dismissNotification}
-          className="-mt-1 -mr-1 text-(--ui-text-tertiary)"
-          data-pane-hit
+          className="-mt-1 -mr-1 shrink-0 text-(--ui-text-tertiary)"
+          data-pane-hit={hit}
           onClick={() => dismissNotification(card.id)}
           size="icon-xs"
           type="button"
@@ -220,18 +270,23 @@ function NotificationCard({ card, entered, leaving }: NotificationCardProps) {
         </Button>
       </div>
 
-      <h3 className="mt-2 text-[15px] leading-[1.3] font-semibold text-(--ui-text-primary)">{card.request.title}</h3>
+      <h3 className="mt-2 shrink-0 text-[15px] leading-[1.3] font-semibold text-(--ui-text-primary)">
+        {card.request.title}
+      </h3>
       <p
-        className={cn('mt-1.5 text-[14px] leading-[1.5] text-(--ui-text-secondary)', !expanded && 'line-clamp-3')}
+        className={cn(
+          'mt-1.5 text-[14px] leading-[1.5] text-(--ui-text-secondary)',
+          expanded ? 'min-h-0 overflow-y-auto' : 'line-clamp-3'
+        )}
         ref={body}
       >
         {card.request.body}
       </p>
       {bodyOverflows || expanded ? (
-        <div className="mt-1">
+        <div className="mt-1 shrink-0">
           <button
             className="cursor-pointer text-[12px] font-medium text-(--ui-text-tertiary) hover:text-(--ui-text-primary)"
-            data-pane-hit
+            data-pane-hit={hit}
             onClick={() => setExpanded(value => !value)}
             type="button"
           >
@@ -242,8 +297,8 @@ function NotificationCard({ card, entered, leaving }: NotificationCardProps) {
 
       {action ? (
         <Button
-          className="mt-2.5"
-          data-pane-hit
+          className="mt-2.5 shrink-0"
+          data-pane-hit={hit}
           onClick={() => activateNotificationAction(card.id, action.id)}
           size="sm"
           type="button"

@@ -19,6 +19,16 @@ export interface CardLayout {
 export const CARD_GAP = 14
 export const CARD_MARGIN = 8
 
+/**
+ * The tallest a card may grow and still sit wholly inside the pane (§8.5,
+ * VAL-NOTIFY-007): the viewport minus the top and bottom margins. An expanded
+ * body is bounded by this so a long host body can never push the card (or its
+ * action/close) outside the pane; the body scrolls instead.
+ */
+export function expandedCardMaxHeight(viewportHeight: number, margin: number = CARD_MARGIN): number {
+  return Math.max(0, viewportHeight - margin * 2)
+}
+
 export interface CardBox {
   x: number
   y: number
@@ -68,32 +78,74 @@ function clearVertical(box: CardBox, obstacles: readonly CardBox[], gap: number,
   return y
 }
 
+/** Intersection area of two boxes inflated by `pad`; 0 when they do not touch. */
+function overlapArea(a: CardBox, b: CardBox, pad: number): number {
+  const width = Math.min(a.x + a.width + pad, b.x + b.width + pad) - Math.max(a.x - pad, b.x - pad)
+  const height = Math.min(a.y + a.height + pad, b.y + b.height + pad) - Math.max(a.y - pad, b.y - pad)
+
+  return width > 0 && height > 0 ? width * height : 0
+}
+
+function totalOverlap(box: CardBox, obstacles: readonly CardBox[], pad: number): number {
+  return obstacles.reduce((sum, other) => sum + overlapArea(box, other, pad), 0)
+}
+
+/** Candidate tops are swept at this step so an unobstructed band is never missed. */
+const VERTICAL_STEP = 8
+
 /**
- * A vertical position that clears the obstacles and stays inside the pane,
- * trying `prefer` first and then the opposite direction. Falls back to a clamp
- * when neither fits (a pane smaller than its own content).
+ * The top for `box` (whose `y` is the DESIRED position) that keeps it inside
+ * the pane and as clear as possible of `obstacles`. Candidates are the desired
+ * spot, both pane edges, every obstacle's clear edges and a fine sweep; the
+ * winner has the least total overlap, then the smallest distance from the
+ * desired spot, preferring downward.
+ *
+ * This is what lets a card near the bottom edge stack UPWARD instead of being
+ * clamped back onto a neighbour (§8.5): a placement that overlaps nothing
+ * always beats one that overlaps something, however far away it has to go.
  */
-function placeVertical(
+function bestVertical(
   box: CardBox,
   obstacles: readonly CardBox[],
   viewport: CardSize,
   gap: number,
-  margin: number,
-  prefer: 'down' | 'up'
+  margin: number
 ): number {
-  const primary = clearVertical(box, obstacles, gap, prefer)
+  const min = margin
+  const max = Math.max(min, viewport.height - margin - box.height)
+  const desired = clamp(box.y, min, max)
+  const candidates = new Set<number>([min, max, desired])
 
-  if (withinBounds(primary, box.height, viewport, margin)) {
-    return primary
+  for (const other of obstacles) {
+    candidates.add(clamp(other.y - box.height - gap, min, max))
+    candidates.add(clamp(other.y + other.height + gap, min, max))
   }
 
-  const secondary = clearVertical(box, obstacles, gap, prefer === 'down' ? 'up' : 'down')
-
-  if (withinBounds(secondary, box.height, viewport, margin)) {
-    return secondary
+  for (let y = min; y <= max; y += VERTICAL_STEP) {
+    candidates.add(y)
   }
 
-  return clamp(primary, margin, Math.max(margin, viewport.height - box.height - margin))
+  let best = desired
+  let bestOverlap = Number.POSITIVE_INFINITY
+  let bestDistance = Number.POSITIVE_INFINITY
+
+  for (const y of candidates) {
+    const overlap = totalOverlap({ ...box, y }, obstacles, gap)
+    const distance = Math.abs(y - desired)
+
+    const better =
+      overlap < bestOverlap - 0.5 ||
+      (Math.abs(overlap - bestOverlap) <= 0.5 &&
+        (distance < bestDistance - 0.5 || (Math.abs(distance - bestDistance) <= 0.5 && y > best)))
+
+    if (better) {
+      best = y
+      bestOverlap = overlap
+      bestDistance = distance
+    }
+  }
+
+  return best
 }
 
 /**
@@ -139,25 +191,40 @@ export function cardLayout(
   }
 
   // Flip to the other side when the roomier one is occupied by a neighbour.
-  const side =
+  const preferred =
     preference.find(candidate => !obstacles.some(box => boxesOverlap(boxFor(candidate), box, gap))) ?? preference[0]
 
-  const box = boxFor(side)
+  // Resolve vertically on the preferred side; if that still cannot clear every
+  // obstacle, try the other side and take whichever placement is clearer.
+  const choices = [preferred, ...preference.filter(side => side !== preferred)].map(side => {
+    const box = boxFor(side)
+    const top = bestVertical(box, obstacles, viewport, gap, margin)
+
+    return { box, overlap: totalOverlap({ ...box, y: top }, obstacles, gap), side, top }
+  })
+
+  const chosen =
+    choices[0].overlap <= 0.5
+      ? choices[0]
+      : (choices.find(choice => choice.overlap <= 0.5) ??
+        choices.reduce((best, choice) => (choice.overlap < best.overlap ? choice : best)))
 
   return {
-    left: box.x,
-    originX: side === 'right' ? 'left' : 'right',
-    side,
-    top: placeVertical(box, obstacles, viewport, gap, margin, 'down')
+    left: chosen.box.x,
+    originX: chosen.side === 'right' ? 'left' : 'right',
+    side: chosen.side,
+    top: chosen.top
   }
 }
 
 /**
  * Keeps several open cards from covering each other — or a neighbouring
- * avatar. A card that overlaps an already-placed box is pushed straight down
- * until it clears it, then the whole column is kept inside the pane.
- * Horizontal position and the unfold origin are untouched — the card still sits
- * beside its own avatar, just lower when a neighbour already occupies that spot.
+ * avatar. Each card is validated against every card already placed AND every
+ * obstacle: the placement with the least overlap wins, so a card that would
+ * otherwise be clamped onto a neighbour near the bottom edge stacks upward (or
+ * into whatever clear band exists) instead. Horizontal position and the unfold
+ * origin are untouched — the card still sits beside its own avatar, just higher
+ * or lower when that spot is taken.
  *
  * Pure and order-stable so the placement contract is unit-tested.
  */
@@ -172,28 +239,10 @@ export function stackCards(
   const out: { x: number; y: number }[] = []
 
   for (const box of boxes) {
-    let y = box.y
-    let moved = true
-    let guard = 0
+    const top = bestVertical(box, placed, viewport, gap, margin)
 
-    while (moved && guard <= boxes.length + obstacles.length) {
-      moved = false
-      guard += 1
-
-      for (const other of placed) {
-        if (boxesOverlap({ ...box, y }, other, gap)) {
-          y = other.y + other.height + gap
-          moved = true
-        }
-      }
-    }
-
-    if (y + box.height > viewport.height - margin) {
-      y = Math.max(margin, viewport.height - margin - box.height)
-    }
-
-    placed.push({ ...box, y })
-    out.push({ x: box.x, y })
+    placed.push({ ...box, y: top })
+    out.push({ x: box.x, y: top })
   }
 
   return out
