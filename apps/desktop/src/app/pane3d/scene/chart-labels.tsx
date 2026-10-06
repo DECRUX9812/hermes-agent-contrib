@@ -19,7 +19,15 @@ import { chartRuntime } from '../director/chart-state'
 import type { ChartSpec } from '../protocol'
 import { DevBadge } from '../ui/dev-badge'
 
-import { barColumnX, CHART_LABEL_GUTTER_PX, CHART_TITLE_GUTTER_PX, CHART_X_LABEL_GUTTER_PX } from './chart-layout'
+import {
+  barColumnX,
+  CHART_LABEL_GUTTER_PX,
+  CHART_PLINTH_HEIGHT,
+  CHART_TITLE_GUTTER_PX,
+  CHART_X_LABEL_GAP_PX,
+  CHART_X_LABEL_GUTTER_PX,
+  CHART_X_LABEL_STRIP_PX
+} from './chart-layout'
 import { type ChartDomain, formatTickLabel, formatValue } from './chart-scale'
 import { PX_PER_UNIT } from './projection'
 
@@ -121,13 +129,14 @@ export function ChartLabels({ boardHeight, boardWidth, domain, hoverIndex, sourc
         ))}
 
         {/* The X labels ride one strip under the board (board width only, not the
-            Y gutter) so eight labels read as one axis, not eight chips. */}
+            Y gutter) so eight labels read as one axis, not eight chips. It starts
+            below the plinth's underside, never over it. */}
         <div
           className="absolute flex items-center rounded-md bg-card shadow-nous"
           style={{
-            height: CHART_X_LABEL_GUTTER_PX - 6,
+            height: CHART_X_LABEL_STRIP_PX,
             left: CHART_LABEL_GUTTER_PX,
-            top: CHART_TITLE_GUTTER_PX + boardHpx + 3,
+            top: CHART_TITLE_GUTTER_PX + boardHpx + CHART_PLINTH_HEIGHT * PX_PER_UNIT + CHART_X_LABEL_GAP_PX,
             width: boardWpx
           }}
         >

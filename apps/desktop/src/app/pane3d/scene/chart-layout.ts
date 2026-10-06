@@ -53,7 +53,14 @@ export const CHART_LIFT = 0.06
 /** Layout in pane CSS px: what the DOM label layer needs around the board. */
 export const CHART_TOP_MARGIN_PX = 8
 export const CHART_TITLE_GUTTER_PX = 30
-export const CHART_X_LABEL_GUTTER_PX = 18
+/**
+ * The X-label strip sits under the plinth, so the gutter is exactly the plinth
+ * + the gap + the strip. Anything less and the strip's top edge grazes the
+ * plinth's underside (measured live at fit 0.62 and at fit 1).
+ */
+export const CHART_X_LABEL_GAP_PX = 2
+export const CHART_X_LABEL_STRIP_PX = 14
+export const CHART_X_LABEL_GUTTER_PX = CHART_X_LABEL_GAP_PX + CHART_X_LABEL_STRIP_PX + CHART_PLINTH_HEIGHT * PX_PER_UNIT
 /** Room left of the board for the Y tick labels. */
 export const CHART_LABEL_GUTTER_PX = 40
 /** Gap between the avatar row and the board. */

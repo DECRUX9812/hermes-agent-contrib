@@ -159,6 +159,10 @@ Before changing the app, read:
   transport, performance, and testing rules.
 - [`DESIGN.md`](./DESIGN.md): visual system, information architecture, motion,
   direct manipulation, and keyboard behavior.
+- [`PANE3D.md`](../../PANE3D.md): the 3D Pane overlay (the transparent
+  always-on-top window with the 3D assistants) — protocols, per-platform
+  click-through, anchoring, the avatar state machine, the dev-harness boundary,
+  how to run and validate it, and how to add a new avatar.
 
 ### Connections, projects, and switching
 

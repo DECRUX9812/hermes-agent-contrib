@@ -185,6 +185,10 @@ export interface ComposerState {
   context: PageContext
   /** Chips the user removed — the task must not receive these fields. */
   removed: ContextField[]
+  /** Text the composer opens with (the launch demo's pre-filled line, §11). */
+  draft?: string
+  /** `dev-harness` when the draft came from the scripted demo; renders the badge. */
+  source?: 'dev-harness'
 }
 
 export const $composer = atom<ComposerState | null>(null)
@@ -347,7 +351,13 @@ export function snapshotPane3d(): Pane3dDebugSnapshot {
     cards: Object.values($cards.get()),
     chart: chartRuntime.visible ? { rotationDeg: chartRuntime.rotationDeg, visible: true } : null,
     composer: composer
-      ? { avatar: composer.avatar, context: { ...composer.context }, removed: [...composer.removed] }
+      ? {
+          avatar: composer.avatar,
+          context: { ...composer.context },
+          draft: composer.draft,
+          removed: [...composer.removed],
+          source: composer.source
+        }
       : null,
     feed: $feed.get(),
     frameloop: pane3dRuntime.frameloop,

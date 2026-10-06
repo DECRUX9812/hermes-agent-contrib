@@ -66,8 +66,14 @@ async function capture(): Promise<PageContext> {
  * Capture, then open. Nothing happens when the avatar is not idle: the machine
  * only accepts `COMPOSER_OPEN` from `idle`, and a stale capture (the avatar was
  * dismissed while the read was in flight) must not resurrect a composer.
+ *
+ * `options` lets the launch demo pre-fill the draft and mark it as harness
+ * content (§11); a plain click passes nothing.
  */
-export async function openComposer(id: AvatarId): Promise<void> {
+export async function openComposer(
+  id: AvatarId,
+  options: { draft?: string; source?: 'dev-harness' } = {}
+): Promise<void> {
   const row = $avatars.get()[id]
 
   if (!row || row.state !== 'idle' || pending.has(id)) {
@@ -90,7 +96,7 @@ export async function openComposer(id: AvatarId): Promise<void> {
       return
     }
 
-    $composer.set({ avatar: id, context, removed: [] })
+    $composer.set({ avatar: id, context, draft: options.draft, removed: [], source: options.source })
   } finally {
     pending.delete(id)
   }

@@ -9,6 +9,7 @@ import { $avatars, applyPaneState, pane3dRuntime } from './director/store'
 import { cancelTasks } from './director/tasks'
 import { HitRegionPublisher } from './hit/publisher'
 import { PaneCamera } from './scene/camera'
+import { paneFrameloop } from './scene/frameloop'
 import { PaneLights } from './scene/lights'
 import { prewarmCompletion } from './scene/prewarm'
 import { Projector } from './scene/projector'
@@ -56,7 +57,7 @@ export function PaneApp() {
   const anyAvatarVisible = Object.values(avatars).some(avatar => avatar.visible && avatar.state !== 'hidden')
   // Never render continuously unless something is actually on screen
   // (architecture §8.4): an avatar, or a presented chart that is turning.
-  const frameloop = documentHidden ? 'never' : anyAvatarVisible || chart !== null ? 'always' : 'demand'
+  const frameloop = paneFrameloop({ anyAvatarVisible, chartPresented: chart !== null, documentHidden })
 
   useEffect(() => {
     pane3dRuntime.frameloop = frameloop

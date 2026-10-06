@@ -16,9 +16,12 @@ import {
   CHART_COLUMN_PITCH,
   CHART_LIFT,
   CHART_MIN_FIT,
+  CHART_PLINTH_HEIGHT,
   CHART_TITLE_GUTTER_PX,
   CHART_TOP_MARGIN_PX,
+  CHART_X_LABEL_GAP_PX,
   CHART_X_LABEL_GUTTER_PX,
+  CHART_X_LABEL_STRIP_PX,
   chartBarSpan,
   chartBoardWidth,
   chartFit,
@@ -29,6 +32,19 @@ import { CHART_MAX_BAR_HEIGHT } from './chart-scale'
 import { PX_PER_UNIT, screenToWorld } from './projection'
 
 const VIEWPORT = { height: 1080, width: 1920 }
+
+describe('X-label gutter', () => {
+  it('is exactly the plinth + gap + strip, so the strip clears the plinth', () => {
+    // The strip's top edge sits at board base + plinth + gap; the gutter is the
+    // panel's room below the board. If the two disagree the strip grazes the
+    // plinth (measured live) or overflows the panel's hit box.
+    expect(CHART_X_LABEL_GUTTER_PX).toBe(
+      CHART_PLINTH_HEIGHT * PX_PER_UNIT + CHART_X_LABEL_GAP_PX + CHART_X_LABEL_STRIP_PX
+    )
+    expect(CHART_X_LABEL_GAP_PX).toBeGreaterThan(0)
+    expect(CHART_X_LABEL_STRIP_PX).toBeGreaterThanOrEqual(12)
+  })
+})
 
 describe('bar columns', () => {
   it('spreads the bars symmetrically about the board centre', () => {

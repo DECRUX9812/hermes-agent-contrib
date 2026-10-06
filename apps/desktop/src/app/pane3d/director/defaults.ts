@@ -1,6 +1,7 @@
 import { scriptedConversation } from '../dev-harness/conversation-script'
 import { runDemoFeed } from '../dev-harness/demo-feed'
 import { DevHarnessExecutor } from '../dev-harness/dev-executor'
+import { playLaunchDemo } from '../dev-harness/launch-demo'
 
 import { installChartPresenter } from './chart-live'
 import { setTaskSubmitter } from './composer'
@@ -28,6 +29,12 @@ export function installPane3dDefaults(): void {
   // automatically through the same seam.
   installChartPresenter()
   setDemoScriptHandler(script => {
+    if (script === 'launch') {
+      playLaunchDemo()
+
+      return
+    }
+
     if (script === 'notify') {
       runDemoFeed()
     }

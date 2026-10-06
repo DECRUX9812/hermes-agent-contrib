@@ -15,6 +15,7 @@ import { avatarObstacleBoxes } from './avatar-obstacles'
 import { CARD_GAP, CARD_MARGIN, type CardBox } from './card-geometry'
 import { cardLayout } from './card-layout'
 import { contextChips } from './composer-chips'
+import { DevBadge } from './dev-badge'
 
 /** Wide enough for a sentence, narrow enough to sit beside an avatar. */
 const COMPOSER_WIDTH = 320
@@ -44,7 +45,9 @@ function ComposerView({ state }: { state: ComposerState }) {
   const box = useRef<HTMLDivElement>(null)
   const textarea = useRef<HTMLTextAreaElement>(null)
   const typed = useRef(false)
-  const [text, setText] = useState('')
+  // The launch demo opens the composer pre-filled (§11); a plain click starts
+  // empty. The draft is the initial value only — typing owns it from then on.
+  const [text, setText] = useState(state.draft ?? '')
   const chips = contextChips(state.context, state.removed)
 
   // The pane becomes focusable a tick after COMPOSER_OPEN (main sets it, then
@@ -141,6 +144,7 @@ function ComposerView({ state }: { state: ComposerState }) {
           style={{ background: definition.palette.primary }}
         />
         <span className="truncate text-[12px] font-medium text-(--ui-text-secondary)">{definition.displayName}</span>
+        {state.source === 'dev-harness' ? <DevBadge /> : null}
         <Button
           aria-label={PANE_COPY.closeComposer}
           className="-mt-1 -mr-1 ml-auto shrink-0 text-(--ui-text-tertiary)"
