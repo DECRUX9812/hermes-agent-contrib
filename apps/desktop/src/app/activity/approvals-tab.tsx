@@ -6,18 +6,18 @@ import { triggerHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 import {
   $attentionItems,
-  requestAttentionReveal,
   type AttentionItem,
-  type AttentionItemKind
+  type AttentionItemKind,
+  requestAttentionReveal
 } from '@/store/attention-inbox'
+import { recordApprovalGranted } from '@/store/bot-rapport'
 import { $gateway } from '@/store/gateway'
 import { notifyError } from '@/store/notifications'
 import {
-  answerApproval,
   $approvalQueues,
+  answerApproval,
   type ApprovalRequest
 } from '@/store/prompts'
-import { recordApprovalGranted } from '@/store/bot-rapport'
 
 // Approvals tab — everything waiting on the user, with explicit buttons.
 // The command is shown in full; Approve and Deny are unambiguous. Follows
@@ -50,10 +50,12 @@ function ApprovalCard({ item }: { item: AttentionItem }) {
       : null
 
   const answer = async (choice: 'once' | 'deny') => {
-    if (!request || busy) return
+    if (!request || busy) {return}
     setBusy(choice)
+
     try {
       await answerApproval(gateway, request, choice)
+
       if (choice === 'once' && sessionId) {
         // Best-effort rapport: the user trusted a bot with something real.
         try {
@@ -62,6 +64,7 @@ function ApprovalCard({ item }: { item: AttentionItem }) {
           // Rapport is advisory; never break approvals.
         }
       }
+
       triggerHaptic('selection')
     } catch (err) {
       notifyError(err, 'Could not answer the request')
@@ -71,7 +74,7 @@ function ApprovalCard({ item }: { item: AttentionItem }) {
   }
 
   const jumpToSession = () => {
-    if (!sessionId) return
+    if (!sessionId) {return}
     requestAttentionReveal(sessionId)
   }
 
@@ -83,7 +86,7 @@ function ApprovalCard({ item }: { item: AttentionItem }) {
       )}
     >
       <div className="flex items-start gap-2.5">
-        <Codicon name={meta.icon} className={cn('mt-0.5 shrink-0 text-[1rem]', meta.tone)} />
+        <Codicon className={cn('mt-0.5 shrink-0 text-[1rem]', meta.tone)} name={meta.icon} />
         <div className="min-w-0 flex-1">
           <p className="break-words font-mono text-[0.75rem] leading-relaxed text-foreground">
             {item.title}
@@ -142,7 +145,7 @@ export function ApprovalsTab() {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-        <Codicon name="shield" className="text-[2rem] text-(--ui-text-quaternary)" />
+        <Codicon className="text-[2rem] text-(--ui-text-quaternary)" name="shield" />
         <p className="text-[0.875rem] font-medium text-foreground">All clear</p>
         <p className="max-w-60 text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)">
           Nothing is waiting on you. When a bot needs approval, it will show up here.
@@ -152,12 +155,12 @@ export function ApprovalsTab() {
   }
 
   return (
-    <div className="flex flex-col gap-2" aria-label="Pending approvals">
+    <div aria-label="Pending approvals" className="flex flex-col gap-2">
       <p className="px-1 text-[0.6875rem] font-medium text-(--ui-text-tertiary)">
         {items.length === 1 ? '1 item needs you' : `${items.length} items need you`}
       </p>
       {items.map(item => (
-        <ApprovalCard key={item.id} item={item} />
+        <ApprovalCard item={item} key={item.id} />
       ))}
     </div>
   )

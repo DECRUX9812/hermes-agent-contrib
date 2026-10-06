@@ -7,8 +7,8 @@ import { $interfaceMode, shownInMode } from '@/store/interface-mode'
 import { applySidebarNavPrefs, SIDEBAR_NAV_PREFS_AREA } from '@/store/sidebar-nav'
 
 import {
-  type AppView,
   ACTIVITY_ROUTE,
+  type AppView,
   ARTIFACTS_ROUTE,
   CAPABILITIES_ROUTE,
   CRON_ROUTE,

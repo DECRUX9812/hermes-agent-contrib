@@ -55,13 +55,16 @@ export type MessageSentiment = 'positive' | 'proud' | 'concerned' | 'thinking' |
 /** Cheap sentiment over a message body — no model call. */
 export function analyzeSentiment(text: string): MessageSentiment {
   const body = text.slice(-2000) // last 2k chars is enough signal
+
   const scores = {
     positive: scoreText(body, POSITIVE),
     proud: scoreText(body, PROUD),
     concerned: scoreText(body, CONCERNED),
     thinking: scoreText(body, THINKING),
   }
+
   const best = (Object.entries(scores) as [MessageSentiment, number][]).sort((a, b) => b[1] - a[1])[0]
+
   return best[1] > 0 ? best[0] : 'neutral'
 }
 
@@ -78,22 +81,33 @@ export function deriveEmotion(activity: PetActivity, sentiment: MessageSentiment
   switch (state) {
     case 'failed':
       return 'concerned'
+
     case 'waiting':
       return 'waiting'
+
     case 'jump':
       return 'happy'
+
     case 'wave':
       return sentiment === 'proud' ? 'proud' : 'happy'
+
     case 'run':
       return 'working'
+
     case 'review':
       return sentiment === 'concerned' ? 'concerned' : 'thinking'
+
     case 'idle':
+
     default:
-      if (sentiment === 'positive') return 'happy'
-      if (sentiment === 'proud') return 'proud'
-      if (sentiment === 'concerned') return 'concerned'
-      if (sentiment === 'thinking') return 'thinking'
+      if (sentiment === 'positive') {return 'happy'}
+
+      if (sentiment === 'proud') {return 'proud'}
+
+      if (sentiment === 'concerned') {return 'concerned'}
+
+      if (sentiment === 'thinking') {return 'thinking'}
+
       return 'neutral'
   }
 }
@@ -103,17 +117,24 @@ export function emotionToPetState(emotion: PetEmotion): PetState {
   switch (emotion) {
     case 'happy':
       return 'wave'
+
     case 'proud':
       return 'jump'
+
     case 'working':
       return 'run'
+
     case 'thinking':
       return 'review'
+
     case 'waiting':
       return 'waiting'
+
     case 'concerned':
       return 'failed'
+
     case 'neutral':
+
     default:
       return 'idle'
   }
@@ -124,17 +145,24 @@ export function emotionCaption(emotion: PetEmotion): string {
   switch (emotion) {
     case 'happy':
       return 'Happy to help'
+
     case 'proud':
       return 'Done — nicely'
+
     case 'working':
       return 'Working…'
+
     case 'thinking':
       return 'Thinking…'
+
     case 'waiting':
       return 'Waiting for you'
+
     case 'concerned':
       return 'Hit a snag'
+
     case 'neutral':
+
     default:
       return 'Ready'
   }
@@ -142,25 +170,32 @@ export function emotionCaption(emotion: PetEmotion): string {
 
 function lastAssistantText(): string {
   const messages = $messages.get()
+
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i]
     // ChatMessage shape: role + content/text variants — read defensively.
     const role = (m as { role?: string }).role ?? ''
-    if (role !== 'assistant') continue
+
+    if (role !== 'assistant') {continue}
     const content = (m as { content?: unknown }).content ?? (m as { text?: unknown }).text ?? ''
-    if (typeof content === 'string' && content.trim()) return content
+
+    if (typeof content === 'string' && content.trim()) {return content}
+
     if (Array.isArray(content)) {
       const text = content
         .map(part => (typeof part === 'string' ? part : (part as { text?: string }).text ?? ''))
         .join('')
-      if (text.trim()) return text
+
+      if (text.trim()) {return text}
     }
   }
+
   return ''
 }
 
 /** Live emotion: task state first, message sentiment second. Never invented. */
 export const $petEmotion = computed([$petActivity, $messages], (activity, messages): PetEmotion => {
   void messages // recompute when messages change; text read inside for freshness
+
   return deriveEmotion(activity, analyzeSentiment(lastAssistantText()))
 })

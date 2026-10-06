@@ -3,14 +3,8 @@ import { useState } from 'react'
 
 import { PetSprite } from '@/components/pet/pet-sprite'
 import { Codicon } from '@/components/ui/codicon'
-import { cn } from '@/lib/utils'
 import { resolveProfileColor } from '@/lib/profile-color'
-import {
-  $rapportByBot,
-  getRapport,
-  rapportTier,
-  rapportTierLabel
-} from '@/store/bot-rapport'
+import { cn } from '@/lib/utils'
 import {
   $colonyBots,
   applyRolePreset,
@@ -18,6 +12,12 @@ import {
   type BotRole,
   type ColonyBot
 } from '@/store/bot-character'
+import {
+  $rapportByBot,
+  getRapport,
+  rapportTier,
+  rapportTierLabel
+} from '@/store/bot-rapport'
 import { $petActive, $petInfo } from '@/store/pet'
 import { $petEmotion, emotionToPetState } from '@/store/pet-emotion'
 import { $profileColors, switchProfile } from '@/store/profile'
@@ -31,22 +31,23 @@ function RapportRing({ score }: { score: number }) {
   const radius = 14
   const circumference = 2 * Math.PI * radius
   const filled = (score / 100) * circumference
+
   const color =
     tier === 'seasoned' ? 'stroke-emerald-400' : tier === 'trusted' ? 'stroke-violet-400' : 'stroke-(--ui-text-quaternary)'
 
   return (
     <span className="relative grid size-9 shrink-0 place-items-center" title={`${rapportTierLabel(tier)}: ${score}/100 work trust`}>
-      <svg viewBox="0 0 36 36" className="size-9 -rotate-90">
-        <circle cx="18" cy="18" r={radius} fill="none" className="stroke-(--ui-control-hover-background)" strokeWidth="3" />
+      <svg className="size-9 -rotate-90" viewBox="0 0 36 36">
+        <circle className="stroke-(--ui-control-hover-background)" cx="18" cy="18" fill="none" r={radius} strokeWidth="3" />
         <circle
+          className={cn(color, 'transition-all duration-500')}
           cx="18"
           cy="18"
-          r={radius}
           fill="none"
-          className={cn(color, 'transition-all duration-500')}
-          strokeWidth="3"
-          strokeLinecap="round"
+          r={radius}
           strokeDasharray={`${filled} ${circumference}`}
+          strokeLinecap="round"
+          strokeWidth="3"
         />
       </svg>
       <span className="absolute text-[0.5625rem] font-bold text-(--ui-text-secondary)">{score}</span>
@@ -63,13 +64,14 @@ function BotAvatar({ bot }: { bot: ColonyBot }) {
   if (bot.active && petActive && bot.character.avatar === 'pet') {
     return (
       <span className="grid size-11 place-items-center overflow-hidden rounded-full bg-(--ui-control-hover-background)">
-        <PetSprite info={petInfo} stateOverride={emotionToPetState(emotion)} zoom={0.44} pauseWhenUnfocused />
+        <PetSprite info={petInfo} pauseWhenUnfocused stateOverride={emotionToPetState(emotion)} zoom={0.44} />
       </span>
     )
   }
 
   const color = resolveProfileColor(bot.profileKey, colors ?? {}) ?? '#8b5cf6'
   const initial = (bot.character.name || bot.label || '?').trim().charAt(0).toUpperCase()
+
   return (
     <span
       aria-hidden="true"
@@ -89,8 +91,9 @@ function BotRow({ bot }: { bot: ColonyBot }) {
   const char = bot.character
 
   const onSwitch = async () => {
-    if (bot.active || switching) return
+    if (bot.active || switching) {return}
     setSwitching(true)
+
     try {
       await switchProfile(bot.profileKey)
     } finally {
@@ -156,8 +159,8 @@ function BotRow({ bot }: { bot: ColonyBot }) {
             <div className="flex flex-wrap gap-1">
               {char.strengths.map(s => (
                 <span
-                  key={s}
                   className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[0.625rem] font-semibold text-violet-200"
+                  key={s}
                 >
                   {s}
                 </span>
@@ -169,7 +172,6 @@ function BotRow({ bot }: { bot: ColonyBot }) {
             <div className="grid grid-cols-2 gap-1.5">
               {BOT_ROLE_PRESETS.map(preset => (
                 <button
-                  key={preset.role}
                   aria-pressed={char.role === preset.role}
                   className={cn(
                     'rounded-lg border p-2 text-left transition-colors',
@@ -177,6 +179,7 @@ function BotRow({ bot }: { bot: ColonyBot }) {
                       ? 'border-violet-400/60 bg-violet-500/10'
                       : 'border-(--ui-edge-border) hover:bg-(--ui-control-hover-background)'
                   )}
+                  key={preset.role}
                   onClick={() => onPreset(preset.role)}
                   type="button"
                 >
@@ -208,7 +211,7 @@ export function BotsTab() {
   if (bots.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-        <Codicon name="robot" className="text-[2rem] text-(--ui-text-quaternary)" />
+        <Codicon className="text-[2rem] text-(--ui-text-quaternary)" name="robot" />
         <p className="text-[0.875rem] font-medium text-foreground">No bots yet</p>
         <p className="max-w-60 text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)">
           Your colony will appear here once profiles are set up.
@@ -218,14 +221,14 @@ export function BotsTab() {
   }
 
   return (
-    <div className="flex flex-col gap-2" aria-label="Bot colony">
+    <div aria-label="Bot colony" className="flex flex-col gap-2">
       <p className="px-1 text-[0.6875rem] font-medium text-(--ui-text-tertiary)">
         {bots.length === 1
           ? '1 bot in your colony'
           : `${bots.length} bots in your colony`}
       </p>
       {bots.map(bot => (
-        <BotRow key={bot.profileKey} bot={bot} />
+        <BotRow bot={bot} key={bot.profileKey} />
       ))}
     </div>
   )

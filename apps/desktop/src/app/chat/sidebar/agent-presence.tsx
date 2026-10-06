@@ -1,11 +1,11 @@
 import { useStore } from '@nanostores/react'
 
-import { PetSprite } from '@/components/pet/pet-sprite'
 import { BrandMark } from '@/components/brand-mark'
+import { PetSprite } from '@/components/pet/pet-sprite'
 import { cn } from '@/lib/utils'
 import { $activeWork } from '@/store/active-work'
-import { $petEmotion, emotionCaption, type PetEmotion } from '@/store/pet-emotion'
 import { $petActive, $petInfo } from '@/store/pet'
+import { $petEmotion, emotionCaption, type PetEmotion } from '@/store/pet-emotion'
 import { $activeGatewayProfile, $profiles, profileLabel } from '@/store/profile'
 
 // Agent Presence Header — the "who's here and what are they doing" strip.
@@ -18,15 +18,22 @@ function statusTone(emotion: PetEmotion): string {
   switch (emotion) {
     case 'concerned':
       return 'text-red-400'
+
     case 'waiting':
       return 'text-amber-400'
+
     case 'working':
+
     case 'thinking':
       return 'text-violet-300'
+
     case 'happy':
+
     case 'proud':
       return 'text-emerald-300'
+
     case 'neutral':
+
     default:
       return 'text-(--ui-text-tertiary)'
   }
@@ -44,6 +51,7 @@ export function AgentPresence() {
   const botName = profile ? profileLabel(profile) : 'Hermes'
 
   const workingTitle = work.count > 0 ? (work.titles[0] ?? null) : null
+
   // When actually working, name the task; otherwise the emotion caption.
   const line = workingTitle && (emotion === 'working' || emotion === 'thinking')
     ? `Working on ${workingTitle}`
@@ -59,7 +67,7 @@ export function AgentPresence() {
     >
       <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-(--ui-control-hover-background)">
         {petActive ? (
-          <PetSprite info={petInfo} zoom={0.42} pauseWhenUnfocused />
+          <PetSprite info={petInfo} pauseWhenUnfocused zoom={0.42} />
         ) : (
           <BrandMark className="size-6 text-violet-300" />
         )}

@@ -5,8 +5,8 @@ import { type FC, useCallback, useEffect, useRef, useState } from 'react'
 import { useIsDark } from '@/components/assistant-ui/embeds/use-is-dark'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
-import { type VisualizationPayload, visualizationFromResult } from '@/lib/visualizations'
 import { cn } from '@/lib/utils'
+import { visualizationFromResult, type VisualizationPayload } from '@/lib/visualizations'
 
 /**
  * Inline visualization card — renders agent-generated HTML in a sandboxed
@@ -24,9 +24,11 @@ function themedSrcDoc(html: string, dark: boolean): string {
   // Inject the theme marker as early as possible so the guest can read
   // `document.documentElement.dataset.theme` during its own boot.
   const marker = `<script>document.documentElement.dataset.theme=${JSON.stringify(dark ? 'dark' : 'light')};</script>`
+
   if (/<head[^>]*>/i.test(html)) {
     return html.replace(/<head[^>]*>/i, match => `${match}${marker}`)
   }
+
   return marker + html
 }
 
@@ -54,13 +56,13 @@ const VisualizationFrame: FC<{
 
   return (
     <iframe
-      ref={iframeRef}
       className={cn('w-full border-0', expanded ? 'h-[80dvh]' : 'min-h-[320px]')}
-      style={expanded ? undefined : { height: CARD_MIN_HEIGHT }}
       onError={onError}
       onLoad={onLoad}
+      ref={iframeRef}
       sandbox="allow-scripts"
       srcDoc={themedSrcDoc(payload.html, dark)}
+      style={expanded ? undefined : { height: CARD_MIN_HEIGHT }}
       title={payload.title}
     />
   )
@@ -82,12 +84,15 @@ export const VisualizationCard: FC<{ result?: unknown; title?: string }> = ({ re
     if (!expanded) {
       return
     }
+
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         closeExpanded()
       }
     }
+
     window.addEventListener('keydown', onKey)
+
     return () => window.removeEventListener('keydown', onKey)
   }, [expanded, closeExpanded])
 
@@ -102,9 +107,9 @@ export const VisualizationCard: FC<{ result?: unknown; title?: string }> = ({ re
   const renderFrame = (isExpanded: boolean) =>
     payload ? (
       <VisualizationFrame
-        key={isExpanded ? 'expanded' : 'inline'}
         dark={dark}
         expanded={isExpanded}
+        key={isExpanded ? 'expanded' : 'inline'}
         onError={() => setFailed(true)}
         onLoad={() => setLoaded(true)}
         payload={payload}
@@ -160,11 +165,11 @@ export const VisualizationCard: FC<{ result?: unknown; title?: string }> = ({ re
 
       {expanded && payload && !failed && (
         <div
+          aria-label={headerTitle}
+          aria-modal="true"
           className="fixed inset-0 z-[100] flex flex-col bg-black/80 p-4 backdrop-blur-sm"
           onClick={closeExpanded}
           role="dialog"
-          aria-modal="true"
-          aria-label={headerTitle}
         >
           <div className="mb-2 flex items-center gap-2" onClick={e => e.stopPropagation()}>
             <Codicon className="text-white/70" name="graph" />

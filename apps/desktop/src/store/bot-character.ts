@@ -76,9 +76,12 @@ function defaultCharacter(profileKey: string): BotCharacter {
 
 function loadCharacter(profileKey: string): BotCharacter {
   const raw = storedString(CHAR_KEY(profileKey))
-  if (!raw) return defaultCharacter(profileKey)
+
+  if (!raw) {return defaultCharacter(profileKey)}
+
   try {
     const parsed = JSON.parse(raw) as Partial<BotCharacter>
+
     return { ...defaultCharacter(profileKey), ...parsed }
   } catch {
     return defaultCharacter(profileKey)
@@ -109,6 +112,7 @@ function bumpCharacters(): void {
 
 export function getBotCharacter(profileKey: string): BotCharacter {
   void $characterVersion.get()
+
   return loadCharacter(normalizeProfileKey(profileKey))
 }
 
@@ -120,7 +124,8 @@ export function setBotCharacter(profileKey: string, patch: Partial<BotCharacter>
 
 export function applyRolePreset(profileKey: string, role: BotRole): void {
   const preset = BOT_ROLE_PRESETS.find(p => p.role === role)
-  if (!preset) return
+
+  if (!preset) {return}
   setBotCharacter(profileKey, {
     role,
     tone: preset.tone,
@@ -133,12 +138,14 @@ export const $colonyBots = computed(
   (profiles, activeProfile): ColonyBot[] => {
     void $characterVersion.get()
     const activeKey = normalizeProfileKey(activeProfile)
+
     const list = (profiles ?? []).map(p => {
       const key = normalizeProfileKey(p.name)
       const char = loadCharacter(key)
       // Prefer the profile's display label for the card name unless the user
       // renamed the bot explicitly (stored name differs from default).
       const defaultName = key === 'default' ? 'Hermes' : key
+
       return {
         profileKey: key,
         label: profileLabel(p),
@@ -146,6 +153,7 @@ export const $colonyBots = computed(
         active: key === activeKey,
       }
     })
+
     // Active bot first, then alphabetical.
     return list.sort((a, b) => Number(b.active) - Number(a.active) || a.label.localeCompare(b.label))
   }

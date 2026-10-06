@@ -6,8 +6,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
 import { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
-import { AgentPresence } from './agent-presence'
-import { ColonyRoster } from './colony-roster'
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { SidebarPanelLabel } from '@/app/shell/sidebar-label'
 import { Button } from '@/components/ui/button'
@@ -150,7 +148,9 @@ import { type AppView, SIDEBAR_LIST_TOP_AREA, type SidebarListTopContribution } 
 import type { SidebarNavItem } from '../../types'
 import { type NewSessionSplitHandler, startNewSessionDrag } from '../new-session-drag'
 
+import { AgentPresence } from './agent-presence'
 import { SidebarSectionAddButton } from './chrome'
+import { ColonyRoster } from './colony-roster'
 import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarDelegationReports } from './delegation-reports'
 import { SidebarFilterMenu } from './filter-menu'

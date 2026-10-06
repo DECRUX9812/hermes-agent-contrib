@@ -7,8 +7,8 @@ import { OverlayView } from '@/app/overlays/overlay-view'
 import { Codicon } from '@/components/ui/codicon'
 import { cn } from '@/lib/utils'
 import { $attentionItemCount } from '@/store/attention-inbox'
-import { $cronJobs } from '@/store/cron'
 import { $colonyBots } from '@/store/bot-character'
+import { $cronJobs } from '@/store/cron'
 
 import { ActivityTab } from './activity-tab'
 import { ApprovalsTab } from './approvals-tab'
@@ -41,10 +41,13 @@ export function ActivityView({ onClose }: { onClose: () => void }) {
     switch (id) {
       case 'approvals':
         return approvalCount > 0 ? approvalCount : null
+
       case 'upcoming':
         return cronJobs.length > 0 ? cronJobs.length : null
+
       case 'bots':
         return bots.length > 1 ? bots.length : null
+
       default:
         return null
     }
@@ -66,14 +69,14 @@ export function ActivityView({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Tabs — one tap to each surface. */}
-        <div className="shrink-0 px-5 pb-2 pt-1" role="tablist" aria-label="Activity sections">
+        <div aria-label="Activity sections" className="shrink-0 px-5 pb-2 pt-1" role="tablist">
           <div className="flex gap-1 rounded-xl bg-(--ui-control-background) p-1">
             {TABS.map(t => {
               const badge = badgeFor(t.id)
               const active = tab === t.id
+
               return (
                 <button
-                  key={t.id}
                   aria-selected={active}
                   className={cn(
                     'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5',
@@ -83,11 +86,12 @@ export function ActivityView({ onClose }: { onClose: () => void }) {
                       ? 'bg-(--ui-control-active-background) text-foreground shadow-sm'
                       : 'text-(--ui-text-tertiary) hover:text-foreground'
                   )}
+                  key={t.id}
                   onClick={() => setTab(t.id)}
                   role="tab"
                   type="button"
                 >
-                  <Codicon name={t.icon} className="text-[0.875rem]" />
+                  <Codicon className="text-[0.875rem]" name={t.icon} />
                   <span>{t.label}</span>
                   {badge !== null && (
                     <span

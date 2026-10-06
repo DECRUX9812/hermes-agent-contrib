@@ -2,10 +2,10 @@ import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
 import {
-  BOT_ROLE_PRESETS,
   applyRolePreset,
-  setBotCharacter,
+  BOT_ROLE_PRESETS,
   type ColonyBot,
+  setBotCharacter,
 } from '@/store/bot-character'
 
 // Bot character card — name, visual identity, tone, strengths, quirks.
@@ -32,9 +32,9 @@ export function BotCard({ bot }: { bot: ColonyBot }) {
 
   return (
     <div
+      aria-label={`${char.name} character card`}
       className="w-60 rounded-xl border border-(--ui-edge-border) bg-(--ui-popover-background) p-3 shadow-xl"
       role="dialog"
-      aria-label={`${char.name} character card`}
     >
       {editing ? (
         <div className="flex flex-col gap-2" onClick={e => e.stopPropagation()}>
@@ -121,8 +121,8 @@ export function BotCard({ bot }: { bot: ColonyBot }) {
             <div className="flex flex-wrap gap-1 pt-0.5">
               {char.strengths.map(s => (
                 <span
-                  key={s}
                   className="rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[0.625rem] font-semibold text-violet-200"
+                  key={s}
                 >
                   {s}
                 </span>

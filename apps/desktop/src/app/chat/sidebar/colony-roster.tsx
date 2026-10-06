@@ -2,11 +2,11 @@ import { useStore } from '@nanostores/react'
 import { useState } from 'react'
 
 import { PetSprite } from '@/components/pet/pet-sprite'
-import { cn } from '@/lib/utils'
 import { resolveProfileColor } from '@/lib/profile-color'
-import { $petEmotion, emotionToPetState } from '@/store/pet-emotion'
-import { $petActive, $petInfo } from '@/store/pet'
+import { cn } from '@/lib/utils'
 import { $colonyBots, type ColonyBot } from '@/store/bot-character'
+import { $petActive, $petInfo } from '@/store/pet'
+import { $petEmotion, emotionToPetState } from '@/store/pet-emotion'
 import { $profileColors, switchProfile } from '@/store/profile'
 
 import { BotCard } from './bot-card'
@@ -18,7 +18,8 @@ import { BotCard } from './bot-card'
 // not a dashboard.
 
 function statusDotClass(bot: ColonyBot, isActive: boolean): string {
-  if (!isActive) return 'bg-(--ui-text-quaternary)'
+  if (!isActive) {return 'bg-(--ui-text-quaternary)'}
+
   // Active bot's dot mirrors the live emotion.
   return 'bg-emerald-400'
 }
@@ -34,13 +35,14 @@ function BotAvatar({ bot }: { bot: ColonyBot }) {
     // The active bot shows its own living pet — expression follows emotion.
     return (
       <span className="grid size-8 place-items-center overflow-hidden rounded-full bg-(--ui-control-hover-background)">
-        <PetSprite info={petInfo} stateOverride={emotionToPetState(emotion)} zoom={0.34} pauseWhenUnfocused />
+        <PetSprite info={petInfo} pauseWhenUnfocused stateOverride={emotionToPetState(emotion)} zoom={0.34} />
       </span>
     )
   }
 
   const color = resolveProfileColor(bot.profileKey, colors ?? {}) ?? '#8b5cf6'
   const initial = (char.name || bot.label || '?').trim().charAt(0).toUpperCase()
+
   return (
     <span
       aria-hidden="true"
@@ -57,11 +59,12 @@ export function ColonyRoster() {
   const [cardFor, setCardFor] = useState<string | null>(null)
   const [switching, setSwitching] = useState<string | null>(null)
 
-  if (bots.length <= 1) return null // Solo bot — no roster needed.
+  if (bots.length <= 1) {return null} // Solo bot — no roster needed.
 
   const onSelect = async (bot: ColonyBot) => {
-    if (bot.active || switching) return
+    if (bot.active || switching) {return}
     setSwitching(bot.profileKey)
+
     try {
       await switchProfile(bot.profileKey)
     } finally {
@@ -73,7 +76,7 @@ export function ColonyRoster() {
     <div className="flex items-center gap-1.5 px-1 pb-2" data-tour="colony-roster">
       <span className="sr-only">Bots in this colony</span>
       {bots.slice(0, 6).map(bot => (
-        <div key={bot.profileKey} className="relative">
+        <div className="relative" key={bot.profileKey}>
           <button
             aria-label={`Switch to ${bot.character.name}`}
             aria-pressed={bot.active}
@@ -83,11 +86,11 @@ export function ColonyRoster() {
               bot.active && 'ring-2 ring-violet-400/70 ring-offset-2 ring-offset-(--ui-sidebar-surface-background)',
               switching === bot.profileKey && 'animate-pulse'
             )}
+            onBlur={() => setCardFor(null)}
             onClick={() => onSelect(bot)}
+            onFocus={() => setCardFor(bot.profileKey)}
             onMouseEnter={() => setCardFor(bot.profileKey)}
             onMouseLeave={() => setCardFor(null)}
-            onFocus={() => setCardFor(bot.profileKey)}
-            onBlur={() => setCardFor(null)}
             title={bot.character.name}
             type="button"
           >

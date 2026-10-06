@@ -25,10 +25,12 @@ function statusIcon(status: RailTaskStatus) {
   switch (status) {
     case 'running':
       return <GlyphSpinner className="text-violet-300" />
+
     case 'error':
-      return <Codicon name="error" className="text-red-400" />
+      return <Codicon className="text-red-400" name="error" />
+
     default:
-      return <Codicon name="check" className="text-emerald-400" />
+      return <Codicon className="text-emerald-400" name="check" />
   }
 }
 
@@ -65,7 +67,7 @@ export function ActivityTab() {
   if (rows.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-        <Codicon name="pulse" className="text-[2rem] text-(--ui-text-quaternary)" />
+        <Codicon className="text-[2rem] text-(--ui-text-quaternary)" name="pulse" />
         <p className="text-[0.875rem] font-medium text-foreground">Nothing happening yet</p>
         <p className="max-w-60 text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)">
           When bots run tasks or you start conversations, they will show up here.
@@ -75,16 +77,16 @@ export function ActivityTab() {
   }
 
   return (
-    <ul className="flex flex-col gap-1" aria-label="Recent activity">
+    <ul aria-label="Recent activity" className="flex flex-col gap-1">
       {rows.map(row => (
         <li
-          key={row.id}
           className={cn(
             'flex items-center gap-3 rounded-lg px-3 py-2',
             'hover:bg-(--ui-control-hover-background)'
           )}
+          key={row.id}
         >
-          <span className="grid size-6 shrink-0 place-items-center" aria-hidden="true">
+          <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center">
             {statusIcon(row.status)}
           </span>
           <div className="min-w-0 flex-1 leading-tight">

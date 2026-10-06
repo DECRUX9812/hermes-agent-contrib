@@ -8,6 +8,7 @@ describe('visualizationFromResult', () => {
       success: true,
       visualization: { title: 'Test Chart', html: '<html><body>chart</body></html>' }
     })
+
     expect(visualizationFromResult(result)).toEqual({
       title: 'Test Chart',
       html: '<html><body>chart</body></html>'
