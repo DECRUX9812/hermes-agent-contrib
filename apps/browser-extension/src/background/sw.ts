@@ -241,64 +241,8 @@ class BotRoomService {
         }
       }
 
-      case 'task': {
-        if (msg.roomId) {
-          void this.rooms.userMessage(msg.roomId, msg.text)
-
-          return
-        }
-
-        if (!msg.botId) {break}
-
-        // site avatar: real harness bot + site context injected
-        const site = msg.botId.startsWith('site:') ? this.siteBots.get(msg.botId) : undefined
-        const bot = site?.bot ?? this.bots.get(msg.botId)
-        const harness = bot && this.harnesses.get(bot.harnessId)
-
-        if (!bot || !harness) {break}
-
-        const text = site ? sitePromptPrefix(bot, site.url, site.title) + msg.text : msg.text
-
-        void harness.send(bot.ref, text, {
-          onDelta: () => undefined,
-          onStatus: line => {
-            // site avatars aren't in the roster — broadcast straight to tabs
-            if (site) {
-              this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working', statusLine: line } })
-            } else {
-              this.rooms.onBotStatus?.(bot.id, 'working', line)
-            }
-          },
-          onPageAction: (action, args, reply) => {
-            void this.bridge
-              .run(`browser_${action}`, args, { tabId })
-              .then(reply, () => reply({ ok: false }))
-          },
-        }).then(res => {
-          this.broadcast({
-            type: 'room.msg',
-            msg: {
-              id: `solo-${Date.now()}`,
-              roomId: `solo:${bot.id}`,
-              author: bot.id,
-              authorName: bot.displayName,
-              text: res.text,
-              at: Date.now(),
-            } satisfies RoomMsg,
-          })
-        }).finally(() => {
-          // settle the avatar's badge — success or send failure alike
-          if (site) {
-            this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'idle' } })
-          }
-        })
-
-        if (site) {
-          this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working' } })
-        }
-
-        return
-      }
+      case 'task':
+        return this.handleTask(tabId, msg)
 
       case 'room.create':
         this.rooms.createRoom(msg.name, msg.botIds ?? [])
@@ -347,6 +291,65 @@ class BotRoomService {
         await this.applySettings(msg.settings)
 
         return
+    }
+  }
+
+  /** The 'task' message: a room route, or a one-shot send to a bot —
+   *  site avatars get their page context injected into the prompt. */
+  private handleTask(tabId: number | undefined, msg: Extract<ContentToSw, { type: 'task' }>): void {
+    if (msg.roomId) {
+      void this.rooms.userMessage(msg.roomId, msg.text)
+
+      return
+    }
+
+    if (!msg.botId) {return}
+
+    // site avatar: real harness bot + site context injected
+    const site = msg.botId.startsWith('site:') ? this.siteBots.get(msg.botId) : undefined
+    const bot = site?.bot ?? this.bots.get(msg.botId)
+    const harness = bot && this.harnesses.get(bot.harnessId)
+
+    if (!bot || !harness) {return}
+
+    const text = site ? sitePromptPrefix(bot, site.url, site.title) + msg.text : msg.text
+
+    void harness.send(bot.ref, text, {
+      onDelta: () => undefined,
+      onStatus: line => {
+        // site avatars aren't in the roster — broadcast straight to tabs
+        if (site) {
+          this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working', statusLine: line } })
+        } else {
+          this.rooms.onBotStatus?.(bot.id, 'working', line)
+        }
+      },
+      onPageAction: (action, args, reply) => {
+        void this.bridge
+          .run(`browser_${action}`, args, { tabId })
+          .then(reply, () => reply({ ok: false }))
+      },
+    }).then(res => {
+      this.broadcast({
+        type: 'room.msg',
+        msg: {
+          id: `solo-${Date.now()}`,
+          roomId: `solo:${bot.id}`,
+          author: bot.id,
+          authorName: bot.displayName,
+          text: res.text,
+          at: Date.now(),
+        } satisfies RoomMsg,
+      })
+    }).finally(() => {
+      // settle the avatar's badge — success or send failure alike
+      if (site) {
+        this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'idle' } })
+      }
+    })
+
+    if (site) {
+      this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working' } })
     }
   }
 
