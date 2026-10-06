@@ -39,8 +39,6 @@ import {
   $connection,
   $messages,
   $sessions,
-  forgetSessionOwnerHintsForSession,
-  getSessionOwnerHint,
   setActiveSessionId,
   setAwaitingResponse,
   setBusy,
@@ -58,7 +56,6 @@ import {
 } from '@/store/session'
 import { isSessionOwnerResolutionError } from '@/store/session-owner-resolution'
 import { isSessionRemovalPending } from '@/store/session-removal'
-import { sessionOwnerRouteFromRow } from '@/store/session-request-router'
 import {
   requestForSessionProfile,
   type SessionOwnerScope,
@@ -78,6 +75,7 @@ import { captureDisplayHydration } from './display-hydration'
 import type { SessionActionHandles, SessionActionsOptions } from './options'
 import { reconcilePersistedSessionTurn } from './persisted-live-turn'
 import { provisionalTranscriptPaint, transcriptRestScope } from './provisional-transcript'
+import { rememberedOwnerForResume } from './remembered-owner'
 import { pendingClarifyToolPayload, restorePendingClarifyFromSnapshot } from './restore-pending-clarify'
 import { projectPendingConnection, restorePendingConnectionFromSnapshot } from './restore-pending-connection'
 import {
@@ -89,7 +87,6 @@ import {
   appendLiveSessionProjection,
   applyRuntimeInfo,
   applyStoredSessionPreviewRuntimeInfo,
-  cachedSessionRow,
   chatMessageArraysEquivalent,
   dedupeInflightUserAgainstTranscript,
   goneSessionVerdict,
@@ -367,25 +364,9 @@ export function useResumeActions(
       // resolveStoredSession finds the row by id (cheap), so an uncached pasted
       // id loads as fast as a sidebar click instead of hanging on a list scan.
       //
-      // A persisted owner hint is only trustworthy when it agrees with the
-      // best cached row for the session. Comparing against the live foreground
-      // socket is wrong in exactly the case the hint exists for: hints are
-      // minted from the AMBIENT connection at create/open time, which in the
-      // all-profiles view is not the foreground. The row is the authority.
-      //
-      // An explicitly captured owner is authoritative as given; only the
-      // REMEMBERED hint is validated, never the caller capture.
-      const rememberedHint = capturedOwner ? undefined : getSessionOwnerHint(storedSessionId)
-      const rowOwnerRoute = sessionOwnerRouteFromRow(cachedSessionRow(storedSessionId))
-
-      const rememberedOwner =
-        rememberedHint && rowOwnerRoute && rememberedHint.connectionId === rowOwnerRoute.connectionId
-          ? rememberedHint
-          : undefined
-
-      if (rememberedHint && !rememberedOwner) {
-        forgetSessionOwnerHintsForSession(storedSessionId)
-      }
+      // Only the REMEMBERED hint is validated (remembered-owner.ts); an explicitly captured owner
+      // (requestSessionResume with a row route, a plugin open) is authoritative as given.
+      const rememberedOwner = capturedOwner ? undefined : rememberedOwnerForResume(storedSessionId)
 
       // An explicit capture outranks the remembered hint; the hint only
       // fills in when the caller had no route to give.

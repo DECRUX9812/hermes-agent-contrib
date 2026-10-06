@@ -7,7 +7,13 @@ import { getLatestSessionMessages, type SessionInfo } from '@/hermes'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import * as gateways from '@/store/gateway'
 import { $activeGatewayProfile, $showAllProfiles } from '@/store/profile'
-import { _resetSessionOwnerHintsForTests, getSessionOwnerHint, setConnection, setSessions } from '@/store/session'
+import {
+  _resetSessionOwnerHintsForTests,
+  getSessionOwnerHint,
+  setConnection,
+  setSessionOwnerHint,
+  setSessions
+} from '@/store/session'
 import { clearAllSessionStates, publishSessionState, requestForOwnedSession } from '@/store/session-states'
 
 import type { ClientSessionState } from '../../../types'
@@ -162,6 +168,34 @@ describe('untagged resume ambient owner', () => {
       expect(ambientRequest).not.toHaveBeenCalled()
     }
   )
+
+  it('keeps a hidden Bot Chat hint when no sidebar row exists (canonical chats are never listed)', async () => {
+    const primary = { connectionState: 'open', request: vi.fn(async (method: string) => rpcResult(method)) }
+    gateways.setPrimaryGateway(primary as never, 'default')
+    gateways.setPrimaryGatewayConnection(descriptor('home'))
+    setConnection(descriptor('home'))
+    await gateways.ensureGatewayForAgent('remote-secondary', 'bot')
+    const secondary = gateways.activeGateway()!
+    // A canonical Bot Chat is born hidden, so it never reaches $sessions: the
+    // persisted hint is the ONLY owner record the resume can consult. Losing it
+    // sends session.resume to the ambient socket, which has never heard of the
+    // session (#120730 remote secondary open).
+    setSessions([])
+    setSessionOwnerHint('stored', { connectionId: 'remote-secondary', profile: 'bot' })
+    let resume!: Resume
+    render(
+      <Harness
+        onReady={ready => {
+          resume = ready
+        }}
+      />
+    )
+    await act(() => resume('stored', true))
+
+    expect(getSessionOwnerHint('stored')).toMatchObject({ connectionId: 'remote-secondary', profile: 'bot' })
+    expect(secondary.request).toHaveBeenCalledWith('session.resume', expect.objectContaining({ session_id: 'stored' }))
+    expect(ambientRequest).not.toHaveBeenCalled()
+  })
 
   it('does not remember the foreground source for a session it could not resolve', async () => {
     const primary = { connectionState: 'open', request: vi.fn(async (method: string) => rpcResult(method)) }
