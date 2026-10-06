@@ -277,6 +277,14 @@ pushes `{ type: 'anchor' }` only on change (> 1 px). `stop()` clears the poll an
 
 The rect pushed to the pane is converted to **pane-local CSS px** (pane DIP ÷ pane zoom factor).
 
+The renderer turns the anchor's top edge into the perch line with a **headroom floor**
+(`scene/projection.ts::effectivePerchPx`): `max(anchorTop, tallestVisibleAvatarHeight + card/bubble
+clearance + margin)` in pane CSS px. A docked page that sits within a body's height of the pane top
+(a maximized main window puts the webview top at ~68 px) therefore lowers the row instead of clipping
+the tallest avatar, its card and a presented chart's title; with enough headroom the perch line is
+the anchor top unchanged (VAL-ANCHOR-001). The emergence clip plane, seam and contact shadow ride the
+effective line.
+
 The pane spawns over the work area of the display containing the current anchor (fallback: primary),
 and `rehome()` moves it to a new display when the anchor moves there.
 
@@ -569,9 +577,10 @@ the vitest `ui` project; main-process tests are the `electron` project. Platform
 
 - **Wayland.** `alwaysOnTop` and `setShape` are not guaranteed; the X11 strategy is the only
   validated click-through. Wayland is a documented follow-up.
-- **High anchor perch.** When the anchor perch sits within ~90 px of the pane top (for example a
-  maximized main window with the browser docked), the avatars and the chart title can be clipped at
-  the top; a perch policy for high anchors is a follow-up.
+- **High anchor perch.** When the anchor top sits within the tallest avatar's height of the pane top
+  (a maximized main window with the browser docked), the perch line is lowered by the headroom floor
+  so the tallest visible avatar, its card and a presented chart stay inside the pane; the avatars then
+  overlap the top of the page by up to that deficit.
 - **macOS / Windows.** The forward-mode click-through strategy is implemented and unit-tested, but
   has not been validated on those hosts. On macOS, OS-window titles require Screen Recording consent
   (without it the app name is used) and the pane is a `panel` at the `floating` level.

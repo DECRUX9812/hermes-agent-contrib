@@ -56,6 +56,16 @@ export const SLOT_WIDTH_MARGIN = 1.25
 /** Gap between the row of avatars and the dock / the edge. */
 export const PERCH_INSET = 12
 export const SLOT_START_RATIO = 0.8
+/**
+ * Headroom above the tallest visible body before the perch line may sit that
+ * high (VAL-ANCHOR-006): the halo/glow a body carries plus the top of a card or
+ * bubble anchored to it, and a small margin so the crown never grazes the pane
+ * top. A docked browser page can sit within a body's height of the pane top — a
+ * maximized main window puts the webview top at ~68 px — which would otherwise
+ * clip the avatar, its card and a presented chart's title at the screen edge.
+ */
+export const PERCH_HEADROOM_CLEARANCE_PX = 24
+export const PERCH_HEADROOM_MARGIN_PX = 8
 
 export function cameraDistance(viewportHeight: number): number {
   const worldHeight = viewportHeight / PX_PER_UNIT
@@ -177,9 +187,29 @@ export function layoutSlotCenters(widths: number[], edge: SlotEdge, viewport: Vi
 }
 
 /**
+ * The lowest the perch line may sit for the tallest visible body (VAL-ANCHOR-006):
+ * the body itself plus the card/bubble clearance and the small margin. Pure and
+ * in pane CSS px, so the caller can reason about "is the crown on screen".
+ */
+export function perchHeadroomFloor(tallestHeightPx: number): number {
+  return Math.max(0, tallestHeightPx) + PERCH_HEADROOM_CLEARANCE_PX + PERCH_HEADROOM_MARGIN_PX
+}
+
+/**
+ * The perch line in pane CSS px: the anchor's top edge, but never above the
+ * headroom floor. With enough headroom this is the anchor top unchanged
+ * (VAL-ANCHOR-001); a high anchor lowers the line just far enough that the
+ * tallest visible body plus its clearance stays inside the pane.
+ */
+export function effectivePerchPx(anchorTopPx: number, tallestHeightPx: number): number {
+  return Math.max(anchorTopPx, perchHeadroomFloor(tallestHeightPx))
+}
+
+/**
  * Slot targets for a row of avatars, filled right-to-left from 80% of the
  * perch edge (architecture §8.6). A real anchor puts the perch line on the
- * anchor's top edge; the desktop anchor floats the row above the dock.
+ * anchor's top edge — lowered by the headroom floor when that edge is too close
+ * to the pane top; the desktop anchor floats the row above the dock.
  */
 export function computeSlotLayout(input: SlotLayoutInput): Record<AvatarId, SlotTarget> {
   const { anchor, dock, heights, ids, viewport, widths } = input
@@ -190,10 +220,16 @@ export function computeSlotLayout(input: SlotLayoutInput): Record<AvatarId, Slot
       ? { left: 0, width: viewport.width }
       : { left: anchor.rect.x, width: anchor.rect.width }
 
-  const perchPx =
+  const anchorPerchPx =
     anchor.kind === 'desktop' || anchor.rect.height <= 0
       ? (dock?.y ?? viewport.height * 0.8) - PERCH_INSET
       : anchor.rect.y
+
+  // The row's headroom is set by its tallest body: one shared perch line keeps
+  // every slot aligned, and the tallest crown is the one that would clip first.
+  const tallestHeightPx = ids.reduce((tallest, id) => Math.max(tallest, (heights[id] ?? 1.1) * PX_PER_UNIT), 0)
+
+  const perchPx = effectivePerchPx(anchorPerchPx, tallestHeightPx)
 
   const perchY = screenToWorld({ x: 0, y: perchPx }, viewport).y
 

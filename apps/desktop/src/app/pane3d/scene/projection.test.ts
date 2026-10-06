@@ -11,7 +11,12 @@ import {
   computeSlotLayout,
   DOCK_MARGIN,
   dockRect,
+  effectivePerchPx,
   type HitPartNode,
+  PERCH_HEADROOM_CLEARANCE_PX,
+  PERCH_HEADROOM_MARGIN_PX,
+  PERCH_INSET,
+  perchHeadroomFloor,
   PX_PER_UNIT,
   reservedSlotRect,
   resetAvatarFrame,
@@ -78,9 +83,11 @@ describe('pane geometry', () => {
     expect(worldToScreen({ x: 0, y: slot.perchY }, VIEWPORT).y).toBeCloseTo(dock.y - 12, 6)
   })
 
-  it('rests a real-anchor avatar on the anchor top edge', () => {
+  it('rests a real-anchor avatar on the anchor top edge when there is headroom', () => {
+    const roomy: PaneAnchor = { ...browserAnchor, rect: { ...browserAnchor.rect, y: 400 } }
+
     const slots = computeSlotLayout({
-      anchor: browserAnchor,
+      anchor: roomy,
       dock: null,
       heights: { muse: 1.1 } as never,
       ids: ['muse'],
@@ -89,7 +96,7 @@ describe('pane geometry', () => {
 
     const perchPx = worldToScreen({ x: 0, y: slots.muse.perchY }, VIEWPORT).y
 
-    expect(perchPx).toBeCloseTo(browserAnchor.rect.y, 6)
+    expect(perchPx).toBeCloseTo(roomy.rect.y, 6)
     // Horizontally inside the anchor, on the right 80% mark.
     const centerX = worldToScreen({ x: slots.muse.x, y: 0 }, VIEWPORT).x
 
@@ -169,11 +176,13 @@ describe('perch row layout (VAL-ROOM-003)', () => {
         )
       }
 
-      // Every slot rests on the anchor's top edge (one shared perch line).
+      // Every slot rests on the effective perch line (one shared line; a high
+      // anchor is lowered by the headroom floor — VAL-ANCHOR-006).
       const perch = ids.map(id => worldToScreen({ x: 0, y: slots[id].perchY }, VIEWPORT).y)
+      const tallestPx = Math.max(...ids.map(id => CAST_HEIGHTS[id])) * PX_PER_UNIT
 
       expect(new Set(perch).size).toBe(1)
-      expect(perch[0]).toBeCloseTo(browserAnchor.rect.y, 6)
+      expect(perch[0]).toBeCloseTo(effectivePerchPx(browserAnchor.rect.y, tallestPx), 6)
     })
 
     it(`keeps ${count} avatars non-overlapping on the desktop row`, () => {
@@ -236,6 +245,87 @@ describe('perch row layout (VAL-ROOM-003)', () => {
     // The row as a whole is shifted to stay inside the work area.
     expect(Math.min(...spans.map(span => span.left))).toBeGreaterThanOrEqual(0)
     expect(Math.max(...spans.map(span => span.right))).toBeLessThanOrEqual(VIEWPORT.width)
+  })
+})
+
+describe('perch headroom floor (VAL-ANCHOR-006)', () => {
+  const highAnchor: PaneAnchor = {
+    kind: 'hermes-browser',
+    label: 'maximized',
+    rect: { height: 700, width: 1600, x: 160, y: 68 }
+  }
+
+  it('is the tallest body plus the card/bubble clearance and the small margin', () => {
+    expect(perchHeadroomFloor(CAST_HEIGHTS.claude * PX_PER_UNIT)).toBeCloseTo(
+      CAST_HEIGHTS.claude * PX_PER_UNIT + PERCH_HEADROOM_CLEARANCE_PX + PERCH_HEADROOM_MARGIN_PX,
+      6
+    )
+    expect(perchHeadroomFloor(0)).toBe(PERCH_HEADROOM_CLEARANCE_PX + PERCH_HEADROOM_MARGIN_PX)
+  })
+
+  it('returns the anchor top unchanged when there is ample headroom', () => {
+    expect(effectivePerchPx(400, CAST_HEIGHTS.muse * PX_PER_UNIT)).toBe(400)
+  })
+
+  it('lowers a 68 px anchor top so the tallest visible body plus clearance stays inside the pane', () => {
+    const perch = effectivePerchPx(highAnchor.rect.y, CAST_HEIGHTS.claude * PX_PER_UNIT)
+
+    expect(perch).toBeGreaterThan(highAnchor.rect.y)
+    // The crown of the tallest body sits below the pane top with the margin to spare.
+    expect(perch - CAST_HEIGHTS.claude * PX_PER_UNIT).toBeGreaterThanOrEqual(PERCH_HEADROOM_MARGIN_PX)
+  })
+
+  it('keeps the whole visible cast on one lowered line, crowns on screen', () => {
+    const ids: AvatarId[] = ['muse', 'grok', 'claude']
+
+    const slots = computeSlotLayout({
+      anchor: highAnchor,
+      dock: null,
+      heights: CAST_HEIGHTS,
+      ids,
+      viewport: VIEWPORT,
+      widths: CAST_WIDTHS
+    })
+
+    const perch = ids.map(id => worldToScreen({ x: 0, y: slots[id].perchY }, VIEWPORT).y)
+
+    expect(new Set(perch).size).toBe(1)
+    expect(perch[0]).toBeCloseTo(effectivePerchPx(highAnchor.rect.y, CAST_HEIGHTS.claude * PX_PER_UNIT), 6)
+
+    for (const id of ids) {
+      // Every rendered body's top edge is inside the pane (screenRect.top >= 0).
+      expect(perch[0] - CAST_HEIGHTS[id] * PX_PER_UNIT, `${id} crown`).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('uses the tallest VISIBLE body, so a shorter cast perches no lower than it must', () => {
+    const slots = computeSlotLayout({
+      anchor: highAnchor,
+      dock: null,
+      heights: CAST_HEIGHTS,
+      ids: ['grok'],
+      viewport: VIEWPORT,
+      widths: CAST_WIDTHS
+    })
+
+    const perch = worldToScreen({ x: 0, y: slots.grok.perchY }, VIEWPORT).y
+
+    expect(perch).toBeCloseTo(effectivePerchPx(highAnchor.rect.y, CAST_HEIGHTS.grok * PX_PER_UNIT), 6)
+    expect(perch).toBeLessThan(effectivePerchPx(highAnchor.rect.y, CAST_HEIGHTS.claude * PX_PER_UNIT))
+  })
+
+  it('leaves the desktop anchor floating above the dock', () => {
+    const dock = dockRect(1, VIEWPORT)
+
+    const slots = computeSlotLayout({
+      anchor: desktopAnchor,
+      dock,
+      heights: { muse: CAST_HEIGHTS.muse } as never,
+      ids: ['muse'],
+      viewport: VIEWPORT
+    })
+
+    expect(worldToScreen({ x: 0, y: slots.muse.perchY }, VIEWPORT).y).toBeCloseTo(dock.y - PERCH_INSET, 6)
   })
 })
 

@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import type { AvatarId } from '../protocol'
+import type { AvatarId, PaneAnchor } from '../protocol'
 
 import {
   barColumnX,
@@ -343,6 +343,47 @@ describe('chartViewFor', () => {
     expect(view?.fit).toBeLessThanOrEqual(1)
     expect(view?.fit).toBeGreaterThanOrEqual(CHART_MIN_FIT)
     expect(panelTopPx).toBeGreaterThanOrEqual(0)
+  })
+
+  it('keeps the whole panel inside the pane when the anchor is high (VAL-ANCHOR-006)', () => {
+    // A maximized main window docks the browser page ~68 px below the pane top.
+    const high: PaneAnchor = {
+      kind: 'hermes-browser',
+      label: 'maximized',
+      rect: { height: 800, width: 1920, x: 0, y: 68 }
+    }
+
+    const heights = Object.fromEntries(SILHOUETTES.map(size => [size.id, size.height])) as Record<AvatarId, number>
+
+    const widths = Object.fromEntries(SILHOUETTES.map(size => [size.id, size.width])) as Partial<
+      Record<AvatarId, number>
+    >
+
+    const ids: AvatarId[] = ['muse', 'grok']
+    const slots = computeSlotLayout({ anchor: high, dock: null, heights, ids, viewport: VIEWPORT, widths })
+
+    const view = chartViewFor({
+      avatars: { muse: { visible: true }, grok: { visible: true } },
+      chart: { avatar: 'muse', series: 8 },
+      definitions: SILHOUETTES,
+      slots,
+      viewport: VIEWPORT
+    })
+
+    expect(view).not.toBeNull()
+    // The headroom floor lowered the perch line, so the FULL-size board and its
+    // title clear the pane top instead of clipping (the round-1 blocker).
+    expect(view!.fit).toBe(1)
+    const perchPx = worldToScreen({ x: 0, y: slots.muse.perchY }, VIEWPORT).y
+
+    const panelTopPx =
+      perchPx - CHART_LIFT * PX_PER_UNIT - CHART_TITLE_GUTTER_PX - CHART_BOARD_HEIGHT * PX_PER_UNIT * view!.fit
+
+    expect(panelTopPx).toBeGreaterThanOrEqual(0)
+    const panel = panelBox(worldToScreen({ x: view!.position.x, y: 0 }, VIEWPORT).x, view!.fitX)
+
+    expect(panel.left).toBeGreaterThanOrEqual(0)
+    expect(panel.right).toBeLessThanOrEqual(VIEWPORT.width)
   })
 
   it('returns null when nothing is presented, or the presenting avatar left the stage', () => {

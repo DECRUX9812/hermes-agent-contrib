@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ScreenRect } from '../protocol'
+import type { AvatarId, PaneAnchor, ScreenRect } from '../protocol'
+import { computeSlotLayout, reservedSlotRect } from '../scene/projection'
 
 import { boxesOverlap, CARD_GAP, CARD_MARGIN, type CardBox } from './card-geometry'
 import { type CardPlacement, type CardRequest, placeCards } from './card-layout'
@@ -260,5 +261,60 @@ describe('placeCards — an open card clears the perch an emerging avatar climbs
 
     expect(animatedOnly.side).toBe('left')
     expect(boxesOverlap(boxOf(request, animatedOnly), GROK_PERCH)).toBe(true)
+  })
+})
+
+describe('placeCards with the high-anchor headroom floor (VAL-ANCHOR-006)', () => {
+  const PANE = { height: 1080, width: 1920 }
+
+  const ANCHOR: PaneAnchor = {
+    kind: 'hermes-browser',
+    label: 'maximized',
+    rect: { height: 800, width: 1920, x: 0, y: 68 }
+  }
+
+  const MUSE = { height: 1.1, id: 'muse' as const, width: 1.35 }
+  const GROK = { height: 0.95, id: 'grok' as const, width: 0.7 }
+
+  it('keeps the card and the lowered row inside the pane, overlapping neither body', () => {
+    const ids: AvatarId[] = ['muse', 'grok']
+
+    // The real cast, so the layout's headroom floor matches the registry.
+    const heights: Record<AvatarId, number> = {
+      claude: 1.23,
+      grok: GROK.height,
+      hermes: 1.08,
+      muse: MUSE.height,
+      opencode: 0.8
+    }
+
+    const widths: Partial<Record<AvatarId, number>> = { grok: GROK.width, muse: MUSE.width }
+
+    const slots = computeSlotLayout({
+      anchor: ANCHOR,
+      dock: null,
+      heights,
+      ids,
+      viewport: PANE,
+      widths
+    })
+
+    const row = [MUSE, GROK].map(size => reservedSlotRect(slots[size.id], size, PANE))
+
+    // The headroom floor lowered the line, so every body's top is on screen.
+    for (const rect of row) {
+      expect(rect.y).toBeGreaterThanOrEqual(0)
+    }
+
+    const request: CardRequest = { avatar: row[0], card: { height: 220, width: 264 }, expanded: false }
+    const [placement] = placeCards([request], PANE, CARD_GAP, CARD_MARGIN, row)
+    const box = boxOf(request, placement)
+
+    expect(placement.degenerate).toBe(false)
+    expect(overlapsAny(box, row)).toBe(false)
+    expect(box.x).toBeGreaterThanOrEqual(CARD_MARGIN)
+    expect(box.y).toBeGreaterThanOrEqual(CARD_MARGIN)
+    expect(box.x + box.width).toBeLessThanOrEqual(PANE.width - CARD_MARGIN)
+    expect(box.y + box.height).toBeLessThanOrEqual(PANE.height - CARD_MARGIN)
   })
 })
