@@ -2222,9 +2222,8 @@ def _tool_lifecycle_required_for_ui(name: str) -> bool:
     lifecycle hides the turn's deliverable entirely (`isCardTool` /
     `isFileEditTool` in apps/desktop/src/lib/tool-render-class.ts must stay in
     sync with `_TOOL_LIFECYCLE_UI_TOOLS`): clarify / connection cards are
-    consent surfaces, image_generate / manage_catalog / delegate_task /
-    create_visualization draw the thing the user asked for, and file edits
-    are the diff the user reviews.
+    consent surfaces, image_generate / manage_catalog / delegate_task / create_visualization
+    draw the thing the user asked for, and file edits are the diff the user reviews.
     The start and complete guards both consult this set, so a card's
     `tool.complete` can never arrive without its `tool.start`.
     """
