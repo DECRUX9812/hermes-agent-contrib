@@ -1061,6 +1061,7 @@ export interface CronJobCreatePayload {
   name?: string
   prompt: string
   provider?: string
+  repeat?: number
   schedule: string
 }
 
