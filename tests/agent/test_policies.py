@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import types
 
 from agent.policies import AgentPolicies, evaluate, resolve_policies
@@ -58,6 +59,24 @@ def test_retry_loop_ignores_distinct_calls_and_sub_limit():
     agent = _agent(_resolved_policies=AgentPolicies(None, 6))
     assert evaluate(agent, varied) is None
     assert evaluate(agent, _calls("read_file", {"path": "/x"}, 5)) is None
+
+
+def test_retry_loop_reads_nested_openai_tool_call_args():
+    """Live message rows carry OpenAI-shaped calls (``{"function": {"name", "arguments"}}``).
+    Reading only top-level args collapsed every nested call to one empty-args signature, so a
+    batch of distinct calls looked like a stuck retry loop and killed the turn."""
+    agent = _agent(_resolved_policies=AgentPolicies(None, 6))
+    varied = [{"role": "assistant", "tool_calls": [
+        {"function": {"name": "terminal", "arguments": json.dumps({"command": f"echo tok{i}"})}}
+    ]} for i in range(8)]
+    assert evaluate(agent, varied) is None
+
+    repeated = [{"role": "assistant", "tool_calls": [
+        {"function": {"name": "terminal", "arguments": json.dumps({"command": "echo same"})}}
+    ]} for _ in range(6)]
+    trip = evaluate(agent, repeated)
+    assert trip is not None and trip.policy == "retry_loop"
+    assert "terminal" in trip.reason
 
 
 def test_retry_loop_catches_alternating_cycle():

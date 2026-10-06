@@ -33,7 +33,7 @@ def _tool_call(i: int):
     return SimpleNamespace(
         id=f"call_{i}",
         type="function",
-        function=SimpleNamespace(name="web_search", arguments='{"query": "x"}'),
+        function=SimpleNamespace(name="web_search", arguments=json.dumps({"query": f"x{i}"})),
     )
 
 
