@@ -91,7 +91,6 @@ export function ColonyRoster() {
             onFocus={() => setCardFor(bot.profileKey)}
             onMouseEnter={() => setCardFor(bot.profileKey)}
             onMouseLeave={() => setCardFor(null)}
-            title={bot.character.name}
             type="button"
           >
             <BotAvatar bot={bot} />
