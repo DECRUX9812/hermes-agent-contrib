@@ -32,7 +32,6 @@ export function createBrowserFilesBridge({
   requireConnection
 }: BrowserFilesOptions): Pick<
   Window['hermesDesktop'],
-  | 'getGatewayFileStreamUrl'
   | 'readDir'
   | 'readFileDataUrl'
   | 'readFileDataUrlForAttach'
@@ -73,14 +72,6 @@ export function createBrowserFilesBridge({
   }
 
   return {
-    getGatewayFileStreamUrl: async payload => {
-      requireConnection(payload.connectionId)
-
-      return (await fileEndpointUrl(bootstrap, 'stream', {
-        path: payload.path,
-        profile: payload.profile ?? currentProfile()
-      })).href
-    },
     readDir: (path: string) =>
       fsGet<Awaited<ReturnType<Window['hermesDesktop']['readDir']>>>('list', path),
     readFileDataUrl: readDataUrl,

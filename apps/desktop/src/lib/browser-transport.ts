@@ -1,8 +1,19 @@
-import { buildHermesWebSocketUrl, normalizeBasePath } from '@hermes/shared'
+import { buildHermesWebSocketUrl } from '@hermes/shared'
 
 import type { HermesApiRequest, HermesStagedUpload } from '@/global'
 import { consumeWebappSession, WEBAPP_LAUNCH_REQUIRED } from '@/lib/browser-launch-session'
 import { hasBrowserHostBootstrap } from '@/lib/platform'
+
+// Local copy: @hermes/shared does not export this on main.
+function normalizeBasePath(basePath: string | undefined): string {
+  if (!basePath) {
+    return ''
+  }
+
+  const withLead = basePath.startsWith('/') ? basePath : `/${basePath}`
+
+  return withLead.replace(/\/+$/, '')
+}
 
 export interface BrowserBootstrapWindow {
   __HERMES_AUTH_REQUIRED__?: boolean

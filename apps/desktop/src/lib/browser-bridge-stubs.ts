@@ -156,5 +156,42 @@ export const BROWSER_BRIDGE_STUBS = {
     onProgress: noopUnsubscribe,
     setBranch: async (branch: string) => ({ branch })
   },
-  watchPreviewFile: async (url: string) => ({ id: `browser:${url}`, path: url })
+  watchPreviewFile: async (url: string) => ({ id: `browser:${url}`, path: url }),
+  // Browser-hosted stubs for methods added after the original bridge.
+  openSessionInTerminal: async () => ({ ok: false, error: 'unsupported' }),
+  openBrowserWindow: async () => ({ ok: false, error: 'unsupported' }),
+  onBrowserPopoutClosed: noopUnsubscribe,
+  onOpenFindBarRequested: noopUnsubscribe,
+  petOverlay: {
+    open: async () => ({ ok: false }),
+    close: async () => ({ ok: false }),
+    setBounds: () => undefined,
+    setIgnoreMouse: () => undefined,
+    setFocusable: () => undefined,
+    pushState: () => undefined,
+    control: () => undefined,
+    onState: noopUnsubscribe,
+    onControl: noopUnsubscribe,
+  },
+  quickEntry: {
+    getSettings: async () => ({ enabled: false, error: null, registered: false, shortcut: '' }),
+    setSettings: async () => ({ enabled: false, error: null, registered: false, shortcut: '' }),
+    submit: async () => ({ ok: false, error: 'unsupported' }),
+    ackSubmit: () => undefined,
+    dismiss: () => undefined,
+    pushState: () => undefined,
+    onState: noopUnsubscribe,
+    onSubmit: noopUnsubscribe,
+    onShown: noopUnsubscribe,
+    onLateResult: noopUnsubscribe,
+  },
+  getSecretStorageEncryption: async () => ({ on: false }),
+  setSecretStorageEncryption: async () => ({ on: false }),
+  connections: {
+    list: async () => ({ version: 1, primary: '', secureTokenStorage: false, connections: [] }),
+    save: async () => { throw new Error('unsupported') },
+    remove: async () => { throw new Error('unsupported') },
+    setPrimary: async () => { throw new Error('unsupported') },
+    test: async () => ({ ok: false, error: 'unsupported' }),
+  },
 } satisfies Partial<Window['hermesDesktop']>

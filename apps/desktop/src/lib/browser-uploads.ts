@@ -177,8 +177,7 @@ export function createBrowserUploadsBridge({
   previewUrls
 }: BrowserUploadsOptions): Pick<
   Window['hermesDesktop'],
-  'getStagedFileDisplayName' | 'getStagedFileForAttach' | 'saveImageBuffer' | 'savePastedText' | 'selectPaths' | 'stageFileForAttach'
-> {
+  'saveImageBuffer' | 'savePastedText' | 'selectPaths' > {
   const displayNames = new Map<string, string>()
 
   const rememberName = (path: string, name: string) => {
@@ -228,13 +227,10 @@ export function createBrowserUploadsBridge({
   }
 
   return {
-    getStagedFileDisplayName: (path: string) => displayNames.get(path),
-    getStagedFileForAttach: (path: string) => bootstrap.stagedUploads.get(path),
     saveImageBuffer: saveBuffer,
     savePastedText: (text: string) => stageBrowserFile(
       bootstrap, new File([text], 'pasted.txt', { type: 'text/plain' }), currentProfile(), rememberName
     ),
     selectPaths: options => selectBrowserFiles(bootstrap, options, currentProfile(), rememberName),
-    stageFileForAttach: (file: File) => stageBrowserFile(bootstrap, file, currentProfile(), rememberName)
   }
 }

@@ -1693,6 +1693,14 @@ export interface HermesSelectPathsOptions {
   profile?: string
   filters?: Array<{ name: string; extensions: string[] }>
 }
+/** Backend-provided source identity, not an authorization token. */
+export interface HermesStagedUpload {
+  install_id: string
+  path: string
+  profile_home: string
+  profile_incarnation: string | null
+}
+
 
 export interface BackendExit {
   code: number | null
