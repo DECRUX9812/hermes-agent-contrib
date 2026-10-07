@@ -22,10 +22,14 @@ const { blobatarSvgMock } = vi.hoisted(() => ({ blobatarSvgMock: vi.fn() }))
 
 vi.mock('@hermes/plugin-sdk', async () => {
   const { atom } = await import('nanostores')
+  // The mascot is a pure SVG builder — re-export the REAL module through the
+  // mock so the tests assert the actual markup, not a lookalike.
+  const { bopMascotMarkup } = await import('@hermes/shared/bops-mascot')
 
   return {
     atom,
     blobatarSvg: (seed: string, opts: unknown) => blobatarSvgMock(seed, opts) as string,
+    bopMascotMarkup,
     createBudgetedLoop: undefined,
     host: { state: { connectionId: { get: () => 'local' } } },
     profileColor: (name: string) => (name === 'inbox-triage' ? '#38bdf8' : '#8b5cf6'),
@@ -143,6 +147,56 @@ describe('rendering a blob face', () => {
     const { container } = render(<BotFace color="#38bdf8" name="agent" shape="blobatar" size={32} />)
 
     expect(container.querySelector('svg[data-hb-math]')).toBeTruthy()
+  })
+})
+
+describe('bop faces — the staff mascot', () => {
+  it('recognizes only the bop family', async () => {
+    const { isBopShape } = await import('./avatar')
+
+    expect(isBopShape('bop')).toBe(true)
+    expect(isBopShape('bop:abc123')).toBe(true)
+    expect(isBopShape('blobatar')).toBe(false)
+    expect(isBopShape('circle')).toBe(false)
+    expect(isBopShape(undefined)).toBe(false)
+  })
+
+  it('seeds the face from the bot name unless one is pinned', async () => {
+    const { bopSeed } = await import('./avatar')
+
+    expect(bopSeed('bop', 'inbox-triage')).toBe('inbox-triage')
+    expect(bopSeed('bop:abc123', 'inbox-triage')).toBe('abc123')
+  })
+
+  it('renders the blob, its headphones and the name tag — eyes open only at work', async () => {
+    const { BotFace } = await import('./avatar')
+    const { container } = render(<BotFace color="#a78bfa" mood="work" name="inbox-triage" shape="bop" size={40} />)
+    const svg = container.querySelector('svg[data-bot-face="inbox-triage"]')
+
+    expect(svg).toBeTruthy()
+    // Blob body in the bot's accent colour + the headphone band arc.
+    expect(svg!.innerHTML).toContain('M20 4c7.5 0 13.5 4.5 15.5 11')
+    expect(svg!.innerHTML).toContain('M6.3 21.5C6.3 8.9 12.4 3.6 20 3.6')
+    // Awake faces draw pupils; the idle vibe draws closed arcs only.
+    expect(svg!.innerHTML).toContain('ellipse cx="15.5" cy="22.3"')
+  })
+
+  it('vibes with closed eyes when idle', async () => {
+    const { BotFace } = await import('./avatar')
+    const { container } = render(<BotFace color="#a78bfa" name="inbox-triage" shape="bop" size={40} />)
+
+    expect(container.innerHTML).toContain('M13.6 22.2q1.9 1.8 3.8 0')
+    expect(container.innerHTML).not.toContain('ellipse cx="15.5" cy="22.3"')
+  })
+
+  it('flips ink details to white on dark bodies', async () => {
+    const { BotFace } = await import('./avatar')
+    const { container } = render(
+      <BotFace color="#1c1c2e" mood="work" name="inbox-triage" shape="bop" size={40} />
+    )
+
+    expect(container.innerHTML).toContain('fill="#fff"')
+    expect(container.innerHTML).not.toContain('ellipse cx="15.5" cy="22.3" rx="1.9" ry="2.6" fill="#1C1C1B"')
   })
 })
 

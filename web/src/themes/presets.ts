@@ -243,6 +243,34 @@ export const defaultLargeTheme: DashboardTheme = {
   },
 };
 
+/**
+ * Bops — the bops.bot "bots are staff" identity. Ink canvas with paper text
+ * and highlighter-lime brand strokes in Geist / Geist Mono (the shared preset
+ * ships their light paper palette too; the dashboard reads the ink side, its
+ * home turf). Ported from their published tokens.
+ */
+export const bopsTheme: DashboardTheme = {
+  name: "bops",
+  label: "Bops",
+  description: "Ink black, paper white and highlighter lime — the bops.bot staff look",
+  palette: {
+    ...webPresetFromShared(THEME_PRESET_PALETTES.bops),
+    noiseOpacity: 0.6,
+  },
+  typography: {
+    ...DEFAULT_TYPOGRAPHY,
+    fontSans: `"Geist", ${SYSTEM_SANS}`,
+    fontMono: `"Geist Mono", ${SYSTEM_MONO}`,
+    fontUrl:
+      "https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@500;600&display=swap",
+    letterSpacing: "-0.01em",
+  },
+  layout: {
+    ...DEFAULT_LAYOUT,
+    radius: "0.75rem",
+  },
+};
+
 export const BUILTIN_THEMES: Record<string, DashboardTheme> = {
   default: defaultTheme,
   "default-large": defaultLargeTheme,
@@ -252,4 +280,5 @@ export const BUILTIN_THEMES: Record<string, DashboardTheme> = {
   mono: monoTheme,
   cyberpunk: cyberpunkTheme,
   rose: roseTheme,
+  bops: bopsTheme,
 };

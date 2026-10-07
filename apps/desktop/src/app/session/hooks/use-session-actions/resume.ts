@@ -39,6 +39,7 @@ import {
   $connection,
   $messages,
   $sessions,
+  forgetSessionOwnerHintsForSession,
   getSessionOwnerHint,
   setActiveSessionId,
   setAwaitingResponse,
@@ -53,7 +54,8 @@ import {
   setSelectedStoredSessionId,
   setSessionOwnerHint,
   setSessionStartedAt,
-  setWorkspaceCwdOwner
+  setWorkspaceCwdOwner,
+  sessionOwnerRouteFromRow
 } from '@/store/session'
 import { isSessionOwnerResolutionError } from '@/store/session-owner-resolution'
 import { isSessionRemovalPending } from '@/store/session-removal'

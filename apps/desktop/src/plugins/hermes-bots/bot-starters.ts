@@ -272,7 +272,7 @@ export function draftFromDescription(raw: string): BotDraft | null {
     description: text,
     persona: '',
     starters: chatStarters(null),
-    shape: 'blobatar',
+    shape: 'bop',
     preset: 'custom'
   }
 }

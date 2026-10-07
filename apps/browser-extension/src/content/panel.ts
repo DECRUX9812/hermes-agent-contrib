@@ -1,6 +1,6 @@
-import type { Bot, RoomMsg } from '../shared/types'
+import { bopAvatarUrl } from '@hermes/shared/bops-mascot'
 
-import { faceDataUrl } from './face'
+import type { Bot, RoomMsg } from '../shared/types'
 
 interface SpeechRecognitionLike {
   continuous: boolean
@@ -30,11 +30,11 @@ export interface ElementInfo {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  idle: '#3dd68c',
-  working: '#ffb224',
-  stalled: '#ff7849',
-  offline: '#6b7280',
-  sleeping: '#8b93b0',
+  idle: '#9a9a98',
+  working: '#12b76a',
+  stalled: '#f04438',
+  offline: '#6b6b6b',
+  sleeping: '#5e5e5b',
 }
 
 const logs = new Map<string, { who: string; text: string; kind: 'user' | 'bot' | 'sys' }[]>()
@@ -81,7 +81,7 @@ export class Panel {
       </div>
       <div class="hr-composer">
         <div class="hr-compose-pill">
-          <textarea rows="1" placeholder="Give ${title} a task…"></textarea>
+          <textarea rows="1" placeholder="Text ${title}…"></textarea>
           <button class="hr-btn mic" title="Speak">🎙</button>
           <button class="hr-btn send" title="Send">➤</button>
         </div>
@@ -154,6 +154,14 @@ export class Panel {
     this.targetChip.style.display = t ? 'flex' : 'none'
 
     if (t) {this.targetChip.querySelector('.hr-target-label')!.textContent = t.label}
+  }
+
+  /** Refresh the header face — a bot that wakes up or dozes off swaps its
+   *  eyes live, not just when the panel next opens. */
+  setAvatar(url: string) {
+    const av = this.el.querySelector<HTMLImageElement>('img.hr-avatar')
+
+    if (av) {av.src = url}
   }
 
   setStatus(status: string, line?: string) {
@@ -292,5 +300,8 @@ export function roomMsgToPanel(panel: Panel, msg: RoomMsg, botName: (id: string)
 }
 
 export function botAvatarUrl(bot: Bot): string {
-  return faceDataUrl(bot.name, 48)
+  // Seed from the bot's NAME (profile/system-prompt key), not `harness:id` —
+  // that's what makes 'default'/'main' profiles the ink+lime chief-of-staff
+  // and keeps a bot's face identical across harnesses.
+  return bopAvatarUrl(bot.ref || bot.name, bot.color, bot.status === 'working' ? 'awake' : 'idle')
 }
