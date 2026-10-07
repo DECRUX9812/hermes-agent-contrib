@@ -549,6 +549,70 @@ export const THEME_PRESET_PALETTES = {
       userBubble: '#1e2a38',
       userBubbleBorder: '#2e4060'
     }
+  },
+  /**
+   * Bops — the bops.bot "bots are staff" identity, first-party (their OSS app
+   * tokens: ink #0A0A0A, paper #F9F9F8, highlighter #E9FF3B). Light is paper;
+   * dark is their ink CTA block. Lime only ever appears as a fill with ink
+   * text — strokes and focus rings stay ink on light, lime on dark.
+   */
+  bops: {
+    colors: {
+      background: '#f9f9f8',
+      foreground: '#0a0a0a',
+      card: '#ffffff',
+      cardForeground: '#0a0a0a',
+      muted: '#f0f0ee',
+      mutedForeground: '#6b6b6b',
+      popover: '#ffffff',
+      popoverForeground: '#0a0a0a',
+      primary: '#0a0a0a',
+      primaryForeground: '#ffffff',
+      secondary: '#f0f0ee',
+      secondaryForeground: '#0a0a0a',
+      accent: '#e9ff3b',
+      accentForeground: '#0a0a0a',
+      border: '#e6e6e3',
+      input: '#ffffff',
+      ring: '#0a0a0a',
+      midground: '#0a0a0a',
+      midgroundForeground: '#ffffff',
+      composerRing: '#0a0a0a',
+      destructive: '#f04438',
+      destructiveForeground: '#ffffff',
+      sidebarBackground: '#f9f9f8',
+      sidebarBorder: '#ececea',
+      userBubble: '#e9ff3b',
+      userBubbleBorder: '#d8e62e'
+    },
+    darkColors: {
+      background: '#0a0a0a',
+      foreground: '#f7f7f5',
+      card: '#161615',
+      cardForeground: '#f7f7f5',
+      muted: '#1e1e1c',
+      mutedForeground: '#9a9a98',
+      popover: '#161615',
+      popoverForeground: '#f7f7f5',
+      primary: '#e9ff3b',
+      primaryForeground: '#0a0a0a',
+      secondary: '#232321',
+      secondaryForeground: '#f7f7f5',
+      accent: '#e9ff3b',
+      accentForeground: '#0a0a0a',
+      border: '#262624',
+      input: '#141413',
+      ring: '#e9ff3b',
+      midground: '#e9ff3b',
+      midgroundForeground: '#0a0a0a',
+      composerRing: '#e9ff3b',
+      destructive: '#f97066',
+      destructiveForeground: '#0a0a0a',
+      sidebarBackground: '#0d0d0c',
+      sidebarBorder: '#1e1e1c',
+      userBubble: '#24251a',
+      userBubbleBorder: '#3a3d22'
+    }
   }
 } satisfies Record<string, ThemePresetPalette>
 

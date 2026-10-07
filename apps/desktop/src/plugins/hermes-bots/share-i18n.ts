@@ -1,7 +1,8 @@
 /**
  * Share-card strings, registered on top of Bot Mode's bundles under the same
  * plugin id (the hire gallery's pattern): English is the floor every locale
- * falls back to.
+ * falls back to. Badge chrome — STAFF / ON THE CLOCK — stays branded in every
+ * language, like a lanyard print.
  */
 
 import { type PluginLocaleBundles, usePluginI18n } from '@hermes/plugin-sdk'
@@ -21,6 +22,9 @@ export const SHARE_EN = {
   exportHint: 'The bot file lets someone run their own copy — no secrets or chat history inside.',
   askMe: 'Ask me',
   scanToChat: 'Scan to chat',
+  staffEyebrow: 'Hermes · Staff',
+  onTheClock: 'On the clock 24/7',
+  staffIdLabel: 'Staff ID —',
   footer: 'Made with Hermes Agent',
   failed: 'Could not make the card'
 }
