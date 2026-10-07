@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { ChatMessage } from '@/lib/chat-messages'
 
-import { activityVerb, currentStep, deriveActivityTasks } from './activity-tasks'
+import { activityVerb, currentStep, deriveActivityTasks, requestSubject } from './activity-tasks'
 
 const user = (id: string, text: string, extra: Partial<ChatMessage> = {}): ChatMessage =>
   ({ id, role: 'user', parts: [{ type: 'text', text }], timestamp: 100, ...extra }) as ChatMessage
@@ -129,5 +129,79 @@ describe('activityVerb', () => {
     expect(activityVerb('browser_click')).toBe('browsed')
     expect(activityVerb('kanban_create')).toBe('tracked')
     expect(activityVerb('some_plugin_tool')).toBe('used')
+  })
+})
+
+describe('requestSubject', () => {
+  it('strips the greeting so the row reads as the ask', () => {
+    // The real rows from a Bot context feed, which read as walls of text.
+    expect(requestSubject('Hey Can You try Again')).toBe('try Again')
+    expect(requestSubject('Hey how Are you doing')).toBe('how Are you doing')
+  })
+
+  it('leads with the request, not the pleasantry', () => {
+    expect(requestSubject('Hey, can you check our recent progress')).toBe('check our recent progress')
+    expect(requestSubject('Ok so I need to deploy the plugin')).toBe('to deploy the plugin')
+  })
+
+  it('caps a long body far below the old 120-char title', () => {
+    const long = 'Hey Can You help me Get the Backdrops Plugin Live on the Desktop app here at desktop.decruxtech.com'
+    const out = requestSubject(long)
+
+    expect(out.length).toBeLessThanOrEqual(60)
+    // "help me" is filler too, so the row leads with the ASK, not the request
+    // for help. (My first expectation here asserted 'help me…' and was wrong.)
+    expect(out.startsWith('Get the Backdrops Plugin Live on')).toBe(true)
+    expect(out.endsWith('…')).toBe(true)
+  })
+
+  it('reproduces the real rows from the Bot context feed, shorter', () => {
+    const rows = [
+      'Hey Can You try Again',
+      'Hey Can You help me Get the Backdrops Plugin Live on...',
+      'Hey how Are you doing',
+      'Like The Plugin Needs to be something that is not already there in the plugin catalog'
+    ]
+
+    for (const row of rows) {
+      const out = requestSubject(row)
+      expect(out.length).toBeLessThanOrEqual(60)
+      expect(out).not.toBe('')
+      // A row never re-grows: the subject is never longer than its source.
+      expect(out.length).toBeLessThanOrEqual(row.length)
+    }
+  })
+
+  it('trims a trailing courtesy', () => {
+    expect(requestSubject('Check the build logs thanks')).toBe('Check the build logs')
+  })
+
+  it('never strips a message to nothing', () => {
+    // A bare greeting was still a request; it must keep a subject.
+    expect(requestSubject('Hey')).toBe('Hey')
+    expect(requestSubject('Thanks!')).toBe('Thanks!')
+  })
+
+  it('is deterministic — no model call, so a reload rebuilds the same list', () => {
+    const text = 'Hey can you ship the fix thanks'
+    expect(requestSubject(text)).toBe(requestSubject(text))
+  })
+
+  it('drops code fences and markdown rather than shouting back a diff', () => {
+    expect(requestSubject('```js\nconst a = 1\n```')).toBe('')
+    expect(requestSubject('### Fix the header')).toBe('Fix the header')
+  })
+
+  it('keeps the first line only, so a multi-line paste does not bleed', () => {
+    expect(requestSubject('First line\nsecond line\nthird')).toBe('First line')
+  })
+
+  it('falls back to the original text when stripping would empty it', () => {
+    expect(requestSubject('please')).toBe('please')
+  })
+
+  it('keeps a judgment call out of it: an empty request stays empty', () => {
+    expect(requestSubject('')).toBe('')
+    expect(requestSubject('   \n  ')).toBe('')
   })
 })

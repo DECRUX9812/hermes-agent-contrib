@@ -105,6 +105,45 @@ function clip(text: string, max = SUBJECT_MAX): string {
   return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line
 }
 
+/** Pleasantries that open a message without carrying meaning. Stripped from the
+ *  front of a subject so a row reads as its ask, not its greeting. Each is
+ *  anchored to a word boundary and the whole run repeats, so "Hey so can you"
+ *  falls away in one pass. */
+const LEAD_FILLER =
+  /^(?:(?:hey|hi|hello|yo|sup|ok|okay|so|well|um|uh|please|pls|good (?:morning|afternoon|evening)|can you|could you|would you|will you|can we|i want you to|i need you to|i'?d like you to|i want|i need|help me|let'?s)\b[\s,.:;-]*)+/i
+
+/** Trailing courtesies that add nothing to a subject. */
+const TAIL_FILLER = /[\s,.:;-]*(?:thanks|thank you|thx|ty|cheers|please)[\s!.]*$/i
+
+/** A request's row subject: the ask in as few words as carry it.
+ *
+ *  This is deliberately deterministic and local — the Activity feed is derived
+ *  from the messages the session already holds, so it works offline, survives a
+ *  reload, and costs no tokens. It is NOT an abstractive summary: a model-written
+ *  one would need an RPC per request and would drift from the transcript it sits
+ *  next to. The job here is to make a long message read short, not to invent
+ *  wording the user never used. */
+export function requestSubject(text: string): string {
+  const flat = text
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/[#>*_`]+/g, '')
+    .split('\n', 1)[0]
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!flat) {
+    return ''
+  }
+
+  const stripped = flat.replace(LEAD_FILLER, '').replace(TAIL_FILLER, '').trim()
+
+  // Never strip to nothing: a bare "Hey" was still a request.
+  const body = stripped || flat
+
+  // Cap tighter than a step subject: this is the line a glance reads first.
+  return clip(body, 60)
+}
+
 function basename(path: string): string {
   const trimmed = path.replace(/[\\/]+$/, '')
 
@@ -259,7 +298,7 @@ export function deriveActivityTasks(
     }
 
     if (isRequest(message)) {
-      drafts.push(openTask(message.id, clip(textOf(message), 120), message.timestamp ?? 0))
+      drafts.push(openTask(message.id, requestSubject(textOf(message)), message.timestamp ?? 0))
 
       continue
     }
