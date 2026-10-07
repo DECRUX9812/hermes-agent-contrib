@@ -18,6 +18,7 @@ import { createBrowserUploadsBridge } from '@/lib/browser-uploads'
 import { createBrowserWindowOpener, sessionWindowTarget } from '@/lib/browser-window'
 import { createBrowserZoom } from '@/lib/browser-zoom'
 import { $connection } from '@/store/session'
+import type { BackendUpdateCheckResponse } from '@/types/hermes'
 
 /**
  * Install a capability-limited Desktop bridge when the real renderer is served
@@ -139,6 +140,60 @@ export function installBrowserDesktopBridge(): boolean {
       requireConnection: requireBrowserConnection
     }),
     zoom: createBrowserZoom(bootstrap.basePath),
+    getVersion: async () => {
+      try {
+        const health = await api<{ version?: string; displayVersion?: string; commit?: string }>({
+          path: '/api/health'
+        })
+        return {
+          appVersion: health.displayVersion || health.version || 'browser-hosted',
+          baseVersion: health.version,
+          commit: health.commit,
+          electronVersion: '',
+          hermesRoot: '',
+          nodeVersion: '',
+          platform: 'browser'
+        }
+      } catch {
+        return {
+          appVersion: 'browser-hosted',
+          electronVersion: '',
+          hermesRoot: '',
+          nodeVersion: '',
+          platform: 'browser'
+        }
+      }
+    },
+    updates: {
+      ...BROWSER_BRIDGE_STUBS.updates,
+      check: async ({ force = false }: { force?: boolean } = {}) => {
+        try {
+          const res = await api<BackendUpdateCheckResponse>({
+            path: `/api/hermes/update/check?force=${force}`
+          })
+          const behind = res.behind === undefined ? 0 : res.behind
+          const checkFailed = res.can_apply && res.behind === null
+          return {
+            supported: res.can_apply,
+            error: checkFailed ? 'check-failed' : undefined,
+            message: res.message ?? undefined,
+            updateAvailable: res.update_available,
+            behind: behind === null || behind < 0 ? null : behind,
+            currentVersion: res.current_version,
+            targetSha: res.update_available ? `backend:${res.current_version}` : undefined,
+            commits: res.commits,
+            fetchedAt: Date.now()
+          }
+        } catch (error) {
+          return {
+            supported: false,
+            error: 'check-failed',
+            message: error instanceof Error ? error.message : String(error),
+            fetchedAt: Date.now()
+          }
+        }
+      }
+    },
     updateHold: {
       recheck: () => Promise.resolve({ ok: true }),
       quit: () => Promise.resolve({ ok: true }),
