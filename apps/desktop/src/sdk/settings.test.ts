@@ -2,7 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { onPersistenceEvent } from '@/lib/storage'
 import { host } from '@/sdk'
-import { $backdrop, $backdropImage, $backdropScene, $backdropStrength, setBackdrop, setBackdropImage, setBackdropStrength } from '@/store/backdrop'
+import {
+  $backdrop,
+  $backdropImage,
+  $backdropScene,
+  $backdropStrength,
+  setBackdrop,
+  setBackdropImage,
+  setBackdropStrength
+} from '@/store/backdrop'
 import { $chatTextScale, setChatTextScale } from '@/store/chat-text-scale'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
@@ -155,12 +163,12 @@ describe('host.settings', () => {
     expect(() => (host.settings.set as (key: string, value: unknown) => void)('backdrop.v1', 'on')).toThrow(
       'Invalid value for desktop setting: backdrop.v1'
     )
-    expect(() =>
-      (host.settings.set as (key: string, value: unknown) => void)('backdrop.scene', 'nebula')
-    ).toThrow('Invalid value for desktop setting: backdrop.scene')
-    expect(() =>
-      (host.settings.set as (key: string, value: unknown) => void)('backdrop.strength', 'loud')
-    ).toThrow('Invalid value for desktop setting: backdrop.strength')
+    expect(() => (host.settings.set as (key: string, value: unknown) => void)('backdrop.scene', 'nebula')).toThrow(
+      'Invalid value for desktop setting: backdrop.scene'
+    )
+    expect(() => (host.settings.set as (key: string, value: unknown) => void)('backdrop.strength', 'loud')).toThrow(
+      'Invalid value for desktop setting: backdrop.strength'
+    )
     expect(() => (host.settings.set as (key: string, value: unknown) => void)('backdrop.image', 42)).toThrow(
       'Invalid value for desktop setting: backdrop.image'
     )

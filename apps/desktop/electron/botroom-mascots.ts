@@ -98,7 +98,7 @@ export function createBotRoomMascots({ spawnMascotWindow, forwardControl }: BotR
   return {
     /** Reconcile live mascot windows with the pushed roster. */
     sync(bots: BotRoomMascot[]) {
-      const seen = new Set(bots.map((b) => b.id))
+      const seen = new Set(bots.map(b => b.id))
 
       for (const bot of bots) {
         roster.set(bot.id, bot)
@@ -205,50 +205,56 @@ export type BotRoomMascots = ReturnType<typeof createBotRoomMascots>
  * renderer captures the pointer and streams screen-space positions here.
  * 'start' records the grab offset; 'move' repositions; 'end' persists.
  */
-export function registerBotRoomMascotDragIpc(windowsFor: (botId: string) => BrowserWindow | undefined, onMoved: (botId: string, x: number, y: number) => void) {
+export function registerBotRoomMascotDragIpc(
+  windowsFor: (botId: string) => BrowserWindow | undefined,
+  onMoved: (botId: string, x: number, y: number) => void
+) {
   const grabs = new Map<string, { dx: number; dy: number }>()
 
-  ipcMain.on('hermes:botroom-mascot:drag', (_event, payload: { botId?: string; phase?: string; x?: number; y?: number }) => {
-    if (!payload || typeof payload.botId !== 'string') {
-      return
+  ipcMain.on(
+    'hermes:botroom-mascot:drag',
+    (_event, payload: { botId?: string; phase?: string; x?: number; y?: number }) => {
+      if (!payload || typeof payload.botId !== 'string') {
+        return
+      }
+
+      const win = windowsFor(payload.botId)
+
+      if (!win || win.isDestroyed()) {
+        return
+      }
+
+      const sx = Number(payload.x)
+      const sy = Number(payload.y)
+
+      if (!Number.isFinite(sx) || !Number.isFinite(sy)) {
+        return
+      }
+
+      if (payload.phase === 'start') {
+        const [wx, wy] = win.getPosition()
+        grabs.set(payload.botId, { dx: sx - wx, dy: sy - wy })
+
+        return
+      }
+
+      const grab = grabs.get(payload.botId)
+
+      if (!grab) {
+        return
+      }
+
+      const nx = Math.round(sx - grab.dx)
+      const ny = Math.round(sy - grab.dy)
+
+      win.setPosition(nx, ny)
+
+      if (payload.phase === 'end') {
+        grabs.delete(payload.botId)
+        onMoved(payload.botId, nx, ny)
+      }
     }
-
-    const win = windowsFor(payload.botId)
-
-    if (!win || win.isDestroyed()) {
-      return
-    }
-
-    const sx = Number(payload.x)
-    const sy = Number(payload.y)
-
-    if (!Number.isFinite(sx) || !Number.isFinite(sy)) {
-      return
-    }
-
-    if (payload.phase === 'start') {
-      const [wx, wy] = win.getPosition()
-      grabs.set(payload.botId, { dx: sx - wx, dy: sy - wy })
-
-      return
-    }
-
-    const grab = grabs.get(payload.botId)
-
-    if (!grab) {
-      return
-    }
-
-    const nx = Math.round(sx - grab.dx)
-    const ny = Math.round(sy - grab.dy)
-
-    win.setPosition(nx, ny)
-
-    if (payload.phase === 'end') {
-      grabs.delete(payload.botId)
-      onMoved(payload.botId, nx, ny)
-    }
-  })
+  )
 }
 
 /** Register the mascot window's control channel — it speaks the same

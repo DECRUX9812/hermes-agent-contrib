@@ -748,8 +748,11 @@ it('keeps touch mount and turn completion from focusing the editor while accepti
 
   function TouchDraft({ disabled }: { disabled: boolean }) {
     draft = useComposerDraft({
-      activeQueueSessionKey: 'touch-focus', focusKey: null, inputDisabled: disabled,
-      queueEditRef: { current: null }, sessionId: 'touch-focus'
+      activeQueueSessionKey: 'touch-focus',
+      focusKey: null,
+      inputDisabled: disabled,
+      queueEditRef: { current: null },
+      sessionId: 'touch-focus'
     })
 
     return <div contentEditable data-slot="composer-rich-input" ref={draft.editorRef} tabIndex={0} />

@@ -32,11 +32,15 @@ import { $connection } from '@/store/session'
 export function installBrowserDesktopBridge(): boolean {
   const win = window as unknown as BrowserBootstrapWindow
 
-  if (win.hermesDesktop) {return false}
+  if (win.hermesDesktop) {
+    return false
+  }
 
   const bootstrap = browserBootstrap()
 
-  if (!bootstrap) {return false}
+  if (!bootstrap) {
+    return false
+  }
 
   if (bootstrap.privateSession) {
     watchWebappLaunchLink(() => window.location.reload())
@@ -72,7 +76,9 @@ export function installBrowserDesktopBridge(): boolean {
   const openExternal = async (url: string) => {
     const target = externalUrlTarget(url)
 
-    if (target?.kind === 'web') {window.open(target.url, '_blank', 'noopener,noreferrer')}
+    if (target?.kind === 'web') {
+      window.open(target.url, '_blank', 'noopener,noreferrer')
+    }
   }
 
   const uploads = createBrowserUploadsBridge({ api, bootstrap, currentProfile, objectUrls, previewUrls })
@@ -96,11 +102,17 @@ export function installBrowserDesktopBridge(): boolean {
       return { count: query && find?.call(window, query) ? 1 : 0 }
     },
     notify: async ({ title, body }: { title?: string; body?: string }) => {
-      if (!('Notification' in window)) {return false}
+      if (!('Notification' in window)) {
+        return false
+      }
 
-      if (Notification.permission === 'default') {await Notification.requestPermission()}
+      if (Notification.permission === 'default') {
+        await Notification.requestPermission()
+      }
 
-      if (Notification.permission !== 'granted') {return false}
+      if (Notification.permission !== 'granted') {
+        return false
+      }
       new Notification(title || 'Hermes', { body })
 
       return true
@@ -120,7 +132,9 @@ export function installBrowserDesktopBridge(): boolean {
       return target ? openWindow(target) : { error: 'invalid_session_id', ok: false }
     },
     requestMicrophoneAccess: async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {return false}
+      if (!navigator.mediaDevices?.getUserMedia) {
+        return false
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       stream.getTracks().forEach(track => track.stop())
 

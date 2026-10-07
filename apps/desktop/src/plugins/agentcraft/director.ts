@@ -10,14 +10,18 @@
 import { Lamp } from './blocks'
 import * as E from './edits'
 import { applyPatch, miniDiff, type Patch } from './edits'
-import type { SimStore} from './model';
+import type { SimStore } from './model'
 import { type AgentActivity, type DecisionStatus, type Station } from './model'
 
-export const DEFAULT_SIM_GOAL = 'Add #tags to pocket-notes: parse them, filter with `notes list --tag`, and show a `notes tags` summary'
+export const DEFAULT_SIM_GOAL =
+  'Add #tags to pocket-notes: parse them, filter with `notes list --tag`, and show a `notes tags` summary'
 
 export const PERMISSION_OPTIONS = ['Allow once', 'Allow this session', 'Deny']
 export const Q1_OPTIONS = ['Only open notes (recommended)', 'Include completed notes']
-export const q2Options = (id: string) => [`Close ${id} - I'll publish 0.3.0 myself (recommended)`, `Keep ${id} on the wall for later`]
+export const q2Options = (id: string) => [
+  `Close ${id} - I'll publish 0.3.0 myself (recommended)`,
+  `Keep ${id} on the wall for later`
+]
 
 const USER = 'you'
 
@@ -155,7 +159,7 @@ test('unknown commands exit 2 with help', () => {
   'test/notes.test.ts': `import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { listNotes } from './notes.ts';
-`,
+`
 }
 
 interface Waiter {
@@ -184,7 +188,9 @@ export class SimDirector {
 
   constructor(readonly st: SimStore) {
     st.on(ev => {
-      if (ev.type === 'decision' && ev.status === 'answered') {this.wake(ev.key)}
+      if (ev.type === 'decision' && ev.status === 'answered') {
+        this.wake(ev.key)
+      }
     })
   }
 
@@ -195,7 +201,9 @@ export class SimDirector {
   task(key: string) {
     const t = this.st.tasks.get(key)
 
-    if (!t) {throw new Error(`sim: unknown task ${key}`)}
+    if (!t) {
+      throw new Error(`sim: unknown task ${key}`)
+    }
 
     return t
   }
@@ -219,7 +227,7 @@ export class SimDirector {
           this.pendingSleep = null
           resolve()
         },
-        Math.max(60, ms / this.speed),
+        Math.max(60, ms / this.speed)
       )
 
       this.pendingSleep = () => {
@@ -265,7 +273,13 @@ export class SimDirector {
     this.st.pushFeed('say', `${from} → ${to}: ${text.slice(0, 72)}${text.length > 72 ? '…' : ''}`, from)
   }
 
-  private async tool(agentId: string, name: string, args: string, ms: number, station: Station = 'desk'): Promise<void> {
+  private async tool(
+    agentId: string,
+    name: string,
+    args: string,
+    ms: number,
+    station: Station = 'desk'
+  ): Promise<void> {
     this.act(agentId, 'reading', station, `$ ${name} ${args}`)
     this.log(agentId, 'tool', `$ ${name} ${args}`)
     await this.sleep(ms)
@@ -283,7 +297,11 @@ export class SimDirector {
 
   async grep(agentId: string, _root: string, pattern: string): Promise<void> {
     await this.tool(agentId, 'Grep', pattern, 800)
-    this.log(agentId, 'result', 'src/notes.ts:3 export interface Note\nsrc/notes.ts:10 export function listNotes\nsrc/cli.ts:11 export function run\n...')
+    this.log(
+      agentId,
+      'result',
+      'src/notes.ts:3 export interface Note\nsrc/notes.ts:10 export function listNotes\nsrc/cli.ts:11 export function run\n...'
+    )
   }
 
   async patch(agentId: string, wtPath: string, patches: Patch | Patch[], ms = 1200): Promise<void> {
@@ -291,7 +309,9 @@ export class SimDirector {
     const taskKey = wtPath.split('-wt-')[1]
     const files = this.worktrees.get(taskKey ?? '')
 
-    if (!files) {throw new Error(`sim: patch on unknown worktree ${wtPath}`)}
+    if (!files) {
+      throw new Error(`sim: patch on unknown worktree ${wtPath}`)
+    }
     this.act(agentId, 'editing', 'desk', `editing ${list.map(p => p.file).join(', ')}`)
 
     for (const p of list) {
@@ -300,7 +320,10 @@ export class SimDirector {
       if (r.changed) {
         let dirty = this.dirtyFiles.get(taskKey)
 
-        if (!dirty) {dirty = new Set(); this.dirtyFiles.set(taskKey, dirty)}
+        if (!dirty) {
+          dirty = new Set()
+          this.dirtyFiles.set(taskKey, dirty)
+        }
         dirty.add(p.file)
         this.log(agentId, 'diff', miniDiff(r.before, r.after))
       } else {
@@ -332,7 +355,11 @@ export class SimDirector {
     this.st.setLamp('ci:1', pass ? Lamp.DONE : Lamp.ERROR)
     this.st.setLamp('ci:2', pass ? Lamp.DONE : Lamp.ERROR)
     this.st.setLamp('ci:3', pass ? Lamp.DONE : Lamp.OFF)
-    this.st.pushFeed('ci', `CI ${pass ? 'green' : 'red'} for ${key === 'baseline' ? 'baseline' : this.task(key).id}`, agentId)
+    this.st.pushFeed(
+      'ci',
+      `CI ${pass ? 'green' : 'red'} for ${key === 'baseline' ? 'baseline' : this.task(key).id}`,
+      agentId
+    )
     this.act(agentId, 'thinking', 'desk', pass ? 'tests green' : 'tests red - fixing')
 
     return pass
@@ -363,12 +390,27 @@ export class SimDirector {
       this.log(agentId, 'result', out)
     }
 
-    if (finalLines) {for (const l of finalLines) {this.log(agentId, 'result', l)}}
+    if (finalLines) {
+      for (const l of finalLines) {
+        this.log(agentId, 'result', l)
+      }
+    }
   }
 
-  memory(agentId: string, scope: 'shared' | string, title: string, body: string, mode: 'replace' | 'append', tag?: string): void {
+  memory(
+    agentId: string,
+    scope: 'shared' | string,
+    title: string,
+    body: string,
+    mode: 'replace' | 'append',
+    tag?: string
+  ): void {
     this.st.pushFeed('memory', `${agentId} wrote "${title}" to ${scope} memory`, agentId)
-    this.log(agentId, 'memory', `memory.${scope === 'shared' ? 'shared' : 'private'} ← "${title}"${tag ? ` [${tag}]` : ''}`)
+    this.log(
+      agentId,
+      'memory',
+      `memory.${scope === 'shared' ? 'shared' : 'private'} ← "${title}"${tag ? ` [${tag}]` : ''}`
+    )
   }
 
   think(agentId: string, text: string, station: Station, ms = 900): Promise<void> {
@@ -380,10 +422,22 @@ export class SimDirector {
 
   // ------------------------------------------------------------ tasks
 
-  ensureTask(key: string, input: { title: string; description?: string; deps?: string[]; assignee?: string; createdBy?: string; priority?: number }) {
+  ensureTask(
+    key: string,
+    input: {
+      title: string
+      description?: string
+      deps?: string[]
+      assignee?: string
+      createdBy?: string
+      priority?: number
+    }
+  ) {
     let t = this.st.tasks.get(key)
 
-    if (t) {return t}
+    if (t) {
+      return t
+    }
     this.nextTaskId++
     const id = `T-${this.nextTaskId}`
     this.taskIds.set(key, id)
@@ -395,14 +449,18 @@ export class SimDirector {
       state: 'todo',
       assignee: input.assignee ?? null,
       deps: input.deps ?? [],
-      priority: input.priority ?? 0,
+      priority: input.priority ?? 0
     }
     this.st.addTask(t)
 
     return t
   }
 
-  setTask(key: string, state: 'todo' | 'doing' | 'review' | 'done' | 'blocked' | 'cancelled', opts: { summary?: string; reason?: string } = {}): void {
+  setTask(
+    key: string,
+    state: 'todo' | 'doing' | 'review' | 'done' | 'blocked' | 'cancelled',
+    opts: { summary?: string; reason?: string } = {}
+  ): void {
     this.st.setTask(key, { state, summary: opts.summary, blockedReason: opts.reason })
 
     if (state === 'blocked') {
@@ -435,7 +493,18 @@ export class SimDirector {
 
   // ------------------------------------------------------------ decisions
 
-  openDecision(key: string, build: () => { agentId: string; kind: 'permission' | 'question' | 'merge'; question: string; options: string[]; context?: string; tool?: string; taskId?: string }): void {
+  openDecision(
+    key: string,
+    build: () => {
+      agentId: string
+      kind: 'permission' | 'question' | 'merge'
+      question: string
+      options: string[]
+      context?: string
+      tool?: string
+      taskId?: string
+    }
+  ): void {
     const d = build()
     const taskKey = d.taskId ? this.taskKeyFor(d.taskId) : undefined
     this.st.openDecision({
@@ -448,13 +517,17 @@ export class SimDirector {
       tool: d.tool,
       taskKey,
       status: 'open',
-      openedAt: Date.now(),
+      openedAt: Date.now()
     })
     this.st.pushFeed('decision', `${d.agentId} asks: ${d.question.slice(0, 64)}…`, d.agentId)
   }
 
   private taskKeyFor(id: string): string | undefined {
-    for (const t of this.st.tasks.values()) {if (t.id === id) {return t.key}}
+    for (const t of this.st.tasks.values()) {
+      if (t.id === id) {
+        return t.key
+      }
+    }
 
     return undefined
   }
@@ -471,12 +544,16 @@ export class SimDirector {
     return new Promise(resolve => {
       const done = () => resolve({ status: d.status, answer: d.answer })
 
-      if (d.status !== 'open') {return done()}
+      if (d.status !== 'open') {
+        return done()
+      }
 
       if (this.autoAnswer > 0) {
         // auto mode picks the recommended (first) option after a beat
         setTimeout(() => {
-          if (d.status === 'open') {this.st.answerDecision(key, { option: d.options[0] })}
+          if (d.status === 'open') {
+            this.st.answerDecision(key, { option: d.options[0] })
+          }
         }, this.autoAnswer / this.speed)
       }
 
@@ -500,7 +577,7 @@ export class SimDirector {
       status: 'open',
       openedAt: Date.now(),
       diff: diff.trim() ? diff : `(no diff for src/cli.ts — ${t.id} changes live elsewhere)`,
-      files: [t.title.toLowerCase().includes('readme') ? 'README.md' : 'src/cli.ts'],
+      files: [t.title.toLowerCase().includes('readme') ? 'README.md' : 'src/cli.ts']
     })
     this.st.pushFeed('decision', `${agentId} wants to merge ${t.id}`, agentId)
     this.act(agentId, 'waiting_user', 'mergestation', `merge review for ${t.id}`)
@@ -511,7 +588,9 @@ export class SimDirector {
   /** Waits on the merge decision; on approval marks task done and celebrates. */
   async settleMerge(taskKey: string, agentId: string, _path: string): Promise<'merged' | 'rejected' | 'changes'> {
     const t = this.task(taskKey)
-    const key = [...this.st.decisions.values()].find(d => d.kind === 'merge' && d.taskKey === taskKey && d.status === 'open')?.key
+    const key = [...this.st.decisions.values()].find(
+      d => d.kind === 'merge' && d.taskKey === taskKey && d.status === 'open'
+    )?.key
     const d = key ? await this.awaitDecision(key) : { status: 'answered' as const, answer: { option: 'Merge' } }
     const opt = d.answer?.option ?? 'Merge'
     this.st.setBulbs('merge', false)
@@ -523,7 +602,9 @@ export class SimDirector {
       const merged = this.worktrees.get(taskKey)
 
       if (merged) {
-        for (const f of this.dirtyFiles.get(taskKey) ?? []) {REPO_FILES[f] = merged[f]}
+        for (const f of this.dirtyFiles.get(taskKey) ?? []) {
+          REPO_FILES[f] = merged[f]
+        }
       }
 
       this.setTask(taskKey, 'done', { summary: `merged by ${USER}` })
@@ -548,7 +629,12 @@ export class SimDirector {
     this.log(agentId, 'text', `${t.id}: changes requested — fixing and re-submitting`)
     this.st.pushFeed('decision', `${t.id}: changes requested`)
     this.act(agentId, 'editing', 'desk', `addressing review on ${t.id}`)
-    await this.patch(agentId, this.wt(taskKey).path, { file: 'src/cli.ts', find: 'export function run(', replace: '// review note addressed\nexport function run(' }, 800)
+    await this.patch(
+      agentId,
+      this.wt(taskKey).path,
+      { file: 'src/cli.ts', find: 'export function run(', replace: '// review note addressed\nexport function run(' },
+      800
+    )
     await this.requestMerge(taskKey, 2, `${agentId}-${taskKey}: review note addressed.`)
 
     return this.settleMerge(taskKey, agentId, _path)

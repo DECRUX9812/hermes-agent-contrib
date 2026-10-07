@@ -19,7 +19,7 @@ import {
   SIDEBAR_NAV_AREA,
   type SidebarNavContribution,
   STATUSBAR_AREAS,
-  Tip,
+  Tip
 } from '@hermes/plugin-sdk'
 import { lazy, Suspense } from 'react'
 
@@ -33,7 +33,7 @@ function StudioStatus() {
       <button
         className={cn(
           'inline-flex h-full items-center gap-1 rounded-none px-1.5 text-[0.6875rem] tabular-nums transition-colors',
-          'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground',
+          'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground'
         )}
         onClick={() => host.navigate('/studio')}
         type="button"
@@ -48,7 +48,8 @@ function StudioStatus() {
 const plugin: HermesPlugin = {
   id: 'agentcraft',
   name: 'AgentCraft Studio',
-  description: 'A voxel agent-village page: six skinned agents work a scripted repo scenario in a three.js Minecraft-style studio.',
+  description:
+    'A voxel agent-village page: six skinned agents work a scripted repo scenario in a three.js Minecraft-style studio.',
   defaultEnabled: true,
   register(ctx) {
     ctx.i18n.register(AGENTCRAFT_LOCALES)
@@ -59,17 +60,19 @@ const plugin: HermesPlugin = {
         area: ROUTES_AREA,
         data: { path: '/studio' } satisfies RouteContribution,
         render: () => (
-          <Suspense fallback={<div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>building the studio…</div>}>
+          <Suspense
+            fallback={<div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>building the studio…</div>}
+          >
             <StudioPage />
           </Suspense>
-        ),
+        )
       },
       {
         id: 'status',
         area: STATUSBAR_AREAS.right,
         order: 78,
-        render: () => <StudioStatus />,
-      },
+        render: () => <StudioStatus />
+      }
     ])
 
     const registerLabels = () =>
@@ -78,7 +81,7 @@ const plugin: HermesPlugin = {
           id: 'nav',
           area: SIDEBAR_NAV_AREA,
           order: 55,
-          data: { codicon: 'map', label: ctx.i18n.t('nav'), path: '/studio' } satisfies SidebarNavContribution,
+          data: { codicon: 'map', label: ctx.i18n.t('nav'), path: '/studio' } satisfies SidebarNavContribution
         },
         {
           id: 'open',
@@ -87,9 +90,9 @@ const plugin: HermesPlugin = {
             id: 'agentcraft.openStudio',
             label: ctx.i18n.t('openStudio'),
             keywords: ['studio', 'agentcraft', 'minecraft', 'voxel', 'agents'],
-            run: () => host.navigate('/studio'),
-          } satisfies PaletteContribution,
-        },
+            run: () => host.navigate('/studio')
+          } satisfies PaletteContribution
+        }
       ])
 
     let disposeLabels = registerLabels()
@@ -97,7 +100,7 @@ const plugin: HermesPlugin = {
       disposeLabels()
       disposeLabels = registerLabels()
     })
-  },
+  }
 }
 
 export default plugin

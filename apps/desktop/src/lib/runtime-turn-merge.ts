@@ -48,8 +48,11 @@ function sameRuntimeAnchor(left: ChatMessage, right: ChatMessage): boolean {
     return left.rowId === right.rowId
   }
 
-  return left.timestamp !== undefined && left.timestamp === right.timestamp &&
+  return (
+    left.timestamp !== undefined &&
+    left.timestamp === right.timestamp &&
     normalizedText(chatMessageText(left)) === normalizedText(chatMessageText(right))
+  )
 }
 
 function locateRuntimeInterval(
@@ -111,9 +114,14 @@ function runtimeCommitCoverage(
   tail: ChatMessage[],
   humans: ChatMessage[]
 ): RuntimeCommitCoverage {
-  const durableHumans = committedCandidates.filter(message => message.role === 'user' &&
-    message.userOriginated !== false && !message.recovered && message.pending !== true &&
-    (message.rowId !== undefined || message.timestamp !== undefined))
+  const durableHumans = committedCandidates.filter(
+    message =>
+      message.role === 'user' &&
+      message.userOriginated !== false &&
+      !message.recovered &&
+      message.pending !== true &&
+      (message.rowId !== undefined || message.timestamp !== undefined)
+  )
 
   // A receipt for one occurrence cannot cover a later identical correction or
   // queued prompt. Assistant/tool persistence says nothing about these rows.
@@ -131,36 +139,54 @@ function runtimeCommitCoverage(
 
   const humansCommitted = committedHumanCount === humans.length
 
-  const committed = committedCandidates.filter(message => message.role === 'assistant' &&
-    message.pending !== true && !message.interim && !message.recovered &&
-    (!isLiveProjectionRow(message) || message.completedAt !== undefined))
+  const committed = committedCandidates.filter(
+    message =>
+      message.role === 'assistant' &&
+      message.pending !== true &&
+      !message.interim &&
+      !message.recovered &&
+      (!isLiveProjectionRow(message) || message.completedAt !== undefined)
+  )
 
   const committedParts = committed.flatMap(message => message.parts)
 
-  const structureCommitted = tail.every(message => message.parts.every(part => {
-    if (part.type === 'tool-call') {
-      // A flushed invocation does not prove that its result was persisted.
-      // The bounded journal retains result presence even when it omits payloads.
-      return part.toolCallId !== undefined && committedParts.some(candidate =>
-        candidate.type === 'tool-call' && candidate.toolCallId === part.toolCallId &&
-        (part.result === undefined || candidate.result !== undefined))
-    }
+  const structureCommitted = tail.every(message =>
+    message.parts.every(part => {
+      if (part.type === 'tool-call') {
+        // A flushed invocation does not prove that its result was persisted.
+        // The bounded journal retains result presence even when it omits payloads.
+        return (
+          part.toolCallId !== undefined &&
+          committedParts.some(
+            candidate =>
+              candidate.type === 'tool-call' &&
+              candidate.toolCallId === part.toolCallId &&
+              (part.result === undefined || candidate.result !== undefined)
+          )
+        )
+      }
 
-    return part.type !== 'reasoning' || committedParts.some(candidate =>
-      candidate.type === 'reasoning' && candidate.text.startsWith(part.text))
-  }))
+      return (
+        part.type !== 'reasoning' ||
+        committedParts.some(candidate => candidate.type === 'reasoning' && candidate.text.startsWith(part.text))
+      )
+    })
+  )
 
   const contentCommitted = tail.filter(assistantHasRecoverableContent).every(message => {
     const text = normalizedText(chatMessageText(message))
 
     if (message.error) {
-      return committed.some(candidate => candidate.error === message.error &&
-        (!text || normalizedText(chatMessageText(candidate)).startsWith(text)))
+      return committed.some(
+        candidate =>
+          candidate.error === message.error && (!text || normalizedText(chatMessageText(candidate)).startsWith(text))
+      )
     }
 
     // A persisted final answer may extend the last throttled partial. Empty
     // text needs explicit structural coverage; an unrelated body proves none.
-    return text ? committed.some(candidate => normalizedText(chatMessageText(candidate)).startsWith(text))
+    return text
+      ? committed.some(candidate => normalizedText(chatMessageText(candidate)).startsWith(text))
       : message.parts.some(part => part.type === 'tool-call' || part.type === 'reasoning') && structureCommitted
   })
 
@@ -176,18 +202,20 @@ function withoutCommittedPrefix(
   // Occurrence reconciliation may already have split durable tool rounds from
   // the live suffix. Consume that proven prefix before overlaying the journal,
   // just as human-turn recovery does, without consuming runtime/correction rows.
-  const beforeCoverage = coverage.contentCommitted && coverage.structureCommitted
-    ? tail.filter(message => message.role !== 'assistant')
-    : tail
+  const beforeCoverage =
+    coverage.contentCommitted && coverage.structureCommitted
+      ? tail.filter(message => message.role !== 'assistant')
+      : tail
 
   const firstAssistant = beforeCoverage.findIndex(message => message.role === 'assistant')
 
-  const remaining = firstAssistant < 0
-    ? beforeCoverage
-    : [
-        ...beforeCoverage.slice(0, firstAssistant),
-        ...withoutCoveredAssistantPrefix(coverage.committed, beforeCoverage.slice(firstAssistant))
-      ]
+  const remaining =
+    firstAssistant < 0
+      ? beforeCoverage
+      : [
+          ...beforeCoverage.slice(0, firstAssistant),
+          ...withoutCoveredAssistantPrefix(coverage.committed, beforeCoverage.slice(firstAssistant))
+        ]
 
   return { beforeCoverage, remaining }
 }
@@ -199,13 +227,17 @@ function matchingBaseRow(
   humans: ChatMessage[],
   humanIndex: number
 ): number {
-  return baseTurn.findIndex((candidate, index) =>
-    index >= cursor && candidate.role === row.role &&
-    (candidate.id === row.id ||
-      (row.rowId !== undefined && candidate.rowId === row.rowId) ||
-      (row.role === 'user' ? (humanIndex >= 0
-        ? coveredHumanOccurrences(candidate, humans, humanIndex) > 0 : userMessagesMatch(candidate, row))
-        : normalizedText(chatMessageText(candidate)) === normalizedText(chatMessageText(row))))
+  return baseTurn.findIndex(
+    (candidate, index) =>
+      index >= cursor &&
+      candidate.role === row.role &&
+      (candidate.id === row.id ||
+        (row.rowId !== undefined && candidate.rowId === row.rowId) ||
+        (row.role === 'user'
+          ? humanIndex >= 0
+            ? coveredHumanOccurrences(candidate, humans, humanIndex) > 0
+            : userMessagesMatch(candidate, row)
+          : normalizedText(chatMessageText(candidate)) === normalizedText(chatMessageText(row))))
   )
 }
 
@@ -217,9 +249,10 @@ function overlayMatchedRow(candidate: ChatMessage, row: ChatMessage, beforeCover
   // A remainder can be just an unflushed result of this very same durable
   // bubble. Overlay its full journal row, not a prefix-subtracted fragment
   // that would erase the already covered text/tools.
-  const overlay = candidate.id === row.id || (row.rowId !== undefined && candidate.rowId === row.rowId)
-    ? beforeCoverage.find(original => original.id === row.id) ?? row
-    : row
+  const overlay =
+    candidate.id === row.id || (row.rowId !== undefined && candidate.rowId === row.rowId)
+      ? (beforeCoverage.find(original => original.id === row.id) ?? row)
+      : row
 
   return overlayProjectionRow(candidate, overlay)
 }
@@ -242,19 +275,33 @@ function recoveredRuntimeRow(
 
   usedIds.add(id)
 
-  return { ...row, id, pending: row.role === 'assistant' && recovery.keepRuntimePending && row.pending === true,
-    ...(!recovery.keepRuntimePending ? { recovered: true } : {}) }
+  return {
+    ...row,
+    id,
+    pending: row.role === 'assistant' && recovery.keepRuntimePending && row.pending === true,
+    ...(!recovery.keepRuntimePending ? { recovered: true } : {})
+  }
 }
 
 /** Interleave the uncommitted journal rows with the interval's base rows,
  *  overlaying each journal row onto the base row that already holds it. */
 function weaveRuntimeTail(journalTail: ChatMessage[], recovery: RuntimeRecovery): ChatMessage[] {
-  const { baseMessages, coverage, humans, interval: { baseTurn }, startedAt } = recovery
+  const {
+    baseMessages,
+    coverage,
+    humans,
+    interval: { baseTurn },
+    startedAt
+  } = recovery
   const { beforeCoverage, remaining: tail } = withoutCommittedPrefix(journalTail, coverage)
   const lastJournalAssistant = tail.findLast(assistantHasRecoverableContent)
 
-  const lastLiveAssistant = baseTurn.findLastIndex(message => message.role === 'assistant' &&
-    message.runtimeTurnStartedAt === startedAt && (message.pending === true || Boolean(message.error)))
+  const lastLiveAssistant = baseTurn.findLastIndex(
+    message =>
+      message.role === 'assistant' &&
+      message.runtimeTurnStartedAt === startedAt &&
+      (message.pending === true || Boolean(message.error))
+  )
 
   const usedIds = new Set(baseMessages.map(message => message.id))
   const merged: ChatMessage[] = []
@@ -268,9 +315,10 @@ function weaveRuntimeTail(journalTail: ChatMessage[], recovery: RuntimeRecovery)
 
     const humanIndex = humans.indexOf(row)
 
-    const match = row === lastJournalAssistant && lastLiveAssistant >= cursor
-      ? lastLiveAssistant
-      : matchingBaseRow(baseTurn, cursor, row, humans, humanIndex)
+    const match =
+      row === lastJournalAssistant && lastLiveAssistant >= cursor
+        ? lastLiveAssistant
+        : matchingBaseRow(baseTurn, cursor, row, humans, humanIndex)
 
     if (match >= 0) {
       merged.push(...baseTurn.slice(cursor, match))
@@ -289,8 +337,10 @@ function weaveRuntimeTail(journalTail: ChatMessage[], recovery: RuntimeRecovery)
 
     // The accepted next-turn queue is outside this runtime boundary. Keep its
     // existing projection when the same queue envelope is already represented.
-    if (row.id.startsWith('user-queued-') && baseMessages.some(candidate =>
-      candidate.id.startsWith('user-queued-') && userMessagesMatch(candidate, row))) {
+    if (
+      row.id.startsWith('user-queued-') &&
+      baseMessages.some(candidate => candidate.id.startsWith('user-queued-') && userMessagesMatch(candidate, row))
+    ) {
       continue
     }
 
@@ -315,16 +365,26 @@ function finalizeRuntimeTurn(
   recovery: RuntimeRecovery,
   keepPending: boolean
 ): InFlightRecoveryResult {
-  const { baseMessages, interval: { first, last }, keepRuntimePending, otherLiveAssistant, startedAt } = recovery
+  const {
+    baseMessages,
+    interval: { first, last },
+    keepRuntimePending,
+    otherLiveAssistant,
+    startedAt
+  } = recovery
 
-  const runtimeMessages = keepRuntimePending ? merged : merged.map(message =>
-    message.role === 'assistant' && message.runtimeTurnStartedAt === startedAt && message.pending === true
-      ? { ...message, pending: false }
-      : message)
+  const runtimeMessages = keepRuntimePending
+    ? merged
+    : merged.map(message =>
+        message.role === 'assistant' && message.runtimeTurnStartedAt === startedAt && message.pending === true
+          ? { ...message, pending: false }
+          : message
+      )
 
-  const messages = first < 0
-    ? [...baseMessages, ...runtimeMessages]
-    : [...baseMessages.slice(0, first), ...runtimeMessages, ...baseMessages.slice(last + 1)]
+  const messages =
+    first < 0
+      ? [...baseMessages, ...runtimeMessages]
+      : [...baseMessages.slice(0, first), ...runtimeMessages, ...baseMessages.slice(last + 1)]
 
   const runtimeAssistant = runtimeMessages.findLast(assistantHasRecoverableContent)
 
@@ -355,13 +415,16 @@ export function mergeRuntimeTurn(
     return { applied: false, caughtUp: true, messages: baseMessages, streamId: null, turnStartedAt: null }
   }
 
-  const currentRuntimeAssistant = baseMessages.findLastIndex(message =>
-    message.role === 'assistant' && message.pending === true && message.runtimeTurnStartedAt === startedAt
+  const currentRuntimeAssistant = baseMessages.findLastIndex(
+    message => message.role === 'assistant' && message.pending === true && message.runtimeTurnStartedAt === startedAt
   )
 
-  const otherLiveAssistant = baseMessages.findLast((message, index) =>
-    message.role === 'assistant' && message.pending === true && message.runtimeTurnStartedAt !== startedAt &&
-    (currentRuntimeAssistant < 0 || index > currentRuntimeAssistant)
+  const otherLiveAssistant = baseMessages.findLast(
+    (message, index) =>
+      message.role === 'assistant' &&
+      message.pending === true &&
+      message.runtimeTurnStartedAt !== startedAt &&
+      (currentRuntimeAssistant < 0 || index > currentRuntimeAssistant)
   )
 
   const recovery: RuntimeRecovery = {

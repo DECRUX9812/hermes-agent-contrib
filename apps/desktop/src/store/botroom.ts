@@ -100,7 +100,7 @@ function wireControl(): void {
   }
 
   wired = true
-  window.hermesDesktop.botroom.onControl((msg) => void handleControl(msg))
+  window.hermesDesktop.botroom.onControl(msg => void handleControl(msg))
 }
 
 // Self-wire in the MAIN renderer only (every window kind imports this store,
@@ -127,22 +127,17 @@ function startFeed(): void {
 
 async function refreshBots(): Promise<void> {
   try {
-    const res = await requestGatewayForProfile<{ profiles: ProfileRow[] }>(
-      activeGatewayProfileKey(),
-      'profiles.list',
-      { include_hidden: true },
-    )
+    const res = await requestGatewayForProfile<{ profiles: ProfileRow[] }>(activeGatewayProfileKey(), 'profiles.list', {
+      include_hidden: true
+    })
 
     const next = new Map<string, BotRoomBot>()
 
     for (const p of res.profiles ?? []) {
       const id = `profile:${p.name}`
 
-      const status: BotRoomBot['status'] = p.status === 'working'
-        ? 'working'
-        : p.status === 'sleeping'
-          ? 'sleeping'
-          : 'idle'
+      const status: BotRoomBot['status'] =
+        p.status === 'working' ? 'working' : p.status === 'sleeping' ? 'sleeping' : 'idle'
 
       next.set(id, {
         id,
@@ -150,12 +145,12 @@ async function refreshBots(): Promise<void> {
         displayName: p.display_name ?? p.name,
         status,
         statusLine: p.last_active,
-        color: (p.ui_meta?.color as string) ?? undefined,
+        color: (p.ui_meta?.color as string) ?? undefined
       })
     }
 
     const prev = $bots.get()
-    const membershipChanged = next.size !== prev.size || [...next.keys()].some((k) => !prev.has(k))
+    const membershipChanged = next.size !== prev.size || [...next.keys()].some(k => !prev.has(k))
 
     if (membershipChanged) {
       $bots.set(next)
@@ -176,15 +171,13 @@ async function refreshBots(): Promise<void> {
 /** Resolve the bot's canonical "Bot Chat" session id — by title, every
  *  time (no stored pointer; a name cannot dangle). */
 async function canonicalChatId(bot: BotRoomBot): Promise<string | null> {
-  const res = await requestGatewayForAgent<{ sessions?: SessionRow[] } | SessionRow[]>(
-    null,
-    bot.name,
-    'session.list',
-    { title: CANONICAL_CHAT_TITLE, include_hidden: true },
-  )
+  const res = await requestGatewayForAgent<{ sessions?: SessionRow[] } | SessionRow[]>(null, bot.name, 'session.list', {
+    title: CANONICAL_CHAT_TITLE,
+    include_hidden: true
+  })
 
   const rows = Array.isArray(res) ? res : (res.sessions ?? [])
-  const row = rows.find((r) => r.title === CANONICAL_CHAT_TITLE) ?? rows[0]
+  const row = rows.find(r => r.title === CANONICAL_CHAT_TITLE) ?? rows[0]
 
   return row ? String(row.resolved_id || row.id) : null
 }
@@ -201,7 +194,7 @@ async function mintCanonicalChat(bot: BotRoomBot): Promise<string | null> {
     { follow_profile_config: true, hidden: true, title: CANONICAL_CHAT_TITLE },
     undefined,
     undefined,
-    { spawnPriority: 'foreground' },
+    { spawnPriority: 'foreground' }
   )
 
   const runtime = created?.session_id
@@ -210,7 +203,7 @@ async function mintCanonicalChat(bot: BotRoomBot): Promise<string | null> {
     try {
       await requestGatewayForAgent(null, bot.name, 'session.title', {
         session_id: runtime,
-        title: CANONICAL_CHAT_TITLE,
+        title: CANONICAL_CHAT_TITLE
       })
     } catch {
       // Title already in use → a concurrent/pre-existing row wins; the
@@ -241,7 +234,7 @@ async function submitToBot(botId: string, text: string): Promise<void> {
     { session_id: stored, omit_messages: true, lazy: true },
     undefined,
     undefined,
-    { spawnPriority: 'foreground' },
+    { spawnPriority: 'foreground' }
   )
 
   const runtime = resumed.session_id
@@ -250,15 +243,9 @@ async function submitToBot(botId: string, text: string): Promise<void> {
     return
   }
 
-  await requestGatewayForAgent(
-    null,
-    bot.name,
-    'prompt.submit',
-    { session_id: runtime, text },
-    undefined,
-    undefined,
-    { spawnPriority: 'foreground' },
-  )
+  await requestGatewayForAgent(null, bot.name, 'prompt.submit', { session_id: runtime, text }, undefined, undefined, {
+    spawnPriority: 'foreground'
+  })
 }
 
 function roomPost(roomId: string, author: string, text: string): void {
@@ -269,7 +256,7 @@ async function roomRelay(room: BotRoomRoom, author: string, text: string): Promi
   // Fan out to every member except the speaker. Bounded: each inbound message
   // delivers at most one prompt per member — no recursive re-relay, so a room
   // turn is linear in members.
-  for (const memberId of room.memberBotIds.filter((id) => id !== author)) {
+  for (const memberId of room.memberBotIds.filter(id => id !== author)) {
     const b = $bots.get().get(memberId)
 
     if (!b) {

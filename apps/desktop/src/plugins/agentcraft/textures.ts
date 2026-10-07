@@ -19,7 +19,6 @@ export const PALETTE = paletteJson as unknown as Palette
 
 export function hex(c: string): [number, number, number] {
   if (typeof c !== 'string' || !c.startsWith('#')) {
-     
     console.error('bad palette color', JSON.stringify(c), new Error('trace').stack)
     throw new Error(`bad palette color: ${JSON.stringify(c)}`)
   }
@@ -33,7 +32,11 @@ function rgb(c: string): [number, number, number, number] {
   return [r, g, b, 255]
 }
 
-export function mix(a: [number, number, number, number], b: [number, number, number, number], t: number): [number, number, number, number] {
+export function mix(
+  a: [number, number, number, number],
+  b: [number, number, number, number],
+  t: number
+): [number, number, number, number] {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t]
 }
 
@@ -94,12 +97,18 @@ function planks(ramp: string, seed: number): Painter {
         for (let x = 0; x < TILE; x++) {
           let t = base + rowShift + (rand() < 0.12 ? -1 : 0)
 
-          if (y === 3) {t = tones.length - 1} // row seam
+          if (y === 3) {
+            t = tones.length - 1
+          } // row seam
 
-          if (x === joint && y < 3) {t = tones.length - 1} // board joint
+          if (x === joint && y < 3) {
+            t = tones.length - 1
+          } // board joint
 
           // knot
-          if (x === (joint + 5) % 16 && y === 1) {t = base + 1}
+          if (x === (joint + 5) % 16 && y === 1) {
+            t = base + 1
+          }
           put(x, row * 4 + y, tones[Math.max(0, Math.min(tones.length - 1, t))])
         }
       }
@@ -120,7 +129,9 @@ function bark(ramp: string, seed: number, stripeEvery = 4): Painter {
       for (let y = 0; y < TILE; y++) {
         let t = base + colShift + (rand() < 0.18 ? -1 : 0)
 
-        if (stripe === 1 && x % stripeEvery === 0) {t = tones.length - 1}
+        if (stripe === 1 && x % stripeEvery === 0) {
+          t = tones.length - 1
+        }
         put(x, y, tones[Math.max(0, Math.min(tones.length - 1, t))])
       }
     }
@@ -247,15 +258,26 @@ function cobble(ramp: string, seed: number, mossy: boolean): Painter {
 }
 
 /** Cross-billboard flower/grass textures: transparent bg + painted pixels. */
-function flower(petals: [number, number, number, number], stem: [number, number, number, number], kind: 'single' | 'double' | 'ball' | 'bells' | 'spray' | 'grass' | 'fern' | 'tallgrass' | 'bushy', seed: number): Painter {
+function flower(
+  petals: [number, number, number, number],
+  stem: [number, number, number, number],
+  kind: 'single' | 'double' | 'ball' | 'bells' | 'spray' | 'grass' | 'fern' | 'tallgrass' | 'bushy',
+  seed: number
+): Painter {
   return (put, rand) => {
     const darkStem: Pixel = [stem[0] * 0.7, stem[1] * 0.7, stem[2] * 0.7, 255]
     const clear: Pixel = [0, 0, 0, 0]
 
-    for (let y = 0; y < TILE; y++) {for (let x = 0; x < TILE; x++) {put(x, y, clear)}}
+    for (let y = 0; y < TILE; y++) {
+      for (let x = 0; x < TILE; x++) {
+        put(x, y, clear)
+      }
+    }
 
     const stemCol = (y0: number, y1: number, x: number) => {
-      for (let y = y0; y <= y1; y++) {put(x, y, stem)}
+      for (let y = y0; y <= y1; y++) {
+        put(x, y, stem)
+      }
     }
 
     if (kind === 'grass') {
@@ -263,7 +285,9 @@ function flower(petals: [number, number, number, number], stem: [number, number,
         const x = 1 + Math.floor(rand() * 14)
         const h = 4 + Math.floor(rand() * 8)
 
-        for (let y = TILE - 1; y > TILE - h; y--) {put(x, y, rand() < 0.3 ? darkStem : stem)}
+        for (let y = TILE - 1; y > TILE - h; y--) {
+          put(x, y, rand() < 0.3 ? darkStem : stem)
+        }
       }
 
       return
@@ -274,7 +298,9 @@ function flower(petals: [number, number, number, number], stem: [number, number,
         const x = Math.floor(rand() * 15)
         const h = 8 + Math.floor(rand() * 8)
 
-        for (let y = TILE - 1; y > TILE - h; y--) {put(x, y, rand() < 0.35 ? darkStem : stem)}
+        for (let y = TILE - 1; y > TILE - h; y--) {
+          put(x, y, rand() < 0.35 ? darkStem : stem)
+        }
       }
 
       return
@@ -288,7 +314,9 @@ function flower(petals: [number, number, number, number], stem: [number, number,
         for (let y = TILE - 1; y > TILE - h; y--) {
           put(x, y, stem)
 
-          if (y % 3 === 0 && i !== 0) {put(x + (i > 0 ? -1 : 1) * (i > 0 ? 0 : -0), y, stem)}
+          if (y % 3 === 0 && i !== 0) {
+            put(x + (i > 0 ? -1 : 1) * (i > 0 ? 0 : -0), y, stem)
+          }
         }
       }
 
@@ -297,7 +325,9 @@ function flower(petals: [number, number, number, number], stem: [number, number,
         for (let y = 0; y < 8; y++) {
           const x = 8 + s * Math.floor(y / 3)
 
-          if (x >= 0 && x < 16) {put(x, TILE - 6 + y - 4, darkStem)}
+          if (x >= 0 && x < 16) {
+            put(x, TILE - 6 + y - 4, darkStem)
+          }
         }
       }
 
@@ -310,7 +340,9 @@ function flower(petals: [number, number, number, number], stem: [number, number,
           const dx = (x - 8) / 6
           const dy = (y - 11) / 5
 
-          if (dx * dx + dy * dy < 1 && rand() < 0.85) {put(x, y, rand() < 0.3 ? darkStem : stem)}
+          if (dx * dx + dy * dy < 1 && rand() < 0.85) {
+            put(x, y, rand() < 0.3 ? darkStem : stem)
+          }
         }
       }
 
@@ -320,7 +352,9 @@ function flower(petals: [number, number, number, number], stem: [number, number,
     // stems
     stemCol(6, 15, 8)
 
-    if (kind === 'double') {stemCol(5, 15, 9)}
+    if (kind === 'double') {
+      stemCol(5, 15, 9)
+    }
     // leaves
     put(7, 11, stem)
     put(9, 9, stem)
@@ -328,8 +362,14 @@ function flower(petals: [number, number, number, number], stem: [number, number,
     if (kind === 'single') {
       for (let dy = 0; dy < 4; dy++) {
         for (let dx = 0; dx < 4; dx++) {
-          if ((dx === 0 || dx === 3) && (dy === 0 || dy === 3) && rand() < 0.7) {continue}
-          put(6 + dx, 2 + dy, dy === 1 && dx === 1 ? [petals[0] * 1.15, petals[1] * 1.15, petals[2] * 1.15, 255] : petals)
+          if ((dx === 0 || dx === 3) && (dy === 0 || dy === 3) && rand() < 0.7) {
+            continue
+          }
+          put(
+            6 + dx,
+            2 + dy,
+            dy === 1 && dx === 1 ? [petals[0] * 1.15, petals[1] * 1.15, petals[2] * 1.15, 255] : petals
+          )
         }
       }
 
@@ -340,7 +380,9 @@ function flower(petals: [number, number, number, number], stem: [number, number,
           const dx = x - 7.5
           const dy = y - 3.5
 
-          if (dx * dx + dy * dy < 9) {put(x, y, petals)}
+          if (dx * dx + dy * dy < 9) {
+            put(x, y, petals)
+          }
         }
       }
     } else if (kind === 'bells') {
@@ -349,7 +391,7 @@ function flower(petals: [number, number, number, number], stem: [number, number,
         [9, 4],
         [7, 6],
         [10, 7],
-        [6, 8],
+        [6, 8]
       ] as const) {
         put(bx, by, petals)
         put(bx, by + 1, petals)
@@ -360,7 +402,9 @@ function flower(petals: [number, number, number, number], stem: [number, number,
         const y = 1 + Math.floor(rand() * 7)
         put(x, y, petals)
 
-        if (rand() < 0.5) {put(x, y + 1, petals)}
+        if (rand() < 0.5) {
+          put(x, y + 1, petals)
+        }
       }
     }
   }
@@ -515,7 +559,14 @@ export const PAINTERS: Record<string, Painter> = {
   },
   bookshelf: (put, rand) => {
     const shelf = PALETTE.ramps.oak.tones.map(rgb)
-    const bookCols = [PALETTE.colors.clay, PALETTE.colors.teal, PALETTE.colors.brass, PALETTE.colors.sage, PALETTE.colors.clay_dark, PALETTE.colors.cream].map(rgb)
+    const bookCols = [
+      PALETTE.colors.clay,
+      PALETTE.colors.teal,
+      PALETTE.colors.brass,
+      PALETTE.colors.sage,
+      PALETTE.colors.clay_dark,
+      PALETTE.colors.cream
+    ].map(rgb)
 
     for (let y = 0; y < TILE; y++) {
       for (let x = 0; x < TILE; x++) {
@@ -651,7 +702,7 @@ export const PAINTERS: Record<string, Painter> = {
     const sticks = [
       [4, 8],
       [8, 5],
-      [11, 9],
+      [11, 9]
     ]
 
     for (const [sx, sh] of sticks) {
@@ -919,7 +970,9 @@ export const PAINTERS: Record<string, Painter> = {
       const y = 11 + Math.floor(rand() * 4)
       put(x, y, cols[2 + Math.floor(rand() * 3)])
 
-      if (rand() < 0.5) {put(x + 1, y, cols[3])}
+      if (rand() < 0.5) {
+        put(x + 1, y, cols[3])
+      }
     }
   },
   firefly_bush: (put, rand) => {
@@ -947,7 +1000,9 @@ export const PAINTERS: Record<string, Painter> = {
         const rim = y < 9
         const w = rim ? 11 : 9
 
-        if (x < 8 - w / 2 || x > 7 + w / 2) {continue}
+        if (x < 8 - w / 2 || x > 7 + w / 2) {
+          continue
+        }
         const t = rim ? 2 : y > 13 ? 3 : 1
         put(x, y, pot[Math.max(0, Math.min(pot.length - 1, t + (rand() < 0.15 ? -1 : 0)))])
       }
@@ -971,7 +1026,9 @@ export const PAINTERS: Record<string, Painter> = {
       const w = 1 + 3 * (1 - f)
 
       for (let x = 8 - Math.round(w); x <= 7 + Math.round(w); x++) {
-        if (rand() < 0.12) {continue}
+        if (rand() < 0.12) {
+          continue
+        }
         put(x, y, f > 0.6 ? c1 : f > 0.3 ? c2 : c3)
       }
     }
@@ -998,7 +1055,7 @@ export const PAINTERS: Record<string, Painter> = {
         put(x, y, tones[Math.max(0, Math.min(tones.length - 1, t))])
       }
     }
-  },
+  }
 }
 
 // ------------------------------------------------------------------ atlas
@@ -1038,7 +1095,7 @@ export const AC_BLOCKS = [
   'status_lamp_waiting',
   'status_lamp_error',
   'status_lamp_done',
-  'status_lamp_off',
+  'status_lamp_off'
 ]
 
 export const AC_LAMP_TILE: Record<number, string> = {
@@ -1048,7 +1105,7 @@ export const AC_LAMP_TILE: Record<number, string> = {
   3: 'ac:status_lamp_working',
   4: 'ac:status_lamp_waiting',
   5: 'ac:status_lamp_error',
-  6: 'ac:status_lamp_done',
+  6: 'ac:status_lamp_done'
 }
 
 export const LAMP_EMISSIVE_TILE: Record<number, string> = {
@@ -1057,7 +1114,7 @@ export const LAMP_EMISSIVE_TILE: Record<number, string> = {
   3: 'ac:status_lamp_working_emissive',
   4: 'ac:status_lamp_waiting_emissive',
   5: 'ac:status_lamp_error_emissive',
-  6: 'ac:status_lamp_done_emissive',
+  6: 'ac:status_lamp_done_emissive'
 }
 
 export const AC_EXTRA = [
@@ -1070,11 +1127,19 @@ export const AC_EXTRA = [
   'status_lamp_cap',
   'decision_podium_front_lit',
   'decision_podium_top_lit',
-  'monitor_screen_off',
+  'monitor_screen_off'
 ]
 
-const blockUrls: Record<string, string> = import.meta.glob('./assets/block/*.png', { eager: true, query: '?url', import: 'default' })
-const vanillaUrls: Record<string, string> = import.meta.glob('./assets/vanilla/*.png', { eager: true, query: '?url', import: 'default' })
+const blockUrls: Record<string, string> = import.meta.glob('./assets/block/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+})
+const vanillaUrls: Record<string, string> = import.meta.glob('./assets/vanilla/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+})
 
 function acUrl(name: string): string | null {
   const key = `./assets/block/${name}.png`
@@ -1129,7 +1194,7 @@ export async function buildAtlas(): Promise<Atlas> {
 
           img.onerror = () => resolve()
           img.src = url
-        }),
+        })
       )
 
       return
@@ -1137,13 +1202,16 @@ export async function buildAtlas(): Promise<Atlas> {
 
     const img = ctx.createImageData(TILE, TILE)
     const painter = PAINTERS[key]
-    painter((x, y, c) => {
-      const o = (y * TILE + x) * 4
-      img.data[o] = c[0]
-      img.data[o + 1] = c[1]
-      img.data[o + 2] = c[2]
-      img.data[o + 3] = c[3]
-    }, makeRand(key.length * 31 + 7))
+    painter(
+      (x, y, c) => {
+        const o = (y * TILE + x) * 4
+        img.data[o] = c[0]
+        img.data[o + 1] = c[1]
+        img.data[o + 2] = c[2]
+        img.data[o + 3] = c[3]
+      },
+      makeRand(key.length * 31 + 7)
+    )
     ctx.putImageData(img, tx, ty)
   })
   await Promise.all(jobs)

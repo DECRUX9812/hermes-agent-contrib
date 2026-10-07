@@ -34,13 +34,18 @@ export function createReviveHistory(term: Terminal, reviveBuffer: string, isPers
   let historyRestored = false
 
   const restoreHistory = () => {
-    if (historyRestored) {return}
+    if (historyRestored) {
+      return
+    }
     historyRestored = true
 
     if (reviveBuffer && !isPersistent()) {
       replaying = true
       term.write(reviveBuffer)
-      term.write('\r\n', () => { replaying = false; markLiveStart() })
+      term.write('\r\n', () => {
+        replaying = false
+        markLiveStart()
+      })
     } else {
       markLiveStart()
     }

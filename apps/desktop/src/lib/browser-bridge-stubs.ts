@@ -55,13 +55,13 @@ export const BROWSER_BRIDGE_STUBS = {
   // one, so it reports not-ok and drops pushes/controls.
   pane3d: {
     captureContext: async () => {
-      throw browserUnsupported("3D Pane")
+      throw browserUnsupported('3D Pane')
     },
     close: async () => ({ ok: false }),
     control: () => undefined,
     dismiss: async () => ({ ok: false }),
     isOpen: async () => false,
-    notify: async () => ({ id: "", ok: false }),
+    notify: async () => ({ id: '', ok: false }),
     onControl: () => noopUnsubscribe(),
     onState: () => noopUnsubscribe(),
     open: async () => ({ ok: false }),
@@ -112,9 +112,15 @@ export const BROWSER_BRIDGE_STUBS = {
   translucencySupported: false,
   windowControls: {
     custom: false,
-    minimize: () => { throw browserUnsupported('Native window controls') },
-    toggleMaximize: () => { throw browserUnsupported('Native window controls') },
-    close: () => { throw browserUnsupported('Native window controls') }
+    minimize: () => {
+      throw browserUnsupported('Native window controls')
+    },
+    toggleMaximize: () => {
+      throw browserUnsupported('Native window controls')
+    },
+    close: () => {
+      throw browserUnsupported('Native window controls')
+    }
   },
   getPathForFile: () => '',
   normalizePreviewTarget: async () => null,
@@ -179,8 +185,17 @@ export const BROWSER_BRIDGE_STUBS = {
     })
   },
   updates: {
-    apply: async () => ({ command: 'hermes update', manual: true, message: 'Run `hermes update` on the server host', ok: false }),
-    check: async () => ({ message: 'Use `hermes update` on the server host', reason: 'browser-hosted', supported: false }),
+    apply: async () => ({
+      command: 'hermes update',
+      manual: true,
+      message: 'Run `hermes update` on the server host',
+      ok: false
+    }),
+    check: async () => ({
+      message: 'Use `hermes update` on the server host',
+      reason: 'browser-hosted',
+      supported: false
+    }),
     getBranch: async () => ({ branch: '' }),
     onProgress: noopUnsubscribe,
     setBranch: async (branch: string) => ({ branch })

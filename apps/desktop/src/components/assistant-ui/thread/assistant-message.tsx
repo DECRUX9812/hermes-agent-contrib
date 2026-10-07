@@ -1197,7 +1197,6 @@ const AssistantActionBar: FC<MessageActionProps & { durationS?: number }> = ({
           </TooltipIconButton>
           <ReadAloudButton action={readAloud} />
           <TooltipIconButton disabled={reloadDisabled} onClick={reload} tooltip={copy.refresh}>
-
             <RefreshCwIcon className="size-3.5" />
           </TooltipIconButton>
         </div>

@@ -15,7 +15,7 @@ import {
   light,
   lightLoss,
   occludes,
-  stairs,
+  stairs
 } from './blocks'
 import { AX, AZ, buildStudioPlan, DESK_ORDER, FEET } from './hq-builder'
 import { findPath } from './life'
@@ -61,8 +61,7 @@ describe('block state packing', () => {
   })
 })
 
-const mkPlan = () =>
-  new Plan(-46, 60, -36, 46, 100, 54, 64, y => (y > 64 ? bs(B.AIR) : bs(B.DIRT)))
+const mkPlan = () => new Plan(-46, 60, -36, 46, 100, 54, 64, y => (y > 64 ? bs(B.AIR) : bs(B.DIRT)))
 
 describe('plan', () => {
   const mk = mkPlan
@@ -113,7 +112,9 @@ describe('the HQ build', () => {
     let n = 0
 
     for (const [name, a] of p.anchors) {
-      if (!name.startsWith('cam:')) {continue}
+      if (!name.startsWith('cam:')) {
+        continue
+      }
       n++
       expect(a.x, name).toBeGreaterThan(-60)
       expect(a.x, name).toBeLessThan(62)
@@ -156,11 +157,7 @@ describe('walkable grid + pathfinding', () => {
     const seatA = p.anchors.get('seat_tove')!
     const seatB = p.anchors.get('seat_kit')!
 
-    const path = findPath(
-      grid,
-      Math.floor(seatA.x), Math.floor(seatA.z),
-      Math.floor(seatB.x), Math.floor(seatB.z),
-    )
+    const path = findPath(grid, Math.floor(seatA.x), Math.floor(seatA.z), Math.floor(seatB.x), Math.floor(seatB.z))
 
     expect(path.length).toBeGreaterThan(0)
     // manhattan-optimal-ish: path should be sane length, not a random walk

@@ -22,7 +22,13 @@ import { latestSessionTodoSnapshot } from '@/lib/todos'
 import { $clarifyRequests } from '@/store/clarify'
 import { announceGoneSessionDraft } from '@/store/composer'
 import { $connectionRequests } from '@/store/connection-request'
-import { $gateway, isActivePrimary, openGatewayForAgent, openGatewayForProfile, pendingSessionReplay } from '@/store/gateway'
+import {
+  $gateway,
+  isActivePrimary,
+  openGatewayForAgent,
+  openGatewayForProfile,
+  pendingSessionReplay
+} from '@/store/gateway'
 import { $gatewaySwitching } from '@/store/gateway-switch'
 import { clearNotifications, notify, notifyError } from '@/store/notifications'
 import {
@@ -41,6 +47,7 @@ import {
   $sessions,
   forgetSessionOwnerHintsForSession,
   getSessionOwnerHint,
+  sessionOwnerRouteFromRow,
   setActiveSessionId,
   setAwaitingResponse,
   setBusy,
@@ -54,8 +61,7 @@ import {
   setSelectedStoredSessionId,
   setSessionOwnerHint,
   setSessionStartedAt,
-  setWorkspaceCwdOwner,
-  sessionOwnerRouteFromRow
+  setWorkspaceCwdOwner
 } from '@/store/session'
 import { isSessionOwnerResolutionError } from '@/store/session-owner-resolution'
 import { isSessionRemovalPending } from '@/store/session-removal'
@@ -131,7 +137,12 @@ function reconcileAuthoritativeChatMessages(
   sourceRows?: SessionMessage[]
 ): ChatMessage[] {
   if (liveProjection && sourceRows) {
-    const reconciled = reconcilePersistedSessionTurn(authoritativeMessages, previousMessages, sourceRows, liveProjection)
+    const reconciled = reconcilePersistedSessionTurn(
+      authoritativeMessages,
+      previousMessages,
+      sourceRows,
+      liveProjection
+    )
 
     if (reconciled) {
       return reconciled

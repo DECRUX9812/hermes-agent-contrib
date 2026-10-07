@@ -67,7 +67,7 @@ export function mountBotRoomPillWindow(host: HTMLElement): void {
   // to whatever app was frontmost.
   window.setTimeout(() => input.focus(), 80)
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', e => {
     e.preventDefault()
 
     const text = input.value.trim()
@@ -82,7 +82,7 @@ export function mountBotRoomPillWindow(host: HTMLElement): void {
     input.blur()
   })
 
-  input.addEventListener('keydown', (e) => {
+  input.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       input.blur()
     }

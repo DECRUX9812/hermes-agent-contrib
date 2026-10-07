@@ -14,6 +14,7 @@ describe('ask rules', () => {
       approvals: { mode: false, smart_policy: 'Ask before email', timeout: 300 },
       model: { default: 'x' }
     }
+
     const rules = askRulesFromConfig(config)
 
     expect(rules).toEqual({ mode: 'off', policy: 'Ask before email' })

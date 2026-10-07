@@ -579,7 +579,9 @@ export function TreeGroup({
         <div
           className="relative flex min-w-0 shrink-0 bg-(--ui-sidebar-surface-background)"
           data-panel-header=""
-          style={topEdge ? { height: titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0) } : undefined}
+          style={
+            topEdge ? { height: titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0) } : undefined
+          }
         >
           {topEdge && (
             <div aria-hidden="true" className="shrink-0" style={{ width: 'var(--panel-titlebar-left, 100%)' }} />
@@ -607,7 +609,9 @@ export function TreeGroup({
                 onSelect={paneId => {
                   clearTabSelection()
 
-                  if (node.minimized) { restoreTreePane(paneId) }
+                  if (node.minimized) {
+                    restoreTreePane(paneId)
+                  }
                   activateTreePane(node.id, paneId)
                 }}
                 tabs={shown.map(id => ({ id, title: tabText(id), label: tabLabel(id) }))}
@@ -943,7 +947,11 @@ export function TreeGroup({
             className="absolute inset-x-0 bottom-0 z-50 flex cursor-grab items-center justify-center outline-1 -outline-offset-2 outline-dashed backdrop-blur-[2px]"
             onPointerDown={e => startPaneDrag(activeId, e, undefined, undefined, tabText(activeId))}
             style={{
-              top: topEdge ? titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0) : headerVisible ? tabStripHeight : 0,
+              top: topEdge
+                ? titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0)
+                : headerVisible
+                  ? tabStripHeight
+                  : 0,
               background:
                 'color-mix(in srgb, var(--ui-accent) 6%, color-mix(in srgb, var(--ui-bg-chrome) 55%, transparent))',
               outlineColor: 'color-mix(in srgb, var(--ui-accent) 55%, transparent)'

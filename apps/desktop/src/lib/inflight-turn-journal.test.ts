@@ -65,12 +65,14 @@ afterEach(() => {
 
 describe('persistInFlightTurnState', () => {
   it.each([true, false])('retains explicit user provenance %s through the recovery journal', userOriginated => {
-    persistInFlightTurnState(journalState({
-      messages: [
-        { ...user('u1', 'same text'), userOriginated },
-        assistant('assistant-stream-1', 'partial', { pending: true })
-      ]
-    }))
+    persistInFlightTurnState(
+      journalState({
+        messages: [
+          { ...user('u1', 'same text'), userOriginated },
+          assistant('assistant-stream-1', 'partial', { pending: true })
+        ]
+      })
+    )
     vi.advanceTimersByTime(400)
 
     const entry = readInFlightTurnJournal('stored-1')
@@ -440,9 +442,14 @@ describe('runtime journal result coverage', () => {
     const result = 'UNSAVED TOOL OUTPUT'
     const call = { type: 'tool-call' as const, toolName: 'terminal', toolCallId: 'tc', args: {} }
 
-    const journal = [anchor, assistant('assistant-stream-runtime', '', {
-      runtimeTurnStartedAt: 10, pending: true, parts: [{ ...call, result }]
-    })]
+    const journal = [
+      anchor,
+      assistant('assistant-stream-runtime', '', {
+        runtimeTurnStartedAt: 10,
+        pending: true,
+        parts: [{ ...call, result }]
+      })
+    ]
 
     const storedCall = assistant('stored-call', '', { timestamp: 11, parts: [call] })
 

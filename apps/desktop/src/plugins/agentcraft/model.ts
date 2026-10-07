@@ -22,7 +22,8 @@ export type AgentActivity =
   | 'done'
   | 'off_shift'
 
-export type Station = 'desk' | 'meeting' | 'lounge' | 'library' | 'terminal' | 'testbench' | 'mergestation' | 'user' | 'atrium'
+export type Station =
+  'desk' | 'meeting' | 'lounge' | 'library' | 'terminal' | 'testbench' | 'mergestation' | 'user' | 'atrium'
 
 export interface SimAgent {
   id: string
@@ -146,7 +147,7 @@ export class SimStore {
         detail: '',
         station: 'lounge',
         taskKey: null,
-        speech: null,
+        speech: null
       })
     }
   }
@@ -158,7 +159,9 @@ export class SimStore {
   }
 
   emit(ev: SimEvent): void {
-    for (const fn of this.listeners) {fn(ev)}
+    for (const fn of this.listeners) {
+      fn(ev)
+    }
   }
 
   /** Mark an agent's monitor + lamp dirty; emitted through on 'agent'. */
@@ -171,7 +174,9 @@ export class SimStore {
   setAgent(id: string, patch: Partial<SimAgent>): void {
     const a = this.agents.get(id)
 
-    if (!a) {return}
+    if (!a) {
+      return
+    }
     Object.assign(a, patch)
     this.touchAgent(id)
   }
@@ -179,7 +184,9 @@ export class SimStore {
   setTask(key: string, patch: Partial<SimTask>): void {
     const t = this.tasks.get(key)
 
-    if (!t) {return}
+    if (!t) {
+      return
+    }
     Object.assign(t, patch)
     this.taskWallDirty = true
     this.emit({ type: 'tasks' })
@@ -195,7 +202,9 @@ export class SimStore {
     const list = this.logs.get(agentId) ?? []
     list.push({ kind, text, t: Date.now() })
 
-    if (list.length > 400) {list.splice(0, list.length - 400)}
+    if (list.length > 400) {
+      list.splice(0, list.length - 400)
+    }
     this.logs.set(agentId, list)
     this.dirtyScreens.add(agentId)
     this.emit({ type: 'log', agentId })
@@ -204,7 +213,9 @@ export class SimStore {
   pushFeed(kind: FeedItem['kind'], text: string, agentId?: string): void {
     this.feed.push({ kind, text, agentId, t: Date.now() })
 
-    if (this.feed.length > 60) {this.feed.splice(0, this.feed.length - 60)}
+    if (this.feed.length > 60) {
+      this.feed.splice(0, this.feed.length - 60)
+    }
     this.feedDirty = true
     this.emit({ type: 'feed' })
   }
@@ -228,7 +239,9 @@ export class SimStore {
   answerDecision(key: string, answer: { option?: string; text?: string }): void {
     const d = this.decisions.get(key)
 
-    if (!d || d.status !== 'open') {return}
+    if (!d || d.status !== 'open') {
+      return
+    }
     d.status = 'answered'
     d.answer = answer
     const openLeft = [...this.decisions.values()].some(o => o.status === 'open')

@@ -33,7 +33,7 @@ export interface WindowSpec {
 const SIZES: Record<Exclude<WindowSize, 'full'>, { w: number; h: number }> = {
   sm: { w: 300, h: 170 },
   md: { w: 520, h: 330 },
-  lg: { w: 760, h: 480 },
+  lg: { w: 760, h: 480 }
 }
 
 export class WindowManager {
@@ -151,7 +151,7 @@ export class WindowManager {
       input.placeholder = spec.placeholder ?? 'Search…'
       const results = document.createElement('div')
       results.className = 'hr-search-results'
-      input.addEventListener('keydown', (e) => {
+      input.addEventListener('keydown', e => {
         if (e.key === 'Enter' && input.value.trim()) {
           this.onSearch?.(id, input.value.trim(), results)
         }
@@ -175,23 +175,29 @@ export class WindowManager {
     el.style.top = size === 'full' ? '16px' : `${90 + (n % 5) * 26}px`
     el.style.zIndex = String(this.zTop++)
 
-    if (size === 'full') {this.setFull(el, true)}
+    if (size === 'full') {
+      this.setFull(el, true)
+    }
 
     // drag by titlebar
     const head = el.querySelector('.hr-win-head') as HTMLElement
     let dx = 0
     let dy = 0
     let dragging = false
-    head.addEventListener('pointerdown', (e) => {
-      if ((e.target as HTMLElement).closest('.hr-win-btn')) {return}
+    head.addEventListener('pointerdown', e => {
+      if ((e.target as HTMLElement).closest('.hr-win-btn')) {
+        return
+      }
       dragging = true
       dx = e.clientX - el.offsetLeft
       dy = e.clientY - el.offsetTop
       head.setPointerCapture(e.pointerId)
       el.style.zIndex = String(this.zTop++)
     })
-    head.addEventListener('pointermove', (e) => {
-      if (!dragging) {return}
+    head.addEventListener('pointermove', e => {
+      if (!dragging) {
+        return
+      }
       el.style.left = `${Math.max(0, Math.min(innerWidth - 60, e.clientX - dx))}px`
       el.style.top = `${Math.max(0, Math.min(innerHeight - 40, e.clientY - dy))}px`
     })
@@ -205,13 +211,18 @@ export class WindowManager {
     el.addEventListener('pointerdown', () => {
       el.style.zIndex = String(this.zTop++)
     })
-    el.addEventListener('click', (e) => {
+    el.addEventListener('click', e => {
       const a = (e.target as HTMLElement).closest<HTMLElement>('.hr-win-btn')?.dataset.a
 
-      if (a === 'close') {this.close(id)}
-      else if (a === 'full') {this.setFull(el, !el.classList.contains('hr-win-full'))}
-      else if (a === 'grow') {this.cycle(el, id, 1)}
-      else if (a === 'shrink') {this.cycle(el, id, -1)}
+      if (a === 'close') {
+        this.close(id)
+      } else if (a === 'full') {
+        this.setFull(el, !el.classList.contains('hr-win-full'))
+      } else if (a === 'grow') {
+        this.cycle(el, id, 1)
+      } else if (a === 'shrink') {
+        this.cycle(el, id, -1)
+      }
     })
 
     // corner resize grip — freeform, floored at the sm preset
@@ -221,7 +232,7 @@ export class WindowManager {
     let rx = 0
     let ry = 0
     let resizing = false
-    grip.addEventListener('pointerdown', (e) => {
+    grip.addEventListener('pointerdown', e => {
       resizing = true
       rx = e.clientX
       ry = e.clientY
@@ -230,8 +241,10 @@ export class WindowManager {
       grip.setPointerCapture(e.pointerId)
       e.stopPropagation()
     })
-    grip.addEventListener('pointermove', (e) => {
-      if (!resizing) {return}
+    grip.addEventListener('pointermove', e => {
+      if (!resizing) {
+        return
+      }
       el.style.width = `${Math.max(220, rw + e.clientX - rx)}px`
       el.style.height = `${Math.max(120, rh + e.clientY - ry)}px`
     })
@@ -252,7 +265,9 @@ export class WindowManager {
     const order: ('sm' | 'md' | 'lg')[] = ['sm', 'md', 'lg']
     const cur = this.windows.get(id)
 
-    if (!cur || cur.size === 'full') {return}
+    if (!cur || cur.size === 'full') {
+      return
+    }
     const next = order[Math.max(0, Math.min(order.length - 1, order.indexOf(cur.size as 'sm' | 'md' | 'lg') + dir))]!
     cur.size = next
     const s = SIZES[next]
@@ -286,17 +301,23 @@ export class WindowManager {
   close(id: string) {
     const w = this.windows.get(id)
 
-    if (!w) {return}
+    if (!w) {
+      return
+    }
     const wasFull = w.el.classList.contains('hr-win-full')
     w.el.remove()
     this.windows.delete(id)
 
-    if (wasFull) {this.onFullscreen?.(false)}
+    if (wasFull) {
+      this.onFullscreen?.(false)
+    }
   }
 
   isFullscreenOpen(): boolean {
     for (const w of this.windows.values()) {
-      if (w.el.classList.contains('hr-win-full')) {return true}
+      if (w.el.classList.contains('hr-win-full')) {
+        return true
+      }
     }
 
     return false

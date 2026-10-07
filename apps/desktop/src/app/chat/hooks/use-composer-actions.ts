@@ -433,16 +433,21 @@ export function useComposerActions({
    *  attach paths funnel through here. */
   const attachToMain = useCallback(
     (attachment: ComposerAttachment) => {
-      const stagedUpload = attachment.kind === 'file' && attachment.path
-        ? window.hermesDesktop?.getStagedFileForAttach?.(attachment.path)
-        : undefined
+      const stagedUpload =
+        attachment.kind === 'file' && attachment.path
+          ? window.hermesDesktop?.getStagedFileForAttach?.(attachment.path)
+          : undefined
 
-      const displayName = attachment.kind === 'file' && attachment.path
-        && attachment.label === pathLabel(attachment.path)
-        ? window.hermesDesktop?.getStagedFileDisplayName?.(attachment.path)
-        : undefined
+      const displayName =
+        attachment.kind === 'file' && attachment.path && attachment.label === pathLabel(attachment.path)
+          ? window.hermesDesktop?.getStagedFileDisplayName?.(attachment.path)
+          : undefined
 
-      scope.add({ ...attachment, ...(stagedUpload ? { stagedUpload } : {}), ...(displayName ? { label: displayName } : {}) })
+      scope.add({
+        ...attachment,
+        ...(stagedUpload ? { stagedUpload } : {}),
+        ...(displayName ? { label: displayName } : {})
+      })
       requestComposerFocus(scope.target)
     },
     [scope]

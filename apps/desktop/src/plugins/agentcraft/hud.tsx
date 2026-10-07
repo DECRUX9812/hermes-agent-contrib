@@ -17,7 +17,15 @@ function useTick(ms = 500): number {
   return n
 }
 
-export function AgentChips({ store, onFocus, onOpen }: { store: SimStore; onFocus: (id: string) => void; onOpen: (id: string) => void }) {
+export function AgentChips({
+  store,
+  onFocus,
+  onOpen
+}: {
+  store: SimStore
+  onFocus: (id: string) => void
+  onOpen: (id: string) => void
+}) {
   useTick(400)
 
   return (
@@ -43,12 +51,17 @@ export function GoalChip({ store, onClick }: { store: SimStore; onClick: () => v
   useTick(600)
   const g = store.goal
 
-  if (!g) {return null}
+  if (!g) {
+    return null
+  }
 
   return (
     <button aria-label={g.text} className="ac-goal" onClick={onClick}>
       <span className="ac-goal-label">GOAL</span>
-      <span className="ac-goal-text">{g.text.slice(0, 64)}{g.text.length > 64 ? '…' : ''}</span>
+      <span className="ac-goal-text">
+        {g.text.slice(0, 64)}
+        {g.text.length > 64 ? '…' : ''}
+      </span>
       <span className={`ac-goal-pill ac-goal-${g.status}`}>{g.status}</span>
     </button>
   )
@@ -58,7 +71,9 @@ export function DecisionBanner({ store, onOpen }: { store: SimStore; onOpen: (d:
   useTick(500)
   const open = [...store.decisions.values()].filter(d => d.status === 'open')
 
-  if (open.length === 0) {return null}
+  if (open.length === 0) {
+    return null
+  }
   const d = open[0]
 
   return (
@@ -85,7 +100,19 @@ export function FeedTicker({ store }: { store: SimStore }) {
   )
 }
 
-export function Controls({ scene, autoAnswer, setAutoAnswer, initialTime = 'golden', initialSpeed = 1.6 }: { scene: StudioScene; autoAnswer: boolean; setAutoAnswer: (v: boolean) => void; initialTime?: 'day' | 'golden' | 'night'; initialSpeed?: number }) {
+export function Controls({
+  scene,
+  autoAnswer,
+  setAutoAnswer,
+  initialTime = 'golden',
+  initialSpeed = 1.6
+}: {
+  scene: StudioScene
+  autoAnswer: boolean
+  setAutoAnswer: (v: boolean) => void
+  initialTime?: 'day' | 'golden' | 'night'
+  initialSpeed?: number
+}) {
   const [speed, setSpeed] = useState(initialSpeed)
   const [time, setTime] = useState<'day' | 'golden' | 'night'>(initialTime)
 
@@ -138,7 +165,15 @@ export function Controls({ scene, autoAnswer, setAutoAnswer, initialTime = 'gold
   )
 }
 
-export function DecisionScreen({ decision, store, onClose }: { decision: SimDecision; store: SimStore; onClose: () => void }) {
+export function DecisionScreen({
+  decision,
+  store,
+  onClose
+}: {
+  decision: SimDecision
+  store: SimStore
+  onClose: () => void
+}) {
   const [free, setFree] = useState('')
   const [chosen, setChosen] = useState<string | null>(null)
 
@@ -151,7 +186,12 @@ export function DecisionScreen({ decision, store, onClose }: { decision: SimDeci
 
   return (
     <div className="ac-modal-backdrop" onClick={onClose}>
-      <div aria-modal="true" className={`ac-modal ac-decision ac-kind-${decision.kind}`} onClick={e => e.stopPropagation()} role="dialog">
+      <div
+        aria-modal="true"
+        className={`ac-modal ac-decision ac-kind-${decision.kind}`}
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+      >
         <div className="ac-modal-head">
           <span className="ac-modal-kind">{decision.kind === 'merge' ? 'merge request' : decision.kind}</span>
           <span className="ac-modal-from">{a?.name ?? decision.agentId}</span>
@@ -161,9 +201,7 @@ export function DecisionScreen({ decision, store, onClose }: { decision: SimDeci
         </div>
         <div className="ac-modal-q">{decision.question}</div>
         {decision.context && <pre className="ac-modal-ctx">{decision.context}</pre>}
-        {decision.diff && (
-          <pre className="ac-modal-diff">{decision.diff.split('\n').slice(0, 24).join('\n')}</pre>
-        )}
+        {decision.diff && <pre className="ac-modal-diff">{decision.diff.split('\n').slice(0, 24).join('\n')}</pre>}
         <div className="ac-modal-opts">
           {decision.options.map(o => (
             <button className={`ac-opt${chosen === o ? ' sel' : ''}`} key={o} onClick={() => setChosen(o)}>
@@ -171,7 +209,13 @@ export function DecisionScreen({ decision, store, onClose }: { decision: SimDeci
             </button>
           ))}
         </div>
-        <input className="ac-modal-note" onChange={e => setFree(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit(chosen ?? undefined)} placeholder="note (optional)" value={free} />
+        <input
+          className="ac-modal-note"
+          onChange={e => setFree(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && submit(chosen ?? undefined)}
+          placeholder="note (optional)"
+          value={free}
+        />
         <div className="ac-modal-actions">
           <button className="ac-btn ac-btn-primary" disabled={!chosen} onClick={() => submit(chosen!)}>
             Answer
@@ -191,7 +235,9 @@ export function AgentCard({ agentId, store, onClose }: { agentId: string; store:
   useTick(500)
   const a = store.agents.get(agentId)
 
-  if (!a) {return null}
+  if (!a) {
+    return null
+  }
   const logs = (store.logs.get(agentId) ?? []).slice(-40)
   const task = a.taskKey ? store.tasks.get(a.taskKey) : null
 
@@ -199,7 +245,9 @@ export function AgentCard({ agentId, store, onClose }: { agentId: string; store:
     <div className="ac-modal-backdrop" onClick={onClose}>
       <div aria-modal="true" className="ac-modal ac-agent" onClick={e => e.stopPropagation()} role="dialog">
         <div className="ac-modal-head" style={{ borderColor: a.color }}>
-          <span className="ac-modal-kind" style={{ background: a.color }}>{a.name}</span>
+          <span className="ac-modal-kind" style={{ background: a.color }}>
+            {a.name}
+          </span>
           <span className="ac-modal-from">{a.role}</span>
           <span className="ac-chip-state">{a.activity.replace('_', ' ')}</span>
           <button aria-label="close" className="ac-modal-x" onClick={onClose}>
@@ -209,12 +257,13 @@ export function AgentCard({ agentId, store, onClose }: { agentId: string; store:
         {task && (
           <div className="ac-agent-task">
             <b>{task.id}</b> {task.title}
-            <div className="ac-agent-taskmeta">{task.state}{task.summary ? ` — ${task.summary}` : ''}</div>
+            <div className="ac-agent-taskmeta">
+              {task.state}
+              {task.summary ? ` — ${task.summary}` : ''}
+            </div>
           </div>
         )}
-        <pre className="ac-modal-log">
-          {logs.map(l => `${l.kind.padEnd(6)} ${l.text}`).join('\n') || 'no log yet'}
-        </pre>
+        <pre className="ac-modal-log">{logs.map(l => `${l.kind.padEnd(6)} ${l.text}`).join('\n') || 'no log yet'}</pre>
       </div>
     </div>
   )

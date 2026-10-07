@@ -51,9 +51,7 @@ describe('shareSessionLink', () => {
 
     await shareSessionLink('sess-2', 'work')
 
-    expect(api).toHaveBeenCalledWith(
-      expect.objectContaining({ body: { session_id: 'sess-2', profile: 'work' } })
-    )
+    expect(api).toHaveBeenCalledWith(expect.objectContaining({ body: { session_id: 'sess-2', profile: 'work' } }))
   })
 
   it('reports failure without copying anything', async () => {

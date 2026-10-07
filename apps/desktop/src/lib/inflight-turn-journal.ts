@@ -97,9 +97,13 @@ function recoverableTail(messages: ChatMessage[], streamId: null | string): Chat
   if (runtimeStartedAt !== undefined) {
     const start = visible.findIndex(message => message.runtimeTurnStartedAt === runtimeStartedAt)
 
-    const tail = visible.slice(start).map(message => message.role === 'assistant' && message.runtimeTurnStartedAt === undefined
-      ? { ...message, runtimeTurnStartedAt: runtimeStartedAt }
-      : message)
+    const tail = visible
+      .slice(start)
+      .map(message =>
+        message.role === 'assistant' && message.runtimeTurnStartedAt === undefined
+          ? { ...message, runtimeTurnStartedAt: runtimeStartedAt }
+          : message
+      )
 
     // One preceding durable row is an optional catch-up anchor. It stays
     // unmarked, is never recovered as runtime content, and lets an idle REST
@@ -179,9 +183,14 @@ export function persistInFlightTurnState(state: JournalableSessionState): void {
 
       const runtimeStartedAt = journaledRuntimeStartedAt(snapshot?.messages ?? [])
 
-      const recoveredRuntime = runtimeStartedAt !== undefined && state.messages.some(message =>
-        message.recovered && (message.runtimeTurnStartedAt === runtimeStartedAt ||
-          snapshot?.messages.some(journaled => journaled.id === message.id)))
+      const recoveredRuntime =
+        runtimeStartedAt !== undefined &&
+        state.messages.some(
+          message =>
+            message.recovered &&
+            (message.runtimeTurnStartedAt === runtimeStartedAt ||
+              snapshot?.messages.some(journaled => journaled.id === message.id))
+        )
 
       if (recoveredRuntime) {
         cancelPendingPersist(storedSessionId)
@@ -190,8 +199,10 @@ export function persistInFlightTurnState(state: JournalableSessionState): void {
       }
     }
 
-    if (!(state.messages.some(message => message.recovered) &&
-      recoverableTail(state.messages, null).some(message => message.recovered))) {
+    if (!(
+      state.messages.some(message => message.recovered) &&
+      recoverableTail(state.messages, null).some(message => message.recovered)
+    )) {
       clearInFlightTurnJournal(storedSessionId)
 
       return
@@ -249,9 +260,11 @@ export function recoverInFlightTurnJournal(
   const recovered = mergeInFlightMessages(baseMessages, snapshot.messages, options)
   const runtimeStartedAt = journaledRuntimeStartedAt(snapshot.messages)
 
-  const recoveredRuntimeIsActive = runtimeStartedAt !== undefined && recovered.messages.some(message =>
-    message.id === recovered.streamId && message.runtimeTurnStartedAt === runtimeStartedAt
-  )
+  const recoveredRuntimeIsActive =
+    runtimeStartedAt !== undefined &&
+    recovered.messages.some(
+      message => message.id === recovered.streamId && message.runtimeTurnStartedAt === runtimeStartedAt
+    )
 
   if (recovered.caughtUp) {
     clearInFlightTurnJournal(storedSessionId)
@@ -263,11 +276,12 @@ export function recoverInFlightTurnJournal(
     // keepPending=false the session is not running. The recovered marker
     // retains uncommitted progress independently until durable catch-up.
     streamId: recovered.applied
-      ? (runtimeStartedAt !== undefined ? recovered.streamId : recovered.streamId ?? (options.keepPending ? snapshot.streamId : null))
+      ? runtimeStartedAt !== undefined
+        ? recovered.streamId
+        : (recovered.streamId ?? (options.keepPending ? snapshot.streamId : null))
       : null,
-    turnStartedAt: recovered.applied && (runtimeStartedAt === undefined || recoveredRuntimeIsActive)
-      ? snapshot.turnStartedAt
-      : null
+    turnStartedAt:
+      recovered.applied && (runtimeStartedAt === undefined || recoveredRuntimeIsActive) ? snapshot.turnStartedAt : null
   }
 }
 

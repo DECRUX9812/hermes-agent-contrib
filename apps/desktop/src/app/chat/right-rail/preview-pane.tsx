@@ -1519,7 +1519,17 @@ export function PreviewPane({
       webview.remove()
       setAnnotate(session => (session.mode ? { ...endAnnotateMode(session), stack: emptyAnnotateStack() } : session))
     }
-  }, [appendConsoleEntry, consoleState, copy, isRemoteHtml, isWebPreview, noteGuestReady, tabId, target.kind, usesBrowserIframe])
+  }, [
+    appendConsoleEntry,
+    consoleState,
+    copy,
+    isRemoteHtml,
+    isWebPreview,
+    noteGuestReady,
+    tabId,
+    target.kind,
+    usesBrowserIframe
+  ])
 
   // Steers the LIVE guest when the session opens a new URL (#120265): loadURL
   // keeps the webview instance (JS state, cookies, form data, scroll, refs,

@@ -84,6 +84,7 @@ export function contextNudgeEligible(size: CanonicalChatSize | null | undefined)
   }
 
   const tokens = typeof size.input_tokens === 'number' && Number.isFinite(size.input_tokens) ? size.input_tokens : 0
+
   const messages =
     typeof size.message_count === 'number' && Number.isFinite(size.message_count) ? size.message_count : 0
 

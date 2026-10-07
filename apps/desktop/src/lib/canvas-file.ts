@@ -32,6 +32,7 @@ export function parseCanvas(text: string): ParsedCanvas {
     const data = JSON.parse(text || '{}') as { appState?: unknown; elements?: unknown; files?: unknown }
     const elements = Array.isArray(data.elements) ? data.elements : []
     const filesById = data.files && typeof data.files === 'object' ? (data.files as Record<string, CanvasFileLike>) : {}
+
     const appState =
       data.appState && typeof data.appState === 'object' ? (data.appState as Record<string, unknown>) : {}
 

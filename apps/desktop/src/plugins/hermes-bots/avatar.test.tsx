@@ -191,9 +191,8 @@ describe('bop faces — the staff mascot', () => {
 
   it('flips ink details to white on dark bodies', async () => {
     const { BotFace } = await import('./avatar')
-    const { container } = render(
-      <BotFace color="#1c1c2e" mood="work" name="inbox-triage" shape="bop" size={40} />
-    )
+
+    const { container } = render(<BotFace color="#1c1c2e" mood="work" name="inbox-triage" shape="bop" size={40} />)
 
     expect(container.innerHTML).toContain('fill="#fff"')
     expect(container.innerHTML).not.toContain('ellipse cx="15.5" cy="22.3" rx="1.9" ry="2.6" fill="#1C1C1B"')
