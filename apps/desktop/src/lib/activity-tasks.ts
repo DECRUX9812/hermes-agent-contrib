@@ -183,11 +183,14 @@ function textOf(message: ChatMessage): string {
 
 /** The reply's opening sentence: what a glance at the list should say. */
 function firstSentence(text: string): string {
-  const flat = text
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/[#>*_`]+/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
+  const firstLine =
+    text
+      .replace(/```[\s\S]*?```/g, ' ')
+      .split('\n')
+      .map(line => line.replace(/^\s*(?:[#>*-]|\d+\.)\s*/, '').trim())
+      .find(Boolean) ?? ''
+
+  const flat = firstLine.replace(/[*_`]+/g, '').replace(/\s+/g, ' ').trim()
 
   const end = flat.search(/[.!?](\s|$)/)
 

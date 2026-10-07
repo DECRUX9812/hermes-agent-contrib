@@ -80,21 +80,20 @@ function ActivityRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask 
       >
         <StatusTile status={task.status} />
         <span className="grid min-w-0 flex-1 gap-0.5">
-          <span className="truncate text-[0.8125rem] font-medium leading-snug text-foreground">
-            {task.title || a.onItsOwn}
+          <span className="flex min-w-0 items-baseline gap-2">
+            <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium leading-snug text-foreground">
+              {task.title || a.onItsOwn}
+            </span>
+            <span className="shrink-0 text-[0.6875rem] tabular-nums text-(--ui-text-quaternary)">
+              {clockTime(task.startedAt)}
+            </span>
           </span>
           <span className="line-clamp-2 text-[0.75rem] leading-snug text-(--ui-text-tertiary)">
             {taskLine(task, a)}
           </span>
-          <span className="flex items-center gap-1.5 text-xs tabular-nums text-(--ui-text-tertiary)">
-            {clockTime(task.startedAt)}
-            {task.steps.length ? (
-              <>
-                <span aria-hidden>·</span>
-                {a.steps(task.steps.length)}
-              </>
-            ) : null}
-          </span>
+          {task.steps.length ? (
+            <span className="text-[0.6875rem] tabular-nums text-(--ui-text-quaternary)">{a.steps(task.steps.length)}</span>
+          ) : null}
         </span>
       </button>
     </li>

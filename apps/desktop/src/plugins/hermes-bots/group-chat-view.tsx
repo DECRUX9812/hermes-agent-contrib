@@ -1442,8 +1442,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           ) : (
             actions
           )}
-          {body}
-          {attachments}
+          <div className="max-w-[92%] rounded-2xl rounded-tl-md bg-(--ui-bg-secondary) px-3 py-1.5">
+            {body}
+            {attachments}
+          </div>
         </div>
       </div>
     )
