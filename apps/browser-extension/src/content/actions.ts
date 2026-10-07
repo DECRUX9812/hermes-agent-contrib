@@ -354,7 +354,7 @@ export async function runPageAction(action: string, a: ActionArgs): Promise<unkn
       const r = el.getBoundingClientRect()
       const box = document.createElement('div')
       box.className = 'hr-eloutline'
-      box.style.cssText = `position:fixed;left:${r.x - 4}px;top:${r.y - 4}px;width:${r.width + 8}px;height:${r.height + 8}px;border:2px solid #5470ff;border-radius:6px;background:rgba(84,112,255,.14);z-index:2147483643;pointer-events:none;transition:opacity .4s`
+      box.style.cssText = `position:fixed;left:${r.x - 4}px;top:${r.y - 4}px;width:${r.width + 8}px;height:${r.height + 8}px;border:2px solid #0a0a0a;border-radius:6px;background:rgba(233,255,59,.22);box-shadow:0 0 0 3px #e9ff3b;z-index:2147483643;pointer-events:none;transition:opacity .4s`
       document.documentElement.appendChild(box)
       setTimeout(() => {
         box.style.opacity = '0'
@@ -371,7 +371,7 @@ export async function runPageAction(action: string, a: ActionArgs): Promise<unkn
       const r = el.getBoundingClientRect()
       const tag = document.createElement('div')
       tag.textContent = a.label ?? a.text ?? ''
-      tag.style.cssText = `position:fixed;left:${r.x}px;top:${r.y - 30}px;z-index:2147483643;background:#3b5bff;color:#fff;padding:4px 10px;border-radius:8px;font:600 12px system-ui;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.4)`
+      tag.style.cssText = `position:fixed;left:${r.x}px;top:${r.y - 30}px;z-index:2147483643;background:#0a0a0a;color:#f9f9f8;padding:4px 10px;border-radius:999px;font:600 12px 'Geist',system-ui;pointer-events:none;box-shadow:0 4px 14px rgba(10,10,10,.3)`
       document.documentElement.appendChild(tag)
       setTimeout(() => tag.remove(), a.ms ?? 4000)
 

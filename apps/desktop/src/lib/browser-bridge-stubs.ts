@@ -51,6 +51,23 @@ export const BROWSER_BRIDGE_STUBS = {
     setFocusable: () => undefined,
     setIgnoreMouse: () => undefined
   },
+  // The 3D Pane is a transparent native window; a browser tab can not open
+  // one, so it reports not-ok and drops pushes/controls.
+  pane3d: {
+    captureContext: async () => {
+      throw browserUnsupported("3D Pane")
+    },
+    close: async () => ({ ok: false }),
+    control: () => undefined,
+    dismiss: async () => ({ ok: false }),
+    isOpen: async () => false,
+    notify: async () => ({ id: "", ok: false }),
+    onControl: () => noopUnsubscribe(),
+    onState: () => noopUnsubscribe(),
+    open: async () => ({ ok: false }),
+    playDemo: async () => ({ ok: false }),
+    summon: async () => ({ ok: false })
+  },
   applyConnectionConfig: async () => {
     throw browserUnsupported('Gateway reconfiguration')
   },
@@ -148,12 +165,15 @@ export const BROWSER_BRIDGE_STUBS = {
   touchBackend: async () => ({ ok: true }),
   uninstall: {
     run: async () => ({ error: 'Run `hermes uninstall` on the server host', ok: false }),
+    // The OS apps settings belong to the server host, not this browser tab.
+    openAppsSettings: async () => undefined,
     summary: async () => ({
       agent_installed: true,
       // Package removal belongs to the server host, never this browser tab.
       code_removal_allowed: false,
       gui_installed: true,
       hermes_home: '',
+      native_removal_instructions: null,
       packaged_app_paths: [],
       platform: 'browser',
       source_built_artifacts: [],

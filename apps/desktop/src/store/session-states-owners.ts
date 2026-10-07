@@ -1,4 +1,3 @@
-import { atom } from 'nanostores'
 
 import { routeSessionId } from '@/app/routes'
 
@@ -89,84 +88,14 @@ export function liveSessionScopes(): Set<string> {
   return scopes
 }
 
-// ── Owner hold across the create → foreground gap ───────────────────────────
-// A routed session.create returns a stored id on the owner's socket, but the
-// surface that will PIN that socket (the selected primary thread, or a tile)
-// is published later and asynchronously: navigate → route effect →
-// $selectedStoredSessionId, or openSessionTile → $sessionTiles. In that gap
-// the entry has no active request, is not yet foreground-bound and, if the
-// user switched source meanwhile, is not the active key either — so the
-// live-work pruner or a refcount-0 lease release could close the socket that
-// holds the just-minted runtime before the first prompt.submit. The hold
-// names the owner in foregroundSessionScopes from the moment the create
-// returns until the foreground publication takes over (the stored id becomes
-// selected or tiled), the caller releases it (failed create / drift close),
-// or a bounded TTL expires — nothing latches.
-const SESSION_OWNER_HOLD_TTL_MS = 60_000
-
-export const sessionOwnerHolds = new Map<
-  string,
-  { owner: SessionOwnerScope; timer: ReturnType<typeof setTimeout>; until: number }
->()
-
-export const $sessionOwnerHoldRevision = atom(0)
-
-function bumpSessionOwnerHoldRevision(): void {
-  $sessionOwnerHoldRevision.set($sessionOwnerHoldRevision.get() + 1)
-}
-
-export function forgetSessionOwnerHold(storedSessionId: string, publish: boolean): boolean {
-  const hold = sessionOwnerHolds.get(storedSessionId)
-
-  if (!hold) {
-    return false
-  }
-
-  clearTimeout(hold.timer)
-  sessionOwnerHolds.delete(storedSessionId)
-
-  if (publish) {
-    bumpSessionOwnerHoldRevision()
-  }
-
-  return true
-}
-
-export function holdSessionOwnerUntilForeground(storedSessionId: string, owner: SessionOwnerScope): () => void {
-  const id = storedSessionId.trim()
-
-  if (!id || !owner) {
-    return () => undefined
-  }
-
-  forgetSessionOwnerHold(id, false)
-  const until = Date.now() + SESSION_OWNER_HOLD_TTL_MS
-  const timer = setTimeout(() => releaseSessionOwnerHold(id), SESSION_OWNER_HOLD_TTL_MS)
-
-  sessionOwnerHolds.set(id, { owner, timer, until })
-  bumpSessionOwnerHoldRevision()
-
-  return () => releaseSessionOwnerHold(id)
-}
-
-export function releaseSessionOwnerHold(storedSessionId: string): void {
-  forgetSessionOwnerHold(storedSessionId.trim(), true)
-}
-
-/** @internal Tests. */
-export function _resetSessionOwnerHoldsForTests(): void {
-  const hadHolds = sessionOwnerHolds.size > 0
-
-  for (const hold of sessionOwnerHolds.values()) {
-    clearTimeout(hold.timer)
-  }
-
-  sessionOwnerHolds.clear()
-
-  if (hadHolds) {
-    bumpSessionOwnerHoldRevision()
-  }
-}
+// The create → foreground owner hold (map, TTL, hold/release/reset and the
+// foreground-scope sweep) lives in ./session-owner-holds.
+export {
+  $sessionOwnerHoldRevision,
+  _resetSessionOwnerHoldsForTests,
+  holdSessionOwnerUntilForeground,
+  releaseSessionOwnerHold
+} from './session-owner-holds'
 
 /** The session id the live HashRouter route names, or null when the route has
  *  no session opinion (new-chat draft, reserved/overlay/contributed page, or

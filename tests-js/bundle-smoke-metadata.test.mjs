@@ -45,7 +45,7 @@ test('identity uses the production bundled variant and exact input tokens, not i
   expect(JSON.parse(execFileSync(process.execPath, [cli, 'identity', '--commit', commit], { env: hostileEnvironment, encoding: 'utf8' }))).toEqual(tagless)
 })
 
-test('channel smoke binds the complete admitted request, not a commit-build identity or display version', () => {
+test('channel smoke binds the complete admitted request, not a commit-build identity or display version', { timeout: 60_000 }, () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'channel-smoke-'))
   const token = randomBytes(8).toString('hex'), sequence = 65537
   const request = { schema: 1, buildId: randomBytes(16).toString('hex'), channel: `smoke-${token}`,
@@ -109,7 +109,10 @@ test('channel smoke binds the complete admitted request, not a commit-build iden
       expect(run('identity').status).not.toBe(0)
     }
   } finally { fs.rmSync(temp, { recursive: true, force: true }) }
-}, 15_000)
+  // Every verifyBundleStamp call re-runs the Python channel validator (~1 s of
+  // interpreter startup each), so the budget tracks interpreter startup, not
+  // logic: 15 s was already 14.9 s on the standard CI runner before it flipped.
+}, 60_000)
 
 test('workspace admission rejects reuse and symlink escapes before creating anything outside runner temp', () => {
   const temp = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'smoke-paths-')))

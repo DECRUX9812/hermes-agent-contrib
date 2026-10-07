@@ -39,8 +39,6 @@ import {
   $connection,
   $messages,
   $sessions,
-  forgetSessionOwnerHintsForSession,
-  getSessionOwnerHint,
   setActiveSessionId,
   setAwaitingResponse,
   setBusy,
@@ -60,7 +58,6 @@ import { isSessionOwnerResolutionError } from '@/store/session-owner-resolution'
 import { isSessionRemovalPending } from '@/store/session-removal'
 import {
   requestForSessionProfile,
-  sessionOwnerRouteFromRow,
   type SessionOwnerScope,
   type SessionProfileRoute
 } from '@/store/session-request-router'
@@ -71,6 +68,7 @@ import { isWatchWindow } from '@/store/windows'
 import type { SessionMessage, SessionMessagesResponse, SessionResumeResult, UsageStats } from '@/types/hermes'
 
 import type { ClientSessionState } from '../../../types'
+import { resumeRouteStillCurrent, routeTargetFromToken } from '../session-context-drift'
 import { singleFlightSessionResume } from '../use-prompt-actions/single-flight-resume'
 
 import { sessionCreatedThisRun } from './created-this-run'
@@ -78,6 +76,7 @@ import { captureDisplayHydration } from './display-hydration'
 import type { SessionActionHandles, SessionActionsOptions } from './options'
 import { reconcilePersistedSessionTurn } from './persisted-live-turn'
 import { provisionalTranscriptPaint, transcriptRestScope } from './provisional-transcript'
+import { rememberedOwnerForResume } from './remembered-owner'
 import { pendingClarifyToolPayload, restorePendingClarifyFromSnapshot } from './restore-pending-clarify'
 import { projectPendingConnection, restorePendingConnectionFromSnapshot } from './restore-pending-connection'
 import {
@@ -89,7 +88,6 @@ import {
   appendLiveSessionProjection,
   applyRuntimeInfo,
   applyStoredSessionPreviewRuntimeInfo,
-  cachedSessionRow,
   chatMessageArraysEquivalent,
   dedupeInflightUserAgainstTranscript,
   goneSessionVerdict,
@@ -252,10 +250,20 @@ export function useResumeActions(
       resumeRequestRef.current = requestId
       const resumedSameSelectedSession = selectedStoredSessionIdRef.current === storedSessionId
 
+      // "Is this still the resume the view wants?" must not read our OWN
+      // re-home as a user switch: fork.ts and the routed creates navigate to the
+      // child and resume it in the SAME tick, so the token captured above is
+      // still the pre-navigation route while the router's `location` has already
+      // moved. The ref `getRouteToken` reads catches up one render later, so the
+      // raw-token equality alone failed the first check after an await and the
+      // branch child sat on its loader forever with no session.resume sent. A
+      // route that now targets the session being resumed is not a switch away
+      // from it — the same "a move TO the target is not drift" rule as
+      // session-context-drift's submitTargetStoredId.
       const isCurrentResume = () =>
         resumeRequestRef.current === requestId &&
         selectedStoredSessionIdRef.current === storedSessionId &&
-        getRouteToken() === routeToken
+        resumeRouteStillCurrent(routeToken, getRouteToken(), storedSessionId)
 
       // A reconnect re-resumes the runtime this view is streaming. Let its
       // replay land while that runtime still owns the view. Otherwise the REST
@@ -367,25 +375,9 @@ export function useResumeActions(
       // resolveStoredSession finds the row by id (cheap), so an uncached pasted
       // id loads as fast as a sidebar click instead of hanging on a list scan.
       //
-      // A persisted owner hint is only trustworthy when it agrees with the
-      // best cached row for the session. Comparing against the live foreground
-      // socket is wrong in exactly the case the hint exists for: hints are
-      // minted from the AMBIENT connection at create/open time, which in the
-      // all-profiles view is not the foreground. The row is the authority.
-      //
-      // An explicitly captured owner is authoritative as given; only the
-      // REMEMBERED hint is validated, never the caller capture.
-      const rememberedHint = capturedOwner ? undefined : getSessionOwnerHint(storedSessionId)
-      const rowOwnerRoute = sessionOwnerRouteFromRow(cachedSessionRow(storedSessionId))
-
-      const rememberedOwner =
-        rememberedHint && rowOwnerRoute && rememberedHint.connectionId === rowOwnerRoute.connectionId
-          ? rememberedHint
-          : undefined
-
-      if (rememberedHint && !rememberedOwner) {
-        forgetSessionOwnerHintsForSession(storedSessionId)
-      }
+      // Only the REMEMBERED hint is validated (remembered-owner.ts); an explicitly captured owner
+      // (requestSessionResume with a row route, a plugin open) is authoritative as given.
+      const rememberedOwner = capturedOwner ? undefined : rememberedOwnerForResume(storedSessionId)
 
       // An explicit capture outranks the remembered hint; the hint only
       // fills in when the caller had no route to give.

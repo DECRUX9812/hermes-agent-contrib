@@ -19,7 +19,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem
@@ -156,6 +155,7 @@ import { buildGatewaySessionGroups, scopeGatewaySessionGroups, useGatewaySession
 import { SidebarLoadMoreRow } from './load-more-row'
 import { navItemActive, useSidebarNavItems } from './nav-items'
 import { orderByIds, reconcileOrderIds, resolveManualSessionOrderIds, sameIds } from './order'
+import { SidebarPresenceGroupContent } from './presence-header'
 import { filterSessionsByProfileScope } from './profile-scope'
 import { ProfileRail } from './profile-switcher'
 import { ProjectDialog } from './project-dialog'
@@ -1633,7 +1633,7 @@ export function ChatSidebar({
         onKeyDown={onSidebarKeyDown}
       >
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--titlebar-height)+0.375rem)]">
-          <SidebarGroupContent>
+          <SidebarPresenceGroupContent>
             <SidebarMenu className="gap-px">
               {/* Workspace first (Codex/Antigravity): which project you are in,
                   switchable in one click, above the actions scoped to it. */}
@@ -1668,7 +1668,7 @@ export function ChatSidebar({
               )}
               {!railCarriesNav && browseOpen && browseNavItems.map(renderNavItem)}
             </SidebarMenu>
-          </SidebarGroupContent>
+          </SidebarPresenceGroupContent>
         </SidebarGroup>
 
         <SidebarStorageCorruptNotice />

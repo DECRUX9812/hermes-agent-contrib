@@ -44,7 +44,7 @@ import {
 } from './profile-appearance'
 import { retintTheme } from './retint'
 import { textMixKnobs } from './text-ramp'
-import type { DesktopTheme, DesktopThemeColors } from './types'
+import type { DesktopTheme, DesktopThemeColors, DesktopThemeTypography } from './types'
 import { $userThemes, listAllThemes, resolveTheme } from './user-themes'
 
 // Legacy global skin (pre per-profile themes). Still the inheritance fallback
@@ -86,6 +86,27 @@ const normalizeMode = (value: string | null): ThemeMode =>
 // it *is* the legacy global slot, so it reads/writes the global directly. Named
 // profiles get their own entry and fall back to that global until assigned, so
 // unassigned profiles and pre-per-profile installs stay on the global value.
+// Named assigns also mirror into the global slot so a Bot Mode gateway hop onto
+// a never-themed bot inherits the look the user just picked (#101216).
+// Persists from stored (write-on-read). Idempotent. No-op when records disagree.
+const promoteUnanimousLegacy = (record: string, legacy: string): void => {
+  if (storedString(legacy) != null) {
+    return
+  }
+
+  const values = Object.values(storedStringRecord(record)).filter(Boolean)
+
+  if (values.length === 0) {
+    return
+  }
+
+  const unique = [...new Set(values)]
+
+  if (unique.length === 1) {
+    persistString(legacy, unique[0])
+  }
+}
+
 // This is the local cache of the profile's config.yaml appearance
 // (./profile-appearance): the boot paint reads it before any fetch.
 const profilePref = <T extends string>(record: string, legacy: string, normalize: (v: string | null) => T) => {
@@ -93,7 +114,11 @@ const profilePref = <T extends string>(record: string, legacy: string, normalize
   const own = (profile: string): string | null =>
     profile === 'default' ? storedString(legacy) : (storedStringRecord(record)[profile] ?? null)
 
-  const stored = (profile: string): string | null => own(profile) ?? storedString(legacy)
+  const stored = (profile: string): string | null => {
+    promoteUnanimousLegacy(record, legacy)
+
+    return own(profile) ?? storedString(legacy)
+  }
 
   /** Write a raw pick, or drop the profile's own entry (`null`). */
   const put = (profile: string, value: null | string): void => {
@@ -113,7 +138,13 @@ const profilePref = <T extends string>(record: string, legacy: string, normalize
     own,
     put,
     resolve: (profile: string): T => normalize(stored(profile)),
-    assign: (profile: string, value: T): void => put(profile, value)
+    assign: (profile: string, value: T): void => {
+      put(profile, value)
+
+      if (profile !== 'default') {
+        persistString(legacy, value)
+      }
+    }
   }
 }
 
@@ -359,6 +390,28 @@ const mixesFor = (isDark: boolean): Record<string, string> => ({
   '--theme-mix-bubble': isDark ? '46%' : '0%'
 })
 
+const TYPOGRAPHY_KNOB_VARS = {
+  baseSize: '--dt-base-size',
+  lineHeight: '--dt-line-height',
+  letterSpacing: '--dt-letter-spacing'
+} as const
+
+// Optional typography knobs. They are the ONLY vars applyTheme may paint
+// inline conditionally: styles.css declares the same fallbacks on :root, so
+// a theme that stops providing one must drop the inline value — otherwise
+// the previous skin's size/leading/tracking sticks across a switch (#41766).
+function applyTypographyKnobs(root: HTMLElement, typo: Partial<DesktopThemeTypography>) {
+  for (const [key, cssVar] of Object.entries(TYPOGRAPHY_KNOB_VARS) as [keyof typeof TYPOGRAPHY_KNOB_VARS, string][]) {
+    const value = typo[key]
+
+    if (value) {
+      root.style.setProperty(cssVar, value)
+    } else {
+      root.style.removeProperty(cssVar)
+    }
+  }
+}
+
 function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily = $chatFontFamily.get()) {
   if (typeof document === 'undefined') {
     return
@@ -445,6 +498,8 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
   })) {
     root.style.setProperty(k, v)
   }
+
+  applyTypographyKnobs(root, typo)
 
   const chromeBg = chromeBackground(c.background, isDark)
 

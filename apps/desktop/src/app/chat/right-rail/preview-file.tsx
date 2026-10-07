@@ -7,7 +7,17 @@ import type {
   MouseEvent as ReactMouseEvent,
   ReactNode
 } from 'react'
-import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  createContext,
+  createElement,
+  Fragment,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { defaultRehypePlugins, defaultRemarkPlugins, Streamdown } from 'streamdown'
 
 import { getApiRequestConnection } from '@/api/client'
@@ -347,14 +357,15 @@ const MD_TAG_CLASSES = {
   thead: 'bg-muted/35 text-muted-foreground'
 } as const
 
-function tagged<T extends keyof typeof MD_TAG_CLASSES>(Tag: T) {
+function tagged(Tag: keyof typeof MD_TAG_CLASSES) {
   const base = MD_TAG_CLASSES[Tag]
 
-  const Component = (({ className, ...rest }: ComponentProps<T>) => {
-    const Element = Tag as React.ElementType
-
-    return <Element className={cn(base, className)} {...rest} />
-  }) as React.FC<ComponentProps<T>>
+  // Tag is a concrete intrinsic tag at every call site; createElement can't
+  // infer props through a generic tag union (it collapses to never via the
+  // react-three/fiber JSX.IntrinsicElements augmentation), so type the
+  // wrapper explicitly instead.
+  const Component: React.FC<React.HTMLAttributes<HTMLElement>> = ({ className, ...rest }) =>
+    createElement(Tag as 'div', { className: cn(base, className), ...rest })
 
   Component.displayName = `Md.${Tag}`
 

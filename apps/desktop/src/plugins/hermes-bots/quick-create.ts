@@ -19,7 +19,6 @@
 
 import { host, queryClient } from '@hermes/plugin-sdk'
 
-import { blobatarSvg } from './avatar'
 import type { BotDraft } from './bot-starters'
 import { $selectedBot } from './bot-state'
 import { BOT_TEMPLATES, disabledSkillNames } from './bot-templates'
@@ -101,7 +100,7 @@ export async function createQuickBot(draft: BotDraft, options: QuickCreateOption
 
   // The ui_meta['hermes-bots'] marker — what makes the profile a roster bot.
   saveBotMeta(slug, {
-    shape: draft.shape || (blobatarSvg ? 'blobatar' : 'circle'),
+    shape: draft.shape || 'bop',
     color: options.color ?? undefined,
     image: options.image ?? null,
     imageKind: options.image ? 'photo' : 'shape',

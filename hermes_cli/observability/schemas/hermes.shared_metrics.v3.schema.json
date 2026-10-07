@@ -3226,6 +3226,7 @@
               "enum": [
                 "bot_room",
                 "browser",
+                "catalog",
                 "clarify",
                 "code_execution",
                 "coding",
@@ -3242,6 +3243,7 @@
                 "feishu_doc",
                 "feishu_drive",
                 "file",
+                "git",
                 "hermes-acp",
                 "hermes-api-server",
                 "hermes-bluebubbles",
@@ -3272,7 +3274,6 @@
                 "safe",
                 "search",
                 "session_search",
-                "setup",
                 "skills",
                 "spotify",
                 "terminal",

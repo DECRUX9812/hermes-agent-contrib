@@ -9,9 +9,9 @@ lane). Exercises the REAL ownership predicate against REAL processes:
     (no cold-start plan) even with an autostart artifact present.
  2. Kill the child (dead serve) — ownership drops, the pause plan carries
     ``cold_start_if_installed`` again.
- 3. Venv-holder fallback rung: a real venv-python process with true
-    ``serve`` argv is detected by the scan and, having a live parent,
-    confers ownership; the token classifier rejects a ``kanban
+ 3. Venv-holder fallback rung: a live venv-python process whose scanned row
+    carries the true ``serve`` argv shape is detected and, having a live
+    parent, confers ownership; the token classifier rejects a ``kanban
     --preserve-cache`` lookalike (the #90778 class the salvage fixed).
 """
 
@@ -135,20 +135,24 @@ def test_holder_scan_fallback_respects_token_classifier(sleeper, monkeypatch, tm
     # Lookalike from the #90778 class — must NOT confer ownership.
     kanban_like = sleeper("-m", "hermes_cli.main", "kanban", "--preserve-cache")
 
-    import psutil
-
-    # Snapshot both holder rows while both processes are alive. Building the
-    # kanban row later (after the serve kill) would re-read the dead serve pid,
-    # raise NoSuchProcess and hand the fallback an empty scan, which returns
-    # False without ever reaching the token classifier.
-    serve_row, kanban_row = (
-        (p.pid, psutil.Process(p.pid).name(), " ".join(psutil.Process(p.pid).cmdline()))
-        for p in (serve_like, kanban_like)
-    )
+    # Snapshot both holder rows while both processes are alive; the pids (and the parent-liveness
+    # rung) stay real. Building the kanban row later, after the serve kill, would re-read the dead
+    # serve pid, raise NoSuchProcess and hand the fallback an empty scan, which returns False
+    # without ever reaching the token classifier.
+    #
+    # The cmdline string mirrors the Desktop spawn shape a real ``python -m hermes_cli.main <sub>``
+    # holder shows: ``module_only`` ownership accepts only that module target, and a real module
+    # launch cannot be spawned inertly from a test (it would start a real control plane).
+    serve_row = (serve_like.pid, "python.exe", f"{sys.executable} -m hermes_cli.main serve")
+    kanban_row = (kanban_like.pid, "python.exe", f"{sys.executable} -m hermes_cli.main kanban --preserve-cache")
     assert "--preserve-cache" in kanban_row[2]
 
+    # The lifecycle probe reads update_cmd_windows' own scan (the module-local
+    # ``_detect_venv_python_processes``), not hermes_cli.main's copy — patch the seam
+    # production reads.
     monkeypatch.setattr(
-        "hermes_cli.main._detect_venv_python_processes", lambda: [serve_row, kanban_row]
+        "hermes_cli.update_cmd_windows._detect_venv_python_processes",
+        lambda **_: [serve_row, kanban_row],
     )
     # serve-shaped holder with a live parent (us) → owns
     assert update_cmd._desktop_owns_gateway_lifecycle() is True
@@ -158,6 +162,7 @@ def test_holder_scan_fallback_respects_token_classifier(sleeper, monkeypatch, tm
     serve_like.wait()
     assert kanban_like.poll() is None
     monkeypatch.setattr(
-        "hermes_cli.main._detect_venv_python_processes", lambda: [kanban_row]
+        "hermes_cli.update_cmd_windows._detect_venv_python_processes",
+        lambda **_: [kanban_row],
     )
     assert update_cmd._desktop_owns_gateway_lifecycle() is False

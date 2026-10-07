@@ -57,9 +57,11 @@ export function showContextMenu(root: ShadowRoot, x: number, y: number, items: M
     els.push(el)
   }
 
+  // Attach before measuring: offsetHeight is 0 while detached, so the
+  // bottom-edge flip never engaged and the menu clipped offscreen.
+  root.appendChild(menu)
   menu.style.left = `${Math.min(x, innerWidth - 196)}px`
   menu.style.top = `${Math.min(y, innerHeight - menu.offsetHeight - 12)}px`
-  root.appendChild(menu)
 
   function dismiss() {
     menu.remove()
@@ -73,7 +75,11 @@ export function showContextMenu(root: ShadowRoot, x: number, y: number, items: M
   }
 
   function outside(e: Event) {
-    if (!menu.contains(e.target as Node)) {dismiss()}
+    // The menu lives in the overlay shadow root: at document level,
+    // e.target retargets to the shadow host, so `menu.contains(target)`
+    // is always false and a click on a row dismissed it before firing.
+    // composedPath() sees through the shadow boundary.
+    if (!e.composedPath().includes(menu)) {dismiss()}
   }
 
   function onKey(e: KeyboardEvent) {
@@ -160,7 +166,9 @@ export function showPalette(root: ShadowRoot, sections: PaletteSection[]) {
   }
 
   function outside(e: Event) {
-    if (!wrap.contains(e.target as Node)) {dismiss()}
+    // See showContextMenu: shadow retargeting makes contains(target)
+    // always false at document level; use the composed path.
+    if (!e.composedPath().includes(wrap)) {dismiss()}
   }
 
   input.addEventListener('input', () => render(input.value))

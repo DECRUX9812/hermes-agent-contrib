@@ -8,7 +8,8 @@ declares public (``PUBLIC_API_PATHS`` and the MCP OAuth redirect target, which a
 the identity provider without our header). Because that allowlist comes from production, the
 exemptions are held to their own contract instead of being trusted: a public route is either
 GET-only or refuses an uncredentialed call by its own mechanism (``/api/cron/fire`` verifies a
-NAS-minted JWT), and no public response carries the sandbox's secrets.
+NAS-minted JWT; ``/api/share/view`` resolves a capability token or 404s), and no public response
+carries the sandbox's secrets.
 
 Every credential channel is probed per route: the ``X-Hermes-Session-Token`` header, the legacy
 ``Authorization: Bearer``, and the ``?token=`` query string. The query channel exists only for
@@ -51,6 +52,10 @@ _CHAT_WS = ("/api/ws", "/api/events", "/api/console")  # accept a token-bearing 
 # The contract for the ``?token=`` channel, owned by this test (not read from production): only a
 # download URL opened outside the SPA may carry the token in its query string.
 _QUERY_TOKEN_ROUTES = frozenset({"/api/files/download"})
+# Public GET routes self-secured by their own capability token instead of the session token: an
+# uncredentialed call must be REFUSED (404 — a dead link and a never-minted one are
+# indistinguishable), never served.
+_CAPABILITY_SECURED = frozenset({"/api/share/view"})
 
 
 def _concrete(path: str) -> str:
@@ -123,6 +128,10 @@ def test_public_exemptions_hold_their_own_contract(dash: H.Dashboard, inventory:
     public = set(inventory["public"])
     routes = [(m, p) for m, p in inventory["http"] if p in public]
     assert any(m == "GET" for m, _ in routes), f"no public GET route mounted: {sorted(public)}"
+    assert _CAPABILITY_SECURED <= public, (
+        "capability-secured route left the public allowlist: "
+        f"{sorted(_CAPABILITY_SECURED - public)}"
+    )
     p = dash.sb.profiles["default"]
     secrets = {"provider key": p.provider_key, "config marker": p.marker, "session token": dash.token}
     bad = []
@@ -132,7 +141,12 @@ def test_public_exemptions_hold_their_own_contract(dash: H.Dashboard, inventory:
             if r.status_code not in (401, 403):
                 bad.append(f"{method} {path} (public, no credential) -> {r.status_code} {r.text[:120]!r}")
             continue
-        if r.status_code != 200:
+        if path in _CAPABILITY_SECURED:
+            # Self-secured by its own capability token: an uncredentialed call is refused
+            # (404 — a dead link and a never-minted one are indistinguishable).
+            if r.status_code != 404:
+                bad.append(f"GET {path} (capability-secured, no token) -> {r.status_code} {r.text[:120]!r}")
+        elif r.status_code != 200:
             bad.append(f"GET {path} is declared public but answered {r.status_code}")
         bad += [f"GET {path} (public) leaked the {what}" for what, value in secrets.items() if value in r.text]
     assert not bad, "public allowlist grants more than read-only, secret-free access:\n  " + "\n  ".join(bad)

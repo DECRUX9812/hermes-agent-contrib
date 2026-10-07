@@ -1,3 +1,4 @@
+import { jevKeyCheck } from '../background/decider'
 import type { GenericHarnessConfig, Settings } from '../shared/types'
 import { HARNESS_PRESETS } from '../shared/types'
 
@@ -86,6 +87,9 @@ async function main() {
   $<HTMLInputElement>('#hermesUrl').value = s.hermes?.url ?? ''
   $<HTMLInputElement>('#hermesToken').value = s.hermes?.token ?? ''
   $<HTMLTextAreaElement>('#disabledHosts').value = s.disabledHosts.join('\n')
+  $<HTMLInputElement>('#deciderEnabled').checked = s.decider?.enabled ?? false
+  $<HTMLInputElement>('#jevKey').value = s.decider?.key ?? ''
+  $<HTMLInputElement>('#jevBase').value = s.decider?.baseUrl ?? ''
   harnesses = s.harnesses
   renderCatalog()
   renderHarnesses()
@@ -154,6 +158,23 @@ async function main() {
     }
   })
 
+  $('#testJev').addEventListener('click', async () => {
+    const el = $('#jevStatus')
+    el.style.display = 'block'
+    el.className = 'conn'
+    el.textContent = 'Checking…'
+
+    const res = await jevKeyCheck({
+      key: $<HTMLInputElement>('#jevKey').value,
+      baseUrl: $<HTMLInputElement>('#jevBase').value.trim() || undefined,
+    })
+
+    el.classList.add(res.ok ? 'ok' : 'err')
+    el.textContent = res.ok
+      ? 'Key works ✓ auto rooms will route through Jev'
+      : `Not working: ${res.reason}`
+  })
+
   $('#save').addEventListener('click', () => {
     void save({
       enabled: $<HTMLInputElement>('#enabled').checked,
@@ -166,6 +187,11 @@ async function main() {
         .value.split('\n')
         .map((l) => l.trim())
         .filter(Boolean),
+      decider: {
+        enabled: $<HTMLInputElement>('#deciderEnabled').checked,
+        key: $<HTMLInputElement>('#jevKey').value.trim(),
+        baseUrl: $<HTMLInputElement>('#jevBase').value.trim() || undefined,
+      },
     })
   })
 }

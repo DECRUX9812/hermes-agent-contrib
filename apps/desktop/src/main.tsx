@@ -69,6 +69,7 @@ if (winParam === 'hud') {
 const TRANSPARENT_WINDOWS = new Set([
   'hud',
   'overlay',
+  'pane3d',
   'quick',
   'wake',
   'botroom',
@@ -92,6 +93,10 @@ if (winParam && TRANSPARENT_WINDOWS.has(winParam)) {
 
 if (winParam === 'overlay') {
   void import('./app/pet-overlay/overlay-root').then(({ mountPetOverlay }) => mountPetOverlay())
+} else if (winParam === 'pane3d') {
+  // Lazy so no three.js/@react-three module reaches the main window bundle
+  // (VAL-PANE-007).
+  void import('./app/pane3d/pane3d-root').then(({ mountPane3d }) => mountPane3d())
 } else if (winParam === 'botroom') {
   void import('./app/botroom/botroom-root').then(({ mountBotRoomWindow }) => mountBotRoomWindow())
 } else if (winParam === 'botroom-mascot') {

@@ -11,6 +11,7 @@ import { RECONNECT_ATTEMPT_TIMEOUT_MS, withTimeout } from '@/lib/with-timeout'
 import {
   $desktopBoot,
   applyDesktopBootProgress,
+  applyDesktopUpdateHold,
   completeDesktopBoot,
   failDesktopBoot,
   setDesktopBootStep
@@ -179,6 +180,12 @@ export function useGatewayBoot({
       // ticket-mint / host-unreachable failures must stay in the reconnect loop
       // (otherwise a 1–3 min blip bricks reading/drafting behind "couldn't start").
       if ($gatewaySwitching.get() || s.bootCompleted || s.bootFailed) {
+        // The blocked-update screen is not a boot step: a pool/profile backend
+        // can meet a hold after the primary booted (R8 M6).
+        if (payload.updateHold !== undefined) {
+          applyDesktopUpdateHold(payload.updateHold)
+        }
+
         if (payload.error && shouldApplyPostBootProgressError(payload.error)) {
           s.primaryReauthError = payload.error
 

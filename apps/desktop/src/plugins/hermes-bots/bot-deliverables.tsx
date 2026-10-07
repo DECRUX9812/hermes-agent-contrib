@@ -9,8 +9,10 @@
 
 import {
   armTranscriptReplayJump,
+  Button,
   cn,
   Codicon,
+  GlyphSpinner,
   host,
   type RailArtifactItem,
   RowButton,
@@ -39,13 +41,24 @@ function itemSessionId(item: RailArtifactItem): null | string {
   return item.transcript?.sessionId || item.registry?.sessionId || null
 }
 
+interface DeliverablesView {
+  ownerKey: string
+  items: RailArtifactItem[]
+  sessions: ReadonlyMap<string, SessionInfo>
+  status: 'loading' | 'ready' | 'error' | 'unavailable'
+}
+
 export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
   const b = useBots()
   const { t } = useI18n()
-  const [items, setItems] = useState<RailArtifactItem[]>([])
-  const [sessionsById, setSessionsById] = useState<ReadonlyMap<string, SessionInfo>>(new Map())
-  const [loaded, setLoaded] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
+
+  const [view, setView] = useState<DeliverablesView>({
+    ownerKey: '',
+    items: [],
+    sessions: new Map(),
+    status: 'loading'
+  })
+
   const seq = useRef(0)
   // The roster poll replaces the owner ROW each refresh — only the key is
   // stable, so the fetch must key off it or every poll pays a transcript
@@ -56,56 +69,57 @@ export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
 
   const load = useCallback(() => {
     const owner = ownerRef.current
+    const key = `${owner?.connectionId || 'local'}::${owner?.name || ''}`
     const current = ++seq.current
-    let route = null
-
-    try {
-      route = botConnectionRoute(owner)
-    } catch {
-      route = null
-    }
+    const empty = { ownerKey: key, items: [], sessions: new Map<string, SessionInfo>() }
 
     if (typeof host.listProfileArtifacts !== 'function' || !owner?.name) {
-      setItems([])
-      setSessionsById(new Map())
-      setLoaded(true)
+      setView({ ...empty, status: 'unavailable' })
 
       return
     }
 
-    setRefreshing(true)
+    setView(prior => ({ ...(prior.ownerKey === key ? prior : empty), status: 'loading' }))
 
-    void host
-      .listProfileArtifacts(route, { profile: owner.name })
+    // Resolve inside the promise so an unroutable remote owner fails visibly,
+    // never falling through to the foreground/local connection.
+    void Promise.resolve()
+      .then(() => host.listProfileArtifacts(botConnectionRoute(owner), { profile: owner.name }))
       .then(result => {
         if (seq.current !== current) {
           return
         }
 
-        setItems(result.items.slice(0, DELIVERABLES_LIMIT))
-        setSessionsById(new Map(result.sessions.map(session => [session.id, session])))
-        setLoaded(true)
+        setView({
+          ownerKey: key,
+          items: result.items.slice(0, DELIVERABLES_LIMIT),
+          sessions: new Map(result.sessions.map(session => [session.id, session])),
+          status: 'ready'
+        })
       })
       .catch(() => {
         if (seq.current !== current) {
           return
         }
 
-        setItems([])
-        setSessionsById(new Map())
-        setLoaded(true)
-      })
-      .finally(() => {
-        if (seq.current === current) {
-          setRefreshing(false)
-        }
+        setView(prior => ({ ...(prior.ownerKey === key ? prior : empty), status: 'error' }))
       })
   }, [])
 
   useEffect(() => {
-    setLoaded(false)
     load()
+    const requestSequence = seq
+
+    return () => {
+      requestSequence.current++
+    }
   }, [load, ownerKey])
+
+  const currentView = view.ownerKey === ownerKey ? view : null
+  const items = currentView?.items ?? []
+  const sessionsById = currentView?.sessions ?? new Map<string, SessionInfo>()
+  const status = currentView?.status ?? 'loading'
+  const refreshing = status === 'loading'
 
   const open = (item: RailArtifactItem) => {
     const owner = ownerRef.current
@@ -115,47 +129,61 @@ export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
       return
     }
 
-    let route = null
-
     try {
-      route = botConnectionRoute(owner)
-    } catch {
-      route = null
-    }
+      const route = botConnectionRoute(owner)
 
-    if (typeof armTranscriptReplayJump === 'function') {
-      armTranscriptReplayJump(sessionId, item.timestamp)
-    }
+      if (typeof armTranscriptReplayJump === 'function') {
+        armTranscriptReplayJump(sessionId, item.timestamp)
+      }
 
-    void host.openSession(sessionId, {
-      ...(route ? { route } : {}),
-      profile: owner.name,
-      intent: 'tab'
-    })
+      void host
+        .openSession(sessionId, {
+          ...(route ? { route } : {}),
+          profile: owner.name,
+          intent: 'tab'
+        })
+        .catch(err => host.notifyError(err, b.deliverables.title))
+    } catch (err) {
+      host.notifyError(err, b.deliverables.title)
+    }
   }
 
   return (
-    <div className="px-3 pb-1">
+    <div aria-busy={refreshing} className="px-3 pb-3" data-testid="bot-deliverables">
       <div className="flex items-baseline justify-between gap-2 pb-1">
         <span className="ui-section-label">{b.deliverables.title}</span>
         <span className="flex items-center gap-1.5">
-          {items.length ? (
-            <span className="text-[0.65rem] tabular-nums text-(--ui-text-quaternary)">{items.length}</span>
-          ) : null}
+          {items.length ? <span className="text-xs tabular-nums text-(--ui-text-tertiary)">{items.length}</span> : null}
           <Tip label={b.deliverables.refresh}>
-            <span
+            <Button
               aria-label={b.deliverables.refresh}
-              className="flex cursor-pointer items-center text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)"
+              disabled={refreshing || status === 'unavailable'}
               onClick={load}
-              role="button"
+              size="icon-xs"
+              variant="ghost"
             >
               <Codicon name="refresh" spinning={refreshing} />
-            </span>
+            </Button>
           </Tip>
         </span>
       </div>
-      {loaded && items.length === 0 ? (
-        <div className="pb-1 text-xs text-(--ui-text-quaternary)">{b.deliverables.empty}</div>
+      {status === 'error' ? (
+        <div className="grid gap-2 pb-2 text-xs text-(--ui-text-secondary)" role="alert">
+          <p>{items.length ? b.deliverables.stale : b.deliverables.failed}</p>
+          <Button className="justify-self-start" onClick={load} size="xs" variant="secondary">
+            {t.common.retry}
+          </Button>
+        </div>
+      ) : null}
+      {refreshing && items.length === 0 ? (
+        <div className="flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)" role="status">
+          <GlyphSpinner ariaLabel={b.deliverables.loading} className="text-xs" />
+          {b.deliverables.loading}
+        </div>
+      ) : status === 'unavailable' ? (
+        <p className="py-2 text-xs text-(--ui-text-tertiary)">{b.deliverables.unavailable}</p>
+      ) : status === 'ready' && items.length === 0 ? (
+        <p className="py-2 text-xs leading-relaxed text-(--ui-text-tertiary)">{b.deliverables.empty}</p>
       ) : (
         <div className="grid gap-0.5">
           {items.map(item => {
@@ -184,12 +212,10 @@ export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
                     {item.label}
                   </span>
                   {sessionTitle ? (
-                    <span className="block min-w-0 truncate text-[0.6875rem] text-(--ui-text-quaternary)">
-                      {sessionTitle}
-                    </span>
+                    <span className="block min-w-0 truncate text-xs text-(--ui-text-tertiary)">{sessionTitle}</span>
                   ) : null}
                 </span>
-                <span className="shrink-0 text-[0.65rem] text-(--ui-text-quaternary)">
+                <span className="shrink-0 text-xs text-(--ui-text-tertiary)">
                   {rosterRowAge(item.timestamp, t.sidebar.row)}
                 </span>
               </RowButton>

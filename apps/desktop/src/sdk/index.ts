@@ -52,6 +52,9 @@ import { type ActivityTask, deriveActivityTasks } from '@/lib/activity-tasks'
 import { selectDesktopPaths } from '@/lib/desktop-fs'
 import { traceIdentityChange } from '@/lib/identity-trace'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
+
+/** Pane, status bar and titlebar slots; see `./areas` for the mount rules. */
+export { PANES_AREA, STATUSBAR_AREAS, TITLEBAR_AREAS } from './areas'
 import { mergeRailArtifacts, type RailArtifactItem, registryArtifactsForSessions } from '@/store/artifact-rail'
 import { $artifactRegistry } from '@/store/artifacts'
 import { $attentionItems, type AttentionItem } from '@/store/attention-inbox'
@@ -132,8 +135,7 @@ import { planPluginOpenSession } from './plugin-open-session-plan'
 import { sessionsHost } from './sessions'
 import { desktopSettings } from './settings'
 
-/** Pane, status bar and titlebar slots; see `./areas` for the mount rules. */
-export { PANES_AREA, STATUSBAR_AREAS, TITLEBAR_AREAS } from './areas'
+export type { DesktopSettingKey, DesktopSettingValues } from './settings'
 
 // -- state: readonly views over the app's live atoms -------------------------
 
@@ -1967,12 +1969,6 @@ export const host = {
   i18n: i18nHost
 }
 
-// -- react bridge -------------------------------------------------------------
-
-export type { DesktopSettingKey, DesktopSettingValues } from './settings'
-
-// -- ui: the design language --------------------------------------------------
-
 /** THE whole Capabilities surface (Skills / Tools / MCP tabs, installed
  *  lists, full-skill detail pane, embedded hub picker with one-click
  *  installs). For plugin dialogs pass `embedded` (tab state stays local —
@@ -1983,6 +1979,7 @@ export type { DesktopSettingKey, DesktopSettingValues } from './settings'
  *  builds without it would route the pin to the ACTIVE gateway. Bot Mode's
  *  Advanced section is the reference consumer. */
 export { CapabilitiesView } from '@/app/capabilities'
+
 /** THE Connectors tab core Capabilities renders — managed apps, the user's
  *  own MCP servers, plugin servers and the catalog, with per-server enable,
  *  sign-in and live probes. Renders anywhere under the app router (a plugin
@@ -2080,13 +2077,13 @@ export {
   type SidebarNavContribution,
   WORKSPACE_PAGE_HEADER_AREA
 } from '@/app/routes'
-
 /** Appearance settings' plugin seam: register a render contribution at
  *  `APPEARANCE_AREAS.extra` to add controls at the end of the Appearance page.
  *  `ColorSwatches` is the app's own swatch grid (profile rail / project dialog
  *  look) — use it for colour picking instead of driving app widgets through
  *  React internals; pair it with `host.sessions.setColor` for session colours. */
 export { APPEARANCE_AREAS } from '@/app/settings/appearance-contrib'
+
 /** THE settings rows: `ListRow` is label + description with the control beside
  *  it (wide) or under it (narrow); `ToggleRow` is the one on/off row — a Switch,
  *  never an Off/On pill pair. Use them for preference rows in plugin panes and
@@ -2228,9 +2225,6 @@ export { Separator } from '@/components/ui/separator'
 export { Skeleton } from '@/components/ui/skeleton'
 export { Switch } from '@/components/ui/switch'
 export { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-
-// -- contracts ----------------------------------------------------------------
-
 export { Textarea } from '@/components/ui/textarea'
 export { Tip, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 export type { GatewayEventListener } from '@/contrib/events'
@@ -2252,11 +2246,11 @@ export type {
  *  `ctx.register` stays the door for permanent contributions. Namespace the
  *  id with your plugin slug (`kanban:board-switcher`). */
 export { Contribute, type ContributeProps } from '@/contrib/react/contribute'
+/** Settings ▸ Plugins entries (`ctx.registerSettingsPage`); `pluginSettingsHref` deep-links one. */
+export { pluginSettingsHref, SETTINGS_PLUGINS_AREA } from '@/contrib/settings-pages'
 
 // -- contracts ----------------------------------------------------------------
 
-/** Settings ▸ Plugins entries (`ctx.registerSettingsPage`); `pluginSettingsHref` deep-links one. */
-export { pluginSettingsHref, SETTINGS_PLUGINS_AREA } from '@/contrib/settings-pages'
 export type { Contribution } from '@/contrib/types'
 /** The live gateway instance type — for typing the `gateway` prop `ConnectorsTab`
  *  takes; obtain the instance from `host.getGateway()`. */
@@ -2319,6 +2313,7 @@ export { CHAT_HEADER_AREAS, type ChatHeaderSlotContribution, type ChatHeaderSlot
 export { answeredAfter, chatMessageText } from '@/lib/chat-messages/parts'
 export type { ChatMessage } from '@/lib/chat-messages/types'
 export { FILE_VIEWERS_AREA, type FileViewerContribution, type FileViewerProps } from '@/lib/file-viewers'
+export { isMissingRpcMethod } from '@/lib/gateway-rpc'
 /** THE confirm flow for guarded model switches — when a gateway model-switch
  *  RPC answers `confirm_required` (data-policy / expensive-model guard),
  *  route it through this shared applier instead of forking a per-surface
@@ -2494,6 +2489,8 @@ export {
   REASONING_EFFORTS,
   type ReasoningEffort
 } from '@hermes/shared'
+/** The staff mascot — the same bops face the Bot Room extension draws. */
+export { bopMascotMarkup } from '@hermes/shared/bops-mascot'
 /** WCAG contrast, from the sRGB primitives shared with the TUI (`null` for
  *  an unparseable colour, never a fake 0). */
 export { contrastRatio } from '@hermes/shared/color'

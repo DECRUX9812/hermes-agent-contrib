@@ -1,10 +1,9 @@
 import type { Bot, Room, RoomMsg, SwToContent } from '../shared/types'
 
 import { runPageAction, setWindowManager, uniqueSelector } from './actions'
-import { faceDataUrl } from './face'
 import { type MascotAction, OverlayScene } from './mascot3d'
-import { type PaletteSection, showContextMenu, showPalette } from './menu'
-import { type ElementInfo, Panel, roomMsgToPanel } from './panel'
+import { type MenuItem, type PaletteSection, showContextMenu, showPalette } from './menu'
+import { botAvatarUrl, bufferRoomMsg, type ElementInfo, Panel, roomMsgToPanel } from './panel'
 import { OVERLAY_CSS } from './styles'
 import { WindowManager } from './windows'
 
@@ -29,6 +28,9 @@ export class Stage {
   private windows: WindowManager
   private siteBot: Bot | null = null
   private sleeping = new Set<string>()
+  /** Whether the SW has a decision-model key — auto rooms can route. */
+  private deciderReady = false
+  private unread = new Map<string, number>()
 
   constructor(send: (msg: unknown) => void) {
     this.send = send
@@ -165,6 +167,7 @@ export class Stage {
       case 'init':
         this.setHidden(!msg.enabled)
         this.siteBot = msg.siteBot ?? null
+        this.deciderReady = msg.deciderReady ?? false
         this.setBots(msg.bots)
         this.setRooms(msg.rooms)
 
@@ -264,6 +267,7 @@ export class Stage {
 
     const panel = this.panels.get(`solo:${b.id}`)
     panel?.setStatus(b.status, b.statusLine)
+    panel?.setAvatar(botAvatarUrl(b))
   }
 
   private onRoomMsg(msg: RoomMsg) {
@@ -272,10 +276,19 @@ export class Stage {
 
     if (panel) {
       if (msg.ephemeral) {
-        panel.showTyping(name(msg.author))
+        panel.showTyping(name(msg.author), this.avatarFor(msg.author))
       } else {
         panel.clearTyping(name(msg.author))
         roomMsgToPanel(panel, msg, name)
+      }
+    } else if (!msg.ephemeral) {
+      // Closed room: buffer into the panel's persistent log so reopening
+      // replays the gap; only bot messages bump the unread badge.
+      bufferRoomMsg(msg.roomId, msg, name)
+
+      if (msg.author !== 'user' && msg.author !== 'system') {
+        this.unread.set(msg.roomId, (this.unread.get(msg.roomId) ?? 0) + 1)
+        this.updateUnreadChip(msg.roomId)
       }
     }
 
@@ -285,6 +298,34 @@ export class Stage {
       const m = this.scene.get(msg.author)
       m?.setTalking(true)
       setTimeout(() => m?.setTalking(false), Math.min(3000, msg.text.length * 20))
+    }
+  }
+
+  private avatarFor(id: string): string | undefined {
+    const b = this.bots.get(id)
+
+    return b ? botAvatarUrl(b) : undefined
+  }
+
+  /** Display names that tint as @mentions inside a room panel. */
+  private roomMentions(room: Room): string[] {
+    return ['everyone', ...room.memberBotIds.map((id) => this.bots.get(id)?.displayName ?? id.split(':').pop() ?? id)]
+  }
+
+  private updateUnreadChip(roomId: string) {
+    const el = this.roomBar.querySelector<HTMLElement>(`.hr-room[data-room-id="${CSS.escape(roomId)}"]`)
+    const badge = el?.querySelector<HTMLElement>('.hr-unread')
+    const n = this.unread.get(roomId) ?? 0
+
+    if (badge) {
+      badge.textContent = n > 9 ? '9+' : String(n)
+      badge.classList.toggle('on', n > 0)
+    }
+
+    if (n > 0 && el) {
+      el.classList.remove('hr-ping')
+      void el.offsetWidth
+      el.classList.add('hr-ping')
     }
   }
 
@@ -473,7 +514,7 @@ export class Stage {
 
     if (existing) {return existing}
     const title = room ? room.name : b?.name ?? 'Bot'
-    const color = b?.color ?? '#5470ff'
+    const color = b?.color ?? '#A78BFA'
     const status = b?.status ?? 'idle'
 
     const panel = new Panel(this.root, key, title, color, status, {
@@ -493,9 +534,16 @@ export class Stage {
         if (!room) {panel.addMsg('You', text, 'user')}
       },
       onClose: () => this.panels.delete(key),
-    }, b ? faceDataUrl(b.name, 48) : undefined)
+    }, b ? botAvatarUrl(b) : undefined)
 
     this.panels.set(key, panel)
+
+    if (room) {
+      panel.setMentions(this.roomMentions(room))
+      this.unread.delete(room.id)
+      this.updateUnreadChip(room.id)
+    }
+
     // position near the mascot
     const botId = room ? room.memberBotIds[0] : b?.id
     const p = botId ? this.pos.get(botId) : undefined
@@ -578,6 +626,11 @@ export class Stage {
 
     this.renderRooms()
     this.layoutRoomMembers()
+
+    // member changes can rename a room's mention set mid-conversation
+    for (const room of rooms) {
+      this.panels.get(room.id)?.setMentions(this.roomMentions(room))
+    }
   }
 
   private layoutRoomMembers() {
@@ -601,32 +654,35 @@ export class Stage {
 
   private renderRooms() {
     this.roomBar.innerHTML = ''
+    let idx = 0
 
     for (const room of this.rooms.values()) {
       const chip = document.createElement('div')
       chip.className = 'hr-room'
       chip.dataset.roomId = room.id
+      chip.style.setProperty('--i', String(idx++))
 
       const faces = room.memberBotIds
         .map((id) => {
           const b = this.bots.get(id)
 
-          return b ? `<span class="hr-face"><img src="${faceDataUrl(b.name, 40)}" width="20" height="20" style="border-radius:50%"/></span>` : ''
+          return b ? `<span class="hr-face"><img src="${botAvatarUrl(b)}" width="20" height="20" style="border-radius:50%"/></span>` : ''
         })
         .join('')
 
-      chip.innerHTML = `<span class="hr-faces">${faces}</span><span></span>`
-      chip.querySelector('span:last-child')!.textContent = room.name
-      chip.title = `${room.name} — ${room.memberBotIds.length} bot(s)${room.scratchpad ? ' · notes: ' + room.scratchpad : ''}`
+      chip.innerHTML = `<span class="hr-faces">${faces}</span><span></span><span class="hr-unread"></span>`
+      const nameEl = chip.querySelectorAll('span')[1]
+      nameEl!.textContent = room.name
+      chip.title = `${room.name} — ${room.memberBotIds.length} bot(s) · ${room.relayMode} relay${room.scratchpad ? ' · notes: ' + room.scratchpad : ''}`
       chip.addEventListener('click', () => {
         this.openPanel(room.id, undefined, room)
       })
       chip.addEventListener('contextmenu', (e) => {
         e.preventDefault()
-
-        if (window.confirm(`Remove room "${room.name}"?`)) {this.send({ type: 'room.remove', roomId: room.id })}
+        this.openRoomMenu(room, e.clientX, e.clientY)
       })
       this.roomBar.appendChild(chip)
+      this.updateUnreadChip(room.id)
       // anchor: chip position in page coords, computed after mount
       requestAnimationFrame(() => {
         const r = chip.getBoundingClientRect()
@@ -638,6 +694,24 @@ export class Stage {
     }
 
     this.layoutRoomMembers()
+  }
+
+  /** Right-click on a room chip: pick who answers, or remove the room. */
+  private openRoomMenu(room: Room, x: number, y: number) {
+    const mode = (m: Room['relayMode'], label: string, hint: string): MenuItem => ({
+      icon: room.relayMode === m ? '●' : '○',
+      label,
+      hint,
+      run: () => this.send({ type: 'room.mode', roomId: room.id, relayMode: m }),
+    })
+
+    showContextMenu(this.root, x, y, [
+      mode('mention', 'Mention', 'answers only when @named'),
+      mode('roundrobin', 'Round robin', 'everyone answers'),
+      mode('auto', 'Auto · Jev', this.deciderReady ? 'decision model picks' : 'needs a key in Options'),
+      { separator: true, label: '' },
+      { icon: '✕', label: `Remove ${room.name}`, danger: true, run: () => this.send({ type: 'room.remove', roomId: room.id }) },
+    ])
   }
 }
 

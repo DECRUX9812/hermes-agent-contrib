@@ -1,7 +1,7 @@
 import { faceDataUrl } from './face'
 import { type MascotAction, OverlayScene } from './mascot3d'
 import { type PaletteSection, showContextMenu, showPalette } from './menu'
-import { type ElementInfo, Panel, roomMsgToPanel } from './panel'
+import { bufferRoomMsg, type ElementInfo, Panel, roomMsgToPanel } from './panel'
 import { OVERLAY_CSS } from './styles'
 import type { Bot, Bot as BotType, ContentToSw, Room, RoomMsg, SwToContent } from './types'
 import { WindowManager } from './windows'
@@ -35,6 +35,7 @@ export class Stage {
   private deck: HTMLElement
   private windows: WindowManager
   private sleeping = new Set<string>()
+  private unread = new Map<string, number>()
   private interactive = false
   private focusable = false
   /** Live mascot drags — latches the window interactive so the pointer can
@@ -321,10 +322,19 @@ export class Stage {
 
     if (panel) {
       if (msg.ephemeral) {
-        panel.showTyping(name(msg.author))
+        panel.showTyping(name(msg.author), this.avatarFor(msg.author))
       } else {
         panel.clearTyping(name(msg.author))
         roomMsgToPanel(panel, msg, name)
+      }
+    } else if (!msg.ephemeral) {
+      // Closed room: buffer into the panel's persistent log so reopening
+      // replays the gap; only bot messages bump the unread badge.
+      bufferRoomMsg(msg.roomId, msg, name)
+
+      if (msg.author !== 'user' && msg.author !== 'system') {
+        this.unread.set(msg.roomId, (this.unread.get(msg.roomId) ?? 0) + 1)
+        this.updateUnreadChip(msg.roomId)
       }
     }
 
@@ -334,6 +344,34 @@ export class Stage {
       const m = this.scene.get(msg.author)
       m?.setTalking(true)
       setTimeout(() => m?.setTalking(false), Math.min(3000, msg.text.length * 20))
+    }
+  }
+
+  private avatarFor(id: string): string | undefined {
+    const b = this.bots.get(id)
+
+    return b ? faceDataUrl(b.displayName ?? b.name, 40) : undefined
+  }
+
+  /** Display names that tint as @mentions inside a room panel. */
+  private roomMentions(room: Room): string[] {
+    return ['everyone', ...room.memberBotIds.map((id) => this.bots.get(id)?.displayName ?? id.split(':').pop() ?? id)]
+  }
+
+  private updateUnreadChip(roomId: string) {
+    const el = this.roomBar.querySelector<HTMLElement>(`.hr-room[data-room-id="${CSS.escape(roomId)}"]`)
+    const badge = el?.querySelector<HTMLElement>('.hr-unread')
+    const n = this.unread.get(roomId) ?? 0
+
+    if (badge) {
+      badge.textContent = n > 9 ? '9+' : String(n)
+      badge.classList.toggle('on', n > 0)
+    }
+
+    if (n > 0 && el) {
+      el.classList.remove('hr-ping')
+      void el.offsetWidth
+      el.classList.add('hr-ping')
     }
   }
 
@@ -460,6 +498,13 @@ export class Stage {
     }, b ? faceDataUrl(b.displayName ?? b.name, 48) : undefined)
 
     this.panels.set(key, panel)
+
+    if (room) {
+      panel.setMentions(this.roomMentions(room))
+      this.unread.delete(room.id)
+      this.updateUnreadChip(room.id)
+    }
+
     const botId = room ? room.memberBotIds[0] : b?.id
     const p = botId ? this.pos.get(botId) : undefined
     const cascade = (this.panels.size - 1) * 26
@@ -518,6 +563,11 @@ export class Stage {
 
     this.renderRooms()
     this.layoutRoomMembers()
+
+    // member changes can rename a room's mention set mid-conversation
+    for (const room of rooms) {
+      this.panels.get(room.id)?.setMentions(this.roomMentions(room))
+    }
   }
 
   private layoutRoomMembers() {
@@ -541,11 +591,13 @@ export class Stage {
 
   private renderRooms() {
     this.roomBar.innerHTML = ''
+    let idx = 0
 
     for (const room of this.rooms.values()) {
       const chip = document.createElement('div')
       chip.className = 'hr-room'
       chip.dataset.roomId = room.id
+      chip.style.setProperty('--i', String(idx++))
 
       const faces = room.memberBotIds
         .map((id) => {
@@ -555,8 +607,9 @@ export class Stage {
         })
         .join('')
 
-      chip.innerHTML = `<span class="hr-faces">${faces}</span><span></span>`
-      chip.querySelector('span:last-child')!.textContent = room.name
+      chip.innerHTML = `<span class="hr-faces">${faces}</span><span></span><span class="hr-unread"></span>`
+      const nameEl = chip.querySelectorAll('span')[1]
+      nameEl!.textContent = room.name
       chip.title = room.name
       chip.addEventListener('click', () => {
         this.openPanel(room.id, undefined, room)
@@ -571,6 +624,7 @@ export class Stage {
         ])
       })
       this.roomBar.appendChild(chip)
+      this.updateUnreadChip(room.id)
       requestAnimationFrame(() => {
         const r = chip.getBoundingClientRect()
 

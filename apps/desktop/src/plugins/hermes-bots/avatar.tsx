@@ -7,7 +7,7 @@
  */
 
 import * as sdk from '@hermes/plugin-sdk'
-import { profileColor } from '@hermes/plugin-sdk'
+import { bopMascotMarkup, profileColor } from '@hermes/plugin-sdk'
 
 import type { AvatarAppearance, AvatarShape, BotMeta, FaceMood } from './types'
 
@@ -187,6 +187,33 @@ export function blobShapeString(seedPart: string, kind: string) {
   }
 
   return seedPart ? `blobatar:${seedPart}` : 'blobatar'
+}
+
+// ── bop shapes (the staff mascot: plush blob + headphones) ──────────────────
+// 'bop' — the face follows the bot's NAME; 'bop:<seed>' — seed locked.
+// The body takes the bot's accent colour; eyes open while it works and vibe
+// shut at idle, like the bops mascots these are ported from.
+
+export function isBopShape(shape: null | string | undefined) {
+  return shape === 'bop' || (typeof shape === 'string' && shape.startsWith('bop:'))
+}
+
+/** The seed actually rendered — the pinned one, else the bot's name. */
+export function bopSeed(shape: null | string | undefined, name: string | undefined) {
+  const parts = typeof shape === 'string' ? shape.split(':') : []
+
+  return parts[1] || name || 'agent'
+}
+
+function bopMarkup(shape: null | string | undefined, name: string, color: string, mood: FaceMood, size: number) {
+  const inner = bopMascotMarkup(bopSeed(shape, name), color, {
+    mood: mood === 'idle' ? 'idle' : 'awake'
+  })
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="${size}" height="${size}"` +
+    ` data-bot-face=${JSON.stringify(name)}>${inner}</svg>`
+  )
 }
 
 /** Static SVG markup for a blob face, tagged data-bot-face so the roster's
@@ -1090,6 +1117,9 @@ export function BotFace({
           dangerouslySetInnerHTML={{
             __html: markup
           }}
+          // The legacy math face carried mood on the svg; keep the attribute
+          // on the static-shape wrappers so it stays observable.
+          data-hb-mood={mood}
           style={{
             width: size,
             height: size,
@@ -1102,6 +1132,26 @@ export function BotFace({
 
     // Older SDK without blobatar: legacy deterministic shape from the name.
     shape = defaultShapeFor(name)
+  }
+
+  // The staff mascot — same static inline-SVG path as blobatar (the roster
+  // PNG backfill finds it through data-bot-face; the math clock ignores it).
+  if (isBopShape(shape)) {
+    return (
+      <span
+        aria-hidden
+        dangerouslySetInnerHTML={{
+          __html: bopMarkup(shape, name, color, mood, size)
+        }}
+        data-hb-mood={mood}
+        style={{
+          width: size,
+          height: size,
+          display: 'block',
+          lineHeight: 0
+        }}
+      />
+    )
   }
 
   // Sigils are line art (no filled body) — the math clock rebuilds filled
@@ -1215,8 +1265,10 @@ export function botAppearance(name: string, meta: BotMeta | null | undefined): A
 
   if (isPrimary && !userCustomized) {
     return {
-      shape: 'squircle',
-      color: PRIMARY_AVATAR_COLOR,
+      // The chief-of-staff bop: ink body, highlighter headphones — the
+      // workspace's main bot in the bops staff language.
+      shape: 'bop',
+      color: '#0a0a0a',
       image: meta?.image || null
     }
   }

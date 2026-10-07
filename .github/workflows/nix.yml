@@ -12,8 +12,9 @@ name: Nix flake check
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # weekly Monday 6am UTC
+  workflow_dispatch:
   workflow_call:
     inputs:
       release:

@@ -25,6 +25,9 @@ export const TEAM_EN = {
   noTeamSelected: 'Pick a team',
   unavailableTitle: 'Teams need a newer Hermes',
   unavailableBody: 'This gateway does not know about teams yet. Update Hermes on the machine it runs on.',
+  loadFailed: 'Could not load your team',
+  loadFailedBody: 'Check the connection and try again. Your team and its work have not been removed.',
+  retry: 'Retry',
   seats: (n: number) => (n === 1 ? '1 teammate' : `${n} teammates`),
   openSeats: (n: number) => (n === 1 ? '1 open seat' : `${n} open seats`),
   needsYou: (n: number) => (n === 1 ? '1 thing needs you' : `${n} things need you`),
@@ -92,6 +95,9 @@ export const TEAM_EN = {
     packCopied: 'Team Pack copied',
     packInvalid: 'That is not a valid Team Pack',
     deleteTeam: 'Delete team',
+    deleteConfirm: (name: string) => `Delete ${name}?`,
+    deleteDescription:
+      'This removes the team, its goals, approvals and shared learnings. The bots and their conversations are kept.',
     ids: 'IDs'
   },
   toast: { created: 'Team created', saved: 'Saved' }

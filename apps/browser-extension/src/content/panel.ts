@@ -1,6 +1,8 @@
+import { bopAvatarUrl } from '@hermes/shared/bops-mascot'
+
 import type { Bot, RoomMsg } from '../shared/types'
 
-import { faceDataUrl } from './face'
+import { renderBody, renderMirror } from './mdlite'
 
 interface SpeechRecognitionLike {
   continuous: boolean
@@ -30,14 +32,22 @@ export interface ElementInfo {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  idle: '#3dd68c',
-  working: '#ffb224',
-  stalled: '#ff7849',
-  offline: '#6b7280',
-  sleeping: '#8b93b0',
+  idle: '#9a9a98',
+  working: '#12b76a',
+  stalled: '#f04438',
+  offline: '#6b6b6b',
+  sleeping: '#5e5e5b',
 }
 
-const logs = new Map<string, { who: string; text: string; kind: 'user' | 'bot' | 'sys' }[]>()
+const logs = new Map<string, { who: string; text: string; kind: 'user' | 'bot' | 'sys'; pickedByJev?: number }[]>()
+
+/** Self-ticking elapsed readout — mutates its own text node once a second
+ *  instead of going through any render path (OpenMausBot WorkingTimer). */
+function fmtElapsed(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000))
+
+  return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`
+}
 
 export class Panel {
   el: HTMLElement
@@ -47,6 +57,10 @@ export class Panel {
   private targetChip: HTMLElement
   private mic: HTMLElement
   private statusEl: HTMLElement
+  private mirror: HTMLElement
+  private readonly mentions = new Set<string>()
+  private typingTimers = new Map<string, number>()
+  private clearedAt = new Map<string, number>()
   private recognizing = false
   private rec: SpeechRecognitionLike | null = null
 
@@ -81,7 +95,7 @@ export class Panel {
       </div>
       <div class="hr-composer">
         <div class="hr-compose-pill">
-          <textarea rows="1" placeholder="Give ${title} a task…"></textarea>
+          <div class="hr-field"><div class="hr-mirror" aria-hidden="true"></div><textarea rows="1" placeholder="Text ${title}…"></textarea></div>
           <button class="hr-btn mic" title="Speak">🎙</button>
           <button class="hr-btn send" title="Send">➤</button>
         </div>
@@ -94,6 +108,7 @@ export class Panel {
     this.statusEl.textContent = status
     this.logEl = this.el.querySelector('.hr-panel-log')!
     this.input = this.el.querySelector('textarea')!
+    this.mirror = this.el.querySelector('.hr-mirror')!
     this.targetChip = this.el.querySelector('.hr-target-chip')!
     this.mic = this.el.querySelector('.hr-btn.mic')!
 
@@ -118,13 +133,40 @@ export class Panel {
       this.input.style.height = 'auto'
       this.input.style.height = Math.min(96, this.input.scrollHeight) + 'px'
       this.el.querySelector('.hr-btn.send')!.classList.toggle('ready', this.input.value.trim().length > 0)
+      this.syncMirror()
     })
+    this.input.addEventListener('scroll', () => {
+      this.mirror.scrollTop = this.input.scrollTop
+      this.mirror.scrollLeft = this.input.scrollLeft
+    })
+    // IME composition is invisible while the textarea's own text is
+    // transparent — surface the real glyphs for the duration.
+    this.input.addEventListener('compositionstart', () => this.el.querySelector('.hr-field')!.classList.add('hr-composing'))
+    this.input.addEventListener('compositionend', () => this.el.querySelector('.hr-field')!.classList.remove('hr-composing'))
     this.targetChip.querySelector('.hr-x')!.addEventListener('click', () => this.setTarget(null))
     this.mic.addEventListener('click', () => this.toggleMic())
 
-    for (const m of logs.get(key) ?? []) {this.renderMsg(m.who, m.text, m.kind)}
+    for (const m of logs.get(key) ?? []) {this.renderMsg(m.who, m.text, m.kind, m.pickedByJev)}
     void color
     this.scope.appendChild(this.el)
+  }
+
+  /** Names the composer mirror and message bodies tint as @mentions —
+   *  room member display names plus 'everyone'. */
+  setMentions(names: Iterable<string>) {
+    this.mentions.clear()
+
+    for (const n of names) {
+      const t = n.trim().toLowerCase()
+
+      if (t) {this.mentions.add(t)}
+    }
+
+    this.syncMirror()
+  }
+
+  private syncMirror() {
+    this.mirror.replaceChildren(renderMirror(this.input.value, this.mentions))
   }
 
   private submit() {
@@ -133,6 +175,7 @@ export class Panel {
     if (!text) {return}
     this.input.value = ''
     this.input.style.height = 'auto'
+    this.syncMirror()
     this.hooks.onSend(text, this.target ?? undefined)
 
     if (this.target) {this.setTarget(null)}
@@ -156,6 +199,14 @@ export class Panel {
     if (t) {this.targetChip.querySelector('.hr-target-label')!.textContent = t.label}
   }
 
+  /** Refresh the header face — a bot that wakes up or dozes off swaps its
+   *  eyes live, not just when the panel next opens. */
+  setAvatar(url: string) {
+    const av = this.el.querySelector<HTMLImageElement>('img.hr-avatar')
+
+    if (av) {av.src = url}
+  }
+
   setStatus(status: string, line?: string) {
     this.statusEl.textContent = line || status
     const dot = this.el.querySelector<HTMLElement>('.hr-dot')
@@ -167,41 +218,68 @@ export class Panel {
     }
   }
 
-  /** Transient "typing" bubble for an ephemeral relay marker — kept out of
-   *  the persistent log and replaced by the real reply when it lands. */
-  showTyping(who: string) {
+  /** Turn presence (OpenMausBot): while a bot works, its face pops in at
+   *  the tail with a shimmering "Thinking" and a self-ticking elapsed
+   *  readout; when the reply lands the presence shrinks away and the
+   *  answer row grows up in its place. Kept out of the persistent log. */
+  showTyping(who: string, avatar?: string) {
     if (this.typing.has(who)) {return}
     const div = document.createElement('div')
-    div.className = 'hr-msg bot typing'
-    const w = document.createElement('div')
-    w.className = 'hr-who'
-    w.textContent = who
-    const body = document.createElement('div')
-    body.className = 'hr-dots'
-    body.innerHTML = '<i></i><i></i><i></i>'
-    div.append(w, body)
+    div.className = 'hr-presence'
+    const face = document.createElement(avatar ? 'img' : 'span')
+    face.className = 'hr-presence-face'
+
+    if (avatar) {(face as HTMLImageElement).src = avatar}
+    else {face.textContent = who.slice(0, 1).toUpperCase()}
+
+    const label = document.createElement('span')
+    label.className = 'hr-think'
+    label.textContent = 'Thinking'
+    const elapsed = document.createElement('span')
+    elapsed.className = 'hr-elapsed'
+    const t0 = Date.now()
+
+    const tick = () => {
+      elapsed.textContent = fmtElapsed(Date.now() - t0)
+    }
+
+    tick()
+    this.typingTimers.set(who, window.setInterval(tick, 1000))
+    div.append(face, label, elapsed)
     this.logEl.appendChild(div)
     this.logEl.scrollTop = this.logEl.scrollHeight
     this.typing.set(who, div)
   }
 
   clearTyping(who: string) {
-    this.typing.get(who)?.remove()
+    const div = this.typing.get(who)
+
+    if (!div) {return}
     this.typing.delete(who)
+    this.clearedAt.set(who, Date.now())
+    const t = this.typingTimers.get(who)
+
+    if (t !== undefined) {
+      clearInterval(t)
+      this.typingTimers.delete(who)
+    }
+
+    div.classList.add('hr-presence-out')
+    window.setTimeout(() => div.remove(), 260)
   }
 
   private typing = new Map<string, HTMLElement>()
 
-  addMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys') {
+  addMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys', pickedByJev?: number) {
     const list = logs.get(this.key) ?? []
-    list.push({ who, text, kind })
+    list.push({ who, text, kind, pickedByJev })
 
     if (list.length > 200) {list.shift()}
     logs.set(this.key, list)
-    this.renderMsg(who, text, kind)
+    this.renderMsg(who, text, kind, pickedByJev)
   }
 
-  private renderMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys') {
+  private renderMsg(who: string, text: string, kind: 'user' | 'bot' | 'sys', pickedByJev?: number) {
     const div = document.createElement('div')
     div.className = `hr-msg ${kind}`
 
@@ -212,9 +290,28 @@ export class Panel {
       div.appendChild(w)
     }
 
+    // A bot row landing right after its presence row is the turn's
+    // answer — it grows up from where the mascot was.
+    const cleared = this.clearedAt.get(who)
+
+    if (kind === 'bot' && cleared !== undefined && Date.now() - cleared < 900) {
+      div.classList.add('hr-answer')
+      this.clearedAt.delete(who)
+    }
+
     const body = document.createElement('div')
-    body.textContent = text
+    body.className = 'hr-md'
+    body.appendChild(renderBody(text, this.mentions))
     div.appendChild(body)
+
+    // auto rooms: "Picked by Jev · 94%" under the chosen speaker's reply
+    if (pickedByJev !== undefined) {
+      const p = document.createElement('div')
+      p.className = 'hr-picked'
+      p.textContent = `Picked by Jev · ${Math.round(pickedByJev * 100)}%`
+      div.appendChild(p)
+    }
+
     this.logEl.appendChild(div)
     this.logEl.scrollTop = this.logEl.scrollHeight
   }
@@ -260,6 +357,7 @@ export class Panel {
 
       for (let i = 0; i < e.results.length; i++) {text += e.results[i]![0]!.transcript}
       this.input.value = text
+      this.syncMirror()
     }
 
     rec.onerror = (e?: { error?: string }) => {
@@ -281,16 +379,41 @@ export class Panel {
 
   close() {
     this.rec?.abort()
+
+    for (const t of this.typingTimers.values()) {clearInterval(t)}
+    this.typingTimers.clear()
     this.el.remove()
     this.hooks.onClose()
   }
 }
 
+function roomMsgRow(msg: RoomMsg, botName: (id: string) => string) {
+  return {
+    who: msg.author === 'user' ? 'You' : msg.author === 'system' ? 'system' : botName(msg.author),
+    text: msg.text,
+    kind: (msg.author === 'user' ? 'user' : msg.author === 'system' ? 'sys' : 'bot') as 'user' | 'bot' | 'sys',
+    pickedByJev: msg.pickedByJev,
+  }
+}
+
 export function roomMsgToPanel(panel: Panel, msg: RoomMsg, botName: (id: string) => string) {
-  const who = msg.author === 'user' ? 'You' : msg.author === 'system' ? 'system' : botName(msg.author)
-  panel.addMsg(who, msg.text, msg.author === 'user' ? 'user' : msg.author === 'system' ? 'sys' : 'bot')
+  const row = roomMsgRow(msg, botName)
+  panel.addMsg(row.who, row.text, row.kind, row.pickedByJev)
+}
+
+/** Buffer a room message into the persistent log while its panel is closed,
+ *  so the unread badge isn't a dead end — reopening replays the gap. */
+export function bufferRoomMsg(roomId: string, msg: RoomMsg, botName: (id: string) => string) {
+  const list = logs.get(roomId) ?? []
+  list.push(roomMsgRow(msg, botName))
+
+  if (list.length > 200) {list.shift()}
+  logs.set(roomId, list)
 }
 
 export function botAvatarUrl(bot: Bot): string {
-  return faceDataUrl(bot.name, 48)
+  // Seed from the bot's NAME (profile/system-prompt key), not `harness:id` —
+  // that's what makes 'default'/'main' profiles the ink+lime chief-of-staff
+  // and keeps a bot's face identical across harnesses.
+  return bopAvatarUrl(bot.ref || bot.name, bot.color, bot.status === 'working' ? 'awake' : 'idle')
 }

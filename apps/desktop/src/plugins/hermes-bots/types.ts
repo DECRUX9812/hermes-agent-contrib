@@ -408,7 +408,7 @@ export interface AvatarAppearance {
    *  always been nullable in practice; `avatarColor` is what resolves it. */
   color: null | string
   image: null | string
-  /** Free-form: a bare shape, `sigil-<n>`, a platonic solid, or `blobatar:<seed>:<kind>`. */
+  /** Free-form: a bare shape, `sigil-<n>`, a platonic solid, `blobatar:<seed>:<kind>`, or `bop[:<seed>]`. */
   shape: string
 }
 

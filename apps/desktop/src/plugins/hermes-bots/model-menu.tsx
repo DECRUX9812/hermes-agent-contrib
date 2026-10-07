@@ -34,7 +34,6 @@ import {
   host,
   useQuery
 } from '@hermes/plugin-sdk'
-import type { ElementType } from 'react'
 
 import { useBots } from './i18n'
 import { providerModelIds, useModelOptions } from './model-picker'
@@ -49,14 +48,20 @@ interface BotModelCurrentResult {
 }
 
 /** The menu primitives a render of the items runs on — ContextMenu for the
- *  roster row submenu, DropdownMenu for the header chip's dropdown. */
+ *  roster row submenu, DropdownMenu for the header chip's dropdown. The two
+ *  Radix roots share their item/sub prop surface, so each slot is the union
+ *  of both wrappers. */
+// Radix ContextMenu/DropdownMenu primitives share their item/sub prop surface,
+// but JSX can't infer props through a union of component types (collapses to
+// never via the react-three/fiber JSX augmentation). ComponentType<any> keeps
+// the slots renderable; the two kits are structurally compatible.
 export interface BotModelMenuKit {
-  CheckboxItem: ElementType
-  Item: ElementType
-  Separator: ElementType
-  Sub: ElementType
-  SubContent: ElementType
-  SubTrigger: ElementType
+  CheckboxItem: React.ComponentType<any>
+  Item: React.ComponentType<any>
+  Separator: React.ComponentType<any>
+  Sub: React.ComponentType<any>
+  SubContent: React.ComponentType<any>
+  SubTrigger: React.ComponentType<any>
 }
 
 const CONTEXT_MENU_KIT: BotModelMenuKit = {

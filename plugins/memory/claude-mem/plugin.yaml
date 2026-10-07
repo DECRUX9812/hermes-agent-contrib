@@ -1,0 +1,3 @@
+name: claude-mem
+version: 1.0.0
+description: "claude-mem — local-first persistent memory via the claude-mem worker (SQLite + vector search). No cloud, no API keys."

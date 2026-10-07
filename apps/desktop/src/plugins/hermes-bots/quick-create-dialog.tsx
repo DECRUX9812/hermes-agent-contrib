@@ -27,7 +27,7 @@ import {
 } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
-import { avatarColor, blobatarSvg, blobShapeString, BotFace } from './avatar'
+import { avatarColor, blobShapeString, BotFace } from './avatar'
 import { AvatarPicker } from './avatar-picker'
 import { type BotStarter, QUICK_STARTERS, starterDraft } from './bot-starters'
 import type { BotTemplateId } from './bot-templates'
@@ -70,7 +70,7 @@ export function QuickCreateDialog({
   const [starters, setStarters] = useState<string[]>([])
   const [templateId, setTemplateId] = useState<null | string>(null)
   const [preset, setPreset] = useState<BotTemplateId>('custom')
-  const [shape, setShape] = useState(blobatarSvg ? 'blobatar' : 'circle')
+  const [shape, setShape] = useState('bop')
   const [color, setColor] = useState<null | string>(null)
   const [image, setImage] = useState<null | string>(null)
   const [busy, setBusy] = useState(false)
