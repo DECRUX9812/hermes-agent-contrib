@@ -8,7 +8,8 @@
     "build": "node esbuild.config.mjs",
     "dev": "node esbuild.config.mjs --watch",
     "typecheck": "tsc -p . --noEmit",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "check": "npm run typecheck && npm run lint"
   },
   "dependencies": {
     "blobatar": "2.0.0",
