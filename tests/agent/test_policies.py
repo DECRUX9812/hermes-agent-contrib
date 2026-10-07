@@ -90,6 +90,13 @@ def test_retry_loop_catches_alternating_cycle():
     assert trip is not None and trip.policy == "retry_loop"
 
 
+def test_retry_loop_window_resets_at_user_message():
+    """A trip in one turn must not block the next prompt before its first API call."""
+    agent = _agent(_resolved_policies=AgentPolicies(None, 6))
+    history = _calls("read_file", {"path": "/x"}, 6) + [{"role": "user", "content": "continue"}]
+    assert evaluate(agent, history) is None
+
+
 def test_evaluate_is_read_only_and_resolves_once():
     """No message mutation (cache invariant); resolution caches per agent."""
     messages = _calls("t", {}, 7)
