@@ -217,23 +217,26 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
   { as = 'span', className, children, ...props },
   ref
 ) {
+  // createElement, not JSX: a bare `ElementType` union resolves its props to
+  // `never` under @types/react 19.x JSX checking.
   const Comp = as as React.ElementType
 
-  return (
-    <Comp
-      className="flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2"
-      ref={ref}
-      {...props}
+  return React.createElement(
+    Comp,
+    {
+      className:
+        'flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2',
+      ref,
+      ...props
+    },
+    <span
+      className={cn(
+        'ui-tab-label block min-w-0 truncate font-medium group-data-[closeable]/tab:text-clip',
+        className
+      )}
     >
-      <span
-        className={cn(
-          'ui-tab-label block min-w-0 truncate font-medium group-data-[closeable]/tab:text-clip',
-          className
-        )}
-      >
-        {children}
-      </span>
-    </Comp>
+      {children}
+    </span>
   )
 })
 

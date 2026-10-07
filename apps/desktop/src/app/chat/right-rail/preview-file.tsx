@@ -7,7 +7,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   ReactNode
 } from 'react'
-import { createContext, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, createElement, Fragment, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { defaultRehypePlugins, defaultRemarkPlugins, Streamdown } from 'streamdown'
 
 import { getApiRequestConnection } from '@/api/client'
@@ -353,7 +353,7 @@ function tagged<T extends keyof typeof MD_TAG_CLASSES>(Tag: T) {
   const Component = (({ className, ...rest }: ComponentProps<T>) => {
     const Element = Tag as React.ElementType
 
-    return <Element className={cn(base, className)} {...rest} />
+    return createElement(Element, { className: cn(base, className), ...rest })
   }) as React.FC<ComponentProps<T>>
 
   Component.displayName = `Md.${Tag}`

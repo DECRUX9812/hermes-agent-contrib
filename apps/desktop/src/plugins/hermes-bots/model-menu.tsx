@@ -34,7 +34,7 @@ import {
   host,
   useQuery
 } from '@hermes/plugin-sdk'
-import type { ElementType } from 'react'
+import type { ComponentType } from 'react'
 
 import { useBots } from './i18n'
 import { providerModelIds, useModelOptions } from './model-picker'
@@ -51,12 +51,14 @@ interface BotModelCurrentResult {
 /** The menu primitives a render of the items runs on — ContextMenu for the
  *  roster row submenu, DropdownMenu for the header chip's dropdown. */
 export interface BotModelMenuKit {
-  CheckboxItem: ElementType
-  Item: ElementType
-  Separator: ElementType
-  Sub: ElementType
-  SubContent: ElementType
-  SubTrigger: ElementType
+  // `ComponentType<any>` over `ElementType`: a bare ElementType unions every
+  // intrinsic tag and resolves props to `never` under @types/react 19.x.
+  CheckboxItem: ComponentType<any>
+  Item: ComponentType<any>
+  Separator: ComponentType<any>
+  Sub: ComponentType<any>
+  SubContent: ComponentType<any>
+  SubTrigger: ComponentType<any>
 }
 
 const CONTEXT_MENU_KIT: BotModelMenuKit = {
