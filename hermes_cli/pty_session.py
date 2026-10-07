@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import threading
 import time
+from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple
 
 WS_CLOSE_PROCESS_EXITED = 4410
@@ -66,9 +67,11 @@ def _key_segments(key: str) -> tuple[str, str]:
 
 
 class PtySession:
-    def __init__(self, key: str, bridge, *, buffer_cap: int, read_timeout: float) -> None:
+    def __init__(self, key: str, bridge, *, buffer_cap: int, read_timeout: float, active_session_file: Optional[Path] = None) -> None:
         self.key = key
         self.bridge = bridge
+        self.active_session_file = active_session_file
+        self.active_session_cleanup: Optional[Callable[[], None]] = None
         self.buffer = RingBuffer(buffer_cap)
         self.alive = True
         self.attached = False
@@ -278,8 +281,19 @@ class PtySession:
             # bridge.close() joins the child — blocking; keep it off the event loop.
             # See #53227.
             await asyncio.to_thread(self.bridge.close)
-        except Exception:
+        except Exception:  # health: allow BLE001 S110 -- teardown of an already-dead PTY must not mask the caller's error path
             pass
+        try:
+            if self.active_session_file is not None:
+                self.active_session_file.unlink(missing_ok=True)
+        except OSError:
+            pass
+        if self.active_session_cleanup is not None:
+            try:
+                self.active_session_cleanup()
+            except Exception:  # health: allow BLE001 S110 -- cleanup callback must not mask the close path; the PTY is dead either way
+                pass
+            self.active_session_cleanup = None
 
 
 class RegistryFull(Exception):
@@ -314,12 +328,14 @@ class PtySessionRegistry:
         # Retain ownership of removed sessions until helper-process shutdown completes.
         self._background_closes: set[asyncio.Task] = set()
 
-    async def attach_or_spawn(self, key: str, *, spawn: Callable[[], object]) -> Tuple[PtySession, bool]:
+    async def attach_or_spawn(self, key: str, *, spawn: Callable[[], object], active_session_file: Optional[Path] = None) -> Tuple[PtySession, bool]:
         # Reserve capacity and the key across blocking fork/exec. On cancellation
         # the registry, not the request's cancellation scope, owns that reservation
         # until the admission finishes and any unclaimed child has been closed.
         await self._spawn_lock.acquire()
-        admission = asyncio.create_task(self._attach_or_spawn(key, spawn=spawn))
+        admission = asyncio.create_task(
+            self._attach_or_spawn(key, spawn=spawn, active_session_file=active_session_file)
+        )
         try:
             # wait() leaves admission running on caller cancellation without
             # shield() reporting its late exception (Python 3.14). The registry's
@@ -352,7 +368,9 @@ class PtySessionRegistry:
         finally:
             self._spawn_lock.release()
 
-    async def _attach_or_spawn(self, key: str, *, spawn: Callable[[], object]) -> Tuple[PtySession, bool]:
+    async def _attach_or_spawn(
+        self, key: str, *, spawn: Callable[[], object], active_session_file: Optional[Path] = None,
+    ) -> Tuple[PtySession, bool]:
         if self._closed:
             raise RegistryFull("Terminal service is shutting down.")
         await self.reap_idle()
@@ -360,6 +378,8 @@ class PtySessionRegistry:
         if existing is not None and existing.alive:
             return existing, False
         if existing is not None:                       # dead remnant
+            # Close in the background: ending a dead leader's helpers can take the helper
+            # grace, and the spawn lock serializes every new chat.
             self._sessions.pop(key, None)
             self._close_in_background(existing)
         if len(self._sessions) >= self._max:
@@ -367,7 +387,13 @@ class PtySessionRegistry:
         # PTY spawn does blocking fork/exec work — keep it off the event loop.
         # See #53227.
         bridge = await asyncio.to_thread(spawn)
-        session = PtySession(key, bridge, buffer_cap=self._buffer_cap, read_timeout=self._read_timeout)
+        session = PtySession(
+            key,
+            bridge,
+            buffer_cap=self._buffer_cap,
+            read_timeout=self._read_timeout,
+            active_session_file=active_session_file,
+        )
         await session.start()
         self._sessions[key] = session
         return session, True

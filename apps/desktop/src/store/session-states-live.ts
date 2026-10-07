@@ -9,15 +9,20 @@ import type { SessionInfo } from '@/types/hermes'
 import { adoptPendingRuntimeTabs, rekeyPreviewTabsSession } from './preview'
 import { forgetPendingRuntimeTabs } from './preview-ownership'
 import { clearAllProviderWaits, clearSessionProviderWait } from './provider-wait'
+import { $projectTree } from ./project-tree
 import {
   $activeSessionId,
+  $cronSessions,
   $currentCwd,
   $lastReadAtBySessionId,
+  $messagingSessions,
   $selectedStoredSessionId,
   $sessions,
+  $unlistedSessionOwnerRows,
   $workspaceCwdOwner,
   clearReadBaseline,
   lineageAliases,
+  ownerLookupSessionRows,
   sessionMatchesStoredId,
   setActiveSessionStoredIdRotation,
   setAwaitingResponse,
@@ -297,7 +302,7 @@ function withNoReplyNotice(messages: ChatMessage[]): ChatMessage[] {
  *  user started meanwhile is either live (skipped) or has its own reply. */
 function markTurnWithoutReply(runtimeId: string) {
   writeSessionState(runtimeId, state =>
-    isLiveTurnAwaitingEvents(state) || turnHasReply(state.messages)
+    state.interrupted || isLiveTurnAwaitingEvents(state) || turnHasReply(state.messages)
       ? state
       : { ...state, messages: withNoReplyNotice(state.messages) }
   )
@@ -917,10 +922,42 @@ export const $focusedSessionState = computed([$focusedRuntimeId, $sessionStates]
   runtimeId ? states[runtimeId] : undefined
 )
 
+/** The best cached row for a stored session id, across every slice the sidebar
+ *  has loaded (#76535): the owner-lookup rows (recents + cron + messaging +
+ *  unlisted-draft/hidden stubs) and the project tree (a tile's session is
+ *  often older than the paginated recents page, so the tree is the only
+ *  loaded copy). Never a by-id fetch — a computed must stay synchronous. */
+function focusedSessionRow(storedSessionId: string): SessionInfo | undefined {
+  return (
+    ownerLookupSessionRows().find(s => sessionMatchesStoredId(s, storedSessionId)) ??
+    $projectTree
+      .get()
+      .flatMap(project => [
+        ...(project.previewSessions ?? []),
+        ...project.repos.flatMap(repo => repo.groups.flatMap(group => group.sessions))
+      ])
+      .find(s => sessionMatchesStoredId(s, storedSessionId))
+  )
+}
+
 /** The workspace CWD of the currently focused session (the focused tile's cwd,
  *  else the primary session's confirmed workspace cwd, with fallback to historical session cwd). */
 export const $focusedWorkspaceCwd = computed(
-  [$focusedStoredSessionId, $selectedStoredSessionId, $focusedSessionState, $sessions, $currentCwd, $workspaceCwdOwner],
+  [
+    $focusedStoredSessionId,
+    $selectedStoredSessionId,
+    $focusedSessionState,
+    $sessions,
+    $currentCwd,
+    $workspaceCwdOwner,
+    $unlistedSessionOwnerRows,
+    $projectTree,
+    // focusedSessionRow reads the cron/messaging slices through the owner
+    // lookup; listing them keeps a cron/messaging row landing reactive without
+    // reading them eagerly in the computed body.
+    $cronSessions,
+    $messagingSessions
+  ],
   (
     focusedStoredId,
     selectedStoredId,
@@ -935,6 +972,7 @@ export const $focusedWorkspaceCwd = computed(
       const tileCwd = (
         focusedSessionState?.cwd ||
         sessions.find(s => sessionMatchesStoredId(s, focusedStoredId))?.cwd ||
+        focusedSessionRow(focusedStoredId)?.cwd ||
         ''
       ).trim()
 
@@ -951,6 +989,7 @@ export const $focusedWorkspaceCwd = computed(
       const fallbackCwd = (
         focusedSessionState?.cwd ||
         sessions.find(s => sessionMatchesStoredId(s, selectedStoredId))?.cwd ||
+        focusedSessionRow(selectedStoredId)?.cwd ||
         ''
       ).trim()
 

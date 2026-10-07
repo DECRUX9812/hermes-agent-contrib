@@ -87,6 +87,7 @@ test.skipIf(!powershell)('the Windows remote marker judge agrees with every corp
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+  // pwsh cold start alone can take seconds on a loaded runner.
 }, 30_000)
 
 // A dead claim whose checkout lock is still flocked (a killed updater's completion

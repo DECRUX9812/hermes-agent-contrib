@@ -80,7 +80,10 @@ function viewAllProfiles(on = true) {
 beforeEach(() => {
   vi.clearAllMocks()
   $activeGatewayProfile.set('default')
-  viewAllProfiles(false)
+  // A real all-profiles window: the hidden single-profile preference never
+  // counts as the effective scope (see projects.test.ts).
+  $profiles.set([{ is_default: true, name: 'default' } as never, { is_default: false, name: 'coder' } as never])
+  setShowAllProfiles(false)
   $sessions.set([])
   $projectTree.set([])
   selectConnection('home')

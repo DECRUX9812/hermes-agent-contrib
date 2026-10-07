@@ -149,6 +149,7 @@ import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
 import { continueInHermesCli } from '../right-sidebar/terminal/hermes-cli'
 import { terminalPaletteToggle } from '../right-sidebar/terminal/reveal-focus'
 import { $workspaceIsPage, WORKSPACE_PAGE_HEADER_AREA } from '../routes'
+import { Butterbar } from '../shell/butterbar'
 
 import { BASIC_TREE, DEFAULT_TREE, registerLayoutPresets } from './layout-presets'
 import { bindLayoutSides } from './layout-sides'
@@ -1111,6 +1112,9 @@ export function ContribController() {
               statusBar.left/right contributions merged in. Unmounted — not
               just hidden — while toggled off, so its 15s status poll and the
               per-turn readouts stop with it. */}
+          {/* Notices registered through `registerButterbar` / `useButterbar`;
+              renders nothing while none are registered. */}
+          <Butterbar />
           {statusbarVisible && <WiredPane part="statusbar" />}
         </div>
       </ContribWiring>

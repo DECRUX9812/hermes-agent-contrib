@@ -1018,7 +1018,9 @@ def _attach_to_host_backend(args) -> None:
     except Exception:
         profile = "default"
     wanted = getattr(args, "open_profile", "") or profile
-    url = f"http://{hr.dial_host(record)}:{record.port}/?profile={wanted}"
+    from hermes_cli.url_utils import format_url_host
+
+    url = f"http://{format_url_host(hr.dial_host(record))}:{record.port}/?profile={wanted}"
 
     kind = "backend" if headless else surface
     print(f"Hermes {kind} already running on this host: PID {record.pid}, port {record.port}.")

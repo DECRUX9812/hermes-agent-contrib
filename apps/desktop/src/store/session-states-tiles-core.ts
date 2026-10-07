@@ -16,12 +16,11 @@ import {
   ownerLookupSessionRows
 } from './session'
 import { $focusedSessionIsTile, $focusedStoredSessionId, TILE_PANE_PREFIX } from './session-focus'
+import { sweepSessionOwnerHolds } from './session-owner-holds'
 import { isSessionOwnerRoute, type SessionOwnerRoute, type SessionOwnerScope } from './session-request-router'
 import {
-  forgetSessionOwnerHold,
   ownerProfileKey,
   sameSessionOwner,
-  sessionOwnerHolds,
   sessionScopeByRuntimeId,
   windowRouteSessionId
 } from './session-states-owners'
@@ -103,24 +102,7 @@ export function foregroundSessionScopes(): Set<string> {
   // Create → foreground holds. A hold whose scope the rungs above already
   // name (the runtime's event scope once selected, a mounted tile's route) is
   // covered and retires; an expired one retires too.
-  const now = Date.now()
-
-  for (const [storedSessionId, hold] of [...sessionOwnerHolds]) {
-    const scope =
-      typeof hold.owner === 'string'
-        ? normalizeProfileKey(hold.owner)
-        : hold.owner?.connectionId?.trim()
-          ? registryBackendScopeKey(hold.owner.connectionId.trim(), normalizeProfileKey(hold.owner.profile))
-          : null
-
-    if (!scope || hold.until <= now || scopes.has(scope)) {
-      // This recompute was already triggered by the covering publication (or
-      // is itself observing expiry), so avoid recursively publishing.
-      forgetSessionOwnerHold(storedSessionId, false)
-
-      continue
-    }
-
+  for (const scope of sweepSessionOwnerHolds(scopes)) {
     scopes.add(scope)
   }
 
