@@ -255,7 +255,9 @@ code, pre, .hr-mono { font-family: 'Geist Mono', 'SF Mono', ui-monospace, Menlo,
 /* ── room tray — paper pill ── */
 .hr-tray {
   position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
-  z-index: 2147483641; display: flex; align-items: center; gap: 6px;
+  /* Above .hr-panel (…3644): an open room panel must never cover its own
+     chip — the relay-mode picker lives on it. */
+  z-index: 2147483645; display: flex; align-items: center; gap: 6px;
   padding: 6px; pointer-events: auto;
   background: var(--card); border: 1px solid var(--hairline);
   border-radius: 999px; box-shadow: var(--card-shadow);
