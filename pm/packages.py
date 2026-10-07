@@ -902,7 +902,12 @@ class CuaDriver(BinaryPackage):
         )
 
     def latest_versions(self, target: str, locked=None) -> list[str]:
-        return github_release_tags("trycua/cua", strip_prefix="cua-driver-rs-v")
+        return github_release_tags("trycua/cua", strip_prefix="cua-driver-rs-v", allow_prereleases=True)
+
+    def known_sha256(self, version: str, url: str) -> Optional[str]:
+        return _github_release_digests("trycua/cua", f"cua-driver-rs-v{version}").get(
+            url.rsplit("/", 1)[-1]
+        )
 
     def stage(self, store: Store, staged: Path, version: str, target: str) -> None:
         flatten_single_dir(staged)

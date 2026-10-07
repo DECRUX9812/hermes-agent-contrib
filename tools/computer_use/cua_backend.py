@@ -69,6 +69,17 @@ def _cua_telemetry_disabled() -> bool:
     """True unless ``computer_use.cua_telemetry`` opts in (unreadable config fails SAFE toward disabling)."""
     return not bool(_computer_use_cfg().get("cua_telemetry", False))
 
+def _cua_cursor_motion_style() -> Optional[str]:
+    """Optional cursor motion style from computer_use config (e.g. 'magnetic', 'spring_settle')."""
+    cfg = _computer_use_cfg()
+    style = cfg.get("cursor_style") or cfg.get("cursor_motion_style")
+    if isinstance(style, str) and style.strip():
+        return style.strip()
+    motion = cfg.get("cursor_motion")
+    if isinstance(motion, dict) and motion.get("style"):
+        return str(motion["style"]).strip()
+    return None
+
 def _cua_configured_permission_mode() -> str:
     """``computer_use.permission_mode``: ``standard`` (default) or ``bounded``; unknown values fall closed to
     ``standard``. ``unrestricted`` is deliberately NOT a config value — it stays tied to the per-session YOLO
@@ -314,8 +325,12 @@ class CuaDriverBackend(_CaptureMixin, _InputMixin, ComputerUseBackend):
             self._session.start()
             rollback.pop_all()
         # Declare this run's identity. Non-fatal: cua-driver accepts anonymous calls (cursor won't render), so degrade.
+        start_payload: Dict[str, Any] = {"session": self._session_id}
+        cursor_style = _cua_cursor_motion_style()
+        if cursor_style:
+            start_payload["cursor_motion"] = {"style": cursor_style}
         self._best_effort("start_session failed (continuing anonymous)",
-                          self._session.call_tool, "start_session", {"session": self._session_id})
+                          self._session.call_tool, "start_session", start_payload)
         # Post-handshake tuning guards on `_started`: before the handshake flips it, call_tool would re-enter
         # session.start() (stubbed start() recurses).
         if self._session._started:
@@ -389,6 +404,11 @@ class CuaDriverBackend(_CaptureMixin, _InputMixin, ComputerUseBackend):
         """Toggle the agent cursor overlay's visibility for this run."""
         return self._action("set_agent_cursor_enabled",
                             {"enabled": bool(enabled), **({"cursor_id": cursor_id} if cursor_id else {})})
+
+    def set_agent_cursor_motion(self, style: str, **kwargs: Any) -> ActionResult:
+        """Configure the agent cursor motion style (e.g. 'magnetic', 'spring_settle')."""
+        payload = {"style": str(style), **kwargs}
+        return self._action("set_agent_cursor_motion", payload)
 
     def set_config(self, **config) -> ActionResult:
         """Set cua-driver config keys (e.g. ``max_image_dimension``); unknown keys pass through — cua-driver validates."""
