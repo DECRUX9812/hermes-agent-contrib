@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "Hermes",
+    "slug": "hermes-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "to.agentmail.hermes",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Scan a pairing code to link the app to your Hermes desktop instance.",
+        "NSMicrophoneUsageDescription": "Voice input for chat messages."
+      }
+    },
+    "android": {
+      "package": "to.agentmail.hermes",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ],
+    "extra": {
+      "gatewayUrl": "",
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}

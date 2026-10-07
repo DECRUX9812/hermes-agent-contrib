@@ -328,3 +328,5 @@ apps/desktop/.dist-build*
 
 # Devin demo-kit render outputs (regenerate via docs/demo-kit/*/render)
 renders/
+
+.expo/
