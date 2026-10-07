@@ -5,6 +5,7 @@ import { UpdateStatusCard, VersionHero } from '@/components/update-status'
 import { VersionDetails } from '@/components/version-details'
 import { useI18n } from '@/i18n'
 import { RefreshCw } from '@/lib/icons'
+import { isBrowserHostedDesktop } from '@/lib/platform'
 import { $connection } from '@/store/session'
 import { $desktopVersion, checkBackendUpdates, refreshDesktopVersion } from '@/store/updates'
 
@@ -40,15 +41,16 @@ function AppUpdatesSettings({ includeUninstall }: AppUpdatesSettingsProps): Reac
   const version = useStore($desktopVersion)
   const connection = useStore($connection)
   const remote = connection?.mode === 'remote'
+  const browserHosted = isBrowserHostedDesktop()
 
   // Refresh the running version when About opens or the active gateway changes.
   useEffect((): void => {
     void refreshDesktopVersion()
 
-    if (remote) {
+    if (remote || browserHosted) {
       void checkBackendUpdates()
     }
-  }, [connection, remote])
+  }, [connection, remote, browserHosted])
 
   return (
     <SettingsContent>
@@ -56,12 +58,12 @@ function AppUpdatesSettings({ includeUninstall }: AppUpdatesSettingsProps): Reac
       <div className="mx-auto mt-4 w-full max-w-2xl">
         <SectionHeading icon={RefreshCw} title={t.settings.about.updates} />
         <div className="grid gap-3" id={settingElementId(SETTING_IDS.about.updates)}>
-          <UpdateStatusCard target="client" />
-          {/* Client and remote backend updates are independent. Only the client has release notes. */}
-          {remote && <UpdateStatusCard showReleaseNotes={false} target="backend" />}
+          {!browserHosted && <UpdateStatusCard target="client" />}
+          {/* Client and remote backend updates are independent. In browser-hosted mode, backend has the release notes. */}
+          {(remote || browserHosted) && <UpdateStatusCard showReleaseNotes={browserHosted} target="backend" />}
         </div>
         {version && <VersionDetails version={version} />}
-        {includeUninstall && <UninstallSection />}
+        {includeUninstall && !browserHosted && <UninstallSection />}
       </div>
     </SettingsContent>
   )
