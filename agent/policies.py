@@ -108,9 +108,15 @@ def _tool_call_signature(call: dict) -> str:
 
 
 def _recent_tool_call_signatures(messages: list, limit: int) -> list[str]:
-    """Trailing ``limit`` tool-call signatures from the live message list."""
+    """Trailing ``limit`` tool-call signatures since the latest user message.
+
+    The window stops at a user row: a fresh prompt is not a retry, and scanning past it
+    let one trip re-fire before every later turn's first API call, wedging the session.
+    """
     sigs: list[str] = []
     for msg in reversed(messages or []):
+        if (msg or {}).get("role") == "user":
+            break
         for call in reversed((msg or {}).get("tool_calls") or []):
             sigs.append(_tool_call_signature(call))
             if len(sigs) >= limit:
