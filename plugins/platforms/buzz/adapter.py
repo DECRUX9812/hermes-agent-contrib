@@ -438,6 +438,25 @@ def _cli_error_message(stderr: str, returncode: int, *, redact_path: Optional[Pa
     return _bounded_cli_message(text or f"buzz CLI failed with exit code {returncode}", redact_path)
 
 
+def _cli_failure_retryable(returncode: int, stderr: str = "") -> bool:
+    """Whether a failed buzz CLI call must be queued for reconnect retry.
+
+    Exit 2 is the CLI's transient/network class. A remote ``auth_error`` — the relay's
+    ``403 relay_membership_required`` being the observed case — is relay-side state that
+    can change while the gateway runs (membership granted, relay policy restored), so it
+    has to stay queued instead of parking the platform fatal: at startup a non-retryable
+    failure with nothing else connected routes into the fatal path and exits the WHOLE
+    gateway with EX_CONFIG (78), which under RestartPreventExitStatus=78 leaves every
+    other platform and session dead until a human restarts it. Local config problems
+    (missing URL / key / binary) are decided before any CLI call runs and remain
+    non-retryable there.
+    """
+    if returncode == 2:
+        return True
+    data = _json_or((stderr or "").strip(), None)
+    return isinstance(data, dict) and str(data.get("error") or "").strip().lower() == "auth_error"
+
+
 def _parse_send_receipt(stdout: str) -> Tuple[Optional[str], Optional[str]]:
     """Validate the buzz-cli success receipt and return ``(event_id, error)``."""
     data = _json_or(stdout, None)
@@ -631,7 +650,7 @@ class BuzzAdapter(BasePlatformAdapter):
             message = _cli_error_message(err, code)
             return self._connect_failed(
                 "connect_failed", message, "Buzz: failed to fetch own profile from %s — %s",
-                self.relay_url, message, retryable=code == 2,
+                self.relay_url, message, retryable=_cli_failure_retryable(code, err),
             )
         profiles = _parse_json_list(out)
         if not profiles or not profiles[0].get("pubkey"):
@@ -651,7 +670,8 @@ class BuzzAdapter(BasePlatformAdapter):
         if code != 0:
             message = _cli_error_message(err, code)
             return self._connect_failed(
-                "connect_failed", message, "Buzz: failed to list channels — %s", message, retryable=code == 2
+                "connect_failed", message, "Buzz: failed to list channels — %s", message,
+                retryable=_cli_failure_retryable(code, err)
             )
         self._channel_names = {}
         for ch in _parse_json_list(out):
