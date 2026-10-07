@@ -2728,6 +2728,110 @@ describe('resumeSession failure recovery', () => {
   })
 })
 
+// ── The router landing ON the resumed session is not a switch away from it ────
+// fork.ts (and every routed create) navigates to the child and calls
+// resumeSession in the SAME tick, so `getRouteToken()` still reads the
+// pre-navigation route at entry while the ref only catches up a render later.
+// The token shape is `${pathname}:${search}:${hash}`, i.e. `/id::` for a plain
+// chat route.
+describe('resumeSession re-home race (navigate + resume in one tick)', () => {
+  afterEach(() => {
+    cleanup()
+    setActiveSessionId(null)
+    setSelectedStoredSessionId(null)
+    setMessages([])
+    setSessions([])
+    vi.restoreAllMocks()
+  })
+
+  async function startResume(
+    routeToken: () => string,
+    requestGateway: <T>(method: string, params?: Record<string, unknown>) => Promise<T>
+  ) {
+    let resume: ((storedSessionId: string, replaceRoute?: boolean) => Promise<unknown>) | null = null
+    render(
+      <ResumeHarness
+        getRouteToken={routeToken}
+        onReady={r => (resume = r)}
+        requestGateway={requestGateway}
+        selectedStoredSessionId="stored-1"
+      />
+    )
+    await waitFor(() => expect(resume).not.toBeNull())
+
+    return resume!
+  }
+
+  it('keeps the resume when the route lands on the session being resumed mid-flight', async () => {
+    let routeToken = '/stored-parent::'
+
+    const requestGateway = vi.fn(async (method: string) => {
+      if (method === 'session.resume') {
+        return {
+          info: {},
+          message_count: 0,
+          messages: [],
+          resumed: 'stored-1',
+          session_id: 'runtime-1',
+          session_key: 'stored-1'
+        } as never
+      }
+
+      return {} as never
+    })
+
+    setSessions([storedSession({ id: 'stored-1' })])
+    vi.mocked(getLatestSessionMessages).mockResolvedValue({ messages: [], session_id: 'stored-1' } as never)
+
+    const resume = await startResume(() => routeToken, requestGateway)
+
+    let pending!: Promise<unknown>
+    act(() => {
+      pending = resume('stored-1')
+    })
+
+    // The navigate() that shipped with this resume commits its render now.
+    routeToken = '/stored-1::'
+
+    await act(async () => {
+      await pending
+    })
+
+    // Abandoning here left the branch child on its loader forever with no
+    // session.resume ever sent.
+    expect(requestGateway).toHaveBeenCalledWith('session.resume', expect.anything())
+    expect($selectedStoredSessionId.get()).toBe('stored-1')
+    expect($activeSessionId.get()).toBe('runtime-1')
+  })
+
+  it('still abandons the resume when the route lands on a different chat mid-flight', async () => {
+    let routeToken = '/stored-parent::'
+
+    const requestGateway = vi.fn(async () => ({}) as never)
+
+    setSessions([storedSession({ id: 'stored-1' })])
+    vi.mocked(getLatestSessionMessages).mockResolvedValue({ messages: [], session_id: 'stored-1' } as never)
+
+    const resume = await startResume(() => routeToken, requestGateway)
+
+    let pending!: Promise<unknown>
+    act(() => {
+      pending = resume('stored-1')
+    })
+
+    // A genuine switch away must still win.
+    routeToken = '/stored-elsewhere::'
+
+    await act(async () => {
+      await pending
+    })
+
+    expect(requestGateway).not.toHaveBeenCalledWith('session.resume', expect.anything())
+    // No resume landed: the view is not bound to the abandoned session's runtime.
+    expect($activeSessionId.get()).toBeNull()
+  })
+})
+
 describe('session.resume turn timer contract', () => {
   beforeEach(() => {
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback: FrameRequestCallback) => {

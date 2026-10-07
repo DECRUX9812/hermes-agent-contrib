@@ -68,6 +68,7 @@ import { isWatchWindow } from '@/store/windows'
 import type { SessionMessage, SessionMessagesResponse, SessionResumeResult, UsageStats } from '@/types/hermes'
 
 import type { ClientSessionState } from '../../../types'
+import { routeTargetFromToken } from '../session-context-drift'
 import { singleFlightSessionResume } from '../use-prompt-actions/single-flight-resume'
 
 import { sessionCreatedThisRun } from './created-this-run'
@@ -249,10 +250,20 @@ export function useResumeActions(
       resumeRequestRef.current = requestId
       const resumedSameSelectedSession = selectedStoredSessionIdRef.current === storedSessionId
 
+      // "Is this still the resume the view wants?" must not read our OWN
+      // re-home as a user switch: fork.ts and the routed creates navigate to the
+      // child and resume it in the SAME tick, so the token captured above is
+      // still the pre-navigation route while the router's `location` has already
+      // moved. The ref `getRouteToken` reads catches up one render later, so the
+      // raw-token equality alone failed the first check after an await and the
+      // branch child sat on its loader forever with no session.resume sent. A
+      // route that now targets the session being resumed is not a switch away
+      // from it — the same "a move TO the target is not drift" rule as
+      // session-context-drift's submitTargetStoredId.
       const isCurrentResume = () =>
         resumeRequestRef.current === requestId &&
         selectedStoredSessionIdRef.current === storedSessionId &&
-        getRouteToken() === routeToken
+        (getRouteToken() === routeToken || routeTargetFromToken(getRouteToken()) === storedSessionId)
 
       // A reconnect re-resumes the runtime this view is streaming. Let its
       // replay land while that runtime still owns the view. Otherwise the REST
