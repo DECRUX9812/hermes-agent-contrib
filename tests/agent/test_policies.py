@@ -60,6 +60,24 @@ def test_retry_loop_ignores_distinct_calls_and_sub_limit():
     assert evaluate(agent, _calls("read_file", {"path": "/x"}, 5)) is None
 
 
+def test_retry_loop_reads_openai_wire_shape():
+    """Persisted tool_calls nest args under ``function.arguments`` — the wire
+    shape the signature reader must match, or every call hashes as ``{}``."""
+    wire = [{"role": "assistant", "tool_calls": [
+        {"id": "c", "type": "function",
+         "function": {"name": "web_search", "arguments": '{"q": "same"}'}},
+    ]} for _ in range(6)]
+    agent = _agent(_resolved_policies=AgentPolicies(None, 6))
+    trip = evaluate(agent, wire)
+    assert trip is not None and trip.policy == "retry_loop"
+
+    distinct = [{"role": "assistant", "tool_calls": [
+        {"id": "c", "type": "function",
+         "function": {"name": "web_search", "arguments": f'{{"q": "x{i}"}}'}},
+    ]} for i in range(8)]
+    assert evaluate(agent, distinct) is None
+
+
 def test_retry_loop_catches_alternating_cycle():
     """A,B,A,B alternating calls still repeat one signature inside the window."""
     ab = [{"role": "assistant", "tool_calls": [

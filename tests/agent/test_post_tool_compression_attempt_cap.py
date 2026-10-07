@@ -33,7 +33,10 @@ def _tool_call(i: int):
     return SimpleNamespace(
         id=f"call_{i}",
         type="function",
-        function=SimpleNamespace(name="web_search", arguments='{"query": "x"}'),
+        # Distinct args per call: identical (name, args) repeats legitimately
+        # trip the retry-loop policy tripwire at 6 (agent/policies.py), which
+        # would halt the turn before the cap under test is even reached.
+        function=SimpleNamespace(name="web_search", arguments=f'{{"query": "x{i}"}}'),
     )
 
 
