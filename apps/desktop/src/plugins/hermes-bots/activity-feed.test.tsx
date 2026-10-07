@@ -23,7 +23,8 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
 })
 
 const { host } = await import('@hermes/plugin-sdk')
-const { activityDays, BotActivityFeed } = await import('./activity-feed')
+const { BotActivityFeed } = await import('./activity-feed')
+const { activityDays } = await import('./activity-days')
 const { activityNow } = await import('./activity-format')
 
 const $activity = host.state.focusedActivity as unknown as { set: (tasks: readonly ActivityTask[]) => void }

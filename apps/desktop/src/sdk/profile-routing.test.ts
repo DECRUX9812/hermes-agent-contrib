@@ -48,6 +48,7 @@ vi.mock('@/store/session', async () => {
     $selectedStoredSessionId: atom(null),
     $sessions: atom([]),
     $unreadFinishedSessionIds: atom([]),
+    $unlistedSessionOwnerRows: atom([]),
     $workspaceCwdOwner: atom(null),
     getSessionOwnerHint: vi.fn(() => undefined),
     knownSessionOwner: vi.fn(() => null),

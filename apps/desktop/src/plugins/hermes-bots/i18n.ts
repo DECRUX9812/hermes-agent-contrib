@@ -34,6 +34,13 @@ import type { ActivityVerb } from '@hermes/plugin-sdk'
 import { useMemo } from 'react'
 
 import { AVATAR_EN, AVATAR_JA, AVATAR_ZH, AVATAR_ZH_HANT, type AvatarMessages } from './avatar-i18n'
+import {
+  DELIVERABLES_EN,
+  DELIVERABLES_JA,
+  DELIVERABLES_ZH,
+  DELIVERABLES_ZH_HANT,
+  type DeliverablesMessages
+} from './deliverables-i18n'
 import { getPluginCtx } from './shared'
 
 type BotsMessages = {
@@ -629,11 +636,7 @@ type BotsMessages = {
     runOutput: string
   }
   /** B3 — the pane's per-bot artifact rail across all owned sessions. */
-  deliverables: {
-    title: string
-    empty: string
-    refresh: string
-  }
+  deliverables: DeliverablesMessages
   runs: {
     title: string
     empty: string
@@ -1363,11 +1366,7 @@ const en: BotsMessages = {
     runDone: 'Finished',
     runOutput: 'Script output'
   },
-  deliverables: {
-    title: 'Deliverables',
-    empty: 'No deliverables yet.',
-    refresh: 'Refresh'
-  },
+  deliverables: DELIVERABLES_EN,
   runs: {
     title: 'Runs',
     empty: 'No recent activity.',
@@ -2098,11 +2097,7 @@ const ja: BotsMessages = {
     runDone: '完了',
     runOutput: 'スクリプト出力'
   },
-  deliverables: {
-    title: '成果物',
-    empty: '成果物はまだありません。',
-    refresh: '更新'
-  },
+  deliverables: DELIVERABLES_JA,
   runs: {
     title: '実行',
     empty: '最近のアクティビティはありません。',
@@ -2816,11 +2811,7 @@ const zh: BotsMessages = {
     runDone: '已完成',
     runOutput: '脚本输出'
   },
-  deliverables: {
-    title: '交付物',
-    empty: '暂无交付物。',
-    refresh: '刷新'
-  },
+  deliverables: DELIVERABLES_ZH,
   runs: {
     title: '运行记录',
     empty: '暂无最近活动。',
@@ -3533,11 +3524,7 @@ const zhHant: BotsMessages = {
     runDone: '已完成',
     runOutput: '指令碼輸出'
   },
-  deliverables: {
-    title: '交付物',
-    empty: '暫無交付物。',
-    refresh: '重新整理'
-  },
+  deliverables: DELIVERABLES_ZH_HANT,
   runs: {
     title: '執行紀錄',
     empty: '沒有最近的活動。',

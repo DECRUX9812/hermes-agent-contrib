@@ -63,6 +63,23 @@ one-off at the call site.
 - **Projects own workspace cwd.** Use Sidebar → Projects for local folders and
   worktrees; do not reintroduce a per-session/right-sidebar folder-picker flow.
 
+### Bot workspace
+
+The context rail uses a compact, left-aligned identity header and four labeled
+tabs in a two-column track. Only the selected tab enters the document tab order;
+arrow keys move selection and focus, and Home/End select the endpoints. Activity
+requests sort by their timestamps and group by local calendar day, including DST
+boundaries. Bot cards expose one native chat button; model controls are siblings,
+never nested inside a chat click or keyboard target. Persona color belongs to the
+avatar, not decorative gradients or hardcoded alpha suffixes.
+
+Deliverables distinguish loading, empty, failed and unsupported states. A failed
+refresh retains the last successful results; switching owner hides prior results
+immediately and ignores stale completions. An unresolved remote owner must fail
+closed rather than fall through to the foreground connection. Team-list failures
+similarly remain failures, with a retry, while an unsupported team capability
+explains how to update. Deleting a team requires the shared confirmation dialog.
+
 Profile icons and condensed profile rows offer **Open in new window** and
 **Set as default** in their existing context menus. Opening a profile creates a
 full peer window without switching the source window. The desktop default

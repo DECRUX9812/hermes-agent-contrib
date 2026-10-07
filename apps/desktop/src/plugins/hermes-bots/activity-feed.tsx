@@ -20,6 +20,7 @@ import {
 } from '@hermes/plugin-sdk'
 import { useMemo, useState } from 'react'
 
+import { activityDays } from './activity-days'
 import { ActivityDetailDialog } from './activity-detail'
 import { clockTime, stepLabel } from './activity-format'
 import { type BotsText, useBots } from './i18n'
@@ -64,50 +65,6 @@ export function StatusTile({ className, status }: { className?: string; status: 
   )
 }
 
-interface ActivityDay {
-  key: string
-  label: string
-  tasks: ActivityTask[]
-}
-
-function dayStart(ms: number): number {
-  const date = new Date(ms)
-
-  date.setHours(0, 0, 0, 0)
-
-  return date.getTime()
-}
-
-/** Newest first, bucketed by local day. Exported for tests. */
-export function activityDays(
-  tasks: readonly ActivityTask[],
-  labels: { today: string; yesterday: string },
-  now = Date.now()
-): ActivityDay[] {
-  const today = dayStart(now)
-  const yesterday = today - 86_400_000
-  const days = new Map<number, ActivityTask[]>()
-
-  for (const task of [...tasks].reverse()) {
-    const start = dayStart((task.startedAt || now / 1000) * 1000)
-
-    days.set(start, [...(days.get(start) ?? []), task])
-  }
-
-  return [...days.entries()]
-    .sort(([a], [b]) => b - a)
-    .map(([start, list]) => ({
-      key: String(start),
-      label:
-        start === today
-          ? labels.today
-          : start === yesterday
-            ? labels.yesterday
-            : new Date(start).toLocaleDateString([], { day: 'numeric', month: 'short', weekday: 'short' }),
-      tasks: list
-    }))
-}
-
 function ActivityRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask }) {
   const b = useBots()
   const a = b.activity
@@ -115,7 +72,7 @@ function ActivityRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask 
   return (
     <li>
       <button
-        className="group/activity flex w-full min-w-0 gap-3 rounded-xl px-2 py-2 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:bg-(--chrome-action-hover) focus-visible:outline-none"
+        className="group/activity flex w-full min-w-0 gap-3 rounded-lg px-2 py-3 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)"
         data-task-status={task.status}
         data-testid="activity-row"
         onClick={onOpen}
@@ -129,7 +86,7 @@ function ActivityRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask 
           <span className="line-clamp-2 text-[0.75rem] leading-snug text-(--ui-text-tertiary)">
             {taskLine(task, a)}
           </span>
-          <span className="flex items-center gap-1.5 text-[0.6875rem] tabular-nums text-(--ui-text-quaternary)">
+          <span className="flex items-center gap-1.5 text-xs tabular-nums text-(--ui-text-tertiary)">
             {clockTime(task.startedAt)}
             {task.steps.length ? (
               <>
@@ -170,7 +127,7 @@ export function BotActivityFeed({ name }: { name: string }) {
     <div className="grid gap-3 px-2 pb-3 pt-1" data-testid="activity-feed">
       {days.map(day => (
         <section key={day.key}>
-          <h3 className="px-2 pb-1 text-[0.9375rem] font-semibold text-foreground">{day.label}</h3>
+          <h3 className="px-2 pb-2 pt-2 text-xs font-medium text-(--ui-text-secondary)">{day.label}</h3>
           <ol className="grid gap-0.5">
             {day.tasks.map(task => (
               <ActivityRow key={task.id} onOpen={() => setOpenId(task.id)} task={task} />

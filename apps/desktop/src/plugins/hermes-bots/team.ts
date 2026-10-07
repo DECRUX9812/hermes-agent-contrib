@@ -130,15 +130,11 @@ export function useSelectedTeamId() {
   return useValue($selectedTeamId)
 }
 
-/** An older gateway without `bots_team.*` reads as "no teams" — never as a broken page. */
+/** A failed read is not an empty team list; callers distinguish capability from connectivity. */
 export async function fetchTeams(): Promise<TeamSummary[]> {
-  try {
-    const res = await host.request<{ teams?: TeamSummary[] }>('bots_team.list', {})
+  const res = await host.request<{ teams?: TeamSummary[] }>('bots_team.list', {})
 
-    return Array.isArray(res?.teams) ? res.teams : []
-  } catch {
-    return []
-  }
+  return Array.isArray(res?.teams) ? res.teams : []
 }
 
 export const fetchTeam = (teamId: string) => host.request<TeamView>('bots_team.get', { team_id: teamId })

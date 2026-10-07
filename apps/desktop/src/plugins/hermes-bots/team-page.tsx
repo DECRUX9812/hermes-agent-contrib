@@ -11,15 +11,19 @@ import {
   Button,
   cn,
   Codicon,
+  ConfirmDialog,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   EmptyState,
+  ErrorState,
   host,
   Input,
+  isMissingRpcMethod,
   Loader,
+  queryClient,
   Switch,
   Textarea,
   useQuery,
@@ -35,6 +39,8 @@ import {
   pendingApprovals,
   type Team,
   type TeamAuditEntry,
+  teamKey,
+  teamsKey,
   topLearnings,
   useTeam,
   useTeams
@@ -119,19 +125,19 @@ function Approvals({ t, team }: { t: TeamText; team: Team }) {
   return (
     <section
       aria-label={t.section.approvals}
-      className="rounded-lg border border-(--ui-accent) bg-(--ui-control-background) p-3"
+      className="border-y border-(--ui-stroke-secondary) py-4"
       data-slot="team-approvals"
     >
-      <h3 className="mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)">{t.section.approvals}</h3>
+      <h3 className="mb-3 text-sm font-semibold text-(--ui-text-primary)">{t.section.approvals}</h3>
       <ul className="grid grid-cols-[minmax(0,1fr)] gap-2">
         {pending.map(a => (
           <li className="flex flex-wrap items-center gap-x-3 gap-y-1" key={a.id}>
-            <span className="rounded bg-(--ui-control-active-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary)">
+            <span className="rounded bg-(--ui-control-active-background) px-1.5 py-0.5 text-xs font-medium text-(--ui-text-secondary)">
               {t.kind[a.kind as keyof typeof t.kind] ?? a.kind}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[0.8125rem] text-(--ui-text-primary)">{a.subject}</span>
-              <span className="block truncate text-[0.6875rem] text-(--ui-text-tertiary)">
+              <span className="block text-sm leading-relaxed text-(--ui-text-primary)">{a.subject}</span>
+              <span className="block text-xs leading-relaxed text-(--ui-text-tertiary)">
                 {t.requestedBy(a.requested_by)}
                 {a.detail ? ` — ${a.detail}` : ''}
               </span>
@@ -181,7 +187,7 @@ function Learnings({ t, team }: { t: TeamText; team: Team }) {
               )}
               <Button
                 aria-label={t.remove}
-                className="hidden size-5 group-hover/l:inline-flex"
+                className="opacity-0 group-hover/l:opacity-100 focus-visible:opacity-100"
                 onClick={() =>
                   void mutateTeam('bots_team.learning.remove', { team_id: team.id, learning_id: l.id }).catch(fail)
                 }
@@ -240,6 +246,7 @@ function Activity({ t, team }: { t: TeamText; team: Team }) {
 
 function AdvancedPanel({ t, team }: { t: TeamText; team: Team }) {
   const a = t.advanced
+  const [deleting, setDeleting] = useState(false)
 
   const exportPack = async () => {
     try {
@@ -267,7 +274,7 @@ function AdvancedPanel({ t, team }: { t: TeamText; team: Team }) {
   }
 
   return (
-    <section className="grid gap-3 rounded-lg border border-(--ui-stroke-tertiary) p-3" data-slot="team-advanced">
+    <section className="grid gap-4 border-t border-(--ui-stroke-tertiary) pt-4" data-slot="team-advanced">
       <label className="flex items-start justify-between gap-4">
         <span>
           <span className="block text-[0.8125rem] text-(--ui-text-primary)">{a.policy}</span>
@@ -291,33 +298,49 @@ function AdvancedPanel({ t, team }: { t: TeamText; team: Team }) {
         {a.ids}: {team.id}
       </p>
       <div>
-        <Button
-          onClick={() =>
-            void host
-              .request('bots_team.delete', { team_id: team.id })
-              .then(() => $selectedTeamId.set(null))
-              .catch(fail)
-          }
-          size="sm"
-          variant="destructive"
-        >
+        <Button onClick={() => setDeleting(true)} size="sm" variant="destructive">
           {a.deleteTeam}
         </Button>
       </div>
+      <ConfirmDialog
+        confirmLabel={a.deleteTeam}
+        description={a.deleteDescription}
+        destructive
+        onClose={() => setDeleting(false)}
+        onConfirm={async () => {
+          const listKey = teamsKey()
+          const detailKey = teamKey(team.id)
+          await host.request('bots_team.delete', { team_id: team.id })
+          queryClient.removeQueries({ queryKey: detailKey, exact: true })
+          await queryClient.invalidateQueries({ queryKey: listKey })
+
+          if ($selectedTeamId.get() === team.id) {
+            $selectedTeamId.set(null)
+          }
+        }}
+        open={deleting}
+        title={a.deleteConfirm(team.name)}
+      />
     </section>
   )
 }
 
 function TeamDetail({ id, t }: { id: string; t: TeamText }) {
   const advanced = useValue(host.state.showsAdvancedChrome)
-  const { data: view, isPending, error } = useTeam(id)
+  const { data: view, isPending, error, refetch } = useTeam(id)
 
   if (isPending) {
     return <Loader />
   }
 
   if (error || !view) {
-    return <p className="p-6 text-[0.8125rem] text-(--ui-text-tertiary)">{String((error as Error)?.message ?? '')}</p>
+    return (
+      <ErrorState className="place-items-center p-6" description={t.loadFailedBody} title={t.loadFailed}>
+        <Button onClick={() => void refetch()} size="sm" variant="secondary">
+          {t.retry}
+        </Button>
+      </ErrorState>
+    )
   }
 
   const { team, tree, rollup } = view
@@ -327,8 +350,10 @@ function TeamDetail({ id, t }: { id: string; t: TeamText }) {
   return (
     <div className="mx-auto grid w-full max-w-4xl grid-cols-[minmax(0,1fr)] gap-6 p-4 sm:p-6" data-slot="team-detail">
       <header>
-        <h2 className="text-lg font-semibold text-(--ui-text-primary)">{team.name}</h2>
-        {team.mission && <p className="mt-1 text-[0.8125rem] text-(--ui-text-secondary)">{team.mission}</p>}
+        <h2 className="text-xl font-semibold tracking-tight text-(--ui-text-primary)">{team.name}</h2>
+        {team.mission && (
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-(--ui-text-secondary)">{team.mission}</p>
+        )}
         <div className="mt-3 flex flex-wrap items-center gap-3 text-[0.75rem] text-(--ui-text-tertiary)">
           <span>{t.seats(team.members.length)}</span>
           {open > 0 && <span>{t.openSeats(open)}</span>}
@@ -368,17 +393,17 @@ function TeamDetail({ id, t }: { id: string; t: TeamText }) {
 export function TeamPage() {
   const t = useTeamText()
   const selected = useValue($selectedTeamId)
-  const { data: teams, isPending } = useTeams()
+  const { data: teams, isPending, error, refetch } = useTeams()
   const [creating, setCreating] = useState(false)
   const current = selected && teams?.some(x => x.id === selected) ? selected : (teams?.[0]?.id ?? null)
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-slot="team-page">
-      <div className="flex items-center gap-3 border-b border-(--ui-stroke-tertiary) px-4 py-2">
+      <div className="flex flex-wrap items-center gap-3 border-b border-(--ui-stroke-tertiary) px-4 py-3">
         <Codicon name="organization" size="1rem" />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-[0.9375rem] font-semibold text-(--ui-text-primary)">{t.title}</h1>
-          <p className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">{t.subtitle}</p>
+          <p className="text-xs leading-relaxed text-(--ui-text-tertiary)">{t.subtitle}</p>
         </div>
         {teams && teams.length > 1 && (
           <select
@@ -395,7 +420,12 @@ export function TeamPage() {
             ))}
           </select>
         )}
-        <Button onClick={() => setCreating(true)} size="sm" variant={teams?.length ? 'outline' : 'default'}>
+        <Button
+          disabled={isMissingRpcMethod(error)}
+          onClick={() => setCreating(true)}
+          size="sm"
+          variant={teams?.length ? 'outline' : 'default'}
+        >
           <Codicon name="add" size="0.75rem" />
           {t.newTeam}
         </Button>
@@ -403,6 +433,14 @@ export function TeamPage() {
       <div className={cn('min-h-0 flex-1 overflow-y-auto')}>
         {isPending ? (
           <Loader />
+        ) : isMissingRpcMethod(error) ? (
+          <EmptyState description={t.unavailableBody} title={t.unavailableTitle} />
+        ) : error ? (
+          <ErrorState className="place-items-center p-6" description={t.loadFailedBody} title={t.loadFailed}>
+            <Button onClick={() => void refetch()} size="sm" variant="secondary">
+              {t.retry}
+            </Button>
+          </ErrorState>
         ) : current ? (
           <TeamDetail id={current} key={current} t={t} />
         ) : (

@@ -104,6 +104,8 @@ describe('draftFromDescription', () => {
     expect(draft.name).toBe('Skeptical Code Reviewer')
     expect(draft.description).toBe('a skeptical code reviewer who catches edge cases')
     expect(draft.starters).toHaveLength(3)
+    // Free-form hires use the staff mascot; curated starter silhouettes retain
+    // their stored blobatar appearance in the separate contract above.
     expect(draft.shape).toBe('bop')
     expect(draft.templateId).toBeUndefined()
     expect(draft.preset).toBe('custom')
