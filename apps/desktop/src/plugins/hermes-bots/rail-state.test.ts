@@ -20,7 +20,9 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
   }
 })
 
-const { hydrateRailSections, $railCollapsed, setRailSectionCollapsed } = await import('./rail-state')
+const { hydrateRailSections, hydrateRailTab, $railCollapsed, $railTab, setRailSectionCollapsed, setRailTab } =
+  await import('./rail-state')
+
 const shared = await import('./shared')
 
 const storage = new Map<string, unknown>()
@@ -52,5 +54,37 @@ describe('rail section collapse pref', () => {
     await Promise.resolve()
 
     expect($railCollapsed.get()).toEqual({ routines: true })
+  })
+
+  it('does not let a late stored preference overwrite a tab the user just selected', async () => {
+    let finish!: (value: string) => void
+    const ctx = scriptedStorage(storage)
+    ctx.storage.get = vi.fn().mockReturnValue(
+      new Promise(resolve => {
+        finish = resolve
+      })
+    )
+    shared.setPluginCtx(ctx)
+    hydrateRailTab()
+    setRailTab('bot')
+    finish('scheduled')
+    await Promise.resolve()
+    expect($railTab.get()).toBe('bot')
+  })
+
+  it('keeps a user fold made while storage was being read', async () => {
+    let finish!: (value: Record<string, boolean>) => void
+    const ctx = scriptedStorage(storage)
+    ctx.storage.get = vi.fn().mockReturnValue(
+      new Promise(resolve => {
+        finish = resolve
+      })
+    )
+    shared.setPluginCtx(ctx)
+    hydrateRailSections()
+    setRailSectionCollapsed('computer', true)
+    finish({ routines: true })
+    await Promise.resolve()
+    expect($railCollapsed.get()).toEqual({ computer: true })
   })
 })

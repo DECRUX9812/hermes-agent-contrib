@@ -92,6 +92,7 @@ hermes_cli/web_dist/
 apps/desktop/build/
 apps/desktop/dist/
 apps/desktop/dist-webapp/
+apps/desktop/dist-review/
 .dist-webapp-build-*
 
 # tsc-emitted artifacts (a stray `tsc -b` compiles into src/, and vite then

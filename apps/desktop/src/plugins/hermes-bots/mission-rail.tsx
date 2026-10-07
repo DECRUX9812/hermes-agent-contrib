@@ -53,15 +53,8 @@ import { EditProfileDialog } from './edit-profile-dialog'
 import { useBots } from './i18n'
 import { botRole, displayName } from './labels'
 import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
-import {
-  $railCollapsed,
-  $railTab,
-  RAIL_TAB_IDS,
-  type RailSectionId,
-  type RailTabId,
-  setRailSectionCollapsed,
-  setRailTab
-} from './rail-state'
+import { $railCollapsed, $railTab, type RailSectionId, setRailSectionCollapsed, setRailTab } from './rail-state'
+import { RailTabs } from './rail-tabs'
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
 import { BotComputerPanel } from './screen-panel'
@@ -136,56 +129,60 @@ function BotHero({
   const [sharing, setSharing] = useState(false)
 
   return (
-    <div className="flex flex-col items-center px-4 pb-4 pt-5 text-center" data-testid="rail-profile-card">
-      <div className="relative">
-        <BotFace
-          color={avatarColor(color, bot.name)}
-          image={image}
-          mood={mood}
-          name={bot.name}
-          shape={shape}
-          size={84}
-        />
-        <Tip label={b.bot.editTitle}>
-          <Button
-            aria-label={b.bot.editTitle}
-            className="absolute -bottom-0.5 -right-0.5 size-7 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) shadow-sm hover:bg-(--chrome-action-hover)"
-            onClick={onEdit}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <Codicon name="edit" size="0.8rem" />
-          </Button>
-        </Tip>
-      </div>
-      <h2 className="mt-3 max-w-full truncate text-lg font-semibold leading-tight text-foreground">{name}</h2>
-      <p
-        className={cn(
-          'mt-1 flex max-w-full items-center gap-1.5 text-[0.8125rem]',
-          tone === 'waiting' ? 'text-amber-700 dark:text-amber-300' : 'text-(--ui-text-tertiary)'
-        )}
-        data-testid="rail-live-line"
-        data-tone={tone}
-      >
-        {tone === 'working' ? (
-          <GlyphSpinner className="shrink-0 text-[0.85rem] text-(--ui-accent)" spinner="breathe" />
-        ) : (
-          <span
-            aria-hidden
-            className={cn(
-              'size-1.5 shrink-0 rounded-full',
-              tone === 'waiting' ? 'bg-current' : 'bg-(--ui-text-quaternary)'
-            )}
+    <div className="px-4 pb-4 pt-4" data-testid="rail-profile-card">
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="relative shrink-0">
+          <BotFace
+            color={avatarColor(color, bot.name)}
+            image={image}
+            mood={mood}
+            name={bot.name}
+            shape={shape}
+            size={48}
           />
-        )}
-        <span className="truncate">{now ?? botLiveStatusLabel(live, b.roster)}</span>
-      </p>
-      <p className="mt-0.5 max-w-full truncate text-[0.6875rem] text-(--ui-text-quaternary)">
-        {[subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : '']
-          .filter(Boolean)
-          .join(' · ')}
-      </p>
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-1">
+          <Tip label={b.bot.editTitle}>
+            <Button
+              aria-label={b.bot.editTitle}
+              className="absolute -bottom-0.5 -right-0.5 size-7 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) shadow-sm hover:bg-(--chrome-action-hover)"
+              onClick={onEdit}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name="edit" size="0.8rem" />
+            </Button>
+          </Tip>
+        </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="max-w-full truncate text-base font-semibold leading-tight text-foreground">{name}</h2>
+          <p
+            className={cn(
+              'mt-1 flex max-w-full items-start gap-1.5 text-xs leading-relaxed',
+              tone === 'waiting' ? 'text-amber-700 dark:text-amber-300' : 'text-(--ui-text-tertiary)'
+            )}
+            data-testid="rail-live-line"
+            data-tone={tone}
+          >
+            {tone === 'working' ? (
+              <GlyphSpinner className="shrink-0 text-[0.85rem] text-(--ui-accent)" spinner="breathe" />
+            ) : (
+              <span
+                aria-hidden
+                className={cn(
+                  'size-1.5 shrink-0 rounded-full',
+                  tone === 'waiting' ? 'bg-current' : 'bg-(--ui-text-quaternary)'
+                )}
+              />
+            )}
+            <span className="min-w-0 wrap-anywhere">{now ?? botLiveStatusLabel(live, b.roster)}</span>
+          </p>
+          <p className="mt-1 max-w-full truncate text-xs text-(--ui-text-tertiary)">
+            {[subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : '']
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-1">
         <Button onClick={() => void newBotChat(bot)} size="xs">
           <Codicon name="comment-add" />
           {b.bot.newTopic}
@@ -203,67 +200,6 @@ function BotHero({
         </Tip>
         <ShareBotDialog bot={bot} meta={meta ?? null} onOpenChange={setSharing} open={sharing} />
       </div>
-    </div>
-  )
-}
-
-const TAB_ICONS: Record<RailTabId, string> = {
-  activity: 'list-unordered',
-  approvals: 'shield',
-  scheduled: 'history',
-  bot: 'hubot'
-}
-
-/** Icon tabs in one pill track; the open tab lifts out of it. */
-function RailTabs({
-  badges,
-  onChange,
-  value
-}: {
-  badges: Partial<Record<RailTabId, number>>
-  onChange: (id: RailTabId) => void
-  value: RailTabId
-}) {
-  const a = useBots().activity
-
-  return (
-    <div
-      aria-label={useBots().rail.title}
-      className="mx-3 grid grid-cols-4 gap-0.5 rounded-full bg-(--ui-inline-code-background) p-1"
-      role="tablist"
-    >
-      {RAIL_TAB_IDS.map(id => {
-        const active = id === value
-        const badge = badges[id] ?? 0
-
-        return (
-          <Tip key={id} label={a.tabs[id]}>
-            <button
-              aria-controls={`rail-panel-${id}`}
-              aria-label={badge ? `${a.tabs[id]} (${badge})` : a.tabs[id]}
-              aria-selected={active}
-              className={cn(
-                'relative grid h-8 place-items-center rounded-full transition-[background-color,color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)/40',
-                active
-                  ? 'bg-(--ui-chat-bubble-background) text-foreground shadow-sm ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10'
-                  : 'text-(--ui-text-tertiary) hover:text-foreground'
-              )}
-              data-testid={`rail-tab:${id}`}
-              id={`rail-tab-${id}`}
-              onClick={() => onChange(id)}
-              role="tab"
-              type="button"
-            >
-              <Codicon name={TAB_ICONS[id]} size="0.95rem" />
-              {badge ? (
-                <span className="absolute right-[calc(50%-1.05rem)] top-0.5 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-amber-500 px-1 text-[0.5625rem] font-semibold leading-none text-white">
-                  {badge > 9 ? '9+' : badge}
-                </span>
-              ) : null}
-            </button>
-          </Tip>
-        )
-      })}
     </div>
   )
 }
@@ -454,6 +390,7 @@ export function MissionRail() {
         data-testid={`rail-panel:${tab}`}
         id={`rail-panel-${tab}`}
         role="tabpanel"
+        tabIndex={0}
       >
         {tab === 'activity' ? <BotActivityFeed name={displayName(owner, meta)} /> : null}
         {tab === 'approvals' ? <ApprovalsPanel bot={owner} name={displayName(owner, meta)} /> : null}

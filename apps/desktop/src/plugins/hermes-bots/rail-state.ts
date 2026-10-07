@@ -22,15 +22,22 @@ export type RailSectionId = (typeof RAIL_SECTION_IDS)[number]
 const RAIL_SECTIONS_STORAGE_KEY = 'mission-rail-v1'
 
 export const $railCollapsed = atom<Record<string, boolean>>({})
+let sectionRevision = 0
 
 export function hydrateRailSections(): void {
+  const revision = ++sectionRevision
+  const ctx = getPluginCtx()
+
   try {
-    // TODO(bot-mode-types): PluginStorage.get(key, fallback) requires the fallback;
-    // Bot Mode reads omit it — same TODO as the other hydrated prefs.
-    // @ts-expect-error typed as written rather than changing the call.
-    Promise.resolve(getPluginCtx()?.storage?.get?.(RAIL_SECTIONS_STORAGE_KEY))
+    Promise.resolve(ctx?.storage?.get(RAIL_SECTIONS_STORAGE_KEY, {}))
       .then(value => {
-        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        if (
+          revision !== sectionRevision ||
+          ctx !== getPluginCtx() ||
+          !value ||
+          typeof value !== 'object' ||
+          Array.isArray(value)
+        ) {
           return
         }
 
@@ -52,6 +59,7 @@ export function hydrateRailSections(): void {
 }
 
 export function setRailSectionCollapsed(id: RailSectionId, collapsed: boolean): void {
+  sectionRevision++
   const next = { ...$railCollapsed.get() }
 
   if (collapsed) {
@@ -63,7 +71,7 @@ export function setRailSectionCollapsed(id: RailSectionId, collapsed: boolean): 
   $railCollapsed.set(next)
 
   try {
-    void getPluginCtx()?.storage?.set?.(RAIL_SECTIONS_STORAGE_KEY, next)
+    Promise.resolve(getPluginCtx()?.storage?.set(RAIL_SECTIONS_STORAGE_KEY, next)).catch(() => undefined)
   } catch {
     /* persistence is best-effort — the choice applies either way */
   }
@@ -78,13 +86,20 @@ export type RailTabId = (typeof RAIL_TAB_IDS)[number]
 const RAIL_TAB_STORAGE_KEY = 'mission-rail-tab-v1'
 
 export const $railTab = atom<RailTabId>('activity')
+let tabRevision = 0
 
 export function hydrateRailTab(): void {
+  const revision = ++tabRevision
+  const ctx = getPluginCtx()
+
   try {
-    // @ts-expect-error same omitted fallback as hydrateRailSections above.
-    Promise.resolve(getPluginCtx()?.storage?.get?.(RAIL_TAB_STORAGE_KEY))
+    Promise.resolve(ctx?.storage?.get(RAIL_TAB_STORAGE_KEY, 'activity'))
       .then(value => {
-        if ((RAIL_TAB_IDS as readonly unknown[]).includes(value)) {
+        if (
+          revision === tabRevision &&
+          ctx === getPluginCtx() &&
+          (RAIL_TAB_IDS as readonly unknown[]).includes(value)
+        ) {
           $railTab.set(value as RailTabId)
         }
       })
@@ -95,10 +110,11 @@ export function hydrateRailTab(): void {
 }
 
 export function setRailTab(id: RailTabId): void {
+  tabRevision++
   $railTab.set(id)
 
   try {
-    void getPluginCtx()?.storage?.set?.(RAIL_TAB_STORAGE_KEY, id)
+    Promise.resolve(getPluginCtx()?.storage?.set(RAIL_TAB_STORAGE_KEY, id)).catch(() => undefined)
   } catch {
     /* persistence is best-effort — the tab switches either way */
   }

@@ -176,15 +176,15 @@ describe('TeamPage', () => {
     expect(screen.getAllByText('1/2 · 50%')).toHaveLength(2) // overall bar + the parent goal
     expect(screen.getByText('Always cite sources')).toBeTruthy()
     expect(screen.getByText('$50 on ads')).toBeTruthy()
-    expect(document.querySelector('[data-slot="team-budget"][data-tone="warn"]')).toBeTruthy()
+    expect(window.document.querySelector('[data-slot="team-budget"][data-tone="warn"]')).toBeTruthy()
   })
 
   it('keeps developer surfaces out of Simple mode', async () => {
     mount()
     await screen.findByText('$50 on ads')
 
-    expect(document.querySelector('[data-slot="team-advanced"]')).toBeNull()
-    expect(document.querySelector('[data-slot="team-activity"]')).toBeNull()
+    expect(window.document.querySelector('[data-slot="team-advanced"]')).toBeNull()
+    expect(window.document.querySelector('[data-slot="team-activity"]')).toBeNull()
   })
 
   it('adds the audit trail and approval policy in Advanced mode', async () => {
@@ -192,8 +192,8 @@ describe('TeamPage', () => {
     mount()
 
     await screen.findByText('$50 on ads')
-    expect(document.querySelector('[data-slot="team-advanced"]')).toBeTruthy()
-    expect(document.querySelector('[data-slot="team-activity"]')).toBeTruthy()
+    expect(window.document.querySelector('[data-slot="team-advanced"]')).toBeTruthy()
+    expect(window.document.querySelector('[data-slot="team-activity"]')).toBeTruthy()
   })
 
   it('sends the board decision to the gateway when the user approves', async () => {
@@ -228,12 +228,31 @@ describe('TeamPage', () => {
     )
   })
 
-  it('offers to start a team when none exists, and treats an older gateway as no teams', async () => {
+  it('explains an unsupported team capability instead of inviting an impossible create', async () => {
     mocks.request.mockImplementation(async () => {
       throw new Error('unknown method')
     })
     mount()
 
-    expect(await screen.findByText('No team yet')).toBeTruthy()
+    expect(await screen.findByText(TEAM_EN.unavailableTitle)).toBeTruthy()
+    expect((screen.getByRole('button', { name: 'New team' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('does not disguise an offline team list as an empty account', async () => {
+    mocks.request.mockRejectedValue(new Error('offline'))
+    mount()
+    expect(await screen.findByText(TEAM_EN.loadFailed)).toBeTruthy()
+    expect(screen.queryByText('No team yet')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy()
+  })
+
+  it('requires confirmation before deleting a team and allows cancellation', async () => {
+    mocks.advanced?.set(true)
+    mount()
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete team' }))
+    expect(await screen.findByText(TEAM_EN.advanced.deleteConfirm('Growth'))).toBeTruthy()
+    expect(mocks.request.mock.calls.some(([method]) => method === 'bots_team.delete')).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(mocks.request.mock.calls.some(([method]) => method === 'bots_team.delete')).toBe(false)
   })
 })
