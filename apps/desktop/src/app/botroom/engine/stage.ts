@@ -1,7 +1,7 @@
 import { faceDataUrl } from './face'
 import { type MascotAction, OverlayScene } from './mascot3d'
 import { type PaletteSection, showContextMenu, showPalette } from './menu'
-import { type ElementInfo, Panel, roomMsgToPanel } from './panel'
+import { bufferRoomMsg, type ElementInfo, Panel, roomMsgToPanel } from './panel'
 import { OVERLAY_CSS } from './styles'
 import type { Bot, Bot as BotType, ContentToSw, Room, RoomMsg, SwToContent } from './types'
 import { WindowManager } from './windows'
@@ -327,9 +327,15 @@ export class Stage {
         panel.clearTyping(name(msg.author))
         roomMsgToPanel(panel, msg, name)
       }
-    } else if (!msg.ephemeral && msg.author !== 'user' && msg.author !== 'system') {
-      this.unread.set(msg.roomId, (this.unread.get(msg.roomId) ?? 0) + 1)
-      this.updateUnreadChip(msg.roomId)
+    } else if (!msg.ephemeral) {
+      // Closed room: buffer into the panel's persistent log so reopening
+      // replays the gap; only bot messages bump the unread badge.
+      bufferRoomMsg(msg.roomId, msg, name)
+
+      if (msg.author !== 'user' && msg.author !== 'system') {
+        this.unread.set(msg.roomId, (this.unread.get(msg.roomId) ?? 0) + 1)
+        this.updateUnreadChip(msg.roomId)
+      }
     }
 
     if (msg.ephemeral) {return}

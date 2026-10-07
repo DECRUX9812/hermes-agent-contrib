@@ -387,9 +387,28 @@ export class Panel {
   }
 }
 
+function roomMsgRow(msg: RoomMsg, botName: (id: string) => string) {
+  return {
+    who: msg.author === 'user' ? 'You' : msg.author === 'system' ? 'system' : botName(msg.author),
+    text: msg.text,
+    kind: (msg.author === 'user' ? 'user' : msg.author === 'system' ? 'sys' : 'bot') as 'user' | 'bot' | 'sys',
+    pickedByJev: msg.pickedByJev,
+  }
+}
+
 export function roomMsgToPanel(panel: Panel, msg: RoomMsg, botName: (id: string) => string) {
-  const who = msg.author === 'user' ? 'You' : msg.author === 'system' ? 'system' : botName(msg.author)
-  panel.addMsg(who, msg.text, msg.author === 'user' ? 'user' : msg.author === 'system' ? 'sys' : 'bot', msg.pickedByJev)
+  const row = roomMsgRow(msg, botName)
+  panel.addMsg(row.who, row.text, row.kind, row.pickedByJev)
+}
+
+/** Buffer a room message into the persistent log while its panel is closed,
+ *  so the unread badge isn't a dead end — reopening replays the gap. */
+export function bufferRoomMsg(roomId: string, msg: RoomMsg, botName: (id: string) => string) {
+  const list = logs.get(roomId) ?? []
+  list.push(roomMsgRow(msg, botName))
+
+  if (list.length > 200) {list.shift()}
+  logs.set(roomId, list)
 }
 
 export function botAvatarUrl(bot: Bot): string {

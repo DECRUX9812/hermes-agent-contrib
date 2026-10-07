@@ -104,7 +104,7 @@ describe('draftFromDescription', () => {
     expect(draft.name).toBe('Skeptical Code Reviewer')
     expect(draft.description).toBe('a skeptical code reviewer who catches edge cases')
     expect(draft.starters).toHaveLength(3)
-    expect(draft.shape).toBe('blobatar')
+    expect(draft.shape).toBe('bop')
     expect(draft.templateId).toBeUndefined()
     expect(draft.preset).toBe('custom')
   })

@@ -1117,6 +1117,9 @@ export function BotFace({
           dangerouslySetInnerHTML={{
             __html: markup
           }}
+          // The legacy math face carried mood on the svg; keep the attribute
+          // on the static-shape wrappers so it stays observable.
+          data-hb-mood={mood}
           style={{
             width: size,
             height: size,
@@ -1140,6 +1143,7 @@ export function BotFace({
         dangerouslySetInnerHTML={{
           __html: bopMarkup(shape, name, color, mood, size)
         }}
+        data-hb-mood={mood}
         style={{
           width: size,
           height: size,

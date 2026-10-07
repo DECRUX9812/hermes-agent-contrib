@@ -29,16 +29,21 @@ export function mentionHue(name: string): number {
 }
 
 const INLINE_RE =
-  /(`[^`\n]+`)|(\*\*[^*]+\*\*|__[^_]+__)|(\*[^*\n]+\*|_[^_\n]+_)|(~~[^~]+~~)|(\[[^\]\n]+\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\])|(https?:\/\/[^\s<>"')]+)|@([A-Za-z0-9_.:-]+)|(\n)|(.)/g
+  /(`[^`\n]+`)|(\*\*[^*]+\*\*|__[^_]+__)|(\*[^*\n]+\*|_[^_\n]+_)|(~~[^~]+~~)|(\[[^\]\n]+\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\))|(https?:\/\/[^\s<>"')]+)|@([A-Za-z0-9_.:-]+)|(\n)|(.)/g
 
-function inlineAppend(text: string, out: Node, mentions?: Mentions) {
+function inlineAppend(text: string, out: Node, mentions?: Mentions, plain = false) {
   INLINE_RE.lastIndex = 0
   let m: RegExpExecArray | null
 
   while ((m = INLINE_RE.exec(text))) {
     const [whole, code, bold, italic, strike, linkMd, , bareUrl, atName, br, ch] = m
+    // Mirror mode: markup stays literal text; only mention pills + breaks
+    // still render, so the overlay wraps identically to the textarea.
+    const lit = plain ? (code ?? bold ?? italic ?? strike ?? linkMd ?? bareUrl) : undefined
 
-    if (code) {
+    if (lit !== undefined) {
+      out.appendChild(document.createTextNode(lit))
+    } else if (code) {
       const el = document.createElement('code')
       el.textContent = code.slice(1, -1)
       out.appendChild(el)
@@ -211,7 +216,7 @@ export function renderBody(text: string, mentions?: Mentions): DocumentFragment 
  *  mention pills — has to wrap identically to the textarea it sits under. */
 export function renderMirror(text: string, mentions?: Mentions): DocumentFragment {
   const frag = document.createDocumentFragment()
-  inlineAppend(text, frag, mentions)
+  inlineAppend(text, frag, mentions, true)
 
   return frag
 }
