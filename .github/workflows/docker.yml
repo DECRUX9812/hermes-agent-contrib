@@ -55,7 +55,7 @@ permissions:
 # shared group would cancel the parent mid-release.
 concurrency:
   group: docker-${{ github.event.pull_request.number || github.ref }}-${{ inputs.release-phase || 'standalone' }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 env:
   IMAGE_NAME: nousresearch/hermes-agent
