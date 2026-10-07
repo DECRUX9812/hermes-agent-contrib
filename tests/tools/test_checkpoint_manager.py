@@ -1403,3 +1403,37 @@ class TestSessionDiff:
         assert result["success"] is True
         assert "feature.py" in result["diff"]
         assert "+x = 1" in result["diff"]
+
+
+# =========================================================================
+# Import-time contract
+# =========================================================================
+
+class TestAnnotationsResolve:
+    def test_every_signature_annotation_resolves_at_runtime(self):
+        """Every annotation in this module must name something that exists.
+
+        ``import`` alone does not prove it on Python 3.14: PEP 649 defers
+        annotation evaluation, so an undefined name in a signature imports fine
+        there and raises NameError on 3.11-3.13, where the annotation is still
+        evaluated while the class body runs. This module has no
+        ``from __future__ import annotations``, and ``agent/agent_init.py``
+        imports ``CheckpointManager`` on every agent build — a missing import
+        here therefore breaks every turn on those versions, invisibly to a 3.14
+        runner. ``get_type_hints`` forces the evaluation on every version.
+        """
+        import inspect
+        import typing
+
+        import tools.checkpoint_manager as checkpoint_manager
+
+        checked = 0
+        for _, cls in inspect.getmembers(checkpoint_manager, inspect.isclass):
+            if cls.__module__ != checkpoint_manager.__name__:
+                continue
+            for _, method in inspect.getmembers(cls, inspect.isfunction):
+                typing.get_type_hints(method)
+                checked += 1
+
+        # Guard against the sweep silently matching nothing (e.g. a rename).
+        assert checked >= 10
