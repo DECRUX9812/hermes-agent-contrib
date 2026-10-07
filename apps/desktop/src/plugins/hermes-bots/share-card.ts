@@ -124,12 +124,33 @@ export async function drawShareCard(data: ShareCardData): Promise<HTMLCanvasElem
 
   ctx.scale(scale, scale)
 
-  // Paper with a soft wash of the bot's own colour from the left.
+  // Paper with a soft wash of the bot's own colour from the left. The
+  // accent arrives as ANY CSS colour (auto-coloured bots get `hsl(...)` from
+  // profileColor), so alpha stops can't just concatenate a hex suffix —
+  // `ctx.fillStyle` echoes the normalized #rrggbb/rgba() back, which is the
+  // canvas's own parser.
+  const withAlpha = (color: string, a: number) => {
+    ctx.fillStyle = '#000000'
+    ctx.fillStyle = color
+    const norm = ctx.fillStyle as string
+    const hex = norm.match(/^#([0-9a-f]{6})$/i)
+
+    if (hex) {
+      const n = parseInt(hex[1], 16)
+
+      return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`
+    }
+
+    const rgba = norm.match(/^rgba?\((.+)\)$/)
+
+    return rgba ? `rgba(${rgba[1].split(',').slice(0, 3).join(',')},${a})` : color
+  }
+
   ctx.fillStyle = '#f9f9f8'
   ctx.fillRect(0, 0, W, H)
   const wash = ctx.createRadialGradient(260, 300, 20, 260, 300, 620)
-  wash.addColorStop(0, `${data.accent}2e`)
-  wash.addColorStop(1, `${data.accent}00`)
+  wash.addColorStop(0, withAlpha(data.accent, 0.18))
+  wash.addColorStop(1, withAlpha(data.accent, 0))
   ctx.fillStyle = wash
   ctx.fillRect(0, 0, W, H)
 

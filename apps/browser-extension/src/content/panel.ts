@@ -156,6 +156,14 @@ export class Panel {
     if (t) {this.targetChip.querySelector('.hr-target-label')!.textContent = t.label}
   }
 
+  /** Refresh the header face — a bot that wakes up or dozes off swaps its
+   *  eyes live, not just when the panel next opens. */
+  setAvatar(url: string) {
+    const av = this.el.querySelector<HTMLImageElement>('img.hr-avatar')
+
+    if (av) {av.src = url}
+  }
+
   setStatus(status: string, line?: string) {
     this.statusEl.textContent = line || status
     const dot = this.el.querySelector<HTMLElement>('.hr-dot')
@@ -292,5 +300,8 @@ export function roomMsgToPanel(panel: Panel, msg: RoomMsg, botName: (id: string)
 }
 
 export function botAvatarUrl(bot: Bot): string {
-  return bopAvatarUrl(bot.id, bot.color, bot.status === 'working' ? 'awake' : 'idle')
+  // Seed from the bot's NAME (profile/system-prompt key), not `harness:id` —
+  // that's what makes 'default'/'main' profiles the ink+lime chief-of-staff
+  // and keeps a bot's face identical across harnesses.
+  return bopAvatarUrl(bot.ref || bot.name, bot.color, bot.status === 'working' ? 'awake' : 'idle')
 }

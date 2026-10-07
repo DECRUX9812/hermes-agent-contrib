@@ -1,11 +1,9 @@
-import { bopAvatarUrl } from '@hermes/shared/bops-mascot'
-
 import type { Bot, Room, RoomMsg, SwToContent } from '../shared/types'
 
 import { runPageAction, setWindowManager, uniqueSelector } from './actions'
 import { type MascotAction, OverlayScene } from './mascot3d'
 import { type PaletteSection, showContextMenu, showPalette } from './menu'
-import { type ElementInfo, Panel, roomMsgToPanel } from './panel'
+import { botAvatarUrl, type ElementInfo, Panel, roomMsgToPanel } from './panel'
 import { OVERLAY_CSS } from './styles'
 import { WindowManager } from './windows'
 
@@ -265,6 +263,7 @@ export class Stage {
 
     const panel = this.panels.get(`solo:${b.id}`)
     panel?.setStatus(b.status, b.statusLine)
+    panel?.setAvatar(botAvatarUrl(b))
   }
 
   private onRoomMsg(msg: RoomMsg) {
@@ -494,7 +493,7 @@ export class Stage {
         if (!room) {panel.addMsg('You', text, 'user')}
       },
       onClose: () => this.panels.delete(key),
-    }, b ? bopAvatarUrl(b.id, b.color, b.status === 'working' ? 'awake' : 'idle') : undefined)
+    }, b ? botAvatarUrl(b) : undefined)
 
     this.panels.set(key, panel)
     // position near the mascot
@@ -612,7 +611,7 @@ export class Stage {
         .map((id) => {
           const b = this.bots.get(id)
 
-          return b ? `<span class="hr-face"><img src="${bopAvatarUrl(b.id, b.color, b.status === 'working' ? 'awake' : 'idle')}" width="20" height="20" style="border-radius:50%"/></span>` : ''
+          return b ? `<span class="hr-face"><img src="${botAvatarUrl(b)}" width="20" height="20" style="border-radius:50%"/></span>` : ''
         })
         .join('')
 
