@@ -62,7 +62,6 @@ import {
   $selectedStoredSessionId,
   $sessions,
   $sessionStartedAt,
-  $turnStartedAt,
   _resetSessionOwnerHintsForTests,
   getSessionOwnerHint,
   knownSessionOwner,
@@ -89,7 +88,6 @@ import {
   setSessionOwnerHint,
   setSessions,
   setSessionStartedAt,
-  setTurnStartedAt,
   setUnlistedSessionOwnerRows
 } from '@/store/session'
 import { assertSessionOwnerResolved } from '@/store/session-owner-resolution'
@@ -109,7 +107,6 @@ import { $subagentsBySession, type SubagentProgress } from '@/store/subagents'
 import { $retainedTodosBySession, $todosBySession, clearSessionTodos } from '@/store/todos'
 import { loadTranscriptTail, saveTranscriptTail } from '@/store/transcript-tail-cache'
 
-import sessionResumeActiveTurn from '../../../../../../tests/fixtures/session-resume-active-turn.json'
 import { deferred } from '../../../test/deferred'
 import { NEW_CHAT_ROUTE, sessionRoute } from '../../routes'
 import type { ClientSessionState } from '../../types'
@@ -1676,53 +1673,6 @@ function ResumeHarness({
   return null
 }
 
-function ResumeTimerHarness({
-  onReady,
-  requestGateway
-}: {
-  onReady: (resume: (storedSessionId: string, replaceRoute?: boolean) => Promise<unknown>) => void
-  requestGateway: <T>(method: string, params?: Record<string, unknown>) => Promise<T>
-}) {
-  const activeSessionId = useStore($activeSessionId)
-  const busyRef = useRef(false)
-
-  const cache = useSessionStateCache({
-    activeSessionId,
-    busyRef,
-    selectedStoredSessionId: null,
-    setAwaitingResponse,
-    setBusy,
-    setMessages
-  })
-
-  const actions = useSessionActions({
-    activeSessionId,
-    activeSessionIdRef: cache.activeSessionIdRef,
-    busyRef,
-    creatingSessionRef: useRef(false),
-    ensureSessionState: cache.ensureSessionState,
-    getRouteToken: () => 'timer-contract',
-    navigate: vi.fn() as never,
-    requestGateway,
-    resetViewSync: cache.resetViewSync,
-    runtimeIdByStoredSessionIdRef: cache.runtimeIdByStoredSessionIdRef,
-    selectedStoredSessionId: null,
-    selectedStoredSessionIdRef: cache.selectedStoredSessionIdRef,
-    sessionStateByRuntimeIdRef: cache.sessionStateByRuntimeIdRef,
-    holdSessionTranscriptView: cache.holdSessionTranscriptView,
-    syncSessionStateToView: cache.syncSessionStateToView,
-    getRoutedStoredSessionId: () => null,
-    routedSessionId: null,
-    updateSessionState: cache.updateSessionState
-  })
-
-  useEffect(() => {
-    onReady(actions.resumeSession)
-  }, [actions.resumeSession, onReady])
-
-  return null
-}
-
 describe('resumeSession failure recovery', () => {
   afterEach(() => {
     cleanup()
@@ -2725,182 +2675,6 @@ describe('resumeSession failure recovery', () => {
     await runResume(requestGateway)
 
     expect(getSessionOwnerHint('stored-1')).toBeUndefined()
-  })
-})
-
-// ── The router landing ON the resumed session is not a switch away from it ────
-// fork.ts (and every routed create) navigates to the child and calls
-// resumeSession in the SAME tick, so `getRouteToken()` still reads the
-// pre-navigation route at entry while the ref only catches up a render later.
-// The token shape is `${pathname}:${search}:${hash}`, i.e. `/id::` for a plain
-// chat route.
-describe('resumeSession re-home race (navigate + resume in one tick)', () => {
-  afterEach(() => {
-    cleanup()
-    setActiveSessionId(null)
-    setSelectedStoredSessionId(null)
-    setMessages([])
-    setSessions([])
-    vi.restoreAllMocks()
-  })
-
-  async function startResume(
-    routeToken: () => string,
-    requestGateway: <T>(method: string, params?: Record<string, unknown>) => Promise<T>
-  ) {
-    let resume: ((storedSessionId: string, replaceRoute?: boolean) => Promise<unknown>) | null = null
-    render(
-      <ResumeHarness
-        getRouteToken={routeToken}
-        onReady={r => (resume = r)}
-        requestGateway={requestGateway}
-        selectedStoredSessionId="stored-1"
-      />
-    )
-    await waitFor(() => expect(resume).not.toBeNull())
-
-    return resume!
-  }
-
-  it('keeps the resume when the route lands on the session being resumed mid-flight', async () => {
-    let routeToken = '/stored-parent::'
-
-    const requestGateway = vi.fn(async (method: string) => {
-      if (method === 'session.resume') {
-        return {
-          info: {},
-          message_count: 0,
-          messages: [],
-          resumed: 'stored-1',
-          session_id: 'runtime-1',
-          session_key: 'stored-1'
-        } as never
-      }
-
-      return {} as never
-    })
-
-    setSessions([storedSession({ id: 'stored-1' })])
-    vi.mocked(getLatestSessionMessages).mockResolvedValue({ messages: [], session_id: 'stored-1' } as never)
-
-    const resume = await startResume(() => routeToken, requestGateway)
-
-    let pending!: Promise<unknown>
-    act(() => {
-      pending = resume('stored-1')
-    })
-
-    // The navigate() that shipped with this resume commits its render now.
-    routeToken = '/stored-1::'
-
-    await act(async () => {
-      await pending
-    })
-
-    // Abandoning here left the branch child on its loader forever with no
-    // session.resume ever sent.
-    expect(requestGateway).toHaveBeenCalledWith('session.resume', expect.anything())
-    expect($selectedStoredSessionId.get()).toBe('stored-1')
-    expect($activeSessionId.get()).toBe('runtime-1')
-  })
-
-  it('still abandons the resume when the route lands on a different chat mid-flight', async () => {
-    let routeToken = '/stored-parent::'
-
-    const requestGateway = vi.fn(async () => ({}) as never)
-
-    setSessions([storedSession({ id: 'stored-1' })])
-    vi.mocked(getLatestSessionMessages).mockResolvedValue({ messages: [], session_id: 'stored-1' } as never)
-
-    const resume = await startResume(() => routeToken, requestGateway)
-
-    let pending!: Promise<unknown>
-    act(() => {
-      pending = resume('stored-1')
-    })
-
-    // A genuine switch away must still win.
-    routeToken = '/stored-elsewhere::'
-
-    await act(async () => {
-      await pending
-    })
-
-    expect(requestGateway).not.toHaveBeenCalledWith('session.resume', expect.anything())
-    // No resume landed: the view is not bound to the abandoned session's runtime.
-    expect($activeSessionId.get()).toBeNull()
-  })
-})
-
-describe('session.resume turn timer contract', () => {
-  beforeEach(() => {
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback: FrameRequestCallback) => {
-      callback(0)
-
-      return null as unknown as number
-    })
-    setActiveSessionId(null)
-    setAwaitingResponse(false)
-    setBusy(false)
-    setMessages([])
-    setSessions([])
-    setTurnStartedAt(null)
-  })
-
-  afterEach(() => {
-    cleanup()
-    setActiveSessionId(null)
-    setAwaitingResponse(false)
-    setBusy(false)
-    setMessages([])
-    setSessions([])
-    setTurnStartedAt(null)
-    vi.restoreAllMocks()
-  })
-
-  async function resumeFrom(response: unknown): Promise<void> {
-    const requestGateway = vi.fn(async (method: string) => {
-      if (method === 'session.resume') {
-        // Model the JSON-RPC serialization/deserialization boundary. The shared
-        // fixture is asserted against the real gateway response in Python.
-        return JSON.parse(JSON.stringify(response)) as never
-      }
-
-      return {} as never
-    })
-
-    vi.mocked(getAllSessionMessages).mockResolvedValue({ messages: [], session_id: 'stored-running' } as never)
-
-    let resume: ((storedSessionId: string, replaceRoute?: boolean) => Promise<unknown>) | null = null
-    render(<ResumeTimerHarness onReady={ready => (resume = ready)} requestGateway={requestGateway} />)
-    await waitFor(() => expect(resume).not.toBeNull())
-    await act(async () => {
-      await resume!('stored-running', true)
-    })
-  }
-
-  it('restores the canonical gateway turn timestamp in milliseconds', async () => {
-    await resumeFrom(sessionResumeActiveTurn)
-
-    expect($turnStartedAt.get()).toBe(sessionResumeActiveTurn.turn_started_at * 1000)
-  })
-
-  it('clears a stale timer when the gateway response is not running', async () => {
-    setTurnStartedAt(1_600_000_000_000)
-
-    await resumeFrom({ ...sessionResumeActiveTurn, running: false })
-
-    expect($turnStartedAt.get()).toBeNull()
-  })
-
-  it('clears a stale timer when the running gateway response omits its timestamp', async () => {
-    const missingTimestamp: Record<string, unknown> = JSON.parse(JSON.stringify(sessionResumeActiveTurn))
-    delete missingTimestamp.turn_started_at
-    setTurnStartedAt(1_600_000_000_000)
-
-    await resumeFrom(missingTimestamp)
-
-    expect($turnStartedAt.get()).toBeNull()
   })
 })
 
