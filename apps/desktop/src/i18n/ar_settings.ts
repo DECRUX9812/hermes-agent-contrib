@@ -1021,6 +1021,7 @@ export const arSettings = {
           label: 'المراجعة',
           hint: 'وكيل المراجعة الفرعي /review'
         },
+        voice_chat: { label: 'دردشة صوتية', hint: 'ردود الوضع الصوتي' },
         triage_specifier: {
           label: 'محدد الفرز',
           hint: 'توضيح مواصفات كانبان'

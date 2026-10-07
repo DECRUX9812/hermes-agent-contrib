@@ -68,7 +68,7 @@ import { isWatchWindow } from '@/store/windows'
 import type { SessionMessage, SessionMessagesResponse, SessionResumeResult, UsageStats } from '@/types/hermes'
 
 import type { ClientSessionState } from '../../../types'
-import { routeTargetFromToken } from '../session-context-drift'
+import { resumeRouteStillCurrent, routeTargetFromToken } from '../session-context-drift'
 import { singleFlightSessionResume } from '../use-prompt-actions/single-flight-resume'
 
 import { sessionCreatedThisRun } from './created-this-run'
@@ -263,7 +263,7 @@ export function useResumeActions(
       const isCurrentResume = () =>
         resumeRequestRef.current === requestId &&
         selectedStoredSessionIdRef.current === storedSessionId &&
-        (getRouteToken() === routeToken || routeTargetFromToken(getRouteToken()) === storedSessionId)
+        resumeRouteStillCurrent(routeToken, getRouteToken(), storedSessionId)
 
       // A reconnect re-resumes the runtime this view is streaming. Let its
       // replay land while that runtime still owns the view. Otherwise the REST
