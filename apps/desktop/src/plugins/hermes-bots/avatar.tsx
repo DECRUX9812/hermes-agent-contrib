@@ -212,7 +212,7 @@ function bopMarkup(shape: null | string | undefined, name: string, color: string
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="${size}" height="${size}"` +
-    ` data-bot-face=${JSON.stringify(name)} data-hb-mood=${JSON.stringify(mood)}>${inner}</svg>`
+    ` data-bot-face=${JSON.stringify(name)}>${inner}</svg>`
   )
 }
 
