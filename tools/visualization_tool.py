@@ -30,7 +30,7 @@ MAX_HTML_CHARS = 200_000
 # Block the obvious exfiltration / breakout vectors. The sandbox already neuters
 # these, but failing fast gives the agent a clear, actionable error.
 _BLOCKED_PATTERNS = [
-    (re.compile(r"<\s*script[^>]*\bsrc\s*=\s*[\"'](?!https://cdn\.|https://unpkg\.com/|https://cdnjs\.cloudflare\.com/)", re.I),
+    (re.compile(r"<\s*script[^>]*\bsrc\s*=\s*[\"']?+(?!https://cdn\.|https://unpkg\.com/|https://cdnjs\.cloudflare\.com/)", re.I),
      "external scripts are only allowed from cdn.jsdelivr.net, unpkg.com, or cdnjs.cloudflare.com"),
     (re.compile(r"fetch\s*\(|XMLHttpRequest|WebSocket\s*\(|EventSource\s*\(", re.I),
      "no network requests at render time — inline all data in the HTML"),
