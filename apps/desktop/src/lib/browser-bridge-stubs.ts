@@ -165,12 +165,15 @@ export const BROWSER_BRIDGE_STUBS = {
   touchBackend: async () => ({ ok: true }),
   uninstall: {
     run: async () => ({ error: 'Run `hermes uninstall` on the server host', ok: false }),
+    // The OS apps settings belong to the server host, not this browser tab.
+    openAppsSettings: async () => undefined,
     summary: async () => ({
       agent_installed: true,
       // Package removal belongs to the server host, never this browser tab.
       code_removal_allowed: false,
       gui_installed: true,
       hermes_home: '',
+      native_removal_instructions: null,
       packaged_app_paths: [],
       platform: 'browser',
       source_built_artifacts: [],
