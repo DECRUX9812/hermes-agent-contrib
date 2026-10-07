@@ -43,7 +43,8 @@ export default function ChatScreen({ askAbout, onAskConsumed, onNeedPairing }: P
     try {
       const list = await listSessions(base, token);
       setSessions(list);
-      if (list.length > 0 && list[0]) setSessionId((s) => s || list[0].id);
+      const first = list[0];
+      if (first) setSessionId((s) => s || first.id);
     } catch (e) {
       setError(e instanceof GatewayError ? e.message : 'Could not reach the gateway.');
     } finally {
