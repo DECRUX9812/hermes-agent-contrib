@@ -95,7 +95,7 @@ export {
   _resetSessionOwnerHoldsForTests,
   holdSessionOwnerUntilForeground,
   releaseSessionOwnerHold
-} from ./session-owner-holds
+} from './session-owner-holds'
 
 /** The session id the live HashRouter route names, or null when the route has
  *  no session opinion (new-chat draft, reserved/overlay/contributed page, or
