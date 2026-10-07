@@ -84,7 +84,17 @@ def _policies_for(agent: Any) -> AgentPolicies:
 def _tool_call_signature(call: dict) -> str:
     """Stable signature for one tool call — name + canonicalized args, hashed so
     long tool payloads never accumulate in memory."""
-    args = call.get("arguments") or call.get("args") or {}
+    # OpenAI wire rows nest args under call["function"]["arguments"] — a reader
+    # limited to top-level keys hashes every call identically (sha256("{}"))
+    # and the retry-loop tripwire fires on any ≥N-call tool streak regardless
+    # of the real arguments (false positive on marathon turns with distinct
+    # args). Mirror the `function` fallback `name` already uses.
+    args = (
+        call.get("arguments")
+        or call.get("args")
+        or (call.get("function") or {}).get("arguments")
+        or {}
+    )
     if isinstance(args, str):
         canonical = args[:4096]
     else:
