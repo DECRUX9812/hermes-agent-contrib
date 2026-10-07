@@ -130,25 +130,37 @@ def test_holder_scan_fallback_respects_token_classifier(sleeper, monkeypatch, tm
     (tmp_path / ".hermes").mkdir()
     _write_ledger([])  # force the fallback rung
 
-    # Real process whose argv carries genuine serve shape, visible to psutil.
-    serve_like = sleeper("-m", "hermes_cli.main", "serve")
+    # Real processes: pid and live parent (us) come from actual sleepers. The
+    # cmdline strings carry production's `-m hermes_cli.main` spawn shape —
+    # a benign script or `-c` argv deliberately cannot classify post-#107002,
+    # so a real sleeper's own argv could never stand in for a holder's.
+    serve_like = sleeper()
     # Lookalike from the #90778 class — must NOT confer ownership.
-    kanban_like = sleeper("-m", "hermes_cli.main", "kanban", "--preserve-cache")
+    kanban_like = sleeper()
 
     import psutil
+
+    def _row(proc: subprocess.Popen, *tail: str):
+        return (
+            proc.pid,
+            psutil.Process(proc.pid).name(),
+            subprocess.list2cmdline([sys.executable, "-m", "hermes_cli.main", *tail]),
+        )
 
     # Snapshot both holder rows while both processes are alive. Building the
     # kanban row later (after the serve kill) would re-read the dead serve pid,
     # raise NoSuchProcess and hand the fallback an empty scan, which returns
     # False without ever reaching the token classifier.
-    serve_row, kanban_row = (
-        (p.pid, psutil.Process(p.pid).name(), " ".join(psutil.Process(p.pid).cmdline()))
-        for p in (serve_like, kanban_like)
-    )
+    serve_row = _row(serve_like, "serve")
+    kanban_row = _row(kanban_like, "kanban", "--preserve-cache")
     assert "--preserve-cache" in kanban_row[2]
 
+    # Patch the seam production reads — the detector lives in
+    # update_cmd_windows; hermes_cli.main._detect_venv_python_processes is an
+    # inert shim that always returns [] (old-updater halt stub).
     monkeypatch.setattr(
-        "hermes_cli.main._detect_venv_python_processes", lambda: [serve_row, kanban_row]
+        "hermes_cli.update_cmd_windows._detect_venv_python_processes",
+        lambda *a, **k: [serve_row, kanban_row],
     )
     # serve-shaped holder with a live parent (us) → owns
     assert update_cmd._desktop_owns_gateway_lifecycle() is True
@@ -158,6 +170,7 @@ def test_holder_scan_fallback_respects_token_classifier(sleeper, monkeypatch, tm
     serve_like.wait()
     assert kanban_like.poll() is None
     monkeypatch.setattr(
-        "hermes_cli.main._detect_venv_python_processes", lambda: [kanban_row]
+        "hermes_cli.update_cmd_windows._detect_venv_python_processes",
+        lambda *a, **k: [kanban_row],
     )
     assert update_cmd._desktop_owns_gateway_lifecycle() is False
