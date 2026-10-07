@@ -112,7 +112,9 @@ class TestUnifiedDashboardRouting:
                 _args(no_open=False, skip_build=True, ui_surface="webapp")
             )
 
-        assert exc.value.code == 1
+        from gateway.restart import GATEWAY_FATAL_CONFIG_EXIT_CODE
+
+        assert exc.value.code == GATEWAY_FATAL_CONFIG_EXIT_CODE
         assert opened == []
 
     def test_named_webapp_prints_route_without_opening_unauthorized_tab(self, main_mod, monkeypatch, capsys):

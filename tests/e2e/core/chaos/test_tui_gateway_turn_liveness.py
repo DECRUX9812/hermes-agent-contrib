@@ -284,7 +284,20 @@ def _assert_heartbeat(scn: Scenario, hb: Heartbeat, stats: dict[str, Any], turn_
     stats["heartbeats"] = len(hb.latencies)
     assert stats["heartbeat_max_s"] < HEARTBEAT_MAX_S, (
         f"{scn.id}: dispatcher blocked {stats['heartbeat_max_s']}s during the wedged turn")
-    assert len(hb.latencies) >= MIN_HEARTBEATS or turn_s < 2.0, (
+    # The count is a proxy for "the dispatcher kept answering DURING the turn", and the
+    # sampler sleeps HEARTBEAT_INTERVAL_S between calls, so the answers a window can hold
+    # are bounded by the time left after its slowest one (one interval goes to
+    # scheduling). provider_drop_mid_stream ends its turn the moment the fault fires, so a
+    # single 1.6 s answer — inside the ceiling above, therefore tolerated — left room for
+    # four samples in its ~2 s turn and the flat MIN_HEARTBEATS failed a healthy gateway on
+    # a 4-vCPU runner. The count only has to prove the dispatcher was SERVING calls rather
+    # than blocked until the fault ended (which answers just the pre-turn call plus the one
+    # in flight at exit): a stall under the ceiling is tolerated by design, and this window
+    # is shorter than that ceiling, so it cannot be told from a short turn. The long-fault
+    # scenarios, where the window does span the ceiling, keep owing the full
+    # MIN_HEARTBEATS.
+    room = max(0, int((turn_s - stats["heartbeat_max_s"]) / HEARTBEAT_INTERVAL_S) - 1)
+    assert len(hb.latencies) >= min(MIN_HEARTBEATS, max(3, room)) or turn_s < 2.0, (
         f"{scn.id}: only {len(hb.latencies)} heartbeats answered in a {turn_s:.1f}s turn")
 
 

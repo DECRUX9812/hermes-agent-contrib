@@ -140,7 +140,11 @@ def test_serve_tree_kill_leaves_no_orphans_and_reboots(tmp_path: Path) -> None:
             assert first.pid in owned, f"ownership scan cannot see serve pid {first.pid} (saw {owned})"
 
             killed = taskkill_tree(first.pid)
-            assert killed.returncode == 0, killed.stderr
+            # taskkill exits 255 when the tree is already gone ("There is no running
+            # instance of the task"): on a 4-vCPU runner the parent can exit between
+            # the ownership scan above and the kill. The orphan scan below — not this
+            # exit code — is what proves the quit path left nothing behind.
+            assert killed.returncode == 0 or b"no running instance" in killed.stderr.lower(), killed.stderr
             # Ownership, not ancestry: anything the backend spawned detached (a broken
             # parent link taskkill /T cannot follow) still carries this profile's
             # HERMES_HOME / cwd, and is an orphan the Desktop quit leaves behind.

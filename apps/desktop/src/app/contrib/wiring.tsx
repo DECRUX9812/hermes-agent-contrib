@@ -36,6 +36,7 @@ import { RemoteDisplayBanner } from '@/components/remote-display-banner'
 import { SendDiagnosticsHost } from '@/components/send-diagnostics-dialog'
 import { SharedMetricsConsentDialog } from '@/components/shared-metrics/consent-dialog'
 import { TipHost } from '@/components/tips'
+import { UpdateHoldOverlay } from '@/components/update-hold-overlay'
 import { emitGatewayEvent } from '@/contrib/events'
 import { translateNow } from '@/i18n'
 import { type ChatMessage, chatMessageText } from '@/lib/chat-messages'
@@ -159,6 +160,7 @@ import { useTouchTitlebar } from '../shell/use-touch-titlebar'
 import { WslgWindowControls } from '../shell/wslg-window-controls'
 import { UpdatesOverlay } from '../updates-overlay'
 
+import { CloseOnlyOverlays } from './close-only-overlays'
 import { ContribWiringContext } from './context'
 import {
   hydrateStoredSessionTranscript,
@@ -193,6 +195,7 @@ const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).
 const ProfilesView = lazy(async () => ({ default: (await import('../profiles')).ProfilesView }))
 const SettingsView = lazy(async () => ({ default: (await import('../settings')).SettingsView }))
 const StarmapView = lazy(async () => ({ default: (await import('../starmap')).StarmapView }))
+const ActivityView = lazy(async () => ({ default: (await import('../activity')).ActivityView }))
 const RosterView = lazy(async () => ({ default: (await import('../roster')).RosterView }))
 
 // Surfaces (the four wired panes), the render context + WiredPane, and the
@@ -202,6 +205,23 @@ export { WiredPane } from './context'
 
 // Only the RPCs issued by session creation follow the handoff's profile pin.
 const HANDOFF_CREATE_LEG_METHODS = new Set(['config.set', 'session.close', 'session.create'])
+
+// Generic in-app route intents raised by toast recovery buttons (Open Keys,
+// Open Gateways, Maintenance …) fired from stores with no router context.
+function useRouteRequestNavigation(navigate: ReturnType<typeof useNavigate>): void {
+  const routeRequest = useStore($routeRequest)
+  const routeRequestSeenRef = useRef(0)
+
+  // eslint-disable-next-line no-restricted-syntax -- one-shot request-seen sentinel, not an atom mirror
+  useEffect(() => {
+    if (!routeRequest || routeRequest.seq === routeRequestSeenRef.current) {
+      return
+    }
+
+    routeRequestSeenRef.current = routeRequest.seq
+    navigate(routeRequest.path)
+  }, [navigate, routeRequest])
+}
 
 export function ContribWiring({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
@@ -215,7 +235,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // intent counter here; the ref skips the initial mount value.
   const billingSettingsSeenRef = useRef(0)
   const poolLimitsSettingsSeenRef = useRef(0)
-  const routeRequestSeenRef = useRef(0)
   const backendRestartSeenRef = useRef(0)
   const cronReviewSeenRef = useRef(0)
   const activeTranscriptSignatureRef = useRef(new Map<string, string>())
@@ -228,22 +247,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const activeSessionId = useStore($activeSessionId)
   const billingSettingsRequest = useStore($billingSettingsRequest)
   const poolLimitsSettingsRequest = useStore($poolLimitsSettingsRequest)
-  const routeRequest = useStore($routeRequest)
   const backendRestartRequest = useStore($backendRestartRequest)
   const cronReviewRequest = useStore($cronReviewRequest)
   const currentCwd = useStore($currentCwd)
 
-  // Generic in-app route intents raised by toast recovery buttons (Open Keys,
-  // Open Gateways, Maintenance …) fired from stores with no router context.
-  // eslint-disable-next-line no-restricted-syntax -- one-shot request-seen sentinel, not an atom mirror
-  useEffect(() => {
-    if (!routeRequest || routeRequest.seq === routeRequestSeenRef.current) {
-      return
-    }
-
-    routeRequestSeenRef.current = routeRequest.seq
-    navigate(routeRequest.path)
-  }, [navigate, routeRequest])
+  useRouteRequestNavigation(navigate)
 
   // "Restart Hermes" from a toast: recycle the local backend the user is
   // looking at (same IPC the Models page uses), then let the boot hook re-dial.
@@ -351,6 +359,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     chatOpen,
     closeOverlayToPreviousRoute,
     commandCenterInitialSection,
+    activityOpen,
     commandCenterOpen,
     cronOpen,
     currentView,
@@ -1463,6 +1472,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       <UpdatesOverlay />
       <GatewayConnectingOverlay />
       <BootFailureOverlay />
+      <UpdateHoldOverlay />
       <CommandPalette />
       <QuickOpen />
       <PluginInstallModal />
@@ -1527,11 +1537,10 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         </Suspense>
       )}
 
-      {agentsOpen && (
-        <Suspense fallback={null}>
-          <AgentsView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
+      <CloseOnlyOverlays
+        onClose={closeOverlayToPreviousRoute}
+        overlays={[{ id: 'agents', open: agentsOpen, View: AgentsView }]}
+      />
 
       {cronOpen && (
         <Suspense fallback={null}>
@@ -1539,23 +1548,15 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         </Suspense>
       )}
 
-      {webhooksOpen && (
-        <Suspense fallback={null}>
-          <WebhooksView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
-
-      {profilesOpen && (
-        <Suspense fallback={null}>
-          <ProfilesView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
-
-      {starmapOpen && (
-        <Suspense fallback={null}>
-          <StarmapView onClose={closeOverlayToPreviousRoute} />
-        </Suspense>
-      )}
+      <CloseOnlyOverlays
+        onClose={closeOverlayToPreviousRoute}
+        overlays={[
+          { id: 'webhooks', open: webhooksOpen, View: WebhooksView },
+          { id: 'profiles', open: profilesOpen, View: ProfilesView },
+          { id: 'starmap', open: starmapOpen, View: StarmapView },
+          { id: 'activity', open: activityOpen, View: ActivityView }
+        ]}
+      />
 
       {rosterOpen && (
         <Suspense fallback={null}>

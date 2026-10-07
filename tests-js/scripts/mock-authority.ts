@@ -707,6 +707,10 @@ export async function startMockAuthority(options: MockAuthorityOptions = {}): Pr
     ]
   })
 
+  // Mirrors `plugins/kanban/dashboard/plugin_api.py::BOARD_COLUMNS` — the board
+  // payload carries a column object per status, never a bare null.
+  const boardColumns = ['triage', 'todo', 'scheduled', 'ready', 'running', 'blocked', 'review', 'done']
+
   /** The boot/boot-adjacent REST surface the renderer probes while it opens.
    *  Every row mirrors the real `hermes serve` shape; anything missing fails
    *  closed as `unavailable`/`empty`, never as an error the UI must handle. */
@@ -714,7 +718,8 @@ export async function startMockAuthority(options: MockAuthorityOptions = {}): Pr
     '/api/audio/voice-live/status': () => ({ mode: 'chained', ok: true, supported: false }),
     '/api/config': () => ({}),
     '/api/config/defaults': () => ({}),
-    '/api/cron/jobs': () => ({ jobs: [], total: 0 }),
+    // GET /api/cron/jobs is a bare job array (web_routers/cron.py::list_cron_jobs).
+    '/api/cron/jobs': () => [],
     '/api/git/status': () => ({ branch: null, clean: true, is_repo: false }),
     '/api/fs/default-cwd': () => ({ branch: null, cwd: '/tmp' }),
     '/api/hermes/update/check': () => ({
@@ -748,8 +753,14 @@ export async function startMockAuthority(options: MockAuthorityOptions = {}): Pr
       provider: 'mock'
     }),
     '/api/model/options': modelOptions,
-    '/api/plugins/kanban/board': () => ({ board: null }),
-    '/api/plugins/kanban/boards': () => ({ boards: [] }),
+    '/api/plugins/kanban/board': () => ({
+      assignees: [],
+      columns: boardColumns.map(name => ({ name, tasks: [] })),
+      latest_event_id: 0,
+      now: Math.floor(Date.now() / 1000),
+      tenants: []
+    }),
+    '/api/plugins/kanban/boards': () => ({ boards: [], current: 'default' }),
     '/api/profiles': () => ({ profiles: [profileDict] }),
     '/api/profiles/active': () => ({ active: 'default', current: 'default' }),
     '/api/profiles/sessions': () => ({

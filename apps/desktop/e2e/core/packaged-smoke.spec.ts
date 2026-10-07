@@ -63,6 +63,12 @@ const nonce = Math.random()
 const U = (n: number) => `U${n}-${nonce}`
 const A = (n: number) => `A${n}-${nonce}`
 
+/** The visible transcript. The sidebar's session/bot chrome mirrors the latest reply as a
+ *  preview, so page-wide text locators for reply content can match more than one node. */
+function viewport(page: Page) {
+  return page.locator('[data-slot="aui_thread-viewport"]').filter({ visible: true }).first()
+}
+
 // ─── Locating the packaged build ────────────────────────────────────────
 
 interface BuildConfig {
@@ -525,7 +531,7 @@ test('packaged binary boots against a scripted provider and completes a first ch
       await expect
         .poll(() => storedSessionForMarker(sandbox, 'default', U(1)), { message: 'first turn persisted to state.db' })
         .toBe(sessionId)
-      await expect(page.getByText(`${A(1)} packaged reply`)).toBeVisible()
+      await expect(viewport(page).getByText(`${A(1)} packaged reply`)).toBeVisible()
       await assertTranscriptOracle(page, ws, provider, { sessionId, expectUserMarkers: [U(1)] }, 'packaged first turn')
     })
   } finally {

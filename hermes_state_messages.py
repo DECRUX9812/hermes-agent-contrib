@@ -138,10 +138,18 @@ class SessionMessagesMixin:
         """Serialize list/dict content (multimodal parts) as a sentinel-prefixed JSON string (sqlite3 binds
         only scalars). Lone UTF-16 surrogates (unsanitized web-scraped tool results) are scrubbed here: left
         raw, sqlite3 raises UnicodeEncodeError and the session silently stops persisting. Pairs with
-        :meth:`_decode_content`."""
+        :meth:`_decode_content`.
+
+        A literal string carrying the reserved ``\\x00json:`` prefix is indistinguishable from
+        stored structured content, so it is JSON-string-wrapped (decoded back verbatim on read)
+        instead of written raw — a crafted import can't smuggle the marker in and have the read
+        path decode attacker-chosen structure."""
         if isinstance(content, str):
-            return _sanitize_surrogates(content)
-        if content is None or isinstance(content, (bytes, int, float)):
+            content = _sanitize_surrogates(content)
+            if not content.startswith(cls._CONTENT_JSON_PREFIX):
+                return content
+            # Fall through: escape the reserved prefix by double-encoding the literal.
+        elif content is None or isinstance(content, (bytes, int, float)):
             return content
         try:
             return cls._CONTENT_JSON_PREFIX + json.dumps(content)  # ensure_ascii escapes surrogates: bindable
@@ -150,7 +158,8 @@ class SessionMessagesMixin:
 
     @classmethod
     def _decode_content(cls, content: Any) -> Any:
-        """Reverse :meth:`_encode_content`; returns scalars unchanged."""
+        """Reverse :meth:`_encode_content`; returns scalars unchanged. Fail closed: a reserved-prefix
+        string that isn't valid JSON (a legacy/malformed marker row) returns the raw string."""
         if isinstance(content, str) and content.startswith(cls._CONTENT_JSON_PREFIX):
             return _json_or(content[len(cls._CONTENT_JSON_PREFIX):], content,
                 "Failed to decode JSON-encoded message content; returning raw string")
@@ -1127,25 +1136,6 @@ class SessionMessagesMixin:
         return self._write_rowcount(
             "UPDATE messages SET content = ? WHERE id = ? AND session_id = ? AND role = 'user' AND active = 1",
             (self._encode_content(content), row_id, session_id))
-
-    def resolve_active_row_id(self, session_id: str, row_id: int) -> Optional[int]:
-        """The active row that still carries *row_id*'s message: *row_id* itself while active, else the one
-        row an in-place compaction re-sequenced it into (``_clone_message_rows`` copies role, content and
-        timestamp byte-exact to a higher id). ``None`` when neither exists or the clone is ambiguous.
-        A caller holding a row id across a compaction (the queued-prompt envelope) re-resolves it here."""
-        if not session_id or isinstance(row_id, bool) or not isinstance(row_id, int) or row_id <= 0:
-            return None
-        origin = self._read_one("SELECT active FROM messages WHERE id = ? AND session_id = ?", (row_id, session_id))
-        if origin is None:
-            return None
-        if origin[0]:
-            return row_id
-        clones = self._read_all(
-            "SELECT c.id FROM messages c JOIN messages o ON o.id = ? "
-            "WHERE c.session_id = ? AND c.active = 1 AND c.id > o.id AND c.role = o.role "
-            "AND c.content IS o.content AND c.timestamp = o.timestamp",
-            (row_id, session_id))
-        return int(clones[0][0]) if len(clones) == 1 else None
 
     def deactivate_message(self, session_id: str, row_id: int) -> int:
         """Deactivate ONE known row (id-addressed, idempotent; returns the affected row count). Used by

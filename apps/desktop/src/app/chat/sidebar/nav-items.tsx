@@ -7,6 +7,7 @@ import { $interfaceMode, shownInMode } from '@/store/interface-mode'
 import { applySidebarNavPrefs, SIDEBAR_NAV_PREFS_AREA } from '@/store/sidebar-nav'
 
 import {
+  ACTIVITY_ROUTE,
   type AppView,
   ARTIFACTS_ROUTE,
   CAPABILITIES_ROUTE,
@@ -30,6 +31,14 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="robot" {...props} />,
     action: 'new-session',
     keybindActionId: 'session.new'
+  },
+  {
+    // No tier: Activity is the heartbeat of the app — it rides every mode.
+    id: 'activity',
+    label: '',
+    icon: props => <Codicon name="pulse" {...props} />,
+    route: ACTIVITY_ROUTE,
+    keybindActionId: 'nav.activity'
   },
   {
     id: 'capabilities',
