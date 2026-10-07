@@ -217,7 +217,7 @@ def _read_entry_source(path: Path) -> tuple[str, int]:
     try:
         # errors="replace" matches /api/fs/read-text's decode policy; the loader
         # only needs valid JS, and a stray byte must not 500 the whole scan.
-        return path.read_text(encoding="utf-8", errors="replace"), size
+        return path.read_text(encoding="utf-8-sig", errors="replace"), size
     except PermissionError:
         raise HTTPException(status_code=403, detail="File is not readable")
     except OSError as exc:

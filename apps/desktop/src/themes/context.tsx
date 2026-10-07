@@ -112,7 +112,7 @@ const promoteUnanimousLegacy = (record: string, legacy: string): void => {
 const profilePref = <T extends string>(record: string, legacy: string, normalize: (v: string | null) => T) => {
   /** The profile's OWN pick — never the global value an unassigned profile inherits. */
   const own = (profile: string): string | null =>
-    profile === 'default' ? storedString(legacy) : (storedStringRecord(record)[profile] ?? null)
+    storedStringRecord(record)[profile] ?? (profile === 'default' ? storedString(legacy) : null)
 
   const stored = (profile: string): string | null => {
     promoteUnanimousLegacy(record, legacy)
@@ -122,14 +122,12 @@ const profilePref = <T extends string>(record: string, legacy: string, normalize
 
   /** Write a raw pick, or drop the profile's own entry (`null`). */
   const put = (profile: string, value: null | string): void => {
-    if (profile === 'default') {
-      persistString(legacy, value)
-
-      return
-    }
-
     const { [profile]: _dropped, ...rest } = storedStringRecord(record)
     persistStringRecord(record, value === null ? rest : { ...rest, [profile]: value })
+
+    if (profile === 'default') {
+      persistString(legacy, value)
+    }
   }
 
   return {

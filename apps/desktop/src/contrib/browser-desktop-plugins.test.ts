@@ -17,13 +17,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as ApiClient from '@/api/client'
 import type { HermesApiRequest } from '@/global'
 
+import { resolve } from 'node:path'
+
 import { $pluginRecords } from './plugins-store'
 import { registry } from './registry'
 import { discoverRuntimePlugins, unloadRuntimePlugin, watchRuntimePlugins } from './runtime-loader'
 
 // The user's real plugin, read from disk in the test so the shipped file is
 // what gets evaluated. Path is overridable for portability.
-const REAL_PLUGIN_PATH = process.env.HERMES_TEST_BACKDROPS_PLUGIN || '/home/decrux/.hermes-webapp/desktop-plugins/backdrops/plugin.js'
+const REAL_PLUGIN_PATH =
+  process.env.HERMES_TEST_BACKDROPS_PLUGIN ||
+  resolve(process.cwd(), '../../plugins/backdrops/desktop/plugin.js')
 
 // The REAL /api handler for the plugin routes, not a hand-written double: this
 // mirrors hermes_cli/web_routers/desktop_plugins.py's contract (root, one
