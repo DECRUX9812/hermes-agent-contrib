@@ -18,6 +18,10 @@ export interface ShareCardData {
   role: string
   starters: string[]
   startersLabel: string
+  /** Badge chrome (the bops staff-card language): the eyebrow + clock tag. */
+  staffEyebrow: string
+  onTheClock: string
+  staffIdLabel: string
 }
 
 export const SHARE_CARD_WIDTH = 1200
@@ -100,9 +104,11 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath()
 }
 
-const FONT = '"Inter", "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+const FONT = '"Geist", "Inter", "SF Pro Display", "Segoe UI", system-ui, sans-serif'
+const MONO = '"Geist Mono", "SF Mono", ui-monospace, monospace'
 
-/** Paint the card into a fresh canvas (2× for crisp pasting) and return it. */
+/** Paint the card into a fresh canvas (2× for crisp pasting) and return it.
+ *  The bops staff badge: paper card, lanyard slot, ink type, one lime tag. */
 export async function drawShareCard(data: ShareCardData): Promise<HTMLCanvasElement> {
   const scale = 2
   const W = SHARE_CARD_WIDTH
@@ -118,14 +124,26 @@ export async function drawShareCard(data: ShareCardData): Promise<HTMLCanvasElem
 
   ctx.scale(scale, scale)
 
-  // Paper: warm white with a wash of the bot's own colour from the left.
-  ctx.fillStyle = '#fbfaf8'
+  // Paper with a soft wash of the bot's own colour from the left.
+  ctx.fillStyle = '#f9f9f8'
   ctx.fillRect(0, 0, W, H)
   const wash = ctx.createRadialGradient(260, 300, 20, 260, 300, 620)
-  wash.addColorStop(0, `${data.accent}33`)
+  wash.addColorStop(0, `${data.accent}2e`)
   wash.addColorStop(1, `${data.accent}00`)
   ctx.fillStyle = wash
   ctx.fillRect(0, 0, W, H)
+
+  // The badge frame: one hairline inside the card, and the lanyard slot.
+  ctx.strokeStyle = '#e6e6e3'
+  ctx.lineWidth = 1.5
+  roundRect(ctx, 22, 22, W - 44, H - 44, 30)
+  ctx.stroke()
+  ctx.fillStyle = '#e6e6e3'
+  roundRect(ctx, W / 2 - 55, 33, 110, 18, 9)
+  ctx.fill()
+  ctx.fillStyle = '#dcdcd6'
+  roundRect(ctx, W / 2 - 51, 35.5, 102, 13, 6.5)
+  ctx.fill()
 
   // The character, on a floor shadow.
   const faceSize = 260
@@ -170,18 +188,46 @@ export async function drawShareCard(data: ShareCardData): Promise<HTMLCanvasElem
   const qrSize = data.qrUrl ? 150 : 0
   const textW = W - textX - 72
   ctx.textBaseline = 'alphabetic'
-  ctx.fillStyle = '#16161a'
-  ctx.font = `700 64px ${FONT}`
-  ctx.fillText(data.name, textX, 190, textW)
 
-  let y = 190
+  // The staff eyebrow — tracking out in mono, like the lanyard print.
+  ctx.fillStyle = '#6b6b6b'
+  ctx.font = `600 20px ${MONO}`
+  const eyebrow = data.staffEyebrow.toUpperCase()
+  ctx.save()
+
+  if ('letterSpacing' in ctx) {
+    ;(ctx as { letterSpacing: string }).letterSpacing = '4px'
+  }
+
+  ctx.fillText(eyebrow, textX, 158, textW)
+  ctx.restore()
+
+  let y = 218
+  ctx.fillStyle = '#0a0a0a'
+  ctx.font = `800 62px ${FONT}`
+  ctx.fillText(data.name, textX, y, textW)
 
   if (data.role) {
-    y += 48
+    y += 46
     ctx.fillStyle = data.accent
     ctx.font = `600 28px ${FONT}`
     ctx.fillText(data.role, textX, y, textW)
   }
+
+  // The lime "on the clock" tag — the one accent every badge shares.
+  y += 26
+  ctx.font = `700 19px ${MONO}`
+  const clockText = data.onTheClock.toUpperCase()
+  const clockW = ctx.measureText(clockText).width + 34
+  ctx.fillStyle = '#e9ff3b'
+  roundRect(ctx, textX, y, clockW, 34, 17)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(10,10,10,0.14)'
+  ctx.lineWidth = 1
+  ctx.stroke()
+  ctx.fillStyle = '#0a0a0a'
+  ctx.fillText(clockText, textX + 17, y + 23)
+  y += 34
 
   if (data.description) {
     ctx.fillStyle = '#4a4a55'
@@ -208,10 +254,10 @@ export async function drawShareCard(data: ShareCardData): Promise<HTMLCanvasElem
       ctx.fillStyle = '#ffffff'
       roundRect(ctx, textX, y, pillW, 44, 22)
       ctx.fill()
-      ctx.strokeStyle = 'rgba(0,0,0,0.08)'
+      ctx.strokeStyle = '#e6e6e3'
       ctx.lineWidth = 1
       ctx.stroke()
-      ctx.fillStyle = '#2a2a33'
+      ctx.fillStyle = '#0a0a0a'
       ctx.fillText(label, textX + 18, y + 29)
       y += 44
     }
@@ -236,7 +282,17 @@ export async function drawShareCard(data: ShareCardData): Promise<HTMLCanvasElem
     }
   }
 
-  ctx.fillStyle = '#a0a0aa'
+  // The badge's footline: staff id in mono, then the maker line.
+  ctx.fillStyle = '#0a0a0a'
+  ctx.font = `600 17px ${MONO}`
+
+  const staffId = data.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  ctx.fillText(`${data.staffIdLabel.toUpperCase()} ${staffId || 'bot'}`, 72, H - 78)
+  ctx.fillStyle = '#9a9a98'
   ctx.font = `500 18px ${FONT}`
   ctx.fillText(data.footer, 72, H - 48)
 

@@ -76,9 +76,12 @@ export function ShareBotDialog({
         faceUrl,
         footer: s.footer,
         name,
+        onTheClock: s.onTheClock,
         qrCaption: s.scanToChat,
         qrUrl,
         role,
+        staffEyebrow: s.staffEyebrow,
+        staffIdLabel: s.staffIdLabel,
         starters: chatStarters(meta),
         startersLabel: s.askMe
       })

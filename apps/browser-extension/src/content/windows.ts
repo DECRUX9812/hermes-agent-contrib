@@ -109,6 +109,7 @@ export class WindowManager {
           img.onerror = () => img.remove()
           thumb.appendChild(img)
         }
+
         card.appendChild(thumb)
 
         const txt = document.createElement('div')
