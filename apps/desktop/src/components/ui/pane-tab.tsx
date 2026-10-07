@@ -217,23 +217,25 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
   { as = 'span', className, children, ...props },
   ref
 ) {
-  const Comp = as as React.ElementType
-
-  return (
-    <Comp
-      className="flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2"
-      ref={ref}
-      {...props}
+  // `as` stays a tag-name union, not ElementType: with @react-three/fiber's
+  // JSX augmentation installed, ElementType unions every intrinsic tag and the
+  // intersected props collapse to `never`.
+  return React.createElement(
+    as,
+    {
+      className:
+        'flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2',
+      ref,
+      ...props
+    },
+    <span
+      className={cn(
+        'ui-tab-label block min-w-0 truncate font-medium group-data-[closeable]/tab:text-clip',
+        className
+      )}
     >
-      <span
-        className={cn(
-          'ui-tab-label block min-w-0 truncate font-medium group-data-[closeable]/tab:text-clip',
-          className
-        )}
-      >
-        {children}
-      </span>
-    </Comp>
+      {children}
+    </span>
   )
 })
 

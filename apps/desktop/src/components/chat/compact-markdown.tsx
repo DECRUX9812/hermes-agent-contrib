@@ -1,5 +1,5 @@
-import type { ComponentProps, ElementType, FC } from 'react'
-import { memo } from 'react'
+import type { ComponentProps, FC } from 'react'
+import { createElement, memo } from 'react'
 import { Streamdown } from 'streamdown'
 
 import { ExternalLink } from '@/lib/external-link'
@@ -28,11 +28,8 @@ const TAG_CLASSES = {
 } as const
 
 function tagged<T extends keyof typeof TAG_CLASSES>(Tag: T) {
-  const Component = (({ className, ...rest }: ComponentProps<T>) => {
-    const Element = Tag as ElementType
-
-    return <Element className={cn(TAG_CLASSES[Tag], className)} {...rest} />
-  }) as FC<ComponentProps<T>>
+  const Component = (({ className, ...rest }: ComponentProps<T>) =>
+    createElement(Tag, { className: cn(TAG_CLASSES[Tag], className), ...rest })) as FC<ComponentProps<T>>
 
   Component.displayName = `Md.${Tag}`
 
