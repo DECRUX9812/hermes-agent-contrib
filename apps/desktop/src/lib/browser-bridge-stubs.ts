@@ -51,6 +51,23 @@ export const BROWSER_BRIDGE_STUBS = {
     setFocusable: () => undefined,
     setIgnoreMouse: () => undefined
   },
+  // The 3D Pane is a transparent native window; a browser tab can not open
+  // one, so it reports not-ok and drops pushes/controls.
+  pane3d: {
+    captureContext: async () => {
+      throw browserUnsupported("3D Pane")
+    },
+    close: async () => ({ ok: false }),
+    control: () => undefined,
+    dismiss: async () => ({ ok: false }),
+    isOpen: async () => false,
+    notify: async () => ({ id: "", ok: false }),
+    onControl: () => noopUnsubscribe(),
+    onState: () => noopUnsubscribe(),
+    open: async () => ({ ok: false }),
+    playDemo: async () => ({ ok: false }),
+    summon: async () => ({ ok: false })
+  },
   applyConnectionConfig: async () => {
     throw browserUnsupported('Gateway reconfiguration')
   },

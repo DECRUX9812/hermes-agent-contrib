@@ -422,6 +422,12 @@ import {
 } from './oauth-rest-request'
 import { wireOauthSessionResponse } from './oauth-session-response'
 import { listWindowsProcesses, reapPackageRootedProcesses } from './package-process-reap'
+
+import { createElectronAnchorService } from './pane3d-anchor-electron'
+import { type AnchorService } from './pane3d-anchor-types'
+import { createElectronPageContextService } from './pane3d-context-electron'
+import { registerPane3dIpc } from './pane3d-ipc'
+import { createPane3dController } from './pane3d-window'
 import { createParentStartMarkerResolver, parentWatchdogEnv } from './parent-process-identity'
 import { bundledPayload, installIdForRoot, type PayloadInfo, payloadPythonPath } from './payload-backend'
 import { petOverlayClickThrough, shouldPopInOnOverlayClosed } from './pet-overlay'
@@ -14456,6 +14462,51 @@ function rehomePetOverlay() {
   }
 }
 
+// ── 3D Pane (transparent avatar layer) ──────────────────────────────────────
+//
+// One transparent, frameless, always-on-top window (`?win=pane3d`) covering the
+// work area of the display the anchor sits on. It hosts a single R3F canvas;
+// everything outside the avatars/cards is click-through (pane3d-window.ts starts
+// that before the window can paint). main.ts only wires the Electron-local
+// primitives below — all pane logic lives in electron/pane3d-*.ts.
+// Assigned just after the IPC relay exists; the controller reads it lazily.
+let pane3dAnchorService: AnchorService | null = null
+
+const pane3dController = createPane3dController({
+  attachConsole: win => attachRendererConsoleCapture(win, 'pane3d', rememberLog),
+  installLifecycle: win => installWindowRendererLifecycle(win, { kind: 'overlay', callbacks: { log: rememberLog } }),
+  isMac: IS_MAC,
+  loadWindowUrl,
+  // Spawn over the display the current anchor is on (pane3d-anchor.ts §7).
+  getAnchor: () => pane3dAnchorService?.currentScreenRect() ?? null,
+  // However the pane dies (palette, hover control, window close), the host
+  // renderer has to hear about it so the palette label can never go stale, and
+  // the relay must stop treating the dead renderer as ready.
+  onClosed: () => {
+    pane3dAnchorService?.stop()
+    pane3dIpc.relay.resetReadiness()
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('hermes:pane3d:control', { type: 'close' })
+    }
+  },
+  // A new pane renderer (fresh spawn or the replacement for a still-closing
+  // window) and an in-place reload both invalidate the previous `ready` and end
+  // the anchor session that was feeding it; `ready` starts a fresh one.
+  onRendererReset: () => {
+    pane3dAnchorService?.stop()
+    pane3dIpc.relay.resetReadiness()
+  },
+  preloadPath: PRELOAD_PATH,
+  rendererBase: () => (DEV_SERVER ? DEV_SERVER : pathToFileURL(resolveRendererIndex()).toString()),
+  wireReveal: win => wireWindowReveal(win, { show: () => win.showInactive() }),
+  // Same zoom opt-out as the pet overlay (no zoom shortcuts, no persisted-zoom
+  // re-assert). Chromium still applies the session's per-origin UI zoom to this
+  // window — helper windows share the main renderer's origin — so pane-local CSS
+  // pixels are scaled by that factor; the hit-region math must divide by it.
+  wireWindow: win => wireCommonWindowHandlers(win, { zoom: false })
+})
+
 // ── Bot Room overlay ───────────────────────────────────────────────────────
 //
 // Full-screen transparent layer (`?win=botroom`) where bot mascots live on the
@@ -16289,6 +16340,31 @@ registerPetOverlayIpc({
   getPetOverlayWindow: () => petOverlayWindow,
   openPetOverlay,
   closePetOverlay
+})
+
+// --- 3D Pane (transparent avatar layer) — see pane3d-ipc.ts. --------------
+// Page context for the composer: the in-app browser guest, else the frontmost
+// non-Hermes OS window, else none (pane3d-context.ts, bounded to 800 ms).
+const pane3dContext = createElectronPageContextService()
+
+const pane3dIpc = registerPane3dIpc({
+  captureContext: () => pane3dContext.capture(),
+  closePane3d: () => pane3dController.close(),
+  getMainWindow: () => mainWindow,
+  getPaneWindow: () => pane3dController.getWindow(),
+  isPane3dOpen: () => pane3dController.isOpen(),
+  // The pane renderer is up: start pushing the anchor (architecture §7).
+  onPaneReady: () => void pane3dAnchorService?.start(),
+  openPane3d: () => void pane3dController.open()
+})
+
+// Anchors the avatars: the in-app browser guest, else the frontmost non-Hermes
+// OS window, else the desktop (pane3d-anchor.ts). Watches the host/guest and
+// re-homes the pane to the anchor's display; stopped when the pane closes.
+pane3dAnchorService = createElectronAnchorService({
+  getPaneWindow: () => pane3dController.getWindow(),
+  pushState: state => pane3dIpc.relay.send(state),
+  rehome: anchor => pane3dController.rehome(anchor)
 })
 
 registerBotRoomIpc({
