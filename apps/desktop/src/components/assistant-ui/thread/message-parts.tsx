@@ -137,10 +137,11 @@ const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
 
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   const showToolActivity = useStore($showToolActivity)
-  // Inside an expanded bot-chat activity pill (G2) quiet rows render — the
-  // pill's summary stands in for them while collapsed. Everywhere else
+  // Inside a bot-chat activity pill (G2) quiet rows follow the pill: hidden
+  // until it is expanded, even when tool activity is on. Everywhere else
   // answer-only applies unchanged.
   const pillExpanded = useContext(ActivityPillExpandedContext)
+  const quietRowHidden = pillExpanded === null ? !showToolActivity : !pillExpanded
 
   // todo parts are hoisted to a dedicated panel above the message content.
   if (isTodoToolName(props.toolName)) {
@@ -179,7 +180,7 @@ const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   // The tool feed (reads, searches, commands) follows display.tool_progress,
   // never show_reasoning. Cards, approvals, and failed calls the user must act
   // on remain regardless.
-  if (!showToolActivity && !pillExpanded && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
+  if (quietRowHidden && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
     return null
   }
 

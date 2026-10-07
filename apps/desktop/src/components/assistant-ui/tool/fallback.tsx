@@ -93,11 +93,11 @@ import { ToolRunTicker } from './run-ticker'
 const ToolEmbedContext = createContext(false)
 const ToolRunDisclosureContext = createContext<string | null>(null)
 
-/** True while a bot-chat activity pill is expanded (bot-mode G2). The
- *  answer-only gate in the tool fallback consults it so a collapsed pill
- *  hides quiet rows — while failures, approvals and card tools still render
- *  — and an expanded one reveals them in place. */
-export const ActivityPillExpandedContext = createContext(false)
+/** Inside a bot-chat activity pill (bot-mode G2): `true` when expanded, `false`
+ *  when collapsed, `null` outside any pill. A collapsed pill hides quiet rows
+ *  — failures, approvals and card tools still render — and an expanded one
+ *  reveals them in place. */
+export const ActivityPillExpandedContext = createContext<boolean | null>(null)
 
 // A search hit's title is result *content* inside an expanded row, not one of
 // the scaffolding lines, so it keeps the brighter secondary grey.
