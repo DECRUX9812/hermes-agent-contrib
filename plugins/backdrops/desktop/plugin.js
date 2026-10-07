@@ -7,7 +7,7 @@
 //
 // Installs off: enable in Capabilities → Plugins, then look under
 // Settings → Appearance → "Backdrop gallery".
-import { APPEARANCE_AREAS, atom, cn, haptic, host, icons, useValue } from '@hermes/plugin-sdk'
+import { APPEARANCE_AREAS, atom, cn, haptic, host, icons, Popover, PopoverContent, PopoverTrigger, STATUSBAR_AREAS, useValue } from '@hermes/plugin-sdk'
 import { useRef } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
@@ -35,8 +35,9 @@ const MAX_EDGE = 1920 // same downscale edge as the native upload tile
 const FETCH_MS = 6000
 const REFRESH_MS = 6 * 60 * 60 * 1000
 
-const $drops = atom(BUNDLED)
 const $origin = atom('loading') // 'live' | 'bundled' | 'cached' | 'loading'
+/** Native paint strength behind the popover toggle (soft → subtle). */
+const $strength = atom('balanced')
 const $backdrop = atom({ image: null, scene: 'off' })
 let $own // the stored photo atom, seeded from ctx.storage at register
 
@@ -117,6 +118,12 @@ const normalize = (base, drops) => {
   return read.slice(0, 60).sort(byNewest)
 }
 
+// Normalized at startup, never raw BUNDLED: entry paths are relative to the
+// manifest's directory, and a tile click before the first refresh would
+// otherwise store a relative path in backdrop.image — a URL that 404s
+// against the app base and persists, leaving the background blank.
+const $drops = atom(normalize(MANIFEST_URL, BUNDLED))
+
 /** Same downscale the Appearance page applies (1920px JPEG → a few hundred KB). */
 const downscaled = async file => {
   const bitmap = await createImageBitmap(file)
@@ -157,24 +164,27 @@ const appliedBadge = () =>
     children: jsx(icons.Check, { className: 'size-3' })
   })
 
+/** One door for every apply surface (gallery tile, statusbar quick-pick). */
+const applyDrop = (ctx, url) => {
+  haptic('tap')
+
+  // A photo the user dropped through the native tile is worth keeping —
+  // stash it as "Your photo" before the gallery claim takes the slot.
+  const current = getSetting('backdrop.image')
+
+  if (typeof current === 'string' && current.startsWith('data:') && current !== ctx.storage.get('own', null)) {
+    ctx.storage.set('own', current)
+    $own?.set(current)
+  }
+
+  setSetting('backdrop.image', url)
+}
+
 function DropTile({ ctx, drop }) {
   const bd = useValue($backdrop)
   const active = bd.scene === 'custom' && bd.image === drop.url
 
-  const apply = () => {
-    haptic('tap')
-
-    // A photo the user dropped through the native tile is worth keeping —
-    // stash it as "Your photo" before the gallery claim takes the slot.
-    const current = getSetting('backdrop.image')
-
-    if (typeof current === 'string' && current.startsWith('data:') && current !== ctx.storage.get('own', null)) {
-      ctx.storage.set('own', current)
-      $own?.set(current)
-    }
-
-    setSetting('backdrop.image', drop.url)
-  }
+  const apply = () => applyDrop(ctx, drop.url)
 
   return jsxs('div', {
     className: 'group relative',
@@ -206,26 +216,29 @@ function DropTile({ ctx, drop }) {
   })
 }
 
+/** One door for photo uploads (gallery tile, statusbar quick-pick). */
+const uploadPhoto = async (ctx, file) => {
+  if (!file) {
+    return
+  }
+
+  try {
+    const dataUrl = await downscaled(file)
+    ctx.storage.set('own', dataUrl)
+    $own.set(dataUrl)
+    setSetting('backdrop.image', dataUrl)
+  } catch (error) {
+    host.notifyError(error, 'Could not read that image.')
+  }
+}
+
 function PhotoTile({ ctx }) {
   const bd = useValue($backdrop)
   const own = useValue($own)
   const input = useRef(null)
   const active = bd.scene === 'custom' && own !== null && bd.image === own
 
-  const upload = async file => {
-    if (!file) {
-      return
-    }
-
-    try {
-      const dataUrl = await downscaled(file)
-      ctx.storage.set('own', dataUrl)
-      $own.set(dataUrl)
-      setSetting('backdrop.image', dataUrl)
-    } catch (error) {
-      host.notifyError(error, 'Could not read that image.')
-    }
-  }
+  const upload = file => void uploadPhoto(ctx, file)
 
   const pick = () => {
     haptic('tap')
@@ -288,6 +301,152 @@ function PhotoTile({ ctx }) {
         },
         ref: input,
         type: 'file'
+      })
+    ]
+  })
+}
+
+/** Soft/vivid veil from the old picker, now driving the native strength slot
+ *  (soft → subtle; the middle balanced stays reachable in Appearance). */
+const STRENGTH_LEVELS = [['soft', 'subtle'], ['vivid', 'vivid']]
+
+function StrengthToggle() {
+  const strength = useValue($strength)
+
+  return jsx('div', {
+    role: 'group',
+    'aria-label': 'Backdrop strength',
+    className: 'flex items-center gap-0.5 rounded-lg border border-(--ui-stroke-tertiary) p-0.5',
+    children: STRENGTH_LEVELS.map(([label, value]) =>
+      jsx('button', {
+        type: 'button',
+        'aria-pressed': strength === value,
+        className: cn(
+          'rounded-md px-2.5 py-1 text-xs capitalize transition',
+          strength === value
+            ? 'bg-primary text-primary-foreground'
+            : 'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover)'
+        ),
+        onClick: () => {
+          haptic('tap')
+          setSetting('backdrop.strength', value)
+        },
+        children: label
+      }, value)
+    )
+  })
+}
+
+/** Upload/apply row for the quick-pick: your photo beside the strength veil. */
+function QuickPhoto({ ctx }) {
+  const bd = useValue($backdrop)
+  const own = useValue($own)
+  const input = useRef(null)
+  const active = bd.scene === 'custom' && own !== null && bd.image === own
+
+  return jsxs('div', {
+    className: 'flex items-center gap-1.5',
+    children: [
+      own
+        ? jsx('button', {
+            type: 'button',
+            'aria-label': 'Apply your photo',
+            title: 'Apply your photo',
+            'aria-pressed': active,
+            className: cn(
+              'size-8 overflow-hidden rounded-lg border transition',
+              active ? 'border-primary ring-2 ring-primary/30' : 'border-(--ui-stroke-tertiary) hover:opacity-90'
+            ),
+            onClick: () => applyDrop(ctx, own),
+            children: jsx('img', { alt: '', className: 'size-full object-cover', src: own })
+          })
+        : jsx('button', {
+            type: 'button',
+            'aria-label': 'Upload a photo',
+            title: 'Upload a photo',
+            className:
+              'grid size-8 place-items-center rounded-lg border border-dashed border-(--ui-stroke-tertiary) text-(--ui-text-tertiary) transition hover:bg-(--chrome-action-hover)',
+            onClick: () => {
+              haptic('tap')
+              input.current?.click()
+            },
+            children: jsx(icons.Plus, { className: 'size-4' })
+          }),
+      jsx('input', {
+        accept: 'image/*',
+        className: 'hidden',
+        onChange: event => {
+          void uploadPhoto(ctx, event.target.files?.[0])
+          event.target.value = ''
+        },
+        ref: input,
+        type: 'file'
+      })
+    ]
+  })
+}
+
+/** The statusbar quick-pick: the same gallery drops one click away, no detour
+ *  through Settings. Thin by design — it applies through the same native
+ *  'custom' slot as the gallery card, so both surfaces always agree. */
+function QuickPick({ ctx }) {
+  const bd = useValue($backdrop)
+  const drops = useValue($drops)
+  const live = bd.scene === 'custom' && bd.image !== null
+
+  return jsxs(Popover, {
+    children: [
+      jsx(PopoverTrigger, {
+        asChild: true,
+        children: jsx('button', {
+          type: 'button',
+          title: 'Pick a chat backdrop',
+          'aria-label': 'Pick a chat backdrop',
+          className: cn(
+            'inline-flex h-full items-center gap-1.5 px-1.5 text-[0.6875rem] hover:bg-(--chrome-action-hover) hover:text-foreground',
+            live ? 'text-foreground' : 'text-(--ui-text-tertiary)'
+          ),
+          children: jsx(icons.ImageIcon, { className: 'size-3.5' })
+        })
+      }),
+      jsx(PopoverContent, {
+        align: 'end',
+        side: 'top',
+        className: 'w-72 p-2',
+        children: jsxs('div', {
+          className: 'flex flex-col gap-2',
+          children: [
+            jsxs('div', {
+              className: 'grid grid-cols-4 gap-1.5',
+              children: drops.map(drop => {
+            const active = bd.scene === 'custom' && bd.image === drop.url
+
+            return jsx('button', {
+              type: 'button',
+              'aria-label': drop.title,
+              title: drop.title,
+              'aria-pressed': active,
+              className: cn(
+                'overflow-hidden rounded-md border transition',
+                active ? 'border-primary ring-2 ring-primary/30' : 'border-(--ui-stroke-tertiary) hover:opacity-90'
+              ),
+              onClick: () => applyDrop(ctx, drop.url),
+              children: jsx('img', {
+                alt: '',
+                className: 'aspect-square size-full object-cover',
+                decoding: 'async',
+                loading: 'lazy',
+                src: drop.thumb
+              })
+            }, drop.id)
+            })
+          }),
+          jsxs('div', {
+            className: 'flex items-center justify-between gap-2 border-t border-(--ui-stroke-tertiary) pt-2',
+            children: [jsx(QuickPhoto, { ctx }), jsx(StrengthToggle, {})]
+          })
+        ]
+        })
       })
     ]
   })
@@ -411,6 +570,20 @@ export default {
   register(ctx) {
     $own = atom(ctx.storage.get('own', null))
 
+    // Heal a relative URL stored by a pre-normalization gallery click: it can
+    // never paint (it 404s against the app base), so resolve it against the
+    // manifest it came from — or clear it when it resolves to nothing usable.
+    try {
+      const stored = getSetting('backdrop.image')
+
+      if (typeof stored === 'string' && !isAbsolute(stored)) {
+        const healed = resolveAgainst(MANIFEST_URL, stored)
+        setSetting('backdrop.image', healed && isHttp(healed) ? healed : null)
+      }
+    } catch {
+      // Pre-backdrop-keys build: the card still renders; tiles stay inert.
+    }
+
     const readBackdrop = () => ({
       image: getSetting('backdrop.image'),
       scene: getSetting('backdrop.scene')
@@ -421,6 +594,8 @@ export default {
     try {
       ctx.onDispose(host.settings.subscribe('backdrop.image', () => $backdrop.set(readBackdrop())))
       ctx.onDispose(host.settings.subscribe('backdrop.scene', () => $backdrop.set(readBackdrop())))
+      $strength.set(getSetting('backdrop.strength') ?? 'balanced')
+      ctx.onDispose(host.settings.subscribe('backdrop.strength', value => $strength.set(value)))
     } catch {
       // Pre-backdrop-keys build: the card still renders; tiles stay inert.
     }
@@ -429,6 +604,13 @@ export default {
       id: 'gallery',
       area: APPEARANCE_AREAS.extra,
       render: () => jsx(BackdropsCard, { ctx })
+    })
+
+    ctx.register({
+      id: 'picker',
+      area: STATUSBAR_AREAS.right,
+      order: 140,
+      render: () => jsx(QuickPick, { ctx })
     })
 
     void refresh(ctx)

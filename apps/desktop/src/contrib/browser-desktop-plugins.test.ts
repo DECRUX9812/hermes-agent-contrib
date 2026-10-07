@@ -7,7 +7,7 @@
  * undefined — SILENTLY, no error, no inventory row. A capability that resolves
  * the root is therefore the whole fix, and "the type exists" proves nothing.
  * These tests drive `discoverRuntimePlugins()` (unmodified) and assert the
- * plugin actually loads and registers its statusbar contribution.
+ * plugin actually loads and registers its contribution.
  */
 
 import { readFileSync } from 'node:fs'
@@ -208,7 +208,7 @@ describe('browser desktop-plugin capability', () => {
     expect($pluginRecords.get()['noop-plugin']).toBeDefined()
   })
 
-  it('loads the REAL backdrops plugin.js and registers its statusbar picker', async () => {
+  it('loads the REAL backdrops plugin.js and registers its appearance gallery', async () => {
     // The user's actual plugin, byte for byte — no rewrite. It imports
     // @hermes/plugin-sdk / react / react/jsx-runtime only, so it passes the
     // loader's import allowlist as shipped.
@@ -231,13 +231,19 @@ describe('browser desktop-plugin capability', () => {
     expect(record.kind).toBe('disk')
     expect(record.file).toBe(`${ROOT}/backdrops/plugin.js`)
 
-    // The picker is a STATUSBAR item in the right-hand area — the exact surface
-    // the user reported missing. Read from the live contribution registry, so
-    // this is the same source the statusbar component subscribes to.
-    const rightRail = registry.getArea('statusBar.right')
+    // The gallery is an Appearance extra card — the surface the plugin's README
+    // documents (Settings → Appearance → "Backdrop gallery"). Read from the
+    // live contribution registry, so this is the same source the settings
+    // page subscribes to.
+    const extras = registry.getArea('appearance.extra')
 
     // ctx.register namespaces the id by plugin, so the live entry is
-    // 'backdrops:picker' — proof the REAL plugin evaluated and registered.
+    // 'backdrops:gallery' — proof the REAL plugin evaluated and registered.
+    expect(extras.map(item => item.id)).toContain('backdrops:gallery')
+
+    // The statusbar quick-pick rides the same drop list one click away.
+    const rightRail = registry.getArea('statusBar.right')
+
     expect(rightRail.map(item => item.id)).toContain('backdrops:picker')
     expect(rightRail.find(item => item.id === 'backdrops:picker')).toMatchObject({ order: 140 })
   })
