@@ -34,8 +34,9 @@
  * `onPageAction('mascot.perform', …)` — the channel is always live.
  *
  * What a bot gets for free once registered: a 3D mascot on every page,
- * draggable + taskable by click or voice; rooms (mention + round-robin
- * relay, shared scratchpad — bots literally hand notes to each other);
+ * draggable + taskable by click or voice; rooms (mention, round-robin or
+ * Jev-routed 'auto' relay, shared scratchpad — bots literally hand notes
+ * to each other);
  * status lines under the mascot; and, with pageControl, the page itself.
  *
  * Conversation memory is YOUR problem: Hermes and OpenClaw keep it

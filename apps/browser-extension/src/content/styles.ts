@@ -117,6 +117,11 @@ export const OVERLAY_CSS = `
   border: 1px solid var(--hairline-soft); border-bottom-left-radius: 5px;
 }
 .hr-msg .hr-who { font-size: 10px; margin-bottom: 2px; font-weight: 680; letter-spacing: .02em; }
+.hr-msg .hr-picked {
+  font-size: 9.5px; font-weight: 620; letter-spacing: .03em; margin-top: 4px;
+  color: #8f96b8;
+}
+.hr-msg .hr-picked::before { content: '◆ '; color: #b6a5ff; font-size: 8px; }
 .hr-msg.sys {
   align-self: center; background: none; color: var(--ink-faint); font-size: 10.5px;
   padding: 2px 10px; border: 0; text-align: center;

@@ -14,8 +14,10 @@ import { DEFAULT_SETTINGS } from '../shared/types'
 
 import { makeHarness } from './adapters'
 import { PageBridge } from './bridge'
+import type { DeciderConfig } from './decider'
 import type { Harness } from './harness'
 import { HermesHarness } from './hermes'
+import type { RoomMemberDescriptor } from './rooms'
 import { RoomEngine } from './rooms'
 import { GatewayRpc } from './rpc'
 import { siteAvatarFor, sitePromptPrefix } from './sitebot'
@@ -45,7 +47,11 @@ class BotRoomService {
   private rosterTimer: ReturnType<typeof setInterval> | null = null
 
   constructor() {
-    this.rooms = new RoomEngine(id => this.harnesses.get(id))
+    this.rooms = new RoomEngine(
+      id => this.harnesses.get(id),
+      () => this.deciderConfig(),
+      botId => this.describeBot(botId),
+    )
     this.rooms.onRoomMsg = msg => this.broadcast({ type: 'room.msg', msg })
     this.rooms.onRoomsChanged = rooms => this.broadcast({ type: 'rooms', rooms })
 
@@ -164,6 +170,29 @@ class BotRoomService {
     return this.settings
   }
 
+  /** The decision model as one call can use it: the switch on AND a key
+   *  on file. Anything less means auto rooms fall back to their lead. */
+  private deciderConfig(): DeciderConfig | null {
+    const d = this.settings.decider
+
+    return d?.enabled && d.key.trim() ? { key: d.key.trim(), baseUrl: d.baseUrl } : null
+  }
+
+  /** What the decider reads about a member: its display name plus the
+   *  persona text the harness config carries (generic harnesses keep a
+   *  per-bot system prompt; Hermes bots pass a bare name). */
+  private describeBot(botId: string): RoomMemberDescriptor {
+    const bot = this.bots.get(botId)
+    const harnessId = botId.split(':')[0]
+    const ref = botId.split(':').slice(1).join(':')
+    const cfg = this.settings.harnesses.find(h => h.id === harnessId)
+
+    return {
+      name: bot?.displayName ?? ref,
+      description: cfg?.bots.find(b => b.name === ref)?.systemPrompt || undefined,
+    }
+  }
+
   /** Fan a message out to every live overlay. */
   private broadcast(msg: SwToContent) {
     void chrome.tabs.query({}, tabs => {
@@ -208,67 +237,12 @@ class BotRoomService {
           backendOk: this.rpc?.isOpen ?? this.settings.hermes == null,
           note: this.status().connected ? undefined : 'backend not connected',
           siteBot: siteBot ?? undefined,
+          deciderReady: this.deciderConfig() != null,
         }
       }
 
-      case 'task': {
-        if (msg.roomId) {
-          void this.rooms.userMessage(msg.roomId, msg.text)
-
-          return
-        }
-
-        if (!msg.botId) {break}
-
-        // site avatar: real harness bot + site context injected
-        const site = msg.botId.startsWith('site:') ? this.siteBots.get(msg.botId) : undefined
-        const bot = site?.bot ?? this.bots.get(msg.botId)
-        const harness = bot && this.harnesses.get(bot.harnessId)
-
-        if (!bot || !harness) {break}
-
-        const text = site ? sitePromptPrefix(bot, site.url, site.title) + msg.text : msg.text
-
-        void harness.send(bot.ref, text, {
-          onDelta: () => undefined,
-          onStatus: line => {
-            // site avatars aren't in the roster — broadcast straight to tabs
-            if (site) {
-              this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working', statusLine: line } })
-            } else {
-              this.rooms.onBotStatus?.(bot.id, 'working', line)
-            }
-          },
-          onPageAction: (action, args, reply) => {
-            void this.bridge
-              .run(`browser_${action}`, args, { tabId })
-              .then(reply, () => reply({ ok: false }))
-          },
-        }).then(res => {
-          this.broadcast({
-            type: 'room.msg',
-            msg: {
-              id: `solo-${Date.now()}`,
-              roomId: `solo:${bot.id}`,
-              author: bot.id,
-              authorName: bot.displayName,
-              text: res.text,
-              at: Date.now(),
-            } satisfies RoomMsg,
-          })
-        }).finally(() => {
-          // settle the avatar's badge — success or send failure alike
-          if (site) {
-            this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'idle' } })
-          }
-        })
-
-        if (site) {
-          this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working' } })
-        }
-
-        return
-      }
+      case 'task':
+        return this.handleTask(tabId, msg)
 
       case 'room.create':
         this.rooms.createRoom(msg.name, msg.botIds ?? [])
@@ -299,6 +273,11 @@ class BotRoomService {
 
         return
 
+      case 'room.mode':
+        this.rooms.setRelayMode(msg.roomId, msg.relayMode)
+
+        return
+
       case 'mascot.move':
         // v0.1: mascot positions live in the content script only.
         return
@@ -312,6 +291,65 @@ class BotRoomService {
         await this.applySettings(msg.settings)
 
         return
+    }
+  }
+
+  /** The 'task' message: a room route, or a one-shot send to a bot —
+   *  site avatars get their page context injected into the prompt. */
+  private handleTask(tabId: number | undefined, msg: Extract<ContentToSw, { type: 'task' }>): void {
+    if (msg.roomId) {
+      void this.rooms.userMessage(msg.roomId, msg.text)
+
+      return
+    }
+
+    if (!msg.botId) {return}
+
+    // site avatar: real harness bot + site context injected
+    const site = msg.botId.startsWith('site:') ? this.siteBots.get(msg.botId) : undefined
+    const bot = site?.bot ?? this.bots.get(msg.botId)
+    const harness = bot && this.harnesses.get(bot.harnessId)
+
+    if (!bot || !harness) {return}
+
+    const text = site ? sitePromptPrefix(bot, site.url, site.title) + msg.text : msg.text
+
+    void harness.send(bot.ref, text, {
+      onDelta: () => undefined,
+      onStatus: line => {
+        // site avatars aren't in the roster — broadcast straight to tabs
+        if (site) {
+          this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working', statusLine: line } })
+        } else {
+          this.rooms.onBotStatus?.(bot.id, 'working', line)
+        }
+      },
+      onPageAction: (action, args, reply) => {
+        void this.bridge
+          .run(`browser_${action}`, args, { tabId })
+          .then(reply, () => reply({ ok: false }))
+      },
+    }).then(res => {
+      this.broadcast({
+        type: 'room.msg',
+        msg: {
+          id: `solo-${Date.now()}`,
+          roomId: `solo:${bot.id}`,
+          author: bot.id,
+          authorName: bot.displayName,
+          text: res.text,
+          at: Date.now(),
+        } satisfies RoomMsg,
+      })
+    }).finally(() => {
+      // settle the avatar's badge — success or send failure alike
+      if (site) {
+        this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'idle' } })
+      }
+    })
+
+    if (site) {
+      this.broadcast({ type: 'bot.status', bot: { ...bot, status: 'working' } })
     }
   }
 

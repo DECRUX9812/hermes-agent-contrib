@@ -141,6 +141,18 @@
   </div>
 
   <div class="card">
+    <h2>Decision model <span style="color:#8b90a8;font-weight:450">— who answers in auto rooms</span></h2>
+    <p class="hint">A room set to <b>auto</b> asks the decision model which member should answer each un-@mentioned message (~300&nbsp;ms, it never does the work itself). Powered by TypeSafe <b>Jev</b> — paste a key from <code>console.typesafe.ai</code>, or point Base URL at a local Jev-compatible server (loopback only). No key: auto rooms fall back to their first member.</p>
+    <label class="toggle" style="margin-bottom:4px"><input type="checkbox" id="deciderEnabled"/><span class="sw"></span>Enable decision model</label>
+    <label for="jevKey">Jev API key</label>
+    <input type="password" id="jevKey" placeholder="ts-…"/>
+    <label for="jevBase">Base URL (optional — https, or http to localhost)</label>
+    <input type="text" id="jevBase" placeholder="https://api.typesafe.ai"/>
+    <div class="conn" id="jevStatus" style="display:none"></div>
+    <div style="margin-top:14px"><button id="testJev">Test key</button></div>
+  </div>
+
+  <div class="card">
     <h2>Bot catalog <span style="color:#8b90a8;font-weight:450">— click one, it comes alive</span></h2>
     <p class="hint">Preset harnesses prefill the form below. Any OpenAI-compatible endpoint works too — Grok (xAI), OpenClaw, a local model, a Muse-style persona, an ACP agent, a CLI relay. They all get mascots, rooms, and the <code>page_action</code> tool that drives your tab.</p>
     <div class="catalog" id="catalog"></div>
