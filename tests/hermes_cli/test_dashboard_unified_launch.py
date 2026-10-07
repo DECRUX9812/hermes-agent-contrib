@@ -112,7 +112,11 @@ class TestUnifiedDashboardRouting:
                 _args(no_open=False, skip_build=True, ui_surface="webapp")
             )
 
-        assert exc.value.code == 1
+        # Surface mismatch is a deliberate refusal: 78 (EX_CONFIG) is the code
+        # RestartPreventExitStatus=78 parks on — exit 1 under Restart=always
+        # was an infinite restart loop (#119824).
+        from gateway.restart import GATEWAY_FATAL_CONFIG_EXIT_CODE
+        assert exc.value.code == GATEWAY_FATAL_CONFIG_EXIT_CODE
         assert opened == []
 
     def test_named_webapp_prints_route_without_opening_unauthorized_tab(self, main_mod, monkeypatch, capsys):
