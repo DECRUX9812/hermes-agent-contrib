@@ -56,3 +56,26 @@ describe('card action boundaries', () => {
     expect(openRosterBot).toHaveBeenCalledWith(expect.objectContaining({ name: 'alpha' }))
   })
 })
+
+describe('card footer recency', () => {
+  const freshBot = { name: 'alpha', worker_session: { last_active: Date.now() } }
+
+  const renderFresh = () =>
+    render(<BotCard bot={freshBot} onDelete={noop} onEdit={noop} onGroup={noop} onNewSection={noop} />)
+
+  it('reads "Active now" for a fresh bot instead of the templated "Active now ago"', () => {
+    renderFresh()
+    expect(screen.getByText('Active now')).toBeTruthy()
+    expect(screen.queryByText(/Active now ago/)).toBeNull()
+  })
+
+  it('keeps the model chip and the recency on separate stacked rows', () => {
+    const view = renderFresh()
+    const footer = view.container.querySelector('.mt-auto')
+    expect(footer, 'card footer exists').toBeTruthy()
+    // flex-col: chip row and recency row are stacked — sharing one line let the
+    // chip overflow onto the age text (measured overlap in the live DOM).
+    expect(footer?.className).toContain('flex-col')
+    expect(footer?.children.length).toBe(2)
+  })
+})

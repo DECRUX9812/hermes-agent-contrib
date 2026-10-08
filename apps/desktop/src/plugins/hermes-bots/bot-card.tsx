@@ -75,6 +75,7 @@ export function BotCard({
   const previewSession = bot.canonical_session || last
   const activitySession = botActivitySession(bot)
   const rowAgeTs = Math.max(activitySession?.last_active || 0, bot.worker_session?.last_active || 0)
+  const rowAge = rowAgeTs ? rosterRowAge(rowAgeTs * 1000, t.sidebar.row) : null
 
   const canonicalSessionId = botCanonicalSessionId(bot)
   const watchedMap = useValue($watchedSessionKeys)
@@ -185,14 +186,23 @@ export function BotCard({
           </span>
         </button>
 
-        <div className="mt-auto flex min-w-0 items-center gap-1.5">
-          <span className="min-w-0">
-            <BotModelChip bot={bot} />
-          </span>
-          {rowAgeTs ? (
-            <span className="ml-auto shrink-0 text-xs text-(--ui-text-tertiary)">
-              {b.roster.cardActive(rosterRowAge(rowAgeTs * 1000, t.sidebar.row))}
+        {/* The footer stacks model + recency instead of sharing one line: on a
+            ~150px card the chip and the age collided (measured ~1200px² of
+            intersection per card in the live DOM). Each owns its own row now,
+            and a fresh bot reads "Active now" — the cardActive template would
+            otherwise produce "Active now ago". */}
+        <div className="mt-auto flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0">
+            <span className="min-w-0 max-w-full">
+              <BotModelChip bot={bot} />
             </span>
+          </div>
+          {rowAge ? (
+            <div className="flex min-w-0 justify-end">
+              <span className="text-xs text-(--ui-text-tertiary)">
+                {rowAge === t.sidebar.row.ageNow ? b.roster.activeNow : b.roster.cardActive(rowAge)}
+              </span>
+            </div>
           ) : null}
         </div>
       </article>
