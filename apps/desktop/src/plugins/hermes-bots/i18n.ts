@@ -746,6 +746,26 @@ type BotsMessages = {
     approvalsBody: string
     openInbox: string
     rules: string
+    /** The Activity tab as a board: Now / Next / Done. */
+    work: {
+      now: string
+      next: string
+      done: string
+      stepOf: (step: number, total: number) => string
+      started: (ago: string) => string
+      watch: string
+      idleTitle: string
+      idleBody: (name: string) => string
+      afterThisStep: string
+      laterInPlan: string
+      routine: string
+      routineAt: (when: string) => string
+      addRoutine: string
+      receipt: string
+      showMore: (count: number) => string
+      showLess: string
+      lastRunFailed: string
+    }
   }
   rail: {
     /** Empty-state title + tab label. */
@@ -1491,7 +1511,26 @@ const en: BotsMessages = {
     approvalsEmpty: 'Nothing is waiting on you',
     approvalsBody: 'Approvals, questions and secrets this bot asks for land here.',
     openInbox: 'Open inbox',
-    rules: 'Ask rules'
+    rules: 'Ask rules',
+    work: {
+      now: 'Now',
+      next: 'Next',
+      done: 'Done',
+      stepOf: (step, total) => `Step ${step} of ${total}`,
+      started: ago => `Started ${ago}`,
+      watch: 'Watch',
+      idleTitle: 'Free for something new',
+      idleBody: name => `${name} isn't working on anything right now.`,
+      afterThisStep: 'After this step',
+      laterInPlan: 'Later in the plan',
+      routine: 'Routine',
+      routineAt: when => `Routine · ${when}`,
+      addRoutine: 'Add a routine',
+      receipt: 'Receipt',
+      showMore: count => `Show ${count} more`,
+      showLess: 'Show less',
+      lastRunFailed: 'Last run failed'
+    }
   },
   rail: {
     title: 'Bot context',
@@ -2257,7 +2296,26 @@ const ja: BotsMessages = {
     approvalsEmpty: '対応待ちはありません',
     approvalsBody: 'このボットが求める承認、質問、シークレットはここに届きます。',
     openInbox: '受信箱を開く',
-    rules: '確認ルール'
+    rules: '確認ルール',
+    work: {
+      now: '今',
+      next: '次',
+      done: '完了',
+      stepOf: (step, total) => `ステップ ${step} / ${total}`,
+      started: ago => `${ago}に開始`,
+      watch: '見る',
+      idleTitle: '新しい依頼を受けられます',
+      idleBody: name => `${name} は今、何も作業していません。`,
+      afterThisStep: 'このステップの後',
+      laterInPlan: 'プランの後半',
+      routine: 'ルーティン',
+      routineAt: when => `ルーティン · ${when}`,
+      addRoutine: 'ルーティンを追加',
+      receipt: '記録',
+      showMore: count => `さらに ${count} 件表示`,
+      showLess: '表示を減らす',
+      lastRunFailed: '前回の実行に失敗'
+    }
   },
   rail: {
     title: 'ボットのコンテキスト',
@@ -2970,7 +3028,26 @@ const zh: BotsMessages = {
     approvalsEmpty: '没有等你处理的事项',
     approvalsBody: '这个机器人请求的审批、问题和密钥会显示在这里。',
     openInbox: '打开收件箱',
-    rules: '询问规则'
+    rules: '询问规则',
+    work: {
+      now: '现在',
+      next: '接下来',
+      done: '已完成',
+      stepOf: (step, total) => `第 ${step} 步，共 ${total} 步`,
+      started: ago => `${ago}开始`,
+      watch: '查看',
+      idleTitle: '可以接新任务',
+      idleBody: name => `${name} 目前没有在做任何事。`,
+      afterThisStep: '这一步之后',
+      laterInPlan: '计划的后续步骤',
+      routine: '例行任务',
+      routineAt: when => `例行任务 · ${when}`,
+      addRoutine: '添加例行任务',
+      receipt: '记录',
+      showMore: count => `再显示 ${count} 项`,
+      showLess: '收起',
+      lastRunFailed: '上次运行失败'
+    }
   },
   rail: {
     title: '机器人上下文',
@@ -3683,7 +3760,26 @@ const zhHant: BotsMessages = {
     approvalsEmpty: '沒有等你處理的事項',
     approvalsBody: '這個機器人請求的審核、問題和密鑰會顯示在這裡。',
     openInbox: '開啟收件匣',
-    rules: '詢問規則'
+    rules: '詢問規則',
+    work: {
+      now: '現在',
+      next: '接下來',
+      done: '已完成',
+      stepOf: (step, total) => `第 ${step} 步，共 ${total} 步`,
+      started: ago => `${ago}開始`,
+      watch: '查看',
+      idleTitle: '可以接新任務',
+      idleBody: name => `${name} 目前沒有在做任何事。`,
+      afterThisStep: '這一步之後',
+      laterInPlan: '計畫的後續步驟',
+      routine: '例行任務',
+      routineAt: when => `例行任務 · ${when}`,
+      addRoutine: '新增例行任務',
+      receipt: '紀錄',
+      showMore: count => `再顯示 ${count} 項`,
+      showLess: '收起',
+      lastRunFailed: '上次執行失敗'
+    }
   },
   rail: {
     title: '機器人脈絡',

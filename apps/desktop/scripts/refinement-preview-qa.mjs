@@ -40,7 +40,9 @@ try {
     assert.equal(await page.getByRole('tabpanel').count(), 1)
   }
 
-  await page.locator('[data-testid=activity-row]').first().click()
+  assert.match(await page.getByTestId('work-now').innerText(), /Step 3 of 5/)
+  await page.screenshot({ path: resolve(output, 'work-board.png'), clip: { x: 1040, y: 0, width: 400, height: 960 } })
+  await page.getByTestId('work-now').getByRole('button', { name: 'Watch', exact: true }).click()
   assert.match(await page.getByRole('dialog').innerText(), /npm run typecheck/)
   await page.keyboard.press('Escape')
   assert.equal(await page.getByRole('dialog').count(), 0)

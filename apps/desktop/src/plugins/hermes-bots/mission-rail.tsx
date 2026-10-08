@@ -2,7 +2,7 @@
  * G1 — the mission rail: the context rail of the bot workspace triptych
  * (roster rail | bot chat | this rail), laid out like a teammate's profile:
  * a hero (face with its live mood, name, what it is doing right now) over
- * four tabs — Activity (the chat read as tasks, activity-feed.tsx),
+ * four tabs — Activity (Now / Next / Done, work-board.tsx),
  * Approvals (what it is waiting on you for, plus its ask rules), Scheduled
  * (task log + routines) and Bot (reach, sessions, computer, deliverables).
  * The open tab persists under `mission-rail-tab-v1`; collapsible sections
@@ -26,7 +26,6 @@ import {
 } from '@hermes/plugin-sdk'
 import { type ReactNode, useState } from 'react'
 
-import { BotActivityFeed } from './activity-feed'
 import { activityNow } from './activity-format'
 import { AUTOPILOT_ICONS, autopilotPresets, type RoutinePreset } from './autopilot'
 import { useAutopilotText } from './autopilot-i18n'
@@ -61,6 +60,7 @@ import { BotComputerPanel } from './screen-panel'
 import { ShareBotDialog } from './share-dialog'
 import { useShareText } from './share-i18n'
 import type { RosterRow } from './types'
+import { WorkBoard } from './work-board'
 
 /** One collapsible rail section: the slim header row carries the fold
  *  affordance (+ an optional trailing action) and is all that remains when
@@ -392,7 +392,15 @@ export function MissionRail() {
         role="tabpanel"
         tabIndex={0}
       >
-        {tab === 'activity' ? <BotActivityFeed name={displayName(owner, meta)} /> : null}
+        {tab === 'activity' ? (
+          <WorkBoard
+            jobs={jobs}
+            name={displayName(owner, meta)}
+            onAddRoutine={() => openCreate()}
+            onOpenRoutine={setDetailJobId}
+            owner={owner}
+          />
+        ) : null}
         {tab === 'approvals' ? <ApprovalsPanel bot={owner} name={displayName(owner, meta)} /> : null}
         {tab === 'scheduled' ? (
           <>

@@ -167,8 +167,31 @@ const team: TeamView = {
   }
 }
 const $activity = atom<readonly ActivityTask[]>(tasks)
+const said = (id: string, role: 'assistant' | 'user', text: string) => ({ id, parts: [{ text, type: 'text' }], role })
+const $messages = atom([
+  said('m1', 'user', '/plan validate the team workspace'),
+  said(
+    'm2',
+    'assistant',
+    '1. Reproduce the layout bug\n2. Fix the rail spacing\n3. Run the typecheck\n4. Write the changelog entry\n5. Ask you to merge\n\n::botplan'
+  ),
+  said('m3', 'user', 'Execute this plan:\n\n1. Reproduce the layout bug'),
+  said('m4', 'assistant', 'DONE: step 1\nDONE: step 2')
+])
+const hourFromNow = (hours: number) => new Date(Date.now() + hours * 3_600_000).toISOString()
+const jobs = [
+  { job_id: 'brief', name: '[bot:builder] Morning brief', next_run_at: hourFromNow(14), schedule: '0 8 * * *' },
+  {
+    job_id: 'deps',
+    name: '[bot:builder] Dependency check',
+    next_run_at: hourFromNow(40),
+    last_fire_error: 'Model timed out',
+    schedule: '0 2 * * *'
+  }
+]
 Object.assign(sdk.host.state, {
   focusedActivity: $activity,
+  focusedMessages: $messages,
   focusedSessionId: atom('runtime-builder'),
   focusedStoredSessionId: atom('chat-builder'),
   focusedSessionOwner: atom({ connectionId: 'local', profile: 'builder' }),
@@ -188,7 +211,7 @@ const request = async (method: string, params: Record<string, unknown> = {}) => 
     )
     return structuredClone(team)
   }
-  if (method === 'cron.list' || method === 'cron.manage') return { jobs: [], scoped: 'builder' }
+  if (method === 'cron.list' || method === 'cron.manage') return { jobs, scoped: 'builder' }
   if (method === 'bots_team.audit.list') return { entries: [] }
   return {}
 }

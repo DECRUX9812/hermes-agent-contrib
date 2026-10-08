@@ -49,6 +49,7 @@ import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
 import { deleteProfile, getLogs, getSessionMessages, getStatus, hermesApi, type HermesGateway } from '@/hermes'
 import { type ActivityTask, deriveActivityTasks } from '@/lib/activity-tasks'
+import type { ChatMessage } from '@/lib/chat-messages/types'
 import { selectDesktopPaths } from '@/lib/desktop-fs'
 import { traceIdentityChange } from '@/lib/identity-trace'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
@@ -177,6 +178,12 @@ const $focusedBusy = focusedTurnFlag(state => state.busy, PRIMARY_SESSION_VIEW.$
 const $focusedActivity = computed([$focusedSessionState, $focusedBusy], (state, busy) =>
   deriveActivityTasks(state?.messages, { busy })
 )
+
+const NO_MESSAGES: readonly ChatMessage[] = []
+
+/** The focused chat's messages, for readouts that derive from the transcript
+ *  (a bot's approved plan and its progress). */
+const $focusedMessages = computed($focusedSessionState, state => state?.messages ?? NO_MESSAGES)
 
 const $focusedAwaitingResponse = focusedTurnFlag(
   state => state.awaitingResponse,
@@ -794,6 +801,8 @@ export const host = {
     /** The focused chat as tasks: each request with the tool calls that
      *  answered it, status, timing and the reply's opening sentence. */
     focusedActivity: readonlyAtom<readonly ActivityTask[]>($focusedActivity),
+    /** The focused chat's messages (read-only). */
+    focusedMessages: readonlyAtom<readonly ChatMessage[]>($focusedMessages),
     /** Runtime id of the FOCUSED chat session — the interacted tile, else the
      *  primary. Prefer this over `activeSessionId` for any readout that
      *  should follow the user between tiles (context, tokens, cost). */
