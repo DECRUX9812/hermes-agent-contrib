@@ -1075,6 +1075,11 @@ function queueGroupChatDrive(group: string, members: GroupMember[], thread: stri
 
       if (groupChatDrives.get(key) === drive) {
         groupChatDrives.delete(key)
+        // The drive owns the room's `running` flag and the success path never
+        // clears it; the catch path only clears when `binding.isLive()`, which
+        // is false exactly when the backend drops mid-round. Either way the
+        // flag outlived the drive and the group overlay stayed lit forever.
+        updateGroupChat(group, room => ({ ...room, running: false, turn: null }))
       }
     }
   })()
