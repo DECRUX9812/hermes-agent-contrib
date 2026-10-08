@@ -10,6 +10,8 @@ export interface ToolResultMetadata {
   preview?: string
   summary?: string
   todos?: unknown
+  /** A card's Retry of this call, recorded on the saved tool row (start_chat's handoff card). */
+  retried?: unknown
 }
 
 /** Which MCP server/tool an app-bearing tool call belongs to and its `ui://` document. */

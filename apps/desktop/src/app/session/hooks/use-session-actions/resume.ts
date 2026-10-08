@@ -10,6 +10,7 @@ import { useI18n } from '@/i18n'
 import {
   type ChatMessage,
   preserveLocalAssistantErrors,
+  QUESTION_CARD_TOOLS,
   restorePendingClarifyToolCall,
   settlePendingClarifyToolCall,
   stripPendingClarifyProjectionForCache,
@@ -68,7 +69,7 @@ import { isWatchWindow } from '@/store/windows'
 import type { SessionMessage, SessionMessagesResponse, SessionResumeResult, UsageStats } from '@/types/hermes'
 
 import type { ClientSessionState } from '../../../types'
-import { resumeRouteStillCurrent, routeTargetFromToken } from '../session-context-drift'
+import { resumeRouteStillCurrent } from '../session-context-drift'
 import { singleFlightSessionResume } from '../use-prompt-actions/single-flight-resume'
 
 import { sessionCreatedThisRun } from './created-this-run'
@@ -190,7 +191,7 @@ function withoutEarlyClarifyProjection(messages: ChatMessage[], requestId: strin
       part =>
         !(
           part.type === 'tool-call' &&
-          part.toolName === 'clarify' &&
+          QUESTION_CARD_TOOLS.has(part.toolName) &&
           part.result === undefined &&
           part.toolCallId === requestId
         )

@@ -49,6 +49,7 @@ import {
   $mountedTranscriptPanes,
   BACKFILL_STEP,
   buildGroups,
+  COMPOSER_UNDIM_AFTER_STALL_MS,
   FIRST_PAINT_BUDGET,
   firstVisibleGroupIndex,
   liveTailStart,
@@ -382,10 +383,33 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
 
   const surfaceId = useComposerSurfaceId()
   const scrollSessionId = sessionId ?? surfaceId
-  useEffect(
-    () => publishThreadAtBottom(isAtBottom && !isHistorical, { paneVisible, sessionId: scrollSessionId }),
-    [isAtBottom, isHistorical, paneVisible, scrollSessionId]
-  )
+  useEffect(() => {
+    const atBottom = isAtBottom && !isHistorical
+    const publisher = { paneVisible, sessionId: scrollSessionId }
+    const el = scrollRef.current
+
+    publishThreadAtBottom(atBottom, publisher)
+
+    if (atBottom || !el) {
+      return
+    }
+
+    let timer = 0
+
+    const arm = () => {
+      publishThreadAtBottom(false, publisher)
+      clearTimeout(timer)
+      timer = window.setTimeout(() => publishThreadAtBottom(false, publisher, false), COMPOSER_UNDIM_AFTER_STALL_MS)
+    }
+
+    arm()
+    el.addEventListener('scroll', arm, { passive: true })
+
+    return () => {
+      clearTimeout(timer)
+      el.removeEventListener('scroll', arm)
+    }
+  }, [isAtBottom, isHistorical, paneVisible, scrollRef, scrollSessionId])
   useEffect(
     () => () => resetPublishedThreadScroll({ paneVisible, sessionId: scrollSessionId }),
     [paneVisible, scrollSessionId]

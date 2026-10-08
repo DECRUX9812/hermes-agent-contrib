@@ -11,6 +11,40 @@ import sqlite3
 import sys
 import threading
 
+_CHECKOUT = Path(__file__).resolve().parent.parent
+
+
+def _checkout_git_dirs() -> set[Path]:
+    """The checkout's own VCS metadata.
+
+    On machines where the main repository lives under the Hermes home (a checkout
+    outside it resolves ``.git`` to ``~/.hermes/.../.git``), the checkout carve-out
+    must extend to the gitdir and commondir those worktrees read — that is repo
+    plumbing, not Hermes state.
+    """
+    dirs: set[Path] = set()
+    git = _CHECKOUT / ".git"
+    try:
+        if git.is_dir():
+            dirs.add(git.resolve())
+        elif git.is_file():
+            text = git.read_text(encoding="utf-8-sig").strip()
+            if text.startswith("gitdir:"):
+                gitdir = Path(text[len("gitdir:"):].strip())
+                if not gitdir.is_absolute():
+                    gitdir = _CHECKOUT / gitdir
+                dirs.add(gitdir.resolve())
+                common = gitdir / "commondir"
+                if common.is_file():
+                    commondir = Path(common.read_text(encoding="utf-8-sig").strip())
+                    if not commondir.is_absolute():
+                        commondir = gitdir / commondir
+                    dirs.add(commondir.resolve())
+    except OSError:
+        pass
+    return dirs
+
+
 _INTERPRETER_PREFIXES = tuple({
     Path(p).resolve() for p in (sys.prefix, sys.base_prefix, sys.exec_prefix, sys.base_exec_prefix)
 } | {
@@ -23,8 +57,8 @@ _INTERPRETER_PREFIXES = tuple({
     # INSTALL_DIR=$HERMES_HOME/hermes-agent). Reading test data, sources for tracebacks, or the
     # checkout's own .venv is not Hermes state; without this every run from a default install
     # trips on its first traceback.
-    Path(__file__).resolve().parent.parent,
-})
+    _CHECKOUT,
+} | _checkout_git_dirs())
 # The same prefixes as plain strings for the check() fast path. PurePath comparison folds case on
 # Windows; ``os.path.normcase`` (identity on POSIX) reproduces that for string compares. Prefixes
 # resolve once at import, as before: they are fixed for the process lifetime.

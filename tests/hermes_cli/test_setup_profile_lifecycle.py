@@ -1,4 +1,9 @@
-"""Setup roles survive metadata updates, but never cross profile publication as a copy."""
+"""Setup-profile copies never inherit setup authority, and profile metadata writes stay scoped.
+
+The setup profile is identified by its marker file (``.setup-profile.json``), not a
+``role`` key in ``profile.yaml``: a copy of any profile drops the marker before it is
+published, so only the profile setup itself ever carries setup authority.
+"""
 
 from pathlib import Path
 import tarfile
@@ -7,8 +12,6 @@ import pytest
 
 from hermes_cli import profile_lifecycle, profiles, setup_profile
 from hermes_cli.profile_incarnation import read_profile_incarnation
-from hermes_constants import reset_hermes_home_override, set_hermes_home_override
-from toolsets import profile_role_toolsets
 
 
 @pytest.fixture
@@ -22,51 +25,50 @@ def profile_root(tmp_path, monkeypatch):
     return root
 
 
-def test_setup_role_metadata_is_scoped_and_refuses_retirement(profile_root):
+def test_setup_marker_scopes_discovery_and_survives_metadata_writes(profile_root):
     guide = profiles.create_profile("guide", no_alias=True, no_skills=True)
     ordinary = profiles.create_profile("ordinary", no_alias=True, no_skills=True)
     incarnation = read_profile_incarnation(guide)
+    # Make guide the setup profile the way setup itself does: via the marker file.
+    setup_profile._write_state(guide, dict(setup_profile._FRESH_STATE))
+    marker_before = (guide / profiles.SETUP_PROFILE_MARKER).read_bytes()
     with profile_lifecycle.profile_lifecycle_lease(guide):
-        profiles.write_profile_meta(guide, role=profiles.SETUP_ROLE, description="guide notes")
+        profiles.write_profile_meta(guide, description="guide notes")
     profiles.write_profile_meta(guide, display_name="My guide", previous_names=["earlier-guide"])
 
-    # Discovery uses the role, not the old hermes-setup slug, and preserves user edits.
+    # Discovery keys off the marker, not the profile name, and preserves user edits.
     before = (guide / "profile.yaml").read_bytes()
     assert setup_profile.ensure_setup_profile() == setup_profile.SetupProfile("guide", guide, False)
     assert (guide / "profile.yaml").read_bytes() == before
+    assert (guide / profiles.SETUP_PROFILE_MARKER).read_bytes() == marker_before
     meta = profiles.read_profile_meta(guide)
-    assert meta["role"] == profiles.SETUP_ROLE
     assert meta["description"] == "guide notes"
     assert meta["display_name"] == "My guide"
     assert meta["previous_names"] == ["earlier-guide"]
     assert read_profile_incarnation(guide) == incarnation
+    # The ordinary profile never picked up setup authority by existing next to the guide.
+    assert setup_profile.setup_marker_state(ordinary) is None
 
-    for home, has_setup in ((guide, True), (ordinary, False), (guide, True)):
-        token = set_hermes_home_override(str(home))
-        try:
-            granted, denied = profile_role_toolsets()
-            assert ("setup" in granted) is has_setup
-            assert ("setup" in denied) is not has_setup
-        finally:
-            reset_hermes_home_override(token)
-
-    with pytest.raises(ValueError, match="unknown profile role"):
-        profiles.write_profile_meta(guide, role="not-a-role")
+    # ``role`` was removed from the metadata API; it must not come back through the back door.
+    removed_kwargs: dict = {"role": "setup"}
+    with pytest.raises(TypeError):
+        profiles.write_profile_meta(guide, **removed_kwargs)
     assert (guide / "profile.yaml").read_bytes() == before
+
     profile_lifecycle.mark_profile_deleting(guide, incarnation)
     with pytest.raises(FileNotFoundError, match="being deleted"):
-        profiles.write_profile_meta(guide, role=profiles.SETUP_ROLE, description="must not land")
+        profiles.write_profile_meta(guide, description="must not land")
     assert (guide / "profile.yaml").read_bytes() == before
     assert profiles.profile_exists("guide") is False
 
 
 @pytest.mark.parametrize("copy_kind", ["clone", "import"])
-def test_setup_copies_drop_role_before_fresh_generation_publication(profile_root, monkeypatch, copy_kind):
+def test_setup_copies_drop_setup_marker_before_fresh_generation_publication(profile_root, monkeypatch, copy_kind):
     setup = setup_profile.ensure_setup_profile()
     assert setup.created is True
     source_incarnation = read_profile_incarnation(setup.path)
     assert source_incarnation is not None
-    source_meta = (setup.path / "profile.yaml").read_bytes()
+    source_marker = (setup.path / profiles.SETUP_PROFILE_MARKER).read_bytes()
     target = profiles.get_profile_dir("copied-guide")
     published = []
     real_publish = profile_lifecycle.publish_profile_generation
@@ -74,7 +76,8 @@ def test_setup_copies_drop_role_before_fresh_generation_publication(profile_root
     def publish(home, incarnation):
         assert Path(home) == target
         assert profile_lifecycle.profile_home_is_tombstoned(home)
-        assert profiles.read_profile_meta(Path(home))["role"] is None
+        # A copy is never the setup profile: the marker is already gone at publish time.
+        assert not (Path(home) / profiles.SETUP_PROFILE_MARKER).is_file()
         assert incarnation is not None and incarnation != source_incarnation
         assert read_profile_incarnation(home) == incarnation
         published.append(incarnation)
@@ -93,7 +96,8 @@ def test_setup_copies_drop_role_before_fresh_generation_publication(profile_root
     assert copied == target
     assert published == [read_profile_incarnation(target)]
     assert profiles.profile_exists("copied-guide") is True
-    assert profiles.read_profile_meta(target)["role"] is None
-    assert (setup.path / "profile.yaml").read_bytes() == source_meta
+    assert not (target / profiles.SETUP_PROFILE_MARKER).is_file()
+    # The source keeps its own marker and incarnation untouched.
+    assert (setup.path / profiles.SETUP_PROFILE_MARKER).read_bytes() == source_marker
     assert read_profile_incarnation(setup.path) == source_incarnation
     assert setup_profile.find_setup_profile() == (setup.name, setup.path)

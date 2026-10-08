@@ -11,10 +11,8 @@ import { SkillTag } from '@/app/chat/skill-tag'
 import { PALETTE_AREA, type PaletteContribution, paletteToggle } from '@/app/command-palette/contrib'
 import { installChatRoomGuard } from '@/app/shell/chat-room'
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
-import { AskDirective } from '@/components/assistant-ui/ask-directive'
 import { InlinePreviewDirective } from '@/components/assistant-ui/inline-preview-directive'
 import { IdleMount } from '@/components/idle-mount'
-import { OnboardingChatDirective } from '@/components/onboarding-chat/directive'
 import { $layoutEditMode, toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { allPaneIds } from '@/components/pane-shell/tree/model'
 import { LayoutTreeRoot } from '@/components/pane-shell/tree/renderer'
@@ -70,7 +68,6 @@ import {
   Zap
 } from '@/lib/icons'
 import { type KeybindContribution, KEYBINDS_AREA } from '@/lib/keybinds/actions'
-import { isOnboardingEnabled } from '@/lib/onboarding-enabled'
 import { SESSION_ROW_AREAS, type SessionRowSlotContribution, type SessionRowSlotProps } from '@/lib/session-row-slots'
 import { TRANSCRIPT_DIRECTIVE_AREA, type TranscriptDirectiveContribution } from '@/lib/transcript-directives'
 import { setYoloEnabled } from '@/lib/yolo-session'
@@ -150,6 +147,7 @@ import { continueInHermesCli } from '../right-sidebar/terminal/hermes-cli'
 import { terminalPaletteToggle } from '../right-sidebar/terminal/reveal-focus'
 import { $workspaceIsPage, WORKSPACE_PAGE_HEADER_AREA } from '../routes'
 import { Butterbar } from '../shell/butterbar'
+import { TermsButterbar } from '../shell/terms-butterbar'
 
 import { BASIC_TREE, DEFAULT_TREE, registerLayoutPresets } from './layout-presets'
 import { bindLayoutSides } from './layout-sides'
@@ -480,28 +478,6 @@ registry.registerMany([
       render: ({ attrs, streaming }) => <InlinePreviewDirective attrs={attrs} streaming={streaming} />
     } satisfies TranscriptDirectiveContribution
   },
-  ...(isOnboardingEnabled()
-    ? [
-        {
-          id: 'transcript.onboarding',
-          area: TRANSCRIPT_DIRECTIVE_AREA,
-          data: {
-            name: 'onboarding',
-            render: ({ attrs, streaming }) => <OnboardingChatDirective attrs={attrs} streaming={streaming} />
-          } satisfies TranscriptDirectiveContribution
-        },
-        // ::ask is the guided chat's question card, registered only with the
-        // onboarding flag. B4 decides its wider use.
-        {
-          id: 'transcript.ask',
-          area: TRANSCRIPT_DIRECTIVE_AREA,
-          data: {
-            name: 'ask',
-            render: ({ attrs, streaming }) => <AskDirective attrs={attrs} streaming={streaming} />
-          } satisfies TranscriptDirectiveContribution
-        }
-      ]
-    : []),
   {
     id: 'layout.reset',
     area: PALETTE_AREA,
@@ -1115,6 +1091,7 @@ export function ContribController() {
           {/* Notices registered through `registerButterbar` / `useButterbar`;
               renders nothing while none are registered. */}
           <Butterbar />
+          <TermsButterbar />
           {statusbarVisible && <WiredPane part="statusbar" />}
         </div>
       </ContribWiring>

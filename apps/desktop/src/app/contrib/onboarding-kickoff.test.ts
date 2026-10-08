@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest'
 
 import type { ClientSessionState } from '@/app/types'
-import { $setupSession } from '@/components/onboarding-chat/setup-profile'
+import { $setupSession } from '@/components/onboarding-chat/setup-session'
 import { assistantTextPart } from '@/lib/chat-messages'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $activeSessionId, $messages, $selectedStoredSessionId } from '@/store/session'
@@ -57,17 +57,17 @@ afterEach(() => {
   $setupSession.set(null)
 })
 
-it('adopts the resumed runtime only after the correct saved transcript is visible', async () => {
+it('adopts the resumed runtime once its transcript is the selected one', async () => {
   const request = vi.fn(async () => {
     throw new Error('Unexpected configuration request')
   })
 
   await adoptGuideSession(
     setupProfile,
-    { id: 'guide', resolved_id: 'guide-tip' },
+    'guide',
     false,
     async () => {
-      publishGuide('guide-tip')
+      publishGuide('guide')
     },
     request
   )
@@ -76,7 +76,27 @@ it('adopts the resumed runtime only after the correct saved transcript is visibl
   expect($messages.get()).toEqual(messages)
 })
 
-it.each(['empty', 'wrong-session', 'wrong-profile', 'no-runtime'])(
+it('routes a free-tier setup through the reasoning config request', async () => {
+  const request = vi.fn(async () => undefined as never)
+
+  const runtimeId = await adoptGuideSession(
+    setupProfile,
+    'guide',
+    true,
+    async () => {
+      publishGuide('guide')
+    },
+    request
+  )
+  expect(runtimeId).toBe('runtime-guide')
+  expect(request).toHaveBeenCalledWith('config.set', {
+    session_id: 'runtime-guide',
+    key: 'reasoning',
+    value: 'minimal'
+  })
+})
+
+it.each(['no-runtime', 'no-state', 'not-selected', 'wrong-profile'])(
   'rejects a settled resume with %s instead of releasing startup',
   async failure => {
     const request = vi.fn(async () => {
@@ -86,17 +106,30 @@ it.each(['empty', 'wrong-session', 'wrong-profile', 'no-runtime'])(
     await expect(
       adoptGuideSession(
         setupProfile,
-        { id: 'guide' },
+        'guide',
         false,
         async () => {
-          publishGuide(failure === 'wrong-session' ? 'other' : 'guide', failure !== 'empty')
+          if (failure === 'no-runtime') {
+            publishGuide('guide')
+            $activeSessionId.set(null)
+            return
+          }
+
+          if (failure === 'no-state') {
+            $activeSessionId.set('runtime-guide')
+            $selectedStoredSessionId.set('guide')
+            $activeGatewayProfile.set(setupProfile)
+            return
+          }
+
+          publishGuide('guide')
+
+          if (failure === 'not-selected') {
+            $selectedStoredSessionId.set('other')
+          }
 
           if (failure === 'wrong-profile') {
             $activeGatewayProfile.set('default')
-          }
-
-          if (failure === 'no-runtime') {
-            $activeSessionId.set(null)
           }
         },
         request
