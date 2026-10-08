@@ -42,7 +42,7 @@ import { $activeGroupMemberKeys } from './group-presence'
 import { $groupReadAt, groupLastRoundSummary, groupUnreadCount } from './group-unread'
 import { isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
-import { botRole, displayName, stripPreviewMarkdown } from './labels'
+import { botRole, cleanPreviewLine, displayName } from './labels'
 import { botLiveStatusLabel, useBotAttention, useBotHealth, useBotLiveStatus } from './live-status'
 import { $relayInflight, relayLaneKey } from './relay'
 import { openRosterBot } from './roster-actions'
@@ -200,8 +200,9 @@ export function BotRow({
   // keep last_session semantics: any recent activity means the bot is alive.
   const { fromBot } = previewKind(previewSession?.preview)
 
-  // DM previews read like DMs: strip the delivery prefix, keep the message.
-  const displayPreview = stripPreviewMarkdown(
+  // DM previews read like DMs: strip the delivery prefix, then flatten to one
+  // clean prose line — no markdown, no mid-line heading markers, no noise.
+  const displayPreview = cleanPreviewLine(
     fromBot ? (previewSession?.preview || '').replace(A2A_PREFIX_RE, '').trim() || '…' : previewSession?.preview || ''
   )
 
@@ -469,9 +470,11 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
     members.find(member => member?.name === lastFrom)
   )
 
-  const preview = last
-    ? `${last.from?.kind === 'user' ? b.group.you : `@${lastHandle}`}: ${stripPreviewMarkdown(roundText) || '…'}`
-    : b.group.memberCount(members.length)
+  // The line shows CONTENT only — the speaker ("You", "@handle") moves to the
+  // hover title, so group rows read as plain prose like every other row.
+  const speaker = last?.from?.kind === 'user' ? b.group.you : `@${lastHandle}`
+  const preview = last ? cleanPreviewLine(roundText) || '…' : b.group.memberCount(members.length)
+  const previewTitle = last ? `${speaker}: ${String(roundText || '').replace(/\s+/g, ' ').trim()}` : ''
 
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
   const availabilityLabel = b.group.availableCount(availableMembers, members.length)
@@ -557,7 +560,9 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             </span>
           ) : null}
         </div>
-        <div className="mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)">{preview}</div>
+        <div className="mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)" title={previewTitle || undefined}>
+          {preview}
+        </div>
       </div>
     </RowButton>
   )
