@@ -20,7 +20,7 @@ import { openRosterBot } from './roster-actions'
 import { botConnectionRoute, botRosterMeta } from './routing'
 import { useTurnBusy } from './row-helpers'
 import { retryBotDeliveries, stopBotTurn } from './run-controls'
-import { taskLogGroups, taskLogLine } from './task-log'
+import { taskLogGroups, taskLogLine, taskLogPreview } from './task-log'
 import type { RosterRow, RoutineJob } from './types'
 
 const RUN_KIND_GLYPHS: Record<BotRunKind, string> = {
@@ -228,11 +228,16 @@ export function BotTaskLog({ jobs, onOpenRoutine, owner }: BotTaskLogProps) {
             {day.runs.map(run => {
               const kindLabel = b.runs[`kind${run.kind[0].toUpperCase()}${run.kind.slice(1)}` as 'kindChat']
               const statusLabel = b.runs[run.status]
+              // The visible line is a subject (clipped on a word boundary);
+              // the unclipped preview is what the row says to a reader who
+              // cannot see the truncation.
+              const preview = taskLogPreview(run) || kindLabel
               const line = taskLogLine(run) || kindLabel
+              const lineClass = 'min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)'
 
               return (
                 <RowButton
-                  aria-label={`${line} — ${statusLabel}`}
+                  aria-label={`${preview} — ${statusLabel}`}
                   className={cn(
                     'flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors',
                     'hover:bg-(--chrome-action-hover)'
@@ -255,7 +260,13 @@ export function BotTaskLog({ jobs, onOpenRoutine, owner }: BotTaskLogProps) {
                       name={RUN_KIND_GLYPHS[run.kind]}
                     />
                   </Tip>
-                  <span className="min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)">{line}</span>
+                  {preview === line ? (
+                    <span className={lineClass}>{line}</span>
+                  ) : (
+                    <Tip label={preview}>
+                      <span className={lineClass}>{line}</span>
+                    </Tip>
+                  )}
                   {run.replay ? (
                     <Tip label={b.runs.replay}>
                       <span

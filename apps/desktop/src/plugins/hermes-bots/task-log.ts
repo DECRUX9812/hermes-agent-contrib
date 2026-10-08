@@ -9,6 +9,7 @@
  * inside the right day) stays unit-testable.
  */
 
+import { clipWords } from './activity-format'
 import type { BotRun } from './bot-runs'
 
 export type TaskLogDayLabel = 'date' | 'today' | 'yesterday'
@@ -28,10 +29,17 @@ function dayStart(ms: number): number {
   return d.getTime()
 }
 
-/** The one-line action text a log row renders: the run's own title first
- *  (routine name), else its outcome summary. */
-export function taskLogLine(run: BotRun): string {
+/** The run's text in full — what a row's tooltip and aria-label keep, so
+ *  clipping the visible line never hides what happened. */
+export function taskLogPreview(run: BotRun): string {
   return (run.title || '').trim() || (run.summary || '').trim()
+}
+
+/** The one-line action text a log row renders: the run's own subject first
+ *  (its routine name), else its outcome preview cut to a subject's length on
+ *  a word boundary. The unclipped preview rides in the row's Tip/aria. */
+export function taskLogLine(run: BotRun): string {
+  return clipWords((run.title || '').trim()) || clipWords((run.summary || '').trim())
 }
 
 /** Group runs (already newest-first from deriveBotRuns) into day buckets,

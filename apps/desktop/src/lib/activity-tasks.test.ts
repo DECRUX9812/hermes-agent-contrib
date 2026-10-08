@@ -122,6 +122,25 @@ describe('deriveActivityTasks', () => {
     expect(tasks.map(task => task.title)).toEqual(['Real request'])
     expect(tasks[0].steps[0].subject).toBe('gpu deals')
   })
+
+  it('carries the row subject: the request for a request task, empty for self-started work', () => {
+    const [own, asked] = deriveActivityTasks([
+      assistant('intro', [{ type: 'text', text: 'Hi, I am Muse.' }]),
+      assistant('resume', [call('t1', 'terminal', { command: 'npm run build' }, done(5))]),
+      user('u1', 'Ok so I need to deploy the plugin'),
+      assistant('a1', [call('t2', 'read_file', { path: 'src/x.ts' }, done(6))])
+    ])
+
+    // Self-started work names its STEPS, which needs the UI's wording — the
+    // request half of the chain is empty and stays empty.
+    expect(own.title).toBe('')
+    expect(own.subject).toBe('')
+    expect(own.subjectSource).toBe('derived')
+
+    expect(asked.title).toBe('Deploy the plugin')
+    expect(asked.subject).toBe('Deploy the plugin')
+    expect(asked.subjectSource).toBe('derived')
+  })
 })
 
 describe('activityVerb', () => {
@@ -135,13 +154,23 @@ describe('activityVerb', () => {
 describe('requestSubject', () => {
   it('strips the greeting so the row reads as the ask', () => {
     // The real rows from a Bot context feed, which read as walls of text.
-    expect(requestSubject('Hey Can You try Again')).toBe('try Again')
-    expect(requestSubject('Hey how Are you doing')).toBe('how Are you doing')
+    expect(requestSubject('Hey Can You try Again')).toBe('Try Again')
+    expect(requestSubject('Hey how Are you doing')).toBe('How Are you doing')
   })
 
   it('leads with the request, not the pleasantry', () => {
-    expect(requestSubject('Hey, can you check our recent progress')).toBe('check our recent progress')
-    expect(requestSubject('Ok so I need to deploy the plugin')).toBe('to deploy the plugin')
+    expect(requestSubject('Hey, can you check our recent progress')).toBe('Check our recent progress')
+    // The strip lands on a PHRASE boundary: it does not stop with an
+    // infinitive marker stranded at the head of the row.
+    expect(requestSubject('Ok so I need to deploy the plugin')).toBe('Deploy the plugin')
+    expect(requestSubject('I need you to fix the flaky test')).toBe('Fix the flaky test')
+    expect(requestSubject('can we add a dark mode toggle')).toBe('Add a dark mode toggle')
+  })
+
+  it('keeps a request that opens with its own words', () => {
+    // The stranded-word pass only runs AFTER a pleasantry was stripped, so a
+    // message that really starts with an article keeps it.
+    expect(requestSubject('the plugin catalog needs an entry')).toBe('the plugin catalog needs an entry')
   })
 
   it('caps a long body far below the old 120-char title', () => {
@@ -153,6 +182,16 @@ describe('requestSubject', () => {
     // for help. (My first expectation here asserted 'help me…' and was wrong.)
     expect(out.startsWith('Get the Backdrops Plugin Live on')).toBe(true)
     expect(out.endsWith('…')).toBe(true)
+  })
+
+  it('cuts on a word boundary, so a row never ends mid-word', () => {
+    const out = requestSubject(`Hey can you ${'word '.repeat(40)}end`)
+
+    // The head moved, so the first word is capitalized as it is cut.
+    expect(out).toBe(`Word ${'word '.repeat(10).trimEnd()}…`)
+    expect(out.length).toBeLessThanOrEqual(60)
+    // One long word with no space to cut on still respects the cap.
+    expect(requestSubject(`check ${'x'.repeat(200)}`).length).toBeLessThanOrEqual(60)
   })
 
   it('reproduces the real rows from the Bot context feed, shorter', () => {

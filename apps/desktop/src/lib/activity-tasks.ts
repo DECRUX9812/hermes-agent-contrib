@@ -52,6 +52,15 @@ export interface ActivityTask {
   /** First sentence of the agent's final reply, '' until it has one. */
   outcome: string
   errorCount: number
+  /** The row's one-line subject: the request in as few words as carry it
+   *  (already run through {@link requestSubject}), '' for work the agent
+   *  started on its own — there the row names the work instead, which needs
+   *  the UI's wording (see `taskSubject` in the plugin's activity-format).
+   *  This is the slot the async model-subject upgrade writes into. */
+  subject: string
+  /** Where `subject` came from: 'derived' at derivation, 'model' once the
+   *  renderer's upgrade layer has merged a cached model-written subject in. */
+  subjectSource?: 'derived' | 'model'
 }
 
 const VERB_BY_TOOL: Readonly<Record<string, ActivityVerb>> = {
@@ -98,22 +107,77 @@ export function activityVerb(tool: string): ActivityVerb {
 }
 
 const SUBJECT_MAX = 80
+/** A row subject's cap: the line a glance reads first. */
+const REQUEST_MAX = 60
 
 function clip(text: string, max = SUBJECT_MAX): string {
   const line = text.split('\n', 1)[0].trim()
 
-  return line.length > max ? `${line.slice(0, max - 1).trimEnd()}…` : line
+  if (line.length <= max) {
+    return line
+  }
+
+  // Cut on a word boundary: a row must never end mid-word ("…the Backdro").
+  const window = line.slice(0, max - 1)
+  const boundary = window.lastIndexOf(' ')
+
+  return `${(boundary > 0 ? window.slice(0, boundary) : window).trimEnd()}…`
 }
 
-/** Pleasantries that open a message without carrying meaning. Stripped from the
- *  front of a subject so a row reads as its ask, not its greeting. Each is
- *  anchored to a word boundary and the whole run repeats, so "Hey so can you"
- *  falls away in one pass. */
+/** One pleasantry that opens a message without carrying meaning, anchored to
+ *  a word boundary. Runs are stripped ONE AT A TIME (below) so the strip can
+ *  be re-checked at every step instead of stopping wherever the old `+` run
+ *  happened to end. */
 const LEAD_FILLER =
-  /^(?:(?:hey|hi|hello|yo|sup|ok|okay|so|well|um|uh|please|pls|good (?:morning|afternoon|evening)|can you|could you|would you|will you|can we|i want you to|i need you to|i'?d like you to|i want|i need|help me|let'?s)\b[\s,.:;-]*)+/i
+  /^(?:hey|hi|hello|yo|sup|ok|okay|so|well|um|uh|please|pls|good (?:morning|afternoon|evening)|can you|could you|would you|will you|can we|i want you to|i need you to|i'?d like you to|i want|i need|help me|let'?s)\b[\s,.:;-]*/i
 
-/** Trailing courtesies that add nothing to a subject. */
+/** A word that cannot head a subject — articles, prepositions, the
+ *  infinitive marker. Stripping a pleasantry may strand one ("Ok so I need
+ *  to deploy the plugin" → "to deploy the plugin"), so the strip carries on
+ *  through it and lands on the next PHRASE boundary instead.
+ *
+ *  Only consulted once a pleasantry has actually been stripped: a request
+ *  that opens with its own words ("the plugin catalog needs an entry") keeps
+ *  them, and nothing is ever stripped to nothing. */
+const STRANDED_HEAD =
+  /^(?:to|a|an|the|that|of|in|on|at|for|with|from|by|and|or|but)\b[\s,.:;-]+/i
+
+/** Trailing courtesies that add nothing to a subject. Each is a whole word
+ *  at the end of the message, so the tail strip is boundary-anchored too. */
 const TAIL_FILLER = /[\s,.:;-]*(?:thanks|thank you|thx|ty|cheers|please)[\s!.]*$/i
+
+/** Strip the pleasantries off a request. `trimmed` says whether the head of
+ *  the line changed — the caller capitalizes only then, so a subject that
+ *  was never stripped keeps its own casing. */
+function stripRequest(text: string): { body: string; trimmed: boolean } {
+  let out = text
+  let trimmed = false
+
+  for (;;) {
+    const filler = LEAD_FILLER.exec(out)
+
+    if (filler && filler[0].length && filler[0].length < out.length) {
+      out = out.slice(filler[0].length)
+      trimmed = true
+
+      continue
+    }
+
+    if (trimmed) {
+      const stranded = STRANDED_HEAD.exec(out)
+
+      if (stranded && stranded[0].length < out.length) {
+        out = out.slice(stranded[0].length)
+
+        continue
+      }
+    }
+
+    break
+  }
+
+  return { body: out.replace(TAIL_FILLER, '').trim(), trimmed }
+}
 
 /** A request's row subject: the ask in as few words as carry it.
  *
@@ -121,8 +185,10 @@ const TAIL_FILLER = /[\s,.:;-]*(?:thanks|thank you|thx|ty|cheers|please)[\s!.]*$
  *  from the messages the session already holds, so it works offline, survives a
  *  reload, and costs no tokens. It is NOT an abstractive summary: a model-written
  *  one would need an RPC per request and would drift from the transcript it sits
- *  next to. The job here is to make a long message read short, not to invent
- *  wording the user never used. */
+ *  next to. (The renderer's async upgrade layer may later REPLACE this with a
+ *  cached model subject; this stays the fallback it degrades to.) The job here
+ *  is to make a long message read short, not to invent wording the user never
+ *  used. */
 export function requestSubject(text: string): string {
   const flat = text
     .replace(/```[\s\S]*?```/g, ' ')
@@ -135,13 +201,15 @@ export function requestSubject(text: string): string {
     return ''
   }
 
-  const stripped = flat.replace(LEAD_FILLER, '').replace(TAIL_FILLER, '').trim()
+  const { body, trimmed } = stripRequest(flat)
 
   // Never strip to nothing: a bare "Hey" was still a request.
-  const body = stripped || flat
+  const kept = body || flat
+  // The head moved, so the new head reads as a sentence: "try Again" → "Try Again".
+  const head = trimmed && kept ? kept[0].toUpperCase() + kept.slice(1) : kept
 
   // Cap tighter than a step subject: this is the line a glance reads first.
-  return clip(body, 60)
+  return clip(head, REQUEST_MAX)
 }
 
 function basename(path: string): string {
@@ -209,7 +277,18 @@ interface Draft {
 
 function openTask(id: string, title: string, startedAt: number): Draft {
   return {
-    task: { completedAt: null, errorCount: 0, id, outcome: '', startedAt, status: 'done', steps: [], title },
+    task: {
+      completedAt: null,
+      errorCount: 0,
+      id,
+      outcome: '',
+      startedAt,
+      status: 'done',
+      steps: [],
+      subject: '',
+      subjectSource: 'derived',
+      title
+    },
     reply: '',
     ended: null
   }
@@ -269,6 +348,11 @@ function seal(draft: Draft, live: boolean): ActivityTask {
 
   task.errorCount = steps.filter(step => step.action.status === 'error').length
   task.outcome = draft.reply ? firstSentence(draft.reply) : ''
+  // The request half of the row's subject chain, derived here so every
+  // consumer renders `subject` (or `taskSubject`'s step fallback) instead of
+  // re-deriving. '' for work the agent started on its own.
+  task.subject = requestSubject(task.title)
+  task.subjectSource = 'derived'
 
   for (const step of steps) {
     task.startedAt ||= step.action.startedAt

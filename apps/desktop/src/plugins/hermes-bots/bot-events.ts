@@ -9,6 +9,7 @@
  * bot-events-view.tsx; this file never imports them.
  */
 
+import { clipWords } from './activity-format'
 import { routineRunTitle } from './bot-runs'
 import { type MailboxNote, noteAddressesMember } from './mailbox'
 import type { GroupMember, RoutineJob } from './types'
@@ -141,7 +142,9 @@ export function deriveInboundEvents(signals: BotInboundSignals): BotInboundEvent
       label: senderLabel(note),
       room: note.room ? String(note.room) : undefined,
       status: note.status === 'declined' ? 'failed' : 'ok',
-      summary: firstLine(note.title) || firstLine(note.body)
+      // The card's summary slot takes a SUBJECT: the note's own line, cut to
+      // a subject's length on a word boundary rather than dumped whole.
+      summary: clipWords(firstLine(note.title)) || clipWords(firstLine(note.body))
     })
   }
 

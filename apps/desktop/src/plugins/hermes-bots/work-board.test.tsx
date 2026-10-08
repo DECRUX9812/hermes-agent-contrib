@@ -42,6 +42,7 @@ vi.mock('./routing', async importOriginal => ({
 const { host } = await import('@hermes/plugin-sdk')
 const { WorkBoard } = await import('./work-board')
 const { activityNow } = await import('./activity-format')
+const { $activitySubjects, activitySubjectKey, resetActivitySubjects } = await import('./activity-subjects')
 
 const $activity = host.state.focusedActivity as unknown as { set: (tasks: readonly ActivityTask[]) => void }
 const $messages = host.state.focusedMessages as unknown as { set: (messages: readonly HermesSdk.ChatMessage[]) => void }
@@ -97,6 +98,8 @@ const finished: ActivityTask = {
     step('t1', 'terminal', 'ran', 'git status', { exitCode: 0, output: 'clean', target: 'git status' }),
     step('t2', 'read_file', 'read', 'bot-card.tsx')
   ],
+  subject: 'Check UI build status',
+  subjectSource: 'derived',
   title: 'Check UI build status'
 }
 
@@ -108,7 +111,35 @@ const running: ActivityTask = {
   startedAt: nowS - 30,
   status: 'running',
   steps: [step('t3', 'read_file', 'read', 'routes.ts', { completedAt: null, output: '', status: 'running' })],
+  subject: 'Compare bots and modes',
+  subjectSource: 'derived',
   title: 'Compare bots and modes'
+}
+
+/** Work the agent started on its own: no request, so the row names its steps. */
+const selfStarted: ActivityTask = {
+  completedAt: nowS - 10,
+  errorCount: 0,
+  id: 'u3',
+  outcome: 'Build is green.',
+  startedAt: nowS - 40,
+  status: 'done',
+  steps: [
+    step('t4', 'terminal', 'ran', 'npm run build', { target: 'npm run build' }),
+    step('t5', 'terminal', 'ran', 'npm test', { target: 'npm test' })
+  ],
+  subject: '',
+  subjectSource: 'derived',
+  title: ''
+}
+
+/** The same self-started work, still going: what the Now card reads. */
+const selfStartedRunning: ActivityTask = {
+  ...selfStarted,
+  completedAt: null,
+  id: 'u4',
+  startedAt: nowS - 30,
+  status: 'running'
 }
 
 beforeAll(() => {
@@ -121,6 +152,7 @@ afterEach(() => {
   act(() => {
     $activity.set([])
     $messages.set([])
+    resetActivitySubjects()
   })
 })
 
@@ -132,7 +164,14 @@ describe('WorkBoard', () => {
   })
 
   it('puts the running task in Now and finished ones in Done, newest first', () => {
-    const older = { ...finished, id: 'u0', title: 'Older task', outcome: 'Older outcome.' }
+    const older = {
+      ...finished,
+      id: 'u0',
+      outcome: 'Older outcome.',
+      subject: 'Older task',
+      title: 'Older task'
+    }
+
     act(() => $activity.set([older, finished, running]))
     board()
 
@@ -142,7 +181,15 @@ describe('WorkBoard', () => {
 
     const done = screen.getAllByTestId('activity-row')
     expect(done.map(row => row.textContent?.includes('Check UI build status'))).toEqual([true, false])
-    expect(done[0].textContent).toContain('Saved 3 screenshots for the preview.')
+
+    // The row IS its subject: one line, then status · time · receipts. The
+    // reply's first sentence is not on the row — it lives in the dialog.
+    expect(done[0].querySelector('[data-testid="activity-subject"]')?.textContent).toBe('Check UI build status')
+    expect(done[0].textContent).toContain('Done')
+    expect(done[0].textContent).not.toContain('Saved 3 screenshots for the preview.')
+
+    fireEvent.click(done[0])
+    expect(screen.getByTestId('activity-detail').textContent).toContain('Saved 3 screenshots for the preview.')
   })
 
   it('says the bot is free when nothing is running', () => {
@@ -242,8 +289,41 @@ describe('WorkBoard', () => {
     board()
 
     const verbs = screen.getAllByTestId('receipt-verb').map(chip => chip.textContent)
-    expect(verbs[0]).toBe('Ran2')
+    // The count reads as a WORD plus its number — "Ran 2", not an icon and a 2.
+    expect(verbs[0]).toBe('Ran 2')
     expect(verbs).toHaveLength(3)
+  })
+
+  it('names self-started work by what it DID, in Now and in Done', () => {
+    act(() => $activity.set([selfStarted, selfStartedRunning]))
+    board()
+
+    // Now's headline is the work, not the literal "Started on its own" —
+    // which stays as the tooltip for a reader who wants the provenance.
+    const now = screen.getByTestId('work-now')
+    expect(within(now).getByTestId('work-now-subject').textContent).toBe('Ran npm run build')
+    expect(within(now).getByTestId('work-now-subject').getAttribute('title')).toBe('Started on its own')
+
+    expect(screen.getByTestId('activity-subject').textContent).toBe('Ran npm run build')
+  })
+
+  it('renders a cached model subject in place of the derived one', () => {
+    act(() => {
+      $activitySubjects.set({
+        entries: {
+          [activitySubjectKey(finished)]: {
+            at: Date.now(),
+            source: 'model',
+            subject: 'Skia UI build receipts'
+          }
+        },
+        ready: true
+      })
+      $activity.set([finished])
+    })
+    board()
+
+    expect(screen.getByTestId('activity-subject').textContent).toBe('Skia UI build receipts')
   })
 
   it('flags a routine whose last run failed', () => {

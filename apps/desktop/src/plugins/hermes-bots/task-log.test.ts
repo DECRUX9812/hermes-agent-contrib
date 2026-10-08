@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { BotRun } from './bot-runs'
-import { taskLogGroups, taskLogLine } from './task-log'
+import { taskLogGroups, taskLogLine, taskLogPreview } from './task-log'
 
 function run(over: Partial<BotRun>): BotRun {
   return {
@@ -61,5 +61,27 @@ describe('taskLogLine', () => {
     expect(taskLogLine(run({ title: 'Morning report' }))).toBe('Morning report')
     expect(taskLogLine(run({ summary: 'Delivered a note', title: '' }))).toBe('Delivered a note')
     expect(taskLogLine(run({ summary: '  ', title: ' ' }))).toBe('')
+  })
+
+  it('cuts a long line to a subject on a word boundary, keeping the raw preview', () => {
+    const long = 'Delivered the weekly digest to the standup room with every open thread from the past week'
+    const row = run({ summary: long, title: '' })
+
+    const line = taskLogLine(row)
+
+    expect(line.length).toBeLessThanOrEqual(60)
+    expect(line.endsWith('…')).toBe(true)
+    expect(line.startsWith('Delivered the weekly digest to the standup room')).toBe(true)
+    // Nothing is lost: the full preview is what the row's Tip/aria carries.
+    expect(taskLogPreview(row)).toBe(long)
+  })
+
+  it('caps a long routine name the same way', () => {
+    const long = 'Weekly review of every open thread in the plugin catalog backlog for the desktop app team'
+    const row = run({ title: long })
+
+    expect(taskLogLine(row).length).toBeLessThanOrEqual(60)
+    expect(taskLogLine(row).endsWith('…')).toBe(true)
+    expect(taskLogPreview(row)).toBe(long)
   })
 })

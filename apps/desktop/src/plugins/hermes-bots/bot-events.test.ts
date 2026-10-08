@@ -146,4 +146,18 @@ describe('deriveInboundEvents', () => {
     expect(mail.room).toBe('standup')
     expect(mail.label).toBe('ops')
   })
+
+  it('reads a note as a capped subject, not a wall of text', () => {
+    const long = 'Review the whole Backdrops Plugin Live flow on the Desktop app for the team before Friday'
+    const [event] = deriveInboundEvents(signals({ notes: [note({ body: long, title: long })] }))
+
+    expect(event.summary.length).toBeLessThanOrEqual(60)
+    expect(event.summary.endsWith('…')).toBe(true)
+    expect(event.summary.startsWith('Review the whole Backdrops Plugin')).toBe(true)
+
+    // A short note is left exactly as written.
+    const [short] = deriveInboundEvents(signals({ notes: [note({ title: 'Review the draft', body: 'ignored' })] }))
+
+    expect(short.summary).toBe('Review the draft')
+  })
 })

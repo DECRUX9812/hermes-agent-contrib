@@ -24,7 +24,8 @@ import {
 import { type ReactNode, useMemo, useState } from 'react'
 
 import { ActivityDetailDialog } from './activity-detail'
-import { stepLabel } from './activity-format'
+import { stepLabel, taskSubject } from './activity-format'
+import { useActivitySubjects } from './activity-subjects'
 import { type BotPlanState, deriveBotPlanState } from './bot-plan'
 import { routineDetailIssue, routineTitle } from './cron'
 import { type BotsText, useBots } from './i18n'
@@ -147,6 +148,11 @@ function NowCard({
   const step = currentStep(task)
   const live = step && step.action.status === 'running' ? stepLabel(step, a, 'doing') : a.thinking
   const planStep = plan && !plan.complete ? activePlanStep(plan) : null
+  const planText = planStep && plan ? plan.steps[planStep - 1] : null
+  // The headline names the WORK: the plan step it is on, else the task's
+  // subject — the request, or for self-started work "Ran npm run build" —
+  // never the bare "Started on its own" (which stays as the tooltip).
+  const headline = planText || taskSubject(task, a)
   const progress = plan ? plan.doneSteps.size / plan.steps.length : null
 
   return (
@@ -158,8 +164,12 @@ function NowCard({
         <GlyphSpinner className="text-[0.8rem]" spinner="breathe" />
         {planStep && plan ? w.stepOf(planStep, plan.steps.length) : a.working}
       </span>
-      <span className="text-[0.875rem] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]">
-        {(planStep && plan?.steps[planStep - 1]) || task.title || a.onItsOwn}
+      <span
+        className="text-[0.875rem] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]"
+        data-testid="work-now-subject"
+        title={!task.title && !planText ? a.onItsOwn : undefined}
+      >
+        {headline}
       </span>
       <span className="truncate text-[0.75rem] text-(--ui-text-tertiary)" data-testid="work-now-live">
         {live}
@@ -276,6 +286,10 @@ function DoneRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask }) {
   const a = b.activity
   const ended = task.completedAt ?? task.startedAt
   const failed = task.status === 'error' || task.status === 'stopped'
+  // The subject is the row: the request (or a cached model subject, or the
+  // work its steps name). The reply's first sentence lives in the dialog,
+  // where there is room to read it.
+  const subject = taskSubject(task, a)
 
   return (
     <li>
@@ -288,17 +302,15 @@ function DoneRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask }) {
       >
         <StatusTile className="size-6 rounded-lg [&_.codicon]:text-[0.75rem]" status={task.status} />
         <span className="grid min-w-0 flex-1 gap-0.5">
-          <span className="truncate text-[0.8125rem] font-medium leading-snug text-foreground">
-            {task.title || a.onItsOwn}
+          <span
+            className="truncate text-[0.8125rem] font-medium leading-snug text-foreground"
+            data-testid="activity-subject"
+          >
+            {subject}
           </span>
-          {task.outcome ? (
-            <span className="line-clamp-2 text-[0.75rem] leading-snug text-(--ui-text-tertiary)">{task.outcome}</span>
-          ) : null}
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] tabular-nums">
             <span className={failed ? 'text-destructive' : 'text-(--ui-text-quaternary)'}>
-              {[failed ? a.status[task.status] : '', ended ? relativeTime(ended * 1000) : '']
-                .filter(Boolean)
-                .join(' · ')}
+              {[a.status[task.status], ended ? relativeTime(ended * 1000) : ''].filter(Boolean).join(' · ')}
             </span>
             {receiptVerbs(task).map(([verb, count]) => (
               <span
@@ -308,8 +320,8 @@ function DoneRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask }) {
                 title={a.verbs[verb]}
               >
                 <Codicon name={VERB_ICONS[verb]} size="0.7rem" />
-                <span className="sr-only">{a.verbs[verb]}</span>
-                {count}
+                {/* The verb in WORDS, so the count counts something a reader can see. */}
+                <span>{`${a.verbs[verb]} ${count}`}</span>
               </span>
             ))}
           </span>
@@ -339,13 +351,26 @@ export function WorkBoard({
   const b = useBots()
   const a = b.activity
   const w = a.work
-  const tasks = useValue(host.state.focusedActivity)
+  const raw = useValue(host.state.focusedActivity)
   const messages = useValue(host.state.focusedMessages)
   const plan = useMemo(() => deriveBotPlanState(messages), [messages])
   // Hold the id: every streamed token re-derives the tasks, and an open
   // detail view must follow the live task rather than freeze a snapshot.
   const [openId, setOpenId] = useState<null | string>(null)
   const [showAllDone, setShowAllDone] = useState(false)
+
+  // What is ON SCREEN: only those rows are worth a model subject — the
+  // upgrade is billed per subject, and a collapsed Done list is not read.
+  const visible = useMemo(() => {
+    const live = raw.at(-1)?.status === 'running' ? [raw.at(-1)!] : []
+    const settled = raw.filter(task => task.status !== 'running').reverse()
+
+    return [...live, ...settled.slice(0, showAllDone ? settled.length : DONE_PREVIEW)]
+  }, [raw, showAllDone])
+
+  // Derived subjects render now; cached model subjects merge in when the
+  // batched upgrade lands. Nothing here waits on a model.
+  const tasks = useActivitySubjects(raw, messages, visible)
   const open = openId ? (tasks.find(task => task.id === openId) ?? null) : null
 
   const running = tasks.at(-1)?.status === 'running' ? tasks.at(-1)! : null
