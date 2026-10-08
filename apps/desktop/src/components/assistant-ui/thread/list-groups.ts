@@ -94,6 +94,9 @@ export const BACKFILL_STEP = 290
 // re-arming forever.
 export const PARKED_OFFSET_MAX_PAGES = 96
 
+// A reader parked this long has stopped scrolling past the composer; bring it back.
+export const COMPOSER_UNDIM_AFTER_STALL_MS = 5000
+
 export const transcriptBackfillFrameCount = (
   firstPaint = FIRST_PAINT_BUDGET,
   step = BACKFILL_STEP,

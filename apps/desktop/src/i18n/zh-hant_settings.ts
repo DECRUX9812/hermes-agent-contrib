@@ -943,7 +943,12 @@ export const zhHantSettings = {
       attachmentSizeDesc:
         '桌面端為預覽和圖片附件載入本地文件的大小上限（MB）。預設為 16。遠端非圖片附件使用單獨的 256 MB 上限。設定過大會將整個文件讀入記憶體，可能導致應用卡死或崩潰。',
       attachmentSizeLabel: '預覽 / 圖片載入大小上限（MB）',
-      attachmentSizeUnit: 'MB'
+      attachmentSizeUnit: 'MB',
+      developerTitle: '開發者',
+      resetOnboardingTitle: '重設初始設定',
+      resetOnboardingDesc: '刪除設定聊天、重建設定設定檔，並再次執行首次設定。你自己的設定檔、聊天和外掛都會保留。',
+      resetOnboardingAction: '重設',
+      resetOnboardingFailed: '無法重設初始設定'
     },
     hudModifier: {
       title: '輕按叫出 HUD',

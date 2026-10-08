@@ -38,6 +38,7 @@ import { PanelEmpty } from '../overlays/panel'
 
 import { ConfigField } from './config-field'
 import { configSubpageForField } from './config-subpages'
+import { DeveloperSettings } from './developer-settings'
 import {
   clearsEnabledToolsets,
   diffConfig,
@@ -488,6 +489,7 @@ function ConfigSettingsInner({
           />
           <PoolLimitsSetting />
           <QuickEntrySettings />
+          <DeveloperSettings />
         </>
       )}
       {/* Proactive nudges (roadmap #43, opt-in): device-local pref — settled

@@ -2568,10 +2568,14 @@ def test_with_session_toolsets_keeps_desktop_ui_when_project_disabled(monkeypatc
     ``desktop_ui`` — the client's own control surface — survives the subtraction."""
     monkeypatch.setattr(server, "_load_disabled_toolsets", lambda: ["project"])
 
-    assert server._with_session_toolsets(["memory"], "desktop") == ["memory", "catalog", "desktop_ui"]
+    assert server._with_session_toolsets(["memory"], "desktop") == [
+        "memory", "catalog", "desktop_ui", "visualization"
+    ]
     # Nothing disabled: the fold-in keeps every client-surface toolset.
     monkeypatch.setattr(server, "_load_disabled_toolsets", lambda: None)
-    assert server._with_session_toolsets(["memory"], "desktop") == ["memory", "catalog", "desktop_ui", "project"]
+    assert server._with_session_toolsets(["memory"], "desktop") == [
+        "memory", "catalog", "desktop_ui", "project", "visualization"
+    ]
 
 
 def test_load_enabled_toolsets_rejects_disabled_mcp_env(monkeypatch, capsys):
@@ -5077,7 +5081,7 @@ def test_session_close_releases_resume_lock_before_slow_teardown(monkeypatch):
         server._sessions.pop("slow-close", None)
 
     assert not thread.is_alive()
-    assert response["result"] == {"closed": True}
+    assert response["result"] == {"closed": True, "messages": []}
 
 
 def test_session_close_settles_active_turn_before_teardown(monkeypatch):
@@ -5130,7 +5134,7 @@ def test_session_close_settles_active_turn_before_teardown(monkeypatch):
 
     assert not close_thread.is_alive()
     assert teardown_started.is_set()
-    assert response["result"] == {"closed": True}
+    assert response["result"] == {"closed": True, "messages": []}
 
 
 def test_ws_orphan_reap_interrupts_isolated_turn_then_reaps(monkeypatch):

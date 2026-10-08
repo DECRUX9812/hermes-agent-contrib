@@ -8,8 +8,8 @@ import type { SessionInfo } from '@/types/hermes'
 
 import { adoptPendingRuntimeTabs, rekeyPreviewTabsSession } from './preview'
 import { forgetPendingRuntimeTabs } from './preview-ownership'
-import { clearAllProviderWaits, clearSessionProviderWait } from './provider-wait'
 import { $projectTree } from './project-tree'
+import { clearAllProviderWaits, clearSessionProviderWait } from './provider-wait'
 import {
   $activeSessionId,
   $cronSessions,
