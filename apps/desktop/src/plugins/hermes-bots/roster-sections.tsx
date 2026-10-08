@@ -221,21 +221,21 @@ export function GatewayKindGlyph({ className, kind }: GatewayKindGlyphProps) {
 }
 
 /** Foldable roster heading. It organizes rows visually but never supplies or
- * reconstructs ownership; every action still receives the full bot row. */
-interface RosterSectionHeaderProps {
+ * reconstructs ownership; every action still receives the full bot row.
+ * Exactly one glyph source is required: `gatewayKind` for a connection section,
+ * `icon` for a plain codicon. */
+type RosterSectionHeaderProps = {
   /** Trailing control drawn beside the heading (outside its button — a
    *  button cannot nest a button). User sections put their ⋯ menu here. */
   action?: ReactNode
   collapsed: boolean
   count: number
-  gatewayKind?: string
-  icon?: string
   label: string
   onDoubleClick?: () => void
   onToggle: () => void
   status?: { available: boolean; label: string }
   tip?: string
-}
+} & ({ gatewayKind: string; icon?: never } | { gatewayKind?: never; icon: string })
 
 export function RosterSectionHeader({
   action,
@@ -260,20 +260,13 @@ export function RosterSectionHeader({
       onDoubleClick={onDoubleClick}
     >
       <DisclosureCaret open={!collapsed} />
-      {gatewayKind ? (
-        <GatewayKindGlyph kind={gatewayKind} />
-      ) : (
-        // TODO(bot-mode-types): neither `gatewayKind` nor `icon` is required, so a header
-        // given neither renders `codicon-undefined`. Both current callers pass exactly one.
-        // @ts-expect-error `icon` is optional here; Codicon's `name` is required.
-        <Codicon className="shrink-0" name={icon} />
-      )}
+      {gatewayKind != null ? <GatewayKindGlyph kind={gatewayKind} /> : <Codicon className="shrink-0" name={icon!} />}
       <span className="flex min-w-0 items-center gap-1">
         <span className="min-w-0 truncate">{label}</span>
         {status && !status.available ? <span className="sr-only">{status.label}</span> : null}
       </span>
       <span aria-hidden className="min-w-0 flex-1" />
-      <span className="shrink-0 font-normal tabular-nums text-(--ui-text-quaternary)">{count}</span>
+      <span className="shrink-0 font-normal tabular-nums text-(--ui-text-tertiary)">{count}</span>
       {status && !status.available ? (
         <Codicon aria-hidden className="shrink-0 text-amber-600 dark:text-amber-300" name="debug-disconnect" />
       ) : null}

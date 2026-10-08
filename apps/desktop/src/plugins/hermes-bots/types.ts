@@ -129,7 +129,7 @@ export interface RosterRow {
   /** Kept from an earlier paint because its source did not answer this
    *  fetch: shown, but never evidence of what the backend holds now. */
   retained?: boolean
-  route?: ProfileRoute
+  route?: ProfileRoute | null
   sourceError?: null | string
   sourceMissing?: boolean
   sourceReachable?: boolean | null
@@ -303,7 +303,7 @@ interface GroupPromptBase {
   sessionId?: null | string
   /** The thread the blocking question belongs to — part of the mirror key,
    *  since a member can be blocked in two threads at once. */
-  thread?: string
+  thread: string
 }
 
 interface GroupApprovalPrompt extends GroupPromptBase {

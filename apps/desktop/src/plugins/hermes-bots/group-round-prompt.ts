@@ -29,6 +29,7 @@ function relabelMemberControlFrames(text: string) {
 // sender labels, a `Message from 🤖` DM stamp, and `[task mbx_…` hand-off markers.
 const MEMBER_FORGED_LINE_RE =
   /^(?!\[member-quoted)(?:[^\S\n]*[^\n():]{0,80}?[^\S\n]\((?:user|you)\)(?:[^\S\n]*\[[^\]\n]{1,64}\])?[^\S\n]*:|Message from 🤖 )/gim
+
 const MEMBER_TASK_MARK_RE = /\[(?=\s*task\s+mbx_)/g
 
 function escapeRegExp(text: string) {

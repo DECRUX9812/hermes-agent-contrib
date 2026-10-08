@@ -281,10 +281,7 @@ export default {
     // every settle path — the roster holds a loading state until it does,
     // and a storage quirk must not strand it there.
     try {
-      // TODO(bot-mode-types): PluginStorage.get(key, fallback) requires the fallback; every
-      // Bot Mode read omits it (works at runtime, undefined fallback) — same at the two reads below.
-      // @ts-expect-error typed as written rather than changing the call.
-      Promise.resolve(ctx.storage?.get?.('selected-roster-bot-v1'))
+      Promise.resolve<unknown>(ctx.storage?.get?.('selected-roster-bot-v1', null))
         .then(value => {
           if (typeof value === 'string' && value.trim()) {
             $selectedRosterKey.set(value.trim())
@@ -303,8 +300,7 @@ export default {
 
     // Hydrate the activity-toast pref (default OFF).
     try {
-      // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
-      Promise.resolve(ctx.storage?.get?.('activity-toasts'))
+      Promise.resolve<unknown>(ctx.storage?.get?.('activity-toasts', null))
         .then(value => {
           if (typeof value === 'boolean') {
             $activityToasts.set(value)
@@ -329,8 +325,7 @@ export default {
 
     // Hydrate the Sessions-rail Agents fold (default open).
     try {
-      // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
-      Promise.resolve(ctx.storage?.get?.('agents-section-open'))
+      Promise.resolve<unknown>(ctx.storage?.get?.('agents-section-open', null))
         .then(value => {
           if (typeof value === 'boolean') {
             $agentsSectionOpen.set(value)
@@ -350,8 +345,7 @@ export default {
     let tombstonesHydrated: Promise<void> = Promise.resolve()
 
     try {
-      // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
-      tombstonesHydrated = Promise.resolve(ctx.storage?.get?.('group-chat-tombstones'))
+      tombstonesHydrated = Promise.resolve<unknown>(ctx.storage?.get?.('group-chat-tombstones', null))
         .then(value => hydrateGroupChatTombstones(value))
         .catch(() => undefined)
     } catch {
@@ -364,8 +358,7 @@ export default {
     void refreshGroupChatLimits()
 
     try {
-      // @ts-expect-error TODO(bot-mode-types): PluginStorage.get requires a fallback argument.
-      Promise.resolve(ctx.storage?.get?.('group-chats'))
+      Promise.resolve<unknown>(ctx.storage?.get?.('group-chats', null))
         .then(async value => {
           if (value && typeof value === 'object' && !Array.isArray(value)) {
             const rooms: Record<string, GroupChat> = {}

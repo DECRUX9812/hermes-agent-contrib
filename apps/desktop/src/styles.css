@@ -2136,6 +2136,28 @@ body.guest-pointer-lock :is(webview, iframe) {
   border-color: var(--ui-stroke-secondary) !important;
 }
 
+/* A docked stack (background tasks, subagents, queue, todos) sits directly on
+   the composer. Square the composer's top edge while it is there so its outline
+   CONTINUES the stack's: rounded top corners under a square-bottomed card is
+   what read as two disconnected boxes. The stack's own bottom border stays
+   transparent, so the composer's top border remains the single shared divider. */
+[data-slot='composer-root'][data-status-stack] [data-slot='composer-surface'],
+[data-slot='composer-root'][data-status-stack] .composer-fallback-surface {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* Animate the junction so a section going live settles instead of snapping.
+   Repeats the surface's own opacity transition (COMPOSER_DROP_FADE_CLASS) —
+   this attribute selector outranks the utility class, so it must carry both. */
+[data-slot='composer-surface'],
+.composer-fallback-surface {
+  transition:
+    opacity 150ms ease-out,
+    border-top-left-radius 180ms ease-out,
+    border-top-right-radius 180ms ease-out;
+}
+
 [data-slot='composer-fade'] {
   min-height: 2.375rem;
 }

@@ -37,10 +37,7 @@ export const $dismissedNudgeCounts = atom<Record<string, number>>({})
 
 export function hydrateDismissedNudges(): void {
   try {
-    // TODO(bot-mode-types): PluginStorage.get requires a fallback argument —
-    // same TODO as the other hydrated prefs.
-    // @ts-expect-error typed as written rather than changing the call.
-    Promise.resolve(getPluginCtx()?.storage?.get?.(NUDGE_STORAGE_KEY))
+    Promise.resolve<unknown>(getPluginCtx()?.storage?.get?.(NUDGE_STORAGE_KEY, null))
       .then(value => {
         if (value && typeof value === 'object' && !Array.isArray(value)) {
           $dismissedNudgeCounts.set(
@@ -84,6 +81,7 @@ export function contextNudgeEligible(size: CanonicalChatSize | null | undefined)
   }
 
   const tokens = typeof size.input_tokens === 'number' && Number.isFinite(size.input_tokens) ? size.input_tokens : 0
+
   const messages =
     typeof size.message_count === 'number' && Number.isFinite(size.message_count) ? size.message_count : 0
 

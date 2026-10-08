@@ -948,12 +948,7 @@ export function startFaceClock() {
 
   // Nothing worth animating: no faces mounted (BotFace wakes us on the next
   // mount) or none visible (the observer wakes us when one scrolls in).
-  // TODO(bot-mode-types): with faces mounted and IntersectionObserver absent
-  // this returns the null observer rather than false — `observer &&`
-  // short-circuits to the observer itself. createBudgetedLoop declares
-  // idleWhen as `() => boolean`; null is falsy so the loop keeps running as
-  // intended today. Hence the assertion at the idleWhen call below.
-  const idle = () => faces.length === 0 || (observer && visibleFaces.size === 0)
+  const idle = () => faces.length === 0 || (observer !== null && visibleFaces.size === 0)
 
   const teardownCaches = () => {
     if (observer) {
@@ -972,7 +967,7 @@ export function startFaceClock() {
   if (typeof createBudgetedLoop === 'function' && createBudgetedLoop) {
     const loop = createBudgetedLoop(paint, {
       fps: 15,
-      idleWhen: idle as () => boolean
+      idleWhen: idle
     })
 
     window.__hbFaceClock = {

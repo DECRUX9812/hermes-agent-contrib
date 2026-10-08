@@ -177,15 +177,10 @@ export function focusedRosterOwner(
   owner: {
     authoritative?: boolean
     connectionId?: string
-    name?: string
     profile?: string
   } | null
 ) {
-  // TODO(bot-mode-types): `owner.name` cannot exist. Every caller passes
-  // $focusedBotOwner, whose two shapes (host.state.focusedSessionOwner and
-  // fallbackFocusedBotOwner) both key the profile as `profile`, so the
-  // `owner?.name` arm is unreachable and a name-only owner would be dropped.
-  const name = String(owner?.profile || owner?.name || '').trim()
+  const name = String(owner?.profile || '').trim()
 
   if (!owner || !name) {
     return null

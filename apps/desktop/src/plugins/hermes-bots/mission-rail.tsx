@@ -47,7 +47,7 @@ import {
   selectRoutineJobs,
   useRoutines
 } from './cron'
-import { $botMeta, $lastRoster, botHandle, newBotChat } from './data'
+import { $botMeta, $lastRoster, botHandle, botRosterKey, newBotChat } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { useBots } from './i18n'
 import { botRole, displayName } from './labels'
@@ -526,10 +526,7 @@ export function MissionRail() {
         // Non-null past the `!owner` early return above: `routineCreateTarget`
         // falls back to the active profile name.
         bot={createTarget!}
-        // TODO(bot-mode-types): `createTarget` is a roster row whenever a create
-        // owner is set, so this key stringifies to "[object Object]" instead of
-        // identifying the target bot. Cast to keep the as-written behavior.
-        key={createTarget as string}
+        key={typeof createTarget === 'string' ? createTarget : botRosterKey(createTarget)}
         onClose={() => {
           setCreateOpen(false)
           setCreateOwner(null)

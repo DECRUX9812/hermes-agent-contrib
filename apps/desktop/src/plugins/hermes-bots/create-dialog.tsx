@@ -204,21 +204,22 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
     ? (connections || []).find(c => c.id === targetConnection)?.label || targetConnection
     : ''
 
+  /** Route descriptor for the create target — the picked connection's default
+   *  backend for remote targets (also handed to MCP setup so its RPCs reach
+   *  the same machine). */
+  const targetRoute = remoteTarget
+    ? ({
+        connectionId: targetConnection,
+        mode: 'remote',
+        profile: 'default',
+        targetProfile: 'default'
+      } as const)
+    : null
+
   /** Gateway RPC on the create target: the picked connection's default
    *  backend for remote targets, the active gateway otherwise. */
   const requestForTarget = <T,>(method: string, params: Record<string, unknown> = {}): Promise<T> =>
-    remoteTarget
-      ? host.requestProfile(
-          {
-            connectionId: targetConnection,
-            mode: 'remote',
-            profile: 'default',
-            targetProfile: 'default'
-          },
-          method,
-          params
-        )
-      : host.request(method, params)
+    targetRoute ? host.requestProfile(targetRoute, method, params) : host.request(method, params)
 
   // Set once ensureAgentCreated() materializes the profile for the live
   // Capabilities tab (CapabilitiesView needs a real backend to point at). State —
@@ -1140,6 +1141,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
                                     }))
                                   }}
                                   profile={createdRef.current}
+                                  route={targetRoute}
                                 />
                               ) : null}
                               {m.description ? (
@@ -1413,11 +1415,9 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
           <DialogTitle>{b.group.newTitle}</DialogTitle>
           <DialogDescription>{`Pick 2–${GROUP_CHAT_MAX_MEMBERS} bots. Local memberships sync through each Bot profile; cross-machine members stay scoped to this room.`}</DialogDescription>
         </DialogHeader>
-        {/* TODO(bot-mode-types): this search box never takes focus when the dialog
-            opens — SearchField accepts no `autoFocus` prop and forwards no extra
-            props, so the `autoFocus` that used to sit here was inert. */}
         <SearchField
           aria-label={b.group.searchToAdd}
+          autoFocus
           containerClassName="w-full"
           inputClassName="w-full"
           onChange={setQuery}

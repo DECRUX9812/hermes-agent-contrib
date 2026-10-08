@@ -342,18 +342,13 @@ export async function ensureGroupChatSession(
         }
 
         if (res?.session_id) {
-          // TODO(bot-mode-types): `known` is `room.sessions[key]`, which the
-          // domain model types `string | true` — and the `target === true` skip
-          // above shows the legacy `true` sentinel is expected here. A backend
-          // that answers the title resume without a `session_key` therefore
-          // stores `true` back into room.sessions and hands `true` on as the
-          // durable id, which later rides into `session_id` on the recovery
-          // resume and on session.interrupt. Typed as-written.
-          //
           // The fallback is the id we resumed BY, which on the adoption pass
           // is the pre-thread pointer — the two title targets are titles, not
-          // ids, and were never eligible.
-          const stored = res.session_key || (target === title || target === roomTitle ? known : target)
+          // ids, and were never eligible. `known` is `string | true` in the
+          // room record: a `true` sentinel is "exists, id unknown" — it must
+          // never be re-stored or sent as a `session_id`.
+          const stored =
+            res.session_key || (target === title || target === roomTitle ? (known === true ? null : known) : target)
 
           if (stored) {
             updateGroupChat(group, (current: GroupChatRoom) => {
@@ -376,8 +371,8 @@ export async function ensureGroupChatSession(
             fresh: false
           }
         }
-      } catch (error: any) {
-        if (error?.code !== 4007) {
+      } catch (error: unknown) {
+        if ((error as { code?: number })?.code !== 4007) {
           const detail = error instanceof Error && error.message ? ` (${error.message})` : ''
           throw new Error(
             `Could not check ${member?.name || 'member'}'s group session${detail} — not starting a new one`
@@ -591,8 +586,8 @@ async function submitGroupTurnPrompt(
     })
 
     return runtime
-  } catch (error: any) {
-    if (!isSessionGoneError(error) || !stored) {
+  } catch (error: unknown) {
+    if (!isSessionGoneError(error as GatewayErrorLike | null | undefined) || !stored) {
       throw error
     }
 
@@ -1343,10 +1338,10 @@ export async function harvestStrandedGroupReply(group: string, member: GroupMemb
         },
         GROUP_SESSION_BACKGROUND_RESUME_OPTIONS
       )
-    } catch (error: any) {
+    } catch (error: unknown) {
       // A session that genuinely no longer exists has nothing to harvest, and a marker that can
       // never resolve would keep the member out of every round; only unreachability keeps it.
-      if (error?.code === 4007) {
+      if ((error as { code?: number })?.code === 4007) {
         updateGroupChat(group, (r: GroupChatRoom) => {
           const next = {
             ...(r.stranded || {})

@@ -701,16 +701,16 @@ async function deliverRelayEnvelope(
     await postReply({
       reply: String(res?.reply || '')
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     // #93091: bot_relay.deliver classifies the failed turn and ships the
     // typed code in the JSON-RPC error's `data.reason`; forward it into
     // the sender-side reply file so the waiter (and the sending agent)
     // get the machine-readable cause, and prefer it for the badge —
     // classified codes beat free-text re-parsing.
-    const reason = String(error?.data?.reason || '').trim()
-    noteBotAttention(attentionKey, reason || error?.message || error)
+    const reason = String((error as { data?: { reason?: string } })?.data?.reason || '').trim()
+    noteBotAttention(attentionKey, reason || (error instanceof Error ? error.message : String(error)))
     await postReply({
-      error: String(error?.message || error || 'delivery failed'),
+      error: String((error instanceof Error ? error.message : (error as { message?: string })?.message) || error || 'delivery failed'),
       ...(reason
         ? {
             reason

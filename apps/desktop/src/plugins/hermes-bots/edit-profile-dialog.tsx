@@ -41,11 +41,6 @@ import type { AvatarAppearance, RosterRow } from './types'
 
 // ── edit profile dialog ──────────────────────────────────────────────────────
 
-/** AvatarAppearance, minus the `image` guarantee — the dialog's no-bot fallback
- *  literal doesn't supply one. See the TODO in EditProfileDialog. */
-interface EditProfileAppearance extends Omit<AvatarAppearance, 'image'> {
-  image?: null | string
-}
 interface EditProfileDialogProps {
   bot: null | RosterRow
   onClose: () => void
@@ -58,16 +53,12 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
   const metaAll = useValue($botMeta)
   const meta = bot ? botRosterMeta(bot, metaAll) : null
 
-  // TODO(bot-mode-types): the no-bot fallback omits `image`, which the state
-  // seeding below reads — `appearance.image` is undefined on that branch, so
-  // this is NOT an AvatarAppearance. Harmless today only because the component
-  // returns null a few lines down when `bot` is null, so the seeded value is
-  // thrown away before anything renders.
-  const appearance: EditProfileAppearance = bot
+  const appearance: AvatarAppearance = bot
     ? botAppearance(bot.name, meta)
     : {
         shape: 'circle',
-        color: null
+        color: null,
+        image: null
       }
 
   const [shape, setShape] = useState(appearance.shape)

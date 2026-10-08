@@ -47,10 +47,10 @@ function boundedModelOptionsFetch<T>(fetch: Promise<T>, settleMs = MODEL_OPTIONS
     return fetch
   }
 
-  // `any`: the timer id is assigned synchronously by the executor below, but
+  // The timer id is assigned synchronously by the executor below, but
   // it is still `null` on the declaration TypeScript sees from the closure,
   // and clearTimeout's signature takes `number | undefined`.
-  let timerId: any = null
+  let timerId: number | undefined = undefined
 
   const deadline = new Promise<never>((_, reject) => {
     timerId = scope.setTimeout(() => {

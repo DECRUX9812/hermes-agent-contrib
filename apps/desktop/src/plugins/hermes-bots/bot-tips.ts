@@ -16,10 +16,7 @@ export const $dismissedBotTips = atom<Record<string, readonly string[]>>({})
 
 export function hydrateDismissedBotTips(): void {
   try {
-    // TODO(bot-mode-types): PluginStorage.get requires a fallback argument —
-    // same TODO as the other hydrated prefs.
-    // @ts-expect-error typed as written rather than changing the call.
-    Promise.resolve(getPluginCtx()?.storage?.get?.(TIPS_STORAGE_KEY))
+    Promise.resolve<unknown>(getPluginCtx()?.storage?.get?.(TIPS_STORAGE_KEY, null))
       .then(value => {
         if (value && typeof value === 'object' && !Array.isArray(value)) {
           $dismissedBotTips.set(

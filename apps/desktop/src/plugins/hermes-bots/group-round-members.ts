@@ -216,7 +216,7 @@ export async function runGroupRoundMember(
     if (reply !== null) {
       clearBotAttention(groupMemberKey(member))
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (!binding.isLive()) {
       return null
     }
@@ -232,7 +232,7 @@ export async function runGroupRoundMember(
           }
         : {})
     })
-    noteBotAttention(groupMemberKey(member), reason || error?.message || error)
+    noteBotAttention(groupMemberKey(member), reason || (error instanceof Error ? error.message : String(error)))
     context.failedMembers?.add(groupMemberKey(member))
     reply = null // a failed turn is a pass, never a room error
   }

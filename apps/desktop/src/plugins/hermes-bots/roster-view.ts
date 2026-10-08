@@ -16,10 +16,7 @@ export const $rosterViewMode = atom<RosterViewMode>('list')
 
 export function hydrateRosterViewMode(): void {
   try {
-    // TODO(bot-mode-types): PluginStorage.get(key, fallback) requires the fallback;
-    // Bot Mode reads omit it — same TODO as the other hydrated prefs.
-    // @ts-expect-error typed as written rather than changing the call.
-    Promise.resolve(getPluginCtx()?.storage?.get?.(ROSTER_VIEW_STORAGE_KEY))
+    Promise.resolve<unknown>(getPluginCtx()?.storage?.get?.(ROSTER_VIEW_STORAGE_KEY, null))
       .then(value => {
         if (value === 'cards' || value === 'list') {
           $rosterViewMode.set(value)

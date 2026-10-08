@@ -498,7 +498,12 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
                           </span>
                         ) : null}
                         {needsSetup ? (
-                          <McpSetupButton entry={m} onDone={() => toggleMcp(m.name, true)} profile={backendScope} />
+                          <McpSetupButton
+                            entry={m}
+                            onDone={() => toggleMcp(m.name, true)}
+                            profile={backendProfile}
+                            route={botRoute}
+                          />
                         ) : null}
                         {m.description ? (
                           <div className="truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)">

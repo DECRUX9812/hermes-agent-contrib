@@ -398,9 +398,11 @@ export function ComposerStatusStack({ onSubmit, queue, sessionId }: ComposerStat
         <div
           className={cn(
             composerDockCard('top'),
-            // Inset (mx-2) so the stack reads slightly narrower than the composer
-            // surface below it — the original look.
-            'mx-2 flex min-h-0 max-h-[inherit] shrink flex-col overflow-hidden rounded-b-none border-b border-b-transparent'
+            // 5px, not the composer root's own 8px inset (mx-2): the composer
+            // root carries `padding-inline: 5px`, so the SURFACE the user sees
+            // starts 5px in. Any other inset steps the stack's outline in or out
+            // at the junction — the "disconnected box" look.
+            'mx-[5px] flex min-h-0 max-h-[inherit] shrink flex-col overflow-hidden rounded-b-none border-b border-b-transparent'
           )}
         >
           <div className="min-h-0 overflow-y-auto overscroll-y-contain" data-slot="status-stack-scroll">

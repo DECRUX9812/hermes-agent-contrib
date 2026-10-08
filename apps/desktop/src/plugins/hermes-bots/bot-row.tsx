@@ -322,7 +322,7 @@ export function BotRow({
             {/* Name and role read as one line ("Atlas Engineer"), so the row
                 is two lines — who, then what it is doing — not three. */}
             {role ? (
-              <span className="min-w-0 shrink-[2] truncate text-[0.6875rem] text-(--ui-text-quaternary)">{role}</span>
+              <span className="min-w-0 shrink-[2] truncate text-[0.75rem] text-(--ui-text-tertiary)">{role}</span>
             ) : null}
           </div>
           {canStop ? (
@@ -386,13 +386,13 @@ export function BotRow({
             <GlyphSpinner ariaLabel={b.bot.openingChat} className="shrink-0 text-xs text-(--ui-text-secondary)" />
           ) : null}
           {rowAgeTs ? (
-            <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+            <span className="shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)">
               {rosterRowAge(rowAgeTs * 1000, t.sidebar.row)}
             </span>
           ) : null}
         </div>
         {showDetailsRow ? (
-          <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-tertiary)">
+          <div className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-secondary)">
             {showHandle ? (
               <span className="shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)">{`@${handle}`}</span>
             ) : null}
@@ -552,12 +552,12 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             </Badge>
           ) : null}
           {lastAt ? (
-            <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+            <span className="shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)">
               {rosterRowAge(lastAt, t.sidebar.row)}
             </span>
           ) : null}
         </div>
-        <div className="min-w-0 truncate text-xs text-(--ui-text-tertiary)">{preview}</div>
+        <div className="mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)">{preview}</div>
       </div>
     </RowButton>
   )

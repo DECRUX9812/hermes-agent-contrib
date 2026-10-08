@@ -350,13 +350,7 @@ export function GroupMentionInput({ members, onChange, onSubmitDraft, value, ...
 }
 
 /** A pending prompt as the room renders it. */
-export type GroupRoomPrompt = GroupPrompt & {
-  /** TODO(bot-mode-types): nothing ever sets this — syncGroupClarify builds
-   *  every entry without a thread — so the answer GroupClarifyCard echoes back
-   *  into the room always lands in the 'legacy' thread instead of the thread
-   *  the member asked from. */
-  thread?: string
-}
+export type GroupRoomPrompt = GroupPrompt
 
 /** A sub-question normalized for rendering: one card row, one answer. */
 interface GroupClarifyQuestion {
@@ -457,10 +451,10 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
         summary,
         entry.thread || 'legacy'
       )
-    } catch (err: any) {
+    } catch (err: unknown) {
       host.notify({
         kind: 'error',
-        message: b.group.answerFailed(botHandle(entry.member, member), String(err?.message || err))
+        message: b.group.answerFailed(botHandle(entry.member, member), String((err as Error)?.message || err))
       })
     } finally {
       setSending(false)

@@ -191,6 +191,7 @@ describe('bop faces — the staff mascot', () => {
 
   it('flips ink details to white on dark bodies', async () => {
     const { BotFace } = await import('./avatar')
+
     const { container } = render(
       <BotFace color="#1c1c2e" mood="work" name="inbox-triage" shape="bop" size={40} />
     )

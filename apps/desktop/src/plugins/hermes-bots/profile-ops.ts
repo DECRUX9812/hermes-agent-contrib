@@ -391,13 +391,9 @@ export async function duplicateBot(bot: RosterRow, roster: RosterRow[]) {
       {
         ...bot,
         name,
-        // TODO(bot-mode-types): botConnectionRoute() returns null for an unrouted bot, so this
-        // synthesized row can carry `route: null`, which RosterRow['route'] (ProfileRoute |
-        // undefined) does not admit. Benign at runtime — every read of it is optional-chained —
-        // but the assertion below is covering for a domain type that is too narrow.
         route: ownerRoute,
         sourceScoped: Boolean(ownerRoute)
-      } as RosterRow,
+      },
       {
         ...look,
         title: meta.title ? `${meta.title} (copy)` : ''
