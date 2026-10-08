@@ -64,6 +64,15 @@ vi.mock('@hermes/plugin-sdk', async () => {
 })
 
 vi.mock('./data', () => ({
+  // Faithful stand-in for data.ts's classifier: a known class passes through,
+  // anything unclassified normalizes to null (the relay then files
+  // 'delivery_failed').
+  attentionReasonFromError: (raw: unknown) => {
+    const known = ['agent_blocked', 'missing_config', 'provider_auth_or_access', 'provider_quota_limit']
+    const value = String(raw || '')
+
+    return known.includes(value) ? value : null
+  },
   botHandle: (name: string) => (name === 'default' ? 'hermes' : name),
   clearBotAttention: clearBotAttentionMock,
   noteBotAttention: noteBotAttentionMock
@@ -944,6 +953,78 @@ describe('the drain loop wires drain → deliver → reply', () => {
       reason: 'provider_auth_or_access'
     })
     expect(noteBotAttentionMock).toHaveBeenCalledWith('b::ops', 'provider_auth_or_access')
+
+    stopBotRelay()
+  })
+
+  it('files a failed-handoff card when the bounced envelope carried a mailbox note', async () => {
+    // Team OS slice 5: a `note` riding the envelope IS a structured task
+    // hand-off (#48). Its bounce becomes an explicit Needs You card beside the
+    // badge — category + CLASSIFIED reason + the note id, never the message
+    // that failed to travel.
+    const failure = Object.assign(new Error('gateway refused'), {
+      data: { reason: 'provider_auth_or_access' }
+    })
+
+    const handoff = { ...envelope, note: { id: 'mbx_abc', kind: 'task' } }
+
+    respondWith(call => {
+      if (call.method === 'bot_relay.outbox.drain') {
+        return { envelopes: call.connectionId === 'a' ? [handoff] : [] }
+      }
+
+      if (call.method === 'bot_relay.deliver') {
+        throw failure
+      }
+
+      return {}
+    })
+
+    const { startBotRelay, stopBotRelay } = await loadRelay()
+    // Same module instance relay.ts just loaded (no reset between the imports).
+    const { $needsYouIndex } = await import('./needs-you')
+
+    startBotRelay()
+    await pushAndSettle()
+
+    expect($needsYouIndex.get()['b::ops']).toEqual([
+      {
+        at: expect.any(Number),
+        bot: 'b::ops',
+        category: 'handoff-failed',
+        id: 'handoff:env-1',
+        reason: 'provider_auth_or_access',
+        ref: 'mbx_abc'
+      }
+    ])
+
+    stopBotRelay()
+  })
+
+  it('never files a handoff card for a plain envelope with no note', async () => {
+    const failure = Object.assign(new Error('gateway refused'), { data: { reason: 'agent_blocked' } })
+
+    respondWith(call => {
+      if (call.method === 'bot_relay.outbox.drain') {
+        return { envelopes: call.connectionId === 'a' ? [envelope] : [] }
+      }
+
+      if (call.method === 'bot_relay.deliver') {
+        throw failure
+      }
+
+      return {}
+    })
+
+    const { startBotRelay, stopBotRelay } = await loadRelay()
+    const { $needsYouIndex } = await import('./needs-you')
+
+    startBotRelay()
+    await pushAndSettle()
+
+    // The badge still flags the failure — it just isn't a HANDOFF failure.
+    expect(noteBotAttentionMock).toHaveBeenCalledWith('b::ops', 'agent_blocked')
+    expect($needsYouIndex.get()).toEqual({})
 
     stopBotRelay()
   })

@@ -1,7 +1,9 @@
 /**
- * D4 — the stuck-work strip: a banner at the top of the roster naming the
- * bots that need a look right now. Derived purely from stores the roster
- * already subscribes to (see triage.ts); clicking an item opens the bot.
+ * D4 + Team OS slice 5 — the stuck-work strip: a banner at the top of the
+ * roster naming the bots that need a look right now. Derived purely from
+ * stores the roster already subscribes to (see triage.ts), including the
+ * universal Needs You index (needs-you.ts: failed handoff / blocked
+ * dependency / artifact-ready cards); clicking an item opens the bot.
  */
 
 import { cn, Codicon, host, queryClient, useValue } from '@hermes/plugin-sdk'
@@ -13,6 +15,7 @@ import { $botAttention, $botMeta } from './data'
 import { useBots } from './i18n'
 import type { BotsText } from './i18n'
 import { displayName } from './labels'
+import { $needsYouIndex } from './needs-you'
 import { $relayInflight } from './relay'
 import { botRosterMeta } from './routing'
 import { deriveTriageItems } from './triage'
@@ -30,6 +33,15 @@ function triageLabel(b: BotsText, item: TriageItem, name: string): string {
     case 'attention':
       return b.triage.attention(name, item.detail || '')
 
+    case 'handoff-failed':
+      return b.triage.handoffFailed(name)
+
+    case 'blocked':
+      return b.triage.blocked(name)
+
+    case 'artifact-review':
+      return b.triage.artifactReview(name)
+
     case 'needs-input':
       return b.triage.needsInput(name)
 
@@ -45,8 +57,11 @@ function triageLabel(b: BotsText, item: TriageItem, name: string): string {
 }
 
 const TRIAGE_GLYPHS: Record<TriageItem['kind'], string> = {
+  'artifact-review': 'eye',
   attention: 'warning',
+  blocked: 'circle-slash',
   delivery: 'mail',
+  'handoff-failed': 'arrow-right',
   'needs-input': 'comment-discussion',
   overdue: 'watch',
   'turn-failed': 'error',
@@ -55,12 +70,26 @@ const TRIAGE_GLYPHS: Record<TriageItem['kind'], string> = {
 
 /** What the row's button says: what you are about to do, by what the bot needs. */
 const TRIAGE_ACTION: Record<TriageItem['kind'], (b: BotsText) => string> = {
+  'artifact-review': b => b.triage.actionReview,
   attention: b => b.triage.actionReview,
+  blocked: b => b.triage.actionOpen,
   delivery: b => b.triage.actionOpen,
+  'handoff-failed': b => b.triage.actionReview,
   'needs-input': b => b.triage.actionAnswer,
   overdue: b => b.triage.actionOpen,
   'turn-failed': b => b.triage.actionReview,
   unreachable: b => b.triage.actionOpen
+}
+
+/** The quiet line under the label. 'attention' already printed its reason in
+ *  the label; the slice-5 cards carry a classified reason and/or a ref (the
+ *  artifact URI, the blocked dependency id) — never a message body. */
+function triageMeta(item: TriageItem, name: string): string {
+  if (item.kind === 'attention') {
+    return name
+  }
+
+  return [name, item.detail, item.ref].filter(Boolean).join(' · ')
 }
 
 export function TriageStrip({
@@ -79,6 +108,7 @@ export function TriageStrip({
   const statusItems = useValue(host.state.statusItemsBySession)
   const storedByRuntime = useValue(host.state.storedSessionByRuntimeId)
   const relayInflight = useValue($relayInflight)
+  const needsYou = useValue($needsYouIndex)
   const activeConnectionId = String(host.state.connectionId?.get?.() || 'local').trim()
 
   // Routine jobs ride the routines dialog's cache — the strip never issues
@@ -107,13 +137,14 @@ export function TriageStrip({
       activeConnectionId,
       dotById,
       jobs: jobs || cachedJobs,
+      needsYou,
       relayInflight: relayInflight || new Set(),
       statusItems,
       storedByRuntime
     }
 
     return deriveTriageItems(bots, signals)
-  }, [activeConnectionId, attention, bots, cachedJobs, dotById, jobs, relayInflight, statusItems, storedByRuntime])
+  }, [activeConnectionId, attention, bots, cachedJobs, dotById, jobs, needsYou, relayInflight, statusItems, storedByRuntime])
 
   if (!items.length) {
     return null
@@ -166,7 +197,7 @@ export function TriageStrip({
                   />
                   <span className="truncate">{triageLabel(b, item, name)}</span>
                 </span>
-                <span className="block truncate text-[0.6875rem] text-(--ui-text-tertiary)">{name}</span>
+                <span className="block truncate text-[0.6875rem] text-(--ui-text-tertiary)">{triageMeta(item, name)}</span>
               </span>
               <span className="shrink-0 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary) group-hover/triage:border-(--ui-stroke-primary) group-hover/triage:text-foreground">
                 {TRIAGE_ACTION[item.kind](b)}

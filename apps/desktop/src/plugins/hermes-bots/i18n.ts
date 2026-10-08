@@ -690,6 +690,10 @@ type BotsMessages = {
     routineOverdue: (name: string) => string
     unreachable: (name: string) => string
     attention: (name: string, reason: string) => string
+    /** Team OS slice 5 — the universal Needs You categories. */
+    handoffFailed: (name: string) => string
+    blocked: (name: string) => string
+    artifactReview: (name: string) => string
     openItem: (name: string) => string
     /** The row's one action, by what the item needs from you. */
     actionAnswer: string
@@ -1436,6 +1440,9 @@ const en: BotsMessages = {
     routineOverdue: name => `${name} has an overdue routine`,
     unreachable: name => `${name}’s gateway is unreachable`,
     attention: (name, reason) => `${name}: ${reason}`,
+    handoffFailed: name => `${name}’s handoff failed`,
+    blocked: name => `${name} is blocked on a dependency`,
+    artifactReview: name => `${name} has an artifact ready for review`,
     openItem: name => `Open ${name}`,
     actionAnswer: 'Answer',
     actionReview: 'Review',
@@ -2186,6 +2193,9 @@ const ja: BotsMessages = {
     routineOverdue: name => `${name}に期限超過のルーチンがあります`,
     unreachable: name => `${name}のゲートウェイに到達できません`,
     attention: (name, reason) => `${name}: ${reason}`,
+    handoffFailed: name => `${name}の引き継ぎが失敗しました`,
+    blocked: name => `${name}は依存関係で保留されています`,
+    artifactReview: name => `${name}にレビュー可能な成果物があります`,
     openItem: name => `${name}を開く`,
     actionAnswer: '回答',
     actionReview: '確認',
@@ -2919,6 +2929,9 @@ const zh: BotsMessages = {
     routineOverdue: name => `${name} 有过期的例行任务`,
     unreachable: name => `无法访问 ${name} 的网关`,
     attention: (name, reason) => `${name}：${reason}`,
+    handoffFailed: name => `${name} 的交接失败`,
+    blocked: name => `${name} 因依赖项受阻`,
+    artifactReview: name => `${name} 有成果物待审查`,
     openItem: name => `打开 ${name}`,
     actionAnswer: '回答',
     actionReview: '查看',
@@ -3651,6 +3664,9 @@ const zhHant: BotsMessages = {
     routineOverdue: name => `${name} 有過期的例行任務`,
     unreachable: name => `無法連接 ${name} 的閘道`,
     attention: (name, reason) => `${name}：${reason}`,
+    handoffFailed: name => `${name} 的交接失敗`,
+    blocked: name => `${name} 因依賴項目受阻`,
+    artifactReview: name => `${name} 有成果物待審查`,
     openItem: name => `開啟 ${name}`,
     actionAnswer: '回答',
     actionReview: '查看',

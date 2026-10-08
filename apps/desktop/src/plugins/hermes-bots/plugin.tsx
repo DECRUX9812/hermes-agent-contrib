@@ -108,6 +108,7 @@ import { BOTS_LOCALES, botsText, useBots } from './i18n'
 import { displayName } from './labels'
 import { hydrateRosterSortMode } from './live-status'
 import { MissionRail } from './mission-rail'
+import { hydrateNeedsYou } from './needs-you'
 import { hydrateRailSections, hydrateRailTab } from './rail-state'
 import { startBotRelay, stopBotRelay } from './relay'
 import { $activityToasts, openRosterBot } from './roster-actions'
@@ -322,6 +323,9 @@ export default {
     // Hydrate dismissed tip cards (G9) — per bot, this device only.
     hydrateDismissedBotTips()
     hydrateDismissedNudges()
+    // Hydrate the universal Needs You index (Team OS slice 5) — malformed or
+    // unknown entries are dropped inside, never thrown on.
+    hydrateNeedsYou()
 
     // Hydrate the Sessions-rail Agents fold (default open).
     try {

@@ -1,33 +1,54 @@
 /**
- * D4 — stuck-work triage: the pure derivation behind the roster's top strip.
+ * D4 + Team OS slice 5 — stuck-work triage: the pure derivation behind the
+ * roster's "Needs you" strip.
  *
- * One item per bot, first-wins in severity order: unreachable gateway,
- * recorded failure flag (relay delivery or other classified attention),
- * needs-input dot on the canonical chat, failed status item on the canonical
- * runtime, overdue routine. Every input is a store the roster already
- * subscribes to — the strip adds no polling of its own.
+ * One item per bot, first-wins in severity order: unreachable gateway, an
+ * EXPLICIT Needs You category (failed handoff / blocked dependency /
+ * artifact-ready — see needs-you.ts), recorded failure flag (relay delivery
+ * or other classified attention), needs-input dot on the canonical chat,
+ * failed status item on the canonical runtime, overdue routine. Every input
+ * is a store the roster already subscribes to — the strip adds no polling of
+ * its own, and the index stays content-free: a kind, a classified reason and
+ * an optional ref, never a message body.
  */
 
 import { nextRunOverdueMs } from '@hermes/plugin-sdk'
 import type { SessionDotState } from '@hermes/plugin-sdk'
 
 import { botRosterKey, botSelectionKey, botSourceStatus } from './data'
+import { needsYouEntriesFor } from './needs-you'
+import type { NeedsYouEntry } from './needs-you'
 import { botCanonicalRuntimeId, botCanonicalSessionId } from './row-helpers'
 import type { RosterRow, RoutineJob } from './types'
 
-export type TriageKind = 'attention' | 'delivery' | 'needs-input' | 'overdue' | 'turn-failed' | 'unreachable'
+export type TriageKind =
+  | 'artifact-review'
+  | 'attention'
+  | 'blocked'
+  | 'delivery'
+  | 'handoff-failed'
+  | 'needs-input'
+  | 'overdue'
+  | 'turn-failed'
+  | 'unreachable'
 
 export interface TriageItem {
   bot: RosterRow
-  /** Free-text detail (the classified flag reason) for 'attention' items. */
+  /** Free-text detail (the classified flag reason) for 'attention' items; the
+   *  classified reason code for the explicit slice-5 categories. */
   detail?: string
   key: string
   kind: TriageKind
+  /** Artifact URI / dependency id for 'artifact-review' / 'blocked' cards. */
+  ref?: string
 }
 
 export interface TriageSignals {
   /** `conn::<id>::<profile>` / selection-key → recorded failure flag. */
   attention: Record<string, { reason?: string } | null | undefined>
+  /** The universal Needs You index (slice 5) — explicit categories, keyed by
+   *  the same ladder the attention flag reads. */
+  needsYou?: Readonly<Record<string, readonly NeedsYouEntry[] | undefined>>
   /** `conn::<id>::<profile>` lanes with a relay delivery currently in flight. */
   relayInflight?: ReadonlySet<string>
   /** Dot state keyed by STORED session id. */
@@ -54,6 +75,18 @@ function attentionFlag(bot: RosterRow, signals: TriageSignals) {
   )
 }
 
+/** The row's three publishing keys — the attention ladder's shape, reused so
+ *  an index entry can never miss a row its flag would have found. */
+function botKeys(bot: RosterRow, signals: TriageSignals): string[] {
+  const active = signals.activeConnectionId || 'local'
+
+  return [
+    botSelectionKey(bot) || '',
+    botRosterKey(bot),
+    `${bot?.connectionId || active}::${bot?.name || 'default'}`
+  ]
+}
+
 export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSignals): TriageItem[] {
   const items: TriageItem[] = []
 
@@ -63,7 +96,7 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
     }
 
     const key = botRosterKey(bot)
-    const add = (kind: TriageKind, detail?: string) => items.push({ bot, detail, key, kind })
+    const add = (kind: TriageKind, detail?: string, ref?: string) => items.push({ bot, detail, key, kind, ref })
 
     // 1. Gateway the bot lives on is unreachable — nothing else can run.
     if (botSourceStatus(bot).available === false) {
@@ -72,7 +105,20 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
       continue
     }
 
-    // 2. A recorded failure flag — a relay delivery that just bounced gets
+    // 2. An EXPLICIT Needs You category (slice 5): a failed handoff, a blocked
+    //    dependency, an artifact ready for review. Only ever recorded by a
+    //    structured event (needs-you.ts) — never inferred from content — and
+    //    it outranks the generic failure flag because it is that flag,
+    //    classified: the card tells you WHICH thing to fix.
+    const explicit = needsYouEntriesFor(signals.needsYou, botKeys(bot, signals), 1)[0]
+
+    if (explicit) {
+      add(explicit.category, explicit.reason, explicit.ref)
+
+      continue
+    }
+
+    // 3. A recorded failure flag — a relay delivery that just bounced gets
     //    the delivery label (lane still in flight or flag keyed as a lane);
     //    anything else keeps its classified reason.
     const flag = attentionFlag(bot, signals)
@@ -85,7 +131,7 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
       continue
     }
 
-    // 3. Needs-input dot on the canonical stored session.
+    // 4. Needs-input dot on the canonical stored session.
     const storedId = botCanonicalSessionId(bot)
 
     if (storedId && signals.dotById?.[storedId] === 'needs-input') {
@@ -94,7 +140,7 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
       continue
     }
 
-    // 4. Failed status item on the canonical chat (runtime or stored id).
+    // 5. Failed status item on the canonical chat (runtime or stored id).
     const runtimeId = botCanonicalRuntimeId(bot, signals.storedByRuntime || {})
 
     const rows =
@@ -107,7 +153,7 @@ export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSig
       continue
     }
 
-    // 5. A routine whose window has passed.
+    // 6. A routine whose window has passed.
     const jobs = signals.jobs?.get(botRosterKey(bot)) || signals.jobs?.get(bot?.name || '') || []
 
     if (jobs.some(job => job?.enabled !== false && job?.state !== 'paused' && nextRunOverdueMs(job) !== null)) {

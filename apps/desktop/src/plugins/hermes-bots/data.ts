@@ -80,8 +80,10 @@ export function botAttentionHint(reason: string): string {
 
 /** Map an error (a #93091 reason code or raw error text) to an attention
  *  class, or null when the failure is transient (rate limit, server error,
- *  timeout) — transient classes must NEVER badge. Pure; tested directly. */
-function attentionReasonFromError(errorTextOrReason: unknown) {
+ *  timeout) — transient classes must NEVER badge. Pure; tested directly.
+ *  Exported for the relay's failed-handoff card (Team OS slice 5): the card
+ *  carries this CLASSIFIED code, never the raw error text. */
+export function attentionReasonFromError(errorTextOrReason: unknown) {
   const raw = String(errorTextOrReason || '').trim()
 
   if (!raw) {

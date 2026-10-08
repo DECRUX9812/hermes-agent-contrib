@@ -9,7 +9,8 @@
 
 import { atom, host, LruCache } from '@hermes/plugin-sdk'
 
-import { botHandle, clearBotAttention, noteBotAttention } from './data'
+import { attentionReasonFromError, botHandle, clearBotAttention, noteBotAttention } from './data'
+import { clearNeedsYou, recordNeedsYouEvent } from './needs-you'
 import { RELAY_DELIVER_TIMEOUT_MS } from './relay-budget'
 import { ID } from './shared'
 import type { ProfileRoute, RosterRow } from './types'
@@ -698,17 +699,39 @@ async function deliverRelayEnvelope(
     )
 
     clearBotAttention(attentionKey)
+    // A delivery that lands clears the failed-handoff card for that lane too —
+    // same lifecycle as the badge it rides beside.
+    clearNeedsYou(attentionKey, 'handoff-failed')
     await postReply({
       reply: String(res?.reply || '')
     })
   } catch (error: unknown) {
     // #93091: bot_relay.deliver classifies the failed turn and ships the
-    // typed code in the JSON-RPC error's `data.reason`; forward it into
-    // the sender-side reply file so the waiter (and the sending agent)
-    // get the machine-readable cause, and prefer it for the badge —
+    // typed code in the JSON-RPC error's `data.reason`; forward it into the
+    // sender-side reply file so the waiter (and the sending agent) get the
+    // machine-readable cause, and prefer it for the badge —
     // classified codes beat free-text re-parsing.
     const reason = String((error as { data?: { reason?: string } })?.data?.reason || '').trim()
-    noteBotAttention(attentionKey, reason || (error instanceof Error ? error.message : String(error)))
+    const raw = reason || (error instanceof Error ? error.message : String(error))
+    noteBotAttention(attentionKey, raw)
+    // Team OS slice 5: when the envelope carried a mailbox task hand-off
+    // (its `note`, #48), a bounce there is a FAILED HANDOFF — an explicit
+    // Needs You card, classified from the same reason code the badge uses.
+    // Content-free by construction: the category, the classified code and
+    // the note id, never the message that failed to travel.
+    const handoffNote = envelope.note && typeof envelope.note === 'object' ? envelope.note : null
+
+    if (handoffNote) {
+      recordNeedsYouEvent({
+        at: Date.now(),
+        bot: attentionKey,
+        category: 'handoff-failed',
+        id: `handoff:${envelopeId}`,
+        reason: attentionReasonFromError(raw) || 'delivery_failed',
+        ref: String(handoffNote.id || envelopeId || '')
+      })
+    }
+
     await postReply({
       error: String((error instanceof Error ? error.message : (error as { message?: string })?.message) || error || 'delivery failed'),
       ...(reason
