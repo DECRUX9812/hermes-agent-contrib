@@ -399,6 +399,11 @@ export const en: Translations = {
     importError: 'Could not import this conversation.'
   },
   common: {
+    answerFailed: 'Could not answer the request',
+    dismiss: 'Dismiss',
+    open: 'Open',
+    runFailed: 'Could not run the job',
+    runNow: 'Run now',
     apply: 'Apply',
     approve: 'Approve',
     back: 'Back',

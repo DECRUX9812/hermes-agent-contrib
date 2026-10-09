@@ -6,6 +6,7 @@ import { triggerAndRefreshCronJobs } from '@/app/cron/cron-actions'
 import { openSession } from '@/app/open-session'
 import { CRON_ROUTE } from '@/app/routes'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import {
   AlertCircle,
@@ -23,12 +24,7 @@ import { requestAttentionReveal } from '@/store/attention-inbox'
 import { recordApprovalGranted } from '@/store/bot-rapport'
 import { setCronFocusJobId } from '@/store/cron'
 import { $gateway } from '@/store/gateway'
-import {
-  $homeFeedItems,
-  dismissHomeFeedItem,
-  type HomeFeedItem,
-  type HomeFeedItemKind
-} from '@/store/home-feed'
+import { $homeFeedItems, dismissHomeFeedItem, type HomeFeedItem, type HomeFeedItemKind } from '@/store/home-feed'
 import { notifyError } from '@/store/notifications'
 import { $approvalQueues, answerApproval, type ApprovalRequest } from '@/store/prompts'
 import { storedSessionIdForRuntimeId } from '@/store/session-states'
@@ -75,6 +71,7 @@ interface HomeFeedCardProps {
 
 export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
   const navigate = useNavigate()
+  const { t } = useI18n()
 
   const gateway = useStore($gateway)
   const approvalQueues = useStore($approvalQueues)
@@ -82,14 +79,11 @@ export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
 
   const sessionId = item.sessionId
 
-  // Find the matching approval request so Approve/Deny can answer it directly
-  const queue = sessionId ? approvalQueues[sessionId] ?? [] : []
-
-  const request: Pick<ApprovalRequest, 'requestId' | 'serverRequestId' | 'sessionId'> | null =
-    item.kind === 'approval'
-      ? queue.find(r => r.requestId && item.id.endsWith(r.requestId)) ??
-        queue[0] ??
-        (sessionId ? { requestId: item.id.split(':').pop() ?? '', sessionId } : null)
+  // Answer only the exact request this card shows; no match means Open, never
+  // a guess at some other queued request.
+  const request: ApprovalRequest | null =
+    item.kind === 'approval' && sessionId
+      ? ((approvalQueues[sessionId] ?? []).find(r => r.requestId && item.id.endsWith(r.requestId)) ?? null)
       : null
 
   const handleApprove = async () => {
@@ -103,16 +97,12 @@ export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
       await answerApproval(gateway, request, 'once')
 
       if (sessionId) {
-        try {
-          recordApprovalGranted(sessionId)
-        } catch {
-          // Rapport is advisory; never break approvals
-        }
+        recordApprovalGranted(sessionId)
       }
 
       triggerHaptic('selection')
     } catch (err) {
-      notifyError(err, 'Could not answer the request')
+      notifyError(err, t.common.answerFailed)
     } finally {
       setBusy(null)
     }
@@ -129,7 +119,7 @@ export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
       await answerApproval(gateway, request, 'deny')
       triggerHaptic('selection')
     } catch (err) {
-      notifyError(err, 'Could not answer the request')
+      notifyError(err, t.common.answerFailed)
     } finally {
       setBusy(null)
     }
@@ -156,7 +146,7 @@ export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
       await triggerAndRefreshCronJobs(item.cronJobId, 'all')
       triggerHaptic('selection')
     } catch (err) {
-      notifyError(err, 'Could not run cron job')
+      notifyError(err, t.common.runFailed)
     } finally {
       setBusy(null)
     }
@@ -178,81 +168,45 @@ export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
       <HomeFeedIcon kind={item.kind} />
 
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium leading-snug text-foreground">
-          {item.title}
-        </div>
+        <div className="truncate font-medium leading-snug text-foreground">{item.title}</div>
         {item.caption && (
-          <div className="truncate text-[0.6875rem] leading-snug text-(--ui-text-secondary)">
-            {item.caption}
-          </div>
+          <div className="truncate text-[0.6875rem] leading-snug text-(--ui-text-secondary)">{item.caption}</div>
         )}
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
-        {item.kind === 'approval' ? (
+        {request ? (
           <>
-            <Button
-              disabled={busy !== null}
-              onClick={handleApprove}
-              size="xs"
-              variant="default"
-            >
-              {busy === 'once' ? 'Approving...' : 'Approve'}
+            <Button disabled={busy !== null} onClick={handleApprove} size="xs" variant="default">
+              {t.common.approve}
             </Button>
-            <Button
-              disabled={busy !== null}
-              onClick={handleDeny}
-              size="xs"
-              variant="destructive"
-            >
-              {busy === 'deny' ? 'Denying...' : 'Deny'}
+            <Button disabled={busy !== null} onClick={handleDeny} size="xs" variant="destructive">
+              {t.common.deny}
             </Button>
             {sessionId && (
-              <Button
-                onClick={handleOpenSession}
-                size="xs"
-                variant="text"
-              >
-                Open
+              <Button onClick={handleOpenSession} size="xs" variant="text">
+                {t.common.open}
               </Button>
             )}
           </>
         ) : item.kind === 'cronOverdue' || item.kind === 'cronDue' ? (
           <>
-            <Button
-              disabled={busy !== null}
-              onClick={handleRunNow}
-              size="xs"
-              variant="secondary"
-            >
-              {busy === 'run' ? 'Running...' : 'Run now'}
+            <Button disabled={busy !== null} onClick={handleRunNow} size="xs" variant="secondary">
+              {t.common.runNow}
             </Button>
-            <Button
-              onClick={handleOpenCron}
-              size="xs"
-              variant="text"
-            >
-              Open
+            <Button onClick={handleOpenCron} size="xs" variant="text">
+              {t.common.open}
             </Button>
           </>
         ) : (
           sessionId && (
-            <Button
-              onClick={handleOpenSession}
-              size="xs"
-              variant="secondary"
-            >
-              Open
+            <Button onClick={handleOpenSession} size="xs" variant="secondary">
+              {t.common.open}
             </Button>
           )
         )}
 
-        <Button
-          aria-label="Dismiss"
-          onClick={() => onDismiss(item.id)}
-          size="icon-xs"
-          variant="ghost"
-        >
+        <Button aria-label={t.common.dismiss} onClick={() => onDismiss(item.id)} size="icon-xs" variant="ghost">
           <X className="size-3" />
         </Button>
       </div>
@@ -265,10 +219,7 @@ export interface HomeFeedProps {
   onDismiss?: (id: string) => void
 }
 
-export function HomeFeed({
-  items: propsItems,
-  onDismiss: propsOnDismiss
-}: HomeFeedProps = {}) {
+export function HomeFeed({ items: propsItems, onDismiss: propsOnDismiss }: HomeFeedProps = {}) {
   const storeItems = useStore($homeFeedItems)
   const items = propsItems ?? storeItems
   const onDismiss = propsOnDismiss ?? dismissHomeFeedItem
@@ -287,11 +238,7 @@ export function HomeFeed({
       data-slot="home-feed"
     >
       {items.map(item => (
-        <HomeFeedCard
-          item={item}
-          key={item.id}
-          onDismiss={onDismiss}
-        />
+        <HomeFeedCard item={item} key={item.id} onDismiss={onDismiss} />
       ))}
     </div>
   )

@@ -69,7 +69,24 @@ describe('HomeFeed component', () => {
     expect(container.firstChild).toBeNull()
   })
 
+  it('never offers Approve when the card matches no queued request', () => {
+    $approvalQueues.set({
+      'session-1': [{ command: 'other', description: '', requestId: 'req-other', sessionId: 'session-1' }]
+    } as never)
+    renderWithRouter(
+      <HomeFeed
+        items={[{ id: 'approval:session-1:req-1', kind: 'approval', sessionId: 'session-1', title: 'Bash execution' }]}
+      />
+    )
+
+    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Open' })).toBeTruthy()
+  })
+
   it('renders cards with title, caption, and actions', () => {
+    $approvalQueues.set({
+      'session-1': [{ command: 'rm -rf /tmp/cache', description: '', requestId: 'req-1', sessionId: 'session-1' }]
+    } as never)
     renderWithRouter(
       <HomeFeed
         items={[

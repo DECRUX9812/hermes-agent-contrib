@@ -439,6 +439,11 @@ export interface Translations extends NoticeTranslations {
     importError: string
   }
   common: {
+    answerFailed: string
+    dismiss: string
+    open: string
+    runFailed: string
+    runNow: string
     apply: string
     approve: string
     back: string

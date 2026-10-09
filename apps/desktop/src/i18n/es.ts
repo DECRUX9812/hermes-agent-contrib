@@ -351,6 +351,11 @@ export const esOverrides = {
     importError: 'No se pudo importar esta conversación.'
   },
   common: {
+    answerFailed: 'No se pudo responder a la solicitud',
+    dismiss: 'Descartar',
+    open: 'Abrir',
+    runFailed: 'No se pudo ejecutar la tarea',
+    runNow: 'Ejecutar ahora',
     apply: 'Aplicar',
     approve: 'Aprobar',
     back: 'Atrás',

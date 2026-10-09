@@ -349,6 +349,11 @@ export const frOverrides = {
     importError: "Impossible d'importer cette conversation."
   },
   common: {
+    answerFailed: 'Impossible de répondre à la demande',
+    dismiss: 'Ignorer',
+    open: 'Ouvrir',
+    runFailed: 'Impossible d’exécuter la tâche',
+    runNow: 'Exécuter maintenant',
     apply: 'Appliquer',
     approve: 'Approuver',
     back: 'Retour',

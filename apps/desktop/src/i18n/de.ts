@@ -348,6 +348,11 @@ export const deOverrides = {
     importError: 'Diese Konversation konnte nicht importiert werden.'
   },
   common: {
+    answerFailed: 'Anfrage konnte nicht beantwortet werden',
+    dismiss: 'Ausblenden',
+    open: 'Öffnen',
+    runFailed: 'Job konnte nicht ausgeführt werden',
+    runNow: 'Jetzt ausführen',
     apply: 'Übernehmen',
     approve: 'Genehmigen',
     back: 'Zurück',
