@@ -1,9 +1,8 @@
 /**
- * Local spend aggregation for the Command Center Usage section. Every input
- * is data the renderer already holds — the analytics payload (per-day,
- * per-model) and the session list (per-session, per-profile usage sums) — so
- * the helpers are pure and the whole section stays behind the
- * `$costAnalyticsEnabled` opt-in.
+ * Local spend aggregation for the Settings Billing spend analytics section.
+ * Every input is data the renderer already holds — the session list
+ * (per-session, per-profile usage sums) — so the helpers are pure and the
+ * whole section stays behind the `$costAnalyticsEnabled` opt-in.
  */
 
 import { sessionTitle } from '@/lib/chat-runtime'

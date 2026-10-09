@@ -849,13 +849,6 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
         heading: cc.commandCenter,
         items: [
           {
-            icon: Archive,
-            id: 'cc-sessions',
-            keywords: ['command center', 'sessions', 'pin'],
-            label: cc.sections.sessions,
-            run: go(`${COMMAND_CENTER_ROUTE}?section=sessions`)
-          },
-          {
             icon: Download,
             id: 'session-import',
             keywords: ['import', 'claude', 'codex', 'conversation'],
@@ -872,9 +865,9 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
           {
             icon: BarChart3,
             id: 'cc-usage',
-            keywords: ['command center', 'usage', 'tokens', 'cost'],
+            keywords: ['billing', 'usage', 'tokens', 'cost'],
             label: cc.sections.usage,
-            run: go(`${COMMAND_CENTER_ROUTE}?section=usage`)
+            run: go(`${SETTINGS_ROUTE}?tab=billing`)
           },
           {
             icon: RefreshCw,

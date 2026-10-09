@@ -1,3 +1,5 @@
+import { compactNumber } from '@hermes/shared'
+import { useStore } from '@nanostores/react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -10,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
 import { BarChart3, CreditCard, ExternalLink, Package, Wrench } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import { $sessionProfilesUsage, $sessions } from '@/store/session'
 
 import { useRouteEnumParam } from '../../hooks/use-route-enum-param'
 import {
@@ -18,13 +21,16 @@ import {
   SectionHeading,
   SectionHeadingSkeleton,
   SettingsContent,
-  SettingsSection
+  SettingsSection,
+  ToggleRow
 } from '../primitives'
 
 import { RowValue } from './account-row-value'
 import { BillingApiProvider } from './api'
 import { AutoReloadRow } from './auto-reload-row'
 import { clampAmount, formatMoney } from './billing-amounts'
+import { formatUsd, profileSpendRows, sessionSpendRows } from './cost-analytics'
+import { $costAnalyticsEnabled, setCostAnalyticsEnabled } from './cost-analytics-enabled'
 import { CurrentPlanCard } from './current-plan-card'
 import { type BillingDevFixtureName, billingDevFixtures } from './dev-fixtures'
 import { StepUpInlineAction } from './inline-feedback'
@@ -351,6 +357,87 @@ function UsageBar({ bar, fallbackLabel }: { bar?: BillingUsageRowView['bar']; fa
   )
 }
 
+function SpendList({
+  emptyLabel,
+  hint,
+  rows,
+  title
+}: {
+  emptyLabel: string
+  hint?: string
+  rows: Array<{ key: string; label: string; value: string }>
+  title: string
+}) {
+  return (
+    <section className="min-w-0">
+      <div className="mb-1.5 text-[0.625rem] font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)">
+        {title}
+        {hint ? <span className="ml-1.5 font-normal normal-case tracking-normal opacity-70">{hint}</span> : null}
+      </div>
+      {rows.length === 0 ? (
+        <div className="text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
+          {emptyLabel}
+        </div>
+      ) : (
+        <ul>
+          {rows.map(row => (
+            <li className="flex items-center justify-between gap-2 py-1.5" key={row.key}>
+              <span className="min-w-0 truncate font-mono text-[0.7rem] text-foreground">{row.label}</span>
+              <span className="shrink-0 text-[0.65rem] text-(--ui-text-tertiary)">{row.value}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+function SpendAnalyticsSection() {
+  const { t } = useI18n()
+  const cc = t.commandCenter
+  const costEnabled = useStore($costAnalyticsEnabled)
+  const profilesUsage = useStore($sessionProfilesUsage)
+  const allSessions = useStore($sessions)
+
+  const profileSpend = useMemo(() => (costEnabled ? profileSpendRows(profilesUsage) : []), [costEnabled, profilesUsage])
+  const sessionSpend = useMemo(() => (costEnabled ? sessionSpendRows(allSessions, 6) : []), [allSessions, costEnabled])
+
+  // TODO(i18n): section title hardcoded in English to avoid editing src/i18n catalog directly
+  return (
+    <SettingsSection icon={BarChart3} title="Spend analytics">
+      <ToggleRow
+        checked={costEnabled}
+        description={cc.costAnalyticsHint}
+        label={cc.costAnalytics}
+        onChange={setCostAnalyticsEnabled}
+      />
+      {costEnabled && (
+        <div className="grid min-h-0 gap-x-8 gap-y-5 pt-3 sm:grid-cols-2">
+          <SpendList
+            emptyLabel={cc.noSpend}
+            rows={profileSpend.map(row => ({
+              key: row.key,
+              label: row.label,
+              value: `${formatUsd(row.cost)} · ${compactNumber(row.tokens ?? 0)}`
+            }))}
+            title={cc.perProfile}
+          />
+          <SpendList
+            emptyLabel={cc.noSpend}
+            hint={cc.loadedSessionsHint}
+            rows={sessionSpend.map(row => ({
+              key: row.key,
+              label: row.label,
+              value: formatUsd(row.cost)
+            }))}
+            title={cc.topSessions}
+          />
+        </div>
+      )}
+    </SettingsSection>
+  )
+}
+
 function UsageRow({ row }: { row: BillingUsageRowView }) {
   return (
     <div className="@container">
@@ -569,6 +656,8 @@ function BillingSettingsContent({
           </div>
         </SettingsSection>
       )}
+
+      <SpendAnalyticsSection />
 
       {
         // no endpoint yet — NAS capability-board gap

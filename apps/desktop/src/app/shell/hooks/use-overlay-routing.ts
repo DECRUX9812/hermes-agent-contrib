@@ -13,7 +13,7 @@ import {
   STARMAP_ROUTE
 } from '@/app/routes'
 
-const SECTIONS = ['sessions', 'system', 'usage'] as const
+const SECTIONS = ['system', 'maintenance', 'notices'] as const satisfies readonly CommandCenterSection[]
 
 export function useOverlayRouting() {
   const location = useLocation()

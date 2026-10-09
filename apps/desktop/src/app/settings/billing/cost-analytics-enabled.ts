@@ -1,10 +1,10 @@
 /**
- * Command Center spend analytics — opt-in.
+ * Spend analytics — opt-in.
  *
- * Off by default: spend rows add cost figures to the Usage section, and not
+ * Off by default: spend rows add cost figures to Billing, and not
  * everyone wants money on screen (shared machines, screen shares). The data
- * itself is already local — it aggregates the same `getUsageAnalytics` /
- * `session.list` payloads the panel and sidebar already paint; nothing is
+ * itself is already local — it aggregates the same session.list
+ * payloads the sidebar already paints; nothing is
  * sent anywhere (root AGENTS.md: no telemetry without opt-in, and there is
  * no telemetry here at all). Presentation-scoped, so the renderer owns it.
  */
