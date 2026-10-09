@@ -6908,6 +6908,21 @@ function buildApplicationMenu() {
       { click: () => sendMenuActionRequested('view.toggleSidebar'), label: 'Toggle Sidebar' },
       { click: () => sendMenuActionRequested('view.toggleStatusbar'), label: 'Toggle Status Bar' },
       { type: 'separator' },
+      {
+        click: (menuItem, browserWindow) => {
+          const win = browserWindow || mainWindow
+          if (!win || win.isDestroyed()) return
+          const next = !win.isVisibleOnAllWorkspaces()
+          win.setVisibleOnAllWorkspaces(next, { skipTransformProcessType: true })
+          // Floating implies staying above other windows so it's actually
+          // reachable on every desktop.
+          win.setAlwaysOnTop(next, 'floating')
+          menuItem.checked = next
+        },
+        checked: false,
+        label: 'Float on All Desktops',
+        type: 'checkbox'
+      },
       { role: 'togglefullscreen' }
     ]
   })
