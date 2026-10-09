@@ -230,6 +230,7 @@ export function BotRow({
 
   const rowTooltip = [
     displayName(bot, meta),
+    role,
     `@${handle}`,
     gatewayLabel,
     sourceStatus.label,
@@ -320,11 +321,9 @@ export function BotRow({
             <Tip label={rowTooltip}>
               <span className="min-w-0 shrink truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
             </Tip>
-            {/* Name and role read as one line ("Atlas Engineer"), so the row
-                is two lines — who, then what it is doing — not three. */}
-            {role ? (
-              <span className="min-w-0 shrink-[2] truncate text-[0.75rem] text-(--ui-text-tertiary)">{role}</span>
-            ) : null}
+            {/* The description no longer rides the name line: it made rows
+                three lines tall and duplicated what the tooltip already says.
+                Rows are strictly who (name) then what (one clean sentence). */}
           </div>
           {canStop ? (
             <Tip label={b.roster.stopRun}>
