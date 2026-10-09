@@ -4,7 +4,7 @@
  * a hero (face with its live mood, name, what it is doing right now) over
  * four tabs — Activity (Now / Next / Done, work-board.tsx),
  * Approvals (what it is waiting on you for, plus its ask rules), Scheduled
- * (task log + routines) and Bot (reach, sessions, computer, deliverables).
+ * (task log + routines) and Bot (reach, computer, deliverables).
  * The open tab persists under `mission-rail-tab-v1`; collapsible sections
  * inside a tab keep their fold under `mission-rail-v1`. Folding the rail
  * itself is the pane's own collapse (the vertical tab), which returns the
@@ -32,7 +32,6 @@ import { useAutopilotText } from './autopilot-i18n'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { BotCardMeta } from './bot-card-meta'
 import { BotDeliverablesSection } from './bot-deliverables'
-import { BotSessionDeck } from './bot-session-deck'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { BotTaskLog } from './bot-task-log'
 import { BotTopicProjectMenu } from './bot-topic-project-menu'
@@ -500,11 +499,6 @@ export function MissionRail() {
                 profile={owner.name}
               />
             )}
-            {/* The session deck and deliverables own their section headers
-                (title + count + refresh), so they sit outside RailSection. */}
-            <div className="border-t border-(--ui-stroke-secondary)">
-              <BotSessionDeck owner={owner} />
-            </div>
             <RailSection id="computer" title={b.screen.panelTitle}>
               <div className="px-3 pb-2 pt-1">
                 <BotComputerPanel bot={owner} meta={meta} />

@@ -779,18 +779,6 @@ type BotsMessages = {
     today: string
     yesterday: string
   }
-  /** F1 — the session deck on the bot pane: every session the bot's profile
-   *  owns, canonical chat first. */
-  deck: {
-    title: string
-    newTopic: string
-    refresh: string
-    /** The canonical Bot Chat's row badge — 'Inbox', the mental model word,
-     *  not the plumbing word. */
-    inbox: string
-    empty: string
-    untitled: string
-  }
   /** G5 — the inbound-event strip inside a bot's canonical chat. */
   events: {
     /** Link affordance that opens the thing a card came from. */
@@ -1545,14 +1533,6 @@ const en: BotsMessages = {
     today: 'Today',
     yesterday: 'Yesterday'
   },
-  deck: {
-    title: 'Sessions',
-    newTopic: 'New topic',
-    refresh: 'Refresh',
-    inbox: 'Inbox',
-    empty: 'No sessions yet.',
-    untitled: 'Untitled session'
-  },
   events: {
     open: 'Open',
     inflight: 'A message is on its way'
@@ -2212,14 +2192,6 @@ const ja: BotsMessages = {
     stepsDone: (done, total) => `${done}/${total} 完了`,
     complete: '完了',
     clearChecklist: 'クリア'
-  },
-  deck: {
-    title: 'セッション',
-    newTopic: '新しいトピック',
-    refresh: '更新',
-    inbox: '受信トレイ',
-    empty: 'セッションはまだありません。',
-    untitled: '無題のセッション'
   },
   events: {
     open: '開く',
@@ -2949,14 +2921,6 @@ const zh: BotsMessages = {
     complete: '已完成',
     clearChecklist: '清除'
   },
-  deck: {
-    title: '会话',
-    newTopic: '新话题',
-    refresh: '刷新',
-    inbox: '收件箱',
-    empty: '还没有会话。',
-    untitled: '未命名会话'
-  },
   events: {
     open: '打开',
     inflight: '消息正在送达'
@@ -3683,14 +3647,6 @@ const zhHant: BotsMessages = {
     stepsDone: (done, total) => `已完成 ${done}/${total}`,
     complete: '已完成',
     clearChecklist: '清除'
-  },
-  deck: {
-    title: '工作階段',
-    newTopic: '新主題',
-    refresh: '重新整理',
-    inbox: '收件匣',
-    empty: '還沒有工作階段。',
-    untitled: '未命名工作階段'
   },
   events: {
     open: '開啟',
