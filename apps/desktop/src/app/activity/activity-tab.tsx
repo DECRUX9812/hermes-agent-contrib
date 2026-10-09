@@ -2,12 +2,14 @@ import { useStore } from '@nanostores/react'
 import { useMemo } from 'react'
 
 import { Codicon } from '@/components/ui/codicon'
+import { EmptyState } from '@/components/ui/empty-state'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
+import { Loader } from '@/components/ui/loader'
 import { sessionTitle } from '@/lib/chat-runtime'
 import { relativeTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { $desktopActionTasks, type RailTaskStatus } from '@/store/activity'
-import { $sessions } from '@/store/session'
+import { $sessions, $sessionsLoading } from '@/store/session'
 
 // Activity tab — what every bot is doing and has done, newest first.
 // Two honest sources: desktop action tasks (real background work) and recent
@@ -37,6 +39,7 @@ function statusIcon(status: RailTaskStatus) {
 export function ActivityTab() {
   const actionTasks = useStore($desktopActionTasks)
   const sessions = useStore($sessions)
+  const loading = useStore($sessionsLoading)
 
   const rows = useMemo<ActivityRow[]>(() => {
     const actions: ActivityRow[] = Object.values(actionTasks).map(({ status, updatedAt }) => ({
@@ -64,15 +67,20 @@ export function ActivityTab() {
       .slice(0, 20)
   }, [actionTasks, sessions])
 
+  if (loading) {
+    return (
+      <div className="grid min-h-48 place-items-center">
+        <Loader className="size-6 text-(--ui-text-tertiary)" />
+      </div>
+    )
+  }
+
   if (rows.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-        <Codicon className="text-[2rem] text-(--ui-text-quaternary)" name="pulse" />
-        <p className="text-[0.875rem] font-medium text-foreground">Nothing happening yet</p>
-        <p className="max-w-60 text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)">
-          When bots run tasks or you start conversations, they will show up here.
-        </p>
-      </div>
+      <EmptyState
+        description="When bots run tasks or you start conversations, they will show up here."
+        title="Nothing happening yet"
+      />
     )
   }
 

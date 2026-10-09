@@ -51,11 +51,11 @@ const DEFAULT_PREFS: NativeNotificationPrefs = {
   enabled: true,
   kinds: {
     approval: true,
-    backgroundDone: true,
+    backgroundDone: false,
     credits: true,
     input: true,
     plugin: true,
-    turnDone: true,
+    turnDone: false,
     turnError: true
   }
 }

@@ -49,9 +49,8 @@ import {
   PanelPill,
   PanelSectionLabel
 } from '../overlays/panel'
+import { CopyValueRow } from '../settings/mobile-companion'
 import { ListRow } from '../settings/primitives'
-
-import { CopyValueRow, MobileCompanion } from './mobile-companion'
 
 const DELIVER_OPTIONS: readonly string[] = ['log', 'telegram', 'discord', 'slack', 'email', 'github_comment']
 
@@ -416,7 +415,6 @@ function ProfileOwnedWebhooksView({ backendProfile, onClose }: ProfileOwnedWebho
         <PageLoader label={w.loading} />
       ) : subscriptions.length === 0 ? (
         <>
-          <MobileCompanion />
           {banners}
           <PanelEmpty
             action={
@@ -439,7 +437,6 @@ function ProfileOwnedWebhooksView({ backendProfile, onClose }: ProfileOwnedWebho
       ) : (
         <>
           <PanelHeader subtitle={w.hint} title={w.subscriptions(subscriptions.length)} />
-          <MobileCompanion />
           {banners}
           <PanelBody>
             <PanelList

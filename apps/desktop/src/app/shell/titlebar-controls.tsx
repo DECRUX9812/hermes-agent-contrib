@@ -291,7 +291,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       // from the action registry, same as every other tool here.
       actionId: 'view.toggleHud',
       hidden: !canUseHud(),
-      icon: <TitlebarIcon name="comment-discussion" />,
+      icon: <TitlebarIcon name="empty-window" />,
       id: 'hud',
       label: t.titlebar.enterHud,
       onSelect: () => {

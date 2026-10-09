@@ -36,6 +36,31 @@ export const $backdropStrength = atom<BackdropStrength>(initialStrength())
 /** The user's own background, as a downscaled data URL (null = none chosen). */
 export const $backdropImage = atom<null | string>(storedString(IMAGE_KEY))
 
+/** Tick atom bumped periodically when auto scene is active to re-evaluate local hour. */
+export const $backdropAutoTick = atom<number>(0)
+
+let autoTickTimer: ReturnType<typeof setInterval> | null = null
+
+export function clearBackdropAutoTimer(): void {
+  if (autoTickTimer !== null) {
+    clearInterval(autoTickTimer)
+    autoTickTimer = null
+  }
+}
+
+export function startBackdropAutoTimer(): () => void {
+  clearBackdropAutoTimer()
+  autoTickTimer = setInterval(() => {
+    $backdropAutoTick.set($backdropAutoTick.get() + 1)
+  }, 60_000)
+
+  return clearBackdropAutoTimer
+}
+
+export function isBackdropAutoTimerActive(): boolean {
+  return autoTickTimer !== null
+}
+
 /** v1 view: is any backdrop on. */
 export const $backdrop = computed($backdropScene, scene => scene !== 'off')
 
@@ -44,6 +69,10 @@ export function setBackdropScene(scene: BackdropScene) {
 
   if (previous === scene) {
     return
+  }
+
+  if (scene !== 'auto') {
+    clearBackdropAutoTimer()
   }
 
   recordFeatureToggle('backdrop', previous !== 'off', scene !== 'off')

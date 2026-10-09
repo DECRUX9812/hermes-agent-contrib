@@ -96,8 +96,17 @@ export function BackdropSceneGrid() {
                   {id === 'custom' && !image ? <FileImage className="size-4" /> : null}
                 </div>
                 <div className="mt-1.5 truncate px-0.5 text-[length:var(--conversation-caption-font-size)] font-medium">
-                  {id === 'custom' && !image ? a.backdropUpload : a.backdropScenes[id]}
+                  {id === 'custom' && !image
+                    ? a.backdropUpload
+                    : id === 'auto'
+                      ? 'Auto'
+                      : (a.backdropScenes as Record<string, string>)[id]}
                 </div>
+                {id === 'auto' ? (
+                  <div className="truncate px-0.5 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
+                    follows the time of day
+                  </div>
+                ) : null}
               </button>
               {id === 'custom' && image ? (
                 <button

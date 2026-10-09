@@ -3,7 +3,7 @@ import { type ComponentType, type ReactNode, useLayoutEffect, useMemo, useRef, u
 import { useLocation, useNavigate } from 'react-router'
 
 import { navItemActive, useSidebarNavItems } from '@/app/chat/sidebar/nav-items'
-import { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
+import { nextRunOverdueMs } from '@/app/cron/job-state'
 import { BrandMark } from '@/components/brand-mark'
 import { $paneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
 import { Codicon } from '@/components/ui/codicon'
@@ -139,7 +139,7 @@ export function ActivityRail({
   const cronJobs = useStore($cronJobs)
 
   const cronAttention = useMemo(
-    () => cronJobs.some(job => jobState(job) === 'running' || nextRunOverdueMs(job) !== null),
+    () => cronJobs.some(job => nextRunOverdueMs(job) !== null),
     [cronJobs]
   )
 

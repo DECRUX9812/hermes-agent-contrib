@@ -30,6 +30,7 @@ import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { migrateSessionDraft } from '@/store/composer'
 import { migrateQueuedPrompts, parkQueuedPrompts } from '@/store/composer-queue'
+import { $homeFeedItems } from '@/store/home-feed'
 import { $introSplash } from '@/store/intro-splash'
 import { $pinnedSessionIds } from '@/store/layout'
 import { $guideOpening, $onboardingGate } from '@/store/onboarding-gate'
@@ -74,6 +75,7 @@ import {
   useComposerSurfaceId
 } from './composer/scope'
 import { useHistoryWindow } from './history-window'
+import { HomeFeed } from './home-feed'
 import { type DroppedFile, partitionDroppedFiles } from './hooks/use-composer-actions'
 import { useFileDropZone } from './hooks/use-file-drop-zone'
 import { shouldShowIntro } from './intro-visibility'
@@ -662,6 +664,21 @@ const ChatViewContent = memo(function ChatViewContent({
     selectedSessionId
   })
 
+  // Proactive home feed: on the empty chat surface in the main window before
+  // the user asks anything, render flat action cards sourced from pending
+  // approvals, prompts, errors, and due cron jobs. Gated off while showIntro is
+  // active (to avoid colliding with the intro hero splash) and when no items exist.
+  const homeFeedItems = useStore($homeFeedItems)
+
+  const showHomeFeed =
+    messagesEmpty &&
+    isPrimary &&
+    isMainWindow() &&
+    !activeSessionId &&
+    !selectedSessionId &&
+    !showIntro &&
+    homeFeedItems.length > 0
+
   // Session is still loading if the route references a session we haven't
   // resumed yet. Brand-new routed drafts are empty on purpose once a runtime
   // is bound. A session the list already knows has history must keep the
@@ -898,6 +915,7 @@ const ChatViewContent = memo(function ChatViewContent({
           {/* Paint-first wake (#89843): transcript is live, profile gate still
               settling in the background — subtle badge, not an overlay. */}
           {isPrimary && !gatewaySwapTarget && <ChatSyncBadge profile={hydrationSyncProfile} />}
+          {showHomeFeed && <HomeFeed items={homeFeedItems} />}
         </div>
         {/* Docked composers overlay their pane; the shared float escapes pane
             clipping through a stable portal host without remounting its editor. */}

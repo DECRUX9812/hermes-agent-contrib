@@ -14,19 +14,26 @@ const mocks = vi.hoisted(() => ({
   notifyError: vi.fn()
 }))
 
-vi.mock('@/hermes', () => ({
-  getWebhooks: (profile?: string) => mocks.getWebhooks(profile),
-  enableWebhooks: (profile?: string) => mocks.enableWebhooks(profile),
-  createWebhook: (body: unknown, profile?: string) => mocks.createWebhook(body, profile),
-  deleteWebhook: (name: string, profile?: string) => mocks.deleteWebhook(name, profile),
-  setWebhookEnabled: (name: string, enabled: boolean, profile?: string) =>
-    mocks.setWebhookEnabled(name, enabled, profile)
-}))
+vi.mock('@/hermes', async importOriginal => {
+  const actual = await importOriginal<any>()
 
-vi.mock('@/store/profile', async () => {
+  return {
+    ...actual,
+    getWebhooks: (profile?: string) => mocks.getWebhooks(profile),
+    enableWebhooks: (profile?: string) => mocks.enableWebhooks(profile),
+    createWebhook: (body: unknown, profile?: string) => mocks.createWebhook(body, profile),
+    deleteWebhook: (name: string, profile?: string) => mocks.deleteWebhook(name, profile),
+    setWebhookEnabled: (name: string, enabled: boolean, profile?: string) =>
+      mocks.setWebhookEnabled(name, enabled, profile)
+  }
+})
+
+vi.mock('@/store/profile', async importOriginal => {
+  const actual = await importOriginal<any>()
   const { atom } = await import('nanostores')
 
   return {
+    ...actual,
     $activeGatewayProfile: atom('alpha'),
     $profileScope: atom('__all__'),
     normalizeProfileKey: (value: string | null | undefined) => String(value ?? '').trim() || 'default'

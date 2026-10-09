@@ -103,4 +103,5 @@ it.each([
   // Hiding the rail hands the door to the statusbar picker on either host.
   act(() => prefs.toggleProfileRailVisible())
   expect(doors()).toEqual({ dropdown: false, picker: true, rail: false })
-})
+  // The first case pays the cold import of the sidebar + statusbar tree.
+}, 60_000)

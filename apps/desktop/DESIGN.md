@@ -43,6 +43,41 @@ one-off at the call site.
 7. **Immediate feedback.** Direct manipulation updates the view first. Network
    or disk persistence reconciles afterward and rolls back visibly on failure.
 
+## Attention — the calm bar
+
+The app should feel like Muse: easy, calm, ADHD-friendly. Attention is the
+budget every screen spends. These are durable principles like the seven above,
+and they are the review lens for any screen (the mechanics live in the
+sections below — this is the bar they add up to):
+
+1. **One thing per screen.** Every view has one obvious purpose. A chat is not
+   also settings, stats, and notifications. The user should never wonder
+   "where do I look?"
+2. **Calm hierarchy.** The most important thing is the biggest and clearest;
+   everything else steps back. Muted color for background information, one
+   accent for actions. No two bright elements competing.
+3. **Scannable, not readable.** Short lines, clear labels, generous spacing.
+   If a row needs more than one line of text, it's too long — truncate with a
+   way to expand.
+4. **Obvious next action.** Every screen makes clear what to do next: a
+   visible button, not a hidden menu. If the user has to hunt for how to
+   proceed, the UI failed.
+5. **Forgiving.** Destructive actions confirm (`ConfirmDialog`), mistakes are
+   undoable where the backend allows, and a misclick is never punished.
+6. **Consistent.** The same action looks the same everywhere; the same icon
+   means the same thing on every screen. Extend the primitive; don't reinvent
+   a pattern per view.
+7. **Quiet by default.** No badges, banners, or popups unless something
+   genuinely needs attention. Every notification is an interruption — earn
+   each one. (Background updates that don't change a decision stay silent.)
+8. **Never a blank screen.** Loading shows a skeleton, spinner, or progress
+   with honest copy — empty, loading, reconnecting, and failed are distinct
+   states, never one gray nothing.
+
+**The squint test:** open the screen, squint, and ask "what's the one thing
+I'm supposed to do here?" If the answer isn't instant, simplify before
+shipping.
+
 ## Information architecture
 
 - **Chat is the home surface.** The transcript and composer stay primary; tools,
@@ -702,6 +737,9 @@ The detailed state contract lives in the scoped
 - [ ] `cursor-pointer`, focus ring, and `Esc`-to-close behave?
 - [ ] Touched a primitive, token, or variant? Its named-contract entry in this
       file is updated in the same change.
+- [ ] Squint test (§ Attention): one obvious next action, background info
+      muted, no badge/banner/popup that hasn't earned attention, no blank
+      loading state?
 
 ## Developer navigation
 

@@ -349,6 +349,7 @@ export const deOverrides = {
   },
   common: {
     apply: 'Übernehmen',
+    approve: 'Genehmigen',
     back: 'Zurück',
     save: 'Speichern',
     saving: 'Speichern…',
@@ -367,6 +368,7 @@ export const deOverrides = {
     copy: 'Kopieren',
     copyFailed: 'Kopieren fehlgeschlagen',
     delete: 'Löschen',
+    deny: 'Ablehnen',
     docs: 'Doku',
     done: 'Fertig',
     error: 'Fehler',

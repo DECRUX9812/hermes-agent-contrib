@@ -5,6 +5,7 @@ import { type FC, useCallback, useEffect, useRef, useState } from 'react'
 import { useIsDark } from '@/components/assistant-ui/embeds/use-is-dark'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { Loader } from '@/components/ui/loader'
 import { cn } from '@/lib/utils'
 import { visualizationFromResult, type VisualizationPayload } from '@/lib/visualizations'
 
@@ -138,10 +139,9 @@ export const VisualizationCard: FC<{ result?: unknown; title?: string }> = ({ re
         </div>
         <div className="relative">
           {pending && (
-            <div className="flex h-[320px] items-center justify-center">
-              <span className="shimmer text-sm text-(--ui-text-tertiary)">
-                Rendering visualization…
-              </span>
+            <div className="flex h-[320px] items-center justify-center gap-2 text-sm text-(--ui-text-tertiary)">
+              <Loader className="size-4" />
+              <span>Rendering visualization…</span>
             </div>
           )}
           {failed && (
@@ -154,10 +154,9 @@ export const VisualizationCard: FC<{ result?: unknown; title?: string }> = ({ re
           )}
           {!failed && renderFrame(false)}
           {!loaded && !failed && !pending && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-(--ui-surface-sunken)">
-              <span className="shimmer text-sm text-(--ui-text-tertiary)">
-                Rendering visualization…
-              </span>
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2 bg-(--ui-surface-sunken) text-sm text-(--ui-text-tertiary)">
+              <Loader className="size-4" />
+              <span>Rendering visualization…</span>
             </div>
           )}
         </div>

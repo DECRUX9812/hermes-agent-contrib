@@ -11,6 +11,7 @@
 
 export const BACKDROP_SCENES = [
   'off',
+  'auto',
   'aurora',
   'dusk',
   'ocean',
@@ -35,6 +36,35 @@ export const isBackdropStrength = (value: unknown): value is BackdropStrength =>
 
 type Kind = 'art' | 'glow' | 'image' | 'pattern' | 'statue'
 type Blend = 'difference' | 'multiply' | 'screen' | 'soft-light'
+
+/**
+ * Resolves the backdrop scene for a given local hour of the day (0-23).
+ * Maps time-of-day slots to ambient scenes:
+ *  - 05:00 - 10:59 (5-11): 'aurora' (dawn)
+ *  - 11:00 - 16:59 (11-17): 'ocean' (day)
+ *  - 17:00 - 20:59 (17-21): 'dusk' (evening)
+ *  - 21:00 - 04:59 (21-5): 'ink' (night)
+ *
+ * Out-of-range policy: clamped to [0, 23] (floored if fractional, defaulting
+ * non-finite values to 0).
+ */
+export function sceneForHour(hour: number): BackdropScene {
+  const clamped = Math.max(0, Math.min(23, Math.floor(Number.isFinite(hour) ? hour : 0)))
+
+  if (clamped >= 5 && clamped < 11) {
+    return 'aurora'
+  }
+
+  if (clamped >= 11 && clamped < 17) {
+    return 'ocean'
+  }
+
+  if (clamped >= 17 && clamped < 21) {
+    return 'dusk'
+  }
+
+  return 'ink'
+}
 
 const blob = (x: number, y: number, color: string, size = 55) =>
   `radial-gradient(circle at ${x}% ${y}%, ${color} 0%, transparent ${size}%)`
@@ -67,7 +97,7 @@ const ART: Record<
   }
 }
 
-const KIND: Record<Exclude<BackdropScene, 'off'>, Kind> = {
+const KIND: Record<Exclude<BackdropScene, 'off' | 'auto'>, Kind> = {
   aurora: 'glow',
   dusk: 'glow',
   ocean: 'glow',
@@ -115,12 +145,18 @@ export function backdropLayer(
     return null
   }
 
-  const kind = KIND[scene]
-  const opacity = OPACITY[scene === 'ink' ? 'ink' : kind][mode][BACKDROP_STRENGTHS.indexOf(strength)]
+  const effective = scene === 'auto' ? sceneForHour(new Date().getHours()) : scene
+
+  if (effective === 'off' || effective === 'auto') {
+    return null
+  }
+
+  const kind = KIND[effective]
+  const opacity = OPACITY[effective === 'ink' ? 'ink' : kind][mode][BACKDROP_STRENGTHS.indexOf(strength)]
   const blend = mode === 'dark' ? 'screen' : 'multiply'
 
   if (kind === 'art') {
-    const art = ART[scene as keyof typeof ART]
+    const art = ART[effective as keyof typeof ART]
 
     return {
       kind,
@@ -133,7 +169,7 @@ export function backdropLayer(
   }
 
   if (kind === 'glow') {
-    return { kind, background: GLOWS[scene as keyof typeof GLOWS], opacity, blend, drift: true }
+    return { kind, background: GLOWS[effective as keyof typeof GLOWS], opacity, blend, drift: true }
   }
 
   if (kind === 'pattern') {

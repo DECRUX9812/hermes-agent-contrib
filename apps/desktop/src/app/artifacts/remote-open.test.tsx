@@ -19,12 +19,15 @@ const paths = vi.hoisted(() => [
 ])
 
 const getSessionMessages = vi.hoisted(() => vi.fn())
+const listAllProfileSessions = vi.hoisted(() =>
+  vi.fn(async () => ({
+    sessions: [{ id: 'artifact-session', title: 'Fixture', profile: 'origin-profile' }]
+  }))
+)
 
 vi.mock('@/hermes', async () => ({
   ...(await vi.importActual('@/hermes')),
-  listAllProfileSessions: async () => ({
-    sessions: [{ id: 'artifact-session', title: 'Fixture', profile: 'origin-profile' }]
-  }),
+  listAllProfileSessions,
   getSessionMessages
 }))
 afterEach(() => {
@@ -98,4 +101,32 @@ it('keeps discovered file paths and originating session scope intact through rem
     offset: 0,
     order: 'oldest'
   })
+})
+
+it('renders ErrorState with a retry button when sessions fail to load, and recovers on retry', async () => {
+  listAllProfileSessions.mockRejectedValueOnce(new Error('Failed to reach gateway'))
+
+  render(
+    <MemoryRouter>
+      <ArtifactsView />
+    </MemoryRouter>
+  )
+
+  expect(await screen.findByText('Artifacts failed to load')).toBeTruthy()
+  expect(screen.getByText('Failed to reach gateway')).toBeTruthy()
+
+  const retryBtn = screen.getByRole('button', { name: 'Retry' })
+  expect(retryBtn).toBeTruthy()
+
+  listAllProfileSessions.mockResolvedValueOnce({
+    sessions: [{ id: 'artifact-session', title: 'Fixture', profile: 'origin-profile' }]
+  })
+  getSessionMessages.mockResolvedValueOnce({
+    messages: [],
+    session_id: 'artifact-session'
+  })
+
+  fireEvent.click(retryBtn)
+
+  expect(await screen.findByText('No artifacts found')).toBeTruthy()
 })

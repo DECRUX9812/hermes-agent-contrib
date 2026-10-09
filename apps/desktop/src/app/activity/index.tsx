@@ -7,46 +7,30 @@ import { OverlayView } from '@/app/overlays/overlay-view'
 import { Codicon } from '@/components/ui/codicon'
 import { cn } from '@/lib/utils'
 import { $attentionItemCount } from '@/store/attention-inbox'
-import { $colonyBots } from '@/store/bot-character'
-import { $cronJobs } from '@/store/cron'
 
 import { ActivityTab } from './activity-tab'
 import { ApprovalsTab } from './approvals-tab'
-import { BotsTab } from './bots-tab'
-import { UpcomingTab } from './upcoming-tab'
 
-type ActivityPaneTab = 'activity' | 'approvals' | 'upcoming' | 'bots'
+type ActivityPaneTab = 'activity' | 'approvals'
 
 // The Activity Pane — Hermes's answer to "what's happening right now."
-// One calm, glanceable view: live status header, colony roster, then four
+// One calm, glanceable view: live status header, colony roster, then two
 // tabs. Activity shows what every bot is doing and has done. Approvals
-// surfaces everything waiting on the user with explicit buttons. Upcoming
-// shows scheduled work with health. Bots is the colony: picker, character
-// cards, rapport. Muse-inspired pattern, Hermes design — never copied.
+// surfaces everything waiting on the user with explicit buttons.
 
 const TABS: ReadonlyArray<{ id: ActivityPaneTab; label: string; icon: string }> = [
   { id: 'activity', label: 'Activity', icon: 'pulse' },
-  { id: 'approvals', label: 'Approvals', icon: 'shield' },
-  { id: 'upcoming', label: 'Upcoming', icon: 'watch' },
-  { id: 'bots', label: 'Bots', icon: 'robot' }
+  { id: 'approvals', label: 'Approvals', icon: 'shield' }
 ]
 
 export function ActivityView({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<ActivityPaneTab>('activity')
   const approvalCount = useStore($attentionItemCount)
-  const cronJobs = useStore($cronJobs)
-  const bots = useStore($colonyBots)
 
   const badgeFor = (id: ActivityPaneTab): number | null => {
     switch (id) {
       case 'approvals':
         return approvalCount > 0 ? approvalCount : null
-
-      case 'upcoming':
-        return cronJobs.length > 0 ? cronJobs.length : null
-
-      case 'bots':
-        return bots.length > 1 ? bots.length : null
 
       default:
         return null
@@ -115,8 +99,6 @@ export function ActivityView({ onClose }: { onClose: () => void }) {
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
           {tab === 'activity' && <ActivityTab />}
           {tab === 'approvals' && <ApprovalsTab />}
-          {tab === 'upcoming' && <UpcomingTab />}
-          {tab === 'bots' && <BotsTab />}
         </div>
       </div>
     </OverlayView>

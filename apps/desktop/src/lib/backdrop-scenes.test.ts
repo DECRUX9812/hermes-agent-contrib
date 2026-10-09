@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { BACKDROP_SCENES, BACKDROP_STRENGTHS, backdropLayer, sceneFromLegacy, sceneSwatch } from './backdrop-scenes'
+import {
+  BACKDROP_SCENES,
+  BACKDROP_STRENGTHS,
+  backdropLayer,
+  sceneForHour,
+  sceneFromLegacy,
+  sceneSwatch
+} from './backdrop-scenes'
 
 const MODES = ['dark', 'light'] as const
 const asset = (file: string) => `/${file}`
@@ -81,5 +88,73 @@ describe('chat background scenes', () => {
     )
     expect(sceneSwatch('custom', 'dark', 'data:x', asset)!.background).toContain('data:x')
     expect(sceneSwatch('custom', 'dark', null, asset)).toBeNull()
+  })
+
+  it('maps all 24 hours to calm ambient scenes with boundary and wrap coverage', () => {
+    const expectedForHour: Record<number, string> = {
+      0: 'ink',
+      1: 'ink',
+      2: 'ink',
+      3: 'ink',
+      4: 'ink',
+      5: 'aurora',
+      6: 'aurora',
+      7: 'aurora',
+      8: 'aurora',
+      9: 'aurora',
+      10: 'aurora',
+      11: 'ocean',
+      12: 'ocean',
+      13: 'ocean',
+      14: 'ocean',
+      15: 'ocean',
+      16: 'ocean',
+      17: 'dusk',
+      18: 'dusk',
+      19: 'dusk',
+      20: 'dusk',
+      21: 'ink',
+      22: 'ink',
+      23: 'ink'
+    }
+
+    for (let hour = 0; hour < 24; hour += 1) {
+      expect(sceneForHour(hour), `hour ${hour}`).toBe(expectedForHour[hour])
+    }
+
+    // Specific boundary transitions & midnight wrap
+    expect(sceneForHour(4)).toBe('ink')
+    expect(sceneForHour(5)).toBe('aurora')
+    expect(sceneForHour(10)).toBe('aurora')
+    expect(sceneForHour(11)).toBe('ocean')
+    expect(sceneForHour(12)).toBe('ocean')
+    expect(sceneForHour(16)).toBe('ocean')
+    expect(sceneForHour(17)).toBe('dusk')
+    expect(sceneForHour(20)).toBe('dusk')
+    expect(sceneForHour(21)).toBe('ink')
+    expect(sceneForHour(22)).toBe('ink')
+    expect(sceneForHour(23)).toBe('ink')
+
+    // Clamping out-of-range & fractional hours
+    expect(sceneForHour(-1)).toBe('ink')
+    expect(sceneForHour(-100)).toBe('ink')
+    expect(sceneForHour(24)).toBe('ink')
+    expect(sceneForHour(99)).toBe('ink')
+    expect(sceneForHour(4.9)).toBe('ink')
+    expect(sceneForHour(5.1)).toBe('aurora')
+    expect(sceneForHour(10.9)).toBe('aurora')
+    expect(sceneForHour(11.1)).toBe('ocean')
+    expect(sceneForHour(16.9)).toBe('ocean')
+    expect(sceneForHour(17.1)).toBe('dusk')
+    expect(sceneForHour(20.9)).toBe('dusk')
+    expect(sceneForHour(21.1)).toBe('ink')
+    expect(sceneForHour(Number.NaN)).toBe('ink')
+    expect(sceneForHour(Number.POSITIVE_INFINITY)).toBe('ink')
+  })
+
+  it('previews auto scene with the dynamic swatch for the current time of day', () => {
+    const swatch = sceneSwatch('auto', 'dark', null, asset)
+    expect(swatch).not.toBeNull()
+    expect(swatch?.background).toBeTruthy()
   })
 })

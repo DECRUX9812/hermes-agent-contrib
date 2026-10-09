@@ -47,6 +47,7 @@ import { cloudTeamChanged, reconnectMovedCloudAgent } from './cloud-team-change'
 import { ConnectionsRegistrySection } from './connections-registry'
 import { CONTROL_TEXT } from './constants'
 import { ManagedUpdatesSection } from './managed-updates-section'
+import { MobileCompanion } from './mobile-companion'
 import { EmptyState, ListRow, Pill, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { SETTING_IDS, settingElementId } from './settings-manifest'
 import { enrichSelectedSshHost, selectSshHost } from './ssh-host-selection'
@@ -1333,6 +1334,9 @@ function GatewayConnectionSettings({ embedded, standalone }: { embedded: boolean
               <div>{g.plainTextStoredDesc}</div>
             </div>
           ) : null}
+          <div className="mt-4">
+            <MobileCompanion />
+          </div>
         </div>
       ) : null}
 

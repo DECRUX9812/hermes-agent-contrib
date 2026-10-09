@@ -350,6 +350,7 @@ export const frOverrides = {
   },
   common: {
     apply: 'Appliquer',
+    approve: 'Approuver',
     back: 'Retour',
     save: 'Enregistrer',
     saving: 'Enregistrement…',
@@ -368,6 +369,7 @@ export const frOverrides = {
     copy: 'Copier',
     copyFailed: 'Échec de la copie',
     delete: 'Supprimer',
+    deny: 'Refuser',
     docs: 'Documentation',
     done: 'Terminé',
     error: 'Erreur',

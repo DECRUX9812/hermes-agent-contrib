@@ -95,7 +95,7 @@ vi.mock('@/i18n', () => ({
 vi.mock('@/lib/haptics', () => ({ triggerHaptic: vi.fn() }))
 vi.mock('@/lib/profile-color', () => ({ PROFILE_SWATCHES: [] }))
 vi.mock('@/lib/session-export', () => ({ exportSession: vi.fn() }))
-vi.mock('@/store/gateway', () => ({ activeGateway: vi.fn(() => null) }))
+vi.mock('@/store/gateway', () => ({ $gateway: atom(null), activeGateway: vi.fn(() => null) }))
 vi.mock('@/store/notifications', () => ({ notify: vi.fn(), notifyError: vi.fn() }))
 vi.mock('@/store/projects', () => ({
   $projectTree: atom<unknown[]>([]),
@@ -113,6 +113,7 @@ vi.mock('@/store/session', () => ({
   $messagingSessions: atom<unknown[]>([]),
   $selectedStoredSessionId: atom<null | string>(null),
   $sessions: atom<unknown[]>([]),
+  $unlistedSessionOwnerRows: atom<unknown[]>([]),
   $unreadFinishedSessionIds: atom<string[]>([]),
   $workspaceCwdOwner: atom<null | string>(null),
   markSessionRead: vi.fn(),

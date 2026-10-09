@@ -19,6 +19,7 @@ import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
 import { $chatTextScale, CHAT_TEXT_SCALE_PRESETS, setChatTextScale } from '@/store/chat-text-scale'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
+import { confirm } from '@/store/confirm'
 import { $preferredEditor } from '@/store/editor-handoff'
 import { $embedAllowed, $embedMode, clearEmbedAllowed, type EmbedMode, setEmbedMode } from '@/store/embed-consent'
 import {
@@ -668,13 +669,21 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
                                   aria-label={a.removeTheme}
                                   className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-md bg-(--ui-bg-elevated)/80 text-(--ui-text-tertiary) opacity-0 backdrop-blur-sm transition hover:text-(--ui-red) focus-visible:opacity-100 group-hover:opacity-100"
                                   onClick={() => {
-                                    triggerHaptic('crisp')
-                                    removeUserTheme(theme.name)
+                                    void confirm({
+                                      confirmLabel: t.common.delete,
+                                      description: theme.label,
+                                      destructive: true,
+                                      onConfirm: async () => {
+                                        triggerHaptic('crisp')
+                                        removeUserTheme(theme.name)
 
-                                    // Re-normalize off the now-missing skin → default.
-                                    if (active) {
-                                      setTheme(theme.name)
-                                    }
+                                        // Re-normalize off the now-missing skin → default.
+                                        if (active) {
+                                          setTheme(theme.name)
+                                        }
+                                      },
+                                      title: a.removeTheme
+                                    })
                                   }}
                                   type="button"
                                 >

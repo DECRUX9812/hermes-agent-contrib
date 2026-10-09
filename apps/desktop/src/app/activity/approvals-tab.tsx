@@ -1,8 +1,11 @@
 import { useStore } from '@nanostores/react'
 import { useState } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
+import { Loader2 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import {
   $attentionItems,
@@ -35,6 +38,7 @@ const KIND_META: Record<AttentionItemKind, { icon: string; tone: string }> = {
 }
 
 function ApprovalCard({ item }: { item: AttentionItem }) {
+  const { t } = useI18n()
   const gateway = useStore($gateway)
   const approvalQueues = useStore($approvalQueues)
   const [busy, setBusy] = useState<string | null>(null)
@@ -109,30 +113,28 @@ function ApprovalCard({ item }: { item: AttentionItem }) {
       </div>
       {request && (
         <div className="mt-2.5 flex gap-2 border-t border-(--ui-edge-border) pt-2.5">
-          <button
-            className={cn(
-              'flex-1 rounded-lg bg-emerald-500/15 px-3 py-1.5',
-              'text-[0.75rem] font-semibold text-emerald-300',
-              'hover:bg-emerald-500/25 disabled:opacity-50'
-            )}
+          <Button
+            className="flex-1"
             disabled={busy !== null}
             onClick={() => answer('once')}
+            size="sm"
             type="button"
+            variant="default"
           >
-            {busy === 'once' ? 'Approving...' : 'Approve'}
-          </button>
-          <button
-            className={cn(
-              'flex-1 rounded-lg bg-red-500/15 px-3 py-1.5',
-              'text-[0.75rem] font-semibold text-red-300',
-              'hover:bg-red-500/25 disabled:opacity-50'
-            )}
+            {busy === 'once' && <Loader2 className="size-3 animate-spin" />}
+            {t.common.approve}
+          </Button>
+          <Button
+            className="flex-1"
             disabled={busy !== null}
             onClick={() => answer('deny')}
+            size="sm"
             type="button"
+            variant="outline"
           >
-            {busy === 'deny' ? 'Denying...' : 'Deny'}
-          </button>
+            {busy === 'deny' && <Loader2 className="size-3 animate-spin" />}
+            {t.common.deny}
+          </Button>
         </div>
       )}
     </div>

@@ -400,6 +400,7 @@ export const en: Translations = {
   },
   common: {
     apply: 'Apply',
+    approve: 'Approve',
     back: 'Back',
     save: 'Save',
     saving: 'Saving…',
@@ -418,6 +419,7 @@ export const en: Translations = {
     copy: 'Copy',
     copyFailed: 'Copy failed',
     delete: 'Delete',
+    deny: 'Deny',
     docs: 'Docs',
     done: 'Done',
     error: 'Error',

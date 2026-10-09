@@ -784,4 +784,17 @@ describe('GatewaySettings', () => {
 
     expect(await screen.findByText('Status: active')).toBeTruthy()
   })
+
+  it('renders the mobile companion pairing banner in remote mode', async () => {
+    getConnectionConfig.mockResolvedValue({
+      ...localConnection,
+      mode: 'remote',
+      remoteUrl: 'https://a.example'
+    })
+
+    render(<GatewaySettings />)
+
+    expect(await screen.findByText('Mobile companion')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Pair a phone' })).toBeTruthy()
+  })
 })

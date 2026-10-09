@@ -231,4 +231,24 @@ describe('ProfilesView', () => {
     expect(selectProfile).not.toHaveBeenCalled()
     expect(setActiveProfile).not.toHaveBeenCalled()
   })
+
+  it('renders an error state with a retry button on load failure and recovers on retry', async () => {
+    vi.mocked(refreshProfiles).mockRejectedValueOnce(new Error('Profile store locked'))
+
+    await renderProfilesView()
+
+    expect(await screen.findByText('Failed to load profiles')).toBeTruthy()
+    expect(screen.getByText('Profile store locked')).toBeTruthy()
+
+    const retryBtn = screen.getByRole('button', { name: 'Retry' })
+    expect(retryBtn).toBeTruthy()
+
+    vi.mocked(refreshProfiles).mockResolvedValueOnce([makeProfile('default', true)])
+
+    await act(async () => {
+      fireEvent.click(retryBtn)
+    })
+
+    expect(await screen.findByText('Profiles')).toBeTruthy()
+  })
 })

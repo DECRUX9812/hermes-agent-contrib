@@ -6,6 +6,7 @@ import {
   Button,
   cn,
   Codicon,
+  confirm,
   Dialog,
   DialogContent,
   DialogFooter,
@@ -103,7 +104,7 @@ function SeatCard({
   const face = useSeatBot(node.profile)
 
   const call = (method: string, extra: Record<string, unknown>) =>
-    void mutateTeam(method, { team_id: team.id, ...extra }).catch(err => host.notifyError(err, 'Team'))
+    mutateTeam(method, { team_id: team.id, ...extra }).catch(err => host.notifyError(err, 'Team'))
 
   return (
     <div
@@ -170,7 +171,19 @@ function SeatCard({
               {node.status === 'paused' ? t.resume : t.pause}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => call('bots_team.member.remove', { member: node.slot })}>
+            <DropdownMenuItem
+              onSelect={() => {
+                void confirm({
+                  confirmLabel: t.remove,
+                  description: face?.label || seatName(node, t.openSeat),
+                  destructive: true,
+                  onConfirm: async () => {
+                    await call('bots_team.member.remove', { member: node.slot })
+                  },
+                  title: t.remove
+                })
+              }}
+            >
               {t.remove}
             </DropdownMenuItem>
           </DropdownMenuContent>

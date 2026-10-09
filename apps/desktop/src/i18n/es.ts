@@ -352,6 +352,7 @@ export const esOverrides = {
   },
   common: {
     apply: 'Aplicar',
+    approve: 'Aprobar',
     back: 'Atrás',
     save: 'Guardar',
     saving: 'Guardando…',
@@ -370,6 +371,7 @@ export const esOverrides = {
     copy: 'Copiar',
     copyFailed: 'No se pudo copiar',
     delete: 'Eliminar',
+    deny: 'Denegar',
     docs: 'Docs',
     done: 'Listo',
     error: 'Error',

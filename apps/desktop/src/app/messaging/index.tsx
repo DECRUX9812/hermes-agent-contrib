@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DisclosureCaret } from '@/components/ui/disclosure-caret'
-import { ErrorBanner } from '@/components/ui/error-state'
+import { ErrorBanner, ErrorState } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ResponsiveTabs } from '@/components/ui/tab-dropdown'
@@ -174,6 +174,7 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
     navigate({ hash, pathname, search: qs ? `?${qs}` : '' }, { replace: true })
   }, [hash, navigate, pathname, search])
   const [platforms, setPlatforms] = useState<MessagingPlatformInfo[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   // A saved credential/toggle only takes effect on the next gateway start, so a
   // vanishing toast is not enough: the page keeps a banner up until a restart
   // actually happens (dashboard parity). Cleared on a completed restart.
@@ -237,8 +238,12 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
 
         if (scopeRef.current === scopeProfile) {
           setPlatforms(result.platforms)
+          setLoadError(null)
         }
       } catch (err) {
+        if (scopeRef.current === scopeProfile) {
+          setLoadError(err instanceof Error ? err.message : String(err))
+        }
         if (!silent) {
           notifyError(err, m.loadFailed)
         }
@@ -301,6 +306,7 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
   if (prevScope !== scopeProfile) {
     setPrevScope(scopeProfile)
     setPlatforms(null)
+    setLoadError(null)
     setPairing({ approved: [], pending: [] })
     setEdits({})
   }
@@ -591,7 +597,23 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
       searchValue={query}
     >
       {!platforms ? (
-        <PageLoader label={m.loading} />
+        loadError ? (
+          <div className="grid h-full place-items-center p-6">
+            <ErrorState description={loadError} title={m.loadFailed}>
+              <Button
+                className="justify-self-center"
+                disabled={refreshing}
+                onClick={() => void refreshAll()}
+                size="sm"
+                variant="secondary"
+              >
+                {t.common.retry}
+              </Button>
+            </ErrorState>
+          </div>
+        ) : (
+          <PageLoader label={m.loading} />
+        )
       ) : (
         <div className="flex h-full min-h-0 flex-col">
           {/* Which profile's gateway this page configures (hidden for

@@ -9,6 +9,7 @@ import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/ui/copy-button'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorState } from '@/components/ui/error-state'
 import {
   Pagination,
   PaginationButton,
@@ -122,6 +123,7 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
   const a = t.artifacts
   const navigate = useNavigate()
   const [artifacts, setArtifacts] = useState<ArtifactRecord[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
   const [kindFilter, setKindFilter] = useRouteEnumParam('tab', ARTIFACT_FILTERS, 'all')
@@ -182,9 +184,10 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
       }
 
       setArtifacts(nextArtifacts.sort((left, right) => right.timestamp - left.timestamp))
+      setLoadError(null)
     } catch (err) {
       notifyError(err, a.failedLoad)
-      setArtifacts([])
+      setLoadError(err instanceof Error ? err.message : String(err))
     } finally {
       refreshInFlightRef.current = false
       setRefreshing(false)
@@ -388,7 +391,23 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
       ]}
     >
       {!artifacts ? (
-        <PageLoader label={a.indexing} />
+        loadError ? (
+          <div className="grid h-full place-items-center p-6">
+            <ErrorState description={loadError} title={a.failedLoad}>
+              <Button
+                className="justify-self-center"
+                disabled={refreshing}
+                onClick={() => void refreshArtifacts()}
+                size="sm"
+                variant="secondary"
+              >
+                {t.common.retry}
+              </Button>
+            </ErrorState>
+          </div>
+        ) : (
+          <PageLoader label={a.indexing} />
+        )
       ) : visibleArtifacts.length === 0 ? (
         <EmptyState className="h-full px-6" description={a.noArtifactsDesc} title={a.noArtifactsTitle} />
       ) : (

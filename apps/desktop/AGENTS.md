@@ -160,6 +160,8 @@ actually run rather than inventing a command; when in doubt, read the scripts.
 - Do hot interactions stay cheap under realistic load?
 - Does the change pass the [`DESIGN.md`](./DESIGN.md) checklist and update all
   locales?
+- Does every screen it touches pass the `DESIGN.md` squint test — one obvious
+  next action, background info muted, nothing louder than it needs to be?
 
 If any answer is "not sure," that's the part to go verify.
 

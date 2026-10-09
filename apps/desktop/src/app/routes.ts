@@ -13,6 +13,7 @@ export const NEW_CHAT_ROUTE = '/'
 export const SETTINGS_ROUTE = '/settings'
 export const COMMAND_CENTER_ROUTE = '/command-center'
 export const INBOX_ROUTE = '/inbox'
+export const MISSION_ROUTE = '/mission-control'
 export const SESSION_IMPORT_ROUTE = '/session-import'
 export const CAPABILITIES_ROUTE = '/capabilities'
 export const MESSAGING_ROUTE = '/messaging'
@@ -41,6 +42,7 @@ export type AppView =
   | 'extension'
   | 'inbox'
   | 'messaging'
+  | 'mission-control'
   | 'profiles'
   | 'roster'
   | 'settings'
@@ -57,6 +59,7 @@ export type AppRouteId =
   | 'cron'
   | 'inbox'
   | 'messaging'
+  | 'mission-control'
   | 'new'
   | 'profiles'
   | 'roster'
@@ -82,6 +85,7 @@ export const APP_ROUTES = [
   { id: 'artifacts', path: ARTIFACTS_ROUTE, view: 'artifacts' },
   { id: 'cron', path: CRON_ROUTE, view: 'cron' },
   { id: 'inbox', path: INBOX_ROUTE, view: 'inbox' },
+  { id: 'mission-control', path: MISSION_ROUTE, view: 'mission-control' },
   { id: 'profiles', path: PROFILES_ROUTE, view: 'profiles' },
   { id: 'agents', path: AGENTS_ROUTE, view: 'agents' },
   { id: 'starmap', path: STARMAP_ROUTE, view: 'starmap' },
@@ -199,6 +203,7 @@ export const OVERLAY_VIEWS: ReadonlySet<AppView> = new Set([
   'command-center',
   'cron',
   'inbox',
+  'mission-control',
   'profiles',
   'roster',
   'settings',

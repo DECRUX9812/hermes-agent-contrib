@@ -102,6 +102,7 @@ vi.mock('../updates-overlay', () => ({ UpdatesOverlay: () => null }))
 vi.mock('./mcp-install-deeplink-dialog', () => ({ McpInstallDeepLinkDialog: () => null }))
 vi.mock('./surfaces', () => ({
   ChatRoutesSurface: () => null,
+  RailSurface: () => null,
   SidebarSurface: () => null,
   StatusbarSurface: () => null,
   TerminalSurface: () => null

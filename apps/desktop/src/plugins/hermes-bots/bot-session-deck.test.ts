@@ -23,13 +23,15 @@ import type { RosterRow } from './types'
 // thing under test-adjacency); only its side-effect-bearing siblings are
 // stubbed.
 vi.mock('@hermes/plugin-sdk', () => ({
+  Button: () => null,
   cn: (...parts: unknown[]) => parts.filter(Boolean).join(' '),
   Codicon: () => null,
+  ErrorState: () => null,
   host: {},
   RowButton: () => null,
   SessionStatusDot: () => null,
   Tip: ({ children }: { children?: unknown }) => children,
-  useI18n: () => ({ t: { sidebar: { row: {} } } })
+  useI18n: () => ({ t: { common: { retry: 'Retry' }, sidebar: { projectLoadFailed: 'Could not load sessions', row: {} } } })
 }))
 
 vi.mock('./data', () => ({ newBotChat: vi.fn() }))

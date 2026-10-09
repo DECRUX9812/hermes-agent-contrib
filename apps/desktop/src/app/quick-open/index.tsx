@@ -5,8 +5,11 @@ import { useMemo, useRef, useState } from 'react'
 import { requestComposerFocus, requestComposerInsertRefs } from '@/app/chat/composer/focus'
 import { droppedFileInlineRef } from '@/app/chat/composer/inline-refs'
 import { HUD_ITEM, HUD_POSITION, HUD_SURFACE, HUD_TEXT } from '@/app/floating-hud'
+import { PanelEmpty } from '@/app/overlays/panel'
+import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { Loader } from '@/components/ui/loader'
 import { useI18n } from '@/i18n'
 import { pathLeaf } from '@/lib/display-path'
 import { normalizeOrLocalPreviewTarget } from '@/lib/local-preview'
@@ -99,21 +102,29 @@ function QuickOpenBody() {
       />
       <CommandList className="max-h-[min(24rem,60vh)]">
         {!cwd ? (
-          <div className="flex flex-col items-center gap-2 px-4 py-6 text-center">
-            <p className={cn(HUD_TEXT, 'text-(--ui-text-tertiary)')}>{q.noProjectBody}</p>
-            <button
-              className="rounded-lg bg-(--ui-accent) px-3 py-1 text-xs font-medium text-white"
-              onClick={() => {
-                setQuickOpenOpen(false)
-                void openFolderAsProject()
-              }}
-              type="button"
-            >
-              {q.openFolder}
-            </button>
-          </div>
+          <PanelEmpty
+            action={
+              <Button
+                onClick={() => {
+                  setQuickOpenOpen(false)
+                  void openFolderAsProject()
+                }}
+                size="sm"
+                type="button"
+              >
+                {q.openFolder}
+              </Button>
+            }
+            description={q.noProjectBody}
+            icon="folder"
+          />
         ) : query ? (
           <>
+            {loading && (
+              <div className="flex items-center justify-center py-6">
+                <Loader className="size-5 text-(--ui-text-tertiary)" />
+              </div>
+            )}
             {!loading && <CommandEmpty className={cn(HUD_TEXT, 'py-6')}>{q.noMatch(query)}</CommandEmpty>}
             <CommandGroup>
               {items.map(item => (

@@ -19,8 +19,10 @@
  */
 
 import {
+  Button,
   cn,
   Codicon,
+  ErrorState,
   host,
   type PluginProfileRoute,
   RowButton,
@@ -108,6 +110,7 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
   const [loaded, setLoaded] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [hasError, setHasError] = useState(false)
   const seq = useRef(0)
   // Same trap as BotDeliverablesSection: the roster poll replaces the owner
   // ROW each refresh — only the key is stable.
@@ -129,11 +132,13 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
     if (typeof host.listPersistedSessions !== 'function' || !owner?.name) {
       setSessions([])
       setLoaded(true)
+      setHasError(false)
 
       return
     }
 
     setRefreshing(true)
+    setHasError(false)
 
     void host
       .listPersistedSessions(route, { limit: DECK_LIMIT, profile: owner.name })
@@ -144,6 +149,7 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
 
         setSessions(result?.sessions ?? [])
         setLoaded(true)
+        setHasError(false)
       })
       .catch(() => {
         if (seq.current !== current) {
@@ -152,6 +158,7 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
 
         setSessions([])
         setLoaded(true)
+        setHasError(true)
       })
       .finally(() => {
         if (seq.current === current) {
@@ -162,6 +169,7 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
 
   useEffect(() => {
     setLoaded(false)
+    setHasError(false)
     load()
   }, [load, ownerKey])
 
@@ -230,7 +238,23 @@ export function BotSessionDeck({ owner }: { owner: RosterRow }) {
         label={b.deck.title}
         onToggle={() => setCollapsed(v => !v)}
       />
-      {collapsed ? null : loaded && rows.length === 0 ? (
+      {collapsed ? null : hasError ? (
+        <ErrorState
+          className="gap-2 py-2"
+          icon={<Codicon className="text-(--ui-text-quaternary)" name="error" size="1rem" />}
+          title={<span className="text-xs text-(--ui-text-tertiary)">{t.sidebar?.projectLoadFailed ?? 'Could not load sessions'}</span>}
+        >
+          <Button
+            className="mx-auto mt-0.5 text-(--ui-text-secondary)"
+            onClick={load}
+            size="sm"
+            variant="ghost"
+          >
+            <Codicon name="refresh" size="0.75rem" />
+            {t.common?.retry ?? 'Retry'}
+          </Button>
+        </ErrorState>
+      ) : loaded && rows.length === 0 ? (
         <div className="pb-1 text-xs text-(--ui-text-quaternary)">{b.deck.empty}</div>
       ) : (
         <div className="grid gap-0.5">

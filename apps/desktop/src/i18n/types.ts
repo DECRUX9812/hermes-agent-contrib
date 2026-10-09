@@ -440,6 +440,7 @@ export interface Translations extends NoticeTranslations {
   }
   common: {
     apply: string
+    approve: string
     back: string
     save: string
     saving: string
@@ -458,6 +459,7 @@ export interface Translations extends NoticeTranslations {
     copy: string
     copyFailed: string
     delete: string
+    deny: string
     docs: string
     done: string
     error: string

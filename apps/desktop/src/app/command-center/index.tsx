@@ -21,6 +21,7 @@ import {
   AlertCircle,
   AlertTriangle,
   BarChart3,
+  Bell,
   Bookmark,
   BookmarkFilled,
   CheckCircle2,
@@ -372,11 +373,13 @@ export function CommandCenterView({
         icon:
           value === 'sessions'
             ? MessageCircle
-            : value === 'system'
-              ? Activity
-              : value === 'maintenance'
-                ? Wrench
-                : BarChart3,
+            : value === 'notices'
+              ? Bell
+              : value === 'system'
+                ? Activity
+                : value === 'maintenance'
+                  ? Wrench
+                  : BarChart3,
         id: value,
         label: cc.sections[value],
         onSelect: () => setSection(value)

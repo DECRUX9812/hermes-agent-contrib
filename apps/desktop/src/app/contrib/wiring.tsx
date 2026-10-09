@@ -24,6 +24,7 @@ import { GatewayConnectingOverlay } from '@/components/gateway-connecting-overla
 import { NotificationStack } from '@/components/notifications'
 import { DesktopOnboardingOverlay } from '@/components/onboarding'
 import { OnboardingChatGate } from '@/components/onboarding-chat/gate'
+import { PageLoader } from '@/components/page-loader'
 import { $newSessionTabAction, type NewSessionTabOptions, registerPaneCloser } from '@/components/pane-shell/tree/store'
 import {
   $workspaceMode,
@@ -192,6 +193,7 @@ import { POOL_LIMITS_SETTINGS_ROUTE } from './wiring-routing'
 // ChatRoutesSurface's and live in ./surfaces.
 const AgentsView = lazy(async () => ({ default: (await import('../agents')).AgentsView }))
 const AttentionInboxView = lazy(async () => ({ default: (await import('../attention-inbox')).AttentionInboxView }))
+const MissionControlView = lazy(async () => ({ default: (await import('../mission-control')).MissionControlView }))
 const CommandCenterView = lazy(async () => ({ default: (await import('../command-center')).CommandCenterView }))
 const CronView = lazy(async () => ({ default: (await import('../cron')).CronView }))
 const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).WebhooksView }))
@@ -302,6 +304,15 @@ function useRecoveryRequestToasts(): void {
   }, [cronReviewRequest, navigate])
 }
 
+function OverlayFallback() {
+  return (
+    <PageLoader
+      aria-label={translateNow('common.loading')}
+      className="fixed inset-0 z-50 bg-black/22 backdrop-blur-[0.125rem]"
+    />
+  )
+}
+
 export function ContribWiring({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const location = useLocation()
@@ -367,6 +378,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     cronOpen,
     currentView,
     inboxOpen,
+    missionOpen,
     openAgents,
     openCommandCenterSection,
     openStarmap,
@@ -1416,7 +1428,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       <FindBar />
 
       {settingsOpen && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<OverlayFallback />}>
           <SettingsView
             gateway={gateway}
             onClose={closeOverlayToPreviousRoute}
@@ -1447,7 +1459,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       )}
 
       {commandCenterOpen && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<OverlayFallback />}>
           <CommandCenterView
             initialSection={commandCenterInitialSection}
             onClose={closeOverlayToPreviousRoute}
@@ -1460,8 +1472,20 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       )}
 
       {inboxOpen && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<OverlayFallback />}>
           <AttentionInboxView
+            onClose={closeOverlayToPreviousRoute}
+            onOpenSession={sessionId => openSession(sessionId, navigate)}
+          />
+        </Suspense>
+      )}
+
+      {/* Mission Control: every mid-turn session as a watchable card with a
+          Stop, plus one-tap side-by-side tiling. Same close/return contract
+          as the inbox — it's a short task over the chat, not a destination. */}
+      {missionOpen && (
+        <Suspense fallback={<OverlayFallback />}>
+          <MissionControlView
             onClose={closeOverlayToPreviousRoute}
             onOpenSession={sessionId => openSession(sessionId, navigate)}
           />
@@ -1474,7 +1498,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       />
 
       {cronOpen && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<OverlayFallback />}>
           <CronView onClose={closeOverlayToPreviousRoute} onOpenSession={openStoredSession} />
         </Suspense>
       )}
@@ -1490,7 +1514,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       />
 
       {rosterOpen && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<OverlayFallback />}>
           <RosterView onClose={closeOverlayToPreviousRoute} onFanOut={fanOutPrompt} />
         </Suspense>
       )}

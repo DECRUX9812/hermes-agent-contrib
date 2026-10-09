@@ -45,6 +45,8 @@ export function ProfilesView({ onClose }: ProfilesViewProps) {
   const { t } = useI18n()
   const p = t.profiles
   const [profiles, setProfiles] = useState<null | ProfileInfo[]>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
   const [selectedName, setSelectedName] = useState<null | string>(null)
   const [query, setQuery] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
@@ -52,9 +54,11 @@ export function ProfilesView({ onClose }: ProfilesViewProps) {
   const [pendingDelete, setPendingDelete] = useState<null | ProfileInfo>(null)
 
   const refresh = useCallback(async () => {
+    setRefreshing(true)
     try {
       const list = await refreshProfiles()
       setProfiles(list)
+      setLoadError(null)
       setSelectedName(current => {
         if (current && list.some(p => p.name === current)) {
           return current
@@ -63,7 +67,10 @@ export function ProfilesView({ onClose }: ProfilesViewProps) {
         return list.find(p => p.is_default)?.name ?? list[0]?.name ?? null
       })
     } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err))
       notifyError(err, p.failedLoad)
+    } finally {
+      setRefreshing(false)
     }
   }, [p])
 
@@ -107,7 +114,20 @@ export function ProfilesView({ onClose }: ProfilesViewProps) {
   return (
     <Panel closeLabel={p.close} onClose={onClose}>
       {!profiles ? (
-        <PageLoader label={p.loading} />
+        loadError ? (
+          <PanelEmpty
+            action={
+              <Button disabled={refreshing} onClick={() => void refresh()} size="sm">
+                {t.common.retry}
+              </Button>
+            }
+            description={loadError}
+            icon="error"
+            title={p.failedLoad}
+          />
+        ) : (
+          <PageLoader label={p.loading} />
+        )
       ) : profiles.length === 0 ? (
         <PanelEmpty
           action={

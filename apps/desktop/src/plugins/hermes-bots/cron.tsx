@@ -11,6 +11,7 @@ import {
   Checkbox,
   cn,
   Codicon,
+  confirm,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -747,7 +748,15 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
             aria-label={t.common.delete}
             className="opacity-0 transition-opacity group-hover:opacity-100"
             disabled={busy}
-            onClick={() => act('remove')}
+            onClick={() => {
+              void confirm({
+                confirmLabel: t.common.delete,
+                description: `${c.deleteDescPrefix}${routineTitle(job, b.cron)}${c.deleteDescSuffix}`,
+                destructive: true,
+                onConfirm: () => act('remove'),
+                title: c.deleteTitle
+              })
+            }}
             size="icon-xs"
             variant="ghost"
           >

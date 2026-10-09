@@ -139,6 +139,26 @@ describe('MessagingView profile scope', () => {
     await waitFor(() => expect(getMessagingPlatforms).toHaveBeenCalledWith('default'))
     expect(getPairing).toHaveBeenCalledWith('default')
   })
+
+  it('renders an ErrorState with a retry button on load failure and recovers on retry', async () => {
+    getMessagingPlatforms.mockRejectedValueOnce(new Error('Gateway down'))
+
+    await renderMessaging()
+
+    expect(await screen.findByText('Messaging platforms failed to load')).toBeTruthy()
+    expect(screen.getByText('Gateway down')).toBeTruthy()
+
+    const retryBtn = screen.getByRole('button', { name: 'Retry' })
+    expect(retryBtn).toBeTruthy()
+
+    getMessagingPlatforms.mockResolvedValueOnce({ platforms: [platform({ id: 'teams', name: 'Microsoft Teams' })] })
+
+    await act(async () => {
+      fireEvent.click(retryBtn)
+    })
+
+    expect((await screen.findAllByText('Microsoft Teams')).length).toBeGreaterThan(0)
+  })
 })
 
 describe('MessagingView status filter', () => {

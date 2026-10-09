@@ -1,8 +1,16 @@
 import { useStore } from '@nanostores/react'
+import { useEffect } from 'react'
 
-import { backdropLayer } from '@/lib/backdrop-scenes'
+import { backdropLayer, sceneForHour } from '@/lib/backdrop-scenes'
 import { cn } from '@/lib/utils'
-import { $backdropImage, $backdropScene, $backdropStrength } from '@/store/backdrop'
+import {
+  $backdropAutoTick,
+  $backdropImage,
+  $backdropScene,
+  $backdropStrength,
+  clearBackdropAutoTimer,
+  startBackdropAutoTimer
+} from '@/store/backdrop'
 import { useTheme } from '@/themes/context'
 
 /** Shipped backdrop art (public/ds-assets), resolved against the app's base URL. */
@@ -12,9 +20,24 @@ export function Backdrop() {
   const scene = useStore($backdropScene)
   const strength = useStore($backdropStrength)
   const image = useStore($backdropImage)
+  // Re-evaluates when auto tick atom changes
+  const autoTick = useStore($backdropAutoTick)
+
+  useEffect(() => {
+    if (scene !== 'auto') {
+      clearBackdropAutoTimer()
+
+      return
+    }
+
+    return startBackdropAutoTimer()
+  }, [scene])
+
   // Surface-bound: the pigment a scene needs depends on the painted surface, not the toggle.
   const { renderedMode } = useTheme()
-  const layer = backdropLayer(scene, strength, renderedMode, image, backdropAsset)
+  const resolvedScene = scene === 'auto' ? sceneForHour(new Date().getHours()) : scene
+  void autoTick
+  const layer = backdropLayer(resolvedScene, strength, renderedMode, image, backdropAsset)
 
   if (!layer) {
     return null
@@ -43,7 +66,7 @@ export function Backdrop() {
     <div
       aria-hidden
       className="pointer-events-none absolute inset-0 z-2 overflow-hidden"
-      data-backdrop-scene={scene}
+      data-backdrop-scene={resolvedScene}
       style={{ mixBlendMode: layer.blend }}
     >
       <div

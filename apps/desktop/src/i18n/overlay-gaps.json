@@ -348,6 +348,8 @@
   "commandCenter.sections.maintenance": ["ar","ja","zh-hant"],
   "commandCenter.toggleBrowser": ["ja","zh-hant"],
   "commandCenter.topSessions": ["ar","ja","zh-hant"],
+  "common.approve": ["ar","ja","ru","zh","zh-hant"],
+  "common.deny": ["ar","ja","ru","zh","zh-hant"],
   "common.expand": ["ar"],
   "common.formatJson": ["ar"],
   "common.tryHint": ["ar"],
