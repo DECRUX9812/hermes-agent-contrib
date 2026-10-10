@@ -50,11 +50,15 @@ vi.mock('@hermes/plugin-sdk', async () => {
     ToggleRow: () => null,
     Tip: ({ children }: { children: ReactNode }) => children,
     relativeTime: () => 'now',
-    useI18n: () => ({ t: { common: { cancel: 'Cancel', save: 'Save' } } }),
+    useI18n: () => ({ t: { common: { back: 'Back', cancel: 'Cancel', save: 'Save' } } }),
     usePluginI18n: () => translateBots
   }
 })
-vi.mock('./avatar', () => ({ avatarColor: () => '#888', botAppearance: () => ({}), BotFace: () => null }))
+vi.mock('./avatar', () => ({
+  avatarColor: (_color: unknown, name: string) => (name === 'reviewer' ? '#f00' : '#0f0'),
+  botAppearance: () => ({}),
+  BotFace: () => null
+}))
 vi.mock('./group-chat-parts', () => ({
   GroupClarifyCard: () => null,
   GroupImageControls: () => null,
@@ -121,6 +125,31 @@ it('groups consecutive same-speaker entries under one header, breaking on thread
   expect(screen.getAllByRole('button', { name: /^Reply to / })).toHaveLength(4)
 })
 
+it('marks each bot run start with a colored speaker dot, not on continuation lines', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'go', at: 1 },
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'first', at: 2 },
+    // Same speaker continues the run — no second dot.
+    { id: 'm2', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'second', at: 3 },
+    // A different voice back to back gets its own dot in its own color.
+    { id: 'm3', thread: 'a', from: { kind: 'member' as const, name: 'reviewer' }, text: 'other voice', at: 4 }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
+
+  const dots = screen.getAllByTestId('group-speaker-dot')
+  expect(dots).toHaveLength(2)
+  // The hue rides the ROW as --speaker-color; dot and name read it from CSS,
+  // so a theme layer can recolor a voice without touching this markup.
+  const rowColors = dots.map(dot => (dot.closest('[style]') as HTMLElement).style.getPropertyValue('--speaker-color'))
+  expect(rowColors).toEqual(['#0f0', '#f00'])
+})
+
 it('removes Stop controls from historical working rows after the room settles', async () => {
   Element.prototype.scrollIntoView = vi.fn()
 
@@ -151,4 +180,21 @@ it('removes Stop controls from historical working rows after the room settles', 
   expect(screen.getByText('builder replied')).toBeTruthy()
   expect(screen.getByText('turn settled')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+})
+
+it('keeps the room header to navigation and settings — no one-click delete beside the title', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  $groupChats.set({ Room: { log: [], watermarks: {}, sessions: {} } })
+  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  // Icon-only controls still answer to their names (screen readers, tests).
+  expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'New Thread' })).toBeTruthy()
+  // Destructive disband moved into Group settings (mocked to null here).
+  expect(screen.queryByRole('button', { name: /disband|delete/i })).toBeNull()
+  // One members entry point (the face pile), not two.
+  expect(screen.getAllByRole('button', { name: 'Manage group members' })).toHaveLength(1)
 })

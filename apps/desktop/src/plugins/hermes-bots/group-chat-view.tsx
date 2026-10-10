@@ -35,7 +35,7 @@ import {
   useQuery,
   useValue
 } from '@hermes/plugin-sdk'
-import type { ClipboardEvent, DragEvent, ReactNode } from 'react'
+import type { ClipboardEvent, CSSProperties, DragEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
@@ -111,8 +111,6 @@ import { clearGroupClarify, renameGroupClarify } from './group-turns'
 import { markGroupRead } from './group-unread'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
-import { roomMailboxNotes, useMailbox } from './mailbox'
-import { MailboxNoteCard } from './mailbox-parts'
 import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
 import { bumpBotOpenGeneration, getPluginCtx, ID } from './shared'
 import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage, RosterRow } from './types'
@@ -125,6 +123,18 @@ const Streamdown = typeof sdk === 'undefined' ? undefined : sdk.Streamdown
 // no scrollbar (#91878). Feature-detected: an older shell without the export
 // keeps the raw Streamdown path.
 const MessageTextContent = typeof sdk === 'undefined' ? undefined : sdk.MessageTextContent
+
+/** Shared bubble width cap for BOTH sides of the room. The user row mirrors
+ *  the bot row's avatar gutter (pl-2/pr-11 vs px-2 + 26px face + gap), so the
+ *  two content columns are the same width — one percentage here keeps the
+ *  left and right edges of long messages perfectly aligned (was 85% user vs
+ *  92% bot, which made every full-width message sit on a different edge). */
+const GROUP_BUBBLE_MAX_W = 'max-w-[85%]'
+
+/** Round arrow send — the 1:1 composer's PRIMARY_ICON_BTN look (core's
+ *  control-classes isn't plugin-reachable), so both composers read the same. */
+const GROUP_SEND_BTN =
+  'size-7 shrink-0 rounded-full p-0 bg-foreground text-background hover:bg-foreground/90 disabled:bg-foreground/30 disabled:text-background disabled:opacity-100'
 
 /** Soft-disband a group chat: remove only this group from every local member's
  *  membership list (the metadata syncs cross-machine via ui_meta), drop the
@@ -385,6 +395,7 @@ interface GroupChatSettingsDialogProps {
   group: string
   members?: GroupMember[]
   onClose: () => void
+  onDisband?: () => void
   onManageMembers?: () => void
   onRenamed?: (group: string) => void
   open: boolean
@@ -398,6 +409,7 @@ function GroupChatSettingsDialog({
   members,
   open,
   onClose,
+  onDisband,
   onManageMembers,
   onRenamed
 }: GroupChatSettingsDialogProps) {
@@ -614,6 +626,21 @@ function GroupChatSettingsDialog({
           </Button>
         ) : null}
         <DialogFooter>
+          {/* Destructive lives here, not one misclick away in the room header. */}
+          {onDisband ? (
+            <Button
+              aria-label={b.group.disbandLabel(group)}
+              className="mr-auto text-destructive hover:text-destructive"
+              onClick={() => {
+                onClose()
+                onDisband()
+              }}
+              variant="ghost"
+            >
+              <Codicon name="trash" />
+              {b.group.disbandAction}
+            </Button>
+          ) : null}
           <Button onClick={onClose} variant="secondary">
             {t.common.cancel}
           </Button>
@@ -640,6 +667,7 @@ interface GroupChatWorkspaceProps {
 }
 
 export function GroupChatWorkspace({ group, members, onBack, visible = true }: GroupChatWorkspaceProps) {
+  const { t } = useI18n()
   const b = useBots()
   const rooms: Record<string, GroupChatRoom> = useValue($groupChats)
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
@@ -822,10 +850,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     .filter(entry => entry?.group === group)
     .sort((a, b) => (a.at || 0) - (b.at || 0))
 
-  // Mailbox notes touching this room's members (#48) — task hand-offs the
-  // bots filed, or the user assigned, rendered under the log as status cards.
-  const mailboxNotes = roomMailboxNotes(useMailbox().data || [], members)
-
   // D2 — the completed round's contribution one-liners (empty while a round
   //  is running or no round has landed yet).
   const roundContributions = room.running ? [] : groupRoundContributions(room)
@@ -857,9 +881,17 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
   const header = (
     <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-2">
-      <Button onClick={() => (onBack ? onBack() : $groupChatWorkspace.set(null))} size="sm" variant="ghost">
-        Back
-      </Button>
+      <Tip label={t.common.back}>
+        <Button
+          aria-label={t.common.back}
+          className="shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
+          onClick={() => (onBack ? onBack() : $groupChatWorkspace.set(null))}
+          size="icon-xs"
+          variant="ghost"
+        >
+          <Codicon name="chevron-left" />
+        </Button>
+      </Tip>
       {/* Room picture (set via Group settings) leads the title when present. */}
       {room.image ? (
         <img
@@ -883,52 +915,48 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       {/* Face pile: the member count alone reads as a number; overlapping
           faces read as a ROOM. Click opens the member manager. */}
       {members.length ? (
-        <Button
-          aria-label="Manage group members"
-          className="flex shrink-0 items-center -space-x-1 rounded-full p-0.5"
-          onClick={() => setMemberPickerOpen(true)}
-          size="inline"
-          variant="text"
-        >
-          {members.slice(0, 5).map((member, faceIndex) => {
-            const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
-            const faceImage = faceAppearance.image
+        <Tip label={memberNames}>
+          <Button
+            aria-label="Manage group members"
+            className="flex shrink-0 items-center -space-x-1 rounded-full p-0.5"
+            onClick={() => setMemberPickerOpen(true)}
+            size="inline"
+            variant="text"
+          >
+            {members.slice(0, 5).map((member, faceIndex) => {
+              const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
+              const faceImage = faceAppearance.image
 
-            return (
-              <span
-                className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
-                key={`face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
-              >
-                <BotFace
-                  color={avatarColor(faceAppearance.color, member.name)}
-                  image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
-                  name={member.name}
-                  shape={faceAppearance.shape}
-                  size={18}
-                />
+              return (
+                <span
+                  className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                  key={`face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
+                >
+                  <BotFace
+                    color={avatarColor(faceAppearance.color, member.name)}
+                    image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                    name={member.name}
+                    shape={faceAppearance.shape}
+                    size={18}
+                  />
+                </span>
+              )
+            })}
+            {members.length > 5 ? (
+              <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-(--chrome-action-hover) text-[0.55rem] font-medium text-(--ui-text-tertiary) ring-1 ring-(--ui-bg-primary)">
+                {`+${members.length - 5}`}
               </span>
-            )
-          })}
-          {members.length > 5 ? (
-            <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-(--chrome-action-hover) text-[0.55rem] font-medium text-(--ui-text-tertiary) ring-1 ring-(--ui-bg-primary)">
-              {`+${members.length - 5}`}
-            </span>
-          ) : null}
-        </Button>
+            ) : null}
+          </Button>
+        </Tip>
       ) : null}
-      <Tip label={memberNames}>
-        <span
-          aria-label={availabilityLabel}
-          className={cn(
-            'shrink-0 text-[0.65rem] text-(--ui-text-quaternary)',
-            members.length > 0 && availableMembers < members.length && 'text-amber-600 dark:text-amber-300'
-          )}
-        >
-          {members.length > 0 && availableMembers < members.length
-            ? availabilityLabel
-            : b.group.memberCount(members.length)}
+      {/* The face pile already says how many; the label only speaks up when
+          a member can't answer right now. */}
+      {members.length > 0 && availableMembers < members.length ? (
+        <span aria-label={availabilityLabel} className="shrink-0 text-[0.65rem] text-amber-600 dark:text-amber-300">
+          {availabilityLabel}
         </span>
-      </Tip>
+      ) : null}
       <Tip label={b.group.settingsHint(group)}>
         <Button
           aria-label={b.group.settingsLabel(group)}
@@ -938,28 +966,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           variant="ghost"
         >
           <Codicon name="gear" />
-        </Button>
-      </Tip>
-      <Tip label="Manage members">
-        <Button
-          aria-label="Manage group members"
-          className="shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
-          onClick={() => setMemberPickerOpen(true)}
-          size="sm"
-          variant="ghost"
-        >
-          <Codicon name="organization" />
-        </Button>
-      </Tip>
-      <Tip label={b.group.disbandHint(group)}>
-        <Button
-          aria-label={b.group.disbandLabel(group)}
-          className="shrink-0 text-(--ui-text-tertiary) hover:text-destructive"
-          onClick={() => setConfirmDisband(true)}
-          size="sm"
-          variant="ghost"
-        >
-          <Codicon name="trash" />
         </Button>
       </Tip>
     </div>
@@ -1347,10 +1353,13 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
     // Your own lines are right-aligned bubbles reusing the 1:1 thread's
     // user-bubble tokens so the room reads like the same chat surface.
+    // pr-11 mirrors the bot side's avatar gutter (px-2 + w-6.5 + gap-2.5 =
+    // 44px), so user and bot bubbles share one content column and their
+    // edges line up instead of drifting by the gutter width.
     if (isUser) {
       return (
         <div
-          className={cn('group flex flex-col items-end gap-0.5 px-2', runStart && index > 0 && 'pt-1.5')}
+          className={cn('group flex flex-col items-end gap-0.5 pl-2 pr-11', runStart && index > 0 && 'pt-1.5')}
           key={entryKey}
         >
           <div className="flex items-baseline gap-1.5 px-1 text-[0.625rem] text-(--ui-text-quaternary)">
@@ -1362,7 +1371,12 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             {runStart ? <span className="font-semibold text-(--ui-text-tertiary)">{label}</span> : null}
             <span>{relativeTime(entry.at)}</span>
           </div>
-          <div className="max-w-[85%] rounded-xl border border-(--dt-user-bubble-border) bg-(--dt-user-bubble) px-3 py-1.5">
+          <div
+            className={cn(
+              'rounded-xl border border-(--dt-user-bubble-border) bg-(--dt-user-bubble) px-3 py-1.5',
+              GROUP_BUBBLE_MAX_W
+            )}
+          >
             {body}
             {attachments}
           </div>
@@ -1401,7 +1415,12 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     return (
       <div
         className={cn('group relative flex items-start gap-2.5 px-2', runStart && index > 0 && 'pt-1.5')}
+        // The speaker's resolved hue rides the row as a custom property, not an
+        // inline color on each painted element: consumers (this file's dot and
+        // name, and any theme/plugin layer) recolor the whole voice by
+        // overriding --speaker-color in CSS without touching markup.
         key={entryKey}
+        style={{ '--speaker-color': speakerColor || undefined } as CSSProperties}
       >
         <div className="w-6.5 shrink-0 self-start">
           {runStart ? (
@@ -1424,13 +1443,21 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         </div>
         <div className="min-w-0 flex-1">
           {runStart ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              {/* Speaker dot: the run header's at-a-glance identity — two bots
+                  replying back to back are tellable by dot color before the
+                  name is read. Both dot and name read --speaker-color off the
+                  row, so a theme layer recolors a voice with one CSS override. */}
+              <span
+                aria-hidden
+                className="size-1.5 shrink-0 rounded-full bg-(--speaker-color)"
+                data-testid="group-speaker-dot"
+              />
               <Tip label={revealed ? 'Hide full handle' : 'Show full handle'}>
                 <Button
-                  className="text-left text-[0.7rem] font-semibold"
+                  className="text-left text-[0.7rem] font-semibold text-(--speaker-color)"
                   onClick={() => setRevealedSpeaker(revealed ? null : entryKey)}
                   size="inline"
-                  style={{ color: speakerColor || undefined }}
                   variant="text"
                 >
                   {label}
@@ -1442,7 +1469,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           ) : (
             actions
           )}
-          <div className="max-w-[92%] rounded-2xl rounded-tl-md bg-(--ui-bg-secondary) px-3 py-1.5">
+          <div className={cn('rounded-2xl rounded-tl-md bg-(--ui-bg-secondary) px-3 py-1.5', GROUP_BUBBLE_MAX_W)}>
             {body}
             {attachments}
           </div>
@@ -1495,9 +1522,16 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               value={replyDrafts[id] || ''}
             />
             {attachButton(id)}
-            <Button disabled={!(replyDrafts[id] || '').trim() && !imagesFor(id).length} size="sm" type="submit">
-              {b.group.reply}
-            </Button>
+            <Tip label={b.group.reply}>
+              <Button
+                aria-label={b.group.reply}
+                className={GROUP_SEND_BTN}
+                disabled={!(replyDrafts[id] || '').trim() && !imagesFor(id).length}
+                type="submit"
+              >
+                <Codicon name="arrow-up" size="0.875rem" />
+              </Button>
+            </Tip>
           </div>
         </form>
       ) : (
@@ -1610,13 +1644,8 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               <GroupClarifyCard entry={entry} members={members} />
             </div>
           ))}
-          {mailboxNotes.map(note => (
-            <div className="pt-1" key={`mailbox:${note.connectionId || ''}:${note.id}`}>
-              <MailboxNoteCard members={members} note={note} />
-            </div>
-          ))}
-          {/* D2 — after a round settles, one card per member's first line */
-          /* (pure derivation over the log; no LLM call). */}
+          {/* D2 — after a round settles, one card per member's first line
+              (pure derivation over the log; no LLM call). */}
           {!room.running && roundContributions.length ? (
             <div
               className="mt-1.5 rounded-r-md border-y border-r border-l-2 border-(--ui-stroke-secondary) border-l-(--ui-accent) bg-(--chrome-action-hover)/40 px-3 py-2"
@@ -1720,9 +1749,16 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               value={draft}
             />
             {attachButton(null)}
-            <Button disabled={!draft.trim() && !imagesFor(null).length} size="sm" type="submit">
-              {b.group.newThread}
-            </Button>
+            <Tip label={b.group.newThread}>
+              <Button
+                aria-label={b.group.newThread}
+                className={GROUP_SEND_BTN}
+                disabled={!draft.trim() && !imagesFor(null).length}
+                type="submit"
+              >
+                <Codicon name="arrow-up" size="0.875rem" />
+              </Button>
+            </Tip>
           </div>
         </form>
       </div>
@@ -1730,6 +1766,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         group={group}
         members={members}
         onClose={() => setSettingsOpen(false)}
+        onDisband={() => setConfirmDisband(true)}
         onManageMembers={() => setMemberPickerOpen(true)}
         open={settingsOpen}
       />
