@@ -182,6 +182,35 @@ it('removes Stop controls from historical working rows after the room settles', 
   expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
 })
 
+it('separates calendar days in the room log with a hairline Today/Yesterday row', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const now = Date.now()
+  const DAY = 86_400_000
+  const log = [
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'from yesterday', at: now - DAY - 3_600_000 },
+    { id: 'm2', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'still yesterday', at: now - DAY },
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'today now', at: now }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  const { container, getAllByTestId } = render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  // Two day changes → two separators; the same-day pair shares one.
+  const separators = getAllByTestId('group-day-separator')
+  expect(separators).toHaveLength(2)
+  expect(separators[0].textContent).toBe('Yesterday')
+  expect(separators[1].textContent).toBe('Today')
+
+  // The separators sit BEFORE the entries of their day, in order.
+  const text = container.textContent || ''
+  expect(text.indexOf('Yesterday')).toBeLessThan(text.indexOf('from yesterday'))
+  expect(text.indexOf('still yesterday')).toBeLessThan(text.indexOf('Today'))
+  expect(text.indexOf('Today')).toBeLessThan(text.indexOf('today now'))
+})
+
 it('keeps the room header to navigation and settings — no one-click delete beside the title', async () => {
   Element.prototype.scrollIntoView = vi.fn()
   const { $groupChats } = await import('./group-chat')

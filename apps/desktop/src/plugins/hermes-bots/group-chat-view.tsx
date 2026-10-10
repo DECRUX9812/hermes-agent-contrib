@@ -77,6 +77,7 @@ import {
   updateGroupChat
 } from './group-chat'
 import type { GroupChatRoom } from './group-chat'
+import { roomDayBucket, roomDayLabel } from './group-day-separators'
 import { GroupClarifyCard, GroupImageControls, GroupMentionInput } from './group-chat-parts'
 import type { GroupRoomPrompt } from './group-chat-parts'
 import { GroupMemberPicker } from './group-chat-view-members'
@@ -1541,7 +1542,30 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const threadEnds = new Map<string, number>()
   room.log.forEach((entry, index) => threadEnds.set(groupThreadOf(entry), index))
   const logChildren: ReactNode[] = []
+  // Day separators: the room is one arrival-ordered river, so a reply from
+  // yesterday sat flush against one from a minute ago. A hairline row marks
+  // each local-day change; the first entry always leads with one.
+  let previousDay = -1
   room.log.forEach((entry, index) => {
+    const day = roomDayBucket(Number(entry.at) || 0)
+
+    if (day !== previousDay) {
+      previousDay = day
+      logChildren.push(
+        <div
+          className="flex items-center gap-2 px-2 pt-2"
+          data-testid="group-day-separator"
+          key={`day:${day}:${index}`}
+        >
+          <span aria-hidden className="h-px flex-1 bg-(--ui-stroke-secondary)" />
+          <span className="shrink-0 text-[0.625rem] font-medium text-(--ui-text-quaternary)">
+            {roomDayLabel(day, { today: b.group.dayToday, yesterday: b.group.dayYesterday })}
+          </span>
+          <span aria-hidden className="h-px flex-1 bg-(--ui-stroke-secondary)" />
+        </div>
+      )
+    }
+
     logChildren.push(renderEntry(entry, index))
     const id = groupThreadOf(entry)
 

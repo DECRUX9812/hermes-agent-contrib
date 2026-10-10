@@ -462,6 +462,9 @@ type BotsMessages = {
     goalPlaceholder: string
     /** D2 — the card that lands after a completed round. */
     roundSummaryTitle: string
+    /** Room-log day separators. */
+    dayToday: string
+    dayYesterday: string
   }
   /** Skills hub + MCP setup surfaces embedded in the bot editor. */
   tools: {
@@ -1218,7 +1221,9 @@ const en: BotsMessages = {
     goal: 'Goal',
     goalHint: 'What this room is trying to accomplish — shown under the title.',
     goalPlaceholder: 'e.g. Compare retrieval strategies for the docs search',
-    roundSummaryTitle: 'Round summary'
+    roundSummaryTitle: 'Round summary',
+    dayToday: 'Today',
+    dayYesterday: 'Yesterday'
   },
   tools: {
     installHint: name => `Install "${name}" and add it to the list above`,
@@ -1963,7 +1968,9 @@ const ja: BotsMessages = {
     goal: '目標',
     goalHint: 'このルームが達成したいこと — タイトルの下に表示されます。',
     goalPlaceholder: '例：ドキュメント検索の検索戦略を比較する',
-    roundSummaryTitle: 'ラウンドの要約'
+    roundSummaryTitle: 'ラウンドの要約',
+    dayToday: '今日',
+    dayYesterday: '昨日'
   },
   tools: {
     installHint: name => `「${name}」をインストールして上の一覧に追加`,
@@ -2697,7 +2704,9 @@ const zh: BotsMessages = {
     goal: '目标',
     goalHint: '此房间要达成的目标 — 显示在标题下方。',
     goalPlaceholder: '例如：比较文档搜索的检索策略',
-    roundSummaryTitle: '轮次总结'
+    roundSummaryTitle: '轮次总结',
+    dayToday: '今天',
+    dayYesterday: '昨天'
   },
   tools: {
     installHint: name => `安装“${name}”并添加到上方列表`,
@@ -3427,7 +3436,9 @@ const zhHant: BotsMessages = {
     goal: '目標',
     goalHint: '此房間要達成的目標 — 顯示在標題下方。',
     goalPlaceholder: '例如：比較文件搜尋的檢索策略',
-    roundSummaryTitle: '回合總結'
+    roundSummaryTitle: '回合總結',
+    dayToday: '今天',
+    dayYesterday: '昨天'
   },
   tools: {
     installHint: name => `安裝「${name}」並新增至上方清單`,
