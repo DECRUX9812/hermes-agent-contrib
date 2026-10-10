@@ -3413,7 +3413,10 @@ export const zhOverrides = {
     running: '正在运行',
     finished: '你离开时已完成',
     scheduled: '今天的安排',
-    recent: '从上次继续'
+    recent: '从上次继续',
+    tasks: '最近的任务',
+    taskWorking: age => `已工作 ${age}`,
+    taskNew: '新回复'
   },
 
   live: {

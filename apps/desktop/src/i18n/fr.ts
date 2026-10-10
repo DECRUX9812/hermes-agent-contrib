@@ -3934,7 +3934,10 @@ export const frOverrides = {
     running: 'En cours',
     finished: 'Terminé pendant votre absence',
     scheduled: 'Prévu aujourd’hui',
-    recent: 'Reprendre là où vous vous étiez arrêté'
+    recent: 'Reprendre là où vous vous étiez arrêté',
+    tasks: 'Tâches récentes',
+    taskWorking: age => `En cours depuis ${age}`,
+    taskNew: 'Nouvelle réponse'
   },
 
   live: {

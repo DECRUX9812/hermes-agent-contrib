@@ -3927,7 +3927,10 @@ export const deOverrides = {
     running: 'Läuft gerade',
     finished: 'Fertig, während du weg warst',
     scheduled: 'Heute geplant',
-    recent: 'Weitermachen, wo du aufgehört hast'
+    recent: 'Weitermachen, wo du aufgehört hast',
+    tasks: 'Letzte Aufgaben',
+    taskWorking: age => `Läuft seit ${age}`,
+    taskNew: 'Neue Antwort'
   },
 
   live: {

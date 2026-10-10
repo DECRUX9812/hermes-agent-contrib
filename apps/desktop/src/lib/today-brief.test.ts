@@ -45,6 +45,17 @@ describe('deriveTodayBrief', () => {
     expect(brief.running.map(s => s.id)).not.toContain('gone')
   })
 
+  it('leads the task cards with what needs you, then running, then finished, topped up by recency', () => {
+    const brief = deriveTodayBrief({
+      cronJobs: [],
+      dotById: { old: 'needs-input', mid: 'working', new: 'idle' },
+      now: NOW,
+      sessions: [session('old', 1), session('mid', 2), session('new', 3), session('newest', 4)]
+    })
+
+    expect(brief.tasks.map(s => s.id)).toEqual(['old', 'mid', 'newest'])
+  })
+
   it('offers recent sessions only when nothing needs attention', () => {
     const quiet = deriveTodayBrief({
       cronJobs: [],

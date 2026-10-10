@@ -131,7 +131,10 @@ export const zhHantOverrides = {
     running: '正在執行',
     finished: '你離開時已完成',
     scheduled: '今天的安排',
-    recent: '從上次繼續'
+    recent: '從上次繼續',
+    tasks: '最近的任務',
+    taskWorking: age => `已工作 ${age}`,
+    taskNew: '新回覆'
   },
 
   live: {

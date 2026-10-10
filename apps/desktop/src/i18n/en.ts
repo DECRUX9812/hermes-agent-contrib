@@ -3576,7 +3576,10 @@ export const en: Translations = {
     running: 'Running now',
     finished: 'Finished while you were away',
     scheduled: 'Coming up today',
-    recent: 'Pick up where you left off'
+    recent: 'Pick up where you left off',
+    tasks: 'Recent tasks',
+    taskWorking: age => `Working for ${age}`,
+    taskNew: 'New reply'
   },
 
   live: {

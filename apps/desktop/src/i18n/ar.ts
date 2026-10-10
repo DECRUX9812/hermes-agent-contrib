@@ -63,7 +63,10 @@ export const arOverrides = {
     running: 'قيد التشغيل',
     finished: 'انتهى أثناء غيابك',
     scheduled: 'القادم اليوم',
-    recent: 'تابع من حيث توقفت'
+    recent: 'تابع من حيث توقفت',
+    tasks: 'المهام الأخيرة',
+    taskWorking: age => `يعمل منذ ${age}`,
+    taskNew: 'رد جديد'
   },
 
   live: {

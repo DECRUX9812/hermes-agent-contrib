@@ -3924,7 +3924,10 @@ export const esOverrides = {
     running: 'En curso',
     finished: 'Terminado mientras no estabas',
     scheduled: 'Próximo hoy',
-    recent: 'Continuar donde lo dejaste'
+    recent: 'Continuar donde lo dejaste',
+    tasks: 'Tareas recientes',
+    taskWorking: age => `Trabajando desde hace ${age}`,
+    taskNew: 'Respuesta nueva'
   },
 
   live: {

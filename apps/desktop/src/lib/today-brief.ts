@@ -22,6 +22,10 @@ export interface TodayBrief {
   scheduled: CronJob[]
   /** Pick up where you left off — only when nothing above has anything. */
   recent: SessionInfo[]
+  /** The home screen's task cards: what needs you, then what is running, then
+   *  what just finished, topped up with the most recent chats — always the
+   *  latest few, so the row reads the same on a busy day and a quiet one. */
+  tasks: SessionInfo[]
   /** Full counts per card: the lists above are capped, the badge is not. */
   totals: Record<BriefCardId, number>
 }
@@ -72,7 +76,10 @@ export function deriveTodayBrief({
   const busy = needsYou.length + running.length + finished.length + scheduled.length > 0
   const recent = busy ? [] : [...live].sort(byRecency)
 
+  const tasks = [...new Set([...needsYou, ...running, ...finished, ...[...live].sort(byRecency)])]
+
   return {
+    tasks: tasks.slice(0, BRIEF_ROW_LIMIT),
     needsYou: needsYou.slice(0, BRIEF_ROW_LIMIT),
     running: running.slice(0, BRIEF_ROW_LIMIT),
     finished: finished.slice(0, BRIEF_ROW_LIMIT),

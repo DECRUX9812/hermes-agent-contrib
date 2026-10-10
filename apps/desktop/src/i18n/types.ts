@@ -3137,6 +3137,9 @@ export interface Translations extends NoticeTranslations {
     finished: string
     scheduled: string
     recent: string
+    tasks: string
+    taskWorking: (age: string) => string
+    taskNew: string
   }
 
   live: {
