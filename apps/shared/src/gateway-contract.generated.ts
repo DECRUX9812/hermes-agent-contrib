@@ -3885,6 +3885,14 @@ export interface SessionAskResult {
   messages_considered: number
   truncated: boolean
 }
+/** ``session_id`` takes a stored id/prefix OR a live runtime id. */
+export interface SessionPredictNextParams {
+  profile?: string | null
+  session_id: string
+}
+export interface SessionPredictNextResult {
+  text: string
+}
 export interface SessionUsageParams {
   session_id: string
   profile?: string | null
@@ -5959,6 +5967,8 @@ export interface RpcMethods {
   'session.list': { params: SessionListParams; result: SessionListResult }
   /** Most recent human-facing session; errors fold into a null session_id. */
   'session.most_recent': { params: SessionMostRecentParams; result: SessionMostRecentResult }
+  /** One-shot utility-model draft of the user's likely next message for the composer's ghost text (opt-in via auxiliary.composer_prediction); read-only, never touches the live conversation's context. */
+  'session.predict_next': { params: SessionPredictNextParams; result: SessionPredictNextResult }
   /** Redirect the active turn (queued for the next turn while the agent is still building). */
   'session.redirect': { params: SessionCorrectionParams; result: SessionCorrectionResult }
   /** Attach to a stored session: reuse it if live here, else lazy / deferred / cold / eager rebuild. */
@@ -6311,6 +6321,7 @@ export const RPC_METHODS = [
   'session.interrupt',
   'session.list',
   'session.most_recent',
+  'session.predict_next',
   'session.redirect',
   'session.resume',
   'session.save',

@@ -538,6 +538,22 @@ method("session.ask", params=SessionAskParams, result=SessionAskResult,
            "read-only, never touches the live conversation's context.")
 
 
+class SessionPredictNextParams(ProfileParams):
+    """``session_id`` takes a stored id/prefix OR a live runtime id."""
+
+    session_id: str = Field(min_length=1)
+
+
+class SessionPredictNextResult(Result):
+    text: str
+
+
+method("session.predict_next", params=SessionPredictNextParams, result=SessionPredictNextResult,
+       doc="One-shot utility-model draft of the user's likely next message for the composer's "
+           "ghost text (opt-in via auxiliary.composer_prediction); read-only, never touches "
+           "the live conversation's context.")
+
+
 class SessionUsageParams(SessionParams):
     pass
 
