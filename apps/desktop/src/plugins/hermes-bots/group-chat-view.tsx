@@ -907,6 +907,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     .filter(member => workingNow.has(member.name))
     .map(member => displayName(member, botRosterMeta(member, allMeta)))
 
+  // Fallback for a roster that hasn't caught up to the live turn: the raw
+  // member keys still name who is on it, so the header never goes quiet
+  // while a bot is actually working.
+  const workingLabel = workingNames.length ? workingNames.join(', ') : [...workingNow].join(', ')
+
   const memberNames =
     (workingNames.length ? `${b.group.workingNow(workingNames.join(', '))} · ` : '') +
     (members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat')
@@ -958,23 +963,39 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             {members.slice(0, 5).map((member, faceIndex) => {
               const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
               const faceImage = faceAppearance.image
+              const working = workingNow.has(member.name)
 
               return (
                 <span
-                  className={cn(
-                    'shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)',
-                    workingNow.has(member.name) && 'relative z-10 ring-2 ring-(--ui-accent) motion-safe:animate-pulse'
-                  )}
-                  data-working={workingNow.has(member.name) ? '' : undefined}
+                  className={cn('relative shrink-0', working && 'z-10')}
+                  data-working={working ? '' : undefined}
                   key={`face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
                 >
-                  <BotFace
-                    color={avatarColor(faceAppearance.color, member.name)}
-                    image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
-                    name={member.name}
-                    shape={faceAppearance.shape}
-                    size={18}
-                  />
+                  {/* The face clips its own overflow, so the working ring can't
+                      live on it — an opacity fade on an 18px avatar read as
+                      nothing. The halo is a sibling square that scales out and
+                      fades (ping), over a steady accent ring underneath. */}
+                  <span
+                    className={cn(
+                      'block overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)',
+                      working && 'ring-2 ring-(--ui-accent)'
+                    )}
+                  >
+                    <BotFace
+                      color={avatarColor(faceAppearance.color, member.name)}
+                      image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                      name={member.name}
+                      shape={faceAppearance.shape}
+                      size={18}
+                    />
+                  </span>
+                  {working ? (
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 rounded-[22%] ring-2 ring-(--ui-accent) motion-safe:animate-ping"
+                      data-testid="group-working-halo"
+                    />
+                  ) : null}
                 </span>
               )
             })}
@@ -985,6 +1006,21 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             ) : null}
           </Button>
         </Tip>
+      ) : null}
+      {/* The ring lives on an 18px face in a corner — easy to miss, which is
+          exactly what happened. The same fact in words, next to the faces,
+          answers "are you guys even working?" without anyone hunting for it. */}
+      {workingLabel ? (
+        <span
+          className="flex min-w-0 max-w-[11rem] shrink items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-2 py-0.5 text-[0.65rem] text-(--ui-text-secondary)"
+          data-testid="group-working-chip"
+        >
+          <span aria-hidden className="relative flex size-1.5 shrink-0">
+            <span className="absolute inset-0 rounded-full bg-(--ui-accent) motion-safe:animate-ping" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-(--ui-accent)" />
+          </span>
+          <span className="truncate">{b.group.workingNow(workingLabel)}</span>
+        </span>
       ) : null}
       {/* The face pile already says how many; the label only speaks up when
           a member can't answer right now. */}

@@ -277,4 +277,8 @@ it('shows each voice’s role and lights the face of whoever is working right no
   expect(screen.getByTestId('group-speaker-role').textContent).toBe('Frontend engineer')
   // Only the bot mid-turn wears the working ring in the header's face pile.
   expect(container.querySelectorAll('[data-working]')).toHaveLength(1)
+  // ...and the ring is a growing halo, not an opacity fade nobody can see.
+  expect(container.querySelectorAll('[data-testid="group-working-halo"]')).toHaveLength(1)
+  // The same fact is spelled out next to the faces, so it needs no hunting.
+  expect(screen.getByTestId('group-working-chip').textContent).toContain('Frontend engineer')
 })
