@@ -68,6 +68,7 @@ export const arCommon = {
     set: 'ضبط',
     skip: 'تخطي',
     update: 'تحديث',
+    undo: 'تراجع',
     on: 'مفعل',
     off: 'معطل'
   },

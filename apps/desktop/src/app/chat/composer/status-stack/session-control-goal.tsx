@@ -441,7 +441,9 @@ export const SessionControlGoalSection = memo(function SessionControlGoalSection
                             }
                           >
                             <span className="sr-only">{index}.</span>
-                            <span className="break-words">{subgoal}</span>
+                            <span className="truncate" title={subgoal}>
+                              {subgoal}
+                            </span>
                           </StatusRow>
                         )
                       })}

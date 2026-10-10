@@ -157,6 +157,7 @@ export const jaOverrides = {
     skip: 'スキップ',
     update: '更新',
     tryHint: term => `「${term}」を試す`,
+    undo: '元に戻す',
     on: 'オン',
     off: 'オフ'
   },
@@ -3488,6 +3489,7 @@ export const jaOverrides = {
     queueCollapse: '折りたたむ',
     queueSendNext: '次に送信',
     queueSteer: 'ステア — 現在のターンを今すぐ修正',
+    queueRemoved: 'キューから削除しました',
     queueSend: '送信',
     queueDelete: '削除',
     queueResume: '再開',

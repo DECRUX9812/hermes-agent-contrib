@@ -27,7 +27,7 @@ import { TipBubble } from './tip-bubble'
 import { useTipRotation } from './use-tip-rotation'
 
 /** How long a tip stays before it steps aside for the rotation. */
-const LINGER_MS = 22_000
+const LINGER_MS = 8_000
 const ANCHOR_POLL_MS = 1_000
 
 export function TipHost() {

@@ -292,7 +292,6 @@ export function BotRow({
     >
       <div
         className={cn('relative shrink-0 rounded-lg', !sourceStatus.available && 'grayscale opacity-60')}
-        style={{ boxShadow: `0 0 0 1px ${accent}80` }}
       >
         <BotFace color={accent} image={photo ? image : null} mood={botMood} name={bot.name} shape={shape} size={34} />
         {/* Status rides the avatar's corner like a presence badge (working,
@@ -400,13 +399,16 @@ export function BotRow({
             {detailText ? (
               <span
                 className={cn(
-                  'min-w-0 truncate',
+                  'min-w-0 truncate flex items-center gap-1.5',
                   liveTone === 'amber' && 'text-amber-600 dark:text-amber-300',
                   liveTone === 'live' && 'text-(--ui-text-secondary)',
                   !liveText && fromBot && 'italic'
                 )}
               >
-                {detailText}
+                {liveTone === 'live' && (
+                  <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-primary animate-pulse" />
+                )}
+                <span className="truncate">{detailText}</span>
               </span>
             ) : null}
           </div>

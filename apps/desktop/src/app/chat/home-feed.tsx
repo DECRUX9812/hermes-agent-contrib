@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { triggerAndRefreshCronJobs } from '@/app/cron/cron-actions'
@@ -7,11 +7,13 @@ import { openSession } from '@/app/open-session'
 import { CRON_ROUTE } from '@/app/routes'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
+import { openExternalLink } from '@/lib/external-link'
 import { triggerHaptic } from '@/lib/haptics'
 import {
   AlertCircle,
   AlertTriangle,
   Clock,
+  GitFork,
   KeyRound,
   Lock,
   MessageQuestion,
@@ -19,6 +21,7 @@ import {
   Terminal,
   X
 } from '@/lib/icons'
+import { isEditableTarget, OVERLAY_SURFACE } from '@/lib/keybinds/combo'
 import { cn } from '@/lib/utils'
 import { requestAttentionReveal } from '@/store/attention-inbox'
 import { recordApprovalGranted } from '@/store/bot-rapport'
@@ -59,17 +62,30 @@ function HomeFeedIcon({ kind }: { kind: HomeFeedItemKind }) {
     case 'cronDue':
       return <Clock className="size-4 shrink-0 text-primary" />
 
+    case 'prReview':
+      return <GitFork className="size-4 shrink-0 text-emerald-400" />
+
     default:
       return <Clock className="size-4 shrink-0 text-(--ui-text-secondary)" />
   }
 }
 
+/** Number-key hint on a card's primary button; keys 1-9 only. */
+function ShortcutHint({ n }: { n?: number }) {
+  return n && n <= 9 ? (
+    <span aria-hidden="true" className="ml-1 font-mono text-[10px] opacity-60">
+      {n}
+    </span>
+  ) : null
+}
+
 interface HomeFeedCardProps {
   item: HomeFeedItem
   onDismiss: (id: string) => void
+  shortcutNumber?: number
 }
 
-export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
+export function HomeFeedCard({ item, onDismiss, shortcutNumber }: HomeFeedCardProps) {
   const navigate = useNavigate()
   const { t } = useI18n()
 
@@ -159,6 +175,18 @@ export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
     }
   }
 
+  const pr = item.kind === 'prReview' ? item.rawPullRequest : undefined
+  const inbox = t.attentionInbox
+  const title = pr ? inbox.pullRequest(pr.number, pr.title) : item.title
+
+  const caption = pr ? `${pr.branch} · ${pr.checks ? inbox.prChecks[pr.checks] : inbox.prChecks.none}` : item.caption
+
+  const handleOpenPr = () => {
+    if (item.prUrl) {
+      openExternalLink(item.prUrl)
+    }
+  }
+
   return (
     <div
       className="flex items-center gap-2.5 px-3 py-2 text-xs transition-colors hover:bg-(--chrome-action-hover)/40"
@@ -168,17 +196,23 @@ export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
       <HomeFeedIcon kind={item.kind} />
 
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium leading-snug text-foreground">{item.title}</div>
-        {item.caption && (
-          <div className="truncate text-[0.6875rem] leading-snug text-(--ui-text-secondary)">{item.caption}</div>
-        )}
+        <div className="truncate font-medium leading-snug text-foreground">{title}</div>
+        {caption && <div className="truncate text-[0.6875rem] leading-snug text-(--ui-text-secondary)">{caption}</div>}
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
         {request ? (
           <>
-            <Button disabled={busy !== null} onClick={handleApprove} size="xs" variant="default">
+            <Button
+              aria-label={t.common.approve}
+              data-feed-primary="true"
+              disabled={busy !== null}
+              onClick={handleApprove}
+              size="xs"
+              variant="default"
+            >
               {t.common.approve}
+              <ShortcutHint n={shortcutNumber} />
             </Button>
             <Button disabled={busy !== null} onClick={handleDeny} size="xs" variant="destructive">
               {t.common.deny}
@@ -191,17 +225,43 @@ export function HomeFeedCard({ item, onDismiss }: HomeFeedCardProps) {
           </>
         ) : item.kind === 'cronOverdue' || item.kind === 'cronDue' ? (
           <>
-            <Button disabled={busy !== null} onClick={handleRunNow} size="xs" variant="secondary">
+            <Button
+              aria-label={t.common.runNow}
+              data-feed-primary="true"
+              disabled={busy !== null}
+              onClick={handleRunNow}
+              size="xs"
+              variant="secondary"
+            >
               {t.common.runNow}
+              <ShortcutHint n={shortcutNumber} />
             </Button>
             <Button onClick={handleOpenCron} size="xs" variant="text">
               {t.common.open}
             </Button>
           </>
+        ) : item.kind === 'prReview' ? (
+          <Button
+            aria-label={t.common.open}
+            data-feed-primary="true"
+            onClick={handleOpenPr}
+            size="xs"
+            variant="secondary"
+          >
+            {t.common.open}
+            <ShortcutHint n={shortcutNumber} />
+          </Button>
         ) : (
           sessionId && (
-            <Button onClick={handleOpenSession} size="xs" variant="secondary">
+            <Button
+              aria-label={t.common.open}
+              data-feed-primary="true"
+              onClick={handleOpenSession}
+              size="xs"
+              variant="secondary"
+            >
               {t.common.open}
+              <ShortcutHint n={shortcutNumber} />
             </Button>
           )
         )}
@@ -224,6 +284,39 @@ export function HomeFeed({ items: propsItems, onDismiss: propsOnDismiss }: HomeF
   const items = propsItems ?? storeItems
   const onDismiss = propsOnDismiss ?? dismissHomeFeedItem
 
+  useEffect(() => {
+    if (items.length === 0) {
+      return
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || isEditableTarget(e.target)) {
+        return
+      }
+
+      if (typeof document !== 'undefined' && document.querySelector(OVERLAY_SURFACE)) {
+        return
+      }
+
+      const num = parseInt(e.key, 10)
+
+      if (num >= 1 && num <= Math.min(items.length, 9)) {
+        const targetItem = items[num - 1]
+        const cardEl = document.querySelector(`[data-feed-id="${targetItem.id}"]`)
+        const primaryBtn = cardEl?.querySelector<HTMLButtonElement>('button[data-feed-primary="true"]')
+
+        if (primaryBtn && !primaryBtn.disabled) {
+          e.preventDefault()
+          primaryBtn.click()
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [items])
+
   if (items.length === 0) {
     return null
   }
@@ -237,8 +330,8 @@ export function HomeFeed({ items: propsItems, onDismiss: propsOnDismiss }: HomeF
       )}
       data-slot="home-feed"
     >
-      {items.map(item => (
-        <HomeFeedCard item={item} key={item.id} onDismiss={onDismiss} />
+      {items.map((item, index) => (
+        <HomeFeedCard item={item} key={item.id} onDismiss={onDismiss} shortcutNumber={index + 1} />
       ))}
     </div>
   )

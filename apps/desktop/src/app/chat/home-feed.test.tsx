@@ -36,6 +36,11 @@ vi.mock('@/app/open-session', () => ({
   openSession: vi.fn()
 }))
 
+// Mock openExternalLink
+vi.mock('@/lib/external-link', () => ({
+  openExternalLink: vi.fn()
+}))
+
 // Mock attention reveal
 vi.mock('@/store/attention-inbox', async importOriginal => {
   const actual = await importOriginal<typeof AttentionInboxModule>()
@@ -260,5 +265,50 @@ describe('HomeFeed component', () => {
     fireEvent.click(runBtn)
 
     expect(triggerAndRefreshCronJobs).toHaveBeenCalledWith('cron-hourly', 'all')
+  })
+
+  it('prReview Open button calls openExternalLink', async () => {
+    const { openExternalLink } = await import('@/lib/external-link')
+
+    renderWithRouter(
+      <HomeFeedCard
+        item={{
+          caption: 'feat/feed · Checks passing',
+          id: 'pr:42',
+          kind: 'prReview',
+          prUrl: 'https://github.com/org/repo/pull/42',
+          title: 'PR #42: Calm feed'
+        }}
+        onDismiss={vi.fn()}
+      />
+    )
+
+    const openBtn = screen.getByRole('button', { name: 'Open' })
+    fireEvent.click(openBtn)
+
+    expect(openExternalLink).toHaveBeenCalledWith('https://github.com/org/repo/pull/42')
+  })
+
+  it('keyboard number 1..5 triggers the primary action of the corresponding card', async () => {
+    const { openExternalLink } = await import('@/lib/external-link')
+
+    renderWithRouter(
+      <HomeFeed
+        items={[
+          {
+            caption: 'feat/feed',
+            id: 'pr:101',
+            kind: 'prReview',
+            prUrl: 'https://github.com/org/repo/pull/101',
+            title: 'PR #101'
+          }
+        ]}
+      />
+    )
+
+    // Press '1'
+    fireEvent.keyDown(window, { key: '1' })
+
+    expect(openExternalLink).toHaveBeenCalledWith('https://github.com/org/repo/pull/101')
   })
 })

@@ -171,12 +171,15 @@ export function BotCard({
           {detailText ? (
             <div
               className={cn(
-                'min-w-0 line-clamp-2 text-xs leading-relaxed text-(--ui-text-tertiary)',
+                'min-w-0 line-clamp-2 text-xs leading-relaxed text-(--ui-text-tertiary) flex items-center gap-1.5',
                 liveTone === 'amber' && 'text-amber-600 dark:text-amber-300',
                 !liveText && fromBot && 'italic'
               )}
             >
-              {detailText}
+              {liveTone === 'live' && (
+                <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-primary animate-pulse" />
+              )}
+              <span className="truncate">{detailText}</span>
             </div>
           ) : null}
           <span className="flex items-center gap-1.5 text-xs font-medium text-(--ui-text-secondary)">

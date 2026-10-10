@@ -160,8 +160,12 @@ export function runningRoutineTitles(jobs: readonly CronJob[] | undefined, bot: 
     .filter(Boolean)
 }
 
-function liveTool(items: readonly { currentTool?: string; state: string }[] | undefined): string | undefined {
-  return items?.find(item => item.state === 'running' && item.currentTool)?.currentTool
+function liveTool(
+  items: readonly { currentTool?: string; state: string; title?: string }[] | undefined
+): string | undefined {
+  const active = items?.find(item => item.state === 'running' && (item.currentTool || item.title))
+
+  return active?.currentTool || active?.title
 }
 
 export function useBotLiveStatus(bot: RosterRow): BotLiveStatus {

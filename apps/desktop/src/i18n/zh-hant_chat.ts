@@ -163,6 +163,7 @@ export const zhHantChat = {
     queueCollapse: '收起',
     queueSendNext: '下一個',
     queueSteer: '引導 — 立即修正目前回合',
+    queueRemoved: '已從佇列移除',
     queueSend: '傳送',
     queueDelete: '刪除',
     queueResume: '繼續',

@@ -1,9 +1,11 @@
 import { atom, computed } from 'nanostores'
 
 import { jobState, jobTitle, nextRunOverdueMs } from '@/app/cron/job-state'
+import type { HermesBranchPullRequest } from '@/global'
 import { persistString, storedString } from '@/lib/storage'
 import { $attentionItems, type AttentionItem, type AttentionItemKind } from '@/store/attention-inbox'
 import { $cronJobs } from '@/store/cron'
+import { $pullRequestsByBranch } from '@/store/pull-requests'
 import { $sessions } from '@/store/session'
 import { storedSessionIdForRuntimeId } from '@/store/session-states'
 import type { CronJob, SessionInfo } from '@/types/hermes'
@@ -12,22 +14,26 @@ export type HomeFeedItemKind =
   | AttentionItemKind
   | 'cronOverdue'
   | 'cronDue'
+  | 'prReview'
 
 export interface HomeFeedItem {
-  /** Stable row id: item.id for attention items, `cron:${job.id}` for cron jobs. */
+  /** Stable row id: item.id for attention items, `cron:${job.id}` for cron jobs, `pr:${pr.number}` for PRs. */
   id: string
   kind: HomeFeedItemKind
-  /** Primary label — command, question, site, job title. */
+  /** Primary label — command, question, site, job title, PR title. */
   title: string
-  /** Secondary label — detail, session title, schedule expression. */
+  /** Secondary label — detail, session title, schedule expression, PR branch. */
   caption?: string
   /** Runtime session id if associated with a session. */
   sessionId?: string | null
   /** Cron job id if associated with a cron job. */
   cronJobId?: string
+  /** Pull request URL if associated with a PR. */
+  prUrl?: string
   /** Raw source item for debugging/inspection. */
   rawAttentionItem?: AttentionItem
   rawCronJob?: CronJob
+  rawPullRequest?: HermesBranchPullRequest
 }
 
 export interface HomeFeedSources {
@@ -36,6 +42,7 @@ export interface HomeFeedSources {
   dismissedIds?: readonly string[] | ReadonlySet<string>
   nowMs?: number
   sessions?: readonly SessionInfo[]
+  pullRequests?: readonly HermesBranchPullRequest[] | Record<string, HermesBranchPullRequest>
 }
 
 export const HOME_FEED_DISMISSED_KEY = 'hermes.desktop.home-feed.dismissed.v1'
@@ -77,8 +84,11 @@ export function priorityRank(kind: HomeFeedItemKind): number {
     case 'cronDue':
       return 5
 
-    default:
+    case 'prReview':
       return 6
+
+    default:
+      return 7
   }
 }
 
@@ -92,6 +102,7 @@ export function collectHomeFeed(src: HomeFeedSources): HomeFeedItem[] {
     cronJobs = [],
     dismissedIds = [],
     nowMs = Date.now(),
+    pullRequests = [],
     sessions = []
   } = src
 
@@ -172,6 +183,35 @@ export function collectHomeFeed(src: HomeFeedSources): HomeFeedItem[] {
     })
   }
 
+  // 3. Open Pull Requests
+  // The live map keys each PR by branch AND by number, so one PR can appear
+  // twice; dedupe on its URL.
+  const prList = [
+    ...new Map((Array.isArray(pullRequests) ? pullRequests : Object.values(pullRequests)).map(pr => [pr.url, pr])).values()
+  ]
+
+  for (const pr of prList) {
+    if (pr.state !== 'open') {
+      continue
+    }
+
+    const prFeedId = `pr:${pr.number}`
+
+    if (dismissedSet.has(prFeedId)) {
+      continue
+    }
+
+    // Copy is localized at render time (HomeFeedCard); the store stays i18n-free.
+    items.push({
+      caption: pr.branch,
+      id: prFeedId,
+      kind: 'prReview',
+      prUrl: pr.url,
+      rawPullRequest: pr,
+      title: pr.title
+    })
+  }
+
   // Priority sort (stable sort preserves insertion order within the same priority tier)
   items.sort((a, b) => priorityRank(a.kind) - priorityRank(b.kind))
 
@@ -214,12 +254,13 @@ export function resetDismissedHomeFeedItems(): void {
 }
 
 export const $homeFeedItems = computed(
-  [$attentionItems, $cronJobs, $dismissedHomeFeedItemIds, $sessions],
-  (attentionItems, cronJobs, dismissedIds, sessions) =>
+  [$attentionItems, $cronJobs, $dismissedHomeFeedItemIds, $sessions, $pullRequestsByBranch],
+  (attentionItems, cronJobs, dismissedIds, sessions, pullRequests) =>
     collectHomeFeed({
       attentionItems,
       cronJobs,
       dismissedIds,
+      pullRequests,
       sessions
     })
 )

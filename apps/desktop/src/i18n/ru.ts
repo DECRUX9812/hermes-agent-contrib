@@ -105,6 +105,7 @@ export const ruOverrides = {
     skip: 'Пропустить',
     update: 'Обновить',
     tryHint: term => `Попробуйте «${term}»`,
+    undo: 'Отменить',
     on: 'Вкл',
     off: 'Выкл'
   },
@@ -1868,6 +1869,13 @@ export const ruOverrides = {
       vaultCode: 'Код хранилища',
       vaultSave: 'Вход в хранилище',
       vaultUnlock: 'Разблокировка хранилища'
+    },
+    pullRequest: (number, title) => `PR #${number}: ${title}`,
+    prChecks: {
+      failure: 'Проверки не прошли',
+      none: 'Открытый PR',
+      pending: 'Проверки идут',
+      success: 'Проверки пройдены'
     }
   },
   commandCenter: {
@@ -3312,6 +3320,7 @@ export const ruOverrides = {
     queueCollapse: 'Свернуть',
     queueSendNext: 'Дальше',
     queueSteer: 'Направить — изменить текущий ход сейчас',
+    queueRemoved: 'Удалено из очереди',
     queueSend: 'Отправить',
     queueDelete: 'Удалить',
     queueResume: 'Продолжить',

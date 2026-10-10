@@ -1,5 +1,6 @@
 import { useStore } from '@nanostores/react'
 
+import { PanelEmpty } from '@/app/overlays/panel'
 import { Button } from '@/components/ui/button'
 
 import { getAvatar } from '../avatars/registry'
@@ -55,7 +56,9 @@ export function FeedPanel() {
       </header>
 
       {entries.length === 0 ? (
-        <p className="px-3 py-4 text-[12px] text-(--ui-text-tertiary)">{PANE_COPY.feedEmpty}</p>
+        <div className="p-3">
+          <PanelEmpty description={PANE_COPY.feedEmpty} icon="pulse" />
+        </div>
       ) : (
         <ul className="min-h-0 flex-1 overflow-y-auto px-1 py-1">
           {entries.map(entry => (

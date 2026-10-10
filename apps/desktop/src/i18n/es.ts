@@ -396,6 +396,7 @@ export const esOverrides = {
     skip: 'Omitir',
     update: 'Actualizar',
     tryHint: term => `Prueba “${term}”`,
+    undo: 'Deshacer',
     on: 'Activado',
     off: 'Desactivado'
   },
@@ -2897,6 +2898,13 @@ export const esOverrides = {
       vaultCode: 'Código de la bóveda',
       vaultSave: 'Inicio de sesión en la bóveda',
       vaultUnlock: 'Desbloqueo de la bóveda'
+    },
+    pullRequest: (number, title) => `PR #${number}: ${title}`,
+    prChecks: {
+      failure: 'Comprobaciones fallidas',
+      none: 'PR abierto',
+      pending: 'Comprobaciones en curso',
+      success: 'Comprobaciones superadas'
     }
   },
   commandCenter: {
@@ -4399,6 +4407,7 @@ export const esOverrides = {
     queueCollapse: 'Contraer',
     queueSendNext: 'Próximo',
     queueSteer: 'Redirigir — encauzar el turno en vivo ahora',
+    queueRemoved: 'Quitado de la cola',
     queueSend: 'Enviar',
     queueDelete: 'Borrar',
     queueResume: 'Reanudar',

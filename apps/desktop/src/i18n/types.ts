@@ -484,6 +484,7 @@ export interface Translations extends NoticeTranslations {
     skip: string
     update: string
     tryHint: (term: string) => string
+    undo: string
     on: string
     off: string
   }
@@ -2358,6 +2359,13 @@ export interface Translations extends NoticeTranslations {
       vaultSave: string
       vaultUnlock: string
     }
+    pullRequest: (number: number, title: string) => string
+    prChecks: {
+      failure: string
+      none: string
+      pending: string
+      success: string
+    }
   }
 
   commandCenter: {
@@ -3526,6 +3534,7 @@ export interface Translations extends NoticeTranslations {
     queueSendNext: string
     queueSend: string
     queueSteer: string
+    queueRemoved: string
     queueDelete: string
     queueResume: string
     queueResumeTip: string

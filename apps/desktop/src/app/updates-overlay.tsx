@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { ErrorIcon, ErrorState } from '@/components/ui/error-state'
 import { Loader } from '@/components/ui/loader'
+import { LogView } from '@/components/ui/log-view'
 import { Progress } from '@/components/ui/progress'
 import { UpdateStatusCard, VersionHero } from '@/components/update-status'
 import { VersionDetails } from '@/components/version-details'
@@ -518,13 +519,13 @@ function ApplyingView({
       />
 
       {recentLog.length > 1 ? (
-        <div className="max-h-24 overflow-hidden rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-left font-mono text-[11px] leading-4 text-muted-foreground">
+        <LogView className="max-h-24">
           {recentLog.map((entry, index) => (
             <div className="truncate" key={`${entry.at}-${index}`}>
               {entry.message}
             </div>
           ))}
-        </div>
+        </LogView>
       ) : null}
 
       <p className="text-center text-xs text-muted-foreground">{u.applyingClose}</p>

@@ -181,6 +181,7 @@ export const zhOverrides = {
     skip: '跳过',
     update: '更新',
     tryHint: term => `试试“${term}”`,
+    undo: '撤销',
     on: '开',
     off: '关'
   },
@@ -2498,6 +2499,13 @@ export const zhOverrides = {
       vaultCode: '保险库验证码',
       vaultSave: '保险库登录',
       vaultUnlock: '解锁保险库'
+    },
+    pullRequest: (number, title) => `PR #${number}：${title}`,
+    prChecks: {
+      failure: '检查失败',
+      none: '打开的 PR',
+      pending: '检查进行中',
+      success: '检查通过'
     }
   },
   commandCenter: {
@@ -3899,6 +3907,7 @@ export const zhOverrides = {
     queueCollapse: '收起',
     queueSendNext: '下一个',
     queueSteer: '引导 — 立即修正当前回合',
+    queueRemoved: '已从队列移除',
     queueSend: '发送',
     queueDelete: '删除',
     queueResume: '继续',

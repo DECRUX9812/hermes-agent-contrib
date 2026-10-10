@@ -5,7 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { requestComposerAttachImages, requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
-import { GlyphSpinner } from '@/components/ui/glyph-spinner'
+import { Loader } from '@/components/ui/loader'
 import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
 import {
@@ -439,7 +439,7 @@ export function RegionCaptureOverlay() {
         className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60"
         data-slot="region-capture-overlay"
       >
-        <GlyphSpinner ariaLabel={t.regionCapture.capturing} className="text-[1.2rem] text-white/80" spinner="braille" />
+        <Loader className="size-12 text-white/90" label={t.regionCapture.capturing} />
       </div>
     )
   }

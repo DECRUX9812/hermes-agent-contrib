@@ -141,6 +141,7 @@ export const arChat = {
     queueCollapse: 'طي',
     queueSendNext: 'إرسالها تاليا',
     queueSteer: 'توجيه — تصحيح الدور الجاري فورا',
+    queueRemoved: 'أزيلت من قائمة الانتظار',
     queueSend: 'إرسالها الآن',
     queueDelete: 'حذف من الطابور',
     queueStuckTitle: 'لم تُرسل الرسالة في قائمة الانتظار',

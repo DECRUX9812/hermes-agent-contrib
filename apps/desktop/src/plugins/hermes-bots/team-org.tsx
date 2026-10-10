@@ -146,7 +146,7 @@ function SeatCard({
           <DropdownMenuTrigger asChild>
             <Button
               aria-label={t.edit}
-              className="-mr-1 size-6 opacity-0 group-hover/seat:opacity-100 focus-visible:opacity-100"
+              className="-mr-1 size-6 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 group-hover/seat:opacity-100"
               size="icon"
               variant="ghost"
             >

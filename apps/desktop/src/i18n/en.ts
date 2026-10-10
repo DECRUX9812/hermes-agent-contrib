@@ -444,6 +444,7 @@ export const en: Translations = {
     skip: 'Skip',
     update: 'Update',
     tryHint: term => `Try “${term}”`,
+    undo: 'Undo',
     on: 'On',
     off: 'Off'
   },
@@ -2601,6 +2602,13 @@ export const en: Translations = {
       vaultCode: 'Vault code',
       vaultSave: 'Vault login',
       vaultUnlock: 'Vault unlock'
+    },
+    pullRequest: (number, title) => `PR #${number}: ${title}`,
+    prChecks: {
+      failure: 'Checks failing',
+      none: 'Open PR',
+      pending: 'Checks running',
+      success: 'Checks passing'
     }
   },
 
@@ -4056,6 +4064,7 @@ export const en: Translations = {
     queueCollapse: 'Collapse',
     queueSendNext: 'Next',
     queueSteer: 'Steer — redirect the live turn now',
+    queueRemoved: 'Removed from queue',
     queueSend: 'Send',
     queueDelete: 'Delete',
     queueResume: 'Resume',

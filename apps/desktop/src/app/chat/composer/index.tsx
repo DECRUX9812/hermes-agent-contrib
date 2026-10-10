@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router'
 import { useTourMarker } from '@/app/chat/tour-marker'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
 import { CRON_ROUTE } from '@/app/routes'
-import { composerFloatingStrip, composerInputBacking, composerEdgeRing } from '@/components/chat/composer-dock'
+import { composerEdgeRing, composerFloatingStrip, composerInputBacking } from '@/components/chat/composer-dock'
 import { useSetupChatView } from '@/components/onboarding-chat/assembly'
 import { OnboardingSkip } from '@/components/onboarding-chat/skip'
 import { Button } from '@/components/ui/button'
@@ -17,11 +17,19 @@ import { isMacPlatform } from '@/lib/platform'
 import { useStoreSelector, useStoresSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { sessionCompacting } from '@/store/compaction'
+import { revokeAttachmentPreviewUrls } from '@/store/composer'
 import { POPOUT_WIDTH_REM } from '@/store/composer-popout'
-import { moveQueuedPrompt, parkQueuedPrompts, removeQueuedPrompt, unparkQueuedPrompts } from '@/store/composer-queue'
+import {
+  enqueueQueuedPrompt,
+  moveQueuedPrompt,
+  parkQueuedPrompts,
+  removeQueuedPrompt,
+  unparkQueuedPrompts
+} from '@/store/composer-queue'
 import { setCronCreateDraft } from '@/store/cron'
 import { $hudMode } from '@/store/hud'
 import { $showsAdvancedChrome } from '@/store/interface-mode'
+import { notify } from '@/store/notifications'
 import { $chatOnboardingSolo } from '@/store/onboarding-intro'
 import { sessionBlockingPrompt } from '@/store/prompts'
 import { toggleReview } from '@/store/review'
@@ -68,7 +76,6 @@ import { useMiddlewareSubmit } from './hooks/use-middleware-submit'
 import { useSlashCompletions } from './hooks/use-slash-completions'
 import { useStatusDrawer } from './hooks/use-status-drawer'
 import { useSessionStatusPresence } from './hooks/use-status-presence'
-import { shouldConvertPasteToAttachment } from './large-paste'
 import { ActionBadges } from './micro-actions'
 import { QueuePanel } from './queue-panel'
 import { RestoredDraftNotice } from './restored-draft-notice'
@@ -783,9 +790,44 @@ export function ChatBar({
                     editingId={queueEdit?.entryId ?? null}
                     entries={queuedPrompts}
                     onDelete={id => {
-                      if (removeQueuedPrompt(activeQueueSessionKey, id) && queueEdit?.entryId === id) {
+                      const target = queuedPrompts.find(e => e.id === id)
+
+                      // Keep blob previews alive while Undo can still restore them.
+                      if (!removeQueuedPrompt(activeQueueSessionKey, id, { retainPreviewUrls: true })) {
+                        return
+                      }
+
+                      if (queueEdit?.entryId === id) {
                         exitQueuedEdit('cancel')
                       }
+
+                      if (!target) {
+                        return
+                      }
+
+                      let restored = false
+
+                      notify({
+                        action: {
+                          label: t.common.undo,
+                          onClick: () => {
+                            restored = true
+                            enqueueQueuedPrompt(activeQueueSessionKey, {
+                              attachments: target.attachments,
+                              displayKind: target.displayKind,
+                              displayText: target.displayText,
+                              text: target.text
+                            })
+                          }
+                        },
+                        kind: 'info',
+                        message: t.composer.queueRemoved,
+                        onDismiss: () => {
+                          if (!restored) {
+                            revokeAttachmentPreviewUrls(target.attachments)
+                          }
+                        }
+                      })
                     }}
                     onEdit={beginQueuedEdit}
                     onMove={(id, direction) => moveQueuedPrompt(activeQueueSessionKey, id, direction)}

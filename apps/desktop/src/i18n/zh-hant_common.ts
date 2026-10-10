@@ -40,6 +40,7 @@ export const zhHantCommon = {
     skip: '略過',
     update: '更新',
     tryHint: term => `試試「${term}」`,
+    undo: '復原',
     on: '開啟',
     off: '關閉'
   },

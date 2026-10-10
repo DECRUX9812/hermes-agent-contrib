@@ -163,6 +163,47 @@ describe('home-feed store & collector', () => {
       expect(feedDueSoon[0].kind).toBe('cronDue')
       expect(feedDueSoon[0].title).toBe('Due Soon Job')
       expect(feedDueSoon[0].cronJobId).toBe('job-due-soon')
+
+      const feedPr = collectHomeFeed({
+        nowMs: BASE_TIME,
+        pullRequests: [
+          {
+            branch: 'feat/calm-feed',
+            checks: 'success',
+            draft: false,
+            number: 42,
+            state: 'open',
+            title: 'Hark style home feed',
+            url: 'https://github.com/org/repo/pull/42'
+          }
+        ]
+      })
+
+      expect(feedPr[0].kind).toBe('prReview')
+      expect(feedPr[0].title).toBe('Hark style home feed')
+      expect(feedPr[0].caption).toBe('feat/calm-feed')
+      expect(feedPr[0].rawPullRequest?.number).toBe(42)
+      expect(feedPr[0].prUrl).toBe('https://github.com/org/repo/pull/42')
+    })
+
+    it('shows a PR once even though the live map keys it by branch and by number', () => {
+      const pr = {
+        branch: 'feat/calm-feed',
+        draft: false,
+        number: 7,
+        state: 'open',
+        title: 'Calm feed',
+        url: 'https://github.com/org/repo/pull/7'
+      }
+
+      const merged = { ...pr, number: 8, state: 'merged', url: 'https://github.com/org/repo/pull/8' }
+
+      const feed = collectHomeFeed({
+        nowMs: BASE_TIME,
+        pullRequests: { '/repo\n#7': pr, '/repo\n#8': merged, '/repo\nfeat/calm-feed': pr }
+      })
+
+      expect(feed.map(item => item.id)).toEqual(['pr:7'])
     })
 
     it('enforces priority ordering: approval > prompts > error > cron overdue > cron due within 15min', () => {

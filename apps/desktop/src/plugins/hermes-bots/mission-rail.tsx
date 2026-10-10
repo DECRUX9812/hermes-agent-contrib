@@ -187,9 +187,9 @@ function BotHero({
           {b.bot.newTopic}
         </Button>
         <BotTopicProjectMenu bot={bot} />
-        <Tip label={b.bot.inbox}>
-          <Button aria-label={b.bot.inbox} onClick={() => void openRosterBot(bot)} size="icon-xs" variant="ghost">
-            <Codicon name="inbox" />
+        <Tip label={b.roster.openChat}>
+          <Button aria-label={b.roster.openChat} onClick={() => void openRosterBot(bot)} size="icon-xs" variant="ghost">
+            <Codicon name="comment" />
           </Button>
         </Tip>
         <Tip label={share.title(name)}>

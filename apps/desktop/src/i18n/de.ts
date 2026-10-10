@@ -393,6 +393,7 @@ export const deOverrides = {
     skip: 'Überspringen',
     update: 'Aktualisieren',
     tryHint: term => `Versuchen Sie „${term}“`,
+    undo: 'Rückgängig',
     on: 'An',
     off: 'Aus'
   },
@@ -2902,6 +2903,13 @@ export const deOverrides = {
       vaultCode: 'Tresor-Code',
       vaultSave: 'Tresor-Login',
       vaultUnlock: 'Tresor entsperren'
+    },
+    pullRequest: (number, title) => `PR #${number}: ${title}`,
+    prChecks: {
+      failure: 'Checks schlagen fehl',
+      none: 'Offener PR',
+      pending: 'Checks laufen',
+      success: 'Checks bestanden'
     }
   },
   commandCenter: {
@@ -4401,6 +4409,7 @@ export const deOverrides = {
     queueCollapse: 'Einklappen',
     queueSendNext: 'Weiter',
     queueSteer: 'Steuern — laufenden Turn jetzt umleiten',
+    queueRemoved: 'Aus der Warteschlange entfernt',
     queueSend: 'Senden',
     queueDelete: 'Löschen',
     queueResume: 'Fortsetzen',

@@ -394,6 +394,7 @@ export const frOverrides = {
     skip: 'Ignorer',
     update: 'Mettre à jour',
     tryHint: term => `Essayez « ${term} »`,
+    undo: 'Annuler',
     on: 'Activé',
     off: 'Désactivé'
   },
@@ -2910,6 +2911,13 @@ export const frOverrides = {
       vaultCode: 'Code du coffre',
       vaultSave: 'Identifiants du coffre',
       vaultUnlock: 'Déverrouillage du coffre'
+    },
+    pullRequest: (number, title) => `PR #${number} : ${title}`,
+    prChecks: {
+      failure: 'Vérifications en échec',
+      none: 'PR ouverte',
+      pending: 'Vérifications en cours',
+      success: 'Vérifications réussies'
     }
   },
   commandCenter: {
@@ -4409,6 +4417,7 @@ export const frOverrides = {
     queueCollapse: 'Replier',
     queueSendNext: 'Suivant',
     queueSteer: 'Diriger — réorienter maintenant le tour en cours',
+    queueRemoved: 'Retiré de la file',
     queueSend: 'Envoyer',
     queueDelete: 'Supprimer',
     queueResume: 'Reprendre',

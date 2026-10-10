@@ -65,8 +65,7 @@ import {
   RefreshCwIcon,
   SmilePlusIcon,
   Upload,
-  VolumeXIcon,
-  XIcon
+  VolumeXIcon
 } from '@/lib/icons'
 import { extractPreviewTargets } from '@/lib/preview-targets'
 import { contentToMarkdown, markdownLabels } from '@/lib/session-markdown'
@@ -345,7 +344,7 @@ const AssistantMessageBody: FC<AssistantMessageProps & { collapsedNotice?: null 
                       side="top"
                       tooltip={t.assistant.thread.dismissError}
                     >
-                      <XIcon className="size-3.5" />
+                      <Codicon name="close" size="0.875rem" />
                     </TooltipIconButton>
                   )}
                 </div>

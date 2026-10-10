@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 import { useEffect, useRef, useState } from 'react'
 
 import { useSessionView } from '@/app/chat/session-view'
+import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { isDesktopFsRemoteMode } from '@/lib/desktop-fs'
 import { Download, FolderOpen, MonitorPlay } from '@/lib/icons'
@@ -230,15 +231,16 @@ export function PreviewAttachment({ target }: { target: string }) {
         <span className="min-w-0 flex-1 truncate text-[0.78rem] font-medium text-foreground/90" title={target}>
           {name}
         </span>
-        <button
-          className="flex shrink-0 items-center gap-1 rounded-md border border-(--ui-stroke-tertiary) bg-background/40 px-2 py-1 text-[0.7rem] font-medium text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground disabled:opacity-50"
+        <Button
           disabled={opening}
           onClick={() => void openInFileManager(localTarget.path, true)}
+          size="xs"
           type="button"
+          variant="outline"
         >
           <FolderOpen className="size-3" />
           {t.fileMenu.revealFileManager}
-        </button>
+        </Button>
       </div>
     )
   }
@@ -254,32 +256,35 @@ export function PreviewAttachment({ target }: { target: string }) {
       {localTarget?.type === 'file' ? (
         // The file already exists on this machine: reveal it in the OS file
         // manager instead of offering to download it again (#101683).
-        <button
-          className="flex shrink-0 items-center gap-1 rounded-md border border-(--ui-stroke-tertiary) bg-background/40 px-2 py-1 text-[0.7rem] font-medium text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground disabled:opacity-50"
+        <Button
           disabled={opening}
           onClick={() => void openInFileManager(localTarget.path, false)}
+          size="xs"
           type="button"
+          variant="outline"
         >
           <FolderOpen className="size-3" />
           {t.fileMenu.revealFileManager}
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
           aria-label={t.fileMenu.download}
-          className="flex shrink-0 items-center gap-1 rounded-md border border-(--ui-stroke-tertiary) bg-background/40 px-2 py-1 text-[0.7rem] font-medium text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground disabled:opacity-50"
           disabled={downloading}
           onClick={() => void downloadFile()}
+          size="xs"
           type="button"
+          variant="outline"
         >
           <Download className="size-3" />
           {downloaded ? t.fileMenu.downloadSaved : t.fileMenu.download}
-        </button>
+        </Button>
       )}
-      <button
-        className="shrink-0 rounded-md border border-(--ui-stroke-tertiary) bg-background/40 px-2 py-1 text-[0.7rem] font-medium text-muted-foreground transition-colors hover:bg-accent/55 hover:text-foreground disabled:opacity-50"
+      <Button
         disabled={opening}
         onClick={() => void togglePreview()}
+        size="xs"
         type="button"
+        variant="outline"
       >
         {opening
           ? t.preview.opening
@@ -288,7 +293,7 @@ export function PreviewAttachment({ target }: { target: string }) {
             : isActive
               ? t.preview.hide
               : t.preview.openPreview}
-      </button>
+      </Button>
     </div>
   )
 }

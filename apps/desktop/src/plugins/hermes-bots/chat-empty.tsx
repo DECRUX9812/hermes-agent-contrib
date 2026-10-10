@@ -7,7 +7,7 @@
  * says whose it is.
  */
 
-import { host, RowButton, useValue, Wordmark } from '@hermes/plugin-sdk'
+import { Button, host, useValue, Wordmark } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
@@ -220,14 +220,16 @@ export function BotChatEmpty({ sessionId }: { sessionId: string }) {
             unmounts. */}
         <div className="pointer-events-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-1.5">
           {starters.map(text => (
-            <RowButton
-              className="rounded-full border border-(--ui-stroke-secondary) px-3 py-1.5 text-xs text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground disabled:opacity-50"
+            <Button
+              className="rounded-full"
               disabled={sent}
               key={text}
               onClick={() => submitStarter(text)}
+              size="xs"
+              variant="chip"
             >
               {text}
-            </RowButton>
+            </Button>
           ))}
         </div>
       </div>
