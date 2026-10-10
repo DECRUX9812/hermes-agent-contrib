@@ -885,8 +885,30 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     ? displayName(leadMember, botRosterMeta(leadMember, allMeta))
     : teamLead?.leadTitle || (teamLead?.lead ? `@${teamLead.lead}` : '')
 
+  // Who is mid-turn right now: a member whose latest event this run is
+  // `working`. Lights their face in the header so "are they even on it?" is
+  // answered without opening the activity log.
+  const latestKindByMember = new Map<string, string>()
+
+  for (const event of room.running ? currentGroupActivity(group) : []) {
+    if (event.member) {
+      latestKindByMember.set(event.member, event.kind)
+    }
+  }
+
+  const workingNow = new Set([...latestKindByMember].filter(([, kind]) => kind === 'working').map(([member]) => member))
+
+  if (room.running && room.turn?.name) {
+    workingNow.add(room.turn.name)
+  }
+
+  const workingNames = members
+    .filter(member => workingNow.has(member.name))
+    .map(member => displayName(member, botRosterMeta(member, allMeta)))
+
   const memberNames =
-    members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat'
+    (workingNames.length ? `${b.group.workingNow(workingNames.join(', '))} · ` : '') +
+    (members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat')
 
   const header = (
     <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-2">
@@ -938,7 +960,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
               return (
                 <span
-                  className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                  className={cn(
+                    'shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)',
+                    workingNow.has(member.name) && 'relative z-10 ring-2 ring-(--ui-accent) motion-safe:animate-pulse'
+                  )}
+                  data-working={workingNow.has(member.name) ? '' : undefined}
                   key={`face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
                 >
                   <BotFace
@@ -1284,6 +1310,8 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
     const entryKey = `${entry.at}:${index}`
     const revealed = !isUser && revealedSpeaker === entryKey
+    const isLead = Boolean(member && leadMember && groupMemberKey(member) === groupMemberKey(leadMember))
+    const roleTitle = isUser ? '' : (meta?.title || member?.title || '').trim()
 
     // Clicked: append the gateway name so same-named agents on
     // two connections are tellable apart on demand.
@@ -1472,6 +1500,26 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                   {label}
                 </Button>
               </Tip>
+              {/* The room as a squad: who leads, and what each voice is for. */}
+              {isLead ? (
+                <Tip label={b.group.roomLead}>
+                  <span
+                    aria-label={b.group.roomLead}
+                    className="text-[0.625rem] leading-none text-amber-500"
+                    data-testid="group-speaker-lead"
+                  >
+                    ★
+                  </span>
+                </Tip>
+              ) : null}
+              {roleTitle ? (
+                <span
+                  className="max-w-40 truncate text-[0.625rem] text-(--ui-text-tertiary)"
+                  data-testid="group-speaker-role"
+                >
+                  {roleTitle}
+                </span>
+              ) : null}
               <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
               {actions}
             </div>

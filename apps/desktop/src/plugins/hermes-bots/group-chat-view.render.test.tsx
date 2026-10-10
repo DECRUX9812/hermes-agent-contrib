@@ -229,3 +229,23 @@ it('leaves a reader in history when a reply lands, and offers a jump back with t
   expect(scrollIntoView).toHaveBeenCalled()
   expect(screen.queryByRole('button', { name: '1 new message' })).toBeNull()
 })
+
+it('shows each voice’s role and lights the face of whoever is working right now', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const log = [{ id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'on it', at: 1 }]
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {}, running: true, turn: { name: 'builder' } } } as never)
+
+  const { container } = render(
+    <GroupChatWorkspace
+      group="Room"
+      members={[{ name: 'builder', title: 'Frontend engineer' }, { name: 'reviewer' }] as never}
+    />
+  )
+
+  expect(screen.getByTestId('group-speaker-role').textContent).toBe('Frontend engineer')
+  // Only the bot mid-turn wears the working ring in the header's face pile.
+  expect(container.querySelectorAll('[data-working]')).toHaveLength(1)
+})

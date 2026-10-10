@@ -444,6 +444,8 @@ type BotsMessages = {
     memberThinking: (name: string) => string
     roomWorking: string
     jumpToLatest: (count: number) => string
+    roomLead: string
+    workingNow: (names: string) => string
     messageRoom: (group: string) => string
     newThreadPlaceholder: (group: string) => string
     everyoneMeta: string
@@ -1202,6 +1204,8 @@ const en: BotsMessages = {
     memberThinking: name => `${name} is thinking…`,
     roomWorking: 'The room is working…',
     jumpToLatest: count => (count ? `${count} new ${count === 1 ? 'message' : 'messages'}` : 'Jump to latest'),
+    roomLead: 'Leads this room',
+    workingNow: names => `Working now: ${names}`,
     messageRoom: group => `Message ${group}`,
     newThreadPlaceholder: group => `New thread in ${group}… (@name to direct, @everyone for all)`,
     everyoneMeta: 'Every bot in the room',
@@ -1945,6 +1949,8 @@ const ja: BotsMessages = {
     memberThinking: name => `${name}が考えています…`,
     roomWorking: 'ルームが作業中です…',
     jumpToLatest: count => (count ? `新着${count}件` : '最新へ移動'),
+    roomLead: 'このルームのリーダー',
+    workingNow: names => `作業中: ${names}`,
     messageRoom: group => `${group}にメッセージ`,
     newThreadPlaceholder: group => `${group}で新しいスレッド…（@名前で個別、@everyoneで全員）`,
     everyoneMeta: 'ルーム内のすべてのボット',
@@ -2677,6 +2683,8 @@ const zh: BotsMessages = {
     memberThinking: name => `${name} 正在思考…`,
     roomWorking: '房间正在处理…',
     jumpToLatest: count => (count ? `${count} 条新消息` : '跳到最新'),
+    roomLead: '本房间负责人',
+    workingNow: names => `正在工作：${names}`,
     messageRoom: group => `发消息给 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中开启新讨论串…（@名称指定，@everyone 全体）`,
     everyoneMeta: '房间里的所有机器人',
@@ -3405,6 +3413,8 @@ const zhHant: BotsMessages = {
     memberThinking: name => `${name} 正在思考…`,
     roomWorking: '房間正在處理…',
     jumpToLatest: count => (count ? `${count} 則新訊息` : '跳到最新'),
+    roomLead: '本房間負責人',
+    workingNow: names => `正在工作：${names}`,
     messageRoom: group => `傳訊息給 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中開啟新討論串…（@名稱指定，@everyone 全體）`,
     everyoneMeta: '房間裡的所有機器人',
