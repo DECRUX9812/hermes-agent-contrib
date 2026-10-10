@@ -38,7 +38,7 @@ def server(tmp_path):
         import importlib
 
         mod = importlib.import_module("tui_gateway.server")
-    setattr(mod, "_hermes_home", launch_home)
+    mod._hermes_home = launch_home
 
     yield mod
     # Reset module-level session state without re-importing. importlib.reload
@@ -97,7 +97,7 @@ def test_init_session_attaches_background_review_callback(server, monkeypatch):
     # the session id we passed in, carrying the full message text.
     matched = [e for e in captured_emits if e[0] == "review.summary"]
     assert len(matched) == 1, captured_emits
-    event, sid, payload = matched[0]
+    _event, sid, payload = matched[0]
     assert sid == "sid-abc"
     assert payload == {
         "text": "💾 Self-improvement review: Skill 'hermes-release' patched"

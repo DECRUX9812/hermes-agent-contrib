@@ -303,7 +303,7 @@ class RegistryFull(Exception):
         super().__init__(message)
 
 
-async def run_reaper(registry: "PtySessionRegistry", *, interval: float = 60.0) -> None:
+async def run_reaper(registry: PtySessionRegistry, *, interval: float = 60.0) -> None:
     """Periodically reap idle/dead keep-alive sessions. Cancelled on shutdown."""
     while True:
         await asyncio.sleep(interval)
@@ -319,7 +319,7 @@ class PtySessionRegistry:
         self._max = max_sessions
         self._buffer_cap = buffer_cap
         self._read_timeout = read_timeout
-        self._sessions: Dict[str, PtySession] = {}
+        self._sessions: dict[str, PtySession] = {}
         # One registry-wide reservation spans lookup, spawn, and registration:
         # racing connections with one attach token must share one tracked PTY.
         self._spawn_lock = asyncio.Lock()
@@ -328,7 +328,7 @@ class PtySessionRegistry:
         # Retain ownership of removed sessions until helper-process shutdown completes.
         self._background_closes: set[asyncio.Task] = set()
 
-    async def attach_or_spawn(self, key: str, *, spawn: Callable[[], object], active_session_file: Optional[Path] = None) -> Tuple[PtySession, bool]:
+    async def attach_or_spawn(self, key: str, *, spawn: Callable[[], object], active_session_file: Optional[Path] = None) -> tuple[PtySession, bool]:
         # Reserve capacity and the key across blocking fork/exec. On cancellation
         # the registry, not the request's cancellation scope, owns that reservation
         # until the admission finishes and any unclaimed child has been closed.
@@ -370,7 +370,7 @@ class PtySessionRegistry:
 
     async def _attach_or_spawn(
         self, key: str, *, spawn: Callable[[], object], active_session_file: Optional[Path] = None,
-    ) -> Tuple[PtySession, bool]:
+    ) -> tuple[PtySession, bool]:
         if self._closed:
             raise RegistryFull("Terminal service is shutting down.")
         await self.reap_idle()
@@ -489,7 +489,7 @@ class PtySessionRegistry:
         self._sessions.pop(oldest.key, None)
         self._close_in_background(oldest)
 
-    def _close_in_background(self, session: "PtySession") -> None:
+    def _close_in_background(self, session: PtySession) -> None:
         task = asyncio.create_task(session.close())
         self._background_closes.add(task)
         task.add_done_callback(self._background_closes.discard)

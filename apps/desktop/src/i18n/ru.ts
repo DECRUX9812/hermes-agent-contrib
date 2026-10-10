@@ -3305,12 +3305,6 @@ export const ruOverrides = {
     editingQueuedInComposer: 'Редактирование хода в очереди в композере',
     restoredDraftNotice: 'Восстановлено ваше неотправленное сообщение',
     restoredDraftUndo: 'Отменить',
-    localSetup: {
-      title: 'Это может работать на вашем компьютере',
-      text: (model: string) =>
-        `${model} подходит для этого компьютера. Бесплатно, а чаты остаются на вашем компьютере.`,
-      action: 'Показать'
-    },
     queueEdit: 'Изменить',
     queueMoveUp: 'Выше в очереди',
     queueMoveDown: 'Ниже в очереди',

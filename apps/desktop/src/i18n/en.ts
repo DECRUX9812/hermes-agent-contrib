@@ -4049,11 +4049,6 @@ export const en: Translations = {
     editingQueuedInComposer: 'Editing queued turn in composer',
     restoredDraftNotice: 'Restored your unsent message',
     restoredDraftUndo: 'Undo',
-    localSetup: {
-      title: 'This could run on your computer',
-      text: (model: string) => `${model} fits this machine. Free, and chats stay on your computer.`,
-      action: 'Show me'
-    },
     queueEdit: 'Edit',
     queueMoveUp: 'Move earlier',
     queueMoveDown: 'Move later',

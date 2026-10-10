@@ -4402,12 +4402,6 @@ export const frOverrides = {
     editingQueuedInComposer: "Modification du tour en file d'attente dans le compositeur",
     restoredDraftNotice: 'Votre message non envoyé a été restauré',
     restoredDraftUndo: 'Annuler',
-    localSetup: {
-      title: 'Ceci pourrait tourner sur votre ordinateur',
-      text: (model: string) =>
-        `${model} tient sur cette machine. Gratuit, et les conversations restent sur votre ordinateur.`,
-      action: 'Montrez-moi'
-    },
     queueEdit: 'Modifier',
     queueMoveUp: 'Monter',
     queueMoveDown: 'Descendre',

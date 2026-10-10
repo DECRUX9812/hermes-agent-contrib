@@ -1,7 +1,7 @@
 """Wire contracts (see ``base.py``). Importing this package fills the registry tables; every topic
 module is listed here so the generator and the runtime see the same catalog."""
 
-from . import (  # noqa: F401
+from . import (
     billing_delegation_pets,
     bot_team,
     common,
