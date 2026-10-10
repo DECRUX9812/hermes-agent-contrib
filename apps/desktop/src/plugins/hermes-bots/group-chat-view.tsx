@@ -739,29 +739,37 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // view on mount and whenever the log grows — but only when the user is
   // already near the bottom, so reading history is never yanked away.
   const bottomSentinelRef = useRef<HTMLDivElement | null>(null)
+  // The log's own overflow div is the scroller (the design-system rebuild
+  // dropped the ScrollArea, so looking one up by data-slot found nothing and
+  // every reply yanked a reader back to the bottom).
+  const scrollerRef = useRef<HTMLDivElement | null>(null)
   const stickToBottomRef = useRef(true)
-  // eslint-disable-next-line no-restricted-syntax -- tracks live scroll position from a DOM listener, not an atom
-  useEffect(() => {
-    const sentinel = bottomSentinelRef.current
+  // Log length when the reader left the bottom (null = following along);
+  // everything past it is what they haven't seen.
+  const [leftAtLength, setLeftAtLength] = useState<null | number>(null)
+  const unseen = leftAtLength === null ? 0 : Math.max(0, room.log.length - leftAtLength)
 
-    if (!sentinel) {
+  const jumpToLatest = () => {
+    stickToBottomRef.current = true
+    setLeftAtLength(null)
+    bottomSentinelRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'end'
+    })
+  }
+
+  const onLogScroll = () => {
+    const viewport = scrollerRef.current
+
+    if (!viewport) {
       return
     }
 
-    const viewport = sentinel.closest('[data-slot="scroll-area-viewport"]')
+    const near = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 80
+    stickToBottomRef.current = near
+    setLeftAtLength(current => (near ? null : (current ?? room.log.length)))
+  }
 
-    if (viewport) {
-      const onScroll = () => {
-        stickToBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 80
-      }
-
-      viewport.addEventListener('scroll', onScroll, {
-        passive: true
-      })
-
-      return () => viewport.removeEventListener('scroll', onScroll)
-    }
-  }, [])
   useEffect(() => {
     if (stickToBottomRef.current) {
       bottomSentinelRef.current?.scrollIntoView({
@@ -780,6 +788,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   useEffect(() => {
     if (visible && !wasVisibleRef.current) {
       stickToBottomRef.current = true
+      setLeftAtLength(null)
       bottomSentinelRef.current?.scrollIntoView({
         block: 'end'
       })
@@ -1591,7 +1600,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         </div>
       ) : null}
       {activityPanel}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" onScroll={onLogScroll} ref={scrollerRef}>
         {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
         {/* unbreakable code line widened every entry to its own width and the */}
         {/* log scrolled sideways as a whole instead of the code block (#91878). */}
@@ -1728,6 +1737,25 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           /* mount and on log growth — unless the user has scrolled up. */}
           <div aria-hidden key={'bottom-sentinel'} ref={bottomSentinelRef} />
         </div>
+        {/* Reading history: new replies land quietly and this pill offers the
+            way back, instead of the log jumping out from under the reader. */}
+        {leftAtLength !== null ? (
+          <div className="pointer-events-none sticky bottom-2 flex justify-center">
+            <Button
+              className={cn(
+                'pointer-events-auto h-7 gap-1 rounded-full px-3 text-[0.7rem] shadow-md',
+                unseen ? 'bg-(--ui-accent) text-white hover:bg-(--ui-accent)/90' : ''
+              )}
+              data-testid="group-jump-latest"
+              onClick={jumpToLatest}
+              size="sm"
+              variant={unseen ? 'default' : 'secondary'}
+            >
+              <Codicon name="arrow-down" />
+              {b.group.jumpToLatest(unseen)}
+            </Button>
+          </div>
+        ) : null}
       </div>
       <div className="border-t border-(--ui-stroke-secondary) p-2">
         <form

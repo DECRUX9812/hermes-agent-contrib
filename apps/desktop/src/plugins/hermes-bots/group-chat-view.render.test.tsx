@@ -198,3 +198,34 @@ it('keeps the room header to navigation and settings — no one-click delete bes
   // One members entry point (the face pile), not two.
   expect(screen.getAllByRole('button', { name: 'Manage group members' })).toHaveLength(1)
 })
+
+it('leaves a reader in history when a reply lands, and offers a jump back with the unseen count', async () => {
+  const scrollIntoView = vi.fn()
+  Element.prototype.scrollIntoView = scrollIntoView
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const first = { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'go', at: 1 }
+  $groupChats.set({ Room: { log: [first], watermarks: {}, sessions: {} } })
+  const { rerender } = render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  // The reader scrolls 500px up from the bottom of the log.
+  const scroller = screen.getByText('go').closest('.overflow-y-auto') as HTMLElement
+  Object.defineProperties(scroller, {
+    clientHeight: { configurable: true, value: 400 },
+    scrollHeight: { configurable: true, value: 1500 },
+    scrollTop: { configurable: true, value: 600, writable: true }
+  })
+  fireEvent.scroll(scroller)
+  scrollIntoView.mockClear()
+
+  const reply = { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'done', at: 2 }
+  // The SDK mock's useValue is a plain read, so repaint after the store moves.
+  $groupChats.set({ Room: { log: [first, reply], watermarks: {}, sessions: {} } })
+  rerender(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  expect(scrollIntoView).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: '1 new message' }))
+  expect(scrollIntoView).toHaveBeenCalled()
+  expect(screen.queryByRole('button', { name: '1 new message' })).toBeNull()
+})
