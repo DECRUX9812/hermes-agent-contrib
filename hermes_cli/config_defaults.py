@@ -796,6 +796,9 @@ DEFAULT_CONFIG = {
             "language": "",
         },
         "memory_query_rewrite": _aux(8, reasoning_effort=False),
+        # Composer predictions (tui_gateway/methods_session_predict.py): one small call per settled
+        # turn drafts the user's likely next message as Tab-to-accept ghost text. Opt-in: it costs a call.
+        "composer_prediction": _aux(15, enabled=False),
         "tts_audio_tags": _aux(30),
         "voice_chat": {**_aux(120), "reasoning_effort": "none"},  # agent/voice_turn_route.py; off = lowest valid
         # Kanban: triage_specifier expands a Triage one-liner into a spec (cheap model OK);

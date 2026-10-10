@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 import { sessionCompacting } from '@/store/compaction'
 import { revokeAttachmentPreviewUrls } from '@/store/composer'
 import { POPOUT_WIDTH_REM } from '@/store/composer-popout'
+import { clearComposerPrediction } from '@/store/composer-prediction'
 import {
   enqueueQueuedPrompt,
   moveQueuedPrompt,
@@ -52,7 +53,7 @@ import { COMPOSER_AREAS } from './contrib'
 import { ComposerControls } from './controls'
 import { ComposerDirectiveActions } from './directive-actions'
 import { COMPOSER_DROP_ACTIVE_CLASS, COMPOSER_DROP_FADE_CLASS } from './drop-affordance'
-import { markActiveComposer, onComposerAttachImagesRequest } from './focus'
+import { markActiveComposer, onComposerAttachImagesRequest, requestComposerInsert } from './focus'
 import { HelpHint } from './help-hint'
 import { useAtCompletions } from './hooks/use-at-completions'
 import { useComposerBranch } from './hooks/use-composer-branch'
@@ -62,6 +63,7 @@ import { useComposerEscCancel } from './hooks/use-composer-esc-cancel'
 import { useComposerMetrics } from './hooks/use-composer-metrics'
 import { useComposerPlaceholder } from './hooks/use-composer-placeholder'
 import { useComposerPopout } from './hooks/use-composer-popout'
+import { takesPrediction, useComposerPrediction } from './hooks/use-composer-prediction'
 import { useComposerQueue } from './hooks/use-composer-queue'
 import { useComposerScreenshot } from './hooks/use-composer-screenshot'
 import { useComposerSubmit } from './hooks/use-composer-submit'
@@ -414,6 +416,7 @@ export function ChatBar({
   // Resting / reconnecting / starting placeholder text, re-rolled only on a real
   // conversation change.
   const placeholder = useComposerPlaceholder({ disabled, reconnecting, sessionId })
+  const prediction = useComposerPrediction({ busy, disabled, sessionId })
 
   // Trigger / completion engine: @// detection, the adapter-driven item list,
   // popover selection, and chip insertion. The keydown nav block below consumes
@@ -628,7 +631,8 @@ export function ChatBar({
           hudNativeDrag && '[-webkit-app-region:no-drag]'
         )}
         contentEditable={!inputDisabled}
-        data-placeholder={placeholder}
+        data-placeholder={prediction || placeholder}
+        data-prediction={prediction ? '' : undefined}
         data-slot={RICH_INPUT_SLOT}
         dir={textDirection}
         onBeforeInput={handleEditorBeforeInput}
@@ -674,7 +678,17 @@ export function ChatBar({
         onDrop={handleInputDrop}
         onFocus={() => markActiveComposer(scope.target)}
         onInput={handleEditorInput}
-        onKeyDown={handleEditorKeyDown}
+        onKeyDown={event => {
+          if (takesPrediction(event, { draft: draftRef.current, prediction, triggerOpen: Boolean(trigger) })) {
+            event.preventDefault()
+            requestComposerInsert(prediction, { mode: 'inline', target: scope.target })
+            clearComposerPrediction(sessionId)
+
+            return
+          }
+
+          handleEditorKeyDown(event)
+        }}
         onKeyUp={handleEditorKeyUp}
         onMouseUp={refreshTrigger}
         onPaste={handlePaste}
@@ -959,7 +973,8 @@ export function ChatBar({
                   // track past the surface — and every `w-full` child (the fade,
                   // the input/controls row) laid out against that phantom width
                   // and got clipped by overflow-hidden, send button first.
-                  'group/composer-surface relative z-4 isolate grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden rounded-[inherit]', composerEdgeRing,
+                  'group/composer-surface relative z-4 isolate grid grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr] overflow-hidden rounded-[inherit]',
+                  composerEdgeRing,
                   COMPOSER_DROP_FADE_CLASS,
                   dragActive && COMPOSER_DROP_ACTIVE_CLASS
                 )}
@@ -1092,7 +1107,12 @@ export function ChatBarFallback() {
       )}
       data-slot="composer-root"
     >
-      <div className={cn('composer-fallback-surface relative isolate h-(--composer-fallback-height) w-full rounded-[inherit]', composerEdgeRing)}>
+      <div
+        className={cn(
+          'composer-fallback-surface relative isolate h-(--composer-fallback-height) w-full rounded-[inherit]',
+          composerEdgeRing
+        )}
+      >
         <div aria-hidden className={composerInputBacking} />
       </div>
     </div>
