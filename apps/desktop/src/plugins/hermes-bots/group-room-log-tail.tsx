@@ -4,6 +4,8 @@
  * view stays one file of layout, not every widget.
  */
 
+import { Codicon } from '@hermes/plugin-sdk'
+
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import type { GroupChatRoom } from './group-chat'
@@ -111,5 +113,59 @@ export function GroupLogTail({
         </div>
       ) : null}
     </>
+  )
+}
+
+/** An empty room: its picture, its faces, and who will answer the first ask. */
+export function GroupRoomEmpty({
+  allMeta,
+  image,
+  leadName,
+  members
+}: {
+  allMeta: Record<string, BotMeta>
+  image: null | string
+  leadName: string
+  members: GroupMember[]
+}) {
+  const b = useBots()
+  const room = { image }
+
+  return (
+    <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center">
+      {room.image ? (
+        <img alt="" className="size-11 rounded-xl object-cover ring-1 ring-(--ui-stroke-secondary)" src={room.image} />
+      ) : (
+        <span className="flex size-11 items-center justify-center rounded-xl bg-(--chrome-action-hover) text-lg text-(--ui-text-tertiary)">
+          <Codicon name="organization" />
+        </span>
+      )}
+      {members.length ? (
+        <span aria-hidden className="flex -space-x-1">
+          {members.slice(0, 6).map((member, faceIndex) => {
+            const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
+            const faceImage = faceAppearance.image
+
+            return (
+              <span
+                className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                key={`empty-face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
+              >
+                <BotFace
+                  color={avatarColor(faceAppearance.color, member.name)}
+                  image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                  name={member.name}
+                  shape={faceAppearance.shape}
+                  size={22}
+                />
+              </span>
+            )
+          })}
+        </span>
+      ) : null}
+      <div className="max-w-72 text-xs text-(--ui-text-tertiary)">
+        {leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
+      </div>
+    </div>
   )
 }

@@ -13,7 +13,8 @@
 import { Button, Codicon } from '@hermes/plugin-sdk'
 
 import type { GroupRoomPrompt } from './group-chat-parts'
-import { EscalationCard } from './group-room-cards'
+import { groupSessionKey } from './group-membership'
+import { ActivityLine, EscalationCard } from './group-room-cards'
 import { handoffLine, nudgeLine, type RoomEscalation, type RoomHandoff, STATUS_CHECK_LINE } from './group-room-handoffs'
 import { groupReplyMentionTag, sendToGroupChat } from './group-rounds'
 import { useBots } from './i18n'
@@ -107,11 +108,13 @@ export interface RoomShortcutsProps {
   onInsert: (text: string) => void
   /** Tag the handoff template starts with: the lead, else the first member. */
   firstTag: string
+  /** Toggle the keyboard-shortcut list. */
+  onHelp: () => void
   thread: null | string
 }
 
 /** The CEO's shortcuts under the composer: hand off, status check, decide. */
-export function RoomShortcuts({ commands, firstTag, onInsert, thread }: RoomShortcutsProps) {
+export function RoomShortcuts({ commands, firstTag, onHelp, onInsert, thread }: RoomShortcutsProps) {
   const b = useBots()
   const s = b.group.shortcuts
 
@@ -134,6 +137,68 @@ export function RoomShortcuts({ commands, firstTag, onInsert, thread }: RoomShor
       {chip(s.handoff, 'arrow-swap', () => onInsert(handoffLine(firstTag, '<task>', '<check>', 30)))}
       {chip(s.status, 'pulse', () => commands.statusCheck(thread))}
       {chip(s.decide, 'question', () => onInsert(b.group.decideTemplate))}
+      <Button
+        aria-label={b.group.keys.hint}
+        className="ml-auto h-7 rounded-full px-2.5 font-mono text-[0.6875rem]"
+        onClick={onHelp}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        ?
+      </Button>
     </div>
+  )
+}
+
+export interface ThreadTailProps {
+  commands: RoomCommands
+  escalations: readonly RoomEscalation[]
+  live: ReadonlyMap<string, ReadonlySet<string>>
+  members: GroupMember[]
+  nameOf: (name: string) => string
+  onDismiss: (escalation: RoomEscalation) => void
+  sessions: Readonly<Record<string, string | true>> | undefined
+  thread: string
+}
+
+/** A thread's live tail in the log: who is working on it now (their current
+ *  tool), and anything stuck on it, with the fixes. */
+export function ThreadTail({
+  commands,
+  escalations,
+  live,
+  members,
+  nameOf,
+  onDismiss,
+  sessions,
+  thread
+}: ThreadTailProps) {
+  return (
+    <>
+      <ActivityLine
+        nameOf={nameOf}
+        names={[...(live.get(thread) ?? [])]}
+        sessionOf={name => {
+          const member = members.find(m => m.name === name)
+          const sid = member ? (sessions || {})[groupSessionKey(thread, member)] : null
+
+          return typeof sid === 'string' ? sid : null
+        }}
+      />
+      {escalations
+        .filter(e => e.handoff.thread === thread)
+        .map(e => (
+          <EscalationCard
+            escalation={e}
+            key={`${e.kind}:${e.handoff.id}`}
+            members={members}
+            nameOf={nameOf}
+            onDismiss={() => onDismiss(e)}
+            onNudge={() => commands.nudge(e.handoff)}
+            onReassign={member => commands.reassign(e.handoff, member)}
+          />
+        ))}
+    </>
   )
 }

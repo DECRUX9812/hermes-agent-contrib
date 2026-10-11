@@ -493,6 +493,7 @@ type BotsMessages = {
       doneWhen: string
       due: (minutes: number) => string
       declinedBecause: (why: string) => string
+      overdue: (minutes: number) => string
       clockHint: string
       status: { accepted: string; declined: string; delivered: string; open: string; working: string }
     }
@@ -515,6 +516,21 @@ type BotsMessages = {
     }
     shortcuts: { decide: string; handoff: string; status: string; task: string }
     decideTemplate: string
+    stopWork: string
+    recap: { again: string; empty: string; failed: string; thread: string; title: string; working: string }
+    catchUp: {
+      title: string
+      summary: (total: number, threads: number, since: string) => string
+      dismiss: string
+      escalated: string
+      question: string
+      fresh: (count: number) => string
+      delivered: (task: string) => string
+      working: (names: string) => string
+      summarize: string
+    }
+    keys: { all: string; board: string; help: string; hint: string; newThread: string; next: string; title: string }
+    alerts: { escalated: (task: string) => string; question: (name: string) => string }
     workingNow: (names: string) => string
     messageRoom: (group: string) => string
     newThreadPlaceholder: (group: string) => string
@@ -1325,6 +1341,7 @@ const en: BotsMessages = {
       doneWhen: 'Done when',
       due: minutes => `due in ${minutes} min`,
       declinedBecause: why => `declined: ${why}`,
+      overdue: minutes => `overdue ${minutes} min`,
       clockHint: 'nudge at 10 min · comes to you at 20',
       status: {
         accepted: 'Accepted',
@@ -1353,6 +1370,37 @@ const en: BotsMessages = {
     },
     shortcuts: { decide: 'Ask to decide', handoff: 'Hand off', status: 'Status check', task: 'Make task' },
     decideTemplate: '@everyone decide: <question> — options: A / B. Lead, give your pick and why.',
+    stopWork: 'Stop work',
+    recap: {
+      again: 'Recap again',
+      empty: 'Nothing to recap yet.',
+      failed: 'Recap unavailable — the summary model did not answer.',
+      thread: 'Recap this thread',
+      title: 'Recap',
+      working: 'Recapping…'
+    },
+    catchUp: {
+      title: 'While you were away',
+      summary: (total, threads, since) =>
+        `${total} new across ${threads} ${threads === 1 ? 'thread' : 'threads'} · since ${since}`,
+      dismiss: 'Got it',
+      escalated: 'escalated to you',
+      question: 'a question for you',
+      fresh: count => `${count} new`,
+      delivered: task => `delivered “${task}”`,
+      working: names => `${names} working`,
+      summarize: 'Summarize what I missed'
+    },
+    keys: {
+      all: 'Esc — back to All',
+      board: 'B — switch Room / Board',
+      help: '? — show this list',
+      hint: 'Press ? for shortcuts',
+      newThread: 'N — start a new thread',
+      next: 'J / K — next / previous thread',
+      title: 'Keyboard'
+    },
+    alerts: { escalated: task => `Needs you: “${task}” stalled`, question: name => `${name} asked you something` },
     workingNow: names => `Working now: ${names}`,
     messageRoom: group => `Message ${group}`,
     newThreadPlaceholder: group => `New thread in ${group}… (@name to direct, @everyone for all)`,
@@ -2147,6 +2195,7 @@ const ja: BotsMessages = {
       doneWhen: '完了条件',
       due: minutes => `期限 ${minutes} 分`,
       declinedBecause: why => `辞退: ${why}`,
+      overdue: minutes => `${minutes} 分超過`,
       clockHint: '10分で催促 · 20分であなたに届きます',
       status: { accepted: '受諾', declined: '辞退', delivered: '納品済み', open: '受け取り待ち', working: '作業中' }
     },
@@ -2169,6 +2218,36 @@ const ja: BotsMessages = {
     },
     shortcuts: { decide: '決定を依頼', handoff: '引き継ぐ', status: '状況確認', task: 'タスク化' },
     decideTemplate: '@everyone decide: <question> — options: A / B. Lead, give your pick and why.',
+    stopWork: '作業を停止',
+    recap: {
+      again: 'もう一度まとめる',
+      empty: 'まとめる内容はまだありません。',
+      failed: 'まとめを取得できませんでした。',
+      thread: 'このスレッドをまとめる',
+      title: 'まとめ',
+      working: 'まとめ中…'
+    },
+    catchUp: {
+      title: '不在中の出来事',
+      summary: (total, threads, since) => `${threads} スレッドで新着 ${total} 件 · ${since} 以降`,
+      dismiss: '了解',
+      escalated: 'あなたにエスカレーション',
+      question: 'あなたへの質問',
+      fresh: count => `新着 ${count}`,
+      delivered: task => `「${task}」納品`,
+      working: names => `${names} 作業中`,
+      summarize: '見逃した内容をまとめる'
+    },
+    keys: {
+      all: 'Esc — すべてに戻る',
+      board: 'B — ルーム / ボード切替',
+      help: '? — この一覧',
+      hint: '? でショートカット',
+      newThread: 'N — 新しいスレッド',
+      next: 'J / K — 次 / 前のスレッド',
+      title: 'キーボード'
+    },
+    alerts: { escalated: task => `要対応: 「${task}」が停滞`, question: name => `${name} から質問があります` },
     workingNow: names => `作業中: ${names}`,
     messageRoom: group => `${group}にメッセージ`,
     newThreadPlaceholder: group => `${group}で新しいスレッド…（@名前で個別、@everyoneで全員）`,
@@ -2952,6 +3031,7 @@ const zh: BotsMessages = {
       doneWhen: '完成标准',
       due: minutes => `${minutes} 分钟内`,
       declinedBecause: why => `已拒绝：${why}`,
+      overdue: minutes => `已超时 ${minutes} 分钟`,
       clockHint: '10 分钟提醒 · 20 分钟转给你',
       status: { accepted: '已接受', declined: '已拒绝', delivered: '已交付', open: '等待接手', working: '进行中' }
     },
@@ -2974,6 +3054,36 @@ const zh: BotsMessages = {
     },
     shortcuts: { decide: '请求决策', handoff: '交接', status: '进度检查', task: '设为任务' },
     decideTemplate: '@everyone decide: <question> — options: A / B. Lead, give your pick and why.',
+    stopWork: '停止工作',
+    recap: {
+      again: '重新总结',
+      empty: '暂无可总结的内容。',
+      failed: '总结不可用——模型没有回应。',
+      thread: '总结此话题',
+      title: '总结',
+      working: '总结中…'
+    },
+    catchUp: {
+      title: '你离开期间',
+      summary: (total, threads, since) => `${threads} 个话题共 ${total} 条新消息 · 自 ${since}`,
+      dismiss: '知道了',
+      escalated: '已升级给你',
+      question: '有问题问你',
+      fresh: count => `${count} 条新消息`,
+      delivered: task => `已交付“${task}”`,
+      working: names => `${names} 工作中`,
+      summarize: '总结我错过的内容'
+    },
+    keys: {
+      all: 'Esc — 返回全部',
+      board: 'B — 切换房间 / 看板',
+      help: '? — 显示此列表',
+      hint: '按 ? 查看快捷键',
+      newThread: 'N — 新话题',
+      next: 'J / K — 下一个 / 上一个话题',
+      title: '键盘'
+    },
+    alerts: { escalated: task => `需要你：“${task}”停滞了`, question: name => `${name} 向你提了问题` },
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `发消息给 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中开启新讨论串…（@名称指定，@everyone 全体）`,
@@ -3753,6 +3863,7 @@ const zhHant: BotsMessages = {
       doneWhen: '完成標準',
       due: minutes => `${minutes} 分鐘內`,
       declinedBecause: why => `已拒絕：${why}`,
+      overdue: minutes => `已逾時 ${minutes} 分鐘`,
       clockHint: '10 分鐘提醒 · 20 分鐘轉給你',
       status: { accepted: '已接受', declined: '已拒絕', delivered: '已交付', open: '等待接手', working: '進行中' }
     },
@@ -3775,6 +3886,36 @@ const zhHant: BotsMessages = {
     },
     shortcuts: { decide: '請求決策', handoff: '交接', status: '進度檢查', task: '設為任務' },
     decideTemplate: '@everyone decide: <question> — options: A / B. Lead, give your pick and why.',
+    stopWork: '停止工作',
+    recap: {
+      again: '重新總結',
+      empty: '目前沒有可總結的內容。',
+      failed: '總結無法使用——模型沒有回應。',
+      thread: '總結此話題',
+      title: '總結',
+      working: '總結中…'
+    },
+    catchUp: {
+      title: '你離開期間',
+      summary: (total, threads, since) => `${threads} 個話題共 ${total} 則新訊息 · 自 ${since}`,
+      dismiss: '知道了',
+      escalated: '已升級給你',
+      question: '有問題問你',
+      fresh: count => `${count} 則新訊息`,
+      delivered: task => `已交付「${task}」`,
+      working: names => `${names} 工作中`,
+      summarize: '總結我錯過的內容'
+    },
+    keys: {
+      all: 'Esc — 返回全部',
+      board: 'B — 切換房間 / 看板',
+      help: '? — 顯示此列表',
+      hint: '按 ? 查看快捷鍵',
+      newThread: 'N — 新話題',
+      next: 'J / K — 下一個 / 上一個話題',
+      title: '鍵盤'
+    },
+    alerts: { escalated: task => `需要你：「${task}」停滯了`, question: name => `${name} 向你提了問題` },
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `傳訊息給 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中開啟新討論串…（@名稱指定，@everyone 全體）`,

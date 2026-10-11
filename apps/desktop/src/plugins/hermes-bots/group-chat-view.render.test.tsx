@@ -512,3 +512,87 @@ it('runs the Command Room: handoff cards, a stalled handoff escalated with a wor
   expect(screen.queryByTestId('group-room-board')).toBeNull()
   expect(screen.getByTestId('group-thread-header').textContent).toContain('fix the header')
 })
+
+it('catches the CEO up, moves by keyboard, counts handoff clocks down, and alerts on a new stall', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const sdk = await import('@hermes/plugin-sdk')
+  const { $groupChats, groupChatRoomKey } = await import('./group-chat')
+  const { $groupVisitAnchor } = await import('./group-unread')
+  const { clearGroupComposerDraft, groupComposerDraftKey } = await import('./group-panes')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  clearGroupComposerDraft(groupComposerDraftKey('Room', { log: [], watermarks: {}, sessions: {} } as never))
+  const now = Date.now()
+  const min = 60_000
+  const members = [{ name: 'builder' }, { name: 'reviewer' }, { name: 'plugin' }] as never
+
+  const log = [
+    {
+      id: 'u1',
+      thread: 'a',
+      from: { kind: 'user' as const, name: 'You' },
+      text: 'ship the header',
+      at: now - 60 * min
+    },
+    {
+      id: 'm1',
+      thread: 'a',
+      from: { kind: 'member' as const, name: 'builder' },
+      text: '@reviewer handoff: check contrast · due: 5m',
+      at: now - 30 * min
+    },
+    { id: 'm2', thread: 'a', from: { kind: 'member' as const, name: 'reviewer' }, text: 'On it.', at: now - 20 * min },
+    { id: 'u2', thread: 'b', from: { kind: 'user' as const, name: 'You' }, text: 'theme plugin', at: now - 10 * min },
+    {
+      id: 'm3',
+      thread: 'b',
+      from: { kind: 'member' as const, name: 'builder' },
+      text: 'drafting tokens',
+      at: now - 5 * min
+    }
+  ]
+
+  const room = { log, watermarks: {}, sessions: {} }
+  $groupChats.set({ Room: room })
+  // The user last opened the room 15 minutes ago.
+  $groupVisitAnchor.set({ [groupChatRoomKey('Room', room as never)]: now - 15 * min })
+  const { rerender } = render(<GroupChatWorkspace group="Room" members={members} />)
+
+  // While you were away: only thread b moved since the visit.
+  const catchUp = screen.getByTestId('group-catchup-card')
+  expect(
+    within(catchUp)
+      .getAllByTestId('group-catchup-line')
+      .map(line => line.textContent)
+  ).toEqual([expect.stringContaining('theme plugin')])
+  fireEvent.click(within(catchUp).getByTestId('group-catchup-line'))
+  expect(screen.getByTestId('group-thread-header').textContent).toContain('theme plugin')
+
+  // Keyboard: Esc back to All, J to the first thread in the rail's order.
+  const logView = screen.getByTestId('group-room-log')
+  fireEvent.keyDown(logView, { key: 'Escape' })
+  expect(screen.queryByTestId('group-thread-header')).toBeNull()
+  fireEvent.keyDown(logView, { key: 'j' })
+  expect(screen.getByTestId('group-thread-header')).toBeTruthy()
+
+  // The accepted handoff was due 25 minutes ago: its clock says so.
+  fireEvent.keyDown(logView, { key: 'Escape' })
+  expect(screen.getByTestId('group-handoff-card').textContent).toContain('overdue 25 min')
+
+  // A NEW stalled handoff toasts the user; the ones present at open never did.
+  expect(sdk.host.notify).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'warning' }))
+
+  const stalled = {
+    id: 'm4',
+    thread: 'b',
+    from: { kind: 'member' as const, name: 'builder' },
+    text: '@plugin handoff: write tokens',
+    at: now - 25 * min
+  }
+
+  $groupChats.set({ Room: { ...room, log: [...log, stalled] } })
+  rerender(<GroupChatWorkspace group="Room" members={members} />)
+  expect(sdk.host.notify).toHaveBeenCalledWith(
+    expect.objectContaining({ kind: 'warning', message: expect.stringContaining('write tokens') })
+  )
+})

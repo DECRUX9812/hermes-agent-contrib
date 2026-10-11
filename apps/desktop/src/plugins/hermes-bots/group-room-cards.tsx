@@ -34,6 +34,19 @@ function Field({ label, children }: { children: string; label: string }) {
   )
 }
 
+/** "due in 12 min" or, past it, a red "overdue 5 min" — re-read on every
+ *  render, which the room's clock tick drives. */
+function DueClock({ at, minutes }: { at: number; minutes: number }) {
+  const b = useBots()
+  const left = Math.round((at + minutes * 60_000 - Date.now()) / 60_000)
+
+  return left >= 0 ? (
+    <span>{b.group.handoff.due(left)}</span>
+  ) : (
+    <span className="font-semibold text-red-600 dark:text-red-300">{b.group.handoff.overdue(-left)}</span>
+  )
+}
+
 export function HandoffCard({ handoff, nameOf }: { handoff: RoomHandoff; nameOf: (name: string) => string }) {
   const b = useBots()
   const h = b.group.handoff
@@ -63,7 +76,10 @@ export function HandoffCard({ handoff, nameOf }: { handoff: RoomHandoff; nameOf:
       </div>
       <div className="flex flex-wrap gap-x-3 px-3 pb-2 text-[0.625rem] text-(--ui-text-quaternary)">
         <span>{relativeTime(handoff.at)}</span>
-        {handoff.dueMinutes ? <span>{h.due(handoff.dueMinutes)}</span> : null}
+        {handoff.dueMinutes &&
+        (handoff.status === 'open' || handoff.status === 'accepted' || handoff.status === 'working') ? (
+          <DueClock at={handoff.at} minutes={handoff.dueMinutes} />
+        ) : null}
         {handoff.status === 'declined' && handoff.reply ? <span>{h.declinedBecause(handoff.reply)}</span> : null}
         {handoff.status === 'open' ? <span>{h.clockHint}</span> : null}
       </div>

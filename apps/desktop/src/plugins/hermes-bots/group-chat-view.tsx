@@ -55,6 +55,7 @@ import {
   $groupChatWorkspace,
   $groupClarify,
   $groupNeedsYou,
+  groupChatRoomKey,
   groupRoundContributions,
   groupThreadOf,
   scheduleGroupChatServerSync,
@@ -77,7 +78,6 @@ import {
   botGroups,
   groupChatMemberBots,
   groupMemberKey,
-  groupSessionKey,
   groupWorkspaceOwnerKey,
   liveGroupChatNames
 } from './group-membership'
@@ -96,20 +96,22 @@ import {
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { GroupRoomBoard } from './group-room-board'
-import { ActivityLine, EscalationCard, HandoffCard } from './group-room-cards'
-import { roomCommands, RoomDecisions, RoomShortcuts } from './group-room-command'
+import { HandoffCard } from './group-room-cards'
+import { CatchUpCard, RecapCard, roomCatchUp } from './group-room-catchup'
+import { roomCommands, RoomDecisions, RoomShortcuts, ThreadTail } from './group-room-command'
 import { GroupComposerContext, GroupThreadHeader } from './group-room-focus'
 import { deriveRoomHandoffs, roomEscalations, type RoomHandoff } from './group-room-handoffs'
 import { GroupRoomHeader } from './group-room-header'
+import { KeysHelp, roomKeyHandler, useNeedsYouAlerts, useRoomClock } from './group-room-keys'
 import { disbandGroupChat } from './group-room-lifecycle'
-import { GroupLogTail } from './group-room-log-tail'
+import { GroupLogTail, GroupRoomEmpty } from './group-room-log-tail'
 import { GroupRoomPanel, type RoomPanelTab } from './group-room-panel'
 import { GroupThreadRail } from './group-room-threads'
 import { roomLiveWork, roomWorkItems } from './group-room-work'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { renameGroupClarify } from './group-turns'
-import { markGroupRead } from './group-unread'
+import { $groupVisitAnchor, markGroupOpened } from './group-unread'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
 import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
@@ -633,6 +635,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const [view, setView] = useState<'board' | 'room'>('room')
   const [panelTab, setPanelTab] = useState<RoomPanelTab>('floor')
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set())
+  const [catchUpDismissed, setCatchUpDismissed] = useState(false)
+  const [keysOpen, setKeysOpen] = useState(false)
+  const visitAnchor = useValue($groupVisitAnchor)[groupChatRoomKey(group, room)] || 0
+  useRoomClock()
   // Focus mode (ADHD-friendly): dim everything before the newest exchange so
   // the room reads as ONE thing to look at, not a wall of history. Dimmed
   // rows stay reachable — hover or keyboard focus restores them, so nothing
@@ -879,6 +885,27 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   }
 
   const commands = roomCommands(group, members, () => memberDescriptors())
+  const memberKeyName = (key: string) => memberLabel(members.find(m => groupMemberKey(m) === key)?.name || key)
+  useNeedsYouAlerts(escalations, roomClarifies, memberKeyName)
+
+  const onRoomKey = roomKeyHandler({
+    focusThread: focusedItem ? focusThread : null,
+    onBoard: () => setView(current => (current === 'board' ? 'room' : 'board')),
+    onHelp: () => setKeysOpen(open => !open),
+    onNewThread: () => openThread(null),
+    onOpen: thread => (keysOpen && thread === null ? setKeysOpen(false) : openThread(thread)),
+    threads: workItems.map(item => item.thread)
+  })
+
+  // "While you were away": only with history from before this visit.
+  const catchUp = roomCatchUp(room.log, visitAnchor, {
+    escalations,
+    handoffs,
+    items: workItems,
+    waiting: new Set(roomClarifies.map(entry => entry.thread || 'legacy'))
+  })
+
+  const showCatchUp = !catchUpDismissed && !focusedItem && visitAnchor > 0 && catchUp.lines.length > 0
 
   const dismissEscalation = (e: { handoff: RoomHandoff; kind: string }) =>
     setDismissed(prev => new Set([...prev, escalationKey(e)]))
@@ -887,34 +914,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     setPanelOpen(true)
     setPanelTab(tab)
   }
-
-  // A thread's live tail: who is working on it now, and anything stuck.
-  const threadTail = (thread: string) => [
-    <ActivityLine
-      key={`activity:${thread}`}
-      nameOf={memberLabel}
-      names={[...(liveWork.get(thread) ?? [])]}
-      sessionOf={name => {
-        const member = members.find(m => m.name === name)
-        const sid = member ? (room.sessions || {})[groupSessionKey(thread, member)] : null
-
-        return typeof sid === 'string' ? sid : null
-      }}
-    />,
-    ...escalations
-      .filter(e => e.handoff.thread === thread)
-      .map(e => (
-        <EscalationCard
-          escalation={e}
-          key={`escalation:${escalationKey(e)}`}
-          members={members}
-          nameOf={memberLabel}
-          onDismiss={() => dismissEscalation(e)}
-          onNudge={() => commands.nudge(e.handoff)}
-          onReassign={member => commands.reassign(e.handoff, member)}
-        />
-      ))
-  ]
 
   const workingNames = members
     .filter(member => workingNow.has(member.name))
@@ -1563,7 +1562,19 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       return
     }
 
-    logChildren.push(...threadTail(id))
+    logChildren.push(
+      <ThreadTail
+        commands={commands}
+        escalations={escalations}
+        key={`tail:${id}`}
+        live={liveWork}
+        members={members}
+        nameOf={memberLabel}
+        onDismiss={dismissEscalation}
+        sessions={room.sessions}
+        thread={id}
+      />
+    )
 
     // The thread's tail: how much is in it and a way in. Replies go through
     // the one bottom composer, never a box opened mid-log.
@@ -1608,6 +1619,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         }
       }}
       onDrop={dropFiles}
+      onKeyDown={onRoomKey}
     >
       {dragOver ? (
         <div
@@ -1618,6 +1630,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         </div>
       ) : null}
       {header}
+      {keysOpen ? <KeysHelp onClose={() => setKeysOpen(false)} /> : null}
       <div className="flex min-h-0 flex-1">
         <div className="hidden min-h-0 @3xl:flex">
           <GroupThreadRail
@@ -1642,6 +1655,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               item={focusedItem}
               nameOf={memberLabel}
               onBack={() => openThread(null)}
+              onStop={() => void stopGroupThread(group, focusedItem.thread, members)}
               owner={focusedItem.assignees.find(name => members.some(m => m.name === name && !m.remoteSource)) || null}
               teamId={teamLead?.teamId || null}
             />
@@ -1684,48 +1698,33 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             {/* unbreakable code line widened every entry to its own width and the */}
             {/* log scrolled sideways as a whole instead of the code block (#91878). */}
             <div className="grid grid-cols-[minmax(0,1fr)] gap-1 px-2.5 pb-2 pt-1">
+              {showCatchUp ? (
+                <CatchUpCard
+                  catchUp={catchUp}
+                  missed={room.log.filter(entry => Number(entry.at) > visitAnchor)}
+                  nameOf={memberLabel}
+                  onDismiss={() => setCatchUpDismissed(true)}
+                  onOpen={openThread}
+                />
+              ) : null}
+              {focusedItem ? (
+                <RecapCard
+                  entries={room.log.filter(entry => groupThreadOf(entry) === focusedItem.thread)}
+                  key={`recap:${focusedItem.thread}`}
+                  label={b.group.recap.thread}
+                  nameOf={memberLabel}
+                />
+              ) : null}
               {room.log.length
                 ? logChildren
                 : [
-                    <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center" key={'empty'}>
-                      {room.image ? (
-                        <img
-                          alt=""
-                          className="size-11 rounded-xl object-cover ring-1 ring-(--ui-stroke-secondary)"
-                          src={room.image}
-                        />
-                      ) : (
-                        <span className="flex size-11 items-center justify-center rounded-xl bg-(--chrome-action-hover) text-lg text-(--ui-text-tertiary)">
-                          <Codicon name="organization" />
-                        </span>
-                      )}
-                      {members.length ? (
-                        <span aria-hidden className="flex -space-x-1">
-                          {members.slice(0, 6).map((member, faceIndex) => {
-                            const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
-                            const faceImage = faceAppearance.image
-
-                            return (
-                              <span
-                                className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
-                                key={`empty-face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
-                              >
-                                <BotFace
-                                  color={avatarColor(faceAppearance.color, member.name)}
-                                  image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
-                                  name={member.name}
-                                  shape={faceAppearance.shape}
-                                  size={22}
-                                />
-                              </span>
-                            )
-                          })}
-                        </span>
-                      ) : null}
-                      <div className="max-w-72 text-xs text-(--ui-text-tertiary)">
-                        {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
-                      </div>
-                    </div>
+                    <GroupRoomEmpty
+                      allMeta={allMeta}
+                      image={room.image || null}
+                      key={'empty'}
+                      leadName={teamLead && leadName ? leadName : ''}
+                      members={members}
+                    />
                   ]}
               {roomClarifies.map(entry => (
                 <div className="pt-1" key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}>
@@ -1819,6 +1818,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             <RoomShortcuts
               commands={commands}
               firstTag={groupReplyMentionTag(leadMember || members[0] || { name: 'everyone' }, members) || 'everyone'}
+              onHelp={() => setKeysOpen(open => !open)}
               onInsert={text =>
                 replyThread ? setReplyDrafts(prev => ({ ...prev, [replyThread]: text })) : setDraft(text)
               }
@@ -1957,7 +1957,7 @@ export function openGroupChat(group: string): void {
     ...$groupNeedsYou.get(),
     [group]: false
   })
-  markGroupRead(group)
+  markGroupOpened(group)
   const ownerKey = groupWorkspaceOwnerKey(group)
   setBotsWorkspaceOwner(ownerKey, null, 'New group conversations start in the group composer.')
   // #93813: what reached the members' room sessions while nobody drove them

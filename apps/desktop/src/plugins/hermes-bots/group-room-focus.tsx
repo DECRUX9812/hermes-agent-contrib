@@ -31,9 +31,11 @@ export interface GroupThreadHeaderProps {
   /** Seat profile that owns the thread's task, when one holds a seat. */
   owner: null | string
   teamId: null | string
+  /** Stop the thread's running turns (shown while it is working). */
+  onStop?: () => void
 }
 
-export function GroupThreadHeader({ item, nameOf, onBack, owner, teamId }: GroupThreadHeaderProps) {
+export function GroupThreadHeader({ item, nameOf, onBack, onStop, owner, teamId }: GroupThreadHeaderProps) {
   const b = useBots()
   const [filed, setFiled] = useState(false)
   const who = item.working.length ? item.working : item.assignees
@@ -79,6 +81,12 @@ export function GroupThreadHeader({ item, nameOf, onBack, owner, teamId }: Group
           <span className="tabular-nums text-(--ui-text-quaternary)">{b.group.workCount(item.count)}</span>
         </div>
       </div>
+      {onStop && item.status === 'working' ? (
+        <Button className="shrink-0 text-red-700 dark:text-red-300" onClick={onStop} size="sm" variant="outline">
+          <Codicon name="debug-stop" />
+          {b.group.stopWork}
+        </Button>
+      ) : null}
       {teamId ? (
         <Button className="shrink-0" disabled={filed} onClick={() => void fileTask()} size="sm" variant="secondary">
           <Codicon name={filed ? 'check' : 'tasklist'} />

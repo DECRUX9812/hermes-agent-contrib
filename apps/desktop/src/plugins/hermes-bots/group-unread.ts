@@ -77,6 +77,24 @@ export function noteGroupRoomsSeen(rooms: Record<string, GroupChat | undefined>)
 
 /** Read = newest entry seen. Opening a room (or watching it while open)
  *  clears the badge; called beside the needs-you clear in openGroupChat. */
+/** roomKey → the read mark as it stood when the user last OPENED the room —
+ *  the "while you were away" anchor. markGroupRead moves the live mark to the
+ *  tail the moment a room opens (and keeps it there while open), so the
+ *  catch-up card needs the value from just before. Runtime-only, like the mark. */
+export const $groupVisitAnchor = atom<Record<string, number>>({})
+
+/** Opening a room: remember where the user left off, then mark it read. */
+export function markGroupOpened(group: string): void {
+  const room = $groupChats.get()[group]
+
+  if (room) {
+    const key = groupChatRoomKey(group, room)
+    $groupVisitAnchor.set({ ...$groupVisitAnchor.get(), [key]: $groupReadAt.get()[key] || 0 })
+  }
+
+  markGroupRead(group)
+}
+
 export function markGroupRead(group: string): void {
   const room = $groupChats.get()[group]
 
