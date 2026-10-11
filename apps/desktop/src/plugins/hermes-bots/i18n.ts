@@ -474,6 +474,47 @@ type BotsMessages = {
     composerNewThreadTo: (name: string) => string
     composerNewThreadEveryone: string
     composerStartNew: string
+    panelFloor: string
+    panelDecisions: string
+    decisionsEmpty: string
+    decisionQuestion: (name: string) => string
+    deskTitle: string
+    deskNeedsYou: string
+    deskFloor: (count: number) => string
+    viewRoom: string
+    viewBoard: string
+    activityLabel: string
+    activityTool: (tool: string) => string
+    activityWorking: string
+    handoff: {
+      label: (from: string, to: string) => string
+      title: string
+      task: string
+      doneWhen: string
+      due: (minutes: number) => string
+      declinedBecause: (why: string) => string
+      clockHint: string
+      status: { accepted: string; declined: string; delivered: string; open: string; working: string }
+    }
+    escalation: {
+      title: string
+      loop: (a: string, b: string) => string
+      stalled: (from: string, to: string) => string
+      reassign: string
+      nudge: (name: string) => string
+      dismiss: string
+    }
+    board: {
+      needsYou: string
+      working: string
+      openHandoffs: string
+      deliveredToday: string
+      filter: string
+      everyone: string
+      column: { answered: string; needs: string; waiting: string; working: string }
+    }
+    shortcuts: { decide: string; handoff: string; status: string; task: string }
+    decideTemplate: string
     workingNow: (names: string) => string
     messageRoom: (group: string) => string
     newThreadPlaceholder: (group: string) => string
@@ -1265,6 +1306,53 @@ const en: BotsMessages = {
     composerNewThreadTo: name => `New thread · ${name} answers, @mention anyone`,
     composerNewThreadEveryone: 'New thread · everyone hears it',
     composerStartNew: 'New thread',
+    panelFloor: 'On the floor',
+    panelDecisions: 'Decisions',
+    decisionsEmpty: 'Nothing waiting on you. Stalled handoffs, loops and questions land here.',
+    decisionQuestion: name => `${name} asked you something`,
+    deskTitle: 'Your desk',
+    deskNeedsYou: 'Needs you',
+    deskFloor: count => `${count} working`,
+    viewRoom: 'Room',
+    viewBoard: 'Board',
+    activityLabel: 'Live activity',
+    activityTool: tool => `now: ${tool}`,
+    activityWorking: 'working…',
+    handoff: {
+      label: (from, to) => `Handoff from ${from} to ${to}`,
+      title: 'Handoff',
+      task: 'Task',
+      doneWhen: 'Done when',
+      due: minutes => `due in ${minutes} min`,
+      declinedBecause: why => `declined: ${why}`,
+      clockHint: 'nudge at 10 min · comes to you at 20',
+      status: {
+        accepted: 'Accepted',
+        declined: 'Declined',
+        delivered: 'Delivered',
+        open: 'Waiting for pickup',
+        working: 'Working'
+      }
+    },
+    escalation: {
+      title: 'Escalated to you',
+      loop: (a, b) => `${a} and ${b} keep handing this back and forth`,
+      stalled: (from, to) => `${from} → ${to} · no pickup for 20 min`,
+      reassign: 'Reassign',
+      nudge: name => `Nudge ${name}`,
+      dismiss: 'Skip'
+    },
+    board: {
+      needsYou: 'Needs you',
+      working: 'Working now',
+      openHandoffs: 'Handed off, not picked up',
+      deliveredToday: 'Delivered today',
+      filter: 'Filter by teammate',
+      everyone: 'Everyone',
+      column: { answered: 'Answered', needs: 'Needs you', waiting: 'Waiting on the team', working: 'Working' }
+    },
+    shortcuts: { decide: 'Ask to decide', handoff: 'Hand off', status: 'Status check', task: 'Make task' },
+    decideTemplate: '@everyone decide: <question> — options: A / B. Lead, give your pick and why.',
     workingNow: names => `Working now: ${names}`,
     messageRoom: group => `Message ${group}`,
     newThreadPlaceholder: group => `New thread in ${group}… (@name to direct, @everyone for all)`,
@@ -2040,6 +2128,47 @@ const ja: BotsMessages = {
     composerNewThreadTo: name => `新しいスレッド · ${name} が応答、@メンションで指名`,
     composerNewThreadEveryone: '新しいスレッド · 全員に届きます',
     composerStartNew: '新しいスレッド',
+    panelFloor: 'フロア',
+    panelDecisions: '決定',
+    decisionsEmpty: 'あなた待ちの項目はありません。止まった引き継ぎ、ループ、質問がここに届きます。',
+    decisionQuestion: name => `${name} から質問があります`,
+    deskTitle: 'あなたのデスク',
+    deskNeedsYou: '要対応',
+    deskFloor: count => `${count} 件作業中`,
+    viewRoom: 'ルーム',
+    viewBoard: 'ボード',
+    activityLabel: 'ライブアクティビティ',
+    activityTool: tool => `現在: ${tool}`,
+    activityWorking: '作業中…',
+    handoff: {
+      label: (from, to) => `${from} から ${to} への引き継ぎ`,
+      title: '引き継ぎ',
+      task: 'タスク',
+      doneWhen: '完了条件',
+      due: minutes => `期限 ${minutes} 分`,
+      declinedBecause: why => `辞退: ${why}`,
+      clockHint: '10分で催促 · 20分であなたに届きます',
+      status: { accepted: '受諾', declined: '辞退', delivered: '納品済み', open: '受け取り待ち', working: '作業中' }
+    },
+    escalation: {
+      title: 'あなたにエスカレーション',
+      loop: (a, b) => `${a} と ${b} の間で行き来しています`,
+      stalled: (from, to) => `${from} → ${to} · 20分間受け取りなし`,
+      reassign: '担当変更',
+      nudge: name => `${name} に催促`,
+      dismiss: 'スキップ'
+    },
+    board: {
+      needsYou: '要対応',
+      working: '作業中',
+      openHandoffs: '未受領の引き継ぎ',
+      deliveredToday: '本日の納品',
+      filter: 'メンバーで絞り込み',
+      everyone: '全員',
+      column: { answered: '回答済み', needs: '要対応', waiting: 'チーム待ち', working: '作業中' }
+    },
+    shortcuts: { decide: '決定を依頼', handoff: '引き継ぐ', status: '状況確認', task: 'タスク化' },
+    decideTemplate: '@everyone decide: <question> — options: A / B. Lead, give your pick and why.',
     workingNow: names => `作業中: ${names}`,
     messageRoom: group => `${group}にメッセージ`,
     newThreadPlaceholder: group => `${group}で新しいスレッド…（@名前で個別、@everyoneで全員）`,
@@ -2804,6 +2933,47 @@ const zh: BotsMessages = {
     composerNewThreadTo: name => `新话题 · 由 ${name} 回答，@提及 指定成员`,
     composerNewThreadEveryone: '新话题 · 所有人都能收到',
     composerStartNew: '新话题',
+    panelFloor: '现场',
+    panelDecisions: '决策',
+    decisionsEmpty: '没有等你处理的事。停滞的交接、循环和提问会出现在这里。',
+    decisionQuestion: name => `${name} 向你提了问题`,
+    deskTitle: '你的工作台',
+    deskNeedsYou: '需要你',
+    deskFloor: count => `${count} 个在工作`,
+    viewRoom: '房间',
+    viewBoard: '看板',
+    activityLabel: '实时动态',
+    activityTool: tool => `当前：${tool}`,
+    activityWorking: '工作中…',
+    handoff: {
+      label: (from, to) => `${from} 交接给 ${to}`,
+      title: '交接',
+      task: '任务',
+      doneWhen: '完成标准',
+      due: minutes => `${minutes} 分钟内`,
+      declinedBecause: why => `已拒绝：${why}`,
+      clockHint: '10 分钟提醒 · 20 分钟转给你',
+      status: { accepted: '已接受', declined: '已拒绝', delivered: '已交付', open: '等待接手', working: '进行中' }
+    },
+    escalation: {
+      title: '已升级给你',
+      loop: (a, b) => `${a} 和 ${b} 在来回推这件事`,
+      stalled: (from, to) => `${from} → ${to} · 20 分钟无人接手`,
+      reassign: '改派',
+      nudge: name => `提醒 ${name}`,
+      dismiss: '跳过'
+    },
+    board: {
+      needsYou: '需要你',
+      working: '进行中',
+      openHandoffs: '已交接未接手',
+      deliveredToday: '今日交付',
+      filter: '按成员筛选',
+      everyone: '所有人',
+      column: { answered: '已回复', needs: '需要你', waiting: '等待团队', working: '进行中' }
+    },
+    shortcuts: { decide: '请求决策', handoff: '交接', status: '进度检查', task: '设为任务' },
+    decideTemplate: '@everyone decide: <question> — options: A / B. Lead, give your pick and why.',
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `发消息给 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中开启新讨论串…（@名称指定，@everyone 全体）`,
@@ -3564,6 +3734,47 @@ const zhHant: BotsMessages = {
     composerNewThreadTo: name => `新話題 · 由 ${name} 回答，@提及 指定成員`,
     composerNewThreadEveryone: '新話題 · 所有人都會收到',
     composerStartNew: '新話題',
+    panelFloor: '現場',
+    panelDecisions: '決策',
+    decisionsEmpty: '沒有等你處理的事。停滯的交接、循環和提問會出現在這裡。',
+    decisionQuestion: name => `${name} 向你提了問題`,
+    deskTitle: '你的工作台',
+    deskNeedsYou: '需要你',
+    deskFloor: count => `${count} 個在工作`,
+    viewRoom: '房間',
+    viewBoard: '看板',
+    activityLabel: '即時動態',
+    activityTool: tool => `目前：${tool}`,
+    activityWorking: '工作中…',
+    handoff: {
+      label: (from, to) => `${from} 交接給 ${to}`,
+      title: '交接',
+      task: '任務',
+      doneWhen: '完成標準',
+      due: minutes => `${minutes} 分鐘內`,
+      declinedBecause: why => `已拒絕：${why}`,
+      clockHint: '10 分鐘提醒 · 20 分鐘轉給你',
+      status: { accepted: '已接受', declined: '已拒絕', delivered: '已交付', open: '等待接手', working: '進行中' }
+    },
+    escalation: {
+      title: '已升級給你',
+      loop: (a, b) => `${a} 和 ${b} 在來回推這件事`,
+      stalled: (from, to) => `${from} → ${to} · 20 分鐘無人接手`,
+      reassign: '改派',
+      nudge: name => `提醒 ${name}`,
+      dismiss: '略過'
+    },
+    board: {
+      needsYou: '需要你',
+      working: '進行中',
+      openHandoffs: '已交接未接手',
+      deliveredToday: '今日交付',
+      filter: '依成員篩選',
+      everyone: '所有人',
+      column: { answered: '已回覆', needs: '需要你', waiting: '等待團隊', working: '進行中' }
+    },
+    shortcuts: { decide: '請求決策', handoff: '交接', status: '進度檢查', task: '設為任務' },
+    decideTemplate: '@everyone decide: <question> — options: A / B. Lead, give your pick and why.',
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `傳訊息給 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中開啟新討論串…（@名稱指定，@everyone 全體）`,

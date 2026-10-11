@@ -357,7 +357,7 @@ it('runs the room as threads: the rail focuses one, its header says where it sta
 
   // The team panel sits beside the room with the squad in it.
   expect(screen.getByTestId('group-room-panel')).toBeTruthy()
-  expect(screen.getAllByRole('button', { name: /^Ask / })).toHaveLength(1)
+  expect(screen.getAllByRole('button', { name: /^Ask builder/i })).toHaveLength(1)
 
   // Rail → one thread on screen; the other thread's ask leaves the log.
   const rail = screen.getByTestId('group-thread-rail')
@@ -461,4 +461,54 @@ it('focus mode dims history but keeps the final run and hover-reachable', async 
   fireEvent.click(toggle)
   expect(toggle.getAttribute('aria-pressed')).toBe('false')
   expect(dimmed()).toHaveLength(0)
+})
+
+it('runs the Command Room: handoff cards, a stalled handoff escalated with a working Reassign, and the Board', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { clearGroupComposerDraft, groupComposerDraftKey } = await import('./group-panes')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  clearGroupComposerDraft(groupComposerDraftKey('Room', { log: [], watermarks: {}, sessions: {} } as never))
+  const stale = Date.now() - 25 * 60_000
+
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'fix the header', at: stale - 1000 },
+    {
+      id: 'm1',
+      thread: 'a',
+      from: { kind: 'member' as const, name: 'builder' },
+      text: 'Plan set.\n@reviewer handoff: check contrast · done when: names readable · due: 15m',
+      at: stale
+    }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  render(
+    <GroupChatWorkspace
+      group="Room"
+      members={[{ name: 'builder' }, { name: 'reviewer' }, { name: 'plugin' }] as never}
+    />
+  )
+
+  // The handoff line reads as a contract card, still waiting for pickup…
+  const card = screen.getByTestId('group-handoff-card')
+  expect(card.textContent).toContain('check contrast')
+  expect(card.textContent).toContain('names readable')
+  expect(card.getAttribute('data-handoff-status')).toBe('open')
+
+  // …and 25 minutes on, it is escalated to the user with the fixes on it.
+  const escalation = screen.getAllByTestId('group-escalation-card')[0]!
+  fireEvent.click(within(escalation).getByRole('button', { name: 'Reassign' }))
+  fireEvent.click(within(escalation).getByRole('button', { name: /plugin/i }))
+  const sent = $groupChats.get().Room!.log.at(-1)!
+  expect(sent.thread).toBe('a')
+  expect(sent.text).toMatch(/^@plugin handoff: check contrast · done when: names readable · due: 15m$/)
+
+  // The Board shows the work by stage; a card opens its thread in the room.
+  fireEvent.click(screen.getByRole('button', { name: 'Board' }))
+  const board = screen.getByTestId('group-room-board')
+  fireEvent.click(within(board).getAllByTestId('group-board-card')[0]!)
+  expect(screen.queryByTestId('group-room-board')).toBeNull()
+  expect(screen.getByTestId('group-thread-header').textContent).toContain('fix the header')
 })

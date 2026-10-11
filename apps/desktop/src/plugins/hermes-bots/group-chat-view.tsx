@@ -77,6 +77,7 @@ import {
   botGroups,
   groupChatMemberBots,
   groupMemberKey,
+  groupSessionKey,
   groupWorkspaceOwnerKey,
   liveGroupChatNames
 } from './group-membership'
@@ -94,10 +95,15 @@ import {
   updateGroupComposerDraft
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
+import { GroupRoomBoard } from './group-room-board'
+import { ActivityLine, EscalationCard, HandoffCard } from './group-room-cards'
+import { roomCommands, RoomDecisions, RoomShortcuts } from './group-room-command'
 import { GroupComposerContext, GroupThreadHeader } from './group-room-focus'
+import { deriveRoomHandoffs, roomEscalations, type RoomHandoff } from './group-room-handoffs'
+import { GroupRoomHeader } from './group-room-header'
 import { disbandGroupChat } from './group-room-lifecycle'
 import { GroupLogTail } from './group-room-log-tail'
-import { GroupRoomPanel } from './group-room-panel'
+import { GroupRoomPanel, type RoomPanelTab } from './group-room-panel'
 import { GroupThreadRail } from './group-room-threads'
 import { roomLiveWork, roomWorkItems } from './group-room-work'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
@@ -622,6 +628,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const [panelOpen, setPanelOpen] = useState(true)
   // One thread on screen at a time when picked from the rail; null = All.
   const [focusThread, setFocusThread] = useState<null | string>(null)
+  // Command Room: the conversation or the CEO Board; the panel's tab; the
+  // escalations the user waved off this session.
+  const [view, setView] = useState<'board' | 'room'>('room')
+  const [panelTab, setPanelTab] = useState<RoomPanelTab>('floor')
+  const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set())
   // Focus mode (ADHD-friendly): dim everything before the newest exchange so
   // the room reads as ONE thing to look at, not a wall of history. Dimmed
   // rows stay reachable — hover or keyboard focus restores them, so nothing
@@ -831,10 +842,23 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     names.forEach(name => workingNow.add(name))
   }
 
+  // The handoff protocol: contracts read off the log, and what reaches the user.
+  const handoffs = deriveRoomHandoffs(room.log, members, { live: liveWork })
+  const escalationKey = (e: { handoff: RoomHandoff; kind: string }) => `${e.kind}:${e.handoff.id}`
+  const escalations = roomEscalations(handoffs, room.log).filter(e => !dismissed.has(escalationKey(e)))
+  const handoffsAt = new Map<number, RoomHandoff[]>()
+
+  for (const handoff of handoffs) {
+    handoffsAt.set(handoff.index, [...(handoffsAt.get(handoff.index) ?? []), handoff])
+  }
+
   const workItems = roomWorkItems(room.log, {
     live: liveWork,
     running: Boolean(room.running),
-    waitingThreads: new Set(roomClarifies.map(entry => entry.thread || 'legacy'))
+    waitingThreads: new Set([
+      ...roomClarifies.map(entry => entry.thread || 'legacy'),
+      ...escalations.map(e => e.handoff.thread)
+    ])
   })
 
   const focusedItem = focusThread ? workItems.find(item => item.thread === focusThread) || null : null
@@ -848,10 +872,49 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
   // Rail / thread link: show one thread and point the composer at it.
   const openThread = (thread: null | string) => {
+    setView('room')
     setFocusThread(thread)
     setReplyThread(thread)
     stickToBottomRef.current = true
   }
+
+  const commands = roomCommands(group, members, () => memberDescriptors())
+
+  const dismissEscalation = (e: { handoff: RoomHandoff; kind: string }) =>
+    setDismissed(prev => new Set([...prev, escalationKey(e)]))
+
+  const openPanel = (tab: RoomPanelTab) => {
+    setPanelOpen(true)
+    setPanelTab(tab)
+  }
+
+  // A thread's live tail: who is working on it now, and anything stuck.
+  const threadTail = (thread: string) => [
+    <ActivityLine
+      key={`activity:${thread}`}
+      nameOf={memberLabel}
+      names={[...(liveWork.get(thread) ?? [])]}
+      sessionOf={name => {
+        const member = members.find(m => m.name === name)
+        const sid = member ? (room.sessions || {})[groupSessionKey(thread, member)] : null
+
+        return typeof sid === 'string' ? sid : null
+      }}
+    />,
+    ...escalations
+      .filter(e => e.handoff.thread === thread)
+      .map(e => (
+        <EscalationCard
+          escalation={e}
+          key={`escalation:${escalationKey(e)}`}
+          members={members}
+          nameOf={memberLabel}
+          onDismiss={() => dismissEscalation(e)}
+          onNudge={() => commands.nudge(e.handoff)}
+          onReassign={member => commands.reassign(e.handoff, member)}
+        />
+      ))
+  ]
 
   const workingNames = members
     .filter(member => workingNow.has(member.name))
@@ -867,161 +930,26 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     (members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat')
 
   const header = (
-    <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-2">
-      <Tip label={t.common.back}>
-        <Button
-          aria-label={t.common.back}
-          className="shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
-          onClick={() => (onBack ? onBack() : $groupChatWorkspace.set(null))}
-          size="icon-xs"
-          variant="ghost"
-        >
-          <Codicon name="chevron-left" />
-        </Button>
-      </Tip>
-      {/* Room picture (set via Group settings) leads the title when present. */}
-      {room.image ? (
-        <img
-          alt=""
-          className="size-6 shrink-0 rounded-md object-cover ring-1 ring-(--ui-stroke-secondary)"
-          src={room.image}
-        />
-      ) : (
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-tertiary)">
-          <Codicon name="organization" />
-        </span>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold">{group}</div>
-        {room.goal ? (
-          <div className="truncate text-[0.6875rem] text-(--ui-text-tertiary)" data-testid="group-goal">
-            {room.goal}
-          </div>
-        ) : null}
-      </div>
-      {/* Face pile: the member count alone reads as a number; overlapping
-          faces read as a ROOM. Click opens the member manager. */}
-      {members.length ? (
-        <Tip label={memberNames}>
-          <Button
-            aria-label="Manage group members"
-            className={cn('flex shrink-0 items-center -space-x-1 rounded-full p-0.5', panelOpen && '@5xl:hidden')}
-            onClick={() => setMemberPickerOpen(true)}
-            size="inline"
-            variant="text"
-          >
-            {members.slice(0, 5).map((member, faceIndex) => {
-              const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
-              const faceImage = faceAppearance.image
-              const working = workingNow.has(member.name)
-
-              return (
-                <span
-                  className={cn('relative shrink-0', working && 'z-10')}
-                  data-working={working ? '' : undefined}
-                  key={`face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
-                >
-                  {/* The face clips its own overflow, so the working ring can't
-                      live on it — an opacity fade on an 18px avatar read as
-                      nothing. The halo is a sibling square that scales out and
-                      fades (ping), over a steady accent ring underneath. */}
-                  <span
-                    className={cn(
-                      'block overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)',
-                      working && 'ring-2 ring-(--ui-accent)'
-                    )}
-                  >
-                    <BotFace
-                      color={avatarColor(faceAppearance.color, member.name)}
-                      image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
-                      name={member.name}
-                      shape={faceAppearance.shape}
-                      size={18}
-                    />
-                  </span>
-                  {working ? (
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 rounded-[22%] ring-2 ring-(--ui-accent) motion-safe:animate-ping"
-                      data-testid="group-working-halo"
-                    />
-                  ) : null}
-                </span>
-              )
-            })}
-            {members.length > 5 ? (
-              <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-(--chrome-action-hover) text-[0.55rem] font-medium text-(--ui-text-tertiary) ring-1 ring-(--ui-bg-primary)">
-                {`+${members.length - 5}`}
-              </span>
-            ) : null}
-          </Button>
-        </Tip>
-      ) : null}
-      {/* The ring lives on an 18px face in a corner — easy to miss, which is
-          exactly what happened. The same fact in words, next to the faces,
-          answers "are you guys even working?" without anyone hunting for it. */}
-      {workingLabel ? (
-        <span
-          className="flex min-w-0 max-w-[11rem] shrink items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-2 py-0.5 text-[0.625rem] text-(--ui-text-secondary)"
-          data-testid="group-working-chip"
-        >
-          <span aria-hidden className="relative flex size-1.5 shrink-0">
-            <span className="absolute inset-0 rounded-full bg-(--ui-accent) motion-safe:animate-ping" />
-            <span className="relative inline-flex size-1.5 rounded-full bg-(--ui-accent)" />
-          </span>
-          <span className="truncate">{b.group.workingNow(workingLabel)}</span>
-        </span>
-      ) : null}
-      {/* The face pile already says how many; the label only speaks up when
-          a member can't answer right now. */}
-      {members.length > 0 && availableMembers < members.length ? (
-        <span aria-label={availabilityLabel} className="shrink-0 text-[0.625rem] text-amber-600 dark:text-amber-300">
-          {availabilityLabel}
-        </span>
-      ) : null}
-      <Tip label={b.group.panelToggle}>
-        <Button
-          aria-label={b.group.panelToggle}
-          aria-pressed={panelOpen}
-          className={cn(
-            'hidden shrink-0 hover:text-foreground @5xl:inline-flex',
-            panelOpen ? 'text-foreground' : 'text-(--ui-text-tertiary)'
-          )}
-          onClick={() => setPanelOpen(open => !open)}
-          size="sm"
-          variant="ghost"
-        >
-          <Codicon name="layout-sidebar-right" />
-        </Button>
-      </Tip>
-      <Tip label={b.group.focusModeHint}>
-        <Button
-          aria-label={b.group.focusMode}
-          aria-pressed={focusMode}
-          className={cn(
-            'shrink-0 hover:text-foreground',
-            focusMode ? 'text-(--ui-accent)' : 'text-(--ui-text-tertiary)'
-          )}
-          data-testid="group-focus-toggle"
-          onClick={() => setFocusMode(on => !on)}
-          size="sm"
-          variant="ghost"
-        >
-          <Codicon name="filter" />
-        </Button>
-      </Tip>
-      <Tip label={b.group.settingsHint(group)}>
-        <Button
-          aria-label={b.group.settingsLabel(group)}
-          className="shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
-          onClick={() => setSettingsOpen(true)}
-          size="sm"
-          variant="ghost"
-        >
-          <Codicon name="gear" />
-        </Button>
-      </Tip>
-    </div>
+    <GroupRoomHeader
+      allMeta={allMeta}
+      availabilityLabel={availabilityLabel}
+      availableMembers={availableMembers}
+      focusMode={focusMode}
+      group={group}
+      memberNames={memberNames}
+      members={members}
+      onBack={onBack}
+      panelOpen={panelOpen}
+      room={room}
+      setFocusMode={setFocusMode}
+      setMemberPickerOpen={setMemberPickerOpen}
+      setPanelOpen={setPanelOpen}
+      setSettingsOpen={setSettingsOpen}
+      setView={setView}
+      view={view}
+      workingLabel={workingLabel}
+      workingNow={workingNow}
+    />
   )
 
   // Seat from the live sources at send time, not from the painted `members`
@@ -1624,11 +1552,18 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     }
 
     logChildren.push(renderEntry(entry, index))
+
+    for (const handoff of handoffsAt.get(index) ?? []) {
+      logChildren.push(<HandoffCard handoff={handoff} key={`handoff:${handoff.id}`} nameOf={memberLabel} />)
+    }
+
     const id = groupThreadOf(entry)
 
     if (threadEnds.get(id) !== index) {
       return
     }
+
+    logChildren.push(...threadTail(id))
 
     // The thread's tail: how much is in it and a way in. Replies go through
     // the one bottom composer, never a box opened mid-log.
@@ -1687,6 +1622,12 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         <div className="hidden min-h-0 @3xl:flex">
           <GroupThreadRail
             allMeta={allMeta}
+            desk={{
+              needsYou: escalations.length + roomClarifies.length,
+              onFloor: () => openPanel('floor'),
+              onNeedsYou: () => openPanel('decisions'),
+              working: workingNow.size
+            }}
             focusThread={focusedItem ? focusThread : null}
             items={workItems}
             members={members}
@@ -1722,9 +1663,19 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               <span className="min-w-0 flex-1 truncate">{b.group.teamListening(leadName)}</span>
             </div>
           ) : null}
-          {activityPanel}
+          {view === 'board' ? (
+            <GroupRoomBoard
+              escalations={escalations}
+              handoffs={handoffs}
+              items={workItems}
+              members={members}
+              nameOf={memberLabel}
+              onOpen={openThread}
+            />
+          ) : null}
+          {view === 'room' ? activityPanel : null}
           <div
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            className={cn('min-h-0 flex-1 overflow-y-auto overscroll-contain', view === 'board' && 'hidden')}
             data-testid="group-room-log"
             onScroll={onLogScroll}
             ref={scrollerRef}
@@ -1814,7 +1765,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               </div>
             ) : null}
           </div>
-          <div className="border-t border-(--ui-stroke-secondary) p-2">
+          <div className={cn('border-t border-(--ui-stroke-secondary) p-2', view === 'board' && 'hidden')}>
             {/* ONE composer for the whole room. The strip above it says where
                 the message goes — a new thread, or a reply in a named one —
                 so nothing ever opens mid-log. */}
@@ -1865,20 +1816,43 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                 </Tip>
               </div>
             </form>
+            <RoomShortcuts
+              commands={commands}
+              firstTag={groupReplyMentionTag(leadMember || members[0] || { name: 'everyone' }, members) || 'everyone'}
+              onInsert={text =>
+                replyThread ? setReplyDrafts(prev => ({ ...prev, [replyThread]: text })) : setDraft(text)
+              }
+              thread={replyThread}
+            />
           </div>
         </div>
         {panelOpen ? (
           <div className="hidden min-h-0 @5xl:flex">
             <GroupRoomPanel
               allMeta={allMeta}
+              decisionCount={escalations.length + roomClarifies.length}
+              decisions={
+                <RoomDecisions
+                  clarifies={roomClarifies}
+                  commands={commands}
+                  escalations={escalations}
+                  memberName={key => memberLabel(members.find(m => groupMemberKey(m) === key)?.name || key)}
+                  members={members}
+                  nameOf={memberLabel}
+                  onDismiss={dismissEscalation}
+                  onOpen={openThread}
+                />
+              }
               goal={room.goal || ''}
               group={group}
               leadMember={leadMember}
               leadName={leadName}
               members={members}
               onMention={mentionMember}
+              onTab={setPanelTab}
               onTeamChanged={() => void teamLeadQuery.refetch()}
               roomWorking={workingNow}
+              tab={panelTab}
               teamId={teamLead?.teamId || null}
             />
           </div>

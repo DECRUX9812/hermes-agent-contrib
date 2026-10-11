@@ -35,6 +35,9 @@ export interface GroupThreadRailProps {
   onNewThread: () => void
   onSelect: (thread: null | string) => void
   totalMessages: number
+  /** The CEO's desk: what waits on the user, who is working; each opens the
+   *  matching panel tab. */
+  desk: { needsYou: number; onFloor: () => void; onNeedsYou: () => void; working: number }
 }
 
 function Faces({
@@ -70,7 +73,8 @@ export function GroupThreadRail({
   members,
   onNewThread,
   onSelect,
-  totalMessages
+  totalMessages,
+  desk
 }: GroupThreadRailProps) {
   const b = useBots()
 
@@ -86,6 +90,37 @@ export function GroupThreadRail({
       className="flex min-h-0 w-60 shrink-0 flex-col border-r border-(--ui-stroke-secondary) bg-(--ui-bg-primary)"
       data-testid="group-thread-rail"
     >
+      <div className="flex flex-col gap-1 px-2 pt-2" data-testid="group-room-desk">
+        <span className="ui-section-label px-1">{b.group.deskTitle}</span>
+        <button
+          className={cn(
+            'flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-left text-[0.75rem] font-semibold transition-colors',
+            desk.needsYou
+              ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+              : 'border-(--ui-stroke-secondary) text-(--ui-text-tertiary)'
+          )}
+          onClick={desk.onNeedsYou}
+          type="button"
+        >
+          <span
+            aria-hidden
+            className={cn('size-2 rounded-full', desk.needsYou ? 'bg-amber-500' : 'bg-(--ui-text-quaternary)')}
+          />
+          <span className="flex-1">{b.group.deskNeedsYou}</span>
+          <span className="font-mono tabular-nums">{desk.needsYou}</span>
+        </button>
+        <button
+          className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg border border-(--ui-stroke-secondary) px-2.5 text-left text-[0.75rem] text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover)"
+          onClick={desk.onFloor}
+          type="button"
+        >
+          <span aria-hidden className="size-2 rounded-full bg-(--ui-accent)" />
+          <span className="flex-1">{b.group.panelFloor}</span>
+          <span className="font-mono text-[0.6875rem] tabular-nums text-(--ui-text-tertiary)">
+            {b.group.deskFloor(desk.working)}
+          </span>
+        </button>
+      </div>
       <div className="flex items-center gap-1 px-2 pt-2 pb-1">
         <span className="ui-section-label flex-1 px-1">{b.group.threadsTitle}</span>
         <Button

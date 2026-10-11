@@ -15,7 +15,8 @@
  * mission, its local bots as seats (the lead keeps the lead seat).
  */
 
-import { Button, Codicon, host, queryClient } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, host, queryClient } from '@hermes/plugin-sdk'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 
 import { $lastRoster } from './data'
@@ -42,7 +43,15 @@ export interface GroupRoomPanelProps {
   onTeamChanged: () => void
   roomWorking: ReadonlySet<string>
   teamId: null | string
+  /** The Decisions queue the room built (escalations, questions); team
+   *  approvals join it here. */
+  decisions: ReactNode
+  decisionCount: number
+  onTab: (tab: RoomPanelTab) => void
+  tab: RoomPanelTab
 }
+
+export type RoomPanelTab = 'decisions' | 'floor' | 'team'
 
 /** One room → one team: name, goal as mission, local bots as seats. */
 export async function runRoomAsTeam(
@@ -77,22 +86,10 @@ function TeamTab(props: GroupRoomPanelProps) {
   const [busy, setBusy] = useState(false)
   const localCount = props.members.filter(member => !member.remoteSource).length
 
-  const squad = (
-    <GroupSquadPanel
-      allMeta={props.allMeta}
-      leadMember={props.leadMember}
-      leadName={props.leadName}
-      members={props.members}
-      onMention={props.onMention}
-      roomWorking={props.roomWorking}
-    />
-  )
-
   if (!props.teamId || !view) {
     return (
       <div className="flex flex-col gap-3 p-3">
         {props.goal ? <Mission label={b.group.panelMission} text={props.goal} /> : null}
-        {squad}
         {!props.teamId && localCount > 0 ? (
           <section
             className="rounded-xl border border-dashed border-(--ui-stroke-secondary) p-3 text-left"
@@ -144,9 +141,6 @@ function TeamTab(props: GroupRoomPanelProps) {
           </div>
         ) : null}
       </div>
-      {/* What needs the board first: hires, spend, credentials, actions. */}
-      <Approvals t={t} team={team} />
-      {squad}
       <GoalsSection progress={rollup.goals} t={t} team={team} />
       <OrgChart t={t} team={team} tree={tree} />
     </div>
@@ -162,8 +156,23 @@ function Mission({ label, text }: { label: string; text: string }) {
   )
 }
 
+/** Team approvals (hires, spend, credentials, actions) — the board's half of
+ *  the Decisions queue; the Team page's own component, one store. */
+function TeamApprovals({ teamId }: { teamId: null | string }) {
+  const t = useTeamText()
+  const { data: view } = useTeam(teamId)
+
+  return view ? <Approvals t={t} team={view.team} /> : null
+}
+
 export function GroupRoomPanel(props: GroupRoomPanelProps) {
   const b = useBots()
+
+  const tabs: { badge?: number; id: RoomPanelTab; label: string }[] = [
+    { id: 'floor', label: b.group.panelFloor },
+    { badge: props.decisionCount || undefined, id: 'decisions', label: b.group.panelDecisions },
+    { id: 'team', label: b.group.panelTeam }
+  ]
 
   return (
     <aside
@@ -171,8 +180,53 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
       className="flex min-h-0 w-80 shrink-0 flex-col border-l border-(--ui-stroke-secondary) bg-(--ui-bg-primary)"
       data-testid="group-room-panel"
     >
+      <div className="flex shrink-0 gap-1 border-b border-(--ui-stroke-secondary) p-1.5" role="tablist">
+        {tabs.map(entry => (
+          <button
+            aria-selected={props.tab === entry.id}
+            className={cn(
+              'flex min-h-8 flex-1 cursor-pointer items-center justify-center gap-1 rounded-md text-[0.75rem] transition-colors',
+              props.tab === entry.id
+                ? 'bg-(--chrome-action-hover) font-semibold text-foreground'
+                : 'text-(--ui-text-tertiary) hover:text-foreground'
+            )}
+            key={entry.id}
+            onClick={() => props.onTab(entry.id)}
+            role="tab"
+            type="button"
+          >
+            {entry.label}
+            {entry.badge ? (
+              <span className="rounded-full bg-amber-500/20 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+                {entry.badge}
+              </span>
+            ) : null}
+          </button>
+        ))}
+      </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <TeamTab {...props} />
+        {props.tab === 'floor' ? (
+          <div className="p-3">
+            <GroupSquadPanel
+              allMeta={props.allMeta}
+              leadMember={props.leadMember}
+              leadName={props.leadName}
+              members={props.members}
+              onMention={props.onMention}
+              roomWorking={props.roomWorking}
+            />
+          </div>
+        ) : props.tab === 'decisions' ? (
+          <div className="flex flex-col gap-3 p-3" data-testid="group-decisions-tab">
+            {props.decisions}
+            <TeamApprovals teamId={props.teamId} />
+            {!props.decisionCount ? (
+              <p className="m-0 text-[0.75rem] text-(--ui-text-tertiary)">{b.group.decisionsEmpty}</p>
+            ) : null}
+          </div>
+        ) : (
+          <TeamTab {...props} />
+        )}
       </div>
     </aside>
   )

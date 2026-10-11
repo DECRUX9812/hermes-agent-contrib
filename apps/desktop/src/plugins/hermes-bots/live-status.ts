@@ -160,7 +160,7 @@ export function runningRoutineTitles(jobs: readonly CronJob[] | undefined, bot: 
     .filter(Boolean)
 }
 
-function liveTool(
+export function liveTool(
   items: readonly { currentTool?: string; state: string; title?: string }[] | undefined
 ): string | undefined {
   const active = items?.find(item => item.state === 'running' && (item.currentTool || item.title))
