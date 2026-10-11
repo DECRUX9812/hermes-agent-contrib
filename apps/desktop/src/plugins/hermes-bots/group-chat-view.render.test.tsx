@@ -62,7 +62,30 @@ vi.mock('./avatar', () => ({
 vi.mock('./group-chat-parts', () => ({
   GroupClarifyCard: () => null,
   GroupImageControls: () => null,
-  GroupMentionInput: () => null
+  // The room wires Escape through this input to close the open reply box;
+  // the stub keeps that contract visible so a room test can press it.
+  GroupMentionInput: ({
+    'aria-label': label,
+    onChange,
+    onEscape,
+    value
+  }: {
+    'aria-label'?: string
+    onChange?: (value: string) => void
+    onEscape?: () => void
+    value?: string
+  }) => (
+    <textarea
+      aria-label={label}
+      onChange={event => onChange?.(event.target.value)}
+      onKeyDown={event => {
+        if (event.key === 'Escape') {
+          onEscape?.()
+        }
+      }}
+      value={value || ''}
+    />
+  )
 }))
 afterEach(cleanup)
 
@@ -324,4 +347,39 @@ it('runs the room beside a team panel: the squad, and a Work tab whose tickets j
   // Jumped to the thread's newest line, and its reply box replaced the link.
   expect(scrollIntoView).toHaveBeenCalled()
   expect(screen.queryByRole('button', { name: 'Reply in thread' })).toBeNull()
+})
+
+it('Escape closes the open reply box but keeps the typed draft', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  // The room's composer drafts persist across tests in this file (the Work
+  // tab test above leaves its reply box open) — start from a clean room.
+  const { clearGroupComposerDraft, groupComposerDraftKey } = await import('./group-panes')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const room = { log: [] as unknown[], watermarks: {}, sessions: {} }
+
+  clearGroupComposerDraft(groupComposerDraftKey('Room', room as never))
+
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'fix the header', at: 1 },
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'fixed', at: 2 }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  // Open the thread's reply box.
+  fireEvent.click(screen.getByRole('button', { name: 'Reply in thread' }))
+  const box = screen.getByLabelText('Reply in thread') as HTMLTextAreaElement
+  fireEvent.change(box, { target: { value: 'one more thing' } })
+
+  // Escape closes the box (the reply textarea is gone; the link is back)...
+  fireEvent.keyDown(box, { key: 'Escape' })
+  expect(screen.queryByRole('textbox', { name: 'Reply in thread' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Reply in thread' })).toBeTruthy()
+
+  // ...and the draft survives, so reopening shows the half-typed reply.
+  fireEvent.click(screen.getByRole('button', { name: 'Reply in thread' }))
+  expect((screen.getByLabelText('Reply in thread') as HTMLTextAreaElement).value).toBe('one more thing')
 })

@@ -1551,6 +1551,9 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                   [id]: text
                 }))
               }
+              // Escape closes the box but KEEPS the draft — same as the
+              // Cancel button — so a mis-key never eats a typed reply.
+              onEscape={() => setReplyThread(null)}
               onPaste={event => pasteImages(id, event)}
               onSubmitDraft={() => submitReply(id)}
               placeholder={b.group.replyInThreadPlaceholder}
@@ -1593,7 +1596,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           <Codicon className="text-[0.625rem]" name="reply" />
           <span>
             {threadCounts.get(id) && threadCounts.get(id)! > 1
-              ? `${threadCounts.get(id)! - 1} ${threadCounts.get(id)! - 1 === 1 ? 'reply' : 'replies'} · ${b.group.replyInThread}`
+              ? `${b.group.replyCount(threadCounts.get(id)! - 1)} · ${b.group.replyInThread}`
               : b.group.replyInThread}
           </span>
         </Button>

@@ -161,6 +161,9 @@ interface GroupMentionInputProps {
   className?: string
   members: GroupMember[]
   onChange: (value: string) => void
+  /** Escape with the popover already closed — the room uses it to close the
+   *  open reply box. Drafts are the caller's to keep; Escape never clears. */
+  onEscape?: () => void
   onPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void
   onSubmitDraft?: () => void
   placeholder?: string
@@ -173,8 +176,9 @@ interface GroupMentionInputProps {
  *  quick picks plus each seated member's handle. Insertion produces exactly
  *  the strings parseGroupChatMentions resolves. Keyboard: Up/Down navigate,
  *  Enter/Tab insert (Enter falls through to submit when the popover is
- *  closed), Escape dismisses. */
-export function GroupMentionInput({ members, onChange, onSubmitDraft, value, ...inputProps }: GroupMentionInputProps) {
+ *  closed), Escape dismisses — then hands Escape to the room when the
+ *  popover was already closed. */
+export function GroupMentionInput({ members, onChange, onEscape, onSubmitDraft, value, ...inputProps }: GroupMentionInputProps) {
   const b = useBots()
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
@@ -334,6 +338,14 @@ export function GroupMentionInput({ members, onChange, onSubmitDraft, value, ...
 
               return
             }
+          }
+
+          // Escape with no popover: the room owns the fallthrough (closing
+          // the open reply box). One key, two layers, no double handling.
+          if (event.key === 'Escape') {
+            onEscape?.()
+
+            return
           }
 
           if (event.key === 'Enter' && !event.shiftKey) {
