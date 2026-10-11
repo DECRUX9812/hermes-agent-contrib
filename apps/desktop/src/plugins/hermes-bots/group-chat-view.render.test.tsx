@@ -189,14 +189,30 @@ it('separates calendar days in the room log with a hairline Today/Yesterday row'
 
   const now = Date.now()
   const DAY = 86_400_000
+
   const log = [
-    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'from yesterday', at: now - DAY - 3_600_000 },
-    { id: 'm2', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'still yesterday', at: now - DAY },
+    {
+      id: 'm1',
+      thread: 'a',
+      from: { kind: 'member' as const, name: 'builder' },
+      text: 'from yesterday',
+      at: now - DAY - 3_600_000
+    },
+    {
+      id: 'm2',
+      thread: 'a',
+      from: { kind: 'member' as const, name: 'builder' },
+      text: 'still yesterday',
+      at: now - DAY
+    },
     { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'today now', at: now }
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  const { container, getAllByTestId } = render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  const { container, getAllByTestId } = render(
+    <GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />
+  )
 
   // Two day changes → two separators; the same-day pair shares one.
   const separators = getAllByTestId('group-day-separator')
@@ -281,4 +297,31 @@ it('shows each voice’s role and lights the face of whoever is working right no
   expect(container.querySelectorAll('[data-testid="group-working-halo"]')).toHaveLength(1)
   // The same fact is spelled out next to the faces, so it needs no hunting.
   expect(screen.getByTestId('group-working-chip').textContent).toContain('Frontend engineer')
+})
+
+it('runs the room beside a team panel: the squad, and a Work tab whose tickets jump to their thread', async () => {
+  const scrollIntoView = vi.fn()
+  Element.prototype.scrollIntoView = scrollIntoView
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'fix the header', at: 1 },
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'fixed', at: 2 }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  expect(screen.getByTestId('group-room-panel')).toBeTruthy()
+  expect(screen.getAllByRole('button', { name: /^Ask / })).toHaveLength(1)
+
+  expect(screen.getByRole('button', { name: 'Reply in thread' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Work' }))
+  scrollIntoView.mockClear()
+  fireEvent.click(screen.getByRole('button', { name: /fix the header/ }))
+
+  // Jumped to the thread's newest line, and its reply box replaced the link.
+  expect(scrollIntoView).toHaveBeenCalled()
+  expect(screen.queryByRole('button', { name: 'Reply in thread' })).toBeNull()
 })

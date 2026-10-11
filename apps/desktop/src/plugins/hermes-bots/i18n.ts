@@ -445,6 +445,23 @@ type BotsMessages = {
     roomWorking: string
     jumpToLatest: (count: number) => string
     roomLead: string
+    squadTitle: string
+    squadMention: (name: string) => string
+    squadRoutingLead: (name: string) => string
+    squadRoutingEveryone: string
+    panelTeam: string
+    panelWork: string
+    panelMission: string
+    panelToggle: string
+    runAsTeamTitle: string
+    runAsTeamBody: string
+    runAsTeamAction: string
+    runAsTeamBusy: string
+    workEmpty: string
+    workStatus: { answered: string; open: string; waiting: string; working: string }
+    workCount: (count: number) => string
+    makeTask: string
+    taskFiled: string
     workingNow: (names: string) => string
     messageRoom: (group: string) => string
     newThreadPlaceholder: (group: string) => string
@@ -1208,6 +1225,23 @@ const en: BotsMessages = {
     roomWorking: 'The room is working…',
     jumpToLatest: count => (count ? `${count} new ${count === 1 ? 'message' : 'messages'}` : 'Jump to latest'),
     roomLead: 'Leads this room',
+    squadTitle: 'In the room',
+    squadMention: name => `Ask ${name}`,
+    squadRoutingLead: name => `Plain messages go to ${name}; @mention anyone else.`,
+    squadRoutingEveryone: 'Everyone hears plain messages; @mention to pick one.',
+    panelTeam: 'Team',
+    panelWork: 'Work',
+    panelMission: 'Mission',
+    panelToggle: 'Team panel',
+    runAsTeamTitle: 'Run this room as a team',
+    runAsTeamBody: 'Give it a mission, an org chart, decisions and tasks — hire and assign right here.',
+    runAsTeamAction: 'Make it a team',
+    runAsTeamBusy: 'Setting up…',
+    workEmpty: 'Nothing in flight yet. Each message you send starts a thread; it shows up here as work.',
+    workStatus: { answered: 'Answered', open: 'Open', waiting: 'Needs you', working: 'Working' },
+    workCount: count => `${count} ${count === 1 ? 'message' : 'messages'}`,
+    makeTask: 'Make task',
+    taskFiled: 'Task filed',
     workingNow: names => `Working now: ${names}`,
     messageRoom: group => `Message ${group}`,
     newThreadPlaceholder: group => `New thread in ${group}… (@name to direct, @everyone for all)`,
@@ -1955,6 +1989,23 @@ const ja: BotsMessages = {
     roomWorking: 'ルームが作業中です…',
     jumpToLatest: count => (count ? `新着${count}件` : '最新へ移動'),
     roomLead: 'このルームのリーダー',
+    squadTitle: 'ルームのメンバー',
+    squadMention: name => `${name} に聞く`,
+    squadRoutingLead: name => `通常のメッセージは ${name} に届きます。他のメンバーは @メンション で。`,
+    squadRoutingEveryone: '通常のメッセージは全員に届きます。@メンション で相手を選べます。',
+    panelTeam: 'チーム',
+    panelWork: '作業',
+    panelMission: 'ミッション',
+    panelToggle: 'チームパネル',
+    runAsTeamTitle: 'このルームをチームとして運用',
+    runAsTeamBody: 'ミッション、組織図、決定、タスクを持たせ、ここで採用と割り当てができます。',
+    runAsTeamAction: 'チームにする',
+    runAsTeamBusy: '設定中…',
+    workEmpty: '進行中の作業はまだありません。送ったメッセージごとにスレッドが始まり、ここに表示されます。',
+    workStatus: { answered: '回答済み', open: '未回答', waiting: '要対応', working: '作業中' },
+    workCount: count => `${count}件`,
+    makeTask: 'タスク化',
+    taskFiled: 'タスク登録済み',
     workingNow: names => `作業中: ${names}`,
     messageRoom: group => `${group}にメッセージ`,
     newThreadPlaceholder: group => `${group}で新しいスレッド…（@名前で個別、@everyoneで全員）`,
@@ -2691,6 +2742,23 @@ const zh: BotsMessages = {
     roomWorking: '房间正在处理…',
     jumpToLatest: count => (count ? `${count} 条新消息` : '跳到最新'),
     roomLead: '本房间负责人',
+    squadTitle: '房间成员',
+    squadMention: name => `问 ${name}`,
+    squadRoutingLead: name => `普通消息发给 ${name}；@提及其他成员。`,
+    squadRoutingEveryone: '普通消息所有人都能收到；用 @提及 指定一位。',
+    panelTeam: '团队',
+    panelWork: '工作',
+    panelMission: '使命',
+    panelToggle: '团队面板',
+    runAsTeamTitle: '把这个房间作为团队运行',
+    runAsTeamBody: '赋予它使命、组织架构、决策和任务——在这里直接招聘和分配。',
+    runAsTeamAction: '设为团队',
+    runAsTeamBusy: '正在设置…',
+    workEmpty: '还没有进行中的工作。你发送的每条消息都会开启一个话题，并显示在这里。',
+    workStatus: { answered: '已回复', open: '待回复', waiting: '需要你', working: '进行中' },
+    workCount: count => `${count} 条`,
+    makeTask: '设为任务',
+    taskFiled: '已建任务',
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `发消息给 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中开启新讨论串…（@名称指定，@everyone 全体）`,
@@ -3423,6 +3491,23 @@ const zhHant: BotsMessages = {
     roomWorking: '房間正在處理…',
     jumpToLatest: count => (count ? `${count} 則新訊息` : '跳到最新'),
     roomLead: '本房間負責人',
+    squadTitle: '房間成員',
+    squadMention: name => `問 ${name}`,
+    squadRoutingLead: name => `一般訊息傳給 ${name}；@提及其他成員。`,
+    squadRoutingEveryone: '一般訊息所有人都會收到；用 @提及 指定一位。',
+    panelTeam: '團隊',
+    panelWork: '工作',
+    panelMission: '使命',
+    panelToggle: '團隊面板',
+    runAsTeamTitle: '把這個房間當作團隊運作',
+    runAsTeamBody: '賦予它使命、組織架構、決策與任務——在這裡直接招募與指派。',
+    runAsTeamAction: '設為團隊',
+    runAsTeamBusy: '設定中…',
+    workEmpty: '目前沒有進行中的工作。你送出的每則訊息都會開啟一個話題，並顯示在這裡。',
+    workStatus: { answered: '已回覆', open: '待回覆', waiting: '需要你', working: '進行中' },
+    workCount: count => `${count} 則`,
+    makeTask: '設為任務',
+    taskFiled: '已建立任務',
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `傳訊息給 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中開啟新討論串…（@名稱指定，@everyone 全體）`,

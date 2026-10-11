@@ -155,7 +155,7 @@ describe('disband', () => {
     room.chat.$groupChatWorkspace.set('Gone')
     room.chat.$groupNeedsYou.set({ Gone: true, Keep: true })
 
-    await room.view.disbandGroupChat('Gone', [{ name: 'builder' }])
+    await (await import('./group-room-lifecycle')).disbandGroupChat('Gone', [{ name: 'builder' }])
 
     // Room state: gone from the atom (no running drive, so no tombstone).
     expect(room.chat.$groupChats.get().Gone).toBeUndefined()
@@ -180,7 +180,7 @@ describe('disband', () => {
       Remote: { log: [], members: [], running: false, sessions: {}, watermarks: {} }
     } as unknown as Record<string, GroupChat>)
 
-    await room.view.disbandGroupChat('Remote', [])
+    await (await import('./group-room-lifecycle')).disbandGroupChat('Remote', [])
 
     expect(room.chat.$groupChats.get().Remote).toBeUndefined()
     expect(room.data.$botMeta.get().builder.groups).toEqual([])
@@ -210,7 +210,7 @@ describe('disband', () => {
       Remote: { log: [], members: [], running: false, sessions: {}, watermarks: {} }
     } as unknown as Record<string, GroupChat>)
 
-    await room.view.disbandGroupChat('Remote', [])
+    await (await import('./group-room-lifecycle')).disbandGroupChat('Remote', [])
 
     expect(room.data.$botMeta.get()['remote-1::builder'].groups).toEqual([])
     expect(room.data.$botMeta.get()['remote-1::builder'].group).toBeNull()
@@ -223,7 +223,7 @@ describe('disband', () => {
     const room = await loadRoom()
     room.data.$botMeta.set({ builder: { group: 'Keep', groups: ['Keep'] } })
 
-    await room.view.disbandGroupChat('Remote', [
+    await (await import('./group-room-lifecycle')).disbandGroupChat('Remote', [
       { connectionId: 'remote-1', name: 'builder', remoteSource: true, sourceScoped: true }
     ])
 
@@ -243,7 +243,7 @@ describe('disband', () => {
       }
     } as unknown as Record<string, GroupChat>)
 
-    await room.view.disbandGroupChat('Live', [{ name: 'research' }])
+    await (await import('./group-room-lifecycle')).disbandGroupChat('Live', [{ name: 'research' }])
 
     const tomb = room.chat.$groupChats.get().Live
 
@@ -277,7 +277,7 @@ describe('disband', () => {
       Gone: { log: [{ at: 1, from: { kind: 'user', name: 'You' }, id: 'g1', text: 'bye' }], watermarks: {} }
     } as unknown as Record<string, GroupChat>)
 
-    await room.view.disbandGroupChat('Gone', [])
+    await (await import('./group-room-lifecycle')).disbandGroupChat('Gone', [])
     await drain(() => room.gateway.rpcFor('profiles.configure').length < 1, 50)
 
     const configure = room.gateway.rpcFor('profiles.configure').at(-1)
@@ -300,7 +300,7 @@ describe('disband', () => {
       }
     } as unknown as Record<string, GroupChat>)
 
-    await room.view.disbandGroupChat('Build', [])
+    await (await import('./group-room-lifecycle')).disbandGroupChat('Build', [])
 
     // The disband is remembered durably, not only in the in-flight sync job.
     expect(room.gateway.storage.get('group-chat-tombstones')).toEqual({ 'id:room-1': 5 })

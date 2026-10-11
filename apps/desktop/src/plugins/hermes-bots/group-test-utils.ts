@@ -456,7 +456,12 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
     state: {
       connectionId: { get: () => 'local', listen: () => () => undefined },
       gateway: { get: () => 'open', listen: () => () => undefined },
-      profile: { get: () => 'default', listen: () => () => undefined }
+      profile: { get: () => 'default', listen: () => () => undefined },
+      // The roster's live-status signals (the room's squad reads them): quiet.
+      cronJobs: { get: () => [], listen: () => () => undefined },
+      dotStateBySession: { get: () => ({}), listen: () => () => undefined },
+      statusItemsBySession: { get: () => ({}), listen: () => () => undefined },
+      storedSessionByRuntimeId: { get: () => ({}), listen: () => () => undefined }
     }
   }
 

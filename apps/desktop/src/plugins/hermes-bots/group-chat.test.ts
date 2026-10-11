@@ -1318,7 +1318,7 @@ describe('sync worker', () => {
         watermarks: {}
       }
     } as unknown as Record<string, GroupChat>)
-    await view.disbandGroupChat('Core', [])
+    await (await import('./group-room-lifecycle')).disbandGroupChat('Core', [])
     await drain(() => room.gateway.rpcFor('profiles.configure').length < 1, 50)
     expect('name:Core' in room.chat.groupChatTombstoneMemory()).toBe(false)
 

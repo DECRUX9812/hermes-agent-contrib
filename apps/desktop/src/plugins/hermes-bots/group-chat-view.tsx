@@ -40,17 +40,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
-import {
-  $botMeta,
-  $lastRoster,
-  botHandle,
-  botMetaV2Active,
-  botSourceStatus,
-  noteBotMetaWrite,
-  persistBotMetaSnapshot,
-  ROSTER_KEY,
-  saveBotMeta
-} from './data'
+import { $botMeta, $lastRoster, botHandle, botSourceStatus, ROSTER_KEY, saveBotMeta } from './data'
 import {
   $groupActivity,
   currentGroupActivity,
@@ -67,7 +57,6 @@ import {
   $groupNeedsYou,
   groupRoundContributions,
   groupThreadOf,
-  rememberGroupChatTombstone,
   scheduleGroupChatServerSync,
   setGroupChatGoal,
   setGroupChatHoldDetection,
@@ -77,17 +66,16 @@ import {
   updateGroupChat
 } from './group-chat'
 import type { GroupChatRoom } from './group-chat'
-import { roomDayBucket, roomDayLabel } from './group-day-separators'
 import { GroupClarifyCard, GroupImageControls, GroupMentionInput } from './group-chat-parts'
 import type { GroupRoomPrompt } from './group-chat-parts'
 import { GroupMemberPicker } from './group-chat-view-members'
 import { compressGroupMemberHistory } from './group-compress'
+import { roomDayBucket, roomDayLabel } from './group-day-separators'
 import { sweepExternalGroupWrites } from './group-external-writes'
 import { GroupHoldStatus } from './group-hold-status'
 import {
   botGroups,
   groupChatMemberBots,
-  groupDisbandMetadataPlan,
   groupMemberKey,
   groupWorkspaceOwnerKey,
   liveGroupChatNames
@@ -106,15 +94,18 @@ import {
   updateGroupComposerDraft
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
+import { disbandGroupChat } from './group-room-lifecycle'
+import { GroupRoomPanel } from './group-room-panel'
+import type { RoomWorkItem } from './group-room-work'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
-import { clearGroupClarify, renameGroupClarify } from './group-turns'
+import { renameGroupClarify } from './group-turns'
 import { markGroupRead } from './group-unread'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
 import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
-import { bumpBotOpenGeneration, getPluginCtx, ID } from './shared'
-import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage, RosterRow } from './types'
+import { bumpBotOpenGeneration, ID } from './shared'
+import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage } from './types'
 
 const Streamdown = typeof sdk === 'undefined' ? undefined : sdk.Streamdown
 // The 1:1 chat's message renderer: `MEDIA:` lines become inline players and
@@ -136,139 +127,6 @@ const GROUP_BUBBLE_MAX_W = 'max-w-[85%]'
  *  control-classes isn't plugin-reachable), so both composers read the same. */
 const GROUP_SEND_BTN =
   'size-7 shrink-0 rounded-full p-0 bg-foreground text-background hover:bg-foreground/90 disabled:bg-foreground/30 disabled:text-background disabled:opacity-100'
-
-/** Soft-disband a group chat: remove only this group from every local member's
- *  membership list (the metadata syncs cross-machine via ui_meta), drop the
- *  room log from the atom + plugin storage, and close the room view if it's
- *  open. Other group memberships and the members' per-group gateway sessions
- *  ("Group: <roomId>", or legacy "Group: <name>") are intentionally KEPT. */
-export async function disbandGroupChat(group: string, members: RosterRow[]) {
-  // Invalidate any in-flight round-robin FIRST: bump the epoch so a running
-  // drive bails at its next member boundary instead of appending to a room
-  // the user just discarded.
-  const all = {
-    ...$groupChats.get()
-  }
-
-  const prior = all[group] || {}
-  const metaBefore = $botMeta.get()
-  const cleanup = groupDisbandMetadataPlan(group, members, prior, $lastRoster.get(), metaBefore)
-  let metadataPersistence: Promise<unknown> = Promise.resolve()
-
-  if (cleanup.patches.size) {
-    const nextMeta = {
-      ...metaBefore
-    }
-
-    for (const [key, patch] of cleanup.patches) {
-      nextMeta[key] = {
-        ...(nextMeta[key] || {}),
-        ...patch
-      }
-      noteBotMetaWrite(key)
-    }
-
-    // Paint the deletion before any remote write can stall. This also removes
-    // orphaned legacy metadata that cannot safely be routed to a source.
-    $botMeta.set(nextMeta)
-    metadataPersistence = persistBotMetaSnapshot(
-      nextMeta,
-      botMetaV2Active || Object.keys(nextMeta).some(key => key.includes('::'))
-    )
-  }
-
-  delete all[group]
-
-  // Remember the disband durably BEFORE any remote write can stall: the
-  // pending sync job alone forgets it once the retry ladder gives up or the
-  // window closes, and a gateway mirror that missed the tombstone push would
-  // resurrect the room on every later pull (#105275).
-  await rememberGroupChatTombstone(group, prior.roomId, prior.syncRevision)
-
-  // Keep a runtime-only tombstone while a drive may still be mid-turn; it
-  // carries no log and is flagged so persistence and name-dedup skip it —
-  // updateGroupChat writes the WHOLE atom map, so an unflagged tombstone
-  // would be persisted by the next unrelated room write and its name would
-  // count as taken, suffixing a same-name recreate to "<name> 2" forever.
-  if (prior.running) {
-    all[group] = {
-      log: [],
-      watermarks: {},
-      sessions: {},
-      epoch: (prior.epoch || 0) + 1,
-      running: false,
-      tombstone: true
-    }
-  }
-
-  $groupChats.set(all)
-
-  if ($groupChatWorkspace.get() === group) {
-    $groupChatWorkspace.set(null)
-  }
-
-  // Retire the room's MAIN-window tab too (host.openWorkspace path).
-  closeGroupChatMainTab(group)
-
-  const needs = {
-    ...$groupNeedsYou.get()
-  }
-
-  delete needs[group]
-  $groupNeedsYou.set(needs)
-  clearGroupClarify(group)
-
-  // Persist the room map WITHOUT the disbanded room so it can't come back
-  // on the next window load.
-  try {
-    const durable: Record<string, GroupChat> = {}
-
-    for (const [name, room] of Object.entries($groupChats.get())) {
-      if (name !== group && Array.isArray(room.log)) {
-        durable[name] = {
-          log: room.log,
-          watermarks: room.watermarks,
-          sessions: room.sessions || {},
-          sessionOwners: room.sessionOwners || {},
-          members: Array.isArray(room.members) ? room.members : [],
-          roomId: typeof room.roomId === 'string' && room.roomId ? room.roomId : null,
-          image: room.image || null,
-          syncRevision: Math.max(0, Number(room.syncRevision || 0))
-        }
-      }
-    }
-
-    await Promise.resolve(getPluginCtx()?.storage?.set?.('group-chats', durable))
-  } catch {
-    /* storage unavailable — the atom reset above still empties the room */
-  }
-
-  scheduleGroupChatServerSync($groupChats.get(), {
-    allowEmpty: true,
-    deletedRooms: [group]
-  })
-  await metadataPersistence
-
-  // Persist the cleanup to every exact owner we can prove. saveBotMeta never
-  // throws (local storage + best-effort profiles.configure per owner), so a
-  // flaky gateway cannot strand the local disband halfway.
-  for (const [key, owner] of cleanup.owners) {
-    const patch = cleanup.patches.get(key)
-
-    if (patch) {
-      await saveBotMeta(owner, patch)
-    }
-  }
-
-  // Converge on server truth: the cached roster still carries the pre-disband
-  // ui_meta (the write-fence in mergeServerMeta keeps it from resurrecting
-  // the membership, but a fresh snapshot is what makes every surface agree).
-  if (typeof queryClient !== 'undefined' && queryClient?.invalidateQueries) {
-    queryClient.invalidateQueries({
-      queryKey: ROSTER_KEY
-    })
-  }
-}
 
 /** Rename a group chat. The group's NAME is its identity everywhere — the
  *  room-map key, each local member's ui_meta membership list, and derived
@@ -730,6 +588,8 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // @handle (the roster's name-device form when names collide across
   // connections). Naturally every speaker just shows its display name.
   const [revealedSpeaker, setRevealedSpeaker] = useState<null | string>(null)
+  // The team panel (Team · Work) beside the conversation; wide rooms only.
+  const [panelOpen, setPanelOpen] = useState(true)
   // Thread replies retain their own draft; the main composer starts a new topic.
   // Pending image attachments per composer: `null` thread key = the main
   // composer, otherwise the reply box of that thread. Data URLs, already
@@ -955,7 +815,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         <Tip label={memberNames}>
           <Button
             aria-label="Manage group members"
-            className="flex shrink-0 items-center -space-x-1 rounded-full p-0.5"
+            className={cn('flex shrink-0 items-center -space-x-1 rounded-full p-0.5', panelOpen && '@3xl:hidden')}
             onClick={() => setMemberPickerOpen(true)}
             size="inline"
             variant="text"
@@ -1029,6 +889,21 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           {availabilityLabel}
         </span>
       ) : null}
+      <Tip label={b.group.panelToggle}>
+        <Button
+          aria-label={b.group.panelToggle}
+          aria-pressed={panelOpen}
+          className={cn(
+            'hidden shrink-0 hover:text-foreground @3xl:inline-flex',
+            panelOpen ? 'text-foreground' : 'text-(--ui-text-tertiary)'
+          )}
+          onClick={() => setPanelOpen(open => !open)}
+          size="sm"
+          variant="ghost"
+        >
+          <Codicon name="layout-sidebar-right" />
+        </Button>
+      </Tip>
       <Tip label={b.group.settingsHint(group)}>
         <Button
           aria-label={b.group.settingsLabel(group)}
@@ -1319,6 +1194,24 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     }
   }
 
+  // Squad panel: ask one member — seeds `@them ` into the main composer.
+  const mentionMember = (member: GroupMember) => {
+    const tag = groupReplyMentionTag(member, members)
+
+    if (tag) {
+      setDraft(current => (current.includes(`@${tag}`) ? current : `@${tag} ${current}`.replace(/\s+$/, ' ')))
+    }
+  }
+
+  // Work list: jump to a ticket's newest line and open its reply box.
+  const jumpToWork = (item: RoomWorkItem) => {
+    stickToBottomRef.current = false
+    scrollerRef.current
+      ?.querySelector(`[data-entry-index="${item.lastIndex}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setReplyThread(item.thread)
+  }
+
   // One log entry, rendered exactly as before conversation folding existed.
   const renderEntry = (entry: GroupMessage, index: number) => {
     const isUser = entry.from.kind === 'user'
@@ -1434,6 +1327,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       return (
         <div
           className={cn('group flex flex-col items-end gap-0.5 pl-2 pr-11', runStart && index > 0 && 'pt-1.5')}
+          data-entry-index={index}
           key={entryKey}
         >
           <div className="flex items-baseline gap-1.5 px-1 text-[0.625rem] text-(--ui-text-quaternary)">
@@ -1493,6 +1387,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         // inline color on each painted element: consumers (this file's dot and
         // name, and any theme/plugin layer) recolor the whole voice by
         // overriding --speaker-color in CSS without touching markup.
+        data-entry-index={index}
         key={entryKey}
         style={{ '--speaker-color': speakerColor || undefined } as CSSProperties}
       >
@@ -1667,7 +1562,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
   return (
     <div
-      className="relative flex h-full flex-col"
+      className="@container relative flex h-full flex-col"
       onDragLeave={event => {
         // Only clear when leaving the room container itself, not when the
         // cursor moves between its children. React types relatedTarget as a
@@ -1693,210 +1588,239 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         </div>
       ) : null}
       {header}
-      <GroupHoldStatus
-        holds={room.holds}
-        memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}
-        members={members}
-      />
-      {teamLead && leadName ? (
-        <div
-          className="flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.7rem] text-(--ui-text-quaternary)"
-          data-testid="group-team-listening"
-        >
-          <Codicon className="shrink-0 text-[0.65rem]" name="organization" />
-          <span className="min-w-0 flex-1 truncate">{b.group.teamListening(leadName)}</span>
-        </div>
-      ) : null}
-      {activityPanel}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" onScroll={onLogScroll} ref={scrollerRef}>
-        {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
-        {/* unbreakable code line widened every entry to its own width and the */}
-        {/* log scrolled sideways as a whole instead of the code block (#91878). */}
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-1 px-2.5 pb-2 pt-1">
-          {room.log.length
-            ? logChildren
-            : [
-                <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center" key={'empty'}>
-                  {room.image ? (
-                    <img
-                      alt=""
-                      className="size-11 rounded-xl object-cover ring-1 ring-(--ui-stroke-secondary)"
-                      src={room.image}
-                    />
-                  ) : (
-                    <span className="flex size-11 items-center justify-center rounded-xl bg-(--chrome-action-hover) text-lg text-(--ui-text-tertiary)">
-                      <Codicon name="organization" />
-                    </span>
-                  )}
-                  {members.length ? (
-                    <span aria-hidden className="flex -space-x-1">
-                      {members.slice(0, 6).map((member, faceIndex) => {
-                        const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
-                        const faceImage = faceAppearance.image
-
-                        return (
-                          <span
-                            className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
-                            key={`empty-face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
-                          >
-                            <BotFace
-                              color={avatarColor(faceAppearance.color, member.name)}
-                              image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
-                              name={member.name}
-                              shape={faceAppearance.shape}
-                              size={22}
-                            />
-                          </span>
-                        )
-                      })}
-                    </span>
-                  ) : null}
-                  <div className="max-w-72 text-xs text-(--ui-text-tertiary)">
-                    {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
-                  </div>
-                </div>
-              ]}
-          {roomClarifies.map(entry => (
-            <div className="pt-1" key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}>
-              <GroupClarifyCard entry={entry} members={members} />
-            </div>
-          ))}
-          {/* D2 — after a round settles, one card per member's first line
-              (pure derivation over the log; no LLM call). */}
-          {!room.running && roundContributions.length ? (
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <GroupHoldStatus
+            holds={room.holds}
+            memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}
+            members={members}
+          />
+          {teamLead && leadName ? (
             <div
-              className="mt-1.5 rounded-r-md border-y border-r border-l-2 border-(--ui-stroke-secondary) border-l-(--ui-accent) bg-(--chrome-action-hover)/40 px-3 py-2"
-              data-testid="group-round-summary"
-              key={'round-summary'}
-            >
-              <div className="mb-1 ui-section-label">{b.group.roundSummaryTitle}</div>
-              <ul className="flex flex-col gap-0.5">
-                {roundContributions.map(entry => {
-                  const summaryMember = members.find(member => member.name === entry.name)
-
-                  const summaryAppearance = summaryMember
-                    ? botAppearance(summaryMember.name, botRosterMeta(summaryMember, allMeta))
-                    : null
-
-                  return (
-                    <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>
-                      <span
-                        className="shrink-0 font-medium"
-                        style={{
-                          color: summaryAppearance ? avatarColor(summaryAppearance.color, entry.name) : undefined
-                        }}
-                      >
-                        {summaryMember ? displayName(summaryMember, botRosterMeta(summaryMember, allMeta)) : entry.name}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-(--ui-text-tertiary)">{entry.line}</span>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          ) : null}
-          {room.running ? (
-            <div
-              className="flex items-center gap-2 px-2 pt-1 text-[0.7rem] text-(--ui-text-quaternary)"
-              key={'working'}
-            >
-              {(() => {
-                // Typing indicator: the thinking member's mini face, or the
-                // classic three-dot pulse when the turn isn't attributable.
-                const turnAppearance = room.turn
-                  ? botAppearance(room.turn.name, botRosterMeta(room.turn, allMeta))
-                  : null
-
-                const turnImage = turnAppearance?.image
-
-                return turnAppearance ? (
-                  <span className="shrink-0 overflow-hidden rounded-[22%]">
-                    <BotFace
-                      color={avatarColor(turnAppearance.color, room.turn ? room.turn.name : 'agent')}
-                      image={turnImage && !isBackfilledFacePng(turnImage) ? turnImage : null}
-                      name={room.turn ? room.turn.name : 'agent'}
-                      shape={turnAppearance.shape}
-                      size={16}
-                    />
-                  </span>
-                ) : (
-                  <span aria-hidden className="flex items-center gap-0.5 px-1 py-1">
-                    {[0, 1, 2].map(dot => (
-                      <span
-                        className="size-1 animate-pulse rounded-full bg-(--ui-text-tertiary)"
-                        key={dot}
-                        style={{ animationDelay: `${dot * 200}ms` }}
-                      />
-                    ))}
-                  </span>
-                )
-              })()}
-              <span>
-                {roomClarifies.length
-                  ? b.group.waitingForAnswer
-                  : room.turn
-                    ? b.group.memberThinking(displayName(room.turn, botRosterMeta(room.turn, allMeta)))
-                    : b.group.roomWorking}
-              </span>
-            </div>
-          ) : null}
-          {/* Scroll anchor (#89835): rooms opened at scroll position 0, mid- */
-          /* history. The effect below scrolls this sentinel into view on */
-          /* mount and on log growth — unless the user has scrolled up. */}
-          <div aria-hidden key={'bottom-sentinel'} ref={bottomSentinelRef} />
-        </div>
-        {/* Reading history: new replies land quietly and this pill offers the
-            way back, instead of the log jumping out from under the reader. */}
-        {leftAtLength !== null ? (
-          <div className="pointer-events-none sticky bottom-2 flex justify-center">
-            <Button
               className={cn(
-                'pointer-events-auto h-7 gap-1 rounded-full px-3 text-[0.7rem] shadow-md',
-                unseen ? 'bg-(--ui-accent) text-white hover:bg-(--ui-accent)/90' : ''
+                'flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.7rem] text-(--ui-text-quaternary)',
+                panelOpen && '@3xl:hidden'
               )}
-              data-testid="group-jump-latest"
-              onClick={jumpToLatest}
-              size="sm"
-              variant={unseen ? 'default' : 'secondary'}
+              data-testid="group-team-listening"
             >
-              <Codicon name="arrow-down" />
-              {b.group.jumpToLatest(unseen)}
-            </Button>
+              <Codicon className="shrink-0 text-[0.65rem]" name="organization" />
+              <span className="min-w-0 flex-1 truncate">{b.group.teamListening(leadName)}</span>
+            </div>
+          ) : null}
+          {activityPanel}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" onScroll={onLogScroll} ref={scrollerRef}>
+            {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
+            {/* unbreakable code line widened every entry to its own width and the */}
+            {/* log scrolled sideways as a whole instead of the code block (#91878). */}
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-1 px-2.5 pb-2 pt-1">
+              {room.log.length
+                ? logChildren
+                : [
+                    <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center" key={'empty'}>
+                      {room.image ? (
+                        <img
+                          alt=""
+                          className="size-11 rounded-xl object-cover ring-1 ring-(--ui-stroke-secondary)"
+                          src={room.image}
+                        />
+                      ) : (
+                        <span className="flex size-11 items-center justify-center rounded-xl bg-(--chrome-action-hover) text-lg text-(--ui-text-tertiary)">
+                          <Codicon name="organization" />
+                        </span>
+                      )}
+                      {members.length ? (
+                        <span aria-hidden className="flex -space-x-1">
+                          {members.slice(0, 6).map((member, faceIndex) => {
+                            const faceAppearance = botAppearance(member.name, botRosterMeta(member, allMeta))
+                            const faceImage = faceAppearance.image
+
+                            return (
+                              <span
+                                className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                                key={`empty-face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
+                              >
+                                <BotFace
+                                  color={avatarColor(faceAppearance.color, member.name)}
+                                  image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                                  name={member.name}
+                                  shape={faceAppearance.shape}
+                                  size={22}
+                                />
+                              </span>
+                            )
+                          })}
+                        </span>
+                      ) : null}
+                      <div className="max-w-72 text-xs text-(--ui-text-tertiary)">
+                        {teamLead && leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
+                      </div>
+                    </div>
+                  ]}
+              {roomClarifies.map(entry => (
+                <div className="pt-1" key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}>
+                  <GroupClarifyCard entry={entry} members={members} />
+                </div>
+              ))}
+              {/* D2 — after a round settles, one card per member's first line
+              (pure derivation over the log; no LLM call). */}
+              {!room.running && roundContributions.length ? (
+                <div
+                  className="mt-1.5 rounded-r-md border-y border-r border-l-2 border-(--ui-stroke-secondary) border-l-(--ui-accent) bg-(--chrome-action-hover)/40 px-3 py-2"
+                  data-testid="group-round-summary"
+                  key={'round-summary'}
+                >
+                  <div className="mb-1 ui-section-label">{b.group.roundSummaryTitle}</div>
+                  <ul className="flex flex-col gap-0.5">
+                    {roundContributions.map(entry => {
+                      const summaryMember = members.find(member => member.name === entry.name)
+
+                      const summaryAppearance = summaryMember
+                        ? botAppearance(summaryMember.name, botRosterMeta(summaryMember, allMeta))
+                        : null
+
+                      return (
+                        <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>
+                          <span
+                            className="shrink-0 font-medium"
+                            style={{
+                              color: summaryAppearance ? avatarColor(summaryAppearance.color, entry.name) : undefined
+                            }}
+                          >
+                            {summaryMember
+                              ? displayName(summaryMember, botRosterMeta(summaryMember, allMeta))
+                              : entry.name}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-(--ui-text-tertiary)">{entry.line}</span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ) : null}
+              {room.running ? (
+                <div
+                  className="flex items-center gap-2 px-2 pt-1 text-[0.7rem] text-(--ui-text-quaternary)"
+                  key={'working'}
+                >
+                  {(() => {
+                    // Typing indicator: the thinking member's mini face, or the
+                    // classic three-dot pulse when the turn isn't attributable.
+                    const turnAppearance = room.turn
+                      ? botAppearance(room.turn.name, botRosterMeta(room.turn, allMeta))
+                      : null
+
+                    const turnImage = turnAppearance?.image
+
+                    return turnAppearance ? (
+                      <span className="shrink-0 overflow-hidden rounded-[22%]">
+                        <BotFace
+                          color={avatarColor(turnAppearance.color, room.turn ? room.turn.name : 'agent')}
+                          image={turnImage && !isBackfilledFacePng(turnImage) ? turnImage : null}
+                          name={room.turn ? room.turn.name : 'agent'}
+                          shape={turnAppearance.shape}
+                          size={16}
+                        />
+                      </span>
+                    ) : (
+                      <span aria-hidden className="flex items-center gap-0.5 px-1 py-1">
+                        {[0, 1, 2].map(dot => (
+                          <span
+                            className="size-1 animate-pulse rounded-full bg-(--ui-text-tertiary)"
+                            key={dot}
+                            style={{ animationDelay: `${dot * 200}ms` }}
+                          />
+                        ))}
+                      </span>
+                    )
+                  })()}
+                  <span>
+                    {roomClarifies.length
+                      ? b.group.waitingForAnswer
+                      : room.turn
+                        ? b.group.memberThinking(displayName(room.turn, botRosterMeta(room.turn, allMeta)))
+                        : b.group.roomWorking}
+                  </span>
+                </div>
+              ) : null}
+              {/* Scroll anchor (#89835): rooms opened at scroll position 0, mid- */
+              /* history. The effect below scrolls this sentinel into view on */
+              /* mount and on log growth — unless the user has scrolled up. */}
+              <div aria-hidden key={'bottom-sentinel'} ref={bottomSentinelRef} />
+            </div>
+            {/* Reading history: new replies land quietly and this pill offers the
+            way back, instead of the log jumping out from under the reader. */}
+            {leftAtLength !== null ? (
+              <div className="pointer-events-none sticky bottom-2 flex justify-center">
+                <Button
+                  className={cn(
+                    'pointer-events-auto h-7 gap-1 rounded-full px-3 text-[0.7rem] shadow-md',
+                    unseen ? 'bg-(--ui-accent) text-white hover:bg-(--ui-accent)/90' : ''
+                  )}
+                  data-testid="group-jump-latest"
+                  onClick={jumpToLatest}
+                  size="sm"
+                  variant={unseen ? 'default' : 'secondary'}
+                >
+                  <Codicon name="arrow-down" />
+                  {b.group.jumpToLatest(unseen)}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+          <div className="border-t border-(--ui-stroke-secondary) p-2">
+            <form
+              className="grid gap-0"
+              onSubmit={event => {
+                event.preventDefault()
+                submit()
+              }}
+            >
+              {attachmentRow(null)}
+              <div className="flex items-center gap-1.5">
+                <GroupMentionInput
+                  aria-label={b.group.messageRoom(group)}
+                  members={members}
+                  onChange={setDraft}
+                  onPaste={event => pasteImages(null, event)}
+                  onSubmitDraft={submit}
+                  placeholder={b.group.newThreadPlaceholder(group)}
+                  value={draft}
+                />
+                {attachButton(null)}
+                <Tip label={b.group.newThread}>
+                  <Button
+                    aria-label={b.group.newThread}
+                    className={GROUP_SEND_BTN}
+                    disabled={!draft.trim() && !imagesFor(null).length}
+                    type="submit"
+                  >
+                    <Codicon name="arrow-up" size="0.875rem" />
+                  </Button>
+                </Tip>
+              </div>
+            </form>
+          </div>
+        </div>
+        {panelOpen ? (
+          <div className="hidden min-h-0 @3xl:flex">
+            <GroupRoomPanel
+              allMeta={allMeta}
+              goal={room.goal || ''}
+              group={group}
+              leadMember={leadMember}
+              leadName={leadName}
+              log={room.log}
+              members={members}
+              onJump={jumpToWork}
+              onMention={mentionMember}
+              onTeamChanged={() => void teamLeadQuery.refetch()}
+              roomWorking={workingNow}
+              running={Boolean(room.running)}
+              teamId={teamLead?.teamId || null}
+              waitingThreads={new Set(roomClarifies.map(entry => entry.thread || 'legacy'))}
+            />
           </div>
         ) : null}
-      </div>
-      <div className="border-t border-(--ui-stroke-secondary) p-2">
-        <form
-          className="grid gap-0"
-          onSubmit={event => {
-            event.preventDefault()
-            submit()
-          }}
-        >
-          {attachmentRow(null)}
-          <div className="flex items-center gap-1.5">
-            <GroupMentionInput
-              aria-label={b.group.messageRoom(group)}
-              members={members}
-              onChange={setDraft}
-              onPaste={event => pasteImages(null, event)}
-              onSubmitDraft={submit}
-              placeholder={b.group.newThreadPlaceholder(group)}
-              value={draft}
-            />
-            {attachButton(null)}
-            <Tip label={b.group.newThread}>
-              <Button
-                aria-label={b.group.newThread}
-                className={GROUP_SEND_BTN}
-                disabled={!draft.trim() && !imagesFor(null).length}
-                type="submit"
-              >
-                <Codicon name="arrow-up" size="0.875rem" />
-              </Button>
-            </Tip>
-          </div>
-        </form>
       </div>
       <GroupChatSettingsDialog
         group={group}

@@ -112,7 +112,7 @@ function CreateTeamDialog({ onClose, open, t }: { onClose: () => void; open: boo
   )
 }
 
-function Approvals({ t, team }: { t: TeamText; team: Team }) {
+export function Approvals({ t, team }: { t: TeamText; team: Team }) {
   const pending = pendingApprovals(team)
 
   if (pending.length === 0) {
