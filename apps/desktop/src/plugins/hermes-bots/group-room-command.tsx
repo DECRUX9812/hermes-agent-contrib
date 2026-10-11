@@ -16,11 +16,14 @@ import type { GroupRoomPrompt } from './group-chat-parts'
 import { groupSessionKey } from './group-membership'
 import { ActivityLine, EscalationCard } from './group-room-cards'
 import { handoffLine, nudgeLine, type RoomEscalation, type RoomHandoff, STATUS_CHECK_LINE } from './group-room-handoffs'
+import { decidedLine, type RoomVote } from './group-room-votes'
 import { groupReplyMentionTag, sendToGroupChat } from './group-rounds'
 import { useBots } from './i18n'
 import type { GroupMember } from './types'
 
 export interface RoomCommands {
+  /** Record a decision's outcome in its own thread. */
+  callDecision: (vote: RoomVote, option: string) => void
   nudge: (handoff: RoomHandoff) => void
   reassign: (handoff: RoomHandoff, member: GroupMember) => void
   statusCheck: (thread: null | string) => void
@@ -32,6 +35,7 @@ export function roomCommands(group: string, members: GroupMember[], seat: () => 
   const tag = (name: string) => groupReplyMentionTag(members.find(m => m.name === name) || { name }, members) || name
 
   return {
+    callDecision: (vote, option) => void sendToGroupChat(group, seat(), decidedLine(option), vote.thread, []),
     nudge: handoff => void sendToGroupChat(group, seat(), nudgeLine(tag(handoff.to), handoff.task), handoff.thread, []),
     reassign: (handoff, member) =>
       void sendToGroupChat(

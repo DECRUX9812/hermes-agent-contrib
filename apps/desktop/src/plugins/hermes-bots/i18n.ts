@@ -498,6 +498,17 @@ type BotsMessages = {
       clockHint: string
       status: { accepted: string; declined: string; delivered: string; open: string; working: string }
     }
+    vote: {
+      label: (question: string) => string
+      title: string
+      option: string
+      picked: (names: string) => string
+      missing: (names: string) => string
+      decided: (option: string) => string
+      callIt: string
+      callHint: string
+      consensus: { majority: string; split: string; unanimous: string; waiting: string }
+    }
     escalation: {
       title: string
       loop: (a: string, b: string) => string
@@ -1369,6 +1380,17 @@ const en: BotsMessages = {
         working: 'Working'
       }
     },
+    vote: {
+      label: question => `Team vote: ${question}`,
+      title: 'Team vote',
+      option: 'Option',
+      picked: names => `${names} picked this`,
+      missing: names => `waiting on ${names}`,
+      decided: option => `Decided: ${option}`,
+      callIt: 'Call it',
+      callHint: 'your call — the card records it in the room',
+      consensus: { majority: 'Majority', split: 'Split', unanimous: 'Unanimous', waiting: 'Waiting' }
+    },
     escalation: {
       title: 'Escalated to you',
       loop: (a, b) => `${a} and ${b} keep handing this back and forth`,
@@ -2234,6 +2256,17 @@ const ja: BotsMessages = {
       clockHint: '10分で催促 · 20分であなたに届きます',
       status: { accepted: '受諾', declined: '辞退', delivered: '納品済み', open: '受け取り待ち', working: '作業中' }
     },
+    vote: {
+      label: question => `チーム投票: ${question}`,
+      title: 'チーム投票',
+      option: '選択肢',
+      picked: names => `${names} が選択`,
+      missing: names => `${names} が未投票`,
+      decided: option => `決定: ${option}`,
+      callIt: '決定する',
+      callHint: 'あなたの決定 — カードが部屋に記録します',
+      consensus: { majority: '過半数', split: '割れた', unanimous: '全員一致', waiting: '投票待ち' }
+    },
     escalation: {
       title: 'あなたにエスカレーション',
       loop: (a, b) => `${a} と ${b} の間で行き来しています`,
@@ -3087,6 +3120,17 @@ const zh: BotsMessages = {
       clockHint: '10 分钟提醒 · 20 分钟转给你',
       status: { accepted: '已接受', declined: '已拒绝', delivered: '已交付', open: '等待接手', working: '进行中' }
     },
+    vote: {
+      label: question => `团队投票：${question}`,
+      title: '团队投票',
+      option: '选项',
+      picked: names => `${names} 选择了这个`,
+      missing: names => `${names} 还没投`,
+      decided: option => `已决定：${option}`,
+      callIt: '拍板',
+      callHint: '由你拍板 — 卡片会记录到房间里',
+      consensus: { majority: '多数', split: '分歧', unanimous: '全票', waiting: '等待投票' }
+    },
     escalation: {
       title: '已升级给你',
       loop: (a, b) => `${a} 和 ${b} 在来回推这件事`,
@@ -3935,6 +3979,17 @@ const zhHant: BotsMessages = {
       overdue: minutes => `已逾時 ${minutes} 分鐘`,
       clockHint: '10 分鐘提醒 · 20 分鐘轉給你',
       status: { accepted: '已接受', declined: '已拒絕', delivered: '已交付', open: '等待接手', working: '進行中' }
+    },
+    vote: {
+      label: question => `團隊投票：${question}`,
+      title: '團隊投票',
+      option: '選項',
+      picked: names => `${names} 選了這個`,
+      missing: names => `${names} 還沒投`,
+      decided: option => `已決定：${option}`,
+      callIt: '拍板',
+      callHint: '由你拍板 — 卡片會記錄到房間裡',
+      consensus: { majority: '多數', split: '分歧', unanimous: '全票', waiting: '等待投票' }
     },
     escalation: {
       title: '已升級給你',

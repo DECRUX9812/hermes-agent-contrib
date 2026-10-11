@@ -13,6 +13,7 @@ import { Button, cn, Codicon, host, relativeTime, useValue } from '@hermes/plugi
 import { useState } from 'react'
 
 import type { HandoffStatus, RoomEscalation, RoomHandoff } from './group-room-handoffs'
+import { type RoomVote, voteConsensus } from './group-room-votes'
 import { useBots } from './i18n'
 import { liveTool } from './live-status'
 import type { GroupMember } from './types'
@@ -172,6 +173,169 @@ export function EscalationCard({
           ))}
         </div>
       ) : null}
+    </section>
+  )
+}
+
+/** The contracts hanging off one log line — handoffs and team votes — each
+ *  rendered directly under the line that called for it. */
+export function LineCards({
+  handoffsAt,
+  index,
+  members,
+  nameOf,
+  onCall,
+  votesAt
+}: {
+  /** Handoffs by the log index that raised them. */
+  handoffsAt: ReadonlyMap<number, readonly RoomHandoff[]>
+  /** The log entry's index. */
+  index: number
+  members: readonly GroupMember[]
+  nameOf: (name: string) => string
+  /** Record a decision's outcome in its own thread. */
+  onCall: (vote: RoomVote, option: string) => void
+  /** Votes by the log index that asked. */
+  votesAt: ReadonlyMap<number, readonly RoomVote[]>
+}) {
+  const handoffs = handoffsAt.get(index) ?? []
+  const votes = votesAt.get(index) ?? []
+
+  // Most lines carry no contract; don't make the log render empty wrappers.
+  if (!handoffs.length && !votes.length) {
+    return null
+  }
+
+  return (
+    <>
+      {handoffs.map(handoff => (
+        <HandoffCard handoff={handoff} key={`handoff:${handoff.id}`} nameOf={nameOf} />
+      ))}
+      {votes.map(vote => (
+        <VoteCard
+          key={`vote:${vote.id}`}
+          members={members}
+          nameOf={nameOf}
+          onCall={option => onCall(vote, option)}
+          vote={vote}
+        />
+      ))}
+    </>
+  )
+}
+
+/** Where the team landed, option by option: a bar per option, who is on it,
+ *  and — while the decision is open — the call to make. */
+export function VoteCard({
+  members,
+  nameOf,
+  onCall,
+  vote
+}: {
+  members: readonly GroupMember[]
+  nameOf: (name: string) => string
+  /** Record the outcome in the room, so the call outlives this session. */
+  onCall: (option: string) => void
+  vote: RoomVote
+}) {
+  const b = useBots()
+  const v = b.group.vote
+  const consensus = voteConsensus(vote, members)
+  const counts = new Map<string, number>()
+
+  for (const pick of Object.values(vote.votes)) {
+    counts.set(pick, (counts.get(pick) || 0) + 1)
+  }
+
+  // The tallest bar sets the scale, so bars compare against each other.
+  const top = counts.size ? Math.max(...counts.values()) : 0
+
+  const TONE = {
+    majority: 'bg-(--ui-accent)/12 text-(--ui-accent)',
+    split: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    unanimous: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    waiting: 'bg-(--ui-bg-tertiary) text-(--ui-text-secondary)'
+  } as const
+
+  return (
+    <section
+      aria-label={v.label(vote.question)}
+      className="ml-11 overflow-hidden rounded-xl border border-(--ui-stroke-secondary)"
+      data-testid="group-vote-card"
+    >
+      <div className="flex flex-wrap items-center gap-2 border-b border-(--ui-stroke-secondary) bg-(--ui-bg-tertiary) px-3 py-1.5">
+        <Codicon className="text-(--ui-accent)" name="flame" />
+        <span className="text-[0.75rem] font-semibold text-foreground">{v.title}</span>
+        <span
+          className={cn('ml-auto rounded-full px-2 py-px text-[0.625rem] font-semibold', TONE[consensus])}
+          data-testid="group-vote-consensus"
+        >
+          {v.consensus[consensus]}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1.5 px-3 py-2">
+        <span className="text-[0.8125rem] leading-snug font-medium text-foreground">{vote.question}</span>
+        {vote.options.map(option => {
+          const voters = Object.entries(vote.votes)
+            .filter(([, pick]) => pick === option)
+            .map(([name]) => nameOf(name))
+
+          const isCalled = vote.decided === option
+          const width = top ? Math.round((voters.length / top) * 100) : 0
+
+          return (
+            <div className="flex items-center gap-2" data-testid="group-vote-option" key={option}>
+              <div className="relative min-w-0 flex-1 overflow-hidden rounded-md bg-(--ui-bg-tertiary)">
+                {/* The bar is the count, so a glance reads the shape of the
+                    room before any name is legible. */}
+                <div
+                  aria-hidden
+                  className={cn(
+                    'h-full absolute inset-y-0 left-0 transition-[width]',
+                    isCalled ? 'bg-emerald-500/35' : 'bg-(--ui-accent)/18'
+                  )}
+                  style={{ width: `${width}%` }}
+                />
+                <div className="relative flex flex-wrap items-center gap-x-2 px-2 py-1">
+                  <span
+                    className={cn(
+                      'min-w-0 truncate text-[0.75rem]',
+                      isCalled ? 'font-semibold text-emerald-700 dark:text-emerald-300' : 'text-foreground'
+                    )}
+                  >
+                    {option}
+                  </span>
+                  {voters.length ? (
+                    <span className="truncate text-[0.625rem] text-(--ui-text-tertiary)">
+                      {v.picked(voters.join(', '))}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
+              {/* Calling it is the user's alone — the card records their word
+                  in the room, it never records one on their behalf. */}
+              {!vote.decided ? (
+                <Button onClick={() => onCall(option)} size="sm" type="button" variant="outline">
+                  {v.callIt}
+                </Button>
+              ) : null}
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex flex-wrap gap-x-3 px-3 pb-2 text-[0.625rem] text-(--ui-text-quaternary)">
+        <span>{relativeTime(vote.at)}</span>
+        {vote.decided ? (
+          <span className="font-semibold text-emerald-700 dark:text-emerald-300" data-testid="group-vote-decided">
+            {v.decided(vote.decided)}
+          </span>
+        ) : (
+          <>
+            {vote.missing.length ? <span>{v.missing(vote.missing.map(nameOf).join(', '))}</span> : null}
+            <span>{v.callHint}</span>
+          </>
+        )}
+      </div>
     </section>
   )
 }

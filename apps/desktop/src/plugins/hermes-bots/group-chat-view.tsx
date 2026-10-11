@@ -96,7 +96,7 @@ import {
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { GroupRoomBoard } from './group-room-board'
-import { HandoffCard } from './group-room-cards'
+import { LineCards } from './group-room-cards'
 import { CatchUpCard, RecapCard, roomCatchUp } from './group-room-catchup'
 import { roomCommands, RoomDecisions, RoomShortcuts, ThreadTail } from './group-room-command'
 import { GroupComposerContext, GroupThreadHeader } from './group-room-focus'
@@ -108,6 +108,7 @@ import { GroupLogTail, GroupRoomEmpty } from './group-room-log-tail'
 import { GroupRoomPanel, type RoomPanelTab } from './group-room-panel'
 import { GroupThreadRail } from './group-room-threads'
 import { useRoomUnread } from './group-room-unseen'
+import { deriveRoomVotes, roomVotesAt } from './group-room-votes'
 import { roomLiveWork, roomWorkItems } from './group-room-work'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
@@ -824,6 +825,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     handoffsAt.set(handoff.index, [...(handoffsAt.get(handoff.index) ?? []), handoff])
   }
 
+  // Team decisions: the question, every pick, and the call — read off the
+  // log the same way handoffs are, so the card always matches the thread.
+  const votesAt = roomVotesAt(deriveRoomVotes(room.log, members))
+
   const workItems = roomWorkItems(room.log, {
     live: liveWork,
     running: Boolean(room.running),
@@ -1521,9 +1526,17 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
     logChildren.push(renderEntry(entry, index))
 
-    for (const handoff of handoffsAt.get(index) ?? []) {
-      logChildren.push(<HandoffCard handoff={handoff} key={`handoff:${handoff.id}`} nameOf={memberLabel} />)
-    }
+    logChildren.push(
+      <LineCards
+        handoffsAt={handoffsAt}
+        index={index}
+        key={`cards:${index}`}
+        members={members}
+        nameOf={memberLabel}
+        onCall={commands.callDecision}
+        votesAt={votesAt}
+      />
+    )
 
     const id = groupThreadOf(entry)
 

@@ -687,3 +687,58 @@ it('lets the CEO search, pin and snooze threads, and remembers where they left o
   expect(titles()).toEqual([expect.stringContaining('theme plugin')])
   expect(rail.querySelector('[data-thread-section="snoozed"]')?.textContent).toContain('1')
 })
+
+it('renders team decision cards with live consensus and records the user call', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { clearGroupComposerDraft, groupComposerDraftKey } = await import('./group-panes')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+  const { decideLine } = await import('./group-room-votes')
+
+  clearGroupComposerDraft(groupComposerDraftKey('Room', { log: [], watermarks: {}, sessions: {} } as never))
+
+  const log = [
+    {
+      id: 'u1',
+      thread: 'a',
+      from: { kind: 'user' as const, name: 'You' },
+      text: decideLine('ship or hold?', ['ship', 'hold']),
+      at: 1000
+    },
+    {
+      id: 'm1',
+      thread: 'a',
+      from: { kind: 'member' as const, name: 'builder' },
+      text: 'ship it',
+      at: 2000
+    },
+    {
+      id: 'm2',
+      thread: 'a',
+      from: { kind: 'member' as const, name: 'reviewer' },
+      text: 'ship',
+      at: 3000
+    }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  render(
+    <GroupChatWorkspace
+      group="Room"
+      members={[{ name: 'builder' }, { name: 'reviewer' }, { name: 'plugin' }] as never}
+    />
+  )
+
+  const card = screen.getByTestId('group-vote-card')
+  expect(card).toBeTruthy()
+  expect(card.textContent).toContain('ship or hold?')
+  expect(screen.getByTestId('group-vote-consensus').textContent).toContain('Majority')
+
+  // Calling it records the outcome in the thread
+  const callBtn = within(card).getAllByRole('button', { name: 'Call it' })[0]!
+  fireEvent.click(callBtn)
+
+  const sent = $groupChats.get().Room!.log.at(-1)!
+  expect(sent.thread).toBe('a')
+  expect(sent.text).toBe('decided: ship')
+})
