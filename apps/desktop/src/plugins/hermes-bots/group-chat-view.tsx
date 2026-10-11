@@ -94,9 +94,12 @@ import {
   updateGroupComposerDraft
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
+import { GroupComposerContext, GroupThreadHeader } from './group-room-focus'
 import { disbandGroupChat } from './group-room-lifecycle'
+import { GroupLogTail } from './group-room-log-tail'
 import { GroupRoomPanel } from './group-room-panel'
-import type { RoomWorkItem } from './group-room-work'
+import { GroupThreadRail } from './group-room-threads'
+import { roomLiveWork, roomWorkItems } from './group-room-work'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { renameGroupClarify } from './group-turns'
@@ -290,16 +293,22 @@ function GroupChatSettingsDialog({
   const [listener, setListener] = useState(currentListener)
   const [compressing, setCompressing] = useState<null | string>(null)
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
+
   const teamLeadQuery = useQuery({
     queryFn: () => resolveRoomListener('', members || []),
     queryKey: [ID, 'group-team-lead-settings', group, ...localMemberProfiles(members || [])],
     enabled: open,
     staleTime: 15000
   })
+
   const autoLead = teamLeadQuery.data || null
   const autoTarget = (members || []).find(m => m.name === autoLead?.lead)
   const autoName = autoTarget ? displayName(autoTarget, botRosterMeta(autoTarget, allMeta)) : autoLead?.lead
-  const autoRole = (autoLead?.leadTitle || (autoTarget ? (botRosterMeta(autoTarget, allMeta)?.title || autoTarget.title || '') : '')).trim()
+
+  const autoRole = (
+    autoLead?.leadTitle || (autoTarget ? botRosterMeta(autoTarget, allMeta)?.title || autoTarget.title || '' : '')
+  ).trim()
+
   const autoSuffix = autoName ? ` (${autoRole ? `${autoRole} · ` : ''}${autoName})` : ''
   useEffect(() => {
     if (open) {
@@ -611,6 +620,8 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const [revealedSpeaker, setRevealedSpeaker] = useState<null | string>(null)
   // The team panel (Team · Work) beside the conversation; wide rooms only.
   const [panelOpen, setPanelOpen] = useState(true)
+  // One thread on screen at a time when picked from the rail; null = All.
+  const [focusThread, setFocusThread] = useState<null | string>(null)
   // Focus mode (ADHD-friendly): dim everything before the newest exchange so
   // the room reads as ONE thing to look at, not a wall of history. Dimmed
   // rows stay reachable — hover or keyboard focus restores them, so nothing
@@ -756,6 +767,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     for (let i = log.length - 1; i > 0; i--) {
       const current = log[i]
       const previous = log[i - 1]
+
       const sameVoice =
         previous.from?.kind === current.from?.kind &&
         previous.from?.name === current.from?.name &&
@@ -813,6 +825,34 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     workingNow.add(room.turn.name)
   }
 
+  const liveWork = roomLiveWork(room.sessions, useValue(host.state.dotStateBySession), members)
+
+  for (const names of liveWork.values()) {
+    names.forEach(name => workingNow.add(name))
+  }
+
+  const workItems = roomWorkItems(room.log, {
+    live: liveWork,
+    running: Boolean(room.running),
+    waitingThreads: new Set(roomClarifies.map(entry => entry.thread || 'legacy'))
+  })
+
+  const focusedItem = focusThread ? workItems.find(item => item.thread === focusThread) || null : null
+  const replyItem = replyThread ? workItems.find(item => item.thread === replyThread) || null : null
+
+  const memberLabel = (name: string) => {
+    const member = members.find(m => m.name === name)
+
+    return member ? displayName(member, botRosterMeta(member, allMeta)) : name
+  }
+
+  // Rail / thread link: show one thread and point the composer at it.
+  const openThread = (thread: null | string) => {
+    setFocusThread(thread)
+    setReplyThread(thread)
+    stickToBottomRef.current = true
+  }
+
   const workingNames = members
     .filter(member => workingNow.has(member.name))
     .map(member => displayName(member, botRosterMeta(member, allMeta)))
@@ -865,7 +905,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         <Tip label={memberNames}>
           <Button
             aria-label="Manage group members"
-            className={cn('flex shrink-0 items-center -space-x-1 rounded-full p-0.5', panelOpen && '@3xl:hidden')}
+            className={cn('flex shrink-0 items-center -space-x-1 rounded-full p-0.5', panelOpen && '@5xl:hidden')}
             onClick={() => setMemberPickerOpen(true)}
             size="inline"
             variant="text"
@@ -944,7 +984,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           aria-label={b.group.panelToggle}
           aria-pressed={panelOpen}
           className={cn(
-            'hidden shrink-0 hover:text-foreground @3xl:inline-flex',
+            'hidden shrink-0 hover:text-foreground @5xl:inline-flex',
             panelOpen ? 'text-foreground' : 'text-(--ui-text-tertiary)'
           )}
           onClick={() => setPanelOpen(open => !open)}
@@ -1266,15 +1306,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     }
   }
 
-  // Work list: jump to a ticket's newest line and open its reply box.
-  const jumpToWork = (item: RoomWorkItem) => {
-    stickToBottomRef.current = false
-    scrollerRef.current
-      ?.querySelector(`[data-entry-index="${item.lastIndex}"]`)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setReplyThread(item.thread)
-  }
-
   // One log entry, rendered exactly as before conversation folding existed.
   const renderEntry = (entry: GroupMessage, index: number) => {
     const isUser = entry.from.kind === 'user'
@@ -1467,7 +1498,15 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         // overriding --speaker-color in CSS without touching markup.
         data-entry-index={index}
         key={entryKey}
-        style={{ '--speaker-color': speakerColor || undefined } as CSSProperties}
+        // Mixed toward the foreground so a dark avatar hue still reads on a dark
+        // room (raw hues like a deep brown vanished into the background).
+        style={
+          {
+            '--speaker-color': speakerColor
+              ? `color-mix(in oklab, ${speakerColor} 62%, var(--color-foreground))`
+              : undefined
+          } as CSSProperties
+        }
       >
         <div className="w-6.5 shrink-0 self-start">
           {runStart ? (
@@ -1561,6 +1600,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // each local-day change; the first entry always leads with one.
   let previousDay = -1
   room.log.forEach((entry, index) => {
+    if (focusThread && groupThreadOf(entry) !== focusThread) {
+      return
+    }
+
     const day = roomDayBucket(Number(entry.at) || 0)
 
     if (day !== previousDay) {
@@ -1587,80 +1630,28 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       return
     }
 
-    // Reply-in-thread: the newest thread's continuation ALSO lives here, so
-    // the main composer below can stay "new thread" without ambiguity.
+    // The thread's tail: how much is in it and a way in. Replies go through
+    // the one bottom composer, never a box opened mid-log.
+    if (focusThread) {
+      return
+    }
+
     logChildren.push(
-      replyThread === id ? (
-        <form
-          className="grid gap-0 px-2 pb-1 pl-11"
-          key={`replybox:${id}`}
-          onSubmit={event => {
-            event.preventDefault()
-            submitReply(id)
-          }}
-        >
-          {attachmentRow(id)}
-          <div className="flex items-center gap-1.5">
-            <GroupMentionInput
-              aria-label={b.group.replyInThread}
-              autoFocus
-              members={members}
-              onChange={text =>
-                setReplyDrafts(prev => ({
-                  ...prev,
-                  [id]: text
-                }))
-              }
-              // Escape closes the box but KEEPS the draft — same as the
-              // Cancel button — so a mis-key never eats a typed reply.
-              onEscape={() => setReplyThread(null)}
-              onPaste={event => pasteImages(id, event)}
-              onSubmitDraft={() => submitReply(id)}
-              placeholder={b.group.replyInThreadPlaceholder}
-              value={replyDrafts[id] || ''}
-            />
-            {attachButton(id)}
-            <Tip label={b.group.reply}>
-              <Button
-                aria-label={b.group.reply}
-                className={GROUP_SEND_BTN}
-                disabled={!(replyDrafts[id] || '').trim() && !imagesFor(id).length}
-                type="submit"
-              >
-                <Codicon name="arrow-up" size="0.875rem" />
-              </Button>
-            </Tip>
-            <Tip label={t.common.cancel}>
-              <Button
-                aria-label={t.common.cancel}
-                className="size-7 shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
-                onClick={() => setReplyThread(null)}
-                size="icon"
-                type="button"
-                variant="ghost"
-              >
-                <Codicon name="close" size="0.875rem" />
-              </Button>
-            </Tip>
-          </div>
-        </form>
-      ) : (
-        <Button
-          aria-label={b.group.replyInThread}
-          className="mt-0.5 w-fit items-center gap-1.5 pb-1 pl-11 text-left text-[0.6875rem] text-(--ui-accent) hover:underline transition-colors"
-          key={`replylink:${id}`}
-          onClick={() => setReplyThread(id)}
-          size="inline"
-          variant="link"
-        >
-          <Codicon className="text-[0.625rem]" name="reply" />
-          <span>
-            {threadCounts.get(id) && threadCounts.get(id)! > 1
-              ? `${b.group.replyCount(threadCounts.get(id)! - 1)} · ${b.group.replyInThread}`
-              : b.group.replyInThread}
-          </span>
-        </Button>
-      )
+      <Button
+        aria-label={b.group.openThread}
+        className="mt-0.5 w-fit items-center gap-1.5 pb-1 pl-11 text-left text-[0.6875rem] text-(--ui-accent) hover:underline transition-colors"
+        key={`replylink:${id}`}
+        onClick={() => openThread(id)}
+        size="inline"
+        variant="link"
+      >
+        <Codicon className="text-[0.625rem]" name="reply" />
+        <span>
+          {threadCounts.get(id) && threadCounts.get(id)! > 1
+            ? `${b.group.replyCount(threadCounts.get(id)! - 1)} · ${b.group.openThread}`
+            : b.group.openThread}
+        </span>
+      </Button>
     )
   })
 
@@ -1693,7 +1684,27 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       ) : null}
       {header}
       <div className="flex min-h-0 flex-1">
+        <div className="hidden min-h-0 @3xl:flex">
+          <GroupThreadRail
+            allMeta={allMeta}
+            focusThread={focusedItem ? focusThread : null}
+            items={workItems}
+            members={members}
+            onNewThread={() => openThread(null)}
+            onSelect={openThread}
+            totalMessages={room.log.length}
+          />
+        </div>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {focusedItem ? (
+            <GroupThreadHeader
+              item={focusedItem}
+              nameOf={memberLabel}
+              onBack={() => openThread(null)}
+              owner={focusedItem.assignees.find(name => members.some(m => m.name === name && !m.remoteSource)) || null}
+              teamId={teamLead?.teamId || null}
+            />
+          ) : null}
           <GroupHoldStatus
             holds={room.holds}
             memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}
@@ -1703,7 +1714,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             <div
               className={cn(
                 'flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.6875rem] text-(--ui-text-quaternary)',
-                panelOpen && '@3xl:hidden'
+                panelOpen && '@5xl:hidden'
               )}
               data-testid="group-team-listening"
             >
@@ -1712,7 +1723,12 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             </div>
           ) : null}
           {activityPanel}
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" onScroll={onLogScroll} ref={scrollerRef}>
+          <div
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+            data-testid="group-room-log"
+            onScroll={onLogScroll}
+            ref={scrollerRef}
+          >
             {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
             {/* unbreakable code line widened every entry to its own width and the */}
             {/* log scrolled sideways as a whole instead of the code block (#91878). */}
@@ -1765,87 +1781,14 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                   <GroupClarifyCard entry={entry} members={members} />
                 </div>
               ))}
-              {/* D2 — after a round settles, one card per member's first line
-              (pure derivation over the log; no LLM call). */}
-              {!room.running && roundContributions.length ? (
-                <div
-                  className="mt-1.5 rounded-r-md border-y border-r border-l-2 border-(--ui-stroke-secondary) border-l-(--ui-accent) bg-(--chrome-action-hover)/40 px-3 py-2"
-                  data-testid="group-round-summary"
-                  key={'round-summary'}
-                >
-                  <div className="mb-1 ui-section-label">{b.group.roundSummaryTitle}</div>
-                  <ul className="flex flex-col gap-0.5">
-                    {roundContributions.map(entry => {
-                      const summaryMember = members.find(member => member.name === entry.name)
-
-                      const summaryAppearance = summaryMember
-                        ? botAppearance(summaryMember.name, botRosterMeta(summaryMember, allMeta))
-                        : null
-
-                      return (
-                        <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>
-                          <span
-                            className="shrink-0 font-medium"
-                            style={{
-                              color: summaryAppearance ? avatarColor(summaryAppearance.color, entry.name) : undefined
-                            }}
-                          >
-                            {summaryMember
-                              ? displayName(summaryMember, botRosterMeta(summaryMember, allMeta))
-                              : entry.name}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate text-(--ui-text-tertiary)">{entry.line}</span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              ) : null}
-              {room.running ? (
-                <div
-                  className="flex items-center gap-2 px-2 pt-1 text-[0.6875rem] text-(--ui-text-quaternary)"
-                  key={'working'}
-                >
-                  {(() => {
-                    // Typing indicator: the thinking member's mini face, or the
-                    // classic three-dot pulse when the turn isn't attributable.
-                    const turnAppearance = room.turn
-                      ? botAppearance(room.turn.name, botRosterMeta(room.turn, allMeta))
-                      : null
-
-                    const turnImage = turnAppearance?.image
-
-                    return turnAppearance ? (
-                      <span className="shrink-0 overflow-hidden rounded-[22%]">
-                        <BotFace
-                          color={avatarColor(turnAppearance.color, room.turn ? room.turn.name : 'agent')}
-                          image={turnImage && !isBackfilledFacePng(turnImage) ? turnImage : null}
-                          name={room.turn ? room.turn.name : 'agent'}
-                          shape={turnAppearance.shape}
-                          size={16}
-                        />
-                      </span>
-                    ) : (
-                      <span aria-hidden className="flex items-center gap-0.5 px-1 py-1">
-                        {[0, 1, 2].map(dot => (
-                          <span
-                            className="size-1 animate-pulse rounded-full bg-(--ui-text-tertiary)"
-                            key={dot}
-                            style={{ animationDelay: `${dot * 200}ms` }}
-                          />
-                        ))}
-                      </span>
-                    )
-                  })()}
-                  <span>
-                    {roomClarifies.length
-                      ? b.group.waitingForAnswer
-                      : room.turn
-                        ? b.group.memberThinking(displayName(room.turn, botRosterMeta(room.turn, allMeta)))
-                        : b.group.roomWorking}
-                  </span>
-                </div>
-              ) : null}
+              <GroupLogTail
+                allMeta={allMeta}
+                focused={Boolean(focusedItem)}
+                members={members}
+                room={room}
+                roomClarifies={roomClarifies}
+                roundContributions={roundContributions}
+              />
               {/* Scroll anchor (#89835): rooms opened at scroll position 0, mid- */
               /* history. The effect below scrolls this sentinel into view on */
               /* mount and on log growth — unless the user has scrolled up. */}
@@ -1872,30 +1815,49 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             ) : null}
           </div>
           <div className="border-t border-(--ui-stroke-secondary) p-2">
+            {/* ONE composer for the whole room. The strip above it says where
+                the message goes — a new thread, or a reply in a named one —
+                so nothing ever opens mid-log. */}
+            <GroupComposerContext
+              leadName={teamLead && leadName ? leadName : ''}
+              onClear={() => openThread(null)}
+              replyTitle={replyThread ? replyItem?.title || b.group.replyInThread : null}
+            />
             <form
               className="grid gap-0"
               onSubmit={event => {
                 event.preventDefault()
-                submit()
+
+                if (replyThread) {
+                  submitReply(replyThread)
+                } else {
+                  submit()
+                }
               }}
             >
-              {attachmentRow(null)}
+              {attachmentRow(replyThread)}
               <div className="flex items-center gap-1.5">
                 <GroupMentionInput
-                  aria-label={b.group.messageRoom(group)}
+                  aria-label={replyThread ? b.group.replyInThread : b.group.messageRoom(group)}
                   members={members}
-                  onChange={setDraft}
-                  onPaste={event => pasteImages(null, event)}
-                  onSubmitDraft={submit}
-                  placeholder={b.group.newThreadPlaceholder(group)}
-                  value={draft}
+                  onChange={text =>
+                    replyThread ? setReplyDrafts(prev => ({ ...prev, [replyThread]: text })) : setDraft(text)
+                  }
+                  // Escape leaves the thread but KEEPS its draft for later.
+                  onEscape={replyThread ? () => openThread(null) : undefined}
+                  onPaste={event => pasteImages(replyThread, event)}
+                  onSubmitDraft={() => (replyThread ? submitReply(replyThread) : submit())}
+                  placeholder={replyThread ? b.group.replyInThreadPlaceholder : b.group.newThreadPlaceholder(group)}
+                  value={replyThread ? replyDrafts[replyThread] || '' : draft}
                 />
-                {attachButton(null)}
-                <Tip label={b.group.newThread}>
+                {attachButton(replyThread)}
+                <Tip label={replyThread ? b.group.reply : b.group.newThread}>
                   <Button
-                    aria-label={b.group.newThread}
+                    aria-label={replyThread ? b.group.reply : b.group.newThread}
                     className={GROUP_SEND_BTN}
-                    disabled={!draft.trim() && !imagesFor(null).length}
+                    disabled={
+                      !(replyThread ? replyDrafts[replyThread] || '' : draft).trim() && !imagesFor(replyThread).length
+                    }
                     type="submit"
                   >
                     <Codicon name="arrow-up" size="0.875rem" />
@@ -1906,22 +1868,18 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           </div>
         </div>
         {panelOpen ? (
-          <div className="hidden min-h-0 @3xl:flex">
+          <div className="hidden min-h-0 @5xl:flex">
             <GroupRoomPanel
               allMeta={allMeta}
               goal={room.goal || ''}
               group={group}
               leadMember={leadMember}
               leadName={leadName}
-              log={room.log}
               members={members}
-              onJump={jumpToWork}
               onMention={mentionMember}
               onTeamChanged={() => void teamLeadQuery.refetch()}
               roomWorking={workingNow}
-              running={Boolean(room.running)}
               teamId={teamLead?.teamId || null}
-              waitingThreads={new Set(roomClarifies.map(entry => entry.thread || 'legacy'))}
             />
           </div>
         ) : null}

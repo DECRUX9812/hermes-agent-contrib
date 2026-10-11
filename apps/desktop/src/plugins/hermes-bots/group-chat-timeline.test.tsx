@@ -62,7 +62,8 @@ it('keeps every public member reply readable in room arrival order across interl
   // The round summary card intentionally re-prints each member's one-liner —
   // the unreadability invariant this test guards lives in the message log.
   container.querySelector('[data-testid="group-round-summary"]')?.remove()
-  const text = container.textContent || ''
+  // The thread rail re-prints each thread's ask as its title; read the log.
+  const text = container.querySelector('[data-testid="group-room-log"]')?.textContent || ''
   let previous = -1
 
   for (const entry of log) {

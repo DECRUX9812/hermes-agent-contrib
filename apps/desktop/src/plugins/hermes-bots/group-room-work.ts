@@ -7,7 +7,37 @@
  */
 
 import { groupThreadOf } from './group-chat'
-import type { GroupMessage } from './types'
+import { groupMemberKey, groupSessionMemberKey, groupSessionThread } from './group-membership'
+import type { GroupMember, GroupMessage } from './types'
+
+/** Dot states that mean a session is mid-turn right now. */
+const LIVE_DOTS: ReadonlySet<string> = new Set(['background', 'stalled', 'working'])
+
+/**
+ * Who is working on which thread RIGHT NOW, read off the room's own member
+ * sessions (one per member per thread) and their live status dots — the honest
+ * signal: a bot grinding through a long task in its thread session shows here
+ * even while the room's own round has long settled.
+ */
+export function roomLiveWork(
+  sessions: Readonly<Record<string, string | true>> | undefined,
+  dotById: Readonly<Record<string, string>> | undefined,
+  members: readonly GroupMember[]
+): Map<string, Set<string>> {
+  const nameByKey = new Map(members.map(member => [groupMemberKey(member), member.name]))
+  const live = new Map<string, Set<string>>()
+
+  for (const [key, sessionId] of Object.entries(sessions || {})) {
+    const name = nameByKey.get(groupSessionMemberKey(key))
+
+    if (typeof sessionId === 'string' && name && LIVE_DOTS.has(dotById?.[sessionId] ?? '')) {
+      const thread = groupSessionThread(key)
+      live.set(thread, (live.get(thread) ?? new Set()).add(name))
+    }
+  }
+
+  return live
+}
 
 /** working: a member is on it now · waiting: a bot asked you something ·
  *  answered: the last word is a bot's · open: asked, nobody has answered. */
@@ -23,6 +53,8 @@ export interface RoomWorkItem {
   status: RoomWorkStatus
   thread: string
   title: string
+  /** Members mid-turn on this thread right now. */
+  working: string[]
 }
 
 const TITLE_MAX = 90
@@ -37,7 +69,11 @@ function oneLine(text: string): string {
 
 export function roomWorkItems(
   log: readonly GroupMessage[],
-  { running, waitingThreads }: { running: boolean; waitingThreads: ReadonlySet<string> }
+  {
+    live = new Map(),
+    running,
+    waitingThreads
+  }: { live?: ReadonlyMap<string, ReadonlySet<string>>; running: boolean; waitingThreads: ReadonlySet<string> }
 ): RoomWorkItem[] {
   const byThread = new Map<string, { entries: { entry: GroupMessage; index: number }[] }>()
   let activeThread: null | string = null
@@ -62,9 +98,11 @@ export function roomWorkItems(
       ...new Set(entries.filter(({ entry }) => entry.from?.kind === 'member').map(({ entry }) => entry.from.name))
     ]
 
+    const working = [...(live.get(thread) ?? [])]
+
     const status: RoomWorkStatus = waitingThreads.has(thread)
       ? 'waiting'
-      : running && thread === activeThread
+      : working.length || (running && thread === activeThread)
         ? 'working'
         : last.entry.from?.kind === 'member'
           ? 'answered'
@@ -77,7 +115,8 @@ export function roomWorkItems(
       lastIndex: last.index,
       status,
       thread,
-      title: oneLine(ask.entry.text) || thread
+      title: oneLine(ask.entry.text) || thread,
+      working
     }
   })
 

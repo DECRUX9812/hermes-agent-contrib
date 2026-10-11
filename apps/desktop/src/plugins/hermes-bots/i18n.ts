@@ -465,6 +465,15 @@ type BotsMessages = {
     workCount: (count: number) => string
     makeTask: string
     taskFiled: string
+    threadsTitle: string
+    threadsNew: string
+    threadsAll: string
+    threadWorking: (names: string) => string
+    threadPeople: (names: string) => string
+    composerReplyingIn: (title: string) => string
+    composerNewThreadTo: (name: string) => string
+    composerNewThreadEveryone: string
+    composerStartNew: string
     workingNow: (names: string) => string
     messageRoom: (group: string) => string
     newThreadPlaceholder: (group: string) => string
@@ -1247,6 +1256,15 @@ const en: BotsMessages = {
     workCount: count => `${count} ${count === 1 ? 'message' : 'messages'}`,
     makeTask: 'Make task',
     taskFiled: 'Task filed',
+    threadsTitle: 'Threads',
+    threadsNew: 'New',
+    threadsAll: 'All activity',
+    threadWorking: names => `${names} working now`,
+    threadPeople: names => `With ${names}`,
+    composerReplyingIn: title => `Replying in: ${title}`,
+    composerNewThreadTo: name => `New thread · ${name} answers, @mention anyone`,
+    composerNewThreadEveryone: 'New thread · everyone hears it',
+    composerStartNew: 'New thread',
     workingNow: names => `Working now: ${names}`,
     messageRoom: group => `Message ${group}`,
     newThreadPlaceholder: group => `New thread in ${group}… (@name to direct, @everyone for all)`,
@@ -2013,6 +2031,15 @@ const ja: BotsMessages = {
     workCount: count => `${count}件`,
     makeTask: 'タスク化',
     taskFiled: 'タスク登録済み',
+    threadsTitle: 'スレッド',
+    threadsNew: '新規',
+    threadsAll: 'すべてのアクティビティ',
+    threadWorking: names => `${names} が作業中`,
+    threadPeople: names => `参加: ${names}`,
+    composerReplyingIn: title => `返信先: ${title}`,
+    composerNewThreadTo: name => `新しいスレッド · ${name} が応答、@メンションで指名`,
+    composerNewThreadEveryone: '新しいスレッド · 全員に届きます',
+    composerStartNew: '新しいスレッド',
     workingNow: names => `作業中: ${names}`,
     messageRoom: group => `${group}にメッセージ`,
     newThreadPlaceholder: group => `${group}で新しいスレッド…（@名前で個別、@everyoneで全員）`,
@@ -2768,6 +2795,15 @@ const zh: BotsMessages = {
     workCount: count => `${count} 条`,
     makeTask: '设为任务',
     taskFiled: '已建任务',
+    threadsTitle: '话题',
+    threadsNew: '新建',
+    threadsAll: '全部动态',
+    threadWorking: names => `${names} 正在工作`,
+    threadPeople: names => `参与：${names}`,
+    composerReplyingIn: title => `回复：${title}`,
+    composerNewThreadTo: name => `新话题 · 由 ${name} 回答，@提及 指定成员`,
+    composerNewThreadEveryone: '新话题 · 所有人都能收到',
+    composerStartNew: '新话题',
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `发消息给 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中开启新讨论串…（@名称指定，@everyone 全体）`,
@@ -3519,6 +3555,15 @@ const zhHant: BotsMessages = {
     workCount: count => `${count} 則`,
     makeTask: '設為任務',
     taskFiled: '已建立任務',
+    threadsTitle: '話題',
+    threadsNew: '新增',
+    threadsAll: '全部動態',
+    threadWorking: names => `${names} 正在工作`,
+    threadPeople: names => `參與：${names}`,
+    composerReplyingIn: title => `回覆：${title}`,
+    composerNewThreadTo: name => `新話題 · 由 ${name} 回答，@提及 指定成員`,
+    composerNewThreadEveryone: '新話題 · 所有人都會收到',
+    composerStartNew: '新話題',
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `傳訊息給 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中開啟新討論串…（@名稱指定，@everyone 全體）`,

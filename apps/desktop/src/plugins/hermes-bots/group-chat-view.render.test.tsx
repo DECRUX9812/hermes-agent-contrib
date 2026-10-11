@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
@@ -28,7 +28,14 @@ vi.mock('@hermes/plugin-sdk', async () => {
     onClick?: () => void
     title?: string
   }) => (
-    <button aria-label={ariaLabel} aria-pressed={ariaPressed} className={className} data-testid={testId} onClick={onClick} title={title}>
+    <button
+      aria-label={ariaLabel}
+      aria-pressed={ariaPressed}
+      className={className}
+      data-testid={testId}
+      onClick={onClick}
+      title={title}
+    >
       {children}
     </button>
   )
@@ -176,7 +183,10 @@ it('marks each bot run start with a colored speaker dot, not on continuation lin
   // The hue rides the ROW as --speaker-color; dot and name read it from CSS,
   // so a theme layer can recolor a voice without touching this markup.
   const rowColors = dots.map(dot => (dot.closest('[style]') as HTMLElement).style.getPropertyValue('--speaker-color'))
-  expect(rowColors).toEqual(['#0f0', '#f00'])
+  // Each hue is mixed toward the foreground so dark avatar colors stay legible.
+  expect(rowColors.map(color => color.includes('#0f0') || color.includes('#f00'))).toEqual([true, true])
+  expect(rowColors[0]).toContain('#0f0')
+  expect(rowColors[1]).toContain('#f00')
 })
 
 it('removes Stop controls from historical working rows after the room settles', async () => {
@@ -216,7 +226,9 @@ it('separates calendar days in the room log with a hairline Today/Yesterday row'
   const { $groupChats } = await import('./group-chat')
   const { GroupChatWorkspace } = await import('./group-chat-view')
 
-  const now = Date.now()
+  // Noon today: "an hour before yesterday's now" must stay yesterday even
+  // when the suite runs just after midnight.
+  const now = new Date().setHours(12, 0, 0, 0)
   const DAY = 86_400_000
 
   const log = [
@@ -249,8 +261,9 @@ it('separates calendar days in the room log with a hairline Today/Yesterday row'
   expect(separators[0].textContent).toBe('Yesterday')
   expect(separators[1].textContent).toBe('Today')
 
-  // The separators sit BEFORE the entries of their day, in order.
-  const text = container.textContent || ''
+  // The separators sit BEFORE the entries of their day, in order (read the
+  // log itself — the thread rail re-prints thread titles).
+  const text = container.querySelector('[data-testid="group-room-log"]')?.textContent || ''
   expect(text.indexOf('Yesterday')).toBeLessThan(text.indexOf('from yesterday'))
   expect(text.indexOf('still yesterday')).toBeLessThan(text.indexOf('Today'))
   expect(text.indexOf('Today')).toBeLessThan(text.indexOf('today now'))
@@ -284,7 +297,7 @@ it('leaves a reader in history when a reply lands, and offers a jump back with t
   const { rerender } = render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
   // The reader scrolls 500px up from the bottom of the log.
-  const scroller = screen.getByText('go').closest('.overflow-y-auto') as HTMLElement
+  const scroller = screen.getByTestId('group-room-log')
   Object.defineProperties(scroller, {
     clientHeight: { configurable: true, value: 400 },
     scrollHeight: { configurable: true, value: 1500 },
@@ -328,34 +341,40 @@ it('shows each voice’s role and lights the face of whoever is working right no
   expect(screen.getByTestId('group-working-chip').textContent).toContain('Frontend engineer')
 })
 
-it('runs the room beside a team panel: the squad, and a Work tab whose tickets jump to their thread', async () => {
-  const scrollIntoView = vi.fn()
-  Element.prototype.scrollIntoView = scrollIntoView
+it('runs the room as threads: the rail focuses one, its header says where it stands, the composer replies in it', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
   const { $groupChats } = await import('./group-chat')
   const { GroupChatWorkspace } = await import('./group-chat-view')
 
   const log = [
     { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'fix the header', at: 1 },
-    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'fixed', at: 2 }
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'fixed', at: 2 },
+    { id: 'u2', thread: 'b', from: { kind: 'user' as const, name: 'You' }, text: 'theme plugin next', at: 3 }
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
   render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
+  // The team panel sits beside the room with the squad in it.
   expect(screen.getByTestId('group-room-panel')).toBeTruthy()
   expect(screen.getAllByRole('button', { name: /^Ask / })).toHaveLength(1)
 
-  expect(screen.getByRole('button', { name: 'Reply in thread' })).toBeTruthy()
-  fireEvent.click(screen.getByRole('button', { name: 'Work' }))
-  scrollIntoView.mockClear()
-  fireEvent.click(screen.getByRole('button', { name: /fix the header/ }))
+  // Rail → one thread on screen; the other thread's ask leaves the log.
+  const rail = screen.getByTestId('group-thread-rail')
+  fireEvent.click(within(rail).getByText('fix the header'))
+  const logView = screen.getByTestId('group-room-log')
+  expect(logView.textContent).toContain('fixed')
+  expect(logView.textContent).not.toContain('theme plugin next')
+  expect(screen.getByTestId('group-thread-header').textContent).toContain('Answered')
+  expect(screen.getByTestId('group-composer-context').textContent).toContain('Replying in: fix the header')
 
-  // Jumped to the thread's newest line, and its reply box replaced the link.
-  expect(scrollIntoView).toHaveBeenCalled()
-  expect(screen.queryByRole('button', { name: 'Reply in thread' })).toBeNull()
+  // Back to All: the whole arrival-ordered room again, composer on a new thread.
+  fireEvent.click(within(rail).getByText('All activity'))
+  expect(screen.getByTestId('group-room-log').textContent).toContain('theme plugin next')
+  expect(screen.queryByTestId('group-thread-header')).toBeNull()
 })
 
-it('Escape closes the open reply box but keeps the typed draft', async () => {
+it('Escape leaves the thread but keeps the typed reply', async () => {
   Element.prototype.scrollIntoView = vi.fn()
   const { $groupChats } = await import('./group-chat')
   // The room's composer drafts persist across tests in this file (the Work
@@ -375,18 +394,19 @@ it('Escape closes the open reply box but keeps the typed draft', async () => {
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
   render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
-  // Open the thread's reply box.
-  fireEvent.click(screen.getByRole('button', { name: 'Reply in thread' }))
+  // Open the thread: the ONE bottom composer now replies in it.
+  fireEvent.click(screen.getByRole('button', { name: /Open this thread/ }))
   const box = screen.getByLabelText('Reply in thread') as HTMLTextAreaElement
   fireEvent.change(box, { target: { value: 'one more thing' } })
+  expect(screen.getByTestId('group-composer-context').textContent).toContain('Replying in: fix the header')
 
-  // Escape closes the box (the reply textarea is gone; the link is back)...
+  // Escape leaves the thread (the composer starts a new one again)...
   fireEvent.keyDown(box, { key: 'Escape' })
-  expect(screen.queryByRole('textbox', { name: 'Reply in thread' })).toBeNull()
-  expect(screen.getByRole('button', { name: 'Reply in thread' })).toBeTruthy()
+  expect(screen.queryByLabelText('Reply in thread')).toBeNull()
+  expect(screen.getByTestId('group-composer-context').textContent).not.toContain('Replying in')
 
   // ...and the draft survives, so reopening shows the half-typed reply.
-  fireEvent.click(screen.getByRole('button', { name: 'Reply in thread' }))
+  fireEvent.click(screen.getByRole('button', { name: /Open this thread/ }))
   expect((screen.getByLabelText('Reply in thread') as HTMLTextAreaElement).value).toBe('one more thing')
 })
 
@@ -409,7 +429,10 @@ it('focus mode dims history but keeps the final run and hover-reachable', async 
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  const { container } = render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
+
+  const { container } = render(
+    <GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />
+  )
 
   const rows = [...container.querySelectorAll('[data-entry-index]')]
   const dimmed = () => rows.filter(row => row.className.includes('opacity-30'))
