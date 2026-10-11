@@ -110,9 +110,9 @@ function SquadMember({ allMeta, isLead, member, onMention, roomTurn, row }: Squa
               </span>
             ) : null}
           </span>
-          {role ? <span className="truncate text-[0.65rem] text-(--ui-text-tertiary)">{role}</span> : null}
+          {role ? <span className="truncate text-[0.625rem] text-(--ui-text-tertiary)">{role}</span> : null}
           <span
-            className={cn('truncate text-[0.65rem] text-(--ui-text-quaternary)', TONE[kind])}
+            className={cn('truncate text-[0.625rem] text-(--ui-text-quaternary)', TONE[kind])}
             data-testid="group-squad-status"
           >
             {status}
@@ -159,11 +159,11 @@ export function GroupSquadPanel({
     <section aria-label={b.group.squadTitle} className="flex flex-col text-left" data-testid="group-squad-panel">
       <div className="flex items-baseline gap-1.5 pb-1">
         <span className="ui-section-label">{b.group.squadTitle}</span>
-        <span className="text-[0.65rem] tabular-nums text-(--ui-text-quaternary)">{members.length}</span>
+        <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{members.length}</span>
       </div>
       {/* Who hears a plain message — the one routing fact that changes what
           typing in the room does. */}
-      <p className="m-0 pb-1.5 text-[0.65rem] leading-snug text-(--ui-text-tertiary)">
+      <p className="m-0 pb-1.5 text-[0.75rem] leading-snug text-(--ui-text-tertiary)">
         {leadName ? b.group.squadRoutingLead(leadName) : b.group.squadRoutingEveryone}
       </p>
       <ul className="-mx-2 my-0 flex list-none flex-col gap-0.5 p-0">

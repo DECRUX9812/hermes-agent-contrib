@@ -893,7 +893,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           answers "are you guys even working?" without anyone hunting for it. */}
       {workingLabel ? (
         <span
-          className="flex min-w-0 max-w-[11rem] shrink items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-2 py-0.5 text-[0.65rem] text-(--ui-text-secondary)"
+          className="flex min-w-0 max-w-[11rem] shrink items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-2 py-0.5 text-[0.625rem] text-(--ui-text-secondary)"
           data-testid="group-working-chip"
         >
           <span aria-hidden className="relative flex size-1.5 shrink-0">
@@ -906,7 +906,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       {/* The face pile already says how many; the label only speaks up when
           a member can't answer right now. */}
       {members.length > 0 && availableMembers < members.length ? (
-        <span aria-label={availabilityLabel} className="shrink-0 text-[0.65rem] text-amber-600 dark:text-amber-300">
+        <span aria-label={availabilityLabel} className="shrink-0 text-[0.625rem] text-amber-600 dark:text-amber-300">
           {availabilityLabel}
         </span>
       ) : null}
@@ -994,10 +994,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         <RowButton
           aria-controls={`group-activity:${group}`}
           aria-expanded={activityOpen}
-          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-foreground"
+          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-foreground"
           onClick={() => setActivityOpen(prev => !prev)}
         >
-          <Codicon className="shrink-0 text-[0.65rem]" name={activityOpen ? 'chevron-down' : 'chevron-right'} />
+          <Codicon className="shrink-0 text-[0.625rem]" name={activityOpen ? 'chevron-down' : 'chevron-right'} />
           <span className="shrink-0 font-medium">{b.group.activity}</span>
           {summaryActivity ? (
             <span
@@ -1023,9 +1023,9 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         <div className="grid gap-0.5 px-2.5 pb-1.5" id={`group-activity:${group}`}>
           {activityEvents.length ? (
             [...activityEvents].reverse().map((event, i) => (
-              <div className="flex items-center gap-1.5 text-[0.7rem]" key={`${event.at}:${i}`}>
+              <div className="flex items-center gap-1.5 text-[0.6875rem]" key={`${event.at}:${i}`}>
                 <Codicon
-                  className={cn('shrink-0 text-[0.65rem]', groupActivityTone(event.kind))}
+                  className={cn('shrink-0 text-[0.625rem]', groupActivityTone(event.kind))}
                   name={GROUP_ACTIVITY_GLYPHS[event.kind] || 'circle-outline'}
                 />
                 <span className={cn('min-w-0 flex-1 truncate', groupActivityTone(event.kind))}>
@@ -1148,7 +1148,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             ) : (
               <img alt="" className="size-6 rounded object-cover" src={img.data} />
             )}
-            <span className="max-w-32 truncate text-[0.65rem] text-(--ui-text-tertiary)">{img.name || 'image'}</span>
+            <span className="max-w-32 truncate text-[0.625rem] text-(--ui-text-tertiary)">{img.name || 'image'}</span>
             <Tip label={b.group.removeAttachment}>
               <Button
                 aria-label={b.group.removeAttachment}
@@ -1316,11 +1316,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           {entry.images.map((img, imgIndex) =>
             img.kind === 'pdf' || img.kind === 'file' ? (
               <div
-                className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
+                className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.625rem] text-(--ui-text-tertiary)"
                 key={`${entryKey}:img:${imgIndex}`}
                 title={img.name || 'attached file'}
               >
-                <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
+                <Codicon className="text-[0.8125rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
                 <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
               </div>
             ) : (
@@ -1423,7 +1423,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           ) : (
             // Continuation lines reveal their timestamp in the avatar gutter
             // on hover (the Slack idiom) — the run header stays uncluttered.
-            <div className="pt-1 text-center text-[0.5rem] leading-3 text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover:opacity-100">
+            <div className="pt-1 text-center text-[0.625rem] leading-3 text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover:opacity-100">
               {relativeTime(entry.at)}
             </div>
           )}
@@ -1442,7 +1442,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               />
               <Tip label={revealed ? 'Hide full handle' : 'Show full handle'}>
                 <Button
-                  className="text-left text-[0.7rem] font-semibold text-(--speaker-color)"
+                  className="text-left text-[0.75rem] font-semibold text-(--speaker-color)"
                   onClick={() => setRevealedSpeaker(revealed ? null : entryKey)}
                   size="inline"
                   variant="text"
@@ -1587,7 +1587,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       ) : (
         <Button
           aria-label={b.group.replyInThread}
-          className="mt-0.5 w-fit items-center gap-1.5 pb-1 pl-11 text-left text-[0.65rem] text-(--ui-accent) hover:underline transition-colors"
+          className="mt-0.5 w-fit items-center gap-1.5 pb-1 pl-11 text-left text-[0.6875rem] text-(--ui-accent) hover:underline transition-colors"
           key={`replylink:${id}`}
           onClick={() => setReplyThread(id)}
           size="inline"
@@ -1642,12 +1642,12 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           {teamLead && leadName ? (
             <div
               className={cn(
-                'flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.7rem] text-(--ui-text-quaternary)',
+                'flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.6875rem] text-(--ui-text-quaternary)',
                 panelOpen && '@3xl:hidden'
               )}
               data-testid="group-team-listening"
             >
-              <Codicon className="shrink-0 text-[0.65rem]" name="organization" />
+              <Codicon className="shrink-0 text-[0.625rem]" name="organization" />
               <span className="min-w-0 flex-1 truncate">{b.group.teamListening(leadName)}</span>
             </div>
           ) : null}
@@ -1743,7 +1743,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               ) : null}
               {room.running ? (
                 <div
-                  className="flex items-center gap-2 px-2 pt-1 text-[0.7rem] text-(--ui-text-quaternary)"
+                  className="flex items-center gap-2 px-2 pt-1 text-[0.6875rem] text-(--ui-text-quaternary)"
                   key={'working'}
                 >
                   {(() => {
@@ -1797,7 +1797,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               <div className="pointer-events-none sticky bottom-2 flex justify-center">
                 <Button
                   className={cn(
-                    'pointer-events-auto h-7 gap-1 rounded-full px-3 text-[0.7rem] shadow-md',
+                    'pointer-events-auto h-7 gap-1 rounded-full px-3 text-[0.75rem] shadow-md',
                     unseen ? 'bg-(--ui-accent) text-white hover:bg-(--ui-accent)/90' : ''
                   )}
                   data-testid="group-jump-latest"

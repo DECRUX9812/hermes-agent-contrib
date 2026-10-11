@@ -110,7 +110,7 @@ function TeamTab(props: GroupRoomPanelProps) {
             data-testid="group-run-as-team"
           >
             <h3 className="m-0 text-[0.8125rem] font-semibold text-foreground">{b.group.runAsTeamTitle}</h3>
-            <p className="m-0 mt-1 text-[0.7rem] leading-snug text-(--ui-text-tertiary)">{b.group.runAsTeamBody}</p>
+            <p className="m-0 mt-1 text-[0.75rem] leading-snug text-(--ui-text-tertiary)">{b.group.runAsTeamBody}</p>
             <Button
               className="mt-2"
               disabled={busy}
@@ -145,7 +145,7 @@ function TeamTab(props: GroupRoomPanelProps) {
         <Mission label={team.name} text={team.mission || props.goal} />
         {rollup.overall.total ? (
           <div className="mt-2">
-            <div className="mb-1 flex justify-between text-[0.65rem] text-(--ui-text-tertiary)">
+            <div className="mb-1 flex justify-between text-[0.625rem] text-(--ui-text-tertiary)">
               <span>{t.overall}</span>
               <span className="tabular-nums">{`${rollup.overall.done}/${rollup.overall.total} · ${rollup.overall.percent}%`}</span>
             </div>
@@ -211,10 +211,10 @@ function WorkTab(props: GroupRoomPanelProps) {
         >
           <button className="block w-full cursor-pointer text-left" onClick={() => props.onJump(item)} type="button">
             <span className="flex items-center gap-1.5">
-              <span className={cn('rounded px-1.5 py-px text-[0.6rem] font-medium', WORK_TONE[item.status])}>
+              <span className={cn('rounded px-1.5 py-px text-[0.625rem] font-medium', WORK_TONE[item.status])}>
                 {b.group.workStatus[item.status]}
               </span>
-              <span className="text-[0.6rem] tabular-nums text-(--ui-text-quaternary)">
+              <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">
                 {b.group.workCount(item.count)}
               </span>
             </span>
@@ -222,14 +222,14 @@ function WorkTab(props: GroupRoomPanelProps) {
               {item.title}
             </span>
             {item.assignees.length ? (
-              <span className="mt-0.5 block truncate text-[0.65rem] text-(--ui-text-tertiary)">
+              <span className="mt-0.5 block truncate text-[0.625rem] text-(--ui-text-tertiary)">
                 {item.assignees.map(nameOf).join(', ')}
               </span>
             ) : null}
           </button>
           {props.teamId ? (
             <Button
-              className="mt-1 h-6 px-1.5 text-[0.65rem]"
+              className="mt-1 h-6 px-1.5 text-[0.75rem]"
               disabled={filed[item.thread]}
               onClick={() => void fileTask(item)}
               size="sm"
@@ -285,7 +285,7 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
           >
             {entry.label}
             {entry.badge ? (
-              <span className="ml-1 rounded-full bg-(--ui-accent)/15 px-1.5 text-[0.6rem] tabular-nums text-(--ui-accent)">
+              <span className="ml-1 rounded-full bg-(--ui-accent)/15 px-1.5 text-[0.625rem] tabular-nums text-(--ui-accent)">
                 {entry.badge}
               </span>
             ) : null}
