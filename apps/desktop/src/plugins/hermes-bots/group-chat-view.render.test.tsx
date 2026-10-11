@@ -13,16 +13,22 @@ vi.mock('@hermes/plugin-sdk', async () => {
 
   const Button = ({
     'aria-label': ariaLabel,
+    'aria-pressed': ariaPressed,
     children,
+    className,
+    'data-testid': testId,
     onClick,
     title
   }: {
     'aria-label'?: string
+    'aria-pressed'?: boolean
     children?: ReactNode
+    className?: string
+    'data-testid'?: string
     onClick?: () => void
     title?: string
   }) => (
-    <button aria-label={ariaLabel} onClick={onClick} title={title}>
+    <button aria-label={ariaLabel} aria-pressed={ariaPressed} className={className} data-testid={testId} onClick={onClick} title={title}>
       {children}
     </button>
   )
@@ -382,4 +388,54 @@ it('Escape closes the open reply box but keeps the typed draft', async () => {
   // ...and the draft survives, so reopening shows the half-typed reply.
   fireEvent.click(screen.getByRole('button', { name: 'Reply in thread' }))
   expect((screen.getByLabelText('Reply in thread') as HTMLTextAreaElement).value).toBe('one more thing')
+})
+
+it('focus mode dims history but keeps the final run and hover-reachable', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { clearGroupComposerDraft, groupComposerDraftKey } = await import('./group-panes')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  // Clean the room's persisted draft (earlier tests leave state behind).
+  clearGroupComposerDraft(groupComposerDraftKey('Room', { log: [], watermarks: {}, sessions: {} } as never))
+
+  // Three speakers: builder's run, then reviewer's run. Focus keeps only the
+  // last run (reviewer) lit; builder's two lines and the user's line dim.
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'ship it', at: 1 },
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'on it', at: 2 },
+    { id: 'm2', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'done', at: 3 },
+    { id: 'm3', thread: 'a', from: { kind: 'member' as const, name: 'reviewer' }, text: 'looks good', at: 4 }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  const { container } = render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
+
+  const rows = [...container.querySelectorAll('[data-entry-index]')]
+  const dimmed = () => rows.filter(row => row.className.includes('opacity-30'))
+
+  // Focus starts off: nothing dimmed.
+  expect(rows).toHaveLength(4)
+  expect(dimmed()).toHaveLength(0)
+
+  const toggle = screen.getByTestId('group-focus-toggle')
+  expect(toggle.getAttribute('aria-pressed')).toBe('false')
+
+  // Toggle on: the three history rows dim, the final reviewer line stays lit.
+  fireEvent.click(toggle)
+  expect(toggle.getAttribute('aria-pressed')).toBe('true')
+  expect(dimmed()).toHaveLength(3)
+
+  // The live exchange (the final run) is never dimmed.
+  const finalRow = rows[3]
+  expect(finalRow.className).not.toContain('opacity-30')
+
+  // Dimmed rows stay reachable — hover restores them (the class is there,
+  // and the hover rule is what the theme layer reads).
+  expect(dimmed().every(row => row.className.includes('hover:opacity-100'))).toBe(true)
+
+  // Toggle off: back to full brightness.
+  fireEvent.click(toggle)
+  expect(toggle.getAttribute('aria-pressed')).toBe('false')
+  expect(dimmed()).toHaveLength(0)
 })

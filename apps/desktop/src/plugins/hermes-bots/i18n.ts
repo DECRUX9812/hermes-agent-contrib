@@ -453,6 +453,9 @@ type BotsMessages = {
     panelWork: string
     panelMission: string
     panelToggle: string
+    /** ADHD-friendly focus mode: dim the history, keep what needs you. */
+    focusMode: string
+    focusModeHint: string
     runAsTeamTitle: string
     runAsTeamBody: string
     runAsTeamAction: string
@@ -1233,6 +1236,8 @@ const en: BotsMessages = {
     panelWork: 'Work',
     panelMission: 'Mission',
     panelToggle: 'Team panel',
+    focusMode: 'Focus',
+    focusModeHint: 'Dim the history — only the newest messages and anything waiting on you stay bright',
     runAsTeamTitle: 'Run this room as a team',
     runAsTeamBody: 'Give it a mission, an org chart, decisions and tasks — hire and assign right here.',
     runAsTeamAction: 'Make it a team',
@@ -1997,6 +2002,8 @@ const ja: BotsMessages = {
     panelWork: '作業',
     panelMission: 'ミッション',
     panelToggle: 'チームパネル',
+    focusMode: 'フォーカス',
+    focusModeHint: '履歴を薄く表示 — 最新のメッセージと応答待ちだけが目立ちます',
     runAsTeamTitle: 'このルームをチームとして運用',
     runAsTeamBody: 'ミッション、組織図、決定、タスクを持たせ、ここで採用と割り当てができます。',
     runAsTeamAction: 'チームにする',
@@ -2750,6 +2757,8 @@ const zh: BotsMessages = {
     panelWork: '工作',
     panelMission: '使命',
     panelToggle: '团队面板',
+    focusMode: '专注',
+    focusModeHint: '淡化历史 — 只保留最新消息和等待你的内容高亮',
     runAsTeamTitle: '把这个房间作为团队运行',
     runAsTeamBody: '赋予它使命、组织架构、决策和任务——在这里直接招聘和分配。',
     runAsTeamAction: '设为团队',
@@ -3499,6 +3508,8 @@ const zhHant: BotsMessages = {
     panelWork: '工作',
     panelMission: '使命',
     panelToggle: '團隊面板',
+    focusMode: '專注',
+    focusModeHint: '淡化歷史 — 只保留最新訊息和等待你的內容醒目',
     runAsTeamTitle: '把這個房間當作團隊運作',
     runAsTeamBody: '賦予它使命、組織架構、決策與任務——在這裡直接招募與指派。',
     runAsTeamAction: '設為團隊',

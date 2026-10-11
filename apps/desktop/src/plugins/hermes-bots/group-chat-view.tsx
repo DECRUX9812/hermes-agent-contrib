@@ -611,6 +611,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const [revealedSpeaker, setRevealedSpeaker] = useState<null | string>(null)
   // The team panel (Team · Work) beside the conversation; wide rooms only.
   const [panelOpen, setPanelOpen] = useState(true)
+  // Focus mode (ADHD-friendly): dim everything before the newest exchange so
+  // the room reads as ONE thing to look at, not a wall of history. Dimmed
+  // rows stay reachable — hover or keyboard focus restores them, so nothing
+  // is hidden, only quiet.
+  const [focusMode, setFocusMode] = useState(false)
   // Thread replies retain their own draft; the main composer starts a new topic.
   // Pending image attachments per composer: `null` thread key = the main
   // composer, otherwise the reply box of that thread. Data URLs, already
@@ -740,6 +745,30 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const roomClarifies = Object.values(clarifyAll || {})
     .filter(entry => entry?.group === group)
     .sort((a, b) => (a.at || 0) - (b.at || 0))
+
+  // Focus mode's bright set: the FINAL speaker run — the newest thing that
+  // happened. Everything before it dims when focus is on. One rule, no knobs:
+  // you always see the live exchange, and clarify cards (which live below the
+  // log, never dimmed) stay bright because they're waiting on YOU.
+  const focusCutoff = (() => {
+    const log = room.log
+
+    for (let i = log.length - 1; i > 0; i--) {
+      const current = log[i]
+      const previous = log[i - 1]
+      const sameVoice =
+        previous.from?.kind === current.from?.kind &&
+        previous.from?.name === current.from?.name &&
+        (previous.from?.source || '') === (current.from?.source || '') &&
+        groupThreadOf(previous) === groupThreadOf(current)
+
+      if (!sameVoice) {
+        return i
+      }
+    }
+
+    return 0
+  })()
 
   // D2 — the completed round's contribution one-liners (empty while a round
   //  is running or no round has landed yet).
@@ -923,6 +952,22 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           variant="ghost"
         >
           <Codicon name="layout-sidebar-right" />
+        </Button>
+      </Tip>
+      <Tip label={b.group.focusModeHint}>
+        <Button
+          aria-label={b.group.focusMode}
+          aria-pressed={focusMode}
+          className={cn(
+            'shrink-0 hover:text-foreground',
+            focusMode ? 'text-(--ui-accent)' : 'text-(--ui-text-tertiary)'
+          )}
+          data-testid="group-focus-toggle"
+          onClick={() => setFocusMode(on => !on)}
+          size="sm"
+          variant="ghost"
+        >
+          <Codicon name="filter" />
         </Button>
       </Tip>
       <Tip label={b.group.settingsHint(group)}>
@@ -1293,6 +1338,9 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     // "who is talking" scan in a multi-voice room.
     const speakerColor = appearance ? avatarColor(appearance.color, entry.from.name) : null
 
+    // Focus mode: this row is history if it predates the final run.
+    const dimmed = focusMode && index < focusCutoff
+
     const body = (
       <div
         className="min-w-0 text-xs text-foreground/90 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere" // The app shell sets user-select: none globally; message bodies opt
@@ -1344,7 +1392,13 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     if (isUser) {
       return (
         <div
-          className={cn('group flex flex-col items-end gap-0.5 pl-2 pr-11', runStart && index > 0 && 'pt-1.5')}
+          className={cn(
+            'group flex flex-col items-end gap-0.5 pl-2 pr-11',
+            runStart && index > 0 && 'pt-1.5',
+            // Focus mode: history quiets, the live exchange stays lit. Hover
+            // or tab-focus restores a dimmed row — nothing is ever unreachable.
+            dimmed && 'opacity-30 transition-opacity hover:opacity-100 focus-within:opacity-100'
+          )}
           data-entry-index={index}
           key={entryKey}
         >
@@ -1400,7 +1454,13 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
     return (
       <div
-        className={cn('group relative flex items-start gap-2.5 px-2', runStart && index > 0 && 'pt-1.5')}
+        className={cn(
+          'group relative flex items-start gap-2.5 px-2',
+          runStart && index > 0 && 'pt-1.5',
+          // Focus mode: history quiets, the live exchange stays lit. Hover
+          // or tab-focus restores a dimmed row — nothing is ever unreachable.
+          dimmed && 'opacity-30 transition-opacity hover:opacity-100 focus-within:opacity-100'
+        )}
         // The speaker's resolved hue rides the row as a custom property, not an
         // inline color on each painted element: consumers (this file's dot and
         // name, and any theme/plugin layer) recolor the whole voice by
