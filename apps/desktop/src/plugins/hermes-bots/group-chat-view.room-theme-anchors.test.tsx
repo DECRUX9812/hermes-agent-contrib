@@ -15,7 +15,9 @@ import { translateBots } from './i18n-test-helper'
 
 vi.mock('@hermes/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
-  const base = await pluginSdkMock(createGroupGateway().host)
+  // teamLead makes bots_team.room_lead resolve, which is what renders the lead
+  // star — without it the room stays on fan-out and the cue never appears.
+  const base = await pluginSdkMock(createGroupGateway({ teamLead: { lead: 'builder' } }).host)
 
   const Button = ({
     'aria-label': ariaLabel,
@@ -61,6 +63,14 @@ vi.mock('@hermes/plugin-sdk', async () => {
     ToggleRow: () => null,
     Tip: ({ children }: { children: ReactNode }) => children,
     relativeTime: () => 'now',
+    // The shared stub returns `data: []`, which leaves the room's team lead
+    // permanently null — so the lead star can never render and no test can pin
+    // it. Running the real queryFn is what the live app does, and it lets this
+    // room's squad cue appear.
+    useQuery: (query: { queryFn?: () => unknown }) => ({
+      data: typeof query?.queryFn === 'function' ? query.queryFn() : [],
+      isLoading: false
+    }),
     useI18n: () => ({ t: { common: { cancel: 'Cancel', save: 'Save' } } }),
     usePluginI18n: () => translateBots
   }
@@ -92,7 +102,7 @@ it('every selector room-theme scopes with matches the rendered room', async () =
   ]
 
   $groupChats.set({ 'Hermes, Coder, Plugin, Nous Art': { log, watermarks: {}, sessions: {} } })
-  const { container } = render(
+  const { container, rerender } = render(
     <GroupChatWorkspace
       group="Hermes, Coder, Plugin, Nous Art"
       members={[{ name: 'builder' }, { name: 'reviewer' }] as never}
@@ -137,4 +147,29 @@ it('every selector room-theme scopes with matches the rendered room', async () =
 
   // Sanity: the room rendered at all (otherwise every count above is vacuous).
   expect(screen.getAllByTestId('message-text-content')).toHaveLength(log.length)
+
+  // Squad cues the plugin themes: a rename here silently orphans that CSS,
+  // exactly like a renamed bubble would.
+  expect(screen.getAllByTestId('message-text-content')).toHaveLength(log.length)
+  expect(all('[class*="text-(--ui-text-quaternary)"]').length).toBeGreaterThan(0)
+
+  const { $botMeta } = await import('./data')
+  $botMeta.set({ builder: { title: 'Frontend engineer' } } as never)
+  $groupChats.set({
+    Room: {
+      // `listener: 'builder'` resolves synchronously through
+      // resolveRoomListener, so the lead cue renders without waiting on the
+      // org-tree RPC.
+      listener: 'builder',
+      log: [{ id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'on it', at: 1 }],
+      running: true,
+      sessions: {},
+      turn: { name: 'builder' },
+      watermarks: {}
+    }
+  } as never)
+  rerender(<GroupChatWorkspace group="Room" members={[{ name: 'builder', title: 'Frontend engineer' }] as never} />)
+
+  expect(all('[data-testid="group-speaker-role"]').length).toBeGreaterThan(0)
+  expect(all('[data-working]').length).toBeGreaterThan(0)
 })

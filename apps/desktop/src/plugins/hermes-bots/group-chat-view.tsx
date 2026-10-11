@@ -289,6 +289,18 @@ function GroupChatSettingsDialog({
   const [goal, setGoal] = useState(currentGoal)
   const [listener, setListener] = useState(currentListener)
   const [compressing, setCompressing] = useState<null | string>(null)
+  const allMeta: Record<string, BotMeta> = useValue($botMeta)
+  const teamLeadQuery = useQuery({
+    queryFn: () => resolveRoomListener('', members || []),
+    queryKey: [ID, 'group-team-lead-settings', group, ...localMemberProfiles(members || [])],
+    enabled: open,
+    staleTime: 15000
+  })
+  const autoLead = teamLeadQuery.data || null
+  const autoTarget = (members || []).find(m => m.name === autoLead?.lead)
+  const autoName = autoTarget ? displayName(autoTarget, botRosterMeta(autoTarget, allMeta)) : autoLead?.lead
+  const autoRole = (autoLead?.leadTitle || (autoTarget ? (botRosterMeta(autoTarget, allMeta)?.title || autoTarget.title || '') : '')).trim()
+  const autoSuffix = autoName ? ` (${autoRole ? `${autoRole} · ` : ''}${autoName})` : ''
   useEffect(() => {
     if (open) {
       setName(group)
@@ -421,13 +433,22 @@ function GroupChatSettingsDialog({
             onChange={event => setListener(event.target.value)}
             value={listener}
           >
-            <option value="">{b.group.listenerAuto}</option>
+            <option value="">
+              {b.group.listenerAuto}
+              {autoSuffix}
+            </option>
             <option value={ROOM_LISTENER_EVERYONE}>{b.group.listenerEveryone}</option>
-            {(members || []).map(member => (
-              <option key={groupMemberKey(member)} value={groupMemberKey(member)}>
-                {b.group.listenerOnly(member.name)}
-              </option>
-            ))}
+            {(members || []).map(member => {
+              const meta = botRosterMeta(member, allMeta) || {}
+              const role = (meta.title || member.title || '').trim()
+              const name = displayName(member, meta)
+
+              return (
+                <option key={groupMemberKey(member)} value={groupMemberKey(member)}>
+                  {role ? `${name} (${role})` : b.group.listenerOnly(name)}
+                </option>
+              )
+            })}
           </select>
           <p className="text-[0.6875rem] text-(--ui-text-tertiary)">{b.group.listenerHint}</p>
         </div>
@@ -1184,14 +1205,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
     const thread = groupThreadOf(entry)
 
-    if (replyThread === thread) {
-      setReplyDrafts(prev => ({
-        ...prev,
-        [thread]: seed(prev[thread] || '')
-      }))
-    } else {
-      setDraft(seed)
-    }
+    setReplyThread(thread)
+    setReplyDrafts(prev => ({
+      ...prev,
+      [thread]: seed(prev[thread] || '')
+    }))
   }
 
   // Squad panel: ask one member — seeds `@them ` into the main composer.
@@ -1471,7 +1489,12 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // replies and prompts, not visibility: a newer topic must never hide a
   // member's completed answer or move it ahead of intervening messages.
   const threadEnds = new Map<string, number>()
-  room.log.forEach((entry, index) => threadEnds.set(groupThreadOf(entry), index))
+  const threadCounts = new Map<string, number>()
+  room.log.forEach((entry, index) => {
+    const thread = groupThreadOf(entry)
+    threadEnds.set(thread, index)
+    threadCounts.set(thread, (threadCounts.get(thread) || 0) + 1)
+  })
   const logChildren: ReactNode[] = []
   // Day separators: the room is one arrival-ordered river, so a reply from
   // yesterday sat flush against one from a minute ago. A hairline row marks
@@ -1544,17 +1567,35 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                 <Codicon name="arrow-up" size="0.875rem" />
               </Button>
             </Tip>
+            <Tip label={t.common.cancel}>
+              <Button
+                aria-label={t.common.cancel}
+                className="size-7 shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
+                onClick={() => setReplyThread(null)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <Codicon name="close" size="0.875rem" />
+              </Button>
+            </Tip>
           </div>
         </form>
       ) : (
         <Button
-          className="mt-0.5 w-fit pb-1 pl-11 text-left text-[0.65rem] text-(--ui-accent) transition-colors"
+          aria-label={b.group.replyInThread}
+          className="mt-0.5 w-fit items-center gap-1.5 pb-1 pl-11 text-left text-[0.65rem] text-(--ui-accent) hover:underline transition-colors"
           key={`replylink:${id}`}
           onClick={() => setReplyThread(id)}
           size="inline"
           variant="link"
         >
-          {b.group.replyInThread}
+          <Codicon className="text-[0.625rem]" name="reply" />
+          <span>
+            {threadCounts.get(id) && threadCounts.get(id)! > 1
+              ? `${threadCounts.get(id)! - 1} ${threadCounts.get(id)! - 1 === 1 ? 'reply' : 'replies'} · ${b.group.replyInThread}`
+              : b.group.replyInThread}
+          </span>
         </Button>
       )
     )
