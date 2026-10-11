@@ -12,6 +12,7 @@
 import { atom } from '@hermes/plugin-sdk'
 
 import { $groupChats, $groupChatWorkspace, groupChatRoomKey } from './group-chat'
+import { $roomPrefs, rememberRoomOpened } from './group-room-prefs'
 import type { GroupChat, GroupMessage } from './types'
 
 /** ~80 chars of the last entry's text, per the A6 one-line summary contract. */
@@ -89,7 +90,12 @@ export function markGroupOpened(group: string): void {
 
   if (room) {
     const key = groupChatRoomKey(group, room)
-    $groupVisitAnchor.set({ ...$groupVisitAnchor.get(), [key]: $groupReadAt.get()[key] || 0 })
+    // The live mark is runtime-only (a restart re-seeds it at the tail), so
+    // the last open this browser remembers wins when it is earlier.
+    const remembered = $roomPrefs.get().lastOpened[key] || 0
+    const live = $groupReadAt.get()[key] || 0
+    const anchor = remembered && live ? Math.min(remembered, live) : remembered || live
+    $groupVisitAnchor.set({ ...$groupVisitAnchor.get(), [key]: anchor })
   }
 
   markGroupRead(group)
@@ -235,6 +241,8 @@ export function markGroupRead(group: string): void {
   }
 
   $groupReadAt.set({ ...$groupReadAt.get(), [key]: tail })
+  // Remembered across restarts, so the next visit's catch-up starts here.
+  rememberRoomOpened(key, tail)
 }
 
 /** Wire the watermark lifecycle: seed rooms on first sight, keep the open

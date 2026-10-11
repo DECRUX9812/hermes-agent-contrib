@@ -532,6 +532,22 @@ type BotsMessages = {
     }
     keys: { all: string; board: string; help: string; hint: string; newThread: string; next: string; title: string }
     alerts: { escalated: (task: string) => string; question: (name: string) => string }
+    prefs: {
+      alertsHint: string
+      alertsOff: string
+      alertsOn: string
+      brief: string
+      briefTitle: string
+      noMatch: string
+      pin: string
+      pinned: string
+      search: string
+      snooze: string
+      snoozed: string
+      unpin: string
+      wake: string
+    }
+    budget: (spent: string, limit: string) => string
     workingNow: (names: string) => string
     messageRoom: (group: string) => string
     newThreadPlaceholder: (group: string) => string
@@ -1403,6 +1419,22 @@ const en: BotsMessages = {
       title: 'Keyboard'
     },
     alerts: { escalated: task => `Needs you: “${task}” stalled`, question: name => `${name} asked you something` },
+    prefs: {
+      alertsHint: 'Also alert me on this computer while the room is in the background',
+      alertsOff: 'Desktop alerts',
+      alertsOn: 'Alerts on',
+      brief: 'Brief me',
+      briefTitle: 'Last 24 hours',
+      noMatch: 'No thread matches.',
+      pin: 'Pin to top',
+      pinned: 'Pinned',
+      search: 'Search threads',
+      snooze: 'Snooze for an hour',
+      snoozed: 'Snoozed',
+      unpin: 'Unpin',
+      wake: 'Wake now'
+    },
+    budget: (spent, limit) => `${spent} of ${limit} this month`,
     workingNow: names => `Working now: ${names}`,
     messageRoom: group => `Message ${group}`,
     newThreadPlaceholder: group => `New thread in ${group}… (@name to direct, @everyone for all)`,
@@ -2251,6 +2283,22 @@ const ja: BotsMessages = {
       title: 'キーボード'
     },
     alerts: { escalated: task => `要対応: 「${task}」が停滞`, question: name => `${name} から質問があります` },
+    prefs: {
+      alertsHint: 'ルームがバックグラウンドの間もこのPCで通知する',
+      alertsOff: 'デスクトップ通知',
+      alertsOn: '通知オン',
+      brief: '要約して',
+      briefTitle: '直近24時間',
+      noMatch: '一致するスレッドはありません。',
+      pin: '上部に固定',
+      pinned: '固定',
+      search: 'スレッドを検索',
+      snooze: '1時間スヌーズ',
+      snoozed: 'スヌーズ中',
+      unpin: '固定を解除',
+      wake: '今すぐ再開'
+    },
+    budget: (spent, limit) => `今月 ${limit} 中 ${spent}`,
     workingNow: names => `作業中: ${names}`,
     messageRoom: group => `${group}にメッセージ`,
     newThreadPlaceholder: group => `${group}で新しいスレッド…（@名前で個別、@everyoneで全員）`,
@@ -3088,6 +3136,22 @@ const zh: BotsMessages = {
       title: '键盘'
     },
     alerts: { escalated: task => `需要你：“${task}”停滞了`, question: name => `${name} 向你提了问题` },
+    prefs: {
+      alertsHint: '房间在后台时也在这台电脑上提醒我',
+      alertsOff: '桌面提醒',
+      alertsOn: '提醒已开',
+      brief: '给我简报',
+      briefTitle: '过去 24 小时',
+      noMatch: '没有匹配的话题。',
+      pin: '置顶',
+      pinned: '已置顶',
+      search: '搜索话题',
+      snooze: '稍后 1 小时',
+      snoozed: '已稍后',
+      unpin: '取消置顶',
+      wake: '立即恢复'
+    },
+    budget: (spent, limit) => `本月 ${spent} / ${limit}`,
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `发消息给 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中开启新讨论串…（@名称指定，@everyone 全体）`,
@@ -3921,6 +3985,22 @@ const zhHant: BotsMessages = {
       title: '鍵盤'
     },
     alerts: { escalated: task => `需要你：「${task}」停滯了`, question: name => `${name} 向你提了問題` },
+    prefs: {
+      alertsHint: '房間在背景時也在這台電腦上提醒我',
+      alertsOff: '桌面提醒',
+      alertsOn: '提醒已開',
+      brief: '給我簡報',
+      briefTitle: '過去 24 小時',
+      noMatch: '沒有符合的話題。',
+      pin: '置頂',
+      pinned: '已置頂',
+      search: '搜尋話題',
+      snooze: '稍後 1 小時',
+      snoozed: '已稍後',
+      unpin: '取消置頂',
+      wake: '立即恢復'
+    },
+    budget: (spent, limit) => `本月 ${spent} / ${limit}`,
     workingNow: names => `正在工作：${names}`,
     messageRoom: group => `傳訊息給 ${group}`,
     newThreadPlaceholder: group => `在 ${group} 中開啟新討論串…（@名稱指定，@everyone 全體）`,

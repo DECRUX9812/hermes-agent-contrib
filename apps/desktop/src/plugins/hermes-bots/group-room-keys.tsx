@@ -17,6 +17,7 @@ import type { KeyboardEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
 import type { RoomEscalation } from './group-room-handoffs'
+import { desktopAlert } from './group-room-prefs'
 import { useBots } from './i18n'
 
 const CLOCK_MS = 30_000
@@ -24,7 +25,6 @@ const CLOCK_MS = 30_000
 export function useRoomClock(): void {
   const [, setTick] = useState(0)
 
-   
   useEffect(() => {
     const id = window.setInterval(() => setTick(tick => tick + 1), CLOCK_MS)
 
@@ -61,12 +61,14 @@ export function useNeedsYouAlerts(
     for (const e of escalations) {
       if (!before.has(`esc:${e.kind}:${e.handoff.id}`)) {
         host.notify({ kind: 'warning', message: b.group.alerts.escalated(e.handoff.task) })
+        desktopAlert(b.group.deskNeedsYou, b.group.alerts.escalated(e.handoff.task))
       }
     }
 
     for (const q of questions) {
       if (!before.has(`q:${q.thread || ''}:${q.memberKey}:${q.requestId || ''}`)) {
         host.notify({ kind: 'info', message: b.group.alerts.question(memberName(q.memberKey)) })
+        desktopAlert(b.group.deskNeedsYou, b.group.alerts.question(memberName(q.memberKey)))
       }
     }
     // keys/escalations/questions are all captured by `signature`.

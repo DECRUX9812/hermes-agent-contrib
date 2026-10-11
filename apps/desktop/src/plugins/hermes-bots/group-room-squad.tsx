@@ -53,9 +53,26 @@ interface SquadMemberProps {
   onMention: (member: GroupMember) => void
   roomTurn: boolean
   row: RosterRow
+  /** This seat's month on the team budget, when the room is a team. */
+  budget?: SeatBudget
 }
 
-function SquadMember({ allMeta, isLead, member, onMention, roomTurn, row }: SquadMemberProps) {
+export interface SeatBudget {
+  limit: null | number
+  spent: number
+  tone: 'exhausted' | 'ok' | 'paused' | 'warn'
+}
+
+const BUDGET_TONE: Record<SeatBudget['tone'], string> = {
+  exhausted: 'text-red-600 dark:text-red-300',
+  ok: 'text-(--ui-text-quaternary)',
+  paused: 'text-(--ui-text-quaternary)',
+  warn: 'text-amber-700 dark:text-amber-300'
+}
+
+const usd = (value: number) => `$${value.toFixed(2)}`
+
+function SquadMember({ allMeta, budget, isLead, member, onMention, roomTurn, row }: SquadMemberProps) {
   const b = useBots()
   const live = useBotLiveStatus(row)
   // Mid-reply in THIS room beats a quiet roster signal; a blocked turn
@@ -117,6 +134,14 @@ function SquadMember({ allMeta, isLead, member, onMention, roomTurn, row }: Squa
           >
             {status}
           </span>
+          {budget && budget.limit ? (
+            <span
+              className={cn('truncate font-mono text-[0.625rem] tabular-nums', BUDGET_TONE[budget.tone])}
+              data-testid="group-squad-budget"
+            >
+              {b.group.budget(usd(budget.spent), usd(budget.limit))}
+            </span>
+          ) : null}
         </span>
         <Codicon
           className="shrink-0 text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover/seat:opacity-100"
@@ -136,6 +161,8 @@ export interface GroupSquadPanelProps {
   onMention: (member: GroupMember) => void
   /** Member names mid-turn in this room. */
   roomWorking: ReadonlySet<string>
+  /** Seat budgets by profile name (team rooms only). */
+  budgets?: Readonly<Record<string, SeatBudget>>
 }
 
 export function GroupSquadPanel({
@@ -144,7 +171,8 @@ export function GroupSquadPanel({
   leadName,
   members,
   onMention,
-  roomWorking
+  roomWorking,
+  budgets
 }: GroupSquadPanelProps) {
   const b = useBots()
   const roster = useValue($lastRoster) as null | RosterRow[] | undefined
@@ -170,6 +198,7 @@ export function GroupSquadPanel({
         {ordered.map(member => (
           <SquadMember
             allMeta={allMeta}
+            budget={budgets?.[member.name]}
             isLead={Boolean(leadKey) && groupMemberKey(member) === leadKey}
             key={groupMemberKey(member)}
             member={member}

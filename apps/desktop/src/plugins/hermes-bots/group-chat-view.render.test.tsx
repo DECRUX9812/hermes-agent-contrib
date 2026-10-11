@@ -633,3 +633,57 @@ it('catches the CEO up, moves by keyboard, counts handoff clocks down, and alert
     expect.objectContaining({ kind: 'warning', message: expect.stringContaining('write tokens') })
   )
 })
+
+it('lets the CEO search, pin and snooze threads, and remembers where they left off across a restart', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats, groupChatRoomKey } = await import('./group-chat')
+  const { $groupReadAt, markGroupOpened } = await import('./group-unread')
+  const { $roomPrefs } = await import('./group-room-prefs')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'fix the header', at: 10 },
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'contrast is low', at: 20 },
+    { id: 'u2', thread: 'b', from: { kind: 'user' as const, name: 'You' }, text: 'theme plugin', at: 30 },
+    { id: 'm2', thread: 'b', from: { kind: 'member' as const, name: 'builder' }, text: 'tokens drafted', at: 40 }
+  ]
+
+  const room = { log, watermarks: {}, sessions: {} }
+  const key = groupChatRoomKey('Room', room as never)
+  $groupChats.set({ Room: room })
+
+  // A restart re-seeded the live read mark at the tail (40), but this browser
+  // remembers the user last read up to 20: the catch-up starts there.
+  $groupReadAt.set({ [key]: 40 })
+  $roomPrefs.set({ desktopAlerts: false, lastOpened: { [key]: 20 }, pins: {}, snoozes: {} })
+  markGroupOpened('Room')
+  const view = <GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />
+  const { rerender } = render(view)
+  expect(screen.getByTestId('group-catchup-card').textContent).toContain('theme plugin')
+  // The SDK mock's useValue is a plain read: repaint after a preference moves.
+  const repaint = () => rerender(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  const rail = screen.getByTestId('group-thread-rail')
+
+  const titles = () =>
+    within(rail)
+      .getAllByTestId('group-thread-row')
+      .map(row => row.textContent)
+
+  // Search reaches message text, not just titles.
+  fireEvent.change(within(rail).getByTestId('group-thread-search'), { target: { value: 'contrast' } })
+  expect(titles()).toEqual([expect.stringContaining('fix the header')])
+  fireEvent.change(within(rail).getByTestId('group-thread-search'), { target: { value: '' } })
+
+  // Pin b: it leads the rail in its own section.
+  const rowOf = (title: string) => within(rail).getByText(title).closest('li') as HTMLElement
+  fireEvent.click(within(rowOf('theme plugin')).getByTestId('group-thread-pin'))
+  repaint()
+  expect(rail.querySelector('[data-thread-section="pinned"]')?.textContent).toContain('theme plugin')
+
+  // Snooze a: it leaves the work sections for a collapsed Snoozed list.
+  fireEvent.click(within(rowOf('fix the header')).getByTestId('group-thread-snooze'))
+  repaint()
+  expect(titles()).toEqual([expect.stringContaining('theme plugin')])
+  expect(rail.querySelector('[data-thread-section="snoozed"]')?.textContent).toContain('1')
+})

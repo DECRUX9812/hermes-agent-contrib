@@ -638,6 +638,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set())
   const [catchUpDismissed, setCatchUpDismissed] = useState(false)
   const [keysOpen, setKeysOpen] = useState(false)
+  const [briefOpen, setBriefOpen] = useState(false)
   const visitAnchor = useValue($groupVisitAnchor)[groupChatRoomKey(group, room)] || 0
   useRoomClock()
   // Focus mode (ADHD-friendly): dim everything before the newest exchange so
@@ -1612,8 +1613,20 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             focusThread={focusedItem ? focusThread : null}
             items={workItems}
             members={members}
+            onBrief={() => {
+              openThread(null)
+              setBriefOpen(true)
+            }}
             onNewThread={() => openThread(null)}
             onSelect={openThread}
+            roomKey={groupChatRoomKey(group, room)}
+            textOf={thread =>
+              room.log
+                .filter(entry => groupThreadOf(entry) === thread)
+                .map(entry => entry.text)
+                .join(' ')
+                .toLowerCase()
+            }
             totalMessages={room.log.length}
             unseen={unseenByThread}
           />
@@ -1667,6 +1680,13 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             {/* unbreakable code line widened every entry to its own width and the */}
             {/* log scrolled sideways as a whole instead of the code block (#91878). */}
             <div className="grid grid-cols-[minmax(0,1fr)] gap-1 px-2.5 pb-2 pt-1">
+              {briefOpen && !focusedItem ? (
+                <RecapCard
+                  entries={room.log.filter(entry => Number(entry.at) > Date.now() - 86_400_000)}
+                  label={b.group.prefs.briefTitle}
+                  nameOf={memberLabel}
+                />
+              ) : null}
               {showCatchUp ? (
                 <CatchUpCard
                   catchUp={catchUp}

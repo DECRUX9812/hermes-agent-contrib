@@ -24,7 +24,7 @@ import { groupMemberKey } from './group-membership'
 import { GroupSquadPanel } from './group-room-squad'
 import { useBots } from './i18n'
 import { ID } from './shared'
-import { mutateTeam, useTeam } from './team'
+import { budgetState, mutateTeam, useTeam } from './team'
 import { GoalsSection } from './team-goals'
 import { useTeamText } from './team-i18n'
 import { OrgChart } from './team-org'
@@ -156,6 +156,33 @@ function Mission({ label, text }: { label: string; text: string }) {
   )
 }
 
+/** The floor: who is in the room and what they are doing — with each seat's
+ *  month on the team budget when the room is a team (the CEO's cost view). */
+function FloorSquad(props: GroupRoomPanelProps) {
+  const { data: view } = useTeam(props.teamId)
+
+  const budgets = Object.fromEntries(
+    (view?.team?.members || [])
+      .filter(seat => seat.profile)
+      .map(seat => [
+        seat.profile as string,
+        { limit: seat.budget.monthly_usd, spent: seat.budget.spent_usd, tone: budgetState(seat).tone }
+      ])
+  )
+
+  return (
+    <GroupSquadPanel
+      allMeta={props.allMeta}
+      budgets={budgets}
+      leadMember={props.leadMember}
+      leadName={props.leadName}
+      members={props.members}
+      onMention={props.onMention}
+      roomWorking={props.roomWorking}
+    />
+  )
+}
+
 /** Team approvals (hires, spend, credentials, actions) — the board's half of
  *  the Decisions queue; the Team page's own component, one store. */
 function TeamApprovals({ teamId }: { teamId: null | string }) {
@@ -207,14 +234,7 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
       <div className="min-h-0 flex-1 overflow-y-auto">
         {props.tab === 'floor' ? (
           <div className="p-3">
-            <GroupSquadPanel
-              allMeta={props.allMeta}
-              leadMember={props.leadMember}
-              leadName={props.leadName}
-              members={props.members}
-              onMention={props.onMention}
-              roomWorking={props.roomWorking}
-            />
+            <FloorSquad {...props} />
           </div>
         ) : props.tab === 'decisions' ? (
           <div className="flex flex-col gap-3 p-3" data-testid="group-decisions-tab">
