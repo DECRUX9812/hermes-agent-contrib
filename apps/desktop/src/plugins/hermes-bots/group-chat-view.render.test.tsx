@@ -374,6 +374,43 @@ it('runs the room as threads: the rail focuses one, its header says where it sta
   expect(screen.queryByTestId('group-thread-header')).toBeNull()
 })
 
+it('nudges only what arrived while you were elsewhere: a rail badge for a grown thread, cleared by opening it', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+  const { $groupThreadReadAt } = await import('./group-unread')
+
+  // Thread b grew while the user was away: their read mark for it is behind
+  // its newest member entry. Thread a they have been reading, so it is current.
+  $groupThreadReadAt.set({ 'name:Room::a': 2, 'name:Room::b': 2 })
+
+  const log = [
+    { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'fix the header', at: 1 },
+    { id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'fixed', at: 2 },
+    { id: 'u2', thread: 'b', from: { kind: 'user' as const, name: 'You' }, text: 'theme plugin next', at: 3 },
+    { id: 'm2', thread: 'b', from: { kind: 'member' as const, name: 'builder' }, text: 'shipped', at: 4 }
+  ]
+
+  $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
+  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  // Only the thread they were NOT in nudges — one badge, count one.
+  const rail = screen.getByTestId('group-thread-rail')
+  const badges = within(rail).getAllByTestId('group-thread-row-unseen')
+  expect(badges).toHaveLength(1)
+  expect(badges[0]!.textContent).toBe('1')
+  expect(badges[0]!.getAttribute('title')).toBe('1 new')
+  expect(badges[0]!.getAttribute('aria-label')).toBe('1 new')
+
+  // "All activity" carries the same count up top, so one glance is enough.
+  expect(within(rail).getByTestId('group-thread-unseen').textContent).toBe('1')
+
+  // Opening it is reading it: the badge clears the moment the thread is.
+  fireEvent.click(within(rail).getByText('theme plugin next'))
+  expect(within(screen.getByTestId('group-thread-rail')).queryAllByTestId('group-thread-row-unseen')).toHaveLength(0)
+  expect(within(screen.getByTestId('group-thread-rail')).queryByTestId('group-thread-unseen')).toBeNull()
+})
+
 it('Escape leaves the thread but keeps the typed reply', async () => {
   Element.prototype.scrollIntoView = vi.fn()
   const { $groupChats } = await import('./group-chat')

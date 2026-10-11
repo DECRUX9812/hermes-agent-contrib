@@ -107,6 +107,7 @@ import { disbandGroupChat } from './group-room-lifecycle'
 import { GroupLogTail, GroupRoomEmpty } from './group-room-log-tail'
 import { GroupRoomPanel, type RoomPanelTab } from './group-room-panel'
 import { GroupThreadRail } from './group-room-threads'
+import { useRoomUnread } from './group-room-unseen'
 import { roomLiveWork, roomWorkItems } from './group-room-work'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
@@ -659,58 +660,22 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // every reply yanked a reader back to the bottom).
   const scrollerRef = useRef<HTMLDivElement | null>(null)
   const stickToBottomRef = useRef(true)
-  // Log length when the reader left the bottom (null = following along);
-  // everything past it is what they haven't seen.
-  const [leftAtLength, setLeftAtLength] = useState<null | number>(null)
-  const unseen = leftAtLength === null ? 0 : Math.max(0, room.log.length - leftAtLength)
 
-  const jumpToLatest = () => {
-    stickToBottomRef.current = true
-    setLeftAtLength(null)
-    bottomSentinelRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'end'
-    })
-  }
+  // Both "what you haven't seen" signals — the log's jump pill and the rail's
+  // per-thread nudge — come from one place, along with the rule that keeps
+  // them honest (only what arrived while you were elsewhere ever counts).
+  const { jumpToLatest, markRead, onLogScroll, readingHistory, unseen, unseenByThread } = useRoomUnread({
+    bottomSentinel: bottomSentinelRef,
+    focusThread,
+    group,
+    log: room.log,
+    logRunning: room.running,
+    room,
+    scroller: scrollerRef,
+    stickToBottom: stickToBottomRef,
+    visible
+  })
 
-  const onLogScroll = () => {
-    const viewport = scrollerRef.current
-
-    if (!viewport) {
-      return
-    }
-
-    const near = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 80
-    stickToBottomRef.current = near
-    setLeftAtLength(current => (near ? null : (current ?? room.log.length)))
-  }
-
-  useEffect(() => {
-    if (stickToBottomRef.current) {
-      bottomSentinelRef.current?.scrollIntoView({
-        block: 'end'
-      })
-    }
-  }, [room.log.length, room.running])
-
-  // Retained-pane reopen (#89835 follow-up): a hot-mounted room pane stays
-  // mounted while another workspace tab is active, so returning to it never
-  // remounts and the mount-time anchor doesn't rerun. Re-anchor on the
-  // hidden → visible edge — an explicit reopen, so it overrides a stale
-  // read-position and mirrors what a fresh open does.
-  const wasVisibleRef = useRef(visible)
-  // eslint-disable-next-line no-restricted-syntax -- previous-value tracker for the hidden → visible edge; lagging a render IS the contract
-  useEffect(() => {
-    if (visible && !wasVisibleRef.current) {
-      stickToBottomRef.current = true
-      setLeftAtLength(null)
-      bottomSentinelRef.current?.scrollIntoView({
-        block: 'end'
-      })
-    }
-
-    wasVisibleRef.current = visible
-  }, [visible])
   const imagesFor = (thread: null | string) => pendingImages[thread ?? 'main'] || []
 
   const addImages = (thread: null | string, picked: Attachment[]) => {
@@ -882,6 +847,9 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     setFocusThread(thread)
     setReplyThread(thread)
     stickToBottomRef.current = true
+    // Looking at it IS reading it: the badge clears on open, not on a timer,
+    // so it can never nag about something already on screen.
+    markRead(thread)
   }
 
   const commands = roomCommands(group, members, () => memberDescriptors())
@@ -1647,6 +1615,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             onNewThread={() => openThread(null)}
             onSelect={openThread}
             totalMessages={room.log.length}
+            unseen={unseenByThread}
           />
         </div>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -1746,7 +1715,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             </div>
             {/* Reading history: new replies land quietly and this pill offers the
             way back, instead of the log jumping out from under the reader. */}
-            {leftAtLength !== null ? (
+            {readingHistory ? (
               <div className="pointer-events-none sticky bottom-2 flex justify-center">
                 <Button
                   className={cn(

@@ -93,6 +93,130 @@ export function markGroupOpened(group: string): void {
   }
 
   markGroupRead(group)
+  // The rail's per-thread marks open WITH the room: the user is looking at
+  // all of it, so every thread starts read. Only what arrives next and isn't
+  // opened counts as new.
+  markGroupThreadsRead(group)
+}
+
+/** First sight of a room (a workspace mounted that openGroupChat didn't
+ *  route through): seed the threads it has never marked, so history never
+ *  badges. Threads already marked keep their mark — a remount must not
+ *  un-read something that arrived while the user was looking elsewhere. */
+export function noteGroupThreadsSeen(group: string): void {
+  const room = $groupChats.get()[group]
+
+  if (!room) {
+    return
+  }
+
+  const key = groupChatRoomKey(group, room)
+  const tails = groupThreadTails(Array.isArray(room.log) ? room.log : [])
+  const current = $groupThreadReadAt.get()
+  const next = { ...current }
+  let changed = false
+
+  for (const [thread, at] of Object.entries(tails)) {
+    const mark = `${key}::${thread}`
+
+    if (!(mark in next)) {
+      next[mark] = at
+      changed = true
+    }
+  }
+
+  if (changed) {
+    $groupThreadReadAt.set(next)
+  }
+}
+
+/** roomKey + thread → `at` of the newest entry the user has actually looked
+ *  at in that thread. Runtime-only, like the room marks. */
+export const $groupThreadReadAt = atom<Record<string, number>>({})
+
+/** Newest `at` per thread in a room's log. */
+function groupThreadTails(log: readonly GroupMessage[]): Record<string, number> {
+  const tails: Record<string, number> = {}
+
+  for (const entry of Array.isArray(log) ? log : []) {
+    const thread = entry?.thread || 'legacy'
+    const at = Number(entry?.at || 0)
+
+    if (at > (tails[thread] ?? -1)) {
+      tails[thread] = at
+    }
+  }
+
+  return tails
+}
+
+/** Member entries per thread the user hasn't opened yet, keyed by thread.
+ *  One pass over the log; the rail renders whatever this returns. */
+export function groupThreadUnseenCounts(
+  log: readonly GroupMessage[],
+  readAtByThread: Readonly<Record<string, number>>
+): Record<string, number> {
+  const unseen: Record<string, number> = {}
+
+  for (const entry of Array.isArray(log) ? log : []) {
+    if (entry?.from?.kind !== 'member') {
+      continue
+    }
+
+    const thread = entry?.thread || 'legacy'
+
+    if (Number(entry?.at || 0) > (readAtByThread[thread] ?? -1)) {
+      unseen[thread] = (unseen[thread] || 0) + 1
+    }
+  }
+
+  return unseen
+}
+
+/** The marks belonging to one room, keyed by thread — the shape the rail's
+ *  counts want. Pure; the caller holds the atom. */
+export function groupThreadMarksFor(marks: Readonly<Record<string, number>>, roomKey: string): Record<string, number> {
+  const prefix = `${roomKey}::`
+  const forRoom: Record<string, number> = {}
+
+  for (const [mark, at] of Object.entries(marks)) {
+    if (mark.startsWith(prefix)) {
+      forRoom[mark.slice(prefix.length)] = at
+    }
+  }
+
+  return forRoom
+}
+
+/** Every thread's mark moves to its tail: the user is looking at the room
+ *  (opened it, or is following the log at the bottom), so all of it is read.
+ *  Called with `threads` to clear just the ones they actually opened. */
+export function markGroupThreadsRead(group: string, threads?: readonly string[]): void {
+  const room = $groupChats.get()[group]
+
+  if (!room) {
+    return
+  }
+
+  const key = groupChatRoomKey(group, room)
+  const tails = groupThreadTails(Array.isArray(room.log) ? room.log : [])
+  const next = { ...$groupThreadReadAt.get() }
+  let changed = false
+
+  for (const [thread, at] of Object.entries(
+    threads ? Object.fromEntries(threads.map(t => [t, tails[t] ?? 0])) : tails
+  )) {
+    const mark = `${key}::${thread}`
+
+    if (at > (next[mark] ?? -1)) {
+      next[mark] = at
+      changed = true
+    }
+  }
+
+  if (changed) {
+    $groupThreadReadAt.set(next)
+  }
 }
 
 export function markGroupRead(group: string): void {
@@ -146,6 +270,21 @@ export function bindGroupReadTracking(): () => void {
       }
 
       $groupReadAt.set(next)
+    }
+
+    // Per-thread marks follow the same lifecycle: a dead room takes its
+    // marks with it, so a recreate starts clean instead of badging history.
+    const threadMarks = $groupThreadReadAt.get()
+    const staleThreads = Object.keys(threadMarks).filter(mark => !live.has(mark.split('::')[0]!))
+
+    if (staleThreads.length) {
+      const next = { ...threadMarks }
+
+      for (const mark of staleThreads) {
+        delete next[mark]
+      }
+
+      $groupThreadReadAt.set(next)
     }
   })
 }

@@ -34,6 +34,8 @@ export interface GroupThreadRailProps {
   members: readonly GroupMember[]
   onNewThread: () => void
   onSelect: (thread: null | string) => void
+  /** Threads the user hasn't opened since they last grew: thread → count. */
+  unseen: Readonly<Record<string, number>>
   totalMessages: number
   /** The CEO's desk: what waits on the user, who is working; each opens the
    *  matching panel tab. */
@@ -73,10 +75,12 @@ export function GroupThreadRail({
   members,
   onNewThread,
   onSelect,
+  unseen,
   totalMessages,
   desk
 }: GroupThreadRailProps) {
   const b = useBots()
+  const unseenTotal = Object.values(unseen).reduce((sum, count) => sum + count, 0)
 
   const nameOf = (name: string) => {
     const member = members.find(m => m.name === name)
@@ -149,6 +153,16 @@ export function GroupThreadRail({
         >
           <Codicon className="text-(--ui-text-tertiary)" name="comment-discussion" />
           <span className="min-w-0 flex-1 truncate">{b.group.threadsAll}</span>
+          {unseenTotal ? (
+            <span
+              aria-label={b.group.threadNew(unseenTotal)}
+              className="rounded-full bg-(--ui-accent) px-1.5 font-mono text-[0.625rem] font-semibold tabular-nums text-white"
+              data-testid="group-thread-unseen"
+              title={b.group.threadNew(unseenTotal)}
+            >
+              {unseenTotal}
+            </span>
+          ) : null}
           <span className="text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{totalMessages}</span>
         </button>
         {SECTIONS.map(status => {
@@ -198,7 +212,7 @@ export function GroupThreadRail({
                           <span
                             className={cn(
                               'line-clamp-2 text-[0.75rem] leading-snug',
-                              active || status === 'waiting'
+                              active || status === 'waiting' || unseen[item.thread]
                                 ? 'font-semibold text-foreground'
                                 : 'text-(--ui-text-secondary)'
                             )}
@@ -207,6 +221,16 @@ export function GroupThreadRail({
                           </span>
                           <span className="flex min-w-0 items-center gap-1.5 text-[0.625rem] text-(--ui-text-quaternary)">
                             {who.length ? <Faces allMeta={allMeta} members={members} names={who} /> : null}
+                            {unseen[item.thread] ? (
+                              <span
+                                aria-label={b.group.threadNew(unseen[item.thread]!)}
+                                className="shrink-0 rounded-full bg-(--ui-accent) px-1.5 font-mono font-semibold tabular-nums text-white"
+                                data-testid="group-thread-row-unseen"
+                                title={b.group.threadNew(unseen[item.thread]!)}
+                              >
+                                {unseen[item.thread]}
+                              </span>
+                            ) : null}
                             <span className="min-w-0 flex-1 truncate">
                               {item.working.length
                                 ? b.group.threadWorking(item.working.map(nameOf).join(', '))

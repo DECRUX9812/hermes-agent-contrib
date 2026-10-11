@@ -470,6 +470,7 @@ type BotsMessages = {
     threadsAll: string
     threadWorking: (names: string) => string
     threadPeople: (names: string) => string
+    threadNew: (count: number) => string
     composerReplyingIn: (title: string) => string
     composerNewThreadTo: (name: string) => string
     composerNewThreadEveryone: string
@@ -1318,6 +1319,7 @@ const en: BotsMessages = {
     threadsAll: 'All activity',
     threadWorking: names => `${names} working now`,
     threadPeople: names => `With ${names}`,
+    threadNew: count => `${count} new`,
     composerReplyingIn: title => `Replying in: ${title}`,
     composerNewThreadTo: name => `New thread · ${name} answers, @mention anyone`,
     composerNewThreadEveryone: 'New thread · everyone hears it',
@@ -2172,6 +2174,7 @@ const ja: BotsMessages = {
     threadsAll: 'すべてのアクティビティ',
     threadWorking: names => `${names} が作業中`,
     threadPeople: names => `参加: ${names}`,
+    threadNew: count => `新着 ${count}件`,
     composerReplyingIn: title => `返信先: ${title}`,
     composerNewThreadTo: name => `新しいスレッド · ${name} が応答、@メンションで指名`,
     composerNewThreadEveryone: '新しいスレッド · 全員に届きます',
@@ -3008,6 +3011,7 @@ const zh: BotsMessages = {
     threadsAll: '全部动态',
     threadWorking: names => `${names} 正在工作`,
     threadPeople: names => `参与：${names}`,
+    threadNew: count => `${count} 条新消息`,
     composerReplyingIn: title => `回复：${title}`,
     composerNewThreadTo: name => `新话题 · 由 ${name} 回答，@提及 指定成员`,
     composerNewThreadEveryone: '新话题 · 所有人都能收到',
@@ -3840,6 +3844,7 @@ const zhHant: BotsMessages = {
     threadsAll: '全部動態',
     threadWorking: names => `${names} 正在工作`,
     threadPeople: names => `參與：${names}`,
+    threadNew: count => `${count} 則新訊息`,
     composerReplyingIn: title => `回覆：${title}`,
     composerNewThreadTo: name => `新話題 · 由 ${name} 回答，@提及 指定成員`,
     composerNewThreadEveryone: '新話題 · 所有人都會收到',
