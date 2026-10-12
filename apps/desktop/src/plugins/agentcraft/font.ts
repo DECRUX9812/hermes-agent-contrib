@@ -55,14 +55,23 @@ export const GLYPH_W = 6 // 5px + 1 space
  * Draw one line of text; returns pixel width. `scale` multiplies pixels
  * (integer). Colors as CSS strings.
  */
-export function drawText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, scale: number, color: string): number {
+export function drawText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  scale: number,
+  color: string
+): number {
   ctx.fillStyle = color
   let cx = x
 
   for (const ch of text) {
     const code = ch.charCodeAt(0)
 
-    if (code === 10) {break}
+    if (code === 10) {
+      break
+    }
     const idx = code - 32
 
     if (idx >= 0 && idx * 5 < GLYPHS.length) {
@@ -101,10 +110,14 @@ export function wrapText(text: string, maxW: number, scale: number): string[] {
     if (textWidth(trial, scale) > maxW && cur) {
       lines.push(cur)
       cur = w
-    } else {cur = trial}
+    } else {
+      cur = trial
+    }
   }
 
-  if (cur) {lines.push(cur)}
+  if (cur) {
+    lines.push(cur)
+  }
 
   return lines
 }

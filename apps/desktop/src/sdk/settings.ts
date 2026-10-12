@@ -1,12 +1,16 @@
 import type { ReadableAtom } from 'nanostores'
 
+import { type BackdropScene, type BackdropStrength, isBackdropScene, isBackdropStrength } from '@/lib/backdrop-scenes'
 import {
-  type BackdropScene,
-  type BackdropStrength,
-  isBackdropScene,
-  isBackdropStrength
-} from '@/lib/backdrop-scenes'
-import { $backdrop, $backdropImage, $backdropScene, $backdropStrength, setBackdrop, setBackdropImage, setBackdropScene, setBackdropStrength } from '@/store/backdrop'
+  $backdrop,
+  $backdropImage,
+  $backdropScene,
+  $backdropStrength,
+  setBackdrop,
+  setBackdropImage,
+  setBackdropScene,
+  setBackdropStrength
+} from '@/store/backdrop'
 import { $chatTextScale, CHAT_TEXT_SCALE_PRESETS, type ChatTextScale, setChatTextScale } from '@/store/chat-text-scale'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'

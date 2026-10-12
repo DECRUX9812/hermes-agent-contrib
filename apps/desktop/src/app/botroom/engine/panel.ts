@@ -34,7 +34,7 @@ const STATUS_COLOR: Record<string, string> = {
   working: '#ffb224',
   stalled: '#ff7849',
   offline: '#6b7280',
-  sleeping: '#8b93b0',
+  sleeping: '#8b93b0'
 }
 
 const logs = new Map<string, { who: string; text: string; kind: 'user' | 'bot' | 'sys' }[]>()
@@ -69,7 +69,7 @@ export class Panel {
     color: string,
     status: string,
     private hooks: PanelHooks,
-    avatar?: string,
+    avatar?: string
   ) {
     this.el = document.createElement('div')
     this.el.className = 'hr-panel'
@@ -100,7 +100,9 @@ export class Panel {
       </div>`
     const av = this.el.querySelector<HTMLImageElement>('img.hr-avatar')
 
-    if (av && avatar) {av.src = avatar}
+    if (av && avatar) {
+      av.src = avatar
+    }
     this.el.querySelector('.hr-title')!.textContent = title
     this.statusEl = this.el.querySelector('.hr-status-txt')!
     this.statusEl.textContent = status
@@ -115,13 +117,13 @@ export class Panel {
     // hit-rects and the host's pointer-events toggles — claim it explicitly.
     const grab = () => this.input.focus({ preventScroll: true })
     this.input.addEventListener('pointerdown', () => requestAnimationFrame(grab))
-    this.el.querySelector('.hr-composer')!.addEventListener('pointerdown', (e) => {
+    this.el.querySelector('.hr-composer')!.addEventListener('pointerdown', e => {
       if ((e.target as HTMLElement).tagName !== 'TEXTAREA' && !(e.target as HTMLElement).closest('.hr-btn')) {
         requestAnimationFrame(grab)
       }
     })
     this.el.querySelector('.hr-btn.send')!.addEventListener('click', () => this.submit())
-    this.input.addEventListener('keydown', (e) => {
+    this.input.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault()
         this.submit()
@@ -139,12 +141,18 @@ export class Panel {
     })
     // IME composition is invisible while the textarea's own text is
     // transparent — surface the real glyphs for the duration.
-    this.input.addEventListener('compositionstart', () => this.el.querySelector('.hr-field')!.classList.add('hr-composing'))
-    this.input.addEventListener('compositionend', () => this.el.querySelector('.hr-field')!.classList.remove('hr-composing'))
+    this.input.addEventListener('compositionstart', () =>
+      this.el.querySelector('.hr-field')!.classList.add('hr-composing')
+    )
+    this.input.addEventListener('compositionend', () =>
+      this.el.querySelector('.hr-field')!.classList.remove('hr-composing')
+    )
     this.targetChip.querySelector('.hr-x')!.addEventListener('click', () => this.setTarget(null))
     this.mic.addEventListener('click', () => this.toggleMic())
 
-    for (const m of logs.get(key) ?? []) {this.renderMsg(m.who, m.text, m.kind)}
+    for (const m of logs.get(key) ?? []) {
+      this.renderMsg(m.who, m.text, m.kind)
+    }
     void color
     this.scope.appendChild(this.el)
   }
@@ -157,7 +165,9 @@ export class Panel {
     for (const n of names) {
       const t = n.trim().toLowerCase()
 
-      if (t) {this.mentions.add(t)}
+      if (t) {
+        this.mentions.add(t)
+      }
     }
 
     this.syncMirror()
@@ -170,13 +180,17 @@ export class Panel {
   private submit() {
     const text = this.input.value.trim()
 
-    if (!text) {return}
+    if (!text) {
+      return
+    }
     this.input.value = ''
     this.input.style.height = 'auto'
     this.syncMirror()
     this.hooks.onSend(text, this.target ?? undefined)
 
-    if (this.target) {this.setTarget(null)}
+    if (this.target) {
+      this.setTarget(null)
+    }
   }
 
   /** Grab the composer — click-mascot-and-type should just work.
@@ -194,7 +208,9 @@ export class Panel {
     this.target = t
     this.targetChip.style.display = t ? 'flex' : 'none'
 
-    if (t) {this.targetChip.querySelector('.hr-target-label')!.textContent = t.label}
+    if (t) {
+      this.targetChip.querySelector('.hr-target-label')!.textContent = t.label
+    }
   }
 
   setStatus(status: string, line?: string) {
@@ -213,14 +229,19 @@ export class Panel {
    *  readout; when the reply lands the presence shrinks away and the
    *  answer row grows up in its place. Kept out of the persistent log. */
   showTyping(who: string, avatar?: string) {
-    if (this.typing.has(who)) {return}
+    if (this.typing.has(who)) {
+      return
+    }
     const div = document.createElement('div')
     div.className = 'hr-presence'
     const face = document.createElement(avatar ? 'img' : 'span')
     face.className = 'hr-presence-face'
 
-    if (avatar) {(face as HTMLImageElement).src = avatar}
-    else {face.textContent = who.slice(0, 1).toUpperCase()}
+    if (avatar) {
+      ;(face as HTMLImageElement).src = avatar
+    } else {
+      face.textContent = who.slice(0, 1).toUpperCase()
+    }
 
     const label = document.createElement('span')
     label.className = 'hr-think'
@@ -244,7 +265,9 @@ export class Panel {
   clearTyping(who: string) {
     const div = this.typing.get(who)
 
-    if (!div) {return}
+    if (!div) {
+      return
+    }
     this.typing.delete(who)
     this.clearedAt.set(who, Date.now())
     const t = this.typingTimers.get(who)
@@ -264,7 +287,9 @@ export class Panel {
     const list = logs.get(this.key) ?? []
     list.push({ who, text, kind })
 
-    if (list.length > 200) {list.shift()}
+    if (list.length > 200) {
+      list.shift()
+    }
     logs.set(this.key, list)
     this.renderMsg(who, text, kind)
   }
@@ -336,7 +361,9 @@ export class Panel {
     rec.onresult = (e: SpeechRecognitionEventLike) => {
       let text = ''
 
-      for (let i = 0; i < e.results.length; i++) {text += e.results[i]![0]!.transcript}
+      for (let i = 0; i < e.results.length; i++) {
+        text += e.results[i]![0]!.transcript
+      }
       this.input.value = text
       this.syncMirror()
     }
@@ -361,7 +388,9 @@ export class Panel {
   close() {
     this.rec?.abort()
 
-    for (const t of this.typingTimers.values()) {clearInterval(t)}
+    for (const t of this.typingTimers.values()) {
+      clearInterval(t)
+    }
     this.typingTimers.clear()
     this.el.remove()
     this.hooks.onClose()
@@ -372,7 +401,7 @@ function roomMsgRow(msg: RoomMsg, botName: (id: string) => string) {
   return {
     who: msg.author === 'user' ? 'You' : msg.author === 'system' ? 'system' : botName(msg.author),
     text: msg.text,
-    kind: (msg.author === 'user' ? 'user' : msg.author === 'system' ? 'sys' : 'bot') as 'user' | 'bot' | 'sys',
+    kind: (msg.author === 'user' ? 'user' : msg.author === 'system' ? 'sys' : 'bot') as 'user' | 'bot' | 'sys'
   }
 }
 
@@ -387,7 +416,9 @@ export function bufferRoomMsg(roomId: string, msg: RoomMsg, botName: (id: string
   const list = logs.get(roomId) ?? []
   list.push(roomMsgRow(msg, botName))
 
-  if (list.length > 200) {list.shift()}
+  if (list.length > 200) {
+    list.shift()
+  }
   logs.set(roomId, list)
 }
 

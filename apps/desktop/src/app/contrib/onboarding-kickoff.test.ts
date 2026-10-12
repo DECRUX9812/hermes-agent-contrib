@@ -88,6 +88,7 @@ it('routes a free-tier setup through the reasoning config request', async () => 
     },
     request
   )
+
   expect(runtimeId).toBe('runtime-guide')
   expect(request).toHaveBeenCalledWith('config.set', {
     session_id: 'runtime-guide',
@@ -112,6 +113,7 @@ it.each(['no-runtime', 'no-state', 'not-selected', 'wrong-profile'])(
           if (failure === 'no-runtime') {
             publishGuide('guide')
             $activeSessionId.set(null)
+
             return
           }
 
@@ -119,6 +121,7 @@ it.each(['no-runtime', 'no-state', 'not-selected', 'wrong-profile'])(
             $activeSessionId.set('runtime-guide')
             $selectedStoredSessionId.set('guide')
             $activeGatewayProfile.set(setupProfile)
+
             return
           }
 

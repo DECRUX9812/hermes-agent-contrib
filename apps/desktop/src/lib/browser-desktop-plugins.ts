@@ -54,9 +54,7 @@ interface PluginEntriesResponse {
  *  folder (the metadata walk at :761). */
 async function listDesktopPluginFolder(name?: string): Promise<HermesReadDirResult> {
   const path =
-    name === undefined
-      ? '/api/desktop-plugins/list'
-      : `/api/desktop-plugins/list?name=${encodeURIComponent(name)}`
+    name === undefined ? '/api/desktop-plugins/list' : `/api/desktop-plugins/list?name=${encodeURIComponent(name)}`
 
   const response = await hermesApi<PluginEntriesResponse>({ path })
 

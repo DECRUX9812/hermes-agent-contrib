@@ -21,7 +21,7 @@ const NB = [
   [0, 1, 0],
   [0, -1, 0],
   [0, 0, 1],
-  [0, 0, -1],
+  [0, 0, -1]
 ]
 
 export function computeLight(p: Plan): LightField {
@@ -76,12 +76,16 @@ export function computeLight(p: Plan): LightField {
       const ny = y + dy
       const nz = z + dz
 
-      if (nx < minX || nx > p.maxX || ny < minY || ny > p.maxY || nz < minZ || nz > p.maxZ) {continue}
+      if (nx < minX || nx > p.maxX || ny < minY || ny > p.maxY || nz < minZ || nz > p.maxZ) {
+        continue
+      }
       const ni = index(nx, ny, nz)
       const s = p.cells[ni]
       const loss = lightLoss(s)
 
-      if (loss === 0) {continue}
+      if (loss === 0) {
+        continue
+      }
       // straight down keeps 15 only while unobstructed; sideways/down lose 1
       const spread = v - loss
 
@@ -123,19 +127,25 @@ export function computeLight(p: Plan): LightField {
     bh++
     const v = block[index(x, y, z)]
 
-    if (v <= 1) {continue}
+    if (v <= 1) {
+      continue
+    }
 
     for (const [dx, dy, dz] of NB) {
       const nx = x + dx
       const ny = y + dy
       const nz = z + dz
 
-      if (nx < minX || nx > p.maxX || ny < minY || ny > p.maxY || nz < minZ || nz > p.maxZ) {continue}
+      if (nx < minX || nx > p.maxX || ny < minY || ny > p.maxY || nz < minZ || nz > p.maxZ) {
+        continue
+      }
       const ni = index(nx, ny, nz)
       const s = p.cells[ni]
       const loss = lightLoss(s)
 
-      if (loss === 0) {continue}
+      if (loss === 0) {
+        continue
+      }
       const spread = v - loss
 
       if (spread > block[ni]) {
@@ -151,15 +161,19 @@ export function computeLight(p: Plan): LightField {
     sky,
     block,
     skyAt(x, y, z) {
-      if (x < minX || x > p.maxX || y < minY || y > p.maxY || z < minZ || z > p.maxZ) {return 15}
+      if (x < minX || x > p.maxX || y < minY || y > p.maxY || z < minZ || z > p.maxZ) {
+        return 15
+      }
 
       return sky[index(x, y, z)]
     },
     blockAt(x, y, z) {
-      if (x < minX || x > p.maxX || y < minY || y > p.maxY || z < minZ || z > p.maxZ) {return 0}
+      if (x < minX || x > p.maxX || y < minY || y > p.maxY || z < minZ || z > p.maxZ) {
+        return 0
+      }
 
       return block[index(x, y, z)]
-    },
+    }
   }
 }
 
@@ -168,7 +182,17 @@ export function computeLight(p: Plan): LightField {
  * vertex on the lit side of a face. `lightAt` = combined channels (sky×day +
  * block) so meshes get one scalar per vertex; AO is computed separately.
  */
-export function smoothLight(field: LightField, x: number, y: number, z: number, nx: number, ny: number, nz: number, cx: number, cy: number): { sky: number; block: number } {
+export function smoothLight(
+  field: LightField,
+  x: number,
+  y: number,
+  z: number,
+  nx: number,
+  ny: number,
+  nz: number,
+  cx: number,
+  cy: number
+): { sky: number; block: number } {
   // the cell the face points into
   const bx = x + nx
   const by = y + ny
@@ -195,7 +219,17 @@ export function smoothLight(field: LightField, x: number, y: number, z: number, 
 }
 
 /** AO 0-3 (Minecraft corner rule) — 0 = darkest. */
-export function aoAt(p: Plan, x: number, y: number, z: number, nx: number, ny: number, nz: number, cx: number, cy: number): number {
+export function aoAt(
+  p: Plan,
+  x: number,
+  y: number,
+  z: number,
+  nx: number,
+  ny: number,
+  nz: number,
+  cx: number,
+  cy: number
+): number {
   const bx = x + nx
   const by = y + ny
   const bz = z + nz
@@ -223,7 +257,9 @@ export function aoAt(p: Plan, x: number, y: number, z: number, nx: number, ny: n
     c = occ(bx + cx, by + cy, bz) ? 1 : 0
   }
 
-  if (s1 && s2) {return 0}
+  if (s1 && s2) {
+    return 0
+  }
 
   return 3 - (s1 + s2 + c)
 }

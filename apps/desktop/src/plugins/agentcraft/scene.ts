@@ -27,7 +27,7 @@ const SKIN_URLS: Record<string, string> = {
   kit: skinKit,
   wren: skinWren,
   rowan: skinRowan,
-  tove: skinTove,
+  tove: skinTove
 }
 
 export interface CameraPreset {
@@ -48,7 +48,7 @@ export const CAMERA_PRESETS: CameraPreset[] = [
   { name: 'merge_station', pos: [19.5, FEET + 1.6, 2.6], look: [24, FEET + 1.8, -0.2] },
   { name: 'testbench', pos: [16, FEET + 2.6, -0.5], look: [23, FEET + 1.0, -4.5] },
   { name: 'hall', pos: [-5, FEET + 1.7, -4.6], look: [18, FEET + 1.5, -2.0] },
-  { name: 'night', pos: [16.5, 71.5, 45.5], look: [-2, 75.5, 11] },
+  { name: 'night', pos: [16.5, 71.5, 45.5], look: [-2, 75.5, 11] }
 ]
 
 export interface StudioScene {
@@ -170,7 +170,13 @@ export async function createStudio(opts: {
   {
     const t = world.screens.hologram
     const tex = screens.holoTexture()
-    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.85, toneMapped: false, side: THREE.DoubleSide })
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      opacity: 0.85,
+      toneMapped: false,
+      side: THREE.DoubleSide
+    })
     holoMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.8), mat)
     holoMesh.position.set(t.x, t.y, t.z)
     world.group.add(holoMesh)
@@ -179,14 +185,22 @@ export async function createStudio(opts: {
   // ------------------------------------------------------------------ confetti pool
   const confetti = new THREE.Points(
     new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(600 * 3), 3)),
-    new THREE.PointsMaterial({ size: 0.14, vertexColors: true, sizeAttenuation: true }),
+    new THREE.PointsMaterial({ size: 0.14, vertexColors: true, sizeAttenuation: true })
   )
 
   {
     const colors = new Float32Array(600 * 3)
-    const cols = [new THREE.Color(0xec9776), new THREE.Color(0xf8d892), new THREE.Color(0x98b2e2), new THREE.Color(0x8e66bf), new THREE.Color(0xf3d9c8)]
+    const cols = [
+      new THREE.Color(0xec9776),
+      new THREE.Color(0xf8d892),
+      new THREE.Color(0x98b2e2),
+      new THREE.Color(0x8e66bf),
+      new THREE.Color(0xf3d9c8)
+    ]
 
-    for (let i = 0; i < 600; i++) {cols[i % cols.length].toArray(colors, i * 3)}
+    for (let i = 0; i < 600; i++) {
+      cols[i % cols.length].toArray(colors, i * 3)
+    }
     confetti.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3))
     confetti.visible = false
     confetti.frustumCulled = false
@@ -231,7 +245,9 @@ export async function createStudio(opts: {
   const flyTo = (name: string) => {
     const p = CAMERA_PRESETS.find(p => p.name === name)
 
-    if (!p) {return}
+    if (!p) {
+      return
+    }
     autoCycle = false
     followId = null
     camTargetPos.set(...p.pos)
@@ -257,7 +273,9 @@ export async function createStudio(opts: {
     canvas.setPointerCapture(e.pointerId)
   })
   canvas.addEventListener('pointermove', e => {
-    if (!orbitDragging) {return}
+    if (!orbitDragging) {
+      return
+    }
     const dx = (e.clientX - lastX) / 200
     const dy = (e.clientY - lastY) / 200
     lastX = e.clientX
@@ -267,7 +285,11 @@ export async function createStudio(opts: {
     const yaw = Math.atan2(v.x, v.z) - dx
     const r = Math.hypot(v.x, v.z)
     const pitch = Math.max(0.08, Math.min(1.4, Math.atan2(v.y, r) + dy))
-    camTargetPos.set(camTargetLook.x + r * Math.sin(yaw) * Math.cos(pitch), camTargetLook.y + r * Math.sin(pitch), camTargetLook.z + r * Math.cos(yaw) * Math.cos(pitch))
+    camTargetPos.set(
+      camTargetLook.x + r * Math.sin(yaw) * Math.cos(pitch),
+      camTargetLook.y + r * Math.sin(pitch),
+      camTargetLook.z + r * Math.cos(yaw) * Math.cos(pitch)
+    )
     autoCycle = false
   })
   canvas.addEventListener('pointerup', () => (orbitDragging = false))
@@ -281,12 +303,17 @@ export async function createStudio(opts: {
 
   // ------------------------------------------------------------------ sim wiring
   const off = sim.store.on(ev => {
-    if (ev.type === 'lamp') {world.setLamp(ev.binding, ev.status)}
-    else if (ev.type === 'bulbs') {world.setBulbs(ev.group, ev.lit)}
-    else if (ev.type === 'confetti') {burstConfetti(ev.x, ev.y, ev.z)}
-    else if (ev.type === 'decision' && ev.status === 'open') {opts.onEvent?.('decision', ev.key)}
-    else if (ev.type === 'bell') {opts.onEvent?.('bell')}
-    else if (ev.type === 'goal' && sim.store.goal?.status === 'done') {
+    if (ev.type === 'lamp') {
+      world.setLamp(ev.binding, ev.status)
+    } else if (ev.type === 'bulbs') {
+      world.setBulbs(ev.group, ev.lit)
+    } else if (ev.type === 'confetti') {
+      burstConfetti(ev.x, ev.y, ev.z)
+    } else if (ev.type === 'decision' && ev.status === 'open') {
+      opts.onEvent?.('decision', ev.key)
+    } else if (ev.type === 'bell') {
+      opts.onEvent?.('bell')
+    } else if (ev.type === 'goal' && sim.store.goal?.status === 'done') {
       world.setLamp('goal:atrium', Lamp.DONE)
       world.applyTime(TIME_PRESETS.night === currentPreset ? TIME_PRESETS.golden : currentPreset)
     }
@@ -315,7 +342,9 @@ export async function createStudio(opts: {
   const clock = new THREE.Clock()
 
   function frame(): void {
-    if (!running) {return}
+    if (!running) {
+      return
+    }
     raf = requestAnimationFrame(frame)
     const now = performance.now()
     const dt = Math.min(0.05, (now - last) / 1000)
@@ -329,7 +358,10 @@ export async function createStudio(opts: {
       if (actor) {
         camTargetLook.set(actor.x, FEET + 1.6, actor.z)
         const back = new THREE.Vector3(Math.sin(actor.yaw), 0, Math.cos(actor.yaw)).multiplyScalar(-4.5)
-        camTargetPos.copy(camTargetLook).add(back).add(new THREE.Vector3(0, 2.2, 0))
+        camTargetPos
+          .copy(camTargetLook)
+          .add(back)
+          .add(new THREE.Vector3(0, 2.2, 0))
       }
     } else if (autoCycle) {
       autoTimer += dt
@@ -370,12 +402,19 @@ export async function createStudio(opts: {
 
       for (let i = 0; i < 600; i++) {
         confettiVel[i * 3 + 1] -= dt * 4
-        pos.setXYZ(i, pos.getX(i) + confettiVel[i * 3] * dt, pos.getY(i) + confettiVel[i * 3 + 1] * dt, pos.getZ(i) + confettiVel[i * 3 + 2] * dt)
+        pos.setXYZ(
+          i,
+          pos.getX(i) + confettiVel[i * 3] * dt,
+          pos.getY(i) + confettiVel[i * 3 + 1] * dt,
+          pos.getZ(i) + confettiVel[i * 3 + 2] * dt
+        )
       }
 
       pos.needsUpdate = true
 
-      if (confettiT > 4) {confetti.visible = false}
+      if (confettiT > 4) {
+        confetti.visible = false
+      }
     }
 
     renderer.render(scene, camera)
@@ -386,7 +425,9 @@ export async function createStudio(opts: {
     for (const [id, p] of positions) {
       const plate = plates.get(id)
 
-      if (!plate) {continue}
+      if (!plate) {
+        continue
+      }
       plate.el.style.transform = `translate(${p.x - 40}px, ${p.y}px)`
       plate.el.style.display = 'block'
       plate.mark.style.display = p.alert ? 'block' : 'none'
@@ -406,7 +447,9 @@ export async function createStudio(opts: {
     }
 
     for (const [id, plate] of plates) {
-      if (!positions.has(id)) {plate.el.style.display = 'none'}
+      if (!positions.has(id)) {
+        plate.el.style.display = 'none'
+      }
     }
   }
 
@@ -462,6 +505,6 @@ export async function createStudio(opts: {
       renderer.dispose()
       canvas.remove()
       overlay.remove()
-    },
+    }
   }
 }

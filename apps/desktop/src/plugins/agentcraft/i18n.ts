@@ -3,6 +3,6 @@ export const AGENTCRAFT_LOCALES = {
     'agentcraft.nav': 'Studio',
     'agentcraft.openStudio': 'Open AgentCraft Studio',
     'agentcraft.status.running': 'studio: sim running',
-    'agentcraft.status.idle': 'studio',
-  },
+    'agentcraft.status.idle': 'studio'
+  }
 }

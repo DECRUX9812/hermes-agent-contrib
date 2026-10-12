@@ -53,9 +53,10 @@ export function AgentPresence() {
   const workingTitle = work.count > 0 ? (work.titles[0] ?? null) : null
 
   // When actually working, name the task; otherwise the emotion caption.
-  const line = workingTitle && (emotion === 'working' || emotion === 'thinking')
-    ? `Working on ${workingTitle}`
-    : emotionCaption(emotion)
+  const line =
+    workingTitle && (emotion === 'working' || emotion === 'thinking')
+      ? `Working on ${workingTitle}`
+      : emotionCaption(emotion)
 
   const isBusy = emotion === 'working' || emotion === 'thinking'
 
@@ -74,7 +75,9 @@ export function AgentPresence() {
       </div>
       <div className="min-w-0 flex-1 leading-tight">
         <div className="truncate text-[0.8125rem] font-semibold text-foreground">{botName}</div>
-        <div className={cn('truncate text-[0.6875rem] font-medium transition-colors duration-200', statusTone(emotion))}>
+        <div
+          className={cn('truncate text-[0.6875rem] font-medium transition-colors duration-200', statusTone(emotion))}
+        >
           {line}
         </div>
       </div>

@@ -11,13 +11,12 @@
  */
 
 import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as ApiClient from '@/api/client'
 import type { HermesApiRequest } from '@/global'
-
-import { resolve } from 'node:path'
 
 import { $pluginRecords } from './plugins-store'
 import { registry } from './registry'
@@ -26,8 +25,7 @@ import { discoverRuntimePlugins, unloadRuntimePlugin, watchRuntimePlugins } from
 // The user's real plugin, read from disk in the test so the shipped file is
 // what gets evaluated. Path is overridable for portability.
 const REAL_PLUGIN_PATH =
-  process.env.HERMES_TEST_BACKDROPS_PLUGIN ||
-  resolve(process.cwd(), '../../plugins/backdrops/desktop/plugin.js')
+  process.env.HERMES_TEST_BACKDROPS_PLUGIN || resolve(process.cwd(), '../../plugins/backdrops/desktop/plugin.js')
 
 // The REAL /api handler for the plugin routes, not a hand-written double: this
 // mirrors hermes_cli/web_routers/desktop_plugins.py's contract (root, one
@@ -74,7 +72,9 @@ function handleApi(request: HermesApiRequest) {
     const name = query.get('name')
 
     if (name === null) {
-      return { entries: (apiDirs.get(ROOT) || []).map(entry => ({ isDirectory: true, name: entry, path: `${ROOT}/${entry}` })) }
+      return {
+        entries: (apiDirs.get(ROOT) || []).map(entry => ({ isDirectory: true, name: entry, path: `${ROOT}/${entry}` }))
+      }
     }
 
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(name)) {
@@ -118,7 +118,7 @@ vi.mock('@/api/client', async importActual => {
 
   return {
     ...actual,
-    hermesApi: async <T,>(request: HermesApiRequest) => handleApi(request) as T
+    hermesApi: async <T>(request: HermesApiRequest) => handleApi(request) as T
   }
 })
 
@@ -255,9 +255,7 @@ describe('browser desktop-plugin capability', () => {
   it('never exposes a file outside plugin.js / the package marker', async () => {
     const desktop = window.hermesDesktop!
 
-    await expect(
-      desktop.readFileText!('/home/u/.hermes/config.yaml')
-    ).resolves.toMatchObject({ ok: false })
+    await expect(desktop.readFileText!('/home/u/.hermes/config.yaml')).resolves.toMatchObject({ ok: false })
 
     // A path that escapes the root by traversal resolves to no segments at all.
     await expect(desktop.readPluginSource!(`${ROOT}/../config.yaml`)).resolves.toEqual({ text: '' })
@@ -270,7 +268,11 @@ describe('browser desktop-plugin capability', () => {
     apiDirs.set(ROOT, ['unified'])
     apiFiles.set(`${ROOT}/unified/plugin.js`, { text: 'export default { id: "unified", register() {} }' })
     apiFiles.set(`${ROOT}/unified/.hermes-package.json`, {
-      text: JSON.stringify({ package: 'unified', repo: 'https://example.test/unified.git', source: '/x/plugins/unified/desktop' })
+      text: JSON.stringify({
+        package: 'unified',
+        repo: 'https://example.test/unified.git',
+        source: '/x/plugins/unified/desktop'
+      })
     })
 
     await withDataUrlImport(() => discoverRuntimePlugins())

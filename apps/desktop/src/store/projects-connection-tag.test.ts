@@ -73,7 +73,9 @@ function connect(request = vi.fn()) {
 // All-profiles mode is hidden while fewer than two profiles exist, so a test
 // that wants the cross-profile tree has to load a second one.
 function viewAllProfiles(on = true) {
-  $profiles.set(on ? [{ is_default: true, name: 'default' } as never, { is_default: false, name: 'work' } as never] : [])
+  $profiles.set(
+    on ? [{ is_default: true, name: 'default' } as never, { is_default: false, name: 'work' } as never] : []
+  )
   setShowAllProfiles(on)
 }
 

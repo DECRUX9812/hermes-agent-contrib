@@ -48,8 +48,10 @@ describe('muted text ramp', () => {
       for (const tier of ['tertiary', 'quaternary'] as TextTier[]) {
         for (const surface of surfaces) {
           const share = resolveTextMix(colors.foreground, surfaces, tier, rendered === 'dark')
+
           const ratio =
             contrastRatio(textInk(colors.foreground, surfaces, surface, tier, rendered === 'dark'), surface) ?? 0
+
           const atCap = share >= TEXT_MIX_CAP[tier] - 1e-9
 
           expect(

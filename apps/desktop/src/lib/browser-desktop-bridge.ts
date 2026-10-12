@@ -33,11 +33,15 @@ import type { BackendUpdateCheckResponse } from '@/types/hermes'
 export function installBrowserDesktopBridge(): boolean {
   const win = window as unknown as BrowserBootstrapWindow
 
-  if (win.hermesDesktop) {return false}
+  if (win.hermesDesktop) {
+    return false
+  }
 
   const bootstrap = browserBootstrap()
 
-  if (!bootstrap) {return false}
+  if (!bootstrap) {
+    return false
+  }
 
   if (bootstrap.privateSession) {
     watchWebappLaunchLink(() => window.location.reload())
@@ -73,7 +77,9 @@ export function installBrowserDesktopBridge(): boolean {
   const openExternal = async (url: string) => {
     const target = externalUrlTarget(url)
 
-    if (target?.kind === 'web') {window.open(target.url, '_blank', 'noopener,noreferrer')}
+    if (target?.kind === 'web') {
+      window.open(target.url, '_blank', 'noopener,noreferrer')
+    }
   }
 
   const uploads = createBrowserUploadsBridge({ api, bootstrap, currentProfile, objectUrls, previewUrls })
@@ -97,11 +103,17 @@ export function installBrowserDesktopBridge(): boolean {
       return { count: query && find?.call(window, query) ? 1 : 0 }
     },
     notify: async ({ title, body }: { title?: string; body?: string }) => {
-      if (!('Notification' in window)) {return false}
+      if (!('Notification' in window)) {
+        return false
+      }
 
-      if (Notification.permission === 'default') {await Notification.requestPermission()}
+      if (Notification.permission === 'default') {
+        await Notification.requestPermission()
+      }
 
-      if (Notification.permission !== 'granted') {return false}
+      if (Notification.permission !== 'granted') {
+        return false
+      }
       new Notification(title || 'Hermes', { body })
 
       return true
@@ -121,7 +133,9 @@ export function installBrowserDesktopBridge(): boolean {
       return target ? openWindow(target) : { error: 'invalid_session_id', ok: false }
     },
     requestMicrophoneAccess: async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {return false}
+      if (!navigator.mediaDevices?.getUserMedia) {
+        return false
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       stream.getTracks().forEach(track => track.stop())
 
@@ -145,6 +159,7 @@ export function installBrowserDesktopBridge(): boolean {
         const health = await api<{ version?: string; displayVersion?: string; commit?: string }>({
           path: '/api/health'
         })
+
         return {
           appVersion: health.displayVersion || health.version || 'browser-hosted',
           baseVersion: health.version,
@@ -171,8 +186,10 @@ export function installBrowserDesktopBridge(): boolean {
           const res = await api<BackendUpdateCheckResponse>({
             path: `/api/hermes/update/check?force=${force}`
           })
+
           const behind = res.behind === undefined ? 0 : res.behind
           const checkFailed = res.can_apply && res.behind === null
+
           return {
             supported: res.can_apply,
             error: checkFailed ? 'check-failed' : undefined,

@@ -95,7 +95,7 @@ export class Stage {
     this.root.appendChild(this.ghost)
 
     this.windows = new WindowManager(this.root)
-    this.windows.onFullscreen = (full) => this.setDocked(full)
+    this.windows.onFullscreen = full => this.setDocked(full)
 
     this.windows.onCard = (_id, item) => {
       if (item.url) {
@@ -111,8 +111,7 @@ export class Stage {
     // arrive — hit-test them so interactive pixels re-arm the pointer.
     // Electron forwards raw *mouse* events, not PointerEvents, so listen
     // for both: 'mousemove' is the only probe that fires while ignored.
-    const probe = (e: { clientX: number; clientY: number }) =>
-      this.updateInteractivity(e.clientX, e.clientY)
+    const probe = (e: { clientX: number; clientY: number }) => this.updateInteractivity(e.clientX, e.clientY)
 
     document.addEventListener('mousemove', probe, { passive: true })
     document.addEventListener('pointermove', probe, { passive: true })
@@ -122,7 +121,9 @@ export class Stage {
     this.root.addEventListener('focusin', () => this.setFocusable(true))
     this.root.addEventListener('focusout', () => {
       requestAnimationFrame(() => {
-        if (!this.root.activeElement) {this.setFocusable(false)}
+        if (!this.root.activeElement) {
+          this.setFocusable(false)
+        }
       })
     })
   }
@@ -137,11 +138,9 @@ export class Stage {
    *  leave the window ignoring the mouse forever. Hit-test inside the
    *  shadow root instead; it only exists on our own surface. */
   private updateInteractivity(x: number, y: number) {
-    const el =
-      this.root.elementFromPoint?.(x, y) ?? document.elementFromPoint(x, y)
+    const el = this.root.elementFromPoint?.(x, y) ?? document.elementFromPoint(x, y)
 
-    const over =
-      this.activeDrags > 0 || Boolean(el && this.hostContains(el) && el.closest(INTERACTIVE))
+    const over = this.activeDrags > 0 || Boolean(el && this.hostContains(el) && el.closest(INTERACTIVE))
 
     if (over !== this.interactive) {
       this.interactive = over
@@ -158,7 +157,9 @@ export class Stage {
   }
 
   private setFocusable(v: boolean) {
-    if (v === this.focusable) {return}
+    if (v === this.focusable) {
+      return
+    }
     this.focusable = v
     window.hermesDesktop.botroom.setFocusable(v)
   }
@@ -273,7 +274,9 @@ export class Stage {
         this.makeHit(b)
       }
 
-      if (prev?.status !== b.status) {this.botStatus(b)}
+      if (prev?.status !== b.status) {
+        this.botStatus(b)
+      }
       idx++
     }
 
@@ -302,14 +305,20 @@ export class Stage {
   private botStatus(b: Bot) {
     const m = this.scene.get(b.id)
 
-    if (!m) {return}
+    if (!m) {
+      return
+    }
     const hit = this.hits.get(b.id)
     hit?.classList.toggle('working', b.status === 'working')
     m.setWorking(b.status === 'working')
 
-    if (b.status === 'working') {m.play('talk', 1)}
-    else if (b.status === 'sleeping') {m.play('sleep', Infinity)}
-    else if (b.status === 'idle') {m.play('idle', Infinity)}
+    if (b.status === 'working') {
+      m.play('talk', 1)
+    } else if (b.status === 'sleeping') {
+      m.play('sleep', Infinity)
+    } else if (b.status === 'idle') {
+      m.play('idle', Infinity)
+    }
 
     const panel = this.panels.get(`solo:${b.id}`)
     panel?.setStatus(b.status, b.statusLine)
@@ -338,7 +347,9 @@ export class Stage {
       }
     }
 
-    if (msg.ephemeral) {return}
+    if (msg.ephemeral) {
+      return
+    }
 
     if (msg.author !== 'user' && msg.author !== 'system') {
       const m = this.scene.get(msg.author)
@@ -355,7 +366,7 @@ export class Stage {
 
   /** Display names that tint as @mentions inside a room panel. */
   private roomMentions(room: Room): string[] {
-    return ['everyone', ...room.memberBotIds.map((id) => this.bots.get(id)?.displayName ?? id.split(':').pop() ?? id)]
+    return ['everyone', ...room.memberBotIds.map(id => this.bots.get(id)?.displayName ?? id.split(':').pop() ?? id)]
   }
 
   private updateUnreadChip(roomId: string) {
@@ -394,11 +405,11 @@ export class Stage {
 
     hit.addEventListener('pointerenter', () => this.scene.get(b.id)?.setHover(true))
     hit.addEventListener('pointerleave', () => this.scene.get(b.id)?.setHover(false))
-    hit.addEventListener('contextmenu', (e) => {
+    hit.addEventListener('contextmenu', e => {
       e.preventDefault()
       this.openBotMenu(b, e.clientX, e.clientY)
     })
-    hit.addEventListener('pointerdown', (e) => {
+    hit.addEventListener('pointerdown', e => {
       dragging = true
       moved = false
       sx = e.clientX
@@ -409,12 +420,16 @@ export class Stage {
       this.dropzone.classList.add('on')
       e.preventDefault()
     })
-    hit.addEventListener('pointermove', (e) => {
-      if (!dragging) {return}
+    hit.addEventListener('pointermove', e => {
+      if (!dragging) {
+        return
+      }
       const dx = e.clientX - sx
       const dy = e.clientY - sy
 
-      if (Math.abs(dx) + Math.abs(dy) > 5) {moved = true}
+      if (Math.abs(dx) + Math.abs(dy) > 5) {
+        moved = true
+      }
       const x = e.clientX
       const y = e.clientY
       this.pos.set(b.id, { x, y })
@@ -424,7 +439,9 @@ export class Stage {
     })
 
     const drop = (e: PointerEvent) => {
-      if (!dragging) {return}
+      if (!dragging) {
+        return
+      }
       dragging = false
       this.activeDrags -= 1
       hit.classList.remove('dragging')
@@ -444,7 +461,7 @@ export class Stage {
         type: 'mascot.move',
         botId: b.id,
         x: this.pos.get(b.id)!.x,
-        y: this.pos.get(b.id)!.y,
+        y: this.pos.get(b.id)!.y
       })
     }
 
@@ -456,7 +473,9 @@ export class Stage {
     for (const el of this.root.querySelectorAll<HTMLElement>('.hr-room')) {
       const r = el.getBoundingClientRect()
 
-      if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) {return el.dataset.roomId ?? null}
+      if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) {
+        return el.dataset.roomId ?? null
+      }
     }
 
     return null
@@ -478,24 +497,36 @@ export class Stage {
   private openPanel(key: string, b?: Bot, room?: Room): Panel {
     const existing = this.panels.get(key)
 
-    if (existing) {return existing}
-    const title = room ? room.name : b?.displayName ?? b?.name ?? 'Bot'
+    if (existing) {
+      return existing
+    }
+    const title = room ? room.name : (b?.displayName ?? b?.name ?? 'Bot')
     const color = b?.color ?? '#5470ff'
     const status = b?.status ?? 'idle'
 
-    const panel = new Panel(this.root, key, title, color, status, {
-      onSend: (text, target?: ElementInfo) => {
-        this.send({
-          type: 'task',
-          text: target ? `${text}\n\n[Target: ${target.label}]` : text,
-          roomId: room ? key : undefined,
-          botId: room ? undefined : b?.id,
-        })
+    const panel = new Panel(
+      this.root,
+      key,
+      title,
+      color,
+      status,
+      {
+        onSend: (text, target?: ElementInfo) => {
+          this.send({
+            type: 'task',
+            text: target ? `${text}\n\n[Target: ${target.label}]` : text,
+            roomId: room ? key : undefined,
+            botId: room ? undefined : b?.id
+          })
 
-        if (!room) {panel.addMsg('You', text, 'user')}
+          if (!room) {
+            panel.addMsg('You', text, 'user')
+          }
+        },
+        onClose: () => this.panels.delete(key)
       },
-      onClose: () => this.panels.delete(key),
-    }, b ? faceDataUrl(b.displayName ?? b.name, 48) : undefined)
+      b ? faceDataUrl(b.displayName ?? b.name, 48) : undefined
+    )
 
     this.panels.set(key, panel)
 
@@ -520,7 +551,9 @@ export class Stage {
   private createRoom() {
     // window.prompt is a no-op under Electron — the room-name prompt is an
     // in-overlay input pinned above the tray instead.
-    if (this.root.querySelector('.hr-ask')) {return}
+    if (this.root.querySelector('.hr-ask')) {
+      return
+    }
 
     const ask = document.createElement('div')
     ask.className = 'hr-ask'
@@ -536,24 +569,31 @@ export class Stage {
 
     const done = (name?: string) => {
       // Enter then blur (and vice versa) both land here — run once.
-      if (doneCalled) {return}
+      if (doneCalled) {
+        return
+      }
       doneCalled = true
       ask.remove()
 
-      if (name) {this.send({ type: 'room.create', name })}
+      if (name) {
+        this.send({ type: 'room.create', name })
+      }
     }
 
-    input.addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', e => {
       e.stopPropagation()
 
-      if (e.key === 'Enter') {done(input.value.trim() || undefined)}
-      else if (e.key === 'Escape') {done()}
+      if (e.key === 'Enter') {
+        done(input.value.trim() || undefined)
+      } else if (e.key === 'Escape') {
+        done()
+      }
     })
     input.addEventListener('blur', () => done())
   }
 
   private setRooms(rooms: Room[]) {
-    this.rooms = new Map(rooms.map((r) => [r.id, r]))
+    this.rooms = new Map(rooms.map(r => [r.id, r]))
 
     for (const key of [...this.panels.keys()]) {
       if (!key.startsWith('solo:') && !this.rooms.has(key)) {
@@ -572,7 +612,9 @@ export class Stage {
 
   private layoutRoomMembers() {
     for (const room of this.rooms.values()) {
-      if (!room.anchor) {continue}
+      if (!room.anchor) {
+        continue
+      }
       room.memberBotIds.forEach((botId, i) => {
         const angle = (i / Math.max(1, room.memberBotIds.length)) * Math.PI * 2
         const x = room.anchor!.x + Math.cos(angle) * 70
@@ -600,10 +642,12 @@ export class Stage {
       chip.style.setProperty('--i', String(idx++))
 
       const faces = room.memberBotIds
-        .map((id) => {
+        .map(id => {
           const b = this.bots.get(id)
 
-          return b ? `<span class="hr-face"><img src="${faceDataUrl(b.displayName ?? b.name, 40)}" width="20" height="20" style="border-radius:50%"/></span>` : ''
+          return b
+            ? `<span class="hr-face"><img src="${faceDataUrl(b.displayName ?? b.name, 40)}" width="20" height="20" style="border-radius:50%"/></span>`
+            : ''
         })
         .join('')
 
@@ -614,13 +658,18 @@ export class Stage {
       chip.addEventListener('click', () => {
         this.openPanel(room.id, undefined, room)
       })
-      chip.addEventListener('contextmenu', (e) => {
+      chip.addEventListener('contextmenu', e => {
         e.preventDefault()
         // window.confirm is also a no-op under Electron — the destructive
         // choice goes through the same context menu surface as mascots.
         showContextMenu(this.root, e.clientX, e.clientY, [
           { icon: '▣', label: `Open "${room.name}"`, run: () => this.openPanel(room.id, undefined, room) },
-          { icon: '✕', label: `Remove "${room.name}"`, danger: true, run: () => this.send({ type: 'room.remove', roomId: room.id }) },
+          {
+            icon: '✕',
+            label: `Remove "${room.name}"`,
+            danger: true,
+            run: () => this.send({ type: 'room.remove', roomId: room.id })
+          }
         ])
       })
       this.roomBar.appendChild(chip)
@@ -645,8 +694,7 @@ export class Stage {
       const chip = document.createElement('button')
       chip.className = 'hr-deck-chip'
       chip.title = `${b.displayName ?? b.name} — ${b.status}`
-      chip.innerHTML =
-        `<img src="${faceDataUrl(b.displayName ?? b.name, 44)}" width="34" height="34" style="border-radius:50%"/><i class="hr-deck-dot" style="background:${statusColor(b.status)};color:${statusColor(b.status)}"></i>`
+      chip.innerHTML = `<img src="${faceDataUrl(b.displayName ?? b.name, 44)}" width="34" height="34" style="border-radius:50%"/><i class="hr-deck-dot" style="background:${statusColor(b.status)};color:${statusColor(b.status)}"></i>`
       chip.addEventListener('click', () => this.togglePanel(b))
       this.deck.appendChild(chip)
     }
@@ -664,26 +712,34 @@ export class Stage {
       { icon: '↺', label: 'Spin', run: () => m()?.play('spin', 1.1) },
       { icon: '↥', label: 'Jump', run: () => m()?.play('jump', 0.8) },
       { icon: '✦', label: 'Celebrate', run: () => m()?.play('celebrate', 1.4) },
-      { icon: '◐', label: asleep ? 'Wake' : 'Sleep', run: () => {
-        if (this.sleeping.delete(b.id)) {m()?.play('idle', Infinity)}
-        else {this.sleeping.add(b.id); m()?.play('sleep', Infinity)}
-      } },
+      {
+        icon: '◐',
+        label: asleep ? 'Wake' : 'Sleep',
+        run: () => {
+          if (this.sleeping.delete(b.id)) {
+            m()?.play('idle', Infinity)
+          } else {
+            this.sleeping.add(b.id)
+            m()?.play('sleep', Infinity)
+          }
+        }
+      },
       { separator: true, label: '' },
       { icon: '▣', label: 'Open Hermes', run: () => this.send({ type: 'open-app' }) },
-      { icon: '◌', label: 'Close overlay', run: () => this.send({ type: 'close' }) },
+      { icon: '◌', label: 'Close overlay', run: () => this.send({ type: 'close' }) }
     ])
   }
 
   /** Raycast-style command palette from the launcher. */
   private openPalette() {
-    const botItems = [...this.bots.values()].map((b) => ({
+    const botItems = [...this.bots.values()].map(b => ({
       icon: '◉',
       label: `Give ${b.displayName ?? b.name} a task`,
       hint: b.status,
       run: () => {
         this.openPanel(`solo:${b.id}`, b)
         this.scene.get(b.id)?.play('wave', 1)
-      },
+      }
     }))
 
     const sections: PaletteSection[] = [
@@ -691,13 +747,21 @@ export class Stage {
       {
         title: 'Actions',
         items: [
-          { icon: '♪', label: 'Everyone dance', run: () => [...this.bots.keys()].forEach((id) => this.scene.get(id)?.play('dance', 2.2)) },
-          { icon: '✦', label: 'Everyone celebrate', run: () => [...this.bots.keys()].forEach((id) => this.scene.get(id)?.play('celebrate', 1.4)) },
+          {
+            icon: '♪',
+            label: 'Everyone dance',
+            run: () => [...this.bots.keys()].forEach(id => this.scene.get(id)?.play('dance', 2.2))
+          },
+          {
+            icon: '✦',
+            label: 'Everyone celebrate',
+            run: () => [...this.bots.keys()].forEach(id => this.scene.get(id)?.play('celebrate', 1.4))
+          },
           { icon: '▣', label: 'New room', run: () => this.createRoom() },
           { icon: '▤', label: 'Open Hermes', run: () => this.send({ type: 'open-app' }) },
-          { icon: '◌', label: 'Close overlay', run: () => this.send({ type: 'close' }) },
-        ],
-      },
+          { icon: '◌', label: 'Close overlay', run: () => this.send({ type: 'close' }) }
+        ]
+      }
     ]
 
     showPalette(this.root, sections)
@@ -712,7 +776,7 @@ export function mountBotRoom(host: HTMLElement): Stage {
   const send = (msg: ContentToSw) => window.hermesDesktop.botroom.control(msg)
   const stage = new Stage(host, send)
 
-  window.hermesDesktop.botroom.onState((payload) => stage.handle(payload as SwToContent))
+  window.hermesDesktop.botroom.onState(payload => stage.handle(payload as SwToContent))
   send({ type: 'ready' })
 
   return stage

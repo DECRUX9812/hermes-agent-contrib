@@ -138,10 +138,7 @@ export function ActivityRail({
   const hasBots = useContributions('panes').some(pane => pane.id === BOTS_PANE)
   const cronJobs = useStore($cronJobs)
 
-  const cronAttention = useMemo(
-    () => cronJobs.some(job => nextRunOverdueMs(job) !== null),
-    [cronJobs]
-  )
+  const cronAttention = useMemo(() => cronJobs.some(job => nextRunOverdueMs(job) !== null), [cronJobs])
 
   const newSession = navItems.find(item => item.id === 'new-session')
   const pages = navItems.filter(item => item.id !== 'new-session')

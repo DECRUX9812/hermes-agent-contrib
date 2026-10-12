@@ -94,14 +94,18 @@ async function loadHost(webapp: boolean) {
 it.each([
   { host: 'Webapp', webapp: true, dropdown: true },
   { host: 'native Desktop', webapp: false, dropdown: false }
-])('$host keeps exactly one profile door, the Webapp as a dropdown', async ({ dropdown, webapp }) => {
-  const { doors, prefs } = await loadHost(webapp)
+])(
+  '$host keeps exactly one profile door, the Webapp as a dropdown',
+  async ({ dropdown, webapp }) => {
+    const { doors, prefs } = await loadHost(webapp)
 
-  // The rail stays at the sidebar foot whether or not the statusbar is shown.
-  expect(doors()).toEqual({ dropdown, picker: false, rail: true })
+    // The rail stays at the sidebar foot whether or not the statusbar is shown.
+    expect(doors()).toEqual({ dropdown, picker: false, rail: true })
 
-  // Hiding the rail hands the door to the statusbar picker on either host.
-  act(() => prefs.toggleProfileRailVisible())
-  expect(doors()).toEqual({ dropdown: false, picker: true, rail: false })
-  // The first case pays the cold import of the sidebar + statusbar tree.
-}, 60_000)
+    // Hiding the rail hands the door to the statusbar picker on either host.
+    act(() => prefs.toggleProfileRailVisible())
+    expect(doors()).toEqual({ dropdown: false, picker: true, rail: false })
+    // The first case pays the cold import of the sidebar + statusbar tree.
+  },
+  60_000
+)

@@ -62,9 +62,7 @@ export function ActivityTab() {
         updatedAt: s.last_active ?? 0
       }))
 
-    return [...actions, ...recentSessions]
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .slice(0, 20)
+    return [...actions, ...recentSessions].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 20)
   }, [actionTasks, sessions])
 
   if (loading) {
@@ -88,10 +86,7 @@ export function ActivityTab() {
     <ul aria-label="Recent activity" className="flex flex-col gap-1">
       {rows.map(row => (
         <li
-          className={cn(
-            'flex items-center gap-3 rounded-lg px-3 py-2',
-            'hover:bg-(--ui-control-hover-background)'
-          )}
+          className={cn('flex items-center gap-3 rounded-lg px-3 py-2', 'hover:bg-(--ui-control-hover-background)')}
           key={row.id}
         >
           <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center">
@@ -101,9 +96,7 @@ export function ActivityTab() {
             <div className="truncate text-[0.8125rem] font-medium text-foreground">{row.label}</div>
             <div className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">{row.detail}</div>
           </div>
-          <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
-            {relativeTime(row.updatedAt)}
-          </span>
+          <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">{relativeTime(row.updatedAt)}</span>
         </li>
       ))}
     </ul>

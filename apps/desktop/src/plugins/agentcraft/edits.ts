@@ -9,20 +9,29 @@ export type Patch = { file: string; create: string } | { file: string; find: str
 export class PatchError extends Error {}
 
 /** Apply one patch against a file map. Returns old/new content (for diff logs). */
-export function applyPatch(files: Record<string, string>, p: Patch): { before: string; after: string; created: boolean; changed: boolean } {
+export function applyPatch(
+  files: Record<string, string>,
+  p: Patch
+): { before: string; after: string; created: boolean; changed: boolean } {
   const before = files[p.file]?.replace(/\r\n/g, '\n') ?? ''
   let after: string
 
   if ('create' in p) {
     after = p.create
   } else {
-    if (before.includes(p.replace)) {return { before, after: before, created: false, changed: false }}
+    if (before.includes(p.replace)) {
+      return { before, after: before, created: false, changed: false }
+    }
 
-    if (!before.includes(p.find)) {throw new PatchError(`anchor not found in ${p.file}: ${JSON.stringify(p.find.slice(0, 60))}`)}
+    if (!before.includes(p.find)) {
+      throw new PatchError(`anchor not found in ${p.file}: ${JSON.stringify(p.find.slice(0, 60))}`)
+    }
     after = before.replace(p.find, p.replace)
   }
 
-  if (after === before) {return { before, after, created: false, changed: false }}
+  if (after === before) {
+    return { before, after, created: false, changed: false }
+  }
   files[p.file] = after
 
   return { before, after, created: !(p.file in files), changed: true }
@@ -36,7 +45,11 @@ export function miniDiff(before: string, after: string, maxLines = 14): string {
   const m = b.length
   const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0))
 
-  for (let i = n - 1; i >= 0; i--) {for (let j = m - 1; j >= 0; j--) {dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1])}}
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1])
+    }
+  }
   const ops: Array<[' ' | '-' | '+', string]> = []
   let i = 0
   let j = 0
@@ -46,29 +59,46 @@ export function miniDiff(before: string, after: string, maxLines = 14): string {
       ops.push([' ', a[i]])
       i++
       j++
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {ops.push(['-', a[i++]])}
-    else {ops.push(['+', b[j++]])}
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      ops.push(['-', a[i++]])
+    } else {
+      ops.push(['+', b[j++]])
+    }
   }
 
-  while (i < n) {ops.push(['-', a[i++]])}
+  while (i < n) {
+    ops.push(['-', a[i++]])
+  }
 
-  while (j < m) {ops.push(['+', b[j++]])}
+  while (j < m) {
+    ops.push(['+', b[j++]])
+  }
   const keep = new Set<number>()
   ops.forEach((o, k) => {
-    if (o[0] !== ' ') {for (let d = -1; d <= 1; d++) {keep.add(k + d)}}
+    if (o[0] !== ' ') {
+      for (let d = -1; d <= 1; d++) {
+        keep.add(k + d)
+      }
+    }
   })
   const out: string[] = []
   let last = -2
 
   for (let k = 0; k < ops.length; k++) {
-    if (!keep.has(k)) {continue}
+    if (!keep.has(k)) {
+      continue
+    }
 
-    if (last >= 0 && k > last + 1) {out.push('  ...')}
+    if (last >= 0 && k > last + 1) {
+      out.push('  ...')
+    }
     out.push(`${ops[k][0]} ${ops[k][1]}`)
     last = k
   }
 
-  if (out.length > maxLines) {return [...out.slice(0, maxLines), `  ... (${out.length - maxLines} more lines)`].join('\n')}
+  if (out.length > maxLines) {
+    return [...out.slice(0, maxLines), `  ... (${out.length - maxLines} more lines)`].join('\n')
+  }
 
   return out.join('\n')
 }
@@ -130,13 +160,13 @@ export const T2_FIX: Patch[] = [
     find: `const TAG_RE = /#(\\w+)/g;`,
     replace: `// A tag starts at the beginning of the text or after whitespace ("issue#12" is not a tag) and
 // may contain letters, digits, "_" and "-" (a trailing "-" is dropped).
-const TAG_RE = /(?:^|\\s)#(\\w[\\w-]*)/g;`,
+const TAG_RE = /(?:^|\\s)#(\\w[\\w-]*)/g;`
   },
   {
     file: 'src/tags.ts',
     find: `  return raw.replace(/^#/, '').toLowerCase();`,
-    replace: `  return raw.replace(/^#/, '').replace(/-+$/, '').toLowerCase();`,
-  },
+    replace: `  return raw.replace(/^#/, '').replace(/-+$/, '').toLowerCase();`
+  }
 ]
 
 // ---------------------------------------------------------------------------
@@ -164,7 +194,7 @@ export function highlightTags(text: string, color = false): string {
   if (!color) return text;
   return text.replace(TAG_IN_TEXT, (_m, pre: string, tag: string) => pre + CYAN + tag + RESET);
 }
-`,
+`
   },
   {
     file: 'src/format.ts',
@@ -177,7 +207,7 @@ export function highlightTags(text: string, color = false): string {
   const box = note.done ? '[x]' : '[ ]';
   const id = \`#\${note.id}\`.padEnd(4);
   return \`\${box} \${id} \${highlightTags(note.text, opts.color)}  (\${relativeTime(note.createdAt, now)})\`;
-}`,
+}`
   },
   {
     file: 'src/format.ts',
@@ -188,15 +218,15 @@ export function highlightTags(text: string, color = false): string {
     replace: `export function formatList(notes: readonly Note[], now = Date.now(), opts: FormatOptions = {}): string {
   if (notes.length === 0) return 'No notes yet. Add one with: notes add "buy oat milk"';
   return notes.map((n) => formatNote(n, now, opts)).join('\\n');
-}`,
-  },
+}`
+  }
 ]
 
 export const T4_TEST: Patch[] = [
   {
     file: 'test/format.test.ts',
     find: `import { formatList, formatNote, relativeTime } from './format.ts';`,
-    replace: `import { formatList, formatNote, highlightTags, relativeTime } from './format.ts';`,
+    replace: `import { formatList, formatNote, highlightTags, relativeTime } from './format.ts';`
   },
   {
     file: 'test/format.test.ts',
@@ -213,8 +243,8 @@ test('highlightTags colors tags only when asked', () => {
   assert.equal(highlightTags('buy #oat-milk today'), 'buy #oat-milk today');
   assert.equal(highlightTags('issue#12', true), 'issue#12');
 });
-`,
-  },
+`
+  }
 ]
 
 // ---------------------------------------------------------------------------
@@ -228,7 +258,7 @@ export const T3_NOTES: Patch[] = [
 `,
     replace: `// Core note operations. Pure functions: callers own persistence.
 import { hasTag, parseTags } from './tags.ts';
-`,
+`
   },
   {
     file: 'src/notes.ts',
@@ -239,7 +269,7 @@ import { hasTag, parseTags } from './tags.ts';
   all?: boolean;
   /** only notes carrying this #tag (case-insensitive) */
   tag?: string;
-}`,
+}`
   },
   {
     file: 'src/notes.ts',
@@ -259,15 +289,15 @@ export function tagCounts(notes: readonly Note[], opts: { includeDone?: boolean 
     for (const t of parseTags(n.text)) counts.set(t, (counts.get(t) ?? 0) + 1);
   }
   return [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-}`,
-  },
+}`
+  }
 ]
 
 export const T3_CLI_LIST: Patch[] = [
   {
     file: 'src/cli.ts',
     find: `import { addNote, completeNote, listNotes, removeNote } from './notes.ts';`,
-    replace: `import { addNote, completeNote, listNotes, removeNote, tagCounts } from './notes.ts';`,
+    replace: `import { addNote, completeNote, listNotes, removeNote, tagCounts } from './notes.ts';`
   },
   {
     file: 'src/cli.ts',
@@ -278,7 +308,7 @@ function flagValue(args: string[], ...names: string[]): string | undefined {
   return i >= 0 ? args[i + 1] : undefined;
 }
 
-function parseId(raw: string | undefined): number {`,
+function parseId(raw: string | undefined): number {`
   },
   {
     file: 'src/cli.ts',
@@ -286,8 +316,8 @@ function parseId(raw: string | undefined): number {`,
         io.out(formatList(listNotes(loadNotes(file), { all }), now()));`,
     replace: `        const all = rest.includes('--all');
         const tag = flagValue(rest, '--tag', '-t');
-        io.out(formatList(listNotes(loadNotes(file), { all, tag }), now()));`,
-  },
+        io.out(formatList(listNotes(loadNotes(file), { all, tag }), now()));`
+  }
 ]
 
 /** `notes tags`; includeDone depends on the user's answer to the lead's question. */
@@ -303,8 +333,8 @@ export function t3CliTags(includeDoneByDefault: boolean): Patch[] {
       io.out(counts.length ? counts.map(([t, n]) => \`#\${t}  \${n}\`).join('\\n') : 'No tags yet. Try: notes add "call mum #family"');
       return 0;
     }
-    case 'done': {`,
-    },
+    case 'done': {`
+    }
   ]
 }
 
@@ -352,8 +382,8 @@ test('tags prints usage counts, most used first', () => {
 });
 
 ${doneTest}
-test('unknown commands exit 2 with help', () => {`,
-    },
+test('unknown commands exit 2 with help', () => {`
+    }
   ]
 }
 
@@ -373,8 +403,8 @@ test('punctuation ends a tag', () => {
   assert.deepEqual(parseTags('done with #work, finally.'), ['work']);
 });
 
-test('hasTag accepts the tag with or without #', () => {`,
-  },
+test('hasTag accepts the tag with or without #', () => {`
+  }
 ]
 
 export const T5_FIX: Patch[] = [
@@ -383,13 +413,13 @@ export const T5_FIX: Patch[] = [
     find: `// may contain letters, digits, "_" and "-" (a trailing "-" is dropped).
 const TAG_RE = /(?:^|\\s)#(\\w[\\w-]*)/g;`,
     replace: `// may contain letters (any script), digits, "_" and "-" (a trailing "-" is dropped).
-const TAG_RE = /(?:^|\\s)#([\\p{L}\\p{N}_][\\p{L}\\p{N}_-]*)/gu;`,
+const TAG_RE = /(?:^|\\s)#([\\p{L}\\p{N}_][\\p{L}\\p{N}_-]*)/gu;`
   },
   {
     file: 'src/tags.ts',
     find: `  return raw.replace(/^#/, '').replace(/-+$/, '').toLowerCase();`,
-    replace: `  return raw.replace(/^#/, '').replace(/-+$/, '').normalize('NFC').toLowerCase();`,
-  },
+    replace: `  return raw.replace(/^#/, '').replace(/-+$/, '').normalize('NFC').toLowerCase();`
+  }
 ]
 
 // ---------------------------------------------------------------------------
@@ -401,7 +431,7 @@ export const T6_README: Patch[] = [
     file: 'README.md',
     find: `| \`notes list [--all]\` | list open notes (\`--all\` includes done ones) |`,
     replace: `| \`notes list [--all] [--tag <name>]\` | list open notes (\`--all\` includes done ones), optionally only one #tag |
-| \`notes tags\` | show your tags and how often you use them |`,
+| \`notes tags\` | show your tags and how often you use them |`
   },
   {
     file: 'README.md',
@@ -418,8 +448,8 @@ notes list --tag work
 notes tags
 \`\`\`
 
-## Development`,
-  },
+## Development`
+  }
 ]
 
 export const T6_CLI: Patch[] = [
@@ -430,7 +460,7 @@ export const T6_CLI: Patch[] = [
     replace: `  notes add <text...>     add a note (use #tags anywhere)
   notes list [--all]      list open notes (--all includes done)
              [--tag <t>]  only notes tagged #t
-  notes tags              show tags and how often they are used`,
+  notes tags              show tags and how often they are used`
   },
   {
     file: 'src/cli.ts',
@@ -439,12 +469,12 @@ export const T6_CLI: Patch[] = [
     replace: `  now?: () => number;
   /** highlight #tags (set when stdout is a terminal) */
   color?: boolean;
-}`,
+}`
   },
   {
     file: 'src/cli.ts',
     find: `        io.out(formatList(listNotes(loadNotes(file), { all, tag }), now()));`,
-    replace: `        io.out(formatList(listNotes(loadNotes(file), { all, tag }), now(), { color: io.color }));`,
+    replace: `        io.out(formatList(listNotes(loadNotes(file), { all, tag }), now(), { color: io.color }));`
   },
   {
     file: 'src/cli.ts',
@@ -452,6 +482,6 @@ export const T6_CLI: Patch[] = [
     out: (l) => console.log(l),`,
     replace: `    env: process.env,
     color: Boolean(process.stdout.isTTY) && !process.env.NO_COLOR,
-    out: (l) => console.log(l),`,
-  },
+    out: (l) => console.log(l),`
+  }
 ]

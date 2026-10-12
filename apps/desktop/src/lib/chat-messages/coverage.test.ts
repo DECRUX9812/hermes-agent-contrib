@@ -30,8 +30,10 @@ it('does not consume journal output across a human correction', () => {
   const later = assistant('later', 'call-1', 'later result')
   const local = [assistant('first', 'call-0', 'first result'), correction, later]
 
-  expect(withoutCoveredAssistantPrefix([
-    assistant('stored', 'call-0', 'first result'),
-    assistant('later-stored', 'call-1', 'later result')
-  ], local)).toEqual([correction, later])
+  expect(
+    withoutCoveredAssistantPrefix(
+      [assistant('stored', 'call-0', 'first result'), assistant('later-stored', 'call-1', 'later result')],
+      local
+    )
+  ).toEqual([correction, later])
 })

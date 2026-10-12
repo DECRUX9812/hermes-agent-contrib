@@ -15,7 +15,7 @@ import type { RosterRow, RoutineJob } from './types'
 vi.mock('@hermes/plugin-sdk', () => ({
   // needs-you.ts (imported by triage.ts) builds its window-local atom at
   // module scope — the mock needs the same tiny store the spec harness uses.
-  atom: <T,>(initial: T) => {
+  atom: <T>(initial: T) => {
     let value = initial
 
     return {

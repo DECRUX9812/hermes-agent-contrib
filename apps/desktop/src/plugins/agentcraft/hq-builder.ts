@@ -28,7 +28,7 @@ import {
   slab,
   stairs,
   trapdoor,
-  upper,
+  upper
 } from './blocks'
 import { Plan } from './plan'
 
@@ -88,14 +88,20 @@ export function deskIds(cast: string[]): string[] {
   const out: string[] = []
 
   for (const id of DESK_ORDER) {
-    if (cast.includes(id)) {out.push(id)}
+    if (cast.includes(id)) {
+      out.push(id)
+    }
   }
 
   for (const id of cast) {
-    if (!out.includes(id)) {out.push(id)}
+    if (!out.includes(id)) {
+      out.push(id)
+    }
   }
 
-  while (out.length < DESK_X.length) {out.push(`agent${out.length}`)}
+  while (out.length < DESK_X.length) {
+    out.push(`agent${out.length}`)
+  }
 
   return out
 }
@@ -175,7 +181,9 @@ function hallShell(p: Plan): void {
   }
 
   for (let x = -21; x <= 21; x++) {
-    if (!isPostX(x)) {continue}
+    if (!isPostX(x)) {
+      continue
+    }
     p.set(x, WALL_TOP, HZN + 1, stairs(B.DARK_OAK_STAIRS, Dir.N, true))
 
     if (Math.abs(x) >= 9) {
@@ -194,7 +202,9 @@ function hallShell(p: Plan): void {
   }
 
   for (let x = -HX + 1; x <= HX - 1; x++) {
-    if (isPostX(x)) {continue}
+    if (isPostX(x)) {
+      continue
+    }
     p.set(x, WALL_TOP, HZN + 1, slab(B.DARK_OAK_SLAB, true))
 
     if (!octFoot(x - AX, HZS - AZ) && !fireplaceX(x)) {
@@ -274,7 +284,9 @@ function gableColumn(p: Plan, x: number, z: number): void {
 function hallRoof(p: Plan): void {
   for (let x = -HX - 1; x <= HX + 1; x++) {
     for (let z = HZN - 1; z <= HZS + 1; z++) {
-      if (octFoot(x - AX, z - AZ)) {continue}
+      if (octFoot(x - AX, z - AZ)) {
+        continue
+      }
       const y = roofY(z)
 
       if (z === RIDGE_Z) {
@@ -317,14 +329,18 @@ function dormer(p: Plan, cx: number, south: boolean): void {
     for (let z = zf + out; z !== RIDGE_Z - out; z -= out) {
       const yr = roofY(z)
 
-      if (yr >= hd) {break}
+      if (yr >= hd) {
+        break
+      }
       p.set(x, hd, z, k === 0 ? ROOF_FULL : stairs(ROOF_STAIRS, k < 0 ? Dir.E : Dir.W, false))
 
       if (k === 0) {
         p.set(x, hd + 1, z, slab(B.DARK_OAK_SLAB, false))
       }
 
-      if (z === zf || z === zf + out) {continue}
+      if (z === zf || z === zf + out) {
+        continue
+      }
 
       if (Math.abs(k) <= 1) {
         p.set(x, yr, z, AIR)
@@ -364,7 +380,9 @@ function dormer(p: Plan, cx: number, south: boolean): void {
 function atriumShell(p: Plan): void {
   for (let dx = -9; dx <= 9; dx++) {
     for (let dz = -9; dz <= 9; dz++) {
-      if (!octFoot(dx, dz)) {continue}
+      if (!octFoot(dx, dz)) {
+        continue
+      }
       const x = AX + dx
       const z = AZ + dz
       p.set(x, GROUND, z, bs(B.DIRT))
@@ -423,9 +441,13 @@ function atriumWall(dx: number, dz: number, y: number): number {
   const orthoZ = az === 9 && ax <= 4
   const cornerPost = (ax === 9 && az === 5) || (az === 9 && ax === 5)
 
-  if (cornerPost) {return post()}
+  if (cornerPost) {
+    return post()
+  }
 
-  if (y === FEET) {return WALNUT_TRIM}
+  if (y === FEET) {
+    return WALNUT_TRIM
+  }
 
   if (orthoX || orthoZ) {
     const along = orthoX ? az : ax
@@ -495,7 +517,9 @@ export function profile(r: number, rad: number, h: number): number {
 }
 
 function domeTop2(dx: number, dz: number): number {
-  if (!domeFoot(dx, dz)) {return 2 * SPRING}
+  if (!domeFoot(dx, dz)) {
+    return 2 * SPRING
+  }
 
   return Math.round(2 * (SPRING + profile(octR(dx, dz), DOME_R, DOME_H)))
 }
@@ -503,7 +527,9 @@ function domeTop2(dx: number, dz: number): number {
 function domeIn2(dx: number, dz: number): number {
   const r = octR(dx, dz)
 
-  if (!domeFoot(dx, dz) || r >= DOME_RI) {return 2 * SPRING}
+  if (!domeFoot(dx, dz) || r >= DOME_RI) {
+    return 2 * SPRING
+  }
   const i2 = Math.round(2 * (SPRING + profile(r, DOME_RI, DOME_HI)))
 
   return Math.min(i2, domeTop2(dx, dz) - 4)
@@ -518,7 +544,9 @@ function dome(p: Plan): void {
 
   for (let dx = -9; dx <= 9; dx++) {
     for (let dz = -9; dz <= 9; dz++) {
-      if (!domeFoot(dx, dz) || oculus(dx, dz)) {continue}
+      if (!domeFoot(dx, dz) || oculus(dx, dz)) {
+        continue
+      }
       const t2 = domeTop2(dx, dz)
       const i2 = domeIn2(dx, dz)
       const rib = dx === 0 || dz === 0
@@ -527,7 +555,9 @@ function dome(p: Plan): void {
         const lo = 2 * y >= i2 && 2 * y < t2
         const hi = 2 * y + 1 >= i2 && 2 * y + 1 < t2
 
-        if (!lo && !hi) {continue}
+        if (!lo && !hi) {
+          continue
+        }
         const exterior = 2 * y + 2 >= t2 || exposedOut(dx, dz, y)
         const interior = (i2 > 2 * SPRING && 2 * y <= i2 && i2 < 2 * y + 2) || exposedIn(dx, dz, y)
         let s: number
@@ -560,14 +590,18 @@ function dome(p: Plan): void {
         continue
       }
 
-      if (octFoot(dx, dz) || !octInside(dx, dz, 10)) {continue}
+      if (octFoot(dx, dz) || !octInside(dx, dz, 10)) {
+        continue
+      }
       const ax = Math.abs(dx)
       const az = Math.abs(dz)
       const inDir: Dir = ax >= az ? (dx > 0 ? Dir.W : Dir.E) : dz > 0 ? Dir.N : Dir.S
       const inX = DIR_STEP_X[inDir]
       const inZ = DIR_STEP_Z[inDir]
 
-      if (!octFoot(dx + inX, dz + inZ)) {continue}
+      if (!octFoot(dx + inX, dz + inZ)) {
+        continue
+      }
 
       if (p.isAir(x, ATRIUM_TOP, z)) {
         p.set(x, ATRIUM_TOP, z, stairs(B.DARK_OAK_STAIRS, inDir, true))
@@ -587,12 +621,16 @@ function exposedOut(dx: number, dz: number, y: number): boolean {
     const nz = dz + DIR_STEP_Z[d]
 
     if (!domeFoot(nx, nz)) {
-      if (y > SPRING || !octFoot(nx, nz)) {return true}
+      if (y > SPRING || !octFoot(nx, nz)) {
+        return true
+      }
 
       continue
     }
 
-    if (!oculus(nx, nz) && domeTop2(nx, nz) <= 2 * y + 1) {return true}
+    if (!oculus(nx, nz) && domeTop2(nx, nz) <= 2 * y + 1) {
+      return true
+    }
   }
 
   return false
@@ -603,17 +641,23 @@ function exposedIn(dx: number, dz: number, y: number): boolean {
     const nx = dx + DIR_STEP_X[d]
     const nz = dz + DIR_STEP_Z[d]
 
-    if (!domeFoot(nx, nz)) {continue}
+    if (!domeFoot(nx, nz)) {
+      continue
+    }
 
     if (oculus(nx, nz)) {
-      if (2 * y + 1 < lanternBase() * 2) {return true}
+      if (2 * y + 1 < lanternBase() * 2) {
+        return true
+      }
 
       continue
     }
 
     const i2 = domeIn2(nx, nz)
 
-    if (i2 > 2 * SPRING && i2 > 2 * y) {return true}
+    if (i2 > 2 * SPRING && i2 > 2 * y) {
+      return true
+    }
   }
 
   return false
@@ -708,7 +752,9 @@ function floors(p: Plan): void {
 
   for (let dx = -8; dx <= 8; dx++) {
     for (let dz = -8; dz <= 8; dz++) {
-      if (!octIn(dx, dz)) {continue}
+      if (!octIn(dx, dz)) {
+        continue
+      }
       const r = octR(dx, dz)
       let f: number
 
@@ -935,7 +981,7 @@ function lounge(p: Plan): void {
     [-13, 0, -90],
     [-8, 0, 90],
     [-13, 2, -90],
-    [-8, 2, 90],
+    [-8, 2, 90]
   ]
 
   chairs.forEach((c, i) => {
@@ -1069,7 +1115,7 @@ function atrium(p: Plan): void {
   const userSlots: Array<[number, number]> = [
     [xp - 1.2, AZ - 1.6],
     [xp - 1.2, AZ + 2.6],
-    [xp - 2.9, AZ - 0.9],
+    [xp - 2.9, AZ - 0.9]
   ]
 
   userSlots.forEach(([sx, sz], i) => {
@@ -1089,7 +1135,9 @@ function atrium(p: Plan): void {
 
   for (let dx = -8; dx <= 8; dx++) {
     for (let dz = -8; dz <= 8; dz++) {
-      if (!octIn(dx, dz) || octR(dx, dz) !== 8) {continue}
+      if (!octIn(dx, dz) || octR(dx, dz) !== 8) {
+        continue
+      }
       p.set(AX + dx, ATRIUM_TOP, AZ + dz, slab(B.DARK_OAK_SLAB, true))
 
       if ((dx + dz) % 3 === 0) {
@@ -1155,10 +1203,14 @@ function chandelier(p: Plan): void {
 
 function hallLighting(p: Plan): void {
   for (let x = -21; x <= 21; x++) {
-    if (!isPostX(x)) {continue}
+    if (!isPostX(x)) {
+      continue
+    }
 
     for (const z of [-5, 1]) {
-      if (Math.abs(x) === 5 && z === 1) {continue}
+      if (Math.abs(x) === 5 && z === 1) {
+        continue
+      }
       p.set(x, FRIEZE - 1, z, chain(B.IRON_CHAIN, Axis.Y))
       p.set(x, FRIEZE - 2, z, LANTERN_HANGING)
     }
@@ -1232,7 +1284,7 @@ const FLAT = [
   [-20, 6, 20, 33],
   [-37, 9, -10, 34],
   [4, 29, 22, 45],
-  [-6, 25, 6, 49],
+  [-6, 25, 6, 49]
 ]
 
 export const GATE_Z = 48
@@ -1261,7 +1313,8 @@ export function edge(x: number, z: number): number {
 
 export function terrainHeight(x: number, z: number): number {
   const e = edge(x, z)
-  const crest = 5.2 + 1.8 * Math.sin(x * 0.15 + z * 0.07) + 1.4 * Math.cos(z * 0.19 - x * 0.11) + 0.8 * Math.sin((x + z) * 0.31)
+  const crest =
+    5.2 + 1.8 * Math.sin(x * 0.15 + z * 0.07) + 1.4 * Math.cos(z * 0.19 - x * 0.11) + 0.8 * Math.sin((x + z) * 0.31)
   const berm = e >= 7 ? crest * smooth(19, 7, e) : crest * smooth(-1, 7, e)
 
   return Math.round(berm * smooth(0, 7, flatDistance(x, z)))
@@ -1286,13 +1339,21 @@ export function ground(p: Plan): void {
         const h = hs[i * nz + k]
         let lo = h
 
-        if (i > 0) {lo = Math.min(lo, hs[(i - 1) * nz + k])}
+        if (i > 0) {
+          lo = Math.min(lo, hs[(i - 1) * nz + k])
+        }
 
-        if (i < nx - 1) {lo = Math.min(lo, hs[(i + 1) * nz + k])}
+        if (i < nx - 1) {
+          lo = Math.min(lo, hs[(i + 1) * nz + k])
+        }
 
-        if (k > 0) {lo = Math.min(lo, hs[i * nz + k - 1])}
+        if (k > 0) {
+          lo = Math.min(lo, hs[i * nz + k - 1])
+        }
 
-        if (k < nz - 1) {lo = Math.min(lo, hs[i * nz + k + 1])}
+        if (k < nz - 1) {
+          lo = Math.min(lo, hs[i * nz + k + 1])
+        }
 
         if (h > lo + 1) {
           hs[i * nz + k] = lo + 1
@@ -1301,14 +1362,18 @@ export function ground(p: Plan): void {
       }
     }
 
-    if (!changed) {break}
+    if (!changed) {
+      break
+    }
   }
 
   for (let x = p.minX; x <= p.maxX; x++) {
     for (let z = p.minZ; z <= p.maxZ; z++) {
       const h = hs[(x - p.minX) * nz + (z - p.minZ)]
 
-      if (h <= 0) {continue}
+      if (h <= 0) {
+        continue
+      }
 
       for (let y = GROUND; y < GROUND + h; y++) {
         p.set(x, y, z, bs(B.DIRT))
@@ -1335,7 +1400,9 @@ function exterior(p: Plan): void {
 
 function outdoorLight(p: Plan): void {
   for (let x = -22; x <= 22; x += 3) {
-    if (Math.abs(x) < 10) {continue}
+    if (Math.abs(x) < 10) {
+      continue
+    }
     p.setIfAir(x, FEET + 3, HZS + 1, light(14))
 
     if (mod(x, 6) === 2) {
@@ -1345,9 +1412,13 @@ function outdoorLight(p: Plan): void {
 
   for (let dx = -10; dx <= 10; dx++) {
     for (let dz = -10; dz <= 10; dz++) {
-      if (octFoot(dx, dz) || !octInside(dx, dz, 10) || dz < -6) {continue}
+      if (octFoot(dx, dz) || !octInside(dx, dz, 10) || dz < -6) {
+        continue
+      }
 
-      if (mod(dx * 3 + dz * 5, 7) !== 0) {continue}
+      if (mod(dx * 3 + dz * 5, 7) !== 0) {
+        continue
+      }
       p.setIfAir(AX + dx, FEET + 3, AZ + dz, light(13))
       p.setIfAir(AX + dx, SPRING + 1, AZ + dz, light(13))
     }
@@ -1368,7 +1439,7 @@ function outdoorLight(p: Plan): void {
     [7, 40],
     [19, 40],
     [10, 32],
-    [16, 42],
+    [16, 42]
   ]) {
     p.setIfAir(c[0], FLOOR + 1, c[1], light(10))
   }
@@ -1431,7 +1502,9 @@ function terraces(p: Plan): void {
     }
 
     for (let x = xa + 1; x <= xb - 1; x++) {
-      if (isPostX(x) || Math.abs(x) < 10) {continue}
+      if (isPostX(x) || Math.abs(x) < 10) {
+        continue
+      }
 
       if (hash(x, 3, 9) % 3 === 0) {
         p.set(x, FEET, HZS + 1, trapdoor(B.SPRUCE_TRAPDOOR, Dir.S, true, false))
@@ -1520,7 +1593,9 @@ function path(p: Plan, x: number, z: number): void {
 }
 
 function lanternPost(p: Plan, x: number, z: number): void {
-  if (!meadowAt(p, x, z)) {return}
+  if (!meadowAt(p, x, z)) {
+    return
+  }
   const t = p.top(x, z)
   p.set(x, t + 1, z, bs(B.SPRUCE_FENCE))
   p.set(x, t + 2, z, bs(B.SPRUCE_FENCE))
@@ -1603,7 +1678,9 @@ function pond(p: Plan): void {
       const wob = 0.12 * Math.sin(x * 0.9 + z * 0.4) + 0.1 * Math.cos(z * 1.3 - x * 0.2)
       const d = Math.sqrt(dx * dx + dz * dz) + wob
 
-      if (d > 1.18 || p.get(x, GROUND, z) === bs(B.DIRT_PATH)) {continue}
+      if (d > 1.18 || p.get(x, GROUND, z) === bs(B.DIRT_PATH)) {
+        continue
+      }
 
       if (d > 1.0) {
         const h = hash(x, z, 31) % 10
@@ -1664,7 +1741,7 @@ const KINDS: TreeKind[] = [
   { log: B.OAK_LOG, leaves: B.AZALEA_LEAVES, accent: B.FLOWERING_AZALEA_LEAVES, trunk: 4, rx: 3.6, ry: 2.3 }, // AZALEA
   { log: B.DARK_OAK_LOG, leaves: B.OAK_LEAVES, accent: null, trunk: 6, rx: 4.2, ry: 2.8 }, // OAK
   { log: B.CHERRY_LOG, leaves: B.CHERRY_LEAVES, accent: null, trunk: 4, rx: 3.4, ry: 2.3 }, // CHERRY
-  { log: B.SPRUCE_LOG, leaves: B.SPRUCE_LEAVES, accent: null, trunk: 11, rx: 3.3, ry: 0 }, // SPRUCE
+  { log: B.SPRUCE_LOG, leaves: B.SPRUCE_LEAVES, accent: null, trunk: 11, rx: 3.3, ry: 0 } // SPRUCE
 ]
 
 function tree(p: Plan, x: number, z: number, k: TreeKind, seed: number): void {
@@ -1722,14 +1799,18 @@ function tree(p: Plan, x: number, z: number, k: TreeKind, seed: number): void {
     for (let ix = Math.floor(cx) - r; ix <= Math.floor(cx) + r; ix++) {
       for (let iz = Math.floor(cz) - r; iz <= Math.floor(cz) + r; iz++) {
         for (let iy = Math.floor(cy) - ry; iy <= Math.floor(cy) + ry; iy++) {
-          if (iy <= base + 1 || iy <= p.top(ix, iz) + 1) {continue}
+          if (iy <= base + 1 || iy <= p.top(ix, iz) + 1) {
+            continue
+          }
           const ex = (ix + 0.5 - cx) / l[3]
           const ey = (iy + 0.5 - cy) / l[4]
           const ez = (iz + 0.5 - cz) / l[3]
           const d = ex * ex + ey * ey + ez * ez
           const jitter = (rnd(ix * 7 + iy, iz * 13 - iy, seed) - 0.5) * (k === KINDS[1] ? 0.25 : 0.55)
 
-          if (d + jitter > 1.0 || !p.isAir(ix, iy, iz)) {continue}
+          if (d + jitter > 1.0 || !p.isAir(ix, iy, iz)) {
+            continue
+          }
           const leaf = k.accent !== null && rnd(ix * 3 + iy, iz + iy * 13, seed + 1) < 0.35 ? k.accent : k.leaves
           p.set(ix, iy, iz, bs(leaf))
         }
@@ -1765,7 +1846,9 @@ function spruce(p: Plan, x: number, z: number, seed: number): void {
       for (let dz = -ri; dz <= ri; dz++) {
         const d = Math.sqrt(dx * dx + dz * dz) + (rnd(x + dx, z + dz + y, seed) - 0.5) * 0.5
 
-        if (d > r || !p.isAir(x + dx, y, z + dz) || y <= p.top(x + dx, z + dz) + 1) {continue}
+        if (d > r || !p.isAir(x + dx, y, z + dz) || y <= p.top(x + dx, z + dz) + 1) {
+          continue
+        }
         p.set(x + dx, y, z + dz, bs(B.SPRUCE_LEAVES))
       }
     }
@@ -1779,7 +1862,12 @@ function litter(p: Plan, x: number, z: number, lr: number, seed: number): void {
     for (let dz = -lr; dz <= lr; dz++) {
       if ((dx !== 0 || dz !== 0) && meadowAt(p, x + dx, z + dz) && rnd(x + dx, z + dz, seed + 7) < 0.4) {
         const t = p.top(x + dx, z + dz)
-        p.set(x + dx, t + 1, z + dz, flowerBed(B.LEAF_LITTER, MC_2D[hash(dx, dz, seed) & 3], 1 + (hash(x + dx, z + dz, seed) % 4)))
+        p.set(
+          x + dx,
+          t + 1,
+          z + dz,
+          flowerBed(B.LEAF_LITTER, MC_2D[hash(dx, dz, seed) & 3], 1 + (hash(x + dx, z + dz, seed) % 4))
+        )
       }
     }
   }
@@ -1789,7 +1877,7 @@ const CAMERA_SPOTS = [
   [27, 42],
   [22, 37],
   [18, 46],
-  [15, 43],
+  [15, 43]
 ]
 
 function trees(p: Plan): void {
@@ -1812,7 +1900,7 @@ function trees(p: Plan): void {
     [42, 12, 0],
     [37, 25, 3],
     [3, 52, 1],
-    [29, -7, 0],
+    [29, -7, 0]
   ]
 
   for (let i = 0; i < spots.length; i++) {
@@ -1854,11 +1942,15 @@ function ring(p: Plan, placed: number[][], inset: number, step: number, phase: n
     jx = Math.max(SITE[0] + 2, Math.min(SITE[3] - 2, jx))
     jz = Math.max(SITE[2] + 2, Math.min(SITE[5] - 2, jz))
 
-    if (flatDistance(jx, jz) < 2.5 && edge(jx, jz) > 4) {continue}
+    if (flatDistance(jx, jz) < 2.5 && edge(jx, jz) > 4) {
+      continue
+    }
     let crowded = false
 
     for (const c of CAMERA_SPOTS) {
-      if (Math.hypot(c[0] - jx, c[1] - jz) < 8) {crowded = true}
+      if (Math.hypot(c[0] - jx, c[1] - jz) < 8) {
+        crowded = true
+      }
     }
 
     for (const o of placed) {
@@ -1869,7 +1961,9 @@ function ring(p: Plan, placed: number[][], inset: number, step: number, phase: n
       }
     }
 
-    if (crowded || !meadowAt(p, jx, jz)) {continue}
+    if (crowded || !meadowAt(p, jx, jz)) {
+      continue
+    }
     const k = mix[(hash(jx, jz, seed + 2) + n++) % mix.length]
     tree(p, jx, jz, k, seed + n)
     placed.push([jx, jz])
@@ -1910,7 +2004,8 @@ function garden(p: Plan): void {
         continue
       }
 
-      const rim = x === x0 + 1 || x === x1 - 1 || z === z0 + 1 || z === z1 - 1 || Math.abs(x - cx) === 1 || Math.abs(z - cz) === 1
+      const rim =
+        x === x0 + 1 || x === x1 - 1 || z === z0 + 1 || z === z1 - 1 || Math.abs(x - cx) === 1 || Math.abs(z - cz) === 1
       p.set(x, GROUND, z, bs(B.GRASS))
       const h = hash(x, z, 61) % 9
 
@@ -2027,7 +2122,9 @@ function foundationPlanting(p: Plan): void {
 function meadow(p: Plan): void {
   for (let x = p.minX; x <= p.maxX; x++) {
     for (let z = p.minZ; z <= p.maxZ; z++) {
-      if (!meadowAt(p, x, z)) {continue}
+      if (!meadowAt(p, x, z)) {
+        continue
+      }
       const t = p.top(x, z)
       const r = rnd(x, z, 51)
       const patch = Math.sin(x * 0.21 + Math.cos(z * 0.17) * 2.0) + Math.cos(z * 0.23 - x * 0.07)
@@ -2065,7 +2162,7 @@ function mod(a: number, n: number): number {
 /** Build the complete studio plan (hall + atrium + dome + landscape) for `cast` agent ids. */
 export function buildStudioPlan(cast: string[]): Plan {
   const p = new Plan(SITE[0], SITE[1], SITE[2], SITE[3], SITE[4], SITE[5], GROUND, y =>
-    y > GROUND ? AIR : y === GROUND ? bs(B.GRASS) : y >= GROUND - 3 ? bs(B.DIRT) : bs(B.STONE),
+    y > GROUND ? AIR : y === GROUND ? bs(B.GRASS) : y >= GROUND - 3 ? bs(B.DIRT) : bs(B.STONE)
   )
 
   ground(p)

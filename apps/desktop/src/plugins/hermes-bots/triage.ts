@@ -80,11 +80,7 @@ function attentionFlag(bot: RosterRow, signals: TriageSignals) {
 function botKeys(bot: RosterRow, signals: TriageSignals): string[] {
   const active = signals.activeConnectionId || 'local'
 
-  return [
-    botSelectionKey(bot) || '',
-    botRosterKey(bot),
-    `${bot?.connectionId || active}::${bot?.name || 'default'}`
-  ]
+  return [botSelectionKey(bot) || '', botRosterKey(bot), `${bot?.connectionId || active}::${bot?.name || 'default'}`]
 }
 
 export function deriveTriageItems(bots: readonly RosterRow[], signals: TriageSignals): TriageItem[] {

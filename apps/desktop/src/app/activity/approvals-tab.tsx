@@ -16,11 +16,7 @@ import {
 import { recordApprovalGranted } from '@/store/bot-rapport'
 import { $gateway } from '@/store/gateway'
 import { notifyError } from '@/store/notifications'
-import {
-  $approvalQueues,
-  answerApproval,
-  type ApprovalRequest
-} from '@/store/prompts'
+import { $approvalQueues, answerApproval, type ApprovalRequest } from '@/store/prompts'
 
 // Approvals tab — everything waiting on the user, with explicit buttons.
 // The command is shown in full; Approve and Deny are unambiguous. Follows
@@ -50,11 +46,13 @@ function ApprovalCard({ item }: { item: AttentionItem }) {
   // directly. Only approval-kind items carry an answerable request.
   const request: ApprovalRequest | null =
     item.kind === 'approval' && sessionId
-      ? (approvalQueues[sessionId] ?? []).find(r => r.requestId && item.id.endsWith(r.requestId)) ?? null
+      ? ((approvalQueues[sessionId] ?? []).find(r => r.requestId && item.id.endsWith(r.requestId)) ?? null)
       : null
 
   const answer = async (choice: 'once' | 'deny') => {
-    if (!request || busy) {return}
+    if (!request || busy) {
+      return
+    }
     setBusy(choice)
 
     try {
@@ -78,23 +76,18 @@ function ApprovalCard({ item }: { item: AttentionItem }) {
   }
 
   const jumpToSession = () => {
-    if (!sessionId) {return}
+    if (!sessionId) {
+      return
+    }
     requestAttentionReveal(sessionId)
   }
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border border-(--ui-edge-border)',
-        'bg-(--ui-control-background) p-3'
-      )}
-    >
+    <div className={cn('rounded-xl border border-(--ui-edge-border)', 'bg-(--ui-control-background) p-3')}>
       <div className="flex items-start gap-2.5">
         <Codicon className={cn('mt-0.5 shrink-0 text-[1rem]', meta.tone)} name={meta.icon} />
         <div className="min-w-0 flex-1">
-          <p className="break-words font-mono text-[0.75rem] leading-relaxed text-foreground">
-            {item.title}
-          </p>
+          <p className="break-words font-mono text-[0.75rem] leading-relaxed text-foreground">{item.title}</p>
           {item.detail && (
             <p className="mt-1 break-words text-[0.6875rem] leading-relaxed text-(--ui-text-secondary)">
               {item.detail}

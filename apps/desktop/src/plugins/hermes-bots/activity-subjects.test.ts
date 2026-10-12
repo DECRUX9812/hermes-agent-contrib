@@ -295,10 +295,7 @@ describe('useActivitySubjects', () => {
         [KEY_1]: { at: Date.now(), source: 'model', subject: 'Ship the plugin' }
       })),
       set: vi.fn(
-        async (
-          _key: string,
-          _entries: Record<string, { at: number; source: string; subject: string }>
-        ) => undefined
+        async (_key: string, _entries: Record<string, { at: number; source: string; subject: string }>) => undefined
       )
     }
 

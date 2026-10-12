@@ -1,4 +1,3 @@
-
 import { routeSessionId } from '@/app/routes'
 
 import { registryConnectionKind } from './connection-registry-state'

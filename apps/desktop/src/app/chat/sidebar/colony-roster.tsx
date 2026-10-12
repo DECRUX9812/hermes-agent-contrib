@@ -18,7 +18,9 @@ import { BotCard } from './bot-card'
 // not a dashboard.
 
 function statusDotClass(bot: ColonyBot, isActive: boolean): string {
-  if (!isActive) {return 'bg-(--ui-text-quaternary)'}
+  if (!isActive) {
+    return 'bg-(--ui-text-quaternary)'
+  }
 
   // Active bot's dot mirrors the live emotion.
   return 'bg-emerald-400'
@@ -59,10 +61,14 @@ export function ColonyRoster() {
   const [cardFor, setCardFor] = useState<string | null>(null)
   const [switching, setSwitching] = useState<string | null>(null)
 
-  if (bots.length <= 1) {return null} // Solo bot — no roster needed.
+  if (bots.length <= 1) {
+    return null
+  } // Solo bot — no roster needed.
 
   const onSelect = async (bot: ColonyBot) => {
-    if (bot.active || switching) {return}
+    if (bot.active || switching) {
+      return
+    }
     setSwitching(bot.profileKey)
 
     try {

@@ -144,7 +144,18 @@ export function TriageStrip({
     }
 
     return deriveTriageItems(bots, signals)
-  }, [activeConnectionId, attention, bots, cachedJobs, dotById, jobs, needsYou, relayInflight, statusItems, storedByRuntime])
+  }, [
+    activeConnectionId,
+    attention,
+    bots,
+    cachedJobs,
+    dotById,
+    jobs,
+    needsYou,
+    relayInflight,
+    statusItems,
+    storedByRuntime
+  ])
 
   if (!items.length) {
     return null
@@ -197,7 +208,9 @@ export function TriageStrip({
                   />
                   <span className="truncate">{triageLabel(b, item, name)}</span>
                 </span>
-                <span className="block truncate text-[0.6875rem] text-(--ui-text-tertiary)">{triageMeta(item, name)}</span>
+                <span className="block truncate text-[0.6875rem] text-(--ui-text-tertiary)">
+                  {triageMeta(item, name)}
+                </span>
               </span>
               <span className="shrink-0 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary) group-hover/triage:border-(--ui-stroke-primary) group-hover/triage:text-foreground">
                 {TRIAGE_ACTION[item.kind](b)}

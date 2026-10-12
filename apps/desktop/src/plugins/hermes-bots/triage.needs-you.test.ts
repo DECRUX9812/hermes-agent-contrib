@@ -21,7 +21,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { RosterRow, RoutineJob } from './types'
 
 vi.mock('@hermes/plugin-sdk', () => ({
-  atom: <T,>(initial: T) => {
+  atom: <T>(initial: T) => {
     let value = initial
 
     return {
@@ -144,13 +144,16 @@ describe('deriveTriageItems — universal Needs You categories', () => {
       'local::alpha': [entry({ category: 'artifact-review', id: 'art:1', ref: 'file:///tmp/report.md' })]
     })
 
-    const items = deriveTriageItems([bot('alpha', { canonical_session: { id: 'stored-alpha' } } as Partial<RosterRow>)], {
-      ...quiet,
-      dotById,
-      needsYou,
-      statusItems,
-      storedByRuntime: { 'rt-alpha': 'stored-alpha' }
-    })
+    const items = deriveTriageItems(
+      [bot('alpha', { canonical_session: { id: 'stored-alpha' } } as Partial<RosterRow>)],
+      {
+        ...quiet,
+        dotById,
+        needsYou,
+        statusItems,
+        storedByRuntime: { 'rt-alpha': 'stored-alpha' }
+      }
+    )
 
     expect(items.map(item => ({ kind: item.kind, ref: item.ref }))).toEqual([
       { kind: 'artifact-review', ref: 'file:///tmp/report.md' }
@@ -228,9 +231,9 @@ describe('deriveTriageItems — universal Needs You categories', () => {
     expect(deriveTriageItems([working], signals(undefined))).toEqual([])
     expect(deriveTriageItems([working], signals({}))).toEqual([])
     // …and only the recorded category makes it one.
-    expect(deriveTriageItems([working], signals({ 'local::busy': [entry({ bot: 'local::busy' })] })).map(item => item.kind)).toEqual([
-      'handoff-failed'
-    ])
+    expect(
+      deriveTriageItems([working], signals({ 'local::busy': [entry({ bot: 'local::busy' })] })).map(item => item.kind)
+    ).toEqual(['handoff-failed'])
   })
 
   it('drops malformed or unknown index entries without breaking hydration of the rest', () => {

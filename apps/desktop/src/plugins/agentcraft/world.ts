@@ -6,7 +6,7 @@
 
 import * as THREE from 'three'
 
-import type { Lamp} from './blocks';
+import type { Lamp } from './blocks'
 import { B, bsId, bulb, isSolid as isBlocking, lamp } from './blocks'
 import { AX, AZ, buildStudioPlan, FEET } from './hq-builder'
 import { computeLight } from './light'
@@ -38,7 +38,7 @@ export const TIME_PRESETS: Record<string, TimePreset> = {
     sunDir: [0.5, 1.0, 0.3],
     sunColor: 0xfff4e0,
     ambient: 0.18,
-    stars: false,
+    stars: false
   },
   golden: {
     name: 'golden',
@@ -50,7 +50,7 @@ export const TIME_PRESETS: Record<string, TimePreset> = {
     sunDir: [-0.6, 0.35, 0.55],
     sunColor: 0xffd9a0,
     ambient: 0.26,
-    stars: false,
+    stars: false
   },
   night: {
     name: 'night',
@@ -62,8 +62,8 @@ export const TIME_PRESETS: Record<string, TimePreset> = {
     sunDir: [0.3, 0.9, -0.4],
     sunColor: 0x9fb4e0,
     ambient: 0.1,
-    stars: true,
-  },
+    stars: true
+  }
 }
 
 const VERT = /* glsl */ `
@@ -182,11 +182,21 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
     uFogFar: { value: 160 },
     uAlpha: { value: 1 },
     uCut: { value: 0 },
-    uAmbient: { value: 0.16 },
+    uAmbient: { value: 0.16 }
   }
 
   const makeMat = (alpha: number, cut: number, emissive = false) => {
-    const u = { ...uniforms, uMap: uniforms.uMap, uSky: uniforms.uSky, uSkyTint: uniforms.uSkyTint, uLampTint: uniforms.uLampTint, uFogColor: uniforms.uFogColor, uFogNear: uniforms.uFogNear, uFogFar: uniforms.uFogFar, uAmbient: uniforms.uAmbient }
+    const u = {
+      ...uniforms,
+      uMap: uniforms.uMap,
+      uSky: uniforms.uSky,
+      uSkyTint: uniforms.uSkyTint,
+      uLampTint: uniforms.uLampTint,
+      uFogColor: uniforms.uFogColor,
+      uFogNear: uniforms.uFogNear,
+      uFogFar: uniforms.uFogFar,
+      uAmbient: uniforms.uAmbient
+    }
     u.uAlpha = { value: alpha }
     u.uCut = { value: cut }
 
@@ -196,7 +206,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
       fragmentShader: emissive ? FRAG_EMISSIVE : FRAG,
       transparent: alpha < 1,
       depthWrite: alpha >= 1,
-      side: THREE.FrontSide,
+      side: THREE.FrontSide
     })
 
     return mat
@@ -209,11 +219,13 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
     { data: mesh.opaque, idx: idxO, mat: makeMat(1, 0) },
     { data: mesh.cutout, idx: idxC, mat: makeMat(1, 0.4) },
     { data: mesh.emissive, idx: idxE, mat: makeMat(1, 0.4, true) },
-    { data: mesh.translucent, idx: idxT, mat: makeMat(0.8, 0.02) },
+    { data: mesh.translucent, idx: idxT, mat: makeMat(0.8, 0.02) }
   ]
 
   for (const l of layers) {
-    if (l.idx.length === 0) {continue}
+    if (l.idx.length === 0) {
+      continue
+    }
     const m = new THREE.Mesh(buildGeometry(l.data, l.idx), l.mat)
     m.frustumCulled = false
     m.matrixAutoUpdate = false
@@ -261,8 +273,11 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
 
   // merge bulbs: (HX, FEET+3, -1) and (HX, FEET+3, +1); podium bulbs: (AX+8, FEET+5, AZ-1..+1)
   for (const [key, cell] of mesh.bulbs) {
-    if (cell.x === 24 && (cell.z === -1 || cell.z === 1)) {bulbCells.merge.push(key)}
-    else {bulbCells.podium.push(key)}
+    if (cell.x === 24 && (cell.z === -1 || cell.z === 1)) {
+      bulbCells.merge.push(key)
+    } else {
+      bulbCells.podium.push(key)
+    }
 
     rebuildLamp(key, cell.x, cell.y, cell.z, plan.cells[key])
   }
@@ -296,7 +311,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
     uniforms: {
       uTop: { value: new THREE.Color(0x88b8e0) },
       uBottom: { value: new THREE.Color(0xf6d9a8) },
-      uStars: { value: 0 },
+      uStars: { value: 0 }
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;
@@ -324,7 +339,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
         }
         gl_FragColor = vec4(col, 1.0);
       }
-    `,
+    `
   })
 
   const skyMesh = new THREE.Mesh(skyGeo, skyMat)
@@ -364,7 +379,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
     transparent: true,
     depthWrite: false,
     fog: false,
-    side: THREE.DoubleSide,
+    side: THREE.DoubleSide
   })
 
   const cloudMesh = new THREE.Mesh(new THREE.PlaneGeometry(560, 560), cloudMat)
@@ -403,7 +418,7 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
   const screens = {
     monitorAnchors,
     taskWall: { x: tw.x, y: FEET + 3.0, z: AZ + 0.5, w: 7, h: 4 },
-    hologram: { x: AX + 0.5, y: FEET + 3.6, z: AZ + 0.5 },
+    hologram: { x: AX + 0.5, y: FEET + 3.6, z: AZ + 0.5 }
   }
 
   return {
@@ -424,20 +439,25 @@ export async function buildWorld(cast: string[]): Promise<WorldBuild> {
           o.geometry.dispose()
           const m = o.material
 
-          if (Array.isArray(m)) {m.forEach(mm => mm.dispose())}
-          else {m?.dispose()}
+          if (Array.isArray(m)) {
+            m.forEach(mm => mm.dispose())
+          } else {
+            m?.dispose()
+          }
         }
       })
       cloudTex?.dispose()
       atlasTex.dispose()
-    },
+    }
   }
 }
 
 /** Walkable-cell grid for agent pathing (FEET level, interior + outdoors). */
 export function walkableGrid(plan: Plan): (x: number, z: number) => boolean {
   return (x, z) => {
-    if (!plan.inXZ(x, z)) {return false}
+    if (!plan.inXZ(x, z)) {
+      return false
+    }
     const feet = plan.get(x, FEET, z)
     const head = plan.get(x, FEET + 1, z)
     const below = plan.get(x, FEET - 1, z)

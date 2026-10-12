@@ -22,9 +22,7 @@ function recordFromUnknown(value: unknown): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(value)
 
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : null
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null
   } catch {
     return null
   }

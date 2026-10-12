@@ -139,8 +139,7 @@ const LEAD_FILLER =
  *  Only consulted once a pleasantry has actually been stripped: a request
  *  that opens with its own words ("the plugin catalog needs an entry") keeps
  *  them, and nothing is ever stripped to nothing. */
-const STRANDED_HEAD =
-  /^(?:to|a|an|the|that|of|in|on|at|for|with|from|by|and|or|but)\b[\s,.:;-]+/i
+const STRANDED_HEAD = /^(?:to|a|an|the|that|of|in|on|at|for|with|from|by|and|or|but)\b[\s,.:;-]+/i
 
 /** Trailing courtesies that add nothing to a subject. Each is a whole word
  *  at the end of the message, so the tail strip is boundary-anchored too. */
@@ -258,7 +257,10 @@ function firstSentence(text: string): string {
       .map(line => line.replace(/^\s*(?:[#>*-]|\d+\.)\s*/, '').trim())
       .find(Boolean) ?? ''
 
-  const flat = firstLine.replace(/[*_`]+/g, '').replace(/\s+/g, ' ').trim()
+  const flat = firstLine
+    .replace(/[*_`]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 
   const end = flat.search(/[.!?](\s|$)/)
 
