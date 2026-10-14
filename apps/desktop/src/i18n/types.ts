@@ -4745,6 +4745,11 @@ export interface Translations extends NoticeTranslations {
       command: string
       commandDetails: string
       moreOptions: string
+      allowOnce: string
+      alwaysAllowHere: string
+      deny: string
+      cardTitle: string
+      cardDetailsTitle: string
       allowSession: string
       alwaysAllowMenu: string
       jumpToApproval: string

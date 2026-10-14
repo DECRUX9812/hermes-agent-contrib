@@ -3,7 +3,6 @@ import { useStore } from '@nanostores/react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { DecodeText } from '@/components/ui/decode-text'
 import { $decideExit, $introStartExit, $introView } from '@/fork/store/onboarding-intro'
 import { $onboardingDecided } from '@/fork/store/onboarding-presence'
 import { prefersReducedMotion } from '@/hooks/use-media-query'
@@ -13,10 +12,6 @@ import { $desktopBoot, type DesktopBootState } from '@/store/boot'
 import { $gatewaySwitching } from '@/store/gateway-switch'
 import { $gatewayState } from '@/store/session'
 import { isMainWindow } from '@/store/windows'
-
-// Decode mechanics live in the shared <DecodeText> primitive
-// (components/ui/decode-text.tsx). "CONN" stays legible via prefix={4}.
-const TEXT = 'CONNECTING'
 
 // Exit choreography (ms): text fades down + out, hold, then the overlay fades.
 const TEXT_OUT_MS = 360
@@ -59,7 +54,6 @@ function isInitialConnect(
 }
 
 interface ConnectingOverlayViewProps {
-  decoding: boolean
   onExit: (() => void) | null
   phase: Phase
 }
@@ -70,8 +64,8 @@ function SlowSetupStart({ onExit }: { onExit: () => void }) {
 
   return (
     <div className="grid max-w-xs justify-items-center gap-3 text-center" role="status">
-      <div className="text-sm font-medium text-foreground">{t.onboarding.setupSlowTitle}</div>
-      <div className="text-xs text-muted-foreground">{t.onboarding.setupSlowBody}</div>
+      <div className="text-ui-sm font-medium text-fg">{t.onboarding.setupSlowTitle}</div>
+      <div className="text-ui-xs text-fg-muted">{t.onboarding.setupSlowBody}</div>
       <Button onClick={onExit} size="sm" type="button" variant="secondary">
         {t.onboarding.continueWithoutSetup}
       </Button>
@@ -79,14 +73,33 @@ function SlowSetupStart({ onExit }: { onExit: () => void }) {
   )
 }
 
-function ConnectingOverlayView({ decoding, onExit, phase }: ConnectingOverlayViewProps) {
-  const leaving = phase !== 'live'
+// Calm centred boot status: the brand mark, one line, and a thin
+// indeterminate bar (transform-only travel via `.progress-slide`).
+function ConnectingStatus() {
+  const { t } = useI18n()
+
+  return (
+    <div
+      className="grid w-48 justify-items-center gap-3 text-center"
+      data-testid="gateway-connecting-status"
+      role="status"
+    >
+      <img alt="" className="size-10 rounded-card" src={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
+      <p className="text-ui-sm text-fg-muted">{t.onboarding.connecting}</p>
+      <div className="h-0.5 w-full overflow-hidden rounded-pill bg-line">
+        <div className="progress-slide h-full rounded-pill bg-brand/60" />
+      </div>
+    </div>
+  )
+}
+
+function ConnectingOverlayView({ onExit, phase }: ConnectingOverlayViewProps) {
   const overlayHidden = phase === 'overlay-out' || phase === 'gone'
 
   return (
     <div
       className={cn(
-        'fixed inset-0 z-(--z-connecting) grid place-items-center bg-(--ui-chat-surface-background) transition-opacity duration-500 ease-out',
+        'fixed inset-0 z-(--z-connecting) grid place-items-center bg-surface transition-opacity duration-(--dur-slow) ease-out-quint',
         overlayHidden ? 'pointer-events-none opacity-0' : 'opacity-100'
       )}
       // Masks the whole app while booting — must stay filled under window
@@ -94,21 +107,7 @@ function ConnectingOverlayView({ decoding, onExit, phase }: ConnectingOverlayVie
       // in styles.css.
       data-glass-opaque=""
     >
-      {onExit ? (
-        <SlowSetupStart onExit={onExit} />
-      ) : (
-        <DecodeText
-          active={decoding}
-          className={cn(
-            'pl-[0.4em] text-(--theme-primary) transition duration-300 ease-out',
-            leaving ? 'translate-y-2 opacity-0 saturate-0' : 'translate-y-0 opacity-100 saturate-100'
-          )}
-          cursor
-          loop
-          prefix={4}
-          text={TEXT}
-        />
-      )}
+      {onExit ? <SlowSetupStart onExit={onExit} /> : <ConnectingStatus />}
     </div>
   )
 }
@@ -234,6 +233,6 @@ export function GatewayConnectingOverlay() {
   }
 
   return (
-    <ConnectingOverlayView decoding={phase === 'live' && (previewing || connecting)} onExit={onExit} phase={phase} />
+    <ConnectingOverlayView onExit={onExit} phase={phase} />
   )
 }

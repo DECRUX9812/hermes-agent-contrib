@@ -8,6 +8,7 @@ export const jaOnboarding: TranslationOverrides['onboarding'] = {
   setupSlowTitle: 'セットアップにいつもより時間がかかっています。',
   setupSlowBody: 'Hermes はバックグラウンドで起動を続けています。',
   continueWithoutSetup: 'セットアップせずに続行',
+  checkingSetup: 'セットアップを確認しています…',
   lookingUpProviders: 'プロバイダーを検索中...',
   collapse: '折りたたむ',
   otherProviders: 'その他のプロバイダー',
