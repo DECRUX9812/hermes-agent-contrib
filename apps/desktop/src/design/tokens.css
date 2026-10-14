@@ -170,6 +170,59 @@
   .animate-enter {
     animation: ds-enter var(--dur-base) var(--ease-out-quint) both;
   }
+
+  /* Dialog + overlay enter: opacity (+ scale 0.98→1 for the content) over
+     --dur-fast. The content is centred with translate utilities (the
+     `translate` property), so the keyframe's `transform: scale()` composes
+     instead of fighting the centring. */
+  .dialog-enter {
+    animation: ds-dialog-in var(--dur-fast) var(--ease-out-quint) both;
+  }
+
+  .dialog-overlay-enter {
+    animation: ds-fade-in var(--dur-fast) var(--ease-out-quint) both;
+  }
+
+  /* Toast enter: slide in from the bottom right by 8px plus a fade over
+     --dur-base. Fill is backwards (not both): once the enter finishes the
+     card's own styles — including the swipe stack's inline transforms — win. */
+  .toast-enter {
+    animation: ds-toast-in var(--dur-base) var(--ease-out-quint) backwards;
+  }
+}
+
+@keyframes ds-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ds-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ds-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(0.5rem, 0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
 }
 
 @keyframes ds-skeleton {
