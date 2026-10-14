@@ -100,6 +100,7 @@ import {
   updateGroupChat
 } from './group-chat'
 import { groupWorkspaceOwnerKey } from './group-membership'
+import { startGroupToolTap } from './group-room-tool-cards'
 import { bindGroupReadTracking } from './group-unread'
 import { isBotHidden } from './hidden-bots'
 import { HIRE_LOCALES } from './hire-i18n'
@@ -826,6 +827,9 @@ export default {
             })
           : null
 
+      // Tool events land before the room opens, so the tap lives with the plugin, not the room.
+      const stopGroupToolTap = typeof host.onEvent === 'function' ? startGroupToolTap() : null
+
       $botsPaneVisible.set(Boolean($sidebarVisible.get()))
       $botChatFocused.set(sessionOwnsWorkspace())
       // A persisted layout can boot directly into Bot Mode. Reconcile now,
@@ -841,6 +845,7 @@ export default {
           stopGroupSync()
           stopFocusSync?.()
           stopReclaimSync?.()
+          stopGroupToolTap?.()
         })
       }
     } else {

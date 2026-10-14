@@ -156,6 +156,7 @@ export function RoomShortcuts({ commands, firstTag, onHelp, onInsert, thread }: 
 export interface ThreadTailProps {
   /** Room-wide bot metadata for the working-row faces. */
   allMeta: Record<string, BotMeta>
+  clarifies: readonly GroupRoomPrompt[]
   commands: RoomCommands
   escalations: readonly RoomEscalation[]
   live: ReadonlyMap<string, ReadonlySet<string>>
@@ -172,6 +173,7 @@ export interface ThreadTailProps {
  *  tool), and anything stuck on it, with the fixes. */
 export function ThreadTail({
   allMeta,
+  clarifies,
   commands,
   escalations,
   live,
@@ -186,6 +188,7 @@ export function ThreadTail({
     <>
       <ActivityLine
         allMeta={allMeta}
+        approvals={clarifies.filter(entry => entry.kind === 'approval' && (entry.thread || 'legacy') === thread)}
         members={members}
         nameOf={nameOf}
         names={[...(live.get(thread) ?? [])]}

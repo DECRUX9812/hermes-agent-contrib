@@ -1220,6 +1220,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       children.push(
         <ThreadTail
           allMeta={allMeta}
+          clarifies={roomClarifies}
           commands={commands}
           escalations={escalations}
           key={`tail:${id}`}
