@@ -1,5 +1,5 @@
 import { Button, cn, Codicon, DisclosureCaret, GlyphSpinner, PanelEmpty, RowButton } from '@hermes/plugin-sdk'
-import type { ReactNode, RefObject } from 'react'
+import { Fragment, type ReactNode, type RefObject } from 'react'
 
 import { avatarColor, blobShapeString, BotFace } from './avatar'
 import { type BotStarter, QUICK_STARTERS } from './bot-starters'
@@ -199,7 +199,10 @@ export function renderRosterContent({
                   sortedGroupRows.length ? renderGroupChatSection() : null,
                   ...gatewaySections.sections.map(renderGatewaySection)
                 ].filter(Boolean)
-              : renderUserSections(rosterRows)}
+              : [
+                  sortedGroupRows.length ? renderGroupChatSection() : null,
+                  <Fragment key="bots">{renderUserSections(rosterRows.filter(row => row.kind !== 'group'))}</Fragment>
+                ]}
             <RosterMailboxSection
               collapsed={mailboxCollapsed}
               notes={mailboxNotes}
