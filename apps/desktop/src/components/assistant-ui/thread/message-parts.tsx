@@ -7,7 +7,7 @@ import {
   useMessagePartText
 } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, type FC, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ComponentProps, type FC, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useSessionView } from '@/app/chat/session-view'
 import { CatalogInstallTool } from '@/components/assistant-ui/catalog-install-tool'
@@ -20,6 +20,7 @@ import { setThemeCall } from '@/components/assistant-ui/theme-picker/args'
 import { ThemeTool } from '@/components/assistant-ui/theme-picker/theme-tool'
 import { AgentDeliveryNotice, deliveryTargetFromCommand } from '@/components/assistant-ui/thread/agent-delivery'
 import { TimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
+import { coveredByToolCards, ToolCardStackContext } from '@/components/assistant-ui/tool-cards'
 import { DelegateTool } from '@/components/assistant-ui/tool/delegate'
 import { ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
 import { parseMaybeObject, toolCallFailed } from '@/components/assistant-ui/tool/fallback-model'
@@ -164,9 +165,14 @@ const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
 
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   const showToolActivity = useStore($showToolActivity)
+  const inToolCardStack = useContext(ToolCardStackContext)
 
   // todo parts are hoisted to a dedicated panel above the message content.
   if (isTodoToolName(props.toolName)) {
+    return null
+  }
+
+  if (inToolCardStack && coveredByToolCards(props)) {
     return null
   }
 

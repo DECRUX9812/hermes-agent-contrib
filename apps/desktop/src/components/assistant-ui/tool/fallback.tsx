@@ -48,11 +48,13 @@ import { AlertCircle, CheckCircle2 } from '@/lib/icons'
 import { toolResultRecord } from '@/lib/tool-result-metadata'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
+import { useStoresSelector } from '@/lib/use-session-slice'
 import { recordPreviewArtifact } from '@/store/preview-status'
 import { sessionApprovalRequest } from '@/store/prompts'
 import { $showToolActivity } from '@/store/tool-activity'
 import { $toolRowDismissed, dismissToolRow } from '@/store/tool-dismiss'
 import { $toolProgressFor, formatToolProgress } from '@/store/tool-progress'
+import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
 import {
   $anyToolDisclosureOpen,
   $hideCodeDiffs,
@@ -62,6 +64,7 @@ import {
 } from '@/store/tool-view'
 
 import { isApprovalActivity, isCurrentTurnMessage } from './approval-activity'
+import { BotToolCards } from './bot-tool-cards'
 import {
   buildToolView,
   clampForDisplay,
@@ -1093,6 +1096,15 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   startIndex
 }) => {
   const showToolActivity = useStore($showToolActivity)
+  const sessionId = useStore(useSessionView().$runtimeId)
+
+  // A Bot Chat's transcript renders its tool runs as cards; every other
+  // session keeps the answer-only passthrough below. The same three-store
+  // resolution the composer uses — the scope set records the answer, and
+  // resolving this runtime id to its stored id reads the other two.
+  const botChat = useStoresSelector([$botChatSessionIds, $sessionStates, $sessionTiles], () =>
+    isBotChatSession(sessionId)
+  )
 
   // Joined rather than returned as an array: assistant-ui compares selector
   // results with `Object.is` and re-runs them on every store update, so a
@@ -1106,6 +1118,26 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
 
   const items = useMemo(() => splitRunItems(toolNameKey.split('\u0000')), [toolNameKey])
   const rows = Children.toArray(children)
+
+  if (botChat) {
+    return (
+      <ToolEmbedContext.Provider value={false}>
+        {items.map(item =>
+          item.kind === 'card' ? (
+            <Fragment key={`card:${item.index}`}>{rows[item.index]}</Fragment>
+          ) : (
+            <BotToolCards
+              endIndex={startIndex + item.end}
+              key={`run:${item.start}`}
+              startIndex={startIndex + item.start}
+            >
+              {rows.slice(item.start, item.end + 1)}
+            </BotToolCards>
+          )
+        )}
+      </ToolEmbedContext.Provider>
+    )
+  }
 
   // The run scaffold ("Explored N files") is part of the tool feed and follows
   // display.tool_progress. Children still mount so clarify, diffs, and failed
