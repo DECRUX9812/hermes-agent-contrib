@@ -7,8 +7,8 @@ export function StatusRow({ icon, text, tone }: { icon?: React.ReactNode; text: 
   return (
     <div
       className={cn(
-        'flex items-center justify-center gap-2 px-2 py-6 text-xs',
-        tone === 'error' ? 'text-(--ui-red)' : 'text-muted-foreground'
+        'flex items-center justify-center gap-2 px-2 py-6 text-ui-sm',
+        tone === 'error' ? 'text-danger' : 'text-fg-muted'
       )}
     >
       {icon}

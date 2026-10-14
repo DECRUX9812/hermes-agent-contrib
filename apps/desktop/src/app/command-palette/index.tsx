@@ -4,15 +4,7 @@ import { Dialog as DialogPrimitive } from 'radix-ui'
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
-import {
-  HUD_HEADING,
-  HUD_ITEM,
-  HUD_NOTE,
-  HUD_NOTE_VARIANT,
-  HUD_POSITION,
-  HUD_SURFACE,
-  HUD_TEXT
-} from '@/app/floating-hud'
+import { HUD_NOTE, HUD_NOTE_VARIANT } from '@/app/floating-hud'
 import { SESSION_IMPORT_ROUTE } from '@/app/routes'
 import { leaveIntro } from '@/components/onboarding/first-run/intro'
 import { codiconIcon } from '@/components/ui/codicon'
@@ -106,6 +98,7 @@ import { isUserTheme, resolveTheme } from '@/themes/user-themes'
 import { buildSessionByAnyId, resolvePinnedSessions } from '../chat/sidebar/session-index'
 import { openSessionFromPicker, openSessionIntentFromModifiers } from '../open-session'
 import {
+  ACTIVITY_ROUTE,
   AGENTS_ROUTE,
   ARTIFACTS_ROUTE,
   CAPABILITIES_ROUTE,
@@ -193,10 +186,10 @@ const PaletteGroups = memo(function PaletteGroups({
       {/* Filtering happens in rankGroups, so cmdk's own CommandEmpty
           (keyed to its internal filter count) would never fire. */}
       {deferred.length === 0 && !pending && (
-        <div className="py-6 text-center text-sm text-muted-foreground">{noResultsLabel}</div>
+        <div className="py-6 text-center text-ui-sm text-fg-muted">{noResultsLabel}</div>
       )}
       {deferred.map((group, index) => (
-        <CommandGroup className={HUD_HEADING} heading={group.heading} key={group.heading ?? `palette-group-${index}`}>
+        <CommandGroup heading={group.heading} key={group.heading ?? `palette-group-${index}`}>
           {group.items.map(item => (
             <PaletteRow
               bindings={bindings}
@@ -241,13 +234,12 @@ const PaletteRow = memo(function PaletteRow({
 
   return (
     <CommandItem
-      className={cn(HUD_ITEM, HUD_TEXT)}
       keywords={item.keywords}
       onMouseDown={onSelectMods}
       onSelect={() => onSelectItem(item)}
       value={paletteValue(item)}
     >
-      <Icon className="size-3.5 shrink-0 text-muted-foreground" />
+      <Icon className="size-3.5 shrink-0 text-fg-muted" />
       <span className={cn('truncate', modPreview && 'text-muted-foreground/80')}>
         {modPreview ? (
           item.modLabel
@@ -784,6 +776,13 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             id: 'nav-settings',
             label: cc.nav.settings.title,
             run: go(SETTINGS_ROUTE)
+          },
+          {
+            action: 'nav.activity',
+            icon: Activity,
+            id: 'nav-activity',
+            label: t.sidebar.nav.activity,
+            run: go(ACTIVITY_ROUTE)
           },
           {
             action: 'nav.capabilities',
@@ -1535,9 +1534,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
       <DialogPrimitive.Content
         aria-describedby={undefined}
         className={cn(
-          HUD_POSITION,
-          HUD_SURFACE,
-          'z-(--z-over-modal-content) w-[min(34rem,calc(100vw-2rem))] overflow-hidden duration-150 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-2 data-[state=open]:zoom-in-95'
+          'fixed left-1/2 top-[12vh] z-(--z-over-modal-content) w-[min(640px,92vw)] -translate-x-1/2 overflow-hidden rounded-dialog border border-line bg-surface-raised shadow-e3 [animation-timing-function:var(--ease-out-quint)] [-webkit-app-region:no-drag] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=closed]:[animation-duration:var(--dur-instant)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-[0.98] data-[state=open]:[animation-duration:var(--dur-fast)]'
         )}
         // The close animation finishing is what retires this whole subtree —
         // the CSS owns the duration, not a hardcoded timer. Guarded on the
@@ -1565,7 +1562,6 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             </button>
           )}
           <CommandInput
-            className={HUD_TEXT}
             onKeyDown={event => {
               // Capture modifiers before cmdk's Enter fires onSelect (which
               // swipes the inviting MouseEvent and hands us nothing).
@@ -1591,7 +1587,7 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             right={page === 'pets' ? <PetInlineToggle /> : undefined}
             value={search}
           />
-          <CommandList className="dt-portal-scrollbar max-h-[min(20rem,56vh)]">
+          <CommandList className="dt-portal-scrollbar h-[min(22rem,56vh)]">
             {/* Server-driven pages render their own list; the rest show groups. */}
             {page === 'pets' ? (
               <PetPalettePage

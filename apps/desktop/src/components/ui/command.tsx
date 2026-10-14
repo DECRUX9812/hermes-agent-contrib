@@ -64,11 +64,11 @@ function CommandInput({ className, right, ...props }: CommandInputProps) {
   }
 
   return (
-    <div className="flex h-11 items-center gap-2 border-b border-border px-3" data-slot="command-input-wrapper">
-      <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
+    <div className="flex h-12 items-center gap-2 border-b border-line px-4" data-slot="command-input-wrapper">
+      <SearchIcon className="size-4 shrink-0 text-fg-muted" />
       <CommandPrimitive.Input
         className={cn(
-          'flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50',
+          'flex h-full w-full bg-transparent text-ui-md text-fg outline-none placeholder:text-fg-subtle disabled:cursor-not-allowed disabled:opacity-50',
           className
         )}
         data-slot="command-input"
@@ -128,7 +128,7 @@ function CommandGroup({ className, ...props }: React.ComponentProps<typeof Comma
         variant === 'menu'
           ? // menuLabelClass, spelled out so Tailwind can see it.
             'p-0 **:[[cmdk-group-heading]]:bg-(--ui-bg-elevated) **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-(--ui-text-tertiary)'
-          : 'p-1 **:[[cmdk-group-heading]]:bg-popover **:[[cmdk-group-heading]]:px-2 **:[[cmdk-group-heading]]:py-1.5 **:[[cmdk-group-heading]]:text-xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:text-muted-foreground',
+          : 'p-1 **:[[cmdk-group-heading]]:bg-surface-raised **:[[cmdk-group-heading]]:px-3 **:[[cmdk-group-heading]]:pt-3 **:[[cmdk-group-heading]]:pb-1 **:[[cmdk-group-heading]]:text-ui-2xs **:[[cmdk-group-heading]]:font-medium **:[[cmdk-group-heading]]:uppercase **:[[cmdk-group-heading]]:tracking-wide **:[[cmdk-group-heading]]:text-fg-subtle',
         className
       )}
       data-slot="command-group"
@@ -160,7 +160,7 @@ function CommandItem({ className, ...props }: React.ComponentProps<typeof Comman
               menuItemClass,
               'cursor-pointer data-[selected=true]:bg-(--ui-control-active-background) data-[selected=true]:text-foreground'
             )
-          : 'relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground',
+          : 'relative mx-1.5 flex h-(--row-h) cursor-default select-none items-center gap-2 rounded-row px-2 text-ui-sm text-fg outline-none data-[selected=true]:bg-selected data-[selected=true]:text-fg',
         'data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50',
         className
       )}
