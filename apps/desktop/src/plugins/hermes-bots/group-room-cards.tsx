@@ -5,22 +5,21 @@
  *
  *  HandoffCard     — a teammate passed work: task, finish line, clock, status.
  *  EscalationCard  — it stalled or looped; the fixes are on the card.
- *  ActivityLine    — what a working teammate is doing right now, one live line
- *                    instead of a stream of "working on it…" bubbles.
+ *  ActivityLine    — what each working teammate is doing right now: one row per
+ *                    bot with its tool cards stacked under it, instead of a
+ *                    stream of "working on it…" bubbles.
  */
 
-import { Button, cn, Codicon, host, relativeTime, Tip, useValue } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, host, relativeTime, useValue } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
-import { avatarColor, botAppearance, BotFace } from './avatar'
-import { isBackfilledFacePng } from './avatar-image'
 import { groupMemberKey } from './group-membership'
 import type { HandoffStatus, RoomEscalation, RoomHandoff } from './group-room-handoffs'
+import { ActivityMember } from './group-room-tool-stack'
 import { type RoomVote, voteConsensus } from './group-room-votes'
 import { useBots } from './i18n'
 import { liveTool } from './live-status'
-import { botRosterMeta } from './routing'
-import type { BotMeta, GroupMember } from './types'
+import type { BotMeta, GroupMember, GroupPrompt } from './types'
 
 const STATUS_TONE: Record<HandoffStatus, string> = {
   accepted: 'bg-info/10 text-info',
@@ -347,6 +346,8 @@ function useRuntimeByStored(): Map<string, string> {
 
 export interface ActivityLineProps {
   allMeta?: Record<string, BotMeta>
+  /** Open approvals on this thread; a member waiting on one gets a Review link under its row. */
+  approvals?: readonly GroupPrompt[]
   members?: readonly GroupMember[]
   /** Live names on this thread — each paints the row its reply will land in. */
   names: readonly string[]
@@ -358,9 +359,18 @@ export interface ActivityLineProps {
   workingSince?: ReadonlyMap<string, number>
 }
 
-/** One flat row per working bot, aligned with the message bubbles: face,
- *  speaker-coloured name, current tool, elapsed, and a per-bot Stop. */
-export function ActivityLine({ allMeta, members, names, nameOf, onStop, sessionOf, workingSince }: ActivityLineProps) {
+/** One row per working bot, aligned with the message bubbles, each with the
+ *  tool cards for what it is doing under it. */
+export function ActivityLine({
+  allMeta,
+  approvals,
+  members,
+  names,
+  nameOf,
+  onStop,
+  sessionOf,
+  workingSince
+}: ActivityLineProps) {
   const b = useBots()
 
   const statusItems = (useValue(host.state.statusItemsBySession) || {}) as Record<
@@ -385,43 +395,20 @@ export function ActivityLine({ allMeta, members, names, nameOf, onStop, sessionO
         const member = members?.find(m => m.name === name)
         const stored = sessionOf(name)
         const runtime = stored ? runtimeByStored.get(stored) || stored : null
-        const tool = runtime ? liveTool(statusItems[runtime]) : undefined
-        const appearance = botAppearance(name, member && allMeta ? botRosterMeta(member, allMeta) : null)
-        const faceImage = appearance.image
-        const since = workingSince?.get(member ? groupMemberKey(member) : name) ?? workingSince?.get(name) ?? null
-        const stopLabel = b.group.stopMember(nameOf(name))
 
         return (
-          <div className="flex min-w-0 items-center gap-1.5 text-ui-xs" key={name}>
-            <span className="shrink-0 overflow-hidden rounded-[22%] ring-1 ring-info motion-safe:animate-pulse">
-              <BotFace
-                color={avatarColor(appearance.color, name)}
-                image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
-                name={name}
-                shape={appearance.shape}
-                size={16}
-              />
-            </span>
-            <span
-              className="shrink-0 font-semibold"
-              style={{
-                color: `color-mix(in oklab, ${avatarColor(appearance.color, name)} 62%, var(--color-foreground))`
-              }}
-            >
-              {nameOf(name)}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-fg-muted">
-              {tool ? b.group.activityTool(tool) : b.group.activityWorking}
-            </span>
-            {since ? <span className="shrink-0 text-fg-subtle">{relativeTime(since)}</span> : null}
-            {member && onStop ? (
-              <Tip label={stopLabel}>
-                <Button aria-label={stopLabel} onClick={() => onStop(member)} size="icon-xs" variant="ghost">
-                  <Codicon name="debug-stop" />
-                </Button>
-              </Tip>
-            ) : null}
-          </div>
+          <ActivityMember
+            allMeta={allMeta}
+            approval={approvals?.find(entry => (member ? groupMemberKey(member) === entry.memberKey : entry.member === name))}
+            key={name}
+            member={member}
+            name={name}
+            nameOf={nameOf}
+            onStop={onStop}
+            runtime={runtime}
+            since={workingSince?.get(member ? groupMemberKey(member) : name) ?? workingSince?.get(name) ?? null}
+            tool={runtime ? liveTool(statusItems[runtime]) : undefined}
+          />
         )
       })}
     </section>

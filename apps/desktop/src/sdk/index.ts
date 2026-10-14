@@ -2030,8 +2030,7 @@ export { type SessionView, useSessionView } from '@/app/chat/session-view'
  *  Reserve it and your label starts on the same left edge as every session row
  *  above you; spell the classes yourself and the row drifts. The session row is
  *  canonical; `row-geometry.ts` explains what each measurement belongs to. */
-export { SidebarRowLead } from '@/app/chat/sidebar/chrome'
-export { SidebarSectionMeta } from '@/app/chat/sidebar/chrome'
+export { SidebarRowLead, SidebarSectionMeta } from '@/app/chat/sidebar/chrome'
 /** One glyph per gateway kind — device, cloud, terminal, network. The statusbar
  *  switcher, the fleet profile rail and any plugin rail listing gateways share
  *  it, so a connection looks the same wherever it is named. */
@@ -2141,6 +2140,8 @@ export type { TitlebarTool } from '@/app/shell/titlebar-controls'
  * `MEDIA:` delivery directives) and the same rich Markdown/media components as
  * core chat. Prefer this over raw Streamdown for transcript-style messages. */
 export { MessageTextContent } from '@/components/assistant-ui/markdown-text'
+/** Live tool activity cards, one stack per working bot. */
+export { ToolActivityStack, type ToolCardGroup, toolCardsFromParts } from '@/components/assistant-ui/tool-cards'
 /** The oversized Collapse lettering an empty chat is titled with — core writes
  *  "HERMES AGENT" with it, a `chat.empty` contribution writes its own name. */
 export { Wordmark } from '@/components/chat/wordmark'
@@ -2249,10 +2250,10 @@ export type { GatewayEventListener } from '@/contrib/events'
 export { Contribute, type ContributeProps } from '@/contrib/react/contribute'
 /** Settings ▸ Plugins entries (`ctx.registerSettingsPage`); `pluginSettingsHref` deep-links one. */
 export { pluginSettingsHref, SETTINGS_PLUGINS_AREA } from '@/contrib/settings-pages'
-export type { Contribution } from '@/contrib/types'
 
 // -- contracts ----------------------------------------------------------------
 
+export type { Contribution } from '@/contrib/types'
 /** The live gateway instance type — for typing the `gateway` prop `ConnectorsTab`
  *  takes; obtain the instance from `host.getGateway()`. */
 export type { HermesGateway } from '@/hermes'
@@ -2306,12 +2307,11 @@ export { CHAT_EMPTY_AREA, type ChatEmptyContribution, type ChatEmptyProps } from
  *  (the props carry the durable session id, owning profile, and shown title;
  *  render `null` for headers the plugin doesn't own). */
 export { CHAT_HEADER_AREAS, type ChatHeaderSlotContribution, type ChatHeaderSlotProps } from '@/lib/chat-header-slots'
-/** `chatMessageText` flattens a message's text parts to a string — the shared
- *  read the transcript-derivation helpers (and every plugin that scans a
- *  conversation) build on. `answeredAfter` tells whether any visible user
- *  message follows a given assistant message, the "was this card replied to"
- *  check transcript cards share. */
-export { answeredAfter, chatMessageText } from '@/lib/chat-messages/parts'
+/** `chatMessageText` flattens a message's text parts to a string: the shared read every plugin that scans
+ *  a conversation builds on.
+ *  `answeredAfter` tells whether a visible user message follows an assistant one.
+ *  `upsertToolPart` folds a tool.start / tool.complete payload into a message's parts. */
+export { answeredAfter, chatMessageText, upsertToolPart } from '@/lib/chat-messages'
 export type { ChatMessage } from '@/lib/chat-messages/types'
 export { FILE_VIEWERS_AREA, type FileViewerContribution, type FileViewerProps } from '@/lib/file-viewers'
 export { isMissingRpcMethod } from '@/lib/gateway-rpc'
