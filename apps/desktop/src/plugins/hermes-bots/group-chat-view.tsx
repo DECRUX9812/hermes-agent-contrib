@@ -17,7 +17,6 @@ import {
   cn,
   Codicon,
   ConfirmDialog,
-  CopyButton,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -35,11 +34,9 @@ import {
   useQuery,
   useValue
 } from '@hermes/plugin-sdk'
-import type { ClipboardEvent, CSSProperties, DragEvent, ReactNode } from 'react'
+import type { ClipboardEvent, DragEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { avatarColor, botAppearance, BotFace } from './avatar'
-import { isBackfilledFacePng } from './avatar-image'
 import { $botMeta, $lastRoster, botHandle, botSourceStatus, ROSTER_KEY, saveBotMeta } from './data'
 import {
   $groupActivity,
@@ -82,6 +79,8 @@ import {
   liveGroupChatNames
 } from './group-membership'
 import { groupMentionComponents, groupMentionText } from './group-mention-text'
+import { GroupMessageRow } from './group-message-row'
+import { indexMembersBySpeaker, memberForSpeaker, startsSpeakerRun } from './group-message-runs'
 import {
   clearGroupComposerDraft,
   closeGroupChatMainTab,
@@ -128,13 +127,6 @@ const Streamdown = typeof sdk === 'undefined' ? undefined : sdk.Streamdown
 // no scrollbar (#91878). Feature-detected: an older shell without the export
 // keeps the raw Streamdown path.
 const MessageTextContent = typeof sdk === 'undefined' ? undefined : sdk.MessageTextContent
-
-/** Shared bubble width cap for BOTH sides of the room. The user row mirrors
- *  the bot row's avatar gutter (pl-2/pr-11 vs px-2 + 26px face + gap), so the
- *  two content columns are the same width — one percentage here keeps the
- *  left and right edges of long messages perfectly aligned (was 85% user vs
- *  92% bot, which made every full-width message sit on a different edge). */
-const GROUP_BUBBLE_MAX_W = 'max-w-[85%]'
 
 /** Round arrow send — the 1:1 composer's PRIMARY_ICON_BTN look (core's
  *  control-classes isn't plugin-reachable), so both composers read the same. */
@@ -1170,6 +1162,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // only when the roster changes since the classifier consults the members.
   const mentionComponents = useMemo(() => groupMentionComponents(members), [members])
   const mentionText = useMemo(() => groupMentionText(members), [members])
+  const memberIndex = useMemo(() => indexMembersBySpeaker(members), [members])
 
   // #89883: answer ONE bot from its message. Seeds `@tag ` into the composer
   // that owns this entry's thread — the open reply box when it is this
@@ -1207,22 +1200,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     }
   }
 
-  // One log entry, rendered exactly as before conversation folding existed.
+  // One log entry: the room computes what it knows, the row draws it.
   const renderEntry = (entry: GroupMessage, index: number) => {
     const isUser = entry.from.kind === 'user'
     const meta = groupTranscriptSpeakerMeta(entry, members, allMeta)
-
-    // Match this speaker back to its member descriptor so display
-    // names and disambiguating handles come from the roster (the
-    // primary "default" profile renders as Hermes, remote dupes
-    // carry their @name-device handle) instead of raw profile ids.
-    const member = isUser
-      ? null
-      : members.find(
-          b =>
-            b.name === entry.from.name &&
-            (entry.from.source ? (b.connectionLabel || b.connectionId) === entry.from.source : !b.remoteSource)
-        ) || null
+    const member = isUser ? null : memberForSpeaker(memberIndex, entry.from)
 
     const display = isUser
       ? b.group.you
@@ -1237,6 +1219,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     const revealed = !isUser && revealedSpeaker === entryKey
     const isLead = Boolean(member && leadMember && groupMemberKey(member) === groupMemberKey(leadMember))
     const roleTitle = isUser ? '' : (meta?.title || member?.title || '').trim()
+    const thread = groupThreadOf(entry)
 
     // Clicked: append the gateway name so same-named agents on
     // two connections are tellable apart on demand.
@@ -1246,242 +1229,29 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         ? `${display}${entry.from.source ? `-${entry.from.source}` : ''} (@${botHandle(entry.from.name, member || undefined)})`
         : display
 
-    // Speaker avatar: same appearance pipeline as the roster
-    // (custom image/pet, else deterministic shape+color face).
-    // Source-qualified speakers use owner-aware botRosterMeta (#96432).
-    // Non-null exactly when !isUser — the user's own lines carry no avatar.
-    const appearance = isUser ? null : botAppearance(entry.from.name, meta)
-    const image = appearance?.image ?? null
-    const photo = Boolean(image && !isBackfilledFacePng(image))
-
-    // Speaker runs: consecutive entries from the same voice share one header
-    // (avatar + name on the run's first line only) so the room reads as voices
-    // taking turns, not a flat ledger of identical rows.
-    const previous = index > 0 ? room.log[index - 1] : null
-
-    const runStart =
-      !previous ||
-      previous.from?.kind !== entry.from?.kind ||
-      previous.from?.name !== entry.from?.name ||
-      (previous.from?.source || '') !== (entry.from?.source || '') ||
-      groupThreadOf(previous) !== groupThreadOf(entry)
-
-    // The member's own avatar color keys the speaker name — the fastest
-    // "who is talking" scan in a multi-voice room.
-    const speakerColor = appearance ? avatarColor(appearance.color, entry.from.name) : null
-
-    // Focus mode: this row is history if it predates the final run.
-    const dimmed = focusMode && index < focusCutoff
-
-    const body = (
-      <div
-        className="min-w-0 text-xs text-foreground/90 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere" // The app shell sets user-select: none globally; message bodies opt
-        // back in so drag-select and ⌘C work in group chat logs.
-        data-selectable-text="true"
-        data-slot="group-chat-message-content"
-      >
-        {MessageTextContent ? (
-          <MessageTextContent decorateText={mentionText} media={!member?.remoteSource} text={entry.text} />
-        ) : Streamdown ? (
-          <Streamdown components={mentionComponents}>{entry.text}</Streamdown>
-        ) : (
-          entry.text
-        )}
-      </div>
-    )
-
-    const attachments =
-      Array.isArray(entry.images) && entry.images.length ? (
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          {entry.images.map((img, imgIndex) =>
-            img.kind === 'pdf' || img.kind === 'file' ? (
-              <div
-                className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.625rem] text-(--ui-text-tertiary)"
-                key={`${entryKey}:img:${imgIndex}`}
-                title={img.name || 'attached file'}
-              >
-                <Codicon className="text-[0.8125rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
-                <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
-              </div>
-            ) : (
-              <img
-                alt={img.name || 'attached image'}
-                className="max-h-40 max-w-60 rounded-md border border-(--ui-stroke-secondary) object-contain"
-                key={`${entryKey}:img:${imgIndex}`}
-                src={img.data}
-                title={img.name || 'attached image'}
-              />
-            )
-          )}
-        </div>
-      ) : null
-
-    // Your own lines are right-aligned bubbles reusing the 1:1 thread's
-    // user-bubble tokens so the room reads like the same chat surface.
-    // pr-11 mirrors the bot side's avatar gutter (px-2 + w-6.5 + gap-2.5 =
-    // 44px), so user and bot bubbles share one content column and their
-    // edges line up instead of drifting by the gutter width.
-    if (isUser) {
-      return (
-        <div
-          className={cn(
-            'group flex flex-col items-end gap-0.5 pl-2 pr-11',
-            runStart && index > 0 && 'pt-1.5',
-            // Focus mode: history quiets, the live exchange stays lit. Hover
-            // or tab-focus restores a dimmed row — nothing is ever unreachable.
-            dimmed && 'opacity-30 transition-opacity hover:opacity-100 focus-within:opacity-100'
-          )}
-          data-entry-index={index}
-          key={entryKey}
-        >
-          <div className="flex items-baseline gap-1.5 px-1 text-[0.625rem] text-(--ui-text-quaternary)">
-            {entry.text.trim() ? (
-              <span className="opacity-0 pointer-events-none transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
-                <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
-              </span>
-            ) : null}
-            {runStart ? <span className="font-semibold text-(--ui-text-tertiary)">{label}</span> : null}
-            <span>{relativeTime(entry.at)}</span>
-          </div>
-          <div
-            className={cn(
-              'rounded-xl border border-(--dt-user-bubble-border) bg-(--dt-user-bubble) px-3 py-1.5',
-              GROUP_BUBBLE_MAX_W
-            )}
-          >
-            {body}
-            {attachments}
-          </div>
-        </div>
-      )
-    }
-
-    // Every line keeps Reply + Copy: in the run header on a run's first line,
-    // floating over the line's top-right on continuations.
-    const actions = (
-      <div
-        className={cn(
-          'flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100',
-          runStart
-            ? 'ml-auto'
-            : 'absolute right-2 -top-1 z-10 rounded-md bg-(--ui-bg-primary) shadow-sm ring-1 ring-(--ui-stroke-secondary)'
-        )}
-      >
-        <Tip label={`Reply to @${replyMentionTag(entry, member)}`}>
-          <Button
-            aria-label={`Reply to ${display}`}
-            className="text-(--ui-text-tertiary) hover:text-foreground"
-            onClick={() => replyToMember(entry, member)}
-            size="icon"
-            variant="ghost"
-          >
-            <Codicon name="reply" />
-          </Button>
-        </Tip>
-        {entry.text.trim() ? (
-          <CopyButton appearance="icon" buttonSize="icon" stopPropagation text={entry.text} />
-        ) : null}
-      </div>
-    )
-
     return (
-      <div
-        className={cn(
-          'group relative flex items-start gap-2.5 px-2',
-          runStart && index > 0 && 'pt-1.5',
-          // Focus mode: history quiets, the live exchange stays lit. Hover
-          // or tab-focus restores a dimmed row — nothing is ever unreachable.
-          dimmed && 'opacity-30 transition-opacity hover:opacity-100 focus-within:opacity-100'
-        )}
-        // The speaker's resolved hue rides the row as a custom property, not an
-        // inline color on each painted element: consumers (this file's dot and
-        // name, and any theme/plugin layer) recolor the whole voice by
-        // overriding --speaker-color in CSS without touching markup.
-        data-entry-index={index}
+      <GroupMessageRow
+        dimmed={focusMode && index < focusCutoff}
+        display={display}
+        entry={entry}
+        index={index}
         key={entryKey}
-        // Mixed toward the foreground so a dark avatar hue still reads on a dark
-        // room (raw hues like a deep brown vanished into the background).
-        style={
-          {
-            '--speaker-color': speakerColor
-              ? `color-mix(in oklab, ${speakerColor} 62%, var(--color-foreground))`
-              : undefined
-          } as CSSProperties
-        }
-      >
-        <div className="w-6.5 shrink-0 self-start">
-          {runStart ? (
-            <div className="mt-0.5">
-              <BotFace
-                color={speakerColor || ''}
-                image={photo ? image : null}
-                name={entry.from.name}
-                shape={appearance ? appearance.shape : 'squircle'}
-                size={26}
-              />
-            </div>
-          ) : (
-            // Continuation lines reveal their timestamp in the avatar gutter
-            // on hover (the Slack idiom) — the run header stays uncluttered.
-            <div className="pt-1 text-center text-[0.625rem] leading-3 text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover:opacity-100">
-              {relativeTime(entry.at)}
-            </div>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          {runStart ? (
-            <div className="flex items-center gap-1.5">
-              {/* Speaker dot: the run header's at-a-glance identity — two bots
-                  replying back to back are tellable by dot color before the
-                  name is read. Both dot and name read --speaker-color off the
-                  row, so a theme layer recolors a voice with one CSS override. */}
-              <span
-                aria-hidden
-                className="size-1.5 shrink-0 rounded-full bg-(--speaker-color)"
-                data-testid="group-speaker-dot"
-              />
-              <Tip label={revealed ? 'Hide full handle' : 'Show full handle'}>
-                <Button
-                  className="text-left text-[0.75rem] font-semibold text-(--speaker-color)"
-                  onClick={() => setRevealedSpeaker(revealed ? null : entryKey)}
-                  size="inline"
-                  variant="text"
-                >
-                  {label}
-                </Button>
-              </Tip>
-              {/* The room as a squad: who leads, and what each voice is for. */}
-              {isLead ? (
-                <Tip label={b.group.roomLead}>
-                  <span
-                    aria-label={b.group.roomLead}
-                    className="text-[0.625rem] leading-none text-amber-500"
-                    data-testid="group-speaker-lead"
-                  >
-                    ★
-                  </span>
-                </Tip>
-              ) : null}
-              {roleTitle ? (
-                <span
-                  className="max-w-40 truncate text-[0.625rem] text-(--ui-text-tertiary)"
-                  data-testid="group-speaker-role"
-                >
-                  {roleTitle}
-                </span>
-              ) : null}
-              <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
-              {actions}
-            </div>
-          ) : (
-            actions
-          )}
-          <div className={cn('rounded-2xl rounded-tl-md bg-(--ui-bg-secondary) px-3 py-1.5', GROUP_BUBBLE_MAX_W)}>
-            {body}
-            {attachments}
-          </div>
-        </div>
-      </div>
+        label={label}
+        lead={isLead}
+        member={member}
+        mentionComponents={mentionComponents}
+        mentionText={mentionText}
+        MessageTextContent={MessageTextContent}
+        meta={meta}
+        onOpenThread={focusThread === thread ? null : () => openThread(thread)}
+        onReply={() => replyToMember(entry, member)}
+        onToggleReveal={() => setRevealedSpeaker(revealed ? null : entryKey)}
+        replyTag={isUser ? '' : replyMentionTag(entry, member)}
+        revealed={revealed}
+        roleTitle={roleTitle}
+        runStart={startsSpeakerRun(index > 0 ? room.log[index - 1] : null, entry)}
+        Streamdown={Streamdown}
+      />
     )
   }
 
@@ -1515,11 +1285,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           data-testid="group-day-separator"
           key={`day:${day}:${index}`}
         >
-          <span aria-hidden className="h-px flex-1 bg-(--ui-stroke-secondary)" />
-          <span className="shrink-0 text-[0.625rem] font-medium text-(--ui-text-quaternary)">
+          <span aria-hidden className="h-px flex-1 bg-line" />
+          <span className="shrink-0 text-ui-2xs font-medium text-fg-subtle">
             {roomDayLabel(day, { today: b.group.dayToday, yesterday: b.group.dayYesterday })}
           </span>
-          <span aria-hidden className="h-px flex-1 bg-(--ui-stroke-secondary)" />
+          <span aria-hidden className="h-px flex-1 bg-line" />
         </div>
       )
     }
