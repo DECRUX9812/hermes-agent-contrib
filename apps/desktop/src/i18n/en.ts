@@ -15,7 +15,9 @@ import { enNotices } from './en_notices'
 import { enOnboarding } from './en_onboarding'
 import { enProjects } from './en_projects'
 import { enSharedMetrics } from './en_shared_metrics'
+import { enStartChat } from './en_start_chat'
 import { enThemePicker } from './en_theme_picker'
+import { enToolCards } from './en_tool_cards'
 import { enUninstallSection } from './en_uninstall_section'
 import { enUpdateChannel } from './en_update_channel'
 import type { Translations } from './types'
@@ -5518,17 +5520,9 @@ export const en: Translations = {
       plugin: 'Plugin',
       startsLater: "We'll set these up when you start."
     },
-    startChat: {
-      starting: title => `Starting “${title}”…`,
-      startingUntitled: 'Starting a chat…',
-      untitled: 'New chat',
-      notStarted: "Couldn't start that chat.",
-      retry: 'Retry',
-      inProfile: profile => `In ${profile}`,
-      open: 'Open',
-      openFailed: "Couldn't open the chat"
-    },
+    startChat: enStartChat,
     clarify: enClarify,
+    toolCards: enToolCards,
     themePicker: enThemePicker,
     catalogInstall: enCatalogInstall,
     mcpSetup: {

@@ -21,7 +21,9 @@ import type { NoticeTranslations } from './types_notices'
 import type { OnboardingTranslations } from './types_onboarding'
 import type { SidebarProjectsTranslations } from './types_projects'
 import type { SharedMetricsTranslations } from './types_shared_metrics'
+import type { StartChatCopy } from './types_start_chat'
 import type { ThemePickerCopy } from './types_theme_picker'
+import type { ToolCardsCopy } from './types_tool_cards'
 import type { UninstallSectionTranslations } from './types_uninstall_section'
 import type { UpdateChannelCopy } from './types_update_channel'
 
@@ -4772,18 +4774,9 @@ export interface Translations extends NoticeTranslations {
       plugin: string
       startsLater: string
     }
-    /** Fork-only: start_chat tool copy (retired upstream, ported to fork.onboarding). */
-    startChat: {
-      starting: (title: string) => string
-      startingUntitled: string
-      untitled: string
-      notStarted: string
-      retry: string
-      inProfile: (profile: string) => string
-      open: string
-      openFailed: string
-    }
+    startChat: StartChatCopy
     clarify: ClarifyCopy
+    toolCards: ToolCardsCopy
     themePicker: ThemePickerCopy
     catalogInstall: CatalogInstallTranslations
     mcpSetup: {
