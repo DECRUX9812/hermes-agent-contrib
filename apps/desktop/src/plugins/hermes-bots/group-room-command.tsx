@@ -187,7 +187,7 @@ export function ThreadTail({
   workingSince
 }: ThreadTailProps) {
   return (
-    <>
+    <div className="flex min-w-0 flex-col gap-1">
       <ActivityLine
         allMeta={allMeta}
         members={members}
@@ -215,6 +215,6 @@ export function ThreadTail({
             onReassign={member => commands.reassign(e.handoff, member)}
           />
         ))}
-    </>
+    </div>
   )
 }

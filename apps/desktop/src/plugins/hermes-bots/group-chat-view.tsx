@@ -101,7 +101,7 @@ import { CatchUpCard, RecapCard, roomCatchUp } from './group-room-catchup'
 import { roomCommands, RoomDecisions, RoomShortcuts, ThreadTail } from './group-room-command'
 import { GroupRoomComposer } from './group-room-composer'
 import { useHandoffFlights } from './group-room-flight'
-import { GroupComposerContext, GroupThreadHeader } from './group-room-focus'
+import { GroupComposerContext } from './group-room-focus'
 import { deriveRoomHandoffs, roomEscalations, type RoomHandoff } from './group-room-handoffs'
 import { GroupRoomHeader } from './group-room-header'
 import { KeysHelp, roomKeyHandler, useNeedsYouAlerts, useRoomClock } from './group-room-keys'
@@ -110,13 +110,14 @@ import { GroupLogTail, GroupRoomEmpty } from './group-room-log-tail'
 import { GroupMembersStrip } from './group-room-members'
 import { GroupRoomPanel, type RoomPanelTab } from './group-room-panel'
 import { $roomPrefs, setAsideCollapsed } from './group-room-prefs'
+import { $roomRoles, roomRole } from './group-room-roles'
 import { GroupThreadRail } from './group-room-threads'
 import { useRoomUnread } from './group-room-unseen'
 import { deriveRoomVotes, roomVotesAt } from './group-room-votes'
 import { roomLiveWork, roomWorkItems } from './group-room-work'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupMember, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
-import { GroupThreadPanel } from './group-thread-panel'
+import { GroupThreadPanel, GroupThreadPanelHeader } from './group-thread-panel'
 import { renameGroupClarify } from './group-turns'
 import { $groupVisitAnchor, markGroupOpened } from './group-unread'
 import { botsText, useBots } from './i18n'
@@ -628,6 +629,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const rootRef = useRef<HTMLDivElement | null>(null)
   const layout = useRoomLayout(rootRef)
   const asideFolded = Boolean(useValue($roomPrefs).asideCollapsed)
+  const roomRoles = useValue($roomRoles)
   const [sheetOpen, setSheetOpen] = useState(false)
   // The thread open beside the conversation; null = none. The log never
   // filters to it, so the reader keeps their place in the room. It rides the
@@ -1177,6 +1179,12 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     const revealed = !isUser && revealedSpeaker === entryKey
     const isLead = Boolean(member && leadMember && groupMemberKey(member) === groupMemberKey(leadMember))
     const roleTitle = isUser ? '' : (meta?.title || member?.title || '').trim()
+
+    // This room's own label for the voice ("Reviewer" here, "Auditor"
+    // everywhere else) wins over the global title on its messages.
+    const roomRoleLabel =
+      !isUser && member ? roomRole(roomRoles, groupChatRoomKey(group, room), groupMemberKey(member)) : ''
+
     const thread = groupThreadOf(entry)
 
     // Clicked: append the gateway name so same-named agents on
@@ -1193,6 +1201,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         dimmed={!inPanel && focusMode && index < focusCutoff}
         display={display}
         entry={entry}
+        handoffLine={handoffsAt.get(index)?.[0]?.line}
         index={index}
         key={entryKey}
         label={label}
@@ -1211,6 +1220,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         replyTag={isUser ? '' : replyMentionTag(entry, member)}
         revealed={revealed}
         roleTitle={roleTitle}
+        roomRole={roomRoleLabel}
         runStart={startsSpeakerRun(index > 0 ? room.log[index - 1] : null, entry)}
         Streamdown={Streamdown}
       />
@@ -1267,6 +1277,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
       children.push(
         <LineCards
+          allMeta={allMeta}
           handoffsAt={handoffsAt}
           index={index}
           key={`cards:${index}`}
@@ -1305,13 +1316,13 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       children.push(
         <Button
           aria-label={b.group.openThread}
-          className="mt-0.5 w-fit items-center gap-1.5 pb-1 pl-11 text-left text-[0.6875rem] text-(--ui-accent) hover:underline transition-colors"
+          className="mt-0.5 w-fit items-center gap-1.5 pb-1 pl-11 text-left text-ui-xs text-fg-muted transition-colors hover:text-fg"
           key={`replylink:${id}`}
           onClick={() => openThread(id)}
           size="inline"
           variant="link"
         >
-          <Codicon className="text-[0.625rem]" name="reply" />
+          <Codicon className="text-ui-2xs" name="reply" />
           <span>
             {threadCounts.get(id) && threadCounts.get(id)! > 1
               ? `${b.group.replyCount(threadCounts.get(id)! - 1)} · ${b.group.openThread}`
@@ -1378,10 +1389,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       }
       entryCount={threadCounts.get(focusedItem.thread) || 0}
       header={
-        <GroupThreadHeader
+        <GroupThreadPanelHeader
           item={focusedItem}
           nameOf={memberLabel}
-          onBack={() => openThread(null)}
+          onClose={() => openThread(null)}
           onStop={() => void stopGroupThread(group, focusedItem.thread, members)}
           owner={focusedItem.assignees.find(name => members.some(m => m.name === name && !m.remoteSource)) || null}
           teamId={teamLead?.teamId || null}

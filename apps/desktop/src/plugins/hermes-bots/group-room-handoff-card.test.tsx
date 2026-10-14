@@ -19,6 +19,7 @@ const base: RoomHandoff = {
   fromUser: false,
   id: 'h1',
   index: 0,
+  line: 0,
   reply: '',
   replyIndex: -1,
   stale: 'fresh',

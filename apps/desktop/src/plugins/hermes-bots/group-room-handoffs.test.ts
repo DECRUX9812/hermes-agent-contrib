@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deriveRoomHandoffs, handoffLine, parseHandoffLine, roomEscalations } from './group-room-handoffs'
+import { deriveRoomHandoffs, handoffLine, handoffLineIndex, parseHandoffLine, roomEscalations, withoutTextLine } from './group-room-handoffs'
 import type { GroupMessage } from './types'
 
 const members = [{ name: 'hermes' }, { name: 'coder', title: 'Coder' }, { name: 'plugin' }] as never
@@ -67,8 +67,42 @@ describe('parseHandoffLine', () => {
   })
 })
 
+describe('handoffLineIndex and withoutTextLine', () => {
+  it('names the exact line a handoff was read off', () => {
+    expect(
+      handoffLineIndex('Plan agreed.\n@coder handoff: unify replies · done when: tests green', members)
+    ).toBe(1)
+    expect(handoffLineIndex('@coder handoff: unify replies · done when: tests green', members)).toBe(0)
+  })
+
+  it('returns -1 when no line is a handoff', () => {
+    expect(handoffLineIndex('Plan agreed.\n@coder can you look?', members)).toBe(-1)
+    expect(handoffLineIndex('@stranger handoff: anything', members)).toBe(-1)
+  })
+
+  it('drops exactly that line from the rendered text', () => {
+    expect(
+      withoutTextLine('Plan agreed.\n@coder handoff: unify replies · done when: tests green', 1)
+    ).toBe('Plan agreed.')
+    expect(withoutTextLine('@coder handoff: unify replies · done when: tests green', 0)).toBe('')
+  })
+
+  it('leaves the text alone for an out-of-range line', () => {
+    expect(withoutTextLine('Plan agreed.', 4)).toBe('Plan agreed.')
+    expect(withoutTextLine('Plan agreed.', -1)).toBe('Plan agreed.')
+  })
+})
+
 describe('deriveRoomHandoffs', () => {
   const ask = msg('hermes', '@coder handoff: fix the header · done when: no box mid-log', 0)
+
+  it('records which text line the handoff came from', () => {
+    const multi = msg('hermes', 'Plan agreed.\n@coder handoff: fix the header · done when: no box mid-log', 0)
+    const [handoff] = deriveRoomHandoffs([multi], members, { now: MIN })
+
+    expect(handoff?.line).toBe(1)
+    expect(deriveRoomHandoffs([ask], members, { now: MIN })[0]?.line).toBe(0)
+  })
 
   it('moves through accepted → delivered on the receiver’s own words in the thread', () => {
     const accepted = deriveRoomHandoffs([ask, msg('coder', 'On it.', MIN)], members, { now: 2 * MIN })

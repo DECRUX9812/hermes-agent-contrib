@@ -72,9 +72,10 @@ afterEach(() => {
 })
 
 describe('ActivityLine working rows', () => {
-  it('renders one row per working bot with face, speaker name, tool, elapsed and Stop', async () => {
+  it('renders one row per working bot with ringed face, is-working name, tool, elapsed and Stop', async () => {
     const { ActivityLine } = await import('./group-room-cards')
     const onStop = vi.fn()
+    const since = Date.now() - 65_000
 
     render(
       <ActivityLine
@@ -84,7 +85,7 @@ describe('ActivityLine working rows', () => {
         names={['builder', 'ops']}
         onStop={onStop}
         sessionOf={name => `${name}-stored`}
-        workingSince={new Map([['builder', 1000]])}
+        workingSince={new Map([['builder', since]])}
       />
     )
 
@@ -92,13 +93,17 @@ describe('ActivityLine working rows', () => {
 
     expect(line.getAttribute('aria-live')).toBe('polite')
     expect(within(line).getAllByTestId('mock-face')).toHaveLength(2)
-    // The live tool through the activity formatter; the other bot is quiet.
-    expect(within(line).getByText('now: Read')).toBeTruthy()
-    expect(within(line).getByText('working…')).toBeTruthy()
-    // Elapsed only where a working stamp exists.
-    expect(within(line).getAllByText('now')).toHaveLength(1)
-    // Speaker-coloured names, like the message rows.
-    expect(within(line).getByText('builder').getAttribute('style')).toContain('color-mix')
+    // Faces breathe inside a brand ring instead of pulsing on their own.
+    expect(line.querySelectorAll('.motion-ring.text-brand')).toHaveLength(2)
+    expect(line.querySelector('.motion-safe\\:animate-pulse')).toBeNull()
+    // "<Name> is working" in the speaker colour; the tool rides a shimmer.
+    expect(within(line).getByText('builder is working').getAttribute('style')).toContain('color-mix')
+    expect(within(line).getByText('ops is working')).toBeTruthy()
+    expect(within(line).getByText('now: Read').closest('.motion-shimmer')).toBeTruthy()
+    expect(within(line).getByText('working…').closest('.motion-shimmer')).toBeTruthy()
+    // Elapsed as m:ss, only where a working stamp exists.
+    expect(within(line).getByText('1:05')).toBeTruthy()
+    expect(within(line).queryAllByText(/\d+:\d\d/)).toHaveLength(1)
     expect(screen.getByRole('button', { name: 'Stop builder' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Stop ops' })).toBeTruthy()
   })

@@ -15,19 +15,29 @@ import { useState } from 'react'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { groupMemberKey } from './group-membership'
+import { HandoffChip, VoteChip } from './group-room-chips'
 import type { HandoffStatus, RoomEscalation, RoomHandoff } from './group-room-handoffs'
 import { type RoomVote, voteConsensus } from './group-room-votes'
 import { useBots } from './i18n'
 import { liveTool } from './live-status'
+import { useRoomText } from './room-i18n'
 import { botRosterMeta } from './routing'
 import type { BotMeta, GroupMember } from './types'
 
-const STATUS_TONE: Record<HandoffStatus, string> = {
+export const STATUS_TONE: Record<HandoffStatus, string> = {
   accepted: 'bg-info/10 text-info',
   declined: 'bg-danger/10 text-danger',
   delivered: 'bg-success/10 text-success',
   open: 'bg-hover text-fg-muted',
   working: 'bg-info/10 text-info'
+}
+
+/** Working-for how long, as m:ss — re-read on every render, which the
+ *  room's clock tick drives. */
+function elapsedMMSS(since: number): string {
+  const total = Math.max(0, Math.floor((Date.now() - since) / 1000))
+
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
 }
 
 /** "due in 12 min" or, past it, a red "overdue 5 min" — re-read on every
@@ -43,14 +53,14 @@ function DueClock({ at, minutes }: { at: number; minutes: number }) {
   )
 }
 
-export function HandoffCard({ handoff, nameOf }: { handoff: RoomHandoff; nameOf: (name: string) => string }) {
+export function HandoffCard({ bare, handoff, nameOf }: { bare?: boolean; handoff: RoomHandoff; nameOf: (name: string) => string }) {
   const b = useBots()
   const h = b.group.handoff
 
   return (
     <section
       aria-label={h.label(nameOf(handoff.from), nameOf(handoff.to))}
-      className="ml-11 rounded-card border border-line bg-surface-raised px-3 py-2"
+      className={cn('rounded-card border border-line bg-surface-raised px-3 py-2', !bare && 'ml-11')}
       data-handoff-status={handoff.status}
       data-testid="group-handoff-card"
     >
@@ -175,9 +185,10 @@ export function EscalationCard({
   )
 }
 
-/** The contracts hanging off one log line — handoffs and team votes — each
- *  rendered directly under the line that called for it. */
+/** The contracts hanging off one log line — handoffs as compact chips, a
+ *  decided vote as a chip, an open vote as the full card it needs. */
 export function LineCards({
+  allMeta,
   handoffsAt,
   index,
   members,
@@ -185,6 +196,8 @@ export function LineCards({
   onCall,
   votesAt
 }: {
+  /** Room-wide bot metadata for the chip faces. */
+  allMeta?: Record<string, BotMeta>
   /** Handoffs by the log index that raised them. */
   handoffsAt: ReadonlyMap<number, readonly RoomHandoff[]>
   /** The log entry's index. */
@@ -207,17 +220,27 @@ export function LineCards({
   return (
     <>
       {handoffs.map(handoff => (
-        <HandoffCard handoff={handoff} key={`handoff:${handoff.id}`} nameOf={nameOf} />
+        <HandoffChip allMeta={allMeta} handoff={handoff} key={`handoff:${handoff.id}`} members={members} nameOf={nameOf} />
       ))}
-      {votes.map(vote => (
-        <VoteCard
-          key={`vote:${vote.id}`}
-          members={members}
-          nameOf={nameOf}
-          onCall={option => onCall(vote, option)}
-          vote={vote}
-        />
-      ))}
+      {votes.map(vote =>
+        vote.decided ? (
+          <VoteChip
+            key={`vote:${vote.id}`}
+            members={members}
+            nameOf={nameOf}
+            onCall={option => onCall(vote, option)}
+            vote={vote}
+          />
+        ) : (
+          <VoteCard
+            key={`vote:${vote.id}`}
+            members={members}
+            nameOf={nameOf}
+            onCall={option => onCall(vote, option)}
+            vote={vote}
+          />
+        )
+      )}
     </>
   )
 }
@@ -225,11 +248,13 @@ export function LineCards({
 /** Where the team landed, option by option: a bar per option, who is on it,
  *  and — while the decision is open — the call to make. */
 export function VoteCard({
+  bare,
   members,
   nameOf,
   onCall,
   vote
 }: {
+  bare?: boolean
   members: readonly GroupMember[]
   nameOf: (name: string) => string
   /** Record the outcome in the room, so the call outlives this session. */
@@ -258,7 +283,7 @@ export function VoteCard({
   return (
     <section
       aria-label={v.label(vote.question)}
-      className="ml-11 overflow-hidden rounded-card border border-line"
+      className={cn('overflow-hidden rounded-card border border-line', !bare && 'ml-11')}
       data-testid="group-vote-card"
     >
       <div className="flex flex-wrap items-center gap-2 border-b border-line bg-surface-sunken px-3 py-1.5">
@@ -362,6 +387,7 @@ export interface ActivityLineProps {
  *  speaker-coloured name, current tool, elapsed, and a per-bot Stop. */
 export function ActivityLine({ allMeta, members, names, nameOf, onStop, sessionOf, workingSince }: ActivityLineProps) {
   const b = useBots()
+  const t = useRoomText().thread
 
   const statusItems = (useValue(host.state.statusItemsBySession) || {}) as Record<
     string,
@@ -390,30 +416,26 @@ export function ActivityLine({ allMeta, members, names, nameOf, onStop, sessionO
         const faceImage = appearance.image
         const since = workingSince?.get(member ? groupMemberKey(member) : name) ?? workingSince?.get(name) ?? null
         const stopLabel = b.group.stopMember(nameOf(name))
+        const speaker = `color-mix(in oklab, ${avatarColor(appearance.color, name)} 62%, var(--color-foreground))`
 
         return (
           <div className="flex min-w-0 items-center gap-1.5 text-ui-xs" key={name}>
-            <span className="shrink-0 overflow-hidden rounded-[22%] ring-1 ring-info motion-safe:animate-pulse">
+            <span className="motion-ring shrink-0 overflow-hidden rounded-[22%] text-brand">
               <BotFace
                 color={avatarColor(appearance.color, name)}
                 image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
                 name={name}
                 shape={appearance.shape}
-                size={16}
+                size={20}
               />
             </span>
-            <span
-              className="shrink-0 font-semibold"
-              style={{
-                color: `color-mix(in oklab, ${avatarColor(appearance.color, name)} 62%, var(--color-foreground))`
-              }}
-            >
-              {nameOf(name)}
+            <span className="shrink-0 font-medium" style={{ color: speaker }}>
+              {t.isWorking(nameOf(name))}
             </span>
-            <span className="min-w-0 flex-1 truncate text-fg-muted">
+            <span className="motion-shimmer min-w-0 flex-1 truncate text-fg-muted">
               {tool ? b.group.activityTool(tool) : b.group.activityWorking}
             </span>
-            {since ? <span className="shrink-0 text-fg-subtle">{relativeTime(since)}</span> : null}
+            {since ? <span className="shrink-0 tabular-nums text-fg-subtle">{elapsedMMSS(since)}</span> : null}
             {member && onStop ? (
               <Tip label={stopLabel}>
                 <Button aria-label={stopLabel} onClick={() => onStop(member)} size="icon-xs" variant="ghost">

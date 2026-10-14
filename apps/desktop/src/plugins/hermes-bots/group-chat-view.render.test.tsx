@@ -531,6 +531,11 @@ it('runs the Command Room: handoff cards, a stalled handoff escalated with a wor
   )
 
   // The handoff line reads as a contract card, still waiting for pickup…
+  // The handoff is a chip until expanded; the protocol line stays hidden
+  // from the message text because the chip already says it.
+  expect(screen.queryByTestId('group-handoff-card')).toBeNull()
+  fireEvent.click(screen.getByTestId('group-event-chip'))
+
   const card = screen.getByTestId('group-handoff-card')
   expect(card.textContent).toContain('check contrast')
   expect(card.textContent).toContain('names readable')
@@ -616,6 +621,7 @@ it('catches the CEO up, moves by keyboard, counts handoff clocks down, and alert
 
   // The accepted handoff was due 25 minutes ago: its clock says so.
   fireEvent.keyDown(logView, { key: 'Escape' })
+  fireEvent.click(screen.getByTestId('group-event-chip'))
   expect(screen.getByTestId('group-handoff-card').textContent).toContain('overdue 25 min')
 
   // A NEW stalled handoff toasts the user; the ones present at open never did.
