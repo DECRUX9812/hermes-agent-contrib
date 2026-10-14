@@ -426,8 +426,6 @@ type BotsMessages = {
     you: string
     /** How many of a room's members are reachable right now. */
     availableCount: (available: number, total: number) => string
-    /** Team-orchestrated room strip: only the org-tree lead hears the user. */
-    teamListening: (lead: string) => string
     settingsHint: (group: string) => string
     settingsLabel: (group: string) => string
     disbandHint: (group: string) => string
@@ -485,9 +483,7 @@ type BotsMessages = {
     panelDecisions: string
     decisionsEmpty: string
     decisionQuestion: (name: string) => string
-    deskTitle: string
     deskNeedsYou: string
-    deskFloor: (count: number) => string
     viewRoom: string
     viewBoard: string
     activityLabel: string
@@ -1313,7 +1309,6 @@ const en: BotsMessages = {
     memberCount: count => `${count} bots`,
     you: 'You',
     availableCount: (available, total) => `${available} of ${total} available`,
-    teamListening: lead => `Only ${lead} is listening — @mention teammates to wake them`,
     settingsHint: group => `Group settings — rename ${group} or set a room picture`,
     settingsLabel: group => `Group settings for ${group}`,
     disbandHint: group => `Disband the ${group} group chat`,
@@ -1369,9 +1364,7 @@ const en: BotsMessages = {
     panelDecisions: 'Decisions',
     decisionsEmpty: 'Nothing waiting on you. Stalled handoffs, loops and questions land here.',
     decisionQuestion: name => `${name} asked you something`,
-    deskTitle: 'Your desk',
     deskNeedsYou: 'Needs you',
-    deskFloor: count => `${count} working`,
     viewRoom: 'Room',
     viewBoard: 'Board',
     activityLabel: 'Live activity',
@@ -2204,7 +2197,6 @@ const ja: BotsMessages = {
     memberCount: count => `ボット${count}体`,
     you: 'あなた',
     availableCount: (available, total) => `${total}体中${available}体が利用可能`,
-    teamListening: lead => `聞いているのは ${lead} だけです — @メンションでチームメイトを起こします`,
     settingsHint: group => `グループ設定 — ${group}の名前変更やルーム画像の設定`,
     settingsLabel: group => `${group}のグループ設定`,
     disbandHint: group => `${group}グループチャットを解散`,
@@ -2260,9 +2252,7 @@ const ja: BotsMessages = {
     panelDecisions: '決定',
     decisionsEmpty: 'あなた待ちの項目はありません。止まった引き継ぎ、ループ、質問がここに届きます。',
     decisionQuestion: name => `${name} から質問があります`,
-    deskTitle: 'あなたのデスク',
     deskNeedsYou: '要対応',
-    deskFloor: count => `${count} 件作業中`,
     viewRoom: 'ルーム',
     viewBoard: 'ボード',
     activityLabel: 'ライブアクティビティ',
@@ -3077,7 +3067,6 @@ const zh: BotsMessages = {
     memberCount: count => `${count} 个机器人`,
     you: '你',
     availableCount: (available, total) => `${total} 个中 ${available} 个可用`,
-    teamListening: lead => `只有 ${lead} 在听 — @提及队友即可唤醒它们`,
     settingsHint: group => `群聊设置 — 重命名 ${group} 或设置房间图片`,
     settingsLabel: group => `${group} 的群聊设置`,
     disbandHint: group => `解散 ${group} 群聊`,
@@ -3133,9 +3122,7 @@ const zh: BotsMessages = {
     panelDecisions: '决策',
     decisionsEmpty: '没有等你处理的事。停滞的交接、循环和提问会出现在这里。',
     decisionQuestion: name => `${name} 向你提了问题`,
-    deskTitle: '你的工作台',
     deskNeedsYou: '需要你',
-    deskFloor: count => `${count} 个在工作`,
     viewRoom: '房间',
     viewBoard: '看板',
     activityLabel: '实时动态',
@@ -3945,7 +3932,6 @@ const zhHant: BotsMessages = {
     memberCount: count => `${count} 個機器人`,
     you: '您',
     availableCount: (available, total) => `${total} 個中 ${available} 個可用`,
-    teamListening: lead => `只有 ${lead} 在聽 — @提及隊友即可喚醒它們`,
     settingsHint: group => `群組設定 — 重新命名 ${group} 或設定房間圖片`,
     settingsLabel: group => `${group} 的群組設定`,
     disbandHint: group => `解散 ${group} 群組聊天`,
@@ -4001,9 +3987,7 @@ const zhHant: BotsMessages = {
     panelDecisions: '決策',
     decisionsEmpty: '沒有等你處理的事。停滯的交接、循環和提問會出現在這裡。',
     decisionQuestion: name => `${name} 向你提了問題`,
-    deskTitle: '你的工作台',
     deskNeedsYou: '需要你',
-    deskFloor: count => `${count} 個在工作`,
     viewRoom: '房間',
     viewBoard: '看板',
     activityLabel: '即時動態',

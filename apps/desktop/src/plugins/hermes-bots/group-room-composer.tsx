@@ -11,11 +11,6 @@ import { GroupMentionInput } from './group-chat-parts'
 import { useBots } from './i18n'
 import type { Attachment, GroupMember } from './types'
 
-/** Round arrow send: the 1:1 composer's primary icon button look, so both
- *  composers read the same. */
-const SEND_BTN =
-  'size-7 shrink-0 rounded-full p-0 bg-fg text-surface hover:bg-fg/90 disabled:bg-fg/30 disabled:text-surface disabled:opacity-100'
-
 export interface GroupRoomComposerProps {
   ariaLabel: string
   images: Attachment[]
@@ -31,7 +26,7 @@ export interface GroupRoomComposerProps {
   value: string
 }
 
-function AttachmentChips({ images, onRemove }: { images: Attachment[]; onRemove: (index: number) => void }) {
+function AttachmentThumbs({ images, onRemove }: { images: Attachment[]; onRemove: (index: number) => void }) {
   const b = useBots()
 
   if (!images.length) {
@@ -39,7 +34,7 @@ function AttachmentChips({ images, onRemove }: { images: Attachment[]; onRemove:
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 px-1 pb-1" data-testid="group-composer-attachments">
+    <div className="flex flex-wrap items-center gap-2 px-3 pt-2" data-testid="group-composer-attachments">
       {images.map((img, index) => (
         <div
           className="flex items-center gap-1 rounded-control border border-line bg-surface-sunken px-1 py-0.5"
@@ -74,10 +69,11 @@ export function GroupRoomComposer(props: GroupRoomComposerProps) {
         props.onSubmit()
       }}
     >
-      <AttachmentChips images={props.images} onRemove={props.onRemoveImage} />
-      <div className="flex items-center gap-1.5">
+      <div className="rounded-card border border-line bg-surface-raised shadow-e1 transition-colors duration-(--dur-fast) focus-within:border-line-strong">
+        <AttachmentThumbs images={props.images} onRemove={props.onRemoveImage} />
         <GroupMentionInput
           aria-label={props.ariaLabel}
+          className="border-0 bg-transparent px-3 py-2.5 text-ui-sm shadow-none focus-visible:outline-none"
           members={props.members}
           onChange={props.onChange}
           onEscape={props.onEscape}
@@ -86,23 +82,25 @@ export function GroupRoomComposer(props: GroupRoomComposerProps) {
           placeholder={props.placeholder}
           value={props.value}
         />
-        <Tip label={b.group.attachHint}>
-          <Button
-            aria-label={b.group.attachHint}
-            className="shrink-0 text-fg-muted hover:text-fg"
-            onClick={props.onPick}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <Codicon name="attach" />
-          </Button>
-        </Tip>
-        <Tip label={props.sendLabel}>
-          <Button aria-label={props.sendLabel} className={SEND_BTN} disabled={empty} type="submit">
-            <Codicon name="arrow-up" size="0.875rem" />
-          </Button>
-        </Tip>
+        <div className="flex items-center justify-end gap-1 px-2 pb-2">
+          <Tip label={b.group.attachHint}>
+            <Button
+              aria-label={b.group.attachHint}
+              className="shrink-0 text-fg-muted hover:text-fg"
+              onClick={props.onPick}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <Codicon name="attach" />
+            </Button>
+          </Tip>
+          <Tip label={props.sendLabel}>
+            <Button aria-label={props.sendLabel} disabled={empty} size="icon-sm" type="submit" variant="default">
+              <Codicon name="arrow-up" />
+            </Button>
+          </Tip>
+        </div>
       </div>
     </form>
   )

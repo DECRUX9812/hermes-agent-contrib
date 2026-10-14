@@ -134,18 +134,18 @@ export function KeysHelp({ onClose }: { onClose: () => void }) {
   return (
     <div
       aria-label={k.title}
-      className="absolute bottom-20 left-3 z-40 flex w-64 flex-col gap-1.5 rounded-xl border border-(--ui-stroke-secondary) bg-(--ui-bg-primary) p-3 shadow-lg"
+      className="absolute bottom-20 left-3 z-40 flex w-64 flex-col gap-1.5 rounded-card border border-line bg-surface-raised p-3 shadow-e2"
       data-testid="group-keys-help"
       role="dialog"
     >
       <div className="flex items-center">
-        <span className="text-[0.75rem] font-semibold text-foreground">{k.title}</span>
-        <Button className="ml-auto h-6 px-2 text-[0.6875rem]" onClick={onClose} size="sm" variant="ghost">
+        <span className="text-ui-sm font-medium">{k.title}</span>
+        <Button className="ml-auto" onClick={onClose} size="sm" variant="ghost">
           Esc
         </Button>
       </div>
       {[k.next, k.all, k.board, k.newThread, k.help].map(line => (
-        <div className="font-mono text-[0.6875rem] text-(--ui-text-secondary)" key={line}>
+        <div className="font-mono text-ui-xs text-fg-muted" key={line}>
           {line}
         </div>
       ))}

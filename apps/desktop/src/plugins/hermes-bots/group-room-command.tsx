@@ -10,7 +10,7 @@
  * conversation stays the single record of what happened.
  */
 
-import { Button, Codicon } from '@hermes/plugin-sdk'
+import { Codicon } from '@hermes/plugin-sdk'
 
 import type { GroupRoomPrompt } from './group-chat-parts'
 import { groupSessionKey } from './group-membership'
@@ -125,34 +125,30 @@ export function RoomShortcuts({ commands, firstTag, onHelp, onInsert, thread }: 
   const s = b.group.shortcuts
 
   const chip = (label: string, icon: string, onClick: () => void) => (
-    <Button
-      className="h-7 rounded-full px-2.5 text-[0.6875rem]"
+    <button
+      className="flex h-6 cursor-pointer items-center gap-1 rounded-pill px-2 text-ui-2xs text-fg-muted hover:bg-hover hover:text-fg"
       key={label}
       onClick={onClick}
-      size="sm"
       type="button"
-      variant="outline"
     >
       <Codicon name={icon} />
       {label}
-    </Button>
+    </button>
   )
 
   return (
-    <div className="mt-1.5 flex flex-wrap gap-1.5" data-testid="group-room-shortcuts">
+    <div className="mt-1.5 flex gap-1" data-testid="group-room-shortcuts">
       {chip(s.handoff, 'arrow-swap', () => onInsert(handoffLine(firstTag, '<task>', '<check>', 30)))}
       {chip(s.status, 'pulse', () => commands.statusCheck(thread))}
       {chip(s.decide, 'question', () => onInsert(b.group.decideTemplate))}
-      <Button
+      <button
         aria-label={b.group.keys.hint}
-        className="ml-auto h-7 rounded-full px-2.5 font-mono text-[0.6875rem]"
+        className="flex h-6 cursor-pointer items-center rounded-pill px-2 text-ui-2xs text-fg-muted hover:bg-hover hover:text-fg"
         onClick={onHelp}
-        size="sm"
         type="button"
-        variant="ghost"
       >
-        ?
-      </Button>
+        <Codicon name="keyboard" />
+      </button>
     </div>
   )
 }
