@@ -154,6 +154,8 @@ describe('statusbar update channel vocabulary', () => {
 
     expect(version?.label).toBe('v0.21.6 (update)')
     expect(version?.title).toContain('v0.21.7 is available')
+    // Hidden by default at rest, but an available update cannot be hidden.
+    expect(version?.lockedVisible).toBe(true)
   })
 
   it('names a stable release older than the checkout as a rollback', () => {

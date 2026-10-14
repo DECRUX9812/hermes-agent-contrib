@@ -122,6 +122,9 @@ function versionItem(
     icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
     id: `version-${target}`,
     label: status.label,
+    // The version rests hidden, but being behind is not a preference: an
+    // available update forces it back so the user cannot miss it.
+    lockedVisible: status.hasUpdate,
     onSelect: () => openUpdateOverlayFor(target),
     title: status.tooltip,
     toggleLabel,

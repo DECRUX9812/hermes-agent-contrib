@@ -27,6 +27,7 @@ export const zhHantChrome = {
     search: '搜尋',
     searchTitle: '搜尋工作階段、檢視和動作',
     swapSidebarSides: '交換側邊欄位置',
+    moreTools: '更多工具',
     hideRightSidebar: '隱藏右側邊欄',
     showRightSidebar: '顯示右側邊欄',
     unreadSessions: count => (count === 1 ? '1 個未讀工作階段' : `${count} 個未讀工作階段`),
@@ -100,6 +101,7 @@ export const zhHantChrome = {
     },
     nav: {
       'new-session': '新工作階段',
+      activity: '活動',
       capabilities: '技能與工具',
       messaging: '訊息平台',
       artifacts: '成品',

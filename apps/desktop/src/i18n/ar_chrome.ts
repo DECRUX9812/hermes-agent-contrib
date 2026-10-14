@@ -32,6 +32,7 @@ export const arChrome = {
     search: 'بحث',
     searchTitle: 'البحث في الجلسات والعروض والإجراءات',
     swapSidebarSides: 'تبديل جانبي الأشرطة',
+    moreTools: 'أدوات أخرى',
     hideRightSidebar: 'إخفاء الشريط الأيمن',
     showRightSidebar: 'إظهار الشريط الأيمن',
     unreadSessions: count => (count === 1 ? 'جلسة واحدة غير مقروءة' : `${count} جلسات غير مقروءة`),
@@ -212,6 +213,7 @@ export const arChrome = {
     },
     nav: {
       'new-session': 'جلسة جديدة',
+      activity: 'النشاط',
       capabilities: 'المهارات',
       messaging: 'المراسلة',
       artifacts: 'العناصر',

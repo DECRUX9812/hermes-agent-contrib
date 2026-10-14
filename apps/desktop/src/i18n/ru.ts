@@ -259,6 +259,7 @@ export const ruOverrides = {
     search: 'Поиск',
     searchTitle: 'Поиск сеансов, видов и действий',
     swapSidebarSides: 'Поменять панели местами',
+    moreTools: 'Другие инструменты',
     hideRightSidebar: 'Скрыть правую панель',
     showRightSidebar: 'Показать правую панель',
     unreadSessions: count =>
@@ -2833,6 +2834,7 @@ export const ruOverrides = {
     },
     nav: {
       'new-session': 'Новый сеанс',
+      activity: 'Активность',
       capabilities: 'Возможности',
       messaging: 'Сообщения',
       artifacts: 'Артефакты',
@@ -4323,6 +4325,11 @@ export const ruOverrides = {
       command: 'Команда',
       moreOptions: 'Больше опций подтверждения',
       allowSession: 'Разрешить в этом сеансе',
+      allowOnce: 'Разрешить один раз',
+      alwaysAllowHere: 'Всегда разрешать здесь',
+      deny: 'Отклонить',
+      cardTitle: 'Разрешить выполнить эту команду?',
+      cardDetailsTitle: 'Проверьте это изменение',
       alwaysAllowMenu: 'Всегда разрешать…',
       jumpToApproval: 'Нужно подтверждение',
       reject: 'Отклонить',

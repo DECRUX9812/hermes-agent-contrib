@@ -10,11 +10,13 @@ import { triggerHaptic } from '@/lib/haptics'
 import { capitalize, normalize } from '@/lib/text'
 import { greetingFor } from '@/lib/today-brief'
 import { $currentCwd, $sessions } from '@/store/session'
+import { $uiLook } from '@/store/ui-look'
 import type { SessionInfo } from '@/types/hermes'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
 import { RecentProjects } from './recent-projects'
 import { TodayBrief } from './today-brief'
+import { Wordmark } from './wordmark'
 
 type IntroCopy = {
   headline: string
@@ -159,6 +161,8 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
   return copies[Math.abs(seed) % copies.length] || FALLBACK_COPY[0]
 }
 
+const WORDMARK = 'HERMES AGENT'
+
 type IntroSuggestion = { icon: string; label: string; prompt: string }
 
 const SUGGESTION_WHAT_CAN_YOU_DO: IntroSuggestion = {
@@ -252,6 +256,7 @@ export function Intro({ composer, personality, seed }: IntroProps) {
   // when a router actually exists.
   const inRouter = useInRouterContext()
   const sessions = useStore($sessions)
+  const look = useStore($uiLook)
   const currentCwd = useStore($currentCwd)
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
   const rotationSeed = mountSeed + (seed ?? 0)
@@ -275,12 +280,13 @@ export function Intro({ composer, personality, seed }: IntroProps) {
       data-slot="aui_intro"
     >
       <div className="w-full min-w-0">
-        <h1
-          className="m-0 text-ui-2xl font-semibold tracking-tight text-fg"
-          data-slot="intro-greeting"
-        >
-          {t.todayBrief.greeting[greetingFor(new Date().getHours())]}
-        </h1>
+        {look === 'classic' ? (
+          <Wordmark className="mb-1" text={WORDMARK} width="min(28rem, 72%)" />
+        ) : (
+          <h1 className="m-0 text-ui-2xl font-semibold tracking-tight text-fg" data-slot="intro-greeting">
+            {t.todayBrief.greeting[greetingFor(new Date().getHours())]}
+          </h1>
+        )}
 
         <p className="mx-auto mt-2 max-w-[34rem] text-ui-base text-fg-muted">{body}</p>
       </div>

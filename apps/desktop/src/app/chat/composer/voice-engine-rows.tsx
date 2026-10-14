@@ -64,3 +64,17 @@ export function VoiceEngineRows({ disabled }: { disabled: boolean }) {
     </>
   )
 }
+
+/** Short engine name for tooltips, or null until the backend has answered. */
+export function useVoiceEngineName(): null | string {
+  const { t } = useI18n()
+  const status = useStore($voiceLiveStatus)
+
+  if (status === null) {
+    return null
+  }
+
+  return selectedVoiceChatMode(status) === 'gpt-live'
+    ? t.composer.voiceEngineLiveShort
+    : t.composer.voiceEngineChainedShort
+}
