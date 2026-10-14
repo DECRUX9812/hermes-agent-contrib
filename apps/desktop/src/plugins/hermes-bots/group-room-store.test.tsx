@@ -6,9 +6,9 @@ import type * as HermesSdk from '@hermes/plugin-sdk'
 import { act, cleanup, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { GroupRow } from './bot-row'
 import { $groupChats } from './group-chat'
 import { groupChatRoomStore } from './group-room-store'
+import { GroupRow } from './group-row'
 import type * as GroupUnread from './group-unread'
 import { translateBotsIn } from './i18n-test-helper'
 

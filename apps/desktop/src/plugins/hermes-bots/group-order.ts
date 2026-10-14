@@ -32,6 +32,54 @@ export function sortGroupRosterRows<T extends OrderRow>(
   return legacy.map(row => (row.kind === 'group' ? groups[index++] : row))
 }
 
+/** Move a room to an absolute index inside its band (same pin flag, and the
+ *  same `visible` subset the caller rendered, so filtered-out rooms keep
+ *  their slots). Returns the full group-name order for the `rosterOrder`
+ *  write, or null when the name is unknown, outside the band, or unmoved. */
+export function moveGroupRow(rows: OrderRow[], name: string, toIndex: number, visible?: string[]): string[] | null {
+  const row = rows.find(row => row.name === name)
+
+  if (!row || row.kind !== 'group') {
+    return null
+  }
+
+  const band = rows.filter(
+    candidate =>
+      candidate.kind === 'group' && candidate.pinned === row.pinned && (!visible || visible.includes(candidate.name!))
+  )
+
+  const from = band.findIndex(candidate => candidate.name === name)
+
+  if (from === -1) {
+    return null
+  }
+
+  const clamped = Math.max(0, Math.min(toIndex, band.length - 1))
+
+  if (clamped === from) {
+    return null
+  }
+
+  const moved = band.slice()
+  const [picked] = moved.splice(from, 1)
+  moved.splice(clamped, 0, picked!)
+
+  const bandNames = new Set(band.map(candidate => candidate.name))
+  let cursor = 0
+
+  return rows
+    .filter(row => row.kind === 'group')
+    .map(row => {
+      if (!bandNames.has(row.name)) {
+        return row.name!
+      }
+
+      const placed = moved[cursor++]
+
+      return placed?.name ?? row.name!
+    })
+}
+
 /** Swap visible neighbours without dropping filtered-out rooms from the order. */
 export function reorderGroupRows(rows: OrderRow[], name: string, delta: -1 | 1, visible?: string[]): string[] | null {
   const row = rows.find(row => row.name === name)
