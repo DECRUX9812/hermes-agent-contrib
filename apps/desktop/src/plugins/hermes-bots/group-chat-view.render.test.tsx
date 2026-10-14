@@ -369,7 +369,7 @@ it('runs the room as threads: the rail opens one beside the room, with its own h
   expect(within(panel).getByTestId('group-thread-header').textContent).toContain('Answered')
   expect(within(panel).getByLabelText('Reply in thread')).toBeTruthy()
   // The main composer keeps starting new threads.
-  expect(screen.getByTestId('group-composer-context').textContent).not.toContain('Replying in')
+  expect(screen.getByTestId('group-composer-context').textContent).toContain('New thread')
 
   // Back to All closes the thread and the members panel returns.
   fireEvent.click(within(rail).getByText('All activity'))

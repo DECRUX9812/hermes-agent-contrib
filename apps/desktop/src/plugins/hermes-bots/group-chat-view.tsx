@@ -1524,7 +1524,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             {/* The main composer always starts a new thread; replies go
                 through the open thread's own box. */}
             <div className="mx-auto w-full max-w-[52rem]">
-              <GroupComposerContext leadName={teamLead && leadName ? leadName : ''} onClear={() => {}} replyTitle={null} />
+              <GroupComposerContext leadName={teamLead && leadName ? leadName : ''} />
               <GroupRoomComposer
                 ariaLabel={b.group.messageRoom(group)}
                 images={imagesFor(null)}
