@@ -1,6 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { railActiveKey, railPanelAction } from './activity-rail-model'
+import { railActiveKey, railPageGroups, railPanelAction } from './activity-rail-model'
+
+describe('railPageGroups', () => {
+  const isPlugin = (page: { id: string }) => page.id.includes(':')
+
+  it('keeps every page, built-ins first and plugin pages in their own group', () => {
+    const pages = [{ id: 'kanban:nav' }, { id: 'activity' }, { id: 'agentcraft:nav' }, { id: 'cron' }]
+
+    expect(railPageGroups(pages, isPlugin)).toEqual([
+      [{ id: 'activity' }, { id: 'cron' }],
+      [{ id: 'kanban:nav' }, { id: 'agentcraft:nav' }]
+    ])
+  })
+
+  it('draws no empty group', () => {
+    expect(railPageGroups([{ id: 'standup:nav' }], isPlugin)).toEqual([[{ id: 'standup:nav' }]])
+    expect(railPageGroups([], isPlugin)).toEqual([])
+  })
+})
 
 describe('railPanelAction', () => {
   it('folds only the panel that is actually showing', () => {

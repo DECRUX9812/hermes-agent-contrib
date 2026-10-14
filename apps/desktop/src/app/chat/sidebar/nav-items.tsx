@@ -74,6 +74,13 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
   }
 ]
 
+const BUILT_IN_NAV_IDS: ReadonlySet<string> = new Set(SIDEBAR_NAV.map(item => item.id))
+
+/** A row a plugin contributed (its page lives in the plugin), not a built-in view. */
+export function isContributedNavItem(item: SidebarNavItem): boolean {
+  return !BUILT_IN_NAV_IDS.has(item.id)
+}
+
 /** Built-in rows whose id is the view they open. */
 const VIEW_ROWS: ReadonlySet<string> = new Set<AppView>(['capabilities', 'messaging', 'artifacts', 'cron'])
 

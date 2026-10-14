@@ -1,8 +1,8 @@
 import { useStore } from '@nanostores/react'
-import { type ComponentType, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type ComponentType, Fragment, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
-import { navItemActive, useSidebarNavItems } from '@/app/chat/sidebar/nav-items'
+import { isContributedNavItem, navItemActive, useSidebarNavItems } from '@/app/chat/sidebar/nav-items'
 import { nextRunOverdueMs } from '@/app/cron/job-state'
 import { BrandMark } from '@/components/brand-mark'
 import { $paneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
@@ -20,16 +20,16 @@ import { $newChatProfile } from '@/store/profile'
 import { type AppView, SETTINGS_ROUTE } from '../routes'
 import type { SidebarNavItem } from '../types'
 
-import { BOTS_PANE, railActiveKey, railPanelAction, SESSIONS_PANE } from './activity-rail-model'
+import { BOTS_PANE, railActiveKey, railPageGroups, railPanelAction, SESSIONS_PANE } from './activity-rail-model'
 import { TITLEBAR_HEIGHT } from './titlebar'
 
 // The icon rail at the window's left edge (Codex / VS Code activity bar, in
-// Hermes's own dress): the Nous mark as Home, the sidebar's panels, the two
-// standing pages, then search and settings. It stays when the sidebar folds,
-// so the app is never more than one click from anywhere. Every other page
-// is one palette search away.
-
-const RAIL_PAGE_IDS = ['cron', 'artifacts'] as const
+// Hermes's own dress): the Nous mark as Home, the sidebar's panels, every
+// page, then search and settings. It stays when the sidebar folds, so the
+// app is never more than one click from anywhere. Pages come from the same
+// list the sidebar's nav rows use (useSidebarNavItems), already filtered to
+// the interface mode, so Simple stays calm through each row's tier and plugin
+// pages (Kanban, Studio, anything installed) keep their own group.
 
 const RAIL_BUTTON =
   'relative grid size-8 place-items-center rounded-row text-fg-muted outline-none transition-[background-color,color] duration-(--dur-fast) ease-standard [-webkit-app-region:no-drag] hover:bg-hover hover:text-fg focus-ring'
@@ -140,15 +140,11 @@ export function ActivityRail({
   const hasBots = useContributions('panes').some(pane => pane.id === BOTS_PANE)
   const cronJobs = useStore($cronJobs)
 
-  const cronAttention = useMemo(
-    () => cronJobs.some(job => nextRunOverdueMs(job) !== null),
-    [cronJobs]
-  )
+  const cronAttention = useMemo(() => cronJobs.some(job => nextRunOverdueMs(job) !== null), [cronJobs])
 
   const newSession = navItems.find(item => item.id === 'new-session')
   const pages = navItems.filter(item => item.id !== 'new-session')
   const activePage = pages.find(item => navItemActive(item, currentView, pathname))?.id ?? null
-  const railPages = RAIL_PAGE_IDS.flatMap(id => pages.filter(item => item.id === id))
 
   const panels = [
     { key: SESSIONS_PANE, shown: sessionsShown },
@@ -206,7 +202,7 @@ export function ActivityRail({
       : [])
   ]
 
-  const pageEntries: RailEntry[] = railPages.map(item => {
+  const pageEntry = (item: SidebarNavItem): RailEntry => {
     const text = labelFor(item)
 
     return {
@@ -218,7 +214,9 @@ export function ActivityRail({
       attention: item.id === 'cron' && cronAttention,
       onPress: () => go(item)
     }
-  })
+  }
+
+  const pageGroups = railPageGroups(pages, isContributedNavItem).map(group => group.map(pageEntry))
 
   const toolEntries: RailEntry[] = [
     {
@@ -289,9 +287,13 @@ export function ActivityRail({
         {panelEntries.map(entry => (
           <RailButton entry={entry} key={entry.key} register={register} />
         ))}
-        {pageEntries.length > 0 && <RailDivider />}
-        {pageEntries.map(entry => (
-          <RailButton entry={entry} key={entry.key} register={register} />
+        {pageGroups.map(group => (
+          <Fragment key={group[0].key}>
+            <RailDivider />
+            {group.map(entry => (
+              <RailButton entry={entry} key={entry.key} register={register} />
+            ))}
+          </Fragment>
         ))}
       </div>
 

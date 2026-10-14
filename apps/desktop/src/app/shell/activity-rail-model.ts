@@ -17,6 +17,17 @@ export function railPanelAction({ paneShown, sidebarOpen }: RailPanelState): 'fo
   return sidebarOpen && paneShown ? 'fold' : 'show'
 }
 
+/** The rail's page groups, each drawn behind its own divider: every page the
+ *  interface mode shows, built-in views first, then plugin pages. The mode
+ *  filter upstream of this is the only thing that hides a page; dropping
+ *  pages here is how plugin rows once vanished from the rail in every mode. */
+export function railPageGroups<T>(pages: readonly T[], isContributed: (page: T) => boolean): T[][] {
+  const builtIn = pages.filter(page => !isContributed(page))
+  const plugins = pages.filter(isContributed)
+
+  return [builtIn, plugins].filter(group => group.length > 0)
+}
+
 /** The entry the rail's indicator sits on: the page on screen wins (it is
  *  where you are), else the panel open beside it, else nothing. */
 export function railActiveKey(
