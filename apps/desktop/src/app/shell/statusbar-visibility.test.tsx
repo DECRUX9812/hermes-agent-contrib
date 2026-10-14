@@ -98,6 +98,17 @@ describe('reset to defaults', () => {
     expect(within(statusbar).queryByText('Cron')).toBeNull()
   })
 
+  it('rests version readouts off the bar and lists them in the menu to bring back', async () => {
+    const statusbar = bar([item('version-client', 'v0.22.0+1166'), item('gateway-health', 'Gateway')])
+
+    expect(within(statusbar).queryByText('v0.22.0+1166')).toBeNull()
+
+    openContextMenu(statusbar)
+    fireEvent.click(await screen.findByRole('menuitemcheckbox', { name: 'v0.22.0+1166' }))
+
+    expect(within(statusbar).getByText('v0.22.0+1166')).toBeTruthy()
+  })
+
   it('disables the row when the layout is already default', async () => {
     const statusbar = bar([item('cron', 'Cron'), item('gateway-health', 'Gateway')])
 

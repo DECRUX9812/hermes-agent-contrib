@@ -122,9 +122,6 @@ function versionItem(
     icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
     id: `version-${target}`,
     label: status.label,
-    // Update state is not a preference: hiding it is how a user misses that
-    // they are behind. Listed in the menu, but locked on.
-    lockedVisible: true,
     onSelect: () => openUpdateOverlayFor(target),
     title: status.tooltip,
     toggleLabel,
@@ -562,7 +559,7 @@ export function useStatusbarItems({
       {
         className: gatewayRestarting ? undefined : gatewayClassName,
         detail: gatewayHealth.detail,
-        hidden: botsShowing,
+        hidden: botsShowing || !(gatewayHealth.degraded || gatewayRestarting),
         icon: gatewayRestarting ? (
           <GlyphSpinner ariaLabel={copy.gatewayRestarting} className="size-3" />
         ) : inferenceReady ? (
