@@ -33,6 +33,7 @@ class InflightTurn(Result):
     assistant: str = ""
     streaming: bool = False
     user: str = ""
+    user_originated: bool | None = None
     display_kind: str | None = None
     display_metadata: dict[str, JsonValue] | None = None
     corrections: list[str] | None = None
@@ -134,6 +135,15 @@ class SessionCreateParams(ProfileParams):
     hidden: bool = False
     room_plumbing: bool = False
     follow_profile_config: bool = False
+    # Born a bot topic: a user-visible side chat of a bot that carries the canonical
+    # Bot Chat's powers (message_agent, update_task, teammate protocol). Persisted
+    # into the row's model_config, fixed for the session's life.
+    bot_topic: bool = False
+    # Born a member session of a team-orchestrated group room (Bot Mode): the lead alone hears
+    # plain user turns; teammates wake on @mention or the lead's delegation. Session-lifetime
+    # marker — set once, persisted in model_config, restored on every resume path.
+    team_room: bool = False
+    team_room_lead: str | None = None
     # #65410: stable caller-chosen key so a retried create (response lost in
     # transit) returns the SAME session instead of a duplicate child.
     idempotency_key: str | None = None
@@ -777,4 +787,38 @@ class LlmOneshotResult(Result):
 
 method("llm.oneshot", params=LlmOneshotParams, result=LlmOneshotResult,
        doc="Stateless one-shot LLM completion (titles, ideas) on the session's or the task backend.")
+
+
+# ── companion side channels (fork) ────────────────────────────────────────────────────────
+
+
+class SessionAskParams(SessionParams):
+    """``history`` is the client-owned thread (prior Q/A pairs); the server keeps no state."""
+
+    question: str
+    history: list[JsonValue] | None = None
+
+
+class SessionAskResult(Result):
+    answer: str
+    resolved_id: str
+    messages_considered: int
+    truncated: bool
+
+
+method("session.ask", params=SessionAskParams, result=SessionAskResult,
+       doc="Answer a question ABOUT a session's transcript via the auxiliary model; "
+           "the live conversation is never read or mutated.")
+
+
+class SessionPredictNextParams(SessionParams):
+    """No body beyond the session address; a miss answers empty text, never an error."""
+
+
+class SessionPredictNextResult(Result):
+    text: str
+
+
+method("session.predict_next", params=SessionPredictNextParams, result=SessionPredictNextResult,
+       doc="Draft the user's likely next composer message (Tab to accept); empty is normal.")
 

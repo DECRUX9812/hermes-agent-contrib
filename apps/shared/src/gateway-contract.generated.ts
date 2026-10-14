@@ -1817,6 +1817,34 @@ export interface DisplayLeaseReleaseParams {
   viewer_id?: string | null
   force?: boolean | null
 }
+/** Calls that take no arguments; the desktop sends ``{}``. */
+export type ForkOnboardingEmptyParams = Record<string, never>
+export interface EnsureSetupProfileResult {
+  name: string
+  path: string
+  created: boolean
+}
+/** ``messages`` seeds the setup chat only when it is created empty; anything else is ignored. */
+export interface EnsureSetupSessionParams {
+  messages?: unknown[] | null
+}
+export interface EnsureSetupSessionResult {
+  profile: string
+  session_id: string
+  empty: boolean
+}
+export interface ForkOnboardingStateResult {
+  eligible: boolean
+  profile?: string | null
+  intro: string
+  failed_starts: number
+  completed_at?: string | null
+}
+export interface ResetSetupProfileResult {
+  name: string
+  path: string
+  reset: boolean
+}
 export interface GroupsCapabilitiesParams {
   profile?: string | null
 }
@@ -3528,6 +3556,9 @@ export interface SessionCreateParams {
   hidden?: boolean
   room_plumbing?: boolean
   follow_profile_config?: boolean
+  bot_topic?: boolean
+  team_room?: boolean
+  team_room_lead?: string | null
   idempotency_key?: string | null
 }
 /** One create-time transcript row (``session_history._coerce_seed_history``); ``text`` is the legacy alias of ``content``; only ``display_kind: "hidden"`` is accepted from the wire. Clients forward stored rows verbatim (``_row_id``, ``timestamp``, …) and the coercer drops what it does not use, so the row stays open. */
@@ -3630,6 +3661,7 @@ export interface InflightTurn {
   assistant?: string
   streaming?: boolean
   user?: string
+  user_originated?: boolean | null
   display_kind?: string | null
   display_metadata?: Record<string, unknown> | null
   corrections?: string[] | null
@@ -4119,6 +4151,27 @@ export interface LlmOneshotParams {
   session_id?: string | null
 }
 export interface LlmOneshotResult {
+  text: string
+}
+/** ``history`` is the client-owned thread (prior Q/A pairs); the server keeps no state. */
+export interface SessionAskParams {
+  session_id: string
+  profile?: string | null
+  question: string
+  history?: unknown[] | null
+}
+export interface SessionAskResult {
+  answer: string
+  resolved_id: string
+  messages_considered: number
+  truncated: boolean
+}
+/** No body beyond the session address; a miss answers empty text, never an error. */
+export interface SessionPredictNextParams {
+  session_id: string
+  profile?: string | null
+}
+export interface SessionPredictNextResult {
   text: string
 }
 export interface SystemBatteryParams {
@@ -5146,6 +5199,28 @@ export interface ThemeValues {
   mode?: ThemeMode | null
   layout?: string | null
 }
+/** ``tools/verify_preview_tool.py``; ``settle_ms`` lets pending console traffic land first. */
+export interface PreviewVerifyRequestParams {
+  session_id: string
+  settle_ms?: number | null
+}
+/** The renderer's pass/fail card; ``ok: false`` with ``error`` when no preview is open. */
+export interface PreviewVerifyResult {
+  ok: boolean
+  errorCount?: number | null
+  errors?: PreviewVerifyErrorEntry[] | null
+  tabId?: string | null
+  title?: string | null
+  url?: string | null
+  warningCount?: number | null
+  error?: string | null
+}
+export interface PreviewVerifyErrorEntry {
+  level: number
+  message: string
+  line?: number | null
+  source?: string | null
+}
 export interface DisplayInstallSudoParams {
   session_id: string
   profile_key: string
@@ -5508,6 +5583,10 @@ export interface PaneRevealPayload {
   pane: string
   [key: string]: unknown
 }
+/** ``tools/apply_layout_tool.py``; preset ids are free-form, resolved by the renderer. */
+export interface LayoutApplyPayload {
+  preset: string
+}
 /** ``tools/react_to_message_tool.py``. */
 export interface MessageReactionPayload {
   row_id: number
@@ -5756,6 +5835,18 @@ export interface RpcMethods {
   'display.thumbnail': { params: ProfileParams; result: DisplayThumbnailResult }
   /** Stage a non-image file into the session workspace and hand back its @file: ref. */
   'file.attach': { params: FileAttachParams; result: FileAttachResult }
+  /** Create the setup profile under the setup lock (mirroring launch credentials), or no-op. */
+  'fork.onboarding.ensure_setup_profile': { params: ForkOnboardingEmptyParams; result: EnsureSetupProfileResult }
+  /** Find the setup chat by title or create it; empty is true only before its first turn. */
+  'fork.onboarding.ensure_setup_session': { params: EnsureSetupSessionParams; result: EnsureSetupSessionResult }
+  /** Latch the intro as seen so it does not replay. */
+  'fork.onboarding.mark_seen': { params: ForkOnboardingEmptyParams; result: ForkOnboardingStateResult }
+  /** Count a failed guide start (capped); at the cap the intro latches seen. */
+  'fork.onboarding.record_failed_start': { params: ForkOnboardingEmptyParams; result: ForkOnboardingStateResult }
+  /** Clear the setup profile's sessions and reset its state; refused when none exists. */
+  'fork.onboarding.reset_setup_profile': { params: ForkOnboardingEmptyParams; result: ResetSetupProfileResult }
+  /** Fork setup-profile state (eligible/intro/failed_starts/completed_at/profile). */
+  'fork.onboarding.state': { params: ForkOnboardingEmptyParams; result: ForkOnboardingStateResult }
   /** Mark the one-time availability notice as shown on the free-tier identity. */
   'free_tier.ack_notice': { params: ProfileParams; result: FreeTierAckNoticeResult }
   /** Report a browser window outcome for the matching pending attempt; mint remains authoritative. */
@@ -6000,6 +6091,8 @@ export interface RpcMethods {
   'session.active_list': { params: SessionActiveListParams; result: SessionActiveListResult }
   /** Set/clear archived (soft-hide, messages kept) on a session + lineage; Desktop PATCH parity. */
   'session.archive': { params: SessionArchiveParams; result: SessionArchiveResult }
+  /** Answer a question ABOUT a session's transcript via the auxiliary model; the live conversation is never read or mutated. */
+  'session.ask': { params: SessionAskParams; result: SessionAskResult }
   /** Fork a live session into a new stored child that shares the parent's history so far. */
   'session.branch': { params: SessionBranchParams; result: SessionBranchResult }
   /** Whole-session branch of a stored parent: the owning backend reads and copies the transcript, which never crosses the wire (a separate method so an older gateway fails loudly, not with an empty branch). */
@@ -6040,6 +6133,8 @@ export interface RpcMethods {
   'session.list': { params: SessionListParams; result: SessionListResult }
   /** Most recent human-facing session; errors fold into a null session_id. */
   'session.most_recent': { params: SessionMostRecentParams; result: SessionMostRecentResult }
+  /** Draft the user's likely next composer message (Tab to accept); empty is normal. */
+  'session.predict_next': { params: SessionPredictNextParams; result: SessionPredictNextResult }
   /** Redirect the active turn (queued for the next turn while the agent is still building). */
   'session.redirect': { params: SessionCorrectionParams; result: SessionCorrectionResult }
   /** Attach to a stored session: reuse it if live here, else lazy / deferred / cold / eager rebuild. */
@@ -6248,6 +6343,12 @@ export const RPC_METHODS = [
   'display.switchSandboxImage',
   'display.thumbnail',
   'file.attach',
+  'fork.onboarding.ensure_setup_profile',
+  'fork.onboarding.ensure_setup_session',
+  'fork.onboarding.mark_seen',
+  'fork.onboarding.record_failed_start',
+  'fork.onboarding.reset_setup_profile',
+  'fork.onboarding.state',
   'free_tier.ack_notice',
   'free_tier.challenge_result',
   'free_tier.claim_nudge',
@@ -6370,6 +6471,7 @@ export const RPC_METHODS = [
   'session.activate',
   'session.active_list',
   'session.archive',
+  'session.ask',
   'session.branch',
   'session.branch_stored',
   'session.branch_whole',
@@ -6390,6 +6492,7 @@ export const RPC_METHODS = [
   'session.interrupt',
   'session.list',
   'session.most_recent',
+  'session.predict_next',
   'session.redirect',
   'session.resume',
   'session.save',
@@ -6466,6 +6569,8 @@ export interface ServerRequestMap {
   'preview.act': { params: PreviewActRequestParams; result: ValueResult }
   /** Read the in-app browser preview's text (JSON text answer). */
   'preview.read': { params: ReadRangeRequestParams; result: ValueResult }
+  /** Read the active preview pane's console log and answer pass/fail with the error list. */
+  'preview.verify': { params: PreviewVerifyRequestParams; result: PreviewVerifyResult }
   /** Masked value for a named env var (skills / setup flows). */
   secret: { params: SecretRequestParams; result: ValueResult }
   /** The onboarding chat's card for one beat; blocks setup_beat until answered (300 s). */
@@ -6496,6 +6601,7 @@ export const SERVER_REQUEST_METHODS = [
   'display.install.sudo',
   'preview.act',
   'preview.read',
+  'preview.verify',
   'secret',
   'setup_beat',
   'sudo',
@@ -6549,6 +6655,8 @@ export interface BackendGatewayEventMap {
   'free_tier.challenge': FreeTierChallengePayload
   /** First frame of a connection: the resolved skin, the change-event capability and the replay epoch. */
   'gateway.ready': GatewayReadyPayload
+  /** Apply a saved layout preset in the desktop GUI. */
+  'layout.apply': LayoutApplyPayload
   /** The turn ended: final text, usage and outcome. */
   'message.complete': MessageCompletePayload
   /** One streamed chunk of the assistant reply. */
@@ -6687,6 +6795,7 @@ export const GATEWAY_EVENT_TYPES = [
   'error',
   'free_tier.challenge',
   'gateway.ready',
+  'layout.apply',
   'message.complete',
   'message.delta',
   'message.interim',

@@ -604,6 +604,15 @@ class PaneRevealPayload(OpenPayload):
 event("pane.reveal", PaneRevealPayload, doc="Focus / reveal a named desktop pane.")
 
 
+class LayoutApplyPayload(Payload):
+    """``tools/apply_layout_tool.py``; preset ids are free-form, resolved by the renderer."""
+
+    preset: str
+
+
+event("layout.apply", LayoutApplyPayload, doc="Apply a saved layout preset in the desktop GUI.")
+
+
 class MessageReactionPayload(Payload):
     """``tools/react_to_message_tool.py``."""
 

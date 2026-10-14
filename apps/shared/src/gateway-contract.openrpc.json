@@ -1465,6 +1465,114 @@
       }
     },
     {
+      "name": "fork.onboarding.ensure_setup_profile",
+      "summary": "Create the setup profile under the setup lock (mirroring launch credentials), or no-op.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkOnboardingEmptyParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/EnsureSetupProfileResult"
+        }
+      }
+    },
+    {
+      "name": "fork.onboarding.ensure_setup_session",
+      "summary": "Find the setup chat by title or create it; empty is true only before its first turn.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/EnsureSetupSessionParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/EnsureSetupSessionResult"
+        }
+      }
+    },
+    {
+      "name": "fork.onboarding.mark_seen",
+      "summary": "Latch the intro as seen so it does not replay.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkOnboardingEmptyParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkOnboardingStateResult"
+        }
+      }
+    },
+    {
+      "name": "fork.onboarding.record_failed_start",
+      "summary": "Count a failed guide start (capped); at the cap the intro latches seen.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkOnboardingEmptyParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkOnboardingStateResult"
+        }
+      }
+    },
+    {
+      "name": "fork.onboarding.reset_setup_profile",
+      "summary": "Clear the setup profile's sessions and reset its state; refused when none exists.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkOnboardingEmptyParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ResetSetupProfileResult"
+        }
+      }
+    },
+    {
+      "name": "fork.onboarding.state",
+      "summary": "Fork setup-profile state (eligible/intro/failed_starts/completed_at/profile).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkOnboardingEmptyParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkOnboardingStateResult"
+        }
+      }
+    },
+    {
       "name": "free_tier.ack_notice",
       "summary": "Mark the one-time availability notice as shown on the free-tier identity.",
       "params": [
@@ -3661,6 +3769,24 @@
       }
     },
     {
+      "name": "session.ask",
+      "summary": "Answer a question ABOUT a session's transcript via the auxiliary model; the live conversation is never read or mutated.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/SessionAskParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/SessionAskResult"
+        }
+      }
+    },
+    {
       "name": "session.branch",
       "summary": "Fork a live session into a new stored child that shares the parent's history so far.",
       "params": [
@@ -4017,6 +4143,24 @@
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/SessionMostRecentResult"
+        }
+      }
+    },
+    {
+      "name": "session.predict_next",
+      "summary": "Draft the user's likely next composer message (Tab to accept); empty is normal.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/SessionPredictNextParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/SessionPredictNextResult"
         }
       }
     },
@@ -16181,6 +16325,75 @@
         "title": "EmptyRequestParams",
         "type": "object"
       },
+      "EnsureSetupProfileResult": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "created": {
+            "title": "Created",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "created"
+        ],
+        "title": "EnsureSetupProfileResult",
+        "type": "object"
+      },
+      "EnsureSetupSessionParams": {
+        "additionalProperties": false,
+        "description": "``messages`` seeds the setup chat only when it is created empty; anything else is ignored.",
+        "properties": {
+          "messages": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Messages"
+          }
+        },
+        "title": "EnsureSetupSessionParams",
+        "type": "object"
+      },
+      "EnsureSetupSessionResult": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "empty": {
+            "title": "Empty",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "profile",
+          "session_id",
+          "empty"
+        ],
+        "title": "EnsureSetupSessionResult",
+        "type": "object"
+      },
       "ErrorPayload": {
         "additionalProperties": false,
         "description": "Every ``_emit(\"error\", \u2026)`` site sets exactly ``message``.",
@@ -16517,6 +16730,61 @@
           "content"
         ],
         "title": "ForeignTurn",
+        "type": "object"
+      },
+      "ForkOnboardingEmptyParams": {
+        "additionalProperties": false,
+        "description": "Calls that take no arguments; the desktop sends ``{}``.",
+        "properties": {},
+        "title": "ForkOnboardingEmptyParams",
+        "type": "object"
+      },
+      "ForkOnboardingStateResult": {
+        "additionalProperties": false,
+        "properties": {
+          "eligible": {
+            "title": "Eligible",
+            "type": "boolean"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "intro": {
+            "title": "Intro",
+            "type": "string"
+          },
+          "failed_starts": {
+            "title": "Failed Starts",
+            "type": "integer"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Completed At"
+          }
+        },
+        "required": [
+          "eligible",
+          "intro",
+          "failed_starts"
+        ],
+        "title": "ForkOnboardingStateResult",
         "type": "object"
       },
       "FreeTierAckNoticeResult": {
@@ -18997,6 +19265,18 @@
             "title": "User",
             "type": "string"
           },
+          "user_originated": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "User Originated"
+          },
           "display_kind": {
             "anyOf": [
               {
@@ -19380,6 +19660,21 @@
           "source"
         ],
         "title": "LanguageOption",
+        "type": "object"
+      },
+      "LayoutApplyPayload": {
+        "additionalProperties": false,
+        "description": "``tools/apply_layout_tool.py``; preset ids are free-form, resolved by the renderer.",
+        "properties": {
+          "preset": {
+            "title": "Preset",
+            "type": "string"
+          }
+        },
+        "required": [
+          "preset"
+        ],
+        "title": "LayoutApplyPayload",
         "type": "object"
       },
       "LearningAxis": {
@@ -26239,6 +26534,178 @@
         "title": "PreviewRestartProgressPayload",
         "type": "object"
       },
+      "PreviewVerifyErrorEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "level": {
+            "title": "Level",
+            "type": "integer"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Line"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source"
+          }
+        },
+        "required": [
+          "level",
+          "message"
+        ],
+        "title": "PreviewVerifyErrorEntry",
+        "type": "object"
+      },
+      "PreviewVerifyRequestParams": {
+        "additionalProperties": false,
+        "description": "``tools/verify_preview_tool.py``; ``settle_ms`` lets pending console traffic land first.",
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "settle_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Settle Ms"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "PreviewVerifyRequestParams",
+        "type": "object"
+      },
+      "PreviewVerifyResult": {
+        "additionalProperties": false,
+        "description": "The renderer's pass/fail card; ``ok: false`` with ``error`` when no preview is open.",
+        "properties": {
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "errorCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Errorcount"
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/PreviewVerifyErrorEntry"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Errors"
+          },
+          "tabId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tabid"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "warningCount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Warningcount"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "title": "PreviewVerifyResult",
+        "type": "object"
+      },
       "ProcessEntry": {
         "additionalProperties": true,
         "description": "``tools/process_registry.py::list_sessions`` row plus the gateway's ``output_tail``.",
@@ -30558,6 +31025,30 @@
         "title": "RequestCancelPayload",
         "type": "object"
       },
+      "ResetSetupProfileResult": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "reset": {
+            "title": "Reset",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "reset"
+        ],
+        "title": "ResetSetupProfileResult",
+        "type": "object"
+      },
       "ResumePhaseStatus": {
         "enum": [
           "loading",
@@ -32210,6 +32701,80 @@
         "title": "SessionArchiveResult",
         "type": "object"
       },
+      "SessionAskParams": {
+        "additionalProperties": false,
+        "description": "``history`` is the client-owned thread (prior Q/A pairs); the server keeps no state.",
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "history": {
+            "anyOf": [
+              {
+                "items": {},
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "History"
+          }
+        },
+        "required": [
+          "session_id",
+          "question"
+        ],
+        "title": "SessionAskParams",
+        "type": "object"
+      },
+      "SessionAskResult": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "resolved_id": {
+            "title": "Resolved Id",
+            "type": "string"
+          },
+          "messages_considered": {
+            "title": "Messages Considered",
+            "type": "integer"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "answer",
+          "resolved_id",
+          "messages_considered",
+          "truncated"
+        ],
+        "title": "SessionAskResult",
+        "type": "object"
+      },
       "SessionBranchParams": {
         "additionalProperties": false,
         "properties": {
@@ -33377,6 +33942,28 @@
             "default": false,
             "title": "Follow Profile Config",
             "type": "boolean"
+          },
+          "bot_topic": {
+            "default": false,
+            "title": "Bot Topic",
+            "type": "boolean"
+          },
+          "team_room": {
+            "default": false,
+            "title": "Team Room",
+            "type": "boolean"
+          },
+          "team_room_lead": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Team Room Lead"
           },
           "idempotency_key": {
             "anyOf": [
@@ -34701,6 +35288,47 @@
           "session_id"
         ],
         "title": "SessionParams",
+        "type": "object"
+      },
+      "SessionPredictNextParams": {
+        "additionalProperties": false,
+        "description": "No body beyond the session address; a miss answers empty text, never an error.",
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "SessionPredictNextParams",
+        "type": "object"
+      },
+      "SessionPredictNextResult": {
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "SessionPredictNextResult",
         "type": "object"
       },
       "SessionReclaimedPayload": {
@@ -44345,6 +44973,24 @@
       }
     },
     {
+      "name": "preview.verify",
+      "summary": "Read the active preview pane's console log and answer pass/fail with the error list.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/PreviewVerifyRequestParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/PreviewVerifyResult"
+        }
+      }
+    },
+    {
       "name": "secret",
       "summary": "Masked value for a named env var (skills / setup flows).",
       "params": [
@@ -44768,6 +45414,18 @@
           "name": "payload",
           "schema": {
             "$ref": "#/components/schemas/GatewayReadyPayload"
+          }
+        }
+      ]
+    },
+    {
+      "name": "layout.apply",
+      "summary": "Apply a saved layout preset in the desktop GUI.",
+      "params": [
+        {
+          "name": "payload",
+          "schema": {
+            "$ref": "#/components/schemas/LayoutApplyPayload"
           }
         }
       ]

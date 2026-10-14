@@ -354,6 +354,39 @@ server_request("theme.pick", params=ThemePickRequestParams, result=ThemePickResu
                doc="Show an accent or layout picker card in the chat and wait for the pick.")
 
 
+# ── preview verify ────────────────────────────────────────────────────────────────────────────
+
+
+class PreviewVerifyRequestParams(ServerRequestParams):
+    """``tools/verify_preview_tool.py``; ``settle_ms`` lets pending console traffic land first."""
+
+    settle_ms: int | None = None
+
+
+class PreviewVerifyErrorEntry(Params):
+    level: int
+    message: str
+    line: int | None = None
+    source: str | None = None
+
+
+class PreviewVerifyResult(Result):
+    """The renderer's pass/fail card; ``ok: false`` with ``error`` when no preview is open."""
+
+    ok: bool
+    errorCount: int | None = None
+    errors: list[PreviewVerifyErrorEntry] | None = None
+    tabId: str | None = None
+    title: str | None = None
+    url: str | None = None
+    warningCount: int | None = None
+    error: str | None = None
+
+
+server_request("preview.verify", params=PreviewVerifyRequestParams, result=PreviewVerifyResult,
+               doc="Read the active preview pane's console log and answer pass/fail with the error list.")
+
+
 # ── withdrawal ────────────────────────────────────────────────────────────────────────────────
 
 
