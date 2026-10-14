@@ -26,7 +26,7 @@ import {
 
 /** The muted slot beside a section label (loading glyph, status hint). */
 export function SidebarSectionMeta({ children }: { children: React.ReactNode }) {
-  return <span className="shrink-0 text-[0.6875rem] font-medium text-(--ui-text-quaternary)">{children}</span>
+  return <span className="shrink-0 text-ui-2xs font-medium text-fg-subtle">{children}</span>
 }
 
 // Row geometry lives in `row-geometry.ts` — see that file for why each class
@@ -38,7 +38,7 @@ export { SIDEBAR_LEAD_ICON_SIZE, SIDEBAR_ROW_CARD_MIN_H, SIDEBAR_TRUNCATED_LEADI
 // SidebarSectionHeader), mirroring the artifacts/file browser header
 // affordances. focus-visible keeps them keyboard-reachable.
 const HEADER_ACTION_BTN =
-  'text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground group-hover/section:opacity-100 focus-visible:opacity-100'
+  'text-fg-muted opacity-0 transition-opacity hover:bg-hover hover:text-fg group-hover/section:opacity-100 focus-visible:opacity-100'
 
 // The sessions section header's "+" — the flat list's top-level new-session
 // control. Also a drag source, the same gesture as the nav's "New session"
@@ -132,7 +132,7 @@ export function SidebarDateDivider({
   toggle?: { ariaLabel: string; onToggle: () => void; open: boolean }
 }) {
   const caption = (
-    <span className="shrink-0 text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-(--ui-text-quaternary)">
+    <span className="shrink-0 text-ui-2xs font-medium text-fg-subtle">
       {label}
     </span>
   )
@@ -156,7 +156,7 @@ export function SidebarDateDivider({
         >
           {caption}
           <DisclosureCaret
-            className="text-(--ui-text-tertiary) opacity-0 transition group-hover/workspace:opacity-100"
+            className="text-fg-muted opacity-0 transition group-hover/workspace:opacity-100"
             open={toggle.open}
           />
           {rule}
@@ -189,7 +189,7 @@ export function SidebarRowShell({
       className={cn(
         SIDEBAR_ROW_MIN_H,
         SIDEBAR_ROW_PAD_TRAIL,
-        'grid grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-md',
+        'grid grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-row mx-1.5',
         className
       )}
       {...props}
@@ -296,7 +296,7 @@ export function SidebarGroupRow({
         // group, never both at once.
         facts.length ? (
           <div className="relative flex items-center">
-            <span className="min-w-9 whitespace-nowrap text-right text-[0.625rem] leading-none text-(--ui-text-tertiary) transition-opacity group-hover/workspace:opacity-0">
+            <span className="min-w-9 whitespace-nowrap text-right text-ui-2xs leading-none text-fg-muted transition-opacity group-hover/workspace:opacity-0">
               {facts.join(' · ')}
             </span>
             {actions ? <div className="absolute right-0 flex items-center">{actions}</div> : null}
@@ -321,7 +321,7 @@ export function SidebarGroupRow({
               type="button"
             >
               <DisclosureCaret
-                className="shrink-0 text-(--ui-text-tertiary) opacity-0 transition group-hover/workspace:opacity-100"
+                className="shrink-0 text-fg-muted opacity-0 transition group-hover/workspace:opacity-100"
                 open={toggle.open}
               />
             </button>
@@ -367,8 +367,8 @@ export function SidebarRowGrab({
       </span>
       <Codicon
         className={cn(
-          'absolute text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover/handle:opacity-80 group-focus-within/handle:opacity-80 hover:text-(--ui-text-secondary)',
-          dragging && 'text-(--ui-text-secondary) opacity-100'
+          'absolute text-fg-subtle opacity-0 transition-opacity group-hover/handle:opacity-80 group-focus-within/handle:opacity-80 hover:text-fg-secondary',
+          dragging && 'text-fg-secondary opacity-100'
         )}
         name="grabber"
         size="0.75rem"
@@ -389,7 +389,7 @@ export function SidebarRowLeadGlyph({
 }) {
   return (
     <span
-      className={cn('grid size-full place-items-center text-(--ui-text-tertiary) [&_.codicon]:leading-none', className)}
+      className={cn('grid size-full place-items-center text-fg-muted [&_.codicon]:leading-none', className)}
       style={style}
     >
       {children}

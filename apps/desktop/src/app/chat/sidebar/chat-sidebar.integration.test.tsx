@@ -82,7 +82,7 @@ const expectOnlySelectedSession = (title: string | null) => {
     .map(label => screen.queryByText(label)?.closest('.group.row-hover'))
     .filter(row => row !== undefined)
 
-  const selectedRows = rows.filter(row => row?.className.includes('bg-(--ui-row-active-background)'))
+  const selectedRows = rows.filter(row => row?.className.includes('bg-selected'))
   const expected = title ? [screen.getByText(title).closest('.group.row-hover')] : []
 
   expect(selectedRows).toEqual(expected)
@@ -396,16 +396,15 @@ describe('ChatSidebar empty-profile sections', () => {
     expect(screen.getByPlaceholderText('Search sessions…')).toBeTruthy()
   })
 
-  it('still shows the blank state when a profile has nothing at all', () => {
+  it('shows a single in-section empty state when a profile has nothing at all', () => {
     $messagingSessions.set([])
     $sidebarMessagingOpenIds.set([])
 
-    // SidebarBlankState: a centered "No sessions yet" plus a "New project"
-    // button, rendered INSTEAD of the whole session area (search included).
     const { container } = renderSidebar('/', 'chat')
 
-    expect(container.textContent).toContain('No sessions yet')
+    expect(container.textContent?.split('No sessions yet')).toHaveLength(2)
     expect(screen.queryByPlaceholderText('Search sessions…')).toBeNull()
+    expect(screen.getByRole('button', { name: 'New project' })).toBeTruthy()
   })
 })
 
