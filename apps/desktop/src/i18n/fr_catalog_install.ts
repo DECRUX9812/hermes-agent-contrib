@@ -1,6 +1,8 @@
+import type { TranslationOverride } from '@hermes/shared/i18n'
+
 import type { CatalogInstallTranslations } from './types_catalog_install'
 
-export const frCatalogInstall: CatalogInstallTranslations = {
+export const frCatalogInstall: TranslationOverride<CatalogInstallTranslations> = {
   preparing: 'Préparation de l’installation…',
   install: 'Installer',
   advanced: 'Avancé',

@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
 
 import { isPublicHost } from './public-host'
+import { CardBlock } from './tool-card-block'
 import type { ToolCardGroup, ToolCardView } from './types'
 
 function stepHost(card: ToolCardView): string {
@@ -142,6 +143,9 @@ export function BrowserSteps({ group }: { group: ToolCardGroup }) {
           )
         })}
       </ol>
+      <div className="mt-2">
+        <CardBlock card={step} showStatus={false} />
+      </div>
     </section>
   )
 }
