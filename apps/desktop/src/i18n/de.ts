@@ -4011,6 +4011,8 @@ export const deOverrides = {
     },
     searchAria: 'Sessions durchsuchen',
     railAria: 'App-Navigation',
+    railPlugins: 'Plugins',
+    railPluginsHint: 'Plugins: öffnen oder installieren',
     searchPlaceholder: 'Sessions durchsuchen…',
     clearSearch: 'Suche löschen',
     noMatch: query => `Keine Sessions passen zu “${query}”.`,

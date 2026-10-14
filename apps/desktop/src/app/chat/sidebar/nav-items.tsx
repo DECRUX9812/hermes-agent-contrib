@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 
 import { Codicon } from '@/components/ui/codicon'
 import { useContributions } from '@/contrib/react/use-contributions'
+import type { Contribution } from '@/contrib/types'
 import { $interfaceMode, shownInMode } from '@/store/interface-mode'
 import { applySidebarNavPrefs, SIDEBAR_NAV_PREFS_AREA } from '@/store/sidebar-nav'
 
@@ -86,6 +87,28 @@ export function navItemActive(item: SidebarNavItem, currentView: AppView, pathna
   return currentView === 'extension' && Boolean(item.route) && pathname === item.route
 }
 
+function contributedNavRows(contributions: readonly Contribution[]): SidebarNavItem[] {
+  return contributions.flatMap(c => {
+    const data = c.data as Partial<SidebarNavContribution> | undefined
+
+    if (!data?.path?.startsWith('/') || !data.label) {
+      return []
+    }
+
+    const codicon = data.codicon || 'plug'
+
+    return [
+      {
+        id: c.id,
+        label: data.label,
+        icon: (props: { className?: string }) => <Codicon name={codicon} {...props} />,
+        route: data.path,
+        tier: data.tier
+      }
+    ]
+  })
+}
+
 /** Built-ins plus contributed rows, filtered to the interface mode, with any
  *  plugin nav preferences (hide / re-order) applied at render. */
 export function useSidebarNavItems(): SidebarNavItem[] {
@@ -93,29 +116,7 @@ export function useSidebarNavItems(): SidebarNavItem[] {
   // below the built-ins with the same chrome; active = at their route.
   const navContributions = useContributions(SIDEBAR_NAV_AREA)
 
-  const contributedNav = useMemo<SidebarNavItem[]>(
-    () =>
-      navContributions.flatMap(c => {
-        const data = c.data as Partial<SidebarNavContribution> | undefined
-
-        if (!data?.path?.startsWith('/') || !data.label) {
-          return []
-        }
-
-        const codicon = data.codicon || 'plug'
-
-        return [
-          {
-            id: c.id,
-            label: data.label,
-            icon: (props: { className?: string }) => <Codicon name={codicon} {...props} />,
-            route: data.path,
-            tier: data.tier
-          }
-        ]
-      }),
-    [navContributions]
-  )
+  const contributedNav = useMemo(() => contributedNavRows(navContributions), [navContributions])
 
   const interfaceMode = useStore($interfaceMode)
   const navPrefs = useContributions(SIDEBAR_NAV_PREFS_AREA)
@@ -127,5 +128,17 @@ export function useSidebarNavItems(): SidebarNavItem[] {
         navPrefs
       ),
     [contributedNav, interfaceMode, navPrefs]
+  )
+}
+
+/** Contributed plugin rows for the icon rail: every row regardless of `tier`
+ *  (the rail shows plugin pages in both modes), with nav preferences applied. */
+export function useRailPluginNavItems(): SidebarNavItem[] {
+  const navContributions = useContributions(SIDEBAR_NAV_AREA)
+  const navPrefs = useContributions(SIDEBAR_NAV_PREFS_AREA)
+
+  return useMemo(
+    () => applySidebarNavPrefs(contributedNavRows(navContributions), navPrefs),
+    [navContributions, navPrefs]
   )
 }

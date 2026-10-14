@@ -1,8 +1,16 @@
 import { useStore } from '@nanostores/react'
-import { type ComponentType, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  type ComponentType,
+  type MouseEvent,
+  type ReactNode,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
-import { navItemActive, useSidebarNavItems } from '@/app/chat/sidebar/nav-items'
+import { navItemActive, useRailPluginNavItems, useSidebarNavItems } from '@/app/chat/sidebar/nav-items'
 import { nextRunOverdueMs } from '@/app/cron/job-state'
 import { BrandMark } from '@/components/brand-mark'
 import { $paneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
@@ -15,9 +23,10 @@ import { openCommandPalette } from '@/store/command-palette'
 import { $cronJobs } from '@/store/cron'
 import { recordAction } from '@/store/desktop-metrics'
 import { $sidebarOpen, setSidebarOpen } from '@/store/layout'
+import { openPluginInstallRequest } from '@/store/plugin-install-request'
 import { $newChatProfile } from '@/store/profile'
 
-import { type AppView, SETTINGS_ROUTE } from '../routes'
+import { type AppView, CAPABILITIES_ROUTE, SETTINGS_ROUTE } from '../routes'
 import type { SidebarNavItem } from '../types'
 
 import { BOTS_PANE, railActiveKey, railPanelAction, SESSIONS_PANE } from './activity-rail-model'
@@ -25,11 +34,15 @@ import { TITLEBAR_HEIGHT } from './titlebar'
 
 // The icon rail at the window's left edge (Codex / VS Code activity bar, in
 // Hermes's own dress): the Nous mark as Home, the sidebar's panels, the two
-// standing pages, then search and settings. It stays when the sidebar folds,
+// standing pages, then every plugin page with the Plugins door that opens the
+// plugin manager, then search and settings. It stays when the sidebar folds,
 // so the app is never more than one click from anywhere. Every other page
 // is one palette search away.
 
 const RAIL_PAGE_IDS = ['cron', 'artifacts'] as const
+
+const PLUGINS_DOOR_KEY = 'plugins'
+const PLUGINS_DOOR_ROUTE = `${CAPABILITIES_ROUTE}?tab=plugins`
 
 const RAIL_BUTTON =
   'relative grid size-8 place-items-center rounded-row text-fg-muted outline-none transition-[background-color,color] duration-(--dur-fast) ease-standard [-webkit-app-region:no-drag] hover:bg-hover hover:text-fg focus-ring'
@@ -44,6 +57,7 @@ interface RailEntry {
   active: boolean
   attention?: boolean
   onPress: () => void
+  onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void
 }
 
 function RailButton({
@@ -62,6 +76,7 @@ function RailButton({
         data-active={entry.active}
         data-rail-entry={entry.key}
         onClick={entry.onPress}
+        onContextMenu={entry.onContextMenu}
         ref={el => register(entry.key, el)}
         type="button"
       >
@@ -132,8 +147,9 @@ export function ActivityRail({
   const { t } = useI18n()
   const s = t.sidebar
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const navItems = useSidebarNavItems()
+  const railPlugins = useRailPluginNavItems()
   const sidebarOpen = useStore($sidebarOpen)
   const sessionsShown = useStore($paneVisible(SESSIONS_PANE))
   const botsShown = useStore($paneVisible(BOTS_PANE))
@@ -147,8 +163,11 @@ export function ActivityRail({
 
   const newSession = navItems.find(item => item.id === 'new-session')
   const pages = navItems.filter(item => item.id !== 'new-session')
-  const activePage = pages.find(item => navItemActive(item, currentView, pathname))?.id ?? null
   const railPages = RAIL_PAGE_IDS.flatMap(id => pages.filter(item => item.id === id))
+  const onPluginsTab = currentView === 'capabilities' && new URLSearchParams(search).get('tab') === 'plugins'
+  const pluginOnScreen = railPlugins.find(item => navItemActive(item, currentView, pathname))?.id ?? null
+  const pageOnScreen = pages.find(item => navItemActive(item, currentView, pathname))?.id ?? null
+  const activePage = onPluginsTab ? PLUGINS_DOOR_KEY : (pluginOnScreen ?? pageOnScreen)
 
   const panels = [
     { key: SESSIONS_PANE, shown: sessionsShown },
@@ -206,7 +225,7 @@ export function ActivityRail({
       : [])
   ]
 
-  const pageEntries: RailEntry[] = railPages.map(item => {
+  const itemEntry = (item: SidebarNavItem): RailEntry => {
     const text = labelFor(item)
 
     return {
@@ -215,10 +234,29 @@ export function ActivityRail({
       ariaLabel: text,
       icon: item.icon,
       active: activeKey === item.id,
-      attention: item.id === 'cron' && cronAttention,
       onPress: () => go(item)
     }
-  })
+  }
+
+  const pageEntries: RailEntry[] = railPages.map(item => ({
+    ...itemEntry(item),
+    attention: item.id === 'cron' && cronAttention
+  }))
+
+  const pluginEntries: RailEntry[] = railPlugins.map(itemEntry)
+
+  const pluginsDoor: RailEntry = {
+    key: PLUGINS_DOOR_KEY,
+    label: s.railPluginsHint,
+    ariaLabel: s.railPlugins,
+    icon: glyph('extensions'),
+    active: activeKey === PLUGINS_DOOR_KEY,
+    onPress: () => navigate(PLUGINS_DOOR_ROUTE),
+    onContextMenu: event => {
+      event.preventDefault()
+      openPluginInstallRequest({ profile: null, repo: '' })
+    }
+  }
 
   const toolEntries: RailEntry[] = [
     {
@@ -293,6 +331,11 @@ export function ActivityRail({
         {pageEntries.map(entry => (
           <RailButton entry={entry} key={entry.key} register={register} />
         ))}
+        <RailDivider />
+        {pluginEntries.map(entry => (
+          <RailButton entry={entry} key={entry.key} register={register} />
+        ))}
+        <RailButton entry={pluginsDoor} register={register} />
       </div>
 
       <div className="flex shrink-0 flex-col items-center gap-1 pt-1">

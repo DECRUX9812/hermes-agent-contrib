@@ -2852,6 +2852,8 @@ export const ruOverrides = {
     },
     searchAria: 'Поиск сеансов',
     railAria: 'Навигация приложения',
+    railPlugins: 'Плагины',
+    railPluginsHint: 'Плагины: открыть или установить',
     searchPlaceholder: 'Поиск сеансов…',
     clearSearch: 'Очистить поиск',
     noMatch: query => `Нет сеансов по запросу «${query}».`,
