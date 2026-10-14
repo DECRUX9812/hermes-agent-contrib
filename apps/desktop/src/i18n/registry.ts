@@ -24,7 +24,7 @@ import {
 } from '@hermes/shared/i18n'
 import { atom } from 'nanostores'
 
-import { isBundledLocale, TRANSLATIONS } from './catalog'
+import { bundledCatalog, isBundledLocale, loadBundledLocale } from './catalog'
 import type { Locale, Translations } from './types'
 
 /** Who registered a language: the backend's pack layer, a plugin, or app code. */
@@ -75,7 +75,22 @@ export function normalizeLocaleId(id: string): string {
 }
 
 function baseCatalog(id: Locale): Translations {
-  return isBundledLocale(id) ? TRANSLATIONS[id] : TRANSLATIONS.en
+  if (!isBundledLocale(id)) {
+    return bundledCatalog('en')!
+  }
+
+  const catalog = bundledCatalog(id)
+
+  if (catalog) {
+    return catalog
+  }
+
+  // Not fetched yet: render English now and re-resolve every translator the
+  // moment the catalog lands. The provider awaits the fetch before switching
+  // locale, so this path only covers module-level translators.
+  void loadBundledLocale(id).then(bump, () => {})
+
+  return bundledCatalog('en')!
 }
 
 function toTree(translations: AppLocaleRegistration['translations'], base: Translations): Record<string, unknown> {
