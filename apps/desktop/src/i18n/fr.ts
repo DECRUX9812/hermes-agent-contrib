@@ -3,6 +3,7 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 import { defineLocale, type TranslationOverrides } from './define-locale'
 import { frAuxTasks } from './fr_aux_tasks'
 import { frBoot } from './fr_boot'
+import { frCatalogInstall } from './fr_catalog_install'
 import { frClarify } from './fr_clarify'
 import { frConnectorAccounts } from './fr_connector_accounts'
 import { frConnectorCard } from './fr_connector_card'
@@ -14,6 +15,7 @@ import { frOnboarding } from './fr_onboarding'
 import { frProjects } from './fr_projects'
 import { frSharedMetrics } from './fr_shared_metrics'
 import { frThemePicker } from './fr_theme_picker'
+import { frToolCards } from './fr_tool_cards'
 import { frUpdateChannel } from './fr_update_channel'
 import { introFr } from './intro-fr'
 
@@ -5807,40 +5809,9 @@ export const frOverrides = {
       alwaysAllow: 'Toujours autoriser'
     },
     clarify: frClarify,
+    toolCards: frToolCards,
     themePicker: frThemePicker,
-    catalogInstall: {
-      preparing: 'Préparation de l’installation…',
-      install: 'Installer',
-      advanced: 'Avancé',
-      skip: 'Ignorer',
-      installing: 'Installation…',
-      installed: 'Installé',
-      notInstalled: 'Non installé',
-      failed: 'Échec',
-      showNames: 'afficher les noms',
-      hideNames: 'masquer les noms',
-      skill: (name: string) => `skill ${name}`,
-      kind: {
-        plugin: 'plugin',
-        skill: 'skill'
-      },
-      tier: {
-        official: 'officiel',
-        community: 'communauté'
-      },
-      targetProfile: (profile: string) => `S’installe dans votre profil ${profile}`,
-      sendFailed: 'Impossible d’envoyer votre réponse. Réessayez.',
-      commitLabel: 'Commit',
-      subdirLabel: 'Dossier',
-      securityHeading: 'Sécurité',
-      scan: {
-        passed: 'Analyse réussie',
-        warnings: 'L’analyse a relevé des avertissements',
-        failed: 'Échec de l’analyse'
-      },
-      requirementsLabel: 'Nécessite',
-      credentialsHeading: 'Identifiants'
-    },
+    catalogInstall: frCatalogInstall,
     mcpSetup: {
       installTitle: 'Ajouter des serveurs MCP',
       enableTitle: 'Activer des serveurs MCP',

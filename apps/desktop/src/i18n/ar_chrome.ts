@@ -231,6 +231,8 @@ export const arChrome = {
       toSimple: 'العودة إلى الواجهة المبسّطة المركّزة على المحادثة.'
     },
     searchAria: 'البحث في الجلسات',
+    railPlugins: 'الإضافات',
+    railPluginsHint: 'الإضافات: فتح أو تثبيت',
     searchPlaceholder: 'البحث في الجلسات...',
     clearSearch: 'مسح البحث',
     noMatch: query => `لا توجد جلسات تطابق "${query}"`,

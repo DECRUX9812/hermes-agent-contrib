@@ -279,6 +279,57 @@ export const arAssistant = {
       openSafetySettings: 'فتح إعدادات الأمان',
       commandDetails: 'تفاصيل الأمر'
     },
+    toolCards: {
+      activityLabel: 'نشاط الأدوات',
+      families: {
+        browser: 'المتصفح',
+        code: 'الشيفرة',
+        files: 'الملفات',
+        generic: 'أداة',
+        mcp: 'موصّل',
+        search: 'البحث',
+        terminal: 'الطرفية',
+        web: 'الويب'
+      },
+      names: {
+        memory: 'الذاكرة',
+        message: 'الرسائل',
+        schedule: 'الجدولة',
+        skills: 'المهارات',
+        vision: 'الرؤية'
+      },
+      usedTimes: (name, count) => `استُخدم ${name} ×${count}`,
+      working: 'جارٍ العمل…',
+      awaitingApproval: 'في انتظار موافقتك',
+      reviewApproval: 'مراجعة',
+      failed: 'فشل',
+      stopped: 'توقّف',
+      showDetails: 'إظهار التفاصيل',
+      hideDetails: 'إخفاء التفاصيل',
+      details: {
+        request: 'الطلب',
+        output: 'المخرجات',
+        duration: 'المدة',
+        noOutput: 'لا توجد مخرجات'
+      },
+      argLabels: {
+        code: 'الشيفرة',
+        command: 'الأمر',
+        input: 'الإدخال',
+        path: 'الملف',
+        query: 'البحث',
+        target: 'الهدف',
+        text: 'النص',
+        url: 'العنوان'
+      },
+      viewer: {
+        title: name => `خطوات ${name}`,
+        step: (index, total) => `الخطوة ${index} من ${total}`,
+        noScreenshot: 'لا توجد لقطة شاشة لهذه الخطوة',
+        previous: 'الخطوة السابقة',
+        next: 'الخطوة التالية'
+      }
+    },
     clarify: {
       notReady: 'غير جاهز',
       gatewayDisconnected: 'البوابة غير متصلة',
