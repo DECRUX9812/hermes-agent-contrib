@@ -105,3 +105,11 @@ Owner: DECRUX9812. Resume from this file after every restart. Read `HANDOFF.md` 
   build), A9 (SYNC_REPORT.md), then full-suite re-run to confirm zero.
 
 (End of file - total 150 lines)
+- 2026-10-14 (sync 2): `git fetch upstream --tags`; merged tag `v0.22.0` (`e06df9c2ea`)
+  with `--no-ff` (no rebase). Delta since sync 1 = 2 upstream commits, 4 test/e2e files,
+  0 conflicts, no fork file touched. Desktop `npm run typecheck` 0 errors, `npm run build`
+  green, `vitest --project ui` 1459/1460 files green (pre-existing upstream-identical
+  `voice-prefs.test.ts` env failure, see SYNC_REPORT "Sync 2"). Real app smoke via the
+  launch-video capture: onboarding chat (name, accent, layout steps), Home, streamed
+  markdown answer, clarify card, manual approval, Bots (New bot, New group chat, room
+  reply), right-sidebar Panels presets, layout editor — all working.
