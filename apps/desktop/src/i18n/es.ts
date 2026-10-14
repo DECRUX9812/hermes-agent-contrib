@@ -637,7 +637,9 @@ export const esOverrides = {
       'view.terminalPaste': 'Pegar en terminal',
       'view.closeTab': 'Cerrar pestaña',
       'view.reopenTab': 'Reabrir pestaña cerrada',
+      'view.splitSession': 'Dividir en una sesión nueva',
       'view.flipPanes': 'Intercambiar lados de las barras laterales',
+      'view.sessionOverview': 'Vista general de sesiones',
       'view.findInPage': 'Buscar en la página',
       'view.findNext': 'Siguiente coincidencia',
       'view.findPrevious': 'Coincidencia anterior',
@@ -4090,6 +4092,7 @@ export const esOverrides = {
       needsInput: 'Necesita tu respuesta',
       waitingForAnswer: 'Esperando tu respuesta',
       finishedUnread: 'Finalizada — sin leer',
+      progressRing: (done, total) => `${done} de ${total} pasos completados`,
       backgroundRunning: 'Tarea en segundo plano en ejecución',
       draftSession: 'Borrador — aún no se ha enviado nada',
       continueOnPhone: 'Continuar en el teléfono',
@@ -4197,6 +4200,7 @@ export const esOverrides = {
       thisMonth: 'Este mes'
     },
     statusDivider: {
+      needsYou: 'Te necesita',
       working: 'En progreso',
       done: 'Completado'
     },
@@ -4214,9 +4218,19 @@ export const esOverrides = {
       profile: 'Perfil',
       source: 'Origen',
       started: 'Iniciado',
-      updated: 'Actualizado'
+      updated: 'Actualizado',
+      lastTool: 'Última herramienta',
+      planFraction: (done, total) => `${done} de ${total}`,
+      more: count => `+${count} más`,
+      stopFailed: 'No se pudo detener la sesión'
     },
     markAllRead: 'Marcar todo como leído'
+  },
+
+  sessionOverview: {
+    title: 'Resumen de sesiones',
+    empty: 'No hay sesiones activas',
+    newSession: 'Nueva sesión'
   },
   composer: {
     message: 'Mensaje',
@@ -4250,6 +4264,26 @@ export const esOverrides = {
     steerTurn: 'Guiar el turno',
     stop: 'Detener',
     send: 'Enviar',
+    broadcastTip: 'Enviar a todos los paneles',
+    broadcastNote: 'Solo texto — los adjuntos se quedan en este panel',
+    broadcastOn: 'Todos los paneles',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const delivered = sent + queued
+      const panes = delivered === 1 ? 'panel' : 'paneles'
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} omitidos`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} fallidos`)
+      }
+
+      return extras.length > 0
+        ? `Enviado a ${delivered} ${panes}, ${extras.join(', ')}`
+        : `Enviado a ${delivered} ${panes}`
+    },
     speaking: 'Hablando',
     transcribing: 'Transcribiendo',
     thinking: 'Pensando',
@@ -5454,6 +5488,8 @@ export const esOverrides = {
     closeToRight: 'Cerrar las de la derecha',
     closeAll: 'Cerrar todo',
     newSessionTab: 'Nueva pestaña de sesión',
+    splitSession: 'Dividir la sesión',
+    splitSessionCapped: 'Hasta 4 sesiones en paralelo',
     newTab: 'Nueva pestaña',
     pluginDisabled: pluginId => `Plugin "${pluginId}" desactivado`,
     pluginDisabledBody: 'Vuelve a activarlo en Capacidades → Plugins para recuperar el panel.',

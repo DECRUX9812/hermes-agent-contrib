@@ -634,7 +634,9 @@ export const deOverrides = {
       'view.terminalPaste': 'In Terminal einfügen',
       'view.closeTab': 'Tab schließen',
       'view.reopenTab': 'Geschlossenen Tab wieder öffnen',
+      'view.splitSession': 'In neue Sitzung teilen',
       'view.flipPanes': 'Sidebar-Seiten tauschen',
+      'view.sessionOverview': 'Sitzungsübersicht',
       'view.findInPage': 'Auf Seite suchen',
       'view.findNext': 'Nächsten Treffer suchen',
       'view.findPrevious': 'Vorherigen Treffer suchen',
@@ -4093,6 +4095,7 @@ export const deOverrides = {
       needsInput: 'Braucht Ihre Eingabe',
       waitingForAnswer: 'Wartet auf Ihre Antwort',
       finishedUnread: 'Abgeschlossen – ungelesen',
+      progressRing: (done, total) => `${done} von ${total} Schritten erledigt`,
       backgroundRunning: 'Hintergrundaufgabe läuft',
       draftSession: 'Entwurf – noch nichts gesendet',
       continueOnPhone: 'Auf dem Handy fortfahren',
@@ -4200,6 +4203,7 @@ export const deOverrides = {
       thisMonth: 'Diesen Monat früher'
     },
     statusDivider: {
+      needsYou: 'Braucht dich',
       working: 'In Arbeit',
       done: 'Erledigt'
     },
@@ -4217,9 +4221,19 @@ export const deOverrides = {
       profile: 'Profil',
       source: 'Quelle',
       started: 'Gestartet',
-      updated: 'Aktualisiert'
+      updated: 'Aktualisiert',
+      lastTool: 'Letztes Tool',
+      planFraction: (done, total) => `${done} von ${total}`,
+      more: count => `+${count} weitere`,
+      stopFailed: 'Sitzung konnte nicht gestoppt werden'
     },
     markAllRead: 'Alle als gelesen markieren'
+  },
+
+  sessionOverview: {
+    title: 'Sitzungsübersicht',
+    empty: 'Keine aktiven Sitzungen',
+    newSession: 'Neue Sitzung'
   },
   composer: {
     message: 'Nachricht',
@@ -4253,6 +4267,26 @@ export const deOverrides = {
     steerTurn: 'Turn steuern',
     stop: 'Stopp',
     send: 'Senden',
+    broadcastTip: 'An alle Bereiche senden',
+    broadcastNote: 'Nur Text — Anhänge bleiben in diesem Bereich',
+    broadcastOn: 'Alle Bereiche',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const delivered = sent + queued
+      const panes = delivered === 1 ? 'Bereich' : 'Bereiche'
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} übersprungen`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} fehlgeschlagen`)
+      }
+
+      return extras.length > 0
+        ? `An ${delivered} ${panes} gesendet, ${extras.join(', ')}`
+        : `An ${delivered} ${panes} gesendet`
+    },
     speaking: 'Spricht',
     transcribing: 'Transkribiert',
     thinking: 'Denkt',
@@ -5453,6 +5487,8 @@ export const deOverrides = {
     closeToRight: 'Nach rechts schließen',
     closeAll: 'Alle schließen',
     newSessionTab: 'Neuer Session-Tab',
+    splitSession: 'Sitzung teilen',
+    splitSessionCapped: 'Bis zu 4 Sitzungen nebeneinander',
     newTab: 'Neuer Tab',
     pluginDisabled: pluginId => `Plugin "${pluginId}" deaktiviert`,
     pluginDisabledBody: 'Aktivieren Sie es wieder unter Einstellungen → Plugins, um das Panel zurückzuholen.',

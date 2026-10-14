@@ -354,7 +354,9 @@ export const ruOverrides = {
       'view.terminalPaste': 'Вставить в терминал',
       'view.closeTab': 'Закрыть вкладку',
       'view.reopenTab': 'Восстановить закрытую вкладку',
+      'view.splitSession': 'Разделить на новую сессию',
       'view.flipPanes': 'Поменять панели местами',
+      'view.sessionOverview': 'Обзор сессий',
       'view.findInPage': 'Найти на странице',
       'view.findNext': 'Следующее вхождение',
       'view.findPrevious': 'Предыдущее вхождение',
@@ -2927,6 +2929,7 @@ export const ruOverrides = {
       needsInput: 'Нужен ваш ввод',
       waitingForAnswer: 'Ждёт вашего ответа',
       finishedUnread: 'Завершён — не прочитан',
+      progressRing: (done, total) => `Выполнено шагов: ${done} из ${total}`,
       backgroundRunning: 'Фоновая задача выполняется',
       draftSession: 'Черновик — ещё ничего не отправлено',
       continueOnPhone: 'Продолжить на телефоне',
@@ -3033,6 +3036,7 @@ export const ruOverrides = {
       thisMonth: 'Ранее в этом месяце'
     },
     statusDivider: {
+      needsYou: 'Ждёт вас',
       working: 'Работает',
       done: 'Готово'
     },
@@ -3050,9 +3054,19 @@ export const ruOverrides = {
       profile: 'Профиль',
       source: 'Источник',
       started: 'Запущен',
-      updated: 'Обновлён'
+      updated: 'Обновлён',
+      lastTool: 'Последний инструмент',
+      planFraction: (done, total) => `${done} из ${total}`,
+      more: count => `ещё ${count}`,
+      stopFailed: 'Не удалось остановить сессию'
     },
     markAllRead: 'Отметить все как прочитанные'
+  },
+
+  sessionOverview: {
+    title: 'Обзор сессий',
+    empty: 'Нет активных сессий',
+    newSession: 'Новая сессия'
   },
   intro: {
     recentSessions: 'Продолжите с того места, где остановились'
@@ -3149,6 +3163,24 @@ export const ruOverrides = {
     steerTurn: 'Направить ход',
     stop: 'Стоп',
     send: 'Отправить',
+    broadcastTip: 'Отправить во все панели',
+    broadcastNote: 'Только текст — вложения остаются в этой панели',
+    broadcastOn: 'Все панели',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`пропущено: ${skipped}`)
+      }
+
+      if (failed > 0) {
+        extras.push(`не доставлено: ${failed}`)
+      }
+
+      return extras.length > 0
+        ? `Отправлено: ${sent + queued}, ${extras.join(', ')}`
+        : `Отправлено: ${sent + queued}`
+    },
     speaking: 'Говорит',
     transcribing: 'Расшифровка',
     thinking: 'Думает',
@@ -4208,6 +4240,8 @@ export const ruOverrides = {
     closeToRight: 'Закрыть справа',
     closeAll: 'Закрыть все',
     newSessionTab: 'Вкладка нового сеанса',
+    splitSession: 'Разделить сессию',
+    splitSessionCapped: 'До 4 сессий рядом',
     pluginDisabled: pluginId => `Плагин «${pluginId}» отключён`,
     pluginDisabledBody: 'Включите его снова в Возможности → Плагины, чтобы вернуть панель.',
     missingPane: paneId => `нет панели: ${paneId}`,

@@ -7,8 +7,9 @@ import { type FC, useEffect, useMemo, useRef } from 'react'
 
 import type { SessionInfo } from '@/hermes'
 import { useI18n } from '@/i18n'
-import { type SidebarListRow } from '@/lib/session-date-groups'
+import { flipKeyOf, type SidebarListRow } from '@/lib/session-date-groups'
 import { sessionBucketLabel } from '@/lib/time'
+import { useFlipList } from '@/lib/use-flip-list'
 import { cn } from '@/lib/utils'
 import { sessionPinId } from '@/store/session'
 import { $sessionListDensity } from '@/store/session-list-density'
@@ -92,6 +93,8 @@ export const VirtualSessionList: FC<VirtualSessionListProps> = ({
 
   // ⇧-click ranges measure over exactly what this list renders, in order.
   const selectionKeys = useMemo(() => listRowSelectionKeys(listRows), [listRows])
+  const flipOrderKey = useMemo(() => listRows.map(flipKeyOf).join('\n'), [listRows])
+  useFlipList(scrollerRef, flipOrderKey)
 
   const virtualizer = useVirtualizer({
     count: listRows.length,
@@ -144,9 +147,16 @@ export const VirtualSessionList: FC<VirtualSessionListProps> = ({
       const open = dividerToggle?.open(row.key) ?? true
 
       return (
-        <div data-index={virtualItem.index} key={row.key} ref={virtualizer.measureElement} style={itemStyle}>
+        <div
+          data-flip-key={flipKeyOf(row)}
+          data-index={virtualItem.index}
+          key={row.key}
+          ref={virtualizer.measureElement}
+          style={itemStyle}
+        >
           <SidebarDateDivider
             action={dividerAction}
+            count={'count' in row ? row.count : undefined}
             label={label}
             toggle={
               dividerToggle
@@ -157,6 +167,7 @@ export const VirtualSessionList: FC<VirtualSessionListProps> = ({
                   }
                 : undefined
             }
+            tone={'tone' in row ? row.tone : undefined}
           />
         </div>
       )
@@ -187,11 +198,23 @@ export const VirtualSessionList: FC<VirtualSessionListProps> = ({
     const rowKey = `${session.profile ?? ''}::${session.id}`
 
     return reorderable ? (
-      <div data-index={virtualItem.index} key={rowKey} ref={virtualizer.measureElement} style={itemStyle}>
+      <div
+        data-flip-key={flipKeyOf(row)}
+        data-index={virtualItem.index}
+        key={rowKey}
+        ref={virtualizer.measureElement}
+        style={itemStyle}
+      >
         <VirtualSortableRow rowProps={commonProps} session={session} />
       </div>
     ) : (
-      <div data-index={virtualItem.index} key={rowKey} ref={virtualizer.measureElement} style={itemStyle}>
+      <div
+        data-flip-key={flipKeyOf(row)}
+        data-index={virtualItem.index}
+        key={rowKey}
+        ref={virtualizer.measureElement}
+        style={itemStyle}
+      >
         <SidebarSessionRow {...commonProps} session={session} />
       </div>
     )

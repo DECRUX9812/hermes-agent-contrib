@@ -79,6 +79,7 @@ beforeEach(() => {
         requestGateway: vi.fn(),
         archiveSelectedSession: () => undefined,
         openNewSessionTab: () => undefined,
+        splitSession: () => undefined,
         startFreshSession: () => undefined,
         toggleCommandCenter: () => undefined,
         toggleSelectedPin: () => undefined

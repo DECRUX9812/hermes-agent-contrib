@@ -722,7 +722,9 @@ export const en: Translations = {
       'view.terminalPaste': 'Paste into terminal',
       'view.closeTab': 'Close tab',
       'view.reopenTab': 'Reopen closed tab',
+      'view.splitSession': 'Split into a new session',
       'view.flipPanes': 'Swap sidebar sides',
+      'view.sessionOverview': 'Session overview',
       'view.findInPage': 'Find in page',
       'view.findNext': 'Find next match',
       'view.findPrevious': 'Find previous match',
@@ -3783,6 +3785,7 @@ export const en: Translations = {
       needsInput: 'Needs your input',
       waitingForAnswer: 'Waiting for your answer',
       finishedUnread: 'Finished — unread',
+      progressRing: (done, total) => `${done} of ${total} steps done`,
       backgroundRunning: 'Background task running',
       draftSession: 'Draft — nothing sent yet',
       continueOnPhone: 'Continue on phone',
@@ -3889,6 +3892,7 @@ export const en: Translations = {
       thisMonth: 'Earlier this month'
     },
     statusDivider: {
+      needsYou: 'Needs you',
       working: 'Working',
       done: 'Done'
     },
@@ -3906,9 +3910,19 @@ export const en: Translations = {
       profile: 'Profile',
       source: 'Source',
       started: 'Started',
-      updated: 'Updated'
+      updated: 'Updated',
+      lastTool: 'Last tool',
+      planFraction: (done, total) => `${done} of ${total}`,
+      more: count => `+${count} more`,
+      stopFailed: 'Could not stop the session'
     },
     markAllRead: 'Mark all as read'
+  },
+
+  sessionOverview: {
+    title: 'Session overview',
+    empty: 'No live sessions',
+    newSession: 'New session'
   },
 
   composer: {
@@ -3943,6 +3957,24 @@ export const en: Translations = {
     steerTurn: 'Steer turn',
     stop: 'Stop',
     send: 'Send',
+    broadcastTip: 'Send to all panes',
+    broadcastNote: 'Text only — attachments stay in this pane',
+    broadcastOn: 'All panes',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const delivered = sent + queued
+      const panes = delivered === 1 ? 'pane' : 'panes'
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} skipped`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} failed`)
+      }
+
+      return extras.length > 0 ? `Sent to ${delivered} ${panes}, ${extras.join(', ')}` : `Sent to ${delivered} ${panes}`
+    },
     speaking: 'Speaking',
     transcribing: 'Transcribing',
     thinking: 'Thinking',
@@ -5163,6 +5195,8 @@ export const en: Translations = {
     closeToRight: 'Close to the right',
     closeAll: 'Close all',
     newSessionTab: 'New session tab',
+    splitSession: 'Split session',
+    splitSessionCapped: 'Up to 4 sessions side by side',
     newTab: 'New tab',
     pluginDisabled: pluginId => `Plugin "${pluginId}" disabled`,
     pluginDisabledBody: 'Re-enable it in Capabilities → Plugins to bring the pane back.',

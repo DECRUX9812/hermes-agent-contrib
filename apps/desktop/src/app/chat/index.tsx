@@ -6,6 +6,7 @@ import { memo, Suspense, useCallback, useEffect, useId, useMemo, useRef, useStat
 import { useLocation } from 'react-router'
 
 import { ChatHeaderSlot } from '@/app/chat/chat-header-slot'
+import { $chatZoneCount } from '@/app/chat/split-session'
 import { RegionCaptureOverlay } from '@/app/region-capture/overlay'
 import type { SubmitTextOptions } from '@/app/session/hooks/use-prompt-actions/utils'
 import { sessionShouldHaveTranscript } from '@/app/session/hooks/use-session-actions/utils'
@@ -62,6 +63,7 @@ import { isAuxiliaryWindow, isMainWindow } from '@/store/windows'
 import { primaryRouteSelectedSessionId, routeSessionId } from '../routes'
 import { titlebarHeaderBaseClass, titlebarHeaderShadowClass, titlebarHeaderTitleClass } from '../shell/titlebar'
 
+import { BlankTileQuickStarts } from './blank-tile-quick-start'
 import { ChatDropOverlay } from './chat-drop-overlay'
 import { dropOverlayKind, useShowChatBar } from './chat-surface-state'
 import { ChatSwapOverlay, ChatSyncBadge } from './chat-swap-overlay'
@@ -560,6 +562,13 @@ const ChatViewContent = memo(function ChatViewContent({
   // Dock anchor for a session drop onto this surface: the workspace pane for the
   // primary, this tile's pane id for a tile. Read by the session-drop bridge.
   const sessionAnchor = isPrimary ? 'workspace' : `session-tile:${storedId ?? ''}`
+  const chatZoneCount = useStore($chatZoneCount)
+
+  const blankQuickStarts = useMemo(
+    () => (isPrimary || !storedId ? undefined : <BlankTileQuickStarts storedSessionId={storedId} />),
+    [isPrimary, storedId]
+  )
+
   const awaitingResponse = useStore(view.$awaitingResponse)
   const busy = useStore(view.$busy)
   const activeGatewayProfile = useStore($activeGatewayProfile)
@@ -820,6 +829,7 @@ const ChatViewContent = memo(function ChatViewContent({
         'relative isolate flex h-full min-w-0 flex-col overflow-hidden bg-(--ui-chat-surface-background)',
         className
       )}
+      data-chat-focused={surfaceFocused && chatZoneCount >= 2 ? '' : undefined}
       data-chat-surface=""
       data-chat-unfocused={surfaceFocused || surfaceHovered ? undefined : ''}
       data-composer-surface-id={composerSurfaceId}
@@ -874,6 +884,7 @@ const ChatViewContent = memo(function ChatViewContent({
         >
           {!guideOpening && (
             <Thread
+              blankQuickStarts={blankQuickStarts}
               clampToComposer={showChatBar}
               cwd={currentCwd}
               gateway={gateway}

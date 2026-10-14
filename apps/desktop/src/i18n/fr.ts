@@ -634,7 +634,9 @@ export const frOverrides = {
       'view.terminalPaste': 'Coller dans le terminal',
       'view.closeTab': "Fermer l'onglet",
       'view.reopenTab': "Rouvrir l'onglet fermé",
+      'view.splitSession': 'Diviser en une nouvelle session',
       'view.flipPanes': 'Inverser les côtés de la barre latérale',
+      'view.sessionOverview': 'Vue d’ensemble des sessions',
       'view.findInPage': 'Rechercher dans la page',
       'view.findNext': 'Rechercher la correspondance suivante',
       'view.findPrevious': 'Rechercher la correspondance précédente',
@@ -4099,6 +4101,7 @@ export const frOverrides = {
       needsInput: 'Nécessite votre saisie',
       waitingForAnswer: 'En attente de votre réponse',
       finishedUnread: 'Terminée — non lue',
+      progressRing: (done, total) => `${done} sur ${total} étapes terminées`,
       backgroundRunning: 'Tâche en arrière-plan en cours',
       draftSession: 'Brouillon — aucun message envoyé',
       continueOnPhone: 'Continuer sur le téléphone',
@@ -4206,6 +4209,7 @@ export const frOverrides = {
       thisMonth: 'Plus tôt ce mois'
     },
     statusDivider: {
+      needsYou: 'À traiter',
       working: 'En cours',
       done: 'Terminées'
     },
@@ -4223,9 +4227,19 @@ export const frOverrides = {
       profile: 'Profil',
       source: 'Source',
       started: 'Démarré',
-      updated: 'Mis à jour'
+      updated: 'Mis à jour',
+      lastTool: 'Dernier outil',
+      planFraction: (done, total) => `${done} sur ${total}`,
+      more: count => `+${count} de plus`,
+      stopFailed: 'Impossible d’arrêter la session'
     },
     markAllRead: 'Tout marquer comme lu'
+  },
+
+  sessionOverview: {
+    title: 'Aperçu des sessions',
+    empty: 'Aucune session active',
+    newSession: 'Nouvelle session'
   },
   composer: {
     message: 'Message',
@@ -4259,6 +4273,26 @@ export const frOverrides = {
     steerTurn: 'Diriger le tour',
     stop: 'Arrêter',
     send: 'Envoyer',
+    broadcastTip: 'Envoyer à tous les volets',
+    broadcastNote: 'Texte uniquement — les pièces jointes restent dans ce volet',
+    broadcastOn: 'Tous les volets',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const delivered = sent + queued
+      const panes = delivered === 1 ? 'volet' : 'volets'
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} ignorés`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} échoués`)
+      }
+
+      return extras.length > 0
+        ? `Envoyé à ${delivered} ${panes}, ${extras.join(', ')}`
+        : `Envoyé à ${delivered} ${panes}`
+    },
     speaking: 'Parle',
     transcribing: 'Transcription',
     thinking: 'Réfléchit',
@@ -5463,6 +5497,8 @@ export const frOverrides = {
     closeToRight: 'Fermer à droite',
     closeAll: 'Tout fermer',
     newSessionTab: 'Nouvel onglet de session',
+    splitSession: 'Diviser la session',
+    splitSessionCapped: "Jusqu'à 4 sessions côte à côte",
     newTab: 'Nouvel onglet',
     pluginDisabled: pluginId => `Plugin « ${pluginId} » désactivé`,
     pluginDisabledBody: 'Réactivez-le dans Paramètres → Plugins pour faire revenir le panneau.',

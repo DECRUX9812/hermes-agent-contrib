@@ -112,6 +112,7 @@ import {
   CAPABILITIES_ROUTE,
   CRON_ROUTE,
   MESSAGING_ROUTE,
+  MISSION_ROUTE,
   navigateToWorkspacePage,
   NEW_CHAT_ROUTE,
   PROFILES_ROUTE,
@@ -130,6 +131,8 @@ export interface KeybindRuntimeDeps {
   startFreshSession: () => void
   /** Open a fresh session as a tab in the main zone (⌘T), leaving the primary. */
   openNewSessionTab: () => void
+  /** Split the focused chat zone with a new session tile. */
+  splitSession: () => void
   /** Pin/unpin the active session. */
   toggleSelectedPin: () => void
   /** Archive the active session. */
@@ -353,6 +356,16 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
 
     // Narrow-viewport reveal is handled inside the store toggles now.
     'view.toggleSidebar': toggleSidebarOpen,
+    // Toggle the session overview overlay: back when already there, else in.
+    // Other overlay routes toggle the same way — the overlay's own close
+    // returns to the previous route, and history-back mirrors that here.
+    'view.sessionOverview': () => {
+      if (location.pathname === MISSION_ROUTE) {
+        navigate(-1)
+      } else {
+        navigate(MISSION_ROUTE)
+      }
+    },
     'view.cycleSidebarGrouping': cycleSidebarGrouping,
     // ⌘J toggles the physical right side — whatever column lives there in the
     // live tree (the Browser preview column, the files column). Falls back to
@@ -380,6 +393,7 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'view.prevTerminal': () => isPaneVisible('terminal') && cycleTerminal(-1),
     'view.closeTerminal': () => isPaneVisible('terminal') && closeActiveTerminal(),
     'view.flipPanes': togglePanesFlipped,
+    'view.splitSession': () => deps.splitSession(),
     // ⌘W: close the focused tab (terminal / preview target / zone tree tab).
     // On the main tab with session tabs stacked, it shifts the next one in —
     // the loader navigates to that session's route (loads it into main). On

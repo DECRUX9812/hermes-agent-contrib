@@ -1,67 +1,89 @@
 import { useStore } from '@nanostores/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import { useNavigate } from 'react-router'
 
 import { OverlayView } from '@/app/overlays/overlay-view'
-import { Button } from '@/components/ui/button'
-import { GlyphSpinner } from '@/components/ui/glyph-spinner'
+import { NEW_CHAT_ROUTE } from '@/app/routes'
+import { setWorkspaceScope } from '@/components/pane-shell/workspace-scope'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
-import { AlertCircle } from '@/lib/icons'
-import type { LiveAction } from '@/lib/live-actions'
-import { activeGatewayProfileKey, requestGatewayForProfile } from '@/store/gateway'
-import { $selectedStoredSessionId, $sessions } from '@/store/session'
-import { $sessionStates, $sessionTiles, $workingSessionIds, openSessionTile } from '@/store/session-states'
+import { $newChatProfile } from '@/store/profile'
+import { $selectedStoredSessionId, $sessions, $unreadFinishedSessionIds } from '@/store/session'
+import { $sessionDotStateById } from '@/store/session-dot-state'
+import { SESSION_LIVE_GROUPS, type SessionLiveGroup } from '@/store/session-live'
+import { $sessionTiles, $workingSessionIds } from '@/store/session-states'
+import { $attentionSessionIds } from '@/store/session-states-live'
 
-import { collectMissionControlCards } from './collector'
-import type { MissionControlCard } from './types'
+import { collectOverviewCards } from './collector'
+import { OverviewCard } from './overview-card'
 
 export interface MissionControlViewProps {
   onClose: () => void
   /** Opens a stored session id (the wiring hands in `openSession`). */
   onOpenSession: (storedSessionId: string) => void
-  /** Optional custom stop callback; defaults to gateway `session.interrupt`. */
+  /** Optional custom stop callback; defaults to the tile delegate's interrupt. */
   onStop?: (runtimeId: string) => Promise<void>
 }
 
-function formatActionLine(action: LiveAction): string {
-  if (action.target) {
-    return `${action.tool}: ${action.target}`
+/** Move focus across the grid's cards. Column count comes from the rendered
+ *  grid (auto-fill), so up/down follow the visual columns at any width. */
+function moveCardFocus(grid: HTMLElement, delta: number) {
+  const cards = [...grid.querySelectorAll<HTMLElement>('[data-overview-card]')]
+  const at = cards.indexOf(document.activeElement as HTMLElement)
+
+  if (at < 0) {
+    return
   }
 
-  return action.tool
+  const next = at + delta
+
+  if (next < 0 || next >= cards.length) {
+    return
+  }
+
+  cards[next]?.focus()
 }
 
-export function MissionControlView({
-  onClose,
-  onOpenSession,
-  onStop
-}: MissionControlViewProps) {
-  const workingSessionIds = useStore($workingSessionIds)
+export function MissionControlView({ onClose, onOpenSession, onStop }: MissionControlViewProps) {
+  const { t } = useI18n()
+  const navigate = useNavigate()
+  const gridRefs = useRef(new Map<string, HTMLDivElement>())
+
   const sessions = useStore($sessions)
-  const sessionStates = useStore($sessionStates)
-  const selectedStoredSessionId = useStore($selectedStoredSessionId)
+  const dotStates = useStore($sessionDotStateById)
+  const workingSessionIds = useStore($workingSessionIds)
+  const attentionSessionIds = useStore($attentionSessionIds)
+  const finishedSessionIds = useStore($unreadFinishedSessionIds)
   const sessionTiles = useStore($sessionTiles)
+  const selectedStoredSessionId = useStore($selectedStoredSessionId)
 
-  const [stoppingIds, setStoppingIds] = useState<ReadonlySet<string>>(() => new Set())
-  const [errorBySessionId, setErrorBySessionId] = useState<Record<string, string>>({})
+  const cards = useMemo(
+    () =>
+      collectOverviewCards({
+        attentionSessionIds,
+        dotStates,
+        finishedSessionIds,
+        openSessionIds: [...sessionTiles.map(tile => tile.storedSessionId), selectedStoredSessionId],
+        sessions,
+        workingSessionIds
+      }),
+    [attentionSessionIds, dotStates, finishedSessionIds, selectedStoredSessionId, sessions, sessionTiles, workingSessionIds]
+  )
 
-  const cards: MissionControlCard[] = useMemo(() => {
-    return collectMissionControlCards({
-      sessionStates,
-      sessions,
-      workingSessionIds
-    })
-  }, [sessionStates, sessions, workingSessionIds])
+  const liveCount = cards.filter(card => card.group !== 'done').length
 
-  const tiledIds = useMemo(() => new Set(sessionTiles.map(t => t.storedSessionId)), [sessionTiles])
+  const groupLabel: Record<SessionLiveGroup, string> = {
+    done: t.sidebar.statusDivider.done,
+    'needs-you': t.sidebar.statusDivider.needsYou,
+    working: t.sidebar.statusDivider.working
+  }
 
-  // Sessions that can be tiled: other working sessions not currently in main and not already tiled
-  const tileableOtherSessions = useMemo(() => {
-    return cards.filter(
-      card => card.storedSessionId !== selectedStoredSessionId && !tiledIds.has(card.storedSessionId)
-    )
-  }, [cards, selectedStoredSessionId, tiledIds])
-
-  const canTileSideBySide = cards.length > 1 && tileableOtherSessions.length > 0
+  // The grid is opened by a direct action (statusbar, keybind), so landing
+  // focus on the first card is a continuation of that gesture, not a steal.
+  useEffect(() => {
+    gridRefs.current.values().next().value?.querySelector<HTMLElement>('[data-overview-card]')?.focus()
+  }, [])
 
   const handleOpen = (storedSessionId: string) => {
     triggerHaptic('selection')
@@ -69,174 +91,121 @@ export function MissionControlView({
     onClose()
   }
 
-  const handleOpenSideBySide = () => {
-    if (!canTileSideBySide) {
+  const handleNewSession = () => {
+    // Same door as the `session.new` keybind: target the sessions workspace
+    // with the live profile, then land on a fresh chat.
+    setWorkspaceScope('sessions')
+    $newChatProfile.set(null)
+    onClose()
+    navigate(NEW_CHAT_ROUTE)
+    window.dispatchEvent(new CustomEvent('hermes:new-session-shortcut'))
+  }
+
+  const handleGridKeyDown = (group: SessionLiveGroup, event: React.KeyboardEvent) => {
+    const grid = gridRefs.current.get(group)
+
+    if (!grid) {
       return
     }
 
-    triggerHaptic('selection')
+    const columns = getComputedStyle(grid).gridTemplateColumns.split(' ').length || 1
 
-    for (const session of tileableOtherSessions) {
-      openSessionTile(session.storedSessionId, 'right')
+    switch (event.key) {
+      case 'ArrowRight':
+        event.preventDefault()
+        moveCardFocus(grid, 1)
+
+        break
+
+      case 'ArrowLeft':
+        event.preventDefault()
+        moveCardFocus(grid, -1)
+
+        break
+
+      case 'ArrowDown':
+        event.preventDefault()
+        moveCardFocus(grid, columns)
+
+        break
+
+      case 'ArrowUp':
+        event.preventDefault()
+        moveCardFocus(grid, -columns)
+
+        break
+
+      default:
+        break
     }
-
-    onClose()
-  }
-
-  const handleStop = async (runtimeId: string) => {
-    triggerHaptic('cancel')
-    setStoppingIds(prev => new Set([...prev, runtimeId]))
-
-    setErrorBySessionId(prev => {
-      const next = { ...prev }
-
-      delete next[runtimeId]
-
-      return next
-    })
-
-    try {
-      if (onStop) {
-        await onStop(runtimeId)
-      } else {
-        await requestGatewayForProfile(activeGatewayProfileKey(), 'session.interrupt', { session_id: runtimeId })
-      }
-    } catch (err) {
-      setStoppingIds(prev => {
-        const next = new Set(prev)
-
-        next.delete(runtimeId)
-
-        return next
-      })
-
-      const message = err instanceof Error ? err.message : 'Failed to stop session'
-
-      setErrorBySessionId(prev => ({ ...prev, [runtimeId]: message }))
-    }
-  }
-
-  const handleDismissError = (runtimeId: string) => {
-    setErrorBySessionId(prev => {
-      const next = { ...prev }
-
-      delete next[runtimeId]
-
-      return next
-    })
   }
 
   return (
-    <OverlayView onClose={onClose} rootClassName="mx-auto w-full max-w-xl">
+    <OverlayView onClose={onClose} rootClassName="mx-auto w-full max-w-3xl">
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex shrink-0 items-center justify-between border-b border-(--ui-stroke-tertiary) px-5 pt-[calc(var(--titlebar-height)+0.875rem)] pb-3">
           <div className="flex items-baseline gap-2">
             <h1 className="text-[length:var(--conversation-text-font-size)] font-semibold text-foreground">
-              Mission Control
+              {t.sessionOverview.title}
             </h1>
-            {cards.length > 0 && (
+            {liveCount > 0 && (
               <span className="text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
-                {cards.length}
+                {liveCount}
               </span>
             )}
           </div>
-          <Button
-            disabled={!canTileSideBySide}
-            onClick={handleOpenSideBySide}
-            size="xs"
-            variant="secondary"
-          >
-            Open side by side
-          </Button>
         </div>
 
         {cards.length === 0 ? (
-          <div className="grid min-h-48 flex-1 place-items-center px-6 pb-8 text-center">
-            <div className="text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
-              Nothing running.
-            </div>
+          <div className="grid min-h-48 flex-1 place-items-center px-6 pb-8">
+            <EmptyState
+              action={{ label: t.sessionOverview.newSession, onClick: handleNewSession }}
+              title={t.sessionOverview.empty}
+            />
           </div>
         ) : (
-          <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-2 py-3">
-            {cards.map(card => {
-              const isStopping = stoppingIds.has(card.runtimeId)
-              const errorMessage = errorBySessionId[card.runtimeId]
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            {SESSION_LIVE_GROUPS.map(group => {
+              const groupCards = cards.filter(card => card.group === group)
 
-              return (
-                <li key={card.runtimeId}>
-                  <div className="flex items-start justify-between gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-(--chrome-action-hover)/50">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate text-[length:var(--conversation-text-font-size)] font-medium text-foreground">
-                          {card.title}
-                        </span>
-                      </div>
+              if (groupCards.length === 0) {
+                return null
+              }
 
-                      {card.latestAction && (
-                        <div className="mt-1 flex items-center gap-1.5 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-secondary) min-w-0">
-                          <span
-                            aria-label="Working"
-                            className="size-1.5 shrink-0 rounded-full bg-emerald-500 animate-pulse"
-                            role="status"
-                          />
-                          <span className="truncate">{formatActionLine(card.latestAction)}</span>
-                        </div>
-                      )}
-
-                      {isStopping && (
-                        <div className="mt-1 flex items-center gap-1.5 text-[length:var(--conversation-caption-font-size)] text-amber-500 min-w-0">
-                          <GlyphSpinner ariaLabel="Stopping" className="size-3 shrink-0" />
-                          <span className="truncate">Stopping session...</span>
-                        </div>
-                      )}
-
-                      {errorMessage && (
-                        <div className="mt-1.5 flex items-center gap-2 text-[length:var(--conversation-caption-font-size)] text-destructive">
-                          <AlertCircle className="size-3.5 shrink-0" />
-                          <span className="truncate">{errorMessage}</span>
-                          <Button
-                            className="text-destructive hover:underline"
-                            onClick={() => void handleStop(card.runtimeId)}
-                            size="micro"
-                            variant="text"
-                          >
-                            Retry
-                          </Button>
-                          <Button
-                            className="text-(--ui-text-tertiary) hover:underline"
-                            onClick={() => handleDismissError(card.runtimeId)}
-                            size="micro"
-                            variant="text"
-                          >
-                            Ignore
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <Button
-                        onClick={() => handleOpen(card.storedSessionId)}
-                        size="xs"
-                        variant="secondary"
-                      >
-                        Open
-                      </Button>
-                      <Button
-                        className="text-destructive hover:bg-destructive/10"
-                        disabled={isStopping}
-                        onClick={() => void handleStop(card.runtimeId)}
-                        size="xs"
-                        variant="ghost"
-                      >
-                        {isStopping ? 'Stopping...' : 'Stop'}
-                      </Button>
-                    </div>
+              const section = (
+                <section aria-label={groupLabel[group]} className="mb-5 last:mb-0" key={group}>
+                  <h2 className="mb-2 flex items-baseline gap-1.5 text-ui-xs font-medium text-fg-muted">
+                    {groupLabel[group]}
+                    <span className="text-ui-2xs tabular-nums">{groupCards.length}</span>
+                  </h2>
+                  <div
+                    className="grid grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-3"
+                    onKeyDown={event => handleGridKeyDown(group, event)}
+                    ref={node => {
+                      if (node) {
+                        gridRefs.current.set(group, node)
+                      } else {
+                        gridRefs.current.delete(group)
+                      }
+                    }}
+                    role="group"
+                  >
+                    {groupCards.map(card => (
+                      <OverviewCard
+                        card={card}
+                        index={cards.indexOf(card)}
+                        key={card.storedSessionId}
+                        onOpen={handleOpen}
+                        onStop={onStop}
+                      />
+                    ))}
                   </div>
-                </li>
+                </section>
               )
+
+              return section
             })}
-          </ul>
+          </div>
         )}
       </div>
     </OverlayView>

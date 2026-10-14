@@ -3,11 +3,13 @@ import { useStore } from '@nanostores/react'
 import type * as React from 'react'
 
 import { type NewSessionSplitHandler, startNewProjectDrag, startNewSessionDrag } from '@/app/chat/new-session-drag'
+import { sessionDotClassName } from '@/app/chat/session-status-dot'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { DisclosureCaret } from '@/components/ui/disclosure-caret'
 import { RowButton } from '@/components/ui/row-button'
 import { Tip } from '@/components/ui/tooltip'
+import type { SidebarDividerTone } from '@/lib/session-date-groups'
 import { cn } from '@/lib/utils'
 import { $sidebarRowMeta } from '@/store/layout'
 import type { TileDock } from '@/store/session-states'
@@ -123,17 +125,28 @@ export function SidebarRowNest({ className, ...props }: React.ComponentProps<'di
 export function SidebarDateDivider({
   action,
   className,
+  count,
   label,
   toggle,
+  tone = 'default',
   ...props
 }: React.ComponentProps<'div'> & {
   action?: React.ReactNode
+  count?: number
   label: string
   toggle?: { ariaLabel: string; onToggle: () => void; open: boolean }
+  tone?: SidebarDividerTone
 }) {
   const caption = (
-    <span className="shrink-0 text-ui-2xs font-medium text-fg-subtle">
+    <span
+      className={cn(
+        'flex shrink-0 items-center gap-1.5 text-ui-2xs font-medium',
+        tone === 'attention' ? 'text-fg' : tone === 'muted' ? 'text-fg-muted' : 'text-fg-subtle'
+      )}
+    >
+      {tone === 'attention' && <span aria-hidden="true" className={sessionDotClassName('needs-input')} />}
       {label}
+      {count !== undefined && <span className="tabular-nums text-fg-muted">{count}</span>}
     </span>
   )
 

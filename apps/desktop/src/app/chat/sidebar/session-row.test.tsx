@@ -7,16 +7,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { registry } from '@/contrib/registry'
 import type { SessionInfo } from '@/hermes'
+import type { ChatMessage } from '@/lib/chat-messages/types'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import type * as ChatRuntime from '@/lib/chat-runtime'
 import { SESSION_ROW_AREAS, type SessionRowSlotProps } from '@/lib/session-row-slots'
 import type * as Time from '@/lib/time'
 import type * as ComposerStatusStore from '@/store/composer-status'
 import { $sidebarRowMeta } from '@/store/layout'
+import { $sessions } from '@/store/session'
 import type * as SessionStore from '@/store/session'
 import { setSessionListDensity } from '@/store/session-list-density'
 import { clearAllSessionStates, publishSessionState } from '@/store/session-states'
 import type * as SessionStatesStore from '@/store/session-states'
+import { clearAllSessionTodos, setSessionTodos } from '@/store/todos'
 import type * as WindowsStore from '@/store/windows'
 
 import { ReorderableList, useSortableBindings } from './reorderable-list'
@@ -48,6 +51,13 @@ vi.mock('@/i18n', () => ({
   },
   useI18n: () => ({
     t: {
+      common: {
+        approve: 'Approve',
+        open: 'Open'
+      },
+      composer: {
+        stop: 'Stop'
+      },
       sidebar: {
         peek: {
           agents: 'Delegated agents',
@@ -56,11 +66,15 @@ vi.mock('@/i18n', () => ({
           archived: 'Archived',
           branch: 'Branch',
           idle: 'Idle',
+          lastTool: 'Last tool',
           model: 'Model',
+          more: (count: number) => `+${count} more`,
+          planFraction: (done: number, total: number) => `${done} of ${total}`,
           profile: 'Profile',
           source: 'Source',
           started: 'Started',
           stats: 'Stats',
+          stopFailed: 'Could not stop the session',
           tokens: (count: string) => `${count} tokens`,
           updated: 'Updated',
           workspace: 'Workspace'
@@ -79,6 +93,8 @@ vi.mock('@/i18n', () => ({
           continuationOrigin: 'Automatic continuation — this conversation was compressed and continued',
           messageCount: (count: number) => `${count} messages`,
           needsInput: 'Needs input',
+          progressRing: (done: number, total: number) => `${done} of ${total} steps done`,
+          openInSplit: 'Open in split',
           sessionActions: 'Session actions',
           sessionRunning: 'Running',
           todoProgress: 'Tasks completed',
@@ -323,7 +339,7 @@ describe('SidebarSessionRow', () => {
       Object.defineProperty(el, 'clientWidth', { configurable: true, value: clientWidth })
     }
 
-    it('opens with the full title after a settled hover when the title overflows', () => {
+    it('shows the peek with the full title after a settled hover when the title overflows', () => {
       vi.useFakeTimers()
       renderRow(makeSession({ title }))
 
@@ -335,7 +351,11 @@ describe('SidebarSessionRow', () => {
         vi.advanceTimersByTime(700)
       })
 
-      expect(screen.getByRole('tooltip').textContent).toContain(title)
+      // The peek's 450ms dwell wins over the title tip's slower one, and the
+      // row suppresses the tip while the peek is open — the full title reads
+      // in the peek card instead.
+      expect(screen.queryByRole('tooltip')).toBeNull()
+      expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(2)
     })
 
     it('stays closed when the title fits', () => {
@@ -441,11 +461,12 @@ describe('SidebarSessionRow condensed density', () => {
     expect(tip.textContent).toContain('compressed and continued')
   })
 
-  it('keeps the overflow-only title tooltip when there is no meta to fold in', () => {
+  it('shows the peek with the full title when there is no meta to fold in', () => {
     vi.useFakeTimers()
     setSessionListDensity('condensed')
     // Bare meta prefs leave nothing hidden, so the title keeps its
-    // overflow-only OverflowTip instead of the always-on condensed tip.
+    // overflow-only OverflowTip instead of the always-on condensed tip — but a
+    // settled dwell still belongs to the peek, which suppresses the tip.
     $sidebarRowMeta.set([])
     const title = 'A very long session title that the sidebar cannot possibly fit'
     renderRow(makeSession({ title }))
@@ -460,7 +481,8 @@ describe('SidebarSessionRow condensed density', () => {
       vi.advanceTimersByTime(700)
     })
 
-    expect(screen.getByRole('tooltip').textContent).toContain(title)
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(2)
   })
 })
 
@@ -633,5 +655,69 @@ describe('SidebarSessionRow continuation badge', () => {
     const branch = renderRow(makeSession({ parent_session_id: 'parent', title: 'A real branch' }))
 
     expect(continuationGlyph(branch.container)).toBeNull()
+  })
+})
+
+describe('SidebarSessionRow progress and live marks', () => {
+  afterEach(() => {
+    clearAllSessionStates()
+    clearAllSessionTodos()
+    $sessions.set([])
+    setSessionListDensity('compact')
+  })
+
+  const planTodos = () =>
+    setSessionTodos('rt1', [
+      { content: 'a', id: 'a', status: 'completed' },
+      { content: 'b', id: 'b', status: 'completed' },
+      { content: 'c', id: 'c', status: 'pending' },
+      { content: 'd', id: 'd', status: 'pending' },
+      { content: 'e', id: 'e', status: 'pending' }
+    ] as never)
+
+  it('shows a one-line row plan as a ring, keeping the X/Y text in its tip only', () => {
+    publishSessionState('rt1', createClientSessionState('s1'))
+    planTodos()
+
+    renderRow(makeSession({ title: 'Planned' }))
+
+    expect(screen.getByRole('img', { name: '2 of 5 steps done' })).toBeTruthy()
+    expect(screen.queryByText('2/5')).toBeNull()
+  })
+
+  it('keeps the X/Y text footer on a card row', () => {
+    publishSessionState('rt1', createClientSessionState('s1'))
+    planTodos()
+
+    renderRow(makeSession({ title: 'Planned card' }), { card: true })
+
+    expect(screen.getByText('2/5')).toBeTruthy()
+  })
+
+  it('marks an unread finish with a muted check instead of the emerald dot', () => {
+    $sessions.set([makeSession({ title: 'Finished', unread: true })])
+
+    renderRow(makeSession({ title: 'Finished', unread: true }))
+
+    const mark = screen.getByRole('status', { name: 'Finished' })
+
+    expect(mark.querySelector('.codicon-check')).toBeTruthy()
+    expect(mark.className).toContain('text-success')
+  })
+
+  it('names the running tool in place of the age on a compact working row', () => {
+    setSessionListDensity('compact')
+
+    const message = {
+      id: 'm1',
+      parts: [{ args: { query: 'weather' }, toolCallId: 'c1', toolName: 'web_search', type: 'tool-call' }],
+      role: 'assistant'
+    } as unknown as ChatMessage
+
+    publishSessionState('rt1', { ...createClientSessionState('s1'), busy: true, messages: [message] })
+
+    renderRow(makeSession({ title: 'Working' }))
+
+    expect(screen.getByText('web search')).toBeTruthy()
   })
 })

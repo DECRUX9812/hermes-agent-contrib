@@ -48,9 +48,20 @@ describe('buildMenuBarStatus', () => {
     )
 
     expect(result.needsYou).toBe(2)
+    expect(result.needsInput).toBe(1)
     expect(result.activeRuns).toBe(1)
     // "needs you" is the badge's whole point — the status line carries it.
     expect(result.strings.statusLine).toBe('menuBar.statusActive:1,2')
+  })
+
+  it('counts needs-input rows separately from unread finishes for the app badge', () => {
+    const result = buildMenuBarStatus(
+      { a: 'needs-input', b: 'needs-input', c: 'unread', d: 'idle' } as Record<string, SessionDotState>,
+      [session('a'), session('b'), session('c'), session('d')]
+    )
+
+    expect(result.needsInput).toBe(2)
+    expect(result.needsYou).toBe(3)
   })
 
   it('excludes archived sessions from counts and the recent list', () => {

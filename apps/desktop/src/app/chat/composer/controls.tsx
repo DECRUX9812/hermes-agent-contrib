@@ -14,6 +14,7 @@ import { $showsAdvancedChrome } from '@/store/interface-mode'
 import { $wakeWord, toggleWakeWord } from '@/store/wake-word'
 
 import { ApprovalPill } from './approval-pill'
+import { BroadcastToggle } from './broadcast-toggle'
 import { ContextRing } from './context-ring'
 import { ACTIVE_ICON_BTN, GHOST_ICON_BTN, PRIMARY_ICON_BTN } from './control-classes'
 import type { ConversationStatus } from './hooks/use-voice-conversation'
@@ -157,6 +158,7 @@ export function ComposerControls({
             )}
             <ApprovalPill compact={compactModelPill} disabled={disabled} />
           </div>
+          <BroadcastToggle disabled={disabled} />
           {voiceControls}
         </>
       )}

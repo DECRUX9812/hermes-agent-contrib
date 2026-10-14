@@ -54,7 +54,11 @@ export const zhHantChrome = {
       profile: '設定檔',
       source: '來源',
       started: '開始時間',
-      updated: '更新時間'
+      updated: '更新時間',
+      lastTool: '上次工具',
+      planFraction: (done, total) => `${done}/${total}`,
+      more: count => `還有 ${count} 項`,
+      stopFailed: '無法停止工作階段'
     },
     markAllRead: '全部標示為已讀',
     filter: {
@@ -250,6 +254,7 @@ export const zhHantChrome = {
       needsInput: '需要您的輸入',
       waitingForAnswer: '等待您的回答',
       finishedUnread: '已完成 — 未讀',
+      progressRing: (done, total) => `已完成 ${done}/${total} 步`,
       backgroundRunning: '背景任務執行中',
       draftSession: '草稿 — 尚未傳送',
       handoffOrigin: platform => `從 ${platform} 轉接`,
@@ -295,6 +300,7 @@ export const zhHantChrome = {
       none: '沒有可封存的工作階段'
     },
     statusDivider: {
+      needsYou: '需要你',
       working: '進行中',
       done: '已完成'
     }
@@ -545,6 +551,8 @@ export const zhHantChrome = {
     closeToRight: '關閉右側',
     closeAll: '全部關閉',
     newSessionTab: '新增工作階段分頁',
+    splitSession: '分割工作階段',
+    splitSessionCapped: '最多可並排顯示 4 個工作階段',
     newTab: '新增分頁',
     pluginDisabled: pluginId => `外掛「${pluginId}」已停用`,
     pluginDisabledBody: '在 技能與工具 → 外掛 中重新啟用即可恢復面板。',

@@ -495,7 +495,9 @@ export const zhOverrides = {
       'view.terminalPaste': '粘贴到终端',
       'view.closeTab': '关闭标签',
       'view.reopenTab': '重新打开已关闭的标签',
+      'view.splitSession': '拆分为新会话',
       'view.flipPanes': '交换侧边栏位置',
+      'view.sessionOverview': '会话总览',
       'view.findInPage': '页面内查找',
       'view.findNext': '查找下一个',
       'view.findPrevious': '查找上一个',
@@ -3608,6 +3610,7 @@ export const zhOverrides = {
       needsInput: '需要你输入',
       waitingForAnswer: '正在等待你的回答',
       finishedUnread: '已完成 — 未读',
+      progressRing: (done, total) => `已完成 ${done}/${total} 步`,
       backgroundRunning: '后台任务运行中',
       draftSession: '草稿 — 尚未发送',
       continueOnPhone: '在手机上继续',
@@ -3713,6 +3716,7 @@ export const zhOverrides = {
       thisMonth: '本月'
     },
     statusDivider: {
+      needsYou: '需要你',
       working: '进行中',
       done: '已完成'
     },
@@ -3730,9 +3734,19 @@ export const zhOverrides = {
       profile: '配置文件',
       source: '来源',
       started: '开始时间',
-      updated: '更新时间'
+      updated: '更新时间',
+      lastTool: '上次工具',
+      planFraction: (done, total) => `${done}/${total}`,
+      more: count => `还有 ${count} 项`,
+      stopFailed: '无法停止会话'
     },
     markAllRead: '全部标记为已读'
+  },
+
+  sessionOverview: {
+    title: '会话总览',
+    empty: '没有正在进行的会话',
+    newSession: '新建会话'
   },
 
   composer: {
@@ -3767,6 +3781,24 @@ export const zhOverrides = {
     steerTurn: '引导当前回合',
     stop: '停止',
     send: '发送',
+    broadcastTip: '发送到所有窗格',
+    broadcastNote: '仅发送文本——附件保留在此窗格',
+    broadcastOn: '所有窗格',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} 个已跳过`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} 个失败`)
+      }
+
+      return extras.length > 0
+        ? `已发送到 ${sent + queued} 个窗格，${extras.join('，')}`
+        : `已发送到 ${sent + queued} 个窗格`
+    },
     speaking: '讲话中',
     transcribing: '转写中',
     thinking: '思考中',
@@ -4928,6 +4960,8 @@ export const zhOverrides = {
     closeToRight: '关闭右侧',
     closeAll: '全部关闭',
     newSessionTab: '新建会话标签',
+    splitSession: '拆分会话',
+    splitSessionCapped: '最多可并排显示 4 个会话',
     newTab: '新建标签页',
     pluginDisabled: pluginId => `插件“${pluginId}”已禁用`,
     pluginDisabledBody: '在 技能与工具 → 插件 中重新启用即可恢复面板。',

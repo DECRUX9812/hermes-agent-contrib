@@ -95,6 +95,12 @@ export const zhHantOverrides = {
   artifactPreview: zhHantArtifacts.artifactPreview,
   sidebar: zhHantChrome.sidebar,
   composer: zhHantChat.composer,
+
+  sessionOverview: {
+    title: '工作階段總覽',
+    empty: '沒有進行中的工作階段',
+    newSession: '新增工作階段'
+  },
   statusStack: zhHantChat.statusStack,
   updates: zhHantBoot.updates,
   install: zhHantBoot.install,
@@ -201,7 +207,9 @@ export const zhHantOverrides = {
   keybinds: {
     actions: {
       'nav.starmap': '開啟記憶圖譜',
-      'nav.webhooks': '開啟 Webhook'
+      'nav.webhooks': '開啟 Webhook',
+      'view.splitSession': '分割為新工作階段',
+      'view.sessionOverview': '工作階段總覽'
     }
   },
 

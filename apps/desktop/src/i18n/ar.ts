@@ -40,6 +40,12 @@ export const arOverrides = {
   artifactPreview: arArtifacts.artifactPreview,
   sidebar: arChrome.sidebar,
   composer: arChat.composer,
+
+  sessionOverview: {
+    title: 'نظرة عامة على الجلسات',
+    empty: 'لا توجد جلسات نشطة',
+    newSession: 'جلسة جديدة'
+  },
   statusStack: arChat.statusStack,
   updates: arBoot.updates,
   install: arBoot.install,

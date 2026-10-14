@@ -290,9 +290,10 @@ export const $sidebarAgentsGrouped: ReadableAtom<boolean> = computed(
   (showAll, flat, allProfiles) => (showAll ? allProfiles : flat)
 )
 
-/** How the recents list is divided. `date` is the sidebar's long-standing
- *  default (Today / Yesterday / Last week dividers). `profile` only means
- *  anything while the sidebar is showing every profile at once. */
+/** How the recents list is divided. `status` is the shipped default (Needs
+ *  you / Working / Done). `date` keeps the calendar dividers (Today / Yesterday
+ *  / Last week). `profile` only means anything while the sidebar is showing
+ *  every profile at once. */
 export const SIDEBAR_GROUPING_ORDER = ['date', 'project', 'status', 'profile'] as const
 /** Derived from the order so a new grouping cannot exist without a slot in the
  *  filter menu and the `view.cycleSidebarGrouping` keybind, which both walk it. */
@@ -330,24 +331,24 @@ export const SIDEBAR_SORT_KEYS: readonly SidebarSortKey[] = ['updated', 'created
 // the grouping to fall back to when the user leaves it.
 const $sidebarFlatGrouping = persistentAtom<SidebarGrouping>(
   SIDEBAR_GROUPING_STORAGE_KEY,
-  'date',
-  oneOf(['date', 'status'], 'date')
+  'status',
+  oneOf(['date', 'status'], 'status')
 )
 
 // All-profiles keeps its own grouping: `profile` only means anything there, and
 // a shared atom would either drag it into a scope where it means nothing or
-// reset the choice every time the user flips the rail. Both scopes still ship
-// by day — grouping by owner is something you go and pick.
+// reset the choice every time the user flips the rail. Both scopes ship by
+// live state — grouping by owner is something you go and pick.
 const $sidebarAllProfilesGrouping = persistentAtom<SidebarGrouping>(
   SIDEBAR_ALL_PROFILES_GROUPING_STORAGE_KEY,
-  'date',
-  oneOf(['date', 'profile', 'status'], 'date')
+  'status',
+  oneOf(['date', 'profile', 'status'], 'status')
 )
 
 // The sidebar as it ships. Declared once so the atoms below, "Reset to
 // defaults" and the "has this view been customized?" check can't drift apart —
 // they used to inline the same literals in three places.
-const SIDEBAR_DEFAULT_GROUPING: SidebarGrouping = 'date'
+const SIDEBAR_DEFAULT_GROUPING: SidebarGrouping = 'status'
 const SIDEBAR_DEFAULT_ORDERING: SidebarOrdering = 'updated'
 const SIDEBAR_DEFAULT_ROW_META: SidebarRowMeta[] = ['preview', 'updated']
 

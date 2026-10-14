@@ -12,10 +12,12 @@
 import { useStore } from '@nanostores/react'
 import { type CSSProperties, Fragment, type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 
+import { $canSplitSession, $splitSessionAction, $splitSessionTab } from '@/app/chat/split-session'
 import { ShellMenuItems } from '@/app/context-menu/shell-menu-items'
 import { TITLEBAR_DRAG_HANDLE_WIDTH, TITLEBAR_HEIGHT } from '@/app/shell/titlebar'
 import { useTouchTitlebar } from '@/app/shell/use-touch-titlebar'
 import { ActionsContextMenu, type MenuKit, renderActionItem } from '@/components/ui/actions-menu'
+import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { DecodeText } from '@/components/ui/decode-text'
 import { DROP_SHEET_BLUR_CLASS, DROP_SHEET_CLASS } from '@/components/ui/drop-affordance'
@@ -28,6 +30,7 @@ import {
   PaneTabLabel,
   PaneTabStrip
 } from '@/components/ui/pane-tab'
+import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
@@ -288,6 +291,8 @@ export function TreeGroup({
   const workspaceMode = useStore($workspaceMode)
   const workspaceOwnerKey = useStore($workspaceOwnerKey)
   const newSessionTabAction = useStore($newSessionTabAction)
+  const splitTab = useStore($splitSessionTab)
+  const splitHint = useKeybindHint('view.splitSession')
   const panesWithCloser = useStore($panesWithCloser)
   // Multi-tab selection (⌥/Ctrl-click, Shift-click) — null for every zone but
   // the one holding it, so this subscription is quiet during normal use.
@@ -340,6 +345,15 @@ export function TreeGroup({
 
     return mint ? { label: t.zones.newTab, onSelect: mint } : null
   }
+
+  const splitAction = useStore($splitSessionAction)
+  const canSplitSession = useStore($canSplitSession)
+
+  const splitAriaLabel = splitTab.capped
+    ? t.zones.splitSessionCapped
+    : splitHint
+      ? `${t.zones.splitSession} (${splitHint})`
+      : t.zones.splitSession
 
   const newTab =
     ownNewTab(activeId) ??
@@ -817,6 +831,36 @@ export function TreeGroup({
                       label={newTab.label}
                       onSelect={newTab.onSelect}
                     />
+                  </span>
+                )}
+                {splitAction && newSessionTabAction && !node.minimized && !compactTabs && shown.some(isSessionStripPane) && (
+                  <span className="flex shrink-0 items-center [-webkit-app-region:no-drag]">
+                    {/* Same chrome as PaneStripGlyph (ghost icon-xs + Tip), but
+                    the tip carries the live keybind via TipKeybindLabel, which
+                    a plain-string glyph label cannot express. */}
+                    <Tip
+                      label={
+                        splitTab.capped ? (
+                          t.zones.splitSessionCapped
+                        ) : (
+                          <TipKeybindLabel actionId="view.splitSession" text={t.zones.splitSession} />
+                        )
+                      }
+                      placement="toolbar"
+                    >
+                      <Button
+                        aria-label={splitAriaLabel}
+                        className="self-center bg-transparent opacity-60 select-none hover:opacity-100 [-webkit-app-region:no-drag]"
+                        disabled={!canSplitSession || splitTab.capped}
+                        onClick={splitAction}
+                        onPointerDown={event => event.stopPropagation()}
+                        size="icon-xs"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Codicon name="split-horizontal" size="0.8125rem" />
+                      </Button>
+                    </Tip>
                   </span>
                 )}
               </PaneTabStrip>
