@@ -10,6 +10,7 @@ import { zhHantCommandCenter } from './zh-hant_command_center'
 import { zhHantCommon } from './zh-hant_common'
 import { zhHantConnectors } from './zh-hant_connectors'
 import { zhHantDiagnostics } from './zh-hant_diagnostics'
+import { zhHantFirstRun } from './zh-hant_first_run'
 import { zhHantSettings } from './zh-hant_settings'
 
 export const zhHantOverrides = {
@@ -61,6 +62,7 @@ export const zhHantOverrides = {
     stripChoices: { share: '與 Nous 分享', local: '保留在這部電腦上', off: '不用了' },
     stripDetails: '詳細資訊'
   },
+  firstRun: zhHantFirstRun,
   intro: introZhHant,
   sessionImport: zhHantConnectors.sessionImport,
   common: zhHantCommon.common,
@@ -155,6 +157,15 @@ export const zhHantOverrides = {
   },
 
   connectors: {
+    directory: {
+      suggested: '推薦',
+      allApps: '全部應用程式',
+      receiptConnected: apps => `已連接：${apps}`,
+      receiptNone: '未連接新的應用程式',
+      receiptTimedOut: '5 分鐘後已關閉',
+      finishInBrowser: '請在瀏覽器中完成',
+      signInFailed: '連接失敗，點擊重試'
+    },
     title: '連接你的應用程式',
     connect: '連接',
     skip: '暫時不要',

@@ -13,9 +13,9 @@ import { Thread } from '@/components/assistant-ui/thread'
 import { TranscriptWindowProvider } from '@/components/assistant-ui/thread/transcript-window'
 import { Backdrop } from '@/components/Backdrop'
 import { COMPOSER_HEART_CONFIG, HeartField } from '@/components/chat/vibe-hearts'
-import { useSetupChatView } from '@/components/onboarding-chat/assembly'
-import { $introHoldsThread } from '@/components/onboarding-chat/intro'
-import { IntroCopy } from '@/components/onboarding-chat/intro-copy'
+import { useSetupChatView } from '@/components/onboarding/first-run/assembly'
+import { $introHoldsThread } from '@/components/onboarding/first-run/intro'
+import { IntroCopy } from '@/components/onboarding/first-run/intro-copy'
 import { usePaneGroup, usePaneVisible } from '@/components/pane-shell/pane-visibility'
 import { $hoveredTreeGroup, $sessionTileDragging, $sessionTileEdgeHover } from '@/components/pane-shell/tree/store'
 import { PromptOverlays } from '@/components/prompt-overlays'
@@ -33,7 +33,7 @@ import { migrateQueuedPrompts, parkQueuedPrompts } from '@/store/composer-queue'
 import { $homeFeedItems } from '@/store/home-feed'
 import { $introSplash } from '@/store/intro-splash'
 import { $pinnedSessionIds } from '@/store/layout'
-import { $guideOpening, $onboardingGate } from '@/store/onboarding-gate'
+import { $introView } from '@/store/onboarding-intro'
 import { $petActive } from '@/store/pet'
 import { $petOverlayActive } from '@/store/pet-overlay'
 import { $activeGatewayProfile, $gatewaySwapTarget, $hydrationSyncProfile, $profiles } from '@/store/profile'
@@ -535,9 +535,8 @@ const ChatViewContent = memo(function ChatViewContent({
   const composerScope = useComposerScope()
   const composerSurfaceId = useComposerSurfaceId()
   const isPrimary = view.kind === 'primary'
-  const guideOpening = useStore($guideOpening) && isPrimary
   const introHoldsThread = useStore($introHoldsThread) && isPrimary && isMainWindow()
-  const guideStarted = useStoreSelector($onboardingGate, gate => gate.guideKickoff === 'started')
+  const guideStarted = useStoreSelector($introView, introView => introView === 'intro' || introView === 'ended')
   const activeSessionId = useStore(view.$runtimeId)
 
   const transcriptStoredSessionId = useStoreSelector($sessionStates, states =>
@@ -710,7 +709,6 @@ const ChatViewContent = memo(function ChatViewContent({
   const threadLoading = threadLoadingState(loadingSession, busy, awaitingResponse, lastVisibleIsUser)
 
   const showChatBar = useShowChatBar({
-    guideOpening,
     loadingSession,
     resumeExhausted,
     routedSessionId,

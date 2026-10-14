@@ -141,6 +141,7 @@ export function NarrowOverlays() {
         if (mode === 'close') {
           const currentTree = $layoutTree.get()
           const targetZone = currentTree ? findGroupOfPane(currentTree, match.id) : null
+
           return current && (current.id === match.id || targetZone?.panes.includes(current.id)) ? null : current
         }
 

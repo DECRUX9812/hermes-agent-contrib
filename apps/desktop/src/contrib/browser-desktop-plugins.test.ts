@@ -11,13 +11,12 @@
  */
 
 import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as ApiClient from '@/api/client'
 import type { HermesApiRequest } from '@/global'
-
-import { resolve } from 'node:path'
 
 import { $pluginRecords } from './plugins-store'
 import { registry } from './registry'

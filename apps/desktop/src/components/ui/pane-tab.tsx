@@ -227,8 +227,10 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
       {children}
     </span>
   )
+
   const cls =
     'flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2'
+
   // `as` is a closed 'button' | 'span' union — render each branch concretely so
   // JSX infers real props instead of collapsing through ElementType to never
   // (react-three/fiber augments JSX.IntrinsicElements).
@@ -239,6 +241,7 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
       </button>
     )
   }
+
   return (
     <span
       className={cls}

@@ -56,6 +56,7 @@ import { COMPOSER_DROP_ACTIVE_CLASS, COMPOSER_DROP_FADE_CLASS } from './drop-aff
 import { markActiveComposer, onComposerAttachImagesRequest, requestComposerInsert } from './focus'
 import { HelpHint } from './help-hint'
 import { useAtCompletions } from './hooks/use-at-completions'
+import { useCardWaitingSubmit } from './hooks/use-card-waiting-submit'
 import { useComposerBranch } from './hooks/use-composer-branch'
 import { useComposerDraft } from './hooks/use-composer-draft'
 import { useComposerDrop } from './hooks/use-composer-drop'
@@ -161,10 +162,9 @@ export function ChatBar({
   // queue uses the stored-session fallback key (prompts can queue pre-resume).
   const statusSessionId = sessionId ?? null
 
-  // The guide uses the setup profile's inference route; the model pill and
-  // git controls would expose settings unrelated to its conversational steps.
-  // Solo covers startup before the guide's session ids are known. Once the intro has ended the setup
-  // chat is a normal chat again.
+  // The guide's conversational steps have no use for the model pill and git
+  // controls. Solo covers startup before the guide's session ids are known.
+  // Once the intro has ended the onboarding chat is a normal chat again.
   const guidedChat = useSetupChatView()
   const chatOnboardingSolo = useStore($chatOnboardingSolo)
   // The git row (branch / worktree / PR / review) is the coding instrument the
@@ -360,7 +360,7 @@ export function ChatBar({
   })
 
   const hasComposerPayload = hasText || attachments.length > 0
-  const canSubmit = busy || hasComposerPayload
+  const { canSubmit, cardWaiting } = useCardWaitingSubmit(sessionId ?? null, busy, hasComposerPayload)
 
   // Steer only makes sense mid-turn, text-only (the gateway can't carry images
   // into a tool result) and never for a slash command (those execute inline).
@@ -583,6 +583,7 @@ export function ChatBar({
       busy={busy}
       busyAction={busyAction}
       canSubmit={canSubmit}
+      cardWaiting={cardWaiting}
       compactModelPill={poppedOut || compactPill}
       conversation={{
         active: voiceConversationActive,
@@ -788,7 +789,7 @@ export function ChatBar({
           <div className={cn(composerFloatingStrip, 'px-[5px] pb-1.5 empty:hidden')}>
             <ActionBadges sessionId={statusSessionId} />
             <SuggestionPills sessionId={statusSessionId} />
-            <OnboardingSkip />
+            <OnboardingSkip sessionId={statusSessionId} />
           </div>
           {/* Session-scoped status stack (todos, subagents, background tasks,
               queue). An in-flow dock child: the dock is bottom-anchored, so it

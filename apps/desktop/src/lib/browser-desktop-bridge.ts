@@ -145,6 +145,7 @@ export function installBrowserDesktopBridge(): boolean {
         const health = await api<{ version?: string; displayVersion?: string; commit?: string }>({
           path: '/api/health'
         })
+
         return {
           appVersion: health.displayVersion || health.version || 'browser-hosted',
           baseVersion: health.version,
@@ -171,8 +172,10 @@ export function installBrowserDesktopBridge(): boolean {
           const res = await api<BackendUpdateCheckResponse>({
             path: `/api/hermes/update/check?force=${force}`
           })
+
           const behind = res.behind === undefined ? 0 : res.behind
           const checkFailed = res.can_apply && res.behind === null
+
           return {
             supported: res.can_apply,
             error: checkFailed ? 'check-failed' : undefined,

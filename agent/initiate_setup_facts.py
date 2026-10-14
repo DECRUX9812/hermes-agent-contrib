@@ -160,7 +160,7 @@ def _locale() -> str:
 def _is_spark(os_family: str, arch: str, gpu: str, cpu: str) -> bool:
     """RTX Sparks by platform, architecture and GPU; DGX Sparks by model string."""
     rtx = os_family == "win32" and arch == "arm64" and gpu == "nvidia"
-    return rtx or products.is_nvidia_arm_soc() or bool(_SPARK_MODEL.search(cpu.replace("_", " ")))
+    return rtx or products.nvidia_platform() in ("rtx_spark", "dgx_spark") or bool(_SPARK_MODEL.search(cpu.replace("_", " ")))
 
 
 def _machine_kind(os_family: str, spark: bool) -> str:

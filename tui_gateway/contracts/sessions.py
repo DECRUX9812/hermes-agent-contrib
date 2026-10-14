@@ -1,7 +1,6 @@
 """Session lifecycle contracts (``tui_gateway/methods_session.py``): create / resume / activate /
 close, the live-session snapshot those share, history + compression + undo, mid-turn corrections,
 listing/browsing stored rows, spawn-tree snapshots, event replay and the stateless one-shot LLM call.
-``session.start_chat`` lives in ``tui_gateway/methods_start_chat.py``.
 """
 
 from __future__ import annotations
@@ -34,7 +33,6 @@ class InflightTurn(Result):
     assistant: str = ""
     streaming: bool = False
     user: str = ""
-    user_originated: bool | None = None
     display_kind: str | None = None
     display_metadata: dict[str, JsonValue] | None = None
     corrections: list[str] | None = None
@@ -136,15 +134,6 @@ class SessionCreateParams(ProfileParams):
     hidden: bool = False
     room_plumbing: bool = False
     follow_profile_config: bool = False
-    # Born a bot topic: a user-visible side chat of a bot that carries the canonical
-    # Bot Chat's powers (message_agent, update_task, teammate protocol). Persisted
-    # into the row's model_config, fixed for the session's life.
-    bot_topic: bool = False
-    # Born a member session of a team-orchestrated group room (Bot Mode): the lead alone hears
-    # plain user turns; teammates wake on @mention or the lead's delegation. Session-lifetime
-    # marker — set once, persisted in model_config, restored on every resume path.
-    team_room: bool = False
-    team_room_lead: str | None = None
     # #65410: stable caller-chosen key so a retried create (response lost in
     # transit) returns the SAME session instead of a duplicate child.
     idempotency_key: str | None = None
@@ -510,50 +499,6 @@ method("session.history", params=SessionHistoryParams, result=SessionHistoryResu
        doc="The durable display transcript (ancestors included, row ids attached).")
 
 
-class SessionAskExchange(Params):
-    """One prior companion Q/A the client holds, replayed for thread continuity."""
-
-    question: str
-    answer: str
-
-
-class SessionAskParams(ProfileParams):
-    """``session_id`` takes a stored id/prefix OR a live runtime id; ``history`` is the
-    client's companion thread so far (bounded server-side)."""
-
-    session_id: str = Field(min_length=1)
-    question: str = Field(min_length=1)
-    history: list[SessionAskExchange] | None = None
-
-
-class SessionAskResult(Result):
-    answer: str
-    resolved_id: str
-    messages_considered: int
-    truncated: bool
-
-
-method("session.ask", params=SessionAskParams, result=SessionAskResult,
-       doc="One-shot utility-model answer about a session's transcript (companion thread); "
-           "read-only, never touches the live conversation's context.")
-
-
-class SessionPredictNextParams(ProfileParams):
-    """``session_id`` takes a stored id/prefix OR a live runtime id."""
-
-    session_id: str = Field(min_length=1)
-
-
-class SessionPredictNextResult(Result):
-    text: str
-
-
-method("session.predict_next", params=SessionPredictNextParams, result=SessionPredictNextResult,
-       doc="One-shot utility-model draft of the user's likely next message for the composer's "
-           "ghost text (opt-in via auxiliary.composer_prediction); read-only, never touches "
-           "the live conversation's context.")
-
-
 class SessionUsageParams(SessionParams):
     pass
 
@@ -833,42 +778,3 @@ class LlmOneshotResult(Result):
 method("llm.oneshot", params=LlmOneshotParams, result=LlmOneshotResult,
        doc="Stateless one-shot LLM completion (titles, ideas) on the session's or the task backend.")
 
-
-# ── start_chat ────────────────────────────────────────────────────────────────────────────────
-
-
-class StartChatArgs(Params):
-    """The ``start_chat`` tool's arguments (``tools/start_chat_tool.py``)."""
-
-    message: str
-    title: str | None = None
-    profile: str | None = None
-
-
-class SessionStartChatParams(SessionParams):
-    """``tool_call_id`` names the rejected call; its saved tool row records a started retry (display-only)."""
-
-    tool_call_id: str
-    args: StartChatArgs
-
-
-class StartChatStatus(WireEnum):
-    started = "started"
-    rejected = "rejected"
-
-
-class SessionStartChatResult(Result):
-    """``tui_gateway/start_chat.py``: ``started`` carries the new chat, ``rejected`` a reason and whether the same
-    arguments may succeed on another try (``retryable``). A call already retried returns that retry's result."""
-
-    status: StartChatStatus
-    session_id: str | None = None
-    profile: str | None = None
-    title: str | None = None
-    message: str | None = None
-    reason: str | None = None
-    retryable: bool | None = None
-
-
-method("session.start_chat", params=SessionStartChatParams, result=SessionStartChatResult,
-       doc="Run a start_chat request again from the session that made it (the handoff card's Retry).")

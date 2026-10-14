@@ -102,12 +102,14 @@ it('every selector room-theme scopes with matches the rendered room', async () =
   ]
 
   $groupChats.set({ 'Hermes, Coder, Plugin, Nous Art': { log, watermarks: {}, sessions: {} } })
+
   const { container, rerender } = render(
     <GroupChatWorkspace
       group="Hermes, Coder, Plugin, Nous Art"
       members={[{ name: 'builder' }, { name: 'reviewer' }] as never}
     />
   )
+
   const all = (selector: string) => [...container.querySelectorAll(selector)]
 
   // [data-testid="group-speaker-dot"] — one per bot run start (builder,
@@ -134,11 +136,15 @@ it('every selector room-theme scopes with matches the rendered room', async () =
   // The pane prefix room-theme anchors on: openWorkspace keys the pane
   // `hermes-bots:group:<slug>`, and the SDK prefixes it `plugin-workspace:`.
   const { host } = await import('@hermes/plugin-sdk')
+
   const opened: string[] = []
+
   ;(host as unknown as { openWorkspace: (id: string) => () => void }).openWorkspace = (id: string) => {
     opened.push(id)
+
     return () => {}
   }
+
   openGroupChat('Hermes, Coder, Plugin, Nous Art')
   // slugifyProfileName lowercases — room-theme anchors on the PREFIX only,
   // so a lowercased slug still matches its `[data-pane-host^=...]` scope.

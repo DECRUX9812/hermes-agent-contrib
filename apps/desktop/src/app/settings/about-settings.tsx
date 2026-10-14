@@ -12,6 +12,7 @@ import { $desktopVersion, checkBackendUpdates, refreshDesktopVersion } from '@/s
 import { SectionHeading, SettingsContent } from './primitives'
 import { SETTING_IDS, settingElementId } from './settings-manifest'
 import { UninstallSection } from './uninstall-section'
+import { UpdateChannelRow } from './update-channel-row'
 import { useSettingDeepLink } from './use-setting-deep-link'
 
 interface AboutSettingsProps {
@@ -59,6 +60,7 @@ function AppUpdatesSettings({ includeUninstall }: AppUpdatesSettingsProps): Reac
         <SectionHeading icon={RefreshCw} title={t.settings.about.updates} />
         <div className="grid gap-3" id={settingElementId(SETTING_IDS.about.updates)}>
           {!browserHosted && <UpdateStatusCard target="client" />}
+          {!browserHosted && <UpdateChannelRow />}
           {/* Client and remote backend updates are independent. In browser-hosted mode, backend has the release notes. */}
           {(remote || browserHosted) && <UpdateStatusCard showReleaseNotes={browserHosted} target="backend" />}
         </div>

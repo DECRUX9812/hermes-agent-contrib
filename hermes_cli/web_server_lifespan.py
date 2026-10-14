@@ -24,6 +24,19 @@ if TYPE_CHECKING:  # pragma: no cover - annotation only
 _log = logging.getLogger("hermes_cli.web_server")
 
 
+def _probe_install_before_state_db() -> None:
+    from hermes_cli.anon_auth import on_local_desktop_backend
+
+    if not on_local_desktop_backend():
+        return
+    try:
+        from hermes_cli.install_state import probe
+
+        probe()
+    except (OSError, ValueError):  # what the probe's own guards leave; onboarding.state probes again
+        _log.warning("first-install check at boot failed", exc_info=True)
+
+
 def _gateway_owns_cron(name: str, home) -> bool:
     """A gateway already ticks this profile's store with live adapters: its OWN process, or the
     live default multiplexer (a served satellite has no gateway.pid of its own). Winning the
@@ -140,6 +153,10 @@ async def _lifespan(app: "FastAPI"):
     # connection closed from the main thread mid-probe (pytest's leaked-DB
     # sweep) and segfaulted the interpreter. The worker is time-bounded by
     # SessionDB's lock patience, so the join cannot hang shutdown.
+    # The first-install check reads the default root's state.db: on the desktop's own backend it runs
+    # before this process starts creating or healing that database, and its answer is kept.
+    _probe_install_before_state_db()
+
     eager_reconcile_thread = threading.Thread(
         target=web_server._eager_reconcile_own_session_db,
         name="statedb-eager-reconcile",
@@ -162,7 +179,7 @@ async def _lifespan(app: "FastAPI"):
     # contended state.db migration, so keep it off the pre-yield path: Group
     # Chat must degrade on its own rather than block every Desktop feature.
     from tui_gateway import methods_groups as _hosted_groups
-    import tui_gateway.server  # noqa: F401
+    import tui_gateway.server
 
     try:
         tui_gateway.server.install_tui_message_injector()
@@ -188,8 +205,8 @@ async def _lifespan(app: "FastAPI"):
     hosted_room_start_thread.start()
 
     # Gateway lifecycle ownership remains exclusive to Electron-spawned backends.
-    cron_stop: "threading.Event | None" = None
-    cron_thread: "threading.Thread | None" = None
+    cron_stop: threading.Event | None = None
+    cron_thread: threading.Thread | None = None
     desktop_owned = is_desktop_owned_backend()
     if desktop_owned:
         # Reap an orphaned gateway from an abnormal previous exit (reparented to
@@ -241,18 +258,22 @@ async def _lifespan(app: "FastAPI"):
             from hermes_cli.local_runtime.bootstrap import ensure_local_runtime
 
             ensure_local_runtime(load_config())
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _log.warning("local runtime boot failed: %s", exc)
 
     threading.Thread(target=_boot_local_runtime, daemon=True, name="local-runtime-boot").start()
 
-    # Nous free tier: the ONE place its identity is created. Inventories credentials, mints only
-    # when HERMES_GUEST_ONBOARDING=1, records the answer for setup.status / free_tier.status and
-    # broadcasts `setup.ready`. Off-thread so a slow portal never delays the socket; the desktop's
-    # first setup.status waits on the record (bounded) instead.
+    # Records who carries inference for setup.status / free_tier.status and broadcasts `setup.ready`
+    # (no identity is created at boot). Off-thread; the desktop's first setup.status waits on the
+    # record (bounded) instead.
     from hermes_cli.free_tier_bootstrap import start_background_bootstrap
 
     start_background_bootstrap()
+    # The desktop's onboarding due answer, worked out after that bootstrap and before it is asked.
+    # Through the server: methods_* functions run with the server's globals (``bind_module``).
+    import tui_gateway.server
+
+    tui_gateway.server.start_due_boot()
 
     try:
         yield
@@ -276,7 +297,7 @@ async def _lifespan(app: "FastAPI"):
             from hermes_cli.local_runtime.bootstrap import shutdown_local_runtime
 
             shutdown_local_runtime()
-        except Exception:  # noqa: BLE001
+        except Exception:
             pass
         if desktop_owned:
             web_server._terminate_desktop_managed_gateway()

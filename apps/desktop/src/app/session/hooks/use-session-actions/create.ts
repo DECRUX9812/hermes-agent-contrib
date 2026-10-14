@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 
 import { NO_PROJECT_ID } from '@/app/chat/sidebar/projects/workspace-groups'
 import { revealTreePane } from '@/components/pane-shell/tree/store'
+import { textPart } from '@/lib/chat-messages'
 import { setSessionYolo } from '@/lib/yolo-session'
 import { announceNewSessionDraftKey } from '@/store/composer'
 import { requestGatewayForAgent, retainGatewayForAgent } from '@/store/gateway'
@@ -504,9 +505,49 @@ export function useCreateActions(
         runtimeIdByStoredSessionIdRef.current.set(stored, created.session_id)
         ensureSessionState(created.session_id, stored)
         upsertOptimisticSession(created, stored, null, text.trim())
+        // SYNC-REVIEW: first-message seeding ported from upstream's monolith; the warm resume paints this cached state as-is.
+        const firstMessageId = `user-${created.session_id}`
+        updateSessionState(
+          created.session_id,
+          state => ({
+            ...state,
+            messages: [
+              ...state.messages,
+              {
+                id: firstMessageId,
+                role: 'user',
+                parts: [textPart(text.trim())],
+                timestamp: Date.now() / 1000
+              }
+            ],
+            awaitingResponse: true,
+            busy: true,
+            turnStartedAt: state.turnStartedAt ?? Date.now()
+          }),
+          stored
+        )
+
         // Submit the exact runtime id returned by session.create so this
         // atomic path cannot fall back to a route token (#85590).
-        await requestGateway('prompt.submit', { session_id: created.session_id, text })
+        try {
+          await requestGateway('prompt.submit', { session_id: created.session_id, text })
+        } catch (error) {
+          // A refused prompt leaves no turn behind, so its bubble and spinner go too.
+          updateSessionState(
+            created.session_id,
+            state => ({
+              ...state,
+              messages: state.messages.filter(message => message.id !== firstMessageId),
+              awaitingResponse: false,
+              busy: false,
+              turnStartedAt: null
+            }),
+            stored
+          )
+
+          throw error
+        }
+
         navigate(sessionRoute(stored), { replace: true })
 
         return { runtimeSessionId: created.session_id, sessionId: stored }
@@ -523,7 +564,8 @@ export function useCreateActions(
       navigate,
       requestGateway,
       runtimeIdByStoredSessionIdRef,
-      selectedStoredSessionIdRef
+      selectedStoredSessionIdRef,
+      updateSessionState
     ]
   )
 

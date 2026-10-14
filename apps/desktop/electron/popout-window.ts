@@ -43,6 +43,7 @@ function popoutUrl(base: string, panel: PopoutPanel): string {
   const origin = stripped.endsWith('/') ? stripped.slice(0, -1) : stripped
   const isDocument = /\.html?$/i.test(origin) || origin.startsWith('file:')
   const sep = isDocument ? '?' : '/?'
+
   return `${origin}${sep}win=popout&panel=${panel}#/`
 }
 
@@ -56,6 +57,7 @@ export function createPopoutController(deps: PopoutWindowDeps): PopoutController
 
   const spawn = (panel: PopoutPanel): BrowserWindow => {
     const size = PANEL_SIZE[panel]
+
     const win = createWindow({
       ...size,
       alwaysOnTop: false,
@@ -91,28 +93,34 @@ export function createPopoutController(deps: PopoutWindowDeps): PopoutController
     win.once('ready-to-show', () => win.show())
 
     windows.set(panel, win)
+
     return win
   }
 
   return {
     close: panel => {
       const win = windows.get(panel)
-      if (alive(win)) win.close()
+
+      if (alive(win)) {win.close()}
     },
     closeAll: () => {
       for (const [, win] of windows) {
-        if (alive(win)) win.close()
+        if (alive(win)) {win.close()}
       }
+
       windows.clear()
     },
     getWindow: panel => windows.get(panel) ?? null,
     isOpen: panel => alive(windows.get(panel) ?? null),
     open: panel => {
       const existing = windows.get(panel)
+
       if (alive(existing)) {
         existing.focus()
+
         return existing
       }
+
       return spawn(panel)
     }
   }

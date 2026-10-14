@@ -2423,7 +2423,7 @@ class TestInboundMediaLocalisation:
                     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk"
                     "+A8AAQUBAScY42YAAAAASUVORK5CYII="
                 )
-            with open(output_path, "wb") as handle:
+            with open(output_path, "wb") as handle:  # noqa: ASYNC230 -- test fake writes a tiny fixture file; a local open() is non-blocking in practice
                 handle.write(payload)
             return 0, "", ""
 
@@ -2592,7 +2592,7 @@ class TestInboundMediaLocalisation:
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk"
                 "+A8AAQUBAScY42YAAAAASUVORK5CYII="
             )
-            with open(output_path, "wb") as handle:
+            with open(output_path, "wb") as handle:  # noqa: ASYNC230 -- test fake writes a tiny fixture file; a local open() is non-blocking in practice
                 handle.write(payload)
             return 0, "", ""
 
