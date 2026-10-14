@@ -352,13 +352,13 @@ export function GroupRoomsBands({
 
   return (
     <div>
-      <div className="flex flex-wrap gap-1 px-2 py-1">
+      <div className="flex gap-1 overflow-x-auto px-2 py-1 [scrollbar-width:none] scroll-fade-x">
         {QUICK_FILTERS.map(id => (
           <button
             aria-label={counts[id] > 0 ? `${labels[id]} ${counts[id]}` : labels[id]}
             aria-pressed={filter === id}
             className={cn(
-              'h-6 rounded-pill px-2 text-ui-2xs',
+              'h-6 shrink-0 whitespace-nowrap rounded-pill px-2 text-ui-2xs',
               filter === id ? 'bg-selected text-fg' : 'text-fg-muted hover:bg-hover'
             )}
             key={id}
