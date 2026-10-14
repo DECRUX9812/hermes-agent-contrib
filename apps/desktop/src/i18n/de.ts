@@ -21,6 +21,7 @@ import { dePreviewWeb } from './de_preview_web'
 import { deProjects } from './de_projects'
 import { deSharedMetrics } from './de_shared_metrics'
 import { deThemePicker } from './de_theme_picker'
+import { deToolCards } from './de_tool_cards'
 import { deUpdateChannel } from './de_update_channel'
 import { defineLocale, type TranslationOverrides } from './define-locale'
 import { introDe } from './intro-de'
@@ -5062,6 +5063,7 @@ export const deOverrides = {
       alwaysAllow: 'Immer erlauben'
     },
     clarify: deClarify,
+    toolCards: deToolCards,
     themePicker: deThemePicker,
     catalogInstall: {
       preparing: 'Installation wird vorbereitet…',
