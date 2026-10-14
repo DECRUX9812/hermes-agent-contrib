@@ -112,6 +112,7 @@ import { useSkinCommand } from '@/themes/use-skin-command'
 import type { SessionInfo } from '@/types/hermes'
 
 import { closeWorkspaceTab } from '../chat/close-tab'
+import { focusComposerWhenMounted } from '../chat/composer/floating-target'
 import { requestComposerInsert, requestComposerInsertRefs } from '../chat/composer/focus'
 import { useComposerActions } from '../chat/hooks/use-composer-actions'
 import { CommandPalette } from '../command-palette'
@@ -1079,6 +1080,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         }).then(created => {
           if (created && slot) {
             discardSessionTile(slot.storedSessionId)
+          }
+
+          // A split is opened to type into, so its composer takes the keyboard.
+          if (created && options?.placement) {
+            focusComposerWhenMounted(`tile:${created.storedSessionId}`)
           }
         })
       }
