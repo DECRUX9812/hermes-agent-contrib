@@ -3,6 +3,7 @@
 @import 'tw-shimmer';
 @import 'katex/dist/katex.min.css';
 @import '@vscode/codicons/dist/codicon.css';
+@import './design/tokens.css';
 
 /* Titlebar clusters: 24×24 hit targets, 13.9px glyphs. codicon.css is
    unlayered (`font: 16px/1`); Tailwind utilities in @layer lose that fight. */
@@ -224,19 +225,22 @@
     --theme-mix-card: 22%;
     --theme-mix-elevated: 28%;
     --theme-mix-bubble: 0%;
-    --theme-fill-primary-accent-mix: 16%;
-    --theme-fill-secondary-accent-mix: 11%;
-    --theme-fill-tertiary-accent-mix: 8%;
-    --theme-fill-quaternary-accent-mix: 5%;
-    --theme-fill-quinary-accent-mix: 3%;
-    --theme-stroke-primary-accent-mix: 24%;
-    --theme-stroke-secondary-accent-mix: 16%;
-    --theme-stroke-tertiary-accent-mix: 10%;
-    --theme-stroke-quaternary-accent-mix: 6%;
-    --theme-row-hover-accent-mix: 4%;
-    --theme-row-active-accent-mix: 8%;
-    --theme-control-hover-accent-mix: 6%;
-    --theme-control-active-accent-mix: 8%;
+    /* Neutral-first chrome: fills, strokes and row states carry only a trace
+       of the accent, so the accent itself stays meaningful (selection, the
+       one primary action, focus) instead of tinting every surface. */
+    --theme-fill-primary-accent-mix: 8%;
+    --theme-fill-secondary-accent-mix: 5%;
+    --theme-fill-tertiary-accent-mix: 3%;
+    --theme-fill-quaternary-accent-mix: 2%;
+    --theme-fill-quinary-accent-mix: 1%;
+    --theme-stroke-primary-accent-mix: 10%;
+    --theme-stroke-secondary-accent-mix: 6%;
+    --theme-stroke-tertiary-accent-mix: 4%;
+    --theme-stroke-quaternary-accent-mix: 2%;
+    --theme-row-hover-accent-mix: 1.5%;
+    --theme-row-active-accent-mix: 5%;
+    --theme-control-hover-accent-mix: 2%;
+    --theme-control-active-accent-mix: 5%;
 
     --ui-base: var(--theme-foreground);
     --ui-accent: var(--theme-midground);
@@ -478,7 +482,7 @@
     --dt-user-bubble-border: var(--ui-stroke-tertiary);
 
     --dt-font-sans:
-      'Segoe WPC', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif,
+      'Inter', 'Segoe WPC', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif,
       'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', emoji;
     /* Key caps always use the native UI face — never theme typography overrides. */
     --dt-font-kbd: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;

@@ -1,0 +1,199 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   DESIGN TOKENS — the one vocabulary every surface speaks.
+
+   Everything here is SEMANTIC and resolves to the theme's own `--ui-*` /
+   `--dt-*` variables, so every skin (and both light and dark) restyles these
+   utilities without a branch in TSX. New UI reaches for these names instead
+   of arbitrary `text-[0.xxrem]`, `rounded-[…]`, hex literals or inline
+   `color-mix()`; DESIGN.md § Tokens is the human-readable table.
+
+   Tailwind namespaces used (each line below mints a utility):
+     --text-*      → text-ui-2xs … text-ui-display   (size + line-height pair)
+     --radius-*    → rounded-control / -row / -card / -panel / -dialog / -pill
+     --shadow-*    → shadow-e1 / -e2 / -e3
+     --ease-*      → ease-out-quint / ease-standard / ease-spring
+     --color-*     → text-fg, text-fg-muted, bg-surface-raised, border-line, …
+   ───────────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/inter/Inter-Latin.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F,
+    U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/inter/Inter-LatinExt.woff2') format('woff2-variations');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+    U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../fonts/inter/Inter-Latin-Italic.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F,
+    U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@theme {
+  /* Type scale — 11 / 12 / 13 / 14 / 15 / 17 / 20 / 24 / 32. 13px is the UI
+     body (rows, menus, buttons), 14–15px the reading size (transcript),
+     everything bigger is a heading. Line heights sit on a 4px grid. */
+  --text-ui-2xs: 0.6875rem;
+  --text-ui-2xs--line-height: 1rem;
+  --text-ui-xs: 0.75rem;
+  --text-ui-xs--line-height: 1rem;
+  --text-ui-sm: 0.8125rem;
+  --text-ui-sm--line-height: 1.25rem;
+  --text-ui-base: 0.875rem;
+  --text-ui-base--line-height: 1.375rem;
+  --text-ui-md: 0.9375rem;
+  --text-ui-md--line-height: 1.5rem;
+  --text-ui-lg: 1.0625rem;
+  --text-ui-lg--line-height: 1.5rem;
+  --text-ui-xl: 1.25rem;
+  --text-ui-xl--line-height: 1.75rem;
+  --text-ui-2xl: 1.5rem;
+  --text-ui-2xl--line-height: 2rem;
+  --text-ui-display: 2rem;
+  --text-ui-display--line-height: 2.5rem;
+  --text-ui-display--letter-spacing: -0.022em;
+
+  /* Radii — concentric: a control inside a row inside a card inside a panel
+     each steps up one rung, so nested corners never fight. */
+  --radius-control: 0.375rem;
+  --radius-row: 0.4375rem;
+  --radius-card: 0.625rem;
+  --radius-panel: 0.75rem;
+  --radius-dialog: 0.875rem;
+  --radius-pill: 9999px;
+
+  /* Elevation — e1 resting card, e2 popover/menu/toast, e3 dialog/palette.
+     A hairline ring rides every layer so edges stay crisp on any wallpaper. */
+  --shadow-e1:
+    0 0 0 1px var(--ds-ring-hairline), 0 1px 2px color-mix(in srgb, #000 4%, transparent);
+  --shadow-e2:
+    0 0 0 1px var(--ds-ring-hairline), 0 4px 12px -2px color-mix(in srgb, #000 10%, transparent),
+    0 2px 4px -2px color-mix(in srgb, #000 6%, transparent);
+  --shadow-e3:
+    0 0 0 1px var(--ds-ring-hairline), 0 24px 48px -12px color-mix(in srgb, #000 24%, transparent),
+    0 8px 16px -8px color-mix(in srgb, #000 12%, transparent);
+
+  /* Motion — exits and entrances decelerate (out-quint); state flips use
+     standard; only physical things (indicators, drawers) get a spring. */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+
+  /* Semantic colour aliases over the live theme. */
+  --color-fg: var(--ui-text-primary);
+  --color-fg-secondary: var(--ui-text-secondary);
+  --color-fg-muted: var(--ui-text-tertiary);
+  --color-fg-subtle: var(--ui-text-quaternary);
+  --color-surface: var(--ui-chat-surface-background);
+  --color-surface-sidebar: var(--ui-sidebar-surface-background);
+  --color-surface-raised: var(--ui-bg-elevated);
+  --color-surface-sunken: var(--ui-bg-quaternary);
+  --color-line: var(--ui-stroke-tertiary);
+  --color-line-strong: var(--ui-stroke-secondary);
+  --color-hover: var(--ui-row-hover-background);
+  --color-selected: var(--ui-row-active-background);
+  --color-brand: var(--ui-accent);
+  --color-success: var(--ui-green);
+  --color-warning: var(--ui-yellow);
+  --color-danger: var(--ui-red);
+  --color-info: var(--ui-blue);
+}
+
+@layer base {
+  :root {
+    /* Durations — Tailwind has no theme namespace for these, so they are
+       plain vars: `duration-(--dur-fast)`. Nothing UI-blocking runs longer
+       than --dur-slow; if it needs more, the motion is hiding latency. */
+    --dur-instant: 80ms;
+    --dur-fast: 120ms;
+    --dur-base: 180ms;
+    --dur-slow: 260ms;
+
+    /* Spacing rhythm (multiples of the 4px Tailwind step). */
+    --space-row-x: 0.5rem;
+    --space-panel: 1rem;
+    --space-section: 1.5rem;
+    --row-h-sm: 1.75rem;
+    --row-h: 2rem;
+    --row-h-lg: 2.5rem;
+
+    --ds-ring-hairline: color-mix(in srgb, var(--ui-base, #000) 8%, transparent);
+    --ds-focus-ring: 0 0 0 2px var(--ui-chat-surface-background), 0 0 0 4px
+      color-mix(in srgb, var(--ui-accent) 55%, transparent);
+  }
+
+  :root.dark {
+    --ds-ring-hairline: color-mix(in srgb, #fff 9%, transparent);
+  }
+}
+
+@layer utilities {
+  /* One focus treatment for every primitive (rows, buttons, palette items). */
+  .focus-ring {
+    outline: none;
+  }
+
+  .focus-ring:focus-visible {
+    box-shadow: var(--ds-focus-ring);
+  }
+
+  /* Shimmering placeholder block — the skeleton primitive's paint. */
+  .skeleton-shimmer {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--ui-base, #000) 5%, transparent) 50%,
+        transparent 100%
+      )
+      0 0 / 200% 100% no-repeat,
+      color-mix(in srgb, var(--ui-base, #000) 6%, transparent);
+    animation: ds-skeleton 1.4s var(--ease-standard) infinite;
+  }
+
+  .animate-enter {
+    animation: ds-enter var(--dur-base) var(--ease-out-quint) both;
+  }
+}
+
+@keyframes ds-skeleton {
+  from {
+    background-position: 100% 0, 0 0;
+  }
+
+  to {
+    background-position: -100% 0, 0 0;
+  }
+}
+
+@keyframes ds-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+:root[data-renderer-animations-paused] .skeleton-shimmer {
+  animation-play-state: paused;
+}

@@ -214,6 +214,30 @@ Never hardcode `border-gray-*`, `bg-white`, `text-black`, etc. The two tiles in
 `BrandMark` (white in light mode, `#0d1117` in dark) are the sanctioned literals
 (the mark needs a fixed backdrop).
 
+## Tokens — the semantic scale (`src/design/tokens.css`)
+
+New and touched UI uses these utilities instead of arbitrary values
+(`text-[0.7rem]`, `rounded-[0.7rem]`, hex, inline `color-mix()`). They resolve
+to the live theme, so every skin and both modes follow without a branch.
+
+| Family | Utilities | Use |
+| --- | --- | --- |
+| Type | `text-ui-2xs` 11 · `text-ui-xs` 12 · `text-ui-sm` 13 · `text-ui-base` 14 · `text-ui-md` 15 · `text-ui-lg` 17 · `text-ui-xl` 20 · `text-ui-2xl` 24 · `text-ui-display` 32 | `sm` is UI body (rows, menus, buttons); `base`/`md` reading; `lg`+ headings. Each carries its line height. |
+| Text colour | `text-fg` · `text-fg-secondary` · `text-fg-muted` · `text-fg-subtle` | primary → hint |
+| Surfaces | `bg-surface` · `bg-surface-sidebar` · `bg-surface-raised` · `bg-surface-sunken` · `bg-hover` · `bg-selected` | field, rail, cards/popovers, wells, row states |
+| Lines | `border-line` · `border-line-strong` | dividers, control outlines |
+| Status | `text-success` · `text-warning` · `text-danger` · `text-info` (and `bg-*/10` tints) | state only, never decoration |
+| Radii | `rounded-control` 6 · `rounded-row` 7 · `rounded-card` 10 · `rounded-panel` 12 · `rounded-dialog` 14 · `rounded-pill` | concentric: each container one rung above its content |
+| Elevation | `shadow-e1` card · `shadow-e2` popover/menu/toast · `shadow-e3` dialog/palette | |
+| Motion | `ease-out-quint` enter/exit · `ease-standard` state flips · `ease-spring` physical indicators; `duration-(--dur-instant/fast/base/slow)` 80/120/180/260ms | nothing user-blocking runs past `--dur-slow` |
+| Rhythm | `h-(--row-h-sm/row-h/row-h-lg)` 28/32/40 · `px-(--space-row-x)` · `p-(--space-panel)` | list rows, panels |
+| Helpers | `.focus-ring` · `.skeleton-shimmer` (via `Skeleton`) · `.animate-enter` | one focus look, skeletons over spinners, list/panel entrance |
+
+The UI face is Inter Variable, bundled in `src/fonts/inter` (OFL). Chrome is
+neutral-first: surfaces carry only a trace of the accent (the
+`--theme-*-accent-mix` knobs), so the accent keeps meaning selection, focus
+and the one primary action.
+
 ## Buttons — one component
 
 `src/components/ui/button.tsx` is the single source. Pick a `variant` + `size`;

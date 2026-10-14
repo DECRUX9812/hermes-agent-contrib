@@ -29,8 +29,10 @@ import type { DesktopTheme, DesktopThemeTypography } from './types'
 // Covers macOS, Windows, Linux, plus the `emoji` generic for anything else.
 export const EMOJI_FALLBACK = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji'
 
+// Inter is bundled (src/fonts/inter, design/tokens.css) so the UI reads the
+// same on every platform instead of falling to whatever sans the distro has.
 const SYSTEM_SANS =
-  '"Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif, ' +
+  '"Inter", "Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif, ' +
   EMOJI_FALLBACK
 
 // Keep the bundled JetBrains Mono first in every mono fallback chain. Several
