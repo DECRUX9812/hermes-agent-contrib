@@ -31,6 +31,7 @@ import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router'
 
 import App from './app'
+import { warmRouteChunks } from './app/route-chunks'
 import { RootErrorBoundary } from './components/error-boundary'
 import { HapticsProvider } from './components/haptics-provider'
 import { RootTooltipProvider } from './components/ui/tooltip'
@@ -150,4 +151,11 @@ if (winParam === 'overlay') {
       </RootErrorBoundary>
     </StrictMode>
   )
+
+  // Wait for the load event so the warmup never competes with boot fetches.
+  if (document.readyState === 'complete') {
+    warmRouteChunks()
+  } else {
+    window.addEventListener('load', () => warmRouteChunks(), { once: true })
+  }
 }

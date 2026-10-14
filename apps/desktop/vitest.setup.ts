@@ -1,6 +1,11 @@
 import { configure } from '@testing-library/react'
 
+import { preloadBundledLocales } from './src/i18n/catalog'
 import { InertResizeObserver } from './src/test/jsdom'
+
+// Non-English catalogs load on demand in the app; tests index `TRANSLATIONS`
+// and render non-English providers synchronously, so fetch them all up front.
+await preloadBundledLocales()
 
 // Shared tooltips measure their arrow through Radix's useSize hook.
 // Geometry assertions still belong in a real browser, not this inert observer. Assigned,

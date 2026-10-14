@@ -53,9 +53,23 @@ function resolveWatchedSession(
  * however far down it scrolls. Hidden entirely when nothing is watched.
  */
 export function SessionWatchStrip({ onOpen }: SessionWatchStripProps) {
+  const watchedKeys = useStore($watchedSessionKeys)
+
+  // Gate before subscribing to the session lists: the strip is always mounted
+  // and usually empty, and each list refresh would otherwise re-render it.
+  if (Object.keys(watchedKeys).length === 0) {
+    return null
+  }
+
+  return <WatchStripChips onOpen={onOpen} watchedKeys={watchedKeys} />
+}
+
+function WatchStripChips({
+  onOpen,
+  watchedKeys
+}: SessionWatchStripProps & { watchedKeys: ReturnType<typeof $watchedSessionKeys.get> }) {
   const { t } = useI18n()
   const watch = t.sidebar.watch
-  const watchedKeys = useStore($watchedSessionKeys)
   const sessions = useStore($sessions)
   const messagingSessions = useStore($messagingSessions)
   const cronSessions = useStore($cronSessions)

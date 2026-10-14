@@ -4,7 +4,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 
 import { getHermesConfigRecord, type HermesConfigRecord, retainConfigReadOrigin, saveHermesConfig } from '@/hermes'
 
-import { TRANSLATIONS } from './catalog'
+import { bundledCatalog, isBundledLocale, loadBundledLocale } from './catalog'
 import {
   DEFAULT_LOCALE,
   isRtlLocale,
@@ -63,6 +63,17 @@ export function withConfigDisplayLanguage(config: HermesConfigRecord, locale: Lo
   )
 }
 
+/** Fetch a not-yet-loaded bundled catalog before switching to it, so the
+ *  chrome flips straight to the new language instead of through English.
+ *  Already-loaded (and non-bundled) locales return synchronously. */
+function catalogReady(locale: Locale): Promise<unknown> | null {
+  if (!isBundledLocale(locale) || bundledCatalog(locale)) {
+    return null
+  }
+
+  return loadBundledLocale(locale).catch(() => undefined)
+}
+
 function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error))
 }
@@ -84,7 +95,7 @@ const I18nContext = createContext<I18nContextValue>({
   locale: DEFAULT_LOCALE,
   saveError: null,
   setLocale: async () => {},
-  t: TRANSLATIONS[DEFAULT_LOCALE]
+  t: bundledCatalog('en')!
 })
 
 export interface I18nProviderProps {
@@ -188,7 +199,17 @@ export function I18nProvider({
 
           // A saved choice needs no machine probe and always takes precedence.
           if (isSupportedLocaleValue(saved)) {
-            setLocaleState(normalizeLocale(saved))
+            const next = normalizeLocale(saved)
+
+            const ready = catalogReady(next)
+
+            if (ready) {
+              await ready
+            }
+
+            if (!cancelled && !userLocaleRef.current) {
+              setLocaleState(next)
+            }
 
             return
           }
@@ -196,9 +217,16 @@ export function I18nProvider({
           // Keep inference unsaved so OS language changes apply on the next boot
           // until the user explicitly picks a language.
           const machineProfile = await window.hermesDesktop?.getMachineProfile?.().catch(() => null)
+          const inferred = resolveInitialLocale(undefined, machineProfile?.locale)
+
+          const inferredReady = catalogReady(inferred)
+
+          if (inferredReady) {
+            await inferredReady
+          }
 
           if (!cancelled && !userLocaleRef.current) {
-            setLocaleState(resolveInitialLocale(undefined, machineProfile?.locale))
+            setLocaleState(inferred)
           }
         })
         .catch(error => {
@@ -242,6 +270,17 @@ export function I18nProvider({
 
       userLocaleRef.current = true
       setSaveError(null)
+
+      const ready = catalogReady(next)
+
+      if (ready) {
+        await ready
+
+        if (generation !== scopeGenerationRef.current) {
+          return
+        }
+      }
+
       setLocaleState(next)
       requestedRef.current = next
       $requestedLocale.set(next)
