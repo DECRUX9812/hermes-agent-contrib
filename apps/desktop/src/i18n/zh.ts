@@ -3734,9 +3734,19 @@ export const zhOverrides = {
       profile: '配置文件',
       source: '来源',
       started: '开始时间',
-      updated: '更新时间'
+      updated: '更新时间',
+      lastTool: '上次工具',
+      planFraction: (done, total) => `${done}/${total}`,
+      more: count => `还有 ${count} 项`,
+      stopFailed: '无法停止会话'
     },
     markAllRead: '全部标记为已读'
+  },
+
+  sessionOverview: {
+    title: '会话总览',
+    empty: '没有正在进行的会话',
+    newSession: '新建会话'
   },
 
   composer: {

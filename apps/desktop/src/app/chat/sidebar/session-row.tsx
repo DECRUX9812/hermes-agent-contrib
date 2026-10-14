@@ -615,7 +615,7 @@ function SidebarSessionRowImpl({
         {...rest}
       >
         {showsRunningArc(dotState) && <span aria-hidden="true" className="arc-border arc-row" />}
-        <SessionPeek onOpenChange={setPeekOpen} session={session}>
+        <SessionPeek onOpen={onResume} onOpenChange={setPeekOpen} session={session}>
           {/* #38072 finding 3: the row's body is a DIV, not a button — the
               reorder grabber (dnd-kit role="button" + tabIndex, kept for
               keyboard reorder, #83617) and the ⋯ trigger must be SIBLINGS of

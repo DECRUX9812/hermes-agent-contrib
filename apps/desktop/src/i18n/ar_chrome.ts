@@ -168,7 +168,11 @@ export const arChrome = {
       profile: 'الملف الشخصي',
       source: 'المصدر',
       started: 'بدأ',
-      updated: 'آخر تحديث'
+      updated: 'آخر تحديث',
+      lastTool: 'آخر أداة',
+      planFraction: (done, total) => `${done} من ${total}`,
+      more: count => `+${count} المزيد`,
+      stopFailed: 'تعذّر إيقاف الجلسة'
     },
     markAllRead: 'وضع علامة مقروء على الكل',
     filter: {

@@ -54,7 +54,11 @@ export const zhHantChrome = {
       profile: '設定檔',
       source: '來源',
       started: '開始時間',
-      updated: '更新時間'
+      updated: '更新時間',
+      lastTool: '上次工具',
+      planFraction: (done, total) => `${done}/${total}`,
+      more: count => `還有 ${count} 項`,
+      stopFailed: '無法停止工作階段'
     },
     markAllRead: '全部標示為已讀',
     filter: {

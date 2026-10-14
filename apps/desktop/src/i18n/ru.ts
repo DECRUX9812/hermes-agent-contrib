@@ -3054,9 +3054,19 @@ export const ruOverrides = {
       profile: 'Профиль',
       source: 'Источник',
       started: 'Запущен',
-      updated: 'Обновлён'
+      updated: 'Обновлён',
+      lastTool: 'Последний инструмент',
+      planFraction: (done, total) => `${done} из ${total}`,
+      more: count => `ещё ${count}`,
+      stopFailed: 'Не удалось остановить сессию'
     },
     markAllRead: 'Отметить все как прочитанные'
+  },
+
+  sessionOverview: {
+    title: 'Обзор сессий',
+    empty: 'Нет активных сессий',
+    newSession: 'Новая сессия'
   },
   intro: {
     recentSessions: 'Продолжите с того места, где остановились'

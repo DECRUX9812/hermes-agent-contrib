@@ -1,138 +1,103 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ClientSessionState } from '@/app/types'
-import type { ChatMessage } from '@/lib/chat-messages'
 import type { SessionInfo } from '@/types/hermes'
 
-import { collectMissionControlCards } from './collector'
+import { collectOverviewCards } from './collector'
 
-function createMessage(id: string, parts: unknown[]): ChatMessage {
-  return { id, parts, role: 'assistant' } as ChatMessage
-}
-
-function toolCall(id: string, toolName: string, args: unknown, timestamp: number) {
+function session(id: string, overrides: Partial<SessionInfo> = {}): SessionInfo {
   return {
-    args,
-    argsText: JSON.stringify(args),
-    timestamp,
-    toolCallId: id,
-    toolName,
-    type: 'tool-call'
-  }
+    id,
+    last_active: 1_000,
+    title: `Session ${id}`,
+    ...overrides
+  } as SessionInfo
 }
 
-describe('collectMissionControlCards', () => {
-  const sessions: SessionInfo[] = [
-    {
-      id: 'stored-1',
-      title: 'Fix auth bug'
-    } as SessionInfo,
-    {
-      id: 'stored-2',
-      title: 'Generate report'
-    } as SessionInfo,
-    {
-      id: 'stored-idle',
-      title: 'Idle session'
-    } as SessionInfo
-  ]
+const EMPTY = {
+  attentionSessionIds: [],
+  dotStates: {},
+  finishedSessionIds: [],
+  openSessionIds: [],
+  sessions: [],
+  workingSessionIds: []
+} as const
 
-  it('collects working sessions with titles and latest activity', () => {
-    const sessionStates: Record<string, ClientSessionState> = {
-      'rt-1': {
-        busy: true,
-        messages: [
-          createMessage('m1', [
-            toolCall('tc-1', 'terminal', { command: 'git status' }, 10),
-            toolCall('tc-2', 'terminal', { command: 'npm test' }, 20)
-          ])
-        ],
-        storedSessionId: 'stored-1'
-      } as unknown as ClientSessionState
-    }
-
-    const cards = collectMissionControlCards({
-      getStoredSessionId: () => 'stored-1',
-      sessions,
-      sessionStates,
-      workingSessionIds: ['rt-1']
+describe('collectOverviewCards', () => {
+  it('orders needs-you before working before done', () => {
+    const cards = collectOverviewCards({
+      ...EMPTY,
+      attentionSessionIds: ['needs'],
+      dotStates: { done: 'idle', needs: 'needs-input', work: 'working' },
+      finishedSessionIds: ['done'],
+      sessions: [session('needs'), session('work'), session('done')],
+      workingSessionIds: ['work']
     })
 
-    expect(cards).toHaveLength(1)
-    expect(cards[0]).toEqual({
-      latestAction: expect.objectContaining({
-        id: 'tc-2',
-        target: 'npm test',
-        tool: 'terminal'
-      }),
-      runtimeId: 'rt-1',
-      storedSessionId: 'stored-1',
-      title: 'Fix auth bug'
-    })
+    expect(cards).toHaveLength(3)
+    expect(cards.map(card => card.storedSessionId)).toEqual(['needs', 'work', 'done'])
+    expect(cards.map(card => card.group)).toEqual(['needs-you', 'working', 'done'])
+    expect(cards[0]).toEqual({ group: 'needs-you', storedSessionId: 'needs', title: 'Session needs' })
+    expect(cards[2]).toEqual({ group: 'done', storedSessionId: 'done', title: 'Session done' })
   })
 
-  it('excludes non-working sessions even if present in sessions or sessionStates', () => {
-    const sessionStates: Record<string, ClientSessionState> = {
-      'rt-1': {
-        busy: true,
-        messages: [createMessage('m1', [toolCall('tc-1', 'terminal', { command: 'cargo build' }, 10)])],
-        storedSessionId: 'stored-1'
-      } as unknown as ClientSessionState,
-      'rt-idle': {
-        busy: false,
-        messages: [createMessage('m2', [toolCall('tc-2', 'terminal', { command: 'echo done' }, 5)])],
-        storedSessionId: 'stored-idle'
-      } as unknown as ClientSessionState
-    }
-
-    const cards = collectMissionControlCards({
-      getStoredSessionId: id => (id === 'rt-1' ? 'stored-1' : 'stored-idle'),
-      sessions,
-      sessionStates,
-      // Only rt-1 is mid-turn / working
-      workingSessionIds: ['rt-1']
+  it('sorts the most recently active first within a group', () => {
+    const cards = collectOverviewCards({
+      ...EMPTY,
+      dotStates: { a: 'working', b: 'working', c: 'working' },
+      sessions: [
+        session('a', { last_active: 100 }),
+        session('b', { last_active: 300 }),
+        session('c', { last_active: 200 })
+      ],
+      workingSessionIds: ['a', 'b', 'c']
     })
 
-    expect(cards).toHaveLength(1)
-    expect(cards[0].runtimeId).toBe('rt-1')
-    expect(cards.some(c => c.runtimeId === 'rt-idle')).toBe(false)
-    expect(cards.some(c => c.storedSessionId === 'stored-idle')).toBe(false)
+    expect(cards).toHaveLength(3)
+    expect(cards.map(card => card.storedSessionId)).toEqual(['b', 'c', 'a'])
+    expect(cards.every(card => card.group === 'working')).toBe(true)
   })
 
-  it('handles state-less runtime ids by producing a card without an activity line (latestAction null)', () => {
-    const sessionStates: Record<string, ClientSessionState> = {}
+  it('de-duplicates lineage aliases to a single card', () => {
+    const sessions = [
+      session('new-id', { _lineage_ids: ['old-id'], _lineage_root_id: 'old-id' }),
+      session('old-id', { _lineage_root_id: 'old-id' })
+    ]
 
-    const cards = collectMissionControlCards({
-      getStoredSessionId: () => 'stored-2',
+    const cards = collectOverviewCards({
+      ...EMPTY,
+      dotStates: { 'new-id': 'working', 'old-id': 'working' },
       sessions,
-      sessionStates,
-      // rt-2 has no state in sessionStates yet
-      workingSessionIds: ['rt-2']
+      workingSessionIds: ['old-id', 'new-id']
     })
 
     expect(cards).toHaveLength(1)
-    expect(cards[0]).toEqual({
-      latestAction: null,
-      runtimeId: 'rt-2',
-      storedSessionId: 'stored-2',
-      title: 'Generate report'
-    })
+    expect(cards[0]?.group).toBe('working')
+    expect(cards[0]?.title).toBe('Session new-id')
   })
 
-  it('falls back gracefully when session metadata is completely missing', () => {
-    const cards = collectMissionControlCards({
-      getStoredSessionId: () => null,
-      sessions: [],
-      sessionStates: {},
-      workingSessionIds: ['rt-unknown']
+  it('includes sessions finished this run and sessions open in a pane', () => {
+    const cards = collectOverviewCards({
+      ...EMPTY,
+      dotStates: { finished: 'unread', open: 'idle', selected: 'idle' },
+      finishedSessionIds: ['finished'],
+      openSessionIds: ['open', 'selected', null, undefined],
+      sessions: [session('finished'), session('open'), session('selected')]
     })
 
+    expect(cards).toHaveLength(3)
+    expect(cards.map(card => card.storedSessionId).sort()).toEqual(['finished', 'open', 'selected'])
+    expect(cards.find(card => card.storedSessionId === 'finished')?.group).toBe('done')
+    expect(cards.every(card => card.title.startsWith('Session '))).toBe(true)
+  })
+
+  it('falls back to the id when no session row exists', () => {
+    const cards = collectOverviewCards({ ...EMPTY, workingSessionIds: ['ghost'] })
+
     expect(cards).toHaveLength(1)
-    expect(cards[0]).toEqual({
-      latestAction: null,
-      runtimeId: 'rt-unknown',
-      storedSessionId: 'rt-unknown',
-      title: 'rt-unknown'
-    })
+    expect(cards).toEqual([{ group: 'done', storedSessionId: 'ghost', title: 'ghost' }])
+  })
+
+  it('returns nothing when every list is empty', () => {
+    expect(collectOverviewCards({ ...EMPTY, sessions: [session('idle')] })).toEqual([])
   })
 })

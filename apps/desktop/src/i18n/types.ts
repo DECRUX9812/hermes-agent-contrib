@@ -20,6 +20,7 @@ import type { ModelMenuTranslations } from './types_model_menu'
 import type { NoticeTranslations } from './types_notices'
 import type { OnboardingTranslations } from './types_onboarding'
 import type { SidebarProjectsTranslations } from './types_projects'
+import type { SessionOverviewTranslations } from './types_session_overview'
 import type { SharedMetricsTranslations } from './types_shared_metrics'
 import type { ThemePickerCopy } from './types_theme_picker'
 import type { UninstallSectionTranslations } from './types_uninstall_section'
@@ -3449,9 +3450,19 @@ export interface Translations extends NoticeTranslations {
       source: string
       started: string
       updated: string
+      /** "Last tool" label above the latest tool-call line. */
+      lastTool: string
+      /** Plan fraction in the live header ("2 of 5"). */
+      planFraction: (done: number, total: number) => string
+      /** Overflow line for long checklists ("+3 more"). */
+      more: (count: number) => string
+      /** Fallback when stopping a session fails without an Error message. */
+      stopFailed: string
     }
     markAllRead: string
   }
+
+  sessionOverview: SessionOverviewTranslations
 
   composer: {
     message: string

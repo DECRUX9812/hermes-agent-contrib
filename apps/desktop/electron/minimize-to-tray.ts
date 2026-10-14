@@ -38,6 +38,9 @@ export function createMinimizeToTray(options: Options) {
   let tray: Tray | null = null
   // Latest status push from the primary renderer; null until the first one.
   let statusPush: TrayStatusPush | null = null
+  // Last needs-input count the badge reflected — Windows flashes only on a
+  // rise, so the previous value has to survive across pushes.
+  let lastNeedsInput = 0
   let stopWatchingHost: (() => void) | undefined
   let dockHidden = false
   let hostGeneration = 0
@@ -54,6 +57,23 @@ export function createMinimizeToTray(options: Options) {
   // The icon exists when EITHER feature needs it: hide-to-tray (`enabled`) or
   // the menu-bar status surface (`statusEnabled`).
   const trayWanted = () => enabled || statusEnabled
+
+  // Needs-you badge, independent of whether the tray surface itself is
+  // switched on — the push handler below runs in both cases. macOS and Linux
+  // paint the count on the dock/taskbar icon (`setBadgeCount` is a documented
+  // no-op where unsupported); on Windows a newly-risen count flashes the
+  // primary window while nothing is focused, stopping when focus returns.
+  const syncAttentionBadge = (needsInput: number) => {
+    if (process.platform === 'darwin' || process.platform === 'linux') {
+      app.setBadgeCount(needsInput)
+    }
+
+    if (process.platform === 'win32' && needsInput > lastNeedsInput && BrowserWindow.getFocusedWindow() === null) {
+      windows.values().next().value?.flashFrame(true)
+    }
+
+    lastNeedsInput = needsInput
+  }
 
   const syncTrayFace = () => {
     if (!tray || tray.isDestroyed()) {
@@ -413,7 +433,14 @@ export function createMinimizeToTray(options: Options) {
     }
 
     statusPush = push
+    syncAttentionBadge(push.needsInput ?? 0)
     syncTrayFace()
+  })
+  // A focused window means the user saw the need — stop flashing it.
+  app.on('browser-window-focus', () => {
+    for (const window of windows) {
+      window.flashFrame(false)
+    }
   })
   app.on('will-quit', () => {
     quitting = true

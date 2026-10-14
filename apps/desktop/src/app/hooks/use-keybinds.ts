@@ -112,6 +112,7 @@ import {
   CAPABILITIES_ROUTE,
   CRON_ROUTE,
   MESSAGING_ROUTE,
+  MISSION_ROUTE,
   navigateToWorkspacePage,
   NEW_CHAT_ROUTE,
   PROFILES_ROUTE,
@@ -355,6 +356,16 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
 
     // Narrow-viewport reveal is handled inside the store toggles now.
     'view.toggleSidebar': toggleSidebarOpen,
+    // Toggle the session overview overlay: back when already there, else in.
+    // Other overlay routes toggle the same way — the overlay's own close
+    // returns to the previous route, and history-back mirrors that here.
+    'view.sessionOverview': () => {
+      if (location.pathname === MISSION_ROUTE) {
+        navigate(-1)
+      } else {
+        navigate(MISSION_ROUTE)
+      }
+    },
     'view.cycleSidebarGrouping': cycleSidebarGrouping,
     // ⌘J toggles the physical right side — whatever column lives there in the
     // live tree (the Browser preview column, the files column). Falls back to

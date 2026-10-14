@@ -531,18 +531,17 @@ export function useStatusbarItems({
         variant: 'action'
       },
       {
-        // Mission Control's door: watchable work. Only exists while a turn is
+        // The session overview's door: watchable work. Only exists while a turn is
         // actually in flight — same self-surfacing rule as the inbox above.
-        // TODO(i18n): title/toggleLabel are hardcoded English (no new catalog
-        // keys in this change) — move to copy.* with the rest of the feed copy.
+        actionId: 'view.sessionOverview',
         className: 'w-7 justify-center px-0',
         detail: activeWork.count > 0 ? activeWork.count : undefined,
         hidden: activeWork.count === 0,
         icon: <MonitorPlay className="size-3.5" />,
         id: 'mission-control',
         to: MISSION_ROUTE,
-        title: 'Mission Control',
-        toggleLabel: 'Toggle Mission Control',
+        title: t.sessionOverview.title,
+        toggleLabel: t.sessionOverview.title,
         variant: 'action'
       },
       {
