@@ -21,6 +21,8 @@ const GROUP_BUBBLE_MAX_W = 'max-w-[85%]'
 const DIMMED_ROW = 'opacity-30 transition-opacity hover:opacity-100 focus-within:opacity-100'
 
 export interface GroupMessageRowProps {
+  /** Landed while the room was open: the row eases in. */
+  arrived?: boolean
   dimmed: boolean
   display: string
   entry: GroupMessage
@@ -43,6 +45,7 @@ export interface GroupMessageRowProps {
 }
 
 export function GroupMessageRow({
+  arrived = false,
   dimmed,
   display,
   entry,
@@ -129,7 +132,8 @@ export function GroupMessageRow({
         className={cn(
           'group flex flex-col items-end gap-0.5 pl-2 pr-11',
           runStart && index > 0 && 'pt-1.5',
-          dimmed && DIMMED_ROW
+          dimmed && DIMMED_ROW,
+          arrived && 'motion-arrive'
         )}
         data-entry-index={index}
       >
@@ -205,7 +209,12 @@ export function GroupMessageRow({
 
   return (
     <div
-      className={cn('group relative flex items-start gap-2.5 px-2', runStart && index > 0 && 'pt-1.5', dimmed && DIMMED_ROW)}
+      className={cn(
+        'group relative flex items-start gap-2.5 px-2',
+        runStart && index > 0 && 'pt-1.5',
+        dimmed && DIMMED_ROW,
+        arrived && 'motion-arrive'
+      )}
       data-entry-index={index}
       // The speaker's resolved hue rides the row as a custom property, not an
       // inline color on each painted element: consumers (this file's dot and

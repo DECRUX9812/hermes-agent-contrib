@@ -15,6 +15,10 @@ const STORAGE_KEY = 'hermes.bots.roomPrefs.v1'
 export const SNOOZE_MS = 60 * 60_000
 
 export interface RoomPrefs {
+  /** The room's right panel folded to its avatar strip (every room). */
+  asideCollapsed?: boolean
+  /** The room's right panel width in px (every room). */
+  asideWidth?: number
   desktopAlerts: boolean
   /** roomKey → the log tail when the user last opened the room. */
   lastOpened: Record<string, number>
@@ -81,6 +85,14 @@ export function snoozedThreads(prefs: RoomPrefs, roomKey: string, now = Date.now
       .filter(([, until]) => until > now)
       .map(([thread]) => thread)
   )
+}
+
+export function setAsideWidth(width: number): void {
+  update(prefs => ({ ...prefs, asideWidth: Math.round(width) }))
+}
+
+export function setAsideCollapsed(collapsed: boolean): void {
+  update(prefs => ({ ...prefs, asideCollapsed: collapsed }))
 }
 
 export function rememberRoomOpened(roomKey: string, tail: number): void {

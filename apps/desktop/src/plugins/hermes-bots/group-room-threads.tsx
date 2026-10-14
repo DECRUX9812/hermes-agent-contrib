@@ -42,6 +42,8 @@ export interface GroupThreadRailProps {
   textOf: (thread: string) => string
   /** Open the 24-hour brief over the whole room. */
   onBrief: () => void
+  /** Drawn inside the room panel's Threads tab instead of as its own column. */
+  embedded?: boolean
   /** Threads the user hasn't opened since they last grew: thread → count. */
   unseen: Readonly<Record<string, number>>
   totalMessages: number
@@ -88,7 +90,8 @@ export function GroupThreadRail({
   desk,
   roomKey,
   textOf,
-  onBrief
+  onBrief,
+  embedded = false
 }: GroupThreadRailProps) {
   const b = useBots()
   const prefs = useValue($roomPrefs)
@@ -194,7 +197,10 @@ export function GroupThreadRail({
   return (
     <nav
       aria-label={b.group.threadsTitle}
-      className="flex min-h-0 w-60 shrink-0 flex-col border-r border-(--ui-stroke-secondary) bg-(--ui-bg-primary)"
+      className={cn(
+        'flex min-h-0 flex-col bg-(--ui-bg-primary)',
+        embedded ? 'h-full w-full' : 'w-60 shrink-0 border-r border-(--ui-stroke-secondary)'
+      )}
       data-testid="group-thread-rail"
     >
       <div className="flex flex-col gap-1 px-2 pt-2" data-testid="group-room-desk">

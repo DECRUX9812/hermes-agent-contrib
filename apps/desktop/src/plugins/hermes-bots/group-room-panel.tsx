@@ -15,7 +15,7 @@
  * mission, its local bots as seats (the lead keeps the lead seat).
  */
 
-import { Button, cn, Codicon, host, queryClient } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, host, queryClient, Tip } from '@hermes/plugin-sdk'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 
@@ -23,6 +23,7 @@ import { $lastRoster } from './data'
 import { groupMemberKey } from './group-membership'
 import { GroupSquadPanel } from './group-room-squad'
 import { useBots } from './i18n'
+import { useRoomText } from './room-i18n'
 import { ID } from './shared'
 import { budgetState, mutateTeam, useTeam } from './team'
 import { GoalsSection } from './team-goals'
@@ -49,9 +50,13 @@ export interface GroupRoomPanelProps {
   decisionCount: number
   onTab: (tab: RoomPanelTab) => void
   tab: RoomPanelTab
+  /** Fold the panel to its avatar strip; absent where it is a sheet. */
+  onCollapse?: () => void
+  /** The room's threads, when the thread rail is not on screen. */
+  threads?: ReactNode
 }
 
-export type RoomPanelTab = 'decisions' | 'floor' | 'team'
+export type RoomPanelTab = 'decisions' | 'floor' | 'team' | 'threads'
 
 /** One room → one team: name, goal as mission, local bots as seats. */
 export async function runRoomAsTeam(
@@ -194,26 +199,25 @@ function TeamApprovals({ teamId }: { teamId: null | string }) {
 
 export function GroupRoomPanel(props: GroupRoomPanelProps) {
   const b = useBots()
+  const r = useRoomText()
+  const tab = props.tab === 'threads' && !props.threads ? 'floor' : props.tab
 
   const tabs: { badge?: number; id: RoomPanelTab; label: string }[] = [
     { id: 'floor', label: b.group.panelFloor },
+    ...(props.threads ? [{ id: 'threads' as const, label: r.panelThreads }] : []),
     { badge: props.decisionCount || undefined, id: 'decisions', label: b.group.panelDecisions },
     { id: 'team', label: b.group.panelTeam }
   ]
 
   return (
-    <aside
-      aria-label={b.group.panelTeam}
-      className="flex min-h-0 w-80 shrink-0 flex-col border-l border-(--ui-stroke-secondary) bg-(--ui-bg-primary)"
-      data-testid="group-room-panel"
-    >
-      <div className="flex shrink-0 gap-1 border-b border-(--ui-stroke-secondary) p-1.5" role="tablist">
+    <div className="flex min-h-0 flex-1 flex-col" data-testid="group-room-panel">
+      <div className="flex shrink-0 items-center gap-1 border-b border-(--ui-stroke-secondary) p-1.5" role="tablist">
         {tabs.map(entry => (
           <button
-            aria-selected={props.tab === entry.id}
+            aria-selected={tab === entry.id}
             className={cn(
               'flex min-h-8 flex-1 cursor-pointer items-center justify-center gap-1 rounded-md text-[0.75rem] transition-colors',
-              props.tab === entry.id
+              tab === entry.id
                 ? 'bg-(--chrome-action-hover) font-semibold text-foreground'
                 : 'text-(--ui-text-tertiary) hover:text-foreground'
             )}
@@ -230,13 +234,28 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
             ) : null}
           </button>
         ))}
+        {props.onCollapse ? (
+          <Tip label={r.asideCollapse}>
+            <Button
+              aria-label={r.asideCollapse}
+              className="shrink-0 text-fg-muted hover:text-fg"
+              onClick={props.onCollapse}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name="layout-sidebar-right-off" />
+            </Button>
+          </Tip>
+        ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {props.tab === 'floor' ? (
+        {tab === 'threads' ? (
+          props.threads
+        ) : tab === 'floor' ? (
           <div className="p-3">
             <FloorSquad {...props} />
           </div>
-        ) : props.tab === 'decisions' ? (
+        ) : tab === 'decisions' ? (
           <div className="flex flex-col gap-3 p-3" data-testid="group-decisions-tab">
             {props.decisions}
             <TeamApprovals teamId={props.teamId} />
@@ -248,7 +267,7 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
           <TeamTab {...props} />
         )}
       </div>
-    </aside>
+    </div>
   )
 }
 

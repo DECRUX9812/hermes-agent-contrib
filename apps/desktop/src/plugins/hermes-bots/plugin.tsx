@@ -111,6 +111,7 @@ import { MissionRail } from './mission-rail'
 import { hydrateNeedsYou } from './needs-you'
 import { hydrateRailSections, hydrateRailTab } from './rail-state'
 import { startBotRelay, stopBotRelay } from './relay'
+import { ROOM_LOCALES } from './room-i18n'
 import { $activityToasts, openRosterBot } from './roster-actions'
 import {
   botChatOwnsWorkspace,
@@ -176,6 +177,7 @@ export default {
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
     const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
+    const disposeRoomLocales = ctx.i18n.register(ROOM_LOCALES)
     setGroupChatSyncDisposed(false)
     startFaceClock()
     // The cross-connection relay rides every gateway socket this Desktop
@@ -192,6 +194,7 @@ export default {
       ctx.onDispose(disposeHireLocales)
       ctx.onDispose(disposeShareLocales)
       ctx.onDispose(disposeAutopilotLocales)
+      ctx.onDispose(disposeRoomLocales)
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)
