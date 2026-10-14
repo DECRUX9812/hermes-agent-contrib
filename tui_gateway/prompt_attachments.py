@@ -175,7 +175,7 @@ def _write_attachment_temp(root: Path, payload: bytes) -> Path:
     """Exclusive, owner-only staging; never expose a partially written attachment."""
     import io
     temp = root / f".attachment-{uuid.uuid4().hex}.tmp"
-    handle = io.open(temp, "xb", opener=lambda path, flags: os.open(path, flags, 0o600))
+    handle = open(temp, "xb", opener=lambda path, flags: os.open(path, flags, 0o600))
     try:
         with handle:
             handle.write(payload)
@@ -357,7 +357,7 @@ def _stage_session_file_attachment(
         import re as _re
         try:
             payload = _b64_payload(
-                data_url, r"^data:[^;,]*(?:;[^;,=]+=[^;,]+)*;base64,(.*)$", _re.DOTALL | _re.I,
+                data_url, r"^data:[^;,]*(?:;[^;,=]+=[^;,]+)*;base64,(.*)$", _re.DOTALL | _re.IGNORECASE,
                 max_bytes=max_bytes)
         except (ValueError, _binascii.Error) as exc:
             raise ValueError("invalid data_url payload") from exc

@@ -414,7 +414,7 @@ def test_webapp_process_identity_uses_the_existing_web_server_lifecycle(monkeypa
 def test_webapp_process_table_fallback_uses_structured_command_identity(monkeypatch):
     from hermes_cli import dashboard_procs
 
-    monkeypatch.setattr(dashboard_procs, "_ledger_web_server_processes", lambda: {})
+    monkeypatch.setattr(dashboard_procs, "_ledger_web_server_processes", dict)
     monkeypatch.setattr(
         dashboard_procs,
         "_iter_process_table",

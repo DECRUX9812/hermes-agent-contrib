@@ -183,7 +183,7 @@ def _notify_sender_status(root: Path, note: dict) -> None:
         return
     # Title and reply are model-authored — flatten them so a newline can't mint a
     # forged attribution line inside the sender's own Bot Chat turn.
-    flat = lambda s: " ".join(str(s or "").split())  # noqa: E731
+    flat = lambda s: " ".join(str(s or "").split())
     reply = flat(note.get("reply"))
     text = (f"Task {note['id']} ({flat(note.get('title'))[:120]}) → {note['status']}"
             + (f": {reply[:500]}" if reply else ""))

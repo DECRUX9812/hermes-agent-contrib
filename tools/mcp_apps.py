@@ -55,7 +55,7 @@ def tool_ui(tool: Any) -> dict:
     entrypoints = [e for e in openai_ui.get("entrypoints") or [] if isinstance(e, dict) and e.get("type")]
     if not (isinstance(uri, str) and uri.startswith(UI_SCHEME)) and visibility is None:
         return {}
-    out: Dict[str, Any] = {"visibility": list(visibility or _DEFAULT_VISIBILITY)}
+    out: dict[str, Any] = {"visibility": list(visibility or _DEFAULT_VISIBILITY)}
     if isinstance(uri, str) and uri.startswith(UI_SCHEME):
         out["resourceUri"] = uri
     if entrypoints:
@@ -152,7 +152,7 @@ def _run(server_name: str, server: Any, op: str, coro_factory, timeout: float = 
 
     from tools import mcp_tool_loop as _loop
     from tools.mcp_tool_handlers import _handle_auth_error_and_retry, _handle_session_expired_and_retry
-    call_once = lambda: _loop._run_on_mcp_loop(coro_factory, timeout=timeout)  # noqa: E731
+    call_once = lambda: _loop._run_on_mcp_loop(coro_factory, timeout=timeout)
     session_expired = partial(_handle_session_expired_and_retry, call_may_have_side_effects=side_effects)
     try:
         return call_once()

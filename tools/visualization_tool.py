@@ -30,11 +30,11 @@ MAX_HTML_CHARS = 200_000
 # Block the obvious exfiltration / breakout vectors. The sandbox already neuters
 # these, but failing fast gives the agent a clear, actionable error.
 _BLOCKED_PATTERNS = [
-    (re.compile(r"<\s*script[^>]*\bsrc\s*=\s*[\"']?+(?!https://cdn\.|https://unpkg\.com/|https://cdnjs\.cloudflare\.com/)", re.I),
+    (re.compile(r"<\s*script[^>]*\bsrc\s*=\s*[\"']?+(?!https://cdn\.|https://unpkg\.com/|https://cdnjs\.cloudflare\.com/)", re.IGNORECASE),
      "external scripts are only allowed from cdn.jsdelivr.net, unpkg.com, or cdnjs.cloudflare.com"),
-    (re.compile(r"fetch\s*\(|XMLHttpRequest|WebSocket\s*\(|EventSource\s*\(", re.I),
+    (re.compile(r"fetch\s*\(|XMLHttpRequest|WebSocket\s*\(|EventSource\s*\(", re.IGNORECASE),
      "no network requests at render time — inline all data in the HTML"),
-    (re.compile(r"top\s*\.\s*location|parent\s*\.\s*location|window\s*\.\s*top", re.I),
+    (re.compile(r"top\s*\.\s*location|parent\s*\.\s*location|window\s*\.\s*top", re.IGNORECASE),
      "frame-busting is not allowed"),
 ]
 
@@ -51,7 +51,7 @@ def _validate_html(html: str) -> str | None:
     return None
 
 
-def _handle_create_visualization(args: Dict[str, Any], **kw) -> str:
+def _handle_create_visualization(args: dict[str, Any], **kw) -> str:
     html = args.get("html", "")
     title = args.get("title", "") or "Visualization"
 

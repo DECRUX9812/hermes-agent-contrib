@@ -5,7 +5,7 @@ import subprocess
 
 import pytest
 
-import tools.git_ship_tool  # noqa: F401 — registers the tools
+import tools.git_ship_tool
 from tools.registry import registry
 
 
@@ -40,7 +40,7 @@ def test_git_ship_commits_dirty_tree(repo):
     assert result["pushed"] is False
     # The tree is clean afterwards — a real repo proves it, not the payload.
     status = subprocess.run(
-        [GIT, "status", "--porcelain"], cwd=repo, capture_output=True, text=True).stdout
+        [GIT, "status", "--porcelain"], cwd=repo, check=False, capture_output=True, text=True).stdout
     assert status == ""
 
 
@@ -52,7 +52,7 @@ def test_git_ship_new_branch_and_generated_message(repo):
     assert result["ok"] is True
     assert result["branch"] == "work"
     head = subprocess.run(
-        [GIT, "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo, capture_output=True, text=True).stdout.strip()
+        [GIT, "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo, check=False, capture_output=True, text=True).stdout.strip()
     assert head == "work"
     # Omitted message lands a conventional fallback, not a failure.
     assert ":" in result["subject"]
@@ -78,7 +78,7 @@ def test_git_ship_files_only_stages_selection(repo):
     result = _dispatch("git_ship", {"path": str(repo), "files": ["a.txt"], "message": "chore: only a"})
     assert result["ok"] is True
     status = subprocess.run(
-        [GIT, "status", "--porcelain"], cwd=repo, capture_output=True, text=True).stdout
+        [GIT, "status", "--porcelain"], cwd=repo, check=False, capture_output=True, text=True).stdout
     assert status == "?? b.txt\n"
 
 

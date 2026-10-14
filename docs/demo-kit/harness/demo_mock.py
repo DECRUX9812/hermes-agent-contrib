@@ -166,7 +166,6 @@ def decide(body):
     # Group room turn: the room prompt names the speaker.
     speaker = (re.search(r"You are @([a-z0-9_-]+)", last_user) or [None, ""])[1].lower() if "Group chat" in last_user or "You are @" in last_user else ""
     if speaker:
-        said_forge = "@forge:" in low or "forge:" in low and "changelog draft" in low
         if speaker == "scout":
             if "changelog draft" in low:
                 return {"text": "(pass)"}

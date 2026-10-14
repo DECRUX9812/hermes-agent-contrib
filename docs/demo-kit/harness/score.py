@@ -95,7 +95,7 @@ def render(duration, drop, hits, stop):
         place(drums, b, kick(), 0.9)
         k = int(b * SR); m = min(n, k + int(0.3 * SR))
         side[k:m] = np.minimum(side[k:m], 1 - 0.55 * np.exp(-np.arange(m - k) / SR / 0.11))
-        beat_in_bar = int(round((b - bar0) / BEAT)) % 4
+        beat_in_bar = round((b - bar0) / BEAT) % 4
         if beat_in_bar in (1, 3):
             place(drums, b, clap(), 0.45)
         for s in range(4):
@@ -111,7 +111,7 @@ def render(duration, drop, hits, stop):
             i, j = int(a * SR), int(b * SR); tt = t[i:j]
             in_groove = drop <= a < stop
             harm = 14 if in_groove else 4
-            pad = np.zeros(j - i); spread_l = np.zeros(j - i); spread_r = np.zeros(j - i)
+            spread_l = np.zeros(j - i); spread_r = np.zeros(j - i)
             for f in voicing:
                 for d, pan in ((-0.006, 0.8), (0.0, 0.5), (0.006, 0.2)):
                     v = saw(f * (1 + d), tt, harm)

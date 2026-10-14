@@ -33,8 +33,8 @@ def _unlock_file(handle) -> None:
         if os.name == "nt":
             import msvcrt
 
-            getattr(msvcrt, "locking")(
-                handle.fileno(), getattr(msvcrt, "LK_UNLCK"), 1
+            msvcrt.locking(
+                handle.fileno(), msvcrt.LK_UNLCK, 1
             )
         else:
             import fcntl

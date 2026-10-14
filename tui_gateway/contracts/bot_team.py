@@ -35,7 +35,7 @@ class TeamMember(OpenModel):
 
 
 class TeamOrgNode(TeamMember):
-    reports: list["TeamOrgNode"] = []
+    reports: list[TeamOrgNode] = []
 
 
 class TeamGoal(OpenModel):

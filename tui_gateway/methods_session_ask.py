@@ -45,13 +45,13 @@ _ASK_SYSTEM = (
 )
 
 
-def _message_digest_lines(messages: List[Dict[str, Any]]) -> List[str]:
+def _message_digest_lines(messages: list[dict[str, Any]]) -> list[str]:
     """``role: text`` lines for a stored/live conversation list (OpenAI-shaped dicts).
 
     Tool rows fold to one ``[tool name]`` line with a clipped result; assistant tool calls appear
     as a ``[calls …]`` marker so the model sees what ran without paying for raw payloads.
     """
-    lines: List[str] = []
+    lines: list[str] = []
     for msg in messages:
         if not isinstance(msg, dict):
             continue
@@ -85,20 +85,20 @@ def _message_digest_lines(messages: List[Dict[str, Any]]) -> List[str]:
     return lines
 
 
-def _digest_transcript(messages: List[Dict[str, Any]]) -> Tuple[str, int, bool]:
+def _digest_transcript(messages: list[dict[str, Any]]) -> tuple[str, int, bool]:
     """``(digest, messages_considered, truncated)`` — head + tail under a char budget."""
     lines = _message_digest_lines(messages)
     total = sum(len(line) + 1 for line in lines)
     if total <= _ASK_HEAD_CHARS + _ASK_TAIL_CHARS:
         return "\n".join(lines), len(lines), False
-    head: List[str] = []
+    head: list[str] = []
     used = 0
     for line in lines:
         if used + len(line) > _ASK_HEAD_CHARS:
             break
         head.append(line)
         used += len(line) + 1
-    tail: List[str] = []
+    tail: list[str] = []
     used = 0
     for line in reversed(lines[len(head):]):
         if used + len(line) > _ASK_TAIL_CHARS:
@@ -111,11 +111,11 @@ def _digest_transcript(messages: List[Dict[str, Any]]) -> Tuple[str, int, bool]:
         len(head) + len(tail), True
 
 
-def _prior_exchanges(params: dict) -> List[Tuple[str, str]]:
+def _prior_exchanges(params: dict) -> list[tuple[str, str]]:
     raw = params.get("history")
     if not isinstance(raw, list):
         return []
-    pairs: List[Tuple[str, str]] = []
+    pairs: list[tuple[str, str]] = []
     for item in raw[-_ASK_MAX_PRIOR:]:
         if not isinstance(item, dict):
             continue
@@ -126,7 +126,7 @@ def _prior_exchanges(params: dict) -> List[Tuple[str, str]]:
     return pairs
 
 
-def _ask_transcript(params: dict) -> Tuple[Optional[list], Optional[str], Optional[str]]:
+def _ask_transcript(params: dict) -> tuple[Optional[list], Optional[str], Optional[str]]:
     """``(messages, resolved_key, error)`` — live in-memory history when the id is live here,
     else the profile store's durable rows (prefix-resolved)."""
     target = str(params.get("session_id") or "").strip()
@@ -184,7 +184,7 @@ def _(rid, params: dict) -> dict:
             # (same constraint as title_generation, #72351).
             temperature=None, max_tokens=_ASK_MAX_TOKENS, reasoning_config={"enabled": False})
         answer = extract_content_or_reasoning(response, max_reasoning_chars=4000)
-    except Exception as exc:  # noqa: BLE001 — provider/config failure is the user's answer
+    except Exception as exc:
         logger.warning("session.ask model call failed for %s: %s", resolved, exc)
         return _err(rid, 5030, f"session.ask failed: {exc}")
     if not answer.strip():

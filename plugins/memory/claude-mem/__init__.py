@@ -246,10 +246,10 @@ class ClaudeMemProvider:
             self._sync_thread = spawn_context_thread(_sync, name="claudemem-sync")
             self._sync_thread.start()
 
-    def get_tool_schemas(self) -> List[Dict[str, Any]]:
+    def get_tool_schemas(self) -> list[dict[str, Any]]:
         return list(TOOL_SCHEMAS)
 
-    def handle_tool_call(self, tool_name: str, args: Dict[str, Any], **kwargs) -> str:
+    def handle_tool_call(self, tool_name: str, args: dict[str, Any], **kwargs) -> str:
         if not self._backend:
             return json.dumps({"error": "claude-mem backend not initialized"})
         try:

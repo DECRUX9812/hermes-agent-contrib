@@ -161,7 +161,7 @@ def chord_at(t):
 PAD_L = np.zeros(N)
 PAD_R = np.zeros(N)
 # pad: detuned saws per bar, heavy lowpass later
-for bar in range(0, 24):
+for bar in range(24):
     t0 = bar * 2.0
     if t0 >= 48:
         break

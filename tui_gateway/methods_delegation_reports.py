@@ -44,7 +44,7 @@ _SUMMARY_IN_FLIGHT: set = set()
 _SUMMARY_IN_FLIGHT_LOCK = threading.Lock()
 
 
-def _task_entries(event: Dict[str, Any], result: Dict[str, Any]) -> List[Dict[str, Any]]:
+def _task_entries(event: dict[str, Any], result: dict[str, Any]) -> list[dict[str, Any]]:
     """Per-task result dicts for a settled delegation: the batch ``results`` list when present
     (event first — it is what the completion formatter saw — then the durable result), else the
     single task shaped from the event's own fields."""
@@ -55,11 +55,11 @@ def _task_entries(event: Dict[str, Any], result: Dict[str, Any]) -> List[Dict[st
     return [event] if event else []
 
 
-def _is_truncated(entry: Dict[str, Any]) -> bool:
+def _is_truncated(entry: dict[str, Any]) -> bool:
     return bool(entry.get("truncated") or entry.get("exit_reason") == "max_iterations")
 
 
-def _report_outcome(entries: List[Dict[str, Any]], state: str) -> tuple:
+def _report_outcome(entries: list[dict[str, Any]], state: str) -> tuple:
     """``(outcome, completed_count, failed_count)`` for one settled delegation.
 
     done = every task finished cleanly; failed = nothing completed; needs_decision = the mixed
@@ -82,7 +82,7 @@ def _report_outcome(entries: List[Dict[str, Any]], state: str) -> tuple:
     return "needs_decision", completed, failed
 
 
-def _report_title(event: Dict[str, Any]) -> str:
+def _report_title(event: dict[str, Any]) -> str:
     """The card's task line: the group label when the unit was grouped, else the unit's goal
     (single delegations store the raw goal; batch units store the composed one)."""
     title = str(event.get("group") or event.get("goal") or "")
@@ -92,9 +92,9 @@ def _report_title(event: Dict[str, Any]) -> str:
     return " ".join(title.split())[:200]
 
 
-def _heuristic_snippet(event: Dict[str, Any], result: Dict[str, Any], entries: List[Dict[str, Any]]) -> str:
+def _heuristic_snippet(event: dict[str, Any], result: dict[str, Any], entries: list[dict[str, Any]]) -> str:
     """First substantive line of the result — the summary call's always-available stand-in."""
-    candidates: List[str] = []
+    candidates: list[str] = []
     for entry in entries:
         candidates.extend(str(entry.get(key) or "") for key in ("summary", "error"))
     candidates.extend(str(source.get(key) or "")
@@ -119,7 +119,7 @@ def _summary_enabled() -> bool:
         return True
 
 
-def _generate_summary(row: Dict[str, Any]) -> str:
+def _generate_summary(row: dict[str, Any]) -> str:
     """One utility-model call → one line, or "" on any failure (missing provider included)."""
     event, result = row.get("event") or {}, row.get("result") or {}
     entries = _task_entries(event, result)
@@ -150,13 +150,13 @@ def _generate_summary(row: Dict[str, Any]) -> str:
         text = str(response.choices[0].message.content or "")
         line = next((ln.strip() for ln in text.splitlines() if ln.strip()), "")
         return line[:_SUMMARY_MAX_CHARS]
-    except Exception as exc:  # noqa: BLE001 — the heuristic snippet already covers the card
+    except Exception as exc:
         logger.debug("delegation report summary generation failed for %s: %s",
                      row.get("delegation_id"), exc)
         return ""
 
 
-def _kick_summary_generation(rows: List[Dict[str, Any]]) -> None:
+def _kick_summary_generation(rows: list[dict[str, Any]]) -> None:
     """Fill ``result_json.report_summary`` for rows lacking it, off the request path. One worker
     per call drains the pending ids; a second call while it runs requeues nothing it already holds."""
     if not _summary_enabled():
@@ -189,7 +189,7 @@ def _kick_summary_generation(rows: List[Dict[str, Any]]) -> None:
     spawn_context_thread(_run, name="delegation-report-summary").start()
 
 
-def _report_for_row(row: Dict[str, Any]) -> Dict[str, Any]:
+def _report_for_row(row: dict[str, Any]) -> dict[str, Any]:
     event, result = row.get("event") or {}, row.get("result") or {}
     entries = _task_entries(event, result)
     outcome, completed_count, failed_count = _report_outcome(entries, str(row.get("state") or ""))
@@ -226,12 +226,12 @@ def _(rid, params):
     try:
         from tools.async_delegation import settled_delegations_for_session
         rows = settled_delegations_for_session(session_id, limit=_MAX_REPORTS)
-    except Exception as exc:  # noqa: BLE001 — a broken ledger yields an empty feed, not a 500
+    except Exception as exc:
         logger.debug("delegation.reports query failed for %s: %s", session_id, exc)
         return _ok(rid, {"reports": []})
     try:
         _kick_summary_generation(rows)
-    except Exception:  # noqa: BLE001 — summaries are decorative; never fail the read
+    except Exception:
         logger.debug("delegation report summary dispatch failed", exc_info=True)
     return _ok(rid, {"reports": [_report_for_row(row) for row in rows]})
 

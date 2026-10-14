@@ -90,7 +90,7 @@ def test_report_for_single_done_row_carries_heuristic_snippet_and_child_ids():
 
 
 def test_report_outcome_classification():
-    batch = _seed(event={
+    _seed(event={
         "is_batch": True, "goal": "2 parallel subagents: a; b", "goals": ["a", "b"],
         "results": [{"task_index": 0, "status": "completed", "summary": "ok"},
                     {"task_index": 1, "status": "interrupted", "error": "stopped"}],

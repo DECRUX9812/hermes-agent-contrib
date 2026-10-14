@@ -18,7 +18,7 @@ from fastapi.testclient import TestClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from hermes_cli.web_routers import desktop_plugins as routes  # noqa: E402
+from hermes_cli.web_routers import desktop_plugins as routes
 
 
 @pytest.fixture

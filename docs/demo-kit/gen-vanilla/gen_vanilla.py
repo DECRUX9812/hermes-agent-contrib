@@ -623,7 +623,7 @@ def brewing(seed: int):
     rod = C('#7a5a1e')
     base = C('#4a4a4a')
     glass_c = C('#9ac1c9')
-    for y in range(0, 10):
+    for y in range(10):
         im.put(8, y, rod)
     for x in range(3, 13):
         im.put(x, 10, base)

@@ -96,7 +96,7 @@ async def controller_cmd(ws, session_id: str, action: str, arguments: dict, time
                       {"command_id": cid, "action": action, "arguments": arguments}))
     try:
         return await asyncio.wait_for(fut, timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return {"ok": False, "error": "controller command timed out"}
     finally:
         PENDING_CMD.pop(cid, None)

@@ -82,7 +82,7 @@ def live_home(monkeypatch):
                     pass
 
     import hermes_state
-    import tui_gateway.server as server
+    from tui_gateway import server
     from tools import bot_mode_probe
 
     monkeypatch.setattr(hermes_state, "DEFAULT_DB_PATH", home / "state.db")
@@ -180,7 +180,7 @@ class TestBotTopicSessionLive:
         from tools.bot_mode_dm import MESSAGE_AGENT_TOOL_NAME, ensure_message_agent_tool
         from tools.bot_mode_probe import bot_powered_session, canonical_bot_chat
 
-        home, server = live_home
+        _home, server = live_home
         created = _create(server, bot_topic=True)
         _title(server, created["session_id"], "Weekly digest thread")
         _close(server, {"result": created})
@@ -213,7 +213,7 @@ class TestBotTopicSessionLive:
         from tools.bot_mode_dm import ensure_message_agent_tool
         from tools.bot_mode_probe import bot_powered_session
 
-        home, server = live_home
+        _home, server = live_home
         created = _create(server)
         _title(server, created["session_id"], "Weekly digest thread")
         _close(server, {"result": created})

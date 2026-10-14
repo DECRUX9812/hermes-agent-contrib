@@ -35,7 +35,7 @@ def test_append_and_list_roundtrip(root):
 
 
 def test_append_is_idempotent_by_note_id(root):
-    first = append_note(root, note_id="mbx_abc", to=_party(), sender=_party("bot", "bob", "bob"), title="t")
+    append_note(root, note_id="mbx_abc", to=_party(), sender=_party("bot", "bob", "bob"), title="t")
     update_note(root, "mbx_abc", status="accepted")
     # A relayed re-delivery keeps the settled status rather than re-forking open.
     again = append_note(root, note_id="mbx_abc", to=_party(), sender=_party("bot", "bob", "bob"), title="t")
