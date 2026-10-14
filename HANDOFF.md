@@ -32,7 +32,7 @@ fork **builds on top of upstream**:
 | Upstream SHA merged | `601b550b4b5addecc0b6dacf9a472a54dd8c6799` (`MERGE_HEAD` during the merge) |
 | Merge base | `46d7718a52` |
 | Fork HEAD before the sync commit | `fd16d50fee` (`feat(desktop): consensus voting cards for team decisions`) |
-| Sync WIP commit | see the reply that accompanies this file (`git log -1` on `sync/nous-2026-10-13`) |
+| Sync WIP commit | `3c77cf762c` (`WIP: sync fork onto upstream main 601b550b4b (not green yet)`), merge closed, on `fork/sync/nous-2026-10-13` |
 | Backup branch | `backup/pre-sync-2026-10-13` = `4e05564517`, on `fork` remote as well |
 | Backup tag | `pre-sync-2026-10-13` = `ea08c2e1e0` (commit object), on `fork` remote |
 | Stale local main | `main` at `8ac5c74432`; the live install at `/home/decrux/.hermes/hermes-agent` tracks it. Changing it needs the user's go-ahead. |
@@ -228,8 +228,9 @@ Status at hand-off (last run per check):
   it, the key order and the diff noise change between machines.
 - **A union merge broke `previewVerify`** on an earlier attempt (reported by the user; re-check the
   preview verification path after any locale or desktop merge).
-- **Locale `--ours` silently drops upstream keys.** Always union.
-- **Lefthook pre-commit runs lint on Python and fails silently without `ruff` on PATH** (user memory note).
+- **Locale `--ours` silently drops upstream keys.** Always union. The WIP commit fixed duplicate `connectors` keys in `ar.ts` and `zh-hant.ts` (merged into one object) and spread `enConnectorCard` / `zhConnectorCard` into `en.ts` / `zh.ts`.
+- **`eslint --fix` on the whole desktop tree touched ~30 files** (import order, curly, unused imports). Behaviour-preserving, but review them in the per-file pass.
+- **Lefthook pre-commit needs `ruff` and `npx` on PATH.** Without them the hook fails (exit 127) and the commit does not happen. Use `export PATH=<scratchpad>/lintenv/bin:$HOME/.hermes/tools/node-26.7.0-linux-x64/bin:$PATH` (ruff 0.15.10). Lint errors in desktop (`eslint`, 0 errors left after the WIP commit, 272 warnings) and Python (`ruff check --config ruff.pre-commit.toml`) block commits.
   Put the pinned ruff (0.15.10, `scratchpad/lintenv`) on PATH before committing, or the hook may pass vacuously.
   Never use `--no-verify`.
 - **`origin` is NousResearch.** Pushing there is wrong for this work; use `fork`.
