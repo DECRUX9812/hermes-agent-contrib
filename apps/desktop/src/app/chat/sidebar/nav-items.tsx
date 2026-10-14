@@ -33,12 +33,12 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     keybindActionId: 'session.new'
   },
   {
-    // No tier: Activity is the heartbeat of the app — it rides every mode.
     id: 'activity',
     label: '',
     icon: props => <Codicon name="pulse" {...props} />,
     route: ACTIVITY_ROUTE,
-    keybindActionId: 'nav.activity'
+    keybindActionId: 'nav.activity',
+    tier: 'advanced'
   },
   {
     id: 'capabilities',
@@ -49,16 +49,13 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     tier: 'advanced'
   },
   {
-    // No tier: the rail's messaging sections render in Simple too, so the
-    // door they open must ride every mode or a whole slice is stranded.
     id: 'messaging',
     label: '',
     icon: props => <Codicon name="comment" {...props} />,
     route: MESSAGING_ROUTE,
-    keybindActionId: 'nav.messaging'
+    keybindActionId: 'nav.messaging',
+    tier: 'advanced'
   },
-  // Artifacts and Scheduled jobs are outputs of running Hermes the developer
-  // way; Capabilities and Messaging are how anyone sets it up.
   {
     id: 'artifacts',
     label: '',

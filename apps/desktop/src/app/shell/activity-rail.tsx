@@ -24,21 +24,23 @@ import { BOTS_PANE, railActiveKey, railPanelAction, SESSIONS_PANE } from './acti
 import { TITLEBAR_HEIGHT } from './titlebar'
 
 // The icon rail at the window's left edge (Codex / VS Code activity bar, in
-// Hermes's own dress): the Nous mark as Home, the sidebar's panels, then
-// every page. It stays when the sidebar folds, so the app is never more than
-// one click from anywhere. Destinations come from the same list the
-// sidebar's nav rows use (useSidebarNavItems), plugin rows included.
+// Hermes's own dress): the Nous mark as Home, the sidebar's panels, the two
+// standing pages, then search and settings. It stays when the sidebar folds,
+// so the app is never more than one click from anywhere. Every other page
+// is one palette search away.
+
+const RAIL_PAGE_IDS = ['cron', 'artifacts'] as const
 
 const RAIL_BUTTON =
-  'relative grid size-9 place-items-center rounded-[0.7rem] text-(--ui-text-tertiary) outline-none transition-[background-color,color] duration-150 [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground focus-visible:ring-2 focus-visible:ring-(--ui-accent)/50'
+  'relative grid size-8 place-items-center rounded-row text-fg-muted outline-none transition-[background-color,color] duration-(--dur-fast) ease-standard [-webkit-app-region:no-drag] hover:bg-hover hover:text-fg focus-ring'
 
-const RAIL_BUTTON_ACTIVE = 'bg-(--ui-control-active-background) text-foreground'
+const RAIL_BUTTON_ACTIVE = 'bg-selected text-fg'
 
 interface RailEntry {
   key: string
   label: ReactNode
   ariaLabel: string
-  icon: ComponentType<{ className?: string }>
+  icon: ComponentType<{ className?: string; size?: string }>
   active: boolean
   attention?: boolean
   onPress: () => void
@@ -63,11 +65,11 @@ function RailButton({
         ref={el => register(entry.key, el)}
         type="button"
       >
-        <entry.icon className="rail-glyph text-[1.125rem]!" />
+        <entry.icon className="rail-glyph" size="1rem" />
         {entry.attention && (
           <span
             aria-hidden="true"
-            className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-amber-500 ring-2 ring-(--ui-bg-chrome)"
+            className="absolute right-1 top-1 size-1.5 rounded-full bg-warning ring-2 ring-surface-sidebar"
           />
         )}
       </button>
@@ -75,10 +77,10 @@ function RailButton({
   )
 }
 
-const glyphs = new Map<string, ComponentType<{ className?: string }>>()
+const glyphs = new Map<string, ComponentType<{ className?: string; size?: string }>>()
 
 /** A stable icon component for a codicon name (stable so buttons don't remount). */
-function glyph(name: string): ComponentType<{ className?: string }> {
+function glyph(name: string): ComponentType<{ className?: string; size?: string }> {
   let icon = glyphs.get(name)
 
   if (!icon) {
@@ -90,7 +92,7 @@ function glyph(name: string): ComponentType<{ className?: string }> {
 }
 
 function RailDivider() {
-  return <span aria-hidden="true" className="my-1 h-px w-5 shrink-0 bg-(--ui-stroke-tertiary)" />
+  return <span aria-hidden="true" className="my-1 h-px w-5 shrink-0 bg-line" />
 }
 
 /** Slides between entries; springs a touch past its mark (Hermes's motion). */
@@ -146,6 +148,7 @@ export function ActivityRail({
   const newSession = navItems.find(item => item.id === 'new-session')
   const pages = navItems.filter(item => item.id !== 'new-session')
   const activePage = pages.find(item => navItemActive(item, currentView, pathname))?.id ?? null
+  const railPages = RAIL_PAGE_IDS.flatMap(id => pages.filter(item => item.id === id))
 
   const panels = [
     { key: SESSIONS_PANE, shown: sessionsShown },
@@ -203,7 +206,7 @@ export function ActivityRail({
       : [])
   ]
 
-  const pageEntries: RailEntry[] = pages.map(item => {
+  const pageEntries: RailEntry[] = railPages.map(item => {
     const text = labelFor(item)
 
     return {
@@ -241,7 +244,7 @@ export function ActivityRail({
   return (
     <nav
       aria-label={s.railAria}
-      className="relative flex h-full w-12 shrink-0 flex-col items-center border-r border-(--ui-stroke-tertiary) bg-(--ui-bg-chrome) pb-2"
+      className="relative flex h-full w-12 shrink-0 flex-col items-center border-r border-line bg-surface-sidebar pb-2"
       data-slot="activity-rail"
     >
       {/* The titlebar band: window drag + where the native controls sit. */}
@@ -251,9 +254,8 @@ export function ActivityRail({
         <span
           aria-hidden="true"
           className={cn(
-            'pointer-events-none absolute left-0 w-[3px] rounded-r-full bg-(--ui-accent) shadow-[0_0_10px_var(--ui-accent)]',
-            settled &&
-              'motion-safe:transition-[top,height] motion-safe:duration-300 motion-safe:ease-[cubic-bezier(0.34,1.4,0.64,1)]'
+            'pointer-events-none absolute left-0 w-0.5 rounded-r-full bg-brand',
+            settled && 'motion-safe:transition-[top,height] motion-safe:duration-(--dur-slow) motion-safe:ease-spring'
           )}
           data-slot="activity-rail-indicator"
           style={{ height: box.height, top: box.top }}
@@ -275,12 +277,12 @@ export function ActivityRail({
           >
             <button
               aria-label={homeText}
-              className="mb-1 grid size-9 shrink-0 place-items-center rounded-[0.7rem] outline-none transition-transform duration-200 [-webkit-app-region:no-drag] hover:scale-105 focus-visible:ring-2 focus-visible:ring-(--ui-accent)/50 active:scale-95"
+              className="mb-1 grid size-8 shrink-0 place-items-center rounded-row outline-none [-webkit-app-region:no-drag] focus-ring"
               data-rail-entry="home"
               onClick={() => go(newSession)}
               type="button"
             >
-              <BrandMark className="size-8" />
+              <BrandMark className="size-6" />
             </button>
           </Tip>
         )}

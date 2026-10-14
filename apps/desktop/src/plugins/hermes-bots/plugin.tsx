@@ -1143,7 +1143,12 @@ export default {
         id: 'team-nav',
         area: SIDEBAR_NAV_AREA,
         order: 40,
-        data: { codicon: 'organization', label: ctx.i18n.t('team.nav'), path: '/team' } satisfies SidebarNavContribution
+        data: {
+          codicon: 'organization',
+          label: ctx.i18n.t('team.nav'),
+          path: '/team',
+          tier: 'advanced'
+        } satisfies SidebarNavContribution
       },
       {
         id: 'team-open',

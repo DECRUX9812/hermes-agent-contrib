@@ -127,7 +127,12 @@ const plugin: HermesPlugin = {
           id: 'nav',
           area: SIDEBAR_NAV_AREA,
           order: 50,
-          data: { codicon: 'project', label: ctx.i18n.t('nav'), path: '/kanban' } satisfies SidebarNavContribution
+          data: {
+          codicon: 'project',
+          label: ctx.i18n.t('nav'),
+          path: '/kanban',
+          tier: 'advanced'
+        } satisfies SidebarNavContribution
         },
         {
           id: 'open',
