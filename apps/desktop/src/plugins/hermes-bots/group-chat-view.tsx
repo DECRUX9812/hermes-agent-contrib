@@ -100,6 +100,7 @@ import { LineCards } from './group-room-cards'
 import { CatchUpCard, RecapCard, roomCatchUp } from './group-room-catchup'
 import { roomCommands, RoomDecisions, RoomShortcuts, ThreadTail } from './group-room-command'
 import { GroupRoomComposer } from './group-room-composer'
+import { useHandoffFlights } from './group-room-flight'
 import { GroupComposerContext, GroupThreadHeader } from './group-room-focus'
 import { deriveRoomHandoffs, roomEscalations, type RoomHandoff } from './group-room-handoffs'
 import { GroupRoomHeader } from './group-room-header'
@@ -823,6 +824,17 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const escalationKey = (e: { handoff: RoomHandoff; kind: string }) => `${e.kind}:${e.handoff.id}`
   const escalations = roomEscalations(handoffs, room.log).filter(e => !dismissed.has(escalationKey(e)))
   const handoffsAt = new Map<number, RoomHandoff[]>()
+
+  useHandoffFlights(
+    rootRef,
+    handoffs,
+    name => {
+      const member = members.find(m => m.name === name)
+
+      return member ? groupMemberKey(member) : null
+    },
+    groupChatRoomKey(group, room)
+  )
 
   for (const handoff of handoffs) {
     handoffsAt.set(handoff.index, [...(handoffsAt.get(handoff.index) ?? []), handoff])

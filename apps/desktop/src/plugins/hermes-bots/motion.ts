@@ -129,27 +129,30 @@ export function flyBetween(
   }
 
   const node = ghost ? (ghost.cloneNode(true) as HTMLElement) : document.createElement('div')
-  const size = ghost ? a.width : 10
   node.setAttribute('aria-hidden', 'true')
   node.dataset.motionGhost = 'true'
-  Object.assign(node.style, {
-    borderRadius: '9999px',
-    height: `${size}px`,
-    left: `${a.left + a.width / 2 - size / 2}px`,
-    margin: '0',
-    pointerEvents: 'none',
-    position: 'fixed',
-    top: `${a.top + a.height / 2 - size / 2}px`,
-    width: `${size}px`,
-    zIndex: '60'
-  })
+  Object.assign(node.style, { left: '0', margin: '0', pointerEvents: 'none', position: 'fixed', top: '0', zIndex: '60' })
 
-  if (!ghost) {
-    node.style.background = 'var(--color-brand)'
-    node.style.boxShadow = '0 0 0 3px color-mix(in oklab, var(--color-brand) 25%, transparent)'
+  if (ghost) {
+    node.style.visibility = 'hidden'
+  } else {
+    Object.assign(node.style, {
+      background: 'var(--color-brand)',
+      borderRadius: '9999px',
+      boxShadow: '0 0 0 3px color-mix(in oklab, var(--color-brand) 25%, transparent)',
+      height: '10px',
+      width: '10px'
+    })
   }
 
+  // The ghost is fixed-position, so measuring it never reflows the page.
   document.body.appendChild(node)
+  const box = node.getBoundingClientRect()
+  const w = box.width || 10
+  const h = box.height || 10
+  node.style.left = `${a.left + a.width / 2 - w / 2}px`
+  node.style.top = `${a.top + a.height / 2 - h / 2}px`
+  node.style.visibility = ''
   const dx = z.left + z.width / 2 - (a.left + a.width / 2)
   const dy = z.top + z.height / 2 - (a.top + a.height / 2)
 
@@ -157,7 +160,8 @@ export function flyBetween(
     [
       { opacity: 0, transform: 'translate(0, 0) scale(0.6)' },
       { offset: 0.15, opacity: 1, transform: `translate(${dx * 0.12}px, ${dy * 0.12}px) scale(1)` },
-      { opacity: 1, transform: `translate(${dx}px, ${dy}px) scale(0.7)` }
+      { offset: 0.8, opacity: 1, transform: `translate(${dx * 0.94}px, ${dy * 0.94}px) scale(0.85)` },
+      { opacity: 0, transform: `translate(${dx}px, ${dy}px) scale(0.5)` }
     ],
     { duration: MOTION_MS.flight, easing: EASE_OUT_QUINT }
   )
