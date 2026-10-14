@@ -20,8 +20,9 @@ import { setThemeCall } from '@/components/assistant-ui/theme-picker/args'
 import { ThemeTool } from '@/components/assistant-ui/theme-picker/theme-tool'
 import { AgentDeliveryNotice, deliveryTargetFromCommand } from '@/components/assistant-ui/thread/agent-delivery'
 import { TimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
+import { coveredByToolCards, ToolCardStackContext } from '@/components/assistant-ui/tool-cards'
 import { DelegateTool } from '@/components/assistant-ui/tool/delegate'
-import { ActivityPillExpandedContext, ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
+import { ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
 import { parseMaybeObject, toolCallFailed } from '@/components/assistant-ui/tool/fallback-model'
 import { formatElapsed, useElapsedSeconds, useMeasuredDuration } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
@@ -164,14 +165,14 @@ const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
 
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   const showToolActivity = useStore($showToolActivity)
-  // Inside a bot-chat activity pill (G2) quiet rows follow the pill: hidden
-  // until it is expanded, even when tool activity is on. Everywhere else
-  // answer-only applies unchanged.
-  const pillExpanded = useContext(ActivityPillExpandedContext)
-  const quietRowHidden = pillExpanded === null ? !showToolActivity : !pillExpanded
+  const inToolCardStack = useContext(ToolCardStackContext)
 
   // todo parts are hoisted to a dedicated panel above the message content.
   if (isTodoToolName(props.toolName)) {
+    return null
+  }
+
+  if (inToolCardStack && coveredByToolCards(props)) {
     return null
   }
 
@@ -212,7 +213,7 @@ const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   // The tool feed (reads, searches, commands) follows display.tool_progress,
   // never show_reasoning. Cards, approvals, and failed calls the user must act
   // on remain regardless.
-  if (quietRowHidden && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
+  if (!showToolActivity && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
     return null
   }
 
