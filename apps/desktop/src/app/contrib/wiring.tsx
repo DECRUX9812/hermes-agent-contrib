@@ -125,6 +125,7 @@ import { resetProjectTreeState } from '../right-sidebar/files/use-project-tree'
 import { PersistentTerminal } from '../right-sidebar/terminal/persistent'
 import { closeAllTerminals } from '../right-sidebar/terminal/terminals'
 import type { FanOutTarget } from '../roster/fan-out-model'
+import { loadCronView, loadSettingsView } from '../route-chunks'
 import {
   CRON_ROUTE,
   navigateToWorkspacePage,
@@ -202,10 +203,10 @@ const AgentsView = lazy(async () => ({ default: (await import('../agents')).Agen
 const AttentionInboxView = lazy(async () => ({ default: (await import('../attention-inbox')).AttentionInboxView }))
 const MissionControlView = lazy(async () => ({ default: (await import('../mission-control')).MissionControlView }))
 const CommandCenterView = lazy(async () => ({ default: (await import('../command-center')).CommandCenterView }))
-const CronView = lazy(async () => ({ default: (await import('../cron')).CronView }))
+const CronView = lazy(async () => ({ default: (await loadCronView()).CronView }))
 const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).WebhooksView }))
 const ProfilesView = lazy(async () => ({ default: (await import('../profiles')).ProfilesView }))
-const SettingsView = lazy(async () => ({ default: (await import('../settings')).SettingsView }))
+const SettingsView = lazy(async () => ({ default: (await loadSettingsView()).SettingsView }))
 const StarmapView = lazy(async () => ({ default: (await import('../starmap')).StarmapView }))
 const ActivityView = lazy(async () => ({ default: (await import('../activity')).ActivityView }))
 const RosterView = lazy(async () => ({ default: (await import('../roster')).RosterView }))
