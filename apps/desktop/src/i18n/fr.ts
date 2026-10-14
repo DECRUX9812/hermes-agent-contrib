@@ -825,6 +825,7 @@ export const frOverrides = {
           'Cette URL utilise un protocole non sécurisé ou local. Préférez https:// ou git@ en production.',
         securityIntro:
           'Installez uniquement des sources de confiance — consultez le dépôt ci-dessous pour vérifier ce qui sera ajouté.',
+        securityHeading: 'Revue de sécurité',
         sourceHeading: 'Code source',
         viewRepository: 'Voir le dépôt',
         viewPluginFiles: 'Voir les fichiers du plugin',
@@ -858,6 +859,9 @@ export const frOverrides = {
         advanced: 'Avancé',
         versionLabel: 'Version',
         reviewedPin: sha => (sha ? `Pin examiné ${sha}` : 'Pin examiné'),
+        reviewedHeading: 'Entrée de catalogue examinée',
+        reviewedIntro: 'Cette entrée a été examinée par un humain au commit épinglé. Vous pouvez toujours inspecter le code exact ci-dessous.',
+        catalogPinned: (name, sha) => `Entrée du catalogue Hermes "${name}" — installe le composant agent examiné au ${sha ? sha : 'commit épinglé'}, pas la tête de branche.`,
         latestCommit: 'Dernier commit',
         nothingToInstall: 'Ce paquet n’a rien à installer ici.'
       }
@@ -1658,7 +1662,12 @@ export const frOverrides = {
         "Taille maximale d'un fichier local que Desktop chargera pour les aperçus et les pièces jointes image, en Mo. La valeur par défaut est 16. Les pièces jointes distantes non-image utilisent une limite distincte de 256 Mo. Une valeur très élevée charge le fichier entier en mémoire et peut figer ou planter l'application.",
       attachmentSizeUnit: 'Mo',
       attachmentSizeLabel: 'Taille maximale de chargement des aperçus / images en mégaoctets',
-      showOptions: 'Afficher les options'
+      showOptions: 'Afficher les options',
+      developerTitle: 'Développeur',
+      resetOnboardingTitle: 'Réinitialiser la configuration initiale',
+      resetOnboardingDesc: "Effacer l'état de la configuration initiale et relancer la configuration du premier démarrage.",
+      resetOnboardingAction: 'Réinitialiser',
+      resetOnboardingFailed: 'Échec de la réinitialisation de la configuration initiale'
     },
     hudModifier: {
       title: 'Toucher pour afficher le HUD',

@@ -35,8 +35,12 @@ export const jaPluginSettings = {
       installsOnly: profile => `${profile} にインストールします。`,
       advanced: '詳細設定',
       versionLabel: 'バージョン',
-      reviewedPin: sha => (sha ? `レビュー済みのピン ${sha}` : 'レビュー済みのピン'),
-      latestCommit: '最新のコミット',
+reviewedPin: sha => (sha ? `レビュー済みのピン ${sha}` : 'レビュー済みのピン'),
+        reviewedHeading: 'レビュー済みカタログ項目',
+        reviewedIntro: 'この項目はピン留めコミットで人によるレビュー済みです。下で実際のコードを確認できます。',
+        catalogPinned: (name, sha) =>
+          `Hermes カタログ項目「${name}」— agent コンポーネントはブランチ最新ではなくレビュー済みピン${sha ? ` ${sha}` : ''}でインストールされます。`,
+        latestCommit: '最新のコミット',
       nothingToInstall: 'このパッケージにはここでインストールするものがありません。'
     }
   }

@@ -726,6 +726,10 @@ export interface Translations extends NoticeTranslations {
         advanced: string
         versionLabel: string
         reviewedPin: (sha: string) => string
+        /** Fork-only: heading for reviewed catalog entries. */
+        reviewedHeading: string
+        /** Fork-only: intro text for reviewed catalog entries. */
+        reviewedIntro: string
         latestCommit: string
         nothingToInstall: string
         includesHeading: string
@@ -745,6 +749,8 @@ export interface Translations extends NoticeTranslations {
         desktopOnlyNote: string
         insecureWarning: string
         securityIntro: string
+        /** Fork-only: security heading for reviewed catalog entries. */
+        securityHeading: string
         sourceHeading: string
         viewRepository: string
         viewPluginFiles: string
@@ -754,6 +760,8 @@ export interface Translations extends NoticeTranslations {
         pinToCommitPlaceholder: string
         pinToCommitHint: string
         pinToCommitInvalid: string
+        /** Fork-only: Git clone label for the install dialog. */
+        gitCloneLabel: string
         install: string
         installing: string
         probing: string
@@ -766,6 +774,8 @@ export interface Translations extends NoticeTranslations {
         installUncertain: string
         desktopFailed: string
         missingEnv: (name: string, vars: string) => string
+        /** Fork-only: shown for pinned catalog entries. */
+        catalogPinned: (name: string, sha: string) => string
       }
     }
     vault: {
@@ -1147,6 +1157,12 @@ export interface Translations extends NoticeTranslations {
       voiceShortcutHintTitle: string
       voiceShortcutHintDesc: string
       showOptions: string
+      /** Fork-only: developer settings for onboarding reset. */
+      developerTitle: string
+      resetOnboardingTitle: string
+      resetOnboardingDesc: string
+      resetOnboardingAction: string
+      resetOnboardingFailed: string
     }
     hudModifier: {
       title: string
@@ -4736,6 +4752,27 @@ export interface Translations extends NoticeTranslations {
       alwaysTitle: string
       alwaysDescription: (pattern: string) => string
       alwaysAllow: string
+    }
+    /** Fork-only: setup_choose tool copy (retired upstream, ported to fork.onboarding). */
+    setupChoose: {
+      kinds: Record<'accent' | 'connectors' | 'layout' | 'plugins' | 'theme', string>
+      loading: string
+      unavailable: string
+      findApp: string
+      customColor: string
+      plugin: string
+      startsLater: string
+    }
+    /** Fork-only: start_chat tool copy (retired upstream, ported to fork.onboarding). */
+    startChat: {
+      starting: (title: string) => string
+      startingUntitled: string
+      untitled: string
+      notStarted: string
+      retry: string
+      inProfile: (profile: string) => string
+      open: string
+      openFailed: string
     }
     clarify: ClarifyCopy
     themePicker: ThemePickerCopy

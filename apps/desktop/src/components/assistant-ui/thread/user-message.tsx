@@ -677,7 +677,7 @@ export const UserMessage: FC<{
                     )}
                   >
                     <UserBubbleActions
-                      fullText={fullText}
+                      fullText={messageText}
                       messageId={messageId}
                       onCancel={onCancel}
                       onRequestRestoreConfirm={onRequestRestoreConfirm}

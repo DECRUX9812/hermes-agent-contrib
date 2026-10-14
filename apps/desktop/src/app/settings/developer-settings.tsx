@@ -2,11 +2,11 @@ import { useState } from 'react'
 
 import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
 import { Button } from '@/components/ui/button'
+import { isOnboardingEnabled } from '@/fork/lib/onboarding-enabled'
+import { resetOnboarding } from '@/fork/store/onboarding-gate'
 import { useI18n } from '@/i18n'
 import { Wrench } from '@/lib/icons'
-import { isOnboardingEnabled } from '@/lib/onboarding-enabled'
 import { notifyError } from '@/store/notifications'
-import { resetOnboarding } from '@/store/onboarding-gate'
 
 import { ListRow, SettingsSection } from './primitives'
 

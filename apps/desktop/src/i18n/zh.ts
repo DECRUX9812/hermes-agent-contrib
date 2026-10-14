@@ -742,6 +742,7 @@ export const zhOverrides = {
         desktopOnlyNote: '仅桌面包不会安装后端智能体插件。',
         insecureWarning: '此 URL 使用了不安全的本地 scheme。生产环境请优先使用 https:// 或 git@。',
         securityIntro: '请仅安装你信任的来源 — 如需了解将添加的内容，可先查看下方仓库。',
+        securityHeading: '安全审查',
         sourceHeading: '源代码',
         viewRepository: '查看仓库',
         viewPluginFiles: '查看插件文件',
@@ -772,6 +773,9 @@ export const zhOverrides = {
         advanced: '高级',
         versionLabel: '版本',
         reviewedPin: sha => (sha ? `已审核的固定提交 ${sha}` : '已审核的固定提交'),
+        reviewedHeading: '已审核的目录条目',
+        reviewedIntro: '此条目已在其固定提交处经过人工审核。你仍可在下方检查确切代码。',
+        catalogPinned: (name, sha) => `Hermes 目录条目「${name}」— agent 部分将安装在经过审核的固定提交${sha ? ` ${sha}` : ''}，而不是分支最新代码。`,
         latestCommit: '最新提交',
         nothingToInstall: '此包在这里没有可安装的内容。'
       }
@@ -1425,7 +1429,12 @@ export const zhOverrides = {
       voiceShortcutHintTitle: '语音录制快捷键',
       voiceShortcutHintDesc:
         '请在“设置 → 键盘快捷键”中设置语音录制快捷键（“开始 / 停止语音对话”）。voice.record_key 配置项仅适用于 CLI 和 TUI。',
-      showOptions: '显示选项'
+      showOptions: '显示选项',
+      developerTitle: '开发者',
+      resetOnboardingTitle: '重置初始设置',
+      resetOnboardingDesc: '清除初始设置状态并重新运行首次设置。',
+      resetOnboardingAction: '重置',
+      resetOnboardingFailed: '重置初始设置失败'
     },
     hudModifier: {
       title: '轻按唤出 HUD',

@@ -1,9 +1,10 @@
 import type { OnboardingStartParams } from '@hermes/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { $onboardingDecided, $onboardingSurfaceClear } from '@/fork/store/onboarding-presence'
+
 import { setPrimaryGatewayConnectionId } from './gateway'
 import { $onboardingPhase } from './onboarding-phase'
-import { $onboardingDecided, $onboardingSurfaceClear } from './onboarding-presence'
 import {
   $onboardingEnded,
   $onboardingSettleFrom,

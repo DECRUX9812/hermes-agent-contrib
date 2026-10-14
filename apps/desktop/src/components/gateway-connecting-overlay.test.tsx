@@ -1,11 +1,11 @@
 import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { $desktopOnboarding } from '@/fork/store/onboarding'
+import { $introView } from '@/fork/store/onboarding-intro'
+import { markOnboardingDecided } from '@/fork/store/onboarding-presence'
 import { $desktopBoot } from '@/store/boot'
 import { $gatewaySwitching } from '@/store/gateway-switch'
-import { $desktopOnboarding } from '@/store/onboarding'
-import { $introView } from '@/store/onboarding-intro'
-import { markOnboardingDecided } from '@/store/onboarding-presence'
 import { setGatewayState } from '@/store/session'
 
 import { BootFailureOverlay } from './boot-failure-overlay'

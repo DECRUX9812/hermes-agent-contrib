@@ -8,6 +8,8 @@ export interface ToolResultMetadata {
   mcp_app?: McpAppRef
   message?: string
   preview?: string
+  /** A card Retry's outcome recorded on the saved row (`display_metadata.retried.result`). */
+  retried?: Record<string, unknown>
   summary?: string
   todos?: unknown
 }

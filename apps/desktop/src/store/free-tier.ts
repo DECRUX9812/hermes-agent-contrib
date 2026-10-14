@@ -1,8 +1,8 @@
 import { atom, computed } from 'nanostores'
 
+import { $onboardingSurfaceClear, onboardingSurfaceActive } from '@/fork/store/onboarding-presence'
 import { runFreeTierChallenge } from '@/store/free-tier-challenge'
 import { setModeContext } from '@/store/interface-mode'
-import { $onboardingSurfaceClear, onboardingSurfaceActive } from '@/store/onboarding-presence'
 import type { FreeTierStatus } from '@/types/hermes'
 
 /** The model the free-tier route runs on. Used to recognise a session that is

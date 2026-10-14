@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { $desktopOnboarding, consumePendingCredentialWarning } from '@/store/onboarding'
-import { setOnboardingSurfaceActive } from '@/store/onboarding-presence'
+import { $desktopOnboarding, consumePendingCredentialWarning } from '@/fork/store/onboarding'
+import { setOnboardingSurfaceActive } from '@/fork/store/onboarding-presence'
 
 import { applyRuntimeInfo } from './utils'
 

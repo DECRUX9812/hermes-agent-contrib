@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useMemo, useState } from 'react'
 
-import { DocsLink } from '@/components/onboarding/flow'
+import { DocsLink } from '@/fork/components/onboarding-flow'
 import { useI18n } from '@/i18n'
 import { $activeConnectionId } from '@/store/connections'
 import { setDesktopMetricsGate } from '@/store/desktop-metrics'

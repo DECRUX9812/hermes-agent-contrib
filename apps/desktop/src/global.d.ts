@@ -460,6 +460,10 @@ declare global {
       localModelsEnabled?: boolean
       /** Dev-only launch flag (`--fresh-install`, unpackaged builds): onboarding treats this launch as a fresh install. */
       assumeFreshInstall?: boolean
+      /** Launch-flag fact (`HERMES_GUEST_ONBOARDING=1` / `--guest-onboarding`): the fork's guided
+       *  first run is on, so the setup surfaces may mount. Optional so the browser-hosted bridge
+       *  (which never launches a desktop) still type-checks. */
+      guestOnboardingEnabled?: boolean
       /** Sanitized local `display.skin`, available before any gateway connects. */
       localSkin?: { profile: string; skin: HermesSkin } | null
       setTranslucency?: (payload: TranslucencyState) => void
@@ -765,6 +769,10 @@ declare global {
         /** `sent` deletes the claimed record; false keeps it for the next attach. */
         ackPendingRun?: (sent: boolean) => Promise<void>
         onPendingRun?: (callback: () => void) => () => void
+        /** Browser-hosted bridge: get the current update branch. */
+        getBranch?: () => Promise<{ branch: string }>
+        /** Browser-hosted bridge: set the update branch. */
+        setBranch?: (branch: string) => Promise<{ branch: string }>
       }
       desktopMetrics?: {
         /** Mirror this window's focused profile and its opt-in; false deletes that profile's pending crashes. */

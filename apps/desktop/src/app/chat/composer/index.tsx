@@ -7,10 +7,11 @@ import { useTourMarker } from '@/app/chat/tour-marker'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
 import { CRON_ROUTE } from '@/app/routes'
 import { composerEdgeRing, composerFloatingStrip, composerInputBacking } from '@/components/chat/composer-dock'
-import { useSetupChatView } from '@/components/onboarding-chat/assembly'
-import { OnboardingSkip } from '@/components/onboarding-chat/skip'
 import { Button } from '@/components/ui/button'
 import { Slot as ContribSlot } from '@/contrib/react/slot'
+import { useSetupChatView } from '@/fork/components/onboarding-chat-assembly'
+import { OnboardingSkip } from '@/fork/components/onboarding-chat-skip'
+import { $chatOnboardingSolo } from '@/fork/store/onboarding-intro'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { isMacPlatform } from '@/lib/platform'
@@ -31,7 +32,6 @@ import { setCronCreateDraft } from '@/store/cron'
 import { $hudMode } from '@/store/hud'
 import { $showsAdvancedChrome } from '@/store/interface-mode'
 import { notify } from '@/store/notifications'
-import { $chatOnboardingSolo } from '@/store/onboarding-intro'
 import { sessionBlockingPrompt } from '@/store/prompts'
 import { toggleReview } from '@/store/review'
 import { $gatewayState } from '@/store/session'
@@ -789,7 +789,7 @@ export function ChatBar({
           <div className={cn(composerFloatingStrip, 'px-[5px] pb-1.5 empty:hidden')}>
             <ActionBadges sessionId={statusSessionId} />
             <SuggestionPills sessionId={statusSessionId} />
-            <OnboardingSkip sessionId={statusSessionId} />
+            <OnboardingSkip />
           </div>
           {/* Session-scoped status stack (todos, subagents, background tasks,
               queue). An in-flow dock child: the dock is bottom-anchored, so it

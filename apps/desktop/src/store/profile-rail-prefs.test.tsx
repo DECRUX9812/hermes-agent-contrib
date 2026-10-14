@@ -77,7 +77,8 @@ async function loadHost(webapp: boolean) {
         openCommandCenterSection: noop,
         requestGateway: async () => undefined as never,
         statusSnapshot: null,
-        toggleCommandCenter: noop
+        toggleCommandCenter: noop,
+        changeSessionCwd: async () => {}
       }),
     { wrapper: MemoryRouter }
   )

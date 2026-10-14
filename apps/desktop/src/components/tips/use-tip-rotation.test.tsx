@@ -2,9 +2,9 @@ import { act, cleanup, render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
+import { markOnboardingDecided } from '@/fork/store/onboarding-presence'
 import { en } from '@/i18n/en'
 import { $localModelsEnabled } from '@/store/local-models-flag'
-import { markOnboardingDecided } from '@/store/onboarding-presence'
 import { $awaitingResponse, $busy, $connection } from '@/store/session'
 import { $activeTip, $nextTipAt, $retiredTips, $tipsEnabled, $tipShownAt } from '@/store/tips'
 

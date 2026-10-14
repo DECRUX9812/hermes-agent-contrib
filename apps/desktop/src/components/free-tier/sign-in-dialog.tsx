@@ -5,7 +5,6 @@ import { type ReactNode, useEffect, useId } from 'react'
 
 import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
 import type { ModelSelection } from '@/app/shell/model-menu-panel'
-import { DeviceCode } from '@/components/onboarding/flow'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,6 +15,9 @@ import {
   preventCloseButtonAutoFocus
 } from '@/components/ui/dialog'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
+import { DeviceCode } from '@/fork/components/onboarding-flow'
+import { refreshOnboardingProviders } from '@/fork/store/onboarding'
+import { $onboardingSurfaceClear } from '@/fork/store/onboarding-presence'
 import { getGlobalModelOptions } from '@/hermes'
 import { type Translations, useI18n } from '@/i18n'
 import { CheckCircle2 } from '@/lib/icons'
@@ -42,8 +44,6 @@ import {
   syncFreeTierOffer
 } from '@/store/free-tier-sign-in'
 import { $localModelOfferPending } from '@/store/local-model-offer'
-import { refreshOnboardingProviders } from '@/store/onboarding'
-import { $onboardingSurfaceClear } from '@/store/onboarding-presence'
 import { $currentModel, setModelPickerOpen } from '@/store/session'
 
 interface FreeTierSignInDialogProps {

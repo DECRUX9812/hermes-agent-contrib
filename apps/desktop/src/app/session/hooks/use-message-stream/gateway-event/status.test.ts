@@ -5,8 +5,8 @@
 // where retrying reproduces the failure.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { requestDesktopOnboarding } from '@/fork/store/onboarding'
 import { $notifications } from '@/store/notifications'
-import { requestDesktopOnboarding } from '@/store/onboarding'
 
 import { handleStatusEvent } from './status'
 import type { GatewayEventContext } from './types'

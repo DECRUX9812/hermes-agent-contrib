@@ -1192,7 +1192,12 @@ export const jaOverrides = {
         'プレビューと画像添付でデスクトップが読み込むローカルファイルの最大サイズ（MB）。既定は 16。リモートの非画像添付は別の 256 MB 上限。高すぎる値を設定するとファイル全体をメモリに読み込み、アプリがフリーズ・クラッシュする可能性があります。',
       attachmentSizeUnit: 'MB',
       attachmentSizeLabel: 'プレビュー/画像読み込みの最大サイズ（メガバイト）',
-      showOptions: 'オプションを表示'
+      showOptions: 'オプションを表示',
+      developerTitle: '開発者',
+      resetOnboardingTitle: '初期設定をリセット',
+      resetOnboardingDesc: '初期設定の状態をクリアし、初回セットアップを再実行します。',
+      resetOnboardingAction: 'リセット',
+      resetOnboardingFailed: '初期設定のリセットに失敗しました'
     },
     hudModifier: {
       title: 'キーをタップして HUD を呼び出す',

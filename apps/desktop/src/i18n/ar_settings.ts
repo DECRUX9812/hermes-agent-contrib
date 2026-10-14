@@ -679,7 +679,12 @@ export const arSettings = {
         'حجم الملف المحلي الذي يحمّله Desktop للمعاينات وإرفاق الصور، بالميغابايت. الافتراضي 16. الإرفاق البعيد غير الصوري يستخدم حدًا منفصلًا 256 MB. ضبطه عاليًا جدًا يحمّل الملف كله في الذاكرة وقد يجمّد التطبيق أو يعطّله.',
       attachmentSizeUnit: 'MB',
       attachmentSizeLabel: 'الحد الأقصى لحجم المعاينة/تحميل الصور بالميغابايت',
-      showOptions: 'إظهار الخيارات'
+      showOptions: 'إظهار الخيارات',
+      developerTitle: 'مطور',
+      resetOnboardingTitle: 'إعادة تعيين الإعداد الأولي',
+      resetOnboardingDesc: 'مسح حالة الإعداد الأولي وإعادة تشغيل إعداد التشغيل الأول.',
+      resetOnboardingAction: 'إعادة تعيين',
+      resetOnboardingFailed: 'فشل إعادة تعيين الإعداد الأولي'
     },
     hudModifier: {
       title: 'استدعاء HUD بضغطة',

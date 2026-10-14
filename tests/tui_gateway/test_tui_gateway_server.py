@@ -9,6 +9,7 @@ import time
 import types
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -16100,6 +16101,9 @@ def test_session_delete_honors_params_profile_sessions_dir(monkeypatch, tmp_path
             captured["sid"] = sid
             captured["sessions_dir"] = sessions_dir
             return True
+
+        def get_session_model_config_value(self, session_id: str, key: str, default: Any = None) -> Any:
+            return default
 
         def close(self):
             captured["closed"] = True

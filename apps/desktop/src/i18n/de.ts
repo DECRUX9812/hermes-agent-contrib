@@ -823,6 +823,7 @@ export const deOverrides = {
           'Diese URL verwendet ein unsicheres oder lokales Schema. Für Produktionsinstallationen bevorzuge https:// oder git@.',
         securityIntro:
           'Installieren Sie nur aus Quellen, denen Sie vertrauen – prüfen Sie das Repository unten, wenn Sie sehen möchten, was hinzugefügt wird.',
+        securityHeading: 'Sicherheitsprüfung',
         sourceHeading: 'Quellcode',
         viewRepository: 'Repository ansehen',
         viewPluginFiles: 'Plugin-Dateien ansehen',
@@ -856,6 +857,9 @@ export const deOverrides = {
         advanced: 'Erweitert',
         versionLabel: 'Version',
         reviewedPin: sha => (sha ? `Geprüfter Pin ${sha}` : 'Geprüfter Pin'),
+        reviewedHeading: 'Geprüfter Katalogeintrag',
+        reviewedIntro: 'Dieser Eintrag wurde am gepinnten Commit von einem Menschen geprüft. Du kannst den genauen Code unten trotzdem inspizieren.',
+        catalogPinned: (name, sha) => `Hermes-Katalogeintrag "${name}" — installiert die geprüfte Agent-Komponente am ${sha ? sha : 'gepinnten Commit'}, nicht den Branch-Head.`,
         latestCommit: 'Neuester Commit',
         nothingToInstall: 'Dieses Paket hat hier nichts zu installieren.'
       }
@@ -1653,7 +1657,12 @@ export const deOverrides = {
         'Wie groß eine lokale Datei sein darf, die Desktop für Vorschauen und Bildanhänge lädt, in MB. Standard ist 16. Remote-Anhänge ohne Bild verwenden ein eigenes Limit von 256 MB. Ein sehr hoher Wert lädt die gesamte Datei in den Speicher, was die App einfrieren oder abstürzen lassen kann.',
       attachmentSizeUnit: 'MB',
       attachmentSizeLabel: 'Maximale Vorschau-/Bildladegröße in Megabyte',
-      showOptions: 'Optionen anzeigen'
+      showOptions: 'Optionen anzeigen',
+      developerTitle: 'Entwickler',
+      resetOnboardingTitle: 'Ersteinrichtung zurücksetzen',
+      resetOnboardingDesc: 'Zustand der Ersteinrichtung löschen und den Ersteinrichtungs-Assistenten erneut ausführen.',
+      resetOnboardingAction: 'Zurücksetzen',
+      resetOnboardingFailed: 'Zurücksetzen der Ersteinrichtung fehlgeschlagen'
     },
     hudModifier: {
       title: 'Tippen, um das HUD aufzurufen',

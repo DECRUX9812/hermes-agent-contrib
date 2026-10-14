@@ -1,8 +1,8 @@
 import type { OnboardingStartResult } from '@hermes/shared'
 
+import { $introStartExit, $introView } from '@/fork/store/onboarding-intro'
 import { chatMessageText } from '@/lib/chat-messages'
 import { BACKEND_BOOT_WAIT_TIMEOUT_MS } from '@/lib/with-timeout'
-import { $introStartExit, $introView } from '@/store/onboarding-intro'
 import { $onboardingEnded, type OnboardingIntroHooks } from '@/store/onboarding-run'
 import { $activeSessionId } from '@/store/session'
 import { $sessionStates } from '@/store/session-states'

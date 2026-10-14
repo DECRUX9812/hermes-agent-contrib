@@ -13,9 +13,9 @@ import { Navigate, Route, Routes, useParams } from 'react-router'
 
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
+import { $chatOnboardingSolo } from '@/fork/store/onboarding-intro'
 import { $activeConnectionId } from '@/store/connections'
 import { $gateway } from '@/store/gateway'
-import { $chatOnboardingSolo } from '@/store/onboarding-intro'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $freshDraftReady, $gatewayState } from '@/store/session'
 

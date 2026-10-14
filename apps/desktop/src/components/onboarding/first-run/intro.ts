@@ -1,10 +1,10 @@
 import { atom, computed } from 'nanostores'
 
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
+import { $introView } from '@/fork/store/onboarding-intro'
 import { TIP_CATALOG } from '@/lib/tips/catalog'
 import { onLayoutCommit } from '@/store/appearance-apply'
 import { $sidebarOpen, CHAT_SIDEBAR_PANE_ID } from '@/store/layout'
-import { $introView } from '@/store/onboarding-intro'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $selectedStoredSessionId } from '@/store/session'
 import { retireTips } from '@/store/tips'

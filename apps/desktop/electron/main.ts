@@ -34,6 +34,8 @@ import {
 } from 'electron'
 import type { Session } from 'electron'
 
+import { guestOnboardingEnabled } from '../src/fork/electron/guest-onboarding'
+
 import { type ActiveRuntimeState, classifyActiveRuntime } from './active-runtime-state'
 import { HERMES_API_EXPECTED_404 } from './api-expected-404'
 import {
@@ -18642,7 +18644,10 @@ ipcMain.on('hermes:feature-flags', (event: IpcMainEvent): void => {
     }),
     // Dev-only: `--fresh-install` makes onboarding treat this launch as a fresh
     // install. Packaged builds never honour it.
-    assumeFreshInstall: !app.isPackaged && process.argv.includes('--fresh-install')
+    assumeFreshInstall: !app.isPackaged && process.argv.includes('--fresh-install'),
+    // The fork's guided first run stays behind its launch flag (argv or env),
+    // exactly as before it moved under fork.onboarding.*.
+    guestOnboarding: guestOnboardingEnabled(process.argv, process.env)
   }
 })
 

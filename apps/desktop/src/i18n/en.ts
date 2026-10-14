@@ -897,6 +897,9 @@ export const en: Translations = {
         advanced: 'Advanced',
         versionLabel: 'Version',
         reviewedPin: sha => (sha ? `Reviewed pin ${sha}` : 'Reviewed pin'),
+        reviewedHeading: 'Reviewed catalog entry',
+        reviewedIntro: 'This entry was human-reviewed at the pinned commit. You can still inspect the exact code below.',
+        catalogPinned: (name, sha) => `Hermes catalog entry "${name}" — installs the reviewed agent component at ${sha ? sha : 'the pinned commit'}, not the branch head.`,
         latestCommit: 'Latest commit',
         nothingToInstall: 'This package has nothing to install here.',
         includesHeading: 'This package includes',
@@ -917,6 +920,7 @@ export const en: Translations = {
         insecureWarning: 'This URL uses an insecure or local scheme. Prefer https:// or git@ for production installs.',
         securityIntro:
           'Install only from sources you trust — review the repository below if you want to see what will be added.',
+        securityHeading: 'Security review',
         sourceHeading: 'Source code',
         viewRepository: 'View repository',
         viewPluginFiles: 'View plugin files',
@@ -927,6 +931,7 @@ export const en: Translations = {
         pinToCommitHint:
           'Everyone installing this SHA gets the same code; the plugin then refuses updates until re-pinned. Leave empty for the latest commit.',
         pinToCommitInvalid: 'Must be a full 40-character commit SHA (branches and tags are not accepted).',
+        gitCloneLabel: 'Git clone URL',
         install: 'Install',
         installing: 'Installing…',
         probing: 'Inspecting repository…',
@@ -1401,7 +1406,12 @@ export const en: Translations = {
       voiceShortcutHintTitle: 'Voice recording shortcut',
       voiceShortcutHintDesc:
         'Set the voice recording shortcut in Settings → Keyboard Shortcuts ("Start / stop voice conversation"). The voice.record_key config value only applies to the CLI and TUI.',
-      showOptions: 'Show options'
+      showOptions: 'Show options',
+      developerTitle: 'Developer',
+      resetOnboardingTitle: 'Reset onboarding',
+      resetOnboardingDesc: 'Clear onboarding state and re-run the first-run setup.',
+      resetOnboardingAction: 'Reset',
+      resetOnboardingFailed: 'Failed to reset onboarding'
     },
     hudModifier: {
       title: 'Tap to summon HUD',
@@ -5482,6 +5492,31 @@ export const en: Translations = {
       alwaysDescription: pattern =>
         `This adds the “${pattern}” pattern to your permanent allowlist (~/.hermes/config.yaml). Hermes won’t ask again for commands like this — in this session or any future one.`,
       alwaysAllow: 'Always allow'
+    },
+    setupChoose: {
+      kinds: {
+        accent: 'Accent color',
+        connectors: 'Apps',
+        layout: 'Layout',
+        plugins: 'Plugins',
+        theme: 'Appearance'
+      },
+      loading: 'Loading options…',
+      unavailable: "This list isn't available right now. Reply in chat instead.",
+      findApp: 'Find an app',
+      customColor: 'Custom color',
+      plugin: 'Plugin',
+      startsLater: "We'll set these up when you start."
+    },
+    startChat: {
+      starting: title => `Starting “${title}”…`,
+      startingUntitled: 'Starting a chat…',
+      untitled: 'New chat',
+      notStarted: "Couldn't start that chat.",
+      retry: 'Retry',
+      inProfile: profile => `In ${profile}`,
+      open: 'Open',
+      openFailed: "Couldn't open the chat"
     },
     clarify: enClarify,
     themePicker: enThemePicker,

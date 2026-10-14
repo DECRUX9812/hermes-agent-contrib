@@ -17,10 +17,10 @@ import {
   undismissTreePanes
 } from '@/components/pane-shell/tree/store'
 import { registry } from '@/contrib/registry'
+import { $chatOnboardingSolo, $introView } from '@/fork/store/onboarding-intro'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { $interfaceMode, type InterfaceMode, modeLayout, setInterfaceMode } from '@/store/interface-mode'
 import { setSidebarOpen } from '@/store/layout'
-import { $chatOnboardingSolo, $introView } from '@/store/onboarding-intro'
 import { $paneStates, type PaneStateSnapshot } from '@/store/panes'
 import { $activeSessionId, $selectedStoredSessionId } from '@/store/session'
 

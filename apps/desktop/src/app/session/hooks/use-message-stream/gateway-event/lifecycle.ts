@@ -68,7 +68,7 @@ export function handleLifecycleEvent(ctx: GatewayEventContext): boolean {
     // One process may serve several profiles and broadcasts to every socket,
     // so the socket's stamp alone can't tell whose config moved; the backend
     // tags it. An untagged event (older backend) keeps the source check alone.
-    const owner = (event as GatewayEvent<'skin.changed'>).payload?.profile
+    const owner = (event as GatewayEvent<'skin.changed'>).payload?.profile as string | undefined
 
     if (
       fromActiveSource() &&

@@ -7,8 +7,8 @@ import { $introCopy, skipIntro } from '@/components/onboarding/first-run/intro'
 import { group } from '@/components/pane-shell/tree/model'
 import { applyLayoutPreset } from '@/components/pane-shell/tree/presets'
 import { $activePresetId, $layoutTree } from '@/components/pane-shell/tree/store'
+import { $chatOnboardingSolo, $introView } from '@/fork/store/onboarding-intro'
 import { setPrimaryGateway } from '@/store/gateway'
-import { $chatOnboardingSolo, $introView } from '@/store/onboarding-intro'
 import { $onboardingPhase } from '@/store/onboarding-phase'
 import {
   $onboardingChatOpener,

@@ -1,7 +1,6 @@
 import { useStore } from '@nanostores/react'
 import { useEffect, useId, useMemo, useState } from 'react'
 
-import { DocsLink } from '@/components/onboarding/flow'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,13 +10,14 @@ import {
   DialogTitle,
   preventCloseButtonAutoFocus
 } from '@/components/ui/dialog'
+import { DocsLink } from '@/fork/components/onboarding-flow'
+import { $desktopOnboarding } from '@/fork/store/onboarding'
+import { $onboardingSurfaceClear } from '@/fork/store/onboarding-presence'
 import { useI18n } from '@/i18n'
 import { ChevronDown } from '@/lib/icons'
 import { $tourActive } from '@/lib/tour/tour-active'
 import { cn } from '@/lib/utils'
 import { notifyError } from '@/store/notifications'
-import { $desktopOnboarding } from '@/store/onboarding'
-import { $onboardingSurfaceClear } from '@/store/onboarding-presence'
 import {
   $sharedMetricsConsent,
   $sharedMetricsDetailsOpen,

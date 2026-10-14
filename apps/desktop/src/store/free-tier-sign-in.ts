@@ -1,13 +1,13 @@
 import type { FreeTierClaimNudgeResult } from '@hermes/shared'
 import { atom } from 'nanostores'
 
+import { onboardingSurfaceActive } from '@/fork/store/onboarding-presence'
 import { cancelOAuthSession, listOAuthProviders, pollOAuthSession, startOAuthLogin } from '@/hermes'
 import { gatewayActivationEpoch } from '@/store/gateway'
 import type { FreeTierStatus } from '@/types/hermes'
 
 import { $freeTierStatus, type FreeTierRequester, NOUS_PROVIDER_ID, refreshFreeTierStatus } from './free-tier'
 import { $localModelOfferPending } from './local-model-offer'
-import { onboardingSurfaceActive } from './onboarding-presence'
 
 const POLL_MS = 2000
 const COPY_FLASH_MS = 1500

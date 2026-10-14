@@ -1,5 +1,6 @@
-import type { SetupChooseKind, SetupChooseOption } from '@hermes/shared'
 import { atom, computed } from 'nanostores'
+
+import type { SetupChooseKind, SetupChooseOption } from '@/fork/gateway-types'
 
 import { hasOpenServerRequest, respondToServerRequest } from './server-requests'
 import { $activeSessionId } from './session'

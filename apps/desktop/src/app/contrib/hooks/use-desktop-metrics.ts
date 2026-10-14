@@ -10,6 +10,7 @@ import { useEffect, useMemo } from 'react'
 
 import { contributedRoutes } from '@/app/routes'
 import { $workspaceMode } from '@/components/pane-shell/workspace-scope'
+import { observeOnboardingMetrics } from '@/fork/hooks/desktop-onboarding-metrics'
 import { $commandPaletteOpen } from '@/store/command-palette'
 import { $activeConnectionId } from '@/store/connections'
 import {
@@ -39,8 +40,6 @@ import {
   type SharedMetricsConsent,
   sharedMetricsProfileRequester
 } from '@/store/shared-metrics'
-
-import { observeOnboardingMetrics } from './desktop-onboarding-metrics'
 
 const DAY_TICK_MS = 10 * 60_000
 const INTERACTION_THROTTLE_MS = 1000

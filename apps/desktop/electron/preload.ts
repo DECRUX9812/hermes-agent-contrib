@@ -17,8 +17,9 @@ const translucencySupport = ipcRenderer.sendSync('hermes:translucency:support')
 const hudWindowing = ipcRenderer.sendSync('hermes:hud:windowing')
 const hudNativeDrag = hudWindowing?.nativeDrag === true
 
-const launchFlags: { localModels?: boolean; assumeFreshInstall?: boolean } | undefined =
-  ipcRenderer.sendSync('hermes:feature-flags')
+const launchFlags:
+  | { guestOnboarding?: boolean; localModels?: boolean; assumeFreshInstall?: boolean }
+  | undefined = ipcRenderer.sendSync('hermes:feature-flags')
 
 // Local, sanitized skin payload for the first renderer theme paint. This does
 // not wait on `gateway.ready`, so an unreachable remote primary cannot force
@@ -36,6 +37,10 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   // Dev-only launch fact: an unpackaged app started with --fresh-install, so
   // onboarding treats this launch as a fresh install. Always false when packaged.
   assumeFreshInstall: launchFlags?.assumeFreshInstall === true,
+  // Launch-flag fact: the guided first run (`HERMES_GUEST_ONBOARDING=1` /
+  // `--guest-onboarding`) is on, so the renderer may run the fork's setup
+  // surfaces. Static for the window's lifetime.
+  guestOnboardingEnabled: launchFlags?.guestOnboarding === true,
   localSkin: localSkin && typeof localSkin === 'object' ? localSkin : null,
   getConnection: (profile, opts) => ipcRenderer.invoke('hermes:connection', profile, opts),
   // Loopback origin that hosts YouTube's player for the file:// renderer.

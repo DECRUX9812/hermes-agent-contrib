@@ -823,18 +823,34 @@ export function toolPartFromStoredCall(
   }
 }
 
+/** A card Retry stamped on the saved row (`hermes_state_tool_retries.py` writes
+ *  `display_metadata.retried = {result, announced}`). Only the outcome rides
+ *  into the metadata; the card reads it to survive a reload. */
+function storedRetry(display: Record<string, unknown>): Record<string, unknown> | undefined {
+  const retried = display.retried
+
+  if (!retried || typeof retried !== 'object' || Array.isArray(retried)) {
+    return undefined
+  }
+
+  const { result } = retried as Record<string, unknown>
+
+  return result && typeof result === 'object' && !Array.isArray(result) ? (result as Record<string, unknown>) : undefined
+}
+
 function storedToolResultMetadata(toolMessage: SessionMessage): ToolResultMetadata | undefined {
   const display = parseMaybeJsonObject(toolMessage.display_metadata)
   const metadata = parseMaybeJsonObject(display.tool_result_metadata)
+  const retried = storedRetry(display)
 
-  if (typeof metadata.inline_diff !== 'string' && retried === undefined && !mcpAppRef(metadata.mcp_app)) {
+  if (typeof metadata.inline_diff !== 'string' && !mcpAppRef(metadata.mcp_app) && !retried) {
     return undefined
   }
 
   return {
     ...(typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : {}),
     ...(mcpAppRef(metadata.mcp_app) ? { mcp_app: mcpAppRef(metadata.mcp_app) } : {}),
-    ...(retried === undefined ? {} : { retried })
+    ...(retried ? { retried } : {})
   }
 }
 

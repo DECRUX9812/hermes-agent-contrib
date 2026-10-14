@@ -8,5 +8,15 @@ export const enAppTour: Translations['appTour'] = {
   modelLocal: 'This computer can run one locally: Settings > Providers > Local Models.',
   capabilities: { title: 'Capabilities', text: 'Skills, tools and plugins Hermes can use. Add more here.' },
   messaging: { title: 'Messaging', text: 'Reach Hermes from Telegram, Slack, Discord and more.' },
-  rightPane: { title: 'The working pane', text: 'Opens files, terminal, review and the in-app browser on the right.' }
+  rightPane: { title: 'The working pane', text: 'Opens files, terminal, review and the in-app browser on the right.' },
+  handoffTour: {
+    profileTitle: 'Your profile',
+    profileText: 'This is your agent profile. Switch profiles from the rail.',
+    sessionsTitle: 'Your sessions',
+    sessionsText: 'All your chats live here. Click one to continue.',
+    stayTitle: 'Stay awhile',
+    stayText: 'Hermes keeps running even when you close the window.',
+    localTitle: 'Local models',
+    localText: 'Run models on this computer. No API keys needed.'
+  }
 }

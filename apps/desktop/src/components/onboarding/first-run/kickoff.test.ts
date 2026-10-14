@@ -1,8 +1,8 @@
 import type { OnboardingStartResult } from '@hermes/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { $chatOnboardingSolo, $introStartExit, $introView } from '@/fork/store/onboarding-intro'
 import { BACKEND_BOOT_WAIT_TIMEOUT_MS } from '@/lib/with-timeout'
-import { $chatOnboardingSolo, $introStartExit, $introView } from '@/store/onboarding-intro'
 import { $onboardingPhase } from '@/store/onboarding-phase'
 import { type OnboardingRequest, startOnboarding } from '@/store/onboarding-run'
 import { $activeSessionId, $connection, $selectedStoredSessionId } from '@/store/session'

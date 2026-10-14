@@ -3,9 +3,9 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import type { WritableAtom } from 'nanostores'
 import { afterEach, expect, it, vi } from 'vitest'
 
+import { startManualOnboarding } from '@/fork/store/onboarding'
 import { I18nProvider } from '@/i18n'
 import { requestModelOptions } from '@/lib/model-options'
-import { startManualOnboarding } from '@/store/onboarding'
 import { $gatewayState, $modelPickerOpen, $selectedStoredSessionId } from '@/store/session'
 import { $focusedTreePaneId as $focusedTreePaneIdMock } from '@/store/session-focus'
 import { $sessionTiles } from '@/store/session-states'

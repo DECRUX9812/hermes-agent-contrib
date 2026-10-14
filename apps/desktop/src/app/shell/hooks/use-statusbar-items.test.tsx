@@ -6,12 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { group } from '@/components/pane-shell/tree/model'
 import { $layoutTree, noteActiveTreeGroup } from '@/components/pane-shell/tree/store'
+import { markOnboardingDecided, setOnboardingSurfaceActive } from '@/fork/store/onboarding-presence'
 import { en } from '@/i18n/en'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import type * as DesktopFs from '@/lib/desktop-fs'
 import { $freeTierStatus } from '@/store/free-tier'
 import { INTERFACE_MODES, setInterfaceMode } from '@/store/interface-mode'
-import { markOnboardingDecided, setOnboardingSurfaceActive } from '@/store/onboarding-presence'
 import {
   $connection,
   $currentCwd,

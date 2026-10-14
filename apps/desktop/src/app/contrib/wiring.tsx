@@ -22,9 +22,7 @@ import { FindBar } from '@/components/find-bar'
 import { FreeTierSignInDialog } from '@/components/free-tier/sign-in-dialog'
 import { GatewayConnectingOverlay } from '@/components/gateway-connecting-overlay'
 import { NotificationStack } from '@/components/notifications'
-import { DesktopOnboardingOverlay } from '@/components/onboarding'
 import { firstRunIntro } from '@/components/onboarding/first-run/kickoff'
-import { OnboardingEnd } from '@/components/onboarding/onboarding-end'
 import { PageLoader } from '@/components/page-loader'
 import { $newSessionTabAction, type NewSessionTabOptions, registerPaneCloser } from '@/components/pane-shell/tree/store'
 import {
@@ -40,6 +38,9 @@ import { SharedMetricsConsentDialog } from '@/components/shared-metrics/consent-
 import { TipHost } from '@/components/tips'
 import { UpdateHoldOverlay } from '@/components/update-hold-overlay'
 import { emitGatewayEvent } from '@/contrib/events'
+import { OnboardingEnd } from '@/fork/components/onboarding-end'
+import { DesktopOnboardingOverlay } from '@/fork/components/onboarding-index'
+import { markOnboardingDecided } from '@/fork/store/onboarding-presence'
 import { translateNow } from '@/i18n'
 import { type ChatMessage, chatMessageText } from '@/lib/chat-messages'
 import { isMessagingSource } from '@/lib/session-source'
@@ -54,7 +55,6 @@ import { reconnectGateway } from '@/store/gateway-reconnect'
 import { $interfaceMode, shownInMode } from '@/store/interface-mode'
 import { $pinnedSessionIds, pinSession, restoreWorktree, unpinSession } from '@/store/layout'
 import { notifyError } from '@/store/notifications'
-import { markOnboardingDecided } from '@/store/onboarding-presence'
 import {
   $onboardingChatOpener,
   decideOnboarding,

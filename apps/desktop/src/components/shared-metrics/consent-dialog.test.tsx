@@ -1,9 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import { $desktopOnboarding } from '@/fork/store/onboarding'
+import { markOnboardingDecided } from '@/fork/store/onboarding-presence'
 import { en } from '@/i18n/en'
-import { $desktopOnboarding } from '@/store/onboarding'
-import { markOnboardingDecided } from '@/store/onboarding-presence'
 import {
   $sharedMetricsConsent,
   $sharedMetricsDetailsOpen,

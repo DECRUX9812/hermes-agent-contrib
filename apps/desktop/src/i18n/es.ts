@@ -827,6 +827,7 @@ export const esOverrides = {
           'Esta URL usa un esquema inseguro o local. Para instalaciones de producción, usa https:// o git@.',
         securityIntro:
           'Instala solo desde fuentes de confianza; revisa el repositorio de abajo si quieres ver qué se añadirá.',
+        securityHeading: 'Revisión de seguridad',
         sourceHeading: 'Código fuente',
         viewRepository: 'Ver repositorio',
         viewPluginFiles: 'Ver archivos del plugin',
@@ -859,6 +860,9 @@ export const esOverrides = {
         advanced: 'Avanzado',
         versionLabel: 'Versión',
         reviewedPin: sha => (sha ? `Pin revisado ${sha}` : 'Pin revisado'),
+        reviewedHeading: 'Entrada de catálogo revisada',
+        reviewedIntro: 'Esta entrada fue revisada por un humano en el commit fijado. Aún puedes inspeccionar el código exacto abajo.',
+        catalogPinned: (name, sha) => `Entrada del catálogo de Hermes "${name}" — instala el componente de agente revisado en ${sha ? sha : 'el commit fijado'}, no la cabeza de la rama.`,
         latestCommit: 'Último commit',
         nothingToInstall: 'Este paquete no tiene nada que instalar aquí.'
       }
@@ -1655,7 +1659,12 @@ export const esOverrides = {
         'Tamaño máximo de archivo local que el escritorio cargará para vistas previas y adjuntos de imagen, en MB. El valor por defecto es 16. Los adjuntos remotos no-imagen usan un límite separado de 256 MB. Un valor muy alto carga el archivo completo en memoria y puede congelar o bloquear la app.',
       attachmentSizeUnit: 'MB',
       attachmentSizeLabel: 'Tamaño máximo de vista previa / carga de imagen en megabytes',
-      showOptions: 'Mostrar opciones'
+      showOptions: 'Mostrar opciones',
+      developerTitle: 'Desarrollador',
+      resetOnboardingTitle: 'Restablecer configuración inicial',
+      resetOnboardingDesc: 'Borrar el estado de la configuración inicial y volver a ejecutar la configuración del primer inicio.',
+      resetOnboardingAction: 'Restablecer',
+      resetOnboardingFailed: 'Error al restablecer la configuración inicial'
     },
     hudModifier: {
       title: 'Pulsar para mostrar el HUD',

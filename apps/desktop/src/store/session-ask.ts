@@ -1,3 +1,5 @@
+import { atom } from 'nanostores'
+
 /**
  * COMPANION THREAD — the "Ask about this session" side channel (roadmap #44).
  * The backend `session.ask` RPC answers a question from the session's STORED
@@ -17,9 +19,7 @@
  * hung off `migrateTilesForProfile` / `dropTilesForProfile` like every other
  * profile-keyed localStorage family.
  */
-import type { SessionAskResult } from '@hermes/shared'
-import { atom } from 'nanostores'
-
+import type { SessionAskResult } from '@/fork/gateway-types'
 import { connectionScopedAtom } from '@/lib/connection-scoped'
 import { Codecs } from '@/lib/persisted'
 import { normalizeProfileKey } from '@/store/profile'
