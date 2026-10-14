@@ -4882,7 +4882,9 @@ export const jaOverrides = {
   keybinds: {
     actions: {
       'nav.starmap': 'メモリグラフを開く',
-      'nav.webhooks': 'Webhook を開く'
+      'nav.webhooks': 'Webhook を開く',
+      'view.splitSession': '新しいセッションに分割',
+      'view.sessionOverview': 'セッションの概要'
     }
   },
 

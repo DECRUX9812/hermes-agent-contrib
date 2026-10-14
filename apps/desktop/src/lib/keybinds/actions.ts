@@ -203,8 +203,14 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   { id: 'view.nextTerminal', category: 'view', defaults: ['ctrl+shift+down'] },
   { id: 'view.prevTerminal', category: 'view', defaults: ['ctrl+shift+up'] },
   { id: 'view.closeTerminal', category: 'view', defaults: ['ctrl+shift+w'] },
-  // ⌘\ — the backslash reads like a mirror line flipping the layout.
-  { id: 'view.flipPanes', category: 'view', defaults: ['mod+\\'] },
+  // ⌘\ — the editor-standard split chord (VS Code, Zed, Claude Code). Splits
+  // the focused chat into a new side-by-side session, up to a 2x2 grid.
+  { id: 'view.splitSession', category: 'view', defaults: ['mod+\\'] },
+  // ⌥⌘\ — flipping the sides gave ⌘\ to split; the backslash still reads as
+  // the mirror line.
+  { id: 'view.flipPanes', category: 'view', defaults: ['mod+alt+\\'] },
+  // ⌘⇧O — "o" for overview: every live session as a card.
+  { id: 'view.sessionOverview', category: 'view', defaults: ['mod+shift+o'] },
   // ⌘W closes the focused zone's active tab — its own tab strip (preview) or
   // the tree tab (session tiles, files, terminal). The uncloseable workspace
   // is a no-op. ⌘⇧T reopens the last closed tab where it was.

@@ -201,7 +201,9 @@ export const zhHantOverrides = {
   keybinds: {
     actions: {
       'nav.starmap': '開啟記憶圖譜',
-      'nav.webhooks': '開啟 Webhook'
+      'nav.webhooks': '開啟 Webhook',
+      'view.splitSession': '分割為新工作階段',
+      'view.sessionOverview': '工作階段總覽'
     }
   },
 
