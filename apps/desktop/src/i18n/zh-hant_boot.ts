@@ -269,6 +269,7 @@ export const zhHantBoot = {
     headerDesc: '連線模型提供方即可開始聊天。大多數選項只需一次點擊。',
     preparingInstall: 'Hermes 正在完成安裝。首次執行通常不到一分鐘。',
     starting: '正在啟動 Hermes…',
+    checkingSetup: '正在檢查你的設定…',
     lookingUpProviders: '正在查詢提供方...',
     collapse: '收合',
     otherProviders: '其他提供方',

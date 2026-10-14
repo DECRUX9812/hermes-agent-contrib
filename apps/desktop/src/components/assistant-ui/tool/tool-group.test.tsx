@@ -532,7 +532,7 @@ describe('flat tool list approval surfacing', () => {
       <GroupHarness message={{ ...message, content: [{ type: 'text', text: 'Waiting for approval.' }] }} />
     )
 
-    const run = await screen.findByRole('button', { name: /Run/ })
+    const run = await screen.findByRole('button', { name: /Allow once/ })
     const host = run.closest('[data-approval-stack]')
     expect(host).not.toBeNull()
     expect(host?.parentElement?.getAttribute('data-slot')).toBe('aui_thread-content')
@@ -542,9 +542,9 @@ describe('flat tool list approval surfacing', () => {
 
     await waitFor(() => {
       expect(container.querySelector('[data-approval-stack]')).toBe(host)
-      expect(screen.getByRole('button', { name: /Run/ })).toBe(run)
+      expect(screen.getByRole('button', { name: /Allow once/ })).toBe(run)
       expect(run.closest('[hidden], [inert]')).toBeNull()
-      expect(screen.getByRole('button', { name: /Reject/ })).toBeTruthy()
+      expect(screen.getByRole('button', { name: /Deny/ })).toBeTruthy()
     })
   })
 

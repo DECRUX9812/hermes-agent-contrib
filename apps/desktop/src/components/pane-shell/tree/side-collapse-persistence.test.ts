@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LAYOUT_KEYS } from '@/lib/layout-persistence'
+import { seedExistingInstall } from '@/test/jsdom'
 
 /** Re-import real stores over the same storage, as a page refresh does. The
  * workspace is available; Files keeps its own toggle, independent of its side. */
@@ -45,6 +46,8 @@ async function boot() {
 describe('side visibility survives a page refresh independently of Files', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    // These are refreshes of an existing install, not a first run that opens in Simple.
+    seedExistingInstall()
     window.history.replaceState(null, '', '/')
     vi.resetModules()
   })
