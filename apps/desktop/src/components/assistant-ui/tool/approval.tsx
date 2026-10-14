@@ -9,7 +9,6 @@ import { useSessionView } from '@/app/chat/session-view'
 import { SCAFFOLD_LABEL_CLASS, ScaffoldRow } from '@/components/chat/scaffold-row'
 import { Button } from '@/components/ui/button'
 import { CardStack, type CardStackAction } from '@/components/ui/card-stack'
-import { Codicon } from '@/components/ui/codicon'
 import {
   Dialog,
   DialogContent,
@@ -18,10 +17,10 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { LogView } from '@/components/ui/log-view'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
-import { ChevronDown, Loader2 } from '@/lib/icons'
+import { Loader2 } from '@/lib/icons'
 import { releaseApprovalKey } from '@/lib/keybinds/approval-keys'
 import { cn } from '@/lib/utils'
 import { $gateway } from '@/store/gateway'
@@ -211,8 +210,8 @@ export function ApprovalQueue({
           })
       }}
       surfaceClassName={cn(
-        'rounded-xl border bg-(--ui-chat-surface-background)',
-        floating ? 'border-(--stroke-nous) shadow-nous' : 'border-(--ui-stroke-secondary)'
+        'rounded-card border border-line bg-surface-raised p-4',
+        floating && 'shadow-e2'
       )}
       swipeDirections={['left']}
     >
@@ -276,12 +275,10 @@ const ApprovalCard: FC<ApprovalCardProps> = ({ request, total, position, stack }
     }
   }, [])
 
-  // false when the backend won't honor a permanent allow → hide "Always allow".
+  // false when the backend won't honor a permanent allow → hide "Always allow here".
   const allowPermanent = request.allowPermanent !== false
   const choices = request.choices ?? (request.smartDenied ? ['once', 'deny'] : undefined)
-  const allowSession = choices ? choices.includes('session') : true
   const allowAlways = choices ? choices.includes('always') : allowPermanent
-  const hasMoreOptions = allowSession || allowAlways
   const hasCommand = request.command.trim().length > 0
   // A plugin `approve` rule escalates through the same gate with a synthetic
   // display target (`<tool> (plugin approval rule)`) while the real command /
@@ -331,60 +328,58 @@ const ApprovalCard: FC<ApprovalCardProps> = ({ request, total, position, stack }
       data-request-id={request.requestId}
       data-slot="tool-approval-card"
       inert={!present}
+      onKeyDown={event => {
+        // Enter = allow once, Esc = deny — only while focus sits inside this
+        // card. Native controls keep their own keys: a focused button still
+        // activates itself instead of answering the card.
+        if (
+          event.target instanceof HTMLElement &&
+          event.target.closest('button, a, input, textarea, select, [role="menuitem"], [role="option"]')
+        ) {
+          return
+        }
+
+        if (event.key === 'Enter') {
+          event.preventDefault()
+          void respond('once')
+        } else if (event.key === 'Escape') {
+          event.preventDefault()
+          void respond('deny')
+        }
+      }}
       onPointerDownCapture={rememberFocusOrigin}
       ref={cardRef}
     >
-      <div className="flex items-center gap-2 px-2.5 pt-2 text-xs text-(--ui-text-secondary)">
-        <Codicon name="terminal" size="0.875rem" />
-        <span>{showsDescription ? copy.commandDetails : copy.command}</span>
+      <p className="text-ui-sm font-medium text-fg">
+        {showsDescription ? copy.cardDetailsTitle : copy.cardTitle}
         {total > 1 && (
-          <span className="ml-auto text-[0.6875rem] tabular-nums text-(--ui-text-tertiary)">
+          <span className="ml-2 text-ui-2xs tabular-nums text-fg-muted">
             {position} / {total}
           </span>
         )}
-      </div>
-      {details.length > 0 && (
-        <pre className="m-0 max-h-40 overflow-auto whitespace-pre-wrap break-words px-2.5 py-2 font-mono text-xs leading-relaxed text-(--ui-text-primary)">
-          {details}
-        </pre>
-      )}
-      <div className="flex items-center justify-end gap-1.5 px-2 pb-2 pt-1" data-slot="tool-approval-actions">
-        <Button data-approval-deny="" disabled={busy} onClick={() => void respond('deny')} size="sm" variant="text">
-          {submitting === 'deny' ? <Loader2 className="size-3 animate-spin" /> : copy.reject}
+      </p>
+      {details.length > 0 && <LogView className="mt-2 max-h-28">{details}</LogView>}
+      <div className="mt-3 flex items-center justify-end gap-2" data-slot="tool-approval-actions">
+        <Button data-approval-deny="" disabled={busy} onClick={() => void respond('deny')} size="sm" variant="ghost">
+          {submitting === 'deny' ? <Loader2 className="size-3 animate-spin" /> : copy.deny}
         </Button>
-        {hasMoreOptions && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button aria-label={copy.moreOptions} disabled={busy} size="sm" variant="secondary">
-                {copy.alwaysAllowMenu}
-                <ChevronDown className="size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-44">
-              {allowSession && (
-                <DropdownMenuItem onSelect={() => void respond('session')}>{copy.allowSession}</DropdownMenuItem>
-              )}
-              {allowAlways && (
-                <DropdownMenuItem
-                  onSelect={() => {
-                    // Defer one tick so the menu fully unmounts before the dialog
-                    // mounts — otherwise Radix's focus-return races the dialog and
-                    // dismisses it via onInteractOutside.
-                    setTimeout(() => setConfirmAlways(true), 0)
-                  }}
-                >
-                  {copy.alwaysAllowMenu}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onSelect={() => void respond('deny')} variant="destructive">
-                {copy.reject}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {allowAlways && (
+          <Button
+            disabled={busy}
+            onClick={() => {
+              // Defer one tick so focus settles before the dialog mounts —
+              // otherwise Radix's focus-return races the dialog and dismisses
+              // it via onInteractOutside.
+              setTimeout(() => setConfirmAlways(true), 0)
+            }}
+            size="sm"
+            variant="secondary"
+          >
+            {copy.alwaysAllowHere}
+          </Button>
         )}
         <Button data-approval-run="" disabled={busy} onClick={() => void respond('once')} size="sm">
-          {submitting === 'once' ? <Loader2 className="size-3 animate-spin" /> : copy.run}
-          <span className="opacity-60">↵</span>
+          {submitting === 'once' ? <Loader2 className="size-3 animate-spin" /> : copy.allowOnce}
         </Button>
       </div>
 
@@ -395,11 +390,7 @@ const ApprovalCard: FC<ApprovalCardProps> = ({ request, total, position, stack }
             <DialogDescription>{copy.alwaysDescription(request.description)}</DialogDescription>
           </DialogHeader>
 
-          {request.command.trim() && (
-            <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-chat-surface-background) px-2.5 py-1.5 font-mono text-xs leading-snug text-foreground">
-              {request.command.trim()}
-            </pre>
-          )}
+          {request.command.trim() && <LogView className="max-h-32">{request.command.trim()}</LogView>}
 
           <DialogFooter>
             <Button onClick={() => setConfirmAlways(false)} size="sm" variant="ghost">

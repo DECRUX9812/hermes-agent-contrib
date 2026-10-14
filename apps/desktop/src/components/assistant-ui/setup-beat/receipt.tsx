@@ -4,19 +4,17 @@ import type { SetupBeat } from '@hermes/shared'
 
 import { FIRST_RUN_LAYOUTS } from '@/components/assistant-ui/theme-picker/layout-picker-card'
 import { TypedAnswer } from '@/components/assistant-ui/typed-answer'
-import { WIDGET_SHELL_CLASS } from '@/components/chat/widget-shell'
 import { LAYOUTS_AREA } from '@/components/pane-shell/tree/presets'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
 import { connectorTitle } from '@/lib/connector-tools'
+import { Check } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import type { SetupBeatAnswerFields, SetupBeatToolResult } from '@/store/setup-beat'
 import { accentName } from '@/themes/accents'
 
-export const SETUP_BEAT_SHELL_CLASS = cn(
-  WIDGET_SHELL_CLASS,
-  'my-1.5 text-[length:var(--conversation-text-font-size)] text-(--ui-text-primary)'
-)
+export const SETUP_BEAT_SHELL_CLASS =
+  'my-1.5 rounded-card border border-line bg-surface-raised p-4 text-ui-sm text-fg'
 
 /** What a settled card shows: the beat's pick, or how the card closed without one. */
 export type SetupBeatOutcome =
@@ -129,11 +127,13 @@ function ReceiptLine({ outcome }: { outcome: Exclude<SetupBeatOutcome, { kind: '
       : closed[outcome.kind]
 
   return (
-    <div className={cn(SETUP_BEAT_SHELL_CLASS, 'flex flex-wrap items-center gap-x-2')} data-setup-beat-settled="">
-      {outcome.beat && outcome.kind !== 'skipped_all' && (
-        <span className="text-(--ui-text-tertiary)">{copy.beats[outcome.beat]}</span>
-      )}
-      <span className={cn(outcome.kind !== 'answer' && 'italic text-(--ui-text-tertiary)')}>{text}</span>
+    <div
+      className="flex flex-wrap items-center gap-x-2 text-ui-xs text-fg-muted"
+      data-setup-beat-settled=""
+    >
+      <Check aria-hidden className="size-3.5 shrink-0 text-success" />
+      {outcome.beat && outcome.kind !== 'skipped_all' && <span>{copy.beats[outcome.beat]}</span>}
+      <span className={cn(outcome.kind !== 'answer' && 'italic')}>{text}</span>
     </div>
   )
 }
