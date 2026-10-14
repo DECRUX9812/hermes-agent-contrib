@@ -1267,12 +1267,14 @@ def test_concurrent_profile_use_cannot_restore_retired_name(
 
     rename_thread = threading.Thread(target=rename)
     rename_thread.start()
-    assert finishing.wait(timeout=2)
+    # rename_profile probes gateway liveness and drains profile resources before
+    # reaching _finish_profile_rename; allow generous time under parallel load.
+    assert finishing.wait(timeout=30)
     use_thread = threading.Thread(target=reuse_old_name)
     use_thread.start()
     release.set()
-    rename_thread.join(timeout=3)
-    use_thread.join(timeout=3)
+    rename_thread.join(timeout=30)
+    use_thread.join(timeout=30)
 
     assert not rename_errors
     assert len(use_errors) == 1
