@@ -1,4 +1,4 @@
-import { memo, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { memo, type ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react'
 
 import { ChatEmptySlot } from '@/components/assistant-ui/chat-empty-slot'
 import { AssistantMessage } from '@/components/assistant-ui/thread/assistant-message'
@@ -23,6 +23,7 @@ import { notifyError } from '@/store/notifications'
 type ThreadLoadingState = 'response' | 'session'
 
 interface ThreadProps {
+  blankQuickStarts?: ReactNode
   clampToComposer?: boolean
   cwd?: string | null
   gateway?: HermesGateway | null
@@ -45,6 +46,7 @@ interface ThreadProps {
 // and loadingIndicator memos below), so the only thing that gets through is a
 // genuine change.
 export const Thread = memo(function Thread({
+  blankQuickStarts,
   clampToComposer = false,
   cwd = null,
   gateway = null,
@@ -181,7 +183,14 @@ export const Thread = memo(function Thread({
   // nothing in it yet gets whichever plugin owns it. The slot often renders
   // nothing, which costs an empty container — harmless, since there is no
   // content to lay out until the first message swaps this branch out.
-  const emptyBody = intro ? <Intro {...intro} /> : sessionId ? <ChatEmptySlot sessionId={sessionId} /> : null
+  const emptyBody = intro ? (
+    <Intro {...intro} />
+  ) : sessionId ? (
+    <>
+      {blankQuickStarts}
+      <ChatEmptySlot sessionId={sessionId} />
+    </>
+  ) : null
 
   const emptyPlaceholder = emptyBody ? (
     <div className="flex min-h-0 w-full flex-col items-center justify-center pt-[var(--composer-measured-height)]">

@@ -17,6 +17,24 @@ export const arChat = {
     steerTurn: 'توجيه الدور',
     stop: 'إيقاف',
     send: 'إرسال',
+    broadcastTip: 'إرسال إلى كل الأجزاء',
+    broadcastNote: 'نص فقط — تبقى المرفقات في هذا الجزء',
+    broadcastOn: 'كل الأجزاء',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`تم تخطي ${skipped}`)
+      }
+
+      if (failed > 0) {
+        extras.push(`فشل ${failed}`)
+      }
+
+      return extras.length > 0
+        ? `تم الإرسال إلى ${sent + queued} أجزاء، ${extras.join('، ')}`
+        : `تم الإرسال إلى ${sent + queued} أجزاء`
+    },
     speaking: 'يتحدث',
     transcribing: 'جار التفريغ',
     thinking: 'يفكر',

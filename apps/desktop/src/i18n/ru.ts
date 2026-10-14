@@ -3151,6 +3151,24 @@ export const ruOverrides = {
     steerTurn: 'Направить ход',
     stop: 'Стоп',
     send: 'Отправить',
+    broadcastTip: 'Отправить во все панели',
+    broadcastNote: 'Только текст — вложения остаются в этой панели',
+    broadcastOn: 'Все панели',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`пропущено: ${skipped}`)
+      }
+
+      if (failed > 0) {
+        extras.push(`не доставлено: ${failed}`)
+      }
+
+      return extras.length > 0
+        ? `Отправлено: ${sent + queued}, ${extras.join(', ')}`
+        : `Отправлено: ${sent + queued}`
+    },
     speaking: 'Говорит',
     transcribing: 'Расшифровка',
     thinking: 'Думает',
@@ -4210,6 +4228,8 @@ export const ruOverrides = {
     closeToRight: 'Закрыть справа',
     closeAll: 'Закрыть все',
     newSessionTab: 'Вкладка нового сеанса',
+    splitSession: 'Разделить сессию',
+    splitSessionCapped: 'До 4 сессий рядом',
     pluginDisabled: pluginId => `Плагин «${pluginId}» отключён`,
     pluginDisabledBody: 'Включите его снова в Возможности → Плагины, чтобы вернуть панель.',
     missingPane: paneId => `нет панели: ${paneId}`,

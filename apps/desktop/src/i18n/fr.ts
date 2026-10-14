@@ -4261,6 +4261,26 @@ export const frOverrides = {
     steerTurn: 'Diriger le tour',
     stop: 'Arrêter',
     send: 'Envoyer',
+    broadcastTip: 'Envoyer à tous les volets',
+    broadcastNote: 'Texte uniquement — les pièces jointes restent dans ce volet',
+    broadcastOn: 'Tous les volets',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const delivered = sent + queued
+      const panes = delivered === 1 ? 'volet' : 'volets'
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} ignorés`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} échoués`)
+      }
+
+      return extras.length > 0
+        ? `Envoyé à ${delivered} ${panes}, ${extras.join(', ')}`
+        : `Envoyé à ${delivered} ${panes}`
+    },
     speaking: 'Parle',
     transcribing: 'Transcription',
     thinking: 'Réfléchit',
@@ -5465,6 +5485,8 @@ export const frOverrides = {
     closeToRight: 'Fermer à droite',
     closeAll: 'Tout fermer',
     newSessionTab: 'Nouvel onglet de session',
+    splitSession: 'Diviser la session',
+    splitSessionCapped: "Jusqu'à 4 sessions côte à côte",
     newTab: 'Nouvel onglet',
     pluginDisabled: pluginId => `Plugin « ${pluginId} » désactivé`,
     pluginDisabledBody: 'Réactivez-le dans Paramètres → Plugins pour faire revenir le panneau.',

@@ -3315,6 +3315,24 @@ export const jaOverrides = {
     steerTurn: 'ターンを操縦',
     stop: '停止',
     send: '送信',
+    broadcastTip: 'すべてのペインに送信',
+    broadcastNote: 'テキストのみ — 添付はこのペインに残ります',
+    broadcastOn: 'すべてのペイン',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} 件スキップ`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} 件失敗`)
+      }
+
+      return extras.length > 0
+        ? `${sent + queued} ペインに送信しました（${extras.join('、')}）`
+        : `${sent + queued} ペインに送信しました`
+    },
     speaking: '話しています',
     transcribing: '文字起こし中',
     thinking: '考え中',
@@ -4243,6 +4261,8 @@ export const jaOverrides = {
     closeToRight: '右側を閉じる',
     closeAll: 'すべて閉じる',
     newSessionTab: '新しいセッションタブ',
+    splitSession: 'セッションを分割',
+    splitSessionCapped: '最大4セッションまで並べて表示',
     newTab: '新しいタブ',
     pluginDisabled: pluginId => `プラグイン「${pluginId}」を無効化しました`,
     pluginDisabledBody: 'スキルとツール → プラグイン で再有効化するとペインが戻ります。',

@@ -3945,6 +3945,24 @@ export const en: Translations = {
     steerTurn: 'Steer turn',
     stop: 'Stop',
     send: 'Send',
+    broadcastTip: 'Send to all panes',
+    broadcastNote: 'Text only — attachments stay in this pane',
+    broadcastOn: 'All panes',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const delivered = sent + queued
+      const panes = delivered === 1 ? 'pane' : 'panes'
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} skipped`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} failed`)
+      }
+
+      return extras.length > 0 ? `Sent to ${delivered} ${panes}, ${extras.join(', ')}` : `Sent to ${delivered} ${panes}`
+    },
     speaking: 'Speaking',
     transcribing: 'Transcribing',
     thinking: 'Thinking',
@@ -5165,6 +5183,8 @@ export const en: Translations = {
     closeToRight: 'Close to the right',
     closeAll: 'Close all',
     newSessionTab: 'New session tab',
+    splitSession: 'Split session',
+    splitSessionCapped: 'Up to 4 sessions side by side',
     newTab: 'New tab',
     pluginDisabled: pluginId => `Plugin "${pluginId}" disabled`,
     pluginDisabledBody: 'Re-enable it in Capabilities → Plugins to bring the pane back.',

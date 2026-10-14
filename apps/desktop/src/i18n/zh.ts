@@ -3769,6 +3769,24 @@ export const zhOverrides = {
     steerTurn: '引导当前回合',
     stop: '停止',
     send: '发送',
+    broadcastTip: '发送到所有窗格',
+    broadcastNote: '仅发送文本——附件保留在此窗格',
+    broadcastOn: '所有窗格',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} 个已跳过`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} 个失败`)
+      }
+
+      return extras.length > 0
+        ? `已发送到 ${sent + queued} 个窗格，${extras.join('，')}`
+        : `已发送到 ${sent + queued} 个窗格`
+    },
     speaking: '讲话中',
     transcribing: '转写中',
     thinking: '思考中',
@@ -4930,6 +4948,8 @@ export const zhOverrides = {
     closeToRight: '关闭右侧',
     closeAll: '全部关闭',
     newSessionTab: '新建会话标签',
+    splitSession: '拆分会话',
+    splitSessionCapped: '最多可并排显示 4 个会话',
     newTab: '新建标签页',
     pluginDisabled: pluginId => `插件“${pluginId}”已禁用`,
     pluginDisabledBody: '在 技能与工具 → 插件 中重新启用即可恢复面板。',

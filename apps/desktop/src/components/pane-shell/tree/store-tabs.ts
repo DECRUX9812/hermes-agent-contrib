@@ -179,6 +179,10 @@ export const $newSessionTabAction = atom<((options?: NewSessionTabOptions) => vo
  *  project); absent, the project scope / configured default decides. */
 export interface NewSessionTabOptions {
   cwd?: string
+  /** Dock the new tab beside `anchor` (a pane id) instead of the default zone. */
+  placement?: { anchor: string; dir: 'bottom' | 'right' }
+  /** Open the new tab in this blank draft's slot, then discard the draft. */
+  replaceStoredSessionId?: string
 }
 
 /**

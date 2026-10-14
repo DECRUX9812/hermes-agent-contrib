@@ -545,6 +545,8 @@ export const zhHantChrome = {
     closeToRight: '關閉右側',
     closeAll: '全部關閉',
     newSessionTab: '新增工作階段分頁',
+    splitSession: '分割工作階段',
+    splitSessionCapped: '最多可並排顯示 4 個工作階段',
     newTab: '新增分頁',
     pluginDisabled: pluginId => `外掛「${pluginId}」已停用`,
     pluginDisabledBody: '在 技能與工具 → 外掛 中重新啟用即可恢復面板。',
