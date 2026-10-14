@@ -8,7 +8,7 @@ import type { ToolCardFamily, ToolCardThumb } from './types'
 const MAX_OUTPUT_CHARS = 600
 const MAX_REASON_CHARS = 120
 const OUTPUT_TEXT_KEYS = ['output', 'stdout', 'content', 'text', 'message', 'summary'] as const
-const IMAGE_PATH = /\.(png|jpe?g|webp|gif)$/i
+const IMAGE_PATH = /\.(png|jpe?g|webp|gif)(\?|#|$)/i
 const HTTP_URL = /^https?:\/\//i
 
 const nonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
@@ -73,7 +73,7 @@ function screenshotSrc(value: unknown): string {
 
   const src = value.trim()
 
-  if (/^data:image\//i.test(src) || HTTP_URL.test(src)) {
+  if (/^data:image\//i.test(src)) {
     return src
   }
 

@@ -9,6 +9,7 @@ import {
 import { translateNow } from '@/i18n'
 import type { ToolCardsCopy } from '@/i18n/types_tool_cards'
 import { capitalize } from '@/lib/text'
+import { isTodoToolName } from '@/lib/todos'
 
 import { toolCardArgs } from './model-args'
 import { toolCardOutput, toolCardPageUrl, toolCardReason, toolCardThumb } from './model-output'
@@ -225,7 +226,7 @@ export function toolCardsFromParts(parts: readonly unknown[], options: { approva
   const cards: ToolCardView[] = []
 
   for (const part of parts) {
-    if (!isToolCallPart(part) || isSilentTool(part.toolName)) {
+    if (!isToolCallPart(part) || isSilentTool(part.toolName) || isTodoToolName(part.toolName)) {
       continue
     }
 

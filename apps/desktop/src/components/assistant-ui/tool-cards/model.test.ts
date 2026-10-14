@@ -229,6 +229,21 @@ describe('grouping', () => {
   })
 })
 
+describe('browser screenshots', () => {
+  it('takes a page address as a site, never as a screenshot', () => {
+    const card = toolCardView(
+      part({
+        args: { url: 'https://example.com/docs' },
+        result: { screenshot: 'https://example.com/docs', success: true },
+        toolCallId: 'nav',
+        toolName: 'browser_navigate'
+      })
+    )
+
+    expect(card.thumb).toEqual({ host: 'example.com', kind: 'site', url: 'https://example.com/docs' })
+  })
+})
+
 describe('toolCardsFromParts', () => {
   it('skips text parts and todo, and marks the call awaiting approval', () => {
     const groups = toolCardsFromParts(
