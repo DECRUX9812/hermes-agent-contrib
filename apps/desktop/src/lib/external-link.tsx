@@ -1,13 +1,16 @@
 import type { ComponentProps, ReactNode } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 
 import { ArrowUpRight } from '@/lib/icons'
 import { IS_MAC } from '@/lib/keybinds/combo'
 import { isBrowserHostedDesktop } from '@/lib/platform'
 import { $alwaysExternalLinks } from '@/store/external-links'
 
-import { resolveBrandIcon } from './brand-icon'
 import { cn } from './utils'
+
+// The brand table pulls ~150 Simple Icons; links render from always-mounted
+// chrome, so a static import put all of them on the boot path.
+const BrandGlyph = lazy(async () => ({ default: (await import('./brand-glyph')).BrandGlyph }))
 
 const titleCache = new Map<string, string>()
 const titleInflight = new Map<string, Promise<string>>()
@@ -311,11 +314,14 @@ export function ExternalLinkIcon({ className }: { className?: string }) {
 // to the brand name, which lands in the anchor's textContent and accessible
 // name — a PR link would read "GitHub#123".
 export function LinkBrandIcon({ className, href }: { className?: string; href: string }) {
-  const Icon = resolveBrandIcon(shortHostLabel(href))
-
-  return Icon ? (
-    <Icon aria-hidden className={cn('mr-1 inline size-[0.85em] align-[-0.12em] opacity-80', className)} title="" />
-  ) : null
+  return (
+    <Suspense fallback={null}>
+      <BrandGlyph
+        className={cn('mr-1 inline size-[0.85em] align-[-0.12em] opacity-80', className)}
+        host={shortHostLabel(href)}
+      />
+    </Suspense>
+  )
 }
 
 export function ExternalLink({
