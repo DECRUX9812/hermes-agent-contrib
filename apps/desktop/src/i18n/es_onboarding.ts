@@ -8,6 +8,7 @@ export const esOnboarding: TranslationOverrides['onboarding'] = {
   setupSlowTitle: 'La configuración está tardando más de lo habitual.',
   setupSlowBody: 'Hermes sigue iniciándose en segundo plano.',
   continueWithoutSetup: 'Continuar sin configurar',
+  checkingSetup: 'Comprobando tu configuración…',
   lookingUpProviders: 'Buscando proveedores...',
   collapse: 'Contraer',
   otherProviders: 'Otros proveedores',

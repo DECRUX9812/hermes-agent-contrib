@@ -8,6 +8,7 @@ export const enOnboarding: Translations['onboarding'] = {
   setupSlowTitle: 'Setup is taking longer than usual.',
   setupSlowBody: 'Hermes is still starting in the background.',
   continueWithoutSetup: 'Continue without setup',
+  checkingSetup: 'Checking your setup…',
   lookingUpProviders: 'Looking up providers...',
   collapse: 'Collapse',
   otherProviders: 'Other providers',

@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
 import {
   $desktopOnboarding,
   ackFreeTierIntro,
@@ -32,14 +31,13 @@ import { Check, ChevronDown, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
 import { isSubmitEnter } from '@/lib/ime'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import { cn } from '@/lib/utils'
-import { $desktopBoot, type DesktopBootState } from '@/store/boot'
 import { $freeTierStatus, FREE_TIER_MODEL, freeTierSetupFailure } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
 import { $setupReadyTick } from '@/store/live-sync'
 import { $localModelsEnabled } from '@/store/local-models-flag'
 import type { OAuthProvider } from '@/types/hermes'
 
-import { DocsLink, FlowPanel, Status } from './onboarding-flow'
+import { DocsLink, FlowPanel } from './onboarding-flow'
 import { FreeTierSetupNotice } from './onboarding-free-tier-setup-notice'
 import { DecodedLabel } from './onboarding-glyph'
 import {
@@ -48,6 +46,7 @@ import {
   LocalModelsProviderRow,
   OpenRouterProviderRow,
   ProviderRow,
+  ProviderRowsSkeleton,
   sortProviders
 } from './onboarding-providers'
 
@@ -58,6 +57,7 @@ export {
   LocalModelsProviderRow,
   OpenRouterProviderRow,
   ProviderRow,
+  ProviderRowsSkeleton,
   providerTitle,
   sortProviders
 } from './onboarding-providers'
@@ -205,7 +205,6 @@ export function DesktopOnboardingOverlay({
 }: DesktopOnboardingOverlayProps) {
   const { t } = useI18n()
   const onboarding = useStore($desktopOnboarding)
-  const boot = useStore($desktopBoot)
   useStore($onboardingSurfaces)
   const onCompletedRef = useRef(onCompleted)
   onCompletedRef.current = onCompleted
@@ -429,10 +428,8 @@ export function DesktopOnboardingOverlay({
     >
       <div
         className={cn(
-          'relative w-full max-w-[45rem] transition-all duration-500 ease-out',
-          bare
-            ? ''
-            : 'overflow-hidden rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) shadow-nous',
+          'relative grid w-full max-w-[45rem] gap-4 rounded-dialog bg-surface-raised p-6 shadow-e3 transition-all duration-500 ease-out',
+          bare ? '' : 'overflow-hidden',
           // Bare confirm screen orchestrates its own per-element exit; the
           // carded states use the simple lift/blur dissolve.
           leaving && !bare
@@ -452,7 +449,7 @@ export function DesktopOnboardingOverlay({
             <Codicon name="close" size="1rem" />
           </Button>
         ) : null}
-        <div className="grid gap-3 p-5">
+        <div className="grid gap-3">
           {reason ? <ReasonNotice reason={reason} /> : null}
           {ready && showPicker && !freeTierIntro && !onboarding.manual ? <FreeTierSetupNotice ctx={ctx} /> : null}
           {ready ? (
@@ -464,7 +461,7 @@ export function DesktopOnboardingOverlay({
               <FlowPanel ctx={ctx} flow={flow} leaving={leaving} onBegin={finalizeOnboarding} />
             )
           ) : (
-            <Preparing boot={boot} />
+            <ProviderRowsSkeleton status={t.onboarding.checkingSetup} />
           )}
         </div>
       </div>
@@ -541,34 +538,8 @@ function FreeTierReadyPanel({
 // upstream), so it never shows the generic "no provider configured" noise.
 function ReasonNotice({ reason }: { reason: string }) {
   return (
-    <div className="rounded-2xl border border-(--ui-stroke-tertiary) bg-(--ui-bg-tertiary)/40 px-4 py-3 text-sm text-muted-foreground">
+    <div className="rounded-card border border-line bg-surface-sunken px-4 py-3 text-ui-sm text-fg-muted">
       {reason}
-    </div>
-  )
-}
-
-function Preparing({ boot }: { boot: DesktopBootState }) {
-  const { t } = useI18n()
-  const progress = Math.max(2, Math.min(100, Math.round(boot.progress)))
-  const hasError = Boolean(boot.error)
-  const installing = boot.phase.startsWith('runtime.')
-
-  return (
-    <div className="grid gap-3" role="status">
-      <p className="text-sm text-muted-foreground">
-        {installing ? t.onboarding.preparingInstall : t.onboarding.starting}
-      </p>
-      <Progress
-        aria-label={installing ? t.onboarding.preparingInstall : t.onboarding.starting}
-        destructive={hasError}
-        size="lg"
-        value={progress / 100}
-      />
-      <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-        <span className="truncate">{boot.message}</span>
-        <span>{progress}%</span>
-      </div>
-      {hasError ? <p className="text-xs text-destructive">{boot.error}</p> : null}
     </div>
   )
 }
@@ -577,9 +548,9 @@ function Header() {
   const { t } = useI18n()
 
   return (
-    <div className="bg-(--ui-chat-bubble-background) px-5 pt-5 pb-1">
-      <h2 className="text-[0.9375rem] font-semibold tracking-tight">{t.onboarding.headerTitle}</h2>
-      <p className="mt-1 max-w-xl text-[0.8125rem] leading-5 text-(--ui-text-tertiary)">{t.onboarding.headerDesc}</p>
+    <div>
+      <h2 className="text-ui-lg font-semibold tracking-tight">{t.onboarding.headerTitle}</h2>
+      <p className="mt-1 max-w-xl text-ui-sm text-fg-muted">{t.onboarding.headerDesc}</p>
     </div>
   )
 }
@@ -648,7 +619,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   }
 
   if (providers === null) {
-    return <Status>{t.onboarding.lookingUpProviders}</Status>
+    return <ProviderRowsSkeleton status={t.onboarding.checkingSetup} />
   }
 
   const select = (p: OAuthProvider) => void startProviderOAuth(p, ctx)
@@ -875,19 +846,19 @@ export function ApiKeyForm({
         {options.map(o => (
           <button
             className={cn(
-              'rounded-2xl border bg-background/60 p-3 text-left transition hover:bg-accent/50',
-              option.envKey === o.envKey ? 'border-primary ring-2 ring-primary/20' : 'border-transparent'
+              'rounded-card border bg-surface p-3 text-left transition hover:bg-hover',
+              option.envKey === o.envKey ? 'border-brand' : 'border-line'
             )}
             key={o.envKey}
             onClick={() => pick(o)}
             type="button"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium">{o.name}</span>
-              {isSet?.(o.envKey) ? <Check className="size-3.5 text-muted-foreground" /> : null}
+              <span className="text-ui-sm font-medium">{o.name}</span>
+              {isSet?.(o.envKey) ? <Check className="size-3.5 text-fg-muted" /> : null}
             </div>
             {(t.onboarding.apiKeyOptions[o.id]?.short ?? o.short) ? (
-              <p className="mt-1 text-xs text-muted-foreground">{t.onboarding.apiKeyOptions[o.id]?.short ?? o.short}</p>
+              <p className="mt-1 text-ui-xs text-fg-muted">{t.onboarding.apiKeyOptions[o.id]?.short ?? o.short}</p>
             ) : null}
           </button>
         ))}
@@ -895,7 +866,7 @@ export function ApiKeyForm({
 
       <div className="grid scroll-mt-4 gap-2" ref={entryRef}>
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm leading-6 text-muted-foreground">{optionDescription}</p>
+          <p className="text-ui-sm text-fg-muted">{optionDescription}</p>
           {option.docsUrl ? <DocsLink href={option.docsUrl}>{t.onboarding.getKey}</DocsLink> : null}
         </div>
         <Input
@@ -933,7 +904,7 @@ export function ApiKeyForm({
             value={modelName}
           />
         ) : null}
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        {error ? <p className="text-ui-xs text-danger">{error}</p> : null}
       </div>
 
       <div className="flex items-center justify-between gap-3">

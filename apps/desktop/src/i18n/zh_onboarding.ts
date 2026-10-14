@@ -8,6 +8,7 @@ export const zhOnboarding: TranslationOverrides['onboarding'] = {
   setupSlowTitle: '设置所需时间比平常更长。',
   setupSlowBody: 'Hermes 仍在后台启动。',
   continueWithoutSetup: '跳过设置并继续',
+  checkingSetup: '正在检查你的设置…',
   lookingUpProviders: '正在查找提供方...',
   collapse: '收起',
   otherProviders: '其他提供方',
