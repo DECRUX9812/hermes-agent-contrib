@@ -2058,14 +2058,6 @@ body.guest-pointer-lock :is(webview, iframe) {
   translate: none;
 }
 
-[data-slot='aui_intro'] p:last-child {
-  max-width: 34rem;
-  margin-inline: auto;
-  color: var(--ui-text-tertiary);
-  font-size: 0.875rem;
-  line-height: 1.45;
-}
-
 .fit-text {
   --fit-captured-length: initial;
   --fit-support-sentinel: var(--fit-captured-length, 9999px);
@@ -2139,6 +2131,20 @@ body.guest-pointer-lock :is(webview, iframe) {
 [data-slot='composer-root'] {
   width: 100%;
   padding-inline: 5px;
+}
+
+/* Tuning pills keep their space at rest and fade in on focus or hover, so the
+   row never reflows. Opacity, not display: a hidden control must stay focusable. */
+[data-slot='composer-reveal'] {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) ease-out;
+}
+
+[data-slot='composer-root']:is(:hover, :focus-within) [data-slot='composer-reveal'],
+[data-slot='composer-reveal']:has([data-state='open']) {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* Popped-out (floating) composer: compact width + an even 5px transparent grab
@@ -2217,7 +2223,12 @@ body.guest-pointer-lock :is(webview, iframe) {
 }
 
 [data-slot='composer-surface'] {
-  border-color: var(--ui-stroke-secondary) !important;
+  border-color: var(--color-line) !important;
+  box-shadow: var(--shadow-e1);
+}
+
+[data-slot='composer-root']:focus-within [data-slot='composer-surface'] {
+  border-color: var(--color-line-strong) !important;
 }
 
 /* A docked stack (background tasks, subagents, queue, todos) sits directly on
@@ -2264,7 +2275,7 @@ body.guest-pointer-lock :is(webview, iframe) {
 }
 
 [data-slot='composer-root'] {
-  --composer-fill: color-mix(in srgb, var(--dt-card) 88%, transparent);
+  --composer-fill: var(--color-surface-raised);
 }
 
 [data-slot='composer-root'][data-thread-scrolled-up] {
@@ -2776,60 +2787,15 @@ button[data-slot='aui_msg-reactions'] svg {
   }
 }
 
-/* Floating "jump to bottom" control (see scroll-to-bottom-button.tsx).
-   Directional scale: it contracts toward 1 as it arrives (from 1.1) and keeps
-   contracting to 0.9 as it leaves — always shrinking in the direction of
-   travel, so the motion reads as a soft settle / recede rather than a pop. The
-   X half-offset stays baked into every transform so `left-1/2` centering holds
-   through the animation. */
+/* Floating "jump to bottom" control (see scroll-to-bottom-button.tsx): a fade
+   only, so the pill never moves while it appears or leaves. */
 .thread-jump-button {
   opacity: 0;
-  transform: translateX(-50%) translateY(0.3rem) scale(0.9);
+  transition: opacity var(--dur-fast) ease-out;
 }
 
 .thread-jump-button[data-state='in'] {
-  animation: thread-jump-in 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.thread-jump-button[data-state='out'] {
-  animation: thread-jump-out 180ms ease-in forwards;
-}
-
-@keyframes thread-jump-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(0.3rem) scale(1.1);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-}
-
-@keyframes thread-jump-out {
-  from {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateX(-50%) translateY(0.3rem) scale(0.9);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .thread-jump-button[data-state='in'],
-  .thread-jump-button[data-state='out'] {
-    animation: none;
-    transition: opacity 120ms linear;
-  }
-
-  .thread-jump-button[data-state='in'] {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
+  opacity: 1;
 }
 
 @keyframes code-card-stream-glow {

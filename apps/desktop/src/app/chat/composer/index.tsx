@@ -866,7 +866,8 @@ export function ChatBar({
           </StatusDrawerContent>
           <ComposerPrimitive.Root
             className={cn(
-              'group/composer relative w-full overflow-visible rounded-2xl',
+              // 20px is the composer's own radius, one step off the radius scale on purpose.
+              'group/composer relative w-full overflow-visible rounded-[20px]',
               poppedOut && 'bg-transparent',
               dragging && 'cursor-grabbing select-none touch-none',
               // Native Wayland HUD: setBounds cannot position a top-level

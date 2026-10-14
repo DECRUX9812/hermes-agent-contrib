@@ -109,6 +109,35 @@ describe('HUD mode', () => {
   })
 })
 
+// The tuning pills sit in a reveal group that fades in on hover or focus. It is
+// hidden by opacity, not display, so its controls keep their place in the DOM
+// and stay reachable by keyboard while the resting composer looks quiet.
+describe('resting composer', () => {
+  it('keeps the reveal group in the DOM and every control in it keyboard reachable', () => {
+    const { container } = renderControls()
+
+    const reveal = container.querySelector<HTMLElement>('[data-slot="composer-reveal"]')
+
+    expect(reveal).toBeTruthy()
+
+    const buttons = reveal!.querySelectorAll('button')
+
+    expect(buttons.length).toBeGreaterThan(0)
+
+    for (const button of buttons) {
+      expect(button.hidden).toBe(false)
+      expect(button.tabIndex).not.toBe(-1)
+    }
+  })
+
+  it('offers voice as the primary control when the draft is empty and idle', () => {
+    renderControls({ hasComposerPayload: false })
+
+    expect(screen.getByLabelText('Start voice conversation')).toBeTruthy()
+    expect(screen.queryByLabelText('Send')).toBeNull()
+  })
+})
+
 // A tile can be narrower than the controls cost, and the row is inside an
 // overflow-hidden surface — so anything that doesn't fold gets clipped off the
 // right edge, send button first. The ladder keeps going past `stacked`: voice

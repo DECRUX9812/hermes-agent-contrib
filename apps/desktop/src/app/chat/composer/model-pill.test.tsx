@@ -187,6 +187,22 @@ describe('ModelPill width', () => {
     expect(pill.className).toMatch(/\bmin-w-0\b/)
     expect(pill.className).toMatch(/\bshrink\b/)
   })
+
+  it('stays in the DOM and keyboard reachable while the reveal group is at rest', () => {
+    setCurrentModel('deepseek/deepseek-v4-flash')
+    $activeSessionId.set(null)
+
+    render(<ModelPill disabled={false} model={modelState({ model: 'deepseek/deepseek-v4-flash' })} />)
+
+    const pill = screen.getByRole('button')
+
+    expect(pill.hidden).toBe(false)
+    expect(pill.tabIndex).not.toBe(-1)
+
+    pill.focus()
+
+    expect(document.activeElement).toBe(pill)
+  })
 })
 
 // The `composer.modelPill` slot: a provider may override the pill's LABEL
