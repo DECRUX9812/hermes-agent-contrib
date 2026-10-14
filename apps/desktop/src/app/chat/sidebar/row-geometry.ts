@@ -22,10 +22,10 @@ import { cn } from '@/lib/utils'
 // which is exactly where a working row paints its arc (`.arc-row` has zero
 // standoff) — the ring ran through the text.
 
-export const SIDEBAR_ROW_MIN_H = 'min-h-[1.625rem]' as const
+export const SIDEBAR_ROW_MIN_H = 'min-h-(--row-h)' as const
 export const SIDEBAR_ROW_PAD_X = 'pl-2 pr-2' as const
 export const SIDEBAR_ROW_PAD_TRAIL = 'pr-2' as const
-export const SIDEBAR_ROW_GAP = 'gap-1.5' as const
+export const SIDEBAR_ROW_GAP = 'gap-2' as const
 
 /** Fixed leading cell — dot, icon, drag handle. Every row's label starts at the
  *  same left edge because they all reserve this exact box. */
@@ -44,7 +44,7 @@ export const SIDEBAR_ROW_INSET = cn(
 export const SIDEBAR_TRUNCATED_LEADING = 'leading-[1.35]' as const
 
 export const SIDEBAR_ROW_LABEL = cn(
-  'min-w-0 truncate text-[0.8125rem] text-(--ui-text-secondary)',
+  'min-w-0 truncate text-ui-sm text-fg-secondary',
   SIDEBAR_TRUNCATED_LEADING
 )
 

@@ -1,8 +1,10 @@
 import { useStore } from '@nanostores/react'
+import type * as React from 'react'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { RowButton } from '@/components/ui/row-button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
 import { openExternalLink } from '@/lib/external-link'
@@ -14,12 +16,14 @@ import { SidebarRowCluster, SidebarRowShell, SidebarRowStack } from './chrome'
 
 // Stands in for session rows, so it borrows their chrome instead of copying
 // the grid — a placeholder on a different edge than the rows it resolves into
-// makes the list step sideways on load.
+// makes the list step sideways on load. Varied widths read as text, not a bar.
+const SKELETON_WIDTHS = ['w-[62%]', 'w-[84%]', 'w-[71%]', 'w-[78%]'] as const
+
 export function SidebarSessionSkeletons() {
   return (
     <SidebarRowStack aria-hidden="true">
-      {['w-32', 'w-40', 'w-28', 'w-36', 'w-24'].map((width, i) => (
-        <SidebarRowShell actions={<Skeleton className="size-3.5 rounded-sm opacity-60" />} key={`${width}-${i}`}>
+      {SKELETON_WIDTHS.map((width, i) => (
+        <SidebarRowShell key={i}>
           <SidebarRowCluster>
             <Skeleton className={cn('h-3 rounded-sm', width)} />
           </SidebarRowCluster>
@@ -29,21 +33,19 @@ export function SidebarSessionSkeletons() {
   )
 }
 
-export function SidebarBlankState({ onNewProject }: { onNewProject: () => void }) {
-  const { t } = useI18n()
-  const s = t.sidebar
+export function SidebarEmptyLine({ children }: { children: React.ReactNode }) {
+  return <p className="px-3.5 py-2 text-ui-xs text-fg-subtle">{children}</p>
+}
 
+export function SidebarGhostRow({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
   return (
-    <div className="grid min-h-0 flex-1 place-items-center px-4 text-center">
-      <div className="flex flex-col items-center gap-2">
-        <Codicon className="text-(--ui-text-quaternary)" name="root-folder" size="1.25rem" />
-        <p className="text-xs text-(--ui-text-tertiary)">{s.noSessions}</p>
-        <Button className="mt-0.5 text-(--ui-text-secondary)" onClick={onNewProject} size="sm" variant="ghost">
-          <Codicon name="add" size="0.75rem" />
-          {s.projects.newButton}
-        </Button>
-      </div>
-    </div>
+    <RowButton
+      className="mx-1.5 flex h-(--row-h) min-w-0 items-center gap-2 rounded-row px-2 text-left text-ui-sm text-fg-secondary transition-colors duration-(--dur-instant) hover:bg-hover hover:text-fg focus-ring"
+      onClick={onClick}
+    >
+      <Codicon className="shrink-0 text-fg-muted" name={icon} size="0.75rem" />
+      <span className="min-w-0 truncate">{label}</span>
+    </RowButton>
   )
 }
 

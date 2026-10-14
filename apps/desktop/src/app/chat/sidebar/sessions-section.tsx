@@ -50,6 +50,8 @@ import { VirtualSessionList } from './virtual-session-list'
 
 export const VIRTUALIZE_THRESHOLD = 25
 
+const SECTION_LABEL = 'pl-0 text-ui-2xs font-medium normal-case tracking-normal text-fg-subtle'
+
 interface SidebarSectionHeaderProps {
   label: string
   open: boolean
@@ -75,13 +77,13 @@ function SidebarSectionHeader({
   const labelBody = (
     <>
       {icon}
-      <SidebarPanelLabel>{label}</SidebarPanelLabel>
+      <SidebarPanelLabel className={SECTION_LABEL}>{label}</SidebarPanelLabel>
       {meta && <SidebarSectionMeta>{meta}</SidebarSectionMeta>}
     </>
   )
 
   return (
-    <div className="group/section flex shrink-0 items-center justify-between gap-1 pb-1 pt-1.5">
+    <div className="group/section flex shrink-0 items-center justify-between gap-1 px-3.5 pb-1 pt-3">
       {collapsible ? (
         <button
           // min-w-0 lets the label truncate at narrow sidebar widths instead of
@@ -95,7 +97,7 @@ function SidebarSectionHeader({
               reads as a static label; an open one may wait for hover/focus. */}
           <DisclosureCaret
             className={cn(
-              'text-(--ui-text-tertiary) transition',
+              'text-fg-muted transition',
               open
                 ? 'opacity-0 group-hover/section-label:opacity-100 group-focus-visible/section-label:opacity-100'
                 : 'opacity-100'

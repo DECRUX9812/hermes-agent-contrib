@@ -73,6 +73,8 @@ import {
 } from './row-helpers'
 import type { RosterRow } from './types'
 
+const SECTION_LABEL = 'pl-0 text-ui-2xs font-medium normal-case tracking-normal text-fg-subtle'
+
 /** Rows the section renders before the "All bots" footer takes over. */
 const AGENTS_ROW_CAP = 7
 
@@ -137,14 +139,14 @@ export function AgentsSection() {
 
   return (
     <section aria-label={t.common.bots} className="px-0">
-      <div className="group/section flex shrink-0 items-center justify-between gap-1 pb-1 pt-1.5">
+      <div className="group/section flex shrink-0 items-center justify-between gap-1 px-3.5 pb-1 pt-3">
         <button
           aria-expanded={open}
           className="group/section-label flex w-fit min-w-0 items-center gap-1 bg-transparent text-left leading-none"
           onClick={() => setAgentsSectionOpen(!open)}
           type="button"
         >
-          <SidebarPanelLabel>{t.common.bots}</SidebarPanelLabel>
+          <SidebarPanelLabel className={SECTION_LABEL}>{t.common.bots}</SidebarPanelLabel>
           {visible.length > 0 && <SidebarSectionMeta>{visible.length}</SidebarSectionMeta>}
           {/* Folded, a bot needing attention is invisible — surface a passive
               dot; the expanded rows carry the reason themselves. */}
@@ -221,11 +223,11 @@ export function AgentsSection() {
           )}
           {visible.length > 0 && !searchQuery && (
             <RowButton
-              className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--ui-control-hover-background) hover:text-foreground"
+              className="mx-1.5 flex h-(--row-h) w-auto min-w-0 items-center gap-2 rounded-row px-2 text-left text-ui-xs text-fg-muted transition-colors duration-(--dur-instant) hover:bg-hover hover:text-fg"
               onClick={() => host.revealPane('hermes-bots:pane')}
             >
               <span className="min-w-0 truncate">{b.agents.allBots(visible.length)}</span>
-              <Codicon className="ml-auto shrink-0 text-[0.75rem] text-(--ui-text-quaternary)" name="arrow-right" />
+              <Codicon className="ml-auto shrink-0 text-[0.75rem] text-fg-subtle" name="arrow-right" />
             </RowButton>
           )}
         </div>
