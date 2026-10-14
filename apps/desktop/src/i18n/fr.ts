@@ -4101,6 +4101,7 @@ export const frOverrides = {
       needsInput: 'Nécessite votre saisie',
       waitingForAnswer: 'En attente de votre réponse',
       finishedUnread: 'Terminée — non lue',
+      progressRing: (done, total) => `${done} sur ${total} étapes terminées`,
       backgroundRunning: 'Tâche en arrière-plan en cours',
       draftSession: 'Brouillon — aucun message envoyé',
       continueOnPhone: 'Continuer sur le téléphone',
@@ -4208,6 +4209,7 @@ export const frOverrides = {
       thisMonth: 'Plus tôt ce mois'
     },
     statusDivider: {
+      needsYou: 'À traiter',
       working: 'En cours',
       done: 'Terminées'
     },

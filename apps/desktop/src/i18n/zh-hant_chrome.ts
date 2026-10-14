@@ -250,6 +250,7 @@ export const zhHantChrome = {
       needsInput: '需要您的輸入',
       waitingForAnswer: '等待您的回答',
       finishedUnread: '已完成 — 未讀',
+      progressRing: (done, total) => `已完成 ${done}/${total} 步`,
       backgroundRunning: '背景任務執行中',
       draftSession: '草稿 — 尚未傳送',
       handoffOrigin: platform => `從 ${platform} 轉接`,
@@ -295,6 +296,7 @@ export const zhHantChrome = {
       none: '沒有可封存的工作階段'
     },
     statusDivider: {
+      needsYou: '需要你',
       working: '進行中',
       done: '已完成'
     }

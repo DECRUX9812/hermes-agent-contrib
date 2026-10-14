@@ -1,5 +1,6 @@
 import { useStore } from '@nanostores/react'
 
+import { Codicon } from '@/components/ui/codicon'
 import { type Translations, useI18n } from '@/i18n'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
@@ -110,6 +111,9 @@ export interface SessionStatusDotProps {
   /** Applied to the OUTER wrapper (stem + dot) — e.g. hover-fade on the
    *  reorder handle. */
   className?: string
+  /** Paint an unread finish as a check mark instead of the emerald dot. Opt-in
+   *  so the shared primitive keeps one look on every other surface. */
+  checkUnread?: boolean
 }
 
 /**
@@ -121,7 +125,7 @@ export interface SessionStatusDotProps {
  * An idle session shows its project color; the active states own the dot with
  * their semantic color so an attention cue is never masked by the tint.
  */
-export function SessionStatusDot({ storedSessionId, session, branchStem, className }: SessionStatusDotProps) {
+export function SessionStatusDot({ checkUnread, storedSessionId, session, branchStem, className }: SessionStatusDotProps) {
   const { t } = useI18n()
   const r = t.sidebar.row
 
@@ -145,7 +149,16 @@ export function SessionStatusDot({ storedSessionId, session, branchStem, classNa
           {branchStem}
         </span>
       ) : null}
-      {dotState === 'idle' ? (
+      {checkUnread && dotState === 'unread' ? (
+        <span
+          aria-label={r.finishedUnread}
+          className="inline-flex size-1.5 shrink-0 items-center justify-center text-success"
+          role="status"
+          title={r.finishedUnread}
+        >
+          <Codicon name="check" size="0.625rem" />
+        </span>
+      ) : dotState === 'idle' ? (
         // Rendered even with no color to paint: an empty dot of the same size
         // keeps every row's title on one left edge, so a session finishing
         // can't shift the list under the pointer.

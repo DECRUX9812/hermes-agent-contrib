@@ -3610,6 +3610,7 @@ export const zhOverrides = {
       needsInput: '需要你输入',
       waitingForAnswer: '正在等待你的回答',
       finishedUnread: '已完成 — 未读',
+      progressRing: (done, total) => `已完成 ${done}/${total} 步`,
       backgroundRunning: '后台任务运行中',
       draftSession: '草稿 — 尚未发送',
       continueOnPhone: '在手机上继续',
@@ -3715,6 +3716,7 @@ export const zhOverrides = {
       thisMonth: '本月'
     },
     statusDivider: {
+      needsYou: '需要你',
       working: '进行中',
       done: '已完成'
     },

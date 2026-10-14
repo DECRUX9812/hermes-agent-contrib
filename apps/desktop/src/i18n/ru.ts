@@ -2929,6 +2929,7 @@ export const ruOverrides = {
       needsInput: 'Нужен ваш ввод',
       waitingForAnswer: 'Ждёт вашего ответа',
       finishedUnread: 'Завершён — не прочитан',
+      progressRing: (done, total) => `Выполнено шагов: ${done} из ${total}`,
       backgroundRunning: 'Фоновая задача выполняется',
       draftSession: 'Черновик — ещё ничего не отправлено',
       continueOnPhone: 'Продолжить на телефоне',
@@ -3035,6 +3036,7 @@ export const ruOverrides = {
       thisMonth: 'Ранее в этом месяце'
     },
     statusDivider: {
+      needsYou: 'Ждёт вас',
       working: 'Работает',
       done: 'Готово'
     },

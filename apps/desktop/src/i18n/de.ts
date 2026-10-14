@@ -4095,6 +4095,7 @@ export const deOverrides = {
       needsInput: 'Braucht Ihre Eingabe',
       waitingForAnswer: 'Wartet auf Ihre Antwort',
       finishedUnread: 'Abgeschlossen – ungelesen',
+      progressRing: (done, total) => `${done} von ${total} Schritten erledigt`,
       backgroundRunning: 'Hintergrundaufgabe läuft',
       draftSession: 'Entwurf – noch nichts gesendet',
       continueOnPhone: 'Auf dem Handy fortfahren',
@@ -4202,6 +4203,7 @@ export const deOverrides = {
       thisMonth: 'Diesen Monat früher'
     },
     statusDivider: {
+      needsYou: 'Braucht dich',
       working: 'In Arbeit',
       done: 'Erledigt'
     },

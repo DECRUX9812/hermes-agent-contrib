@@ -3244,6 +3244,7 @@ export const jaOverrides = {
       needsInput: '入力が必要です',
       waitingForAnswer: '回答を待っています',
       finishedUnread: '完了 — 未読',
+      progressRing: (done, total) => `${total} 件中 ${done} 件のステップが完了`,
       backgroundRunning: 'バックグラウンドタスク実行中',
       draftSession: '下書き — 未送信',
       handoffOrigin: platform => `${platform} から引き継ぎ`,
@@ -3279,6 +3280,7 @@ export const jaOverrides = {
       thisMonth: '今月'
     },
     statusDivider: {
+      needsYou: '要対応',
       working: '実行中',
       done: '完了'
     }

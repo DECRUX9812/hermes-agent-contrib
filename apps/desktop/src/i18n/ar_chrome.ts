@@ -352,6 +352,11 @@ export const arChrome = {
     loading: 'جار التحميل...',
     loadMore: 'تحميل المزيد',
     loadCount: step => `تحميل ${step} أخرى`,
+    statusDivider: {
+      needsYou: 'يحتاج إليك',
+      working: 'قيد التنفيذ',
+      done: 'مكتملة'
+    },
     row: {
       pin: 'تثبيت',
       unpin: 'إلغاء التثبيت',
@@ -378,6 +383,7 @@ export const arChrome = {
       backgroundRunning: 'تعمل في الخلفية',
       draftSession: 'مسودة — لم تُرسل بعد',
       finishedUnread: 'اكتملت وفيها جديد',
+      progressRing: (done, total) => `${done} من ${total} خطوات مكتملة`,
       hideTabBar: 'إخفاء شريط التبويبات',
       openInNewTab: 'فتح في تبويب جديد',
       openInSplit: 'فتح في تقسيم',

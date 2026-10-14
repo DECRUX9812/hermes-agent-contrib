@@ -132,7 +132,7 @@ import {
   markAllSessionsRead,
   sessionPinId
 } from '@/store/session'
-import { $sessionDotStateById, sessionStatusBucket, sessionStatusRank } from '@/store/session-dot-state'
+import { $sessionDotStateById, sessionStatusBucket } from '@/store/session-dot-state'
 import { $focusedSessionIsTile, $focusedStoredSessionId } from '@/store/session-focus'
 import { $unconfirmedPinWrites } from '@/store/session-pin-sync'
 import { $removedSessionIds } from '@/store/session-removal'
@@ -147,6 +147,7 @@ import { type AppView, SIDEBAR_LIST_TOP_AREA, type SidebarListTopContribution } 
 import type { SidebarNavItem } from '../../types'
 import { type NewSessionSplitHandler, startNewSessionDrag } from '../new-session-drag'
 
+import { attentionFoldSessions } from './attention-fold'
 import { SidebarSectionAddButton } from './chrome'
 import { SidebarCronJobsSection } from './cron-jobs-section'
 import { SidebarDelegationReports } from './delegation-reports'
@@ -600,29 +601,31 @@ export function ChatSidebar({
     [pinnedIdentitySet]
   )
 
+  const {
+    resumeSearchedSession,
+    searchInputRef,
+    searchPending,
+    searchQuery,
+    searchResults,
+    setSearchQuery,
+    trimmedQuery
+  } = useSidebarSearch({ onResumeSession, sessionByAnyId, sortedSessions })
+
   // ── Needs attention ────────────────────────────────────────────────────
   // The rail's inbox fold: sessions a surface already flags — waiting on the
   // user, stalled mid-turn, or finished-but-unread — gathered at the top and
   // ranked loudest-first (the same rank order-by-status uses). The pin rule
   // holds here too: a flagged row lives in this fold and nowhere else, so the
   // fold drains to inbox zero instead of shadowing the lists below it.
-  const attentionSessions = useMemo(() => {
-    const flagged = sortedSessions.filter(session => {
-      if (isPinnedSession(session)) {
-        return false
-      }
-
-      const state = dotStates[session.id]
-
-      return state === 'needs-input' || state === 'stalled' || state === 'unread'
-    })
-
-    return flagged.sort(
-      (a, b) =>
-        sessionStatusRank(dotStates[a.id] ?? 'idle') - sessionStatusRank(dotStates[b.id] ?? 'idle') ||
-        sessionTime(b) - sessionTime(a)
-    )
-  }, [sortedSessions, isPinnedSession, dotStates])
+  // Status grouping already files these rows under "Needs you", so the fold
+  // would show the same sessions twice. Searching and archive views keep it.
+  const attentionSessions = useMemo(
+    () =>
+      grouping === 'status' && !trimmedQuery && !showArchived
+        ? []
+        : attentionFoldSessions(sortedSessions, dotStates, isPinnedSession),
+    [grouping, trimmedQuery, showArchived, sortedSessions, isPinnedSession, dotStates]
+  )
 
   const attentionIdSet = useMemo(() => new Set(attentionSessions.map(s => s.id)), [attentionSessions])
   const attentionOpen = useStore($sidebarAttentionOpen)
@@ -650,16 +653,6 @@ export function ChatSidebar({
       isPinnedSession(session) || attentionIdSet.has(session.id) || (filtersNarrow && !sessionMatchesFilters(session)),
     [isPinnedSession, attentionIdSet, filtersNarrow, sessionMatchesFilters]
   )
-
-  const {
-    resumeSearchedSession,
-    searchInputRef,
-    searchPending,
-    searchQuery,
-    searchResults,
-    setSearchQuery,
-    trimmedQuery
-  } = useSidebarSearch({ onResumeSession, sessionByAnyId, sortedSessions })
 
   const unpinnedAgentSessions = useMemo(
     () => sortedSessions.filter(s => !isPinnedSession(s) && !attentionIdSet.has(s.id)),

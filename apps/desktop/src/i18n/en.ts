@@ -3785,6 +3785,7 @@ export const en: Translations = {
       needsInput: 'Needs your input',
       waitingForAnswer: 'Waiting for your answer',
       finishedUnread: 'Finished — unread',
+      progressRing: (done, total) => `${done} of ${total} steps done`,
       backgroundRunning: 'Background task running',
       draftSession: 'Draft — nothing sent yet',
       continueOnPhone: 'Continue on phone',
@@ -3891,6 +3892,7 @@ export const en: Translations = {
       thisMonth: 'Earlier this month'
     },
     statusDivider: {
+      needsYou: 'Needs you',
       working: 'Working',
       done: 'Done'
     },

@@ -3305,6 +3305,8 @@ export interface Translations extends NoticeTranslations {
       needsInput: string
       waitingForAnswer: string
       finishedUnread: string
+      /** Row progress ring's accessible name: "2 of 5 steps done". */
+      progressRing: (done: number, total: number) => string
       backgroundRunning: string
       draftSession: string
       /** "Continue on phone" submenu — hand this session off to a messaging
@@ -3426,6 +3428,7 @@ export interface Translations extends NoticeTranslations {
       thisMonth: string
     }
     statusDivider: {
+      needsYou: string
       working: string
       done: string
     }
