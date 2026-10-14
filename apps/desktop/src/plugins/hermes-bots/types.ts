@@ -326,6 +326,7 @@ export type GroupActivityKind =
   | 'delivered'
   | 'failed'
   | 'held'
+  | 'member-stopped'
   | 'passed'
   | 'queued'
   | 'replied'
