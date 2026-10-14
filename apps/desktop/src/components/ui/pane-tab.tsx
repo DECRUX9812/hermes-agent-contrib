@@ -187,7 +187,11 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
       {...props}
     >
       <div
-        className={cn('pane-tab-content flex h-full min-w-0 max-w-full flex-1 items-center', vertical && 'contents')}
+        className={cn(
+          'pane-tab-content flex h-full min-w-0 max-w-full flex-1 items-center',
+          segmented && 'justify-center',
+          vertical && 'contents'
+        )}
       >
         {children}
       </div>
