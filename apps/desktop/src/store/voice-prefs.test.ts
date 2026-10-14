@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { seedExistingInstall } from '@/test/jsdom'
+
 vi.mock('@/hermes', () => ({
   getHermesConfigRecord: vi.fn(async () => ({})),
   saveHermesConfig: vi.fn(async () => undefined)
@@ -24,6 +26,7 @@ it('keeps the desktop toggle local across config refreshes', async () => {
   for (const fails of [false, true]) {
     for (const enabled of [false, true]) {
       localStorage.clear()
+      seedExistingInstall()
       vi.resetModules()
       const prefs = await import('./voice-prefs')
       const write = vi.spyOn(localStorage, 'setItem')
@@ -53,6 +56,7 @@ it('migrates the legacy preference once, not on every refresh', async () => {
   for (const fails of [false, true]) {
     for (const enabled of [false, true]) {
       localStorage.clear()
+      seedExistingInstall()
       vi.resetModules()
       const prefs = await import('./voice-prefs')
       const write = vi.spyOn(localStorage, 'setItem')

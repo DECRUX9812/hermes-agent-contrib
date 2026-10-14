@@ -623,6 +623,7 @@ export interface Translations extends NoticeTranslations {
     search: string
     searchTitle: string
     swapSidebarSides: string
+    moreTools: string
     hideRightSidebar: string
     showRightSidebar: string
     unreadSessions: (count: number) => string

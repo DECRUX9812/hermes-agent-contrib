@@ -8,6 +8,8 @@
 import { atom } from 'nanostores'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { seedExistingInstall } from '@/test/jsdom'
+
 const MODE_KEY = 'hermes.desktop.interfaceMode.v1'
 
 const loadStore = () => import('./interface-mode')
@@ -15,7 +17,25 @@ const loadStore = () => import('./interface-mode')
 describe('interface mode persistence', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    seedExistingInstall()
     vi.resetModules()
+  })
+
+  it('opens a fresh install in Simple and records that choice', async () => {
+    window.localStorage.clear()
+    vi.resetModules()
+
+    const { $interfaceMode } = await loadStore()
+
+    expect($interfaceMode.get()).toBe('simple')
+    expect(window.localStorage.getItem(MODE_KEY)).toBe('simple')
+  }, 60_000)
+
+  it('keeps Advanced for an existing install and writes no record', async () => {
+    const { $interfaceMode } = await loadStore()
+
+    expect($interfaceMode.get()).toBe('advanced')
+    expect(window.localStorage.getItem(MODE_KEY)).toBeNull()
   })
 
   it('never writes a record for Advanced, so an untouched install stays untouched', async () => {
@@ -48,6 +68,7 @@ describe('interface mode persistence', () => {
 describe('modeBound resolver', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    seedExistingInstall()
     vi.resetModules()
   })
 
@@ -148,6 +169,7 @@ describe('modeBound resolver', () => {
 describe('tiers', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    seedExistingInstall()
     vi.resetModules()
   })
 

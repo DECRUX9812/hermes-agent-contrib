@@ -9,7 +9,7 @@ import { $narrowOverlayPaneIds } from '@/components/pane-shell/narrow-overlay-st
 import { $narrowViewport } from '@/components/pane-shell/tree/store'
 import { registry } from '@/contrib/registry'
 import { I18nProvider } from '@/i18n'
-import { CHAT_SIDEBAR_PANE_ID } from '@/store/layout'
+import { $panesFlipped, CHAT_SIDEBAR_PANE_ID } from '@/store/layout'
 import { REVIEW_PANE_ID } from '@/store/review'
 import { setTitlebarAppActionsSide } from '@/store/titlebar-app-actions'
 
@@ -37,6 +37,14 @@ function renderControls(pathname: string, props?: { leftTools?: TitlebarTool[]; 
       </I18nProvider>
     </MemoryRouter>
   )
+}
+
+function openMoreTools() {
+  fireEvent.pointerDown(screen.getByRole('button', { name: 'More tools' }), {
+    button: 0,
+    ctrlKey: false,
+    pointerType: 'mouse'
+  })
 }
 
 const windowControls = () => screen.queryByLabelText('Window controls')
@@ -201,6 +209,7 @@ describe('titlebar app-action cluster', () => {
     $narrowViewport.set(false)
     $narrowOverlayPaneIds.set(new Set())
     setTitlebarAppActionsSide('right')
+    $panesFlipped.set(false)
     cleanup()
     vi.unstubAllGlobals()
   })
@@ -272,6 +281,29 @@ describe('titlebar app-action cluster', () => {
 
     expect(screen.queryByLabelText('HUD mode')).toBeNull()
     expect(screen.getByLabelText('Open settings')).toBeTruthy()
-    expect(screen.getByLabelText('Layout editor')).toBeTruthy()
+  })
+
+  it('keeps three right-side tools on the bar and moves the rest under More tools', () => {
+    renderControls('/')
+
+    const right = screen.getByLabelText('App controls')
+
+    expect(within(right).getAllByRole('button')).toHaveLength(4)
+    expect(within(right).getByLabelText('Open settings')).toBeTruthy()
+    expect(within(right).queryByLabelText('Layout editor')).toBeNull()
+
+    openMoreTools()
+
+    expect(screen.getByRole('menuitem', { name: 'Layout editor' })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Swap sidebar sides' })).toBeTruthy()
+  })
+
+  it('runs a tool picked from More tools', () => {
+    renderControls('/')
+    openMoreTools()
+
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Swap sidebar sides' }))
+
+    expect($panesFlipped.get()).toBe(true)
   })
 })

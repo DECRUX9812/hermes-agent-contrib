@@ -3,6 +3,7 @@ import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores
 import { translateNow } from '@/i18n'
 import { createLayoutPersistence } from '@/lib/layout-persistence'
 import { type Codec, persistentAtom } from '@/lib/persisted'
+import { writeKey } from '@/lib/storage'
 import type { SidebarRowMeta } from '@/store/layout'
 import { notify } from '@/store/notifications'
 import type { ToolViewMode } from '@/store/tool-view'
@@ -50,6 +51,29 @@ const INTERFACE_MODE_STORAGE_KEY = 'hermes.desktop.interfaceMode.v1'
 const modeCodec: Codec<InterfaceMode> = {
   decode: raw => (raw === 'simple' ? 'simple' : DEFAULT_INTERFACE_MODE),
   encode: mode => (mode === DEFAULT_INTERFACE_MODE ? null : mode)
+}
+
+// No `hermes.` record of any kind means nothing has ever run here: a fresh
+// install opens chat-first and writes that down, so the choice sticks even if
+// the default changes later. An install with any record keeps today's default.
+function isFreshInstall(): boolean {
+  try {
+    const storage = window.localStorage
+
+    for (let index = 0; index < storage.length; index += 1) {
+      if (storage.key(index)?.startsWith('hermes.')) {
+        return false
+      }
+    }
+
+    return true
+  } catch {
+    return false
+  }
+}
+
+if (isFreshInstall()) {
+  writeKey(INTERFACE_MODE_STORAGE_KEY, 'simple')
 }
 
 export const $interfaceMode = persistentAtom<InterfaceMode>(
