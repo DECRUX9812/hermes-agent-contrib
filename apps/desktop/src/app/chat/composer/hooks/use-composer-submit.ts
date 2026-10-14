@@ -1,6 +1,7 @@
 import { SLASH_COMMAND_RE } from '@hermes/shared'
 import { type RefObject, useLayoutEffect, useRef } from 'react'
 
+import { broadcastTyped } from '@/app/chat/broadcast-fan-out'
 import { usePaneVisible } from '@/components/pane-shell/pane-visibility'
 import { translateNow, useI18n } from '@/i18n'
 import { isSlashCommandText } from '@/lib/chat-runtime'
@@ -386,6 +387,8 @@ export function useComposerSubmit({
       if (!submitWhileBusy(text, payloadPresent, blockingPrompt)) {
         return
       }
+
+      broadcastTyped(scope.target, text)
     } else if (!payloadPresent && queuedPrompts.length > 0) {
       void drainNextQueued()
     } else if (payloadPresent) {
@@ -397,6 +400,7 @@ export function useComposerSubmit({
       // consumer is discarded/replaced (not here — clear would race the clone).
       scope.attachments.clear({ retainPreviewUrls: true })
       dispatchSubmit(text, submittedAttachments)
+      broadcastTyped(scope.target, text)
     }
 
     focusInput()

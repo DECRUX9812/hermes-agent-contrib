@@ -7,17 +7,20 @@ import { TILE_PANE_PREFIX } from '@/store/session-focus'
 import { type SessionLiveGroup, sessionLiveSummary } from '@/store/session-live'
 import { $sessionTiles, sessionTileDelegate } from '@/store/session-states'
 
+import { requestComposerSubmit } from './composer/focus'
 import { $visibleChatZones } from './split-session'
 
 export interface BroadcastTarget {
   storedSessionId: string
   runtimeId: null | string
   group: SessionLiveGroup
+  /** The pane's composer routing key: `'main'` or `'tile:<storedSessionId>'`. */
+  composerTarget: string
 }
 
 export interface BroadcastPorts {
   enqueue: (storedSessionId: string, text: string) => void
-  submit: (runtimeId: string, text: string) => Promise<unknown>
+  submit: (target: BroadcastTarget & { runtimeId: string }, text: string) => Promise<unknown>
 }
 
 export interface BroadcastOutcome {
@@ -41,7 +44,7 @@ async function deliver(target: BroadcastTarget, text: string, ports: BroadcastPo
   }
 
   try {
-    await ports.submit(target.runtimeId, text)
+    await ports.submit({ ...target, runtimeId: target.runtimeId }, text)
 
     return 'sent'
   } catch {
@@ -89,7 +92,14 @@ function visibleTargets(): BroadcastTarget[] {
         ? $activeSessionId.get()
         : ($sessionTiles.get().find(tile => tile.storedSessionId === storedSessionId)?.runtimeId ?? null)
 
-    return [{ storedSessionId, runtimeId, group: sessionLiveSummary(storedSessionId).get().group }]
+    return [
+      {
+        storedSessionId,
+        runtimeId,
+        group: sessionLiveSummary(storedSessionId).get().group,
+        composerTarget: active === 'workspace' ? 'main' : `${TILE_COMPOSER_PREFIX}${storedSessionId}`
+      }
+    ]
   })
 }
 
@@ -97,7 +107,14 @@ const ports: BroadcastPorts = {
   enqueue: (storedSessionId, text) => {
     enqueueQueuedPrompt(storedSessionId, { attachments: [], text })
   },
-  submit: async (runtimeId, text) => {
+  submit: async ({ composerTarget, runtimeId }, text) => {
+    // The pane's own composer paints the user bubble and routes the send like a
+    // typed message; the bare runtime submit is the fallback for a composer
+    // that is not on screen (a popped-out composer shows only one pane).
+    if (requestComposerSubmit(text, { target: composerTarget })) {
+      return
+    }
+
     const delegate = sessionTileDelegate()
 
     if (!delegate) {
@@ -108,22 +125,32 @@ const ports: BroadcastPorts = {
   }
 }
 
-export function withBroadcast<A extends [text: string, ...rest: unknown[]], R>(
-  originPaneId: string,
-  send: (...args: A) => R
-): (...args: A) => R {
-  return (...args) => {
-    const result = send(...args)
+const TILE_COMPOSER_PREFIX = 'tile:'
 
-    broadcastSent(originPaneId, args[0])
+/** The chat pane a composer types into; null for composers outside the panes (the message editor). */
+function paneOfComposer(target: string): null | string {
+  if (target === 'main') {
+    return 'workspace'
+  }
 
-    return result
+  return target.startsWith(TILE_COMPOSER_PREFIX) ? `${TILE_PANE_PREFIX}${target.slice(TILE_COMPOSER_PREFIX.length)}` : null
+}
+
+/** Called once per message the user types, after the origin pane sent, steered
+ *  or queued it. Hooking the composer's typed-send instead of the session's
+ *  submit keeps queue drains out: a drain replays text a broadcast may have
+ *  queued, and fanning it out again would echo it around the panes forever. */
+export function broadcastTyped(composerTarget: string, text: string): void {
+  const originPaneId = paneOfComposer(composerTarget)
+
+  if (originPaneId) {
+    broadcastSent(originPaneId, text)
   }
 }
 
-/** Called after the origin pane's own send. Slash commands stay local to the pane. */
+/** Slash commands stay local to the pane. */
 export function broadcastSent(originPaneId: string, text: string): void {
-  if (!$broadcastOn.get() || !$broadcastAvailable.get() || text.trimStart().startsWith('/')) {
+  if (!$broadcastOn.get() || !$broadcastAvailable.get() || !text.trim() || text.trimStart().startsWith('/')) {
     return
   }
 

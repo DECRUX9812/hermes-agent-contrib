@@ -19,7 +19,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { atom, computed } from 'nanostores'
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 
-import { withBroadcast } from '@/app/chat/broadcast-fan-out'
 import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
 import { useModelControls } from '@/app/session/hooks/use-model-controls'
 import { blobToDataUrl } from '@/app/session/hooks/use-prompt-actions/utils'
@@ -59,7 +58,6 @@ import {
   sessionMatchesStoredId,
   sessionPinId
 } from '@/store/session'
-import { TILE_PANE_PREFIX } from '@/store/session-focus'
 import { isSessionRemovalPending } from '@/store/session-removal'
 import { requestForSessionProfile } from '@/store/session-request-router'
 import {
@@ -354,8 +352,6 @@ function TileChat({
   const onPickImages = useCallback(() => void pickImages(), [pickImages])
   const onRemoveAttachment = useCallback((id: string) => void removeAttachment(id), [removeAttachment])
   const onRetryResume = useCallback(() => patchSessionTile(storedSessionId, { error: undefined }), [storedSessionId])
-  const tilePaneId = `${TILE_PANE_PREFIX}${storedSessionId}`
-  const onSubmit = useMemo(() => withBroadcast(tilePaneId, actions.submitText), [actions.submitText, tilePaneId])
 
   // Per-tile model menu — rendered under this tile's SessionView so the pill
   // + switch target THIS runtime, not the primary (which may be mid-turn).
@@ -429,7 +425,7 @@ function TileChat({
           onRetryResume={onRetryResume}
           onSteer={actions.steerPrompt}
           onSteerHidden={actions.injectHiddenPrompt}
-          onSubmit={onSubmit}
+          onSubmit={actions.submitText}
           onThreadMessagesChange={actions.handleThreadMessagesChange}
           onToggleSelectedPin={noop}
           onTranscribeAudio={tileTranscribeAudio}

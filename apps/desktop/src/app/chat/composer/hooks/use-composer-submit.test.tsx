@@ -1,6 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { type Dispatch, type PropsWithChildren, type SetStateAction, useLayoutEffect, useState } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as sessionOwnerUtils from '@/app/session/hooks/use-session-actions/utils'
 import { PaneVisibleContext } from '@/components/pane-shell/pane-visibility'
@@ -29,6 +29,10 @@ import { type ComposerTarget, requestComposerSubmit } from '../focus'
 import { ComposerScopeProvider, ComposerSurfaceProvider, MAIN_COMPOSER_SCOPE } from '../scope'
 
 import { useComposerSubmit } from './use-composer-submit'
+
+const broadcastTyped = vi.hoisted(() => vi.fn())
+
+vi.mock('@/app/chat/broadcast-fan-out', () => ({ broadcastTyped }))
 
 interface SubmitHarnessOptions {
   attachments?: ComposerAttachment[]
@@ -959,5 +963,47 @@ describe('useComposerSubmit with a setup card waiting in the onboarding chat', (
     expect(queueCurrentDraft).not.toHaveBeenCalled()
     expect(onSteer).not.toHaveBeenCalled()
     expect(onSubmit).not.toHaveBeenCalled()
+  })
+})
+
+describe('useComposerSubmit broadcast', () => {
+  beforeEach(() => broadcastTyped.mockClear())
+
+  afterEach(() => {
+    cleanup()
+    clearQueuedPrompts('stored-session')
+  })
+
+  it('broadcasts a typed idle send once, from the composer that sent it', () => {
+    const { hook, onSubmit } = renderSubmitHook({ scopeTarget: 'tile:stored-session', text: 'run the tests' })
+
+    act(() => {
+      hook.result.current.submitDraft()
+    })
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(broadcastTyped).toHaveBeenCalledExactlyOnceWith('tile:stored-session', 'run the tests')
+  })
+
+  it('broadcasts text typed while busy, which steers the origin pane', () => {
+    const { hook, onSteer } = renderSubmitHook({ busy: true, text: 'use the staging server' })
+
+    act(() => {
+      hook.result.current.submitDraft()
+    })
+
+    expect(onSteer).toHaveBeenCalledTimes(1)
+    expect(broadcastTyped).toHaveBeenCalledExactlyOnceWith('main', 'use the staging server')
+  })
+
+  it('never broadcasts a programmatic submit that the user did not type', async () => {
+    const { onSubmit } = renderSubmitHook()
+
+    await act(async () => {
+      requestComposerSubmit('Start without connections.', { target: 'main' })
+    })
+
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+    expect(broadcastTyped).not.toHaveBeenCalled()
   })
 })

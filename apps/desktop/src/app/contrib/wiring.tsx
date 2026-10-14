@@ -13,7 +13,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type CSSProperties, lazy, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
-import { withBroadcast } from '@/app/chat/broadcast-fan-out'
 import { $splitSessionAction, splitFocusedSession } from '@/app/chat/split-session'
 import { formatRefValue } from '@/components/assistant-ui/directive-text'
 import { BootFailureOverlay } from '@/components/boot-failure-overlay'
@@ -1273,7 +1272,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     onRetryResume: sessionId => void resumeSession(sessionId, true),
     onSteer: steerPrompt,
     onSteerHidden: injectHiddenPrompt,
-    onSubmit: withBroadcast('workspace', submitText),
+    onSubmit: submitText,
     onThreadMessagesChange: handleThreadMessagesChange,
     onToggleSelectedPin: toggleSelectedPin,
     onTranscribeAudio: transcribeVoiceAudio,
