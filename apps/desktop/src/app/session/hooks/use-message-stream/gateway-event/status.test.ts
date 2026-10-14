@@ -12,7 +12,7 @@ import { handleStatusEvent } from './status'
 import type { GatewayEventContext } from './types'
 
 vi.mock('@/store/native-notifications', () => ({ dispatchNativeNotification: vi.fn() }))
-vi.mock('@/store/onboarding', () => ({ requestDesktopOnboarding: vi.fn() }))
+vi.mock('@/fork/store/onboarding', () => ({ requestDesktopOnboarding: vi.fn() }))
 
 const OWNED_REFUSAL =
   'Session 20260909_095312_6b93f5 already has a live owner (tui, pid 32977, lease age 22m). ' +

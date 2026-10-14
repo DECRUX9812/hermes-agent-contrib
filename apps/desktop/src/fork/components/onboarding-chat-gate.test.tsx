@@ -7,13 +7,14 @@ import type { OnboardingStateResult } from '@/fork/gateway-types'
 async function loadWindow() {
   vi.resetModules()
 
-  const [{ OnboardingChatGate }, gate, onboarding] = await Promise.all([
+  const [{ OnboardingChatGate }, gate, onboarding, presence] = await Promise.all([
     import('./onboarding-chat-gate'),
     import('@/fork/store/onboarding-gate'),
-    import('@/fork/store/onboarding')
+    import('@/fork/store/onboarding'),
+    import('@/fork/store/onboarding-presence')
   ])
 
-  return { OnboardingChatGate, gate, onboarding }
+  return { OnboardingChatGate, gate, onboarding, presence }
 }
 
 const UNSEEN_STATE: OnboardingStateResult = { eligible: true, intro: 'unseen', failed_starts: 0, profile: 'setup' }
@@ -38,8 +39,9 @@ afterEach(() => {
 
 describe('OnboardingChatGate', () => {
   it('lets a window that does not run the intro open the provider picker once the state is read', async () => {
-    const { OnboardingChatGate, gate, onboarding } = await loadWindow()
+    const { OnboardingChatGate, gate, onboarding, presence } = await loadWindow()
 
+    presence.markOnboardingDecided()
     onboarding.requestDesktopOnboarding('No provider configured')
     render(<OnboardingChatGate enabled onKickoff={neverKicksOff} requestGateway={unseenFirstRun} runsIntro={false} />)
 

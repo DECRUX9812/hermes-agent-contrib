@@ -173,7 +173,6 @@ export function GroupThreadRail({
             className="flex size-6 cursor-pointer items-center justify-center rounded bg-(--ui-bg-primary) text-(--ui-text-tertiary) shadow-sm ring-1 ring-(--ui-stroke-secondary) hover:text-foreground"
             data-testid="group-thread-pin"
             onClick={() => togglePin(roomKey, item.thread)}
-            title={pins.includes(item.thread) ? b.group.prefs.unpin : b.group.prefs.pin}
             type="button"
           >
             <Codicon name={pins.includes(item.thread) ? 'pinned' : 'pin'} />
@@ -183,7 +182,6 @@ export function GroupThreadRail({
             className="flex size-6 cursor-pointer items-center justify-center rounded bg-(--ui-bg-primary) text-(--ui-text-tertiary) shadow-sm ring-1 ring-(--ui-stroke-secondary) hover:text-foreground"
             data-testid="group-thread-snooze"
             onClick={() => snoozeThread(roomKey, item.thread, snoozed.has(item.thread) ? 0 : undefined)}
-            title={snoozed.has(item.thread) ? b.group.prefs.wake : b.group.prefs.snooze}
             type="button"
           >
             <Codicon name={snoozed.has(item.thread) ? 'bell' : 'clock'} />
@@ -239,7 +237,6 @@ export function GroupThreadRail({
             className="h-7 gap-1 px-2 text-[0.6875rem]"
             onClick={() => void setDesktopAlerts(!prefs.desktopAlerts)}
             size="sm"
-            title={b.group.prefs.alertsHint}
             variant={prefs.desktopAlerts ? 'secondary' : 'ghost'}
           >
             <Codicon name={prefs.desktopAlerts ? 'bell-dot' : 'bell-slash'} />

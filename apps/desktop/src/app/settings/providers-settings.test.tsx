@@ -34,7 +34,7 @@ vi.mock('@/hermes', () => ({
   setEnvVar: (key: string, value: string, profile?: string) => setEnvVar(key, value, profile)
 }))
 
-vi.mock('@/store/onboarding', () => ({
+vi.mock('@/fork/store/onboarding', () => ({
   $desktopOnboarding: onboarding,
   startManualProviderOAuth: (...args: unknown[]) => startManualProviderOAuth(...args),
   startManualLocalEndpoint: (reason: null | string) => startManualLocalEndpoint(reason)

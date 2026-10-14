@@ -2,8 +2,9 @@ import type { FC, ReactNode } from 'react'
 import { useMemo } from 'react'
 
 import { type Contribution, useContributions } from '@/contrib'
-import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
+import { ContribBoundary } from '@/contrib/react/boundary'
 import {
+  type ParsedTranscriptDirective,
   segmentTranscriptDirectives,
   TRANSCRIPT_DIRECTIVE_AREA,
   type TranscriptDirectiveContribution,
@@ -40,6 +41,33 @@ function claimFor(contributions: readonly Contribution[], name: string) {
   return contributions.find(c => (c.data as TranscriptDirectiveContribution | undefined)?.name === name)
 }
 
+const DirectiveEntry: FC<{
+  contribution: Contribution
+  parsed: ParsedTranscriptDirective
+  streaming: boolean
+  messageText: string
+}> = ({ contribution, parsed, streaming, messageText }) => {
+  const render = (contribution.data as TranscriptDirectiveContribution).render
+
+  // Stable component IDENTITY per (render, parsed) — a fresh type per parent
+  // render would remount the widget (card-sized jump). Streaming arrives as a
+  // real prop on that stable type, so the settle flip re-renders the same
+  // mount instead of being memo-skipped (ref-only reads were exactly that).
+  const Leaf = useMemo(
+    () =>
+      function DirectiveLeafHost({ streaming: live }: { streaming: boolean }) {
+        return <>{render({ attrs: parsed.attrs, source: parsed.source, streaming: live, messageText })}</>
+      },
+    [render, parsed, messageText]
+  )
+
+  return (
+    <ContribBoundary id={contribution.id} variant="chip">
+      <Leaf streaming={streaming} />
+    </ContribBoundary>
+  )
+}
+
 export const TranscriptDirectiveLeaf: FC<{ text: string; streaming?: boolean; messageText?: string }> = ({
   text,
   streaming,
@@ -63,35 +91,22 @@ export const TranscriptDirectiveLeaf: FC<{ text: string; streaming?: boolean; me
     [contributions, segments]
   )
 
-  const match = entries[0]?.match
-  const parsed = entries[0]?.parsed
-  // SAFETY: claimFor resolved this entry from the directive area by its registered name.
-  const render = (match?.data as TranscriptDirectiveContribution | undefined)?.render
-
-  // Stable component identity for the boundary-mounted leaf: a fresh closure per
-  // render would remount the widget on every parent render.
-  const renderLeaf = useMemo(
-    () =>
-      render && parsed
-        ? () =>
-            render({
-              attrs: parsed.attrs,
-              source: parsed.source,
-              streaming: streaming ?? false,
-              messageText
-            })
-        : null,
-    [render, parsed, streaming, messageText]
-  )
-
-  if (!match || !renderLeaf) {
+  if (entries.length === 0) {
     return null
   }
 
   return (
-    <ContribBoundary id={match.id} variant="chip">
-      <ContribRender render={renderLeaf} />
-    </ContribBoundary>
+    <>
+      {entries.map(entry => (
+        <DirectiveEntry
+          contribution={entry.match}
+          key={entry.key}
+          messageText={messageText}
+          parsed={entry.parsed}
+          streaming={streaming ?? false}
+        />
+      ))}
+    </>
   )
 }
 

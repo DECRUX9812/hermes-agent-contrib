@@ -52,7 +52,7 @@ vi.mock('@/hermes', async () => ({
   setApiRequestProfile: () => {}
 }))
 
-vi.mock('@/store/onboarding', () => ({
+vi.mock('@/fork/store/onboarding', () => ({
   startManualLocalEndpoint: (...args: unknown[]) => startManualLocalEndpoint(...args),
   startManualOnboarding: (...args: unknown[]) => startManualOnboarding(...args),
   startManualProviderOAuth: (...args: unknown[]) => startManualProviderOAuth(...args)

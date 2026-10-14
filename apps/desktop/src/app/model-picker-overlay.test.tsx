@@ -40,7 +40,7 @@ vi.mock('@/lib/model-options', async importOriginal => ({
   ...(await importOriginal<Record<string, unknown>>()),
   requestModelOptions: vi.fn().mockResolvedValue({ model: '', provider: '', providers: [] })
 }))
-vi.mock('@/store/onboarding', async importOriginal => ({
+vi.mock('@/fork/store/onboarding', async importOriginal => ({
   ...(await importOriginal<Record<string, unknown>>()),
   startManualOnboarding: vi.fn()
 }))

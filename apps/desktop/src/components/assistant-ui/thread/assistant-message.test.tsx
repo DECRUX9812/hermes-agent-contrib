@@ -33,7 +33,7 @@ vi.mock('@/store/profile', async importOriginal => ({
   requestFreshSession: () => requestFreshSession()
 }))
 
-vi.mock('@/store/onboarding', async importOriginal => ({
+vi.mock('@/fork/store/onboarding', async importOriginal => ({
   ...(await importOriginal<Record<string, unknown>>()),
   startManualProviderOAuth: (...args: unknown[]) => startManualProviderOAuth(...args)
 }))
