@@ -9,7 +9,9 @@
  * every read and write is guarded and the room works without it.
  */
 
-import { atom } from 'nanostores'
+import { atom, computed } from 'nanostores'
+
+import type { RoomQuickFilter } from './group-row'
 
 const STORAGE_KEY = 'hermes.bots.roomPrefs.v1'
 export const SNOOZE_MS = 60 * 60_000
@@ -24,6 +26,8 @@ export interface RoomPrefs {
   idleCollapsed?: Record<string, boolean>
   /** roomKey → the log tail when the user last opened the room. */
   lastOpened: Record<string, number>
+  /** The room-list quick filter. */
+  roomFilter?: RoomQuickFilter
   /** roomKey → pinned thread ids, pin order. */
   pins: Record<string, string[]>
   /** roomKey → thread → snoozed until (ms). */
@@ -31,6 +35,12 @@ export interface RoomPrefs {
 }
 
 const EMPTY: RoomPrefs = { desktopAlerts: false, lastOpened: {}, pins: {}, snoozes: {} }
+
+export function storedRoomFilter(prefs: RoomPrefs): RoomQuickFilter {
+  const filter = prefs.roomFilter
+
+  return filter === 'needsYou' || filter === 'unread' || filter === 'working' ? filter : 'all'
+}
 
 function load(): RoomPrefs {
   try {
@@ -44,6 +54,8 @@ function load(): RoomPrefs {
 
 export const $roomPrefs = atom<RoomPrefs>(typeof window === 'undefined' ? EMPTY : load())
 
+export const $roomFilter = computed($roomPrefs, storedRoomFilter)
+
 function update(change: (prefs: RoomPrefs) => RoomPrefs): void {
   const next = change($roomPrefs.get())
   $roomPrefs.set(next)
@@ -53,6 +65,10 @@ function update(change: (prefs: RoomPrefs) => RoomPrefs): void {
   } catch {
     // Storage refused: the preference still holds for this session.
   }
+}
+
+export function setRoomFilter(filter: RoomQuickFilter): void {
+  update(prefs => ({ ...prefs, roomFilter: filter }))
 }
 
 export function togglePin(roomKey: string, thread: string): void {

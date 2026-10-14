@@ -41,8 +41,9 @@ import { GroupChatWorkspace, openGroupChat } from './group-chat-view'
 import { groupChatMemberBots } from './group-membership'
 import { $groupMainTabsRev, shouldRenderGroupChatInPane } from './group-panes'
 import { $activeGroupMemberKeys } from './group-presence'
+import { $roomFilter, setRoomFilter } from './group-room-prefs'
 import { roomStatusFor } from './group-row'
-import type { RoomQuickFilter, RoomStatusSnapshot } from './group-row'
+import type { RoomStatusSnapshot } from './group-row'
 import { groupHasPendingClarify } from './group-turns'
 import { $groupReadAt } from './group-unread'
 import { $showHiddenBots, isBotHidden } from './hidden-bots'
@@ -312,7 +313,6 @@ export function BotsPane() {
   const mailboxNotes = useMailbox().data || []
   const [assigningTask, setAssigningTask] = useState<null | RosterRow>(null)
   const [query, setQuery] = useState('')
-  const [roomFilter, setRoomFilter] = useState<RoomQuickFilter>('all')
   const [rowKindFilter, setRowKindFilter] = useState<RosterKindFilter>('all')
   const [activityFilter, setActivityFilter] = useState<RosterActivityFilter>('all')
   const [gatewayFilter, setGatewayFilter] = useState('all')
@@ -330,6 +330,7 @@ export function BotsPane() {
   const groupNeedsYou = useValue($groupNeedsYou)
   const groupClarify = useValue($groupClarify)
   const groupRooms = useValue($groupChats)
+  const roomFilter = useValue($roomFilter)
   const groupReadAt = useValue($groupReadAt)
   const roomArchive = useValue($roomArchive)
   const rememberedSources = useValue($lastSources)
