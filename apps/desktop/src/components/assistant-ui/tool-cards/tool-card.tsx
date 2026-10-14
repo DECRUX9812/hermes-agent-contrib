@@ -73,8 +73,15 @@ export function ToolCard({
   const shot = group.thumb?.kind === 'screenshot' ? group.thumb.src : null
 
   const toggle = () => {
-    setOpen(current => !current)
+    if (everOpened) {
+      setOpen(current => !current)
+
+      return
+    }
+
+    // Mount the panel closed first so its grid row has a 0fr frame to grow from.
     setEverOpened(true)
+    requestAnimationFrame(() => setOpen(true))
   }
 
   return (

@@ -116,12 +116,12 @@ describe('ToolActivityStack', () => {
     expect(screen.queryByText('Request')).toBeNull()
   })
 
-  it('expands a row to show its request and output', () => {
+  it('expands a row to show its request and output', async () => {
     render(<ToolActivityStack groups={[group()]} />)
 
     fireEvent.click(screen.getByRole('button', { expanded: false }))
 
-    expect(screen.getByRole('button', { expanded: true })).toBeTruthy()
+    expect(await screen.findByRole('button', { expanded: true })).toBeTruthy()
     expect(screen.getByText('Request')).toBeTruthy()
     expect(screen.getByText('Output')).toBeTruthy()
     expect(screen.getByText('Welcome to example')).toBeTruthy()
