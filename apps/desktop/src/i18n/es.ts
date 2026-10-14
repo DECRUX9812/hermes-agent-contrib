@@ -4008,6 +4008,8 @@ export const esOverrides = {
     },
     searchAria: 'Buscar sesiones',
     railAria: 'Navegación de la app',
+    railPlugins: 'Plugins',
+    railPluginsHint: 'Plugins: abrir o instalar',
     searchPlaceholder: 'Buscar sesiones…',
     clearSearch: 'Limpiar búsqueda',
     noMatch: query => `Ninguna sesión coincide con “${query}”.`,

@@ -3700,6 +3700,8 @@ export const en: Translations = {
     },
     searchAria: 'Search sessions',
     railAria: 'App navigation',
+    railPlugins: 'Plugins',
+    railPluginsHint: 'Plugins: open or install',
     searchPlaceholder: 'Search sessions…',
     clearSearch: 'Clear search',
     noMatch: query => `No sessions match “${query}”.`,

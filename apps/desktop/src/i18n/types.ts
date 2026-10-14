@@ -3223,6 +3223,8 @@ export interface Translations extends NoticeTranslations {
     }
     searchAria: string
     railAria: string
+    railPlugins: string
+    railPluginsHint: string
     searchPlaceholder: string
     clearSearch: string
     noMatch: (query: string) => string
