@@ -1,4 +1,4 @@
-interface OrderRow {
+export interface OrderRow {
   activity: number
   /** A2 rollup — only consulted when the caller opts into attention sort. */
   attention?: number

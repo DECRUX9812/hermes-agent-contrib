@@ -549,7 +549,6 @@ export function BotsPane() {
     return (
       <RosterGroupRowView
         active={groupChatName === row.name}
-        b={b}
         bandNames={bandNames}
         group={row.name}
         groupClarify={groupClarify}

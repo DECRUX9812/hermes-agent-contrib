@@ -14,18 +14,17 @@ import { Fragment, useRef, useState } from 'react'
 import { $botMeta } from './data'
 import { $roomArchive, isRoomArchived, setRoomArchived } from './group-archive'
 import { $groupChats, groupChatRoomKey, updateGroupChat } from './group-chat'
-import type { $groupClarify, $groupNeedsYou, GroupChat } from './group-chat'
+import type { $groupClarify, $groupNeedsYou } from './group-chat'
 import { groupChatNames, groupLastActivity } from './group-membership'
 import { moveGroupRow, reorderGroupRows, sortGroupRosterRows } from './group-order'
 import type { OrderRow } from './group-order'
 import { GroupRow, roomMatchesFilter } from './group-row'
 import type { RoomQuickFilter, RoomStatusSnapshot } from './group-row'
 import { groupHasPendingClarify } from './group-turns'
-import type { useBots } from './i18n'
 import { useFlip } from './motion'
 import { useRoomText } from './room-i18n'
 import type { RosterGroupRow } from './roster-pane-derivation'
-import type { GroupMember } from './types'
+import type { GroupChat, GroupMember } from './types'
 
 /** The room being dragged for a reorder, by room name. */
 export const $draggingRoom = atom<null | string>(null)
@@ -141,7 +140,6 @@ export function dropRoomOnBand(name: string, band: 'active' | 'archived' | 'pinn
 }
 
 interface RosterGroupRowViewProps extends Omit<ComponentProps<typeof GroupRow>, 'needsYou' | 'onMoveKey'> {
-  b: ReturnType<typeof useBots>
   /** Names the row may move among (its band, filter-matching); defaults to all rows. */
   bandNames?: string[]
   groupClarify: ReturnType<typeof $groupClarify.get>
@@ -151,7 +149,6 @@ interface RosterGroupRowViewProps extends Omit<ComponentProps<typeof GroupRow>, 
 }
 
 export function RosterGroupRowView({
-  b,
   bandNames,
   groupClarify,
   groupNeedsYou,

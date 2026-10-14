@@ -38,12 +38,12 @@ import { GroupRoomsBands } from './roster-pane-groups'
 import { $collapsedBotSections, toggleBotSectionCollapsed } from './user-sections'
 
 const rows: RosterGroupRow[] = [
-  { kind: 'group', members: [], name: 'Pinned', pinned: true, activity: 3 },
-  { kind: 'group', members: [], name: 'Working', pinned: false, activity: 2 },
-  { kind: 'group', members: [], name: 'Quiet', pinned: false, activity: 1 }
+  { active: false, kind: 'group', members: [], name: 'Pinned', pinned: true, activity: 3 },
+  { active: false, kind: 'group', members: [], name: 'Working', pinned: false, activity: 2 },
+  { active: false, kind: 'group', members: [], name: 'Quiet', pinned: false, activity: 1 }
 ]
 
-const archivedRow: RosterGroupRow = { kind: 'group', members: [], name: 'Old', pinned: false, activity: 0 }
+const archivedRow: RosterGroupRow = { active: false, kind: 'group', members: [], name: 'Old', pinned: false, activity: 0 }
 
 const statuses: Record<string, RoomStatusSnapshot> = {
   Pinned: { needsYou: false, unread: 0, working: false },

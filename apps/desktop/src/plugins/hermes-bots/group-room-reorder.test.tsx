@@ -35,14 +35,12 @@ import { $roomArchive } from './group-archive'
 import { $groupChats, $groupClarify, $groupNeedsYou } from './group-chat'
 import type { RoomQuickFilter } from './group-row'
 import { roomStatusFor } from './group-row'
-import { translateBots } from './i18n-test-helper'
 import type { RosterGroupRow } from './roster-pane-derivation'
 import { $draggingRoom, $roomDropTarget, GroupRoomsBands } from './roster-pane-groups'
 import { RosterGroupRowView } from './roster-pane-groups'
 import type { GroupMember } from './types'
 import { $collapsedBotSections, toggleBotSectionCollapsed } from './user-sections'
 
-const b = translateBots
 const dragData = () => ({ setData: vi.fn(), getData: () => '', effectAllowed: 'move' as const })
 
 const SEATS = [{ name: 'alpha' }, { name: 'beta' }]
@@ -57,7 +55,8 @@ function seedRooms(extra: Record<string, Record<string, unknown>> = {}) {
 }
 
 function rowList(rooms: ReturnType<typeof $groupChats.get>): RosterGroupRow[] {
-  return (['A', 'B', 'C'] as const).map(name => ({
+  return ['A', 'B', 'C'].map((name): RosterGroupRow => ({
+    active: false,
     kind: 'group',
     members: [] as GroupMember[],
     name,
@@ -79,7 +78,6 @@ function FlatList() {
       {rowList(rooms).map(row => (
         <RosterGroupRowView
           active={false}
-          b={b}
           bandNames={['A', 'B', 'C']}
           group={row.name}
           groupClarify={{}}
@@ -112,7 +110,6 @@ function Bands() {
     list.map(row => (
       <RosterGroupRowView
         active={false}
-        b={b}
         bandNames={list.map(entry => entry.name)}
         group={row.name}
         groupClarify={{}}
@@ -133,7 +130,7 @@ function Bands() {
       filter={filter}
       onFilter={setFilter}
       renderBandRows={pass}
-      renderRow={row => pass([row])}
+      renderRow={row => pass(rows.filter(entry => entry.name === row.name))}
       rooms={rooms}
       rosterSectionCollapsed={id => collapsedSections.has(id)}
       rows={rows}
