@@ -3187,6 +3187,7 @@ export const en: Translations = {
     switchToConnection: name => `Switch to ${name}`,
     switchConnectionFailed: name => `Could not connect to ${name}`,
     manageProfiles: 'Manage profiles…',
+    railMore: 'More profile actions',
     connectGateway: 'Manage gateways…',
     fleet: {
       allOnGateway: 'All profiles on this gateway',

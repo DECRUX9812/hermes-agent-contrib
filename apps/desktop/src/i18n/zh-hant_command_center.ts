@@ -339,6 +339,7 @@ export const zhHantCommandCenter = {
     switchToConnection: name => `切換至 ${name}`,
     switchConnectionFailed: name => `無法連線至 ${name}`,
     manageProfiles: '管理設定檔…',
+    railMore: '更多設定檔操作',
     fleet: {
       localDevice: '此裝置（本機後端——若未安裝 Hermes 則會安裝，否則開啟新的工作階段）',
       switchDeviceTitle: '切換到此裝置？',

@@ -2765,6 +2765,7 @@ export const jaOverrides = {
     switchToConnection: name => `${name} に切り替え`,
     switchConnectionFailed: name => `${name} に接続できませんでした`,
     manageProfiles: 'プロファイルを管理…',
+    railMore: 'プロファイルのその他の操作',
     fleet: {
       localDevice:
         'このデバイス（ローカルバックエンド — Hermes が無ければインストールし、あれば新しいセッションを開きます）',

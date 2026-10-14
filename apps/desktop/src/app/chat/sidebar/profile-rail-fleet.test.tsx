@@ -60,6 +60,7 @@ vi.mock('@/i18n', () => ({
         },
         importProfile: 'Import profile…',
         manageProfiles: 'Manage profiles…',
+        railMore: 'More profile actions',
         newProfile: 'New profile',
         remoteOverride: {
           badge: (host: string) => `Runs on ${host}`,
@@ -277,7 +278,7 @@ describe('ProfileRail overflow', () => {
     expect(mask.mock.calls.at(-1)?.[0]).toContain('to right, black,')
     expect(mask.mock.calls.at(-1)?.[0]).toContain('transparent)')
     expect(scroller.contains(screen.getByRole('button', { name: 'New profile' }))).toBe(false)
-    expect(scroller.contains(screen.getByRole('button', { name: 'Import profile…' }))).toBe(false)
+    expect(scroller.contains(screen.getByRole('button', { name: 'More profile actions' }))).toBe(false)
 
     scroller.scrollLeft = 50
     fireEvent.scroll(scroller)
@@ -431,7 +432,8 @@ describe('ProfileRail fleet mode', () => {
     expect(getAgentRoster).not.toHaveBeenCalled()
     expect(screen.queryByRole('group', { name: /^Profiles on/ })).toBeNull()
     expect(container.querySelector('[data-slot="profile-rail-divider"]')).toBeNull()
-    expect(screen.getByRole('button', { name: 'Manage gateways…' })).toBeTruthy()
+    fireEvent.keyDown(screen.getByRole('button', { name: 'More profile actions' }), { key: 'Enter' })
+    expect(screen.getByRole('menuitem', { name: 'Manage gateways…' })).toBeTruthy()
   })
 
   it('lays every other gateway on the strip as an at-rest group, in switcher order', async () => {
@@ -487,7 +489,9 @@ describe('ProfileRail fleet mode', () => {
 
     // Fleet pill: "all on this gateway" replaces the default↔all toggle.
     expect(screen.getByRole('button', { name: 'All profiles on this gateway' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Manage gateways…' })).toBeNull()
+    fireEvent.keyDown(screen.getByRole('button', { name: 'More profile actions' }), { key: 'Enter' })
+    expect(screen.getByRole('menuitem', { name: 'Manage profiles…' })).toBeTruthy()
+    expect(screen.queryByRole('menuitem', { name: 'Manage gateways…' })).toBeNull()
   })
 
   it('marks an unreachable gateway but never hides it', async () => {

@@ -2778,6 +2778,7 @@ export interface Translations extends NoticeTranslations {
     switchToConnection: (name: string) => string
     switchConnectionFailed: (name: string) => string
     manageProfiles: string
+    railMore: string
     connectGateway: string
     fleet: {
       allOnGateway: string

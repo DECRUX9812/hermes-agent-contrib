@@ -33,6 +33,7 @@ vi.mock('@/i18n', () => ({
         failedSaveSoul: 'Failed to save SOUL.md',
         importProfile: 'Import profile…',
         manageProfiles: 'Manage profiles…',
+        railMore: 'More profile actions',
         newProfile: 'New profile',
         renameMenu: 'Rename…',
         remoteOverride: {

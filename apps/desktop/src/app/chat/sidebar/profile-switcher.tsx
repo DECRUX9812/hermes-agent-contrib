@@ -71,8 +71,9 @@ import { PROFILES_ROUTE, ROSTER_ROUTE, SETTINGS_ROUTE } from '../../routes'
 
 import { buildRestGroups, countRestAgents, type FleetAgent, type FleetGroup, fleetRouteKey } from './fleet-rail'
 import { useLocalDeviceSwitch } from './local-device-switch'
+import { ProfileRailOverflow, type ProfileRailOverflowItem } from './profile-rail-overflow'
 import { ProfileRemoteOverrideDialog } from './profile-remote-override-dialog'
-import { AddProfileButton, EditSoulDialog, ImportProfileButton, ProfileDropdown } from './profile-switcher-dropdown'
+import { AddProfileButton, EditSoulDialog, ProfileDropdown } from './profile-switcher-dropdown'
 import { FleetDivider, FleetRestGroup, ProfilePill, ProfileSquare } from './profile-switcher-squares'
 import { useFleetRoster } from './use-fleet-roster'
 import { useProfileRailRefreshOnActive } from './use-profile-rail-refresh-on-active'
@@ -436,6 +437,38 @@ export function ProfileRail() {
     </>
   )
 
+  const overflowItems: ProfileRailOverflowItem[] = [
+    ...(condensed
+      ? []
+      : [
+          { glyph: 'cloud-download', id: 'import', label: p.importProfile, onSelect: () => void runImportProfileFlow() }
+        ]),
+    { glyph: 'account', id: 'manage', label: p.manageProfiles, onSelect: () => navigate(PROFILES_ROUTE) }
+  ]
+
+  const overflowTrailing: ProfileRailOverflowItem[] = [
+    ...(fleetRunCount > 0
+      ? [
+          {
+            glyph: 'pulse',
+            id: 'roster',
+            label: t.roster.railPill(fleetRunCount),
+            onSelect: () => navigate(ROSTER_ROUTE)
+          }
+        ]
+      : []),
+    ...(multipleConnections
+      ? []
+      : [
+          {
+            glyph: 'plug',
+            id: 'gateways',
+            label: p.connectGateway,
+            onSelect: () => navigate(`${SETTINGS_ROUTE}?tab=gateway`)
+          }
+        ])
+  ]
+
   return (
     // `data-tour` as well as `data-slot`: only the former is identity to the
     // tour collector and the tip catalog, and the rail's one other durable
@@ -574,42 +607,22 @@ export function ProfileRail() {
             </div>
           </div>
           <AddProfileButton label={p.newProfile} onClick={() => setCreateOpen(true)} />
-          <ImportProfileButton label={p.importProfile} />
         </>
       )}
 
-      {/* Always reachable, even with only the default profile: the manage
-          overlay is the only place to edit a profile's SOUL.md, and a
-          single-profile user must be able to edit the default's persona
-          without first creating a throwaway second profile. */}
-      <ProfilePill active={false} glyph="ellipsis" label={p.manageProfiles} onSelect={() => navigate(PROFILES_ROUTE)} />
-
-      {/* Roster — self-limiting affordance: the pill exists only while a run
-          is actually in flight somewhere across the fleet, and opens the
-          roster overlay (click-through cards, no actions). */}
-      {fleetRunCount > 0 && (
-        <ProfilePill
-          active={false}
-          glyph="pulse"
-          label={t.roster.railPill(fleetRunCount)}
-          onSelect={() => navigate(ROSTER_ROUTE)}
-          slot="profile-rail-roster"
-        />
-      )}
+      {/* Always reachable, even with only the default profile: Manage is the
+          only place to edit a profile's SOUL.md. Import rides along on the
+          strip path (the condensed dropdown carries its own); the roster row
+          exists only while a run is in flight; the gateways door only until a
+          second source exists (then the source selector owns it). */}
+      <ProfileRailOverflow
+        items={overflowItems}
+        label={p.railMore}
+        live={fleetRunCount > 0}
+        trailing={overflowTrailing}
+      />
 
       {localDeviceDialog}
-
-      {/* Multi-gateway discoverability: before a second source exists, a plug
-          pinned beside Manage deep-links to the unified Gateways page. Once
-          there are several sources, the same action lives in their selector. */}
-      {!multipleConnections && (
-        <ProfilePill
-          active={false}
-          glyph="plug"
-          label={p.connectGateway}
-          onSelect={() => navigate(`${SETTINGS_ROUTE}?tab=gateway`)}
-        />
-      )}
 
       {/* Land in the new profile on a fresh chat (selectProfile triggers the
           new-session reset), not stuck on the session you were just in. */}
