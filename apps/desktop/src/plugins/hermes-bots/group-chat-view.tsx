@@ -1239,7 +1239,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         mentionText={mentionText}
         MessageTextContent={MessageTextContent}
         meta={meta}
-        onOpenThread={focusThread === thread ? null : () => openThread(thread)}
+        onOpenThread={
+          // The thread's last entry already ends in the tail's reply link.
+          focusThread === thread || threadEnds.get(thread) === index ? null : () => openThread(thread)
+        }
         onReply={() => replyToMember(entry, member)}
         onToggleReveal={() => setRevealedSpeaker(revealed ? null : entryKey)}
         replyTag={isUser ? '' : replyMentionTag(entry, member)}
