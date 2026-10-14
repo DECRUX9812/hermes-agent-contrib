@@ -26,8 +26,6 @@ import {
   host,
   Input,
   queryClient,
-  relativeTime,
-  RowButton,
   Tip,
   ToggleRow,
   useI18n,
@@ -40,10 +38,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { $botMeta, $lastRoster, botHandle, botSourceStatus, ROSTER_KEY, saveBotMeta } from './data'
 import {
   $groupActivity,
-  currentGroupActivity,
-  GROUP_ACTIVITY_GLYPHS,
-  groupActivityLabel,
-  groupActivityTone
+  currentGroupActivity
 } from './group-activity'
 import type { GroupActivityEntry } from './group-activity'
 import { filesToGroupAttachments, pickGroupAttachments } from './group-attachments'
@@ -94,6 +89,7 @@ import {
   updateGroupComposerDraft
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
+import { GroupRoomActivityBar } from './group-room-activity'
 import { asideInline, GroupRoomAside, useRoomLayout } from './group-room-aside'
 import { GroupRoomBoard } from './group-room-board'
 import { LineCards } from './group-room-cards'
@@ -731,9 +727,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     void filesToGroupAttachments(files).then(picked => addImages(focusThread, picked))
   }
 
-  // Collapsible Activity view: collapsed by default — opening it is always an
-  // explicit user action, it never steals focus, and it never auto-scrolls.
-  const [activityOpen, setActivityOpen] = useState(false)
   // Subscribe: activity rows re-render as turn events land.
   useValue($groupActivity)
   // Pending member questions for THIS room (#90694), oldest first.
@@ -958,9 +951,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     host.notify({ kind: 'success', message: b.group.stoppedMember(memberLabel(member.name)) })
   }
 
-  // Activity disclosure: quiet, collapsed by default. The collapsed row shows
-  // the latest event; expanding lists the current run's events newest-first.
-  // Events are epoch-tagged, so a superseded run's history drops out of view.
+  // Activity disclosure lives in GroupRoomActivityBar (quiet, collapsed by
+  // default). Events are epoch-tagged, so a superseded run's history drops
+  // out of view. The view keeps the events, the latest (for stop scope) and
+  // the per-member working stamps (for the thread tails).
   const activityEvents: GroupActivityEntry[] = currentGroupActivity(group)
   const latestActivity = activityEvents.length ? activityEvents[activityEvents.length - 1] : null
 
@@ -969,24 +963,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       .filter(event => event.kind === 'working' && event.member)
       .map(event => [event.member as string, event.at])
   )
-
-  // A later "settled" event must not hide a member that failed to answer.
-  // Successful completion for that member clears its unresolved warning.
-  const unresolvedFailures = new Map<string, GroupActivityEntry>()
-
-  for (const event of activityEvents) {
-    const key = event.member || ''
-
-    if (event.kind === 'failed' || event.kind === 'timed-out') {
-      unresolvedFailures.delete(key)
-      unresolvedFailures.set(key, event)
-    } else if (event.kind === 'replied' || event.kind === 'passed' || event.kind === 'delivered') {
-      unresolvedFailures.delete(key)
-    }
-  }
-
-  const summaryActivity =
-    !room.running && unresolvedFailures.size ? [...unresolvedFailures.values()].at(-1)! : latestActivity
 
   // #94570 shell rewired onto the real primitive (#91868/#94569): the button
   // must stop the ROUND, not just spray per-member interrupts — without the
@@ -1001,52 +977,12 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   }
 
   const activityPanel = (
-    <div className="border-b border-line">
-      <div className="flex items-center gap-1">
-        <RowButton
-          aria-controls={`group-activity:${group}`}
-          aria-expanded={activityOpen}
-          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-ui-2xs text-fg-muted transition-colors hover:text-foreground"
-          onClick={() => setActivityOpen(prev => !prev)}
-        >
-          <Codicon className="shrink-0 text-ui-2xs" name={activityOpen ? 'chevron-down' : 'chevron-right'} />
-          <span className="shrink-0 font-medium">{b.group.activity}</span>
-          {summaryActivity ? (
-            <span
-              className={cn('min-w-0 flex-1 truncate', groupActivityTone(summaryActivity.kind))}
-            >{`${groupActivityLabel(summaryActivity, group)} · ${relativeTime(summaryActivity.at)}`}</span>
-          ) : null}
-        </RowButton>
-        {room.running ? (
-          <Tip label={b.group.stopHint}>
-            <Button className="shrink-0" onClick={() => void stopRoomRun()} size="xs" variant="ghost">
-              <Codicon name="debug-stop" />
-              {b.group.stopAll}
-            </Button>
-          </Tip>
-        ) : null}
-      </div>
-      {activityOpen ? (
-        <div className="grid gap-0.5 px-2.5 pb-1.5" id={`group-activity:${group}`}>
-          {activityEvents.length ? (
-            [...activityEvents].reverse().map((event, i) => (
-              <div className="flex items-center gap-1.5 text-ui-2xs" key={`${event.at}:${i}`}>
-                <Codicon
-                  className={cn('shrink-0 text-ui-2xs', groupActivityTone(event.kind))}
-                  name={GROUP_ACTIVITY_GLYPHS[event.kind] || 'circle-outline'}
-                />
-                <span className={cn('min-w-0 flex-1 truncate', groupActivityTone(event.kind))}>
-                  {groupActivityLabel(event, group)}
-                </span>
-                <span className="shrink-0 text-ui-2xs text-fg-muted">{relativeTime(event.at)}</span>
-              </div>
-            ))
-          ) : (
-            <div className="px-0.5 pb-0.5 text-ui-2xs text-fg-muted">{b.group.noActivityYet}</div>
-          )}
-        </div>
-      ) : null}
-    </div>
+    <GroupRoomActivityBar
+      events={activityEvents}
+      group={group}
+      onStopAll={() => void stopRoomRun()}
+      running={room.running === true}
+    />
   )
 
   const submit = () => {
@@ -1329,12 +1265,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const threadRail = (embedded: boolean) => (
     <GroupThreadRail
       allMeta={allMeta}
-      desk={{
-        needsYou: escalations.length + roomClarifies.length,
-        onFloor: () => openPanel('floor'),
-        onNeedsYou: () => openPanel('decisions'),
-        working: workingNow.size
-      }}
       embedded={embedded}
       focusThread={focusedItem ? focusThread : null}
       items={workItems}
@@ -1476,7 +1406,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     >
       {dragOver ? (
         <div
-          className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center border-2 border-dashed border-(--ui-accent) text-sm font-medium text-(--ui-accent)"
+          className="motion-fade-in pointer-events-none absolute inset-2 z-40 flex items-center justify-center rounded-panel border-2 border-dashed border-brand bg-surface/80 text-brand text-ui-sm font-medium"
           key={'dropzone'}
         >
           {focusedItem ? b.group.dropToThread : b.group.dropToRoom}
@@ -1492,18 +1422,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}
             members={members}
           />
-          {teamLead && leadName ? (
-            <div
-              className={cn(
-                'flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2.5 py-1 text-[0.6875rem] text-(--ui-text-quaternary)',
-                panelShown && inlineAside && 'hidden'
-              )}
-              data-testid="group-team-listening"
-            >
-              <Codicon className="shrink-0 text-[0.625rem]" name="organization" />
-              <span className="min-w-0 flex-1 truncate">{b.group.teamListening(leadName)}</span>
-            </div>
-          ) : null}
           {view === 'board' ? (
             <GroupRoomBoard
               escalations={escalations}
@@ -1524,7 +1442,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
             {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
             {/* unbreakable code line widened every entry to its own width and the */}
             {/* log scrolled sideways as a whole instead of the code block (#91878). */}
-            <div className="grid grid-cols-[minmax(0,1fr)] gap-1 px-2.5 pb-2 pt-1">
+            <div className="mx-auto grid w-full max-w-[52rem] grid-cols-[minmax(0,1fr)] gap-1 px-4 pb-4 pt-2">
               {briefOpen ? (
                 <RecapCard
                   entries={room.log.filter(entry => Number(entry.at) > Date.now() - 86_400_000)}
@@ -1577,8 +1495,8 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               <div className="pointer-events-none sticky bottom-2 flex justify-center">
                 <Button
                   className={cn(
-                    'pointer-events-auto h-7 gap-1 rounded-full px-3 text-[0.75rem] shadow-md',
-                    unseen ? 'bg-(--ui-accent) text-white hover:bg-(--ui-accent)/90' : ''
+                    'motion-fade-in pointer-events-auto h-7 gap-1 rounded-pill px-3 text-ui-xs shadow-e2',
+                    unseen ? 'bg-brand text-white hover:bg-brand/90' : ''
                   )}
                   data-testid="group-jump-latest"
                   onClick={jumpToLatest}
@@ -1591,30 +1509,32 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               </div>
             ) : null}
           </div>
-          <div className={cn('border-t border-(--ui-stroke-secondary) p-2', view === 'board' && 'hidden')}>
+          <div className={cn('bg-surface px-4 pb-3 pt-2', view === 'board' && 'hidden')}>
             {/* The main composer always starts a new thread; replies go
                 through the open thread's own box. */}
-            <GroupComposerContext leadName={teamLead && leadName ? leadName : ''} onClear={() => {}} replyTitle={null} />
-            <GroupRoomComposer
-              ariaLabel={b.group.messageRoom(group)}
-              images={imagesFor(null)}
-              members={members}
-              onChange={setDraft}
-              onPaste={event => pasteImages(null, event)}
-              onPick={() => void pickGroupAttachments().then(picked => addImages(null, picked))}
-              onRemoveImage={index => removeImage(null, index)}
-              onSubmit={submit}
-              placeholder={b.group.newThreadPlaceholder(group)}
-              sendLabel={b.group.newThread}
-              value={draft}
-            />
-            <RoomShortcuts
-              commands={commands}
-              firstTag={groupReplyMentionTag(leadMember || members[0] || { name: 'everyone' }, members) || 'everyone'}
-              onHelp={() => setKeysOpen(open => !open)}
-              onInsert={setDraft}
-              thread={null}
-            />
+            <div className="mx-auto w-full max-w-[52rem]">
+              <GroupComposerContext leadName={teamLead && leadName ? leadName : ''} onClear={() => {}} replyTitle={null} />
+              <GroupRoomComposer
+                ariaLabel={b.group.messageRoom(group)}
+                images={imagesFor(null)}
+                members={members}
+                onChange={setDraft}
+                onPaste={event => pasteImages(null, event)}
+                onPick={() => void pickGroupAttachments().then(picked => addImages(null, picked))}
+                onRemoveImage={index => removeImage(null, index)}
+                onSubmit={submit}
+                placeholder={b.group.newThreadPlaceholder(group)}
+                sendLabel={b.group.newThread}
+                value={draft}
+              />
+              <RoomShortcuts
+                commands={commands}
+                firstTag={groupReplyMentionTag(leadMember || members[0] || { name: 'everyone' }, members) || 'everyone'}
+                onHelp={() => setKeysOpen(open => !open)}
+                onInsert={setDraft}
+                thread={null}
+              />
+            </div>
           </div>
         </div>
         <GroupRoomAside
