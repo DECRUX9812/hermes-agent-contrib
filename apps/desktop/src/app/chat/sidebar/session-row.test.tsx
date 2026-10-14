@@ -7,16 +7,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { registry } from '@/contrib/registry'
 import type { SessionInfo } from '@/hermes'
+import type { ChatMessage } from '@/lib/chat-messages/types'
 import { createClientSessionState } from '@/lib/chat-runtime'
 import type * as ChatRuntime from '@/lib/chat-runtime'
 import { SESSION_ROW_AREAS, type SessionRowSlotProps } from '@/lib/session-row-slots'
 import type * as Time from '@/lib/time'
 import type * as ComposerStatusStore from '@/store/composer-status'
 import { $sidebarRowMeta } from '@/store/layout'
+import { $sessions } from '@/store/session'
 import type * as SessionStore from '@/store/session'
 import { setSessionListDensity } from '@/store/session-list-density'
 import { clearAllSessionStates, publishSessionState } from '@/store/session-states'
 import type * as SessionStatesStore from '@/store/session-states'
+import { clearAllSessionTodos, setSessionTodos } from '@/store/todos'
 import type * as WindowsStore from '@/store/windows'
 
 import { ReorderableList, useSortableBindings } from './reorderable-list'
@@ -79,6 +82,7 @@ vi.mock('@/i18n', () => ({
           continuationOrigin: 'Automatic continuation — this conversation was compressed and continued',
           messageCount: (count: number) => `${count} messages`,
           needsInput: 'Needs input',
+          progressRing: (done: number, total: number) => `${done} of ${total} steps done`,
           sessionActions: 'Session actions',
           sessionRunning: 'Running',
           todoProgress: 'Tasks completed',
@@ -633,5 +637,69 @@ describe('SidebarSessionRow continuation badge', () => {
     const branch = renderRow(makeSession({ parent_session_id: 'parent', title: 'A real branch' }))
 
     expect(continuationGlyph(branch.container)).toBeNull()
+  })
+})
+
+describe('SidebarSessionRow progress and live marks', () => {
+  afterEach(() => {
+    clearAllSessionStates()
+    clearAllSessionTodos()
+    $sessions.set([])
+    setSessionListDensity('compact')
+  })
+
+  const planTodos = () =>
+    setSessionTodos('rt1', [
+      { content: 'a', id: 'a', status: 'completed' },
+      { content: 'b', id: 'b', status: 'completed' },
+      { content: 'c', id: 'c', status: 'pending' },
+      { content: 'd', id: 'd', status: 'pending' },
+      { content: 'e', id: 'e', status: 'pending' }
+    ] as never)
+
+  it('shows a one-line row plan as a ring, keeping the X/Y text in its tip only', () => {
+    publishSessionState('rt1', createClientSessionState('s1'))
+    planTodos()
+
+    renderRow(makeSession({ title: 'Planned' }))
+
+    expect(screen.getByRole('img', { name: '2 of 5 steps done' })).toBeTruthy()
+    expect(screen.queryByText('2/5')).toBeNull()
+  })
+
+  it('keeps the X/Y text footer on a card row', () => {
+    publishSessionState('rt1', createClientSessionState('s1'))
+    planTodos()
+
+    renderRow(makeSession({ title: 'Planned card' }), { card: true })
+
+    expect(screen.getByText('2/5')).toBeTruthy()
+  })
+
+  it('marks an unread finish with a muted check instead of the emerald dot', () => {
+    $sessions.set([makeSession({ title: 'Finished', unread: true })])
+
+    renderRow(makeSession({ title: 'Finished', unread: true }))
+
+    const mark = screen.getByRole('status', { name: 'Finished' })
+
+    expect(mark.querySelector('.codicon-check')).toBeTruthy()
+    expect(mark.className).toContain('text-success')
+  })
+
+  it('names the running tool in place of the age on a compact working row', () => {
+    setSessionListDensity('compact')
+
+    const message = {
+      id: 'm1',
+      parts: [{ args: { query: 'weather' }, toolCallId: 'c1', toolName: 'web_search', type: 'tool-call' }],
+      role: 'assistant'
+    } as unknown as ChatMessage
+
+    publishSessionState('rt1', { ...createClientSessionState('s1'), busy: true, messages: [message] })
+
+    renderRow(makeSession({ title: 'Working' }))
+
+    expect(screen.getByText('web search')).toBeTruthy()
   })
 })

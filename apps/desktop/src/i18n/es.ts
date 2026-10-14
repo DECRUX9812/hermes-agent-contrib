@@ -4092,6 +4092,7 @@ export const esOverrides = {
       needsInput: 'Necesita tu respuesta',
       waitingForAnswer: 'Esperando tu respuesta',
       finishedUnread: 'Finalizada — sin leer',
+      progressRing: (done, total) => `${done} de ${total} pasos completados`,
       backgroundRunning: 'Tarea en segundo plano en ejecución',
       draftSession: 'Borrador — aún no se ha enviado nada',
       continueOnPhone: 'Continuar en el teléfono',
@@ -4199,6 +4200,7 @@ export const esOverrides = {
       thisMonth: 'Este mes'
     },
     statusDivider: {
+      needsYou: 'Te necesita',
       working: 'En progreso',
       done: 'Completado'
     },

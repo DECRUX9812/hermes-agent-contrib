@@ -39,6 +39,7 @@ import { sessionPinId } from '@/store/session'
 import { $sessionDigestById } from '@/store/session-digest'
 import { $sessionDotStateById, hasLiveTurn, showsRunningArc } from '@/store/session-dot-state'
 import { $sessionListDensity } from '@/store/session-list-density'
+import { sessionLiveSummary } from '@/store/session-live'
 import {
   $selectedSessionKeys,
   selectionKeyForSession,
@@ -65,6 +66,7 @@ import {
 import { shellOwnsPress } from './reorderable-list'
 import { SessionActionsMenu, SessionContextMenu } from './session-actions-menu'
 import { SessionPeek } from './session-peek'
+import { SessionProgressRing } from './session-progress-ring'
 import { sessionRowDetails } from './session-row-details'
 import { resolveSessionRowClick } from './session-row-gesture'
 import { SessionRowSlot } from './session-row-slots'
@@ -298,6 +300,15 @@ function SidebarSessionRowImpl({
   // on one-line rows. A selector keyed to this row: only rows whose own
   // fraction changes repaint on todo events.
   const todoProgress = useStoreSelector($todoProgressBySession, progress => progress[session.id])
+  const live = sessionLiveSummary(session.id)
+  const todoDone = useStoreSelector(live, summary => summary.todoDone)
+  const todoTotal = useStoreSelector(live, summary => summary.todoTotal)
+
+  // The tool a working session is running right now, for the compact row's
+  // trailing slot; '' keeps the slot empty for every other row.
+  const runningTool = useStoreSelector(live, summary =>
+    summary.group === 'working' && summary.tool?.status === 'running' ? summary.tool.name.replaceAll('_', ' ') : ''
+  )
 
   // Chips staged into this session's composer via a file drop on the row —
   // a paperclip count, offered next to the plan progress. Keyed on the pin id
@@ -321,21 +332,37 @@ function SidebarSessionRowImpl({
   // The one-line row's progress chip sits in the trailing slot so a working
   // row reads its plan without opening the chat. (todoProgress is only set
   // while a plan exists, so it self-clears when the last item lands.)
-  if (!condensed && !card && todoProgress) {
+  if (!condensed && !card && todoProgress && todoTotal > 0) {
     trailing.push({
       key: 'progress',
       node: (
-        <span
-          className="pointer-events-none whitespace-nowrap tabular-nums text-ui-2xs leading-none text-fg-muted"
-          title={r.todoProgress}
-        >
-          {todoProgress}
+        <Tip label={peekOpen ? '' : todoProgress} side="top">
+          <span className="inline-flex">
+            <SessionProgressRing done={todoDone} total={todoTotal} />
+          </span>
+        </Tip>
+      )
+    })
+  }
+
+  // The compact one-line row names the running tool instead of the
+  // age/figures while the session is working — the "what it's doing now" at
+  // a glance. Comfortable/detailed already paint the digest line, and
+  // condensed folds everything into the tooltip, so both keep their own face.
+  const showRunningTool = !card && density === 'compact' && runningTool !== ''
+
+  if (showRunningTool) {
+    trailing.push({
+      key: 'tool',
+      node: (
+        <span className="pointer-events-none max-w-28 truncate whitespace-nowrap text-ui-2xs leading-none text-fg-muted">
+          {runningTool}
         </span>
       )
     })
   }
 
-  if (!condensed && (figures.length || showAge)) {
+  if (!condensed && !showRunningTool && (figures.length || showAge)) {
     // The card's meta lines separate by spacing alone, so its header figures
     // match (non-breaking pair — plain spaces collapse to one); the one-line
     // row keeps the interpunct between joined figures.
@@ -545,6 +572,7 @@ function SidebarSessionRowImpl({
           rowFileDrag === 'files' && 'bg-selected shadow-[inset_0_0_0_1px_var(--dt-composer-ring)]',
           className
         )}
+        data-dragging={dragging ? '' : undefined}
         data-glass-opaque={dragging ? '' : undefined}
         data-working={liveTurn ? 'true' : undefined}
         // The row runs BOTH drags off one press, and each declines outside its
@@ -657,6 +685,7 @@ function SidebarSessionRowImpl({
                   {lead ?? (
                     <SessionStatusDot
                       branchStem={branchStem}
+                      checkUnread
                       className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
                       session={session}
                       storedSessionId={session.id}
@@ -665,7 +694,14 @@ function SidebarSessionRowImpl({
                 </SidebarRowGrab>
               ) : (
                 <SidebarRowLead className="overflow-hidden">
-                  {lead ?? <SessionStatusDot branchStem={branchStem} session={session} storedSessionId={session.id} />}
+                  {lead ?? (
+                    <SessionStatusDot
+                      branchStem={branchStem}
+                      checkUnread
+                      session={session}
+                      storedSessionId={session.id}
+                    />
+                  )}
                 </SidebarRowLead>
               )
 

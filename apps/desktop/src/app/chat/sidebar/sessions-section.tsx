@@ -1,7 +1,7 @@
 import type { useSensors } from '@dnd-kit/core'
 import { useStore } from '@nanostores/react'
 import type * as React from 'react'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { type NewSessionSplitHandler, startNewSessionDrag } from '@/app/chat/new-session-drag'
 import { SidebarPanelLabel } from '@/app/shell/sidebar-label'
@@ -12,6 +12,7 @@ import type { SessionInfo } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { flattenSessionsWithBranches } from '@/lib/session-branch-tree'
 import {
+  flipKeyOf,
   groupEntriesByRecency,
   groupEntriesByStatus,
   hideCollapsedGroupRows,
@@ -19,6 +20,7 @@ import {
   toSessionRows
 } from '@/lib/session-date-groups'
 import { sessionBucketLabel } from '@/lib/time'
+import { useFlipList } from '@/lib/use-flip-list'
 import { cn } from '@/lib/utils'
 import {
   $sidebarListGroupIds,
@@ -28,7 +30,8 @@ import {
   toggleWorkspaceNodeCollapsed
 } from '@/store/layout'
 import { sessionPinId } from '@/store/session'
-import { $sessionDotStateById, hasLiveTurn } from '@/store/session-dot-state'
+import { $sessionDotStateById } from '@/store/session-dot-state'
+import { sessionLiveGroup } from '@/store/session-live'
 import { applySessionRange, listRowSelectionKeys, selectionKeyForSession } from '@/store/session-selection'
 
 import { SidebarDateDivider, SidebarSectionMeta } from './chrome'
@@ -369,6 +372,12 @@ export function SidebarSessionsSection({
     [isListGroupOpen, t]
   )
 
+  const flipRow = (row: SidebarListRow, node: React.ReactNode) => (
+    <div data-flip-key={flipKeyOf(row)} key={flipKeyOf(row)}>
+      {node}
+    </div>
+  )
+
   // A single flat/virtual/lane list row — either a divider or a session.
   const renderListRow = useCallback(
     (row: SidebarListRow, draggable: boolean, action?: React.ReactNode, selectionKeys?: readonly string[]) => {
@@ -382,6 +391,7 @@ export function SidebarSessionsSection({
       return (
         <SidebarDateDivider
           action={action}
+          count={'count' in row ? row.count : undefined}
           key={row.key}
           label={label}
           toggle={{
@@ -389,6 +399,7 @@ export function SidebarSessionsSection({
             onToggle: () => dividerToggle.onToggle(row.key),
             open
           }}
+          tone={'tone' in row ? row.tone : undefined}
         />
       )
     },
@@ -453,7 +464,7 @@ export function SidebarSessionsSection({
         : grouping === 'status'
           ? groupEntriesByStatus(
               displayEntries,
-              entry => hasLiveTurn(dotStates[entry.session.id] ?? 'idle'),
+              entry => sessionLiveGroup(dotStates[entry.session.id] ?? 'idle'),
               statusDividerLabels
             )
           : toSessionRows(displayEntries)
@@ -511,6 +522,10 @@ export function SidebarSessionsSection({
   // background refresh keeps the prior tree, so this only fires when empty.
   const showProjectsSkeleton =
     projectsLoading && !hasProjectOverview && !hasProjectContent && !projectContent && !groups?.length
+
+  const flatListRef = useRef<HTMLDivElement | null>(null)
+  const flatOrderKey = useMemo(() => visibleRows.map(flipKeyOf).join('\n'), [visibleRows])
+  useFlipList(flatListRef, flatOrderKey)
 
   let inner: React.ReactNode
 
@@ -638,11 +653,17 @@ export function SidebarSessionsSection({
   } else if (sessionsDraggable) {
     inner = (
       <ReorderableList ids={sortableRowIds} onReorder={persistSessionOrder} sensors={dndSensors}>
-        {visibleRows.map(row => renderListRow(row, true, dividerAction, flatSelectionKeys))}
+        <div ref={flatListRef}>
+          {visibleRows.map(row => flipRow(row, renderListRow(row, true, dividerAction, flatSelectionKeys)))}
+        </div>
       </ReorderableList>
     )
   } else {
-    inner = visibleRows.map(row => renderListRow(row, false, dividerAction, flatSelectionKeys))
+    inner = (
+      <div ref={flatListRef}>
+        {visibleRows.map(row => flipRow(row, renderListRow(row, false, dividerAction, flatSelectionKeys)))}
+      </div>
+    )
   }
 
   // The virtualizer owns its own scroller, so suppress the wrapper's overflow

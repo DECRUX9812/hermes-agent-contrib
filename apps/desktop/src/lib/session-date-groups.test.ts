@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
+import type { SessionLiveGroup } from '@/store/session-live'
 import type { SessionInfo } from '@/types/hermes'
 
 import { makeSessionInfo } from '../test/session-info'
 
 import type { SidebarSessionEntry } from './session-branch-tree'
-import { groupEntriesByRecency, hideCollapsedGroupRows, toSessionRows } from './session-date-groups'
+import {
+  groupEntriesByRecency,
+  groupEntriesByStatus,
+  hideCollapsedGroupRows,
+  toSessionRows
+} from './session-date-groups'
 
 const session = (id: string, overrides: Partial<SessionInfo> = {}): SessionInfo =>
   makeSessionInfo({ id, message_count: 1, source: 'cli', title: id, ...overrides })
@@ -265,5 +271,86 @@ describe('toSessionRows', () => {
       { entry: entries[0], kind: 'session' },
       { entry: entries[1], kind: 'session' }
     ])
+  })
+})
+
+describe('groupEntriesByStatus', () => {
+  const LABELS = { done: 'Done', needsYou: 'Needs you', working: 'Working' }
+
+  const byGroup =
+    (groups: Record<string, SessionLiveGroup>) =>
+    (e: SidebarSessionEntry): SessionLiveGroup =>
+      groups[e.session.id] ?? 'done'
+
+  const sessionIds = (rows: ReturnType<typeof groupEntriesByStatus>) =>
+    rows.flatMap(row => (row.kind === 'session' ? [row.entry.session.id] : []))
+
+  it('emits needs you, working and done in that order, keeping the incoming order inside each', () => {
+    const entries = [
+      entry(session('d1')),
+      entry(session('w1')),
+      entry(session('n1')),
+      entry(session('w2')),
+      entry(session('n2')),
+      entry(session('d2'))
+    ]
+
+    const rows = groupEntriesByStatus(
+      entries,
+      byGroup({ d1: 'done', d2: 'done', n1: 'needs-you', n2: 'needs-you', w1: 'working', w2: 'working' }),
+      LABELS
+    )
+
+    expect(rows.flatMap(row => (row.kind === 'divider' ? [row.key] : []))).toEqual([
+      'status:needs-you',
+      'status:working',
+      'status:done'
+    ])
+    expect(sessionIds(rows)).toEqual(['n1', 'n2', 'w1', 'w2', 'd1', 'd2'])
+  })
+
+  it('labels each divider and counts top-level sessions only, with no count on done', () => {
+    const entries = [
+      entry(session('n1')),
+      entry(session('n1-child'), '└─ '),
+      entry(session('w1')),
+      entry(session('d1'))
+    ]
+
+    const rows = groupEntriesByStatus(
+      entries,
+      byGroup({ 'n1': 'needs-you', 'n1-child': 'needs-you', w1: 'working', d1: 'done' }),
+      LABELS
+    )
+
+    expect(rows.filter(row => row.kind === 'divider')).toEqual([
+      { count: 1, key: 'status:needs-you', kind: 'divider', label: 'Needs you', tone: 'attention' },
+      { count: 1, key: 'status:working', kind: 'divider', label: 'Working', tone: 'default' },
+      { key: 'status:done', kind: 'divider', label: 'Done', tone: 'muted' }
+    ])
+  })
+
+  it('keeps a branch child under its parent group rather than the group its own state implies', () => {
+    const entries = [entry(session('parent')), entry(session('child'), '└─ '), entry(session('other'))]
+
+    const rows = groupEntriesByStatus(
+      entries,
+      e => (e.session.id === 'parent' ? 'working' : e.session.id === 'other' ? 'done' : 'done'),
+      LABELS
+    )
+
+    expect(sessionIds(rows)).toEqual(['parent', 'child', 'other'])
+    expect(rows.findIndex(row => row.kind === 'divider' && row.key === 'status:done')).toBe(3)
+  })
+
+  it('emits nothing for an empty group', () => {
+    const rows = groupEntriesByStatus([entry(session('d1')), entry(session('d2'))], () => 'done', LABELS)
+
+    expect(rows.map(row => (row.kind === 'divider' ? row.key : row.entry.session.id))).toEqual([
+      'status:done',
+      'd1',
+      'd2'
+    ])
+    expect(groupEntriesByStatus([], () => 'done', LABELS)).toEqual([])
   })
 })

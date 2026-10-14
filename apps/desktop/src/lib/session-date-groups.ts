@@ -1,14 +1,18 @@
 import { type SidebarSessionEntry } from '@/lib/session-branch-tree'
 import { calendarBucket, HOUR, localeWeekStartDay, MINUTE, SECOND, type SessionBucket } from '@/lib/time'
+import { SESSION_LIVE_GROUPS, type SessionLiveGroup } from '@/store/session-live'
 
 // A flat list row is either a divider or a session entry. Interleaving these
 // lets the flat list (and the virtualizer) render separators inline without a
 // second layer of nesting. A divider either names a calendar bucket (resolved
-// against the locale's labels at render time) or carries its own label.
+// against the locale's labels at render time) or carries its own label, and
+// may add a count and a tone for the status groups.
+export type SidebarDividerTone = 'attention' | 'default' | 'muted'
+
 export type SidebarListRow =
   | { bucket: SessionBucket; key: string; kind: 'divider' }
   | { entry: SidebarSessionEntry; kind: 'session' }
-  | { key: string; kind: 'divider'; label: string }
+  | { count?: number; key: string; kind: 'divider'; label: string; tone?: SidebarDividerTone }
 
 // The row's own age label reads from `last_active || started_at`; bucket off the
 // same value so a divider lines up with what the row actually shows.
@@ -153,33 +157,61 @@ export function groupEntriesByRecency(
   return rows
 }
 
-// Split into two runs — still busy, and everything else — under the same
-// dividers the date grouping uses. Branch children ride with their parent, as
-// they do there. Entries arrive already ordered, so each run is contiguous.
+const STATUS_DIVIDER_TONE: Record<SessionLiveGroup, SidebarDividerTone> = {
+  'needs-you': 'attention',
+  working: 'default',
+  done: 'muted'
+}
+
+// Split into the live groups (needs you, working, done) under dividers. Branch
+// children ride with their parent's group. Entries arrive already ordered, so
+// each run keeps that order; an empty group emits no divider at all. Counts are
+// top-level sessions only, and the done group carries none.
 export function groupEntriesByStatus(
   entries: readonly SidebarSessionEntry[],
-  isWorking: (entry: SidebarSessionEntry) => boolean,
-  labels: { done: string; working: string }
+  groupOf: (entry: SidebarSessionEntry) => SessionLiveGroup,
+  labels: { done: string; needsYou: string; working: string }
 ): SidebarListRow[] {
-  const working: SidebarSessionEntry[] = []
-  const done: SidebarSessionEntry[] = []
-  let cluster = done
+  const runs: Record<SessionLiveGroup, SidebarSessionEntry[]> = { 'needs-you': [], working: [], done: [] }
+  let cluster = runs.done
 
   for (const entry of entries) {
     if (!entry.branchStem) {
-      cluster = isWorking(entry) ? working : done
+      cluster = runs[groupOf(entry)]
     }
 
     cluster.push(entry)
   }
 
-  return [
-    ...(working.length ? [{ key: 'status:working', kind: 'divider' as const, label: labels.working }] : []),
-    ...toSessionRows(working),
-    ...(done.length ? [{ key: 'status:done', kind: 'divider' as const, label: labels.done }] : []),
-    ...toSessionRows(done)
-  ]
+  const labelOf: Record<SessionLiveGroup, string> = {
+    'needs-you': labels.needsYou,
+    working: labels.working,
+    done: labels.done
+  }
+
+  return SESSION_LIVE_GROUPS.flatMap((group): SidebarListRow[] => {
+    const run = runs[group]
+
+    if (!run.length) {
+      return []
+    }
+
+    const divider: SidebarListRow = {
+      key: `status:${group}`,
+      kind: 'divider',
+      label: labelOf[group],
+      tone: STATUS_DIVIDER_TONE[group],
+      ...(group === 'done' ? {} : { count: run.filter(entry => !entry.branchStem).length })
+    }
+
+    return [divider, ...toSessionRows(run)]
+  })
 }
+
+// Stable identity for a flat-list row, shared by the list DOM and the FLIP
+// hook that reads it: dividers key on their own key, sessions on profile + id.
+export const flipKeyOf = (row: SidebarListRow): string =>
+  row.kind === 'divider' ? row.key : `${row.entry.session.profile ?? ''}::${row.entry.session.id}`
 
 // Wrap entries as plain session rows (no dividers) so the ungrouped path shares
 // the same `SidebarListRow[]` shape as the grouped one.
