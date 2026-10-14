@@ -129,9 +129,11 @@ it('every selector room-theme scopes with matches the rendered room', async () =
   // the anchor stays flat and this assertion can actually run).
   expect(all('div.grid:has(> div.group)')).toHaveLength(1)
 
-  // The meta-contrast override rewrites --ui-text-quaternary inside the room;
-  // it only matters because the room actually renders text on that token.
-  expect(all('[class*="text-(--ui-text-quaternary)"]').length).toBeGreaterThan(0)
+  // The meta-contrast override lifts the quietest text tier inside the room.
+  // The room now draws that tier through the design token `text-fg-subtle`
+  // (`--color-fg-subtle`, resolved at :root), so the override has to target
+  // the token as well as the raw --ui-text-quaternary it was written against.
+  expect(all('[class*="text-fg-subtle"], [class*="text-(--ui-text-quaternary)"]').length).toBeGreaterThan(0)
 
   // The pane prefix room-theme anchors on: openWorkspace keys the pane
   // `hermes-bots:group:<slug>`, and the SDK prefixes it `plugin-workspace:`.
@@ -157,7 +159,7 @@ it('every selector room-theme scopes with matches the rendered room', async () =
   // Squad cues the plugin themes: a rename here silently orphans that CSS,
   // exactly like a renamed bubble would.
   expect(screen.getAllByTestId('message-text-content')).toHaveLength(log.length)
-  expect(all('[class*="text-(--ui-text-quaternary)"]').length).toBeGreaterThan(0)
+  expect(all('[class*="text-fg-subtle"], [class*="text-(--ui-text-quaternary)"]').length).toBeGreaterThan(0)
 
   const { $botMeta } = await import('./data')
   $botMeta.set({ builder: { title: 'Frontend engineer' } } as never)
