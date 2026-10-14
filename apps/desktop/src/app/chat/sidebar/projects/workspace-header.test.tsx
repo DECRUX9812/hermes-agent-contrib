@@ -22,7 +22,8 @@ vi.mock('@/i18n', () => ({
   })
 }))
 
-vi.mock('@/store/projects', () => ({
+vi.mock('@/store/projects', async importOriginal => ({
+  ...(await importOriginal<object>()),
   copyPath: vi.fn(),
   revealPath: vi.fn()
 }))
