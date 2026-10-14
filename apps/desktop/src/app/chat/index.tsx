@@ -846,6 +846,18 @@ const ChatViewContent = memo(function ChatViewContent({
           stalling to timeout. */}
       <PromptOverlays sessionId={activeSessionId} />
 
+      {/* "Where it left off" recap (#13) — only once the transcript is
+          settled: gating on loadingSession/routeSessionMismatch/
+          resumeExhausted/messagesEmpty keeps it dark through resume and
+          hydration flicker; SessionRecapCard reads view.$messages
+          one-shot at mount (the atom is far too hot to subscribe here). It sits
+          in the column above the transcript, so it takes its own height. */}
+      {!guideOpening &&
+        !loadingSession &&
+        !routeSessionMismatch &&
+        !resumeExhausted &&
+        !messagesEmpty &&
+        storedId && <SessionRecapCard storedSessionId={storedId} />}
       <ChatRuntimeBoundary
         busy={busy}
         onCancel={haltRun}
@@ -876,18 +888,6 @@ const ChatViewContent = memo(function ChatViewContent({
               sessionKey={threadKey}
             />
           )}
-          {/* "Where it left off" recap (#13) — only once the transcript is
-              settled: gating on loadingSession/routeSessionMismatch/
-              resumeExhausted/messagesEmpty keeps it dark through resume and
-              hydration flicker; SessionRecapCard reads view.$messages
-              one-shot at mount (the atom is far too hot to subscribe here). */}
-          {!guideOpening &&
-            !loadingSession &&
-            !routeSessionMismatch &&
-            !resumeExhausted &&
-            !messagesEmpty &&
-            storedId && <SessionRecapCard storedSessionId={storedId} />}
-
           {isPrimary && isMainWindow() && <IntroCopy />}
           {resumeExhausted && routedSessionId && (
             <ResumeExhaustedOverlay onRetryResume={onRetryResume} sessionId={routedSessionId} />

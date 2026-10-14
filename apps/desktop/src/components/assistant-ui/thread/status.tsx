@@ -10,6 +10,7 @@ import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { SCAFFOLD_LABEL_CLASS } from '@/components/chat/scaffold-row'
 import { Codicon } from '@/components/ui/codicon'
 import { Loader } from '@/components/ui/loader'
+import { Skeleton } from '@/components/ui/skeleton'
 import { StatusPulse } from '@/components/ui/status-pulse'
 import { getLocalModelsStatus } from '@/hermes'
 import { useI18n } from '@/i18n'
@@ -242,6 +243,24 @@ export const CenteredThreadSpinner: FC = () => {
         strokeScale={0.72}
         type="rose-curve"
       />
+    </div>
+  )
+}
+
+export const SessionLoadingSkeleton: FC = () => {
+  const { t } = useI18n()
+
+  return (
+    <div
+      aria-label={t.assistant.thread.loadingSession}
+      className="pointer-events-none absolute inset-0 z-1 overflow-hidden"
+      role="status"
+    >
+      <div className="mx-auto flex w-full min-w-0 max-w-(--composer-width) flex-col gap-3 px-6 pt-8">
+        <Skeleton className="h-3.5 w-[70%]" />
+        <Skeleton className="h-3.5 w-[90%]" />
+        <Skeleton className="h-3.5 w-[40%]" />
+      </div>
     </div>
   )
 }

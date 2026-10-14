@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { type ChatMessage, chatMessageText } from '@/lib/chat-messages'
+import { iconSize, X } from '@/lib/icons'
 import { formatAgo } from '@/lib/time'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { $sessions, sessionMatchesStoredId, sessionPinId } from '@/store/session'
@@ -79,7 +80,8 @@ export function buildSessionRecap(
 }
 
 /**
- * Small dismissible card at the top of a settled stored-session transcript:
+ * Small dismissible card above a settled stored-session transcript, in normal
+ * flow so it never covers the messages:
  * "where it left off" — last reply preview, turn count, time-ago, plan
  * progress. Offers, never hijacks: no focus move, no navigation. Mount is
  * gated on the settled signals by the caller, so `view.$messages` is read
@@ -120,27 +122,24 @@ export function SessionRecapCard({ storedSessionId }: { storedSessionId: string 
 
   return (
     <div
-      className="pointer-events-none absolute inset-x-0 top-2 z-20 flex justify-center px-4"
+      className="mx-auto mt-2 w-full max-w-xl shrink-0 px-4"
       data-slot="session-recap"
     >
-      <div
-        className="pointer-events-auto flex w-full max-w-xl items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--dt-composer-ring)_32%,transparent)] bg-[color-mix(in_srgb,var(--dt-card)_94%,transparent)] px-2.5 py-1.5 shadow-composer"
-        role="status"
-      >
+      <div className="flex items-center gap-2 rounded-card border border-line bg-surface-raised px-3 py-2" role="status">
         <div className="min-w-0 flex-1">
-          <div className="text-[0.68rem] font-medium text-muted-foreground">{meta}</div>
+          <div className="text-ui-xs text-fg-muted">{meta}</div>
           {recap.lastAssistantLine ? (
-            <div className="truncate text-[0.72rem] text-foreground/80">{recap.lastAssistantLine}</div>
+            <div className="truncate text-ui-sm text-fg-secondary">{recap.lastAssistantLine}</div>
           ) : null}
         </div>
         <Button
           aria-label={r.dismiss}
-          className="h-6 shrink-0 rounded-md px-2 text-[0.68rem]"
           onClick={() => dismissSessionRecap(pinKey)}
+          size="icon-xs"
           type="button"
           variant="ghost"
         >
-          ×
+          <X className={iconSize.xs} />
         </Button>
       </div>
     </div>

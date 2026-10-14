@@ -596,7 +596,7 @@ function ToolEntry({ part }: ToolEntryProps) {
   return (
     <div
       className={cn(
-        'group/tool-block min-w-0 max-w-full overflow-hidden text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)',
+        'group/tool-block min-w-0 max-w-full overflow-hidden text-ui-xs text-fg-muted',
         open && TOOL_EXPANDED_SHELL_CLASS
       )}
       data-conversation-scaffold=""

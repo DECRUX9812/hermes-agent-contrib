@@ -6,7 +6,7 @@ import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import type { HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
-import { Ear, EarOff, iconSize, Layers3, Loader2, Square } from '@/lib/icons'
+import { AudioLines, Ear, EarOff, iconSize, Layers3, Loader2, Square } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { recordAction } from '@/store/desktop-metrics'
 import { $hudMode, closeHud, resetHudLayout } from '@/store/hud'
@@ -19,7 +19,6 @@ import { ACTIVE_ICON_BTN, GHOST_ICON_BTN, PRIMARY_ICON_BTN } from './control-cla
 import type { ConversationStatus } from './hooks/use-voice-conversation'
 import { ModelPill } from './model-pill'
 import { ReasoningPill } from './reasoning-pill'
-import { StartVoiceButton } from './start-voice-button'
 import type { ChatBarState, VoiceStatus } from './types'
 import { VoiceFan } from './voice-fan'
 import { VoiceMenu } from './voice-menu'
@@ -137,19 +136,26 @@ export function ComposerControls({
     >
       {minimal ? null : (
         <>
-          {hideModelPill ? null : (
-            <>
-              <ModelPill compact={compactModelPill} disabled={disabled} model={state.model} />
-              {/* Simple keeps the row to what a conversation needs — model, voice,
-                  send. Reasoning effort and the context gauge are tuning; they
-                  stay in Advanced and in Settings. */}
-              {compactModelPill || !showsAdvancedChrome ? null : (
-                <ReasoningPill disabled={disabled} model={state.model} />
-              )}
-              {showsAdvancedChrome ? <ContextRing disabled={disabled} gateway={gateway} /> : null}
-            </>
-          )}
-          <ApprovalPill compact={compactModelPill} disabled={disabled} />
+          {/* Tuning pills sit at rest with their space held, so nothing shifts
+              when the composer is focused or hovered (styles.css). */}
+          <div
+            className="flex shrink-0 items-center gap-(--composer-control-gap)"
+            data-slot="composer-reveal"
+          >
+            {hideModelPill ? null : (
+              <>
+                <ModelPill compact={compactModelPill} disabled={disabled} model={state.model} />
+                {/* Simple keeps the row to what a conversation needs — model, voice,
+                    send. Reasoning effort and the context gauge are tuning; they
+                    stay in Advanced and in Settings. */}
+                {compactModelPill || !showsAdvancedChrome ? null : (
+                  <ReasoningPill disabled={disabled} model={state.model} />
+                )}
+                {showsAdvancedChrome ? <ContextRing disabled={disabled} gateway={gateway} /> : null}
+              </>
+            )}
+            <ApprovalPill compact={compactModelPill} disabled={disabled} />
+          </div>
           {voiceControls}
         </>
       )}
@@ -189,7 +195,22 @@ export function ComposerControls({
         )
       ) : null}
       {showVoicePrimary ? (
-        <StartVoiceButton disabled={disabled} label={c.startVoice} onStart={conversation.onStart} />
+        <Tip label={c.startVoice} placement="control">
+          <Button
+            aria-label={c.startVoice}
+            className={PRIMARY_ICON_BTN}
+            disabled={disabled}
+            onClick={() => {
+              triggerHaptic('open')
+              recordAction('composer.voice', 'click')
+              conversation.onStart()
+            }}
+            size="icon"
+            type="button"
+          >
+            <AudioLines className={iconSize.sm} />
+          </Button>
+        </Tip>
       ) : (
         <Tip label={<TipKeybindLabel actionId="composer.send" text={sendLabel} />} placement="control">
           <Button

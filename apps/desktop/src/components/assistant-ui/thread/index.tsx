@@ -5,7 +5,7 @@ import { AssistantMessage } from '@/components/assistant-ui/thread/assistant-mes
 import { DelegationPill } from '@/components/assistant-ui/thread/delegation-pill'
 import { ThreadEditContext } from '@/components/assistant-ui/thread/edit-context'
 import { ThreadMessageList } from '@/components/assistant-ui/thread/list'
-import { BackgroundResumeNotice, CenteredThreadSpinner } from '@/components/assistant-ui/thread/status'
+import { BackgroundResumeNotice, SessionLoadingSkeleton } from '@/components/assistant-ui/thread/status'
 import { SystemMessage } from '@/components/assistant-ui/thread/system-message'
 import { ThreadScrubber } from '@/components/assistant-ui/thread/thread-scrubber'
 import { ThreadTimeline } from '@/components/assistant-ui/thread/timeline'
@@ -220,7 +220,7 @@ export const Thread = memo(function Thread({
           sessionKey={sessionKey}
           sessionLoading={loading === 'session'}
         />
-        {loading === 'session' && <CenteredThreadSpinner />}
+        {loading === 'session' && <SessionLoadingSkeleton />}
         <ThreadTimeline />
         <ThreadScrubber />
         <ConfirmDialog

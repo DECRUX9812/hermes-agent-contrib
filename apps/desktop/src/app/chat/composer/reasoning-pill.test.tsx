@@ -212,4 +212,21 @@ describe('ReasoningPill', () => {
 
     expect(screen.getByTestId('reasoning-pill')).toBeTruthy()
   })
+
+  it('stays keyboard reachable while the reveal group is at rest', () => {
+    render(
+      <SessionViewProvider value={tileView('medium')}>
+        <ReasoningPill disabled={false} model={modelState()} />
+      </SessionViewProvider>
+    )
+
+    const pill = screen.getByTestId('reasoning-pill')
+
+    expect(pill.hidden).toBe(false)
+    expect(pill.tabIndex).not.toBe(-1)
+
+    pill.focus()
+
+    expect(document.activeElement).toBe(pill)
+  })
 })
