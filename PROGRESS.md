@@ -37,11 +37,21 @@ Owner: DECRUX9812. Resume from this file after every restart. Read `HANDOFF.md` 
 - [x] A2c. Full desktop typecheck verified green 2026-10-14: `tsc -p .`,
   `tsconfig.electron.json`, `tsconfig.e2e.json`, electron-builder config —
   all 0 errors.
-- [ ] A6. Re-run `tests/tui_gateway/` full (no `-x`).
-- [ ] A7. Regenerate gateway contract; re-run `tests/tui_gateway/contracts/test_generated.py`.
+- [x] A6. Re-run `tests/tui_gateway/` full (no `-x`).
+  First full run 2026-10-14: 2782 passed, 32 failed across 14 files. All triaged
+  to merge fallout, all fixed (see log below); targeted re-runs green per file.
+- [x] A7. Regenerate gateway contract; re-run `tests/tui_gateway/contracts/test_generated.py`.
+  Declared contracts for 8 registered-but-undeclared methods
+  (`fork.onboarding.*` ×6 in new `tui_gateway/contracts/fork_onboarding.py`,
+  `session.ask` + `session.predict_next` in `contracts/sessions.py`), restored
+  fork's `bot_topic`/`team_room`/`team_room_lead` + `user_originated` fields the
+  merge dropped, added `layout.apply` event + `preview.verify` server request.
+  Regenerated TS + OpenRPC; contract test green.
 - [ ] A8. `scripts/check` green; `npm run lint`, `npm test`, `npm run build` green.
 - [ ] A9. Write `SYNC_REPORT.md` (per-file decisions + Core touchpoints).
-- [ ] A10. Locale union pass + `i18n-keys.mjs`.
+- [x] A10. Locale union pass + `i18n-keys.mjs`.
+  `locales/_keys.desktop.json` was stale vs `src/i18n/en.ts`; regenerated
+  (+46 keys). en.ts already a union (67 top-level keys vs upstream 52).
 
 ### B. UX plan (`~/Code/hermes-ux-plan.md`)
 - [x] B0. Read the plan; listed 3 quick wins and Phase 1–6 tasks.
@@ -81,5 +91,17 @@ Owner: DECRUX9812. Resume from this file after every restart. Read `HANDOFF.md` 
 - 2026-10-14: verified desktop typecheck fully green (main + electron + e2e +
   electron-builder configs, 0 errors). A5 fixed (test-only timeout bump, passes).
   Committed fork onboarding port (A2b) + A5 fix as separate commits; pushed to fork.
+- 2026-10-14 (cont.): A7 done — contract test green after declaring 8 missing
+  method contracts + layout.apply/preview.verify; regen clean. A6 triage done:
+  32 failures = merge fallout in 6 classes, all fixed and re-verified per file:
+  (1) dropped fork contract fields (bot_topic/team_room/user_originated);
+  (2) upstream rename `_session_default_model`→`_session_default_route` broke a
+  fork test patch; (3) resume lambdas missing 3rd incarnation arg;
+  (4) merge hybrid `_profile_workspace_cwd` vs upstream `_profile_default_cwd`
+  in resume repair (took upstream's line); (5) profiles.list fence needs
+  Path.home isolation in 3 fork fixtures; (6) stale test fakes (acquire kwarg,
+  kanban mock home). compute_host timeout was flaky (passes alone).
+  A10 done (keys regen). Remaining: A8 (scripts/check, npm lanes, desktop
+  build), A9 (SYNC_REPORT.md), then full-suite re-run to confirm zero.
 
 (End of file - total 150 lines)

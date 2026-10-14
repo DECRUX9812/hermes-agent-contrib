@@ -20,13 +20,16 @@ def _restore_stdout():
 
 
 @pytest.fixture()
-def server():
+def server(tmp_path):
     # Same import-window pattern as tests/tui_gateway/test_protocol.py: the mocks only need
-    # to cover the initial import of tui_gateway.server.
+    # to cover the initial import of tui_gateway.server. The home is a REAL temp dir: the
+    # profile-incarnation fence fail-closes on a missing home before the guard ever runs.
+    home = tmp_path / "hermes_test"
+    home.mkdir()
     import tui_gateway.server_requests
     import tui_gateway.transport
     with patch.dict("sys.modules", {
-        "hermes_constants": MagicMock(get_hermes_home=MagicMock(return_value="/tmp/hermes_test")),
+        "hermes_constants": MagicMock(get_hermes_home=MagicMock(return_value=home)),
         "hermes_cli.env_loader": MagicMock(),
         "hermes_cli.banner": MagicMock(),
         "hermes_state": MagicMock(),

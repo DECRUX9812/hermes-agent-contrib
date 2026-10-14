@@ -40,10 +40,10 @@ def resume_path(monkeypatch):
     for name, value in {
         "_resolve_model": lambda: "test-model",
         "_enable_gateway_prompts": lambda: None,
-        "_find_live_session_by_key": lambda _key, _home=None: None,
+        "_find_live_session_by_key": lambda _key, _home=None, _incarnation=None: None,
         "_schedule_session_cap_enforcement": lambda *a, **k: None,
         "_maybe_schedule_auto_continue": lambda *a, **k: None,
-        "_child_run_active": lambda _key, _home=None: False,
+        "_child_run_active": lambda _key, _home=None, _incarnation=None: False,
         "_make_agent": lambda *a, **k: _Agent(),
         "_wire_session_agent": lambda *a, **k: False,
         "_start_session_services": lambda *a, **k: None,

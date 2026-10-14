@@ -7,6 +7,8 @@ roster silently paints a stale preview.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 import tui_gateway.server as srv
@@ -22,6 +24,7 @@ def _clean_memo():
 @pytest.fixture
 def home(tmp_path, monkeypatch):
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
     (tmp_path / "profiles" / "bob").mkdir(parents=True)
     return tmp_path
 

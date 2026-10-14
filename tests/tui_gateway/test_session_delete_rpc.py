@@ -172,7 +172,7 @@ def test_session_delete_honors_params_profile_sessions_dir(monkeypatch, tmp_path
     captured: dict = {}
 
     class ProfileDB(_NoOnboardingRun):
-        def __init__(self, db_path=None):
+        def __init__(self, db_path=None, **_kw):
             captured["db_path"] = db_path
 
         def delete_session(self, sid, sessions_dir=None, **_kw):
