@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 import { EditorView } from '@codemirror/view'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 
 import { setApiRequestConnection, setApiRequestProfile } from '@/api/client'
@@ -125,7 +125,19 @@ it.each(['connection', 'profile', 'local', 'api-route'] as const)(
       )
 
       fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
-      const editor = EditorView.findFromDOM(rendered.container.querySelector('.cm-content')!)!
+
+      // The editor module loads on first use.
+      const content = await waitFor(() => {
+        const el = rendered.container.querySelector<HTMLElement>('.cm-content')
+
+        if (!el) {
+          throw new Error('editor not mounted yet')
+        }
+
+        return el
+      })
+
+      const editor = EditorView.findFromDOM(content)!
       act(() => editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: 'draft for origin' } }))
       fireEvent.click(screen.getByRole('button', { name: /Save/ }))
       await started
