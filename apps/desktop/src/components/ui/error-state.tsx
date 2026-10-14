@@ -1,6 +1,8 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
+import { LogView } from '@/components/ui/log-view'
 import { AlertTriangle } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 
@@ -8,7 +10,7 @@ import { cn } from '@/lib/utils'
 // everywhere an error is surfaced (boundaries, dialogs, banners) so failures
 // read identically — one icon, one color, no background chip.
 export function ErrorIcon({ className, size = '1.75rem' }: { className?: string; size?: string }) {
-  return <Codicon className={cn('text-destructive', className)} name="error" size={size} />
+  return <Codicon className={cn('text-danger', className)} name="error" size={size} />
 }
 
 // Inline error banner for detail panes (born in Messaging's platform error,
@@ -18,7 +20,7 @@ export function ErrorBanner({ children, className }: { children: ReactNode; clas
   return (
     <div
       className={cn(
-        'flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-destructive',
+        'flex items-start gap-2 rounded-card border border-danger/30 bg-danger/10 px-3 py-2 text-ui-xs leading-(--conversation-caption-line-height) text-danger',
         className
       )}
     >
@@ -28,41 +30,90 @@ export function ErrorBanner({ children, className }: { children: ReactNode; clas
   )
 }
 
+export interface ErrorStateAction {
+  label: ReactNode
+  onClick: () => void
+  disabled?: boolean
+}
+
 export interface ErrorStateProps {
-  /** Optional actions row/stack rendered below the copy. */
+  /** Optional actions row rendered below the copy (legacy callers pass Buttons). */
   children?: ReactNode
   className?: string
   description?: ReactNode
-  /** Defaults to a destructive AlertCircle. */
+  /** Defaults to the danger tile below. */
   icon?: ReactNode
   title: ReactNode
+  /** The single primary recovery action (Retry, Restart Hermes…). */
+  primaryAction?: ErrorStateAction
+  /** Quieter follow-ups (Open logs, Gateway settings…) as ghost buttons. */
+  secondaryActions?: ErrorStateAction[]
+  /** Raw cause output — rendered in a LogView behind the disclosure. */
+  details?: ReactNode
+  detailsLabel?: string
+  hideDetailsLabel?: string
 }
 
-// Shared, presentation-only error layout: the canonical ErrorIcon (no bg chip)
-// over a centered title + body, with an optional actions stack. Used by the
-// React error boundary, the in-dialog update error, and the boot-failure banner
-// so every failure reads the same. Title/description accept nodes so Radix
-// Dialog callers can pass DialogTitle/DialogDescription for accessibility.
-export function ErrorState({ children, className, description, icon, title }: ErrorStateProps) {
+// THE recoverable-error card: a danger tile over a compact title + body, one
+// primary Button, ghost secondaries, and an optional "Show details"
+// disclosure for the raw cause. Used by the boot-failure overlay, the route
+// error boundary and every error card so all failures read the same.
+// Title/description accept nodes so Radix Dialog callers can pass
+// DialogTitle/DialogDescription for accessibility.
+export function ErrorState({
+  children,
+  className,
+  description,
+  details,
+  detailsLabel = 'Show details',
+  hideDetailsLabel = 'Hide details',
+  icon,
+  primaryAction,
+  secondaryActions,
+  title
+}: ErrorStateProps) {
+  const [detailsOpen, setDetailsOpen] = useState(false)
+
   return (
-    <div className={cn('grid gap-5', className)}>
-      <div className="flex flex-col items-center gap-3 text-center">
-        {icon ?? <ErrorIcon />}
+    <div className={cn('grid justify-items-center gap-2 text-center', className)}>
+      {icon ?? (
+        <span className="grid size-7 place-items-center rounded-control bg-danger/10 text-danger">
+          <Codicon name="error" size="1rem" />
+        </span>
+      )}
 
-        {typeof title === 'string' ? (
-          <h2 className="text-center text-xl font-semibold tracking-tight">{title}</h2>
-        ) : (
-          title
-        )}
+      {typeof title === 'string' ? <h2 className="text-ui-sm font-semibold">{title}</h2> : title}
 
-        {typeof description === 'string' ? (
-          <p className="max-w-prose text-center text-sm leading-5 text-muted-foreground">{description}</p>
-        ) : (
-          description
-        )}
-      </div>
+      {typeof description === 'string' ? (
+        <p className="max-w-prose text-ui-sm text-fg-muted">{description}</p>
+      ) : (
+        description
+      )}
 
-      {children && <div className="grid gap-2">{children}</div>}
+      {primaryAction || (secondaryActions && secondaryActions.length > 0) || children ? (
+        <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+          {primaryAction ? (
+            <Button disabled={primaryAction.disabled} onClick={primaryAction.onClick}>
+              {primaryAction.label}
+            </Button>
+          ) : null}
+          {secondaryActions?.map((action, index) => (
+            <Button disabled={action.disabled} key={index} onClick={action.onClick} variant="ghost">
+              {action.label}
+            </Button>
+          ))}
+          {children}
+        </div>
+      ) : null}
+
+      {details ? (
+        <details className="w-full text-left" onToggle={event => setDetailsOpen(event.currentTarget.open)}>
+          <summary className="cursor-pointer select-none text-center text-ui-xs text-fg-muted">
+            {detailsOpen ? hideDetailsLabel : detailsLabel}
+          </summary>
+          <LogView className="mt-1 max-h-32">{details}</LogView>
+        </details>
+      ) : null}
     </div>
   )
 }

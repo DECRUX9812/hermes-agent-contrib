@@ -8,6 +8,7 @@ export const ruOnboarding: TranslationOverrides['onboarding'] = {
   setupSlowTitle: 'Настройка занимает больше времени, чем обычно.',
   setupSlowBody: 'Hermes всё ещё запускается в фоновом режиме.',
   continueWithoutSetup: 'Продолжить без настройки',
+  checkingSetup: 'Проверяем вашу настройку…',
   lookingUpProviders: 'Ищем провайдеров...',
   collapse: 'Свернуть',
   otherProviders: 'Другие провайдеры',

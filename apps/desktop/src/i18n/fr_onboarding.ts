@@ -9,6 +9,7 @@ export const frOnboarding: TranslationOverrides['onboarding'] = {
   setupSlowTitle: 'La configuration prend plus de temps que d’habitude.',
   setupSlowBody: 'Hermes est toujours en cours de démarrage en arrière-plan.',
   continueWithoutSetup: 'Continuer sans configuration',
+  checkingSetup: 'Vérification de votre configuration…',
   lookingUpProviders: 'Recherche des fournisseurs...',
   collapse: 'Réduire',
   otherProviders: 'Autres fournisseurs',

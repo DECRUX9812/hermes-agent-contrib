@@ -4,17 +4,14 @@ import * as React from 'react'
 import { cn } from '@/lib/utils'
 
 const alertVariants = cva(
-  'relative grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-lg border bg-card px-4 py-3 text-sm text-card-foreground shadow-xs [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0',
+  'relative grid w-full grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-card border border-line bg-surface-raised px-4 py-3 text-ui-sm text-fg shadow-e1 [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0',
   {
     variants: {
       variant: {
-        default: 'border-border',
-        destructive:
-          'border-destructive/35 bg-[color-mix(in_srgb,var(--dt-card)_96%,var(--dt-destructive)_4%)] [&>svg]:text-destructive',
-        warning:
-          'border-primary/30 bg-[color-mix(in_srgb,var(--dt-card)_96%,var(--dt-primary)_4%)] [&>svg]:text-primary',
-        success:
-          'border-primary/25 bg-[color-mix(in_srgb,var(--dt-card)_97%,var(--dt-primary)_3%)] [&>svg]:text-primary'
+        default: 'border-line',
+        destructive: 'border-danger/30 bg-danger/10 [&>svg]:text-danger',
+        warning: 'border-warning/30 bg-warning/10 [&>svg]:text-warning',
+        success: 'border-success/30 bg-success/10 [&>svg]:text-success'
       }
     },
     defaultVariants: {
@@ -30,7 +27,7 @@ function Alert({ className, variant, ...props }: React.ComponentProps<'div'> & V
 function AlertTitle({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight text-foreground', className)}
+      className={cn('col-start-2 line-clamp-1 min-h-4 text-ui-sm font-medium tracking-tight text-fg', className)}
       data-slot="alert-title"
       {...props}
     />
@@ -41,7 +38,7 @@ function AlertDescription({ className, ...props }: React.ComponentProps<'div'>) 
   return (
     <div
       className={cn(
-        'col-start-2 grid justify-items-start gap-1 text-muted-foreground [&_p]:leading-relaxed',
+        'col-start-2 grid justify-items-start gap-1 text-ui-sm text-fg-muted [&_p]:leading-relaxed',
         className
       )}
       data-slot="alert-description"

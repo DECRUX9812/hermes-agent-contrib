@@ -1,4 +1,6 @@
+import { Badge } from '@/components/ui/badge'
 import { RowButton } from '@/components/ui/row-button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useI18n } from '@/i18n'
 import { Check, ChevronRight, Terminal } from '@/lib/icons'
 import { PROVIDER_DISPLAY_NAMES } from '@/lib/model-status-label'
@@ -38,15 +40,14 @@ export function FeaturedProviderRow({
 
   return (
     <button
-      className="group relative flex w-full items-center justify-between gap-4 rounded-[8px] bg-primary/[0.06] px-3 py-2.5 text-left transition-colors hover:bg-primary/10"
+      className="group flex w-full items-center justify-between gap-4 rounded-card border border-line p-3 text-left transition-colors hover:bg-hover"
       onClick={() => onSelect(provider)}
       type="button"
     >
-      <span aria-hidden className="arc-border arc-reverse arc-nous" />
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <img alt="" className="size-5 shrink-0 rounded" src={assetPath('apple-touch-icon.png')} />
-          <span className="text-[length:var(--conversation-text-font-size)] font-semibold">
+          <span className="text-ui-sm font-semibold">
             {freeTier ? t.freeTier.providerRowTitle : providerTitle(provider)}
           </span>
           {freeTier ? (
@@ -54,17 +55,14 @@ export function FeaturedProviderRow({
           ) : loggedIn ? (
             <ConnectedTag />
           ) : (
-            <span className="inline-flex items-center gap-1.5 bg-primary px-2 py-0.5 text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-primary-foreground">
-              <span aria-hidden="true" className="dither inline-block size-2 shrink-0" />
-              {t.onboarding.recommended}
-            </span>
+            <Badge className="rounded-pill bg-brand/10 px-1.5 text-brand">{t.onboarding.recommended}</Badge>
           )}
         </div>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+        <p className="mt-1 text-ui-xs text-fg-muted">
           {freeTier ? t.freeTier.providerRowPitch : t.onboarding.featuredPitch}
         </p>
       </div>
-      <ChevronRight className="size-4 shrink-0 text-primary transition group-hover:translate-x-0.5" />
+      <ChevronRight className="size-4 shrink-0 text-fg-muted transition group-hover:text-fg" />
     </button>
   )
 }
@@ -73,36 +71,43 @@ export function FeaturedProviderRow({
 function FreeTierTag() {
   const { t } = useI18n()
 
-  return (
-    <span className="inline-flex items-center gap-1 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-      {t.onboarding.freeTier}
-    </span>
-  )
+  return <Badge className="rounded-pill bg-brand/10 px-1.5 text-brand">{t.onboarding.freeTier}</Badge>
 }
 
 function ConnectedTag() {
   const { t } = useI18n()
 
   return (
-    <span className="inline-flex items-center gap-1 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+    <Badge className="rounded-pill bg-brand/10 px-1.5 text-brand">
       <Check className="size-3" />
       {t.onboarding.connected}
-    </span>
+    </Badge>
   )
 }
 
 const PROVIDER_ROW_CLASS =
-  'group flex w-full items-center justify-between gap-3 rounded-[6px] px-3 py-2.5 text-left transition-colors hover:bg-(--ui-control-hover-background)'
+  'group flex w-full items-center justify-between gap-3 rounded-card border border-line p-3 text-left transition-colors hover:bg-hover'
+
+/** Readiness-pending placeholder: one status line plus two skeleton provider rows. */
+export function ProviderRowsSkeleton({ status }: { status: string }) {
+  return (
+    <div className="grid gap-2" role="status">
+      <p className="text-ui-sm text-fg-muted">{status}</p>
+      <Skeleton className="h-16 w-full rounded-card" />
+      <Skeleton className="h-16 w-full rounded-card" />
+    </div>
+  )
+}
 
 /** Quick-key row for API-key providers (Fireworks leads the expanded list after Nous, OpenRouter further down). */
 export function KeyProviderRow({ onClick, pitch, title }: { onClick: () => void; pitch: string; title: string }) {
   return (
     <RowButton className={PROVIDER_ROW_CLASS} onClick={onClick}>
       <div className="min-w-0">
-        <span className="text-[length:var(--conversation-text-font-size)] font-semibold">{title}</span>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">{pitch}</p>
+        <span className="text-ui-sm font-semibold">{title}</span>
+        <p className="mt-1 text-ui-xs text-fg-muted">{pitch}</p>
       </div>
-      <ChevronRight className="size-4 text-muted-foreground transition group-hover:text-foreground" />
+      <ChevronRight className="size-4 text-fg-muted transition group-hover:text-fg" />
     </RowButton>
   )
 }
@@ -145,14 +150,14 @@ export function ProviderRow({
     <RowButton className={PROVIDER_ROW_CLASS} onClick={() => onSelect(provider)}>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-[length:var(--conversation-text-font-size)] font-semibold">
+          <span className="text-ui-sm font-semibold">
             {freeTier ? t.freeTier.providerRowTitle : providerTitle(provider)}
           </span>
           {freeTier ? <FreeTierTag /> : loggedIn ? <ConnectedTag /> : null}
         </div>
-        <p className="mt-1 text-xs leading-5 text-muted-foreground">{t.onboarding.flowSubtitles[provider.flow]}</p>
+        <p className="mt-1 text-ui-xs text-fg-muted">{t.onboarding.flowSubtitles[provider.flow]}</p>
       </div>
-      <Trail className="size-4 text-muted-foreground transition group-hover:text-foreground" />
+      <Trail className="size-4 text-fg-muted transition group-hover:text-fg" />
     </RowButton>
   )
 }
