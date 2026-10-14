@@ -17,7 +17,7 @@ type DotVariant = {
   title?: (r: Translations['sidebar']['row']) => string
 }
 
-// Shared base for every active dot; idle is smaller and uses its own class.
+// Shared base for every dot, idle included: 6px.
 const DOT_BASE = 'size-1.5 rounded-full'
 
 // Three colors and one fill/hollow axis, none of it moving. Motion on a 6px
@@ -78,13 +78,11 @@ const DOT_VARIANTS: Record<SessionDotState, DotVariant> = {
     className: `${DOT_BASE} border border-(--ui-text-quaternary) opacity-(--status-idle-opacity)`,
     title: r => r.draftSession
   },
-  // Settled: the project color when there is one, else the faintest filled
-  // grey. Classic shows SOME mark on every session — a row with nothing in
-  // the lead slot read as broken next to its neighbours there. The Soft look
-  // lets the grey (and the draft ring) rest via --status-idle-opacity: a dot
-  // appears when there is something to say; a project color always shows.
+  // Settled: the project color when there is one, else nothing at all — a
+  // dot appears only when there is something to say. The uncoloured slot is
+  // `invisible`, not removed, so every title keeps one left edge.
   idle: {
-    className: 'size-1 rounded-full bg-(--ui-text-quaternary) [&:not([style])]:opacity-(--status-idle-opacity)'
+    className: `${DOT_BASE} bg-(--ui-text-quaternary) [&:not([style])]:invisible`
   }
 }
 
