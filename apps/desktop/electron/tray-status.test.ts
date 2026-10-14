@@ -59,6 +59,21 @@ describe('sanitizeTrayStatusPush', () => {
     expect(result?.needsYou).toBe(99)
   })
 
+  it('carries the needs-input count for the app badge', () => {
+    expect(sanitizeTrayStatusPush(push({ needsInput: 3 }))?.needsInput).toBe(3)
+  })
+
+  it('defaults a missing needs-input count to zero so older renderers keep working', () => {
+    const { needsInput, ...legacy } = push()
+
+    expect(sanitizeTrayStatusPush(legacy)?.needsInput).toBe(0)
+  })
+
+  it('drops a malformed needs-input count to zero', () => {
+    expect(sanitizeTrayStatusPush(push({ needsInput: 'lots' }) as never)?.needsInput).toBe(0)
+    expect(sanitizeTrayStatusPush(push({ needsInput: Number.NaN }) as never)?.needsInput).toBe(0)
+  })
+
   it('caps the recent-session list and truncates long titles', () => {
     const sessions = Array.from({ length: 12 }, (_, i) => ({
       attention: i % 2 === 0,

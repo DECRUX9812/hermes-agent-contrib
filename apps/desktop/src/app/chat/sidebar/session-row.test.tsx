@@ -48,6 +48,13 @@ vi.mock('@/i18n', () => ({
   },
   useI18n: () => ({
     t: {
+      common: {
+        approve: 'Approve',
+        open: 'Open'
+      },
+      composer: {
+        stop: 'Stop'
+      },
       sidebar: {
         peek: {
           agents: 'Delegated agents',
@@ -56,11 +63,15 @@ vi.mock('@/i18n', () => ({
           archived: 'Archived',
           branch: 'Branch',
           idle: 'Idle',
+          lastTool: 'Last tool',
           model: 'Model',
+          more: (count: number) => `+${count} more`,
+          planFraction: (done: number, total: number) => `${done} of ${total}`,
           profile: 'Profile',
           source: 'Source',
           started: 'Started',
           stats: 'Stats',
+          stopFailed: 'Could not stop the session',
           tokens: (count: string) => `${count} tokens`,
           updated: 'Updated',
           workspace: 'Workspace'
@@ -79,6 +90,7 @@ vi.mock('@/i18n', () => ({
           continuationOrigin: 'Automatic continuation — this conversation was compressed and continued',
           messageCount: (count: number) => `${count} messages`,
           needsInput: 'Needs input',
+          openInSplit: 'Open in split',
           sessionActions: 'Session actions',
           sessionRunning: 'Running',
           todoProgress: 'Tasks completed',
@@ -323,7 +335,7 @@ describe('SidebarSessionRow', () => {
       Object.defineProperty(el, 'clientWidth', { configurable: true, value: clientWidth })
     }
 
-    it('opens with the full title after a settled hover when the title overflows', () => {
+    it('shows the peek with the full title after a settled hover when the title overflows', () => {
       vi.useFakeTimers()
       renderRow(makeSession({ title }))
 
@@ -335,7 +347,11 @@ describe('SidebarSessionRow', () => {
         vi.advanceTimersByTime(700)
       })
 
-      expect(screen.getByRole('tooltip').textContent).toContain(title)
+      // The peek's 450ms dwell wins over the title tip's slower one, and the
+      // row suppresses the tip while the peek is open — the full title reads
+      // in the peek card instead.
+      expect(screen.queryByRole('tooltip')).toBeNull()
+      expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(2)
     })
 
     it('stays closed when the title fits', () => {
@@ -441,11 +457,12 @@ describe('SidebarSessionRow condensed density', () => {
     expect(tip.textContent).toContain('compressed and continued')
   })
 
-  it('keeps the overflow-only title tooltip when there is no meta to fold in', () => {
+  it('shows the peek with the full title when there is no meta to fold in', () => {
     vi.useFakeTimers()
     setSessionListDensity('condensed')
     // Bare meta prefs leave nothing hidden, so the title keeps its
-    // overflow-only OverflowTip instead of the always-on condensed tip.
+    // overflow-only OverflowTip instead of the always-on condensed tip — but a
+    // settled dwell still belongs to the peek, which suppresses the tip.
     $sidebarRowMeta.set([])
     const title = 'A very long session title that the sidebar cannot possibly fit'
     renderRow(makeSession({ title }))
@@ -460,7 +477,8 @@ describe('SidebarSessionRow condensed density', () => {
       vi.advanceTimersByTime(700)
     })
 
-    expect(screen.getByRole('tooltip').textContent).toContain(title)
+    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(2)
   })
 })
 

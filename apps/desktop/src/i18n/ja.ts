@@ -3106,7 +3106,11 @@ export const jaOverrides = {
       profile: 'プロファイル',
       source: 'ソース',
       started: '開始',
-      updated: '更新'
+      updated: '更新',
+      lastTool: '最後のツール',
+      planFraction: (done, total) => `${total}件中${done}件`,
+      more: count => `他${count}件`,
+      stopFailed: 'セッションを停止できませんでした'
     },
     markAllRead: 'すべて既読にする',
     filter: {
@@ -3279,9 +3283,16 @@ export const jaOverrides = {
       thisMonth: '今月'
     },
     statusDivider: {
+      needsYou: '要対応',
       working: '実行中',
       done: '完了'
     }
+  },
+
+  sessionOverview: {
+    title: 'セッション概要',
+    empty: 'アクティブなセッションはありません',
+    newSession: '新規セッション'
   },
 
   composer: {

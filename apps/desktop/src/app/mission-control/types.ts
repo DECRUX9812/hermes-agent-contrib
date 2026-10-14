@@ -1,8 +1,7 @@
-import type { LiveAction } from '@/lib/live-actions'
+import type { SessionLiveGroup } from '@/store/session-live'
 
-export interface MissionControlCard {
-  runtimeId: string
+export interface OverviewCardData {
   storedSessionId: string
   title: string
-  latestAction: LiveAction | null
+  group: SessionLiveGroup
 }

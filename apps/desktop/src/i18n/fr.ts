@@ -4208,6 +4208,7 @@ export const frOverrides = {
       thisMonth: 'Plus tôt ce mois'
     },
     statusDivider: {
+      needsYou: 'A besoin de vous',
       working: 'En cours',
       done: 'Terminées'
     },
@@ -4225,9 +4226,19 @@ export const frOverrides = {
       profile: 'Profil',
       source: 'Source',
       started: 'Démarré',
-      updated: 'Mis à jour'
+      updated: 'Mis à jour',
+      lastTool: 'Dernier outil',
+      planFraction: (done, total) => `${done} sur ${total}`,
+      more: count => `+${count} de plus`,
+      stopFailed: 'Impossible d’arrêter la session'
     },
     markAllRead: 'Tout marquer comme lu'
+  },
+
+  sessionOverview: {
+    title: 'Aperçu des sessions',
+    empty: 'Aucune session active',
+    newSession: 'Nouvelle session'
   },
   composer: {
     message: 'Message',

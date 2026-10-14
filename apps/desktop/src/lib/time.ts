@@ -257,3 +257,19 @@ export function formatAgo(fromMs: number, labels: AgoLabels, nowMs = Date.now())
 
   return by[unit](value)
 }
+
+// Compact elapsed clock for live surfaces (peek, overview grid): m:ss under
+// an hour, h:mm:ss beyond. Pure numbers, no locale words, so it ticks without
+// re-translation.
+export function formatElapsedClock(totalSeconds: number): string {
+  const total = Math.max(0, Math.floor(totalSeconds))
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = total % 60
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  }
+
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}

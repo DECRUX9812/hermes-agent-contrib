@@ -1,61 +1,91 @@
-import type { ClientSessionState } from '@/app/types'
 import { sessionTitle } from '@/lib/chat-runtime'
-import { deriveLiveActions } from '@/lib/live-actions'
-import { storedSessionIdForRuntimeId } from '@/store/session-states'
+import { lineageAliases } from '@/store/session'
+import type { SessionDotState } from '@/store/session-dot-state'
+import { SESSION_LIVE_GROUPS, sessionLiveGroup, type SessionLiveGroup } from '@/store/session-live'
 import type { SessionInfo } from '@/types/hermes'
 
-import type { MissionControlCard } from './types'
+import type { OverviewCardData } from './types'
 
-export interface CollectMissionControlOptions {
-  workingSessionIds: readonly string[]
+export interface CollectOverviewOptions {
   sessions: readonly SessionInfo[]
-  sessionStates: Record<string, ClientSessionState | undefined>
-  getStoredSessionId?: (runtimeId: string) => null | string
+  dotStates: Record<string, SessionDotState | undefined>
+  /** Stored ids with a live turn, loudest first. */
+  workingSessionIds: readonly string[]
+  attentionSessionIds: readonly string[]
+  /** Stored ids that finished during this run (still worth a glance). */
+  finishedSessionIds: readonly string[]
+  /** Stored ids open in a pane or selected (nulls ignored). */
+  openSessionIds: readonly (null | string | undefined)[]
 }
 
 /**
- * Pure collector that transforms active working sessions into Mission Control cards.
- * - Extracts only working sessions (non-working excluded)
- * - Resolves titles from stored session data
- * - Attaches latest live action if available (state-less runtime id -> card without activity line)
+ * Pure collector for the session overview grid: every session with a live
+ * turn, every session that finished during this run, and every session open
+ * in a pane — de-duplicated by lineage (a renamed/continued session paints
+ * once), ordered needs-you first, most recently active first within a group.
  */
-export function collectMissionControlCards({
-  getStoredSessionId = storedSessionIdForRuntimeId,
+export function collectOverviewCards({
+  attentionSessionIds,
+  dotStates,
+  finishedSessionIds,
+  openSessionIds,
   sessions,
-  sessionStates,
   workingSessionIds
-}: CollectMissionControlOptions): MissionControlCard[] {
-  const sessionByStoredId = new Map<string, SessionInfo>()
+}: CollectOverviewOptions): OverviewCardData[] {
+  const sessionById = new Map<string, SessionInfo>()
 
   for (const session of sessions) {
-    sessionByStoredId.set(session.id, session)
+    sessionById.set(session.id, session)
   }
 
-  const cards: MissionControlCard[] = []
+  const seen = new Set<string>()
+  const cards: { card: OverviewCardData; lastActive: number }[] = []
 
-  for (const runtimeId of workingSessionIds) {
-    const state = sessionStates[runtimeId]
-    const resolvedStoredId = state?.storedSessionId ?? getStoredSessionId(runtimeId) ?? runtimeId
-    const session = sessionByStoredId.get(resolvedStoredId) ?? sessionByStoredId.get(runtimeId)
-    const title = session ? sessionTitle(session) : (resolvedStoredId || runtimeId || 'Untitled Session')
+  const consider = (storedSessionId: string) => {
+    const canonical = lineageAliases(storedSessionId, sessions)[0] ?? storedSessionId
 
-    let latestAction = null
-
-    if (state?.messages && state.messages.length > 0) {
-      const actions = deriveLiveActions(state.messages)
-
-      if (actions.length > 0) {
-        latestAction = actions[actions.length - 1]
-      }
+    if (seen.has(canonical)) {
+      return
     }
 
+    seen.add(canonical)
+
+    const session = sessionById.get(canonical) ?? sessionById.get(storedSessionId)
+    const group: SessionLiveGroup = sessionLiveGroup(dotStates[canonical] ?? dotStates[storedSessionId] ?? 'idle')
+
     cards.push({
-      latestAction,
-      runtimeId,
-      storedSessionId: resolvedStoredId,
-      title
+      card: {
+        group,
+        storedSessionId: canonical,
+        title: session ? sessionTitle(session) : canonical
+      },
+      lastActive: session?.last_active ?? -1
     })
   }
 
-  return cards
+  for (const id of workingSessionIds) {
+    consider(id)
+  }
+
+  for (const id of attentionSessionIds) {
+    consider(id)
+  }
+
+  for (const id of finishedSessionIds) {
+    consider(id)
+  }
+
+  for (const id of openSessionIds) {
+    if (id) {
+      consider(id)
+    }
+  }
+
+  const groupRank = new Map(SESSION_LIVE_GROUPS.map((group, index) => [group, index]))
+
+  cards.sort(
+    (a, b) => groupRank.get(a.card.group)! - groupRank.get(b.card.group)! || b.lastActive - a.lastActive
+  )
+
+  return cards.map(entry => entry.card)
 }

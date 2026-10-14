@@ -95,6 +95,12 @@ export const zhHantOverrides = {
   artifactPreview: zhHantArtifacts.artifactPreview,
   sidebar: zhHantChrome.sidebar,
   composer: zhHantChat.composer,
+
+  sessionOverview: {
+    title: '工作階段總覽',
+    empty: '沒有進行中的工作階段',
+    newSession: '新增工作階段'
+  },
   statusStack: zhHantChat.statusStack,
   updates: zhHantBoot.updates,
   install: zhHantBoot.install,

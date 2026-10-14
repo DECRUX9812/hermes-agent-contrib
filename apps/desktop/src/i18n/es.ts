@@ -4199,6 +4199,7 @@ export const esOverrides = {
       thisMonth: 'Este mes'
     },
     statusDivider: {
+      needsYou: 'Te necesita',
       working: 'En progreso',
       done: 'Completado'
     },
@@ -4216,9 +4217,19 @@ export const esOverrides = {
       profile: 'Perfil',
       source: 'Origen',
       started: 'Iniciado',
-      updated: 'Actualizado'
+      updated: 'Actualizado',
+      lastTool: 'Última herramienta',
+      planFraction: (done, total) => `${done} de ${total}`,
+      more: count => `+${count} más`,
+      stopFailed: 'No se pudo detener la sesión'
     },
     markAllRead: 'Marcar todo como leído'
+  },
+
+  sessionOverview: {
+    title: 'Resumen de sesiones',
+    empty: 'No hay sesiones activas',
+    newSession: 'Nueva sesión'
   },
   composer: {
     message: 'Mensaje',

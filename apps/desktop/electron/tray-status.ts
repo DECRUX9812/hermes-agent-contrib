@@ -38,6 +38,9 @@ export interface TrayStatusPush {
   activeRuns: number
   /** Sessions blocking on input or finished-unread. */
   needsYou: number
+  /** Sessions blocking on input only — drives the app badge. Optional so an
+   *  older renderer still pushes a usable payload (missing → 0). */
+  needsInput?: number
   sessions: TrayStatusSession[]
   strings: TrayStatusStrings
 }
@@ -111,6 +114,7 @@ export function sanitizeTrayStatusPush(raw: unknown): TrayStatusPush | null {
 
   return {
     activeRuns: cleanCount(record.activeRuns),
+    needsInput: cleanCount(record.needsInput),
     needsYou: cleanCount(record.needsYou),
     sessions,
     strings

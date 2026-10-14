@@ -4202,6 +4202,7 @@ export const deOverrides = {
       thisMonth: 'Diesen Monat früher'
     },
     statusDivider: {
+      needsYou: 'Eingabe erforderlich',
       working: 'In Arbeit',
       done: 'Erledigt'
     },
@@ -4219,9 +4220,19 @@ export const deOverrides = {
       profile: 'Profil',
       source: 'Quelle',
       started: 'Gestartet',
-      updated: 'Aktualisiert'
+      updated: 'Aktualisiert',
+      lastTool: 'Letztes Tool',
+      planFraction: (done, total) => `${done} von ${total}`,
+      more: count => `+${count} weitere`,
+      stopFailed: 'Sitzung konnte nicht gestoppt werden'
     },
     markAllRead: 'Alle als gelesen markieren'
+  },
+
+  sessionOverview: {
+    title: 'Sitzungsübersicht',
+    empty: 'Keine aktiven Sitzungen',
+    newSession: 'Neue Sitzung'
   },
   composer: {
     message: 'Nachricht',

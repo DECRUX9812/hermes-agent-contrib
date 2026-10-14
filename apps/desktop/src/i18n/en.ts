@@ -3891,6 +3891,7 @@ export const en: Translations = {
       thisMonth: 'Earlier this month'
     },
     statusDivider: {
+      needsYou: 'Needs you',
       working: 'Working',
       done: 'Done'
     },
@@ -3908,9 +3909,19 @@ export const en: Translations = {
       profile: 'Profile',
       source: 'Source',
       started: 'Started',
-      updated: 'Updated'
+      updated: 'Updated',
+      lastTool: 'Last tool',
+      planFraction: (done, total) => `${done} of ${total}`,
+      more: count => `+${count} more`,
+      stopFailed: 'Could not stop the session'
     },
     markAllRead: 'Mark all as read'
+  },
+
+  sessionOverview: {
+    title: 'Session overview',
+    empty: 'No live sessions',
+    newSession: 'New session'
   },
 
   composer: {
