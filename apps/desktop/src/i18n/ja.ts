@@ -3,6 +3,7 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 import { defineLocale, type TranslationOverrides } from './define-locale'
 import { introJa } from './intro-ja'
 import { jaAuxTasks } from './ja_aux_tasks'
+import { jaCatalogInstall } from './ja_catalog_install'
 import { jaClarify } from './ja_clarify'
 import { jaConnectors } from './ja_connectors'
 import { jaFirstRun } from './ja_first_run'
@@ -14,6 +15,7 @@ import { jaPluginSettings } from './ja_plugins'
 import { jaProjects } from './ja_projects'
 import { jaSharedMetrics } from './ja_shared_metrics'
 import { jaThemePicker } from './ja_theme_picker'
+import { jaToolCards } from './ja_tool_cards'
 import { jaUpdateChannel } from './ja_update_channel'
 
 export const jaOverrides = {
@@ -3179,6 +3181,8 @@ export const jaOverrides = {
       toSimple: 'チャット中心のすっきりした画面に戻ります。'
     },
     searchAria: 'セッションを検索',
+    railPlugins: 'プラグイン',
+    railPluginsHint: 'プラグイン: 開く、またはインストール',
     searchPlaceholder: 'セッションを検索…',
     clearSearch: '検索をクリア',
     noMatch: query => `"${query}" に一致するセッションがありません。`,
@@ -4298,29 +4302,7 @@ export const jaOverrides = {
   },
 
   assistant: {
-    catalogInstall: {
-      preparing: 'インストールを準備中…',
-      install: 'インストール',
-      advanced: '詳細設定',
-      skip: 'スキップ',
-      installing: 'インストール中…',
-      installed: 'インストール済み',
-      notInstalled: '未インストール',
-      failed: '失敗',
-      showNames: '名前を表示',
-      hideNames: '名前を隠す',
-      skill: name => `スキル ${name}`,
-      kind: { plugin: 'プラグイン', skill: 'スキル' },
-      tier: { official: '公式', community: 'コミュニティ' },
-      targetProfile: profile => `${profile} プロファイルにインストールします`,
-      sendFailed: '回答を送信できませんでした。もう一度お試しください。',
-      commitLabel: 'コミット',
-      subdirLabel: 'フォルダー',
-      securityHeading: 'セキュリティ',
-      scan: { passed: 'スキャン合格', warnings: 'スキャンで警告あり', failed: 'スキャン不合格' },
-      requirementsLabel: '必要条件',
-      credentialsHeading: '認証情報'
-    },
+    catalogInstall: jaCatalogInstall,
     thread: {
       loadingSession: 'セッションを読み込み中',
       showEarlier: '以前のメッセージを表示',
@@ -4590,6 +4572,7 @@ export const jaOverrides = {
       commandDetails: 'コマンドの詳細'
     },
     clarify: jaClarify,
+    toolCards: jaToolCards,
     themePicker: jaThemePicker,
     tool: {
       copyCode: 'コードをコピー',

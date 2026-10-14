@@ -116,6 +116,8 @@ export const zhHantChrome = {
       toSimple: '返回清爽的聊天優先介面。'
     },
     searchAria: '搜尋工作階段',
+    railPlugins: '外掛',
+    railPluginsHint: '外掛：開啟或安裝',
     searchPlaceholder: '搜尋工作階段…',
     clearSearch: '清除搜尋',
     noMatch: query => `沒有工作階段符合「${query}」。`,

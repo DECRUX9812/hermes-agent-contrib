@@ -275,6 +275,57 @@ export const zhHantAssistant = {
       openSafetySettings: '開啟安全設定',
       commandDetails: '指令詳細資訊'
     },
+    toolCards: {
+      activityLabel: '工具活動',
+      families: {
+        browser: '瀏覽器',
+        code: '程式碼',
+        files: '檔案',
+        generic: '工具',
+        mcp: '連接器',
+        search: '搜尋',
+        terminal: '終端機',
+        web: '網頁'
+      },
+      names: {
+        memory: '記憶',
+        message: '訊息',
+        schedule: '排程',
+        skills: '技能',
+        vision: '視覺'
+      },
+      usedTimes: (name, count) => `已使用 ${name} ×${count}`,
+      working: '處理中…',
+      awaitingApproval: '等待你的批准',
+      reviewApproval: '檢視',
+      failed: '失敗',
+      stopped: '已停止',
+      showDetails: '顯示詳情',
+      hideDetails: '隱藏詳情',
+      details: {
+        request: '請求',
+        output: '輸出',
+        duration: '耗時',
+        noOutput: '無輸出'
+      },
+      argLabels: {
+        code: '程式碼',
+        command: '指令',
+        input: '輸入',
+        path: '檔案',
+        query: '搜尋',
+        target: '目標',
+        text: '文字',
+        url: '網址'
+      },
+      viewer: {
+        title: name => `${name}步驟`,
+        step: (index, total) => `第 ${index} 步，共 ${total} 步`,
+        noScreenshot: '此步驟沒有截圖',
+        previous: '上一步',
+        next: '下一步'
+      }
+    },
     clarify: {
       notReady: '澄清請求尚未就緒',
       gatewayDisconnected: 'Hermes 閘道未連線',
