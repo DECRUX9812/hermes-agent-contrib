@@ -1685,6 +1685,7 @@ export function ChatSidebar({
               onChange={setSearchQuery}
               placeholder={s.searchPlaceholder}
               value={searchQuery}
+              variant="sunken"
             />
           </div>
         )}

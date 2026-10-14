@@ -52,8 +52,21 @@ const TAB_IDLE =
 const TAB_SELECTED =
   '[background-image:linear-gradient(color-mix(in_srgb,var(--ui-accent)_14%,transparent),color-mix(in_srgb,var(--ui-accent)_14%,transparent))] text-foreground'
 
+// Segmented form (the sidebar's Sessions / Bots switch): the strip is a sunken
+// track and the active tab a raised pill. Font size lives on the track — tw-merge
+// reads `text-ui-*` and `text-fg*` as one group, so they cannot share a cn().
+const TAB_SEGMENTED =
+  'group/tab relative flex h-full min-w-0 flex-1 basis-0 items-center justify-center rounded-[5px] font-medium [-webkit-app-region:no-drag] transition-colors duration-(--dur-instant)'
+
+const TAB_SEGMENTED_ACTIVE = 'bg-surface-raised text-fg shadow-e1'
+const TAB_SEGMENTED_IDLE = 'text-fg-muted hover:text-fg'
+
+export type PaneTabVariant = 'segmented' | 'tabs'
+
 interface PaneTabProps extends React.ComponentProps<'div'> {
   active?: boolean
+  /** `segmented` pairs with a `segmented` `PaneTabStrip`; horizontal only. */
+  variant?: PaneTabVariant
   dirty?: boolean
   /** Close verb. Horizontal tabs reveal a hover ✕ over the label's masked
    *  right edge; middle-click and ⌘-click always work,
@@ -69,6 +82,25 @@ interface PaneTabProps extends React.ComponentProps<'div'> {
   vertical?: boolean
   /** Content-facing edge of a vertical rail — the strip line the active tab cuts. */
   side?: 'left' | 'right'
+}
+
+interface TabClassOptions {
+  active: boolean
+  edge?: string
+  onClose?: () => void
+  selected: boolean
+  vertical: boolean
+}
+
+function tabClasses({ active, edge, onClose, selected, vertical }: TabClassOptions) {
+  return cn(
+    TAB,
+    vertical ? TAB_VERTICAL : TAB_HORIZONTAL,
+    !vertical && onClose && TAB_CLOSEABLE,
+    edge,
+    active ? cn(TAB_ACTIVE, !vertical && TAB_ACTIVE_UNDERLINE) : cn(TAB_IDLE, edge && `${edge}-(--ui-stroke-tertiary)`),
+    selected && TAB_SELECTED
+  )
 }
 
 /**
@@ -90,6 +122,7 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
     selected = false,
     vertical = false,
     side = 'left',
+    variant = 'tabs',
     children,
     className,
     ...props
@@ -100,18 +133,14 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
   // that rule, and a per-tab border stacked a second translucent line over it.
   const edge = vertical ? (side === 'right' ? 'border-l' : 'border-r') : undefined
   const middle = middleClickHandlers(onClose)
+  const segmented = variant === 'segmented' && !vertical
 
   return (
     <div
       className={cn(
-        TAB,
-        vertical ? TAB_VERTICAL : TAB_HORIZONTAL,
-        !vertical && onClose && TAB_CLOSEABLE,
-        edge,
-        active
-          ? cn(TAB_ACTIVE, !vertical && TAB_ACTIVE_UNDERLINE)
-          : cn(TAB_IDLE, edge && `${edge}-(--ui-stroke-tertiary)`),
-        selected && TAB_SELECTED,
+        segmented
+          ? cn(TAB_SEGMENTED, active ? TAB_SEGMENTED_ACTIVE : TAB_SEGMENTED_IDLE, selected && TAB_SELECTED)
+          : tabClasses({ active, edge, onClose, selected, vertical }),
         className
       )}
       data-active={active}
@@ -219,10 +248,7 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
 ) {
   const inner = (
     <span
-      className={cn(
-        'ui-tab-label block min-w-0 truncate font-medium group-data-[closeable]/tab:text-clip',
-        className
-      )}
+      className={cn('ui-tab-label block min-w-0 truncate font-medium group-data-[closeable]/tab:text-clip', className)}
     >
       {children}
     </span>
@@ -243,11 +269,7 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
   }
 
   return (
-    <span
-      className={cls}
-      ref={ref as React.Ref<HTMLSpanElement>}
-      {...(props as React.HTMLAttributes<HTMLSpanElement>)}
-    >
+    <span className={cls} ref={ref as React.Ref<HTMLSpanElement>} {...(props as React.HTMLAttributes<HTMLSpanElement>)}>
       {inner}
     </span>
   )
@@ -262,6 +284,7 @@ interface PaneTabStripProps extends React.ComponentProps<'div'> {
   trailing?: React.ReactNode
   /** Top-edge panel header shares the native window-control band. */
   titlebar?: boolean
+  variant?: PaneTabVariant
 }
 
 /**
@@ -274,9 +297,11 @@ interface PaneTabStripProps extends React.ComponentProps<'div'> {
  * `data-zone-tabstrip`, drop carets) ride on the usual div props.
  */
 export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(function PaneTabStrip(
-  { children, className, listRef, trailing, titlebar = false, ...props },
+  { children, className, listRef, trailing, titlebar = false, variant = 'tabs', ...props },
   ref
 ) {
+  const segmented = variant === 'segmented'
+
   return (
     <div
       // Strip and active tab both sit on the sidebar surface, so the bar reads
@@ -285,13 +310,17 @@ export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(
       className={cn(
         'group/pane-header relative flex min-w-0 shrink-0 select-none bg-(--ui-sidebar-surface-background) [--pane-tab-active-bg:var(--ui-sidebar-surface-background)]',
         titlebar ? 'h-full flex-1 [-webkit-app-region:drag]' : 'h-7 [-webkit-app-region:no-drag]',
+        segmented && 'px-2',
         className
       )}
       ref={ref}
       {...props}
     >
       <div
-        className="flex min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={cn(
+          'flex min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          segmented && 'h-7 gap-0.5 self-center rounded-control bg-surface-sunken p-0.5 text-ui-xs'
+        )}
         ref={listRef}
         role="tablist"
       >

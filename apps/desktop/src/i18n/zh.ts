@@ -3061,6 +3061,7 @@ export const zhOverrides = {
     switchToConnection: name => `切换到 ${name}`,
     switchConnectionFailed: name => `无法连接到 ${name}`,
     manageProfiles: '管理配置档案…',
+    railMore: '更多配置档案操作',
     connectGateway: '管理网关…',
     fleet: {
       allOnGateway: '此网关上的全部配置档案',

@@ -3520,6 +3520,7 @@ export const esOverrides = {
     switchToConnection: name => `Cambiar a ${name}`,
     switchConnectionFailed: name => `No se pudo conectar a ${name}`,
     manageProfiles: 'Gestionar perfiles...',
+    railMore: 'Más acciones de perfil',
     connectGateway: 'Gestionar gateways…',
     fleet: {
       allOnGateway: 'Todos los perfiles de este gateway',

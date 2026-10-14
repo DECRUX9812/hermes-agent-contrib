@@ -26,6 +26,7 @@ vi.mock('@/i18n', () => ({
         failedSaveSoul: 'Failed to save SOUL.md',
         importProfile: 'Import profile…',
         manageProfiles: 'Manage profiles…',
+        railMore: 'More profile actions',
         newProfile: 'New profile',
         remoteOverride: {
           badge: (host: string) => `Runs on ${host}`,
@@ -96,6 +97,10 @@ const hasMultipleConnections = $hasMultipleConnections as ReturnType<typeof atom
 const { $profiles } = await import('@/store/profile')
 const profiles = $profiles as ReturnType<typeof atom<Array<{ is_default: boolean; name: string }>>>
 
+// Manage, Import and the gateways door ride the rail's overflow menu.
+const openRailMenu = () =>
+  fireEvent.keyDown(screen.getByRole('button', { name: 'More profile actions' }), { key: 'Enter' })
+
 afterEach(() => {
   cleanup()
   hasMultipleConnections.set(false)
@@ -105,8 +110,9 @@ afterEach(() => {
 describe('ProfileRail multi-gateway entry point', () => {
   it('deep-links to the unified Settings → Gateways page from the rail', () => {
     render(<ProfileRail />)
+    openRailMenu()
 
-    const pill = screen.getByRole('button', { name: 'Manage gateways…' })
+    const pill = screen.getByRole('menuitem', { name: 'Manage gateways…' })
     fireEvent.click(pill)
 
     expect(navigate).toHaveBeenCalledWith('/settings?tab=gateway')
@@ -114,11 +120,12 @@ describe('ProfileRail multi-gateway entry point', () => {
 
   it('keeps the entry point visible for single-profile users', () => {
     render(<ProfileRail />)
+    openRailMenu()
 
     // The whole point is first-run discoverability: the pill must not be
     // gated behind multiProfile the way the default↔all toggle is.
-    expect(screen.getByRole('button', { name: 'Manage gateways…' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Manage profiles…' })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Manage gateways…' })).toBeTruthy()
+    expect(screen.getByRole('menuitem', { name: 'Manage profiles…' })).toBeTruthy()
   })
 
   it('keeps the active profile explicit when gateway identity moves to the statusbar', () => {
@@ -126,7 +133,8 @@ describe('ProfileRail multi-gateway entry point', () => {
     render(<ProfileRail />)
 
     expect(screen.getByRole('button', { name: 'default' })).toBeTruthy()
-    expect(screen.queryByRole('button', { name: 'Manage gateways…' })).toBeNull()
-    expect(screen.getByRole('button', { name: 'Manage profiles…' })).toBeTruthy()
+    openRailMenu()
+    expect(screen.queryByRole('menuitem', { name: 'Manage gateways…' })).toBeNull()
+    expect(screen.getByRole('menuitem', { name: 'Manage profiles…' })).toBeTruthy()
   })
 })

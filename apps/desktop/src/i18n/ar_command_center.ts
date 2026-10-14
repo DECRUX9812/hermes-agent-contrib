@@ -417,6 +417,7 @@ export const arCommandCenter = {
     switchToConnection: name => `التبديل إلى ${name}`,
     switchConnectionFailed: name => `تعذّر الاتصال بـ ${name}`,
     manageProfiles: 'إدارة الملفات الشخصية',
+    railMore: 'إجراءات أخرى للملف الشخصي',
     fleet: {
       localDevice: 'هذا الجهاز (خلفية محلية — تثبّت Hermes إن كان مفقودًا، وإلا تفتح جلسة جديدة)',
       switchDeviceTitle: 'التبديل إلى هذا الجهاز؟',

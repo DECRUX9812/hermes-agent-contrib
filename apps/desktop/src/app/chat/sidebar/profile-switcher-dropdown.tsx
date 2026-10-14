@@ -21,7 +21,6 @@ import { useI18n } from '@/i18n'
 import { resolveProfileColor } from '@/lib/profile-color'
 import { notify, notifyError } from '@/store/notifications'
 import { normalizeProfileKey, prewarmProfilePick, profileLabel } from '@/store/profile'
-import { runImportProfileFlow } from '@/store/profile-share'
 import type { ProfileInfo } from '@/types/hermes'
 
 import { FleetGatewayMenuGroup } from './fleet-gateway-menu-group'
@@ -138,24 +137,6 @@ export function AddProfileButton({ label, onClick }: { label: string; onClick: (
         type="button"
       >
         <Codicon name="add" size="0.75rem" />
-      </button>
-    </Tip>
-  )
-}
-
-// Import-archive door beside the "+": adopt a shared profile bundle (theme,
-// skills, layout) as a new profile. Same chrome as AddProfileButton; the whole
-// flow (picker → import → apply overlay → switch) lives in the store.
-export function ImportProfileButton({ label }: { label: string }) {
-  return (
-    <Tip label={label}>
-      <button
-        aria-label={label}
-        className="grid size-5 shrink-0 place-items-center rounded-(--control-icon-radius) text-(--ui-text-tertiary) opacity-55 transition hover:bg-(--ui-control-hover-background) hover:text-foreground hover:opacity-100"
-        onClick={() => void runImportProfileFlow()}
-        type="button"
-      >
-        <Codicon name="cloud-download" size="0.75rem" />
       </button>
     </Tip>
   )

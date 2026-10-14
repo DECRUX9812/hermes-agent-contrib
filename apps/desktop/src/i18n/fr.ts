@@ -3533,6 +3533,7 @@ export const frOverrides = {
     switchToConnection: name => `Basculer vers ${name}`,
     switchConnectionFailed: name => `Impossible de se connecter à ${name}`,
     manageProfiles: 'Gérer les profils…',
+    railMore: 'Autres actions de profil',
     connectGateway: 'Connecter un autre gateway Hermes…',
     fleet: {
       allOnGateway: 'Tous les profils de cette gateway',

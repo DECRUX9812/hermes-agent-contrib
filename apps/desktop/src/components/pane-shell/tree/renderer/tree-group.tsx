@@ -322,6 +322,9 @@ export function TreeGroup({
   // also has to accommodate the drag handle and the separate new-tab target.
   const tabsBelowControls = topEdge && (compactTabs || sidebarGroup || measuredBelowControls)
   const tabsInTitlebar = topEdge && !tabsBelowControls
+  // The sessions sidebar's strip (Sessions / Bots) reads as a view switch, not
+  // as editor tabs.
+  const tabVariant = !tabsInTitlebar && node.panes.includes('sessions') ? 'segmented' : 'tabs'
   const pageHeader = paneChrome(active).headerContent
   // The active pane's strip-trailing affordance (a session's skill chip) —
   // pinned right of the tab list, never scrolled away.
@@ -579,7 +582,9 @@ export function TreeGroup({
         <div
           className="relative flex min-w-0 shrink-0 bg-(--ui-sidebar-surface-background)"
           data-panel-header=""
-          style={topEdge ? { height: titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0) } : undefined}
+          style={
+            topEdge ? { height: titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0) } : undefined
+          }
         >
           {topEdge && (
             <div aria-hidden="true" className="shrink-0" style={{ width: 'var(--panel-titlebar-left, 100%)' }} />
@@ -607,7 +612,10 @@ export function TreeGroup({
                 onSelect={paneId => {
                   clearTabSelection()
 
-                  if (node.minimized) { restoreTreePane(paneId) }
+                  if (node.minimized) {
+                    restoreTreePane(paneId)
+                  }
+
                   activateTreePane(node.id, paneId)
                 }}
                 tabs={shown.map(id => ({ id, title: tabText(id), label: tabLabel(id) }))}
@@ -661,6 +669,7 @@ export function TreeGroup({
                     <StripDropCaret groupId={node.id} stripRef={stripRef} />
                   </>
                 }
+                variant={tabVariant}
               >
                 {shown.map((paneId, index) => {
                   const isActive = paneId === activeId && !node.minimized
@@ -759,6 +768,7 @@ export function TreeGroup({
                       role="tab"
                       selected={isSelected}
                       style={{ cursor: 'grab' }}
+                      variant={tabVariant}
                     >
                       {chrome.tabLead ? (
                         <span className="ml-2 -mr-1 flex shrink-0 items-center">
@@ -943,7 +953,11 @@ export function TreeGroup({
             className="absolute inset-x-0 bottom-0 z-50 flex cursor-grab items-center justify-center outline-1 -outline-offset-2 outline-dashed backdrop-blur-[2px]"
             onPointerDown={e => startPaneDrag(activeId, e, undefined, undefined, tabText(activeId))}
             style={{
-              top: topEdge ? titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0) : headerVisible ? tabStripHeight : 0,
+              top: topEdge
+                ? titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0)
+                : headerVisible
+                  ? tabStripHeight
+                  : 0,
               background:
                 'color-mix(in srgb, var(--ui-accent) 6%, color-mix(in srgb, var(--ui-bg-chrome) 55%, transparent))',
               outlineColor: 'color-mix(in srgb, var(--ui-accent) 55%, transparent)'
