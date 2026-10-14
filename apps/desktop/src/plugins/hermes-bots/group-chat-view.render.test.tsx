@@ -152,7 +152,9 @@ it('groups consecutive same-speaker entries under one header, breaking on thread
   render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
 
   const names = (want: string) =>
-    screen.getAllByRole('button').filter(el => (el.textContent || '').trim().toLowerCase() === want)
+    within(screen.getByTestId('group-room-log'))
+      .getAllByRole('button')
+      .filter(el => (el.textContent || '').trim().toLowerCase() === want)
 
   // builder: m1+m2 share one header; m3's thread change re-breaks the run.
   expect(names('builder')).toHaveLength(2)
@@ -283,7 +285,7 @@ it('keeps the room header to navigation and settings — no one-click delete bes
   // Destructive disband moved into Group settings (mocked to null here).
   expect(screen.queryByRole('button', { name: /disband|delete/i })).toBeNull()
   // One members entry point (the face pile), not two.
-  expect(screen.getAllByRole('button', { name: 'Manage group members' })).toHaveLength(1)
+  expect(screen.getAllByRole('button', { name: /^(Show|Hide) members$/ })).toHaveLength(1)
 })
 
 it('leaves a reader in history when a reply lands, and offers a jump back with the unseen count', async () => {
@@ -325,7 +327,7 @@ it('shows each voice’s role and lights the face of whoever is working right no
   const log = [{ id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'on it', at: 1 }]
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {}, running: true, turn: { name: 'builder' } } } as never)
 
-  const { container } = render(
+  render(
     <GroupChatWorkspace
       group="Room"
       members={[{ name: 'builder', title: 'Frontend engineer' }, { name: 'reviewer' }] as never}
@@ -334,11 +336,9 @@ it('shows each voice’s role and lights the face of whoever is working right no
 
   expect(screen.getByTestId('group-speaker-role').textContent).toBe('Frontend engineer')
   // Only the bot mid-turn wears the working ring in the header's face pile.
-  expect(container.querySelectorAll('[data-working]')).toHaveLength(1)
-  // ...and the ring is a growing halo, not an opacity fade nobody can see.
-  expect(container.querySelectorAll('[data-testid="group-working-halo"]')).toHaveLength(1)
-  // The same fact is spelled out next to the faces, so it needs no hunting.
-  expect(screen.getByTestId('group-working-chip').textContent).toContain('Frontend engineer')
+  const pile = screen.getByRole('button', { name: /^(Show|Hide) members$/ })
+  expect(pile.querySelectorAll('[data-working]')).toHaveLength(1)
+  expect(pile.querySelector('[data-working]')?.classList).toContain('motion-ring')
 })
 
 it('runs the room as threads: the rail opens one beside the room, with its own header and reply box', async () => {
@@ -357,7 +357,7 @@ it('runs the room as threads: the rail opens one beside the room, with its own h
 
   // The team panel sits beside the room with the squad in it.
   expect(screen.getByTestId('group-room-panel')).toBeTruthy()
-  expect(screen.getAllByRole('button', { name: /^Ask builder/i })).toHaveLength(1)
+  expect(screen.getByRole('button', { name: 'Builder, details' })).toBeTruthy()
 
   // Rail → the thread opens beside the room; the room keeps every thread.
   const rail = screen.getByTestId('group-thread-rail')
