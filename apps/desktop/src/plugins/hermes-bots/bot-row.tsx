@@ -35,10 +35,11 @@ import { isBackfilledFacePng } from './avatar-image'
 import { BotRowMenu } from './bot-menu'
 import { $botChatFocused, $focusedBotOwner, $pendingBotOpen, $selectedRosterKey, focusedRosterOwner } from './bot-state'
 import { $botMeta, botActivitySession, botAttentionHint, botHandle, botRosterKey, botSourceStatus } from './data'
-import { $groupChats, $groupChatWorkspace, groupChatRoomKey } from './group-chat'
+import { $groupChatWorkspace, type GroupChatRoom, groupChatRoomKey } from './group-chat'
 import { groupLastActivity } from './group-membership'
 import { toggleGroupChatPinned } from './group-pin'
 import { $activeGroupMemberKeys } from './group-presence'
+import { useGroupChatRoom } from './group-room-store'
 import { $groupReadAt, groupLastRoundSummary, groupUnreadCount } from './group-unread'
 import { isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
@@ -64,7 +65,7 @@ import {
   $botSections,
   $draggingBot,
   BOT_DRAG_MIME,
-  groupChatSectionId,
+  groupChatRoomSectionId,
   groupDragKey,
   moveGroupChatsToSection
 } from './user-sections'
@@ -448,13 +449,11 @@ interface GroupRowProps {
 export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSection }: GroupRowProps) {
   const { t } = useI18n()
   const b = useBots()
-  const rooms = useValue($groupChats)
+  const maybeRoom = useGroupChatRoom(group)
   const sections = useValue($botSections)
-  const currentSectionId = groupChatSectionId(group, rooms)
+  const currentSectionId = groupChatRoomSectionId(maybeRoom)
 
-  const room = rooms[group] || {
-    log: []
-  }
+  const room = (maybeRoom ?? { log: [] }) as GroupChatRoom
 
   const log = Array.isArray(room.log) ? room.log : []
   const last = log.length ? log[log.length - 1] : null

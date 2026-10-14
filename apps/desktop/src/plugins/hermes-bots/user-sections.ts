@@ -372,6 +372,11 @@ export function groupDragKey(name: string): string {
   return `${GROUP_DRAG_PREFIX}${name}`
 }
 
+/** Section of a single room, for call sites on a per-room store instead of the whole map. */
+export function groupChatRoomSectionId(room: null | Pick<GroupChat, 'sectionId'> | undefined): null | string {
+  return room?.sectionId ? String(room.sectionId) : null
+}
+
 /** A group's section, off the live room record. */
 export function groupChatSectionId(name: string, rooms: Record<string, GroupChat>): null | string {
   const id = rooms?.[name]?.sectionId

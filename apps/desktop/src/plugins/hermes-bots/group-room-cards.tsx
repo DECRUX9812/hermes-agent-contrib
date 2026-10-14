@@ -19,20 +19,11 @@ import { liveTool } from './live-status'
 import type { GroupMember } from './types'
 
 const STATUS_TONE: Record<HandoffStatus, string> = {
-  accepted: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300',
-  declined: 'bg-red-500/12 text-red-700 dark:text-red-300',
-  delivered: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-  open: 'bg-(--ui-bg-tertiary) text-(--ui-text-secondary)',
-  working: 'bg-(--ui-accent)/12 text-(--ui-accent)'
-}
-
-function Field({ label, children }: { children: string; label: string }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="text-[0.625rem] font-semibold tracking-wide text-(--ui-text-quaternary) uppercase">{label}</span>
-      <span className="text-[0.75rem] leading-snug text-(--ui-text-secondary)">{children}</span>
-    </div>
-  )
+  accepted: 'bg-info/10 text-info',
+  declined: 'bg-danger/10 text-danger',
+  delivered: 'bg-success/10 text-success',
+  open: 'bg-hover text-fg-muted',
+  working: 'bg-info/10 text-info'
 }
 
 /** "due in 12 min" or, past it, a red "overdue 5 min" — re-read on every
@@ -44,7 +35,7 @@ function DueClock({ at, minutes }: { at: number; minutes: number }) {
   return left >= 0 ? (
     <span>{b.group.handoff.due(left)}</span>
   ) : (
-    <span className="font-semibold text-red-600 dark:text-red-300">{b.group.handoff.overdue(-left)}</span>
+    <span className="font-semibold text-danger">{b.group.handoff.overdue(-left)}</span>
   )
 }
 
@@ -55,27 +46,30 @@ export function HandoffCard({ handoff, nameOf }: { handoff: RoomHandoff; nameOf:
   return (
     <section
       aria-label={h.label(nameOf(handoff.from), nameOf(handoff.to))}
-      className="ml-11 overflow-hidden rounded-xl border border-(--ui-accent)/25 bg-(--ui-accent)/5"
+      className="ml-11 rounded-card border border-line bg-surface-raised px-3 py-2"
       data-handoff-status={handoff.status}
       data-testid="group-handoff-card"
     >
-      <div className="flex flex-wrap items-center gap-2 border-b border-(--ui-accent)/20 bg-(--ui-accent)/8 px-3 py-1.5">
-        <Codicon className="text-(--ui-accent)" name="arrow-swap" />
-        <span className="text-[0.75rem] font-semibold text-(--ui-accent)">{h.title}</span>
-        <span className="text-[0.75rem] text-(--ui-text-secondary)">
+      <div className="flex items-center gap-2 text-ui-xs text-fg-muted">
+        <span className="min-w-0 truncate">
           {nameOf(handoff.from)} → {nameOf(handoff.to)}
         </span>
-        <span
-          className={cn('ml-auto rounded-full px-2 py-px text-[0.625rem] font-semibold', STATUS_TONE[handoff.status])}
-        >
+        <span className={cn('ml-auto shrink-0 rounded-pill px-2 py-px font-semibold', STATUS_TONE[handoff.status])}>
           {h.status[handoff.status]}
         </span>
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 px-3 py-2 @lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <Field label={h.task}>{handoff.task}</Field>
-        {handoff.doneWhen ? <Field label={h.doneWhen}>{handoff.doneWhen}</Field> : null}
-      </div>
-      <div className="flex flex-wrap gap-x-3 px-3 pb-2 text-[0.625rem] text-(--ui-text-quaternary)">
+      <div className="mt-1 text-ui-sm text-fg">{handoff.task}</div>
+      {handoff.why ? (
+        <div className="mt-0.5 text-ui-xs text-fg-muted">
+          {h.why}: {handoff.why}
+        </div>
+      ) : null}
+      {handoff.doneWhen ? (
+        <div className="mt-0.5 text-ui-xs text-fg-muted">
+          {h.doneWhen}: {handoff.doneWhen}
+        </div>
+      ) : null}
+      <div className="mt-1 flex flex-wrap gap-x-3 text-ui-2xs text-fg-subtle">
         <span>{relativeTime(handoff.at)}</span>
         {handoff.dueMinutes &&
         (handoff.status === 'open' || handoff.status === 'accepted' || handoff.status === 'working') ? (
@@ -119,22 +113,22 @@ export function EscalationCard({
     <section
       aria-label={e.title}
       className={cn(
-        'flex flex-col gap-2 rounded-xl border border-amber-500/40 bg-amber-500/8 px-3 py-2.5',
+        'flex flex-col gap-2 rounded-card border border-warning/40 bg-warning/10 px-3 py-2.5',
         !compact && 'ml-11'
       )}
       data-testid="group-escalation-card"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <Codicon className="text-amber-600 dark:text-amber-300" name="warning" />
-        <span className="text-[0.75rem] font-semibold text-amber-700 dark:text-amber-300">{e.title}</span>
-        <span className="text-[0.6875rem] text-(--ui-text-tertiary)">
+        <Codicon className="text-warning" name="warning" />
+        <span className="text-ui-xs font-semibold text-warning">{e.title}</span>
+        <span className="text-ui-2xs text-fg-muted">
           {escalation.kind === 'loop'
             ? e.loop(nameOf(handoff.from), nameOf(handoff.to))
             : e.stalled(nameOf(handoff.from), nameOf(handoff.to))}
         </span>
       </div>
       <button
-        className="cursor-pointer text-left text-[0.8125rem] leading-snug text-foreground"
+        className="cursor-pointer text-left text-ui-sm leading-snug text-fg"
         onClick={onOpen}
         type="button"
       >
@@ -251,30 +245,30 @@ export function VoteCard({
   const top = counts.size ? Math.max(...counts.values()) : 0
 
   const TONE = {
-    majority: 'bg-(--ui-accent)/12 text-(--ui-accent)',
-    split: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-    unanimous: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
-    waiting: 'bg-(--ui-bg-tertiary) text-(--ui-text-secondary)'
+    majority: 'bg-info/10 text-info',
+    split: 'bg-warning/10 text-warning',
+    unanimous: 'bg-success/10 text-success',
+    waiting: 'bg-hover text-fg-muted'
   } as const
 
   return (
     <section
       aria-label={v.label(vote.question)}
-      className="ml-11 overflow-hidden rounded-xl border border-(--ui-stroke-secondary)"
+      className="ml-11 overflow-hidden rounded-card border border-line"
       data-testid="group-vote-card"
     >
-      <div className="flex flex-wrap items-center gap-2 border-b border-(--ui-stroke-secondary) bg-(--ui-bg-tertiary) px-3 py-1.5">
-        <Codicon className="text-(--ui-accent)" name="flame" />
-        <span className="text-[0.75rem] font-semibold text-foreground">{v.title}</span>
+      <div className="flex flex-wrap items-center gap-2 border-b border-line bg-surface-sunken px-3 py-1.5">
+        <Codicon className="text-info" name="flame" />
+        <span className="text-ui-xs font-semibold text-fg">{v.title}</span>
         <span
-          className={cn('ml-auto rounded-full px-2 py-px text-[0.625rem] font-semibold', TONE[consensus])}
+          className={cn('ml-auto rounded-pill px-2 py-px text-ui-2xs font-semibold', TONE[consensus])}
           data-testid="group-vote-consensus"
         >
           {v.consensus[consensus]}
         </span>
       </div>
       <div className="flex flex-col gap-1.5 px-3 py-2">
-        <span className="text-[0.8125rem] leading-snug font-medium text-foreground">{vote.question}</span>
+        <span className="text-ui-sm leading-snug font-medium text-fg">{vote.question}</span>
         {vote.options.map(option => {
           const voters = Object.entries(vote.votes)
             .filter(([, pick]) => pick === option)
@@ -285,28 +279,28 @@ export function VoteCard({
 
           return (
             <div className="flex items-center gap-2" data-testid="group-vote-option" key={option}>
-              <div className="relative min-w-0 flex-1 overflow-hidden rounded-md bg-(--ui-bg-tertiary)">
+              <div className="relative min-w-0 flex-1 overflow-hidden rounded-row bg-surface-sunken">
                 {/* The bar is the count, so a glance reads the shape of the
                     room before any name is legible. */}
                 <div
                   aria-hidden
                   className={cn(
                     'h-full absolute inset-y-0 left-0 transition-[width]',
-                    isCalled ? 'bg-emerald-500/35' : 'bg-(--ui-accent)/18'
+                    isCalled ? 'bg-success/30' : 'bg-info/15'
                   )}
                   style={{ width: `${width}%` }}
                 />
                 <div className="relative flex flex-wrap items-center gap-x-2 px-2 py-1">
                   <span
                     className={cn(
-                      'min-w-0 truncate text-[0.75rem]',
-                      isCalled ? 'font-semibold text-emerald-700 dark:text-emerald-300' : 'text-foreground'
+                      'min-w-0 truncate text-ui-xs',
+                      isCalled ? 'font-semibold text-success' : 'text-fg'
                     )}
                   >
                     {option}
                   </span>
                   {voters.length ? (
-                    <span className="truncate text-[0.625rem] text-(--ui-text-tertiary)">
+                    <span className="truncate text-ui-2xs text-fg-subtle">
                       {v.picked(voters.join(', '))}
                     </span>
                   ) : null}
@@ -323,10 +317,10 @@ export function VoteCard({
           )
         })}
       </div>
-      <div className="flex flex-wrap gap-x-3 px-3 pb-2 text-[0.625rem] text-(--ui-text-quaternary)">
+      <div className="flex flex-wrap gap-x-3 px-3 pb-2 text-ui-2xs text-fg-subtle">
         <span>{relativeTime(vote.at)}</span>
         {vote.decided ? (
-          <span className="font-semibold text-emerald-700 dark:text-emerald-300" data-testid="group-vote-decided">
+          <span className="font-semibold text-success" data-testid="group-vote-decided">
             {v.decided(vote.decided)}
           </span>
         ) : (
