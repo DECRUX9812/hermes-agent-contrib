@@ -114,6 +114,39 @@ it('never clamps the user’s own lines', () => {
   expect(screen.getByText(LONG_TEXT)).toBeTruthy()
 })
 
+it('prefers the room role label over the global title', () => {
+  renderRow(botLine('a quick answer'), { roleTitle: 'Auditor', roomRole: 'Reviewer' })
+
+  expect(screen.getByTestId('group-speaker-role').textContent).toBe('Reviewer')
+})
+
+it('falls back to the global title when the room names no role', () => {
+  renderRow(botLine('a quick answer'), { roleTitle: 'Auditor' })
+
+  expect(screen.getByTestId('group-speaker-role').textContent).toBe('Auditor')
+})
+
+it('shows no header on a continuation entry', () => {
+  renderRow(botLine('still going'), { runStart: false })
+
+  expect(screen.queryByTestId('group-speaker-role')).toBeNull()
+  expect(screen.queryByText('builder')).toBeNull()
+  expect(screen.getByText('still going')).toBeTruthy()
+})
+
+it('hides the handoff protocol line the chip below already says', () => {
+  renderRow(botLine('Plan agreed.\n@coder handoff: unify replies · done when: tests green'), { handoffLine: 1 })
+
+  expect(screen.getByText('Plan agreed.')).toBeTruthy()
+  expect(screen.queryByText(/handoff:/)).toBeNull()
+})
+
+it('keeps the protocol line when no chip is shown for it', () => {
+  renderRow(botLine('Plan agreed.\n@coder handoff: unify replies · done when: tests green'))
+
+  expect(screen.getByText(/handoff:/)).toBeTruthy()
+})
+
 it('marks the room lead with the same label as before', () => {
   renderRow(botLine('hello'), { lead: true })
 

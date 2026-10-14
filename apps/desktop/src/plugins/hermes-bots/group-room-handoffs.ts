@@ -41,6 +41,8 @@ export interface RoomHandoff {
   id: string
   /** Index of the log entry that carried the handoff. */
   index: number
+  /** 0-based line of the entry text the handoff was read off. */
+  line: number
   /** The receiver's answer that settled it (decline reason / delivery). */
   reply: string
   /** Log index of that answer, or -1. */
@@ -91,13 +93,45 @@ export function parseHandoffLine(
   text: string,
   members: readonly GroupMember[]
 ): null | { doneWhen: string; dueMinutes: null | number; task: string; to: string; why: string } {
-  for (const line of String(text || '').split('\n')) {
-    const match = line.match(LINE)
-    const to = match ? resolveHandle(match[1]!, members) : null
+  const found = scanHandoffLines(text, members)[0]
 
-    if (!match || !to) {
-      continue
-    }
+  return found ? { doneWhen: found.doneWhen, dueMinutes: found.dueMinutes, task: found.task, to: found.to, why: found.why } : null
+}
+
+/** 0-based line of the entry text carrying its handoff, or -1 when none. */
+export function handoffLineIndex(text: string, members: readonly GroupMember[]): number {
+  return scanHandoffLines(text, members)[0]?.line ?? -1
+}
+
+/** The entry text with one 0-based line removed (the chip says it instead). */
+export function withoutTextLine(text: string, line: number): string {
+  const lines = String(text || '').split('\n')
+
+  if (line < 0 || line >= lines.length) {
+    return String(text || '')
+  }
+
+  return lines
+    .filter((_, index) => index !== line)
+    .join('\n')
+    .replace(/^\n+/, '')
+}
+
+function scanHandoffLines(
+  text: string,
+  members: readonly GroupMember[]
+): { doneWhen: string; dueMinutes: null | number; line: number; task: string; to: string; why: string }[] {
+  const out: { doneWhen: string; dueMinutes: null | number; line: number; task: string; to: string; why: string }[] = []
+
+  String(text || '')
+    .split('\n')
+    .forEach((lineText, line) => {
+      const match = lineText.match(LINE)
+      const to = match ? resolveHandle(match[1]!, members) : null
+
+      if (!match || !to) {
+        return
+      }
 
     const [task = '', ...rest] = match[2]!.split(FIELD_SPLIT).map(part => part.trim())
     let doneWhen = ''
@@ -118,11 +152,11 @@ export function parseHandoffLine(
     }
 
     if (task) {
-      return { doneWhen, dueMinutes, task, to, why }
+      out.push({ doneWhen, dueMinutes, line, task, to, why })
     }
-  }
+    })
 
-  return null
+  return out
 }
 
 function speakerName(entry: GroupMessage): string {
@@ -143,6 +177,7 @@ export function deriveRoomHandoffs(
       return
     }
 
+    const line = handoffLineIndex(entry.text, members)
     const thread = groupThreadOf(entry)
     let status: HandoffStatus = 'open'
     let reply = ''
@@ -197,6 +232,7 @@ export function deriveRoomHandoffs(
       fromUser: entry.from?.kind === 'user',
       id: entry.id || `${thread}:${index}`,
       index,
+      line,
       reply,
       replyIndex,
       stale:

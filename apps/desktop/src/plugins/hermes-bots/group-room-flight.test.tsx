@@ -16,6 +16,7 @@ function handoff(id: string, at: number, from = 'atlas', to = 'pixel'): RoomHand
     fromUser: false,
     id,
     index: 0,
+    line: 0,
     reply: '',
     replyIndex: -1,
     stale: 'fresh',

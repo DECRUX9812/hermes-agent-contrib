@@ -7,6 +7,7 @@ import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import type { groupMentionComponents, groupMentionText } from './group-mention-text'
 import { isLongReply } from './group-message-runs'
+import { withoutTextLine } from './group-room-handoffs'
 import { useBots } from './i18n'
 import type { BotMeta, GroupMember, GroupMessage } from './types'
 
@@ -26,6 +27,8 @@ export interface GroupMessageRowProps {
   dimmed: boolean
   display: string
   entry: GroupMessage
+  /** 0-based line of the entry text a chip below already says; hidden here. */
+  handoffLine?: number
   index: number
   label: string
   lead: boolean
@@ -39,6 +42,8 @@ export interface GroupMessageRowProps {
   onToggleReveal: () => void
   replyTag: string
   revealed: boolean
+  /** This room's role label for the speaker; falls back to `roleTitle`. */
+  roomRole?: string
   roleTitle: string
   runStart: boolean
   Streamdown?: typeof sdk.Streamdown
@@ -49,6 +54,7 @@ export function GroupMessageRow({
   dimmed,
   display,
   entry,
+  handoffLine,
   index,
   label,
   lead,
@@ -62,6 +68,7 @@ export function GroupMessageRow({
   onToggleReveal,
   replyTag,
   revealed,
+  roomRole,
   roleTitle,
   runStart,
   Streamdown
@@ -76,6 +83,9 @@ export function GroupMessageRow({
   const speakerColor = appearance ? avatarColor(appearance.color, entry.from.name) : null
   const long = !isUser && isLongReply(entry.text)
   const clamped = long && !expanded
+  // The handoff protocol line duplicates the chip below it: hide exactly the
+  // line the parser consumed, and only when a chip is shown for it.
+  const shownText = !isUser && handoffLine !== undefined && handoffLine >= 0 ? withoutTextLine(entry.text, handoffLine) : entry.text
 
   const body = (
     <div
@@ -89,11 +99,11 @@ export function GroupMessageRow({
       data-slot="group-chat-message-content"
     >
       {MessageTextContent ? (
-        <MessageTextContent decorateText={mentionText} media={!member?.remoteSource} text={entry.text} />
+        <MessageTextContent decorateText={mentionText} media={!member?.remoteSource} text={shownText} />
       ) : Streamdown ? (
-        <Streamdown components={mentionComponents}>{entry.text}</Streamdown>
+        <Streamdown components={mentionComponents}>{shownText}</Streamdown>
       ) : (
-        entry.text
+        shownText
       )}
     </div>
   )
@@ -148,7 +158,7 @@ export function GroupMessageRow({
         </div>
         <div
           className={cn(
-            'rounded-xl border border-(--dt-user-bubble-border) bg-(--dt-user-bubble) px-3 py-1.5',
+            'rounded-card border border-line bg-surface-raised px-3 py-1.5',
             GROUP_BUBBLE_MAX_W
           )}
         >
@@ -210,7 +220,7 @@ export function GroupMessageRow({
   return (
     <div
       className={cn(
-        'group relative flex items-start gap-2.5 px-2',
+        'group relative flex items-start gap-3',
         runStart && index > 0 && 'pt-1.5',
         dimmed && DIMMED_ROW,
         arrived && 'motion-arrive'
@@ -230,7 +240,7 @@ export function GroupMessageRow({
         } as CSSProperties
       }
     >
-      <div className="w-6.5 shrink-0 self-start">
+      <div className="w-8 shrink-0 self-start">
         {runStart ? (
           <div className="mt-0.5">
             <BotFace
@@ -238,7 +248,7 @@ export function GroupMessageRow({
               image={photo ? image : null}
               name={entry.from.name}
               shape={appearance ? appearance.shape : 'squircle'}
-              size={26}
+              size={32}
             />
           </div>
         ) : (
@@ -259,7 +269,7 @@ export function GroupMessageRow({
             <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-(--speaker-color)" data-testid="group-speaker-dot" />
             <Tip label={revealed ? 'Hide full handle' : 'Show full handle'}>
               <Button
-                className="text-left text-ui-xs font-semibold text-(--speaker-color)"
+                className="text-left text-ui-sm font-semibold text-(--speaker-color)"
                 onClick={onToggleReveal}
                 size="inline"
                 variant="text"
@@ -275,9 +285,9 @@ export function GroupMessageRow({
                 </span>
               </Tip>
             ) : null}
-            {roleTitle ? (
-              <span className="max-w-40 truncate text-ui-2xs text-fg-muted" data-testid="group-speaker-role">
-                {roleTitle}
+            {(roomRole || roleTitle) ? (
+              <span className="max-w-40 truncate text-ui-xs text-fg-muted" data-testid="group-speaker-role">
+                {roomRole || roleTitle}
               </span>
             ) : null}
             <span className="text-ui-2xs text-fg-subtle">{relativeTime(entry.at)}</span>
@@ -286,10 +296,12 @@ export function GroupMessageRow({
         ) : (
           actions
         )}
-        <div className={cn('rounded-2xl rounded-tl-md bg-surface-sunken px-3 py-1.5', GROUP_BUBBLE_MAX_W)}>
-          {body}
-          {attachments}
-        </div>
+        {shownText.trim() || attachments ? (
+          <div className="max-w-[760px]">
+            {shownText.trim() ? body : null}
+            {attachments}
+          </div>
+        ) : null}
         {longActions}
       </div>
     </div>
