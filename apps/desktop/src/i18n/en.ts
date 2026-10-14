@@ -5,7 +5,6 @@ import { enAppTour } from './en_app_tour'
 import { enBilling } from './en_billing'
 import { enBoot } from './en_boot'
 import { enCatalog } from './en_catalog'
-import { enCatalogInstall } from './en_catalog_install'
 import { enClarify } from './en_clarify'
 import { enConnectorAccounts } from './en_connector_accounts'
 import { enConnectorCard } from './en_connector_card'
@@ -28,6 +27,7 @@ import { enProjects } from './en_projects'
 import { enSetupConnect } from './en_setup_connect'
 import { enSharedMetrics } from './en_shared_metrics'
 import { enThemePicker } from './en_theme_picker'
+import { enToolCards } from './en_tool_cards'
 import { enUninstallSection } from './en_uninstall_section'
 import { enUpdateChannel } from './en_update_channel'
 import type { Translations } from './types'
@@ -4509,6 +4509,7 @@ export const en: Translations = {
       alwaysAllow: 'Always allow'
     },
     clarify: enClarify,
+    toolCards: enToolCards,
     themePicker: enThemePicker,
     catalogInstall: enCatalogInstall,
     mcpSetup: {
