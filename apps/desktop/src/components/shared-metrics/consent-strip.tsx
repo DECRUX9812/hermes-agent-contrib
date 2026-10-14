@@ -2,7 +2,6 @@ import { useStore } from '@nanostores/react'
 import { useMemo, useState } from 'react'
 
 import { useGatewayRequest } from '@/app/gateway/hooks/use-gateway-request'
-import { StatusRow } from '@/components/chat/status-row'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { useI18n } from '@/i18n'
@@ -17,12 +16,14 @@ import {
 } from '@/store/shared-metrics'
 
 const CHOICES: readonly SharedMetricsChoice[] = ['share', 'local', 'off']
+// Keeping data on this machine is the default answer; sharing stays one click away, not louder.
+const PRIMARY_CHOICE: SharedMetricsChoice = 'local'
 
 /**
- * The first-run shared-metrics offer, in the composer status stack beside the
- * free-tier strip: it never blocks the composer or takes focus, and it stays
- * until one of the three equal answers is saved (the backend's `decided` is
- * the only latch). "Details" opens the full explainer the host paints.
+ * The first-run shared-metrics offer, a compact card above the composer: it
+ * never blocks the composer or takes focus, and it stays until one of the
+ * three answers is saved (the backend's `decided` is the only latch). "Details"
+ * opens the full explainer the host paints.
  */
 export function SharedMetricsConsentStrip() {
   const { requestGateway } = useGatewayRequest()
@@ -47,40 +48,36 @@ export function SharedMetricsConsentStrip() {
   }
 
   return (
-    <StatusRow
-      leading={<Codicon aria-hidden className="text-(--ui-text-tertiary)" name="graph" size="0.8rem" />}
-      trailing={
-        <>
-          {CHOICES.map(choice => (
-            <Button
-              className="text-foreground/90 hover:text-foreground"
-              disabled={saving}
-              key={choice}
-              onClick={() => void choose(choice)}
-              size="micro"
-              type="button"
-              variant="text"
-            >
-              {copy.stripChoices[choice]}
-            </Button>
-          ))}
+    <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-line bg-surface-raised px-3 py-2 text-ui-xs">
+      <div className="flex min-w-0 flex-1 items-start gap-2">
+        <Codicon aria-hidden className="mt-0.5 shrink-0 text-fg-muted" name="graph" size="0.8rem" />
+        <p className="m-0 min-w-0 text-fg-secondary">
+          <span className="font-medium text-fg">{copy.consentTitle}</span>{' '}
+          <span className="text-fg-muted">{reask ? copy.stripReaskBody : copy.stripBody}</span>
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-1">
+        {CHOICES.map(choice => (
           <Button
-            className="text-muted-foreground/75 hover:text-foreground/90"
-            onClick={() => $sharedMetricsDetailsOpen.set(true)}
-            size="micro"
+            disabled={saving}
+            key={choice}
+            onClick={() => void choose(choice)}
+            size="xs"
             type="button"
-            variant="text"
+            variant={choice === PRIMARY_CHOICE ? 'default' : 'ghost'}
           >
-            {copy.stripDetails}
+            {copy.stripChoices[choice]}
           </Button>
-        </>
-      }
-      trailingVisible
-    >
-      <span className="min-w-0 truncate text-[0.73rem] leading-4 text-foreground/92">
-        <span className="font-medium">{copy.consentTitle}</span>
-        <span className="text-muted-foreground/80"> {reask ? copy.stripReaskBody : copy.stripBody}</span>
-      </span>
-    </StatusRow>
+        ))}
+        <Button
+          onClick={() => $sharedMetricsDetailsOpen.set(true)}
+          size="xs"
+          type="button"
+          variant="ghost"
+        >
+          {copy.stripDetails}
+        </Button>
+      </div>
+    </div>
   )
 }
