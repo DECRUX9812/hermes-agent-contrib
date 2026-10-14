@@ -10,13 +10,11 @@ import { triggerHaptic } from '@/lib/haptics'
 import { capitalize, normalize } from '@/lib/text'
 import { greetingFor } from '@/lib/today-brief'
 import { $currentCwd, $sessions } from '@/store/session'
-import { $uiLook } from '@/store/ui-look'
 import type { SessionInfo } from '@/types/hermes'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
 import { RecentProjects } from './recent-projects'
 import { TodayBrief } from './today-brief'
-import { Wordmark } from './wordmark'
 
 type IntroCopy = {
   headline: string
@@ -161,8 +159,6 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
   return copies[Math.abs(seed) % copies.length] || FALLBACK_COPY[0]
 }
 
-const WORDMARK = 'HERMES AGENT'
-
 type IntroSuggestion = { icon: string; label: string; prompt: string }
 
 const SUGGESTION_WHAT_CAN_YOU_DO: IntroSuggestion = {
@@ -256,7 +252,6 @@ export function Intro({ composer, personality, seed }: IntroProps) {
   // when a router actually exists.
   const inRouter = useInRouterContext()
   const sessions = useStore($sessions)
-  const look = useStore($uiLook)
   const currentCwd = useStore($currentCwd)
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
   const rotationSeed = mountSeed + (seed ?? 0)
@@ -276,37 +271,18 @@ export function Intro({ composer, personality, seed }: IntroProps) {
 
   return (
     <div
-      className="pointer-events-none relative isolate flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
+      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center sm:px-6 lg:px-8"
       data-slot="aui_intro"
     >
-      {/* Ambient brand wash — a soft radial fade that gives the empty canvas
-          depth without any painted surface. Theme-token derived, so it follows
-          accent + appearance changes for free. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 -top-8 -z-10 h-72 bg-[radial-gradient(ellipse_50%_50%_at_50%_50%,color-mix(in_srgb,var(--theme-midground)_10%,transparent),transparent_100%)]"
-      />
       <div className="w-full min-w-0">
-        {look === 'soft' ? (
-          // Soft greets you like a person (Claude / ChatGPT home): the time of
-          // day, in the theme's midground, instead of a 36rem brand wordmark.
-          <h1
-            className="m-0 mb-2 bg-gradient-to-b from-(--theme-midground) to-[color-mix(in_srgb,var(--theme-midground)_62%,var(--ui-bg-chrome))] bg-clip-text text-[2rem] font-semibold leading-tight tracking-tight text-transparent sm:text-[2.25rem]"
-            data-slot="intro-greeting"
-          >
-            {t.todayBrief.greeting[greetingFor(new Date().getHours())]}
-          </h1>
-        ) : (
-          <Wordmark
-            className="mb-1 bg-gradient-to-b from-(--theme-midground) to-[color-mix(in_srgb,var(--theme-midground)_58%,var(--ui-bg-chrome))] bg-clip-text text-transparent dark:text-transparent"
-            text={WORDMARK}
-            width="min(36rem, 82%)"
-          />
-        )}
+        <h1
+          className="m-0 text-ui-2xl font-semibold tracking-tight text-fg"
+          data-slot="intro-greeting"
+        >
+          {t.todayBrief.greeting[greetingFor(new Date().getHours())]}
+        </h1>
 
-        <p className="m-0 text-center text-[0.9375rem] leading-normal tracking-tight text-(--ui-text-secondary)">
-          {body}
-        </p>
+        <p className="mx-auto mt-2 max-w-[34rem] text-ui-base text-fg-muted">{body}</p>
       </div>
 
       {/* Everything actionable — the composer, the starter chips, the recency
@@ -322,7 +298,7 @@ export function Intro({ composer, personality, seed }: IntroProps) {
           {introSuggestions({ hasSessions: recentSessions.length > 0, hasWorkspace: Boolean(currentCwd.trim()) }).map(
             suggestion => (
               <Button
-                className="rounded-full"
+                className="rounded-pill gap-2"
                 key={suggestion.label}
                 onClick={() => {
                   triggerHaptic('selection')
@@ -333,7 +309,7 @@ export function Intro({ composer, personality, seed }: IntroProps) {
                 type="button"
                 variant="secondary"
               >
-                <Codicon className="opacity-70" name={suggestion.icon} />
+                <Codicon className="text-fg-muted" name={suggestion.icon} />
                 {suggestion.label}
               </Button>
             )
