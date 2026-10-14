@@ -23,6 +23,7 @@ import { frPreviewWeb } from './fr_preview_web'
 import { frProjects } from './fr_projects'
 import { frSharedMetrics } from './fr_shared_metrics'
 import { frThemePicker } from './fr_theme_picker'
+import { frToolCards } from './fr_tool_cards'
 import { frUpdateChannel } from './fr_update_channel'
 import { introFr } from './intro-fr'
 
@@ -5105,6 +5106,7 @@ export const frOverrides = {
       deniedSessionStopped: 'Refusé, session arrêtée.'
     },
     clarify: frClarify,
+    toolCards: frToolCards,
     themePicker: frThemePicker,
     catalogInstall: {
       preparing: 'Préparation de l’installation…',

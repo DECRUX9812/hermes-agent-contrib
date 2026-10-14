@@ -23,6 +23,7 @@ import { zhPreviewWeb } from './zh_preview_web'
 import { zhProjects } from './zh_projects'
 import { zhSharedMetrics } from './zh_shared_metrics'
 import { zhThemePicker } from './zh_theme_picker'
+import { zhToolCards } from './zh_tool_cards'
 import { zhUpdateChannel } from './zh_update_channel'
 
 export const zhOverrides = {
@@ -4393,6 +4394,7 @@ export const zhOverrides = {
       deniedSessionStopped: '已拒绝，会话已停止。'
     },
     clarify: zhClarify,
+    toolCards: zhToolCards,
     themePicker: zhThemePicker,
     catalogInstall: {
       preparing: '正在准备安装…',

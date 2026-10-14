@@ -22,6 +22,7 @@ import { ruPreviewWeb } from './ru_preview_web'
 import { ruProjects } from './ru_projects'
 import { ruSharedMetrics } from './ru_shared_metrics'
 import { ruThemePicker } from './ru_theme_picker'
+import { ruToolCards } from './ru_tool_cards'
 import { ruUpdateChannel } from './ru_update_channel'
 
 export const ruOverrides = {
@@ -3568,6 +3569,7 @@ export const ruOverrides = {
       deniedSessionStopped: 'Отклонено, сеанс остановлен.'
     },
     clarify: ruClarify,
+    toolCards: ruToolCards,
     themePicker: ruThemePicker,
     catalogInstall: {
       preparing: 'Готовим установку…',
