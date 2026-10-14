@@ -1,6 +1,6 @@
 import { configure } from '@testing-library/react'
 
-import { InertResizeObserver } from './src/test/jsdom'
+import { InertResizeObserver, seedExistingInstall } from './src/test/jsdom'
 
 // Shared tooltips measure their arrow through Radix's useSize hook.
 // Geometry assertions still belong in a real browser, not this inert observer. Assigned,
@@ -78,3 +78,7 @@ if ('Element' in globalThis) {
 // as the 15s testTimeout above it while still finishing below it, so a
 // genuinely hung await still surfaces as this assertion, not a test timeout.
 configure({ asyncUtilTimeout: 12_000 })
+
+// Each test file starts with empty storage, which the app reads as a fresh
+// install (Simple). Tests keep the Advanced default they were written against.
+seedExistingInstall()

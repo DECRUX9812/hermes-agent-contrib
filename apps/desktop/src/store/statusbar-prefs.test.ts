@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { seedExistingInstall } from '@/test/jsdom'
+
 const LEGACY_VISIBLE_KEY = 'hermes.desktop.statusbarVisible'
 
 const loadStore = () => import('./statusbar-prefs')
@@ -7,6 +9,7 @@ const loadStore = () => import('./statusbar-prefs')
 describe('statusbar whole-bar visibility', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    seedExistingInstall()
     vi.resetModules()
   })
 
@@ -34,6 +37,7 @@ describe('statusbar whole-bar visibility', () => {
 describe('statusbar hidden items', () => {
   beforeEach(() => {
     window.localStorage.clear()
+    seedExistingInstall()
     vi.resetModules()
   })
 
