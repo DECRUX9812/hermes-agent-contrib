@@ -80,6 +80,22 @@
     will-change: transform;
   }
 
+  /* Typing dots on a live tool card: three dots trade places in a short
+     loop. Opacity and translateY only, so the effect stays on the
+     compositor; the stagger lives on the children, not in JS. */
+  .motion-typing > span {
+    animation: motion-typing 1.2s ease-in-out infinite;
+    will-change: transform, opacity;
+  }
+
+  .motion-typing > span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .motion-typing > span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
   /* Expand/collapse a block in place: the grid row goes 0fr ↔ 1fr and the
      child keeps min-height 0, so no height is ever measured in JS. */
   .motion-collapse {
@@ -162,9 +178,24 @@
   }
 }
 
+@keyframes motion-typing {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .motion-ring::after,
-  .motion-shimmer::after {
+  .motion-shimmer::after,
+  .motion-typing > span {
     animation: none !important;
   }
 
@@ -177,6 +208,7 @@
   }
 }
 
-:root[data-renderer-animations-paused] :is(.motion-ring, .motion-shimmer)::after {
+:root[data-renderer-animations-paused] :is(.motion-ring, .motion-shimmer)::after,
+:root[data-renderer-animations-paused] .motion-typing > span {
   animation-play-state: paused;
 }
