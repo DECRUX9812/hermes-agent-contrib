@@ -488,7 +488,6 @@ type BotsMessages = {
     viewBoard: string
     activityLabel: string
     activityTool: (tool: string) => string
-    activityWorking: string
     handoff: {
       label: (from: string, to: string) => string
       title: string
@@ -1369,7 +1368,6 @@ const en: BotsMessages = {
     viewBoard: 'Board',
     activityLabel: 'Live activity',
     activityTool: tool => `now: ${tool}`,
-    activityWorking: 'working…',
     handoff: {
       label: (from, to) => `Handoff from ${from} to ${to}`,
       title: 'Handoff',
@@ -2257,7 +2255,6 @@ const ja: BotsMessages = {
     viewBoard: 'ボード',
     activityLabel: 'ライブアクティビティ',
     activityTool: tool => `現在: ${tool}`,
-    activityWorking: '作業中…',
     handoff: {
       label: (from, to) => `${from} から ${to} への引き継ぎ`,
       title: '引き継ぎ',
@@ -3127,7 +3124,6 @@ const zh: BotsMessages = {
     viewBoard: '看板',
     activityLabel: '实时动态',
     activityTool: tool => `当前：${tool}`,
-    activityWorking: '工作中…',
     handoff: {
       label: (from, to) => `${from} 交接给 ${to}`,
       title: '交接',
@@ -3992,7 +3988,6 @@ const zhHant: BotsMessages = {
     viewBoard: '看板',
     activityLabel: '即時動態',
     activityTool: tool => `目前：${tool}`,
-    activityWorking: '工作中…',
     handoff: {
       label: (from, to) => `${from} 交接給 ${to}`,
       title: '交接',

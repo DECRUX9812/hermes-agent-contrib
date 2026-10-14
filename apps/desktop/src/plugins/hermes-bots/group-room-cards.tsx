@@ -429,11 +429,11 @@ export function ActivityLine({ allMeta, members, names, nameOf, onStop, sessionO
                 size={20}
               />
             </span>
-            <span className="shrink-0 font-medium" style={{ color: speaker }}>
+            <span className={cn('shrink-0 font-medium', !tool && 'motion-shimmer')} style={{ color: speaker }}>
               {t.isWorking(nameOf(name))}
             </span>
             <span className="motion-shimmer min-w-0 flex-1 truncate text-fg-muted">
-              {tool ? b.group.activityTool(tool) : b.group.activityWorking}
+              {tool ? b.group.activityTool(tool) : null}
             </span>
             {since ? <span className="shrink-0 tabular-nums text-fg-subtle">{elapsedMMSS(since)}</span> : null}
             {member && onStop ? (

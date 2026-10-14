@@ -100,7 +100,9 @@ describe('ActivityLine working rows', () => {
     expect(within(line).getByText('builder is working').getAttribute('style')).toContain('color-mix')
     expect(within(line).getByText('ops is working')).toBeTruthy()
     expect(within(line).getByText('now: Read').closest('.motion-shimmer')).toBeTruthy()
-    expect(within(line).getByText('working…').closest('.motion-shimmer')).toBeTruthy()
+    // With no tool to name, the shimmer rides the name line instead of repeating "working".
+    expect(within(line).getByText('ops is working').classList.contains('motion-shimmer')).toBe(true)
+    expect(within(line).queryByText('working…')).toBeNull()
     // Elapsed as m:ss, only where a working stamp exists.
     expect(within(line).getByText('1:05')).toBeTruthy()
     expect(within(line).queryAllByText(/\d+:\d\d/)).toHaveLength(1)
@@ -145,7 +147,7 @@ describe('ActivityLine working rows', () => {
     )
 
     expect(screen.getByTestId('group-activity-line')).toBeTruthy()
-    expect(screen.getByText('working…')).toBeTruthy()
+    expect(screen.getByText('builder is working')).toBeTruthy()
     expect(screen.queryByRole('button')).toBeNull()
   })
 
