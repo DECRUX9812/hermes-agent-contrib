@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { deriveRoomHandoffs, parseHandoffLine, roomEscalations } from './group-room-handoffs'
+import { deriveRoomHandoffs, handoffLine, parseHandoffLine, roomEscalations } from './group-room-handoffs'
 import type { GroupMessage } from './types'
 
 const members = [{ name: 'hermes' }, { name: 'coder', title: 'Coder' }, { name: 'plugin' }] as never
@@ -18,12 +18,52 @@ describe('parseHandoffLine', () => {
   it('reads the task, the finish line and the clock off one line', () => {
     expect(
       parseHandoffLine('Plan agreed.\n@Coder handoff: unify replies · done when: tests green · due: 30m', members)
-    ).toEqual({ doneWhen: 'tests green', dueMinutes: 30, task: 'unify replies', to: 'coder' })
+    ).toEqual({ doneWhen: 'tests green', dueMinutes: 30, task: 'unify replies', to: 'coder', why: '' })
+  })
+
+  it('reads why in any field order', () => {
+    expect(
+      parseHandoffLine('@coder handoff: unify replies · why: owns the test suite · done when: tests green · due: 30m', members)
+    ).toMatchObject({ task: 'unify replies', why: 'owns the test suite' })
+    expect(
+      parseHandoffLine('@coder handoff: unify replies · due: 30m · done when: tests green · why: owns the test suite', members)
+    ).toMatchObject({ task: 'unify replies', why: 'owns the test suite' })
+  })
+
+  it('accepts because: as the reason', () => {
+    expect(parseHandoffLine('@coder handoff: unify replies · because: owns the test suite', members)).toMatchObject({
+      why: 'owns the test suite'
+    })
   })
 
   it('ignores a plain mention and an unknown name', () => {
     expect(parseHandoffLine('@coder can you look?', members)).toBeNull()
     expect(parseHandoffLine('@stranger handoff: anything', members)).toBeNull()
+  })
+
+  it('round-trips handoffLine back through the parser, with and without why', () => {
+    expect(parseHandoffLine(handoffLine('coder', 'unify replies', 'tests green', 30), members)).toEqual({
+      doneWhen: 'tests green',
+      dueMinutes: 30,
+      task: 'unify replies',
+      to: 'coder',
+      why: ''
+    })
+    expect(
+      parseHandoffLine(handoffLine('coder', 'unify replies', 'tests green', 30, 'owns the test suite'), members)
+    ).toEqual({
+      doneWhen: 'tests green',
+      dueMinutes: 30,
+      task: 'unify replies',
+      to: 'coder',
+      why: 'owns the test suite'
+    })
+  })
+
+  it('leaves the no-why line byte-identical', () => {
+    expect(handoffLine('coder', 'unify replies', 'tests green', 30)).toBe(
+      '@coder handoff: unify replies · done when: tests green · due: 30m'
+    )
   })
 })
 
@@ -55,6 +95,16 @@ describe('deriveRoomHandoffs', () => {
     )
 
     expect(h).toMatchObject({ reply: 'not my area', status: 'declined' })
+  })
+
+  it('carries the reason onto the derived handoff', () => {
+    const [h] = deriveRoomHandoffs(
+      [msg('hermes', '@coder handoff: fix the header · why: owns the test suite', 0)],
+      members,
+      { now: MIN }
+    )
+
+    expect(h).toMatchObject({ task: 'fix the header', why: 'owns the test suite' })
   })
 
   it('reads the receiver mid-turn on the thread as working', () => {

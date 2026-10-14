@@ -51,6 +51,8 @@ export interface RoomHandoff {
   task: string
   thread: string
   to: string
+  /** Why the work moved to this teammate ('' when the line named none). */
+  why: string
 }
 
 export interface RoomEscalation {
@@ -61,6 +63,7 @@ export interface RoomEscalation {
 const LINE = /@([a-z0-9][a-z0-9._-]*)\s+hand-?off\s*:\s*(.+)/i
 const FIELD_SPLIT = /\s+[·|;]\s+/
 const DONE_WHEN = /^done\s*when\s*:\s*/i
+const WHY = /^(why|because)\s*:\s*/i
 const DUE = /^due\s*:\s*(\d+)\s*(m|min|mins|minutes|h|hr|hrs|hours)?\b/i
 const ACCEPT = /^\(?\s*(accepted|accept|on it|taking it|got it|claimed)\b/i
 const DECLINE = /^\(?\s*(declined?|can'?t take|not mine)\b\s*[:,-]?\s*/i
@@ -87,7 +90,7 @@ function resolveHandle(handle: string, members: readonly GroupMember[]): null | 
 export function parseHandoffLine(
   text: string,
   members: readonly GroupMember[]
-): null | { doneWhen: string; dueMinutes: null | number; task: string; to: string } {
+): null | { doneWhen: string; dueMinutes: null | number; task: string; to: string; why: string } {
   for (const line of String(text || '').split('\n')) {
     const match = line.match(LINE)
     const to = match ? resolveHandle(match[1]!, members) : null
@@ -99,12 +102,15 @@ export function parseHandoffLine(
     const [task = '', ...rest] = match[2]!.split(FIELD_SPLIT).map(part => part.trim())
     let doneWhen = ''
     let dueMinutes: null | number = null
+    let why = ''
 
     for (const part of rest) {
       const due = part.match(DUE)
 
       if (DONE_WHEN.test(part)) {
         doneWhen = part.replace(DONE_WHEN, '').trim()
+      } else if (WHY.test(part)) {
+        why = part.replace(WHY, '').trim()
       } else if (due) {
         const n = Number(due[1])
         dueMinutes = /^h/i.test(due[2] || '') ? n * 60 : n
@@ -112,7 +118,7 @@ export function parseHandoffLine(
     }
 
     if (task) {
-      return { doneWhen, dueMinutes, task, to }
+      return { doneWhen, dueMinutes, task, to, why }
     }
   }
 
@@ -198,7 +204,8 @@ export function deriveRoomHandoffs(
       status,
       task: parsed.task,
       thread,
-      to: parsed.to
+      to: parsed.to,
+      why: parsed.why
     })
   })
 
@@ -246,10 +253,13 @@ export function roomEscalations(handoffs: readonly RoomHandoff[], log: readonly 
 // ── What the room sends (protocol words, so never translated) ──────────────
 
 /** A handoff line in the exact shape parseHandoffLine reads back. */
-export function handoffLine(tag: string, task: string, doneWhen = '', dueMinutes = 30): string {
-  return [`@${tag} handoff: ${task}`, ...(doneWhen ? [`done when: ${doneWhen}`] : []), `due: ${dueMinutes}m`].join(
-    ' · '
-  )
+export function handoffLine(tag: string, task: string, doneWhen = '', dueMinutes = 30, why = ''): string {
+  return [
+    `@${tag} handoff: ${task}`,
+    ...(why.trim() ? [`why: ${why.trim()}`] : []),
+    ...(doneWhen ? [`done when: ${doneWhen}`] : []),
+    `due: ${dueMinutes}m`
+  ].join(' · ')
 }
 
 export function nudgeLine(tag: string, task: string): string {

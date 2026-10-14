@@ -497,6 +497,7 @@ type BotsMessages = {
       label: (from: string, to: string) => string
       title: string
       task: string
+      why: string
       doneWhen: string
       due: (minutes: number) => string
       declinedBecause: (why: string) => string
@@ -1380,6 +1381,7 @@ const en: BotsMessages = {
       label: (from, to) => `Handoff from ${from} to ${to}`,
       title: 'Handoff',
       task: 'Task',
+      why: 'Why',
       doneWhen: 'Done when',
       due: minutes => `due in ${minutes} min`,
       declinedBecause: why => `declined: ${why}`,
@@ -2270,6 +2272,7 @@ const ja: BotsMessages = {
       label: (from, to) => `${from} から ${to} への引き継ぎ`,
       title: '引き継ぎ',
       task: 'タスク',
+      why: '理由',
       doneWhen: '完了条件',
       due: minutes => `期限 ${minutes} 分`,
       declinedBecause: why => `辞退: ${why}`,
@@ -3142,6 +3145,7 @@ const zh: BotsMessages = {
       label: (from, to) => `${from} 交接给 ${to}`,
       title: '交接',
       task: '任务',
+      why: '原因',
       doneWhen: '完成标准',
       due: minutes => `${minutes} 分钟内`,
       declinedBecause: why => `已拒绝：${why}`,
@@ -4009,6 +4013,7 @@ const zhHant: BotsMessages = {
       label: (from, to) => `${from} 交接給 ${to}`,
       title: '交接',
       task: '任務',
+      why: '原因',
       doneWhen: '完成標準',
       due: minutes => `${minutes} 分鐘內`,
       declinedBecause: why => `已拒絕：${why}`,
