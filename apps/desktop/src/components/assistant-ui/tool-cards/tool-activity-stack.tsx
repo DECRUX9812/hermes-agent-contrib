@@ -1,4 +1,4 @@
-import type { JSX, ReactNode } from 'react'
+import { type JSX, memo, type ReactNode } from 'react'
 
 import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -18,7 +18,7 @@ export interface ToolActivityStackProps {
 /** Live tool activity cards, inline in the chat. Renders nothing when there
  *  is nothing to show. Groups stay keyed by their stable key so a group that
  *  grows or settles keeps its DOM node and animates instead of remounting. */
-export function ToolActivityStack({ actor, className, groups, onReviewApproval }: ToolActivityStackProps): JSX.Element | null {
+function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }: ToolActivityStackProps): JSX.Element | null {
   const { t } = useI18n()
 
   if (groups.length === 0) {
@@ -38,3 +38,5 @@ export function ToolActivityStack({ actor, className, groups, onReviewApproval }
     </div>
   )
 }
+
+export const ToolActivityStack = memo(ToolActivityStackImpl)
