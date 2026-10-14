@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 
 const calls = vi.hoisted(() => [] as { method: string; params: Record<string, unknown> }[])
 
-vi.mock('@hermes/plugin-sdk', async () => (await import('./group-test-utils')).pluginSdkMock({}))
+vi.mock('@hermes/plugin-sdk', async () => (await import('./group-test-utils')).pluginSdkMock({ state: {} }))
 vi.mock('./team', () => ({
   mutateTeam: async (method: string, params: Record<string, unknown>) => {
     calls.push({ method, params })

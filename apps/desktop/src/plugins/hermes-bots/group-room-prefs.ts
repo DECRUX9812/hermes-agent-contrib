@@ -20,6 +20,8 @@ export interface RoomPrefs {
   /** The room's right panel width in px (every room). */
   asideWidth?: number
   desktopAlerts: boolean
+  /** roomKey → the members panel's IDLE group folded away. */
+  idleCollapsed?: Record<string, boolean>
   /** roomKey → the log tail when the user last opened the room. */
   lastOpened: Record<string, number>
   /** roomKey → pinned thread ids, pin order. */
@@ -93,6 +95,10 @@ export function setAsideWidth(width: number): void {
 
 export function setAsideCollapsed(collapsed: boolean): void {
   update(prefs => ({ ...prefs, asideCollapsed: collapsed }))
+}
+
+export function setIdleCollapsed(roomKey: string, collapsed: boolean): void {
+  update(prefs => ({ ...prefs, idleCollapsed: { ...prefs.idleCollapsed, [roomKey]: collapsed } }))
 }
 
 export function rememberRoomOpened(roomKey: string, tail: number): void {

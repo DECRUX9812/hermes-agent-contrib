@@ -21,7 +21,14 @@
  */
 
 import type { PluginContext } from '@hermes/plugin-sdk'
+import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+
+interface PopoverContentStubProps {
+  children?: ReactNode
+  className?: string
+  'data-testid'?: string
+}
 
 /** One message in a scripted session transcript, in the gateway's own shape. */
 export interface ScriptedMessage {
@@ -495,6 +502,10 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
   // name-derived hue; the room header's face pile now reaches it on every
   // render with members, so the color has to resolve in tests.
   const { profileColor } = await import('../../lib/profile-color')
+  const { createContext, createElement, useContext } = await import('react')
+  // Radix mounts content only while open; the stub keeps that, driven by the
+  // controlled `open` the member card passes in.
+  const PopoverOpen = createContext(false)
 
   return {
     // Real value: approval.respond forwards it as its client deadline (#60654).
@@ -515,6 +526,11 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
     toggleSessionWatched: undefined,
     CapabilitiesView: undefined,
     MessageTextContent: undefined,
+    Popover: ({ children, open }: { children?: ReactNode; open?: boolean }) =>
+      createElement(PopoverOpen.Provider, { value: Boolean(open) }, children),
+    PopoverContent: ({ children, className, 'data-testid': testId }: PopoverContentStubProps) =>
+      useContext(PopoverOpen) ? createElement('div', { className, 'data-testid': testId }, children) : null,
+    PopoverTrigger: ({ children }: { children?: ReactNode }) => children,
     profileColor,
     Streamdown: undefined,
     queryClient: { invalidateQueries: () => undefined },

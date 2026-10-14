@@ -21,7 +21,7 @@ import { useState } from 'react'
 
 import { $lastRoster } from './data'
 import { groupMemberKey } from './group-membership'
-import { GroupSquadPanel } from './group-room-squad'
+import { GroupMembersPanel, type GroupMembersPanelProps } from './group-room-members'
 import { useBots } from './i18n'
 import { useRoomText } from './room-i18n'
 import { ID } from './shared'
@@ -30,19 +30,13 @@ import { GoalsSection } from './team-goals'
 import { useTeamText } from './team-i18n'
 import { OrgChart } from './team-org'
 import { Approvals } from './team-page'
-import type { BotMeta, GroupMember, RosterRow } from './types'
+import type { GroupMember, RosterRow } from './types'
 
-export interface GroupRoomPanelProps {
-  allMeta: Record<string, BotMeta>
+export interface GroupRoomPanelProps extends Omit<GroupMembersPanelProps, 'budgets'> {
   goal: string
   group: string
-  leadMember: GroupMember | null
-  leadName: string
-  members: GroupMember[]
-  onMention: (member: GroupMember) => void
   /** Re-resolve the room's covering team after this panel created one. */
   onTeamChanged: () => void
-  roomWorking: ReadonlySet<string>
   teamId: null | string
   /** The Decisions queue the room built (escalations, questions); team
    *  approvals join it here. */
@@ -97,11 +91,11 @@ function TeamTab(props: GroupRoomPanelProps) {
         {props.goal ? <Mission label={b.group.panelMission} text={props.goal} /> : null}
         {!props.teamId && localCount > 0 ? (
           <section
-            className="rounded-xl border border-dashed border-(--ui-stroke-secondary) p-3 text-left"
+            className="rounded-card border border-dashed border-line p-3 text-left"
             data-testid="group-run-as-team"
           >
-            <h3 className="m-0 text-[0.8125rem] font-semibold text-foreground">{b.group.runAsTeamTitle}</h3>
-            <p className="m-0 mt-1 text-[0.75rem] leading-snug text-(--ui-text-tertiary)">{b.group.runAsTeamBody}</p>
+            <h3 className="m-0 text-ui-sm font-semibold text-fg">{b.group.runAsTeamTitle}</h3>
+            <p className="m-0 mt-1 text-ui-xs leading-snug text-fg-muted">{b.group.runAsTeamBody}</p>
             <Button
               className="mt-2"
               disabled={busy}
@@ -136,12 +130,12 @@ function TeamTab(props: GroupRoomPanelProps) {
         <Mission label={team.name} text={team.mission || props.goal} />
         {rollup.overall.total ? (
           <div className="mt-2">
-            <div className="mb-1 flex justify-between text-[0.625rem] text-(--ui-text-tertiary)">
+            <div className="mb-1 flex justify-between text-ui-2xs text-fg-muted">
               <span>{t.overall}</span>
               <span className="tabular-nums">{`${rollup.overall.done}/${rollup.overall.total} · ${rollup.overall.percent}%`}</span>
             </div>
-            <div className="h-1 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)">
-              <div className="h-full rounded-full bg-(--ui-accent)" style={{ width: `${rollup.overall.percent}%` }} />
+            <div className="h-1 overflow-hidden rounded-pill bg-line">
+              <div className="h-full rounded-pill bg-brand" style={{ width: `${rollup.overall.percent}%` }} />
             </div>
           </div>
         ) : null}
@@ -156,15 +150,15 @@ function Mission({ label, text }: { label: string; text: string }) {
   return (
     <div className="text-left" data-testid="group-room-mission">
       <div className="ui-section-label">{label}</div>
-      {text ? <p className="m-0 mt-1 text-[0.75rem] leading-relaxed text-(--ui-text-secondary)">{text}</p> : null}
+      {text ? <p className="m-0 mt-1 text-ui-xs leading-relaxed text-fg-secondary">{text}</p> : null}
     </div>
   )
 }
 
-/** The floor: who is in the room and what they are doing — with each seat's
- *  month on the team budget when the room is a team (the CEO's cost view). */
-function FloorSquad(props: GroupRoomPanelProps) {
-  const { data: view } = useTeam(props.teamId)
+/** The members tab, with each seat's month on the team budget when the room is
+ *  a team (the CEO's cost view). */
+function MembersTab({ teamId, ...props }: GroupRoomPanelProps) {
+  const { data: view } = useTeam(teamId)
 
   const budgets = Object.fromEntries(
     (view?.team?.members || [])
@@ -175,17 +169,7 @@ function FloorSquad(props: GroupRoomPanelProps) {
       ])
   )
 
-  return (
-    <GroupSquadPanel
-      allMeta={props.allMeta}
-      budgets={budgets}
-      leadMember={props.leadMember}
-      leadName={props.leadName}
-      members={props.members}
-      onMention={props.onMention}
-      roomWorking={props.roomWorking}
-    />
-  )
+  return <GroupMembersPanel {...props} budgets={budgets} />
 }
 
 /** Team approvals (hires, spend, credentials, actions) — the board's half of
@@ -203,7 +187,7 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
   const tab = props.tab === 'threads' && !props.threads ? 'floor' : props.tab
 
   const tabs: { badge?: number; id: RoomPanelTab; label: string }[] = [
-    { id: 'floor', label: b.group.panelFloor },
+    { id: 'floor', label: r.members.tab },
     ...(props.threads ? [{ id: 'threads' as const, label: r.panelThreads }] : []),
     { badge: props.decisionCount || undefined, id: 'decisions', label: b.group.panelDecisions },
     { id: 'team', label: b.group.panelTeam }
@@ -211,15 +195,13 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col" data-testid="group-room-panel">
-      <div className="flex shrink-0 items-center gap-1 border-b border-(--ui-stroke-secondary) p-1.5" role="tablist">
+      <div className="flex shrink-0 items-center gap-0.5 border-b border-line px-2 py-1.5" role="tablist">
         {tabs.map(entry => (
           <button
             aria-selected={tab === entry.id}
             className={cn(
-              'flex min-h-8 flex-1 cursor-pointer items-center justify-center gap-1 rounded-md text-[0.75rem] transition-colors',
-              tab === entry.id
-                ? 'bg-(--chrome-action-hover) font-semibold text-foreground'
-                : 'text-(--ui-text-tertiary) hover:text-foreground'
+              'flex h-7 flex-1 cursor-pointer items-center justify-center gap-1 rounded-control text-ui-xs transition-colors focus-ring',
+              tab === entry.id ? 'bg-selected font-medium text-fg' : 'text-fg-muted hover:text-fg'
             )}
             key={entry.id}
             onClick={() => props.onTab(entry.id)}
@@ -228,7 +210,7 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
           >
             {entry.label}
             {entry.badge ? (
-              <span className="rounded-full bg-amber-500/20 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+              <span className="rounded-pill bg-warning/15 px-1.5 text-ui-2xs font-medium tabular-nums text-warning">
                 {entry.badge}
               </span>
             ) : null}
@@ -252,15 +234,15 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
         {tab === 'threads' ? (
           props.threads
         ) : tab === 'floor' ? (
-          <div className="p-3">
-            <FloorSquad {...props} />
+          <div className="px-2 pt-3 pb-4">
+            <MembersTab {...props} />
           </div>
         ) : tab === 'decisions' ? (
           <div className="flex flex-col gap-3 p-3" data-testid="group-decisions-tab">
             {props.decisions}
             <TeamApprovals teamId={props.teamId} />
             {!props.decisionCount ? (
-              <p className="m-0 text-[0.75rem] text-(--ui-text-tertiary)">{b.group.decisionsEmpty}</p>
+              <p className="m-0 text-ui-xs text-fg-muted">{b.group.decisionsEmpty}</p>
             ) : null}
           </div>
         ) : (

@@ -919,19 +919,6 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     setPanelTab(tab)
   }
 
-  const workingNames = members
-    .filter(member => workingNow.has(member.name))
-    .map(member => displayName(member, botRosterMeta(member, allMeta)))
-
-  // Fallback for a roster that hasn't caught up to the live turn: the raw
-  // member keys still name who is on it, so the header never goes quiet
-  // while a bot is actually working.
-  const workingLabel = workingNames.length ? workingNames.join(', ') : [...workingNow].join(', ')
-
-  const memberNames =
-    (workingNames.length ? `${b.group.workingNow(workingNames.join(', '))} · ` : '') +
-    (members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat')
-
   const header = (
     <GroupRoomHeader
       allMeta={allMeta}
@@ -939,18 +926,15 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       availableMembers={availableMembers}
       focusMode={focusMode}
       group={group}
-      memberNames={memberNames}
       members={members}
       onBack={onBack}
       panelOpen={panelShown}
       room={room}
       setFocusMode={setFocusMode}
-      setMemberPickerOpen={setMemberPickerOpen}
       setPanelOpen={next => showAside(typeof next === 'function' ? next(panelShown) : next)}
       setSettingsOpen={setSettingsOpen}
       setView={setView}
       view={view}
-      workingLabel={workingLabel}
       workingNow={workingNow}
     />
   )
@@ -1416,9 +1400,23 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     </GroupThreadPanel>
   ) : null
 
+  const isAvailable = (member: GroupMember) => botSourceStatus(member).available
+
+  const stopMember = (member: GroupMember) => {
+    const threads = [...liveWork].filter(([, names]) => names.has(member.name)).map(([thread]) => thread)
+
+    for (const thread of threads.length ? threads : ['']) {
+      commands.stopMember?.(thread, member)
+    }
+  }
+
+  const roomKey = groupChatRoomKey(group, room)
+  const onListen = (listener: string) => setGroupChatListener(group, listener)
+
   const membersPanel = (
     <GroupRoomPanel
       allMeta={allMeta}
+      available={isAvailable}
       decisionCount={escalations.length + roomClarifies.length}
       decisions={
         <RoomDecisions
@@ -1435,16 +1433,23 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       goal={room.goal || ''}
       group={group}
       leadMember={leadMember}
-      leadName={leadName}
+      liveWork={liveWork}
       members={members}
       onCollapse={inlineAside ? () => showAside(false) : undefined}
+      onListen={onListen}
+      onManage={() => setMemberPickerOpen(true)}
       onMention={mentionMember}
+      onStop={stopMember}
       onTab={setPanelTab}
       onTeamChanged={() => void teamLeadQuery.refetch()}
+      prompts={roomClarifies}
+      roomKey={roomKey}
       roomWorking={workingNow}
+      sessions={room.sessions}
       tab={panelTab}
       teamId={teamLead?.teamId || null}
       threads={layout === 'xwide' ? undefined : threadRail(true)}
+      workingSince={workingSince}
     />
   )
 
@@ -1624,10 +1629,18 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
           strip={
             <GroupMembersStrip
               allMeta={allMeta}
+              available={isAvailable}
               leadMember={leadMember}
+              liveWork={liveWork}
               members={members}
-              onSelect={() => openPanel('floor')}
+              onListen={onListen}
+              onMention={mentionMember}
+              onStop={stopMember}
+              prompts={roomClarifies}
+              roomKey={roomKey}
               roomWorking={workingNow}
+              sessions={room.sessions}
+              workingSince={workingSince}
             />
           }
         />
