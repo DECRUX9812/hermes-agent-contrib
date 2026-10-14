@@ -30,6 +30,7 @@ const deps = {
   archiveSelectedSession: vi.fn(),
   openNewSessionTab: vi.fn(),
   requestGateway: vi.fn(),
+  splitSession: vi.fn(),
   startFreshSession: vi.fn(),
   toggleCommandCenter: vi.fn(),
   toggleSelectedPin: vi.fn()

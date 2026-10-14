@@ -4257,6 +4257,26 @@ export const deOverrides = {
     steerTurn: 'Turn steuern',
     stop: 'Stopp',
     send: 'Senden',
+    broadcastTip: 'An alle Bereiche senden',
+    broadcastNote: 'Nur Text — Anhänge bleiben in diesem Bereich',
+    broadcastOn: 'Alle Bereiche',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const delivered = sent + queued
+      const panes = delivered === 1 ? 'Bereich' : 'Bereiche'
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} übersprungen`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} fehlgeschlagen`)
+      }
+
+      return extras.length > 0
+        ? `An ${delivered} ${panes} gesendet, ${extras.join(', ')}`
+        : `An ${delivered} ${panes} gesendet`
+    },
     speaking: 'Spricht',
     transcribing: 'Transkribiert',
     thinking: 'Denkt',
@@ -5457,6 +5477,8 @@ export const deOverrides = {
     closeToRight: 'Nach rechts schließen',
     closeAll: 'Alle schließen',
     newSessionTab: 'Neuer Session-Tab',
+    splitSession: 'Sitzung teilen',
+    splitSessionCapped: 'Bis zu 4 Sitzungen nebeneinander',
     newTab: 'Neuer Tab',
     pluginDisabled: pluginId => `Plugin "${pluginId}" deaktiviert`,
     pluginDisabledBody: 'Aktivieren Sie es wieder unter Einstellungen → Plugins, um das Panel zurückzuholen.',

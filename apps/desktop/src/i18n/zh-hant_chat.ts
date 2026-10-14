@@ -32,6 +32,24 @@ export const zhHantChat = {
     steerTurn: '引導目前回合',
     stop: '停止',
     send: '傳送',
+    broadcastTip: '傳送到所有窗格',
+    broadcastNote: '僅傳送文字——附件保留在此窗格',
+    broadcastOn: '所有窗格',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} 個已略過`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} 個失敗`)
+      }
+
+      return extras.length > 0
+        ? `已傳送到 ${sent + queued} 個窗格，${extras.join('，')}`
+        : `已傳送到 ${sent + queued} 個窗格`
+    },
     speaking: '說話中',
     transcribing: '轉寫中',
     thinking: '思考中',

@@ -13,6 +13,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type CSSProperties, lazy, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
+import { withBroadcast } from '@/app/chat/broadcast-fan-out'
+import { $splitSessionAction, splitFocusedSession } from '@/app/chat/split-session'
 import { formatRefValue } from '@/components/assistant-ui/directive-text'
 import { BootFailureOverlay } from '@/components/boot-failure-overlay'
 import { ConfirmHost } from '@/components/confirm-host'
@@ -96,7 +98,12 @@ import {
   setBusy,
   setMessages
 } from '@/store/session'
-import { sessionTileDelegate } from '@/store/session-states'
+import {
+  $sessionTiles,
+  discardSessionTile,
+  sessionTileDelegate,
+  type TileDock
+} from '@/store/session-states'
 import { reportPendingUpdateRun } from '@/store/shared-metrics'
 import { $archivedSessions } from '@/store/sidebar-archive'
 import { $titlebarAppActionsSide, titlebarAppActionsClusterCounts } from '@/store/titlebar-app-actions'
@@ -1055,10 +1062,30 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       const workspaceNewSessionTarget = $workspaceNewSessionTarget.get()
       const cwd = options?.cwd?.trim() ? { cwd: options.cwd.trim() } : {}
 
-      if ($workspaceMode.get() === 'bots' && workspaceNewSessionTarget?.kind === 'route' && workspaceOwnerKey) {
-        void openNewSessionTile('center', {
+      const slot = options?.replaceStoredSessionId
+        ? $sessionTiles.get().find(tile => tile.storedSessionId === options.replaceStoredSessionId)
+        : undefined
+
+      const dock: { anchor?: string; before?: null | string; dir: TileDock } = options?.placement
+        ? { anchor: options.placement.anchor, dir: options.placement.dir }
+        : { anchor: slot?.anchor, before: slot?.before, dir: slot?.dir ?? 'center' }
+
+      const launch = (extra: Partial<Parameters<typeof openNewSessionTile>[1]>) => {
+        void openNewSessionTile(dock.dir, {
           ...cwd,
+          anchor: dock.anchor,
+          before: dock.before,
           listed: false,
+          ...extra
+        }).then(created => {
+          if (created && slot) {
+            discardSessionTile(slot.storedSessionId)
+          }
+        })
+      }
+
+      if ($workspaceMode.get() === 'bots' && workspaceNewSessionTarget?.kind === 'route' && workspaceOwnerKey) {
+        launch({
           route: workspaceNewSessionTarget.route,
           workspaceScope: {
             ownerRoute: workspaceNewSessionTarget.route,
@@ -1070,7 +1097,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         return
       }
 
-      void openNewSessionTile('center', { ...cwd, listed: false })
+      launch({})
     },
     [openNewSessionTile]
   )
@@ -1120,10 +1147,19 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     archiveSelectedSession,
     openNewSessionTab,
     requestGateway,
+    splitSession: splitFocusedSession,
     startFreshSession: startFreshSessionDraft,
     toggleCommandCenter,
     toggleSelectedPin
   })
+
+  // Register the split action beside it: the strip's split glyph reads this
+  // atom, so it hides until wired and never imports chat code itself.
+  useEffect(() => {
+    $splitSessionAction.set(splitFocusedSession)
+
+    return () => $splitSessionAction.set(null)
+  }, [])
 
   // Register the tab-strip "+" action (the generic renderer stays
   // session-agnostic; null until wired hides the glyph).
@@ -1237,7 +1273,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     onRetryResume: sessionId => void resumeSession(sessionId, true),
     onSteer: steerPrompt,
     onSteerHidden: injectHiddenPrompt,
-    onSubmit: submitText,
+    onSubmit: withBroadcast('workspace', submitText),
     onThreadMessagesChange: handleThreadMessagesChange,
     onToggleSelectedPin: toggleSelectedPin,
     onTranscribeAudio: transcribeVoiceAudio,

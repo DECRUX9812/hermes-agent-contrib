@@ -4254,6 +4254,26 @@ export const esOverrides = {
     steerTurn: 'Guiar el turno',
     stop: 'Detener',
     send: 'Enviar',
+    broadcastTip: 'Enviar a todos los paneles',
+    broadcastNote: 'Solo texto — los adjuntos se quedan en este panel',
+    broadcastOn: 'Todos los paneles',
+    broadcastSummary: (sent, queued, skipped, failed) => {
+      const delivered = sent + queued
+      const panes = delivered === 1 ? 'panel' : 'paneles'
+      const extras: string[] = []
+
+      if (skipped > 0) {
+        extras.push(`${skipped} omitidos`)
+      }
+
+      if (failed > 0) {
+        extras.push(`${failed} fallidos`)
+      }
+
+      return extras.length > 0
+        ? `Enviado a ${delivered} ${panes}, ${extras.join(', ')}`
+        : `Enviado a ${delivered} ${panes}`
+    },
     speaking: 'Hablando',
     transcribing: 'Transcribiendo',
     thinking: 'Pensando',
@@ -5458,6 +5478,8 @@ export const esOverrides = {
     closeToRight: 'Cerrar las de la derecha',
     closeAll: 'Cerrar todo',
     newSessionTab: 'Nueva pestaña de sesión',
+    splitSession: 'Dividir la sesión',
+    splitSessionCapped: 'Hasta 4 sesiones en paralelo',
     newTab: 'Nueva pestaña',
     pluginDisabled: pluginId => `Plugin "${pluginId}" desactivado`,
     pluginDisabledBody: 'Vuelve a activarlo en Capacidades → Plugins para recuperar el panel.',

@@ -3469,6 +3469,10 @@ export interface Translations extends NoticeTranslations {
     steerTurn: string
     stop: string
     send: string
+    broadcastTip: string
+    broadcastNote: string
+    broadcastOn: string
+    broadcastSummary: (sent: number, queued: number, skipped: number, failed: number) => string
     speaking: string
     transcribing: string
     thinking: string
@@ -4557,6 +4561,8 @@ export interface Translations extends NoticeTranslations {
     closeToRight: string
     closeAll: string
     newSessionTab: string
+    splitSession: string
+    splitSessionCapped: string
     newTab: string
     pluginDisabled: (pluginId: string) => string
     pluginDisabledBody: string
