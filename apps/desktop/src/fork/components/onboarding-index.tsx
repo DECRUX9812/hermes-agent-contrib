@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
 import {
   $desktopOnboarding,
   ackFreeTierIntro,
@@ -31,6 +32,7 @@ import { Check, ChevronDown, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
 import { isSubmitEnter } from '@/lib/ime'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import { cn } from '@/lib/utils'
+import { $desktopBoot, type DesktopBootState } from '@/store/boot'
 import { $freeTierStatus, FREE_TIER_MODEL, freeTierSetupFailure } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
 import { $setupReadyTick } from '@/store/live-sync'
@@ -205,6 +207,7 @@ export function DesktopOnboardingOverlay({
 }: DesktopOnboardingOverlayProps) {
   const { t } = useI18n()
   const onboarding = useStore($desktopOnboarding)
+  const boot = useStore($desktopBoot)
   useStore($onboardingSurfaces)
   const onCompletedRef = useRef(onCompleted)
   onCompletedRef.current = onCompleted
@@ -428,8 +431,8 @@ export function DesktopOnboardingOverlay({
     >
       <div
         className={cn(
-          'relative grid w-full max-w-[45rem] gap-4 rounded-dialog bg-surface-raised p-6 shadow-e3 transition-all duration-500 ease-out',
-          bare ? '' : 'overflow-hidden',
+          'relative grid w-full max-w-[45rem] gap-4 p-6 transition-all duration-500 ease-out',
+          bare ? '' : 'overflow-hidden rounded-dialog border border-line bg-surface-raised shadow-e3',
           // Bare confirm screen orchestrates its own per-element exit; the
           // carded states use the simple lift/blur dissolve.
           leaving && !bare
@@ -461,7 +464,7 @@ export function DesktopOnboardingOverlay({
               <FlowPanel ctx={ctx} flow={flow} leaving={leaving} onBegin={finalizeOnboarding} />
             )
           ) : (
-            <ProviderRowsSkeleton status={t.onboarding.checkingSetup} />
+            <Preparing boot={boot} />
           )}
         </div>
       </div>
@@ -540,6 +543,32 @@ function ReasonNotice({ reason }: { reason: string }) {
   return (
     <div className="rounded-card border border-line bg-surface-sunken px-4 py-3 text-ui-sm text-fg-muted">
       {reason}
+    </div>
+  )
+}
+
+// A runtime install takes minutes and a boot error needs its message, so both
+// keep the real progress; the ordinary readiness wait is a quiet skeleton.
+function Preparing({ boot }: { boot: DesktopBootState }) {
+  const { t } = useI18n()
+  const installing = boot.phase.startsWith('runtime.')
+
+  if (!installing && !boot.error) {
+    return <ProviderRowsSkeleton status={t.onboarding.checkingSetup} />
+  }
+
+  const progress = Math.max(2, Math.min(100, Math.round(boot.progress)))
+  const label = installing ? t.onboarding.preparingInstall : t.onboarding.starting
+
+  return (
+    <div className="grid gap-3" role="status">
+      <p className="text-ui-sm text-fg-muted">{label}</p>
+      <Progress aria-label={label} destructive={Boolean(boot.error)} size="lg" value={progress / 100} />
+      <div className="flex items-center justify-between gap-3 text-ui-xs text-fg-muted">
+        <span className="truncate">{boot.message}</span>
+        <span className="tabular-nums">{progress}%</span>
+      </div>
+      {boot.error ? <p className="text-ui-xs text-danger">{boot.error}</p> : null}
     </div>
   )
 }

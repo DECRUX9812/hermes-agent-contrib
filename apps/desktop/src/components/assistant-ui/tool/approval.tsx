@@ -278,6 +278,7 @@ const ApprovalCard: FC<ApprovalCardProps> = ({ request, total, position, stack }
   // false when the backend won't honor a permanent allow → hide "Always allow here".
   const allowPermanent = request.allowPermanent !== false
   const choices = request.choices ?? (request.smartDenied ? ['once', 'deny'] : undefined)
+  const allowSession = choices ? choices.includes('session') : true
   const allowAlways = choices ? choices.includes('always') : allowPermanent
   const hasCommand = request.command.trim().length > 0
   // A plugin `approve` rule escalates through the same gate with a synthetic
@@ -328,25 +329,6 @@ const ApprovalCard: FC<ApprovalCardProps> = ({ request, total, position, stack }
       data-request-id={request.requestId}
       data-slot="tool-approval-card"
       inert={!present}
-      onKeyDown={event => {
-        // Enter = allow once, Esc = deny — only while focus sits inside this
-        // card. Native controls keep their own keys: a focused button still
-        // activates itself instead of answering the card.
-        if (
-          event.target instanceof HTMLElement &&
-          event.target.closest('button, a, input, textarea, select, [role="menuitem"], [role="option"]')
-        ) {
-          return
-        }
-
-        if (event.key === 'Enter') {
-          event.preventDefault()
-          void respond('once')
-        } else if (event.key === 'Escape') {
-          event.preventDefault()
-          void respond('deny')
-        }
-      }}
       onPointerDownCapture={rememberFocusOrigin}
       ref={cardRef}
     >
@@ -373,13 +355,19 @@ const ApprovalCard: FC<ApprovalCardProps> = ({ request, total, position, stack }
               setTimeout(() => setConfirmAlways(true), 0)
             }}
             size="sm"
-            variant="secondary"
+            variant="ghost"
           >
             {copy.alwaysAllowHere}
           </Button>
         )}
+        {allowSession && (
+          <Button disabled={busy} onClick={() => void respond('session')} size="sm" variant="secondary">
+            {submitting === 'session' ? <Loader2 className="size-3 animate-spin" /> : copy.allowSession}
+          </Button>
+        )}
         <Button data-approval-run="" disabled={busy} onClick={() => void respond('once')} size="sm">
           {submitting === 'once' ? <Loader2 className="size-3 animate-spin" /> : copy.allowOnce}
+          <span className="opacity-60">↵</span>
         </Button>
       </div>
 
