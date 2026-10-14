@@ -13,7 +13,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type CSSProperties, lazy, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
-import { withBroadcast } from '@/app/chat/broadcast-fan-out'
 import { $splitSessionAction, splitFocusedSession } from '@/app/chat/split-session'
 import { formatRefValue } from '@/components/assistant-ui/directive-text'
 import { BootFailureOverlay } from '@/components/boot-failure-overlay'
@@ -113,6 +112,7 @@ import { useSkinCommand } from '@/themes/use-skin-command'
 import type { SessionInfo } from '@/types/hermes'
 
 import { closeWorkspaceTab } from '../chat/close-tab'
+import { focusComposerWhenMounted } from '../chat/composer/floating-target'
 import { requestComposerInsert, requestComposerInsertRefs } from '../chat/composer/focus'
 import { useComposerActions } from '../chat/hooks/use-composer-actions'
 import { CommandPalette } from '../command-palette'
@@ -1081,6 +1081,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
           if (created && slot) {
             discardSessionTile(slot.storedSessionId)
           }
+
+          // A split is opened to type into, so its composer takes the keyboard.
+          if (created && options?.placement) {
+            focusComposerWhenMounted(`tile:${created.storedSessionId}`)
+          }
         })
       }
 
@@ -1273,7 +1278,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     onRetryResume: sessionId => void resumeSession(sessionId, true),
     onSteer: steerPrompt,
     onSteerHidden: injectHiddenPrompt,
-    onSubmit: withBroadcast('workspace', submitText),
+    onSubmit: submitText,
     onThreadMessagesChange: handleThreadMessagesChange,
     onToggleSelectedPin: toggleSelectedPin,
     onTranscribeAudio: transcribeVoiceAudio,

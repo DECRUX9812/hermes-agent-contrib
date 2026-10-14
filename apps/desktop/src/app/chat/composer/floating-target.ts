@@ -300,6 +300,25 @@ export function claimFloatingComposer(id: string) {
   }
 }
 
+/** Hand the keyboard to a composer the user just opened (a new split pane),
+ * waiting a bounded number of frames for it to mount. Programmatic focus alone
+ * would be redirected back to the pointer's pane, so this claims the recipient
+ * first; the pointer still takes it back on its next move, as everywhere else. */
+export function focusComposerWhenMounted(target: string, frames = 60) {
+  const attempt = (left: number) => {
+    const id = [...surfaces].find(([, surface]) => surface.target === target)?.[0]
+
+    if (id) {
+      flushSync(() => selectSurface(id))
+      focusSelectedComposer()
+    } else if (left > 0) {
+      window.requestAnimationFrame(() => attempt(left - 1))
+    }
+  }
+
+  attempt(frames)
+}
+
 /** Keep the microphone's stop controls and hotkey on its real owner. */
 export function pinFloatingComposerCapture(id: string): () => void {
   captureOwners.add(id)

@@ -7,7 +7,8 @@ import { type BroadcastPorts, type BroadcastTarget, fanOutBroadcast } from './br
 const target = (storedSessionId: string, group: SessionLiveGroup, runtimeId: null | string = `rt-${storedSessionId}`): BroadcastTarget => ({
   storedSessionId,
   runtimeId,
-  group
+  group,
+  composerTarget: `tile:${storedSessionId}`
 })
 
 function ports(overrides: Partial<BroadcastPorts> = {}) {
@@ -30,7 +31,7 @@ describe('fanOutBroadcast', () => {
     )
 
     expect(outcome).toEqual({ sent: 1, queued: 2, skipped: 1, failed: 0 })
-    expect(p.submit).toHaveBeenCalledWith('rt-a', 'run tests')
+    expect(p.submit).toHaveBeenCalledWith(expect.objectContaining({ runtimeId: 'rt-a' }), 'run tests')
     expect(p.enqueue).toHaveBeenCalledWith('c', 'run tests')
     expect(p.enqueue).toHaveBeenCalledWith('d', 'run tests')
     expect(p.enqueue).toHaveBeenCalledTimes(2)
@@ -42,7 +43,7 @@ describe('fanOutBroadcast', () => {
     const outcome = await fanOutBroadcast('hi', [target('origin', 'done'), target('other', 'done')], 'origin', p)
 
     expect(p.submit).toHaveBeenCalledTimes(1)
-    expect(p.submit).toHaveBeenCalledWith('rt-other', 'hi')
+    expect(p.submit).toHaveBeenCalledWith(expect.objectContaining({ composerTarget: 'tile:other' }), 'hi')
     expect(outcome).toEqual({ sent: 1, queued: 0, skipped: 0, failed: 0 })
   })
 
