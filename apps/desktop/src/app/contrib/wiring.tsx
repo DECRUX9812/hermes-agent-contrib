@@ -44,6 +44,7 @@ import { markOnboardingDecided } from '@/fork/store/onboarding-presence'
 import { translateNow } from '@/i18n'
 import { type ChatMessage, chatMessageText } from '@/lib/chat-messages'
 import { isMessagingSource } from '@/lib/session-source'
+import { useStoresSelector } from '@/lib/use-session-slice'
 import { activateWakeIndicator } from '@/lib/wake-indicator'
 import { playWakeSound } from '@/lib/wake-sound'
 import { $billingSettingsRequest } from '@/store/billing-block'
@@ -369,7 +370,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const resumeExhaustedSessionId = useStore($resumeExhaustedSessionId)
   const sessionResumeRequest = useStore($sessionResumeRequest)
   const selectedStoredSessionId = useStore($selectedStoredSessionId)
-  const messagingSessions = useStore($messagingSessions)
   const sessions = useStore($sessions)
   const activeConnectionId = useStore($activeConnectionId)
   const activeGatewayProfile = useStore($activeGatewayProfile)
@@ -949,9 +949,16 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     profile: activeGatewayProfile
   })
 
-  const activeIsMessaging =
-    !!selectedStoredSessionId &&
-    isMessagingSource(messagingSessions.find(s => sessionMatchesStoredId(s, selectedStoredSessionId))?.source)
+  // A boolean selector, not the list: the messaging list refreshes on its own
+  // poll, and subscribing to it re-rendered this whole controller each time.
+  const activeIsMessaging = useStoresSelector([$messagingSessions, $selectedStoredSessionId], () => {
+    const storedId = $selectedStoredSessionId.get()
+
+    return (
+      !!storedId &&
+      isMessagingSource($messagingSessions.get().find(s => sessionMatchesStoredId(s, storedId))?.source)
+    )
+  })
 
   useTranscriptPeerSync({
     activeSessionIdRef,
