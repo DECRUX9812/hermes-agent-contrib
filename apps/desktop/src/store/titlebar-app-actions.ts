@@ -46,6 +46,19 @@ export type TitlebarFixedToolId = keyof typeof TITLEBAR_FIXED_TOOLS
 const APP_ACTION_IDS: readonly TitlebarFixedToolId[] = ['settings', 'layout', 'hud']
 const RIGHT_FIXED_IDS: readonly TitlebarFixedToolId[] = ['flip-panes', 'panels', 'right-sidebar']
 
+/** The fixed right cluster shows this many tools; the rest move under its ⋯ menu. */
+export const TITLEBAR_RIGHT_VISIBLE_MAX = 3
+
+/** Which right-cluster tools keep their own button when the cluster is full, most important first. */
+export const TITLEBAR_RIGHT_PRIORITY: readonly TitlebarFixedToolId[] = [
+  'settings',
+  'right-sidebar',
+  'panels',
+  'layout',
+  'hud',
+  'flip-panes'
+]
+
 /** Button counts for the two titlebar clusters, for the mode that is rendering them. */
 export function titlebarAppActionsClusterCounts(
   side: TitlebarAppActionsSide,
@@ -59,8 +72,12 @@ export function titlebarAppActionsClusterCounts(
   const rightFixed = RIGHT_FIXED_IDS.filter(id => shown(TITLEBAR_FIXED_TOOLS[id])).length
 
   if (side === 'left') {
-    return { left: sidebar + appActions + leftExtras, right: rightFixed + rightExtras }
+    return { left: sidebar + appActions + leftExtras, right: fixedRightSlots(rightFixed) + rightExtras }
   }
 
-  return { left: sidebar + leftExtras, right: appActions + rightFixed + rightExtras }
+  return { left: sidebar + leftExtras, right: fixedRightSlots(appActions + rightFixed) + rightExtras }
+}
+
+function fixedRightSlots(toolCount: number): number {
+  return toolCount > TITLEBAR_RIGHT_VISIBLE_MAX ? TITLEBAR_RIGHT_VISIBLE_MAX + 1 : toolCount
 }

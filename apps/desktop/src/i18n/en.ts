@@ -626,6 +626,7 @@ export const en: Translations = {
     search: 'Search',
     searchTitle: 'Search sessions, views, and actions',
     swapSidebarSides: 'Swap sidebar sides',
+    moreTools: 'More tools',
     hideRightSidebar: 'Hide right sidebar',
     showRightSidebar: 'Show right sidebar',
     unreadSessions: count => (count === 1 ? '1 unread session' : `${count} unread sessions`),
