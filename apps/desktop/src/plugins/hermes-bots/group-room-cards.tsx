@@ -9,14 +9,18 @@
  *                    instead of a stream of "working on it…" bubbles.
  */
 
-import { Button, cn, Codicon, host, relativeTime, useValue } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, host, relativeTime, Tip, useValue } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
+import { avatarColor, botAppearance, BotFace } from './avatar'
+import { isBackfilledFacePng } from './avatar-image'
+import { groupMemberKey } from './group-membership'
 import type { HandoffStatus, RoomEscalation, RoomHandoff } from './group-room-handoffs'
 import { type RoomVote, voteConsensus } from './group-room-votes'
 import { useBots } from './i18n'
 import { liveTool } from './live-status'
-import type { GroupMember } from './types'
+import { botRosterMeta } from './routing'
+import type { BotMeta, GroupMember } from './types'
 
 const STATUS_TONE: Record<HandoffStatus, string> = {
   accepted: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300',
@@ -348,13 +352,21 @@ function useRuntimeByStored(): Map<string, string> {
 }
 
 export interface ActivityLineProps {
+  allMeta?: Record<string, BotMeta>
+  members?: readonly GroupMember[]
+  /** Live names on this thread — each paints the row its reply will land in. */
   names: readonly string[]
   nameOf: (name: string) => string
+  onStop?: (member: GroupMember) => void
   /** Member name → that member's room session id on this thread. */
   sessionOf: (name: string) => null | string
+  /** Latest 'working' activity stamp per member key, for the elapsed read. */
+  workingSince?: ReadonlyMap<string, number>
 }
 
-export function ActivityLine({ names, nameOf, sessionOf }: ActivityLineProps) {
+/** One flat row per working bot, aligned with the message bubbles: face,
+ *  speaker-coloured name, current tool, elapsed, and a per-bot Stop. */
+export function ActivityLine({ allMeta, members, names, nameOf, onStop, sessionOf, workingSince }: ActivityLineProps) {
   const b = useBots()
 
   const statusItems = (useValue(host.state.statusItemsBySession) || {}) as Record<
@@ -372,24 +384,49 @@ export function ActivityLine({ names, nameOf, sessionOf }: ActivityLineProps) {
     <section
       aria-label={b.group.activityLabel}
       aria-live="polite"
-      className="ml-11 flex flex-col gap-1 rounded-xl border border-dashed border-(--ui-stroke-secondary) px-3 py-2"
+      className="ml-11 flex flex-col gap-1"
       data-testid="group-activity-line"
     >
       {names.map(name => {
+        const member = members?.find(m => m.name === name)
         const stored = sessionOf(name)
         const runtime = stored ? runtimeByStored.get(stored) || stored : null
         const tool = runtime ? liveTool(statusItems[runtime]) : undefined
+        const appearance = botAppearance(name, member && allMeta ? botRosterMeta(member, allMeta) : null)
+        const faceImage = appearance.image
+        const since = workingSince?.get(member ? groupMemberKey(member) : name) ?? workingSince?.get(name) ?? null
+        const stopLabel = b.group.stopMember(nameOf(name))
 
         return (
-          <div className="flex min-w-0 items-center gap-2 text-[0.75rem]" key={name}>
-            <span aria-hidden className="relative flex size-2 shrink-0">
-              <span className="absolute inset-0 rounded-full bg-(--ui-accent) motion-safe:animate-ping" />
-              <span className="relative size-2 rounded-full bg-(--ui-accent)" />
+          <div className="flex min-w-0 items-center gap-1.5 text-ui-xs" key={name}>
+            <span className="shrink-0 overflow-hidden rounded-[22%] ring-1 ring-info motion-safe:animate-pulse">
+              <BotFace
+                color={avatarColor(appearance.color, name)}
+                image={faceImage && !isBackfilledFacePng(faceImage) ? faceImage : null}
+                name={name}
+                shape={appearance.shape}
+                size={16}
+              />
             </span>
-            <span className="shrink-0 font-semibold text-foreground">{nameOf(name)}</span>
-            <span className="min-w-0 flex-1 truncate font-mono text-[0.6875rem] text-(--ui-text-tertiary)">
+            <span
+              className="shrink-0 font-semibold"
+              style={{
+                color: `color-mix(in oklab, ${avatarColor(appearance.color, name)} 62%, var(--color-foreground))`
+              }}
+            >
+              {nameOf(name)}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-fg-muted">
               {tool ? b.group.activityTool(tool) : b.group.activityWorking}
             </span>
+            {since ? <span className="shrink-0 text-fg-subtle">{relativeTime(since)}</span> : null}
+            {member && onStop ? (
+              <Tip label={stopLabel}>
+                <Button aria-label={stopLabel} onClick={() => onStop(member)} size="icon-xs" variant="ghost">
+                  <Codicon name="debug-stop" />
+                </Button>
+              </Tip>
+            ) : null}
           </div>
         )
       })}

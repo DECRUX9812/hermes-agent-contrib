@@ -109,7 +109,7 @@ import { GroupThreadRail } from './group-room-threads'
 import { useRoomUnread } from './group-room-unseen'
 import { deriveRoomVotes, roomVotesAt } from './group-room-votes'
 import { roomLiveWork, roomWorkItems } from './group-room-work'
-import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
+import { groupReplyMentionTag, sendToGroupChat, stopGroupMember, stopGroupThread } from './group-rounds'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { renameGroupClarify } from './group-turns'
 import { $groupVisitAnchor, markGroupOpened } from './group-unread'
@@ -807,6 +807,8 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     names.forEach(name => workingNow.add(name))
   }
 
+  const turnCovered = Boolean(room.turn && [...liveWork.values()].some(names => names.has(room.turn?.name || '')))
+
   // The handoff protocol: contracts read off the log, and what reaches the user.
   const handoffs = deriveRoomHandoffs(room.log, members, { live: liveWork })
   const escalationKey = (e: { handoff: RoomHandoff; kind: string }) => `${e.kind}:${e.handoff.id}`
@@ -931,11 +933,23 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     }))
   }
 
+  commands.stopMember = (thread, member) => {
+    void stopGroupMember(group, thread, member, memberDescriptors())
+    host.notify({ kind: 'success', message: b.group.stoppedMember(memberLabel(member.name)) })
+  }
+
   // Activity disclosure: quiet, collapsed by default. The collapsed row shows
   // the latest event; expanding lists the current run's events newest-first.
   // Events are epoch-tagged, so a superseded run's history drops out of view.
   const activityEvents: GroupActivityEntry[] = currentGroupActivity(group)
   const latestActivity = activityEvents.length ? activityEvents[activityEvents.length - 1] : null
+
+  const workingSince = new Map<string, number>(
+    activityEvents
+      .filter(event => event.kind === 'working' && event.member)
+      .map(event => [event.member as string, event.at])
+  )
+
   // A later "settled" event must not hide a member that failed to answer.
   // Successful completion for that member clears its unresolved warning.
   const unresolvedFailures = new Map<string, GroupActivityEntry>()
@@ -967,15 +981,15 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   }
 
   const activityPanel = (
-    <div className="border-b border-(--ui-stroke-secondary)">
+    <div className="border-b border-line">
       <div className="flex items-center gap-1">
         <RowButton
           aria-controls={`group-activity:${group}`}
           aria-expanded={activityOpen}
-          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-foreground"
+          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-ui-2xs text-fg-muted transition-colors hover:text-foreground"
           onClick={() => setActivityOpen(prev => !prev)}
         >
-          <Codicon className="shrink-0 text-[0.625rem]" name={activityOpen ? 'chevron-down' : 'chevron-right'} />
+          <Codicon className="shrink-0 text-ui-2xs" name={activityOpen ? 'chevron-down' : 'chevron-right'} />
           <span className="shrink-0 font-medium">{b.group.activity}</span>
           {summaryActivity ? (
             <span
@@ -985,14 +999,9 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         </RowButton>
         {room.running ? (
           <Tip label={b.group.stopHint}>
-            <Button
-              className="shrink-0 text-(--ui-accent)"
-              onClick={() => void stopRoomRun()}
-              size="xs"
-              variant="ghost"
-            >
+            <Button className="shrink-0" onClick={() => void stopRoomRun()} size="xs" variant="ghost">
               <Codicon name="debug-stop" />
-              {b.group.stop}
+              {b.group.stopAll}
             </Button>
           </Tip>
         ) : null}
@@ -1001,32 +1010,19 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         <div className="grid gap-0.5 px-2.5 pb-1.5" id={`group-activity:${group}`}>
           {activityEvents.length ? (
             [...activityEvents].reverse().map((event, i) => (
-              <div className="flex items-center gap-1.5 text-[0.6875rem]" key={`${event.at}:${i}`}>
+              <div className="flex items-center gap-1.5 text-ui-2xs" key={`${event.at}:${i}`}>
                 <Codicon
-                  className={cn('shrink-0 text-[0.625rem]', groupActivityTone(event.kind))}
+                  className={cn('shrink-0 text-ui-2xs', groupActivityTone(event.kind))}
                   name={GROUP_ACTIVITY_GLYPHS[event.kind] || 'circle-outline'}
                 />
                 <span className={cn('min-w-0 flex-1 truncate', groupActivityTone(event.kind))}>
                   {groupActivityLabel(event, group)}
                 </span>
-                <span className="shrink-0 text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(event.at)}</span>
-                {room.running && event.kind === 'working' ? (
-                  <Tip label={b.group.stopHint}>
-                    <Button
-                      className="shrink-0 text-(--ui-accent)"
-                      onClick={() => void stopRoomRun()}
-                      size="micro"
-                      variant="ghost"
-                    >
-                      <Codicon name="debug-stop" />
-                      {b.group.stop}
-                    </Button>
-                  </Tip>
-                ) : null}
+                <span className="shrink-0 text-ui-2xs text-fg-muted">{relativeTime(event.at)}</span>
               </div>
             ))
           ) : (
-            <div className="px-0.5 pb-0.5 text-[0.625rem] text-(--ui-text-quaternary)">{b.group.noActivityYet}</div>
+            <div className="px-0.5 pb-0.5 text-ui-2xs text-fg-muted">{b.group.noActivityYet}</div>
           )}
         </div>
       ) : null}
@@ -1316,6 +1312,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
     logChildren.push(
       <ThreadTail
+        allMeta={allMeta}
         commands={commands}
         escalations={escalations}
         key={`tail:${id}`}
@@ -1325,6 +1322,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         onDismiss={dismissEscalation}
         sessions={room.sessions}
         thread={id}
+        workingSince={workingSince}
       />
     )
 
@@ -1510,6 +1508,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                 room={room}
                 roomClarifies={roomClarifies}
                 roundContributions={roundContributions}
+                turnCovered={turnCovered}
               />
               {/* Scroll anchor (#89835): rooms opened at scroll position 0, mid- */
               /* history. The effect below scrolls this sentinel into view on */

@@ -411,6 +411,9 @@ type BotsMessages = {
     hideActivity: string
     stop: string
     stopHint: string
+    stopAll: string
+    stopMember: (name: string) => string
+    stoppedMember: (name: string) => string
     allHeldStatus: (count: number) => string
     heldMembersStatus: (members: string) => string
     holdReleaseHint: string
@@ -1295,6 +1298,9 @@ const en: BotsMessages = {
     hideActivity: 'Hide room activity',
     stop: 'Stop',
     stopHint: 'Stop this run — interrupts the member on turn and holds the rest',
+    stopAll: 'Stop all',
+    stopMember: name => `Stop ${name}`,
+    stoppedMember: name => `Stopped ${name} — it stays held until you resume`,
     allHeldStatus: count => `All ${count} bots are paused`,
     heldMembersStatus: members => `Paused: ${members}`,
     holdReleaseHint: 'Mention a paused bot or send @all resume to release them.',
@@ -2182,6 +2188,9 @@ const ja: BotsMessages = {
     hideActivity: '部屋のアクティビティを隠す',
     stop: '停止',
     stopHint: 'この実行を停止 — ターン中のメンバーを中断し、残りを保留します',
+    stopAll: 'すべて停止',
+    stopMember: name => `${name}を停止`,
+    stoppedMember: name => `${name}を停止しました — 再開するまで保留されます`,
     allHeldStatus: count => `すべてのボット（${count}体）が一時停止中`,
     heldMembersStatus: members => `一時停止中: ${members}`,
     holdReleaseHint: '一時停止中のボットにメンションするか、@all resume を送信して再開します。',
@@ -3052,6 +3061,9 @@ const zh: BotsMessages = {
     hideActivity: '隐藏房间活动',
     stop: '停止',
     stopHint: '停止本次运行 — 中断当前回合的成员，并暂停其余成员',
+    stopAll: '全部停止',
+    stopMember: name => `停止${name}`,
+    stoppedMember: name => `已停止${name}——在你恢复之前它将保持暂停`,
     allHeldStatus: count => `全部 ${count} 个机器人已暂停`,
     heldMembersStatus: members => `已暂停：${members}`,
     holdReleaseHint: '提及已暂停的机器人，或发送 @all resume 以恢复它们。',
@@ -3916,6 +3928,9 @@ const zhHant: BotsMessages = {
     hideActivity: '隱藏房間活動',
     stop: '停止',
     stopHint: '停止本次執行 — 中斷目前回合的成員，並暫停其餘成員',
+    stopAll: '全部停止',
+    stopMember: name => `停止${name}`,
+    stoppedMember: name => `已停止${name}——在你恢復之前它將保持暫停`,
     allHeldStatus: count => `全部 ${count} 個機器人已暫停`,
     heldMembersStatus: members => `已暫停：${members}`,
     holdReleaseHint: '提及已暫停的機器人，或傳送 @all resume 以恢復它們。',

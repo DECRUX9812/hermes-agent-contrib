@@ -537,6 +537,80 @@ export function unaddressedGroupMentions(group: string, members: GroupMember[], 
   })
 }
 
+/** The thread session a stop targets for one member: the thread's own
+ *  session key, else the bare pointer only for rooms that never migrated
+ *  (a migrated room answers on thread keys alone). Shared by both stops. */
+function groupThreadSessionId(
+  sessions: Record<string, string | true> | undefined,
+  thread: null | string,
+  member: GroupMember
+): string | true | null {
+  const key = groupMemberKey(member)
+  const scoped = (sessions || {})[groupSessionKey(thread || 'legacy', member)]
+
+  if (scoped) {
+    return scoped
+  }
+
+  return hasThreadScopedGroupSession(sessions || {}, key) ? null : (sessions || {})[key] || null
+}
+
+/** Stop ONE member mid-round: hold it (the same #93129 stamp the room stop
+ *  mints, so later rounds skip it until re-addressed) and interrupt its
+ *  thread session, best-effort — without bumping the epoch or clearing
+ *  `running`, so the round carries on with the remaining members. The
+ *  roster lets a thin member ref resolve to its routable descriptor. */
+export async function stopGroupMember(
+  group: string,
+  thread: null | string,
+  member: GroupMember,
+  roster: GroupMember[] | null = null
+) {
+  const room = $groupChats.get()[group] || {}
+  const target = (Array.isArray(roster) ? roster : []).find(m => groupMemberKey(m) === groupMemberKey(member)) || member
+  const key = groupMemberKey(target)
+
+  const stamp: GroupHoldStamp = {
+    at: Date.now(),
+    byMessageId: null,
+    thread: thread || null
+  }
+
+  updateGroupChat(group, (r: GroupChatRoom) => {
+    // An existing hold keeps its stamp; rooms without hold detection stop
+    // the member through the interrupt leg alone.
+    if (r.holdDetection !== false && key && !r.holds?.[key]) {
+      r.holds = {
+        ...(r.holds || {}),
+        [key]: {
+          ...stamp
+        }
+      }
+    }
+
+    return r
+  })
+
+  recordGroupActivity(group, {
+    kind: 'member-stopped',
+    member: key || member.name,
+    thread: thread || null
+  })
+
+  const sessionId = groupThreadSessionId(room.sessions, thread, target)
+
+  if (sessionId) {
+    try {
+      await requestForBot(target, 'session.interrupt', {
+        session_id: sessionId
+      })
+    } catch {
+      /* best-effort — the hold leg above already skips the member, and its
+         in-flight poll settles on the hold without an epoch move */
+    }
+  }
+}
+
 /** #91868/#94569: the REAL stop path for a group round. The round loop's only
  *  cancellation primitives were the epoch bump (checked at member boundaries)
  *  and #93129 holds (skip FUTURE turns) — neither touches the member whose
@@ -606,13 +680,7 @@ export async function stopGroupThread(group: string, thread: null | string, memb
   // The captured descriptor owns routing even if the roster has changed.
   // Sessions are per thread, so a stop targets the session of the thread it
   // was issued from; an unmigrated room still answers on its bare pointer.
-  const sessions = room.sessions || {}
-  const onTurnKey = onTurn ? groupMemberKey(onTurn) : ''
-
-  const sessionId = onTurn
-    ? sessions[groupSessionKey(thread || 'legacy', onTurn)] ||
-      (hasThreadScopedGroupSession(sessions, onTurnKey) ? null : sessions[onTurnKey])
-    : null
+  const sessionId = onTurn ? groupThreadSessionId(room.sessions, thread, onTurn) : null
 
   if (onTurn && sessionId) {
     try {

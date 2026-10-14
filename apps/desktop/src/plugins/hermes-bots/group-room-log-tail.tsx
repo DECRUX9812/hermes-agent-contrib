@@ -22,6 +22,8 @@ export interface GroupLogTailProps {
   room: GroupChatRoom
   roomClarifies: readonly unknown[]
   roundContributions: readonly { line: string; name: string }[]
+  /** The on-turn member already paints a working row in the thread tail. */
+  turnCovered: boolean
 }
 
 export function GroupLogTail({
@@ -30,7 +32,8 @@ export function GroupLogTail({
   members,
   room,
   roomClarifies,
-  roundContributions
+  roundContributions,
+  turnCovered
 }: GroupLogTailProps) {
   const b = useBots()
 
@@ -72,8 +75,8 @@ export function GroupLogTail({
           </ul>
         </div>
       ) : null}
-      {room.running ? (
-        <div className="flex items-center gap-2 px-2 pt-1 text-[0.6875rem] text-(--ui-text-quaternary)" key={'working'}>
+      {room.running && (!turnCovered || roomClarifies.length) ? (
+        <div className="flex items-center gap-2 px-2 pt-1 text-ui-2xs text-fg-muted" key={'working'}>
           {(() => {
             // Typing indicator: the thinking member's mini face, or the
             // classic three-dot pulse when the turn isn't attributable.

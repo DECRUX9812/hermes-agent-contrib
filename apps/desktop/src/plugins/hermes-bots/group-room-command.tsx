@@ -19,7 +19,7 @@ import { handoffLine, nudgeLine, type RoomEscalation, type RoomHandoff, STATUS_C
 import { decidedLine, type RoomVote } from './group-room-votes'
 import { groupReplyMentionTag, sendToGroupChat } from './group-rounds'
 import { useBots } from './i18n'
-import type { GroupMember } from './types'
+import type { BotMeta, GroupMember } from './types'
 
 export interface RoomCommands {
   /** Record a decision's outcome in its own thread. */
@@ -27,6 +27,8 @@ export interface RoomCommands {
   nudge: (handoff: RoomHandoff) => void
   reassign: (handoff: RoomHandoff, member: GroupMember) => void
   statusCheck: (thread: null | string) => void
+  /** Stop one member's turn (its row's Stop button); the room keeps running. */
+  stopMember?: (thread: string, member: GroupMember) => void
 }
 
 /** The room's actions, bound to its live seating (`seat` re-reads the roster
@@ -156,6 +158,8 @@ export function RoomShortcuts({ commands, firstTag, onHelp, onInsert, thread }: 
 }
 
 export interface ThreadTailProps {
+  /** Room-wide bot metadata for the working-row faces. */
+  allMeta: Record<string, BotMeta>
   commands: RoomCommands
   escalations: readonly RoomEscalation[]
   live: ReadonlyMap<string, ReadonlySet<string>>
@@ -164,11 +168,14 @@ export interface ThreadTailProps {
   onDismiss: (escalation: RoomEscalation) => void
   sessions: Readonly<Record<string, string | true>> | undefined
   thread: string
+  /** Latest 'working' activity stamp per member key, for the elapsed read. */
+  workingSince: ReadonlyMap<string, number>
 }
 
 /** A thread's live tail in the log: who is working on it now (their current
  *  tool), and anything stuck on it, with the fixes. */
 export function ThreadTail({
+  allMeta,
   commands,
   escalations,
   live,
@@ -176,19 +183,24 @@ export function ThreadTail({
   nameOf,
   onDismiss,
   sessions,
-  thread
+  thread,
+  workingSince
 }: ThreadTailProps) {
   return (
     <>
       <ActivityLine
+        allMeta={allMeta}
+        members={members}
         nameOf={nameOf}
         names={[...(live.get(thread) ?? [])]}
+        onStop={member => commands.stopMember?.(thread, member)}
         sessionOf={name => {
           const member = members.find(m => m.name === name)
           const sid = member ? (sessions || {})[groupSessionKey(thread, member)] : null
 
           return typeof sid === 'string' ? sid : null
         }}
+        workingSince={workingSince}
       />
       {escalations
         .filter(e => e.handoff.thread === thread)
