@@ -35,11 +35,16 @@ import {
   sourceByConnection,
   useRoster
 } from './data'
-import { $groupChats, $groupChatWorkspace, $groupClarify, $groupNeedsYou } from './group-chat'
+import { $roomArchive, isRoomArchived } from './group-archive'
+import { $groupChats, $groupChatWorkspace, $groupClarify, $groupNeedsYou, groupChatRoomKey } from './group-chat'
 import { GroupChatWorkspace, openGroupChat } from './group-chat-view'
 import { groupChatMemberBots } from './group-membership'
 import { $groupMainTabsRev, shouldRenderGroupChatInPane } from './group-panes'
 import { $activeGroupMemberKeys } from './group-presence'
+import { roomStatusFor } from './group-row'
+import type { RoomQuickFilter, RoomStatusSnapshot } from './group-row'
+import { groupHasPendingClarify } from './group-turns'
+import { $groupReadAt } from './group-unread'
 import { $showHiddenBots, isBotHidden } from './hidden-bots'
 import { HireGallery } from './hire-gallery'
 import { useBots } from './i18n'
@@ -307,6 +312,7 @@ export function BotsPane() {
   const mailboxNotes = useMailbox().data || []
   const [assigningTask, setAssigningTask] = useState<null | RosterRow>(null)
   const [query, setQuery] = useState('')
+  const [roomFilter, setRoomFilter] = useState<RoomQuickFilter>('all')
   const [rowKindFilter, setRowKindFilter] = useState<RosterKindFilter>('all')
   const [activityFilter, setActivityFilter] = useState<RosterActivityFilter>('all')
   const [gatewayFilter, setGatewayFilter] = useState('all')
@@ -324,6 +330,8 @@ export function BotsPane() {
   const groupNeedsYou = useValue($groupNeedsYou)
   const groupClarify = useValue($groupClarify)
   const groupRooms = useValue($groupChats)
+  const groupReadAt = useValue($groupReadAt)
+  const roomArchive = useValue($roomArchive)
   const rememberedSources = useValue($lastSources)
   const rosterHydrated = useValue($rosterHydrated)
   const selectionHydrated = useValue($selectedRosterHydrated)
@@ -449,6 +457,21 @@ export function BotsPane() {
 
   const toggleRosterSection = toggleBotSectionCollapsed
 
+  // Room statuses feed the group chats section's quick filters. One pass over
+  // the sorted rows; the row itself derives the same snapshot from the same
+  // helper, so the chips and the rows never disagree.
+  const roomStatuses: Record<string, RoomStatusSnapshot> = {}
+
+  for (const row of sortedGroupRows) {
+    const room = groupRooms[row.name]
+    const key = room ? groupChatRoomKey(row.name, room) : ''
+
+    roomStatuses[row.name] = roomStatusFor(room, {
+      needsYou: Boolean(groupNeedsYou[row.name]) || groupHasPendingClarify(groupClarify, row.name),
+      readAt: (key && groupReadAt[key]) || 0
+    })
+  }
+
   useEffect(() => {
     if (!hiddenExpanded || hasRosterConstraint) {
       return
@@ -506,22 +529,41 @@ export function BotsPane() {
       />
     )
 
-  const renderGroupRow = (row: { members: GroupMember[]; name: string }) => (
-    <RosterGroupRowView
-      active={groupChatName === row.name}
-      b={b}
-      group={row.name}
-      groupClarify={groupClarify}
-      groupNeedsYou={groupNeedsYou}
-      groupRooms={groupRooms}
-      key={`group:${row.name}`}
-      members={row.members}
-      onDisband={setDeletingGroup}
-      onNewSection={target => setSectionDialog({ group: target, mode: 'create' })}
-      onOpen={openGroupChat}
-      sortedGroupRows={sortedGroupRows}
-    />
-  )
+  const renderGroupRow = (row: { members: GroupMember[]; name: string }) => {
+    // Keyboard moves stay inside the row's own band (pin + archive), like a
+    // drop onto another row does.
+    const room = groupRooms[row.name]
+    const archived = room ? isRoomArchived(roomArchive, groupChatRoomKey(row.name, room)) : false
+    const pinned = sortedGroupRows.find(anchor => anchor.name === row.name)?.pinned
+
+    const archivedOf = (name: string): boolean => {
+      const candidate = groupRooms[name]
+
+      return candidate ? isRoomArchived(roomArchive, groupChatRoomKey(name, candidate)) : false
+    }
+
+    const bandNames = sortedGroupRows
+      .filter(candidate => candidate.pinned === pinned && archivedOf(candidate.name) === archived)
+      .map(candidate => candidate.name)
+
+    return (
+      <RosterGroupRowView
+        active={groupChatName === row.name}
+        b={b}
+        bandNames={bandNames}
+        group={row.name}
+        groupClarify={groupClarify}
+        groupNeedsYou={groupNeedsYou}
+        groupRooms={groupRooms}
+        key={`group:${row.name}`}
+        members={row.members}
+        onDisband={setDeletingGroup}
+        onNewSection={target => setSectionDialog({ group: target, mode: 'create' })}
+        onOpen={openGroupChat}
+        sortedGroupRows={sortedGroupRows}
+      />
+    )
+  }
 
   const { renderUserSections, renderGatewaySection, renderGroupChatSection, renderHiddenGatewaySection } =
     rosterSectionRenderers({
@@ -537,7 +579,10 @@ export function BotsPane() {
       cardMode,
       renderBotRow,
       renderGroupRow,
-      sortedGroupRows
+      sortedGroupRows,
+      roomFilter,
+      onRoomFilter: setRoomFilter,
+      roomStatuses
     })
 
   return (
