@@ -20,7 +20,7 @@ export function SettingsContent({ children, bare = false }: { children: ReactNod
   return (
     <section className="min-h-0 overflow-hidden">
       <div className={cn('h-full min-h-0 overflow-y-auto', bare ? 'px-5 pb-6' : cn('pb-20', PAGE_INSET_X))}>
-        {children}
+        <div className={cn('mx-auto max-w-[720px]', bare && 'mx-0')}>{children}</div>
       </div>
     </section>
   )
@@ -73,10 +73,10 @@ export function SectionHeading({
   }
 
   return (
-    <div className="mb-2.5 flex items-center gap-2 pt-2 text-[length:var(--conversation-text-font-size)] font-medium">
+    <div className="mb-2 flex items-center gap-2 px-1 pt-2 text-ui-sm font-medium text-fg-secondary">
       {showTitle && (
         <>
-          <Icon className="size-4 shrink-0 text-muted-foreground" />
+          <Icon className="size-4 shrink-0 text-fg-muted" />
           <span>{title}</span>
         </>
       )}
@@ -85,6 +85,9 @@ export function SectionHeading({
     </div>
   )
 }
+
+// One card per settings group: rows divide it with hairlines, nothing nests.
+export const SETTINGS_CARD = 'divide-y divide-line overflow-hidden rounded-card border border-line bg-surface-raised'
 
 // A titled section: heading + body with the shared vertical rhythm. Keeps the
 // heading and its content welded together so pages stop hand-rolling
@@ -105,7 +108,7 @@ export function SettingsSection({
   return (
     <section className="mb-6">
       <SectionHeading aside={aside} icon={icon} meta={meta} title={title} />
-      {children}
+      <div className={SETTINGS_CARD}>{children}</div>
     </section>
   )
 }
@@ -177,18 +180,14 @@ export function ListRow({
     // the row's own pane width, so a narrow detail column (messaging, split
     // views) stacks instead of squishing the label against minmax(15rem,…).
     <div className={cn('@container', className)} data-tour={dataTour} id={id}>
-      <div className={cn('grid gap-3 py-3', !wide && [LIST_ROW_COLUMNS, '@2xl:items-center'])}>
+      <div className={cn('grid min-h-12 gap-3 px-4 py-3', !wide && [LIST_ROW_COLUMNS, '@2xl:items-center'])}>
         <div className="min-w-0">
-          <div className="flex items-center justify-between gap-3 text-[length:var(--conversation-text-font-size)] font-medium text-foreground">
+          <div className="flex items-center justify-between gap-3 text-ui-sm text-fg">
             <span className="min-w-0">{title}</span>
             {wide && action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
           </div>
-          {description && (
-            <div className="mt-1 text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-(--ui-text-tertiary)">
-              {description}
-            </div>
-          )}
-          {hint && <div className="mt-1 block font-mono text-[0.68rem] text-muted-foreground/45">{hint}</div>}
+          {description && <div className="mt-0.5 text-ui-xs leading-normal text-fg-muted">{description}</div>}
+          {hint && <div className="mt-1 block font-mono text-ui-2xs text-fg-subtle">{hint}</div>}
           {below}
         </div>
         {!wide && action && (
@@ -274,7 +273,7 @@ export function RowFootnoteAction({ children, onClick }: { children: ReactNode; 
 // its shape (like ModelSettings) instead of collapsing to a centered spinner.
 export function SectionHeadingSkeleton() {
   return (
-    <div className="mb-2.5 flex items-center gap-2 pt-2">
+    <div className="mb-2 flex items-center gap-2 px-1 pt-2">
       <Skeleton className="size-4" />
       <Skeleton className="h-4 w-36 max-w-full" />
     </div>
@@ -284,7 +283,7 @@ export function SectionHeadingSkeleton() {
 export function ListRowSkeleton({ wide = false }: { wide?: boolean }) {
   return (
     <div className="@container">
-      <div className={cn('grid gap-3 py-3', !wide && [LIST_ROW_COLUMNS, '@2xl:items-center'])}>
+      <div className={cn('grid min-h-12 gap-3 px-4 py-3', !wide && [LIST_ROW_COLUMNS, '@2xl:items-center'])}>
         <div className="min-w-0 space-y-1.5">
           <Skeleton className="h-3.5 w-40 max-w-full" />
           <Skeleton className="h-3 w-64 max-w-full" />
@@ -311,7 +310,7 @@ export function SettingsSkeleton({
       {sections.map((section, i) => (
         <section className={cn(i > 0 && 'mt-6')} key={i}>
           {section.heading && <SectionHeadingSkeleton />}
-          <div className="grid gap-1">
+          <div className={SETTINGS_CARD}>
             {Array.from({ length: section.rows }, (_, r) => (
               <ListRowSkeleton key={r} />
             ))}
