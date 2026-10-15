@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { $onboardingPhase } from '@/store/onboarding-phase'
 import { $onboardingSession } from '@/store/onboarding-session'
+import { $previewTabs } from '@/store/preview'
 import { $reasoningCollapsedByDefault, setShowReasoningFromConfig } from '@/store/reasoning-disclosure'
 import { $activeSessionId } from '@/store/session'
 
@@ -781,24 +782,38 @@ describe('assistant-ui streaming renderer', () => {
       />
     )
 
-    fireEvent.click(container.querySelector('[data-tool-row] button')!)
+    // A failed generation is the normal one-line tool row carrying the error
+    // line — not the image card, and not a raw payload dump.
+    const row = container.querySelector<HTMLButtonElement>('[data-tool-step="error"]')
 
-    await waitFor(() => {
-      expect(container.textContent).toContain('FAL rejected the prompt')
+    expect(row?.textContent).toContain('FAL rejected the prompt')
+
+    // The payload stays reachable: the row opens the call's step view.
+    fireEvent.click(row!)
+
+    expect($previewTabs.get().find(tab => tab.target.step?.toolName === 'image_generate')?.target.step?.result).toEqual({
+      error: 'FAL rejected the prompt',
+      image: null,
+      success: false
     })
     expect(container.querySelector('[data-slot="aui_generated-image"]')).toBeNull()
     expect(container.textContent).not.toContain('"success":false')
   })
 
   it('shows the command prompt and exit code for terminal calls', async () => {
-    const { container } = render(<MessageHarness message={assistantTerminalMessage()} />)
+    render(<MessageHarness message={assistantTerminalMessage()} />)
 
-    fireEvent.click(container.querySelector('[data-tool-row] button')!)
+    // The transcript's one line for the call is the pill, which names the
+    // command; the exit code and output are the step view the pill opens.
+    const row = await screen.findByRole('button', { name: /npm run check --workspace=apps\/desktop/ })
 
-    await waitFor(() => {
-      expect(container.textContent).toContain('$ npm run check --workspace=apps/desktop')
-      expect(container.textContent).toContain('exit 0')
-      expect(container.textContent).toContain('all checks passed')
-    })
+    expect(row.textContent).toContain('npm run check --workspace=apps/desktop')
+
+    fireEvent.click(row)
+
+    const step = $previewTabs.get().find(tab => tab.target.step?.toolName === 'terminal')?.target.step
+
+    expect(step?.args).toEqual({ command: 'npm run check --workspace=apps/desktop' })
+    expect(step?.result).toEqual({ exit_code: 0, stdout: 'all checks passed' })
   })
 })

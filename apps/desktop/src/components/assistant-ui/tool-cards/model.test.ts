@@ -81,11 +81,11 @@ describe('status wording and state', () => {
     expect(card.reason).toBe('disk full')
   })
 
-  it('settles an interrupted call as done and stopped', () => {
+  it('settles an interrupted call as done and interrupted', () => {
     const card = toolCardView(part({ args: navigate, completedAt: 1_700_000_000, interrupted: true, toolName: 'browser_navigate' }))
 
     expect(card.state).toBe('done')
-    expect(card.status).toBe('Stopped')
+    expect(card.status).toBe('Interrupted')
     expect(card.interrupted).toBe(true)
   })
 

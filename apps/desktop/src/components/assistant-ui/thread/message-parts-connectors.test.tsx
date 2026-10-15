@@ -108,7 +108,7 @@ describe('manage_connections routing outside guided onboarding', () => {
     // SAFETY: the card reads only `request` off the client in this test.
     $gateway.set({ request: vi.fn().mockResolvedValue({ status: 'ok' }) } as never)
 
-    render(
+    const { container } = render(
       <I18nProvider configClient={null} initialLocale="en">
         <SessionViewProvider value={view(SESSION_ID, STORED_ID)}>
           <Fallback {...props()} />
@@ -119,6 +119,8 @@ describe('manage_connections routing outside guided onboarding', () => {
     await waitFor(() => {
       expect(screen.getAllByRole('button', { name: 'Connect' })).toHaveLength(2)
     })
-    expect(screen.queryByText(/running manage connections/i)).toBeNull()
+    // The card is the call's surface: the one-line pill above it is the step
+    // row, and the generic tool row never stands in for the card.
+    expect(container.querySelector('[data-tool-row]')).toBeNull()
   })
 })

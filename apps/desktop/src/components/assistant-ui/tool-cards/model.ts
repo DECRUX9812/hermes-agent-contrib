@@ -138,7 +138,10 @@ const TITLELESS_TOOLS = new Set([
 
 function toolCardStatus(part: ToolPart, view: ToolView): string {
   if (part.interrupted) {
-    return t('stopped')
+    // A stop is not a lost result: the row for this same call reads
+    // "Interrupted", so the pill says it too. "Stopped" stays for a call the
+    // turn abandoned without ever settling it.
+    return translateNow('assistant.tool.resultInterrupted')
   }
 
   if (TITLELESS_TOOLS.has(part.toolName)) {
