@@ -1,5 +1,5 @@
 import { type ThreadMessage } from '@assistant-ui/react'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { $activeSessionId } from '@/store/session'
@@ -63,7 +63,11 @@ describe('tool parts sealed without a result', () => {
     $activeSessionId.set('sess-1')
     const { container } = render(<Harness message={sealedMessage('delegate_task', { tasks: [{ goal: 'inspect' }] })} />)
 
-    expect(await screen.findByText('Result unavailable')).toBeTruthy()
+    // The call's one-line pill heads the part; the generic row below it is what
+    // reports the missing result, so scope the assertion to that row.
+    await waitFor(() => {
+      expect(container.querySelector('[data-tool-row]')?.textContent).toContain('Result unavailable')
+    })
     expect(container.querySelector('[data-delegate-card]')).toBeNull()
     expect(screen.queryByLabelText('Running')).toBeNull()
   })
@@ -71,7 +75,9 @@ describe('tool parts sealed without a result', () => {
   it('renders a sealed image_generate as the generic row, not a rendering placeholder', async () => {
     const { container } = render(<Harness message={sealedMessage('image_generate', { prompt: 'a cat' })} />)
 
-    expect(await screen.findByText('Result unavailable')).toBeTruthy()
+    await waitFor(() => {
+      expect(container.querySelector('[data-tool-row]')?.textContent).toContain('Result unavailable')
+    })
     expect(container.querySelector('[data-slot="aui_generated-image"]')).toBeNull()
     expect(screen.queryByRole('status')).toBeNull()
   })
