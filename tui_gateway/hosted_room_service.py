@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import os
 import threading
 import time
@@ -91,7 +92,8 @@ class HostedRoomService:
         self.runtime = HostedRoomRuntime(
             db_path=self.db_path, rooms=self.bindings, rpc=self.rpc,
             transport_resolver=self._resolve_member_transport, turn_lock=self._turn_lock,
-            prepare_room=self.prepare_room, publish_terminal=self.publish_terminal,
+            prepare_room=self.prepare_room, on_started=self.publish_started,
+            publish_terminal=self.publish_terminal,
             pending_action=self._set_pending_action,
             poll_interval_seconds=_HOSTED_ROOM_IDLE_FALLBACK_SECONDS,
             active_poll_interval_seconds=_HOSTED_ROOM_ACTIVE_POLL_SECONDS,
@@ -453,6 +455,36 @@ class HostedRoomService:
     def publish_terminal(self, binding: HostedRoomBinding, _task: Mapping[str, Any]) -> None:
         self.prepare_room(binding)
         self.runtime.wakeup()
+
+    def publish_started(self, binding: HostedRoomBinding, task: Mapping[str, Any]) -> None:
+        """Record the admitted member turn before submitting it to the session."""
+        identity = task["identity"]
+        payload = task["payload"]
+        member_id = str(payload["target_member_id"])
+        member = next(
+            (row for row in self._room(binding.room_id).get("members", [])
+             if str(row.get("member_id") or "") == member_id),
+            {})
+        execution_generation = int(task["execution_generation"])
+        digest = hashlib.sha256(
+            f"{identity.task_id}\0{execution_generation}".encode("utf-8")).hexdigest()[:32]
+        hosted_rooms.append_event(
+            self.db_path,
+            room_id=binding.room_id,
+            event_id=f"started:{digest}",
+            kind="turn.started",
+            actor={"kind": "gateway", "id": binding.gateway_id},
+            payload={
+                "member": str(member.get("profile") or member_id),
+                "member_id": member_id,
+                "task_id": identity.task_id,
+                "thread_id": identity.thread_id,
+                "turn_id": identity.turn_id,
+                "execution_generation": execution_generation,
+            },
+            authority_gateway_id=binding.gateway_id,
+            authority_epoch=binding.authority_epoch,
+        )
 
     def create_room(self, *, room_id: str, name: str, members: Any) -> dict[str, Any]:
         normalized = discussion.validate_roster(members, local_profiles=self.local_profiles())

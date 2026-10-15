@@ -67,6 +67,10 @@ async function commitGroupChatRoster(group: string, previous: RosterRow[], seate
 
   updateGroupChat(group, (room: GroupChatRoom) => ({
     ...room,
+    // Hosted rooms have no roster-mutation RPC. Keep their backend transcript
+    // visible, but move future turns back to the renderer rather than silently
+    // driving the old roster server-side.
+    hostedRoomClientOnly: room.hostedRoomCreated ? true : room.hostedRoomClientOnly,
     members: durableGroupChatMembers(seated),
     heldMessages: without(room.heldMessages, key => key),
     holds: without(room.holds, key => key),

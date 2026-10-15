@@ -50,6 +50,7 @@ import {
   groupChatRoomKey,
   groupRoundContributions,
   groupThreadOf,
+  mintGroupThreadId,
   scheduleGroupChatServerSync,
   setGroupChatGoal,
   setGroupChatHoldDetection,
@@ -102,6 +103,25 @@ import { deriveRoomHandoffs, roomEscalations, type RoomHandoff } from './group-r
 import { GroupRoomHeader } from './group-room-header'
 import { KeysHelp, roomKeyHandler, useNeedsYouAlerts, useRoomClock } from './group-room-keys'
 import { disbandGroupChat } from './group-room-lifecycle'
+import {
+  answerHostedRoomApproval,
+  ensureHostedRoom,
+  hostedRoomApprovalActions,
+  hostedRoomApprovalPrompts,
+  hostedRoomOwnerMember,
+  hostedRoomRetryActions,
+  mergeHostedRoomEntries,
+  newHostedRoomEventId,
+  recordHostedRoomEvent,
+  renameHostedRoom,
+  retryHostedRoomTask,
+  roomDriveMode,
+  sendHostedRoomMessage,
+  stopHostedRoom,
+  useHostedRoomView,
+  watchHostedRoom
+} from './hosted-room-log'
+import type { HostedRoomAction } from './hosted-room-log'
 import { GroupLogTail, GroupRoomEmpty } from './group-room-log-tail'
 import { GroupMembersStrip } from './group-room-members'
 import { GroupRoomPanel, type RoomPanelTab } from './group-room-panel'
@@ -170,6 +190,32 @@ export async function renameGroupChat(oldName: string, newName: string, members:
     })
 
     return null
+  }
+
+  const currentRoom = $groupChats.get()[oldName]
+
+  // The hosted Discussion keeps the immutable room id; rename its display
+  // name before the renderer re-keys its local room so a failed write leaves
+  // both sides at the old name.
+  if (currentRoom?.hostedRoomCreated && currentRoom.roomId) {
+    const owner = hostedRoomOwnerMember(currentRoom, members || [])
+
+    if (!owner) {
+      host.notify({ kind: 'error', message: botsText().group.hostedRoomFailed('no local room owner') })
+
+      return null
+    }
+
+    try {
+      await renameHostedRoom(String(currentRoom.roomId), owner, next)
+    } catch (error) {
+      host.notify({
+        kind: 'error',
+        message: botsText().group.hostedRoomFailed(error instanceof Error ? error.message : String(error))
+      })
+
+      return null
+    }
   }
 
   // Move the room record wholesale — log, watermarks, sessions, members,
@@ -563,10 +609,46 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const rooms: Record<string, GroupChatRoom> = useValue($groupChats)
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
 
-  const room: GroupChatRoom = rooms[group] || {
+  const storedRoom: GroupChatRoom = rooms[group] || {
     log: [],
     running: false
   }
+  const hostedRoomId = String(storedRoom.roomId || '')
+  const hostedView = useHostedRoomView(hostedRoomId)
+  const roomMode = roomDriveMode(storedRoom, members, hostedView)
+  const hostedActiveMember = hostedView.activeMemberId
+    ? members.find(member => String(member.targetProfile || member.name) === hostedView.activeMemberId) || null
+    : null
+  const hostedRunning =
+    roomMode === 'hosted' && Boolean(hostedView.driverStatus?.working || hostedView.activeMemberId)
+  const room: GroupChatRoom =
+    roomMode === 'hosted'
+      ? {
+          ...storedRoom,
+          log: mergeHostedRoomEntries(storedRoom.log, hostedView.entries),
+          running: hostedRunning,
+          turn: hostedActiveMember
+        }
+      : storedRoom
+
+  useEffect(() => {
+    const current = $groupChats.get()[group] || storedRoom
+
+    return watchHostedRoom({ group, members, room: current })
+    // The watcher owns room-id minting and hosted capability probing; other
+    // room fields are read again when one of these mode inputs changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    group,
+    members,
+    storedRoom.goal,
+    storedRoom.holdDetection,
+    storedRoom.hostedRoomClientOnly,
+    storedRoom.hostedRoomCreated,
+    storedRoom.listener,
+    storedRoom.limits,
+    storedRoom.roomId
+  ])
 
   const composerKey = groupComposerDraftKey(group, room)
   const composerKeyRef = useRef(composerKey)
@@ -734,9 +816,16 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // Pending member questions for THIS room (#90694), oldest first.
   const clarifyAll: Record<string, GroupRoomPrompt> = useValue($groupClarify)
 
-  const roomClarifies = Object.values(clarifyAll || {})
+  const localRoomClarifies = Object.values(clarifyAll || {})
     .filter(entry => entry?.group === group)
     .sort((a, b) => (a.at || 0) - (b.at || 0))
+  const hostedClarifies = roomMode === 'hosted' ? hostedRoomApprovalPrompts(group, hostedView) : []
+  const roomClarifies = [...localRoomClarifies, ...hostedClarifies]
+  const hostedApprovals = new Map(
+    hostedRoomApprovalActions(hostedView).map(action => [String(action.request_id || ''), action])
+  )
+  const hostedRetries = roomMode === 'hosted' ? hostedRoomRetryActions(hostedView) : []
+  const hostedOwner = hostedRoomOwnerMember(storedRoom, members)
 
   // Focus mode's bright set: the FINAL speaker run — the newest thing that
   // happened. Everything before it dims when focus is on. One rule, no knobs:
@@ -948,6 +1037,83 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     }))
   }
 
+  const sendRoomMessage = async (text: string, thread: null | string, images: Attachment[]) => {
+    const currentRoom = $groupChats.get()[group] || storedRoom
+    const preflightRoom = currentRoom.roomId ? currentRoom : { ...currentRoom, roomId: 'pending' }
+    const currentMembers = memberDescriptors()
+    const supportedTextOnly = images.length === 0
+    const preflight = roomDriveMode(
+      preflightRoom,
+      currentMembers,
+      { capabilities: { driver: true }, status: 'ready' },
+      !supportedTextOnly
+    )
+
+    if (preflight !== 'hosted') {
+      if ((images.length > 0 || currentRoom.hostedRoomCreated) && !currentRoom.hostedRoomClientOnly) {
+        updateGroupChat(group, current => ({ ...current, hostedRoomClientOnly: true }), { sync: false })
+      }
+
+      return Boolean(sendToGroupChat(group, currentMembers, text, thread, images))
+    }
+
+    const hosted = await ensureHostedRoom(group, currentRoom, currentMembers)
+
+    if (hosted.error) {
+      throw new Error(hosted.error)
+    }
+
+    const ensuredRoom = $groupChats.get()[group] || currentRoom
+    const mode = roomDriveMode(ensuredRoom, currentMembers, hosted, !supportedTextOnly)
+    const owner = hostedRoomOwnerMember(ensuredRoom, currentMembers)
+    const roomId = String(ensuredRoom.roomId || '')
+
+    if (mode !== 'hosted' || !owner || !roomId) {
+      return Boolean(sendToGroupChat(group, currentMembers, text, thread, images))
+    }
+
+    const targetThread = thread || mintGroupThreadId()
+    const event = await sendHostedRoomMessage(
+      roomId,
+      owner,
+      text,
+      targetThread,
+      newHostedRoomEventId()
+    )
+    recordHostedRoomEvent(roomId, event, currentMembers)
+    $groupNeedsYou.set({ ...$groupNeedsYou.get(), [group]: false })
+
+    return true
+  }
+
+  const answerRoomPrompt = async (entry: GroupRoomPrompt, _member: GroupMember, answer: string) => {
+    const action = hostedApprovals.get(entry.requestId)
+    const roomId = String(storedRoom.roomId || '')
+
+    if (!action || !hostedOwner || !roomId) {
+      throw new Error('The hosted room approval is no longer available.')
+    }
+
+    await answerHostedRoomApproval(roomId, hostedOwner, action, answer)
+  }
+
+  const retryRoomAction = async (action: HostedRoomAction) => {
+    const roomId = String(storedRoom.roomId || '')
+
+    if (!hostedOwner || !roomId) {
+      return
+    }
+
+    try {
+      await retryHostedRoomTask(roomId, hostedOwner, action)
+    } catch (error) {
+      host.notify({
+        kind: 'error',
+        message: b.group.hostedRoomFailed(error instanceof Error ? error.message : String(error))
+      })
+    }
+  }
+
   commands.stopMember = (thread, member) => {
     void stopGroupMember(group, thread, member, memberDescriptors())
     host.notify({ kind: 'success', message: b.group.stoppedMember(memberLabel(member.name)) })
@@ -971,11 +1137,32 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   // epoch bump + holds the loop marched on to the next member. Thread scope:
   // the run being stopped is the one the latest activity belongs to.
   const stopRoomRun = async () => {
-    await stopGroupThread(group, latestActivity?.thread || null, memberDescriptors())
-    host.notify({
-      kind: 'success',
-      message: b.group.stopped(group)
-    })
+    try {
+      if (roomMode === 'hosted') {
+        const roomId = String(storedRoom.roomId || '')
+
+        if (!hostedOwner || !roomId) {
+          return
+        }
+
+        await stopHostedRoom(roomId, hostedOwner)
+      } else {
+        await stopGroupThread(group, latestActivity?.thread || null, memberDescriptors())
+      }
+
+      host.notify({
+        kind: 'success',
+        message: b.group.stopped(group)
+      })
+    } catch (error) {
+      host.notify({
+        kind: 'error',
+        message:
+          roomMode === 'hosted'
+            ? b.group.hostedRoomFailed(error instanceof Error ? error.message : String(error))
+            : String(error instanceof Error ? error.message : error)
+      })
+    }
   }
 
   const activityPanel = (
@@ -1006,18 +1193,27 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       }
     }))
 
-    // Main composer = START A NEW THREAD with the whole group (Slack shape).
-    // Full descriptors ride into the turn loop: remote members keep their
-    // connection fields so their turns route to their own machines.
-    const minted = sendToGroupChat(group, memberDescriptors(), text, null, images)
+    void (async () => {
+      let sent = false
 
-    if (!minted) {
-      const restored = restoreGroupComposerDraft(composerKeyRef.current, cleared.revision, before)
-
-      if (restored) {
-        setComposerDraft(restored)
+      try {
+        // Main composer = START A NEW THREAD with the whole group (Slack shape).
+        sent = await sendRoomMessage(text, null, images)
+      } catch (error) {
+        host.notify({
+          kind: 'error',
+          message: b.group.hostedRoomFailed(error instanceof Error ? error.message : String(error))
+        })
       }
-    }
+
+      if (!sent) {
+        const restored = restoreGroupComposerDraft(composerKeyRef.current, cleared.revision, before)
+
+        if (restored) {
+          setComposerDraft(restored)
+        }
+      }
+    })()
   }
 
   const submitReply = (thread: string) => {
@@ -1042,17 +1238,27 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       }
     }))
 
-    // Reply box = CONTINUE this thread; the member turns it triggers are
-    // scoped to it.
-    const sent = sendToGroupChat(group, memberDescriptors(), text, thread, images)
+    void (async () => {
+      let sent = false
 
-    if (!sent) {
-      const restored = restoreGroupComposerDraft(composerKeyRef.current, cleared.revision, before)
-
-      if (restored) {
-        setComposerDraft(restored)
+      try {
+        // Reply box = CONTINUE this thread; the member turns it triggers are scoped to it.
+        sent = await sendRoomMessage(text, thread, images)
+      } catch (error) {
+        host.notify({
+          kind: 'error',
+          message: b.group.hostedRoomFailed(error instanceof Error ? error.message : String(error))
+        })
       }
-    }
+
+      if (!sent) {
+        const restored = restoreGroupComposerDraft(composerKeyRef.current, cleared.revision, before)
+
+        if (restored) {
+          setComposerDraft(restored)
+        }
+      }
+    })()
   }
 
   // #91359: recognized @mentions render as inline references; recomputed
@@ -1484,9 +1690,43 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                   ]}
               {roomClarifies.map(entry => (
                 <div className="pt-1" key={`clarify:${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}>
-                  <GroupClarifyCard entry={entry} members={members} />
+                  <GroupClarifyCard
+                    entry={entry}
+                    members={members}
+                    onAnswer={hostedApprovals.has(entry.requestId) ? answerRoomPrompt : undefined}
+                  />
                 </div>
               ))}
+              {hostedRetries.map(action => {
+                const taskId = String(action.task_id || '')
+                const label =
+                  String(action.member || '') || (taskId && taskNames[taskId]) || b.group.threadFallback
+
+                return (
+                  <div
+                    className="flex max-w-full items-start gap-3 rounded-[calc(var(--radius)*1.5)] border border-state-warning/35 bg-state-warning/8 px-3 py-2"
+                    key={`retry:${taskId}:${String(action.execution_generation || '')}`}
+                  >
+                    <span className="i-fluent:alert-urgent-16-regular mt-0.5 size-4 shrink-0 text-state-warning" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-fg">{b.group.retryTitle(label)}</div>
+                      {action.error ? (
+                        <div className="mt-0.5 whitespace-pre-wrap break-words text-xs text-fg-muted">
+                          {String(action.error)}
+                        </div>
+                      ) : null}
+                    </div>
+                    <Button
+                      className="shrink-0"
+                      onClick={() => void retryRoomAction(action)}
+                      size="xs"
+                      variant="outline"
+                    >
+                      {b.group.retry}
+                    </Button>
+                  </div>
+                )
+              })}
               <GroupLogTail
                 allMeta={allMeta}
                 focused={false}

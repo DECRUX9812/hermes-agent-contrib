@@ -36,6 +36,7 @@ import {
 import { groupDisbandMetadataPlan } from './group-membership'
 import { closeGroupChatMainTab } from './group-panes'
 import { clearGroupClarify } from './group-turns'
+import { disbandHostedRoom, hostedRoomOwnerMember } from './hosted-room-log'
 import { getPluginCtx } from './shared'
 import type { GroupChat, RosterRow } from './types'
 
@@ -53,6 +54,20 @@ export async function disbandGroupChat(group: string, members: RosterRow[]) {
   }
 
   const prior = all[group] || {}
+
+  // The hosted Discussion owns this room once created. Retire it before the
+  // renderer drops its local pointer, or a failed/offline write would leave
+  // an orphaned backend room that can keep taking turns.
+  if (prior.hostedRoomCreated && prior.roomId) {
+    const owner = hostedRoomOwnerMember(prior, members)
+
+    if (!owner) {
+      throw new Error('The hosted room has no local owner for disband.')
+    }
+
+    await disbandHostedRoom(String(prior.roomId), owner)
+  }
+
   const metaBefore = $botMeta.get()
   const cleanup = groupDisbandMetadataPlan(group, members, prior, $lastRoster.get(), metaBefore)
   let metadataPersistence: Promise<unknown> = Promise.resolve()

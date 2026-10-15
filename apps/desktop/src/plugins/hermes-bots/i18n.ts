@@ -420,6 +420,8 @@ type BotsMessages = {
     needsYourInput: string
     noMembersToSend: (group: string) => string
     pictureGenerationFailed: string
+    /** A backend-hosted room action (send, rename, stop, approve, retry) failed. */
+    hostedRoomFailed: (error: string) => string
     nameTaken: (name: string) => string
     memberCount: (count: number) => string
     /** The reader's own lines in a room: the transcript speaker and the roster preview. */
@@ -1378,6 +1380,7 @@ const en: BotsMessages = {
     noMembersToSend: group =>
       `${group} has no members to send to — add a bot, or reopen the room if members are still loading.`,
     pictureGenerationFailed: 'Group picture generation failed',
+    hostedRoomFailed: error => `The group room action failed: ${error}`,
     nameTaken: name => `A group named “${name}” already exists.`,
     memberCount: count => `${count} bots`,
     you: 'You',
@@ -2338,6 +2341,7 @@ const ja: BotsMessages = {
     noMembersToSend: group =>
       `${group} に送信先のメンバーがいません。ボットを追加するか、メンバーの読み込み中であればルームを開き直してください。`,
     pictureGenerationFailed: 'グループ画像の生成に失敗しました',
+    hostedRoomFailed: error => `グループルームの操作に失敗しました: ${error}`,
     nameTaken: name => `「${name}」という名前のグループはすでに存在します。`,
     memberCount: count => `ボット${count}体`,
     you: 'あなた',
@@ -3280,6 +3284,7 @@ const zh: BotsMessages = {
     needsYourInput: '此群聊中有机器人需要你输入',
     noMembersToSend: group => `${group} 没有可发送的成员——请添加机器人，如果成员仍在加载，请重新打开该群聊。`,
     pictureGenerationFailed: '群组图片生成失败',
+    hostedRoomFailed: error => `群聊房间操作失败：${error}`,
     nameTaken: name => `已存在名为“${name}”的群聊。`,
     memberCount: count => `${count} 个机器人`,
     you: '你',
@@ -4217,6 +4222,7 @@ const zhHant: BotsMessages = {
     needsYourInput: '此群組聊天中有機器人需要您的輸入',
     noMembersToSend: group => `${group} 沒有可傳送的成員——請新增機器人，若成員仍在載入中，請重新開啟該群組聊天。`,
     pictureGenerationFailed: '群組圖片產生失敗',
+    hostedRoomFailed: error => `群組聊天室操作失敗：${error}`,
     nameTaken: name => `已存在名為「${name}」的群組聊天。`,
     memberCount: count => `${count} 個機器人`,
     you: '您',
