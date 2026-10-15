@@ -4419,6 +4419,7 @@ export const esOverrides = {
     attach: 'Adjuntar',
     queued: count => `${count} en cola`,
     queuedPaused: count => `${count} en cola — en pausa`,
+    queuedPillFolded: 'en cola',
     attachmentOnly: 'Turno solo con adjunto',
     emptyTurn: 'Turno vacío',
     hiddenQueued: 'Nota de configuración',

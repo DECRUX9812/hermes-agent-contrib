@@ -3532,6 +3532,10 @@ export interface Translations extends NoticeTranslations {
     attach: string
     queued: (count: number) => string
     queuedPaused: (count: number) => string
+    /** Composer pill bar, folded state: the noun that follows the count (the
+     *  pill renders the number itself so it can carry tabular figures) — e.g.
+     *  English "3 queued turns · Edit". */
+    queuedPillFolded: string
     attachmentOnly: string
     emptyTurn: string
     hiddenQueued: string

@@ -83,6 +83,7 @@ import { useStatusDrawer } from './hooks/use-status-drawer'
 import { useSessionStatusPresence } from './hooks/use-status-presence'
 import { ActionBadges } from './micro-actions'
 import { QueuePanel } from './queue-panel'
+import { QueuedPills } from './queued-pills'
 import { RestoredDraftNotice } from './restored-draft-notice'
 import { beginComposerComposition, RICH_INPUT_SLOT } from './rich-editor'
 import { useComposerScope, useComposerSurfaceId } from './scope'
@@ -1052,6 +1053,25 @@ export function ChatBar({
                     </div>
                   )}
                   {attachments.length > 0 && <AttachmentList attachments={attachments} onRemove={onRemoveAttachment} />}
+                  {/* The queue's own trace next to the input: the drawer that
+                    lists the same entries is collapsed by default, so a turn
+                    sent mid-run would otherwise leave no visible trace. */}
+                  {activeQueueSessionKey && queuedPrompts.length > 0 && (
+                    <QueuedPills
+                      entries={queuedPrompts}
+                      onDelete={id => {
+                        if (!removeQueuedPrompt(activeQueueSessionKey, id)) {
+                          return
+                        }
+
+                        // A removed entry must not stay "being edited".
+                        if (queueEdit?.entryId === id) {
+                          exitQueuedEdit('cancel')
+                        }
+                      }}
+                      onEdit={beginQueuedEdit}
+                    />
+                  )}
                   <div
                     className={cn(
                       'grid w-full',

@@ -3468,6 +3468,7 @@ export const jaOverrides = {
     attach: '添付',
     queued: count => `${count} 件キュー済み`,
     queuedPaused: count => `${count} 件キュー済み — 一時停止中`,
+    queuedPillFolded: '件キュー済み',
     attachmentOnly: '添付のみのターン',
     emptyTurn: '空のターン',
     attachments: count => `${count} 件の添付`,

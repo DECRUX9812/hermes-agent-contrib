@@ -3304,6 +3304,7 @@ export const ruOverrides = {
     attach: 'Прикрепить',
     queued: count => `${count} в очереди`,
     queuedPaused: count => `${count} в очереди — пауза`,
+    queuedPillFolded: 'в очереди',
     attachmentOnly: 'Ход только с вложениями',
     emptyTurn: 'Пустой ход',
     attachments: count => `${count} ${RU_NOUN(count, 'вложение', 'вложения', 'вложений')}`,
