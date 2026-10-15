@@ -99,6 +99,21 @@ describe('ToolActivityStack', () => {
     expect(screen.getByText('Connection refused')).toBeTruthy()
   })
 
+  it('names each card by its tool and status for assistive tech', () => {
+    const failed = view({ reason: 'Connection refused', state: 'error', status: 'Opening example.com' })
+    render(
+      <ToolActivityStack
+        groups={[
+          group({ cards: [failed], state: 'error' }),
+          { cards: browserCards(), family: 'browser', icon: 'globe', key: 'gb', name: 'Browser', state: 'done' }
+        ]}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Web: Opening example.com. Connection refused' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Used Browser ×3' })).toBeTruthy()
+  })
+
   it('calls onReviewApproval from Review without toggling details', () => {
     const onReviewApproval = vi.fn()
     const waiting = view({ state: 'approval', status: 'Editing files' })
