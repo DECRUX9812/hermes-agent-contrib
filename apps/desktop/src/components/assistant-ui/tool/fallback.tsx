@@ -632,7 +632,7 @@ function ToolEntry({ part }: ToolEntryProps) {
     )
   }
 
-  if (part.toolResultMetadata?.mcp_app && !isPending && view.status !== 'error') {
+  if (part.toolResultMetadata?.mcp_app && !isPending) {
     return (
       <div className="grid min-w-0 gap-1">
         <ToolStepPill card={card} />
@@ -704,7 +704,7 @@ function ToolEntry({ part }: ToolEntryProps) {
           </span>
         </DisclosureRow>
       </div>
-      {part.toolResultMetadata?.mcp_app && !isPending && view.status !== 'error' && (
+      {part.toolResultMetadata?.mcp_app && !isPending && (
         // The tool's own MCP App is the call's deliverable: shown whether or not the row is expanded.
         <div className="w-full min-w-0 max-w-full p-1.5">
           <McpAppFrame app={part.toolResultMetadata.mcp_app} args={part.args} result={part.result} />
@@ -749,7 +749,7 @@ function ToolEntry({ part }: ToolEntryProps) {
           )}
           {showDetail &&
             !showPayload &&
-            (view.status === 'error' ? (
+            ((view.status as string) === 'error' ? (
               detailSections.summary || detailSections.body ? (
                 <div className="max-w-full text-xs leading-relaxed text-danger">
                   {detailSections.summary && (
