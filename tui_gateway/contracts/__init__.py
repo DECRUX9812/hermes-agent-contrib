@@ -11,6 +11,7 @@ from . import (
     delegation_reports,
     display,
     events,
+    fork_approvals,
     fork_bot,
     fork_browser,
     fork_computer,

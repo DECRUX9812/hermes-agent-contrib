@@ -629,6 +629,24 @@ CREATE INDEX IF NOT EXISTS idx_session_model_usage_session ON session_model_usag
 CREATE INDEX IF NOT EXISTS idx_session_model_usage_model ON session_model_usage(model);
 CREATE INDEX IF NOT EXISTS idx_async_delegations_delivery
     ON async_delegations(delivery_state, completed_at);
+
+CREATE TABLE IF NOT EXISTS fork_approvals (
+    request_id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    tool_call_id TEXT NOT NULL DEFAULT '',
+    tool_name TEXT NOT NULL DEFAULT '',
+    command TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    created_at REAL NOT NULL,
+    status TEXT NOT NULL,
+    decided_at REAL,
+    choice TEXT,
+    ran_at REAL,
+    reason TEXT,
+    owner TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_fork_approvals_session ON fork_approvals(session_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_fork_approvals_tool_call ON fork_approvals(tool_call_id);
 """
 
 # Indexes on later-added columns must run AFTER _reconcile_columns(), or executescript fails on legacy DBs.

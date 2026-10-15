@@ -51,6 +51,10 @@ def _is_interactive_cli() -> bool:
     return is_truthy_value(ctx_val) if ctx_val is not None else env_var_enabled("HERMES_INTERACTIVE")
 
 
+def current_tool_call_id() -> str:
+    return _approval_tool_call_id.get()
+
+
 def _fire_approval_hook(hook_name: str, **kwargs) -> None:
     """Invoke a plugin lifecycle hook (pre_approval_request / post_approval_response).
 
