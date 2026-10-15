@@ -324,8 +324,8 @@ export function BotRow({
               <span
                 aria-label={healthLabel}
                 className={cn(
-                  'flex shrink-0 items-center text-[0.6875rem]',
-                  health.kind === 'unreachable' ? 'text-destructive' : 'text-amber-600 dark:text-amber-300'
+                  'flex shrink-0 items-center text-ui-2xs',
+                  health.kind === 'unreachable' ? 'text-destructive' : 'text-warning'
                 )}
               >
                 <Codicon name={health.kind === 'unreachable' ? 'debug-disconnect' : 'warning'} />
@@ -342,7 +342,7 @@ export function BotRow({
                     ? `${b.roster.needsAttention}: ${botAttentionHint(attention.reason)}`
                     : b.roster.attentionItems(attention.count)
                 }
-                className="flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums text-amber-600 dark:text-amber-300"
+                className="flex shrink-0 items-center gap-0.5 font-mono text-ui-2xs font-medium tabular-nums text-warning"
                 onClick={event => {
                   event.stopPropagation()
                   open()
@@ -380,7 +380,7 @@ export function BotRow({
               <span
                 className={cn(
                   'min-w-0 truncate flex items-center gap-1.5',
-                  liveTone === 'amber' && 'text-amber-600 dark:text-amber-300',
+                  liveTone === 'amber' && 'text-warning',
                   liveTone === 'live' && 'text-(--ui-text-secondary)',
                   !liveText && fromBot && 'italic'
                 )}

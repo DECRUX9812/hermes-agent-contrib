@@ -38,10 +38,10 @@ function HomeFeedIcon({ kind }: { kind: HomeFeedItemKind }) {
       return <MessageQuestion className="size-4 shrink-0 text-violet-300" />
 
     case 'error':
-      return <AlertCircle className="size-4 shrink-0 text-red-400" />
+      return <AlertCircle className="size-4 shrink-0 text-danger" />
 
     case 'secret':
-      return <KeyRound className="size-4 shrink-0 text-amber-400" />
+      return <KeyRound className="size-4 shrink-0 text-warning" />
 
     case 'sudo':
       return <Terminal className="size-4 shrink-0 text-(--ui-text-secondary)" />
@@ -54,13 +54,13 @@ function HomeFeedIcon({ kind }: { kind: HomeFeedItemKind }) {
       return <Lock className="size-4 shrink-0 text-(--ui-text-secondary)" />
 
     case 'cronOverdue':
-      return <AlertTriangle className="size-4 shrink-0 text-amber-400" />
+      return <AlertTriangle className="size-4 shrink-0 text-warning" />
 
     case 'cronDue':
       return <Clock className="size-4 shrink-0 text-primary" />
 
     case 'prReview':
-      return <GitFork className="size-4 shrink-0 text-emerald-400" />
+      return <GitFork className="size-4 shrink-0 text-success" />
 
     default:
       return <Clock className="size-4 shrink-0 text-(--ui-text-secondary)" />

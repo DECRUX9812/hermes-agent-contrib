@@ -88,9 +88,8 @@ const TONE_STYLES: Record<EmptyStateTone, { cube: string; primary: string }> = {
     primary: 'border-border bg-background text-foreground hover:bg-accent'
   },
   warning: {
-    cube: 'text-amber-500/70 dark:text-amber-300/70',
-    primary:
-      'border-amber-400/40 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:border-amber-300/30 dark:bg-amber-300/15 dark:text-amber-100 dark:hover:bg-amber-300/20'
+    cube: 'text-warning/70',
+    primary: 'border-warning/40 bg-warning/10 text-fg hover:bg-warning/20'
   }
 }
 
@@ -775,9 +774,7 @@ export function SourceView({ filePath, language, text }: { filePath?: string; la
                     className={cn(
                       'h-5 w-9 pr-2 leading-5 tabular-nums transition-colors',
                       filePath && 'cursor-pointer',
-                      selected
-                        ? 'bg-amber-200/45 text-amber-900 dark:bg-amber-300/20 dark:text-amber-100'
-                        : filePath && 'hover:text-foreground'
+                      selected ? 'bg-warning/25 text-fg' : filePath && 'hover:text-foreground'
                     )}
                     draggable={Boolean(filePath)}
                     key={line}
@@ -1169,7 +1166,7 @@ export function LocalFilePreview({
           trailing={<EditControls dirty={dirty} onCancel={cancelEdit} onSave={() => void saveEdit()} saving={saving} />}
         />
         {conflict && (
-          <div className="shrink-0 border-b border-amber-400/40 bg-amber-50 px-3 py-2 text-[0.7rem] text-amber-900 dark:border-amber-300/30 dark:bg-amber-300/10 dark:text-amber-100">
+          <div className="shrink-0 border-b border-warning/40 bg-warning/10 px-3 py-2 text-[0.7rem] text-fg">
             <div className="font-semibold">{t.preview.diskChangedTitle}</div>
             <div className="mt-0.5 leading-relaxed">{t.preview.diskChangedBody}</div>
             <div className="mt-1.5 flex gap-3">

@@ -532,6 +532,10 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
       useContext(PopoverOpen) ? createElement('div', { className, 'data-testid': testId }, children) : null,
     PopoverTrigger: ({ children }: { children?: ReactNode }) => children,
     profileColor,
+    // The board's column dots ride the shared status mark; a stub keeps the
+    // state visible to assertions without dragging in the real component.
+    StatusBadge: ({ className, state }: { className?: string; state: string }) =>
+      createElement('span', { className, 'data-status': state }),
     Streamdown: undefined,
     queryClient: { invalidateQueries: () => undefined },
     useQuery: () => ({ data: [], isLoading: false }),

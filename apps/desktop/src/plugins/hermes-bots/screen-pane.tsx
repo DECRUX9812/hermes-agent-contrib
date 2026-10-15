@@ -447,7 +447,7 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
               {t.screen.imageSwitchKeep}
             </Button>
           </div>
-          {error ? <div className="text-xs text-red-500">{error}</div> : null}
+          {error ? <div className="text-xs text-danger">{error}</div> : null}
         </div>
       </div>
     )
@@ -463,7 +463,7 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
             {busy ? <GlyphSpinner /> : <Codicon name="play" />}
             {t.screen.start}
           </Button>
-          {error ? <div className="text-xs text-red-500">{error}</div> : null}
+          {error ? <div className="text-xs text-danger">{error}</div> : null}
         </div>
       </div>
     )
@@ -492,14 +492,14 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
         {lease?.holder === 'human' && lease.reason ? (
           // Why control was taken stays readable while the human acts.
           <span
-            className="max-w-[40%] truncate rounded bg-amber-500/15 px-2 py-0.5 text-amber-600 dark:text-amber-400"
+            className="max-w-[40%] truncate rounded bg-warning/10 px-2 py-0.5 text-warning"
             title={lease.reason}
           >
             <Codicon name="bell" /> {lease.reason}
           </span>
         ) : null}
         {iHold ? (
-          <span className="rounded bg-red-500/15 px-2 py-0.5 font-medium text-red-600 dark:text-red-400">
+          <span className="rounded bg-warning/10 px-2 py-0.5 font-medium text-warning">
             {t.screen.youControl}
           </span>
         ) : humanOther ? (
@@ -542,7 +542,9 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
       </div>
       <div
         className={
-          iHold ? 'relative min-h-0 grow bg-black ring-2 ring-inset ring-red-500/70' : 'relative min-h-0 grow bg-black'
+          iHold
+            ? 'relative min-h-0 grow bg-black ring-2 ring-inset ring-warning/70'
+            : 'relative min-h-0 grow bg-black'
         }
       >
         {/* data-terminal: the same keyboard-ownership marker the terminal pane uses, so the app's
@@ -556,12 +558,12 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
           </div>
         ) : null}
         {evicted ? (
-          <div className="pointer-events-none absolute inset-x-0 top-0 bg-amber-950/80 px-3 py-1.5 text-center text-xs text-amber-100">
+          <div className="pointer-events-none absolute inset-x-0 top-0 bg-warning/15 px-3 py-1.5 text-center text-xs text-warning">
             {t.screen.controlTaken}
           </div>
         ) : null}
         {conn === 'error' && error ? (
-          <div className="absolute inset-x-0 bottom-0 bg-red-950/80 px-3 py-1.5 text-xs text-red-200">{error}</div>
+          <div className="absolute inset-x-0 bottom-0 bg-danger/15 px-3 py-1.5 text-xs text-danger">{error}</div>
         ) : null}
       </div>
     </div>

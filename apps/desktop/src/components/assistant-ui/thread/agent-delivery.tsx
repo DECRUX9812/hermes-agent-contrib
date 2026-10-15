@@ -2,7 +2,9 @@ import { type ToolCallMessagePartProps } from '@assistant-ui/react'
 import { type FC, useEffect, useState } from 'react'
 
 import { messageContentText } from '@/components/assistant-ui/thread/content'
+import { META_LINE_BODY_CLASS, META_LINE_CLASS } from '@/components/assistant-ui/thread/meta-line'
 import { AGENT_MESSAGE_RE, agentAvatarCache, resolveAgentAvatar } from '@/components/assistant-ui/thread/user-message'
+import { cn } from '@/lib/utils'
 
 // Sender-side inter-agent delivery: `hermes -p <agent> chat … -q "Message
 // from 🤖 <sender>…"` run through the terminal tool IS the messaging
@@ -118,8 +120,7 @@ export function replyTextFromResult(result: unknown): string {
     .trim()
 }
 
-const NOTICE_CLASS =
-  'flex max-w-[min(86%,44rem)] flex-col gap-0.5 self-center px-2 py-0.5 text-[0.6875rem] leading-5 text-muted-foreground/60'
+const NOTICE_CLASS = cn(META_LINE_CLASS, 'flex flex-col gap-0.5')
 
 const AgentGlyph: FC<{ handle: string }> = ({ handle }) => {
   const [avatar, setAvatar] = useState<null | string>(() => agentAvatarCache.get(handle.toLowerCase())?.url ?? null)
@@ -184,9 +185,7 @@ export const AgentDeliveryNotice: FC<ToolCallMessagePartProps> = props => {
             <summary className="cursor-pointer select-none text-center text-muted-foreground/45 hover:text-muted-foreground/70">
               show message
             </summary>
-            <div className="mt-1 max-w-[36rem] whitespace-pre-wrap rounded-lg border border-(--ui-stroke-tertiary) px-3 py-2 text-left text-[0.75rem] leading-5 text-foreground/85">
-              {replyBody}
-            </div>
+            <div className={cn(META_LINE_BODY_CLASS, 'whitespace-pre-wrap')}>{replyBody}</div>
           </details>
         </div>
       )}
