@@ -2,7 +2,6 @@ import { atom, computed } from 'nanostores'
 
 import type { ClientSessionState } from '@/app/types'
 import { type ChatMessage, chatMessageText, finalizeInterruptedMessages, sealOpenToolParts } from '@/lib/chat-messages'
-import { createClientSessionState } from '@/lib/chat-runtime'
 import type { ErrorSurface } from '@/lib/error-surface'
 import { stableArray, stableRecord } from '@/lib/stable-array'
 import type { SessionInfo } from '@/types/hermes'
@@ -76,6 +75,15 @@ export const $skillsByStoredId = computed([$sessionStates, $sessions], (states, 
 // not completion: long tool calls can legitimately stay quiet, so this is a
 // presentation hint and never mutates the backend-derived busy state.
 export const $stalledSessionIds = atom<string[]>([])
+
+// In-flight `reconcileBusyStatesOnReconnect` count. A reload or gateway switch
+// starts with no busy claim at all, and the window only learns what the backend
+// still runs from the snapshot — so between the session list leaving its
+// loading state and that snapshot landing, an absent claim is ignorance, not
+// "idle". The queue drains wait on this (a count, because a primary boot
+// reconcile and a secondary socket's reopen can overlap): draining on ignorance
+// submits a queued follow-up into a live run.
+export const $busyClaimsPending = atom(0)
 
 export function setSessionStalled(storedSessionId: string | null | undefined, stalled: boolean) {
   if (!storedSessionId) {
@@ -755,6 +763,12 @@ type SessionStatusRequest = (
 
 const textValue = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
 
+/** Does the snapshot still run this session, under either identity a cached
+ *  state can answer to? A respawn re-mints the runtime id, never the durable
+ *  stored key, so both are asked. */
+const snapshotRuns = (running: ReadonlyMap<string, RunningSession>, ids: ReadonlyArray<null | string>): boolean =>
+  ids.some(id => id !== null && running.has(id))
+
 /** Which sessions the backend still runs, indexed under BOTH identities a
  *  cached state can answer to: the runtime id it was bound to and the durable
  *  stored key. `null` means no answer at all (a gateway without the method, an
@@ -812,14 +826,19 @@ async function fetchRunningSessions(request: SessionStatusRequest): Promise<Map<
  *  for the same durable session under an id the snapshot no longer lists is
  *  dropped first: it can never receive a settle event, so it would hold the
  *  session busy forever after the live claim cleared. */
-function claimRunningSessions(running: ReadonlyMap<string, RunningSession>) {
+async function claimRunningSessions(running: ReadonlyMap<string, RunningSession>) {
+  const fresh = [...new Set(running.values())].filter(session => !$sessionStates.get()[session.runtimeId])
+
+  if (fresh.length === 0) {
+    return
+  }
+
+  // Loaded lazily: the state factory lives beside the chat runtime, and that
+  // module's React component graph has no business in a store's import graph.
+  const { createClientSessionState } = await import('@/lib/chat-runtime')
   const liveRuntimeIds = new Set([...running.values()].map(session => session.runtimeId))
 
-  for (const session of new Set(running.values())) {
-    if ($sessionStates.get()[session.runtimeId]) {
-      continue
-    }
-
+  for (const session of fresh) {
     if (session.storedId) {
       for (const [cachedRuntimeId, cached] of Object.entries($sessionStates.get())) {
         // A scoped entry belongs to another socket's reconcile.
@@ -895,11 +914,27 @@ function claimRunningSessions(running: ReadonlyMap<string, RunningSession>) {
  *  With no `request` (a caller that has nobody to ask) the historic blind
  *  retire stands. With a `request` whose snapshot failed, NOTHING is retired:
  *  missing data is not a finished turn, and the ordinary settle path still
- *  clears a claim whose turn really ended. */
+ *  clears a claim whose turn really ended.
+ *
+ *  While the snapshot is in flight the queue drains are held
+ *  ($busyClaimsPending): the session list can leave its loading state — the
+ *  edge they wake on — before this call publishes its claims, and a drain that
+ *  read that gap as idle would submit a queued follow-up into the live run. */
 export async function reconcileBusyStatesOnReconnect(
   scope?: string,
   request?: null | SessionStatusRequest
 ): Promise<void> {
+  // Hold the drains while the snapshot is in flight (see $busyClaimsPending).
+  $busyClaimsPending.set($busyClaimsPending.get() + 1)
+
+  try {
+    await reconcileBusyClaims(scope, request)
+  } finally {
+    $busyClaimsPending.set($busyClaimsPending.get() - 1)
+  }
+}
+
+async function reconcileBusyClaims(scope?: string, request?: null | SessionStatusRequest): Promise<void> {
   const states = $sessionStates.get()
 
   // A SCOPED reconcile can only act on claims this mirror already holds for
@@ -919,10 +954,7 @@ export async function reconcileBusyStatesOnReconnect(
 
   const focusedRuntimeId = $activeSessionId.get()
   const focusedStoredId = $selectedStoredSessionId.get()
-  const focusedIsRunning = Boolean(
-    running &&
-      ((focusedRuntimeId && running.has(focusedRuntimeId)) || (focusedStoredId && running.has(focusedStoredId)))
-  )
+  const focusedIsRunning = running !== null && snapshotRuns(running, [focusedRuntimeId, focusedStoredId])
   let retiredFocusedTurn = false
 
   // Only the primary socket has a confirm producer for a parked completion
@@ -992,7 +1024,7 @@ export async function reconcileBusyStatesOnReconnect(
     }
 
     if (running && scope === undefined) {
-      claimRunningSessions(running)
+      await claimRunningSessions(running)
     }
   } finally {
     deferringReconcileUnread = false

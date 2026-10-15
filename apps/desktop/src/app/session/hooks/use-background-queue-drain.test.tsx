@@ -21,7 +21,13 @@ import {
   setSessions,
   setSessionsLoading
 } from '@/store/session'
-import { $sessionStates, clearAllSessionStates, publishSessionState, reconcileBusyStatesOnReconnect } from '@/store/session-states'
+import {
+  $busyClaimsPending,
+  $sessionStates,
+  clearAllSessionStates,
+  publishSessionState,
+  reconcileBusyStatesOnReconnect
+} from '@/store/session-states'
 import type { SessionInfo } from '@/types/hermes'
 
 import { useBackgroundQueueDrain } from './use-background-queue-drain'
@@ -81,6 +87,7 @@ describe('useBackgroundQueueDrain', () => {
     // Production drain waits for the sidebar list. Tests that assert drain
     // behavior are post-load unless they opt into the loading gate.
     setSessionsLoading(false)
+    $busyClaimsPending.set(0)
   })
 
   afterEach(() => {
@@ -92,6 +99,7 @@ describe('useBackgroundQueueDrain', () => {
     resetFrozenQueuedTransportsForTests()
     $sessions.set([])
     setSessionsLoading(true)
+    $busyClaimsPending.set(0)
     clearNotifications()
     clearAllSessionStates()
   })
@@ -361,6 +369,31 @@ describe('useBackgroundQueueDrain', () => {
     })
 
     await waitFor(() => expect(getQueuedPrompts('stored-session-a')).toHaveLength(0))
+  })
+
+  // The b4 boundary, first half: the session list settles before the reconcile's
+  // snapshot lands, so a drain that only waited for the list would read the
+  // still-running turn as idle. The in-flight snapshot is part of discovery.
+  it('does not drain while a busy-claim snapshot is still in flight', async () => {
+    setSessionsLoading(false)
+    $busyClaimsPending.set(1)
+
+    const runtimeMap = { current: new Map([['stored-session-a', 'rt-session-a']]) }
+    const submitText = vi.fn(async () => true)
+
+    enqueueQueuedPrompt('stored-session-a', { text: 'wait for the snapshot', attachments: [] })
+
+    render(<Harness runtimeMap={runtimeMap} submitText={submitText} />)
+
+    await new Promise(resolve => window.setTimeout(resolve, 0))
+    expect(submitText).not.toHaveBeenCalled()
+    expect(getQueuedPrompts('stored-session-a')).toHaveLength(1)
+
+    // Snapshot landed and reported the session idle: the entry flows.
+    act(() => $busyClaimsPending.set(0))
+
+    await waitFor(() => expect(submitText).toHaveBeenCalledTimes(1))
+    expect(getQueuedPrompts('stored-session-a')).toHaveLength(0)
   })
 
   // The b4 boundary: a reconnect that reads a still-running turn as idle hands

@@ -154,12 +154,20 @@ test('a queued follow-up stays visible while the bot runs and is never lost on r
 
       test.info().annotations.push({ type: 'reload', description: method })
 
-      // The queue is persisted, so the follow-up cannot be lost: on the fresh
-      // window it is either the composer's pill or already handed to the run
-      // (a stored user row). Never both, never neither.
+      // The first turn is still held on the backend, so the fresh window has to
+      // read that run as live and keep the follow-up queued. Handing it to the
+      // run here is the bug: the reconnect retired every busy claim, the session
+      // list left its loading state, and the drain fired into a turn that was
+      // still going — one that emits no delta to re-assert itself.
       const landed = async () => `${await queuedPills(page).count()}-${await storedFollowUps(page)}`
 
-      await expect.poll(landed, { timeout: 120_000 }).toMatch(/^(0-1|1-0)$/)
+      await expect.poll(landed, { timeout: 120_000 }).toBe('1-0')
+
+      // And it stays queued: past the drain's retry interval, which is when a
+      // reconnect that read the run as idle would have submitted it.
+      await page.waitForTimeout(2_000)
+      expect(await landed()).toBe('1-0')
+      expect(provider.completions.filter(item => item.marker === U(2))).toHaveLength(0)
 
       test.info().annotations.push({ type: 'queued-after-reload', description: await landed() })
       await shot(page, '4-botpane', 'queue-pill-after-reload')

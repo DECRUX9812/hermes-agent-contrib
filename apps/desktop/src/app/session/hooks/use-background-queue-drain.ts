@@ -24,7 +24,7 @@ import {
   idsShareLineage,
   sessionMatchesStoredId
 } from '@/store/session'
-import { $workingSessionIds } from '@/store/session-states'
+import { $busyClaimsPending, $workingSessionIds } from '@/store/session-states'
 
 import type { SubmitTextOptions } from './use-prompt-actions/utils'
 
@@ -57,6 +57,7 @@ export function useBackgroundQueueDrain({
   const queuedPromptsBySession = useStore($queuedPromptsBySession)
   const parkedQueueSessions = useStore($parkedQueueSessions)
   const sessionsLoading = useStore($sessionsLoading)
+  const busyClaimsPending = useStore($busyClaimsPending)
   const workingSessionIds = useStore($workingSessionIds)
   const submitTextRef = useRef(submitText)
   const drainingSessionIdsRef = useRef(new Set<string>())
@@ -227,7 +228,11 @@ export function useBackgroundQueueDrain({
     // Preserve the retry budget while session discovery runs at boot, on a
     // gateway/profile switch, or during a refresh over an empty list.
     // Once discovery settles, submitText can resume by stored id.
-    if (!enabled || sessionsLoading) {
+    // A busy-claim snapshot still in flight counts as discovery: the session
+    // list can leave its loading state before the reconcile publishes what the
+    // backend still runs, and draining into that gap hands a queued follow-up
+    // to a live run this window cannot see.
+    if (!enabled || sessionsLoading || busyClaimsPending > 0) {
       return
     }
 
@@ -264,6 +269,7 @@ export function useBackgroundQueueDrain({
       drainSessionQueue(sessionKey, entry)
     }
   }, [
+    busyClaimsPending,
     drainSessionQueue,
     enabled,
     parkedQueueSessions,
