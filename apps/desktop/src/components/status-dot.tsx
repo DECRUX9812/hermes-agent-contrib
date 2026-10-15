@@ -3,24 +3,35 @@ import { memo } from 'react'
 
 import { cn } from '@/lib/utils'
 
-export type StatusTone = 'good' | 'muted' | 'warn' | 'bad'
+export type StatusState = 'running' | 'queued' | 'needs-approval' | 'done' | 'error'
 
-const TONE_BG: Record<StatusTone, string> = {
-  good: 'bg-primary',
-  muted: 'bg-muted-foreground/40',
-  warn: 'bg-amber-500',
-  bad: 'bg-destructive'
+const STATE_CLASS: Record<StatusState, string> = {
+  running: 'bg-brand',
+  queued: 'bg-fg-subtle',
+  'needs-approval': 'bg-warning',
+  done: 'bg-success',
+  error: 'bg-danger'
 }
 
-interface StatusDotProps extends ComponentProps<'span'> {
-  tone: StatusTone
+interface StatusBadgeProps extends ComponentProps<'span'> {
+  state: StatusState
 }
 
-export const StatusDot = memo(function StatusDot({ className, tone, ...props }: StatusDotProps) {
+/** Shared five-state status mark. A supplied aria-label makes the mark
+ *  announce itself; otherwise the surrounding row provides its label. */
+export const StatusBadge = memo(function StatusBadge({
+  'aria-label': ariaLabel,
+  className,
+  state,
+  ...props
+}: StatusBadgeProps) {
   return (
     <span
-      aria-hidden="true"
-      className={cn('inline-block size-1.5 rounded-full', TONE_BG[tone], className)}
+      aria-hidden={ariaLabel ? undefined : true}
+      aria-label={ariaLabel}
+      className={cn('inline-block size-1.5 shrink-0 rounded-full', STATE_CLASS[state], className)}
+      data-status={state}
+      role={ariaLabel ? 'img' : undefined}
       {...props}
     />
   )

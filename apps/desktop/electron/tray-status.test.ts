@@ -70,8 +70,8 @@ describe('sanitizeTrayStatusPush', () => {
   })
 
   it('drops a malformed needs-input count to zero', () => {
-    expect(sanitizeTrayStatusPush(push({ needsInput: 'lots' }) as never)?.needsInput).toBe(0)
-    expect(sanitizeTrayStatusPush(push({ needsInput: Number.NaN }) as never)?.needsInput).toBe(0)
+    expect(sanitizeTrayStatusPush(push({ needsInput: 'lots' } as never))?.needsInput).toBe(0)
+    expect(sanitizeTrayStatusPush(push({ needsInput: Number.NaN }))?.needsInput).toBe(0)
   })
 
   it('caps the recent-session list and truncates long titles', () => {

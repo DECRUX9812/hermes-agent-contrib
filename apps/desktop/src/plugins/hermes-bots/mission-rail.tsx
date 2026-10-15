@@ -20,6 +20,7 @@ import {
   host,
   PanelEmpty,
   ReachCard,
+  StatusBadge,
   Tip,
   useI18n,
   useValue
@@ -231,11 +232,19 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
         <ul className="grid gap-1.5" data-testid="rail-approvals">
           {mine.map(item => (
             <li className="flex gap-2.5 border-b border-(--ui-stroke-tertiary) px-1 py-2 last:border-0" key={item.id}>
-              <Codicon
-                className="mt-0.5 shrink-0 text-warning"
-                name={ATTENTION_ICONS[item.kind] ?? 'bell'}
-                size="0.95rem"
-              />
+              {item.kind === 'approval' ? (
+                <StatusBadge
+                  aria-label={b.triage.needsInput(name)}
+                  className="mt-1"
+                  state="needs-approval"
+                />
+              ) : (
+                <Codicon
+                  className="mt-0.5 shrink-0 text-warning"
+                  name={ATTENTION_ICONS[item.kind] ?? 'bell'}
+                  size="0.95rem"
+                />
+              )}
               <span className="grid min-w-0 gap-0.5">
                 <span className="wrap-anywhere text-ui-sm font-medium leading-snug text-fg">
                   {item.title}

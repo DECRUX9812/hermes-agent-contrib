@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router'
 import { triggerAndRefreshCronJobs } from '@/app/cron/cron-actions'
 import { openSession } from '@/app/open-session'
 import { CRON_ROUTE } from '@/app/routes'
+import { StatusBadge } from '@/components/status-dot'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import { openExternalLink } from '@/lib/external-link'
@@ -17,25 +18,21 @@ import {
   KeyRound,
   Lock,
   MessageQuestion,
-  ShieldLock,
   Terminal,
   X
 } from '@/lib/icons'
 import { isEditableTarget, OVERLAY_SURFACE } from '@/lib/keybinds/combo'
 import { cn } from '@/lib/utils'
 import { requestAttentionReveal } from '@/store/attention-inbox'
-import { recordApprovalGranted } from '@/store/bot-rapport'
 import { setCronFocusJobId } from '@/store/cron'
-import { $gateway } from '@/store/gateway'
 import { $homeFeedItems, dismissHomeFeedItem, type HomeFeedItem, type HomeFeedItemKind } from '@/store/home-feed'
 import { notifyError } from '@/store/notifications'
-import { $approvalQueues, answerApproval, type ApprovalRequest } from '@/store/prompts'
 import { storedSessionIdForRuntimeId } from '@/store/session-states'
 
 function HomeFeedIcon({ kind }: { kind: HomeFeedItemKind }) {
   switch (kind) {
     case 'approval':
-      return <ShieldLock className="size-4 shrink-0 text-amber-400" />
+      return <StatusBadge className="size-2" state="needs-approval" />
 
     case 'clarify':
       return <MessageQuestion className="size-4 shrink-0 text-violet-300" />
@@ -89,57 +86,9 @@ export function HomeFeedCard({ item, onDismiss, shortcutNumber }: HomeFeedCardPr
   const navigate = useNavigate()
   const { t } = useI18n()
 
-  const gateway = useStore($gateway)
-  const approvalQueues = useStore($approvalQueues)
   const [busy, setBusy] = useState<string | null>(null)
 
   const sessionId = item.sessionId
-
-  // Answer only the exact request this card shows; no match means Open, never
-  // a guess at some other queued request.
-  const request: ApprovalRequest | null =
-    item.kind === 'approval' && sessionId
-      ? ((approvalQueues[sessionId] ?? []).find(r => r.requestId && item.id.endsWith(r.requestId)) ?? null)
-      : null
-
-  const handleApprove = async () => {
-    if (!request || busy) {
-      return
-    }
-
-    setBusy('once')
-
-    try {
-      await answerApproval(gateway, request, 'once')
-
-      if (sessionId) {
-        recordApprovalGranted(sessionId)
-      }
-
-      triggerHaptic('selection')
-    } catch (err) {
-      notifyError(err, t.common.answerFailed)
-    } finally {
-      setBusy(null)
-    }
-  }
-
-  const handleDeny = async () => {
-    if (!request || busy) {
-      return
-    }
-
-    setBusy('deny')
-
-    try {
-      await answerApproval(gateway, request, 'deny')
-      triggerHaptic('selection')
-    } catch (err) {
-      notifyError(err, t.common.answerFailed)
-    } finally {
-      setBusy(null)
-    }
-  }
 
   const handleOpenSession = () => {
     if (!sessionId) {
@@ -201,28 +150,18 @@ export function HomeFeedCard({ item, onDismiss, shortcutNumber }: HomeFeedCardPr
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5">
-        {request ? (
-          <>
+        {item.kind === 'approval' ? (
+          sessionId && (
             <Button
-              aria-label={t.common.approve}
               data-feed-primary="true"
-              disabled={busy !== null}
-              onClick={handleApprove}
+              onClick={handleOpenSession}
               size="xs"
-              variant="default"
+              variant="secondary"
             >
-              {t.common.approve}
+              {t.common.open}
               <ShortcutHint n={shortcutNumber} />
             </Button>
-            <Button disabled={busy !== null} onClick={handleDeny} size="xs" variant="destructive">
-              {t.common.deny}
-            </Button>
-            {sessionId && (
-              <Button onClick={handleOpenSession} size="xs" variant="text">
-                {t.common.open}
-              </Button>
-            )}
-          </>
+          )
         ) : item.kind === 'cronOverdue' || item.kind === 'cronDue' ? (
           <>
             <Button

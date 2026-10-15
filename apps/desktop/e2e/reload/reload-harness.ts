@@ -36,6 +36,8 @@ const KEY_RELOAD_WINDOW_MS = 3_000
 export interface BootOptions {
   /** Extra profiles; each gets its own provider home under `<hermesHome>/profiles/<name>`. */
   profiles?: string[]
+  /** Approval policy for turns that exercise the terminal gate. */
+  approvals?: 'manual' | 'off'
 }
 
 export interface RealApp {
@@ -61,10 +63,10 @@ export async function bootReal(label: string, opts: BootOptions = {}): Promise<R
   }
 
   try {
-    writeProviderHome(box.hermesHome, provider.url)
+    writeProviderHome(box.hermesHome, provider.url, '', opts.approvals ?? 'off')
 
     for (const name of opts.profiles ?? []) {
-      writeProviderHome(path.join(box.hermesHome, 'profiles', name), provider.url)
+      writeProviderHome(path.join(box.hermesHome, 'profiles', name), provider.url, '', opts.approvals ?? 'off')
     }
 
     const launched = await launchCoreApp(coreAppEnv(box))
