@@ -25,6 +25,14 @@ export const esToolCards: ToolCardsCopy = {
   reviewApproval: 'Revisar',
   failed: 'Error',
   stopped: 'Detenido',
+  statuses: {
+    browser_back: { done: 'Volvió atrás', pending: 'Volviendo atrás' },
+    browser_console: { done: 'Leyó la consola de la página', pending: 'Leyendo la consola de la página' },
+    browser_get_images: { done: 'Recopiló imágenes de la página', pending: 'Recopilando imágenes de la página' },
+    browser_press: { done: 'Pulsó una tecla', pending: 'Pulsando una tecla' },
+    browser_scroll: { done: 'Desplazó la página', pending: 'Desplazando la página' },
+    browser_vision: { done: 'Miró la página', pending: 'Mirando la página' }
+  },
   details: {
     request: 'Solicitud',
     output: 'Salida',

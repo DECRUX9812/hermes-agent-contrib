@@ -25,6 +25,14 @@ export const zhToolCards: ToolCardsCopy = {
   reviewApproval: '查看',
   failed: '失败',
   stopped: '已停止',
+  statuses: {
+    browser_back: { done: '已返回', pending: '正在返回' },
+    browser_console: { done: '已读取页面控制台', pending: '正在读取页面控制台' },
+    browser_get_images: { done: '已收集页面图片', pending: '正在收集页面图片' },
+    browser_press: { done: '已按键', pending: '正在按键' },
+    browser_scroll: { done: '已滚动页面', pending: '正在滚动页面' },
+    browser_vision: { done: '已查看页面', pending: '正在查看页面' }
+  },
   details: {
     request: '请求',
     output: '输出',

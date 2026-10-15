@@ -300,6 +300,14 @@ export const zhHantAssistant = {
       reviewApproval: '檢視',
       failed: '失敗',
       stopped: '已停止',
+      statuses: {
+        browser_back: { done: '已返回', pending: '正在返回' },
+        browser_console: { done: '已讀取頁面主控台', pending: '正在讀取頁面主控台' },
+        browser_get_images: { done: '已收集頁面圖片', pending: '正在收集頁面圖片' },
+        browser_press: { done: '已按鍵', pending: '正在按鍵' },
+        browser_scroll: { done: '已捲動頁面', pending: '正在捲動頁面' },
+        browser_vision: { done: '已檢視頁面', pending: '正在檢視頁面' }
+      },
       details: {
         request: '請求',
         output: '輸出',

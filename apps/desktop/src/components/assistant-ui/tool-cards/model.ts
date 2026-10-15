@@ -127,9 +127,22 @@ function toolCardState(part: ToolPart, view: ToolView, approvalPending: boolean)
   return view.status === 'error' ? 'error' : 'done'
 }
 
+const TITLELESS_TOOLS = new Set([
+  'browser_back',
+  'browser_console',
+  'browser_get_images',
+  'browser_press',
+  'browser_scroll',
+  'browser_vision'
+])
+
 function toolCardStatus(part: ToolPart, view: ToolView): string {
   if (part.interrupted) {
     return t('stopped')
+  }
+
+  if (TITLELESS_TOOLS.has(part.toolName)) {
+    return t(`statuses.${part.toolName}.${view.status === 'running' ? 'pending' : 'done'}`)
   }
 
   if (view.title) {

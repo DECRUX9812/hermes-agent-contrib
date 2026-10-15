@@ -25,6 +25,14 @@ export const ruToolCards: ToolCardsCopy = {
   reviewApproval: 'Проверить',
   failed: 'Ошибка',
   stopped: 'Остановлено',
+  statuses: {
+    browser_back: { done: 'Вернулся назад', pending: 'Возвращается назад' },
+    browser_console: { done: 'Прочитал консоль страницы', pending: 'Читает консоль страницы' },
+    browser_get_images: { done: 'Собрал изображения страницы', pending: 'Собирает изображения страницы' },
+    browser_press: { done: 'Нажал клавишу', pending: 'Нажимает клавишу' },
+    browser_scroll: { done: 'Прокрутил страницу', pending: 'Прокручивает страницу' },
+    browser_vision: { done: 'Посмотрел на страницу', pending: 'Смотрит на страницу' }
+  },
   details: {
     request: 'Запрос',
     output: 'Вывод',
