@@ -1825,6 +1825,132 @@
       }
     },
     {
+      "name": "fork.team.board",
+      "summary": "Read a goal's linked Kanban cards and descendants as a goal-first board.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkTeamBoardParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkTeamBoardResult"
+        }
+      }
+    },
+    {
+      "name": "fork.team.card.resume",
+      "summary": "Hand a team card back to a profile and return it to Kanban's ready phase.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkTeamCardResumeParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkTeamCardResumeResult"
+        }
+      }
+    },
+    {
+      "name": "fork.team.card.stop",
+      "summary": "Safely stop a running team card and park it as blocked.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkTeamCardParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkTeamCardStopResult"
+        }
+      }
+    },
+    {
+      "name": "fork.team.card.takeover",
+      "summary": "Stop a card, unassign it to the human, and return its latest worker stream.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkTeamCardParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkTeamCardTakeoverResult"
+        }
+      }
+    },
+    {
+      "name": "fork.team.goal.start",
+      "summary": "Upsert a team goal and dispatch one lead card through Kanban.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkTeamGoalStartParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkTeamGoalStartResult"
+        }
+      }
+    },
+    {
+      "name": "fork.team.templates.apply",
+      "summary": "Idempotently create a built-in team template using a client request ID, reusing assigned profiles or creating new ones.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkTeamTemplatesApplyParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkTeamTemplatesApplyResult"
+        }
+      }
+    },
+    {
+      "name": "fork.team.templates.list",
+      "summary": "List built-in team templates.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkTeamTemplatesListParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkTeamTemplatesListResult"
+        }
+      }
+    },
+    {
       "name": "free_tier.ack_notice",
       "summary": "Mark the one-time availability notice as shown on the free-tier identity.",
       "params": [
@@ -17841,6 +17967,657 @@
           "failed_starts"
         ],
         "title": "ForkOnboardingStateResult",
+        "type": "object"
+      },
+      "ForkTeamAssignee": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile",
+          "title",
+          "role"
+        ],
+        "title": "ForkTeamAssignee",
+        "type": "object"
+      },
+      "ForkTeamBoardParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "goal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Goal Id"
+          }
+        },
+        "required": [
+          "team_id"
+        ],
+        "title": "ForkTeamBoardParams",
+        "type": "object"
+      },
+      "ForkTeamBoardResult": {
+        "additionalProperties": false,
+        "properties": {
+          "goal": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TeamGoal"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/ForkTeamCard"
+            },
+            "title": "Cards",
+            "type": "array"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ForkTeamTotals"
+          }
+        },
+        "required": [
+          "cards",
+          "totals"
+        ],
+        "title": "ForkTeamBoardResult",
+        "type": "object"
+      },
+      "ForkTeamCard": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForkTeamAssignee"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "column": {
+            "enum": [
+              "queued",
+              "in_progress",
+              "needs_approval",
+              "done"
+            ],
+            "title": "Column",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Started At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Updated At"
+          },
+          "elapsed_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Elapsed S"
+          },
+          "tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cost Usd"
+          },
+          "last_tool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForkTeamLastTool"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "needs_you": {
+            "anyOf": [
+              {
+                "enum": [
+                  "approval",
+                  "review",
+                  "blocked",
+                  "question"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Needs You"
+          },
+          "stoppable": {
+            "title": "Stoppable",
+            "type": "boolean"
+          },
+          "takeable": {
+            "title": "Takeable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task_id",
+          "title",
+          "column",
+          "status",
+          "stoppable",
+          "takeable"
+        ],
+        "title": "ForkTeamCard",
+        "type": "object"
+      },
+      "ForkTeamCardParams": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "title": "ForkTeamCardParams",
+        "type": "object"
+      },
+      "ForkTeamCardResumeParams": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assignee"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "title": "ForkTeamCardResumeParams",
+        "type": "object"
+      },
+      "ForkTeamCardResumeResult": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assignee"
+          }
+        },
+        "required": [
+          "task_id",
+          "status"
+        ],
+        "title": "ForkTeamCardResumeResult",
+        "type": "object"
+      },
+      "ForkTeamCardStopResult": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "stopped": {
+            "title": "Stopped",
+            "type": "boolean"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "stopped",
+          "status"
+        ],
+        "title": "ForkTeamCardStopResult",
+        "type": "object"
+      },
+      "ForkTeamCardTakeoverResult": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          }
+        },
+        "title": "ForkTeamCardTakeoverResult",
+        "type": "object"
+      },
+      "ForkTeamGoalStartParams": {
+        "additionalProperties": false,
+        "properties": {
+          "team_id": {
+            "title": "Team Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Detail"
+          }
+        },
+        "required": [
+          "team_id",
+          "title"
+        ],
+        "title": "ForkTeamGoalStartParams",
+        "type": "object"
+      },
+      "ForkTeamGoalStartResult": {
+        "additionalProperties": false,
+        "properties": {
+          "goal": {
+            "$ref": "#/components/schemas/TeamGoal"
+          },
+          "lead_task_id": {
+            "title": "Lead Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "goal",
+          "lead_task_id"
+        ],
+        "title": "ForkTeamGoalStartResult",
+        "type": "object"
+      },
+      "ForkTeamLastTool": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status"
+        ],
+        "title": "ForkTeamLastTool",
+        "type": "object"
+      },
+      "ForkTeamTemplate": {
+        "additionalProperties": false,
+        "properties": {
+          "template_id": {
+            "title": "Template Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "seats": {
+            "items": {
+              "$ref": "#/components/schemas/ForkTeamTemplateSeat"
+            },
+            "title": "Seats",
+            "type": "array"
+          }
+        },
+        "required": [
+          "template_id",
+          "name",
+          "description",
+          "seats"
+        ],
+        "title": "ForkTeamTemplate",
+        "type": "object"
+      },
+      "ForkTeamTemplateSeat": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reports To"
+          },
+          "instruction": {
+            "title": "Instruction",
+            "type": "string"
+          },
+          "lead": {
+            "title": "Lead",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "role",
+          "title",
+          "instruction",
+          "lead"
+        ],
+        "title": "ForkTeamTemplateSeat",
+        "type": "object"
+      },
+      "ForkTeamTemplatesApplyParams": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "template_id": {
+            "title": "Template Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "assign": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Assign"
+          }
+        },
+        "required": [
+          "request_id",
+          "template_id"
+        ],
+        "title": "ForkTeamTemplatesApplyParams",
+        "type": "object"
+      },
+      "ForkTeamTemplatesApplyResult": {
+        "additionalProperties": false,
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/Team"
+          },
+          "created": {
+            "title": "Created",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "team",
+          "created"
+        ],
+        "title": "ForkTeamTemplatesApplyResult",
+        "type": "object"
+      },
+      "ForkTeamTemplatesListParams": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "ForkTeamTemplatesListParams",
+        "type": "object"
+      },
+      "ForkTeamTemplatesListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "templates": {
+            "items": {
+              "$ref": "#/components/schemas/ForkTeamTemplate"
+            },
+            "title": "Templates",
+            "type": "array"
+          }
+        },
+        "required": [
+          "templates"
+        ],
+        "title": "ForkTeamTemplatesListResult",
+        "type": "object"
+      },
+      "ForkTeamTotals": {
+        "additionalProperties": false,
+        "properties": {
+          "queued": {
+            "title": "Queued",
+            "type": "integer"
+          },
+          "in_progress": {
+            "title": "In Progress",
+            "type": "integer"
+          },
+          "needs_approval": {
+            "title": "Needs Approval",
+            "type": "integer"
+          },
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "needs_you": {
+            "title": "Needs You",
+            "type": "integer"
+          },
+          "tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tokens"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Cost Usd"
+          }
+        },
+        "required": [
+          "queued",
+          "in_progress",
+          "needs_approval",
+          "done",
+          "needs_you"
+        ],
+        "title": "ForkTeamTotals",
         "type": "object"
       },
       "FreeTierAckNoticeResult": {
@@ -41928,6 +42705,14 @@
             },
             "title": "Task Ids",
             "type": "array"
+          },
+          "task_boards": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "title": "Task Boards",
+            "type": "object"
           },
           "created_at": {
             "default": 0,
