@@ -1,5 +1,6 @@
 # health: allow FILE_LINES -- security fix for #82010: distinguish an explicitly-empty toolset allowlist (fail closed, nothing allowed) from an absent one (no restriction); the added lines are minimal fail-closed branches at this existing chokepoint
 import atexit
+import base64
 import concurrent.futures
 import contextlib
 import contextvars
@@ -9,6 +10,7 @@ import importlib
 import inspect
 import json
 import logging
+import mimetypes
 import os
 import queue
 import re
@@ -3844,7 +3846,8 @@ from . import (
     methods_onboarding as _methods_onboarding, methods_i18n as _methods_i18n, methods_machine as _methods_machine,
     methods_shared_metrics as _methods_shared_metrics, methods_mcp_apps as _methods_mcp_apps,
     methods_plugin_catalog as _methods_plugin_catalog, methods_fork_onboarding as _methods_fork_onboarding,
-    methods_fork_routines as _methods_fork_routines, methods_fork_computer as _methods_fork_computer)
+    methods_fork_routines as _methods_fork_routines, methods_fork_computer as _methods_fork_computer,
+    methods_fork_browser as _methods_fork_browser)
 
 for _m in (
     _session_transports, _session_reaper, _session_lifecycle, _session_workdir, _compute_host_bridge, _model_switch,
@@ -3857,6 +3860,6 @@ for _m in (
     _methods_session_control, _methods_subagents, _methods_delegation_reports, _methods_session_ask, _methods_session_predict, _methods_vault, _methods_free_tier, _methods_connectors,
     _methods_connectors_account, _methods_display, _methods_display_watch, _methods_onboarding,
     _methods_i18n, _methods_machine, _methods_shared_metrics, _methods_mcp_apps, _methods_plugin_catalog,
-    _methods_fork_onboarding, _methods_fork_routines, _methods_fork_computer):
+    _methods_fork_onboarding, _methods_fork_routines, _methods_fork_computer, _methods_fork_browser):
     _m.register(sys.modules[__name__])
 del _m

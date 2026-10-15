@@ -1817,6 +1817,31 @@ export interface DisplayLeaseReleaseParams {
   viewer_id?: string | null
   force?: boolean | null
 }
+export interface BrowserThumbnailParams {
+  tool_call_id: string
+  profile?: string | null
+  session_id?: string | null
+}
+export interface BrowserThumbnailResult {
+  found: boolean
+  reason?: string | null
+  mime?: string | null
+  data_base64?: string | null
+  url?: string | null
+  title?: string | null
+  captured_at?: number | string | null
+}
+export interface BrowserSnapshotParams {
+  tool_call_id: string
+  profile?: string | null
+  session_id?: string | null
+}
+export interface BrowserSnapshotResult {
+  found: boolean
+  text?: string | null
+  url?: string | null
+  title?: string | null
+}
 export interface ComputerTimelineParams {
   profile: string
   session_id: string
@@ -5541,6 +5566,12 @@ export interface ToolCompletePayload {
   todos?: unknown[] | null
   revision?: number | null
   labels?: ToolLabel[] | null
+  thumbnail?: ToolThumbnail | null
+}
+export interface ToolThumbnail {
+  id: string
+  url?: string | null
+  title?: string | null
 }
 /** ``agent_callbacks`` tool_gen_callback. */
 export interface ToolGeneratingPayload {
@@ -5940,6 +5971,10 @@ export interface RpcMethods {
   'display.thumbnail': { params: ProfileParams; result: DisplayThumbnailResult }
   /** Stage a non-image file into the session workspace and hand back its @file: ref. */
   'file.attach': { params: FileAttachParams; result: FileAttachResult }
+  /** Retrieve the snapshot text and metadata for a browser tool step. */
+  'fork.browser.snapshot': { params: BrowserSnapshotParams; result: BrowserSnapshotResult }
+  /** Retrieve the captured thumbnail image and metadata for a browser tool step. */
+  'fork.browser.thumbnail': { params: BrowserThumbnailParams; result: BrowserThumbnailResult }
   /** Read persisted tool activity and the latest todo checklist from a profile session. */
   'fork.computer.timeline': { params: ComputerTimelineParams; result: ComputerTimelineResult }
   /** Create the setup profile under the setup lock (mirroring launch credentials), or no-op. */
@@ -6464,6 +6499,8 @@ export const RPC_METHODS = [
   'display.switchSandboxImage',
   'display.thumbnail',
   'file.attach',
+  'fork.browser.snapshot',
+  'fork.browser.thumbnail',
   'fork.computer.timeline',
   'fork.onboarding.ensure_setup_profile',
   'fork.onboarding.ensure_setup_session',
