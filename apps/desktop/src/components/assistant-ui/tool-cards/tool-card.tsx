@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ToolIcon } from '@/components/ui/tool-icon'
 import { useI18n } from '@/i18n'
+import type { ToolCardsCopy } from '@/i18n/types_tool_cards'
 import { cn } from '@/lib/utils'
 
 import { ToolCardDetails } from './tool-card-details'
@@ -47,6 +48,104 @@ function toggleOnClick(toggle: () => void) {
   }
 }
 
+interface CardBodyProps {
+  actor?: ReactNode
+  copy: ToolCardsCopy
+  group: ToolCardGroup
+  onReviewApproval?: () => void
+}
+
+function LiveStatus({ copy, group }: Pick<CardBodyProps, 'copy' | 'group'>) {
+  const status = group.cards[group.cards.length - 1].status
+
+  if (group.state === 'running') {
+    return (
+      <>
+        <span className="motion-shimmer min-w-0 truncate text-fg-muted">{status}</span>
+        <TypingDots />
+      </>
+    )
+  }
+
+  if (group.state === 'approval') {
+    return <span className="min-w-0 truncate text-warning">{copy.awaitingApproval}</span>
+  }
+
+  return <span className="min-w-0 truncate text-fg-muted">{status}</span>
+}
+
+function LiveCardBody({ actor, copy, group, onReviewApproval }: CardBodyProps) {
+  const last = group.cards[group.cards.length - 1]
+  const site = group.thumb?.kind === 'site' ? group.thumb : null
+  const shot = group.thumb?.kind === 'screenshot' ? group.thumb.src : null
+
+  return (
+    <>
+      <span
+        className={cn(
+          'relative grid size-9 shrink-0 place-items-center rounded-control bg-surface-sunken text-fg-secondary',
+          group.state === 'running' && 'motion-ring text-info',
+          group.state === 'error' && 'bg-danger/10 text-danger',
+          group.state === 'approval' && 'bg-warning/10 text-warning'
+        )}
+      >
+        <ToolIcon className={group.state === 'running' ? 'text-fg-secondary' : undefined} name={group.icon} size={18} />
+        {actor ? (
+          <span className="absolute -right-1 -bottom-1 block overflow-hidden rounded-full ring-2 ring-surface-raised">
+            {actor}
+          </span>
+        ) : null}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-ui-sm font-semibold text-fg">
+          {group.name}
+          {group.cards.length > 1 ? (
+            <span className="font-normal text-fg-subtle tabular-nums"> · {group.cards.length}</span>
+          ) : null}
+        </span>
+        <span className="flex min-w-0 items-center gap-1.5 truncate text-ui-xs">
+          {site ? <SiteFavicon host={site.host} url={site.url} /> : null}
+          <LiveStatus copy={copy} group={group} />
+        </span>
+        {group.state === 'error' && last.reason ? (
+          <span className="text-ui-xs text-danger line-clamp-2">{last.reason}</span>
+        ) : null}
+      </span>
+      {group.state === 'approval' && onReviewApproval ? (
+        <Button
+          onClick={event => {
+            event.stopPropagation()
+            onReviewApproval()
+          }}
+          size="xs"
+          variant="outline"
+        >
+          {copy.reviewApproval}
+        </Button>
+      ) : null}
+      {shot ? <ScreenshotThumb src={shot} /> : null}
+    </>
+  )
+}
+
+function QuietCardBody({ copy, group }: Pick<CardBodyProps, 'copy' | 'group'>) {
+  const last = group.cards[group.cards.length - 1]
+  const header = group.cards.length > 1 ? copy.usedTimes(group.name, group.cards.length) : last.status
+  const site = group.thumb?.kind === 'site' ? group.thumb : null
+
+  return (
+    <>
+      <ToolIcon className="shrink-0 text-fg-subtle" name={group.icon} size={14} />
+      <Codicon className="shrink-0 text-success" name="check" size={12} />
+      <span className="min-w-0 flex-1 truncate">{header}</span>
+      {site ? <SiteFavicon host={site.host} url={site.url} /> : null}
+      {last.durationLabel ? (
+        <span className="shrink-0 text-ui-2xs text-fg-subtle tabular-nums">{last.durationLabel}</span>
+      ) : null}
+    </>
+  )
+}
+
 /** One tool group: a live card while it works, settling into a quiet line
  *  once done. A single root keeps its DOM node across the change so the
  *  transition animates instead of remounting. */
@@ -64,13 +163,7 @@ export function ToolCard({
   const [open, setOpen] = useState(false)
   const [everOpened, setEverOpened] = useState(false)
   const [mountedLive] = useState(() => isLiveState(group.state))
-
   const live = isLiveState(group.state)
-  const last = group.cards[group.cards.length - 1]
-  const multi = group.cards.length > 1
-  const header = group.state === 'done' && multi ? copy.usedTimes(group.name, group.cards.length) : last.status
-  const site = group.thumb?.kind === 'site' ? group.thumb : null
-  const shot = group.thumb?.kind === 'screenshot' ? group.thumb.src : null
 
   const toggle = () => {
     if (everOpened) {
@@ -102,72 +195,9 @@ export function ToolCard({
         tabIndex={0}
       >
         {live ? (
-          <>
-            <span
-              className={cn(
-                'relative grid size-9 shrink-0 place-items-center rounded-control bg-surface-sunken text-fg-secondary',
-                group.state === 'running' && 'motion-ring text-info',
-                group.state === 'error' && 'bg-danger/10 text-danger',
-                group.state === 'approval' && 'bg-warning/10 text-warning'
-              )}
-            >
-              <ToolIcon
-                className={group.state === 'running' ? 'text-fg-secondary' : undefined}
-                name={group.icon}
-                size={18}
-              />
-              {actor ? (
-                <span className="absolute -right-1 -bottom-1 block overflow-hidden rounded-full ring-2 ring-surface-raised">
-                  {actor}
-                </span>
-              ) : null}
-            </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-ui-sm font-semibold text-fg">
-                {group.name}
-                {multi ? <span className="font-normal text-fg-subtle tabular-nums"> · {group.cards.length}</span> : null}
-              </span>
-              <span className="flex min-w-0 items-center gap-1.5 truncate text-ui-xs">
-                {site ? <SiteFavicon host={site.host} url={site.url} /> : null}
-                {group.state === 'running' ? (
-                  <>
-                    <span className="motion-shimmer min-w-0 truncate text-fg-muted">{last.status}</span>
-                    <TypingDots />
-                  </>
-                ) : group.state === 'approval' ? (
-                  <span className="min-w-0 truncate text-warning">{copy.awaitingApproval}</span>
-                ) : (
-                  <span className="min-w-0 truncate text-fg-muted">{last.status}</span>
-                )}
-              </span>
-              {group.state === 'error' && last.reason ? (
-                <span className="text-ui-xs text-danger line-clamp-2">{last.reason}</span>
-              ) : null}
-            </span>
-            {group.state === 'approval' && onReviewApproval ? (
-              <Button
-                onClick={event => {
-                  event.stopPropagation()
-                  onReviewApproval()
-                }}
-                size="xs"
-                variant="outline"
-              >
-                {copy.reviewApproval}
-              </Button>
-            ) : null}
-            {shot ? <ScreenshotThumb src={shot} /> : null}
-          </>
+          <LiveCardBody actor={actor} copy={copy} group={group} onReviewApproval={onReviewApproval} />
         ) : (
-          <>
-            <ToolIcon className="shrink-0 text-fg-subtle" name={group.icon} size={14} />
-            <Codicon className="shrink-0 text-success" name="check" size={12} />
-            <span className="min-w-0 flex-1 truncate">{header}</span>
-            {site ? <SiteFavicon host={site.host} url={site.url} /> : null}
-            {last.durationLabel ? (
-              <span className="shrink-0 text-ui-2xs text-fg-subtle tabular-nums">{last.durationLabel}</span>
-            ) : null}
-          </>
+          <QuietCardBody copy={copy} group={group} />
         )}
       </div>
       {everOpened ? <ToolCardDetails group={group} live={live} open={open} /> : null}

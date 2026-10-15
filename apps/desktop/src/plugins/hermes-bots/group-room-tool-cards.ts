@@ -63,7 +63,13 @@ export function recordGroupToolEvent(event: RpcEvent): void {
   $memberToolParts.set(remember(store, sessionId, parts))
 }
 
+/** Tool events land before a room opens, so the tap lives with the plugin, not
+ *  the room. Older shells have no host.onEvent and get no live cards. */
 export function startGroupToolTap(): () => void {
+  if (typeof host.onEvent !== 'function') {
+    return () => {}
+  }
+
   const stops = [
     host.onEvent('tool.start', recordGroupToolEvent),
     host.onEvent('tool.complete', recordGroupToolEvent),
