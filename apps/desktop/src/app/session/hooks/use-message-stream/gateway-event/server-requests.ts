@@ -404,22 +404,13 @@ const approval: Handler = ctx => {
     requestId: str(p.request_id) || undefined,
     serverRequestId: request.id,
     sessionId: sessionId || null,
+    toolName: str(p.tool_name) || undefined,
     smartDenied: p.smart_denied === true
   }).catch(() => undefined)
   markNeedsInput(ctx)
 
   if (!request.replayed) {
     dispatchNativeNotification({
-      actions: [
-        {
-          id: str(p.request_id) ? `approve:${str(p.request_id)}` : 'approve',
-          text: translateNow('notifications.native.approveAction')
-        },
-        {
-          id: str(p.request_id) ? `reject:${str(p.request_id)}` : 'reject',
-          text: translateNow('notifications.native.rejectAction')
-        }
-      ],
       body: command || description,
       kind: 'approval',
       sessionId: sessionId || null,

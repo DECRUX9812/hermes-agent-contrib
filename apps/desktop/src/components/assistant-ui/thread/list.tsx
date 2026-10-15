@@ -42,7 +42,6 @@ import {
 } from '@/store/thread-scroll'
 import { isSecondaryWindow } from '@/store/windows'
 
-import { PendingApprovalStack } from '../tool/approval'
 import { PendingSecretCard } from '../tool/secret-request'
 
 import {
@@ -1261,7 +1260,6 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
           ) : (
             rows
           )}
-          <PendingApprovalStack />
           <PendingSecretCard />
           {!renderEmpty && loadingIndicator}
           {!renderEmpty && clampToComposer && (

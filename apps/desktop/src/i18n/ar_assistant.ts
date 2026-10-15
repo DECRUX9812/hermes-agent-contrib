@@ -263,7 +263,7 @@ export const arAssistant = {
       moreOptions: 'خيارات إضافية',
       allowSession: 'السماح لهذه الجلسة',
       allowOnce: 'السماح مرة واحدة',
-      alwaysAllowHere: 'السماح دائما هنا',
+      alwaysAllowHere: 'السماح دائما',
       deny: 'رفض',
       cardTitle: 'هل تسمح بتشغيل هذا الأمر؟',
       cardDetailsTitle: 'راجع هذا التغيير',
@@ -277,7 +277,10 @@ export const arAssistant = {
       timedOutSystemLine:
         'انتهت مهلة الموافقة — لم يُنفَّذ الأمر. اطلب من Hermes إعادة المحاولة، أو ارفع الحد في الإعدادات ← الأمان ← مهلة الموافقة.',
       openSafetySettings: 'فتح إعدادات الأمان',
-      commandDetails: 'تفاصيل الأمر'
+      commandDetails: 'تفاصيل الأمر',
+      alwaysConfirmPrompt: pattern => `السماح دائمًا بـ ${pattern}؟`,
+      decisionRecorded: choice => `تم تسجيل القرار: ${choice}`,
+      noLongerPending: 'لم تعد هذه الموافقة معلّقة.'
     },
     toolCards: {
       activityLabel: 'نشاط الأدوات',

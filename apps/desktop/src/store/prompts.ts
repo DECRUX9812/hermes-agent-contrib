@@ -1,3 +1,9 @@
+import type {
+  ApprovalChoice,
+  ForkApproval,
+  ForkApprovalsDecideResult,
+  ForkApprovalsListResult
+} from '@hermes/shared'
 import { atom, computed, type ReadableAtom } from 'nanostores'
 
 import { $clarifyRequest, $clarifyRequests } from './clarify'
@@ -5,7 +11,7 @@ import { isSessionGone, isSessionGoneForBackgroundPolling, markSessionGone } fro
 import { respondToServerRequest } from './server-requests'
 import { $activeSessionId } from './session'
 import { ambientRequestFor } from './session-gone-latch'
-import { requestForOwnedSession } from './session-states'
+import { requestForOwnedSession, storedSessionIdForRuntimeId } from './session-states'
 
 // Blocking interactive prompts the gateway raises mid-turn. Each is a
 // server→client JSON-RPC request (`tui_gateway/server_requests.py`) the Python
@@ -90,6 +96,7 @@ export interface ApprovalRequest extends KeyedPrompt {
   requestId?: string
   serverRequestId?: string
   smartDenied?: boolean
+  toolName?: string
 }
 
 interface ApprovalGateway {
@@ -339,73 +346,73 @@ export async function replayPendingApproval(gateway: ApprovalGateway | null, ses
   )
 }
 
-/**
- * Resolve an approval: answer the live server request when it is still open
- * (the response frame goes back over the socket it arrived on — the owner by
- * construction), else the queue-level `approval.respond` RPC for a prompt that
- * was restored from `approval.pending` or is being answered from another
- * surface. Returns after the backend has the decision.
- */
-
-// #55433: the backend honors an answer for the whole `approvals.timeout` window
-// (default 300s), but `approval.respond` otherwise rides the generic 30s RPC
-// deadline. During a long LLM stream the gateway's WS writes can stall well past
-// 30s while the turn is still live and the approval is still pending — the
-// client gives up with "request timed out: approval.respond" long before the
-// backend would. Give the RPC a deadline that covers the backend window (300s
-// plus margin for the write to drain), and retry once on a deadline failure:
-// `resolve_gateway_approval` pops the queue entry before committing, so a
-// duplicate resolve is a harmless `resolved: 0`.
-export const APPROVAL_RESPOND_REQUEST_TIMEOUT_MS = 330_000
-
-function isRequestTimeoutError(error: unknown): boolean {
-  return error instanceof Error && /request timed out/i.test(error.message)
+export interface ApprovalDecision {
+  approval?: ForkApproval
+  choice: ApprovalChoice | null
+  resolved: boolean
 }
 
-export async function answerApproval(
+/** Read durable approvals for a stored session, routed through that session's
+ *  owner rather than whichever profile happens to be foreground. */
+export async function listSessionApprovals(
+  gateway: ApprovalGateway,
+  runtimeSessionId: string,
+  storedSessionId: string
+): Promise<ForkApproval[]> {
+  const result = await requestForOwnedSession<ForkApprovalsListResult>(
+    runtimeSessionId,
+    ambientRequestFor(gateway),
+    'fork.approvals.list',
+    { session_id: storedSessionId }
+  )
+
+  return result.approvals
+}
+
+/** Answer the live request on its owning socket, or use the durable journal
+ *  RPC when the request was restored without an open server-request frame. */
+export async function decideApproval(
   gateway: ApprovalGateway | null,
   request: Pick<ApprovalRequest, 'requestId' | 'serverRequestId' | 'sessionId'>,
-  choice: string,
+  choice: ApprovalChoice,
   all = false
-): Promise<void> {
+): Promise<ApprovalDecision> {
   if (respondToServerRequest(request.serverRequestId, { choice, ...(all ? { all: true } : {}) })) {
-    return
+    return { choice, resolved: true }
   }
 
   if (!gateway) {
     throw new Error('Hermes gateway is not connected')
   }
 
-  const params = {
-    all,
-    choice,
-    ...(request.requestId ? { request_id: request.requestId } : {}),
-    session_id: request.sessionId ?? undefined
+  if (!request.sessionId || !request.requestId) {
+    throw new Error('This approval is no longer available')
   }
 
-  try {
-    await requestForOwnedSession(
-      request.sessionId,
-      ambientRequestFor(gateway),
-      'approval.respond',
-      params,
-      APPROVAL_RESPOND_REQUEST_TIMEOUT_MS
-    )
-  } catch (error) {
-    if (!isRequestTimeoutError(error)) {
-      throw error
-    }
-
-    // The deadline fired while the approval may still be pending server-side
-    // (WS stall behind a long LLM stream). Resolve is idempotent: re-send once.
-    await requestForOwnedSession(
-      request.sessionId,
-      ambientRequestFor(gateway),
-      'approval.respond',
-      params,
-      APPROVAL_RESPOND_REQUEST_TIMEOUT_MS
-    )
+  if (all) {
+    throw new Error('Approve-all is only available on a live approval request')
   }
+
+  const storedSessionId = storedSessionIdForRuntimeId(request.sessionId) ?? request.sessionId
+
+  const result = await requestForOwnedSession<ForkApprovalsDecideResult>(
+    request.sessionId,
+    ambientRequestFor(gateway),
+    'fork.approvals.decide',
+    { choice, request_id: request.requestId, session_id: storedSessionId }
+  )
+
+  return { approval: result.approval, choice: result.approval.choice ?? choice, resolved: result.resolved }
+}
+
+export async function answerApproval(
+  gateway: ApprovalGateway | null,
+  request: Pick<ApprovalRequest, 'requestId' | 'serverRequestId' | 'sessionId'>,
+  choice: ApprovalChoice,
+  all = false
+): Promise<void> {
+  await decideApproval(gateway, request, choice, all)
+  clearApprovalRequest(request.sessionId, request.requestId)
 }
 
 /** The prompt request for one specific session — the tile counterpart of the

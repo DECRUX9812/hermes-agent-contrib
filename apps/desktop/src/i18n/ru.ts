@@ -4365,7 +4365,7 @@ export const ruOverrides = {
       moreOptions: 'Больше опций подтверждения',
       allowSession: 'Разрешить в этом сеансе',
       allowOnce: 'Разрешить один раз',
-      alwaysAllowHere: 'Всегда разрешать здесь',
+      alwaysAllowHere: 'Всегда разрешать',
       deny: 'Отклонить',
       cardTitle: 'Разрешить выполнить эту команду?',
       cardDetailsTitle: 'Проверьте это изменение',
@@ -4375,7 +4375,10 @@ export const ruOverrides = {
       alwaysTitle: 'Всегда разрешать эту команду?',
       alwaysDescription: pattern =>
         `Это добавит паттерн «${pattern}» в ваш постоянный список разрешений (~/.hermes/config.yaml). Hermes больше не будет спрашивать о подобных командах — ни в этом сеансе, ни в будущем.`,
-      alwaysAllow: 'Всегда разрешать'
+      alwaysAllow: 'Всегда разрешать',
+      alwaysConfirmPrompt: pattern => `Всегда разрешать «${pattern}»?`,
+      decisionRecorded: choice => `Решение записано: ${choice}`,
+      noLongerPending: 'Это подтверждение больше не ожидает решения.'
     },
     clarify: ruClarify,
     toolCards: ruToolCards,

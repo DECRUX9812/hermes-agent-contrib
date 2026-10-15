@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { StatusDot, type StatusTone } from '@/components/status-dot'
+import { StatusBadge, type StatusState } from '@/components/status-dot'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/ui/copy-button'
 import { type MessagingPlatformInfo } from '@/hermes'
@@ -35,11 +35,11 @@ export function hasPhoneParity(platform: MessagingPlatformInfo): boolean {
 export function PhoneParityCard({
   platform,
   stateLabel,
-  tone
+  status
 }: {
   platform: MessagingPlatformInfo
   stateLabel: string
-  tone: StatusTone
+  status: StatusState
 }) {
   const { t } = useI18n()
   const p = t.messaging.phoneParity
@@ -70,7 +70,7 @@ export function PhoneParityCard({
         <Smartphone className="size-3.5" />
         <span className="font-medium text-(--ui-text-primary)">{p.title}</span>
         <span className="ml-auto inline-flex items-center gap-1.5" title={p.presence}>
-          <StatusDot tone={tone} />
+          <StatusBadge state={status} />
           {stateLabel}
         </span>
       </div>
