@@ -2,7 +2,6 @@
 
 import { type ToolCallMessagePartProps, useAuiState } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
-import { motion, useReducedMotion } from 'motion/react'
 import {
   Children,
   createContext,
@@ -13,7 +12,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState
 } from 'react'
 
@@ -22,6 +20,7 @@ import { AnsiText } from '@/components/assistant-ui/ansi-text'
 import { MarkdownImage } from '@/components/assistant-ui/markdown-text'
 import { SET_THEME_TOOL, setThemeCall } from '@/components/assistant-ui/theme-picker/args'
 import { TimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
+import { toolCardView, ToolStepPill } from '@/components/assistant-ui/tool-cards'
 import { useElapsedSeconds } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { CompactMarkdown } from '@/components/chat/compact-markdown'
@@ -30,8 +29,7 @@ import { DisclosureRow } from '@/components/chat/disclosure-row'
 import {
   SCAFFOLD_GLYPH_CLASS,
   SCAFFOLD_LABEL_CLASS,
-  SCAFFOLD_META_CLASS,
-  ScaffoldRow
+  SCAFFOLD_META_CLASS
 } from '@/components/chat/scaffold-row'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
@@ -49,21 +47,17 @@ import { toolResultRecord } from '@/lib/tool-result-metadata'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { useStoresSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
-import { revealLivePane } from '@/store/live-activity'
 import { recordPreviewArtifact } from '@/store/preview-status'
-import { sessionApprovalRequest } from '@/store/prompts'
 import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
 import { $showToolActivity } from '@/store/tool-activity'
 import { $toolRowDismissed, dismissToolRow } from '@/store/tool-dismiss'
 import {
-  $anyToolDisclosureOpen,
   $hideCodeDiffs,
   $toolDisclosureOpen,
   $toolViewMode,
   setToolDisclosureOpen
 } from '@/store/tool-view'
 
-import { isApprovalActivity, isCurrentTurnMessage } from './approval-activity'
 import { BotToolCards } from './bot-tool-cards'
 import {
   buildToolView,
@@ -78,6 +72,7 @@ import {
   looksRedundant,
   type SearchResultRow,
   selectMessageRunning,
+  stableHash,
   toolCopyPayload,
   toolEntryDisclosureId,
   type ToolPart,
@@ -85,15 +80,12 @@ import {
   type ToolTitleAction
 } from './fallback-model'
 import { McpAppFrame } from './mcp-app'
-import { isToolCallPart, summarizeToolRun } from './run-summary'
-import { ToolRunTicker } from './run-ticker'
 
 // `true` when a ToolEntry is rendered inside an embedding wrapper that owns
 // the per-row chrome (timer / preview). The flat ToolGroupSlot sets this
 // false, so every row currently owns its own chrome; kept as a seam for any
 // future embedding surface.
 const ToolEmbedContext = createContext(false)
-const ToolRunDisclosureContext = createContext<string | null>(null)
 
 // A search hit's title is result *content* inside an expanded row, not one of
 // the scaffolding lines, so it keeps the brighter secondary grey.
@@ -104,6 +96,44 @@ const TOOL_HEADER_SUBTITLE_CLASS =
   'text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-(--ui-text-tertiary)'
 
 const TOOL_HEADER_GLYPH_WRAP_CLASS = cn(SCAFFOLD_GLYPH_CLASS, 'self-center')
+
+const toolValueIds = new WeakMap<object, number>()
+let nextToolValueId = 0
+
+function toolValueKey(value: unknown): string {
+  if (value && typeof value === 'object') {
+    const existing = toolValueIds.get(value)
+
+    if (existing !== undefined) {
+      return `o${existing}`
+    }
+
+    const next = ++nextToolValueId
+    toolValueIds.set(value, next)
+
+    return `o${next}`
+  }
+
+  if (typeof value === 'string') {
+    return `s${value.length}:${stableHash(value)}`
+  }
+
+  return `${typeof value}:${String(value)}`
+}
+
+function toolCallDataKey(part: ToolPart): string {
+  return [
+    part.toolName,
+    part.toolCallId ?? '',
+    toolValueKey(part.args),
+    toolValueKey(part.result),
+    toolValueKey(part.toolResultMetadata),
+    part.timestamp ?? '',
+    part.completedAt ?? '',
+    part.isError ?? '',
+    part.interrupted ?? ''
+  ].join(':')
+}
 
 // Glass-style section label that sits above any pre/JSON/output block.
 // Lowercase tracking + tiny size so it reads as a quiet field label rather
@@ -211,19 +241,19 @@ function statusGlyph(status: ToolStatus, copy: ToolStatusCopy): ReactNode {
   }
 
   if (status === 'error') {
-    return <AlertCircle aria-label={copy.statusError} className="size-3.5 shrink-0 text-destructive" />
+    return <AlertCircle aria-label={copy.statusError} className="size-3.5 shrink-0 text-danger" />
   }
 
   if (status === 'warning') {
     return (
-      <AlertCircle aria-label={copy.statusRecovered} className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+      <AlertCircle aria-label={copy.statusRecovered} className="size-3.5 shrink-0 text-warning" />
     )
   }
 
   return (
     <CheckCircle2
       aria-label={copy.statusDone}
-      className="size-3.5 shrink-0 text-emerald-600/85 dark:text-emerald-400/85"
+      className="size-3.5 shrink-0 text-success"
     />
   )
 }
@@ -321,8 +351,8 @@ function ToolTitle({
       className={cn(
         SCAFFOLD_LABEL_CLASS,
         isPending && 'text-(--conversation-scaffold-meta)',
-        status === 'error' && 'text-destructive',
-        status === 'warning' && 'text-amber-700 dark:text-amber-300',
+        status === 'error' && 'text-danger',
+        status === 'warning' && 'text-warning',
         legendary && !isPending && 'tool-memory-legendary-title text-transparent'
       )}
     >
@@ -356,7 +386,6 @@ function ToolEntry({ part }: ToolEntryProps) {
   const messageId = useAuiState(s => s.message.id)
   const messageRunning = useAuiState(selectMessageRunning)
   const embedded = useContext(ToolEmbedContext)
-  const runDisclosureId = useContext(ToolRunDisclosureContext)
   const toolViewMode = useStore($toolViewMode)
   const hideCodeDiffs = useStore($hideCodeDiffs)
 
@@ -588,6 +617,30 @@ function ToolEntry({ part }: ToolEntryProps) {
     return null
   }
 
+  const card = toolCardView(stablePart)
+
+  if (view.status === 'error') {
+    return <ToolStepPill card={card} />
+  }
+
+  if (isFileEdit && view.inlineDiff && !hideCodeDiffs) {
+    return (
+      <div className="grid min-w-0 gap-1">
+        <ToolStepPill card={card} />
+        <FileDiffPanel diff={view.inlineDiff} path={view.subtitle} />
+      </div>
+    )
+  }
+
+  if (part.toolResultMetadata?.mcp_app && !isPending && view.status !== 'error') {
+    return (
+      <div className="grid min-w-0 gap-1">
+        <ToolStepPill card={card} />
+        <McpAppFrame app={part.toolResultMetadata.mcp_app} args={part.args} result={part.result} />
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(
@@ -607,11 +660,6 @@ function ToolEntry({ part }: ToolEntryProps) {
           onToggle={
             hasExpandableContent
               ? () => {
-                  // Opening a row is newer intent than an earlier group collapse.
-                  if (!open && runDisclosureId) {
-                    setToolDisclosureOpen(runDisclosureId, true)
-                  }
-
                   setToolDisclosureOpen(disclosureId, !open)
                 }
               : undefined
@@ -643,10 +691,10 @@ function ToolEntry({ part }: ToolEntryProps) {
             {showDiffStats && diffStats && (
               <span className="flex shrink-0 items-center gap-1 font-mono text-[0.625rem] tabular-nums">
                 {diffStats.added > 0 && (
-                  <span className="text-emerald-600 dark:text-emerald-400">+{diffStats.added}</span>
+                  <span className="text-success">+{diffStats.added}</span>
                 )}
                 {diffStats.removed > 0 && (
-                  <span className="text-rose-600 dark:text-rose-400">−{diffStats.removed}</span>
+                  <span className="text-danger">−{diffStats.removed}</span>
                 )}
               </span>
             )}
@@ -703,7 +751,7 @@ function ToolEntry({ part }: ToolEntryProps) {
             !showPayload &&
             (view.status === 'error' ? (
               detailSections.summary || detailSections.body ? (
-                <div className="max-w-full text-xs leading-relaxed text-destructive">
+                <div className="max-w-full text-xs leading-relaxed text-danger">
                   {detailSections.summary && (
                     <LinkifiedText className="block font-medium" text={detailSections.summary} />
                   )}
@@ -801,7 +849,7 @@ function TerminalTranscript({ command, exitCode }: TerminalTranscriptProps) {
         <span
           className={cn(
             'shrink-0 rounded bg-(--ui-bg-tertiary) px-1 py-px text-[0.6rem] tabular-nums',
-            exitCode === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+            exitCode === 0 ? 'text-success' : 'text-warning'
           )}
         >
           exit {exitCode}
@@ -862,239 +910,20 @@ export function splitRunItems(toolNames: readonly string[]): RunItem[] {
 // The one grey line that stands in for a run of tool calls — "Explored 3
 // files, ran 5 commands". Live, it narrates in the present tense above the
 // ticker by default; its toggle can reveal the activity before it settles.
-/** "Live" on a run's summary line: the raw record of the run (every command
- *  and its full output) in the Live pane, scrolled to the run's first call.
- *  The summary stays the transcript's presentation; this is the door past it. */
-function LiveRunLink({ callId }: { callId?: string }) {
-  const { t } = useI18n()
-
-  return (
-    <button
-      className="mr-1.5 inline-flex items-center gap-0.5 rounded px-1 text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)"
-      data-slot="live-run-link"
-      onClick={event => {
-        event.stopPropagation()
-        revealLivePane(callId)
-      }}
-      type="button"
-    >
-      <Codicon name="pulse" size="0.7rem" />
-      {t.live.openLive}
-    </button>
-  )
-}
-
-function ToolRunHeader({
-  completedAt,
-  firstCallId,
-  live,
-  onToggle,
-  open,
-  startedAt,
-  summary
-}: {
-  completedAt?: number
-  firstCallId?: string
-  live: boolean
-  onToggle?: () => void
-  open: boolean
-  startedAt?: number
-  summary: string
-}) {
-  return (
-    <div data-conversation-scaffold="" data-tool-summary="">
-      <ScaffoldRow
-        onToggle={onToggle}
-        open={open}
-        trailing={
-          <>
-            <LiveRunLink callId={firstCallId} />
-            <TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />
-          </>
-        }
-      >
-        <FadeText className={cn(SCAFFOLD_LABEL_CLASS, 'truncate')}>
-          {live ? <span className="shimmer">{summary}</span> : summary}
-        </FadeText>
-      </ScaffoldRow>
-    </div>
-  )
-}
-
-interface ToolRunState {
-  approvalActivity: boolean
-  completedAt?: number
-  count: number
-  /** Disclosure id of each row in the run, so the run can tell when one is open. */
-  entryIds: readonly string[]
-  /** The run's first tool call — where the Live pane scrolls to. */
-  firstCallId?: string
-  key: string
-  live: boolean
-  startedAt?: number
-  summary: string
-}
-
-// assistant-ui compares selector results with `Object.is` and calls the
-// selector on every store update, so returning a fresh object here would
-// re-render the group on every text delta in the turn. The run only changes
-// when a call arrives or one finishes; cache on exactly that.
-function useToolRun(startIndex: number, endIndex: number): ToolRunState {
-  const { locale } = useI18n()
-  const cache = useRef<null | { signature: string; tools: readonly ToolPart[]; value: ToolRunState }>(null)
-
-  return useAuiState(state => {
-    const parts = state.message.parts
-    const tools = parts.slice(Math.max(0, startIndex), endIndex + 1).filter(isToolCallPart)
-    const timelineTools = tools as unknown as ToolPart[]
-
-    // Live means the turn is still working and nothing has come after this run
-    // — not that some call is unresolved. Those differ in the gap between one
-    // call finishing and the next arriving, which for sequential calls is most
-    // of the run: it fell back to past tense there, unmounting the ticker and
-    // dropping its reel to the top instead of scrolling.
-    //
-    // The tail bound is what keeps this honest — a turn that ends, or an agent
-    // that moves on to later parts, leaves the run settled and collapsible.
-    const live = selectMessageRunning(state) && endIndex >= parts.length - 1
-
-    const signature = timelineTools
-      .map(
-        tool =>
-          `${tool.toolCallId}:${tool.result === undefined ? 0 : 1}:${tool.timestamp ?? ''}:${tool.completedAt ?? ''}`
-      )
-      .concat(String(live), state.message.id, locale)
-      .join('|')
-
-    // The arguments may arrive after tool.start. Compare references rather
-    // than stringify potentially huge args/results on every streaming tick.
-    const sameInputs =
-      cache.current?.tools.length === timelineTools.length &&
-      timelineTools.every((tool, index) => {
-        const previous = cache.current!.tools[index]
-
-        return (
-          tool.args === previous.args &&
-          tool.result === previous.result &&
-          tool.toolName === previous.toolName &&
-          tool.isError === previous.isError
-        )
-      })
-
-    if (cache.current?.signature !== signature || !sameInputs) {
-      cache.current = {
-        signature,
-        tools: timelineTools,
-        value: {
-          completedAt: timelineTools.reduce<number | undefined>(
-            (latest, tool) =>
-              tool.completedAt === undefined
-                ? latest
-                : latest === undefined
-                  ? tool.completedAt
-                  : Math.max(latest, tool.completedAt),
-            undefined
-          ),
-          count: tools.length,
-          approvalActivity: tools.length > 0 && tools.every(isApprovalActivity),
-          entryIds: tools.map(tool => toolEntryDisclosureId(state.message.id, tool)),
-          firstCallId: tools[0]?.toolCallId,
-          key: `${state.message.id}:${tools[0]?.toolCallId ?? ''}`,
-          live,
-          startedAt: timelineTools.reduce<number | undefined>(
-            (earliest, tool) =>
-              tool.timestamp === undefined
-                ? earliest
-                : earliest === undefined
-                  ? tool.timestamp
-                  : Math.min(earliest, tool.timestamp),
-            undefined
-          ),
-          summary: summarizeToolRun(tools, live)
-        }
-      }
-    }
-
-    return cache.current.value
-  })
-}
-
-/**
- * One run of consecutive activity calls, headed by the line that summarizes it.
- *
- * The run is identified by its FIRST tool call, never by its position: a live
- * stream and the same turn rehydrated from history agree on which calls belong
- * together, but not on the indices they land at, because rehydration folds a
- * turn into one bubble that the live view spreads over several. Keying off the
- * index is what made an earlier attempt at this reshuffle the moment a turn
- * settled. `lib/tool-run-continuity.test.ts` locks that agreement down.
- *
- * Live, the run is a summary plus the one-line ticker. Settled, the summary is
- * the whole of it until the user opens it. `ToolEmbedContext` is false so each
- * row still owns its own chrome (timer / copy) when shown.
- */
-const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> = ({
-  children,
-  endIndex,
-  startIndex
-}) => {
-  const messageRunning = useAuiState(selectMessageRunning)
-
-  const { completedAt, count, entryIds, firstCallId, key, live, startedAt, summary, approvalActivity } = useToolRun(
-    startIndex,
-    endIndex
-  )
-
-  const sessionId = useStore(useSessionView().$runtimeId)
-  const approval = useStore(useMemo(() => sessionApprovalRequest(sessionId), [sessionId]))
-  const currentTurn = useAuiState(state => isCurrentTurnMessage(state.thread.messages, state.message.id))
-  const disclosureId = `tool-run:${key}`
-  const persistedOpen = useStore($toolDisclosureOpen(disclosureId))
-  const rowOpen = useStore(useMemo(() => $anyToolDisclosureOpen(entryIds), [entryIds]))
-  const enterRef = useEnterAnimation(messageRunning, `tool-run:${key}`)
-  const representedByApproval = !!approval && currentTurn && approvalActivity
-  const expanded = count < 2 || (persistedOpen ?? rowOpen)
-  const collapsed = representedByApproval && !rowOpen && !persistedOpen
-  const reduced = useReducedMotion()
-
-  // The original runtime stays mounted while its summary owns the activity.
-  // Reveal its footprint gradually when the last approval clears, instead of
-  // inserting all represented rows in the outgoing card's first exit frame.
-  return (
-    <ToolRunDisclosureContext.Provider value={disclosureId}>
-      <motion.div
-        animate={{ height: collapsed ? 0 : 'auto' }}
-        aria-hidden={collapsed || undefined}
-        className="grid min-w-0 max-w-full gap-(--tool-row-gap) overflow-hidden"
-        data-slot="tool-block"
-        data-tool-group=""
-        inert={collapsed}
-        initial={currentTurn && approvalActivity && messageRunning && !reduced ? { height: 0 } : false}
-        ref={enterRef}
-        transition={{ duration: reduced ? 0 : 0.22, ease: 'easeInOut' }}
-      >
-        {count > 1 && !representedByApproval && (
-          <ToolRunHeader
-            completedAt={completedAt}
-            firstCallId={firstCallId}
-            live={live}
-            onToggle={() => setToolDisclosureOpen(disclosureId, !expanded)}
-            open={expanded}
-            startedAt={startedAt}
-            summary={summary}
-          />
-        )}
-        {count > 1 && live && !expanded && <ToolRunTicker>{children}</ToolRunTicker>}
-        {expanded && <div className="grid min-w-0 max-w-full gap-(--tool-row-gap)">{children}</div>}
-      </motion.div>
-    </ToolRunDisclosureContext.Provider>
-  )
-}
-
 // The name the run splitter classifies a part by: connector and MCP calls are cards, and so is set_theme
 // reached through the tool_call bridge (a reloaded transcript).
-function toolGroupKey(toolName: string, args: ToolCallMessagePartProps['args']): string {
-  if (connectorCalls(toolName, args).length || mcpTargets(toolName, args).length) {
+function toolGroupKey(
+  toolName: string,
+  args: ToolCallMessagePartProps['args'],
+  metadata?: ToolPart['toolResultMetadata'],
+  part?: ToolPart
+): string {
+  if (
+    metadata?.mcp_app ||
+    (part && toolCardView(part).state === 'error') ||
+    connectorCalls(toolName, args).length ||
+    mcpTargets(toolName, args).length
+  ) {
     return CONNECTION_CARD_KEY
   }
 
@@ -1134,7 +963,18 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   const toolNameKey = useAuiState(state =>
     state.message.parts
       .slice(Math.max(0, startIndex), endIndex + 1)
-      .map(part => (part.type === 'tool-call' ? toolGroupKey(part.toolName, part.args) : ''))
+      .map(part =>
+        part.type === 'tool-call'
+          ? toolGroupKey(part.toolName, part.args, (part as ToolPart).toolResultMetadata, part as ToolPart)
+          : ''
+      )
+      .join('\u0000')
+  )
+
+  const toolDataKey = useAuiState(state =>
+    state.message.parts
+      .slice(Math.max(0, startIndex), endIndex + 1)
+      .map(part => (part.type === 'tool-call' ? toolCallDataKey(part as ToolPart) : ''))
       .join('\u0000')
   )
 
@@ -1151,6 +991,7 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
             <BotToolCards
               endIndex={startIndex + item.end}
               key={`run:${item.start}`}
+              revision={toolDataKey}
               startIndex={startIndex + item.start}
             >
               {rows.slice(item.start, item.end + 1)}
@@ -1174,9 +1015,14 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
         item.kind === 'card' ? (
           <Fragment key={`card:${item.index}`}>{rows[item.index]}</Fragment>
         ) : (
-          <ToolRun endIndex={startIndex + item.end} key={`run:${item.start}`} startIndex={startIndex + item.start}>
+          <BotToolCards
+            endIndex={startIndex + item.end}
+            key={`run:${item.start}`}
+            revision={toolDataKey}
+            startIndex={startIndex + item.start}
+          >
             {rows.slice(item.start, item.end + 1)}
-          </ToolRun>
+          </BotToolCards>
         )
       )}
     </ToolEmbedContext.Provider>

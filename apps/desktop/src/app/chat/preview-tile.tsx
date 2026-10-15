@@ -206,6 +206,10 @@ function PreviewTabLead({ tabId }: { tabId: string }) {
     return <ToolIcon className="opacity-70" name="globe" size="0.6875rem" />
   }
 
+  if (target.kind === 'step') {
+    return <ToolIcon className="opacity-70" name="tools" size="0.6875rem" />
+  }
+
   return <FileTypeIcon className="opacity-70" path={target.path || target.url} size="0.6875rem" />
 }
 

@@ -165,18 +165,37 @@ export function toolCardView(part: ToolPart, options: { approvalPending?: boolea
   const family = toolCardFamily(part.toolName)
   const state = toolCardState(part, view, options.approvalPending === true)
   const pageUrl = toolCardPageUrl(part.args, part.result)
+  const startedAt = epochMs(part.timestamp)
+  const completedAt = epochMs(part.completedAt)
+
+  const durationMs =
+    typeof part.toolResultMetadata?.duration_s === 'number'
+      ? Math.max(0, part.toolResultMetadata.duration_s * 1000)
+      : startedAt !== undefined && completedAt !== undefined
+        ? Math.max(0, completedAt - startedAt)
+        : undefined
 
   const card: ToolCardView = {
     id: part.toolCallId || stableHash(part.toolName + JSON.stringify(part.args ?? {})),
+    step: {
+      args: part.args,
+      result: part.result,
+      startedAt: epochMs(part.timestamp),
+      thumbnailId: part.toolResultMetadata?.thumbnail?.id,
+      toolCallId: part.toolCallId,
+      toolName: part.toolName
+    },
     family,
     icon: toolCardIcon(part.toolName, family),
     name: toolCardName(part.toolName, family),
     status: toolCardStatus(part, view),
     state,
     args: toolCardArgs(part.args),
-    durationLabel: view.durationLabel,
-    startedAt: epochMs(part.timestamp),
-    completedAt: epochMs(part.completedAt)
+    durationLabel: view.durationLabel ?? (durationMs === undefined ? undefined : formatToolRunDuration(durationMs)),
+    startedAt,
+    completedAt,
+    interrupted: part.interrupted,
+    durationMs
   }
 
   if (state === 'error') {
@@ -230,6 +249,28 @@ export function groupToolCards(cards: readonly ToolCardView[]): ToolCardGroup[] 
   }
 
   return runs.map(groupOf)
+}
+
+export interface ToolRunSummary {
+  count: number
+  durationMs?: number
+}
+
+export function summarizeToolRun(cards: readonly ToolCardView[], live: boolean): ToolRunSummary | undefined {
+  if (live || cards.length < 2 || cards.some(card => card.state !== 'done' || card.interrupted)) {
+    return undefined
+  }
+
+  const hasAllDurations = cards.every(card => card.durationMs !== undefined)
+
+  return {
+    count: cards.length,
+    durationMs: hasAllDurations ? cards.reduce((total, card) => total + (card.durationMs ?? 0), 0) : undefined
+  }
+}
+
+export function formatToolRunDuration(durationMs: number): string {
+  return `${(Math.max(0, durationMs) / 1000).toFixed(1)}s`
 }
 
 const isToolCallPart = (part: unknown): part is ToolPart =>

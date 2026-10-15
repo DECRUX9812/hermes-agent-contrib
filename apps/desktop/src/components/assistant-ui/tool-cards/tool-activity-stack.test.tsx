@@ -1,5 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { $previewTabs } from '@/store/preview'
 
 import { ToolActivityStack } from './tool-activity-stack'
 import type { ToolCardGroup, ToolCardThumb, ToolCardView } from './types'
@@ -14,6 +16,7 @@ function view(overrides: Partial<ToolCardView> = {}): ToolCardView {
     id: 'c1',
     name: 'Web',
     output: 'Welcome to example',
+    step: { args: { url: 'https://example.com' }, result: 'Welcome to example', toolName: 'fetch_url' },
     state: 'running',
     status: 'Checking example.com',
     ...overrides
@@ -35,13 +38,14 @@ function group(overrides: Partial<ToolCardGroup> = {}): ToolCardGroup {
 }
 
 function browserCards(): ToolCardView[] {
-  return [1, 2, 3].map(index =>
+  return [500, 1_000, 1_900].map((durationMs, index) =>
     view({
       args: [{ label: 'Address', value: `https://example.com/page-${index}` }],
       family: 'browser',
       id: `b${index}`,
       name: 'Browser',
       output: `page ${index} text`,
+      durationMs,
       state: 'done',
       status: `Opened page ${index}`,
       thumb: { kind: 'screenshot', src: SHOT }
@@ -55,6 +59,7 @@ let originalDesktop: typeof window.hermesDesktop
 beforeEach(() => {
   resolveFavicon.mockReset()
   resolveFavicon.mockResolvedValue('')
+  $previewTabs.set([])
   originalDesktop = window.hermesDesktop
   Object.defineProperty(window, 'hermesDesktop', { configurable: true, value: { resolveFavicon } })
 })
@@ -71,25 +76,44 @@ describe('ToolActivityStack', () => {
     expect(container.innerHTML).toBe('')
   })
 
-  it('shows a running status with typing dots', () => {
+  it('shows a running tool call as a one-line pill', () => {
     const { container } = render(<ToolActivityStack groups={[group()]} />)
 
     expect(screen.getByText('Checking example.com')).toBeTruthy()
-    expect(container.querySelector('[data-typing]')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Web: Checking example.com' })).toBeTruthy()
+    expect(container.querySelector('[data-tool-step="running"]')).toBeTruthy()
   })
 
-  it('settles three browser runs into one quiet line with a check', () => {
+  it('folds a completed multi-tool run into one quiet summary with total duration', () => {
     const cards = browserCards()
 
     const { container } = render(
       <ToolActivityStack
-        groups={[{ cards, family: 'browser', icon: 'globe', key: 'gb', name: 'Browser', state: 'done' }]}
+        groups={[
+          { cards: [cards[0]], family: 'browser', icon: 'globe', key: 'gb', name: 'Browser', state: 'done' },
+          { cards: [cards[1]], family: 'terminal', icon: 'terminal', key: 'gt', name: 'Terminal', state: 'done' },
+          { cards: [cards[2]], family: 'files', icon: 'files', key: 'gf', name: 'Files', state: 'done' }
+        ]}
       />
     )
 
-    expect(screen.getByText('Used Browser ×3')).toBeTruthy()
-    expect(container.querySelector('[data-tool-card="done"] .codicon-check')).toBeTruthy()
-    expect(container.querySelector('[data-typing]')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Used 3 tools' })).toBeTruthy()
+    expect(screen.getByText('3.4s')).toBeTruthy()
+    expect(container.querySelector('[data-tool-run-anchor]')).toBeTruthy()
+    expect(container.querySelector('[data-tool-step]')).toBeNull()
+  })
+
+  it('does not fold successful calls until the assistant turn completes', () => {
+    const cards = browserCards()
+    const groups = [{ cards, family: 'browser' as const, icon: 'globe', key: 'gb', name: 'Browser', state: 'done' as const }]
+    const { rerender } = render(<ToolActivityStack groups={groups} live />)
+
+    expect(screen.getByRole('button', { name: 'Browser: Opened page 1' })).toBeTruthy()
+    expect(screen.queryByText('Used 3 tools')).toBeNull()
+
+    rerender(<ToolActivityStack groups={groups} live={false} />)
+
+    expect(screen.getByRole('button', { name: 'Used 3 tools' })).toBeTruthy()
   })
 
   it('shows the error reason on a failed card', () => {
@@ -99,7 +123,7 @@ describe('ToolActivityStack', () => {
     expect(screen.getByText('Connection refused')).toBeTruthy()
   })
 
-  it('names each card by its tool and status for assistive tech', () => {
+  it('names each pill and summary for assistive tech', () => {
     const failed = view({ reason: 'Connection refused', state: 'error', status: 'Opening example.com' })
     render(
       <ToolActivityStack
@@ -110,11 +134,11 @@ describe('ToolActivityStack', () => {
       />
     )
 
-    expect(screen.getByRole('button', { name: 'Web: Opening example.com. Connection refused' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Used Browser ×3' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Web: Opening example.com: Connection refused' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Used 3 tools' })).toBeTruthy()
   })
 
-  it('calls onReviewApproval from Review without toggling details', () => {
+  it('calls onReviewApproval from Review without opening the pill', () => {
     const onReviewApproval = vi.fn()
     const waiting = view({ state: 'approval', status: 'Editing files' })
     render(
@@ -127,22 +151,11 @@ describe('ToolActivityStack', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Review' }))
 
     expect(onReviewApproval).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole('button', { expanded: false })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Web: Editing files' })).toBeTruthy()
     expect(screen.queryByText('Request')).toBeNull()
   })
 
-  it('expands a row to show its request and output', async () => {
-    render(<ToolActivityStack groups={[group()]} />)
-
-    fireEvent.click(screen.getByRole('button', { expanded: false }))
-
-    expect(await screen.findByRole('button', { expanded: true })).toBeTruthy()
-    expect(screen.getByText('Request')).toBeTruthy()
-    expect(screen.getByText('Output')).toBeTruthy()
-    expect(screen.getByText('Welcome to example')).toBeTruthy()
-  })
-
-  it('opens the browser viewer on the latest screenshot and steps back', () => {
+  it('expands a completed run to its individual pills', () => {
     const cards = browserCards()
     render(
       <ToolActivityStack
@@ -150,29 +163,35 @@ describe('ToolActivityStack', () => {
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { expanded: false }))
+    fireEvent.click(screen.getByRole('button', { name: 'Used 3 tools' }))
 
-    expect(screen.getByText('Step 3 of 3')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Browser: Opened page 1' })).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Previous step' }))
-
-    expect(screen.getByText('Step 2 of 3')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Browser: Opened page 2' })).toBeTruthy()
   })
 
-  it('never asks the network for a localhost favicon', async () => {
+  it('opens the Step view after a pill click with the original tool arguments', () => {
+    const card = view({
+      id: 'call-step',
+      step: { args: { command: 'npm test' }, result: 'all passed', toolCallId: 'call-step', toolName: 'terminal' }
+    })
+
+    render(<ToolActivityStack groups={[group({ cards: [card] })]} />)
+
+    expect($previewTabs.get()).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Web: Checking example.com' }))
+
+    expect($previewTabs.get()).toHaveLength(1)
+    expect($previewTabs.get()[0].target.kind).toBe('step')
+    expect($previewTabs.get()[0].target.step?.args).toEqual({ command: 'npm test' })
+  })
+
+  it('does not request a favicon for site thumbs', () => {
     const thumb: ToolCardThumb = { host: 'localhost', kind: 'site', url: 'http://localhost:4177/app' }
     const local = view({ id: 'l1', status: 'Serving the app', thumb })
     render(<ToolActivityStack groups={[group({ cards: [local], key: 'gl', thumb })]} />)
 
-    expect(await screen.findByText('Serving the app')).toBeTruthy()
-    await waitFor(() => expect(resolveFavicon).not.toHaveBeenCalled())
-  })
-
-  it('resolves a favicon for a public site thumb', async () => {
-    const thumb: ToolCardThumb = { host: 'example.com', kind: 'site', url: 'https://example.com/docs' }
-    const page = view({ id: 'p1', status: 'Reading the docs', thumb })
-    render(<ToolActivityStack groups={[group({ cards: [page], key: 'gp', thumb })]} />)
-
-    await waitFor(() => expect(resolveFavicon).toHaveBeenCalledWith('https://example.com/docs'))
+    expect(screen.getByText('Serving the app')).toBeTruthy()
+    expect(resolveFavicon).not.toHaveBeenCalled()
   })
 })

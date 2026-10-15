@@ -84,7 +84,7 @@ afterEach(() => {
 })
 
 describe('bot-tool-cards', () => {
-  it('renders a single tool call in Bot Chat as a card', async () => {
+  it('renders a single tool call in Bot Chat as a pill', async () => {
     markBotChat()
 
     const message: ThreadMessage = {
@@ -113,11 +113,11 @@ describe('bot-tool-cards', () => {
 
     expect(await screen.findByText('Finished reading.')).toBeTruthy()
     expect(container.querySelector('[data-slot="tool-activity-stack"]')).toBeTruthy()
-    expect(container.querySelector('[data-tool-card="done"]')).toBeTruthy()
-    expect(screen.getByText('Read status.tsx')).toBeTruthy()
+    expect(container.querySelector('[data-tool-step="done"]')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Files: Read status\.tsx/ })).toBeTruthy()
   })
 
-  it('groups a run of reads and searches into cards by kind', async () => {
+  it('folds a completed Bot Chat run and expands it into individual pills', async () => {
     markBotChat()
 
     const message: ThreadMessage = {
@@ -161,12 +161,15 @@ describe('bot-tool-cards', () => {
     const { container } = render(<Harness message={message} />)
 
     expect(await screen.findByText('Run completed.')).toBeTruthy()
-    const cards = container.querySelectorAll('[data-tool-card="done"]')
-    expect(cards.length).toBe(2)
-    expect(screen.getByText(/Files ×2/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Used 3 tools' })).toBeTruthy()
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(0)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Used 3 tools' }))
+
+    expect(container.querySelectorAll('[data-tool-step="done"]')).toHaveLength(3)
   })
 
-  it('leaves non-bot sessions to render through ToolRun or answer-only passthrough', async () => {
+  it('leaves non-bot sessions in answer-only mode until tool activity is enabled', async () => {
     const { container, rerender } = render(<Harness message={toolMessage()} />)
 
     expect(await screen.findByText('all done')).toBeTruthy()
@@ -181,10 +184,10 @@ describe('bot-tool-cards', () => {
     rerender(<Harness message={toolMessage()} />)
 
     await waitFor(() => {
-      expect(container.querySelector('[data-tool-summary]')).not.toBeNull()
+      expect(screen.getByRole('button', { name: 'Used 2 tools' })).toBeTruthy()
     })
 
-    expect(container.querySelector('[data-slot="tool-activity-stack"]')).toBeNull()
+    expect(container.querySelector('[data-slot="tool-activity-stack"]')).toBeTruthy()
   })
 
   it('still renders card tools such as file diffs as their own components', async () => {
@@ -217,7 +220,8 @@ describe('bot-tool-cards', () => {
     const { container } = render(<Harness message={message} />)
 
     expect(await screen.findByText('Edited demo.ts')).toBeTruthy()
-    expect(container.querySelector('[data-tool-row][data-file-edit]')).toBeTruthy()
+    expect(container.querySelector('[data-tool-step="done"]')).toBeTruthy()
+    expect(screen.getByText('afterEdit')).toBeTruthy()
   })
 
   it('still renders inter-agent delivery notices', async () => {
@@ -370,8 +374,8 @@ describe('bot-tool-cards', () => {
     const { container } = render(<Harness message={message} />)
 
     expect(await screen.findByText('Write failed.')).toBeTruthy()
-    expect(container.querySelector('[data-tool-card="error"]')).toBeTruthy()
-    expect(screen.getAllByText('disk full, act now').length).toBeGreaterThan(0)
+    expect(container.querySelector('[data-tool-step="error"]')).toBeTruthy()
+    expect(screen.getByText('disk full, act now')).toBeTruthy()
     expect(container.querySelector('[data-tool-row]')).toBeNull()
   })
 
@@ -386,7 +390,7 @@ describe('bot-tool-cards', () => {
     expect(container.querySelector('[data-tool-row]')).toBeNull()
   })
 
-  it('shows typing dots on a running call', async () => {
+  it('shows a running call as a one-line pill', async () => {
     markBotChat()
 
     const message: ThreadMessage = {
@@ -408,6 +412,6 @@ describe('bot-tool-cards', () => {
 
     const { container } = render(<Harness message={message} />)
 
-    await waitFor(() => expect(container.querySelector('[data-tool-card="running"] [data-typing]')).toBeTruthy())
+    await waitFor(() => expect(container.querySelector('[data-tool-step="running"]')).toBeTruthy())
   })
 })

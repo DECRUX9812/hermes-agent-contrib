@@ -117,6 +117,12 @@ export function toolCallFailed(part: { isError?: boolean; result?: unknown }): b
   )
 }
 
+export function toolCallFailedNeedsUser(part: { isError?: boolean; result?: unknown }): boolean {
+  const exitCode = parseMaybeObject(part.result).exit_code
+
+  return toolCallFailed(part) || (typeof exitCode === 'number' && exitCode !== 0)
+}
+
 export function unwrapToolPayload(value: unknown): unknown {
   const record = parseMaybeObject(value)
 

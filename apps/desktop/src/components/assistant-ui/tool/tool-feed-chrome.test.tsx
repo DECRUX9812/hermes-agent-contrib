@@ -125,9 +125,9 @@ describe('tool feed visibility policy', () => {
 
     expect(await screen.findByText('final answer only')).toBeTruthy()
     expect(container.querySelector('[data-slot="aui_thinking-disclosure"]')).toBeNull()
-    expect(container.querySelector('[data-tool-summary]')).toBeNull()
+    expect(container.querySelector('[data-tool-run-anchor]')).toBeNull()
     expect(screen.getByRole('button', { name: /Allow once/ })).toBeTruthy()
-    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-tool-step="error"]')).toHaveLength(1)
   })
 
   it('keeps the execution flow while reasoning stays hidden', async () => {
@@ -139,16 +139,15 @@ describe('tool feed visibility policy', () => {
 
     expect(await screen.findByText('final answer only')).toBeTruthy()
     expect(container.querySelector('[data-slot="aui_thinking-disclosure"]')).toBeNull()
-    expect(await screen.findByText(/Explored 2 files/)).toBeTruthy()
-    // The run scaffold is the visible flow here; the suppressed case above pins
-    // its absence via the same marker.
-    expect(container.querySelector('[data-tool-summary]')).not.toBeNull()
+    expect(await screen.findByRole('button', { name: 'Used 2 tools' })).toBeTruthy()
+    expect(container.querySelector('[data-tool-run-anchor]')).not.toBeNull()
+    expect(container.querySelectorAll('[data-tool-step="error"]')).toHaveLength(1)
   })
 
   it('still shows tool chrome when reasoning blocks are on', async () => {
     const { container } = render(<Harness />)
 
-    expect(await screen.findByText(/Explored 2 files/)).toBeTruthy()
+    expect(await screen.findByRole('button', { name: 'Used 2 tools' })).toBeTruthy()
     expect(container.querySelector('[data-slot="aui_thinking-disclosure"]')).not.toBeNull()
   })
 
@@ -159,7 +158,7 @@ describe('tool feed visibility policy', () => {
 
     expect(await screen.findByText('final answer only')).toBeTruthy()
     expect(container.querySelector('[data-slot="aui_thinking-disclosure"]')).not.toBeNull()
-    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-tool-step="error"]')).toHaveLength(1)
   })
 
   it('keeps a failed call whose error sits inside result, from a real tool.complete payload', async () => {
@@ -178,8 +177,7 @@ describe('tool feed visibility policy', () => {
     )
 
     expect(await screen.findByText('done')).toBeTruthy()
-    const rows = container.querySelectorAll('[data-tool-row]')
-    expect(rows).toHaveLength(1)
+    expect(container.querySelectorAll('[data-tool-step="error"]')).toHaveLength(1)
   })
 
   it('keeps a failed terminal call with a non-zero exit_code, from a real tool.complete payload', async () => {
@@ -214,7 +212,7 @@ describe('tool feed visibility policy', () => {
     )
 
     expect(await screen.findByText('done')).toBeTruthy()
-    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-tool-step="error"]')).toHaveLength(1)
   })
 
   it('still hides a successful call driven through the same tool.complete mapping', async () => {
@@ -231,6 +229,6 @@ describe('tool feed visibility policy', () => {
     )
 
     expect(await screen.findByText('done')).toBeTruthy()
-    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(0)
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(0)
   })
 })

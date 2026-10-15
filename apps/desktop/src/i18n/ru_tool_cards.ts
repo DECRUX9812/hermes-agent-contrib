@@ -20,6 +20,7 @@ export const ruToolCards: ToolCardsCopy = {
     vision: 'Зрение'
   },
   usedTimes: (name, count) => `Использовано: ${name} ×${count}`,
+  usedTools: count => `Использовано инструментов: ${count}`,
   working: 'Выполняется…',
   awaitingApproval: 'Ждёт вашего подтверждения',
   reviewApproval: 'Проверить',
@@ -50,9 +51,13 @@ export const ruToolCards: ToolCardsCopy = {
     url: 'Адрес'
   },
   viewer: {
+    action: 'Действие',
     title: name => `Шаги: ${name}`,
     step: (index, total) => `Шаг ${index} из ${total}`,
     noScreenshot: 'Для этого шага нет снимка',
+    thumbnail: 'Снимок экрана',
+    snapshot: 'Снимок DOM',
+    url: 'URL',
     previous: 'Предыдущий шаг',
     next: 'Следующий шаг'
   }

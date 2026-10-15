@@ -20,6 +20,7 @@ export const zhToolCards: ToolCardsCopy = {
     vision: '视觉'
   },
   usedTimes: (name, count) => `已使用 ${name} ×${count}`,
+  usedTools: count => `已使用 ${count} 个工具`,
   working: '处理中…',
   awaitingApproval: '等待你的批准',
   reviewApproval: '查看',
@@ -50,9 +51,13 @@ export const zhToolCards: ToolCardsCopy = {
     url: '地址'
   },
   viewer: {
+    action: '操作',
     title: name => `${name}步骤`,
     step: (index, total) => `第 ${index} 步，共 ${total} 步`,
     noScreenshot: '此步骤没有截图',
+    thumbnail: '截图',
+    snapshot: 'DOM 快照',
+    url: 'URL',
     previous: '上一步',
     next: '下一步'
   }

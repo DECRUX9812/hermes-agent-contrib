@@ -20,6 +20,7 @@ export const jaToolCards: ToolCardsCopy = {
     vision: 'ビジョン'
   },
   usedTimes: (name, count) => `${name} ×${count} 回使用`,
+  usedTools: count => `${count} 個のツールを使用`,
   working: '処理中…',
   awaitingApproval: '承認待ち',
   reviewApproval: '確認',
@@ -50,9 +51,13 @@ export const jaToolCards: ToolCardsCopy = {
     url: 'アドレス'
   },
   viewer: {
+    action: '操作',
     title: name => `${name}のステップ`,
     step: (index, total) => `ステップ ${index} / ${total}`,
     noScreenshot: 'このステップのスクリーンショットはありません',
+    thumbnail: 'スクリーンショット',
+    snapshot: 'DOM スナップショット',
+    url: 'URL',
     previous: '前のステップ',
     next: '次のステップ'
   }
