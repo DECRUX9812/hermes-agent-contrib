@@ -46,17 +46,12 @@ function FleetJobRow({ bot, job }: FleetRoutine) {
   return (
     <div className="flex items-center gap-2 rounded-md px-1.5 py-1">
       <BotFace color={avatarColor(color, bot.name)} image={image} name={bot.name} shape={shape} size={16} />
-      <span className="min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)">{jobTitle}</span>
-      <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">{name}</span>
+      <span className="min-w-0 flex-1 truncate text-ui-xs text-fg-secondary">{jobTitle}</span>
+      <span className="shrink-0 text-ui-2xs text-fg-muted">{name}</span>
       {paused ? (
-        <span className="shrink-0 text-[0.65rem] text-(--ui-text-quaternary)">—</span>
+        <span className="shrink-0 text-ui-2xs text-fg-muted">—</span>
       ) : Number.isFinite(fireAt) ? (
-        <span
-          className={cn(
-            'shrink-0 text-[0.65rem] tabular-nums',
-            overdue ? 'text-amber-600 dark:text-amber-300' : 'text-(--ui-text-quaternary)'
-          )}
-        >
+        <span className={cn('shrink-0 font-mono tabular-nums text-ui-2xs', overdue ? 'text-warning' : 'text-fg-muted')}>
           {overdue ? `${b.calendar.overdue} · ` : ''}
           {relativeTime(fireAt)}
         </span>
@@ -139,17 +134,17 @@ export function RoutinesCalendarDialog({
         </DialogHeader>
         <div className="flex max-h-[60vh] min-h-0 flex-col gap-2 overflow-y-auto">
           {partial ? (
-            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[0.6875rem] text-amber-700 dark:text-amber-300">
+            <div className="rounded-control bg-warning/10 px-2.5 py-1.5 text-ui-2xs text-warning">
               {b.calendar.loadFailed}
             </div>
           ) : null}
           {loading ? (
-            <div className="flex items-center gap-1.5 px-1 py-3 text-[0.75rem] text-(--ui-text-tertiary)">
+            <div className="flex items-center gap-1.5 px-1 py-3 text-ui-xs text-fg-muted">
               <Codicon name="loading" spinning />
               {b.calendar.title}
             </div>
           ) : !hasAny ? (
-            <div className="px-1 py-4 text-center text-[0.75rem] text-(--ui-text-tertiary)">{b.calendar.empty}</div>
+            <div className="px-1 py-4 text-center text-ui-xs text-fg-muted">{b.calendar.empty}</div>
           ) : (
             <>
               {groups.nextUp.length ? (

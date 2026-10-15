@@ -10,18 +10,22 @@
  *  - Copy screenshot never writes an empty clipboard entry.
  */
 
+import type * as HermesSdk from '@hermes/plugin-sdk'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, fireEvent, render, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import type { RosterRow } from './types'
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@hermes/plugin-sdk', async importOriginal => {
+  const sdk = await importOriginal<typeof HermesSdk>()
   const { useStore } = await import('@nanostores/react')
   const { atom } = await import('nanostores')
   const { onGatewayEvent } = await import('../../contrib/events')
 
   return {
+    ...sdk,
     atom,
     coarseElapsed: () => ({ unit: 'm' as const, value: 0 }),
     Button: ({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) => (
@@ -45,6 +49,8 @@ vi.mock('./data', async () => {
 
   return {
     $lastRoster: atom<RosterRow[]>([]),
+    botRosterKey: (bot: RosterRow) =>
+      bot.sourceScoped || bot.remoteSource ? `${bot.connectionId}::${bot.name}` : bot.name,
     botSelectionKey: (bot: RosterRow) =>
       bot.sourceScoped || bot.remoteSource ? `${bot.connectionId}::${bot.name}` : bot.name
   }
@@ -78,6 +84,22 @@ vi.mock('./i18n', () => ({
       handBack: 'Hand back',
       handBackForce: 'Force hand back',
       handBackForceHint: 'Another window holds control'
+    },
+    computer: {
+      todoStatus: { cancelled: 'Cancelled', completed: 'Completed', inProgress: 'In progress', pending: 'Pending' },
+      title: 'Computer history',
+      history: 'What it did',
+      steps: 'Computer steps',
+      replay: 'Replay history',
+      previousStep: 'Previous step',
+      nextStep: 'Next step',
+      live: 'Live',
+      taskChecklist: 'Task checklist',
+      noCanonicalChat: 'No canonical chat',
+      loading: 'Loading history',
+      loadFailed: 'Load failed',
+      retry: 'Retry',
+      empty: 'No steps'
     }
   })
 }))
@@ -89,6 +111,16 @@ import { type DisplayStatus, viewerHash } from './screen-connection'
 import { openBotScreen } from './screen-open'
 import { BotComputerPanel } from './screen-panel'
 import { $screenState, setScreenLease, setScreenStatus, setScreenViewer } from './screen-state'
+
+function renderPanel(bot: RosterRow) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+  return render(
+    <QueryClientProvider client={client}>
+      <BotComputerPanel bot={bot} />
+    </QueryClientProvider>
+  )
+}
 
 const botRemote: RosterRow = { name: 'default', sourceScoped: true, connectionId: 'host-a', connectionKind: 'remote' }
 
@@ -152,7 +184,7 @@ it('take over mints a viewer through display.observe before acquiring, then open
     return Promise.resolve({ data_url: null })
   }) as never)
 
-  const view = render(<BotComputerPanel bot={botRemote} />)
+  const view = renderPanel(botRemote)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Take over' }))
 
@@ -181,7 +213,7 @@ it('hand back releases the lease with this window\u2019s minted viewer id', asyn
     return Promise.resolve({ data_url: null })
   }) as never)
 
-  const view = render(<BotComputerPanel bot={botRemote} />)
+  const view = renderPanel(botRemote)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Hand back' }))
 
@@ -202,7 +234,7 @@ it('restart bounces the screen: display.stop (forced) before display.start', asy
     return Promise.resolve({ data_url: null })
   }) as never)
 
-  const view = render(<BotComputerPanel bot={botRemote} />)
+  const view = renderPanel(botRemote)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Restart' }))
 
@@ -229,7 +261,7 @@ it('opens the bot workdir in a user terminal on the canonical chat; hidden for r
     return Promise.resolve({ data_url: null })
   }) as never)
 
-  const view = render(<BotComputerPanel bot={botLocal} />)
+  const view = renderPanel(botLocal)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Workdir' }))
 
@@ -238,7 +270,7 @@ it('opens the bot workdir in a user terminal on the canonical chat; hidden for r
   })
   view.unmount()
 
-  const remote = render(<BotComputerPanel bot={botRemote} />)
+  const remote = renderPanel(botRemote)
   await act(async () => {})
   expect(remote.queryByRole('button', { name: 'Workdir' })).toBeNull()
   remote.unmount()
@@ -254,7 +286,7 @@ it('copy screenshot never writes an empty frame to the clipboard', async () => {
     return Promise.resolve({})
   }) as never)
 
-  const view = render(<BotComputerPanel bot={botRemote} />)
+  const view = renderPanel(botRemote)
   await act(async () => {})
   fireEvent.click(view.getByRole('button', { name: 'Copy screenshot' }))
 

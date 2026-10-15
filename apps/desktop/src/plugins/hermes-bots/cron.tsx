@@ -8,7 +8,6 @@ import {
   armTranscriptReplayJump,
   atom,
   Button,
-  Checkbox,
   cn,
   Codicon,
   confirm,
@@ -41,6 +40,7 @@ import {
 import { useEffect, useState } from 'react'
 
 import type { RoutinePreset } from './autopilot'
+import { type BotRoutine, createBotRoutine, updateBotRoutine } from './bot-routines'
 import { $selectedBot } from './bot-state'
 import { $botMeta, botRosterKey, botSelectionKey, isActiveRosterBot } from './data'
 import { labeled } from './dialog-parts'
@@ -794,7 +794,7 @@ type ScheduleFreq = 'once' | 'hourly' | 'daily' | 'weekdays' | 'weekly' | 'month
 
 /** Picker form state. Every detail field stays a string: they are edited as
  *  raw `Input` text and only coerced when the schedule string is composed. */
-interface ScheduleState {
+export interface ScheduleState {
   freq: ScheduleFreq
   intervalN: string
   intervalUnit: string
@@ -845,7 +845,7 @@ const TIMES = (() => {
 })()
 
 /** Compose the Hermes schedule string from picker state. */
-function composeSchedule(state: ScheduleState): string {
+export function composeSchedule(state: ScheduleState): string {
   const [h, m] = (state.time || '9:0').split(':').map(Number)
 
   switch (state.freq) {
@@ -938,12 +938,12 @@ function pickerSelect<T extends string>(
   )
 }
 
-interface SchedulePickerProps {
+export interface SchedulePickerProps {
   setState: React.Dispatch<React.SetStateAction<ScheduleState>>
   state: ScheduleState
 }
 
-function SchedulePicker({ state, setState }: SchedulePickerProps) {
+export function SchedulePicker({ state, setState }: SchedulePickerProps) {
   const b = useBots()
   const { locale } = useI18n()
   const clock = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit' })
@@ -1108,7 +1108,7 @@ function SchedulePicker({ state, setState }: SchedulePickerProps) {
   )
 }
 
-function defaultScheduleState(): ScheduleState {
+export function defaultScheduleState(): ScheduleState {
   return {
     freq: 'daily',
     time: '9:0',
@@ -1132,55 +1132,59 @@ interface CreateRoutineDialogProps {
   open: boolean
   /** Prefill (an autopilot pick): seeded when the dialog opens, still editable. */
   preset?: null | RoutinePreset
+  /** Existing persisted routine: the same form becomes its editor. */
+  routine?: BotRoutine | null
 }
 
-export function CreateRoutineDialog({ bot, open, onClose, preset = null }: CreateRoutineDialogProps) {
+export function CreateRoutineDialog({ bot, open, onClose, preset = null, routine = null }: CreateRoutineDialogProps) {
   const b = useBots()
   const { t } = useI18n()
   const c = t.cron
   const [name, setName] = useState('')
   const [instruction, setInstruction] = useState('')
+  const [condition, setCondition] = useState('')
+  const [kind, setKind] = useState<'schedule' | 'watch'>('schedule')
   const [sched, setSched] = useState(defaultScheduleState())
-  const [continuity, setContinuity] = useState(false)
-  // Where the run's output lands: 'history' = the run session only (Run
-  // history / cron page, today's behavior); 'bot-chat' = inject into this
-  // bot's canonical Bot Chat as a real message — the bot reads it, acts on
-  // it, and responds there (costs the bot one agent turn per run).
-  const [target, setTarget] = useState('history')
+  const [rawSchedule, setRawSchedule] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<null | string>(null)
-  const activeProfile = useValue(host.state.profile)
   // Normalize the bare-name arm to a row once, the way loadRoutines /
   // useRoutines / invalidateRoutineOwner already do. Everything below reads
   // `owner.name` — on a raw string those reads are undefined, which silently
   // costs the dialog its title and costs requestForBot its route.
   const owner: RosterRow = typeof bot === 'string' ? { name: bot } : bot
-  const profile = owner.name
-  const schedule = composeSchedule(sched)
+  const schedule = routine ? rawSchedule : composeSchedule(sched)
 
-  // An autopilot pick seeds the form each time the dialog opens with it.
+  // Prefills and persisted edit values are form state, not copies of server data.
   useEffect(() => {
-    if (open && preset) {
+    if (open && routine) {
+      setName(routine.name)
+      setKind(routine.kind)
+      setInstruction(routine.prompt || '')
+      setCondition(routine.condition || '')
+      setRawSchedule(routine.schedule)
+    } else if (open && preset) {
       setName(preset.title)
       setInstruction(preset.instruction)
       setSched({ ...defaultScheduleState(), ...preset.schedule })
-      setTarget(preset.deliverToChat ? 'bot-chat' : 'history')
+      setKind('schedule')
     }
-  }, [open, preset])
+  }, [open, preset, routine])
 
   const reset = () => {
     setName('')
     setInstruction('')
+    setCondition('')
+    setKind('schedule')
     setSched(defaultScheduleState())
-    setContinuity(false)
-    setTarget('history')
+    setRawSchedule('')
     setBusy(false)
     setError(null)
   }
 
   const submit = async () => {
     const title = name.trim()
-    const task = instruction.trim()
+    const task = (routine?.kind === 'watch' || kind === 'watch' ? condition : instruction).trim()
     const inputError = routineInputError(title, task, b.cron)
 
     if (inputError) {
@@ -1197,44 +1201,23 @@ export function CreateRoutineDialog({ bot, open, onClose, preset = null }: Creat
     setError(null)
 
     try {
-      const repeatN =
-        sched.freq !== 'once' && sched.freq !== 'advanced' && String(sched.repeatN || '').trim()
-          ? Math.max(1, parseInt(sched.repeatN, 10) || 1)
-          : null
+      const effectiveKind = routine?.kind || kind
 
-      await requestForBot(owner, 'cron.manage', {
-        action: 'add',
-        name: `[bot:${profile}] ${title}`,
+      const params = {
+        name: title,
         schedule: schedule.trim(),
-        prompt: routinePrompt(profile, title, task, activeProfile),
-        ...(profile
-          ? {
-              profile
-            }
-          : {}),
-        ...(repeatN
-          ? {
-              repeat: repeatN
-            }
-          : {}),
-        ...(continuity
-          ? {
-              continuity: true
-            }
-          : {}),
-        // 'bot-chat' (bare, no name): the job is created IN the bot's own
-        // cron store (profile scoping above), so the scheduler resolves the
-        // token to that profile — no cross-gateway name ambiguity possible.
-        ...(target === 'bot-chat'
-          ? {
-              deliver: 'bot-chat'
-            }
-          : {})
-      })
-      await invalidateRoutineOwner(owner)
+        ...(effectiveKind === 'watch' ? { condition: task } : { prompt: task })
+      }
+
+      if (routine) {
+        await updateBotRoutine(owner, routine.id, params)
+      } else {
+        await createBotRoutine(owner, { ...params, kind: effectiveKind })
+      }
+
       host.notify({
         kind: 'success',
-        message: `${c.created}: ${title}`
+        message: `${routine ? b.routines.updated : b.routines.created}: ${title}`
       })
       reset()
       onClose()
@@ -1245,6 +1228,7 @@ export function CreateRoutineDialog({ bot, open, onClose, preset = null }: Creat
   }
 
   const ownerLabel = displayName(owner, botRosterMeta(owner, $botMeta.get()))
+  const effectiveKind = routine?.kind || kind
 
   return (
     <Dialog
@@ -1258,8 +1242,10 @@ export function CreateRoutineDialog({ bot, open, onClose, preset = null }: Creat
     >
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{c.createTitle}</DialogTitle>
-          <DialogDescription>{b.cron.createDesc(ownerLabel)}</DialogDescription>
+          <DialogTitle>{routine ? b.routines.editTitle : c.createTitle}</DialogTitle>
+          <DialogDescription>
+            {routine ? b.routines.editDescription(ownerLabel) : b.cron.createDesc(ownerLabel)}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3.5">
           {labeled(
@@ -1271,33 +1257,49 @@ export function CreateRoutineDialog({ bot, open, onClose, preset = null }: Creat
               value={name}
             />
           )}
-          {labeled(
-            c.promptLabel,
-            <Textarea
-              className="min-h-20"
-              onChange={event => setInstruction(event.target.value)}
-              placeholder={c.promptPlaceholder}
-              value={instruction}
-            />
-          )}
-          {labeled(b.cron.whenToRun, <SchedulePicker setState={setSched} state={sched} />)}
-          {labeled(
-            b.cron.sendResultsTo,
-            pickerSelect(target, setTarget, [
-              {
-                id: 'history',
-                label: b.cron.runHistoryOnly
-              },
-              {
-                id: 'bot-chat',
-                label: b.cron.botChatTarget(ownerLabel)
-              }
-            ])
-          )}
-          <label className="flex items-center gap-2 text-xs text-(--ui-text-tertiary) cursor-pointer select-none">
-            <Checkbox checked={continuity} onCheckedChange={value => setContinuity(Boolean(value))} />
-            {b.cron.continuity}
-          </label>
+          {!routine
+            ? labeled(
+                b.routines.kind,
+                <div className="flex gap-1">
+                  {(['schedule', 'watch'] as const).map(value => (
+                    <Button
+                      aria-pressed={kind === value}
+                      key={value}
+                      onClick={() => setKind(value)}
+                      size="sm"
+                      variant={kind === value ? 'secondary' : 'ghost'}
+                    >
+                      {value === 'schedule' ? b.routines.onSchedule : b.routines.tellWhen}
+                    </Button>
+                  ))}
+                </div>
+              )
+            : null}
+          {effectiveKind === 'watch'
+            ? labeled(
+                b.routines.condition,
+                <Textarea
+                  className="min-h-20"
+                  onChange={event => setCondition(event.target.value)}
+                  placeholder={b.routines.conditionPlaceholder}
+                  value={condition}
+                />
+              )
+            : labeled(
+                c.promptLabel,
+                <Textarea
+                  className="min-h-20"
+                  onChange={event => setInstruction(event.target.value)}
+                  placeholder={c.promptPlaceholder}
+                  value={instruction}
+                />
+              )}
+          {routine
+            ? labeled(
+                b.cron.whenToRun,
+                <Input onChange={event => setRawSchedule(event.target.value)} value={rawSchedule} />
+              )
+            : labeled(b.cron.whenToRun, <SchedulePicker setState={setSched} state={sched} />)}
           {error ? (
             <div className="rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-accent)">
               {error}
@@ -1315,8 +1317,16 @@ export function CreateRoutineDialog({ bot, open, onClose, preset = null }: Creat
           >
             {t.common.cancel}
           </Button>
-          <Button disabled={busy || !name.trim() || !instruction.trim() || !schedule.trim()} onClick={submit}>
-            {busy ? t.common.saving : c.createAction}
+          <Button
+            disabled={
+              busy ||
+              !name.trim() ||
+              !(effectiveKind === 'watch' ? condition.trim() : instruction.trim()) ||
+              !schedule.trim()
+            }
+            onClick={submit}
+          >
+            {busy ? t.common.saving : routine ? t.common.save : c.createAction}
           </Button>
         </DialogFooter>
       </DialogContent>

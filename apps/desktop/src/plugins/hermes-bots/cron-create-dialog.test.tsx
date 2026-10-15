@@ -1,22 +1,11 @@
-/**
- * The Create-job dialog: who it says the job belongs to, and where the run's
- * output is delivered.
- *
- * #93572: the dialog's `bot` prop is the pane's create target — an owner
- * OBJECT for roster-scoped bots, a bare profile name otherwise. Building the
- * label with `displayName({ name: bot }, $botMeta.get()[bot])` rendered
- * "[object Object]" and keyed the meta map with an object. The prop is now
- * normalized to a roster row at the component boundary and the meta lookup
- * goes through the object-aware `botRosterMeta`.
- */
+/** The routine editor writes through the profile-scoped fork.routines RPCs. */
 
 import type * as HermesSdk from '@hermes/plugin-sdk'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { translateBots } from './i18n-test-helper'
 
-// Radix calls these on open; jsdom doesn't implement them.
 beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn()
   Element.prototype.hasPointerCapture = vi.fn(() => false)
@@ -25,7 +14,7 @@ beforeAll(() => {
 
 const { notify, request } = vi.hoisted(() => ({
   notify: vi.fn(),
-  request: vi.fn(async (_method: string, _params: Record<string, unknown>) => ({}))
+  request: vi.fn(async (_method: string, _params: Record<string, unknown>) => ({ routines: [] }))
 }))
 
 vi.mock('@hermes/plugin-sdk', async importOriginal => {
@@ -34,8 +23,6 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
   return {
     ...sdk,
     host: { ...sdk.host, notify, request },
-    // The plugin bundle normally lands via `ctx.i18n.register` at load, so
-    // without this every localized label renders empty.
     usePluginI18n: () => translateBots
   }
 })
@@ -43,16 +30,7 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
 const { $botMeta } = await import('./data')
 const { CreateRoutineDialog } = await import('./cron')
 
-/** The control under a `labeled(...)` caption — the label is presentational,
- *  so it carries no `for`/`id` pair to query by. */
-function controlUnder(caption: string) {
-  const field = screen.getByText(caption).parentElement!
-
-  return within(field).getByRole('combobox')
-}
-
-/** Name + instruction; the schedule picker already defaults to a valid daily. */
-function fillRequiredFields() {
+function fillScheduleFields() {
   fireEvent.change(screen.getByPlaceholderText('Morning briefing'), { target: { value: 'Morning digest' } })
   fireEvent.change(screen.getByPlaceholderText(/Summarize my unread Slack threads/), {
     target: { value: 'Summarize yesterday.' }
@@ -64,82 +42,61 @@ beforeEach(() => {
   $botMeta.set({})
 })
 
-afterEach(() => {
-  cleanup()
-})
+afterEach(() => cleanup())
 
-describe('the dialog names the bot, never its object', () => {
-  it('resolves an owner OBJECT through the roster-aware meta lookup', () => {
+describe('routine form', () => {
+  it('uses the bot display name when given an owner row or profile name', () => {
     $botMeta.set({ ops: { title: 'Ops Bot' } })
-
-    render(<CreateRoutineDialog bot={{ name: 'ops' }} onClose={() => undefined} open />)
-
-    const dialog = screen.getByRole('dialog')
-
-    expect(dialog.textContent).toContain('Ops Bot')
-    expect(dialog.textContent).not.toContain('[object Object]')
+    const view = render(<CreateRoutineDialog bot={{ name: 'ops' }} onClose={() => undefined} open />)
+    expect(view.getByRole('dialog').textContent).toContain('Ops Bot')
+    view.rerender(<CreateRoutineDialog bot="ops" onClose={() => undefined} open />)
+    expect(view.getByRole('dialog').textContent).not.toContain('[object Object]')
   })
 
-  it('normalizes the bare-name arm to the same label', () => {
-    $botMeta.set({ ops: { title: 'Ops Bot' } })
-
-    render(<CreateRoutineDialog bot="ops" onClose={() => undefined} open />)
-
-    expect(screen.getByRole('dialog').textContent).toContain('Ops Bot')
-  })
-})
-
-describe('where the run\u2019s output lands', () => {
-  it('sends no deliver param by default \u2014 history only', async () => {
+  it('creates a schedule routine on the bot profile', async () => {
     render(<CreateRoutineDialog bot={{ name: 'ops' }} onClose={() => undefined} open />)
-    fillRequiredFields()
-
+    fillScheduleFields()
     fireEvent.click(screen.getByRole('button', { name: 'Create cron' }))
 
-    await waitFor(() => expect(request).toHaveBeenCalled())
-
-    const [, params] = request.mock.calls[0]
-
-    expect(params).not.toHaveProperty('deliver')
-    expect(params).toMatchObject({ action: 'add', name: '[bot:ops] Morning digest', profile: 'ops' })
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        'fork.routines.create',
+        expect.objectContaining({
+          kind: 'schedule',
+          name: 'Morning digest',
+          profile: 'ops',
+          prompt: 'Summarize yesterday.',
+          schedule: '0 9 * * *'
+        })
+      )
+    )
   })
 
-  it('sends the BARE bot-chat token on the profile-scoped create', async () => {
+  it('creates a watch routine with a condition and no prompt', async () => {
     render(<CreateRoutineDialog bot={{ name: 'ops' }} onClose={() => undefined} open />)
-    fillRequiredFields()
-
-    fireEvent.click(controlUnder('Send results to'))
-    fireEvent.click(screen.getByRole('option', { name: /chat \(bot responds\)/ }))
+    fireEvent.change(screen.getByPlaceholderText('Morning briefing'), { target: { value: 'Watch releases' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Tell me when' }))
+    fireEvent.change(screen.getByPlaceholderText('Tell the bot what change or event to watch for…'), {
+      target: { value: 'A new release is published.' }
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Create cron' }))
 
-    await waitFor(() => expect(request).toHaveBeenCalled())
-
-    const [, params] = request.mock.calls[0]
-
-    // The job is created in the bot's OWN cron store (profile scoping above),
-    // so the bare token resolves to that profile machine-locally. A named
-    // token built from a Desktop-side alias could name a profile the backend
-    // does not have — the #82530 alias trap.
-    expect(params.deliver).toBe('bot-chat')
-    expect(params.profile).toBe('ops')
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        'fork.routines.create',
+        expect.objectContaining({
+          condition: 'A new release is published.',
+          kind: 'watch',
+          name: 'Watch releases',
+          profile: 'ops',
+          schedule: '0 9 * * *'
+        })
+      )
+    )
+    expect(request.mock.calls[0]?.[1]).not.toHaveProperty('prompt')
   })
 
-  it('returns the picker to history when the dialog is reopened', async () => {
-    const { rerender } = render(<CreateRoutineDialog bot={{ name: 'ops' }} onClose={() => undefined} open />)
-
-    fireEvent.click(controlUnder('Send results to'))
-    fireEvent.click(screen.getByRole('option', { name: /chat \(bot responds\)/ }))
-    // Cancel resets; a reopened dialog must never inherit the last target.
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-
-    rerender(<CreateRoutineDialog bot={{ name: 'ops' }} onClose={() => undefined} open />)
-
-    await waitFor(() => expect(controlUnder('Send results to').textContent).toBe('Run history only'))
-  })
-})
-
-describe('an autopilot pick prefills the dialog', () => {
-  it('schedules exactly the preset it was opened with once confirmed', async () => {
+  it('prefills an autopilot schedule and persists the selected prompt', async () => {
     const preset = {
       deliverToChat: true,
       instruction: 'Brief me for the day.',
@@ -148,14 +105,20 @@ describe('an autopilot pick prefills the dialog', () => {
     }
 
     render(<CreateRoutineDialog bot={{ name: 'ops' }} onClose={() => undefined} open preset={preset} />)
-
     expect(screen.getByDisplayValue('Morning brief')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /^create/i }))
 
-    await waitFor(() => expect(request).toHaveBeenCalled())
-    const [, params] = request.mock.calls.find(([method]) => method === 'cron.manage')!
-
-    expect(params).toMatchObject({ action: 'add', deliver: 'bot-chat', schedule: '0 8 * * 1-5' })
-    expect(String(params.prompt)).toContain('Brief me for the day.')
+    await waitFor(() =>
+      expect(request).toHaveBeenCalledWith(
+        'fork.routines.create',
+        expect.objectContaining({
+          kind: 'schedule',
+          name: 'Morning brief',
+          profile: 'ops',
+          prompt: 'Brief me for the day.',
+          schedule: '0 8 * * 1-5'
+        })
+      )
+    )
   })
 })

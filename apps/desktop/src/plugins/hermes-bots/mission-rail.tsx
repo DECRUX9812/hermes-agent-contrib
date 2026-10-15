@@ -27,12 +27,13 @@ import {
 import { type ReactNode, useState } from 'react'
 
 import { activityNow } from './activity-format'
-import { AUTOPILOT_ICONS, autopilotPresets, type RoutinePreset } from './autopilot'
-import { useAutopilotText } from './autopilot-i18n'
+import type { RoutinePreset } from './autopilot'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { BotCardMeta } from './bot-card-meta'
+import { BotTodoChecklist } from './bot-computer-panel'
 import { BotDeliverablesSection } from './bot-deliverables'
 import { BotIdentitySection, BotMemorySection } from './bot-identity-sections'
+import { BotRoutinesPanel } from './bot-routines-panel'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { BotTaskLog } from './bot-task-log'
 import { BotTopicProjectMenu } from './bot-topic-project-menu'
@@ -42,8 +43,6 @@ import {
   resolveRoutineOwner,
   routineCreateTarget,
   RoutineDetailDialog,
-  routineFilterHint,
-  RoutineRow,
   selectRoutineJobs,
   useRoutines
 } from './cron'
@@ -237,12 +236,8 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
                 size="0.95rem"
               />
               <span className="grid min-w-0 gap-0.5">
-                <span className="wrap-anywhere text-ui-sm font-medium leading-snug text-fg">
-                  {item.title}
-                </span>
-                {item.detail ? (
-                  <span className="line-clamp-2 text-ui-xs text-fg-muted">{item.detail}</span>
-                ) : null}
+                <span className="wrap-anywhere text-ui-sm font-medium leading-snug text-fg">{item.title}</span>
+                {item.detail ? <span className="line-clamp-2 text-ui-xs text-fg-muted">{item.detail}</span> : null}
               </span>
             </li>
           ))}
@@ -261,49 +256,6 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
         </Button>
       ) : null}
       {!bot.remoteSource && <AskRulesCard name={name} profile={bot.name} />}
-    </div>
-  )
-}
-
-/** "Put <bot> on autopilot": presets that prefill the routine dialog. A
- *  preset whose title already names one of the bot's routines is hidden. */
-function AutopilotChips({
-  name,
-  onCustom,
-  onPick,
-  taken
-}: {
-  name: string
-  /** Offered when this card stands in for the empty state. */
-  onCustom?: () => void
-  onPick: (preset: RoutinePreset) => void
-  taken: string[]
-}) {
-  const a = useAutopilotText()
-  const presets = autopilotPresets(a).filter(({ label }) => !taken.some(title => title.endsWith(label)))
-
-  if (!presets.length) {
-    return null
-  }
-
-  return (
-    <div className="mx-2.5 mb-2 mt-1 border-t border-(--ui-stroke-tertiary) pt-2.5" data-slot="autopilot">
-      <p className="text-ui-xs font-medium text-fg">{a.heading(name)}</p>
-      <p className="mb-2 text-ui-2xs leading-snug text-fg-muted">{a.hint}</p>
-      <div className="flex flex-wrap gap-1">
-        {presets.map(({ id, label, preset }) => (
-          <Button key={id} onClick={() => onPick(preset)} size="xs" variant="secondary">
-            <Codicon name={AUTOPILOT_ICONS[id]} />
-            {label}
-          </Button>
-        ))}
-        {onCustom && (
-          <Button onClick={onCustom} size="xs" variant="ghost">
-            <Codicon name="add" />
-            {a.custom}
-          </Button>
-        )}
-      </div>
     </div>
   )
 }
@@ -334,7 +286,7 @@ export function MissionRail() {
   const bot = String(owner?.name || focusedOwner?.name || 'default').trim() || 'default'
   const allMeta = useValue($botMeta)
   const meta = owner ? botRosterMeta(owner, allMeta) : null
-  const { data, error, isLoading, refetch } = useRoutines(owner)
+  const { data, error } = useRoutines(owner)
   const b = useBots()
   const { t } = useI18n()
   const c = t.cron
@@ -376,10 +328,6 @@ export function MissionRail() {
   const jobs = view.jobs
   const detailJob = detailJobId ? jobs.find(job => job.job_id === detailJobId) || null : null
 
-  const staleNotice = error && !view.live && view.all.length ? b.cron.staleNotice : null
-
-  const filterHint = routineFilterHint(view.all, jobs)
-
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain">
       <BotHero bot={owner} meta={meta} onEdit={() => setEditing(true)} />
@@ -393,13 +341,16 @@ export function MissionRail() {
         tabIndex={0}
       >
         {tab === 'activity' ? (
-          <WorkBoard
-            jobs={jobs}
-            name={displayName(owner, meta)}
-            onAddRoutine={() => openCreate()}
-            onOpenRoutine={setDetailJobId}
-            owner={owner}
-          />
+          <>
+            <BotTodoChecklist bot={owner} />
+            <WorkBoard
+              jobs={jobs}
+              name={displayName(owner, meta)}
+              onAddRoutine={() => openCreate()}
+              onOpenRoutine={setDetailJobId}
+              owner={owner}
+            />
+          </>
         ) : null}
         {tab === 'approvals' ? <ApprovalsPanel bot={owner} name={displayName(owner, meta)} /> : null}
         {tab === 'scheduled' ? (
@@ -418,67 +369,7 @@ export function MissionRail() {
               id="routines"
               title={c.title}
             >
-              {staleNotice ? (
-                <div className="mx-3 mb-1 border-l border-(--ui-stroke-tertiary) px-2 py-1.5 text-ui-2xs text-fg-muted">
-                  {staleNotice}
-                </div>
-              ) : null}
-              {isLoading && !view.all.length ? (
-                <div className="flex items-center justify-center py-4">
-                  <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
-                </div>
-              ) : error && !view.all.length ? (
-                <PanelEmpty
-                  action={
-                    <Button onClick={() => void refetch()} size="sm" variant="secondary">
-                      {t.common.retry}
-                    </Button>
-                  }
-                  description={b.cron.readFailure}
-                  icon="warning"
-                  title={c.failedLoad}
-                />
-              ) : jobs.length === 0 && !filterHint ? (
-                // Nothing scheduled and nothing hidden by the filter: the autopilot
-                // card below IS the empty state, with a way to write one from scratch.
-                <AutopilotChips
-                  name={displayName(owner, meta)}
-                  onCustom={() => openCreate()}
-                  onPick={openCreate}
-                  taken={[]}
-                />
-              ) : jobs.length === 0 ? (
-                // `filterHint` is the informative case (jobs exist on the profile but
-                // none are tagged for this bot), so it wins the description slot.
-                <PanelEmpty
-                  action={
-                    <Button onClick={() => openCreate()} size="sm">
-                      {c.newCron}
-                    </Button>
-                  }
-                  description={filterHint || c.emptyDescNew}
-                  icon="watch"
-                  title={c.emptyTitleNew}
-                />
-              ) : (
-                <div className="grid gap-1.5 px-2.5 pb-2 pt-1">
-                  {jobs.map(job => (
-                    <RoutineRow
-                      job={job}
-                      key={job.job_id}
-                      onOpen={opened => setDetailJobId(opened.job_id)}
-                      owner={owner}
-                    />
-                  ))}
-                </div>
-              )}
-              {!isLoading && !error && jobs.length > 0 && (
-                <AutopilotChips
-                  name={displayName(owner, meta)}
-                  onPick={openCreate}
-                  taken={jobs.map(job => String(job.name || ''))}
-                />
-              )}
+              <BotRoutinesPanel bot={owner} name={displayName(owner, meta)} onCreate={openCreate} />
             </RailSection>
           </>
         ) : null}
