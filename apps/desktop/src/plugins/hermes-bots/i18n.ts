@@ -683,6 +683,23 @@ type BotsMessages = {
     controlTaken: string
   }
 
+  computer: {
+    title: string
+    history: string
+    steps: string
+    replay: string
+    previousStep: string
+    nextStep: string
+    live: string
+    taskChecklist: string
+    noCanonicalChat: string
+    loading: string
+    loadFailed: string
+    retry: string
+    empty: string
+    todoStatus: { pending: string; inProgress: string; completed: string; cancelled: string }
+  }
+
   /** Bot-scoped scheduled jobs. Generic scheduling chrome (weekday names,
    *  Daily/Hourly, the job verbs) resolves against core's `cron` section. */
   cron: {
@@ -757,6 +774,33 @@ type BotsMessages = {
     runDone: string
     /** A script-only run's output doc — no transcript to open. */
     runOutput: string
+  }
+  routines: {
+    kind: string
+    kindSchedule: string
+    kindWatch: string
+    onSchedule: string
+    tellWhen: string
+    condition: string
+    conditionPlaceholder: string
+    pause: string
+    resume: string
+    runNow: string
+    edit: string
+    editTitle: string
+    editDescription: (bot: string) => string
+    removePrompt: (name: string) => string
+    confirmRemove: string
+    lastStatus: string
+    legacyTitle: string
+    loading: string
+    loadFailed: string
+    retry: string
+    empty: string
+    create: string
+    actionFailed: string
+    created: string
+    updated: string
   }
   /** B3 — the pane's per-bot artifact rail across all owned sessions. */
   deliverables: DeliverablesMessages
@@ -1606,6 +1650,22 @@ const en: BotsMessages = {
     agentControls: 'Bot is in control',
     controlTaken: 'Another viewer took control. Watching only.'
   },
+  computer: {
+    title: 'Computer history',
+    history: 'What it did',
+    steps: 'Computer steps',
+    replay: 'Replay history',
+    previousStep: 'Previous step',
+    nextStep: 'Next step',
+    live: 'Live',
+    taskChecklist: 'Task checklist',
+    noCanonicalChat: 'The bot’s canonical chat is not available yet.',
+    loading: 'Loading computer history…',
+    loadFailed: 'Could not load computer history.',
+    retry: 'Retry',
+    empty: 'No computer steps yet.',
+    todoStatus: { pending: 'Pending', inProgress: 'In progress', completed: 'Completed', cancelled: 'Cancelled' }
+  },
   cron: {
     untitled: 'Untitled job',
     nameNul: 'Job name cannot contain NUL (U+0000).',
@@ -1675,6 +1735,33 @@ const en: BotsMessages = {
     runActive: 'Running',
     runDone: 'Finished',
     runOutput: 'Script output'
+  },
+  routines: {
+    kind: 'Routine type',
+    kindSchedule: 'Schedule',
+    kindWatch: 'Watch',
+    onSchedule: 'On a schedule',
+    tellWhen: 'Tell me when',
+    condition: 'Condition',
+    conditionPlaceholder: 'Tell the bot what change or event to watch for…',
+    pause: 'Pause',
+    resume: 'Resume',
+    runNow: 'Run now',
+    edit: 'Edit',
+    editTitle: 'Edit routine',
+    editDescription: bot => `Update the routine for ${bot}.`,
+    removePrompt: name => `Remove “${name}”?`,
+    confirmRemove: 'Confirm routine removal',
+    lastStatus: 'Last status',
+    legacyTitle: 'Existing scheduled jobs',
+    loading: 'Loading routines…',
+    loadFailed: 'Could not load routines.',
+    retry: 'Retry',
+    empty: 'No routines yet.',
+    create: 'Create a routine',
+    actionFailed: 'Could not update this routine.',
+    created: 'Routine created',
+    updated: 'Routine updated'
   },
   deliverables: DELIVERABLES_EN,
   runs: {
@@ -2519,6 +2606,22 @@ const ja: BotsMessages = {
     agentControls: 'ボットが操作中',
     controlTaken: '別のビューアが操作を引き継ぎました。閲覧のみ。'
   },
+  computer: {
+    title: 'コンピューターの履歴',
+    history: '実行した内容',
+    steps: 'コンピューターの手順',
+    replay: '履歴を再生',
+    previousStep: '前の手順',
+    nextStep: '次の手順',
+    live: 'ライブ',
+    taskChecklist: 'タスクリスト',
+    noCanonicalChat: 'ボットのチャットはまだ利用できません。',
+    loading: 'コンピューターの履歴を読み込み中…',
+    loadFailed: 'コンピューターの履歴を読み込めませんでした。',
+    retry: '再試行',
+    empty: 'コンピューターの操作はまだありません。',
+    todoStatus: { pending: '未対応', inProgress: '進行中', completed: '完了', cancelled: 'キャンセル済み' }
+  },
   cron: {
     untitled: '無題のジョブ',
     nameNul: 'ジョブ名に NUL (U+0000) は使用できません。',
@@ -2588,6 +2691,33 @@ const ja: BotsMessages = {
     runActive: '実行中',
     runDone: '完了',
     runOutput: 'スクリプト出力'
+  },
+  routines: {
+    kind: 'ルーチンの種類',
+    kindSchedule: 'スケジュール',
+    kindWatch: '監視',
+    onSchedule: 'スケジュールで実行',
+    tellWhen: '変化を知らせる',
+    condition: '条件',
+    conditionPlaceholder: '監視する変化やイベントをボットに伝えてください…',
+    pause: '一時停止',
+    resume: '再開',
+    runNow: '今すぐ実行',
+    edit: '編集',
+    editTitle: 'ルーチンを編集',
+    editDescription: bot => `${bot} のルーチンを更新します。`,
+    removePrompt: name => `「${name}」を削除しますか？`,
+    confirmRemove: 'ルーチン削除の確認',
+    lastStatus: '前回の状態',
+    legacyTitle: '既存の定期実行ジョブ',
+    loading: 'ルーチンを読み込み中…',
+    loadFailed: 'ルーチンを読み込めませんでした。',
+    retry: '再試行',
+    empty: 'ルーチンはまだありません。',
+    create: 'ルーチンを作成',
+    actionFailed: 'ルーチンを更新できませんでした。',
+    created: 'ルーチンを作成しました',
+    updated: 'ルーチンを更新しました'
   },
   deliverables: DELIVERABLES_JA,
   runs: {
@@ -3414,6 +3544,22 @@ const zh: BotsMessages = {
     agentControls: '机器人正在控制',
     controlTaken: '另一位查看者已接管控制。仅可观看。'
   },
+  computer: {
+    title: '计算机历史',
+    history: '已执行的操作',
+    steps: '计算机步骤',
+    replay: '回放历史',
+    previousStep: '上一步',
+    nextStep: '下一步',
+    live: '实时',
+    taskChecklist: '任务清单',
+    noCanonicalChat: '机器人的专属聊天暂不可用。',
+    loading: '正在加载计算机历史…',
+    loadFailed: '无法加载计算机历史。',
+    retry: '重试',
+    empty: '尚无计算机操作。',
+    todoStatus: { pending: '待处理', inProgress: '进行中', completed: '已完成', cancelled: '已取消' }
+  },
   cron: {
     untitled: '未命名任务',
     nameNul: '任务名称不能包含 NUL (U+0000)。',
@@ -3483,6 +3629,33 @@ const zh: BotsMessages = {
     runActive: '运行中',
     runDone: '已完成',
     runOutput: '脚本输出'
+  },
+  routines: {
+    kind: '例行任务类型',
+    kindSchedule: '计划',
+    kindWatch: '监视',
+    onSchedule: '按计划运行',
+    tellWhen: '有变化时通知我',
+    condition: '条件',
+    conditionPlaceholder: '告诉机器人要监视的变化或事件…',
+    pause: '暂停',
+    resume: '恢复',
+    runNow: '立即运行',
+    edit: '编辑',
+    editTitle: '编辑例行任务',
+    editDescription: bot => `更新 ${bot} 的例行任务。`,
+    removePrompt: name => `要移除“${name}”吗？`,
+    confirmRemove: '确认移除例行任务',
+    lastStatus: '上次状态',
+    legacyTitle: '现有定时任务',
+    loading: '正在加载例行任务…',
+    loadFailed: '无法加载例行任务。',
+    retry: '重试',
+    empty: '暂无例行任务。',
+    create: '创建例行任务',
+    actionFailed: '无法更新此例行任务。',
+    created: '已创建例行任务',
+    updated: '已更新例行任务'
   },
   deliverables: DELIVERABLES_ZH,
   runs: {
@@ -4308,6 +4481,22 @@ const zhHant: BotsMessages = {
     agentControls: '機器人正在控制',
     controlTaken: '另一位檢視者已接手控制。僅可觀看。'
   },
+  computer: {
+    title: '電腦歷史',
+    history: '已執行的操作',
+    steps: '電腦步驟',
+    replay: '重播歷史',
+    previousStep: '上一步',
+    nextStep: '下一步',
+    live: '即時',
+    taskChecklist: '任務清單',
+    noCanonicalChat: '機器人的專屬聊天暫不可用。',
+    loading: '正在載入電腦歷史…',
+    loadFailed: '無法載入電腦歷史。',
+    retry: '重試',
+    empty: '尚無電腦操作。',
+    todoStatus: { pending: '待處理', inProgress: '進行中', completed: '已完成', cancelled: '已取消' }
+  },
   cron: {
     untitled: '未命名工作',
     nameNul: '工作名稱不能包含 NUL (U+0000)。',
@@ -4377,6 +4566,33 @@ const zhHant: BotsMessages = {
     runActive: '執行中',
     runDone: '已完成',
     runOutput: '指令碼輸出'
+  },
+  routines: {
+    kind: '例行工作類型',
+    kindSchedule: '排程',
+    kindWatch: '監看',
+    onSchedule: '依排程執行',
+    tellWhen: '有變化時通知我',
+    condition: '條件',
+    conditionPlaceholder: '告訴機器人要監看的變化或事件…',
+    pause: '暫停',
+    resume: '恢復',
+    runNow: '立即執行',
+    edit: '編輯',
+    editTitle: '編輯例行工作',
+    editDescription: bot => `更新 ${bot} 的例行工作。`,
+    removePrompt: name => `要移除「${name}」嗎？`,
+    confirmRemove: '確認移除例行工作',
+    lastStatus: '上次狀態',
+    legacyTitle: '現有排程工作',
+    loading: '正在載入例行工作…',
+    loadFailed: '無法載入例行工作。',
+    retry: '重試',
+    empty: '尚無例行工作。',
+    create: '建立例行工作',
+    actionFailed: '無法更新此例行工作。',
+    created: '已建立例行工作',
+    updated: '已更新例行工作'
   },
   deliverables: DELIVERABLES_ZH_HANT,
   runs: {

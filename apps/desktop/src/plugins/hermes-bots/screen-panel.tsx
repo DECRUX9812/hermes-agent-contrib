@@ -14,6 +14,7 @@ import { Button, Codicon, GlyphSpinner, host, Tip, useValue } from '@hermes/plug
 import { useEffect, useRef, useState } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 
+import { BotComputerTimeline } from './bot-computer-panel'
 import { botSelectionKey } from './data'
 import { useBots } from './i18n'
 import {
@@ -125,14 +126,14 @@ const DEFAULT_FRAME_HEIGHT = 170
 let frameHeight = DEFAULT_FRAME_HEIGHT
 
 const CHIP_CLASS: Record<PortalTone, string> = {
-  live: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  human: 'bg-red-500/15 text-red-600 dark:text-red-400',
-  other: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  off: 'bg-muted text-muted-foreground',
-  missing: 'bg-muted text-muted-foreground',
-  unsupported: 'bg-muted text-muted-foreground',
-  unavailable: 'bg-muted text-muted-foreground',
-  unknown: 'bg-muted text-muted-foreground'
+  live: 'bg-success/10 text-success',
+  human: 'bg-warning/10 text-warning',
+  other: 'bg-info/10 text-info',
+  off: 'bg-surface-sunken text-fg-muted',
+  missing: 'bg-surface-sunken text-fg-muted',
+  unsupported: 'bg-surface-sunken text-fg-muted',
+  unavailable: 'bg-surface-sunken text-fg-muted',
+  unknown: 'bg-surface-sunken text-fg-muted'
 }
 
 export function BotComputerPanel({ bot, meta }: { bot: RosterRow; meta?: BotMeta | null }) {
@@ -242,127 +243,129 @@ function ComputerPanelContent({ bot, meta }: { bot: RosterRow; meta?: BotMeta | 
   const unsupported = tone === 'unsupported' || tone === 'unavailable'
 
   return (
-    <section
-      aria-label={t.screen.panelTitle}
-      className="overflow-hidden rounded-lg border border-(--ui-stroke-secondary)"
-    >
-      <div className="flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2 py-1">
-        <Codicon className="text-(--ui-text-tertiary)" name="device-desktop" size="0.8rem" />
-        <span className="text-[0.65rem] font-medium text-(--ui-text-secondary)">{t.screen.panelTitle}</span>
-        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[0.6rem] font-medium ${CHIP_CLASS[tone]}`}>{chip}</span>
-        <span className="grow" />
-        <Tip label={t.screen.openFullPane}>
-          <Button
-            aria-label={t.screen.openFullPane}
-            disabled={unsupported}
-            onClick={() => openBotScreen(bot, meta ?? null)}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <Codicon name="screen-full" />
-          </Button>
-        </Tip>
-        <Tip label={t.screen.copyScreenshot}>
-          <Button
-            aria-label={t.screen.copyScreenshot}
-            disabled={unsupported || !running || busy !== null}
-            onClick={copyShot}
-            size="icon-xs"
-            variant="ghost"
-          >
-            {busy === 'copy' ? <GlyphSpinner /> : <Codicon name="copy" />}
-          </Button>
-        </Tip>
-        <Tip label={t.screen.restartScreen}>
-          <Button
-            aria-label={t.screen.restartScreen}
-            disabled={unsupported || tone === 'missing' || busy !== null}
-            onClick={restart}
-            size="icon-xs"
-            variant="ghost"
-          >
-            {busy === 'restart' ? <GlyphSpinner /> : <Codicon name="debug-restart" />}
-          </Button>
-        </Tip>
-        {canOpenBotWorkdir(bot) ? (
-          <Tip label={t.screen.openWorkdir}>
+    <div className="grid gap-2">
+      <section aria-label={t.screen.panelTitle} className="overflow-hidden rounded-panel border border-line">
+        <div className="flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2 py-1">
+          <Codicon className="text-fg-muted" name="device-desktop" />
+          <span className="text-ui-xs font-medium text-fg-secondary">{t.screen.panelTitle}</span>
+          <span className={`shrink-0 rounded-pill px-1.5 py-0.5 text-ui-2xs font-medium ${CHIP_CLASS[tone]}`}>
+            {chip}
+          </span>
+          <span className="grow" />
+          <Tip label={t.screen.openFullPane}>
             <Button
-              aria-label={t.screen.openWorkdir}
-              disabled={busy !== null}
-              onClick={openWorkdir}
+              aria-label={t.screen.openFullPane}
+              disabled={unsupported}
+              onClick={() => openBotScreen(bot, meta ?? null)}
               size="icon-xs"
               variant="ghost"
             >
-              {busy === 'workdir' ? <GlyphSpinner /> : <Codicon name="folder-opened" />}
+              <Codicon name="screen-full" />
             </Button>
           </Tip>
-        ) : null}
-      </div>
-
-      {!unsupported ? (
-        <>
-          <div className="relative bg-black" style={{ height }}>
-            <button
-              aria-label={`${t.screen.portalTitle}: ${caption || chip}`}
-              className={`absolute inset-0 block size-full overflow-hidden text-left ${tone === 'human' ? 'ring-2 ring-inset ring-red-500/80' : tone === 'other' ? 'ring-2 ring-inset ring-amber-500/70' : ''}`}
-              onClick={() => openBotScreen(bot, meta ?? null)}
-              ref={boxRef}
-              type="button"
+          <Tip label={t.screen.copyScreenshot}>
+            <Button
+              aria-label={t.screen.copyScreenshot}
+              disabled={unsupported || !running || busy !== null}
+              onClick={copyShot}
+              size="icon-xs"
+              variant="ghost"
             >
-              {dataUrl ? (
-                <img
-                  alt=""
-                  className={
-                    stale
-                      ? 'absolute inset-0 size-full object-cover opacity-40 grayscale'
-                      : 'absolute inset-0 size-full object-cover'
-                  }
-                  draggable={false}
-                  src={dataUrl}
-                />
-              ) : (
-                <span className="absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]">
-                  <Codicon
-                    className="text-[2.25rem] text-white/30"
-                    name={running ? 'loading' : tone === 'missing' ? 'cloud-download' : 'vm'}
-                  />
-                </span>
-              )}
-            </button>
-            {caption ? (
-              <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-black/0 px-2.5 pb-1.5 pt-4 text-[0.65rem] text-white/70">
-                {caption}
-              </span>
-            ) : null}
-          </div>
-          <div
-            aria-label={t.screen.resizePanel}
-            className="h-1.5 cursor-ns-resize bg-(--chrome-action-hover)/40 transition-colors hover:bg-(--chrome-action-hover)"
-            onPointerDown={onDragStart}
-            role="separator"
-          />
-          <div className="flex items-center gap-2 border-t border-(--ui-stroke-secondary) px-2 py-1.5">
-            {iHold ? (
-              <Button disabled={busy !== null} onClick={() => handBack()} size="sm" variant="secondary">
-                {busy === 'handback' ? <GlyphSpinner /> : <Codicon name="debug-continue" />} {t.screen.handBack}
+              {busy === 'copy' ? <GlyphSpinner /> : <Codicon name="copy" />}
+            </Button>
+          </Tip>
+          <Tip label={t.screen.restartScreen}>
+            <Button
+              aria-label={t.screen.restartScreen}
+              disabled={unsupported || tone === 'missing' || busy !== null}
+              onClick={restart}
+              size="icon-xs"
+              variant="ghost"
+            >
+              {busy === 'restart' ? <GlyphSpinner /> : <Codicon name="debug-restart" />}
+            </Button>
+          </Tip>
+          {canOpenBotWorkdir(bot) ? (
+            <Tip label={t.screen.openWorkdir}>
+              <Button
+                aria-label={t.screen.openWorkdir}
+                disabled={busy !== null}
+                onClick={openWorkdir}
+                size="icon-xs"
+                variant="ghost"
+              >
+                {busy === 'workdir' ? <GlyphSpinner /> : <Codicon name="folder-opened" />}
               </Button>
-            ) : (
-              <>
-                {humanOther ? (
-                  <Tip label={t.screen.handBackForceHint}>
-                    <Button disabled={busy !== null} onClick={() => handBack(true)} size="sm" variant="secondary">
-                      <Codicon name="debug-continue" /> {t.screen.handBackForce}
-                    </Button>
-                  </Tip>
-                ) : null}
-                <Button disabled={busy !== null || !running} onClick={takeOver} size="sm">
-                  {busy === 'takeover' ? <GlyphSpinner /> : <Codicon name="record-keys" />} {t.screen.takeOver}
+            </Tip>
+          ) : null}
+        </div>
+
+        {!unsupported ? (
+          <>
+            <div className="relative bg-surface-sunken" style={{ height }}>
+              <button
+                aria-label={`${t.screen.portalTitle}: ${caption || chip}`}
+                className={`absolute inset-0 block size-full overflow-hidden text-left ${tone === 'human' ? 'ring-2 ring-inset ring-danger' : tone === 'other' ? 'ring-2 ring-inset ring-warning' : ''}`}
+                onClick={() => openBotScreen(bot, meta ?? null)}
+                ref={boxRef}
+                type="button"
+              >
+                {dataUrl ? (
+                  <img
+                    alt=""
+                    className={
+                      stale
+                        ? 'absolute inset-0 size-full object-cover opacity-40 grayscale'
+                        : 'absolute inset-0 size-full object-cover'
+                    }
+                    draggable={false}
+                    src={dataUrl}
+                  />
+                ) : (
+                  <span className="absolute inset-0 grid place-items-center bg-surface-sunken">
+                    <Codicon
+                      className="text-fg-subtle"
+                      name={running ? 'loading' : tone === 'missing' ? 'cloud-download' : 'vm'}
+                    />
+                  </span>
+                )}
+              </button>
+              {caption ? (
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-surface-sunken/90 to-transparent px-2.5 pb-1.5 pt-4 text-ui-2xs text-fg-secondary">
+                  {caption}
+                </span>
+              ) : null}
+            </div>
+            <div
+              aria-label={t.screen.resizePanel}
+              className="h-1.5 cursor-ns-resize bg-(--chrome-action-hover)/40 transition-colors hover:bg-(--chrome-action-hover)"
+              onPointerDown={onDragStart}
+              role="separator"
+            />
+            <div className="flex items-center gap-2 border-t border-(--ui-stroke-secondary) px-2 py-1.5">
+              {iHold ? (
+                <Button disabled={busy !== null} onClick={() => handBack()} size="sm" variant="secondary">
+                  {busy === 'handback' ? <GlyphSpinner /> : <Codicon name="debug-continue" />} {t.screen.handBack}
                 </Button>
-              </>
-            )}
-          </div>
-        </>
-      ) : null}
-    </section>
+              ) : (
+                <>
+                  {humanOther ? (
+                    <Tip label={t.screen.handBackForceHint}>
+                      <Button disabled={busy !== null} onClick={() => handBack(true)} size="sm" variant="secondary">
+                        <Codicon name="debug-continue" /> {t.screen.handBackForce}
+                      </Button>
+                    </Tip>
+                  ) : null}
+                  <Button disabled={busy !== null || !running} onClick={takeOver} size="sm">
+                    {busy === 'takeover' ? <GlyphSpinner /> : <Codicon name="record-keys" />} {t.screen.takeOver}
+                  </Button>
+                </>
+              )}
+            </div>
+          </>
+        ) : null}
+      </section>
+      <BotComputerTimeline bot={bot} />
+    </div>
   )
 }
