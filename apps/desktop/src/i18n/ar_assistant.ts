@@ -304,6 +304,14 @@ export const arAssistant = {
       reviewApproval: 'مراجعة',
       failed: 'فشل',
       stopped: 'توقّف',
+      statuses: {
+        browser_back: { done: 'عاد للخلف', pending: 'يعود للخلف' },
+        browser_console: { done: 'قرأ وحدة تحكم الصفحة', pending: 'يقرأ وحدة تحكم الصفحة' },
+        browser_get_images: { done: 'جمع صور الصفحة', pending: 'يجمع صور الصفحة' },
+        browser_press: { done: 'ضغط على مفتاح', pending: 'يضغط على مفتاح' },
+        browser_scroll: { done: 'مرر الصفحة', pending: 'يمرر الصفحة' },
+        browser_vision: { done: 'نظر إلى الصفحة', pending: 'ينظر إلى الصفحة' }
+      },
       details: {
         request: 'الطلب',
         output: 'المخرجات',

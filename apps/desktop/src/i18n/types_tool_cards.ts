@@ -29,6 +29,11 @@ export interface ToolCardsCopy {
   reviewApproval: string
   failed: string
   stopped: string
+  /** Present/past statuses for tools the transcript has no title for. */
+  statuses: Record<
+    'browser_back' | 'browser_console' | 'browser_get_images' | 'browser_press' | 'browser_scroll' | 'browser_vision',
+    { done: string; pending: string }
+  >
   /** Detail rows inside an expanded card. */
   details: {
     request: string
