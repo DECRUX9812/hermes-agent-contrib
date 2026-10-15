@@ -95,7 +95,7 @@ import { asideInline, GroupRoomAside, useRoomLayout } from './group-room-aside'
 import { GroupRoomBoard } from './group-room-board'
 import { LineCards } from './group-room-cards'
 import { CatchUpCard, RecapCard, roomCatchUp } from './group-room-catchup'
-import { roomCommands, RoomDecisions, RoomShortcuts, ThreadTail } from './group-room-command'
+import { roomCommands, RoomDecisions, type RoomSend, RoomShortcuts, ThreadTail } from './group-room-command'
 import { GroupRoomComposer } from './group-room-composer'
 import { useHandoffFlights } from './group-room-flight'
 import { GroupComposerContext } from './group-room-focus'
@@ -103,6 +103,20 @@ import { deriveRoomHandoffs, roomEscalations, type RoomHandoff } from './group-r
 import { GroupRoomHeader } from './group-room-header'
 import { KeysHelp, roomKeyHandler, useNeedsYouAlerts, useRoomClock } from './group-room-keys'
 import { disbandGroupChat } from './group-room-lifecycle'
+import { GroupLogTail, GroupRoomEmpty } from './group-room-log-tail'
+import { GroupMembersStrip } from './group-room-members'
+import { GroupRoomPanel, type RoomPanelTab } from './group-room-panel'
+import { $roomPrefs, setAsideCollapsed } from './group-room-prefs'
+import { $roomRoles, roomRole } from './group-room-roles'
+import { GroupThreadRail } from './group-room-threads'
+import { useRoomUnread } from './group-room-unseen'
+import { deriveRoomVotes, roomVotesAt } from './group-room-votes'
+import { roomLiveWork, roomWorkItems } from './group-room-work'
+import { groupReplyMentionTag, sendToGroupChat, stopGroupMember, stopGroupThread } from './group-rounds'
+import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
+import { GroupThreadPanel, GroupThreadPanelHeader } from './group-thread-panel'
+import { renameGroupClarify } from './group-turns'
+import { $groupVisitAnchor, markGroupOpened } from './group-unread'
 import {
   answerHostedRoomApproval,
   ensureHostedRoom,
@@ -122,20 +136,6 @@ import {
   watchHostedRoom
 } from './hosted-room-log'
 import type { HostedRoomAction } from './hosted-room-log'
-import { GroupLogTail, GroupRoomEmpty } from './group-room-log-tail'
-import { GroupMembersStrip } from './group-room-members'
-import { GroupRoomPanel, type RoomPanelTab } from './group-room-panel'
-import { $roomPrefs, setAsideCollapsed } from './group-room-prefs'
-import { $roomRoles, roomRole } from './group-room-roles'
-import { GroupThreadRail } from './group-room-threads'
-import { useRoomUnread } from './group-room-unseen'
-import { deriveRoomVotes, roomVotesAt } from './group-room-votes'
-import { roomLiveWork, roomWorkItems } from './group-room-work'
-import { groupReplyMentionTag, sendToGroupChat, stopGroupMember, stopGroupThread } from './group-rounds'
-import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
-import { GroupThreadPanel, GroupThreadPanelHeader } from './group-thread-panel'
-import { renameGroupClarify } from './group-turns'
-import { $groupVisitAnchor, markGroupOpened } from './group-unread'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
 import { useArrivals } from './motion'
@@ -631,6 +631,13 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
         }
       : storedRoom
 
+  // What the watcher must react to is the membership, not the array's
+  // identity: a parent re-render hands down a fresh array, and restarting on
+  // that would re-probe (and re-create) the room on every render.
+  const memberSignature = members
+    .map(member => [member.connectionId, member.name, member.targetProfile || ''].join(':'))
+    .join('|')
+
   useEffect(() => {
     const current = $groupChats.get()[group] || storedRoom
 
@@ -640,7 +647,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     group,
-    members,
+    memberSignature,
     storedRoom.goal,
     storedRoom.holdDetection,
     storedRoom.hostedRoomClientOnly,
@@ -956,7 +963,10 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     markRead(thread)
   }
 
-  const commands = roomCommands(group, members, () => memberDescriptors())
+  // The board's own lines go through the room's sender, so a backend-driven
+  // room never falls back to a renderer round from a board button.
+  const sendRoomLine: RoomSend = (text, thread) => void sendRoomMessage(text, thread, [])
+  const commands = roomCommands(group, members, () => memberDescriptors(), sendRoomLine)
   const memberKeyName = (key: string) => memberLabel(members.find(m => groupMemberKey(m) === key)?.name || key)
   useNeedsYouAlerts(escalations, roomClarifies, memberKeyName)
 
@@ -1115,6 +1125,23 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   }
 
   commands.stopMember = (thread, member) => {
+    const hostedRoomId = String(storedRoom.roomId || '')
+
+    // The backend cancels a hosted room's live work as a whole; there is no
+    // per-member stop RPC.
+    if (roomMode === 'hosted' && hostedOwner && hostedRoomId) {
+      void stopHostedRoom(hostedRoomId, hostedOwner)
+        .then(() => host.notify({ kind: 'success', message: b.group.stoppedMember(memberLabel(member.name)) }))
+        .catch((error: unknown) =>
+          host.notify({
+            kind: 'error',
+            message: b.group.hostedRoomFailed(error instanceof Error ? error.message : String(error))
+          })
+        )
+
+      return
+    }
+
     void stopGroupMember(group, thread, member, memberDescriptors())
     host.notify({ kind: 'success', message: b.group.stoppedMember(memberLabel(member.name)) })
   }
@@ -1699,22 +1726,16 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
               ))}
               {hostedRetries.map(action => {
                 const taskId = String(action.task_id || '')
-                const label =
-                  String(action.member || '') || (taskId && taskNames[taskId]) || b.group.threadFallback
+                const member = String(action.member || action.member_id || '')
 
                 return (
                   <div
-                    className="flex max-w-full items-start gap-3 rounded-[calc(var(--radius)*1.5)] border border-state-warning/35 bg-state-warning/8 px-3 py-2"
+                    className="flex max-w-full items-start gap-3 rounded-card border border-warning/35 bg-warning/8 px-3 py-2"
                     key={`retry:${taskId}:${String(action.execution_generation || '')}`}
                   >
-                    <span className="i-fluent:alert-urgent-16-regular mt-0.5 size-4 shrink-0 text-state-warning" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-fg">{b.group.retryTitle(label)}</div>
-                      {action.error ? (
-                        <div className="mt-0.5 whitespace-pre-wrap break-words text-xs text-fg-muted">
-                          {String(action.error)}
-                        </div>
-                      ) : null}
+                    <Codicon className="mt-0.5 shrink-0 text-warning" name="warning" />
+                    <div className="min-w-0 flex-1 truncate text-ui-sm font-medium text-fg">
+                      {b.group.retryTitle(member ? memberLabel(member) : '')}
                     </div>
                     <Button
                       className="shrink-0"
@@ -1878,7 +1899,7 @@ function GroupChatMainView({ group }: GroupChatMainViewProps) {
   // Subscribe: membership changes ride bot meta AND the room record.
   useValue($groupChats)
   const roster = useValue($lastRoster)
-  const members = groupChatMemberBots(group, roster, allMeta)
+  const members = useMemo(() => groupChatMemberBots(group, roster, allMeta), [group, roster, allMeta])
 
   // Older SDKs have no paneVisibility: fall back to an always-visible atom so
   // the hook order stays stable and behavior matches the previous build.

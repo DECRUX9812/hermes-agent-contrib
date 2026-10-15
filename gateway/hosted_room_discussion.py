@@ -393,9 +393,6 @@ def _held_members(validated: Sequence[_ValidatedEvent], room: DiscussionRoom) ->
     """Replay room-wide user holds; a direct mention releases only that seat."""
     held: set[str] = set()
     for event in validated:
-        if event.kind == "room.stop_requested":
-            held.update(member.member_id for member in room.members)
-            continue
         if event.kind != "message.user":
             continue
         text = str(event.payload["text"])

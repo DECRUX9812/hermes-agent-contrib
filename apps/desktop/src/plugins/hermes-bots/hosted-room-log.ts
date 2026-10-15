@@ -9,9 +9,10 @@ import type {
   GroupsCapabilitiesResult,
   GroupsLogResult,
   GroupsStateResult,
+  ReadableAtom,
   RoomDriverStatus,
   RoomEvent
-} from '@hermes/shared'
+} from '@hermes/plugin-sdk'
 
 import { $botMeta, botHandle } from './data'
 import { $groupNeedsYou, mintGroupRoomId, updateGroupChat } from './group-chat'
@@ -50,6 +51,8 @@ interface HostedRoomWatchOptions {
   group: string
   members: GroupMember[]
   room: GroupChat
+  /** Route every hosted call through this instead of the bot's own connection. */
+  request?: HostedRoomRequest
 }
 
 const IDLE_VIEW: HostedRoomView = {
@@ -61,8 +64,9 @@ const IDLE_VIEW: HostedRoomView = {
   error: null,
   status: 'checking'
 }
+
 const $hostedRoomViews = atom<Record<string, HostedRoomView>>({})
-const viewStores = new Map<string, ReturnType<typeof computed<HostedRoomView>>>()
+const viewStores = new Map<string, ReadableAtom<HostedRoomView>>()
 const ensureFlights = new Map<string, Promise<HostedRoomView>>()
 const pollFlights = new Map<string, Promise<void>>()
 const watchers = new Map<string, number>()
@@ -145,6 +149,11 @@ function localMember(member: GroupMember): boolean {
   )
 }
 
+/** The roster key the backend stores for a member: its profile, else its name. */
+function memberKey(member: GroupMember): string {
+  return String(member.targetProfile || member.name)
+}
+
 /** The single policy point for selecting the room's driver. */
 export function roomDriveMode(
   room: GroupChat,
@@ -171,6 +180,14 @@ export function roomDriveMode(
   }
 
   return 'hosted'
+}
+
+/** A room earns a backend id only when the hosted driver could take it; minting one re-keys its local prefs. */
+function hostedEligible(room: GroupChat, members: GroupMember[]): boolean {
+  return (
+    roomDriveMode({ ...room, roomId: 'pending' }, members, { capabilities: { driver: true }, status: 'ready' }) ===
+    'hosted'
+  )
 }
 
 export function hostedRoomCursorKey(roomId: string, connectionId = 'local'): string {
@@ -253,6 +270,7 @@ export function mergeHostedRoomEvents(existing: RoomEvent[], incoming: RoomEvent
     if (!event || !Number.isInteger(event.seq) || !event.event_id) {
       continue
     }
+
     if (!byId.has(event.event_id) && !bySeq.has(event.seq)) {
       byId.set(event.event_id, event)
       bySeq.set(event.seq, event)
@@ -276,10 +294,13 @@ export function projectHostedRoomEvents(events: RoomEvent[], members: GroupMembe
       continue
     }
 
+    const memberId = String(payload.member_id)
+
     const member =
       event.kind === 'message.member'
-        ? members.find(candidate => String(candidate.name) === String(payload.member_id))
+        ? members.find(candidate => memberKey(candidate) === memberId || String(candidate.name) === memberId)
         : undefined
+
     const text = typeof payload.text === 'string' ? payload.text : ''
 
     if (!text) {
@@ -287,6 +308,7 @@ export function projectHostedRoomEvents(events: RoomEvent[], members: GroupMembe
     }
 
     const source = member?.connectionLabel || member?.connectionId
+
     const from = member
       ? {
           kind: 'member' as const,
@@ -367,8 +389,8 @@ function roomMemberInputs(members: GroupMember[]) {
     const name = displayName(member, resolved)
 
     return {
-      member_id: member.targetProfile || member.name,
-      profile: member.targetProfile || member.name,
+      member_id: memberKey(member),
+      profile: memberKey(member),
       handle: botHandle(member.name, member),
       display_name: name
     }
@@ -378,9 +400,7 @@ function roomMemberInputs(members: GroupMember[]) {
 /** The local profile allowed to call this room's backend owner after a roster edit. */
 export function hostedRoomOwnerMember(room: GroupChat, members: GroupMember[]): GroupMember | null {
   const owner = String(room.hostedRoomOwner || '')
-  const existing = members.find(
-    member => localMember(member) && String(member.targetProfile || member.name) === owner
-  )
+  const existing = members.find(member => localMember(member) && memberKey(member) === owner)
 
   if (existing) {
     return existing
@@ -415,6 +435,7 @@ export async function ensureHostedRoom(
     const roomId = mintGroupRoomId()
     room = updateGroupChat(group, current => ({ ...current, roomId })) as GroupChatRoom
   }
+
   const roomId = String(room.roomId)
   const alreadyCreated = hostedRoomWasCreated(room)
   const candidate = roomDriveMode(room, members, { capabilities: { driver: true }, status: 'ready' })
@@ -430,6 +451,7 @@ export async function ensureHostedRoom(
   ) {
     return viewFor(roomId)
   }
+
   const flight = ensureFlights.get(roomId)
 
   if (flight) {
@@ -517,6 +539,7 @@ export function recordHostedRoomEvent(roomId: string, event: RoomEvent, members:
   persistHostedRoomCheckpoint(roomId, { cursor, events })
   setView(roomId, current => ({
     ...current,
+    activeMemberId: activeMemberFromEvents(events),
     cursor,
     entries: projectHostedRoomEvents(events, members)
   }))
@@ -531,6 +554,7 @@ export async function sendHostedRoomMessage(
   request?: HostedRoomRequest
 ): Promise<RoomEvent> {
   const call = roomRequest(routedMember(member), request)
+
   const params = {
     room_id: roomId,
     event_id: eventId,
@@ -663,10 +687,12 @@ async function pollHostedRoom(
   const poll = (async () => {
     const call = roomRequest(routedMember(member), request)
     const previousCursor = viewFor(roomId).cursor
+
     const [stateResult, checkpoint] = await Promise.all([
       call('groups.state', { room_id: roomId }) as Promise<GroupsStateResult>,
       Promise.resolve(loadHostedRoomCheckpoint(roomId))
     ])
+
     let events = checkpoint.events
     let cursor = Math.max(viewFor(roomId).cursor, checkpoint.cursor)
     let page: GroupsLogResult
@@ -680,6 +706,7 @@ async function pollHostedRoom(
       })) as GroupsLogResult
       events = mergeHostedRoomEvents(events, page.events || [])
       cursor = Math.max(cursor, Number(page.cursor) || 0)
+
       if (page.has_more && cursor <= previousPageCursor) {
         throw new Error('The hosted room log did not advance its cursor.')
       }
@@ -691,6 +718,7 @@ async function pollHostedRoom(
     projectPageStatus(roomId, events, stateResult.driver_status || null, members, cursor)
 
     const latestNewUserSeq = [...events].reverse().find(event => event.kind === 'message.user')?.seq || 0
+
     const latestNewYouMention = [...events].reverse().find(
       event =>
         event.kind === 'message.member' &&
@@ -723,10 +751,14 @@ async function pollHostedRoom(
 
 /** Start polling only for a mounted, visible room surface. */
 export function watchHostedRoom(options: HostedRoomWatchOptions): () => void {
-  const { group, members } = options
+  const { group, members, request } = options
   let room = options.room
 
   if (!room.roomId) {
+    if (!hostedEligible(room, members)) {
+      return () => undefined
+    }
+
     room = updateGroupChat(group, current => ({ ...current, roomId: mintGroupRoomId() }))
   }
 
@@ -744,11 +776,11 @@ export function watchHostedRoom(options: HostedRoomWatchOptions): () => void {
     }
 
     try {
-      const view = await ensureHostedRoom(group, room, members, undefined, !attemptedInitialization)
+      const view = await ensureHostedRoom(group, room, members, request, !attemptedInitialization)
       attemptedInitialization = true
 
       if (view.status === 'ready') {
-        await pollHostedRoom(roomId, member, members)
+        await pollHostedRoom(roomId, member, members, request)
       }
     } catch (error) {
       setView(roomId, current => ({

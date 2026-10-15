@@ -100,7 +100,7 @@ class HostedRoomRuntime:
         turn_lock: Callable[[str], ContextManager[Any]], rpc: InternalSessionRPC | None = None,
         transport_resolver: MemberTransportResolver | None = None,
         prepare_room: Callable[[HostedRoomBinding], None] | None = None,
-        on_started: Callable[[HostedRoomBinding, Mapping[str, Any]], None] | None = None,
+        on_started: Callable[[HostedRoomBinding, Mapping[str, Any], int], None] | None = None,
         publish_terminal: Callable[[HostedRoomBinding, Mapping[str, Any]], None] | None = None,
         pending_action: Callable[[str, str, Mapping[str, Any] | None], None] | None = None,
         clock: Callable[[], float] = time.time,
@@ -593,7 +593,9 @@ class HostedRoomRuntime:
                 session_id = _session_id(session)
                 deadline_monotonic = time.monotonic() + self.turn_timeout_seconds
                 if self.on_started is not None:
-                    self.on_started(binding, task)
+                    # The attempt's generation, not the task row's: start_task bumps it and
+                    # the same value is what the member session and any later approval use.
+                    self.on_started(binding, task, attempt.execution_generation)
                 submit_attempted = True
                 transport.submit(
                     **_session_kw(profile, session_id), prompt=task["payload"]["prompt"],

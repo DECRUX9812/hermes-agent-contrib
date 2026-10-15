@@ -387,12 +387,13 @@ def test_create_send_drive_publish_and_replay_without_client_transport(tmp_path:
     assert service.stop(timeout=5.0)
 
     events = service._events("room-1")
-    assert [event["kind"] for event in events][:3] == [
+    assert [event["kind"] for event in events][:4] == [
         "message.user",
+        "turn.started",
         "message.member",
         "turn.settled",
     ]
-    assert events[1]["payload"]["text"] == "reply from ops"
+    assert events[2]["payload"]["text"] == "reply from ops"
     assert service.status("room-1")["working"] is False
 
 
@@ -741,7 +742,7 @@ def test_started_event_is_durable_before_member_submission(tmp_path: Path):
     member_reply = next(event for event in events if event["kind"] == "message.member")
     task = driver.list_tasks(db, room_id="room-1")[0]
     digest = hashlib.sha256(
-        f"{task['identity'].task_id}\0{started['payload']['execution_generation']}".encode("utf-8")
+        f"{task['identity'].task_id}\0{started['payload']['execution_generation']}".encode()
     ).hexdigest()[:32]
 
     assert started["seq"] < member_reply["seq"]

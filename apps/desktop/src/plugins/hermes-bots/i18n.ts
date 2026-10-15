@@ -422,6 +422,10 @@ type BotsMessages = {
     pictureGenerationFailed: string
     /** A backend-hosted room action (send, rename, stop, approve, retry) failed. */
     hostedRoomFailed: (error: string) => string
+    /** Retry one room task the driver could not finish. */
+    retry: string
+    /** Title of a retryable room task: its member, else the anonymous form. */
+    retryTitle: (member: string) => string
     nameTaken: (name: string) => string
     memberCount: (count: number) => string
     /** The reader's own lines in a room: the transcript speaker and the roster preview. */
@@ -1381,6 +1385,8 @@ const en: BotsMessages = {
       `${group} has no members to send to — add a bot, or reopen the room if members are still loading.`,
     pictureGenerationFailed: 'Group picture generation failed',
     hostedRoomFailed: error => `The group room action failed: ${error}`,
+    retry: 'Retry',
+    retryTitle: member => (member ? `${member}’s turn needs a retry` : 'A member’s turn needs a retry'),
     nameTaken: name => `A group named “${name}” already exists.`,
     memberCount: count => `${count} bots`,
     you: 'You',
@@ -2342,6 +2348,9 @@ const ja: BotsMessages = {
       `${group} に送信先のメンバーがいません。ボットを追加するか、メンバーの読み込み中であればルームを開き直してください。`,
     pictureGenerationFailed: 'グループ画像の生成に失敗しました',
     hostedRoomFailed: error => `グループルームの操作に失敗しました: ${error}`,
+    retry: '再試行',
+    retryTitle: member =>
+      member ? `${member} のターンは再試行が必要です` : 'メンバーのターンは再試行が必要です',
     nameTaken: name => `「${name}」という名前のグループはすでに存在します。`,
     memberCount: count => `ボット${count}体`,
     you: 'あなた',
@@ -3285,6 +3294,8 @@ const zh: BotsMessages = {
     noMembersToSend: group => `${group} 没有可发送的成员——请添加机器人，如果成员仍在加载，请重新打开该群聊。`,
     pictureGenerationFailed: '群组图片生成失败',
     hostedRoomFailed: error => `群聊房间操作失败：${error}`,
+    retry: '重试',
+    retryTitle: member => (member ? `${member} 的回合需要重试` : '有成员的回合需要重试'),
     nameTaken: name => `已存在名为“${name}”的群聊。`,
     memberCount: count => `${count} 个机器人`,
     you: '你',
@@ -4223,6 +4234,8 @@ const zhHant: BotsMessages = {
     noMembersToSend: group => `${group} 沒有可傳送的成員——請新增機器人，若成員仍在載入中，請重新開啟該群組聊天。`,
     pictureGenerationFailed: '群組圖片產生失敗',
     hostedRoomFailed: error => `群組聊天室操作失敗：${error}`,
+    retry: '重試',
+    retryTitle: member => (member ? `${member} 的回合需要重試` : '有成員的回合需要重試'),
     nameTaken: name => `已存在名為「${name}」的群組聊天。`,
     memberCount: count => `${count} 個機器人`,
     you: '您',
