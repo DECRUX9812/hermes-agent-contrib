@@ -48,6 +48,14 @@ export function clampAsideWidth(width: number): number {
   return Math.min(ASIDE_MAX, Math.max(ASIDE_MIN, Math.round(width)))
 }
 
+/** The sheet's width on medium rooms: the stored aside width, never below
+ *  360. Exported so the room's reading column reserves exactly this much
+ *  while the sheet is open — the column shrinks with the panel instead of
+ *  running under it. */
+export function roomSheetWidth(stored: number | undefined): number {
+  return Math.max(clampAsideWidth(stored || ASIDE_DEFAULT), 360)
+}
+
 /** The room's width bucket. Re-renders only when the bucket changes, never
  *  per pixel of a window drag. An unmeasured room (0 px: not laid out yet, or
  *  hidden) keeps the full layout rather than collapsing everything. */
@@ -293,7 +301,7 @@ export function GroupRoomAside(props: GroupRoomAsideProps) {
             aria-label={props.label}
             className="motion-slide-in absolute inset-y-0 right-0 z-30 flex min-h-0 max-w-[calc(100%-3rem)] flex-col border-l border-line bg-surface shadow-e3"
             data-testid="group-room-sheet"
-            style={{ width: Math.max(width, 360) }}
+            style={{ width: roomSheetWidth(stored) }}
           >
             {content}
           </aside>

@@ -91,7 +91,7 @@ import {
 } from './group-panes'
 import type { GroupComposerDraft, GroupDraftSetter } from './group-panes'
 import { GroupRoomActivityBar } from './group-room-activity'
-import { asideInline, GroupRoomAside, useRoomLayout } from './group-room-aside'
+import { asideInline, GroupRoomAside, roomSheetWidth, useRoomLayout } from './group-room-aside'
 import { GroupRoomBoard } from './group-room-board'
 import { LineCards } from './group-room-cards'
 import { CatchUpCard, RecapCard, roomCatchUp } from './group-room-catchup'
@@ -713,7 +713,8 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
   const r = useRoomText()
   const rootRef = useRef<HTMLDivElement | null>(null)
   const layout = useRoomLayout(rootRef)
-  const asideFolded = Boolean(useValue($roomPrefs).asideCollapsed)
+  const roomPrefs = useValue($roomPrefs)
+  const asideFolded = Boolean(roomPrefs.asideCollapsed)
   const roomRoles = useValue($roomRoles)
   const [sheetOpen, setSheetOpen] = useState(false)
   // The thread open beside the conversation; null = none. The log never
@@ -994,6 +995,11 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
 
   const inlineAside = asideInline(layout)
   const panelShown = inlineAside ? !asideFolded || Boolean(focusedItem) : sheetOpen || Boolean(focusedItem)
+  // Medium rooms open the panel as a sheet OVER the conversation's right
+  // edge; the reading column reserves the sheet's width while it is up, so
+  // bubbles reflow instead of running underneath it.
+  const sheetOpenLive = !inlineAside && panelShown
+  const sheetPad = sheetOpenLive ? `min(${roomSheetWidth(roomPrefs.asideWidth)}px, calc(100% - 3rem))` : undefined
 
   const showAside = (open: boolean) => {
     if (inlineAside) {
@@ -1661,7 +1667,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
       {keysOpen ? <KeysHelp onClose={() => setKeysOpen(false)} /> : null}
       <div className="flex min-h-0 flex-1">
         {layout === 'xwide' ? <div className="flex min-h-0">{threadRail(false)}</div> : null}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col" style={{ paddingInlineEnd: sheetPad }}>
           <GroupHoldStatus
             holds={room.holds}
             memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}

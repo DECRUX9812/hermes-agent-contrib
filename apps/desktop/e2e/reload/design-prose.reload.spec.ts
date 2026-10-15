@@ -70,7 +70,9 @@ test('long assistant prose reads at the 72ch measure', async () => {
     // paragraphs must sit clearly inside it.
     const { paragraphs, proseWidth, columnWidth } = await content.evaluate(el => {
       const column = el.closest('[data-slot="aui_thread-content"]') ?? el
-      const prose = [...el.querySelectorAll<HTMLElement>('.aui-md > p')]
+      // Streamdown wraps blocks in its own containers, so paragraphs are
+      // nested — match at any depth.
+      const prose = [...el.querySelectorAll<HTMLElement>('.aui-md p')]
 
       return {
         columnWidth: column.getBoundingClientRect().width,
