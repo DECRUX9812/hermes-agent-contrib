@@ -100,6 +100,7 @@ class HostedRoomRuntime:
         turn_lock: Callable[[str], ContextManager[Any]], rpc: InternalSessionRPC | None = None,
         transport_resolver: MemberTransportResolver | None = None,
         prepare_room: Callable[[HostedRoomBinding], None] | None = None,
+        on_started: Callable[[HostedRoomBinding, Mapping[str, Any], int], None] | None = None,
         publish_terminal: Callable[[HostedRoomBinding, Mapping[str, Any]], None] | None = None,
         pending_action: Callable[[str, str, Mapping[str, Any] | None], None] | None = None,
         clock: Callable[[], float] = time.time,
@@ -125,7 +126,7 @@ class HostedRoomRuntime:
             raise ValueError("rpc or transport_resolver is required")
         self.db_path = Path(db_path)
         self.rpc, self.transport_resolver, self.turn_lock = rpc, transport_resolver, turn_lock
-        self.prepare_room, self.publish_terminal = prepare_room, publish_terminal
+        self.prepare_room, self.on_started, self.publish_terminal = prepare_room, on_started, publish_terminal
         self.pending_action, self.clock = pending_action, clock
         for name, value in positive.items():
             setattr(self, name, float(value))
@@ -399,6 +400,7 @@ class HostedRoomRuntime:
             safe_approval = {**approval, "choices": choices or ["once", "deny"]}
             action = {
                 "kind": "approval", "task_id": task["identity"].task_id,
+                "thread_id": task["identity"].thread_id, "turn_id": task["identity"].turn_id,
                 "execution_generation": int(task["execution_generation"]),
                 "run_id": info.get("run_id"), "session_id": session_id,
                 "request_id": safe_approval.get("request_id"), "approval": safe_approval}
@@ -588,8 +590,13 @@ class HostedRoomRuntime:
                 session = self._resolve_or_create(transport, profile, binding.room_id)
                 # A submit should fail before admission or return after it; an unexpected
                 # exception at that boundary is ambiguous, never a proven failure.
-                submit_attempted, session_id = True, _session_id(session)
+                session_id = _session_id(session)
                 deadline_monotonic = time.monotonic() + self.turn_timeout_seconds
+                if self.on_started is not None:
+                    # The attempt's generation, not the task row's: start_task bumps it and
+                    # the same value is what the member session and any later approval use.
+                    self.on_started(binding, task, attempt.execution_generation)
+                submit_attempted = True
                 transport.submit(
                     **_session_kw(profile, session_id), prompt=task["payload"]["prompt"],
                     task=attempt.identity, execution_generation=attempt.execution_generation,

@@ -232,6 +232,13 @@ export interface GroupChat {
    *  'off' rides the ceiling itself — the runaway brake still binds). An
    *  absent axis inherits the config.yaml `group_chat` block, else default. */
   limits?: GroupChatLimits
+  /** Keep this room on the renderer driver after an unsupported local-only
+   *  feature (for example attachments or a roster edit) enters its history. */
+  hostedRoomClientOnly?: boolean
+  /** The backend accepted this immutable room identity at least once. */
+  hostedRoomCreated?: boolean
+  /** Local profile used to address the hosted room after roster changes. */
+  hostedRoomOwner?: string
   /** Who hears a plain (un-@mentioned) user turn: unset = auto (the bot team's
    *  lead when the room is one team, else everyone), 'everyone' = fan-out, or
    *  one member's key — that bot alone listens and the rest wake on @mention

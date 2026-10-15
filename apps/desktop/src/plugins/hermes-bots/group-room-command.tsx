@@ -31,23 +31,27 @@ export interface RoomCommands {
   stopMember?: (thread: string, member: GroupMember) => void
 }
 
+/** One room line out: the room's own sender, so a backend-driven room stays
+ *  backend-driven whatever triggered the message. */
+export type RoomSend = (text: string, thread: null | string) => void
+
 /** The room's actions, bound to its live seating (`seat` re-reads the roster
  *  at send time, like the composer's own sends). */
-export function roomCommands(group: string, members: GroupMember[], seat: () => GroupMember[]): RoomCommands {
+export function roomCommands(
+  group: string,
+  members: GroupMember[],
+  seat: () => GroupMember[],
+  send?: RoomSend
+): RoomCommands {
   const tag = (name: string) => groupReplyMentionTag(members.find(m => m.name === name) || { name }, members) || name
+  const line: RoomSend = send || ((text, thread) => void sendToGroupChat(group, seat(), text, thread, []))
 
   return {
-    callDecision: (vote, option) => void sendToGroupChat(group, seat(), decidedLine(option), vote.thread, []),
-    nudge: handoff => void sendToGroupChat(group, seat(), nudgeLine(tag(handoff.to), handoff.task), handoff.thread, []),
+    callDecision: (vote, option) => line(decidedLine(option), vote.thread),
+    nudge: handoff => line(nudgeLine(tag(handoff.to), handoff.task), handoff.thread),
     reassign: (handoff, member) =>
-      void sendToGroupChat(
-        group,
-        seat(),
-        handoffLine(tag(member.name), handoff.task, handoff.doneWhen, handoff.dueMinutes || 30),
-        handoff.thread,
-        []
-      ),
-    statusCheck: thread => void sendToGroupChat(group, seat(), STATUS_CHECK_LINE, thread, [])
+      line(handoffLine(tag(member.name), handoff.task, handoff.doneWhen, handoff.dueMinutes || 30), handoff.thread),
+    statusCheck: thread => line(STATUS_CHECK_LINE, thread)
   }
 }
 
