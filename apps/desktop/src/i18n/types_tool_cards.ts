@@ -23,6 +23,8 @@ export interface ToolCardsCopy {
   }
   /** A settled run of the same tool: "Used Browser ×3". */
   usedTimes: (name: string, count: number) => string
+  /** A completed run, folded into one line. */
+  usedTools: (count: number) => string
   /** Status while a call has no better line yet. */
   working: string
   awaitingApproval: string
@@ -54,9 +56,13 @@ export interface ToolCardsCopy {
   }
   /** The browser steps viewer. */
   viewer: {
+    action: string
     title: (name: string) => string
     step: (index: number, total: number) => string
     noScreenshot: string
+    thumbnail: string
+    snapshot: string
+    url: string
     previous: string
     next: string
   }

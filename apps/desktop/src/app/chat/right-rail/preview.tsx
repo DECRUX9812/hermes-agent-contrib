@@ -6,6 +6,7 @@ import { $previewReloadRequest, $previewTabs, adoptPersistedBrowserTab } from '@
 import { isBrowserWindow } from '@/store/windows'
 
 import { PreviewPane } from './preview-pane'
+import { ToolStepPane } from './tool-step-pane'
 
 interface PreviewTilePaneProps {
   /** The tab's own Close, for body states that offer one (a failed load). */
@@ -45,6 +46,10 @@ export function PreviewTilePane({ onClose, tabId }: PreviewTilePaneProps) {
   // tick later).
   if (!target) {
     return null
+  }
+
+  if (target.kind === 'step') {
+    return <ToolStepPane target={target} />
   }
 
   return (

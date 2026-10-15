@@ -1,8 +1,15 @@
 import type { RpcEvent } from '@hermes/plugin-sdk'
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { $memberToolParts, recordGroupToolEvent, startGroupToolTap, useMemberToolCards } from './group-room-tool-cards'
+import {
+  $memberToolParts,
+  $memberToolTurnLive,
+  recordGroupToolEvent,
+  startGroupToolTap,
+  useMemberToolCards,
+  useMemberToolTurnLive
+} from './group-room-tool-cards'
 
 const { onEventMock } = vi.hoisted(() => ({ onEventMock: vi.fn() }))
 
@@ -34,6 +41,7 @@ const partsOf = (session: string) => $memberToolParts.get()[session] ?? []
 
 beforeEach(() => {
   $memberToolParts.set({})
+  $memberToolTurnLive.set({})
   onEventMock.mockReset()
 })
 
@@ -65,6 +73,16 @@ describe('group room tool parts', () => {
 
     expect($memberToolParts.get().s1).toBeUndefined()
     expect(partsOf('s2')).toHaveLength(1)
+    expect($memberToolTurnLive.get().s1).toBe(true)
+  })
+
+  it('keeps a member live until its assistant message completes', () => {
+    start('s1', 'call-1')
+    complete('s1', 'call-1')
+
+    expect($memberToolTurnLive.get().s1).toBe(true)
+    recordGroupToolEvent(event('message.complete', 's1'))
+    expect($memberToolTurnLive.get().s1).toBe(false)
   })
 
   it('keeps only the newest 24 tool calls per session', () => {
@@ -107,10 +125,12 @@ describe('group room tool parts', () => {
 
   it('ignores an event without a session id', () => {
     const before = $memberToolParts.get()
+    const liveBefore = $memberToolTurnLive.get()
 
     recordGroupToolEvent(event('tool.start', undefined, { name: 'web_search', tool_id: 'call-1' }))
 
     expect($memberToolParts.get()).toBe(before)
+    expect($memberToolTurnLive.get()).toBe(liveBefore)
   })
 
   it('returns the same store object when a clear finds nothing to clear', () => {
@@ -123,14 +143,23 @@ describe('group room tool parts', () => {
 })
 
 describe('startGroupToolTap', () => {
-  it('subscribes to the three tool and turn events and disposes them together', () => {
-    const disposers = [vi.fn(), vi.fn(), vi.fn()]
+  it('subscribes to tool start/completion and assistant turn boundaries', () => {
+    const disposers = [vi.fn(), vi.fn(), vi.fn(), vi.fn()]
 
-    onEventMock.mockReturnValueOnce(disposers[0]).mockReturnValueOnce(disposers[1]).mockReturnValueOnce(disposers[2])
+    onEventMock
+      .mockReturnValueOnce(disposers[0])
+      .mockReturnValueOnce(disposers[1])
+      .mockReturnValueOnce(disposers[2])
+      .mockReturnValueOnce(disposers[3])
 
     const stop = startGroupToolTap()
 
-    expect(onEventMock.mock.calls.map(([type]) => type)).toEqual(['tool.start', 'tool.complete', 'message.start'])
+    expect(onEventMock.mock.calls.map(([type]) => type)).toEqual([
+      'tool.start',
+      'tool.complete',
+      'message.start',
+      'message.complete'
+    ])
 
     stop()
 
@@ -150,13 +179,26 @@ describe('useMemberToolCards', () => {
     expect(result.current[0].cards).toHaveLength(1)
   })
 
+  it('reads live state from the matching runtime session', () => {
+    start('s1', 'call-1')
+
+    const { result, unmount } = renderHook(() => useMemberToolTurnLive('s1'))
+
+    expect(result.current).toBe(true)
+    unmount()
+
+    const empty = renderHook(() => useMemberToolTurnLive(null))
+
+    expect(empty.result.current).toBe(false)
+  })
+
   it('keeps the same groups when another session records an event', () => {
     start('s1', 'call-1')
 
     const { rerender, result } = renderHook(() => useMemberToolCards('s1', false))
     const before = result.current
 
-    start('s2', 'call-2')
+    act(() => start('s2', 'call-2'))
     rerender()
 
     expect(result.current).toBe(before)

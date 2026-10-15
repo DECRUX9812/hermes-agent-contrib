@@ -26,6 +26,7 @@ import {
 import { normalizeProfileKey } from './profile'
 import { $activeSessionId } from './session'
 import { $focusedSessionIsTile, $focusedStoredSessionId } from './session-focus'
+import type { SessionOwnerScope } from './session-request-router'
 import { canOpenBrowserWindow, isBrowserWindow, openBrowserInNewWindow, windowBrowserTabId } from './windows'
 
 /**
@@ -56,7 +57,7 @@ export interface PreviewTarget {
   /** `artifact` targets have nothing behind them on disk or on the network —
    * `url` is an id into the artifact registry, which owns the content. They
    * are what lets the rail preview generated HTML the workspace never saw. */
-  kind: 'artifact' | 'file' | 'url'
+  kind: 'artifact' | 'file' | 'step' | 'url'
   label: string
   large?: boolean
   language?: string
@@ -75,6 +76,26 @@ export interface PreviewTarget {
   /** Runtime-only target that cannot be restored from persisted state. */
   transient?: boolean
   url: string
+  step?: {
+    action: string
+    args?: unknown
+    completedAt?: number
+    durationLabel?: string
+    family: string
+    name: string
+    owner?: SessionOwnerScope
+    reason?: string
+    result?: unknown
+    sessionId?: string
+    startedAt?: number
+    state: 'approval' | 'done' | 'error' | 'running'
+    thumbnail?: { kind: 'screenshot'; src: string; url?: string } | { host: string; kind: 'site'; url: string }
+    thumbnailId?: string
+    title?: string
+    toolCallId?: string
+    toolName: string
+    url?: string
+  }
 }
 
 export interface PreviewServerRestart {
@@ -110,7 +131,7 @@ function isPreviewTarget(value: unknown): value is PreviewTarget {
   const r = value as Record<string, unknown>
 
   return (
-    (r.kind === 'artifact' || r.kind === 'file' || r.kind === 'url') &&
+    (r.kind === 'artifact' || r.kind === 'file' || r.kind === 'step' || r.kind === 'url') &&
     typeof r.label === 'string' &&
     typeof r.source === 'string' &&
     typeof r.url === 'string'
@@ -814,6 +835,10 @@ export const $previewServerRestartStatus = computed($previewServerRestart, resta
  *  a file by its canonical path and owner (`fileTabFor`), so an id never needs
  *  rekeying when the owner changes (draft adoption, compression rotation). */
 export function previewTabId(target: PreviewTarget, sessionId?: null | string): RightRailTabId {
+  if (target.kind === 'step') {
+    return `step:${sessionId ?? 'draft'}:${target.step?.toolCallId ?? target.source}`
+  }
+
   if (target.kind === 'file' && sessionId) {
     return `file:${sessionId}:${target.url}`
   }
@@ -948,7 +973,7 @@ export function openPreview(
       ? browserTabFor(visible)
       : target.kind === 'file'
         ? fileTabFor(visible, target)
-        : current.find(tab => tab.id === previewTabId(target))
+        : current.find(tab => tab.id === previewTabId(target, owner))
 
   const id =
     existing?.id ?? (target.kind === 'url' ? mintBrowserTabId() : unusedTabId(previewTabId(target, owner), current))
@@ -974,6 +999,28 @@ export function openPreview(
 
   noteExplicitPreviewOpen(id)
   selectRightRailTab(id)
+}
+
+/** Open the drawer on an individual tool call without persisting its payload. */
+export function openToolStep(
+  step: NonNullable<PreviewTarget['step']>,
+  requestedOwner: null | string = $focusedStoredSessionId.get(),
+  runtimeId: null | string = $activeSessionId.get(),
+  profile?: null | string
+): void {
+  openPreview(
+    {
+      kind: 'step',
+      label: step.title ?? step.name,
+      source: step.toolCallId ?? step.toolName,
+      transient: true,
+      url: step.url ?? '',
+      step
+    },
+    requestedOwner,
+    runtimeId,
+    profile
+  )
 }
 
 const blankPage = (): PreviewTarget => ({ kind: 'url', label: 'Browser', source: 'about:blank', url: 'about:blank' })

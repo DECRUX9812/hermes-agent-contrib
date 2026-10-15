@@ -100,6 +100,7 @@ export type GatewayEventPayload = {
   labels?: ToolLabel[]
   preview?: string
   result?: unknown
+  thumbnail?: unknown
   summary?: string
   error?: string | boolean
   // error — the gateway's machine-readable cause, when it has one (currently

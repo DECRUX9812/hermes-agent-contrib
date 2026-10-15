@@ -20,6 +20,7 @@ export const frToolCards: ToolCardsCopy = {
     vision: 'Vision'
   },
   usedTimes: (name, count) => `Utilisé ${name} ×${count}`,
+  usedTools: count => `${count} outils utilisés`,
   working: 'En cours…',
   awaitingApproval: 'En attente de votre approbation',
   reviewApproval: 'Examiner',
@@ -50,9 +51,13 @@ export const frToolCards: ToolCardsCopy = {
     url: 'Adresse'
   },
   viewer: {
+    action: 'Action',
     title: name => `Étapes de ${name}`,
     step: (index, total) => `Étape ${index} sur ${total}`,
     noScreenshot: 'Pas de capture pour cette étape',
+    thumbnail: 'Capture d’écran',
+    snapshot: 'Instantané du DOM',
+    url: 'URL',
     previous: 'Étape précédente',
     next: 'Étape suivante'
   }

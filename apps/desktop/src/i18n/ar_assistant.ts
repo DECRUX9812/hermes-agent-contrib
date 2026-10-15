@@ -299,6 +299,7 @@ export const arAssistant = {
         vision: 'الرؤية'
       },
       usedTimes: (name, count) => `استُخدم ${name} ×${count}`,
+      usedTools: count => `استُخدمت ${count} أدوات`,
       working: 'جارٍ العمل…',
       awaitingApproval: 'في انتظار موافقتك',
       reviewApproval: 'مراجعة',
@@ -329,9 +330,13 @@ export const arAssistant = {
         url: 'العنوان'
       },
       viewer: {
+        action: 'الإجراء',
         title: name => `خطوات ${name}`,
         step: (index, total) => `الخطوة ${index} من ${total}`,
         noScreenshot: 'لا توجد لقطة شاشة لهذه الخطوة',
+        thumbnail: 'لقطة شاشة',
+        snapshot: 'لقطة DOM',
+        url: 'URL',
         previous: 'الخطوة السابقة',
         next: 'الخطوة التالية'
       }

@@ -21,6 +21,7 @@ const NO_GROUPS: ToolCardGroup[] = []
 
 /** Tool calls per runtime session id, newest last. */
 export const $memberToolParts = atom<Record<string, ToolPart[]>>({})
+export const $memberToolTurnLive = atom<Record<string, boolean>>({})
 
 const isToolCall = (part: ChatPart): part is ToolPart => part.type === 'tool-call'
 
@@ -33,6 +34,18 @@ function remember(store: Record<string, ToolPart[]>, sessionId: string, parts: T
   return Object.fromEntries(kept.slice(-SESSIONS))
 }
 
+function setTurnLive(sessionId: string, live: boolean): void {
+  const current = $memberToolTurnLive.get()
+  const entries = Object.entries(current).filter(([id]) => id !== sessionId)
+
+  if (current[sessionId] === live && Object.keys(current).at(-1) === sessionId) {
+    return
+  }
+
+  entries.push([sessionId, live])
+  $memberToolTurnLive.set(Object.fromEntries(entries.slice(-SESSIONS)))
+}
+
 export function recordGroupToolEvent(event: RpcEvent): void {
   const sessionId = event.session_id
 
@@ -43,9 +56,16 @@ export function recordGroupToolEvent(event: RpcEvent): void {
   const store = $memberToolParts.get()
 
   if (event.type === 'message.start') {
+    setTurnLive(sessionId, true)
     if (sessionId in store) {
       $memberToolParts.set(Object.fromEntries(Object.entries(store).filter(([id]) => id !== sessionId)))
     }
+
+    return
+  }
+
+  if (event.type === 'message.complete') {
+    setTurnLive(sessionId, false)
 
     return
   }
@@ -54,6 +74,10 @@ export function recordGroupToolEvent(event: RpcEvent): void {
 
   if (!phase) {
     return
+  }
+
+  if (phase === 'running') {
+    setTurnLive(sessionId, true)
   }
 
   const parts = upsertToolPart(store[sessionId] ?? [], event.payload as ToolPayload, phase)
@@ -73,7 +97,8 @@ export function startGroupToolTap(): () => void {
   const stops = [
     host.onEvent('tool.start', recordGroupToolEvent),
     host.onEvent('tool.complete', recordGroupToolEvent),
-    host.onEvent('message.start', recordGroupToolEvent)
+    host.onEvent('message.start', recordGroupToolEvent),
+    host.onEvent('message.complete', recordGroupToolEvent)
   ]
 
   return () => stops.forEach(stop => stop())
@@ -96,4 +121,10 @@ export function useMemberToolCards(runtimeId: null | string, approvalPending: bo
 
     return toolCardsFromParts(parts, { approvalCallId: approvalPending ? runningApprovalCall(parts) : undefined })
   }, [approvalPending, parts])
+}
+
+export function useMemberToolTurnLive(runtimeId: null | string): boolean {
+  const liveBySession = useValue($memberToolTurnLive)
+
+  return runtimeId ? (liveBySession[runtimeId] ?? false) : false
 }

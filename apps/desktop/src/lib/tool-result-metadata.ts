@@ -1,6 +1,8 @@
 /** Gateway display hints are not the tool's result. Keep them off the raw
  * payload so summaries cannot overwrite evidence, including false/null/"". */
 export interface ToolResultMetadata {
+  /** Persisted browser capture reference; image bytes are fetched on demand. */
+  thumbnail?: { id: string; title?: string; url?: string }
   duration_s?: number
   error?: string | boolean
   inline_diff?: string
@@ -12,6 +14,22 @@ export interface ToolResultMetadata {
   retried?: Record<string, unknown>
   summary?: string
   todos?: unknown
+}
+
+export function toolThumbnailRef(value: unknown): ToolResultMetadata['thumbnail'] {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+
+  const record = value as Record<string, unknown>
+
+  return typeof record.id === 'string' && record.id.trim()
+    ? {
+        id: record.id,
+        ...(typeof record.title === 'string' ? { title: record.title } : {}),
+        ...(typeof record.url === 'string' ? { url: record.url } : {})
+      }
+    : undefined
 }
 
 /** Which MCP server/tool an app-bearing tool call belongs to and its `ui://` document. */

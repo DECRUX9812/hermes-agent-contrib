@@ -20,6 +20,7 @@ export const deToolCards: ToolCardsCopy = {
     vision: 'Bildanalyse'
   },
   usedTimes: (name, count) => `${name} ×${count} genutzt`,
+  usedTools: count => `${count} Tools verwendet`,
   working: 'Läuft…',
   awaitingApproval: 'Wartet auf Ihre Freigabe',
   reviewApproval: 'Prüfen',
@@ -50,9 +51,13 @@ export const deToolCards: ToolCardsCopy = {
     url: 'Adresse'
   },
   viewer: {
+    action: 'Aktion',
     title: name => `Schritte: ${name}`,
     step: (index, total) => `Schritt ${index} von ${total}`,
     noScreenshot: 'Für diesen Schritt gibt es keinen Screenshot',
+    thumbnail: 'Screenshot',
+    snapshot: 'DOM-Snapshot',
+    url: 'URL',
     previous: 'Vorheriger Schritt',
     next: 'Nächster Schritt'
   }

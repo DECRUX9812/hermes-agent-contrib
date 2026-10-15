@@ -82,7 +82,7 @@ export const FILES_PANE_ID = 'files'
 
 /** Every rail tab is a preview of something, namespaced by what backs it: a
  *  path on disk, a live URL, or an id into the in-memory artifact registry. */
-export type RightRailTabId = `artifact:${string}` | `file:${string}` | `url:${string}`
+export type RightRailTabId = `artifact:${string}` | `file:${string}` | `step:${string}` | `url:${string}`
 
 ensurePaneRegistered(CHAT_SIDEBAR_PANE_ID, { open: true })
 ensurePaneRegistered(FILE_BROWSER_PANE_ID, { open: false })

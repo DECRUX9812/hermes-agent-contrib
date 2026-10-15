@@ -295,6 +295,7 @@ export const zhHantAssistant = {
         vision: '視覺'
       },
       usedTimes: (name, count) => `已使用 ${name} ×${count}`,
+      usedTools: count => `已使用 ${count} 個工具`,
       working: '處理中…',
       awaitingApproval: '等待你的批准',
       reviewApproval: '檢視',
@@ -325,9 +326,13 @@ export const zhHantAssistant = {
         url: '網址'
       },
       viewer: {
+        action: '動作',
         title: name => `${name}步驟`,
         step: (index, total) => `第 ${index} 步，共 ${total} 步`,
         noScreenshot: '此步驟沒有截圖',
+        thumbnail: '螢幕截圖',
+        snapshot: 'DOM 快照',
+        url: 'URL',
         previous: '上一步',
         next: '下一步'
       }
