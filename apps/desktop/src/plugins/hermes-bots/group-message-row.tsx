@@ -90,7 +90,7 @@ export function GroupMessageRow({
   const body = (
     <div
       className={cn(
-        'min-w-0 text-ui-sm text-fg [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere',
+        'min-w-0 max-w-full wrap-anywhere text-ui-sm text-fg [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere',
         clamped && 'max-h-64 overflow-hidden mask-b-from-75%'
       )}
       // The app shell sets user-select: none globally; message bodies opt
@@ -140,7 +140,7 @@ export function GroupMessageRow({
     return (
       <div
         className={cn(
-          'group flex flex-col items-end gap-0.5 pl-2 pr-11',
+          'group flex max-w-full min-w-0 flex-col items-end gap-0.5 pl-2 pr-11',
           runStart && index > 0 && 'pt-1.5',
           dimmed && DIMMED_ROW,
           arrived && 'motion-arrive'
@@ -158,7 +158,7 @@ export function GroupMessageRow({
         </div>
         <div
           className={cn(
-            'rounded-card border border-line bg-surface-raised px-3 py-1.5',
+            'min-w-0 rounded-card border border-line bg-surface-raised px-3 py-1.5',
             GROUP_BUBBLE_MAX_W
           )}
         >

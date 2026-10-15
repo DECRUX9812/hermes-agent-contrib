@@ -98,7 +98,11 @@ _GATEWAY_EVENT_FIELDS = {
     "room.activity": (
         frozenset({"status", "reason_code", "thread_id", "discussion_event_id"}),
         ("reason_code", "thread_id", "discussion_event_id")),
-    "room.stop_requested": (frozenset({"cancel_id"}), ("cancel_id",))}
+    "room.stop_requested": (frozenset({"cancel_id"}), ("cancel_id",)),
+    "turn.started": (
+        frozenset({
+            "member", "member_id", "task_id", "thread_id", "turn_id", "execution_generation"}),
+        ("member", "member_id", "task_id", "thread_id", "turn_id"))}
 _EPOCH_STAMPED_KINDS = _TERMINAL_EVENT_KINDS | {"message.member", *_GATEWAY_EVENT_FIELDS}
 
 
@@ -344,6 +348,74 @@ def resolve_mentions(
     return tuple(member for member in members if member.handle.casefold() in mentioned)
 
 
+def _masked_hold_directive_text(value: str) -> str:
+    """Keep mentions in quoted spans for routing, but hide their prose from hold detection."""
+    def mentions_only(span: str) -> str:
+        return " ".join(re.findall(r"@[\w.-]+", span, flags=re.UNICODE)) or "quoted"
+
+    kept: list[str] = []
+    fence = ""
+    for line in value.splitlines():
+        if fence:
+            closing = line.strip().startswith(fence)
+            kept.append("" if closing else mentions_only(line))
+            if closing:
+                fence = ""
+            continue
+        opened = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if opened:
+            fence = opened.group(1)
+            kept.append("")
+            continue
+        if re.match(r"^\s*>", line):
+            kept.append(mentions_only(line))
+            continue
+        kept.append(re.sub(
+            r"`[^`\n]*`|[\"“”][^\"“”\n]*[\"“”]", lambda match: mentions_only(match.group(0)), line))
+    return "\n".join(kept)
+
+
+def _hold_directive_action(text: str) -> str:
+    """Mirror the room's conservative stop-word proximity rule for user events."""
+    tokens = re.findall(
+        r"@[\w.-]+|[\w-]+", _masked_hold_directive_text(text).lower(), flags=re.UNICODE)
+    mention_positions = [index for index, token in enumerate(tokens) if token.startswith("@")]
+    stop_positions = [
+        index for index, token in enumerate(tokens) if token in {"stop", "halt", "pause"}]
+    if not stop_positions:
+        return "release"
+    if any(abs(stop - mention) <= 2 for stop in stop_positions for mention in mention_positions):
+        return "hold"
+    return "distant"
+
+
+def _held_members(validated: Sequence[_ValidatedEvent], room: DiscussionRoom) -> set[str]:
+    """Replay room-wide user holds; a direct mention releases only that seat."""
+    held: set[str] = set()
+    for event in validated:
+        if event.kind != "message.user":
+            continue
+        text = str(event.payload["text"])
+        action = _hold_directive_action(text)
+        addressed = resolve_mentions((text,), room.members, default_all=False)
+        everyone = any(
+            match.group(1).casefold() in {"all", "everyone"} for match in _MENTION_RE.finditer(text))
+        if action == "hold":
+            if everyone:
+                held.update(member.member_id for member in room.members)
+            else:
+                # Only resolved member handles are hold targets. @user and unknown tags
+                # remain ordinary prose and cannot hold a room seat.
+                directive_mentions = resolve_mentions((text,), room.members, default_all=False)
+                held.update(member.member_id for member in directive_mentions)
+        elif action == "release":
+            if everyone:
+                held.clear()
+            else:
+                held.difference_update(member.member_id for member in addressed)
+    return held
+
+
 def _unaddressed_member_mentions(
     messages: Sequence[_ValidatedEvent], room: DiscussionRoom) -> tuple[DiscussionMember, ...]:
     """Return peers explicitly cited by a Bot and not heard from afterward."""
@@ -438,6 +510,8 @@ def _validate_gateway_event(kind: str, payload: Payload, actor: Payload, room: D
         raise DiscussionValidationError("invalid room.activity status")
     for field in identifier_fields:
         _identifier(payload.get(field), label=field)
+    if kind == "turn.started":
+        _positive_int(payload.get("execution_generation"), label="execution_generation")
     _require_gateway_actor(actor, room, f"{kind} requires the room gateway")
     return payload
 
@@ -646,7 +720,10 @@ def _effective_watermarks(
 
 
 def _round_zero_responders(
-    text: str, members: Sequence[DiscussionMember], lead: DiscussionMember | None
+    text: str,
+    members: Sequence[DiscussionMember],
+    lead: DiscussionMember | None,
+    held_member_ids: set[str] | None = None,
 ) -> list[DiscussionMember]:
     """Who a fresh user turn wakes. Orchestrated rooms (a team lead seated, ``lead`` set): the
     lead always hears the user; teammates wake only when the message explicitly @mentions them
@@ -654,8 +731,11 @@ def _round_zero_responders(
     an unaddressed send wakes the whole roster."""
     mentioned = resolve_mentions((text,), members, default_all=lead is None)
     if lead is None:
-        return mentioned
-    return [lead, *[m for m in mentioned if m.member_id != lead.member_id]]
+        responders = mentioned
+    else:
+        responders = [lead, *[m for m in mentioned if m.member_id != lead.member_id]]
+    held = held_member_ids or set()
+    return [member for member in responders if member.member_id not in held]
 
 
 def plan_next_task(
@@ -685,6 +765,7 @@ def plan_next_task(
         (int(event.payload["round_index"]), str(event.payload["member_id"])) for event in validated
         if event.kind in _TERMINAL_EVENT_KINDS and event.payload.get("discussion_event_id") == discussion.event_id}
     watermarks = _effective_watermarks(validated, initial_watermarks)
+    held_member_ids = _held_members(validated, room)
     seen_through_seq = max(event.seq for event in thread_messages)
     for round_index in range(MAX_DISCUSSION_ROUNDS):
         # The user's message selects the first round, with no mention meaning
@@ -694,8 +775,11 @@ def plan_next_task(
         # intact, so a peer cited later still receives the complete bounded
         # transcript delta without consuming turns meanwhile.
         responders = (
-            _round_zero_responders(str(discussion.payload["text"]), room.members, lead) if round_index == 0
-            else _unaddressed_member_mentions(discussion_messages, room))
+            _round_zero_responders(
+                str(discussion.payload["text"]), room.members, lead, held_member_ids)
+            if round_index == 0 else tuple(
+                member for member in _unaddressed_member_mentions(discussion_messages, room)
+                if member.member_id not in held_member_ids))
         for member_index, member in enumerate(_rotate(responders, round_index)):
             if (round_index, member.member_id) in terminals:
                 continue

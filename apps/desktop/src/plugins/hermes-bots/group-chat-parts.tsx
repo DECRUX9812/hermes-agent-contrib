@@ -376,6 +376,8 @@ interface GroupClarifyQuestion {
 interface GroupClarifyCardProps {
   entry: GroupRoomPrompt
   members: GroupMember[]
+  /** Hosted rooms answer through the room RPC instead of the member session. */
+  onAnswer?: (entry: GroupRoomPrompt, member: GroupMember, answer: string) => Promise<void>
 }
 
 /** One member's pending prompt, rendered in the room (#90694).
@@ -385,7 +387,7 @@ interface GroupClarifyCardProps {
  *  - approval: the command in a code row plus the server's choice set
  *    (once/session/always/deny) as buttons — no free text; approvals are a
  *    closed choice. Answer sends via the member's own source. */
-export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
+export function GroupClarifyCard({ entry, members, onAnswer }: GroupClarifyCardProps) {
   const b = useBots()
   const { group } = entry
   const isApproval = entry.kind === 'approval'
@@ -436,7 +438,9 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
 
     try {
       if (isApproval) {
-        await answerGroupClarify(entry, member, resolve(questions[0]))
+        await (onAnswer
+          ? onAnswer(entry, member, resolve(questions[0]))
+          : answerGroupClarify(entry, member, resolve(questions[0])))
       } else {
         const answers: Record<string, null | string> = {}
 

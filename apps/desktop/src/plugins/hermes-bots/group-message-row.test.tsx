@@ -114,6 +114,17 @@ it('never clamps the user’s own lines', () => {
   expect(screen.getByText(LONG_TEXT)).toBeTruthy()
 })
 
+it('lets an unbroken user line wrap inside the room column', () => {
+  renderRow(userLine(`https://example.invalid/${'path/'.repeat(120)}`))
+
+  const body = screen.getByText(/example\.invalid/)
+
+  expect(body.className).toContain('wrap-anywhere')
+  expect(body.className).toContain('max-w-full')
+  expect(body.parentElement?.className).toContain('max-w-[85%]')
+  expect(body.parentElement?.className).toContain('min-w-0')
+})
+
 it('prefers the room role label over the global title', () => {
   renderRow(botLine('a quick answer'), { roleTitle: 'Auditor', roomRole: 'Reviewer' })
 

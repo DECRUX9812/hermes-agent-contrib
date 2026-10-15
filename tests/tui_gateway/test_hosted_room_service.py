@@ -387,12 +387,13 @@ def test_create_send_drive_publish_and_replay_without_client_transport(tmp_path:
     assert service.stop(timeout=5.0)
 
     events = service._events("room-1")
-    assert [event["kind"] for event in events][:3] == [
+    assert [event["kind"] for event in events][:4] == [
         "message.user",
+        "turn.started",
         "message.member",
         "turn.settled",
     ]
-    assert events[1]["payload"]["text"] == "reply from ops"
+    assert events[2]["payload"]["text"] == "reply from ops"
     assert service.status("room-1")["working"] is False
 
 
@@ -712,6 +713,48 @@ def test_service_derives_room_deadline_from_agent_timeout(tmp_path: Path, monkey
     service = HostedRoomService(_server(), db_path=tmp_path / "state.db")
 
     assert service.runtime.turn_timeout_seconds == 120.0
+
+
+def test_started_event_is_durable_before_member_submission(tmp_path: Path):
+    db = tmp_path / "state.db"
+    service = HostedRoomService(_server(), db_path=db)
+    service.rpc = _FakeRPC()
+    service.runtime.rpc = service.rpc
+    service.local_profiles = lambda: ("default", "ops")
+    service.create_room(
+        room_id="room-1",
+        name="Started room",
+        members=[
+            {"member_id": "default", "profile": "default", "handle": "hermes"},
+            {"member_id": "ops", "profile": "ops", "handle": "ops"},
+        ],
+    )
+    service.send(
+        room_id="room-1",
+        event_id="user-started",
+        payload={"text": "@ops start", "thread_id": "thread-1"},
+    )
+
+    service.runtime._process_room(service.bindings()[0])
+
+    events = service._events("room-1")
+    started = next(event for event in events if event["kind"] == "turn.started")
+    member_reply = next(event for event in events if event["kind"] == "message.member")
+    task = driver.list_tasks(db, room_id="room-1")[0]
+    digest = hashlib.sha256(
+        f"{task['identity'].task_id}\0{started['payload']['execution_generation']}".encode()
+    ).hexdigest()[:32]
+
+    assert started["seq"] < member_reply["seq"]
+    assert started["event_id"] == f"started:{digest}"
+    assert started["payload"] == {
+        "member": "ops",
+        "member_id": "ops",
+        "task_id": task["identity"].task_id,
+        "thread_id": "thread-1",
+        "turn_id": task["identity"].turn_id,
+        "execution_generation": 1,
+    }
 
 
 def test_service_publishes_deferred_turn_continues_and_retries_new_generation(

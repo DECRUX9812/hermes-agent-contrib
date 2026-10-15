@@ -2476,6 +2476,14 @@ export type { GatewayEvent as RpcEvent } from '@hermes/shared'
 export type { DisplayLease, DisplayObserveResult, DisplayStatus, DisplayThumbnailResult } from '@hermes/shared'
 /** `session.list` / `profiles.list` session rows, generated from `tui_gateway/contracts`. */
 export type { ProfileSessionPreview, SessionListRow } from '@hermes/shared'
+/** Hosted group-room wire shapes, generated from `tui_gateway/contracts/groups_bot_relay.py`. */
+export type {
+  GroupsCapabilitiesResult,
+  GroupsLogResult,
+  GroupsStateResult,
+  RoomDriverStatus,
+  RoomEvent
+} from '@hermes/shared'
 /** Bot identity and on-disk memory RPC contracts from `tui_gateway/contracts/fork_bot.py`. */
 export type {
   ForkBotIdentityGetResult,
@@ -2520,6 +2528,8 @@ export { Blobatar } from 'blobatar/react'
 /** Plugin-local reactive state (share between a trigger and its panel, poll
  *  loops, cross-component signals) — the same primitive `host.state` uses. */
 export { atom, computed } from 'nanostores'
+/** The read side of those atoms, for a plugin that caches or passes one on. */
+export type { ReadableAtom } from 'nanostores'
 /** Markdown renderer (same pipeline core chat surfaces use) so plugins render
  *  message text as a preview instead of raw Markdown source. */
 export { Streamdown } from 'streamdown'

@@ -217,6 +217,42 @@ def test_room_stop_fences_old_work_but_allows_a_later_message(room_db):
     assert resumed.discussion_event_id == "user-2"
 
 
+def test_member_stop_hold_releases_on_direct_mention(room_db):
+    db, room = room_db
+    _append_user(db, event_id="user-1", text="stop @research")
+    assert discussion.plan_next_task(room, _events(db), local_profiles=LOCAL_PROFILES).status == "settled"
+
+    _append_user(db, event_id="user-2", text="A new update.")
+    task = _next_task(room, db)
+    assert task.member.profile != "research"
+
+    _append_user(db, event_id="user-3", text="@research resume")
+    resumed = _next_task(room, db)
+    assert resumed.member.profile == "research"
+    assert "stop @research" in resumed.payload["prompt"]
+
+
+def test_all_stop_hold_releases_on_broadcast_and_user_mention_is_not_a_member(room_db):
+    db, room = room_db
+    _append_user(db, event_id="user-1", text="@all stop")
+    assert discussion.plan_next_task(room, _events(db), local_profiles=LOCAL_PROFILES).status == "settled"
+
+    _append_user(db, event_id="user-2", text="@user please help")
+    assert discussion.plan_next_task(room, _events(db), local_profiles=LOCAL_PROFILES).status == "settled"
+
+    _append_user(db, event_id="user-3", text="@all resume")
+    assert _next_task(room, db).member.profile == "research"
+
+
+def test_stop_words_in_quotes_and_distant_prose_do_not_hold_members(room_db):
+    db, room = room_db
+    _append_user(db, event_id="user-1", text="@research go, das ist halt ein Test")
+    assert _next_task(room, db).member.profile == "research"
+
+    _append_user(db, event_id="user-2", text='@research please review `stop @build`')
+    assert _next_task(room, db).member.profile == "research"
+
+
 def test_deterministic_task_fits_existing_driver_and_reconstructs_after_restart(
     room_db: tuple[Path, dict],
 ):
