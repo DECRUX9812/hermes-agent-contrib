@@ -2315,7 +2315,7 @@ export { CHAT_HEADER_AREAS, type ChatHeaderSlotContribution, type ChatHeaderSlot
 export { answeredAfter, chatMessageText, upsertToolPart } from '@/lib/chat-messages'
 export type { ChatMessage } from '@/lib/chat-messages/types'
 export { FILE_VIEWERS_AREA, type FileViewerContribution, type FileViewerProps } from '@/lib/file-viewers'
-export { isMissingRpcMethod } from '@/lib/gateway-rpc'
+export { isMissingRestEndpoint, isMissingRpcMethod } from '@/lib/gateway-rpc'
 /** THE confirm flow for guarded model switches — when a gateway model-switch
  *  RPC answers `confirm_required` (data-policy / expensive-model guard),
  *  route it through this shared applier instead of forking a per-surface
