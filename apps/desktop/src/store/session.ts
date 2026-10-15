@@ -786,6 +786,34 @@ export function mergeSessionPage(
   return interleaved
 }
 
+/**
+ * Carry the fields only the sidebar list computes onto a row that arrived
+ * without them. `preview` (the first user message, what the row is labelled
+ * with when no title is set) and `unread` are produced by the listing query —
+ * a single-session read returns the raw row and knows neither. Re-prepending
+ * that row (the by-id resolve a cold start runs for the routed session, a
+ * pasted id) used to blank the row it replaced, so the sidebar entry and every
+ * tab read "Untitled session" until the next list refresh.
+ */
+export function carryListedRowFields(
+  rows: readonly SessionInfo[],
+  incoming: SessionInfo,
+  storedSessionId: string
+): SessionInfo {
+  const prev = rows.find(row => sessionMatchesStoredId(row, storedSessionId))
+  const carried: Partial<SessionInfo> = {}
+
+  if (!incoming.preview?.trim() && prev?.preview?.trim()) {
+    carried.preview = prev.preview
+  }
+
+  if (incoming.unread === undefined && prev?.unread !== undefined) {
+    carried.unread = prev.unread
+  }
+
+  return Object.keys(carried).length ? { ...incoming, ...carried } : incoming
+}
+
 // Error scope for a failed unified read (Electron's primary fan-out): every
 // profile in the aggregate went unread, not a profile literally named `all`.
 const ALL_PROFILES_SCAN = 'all'

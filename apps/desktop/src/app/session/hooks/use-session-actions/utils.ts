@@ -24,6 +24,7 @@ import {
   $currentCwd,
   $messagingSessions,
   $sessions,
+  carryListedRowFields,
   commitWorkspaceCwdForSelectedSession,
   getSessionOwnerHint,
   knownSessionOwner,
@@ -2290,15 +2291,14 @@ function upsertResolvedSession(
     return
   }
 
+  // The by-id row knows no `preview`/`unread` (list-only fields): carry what the page served.
   const prepend = (prev: SessionInfo[]) => [
-    session,
-    ...prev.filter(existing => {
-      if (sessionMatchesStoredId(existing, storedSessionId)) {
-        return false
-      }
-
-      return (existing._lineage_root_id ?? existing.id) !== lineage
-    })
+    carryListedRowFields(prev, session, storedSessionId),
+    ...prev.filter(
+      existing =>
+        !sessionMatchesStoredId(existing, storedSessionId) &&
+        (existing._lineage_root_id ?? existing.id) !== lineage
+    )
   ]
 
   // A resolve can observe a source move (cross-room /resume rewrites the row to
