@@ -146,6 +146,20 @@ function QuietCardBody({ copy, group }: Pick<CardBodyProps, 'copy' | 'group'>) {
   )
 }
 
+function cardLabel(copy: ToolCardsCopy, group: ToolCardGroup): string {
+  const last = group.cards[group.cards.length - 1]
+
+  if (group.state === 'approval') {
+    return `${group.name}: ${copy.awaitingApproval}`
+  }
+
+  if (group.state === 'done' && group.cards.length > 1) {
+    return copy.usedTimes(group.name, group.cards.length)
+  }
+
+  return [`${group.name}: ${last.status}`, group.state === 'error' ? last.reason : null].filter(Boolean).join('. ')
+}
+
 /** One tool group: a live card while it works, settling into a quiet line
  *  once done. A single root keeps its DOM node across the change so the
  *  transition animates instead of remounting. */
@@ -181,7 +195,7 @@ export function ToolCard({
     <div data-tool-card={group.state} data-tool-card-key={group.key} role="listitem">
       <div
         aria-expanded={open}
-        aria-label={open ? copy.hideDetails : copy.showDetails}
+        aria-label={cardLabel(copy, group)}
         className={cn(
           'w-full max-w-md transition-[background-color,border-color,box-shadow,padding,min-height] duration-(--dur-base) ease-spring',
           mountedLive && 'motion-arrive',
@@ -193,6 +207,7 @@ export function ToolCard({
         onKeyDown={toggleOnKey(toggle)}
         role="button"
         tabIndex={0}
+        title={open ? copy.hideDetails : copy.showDetails}
       >
         {live ? (
           <LiveCardBody actor={actor} copy={copy} group={group} onReviewApproval={onReviewApproval} />

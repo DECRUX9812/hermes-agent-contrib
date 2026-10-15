@@ -18,11 +18,14 @@ import { sessionApprovalRequest } from '@/store/prompts'
 
 import { isApprovalActivity, isCurrentTurnMessage } from './approval-activity'
 
+function cardSignature(card: ToolCardGroup['cards'][number]): string {
+  return `${card.id}:${card.state}:${card.status}:${card.reason ?? ''}:${card.durationLabel ?? ''}:${card.output?.length ?? 0}`
+}
+
 function groupSignature(group: ToolCardGroup): string {
-  const last = group.cards[group.cards.length - 1]
   const thumbUrl = group.thumb ? (group.thumb.kind === 'screenshot' ? group.thumb.src : group.thumb.url) : ''
 
-  return `${group.key}|${group.state}|${group.cards.length}|${last?.status ?? ''}|${last?.reason ?? ''}|${thumbUrl}|${last?.durationLabel ?? ''}`
+  return `${group.key}|${group.state}|${thumbUrl}|${group.cards.map(cardSignature).join(',')}`
 }
 
 function groupsSignature(groups: readonly ToolCardGroup[]): string {
