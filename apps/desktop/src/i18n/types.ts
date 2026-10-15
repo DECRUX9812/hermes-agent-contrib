@@ -3999,6 +3999,9 @@ catalog: CatalogTranslations
       alwaysTitle: string
       alwaysDescription: (pattern: string) => string
       alwaysAllow: string
+      alwaysConfirmPrompt: (pattern: string) => string
+      decisionRecorded: (choice: string) => string
+      noLongerPending: string
     }
     clarify: ClarifyCopy
     toolCards: ToolCardsCopy

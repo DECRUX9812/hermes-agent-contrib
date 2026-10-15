@@ -8,7 +8,6 @@ import {
   $secretRequest,
   $sudoRequest,
   answerApproval,
-  APPROVAL_RESPOND_REQUEST_TIMEOUT_MS,
   clearAllPrompts,
   clearApprovalRequest,
   clearSecretRequest,
@@ -286,59 +285,26 @@ describe('answerApproval', () => {
     resetServerRequestsForTests()
   })
 
-  it('sends approval.respond with a deadline that covers the backend approvals window', async () => {
-    const calls: Array<[string, Record<string, unknown>, number | undefined]> = []
+  it('uses the durable decide RPC when no live server request is open', async () => {
+    const request = vi.fn().mockResolvedValue({ approval: { choice: 'once', status: 'allowed' }, resolved: true })
 
-    const gateway = {
-      request: async (method: string, params: Record<string, unknown>, timeoutMs?: number) => {
-        calls.push([method, params, timeoutMs])
+    await answerApproval({ request } as never, target, 'once')
 
-        return { resolved: 1 }
-      }
-    }
-
-    await answerApproval(gateway as never, target, 'once')
-
-    // #55433: the generic 30s default fires long before the backend's 300s
-    // approvals.timeout; the RPC must carry an explicit longer deadline.
-    expect(calls).toHaveLength(1)
-    expect(calls[0][0]).toBe('approval.respond')
-    expect(calls[0][2]).toBe(APPROVAL_RESPOND_REQUEST_TIMEOUT_MS)
-    expect(APPROVAL_RESPOND_REQUEST_TIMEOUT_MS).toBeGreaterThanOrEqual(300_000)
+    expect(request).toHaveBeenCalledExactlyOnceWith(
+      'fork.approvals.decide',
+      { choice: 'once', request_id: 'r1', session_id: 's1' }
+    )
   })
 
-  it('retries once when the respond deadline fires behind a stalled WS', async () => {
-    let calls = 0
-
+  it('does not retry a failed durable decision', async () => {
     const gateway = {
-      request: async (_method: string, _params: Record<string, unknown>, _timeoutMs?: number) => {
-        calls += 1
-
-        if (calls === 1) {
-          throw new Error(`request timed out after 330s: approval.respond`)
-        }
-
-        return { resolved: 1 }
-      }
-    }
-
-    // Resolves on the retry; a duplicate resolve is idempotent server-side.
-    await expect(answerApproval(gateway as never, target, 'deny')).resolves.toBeUndefined()
-    expect(calls).toBe(2)
-  })
-
-  it('propagates non-timeout failures without a retry', async () => {
-    let calls = 0
-
-    const gateway = {
-      request: async () => {
-        calls += 1
+      request: vi.fn(async () => {
         throw new JsonRpcGatewayError('session not found', { code: 4001 })
-      }
+      })
     }
 
     await expect(answerApproval(gateway as never, target, 'once')).rejects.toThrow('session not found')
-    expect(calls).toBe(1)
+    expect(gateway.request).toHaveBeenCalledTimes(1)
   })
 
   it('answers the live server request without any RPC when one is open', async () => {
@@ -350,6 +316,15 @@ describe('answerApproval', () => {
     await answerApproval({ request } as never, { requestId: 'r1', serverRequestId: 'srv-1', sessionId: 's1' }, 'once')
 
     expect(respond).toHaveBeenCalledWith({ choice: 'once' })
+    expect(request).not.toHaveBeenCalled()
+  })
+
+  it('rejects the journal path when the request has no durable id', async () => {
+    const request = vi.fn()
+
+    await expect(answerApproval({ request } as never, { sessionId: 's1' }, 'once')).rejects.toThrow(
+      'This approval is no longer available'
+    )
     expect(request).not.toHaveBeenCalled()
   })
 })
