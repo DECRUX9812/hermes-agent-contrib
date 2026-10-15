@@ -58,6 +58,15 @@ describe('status wording and state', () => {
     expect(done.status).toBe('Opened example.com/docs')
   })
 
+  it('describes titleless browser tools in present and past tense', () => {
+    const running = toolCardView(part({ toolName: 'browser_vision' }))
+
+    const done = toolCardView(part({ result: { success: true }, toolName: 'browser_scroll' }))
+
+    expect(running.status).toBe('Looking at the page')
+    expect(done.status).toBe('Scrolled the page')
+  })
+
   it('reports the reason from the first line of an error', () => {
     const card = toolCardView(part({ args: { path: '/workspace/app/out.txt' }, result: { error: 'disk full\nmore' }, toolName: 'write_file' }))
 

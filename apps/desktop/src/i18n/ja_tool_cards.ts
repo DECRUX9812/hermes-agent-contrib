@@ -25,6 +25,14 @@ export const jaToolCards: ToolCardsCopy = {
   reviewApproval: '確認',
   failed: '失敗',
   stopped: '停止しました',
+  statuses: {
+    browser_back: { done: '戻りました', pending: '戻っています' },
+    browser_console: { done: 'ページのコンソールを読みました', pending: 'ページのコンソールを読んでいます' },
+    browser_get_images: { done: 'ページの画像を集めました', pending: 'ページの画像を集めています' },
+    browser_press: { done: 'キーを押しました', pending: 'キーを押しています' },
+    browser_scroll: { done: 'ページをスクロールしました', pending: 'ページをスクロールしています' },
+    browser_vision: { done: 'ページを確認しました', pending: 'ページを確認しています' }
+  },
   details: {
     request: 'リクエスト',
     output: '出力',

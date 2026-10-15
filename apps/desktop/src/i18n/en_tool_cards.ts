@@ -25,6 +25,14 @@ export const enToolCards: ToolCardsCopy = {
   reviewApproval: 'Review',
   failed: 'Failed',
   stopped: 'Stopped',
+  statuses: {
+    browser_back: { done: 'Went back', pending: 'Going back' },
+    browser_console: { done: 'Read the page console', pending: 'Reading the page console' },
+    browser_get_images: { done: 'Collected page images', pending: 'Collecting page images' },
+    browser_press: { done: 'Pressed a key', pending: 'Pressing a key' },
+    browser_scroll: { done: 'Scrolled the page', pending: 'Scrolling the page' },
+    browser_vision: { done: 'Looked at the page', pending: 'Looking at the page' }
+  },
   details: {
     request: 'Request',
     output: 'Output',

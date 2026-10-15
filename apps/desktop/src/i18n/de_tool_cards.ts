@@ -25,6 +25,14 @@ export const deToolCards: ToolCardsCopy = {
   reviewApproval: 'Prüfen',
   failed: 'Fehlgeschlagen',
   stopped: 'Abgebrochen',
+  statuses: {
+    browser_back: { done: 'Zurückgegangen', pending: 'Geht zurück' },
+    browser_console: { done: 'Seitenkonsole gelesen', pending: 'Liest die Seitenkonsole' },
+    browser_get_images: { done: 'Seitenbilder gesammelt', pending: 'Sammelt Seitenbilder' },
+    browser_press: { done: 'Taste gedrückt', pending: 'Drückt eine Taste' },
+    browser_scroll: { done: 'Seite gescrollt', pending: 'Scrollt die Seite' },
+    browser_vision: { done: 'Seite betrachtet', pending: 'Betrachtet die Seite' }
+  },
   details: {
     request: 'Anfrage',
     output: 'Ausgabe',
