@@ -211,11 +211,22 @@ def send(method: str, sid: str, params: dict, *, timeout: float | None,
     return None
 
 
-def send_async(method: str, sid: str, params: dict, on_result: Callable[[dict | None], None]) -> Callable[[str], None]:
+def send_async(
+    method: str,
+    sid: str,
+    params: dict,
+    on_result: Callable[[dict | None], None],
+    *,
+    before_send: Callable[[], bool | None] | None = None,
+) -> Callable[[str], None]:
     """Send one request whose wait is owned elsewhere (the approval queue's own timeout). ``on_result``
     runs on the dispatching thread when the response lands. Returns ``settle(reason)``: call it when
-    the underlying wait ends; if the request is still open it is withdrawn with ``request.cancel``."""
+    the underlying wait ends; if the request is still open it is withdrawn with ``request.cancel``.
+    ``before_send`` runs only when a client can answer; returning False suppresses the request."""
     if _unanswerable(method, sid):
+        on_result(None)
+        return lambda reason: None
+    if before_send is not None and before_send() is False:
         on_result(None)
         return lambda reason: None
     req = ServerRequest(sid, method, params, on_result=on_result)

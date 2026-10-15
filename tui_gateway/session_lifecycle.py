@@ -903,8 +903,8 @@ def _interrupt_session_turn(
         # Announce BEFORE the queue is drained, or there is nothing left to name.
         reason = "ws_orphan_reap" if orphan else "interrupt"
         _announce_cancelled_gateway_approvals(session, reason, session_id=sid)
-        from tools.approval import resolve_gateway_approval
-        resolve_gateway_approval(session["session_key"], "deny", resolve_all=True)
+        from tools.approval import withdraw_gateway_approvals
+        withdraw_gateway_approvals(session["session_key"], reason)
     return use_compute_host
 
 

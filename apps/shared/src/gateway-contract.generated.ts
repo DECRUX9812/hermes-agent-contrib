@@ -1817,6 +1817,38 @@ export interface DisplayLeaseReleaseParams {
   viewer_id?: string | null
   force?: boolean | null
 }
+export interface ForkApprovalsListParams {
+  session_id: string
+  profile?: string | null
+}
+export interface ForkApprovalsListResult {
+  approvals: ForkApproval[]
+}
+export interface ForkApproval {
+  request_id: string
+  tool_call_id: string
+  tool_name: string
+  command: string
+  description: string
+  created_at: number
+  status: ForkApprovalStatus
+  decided_at?: number | null
+  choice?: ApprovalChoice | null
+  ran_at?: number | null
+  reason?: string | null
+}
+export type ForkApprovalStatus = 'pending' | 'allowed' | 'denied' | 'expired' | 'withdrawn'
+export type ApprovalChoice = 'once' | 'session' | 'always' | 'deny'
+export interface ForkApprovalsDecideParams {
+  session_id: string
+  request_id: string
+  choice: ApprovalChoice
+  profile?: string | null
+}
+export interface ForkApprovalsDecideResult {
+  approval: ForkApproval
+  resolved: boolean
+}
 /** Calls that take no arguments; the desktop sends ``{}``. */
 export type ForkOnboardingEmptyParams = Record<string, never>
 export interface EnsureSetupProfileResult {
@@ -2061,7 +2093,6 @@ export interface GroupsApproveParams {
   choice: ApprovalChoice
   request_id: string
 }
-export type ApprovalChoice = 'once' | 'session' | 'always' | 'deny'
 /** ``result`` is the local ``approval.respond`` answer or the peer's run-action receipt. */
 export interface GroupsApproveResult {
   approved?: boolean
@@ -5835,6 +5866,10 @@ export interface RpcMethods {
   'display.thumbnail': { params: ProfileParams; result: DisplayThumbnailResult }
   /** Stage a non-image file into the session workspace and hand back its @file: ref. */
   'file.attach': { params: FileAttachParams; result: FileAttachResult }
+  /** Answer one pending approval. Idempotent: a request already decided resolves nothing and returns its recorded row. */
+  'fork.approvals.decide': { params: ForkApprovalsDecideParams; result: ForkApprovalsDecideResult }
+  /** Journal rows for one stored session, oldest to newest (at most 50). */
+  'fork.approvals.list': { params: ForkApprovalsListParams; result: ForkApprovalsListResult }
   /** Create the setup profile under the setup lock (mirroring launch credentials), or no-op. */
   'fork.onboarding.ensure_setup_profile': { params: ForkOnboardingEmptyParams; result: EnsureSetupProfileResult }
   /** Find the setup chat by title or create it; empty is true only before its first turn. */
@@ -6343,6 +6378,8 @@ export const RPC_METHODS = [
   'display.switchSandboxImage',
   'display.thumbnail',
   'file.attach',
+  'fork.approvals.decide',
+  'fork.approvals.list',
   'fork.onboarding.ensure_setup_profile',
   'fork.onboarding.ensure_setup_session',
   'fork.onboarding.mark_seen',

@@ -15,21 +15,27 @@ import threading
 import time
 import uuid
 
+from hermes_constants import get_hermes_home
 from tools.interrupt import get_interrupt_reason, is_interrupted
 from tools import approval_context as _ctx
 from tools.approval_human_wait import activity_heartbeat, human_wait_window
+from agent.terminal_approval_batch import approval_published, preparing_terminal_approval, register_prepared_approval
 
 logger = logging.getLogger("tools.approval")
 
 
 class _ApprovalEntry:
     """One pending dangerous-command approval inside a gateway session."""
-    __slots__ = ("acknowledged", "cancelled", "data", "event", "reason", "result", "settle")
+    __slots__ = (
+        "acknowledged", "cancelled", "data", "event", "journaled", "profile_home", "reason", "result", "settle",
+    )
 
     def __init__(self, data: dict):
         self.event = threading.Event()
         self.data = dict(data)
         self.data.setdefault("request_id", uuid.uuid4().hex)
+        self.journaled = False
+        self.profile_home = str(get_hermes_home())
         self.acknowledged = False
         # Surface hook run once when the wait ends by ANY path (answer, timeout, interrupt, /approve from
         # another client): the tui_gateway withdraws its open server→client request through it.
@@ -144,7 +150,12 @@ def _await_gateway_decision(session_key: str, notify_cb, approval_data: dict, *,
     the leader's ``session``/``always``/``deny``/timeout; a ``once`` covers only
     the leader, so the follower falls through to a fresh prompt."""
     from tools import approval as _approval
-    from agent.terminal_approval_batch import approval_published, preparing_terminal_approval, register_prepared_approval
+
+    tool_call_id = _ctx.current_tool_call_id()
+    if tool_call_id:
+        from tools import approval_journal
+        if approval_journal.already_ran(tool_call_id):
+            return {"resolved": False, "choice": None, "already_ran": True}
 
     primary_key = approval_data.get("pattern_key", "")
     payload = {
@@ -183,6 +194,13 @@ def _await_gateway_decision(session_key: str, notify_cb, approval_data: dict, *,
             if not queue:
                 _approval._gateway_queues.pop(session_key, None)
             settle, entry.settle = entry.settle, None
+        if choice is None and entry.journaled:
+            from tools import approval_journal
+            request_id = str(entry.data.get("request_id") or "")
+            if request_id:
+                reason = entry.cancelled or (state if state in {"timeout", "notify_failed", "interrupted"}
+                                             else "session_closed")
+                approval_journal.settle(request_id, reason, home=entry.profile_home)
         if settle is not None:
             # ``request.cancel`` carries a RequestCancelReason: a choice committed from another surface is
             # ``resolved``; a withdrawn entry (woken with no choice — session torn down, turn ended, client

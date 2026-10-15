@@ -1331,11 +1331,12 @@ def _(rid, params: dict) -> dict:
         session = _approval_respond_session_fallback(params)
         if session is None:
             return err
-    return _approval_reply(
-        rid, "resolved",
-        lambda a: a.resolve_gateway_approval(
-            session["session_key"], params.get("choice", "deny"),
-            resolve_all=params.get("all", False), request_id=params.get("request_id")))
+    with _session_profile_runtime_scope(session, hydrate_secrets=False):
+        return _approval_reply(
+            rid, "resolved",
+            lambda a: a.resolve_gateway_approval(
+                session["session_key"], params.get("choice", "deny"),
+                resolve_all=params.get("all", False), request_id=params.get("request_id")))
 
 
 # ── attachments ─────────────────────────────────────────────────────────────

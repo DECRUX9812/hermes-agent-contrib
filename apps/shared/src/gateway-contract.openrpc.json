@@ -1465,6 +1465,42 @@
       }
     },
     {
+      "name": "fork.approvals.decide",
+      "summary": "Answer one pending approval. Idempotent: a request already decided resolves nothing and returns its recorded row.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkApprovalsDecideParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkApprovalsDecideResult"
+        }
+      }
+    },
+    {
+      "name": "fork.approvals.list",
+      "summary": "Journal rows for one stored session, oldest to newest (at most 50).",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ForkApprovalsListParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ForkApprovalsListResult"
+        }
+      }
+    },
+    {
       "name": "fork.onboarding.ensure_setup_profile",
       "summary": "Create the setup profile under the setup lock (mirroring launch credentials), or no-op.",
       "params": [
@@ -16730,6 +16766,203 @@
           "content"
         ],
         "title": "ForeignTurn",
+        "type": "object"
+      },
+      "ForkApproval": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "tool_call_id": {
+            "title": "Tool Call Id",
+            "type": "string"
+          },
+          "tool_name": {
+            "title": "Tool Name",
+            "type": "string"
+          },
+          "command": {
+            "title": "Command",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "number"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ForkApprovalStatus"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Decided At"
+          },
+          "choice": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalChoice"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "ran_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ran At"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "request_id",
+          "tool_call_id",
+          "tool_name",
+          "command",
+          "description",
+          "created_at",
+          "status"
+        ],
+        "title": "ForkApproval",
+        "type": "object"
+      },
+      "ForkApprovalStatus": {
+        "enum": [
+          "pending",
+          "allowed",
+          "denied",
+          "expired",
+          "withdrawn"
+        ],
+        "title": "ForkApprovalStatus",
+        "type": "string"
+      },
+      "ForkApprovalsDecideParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "choice": {
+            "$ref": "#/components/schemas/ApprovalChoice"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          }
+        },
+        "required": [
+          "session_id",
+          "request_id",
+          "choice"
+        ],
+        "title": "ForkApprovalsDecideParams",
+        "type": "object"
+      },
+      "ForkApprovalsDecideResult": {
+        "additionalProperties": false,
+        "properties": {
+          "approval": {
+            "$ref": "#/components/schemas/ForkApproval"
+          },
+          "resolved": {
+            "title": "Resolved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "approval",
+          "resolved"
+        ],
+        "title": "ForkApprovalsDecideResult",
+        "type": "object"
+      },
+      "ForkApprovalsListParams": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "ForkApprovalsListParams",
+        "type": "object"
+      },
+      "ForkApprovalsListResult": {
+        "additionalProperties": false,
+        "properties": {
+          "approvals": {
+            "items": {
+              "$ref": "#/components/schemas/ForkApproval"
+            },
+            "title": "Approvals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "approvals"
+        ],
+        "title": "ForkApprovalsListResult",
         "type": "object"
       },
       "ForkOnboardingEmptyParams": {

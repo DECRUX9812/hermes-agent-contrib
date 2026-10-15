@@ -146,25 +146,39 @@ def resolve_gateway_approval(session_key: str, choice: str,
     (FIFO) or the one matching *request_id*. *reason* is the ``/deny <reason>`` free text,
     relayed to the agent in the BLOCKED message. Returns the number resolved.
     """
+    from tools import approval_journal
+
     with _lock:
         queue = _gateway_queues.get(session_key)
         if not queue:
             return 0
-        if request_id:
-            targets = [entry for entry in queue if entry.data.get("request_id") == request_id]
-            if not targets:
-                return 0
-            queue[:] = [entry for entry in queue if entry not in targets]
-        elif resolve_all:
-            targets = list(queue)
-            queue.clear()
+        if resolve_all:
+            candidates = list(queue)
+        elif request_id:
+            candidates = [entry for entry in queue if entry.data.get("request_id") == request_id]
         else:
-            targets = [queue.pop(0)]
+            candidates = queue[:1]
+        targets = []
+        for entry in candidates:
+            entry_id = str(entry.data.get("request_id") or "")
+            if not entry_id:
+                targets.append(entry)
+                continue
+            if not getattr(entry, "journaled", False):
+                targets.append(entry)
+                continue
+            _row, won = approval_journal.record_decision(
+                entry_id, choice, home=getattr(entry, "profile_home", None))
+            if won is not False:
+                targets.append(entry)
+        if not targets:
+            return 0
+        queue[:] = [entry for entry in queue if entry not in targets]
         if not queue:
             _gateway_queues.pop(session_key, None)
         # Popping the entry and committing its outcome are ONE critical section: the waiter's
         # ``_drop_entry`` reads ``entry.result`` under this same lock after its deadline check, so a
-        # choice acked to the client here can never be popped-and-lost as a timeout (#112548).
+        # journal decision and a choice acked to the client cannot be popped-and-lost as a timeout.
         for entry in targets:
             entry.result = choice
             if reason:
@@ -182,12 +196,45 @@ def withdraw_gateway_approval(session_key: str, request_id: str, cause: str) -> 
         entry = next((e for e in queue if e.data.get("request_id") == request_id), None)
         if entry is None:
             return False
+        journaled = getattr(entry, "journaled", False)
+        home = getattr(entry, "profile_home", None)
         queue.remove(entry)
         if not queue:
             _gateway_queues.pop(session_key, None)
         entry.cancelled = cause
         entry.event.set()
+    if journaled:
+        from tools import approval_journal
+        approval_journal.settle(request_id, cause, home=home)
     return True
+
+
+def withdraw_gateway_approvals(session_key: str, cause: str) -> int:
+    """Withdraw all queued approvals without recording a user denial."""
+    with _lock:
+        entries = list(_gateway_queues.pop(session_key, []))
+        journaled_entries = []
+        for entry in entries:
+            if entry.data.get("request_id") and getattr(entry, "journaled", False):
+                journaled_entries.append((str(entry.data["request_id"]), getattr(entry, "profile_home", None)))
+            entry.cancelled = cause
+            entry.result = "deny"
+            entry.event.set()
+    if journaled_entries:
+        from tools import approval_journal
+        for request_id, home in journaled_entries:
+            approval_journal.settle(request_id, cause, home=home)
+    return len(entries)
+
+
+def mark_gateway_approval_journaled(session_key: str, request_id: str) -> bool:
+    """Mark the queue entry only after its durable request row has been written."""
+    with _lock:
+        for entry in _gateway_queues.get(session_key, []):
+            if entry.data.get("request_id") == request_id:
+                entry.journaled = True
+                return True
+    return False
 
 
 def list_gateway_approvals(session_key: str) -> list[dict]:
@@ -847,6 +894,10 @@ def _human_decision(spec: _GateSpec, *, command: str, description: str,
             if decision.get("notify_failed"):
                 return _denied(spec.notify_failed, pattern_key=pattern_key,
                                description=description, outcome="notify_failed", noun=spec.noun)
+            if decision.get("already_ran"):
+                from tools.approval_journal import ALREADY_RAN_REASON
+                return deny(spec.gateway_refused, "already_ran", reason=ALREADY_RAN_REASON,
+                            reason_addendum="", timeout_addendum="", deny_reason=None)
             # Consent contract: silence is NOT consent, and an explicit deny is a hard
             # halt — both produce a BLOCKED outcome. ``/deny <reason>`` free text is
             # relayed verbatim so the agent can adapt rather than only hearing "denied".

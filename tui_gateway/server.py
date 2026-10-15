@@ -881,9 +881,34 @@ def _emit_approval_request(sid: str, data: dict | None) -> None:
     interrupt) withdraws the request with ``request.cancel``."""
     from tui_gateway import server_requests
     from tools import approval as _approval
+    from tools import approval_context
     payload = _approval_request_payload(data)
     request_id = str(payload.get("request_id") or "")
-    session_key = str((_sessions.get(sid) or {}).get("session_key") or "")
+    session = _sessions.get(sid) or {}
+    session_key = str(session.get("session_key") or "")
+    tool_call_id = approval_context.current_tool_call_id()
+    journaled = False
+
+    def before_send() -> bool | None:
+        nonlocal journaled
+        if not request_id:
+            return None
+        from tools import approval_journal
+
+        tool_names = session.get("tool_names")
+        recorded = approval_journal.record_request(
+            request_id, session_id=str(getattr(session.get("agent"), "session_id", "") or session_key),
+            tool_call_id=tool_call_id, tool_name=tool_names.get(tool_call_id, "") if isinstance(tool_names, dict) else "",
+            command=str(payload.get("command") or ""), description=str(payload.get("description") or ""),
+            home=session.get("profile_home"))
+        if recorded is False:
+            return False
+        if recorded:
+            journaled = True
+            _approval.mark_gateway_approval_journaled(session_key, request_id)
+            if tool_call_id:
+                session.setdefault("journaled_approval_tool_calls", set()).add(tool_call_id)
+        return None
 
     def on_result(result: dict | None) -> None:
         if result is None:
@@ -892,18 +917,30 @@ def _emit_approval_request(sid: str, data: dict | None) -> None:
             # queue entry the agent would idle for the whole approvals.timeout with no prompt anywhere
             # (#112548). A withdrawal, not a deny: nobody refused the command.
             if request_id:
-                _approval.withdraw_gateway_approval(session_key, request_id,
-                                                    "the attached client cannot answer approval requests "
-                                                    "(update the Hermes app)")
+                _approval.withdraw_gateway_approval(
+                    session_key, request_id,
+                    "the attached client cannot answer approval requests (update the Hermes app)")
             return
         choice = str(result.get("choice") or "deny")
-        _approval.resolve_gateway_approval(session_key, choice, resolve_all=bool(result.get("all")),
-                                           request_id=request_id or None)
+        _approval.resolve_gateway_approval(
+            session_key, choice, resolve_all=bool(result.get("all")), request_id=request_id or None)
 
-    settle = server_requests.send_async("approval", sid, payload, on_result)
+    send_settle = server_requests.send_async("approval", sid, payload, on_result, before_send=before_send)
+
+    def settle(reason: str) -> None:
+        if journaled and request_id:
+            from tools import approval_journal
+
+            approval_journal.settle(request_id, reason, home=session.get("profile_home"))
+        send_settle(reason)
+
     # The wait can end between the frame going out and the hook attaching (the client answered by RPC, another
     # surface resolved it): withdraw now, or the request stays in ``open_requests`` for every later resume.
     if request_id and not _approval.register_gateway_settle(session_key, request_id, settle):
+        if journaled:
+            from tools import approval_journal
+
+            approval_journal.settle(request_id, "session_closed", home=session.get("profile_home"))
         settle("resolved")
 
 
@@ -3841,7 +3878,8 @@ from . import (
     methods_display as _methods_display, methods_display_watch as _methods_display_watch,
     methods_onboarding as _methods_onboarding, methods_i18n as _methods_i18n, methods_machine as _methods_machine,
     methods_shared_metrics as _methods_shared_metrics, methods_mcp_apps as _methods_mcp_apps,
-    methods_plugin_catalog as _methods_plugin_catalog, methods_fork_onboarding as _methods_fork_onboarding)
+    methods_plugin_catalog as _methods_plugin_catalog, methods_fork_onboarding as _methods_fork_onboarding,
+    methods_fork_approvals as _methods_fork_approvals)
 
 for _m in (
     _session_transports, _session_reaper, _session_lifecycle, _session_workdir, _compute_host_bridge, _model_switch,
@@ -3854,6 +3892,6 @@ for _m in (
     _methods_session_control, _methods_subagents, _methods_delegation_reports, _methods_session_ask, _methods_session_predict, _methods_vault, _methods_free_tier, _methods_connectors,
     _methods_connectors_account, _methods_display, _methods_display_watch, _methods_onboarding,
     _methods_i18n, _methods_machine, _methods_shared_metrics, _methods_mcp_apps, _methods_plugin_catalog,
-    _methods_fork_onboarding):
+    _methods_fork_onboarding, _methods_fork_approvals):
     _m.register(sys.modules[__name__])
 del _m
