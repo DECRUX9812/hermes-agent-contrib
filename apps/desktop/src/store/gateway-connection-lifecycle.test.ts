@@ -409,7 +409,13 @@ describe('secondary reconnect runtime scope', () => {
         profile: 'writer'
       })
     )
-    expect(reconnectStateMocks.reconcileBusyStatesOnReconnect).toHaveBeenCalledWith('conn:homelab::writer')
+    // The scope picks the socket's sessions; the requester it reconciles
+    // against is that socket's own request (the snapshot must come from the
+    // backend that holds the run, not from the ambient primary).
+    expect(reconnectStateMocks.reconcileBusyStatesOnReconnect).toHaveBeenCalledWith(
+      'conn:homelab::writer',
+      expect.any(Function)
+    )
   })
 })
 

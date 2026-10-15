@@ -27,6 +27,7 @@ import {
 } from '@/store/composer-queue'
 import { notify } from '@/store/notifications'
 import { $sessionsLoading } from '@/store/session'
+import { $busyClaimsPending } from '@/store/session-states'
 
 import { cloneAttachments, type QueueEditState } from '../composer-utils'
 import { useComposerScope } from '../scope'
@@ -123,6 +124,7 @@ export function useComposerQueue({
   const parkedSessions = useStore($parkedQueueSessions)
   const queueParked = Boolean(activeQueueSessionKey && parkedSessions[activeQueueSessionKey])
   const sessionsLoading = useStore($sessionsLoading)
+  const busyClaimsPending = useStore($busyClaimsPending)
 
   const [queueEdit, setQueueEdit] = useState<QueueEditState | null>(null)
   queueEditRef.current = queueEdit
@@ -583,15 +585,19 @@ export function useComposerQueue({
   // for the user. To cancel queued turns, the user deletes them from the panel.
   useEffect(() => {
     // Match the background drainer: preserve the retry budget while session
-    // discovery runs at boot, on a gateway/profile switch, or over an empty list.
-    if (sessionsLoading) {
+    // discovery runs at boot, on a gateway/profile switch, or over an empty
+    // list — and while a reconnect/boot busy-claim snapshot is still in flight.
+    // Until it lands, an absent claim is ignorance, not "idle": draining then
+    // hands the queued follow-up to a run this window cannot see (a held,
+    // thinking or tool-waiting turn emits no delta to re-assert it).
+    if (sessionsLoading || busyClaimsPending > 0) {
       return
     }
 
     if (shouldAutoDrain({ isBusy: busy, parked: queueParked, queueLength: queuedPrompts.length })) {
       return autoDrainNext()
     }
-  }, [autoDrainNext, busy, drainRetryTick, queueParked, queuedPrompts.length, sessionsLoading])
+  }, [autoDrainNext, busy, busyClaimsPending, drainRetryTick, queueParked, queuedPrompts.length, sessionsLoading])
 
   // Queue-edit cleanup: on session swap the scope effect already stashed the
   // edit snapshot; only restore into the composer when still on the same scope.

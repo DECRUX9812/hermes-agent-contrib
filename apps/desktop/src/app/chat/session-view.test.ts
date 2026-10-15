@@ -84,6 +84,29 @@ describe('primary session view reads its own session slice', () => {
     expect(PRIMARY_SESSION_VIEW.$busy.get()).toBe(false)
   })
 
+  it('marks the selected session busy from a stored-id claim before its runtime is bound', () => {
+    // A reload/gateway-switch reconcile publishes the backend's still-running
+    // sessions as claims BEFORE the route's resume binds a runtime id. The
+    // composer must read that claim: idle here is what let its queue drain
+    // hand a queued follow-up to a run that emits no delta to re-assert itself.
+    publishSessionState('runtime-claimed', {
+      ...stateWith('runtime-claimed', '', true),
+      storedSessionId: 'stored-claimed'
+    })
+    $activeSessionId.set(null)
+    $selectedStoredSessionId.set('stored-claimed')
+
+    expect(PRIMARY_SESSION_VIEW.$busy.get()).toBe(true)
+
+    // An idle claim for the same session still reads idle.
+    publishSessionState('runtime-claimed', {
+      ...stateWith('runtime-claimed', '', false),
+      storedSessionId: 'stored-claimed'
+    })
+
+    expect(PRIMARY_SESSION_VIEW.$busy.get()).toBe(false)
+  })
+
   it('returns to the draft atoms when the active session state is dropped', () => {
     publishSessionState('runtime-a', stateWith('runtime-a', 'session A turn', true))
     $activeSessionId.set('runtime-a')

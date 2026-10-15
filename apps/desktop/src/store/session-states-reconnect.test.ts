@@ -303,4 +303,105 @@ describe('reconcileBusyStatesOnReconnect', () => {
     expect($workingSessionIds.get()).not.toContain('sA')
     expect($unreadFinishedSessionIds.get()).toEqual(['sA'])
   })
+
+  // A blind downgrade assumed a live turn re-asserts busy through its stream
+  // events. A held, thinking, tool-waiting or non-streaming run never emits
+  // one, so its claim was gone for good — and the queue drains, which wake
+  // when the session list stops loading, submit a queued follow-up into the
+  // middle of that run. The snapshot is the authority instead: a session it
+  // still reports running keeps (or gains) the claim.
+  it('keeps the claim of a run the backend still reports working', async () => {
+    publishSessionState('rt1', state({ busy: true, storedSessionId: 's1' }))
+
+    await reconcileBusyStatesOnReconnect(undefined, async () => ({
+      sessions: [{ id: 'rt1', session_key: 's1', status: 'working' }]
+    }))
+
+    expect($sessionStates.get()['rt1']).toMatchObject({ busy: true, turnLive: true })
+    expect($workingSessionIds.get()).toContain('s1')
+  })
+
+  it('re-asserts busy for a run the mirror never held (a window reload)', async () => {
+    await reconcileBusyStatesOnReconnect(undefined, async () => ({
+      sessions: [{ id: 'rtLive', session_key: 's1', status: 'working' }]
+    }))
+
+    expect($sessionStates.get()['rtLive']).toMatchObject({ busy: true, storedSessionId: 's1', turnLive: true })
+    expect($workingSessionIds.get()).toContain('s1')
+  })
+
+  it('reads a waiting run as needing input and a starting run as busy', async () => {
+    await reconcileBusyStatesOnReconnect(undefined, async () => ({
+      sessions: [
+        { id: 'rtWait', session_key: 'sWait', status: 'waiting' },
+        { id: 'rtStart', session_key: 'sStart', status: 'starting' }
+      ]
+    }))
+
+    expect($sessionStates.get()['rtWait']).toMatchObject({ busy: true, needsInput: true })
+    expect($attentionSessionIds.get()).toContain('sWait')
+    expect($workingSessionIds.get()).toContain('sStart')
+  })
+
+  it('downgrades only the sessions the snapshot omits or reports idle', async () => {
+    publishSessionState('rtLive', state({ busy: true, storedSessionId: 'sLive' }))
+    publishSessionState('rtIdle', state({ busy: true, storedSessionId: 'sIdle' }))
+    publishSessionState('rtGone', state({ busy: true, storedSessionId: 'sGone' }))
+
+    await reconcileBusyStatesOnReconnect(undefined, async () => ({
+      sessions: [
+        { id: 'rtLive', session_key: 'sLive', status: 'working' },
+        { id: 'rtIdle', session_key: 'sIdle', status: 'idle' }
+      ]
+    }))
+
+    expect($workingSessionIds.get()).toEqual(['sLive'])
+  })
+
+  it('transfers the claim to the runtime id a respawn re-minted', async () => {
+    publishSessionState('rtOld', state({ busy: true, storedSessionId: 's1' }))
+
+    await reconcileBusyStatesOnReconnect(undefined, async () => ({
+      sessions: [{ id: 'rtNew', session_key: 's1', status: 'working' }]
+    }))
+
+    // The dead id can never settle, so it must not keep holding the claim.
+    expect($sessionStates.get()['rtOld']).toBeUndefined()
+    expect($sessionStates.get()['rtNew']).toMatchObject({ busy: true, storedSessionId: 's1', turnLive: true })
+    expect($workingSessionIds.get()).toContain('s1')
+  })
+
+  it('retires nothing when the snapshot cannot be taken', async () => {
+    publishSessionState('rt1', state({ busy: true, storedSessionId: 's1' }))
+
+    await reconcileBusyStatesOnReconnect(undefined, async () => {
+      throw new Error('gateway closed')
+    })
+
+    expect($sessionStates.get()['rt1']).toMatchObject({ busy: true })
+    expect($workingSessionIds.get()).toContain('s1')
+  })
+
+  it('keeps the focused composer busy while its run is live', async () => {
+    $activeSessionId.set('rt1')
+    $busy.set(true)
+    publishSessionState('rt1', state({ busy: true, storedSessionId: 's1' }))
+
+    await reconcileBusyStatesOnReconnect(undefined, async () => ({
+      sessions: [{ id: 'rt1', session_key: 's1', status: 'working' }]
+    }))
+
+    expect($busy.get()).toBe(true)
+  })
+
+  it('clears the focused composer when the snapshot does not list its turn', async () => {
+    $activeSessionId.set('rt1')
+    $busy.set(true)
+    publishSessionState('rt1', state({ busy: true, storedSessionId: 's1' }))
+
+    await reconcileBusyStatesOnReconnect(undefined, async () => ({ sessions: [] }))
+
+    expect($busy.get()).toBe(false)
+    expect($workingSessionIds.get()).not.toContain('s1')
+  })
 })

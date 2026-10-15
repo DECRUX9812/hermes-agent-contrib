@@ -16,6 +16,7 @@ import {
 } from '@/store/composer-queue'
 import { $notifications, clearNotifications } from '@/store/notifications'
 import { setSessionsLoading } from '@/store/session'
+import { $busyClaimsPending } from '@/store/session-states'
 
 import type { QueueEditState } from '../composer-utils'
 import type { ChatBarProps } from '../types'
@@ -77,6 +78,7 @@ describe('useComposerQueue park integration', () => {
     clearNotifications()
     resetFrozenQueuedTransportsForTests()
     setSessionsLoading(false)
+    $busyClaimsPending.set(0)
   })
 
   afterEach(() => {
@@ -90,6 +92,7 @@ describe('useComposerQueue park integration', () => {
     clearNotifications()
     resetFrozenQueuedTransportsForTests()
     setSessionsLoading(true)
+    $busyClaimsPending.set(0)
   })
 
   it('reschedules rejected foreground drains to a bounded stop and keeps manual recovery', async () => {
@@ -291,6 +294,31 @@ describe('useComposerQueue park integration', () => {
 
     expect(onSubmit).not.toHaveBeenCalled()
     expect(getQueuedPrompts(SESSION_KEY)).toHaveLength(1)
+  })
+
+  it('holds a restored queue while a busy-claim snapshot is still in flight', async () => {
+    // A reload/boot reconcile leaves the session list's loading state before its
+    // `session.active_list` snapshot lands. Until it does, an absent busy claim
+    // is ignorance, not "idle" — draining here submits the follow-up into a run
+    // this window cannot see.
+    setSessionsLoading(false)
+    $busyClaimsPending.set(1)
+    enqueueQueuedPrompt(SESSION_KEY, { attachments: [], text: 'wait for the snapshot' })
+
+    const { hook, onSubmit } = renderQueueHook()
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(getQueuedPrompts(SESSION_KEY)).toHaveLength(1)
+
+    // Snapshot landed and reported the session idle: the queue flows.
+    $busyClaimsPending.set(0)
+    hook.rerender({ busy: false })
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    expect(getQueuedPrompts(SESSION_KEY)).toHaveLength(0)
   })
 
   it('auto-drains a restored queue once the session list finishes loading', async () => {

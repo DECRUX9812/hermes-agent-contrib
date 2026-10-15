@@ -18,7 +18,7 @@ import {
   $selectedStoredSessionId,
   $turnStartedAt
 } from '@/store/session'
-import { $sessionStates } from '@/store/session-states'
+import { $sessionStates, $workingSessionIds } from '@/store/session-states'
 
 import { lastVisibleMessageIsUser } from './thread-loading'
 
@@ -96,9 +96,21 @@ const $primaryMessages = primaryField<ChatMessage[]>(state => state.messages, $m
  * leftover from whichever session last published, and inheriting it is how
  * focusing B while A runs marked B busy. The draft atom is only for a true
  * new chat (no stored id) so the first-send optimistic lock still paints.
+ *
+ * The one exception is a claim the store already holds for THIS stored session
+ * (`$workingSessionIds`, keyed by stored id): a reload or gateway switch starts
+ * with no runtime slice at all, and the reconcile that asks the backend what it
+ * still runs publishes those sessions as claims — under the stored key, before
+ * the route's resume binds a runtime id. Reading that claim keeps the composer
+ * honest (Stop, steer) for the window in which the session list has already
+ * settled but no slice exists yet; without it the composer reads idle and its
+ * queue drain hands a queued follow-up to a run that is still going, one that
+ * emits no delta to re-assert itself.
  */
-const $primaryBusy = computed([$primaryState, $busy, $selectedStoredSessionId], (state, draftBusy, selected) =>
-  state ? state.busy : selected ? false : draftBusy
+const $primaryBusy = computed(
+  [$primaryState, $busy, $selectedStoredSessionId, $workingSessionIds],
+  (state, draftBusy, selected, working) =>
+    state ? state.busy : selected ? working.includes(selected) : draftBusy
 )
 
 /** Whether a slice's effort is still unknown: marked pending by the resume and

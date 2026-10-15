@@ -63,6 +63,18 @@ export class FakeWebSocket {
       return
     }
 
+    // The boot and reconnect paths await a `session.active_list` snapshot
+    // before they let the session list out of its loading state, so a healthy
+    // fake socket has to answer it: with no live sessions it reports an empty
+    // snapshot, which retires nothing and re-asserts nothing.
+    if (frame.method === 'session.active_list') {
+      this.emit('message', {
+        data: JSON.stringify({ jsonrpc: '2.0', id: frame.id, result: { sessions: [] } })
+      })
+
+      return
+    }
+
     if (frame.method !== 'ping') {
       return
     }

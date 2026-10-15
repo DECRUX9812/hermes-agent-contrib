@@ -287,11 +287,17 @@ export function createGatewayBootReconnect({ s, desktop, gateway, callbacksRef, 
       // Same staleness, other half: pre-reconnect busy flags are keyed by
       // those dead runtime ids and would never receive their terminal
       // busy:false — clear them or the sidebar running arc lies forever
-      // (#53902/#73082). A genuinely live turn re-asserts busy on its next
-      // post-reconnect event.
+      // (#53902/#73082). The reconcile asks THIS socket what it is still
+      // running before retiring anything: a held, thinking or tool-waiting
+      // turn emits no delta to re-assert busy, and the queue drains wake as
+      // soon as the session list stops loading, so a false idle there lets a
+      // queued follow-up land inside the live run. Awaiting it keeps that
+      // ordering; `refreshSessions` flips the loading flag.
       // A manual retry may finish after the user has moved to another route.
       if (!manual || (isActivePrimary() && gatewayActivationEpoch() === manual.activationEpoch)) {
-        reconcileBusyStatesOnReconnect()
+        await reconcileBusyStatesOnReconnect(undefined, (method, params, timeoutMs) =>
+          gateway.request(method, params, timeoutMs)
+        )
         await callbacksRef.current.refreshHermesConfig().catch(() => undefined)
         await callbacksRef.current.refreshSessions().catch(() => undefined)
       }
