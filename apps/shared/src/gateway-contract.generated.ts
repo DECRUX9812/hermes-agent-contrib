@@ -1817,6 +1817,87 @@ export interface DisplayLeaseReleaseParams {
   viewer_id?: string | null
   force?: boolean | null
 }
+export interface ForkBotIdentityGetParams {
+  profile: string
+}
+export interface ForkBotIdentityGetResult {
+  profile: string
+  display_name: string
+  role: string
+  instructions: string
+  model: ForkBotModelPin
+  revision: number
+}
+export interface ForkBotModelPin {
+  provider: string
+  default: string
+}
+export interface ForkBotIdentitySetParams {
+  profile: string
+  display_name?: string | null
+  role?: string | null
+  instructions?: string | null
+  model?: string | null
+  provider?: string | null
+  confirm_expensive_model?: boolean | null
+  expected_revision?: number | null
+}
+export interface ForkBotIdentitySetResult {
+  profile: string
+  display_name: string
+  role: string
+  instructions: string
+  model: ForkBotModelPin
+  revision: number
+  applied: ForkBotIdentityApplied
+  confirm_required?: boolean | null
+  confirm_message?: string | null
+}
+export interface ForkBotIdentityApplied {
+  display_name?: boolean | null
+  role?: boolean | null
+  instructions?: boolean | null
+  model?: boolean | null
+}
+export interface ForkMemoryListParams {
+  profile: string
+}
+export interface ForkMemoryListResult {
+  entries: ForkMemoryEntry[]
+  usage: ForkMemoryUsage
+  enabled: ForkMemoryEnabled
+}
+export interface ForkMemoryEntry {
+  id: string
+  target: string
+  text: string
+}
+export interface ForkMemoryUsage {
+  memory: ForkMemoryLimitUsage
+  user: ForkMemoryLimitUsage
+}
+export interface ForkMemoryLimitUsage {
+  used: number
+  limit: number
+}
+export interface ForkMemoryEnabled {
+  memory: boolean
+  user: boolean
+}
+export interface ForkMemoryAddParams {
+  profile: string
+  target: string
+  text: string
+}
+export interface ForkMemoryUpdateParams {
+  profile: string
+  id: string
+  text: string
+}
+export interface ForkMemoryRemoveParams {
+  profile: string
+  id: string
+}
 /** Calls that take no arguments; the desktop sends ``{}``. */
 export type ForkOnboardingEmptyParams = Record<string, never>
 export interface EnsureSetupProfileResult {
@@ -5835,6 +5916,18 @@ export interface RpcMethods {
   'display.thumbnail': { params: ProfileParams; result: DisplayThumbnailResult }
   /** Stage a non-image file into the session workspace and hand back its @file: ref. */
   'file.attach': { params: FileAttachParams; result: FileAttachResult }
+  /** Read a bot profile's identity (display name, role, instructions, model, revision). */
+  'fork.bot.identity.get': { params: ForkBotIdentityGetParams; result: ForkBotIdentityGetResult }
+  /** Update a bot profile's identity with CAS and model selection guards. */
+  'fork.bot.identity.set': { params: ForkBotIdentitySetParams; result: ForkBotIdentitySetResult }
+  /** Append an on-disk memory item and return the fresh list. */
+  'fork.memory.add': { params: ForkMemoryAddParams; result: ForkMemoryListResult }
+  /** List on-disk memories for a bot profile with limits and usage. */
+  'fork.memory.list': { params: ForkMemoryListParams; result: ForkMemoryListResult }
+  /** Remove an on-disk memory item by stable content id and return the fresh list. */
+  'fork.memory.remove': { params: ForkMemoryRemoveParams; result: ForkMemoryListResult }
+  /** Update an on-disk memory item by stable content id and return the fresh list. */
+  'fork.memory.update': { params: ForkMemoryUpdateParams; result: ForkMemoryListResult }
   /** Create the setup profile under the setup lock (mirroring launch credentials), or no-op. */
   'fork.onboarding.ensure_setup_profile': { params: ForkOnboardingEmptyParams; result: EnsureSetupProfileResult }
   /** Find the setup chat by title or create it; empty is true only before its first turn. */
@@ -6343,6 +6436,12 @@ export const RPC_METHODS = [
   'display.switchSandboxImage',
   'display.thumbnail',
   'file.attach',
+  'fork.bot.identity.get',
+  'fork.bot.identity.set',
+  'fork.memory.add',
+  'fork.memory.list',
+  'fork.memory.remove',
+  'fork.memory.update',
   'fork.onboarding.ensure_setup_profile',
   'fork.onboarding.ensure_setup_session',
   'fork.onboarding.mark_seen',
