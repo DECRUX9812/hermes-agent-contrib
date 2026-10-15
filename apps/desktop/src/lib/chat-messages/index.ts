@@ -1,6 +1,7 @@
 export { sameAttachmentTurn } from './attachment-turn'
 export { toChatMessages } from './hydration'
 export {
+  answeredAfter,
   appendAssistantTextPart,
   appendReasoningPart,
   assistantTextPart,

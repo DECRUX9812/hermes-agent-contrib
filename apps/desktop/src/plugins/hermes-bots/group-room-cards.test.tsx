@@ -28,6 +28,8 @@ const { host, stores } = vi.hoisted(() => {
 vi.mock('@hermes/plugin-sdk', async () => {
   const { pluginSdkMock } = await import('./group-test-utils')
   const base = await pluginSdkMock(host)
+  const { ToolActivityStack, toolCardsFromParts } = await import('@/components/assistant-ui/tool-cards')
+  const { upsertToolPart } = await import('@/lib/chat-messages')
 
   return {
     ...base,
@@ -36,6 +38,9 @@ vi.mock('@hermes/plugin-sdk', async () => {
     Codicon: ({ name }: { name: string }) => <span aria-hidden data-icon={name} />,
     relativeTime: () => 'now',
     Tip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+    ToolActivityStack,
+    toolCardsFromParts,
+    upsertToolPart,
     useI18n: () => ({ t: { common: {} } }),
     usePluginI18n: () => translateBots
   }

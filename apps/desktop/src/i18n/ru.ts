@@ -2,6 +2,7 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { defineLocale, type TranslationOverrides } from './define-locale'
 import { ruAuxTasks } from './ru_aux_tasks'
+import { ruCatalogInstall } from './ru_catalog_install'
 import { ruClarify } from './ru_clarify'
 import { ruConnectors } from './ru_connectors'
 import { ruFirstRun } from './ru_first_run'
@@ -12,6 +13,7 @@ import { ruPluginSettings } from './ru_plugins'
 import { ruProjects } from './ru_projects'
 import { ruSharedMetrics } from './ru_shared_metrics'
 import { ruThemePicker } from './ru_theme_picker'
+import { ruToolCards } from './ru_tool_cards'
 import { ruUpdateChannel } from './ru_update_channel'
 
 // RU_PLURAL: (count, one, few, many) — русские формы сущ. падежа
@@ -4376,30 +4378,9 @@ export const ruOverrides = {
       alwaysAllow: 'Всегда разрешать'
     },
     clarify: ruClarify,
+    toolCards: ruToolCards,
     themePicker: ruThemePicker,
-    catalogInstall: {
-      preparing: 'Готовим установку…',
-      install: 'Установить',
-      advanced: 'Дополнительно',
-      skip: 'Пропустить',
-      installing: 'Установка…',
-      installed: 'Установлено',
-      notInstalled: 'Не установлено',
-      failed: 'Ошибка',
-      showNames: 'показать имена',
-      hideNames: 'скрыть имена',
-      skill: name => `навык ${name}`,
-      kind: { plugin: 'плагин', skill: 'навык' },
-      tier: { official: 'официальный', community: 'сообщество' },
-      targetProfile: profile => `Установка в ваш профиль ${profile}`,
-      sendFailed: 'Не удалось отправить ответ. Попробуйте ещё раз.',
-      commitLabel: 'Коммит',
-      subdirLabel: 'Папка',
-      securityHeading: 'Безопасность',
-      scan: { passed: 'Проверка пройдена', warnings: 'Проверка нашла предупреждения', failed: 'Проверка не пройдена' },
-      requirementsLabel: 'Требования',
-      credentialsHeading: 'Учётные данные'
-    },
+    catalogInstall: ruCatalogInstall,
     mcpSetup: {
       installTitle: 'Добавить MCP-серверы',
       enableTitle: 'Включить MCP-серверы',

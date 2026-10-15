@@ -100,6 +100,7 @@ import {
   updateGroupChat
 } from './group-chat'
 import { groupWorkspaceOwnerKey } from './group-membership'
+import { startGroupToolTap } from './group-room-tool-cards'
 import { bindGroupReadTracking } from './group-unread'
 import { isBotHidden } from './hidden-bots'
 import { HIRE_LOCALES } from './hire-i18n'
@@ -172,12 +173,8 @@ export default {
     // The user's own roster sections. Read once at register; every mutation
     // writes through.
     loadBotSections()
-    const disposeLocales = ctx.i18n.register(BOTS_LOCALES)
-    const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
-    const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
-    const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
-    const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
-    const disposeRoomLocales = ctx.i18n.register(ROOM_LOCALES)
+    const localePacks = [BOTS_LOCALES, TEAM_LOCALES, HIRE_LOCALES, SHARE_LOCALES, AUTOPILOT_LOCALES, ROOM_LOCALES]
+    const disposeLocales = localePacks.map(bundles => ctx.i18n.register(bundles))
     setGroupChatSyncDisposed(false)
     startFaceClock()
     // The cross-connection relay rides every gateway socket this Desktop
@@ -189,15 +186,11 @@ export default {
     // Disabling the plugin (or a hot reload) must actually stop the clock —
     // before this, the rAF loop + 1Hz document scan ran until app restart.
     if (typeof ctx.onDispose === 'function') {
-      ctx.onDispose(disposeLocales)
-      ctx.onDispose(disposeTeamLocales)
-      ctx.onDispose(disposeHireLocales)
-      ctx.onDispose(disposeShareLocales)
-      ctx.onDispose(disposeAutopilotLocales)
-      ctx.onDispose(disposeRoomLocales)
+      disposeLocales.forEach(dispose => ctx.onDispose(dispose))
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)
+      ctx.onDispose(startGroupToolTap())
     }
 
     // @-mention autocomplete: typing "@rese…" in ANY composer offers the

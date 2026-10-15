@@ -6,6 +6,7 @@ import { useTranscriptWindow } from '@/components/assistant-ui/thread/transcript
 import { Codicon } from '@/components/ui/codicon'
 import { AnimatedInt } from '@/components/ui/diff-count'
 import { useI18n } from '@/i18n'
+import { scrollToSessionApproval } from '@/lib/approval-anchor'
 import { triggerHaptic } from '@/lib/haptics'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
@@ -17,28 +18,6 @@ import {
 } from '@/store/thread-scroll'
 
 import { useComposerSurfaceId } from './composer/scope'
-
-// Attribute-safe selector fragment. jsdom (vitest) does not ship `CSS.escape`.
-const cssEscape = (value: string): string => {
-  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
-    return CSS.escape(value)
-  }
-
-  return value.replace(/[^a-zA-Z0-9_:-]/g, ch => `\\${ch}`)
-}
-
-// The pending-approval stack renders once per pane, tagged with the owning
-// session so a split view can't jump one pane's arrow into a sibling's
-// approval. `nearest` keeps this a minimal scroll within the transcript's own
-// scroll container instead of an unqualified scrollIntoView, which would also
-// nudge any overflow-hidden ancestor's programmatic scroll offset.
-function findSessionApprovalStack(sessionId: string | null): HTMLElement | null {
-  if (!sessionId) {
-    return null
-  }
-
-  return document.querySelector<HTMLElement>(`[data-approval-stack][data-session-id="${cssEscape(sessionId)}"]`)
-}
 
 /**
  * Floating "jump to bottom" control. Sits centered just above the composer,
@@ -109,11 +88,7 @@ export function ScrollToBottomButton({ sessionId }: { sessionId: string | null }
       onClick={() => {
         triggerHaptic('selection')
 
-        const approvalStack = visibleApproval ? findSessionApprovalStack(request?.sessionId ?? null) : null
-
-        if (approvalStack) {
-          approvalStack.scrollIntoView({ block: 'nearest' })
-
+        if (visibleApproval && scrollToSessionApproval(request?.sessionId)) {
           return
         }
 

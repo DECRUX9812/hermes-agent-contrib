@@ -16,6 +16,7 @@ import { $imagenAvailable, normalizeAvatarImage, pickImageFromDevice, probeImage
 import { $botMeta, botHandle, botMentionTag } from './data'
 import { appendGroupChatEntry } from './group-chat'
 import { groupMemberKey } from './group-membership'
+import { groupClarifyKey } from './group-room-tool-stack'
 import { answerGroupClarify } from './group-turns'
 import { useBots } from './i18n'
 import { displayName } from './labels'
@@ -474,7 +475,10 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
   }
 
   return (
-    <div className="grid gap-1.5 rounded-md border border-(--ui-accent)/50 bg-(--ui-accent)/5 px-2.5 py-2">
+    <div
+      className="grid gap-1.5 rounded-md border border-(--ui-accent)/50 bg-(--ui-accent)/5 px-2.5 py-2"
+      data-group-clarify={groupClarifyKey(entry)}
+    >
       <div className="flex items-center gap-1.5 text-xs font-medium">
         <Codicon className="shrink-0 text-(--ui-accent)" name={isApproval ? 'shield' : 'question'} />
         {isApproval

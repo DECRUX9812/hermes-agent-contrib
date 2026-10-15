@@ -279,6 +279,63 @@ export const arAssistant = {
       openSafetySettings: 'فتح إعدادات الأمان',
       commandDetails: 'تفاصيل الأمر'
     },
+    toolCards: {
+      activityLabel: 'نشاط الأدوات',
+      families: {
+        browser: 'المتصفح',
+        code: 'الشيفرة',
+        files: 'الملفات',
+        generic: 'أداة',
+        mcp: 'موصّل',
+        search: 'البحث',
+        terminal: 'الطرفية',
+        web: 'الويب'
+      },
+      names: {
+        memory: 'الذاكرة',
+        message: 'الرسائل',
+        schedule: 'الجدولة',
+        skills: 'المهارات',
+        vision: 'الرؤية'
+      },
+      usedTimes: (name, count) => `استُخدم ${name} ×${count}`,
+      working: 'جارٍ العمل…',
+      awaitingApproval: 'في انتظار موافقتك',
+      reviewApproval: 'مراجعة',
+      failed: 'فشل',
+      stopped: 'توقّف',
+      statuses: {
+        browser_back: { done: 'عاد للخلف', pending: 'يعود للخلف' },
+        browser_console: { done: 'قرأ وحدة تحكم الصفحة', pending: 'يقرأ وحدة تحكم الصفحة' },
+        browser_get_images: { done: 'جمع صور الصفحة', pending: 'يجمع صور الصفحة' },
+        browser_press: { done: 'ضغط على مفتاح', pending: 'يضغط على مفتاح' },
+        browser_scroll: { done: 'مرر الصفحة', pending: 'يمرر الصفحة' },
+        browser_vision: { done: 'نظر إلى الصفحة', pending: 'ينظر إلى الصفحة' }
+      },
+      details: {
+        request: 'الطلب',
+        output: 'المخرجات',
+        duration: 'المدة',
+        noOutput: 'لا توجد مخرجات'
+      },
+      argLabels: {
+        code: 'الشيفرة',
+        command: 'الأمر',
+        input: 'الإدخال',
+        path: 'الملف',
+        query: 'البحث',
+        target: 'الهدف',
+        text: 'النص',
+        url: 'العنوان'
+      },
+      viewer: {
+        title: name => `خطوات ${name}`,
+        step: (index, total) => `الخطوة ${index} من ${total}`,
+        noScreenshot: 'لا توجد لقطة شاشة لهذه الخطوة',
+        previous: 'الخطوة السابقة',
+        next: 'الخطوة التالية'
+      }
+    },
     clarify: {
       notReady: 'غير جاهز',
       gatewayDisconnected: 'البوابة غير متصلة',

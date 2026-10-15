@@ -64,6 +64,7 @@ import {
 } from '@/store/tool-view'
 
 import { isApprovalActivity, isCurrentTurnMessage } from './approval-activity'
+import { BotToolCards } from './bot-tool-cards'
 import {
   buildToolView,
   clampForDisplay,
@@ -93,12 +94,6 @@ import { ToolRunTicker } from './run-ticker'
 // future embedding surface.
 const ToolEmbedContext = createContext(false)
 const ToolRunDisclosureContext = createContext<string | null>(null)
-
-/** Inside a bot-chat activity pill (bot-mode G2): `true` when expanded, `false`
- *  when collapsed, `null` outside any pill. A collapsed pill hides quiet rows
- *  — failures, approvals and card tools still render — and an expanded one
- *  reveals them in place. */
-export const ActivityPillExpandedContext = createContext<boolean | null>(null)
 
 // A search hit's title is result *content* inside an expanded row, not one of
 // the scaffolding lines, so it keeps the brighter secondary grey.
@@ -1117,71 +1112,6 @@ function toolGroupKey(toolName: string, args: ToolCallMessagePartProps['args']):
  * for different ranges keeps the decision next to the rendering that depends
  * on it.
  */
-/**
- * Bot-chat activity pill (bot-mode G2): in a Bot Chat's transcript a run of
- * tool calls renders as one compact collapsed line — "› Reading 62 unread
- * threads" — instead of the settled run's quiet chrome. Expanding it reveals
- * the individual rows in place via `ActivityPillExpandedContext`.
- *
- * The pill owns only the summary line: children always mount, and each row
- * still self-gates — failures, approvals and card tools render inside a
- * collapsed pill exactly as answer-only renders them inline, so nothing the
- * user must act on is ever hidden by the collapse.
- */
-const BotActivityPill: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> = ({
-  children,
-  endIndex,
-  startIndex
-}) => {
-  const messageRunning = useAuiState(selectMessageRunning)
-
-  const { approvalActivity, completedAt, entryIds, firstCallId, key, live, startedAt, summary } = useToolRun(
-    startIndex,
-    endIndex
-  )
-
-  const sessionId = useStore(useSessionView().$runtimeId)
-  const approval = useStore(useMemo(() => sessionApprovalRequest(sessionId), [sessionId]))
-  const currentTurn = useAuiState(state => isCurrentTurnMessage(state.thread.messages, state.message.id))
-  const representedByApproval = !!approval && currentTurn && approvalActivity
-  const disclosureId = `tool-run:${key}`
-  const persistedOpen = useStore($toolDisclosureOpen(disclosureId))
-  const rowOpen = useStore(useMemo(() => $anyToolDisclosureOpen(entryIds), [entryIds]))
-  const enterRef = useEnterAnimation(messageRunning, `tool-run:${key}`)
-  // Pills start collapsed — the one-line summary IS the presentation — but a
-  // persisted disclosure (or a row the user opened inside) wins, matching the
-  // same disclosure id the full transcript would use.
-  const expanded = persistedOpen ?? rowOpen ?? false
-
-  return (
-    <ToolRunDisclosureContext.Provider value={disclosureId}>
-      <ActivityPillExpandedContext.Provider value={expanded}>
-        <div className="min-w-0 max-w-full" data-slot="bot-activity-pill" ref={enterRef}>
-          {!representedByApproval && (
-            <div data-conversation-scaffold="" data-tool-summary="">
-              <ScaffoldRow
-                onToggle={() => setToolDisclosureOpen(disclosureId, !expanded)}
-                open={expanded}
-                trailing={
-                  <>
-                    <LiveRunLink callId={firstCallId} />
-                    <TimelineTimestamp completedAt={completedAt} timestamp={startedAt} />
-                  </>
-                }
-              >
-                <FadeText className={cn(SCAFFOLD_LABEL_CLASS, 'truncate')}>
-                  {live ? <span className="shimmer">{summary}</span> : summary}
-                </FadeText>
-              </ScaffoldRow>
-            </div>
-          )}
-          {children}
-        </div>
-      </ActivityPillExpandedContext.Provider>
-    </ToolRunDisclosureContext.Provider>
-  )
-}
-
 export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> = ({
   children,
   endIndex,
@@ -1190,7 +1120,7 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   const showToolActivity = useStore($showToolActivity)
   const sessionId = useStore(useSessionView().$runtimeId)
 
-  // A Bot Chat's transcript renders its tool runs as pills (G2); every other
+  // A Bot Chat's transcript renders its tool runs as cards; every other
   // session keeps the answer-only passthrough below. The same three-store
   // resolution the composer uses — the scope set records the answer, and
   // resolving this runtime id to its stored id reads the other two.
@@ -1211,33 +1141,31 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   const items = useMemo(() => splitRunItems(toolNameKey.split('\u0000')), [toolNameKey])
   const rows = Children.toArray(children)
 
-  // The run scaffold ("Explored N files") is part of the tool feed and follows
-  // display.tool_progress. Children still mount so clarify, diffs, and failed
-  // calls can render on their own.
-  if (!showToolActivity) {
-    if (!botChat) {
-      return children
-    }
-
-    // A Bot Chat's runs become activity pills: the run's own summary line as
-    // a compact collapsible chip, cards still in place.
+  if (botChat) {
     return (
       <ToolEmbedContext.Provider value={false}>
         {items.map(item =>
           item.kind === 'card' ? (
             <Fragment key={`card:${item.index}`}>{rows[item.index]}</Fragment>
           ) : (
-            <BotActivityPill
+            <BotToolCards
               endIndex={startIndex + item.end}
               key={`run:${item.start}`}
               startIndex={startIndex + item.start}
             >
               {rows.slice(item.start, item.end + 1)}
-            </BotActivityPill>
+            </BotToolCards>
           )
         )}
       </ToolEmbedContext.Provider>
     )
+  }
+
+  // The run scaffold ("Explored N files") is part of the tool feed and follows
+  // display.tool_progress. Children still mount so clarify, diffs, and failed
+  // calls can render on their own.
+  if (!showToolActivity) {
+    return children
   }
 
   return (

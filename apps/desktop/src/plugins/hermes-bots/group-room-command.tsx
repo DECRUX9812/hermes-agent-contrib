@@ -156,6 +156,7 @@ export function RoomShortcuts({ commands, firstTag, onHelp, onInsert, thread }: 
 export interface ThreadTailProps {
   /** Room-wide bot metadata for the working-row faces. */
   allMeta: Record<string, BotMeta>
+  clarifies: readonly GroupRoomPrompt[]
   commands: RoomCommands
   escalations: readonly RoomEscalation[]
   live: ReadonlyMap<string, ReadonlySet<string>>
@@ -172,6 +173,7 @@ export interface ThreadTailProps {
  *  tool), and anything stuck on it, with the fixes. */
 export function ThreadTail({
   allMeta,
+  clarifies,
   commands,
   escalations,
   live,
@@ -182,13 +184,17 @@ export function ThreadTail({
   thread,
   workingSince
 }: ThreadTailProps) {
+  const approvals = clarifies.filter(entry => entry.kind === 'approval' && (entry.thread || 'legacy') === thread)
+
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <ActivityLine
         allMeta={allMeta}
+        approvals={approvals}
         members={members}
         nameOf={nameOf}
-        names={[...(live.get(thread) ?? [])]}
+        // A member blocked on approval drops out of the live set; keep its row so Review stays reachable.
+        names={[...new Set([...(live.get(thread) ?? []), ...approvals.map(entry => entry.member)])]}
         onStop={member => commands.stopMember?.(thread, member)}
         sessionOf={name => {
           const member = members.find(m => m.name === name)

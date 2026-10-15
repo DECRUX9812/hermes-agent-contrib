@@ -3,6 +3,7 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 import { defineLocale, type TranslationOverrides } from './define-locale'
 import { esAuxTasks } from './es_aux_tasks'
 import { esBoot } from './es_boot'
+import { esCatalogInstall } from './es_catalog_install'
 import { esClarify } from './es_clarify'
 import { esConnectorAccounts } from './es_connector_accounts'
 import { esConnectorCard } from './es_connector_card'
@@ -14,6 +15,7 @@ import { esOnboarding } from './es_onboarding'
 import { esProjects } from './es_projects'
 import { esSharedMetrics } from './es_shared_metrics'
 import { esThemePicker } from './es_theme_picker'
+import { esToolCards } from './es_tool_cards'
 import { esUpdateChannel } from './es_update_channel'
 import { introEs } from './intro-es'
 
@@ -5834,40 +5836,9 @@ export const esOverrides = {
       alwaysAllow: 'Permitir siempre'
     },
     clarify: esClarify,
+    toolCards: esToolCards,
     themePicker: esThemePicker,
-    catalogInstall: {
-      preparing: 'Preparando la instalación…',
-      install: 'Instalar',
-      advanced: 'Avanzado',
-      skip: 'Omitir',
-      installing: 'Instalando…',
-      installed: 'Instalado',
-      notInstalled: 'No instalado',
-      failed: 'Falló',
-      showNames: 'mostrar nombres',
-      hideNames: 'ocultar nombres',
-      skill: (name: string) => `skill ${name}`,
-      kind: {
-        plugin: 'plugin',
-        skill: 'skill'
-      },
-      tier: {
-        official: 'oficial',
-        community: 'comunidad'
-      },
-      targetProfile: (profile: string) => `Se instala en tu perfil ${profile}`,
-      sendFailed: 'No se pudo enviar tu respuesta. Vuelve a intentarlo.',
-      commitLabel: 'Commit',
-      subdirLabel: 'Carpeta',
-      securityHeading: 'Seguridad',
-      scan: {
-        passed: 'Análisis superado',
-        warnings: 'El análisis encontró advertencias',
-        failed: 'Falló el análisis'
-      },
-      requirementsLabel: 'Requiere',
-      credentialsHeading: 'Credenciales'
-    },
+    catalogInstall: esCatalogInstall,
     mcpSetup: {
       installTitle: 'Añadir servidores MCP',
       enableTitle: 'Activar servidores MCP',

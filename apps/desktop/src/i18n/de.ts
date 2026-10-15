@@ -2,6 +2,7 @@ import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { deAuxTasks } from './de_aux_tasks'
 import { deBoot } from './de_boot'
+import { deCatalogInstall } from './de_catalog_install'
 import { deClarify } from './de_clarify'
 import { deConnectorAccounts } from './de_connector_accounts'
 import { deConnectorCard } from './de_connector_card'
@@ -13,6 +14,7 @@ import { deOnboarding } from './de_onboarding'
 import { deProjects } from './de_projects'
 import { deSharedMetrics } from './de_shared_metrics'
 import { deThemePicker } from './de_theme_picker'
+import { deToolCards } from './de_tool_cards'
 import { deUpdateChannel } from './de_update_channel'
 import { defineLocale, type TranslationOverrides } from './define-locale'
 import { introDe } from './intro-de'
@@ -5835,40 +5837,9 @@ export const deOverrides = {
       alwaysAllow: 'Immer erlauben'
     },
     clarify: deClarify,
+    toolCards: deToolCards,
     themePicker: deThemePicker,
-    catalogInstall: {
-      preparing: 'Installation wird vorbereitet…',
-      install: 'Installieren',
-      advanced: 'Erweitert',
-      skip: 'Überspringen',
-      installing: 'Wird installiert…',
-      installed: 'Installiert',
-      notInstalled: 'Nicht installiert',
-      failed: 'Fehlgeschlagen',
-      showNames: 'Namen anzeigen',
-      hideNames: 'Namen ausblenden',
-      skill: (name: string) => `Skill ${name}`,
-      kind: {
-        plugin: 'Plugin',
-        skill: 'Skill'
-      },
-      tier: {
-        official: 'offiziell',
-        community: 'Community'
-      },
-      targetProfile: (profile: string) => `Wird in Ihr Profil ${profile} installiert`,
-      sendFailed: 'Ihre Antwort konnte nicht gesendet werden. Versuchen Sie es erneut.',
-      commitLabel: 'Commit',
-      subdirLabel: 'Ordner',
-      securityHeading: 'Sicherheit',
-      scan: {
-        passed: 'Scan bestanden',
-        warnings: 'Scan hat Warnungen gefunden',
-        failed: 'Scan fehlgeschlagen'
-      },
-      requirementsLabel: 'Erfordert',
-      credentialsHeading: 'Zugangsdaten'
-    },
+    catalogInstall: deCatalogInstall,
     mcpSetup: {
       installTitle: 'MCP-Server hinzufügen',
       enableTitle: 'MCP-Server aktivieren',
