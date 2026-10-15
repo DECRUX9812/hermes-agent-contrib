@@ -21,7 +21,7 @@ import {
   setSessions,
   setSessionsLoading
 } from '@/store/session'
-import { clearAllSessionStates, publishSessionState } from '@/store/session-states'
+import { $sessionStates, clearAllSessionStates, publishSessionState, reconcileBusyStatesOnReconnect } from '@/store/session-states'
 import type { SessionInfo } from '@/types/hermes'
 
 import { useBackgroundQueueDrain } from './use-background-queue-drain'
@@ -360,6 +360,43 @@ describe('useBackgroundQueueDrain', () => {
       })
     })
 
+    await waitFor(() => expect(getQueuedPrompts('stored-session-a')).toHaveLength(0))
+  })
+
+  // The b4 boundary: a reconnect that reads a still-running turn as idle hands
+  // the queued follow-up to the live run. The snapshot keeps the claim, so the
+  // entry waits for the real settle and is then delivered exactly once.
+  it('holds a restored queue while a reconnect snapshot reports the run live, then delivers it once', async () => {
+    setSessionsLoading(true)
+
+    const runtimeMap = { current: new Map<string, string>() }
+    const submitText = vi.fn(async () => true)
+
+    enqueueQueuedPrompt('stored-session-a', { text: 'not into the live run', attachments: [] })
+
+    await reconcileBusyStatesOnReconnect(undefined, async () => ({
+      sessions: [{ id: 'rt-live', session_key: 'stored-session-a', status: 'working' }]
+    }))
+
+    render(<Harness runtimeMap={runtimeMap} submitText={submitText} />)
+    setSessionsLoading(false)
+
+    await new Promise(resolve => window.setTimeout(resolve, 0))
+    expect(submitText).not.toHaveBeenCalled()
+    expect(getQueuedPrompts('stored-session-a')).toHaveLength(1)
+
+    act(() => {
+      publishSessionState('rt-live', { ...$sessionStates.get()['rt-live'], busy: false, turnLive: false })
+    })
+
+    await waitFor(() => expect(submitText).toHaveBeenCalledTimes(1))
+
+    expect(submitText).toHaveBeenCalledWith('not into the live run', {
+      attachments: [],
+      fromQueue: true,
+      sessionId: null,
+      storedSessionId: 'stored-session-a'
+    })
     await waitFor(() => expect(getQueuedPrompts('stored-session-a')).toHaveLength(0))
   })
 

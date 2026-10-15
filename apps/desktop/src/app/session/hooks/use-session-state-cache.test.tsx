@@ -1277,7 +1277,7 @@ describe('useSessionStateCache — reconnect busy reconcile (#93059)', () => {
     setActiveSessionId(null)
   })
 
-  it('retires the wiring cache entry, not just the store mirror', () => {
+  it('retires the wiring cache entry, not just the store mirror', async () => {
     let cache!: Cache
 
     setActiveSessionId('runtime-1')
@@ -1303,7 +1303,9 @@ describe('useSessionStateCache — reconnect busy reconcile (#93059)', () => {
     expect(cache.sessionStateByRuntimeIdRef.current.get('runtime-1')?.busy).toBe(true)
 
     // Backend respawned: no terminal busy:false can arrive for this runtime.
-    act(() => reconcileBusyStatesOnReconnect())
+    await act(async () => {
+      await reconcileBusyStatesOnReconnect()
+    })
 
     expect(cache.sessionStateByRuntimeIdRef.current.get('runtime-1')?.busy).toBe(false)
     expect(cache.sessionStateByRuntimeIdRef.current.get('runtime-1')?.awaitingResponse).toBe(false)

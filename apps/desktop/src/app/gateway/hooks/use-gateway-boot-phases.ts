@@ -26,6 +26,7 @@ import {
   setCurrentCwd,
   setSessionsLoading
 } from '@/store/session'
+import { reconcileBusyStatesOnReconnect } from '@/store/session-states'
 import { warnIfTerminalBackendUnavailable } from '@/store/terminal-backend-warning'
 import { isPeerInstanceWindow, windowProfileOverride } from '@/store/windows'
 
@@ -232,6 +233,14 @@ export function createGatewayBootPhases({
 
       void refreshActiveProfile().catch(() => undefined)
 
+      // The switch wiped every cached busy claim with the outgoing backend's
+      // sessions, so the new backend's live runs have to be re-asserted
+      // BEFORE the session list leaves its loading state: the queue drains
+      // wake on that edge and read $workingSessionIds.
+      await reconcileBusyStatesOnReconnect(undefined, (method, params, timeoutMs) =>
+        gateway.request(method, params, timeoutMs)
+      )
+
       await Promise.all([
         seedDefaultCwd(ownsSwitch),
         callbacksRef.current.refreshHermesConfig(false, ownsSwitch).catch(() => undefined),
@@ -396,6 +405,16 @@ export function createGatewayBootPhases({
         message: translateNow('boot.steps.loadingSettings'),
         progress: 97
       })
+
+      // A reload starts with no cached session state at all, so every busy
+      // claim is unknown rather than stale: ask the backend we just dialed
+      // what it is still running BEFORE the session list stops loading. The
+      // queue drains wake on that edge and read $workingSessionIds, so without
+      // this a queued follow-up is auto-drained into a run this window cannot
+      // see (a held, thinking or tool-waiting turn emits no delta).
+      await reconcileBusyStatesOnReconnect(undefined, (method, params, timeoutMs) =>
+        gateway.request(method, params, timeoutMs)
+      )
 
       await Promise.all([
         // The pre-connect seed already applied the configured default; this

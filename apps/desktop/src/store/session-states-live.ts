@@ -2,6 +2,7 @@ import { atom, computed } from 'nanostores'
 
 import type { ClientSessionState } from '@/app/types'
 import { type ChatMessage, chatMessageText, finalizeInterruptedMessages, sealOpenToolParts } from '@/lib/chat-messages'
+import { createClientSessionState } from '@/lib/chat-runtime'
 import type { ErrorSurface } from '@/lib/error-surface'
 import { stableArray, stableRecord } from '@/lib/stable-array'
 import type { SessionInfo } from '@/types/hermes'
@@ -728,7 +729,125 @@ export function clearAllSessionStates() {
   $sessionStates.set({})
 }
 
-/** Downgrade cached busy/awaiting states after a gateway reconnect.
+/** The live-run snapshot a reconnect reconcile trusts. `session.active_list`
+ *  answers one row per live session: `id` is the runtime id (re-minted by a
+ *  respawned backend) and `session_key` the durable id it is stored under. */
+interface ActiveSessionRow {
+  id?: unknown
+  session_key?: unknown
+  status?: unknown
+}
+
+interface RunningSession {
+  needsInput: boolean
+  runtimeId: string
+  storedId: null | string
+}
+
+/** A request-only view of ONE socket, the one being reconnected. Kept
+ *  non-generic so a caller can hand in a raw `gateway.request`: the snapshot
+ *  is validated structurally below. */
+type SessionStatusRequest = (
+  method: string,
+  params?: Record<string, unknown>,
+  timeoutMs?: number
+) => Promise<unknown>
+
+const textValue = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
+
+/** Which sessions the backend still runs, indexed under BOTH identities a
+ *  cached state can answer to: the runtime id it was bound to and the durable
+ *  stored key. `null` means no answer at all (a gateway without the method, an
+ *  unreachable owner, a timeout) — silence is not proof that a turn ended. */
+async function fetchRunningSessions(request: SessionStatusRequest): Promise<Map<string, RunningSession> | null> {
+  try {
+    const response = await request('session.active_list', {}, LIVE_TURN_PROBE_TIMEOUT_MS)
+    const rows = (response as { sessions?: unknown } | null)?.sessions
+
+    if (!Array.isArray(rows)) {
+      return null
+    }
+
+    const running = new Map<string, RunningSession>()
+
+    for (const row of rows as ActiveSessionRow[]) {
+      const runtimeId = textValue(row?.id)
+      const status = textValue(row?.status)
+
+      // Only an explicit `idle` (or no status at all) is a finished turn: an
+      // unrecognised status counts as running, the reading `liveTurnVerdict`
+      // takes. Holding a claim the drain waits on is the safe direction to be
+      // wrong in — a stale running arc corrects itself, an auto-drained send
+      // into a live turn does not.
+      if (!runtimeId || !status || status === 'idle') {
+        continue
+      }
+
+      const live: RunningSession = {
+        needsInput: status === 'waiting',
+        runtimeId,
+        storedId: textValue(row.session_key) || null
+      }
+
+      running.set(runtimeId, live)
+
+      if (live.storedId) {
+        running.set(live.storedId, live)
+      }
+    }
+
+    return running
+  } catch {
+    return null
+  }
+}
+
+/** Publish a busy claim for every session the snapshot still runs, under the
+ *  runtime id the backend runs it as.
+ *
+ *  The mirror holds nothing for a session this window never opened, and
+ *  nothing current after a reload (no mirror at all) or a respawn (its runtime
+ *  ids are dead) — yet only a published state feeds $workingSessionIds, which
+ *  is what the queue drains read before submitting a follow-up. A cached entry
+ *  for the same durable session under an id the snapshot no longer lists is
+ *  dropped first: it can never receive a settle event, so it would hold the
+ *  session busy forever after the live claim cleared. */
+function claimRunningSessions(running: ReadonlyMap<string, RunningSession>) {
+  const liveRuntimeIds = new Set([...running.values()].map(session => session.runtimeId))
+
+  for (const session of new Set(running.values())) {
+    if ($sessionStates.get()[session.runtimeId]) {
+      continue
+    }
+
+    if (session.storedId) {
+      for (const [cachedRuntimeId, cached] of Object.entries($sessionStates.get())) {
+        // A scoped entry belongs to another socket's reconcile.
+        if (
+          cached?.storedSessionId === session.storedId &&
+          !liveRuntimeIds.has(cachedRuntimeId) &&
+          sessionScopeByRuntimeId.get(cachedRuntimeId) === undefined
+        ) {
+          dropSessionState(cachedRuntimeId)
+        }
+      }
+    }
+
+    publishSessionState(session.runtimeId, {
+      ...createClientSessionState(session.storedId),
+      busy: true,
+      needsInput: session.needsInput,
+      storedSessionId: session.storedId,
+      turnLive: true
+    })
+
+    noteSessionEvent(session.runtimeId)
+  }
+}
+
+/** Reconcile cached busy/awaiting states with the backend after a gateway
+ *  reconnect, against the `session.active_list` snapshot taken through
+ *  `request` (the socket being reconnected).
  *
  *  A respawned backend re-mints runtime ids (the same fact that drives
  *  resetTileRuntimeBindings), so a pre-reconnect `busy` can never receive its
@@ -737,6 +856,16 @@ export function clearAllSessionStates() {
  *  forever: the sidebar running arc and agents-panel "running" chrome lie for
  *  hours after the turn actually ended (#53902, #73082 — stale-flag half).
  *
+ *  The opposite error costs just as much: a turn the backend STILL runs must
+ *  keep its claim. A held, thinking, tool-waiting or non-streaming run emits
+ *  no delta, so a blind retire would never be re-asserted — and the queue
+ *  drains, which wake on the session list leaving its loading state and read
+ *  $workingSessionIds, would submit a queued follow-up into the middle of the
+ *  live run. So the snapshot decides per session, matched on BOTH identities:
+ *  `working`/`waiting`/`starting` keep the claim (under the runtime id the
+ *  backend reports, or the durable stored key when a respawn re-minted it),
+ *  and only a session the snapshot omits or reports `idle` is downgraded.
+ *
  *  `scope` picks which socket's sessions to reconcile, keyed by the event-
  *  source scope recorded at fan-in: a SECONDARY (registry or local secondary)
  *  reconnect passes its scope and touches only runtimes that arrived on that socket;
@@ -744,18 +873,14 @@ export function clearAllSessionStates() {
  *  runtimes (primary events record no scope). Neither can clear live
  *  work riding a different, still-healthy connection.
  *
- *  Direction of failure is deliberate: a turn that IS still live (transient
- *  socket blip, same backend) re-asserts busy on its next event or inflight
- *  snapshot within a beat, so at worst its arc blinks once. A dead turn's
- *  state, by contrast, would never clear on its own. `needsInput` is left
- *  untouched — a blocking prompt is the one claim the user must explicitly
- *  answer, and post-reconnect refresh re-asserts or retires it via its own
- *  path. Transition side-effects run through publishSessionState, so
- *  watchdogs disarm and stall hints drop — but the unread dot is deferred:
- *  a PRIMARY downgrade is blind, so the completion is parked until the
- *  post-reconnect `session.active_list` snapshot confirms the turn is gone
- *  (`confirmReconnectSettlesExcept`) or a busy re-assert proves it alive
- *  (#113029). A SCOPED downgrade lights it at once: no poll covers that socket.
+ *  `needsInput` is only ever asserted here, never retired — a blocking prompt
+ *  is the one claim the user must explicitly answer. Transition side-effects
+ *  run through publishSessionState, so watchdogs disarm and stall hints drop —
+ *  but the unread dot is deferred: a PRIMARY downgrade is blind, so the
+ *  completion is parked until the post-reconnect `session.active_list` snapshot
+ *  confirms the turn is gone (`confirmReconnectSettlesExcept`) or a busy
+ *  re-assert proves it alive (#113029). A SCOPED downgrade lights it at once:
+ *  no poll covers that socket.
  *
  *  The downgrade goes through the delegate's `retireBusyClaim` (the wiring
  *  cache's updateSessionState), not straight into this mirror: the claim has
@@ -765,10 +890,39 @@ export function clearAllSessionStates() {
  *  fallback for runtimes the cache never held (background-sync rows, no
  *  wiring mounted). A PRIMARY reconcile also clears the focused draft
  *  latches, which outlive the state they mirrored; a scoped one leaves them
- *  alone — a background socket says nothing about the primary composer. */
-export function reconcileBusyStatesOnReconnect(scope?: string) {
+ *  alone — a background socket says nothing about the primary composer.
+ *
+ *  With no `request` (a caller that has nobody to ask) the historic blind
+ *  retire stands. With a `request` whose snapshot failed, NOTHING is retired:
+ *  missing data is not a finished turn, and the ordinary settle path still
+ *  clears a claim whose turn really ended. */
+export async function reconcileBusyStatesOnReconnect(
+  scope?: string,
+  request?: null | SessionStatusRequest
+): Promise<void> {
   const states = $sessionStates.get()
+
+  // A SCOPED reconcile can only act on claims this mirror already holds for
+  // that socket — a snapshot row cannot be attributed to a scope it did not
+  // arrive on — so with none there is nothing to keep and nothing to retire.
+  // A short-lived route (a relay lease reopening its socket every tick) must
+  // not pay a round-trip for that.
+  if (scope !== undefined && !Object.keys(states).some(runtimeId => sessionScopeByRuntimeId.get(runtimeId) === scope)) {
+    return
+  }
+
+  const running = request ? await fetchRunningSessions(request) : null
+
+  if (request && !running) {
+    return
+  }
+
   const focusedRuntimeId = $activeSessionId.get()
+  const focusedStoredId = $selectedStoredSessionId.get()
+  const focusedIsRunning = Boolean(
+    running &&
+      ((focusedRuntimeId && running.has(focusedRuntimeId)) || (focusedStoredId && running.has(focusedStoredId)))
+  )
   let retiredFocusedTurn = false
 
   // Only the primary socket has a confirm producer for a parked completion
@@ -778,13 +932,42 @@ export function reconcileBusyStatesOnReconnect(scope?: string) {
 
   try {
     for (const [runtimeId, state] of Object.entries(states)) {
-      if (!state || (!state.busy && !state.awaitingResponse)) {
+      if (!state) {
         continue
       }
 
       const recorded = sessionScopeByRuntimeId.get(runtimeId)
 
       if (scope === undefined ? recorded !== undefined : recorded !== scope) {
+        continue
+      }
+
+      const live = running?.get(runtimeId) ?? (state.storedSessionId ? running?.get(state.storedSessionId) : undefined)
+
+      if (live) {
+        // Still running: keep the claim, and re-assert it if this mirror lost
+        // it, so no drain can read the reconnect as idle.
+        if (!state.busy || !state.turnLive || (live.needsInput && !state.needsInput)) {
+          publishSessionState(runtimeId, {
+            ...state,
+            busy: true,
+            needsInput: state.needsInput || live.needsInput,
+            turnLive: true
+          })
+        }
+
+        // Only the runtime id the backend reports has events behind it; a
+        // stored-key match against a re-minted runtime is the claim transfer's
+        // job below. Noting a dead id would aim its silence probe at a
+        // runtime the snapshot no longer lists.
+        if (live.runtimeId === runtimeId) {
+          noteSessionEvent(runtimeId)
+        }
+
+        continue
+      }
+
+      if (!state.busy && !state.awaitingResponse) {
         continue
       }
 
@@ -807,19 +990,31 @@ export function reconcileBusyStatesOnReconnect(scope?: string) {
         })
       }
     }
+
+    if (running && scope === undefined) {
+      claimRunningSessions(running)
+    }
   } finally {
     deferringReconcileUnread = false
   }
 
-  if (scope === undefined) {
-    setBusy(false)
-    setAwaitingResponse(false)
-  }
-
   // The global clock mirrors the focused session, whichever socket owns it.
-  // A reconnect for a different backend must not reset that session's timer.
+  // A reconnect for a different backend must not reset that session's timer,
+  // and a focused turn the backend still runs keeps its clock with its claim.
   if (retiredFocusedTurn) {
     setTurnStartedAt(null)
+  }
+
+  if (scope === undefined) {
+    // A focused turn the snapshot still lists keeps its busy latch: clearing
+    // it here is what made Send no-op (and a queued prompt drain) into a run
+    // that never emitted an event to re-assert it.
+    if (focusedIsRunning) {
+      setBusy(true)
+    } else {
+      setBusy(false)
+      setAwaitingResponse(false)
+    }
   }
 }
 

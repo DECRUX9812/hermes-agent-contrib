@@ -93,7 +93,7 @@ export async function openSecondary(entry: Secondary, spawnPriority: SpawnPriori
     // outranks the single local-module microtask this adds to a reconnect.
     const openedScopes = openedSecondaryScopes()
     const reopening = entry.lastOpenedAt > 0 || entry.connection !== null || openedScopes.has(entry.scope)
-    let reconcileBusyAfterOpen: null | (() => void) = null
+    let reconcileBusyAfterOpen: null | (() => Promise<void>) = null
 
     if (reopening) {
       try {
@@ -112,7 +112,10 @@ export async function openSecondary(entry: Secondary, spawnPriority: SpawnPriori
           resetRouteOwnedTileRuntimeBindings(scope)
         }
 
-        reconcileBusyAfterOpen = () => reconcileBusyStatesOnReconnect(entry.scope)
+        reconcileBusyAfterOpen = () =>
+          reconcileBusyStatesOnReconnect(entry.scope, (method, params, timeoutMs) =>
+            entry.gateway.request(method, params, timeoutMs)
+          )
       } catch {
         // Best effort for partial test/HMR graphs. Production always loads the
         // real store; a failed import must not make the transport unrecoverable.
@@ -186,7 +189,12 @@ export async function openSecondary(entry: Secondary, spawnPriority: SpawnPriori
     openedScopes.add(entry.scope)
 
     try {
-      reconcileBusyAfterOpen?.()
+      // Awaited: the reconcile asks this socket what it still runs before it
+      // retires any busy claim, and the routed action that opened the scope
+      // refreshes the session list (and wakes the queue drains) as soon as it
+      // returns. A follow-up must not be auto-drained into a run that never
+      // emits a delta to re-assert itself.
+      await reconcileBusyAfterOpen?.()
     } catch {
       // The socket is already open. A best-effort UI-state reconcile must not
       // turn that successful transport recovery into a reported dial failure.
