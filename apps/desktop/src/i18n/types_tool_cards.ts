@@ -29,8 +29,6 @@ export interface ToolCardsCopy {
   reviewApproval: string
   failed: string
   stopped: string
-  showDetails: string
-  hideDetails: string
   /** Detail rows inside an expanded card. */
   details: {
     request: string

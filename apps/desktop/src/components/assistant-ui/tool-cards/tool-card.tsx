@@ -1,4 +1,4 @@
-import { type JSX, type KeyboardEvent, type MouseEvent, type ReactNode, useState } from 'react'
+import { type HTMLAttributes, type JSX, type KeyboardEvent, type MouseEvent, type ReactNode, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
@@ -26,11 +26,7 @@ function isLiveState(state: ToolCardGroup['state']): boolean {
 }
 
 function toggleOnKey(toggle: () => void) {
-  return (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.target instanceof HTMLElement && event.target.closest('button')) {
-      return
-    }
-
+  return (event: KeyboardEvent<HTMLSpanElement>) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()
       toggle()
@@ -53,6 +49,8 @@ interface CardBodyProps {
   copy: ToolCardsCopy
   group: ToolCardGroup
   onReviewApproval?: () => void
+  /** The disclosure control. Review sits beside it, never inside, so it stays reachable. */
+  toggle: HTMLAttributes<HTMLSpanElement>
 }
 
 function LiveStatus({ copy, group }: Pick<CardBodyProps, 'copy' | 'group'>) {
@@ -74,13 +72,14 @@ function LiveStatus({ copy, group }: Pick<CardBodyProps, 'copy' | 'group'>) {
   return <span className="min-w-0 truncate text-fg-muted">{status}</span>
 }
 
-function LiveCardBody({ actor, copy, group, onReviewApproval }: CardBodyProps) {
+function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }: CardBodyProps) {
   const last = group.cards[group.cards.length - 1]
   const site = group.thumb?.kind === 'site' ? group.thumb : null
   const shot = group.thumb?.kind === 'screenshot' ? group.thumb.src : null
 
   return (
     <>
+      <span {...toggle} className="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-control">
       <span
         className={cn(
           'relative grid size-9 shrink-0 place-items-center rounded-control bg-surface-sunken text-fg-secondary',
@@ -111,6 +110,7 @@ function LiveCardBody({ actor, copy, group, onReviewApproval }: CardBodyProps) {
           <span className="text-ui-xs text-danger line-clamp-2">{last.reason}</span>
         ) : null}
       </span>
+      </span>
       {group.state === 'approval' && onReviewApproval ? (
         <Button
           onClick={event => {
@@ -128,13 +128,13 @@ function LiveCardBody({ actor, copy, group, onReviewApproval }: CardBodyProps) {
   )
 }
 
-function QuietCardBody({ copy, group }: Pick<CardBodyProps, 'copy' | 'group'>) {
+function QuietCardBody({ copy, group, toggle }: Pick<CardBodyProps, 'copy' | 'group' | 'toggle'>) {
   const last = group.cards[group.cards.length - 1]
   const header = group.cards.length > 1 ? copy.usedTimes(group.name, group.cards.length) : last.status
   const site = group.thumb?.kind === 'site' ? group.thumb : null
 
   return (
-    <>
+    <span {...toggle} className="focus-ring flex min-w-0 flex-1 items-center gap-2 rounded-row">
       <ToolIcon className="shrink-0 text-fg-subtle" name={group.icon} size={14} />
       <Codicon className="shrink-0 text-success" name="check" size={12} />
       <span className="min-w-0 flex-1 truncate">{header}</span>
@@ -142,7 +142,7 @@ function QuietCardBody({ copy, group }: Pick<CardBodyProps, 'copy' | 'group'>) {
       {last.durationLabel ? (
         <span className="shrink-0 text-ui-2xs text-fg-subtle tabular-nums">{last.durationLabel}</span>
       ) : null}
-    </>
+    </span>
   )
 }
 
@@ -191,11 +191,18 @@ export function ToolCard({
     requestAnimationFrame(() => setOpen(true))
   }
 
+  const toggleProps: HTMLAttributes<HTMLSpanElement> = {
+    'aria-expanded': open,
+    'aria-label': cardLabel(copy, group),
+    onKeyDown: toggleOnKey(toggle),
+    role: 'button',
+    tabIndex: 0
+  }
+
   return (
     <div data-tool-card={group.state} data-tool-card-key={group.key} role="listitem">
+      {/* The whole surface is a pointer target; keyboard and assistive tech use the toggle inside it. */}
       <div
-        aria-expanded={open}
-        aria-label={cardLabel(copy, group)}
         className={cn(
           'w-full max-w-md transition-[background-color,border-color,box-shadow,padding,min-height] duration-(--dur-base) ease-spring',
           mountedLive && 'motion-arrive',
@@ -204,15 +211,11 @@ export function ToolCard({
             : 'flex min-h-7 items-center gap-2 rounded-row border border-transparent px-1.5 text-left text-ui-xs text-fg-muted hover:bg-hover'
         )}
         onClick={toggleOnClick(toggle)}
-        onKeyDown={toggleOnKey(toggle)}
-        role="button"
-        tabIndex={0}
-        title={open ? copy.hideDetails : copy.showDetails}
       >
         {live ? (
-          <LiveCardBody actor={actor} copy={copy} group={group} onReviewApproval={onReviewApproval} />
+          <LiveCardBody actor={actor} copy={copy} group={group} onReviewApproval={onReviewApproval} toggle={toggleProps} />
         ) : (
-          <QuietCardBody copy={copy} group={group} />
+          <QuietCardBody copy={copy} group={group} toggle={toggleProps} />
         )}
       </div>
       {everOpened ? <ToolCardDetails group={group} live={live} open={open} /> : null}

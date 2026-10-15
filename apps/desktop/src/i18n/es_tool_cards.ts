@@ -25,8 +25,6 @@ export const esToolCards: ToolCardsCopy = {
   reviewApproval: 'Revisar',
   failed: 'Error',
   stopped: 'Detenido',
-  showDetails: 'Mostrar detalles',
-  hideDetails: 'Ocultar detalles',
   details: {
     request: 'Solicitud',
     output: 'Salida',

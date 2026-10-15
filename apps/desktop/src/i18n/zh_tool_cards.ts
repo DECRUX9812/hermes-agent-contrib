@@ -25,8 +25,6 @@ export const zhToolCards: ToolCardsCopy = {
   reviewApproval: '查看',
   failed: '失败',
   stopped: '已停止',
-  showDetails: '显示详情',
-  hideDetails: '隐藏详情',
   details: {
     request: '请求',
     output: '输出',
