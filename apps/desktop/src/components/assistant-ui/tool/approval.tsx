@@ -22,6 +22,7 @@ import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { Loader2 } from '@/lib/icons'
 import { releaseApprovalKey } from '@/lib/keybinds/approval-keys'
+import { useStoresSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { $gateway } from '@/store/gateway'
 import { reconnectAction } from '@/store/gateway-reconnect'
@@ -34,6 +35,7 @@ import {
   sessionApprovalRequests,
   sessionApprovalStackSize
 } from '@/store/prompts'
+import { $botChatSessionIds, $sessionStates, $sessionTiles, isBotChatSession } from '@/store/session-states'
 import { $showToolActivity } from '@/store/tool-activity'
 import { setToolDisclosureOpen } from '@/store/tool-view'
 
@@ -79,6 +81,11 @@ function ApprovalActivity({ floating, visible }: { floating: boolean; visible: b
   const { t } = useI18n()
   const reduced = useReducedMotion()
   const showToolActivity = useStore($showToolActivity)
+  const sessionId = useStore(useSessionView().$runtimeId)
+
+  const botChat = useStoresSelector([$botChatSessionIds, $sessionStates, $sessionTiles], () =>
+    isBotChatSession(sessionId)
+  )
 
   const summary = useAuiState(state => {
     if (!visible) {
@@ -119,9 +126,10 @@ function ApprovalActivity({ floating, visible }: { floating: boolean; visible: b
       .join('\n')
   })
 
-  // The pending approval stays. The run summary beside it is tool feed and
-  // follows display.tool_progress alongside the other process rows.
-  if (!showToolActivity) {
+  // The pending approval stays. The run summary is tool feed that follows
+  // display.tool_progress, and a Bot Chat drops it because its tool cards
+  // already show the call waiting for approval.
+  if (!showToolActivity || botChat) {
     return null
   }
 
