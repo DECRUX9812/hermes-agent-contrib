@@ -177,13 +177,25 @@ export const zhHantAssistant = {
       command: '指令',
       moreOptions: '更多核准選項',
       allowSession: '允許本工作階段',
+      allowOnce: '允許一次',
+      alwaysAllowHere: '一律允許',
+      deny: '拒絕',
+      cardTitle: '允許執行此命令？',
+      cardDetailsTitle: '檢查此變更',
       alwaysAllowMenu: '一律允許…',
       jumpToApproval: '需要核准',
       reject: '拒絕',
       alwaysTitle: '一律允許此指令？',
       alwaysDescription: pattern =>
         `這會將「${pattern}」模式加入永久允許清單（~/.hermes/config.yaml）。Hermes 對類似指令將不再詢問，包括目前工作階段和未來工作階段。`,
-      alwaysAllow: '一律允許'
+      alwaysAllow: '一律允許',
+      alwaysConfirmPrompt: pattern => `一律允許「${pattern}」？`,
+      decisionRecorded: choice => `已記錄決定：${choice}`,
+      noLongerPending: '此核准已不再等待處理。',
+      reconnect: '重新連線',
+      timedOutSystemLine: '核准逾時——指令未執行。請要求 Hermes 重試，或在設定 → 安全 → 核准逾時中提高上限。',
+      openSafetySettings: '開啟安全設定',
+      commandDetails: '指令詳細資訊'
     },
     toolCards: {
       activityLabel: '工具活動',

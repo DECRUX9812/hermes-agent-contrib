@@ -11,11 +11,13 @@ import {
   useRef
 } from 'react'
 
+import { useSessionView } from '@/app/chat/session-view'
 import { useTourMarker } from '@/app/chat/tour-marker'
 import type { GatewayRequester } from '@/app/contrib/types'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
 import { useBusyInputMode } from '@/app/session/hooks/use-busy-input-mode'
 import { composerFloatingStrip, composerInputBacking } from '@/components/chat/composer-dock'
+import { ApprovalComposerEntry } from '@/components/assistant-ui/tool/approval'
 import { useSetupChatView } from '@/components/onboarding/first-run/assembly'
 import { OnboardingSkip } from '@/components/onboarding/skip-setup'
 import { Slot as ContribSlot } from '@/contrib/react/slot'
@@ -174,6 +176,7 @@ export function ChatBar({
   // Which live composer this instance IS (main | tile) — its attachment set,
   // focus-bus key, and awaiting-input edge. Main scope = the legacy globals.
   const scope = useComposerScope()
+  const storedSessionId = useStore(useSessionView().$storedId)
   const attachments = useStore(scope.attachments.$attachments)
   const compacting = useStore(useMemo(() => sessionCompacting(sessionId ?? null), [sessionId]))
   const surfaceId = useComposerSurfaceId()
@@ -1352,6 +1355,7 @@ export function ChatBar({
               sessionId={statusSessionId}
             />
           </StatusDrawerContent>
+          <ApprovalComposerEntry runtimeSessionId={sessionId ?? null} storedSessionId={storedSessionId} />
           <ComposerPrimitive.Root
             className={cn(
               'group/composer relative w-full overflow-visible rounded-2xl',

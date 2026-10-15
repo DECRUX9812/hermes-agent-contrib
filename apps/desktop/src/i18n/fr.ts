@@ -5061,13 +5061,21 @@ export const frOverrides = {
       command: 'Commande',
       moreOptions: "Plus d'options d'approbation",
       allowSession: 'Autoriser cette session',
+      allowOnce: 'Autoriser une fois',
+      alwaysAllowHere: 'Toujours autoriser',
+      deny: 'Refuser',
+      cardTitle: 'Autoriser cette commande ?',
+      cardDetailsTitle: 'Vérifier cette modification',
       alwaysAllowMenu: 'Toujours autoriser…',
       jumpToApproval: 'Approbation requise',
       reject: 'Rejeter',
       alwaysTitle: 'Toujours autoriser cette commande ?',
       alwaysDescription: pattern =>
         `Cela ajoute le motif « ${pattern} » à votre liste d'autorisation permanente (~/.hermes/config.yaml). Hermes ne redemandera plus pour ce type de commande — que ce soit dans cette session ou dans une session future.`,
-      alwaysAllow: 'Toujours autoriser'
+      alwaysAllow: 'Toujours autoriser',
+      alwaysConfirmPrompt: pattern => `Toujours autoriser « ${pattern} » ?`,
+      decisionRecorded: choice => `Décision enregistrée : ${choice}`,
+      noLongerPending: "Cette approbation n'est plus en attente."
     },
     clarify: frClarify,
     toolCards: frToolCards,
