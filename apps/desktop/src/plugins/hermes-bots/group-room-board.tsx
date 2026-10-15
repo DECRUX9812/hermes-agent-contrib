@@ -5,7 +5,7 @@
  * reads; a card opens its thread.
  */
 
-import { cn, relativeTime } from '@hermes/plugin-sdk'
+import { cn, relativeTime, StatusBadge } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
 import type { RoomEscalation, RoomHandoff } from './group-room-handoffs'
@@ -17,11 +17,13 @@ type Column = 'answered' | 'needs' | 'waiting' | 'working'
 
 const COLUMNS: readonly Column[] = ['needs', 'waiting', 'working', 'answered']
 
-const DOT: Record<Column, string> = {
-  answered: 'bg-emerald-500/70',
-  needs: 'bg-amber-500',
-  waiting: 'bg-(--ui-text-quaternary)',
-  working: 'bg-(--ui-accent)'
+// Column dots ride the shared status vocabulary (StatusBadge): queued,
+// running, needs-approval, done.
+const DOT: Record<Column, 'done' | 'needs-approval' | 'queued' | 'running'> = {
+  answered: 'done',
+  needs: 'needs-approval',
+  waiting: 'queued',
+  working: 'running'
 }
 
 export interface GroupRoomBoardProps {
@@ -57,7 +59,7 @@ export function GroupRoomBoard({ escalations, handoffs, items, members, nameOf, 
   const tiles = [
     {
       label: c.needsYou,
-      tone: 'border-amber-500/40 bg-amber-500/8 text-amber-700 dark:text-amber-300',
+      tone: 'border-warning/40 bg-warning/8 text-warning',
       value: visible.filter(i => columnOf(i, escalated) === 'needs').length
     },
     {
@@ -72,7 +74,7 @@ export function GroupRoomBoard({ escalations, handoffs, items, members, nameOf, 
     },
     {
       label: c.deliveredToday,
-      tone: 'border-emerald-500/30 bg-emerald-500/6 text-emerald-700 dark:text-emerald-300',
+      tone: 'border-success/30 bg-success/6 text-success',
       value: handoffs.filter(h => h.status === 'delivered' && h.at >= startOfDay).length
     }
   ]
@@ -117,7 +119,7 @@ export function GroupRoomBoard({ escalations, handoffs, items, members, nameOf, 
               key={column}
             >
               <div className="flex items-center gap-2 px-1">
-                <span aria-hidden className={cn('size-2 rounded-full', DOT[column])} />
+                <StatusBadge className="size-2" state={DOT[column]} />
                 <span className="text-[0.75rem] font-semibold text-foreground">{c.column[column]}</span>
                 <span className="ml-auto font-mono text-[0.6875rem] text-(--ui-text-quaternary)">{cards.length}</span>
               </div>

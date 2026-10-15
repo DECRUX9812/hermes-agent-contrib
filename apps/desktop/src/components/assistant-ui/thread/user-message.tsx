@@ -12,6 +12,7 @@ import {
 import { ThreadEditContext } from '@/components/assistant-ui/thread/edit-context'
 import { MessageHoverTime } from '@/components/assistant-ui/thread/message-hover-time'
 import { ReactionBadge, ReactionPicker } from '@/components/assistant-ui/thread/message-reactions'
+import { META_LINE_BODY_CLASS, META_LINE_CLASS } from '@/components/assistant-ui/thread/meta-line'
 import { BackgroundResult } from '@/components/assistant-ui/thread/system-message'
 import { threadUserOrdinal } from '@/components/assistant-ui/thread/thread-message-index'
 import { MessageTimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
@@ -223,7 +224,7 @@ const AgentMessageNote: FC<{ text: string }> = ({ text }) => {
   // message, so the exchange still reads in order.
   return (
     <div
-      className="flex max-w-[min(86%,44rem)] flex-col gap-0.5 self-center px-2 py-0.5 text-[0.6875rem] leading-5 text-muted-foreground/60"
+      className={cn(META_LINE_CLASS, 'flex flex-col gap-0.5')}
       data-slot="aui_agent-message-note"
     >
       <span className="flex items-center justify-center gap-1.5">
@@ -241,7 +242,7 @@ const AgentMessageNote: FC<{ text: string }> = ({ text }) => {
           <summary className="cursor-pointer select-none text-center text-muted-foreground/45 hover:text-muted-foreground/70">
             show message
           </summary>
-          <div className="mt-1 max-w-[36rem] rounded-lg border border-(--ui-stroke-tertiary) px-3 py-2 text-left text-[0.75rem] leading-5 text-foreground/85">
+          <div className={META_LINE_BODY_CLASS}>
             <UserMessageText text={body} />
           </div>
         </details>

@@ -573,6 +573,10 @@
        and made tables span the screen; the revamp target (docs/revamp/mockups)
        reads at 46rem. Custom CSS can set it back to 100%. */
     --composer-width: 46rem;
+    /* Rule 2 — the prose measure. The 46rem column runs ~80–90 characters of
+       body text; message PROSE caps at ~72ch while wide content (code blocks,
+       tables, images, tool rows) keeps the full column. */
+    --prose-measure: 72ch;
     --composer-control-size: 1.5rem;
     --composer-control-primary-size: 1.625rem;
     --composer-voice-menu-size: 1.25rem;
@@ -1893,6 +1897,12 @@ body.guest-pointer-lock :is(webview, iframe) {
 [data-slot='aui_assistant-message-content'] .aui-md,
 [data-slot='aui_assistant-message-content'] .aui-md :where(p, li, blockquote, table, pre) {
   font-size: inherit;
+}
+
+/* Rule 2 — prose measure: cap reading lines at --prose-measure. Only prose
+   blocks take the cap — tables, code cards and images keep the full column. */
+[data-slot='aui_assistant-message-content'] .aui-md :where(p, h1, h2, h3, h4, h5, h6, li, blockquote) {
+  max-width: var(--prose-measure);
 }
 
 /* Tailwind Typography sets `.prose :where(p) { margin: 1.25em }` (~16px). That

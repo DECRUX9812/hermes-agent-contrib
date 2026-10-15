@@ -208,6 +208,7 @@ test('group room, member replies, pin, and quick filter survive a window reload'
 
       await expect(page.locator('[data-slot="group-chat-message-content"]').filter({ hasText: PROMPT })).toHaveCount(1)
       await assertMemberReplies(page)
+      await shot(page, '6-design', '02-room-members-open')
       await shot(page, '2-groupchat', '02-after-reload')
     })
   } finally {

@@ -3,6 +3,7 @@ import { type FC, useState } from 'react'
 
 import { MarkdownTextContent } from '@/components/assistant-ui/markdown-text'
 import { messageContentText } from '@/components/assistant-ui/thread/content'
+import { META_LINE_CLASS } from '@/components/assistant-ui/thread/meta-line'
 import { MessageTimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
 import { SCAFFOLD_GLYPH_CLASS, SCAFFOLD_LABEL_CLASS, ScaffoldRow } from '@/components/chat/scaffold-row'
 import { Codicon } from '@/components/ui/codicon'
@@ -118,7 +119,7 @@ export const SystemMessage: FC = () => {
   if (steerNote?.groups) {
     return (
       <MessagePrimitive.Root
-        className="flex max-w-[min(86%,44rem)] items-center gap-1.5 self-center px-2 py-0.5 text-[0.6875rem] leading-5 text-muted-foreground/60"
+        className={cn(META_LINE_CLASS, 'flex items-center gap-1.5')}
         data-role="system"
         data-slot="aui_system-message-root"
       >
@@ -142,7 +143,8 @@ export const SystemMessage: FC = () => {
     return (
       <MessagePrimitive.Root
         className={cn(
-          'w-[60%] max-w-[44rem] self-center px-2 py-0.5 text-[0.6875rem] leading-5 text-muted-foreground/60',
+          META_LINE_CLASS,
+          'w-[60%] max-w-[44rem]',
           multiline ? 'text-left' : 'text-center'
         )}
         data-role="system"
@@ -167,7 +169,8 @@ export const SystemMessage: FC = () => {
   return (
     <MessagePrimitive.Root
       className={cn(
-        'w-[60%] max-w-[44rem] self-center px-2 py-0.5 text-[0.6875rem] leading-5 text-muted-foreground/55',
+        META_LINE_CLASS,
+        'w-[60%] max-w-[44rem] text-muted-foreground/55',
         multiline ? 'text-left' : 'text-center'
       )}
       data-role="system"
