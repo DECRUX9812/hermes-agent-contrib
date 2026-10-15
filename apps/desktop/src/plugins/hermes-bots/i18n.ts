@@ -902,6 +902,37 @@ type BotsMessages = {
     today: string
     yesterday: string
   }
+  identity: {
+    heading: string
+    name: string
+    role: string
+    model: string
+    instructions: string
+    edit: string
+    changedElsewhere: string
+    emptyName: string
+    nextChatNote: string
+    confirm: string
+    confirmModel: string
+    modelSaveFailed: string
+    saveFailed: string
+    loadFailed: string
+  }
+  memory: {
+    heading: string
+    whatItRemembers: string
+    aboutYou: string
+    usage: string
+    add: string
+    placeholder: string
+    removePrompt: string
+    removeYes: string
+    removeNo: string
+    changedElsewhere: string
+    writesOff: string
+    loadFailed: string
+    writeFailed: (message: string) => string
+  }
   /** G5 — the inbound-event strip inside a bot's canonical chat. */
   events: {
     /** Link affordance that opens the thing a card came from. */
@@ -1799,6 +1830,37 @@ const en: BotsMessages = {
     tasks: 'Task log',
     today: 'Today',
     yesterday: 'Yesterday'
+  },
+  identity: {
+    heading: 'Profile',
+    name: 'Name',
+    role: 'Role',
+    model: 'Model',
+    instructions: 'Instructions',
+    edit: 'Edit',
+    changedElsewhere: 'Changed elsewhere, reloaded',
+    emptyName: 'Name cannot be empty',
+    nextChatNote: 'Changes apply to the bot’s next chat. The current chat keeps its prompt.',
+    confirm: 'Confirm',
+    confirmModel: 'Confirm model change',
+    modelSaveFailed: 'Could not save the model',
+    saveFailed: 'Could not save the profile',
+    loadFailed: 'Could not load this profile'
+  },
+  memory: {
+    heading: 'Memory',
+    whatItRemembers: 'What it remembers',
+    aboutYou: 'About you',
+    usage: 'Memory usage',
+    add: 'Add',
+    placeholder: 'Write a memory…',
+    removePrompt: 'Remove this memory?',
+    removeYes: 'Yes, remove',
+    removeNo: 'No, keep it',
+    changedElsewhere: 'This item changed, list reloaded',
+    writesOff: 'Memory writes are off in settings',
+    loadFailed: 'Could not load memory',
+    writeFailed: message => `Could not save memory: ${message}`
   },
   events: {
     open: 'Open',
@@ -2709,6 +2771,37 @@ const ja: BotsMessages = {
     today: '今日',
     yesterday: '昨日'
   },
+  identity: {
+    heading: 'プロフィール',
+    name: '名前',
+    role: '役割',
+    model: 'モデル',
+    instructions: '指示',
+    edit: '編集',
+    changedElsewhere: '別の場所で変更されたため、再読み込みしました',
+    emptyName: '名前を空にすることはできません',
+    nextChatNote: '変更は次のチャットから適用されます。進行中のチャットでは現在のプロンプトが使われます。',
+    confirm: '確認',
+    confirmModel: 'モデルの変更を確認',
+    modelSaveFailed: 'モデルを保存できませんでした',
+    saveFailed: 'プロフィールを保存できませんでした',
+    loadFailed: 'プロフィールを読み込めませんでした'
+  },
+  memory: {
+    heading: 'メモリ',
+    whatItRemembers: '覚えていること',
+    aboutYou: 'あなたについて',
+    usage: 'メモリ使用量',
+    add: '追加',
+    placeholder: 'メモリを書く…',
+    removePrompt: 'このメモリを削除しますか？',
+    removeYes: 'はい、削除',
+    removeNo: 'いいえ、そのまま',
+    changedElsewhere: 'この項目は変更されました。リストを再読み込みしました',
+    writesOff: '設定でメモリへの書き込みがオフになっています',
+    loadFailed: 'メモリを読み込めませんでした',
+    writeFailed: message => `メモリを保存できませんでした: ${message}`
+  },
   quick: {
     intro: '名前だけで作成できます — 他はすべて任意です。',
     templates: 'テンプレートから始める',
@@ -3572,6 +3665,37 @@ const zh: BotsMessages = {
     today: '今天',
     yesterday: '昨天'
   },
+  identity: {
+    heading: '资料',
+    name: '名称',
+    role: '角色',
+    model: '模型',
+    instructions: '指令',
+    edit: '编辑',
+    changedElsewhere: '已在其他位置更改，现已重新加载',
+    emptyName: '名称不能为空',
+    nextChatNote: '更改会从机器人的下一次聊天开始生效。当前聊天会保留现有提示词。',
+    confirm: '确认',
+    confirmModel: '确认更改模型',
+    modelSaveFailed: '无法保存模型',
+    saveFailed: '无法保存资料',
+    loadFailed: '无法加载此资料'
+  },
+  memory: {
+    heading: '记忆',
+    whatItRemembers: '它记住的内容',
+    aboutYou: '关于你',
+    usage: '记忆用量',
+    add: '添加',
+    placeholder: '写一条记忆…',
+    removePrompt: '要删除这条记忆吗？',
+    removeYes: '是，删除',
+    removeNo: '否，保留',
+    changedElsewhere: '此条目已更改，列表已重新加载',
+    writesOff: '设置中已关闭记忆写入',
+    loadFailed: '无法加载记忆',
+    writeFailed: message => `无法保存记忆：${message}`
+  },
   quick: {
     intro: '只需一个名字即可创建 — 其他都是可选的。',
     templates: '从模板开始',
@@ -4434,6 +4558,37 @@ const zhHant: BotsMessages = {
     tasks: '任務日誌',
     today: '今天',
     yesterday: '昨天'
+  },
+  identity: {
+    heading: '個人資料',
+    name: '名稱',
+    role: '角色',
+    model: '模型',
+    instructions: '指示',
+    edit: '編輯',
+    changedElsewhere: '已在其他位置變更，現已重新載入',
+    emptyName: '名稱不可為空',
+    nextChatNote: '變更會從機器人的下一次聊天開始生效。目前的聊天會保留現有提示詞。',
+    confirm: '確認',
+    confirmModel: '確認變更模型',
+    modelSaveFailed: '無法儲存模型',
+    saveFailed: '無法儲存個人資料',
+    loadFailed: '無法載入此個人資料'
+  },
+  memory: {
+    heading: '記憶',
+    whatItRemembers: '它記得的事',
+    aboutYou: '關於你',
+    usage: '記憶用量',
+    add: '新增',
+    placeholder: '寫下一則記憶…',
+    removePrompt: '要移除此記憶嗎？',
+    removeYes: '是，移除',
+    removeNo: '否，保留',
+    changedElsewhere: '此項目已變更，清單已重新載入',
+    writesOff: '設定中已關閉記憶寫入',
+    loadFailed: '無法載入記憶',
+    writeFailed: message => `無法儲存記憶：${message}`
   },
   quick: {
     intro: '只要一個名稱即可建立 — 其他都是選填。',

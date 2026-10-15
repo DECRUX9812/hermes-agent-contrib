@@ -32,6 +32,7 @@ import { useAutopilotText } from './autopilot-i18n'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { BotCardMeta } from './bot-card-meta'
 import { BotDeliverablesSection } from './bot-deliverables'
+import { BotIdentitySection, BotMemorySection } from './bot-identity-sections'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { BotTaskLog } from './bot-task-log'
 import { BotTopicProjectMenu } from './bot-topic-project-menu'
@@ -156,13 +157,13 @@ function BotHero({
           <p
             className={cn(
               'mt-1 flex max-w-full items-start gap-1.5 text-xs leading-relaxed',
-              tone === 'waiting' ? 'text-amber-700 dark:text-amber-300' : 'text-(--ui-text-tertiary)'
+              tone === 'waiting' ? 'text-warning' : 'text-(--ui-text-tertiary)'
             )}
             data-testid="rail-live-line"
             data-tone={tone}
           >
             {tone === 'working' ? (
-              <GlyphSpinner className="shrink-0 text-[0.85rem] text-(--ui-accent)" spinner="breathe" />
+              <GlyphSpinner className="shrink-0 text-ui-sm text-(--ui-accent)" spinner="breathe" />
             ) : (
               <span
                 aria-hidden
@@ -229,18 +230,18 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
       {mine.length ? (
         <ul className="grid gap-1.5" data-testid="rail-approvals">
           {mine.map(item => (
-            <li className="flex gap-2.5 rounded-xl bg-amber-500/8 px-2.5 py-2" key={item.id}>
+            <li className="flex gap-2.5 border-b border-(--ui-stroke-tertiary) px-1 py-2 last:border-0" key={item.id}>
               <Codicon
-                className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
+                className="mt-0.5 shrink-0 text-warning"
                 name={ATTENTION_ICONS[item.kind] ?? 'bell'}
                 size="0.95rem"
               />
               <span className="grid min-w-0 gap-0.5">
-                <span className="text-[0.8125rem] font-medium leading-snug text-foreground [overflow-wrap:anywhere]">
+                <span className="wrap-anywhere text-ui-sm font-medium leading-snug text-fg">
                   {item.title}
                 </span>
                 {item.detail ? (
-                  <span className="line-clamp-2 text-[0.75rem] text-(--ui-text-tertiary)">{item.detail}</span>
+                  <span className="line-clamp-2 text-ui-xs text-fg-muted">{item.detail}</span>
                 ) : null}
               </span>
             </li>
@@ -249,8 +250,8 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
       ) : (
         <div className="grid gap-1 px-1 py-4 text-center">
           <Codicon className="mx-auto text-(--ui-text-quaternary)" name="shield" size="1.2rem" />
-          <div className="text-[0.8125rem] font-medium text-(--ui-text-secondary)">{a.approvalsEmpty}</div>
-          <div className="text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)">{a.approvalsBody}</div>
+          <div className="text-ui-sm font-medium text-fg-secondary">{a.approvalsEmpty}</div>
+          <div className="text-ui-xs leading-relaxed text-fg-muted">{a.approvalsBody}</div>
         </div>
       )}
       {typeof host.navigate === 'function' ? (
@@ -286,9 +287,9 @@ function AutopilotChips({
   }
 
   return (
-    <div className="mx-2.5 mb-2 mt-1 rounded-xl bg-(--ui-widget-surface-background) p-2.5" data-slot="autopilot">
-      <p className="text-[0.75rem] font-medium text-foreground">{a.heading(name)}</p>
-      <p className="mb-2 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)">{a.hint}</p>
+    <div className="mx-2.5 mb-2 mt-1 border-t border-(--ui-stroke-tertiary) pt-2.5" data-slot="autopilot">
+      <p className="text-ui-xs font-medium text-fg">{a.heading(name)}</p>
+      <p className="mb-2 text-ui-2xs leading-snug text-fg-muted">{a.hint}</p>
       <div className="flex flex-wrap gap-1">
         {presets.map(({ id, label, preset }) => (
           <Button key={id} onClick={() => onPick(preset)} size="xs" variant="secondary">
@@ -418,7 +419,7 @@ export function MissionRail() {
               title={c.title}
             >
               {staleNotice ? (
-                <div className="mx-3 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
+                <div className="mx-3 mb-1 border-l border-(--ui-stroke-tertiary) px-2 py-1.5 text-ui-2xs text-fg-muted">
                   {staleNotice}
                 </div>
               ) : null}
@@ -483,6 +484,12 @@ export function MissionRail() {
         ) : null}
         {tab === 'bot' ? (
           <>
+            <RailSection id="profile" title={b.identity.heading}>
+              <BotIdentitySection bot={owner} key={botRosterKey(owner)} />
+            </RailSection>
+            <RailSection id="memory" title={b.memory.heading}>
+              <BotMemorySection bot={owner} key={botRosterKey(owner)} />
+            </RailSection>
             <BotCardMeta bot={owner} />
             {/* Every bot, an address: its own Telegram/Slack link as a QR, or the
                 one step that gives it one. Remote-source bots have no platforms on

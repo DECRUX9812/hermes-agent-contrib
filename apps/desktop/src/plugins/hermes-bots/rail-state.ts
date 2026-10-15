@@ -15,7 +15,7 @@ import { getPluginCtx } from './shared'
 /** The rail's collapsible sections, top to bottom. Adding a section (the F1
  *  sessions deck, a later tools panel) is one entry here plus one RailSection
  *  in mission-rail.tsx. */
-export const RAIL_SECTION_IDS = ['tasks', 'computer', 'routines'] as const
+export const RAIL_SECTION_IDS = ['profile', 'memory', 'tasks', 'computer', 'routines'] as const
 
 export type RailSectionId = (typeof RAIL_SECTION_IDS)[number]
 
