@@ -28,7 +28,9 @@ interface QueuePanelProps {
   parked: boolean
 }
 
-const entryPreview = (entry: QueuedPromptEntry, c: Translations['composer']) =>
+/** The one-line label for a queued turn — shared with the composer's pill bar,
+ *  which must never show a different preview than the drawer. */
+export const queuedEntryPreview = (entry: QueuedPromptEntry, c: Translations['composer']) =>
   entry.displayKind === 'hidden'
     ? c.hiddenQueued
     : (entry.displayText ?? entry.text).trim() || (entry.attachments.length > 0 ? c.attachmentOnly : c.emptyTurn)
@@ -97,7 +99,7 @@ export function QueuePanel({
         // Steer only surfaces where it can actually deliver: a live turn to
         // redirect and an entry the redirect can carry (text-only, no slash).
         const canSteer = busy && Boolean(onSteerNow) && isSteerableEntry(entry)
-        const preview = entryPreview(entry, c)
+        const preview = queuedEntryPreview(entry, c)
         const canExpand = shouldOfferExpandedPreview(preview)
         const isExpanded = expandedIds.has(entry.id)
 

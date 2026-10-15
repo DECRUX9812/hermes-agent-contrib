@@ -4106,6 +4106,7 @@ export const en: Translations = {
     attach: 'Attach',
     queued: count => `${count} Queued`,
     queuedPaused: count => `${count} Queued — paused`,
+    queuedPillFolded: 'queued turns',
     attachmentOnly: 'Attachment-only turn',
     emptyTurn: 'Empty turn',
     hiddenQueued: 'Setup note',

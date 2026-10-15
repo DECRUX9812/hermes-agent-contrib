@@ -4421,6 +4421,7 @@ export const deOverrides = {
     attach: 'Anhängen',
     queued: count => `${count} eingereiht`,
     queuedPaused: count => `${count} eingereiht — pausiert`,
+    queuedPillFolded: 'eingereiht',
     attachmentOnly: 'Nur-Anhang-Turn',
     emptyTurn: 'Leerer Turn',
     hiddenQueued: 'Einrichtungshinweis',

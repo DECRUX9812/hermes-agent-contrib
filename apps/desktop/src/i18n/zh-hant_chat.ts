@@ -169,6 +169,7 @@ export const zhHantChat = {
     attach: '附加',
     queued: count => `${count} 個排隊中`,
     queuedPaused: count => `${count} 個排隊中 — 已暫停`,
+    queuedPillFolded: '個排隊中',
     attachmentOnly: '僅附件回合',
     emptyTurn: '空回合',
     attachments: count => `${count} 個附件`,

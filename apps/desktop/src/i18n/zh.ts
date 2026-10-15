@@ -3929,6 +3929,7 @@ export const zhOverrides = {
     attach: '附加',
     queued: count => `${count} 条排队`,
     queuedPaused: count => `${count} 条排队 — 已暂停`,
+    queuedPillFolded: '条排队',
     attachmentOnly: '仅附件回合',
     emptyTurn: '空回合',
     attachments: count => `${count} 个附件`,

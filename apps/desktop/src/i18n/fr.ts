@@ -4429,6 +4429,7 @@ export const frOverrides = {
     attach: 'Attacher',
     queued: count => `${count} en file d'attente`,
     queuedPaused: count => `${count} en file d'attente — en pause`,
+    queuedPillFolded: 'en file d’attente',
     attachmentOnly: 'Tour avec seulement des pièces jointes',
     emptyTurn: 'Tour vide',
     hiddenQueued: 'Note de configuration',

@@ -147,6 +147,7 @@ export const arChat = {
     urlHintPre: 'سيقرأ Hermes الرابط ضمن السياق.',
     attach: 'إرفاق',
     queued: count => `${count} في الطابور`,
+    queuedPillFolded: 'في الطابور',
     attachmentOnly: 'إرفاق فقط',
     emptyTurn: 'اكتب رسالة أو أرفق ملفا.',
     attachments: count => `${count} مرفق`,
