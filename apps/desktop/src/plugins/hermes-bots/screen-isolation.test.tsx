@@ -1,15 +1,19 @@
+import type * as HermesSdk from '@hermes/plugin-sdk'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, fireEvent, render, renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 import type { RosterRow } from './types'
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@hermes/plugin-sdk', async importOriginal => {
+  const sdk = await importOriginal<typeof HermesSdk>()
   const { useStore } = await import('@nanostores/react')
   const { atom } = await import('nanostores')
   const { onGatewayEvent } = await import('../../contrib/events')
 
   return {
+    ...sdk,
     atom,
     coarseElapsed: () => ({ unit: 'm' as const, value: 0 }),
     Button: ({ children, ...props }: { children?: ReactNode } & Record<string, unknown>) => (
@@ -26,10 +30,13 @@ vi.mock('@hermes/plugin-sdk', async () => {
 vi.mock('./data', async () => {
   const { atom } = await import('nanostores')
 
+  const rosterKey = (bot: RosterRow) =>
+    bot.sourceScoped || bot.remoteSource ? `${bot.connectionId}::${bot.name}` : bot.name
+
   return {
     $lastRoster: atom<RosterRow[]>([]),
-    botSelectionKey: (bot: RosterRow) =>
-      bot.sourceScoped || bot.remoteSource ? `${bot.connectionId}::${bot.name}` : bot.name
+    botRosterKey: rosterKey,
+    botSelectionKey: rosterKey
   }
 })
 vi.mock('./i18n', () => ({
@@ -62,6 +69,22 @@ vi.mock('./i18n', () => ({
       handBack: 'Hand back',
       handBackForce: 'Force hand back',
       handBackForceHint: 'Another window holds control'
+    },
+    computer: {
+      todoStatus: { cancelled: 'Cancelled', completed: 'Completed', inProgress: 'In progress', pending: 'Pending' },
+      title: 'Computer history',
+      history: 'What it did',
+      steps: 'Computer steps',
+      replay: 'Replay history',
+      previousStep: 'Previous step',
+      nextStep: 'Next step',
+      live: 'Live',
+      taskChecklist: 'Task checklist',
+      noCanonicalChat: 'No canonical chat',
+      loading: 'Loading history',
+      loadFailed: 'Load failed',
+      retry: 'Retry',
+      empty: 'No steps'
     }
   })
 }))
@@ -82,6 +105,28 @@ import { $screenState, setScreenStatus } from './screen-state'
 
 const botA: RosterRow = { name: 'default', sourceScoped: true, connectionId: 'host-a', connectionKind: 'remote' }
 const botB: RosterRow = { ...botA, connectionId: 'host-b' }
+
+/** The panel mounts the computer timeline, whose query hook needs the app's
+ *  QueryClient ancestor — the same ancestor the real shell provides. */
+function renderPanel(bot: RosterRow) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+  const view = render(
+    <QueryClientProvider client={client}>
+      <BotComputerPanel bot={bot} />
+    </QueryClientProvider>
+  )
+
+  return {
+    ...view,
+    rerenderPanel: (next: RosterRow) =>
+      view.rerender(
+        <QueryClientProvider client={client}>
+          <BotComputerPanel bot={next} />
+        </QueryClientProvider>
+      )
+  }
+}
 
 const status: DisplayStatus = {
   profile: 'default',
@@ -162,11 +207,11 @@ it.each(['pending', 'rejected'])('never displays host A pixels under host B whil
   vi.mocked(host.requestProfile)
     .mockResolvedValueOnce({ data_url: 'data:image/jpeg;base64,HOST_A' })
     .mockImplementationOnce(() => (state === 'pending' ? new Promise(() => {}) : Promise.reject(new Error('offline'))))
-  const view = render(<BotComputerPanel bot={botA} />)
+  const view = renderPanel(botA)
   await act(async () => {})
   expect(view.container.querySelector('img')?.getAttribute('src')).toContain('HOST_A')
 
-  view.rerender(<BotComputerPanel bot={botB} />)
+  view.rerenderPanel(botB)
   await act(async () => {})
   expect(view.container.querySelector('img')).toBeNull()
   view.unmount()
@@ -186,8 +231,8 @@ it('discards a late thumbnail from the previous owner and retains a same-owner f
     )
     .mockResolvedValueOnce({ data_url: 'data:image/jpeg;base64,HOST_B' })
     .mockRejectedValue(new Error('offline'))
-  const view = render(<BotComputerPanel bot={botA} />)
-  view.rerender(<BotComputerPanel bot={botB} />)
+  const view = renderPanel(botA)
+  view.rerenderPanel(botB)
   await act(async () => {})
   await act(async () => {
     finishA({ data_url: 'data:image/jpeg;base64,HOST_A' })
@@ -205,7 +250,7 @@ it('captions a suppressed thumbnail as hidden-while-controlled and never ages it
   vi.useFakeTimers()
   setScreenStatus(botA, status)
   vi.mocked(host.requestProfile).mockResolvedValue({ data_url: null, suppressed: 'human_has_control' })
-  const view = render(<BotComputerPanel bot={botA} />)
+  const view = renderPanel(botA)
   await act(async () => {})
   expect(view.getByRole('button', { name: /^Screen/ }).getAttribute('aria-label')).toContain(
     'Hidden while someone has control'
@@ -233,7 +278,7 @@ it('settles on an older backend without display.*: portal tone is unavailable an
   expect(vi.mocked(host.requestProfile)).toHaveBeenCalledTimes(1)
   hook.unmount()
 
-  const view = render(<BotComputerPanel bot={botA} />)
+  const view = renderPanel(botA)
   await act(async () => {})
   expect(view.queryByRole('button', { name: /^Screen/ })).toBeNull()
   expect(view.container.querySelector('img')).toBeNull()

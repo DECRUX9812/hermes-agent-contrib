@@ -101,8 +101,8 @@ describe('ActivityLine working rows', () => {
     // Faces breathe inside a brand ring instead of pulsing on their own.
     expect(line.querySelectorAll('.motion-ring.text-brand')).toHaveLength(2)
     expect(line.querySelector('.motion-safe\\:animate-pulse')).toBeNull()
-    // "<Name> is working" in the speaker colour; the tool rides a shimmer.
-    expect(within(line).getByText('builder is working').getAttribute('style')).toContain('color-mix')
+    // "<Name> is working" in the muted token tone (no hardcoded colour mixes); the tool rides a shimmer.
+    expect(within(line).getByText('builder is working').classList.contains('text-fg-secondary')).toBe(true)
     expect(within(line).getByText('ops is working')).toBeTruthy()
     expect(within(line).getByText('now: Read').closest('.motion-shimmer')).toBeTruthy()
     // With no tool to name, the shimmer rides the name line instead of repeating "working".
