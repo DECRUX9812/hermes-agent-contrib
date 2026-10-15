@@ -4020,6 +4020,8 @@ export const frOverrides = {
     },
     searchAria: 'Rechercher des sessions',
     railAria: 'Navigation de l’app',
+    railPlugins: 'Plugins',
+    railPluginsHint: 'Plugins : ouvrir ou installer',
     searchPlaceholder: 'Rechercher des sessions…',
     clearSearch: 'Effacer la recherche',
     noMatch: query => `Aucune session ne correspond à « ${query} ».`,

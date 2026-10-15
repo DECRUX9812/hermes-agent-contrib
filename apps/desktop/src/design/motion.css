@@ -1,0 +1,182 @@
+/* Motion tokens and loops (DESIGN.md § Motion).
+
+   Only transform and opacity animate here, so every effect stays on the
+   compositor. Durations sit between --dur-base and --dur-slow: long enough to
+   read as movement, short enough never to hide latency. The blanket
+   reduced-motion rule in styles.css collapses all of these to one 0.01 ms
+   iteration; motion.ts mirrors that for WAAPI. */
+
+@layer base {
+  :root {
+    --dur-enter: 200ms;
+    --dur-panel: 220ms;
+    --dur-flight: 240ms;
+    --dur-ring: 1.6s;
+    --dur-shimmer: 1.8s;
+  }
+}
+
+@layer utilities {
+  /* A row that arrived while the view was open. */
+  .motion-arrive {
+    animation: motion-arrive var(--dur-enter) var(--ease-out-quint) both;
+  }
+
+  /* Panels and sheets entering from the right edge. */
+  .motion-slide-in {
+    animation: motion-slide-in var(--dur-panel) var(--ease-out-quint) both;
+  }
+
+  .motion-fade-in {
+    animation: ds-fade-in var(--dur-enter) var(--ease-out-quint) both;
+  }
+
+  /* A face that just received something (handoff landed, turn started). */
+  .motion-pop {
+    animation: motion-pop var(--dur-panel) var(--ease-spring) both;
+  }
+
+  /* Working presence: a soft ring that breathes outward from the avatar.
+     The ring is a pseudo layer so the face itself never repaints. The host
+     sets the ring colour through `color` (currentColor). */
+  .motion-ring {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .motion-ring::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 2px solid currentColor;
+    opacity: 0;
+    pointer-events: none;
+    animation: motion-ring var(--dur-ring) cubic-bezier(0.25, 0.6, 0.3, 1) infinite;
+    will-change: transform, opacity;
+  }
+
+  /* "Still going" on a line of text: a highlight band sweeps across the box.
+     The band is a translated pseudo layer, not an animated background, so the
+     text never repaints. */
+  .motion-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .motion-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in oklab, var(--color-surface, #fff) 70%, transparent) 50%,
+      transparent 100%
+    );
+    transform: translateX(-100%);
+    animation: motion-shimmer var(--dur-shimmer) linear infinite;
+    will-change: transform;
+  }
+
+  /* Expand/collapse a block in place: the grid row goes 0fr ↔ 1fr and the
+     child keeps min-height 0, so no height is ever measured in JS. */
+  .motion-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-rows var(--dur-base) var(--ease-standard),
+      opacity var(--dur-base) var(--ease-standard);
+  }
+
+  .motion-collapse[data-open='true'] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .motion-collapse > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+@keyframes motion-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes motion-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes motion-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.12);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes motion-ring {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes motion-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-ring::after,
+  .motion-shimmer::after {
+    animation: none !important;
+  }
+
+  .motion-ring::after {
+    opacity: 0.55;
+  }
+
+  .motion-shimmer::after {
+    display: none;
+  }
+}
+
+:root[data-renderer-animations-paused] :is(.motion-ring, .motion-shimmer)::after {
+  animation-play-state: paused;
+}

@@ -401,6 +401,8 @@ type BotsMessages = {
     replyInThread: string
     replyInThreadPlaceholder: string
     openThread: string
+    showMore: string
+    showLess: string
     collapseThread: string
     collapseThreadLabel: string
     activity: string
@@ -409,6 +411,9 @@ type BotsMessages = {
     hideActivity: string
     stop: string
     stopHint: string
+    stopAll: string
+    stopMember: (name: string) => string
+    stoppedMember: (name: string) => string
     allHeldStatus: (count: number) => string
     heldMembersStatus: (members: string) => string
     holdReleaseHint: string
@@ -421,8 +426,6 @@ type BotsMessages = {
     you: string
     /** How many of a room's members are reachable right now. */
     availableCount: (available: number, total: number) => string
-    /** Team-orchestrated room strip: only the org-tree lead hears the user. */
-    teamListening: (lead: string) => string
     settingsHint: (group: string) => string
     settingsLabel: (group: string) => string
     disbandHint: (group: string) => string
@@ -472,7 +475,6 @@ type BotsMessages = {
     threadWorking: (names: string) => string
     threadPeople: (names: string) => string
     threadNew: (count: number) => string
-    composerReplyingIn: (title: string) => string
     composerNewThreadTo: (name: string) => string
     composerNewThreadEveryone: string
     composerStartNew: string
@@ -480,18 +482,16 @@ type BotsMessages = {
     panelDecisions: string
     decisionsEmpty: string
     decisionQuestion: (name: string) => string
-    deskTitle: string
     deskNeedsYou: string
-    deskFloor: (count: number) => string
     viewRoom: string
     viewBoard: string
     activityLabel: string
     activityTool: (tool: string) => string
-    activityWorking: string
     handoff: {
       label: (from: string, to: string) => string
       title: string
       task: string
+      why: string
       doneWhen: string
       due: (minutes: number) => string
       declinedBecause: (why: string) => string
@@ -1283,6 +1283,8 @@ const en: BotsMessages = {
     replyInThread: 'Reply in thread',
     replyInThreadPlaceholder: 'Reply in thread…',
     openThread: 'Open this thread',
+    showMore: 'Show more',
+    showLess: 'Show less',
     collapseThread: 'Collapse thread',
     collapseThreadLabel: 'Collapse this thread',
     activity: 'Activity',
@@ -1291,6 +1293,9 @@ const en: BotsMessages = {
     hideActivity: 'Hide room activity',
     stop: 'Stop',
     stopHint: 'Stop this run — interrupts the member on turn and holds the rest',
+    stopAll: 'Stop all',
+    stopMember: name => `Stop ${name}`,
+    stoppedMember: name => `Stopped ${name} — it stays held until you resume`,
     allHeldStatus: count => `All ${count} bots are paused`,
     heldMembersStatus: members => `Paused: ${members}`,
     holdReleaseHint: 'Mention a paused bot or send @all resume to release them.',
@@ -1302,7 +1307,6 @@ const en: BotsMessages = {
     memberCount: count => `${count} bots`,
     you: 'You',
     availableCount: (available, total) => `${available} of ${total} available`,
-    teamListening: lead => `Only ${lead} is listening — @mention teammates to wake them`,
     settingsHint: group => `Group settings — rename ${group} or set a room picture`,
     settingsLabel: group => `Group settings for ${group}`,
     disbandHint: group => `Disband the ${group} group chat`,
@@ -1350,7 +1354,6 @@ const en: BotsMessages = {
     threadWorking: names => `${names} working now`,
     threadPeople: names => `With ${names}`,
     threadNew: count => `${count} new`,
-    composerReplyingIn: title => `Replying in: ${title}`,
     composerNewThreadTo: name => `New thread · ${name} answers, @mention anyone`,
     composerNewThreadEveryone: 'New thread · everyone hears it',
     composerStartNew: 'New thread',
@@ -1358,18 +1361,16 @@ const en: BotsMessages = {
     panelDecisions: 'Decisions',
     decisionsEmpty: 'Nothing waiting on you. Stalled handoffs, loops and questions land here.',
     decisionQuestion: name => `${name} asked you something`,
-    deskTitle: 'Your desk',
     deskNeedsYou: 'Needs you',
-    deskFloor: count => `${count} working`,
     viewRoom: 'Room',
     viewBoard: 'Board',
     activityLabel: 'Live activity',
     activityTool: tool => `now: ${tool}`,
-    activityWorking: 'working…',
     handoff: {
       label: (from, to) => `Handoff from ${from} to ${to}`,
       title: 'Handoff',
       task: 'Task',
+      why: 'Why',
       doneWhen: 'Done when',
       due: minutes => `due in ${minutes} min`,
       declinedBecause: why => `declined: ${why}`,
@@ -2168,6 +2169,8 @@ const ja: BotsMessages = {
     replyInThread: 'スレッドで返信',
     replyInThreadPlaceholder: 'スレッドで返信…',
     openThread: 'このスレッドを開く',
+    showMore: 'もっと見る',
+    showLess: '折りたたむ',
     collapseThread: 'スレッドを折りたたむ',
     collapseThreadLabel: 'このスレッドを折りたたむ',
     activity: 'アクティビティ',
@@ -2176,6 +2179,9 @@ const ja: BotsMessages = {
     hideActivity: '部屋のアクティビティを隠す',
     stop: '停止',
     stopHint: 'この実行を停止 — ターン中のメンバーを中断し、残りを保留します',
+    stopAll: 'すべて停止',
+    stopMember: name => `${name}を停止`,
+    stoppedMember: name => `${name}を停止しました — 再開するまで保留されます`,
     allHeldStatus: count => `すべてのボット（${count}体）が一時停止中`,
     heldMembersStatus: members => `一時停止中: ${members}`,
     holdReleaseHint: '一時停止中のボットにメンションするか、@all resume を送信して再開します。',
@@ -2187,7 +2193,6 @@ const ja: BotsMessages = {
     memberCount: count => `ボット${count}体`,
     you: 'あなた',
     availableCount: (available, total) => `${total}体中${available}体が利用可能`,
-    teamListening: lead => `聞いているのは ${lead} だけです — @メンションでチームメイトを起こします`,
     settingsHint: group => `グループ設定 — ${group}の名前変更やルーム画像の設定`,
     settingsLabel: group => `${group}のグループ設定`,
     disbandHint: group => `${group}グループチャットを解散`,
@@ -2235,7 +2240,6 @@ const ja: BotsMessages = {
     threadWorking: names => `${names} が作業中`,
     threadPeople: names => `参加: ${names}`,
     threadNew: count => `新着 ${count}件`,
-    composerReplyingIn: title => `返信先: ${title}`,
     composerNewThreadTo: name => `新しいスレッド · ${name} が応答、@メンションで指名`,
     composerNewThreadEveryone: '新しいスレッド · 全員に届きます',
     composerStartNew: '新しいスレッド',
@@ -2243,18 +2247,16 @@ const ja: BotsMessages = {
     panelDecisions: '決定',
     decisionsEmpty: 'あなた待ちの項目はありません。止まった引き継ぎ、ループ、質問がここに届きます。',
     decisionQuestion: name => `${name} から質問があります`,
-    deskTitle: 'あなたのデスク',
     deskNeedsYou: '要対応',
-    deskFloor: count => `${count} 件作業中`,
     viewRoom: 'ルーム',
     viewBoard: 'ボード',
     activityLabel: 'ライブアクティビティ',
     activityTool: tool => `現在: ${tool}`,
-    activityWorking: '作業中…',
     handoff: {
       label: (from, to) => `${from} から ${to} への引き継ぎ`,
       title: '引き継ぎ',
       task: 'タスク',
+      why: '理由',
       doneWhen: '完了条件',
       due: minutes => `期限 ${minutes} 分`,
       declinedBecause: why => `辞退: ${why}`,
@@ -3036,6 +3038,8 @@ const zh: BotsMessages = {
     replyInThread: '在帖子中回复',
     replyInThreadPlaceholder: '在帖子中回复…',
     openThread: '打开此帖子',
+    showMore: '显示更多',
+    showLess: '收起',
     collapseThread: '收起帖子',
     collapseThreadLabel: '收起此帖子',
     activity: '活动',
@@ -3044,6 +3048,9 @@ const zh: BotsMessages = {
     hideActivity: '隐藏房间活动',
     stop: '停止',
     stopHint: '停止本次运行 — 中断当前回合的成员，并暂停其余成员',
+    stopAll: '全部停止',
+    stopMember: name => `停止${name}`,
+    stoppedMember: name => `已停止${name}——在你恢复之前它将保持暂停`,
     allHeldStatus: count => `全部 ${count} 个机器人已暂停`,
     heldMembersStatus: members => `已暂停：${members}`,
     holdReleaseHint: '提及已暂停的机器人，或发送 @all resume 以恢复它们。',
@@ -3054,7 +3061,6 @@ const zh: BotsMessages = {
     memberCount: count => `${count} 个机器人`,
     you: '你',
     availableCount: (available, total) => `${total} 个中 ${available} 个可用`,
-    teamListening: lead => `只有 ${lead} 在听 — @提及队友即可唤醒它们`,
     settingsHint: group => `群聊设置 — 重命名 ${group} 或设置房间图片`,
     settingsLabel: group => `${group} 的群聊设置`,
     disbandHint: group => `解散 ${group} 群聊`,
@@ -3102,7 +3108,6 @@ const zh: BotsMessages = {
     threadWorking: names => `${names} 正在工作`,
     threadPeople: names => `参与：${names}`,
     threadNew: count => `${count} 条新消息`,
-    composerReplyingIn: title => `回复：${title}`,
     composerNewThreadTo: name => `新话题 · 由 ${name} 回答，@提及 指定成员`,
     composerNewThreadEveryone: '新话题 · 所有人都能收到',
     composerStartNew: '新话题',
@@ -3110,18 +3115,16 @@ const zh: BotsMessages = {
     panelDecisions: '决策',
     decisionsEmpty: '没有等你处理的事。停滞的交接、循环和提问会出现在这里。',
     decisionQuestion: name => `${name} 向你提了问题`,
-    deskTitle: '你的工作台',
     deskNeedsYou: '需要你',
-    deskFloor: count => `${count} 个在工作`,
     viewRoom: '房间',
     viewBoard: '看板',
     activityLabel: '实时动态',
     activityTool: tool => `当前：${tool}`,
-    activityWorking: '工作中…',
     handoff: {
       label: (from, to) => `${from} 交接给 ${to}`,
       title: '交接',
       task: '任务',
+      why: '原因',
       doneWhen: '完成标准',
       due: minutes => `${minutes} 分钟内`,
       declinedBecause: why => `已拒绝：${why}`,
@@ -3898,6 +3901,8 @@ const zhHant: BotsMessages = {
     replyInThread: '在討論串中回覆',
     replyInThreadPlaceholder: '在討論串中回覆…',
     openThread: '開啟此討論串',
+    showMore: '顯示更多',
+    showLess: '收合',
     collapseThread: '收合討論串',
     collapseThreadLabel: '收合此討論串',
     activity: '活動',
@@ -3906,6 +3911,9 @@ const zhHant: BotsMessages = {
     hideActivity: '隱藏房間活動',
     stop: '停止',
     stopHint: '停止本次執行 — 中斷目前回合的成員，並暫停其餘成員',
+    stopAll: '全部停止',
+    stopMember: name => `停止${name}`,
+    stoppedMember: name => `已停止${name}——在你恢復之前它將保持暫停`,
     allHeldStatus: count => `全部 ${count} 個機器人已暫停`,
     heldMembersStatus: members => `已暫停：${members}`,
     holdReleaseHint: '提及已暫停的機器人，或傳送 @all resume 以恢復它們。',
@@ -3916,7 +3924,6 @@ const zhHant: BotsMessages = {
     memberCount: count => `${count} 個機器人`,
     you: '您',
     availableCount: (available, total) => `${total} 個中 ${available} 個可用`,
-    teamListening: lead => `只有 ${lead} 在聽 — @提及隊友即可喚醒它們`,
     settingsHint: group => `群組設定 — 重新命名 ${group} 或設定房間圖片`,
     settingsLabel: group => `${group} 的群組設定`,
     disbandHint: group => `解散 ${group} 群組聊天`,
@@ -3964,7 +3971,6 @@ const zhHant: BotsMessages = {
     threadWorking: names => `${names} 正在工作`,
     threadPeople: names => `參與：${names}`,
     threadNew: count => `${count} 則新訊息`,
-    composerReplyingIn: title => `回覆：${title}`,
     composerNewThreadTo: name => `新話題 · 由 ${name} 回答，@提及 指定成員`,
     composerNewThreadEveryone: '新話題 · 所有人都會收到',
     composerStartNew: '新話題',
@@ -3972,18 +3978,16 @@ const zhHant: BotsMessages = {
     panelDecisions: '決策',
     decisionsEmpty: '沒有等你處理的事。停滯的交接、循環和提問會出現在這裡。',
     decisionQuestion: name => `${name} 向你提了問題`,
-    deskTitle: '你的工作台',
     deskNeedsYou: '需要你',
-    deskFloor: count => `${count} 個在工作`,
     viewRoom: '房間',
     viewBoard: '看板',
     activityLabel: '即時動態',
     activityTool: tool => `目前：${tool}`,
-    activityWorking: '工作中…',
     handoff: {
       label: (from, to) => `${from} 交接給 ${to}`,
       title: '交接',
       task: '任務',
+      why: '原因',
       doneWhen: '完成標準',
       due: minutes => `${minutes} 分鐘內`,
       declinedBecause: why => `已拒絕：${why}`,

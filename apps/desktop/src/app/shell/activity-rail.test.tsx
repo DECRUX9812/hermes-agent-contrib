@@ -1,24 +1,42 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { type AppView, SIDEBAR_NAV_AREA, type SidebarNavContribution } from '@/app/routes'
 import { registry } from '@/contrib/registry'
 import { I18nProvider } from '@/i18n'
-import { $interfaceMode } from '@/store/interface-mode'
-
-import { SIDEBAR_NAV_AREA, type SidebarNavContribution } from '../routes'
+import { type InterfaceMode, setInterfaceMode } from '@/store/interface-mode'
+import { $pluginInstallRequest } from '@/store/plugin-install-request'
+import { SIDEBAR_NAV_PREFS_AREA } from '@/store/sidebar-nav'
 
 import { ActivityRail } from './activity-rail'
 
-function renderRail() {
-  return render(
-    <MemoryRouter initialEntries={['/']}>
+const KANBAN_ID = 'kanban:nav'
+
+let location = { pathname: '', search: '' }
+
+function LocationProbe() {
+  location = useLocation()
+
+  return null
+}
+
+function renderRail(opts: { mode: InterfaceMode; currentView?: AppView; path?: string }) {
+  const onNavigate = vi.fn()
+
+  setInterfaceMode(opts.mode)
+
+  render(
+    <MemoryRouter initialEntries={[opts.path ?? '/']}>
       <I18nProvider configClient={null} initialLocale="en">
-        <ActivityRail currentView="chat" onNavigate={() => {}} />
+        <LocationProbe />
+        <ActivityRail currentView={opts.currentView ?? 'chat'} onNavigate={onNavigate} />
       </I18nProvider>
     </MemoryRouter>
   )
+
+  return { onNavigate }
 }
 
 const railButton = (name: string) => screen.queryByRole('button', { name })
@@ -36,7 +54,7 @@ describe('ActivityRail plugin pages', () => {
           path: '/kanban',
           tier: 'advanced'
         } satisfies SidebarNavContribution,
-        id: 'kanban:nav'
+        id: KANBAN_ID
       },
       {
         area: SIDEBAR_NAV_AREA,
@@ -48,13 +66,13 @@ describe('ActivityRail plugin pages', () => {
 
   afterEach(() => {
     dispose()
+    $pluginInstallRequest.set(null)
+    setInterfaceMode('advanced')
     cleanup()
-    $interfaceMode.set('advanced')
   })
 
   it('puts every plugin page on the Advanced rail beside the built-in pages', () => {
-    $interfaceMode.set('advanced')
-    renderRail()
+    renderRail({ mode: 'advanced' })
 
     expect(railButton('Kanban')).not.toBeNull()
     expect(railButton('Standup')).not.toBeNull()
@@ -62,11 +80,62 @@ describe('ActivityRail plugin pages', () => {
   })
 
   it('keeps an untiered plugin page on the Simple rail and leaves Advanced-tier pages off', () => {
-    $interfaceMode.set('simple')
-    renderRail()
+    renderRail({ mode: 'simple' })
 
     expect(railButton('Standup')).not.toBeNull()
     expect(railButton('Kanban')).toBeNull()
     expect(railButton('Capabilities')).toBeNull()
+  })
+
+  it('navigates to the plugin row it was clicked on', () => {
+    const { onNavigate } = renderRail({ mode: 'advanced' })
+
+    fireEvent.click(railButton('Kanban')!)
+
+    expect(onNavigate).toHaveBeenCalledWith(expect.objectContaining({ id: KANBAN_ID, route: '/kanban' }))
+  })
+
+  it('marks the plugin row active while its route is on screen', () => {
+    renderRail({ mode: 'advanced', path: '/kanban', currentView: 'extension' })
+
+    expect(railButton('Kanban')?.getAttribute('aria-current')).toBe('page')
+  })
+
+  it('hides a plugin row the user removed through nav preferences', () => {
+    const disposePrefs = registry.register({
+      area: SIDEBAR_NAV_PREFS_AREA,
+      data: { hide: [KANBAN_ID] },
+      id: 'test-prefs'
+    })
+
+    renderRail({ mode: 'advanced' })
+
+    expect(railButton('Kanban')).toBeNull()
+
+    disposePrefs()
+  })
+
+  it('opens the capabilities plugins tab from the Plugins door', () => {
+    renderRail({ mode: 'simple' })
+
+    fireEvent.click(railButton('Plugins')!)
+
+    expect(location.pathname).toBe('/capabilities')
+    expect(location.search).toBe('?tab=plugins')
+  })
+
+  it('marks the Plugins door active on the capabilities plugins tab, not the Capabilities page', () => {
+    renderRail({ mode: 'advanced', path: '/capabilities?tab=plugins', currentView: 'capabilities' })
+
+    expect(railButton('Plugins')?.getAttribute('aria-current')).toBe('page')
+    expect(railButton('Capabilities')?.getAttribute('aria-current')).toBeNull()
+  })
+
+  it('opens the install request from the Plugins door on right-click', () => {
+    renderRail({ mode: 'simple' })
+
+    fireEvent.contextMenu(railButton('Plugins')!)
+
+    expect($pluginInstallRequest.get()).toEqual({ profile: null, repo: '' })
   })
 })

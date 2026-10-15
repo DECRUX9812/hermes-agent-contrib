@@ -152,7 +152,9 @@ it('groups consecutive same-speaker entries under one header, breaking on thread
   render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
 
   const names = (want: string) =>
-    screen.getAllByRole('button').filter(el => (el.textContent || '').trim().toLowerCase() === want)
+    within(screen.getByTestId('group-room-log'))
+      .getAllByRole('button')
+      .filter(el => (el.textContent || '').trim().toLowerCase() === want)
 
   // builder: m1+m2 share one header; m3's thread change re-breaks the run.
   expect(names('builder')).toHaveLength(2)
@@ -283,7 +285,7 @@ it('keeps the room header to navigation and settings — no one-click delete bes
   // Destructive disband moved into Group settings (mocked to null here).
   expect(screen.queryByRole('button', { name: /disband|delete/i })).toBeNull()
   // One members entry point (the face pile), not two.
-  expect(screen.getAllByRole('button', { name: 'Manage group members' })).toHaveLength(1)
+  expect(screen.getAllByRole('button', { name: /^(Show|Hide) members$/ })).toHaveLength(1)
 })
 
 it('leaves a reader in history when a reply lands, and offers a jump back with the unseen count', async () => {
@@ -325,7 +327,7 @@ it('shows each voice’s role and lights the face of whoever is working right no
   const log = [{ id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'on it', at: 1 }]
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {}, running: true, turn: { name: 'builder' } } } as never)
 
-  const { container } = render(
+  render(
     <GroupChatWorkspace
       group="Room"
       members={[{ name: 'builder', title: 'Frontend engineer' }, { name: 'reviewer' }] as never}
@@ -334,14 +336,12 @@ it('shows each voice’s role and lights the face of whoever is working right no
 
   expect(screen.getByTestId('group-speaker-role').textContent).toBe('Frontend engineer')
   // Only the bot mid-turn wears the working ring in the header's face pile.
-  expect(container.querySelectorAll('[data-working]')).toHaveLength(1)
-  // ...and the ring is a growing halo, not an opacity fade nobody can see.
-  expect(container.querySelectorAll('[data-testid="group-working-halo"]')).toHaveLength(1)
-  // The same fact is spelled out next to the faces, so it needs no hunting.
-  expect(screen.getByTestId('group-working-chip').textContent).toContain('Frontend engineer')
+  const pile = screen.getByRole('button', { name: /^(Show|Hide) members$/ })
+  expect(pile.querySelectorAll('[data-working]')).toHaveLength(1)
+  expect(pile.querySelector('[data-working]')?.classList).toContain('motion-ring')
 })
 
-it('runs the room as threads: the rail focuses one, its header says where it stands, the composer replies in it', async () => {
+it('runs the room as threads: the rail opens one beside the room, with its own header and reply box', async () => {
   Element.prototype.scrollIntoView = vi.fn()
   const { $groupChats } = await import('./group-chat')
   const { GroupChatWorkspace } = await import('./group-chat-view')
@@ -357,21 +357,24 @@ it('runs the room as threads: the rail focuses one, its header says where it sta
 
   // The team panel sits beside the room with the squad in it.
   expect(screen.getByTestId('group-room-panel')).toBeTruthy()
-  expect(screen.getAllByRole('button', { name: /^Ask builder/i })).toHaveLength(1)
+  expect(screen.getByRole('button', { name: 'Builder, details' })).toBeTruthy()
 
-  // Rail → one thread on screen; the other thread's ask leaves the log.
+  // Rail → the thread opens beside the room; the room keeps every thread.
   const rail = screen.getByTestId('group-thread-rail')
   fireEvent.click(within(rail).getByText('fix the header'))
-  const logView = screen.getByTestId('group-room-log')
-  expect(logView.textContent).toContain('fixed')
-  expect(logView.textContent).not.toContain('theme plugin next')
-  expect(screen.getByTestId('group-thread-header').textContent).toContain('Answered')
-  expect(screen.getByTestId('group-composer-context').textContent).toContain('Replying in: fix the header')
-
-  // Back to All: the whole arrival-ordered room again, composer on a new thread.
-  fireEvent.click(within(rail).getByText('All activity'))
   expect(screen.getByTestId('group-room-log').textContent).toContain('theme plugin next')
-  expect(screen.queryByTestId('group-thread-header')).toBeNull()
+  const panel = screen.getByTestId('group-thread-panel')
+  expect(within(panel).getByTestId('group-thread-log').textContent).toContain('fixed')
+  expect(within(panel).getByTestId('group-thread-log').textContent).not.toContain('theme plugin next')
+  expect(within(panel).getByTestId('group-thread-header').textContent).toContain('Answered')
+  expect(within(panel).getByLabelText('Reply in thread')).toBeTruthy()
+  // The main composer keeps starting new threads.
+  expect(screen.getByTestId('group-composer-context').textContent).toContain('New thread')
+
+  // Back to All closes the thread and the members panel returns.
+  fireEvent.click(within(rail).getByText('All activity'))
+  expect(screen.queryByTestId('group-thread-panel')).toBeNull()
+  expect(screen.getByTestId('group-room-panel')).toBeTruthy()
 })
 
 it('nudges only what arrived while you were elsewhere: a rail badge for a grown thread, cleared by opening it', async () => {
@@ -431,16 +434,15 @@ it('Escape leaves the thread but keeps the typed reply', async () => {
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
   render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
-  // Open the thread: the ONE bottom composer now replies in it.
+  // Open the thread: its panel brings its own reply box.
   fireEvent.click(screen.getByRole('button', { name: /Open this thread/ }))
   const box = screen.getByLabelText('Reply in thread') as HTMLTextAreaElement
   fireEvent.change(box, { target: { value: 'one more thing' } })
-  expect(screen.getByTestId('group-composer-context').textContent).toContain('Replying in: fix the header')
 
-  // Escape leaves the thread (the composer starts a new one again)...
+  // Escape closes the thread panel; the main composer was never retargeted...
   fireEvent.keyDown(box, { key: 'Escape' })
   expect(screen.queryByLabelText('Reply in thread')).toBeNull()
-  expect(screen.getByTestId('group-composer-context').textContent).not.toContain('Replying in')
+  expect(screen.queryByTestId('group-thread-panel')).toBeNull()
 
   // ...and the draft survives, so reopening shows the half-typed reply.
   fireEvent.click(screen.getByRole('button', { name: /Open this thread/ }))
@@ -529,6 +531,11 @@ it('runs the Command Room: handoff cards, a stalled handoff escalated with a wor
   )
 
   // The handoff line reads as a contract card, still waiting for pickup…
+  // The handoff is a chip until expanded; the protocol line stays hidden
+  // from the message text because the chip already says it.
+  expect(screen.queryByTestId('group-handoff-card')).toBeNull()
+  fireEvent.click(screen.getByTestId('group-event-chip'))
+
   const card = screen.getByTestId('group-handoff-card')
   expect(card.textContent).toContain('check contrast')
   expect(card.textContent).toContain('names readable')
@@ -614,6 +621,7 @@ it('catches the CEO up, moves by keyboard, counts handoff clocks down, and alert
 
   // The accepted handoff was due 25 minutes ago: its clock says so.
   fireEvent.keyDown(logView, { key: 'Escape' })
+  fireEvent.click(screen.getByTestId('group-event-chip'))
   expect(screen.getByTestId('group-handoff-card').textContent).toContain('overdue 25 min')
 
   // A NEW stalled handoff toasts the user; the ones present at open never did.

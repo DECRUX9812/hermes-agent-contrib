@@ -306,4 +306,21 @@ describe('feed shape', () => {
     expect(feed(room, 'Volatile').length).toBeGreaterThan(0)
     expect([...room.gateway.storage.keys()]).not.toContain('group-activity')
   })
+
+  it('a per-member stop reads as "Stopped <Name>" with the stop glyph', async () => {
+    const room = await loadRoom()
+    room.chat.updateGroupChat('Cap', current => {
+      current.log = []
+      current.members = MEMBERS
+
+      return current
+    })
+
+    room.activity.recordGroupActivity('Cap', { kind: 'member-stopped', member: 'builder' })
+
+    const events = feed(room, 'Cap')
+
+    expect(room.activity.groupActivityLabel(events[events.length - 1], 'Cap')).toBe('Stopped builder')
+    expect(room.activity.GROUP_ACTIVITY_GLYPHS['member-stopped']).toBe('debug-stop')
+  })
 })

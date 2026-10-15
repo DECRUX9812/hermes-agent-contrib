@@ -154,6 +154,12 @@ export function groupActivityLabel(event: GroupActivityEntry, group?: null | str
     return axis ? `paused at the ${axis} cap — send a message to keep going` : base
   }
 
+  if (kind === 'member-stopped') {
+    const who = event?.member === 'You' ? 'You' : groupSpeakerLabel(event?.member || 'A bot', group)
+
+    return `Stopped ${who}`
+  }
+
   const who = event?.member === 'You' ? 'You' : groupSpeakerLabel(event?.member || 'A bot', group)
   const reason = kind === 'failed' ? String(event?.reason || '').trim() : ''
 
@@ -177,6 +183,7 @@ const GROUP_ACTIVITY_LABELS: Record<GroupActivityKind, string> = {
   safety: 'safety brake stopped a runaway turn',
   delivered: 'delivered a late reply',
   held: 'is held (stopped by you) — @mention it or say resume to release',
+  'member-stopped': 'stopped by you — held until resumed',
   stopped: 'stopped the room — remaining turns are held until resumed'
 }
 
@@ -201,6 +208,7 @@ export const GROUP_ACTIVITY_GLYPHS: Record<GroupActivityKind, string> = {
   safety: 'debug-stop',
   delivered: 'mail-read',
   held: 'debug-pause',
+  'member-stopped': 'debug-stop',
   stopped: 'debug-stop'
 }
 

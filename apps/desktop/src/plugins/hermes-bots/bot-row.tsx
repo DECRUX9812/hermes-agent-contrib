@@ -1,26 +1,16 @@
 /**
- * The two rows the Bots rail lists: one bot, and one group chat.
+ * The bot row the Bots rail lists: one bot.
  *
- * Rows only. Both take their bot or room and their context-menu callbacks as
- * props and own no roster state, so the pane above them decides what to list
- * and the row decides only how it reads.
+ * Rows only. It takes its bot and its context-menu callbacks as props and
+ * owns no roster state, so the pane above decides what to list and the row
+ * decides only how it reads. Group rooms live in `group-row.tsx`.
  */
 
 import {
   $watchedSessionKeys,
-  Badge,
   cn,
   Codicon,
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
   GlyphSpinner,
-  haptic,
   host,
   isWatchedSessionId,
   RowButton,
@@ -35,11 +25,8 @@ import { isBackfilledFacePng } from './avatar-image'
 import { BotRowMenu } from './bot-menu'
 import { $botChatFocused, $focusedBotOwner, $pendingBotOpen, $selectedRosterKey, focusedRosterOwner } from './bot-state'
 import { $botMeta, botActivitySession, botAttentionHint, botHandle, botRosterKey, botSourceStatus } from './data'
-import { $groupChats, $groupChatWorkspace, groupChatRoomKey } from './group-chat'
-import { groupLastActivity } from './group-membership'
-import { toggleGroupChatPinned } from './group-pin'
+import { $groupChatWorkspace } from './group-chat'
 import { $activeGroupMemberKeys } from './group-presence'
-import { $groupReadAt, groupLastRoundSummary, groupUnreadCount } from './group-unread'
 import { isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
 import { botRole, cleanPreviewLine, displayName } from './labels'
@@ -59,15 +46,8 @@ import {
   workerActiveAt
 } from './row-helpers'
 import { stopBotTurn } from './run-controls'
-import type { GroupMember, RosterRow } from './types'
-import {
-  $botSections,
-  $draggingBot,
-  BOT_DRAG_MIME,
-  groupChatSectionId,
-  groupDragKey,
-  moveGroupChatsToSection
-} from './user-sections'
+import type { RosterRow } from './types'
+import { $draggingBot, BOT_DRAG_MIME } from './user-sections'
 
 // ── bot row ──────────────────────────────────────────────────────────────────
 
@@ -428,206 +408,5 @@ export function BotRow({
     >
       {row}
     </BotRowMenu>
-  )
-}
-
-/** One group chat as one quiet roster row. The room owns one visual identity;
- *  member details stay in its tooltip and workspace instead of competing
- *  with bot avatars in the narrow sidebar. */
-interface GroupRowProps {
-  active: boolean
-  group: string
-  members: GroupMember[]
-  needsYou: boolean
-  onDisband: (room: { members: GroupMember[]; name: string }) => void
-  /** Opens the New section dialog; the group is filed into it on create. */
-  onNewSection: (group: string) => void
-  onOpen: (group: string) => void
-}
-
-export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSection }: GroupRowProps) {
-  const { t } = useI18n()
-  const b = useBots()
-  const rooms = useValue($groupChats)
-  const sections = useValue($botSections)
-  const currentSectionId = groupChatSectionId(group, rooms)
-
-  const room = rooms[group] || {
-    log: []
-  }
-
-  const log = Array.isArray(room.log) ? room.log : []
-  const last = log.length ? log[log.length - 1] : null
-  const lastAt = groupLastActivity(room)
-  const readAt = useValue($groupReadAt)[groupChatRoomKey(group, room)] || 0
-  const unread = groupUnreadCount(log, readAt)
-  const { text: roundText } = groupLastRoundSummary(room)
-  // Room previews speak the same handle vocabulary as the roster, mentions
-  // and the group prompt: the primary profile is @hermes, not @default.
-  const lastFrom = last?.from?.name || ''
-
-  const lastHandle = botHandle(
-    lastFrom || 'bot',
-    members.find(member => member?.name === lastFrom)
-  )
-
-  // The line shows CONTENT only — the speaker ("You", "@handle") moves to the
-  // hover title, so group rows read as plain prose like every other row.
-  const speaker = last?.from?.kind === 'user' ? b.group.you : `@${lastHandle}`
-  const preview = last ? cleanPreviewLine(roundText) || '…' : b.group.memberCount(members.length)
-  const previewTitle = last ? `${speaker}: ${String(roundText || '').replace(/\s+/g, ' ').trim()}` : ''
-
-  const availableMembers = members.filter(member => botSourceStatus(member).available).length
-  const availabilityLabel = b.group.availableCount(availableMembers, members.length)
-
-  // Same drag contract as a bot row, under the group's own key shape so a
-  // drop zone can tell which kind landed without decoding roster keys.
-  const dragKey = groupDragKey(group)
-  const dragging = useValue($draggingBot) === dragKey
-
-  const row = (
-    <RowButton
-      aria-label={`${group}, ${b.group.memberCount(members.length)}, ${availabilityLabel}`}
-      className={cn(
-        'flex w-full min-w-0 max-w-full items-center gap-2.5 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
-        'hover:bg-(--chrome-action-hover)',
-        active && 'bg-(--ui-row-active-background)',
-        dragging && 'opacity-40'
-      )}
-      draggable
-      onClick={() => {
-        haptic('tap')
-        onOpen(group)
-      }}
-      onDragEnd={() => $draggingBot.set(null)}
-      onDragStart={event => {
-        event.dataTransfer.setData(BOT_DRAG_MIME, dragKey)
-        event.dataTransfer.effectAllowed = 'move'
-        $draggingBot.set(dragKey)
-      }}
-    >
-      <div className="relative flex w-[34px] shrink-0 items-center justify-center">
-        {room.image ? (
-          <img
-            alt=""
-            className={cn(
-              'size-8 rounded-md object-cover ring-1 ring-(--ui-stroke-tertiary)',
-              availableMembers === 0 && 'grayscale opacity-60'
-            )}
-            src={room.image}
-          />
-        ) : (
-          <span
-            className={cn(
-              'flex size-8 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-tertiary)',
-              availableMembers === 0 && 'opacity-60'
-            )}
-          >
-            <Codicon name="organization" />
-          </span>
-        )}
-        {members.length > 0 && availableMembers < members.length ? (
-          <Tip label={availabilityLabel}>
-            <span
-              aria-label={availabilityLabel}
-              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] text-amber-600 ring-1 ring-(--ui-stroke-tertiary) dark:text-amber-300"
-            >
-              <Codicon name="debug-disconnect" />
-            </span>
-          </Tip>
-        ) : null}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium" title={group}>{group}</span>
-          {room.pinned ? (
-            <Tip label={b.roster.pinned}>
-              <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
-            </Tip>
-          ) : null}
-          {needsYou ? (
-            <Tip label={b.group.needsYourInput}>
-              <Codicon aria-label={b.roster.needsInput} className="shrink-0 text-(--ui-accent)" name="question" />
-            </Tip>
-          ) : null}
-          {unread > 0 ? (
-            <Badge aria-label={b.group.unreadCount(unread)} className="shrink-0" size="xs" variant="solid">
-              {unread > 99 ? '99+' : unread}
-            </Badge>
-          ) : null}
-          {lastAt ? (
-            <span className="shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)">
-              {rosterRowAge(lastAt, t.sidebar.row)}
-            </span>
-          ) : null}
-        </div>
-        <div className="mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)" title={previewTitle || undefined}>
-          {preview}
-        </div>
-      </div>
-    </RowButton>
-  )
-
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onSelect={() => onOpen(group)}>Open Group Chat</ContextMenuItem>
-        <ContextMenuSeparator />
-        {/* Same affordance as a bot row's pin; pinned rooms lead the roster
-            band, and the flag lives on the room record. */}
-        <ContextMenuItem
-          onSelect={() => {
-            const pinned = toggleGroupChatPinned(group)
-
-            if (pinned !== null) {
-              host.notify({ kind: 'info', message: `${group} ${pinned ? 'pinned to top' : 'unpinned'}` })
-            }
-          }}
-        >
-          {room.pinned ? 'Unpin' : 'Pin to top'}
-        </ContextMenuItem>
-        {/* Filing — the same submenu a bot row gets, driving the room-record
-            assignment instead of profile meta. */}
-        <ContextMenuSub>
-          <ContextMenuSubTrigger>{b.sections.moveTo}</ContextMenuSubTrigger>
-          <ContextMenuSubContent>
-            {sections.map(section => (
-              <ContextMenuItem
-                disabled={section.id === currentSectionId}
-                key={section.id}
-                onSelect={() => moveGroupChatsToSection([group], section.id)}
-              >
-                <Codicon className="mr-1.5" name="folder" />
-                {section.name}
-              </ContextMenuItem>
-            ))}
-            {sections.length ? <ContextMenuSeparator /> : null}
-            <ContextMenuItem onSelect={() => onNewSection(group)}>
-              <Codicon className="mr-1.5" name="new-folder" />
-              {b.sections.newSectionEllipsis}
-            </ContextMenuItem>
-            {currentSectionId ? (
-              <ContextMenuItem onSelect={() => moveGroupChatsToSection([group], null)}>
-                <Codicon className="mr-1.5" name="inbox" />
-                {b.sections.removeFromSection}
-              </ContextMenuItem>
-            ) : null}
-          </ContextMenuSubContent>
-        </ContextMenuSub>
-        <ContextMenuSeparator />
-        <ContextMenuItem
-          className="text-destructive focus:text-destructive"
-          onSelect={() =>
-            onDisband({
-              name: group,
-              members
-            })
-          }
-        >
-          {b.group.deleteAction}
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
   )
 }

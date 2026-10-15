@@ -3535,6 +3535,8 @@ export const zhOverrides = {
     },
     searchAria: '搜索会话',
     railAria: '应用导航',
+    railPlugins: '插件',
+    railPluginsHint: '插件：打开或安装',
     searchPlaceholder: '搜索会话…',
     clearSearch: '清除搜索',
     noMatch: query => `没有会话匹配"${query}"。`,

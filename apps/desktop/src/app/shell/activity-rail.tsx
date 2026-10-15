@@ -1,5 +1,14 @@
 import { useStore } from '@nanostores/react'
-import { type ComponentType, Fragment, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import {
+  type ComponentType,
+  Fragment,
+  type MouseEvent,
+  type ReactNode,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { isContributedNavItem, navItemActive, useSidebarNavItems } from '@/app/chat/sidebar/nav-items'
@@ -15,9 +24,10 @@ import { openCommandPalette } from '@/store/command-palette'
 import { $cronJobs } from '@/store/cron'
 import { recordAction } from '@/store/desktop-metrics'
 import { $sidebarOpen, setSidebarOpen } from '@/store/layout'
+import { openPluginInstallRequest } from '@/store/plugin-install-request'
 import { $newChatProfile } from '@/store/profile'
 
-import { type AppView, SETTINGS_ROUTE } from '../routes'
+import { type AppView, CAPABILITIES_ROUTE, SETTINGS_ROUTE } from '../routes'
 import type { SidebarNavItem } from '../types'
 
 import { BOTS_PANE, railActiveKey, railPageGroups, railPanelAction, SESSIONS_PANE } from './activity-rail-model'
@@ -25,11 +35,15 @@ import { TITLEBAR_HEIGHT } from './titlebar'
 
 // The icon rail at the window's left edge (Codex / VS Code activity bar, in
 // Hermes's own dress): the Nous mark as Home, the sidebar's panels, every
-// page, then search and settings. It stays when the sidebar folds, so the
-// app is never more than one click from anywhere. Pages come from the same
-// list the sidebar's nav rows use (useSidebarNavItems), already filtered to
-// the interface mode, so Simple stays calm through each row's tier and plugin
-// pages (Kanban, Studio, anything installed) keep their own group.
+// page, the Plugins door that opens the plugin manager, then search and
+// settings. It stays when the sidebar folds, so the app is never more than
+// one click from anywhere. Pages come from the same list the sidebar's nav
+// rows use (useSidebarNavItems), already filtered to the interface mode, so
+// Simple stays calm through each row's tier and plugin pages (Kanban, Studio,
+// anything installed) keep their own group.
+
+const PLUGINS_DOOR_KEY = 'plugins'
+const PLUGINS_DOOR_ROUTE = `${CAPABILITIES_ROUTE}?tab=plugins`
 
 const RAIL_BUTTON =
   'relative grid size-8 place-items-center rounded-row text-fg-muted outline-none transition-[background-color,color] duration-(--dur-fast) ease-standard [-webkit-app-region:no-drag] hover:bg-hover hover:text-fg focus-ring'
@@ -44,6 +58,7 @@ interface RailEntry {
   active: boolean
   attention?: boolean
   onPress: () => void
+  onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void
 }
 
 function RailButton({
@@ -62,6 +77,7 @@ function RailButton({
         data-active={entry.active}
         data-rail-entry={entry.key}
         onClick={entry.onPress}
+        onContextMenu={entry.onContextMenu}
         ref={el => register(entry.key, el)}
         type="button"
       >
@@ -132,7 +148,7 @@ export function ActivityRail({
   const { t } = useI18n()
   const s = t.sidebar
   const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const navItems = useSidebarNavItems()
   const sidebarOpen = useStore($sidebarOpen)
   const sessionsShown = useStore($paneVisible(SESSIONS_PANE))
@@ -144,7 +160,9 @@ export function ActivityRail({
 
   const newSession = navItems.find(item => item.id === 'new-session')
   const pages = navItems.filter(item => item.id !== 'new-session')
-  const activePage = pages.find(item => navItemActive(item, currentView, pathname))?.id ?? null
+  const onPluginsTab = currentView === 'capabilities' && new URLSearchParams(search).get('tab') === 'plugins'
+  const pageOnScreen = pages.find(item => navItemActive(item, currentView, pathname))?.id ?? null
+  const activePage = onPluginsTab ? PLUGINS_DOOR_KEY : pageOnScreen
 
   const panels = [
     { key: SESSIONS_PANE, shown: sessionsShown },
@@ -217,6 +235,19 @@ export function ActivityRail({
   }
 
   const pageGroups = railPageGroups(pages, isContributedNavItem).map(group => group.map(pageEntry))
+
+  const pluginsDoor: RailEntry = {
+    key: PLUGINS_DOOR_KEY,
+    label: s.railPluginsHint,
+    ariaLabel: s.railPlugins,
+    icon: glyph('extensions'),
+    active: activeKey === PLUGINS_DOOR_KEY,
+    onPress: () => navigate(PLUGINS_DOOR_ROUTE),
+    onContextMenu: event => {
+      event.preventDefault()
+      openPluginInstallRequest({ profile: null, repo: '' })
+    }
+  }
 
   const toolEntries: RailEntry[] = [
     {
@@ -295,6 +326,7 @@ export function ActivityRail({
             ))}
           </Fragment>
         ))}
+        <RailButton entry={pluginsDoor} register={register} />
       </div>
 
       <div className="flex shrink-0 flex-col items-center gap-1 pt-1">

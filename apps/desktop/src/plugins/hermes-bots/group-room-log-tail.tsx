@@ -22,6 +22,8 @@ export interface GroupLogTailProps {
   room: GroupChatRoom
   roomClarifies: readonly unknown[]
   roundContributions: readonly { line: string; name: string }[]
+  /** The on-turn member already paints a working row in the thread tail. */
+  turnCovered: boolean
 }
 
 export function GroupLogTail({
@@ -30,7 +32,8 @@ export function GroupLogTail({
   members,
   room,
   roomClarifies,
-  roundContributions
+  roundContributions,
+  turnCovered
 }: GroupLogTailProps) {
   const b = useBots()
 
@@ -40,7 +43,7 @@ export function GroupLogTail({
       (pure derivation over the log; no LLM call). */}
       {!focused && !room.running && roundContributions.length ? (
         <div
-          className="mt-1.5 rounded-r-md border-y border-r border-l-2 border-(--ui-stroke-secondary) border-l-(--ui-accent) bg-(--chrome-action-hover)/40 px-3 py-2"
+          className="mt-1.5 rounded-card border border-line bg-surface-raised px-4 py-3"
           data-testid="group-round-summary"
           key={'round-summary'}
         >
@@ -54,7 +57,7 @@ export function GroupLogTail({
                 : null
 
               return (
-                <li className="flex items-baseline gap-1.5 text-[0.75rem]" key={`summary:${entry.name}`}>
+                <li className="flex items-baseline gap-1.5 text-ui-xs" key={`summary:${entry.name}`}>
                   <span
                     className="shrink-0 font-medium"
                     style={{
@@ -65,15 +68,15 @@ export function GroupLogTail({
                   >
                     {summaryMember ? displayName(summaryMember, botRosterMeta(summaryMember, allMeta)) : entry.name}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-(--ui-text-tertiary)">{entry.line}</span>
+                  <span className="min-w-0 flex-1 truncate text-fg-muted">{entry.line}</span>
                 </li>
               )
             })}
           </ul>
         </div>
       ) : null}
-      {room.running ? (
-        <div className="flex items-center gap-2 px-2 pt-1 text-[0.6875rem] text-(--ui-text-quaternary)" key={'working'}>
+      {room.running && (!turnCovered || roomClarifies.length) ? (
+        <div className="flex items-center gap-2 px-2 pt-1 text-ui-2xs text-fg-muted" key={'working'}>
           {(() => {
             // Typing indicator: the thinking member's mini face, or the
             // classic three-dot pulse when the turn isn't attributable.
@@ -95,7 +98,7 @@ export function GroupLogTail({
               <span aria-hidden className="flex items-center gap-0.5 px-1 py-1">
                 {[0, 1, 2].map(dot => (
                   <span
-                    className="size-1 animate-pulse rounded-full bg-(--ui-text-tertiary)"
+                    className="size-1 animate-pulse rounded-full bg-fg-muted"
                     key={dot}
                     style={{ animationDelay: `${dot * 200}ms` }}
                   />
@@ -134,9 +137,9 @@ export function GroupRoomEmpty({
   return (
     <div className="flex flex-col items-center gap-2.5 px-6 py-10 text-center">
       {room.image ? (
-        <img alt="" className="size-11 rounded-xl object-cover ring-1 ring-(--ui-stroke-secondary)" src={room.image} />
+        <img alt="" className="size-11 rounded-xl object-cover ring-1 ring-line" src={room.image} />
       ) : (
-        <span className="flex size-11 items-center justify-center rounded-xl bg-(--chrome-action-hover) text-lg text-(--ui-text-tertiary)">
+        <span className="flex size-11 items-center justify-center rounded-xl bg-hover text-lg text-fg-muted">
           <Codicon name="organization" />
         </span>
       )}
@@ -148,7 +151,7 @@ export function GroupRoomEmpty({
 
             return (
               <span
-                className="shrink-0 overflow-hidden rounded-[22%] bg-(--ui-bg-primary) ring-1 ring-(--ui-bg-primary)"
+                className="shrink-0 overflow-hidden rounded-[22%] bg-surface ring-1 ring-surface"
                 key={`empty-face:${member.connectionId || ''}:${member.name}:${faceIndex}`}
               >
                 <BotFace
@@ -163,7 +166,7 @@ export function GroupRoomEmpty({
           })}
         </span>
       ) : null}
-      <div className="max-w-72 text-xs text-(--ui-text-tertiary)">
+      <div className="max-w-72 text-ui-xs text-fg-muted">
         {leadName ? b.group.composerPlaceholderTeam(leadName) : b.group.composerPlaceholder}
       </div>
     </div>

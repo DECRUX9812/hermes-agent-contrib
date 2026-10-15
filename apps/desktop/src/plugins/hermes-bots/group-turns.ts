@@ -11,7 +11,7 @@ import { APPROVAL_RESPOND_TIMEOUT_MS, host } from '@hermes/plugin-sdk'
 import { noteBotAttention } from './data'
 import { groupFailureReason, recordGroupActivity } from './group-activity'
 import { $groupChats, $groupClarify, appendGroupChatEntry, updateGroupChat } from './group-chat'
-import type { GroupChatRoom } from './group-chat'
+import type { GroupChatRoom, GroupHoldStamp } from './group-chat'
 import {
   failedTurnBoundaryRow,
   groupTranscriptRowText,
@@ -974,6 +974,11 @@ interface GroupTurnPollContext {
   binding: { isLive(): boolean }
   /** The in-flight marker this poll owns (see markGroupTurnInFlight). */
   turn: string
+  /** The member's hold stamp (by identity) when this turn was dispatched.
+   *  A per-member stop mints a NEW stamp without moving the epoch; the poll
+   *  settles when the stamp changes. Identity, not the stamp's clock: the
+   *  clock can stand still, and a pre-existing hold must not read as fresh. */
+  heldBefore: GroupHoldStamp | null | undefined
 }
 
 // Polls alive in THIS process, by marker token. A marker whose token is here belongs to a turn
@@ -1058,6 +1063,19 @@ async function pollGroupMemberTurn(context: GroupTurnPollContext): Promise<null 
     if ((roomDuringPoll.stoppedEpoch || 0) > dispatchEpoch) {
       clearGroupTurnMarker(context.group, member, context.turn)
 
+      return null
+    }
+
+    // A per-member stop (or a "stop @name" send) holds the member without
+    // moving the epoch, so the staleness check above never fires — but the
+    // best-effort interrupt already idled the session, and nothing new will
+    // arrive. Settle when the stop minted a NEW hold stamp; later rounds skip
+    // the held member at the boundary. Identity, not the stamp's clock: the
+    // clock can stand still while a pre-existing hold must not read as a
+    // fresh stop. The stop recorded its own activity event, so no row here.
+    const heldNow = (roomDuringPoll.holds || {})[groupMemberKey(member)]
+
+    if (heldNow && heldNow !== context.heldBefore) {
       return null
     }
 
@@ -1211,7 +1229,10 @@ async function runGroupChatMemberTurnLeased(
 
     // #91868/#94569: remember the epoch this turn was dispatched under so the
     // poll loop below can tell an explicit stop from ordinary room churn.
+    // A per-member stop mints a new hold stamp without moving the epoch, so
+    // remember the stamp OBJECT too (see heldBefore).
     const dispatchEpoch = ($groupChats.get()[group] || {}).epoch || 0
+    const heldBefore = ($groupChats.get()[group] || {}).holds?.[groupMemberKey(member)]
     recordGroupActivity(group, {
       kind: 'working',
       member: groupMemberKey(member),
@@ -1278,7 +1299,8 @@ async function runGroupChatMemberTurnLeased(
         before,
         leftover,
         binding,
-        turn
+        turn,
+        heldBefore
       })
 
       // A reply (or an explicit pass) ends the turn; null is a timeout or a dead

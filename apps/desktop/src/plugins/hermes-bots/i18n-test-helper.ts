@@ -9,11 +9,12 @@
 
 import { AUTOPILOT_LOCALES } from './autopilot-i18n'
 import { BOTS_LOCALES } from './i18n'
+import { ROOM_LOCALES } from './room-i18n'
 import { SHARE_LOCALES } from './share-i18n'
 
 /** Add-on bundles registered beside Bot Mode's own under the same plugin id;
  *  English is their only locale, so every locale falls back to it here too. */
-const ADDON_EN = { ...AUTOPILOT_LOCALES.en, ...SHARE_LOCALES.en }
+const ADDON_EN = { ...AUTOPILOT_LOCALES.en, ...ROOM_LOCALES.en, ...SHARE_LOCALES.en }
 
 /** The same resolver against another shipped locale, for a test that has to
  *  tell a catalog string from an English literal that happens to match `en`. */

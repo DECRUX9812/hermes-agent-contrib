@@ -48,6 +48,7 @@ import { $selectedBot } from './bot-state'
 import { BOT_TEMPLATE_IDS, BOT_TEMPLATES, disabledSkillNames, stagedSkillsForTemplate } from './bot-templates'
 import type { BotTemplateId } from './bot-templates'
 import { createCanonicalChat } from './canonical-chat'
+import { applyGroupTemplate, GroupRoleSelects, GroupTemplateRow, useGroupTemplateDraft } from './create-group-templates'
 import { $botMeta, botHandle, botRosterKey, filterBots, ROSTER_KEY, saveBotMeta } from './data'
 import { labeled, ResizableFrame } from './dialog-parts'
 import { GROUP_CHAT_MAX_MEMBERS, mintGroupRoomId, uniqueGroupChatName, updateGroupChat } from './group-chat'
@@ -1325,6 +1326,7 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
   const [checked, setChecked] = useState<Record<string, boolean>>({})
   const [name, setName] = useState('')
   const [image, setImage] = useState<null | string>(null)
+  const groupDraft = useGroupTemplateDraft(open)
 
   // Reset per open so a cancelled draft doesn't leak into the next one.
   useEffect(() => {
@@ -1393,6 +1395,9 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
 
       return room
     })
+
+    // Templates land after the room exists: goal, Lead listener, role labels.
+    applyGroupTemplate(groupName, groupDraft.template, selected, groupDraft.roleByKey)
     host.notify({
       kind: 'info',
       message: `“${groupName}” created with ${selected.length} bots`
@@ -1415,6 +1420,7 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
           <DialogTitle>{b.group.newTitle}</DialogTitle>
           <DialogDescription>{`Pick 2–${GROUP_CHAT_MAX_MEMBERS} bots. Local memberships sync through each Bot profile; cross-machine members stay scoped to this room.`}</DialogDescription>
         </DialogHeader>
+        <GroupTemplateRow onChange={entry => groupDraft.pickTemplate(entry, setName)} value={groupDraft.templateId} />
         <SearchField
           aria-label={b.group.searchToAdd}
           autoFocus
@@ -1450,6 +1456,13 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
             ))}
           </div>
         ) : null}
+        <GroupRoleSelects
+          allMeta={allMeta}
+          bots={selected}
+          onChange={groupDraft.assignRole}
+          roles={groupDraft.template.roles}
+          valueByKey={groupDraft.roleByKey}
+        />
         <div className="max-h-64 min-h-0 overflow-y-auto overscroll-contain">
           <div className="grid gap-0.5 pr-2">
             {visible.length ? (
@@ -1522,7 +1535,7 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
             <Input
               aria-label={b.group.nameLabel}
               maxLength={64}
-              onChange={event => setName(event.target.value)}
+              onChange={event => groupDraft.typeName(event.target.value, setName)}
               placeholder={placeholder}
               value={name}
             />

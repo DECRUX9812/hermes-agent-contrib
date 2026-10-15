@@ -41,6 +41,8 @@ export interface RoomHandoff {
   id: string
   /** Index of the log entry that carried the handoff. */
   index: number
+  /** 0-based line of the entry text the handoff was read off. */
+  line: number
   /** The receiver's answer that settled it (decline reason / delivery). */
   reply: string
   /** Log index of that answer, or -1. */
@@ -51,6 +53,8 @@ export interface RoomHandoff {
   task: string
   thread: string
   to: string
+  /** Why the work moved to this teammate ('' when the line named none). */
+  why: string
 }
 
 export interface RoomEscalation {
@@ -61,6 +65,7 @@ export interface RoomEscalation {
 const LINE = /@([a-z0-9][a-z0-9._-]*)\s+hand-?off\s*:\s*(.+)/i
 const FIELD_SPLIT = /\s+[·|;]\s+/
 const DONE_WHEN = /^done\s*when\s*:\s*/i
+const WHY = /^(why|because)\s*:\s*/i
 const DUE = /^due\s*:\s*(\d+)\s*(m|min|mins|minutes|h|hr|hrs|hours)?\b/i
 const ACCEPT = /^\(?\s*(accepted|accept|on it|taking it|got it|claimed)\b/i
 const DECLINE = /^\(?\s*(declined?|can'?t take|not mine)\b\s*[:,-]?\s*/i
@@ -87,24 +92,59 @@ function resolveHandle(handle: string, members: readonly GroupMember[]): null | 
 export function parseHandoffLine(
   text: string,
   members: readonly GroupMember[]
-): null | { doneWhen: string; dueMinutes: null | number; task: string; to: string } {
-  for (const line of String(text || '').split('\n')) {
-    const match = line.match(LINE)
-    const to = match ? resolveHandle(match[1]!, members) : null
+): null | { doneWhen: string; dueMinutes: null | number; task: string; to: string; why: string } {
+  const found = scanHandoffLines(text, members)[0]
 
-    if (!match || !to) {
-      continue
-    }
+  return found ? { doneWhen: found.doneWhen, dueMinutes: found.dueMinutes, task: found.task, to: found.to, why: found.why } : null
+}
+
+/** 0-based line of the entry text carrying its handoff, or -1 when none. */
+export function handoffLineIndex(text: string, members: readonly GroupMember[]): number {
+  return scanHandoffLines(text, members)[0]?.line ?? -1
+}
+
+/** The entry text with one 0-based line removed (the chip says it instead). */
+export function withoutTextLine(text: string, line: number): string {
+  const lines = String(text || '').split('\n')
+
+  if (line < 0 || line >= lines.length) {
+    return String(text || '')
+  }
+
+  return lines
+    .filter((_, index) => index !== line)
+    .join('\n')
+    .replace(/^\n+/, '')
+}
+
+function scanHandoffLines(
+  text: string,
+  members: readonly GroupMember[]
+): { doneWhen: string; dueMinutes: null | number; line: number; task: string; to: string; why: string }[] {
+  const out: { doneWhen: string; dueMinutes: null | number; line: number; task: string; to: string; why: string }[] = []
+
+  String(text || '')
+    .split('\n')
+    .forEach((lineText, line) => {
+      const match = lineText.match(LINE)
+      const to = match ? resolveHandle(match[1]!, members) : null
+
+      if (!match || !to) {
+        return
+      }
 
     const [task = '', ...rest] = match[2]!.split(FIELD_SPLIT).map(part => part.trim())
     let doneWhen = ''
     let dueMinutes: null | number = null
+    let why = ''
 
     for (const part of rest) {
       const due = part.match(DUE)
 
       if (DONE_WHEN.test(part)) {
         doneWhen = part.replace(DONE_WHEN, '').trim()
+      } else if (WHY.test(part)) {
+        why = part.replace(WHY, '').trim()
       } else if (due) {
         const n = Number(due[1])
         dueMinutes = /^h/i.test(due[2] || '') ? n * 60 : n
@@ -112,11 +152,11 @@ export function parseHandoffLine(
     }
 
     if (task) {
-      return { doneWhen, dueMinutes, task, to }
+      out.push({ doneWhen, dueMinutes, line, task, to, why })
     }
-  }
+    })
 
-  return null
+  return out
 }
 
 function speakerName(entry: GroupMessage): string {
@@ -137,6 +177,7 @@ export function deriveRoomHandoffs(
       return
     }
 
+    const line = handoffLineIndex(entry.text, members)
     const thread = groupThreadOf(entry)
     let status: HandoffStatus = 'open'
     let reply = ''
@@ -191,6 +232,7 @@ export function deriveRoomHandoffs(
       fromUser: entry.from?.kind === 'user',
       id: entry.id || `${thread}:${index}`,
       index,
+      line,
       reply,
       replyIndex,
       stale:
@@ -198,7 +240,8 @@ export function deriveRoomHandoffs(
       status,
       task: parsed.task,
       thread,
-      to: parsed.to
+      to: parsed.to,
+      why: parsed.why
     })
   })
 
@@ -246,10 +289,13 @@ export function roomEscalations(handoffs: readonly RoomHandoff[], log: readonly 
 // ── What the room sends (protocol words, so never translated) ──────────────
 
 /** A handoff line in the exact shape parseHandoffLine reads back. */
-export function handoffLine(tag: string, task: string, doneWhen = '', dueMinutes = 30): string {
-  return [`@${tag} handoff: ${task}`, ...(doneWhen ? [`done when: ${doneWhen}`] : []), `due: ${dueMinutes}m`].join(
-    ' · '
-  )
+export function handoffLine(tag: string, task: string, doneWhen = '', dueMinutes = 30, why = ''): string {
+  return [
+    `@${tag} handoff: ${task}`,
+    ...(why.trim() ? [`why: ${why.trim()}`] : []),
+    ...(doneWhen ? [`done when: ${doneWhen}`] : []),
+    `due: ${dueMinutes}m`
+  ].join(' · ')
 }
 
 export function nudgeLine(tag: string, task: string): string {

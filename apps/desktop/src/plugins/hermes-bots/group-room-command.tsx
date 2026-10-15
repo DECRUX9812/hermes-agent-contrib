@@ -10,7 +10,7 @@
  * conversation stays the single record of what happened.
  */
 
-import { Button, Codicon } from '@hermes/plugin-sdk'
+import { Codicon } from '@hermes/plugin-sdk'
 
 import type { GroupRoomPrompt } from './group-chat-parts'
 import { groupSessionKey } from './group-membership'
@@ -19,7 +19,7 @@ import { handoffLine, nudgeLine, type RoomEscalation, type RoomHandoff, STATUS_C
 import { decidedLine, type RoomVote } from './group-room-votes'
 import { groupReplyMentionTag, sendToGroupChat } from './group-rounds'
 import { useBots } from './i18n'
-import type { GroupMember } from './types'
+import type { BotMeta, GroupMember } from './types'
 
 export interface RoomCommands {
   /** Record a decision's outcome in its own thread. */
@@ -27,6 +27,8 @@ export interface RoomCommands {
   nudge: (handoff: RoomHandoff) => void
   reassign: (handoff: RoomHandoff, member: GroupMember) => void
   statusCheck: (thread: null | string) => void
+  /** Stop one member's turn (its row's Stop button); the room keeps running. */
+  stopMember?: (thread: string, member: GroupMember) => void
 }
 
 /** The room's actions, bound to its live seating (`seat` re-reads the roster
@@ -123,39 +125,37 @@ export function RoomShortcuts({ commands, firstTag, onHelp, onInsert, thread }: 
   const s = b.group.shortcuts
 
   const chip = (label: string, icon: string, onClick: () => void) => (
-    <Button
-      className="h-7 rounded-full px-2.5 text-[0.6875rem]"
+    <button
+      className="flex h-6 cursor-pointer items-center gap-1 rounded-pill px-2 text-ui-2xs text-fg-muted hover:bg-hover hover:text-fg"
       key={label}
       onClick={onClick}
-      size="sm"
       type="button"
-      variant="outline"
     >
       <Codicon name={icon} />
       {label}
-    </Button>
+    </button>
   )
 
   return (
-    <div className="mt-1.5 flex flex-wrap gap-1.5" data-testid="group-room-shortcuts">
+    <div className="mt-1.5 flex gap-1" data-testid="group-room-shortcuts">
       {chip(s.handoff, 'arrow-swap', () => onInsert(handoffLine(firstTag, '<task>', '<check>', 30)))}
       {chip(s.status, 'pulse', () => commands.statusCheck(thread))}
       {chip(s.decide, 'question', () => onInsert(b.group.decideTemplate))}
-      <Button
+      <button
         aria-label={b.group.keys.hint}
-        className="ml-auto h-7 rounded-full px-2.5 font-mono text-[0.6875rem]"
+        className="flex h-6 cursor-pointer items-center rounded-pill px-2 text-ui-2xs text-fg-muted hover:bg-hover hover:text-fg"
         onClick={onHelp}
-        size="sm"
         type="button"
-        variant="ghost"
       >
-        ?
-      </Button>
+        <Codicon name="keyboard" />
+      </button>
     </div>
   )
 }
 
 export interface ThreadTailProps {
+  /** Room-wide bot metadata for the working-row faces. */
+  allMeta: Record<string, BotMeta>
   commands: RoomCommands
   escalations: readonly RoomEscalation[]
   live: ReadonlyMap<string, ReadonlySet<string>>
@@ -164,11 +164,14 @@ export interface ThreadTailProps {
   onDismiss: (escalation: RoomEscalation) => void
   sessions: Readonly<Record<string, string | true>> | undefined
   thread: string
+  /** Latest 'working' activity stamp per member key, for the elapsed read. */
+  workingSince: ReadonlyMap<string, number>
 }
 
 /** A thread's live tail in the log: who is working on it now (their current
  *  tool), and anything stuck on it, with the fixes. */
 export function ThreadTail({
+  allMeta,
   commands,
   escalations,
   live,
@@ -176,19 +179,24 @@ export function ThreadTail({
   nameOf,
   onDismiss,
   sessions,
-  thread
+  thread,
+  workingSince
 }: ThreadTailProps) {
   return (
-    <>
+    <div className="flex min-w-0 flex-col gap-1">
       <ActivityLine
+        allMeta={allMeta}
+        members={members}
         nameOf={nameOf}
         names={[...(live.get(thread) ?? [])]}
+        onStop={member => commands.stopMember?.(thread, member)}
         sessionOf={name => {
           const member = members.find(m => m.name === name)
           const sid = member ? (sessions || {})[groupSessionKey(thread, member)] : null
 
           return typeof sid === 'string' ? sid : null
         }}
+        workingSince={workingSince}
       />
       {escalations
         .filter(e => e.handoff.thread === thread)
@@ -203,6 +211,6 @@ export function ThreadTail({
             onReassign={member => commands.reassign(e.handoff, member)}
           />
         ))}
-    </>
+    </div>
   )
 }
