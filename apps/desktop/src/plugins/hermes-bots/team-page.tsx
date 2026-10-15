@@ -41,10 +41,12 @@ import {
   type TeamAuditEntry,
   teamKey,
   teamsKey,
+  type TeamView,
   topLearnings,
   useTeam,
   useTeams
 } from './team'
+import { TeamBoard, TemplateCards } from './team-board-view'
 import { GoalsSection } from './team-goals'
 import { type TeamText, useTeamText } from './team-i18n'
 import { Field, OrgChart } from './team-org'
@@ -325,56 +327,18 @@ function AdvancedPanel({ t, team }: { t: TeamText; team: Team }) {
   )
 }
 
-function TeamDetail({ id, t }: { id: string; t: TeamText }) {
-  const advanced = useValue(host.state.showsAdvancedChrome)
-  const { data: view, isPending, error, refetch } = useTeam(id)
-
-  if (isPending) {
-    return <Loader />
-  }
-
-  if (error || !view) {
-    return (
-      <ErrorState className="place-items-center p-6" description={t.loadFailedBody} title={t.loadFailed}>
-        <Button onClick={() => void refetch()} size="sm" variant="secondary">
-          {t.retry}
-        </Button>
-      </ErrorState>
-    )
-  }
-
+/** Everything that must not crowd the board (DESIGN.md rule 8): approvals, the org chart,
+ *  learnings, the audit trail and the packs — one quiet column under the board. */
+function MoreSections({ advanced, t, view }: { advanced: boolean; t: TeamText; view: TeamView }) {
   const { team, tree, rollup } = view
-  const pending = pendingApprovals(team).length
-  const open = team.members.filter(m => !m.profile).length
 
   return (
-    <div className="mx-auto grid w-full max-w-4xl grid-cols-[minmax(0,1fr)] gap-6 p-4 sm:p-6" data-slot="team-detail">
+    <div className="mx-auto grid w-full max-w-4xl grid-cols-[minmax(0,1fr)] gap-6" data-slot="team-more-sections">
       <header>
-        <h2 className="text-xl font-semibold tracking-tight text-(--ui-text-primary)">{team.name}</h2>
-        {team.mission && (
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-(--ui-text-secondary)">{team.mission}</p>
-        )}
-        <div className="mt-3 flex flex-wrap items-center gap-3 text-[0.75rem] text-(--ui-text-tertiary)">
-          <span>{t.seats(team.members.length)}</span>
-          {open > 0 && <span>{t.openSeats(open)}</span>}
-          {pending > 0 && <span className="font-medium text-(--ui-accent)">{t.needsYou(pending)}</span>}
-        </div>
-        <div className="mt-3" data-slot="team-overall">
-          <div className="mb-1 flex justify-between text-[0.6875rem] text-(--ui-text-tertiary)">
-            <span>{t.overall}</span>
-            <span className="tabular-nums">
-              {rollup.overall.total
-                ? `${rollup.overall.done}/${rollup.overall.total} · ${rollup.overall.percent}%`
-                : t.goalNone}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)">
-            <div
-              className="h-full rounded-full bg-(--ui-accent) transition-[width] duration-500"
-              style={{ width: `${rollup.overall.percent}%` }}
-            />
-          </div>
-        </div>
+        <h3 className="text-sm font-semibold text-fg" data-slot="team-name">
+          {team.name}
+        </h3>
+        {team.mission && <p className="mt-1 max-w-2xl text-ui-xs leading-relaxed text-fg-muted">{team.mission}</p>}
       </header>
       <Approvals t={t} team={team} />
       <OrgChart t={t} team={team} tree={tree} />
@@ -388,6 +352,23 @@ function TeamDetail({ id, t }: { id: string; t: TeamText }) {
       )}
     </div>
   )
+}
+
+function TeamDetail({ id, t }: { id: string; t: TeamText }) {
+  const advanced = useValue(host.state.showsAdvancedChrome)
+  const { data: view, isPending, error, refetch } = useTeam(id)
+
+  if (error || (!isPending && !view)) {
+    return (
+      <ErrorState className="place-items-center p-6" description={t.loadFailedBody} title={t.loadFailed}>
+        <Button onClick={() => void refetch()} size="sm" variant="secondary">
+          {t.retry}
+        </Button>
+      </ErrorState>
+    )
+  }
+
+  return <TeamBoard more={view ? <MoreSections advanced={advanced} t={t} view={view} /> : null} t={t} teamId={id} />
 }
 
 export function TeamPage() {
@@ -444,7 +425,7 @@ export function TeamPage() {
         ) : current ? (
           <TeamDetail id={current} key={current} t={t} />
         ) : (
-          <EmptyState description={t.emptyBody} title={t.emptyTitle} />
+          <TemplateCards onApplied={teamId => $selectedTeamId.set(teamId)} t={t} />
         )}
       </div>
       <CreateTeamDialog onClose={() => setCreating(false)} open={creating} t={t} />
