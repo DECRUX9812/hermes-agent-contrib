@@ -170,4 +170,12 @@ describe('useMemberToolCards', () => {
 
     expect(result.current.map(group => group.state)).toEqual(['approval', 'running'])
   })
+
+  it('points the approval at a running file write as well', () => {
+    recordGroupToolEvent(event('tool.start', 's1', { args: { path: '/workspace/out.txt' }, name: 'write_file', tool_id: 'write-1' }))
+
+    const { result } = renderHook(() => useMemberToolCards('s1', true))
+
+    expect(result.current.map(group => group.state)).toEqual(['approval'])
+  })
 })

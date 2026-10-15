@@ -25,8 +25,6 @@ export const deToolCards: ToolCardsCopy = {
   reviewApproval: 'Prüfen',
   failed: 'Fehlgeschlagen',
   stopped: 'Abgebrochen',
-  showDetails: 'Details anzeigen',
-  hideDetails: 'Details ausblenden',
   details: {
     request: 'Anfrage',
     output: 'Ausgabe',

@@ -184,14 +184,17 @@ export function ThreadTail({
   thread,
   workingSince
 }: ThreadTailProps) {
+  const approvals = clarifies.filter(entry => entry.kind === 'approval' && (entry.thread || 'legacy') === thread)
+
   return (
     <>
       <ActivityLine
         allMeta={allMeta}
-        approvals={clarifies.filter(entry => entry.kind === 'approval' && (entry.thread || 'legacy') === thread)}
+        approvals={approvals}
         members={members}
         nameOf={nameOf}
-        names={[...(live.get(thread) ?? [])]}
+        // A member blocked on approval drops out of the live set; keep its row so Review stays reachable.
+        names={[...new Set([...(live.get(thread) ?? []), ...approvals.map(entry => entry.member)])]}
         onStop={member => commands.stopMember?.(thread, member)}
         sessionOf={name => {
           const member = members.find(m => m.name === name)

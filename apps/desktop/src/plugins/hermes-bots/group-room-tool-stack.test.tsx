@@ -2,7 +2,9 @@ import type { RpcEvent } from '@hermes/plugin-sdk'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { groupSessionKey } from './group-membership'
 import { ActivityLine } from './group-room-cards'
+import { ThreadTail } from './group-room-command'
 import { $memberToolParts, recordGroupToolEvent } from './group-room-tool-cards'
 import { groupClarifyKey } from './group-room-tool-stack'
 import { translateBots } from './i18n-test-helper'
@@ -173,5 +175,27 @@ describe('ActivityLine tool card stacks', () => {
     renderLine([])
 
     expect(screen.queryByRole('button', { name: 'Review' })).toBeNull()
+  })
+
+  it('keeps a bot blocked on approval in the thread tail so Review stays reachable', () => {
+    event('tool.start', 'builder-runtime', { name: 'terminal', tool_id: 'shell-1' })
+
+    render(
+      <ThreadTail
+        allMeta={{}}
+        clarifies={[approvalFor('builder')]}
+        commands={{} as never}
+        escalations={[]}
+        live={new Map()}
+        members={MEMBERS}
+        nameOf={name => name}
+        onDismiss={vi.fn()}
+        sessions={{ [groupSessionKey('thread-1', MEMBERS[0])]: 'builder-stored' }}
+        thread="thread-1"
+        workingSince={new Map()}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: 'Review' })).toBeTruthy()
   })
 })

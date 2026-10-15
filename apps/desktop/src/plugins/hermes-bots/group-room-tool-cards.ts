@@ -16,7 +16,7 @@ type ToolPayload = Parameters<typeof upsertToolPart>[1]
 
 const PARTS_PER_SESSION = 24
 const SESSIONS = 32
-const APPROVAL_TOOLS = new Set(['execute_code', 'terminal'])
+const APPROVAL_TOOLS = new Set(['execute_code', 'patch', 'terminal', 'write_file'])
 const NO_GROUPS: ToolCardGroup[] = []
 
 /** Tool calls per runtime session id, newest last. */
@@ -79,8 +79,11 @@ export function startGroupToolTap(): () => void {
   return () => stops.forEach(stop => stop())
 }
 
-const runningApprovalCall = (parts: readonly ToolPart[]): string | undefined =>
-  parts.findLast(part => APPROVAL_TOOLS.has(part.toolName) && part.completedAt === undefined)?.toolCallId
+function runningApprovalCall(parts: readonly ToolPart[]): string | undefined {
+  const running = parts.filter(part => part.completedAt === undefined)
+
+  return (running.findLast(part => APPROVAL_TOOLS.has(part.toolName)) ?? running.at(-1))?.toolCallId
+}
 
 export function useMemberToolCards(runtimeId: null | string, approvalPending: boolean): ToolCardGroup[] {
   const store = useValue($memberToolParts)

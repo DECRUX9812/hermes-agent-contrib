@@ -25,8 +25,6 @@ export const jaToolCards: ToolCardsCopy = {
   reviewApproval: '確認',
   failed: '失敗',
   stopped: '停止しました',
-  showDetails: '詳細を表示',
-  hideDetails: '詳細を隠す',
   details: {
     request: 'リクエスト',
     output: '出力',

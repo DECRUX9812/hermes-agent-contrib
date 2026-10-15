@@ -304,8 +304,6 @@ export const arAssistant = {
       reviewApproval: 'مراجعة',
       failed: 'فشل',
       stopped: 'توقّف',
-      showDetails: 'إظهار التفاصيل',
-      hideDetails: 'إخفاء التفاصيل',
       details: {
         request: 'الطلب',
         output: 'المخرجات',

@@ -25,8 +25,6 @@ export const ruToolCards: ToolCardsCopy = {
   reviewApproval: 'Проверить',
   failed: 'Ошибка',
   stopped: 'Остановлено',
-  showDetails: 'Показать подробности',
-  hideDetails: 'Скрыть подробности',
   details: {
     request: 'Запрос',
     output: 'Вывод',

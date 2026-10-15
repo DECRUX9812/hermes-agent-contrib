@@ -300,8 +300,6 @@ export const zhHantAssistant = {
       reviewApproval: '檢視',
       failed: '失敗',
       stopped: '已停止',
-      showDetails: '顯示詳情',
-      hideDetails: '隱藏詳情',
       details: {
         request: '請求',
         output: '輸出',
