@@ -2,6 +2,7 @@ import { type ThreadMessage } from '@assistant-ui/react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ApprovalComposerEntry } from '@/components/assistant-ui/tool/approval'
 import { $displayTimestamps } from '@/store/display-timestamps'
 import { clearAllPrompts, setApprovalRequest } from '@/store/prompts'
 import { $activeSessionId } from '@/store/session'
@@ -352,6 +353,7 @@ function movedOnMessage(): ThreadMessage {
 const GroupHarness = ({ message }: { message: ThreadMessage }) => (
   <ThreadRuntime messages={[message]}>
     <Thread />
+    <ApprovalComposerEntry runtimeSessionId="sess-1" storedSessionId="sess-1" />
   </ThreadRuntime>
 )
 
@@ -524,7 +526,7 @@ describe('tool run left unresolved', () => {
 
 describe('flat tool list approval surfacing', () => {
   it('keeps the approval visible in the same host when tool rows arrive', async () => {
-    setApprovalRequest({ command: 'rm -rf /tmp/x', description: 'dangerous command', sessionId: 'sess-1' })
+    setApprovalRequest({ command: 'rm -rf /tmp/x', description: 'dangerous command', requestId: 'req-1', sessionId: 'sess-1' })
     const message = groupedPendingMessage()
     assert(message.role === 'assistant')
 
@@ -535,7 +537,7 @@ describe('flat tool list approval surfacing', () => {
     const run = await screen.findByRole('button', { name: /Run/ })
     const host = run.closest('[data-approval-stack]')
     expect(host).not.toBeNull()
-    expect(host?.parentElement?.getAttribute('data-slot')).toBe('aui_thread-content')
+    expect(host?.getAttribute('data-slot')).toBe('composer-approval-entry')
     expect(host?.closest('[hidden], [inert], [data-tool-row], [data-tool-group]')).toBeNull()
 
     rerender(<GroupHarness message={message} />)

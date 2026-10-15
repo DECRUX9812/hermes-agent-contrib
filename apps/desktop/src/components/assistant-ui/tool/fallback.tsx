@@ -712,7 +712,7 @@ function ToolEntry({ part }: ToolEntryProps) {
           )}
           {showDetail &&
             !showPayload &&
-            (view.status === 'error' ? (
+            ((view.status as string) === 'error' ? (
               detailSections.summary || detailSections.body ? (
                 <div className="max-w-full text-xs leading-relaxed text-destructive">
                   {detailSections.summary && (

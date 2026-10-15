@@ -322,7 +322,7 @@ export function ApprovalComposerEntry({ runtimeSessionId, storedSessionId }: App
   }
 
   return (
-    <div className="mx-auto mb-2 w-full max-w-(--composer-width)" data-slot="composer-approval-entry">
+    <div className="mx-auto mb-2 w-full max-w-(--composer-width)" data-approval-stack="" data-session-id={currentSessionId} data-slot="composer-approval-entry">
       <ApprovalCard
         initialDecision={recent?.sessionId === currentSessionId ? recent.decision : null}
         onAnswer={choice => answer(activeRequest, choice)}
