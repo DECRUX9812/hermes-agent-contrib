@@ -6,7 +6,7 @@
  * dependency / artifact-ready cards); clicking an item opens the bot.
  */
 
-import { cn, Codicon, host, queryClient, useValue } from '@hermes/plugin-sdk'
+import { cn, Codicon, host, queryClient, StatusBadge, useValue } from '@hermes/plugin-sdk'
 import { useMemo } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
@@ -157,11 +157,11 @@ export function TriageStrip({
     <section className="mb-1 px-2" data-testid="bot-triage-strip">
       <div className="flex items-center justify-between px-1 pt-1 pb-1.5">
         <span className="ui-section-label">{b.triage.title}</span>
-        <span className="rounded-full bg-amber-500/15 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+        <span className="rounded-full bg-warning/10 px-1.5 text-ui-2xs font-semibold tabular-nums text-warning">
           {items.length}
         </span>
       </div>
-      <div className="grid gap-0.5 rounded-lg bg-amber-500/[0.06] p-1">
+      <div className="grid gap-0.5 rounded-lg bg-warning/5 p-1">
         {items.map(item => {
           const meta = botRosterMeta(item.bot, allMeta)
           const { shape, color, image } = botAppearance(item.bot.name, meta)
@@ -179,7 +179,7 @@ export function TriageStrip({
               onClick={() => onOpen(item.bot)}
               type="button"
             >
-              <span className="shrink-0 rounded-md ring-1 ring-amber-500/50">
+              <span className="shrink-0 rounded-md ring-1 ring-warning/50">
                 <BotFace
                   color={avatarColor(color, item.bot.name)}
                   image={image}
@@ -189,15 +189,23 @@ export function TriageStrip({
                 />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="flex min-w-0 items-center gap-1 text-xs font-medium text-foreground">
-                  <Codicon
-                    className="shrink-0 text-amber-600 dark:text-amber-300"
-                    name={TRIAGE_GLYPHS[item.kind]}
-                    size="0.7rem"
-                  />
+                <span className="flex min-w-0 items-center gap-1 text-ui-xs font-medium text-fg">
+                  {item.kind === 'needs-input' ? (
+                    <StatusBadge
+                      aria-label={b.triage.needsInput(name)}
+                      className="size-2"
+                      state="needs-approval"
+                    />
+                  ) : (
+                    <Codicon
+                      className="shrink-0 text-warning"
+                      name={TRIAGE_GLYPHS[item.kind]}
+                      size="0.7rem"
+                    />
+                  )}
                   <span className="truncate">{triageLabel(b, item, name)}</span>
                 </span>
-                <span className="block truncate text-[0.6875rem] text-(--ui-text-tertiary)">{triageMeta(item, name)}</span>
+                <span className="block truncate text-ui-2xs text-fg-muted">{triageMeta(item, name)}</span>
               </span>
               <span className="shrink-0 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary) group-hover/triage:border-(--ui-stroke-primary) group-hover/triage:text-foreground">
                 {TRIAGE_ACTION[item.kind](b)}

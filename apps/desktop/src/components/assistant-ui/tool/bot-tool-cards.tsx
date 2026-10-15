@@ -17,19 +17,54 @@ import { scrollToSessionApproval } from '@/lib/approval-anchor'
 import { sessionApprovalRequest } from '@/store/prompts'
 
 import { isApprovalActivity, isCurrentTurnMessage } from './approval-activity'
+import { selectMessageRunning } from './fallback-model'
 
-function cardSignature(card: ToolCardGroup['cards'][number]): string {
-  return `${card.id}:${card.state}:${card.status}:${card.reason ?? ''}:${card.durationLabel ?? ''}:${card.output?.length ?? 0}`
+function thumbKey(group: ToolCardGroup): string {
+  const thumb = group.thumb
+
+  return thumb ? (thumb.kind === 'screenshot' ? thumb.src : thumb.url) : ''
 }
 
-function groupSignature(group: ToolCardGroup): string {
-  const thumbUrl = group.thumb ? (group.thumb.kind === 'screenshot' ? group.thumb.src : group.thumb.url) : ''
-
-  return `${group.key}|${group.state}|${thumbUrl}|${group.cards.map(cardSignature).join(',')}`
+function sameCard(left: ToolCardGroup['cards'][number], right: ToolCardGroup['cards'][number]): boolean {
+  return (
+    left.id === right.id &&
+    left.state === right.state &&
+    left.status === right.status &&
+    left.reason === right.reason &&
+    left.durationLabel === right.durationLabel &&
+    left.durationMs === right.durationMs &&
+    left.output === right.output &&
+    left.interrupted === right.interrupted &&
+    left.step.args === right.step.args &&
+    left.step.result === right.step.result &&
+    left.step.thumbnailId === right.step.thumbnailId &&
+    left.args.length === right.args.length &&
+    left.args.every((arg, index) => arg.label === right.args[index]?.label && arg.value === right.args[index]?.value)
+  )
 }
 
-function groupsSignature(groups: readonly ToolCardGroup[]): string {
-  return groups.map(groupSignature).join(';')
+function sameGroups(left: readonly ToolCardGroup[], right: readonly ToolCardGroup[]): boolean {
+  return (
+    left.length === right.length &&
+    left.every((group, index) => {
+      const next = right[index]
+
+      return Boolean(
+        next &&
+          group.key === next.key &&
+          group.family === next.family &&
+          group.name === next.name &&
+          group.state === next.state &&
+          thumbKey(group) === thumbKey(next) &&
+          group.cards.length === next.cards.length &&
+          group.cards.every((card, cardIndex) => {
+            const nextCard = next.cards[cardIndex]
+
+            return Boolean(nextCard && sameCard(card, nextCard))
+          })
+      )
+    })
+  )
 }
 
 /**
@@ -37,13 +72,15 @@ function groupsSignature(groups: readonly ToolCardGroup[]): string {
  * Renders tool calls as live ToolActivityStack cards and suppresses redundant
  * quiet rows in children via ToolCardStackContext.
  */
-export const BotToolCards: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> = ({
+export const BotToolCards: FC<PropsWithChildren<{ endIndex: number; revision: string; startIndex: number }>> = ({
   children,
   endIndex,
+  revision,
   startIndex
 }) => {
   const parts = useAuiState(state => state.message.parts)
   const currentTurn = useAuiState(state => isCurrentTurnMessage(state.thread.messages, state.message.id))
+  const live = useAuiState(selectMessageRunning)
   const sessionId = useStore(useSessionView().$runtimeId)
   const approval = useStore(useMemo(() => sessionApprovalRequest(sessionId), [sessionId]))
 
@@ -56,7 +93,8 @@ export const BotToolCards: FC<PropsWithChildren<{ endIndex: number; startIndex: 
         typeof (part as { toolName?: unknown }).toolName === 'string' &&
         coveredByToolCards(part as unknown as CoveredToolPart)
     )
-  }, [parts, startIndex, endIndex])
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- the parts array keeps its identity across in-place part updates; revision is the parent's change signal.
+  }, [parts, revision, startIndex, endIndex])
 
   const approvalCallId = useMemo(() => {
     if (!approval || !currentTurn) {
@@ -90,14 +128,13 @@ export const BotToolCards: FC<PropsWithChildren<{ endIndex: number; startIndex: 
     [coveredParts, approvalCallId]
   )
 
-  const cacheRef = useRef<{ groups: ToolCardGroup[]; signature: string }>({ groups: [], signature: '' })
-  const signature = useMemo(() => groupsSignature(freshGroups), [freshGroups])
+  const cacheRef = useRef<ToolCardGroup[]>([])
 
-  if (cacheRef.current.signature !== signature || cacheRef.current.groups.length !== freshGroups.length) {
-    cacheRef.current = { groups: freshGroups, signature }
+  if (!sameGroups(cacheRef.current, freshGroups)) {
+    cacheRef.current = freshGroups
   }
 
-  const groups = cacheRef.current.groups
+  const groups = cacheRef.current
 
   const handleReviewApproval = useCallback(() => {
     scrollToSessionApproval(sessionId)
@@ -105,7 +142,12 @@ export const BotToolCards: FC<PropsWithChildren<{ endIndex: number; startIndex: 
 
   return (
     <>
-      <ToolActivityStack groups={groups} onReviewApproval={handleReviewApproval} />
+      <ToolActivityStack
+        groups={groups}
+        live={live}
+        onReviewApproval={handleReviewApproval}
+        sessionId={sessionId ?? undefined}
+      />
       <ToolCardStackContext.Provider value={true}>{children}</ToolCardStackContext.Provider>
     </>
   )

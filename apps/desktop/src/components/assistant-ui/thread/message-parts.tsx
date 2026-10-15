@@ -20,10 +20,10 @@ import { setThemeCall } from '@/components/assistant-ui/theme-picker/args'
 import { ThemeTool } from '@/components/assistant-ui/theme-picker/theme-tool'
 import { AgentDeliveryNotice, deliveryTargetFromCommand } from '@/components/assistant-ui/thread/agent-delivery'
 import { TimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
-import { coveredByToolCards, ToolCardStackContext } from '@/components/assistant-ui/tool-cards'
+import { coveredByToolCards, ToolCardStackContext, toolCardView, ToolStepPill } from '@/components/assistant-ui/tool-cards'
 import { DelegateTool } from '@/components/assistant-ui/tool/delegate'
 import { ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
-import { parseMaybeObject, toolCallFailed } from '@/components/assistant-ui/tool/fallback-model'
+import { toolCallFailedNeedsUser, type ToolPart } from '@/components/assistant-ui/tool/fallback-model'
 import { formatElapsed, useElapsedSeconds, useMeasuredDuration } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { GeneratedImage } from '@/components/chat/generated-image-result'
@@ -45,42 +45,58 @@ import { $showToolActivity } from '@/store/tool-activity'
 
 type TimelineToolCallProps = ToolCallMessagePartProps & { completedAt?: number; timestamp?: number }
 
+function ToolStepHeader({ part }: { part: TimelineToolCallProps }) {
+  const card = toolCardView({ ...part, type: 'tool-call' } as ToolPart)
+
+  return <ToolStepPill card={card} />
+}
+
 // A call sealed without a result (turn stopped, completion event lost) is
 // neither pending nor successful; only the generic row can say so.
 const settledWithoutResult = ({ completedAt, result }: TimelineToolCallProps): boolean =>
   result === undefined && completedAt !== undefined
 
 const ImageGenerateTool: FC<TimelineToolCallProps> = props => {
-  const { args, completedAt, result, timestamp } = props
+  const { args, result } = props
   const aspectRatio = typeof args?.aspect_ratio === 'string' ? args.aspect_ratio : undefined
 
   // The image card owns successful generations. Failed or malformed results
   // still need the normal tool row: it extracts the error text and gives the
   // user an honest, expandable failure rather than silently dropping the call.
   if (settledWithoutResult(props) || (result !== undefined && !generatedImageFromResult(result))) {
-    return <ToolFallback {...props} />
+    return (
+      <>
+        <ToolStepHeader part={props} />
+        <ToolFallback {...props} />
+      </>
+    )
   }
 
   return (
     <div className="mt-1.5">
-      <TimelineTimestamp className="mb-0.5 block" completedAt={completedAt} timestamp={timestamp} />
+      <ToolStepHeader part={props} />
       <GeneratedImage aspectRatio={aspectRatio} result={result} />
     </div>
   )
 }
 
 const VisualizationToolPart: FC<TimelineToolCallProps> = props => {
-  const { completedAt, result, timestamp } = props
+  const { result } = props
 
   // Failed or malformed results fall back to the normal tool row so the
   // error stays visible and debuggable instead of silently dropping.
   if (settledWithoutResult(props) || (result !== undefined && !visualizationFromResult(result))) {
-    return <ToolFallback {...props} />
+    return (
+      <>
+        <ToolStepHeader part={props} />
+        <ToolFallback {...props} />
+      </>
+    )
   }
 
   return (
     <div className="mt-1.5">
-      <TimelineTimestamp className="mb-0.5 block" completedAt={completedAt} timestamp={timestamp} />
+      <ToolStepHeader part={props} />
       <VisualizationCard result={result} />
     </div>
   )
@@ -90,12 +106,17 @@ const DelegateToolPart: FC<TimelineToolCallProps> = props => {
   // A call that failed outright dispatched nothing — there are no children to
   // list, only an error. The generic row extracts and expands it properly.
   if (props.isError || settledWithoutResult(props)) {
-    return <ToolFallback {...props} />
+    return (
+      <>
+        <ToolStepHeader part={props} />
+        <ToolFallback {...props} />
+      </>
+    )
   }
 
   return (
     <>
-      <TimelineTimestamp className="mb-0.5 block" completedAt={props.completedAt} timestamp={props.timestamp} />
+      <ToolStepHeader part={props} />
       <DelegateTool args={props.args} result={props.result} toolCallId={props.toolCallId} />
     </>
   )
@@ -106,12 +127,17 @@ const ClarifyToolPart: FC<TimelineToolCallProps> = props => {
   // the session's live clarify request, so a later turn's question would
   // otherwise paint onto this row as a second live card.
   if (settledWithoutResult(props)) {
-    return <ToolFallback {...props} />
+    return (
+      <>
+        <ToolStepHeader part={props} />
+        <ToolFallback {...props} />
+      </>
+    )
   }
 
   return (
     <>
-      <TimelineTimestamp className="mb-0.5 block" completedAt={props.completedAt} timestamp={props.timestamp} />
+      <ToolStepHeader part={props} />
       <ClarifyTool {...props} />
     </>
   )
@@ -119,12 +145,17 @@ const ClarifyToolPart: FC<TimelineToolCallProps> = props => {
 
 const ThemeToolPart: FC<TimelineToolCallProps> = props => {
   if (settledWithoutResult(props)) {
-    return <ToolFallback {...props} />
+    return (
+      <>
+        <ToolStepHeader part={props} />
+        <ToolFallback {...props} />
+      </>
+    )
   }
 
   return (
     <>
-      <TimelineTimestamp className="mb-0.5 block" completedAt={props.completedAt} timestamp={props.timestamp} />
+      <ToolStepHeader part={props} />
       <ThemeTool {...props} />
     </>
   )
@@ -132,35 +163,45 @@ const ThemeToolPart: FC<TimelineToolCallProps> = props => {
 
 const SetupBeatToolPart: FC<TimelineToolCallProps> = props => {
   if (settledWithoutResult(props)) {
-    return <ToolFallback {...props} />
+    return (
+      <>
+        <ToolStepHeader part={props} />
+        <ToolFallback {...props} />
+      </>
+    )
   }
 
-  return <SetupBeatTool {...props} />
+  return (
+    <>
+      <ToolStepHeader part={props} />
+      <SetupBeatTool {...props} />
+    </>
+  )
 }
 
-const ConnectionsToolPart: FC<TimelineToolCallProps> = props =>
-  mcpTargets(props.toolName, props.args).length > 0 ? <McpSetupTool {...props} /> : <ConnectorTool {...props} />
+const ConnectionsToolPart: FC<TimelineToolCallProps> = props => (
+  <>
+    <ToolStepHeader part={props} />
+    {mcpTargets(props.toolName, props.args).length > 0 ? <McpSetupTool {...props} /> : <ConnectorTool {...props} />}
+  </>
+)
+
+const CatalogToolPart: FC<TimelineToolCallProps> = props => (
+  <>
+    <ToolStepHeader part={props} />
+    <CatalogInstallTool {...props} />
+  </>
+)
 
 const TOOL_CARDS: Record<CardToolName, FC<TimelineToolCallProps>> = {
   clarify: ClarifyToolPart,
   create_visualization: VisualizationToolPart,
   delegate_task: DelegateToolPart,
   image_generate: ImageGenerateTool,
-  manage_catalog: CatalogInstallTool,
+  manage_catalog: CatalogToolPart,
   manage_connections: ConnectionsToolPart,
   set_theme: ThemeToolPart,
   setup_beat: SetupBeatToolPart
-}
-
-// A failure the user still has to see. The gateway's tool.complete carries the
-// failure inside `result`, never as the top-level error that sets isError, so
-// this reads the body like the run summary does. A non-zero exit_code counts
-// too, matching the gateway's _tool_result_needs_user, which forwards terminal
-// {output, exit_code: 1, error: null} in answer-only mode.
-const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
-  const exitCode = parseMaybeObject(part.result).exit_code
-
-  return toolCallFailed(part) || (typeof exitCode === 'number' && exitCode !== 0)
 }
 
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
@@ -213,7 +254,7 @@ const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   // The tool feed (reads, searches, commands) follows display.tool_progress,
   // never show_reasoning. Cards, approvals, and failed calls the user must act
   // on remain regardless.
-  if (!showToolActivity && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
+  if (!showToolActivity && !toolCallFailedNeedsUser(props) && !isCardTool(props.toolName)) {
     return null
   }
 

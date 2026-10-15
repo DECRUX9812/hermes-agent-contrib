@@ -3,7 +3,14 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { ToolPart } from '@/components/assistant-ui/tool/fallback-model'
 import { setRuntimeI18nLocale } from '@/i18n'
 
-import { groupToolCards, toolCardFamily, toolCardsFromParts, toolCardView } from './model'
+import {
+  formatToolRunDuration,
+  groupToolCards,
+  summarizeToolRun,
+  toolCardFamily,
+  toolCardsFromParts,
+  toolCardView
+} from './model'
 
 const part = (overrides: Partial<ToolPart>): ToolPart => ({
   args: {},
@@ -79,6 +86,7 @@ describe('status wording and state', () => {
 
     expect(card.state).toBe('done')
     expect(card.status).toBe('Stopped')
+    expect(card.interrupted).toBe(true)
   })
 
   it('waits for approval only while the call is running', () => {
@@ -250,6 +258,36 @@ describe('browser screenshots', () => {
     )
 
     expect(card.thumb).toEqual({ host: 'example.com', kind: 'site', url: 'https://example.com/docs' })
+  })
+})
+
+describe('completed run summary', () => {
+  it('folds a complete multi-call run and totals only known durations', () => {
+    const cards = [
+      toolCardView(part({ completedAt: 1.6, timestamp: 1, toolCallId: 'a' })),
+      toolCardView(part({ completedAt: 3.4, timestamp: 1.6, toolCallId: 'b' }))
+    ]
+
+    expect(summarizeToolRun(cards, false)).toEqual({ count: 2, durationMs: 2_400 })
+    expect(formatToolRunDuration(2_400)).toBe('2.4s')
+  })
+
+  it('keeps a live, failed, interrupted, or single call unfolded', () => {
+    const done = toolCardView(part({ completedAt: 2, timestamp: 1, toolCallId: 'a' }))
+    const failed = toolCardView(part({ result: { error: 'failed' }, toolCallId: 'b' }))
+    const interrupted = toolCardView(part({ completedAt: 2, interrupted: true, timestamp: 1, toolCallId: 'c' }))
+
+    expect(summarizeToolRun([done, done], true)).toBeUndefined()
+    expect(summarizeToolRun([done, failed], false)).toBeUndefined()
+    expect(summarizeToolRun([done, interrupted], false)).toBeUndefined()
+    expect(summarizeToolRun([done], false)).toBeUndefined()
+  })
+
+  it('omits a duration when any step has no timing data', () => {
+    const timed = toolCardView(part({ completedAt: 2, timestamp: 1, toolCallId: 'a' }))
+    const untimed = toolCardView(part({ completedAt: 2, toolCallId: 'b' }))
+
+    expect(summarizeToolRun([timed, untimed], false)).toEqual({ count: 2, durationMs: undefined })
   })
 })
 

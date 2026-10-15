@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { buildToolView } from '@/components/assistant-ui/tool/fallback-model'
 import { toRuntimeMessage } from '@/lib/chat-runtime'
 
-import { upsertToolPart } from './tool-parts'
+import { storedToolMessagePart, upsertToolPart } from './tool-parts'
 import type { ChatMessagePart } from './types'
 
 describe('live tool result evidence', () => {
@@ -85,5 +85,53 @@ describe('live tool result evidence', () => {
     expect(buildToolView(missing, '').status).toBe('warning')
     expect(empty.result).toBe('')
     expect(buildToolView(empty, '').status).toBe('success')
+  })
+})
+
+describe('browser thumbnail metadata', () => {
+  it('keeps a validated capture reference on live and stored tool parts', () => {
+    const [live] = upsertToolPart(
+      [],
+      {
+        name: 'browser_snapshot',
+        result: { success: true },
+        thumbnail: { id: 'capture-1', title: 'Example', url: 'https://example.com' },
+        tool_id: 'browser-call-1'
+      },
+      'complete',
+      2
+    )
+
+    expect(live.type).toBe('tool-call')
+    if (live.type !== 'tool-call') {
+      throw new Error('Missing live browser tool')
+    }
+    expect(live.toolResultMetadata?.thumbnail).toEqual({
+      id: 'capture-1',
+      title: 'Example',
+      url: 'https://example.com'
+    })
+
+    const stored = storedToolMessagePart(
+      {
+        content: '{"success":true}',
+        display_metadata: JSON.stringify({
+          tool_result_metadata: {
+            thumbnail: { id: 'capture-2', title: 'Stored page' }
+          }
+        }),
+        role: 'tool',
+        timestamp: 3,
+        tool_call_id: 'browser-call-2',
+        tool_name: 'browser_snapshot'
+      },
+      0
+    )
+
+    expect(stored.type).toBe('tool-call')
+    if (stored.type !== 'tool-call') {
+      throw new Error('Missing stored browser tool')
+    }
+    expect(stored.toolResultMetadata?.thumbnail).toEqual({ id: 'capture-2', title: 'Stored page' })
   })
 })

@@ -8,7 +8,7 @@ import { Button, cn, Codicon, Tip, ToolActivityStack } from '@hermes/plugin-sdk'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
-import { useMemberToolCards } from './group-room-tool-cards'
+import { useMemberToolCards, useMemberToolTurnLive } from './group-room-tool-cards'
 import { useBots } from './i18n'
 import { useRoomText } from './room-i18n'
 import { botRosterMeta } from './routing'
@@ -65,6 +65,7 @@ export function ActivityMember({
   const b = useBots()
   const t = useRoomText().thread
   const groups = useMemberToolCards(runtime, Boolean(approval))
+  const live = useMemberToolTurnLive(runtime)
   const appearance = botAppearance(name, member && allMeta ? botRosterMeta(member, allMeta) : null)
   const color = avatarColor(appearance.color, name)
   const faceImage = appearance.image && !isBackfilledFacePng(appearance.image) ? appearance.image : null
@@ -73,12 +74,11 @@ export function ActivityMember({
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <div className="flex min-w-0 items-center gap-1.5 text-ui-xs">
-        <span className="motion-ring shrink-0 overflow-hidden rounded-[22%] text-brand">
+        <span className="motion-ring shrink-0 overflow-hidden rounded-control text-brand">
           <BotFace color={color} image={faceImage} name={name} shape={appearance.shape} size={20} />
         </span>
         <span
-          className={cn('shrink-0 font-medium', !tool && !groups.length && 'motion-shimmer')}
-          style={{ color: `color-mix(in oklab, ${color} 62%, var(--color-foreground))` }}
+          className={cn('shrink-0 font-medium text-fg-secondary', !tool && !groups.length && 'motion-shimmer')}
         >
           {t.isWorking(nameOf(name))}
         </span>
@@ -98,7 +98,9 @@ export function ActivityMember({
         actor={<BotFace color={color} image={faceImage} name={name} shape={appearance.shape} size={14} />}
         className="pl-5"
         groups={groups}
+        live={live}
         onReviewApproval={approval ? () => revealGroupClarify(approval) : undefined}
+        sessionId={runtime ?? undefined}
       />
     </div>
   )

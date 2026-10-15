@@ -1,50 +1,19 @@
 import { type ThreadMessage } from '@assistant-ui/react'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest'
 
-import { $displayTimestamps } from '@/store/display-timestamps'
+import { ApprovalComposerEntry } from '@/components/assistant-ui/tool/approval'
 import { clearAllPrompts, setApprovalRequest } from '@/store/prompts'
 import { $activeSessionId } from '@/store/session'
-import { clearDismissedToolRows } from '@/store/tool-dismiss'
-import { $toolDisclosureStates } from '@/store/tool-view'
+import { setShowToolActivityFromConfig } from '@/store/tool-activity'
 
 import { stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '../test-utils'
 import { Thread } from '../thread'
-import { formatTimelineRange } from '../thread/timestamp'
-
-// Timeline timestamps render only when `display.timestamps` is enabled.
-$displayTimestamps.set(true)
-
-// Tool runs retain their own disclosure behavior. Approvals belong to a
-// persistent transcript host outside those runs, so collapsing or mounting a
-// tool row cannot hide or relocate the decision.
 
 const createdAt = new Date('2026-06-03T00:00:00.000Z')
 
-const resizeObservers = new Set<TestResizeObserver>()
-
-// This suite drives resizes by hand, so it needs observers it can reach.
-class TestResizeObserver {
-  private target: Element | null = null
-
-  constructor(private readonly callback: ResizeObserverCallback) {
-    resizeObservers.add(this)
-  }
-
-  observe(target: Element) {
-    this.target = target
-  }
-
-  unobserve() {}
-
-  disconnect() {
-    resizeObservers.delete(this)
-  }
-}
-
 stubThreadEnvironment()
 stubThreadViewportSize()
-vi.stubGlobal('ResizeObserver', TestResizeObserver)
 
 // A running assistant message with two tools: a completed read_file plus a
 // pending terminal (no result), rendered as a flat two-row list.
@@ -352,48 +321,49 @@ function movedOnMessage(): ThreadMessage {
 const GroupHarness = ({ message }: { message: ThreadMessage }) => (
   <ThreadRuntime messages={[message]}>
     <Thread />
+    <ApprovalComposerEntry runtimeSessionId="sess-1" storedSessionId="sess-1" />
   </ThreadRuntime>
 )
 
 beforeEach(() => {
   clearAllPrompts()
   $activeSessionId.set('sess-1')
-  $toolDisclosureStates.set({})
-  clearDismissedToolRows()
+  setShowToolActivityFromConfig('on')
 })
 
 afterEach(() => {
   cleanup()
   clearAllPrompts()
   $activeSessionId.set(null)
-  clearDismissedToolRows()
+  setShowToolActivityFromConfig(undefined)
 })
 
 describe('settled tool run', () => {
-  it('collapses to a summary line naming the work', async () => {
+  it('collapses a completed run into a count and duration', async () => {
     const { container } = render(<GroupHarness message={settledRunMessage()} />)
 
-    expect(await screen.findByText('Explored wiring.tsx, ran 1 command')).toBeTruthy()
-    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(0)
+    expect(await screen.findByRole('button', { name: 'Used 2 tools' })).toBeTruthy()
+    expect(screen.getByText('2.5s')).toBeTruthy()
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(0)
   })
 
-  it('expands to the underlying rows when the summary is clicked', async () => {
+  it('expands the completed run into one-line pills when clicked', async () => {
     const { container } = render(<GroupHarness message={settledRunMessage()} />)
 
-    fireEvent.click(await screen.findByText('Explored wiring.tsx, ran 1 command'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Used 2 tools' }))
 
     await waitFor(() => {
-      expect(container.querySelectorAll('[data-tool-row]').length).toBeGreaterThan(0)
+      expect(container.querySelectorAll('[data-tool-step]').length).toBe(2)
     })
   })
 
-  it('leaves a lone tool call as its own row, with no summary above it', async () => {
+  it('leaves a lone tool call as a pill, with no fold summary', async () => {
     const { container } = render(<GroupHarness message={completedOnlyMessage()} />)
 
     await waitFor(() => {
-      expect(container.querySelectorAll('[data-tool-row]').length).toBe(1)
+      expect(container.querySelectorAll('[data-tool-step]').length).toBe(1)
     })
-    expect(container.querySelector('[data-tool-summary]')).toBeNull()
+    expect(container.querySelector('[data-tool-run-anchor]')).toBeNull()
   })
 })
 
@@ -404,31 +374,19 @@ describe('a file edit among ordinary activity', () => {
   it('stays visible between the two runs it interrupted', async () => {
     const { container } = render(<GroupHarness message={editBetweenRunsMessage()} />)
 
-    await screen.findByText('Explored 2 files')
-
-    const shape = [...container.querySelectorAll('[data-tool-summary],[data-tool-row]')].map(node =>
-      node.hasAttribute('data-tool-summary') ? 'summary' : 'row'
-    )
-
-    expect(shape).toEqual(['summary', 'row', 'summary'])
+    expect(await screen.findAllByRole('button', { name: 'Used 2 tools' })).toHaveLength(2)
+    expect(container.querySelector('[data-tool-step="done"]')).toBeTruthy()
+    expect(screen.getByText('added line')).toBeTruthy()
   })
 })
 
 describe('live tool run', () => {
-  it('honors explicit disclosure across live updates and completion', async () => {
+  it('keeps successful calls as pills until the assistant turn completes', async () => {
     const message = groupedPendingMessage()
     const { container, rerender } = render(<GroupHarness message={message} />)
-    const toggle = () => container.querySelector('[data-tool-summary] button[aria-expanded]') as HTMLButtonElement
 
-    await waitFor(() => expect(toggle()).not.toBeNull())
-    fireEvent.click(toggle())
-    expect(toggle().getAttribute('aria-expanded')).toBe('true')
-    expect(container.querySelector('[data-tool-ticker]')).toBeNull()
-    fireEvent.click(toggle())
-    const row = container.querySelector('[data-tool-ticker] [data-tool-row] button[aria-expanded="false"]')
-    expect(row).not.toBeNull()
-    fireEvent.click(row as Element)
-    await waitFor(() => expect(container.querySelector('[data-tool-ticker]')).toBeNull())
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(2)
+    expect(container.querySelector('[data-tool-run-anchor]')).toBeNull()
 
     const next = {
       ...message,
@@ -445,60 +403,43 @@ describe('live tool run', () => {
     } as ThreadMessage
 
     rerender(<GroupHarness message={next} />)
-    await waitFor(() => expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(3))
-    rerender(<GroupHarness message={{ ...next, status: { type: 'complete', reason: 'stop' } }} />)
-    await waitFor(() => expect(toggle().getAttribute('aria-expanded')).toBe('true'))
-    fireEvent.click(toggle())
-    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(0)
+    await waitFor(() => expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(3))
+
+    const settled = {
+      ...next,
+      content: next.content.map(part =>
+        part.type === 'tool-call' && (part as { completedAt?: number }).completedAt === undefined
+          ? { ...part, completedAt: createdAt.getTime() / 1000 + 5, result: { content: 'done' } }
+          : part
+      ),
+      status: { type: 'complete', reason: 'stop' }
+    } as ThreadMessage
+
+    rerender(<GroupHarness message={settled} />)
+
+    await waitFor(() => expect(container.querySelector('[data-tool-run-anchor]')).toBeTruthy())
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(0)
   })
 
-  it('updates named skill summaries when identifying arguments arrive late', async () => {
+  it('updates the pill when identifying arguments arrive late', async () => {
     const message = groupedPendingMessage()
     const first = { ...message.content[0], toolName: 'skill_view', args: {}, result: { success: true } }
 
-    const { container, rerender } = render(
+    const { rerender } = render(
       <GroupHarness message={{ ...message, content: [first, message.content[1]] } as ThreadMessage} />
     )
 
-    const summary = () => container.querySelector('[data-tool-summary]')?.textContent
-    await waitFor(() => expect(summary()).toContain('Loaded skill'))
+    expect(await screen.findByRole('button', { name: /Skills: Loaded skill/ })).toBeTruthy()
     const named = { ...first, args: { name: 'research-notes' } }
     rerender(<GroupHarness message={{ ...message, content: [named, message.content[1]] } as ThreadMessage} />)
-    await waitFor(() => expect(summary()).toContain('research-notes'))
+    expect(await screen.findByRole('button', { name: /Skills: Loaded skill: research-notes/ })).toBeTruthy()
   })
 
-  // Liveness used to also require an unresolved call, which is false for the
-  // instant between one sequential call finishing and the next arriving — so a
-  // string of commands settled and re-opened between every one, unmounting the
-  // ticker and dropping its reel back to the first row instead of scrolling.
-  it('stays live in the gap between two sequential calls', async () => {
+  it('keeps a completed call visible during the gap before the next call', async () => {
     const { container } = render(<GroupHarness message={betweenSequentialCallsMessage()} />)
 
-    expect(await screen.findByText('Running 2 commands')).toBeTruthy()
-    expect(container.querySelector('[data-tool-ticker]')).not.toBeNull()
-    expect(container.querySelector('[data-tool-summary] button[aria-expanded]')).not.toBeNull()
-  })
-
-  // The ticker is a one-line window, so a row opened inside it had its output
-  // sliced to that line and then ticked away by the next call. Opening a row
-  // is a request to read it: the run gives up the window until it settles.
-  it('drops the one-line window when a row inside it is opened', async () => {
-    const { container } = render(<GroupHarness message={betweenSequentialCallsMessage()} />)
-
-    await screen.findByText('Running 2 commands')
-
-    const row = container.querySelector('[data-tool-ticker] [data-tool-row] button[aria-expanded="false"]')
-
-    expect(row).not.toBeNull()
-
-    fireEvent.click(row as Element)
-
-    await waitFor(() => {
-      expect(container.querySelector('[data-tool-ticker]')).toBeNull()
-    })
-
-    // ...and the row it opened is still on screen to be read.
-    expect(container.querySelector('[data-tool-row][data-tool-open]')).not.toBeNull()
+    expect(container.querySelectorAll('[data-tool-step="done"]')).toHaveLength(2)
+    expect(container.querySelector('[data-tool-run-anchor]')).toBeNull()
   })
 })
 
@@ -506,25 +447,25 @@ describe('live tool run', () => {
 // it in the present tense and — because a live run withholds its toggle — left
 // it permanently expanded with no way to collapse it.
 describe('tool run left unresolved', () => {
-  it('settles with the turn rather than narrating work that stopped', async () => {
+  it('keeps unresolved history visible after the assistant turn settles', async () => {
     const { container } = render(<GroupHarness message={abandonedRunMessage()} />)
 
-    expect(await screen.findByText('Explored 2 files')).toBeTruthy()
-    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(0)
-    expect(container.querySelector('[data-tool-summary] button[aria-expanded]')).not.toBeNull()
+    expect(await screen.findByRole('button', { name: /Search: Stopped/ })).toBeTruthy()
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(2)
+    expect(container.querySelector('[data-tool-run-anchor]')).toBeNull()
   })
 
-  it('settles once the agent moves on, even mid-turn', async () => {
+  it('does not fold earlier calls before the assistant turn completes', async () => {
     const { container } = render(<GroupHarness message={movedOnMessage()} />)
 
-    expect(await screen.findByText('Explored 2 files')).toBeTruthy()
-    expect(container.querySelector('[data-tool-summary] button[aria-expanded]')).not.toBeNull()
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(3)
+    expect(container.querySelector('[data-tool-run-anchor]')).toBeNull()
   })
 })
 
-describe('flat tool list approval surfacing', () => {
-  it('keeps the approval visible in the same host when tool rows arrive', async () => {
-    setApprovalRequest({ command: 'rm -rf /tmp/x', description: 'dangerous command', sessionId: 'sess-1' })
+describe('tool pills and approval surfacing', () => {
+  it('keeps the approval visible in the same host when tool pills arrive', async () => {
+    setApprovalRequest({ command: 'rm -rf /tmp/x', description: 'dangerous command', requestId: 'req-1', sessionId: 'sess-1' })
     const message = groupedPendingMessage()
     assert(message.role === 'assistant')
 
@@ -535,7 +476,7 @@ describe('flat tool list approval surfacing', () => {
     const run = await screen.findByRole('button', { name: /Allow once/ })
     const host = run.closest('[data-approval-stack]')
     expect(host).not.toBeNull()
-    expect(host?.parentElement?.getAttribute('data-slot')).toBe('aui_thread-content')
+    expect(host?.getAttribute('data-slot')).toBe('composer-approval-entry')
     expect(host?.closest('[hidden], [inert], [data-tool-row], [data-tool-group]')).toBeNull()
 
     rerender(<GroupHarness message={message} />)
@@ -548,81 +489,23 @@ describe('flat tool list approval surfacing', () => {
     })
   })
 
-  it('lets completed tool rows be dismissed', async () => {
-    const { container } = render(<GroupHarness message={completedOnlyMessage()} />)
-
-    const dismiss = await screen.findByLabelText('Dismiss')
-
-    expect(container.querySelectorAll('[data-slot="tool-block"]').length).toBeGreaterThan(0)
-
-    fireEvent.click(dismiss)
-
-    await waitFor(() => {
-      expect(screen.queryByLabelText('Dismiss')).toBeNull()
-    })
-  })
-
-  it('keeps a dismissed row hidden after a remount (virtualization)', async () => {
-    // The thread virtualizes, so a row's component unmounts/remounts as it
-    // scrolls. Dismissal must persist across that — component-local state would
-    // forget it and the row would pop back. Simulate the remount by unmounting
-    // and rendering the same message fresh.
-    const first = render(<GroupHarness message={completedOnlyMessage()} />)
-
-    fireEvent.click(await screen.findByLabelText('Dismiss'))
-
-    await waitFor(() => {
-      expect(screen.queryByLabelText('Dismiss')).toBeNull()
-    })
-
-    first.unmount()
-
-    render(<GroupHarness message={completedOnlyMessage()} />)
-
-    // The row is the only thing this message renders, so staying dismissed
-    // means nothing comes back — including its dismiss control.
-    await waitFor(() => {
-      expect(screen.queryByLabelText('Dismiss')).toBeNull()
-    })
-  })
-
-  it('does not show dismiss for pending tool rows', async () => {
+  it('renders a pending tool as a pill without a row dismissal action', async () => {
     const { container } = render(<GroupHarness message={pendingOnlyMessage()} />)
 
     await waitFor(() => {
-      expect(container.querySelectorAll('[data-slot="tool-block"]').length).toBeGreaterThan(0)
+      expect(container.querySelectorAll('[data-tool-step="running"]').length).toBe(1)
     })
 
     expect(screen.queryByLabelText('Dismiss')).toBeNull()
   })
 })
 
-describe('tool lifecycle timestamps', () => {
-  it('shows the precise call and completion times on a settled tool row', async () => {
+describe('tool step duration', () => {
+  it('shows the call duration on a settled pill', async () => {
     const { container } = render(<GroupHarness message={completedOnlyMessage()} />)
 
-    await screen.findByText(/Read/)
+    await screen.findByRole('button', { name: /Files: Read/ })
 
-    const timestamps = Array.from(container.querySelectorAll('[data-slot="timeline-timestamp"]')).map(node =>
-      node.textContent?.trim()
-    )
-
-    const startedAt = createdAt.getTime() / 1000 + 10.125
-
-    expect(timestamps).toContain(formatTimelineRange(startedAt, createdAt.getTime() / 1000 + 12.875))
-  })
-
-  it('shows the full lifecycle range when settled calls are collapsed', async () => {
-    const { container } = render(<GroupHarness message={settledRunMessage()} />)
-
-    await waitFor(() => expect(container.querySelector('[data-tool-summary]')).toBeTruthy())
-
-    const timestamps = Array.from(container.querySelectorAll('[data-slot="timeline-timestamp"]')).map(node =>
-      node.textContent?.trim()
-    )
-
-    expect(timestamps).toContain(
-      formatTimelineRange(createdAt.getTime() / 1000 + 20, createdAt.getTime() / 1000 + 23.5)
-    )
+    expect(container.querySelector('.font-mono.tabular-nums')?.textContent).toBe('2.8s')
   })
 })

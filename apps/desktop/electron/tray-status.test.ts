@@ -70,7 +70,7 @@ describe('sanitizeTrayStatusPush', () => {
   })
 
   it('drops a malformed needs-input count to zero', () => {
-    expect(sanitizeTrayStatusPush(push({ needsInput: 'lots' }) as never)?.needsInput).toBe(0)
+    expect(sanitizeTrayStatusPush(push({ needsInput: 'lots' as never }))?.needsInput).toBe(0)
     expect(sanitizeTrayStatusPush(push({ needsInput: Number.NaN }) as never)?.needsInput).toBe(0)
   })
 

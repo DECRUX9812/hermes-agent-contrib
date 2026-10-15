@@ -28,6 +28,7 @@ import {
   newBrowserTab,
   noteBrowserPage,
   openPreview,
+  openToolStep,
   previewTabId,
   previewTabIdsVisibleTo,
   previewTabsFor,
@@ -89,6 +90,32 @@ describe('preview store', () => {
 
     expect($rightRailActiveTabId.get()).toBe('file:file:///work/demo.html')
     expect($previewTarget.get()?.path).toBe('/work/demo.html')
+  })
+
+  it('opens a transient Step tab only on explicit request and never persists it', () => {
+    openToolStep(
+      {
+        action: 'Ran tests',
+        args: { command: 'npm test' },
+        family: 'terminal',
+        name: 'Terminal',
+        result: 'all passed',
+        state: 'done',
+        toolCallId: 'call-step',
+        toolName: 'terminal'
+      },
+      null,
+      null,
+      'default'
+    )
+
+    const [tab] = $previewTabs.get()
+
+    expect(tab.id).toBe('step:draft:call-step')
+    expect(tab.target.kind).toBe('step')
+    expect(tab.target.transient).toBe(true)
+    expect($rightRailActiveTabId.get()).toBe(tab.id)
+    expect(window.localStorage.getItem('hermes.desktop.previewTabs.v2') ?? '').not.toContain('call-step')
   })
 
   it('gives every kind of target its own tab, side by side', () => {

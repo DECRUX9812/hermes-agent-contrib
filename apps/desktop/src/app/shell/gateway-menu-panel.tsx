@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 
-import { StatusDot } from '@/components/status-dot'
+import { StatusBadge } from '@/components/status-dot'
 import { Button } from '@/components/ui/button'
 import { LogView } from '@/components/ui/log-view'
 import { Tip } from '@/components/ui/tooltip'
@@ -154,11 +154,11 @@ export function GatewayMenuPanel({
       <div className="flex items-center justify-between gap-3 px-3 py-2">
         <div className="flex min-w-0 flex-col gap-1 text-[0.7rem] leading-none">
           <span className="flex items-center gap-1.5 font-medium">
-            <StatusDot tone={gatewayOpen ? 'good' : gatewayConnecting ? 'warn' : 'bad'} />
+            <StatusBadge state={gatewayOpen ? 'done' : gatewayConnecting ? 'running' : 'queued'} />
             {connectionLabel}
           </span>
           <span className="flex items-center gap-1.5 text-muted-foreground">
-            <StatusDot tone={inferenceReady ? 'good' : gatewayOpen ? 'warn' : 'bad'} />
+            <StatusBadge state={inferenceReady ? 'done' : gatewayOpen ? 'running' : 'queued'} />
             {inferenceLabel}
           </span>
         </div>
@@ -239,7 +239,7 @@ export function GatewayMenuPanel({
               <li className="flex items-center justify-between gap-2 text-xs" key={name}>
                 <span className="truncate capitalize">{name}</span>
                 <span className="flex items-center gap-1.5 text-[0.66rem] text-muted-foreground">
-                  <StatusDot tone={platformStatusTone({ state: platform.state })} />
+                  <StatusBadge state={platformStatusTone({ state: platform.state })} />
                   {prettyState(platform.state)}
                 </span>
               </li>

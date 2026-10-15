@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { groupSessionKey } from './group-membership'
 import { ActivityLine } from './group-room-cards'
 import { ThreadTail } from './group-room-command'
-import { $memberToolParts, recordGroupToolEvent } from './group-room-tool-cards'
+import { $memberToolParts, $memberToolTurnLive, recordGroupToolEvent } from './group-room-tool-cards'
 import { groupClarifyKey } from './group-room-tool-stack'
 import { translateBots } from './i18n-test-helper'
 import type { GroupMember, GroupPrompt } from './types'
@@ -102,6 +102,7 @@ const stacksOf = (container: HTMLElement) =>
 
 beforeEach(() => {
   $memberToolParts.set({})
+  $memberToolTurnLive.set({})
   stores.statusItems = {}
   stores.storedByRuntime = { 'builder-runtime': 'builder-stored', 'ops-runtime': 'ops-stored' }
 })
@@ -123,9 +124,9 @@ describe('ActivityLine tool card stacks', () => {
     expect(stacksOf(container)).toHaveLength(2)
     expect(within(builderStack.parentElement as HTMLElement).getByText('builder is working')).toBeTruthy()
     expect(within(opsStack.parentElement as HTMLElement).getByText('ops is working')).toBeTruthy()
-    expect(builderStack.querySelector('[data-tool-card="running"]')).not.toBeNull()
-    expect(opsStack.querySelector('[data-tool-card="done"]')).not.toBeNull()
-    expect(opsStack.querySelector('[data-tool-card="running"]')).toBeNull()
+    expect(builderStack.querySelector('[data-tool-step="running"]')).not.toBeNull()
+    expect(opsStack.querySelector('[data-tool-step="done"]')).not.toBeNull()
+    expect(opsStack.querySelector('[data-tool-step="running"]')).toBeNull()
   })
 
   it('wears the teammate face on the stack', () => {

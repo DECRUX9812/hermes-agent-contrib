@@ -3,9 +3,11 @@ import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useId, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router'
 
+import { useSessionView } from '@/app/chat/session-view'
 import { useTourMarker } from '@/app/chat/tour-marker'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
 import { CRON_ROUTE } from '@/app/routes'
+import { ApprovalComposerEntry } from '@/components/assistant-ui/tool/approval'
 import { composerEdgeRing, composerFloatingStrip, composerInputBacking } from '@/components/chat/composer-dock'
 import { Button } from '@/components/ui/button'
 import { Slot as ContribSlot } from '@/contrib/react/slot'
@@ -135,6 +137,7 @@ export function ChatBar({
   // Which live composer this instance IS (main | tile) — its attachment set,
   // focus-bus key, and awaiting-input edge. Main scope = the legacy globals.
   const scope = useComposerScope()
+  const storedSessionId = useStore(useSessionView().$storedId)
   const attachments = useStore(scope.attachments.$attachments)
   const compacting = useStore(useMemo(() => sessionCompacting(sessionId ?? null), [sessionId]))
   const surfaceId = useComposerSurfaceId()
@@ -864,6 +867,7 @@ export function ChatBar({
               sessionId={statusSessionId}
             />
           </StatusDrawerContent>
+          <ApprovalComposerEntry runtimeSessionId={sessionId ?? null} storedSessionId={storedSessionId} />
           <ComposerPrimitive.Root
             className={cn(
               // 20px is the composer's own radius, one step off the radius scale on purpose.

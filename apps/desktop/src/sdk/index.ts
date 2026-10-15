@@ -2142,6 +2142,7 @@ export type { TitlebarTool } from '@/app/shell/titlebar-controls'
 export { MessageTextContent } from '@/components/assistant-ui/markdown-text'
 /** Live tool activity cards, one stack per working bot. */
 export { ToolActivityStack, type ToolCardGroup, toolCardsFromParts } from '@/components/assistant-ui/tool-cards'
+export { ApprovalCard, type ApprovalCardProps } from '@/components/assistant-ui/tool/approval'
 /** The oversized Collapse lettering an empty chat is titled with — core writes
  *  "HERMES AGENT" with it, a `chat.empty` contribution writes its own name. */
 export { Wordmark } from '@/components/chat/wordmark'
@@ -2161,7 +2162,7 @@ export type { FloatingAnchor } from '@/components/pane-shell/tree/renderer/float
  *  Author with `data: {…} satisfies PaneContribution` so a misspelled flag is
  *  a compile error, not a silently ignored hint. */
 export type { PaneContribution, PaneDockHint, PaneSizing } from '@/components/pane-shell/tree/renderer/track-model'
-export { StatusDot, type StatusTone } from '@/components/status-dot'
+export { StatusBadge, type StatusState } from '@/components/status-dot'
 export { Badge } from '@/components/ui/badge'
 export { Button } from '@/components/ui/button'
 export { Checkbox } from '@/components/ui/checkbox'

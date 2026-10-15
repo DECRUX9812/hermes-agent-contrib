@@ -17,6 +17,16 @@ export interface ToolCardDetail {
 export interface ToolCardView {
   /** The tool call id, or a stable hash of name + args when the call has none. */
   id: string
+  /** Source fields retained for the on-demand Step drawer, never rendered as JSON in the pill. */
+  step: {
+    args?: unknown
+    result?: unknown
+    startedAt?: number
+    thumbnailId?: string
+    title?: string
+    toolCallId?: string
+    toolName: string
+  }
   family: ToolCardFamily
   /** A `ToolIcon` name. */
   icon: string
@@ -39,6 +49,8 @@ export interface ToolCardView {
   startedAt?: number
   /** ms epoch. */
   completedAt?: number
+  durationMs?: number
+  interrupted?: boolean
 }
 
 /** Consecutive calls of one tool, shown as one card. */

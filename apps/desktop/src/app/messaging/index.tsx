@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { PageLoader } from '@/components/page-loader'
-import { StatusDot, type StatusTone } from '@/components/status-dot'
+import { StatusBadge, type StatusState } from '@/components/status-dot'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -58,20 +58,29 @@ interface MessagingViewProps extends React.ComponentProps<'section'> {
 
 type EditMap = Record<string, Record<string, string>>
 
-const PILL_TONE: Record<StatusTone, string> = {
-  good: 'bg-primary/10 text-primary',
-  muted: 'bg-muted text-muted-foreground',
-  warn: 'bg-amber-500/10 text-amber-600 dark:text-amber-300',
-  bad: 'bg-destructive/10 text-destructive'
+const PILL_TONE: Record<StatusState, string> = {
+  running: 'bg-info/10 text-info',
+  queued: 'bg-surface-sunken text-fg-muted',
+  'needs-approval': 'bg-warning/10 text-warning',
+  done: 'bg-success/10 text-success',
+  error: 'bg-danger/10 text-danger'
 }
 
 const stateLabel = (state: null | string | undefined, m: Translations['messaging']) =>
   state ? m.states[state] || state.replace(/_/g, ' ') : m.unknown
 
 // Filter order: what needs you first, then what's fine, then what's off.
-const STATUS_FILTER_ORDER: StatusTone[] = ['bad', 'warn', 'good', 'muted']
+const STATUS_FILTER_ORDER: StatusState[] = ['error', 'needs-approval', 'running', 'done', 'queued']
 
-function platformMatches(platform: MessagingPlatformInfo, tone: 'all' | StatusTone, query: string): boolean {
+const STATUS_FILTER_LABEL: Record<StatusState, keyof Translations['messaging']['statusFilter']> = {
+  running: 'warn',
+  queued: 'muted',
+  'needs-approval': 'warn',
+  done: 'good',
+  error: 'bad'
+}
+
+function platformMatches(platform: MessagingPlatformInfo, tone: 'all' | StatusState, query: string): boolean {
   const q = normalize(query)
 
   return (
@@ -190,7 +199,7 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
   const [pendingRevoke, setPendingRevoke] = useState<null | PairingUser>(null)
   const [edits, setEdits] = useState<EditMap>({})
   const [query, setQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | StatusTone>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | StatusState>('all')
   const [refreshing, setRefreshing] = useState(false)
   const [saving, setSaving] = useState<string | null>(null)
   const platformIds = useMemo(() => platforms?.map(p => p.id) ?? [], [platforms])
@@ -388,7 +397,7 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
 
   // Picking a filter moves the detail pane into it. Only on that click: a
   // platform that leaves the filter because you just enabled it stays open.
-  function handleStatusFilter(next: 'all' | StatusTone) {
+  function handleStatusFilter(next: 'all' | StatusState) {
     setStatusFilter(next)
 
     if (selected && !platformMatches(selected, next, query)) {
@@ -589,8 +598,11 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
         presentTones.length > 1 && (
           <ResponsiveTabs
             align="end"
-            onChange={id => handleStatusFilter(id as 'all' | StatusTone)}
-            tabs={(['all', ...presentTones] as const).map(id => ({ id, label: m.statusFilter[id] }))}
+            onChange={id => handleStatusFilter(id as 'all' | StatusState)}
+            tabs={(['all', ...presentTones] as const).map(id => ({
+              id,
+              label: m.statusFilter[id === 'all' ? 'all' : STATUS_FILTER_LABEL[id]]
+            }))}
             value={activeStatusFilter}
           />
         )
@@ -745,13 +757,13 @@ function PlatformRow({
               aria-label={t.messaging.pendingAria(pendingCount)}
               className={cn(
                 'inline-flex min-w-4 items-center justify-center rounded-full px-1 text-[0.66rem] font-medium tabular-nums',
-                PILL_TONE.warn
+                PILL_TONE['needs-approval']
               )}
             >
               {pendingCount}
             </span>
           )}
-          <StatusDot tone={platformStatusTone(platform)} />
+          <StatusBadge state={platformStatusTone(platform)} />
         </span>
       </span>
     </button>
@@ -894,7 +906,7 @@ function PlatformDetail({
           <PhoneParityCard
             platform={platform}
             stateLabel={stateLabel(platform.state, m)}
-            tone={platformStatusTone(platform)}
+            status={platformStatusTone(platform)}
           />
         </section>
       )}
@@ -1198,7 +1210,7 @@ function PlatformHint({ platform }: { platform: MessagingPlatformInfo }) {
   return hint ? <p className="mt-2 text-xs leading-5 text-muted-foreground">{hint}</p> : null
 }
 
-function StatePill({ children, tone }: { children: string; tone: StatusTone }) {
+function StatePill({ children, tone }: { children: string; tone: StatusState }) {
   return (
     <span
       className={cn(
@@ -1206,7 +1218,7 @@ function StatePill({ children, tone }: { children: string; tone: StatusTone }) {
         PILL_TONE[tone]
       )}
     >
-      <StatusDot tone={tone} />
+      <StatusBadge state={tone} />
       {children}
     </span>
   )
@@ -1217,7 +1229,7 @@ function SetupPill({ active, children }: { active: boolean; children: string }) 
     <span
       className={cn(
         'inline-flex items-center rounded-full px-2 py-0.5 text-[0.66rem] font-medium',
-        PILL_TONE[active ? 'good' : 'muted']
+        PILL_TONE[active ? 'done' : 'queued']
       )}
     >
       {children}

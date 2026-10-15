@@ -4586,7 +4586,7 @@ export const jaOverrides = {
       moreOptions: 'その他の承認オプション',
       allowSession: 'このセッションで許可',
       allowOnce: '今回のみ許可',
-      alwaysAllowHere: 'ここでは常に許可',
+      alwaysAllowHere: '常に許可',
       deny: '拒否',
       cardTitle: 'このコマンドの実行を許可しますか？',
       cardDetailsTitle: 'この変更を確認',
@@ -4601,7 +4601,10 @@ export const jaOverrides = {
       timedOutSystemLine:
         '承認がタイムアウトしました — コマンドは実行されていません。Hermes に再試行を依頼するか、設定 → 安全 → 承認タイムアウトで上限を上げてください。',
       openSafetySettings: '安全設定を開く',
-      commandDetails: 'コマンドの詳細'
+      commandDetails: 'コマンドの詳細',
+      alwaysConfirmPrompt: pattern => `「${pattern}」を常に許可しますか？`,
+      decisionRecorded: choice => `決定を記録しました: ${choice}`,
+      noLongerPending: 'この承認は保留中ではありません。'
     },
     clarify: jaClarify,
     toolCards: jaToolCards,

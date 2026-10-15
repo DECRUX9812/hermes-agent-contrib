@@ -5526,7 +5526,7 @@ export const en: Translations = {
       commandDetails: 'Command details',
       moreOptions: 'More approval options',
       allowOnce: 'Allow once',
-      alwaysAllowHere: 'Always allow here',
+      alwaysAllowHere: 'Always allow',
       deny: 'Deny',
       cardTitle: 'Allow this command to run?',
       cardDetailsTitle: 'Review this requested change',
@@ -5537,7 +5537,10 @@ export const en: Translations = {
       alwaysTitle: 'Always allow this command?',
       alwaysDescription: pattern =>
         `This adds the “${pattern}” pattern to your permanent allowlist (~/.hermes/config.yaml). Hermes won’t ask again for commands like this — in this session or any future one.`,
-      alwaysAllow: 'Always allow'
+      alwaysAllow: 'Always allow',
+      alwaysConfirmPrompt: pattern => `Always allow “${pattern}”?`,
+      decisionRecorded: choice => `Decision recorded: ${choice}`,
+      noLongerPending: 'This approval is no longer pending.'
     },
     setupChoose: {
       kinds: {
