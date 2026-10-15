@@ -11,7 +11,12 @@ import {
 } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
-import { isContributedNavItem, navItemActive, useSidebarNavItems } from '@/app/chat/sidebar/nav-items'
+import {
+  isContributedNavItem,
+  navItemActive,
+  useRailPluginNavItems,
+  useSidebarNavItems
+} from '@/app/chat/sidebar/nav-items'
 import { nextRunOverdueMs } from '@/app/cron/job-state'
 import { BrandMark } from '@/components/brand-mark'
 import { $paneVisible, revealTreePane } from '@/components/pane-shell/tree/store'
@@ -37,10 +42,11 @@ import { TITLEBAR_HEIGHT } from './titlebar'
 // Hermes's own dress): the Nous mark as Home, the sidebar's panels, every
 // page, the Plugins door that opens the plugin manager, then search and
 // settings. It stays when the sidebar folds, so the app is never more than
-// one click from anywhere. Pages come from the same list the sidebar's nav
-// rows use (useSidebarNavItems), already filtered to the interface mode, so
-// Simple stays calm through each row's tier and plugin pages (Kanban, Studio,
-// anything installed) keep their own group.
+// one click from anywhere. Built-in pages come from the sidebar's nav rows
+// (useSidebarNavItems), filtered to the interface mode, so Simple stays calm
+// through each row's tier. Plugin pages (Kanban, Studio, anything installed)
+// keep their own group and show in both modes: the plugin rail is never
+// hidden behind Simple.
 
 const PLUGINS_DOOR_KEY = 'plugins'
 const PLUGINS_DOOR_ROUTE = `${CAPABILITIES_ROUTE}?tab=plugins`
@@ -150,6 +156,7 @@ export function ActivityRail({
   const navigate = useNavigate()
   const { pathname, search } = useLocation()
   const navItems = useSidebarNavItems()
+  const railPlugins = useRailPluginNavItems()
   const sidebarOpen = useStore($sidebarOpen)
   const sessionsShown = useStore($paneVisible(SESSIONS_PANE))
   const botsShown = useStore($paneVisible(BOTS_PANE))
@@ -159,7 +166,12 @@ export function ActivityRail({
   const cronAttention = useMemo(() => cronJobs.some(job => nextRunOverdueMs(job) !== null), [cronJobs])
 
   const newSession = navItems.find(item => item.id === 'new-session')
-  const pages = navItems.filter(item => item.id !== 'new-session')
+
+  const pages = [
+    ...navItems.filter(item => item.id !== 'new-session' && !isContributedNavItem(item)),
+    ...railPlugins
+  ]
+
   const onPluginsTab = currentView === 'capabilities' && new URLSearchParams(search).get('tab') === 'plugins'
   const pageOnScreen = pages.find(item => navItemActive(item, currentView, pathname))?.id ?? null
   const activePage = onPluginsTab ? PLUGINS_DOOR_KEY : pageOnScreen

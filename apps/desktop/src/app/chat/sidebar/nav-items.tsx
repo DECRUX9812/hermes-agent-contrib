@@ -137,3 +137,15 @@ export function useSidebarNavItems(): SidebarNavItem[] {
     [contributedNav, interfaceMode, navPrefs]
   )
 }
+
+/** Contributed plugin rows for the icon rail: every row regardless of `tier`
+ *  (the rail shows plugin pages in both modes), with nav preferences applied. */
+export function useRailPluginNavItems(): SidebarNavItem[] {
+  const navContributions = useContributions(SIDEBAR_NAV_AREA)
+  const navPrefs = useContributions(SIDEBAR_NAV_PREFS_AREA)
+
+  return useMemo(
+    () => applySidebarNavPrefs(contributedNavRows(navContributions), navPrefs),
+    [navContributions, navPrefs]
+  )
+}

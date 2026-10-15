@@ -79,16 +79,16 @@ describe('ActivityRail plugin pages', () => {
     expect(railButton('Capabilities')).not.toBeNull()
   })
 
-  it('keeps an untiered plugin page on the Simple rail and leaves Advanced-tier pages off', () => {
+  it('keeps every plugin page on the Simple rail, whatever its tier, and leaves Advanced built-ins off', () => {
     renderRail({ mode: 'simple' })
 
     expect(railButton('Standup')).not.toBeNull()
-    expect(railButton('Kanban')).toBeNull()
+    expect(railButton('Kanban')).not.toBeNull()
     expect(railButton('Capabilities')).toBeNull()
   })
 
   it('navigates to the plugin row it was clicked on', () => {
-    const { onNavigate } = renderRail({ mode: 'advanced' })
+    const { onNavigate } = renderRail({ mode: 'simple' })
 
     fireEvent.click(railButton('Kanban')!)
 
