@@ -89,6 +89,87 @@ function useSeatBot(profile: null | string) {
   return { ...botAppearance(bot.name, meta), label: displayName(bot, meta) }
 }
 
+/** An inline-editable seat line: text until clicked, an input on Enter/blur, Escape cancels.
+ *  Saves straight through `bots_team.member.upsert` — no dialog for a rename. */
+function InlineSeatField({
+  ariaLabel,
+  className,
+  field,
+  node,
+  placeholder,
+  t,
+  team
+}: {
+  ariaLabel: string
+  className?: string
+  field: 'role' | 'title'
+  node: TeamOrgNode
+  placeholder: string
+  t: TeamText
+  team: Team
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState<null | string>(null)
+  const value = node[field]
+
+  const commit = () => {
+    const next = (draft ?? '').trim()
+
+    setEditing(false)
+    setDraft(null)
+
+    if (next !== value) {
+      void mutateTeam('bots_team.member.upsert', { [field]: next, slot: node.slot, team_id: team.id }).catch(err =>
+        host.notifyError(err, 'Team')
+      )
+    }
+  }
+
+  if (!editing) {
+    return (
+      <button
+        aria-label={ariaLabel}
+        className={cn(
+          '-mx-1 max-w-full truncate rounded-row px-1 text-left transition-colors hover:bg-hover',
+          className
+        )}
+        data-slot={`team-seat-${field}`}
+        onClick={e => {
+          e.preventDefault()
+          e.stopPropagation()
+          setEditing(true)
+        }}
+        type="button"
+      >
+        {value || <span className="text-fg-subtle">{placeholder}</span>}
+      </button>
+    )
+  }
+
+  return (
+    <Input
+      aria-label={ariaLabel}
+      autoFocus
+      className={cn('h-6', className)}
+      onBlur={commit}
+      onChange={e => setDraft(e.target.value)}
+      onClick={e => e.stopPropagation()}
+      onKeyDown={e => {
+        if (e.key === 'Enter') {
+          commit()
+        }
+
+        if (e.key === 'Escape') {
+          setEditing(false)
+          setDraft(null)
+        }
+      }}
+      placeholder={placeholder}
+      value={draft ?? value}
+    />
+  )
+}
+
 function SeatCard({
   node,
   onEdit,
@@ -136,11 +217,28 @@ function SeatCard({
             {open ? <Codicon name="add" size="0.875rem" /> : (node.profile ?? '?').slice(0, 1).toUpperCase()}
           </span>
         )}
-        <div className="min-w-0 flex-1">
+        <div className="grid min-w-0 flex-1 gap-0.5">
           <p className="truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">
             {face?.label || seatName(node, t.openSeat)}
           </p>
-          <p className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">{node.role || node.title || '—'}</p>
+          <InlineSeatField
+            ariaLabel={t.seatTitle}
+            className="text-[0.6875rem] text-(--ui-text-secondary)"
+            field="title"
+            node={node}
+            placeholder={t.seatTitlePlaceholder}
+            t={t}
+            team={team}
+          />
+          <InlineSeatField
+            ariaLabel={t.seatRole}
+            className="text-[0.6875rem] text-(--ui-text-tertiary)"
+            field="role"
+            node={node}
+            placeholder={t.seatRolePlaceholder}
+            t={t}
+            team={team}
+          />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -239,11 +337,16 @@ function OrgBranch({
 
 export function OrgChart({ team, tree, t }: { team: Team; tree: TeamOrgNode[]; t: TeamText }) {
   const [editing, setEditing] = useState<null | Partial<TeamMember>>(null)
+  const openSeats = team.members.filter(m => !m.profile).length
 
   return (
     <section aria-label={t.section.org} data-slot="team-org">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="text-[0.8125rem] font-semibold text-(--ui-text-primary)">{t.section.org}</h3>
+        <p className="min-w-0 truncate text-[0.6875rem] text-(--ui-text-tertiary)" data-slot="team-seats-count">
+          {t.seats(team.members.length)}
+          {openSeats > 0 ? ` · ${t.openSeats(openSeats)}` : ''}
+        </p>
         <Button onClick={() => setEditing({})} size="sm" variant="outline">
           <Codicon name="add" size="0.75rem" />
           {t.addSeat}
@@ -301,7 +404,6 @@ function SeatForm({
   team: Team
 }) {
   const [profile, setProfile] = useState(member.profile ?? '')
-  const [role, setRole] = useState(member.role ?? '')
   const [budget, setBudget] = useState(member.budget?.monthly_usd?.toString() ?? '')
   const [skills, setSkills] = useState((member.skills ?? []).join(', '))
   const [boss, setBoss] = useState(member.reports_to ?? '')
@@ -322,7 +424,6 @@ function SeatForm({
         team_id: team.id,
         ...(member.slot ? { slot: member.slot } : {}),
         profile: profile.trim() || null,
-        role,
         skills: splitList(skills),
         monthly_usd: budget.trim() === '' ? null : Number(budget),
         reports_to: boss || null
@@ -358,9 +459,6 @@ function SeatForm({
             <option key={n} value={n} />
           ))}
         </datalist>
-      </Field>
-      <Field label={t.seatRole}>
-        <Input onChange={e => setRole(e.target.value)} placeholder={t.seatRolePlaceholder} value={role} />
       </Field>
       <Field label={t.seatSkills}>
         <Input onChange={e => setSkills(e.target.value)} placeholder={t.seatSkillsPlaceholder} value={skills} />

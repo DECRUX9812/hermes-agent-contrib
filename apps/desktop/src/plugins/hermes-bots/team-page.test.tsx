@@ -158,6 +158,10 @@ beforeEach(() => {
       return { ...fixture(), approval: {} }
     }
 
+    if (method === 'fork.team.board') {
+      return { cards: [], goal: null, totals: { cost_usd: null, done: 0, in_progress: 0, needs_approval: 0, needs_you: 0, queued: 0, tokens: null } }
+    }
+
     return { entries: [] }
   })
 })
@@ -171,9 +175,9 @@ describe('TeamPage', () => {
     expect((await screen.findAllByText('Reach 10k users')).length).toBeGreaterThan(0)
     expect(screen.getAllByText('ceo').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Designer').length).toBeGreaterThan(0)
-    expect(screen.getByText('1 open seat')).toBeTruthy()
+    expect(screen.getByText(/1 open seat/)).toBeTruthy()
     expect(screen.getByText('Grow blog')).toBeTruthy()
-    expect(screen.getAllByText('1/2 · 50%')).toHaveLength(2) // overall bar + the parent goal
+    expect(screen.getAllByText('1/2 · 50%')).toHaveLength(1) // the parent goal's roll-up
     expect(screen.getByText('Always cite sources')).toBeTruthy()
     expect(screen.getByText('$50 on ads')).toBeTruthy()
     expect(window.document.querySelector('[data-slot="team-budget"][data-tone="warn"]')).toBeTruthy()
