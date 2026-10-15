@@ -299,6 +299,12 @@ class ToolStartPayload(Payload):
 event("tool.start", ToolStartPayload, doc="A tool call began (stable id + full args).")
 
 
+class ToolThumbnail(Payload):
+    id: str
+    url: str | None = None
+    title: str | None = None
+
+
 class ToolCompletePayload(Payload):
     """``tool_progress._on_tool_complete``; ``todos``/``revision`` merged in for the todo tools."""
 
@@ -313,6 +319,7 @@ class ToolCompletePayload(Payload):
     todos: list[JsonValue] | None = None
     revision: int | None = None
     labels: list[ToolLabel] | None = None
+    thumbnail: ToolThumbnail | None = None
 
 
 event("tool.complete", ToolCompletePayload, doc="A tool call finished: parsed result, summary, optional diff / todo snapshot.")
@@ -782,6 +789,6 @@ __all__ = [
     "StreamDeltaPayload", "SubagentEventPayload", "SubagentOutputTailEntry", "TerminalClosePayload",
     "TerminalOutputPayload", "TipShowPayload", "TodoUpdatedPayload", "ToolCompletePayload",
     "ToolGeneratingPayload", "ToolLabel", "ToolLabelKind", "ToolOutputRiskPayload", "ToolStartPayload",
-    "TurnStatus", "VoicePartialPayload", "VoiceStatusPayload",
+    "ToolThumbnail", "TurnStatus", "VoicePartialPayload", "VoiceStatusPayload",
     "VoiceTranscriptPayload", "WakeDetectedPayload",
 ]

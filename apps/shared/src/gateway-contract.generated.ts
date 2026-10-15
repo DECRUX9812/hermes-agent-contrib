@@ -1898,6 +1898,31 @@ export interface ForkMemoryRemoveParams {
   profile: string
   id: string
 }
+export interface BrowserThumbnailParams {
+  tool_call_id: string
+  profile?: string | null
+  session_id?: string | null
+}
+export interface BrowserThumbnailResult {
+  found: boolean
+  reason?: string | null
+  mime?: string | null
+  data_base64?: string | null
+  url?: string | null
+  title?: string | null
+  captured_at?: number | string | null
+}
+export interface BrowserSnapshotParams {
+  tool_call_id: string
+  profile?: string | null
+  session_id?: string | null
+}
+export interface BrowserSnapshotResult {
+  found: boolean
+  text?: string | null
+  url?: string | null
+  title?: string | null
+}
 export interface ComputerTimelineParams {
   profile: string
   session_id: string
@@ -5622,6 +5647,12 @@ export interface ToolCompletePayload {
   todos?: unknown[] | null
   revision?: number | null
   labels?: ToolLabel[] | null
+  thumbnail?: ToolThumbnail | null
+}
+export interface ToolThumbnail {
+  id: string
+  url?: string | null
+  title?: string | null
 }
 /** ``agent_callbacks`` tool_gen_callback. */
 export interface ToolGeneratingPayload {
@@ -6025,6 +6056,10 @@ export interface RpcMethods {
   'fork.bot.identity.get': { params: ForkBotIdentityGetParams; result: ForkBotIdentityGetResult }
   /** Update a bot profile's identity with CAS and model selection guards. */
   'fork.bot.identity.set': { params: ForkBotIdentitySetParams; result: ForkBotIdentitySetResult }
+  /** Retrieve the snapshot text and metadata for a browser tool step. */
+  'fork.browser.snapshot': { params: BrowserSnapshotParams; result: BrowserSnapshotResult }
+  /** Retrieve the captured thumbnail image and metadata for a browser tool step. */
+  'fork.browser.thumbnail': { params: BrowserThumbnailParams; result: BrowserThumbnailResult }
   /** Read persisted tool activity and the latest todo checklist from a profile session. */
   'fork.computer.timeline': { params: ComputerTimelineParams; result: ComputerTimelineResult }
   /** Append an on-disk memory item and return the fresh list. */
@@ -6559,6 +6594,8 @@ export const RPC_METHODS = [
   'file.attach',
   'fork.bot.identity.get',
   'fork.bot.identity.set',
+  'fork.browser.snapshot',
+  'fork.browser.thumbnail',
   'fork.computer.timeline',
   'fork.memory.add',
   'fork.memory.list',

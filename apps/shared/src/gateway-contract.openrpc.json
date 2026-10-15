@@ -1501,6 +1501,42 @@
       }
     },
     {
+      "name": "fork.browser.snapshot",
+      "summary": "Retrieve the snapshot text and metadata for a browser tool step.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BrowserSnapshotParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BrowserSnapshotResult"
+        }
+      }
+    },
+    {
+      "name": "fork.browser.thumbnail",
+      "summary": "Retrieve the captured thumbnail image and metadata for a browser tool step.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/BrowserThumbnailParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/BrowserThumbnailResult"
+        }
+      }
+    },
+    {
       "name": "fork.computer.timeline",
       "summary": "Read persisted tool activity and the latest todo checklist from a profile session.",
       "params": [
@@ -10057,6 +10093,221 @@
           "level"
         ],
         "title": "BrowserProgressPayload",
+        "type": "object"
+      },
+      "BrowserSnapshotParams": {
+        "additionalProperties": false,
+        "properties": {
+          "tool_call_id": {
+            "title": "Tool Call Id",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          }
+        },
+        "required": [
+          "tool_call_id"
+        ],
+        "title": "BrowserSnapshotParams",
+        "type": "object"
+      },
+      "BrowserSnapshotResult": {
+        "additionalProperties": false,
+        "properties": {
+          "found": {
+            "title": "Found",
+            "type": "boolean"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Text"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          }
+        },
+        "required": [
+          "found"
+        ],
+        "title": "BrowserSnapshotResult",
+        "type": "object"
+      },
+      "BrowserThumbnailParams": {
+        "additionalProperties": false,
+        "properties": {
+          "tool_call_id": {
+            "title": "Tool Call Id",
+            "type": "string"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Profile"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Session Id"
+          }
+        },
+        "required": [
+          "tool_call_id"
+        ],
+        "title": "BrowserThumbnailParams",
+        "type": "object"
+      },
+      "BrowserThumbnailResult": {
+        "additionalProperties": false,
+        "properties": {
+          "found": {
+            "title": "Found",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Reason"
+          },
+          "mime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Mime"
+          },
+          "data_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Data Base64"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "captured_at": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Captured At"
+          }
+        },
+        "required": [
+          "found"
+        ],
+        "title": "BrowserThumbnailResult",
         "type": "object"
       },
       "CapabilityEntry": {
@@ -42937,6 +43188,17 @@
             ],
             "default": null,
             "title": "Labels"
+          },
+          "thumbnail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolThumbnail"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [
@@ -43176,6 +43438,44 @@
           "name"
         ],
         "title": "ToolStartPayload",
+        "type": "object"
+      },
+      "ToolThumbnail": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "ToolThumbnail",
         "type": "object"
       },
       "ToolsAction": {

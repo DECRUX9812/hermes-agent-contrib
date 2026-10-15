@@ -321,6 +321,21 @@ def _prepare_tool_result_metadata(sid: str, tool_call_id: str, name: str, args: 
         from tools.mcp_apps import app_for_tool_call
         if app := app_for_tool_call(name, args):
             metadata["mcp_app"] = app
+    with contextlib.suppress(Exception):
+        from tools.browser_step_thumbnail import is_browser_step_tool, capture_browser_step_thumbnail
+        if is_browser_step_tool(name):
+            task_id = (session.get("session_key") or getattr(session.get("agent"), "session_id", None) or sid) if session is not None else sid
+            profile_home = session.get("profile_home") if session is not None else None
+            thumb = capture_browser_step_thumbnail(
+                tool_call_id=tool_call_id,
+                name=name,
+                args=args,
+                result=result,
+                task_id=task_id,
+                profile_home=profile_home,
+            )
+            if thumb:
+                metadata["thumbnail"] = thumb
     if session is not None:
         session.setdefault("tool_result_metadata", {})[tool_call_id] = metadata
     return {"tool_result_metadata": metadata} if metadata else {}
@@ -361,7 +376,7 @@ def _on_tool_complete(sid: str, tool_call_id: str, name: str, args: dict, result
         payload.update(todo_state)
         if session is not None:
             _cache_todo_state(session, todo_state)
-    if (_tool_progress_enabled(sid) or payload.get("inline_diff") or _tool_lifecycle_required_for_ui(name)
+    if (_tool_progress_enabled(sid) or payload.get("inline_diff") or payload.get("thumbnail") or _tool_lifecycle_required_for_ui(name)
             or is_todo_tool_name(name) or _connector_tool_lifecycle(name, args)
             or _tool_result_needs_user(result)):
         _emit_tool_lifecycle("tool.complete", sid, name, args, payload)

@@ -12,6 +12,7 @@ from . import (
     display,
     events,
     fork_bot,
+    fork_browser,
     fork_computer,
     fork_onboarding,
     fork_routines,
