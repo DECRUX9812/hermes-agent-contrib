@@ -533,6 +533,7 @@ export interface TeamGoal {
   owner?: string | null
   status?: string
   task_ids?: string[]
+  task_boards?: Record<string, string>
   created_at?: number
   updated_at?: number | null
   [key: string]: unknown
@@ -2087,6 +2088,107 @@ export interface RunRoutineNowParams {
 export interface RunRoutineNowResult {
   routines: Routine[]
   started: boolean
+}
+export interface ForkTeamBoardParams {
+  team_id: string
+  goal_id?: string | null
+}
+export interface ForkTeamBoardResult {
+  goal?: TeamGoal | null
+  cards: ForkTeamCard[]
+  totals: ForkTeamTotals
+}
+export interface ForkTeamCard {
+  task_id: string
+  title: string
+  assignee?: ForkTeamAssignee | null
+  column: 'queued' | 'in_progress' | 'needs_approval' | 'done'
+  status: string
+  started_at?: number | null
+  updated_at?: number | null
+  elapsed_s?: number | null
+  tokens?: number | null
+  cost_usd?: number | null
+  last_tool?: ForkTeamLastTool | null
+  session_id?: string | null
+  needs_you?: 'approval' | 'review' | 'blocked' | 'question' | null
+  stoppable: boolean
+  takeable: boolean
+}
+export interface ForkTeamAssignee {
+  profile: string
+  title: string
+  role: string
+}
+export interface ForkTeamLastTool {
+  name: string
+  status: string
+}
+export interface ForkTeamTotals {
+  queued: number
+  in_progress: number
+  needs_approval: number
+  done: number
+  needs_you: number
+  tokens?: number | null
+  cost_usd?: number | null
+}
+export interface ForkTeamGoalStartParams {
+  team_id: string
+  title: string
+  detail?: string | null
+}
+export interface ForkTeamGoalStartResult {
+  goal: TeamGoal
+  lead_task_id: string
+}
+export interface ForkTeamCardParams {
+  task_id: string
+}
+export interface ForkTeamCardStopResult {
+  task_id: string
+  stopped: boolean
+  status: string
+}
+export interface ForkTeamCardTakeoverResult {
+  session_id?: string | null
+  profile?: string | null
+}
+export interface ForkTeamCardResumeParams {
+  task_id: string
+  assignee?: string | null
+}
+export interface ForkTeamCardResumeResult {
+  task_id: string
+  status: string
+  assignee?: string | null
+}
+export type ForkTeamTemplatesListParams = Record<string, never>
+export interface ForkTeamTemplatesListResult {
+  templates: ForkTeamTemplate[]
+}
+export interface ForkTeamTemplate {
+  template_id: string
+  name: string
+  description: string
+  seats: ForkTeamTemplateSeat[]
+}
+export interface ForkTeamTemplateSeat {
+  role: string
+  title: string
+  reports_to?: string | null
+  instruction: string
+  lead: boolean
+}
+export interface ForkTeamTemplatesApplyParams {
+  request_id: string
+  template_id: string
+  name?: string | null
+  assign?: Record<string, string> | null
+}
+export interface ForkTeamTemplatesApplyResult {
+  team: Team
+  created: boolean
 }
 export interface GroupsCapabilitiesParams {
   profile?: string | null
@@ -6131,6 +6233,20 @@ export interface RpcMethods {
   'fork.routines.run_now': { params: RunRoutineNowParams; result: RunRoutineNowResult }
   /** Update a bot routine without replacing its cron job or run history. */
   'fork.routines.update': { params: UpdateRoutineParams; result: UpdateRoutineResult }
+  /** Read a goal's linked Kanban cards and descendants as a goal-first board. */
+  'fork.team.board': { params: ForkTeamBoardParams; result: ForkTeamBoardResult }
+  /** Hand a team card back to a profile and return it to Kanban's ready phase. */
+  'fork.team.card.resume': { params: ForkTeamCardResumeParams; result: ForkTeamCardResumeResult }
+  /** Safely stop a running team card and park it as blocked. */
+  'fork.team.card.stop': { params: ForkTeamCardParams; result: ForkTeamCardStopResult }
+  /** Stop a card, unassign it to the human, and return its latest worker stream. */
+  'fork.team.card.takeover': { params: ForkTeamCardParams; result: ForkTeamCardTakeoverResult }
+  /** Upsert a team goal and dispatch one lead card through Kanban. */
+  'fork.team.goal.start': { params: ForkTeamGoalStartParams; result: ForkTeamGoalStartResult }
+  /** Idempotently create a built-in team template using a client request ID, reusing assigned profiles or creating new ones. */
+  'fork.team.templates.apply': { params: ForkTeamTemplatesApplyParams; result: ForkTeamTemplatesApplyResult }
+  /** List built-in team templates. */
+  'fork.team.templates.list': { params: ForkTeamTemplatesListParams; result: ForkTeamTemplatesListResult }
   /** Mark the one-time availability notice as shown on the free-tier identity. */
   'free_tier.ack_notice': { params: ProfileParams; result: FreeTierAckNoticeResult }
   /** Report a browser window outcome for the matching pending attempt; mint remains authoritative. */
@@ -6651,6 +6767,13 @@ export const RPC_METHODS = [
   'fork.routines.resume',
   'fork.routines.run_now',
   'fork.routines.update',
+  'fork.team.board',
+  'fork.team.card.resume',
+  'fork.team.card.stop',
+  'fork.team.card.takeover',
+  'fork.team.goal.start',
+  'fork.team.templates.apply',
+  'fork.team.templates.list',
   'free_tier.ack_notice',
   'free_tier.challenge_result',
   'free_tier.claim_nudge',

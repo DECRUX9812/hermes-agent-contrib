@@ -17,6 +17,7 @@ from . import (
     fork_computer,
     fork_onboarding,
     fork_routines,
+    fork_team,
     groups_bot_relay,
     i18n,
     liveness,

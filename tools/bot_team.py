@@ -219,12 +219,13 @@ def _roll_period(budget: dict) -> dict:
 
 
 def create_team(root: Path | str, *, name: str, mission: str = "", actor: str = BOARD_ACTOR,
-                lead_decides: bool = False, channels: Optional[dict] = None) -> dict:
+                lead_decides: bool = False, channels: Optional[dict] = None,
+                team_id: Optional[str] = None) -> dict:
     name = _text(name, NAME_MAX)
     if not name:
         raise TeamError("team name required")
     team = {
-        "id": _new_id(TEAM_ID_PREFIX),
+        "id": team_id or _new_id(TEAM_ID_PREFIX),
         "name": name,
         "mission": _text(mission, MISSION_MAX),
         # governance: does the lead count as a decider, or only the human board?
@@ -239,7 +240,11 @@ def create_team(root: Path | str, *, name: str, mission: str = "", actor: str = 
         "created_at": _now(),
         "updated_at": _now(),
     }
+    if not team["id"].startswith(TEAM_ID_PREFIX) or not _ID_RE.fullmatch(team["id"]):
+        raise TeamError("invalid team id")
     with _lock_for(team["id"]):
+        if _team_path(root, team["id"]).exists():
+            raise TeamError(f"team '{team['id']}' already exists")
         _save(root, team)
         audit(root, team["id"], actor, "team.create", {"name": name})
     return team
@@ -489,7 +494,8 @@ def upsert_goal(root: Path | str, team_id: str, *, goal_id: Optional[str] = None
             if not title:
                 raise TeamError("goal title required")
             goal = {"id": _new_id(GOAL_ID_PREFIX), "title": title, "detail": "", "parent_id": None,
-                    "owner": None, "status": "open", "task_ids": [], "created_at": _now()}
+                    "owner": None, "status": "open", "task_ids": [], "task_boards": {},
+                    "created_at": _now()}
             team["goals"].append(goal)
         if "title" in fields and goal_id:
             title = _text(fields["title"], NAME_MAX * 2)
@@ -527,7 +533,8 @@ def upsert_goal(root: Path | str, team_id: str, *, goal_id: Optional[str] = None
 
 
 def link_task(root: Path | str, team_id: str, goal_id: str, task_id: str, *,
-              unlink: bool = False, actor: str = BOARD_ACTOR) -> dict:
+              unlink: bool = False, actor: str = BOARD_ACTOR,
+              board_path: Optional[str] = None) -> dict:
     """Attach (or detach) a Kanban task id to a goal. The task itself is untouched."""
     task_id = _text(task_id, 80)
     if not task_id:
@@ -537,8 +544,11 @@ def link_task(root: Path | str, team_id: str, goal_id: str, task_id: str, *,
         goal = _goal(team, goal_id)
         if unlink:
             goal["task_ids"] = [t for t in goal["task_ids"] if t != task_id]
+            goal.setdefault("task_boards", {}).pop(task_id, None)
         elif task_id not in goal["task_ids"]:
             goal["task_ids"].append(task_id)
+        if not unlink and board_path:
+            goal.setdefault("task_boards", {})[task_id] = str(board_path)
         _save(root, team)
         audit(root, team_id, actor, "goal.unlink_task" if unlink else "goal.link_task",
               {"goal": goal_id, "task": task_id})
@@ -997,15 +1007,18 @@ def prompt_section(root: Path | str, profile: str) -> str:
 TaskCreator = Callable[..., str]
 
 
-def default_task_creator(*, title: str, body: str, assignee: str, created_by: str, idempotency_key: str) -> str:
+def default_task_creator(
+    *, title: str, body: str, assignee: str, created_by: str, idempotency_key: str,
+    board_path: Optional[str] = None, board: Optional[str] = None,
+) -> str:
     """Create the card on this home's default Kanban board (the engine that already does claims,
     runs and dispatch). Raises if Kanban is unavailable — delegating work is not best-effort."""
     from hermes_cli import kanban_db_connect as kbc
     from hermes_cli import kanban_db as kb
 
-    with kbc.connect() as conn:
+    with kbc.connect(db_path=Path(board_path) if board_path else None, board=board) as conn:
         return kb.create_task(conn, title=title, body=body, assignee=assignee, created_by=created_by,
-                              idempotency_key=idempotency_key)
+                              idempotency_key=idempotency_key, board=board)
 
 
 def spawn_goal_task(root: Path | str, team_id: str, goal_id: str, *, title: str, body: str = "",
@@ -1035,8 +1048,44 @@ def spawn_goal_task(root: Path | str, team_id: str, goal_id: str, *, title: str,
         text += f"\n\n## Task\n{title}" + (f"\n\n{_text(body, TEXT_MAX)}" if body.strip() else "")
         slug = re.sub(r"\W+", "-", title.lower())[:80]
         key = f"{team_id}:{goal_id}:{slug}"
-    task_id = (creator or default_task_creator)(
-        title=title, body=text, assignee=member["profile"], created_by=f"team:{team_id}", idempotency_key=key)
-    link_task(root, team_id, goal_id, task_id, actor=actor)
-    audit(root, team_id, actor, "goal.delegate", {"goal": goal_id, "task": task_id, "assignee": member["profile"]})
-    return {"task_id": task_id, "assignee": member["profile"]}
+        existing = goal.get("task_keys", {}).get(slug)
+        if existing:
+            return {"task_id": existing, "assignee": member["profile"]}
+        board_path = None
+        board = None
+        if creator is None:
+            from hermes_cli import kanban_db as kb
+
+            reservations = goal.get("task_key_boards")
+            reservation = reservations.get(slug) if isinstance(reservations, dict) else None
+            if isinstance(reservation, dict) and reservation.get("path"):
+                board_path = str(reservation["path"])
+                board = reservation.get("board")
+            else:
+                board = kb.get_current_board()
+                board_path = str(kb.kanban_db_path(board=board))
+                goal.setdefault("task_key_boards", {})[slug] = {
+                    "path": board_path,
+                    "board": board,
+                }
+                _save(root, team)
+        create = creator or default_task_creator
+        creator_params = {
+            "title": title, "body": text, "assignee": member["profile"],
+            "created_by": f"team:{team_id}", "idempotency_key": key,
+        }
+        if creator is None:
+            creator_params.update(board_path=board_path, board=board)
+        task_id = create(**creator_params)
+        link_task(root, team_id, goal_id, task_id, actor=actor, board_path=board_path)
+        team = _load(root, team_id)
+        goal = _goal(team, goal_id)
+        goal.setdefault("task_keys", {})[slug] = task_id
+        reservations = goal.get("task_key_boards")
+        if isinstance(reservations, dict):
+            reservations.pop(slug, None)
+        _save(root, team)
+        audit(root, team_id, actor, "goal.delegate", {
+            "goal": goal_id, "task": task_id, "assignee": member["profile"],
+        })
+        return {"task_id": task_id, "assignee": member["profile"]}

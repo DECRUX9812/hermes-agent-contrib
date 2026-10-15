@@ -201,6 +201,9 @@ _LONG_HANDLERS = frozenset({
     "fork.onboarding.reset_setup_profile",
     "fork.routines.list", "fork.routines.create", "fork.routines.update", "fork.routines.pause",
     "fork.routines.resume", "fork.routines.remove", "fork.routines.run_now", "fork.computer.timeline",
+    # Team board reads span profile state DBs; stop can wait for process teardown and template apply creates profiles.
+    "fork.team.board", "fork.team.goal.start", "fork.team.card.stop", "fork.team.card.takeover",
+    "fork.team.card.resume", "fork.team.templates.list", "fork.team.templates.apply",
     "command.dispatch",  # /goal draft invokes the auxiliary model; never block the RPC reader
     "shared_metrics.set",  # consent reconcile waits on the metrics store's write lock
 })
@@ -3885,7 +3888,7 @@ from . import (
     methods_plugin_catalog as _methods_plugin_catalog, methods_fork_onboarding as _methods_fork_onboarding,
     methods_fork_routines as _methods_fork_routines, methods_fork_computer as _methods_fork_computer,
     methods_fork_bot as _methods_fork_bot, methods_fork_browser as _methods_fork_browser,
-    methods_fork_approvals as _methods_fork_approvals)
+    methods_fork_approvals as _methods_fork_approvals, methods_fork_team as _methods_fork_team)
 
 for _m in (
     _session_transports, _session_reaper, _session_lifecycle, _session_workdir, _compute_host_bridge, _model_switch,
@@ -3899,6 +3902,6 @@ for _m in (
     _methods_connectors_account, _methods_display, _methods_display_watch, _methods_onboarding,
     _methods_i18n, _methods_machine, _methods_shared_metrics, _methods_mcp_apps, _methods_plugin_catalog,
     _methods_fork_onboarding, _methods_fork_routines, _methods_fork_computer, _methods_fork_bot,
-    _methods_fork_browser, _methods_fork_approvals):
+    _methods_fork_browser, _methods_fork_approvals, _methods_fork_team):
     _m.register(sys.modules[__name__])
 del _m

@@ -46,6 +46,7 @@ class TeamGoal(OpenModel):
     owner: str | None = None
     status: str = "open"
     task_ids: list[str] = []
+    task_boards: dict[str, str] = {}
     created_at: int = 0
     updated_at: int | None = None
 
