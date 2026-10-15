@@ -1817,6 +1817,41 @@ export interface DisplayLeaseReleaseParams {
   viewer_id?: string | null
   force?: boolean | null
 }
+export interface ComputerTimelineParams {
+  profile: string
+  session_id: string
+  limit?: number | null
+}
+export interface ComputerTimelineResult {
+  session_id: string
+  steps: ComputerTimelineStep[]
+  todos: ComputerTodo[]
+}
+export interface ComputerTimelineStep {
+  id: string
+  index: number
+  tool: string
+  kind: 'terminal' | 'file' | 'browser' | 'search' | 'other'
+  title: string
+  status: 'done' | 'error' | 'running'
+  at?: string | null
+  duration_s?: number | null
+  detail: ComputerTimelineDetail
+}
+export interface ComputerTimelineDetail {
+  command?: string | null
+  output_tail?: string | null
+  path?: string | null
+  diff?: string | null
+  url?: string | null
+  page_title?: string | null
+  screenshot_path?: string | null
+}
+export interface ComputerTodo {
+  id: string
+  content: string
+  status: string
+}
 /** Calls that take no arguments; the desktop sends ``{}``. */
 export type ForkOnboardingEmptyParams = Record<string, never>
 export interface EnsureSetupProfileResult {
@@ -1844,6 +1879,76 @@ export interface ResetSetupProfileResult {
   name: string
   path: string
   reset: boolean
+}
+export interface ListRoutinesParams {
+  profile: string
+}
+export interface ListRoutinesResult {
+  routines: Routine[]
+}
+export interface Routine {
+  id: string
+  name: string
+  kind: 'schedule' | 'watch'
+  schedule: string
+  prompt: string
+  condition?: string | null
+  enabled: boolean
+  next_run_at?: string | null
+  last_run_at?: string | null
+  last_status?: string | null
+  deliver?: string | null
+}
+export interface CreateRoutineParams {
+  profile: string
+  name: string
+  kind: 'schedule' | 'watch'
+  schedule: string
+  prompt?: string | null
+  condition?: string | null
+}
+export interface CreateRoutineResult {
+  routines: Routine[]
+}
+export interface UpdateRoutineParams {
+  profile: string
+  id: string
+  name?: string | null
+  schedule?: string | null
+  prompt?: string | null
+  condition?: string | null
+}
+export interface UpdateRoutineResult {
+  routines: Routine[]
+}
+export interface PauseRoutineParams {
+  profile: string
+  id: string
+}
+export interface PauseRoutineResult {
+  routines: Routine[]
+}
+export interface ResumeRoutineParams {
+  profile: string
+  id: string
+}
+export interface ResumeRoutineResult {
+  routines: Routine[]
+}
+export interface RemoveRoutineParams {
+  profile: string
+  id: string
+}
+export interface RemoveRoutineResult {
+  routines: Routine[]
+}
+export interface RunRoutineNowParams {
+  profile: string
+  id: string
+}
+export interface RunRoutineNowResult {
+  routines: Routine[]
+  started: boolean
 }
 export interface GroupsCapabilitiesParams {
   profile?: string | null
@@ -5835,6 +5940,8 @@ export interface RpcMethods {
   'display.thumbnail': { params: ProfileParams; result: DisplayThumbnailResult }
   /** Stage a non-image file into the session workspace and hand back its @file: ref. */
   'file.attach': { params: FileAttachParams; result: FileAttachResult }
+  /** Read persisted tool activity and the latest todo checklist from a profile session. */
+  'fork.computer.timeline': { params: ComputerTimelineParams; result: ComputerTimelineResult }
   /** Create the setup profile under the setup lock (mirroring launch credentials), or no-op. */
   'fork.onboarding.ensure_setup_profile': { params: ForkOnboardingEmptyParams; result: EnsureSetupProfileResult }
   /** Find the setup chat by title or create it; empty is true only before its first turn. */
@@ -5847,6 +5954,20 @@ export interface RpcMethods {
   'fork.onboarding.reset_setup_profile': { params: ForkOnboardingEmptyParams; result: ResetSetupProfileResult }
   /** Fork setup-profile state (eligible/intro/failed_starts/completed_at/profile). */
   'fork.onboarding.state': { params: ForkOnboardingEmptyParams; result: ForkOnboardingStateResult }
+  /** Create a recurring schedule or condition watch delivered to this bot's canonical chat. */
+  'fork.routines.create': { params: CreateRoutineParams; result: CreateRoutineResult }
+  /** List this profile's persisted bot routines, including paused routines. */
+  'fork.routines.list': { params: ListRoutinesParams; result: ListRoutinesResult }
+  /** Pause a bot routine. */
+  'fork.routines.pause': { params: PauseRoutineParams; result: PauseRoutineResult }
+  /** Remove a bot routine. */
+  'fork.routines.remove': { params: RemoveRoutineParams; result: RemoveRoutineResult }
+  /** Resume a bot routine. */
+  'fork.routines.resume': { params: ResumeRoutineParams; result: ResumeRoutineResult }
+  /** Start a bot routine manually in the background. */
+  'fork.routines.run_now': { params: RunRoutineNowParams; result: RunRoutineNowResult }
+  /** Update a bot routine without replacing its cron job or run history. */
+  'fork.routines.update': { params: UpdateRoutineParams; result: UpdateRoutineResult }
   /** Mark the one-time availability notice as shown on the free-tier identity. */
   'free_tier.ack_notice': { params: ProfileParams; result: FreeTierAckNoticeResult }
   /** Report a browser window outcome for the matching pending attempt; mint remains authoritative. */
@@ -6343,12 +6464,20 @@ export const RPC_METHODS = [
   'display.switchSandboxImage',
   'display.thumbnail',
   'file.attach',
+  'fork.computer.timeline',
   'fork.onboarding.ensure_setup_profile',
   'fork.onboarding.ensure_setup_session',
   'fork.onboarding.mark_seen',
   'fork.onboarding.record_failed_start',
   'fork.onboarding.reset_setup_profile',
   'fork.onboarding.state',
+  'fork.routines.create',
+  'fork.routines.list',
+  'fork.routines.pause',
+  'fork.routines.remove',
+  'fork.routines.resume',
+  'fork.routines.run_now',
+  'fork.routines.update',
   'free_tier.ack_notice',
   'free_tier.challenge_result',
   'free_tier.claim_nudge',

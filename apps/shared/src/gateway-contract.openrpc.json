@@ -1465,6 +1465,24 @@
       }
     },
     {
+      "name": "fork.computer.timeline",
+      "summary": "Read persisted tool activity and the latest todo checklist from a profile session.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ComputerTimelineParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ComputerTimelineResult"
+        }
+      }
+    },
+    {
       "name": "fork.onboarding.ensure_setup_profile",
       "summary": "Create the setup profile under the setup lock (mirroring launch credentials), or no-op.",
       "params": [
@@ -1569,6 +1587,132 @@
         "name": "result",
         "schema": {
           "$ref": "#/components/schemas/ForkOnboardingStateResult"
+        }
+      }
+    },
+    {
+      "name": "fork.routines.create",
+      "summary": "Create a recurring schedule or condition watch delivered to this bot's canonical chat.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/CreateRoutineParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/CreateRoutineResult"
+        }
+      }
+    },
+    {
+      "name": "fork.routines.list",
+      "summary": "List this profile's persisted bot routines, including paused routines.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ListRoutinesParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ListRoutinesResult"
+        }
+      }
+    },
+    {
+      "name": "fork.routines.pause",
+      "summary": "Pause a bot routine.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/PauseRoutineParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/PauseRoutineResult"
+        }
+      }
+    },
+    {
+      "name": "fork.routines.remove",
+      "summary": "Remove a bot routine.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RemoveRoutineParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RemoveRoutineResult"
+        }
+      }
+    },
+    {
+      "name": "fork.routines.resume",
+      "summary": "Resume a bot routine.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/ResumeRoutineParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/ResumeRoutineResult"
+        }
+      }
+    },
+    {
+      "name": "fork.routines.run_now",
+      "summary": "Start a bot routine manually in the background.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/RunRoutineNowParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/RunRoutineNowResult"
+        }
+      }
+    },
+    {
+      "name": "fork.routines.update",
+      "summary": "Update a bot routine without replacing its cron job or run history.",
+      "params": [
+        {
+          "name": "params",
+          "schema": {
+            "$ref": "#/components/schemas/UpdateRoutineParams"
+          }
+        }
+      ],
+      "result": {
+        "name": "result",
+        "schema": {
+          "$ref": "#/components/schemas/UpdateRoutineResult"
         }
       }
     },
@@ -10899,6 +11043,261 @@
         "title": "CompressionSummary",
         "type": "object"
       },
+      "ComputerTimelineDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Command"
+          },
+          "output_tail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Output Tail"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Path"
+          },
+          "diff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Diff"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "page_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page Title"
+          },
+          "screenshot_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Screenshot Path"
+          }
+        },
+        "title": "ComputerTimelineDetail",
+        "type": "object"
+      },
+      "ComputerTimelineParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Limit"
+          }
+        },
+        "required": [
+          "profile",
+          "session_id"
+        ],
+        "title": "ComputerTimelineParams",
+        "type": "object"
+      },
+      "ComputerTimelineResult": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/ComputerTimelineStep"
+            },
+            "title": "Steps",
+            "type": "array"
+          },
+          "todos": {
+            "items": {
+              "$ref": "#/components/schemas/ComputerTodo"
+            },
+            "title": "Todos",
+            "type": "array"
+          }
+        },
+        "required": [
+          "session_id",
+          "steps",
+          "todos"
+        ],
+        "title": "ComputerTimelineResult",
+        "type": "object"
+      },
+      "ComputerTimelineStep": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "title": "Index",
+            "type": "integer"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "terminal",
+              "file",
+              "browser",
+              "search",
+              "other"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "done",
+              "error",
+              "running"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "At"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Duration S"
+          },
+          "detail": {
+            "$ref": "#/components/schemas/ComputerTimelineDetail"
+          }
+        },
+        "required": [
+          "id",
+          "index",
+          "tool",
+          "kind",
+          "title",
+          "status",
+          "detail"
+        ],
+        "title": "ComputerTimelineStep",
+        "type": "object"
+      },
+      "ComputerTodo": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "content",
+          "status"
+        ],
+        "title": "ComputerTodo",
+        "type": "object"
+      },
       "ConfigGetParams": {
         "additionalProperties": false,
         "description": "``key`` selects one getter from ``_CONFIG_GETTERS``; ``cwd`` feeds the ``project`` getter,\n``session_id`` lets ``reasoning`` / ``fast`` answer with the session's live pin.",
@@ -13807,6 +14206,80 @@
         ],
         "title": "CorrectionStatus",
         "type": "string"
+      },
+      "CreateRoutineParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "schedule",
+              "watch"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "schedule": {
+            "title": "Schedule",
+            "type": "string"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Condition"
+          }
+        },
+        "required": [
+          "profile",
+          "name",
+          "kind",
+          "schedule"
+        ],
+        "title": "CreateRoutineParams",
+        "type": "object"
+      },
+      "CreateRoutineResult": {
+        "additionalProperties": false,
+        "properties": {
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            },
+            "title": "Routines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "routines"
+        ],
+        "title": "CreateRoutineResult",
+        "type": "object"
       },
       "CronAction": {
         "enum": [
@@ -20190,6 +20663,37 @@
         "title": "LegacyPluginRow",
         "type": "object"
       },
+      "ListRoutinesParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile"
+        ],
+        "title": "ListRoutinesParams",
+        "type": "object"
+      },
+      "ListRoutinesResult": {
+        "additionalProperties": false,
+        "properties": {
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            },
+            "title": "Routines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "routines"
+        ],
+        "title": "ListRoutinesResult",
+        "type": "object"
+      },
       "LiveSessionStatus": {
         "enum": [
           "idle",
@@ -23385,6 +23889,42 @@
           "lines"
         ],
         "title": "PasteCollapseResult",
+        "type": "object"
+      },
+      "PauseRoutineParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile",
+          "id"
+        ],
+        "title": "PauseRoutineParams",
+        "type": "object"
+      },
+      "PauseRoutineResult": {
+        "additionalProperties": false,
+        "properties": {
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            },
+            "title": "Routines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "routines"
+        ],
+        "title": "PauseRoutineResult",
         "type": "object"
       },
       "PaymentMethodKind": {
@@ -30833,6 +31373,42 @@
         "title": "ReloadMcpStatus",
         "type": "string"
       },
+      "RemoveRoutineParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile",
+          "id"
+        ],
+        "title": "RemoveRoutineParams",
+        "type": "object"
+      },
+      "RemoveRoutineResult": {
+        "additionalProperties": false,
+        "properties": {
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            },
+            "title": "Routines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "routines"
+        ],
+        "title": "RemoveRoutineResult",
+        "type": "object"
+      },
       "RepoDiscoveryPolicy": {
         "additionalProperties": false,
         "description": "``methods_projects._repo_discovery_policy`` \u2014 the effective ``desktop.repo_scan_*`` config.",
@@ -31057,6 +31633,42 @@
         ],
         "title": "ResumePhaseStatus",
         "type": "string"
+      },
+      "ResumeRoutineParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile",
+          "id"
+        ],
+        "title": "ResumeRoutineParams",
+        "type": "object"
+      },
+      "ResumeRoutineResult": {
+        "additionalProperties": false,
+        "properties": {
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            },
+            "title": "Routines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "routines"
+        ],
+        "title": "ResumeRoutineResult",
+        "type": "object"
       },
       "ReviewSummaryPayload": {
         "additionalProperties": false,
@@ -32173,6 +32785,150 @@
           "idempotent"
         ],
         "title": "RoomTombstone",
+        "type": "object"
+      },
+      "Routine": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "schedule",
+              "watch"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "schedule": {
+            "title": "Schedule",
+            "type": "string"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Condition"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "next_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Next Run At"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Last Run At"
+          },
+          "last_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Last Status"
+          },
+          "deliver": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Deliver"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "schedule",
+          "prompt",
+          "enabled"
+        ],
+        "title": "Routine",
+        "type": "object"
+      },
+      "RunRoutineNowParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "profile",
+          "id"
+        ],
+        "title": "RunRoutineNowParams",
+        "type": "object"
+      },
+      "RunRoutineNowResult": {
+        "additionalProperties": false,
+        "properties": {
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            },
+            "title": "Routines",
+            "type": "array"
+          },
+          "started": {
+            "title": "Started",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "routines",
+          "started"
+        ],
+        "title": "RunRoutineNowResult",
         "type": "object"
       },
       "SecretRequestParams": {
@@ -42483,6 +43239,90 @@
         ],
         "title": "UndoIntent",
         "type": "string"
+      },
+      "UpdateRoutineParams": {
+        "additionalProperties": false,
+        "properties": {
+          "profile": {
+            "title": "Profile",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Name"
+          },
+          "schedule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Schedule"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt"
+          },
+          "condition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Condition"
+          }
+        },
+        "required": [
+          "profile",
+          "id"
+        ],
+        "title": "UpdateRoutineParams",
+        "type": "object"
+      },
+      "UpdateRoutineResult": {
+        "additionalProperties": false,
+        "properties": {
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            },
+            "title": "Routines",
+            "type": "array"
+          }
+        },
+        "required": [
+          "routines"
+        ],
+        "title": "UpdateRoutineResult",
+        "type": "object"
       },
       "Usage": {
         "additionalProperties": true,
