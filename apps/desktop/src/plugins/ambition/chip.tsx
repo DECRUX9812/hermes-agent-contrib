@@ -11,14 +11,12 @@ import {
 } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
-import { AMBITION_KEY, type AmbitionSummary, errorText, fetchSessionSummary, putMode } from './api'
+import { AMBITION_KEY, type AmbitionSummary, errorText, fetchSessionSummary, putMode, summaryKey } from './api'
 import { useAmbitionI18n } from './i18n'
 
 // ON state = accent — the same vocabulary the composer's other toggles wear.
 const CHIP_ON = 'bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary'
 const CHIP_OFF = 'text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover) hover:text-foreground'
-
-const summaryKey = (storedSessionId: string) => [AMBITION_KEY, storedSessionId] as const
 
 /**
  * The composer's Ambition toggle. Its state IS the backend mode: the session

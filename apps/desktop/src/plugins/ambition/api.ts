@@ -10,6 +10,25 @@ import type { PluginRestOptions } from '@hermes/plugin-sdk'
 
 export const AMBITION_KEY = 'ambition'
 
+/** The session summary's query key — the one cache entry the chip, the cards
+ *  and the judge rows all read and invalidate. */
+export const summaryKey = (storedSessionId: string) => [AMBITION_KEY, storedSessionId] as const
+
+/** The card a plugin tool result points at: `ambition_card` and
+ *  `ambition_judge` both answer with `card_id`. Null when the result carries
+ *  none — a rejected call, or a result this surface cannot read. */
+export function cardIdFrom(result: unknown): null | string {
+  if (result && typeof result === 'object' && 'card_id' in result) {
+    const id = (result as { card_id?: unknown }).card_id
+
+    if (typeof id === 'string' && id !== '') {
+      return id
+    }
+  }
+
+  return null
+}
+
 /** The narrow slice of the plugin REST door the Ambition UI uses. */
 export interface AmbitionRest {
   <T>(path: string, opts?: PluginRestOptions): Promise<T>

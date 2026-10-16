@@ -167,6 +167,13 @@ test('ambition card survives an edit, an accept and a full reload', async () => 
     await expect(judge.locator('[data-slot="ambition-judge-measured"]')).toContainText('24 demo batches')
     await expect(page.getByText('outside checklist script')).toBeVisible()
 
+    // The Target was edited AFTER the verdict, so the chip keeps the value the
+    // judge was handed and names the one the card carries now — a verdict can
+    // never be read against a target it was not measured against.
+    await expect(judge.locator('[data-slot="ambition-judge-target-edited"]')).toContainText(
+      '30 demo batches checked'
+    )
+
     expect(await currentSessionId(page)).toBeTruthy()
 
     // ── The pillar gate: everything above survives a full window reload. ──
@@ -186,6 +193,10 @@ test('ambition card survives an edit, an accept and a full reload', async () => 
 
     await expect(reloadedJudge).toBeVisible()
     await expect(reloadedJudge).toHaveAttribute('data-verdict', 'pass')
+    await expect(reloadedJudge.locator('[data-slot="ambition-judge-target"]')).toContainText('24 demo batches')
+    await expect(reloadedJudge.locator('[data-slot="ambition-judge-target-edited"]')).toContainText(
+      '30 demo batches checked'
+    )
     await shot(page, '7-ambition', '04-after-reload-judge')
   } finally {
     await real.close()
