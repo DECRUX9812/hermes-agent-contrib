@@ -70,13 +70,11 @@ const ImageGenerateTool: FC<TimelineToolCallProps> = props => {
   // The image card owns successful generations. Failed or malformed results
   // still need the normal tool row: it extracts the error text and gives the
   // user an honest, expandable failure rather than silently dropping the call.
+  // The row is the call's ONE status surface here — the generic row already
+  // paints failed calls as the pill, so heading it with ToolStepHeader too
+  // would draw the call twice.
   if (settledWithoutResult(props) || (result !== undefined && !generatedImageFromResult(result))) {
-    return (
-      <>
-        <ToolStepHeader part={props} />
-        <ToolFallback {...props} />
-      </>
-    )
+    return <ToolFallback {...props} />
   }
 
   return (
@@ -93,12 +91,7 @@ const VisualizationToolPart: FC<TimelineToolCallProps> = props => {
   // Failed or malformed results fall back to the normal tool row so the
   // error stays visible and debuggable instead of silently dropping.
   if (settledWithoutResult(props) || (result !== undefined && !visualizationFromResult(result))) {
-    return (
-      <>
-        <ToolStepHeader part={props} />
-        <ToolFallback {...props} />
-      </>
-    )
+    return <ToolFallback {...props} />
   }
 
   return (
@@ -113,12 +106,7 @@ const DelegateToolPart: FC<TimelineToolCallProps> = props => {
   // A call that failed outright dispatched nothing — there are no children to
   // list, only an error. The generic row extracts and expands it properly.
   if (props.isError || settledWithoutResult(props)) {
-    return (
-      <>
-        <ToolStepHeader part={props} />
-        <ToolFallback {...props} />
-      </>
-    )
+    return <ToolFallback {...props} />
   }
 
   return (
@@ -134,12 +122,7 @@ const ClarifyToolPart: FC<TimelineToolCallProps> = props => {
   // the session's live clarify request, so a later turn's question would
   // otherwise paint onto this row as a second live card.
   if (settledWithoutResult(props)) {
-    return (
-      <>
-        <ToolStepHeader part={props} />
-        <ToolFallback {...props} />
-      </>
-    )
+    return <ToolFallback {...props} />
   }
 
   return (
@@ -152,12 +135,7 @@ const ClarifyToolPart: FC<TimelineToolCallProps> = props => {
 
 const ThemeToolPart: FC<TimelineToolCallProps> = props => {
   if (settledWithoutResult(props)) {
-    return (
-      <>
-        <ToolStepHeader part={props} />
-        <ToolFallback {...props} />
-      </>
-    )
+    return <ToolFallback {...props} />
   }
 
   return (
@@ -170,12 +148,7 @@ const ThemeToolPart: FC<TimelineToolCallProps> = props => {
 
 const SetupBeatToolPart: FC<TimelineToolCallProps> = props => {
   if (settledWithoutResult(props)) {
-    return (
-      <>
-        <ToolStepHeader part={props} />
-        <ToolFallback {...props} />
-      </>
-    )
+    return <ToolFallback {...props} />
   }
 
   return (
