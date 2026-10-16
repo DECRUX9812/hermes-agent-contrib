@@ -13,6 +13,7 @@
  *   data kinds (`data`):      composer.middleware    (ComposerMiddleware)
  *                             composer.attachments   (ComposerAttachmentProvider)
  *                             composer.microActions  (ComposerMicroActionProvider)
+ *                             composer.slashCommands (ComposerSlashCommand)
  *
  * Core keeps ownership of the transcript, input, and submit engine — these
  * seams AUGMENT the composer, they never replace it. Middleware runs as an
@@ -37,6 +38,7 @@ export const COMPOSER_AREAS = {
   middleware: 'composer.middleware',
   attachments: 'composer.attachments',
   microActions: 'composer.microActions',
+  slashCommands: 'composer.slashCommands',
   atCompletions: 'composer.atCompletions',
   modelPill: 'composer.modelPill'
 } as const
@@ -126,6 +128,42 @@ export async function runComposerMiddleware(draft: ComposerDraft): Promise<Compo
   }
 
   return current
+}
+
+/** Payload of a `composer.slashCommands` data contribution — a slash command
+ *  the PLUGIN handles client-side. The dispatcher resolves the command's chat
+ *  (creating the backend session on a fresh draft, exactly like an exec
+ *  command) and hands the run its STORED session id, so a command that keys
+ *  per-session state on the backend lands on the right conversation. A name
+ *  claimed here never reaches `slash.exec` / `command.dispatch`. */
+export interface ComposerSlashCommandContext {
+  /** Text after the command token, trimmed of the leading whitespace. */
+  arg: string
+  /** The stored session id of the chat the command ran in (null only when no
+   *  session could be created). */
+  storedSessionId: null | string
+  /** Render an inline system line in the chat as the command's output. */
+  render: (text: string) => void
+}
+
+export interface ComposerSlashCommand {
+  /** Command name without the leading slash (e.g. `ambition`). */
+  name: string
+  run: (ctx: ComposerSlashCommandContext) => Promise<void> | void
+}
+
+/** The contribution claiming a slash command name, or null. First registration
+ *  wins; a pure registry read (no hook), safe inside the dispatch callback. */
+export function composerSlashCommand(name: string): ComposerSlashCommand | null {
+  for (const contribution of registry.getArea(COMPOSER_AREAS.slashCommands)) {
+    const command = contribution.data as ComposerSlashCommand | undefined
+
+    if (command?.name === name && typeof command.run === 'function') {
+      return command
+    }
+  }
+
+  return null
 }
 
 /** Attach-menu entries contributed by plugins/core, with stable render keys. */

@@ -1,14 +1,24 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { registry } from '@/contrib/registry'
 
-import { COMPOSER_AREAS, type ComposerMiddleware, runComposerMiddleware } from './contrib'
+import { COMPOSER_AREAS, type ComposerMiddleware, type ComposerSlashCommand, composerSlashCommand, runComposerMiddleware } from './contrib'
 
 const disposers: Array<() => void> = []
 
 function addMiddleware(id: string, handler: ComposerMiddleware['handler'], order?: number) {
   disposers.push(
     registry.register({ id, area: COMPOSER_AREAS.middleware, order, data: { handler } satisfies ComposerMiddleware })
+  )
+}
+
+function addSlashCommand(id: string, command: ComposerSlashCommand) {
+  disposers.push(
+    registry.register({
+      area: COMPOSER_AREAS.slashCommands,
+      data: command satisfies ComposerSlashCommand,
+      id
+    })
   )
 }
 
@@ -50,5 +60,25 @@ describe('runComposerMiddleware', () => {
     addMiddleware('async', async d => ({ ...d, text: d.text.toUpperCase() }))
 
     expect(await runComposerMiddleware({ text: 'quiet' })).toEqual({ text: 'QUIET' })
+  })
+})
+
+describe('composerSlashCommand', () => {
+  it('resolves a registered command by name', () => {
+    const run = vi.fn()
+
+    addSlashCommand('test-cmd', { name: 'testcmd', run })
+
+    expect(composerSlashCommand('testcmd')?.run).toBe(run)
+    expect(composerSlashCommand('other')).toBeNull()
+  })
+
+  it('first registration wins and malformed rows are skipped', () => {
+    addSlashCommand('first', { name: 'dup', run: () => undefined })
+    addSlashCommand('second', { name: 'dup', run: () => undefined })
+    registry.register({ area: COMPOSER_AREAS.slashCommands, data: { name: 'broken' }, id: 'no-run' })
+
+    expect(composerSlashCommand('dup')?.run).toBeTruthy()
+    expect(composerSlashCommand('broken')).toBeNull()
   })
 })

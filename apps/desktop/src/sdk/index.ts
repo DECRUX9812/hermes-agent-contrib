@@ -2009,7 +2009,9 @@ export {
   type ComposerAttachmentProvider,
   type ComposerMiddleware,
   type ComposerModelPillContext,
-  type ComposerModelPillProvider
+  type ComposerModelPillProvider,
+  type ComposerSlashCommand,
+  type ComposerSlashCommandContext
 } from '@/app/chat/composer/contrib'
 /** THE session status dot — the one primitive the sidebar row, the pane tabs
  *  and the session switcher render, so a session's status can never disagree
@@ -2095,12 +2097,12 @@ export {
  *  look) — use it for colour picking instead of driving app widgets through
  *  React internals; pair it with `host.sessions.setColor` for session colours. */
 export { APPEARANCE_AREAS } from '@/app/settings/appearance-contrib'
-
 /** THE settings rows: `ListRow` is label + description with the control beside
  *  it (wide) or under it (narrow); `ToggleRow` is the one on/off row — a Switch,
  *  never an Off/On pill pair. Use them for preference rows in plugin panes and
  *  dialogs so they line up with core Settings. */
 export { ListRow, ToggleRow } from '@/app/settings/primitives'
+
 /** THE full per-toolset config panel core Settings renders — provider picker,
  *  env vars / API keys, model catalog picker, and post-setup runners. Route-
  *  decoupled (the "manage keys" deep link is a no-op outside the router); pass
@@ -2251,10 +2253,10 @@ export type { GatewayEventListener } from '@/contrib/events'
 export { Contribute, type ContributeProps } from '@/contrib/react/contribute'
 /** Settings ▸ Plugins entries (`ctx.registerSettingsPage`); `pluginSettingsHref` deep-links one. */
 export { pluginSettingsHref, SETTINGS_PLUGINS_AREA } from '@/contrib/settings-pages'
+export type { Contribution } from '@/contrib/types'
 
 // -- contracts ----------------------------------------------------------------
 
-export type { Contribution } from '@/contrib/types'
 /** The live gateway instance type — for typing the `gateway` prop `ConnectorsTab`
  *  takes; obtain the instance from `host.getGateway()`. */
 export type { HermesGateway } from '@/hermes'
@@ -2343,10 +2345,10 @@ export { formatModifierToken } from '@/lib/keybinds/combo'
 export { LruCache } from '@/lib/lru-cache'
 /** Capture a gateway file download alongside a REST read (see the SDK guide). */
 export { captureGatewayFileDownload } from '@/lib/media'
-
 /** True when a saved provider id names this `model.options` row: its slug,
  *  display name, or a custom-provider alias (`custom:<key>` vs the bare key). */
 export { catalogProviderMatches } from '@/lib/model-options'
+
 /** The app's deterministic identity color for a name (profiles, assignees,
  *  authors), its translucent tag fill, and the curated picker swatches — so
  *  plugin-rendered identities read the same hue as everywhere else. The
@@ -2361,11 +2363,11 @@ export { queryClient } from '@/lib/query-client'
 /** Compact labels for the reasoning levels exported from @hermes/shared, so a
  *  plugin surfacing a thinking depth uses the same spelling as the app. */
 export { reasoningEffortLabel } from '@/lib/reasoning-effort'
-
 /** The app's own gateway-readiness evaluation (setup.status +
  *  setup.runtime_check, reconciled) — pass `host.request`. Don't hand-roll
  *  readiness from raw RPC shapes. */
 export { evaluateRuntimeReadiness, type RuntimeReadinessResult } from '@/lib/runtime-readiness'
+
 /** Row-decoration slots: register a `data` contribution with a `render` for
  *  `SESSION_ROW_AREAS.leading` / `.trailing` to decorate sidebar session rows
  *  (the props carry the row's stored session id). */
@@ -2380,6 +2382,14 @@ export { resolveSiblingWsUrl, type SiblingWsRoute } from '@/lib/sibling-ws-url'
  *  suffix. `relativeTime` is the bidirectional Intl form ("in 14 hr") — use it
  *  for a scheduled next-run, not for an age. */
 export { type AgoLabels, coarseElapsed, fmtDateTime, fmtDayTime, formatAgo, relativeTime } from '@/lib/time'
+/** The transcript's tool-call seam: a plugin claims a tool NAME and its node
+ *  renders in place of the generic tool row wherever that tool's call settles.
+ *  Unclaimed tools render exactly as before. */
+export {
+  TRANSCRIPT_TOOL_PART_AREA,
+  type TranscriptToolPartProps,
+  type TranscriptToolPartRenderer
+} from '@/lib/tool-part-renderers'
 /** The transcript as a contribution area: register a named `::directive{...}`
  *  and the model can render your component inline in assistant messages. */
 export {

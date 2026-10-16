@@ -1,3 +1,4 @@
+import { claimedToolPartRenderer, effectiveToolName } from '@/lib/tool-part-renderers'
 import { isCardTool, isFileEditTool, isSilentTool } from '@/lib/tool-render-class'
 
 /**
@@ -162,17 +163,19 @@ function partPaintWeight(part: unknown, measure: (parts: readonly unknown[]) => 
   }
 
   const toolName = typeof part.toolName === 'string' ? part.toolName : ''
+  const effectiveName = effectiveToolName(part as { args?: unknown; storedResultToolName?: string; toolName: string })
 
   if (isSilentTool(toolName)) {
     return 0
   }
 
-  if (!isCardTool(toolName)) {
+  if (!isCardTool(toolName) && !claimedToolPartRenderer(effectiveName)) {
     return COLLAPSED_ROW_WEIGHT
   }
 
   // A diff is the one card that scales: `FileDiffPanel` mounts a row per line,
   // and a big patch really is the expensive thing in the turn.
+  // A plugin-claimed renderer prices like a card: it mounts a real surface.
   return isFileEditTool(toolName) ? measure([part]) : CARD_WEIGHT
 }
 
