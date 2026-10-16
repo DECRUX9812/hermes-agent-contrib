@@ -55,7 +55,10 @@ test('tool pills fold after completion, keep the scroll anchor, and reopen after
     })
     await expect(viewport).toHaveAttribute('data-following', 'false')
 
-    const anchor = page.getByText(finalText, { exact: true }).first()
+    // Scoped to the transcript: the sessions row previews this same sentence as
+    // soon as the turn seals, and an unscoped `.first()` is that row by DOM
+    // order — it would measure the sidebar, not the answer under the pills.
+    const anchor = viewport.getByText(finalText, { exact: true }).first()
     await expect(anchor).toBeVisible()
     const before = await anchor.evaluate(element => element.getBoundingClientRect().top)
     await shot(page, '3-toolcards', '01-live-pills')

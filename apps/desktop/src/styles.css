@@ -2577,6 +2577,19 @@ body.guest-pointer-lock :is(webview, iframe) {
   margin-top: var(--scaffold-block-gap);
 }
 
+/* The tool run's activity stack is scaffolding that is not a `tool-block`, so
+   neither list above matched it: it carried no margin at all. A streaming turn
+   keeps its prose and its run in two bubbles, held apart by the response
+   group's flex gap (`--scaffold-block-gap` — the interval the scaffold ↔
+   scaffold rule above asks for); sealing rehydrates both into ONE bubble, and
+   the pair then sat flush. That 4px lands after the fold, so anything anchored
+   below the run moved with it. Same interval split or rehydrated. */
+[data-slot='aui_assistant-message-content']
+  > :is([data-slot='tool-block'], [data-slot='aui_thinking-disclosure'], [data-slot='aui_turn-activity'], .aui-md)
+  + [data-slot='tool-activity-stack'] {
+  margin-top: var(--scaffold-block-gap);
+}
+
 /* Except a file edit, which is the deliverable rather than another line in the
    run — a diff you read like a PR, so it keeps the full block gap on both
    sides while the scaffolding around it stays tight. `data-file-edit` is only

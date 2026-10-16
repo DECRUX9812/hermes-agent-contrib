@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { renderMessageStream } from '@/app/session/hooks/use-message-stream/test-harness'
 import { stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '@/components/assistant-ui/test-utils'
 import { Thread } from '@/components/assistant-ui/thread'
+import { ApprovalComposerEntry } from '@/components/assistant-ui/tool/approval'
 import { toRuntimeMessage } from '@/lib/chat-runtime'
 import { clearAllPrompts, setApprovalRequest } from '@/store/prompts'
 import { setShowReasoningFromConfig } from '@/store/reasoning-disclosure'
@@ -72,9 +73,12 @@ function answerOnlyMessage(): ThreadMessage {
 }
 
 function Harness() {
+  // The approval card belongs to its own host above the composer, outside the
+  // transcript, so the surface that carries an approval renders both.
   return (
     <ThreadRuntime messages={[answerOnlyMessage()]}>
       <Thread />
+      <ApprovalComposerEntry runtimeSessionId={SID} storedSessionId={SID} />
     </ThreadRuntime>
   )
 }
@@ -119,14 +123,23 @@ describe('tool feed visibility policy', () => {
   it('answer-only (both switches off) hides reasoning and non-essential tool chrome', async () => {
     setShowReasoningFromConfig(false)
     setShowToolActivityFromConfig('off')
-    setApprovalRequest({ command: 'rm -rf /tmp/x', description: 'dangerous command', sessionId: SID })
+    setApprovalRequest({
+      command: 'rm -rf /tmp/x',
+      description: 'dangerous command',
+      requestId: 'req-1',
+      sessionId: SID
+    })
 
     const { container } = render(<Harness />)
 
     expect(await screen.findByText('final answer only')).toBeTruthy()
     expect(container.querySelector('[data-slot="aui_thinking-disclosure"]')).toBeNull()
     expect(container.querySelector('[data-tool-run-anchor]')).toBeNull()
-    expect(screen.getByRole('button', { name: /Allow once/ })).toBeTruthy()
+    // No chrome switch hides an approval: it keeps its own host above the
+    // composer, visible and actionable.
+    const run = screen.getByRole('button', { name: /Allow once/ })
+    expect(run.closest('[data-approval-stack]')?.getAttribute('data-slot')).toBe('composer-approval-entry')
+    expect(screen.getByRole('button', { name: /Deny/ })).toBeTruthy()
     expect(container.querySelectorAll('[data-tool-step="error"]')).toHaveLength(1)
   })
 
