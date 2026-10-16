@@ -783,8 +783,13 @@ describe('assistant-ui streaming renderer', () => {
     )
 
     // A failed generation is the normal one-line tool row carrying the error
-    // line — not the image card, and not a raw payload dump.
-    const row = container.querySelector<HTMLButtonElement>('[data-tool-step="error"]')
+    // line — not the image card, and not a raw payload dump. One status
+    // surface per call: the failed row paints as a single error pill.
+    const errorPills = container.querySelectorAll<HTMLButtonElement>('[data-tool-step="error"]')
+
+    expect(errorPills).toHaveLength(1)
+
+    const row = errorPills[0]
 
     expect(row?.textContent).toContain('FAL rejected the prompt')
 

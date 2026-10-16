@@ -63,11 +63,13 @@ describe('tool parts sealed without a result', () => {
     $activeSessionId.set('sess-1')
     const { container } = render(<Harness message={sealedMessage('delegate_task', { tasks: [{ goal: 'inspect' }] })} />)
 
-    // The call's one-line pill heads the part; the generic row below it is what
-    // reports the missing result, so scope the assertion to that row.
+    // One status surface for the call: the generic row is the only thing that
+    // reports the missing result — no pill above it repeating the same words.
     await waitFor(() => {
       expect(container.querySelector('[data-tool-row]')?.textContent).toContain('Result unavailable')
     })
+    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(0)
     expect(container.querySelector('[data-delegate-card]')).toBeNull()
     expect(screen.queryByLabelText('Running')).toBeNull()
   })
@@ -78,6 +80,8 @@ describe('tool parts sealed without a result', () => {
     await waitFor(() => {
       expect(container.querySelector('[data-tool-row]')?.textContent).toContain('Result unavailable')
     })
+    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(1)
+    expect(container.querySelectorAll('[data-tool-step]')).toHaveLength(0)
     expect(container.querySelector('[data-slot="aui_generated-image"]')).toBeNull()
     expect(screen.queryByRole('status')).toBeNull()
   })
