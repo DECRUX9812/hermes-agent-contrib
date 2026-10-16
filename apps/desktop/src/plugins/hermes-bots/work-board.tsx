@@ -239,7 +239,7 @@ function NextRow({
   const body = (
     <>
       <Codicon
-        className={cn('mt-0.5 shrink-0', warn ? 'text-amber-600 dark:text-amber-300' : 'text-(--ui-text-quaternary)')}
+        className={cn('mt-0.5 shrink-0', warn ? 'text-warning' : 'text-(--ui-text-quaternary)')}
         name={warn ? 'warning' : icon}
         size="0.85rem"
       />
@@ -248,7 +248,7 @@ function NextRow({
         <span
           className={cn(
             'truncate text-[0.6875rem]',
-            warn ? 'text-amber-700 dark:text-amber-300' : 'text-(--ui-text-tertiary)'
+            warn ? 'text-warning' : 'text-(--ui-text-tertiary)'
           )}
         >
           {detail}

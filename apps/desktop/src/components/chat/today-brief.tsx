@@ -23,9 +23,9 @@ import { useElapsedSeconds } from './activity-timer'
 
 /** Card chrome per concern: the glyph and the tone its count badge wears. */
 const CARD_STYLE: Record<BriefCardId, { icon: string; tone: string }> = {
-  needsYou: { icon: 'bell-dot', tone: 'bg-amber-500/15 text-amber-700 dark:text-amber-300' },
+  needsYou: { icon: 'bell-dot', tone: 'bg-warning/10 text-warning' },
   running: { icon: 'loading', tone: 'bg-(--ui-accent)/12 text-(--ui-accent)' },
-  finished: { icon: 'check-all', tone: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' },
+  finished: { icon: 'check-all', tone: 'bg-success/10 text-success' },
   scheduled: { icon: 'calendar', tone: 'bg-(--ui-bg-tertiary) text-(--ui-text-secondary)' },
   recent: { icon: 'history', tone: 'bg-(--ui-bg-tertiary) text-(--ui-text-secondary)' }
 }
@@ -121,7 +121,7 @@ function TaskCard({
     <button
       className={cn(
         'group flex min-h-32 min-w-0 flex-col gap-1.5 rounded-xl border border-(--ui-stroke-secondary) bg-(--ui-widget-surface-background) p-3 text-left transition-[border-color,box-shadow,transform] duration-200 animate-in fade-in-0 slide-in-from-bottom-1 hover:-translate-y-px hover:border-(--ui-stroke-primary) hover:shadow-md motion-reduce:transform-none motion-reduce:animate-none',
-        needsYou && 'border-amber-500/40'
+        needsYou && 'border-warning/40'
       )}
       data-task-card={session.id}
       onClick={() => {
@@ -132,7 +132,7 @@ function TaskCard({
     >
       <span className="flex w-full items-center gap-1.5 text-[0.6875rem] tabular-nums text-(--ui-text-quaternary)">
         {working && <Codicon className="text-(--ui-accent)" name="loading" size="0.7rem" spinning />}
-        <span className={cn('min-w-0 flex-1 truncate', needsYou && 'text-amber-700 dark:text-amber-300')}>
+        <span className={cn('min-w-0 flex-1 truncate', needsYou && 'text-warning')}>
           {working && progress ? `${status} · ${progress}` : status}
         </span>
         {dot === 'unread' && (

@@ -11,13 +11,14 @@ interface AlertStyle {
   label: string
 }
 
-// GitHub's five alert kinds, mapped to our icon set + a tinted accent.
+// GitHub's five alert kinds, mapped to our icon set + the semantic status
+// scale. "Important" is emphasis, not a state, so it wears neutral fg ink.
 const ALERT_STYLES: Record<AlertType, AlertStyle> = {
-  caution: { accent: 'text-rose-600 dark:text-rose-400', icon: AlertTriangle, label: 'Caution' },
-  important: { accent: 'text-violet-600 dark:text-violet-400', icon: AlertCircle, label: 'Important' },
-  note: { accent: 'text-blue-600 dark:text-blue-400', icon: Info, label: 'Note' },
-  tip: { accent: 'text-emerald-600 dark:text-emerald-400', icon: Zap, label: 'Tip' },
-  warning: { accent: 'text-amber-600 dark:text-amber-400', icon: AlertTriangle, label: 'Warning' }
+  caution: { accent: 'text-danger', icon: AlertTriangle, label: 'Caution' },
+  important: { accent: 'text-fg', icon: AlertCircle, label: 'Important' },
+  note: { accent: 'text-info', icon: Info, label: 'Note' },
+  tip: { accent: 'text-success', icon: Zap, label: 'Tip' },
+  warning: { accent: 'text-warning', icon: AlertTriangle, label: 'Warning' }
 }
 
 const MARKER_RE = /^\s*\[!(note|tip|important|warning|caution)\]\s*\n?/i
