@@ -149,6 +149,11 @@ export interface ComposerSlashCommandContext {
 export interface ComposerSlashCommand {
   /** Command name without the leading slash (e.g. `ambition`). */
   name: string
+  /** Row title in the `/` popover; defaults to the `/name` spelling. Whatever
+   *  it says, picking the row inserts the command name. */
+  label?: string
+  /** One-line description next to that title. */
+  description?: string
   run: (ctx: ComposerSlashCommandContext) => Promise<void> | void
 }
 
@@ -164,6 +169,21 @@ export function composerSlashCommand(name: string): ComposerSlashCommand | null 
   }
 
   return null
+}
+
+/** Every registered client command, in registration order — the same set the
+ *  dispatcher resolves from, so the `/` popover can list a plugin command
+ *  instead of leaving it discoverable only by typing it out. */
+export function useComposerSlashCommands(): ComposerSlashCommand[] {
+  const contributions = useContributions(COMPOSER_AREAS.slashCommands)
+
+  return useMemo(
+    () =>
+      contributions
+        .map(contribution => contribution.data as ComposerSlashCommand | undefined)
+        .filter((command): command is ComposerSlashCommand => Boolean(command?.name) && typeof command?.run === 'function'),
+    [contributions]
+  )
 }
 
 /** Attach-menu entries contributed by plugins/core, with stable render keys. */

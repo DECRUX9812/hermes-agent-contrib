@@ -14,6 +14,7 @@ type AmbitionMessages = {
   accept: string
   altitude: string
   cardUnavailable: string
+  commandDesc: string
   commandOff: string
   commandOn: string
   depth: string
@@ -49,6 +50,7 @@ export const en: AmbitionMessages = {
   accept: 'Accept',
   altitude: 'Altitude',
   cardUnavailable: 'The Ambition card is not available.',
+  commandDesc: 'Turn Ambition mode on or off for this chat',
   commandOff: 'Ambition off for this chat.',
   commandOn: 'Ambition on for this chat.',
   depth: 'Depth',

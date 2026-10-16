@@ -139,6 +139,7 @@ const plugin: HermesPlugin = {
         area: COMPOSER_AREAS.slashCommands,
         data: {
           name: 'ambition',
+          description: ctx.i18n.t('commandDesc'),
           run: ({ arg, render, storedSessionId }: ComposerSlashCommandContext) =>
             runAmbitionCommand(arg, storedSessionId, render, ctx.i18n.t)
         }

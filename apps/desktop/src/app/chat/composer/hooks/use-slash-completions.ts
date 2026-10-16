@@ -21,6 +21,9 @@ import { $slashCompletionsEpoch, cachedSlashCompletion, hasCachedSlashCompletion
 import { normalize } from '@/lib/text'
 import { $sessions } from '@/store/session'
 
+import { slashCompletionToken } from '../composer-utils'
+import { useComposerSlashCommands } from '../contrib'
+
 import type { CompletionEntry, CompletionPayload } from './use-live-completion-adapter'
 import { useLiveCompletionAdapter } from './use-live-completion-adapter'
 
@@ -51,6 +54,11 @@ function textValue(value: unknown, fallback = ''): string {
 
 function commandText(value: string): string {
   return value.startsWith('/') ? value : `/${value}`
+}
+
+/** The command a completion row names (`/ambition off` → `ambition`). */
+function rowCommandName(value: unknown): string {
+  return typeof value === 'string' ? slashCompletionToken(value.split(/\s+/, 1)[0] ?? '') : ''
 }
 
 /** How many recent sessions to surface inline before the "Browse all…" entry. */
@@ -85,6 +93,65 @@ export function useSlashCompletions(options: {
 
   const scopeKey = sessionId ?? (profile ? `profile:${profile}` : '')
   const catalogKey = scopeKey ? `catalog:${scopeKey}` : 'catalog'
+
+  // Plugin-owned client commands (`composer.slashCommands`) are listed here as
+  // well as dispatched, or a command the composer happily runs when typed can
+  // never be found. A name one of them claims belongs to it: `runSlash`
+  // resolves `composerSlashCommand` BEFORE any backend surface, so a catalog
+  // row naming the same command could only describe one the user cannot reach
+  // — it is dropped and the plugin's row stands in its place. First
+  // registration wins, the same rule the dispatcher applies.
+  const pluginCommands = useComposerSlashCommands()
+
+  const pluginSlash = useMemo(() => {
+    const claimed = new Set<string>()
+    const rows: Array<{ key: string; row: CompletionEntry }> = []
+
+    for (const command of pluginCommands) {
+      const text = commandText(command.name.trim())
+      const key = rowCommandName(text)
+
+      if (!key || claimed.has(key)) {
+        continue
+      }
+
+      claimed.add(key)
+      rows.push({
+        key,
+        row: {
+          text,
+          // The row may show a friendlier title; picking it still inserts the
+          // command name, which is what the chip and the dispatcher carry.
+          display: command.label?.trim() || text,
+          meta: command.description?.trim() ?? '',
+          group: 'Commands'
+        }
+      })
+    }
+
+    return { claimed, rows, signature: rows.map(entry => entry.key).join('|') }
+  }, [pluginCommands])
+
+  /** Plugin rows matching a query, narrowed by the same prefix rule the
+   *  backend applies to a command name. A query past the name is its argument
+   *  stage, where this seam has nothing to offer for a client command. */
+  const pluginRows = useCallback(
+    (query: string) =>
+      /\s/.test(query)
+        ? []
+        : pluginSlash.rows.filter(entry => entry.key.startsWith(normalize(query))).map(entry => entry.row),
+    [pluginSlash]
+  )
+
+  /** Whether a completion row names a command a plugin owns. */
+  const rowIsClaimed = useCallback(
+    (text: unknown) => {
+      const key = rowCommandName(text)
+
+      return Boolean(key) && pluginSlash.claimed.has(key)
+    },
+    [pluginSlash]
+  )
 
   // Warm argument_mode before the first `/` so Space treats /review as text.
   useEffect(() => {
@@ -180,8 +247,11 @@ export function useSlashCompletions(options: {
 
           // Prefer the categorized layout so the popover renders section headers
           // (Session, Tools & Skills, ...). Fall back to the flat list when the
-          // backend didn't categorize.
-          const sections = catalog.categories?.length ? catalog.categories : [{ name: '', pairs: catalog.pairs ?? [] }]
+          // backend didn't categorize. Rows naming a plugin-owned command are
+          // dropped here; the plugin's own row replaces them below.
+          const sections = (catalog.categories?.length ? catalog.categories : [{ name: '', pairs: catalog.pairs ?? [] }])
+            .map(section => ({ ...section, pairs: section.pairs.filter(([command]) => !rowIsClaimed(command)) }))
+            .filter(section => section.pairs.length > 0)
 
           const items = sections.flatMap<CompletionEntry>(section =>
             section.pairs.map(([command, meta]) => ({
@@ -202,7 +272,11 @@ export function useSlashCompletions(options: {
           const skillRows: CompletionEntry[] = []
 
           for (const [command, meta] of catalog.pairs ?? []) {
-            if (!categorized.has(command.toLowerCase()) && isDesktopSlashExtensionCommand(command)) {
+            if (
+              !categorized.has(command.toLowerCase()) &&
+              !rowIsClaimed(command) &&
+              isDesktopSlashExtensionCommand(command)
+            ) {
               skillRows.push({ text: command, display: command, group: 'Skills', meta })
             }
           }
@@ -212,7 +286,11 @@ export function useSlashCompletions(options: {
           // query takes the other branch, where nothing is hidden.
           items.push(...rankSkillCommands(skillRows, catalog.skills, { pruneUnusedBuiltins: true }))
 
-          return { items, query }
+          // Plugin commands lead the browse list: they live only on this side
+          // of the wire, the user installed them deliberately, and there are
+          // few of them — the same reason the skills someone uses rank above
+          // the bundled ones.
+          return { items: [...pluginRows(query), ...items], query }
         }
 
         const result = await cachedSlashCompletion(`slash:${scopeKey}:${text.toLowerCase()}`, () =>
@@ -234,7 +312,9 @@ export function useSlashCompletions(options: {
         // only its review slice here) must not suggest the subcommands the
         // exec gate would refuse — filter before the arg-stub rewrite so the
         // token under test is the bare subcommand word.
-        const scopedItems = filterDesktopSubcommandCompletions(text, result.items ?? [], { isArgCompletion })
+        const scopedItems = filterDesktopSubcommandCompletions(text, result.items ?? [], {
+          isArgCompletion
+        }).filter(item => !rowIsClaimed(item.text))
 
         // An alias the user typed to completion (`/reset`) must surface even
         // though aliases are hidden while browsing — otherwise the popover
@@ -280,7 +360,10 @@ export function useSlashCompletions(options: {
           return { items: decorated, query }
         }
 
-        const items = [...decorated].sort(
+        // Plugin commands lead the Commands group: the user just typed the
+        // name that brought them here, so burying them under every backend row
+        // matching the same prefix would be a discovery gate, not a ranking.
+        const items = [...pluginRows(query), ...decorated].sort(
           (a, b) => groupOrder.indexOf(a.group ?? '') - groupOrder.indexOf(b.group ?? '')
         )
 
@@ -289,7 +372,7 @@ export function useSlashCompletions(options: {
         return { items: [], query }
       }
     },
-    [gateway, skinThemes, activeSkin, scopeKey, catalogKey, sessionParams]
+    [gateway, skinThemes, activeSkin, scopeKey, catalogKey, sessionParams, pluginRows, rowIsClaimed]
   )
 
   const toItem = useCallback((entry: CompletionEntry, index: number): Unstable_TriggerItem => {
@@ -336,5 +419,14 @@ export function useSlashCompletions(options: {
     [skinThemes, scopeKey, catalogKey]
   )
 
-  return useLiveCompletionAdapter({ enabled, epoch: `${epoch}:${locale}`, fetcher, isCached, toItem })
+  // The plugin signature rides along so a command registered after the popover
+  // already answered (a plugin enabled from the plugins page) is declared
+  // stale, instead of needing a keystroke to appear.
+  return useLiveCompletionAdapter({
+    enabled,
+    epoch: `${epoch}:${locale}:${pluginSlash.signature}`,
+    fetcher,
+    isCached,
+    toItem
+  })
 }
