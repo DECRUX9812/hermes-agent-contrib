@@ -31,57 +31,68 @@ import { AmbitionJudgePart } from './judge'
 // gateway stream under this wire name.
 const CARD_UPDATED = 'plugin.ambition.card.updated'
 
-/** Typed `/ambition [off]` — the desktop owns it (the backend's public
- *  command surface passes no session id), routed through the same REST call
- *  the chip uses so the mode lands on THIS chat. */
-function runAmbitionCommand(arg: string, storedSessionId: null | string, render: (text: string) => void): void {
+/** The ONE session-scoped mode write. Both entry points land here — the
+ *  composer command and the palette rows — so both hit the plugin's REST door
+ *  with an explicit session id: the backend's public command surface carries
+ *  none, and the mode belongs to the chat the user is in, not to the process. */
+function setModeFor(sessionId: string, enabled: boolean): Promise<void> {
+  return putMode(sessionId, enabled).then(() => {
+    void queryClient.invalidateQueries({ queryKey: [AMBITION_KEY] })
+  })
+}
+
+/** Typed `/ambition [off]` — the desktop owns it, routed through the same
+ *  session-scoped write the palette rows use so the mode lands on THIS chat.
+ *  Resolves once the write and its inline line are done. */
+async function runAmbitionCommand(
+  arg: string,
+  storedSessionId: null | string,
+  render: (text: string) => void,
+  t: (key: string) => string
+): Promise<void> {
   if (!storedSessionId) {
-    render('Ambition needs a chat to scope to — send a message first.')
+    render(t('needsChat'))
 
     return
   }
 
   const enabled = arg.trim().toLowerCase() !== 'off'
 
-  void putMode(storedSessionId, enabled)
-    .then(() => {
-      void queryClient.invalidateQueries({ queryKey: [AMBITION_KEY] })
-      render(enabled ? 'Ambition on for this chat.' : 'Ambition off for this chat.')
-    })
-    .catch((error: unknown) => {
-      render(`Ambition: ${errorText(error)}`)
-    })
+  try {
+    await setModeFor(storedSessionId, enabled)
+    render(enabled ? t('commandOn') : t('commandOff'))
+  } catch (error: unknown) {
+    render(`${enabled ? t('modeOnFailed') : t('modeOffFailed')} ${errorText(error)}`)
+  }
 }
 
 const paletteRows = (t: (key: string) => string): PaletteContribution[] => {
-  const setMode = (enabled: boolean, missing: string) => {
+  const setMode = (enabled: boolean): Promise<void> => {
     const sessionId = host.state.focusedStoredSessionId.get()
 
     if (!sessionId) {
-      host.notify({ kind: 'error', message: missing })
+      host.notify({ kind: 'error', message: t('needsChat') })
 
-      return
+      return Promise.resolve()
     }
 
-    void putMode(sessionId, enabled)
-      .then(() => void queryClient.invalidateQueries({ queryKey: [AMBITION_KEY] }))
-      .catch((error: unknown) => host.notifyError(error, errorText(error)))
+    return setModeFor(sessionId, enabled).catch((error: unknown) => {
+      host.notifyError(error, errorText(error))
+    })
   }
-
-  const missing = 'Ambition needs a chat to scope to — open or send a message first.'
 
   return [
     {
       id: 'ambition.on',
-      keywords: ['ambition', 'mode', 'card'],
+      keywords: ['ambition', 'mode', 'card', '/ambition'],
       label: t('onCommand'),
-      run: () => setMode(true, missing)
+      run: () => void setMode(true)
     },
     {
       id: 'ambition.off',
-      keywords: ['ambition', 'mode', 'off'],
+      keywords: ['ambition', 'mode', 'off', '/ambition'],
       label: t('offCommand'),
-      run: () => setMode(false, missing)
+      run: () => void setMode(false)
     }
   ]
 }
@@ -129,7 +140,7 @@ const plugin: HermesPlugin = {
         data: {
           name: 'ambition',
           run: ({ arg, render, storedSessionId }: ComposerSlashCommandContext) =>
-            runAmbitionCommand(arg, storedSessionId, render)
+            runAmbitionCommand(arg, storedSessionId, render, ctx.i18n.t)
         }
       }
     ])
@@ -139,12 +150,7 @@ const plugin: HermesPlugin = {
         paletteRows(ctx.i18n.t).map(row => ({
           id: `palette-${row.id}`,
           area: PALETTE_AREA,
-          data: {
-            id: `ambition.${row.id}`,
-            keywords: row.keywords,
-            label: row.label,
-            run: row.run
-          } satisfies PaletteContribution
+          data: row
         }))
       )
 

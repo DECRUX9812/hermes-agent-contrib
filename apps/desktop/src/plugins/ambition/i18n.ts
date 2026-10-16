@@ -14,6 +14,8 @@ type AmbitionMessages = {
   accept: string
   altitude: string
   cardUnavailable: string
+  commandOff: string
+  commandOn: string
   depth: string
   evidence: string
   evidenceHide: string
@@ -23,6 +25,7 @@ type AmbitionMessages = {
   modeOffFailed: string
   modeOn: string
   modeOnFailed: string
+  needsChat: string
   needsFromYou: string
   offCommand: string
   onCommand: string
@@ -34,6 +37,7 @@ type AmbitionMessages = {
   statusEdited: string
   statusProposed: string
   target: string
+  targetEditedAfterJudging: string
   unavailableTitle: string
   verdictFail: string
   verdictInconclusive: string
@@ -45,6 +49,8 @@ export const en: AmbitionMessages = {
   accept: 'Accept',
   altitude: 'Altitude',
   cardUnavailable: 'The Ambition card is not available.',
+  commandOff: 'Ambition off for this chat.',
+  commandOn: 'Ambition on for this chat.',
   depth: 'Depth',
   evidence: 'Evidence',
   evidenceHide: 'Hide evidence',
@@ -54,6 +60,7 @@ export const en: AmbitionMessages = {
   modeOffFailed: 'Could not turn Ambition off.',
   modeOn: 'Ambition on for this chat: your next substantial ask gets an editable card before the work starts.',
   modeOnFailed: 'Could not turn Ambition on.',
+  needsChat: 'Ambition needs a chat to scope to — send a message first.',
   needsFromYou: 'Needs from you',
   offCommand: 'Ambition: Turn off for this chat',
   onCommand: 'Ambition: Turn on for this chat',
@@ -65,6 +72,7 @@ export const en: AmbitionMessages = {
   statusEdited: 'edited',
   statusProposed: 'proposed',
   target: 'Target',
+  targetEditedAfterJudging: 'target edited after judging',
   unavailableTitle: 'Ambition needs the ambition plugin',
   verdictFail: 'Fail',
   verdictInconclusive: 'Inconclusive',

@@ -13,13 +13,14 @@ import { useState } from 'react'
 
 import {
   acceptCard,
-  AMBITION_KEY,
   type AmbitionCard,
   type AmbitionField,
+  cardIdFrom,
   declineCard,
   errorText,
   fetchSessionSummary,
-  patchCard
+  patchCard,
+  summaryKey
 } from './api'
 import { useAmbitionI18n } from './i18n'
 
@@ -40,20 +41,6 @@ const FIELD_LABELS: Record<AmbitionField, string> = {
 // The plugin store clamps fields at 2000 chars; mirror the cap so a paste
 // doesn't round-trip to a 422.
 const MAX_FIELD_LEN = 2000
-
-const summaryKey = (storedSessionId: string) => [AMBITION_KEY, storedSessionId] as const
-
-const cardIdFromResult = (result: unknown): null | string => {
-  if (result && typeof result === 'object' && 'card_id' in result) {
-    const id = (result as { card_id?: unknown }).card_id
-
-    if (typeof id === 'string' && id !== '') {
-      return id
-    }
-  }
-
-  return null
-}
 
 /** One labelled field, editable inline: a quiet textarea that PATCHes the
  *  card on blur when its text changed. Remounts on the card's `updated_at`
@@ -109,7 +96,7 @@ export function AmbitionCardPart({ result }: TranscriptToolPartProps) {
   const storedSessionId = useValue(useSessionView().$storedId)
   const [saving, setSaving] = useState(false)
 
-  const cardId = cardIdFromResult(result)
+  const cardId = cardIdFrom(result)
 
   const { data } = useQuery({
     enabled: Boolean(storedSessionId),

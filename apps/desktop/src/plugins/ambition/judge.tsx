@@ -1,7 +1,20 @@
-import { cn, StatusBadge, type StatusState, type TranscriptToolPartProps } from '@hermes/plugin-sdk'
+import {
+  cn,
+  StatusBadge,
+  type StatusState,
+  type TranscriptToolPartProps,
+  useQuery,
+  useSessionView,
+  useValue
+} from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
-import { type AmbitionVerdict } from './api'
+import {
+  type AmbitionVerdict,
+  cardIdFrom,
+  fetchSessionSummary,
+  summaryKey
+} from './api'
 import { useAmbitionI18n } from './i18n'
 
 // Verdict → the shared status vocabulary: pass is done (green), fail is
@@ -56,14 +69,39 @@ const targetFromResult = (result: unknown): string =>
     ? (result as { target: string }).target
     : ''
 
+/** Target is the one card field a user can still move after a verdict was
+ *  recorded, and the verdict is a claim about the value the judge was handed. */
+const targetMoved = (judged: string, current: string): boolean =>
+  Boolean(judged && current && judged.trim() !== current.trim())
+
 /**
  * The judge result chip at the `ambition_judge` tool call: Target vs Measured
  * (numbers read as numbers), the shared status mark for the verdict, and the
  * outside judge's name. The evidence — the why — expands on click.
+ *
+ * The Target shown is the one the judge was handed (the card as it stood when
+ * the verdict was recorded), never the card's live value: a verdict next to a
+ * target it was never measured against reads as a different — and better —
+ * result than the judge reported. When the card's Target HAS moved since, the
+ * chip says so, and names the value the card carries now.
  */
 export function AmbitionJudgePart({ args, isError, result }: TranscriptToolPartProps) {
   const t = useAmbitionI18n()
   const [showEvidence, setShowEvidence] = useState(false)
+  const storedSessionId = useValue(useSessionView().$storedId)
+
+  // The card the verdict belongs to, read back from backend truth: it is the
+  // only place the CURRENT Target lives. Same query the chip and cards read.
+  const cardId = cardIdFrom(result)
+
+  const { data } = useQuery({
+    enabled: Boolean(storedSessionId && cardId),
+    queryFn: () => fetchSessionSummary(storedSessionId as string),
+    queryKey: summaryKey(storedSessionId ?? ''),
+    refetchInterval: 60_000,
+    retry: false,
+    staleTime: 30_000
+  })
 
   // The plugin tool reports {ok: false, ...} instead of throwing; either a
   // failed call or a rejected record keeps the honest error line.
@@ -88,7 +126,12 @@ export function AmbitionJudgePart({ args, isError, result }: TranscriptToolPartP
   const verdictLabel =
     facts.verdict === 'pass' ? t('verdictPass') : facts.verdict === 'fail' ? t('verdictFail') : t('verdictInconclusive')
 
-  const target = targetFromResult(result)
+  const judgedTarget = targetFromResult(result)
+  const currentTarget = (cardId ? data?.cards.find(card => card.id === cardId)?.fields.target : '') || ''
+  // A result with no target of its own (an older record) still shows the
+  // card's current value, with nothing to compare against.
+  const target = judgedTarget || currentTarget
+  const targetEdited = targetMoved(judgedTarget, currentTarget)
 
   return (
     <div
@@ -101,6 +144,11 @@ export function AmbitionJudgePart({ args, isError, result }: TranscriptToolPartP
         {target ? (
           <span className="font-mono tabular-nums" data-slot="ambition-judge-target">
             {t('target') + ': ' + target}
+          </span>
+        ) : null}
+        {targetEdited ? (
+          <span className="min-w-0 truncate text-ui-2xs text-fg-muted" data-slot="ambition-judge-target-edited">
+            {t('targetEditedAfterJudging') + ': ' + currentTarget}
           </span>
         ) : null}
         <span className="font-mono tabular-nums" data-slot="ambition-judge-measured">
