@@ -7,7 +7,7 @@ import {
   useMessagePartText
 } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, type FC, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { type ComponentProps, createElement, type FC, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useSessionView } from '@/app/chat/session-view'
 import { CatalogInstallTool } from '@/components/assistant-ui/catalog-install-tool'
@@ -29,11 +29,18 @@ import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { GeneratedImage } from '@/components/chat/generated-image-result'
 import { SCAFFOLD_LABEL_CLASS, SCAFFOLD_META_CLASS, ScaffoldRow } from '@/components/chat/scaffold-row'
 import { VisualizationCard } from '@/components/chat/visualization-card'
+import { ContribBoundary } from '@/contrib/react/boundary'
+import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
 import { mcpTargets, toolLabels } from '@/lib/connector-tools'
 import { generatedImageFromResult } from '@/lib/generated-images'
 import { separateGluedReasoningBlocks } from '@/lib/reasoning-blocks'
 import { isTodoToolName } from '@/lib/todos'
+import {
+  claimedToolPartIn,
+  TRANSCRIPT_TOOL_PART_AREA,
+  type TranscriptToolPartProps
+} from '@/lib/tool-part-renderers'
 import { type CardToolName, isCardTool, isCardToolName } from '@/lib/tool-render-class'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
@@ -207,10 +214,31 @@ const TOOL_CARDS: Record<CardToolName, FC<TimelineToolCallProps>> = {
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   const showToolActivity = useStore($showToolActivity)
   const inToolCardStack = useContext(ToolCardStackContext)
+  const rendererContributions = useContributions(TRANSCRIPT_TOOL_PART_AREA)
 
   // todo parts are hoisted to a dedicated panel above the message content.
   if (isTodoToolName(props.toolName)) {
     return null
+  }
+
+  // A plugin-claimed renderer draws the SETTLED call itself; a call still
+  // running keeps the standard pill and a failed one the expandable error row
+  // (the host owns both — a broken plugin can't swallow its own failure).
+  // The claim resolves through the tool_search bridge: a `tool_call` part is
+  // its single inner tool's call when a renderer claims that tool.
+  const claimed = claimedToolPartIn(rendererContributions, props as TranscriptToolPartProps & { storedResultToolName?: string })
+
+  if (claimed && !props.isError && !settledWithoutResult(props)) {
+    const settled = props.result !== undefined
+
+    return (
+      <ContribBoundary id={`tool-part:${claimed.props.toolName}`} variant="chip">
+        {/* Mounted as a component (createElement), never called inline: the
+          renderer's hooks must belong to it, and a plugin load/replace swaps
+          the component type so the leaf remounts cleanly (React #310). */}
+        {settled ? createElement(claimed.renderer.render, claimed.props) : <ToolStepHeader part={props} />}
+      </ContribBoundary>
+    )
   }
 
   if (inToolCardStack && coveredByToolCards(props)) {

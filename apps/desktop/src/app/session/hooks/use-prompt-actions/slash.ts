@@ -2,6 +2,7 @@ import { skillInvocationText } from '@hermes/shared'
 import { parseCommandDispatch, parseSlashCommand } from '@hermes/shared'
 import { type MutableRefObject, useCallback, useRef } from 'react'
 
+import { composerSlashCommand } from '@/app/chat/composer/contrib'
 import { mergeOlderTranscriptPage } from '@/app/chat/transcript-backfill'
 import { prepareDefaultNewSession } from '@/app/session/new-session-route'
 import { invalidateContextBreakdown } from '@/app/shell/hooks/use-context-breakdown'
@@ -1372,6 +1373,25 @@ export function useSlashCommand(deps: SlashCommandDeps) {
         }
 
         const ctx: SlashActionCtx = { arg, command, name, recordInput, sessionHint }
+
+        // A plugin-owned client command (`composer.slashCommands`) runs right
+        // here, session-scoped: the backend's public command surface passes no
+        // session id, so a plugin command that keys per-session state must be
+        // handled before any dispatch can send it there.
+        const pluginCommand = composerSlashCommand(name)
+
+        if (pluginCommand) {
+          const resolved = await withSlashOutput(ctx)
+
+          if (!resolved) {
+            return
+          }
+
+          await pluginCommand.run({ arg, render: resolved.render, storedSessionId: resolved.storedSessionId })
+
+          return
+        }
+
         const surface = resolveDesktopCommand(`/${name}`)?.surface
 
         switch (surface?.kind) {

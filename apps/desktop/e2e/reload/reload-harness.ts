@@ -38,6 +38,9 @@ export interface BootOptions {
   profiles?: string[]
   /** Approval policy for turns that exercise the terminal gate. */
   approvals?: 'manual' | 'off'
+  /** Seed the sandbox HERMES_HOME before the app (and its backend) boots —
+   *  e.g. installing a Hermes plugin the spec exercises. */
+  setupHome?: (hermesHome: string) => void
 }
 
 export interface RealApp {
@@ -64,6 +67,7 @@ export async function bootReal(label: string, opts: BootOptions = {}): Promise<R
 
   try {
     writeProviderHome(box.hermesHome, provider.url, '', opts.approvals ?? 'off')
+    opts.setupHome?.(box.hermesHome)
 
     for (const name of opts.profiles ?? []) {
       writeProviderHome(path.join(box.hermesHome, 'profiles', name), provider.url, '', opts.approvals ?? 'off')

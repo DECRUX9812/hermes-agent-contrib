@@ -2,6 +2,7 @@ import { setThemeCall } from '@/components/assistant-ui/theme-picker/args'
 import { deliveryTargetFromCommand } from '@/components/assistant-ui/thread/agent-delivery'
 import { toolLabels } from '@/lib/connector-tools'
 import { isTodoToolName } from '@/lib/todos'
+import { claimedToolPartRenderer, effectiveToolName } from '@/lib/tool-part-renderers'
 import { isCardTool, isCardToolName, isSilentTool } from '@/lib/tool-render-class'
 
 export interface CoveredToolPart {
@@ -9,6 +10,7 @@ export interface CoveredToolPart {
   args?: unknown
   isError?: boolean
   result?: unknown
+  storedResultToolName?: string
 }
 
 function extractTerminalCommand(args: unknown): string {
@@ -25,6 +27,11 @@ type CoveredPredicate = (part: CoveredToolPart) => boolean
 
 const EXCLUDED_PREDICATES: readonly CoveredPredicate[] = [
   part => isTodoToolName(part.toolName),
+  // A plugin-claimed renderer draws the call itself at its place in the turn;
+  // the stack drawing a pill for it too would paint the same call twice. The
+  // claim resolves through the tool_search bridge: a `tool_call` part is its
+  // single inner tool's call when that tool is claimed.
+  part => Boolean(claimedToolPartRenderer(effectiveToolName(part))),
   part => part.toolName === 'terminal' && Boolean(deliveryTargetFromCommand(extractTerminalCommand(part.args))),
   part => part.toolName === 'react_to_message' && !part.isError,
   part => isCardTool(part.toolName) || isCardToolName(part.toolName),
