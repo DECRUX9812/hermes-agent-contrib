@@ -151,7 +151,7 @@ export function AgentsSection() {
           {/* Folded, a bot needing attention is invisible — surface a passive
               dot; the expanded rows carry the reason themselves. */}
           {!open && Object.keys(attentionByKey).length > 0 && (
-            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-amber-500" />
+            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-warning" />
           )}
           <DisclosureCaret
             className={cn(
@@ -332,7 +332,7 @@ function AgentRow({ bot }: { bot: RosterRow }) {
             <Tip label={botAttentionHint(attention.reason)}>
               <Codicon
                 aria-label={b.roster.needsAttention}
-                className="shrink-0 text-[0.6875rem] text-amber-600 dark:text-amber-300"
+                className="shrink-0 text-[0.6875rem] text-warning"
                 name="warning"
               />
             </Tip>

@@ -157,7 +157,7 @@ export function ScreenInstallCard({ bot, status, onInstalled }: ScreenInstallCar
             <div ref={logEnd} />
           </pre>
         ) : null}
-        {error ? <div className="text-xs text-red-500">{error}</div> : null}
+        {error ? <div className="text-xs text-danger">{error}</div> : null}
         <div className="text-xs text-muted-foreground">{t.screen.installHint}</div>
       </div>
     </div>

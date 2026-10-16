@@ -305,7 +305,7 @@ function ComputerPanelContent({ bot, meta }: { bot: RosterRow; meta?: BotMeta | 
             <div className="relative bg-surface-sunken" style={{ height }}>
               <button
                 aria-label={`${t.screen.portalTitle}: ${caption || chip}`}
-                className={`absolute inset-0 block size-full overflow-hidden text-left ${tone === 'human' ? 'ring-2 ring-inset ring-danger' : tone === 'other' ? 'ring-2 ring-inset ring-warning' : ''}`}
+                className={`absolute inset-0 block size-full overflow-hidden text-left ${tone === 'human' ? 'ring-2 ring-inset ring-warning' : tone === 'other' ? 'ring-2 ring-inset ring-info' : ''}`}
                 onClick={() => openBotScreen(bot, meta ?? null)}
                 ref={boxRef}
                 type="button"
