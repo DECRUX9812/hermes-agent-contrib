@@ -49,7 +49,7 @@ function runStatusGlyph(status: BotRunStatus): string {
 function runStatusClass(status: BotRunStatus): string {
   switch (status) {
     case 'attention':
-      return 'text-amber-600 dark:text-amber-300'
+      return 'text-warning'
 
     case 'failed':
       return 'text-destructive'

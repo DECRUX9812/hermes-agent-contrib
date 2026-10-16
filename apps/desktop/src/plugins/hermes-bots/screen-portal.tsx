@@ -85,10 +85,12 @@ const TONE_ICON: Record<PortalTone, string> = {
   unknown: 'device-desktop'
 }
 
+// Same status tokens the pane's chip uses (screen-panel.tsx CHIP_CLASS):
+// live is success-green, a held lease is amber, a third-party holder is info.
 const TONE_DOT: Record<PortalTone, string> = {
-  live: 'bg-emerald-500',
-  human: 'bg-red-500',
-  other: 'bg-amber-500',
+  live: 'bg-success',
+  human: 'bg-warning',
+  other: 'bg-info',
   off: 'bg-(--ui-text-quaternary)',
   missing: 'bg-(--ui-text-quaternary)',
   unsupported: 'bg-(--ui-text-quaternary)',

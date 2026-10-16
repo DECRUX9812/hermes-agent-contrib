@@ -37,7 +37,7 @@ import { ID } from './shared'
 function eventGlyphClass(status: BotInboundEvent['status']): string {
   switch (status) {
     case 'attention':
-      return 'text-amber-600 dark:text-amber-300'
+      return 'text-warning'
 
     case 'failed':
       return 'text-destructive'

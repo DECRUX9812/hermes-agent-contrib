@@ -72,7 +72,7 @@ export function BotCardMeta({ bot }: { bot: RosterRow }) {
 
   return (
     <div
-      className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[0.6875rem] text-(--ui-text-tertiary)"
+      className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-ui-2xs text-(--ui-text-tertiary)"
       data-testid="bot-card-meta"
     >
       {items.map((item, index) => (

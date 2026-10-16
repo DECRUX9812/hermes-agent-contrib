@@ -239,7 +239,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
           <Tip label={availabilityLabel}>
             <span
               aria-label={availabilityLabel}
-              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] text-amber-600 ring-1 ring-(--ui-stroke-tertiary) dark:text-amber-300"
+              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] text-warning ring-1 ring-(--ui-stroke-tertiary)"
             >
               <Codicon name="debug-disconnect" />
             </span>

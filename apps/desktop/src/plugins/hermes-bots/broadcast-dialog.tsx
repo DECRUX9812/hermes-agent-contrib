@@ -48,7 +48,7 @@ function BroadcastStatusGlyph({ status }: { status: BroadcastEntry['status'] }) 
     return <Codicon className="text-destructive" name="error" />
   }
 
-  return <Codicon aria-label={b.broadcast.title} className="text-green-600 dark:text-green-400" name="check" />
+  return <Codicon aria-label={b.broadcast.title} className="text-success" name="check" />
 }
 
 function BroadcastResultCard({ entry }: { entry: BroadcastEntry }) {

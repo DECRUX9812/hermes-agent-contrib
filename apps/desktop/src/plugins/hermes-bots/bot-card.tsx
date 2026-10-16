@@ -172,7 +172,7 @@ export function BotCard({
             <div
               className={cn(
                 'min-w-0 line-clamp-2 text-xs leading-relaxed text-(--ui-text-tertiary) flex items-center gap-1.5',
-                liveTone === 'amber' && 'text-amber-600 dark:text-amber-300',
+                liveTone === 'amber' && 'text-warning',
                 !liveText && fromBot && 'italic'
               )}
             >

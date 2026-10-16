@@ -539,9 +539,9 @@ function RoutineRunHistory({ job, owner }: { job: RoutineJob; owner: RosterRow }
               className="flex items-center gap-2 rounded-md px-1.5 py-1.5 text-xs text-(--ui-text-tertiary)"
               key={run.id}
             >
-              <Codicon aria-label={statusLabel} className="shrink-0 text-[0.6875rem]" name={statusIcon} />
+              <Codicon aria-label={statusLabel} className="shrink-0 text-ui-2xs" name={statusIcon} />
               <span className="min-w-0 flex-1 truncate">{label}</span>
-              <span className="shrink-0 text-[0.65rem] text-(--ui-text-quaternary)">
+              <span className="shrink-0 text-ui-2xs text-(--ui-text-quaternary)">
                 {atMs ? rosterRowAge(atMs, t.sidebar.row) : ''}
               </span>
             </div>
@@ -561,19 +561,19 @@ function RoutineRunHistory({ job, owner }: { job: RoutineJob; owner: RosterRow }
             <Codicon
               aria-label={statusLabel}
               className={cn(
-                'shrink-0 text-[0.6875rem]',
+                'shrink-0 text-ui-2xs',
                 run.is_active ? 'text-(--ui-accent)' : 'text-(--ui-text-tertiary)'
               )}
               name={statusIcon}
               spinning={Boolean(run.is_active)}
             />
-            <span className="min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)">{label}</span>
+            <span className="min-w-0 flex-1 truncate text-ui-xs text-(--ui-text-secondary)">{label}</span>
             {durationMs !== null ? (
-              <span className="shrink-0 text-[0.65rem] tabular-nums text-(--ui-text-quaternary)">
+              <span className="shrink-0 font-mono text-ui-2xs tabular-nums text-(--ui-text-quaternary)">
                 {Math.round(durationMs / 1000)}s
               </span>
             ) : null}
-            <span className="shrink-0 text-[0.65rem] text-(--ui-text-quaternary)">
+            <span className="shrink-0 text-ui-2xs text-(--ui-text-quaternary)">
               {atMs ? rosterRowAge(atMs, t.sidebar.row) : ''}
             </span>
           </RowButton>
@@ -768,18 +768,18 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
           pane can't fit both on one line the next-run label wraps to a second
           line instead of being cut to "next in 4" (#89534). */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 pl-3.5">
-        <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-(--ui-stroke-secondary) px-1.5 py-0.5 text-[0.65rem] text-(--ui-text-tertiary)">
-          <Codicon className="text-[0.7rem]" name="calendar" />
+        <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-(--ui-stroke-secondary) px-1.5 py-0.5 text-ui-2xs text-(--ui-text-tertiary)">
+          <Codicon className="text-ui-2xs" name="calendar" />
           {scheduleLabel(job.schedule)}
         </span>
-        <span className="ml-auto shrink-0 whitespace-nowrap text-[0.65rem] text-(--ui-text-quaternary)">
+        <span className="ml-auto shrink-0 whitespace-nowrap text-ui-2xs text-(--ui-text-quaternary)">
           {active && job.next_run_at
             ? `${nextRunOverdueMs(job) === null ? c.next : c.overdueSince} ${relativeTime(new Date(job.next_run_at).getTime())}`
             : c.states.paused}
         </span>
       </div>
       {legacyUnsafe ? (
-        <div className="rounded-md border border-(--ui-stroke-secondary) px-2 py-1.5 text-[0.65rem] leading-4 text-(--ui-accent)">
+        <div className="rounded-md border border-(--ui-stroke-secondary) px-2 py-1.5 text-ui-2xs leading-4 text-(--ui-accent)">
           {b.cron.legacyUnsafe}
         </div>
       ) : null}
@@ -1103,7 +1103,7 @@ export function SchedulePicker({ state, setState }: SchedulePickerProps) {
           <span className="text-xs text-(--ui-text-tertiary)">{b.cron.runsHint}</span>
         </div>
       ) : null}
-      <div className="text-[0.65rem] text-(--ui-text-quaternary)">{`${scheduleSummary(state, b.cron, timeLabel)} \u00b7 ${composeSchedule(state) || '\u2014'}`}</div>
+      <div className="text-ui-2xs text-(--ui-text-quaternary)">{`${scheduleSummary(state, b.cron, timeLabel)} \u00b7 ${composeSchedule(state) || '\u2014'}`}</div>
     </div>
   )
 }
