@@ -1,9 +1,10 @@
 import { type ThreadMessage } from '@assistant-ui/react'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '@/components/assistant-ui/test-utils'
 import { Thread } from '@/components/assistant-ui/thread'
+import { ApprovalComposerEntry } from '@/components/assistant-ui/tool/approval'
 import { clearAllPrompts, setApprovalRequest } from '@/store/prompts'
 import { $activeSessionId } from '@/store/session'
 import { $botChatSessionIds, $sessionTiles, setSessionTileWorkspaceScope } from '@/store/session-states'
@@ -36,9 +37,12 @@ function runningTerminalMessage(): ThreadMessage {
 }
 
 function Harness({ message }: { message: ThreadMessage }) {
+  // The approval card lives above the composer, outside the transcript, so
+  // the surface an approval belongs to renders both.
   return (
     <ThreadRuntime messages={[message]}>
       <Thread />
+      <ApprovalComposerEntry runtimeSessionId={SID} storedSessionId={SID} />
     </ThreadRuntime>
   )
 }
@@ -49,7 +53,11 @@ function markBotChat() {
 }
 
 function seedPendingApproval() {
-  setApprovalRequest({ command: 'npm test', description: 'run tests', sessionId: SID })
+  setApprovalRequest({ command: 'npm test', description: 'run tests', requestId: 'req-1', sessionId: SID })
+}
+
+function assistantMessageRoot(container: HTMLElement): HTMLElement | null {
+  return container.querySelector('[data-slot="aui_assistant-message-root"]')
 }
 
 beforeEach(() => {
@@ -69,7 +77,7 @@ afterEach(() => {
 })
 
 describe('bot approval summary', () => {
-  it('drops the run summary in a Bot Chat but keeps the approval prompt', async () => {
+  it('keeps the approval prompt actionable in a Bot Chat and drops the run summary next to it', async () => {
     markBotChat()
     seedPendingApproval()
 
@@ -79,15 +87,37 @@ describe('bot approval summary', () => {
     const stack = container.querySelector('[data-approval-stack]') as HTMLElement
 
     expect(within(stack).getByRole('button', { name: /Deny/ })).toBeTruthy()
-    expect(container.querySelector('[data-approval-activity]')).toBeNull()
+
+    // The prompt survives the tool feed going dark.
+    act(() => setShowToolActivityFromConfig('off'))
+
+    expect(await screen.findByRole('button', { name: /Allow once/ })).toBeTruthy()
+    const darkStack = container.querySelector('[data-approval-stack]') as HTMLElement
+
+    expect(within(darkStack).getByRole('button', { name: /Deny/ })).toBeTruthy()
+
+    // The bots pane's own tool cards are the run surface: the tool-only
+    // bubble collapses next to the approval instead of doubling the run,
+    // and the approval stack carries no run feed of its own.
+    expect(assistantMessageRoot(container)?.getAttribute('data-approval-activity-only')).toBe('')
+    expect(darkStack.querySelector('[data-slot="tool-activity-stack"]')).toBeNull()
   })
 
-  it('keeps the run summary above the approval prompt outside a Bot Chat', async () => {
+  it('collapses the run bubble only while the approval pends outside a Bot Chat', async () => {
     seedPendingApproval()
 
     const { container } = render(<Harness message={runningTerminalMessage()} />)
 
     expect(await screen.findByRole('button', { name: /Allow once/ })).toBeTruthy()
-    expect(container.querySelector('[data-approval-activity]')).not.toBeNull()
+    expect(assistantMessageRoot(container)?.getAttribute('data-approval-activity-only')).toBe('')
+
+    act(() => clearAllPrompts())
+
+    await waitFor(() => {
+      expect(assistantMessageRoot(container)?.hasAttribute('data-approval-activity-only')).toBe(false)
+    })
+
+    // With nothing pending the run summary stays in the transcript.
+    expect(container.querySelector('[data-slot="tool-activity-stack"]')).not.toBeNull()
   })
 })
