@@ -20,7 +20,7 @@ import { deriveSyncStatusSummary, type SyncStatusSummary } from './sync-status'
 const LEVEL_STYLES: Record<SyncStatusSummary['level'], string> = {
   ok: 'text-muted-foreground',
   info: 'text-muted-foreground',
-  warn: 'text-amber-600 dark:text-amber-400',
+  warn: 'text-warning',
   error: 'text-destructive'
 }
 
@@ -74,7 +74,7 @@ export function SyncStatusCard() {
         <ul className="grid gap-1 text-xs text-foreground">
           {summary.needsFixing.map(item => (
             <li className="flex items-start gap-2" key={`needs-fixing-${item.plugin}`}>
-              <AlertTriangle aria-hidden className="mt-0.5 size-3 shrink-0 text-amber-600 dark:text-amber-400" />
+              <AlertTriangle aria-hidden className="mt-0.5 size-3 shrink-0 text-warning" />
               <span className="leading-snug">
                 {item.plugin}: {item.reason}
               </span>
@@ -87,7 +87,7 @@ export function SyncStatusCard() {
         <ul className="grid gap-1 text-xs text-foreground">
           {summary.disabledPlugins.map(item => (
             <li className="flex items-start gap-2" key={`disabled-${item.plugin}`}>
-              <AlertTriangle aria-hidden className="mt-0.5 size-3 shrink-0 text-amber-600 dark:text-amber-400" />
+              <AlertTriangle aria-hidden className="mt-0.5 size-3 shrink-0 text-warning" />
               <span className="leading-snug">
                 {item.plugin}: {item.reason}
               </span>

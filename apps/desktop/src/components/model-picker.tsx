@@ -584,8 +584,8 @@ function ModelPrice({ price, isCurrent }: { price?: ModelPricing; isCurrent: boo
         {typeof price.discount_percent === 'number' ? (
           <span
             className={cn(
-              'rounded-sm px-1 py-0.5 text-[0.62rem] font-semibold',
-              isCurrent ? 'bg-primary-foreground/20' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+              'rounded-sm px-1 py-0.5 font-mono text-[0.62rem] font-semibold tabular-nums',
+              isCurrent ? 'bg-primary-foreground/20' : 'bg-warning/10 text-warning'
             )}
           >
             -{price.discount_percent}%
@@ -594,7 +594,7 @@ function ModelPrice({ price, isCurrent }: { price?: ModelPricing; isCurrent: boo
         <span
           className={cn(
             'shrink-0 rounded-sm px-1 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wide',
-            isCurrent ? 'bg-primary-foreground/20' : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+            isCurrent ? 'bg-primary-foreground/20' : 'bg-success/10 text-success'
           )}
         >
           {copy.free}
@@ -608,7 +608,7 @@ function ModelPrice({ price, isCurrent }: { price?: ModelPricing; isCurrent: boo
   return (
     <span
       className={cn(
-        'shrink-0 inline-flex items-center gap-1.5 text-[0.66rem] tabular-nums',
+        'shrink-0 inline-flex items-center gap-1.5 font-mono text-[0.66rem] tabular-nums',
         isCurrent ? 'text-primary-foreground/80' : 'text-muted-foreground'
       )}
       title={copy.priceTitle}
@@ -616,8 +616,8 @@ function ModelPrice({ price, isCurrent }: { price?: ModelPricing; isCurrent: boo
       {onSale ? (
         <span
           className={cn(
-            'rounded-sm px-1 py-0.5 text-[0.62rem] font-semibold',
-            isCurrent ? 'bg-primary-foreground/20' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+            'rounded-sm px-1 py-0.5 font-mono text-[0.62rem] font-semibold tabular-nums',
+            isCurrent ? 'bg-primary-foreground/20' : 'bg-warning/10 text-warning'
           )}
         >
           -{price.discount_percent}%
@@ -662,7 +662,7 @@ function ProviderHeading({ provider }: { provider: ModelOptionProvider }) {
   // route by name — the label is copy.
   const tierBadge =
     provider.free_tier === true || provider.free_tier_row === true ? (
-      <span className="rounded-sm bg-emerald-500/15 px-1 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+      <span className="rounded-sm bg-success/10 px-1 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-success">
         {copy.freeTier}
       </span>
     ) : provider.free_tier === false ? (

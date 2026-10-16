@@ -69,13 +69,13 @@ const cases: ReceiptCase[] = [
     name: 'review beats bisect and updates',
     receipt: details,
     headline: /need update-url review/,
-    tone: 'text-amber-600'
+    tone: 'text-warning'
   },
   {
     name: 'bisect beats updates',
     receipt: { ...details, plugin_checks: details.plugin_checks?.slice(1) },
     headline: /disabled by dependency conflicts/,
-    tone: 'text-amber-600'
+    tone: 'text-warning'
   },
   {
     name: 'updates only',

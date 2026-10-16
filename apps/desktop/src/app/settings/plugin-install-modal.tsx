@@ -81,10 +81,10 @@ function ProbeWarnings({ copy, probe }: { copy: InstallModalCopy; probe: null | 
     <div
       className={cn(
         CAPTION,
-        'flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-foreground'
+        'flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-foreground'
       )}
     >
-      <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+      <AlertTriangle aria-hidden className="mt-0.5 size-3.5 shrink-0 text-warning" />
       <span>{warnings.join(' ')}</span>
     </div>
   )

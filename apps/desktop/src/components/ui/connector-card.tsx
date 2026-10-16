@@ -37,7 +37,7 @@ export interface ConnectorRowProps {
 const SHELL_CLASS = `${WIDGET_SHELL_CLASS} text-[length:var(--conversation-text-font-size)] text-(--ui-text-primary)`
 
 const MARKS = {
-  connected: { Icon: Check, className: 'text-emerald-600 dark:text-emerald-400' },
+  connected: { Icon: Check, className: 'text-success' },
   idle: { Icon: CircleIcon, className: 'text-(--ui-text-quaternary)' },
   // The spin is the only motion in the card; a reduced-motion reader keeps the mark, without it.
   waiting: { Icon: Loader2, className: 'animate-spin text-primary motion-reduce:animate-none' }
@@ -109,7 +109,7 @@ export function ConnectorSummary({
           {connector.title || connector.name}
         </span>
         {meta ? (
-          <span className={cn(SCAFFOLD_META_CLASS, tone === 'ok' && 'text-emerald-600/85 dark:text-emerald-400/85')}>
+          <span className={cn(SCAFFOLD_META_CLASS, tone === 'ok' && 'text-success/85')}>
             {meta}
           </span>
         ) : null}
