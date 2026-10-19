@@ -208,11 +208,19 @@ it.each(['close', 'remove', 'prune'] as const)('%s fully disposes a parked route
   expect(liveSecondaryConnectionIds()).toEqual(new Set())
   onEvent.mockClear()
   // Even an already queued browser message cannot reach the retired route.
-  socket.dispatchEvent(new MessageEvent('message', {
-    data: JSON.stringify({ jsonrpc: '2.0', method: 'event', params: {
-      type: 'message.delta', session_id: sessionId, payload: { text: 'late event' }
-    } })
-  }))
+  socket.dispatchEvent(
+    new MessageEvent('message', {
+      data: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'event',
+        params: {
+          type: 'message.delta',
+          session_id: sessionId,
+          payload: { text: 'late event' }
+        }
+      })
+    })
+  )
   expect(onEvent).not.toHaveBeenCalled()
   closeSecondaryGateways()
   await vi.advanceTimersByTimeAsync(60_000)

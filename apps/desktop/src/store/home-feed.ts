@@ -8,10 +8,7 @@ import { $sessions } from '@/store/session'
 import { storedSessionIdForRuntimeId } from '@/store/session-states'
 import type { CronJob, SessionInfo } from '@/types/hermes'
 
-export type HomeFeedItemKind =
-  | AttentionItemKind
-  | 'cronOverdue'
-  | 'cronDue'
+export type HomeFeedItemKind = AttentionItemKind | 'cronOverdue' | 'cronDue'
 
 export interface HomeFeedItem {
   /** Stable row id: item.id for attention items, `cron:${job.id}` for cron jobs. */
@@ -87,13 +84,7 @@ export function priorityRank(kind: HomeFeedItemKind): number {
  * applies priority ordering, filters dismissed items, and caps at 5.
  */
 export function collectHomeFeed(src: HomeFeedSources): HomeFeedItem[] {
-  const {
-    attentionItems = [],
-    cronJobs = [],
-    dismissedIds = [],
-    nowMs = Date.now(),
-    sessions = []
-  } = src
+  const { attentionItems = [], cronJobs = [], dismissedIds = [], nowMs = Date.now(), sessions = [] } = src
 
   const dismissedSet = dismissedIds instanceof Set ? dismissedIds : new Set(dismissedIds)
   const items: HomeFeedItem[] = []

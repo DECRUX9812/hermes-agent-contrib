@@ -271,9 +271,7 @@ export function hydrateNeedsYouIndex(raw: unknown, now: number = Date.now()): Ne
     }
 
     const entries = value
-      .map(item =>
-        normalizeNeedsYouEvent(item && typeof item === 'object' ? { ...(item as object), bot } : null, now)
-      )
+      .map(item => normalizeNeedsYouEvent(item && typeof item === 'object' ? { ...(item as object), bot } : null, now))
       .filter((entry): entry is NeedsYouEntry => entry !== null)
 
     if (entries.length) {

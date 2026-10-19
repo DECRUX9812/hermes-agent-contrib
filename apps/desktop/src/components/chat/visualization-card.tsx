@@ -45,10 +45,7 @@ const VisualizationFrame: FC<{
   // Re-assert the theme if it flips while the card is mounted.
   useEffect(() => {
     try {
-      iframeRef.current?.contentDocument?.documentElement?.setAttribute(
-        'data-theme',
-        dark ? 'dark' : 'light'
-      )
+      iframeRef.current?.contentDocument?.documentElement?.setAttribute('data-theme', dark ? 'dark' : 'light')
     } catch {
       // Sandboxed without allow-same-origin: opaque origin, no access. The
       // srcDoc injection already set the initial theme; ignore.
@@ -122,9 +119,7 @@ export const VisualizationCard: FC<{ result?: unknown; title?: string }> = ({ re
       <div className="mt-1.5 overflow-hidden rounded-lg border border-(--ui-border-subtle) bg-(--ui-surface-sunken)">
         <div className="flex items-center gap-2 px-3 py-2">
           <Codicon className="text-(--ui-text-tertiary)" name="graph" />
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-(--ui-text-secondary)">
-            {headerTitle}
-          </span>
+          <span className="min-w-0 flex-1 truncate text-sm font-medium text-(--ui-text-secondary)">{headerTitle}</span>
           {payload && !failed && (
             <Button
               aria-label="Expand visualization"
@@ -147,9 +142,7 @@ export const VisualizationCard: FC<{ result?: unknown; title?: string }> = ({ re
           {failed && (
             <div className="flex h-[120px] flex-col items-center justify-center gap-1 px-4 text-center">
               <Codicon className="text-(--ui-text-tertiary)" name="warning" />
-              <p className="text-sm text-(--ui-text-tertiary)">
-                The visualization could not be rendered.
-              </p>
+              <p className="text-sm text-(--ui-text-tertiary)">The visualization could not be rendered.</p>
             </div>
           )}
           {!failed && renderFrame(false)}
@@ -183,10 +176,7 @@ export const VisualizationCard: FC<{ result?: unknown; title?: string }> = ({ re
               <Codicon name="close" />
             </Button>
           </div>
-          <div
-            className="min-h-0 flex-1 overflow-hidden rounded-lg"
-            onClick={e => e.stopPropagation()}
-          >
+          <div className="min-h-0 flex-1 overflow-hidden rounded-lg" onClick={e => e.stopPropagation()}>
             {renderFrame(true)}
           </div>
         </div>

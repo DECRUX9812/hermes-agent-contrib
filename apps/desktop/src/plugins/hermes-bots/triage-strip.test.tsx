@@ -26,9 +26,11 @@ const { TriageStrip } = await import('./triage-strip')
 const noop = () => undefined
 const BOT = [{ name: 'alpha' }] as RosterRow[]
 
-const card = (
-  fields: Pick<NeedsYouEntry, 'category' | 'id'> & Partial<NeedsYouEntry>
-): NeedsYouEntry => ({ at: 1_700_000_000_000, bot: 'local::alpha', ...fields })
+const card = (fields: Pick<NeedsYouEntry, 'category' | 'id'> & Partial<NeedsYouEntry>): NeedsYouEntry => ({
+  at: 1_700_000_000_000,
+  bot: 'local::alpha',
+  ...fields
+})
 
 beforeEach(() => {
   $needsYouIndex.set({})
@@ -62,9 +64,7 @@ describe('the Needs you strip renders the explicit categories', () => {
 
   it('renders an artifact-review card with the artifact ref', () => {
     $needsYouIndex.set({
-      'local::alpha': [
-        card({ category: 'artifact-review', id: 'art:1', ref: 'file:///tmp/report.md' })
-      ]
+      'local::alpha': [card({ category: 'artifact-review', id: 'art:1', ref: 'file:///tmp/report.md' })]
     })
 
     render(<TriageStrip bots={BOT} onOpen={noop} />)

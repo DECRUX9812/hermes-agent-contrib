@@ -88,7 +88,12 @@ export function MailboxNoteCard({ note, members }: { note: MailboxNote; members:
 
     setBusy(true)
     void updateMailboxNote(note, next)
-      .catch(error => host.notify({ kind: 'error', message: b.mailbox.updateFailed(String(error instanceof Error ? error.message : error)) }))
+      .catch(error =>
+        host.notify({
+          kind: 'error',
+          message: b.mailbox.updateFailed(String(error instanceof Error ? error.message : error))
+        })
+      )
       .finally(() => setBusy(false))
   }
 
@@ -161,7 +166,12 @@ export function MailboxTaskDialog({ member, onClose }: { member: GroupMember | n
         host.notify({ kind: 'success', message: b.mailbox.sent(label ?? displayName(member)) })
         onClose()
       })
-      .catch(error => host.notify({ kind: 'error', message: b.mailbox.sendFailed(String(error instanceof Error ? error.message : error)) }))
+      .catch(error =>
+        host.notify({
+          kind: 'error',
+          message: b.mailbox.sendFailed(String(error instanceof Error ? error.message : error))
+        })
+      )
       .finally(() => setSending(false))
   }
 

@@ -6911,7 +6911,10 @@ function buildApplicationMenu() {
       {
         click: (menuItem, browserWindow) => {
           const win = browserWindow || mainWindow
-          if (!win || win.isDestroyed()) return
+
+          if (!win || win.isDestroyed()) {
+            return
+          }
           const next = !win.isVisibleOnAllWorkspaces()
           win.setVisibleOnAllWorkspaces(next, { skipTransformProcessType: true })
           // Floating implies staying above other windows so it's actually
@@ -14536,7 +14539,7 @@ const botroomMascots = createBotRoomMascots({
     botroomUrl,
     isMac: IS_MAC
   }),
-  forwardControl: (payload) => {
+  forwardControl: payload => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('hermes:botroom:control', payload)
     }
@@ -14553,7 +14556,7 @@ const botroomPill = createPillWindowSpawner({
 // streams screen positions; moves land on the positions map and forward as
 // 'mascot.move' controls, same protocol as the overlay's internal drags.
 registerBotRoomMascotDragIpc(
-  (botId) => botroomMascots.window(botId),
+  botId => botroomMascots.window(botId),
   (botId, x, y) => botroomMascots.place(botId, x, y)
 )
 
@@ -16287,7 +16290,7 @@ pane3dAnchorService = createElectronAnchorService({
 registerBotRoomIpc({
   mascots: botroomMascots,
   pill: botroomPill,
-  getBot: (botId) => botroomMascots.bot(botId),
+  getBot: botId => botroomMascots.bot(botId),
   getMainWindow: () => mainWindow,
   getBotRoomWindow: () => botroomWindow,
   openBotRoom,

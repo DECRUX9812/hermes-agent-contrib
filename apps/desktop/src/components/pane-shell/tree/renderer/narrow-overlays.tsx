@@ -141,6 +141,7 @@ export function NarrowOverlays() {
         if (mode === 'close') {
           const currentTree = $layoutTree.get()
           const targetZone = currentTree ? findGroupOfPane(currentTree, match.id) : null
+
           return current && (current.id === match.id || targetZone?.panes.includes(current.id)) ? null : current
         }
 
@@ -209,7 +210,9 @@ export function NarrowOverlays() {
           aria-hidden="true"
           className="absolute inset-0 z-30"
           data-narrow-overlay-backdrop=""
-          onPointerCancel={() => { outsidePress.current = null }}
+          onPointerCancel={() => {
+            outsidePress.current = null
+          }}
           onPointerDown={event => {
             if (event.button === 0 && isTopEscapeLayer(ESCAPE_PRIORITY.narrowOverlay)) {
               // Dismissal must not focus the transcript or input underneath.
@@ -217,7 +220,9 @@ export function NarrowOverlays() {
               outsidePress.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
             }
           }}
-          onPointerLeave={() => { outsidePress.current = null }}
+          onPointerLeave={() => {
+            outsidePress.current = null
+          }}
           onPointerMove={event => {
             const press = outsidePress.current
 

@@ -204,12 +204,7 @@ export function cleanReviveSnapshot(serialized: string, shell = '', startsAtLive
 // Keep restored history byte-for-byte and append only the cleaned output emitted
 // by the new PTY. This provenance boundary is what makes greeting/prompt cleanup
 // safe: legacy scrollback is never reclassified by its visible text.
-export function mergeReviveSnapshot(
-  restored: string,
-  live: string,
-  shell = '',
-  startsAtLiveBoundary = true
-): string {
+export function mergeReviveSnapshot(restored: string, live: string, shell = '', startsAtLiveBoundary = true): string {
   const cleanedLive = cleanReviveSnapshot(live, shell, startsAtLiveBoundary)
 
   if (!restored) {

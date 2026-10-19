@@ -120,12 +120,7 @@ function DeleteModelButton({ modelId }: ModelIdProps): ReactElement {
 
   return (
     <Tip label={scope.copy.deleteAction}>
-      <Button
-        className={cn(deleting && '[&_svg]:animate-spin')}
-        onClick={handleDelete}
-        size="icon"
-        variant="ghost"
-      >
+      <Button className={cn(deleting && '[&_svg]:animate-spin')} onClick={handleDelete} size="icon" variant="ghost">
         {deleting ? <Loader2 /> : <Trash2 />}
       </Button>
     </Tip>

@@ -22,7 +22,9 @@ export function requireBrowserConnection(connectionId?: null | string): void {
 }
 
 function connectionFor(bootstrap: BrowserBootstrap, profile?: null | string): HermesConnection {
-  if (!bootstrap.authRequired && !bootstrap.token) {throw new Error(WEBAPP_LAUNCH_REQUIRED)}
+  if (!bootstrap.authRequired && !bootstrap.token) {
+    throw new Error(WEBAPP_LAUNCH_REQUIRED)
+  }
 
   const baseUrl = `${window.location.origin}${bootstrap.basePath}`
 
@@ -74,7 +76,10 @@ interface BrowserConnectionOptions {
 }
 
 /** Connection, gateway socket, roster and sign-in members, all bound to the serving origin. */
-export function createBrowserConnectionBridge({ api, bootstrap }: BrowserConnectionOptions): Pick<
+export function createBrowserConnectionBridge({
+  api,
+  bootstrap
+}: BrowserConnectionOptions): Pick<
   Window['hermesDesktop'],
   | 'getAgentRoster'
   | 'getConnection'
@@ -132,12 +137,14 @@ export function createBrowserConnectionBridge({ api, bootstrap }: BrowserConnect
           targetProfile: profile
         })),
         primaryConnectionId: LOCAL_CONNECTION_ID,
-        sources: [{
-          connectionId: LOCAL_CONNECTION_ID,
-          kind: 'local' as const,
-          label: connectionLabel,
-          reachable: true
-        }]
+        sources: [
+          {
+            connectionId: LOCAL_CONNECTION_ID,
+            kind: 'local' as const,
+            label: connectionLabel,
+            reachable: true
+          }
+        ]
       }
     },
     // Reconnect belongs to the window, not whichever secondary profile is active.

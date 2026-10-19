@@ -10,14 +10,7 @@ import { $petActivity, derivePetState, type PetActivity, type PetState } from '.
 // call: sentiment is cheap keyword heuristics over the last assistant message,
 // task state comes from the real $petActivity store. When in doubt, neutral.
 
-export type PetEmotion =
-  | 'happy'
-  | 'thinking'
-  | 'working'
-  | 'waiting'
-  | 'proud'
-  | 'concerned'
-  | 'neutral'
+export type PetEmotion = 'happy' | 'thinking' | 'working' | 'waiting' | 'proud' | 'concerned' | 'neutral'
 
 interface ScoredPattern {
   re: RegExp
@@ -25,25 +18,28 @@ interface ScoredPattern {
 }
 
 const POSITIVE: ScoredPattern[] = [
-  { re: /\b(done|completed|finished|success|successful|fixed|resolved|shipped|merged|passed|passing|working now)\b/i, score: 2 },
+  {
+    re: /\b(done|completed|finished|success|successful|fixed|resolved|shipped|merged|passed|passing|working now)\b/i,
+    score: 2
+  },
   { re: /\b(great|excellent|perfect|awesome|nice)\b/i, score: 1 },
-  { re: /🎉|✅|✓|👍/u, score: 1 },
+  { re: /🎉|✅|✓|👍/u, score: 1 }
 ]
 
 const PROUD: ScoredPattern[] = [
   { re: /\b(all (tests|checks) (pass|green)|shipped|deployed|merged|released)\b/i, score: 2 },
-  { re: /\b(landed|wrapped up|nailed it)\b/i, score: 1 },
+  { re: /\b(landed|wrapped up|nailed it)\b/i, score: 1 }
 ]
 
 const CONCERNED: ScoredPattern[] = [
   { re: /\b(error|failed|failure|broken|crash|exception|warning|problem|issue|blocked|stuck)\b/i, score: 2 },
   { re: /\b(sorry|apologize|unable|couldn't|can't)\b/i, score: 1 },
-  { re: /⚠️|❌|🚨/u, score: 1 },
+  { re: /⚠️|❌|🚨/u, score: 1 }
 ]
 
 const THINKING: ScoredPattern[] = [
   { re: /\b(let me (think|check|look|see)|hmm|considering|analyzing|investigating|one moment)\b/i, score: 2 },
-  { re: /\b(interesting|curious)\b/i, score: 1 },
+  { re: /\b(interesting|curious)\b/i, score: 1 }
 ]
 
 function scoreText(text: string, patterns: ScoredPattern[]): number {
@@ -60,7 +56,7 @@ export function analyzeSentiment(text: string): MessageSentiment {
     positive: scoreText(body, POSITIVE),
     proud: scoreText(body, PROUD),
     concerned: scoreText(body, CONCERNED),
-    thinking: scoreText(body, THINKING),
+    thinking: scoreText(body, THINKING)
   }
 
   const best = (Object.entries(scores) as [MessageSentiment, number][]).sort((a, b) => b[1] - a[1])[0]
@@ -100,13 +96,21 @@ export function deriveEmotion(activity: PetActivity, sentiment: MessageSentiment
     case 'idle':
 
     default:
-      if (sentiment === 'positive') {return 'happy'}
+      if (sentiment === 'positive') {
+        return 'happy'
+      }
 
-      if (sentiment === 'proud') {return 'proud'}
+      if (sentiment === 'proud') {
+        return 'proud'
+      }
 
-      if (sentiment === 'concerned') {return 'concerned'}
+      if (sentiment === 'concerned') {
+        return 'concerned'
+      }
 
-      if (sentiment === 'thinking') {return 'thinking'}
+      if (sentiment === 'thinking') {
+        return 'thinking'
+      }
 
       return 'neutral'
   }
@@ -176,17 +180,23 @@ function lastAssistantText(): string {
     // ChatMessage shape: role + content/text variants — read defensively.
     const role = (m as { role?: string }).role ?? ''
 
-    if (role !== 'assistant') {continue}
+    if (role !== 'assistant') {
+      continue
+    }
     const content = (m as { content?: unknown }).content ?? (m as { text?: unknown }).text ?? ''
 
-    if (typeof content === 'string' && content.trim()) {return content}
+    if (typeof content === 'string' && content.trim()) {
+      return content
+    }
 
     if (Array.isArray(content)) {
       const text = content
-        .map(part => (typeof part === 'string' ? part : (part as { text?: string }).text ?? ''))
+        .map(part => (typeof part === 'string' ? part : ((part as { text?: string }).text ?? '')))
         .join('')
 
-      if (text.trim()) {return text}
+      if (text.trim()) {
+        return text
+      }
     }
   }
 

@@ -544,7 +544,7 @@ export const jaOverrides = {
         bundled: '同梱',
         disk: 'ディスク上',
         runtime: 'ランタイム'
-      },
+      }
     },
     closeSettings: '設定を閉じる',
     exportConfig: '設定を書き出す',
@@ -1447,7 +1447,7 @@ export const jaOverrides = {
       cloudAgentProvisioning: 'プロビジョニング中…',
       cloudStatusLabel: status => `ステータス：${status}`,
       sshErrInteractiveAuth:
-        'Tailscale SSH では対話的なブラウザー確認が必要です。ターミナルで `ssh <host> true` を実行して確認を完了し、再試行してください。Hermes は SSH を非対話的に実行します。',
+        'Tailscale SSH では対話的なブラウザー確認が必要です。ターミナルで `ssh <host> true` を実行して確認を完了し、再試行してください。Hermes は SSH を非対話的に実行します。'
     },
     keys: {
       loading: 'API キーと認証情報を読み込み中...',
@@ -4202,7 +4202,8 @@ export const jaOverrides = {
       sentMessage: count => `${count} 件のログエントリーがコンポーザーに追加されました`
     },
     web: {
-      embeddedPreviewHint: '埋め込みプレビューを許可しないサイトもあります。元のページをブラウザーのタブで開いてください。',
+      embeddedPreviewHint:
+        '埋め込みプレビューを許可しないサイトもあります。元のページをブラウザーのタブで開いてください。',
       appFailedToBoot: 'プレビューアプリの起動に失敗しました',
       serverNotFound: 'サーバーが見つかりません',
       remoteLoopback:
@@ -5304,7 +5305,7 @@ export const jaOverrides = {
       hintOpenWorld: {
         label: '外部',
         long: 'このアプリの外部にアクセスします。'
-      },
+      }
     }
   },
   freeTier: {

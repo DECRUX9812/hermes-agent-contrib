@@ -37,7 +37,7 @@ export function collectMissionControlCards({
     const state = sessionStates[runtimeId]
     const resolvedStoredId = state?.storedSessionId ?? getStoredSessionId(runtimeId) ?? runtimeId
     const session = sessionByStoredId.get(resolvedStoredId) ?? sessionByStoredId.get(runtimeId)
-    const title = session ? sessionTitle(session) : (resolvedStoredId || runtimeId || 'Untitled Session')
+    const title = session ? sessionTitle(session) : resolvedStoredId || runtimeId || 'Untitled Session'
 
     let latestAction = null
 

@@ -108,14 +108,18 @@ describe('useComposerMetrics — published clearance survives an effect replay',
   })
 
   it('uses a single control column below the two-touch-target budget', () => {
-    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: () => '44px' } as unknown as CSSStyleDeclaration)
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+      getPropertyValue: () => '44px'
+    } as unknown as CSSStyleDeclaration)
     const { getByTestId } = render(<Harness dockHeight={200} surfaceHeight={120} width={80} />)
     expect(JSON.parse(getByTestId('fit').textContent!)).toMatchObject({ minimal: true, singleColumn: true })
     vi.restoreAllMocks()
   })
 
   it('collapses extra controls earlier when touch targets consume more width', () => {
-    vi.spyOn(window, 'getComputedStyle').mockReturnValue({ getPropertyValue: () => '44px' } as unknown as CSSStyleDeclaration)
+    vi.spyOn(window, 'getComputedStyle').mockReturnValue({
+      getPropertyValue: () => '44px'
+    } as unknown as CSSStyleDeclaration)
     const { getByTestId } = render(<Harness dockHeight={200} surfaceHeight={120} width={220} />)
     expect(JSON.parse(getByTestId('fit').textContent!)).toMatchObject({ minimal: true, foldVoice: true })
     vi.restoreAllMocks()

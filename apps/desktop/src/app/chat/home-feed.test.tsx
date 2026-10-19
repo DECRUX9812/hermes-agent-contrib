@@ -6,11 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readKey } from '@/lib/storage'
 import type * as AttentionInboxModule from '@/store/attention-inbox'
 import { $gateway } from '@/store/gateway'
-import {
-  $dismissedHomeFeedItemIds,
-  HOME_FEED_DISMISSED_KEY,
-  resetDismissedHomeFeedItems
-} from '@/store/home-feed'
+import { $dismissedHomeFeedItemIds, HOME_FEED_DISMISSED_KEY, resetDismissedHomeFeedItems } from '@/store/home-feed'
 import type * as PromptsModule from '@/store/prompts'
 import { $approvalQueues, answerApproval } from '@/store/prompts'
 

@@ -113,9 +113,7 @@ describe('normalizeNeedsYouEvent', () => {
 describe('recordNeedsYouEvent', () => {
   it('surfaces a failed handoff with its category and classified reason', () => {
     expect(recordNeedsYouEvent(event({ reason: 'provider_auth_or_access' }), NOW)).toBe(true)
-    expect($needsYouIndex.get()['legacy::alpha']).toEqual([
-      { ...event(), reason: 'provider_auth_or_access' }
-    ])
+    expect($needsYouIndex.get()['legacy::alpha']).toEqual([{ ...event(), reason: 'provider_auth_or_access' }])
   })
 
   it('drops a malformed or unknown event without touching the index', () => {

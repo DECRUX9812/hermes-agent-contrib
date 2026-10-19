@@ -473,7 +473,11 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
   // hover title, so group rows read as plain prose like every other row.
   const speaker = last?.from?.kind === 'user' ? b.group.you : `@${lastHandle}`
   const preview = last ? cleanPreviewLine(roundText) || '…' : b.group.memberCount(members.length)
-  const previewTitle = last ? `${speaker}: ${String(roundText || '').replace(/\s+/g, ' ').trim()}` : ''
+  const previewTitle = last
+    ? `${speaker}: ${String(roundText || '')
+        .replace(/\s+/g, ' ')
+        .trim()}`
+    : ''
 
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
   const availabilityLabel = b.group.availableCount(availableMembers, members.length)
@@ -537,7 +541,9 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium" title={group}>{group}</span>
+          <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium" title={group}>
+            {group}
+          </span>
           {room.pinned ? (
             <Tip label={b.roster.pinned}>
               <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />

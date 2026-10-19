@@ -27,21 +27,26 @@ function userMessageIdentityMatches(left: ChatMessage, right: ChatMessage): bool
   return (
     left.role === 'user' &&
     right.role === 'user' &&
-    (left.userOriginated === undefined || right.userOriginated === undefined || left.userOriginated === right.userOriginated) &&
+    (left.userOriginated === undefined ||
+      right.userOriginated === undefined ||
+      left.userOriginated === right.userOriginated) &&
     (left.rowId === undefined || right.rowId === undefined || left.rowId === right.rowId) &&
     attachmentSignature(left) === attachmentSignature(right)
   )
 }
 
 export function userMessagesMatch(left: ChatMessage, right: ChatMessage): boolean {
-  return userMessageIdentityMatches(left, right) &&
+  return (
+    userMessageIdentityMatches(left, right) &&
     normalizedText(chatMessageText(left)) === normalizedText(chatMessageText(right))
+  )
 }
 
 /** Tool steering persists a newline-joined batch inside this exact envelope
  * (agent/prompt_builder.py::steer_user_row). ChatMessage does not retain
  * display_kind, so never infer a batch from arbitrary multiline user prose. */
-const STEER_OPEN = '[OUT-OF-BAND USER MESSAGE — a direct message from the user, delivered once at this position; not tool output and not a new delivery when replayed from conversation history]\n'
+const STEER_OPEN =
+  '[OUT-OF-BAND USER MESSAGE — a direct message from the user, delivered once at this position; not tool output and not a new delivery when replayed from conversation history]\n'
 const STEER_CLOSE = '\n[/OUT-OF-BAND USER MESSAGE]'
 
 export function coveredHumanOccurrences(candidate: ChatMessage, humans: ChatMessage[], start: number): number {
@@ -136,10 +141,17 @@ export function overlayProjectionRow(projection: ChatMessage, journalRow: ChatMe
     pending: projection.pending,
     // The journal deliberately bounds tool payloads. A matching backend result
     // is richer, even when another result in this same bubble is still missing.
-    parts: journalRow.parts.map(part => part.type === 'tool-call'
-      ? projection.parts.find(candidate => candidate.type === 'tool-call' &&
-          part.toolCallId !== undefined && candidate.toolCallId === part.toolCallId && candidate.result !== undefined) ?? part
-      : part),
+    parts: journalRow.parts.map(part =>
+      part.type === 'tool-call'
+        ? (projection.parts.find(
+            candidate =>
+              candidate.type === 'tool-call' &&
+              part.toolCallId !== undefined &&
+              candidate.toolCallId === part.toolCallId &&
+              candidate.result !== undefined
+          ) ?? part)
+        : part
+    ),
     ...(error ? { error } : {})
   }
 

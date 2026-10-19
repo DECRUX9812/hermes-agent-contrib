@@ -24,29 +24,29 @@ export const BOT_ROLE_PRESETS: readonly BotRolePreset[] = [
     label: 'The Planner',
     tagline: 'Breaks big goals into shippable steps.',
     tone: 'Structured, calm, asks one clarifying question at a time.',
-    strengths: ['Roadmaps', 'Task breakdown', 'Prioritization'],
+    strengths: ['Roadmaps', 'Task breakdown', 'Prioritization']
   },
   {
     role: 'coder',
     label: 'The Coder',
     tagline: 'Writes, tests, and ships code.',
     tone: 'Direct, shows the diff, explains the why in one line.',
-    strengths: ['Implementation', 'Debugging', 'Code review'],
+    strengths: ['Implementation', 'Debugging', 'Code review']
   },
   {
     role: 'researcher',
     label: 'The Researcher',
     tagline: 'Finds answers and cites sources.',
     tone: 'Thorough, cites sources, flags uncertainty honestly.',
-    strengths: ['Web research', 'Summaries', 'Fact-checking'],
+    strengths: ['Web research', 'Summaries', 'Fact-checking']
   },
   {
     role: 'assistant',
     label: 'The Assistant',
     tagline: 'Day-to-day help, fast and friendly.',
     tone: 'Warm, concise, gets to the point.',
-    strengths: ['Q&A', 'Drafting', 'Scheduling'],
-  },
+    strengths: ['Q&A', 'Drafting', 'Scheduling']
+  }
 ]
 
 export interface BotCharacter {
@@ -70,14 +70,16 @@ function defaultCharacter(profileKey: string): BotCharacter {
     tone: 'Warm, concise, gets to the point.',
     strengths: [],
     quirks: [],
-    avatar: 'pet',
+    avatar: 'pet'
   }
 }
 
 function loadCharacter(profileKey: string): BotCharacter {
   const raw = storedString(CHAR_KEY(profileKey))
 
-  if (!raw) {return defaultCharacter(profileKey)}
+  if (!raw) {
+    return defaultCharacter(profileKey)
+  }
 
   try {
     const parsed = JSON.parse(raw) as Partial<BotCharacter>
@@ -125,11 +127,13 @@ export function setBotCharacter(profileKey: string, patch: Partial<BotCharacter>
 export function applyRolePreset(profileKey: string, role: BotRole): void {
   const preset = BOT_ROLE_PRESETS.find(p => p.role === role)
 
-  if (!preset) {return}
+  if (!preset) {
+    return
+  }
   setBotCharacter(profileKey, {
     role,
     tone: preset.tone,
-    strengths: preset.strengths,
+    strengths: preset.strengths
   })
 }
 
@@ -150,7 +154,7 @@ export const $colonyBots = computed(
         profileKey: key,
         label: profileLabel(p),
         character: char.name === defaultName ? { ...char, name: profileLabel(p) } : char,
-        active: key === activeKey,
+        active: key === activeKey
       }
     })
 

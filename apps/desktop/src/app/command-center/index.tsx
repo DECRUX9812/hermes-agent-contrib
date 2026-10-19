@@ -9,16 +9,7 @@ import { ResponsiveTabs } from '@/components/ui/tab-dropdown'
 import { getActionStatus, getLogs, getStatus, restartGateway, updateHermes } from '@/hermes'
 import type { ActionStatusResponse, SessionInfo, StatusResponse } from '@/hermes'
 import { useI18n } from '@/i18n'
-import {
-  Activity,
-  AlertCircle,
-  AlertTriangle,
-  Bell,
-  CheckCircle2,
-  type IconComponent,
-  Info,
-  Wrench
-} from '@/lib/icons'
+import { Activity, AlertCircle, AlertTriangle, Bell, CheckCircle2, type IconComponent, Info, Wrench } from '@/lib/icons'
 import { fmtDateTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { upsertDesktopActionTask } from '@/store/activity'
@@ -86,10 +77,7 @@ function EmptyPanel({ description, title }: { description: string; title?: strin
   )
 }
 
-export function CommandCenterView({
-  initialSection,
-  onClose
-}: CommandCenterViewProps) {
+export function CommandCenterView({ initialSection, onClose }: CommandCenterViewProps) {
   const { t } = useI18n()
   const cc = t.commandCenter
   const [section, setSection] = useRouteEnumParam('section', SECTIONS, initialSection ?? 'system')
@@ -198,12 +186,7 @@ export function CommandCenterView({
     () =>
       SECTIONS.map(value => ({
         active: section === value,
-        icon:
-          value === 'notices'
-            ? Bell
-            : value === 'system'
-              ? Activity
-              : Wrench,
+        icon: value === 'notices' ? Bell : value === 'system' ? Activity : Wrench,
         id: value,
         label: cc.sections[value],
         onSelect: () => setSection(value)
@@ -219,12 +202,7 @@ export function CommandCenterView({
         <OverlayNav groups={navGroups} />
 
         <OverlayMain className="px-0 pb-0">
-          {activeGroup && (
-            <OverlayBreadcrumbHeader
-              group={activeGroup}
-              rootLabel={cc.commandCenter}
-            />
-          )}
+          {activeGroup && <OverlayBreadcrumbHeader group={activeGroup} rootLabel={cc.commandCenter} />}
           <div className={cn('flex min-h-0 flex-1 flex-col', PAGE_INSET_X)}>
             {section === 'notices' ? (
               <NoticesPanel />

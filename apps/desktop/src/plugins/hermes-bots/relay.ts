@@ -733,7 +733,11 @@ async function deliverRelayEnvelope(
     }
 
     await postReply({
-      error: String((error instanceof Error ? error.message : (error as { message?: string })?.message) || error || 'delivery failed'),
+      error: String(
+        (error instanceof Error ? error.message : (error as { message?: string })?.message) ||
+          error ||
+          'delivery failed'
+      ),
       ...(reason
         ? {
             reason

@@ -24,7 +24,7 @@ import {
   M_AXIS,
   M_DIR,
   M_TOP,
-  occludes,
+  occludes
 } from './blocks'
 import { aoAt, type LightField, smoothLight } from './light'
 import type { Plan } from './plan'
@@ -64,7 +64,7 @@ const FACE_N: Array<[number, number, number]> = [
   [0, 1, 0],
   [0, -1, 0],
   [0, 0, 1],
-  [0, 0, -1],
+  [0, 0, -1]
 ]
 
 /** Order of face directions in meta terms: E=1 W=3 U=- D=- S=2 N=0 mapping to Dir enum. */
@@ -87,20 +87,32 @@ function texFor(def: BlockDef, face: number, meta: number): string {
   }
 
   if (def.shape === 'screen' || def.shape === 'facing' || def.shape === 'lectern' || def.shape === 'bell') {
-    if (FACE_DIR[face] === dir && t.front) {return t.front}
+    if (FACE_DIR[face] === dir && t.front) {
+      return t.front
+    }
 
-    if (FACE_DIR[face] === ((dir + 2) & 3) && t.back) {return t.back}
+    if (FACE_DIR[face] === ((dir + 2) & 3) && t.back) {
+      return t.back
+    }
 
-    if (face === 2 && t.top) {return t.top}
+    if (face === 2 && t.top) {
+      return t.top
+    }
 
-    if (face === 3 && t.bottom) {return t.bottom}
+    if (face === 3 && t.bottom) {
+      return t.bottom
+    }
 
     return t.side ?? t.all ?? ''
   }
 
-  if (face === 2) {return t.top ?? t.all ?? ''}
+  if (face === 2) {
+    return t.top ?? t.all ?? ''
+  }
 
-  if (face === 3) {return t.bottom ?? t.all ?? ''}
+  if (face === 3) {
+    return t.bottom ?? t.all ?? ''
+  }
 
   return t.side ?? t.all ?? ''
 }
@@ -119,13 +131,15 @@ class Builder {
     private p: Plan,
     private light: LightField,
     private atlas: Atlas,
-    private dynamic: Map<number, { x: number; y: number; z: number }>,
+    private dynamic: Map<number, { x: number; y: number; z: number }>
   ) {}
 
   quad(sink: number[], idxSink: number[], x: number, y: number, z: number, q: Quad): void {
     const rect = this.atlas.uv.get(q.tile)
 
-    if (!rect) {return}
+    if (!rect) {
+      return
+    }
     const [u0, v0, u1, v1] = rect
     const base = sink.length / 8
     const [nx, ny, nz] = q.n
@@ -148,7 +162,7 @@ class Builder {
         v0 + (v1 - v0) * q.uv[v][1],
         l.sky / 15,
         l.block / 15,
-        aoF,
+        aoF
       )
     }
 
@@ -156,11 +170,17 @@ class Builder {
   }
 
   sinkFor(def: BlockDef, emissive: boolean): [number[], number[]] {
-    if (emissive || def.emissive) {return [this.emissive, this.idxE]}
+    if (emissive || def.emissive) {
+      return [this.emissive, this.idxE]
+    }
 
-    if (def.translucent) {return [this.translucent, this.idxT]}
+    if (def.translucent) {
+      return [this.translucent, this.idxT]
+    }
 
-    if (def.cutout) {return [this.cutout, this.idxC]}
+    if (def.cutout) {
+      return [this.cutout, this.idxC]
+    }
 
     return [this.opaque, this.idxO]
   }
@@ -171,15 +191,23 @@ class Builder {
     const ns = this.p.get(x + nx, y + ny, z + nz)
     const nid = bsId(ns)
 
-    if (nid === B.AIR) {return false}
+    if (nid === B.AIR) {
+      return false
+    }
     const ndef = defOf(nid)
 
-    if (ndef.opaque) {return true}
+    if (ndef.opaque) {
+      return true
+    }
 
-    if (selfDef.shape === 'water' && ndef.shape === 'water') {return true}
+    if (selfDef.shape === 'water' && ndef.shape === 'water') {
+      return true
+    }
 
     // same-type adjacency culls (panes link, leaves densify internally)
-    if (nid === bsId(self) && (selfDef.cutout || selfDef.shape === 'pane')) {return selfDef.shape === 'cube'}
+    if (nid === bsId(self) && (selfDef.cutout || selfDef.shape === 'pane')) {
+      return selfDef.shape === 'cube'
+    }
 
     return false
   }
@@ -187,14 +215,18 @@ class Builder {
   emit(x: number, y: number, z: number, state: number): void {
     const id = bsId(state)
 
-    if (id === B.AIR || id === B.LIGHT) {return}
+    if (id === B.AIR || id === B.LIGHT) {
+      return
+    }
     const def = defOf(id)
     const meta = bsMeta(state)
 
     if (this.dynamic.size > 0) {
       const key = this.p.index(x, y, z)
 
-      if (this.dynamic.has(key)) {return} // emitted by the dynamic pass
+      if (this.dynamic.has(key)) {
+        return
+      } // emitted by the dynamic pass
     }
 
     this.emitCell(x, y, z, state, def, meta)
@@ -255,7 +287,9 @@ class Builder {
         boxQuads(quads, 5, y0, 5, 11, y0 + 7, 11, def, meta, (f, d, m) => texFor(d, f, m), true)
         boxQuads(quads, 6, y0 + 7, 6, 10, y0 + 9, 10, def, meta, (f, d, m) => texFor(d, f, m))
 
-        if (hang) {boxQuads(quads, 7, 14, 7, 9, 16, 9, def, meta, (f, d, m) => texFor(d, f, m))}
+        if (hang) {
+          boxQuads(quads, 7, 14, 7, 9, 16, 9, def, meta, (f, d, m) => texFor(d, f, m))
+        }
 
         break
       }
@@ -263,9 +297,13 @@ class Builder {
       case 'chain': {
         const axis = meta & M_AXIS
 
-        if (axis === Axis.Y) {boxQuads(quads, 6, 0, 6, 10, 16, 10, def, meta, (f, d, m) => texFor(d, f, m), true)}
-        else if (axis === Axis.X) {boxQuads(quads, 0, 7, 6, 16, 11, 10, def, meta, (f, d, m) => texFor(d, f, m), true)}
-        else {boxQuads(quads, 6, 7, 0, 10, 11, 16, def, meta, (f, d, m) => texFor(d, f, m), true)}
+        if (axis === Axis.Y) {
+          boxQuads(quads, 6, 0, 6, 10, 16, 10, def, meta, (f, d, m) => texFor(d, f, m), true)
+        } else if (axis === Axis.X) {
+          boxQuads(quads, 0, 7, 6, 16, 11, 10, def, meta, (f, d, m) => texFor(d, f, m), true)
+        } else {
+          boxQuads(quads, 6, 7, 0, 10, 11, 16, def, meta, (f, d, m) => texFor(d, f, m), true)
+        }
 
         break
       }
@@ -277,7 +315,7 @@ class Builder {
           [7, 0, 8],
           [4, 0, 5],
           [10, 0, 6],
-          [6, 0, 11],
+          [6, 0, 11]
         ]
 
         for (let i = 0; i < n && i < spots.length; i++) {
@@ -291,17 +329,17 @@ class Builder {
               [sx, h + 4, sz + 1],
               [sx + 2, h + 4, sz + 1],
               [sx + 2, h, sz + 1],
-              [sx, h, sz + 1],
+              [sx, h, sz + 1]
             ],
             n: [0, 0, 1],
             uv: [
               [0.4, 0],
               [0.6, 0],
               [0.6, 0.3],
-              [0.4, 0.3],
+              [0.4, 0.3]
             ],
             tile: 'flame',
-            emissive: true,
+            emissive: true
           }
 
           quads.push(flame)
@@ -342,16 +380,16 @@ class Builder {
             [2, 1.5, 2],
             [14, 1.5, 2],
             [14, 1.5, 14],
-            [2, 1.5, 14],
+            [2, 1.5, 14]
           ],
           n: [0, 1, 0],
           uv: [
             [0, 0],
             [1, 0],
             [1, 1],
-            [0, 1],
+            [0, 1]
           ],
-          tile: def.tex.all ?? '',
+          tile: def.tex.all ?? ''
         })
 
         break
@@ -364,10 +402,15 @@ class Builder {
         } else {
           const dir = meta & M_DIR
 
-          if (dir === Dir.N) {boxQuads(quads, 0, 0, 0, 16, 16, 3, def, meta, (f, d, m) => texFor(d, f, m), true)}
-          else if (dir === Dir.S) {boxQuads(quads, 0, 0, 13, 16, 16, 16, def, meta, (f, d, m) => texFor(d, f, m), true)}
-          else if (dir === Dir.W) {boxQuads(quads, 0, 0, 0, 3, 16, 16, def, meta, (f, d, m) => texFor(d, f, m), true)}
-          else {boxQuads(quads, 13, 0, 0, 16, 16, 16, def, meta, (f, d, m) => texFor(d, f, m), true)}
+          if (dir === Dir.N) {
+            boxQuads(quads, 0, 0, 0, 16, 16, 3, def, meta, (f, d, m) => texFor(d, f, m), true)
+          } else if (dir === Dir.S) {
+            boxQuads(quads, 0, 0, 13, 16, 16, 16, def, meta, (f, d, m) => texFor(d, f, m), true)
+          } else if (dir === Dir.W) {
+            boxQuads(quads, 0, 0, 0, 3, 16, 16, def, meta, (f, d, m) => texFor(d, f, m), true)
+          } else {
+            boxQuads(quads, 13, 0, 0, 16, 16, 16, def, meta, (f, d, m) => texFor(d, f, m), true)
+          }
         }
 
         break
@@ -446,7 +489,9 @@ class Builder {
         (nz > 0 && q.p.every(v => v[2] === 16)) ||
         (nz < 0 && q.p.every(v => v[2] === 0))
 
-      if (onBoundary && this.culled(x, y, z, faceIdx, state, def)) {continue}
+      if (onBoundary && this.culled(x, y, z, faceIdx, state, def)) {
+        continue
+      }
       const [sink, idx] = this.sinkFor(def, q.emissive === true)
       this.quad(sink, idx, x, y, z, q)
     }
@@ -456,7 +501,20 @@ class Builder {
 type TexPick = (face: number, def: BlockDef, meta: number) => string
 
 /** Emit the 6 faces of an axis-aligned sub-box (pixel coords 0..16). */
-function boxQuads(out: Quad[], x0: number, y0: number, z0: number, x1: number, y1: number, z1: number, def: BlockDef, meta: number, pick: TexPick, cutoutUv = false, emissive = false): void {
+function boxQuads(
+  out: Quad[],
+  x0: number,
+  y0: number,
+  z0: number,
+  x1: number,
+  y1: number,
+  z1: number,
+  def: BlockDef,
+  meta: number,
+  pick: TexPick,
+  cutoutUv = false,
+  emissive = false
+): void {
   const faces: Array<{ f: number; c: [number, number, number][]; uvBase: [number, number] }> = [
     // +x (east): u=z, v=1-y
     {
@@ -465,9 +523,9 @@ function boxQuads(out: Quad[], x0: number, y0: number, z0: number, x1: number, y
         [x1, y0, z0],
         [x1, y0, z1],
         [x1, y1, z1],
-        [x1, y1, z0],
+        [x1, y1, z0]
       ],
-      uvBase: [z0 / 16, 1 - y1 / 16],
+      uvBase: [z0 / 16, 1 - y1 / 16]
     },
     // -x (west)
     {
@@ -476,9 +534,9 @@ function boxQuads(out: Quad[], x0: number, y0: number, z0: number, x1: number, y
         [x0, y0, z1],
         [x0, y0, z0],
         [x0, y1, z0],
-        [x0, y1, z1],
+        [x0, y1, z1]
       ],
-      uvBase: [1 - z1 / 16, 1 - y1 / 16],
+      uvBase: [1 - z1 / 16, 1 - y1 / 16]
     },
     // +y (up): u=x, v=z
     {
@@ -487,9 +545,9 @@ function boxQuads(out: Quad[], x0: number, y0: number, z0: number, x1: number, y
         [x0, y1, z0],
         [x0, y1, z1],
         [x1, y1, z1],
-        [x1, y1, z0],
+        [x1, y1, z0]
       ],
-      uvBase: [x0 / 16, z0 / 16],
+      uvBase: [x0 / 16, z0 / 16]
     },
     // -y (down)
     {
@@ -498,9 +556,9 @@ function boxQuads(out: Quad[], x0: number, y0: number, z0: number, x1: number, y
         [x0, y0, z1],
         [x0, y0, z0],
         [x1, y0, z0],
-        [x1, y0, z1],
+        [x1, y0, z1]
       ],
-      uvBase: [x0 / 16, 1 - z1 / 16],
+      uvBase: [x0 / 16, 1 - z1 / 16]
     },
     // +z (south): u=x, v=1-y
     {
@@ -509,9 +567,9 @@ function boxQuads(out: Quad[], x0: number, y0: number, z0: number, x1: number, y
         [x0, y0, z1],
         [x1, y0, z1],
         [x1, y1, z1],
-        [x0, y1, z1],
+        [x0, y1, z1]
       ],
-      uvBase: [x0 / 16, 1 - y1 / 16],
+      uvBase: [x0 / 16, 1 - y1 / 16]
     },
     // -z (north)
     {
@@ -520,16 +578,18 @@ function boxQuads(out: Quad[], x0: number, y0: number, z0: number, x1: number, y
         [x1, y0, z0],
         [x0, y0, z0],
         [x0, y1, z0],
-        [x1, y1, z0],
+        [x1, y1, z0]
       ],
-      uvBase: [1 - x1 / 16, 1 - y1 / 16],
-    },
+      uvBase: [1 - x1 / 16, 1 - y1 / 16]
+    }
   ]
 
   for (const { f, c, uvBase } of faces) {
     const tile = pick(f, def, meta)
 
-    if (!tile) {continue}
+    if (!tile) {
+      continue
+    }
     // uv size from the box's extent along the face axes
     const us = (f === 0 || f === 1 ? z1 - z0 : x1 - x0) / 16
     const vs = f === 2 || f === 3 ? (z1 - z0) / 16 : (y1 - y0) / 16
@@ -538,7 +598,7 @@ function boxQuads(out: Quad[], x0: number, y0: number, z0: number, x1: number, y
       [uvBase[0], uvBase[1] + vs],
       [uvBase[0] + us, uvBase[1] + vs],
       [uvBase[0] + us, uvBase[1]],
-      [uvBase[0], uvBase[1]],
+      [uvBase[0], uvBase[1]]
     ]
 
     out.push({ p: c as [number, number, number][], n: FACE_N[f] as [number, number, number], uv, tile, emissive })
@@ -554,17 +614,27 @@ function stairQuads(out: Quad[], dir: number, top: boolean, def: BlockDef, meta:
   if (!top) {
     boxQuads(out, 0, 0, 0, 16, 8, 16, def, meta, pick)
 
-    if (dir === 0) {boxQuads(out, 0, 8, 0, 16, 16, 8, def, meta, pick)}
-    else if (dir === 2) {boxQuads(out, 0, 8, 8, 16, 16, 16, def, meta, pick)}
-    else if (dir === 1) {boxQuads(out, 8, 8, 0, 16, 16, 16, def, meta, pick)}
-    else {boxQuads(out, 0, 8, 0, 8, 16, 16, def, meta, pick)}
+    if (dir === 0) {
+      boxQuads(out, 0, 8, 0, 16, 16, 8, def, meta, pick)
+    } else if (dir === 2) {
+      boxQuads(out, 0, 8, 8, 16, 16, 16, def, meta, pick)
+    } else if (dir === 1) {
+      boxQuads(out, 8, 8, 0, 16, 16, 16, def, meta, pick)
+    } else {
+      boxQuads(out, 0, 8, 0, 8, 16, 16, def, meta, pick)
+    }
   } else {
     boxQuads(out, 0, 8, 0, 16, 16, 16, def, meta, pick)
 
-    if (dir === 0) {boxQuads(out, 0, 0, 0, 16, 8, 8, def, meta, pick)}
-    else if (dir === 2) {boxQuads(out, 0, 0, 8, 16, 8, 16, def, meta, pick)}
-    else if (dir === 1) {boxQuads(out, 8, 0, 0, 16, 8, 16, def, meta, pick)}
-    else {boxQuads(out, 0, 0, 0, 8, 8, 16, def, meta, pick)}
+    if (dir === 0) {
+      boxQuads(out, 0, 0, 0, 16, 8, 8, def, meta, pick)
+    } else if (dir === 2) {
+      boxQuads(out, 0, 0, 8, 16, 8, 16, def, meta, pick)
+    } else if (dir === 1) {
+      boxQuads(out, 8, 0, 0, 16, 8, 16, def, meta, pick)
+    } else {
+      boxQuads(out, 0, 0, 0, 8, 8, 16, def, meta, pick)
+    }
   }
 }
 
@@ -581,13 +651,21 @@ function paneQuads(out: Quad[], x: number, y: number, z: number, p: Plan, def: B
 
   boxQuads(out, 7, 0, 7, 9, 16, 9, def, meta, pick, true)
 
-  if (conn(0, -1)) {boxQuads(out, 7, 0, 0, 9, 16, 7, def, meta, pick, true)}
+  if (conn(0, -1)) {
+    boxQuads(out, 7, 0, 0, 9, 16, 7, def, meta, pick, true)
+  }
 
-  if (conn(0, 1)) {boxQuads(out, 7, 0, 9, 9, 16, 16, def, meta, pick, true)}
+  if (conn(0, 1)) {
+    boxQuads(out, 7, 0, 9, 9, 16, 16, def, meta, pick, true)
+  }
 
-  if (conn(-1, 0)) {boxQuads(out, 0, 0, 7, 7, 16, 9, def, meta, pick, true)}
+  if (conn(-1, 0)) {
+    boxQuads(out, 0, 0, 7, 7, 16, 9, def, meta, pick, true)
+  }
 
-  if (conn(1, 0)) {boxQuads(out, 9, 0, 7, 16, 16, 9, def, meta, pick, true)}
+  if (conn(1, 0)) {
+    boxQuads(out, 9, 0, 7, 16, 16, 9, def, meta, pick, true)
+  }
 }
 
 function fenceQuads(out: Quad[], x: number, y: number, z: number, p: Plan, def: BlockDef, meta: number): void {
@@ -605,9 +683,11 @@ function fenceQuads(out: Quad[], x: number, y: number, z: number, p: Plan, def: 
     [0, -1],
     [0, 1],
     [-1, 0],
-    [1, 0],
+    [1, 0]
   ] as const) {
-    if (!conn(dx, dz)) {continue}
+    if (!conn(dx, dz)) {
+      continue
+    }
     const ax0 = dx === 0 ? 6 : dx < 0 ? 0 : 6
     const ax1 = dx === 0 ? 10 : dx < 0 ? 10 : 16
     const az0 = dz === 0 ? 6 : dz < 0 ? 0 : 6
@@ -628,29 +708,29 @@ function crossQuads(out: Quad[], def: BlockDef, meta: number, half: 'full' | 'to
         [0.8, y1, 0.8],
         [15.2, y1, 15.2],
         [15.2, y0, 15.2],
-        [0.8, y0, 0.8],
+        [0.8, y0, 0.8]
       ],
       uv: [
         [0, v0],
         [1, v0],
         [1, v1],
-        [0, v1],
-      ],
+        [0, v1]
+      ]
     },
     {
       p: [
         [0.8, y1, 15.2],
         [15.2, y1, 0.8],
         [15.2, y0, 0.8],
-        [0.8, y0, 15.2],
+        [0.8, y0, 15.2]
       ],
       uv: [
         [0, v0],
         [1, v0],
         [1, v1],
-        [0, v1],
-      ],
-    },
+        [0, v1]
+      ]
+    }
   ]
 
   for (const q of quads) {
@@ -701,7 +781,9 @@ export function meshWorld(p: Plan, light: LightField, atlas: Atlas): WorldMesh {
       for (let x = p.minX; x <= p.maxX; x++) {
         const s = p.get(x, y, z)
 
-        if (bsId(s) === B.AIR) {continue}
+        if (bsId(s) === B.AIR) {
+          continue
+        }
         b.emit(x, y, z, s)
       }
     }
@@ -716,12 +798,20 @@ export function meshWorld(p: Plan, light: LightField, atlas: Atlas): WorldMesh {
     emissive: b.emissive,
     idx: [b.idxO, b.idxC, b.idxT, b.idxE],
     lamps,
-    bulbs,
+    bulbs
   }
 }
 
 /** Rebuild one dynamic cell (lamp / bulb) into a small quad batch. */
-export function meshCell(p: Plan, light: LightField, atlas: Atlas, x: number, y: number, z: number, state: number): { opaque: number[]; emissive: number[]; idxO: number[]; idxE: number[] } {
+export function meshCell(
+  p: Plan,
+  light: LightField,
+  atlas: Atlas,
+  x: number,
+  y: number,
+  z: number,
+  state: number
+): { opaque: number[]; emissive: number[]; idxO: number[]; idxE: number[] } {
   const b = new Builder(p, light, atlas, new Map())
   const id = bsId(state)
   const def = defOf(id)

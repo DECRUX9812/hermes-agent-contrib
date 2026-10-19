@@ -79,14 +79,25 @@ export function showContextMenu(root: ShadowRoot, x: number, y: number, items: M
     // e.target retargets to the shadow host, so `menu.contains(target)`
     // is always false and a click on a row dismissed it before firing.
     // composedPath() sees through the shadow boundary.
-    if (!e.composedPath().includes(menu)) {dismiss()}
+    if (!e.composedPath().includes(menu)) {
+      dismiss()
+    }
   }
 
   function onKey(e: KeyboardEvent) {
-    if (e.key === 'Escape') {dismiss()}
-    else if (e.key === 'ArrowDown') {e.preventDefault(); move(1)}
-    else if (e.key === 'ArrowUp') {e.preventDefault(); move(-1)}
-    else if (e.key === 'Enter' && sel >= 0) {e.preventDefault(); dismiss(); items.filter((i) => !i.separator)[sel]?.run?.()}
+    if (e.key === 'Escape') {
+      dismiss()
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      move(1)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      move(-1)
+    } else if (e.key === 'Enter' && sel >= 0) {
+      e.preventDefault()
+      dismiss()
+      items.filter(i => !i.separator)[sel]?.run?.()
+    }
   }
 
   setTimeout(() => document.addEventListener('pointerdown', outside, true), 0)
@@ -114,9 +125,13 @@ export function showPalette(root: ShadowRoot, sections: PaletteSection[]) {
     flat = []
 
     for (const s of sections) {
-      const hits = s.items.filter((it) => !ql || it.label.toLowerCase().includes(ql) || (it.hint ?? '').toLowerCase().includes(ql))
+      const hits = s.items.filter(
+        it => !ql || it.label.toLowerCase().includes(ql) || (it.hint ?? '').toLowerCase().includes(ql)
+      )
 
-      if (!hits.length) {continue}
+      if (!hits.length) {
+        continue
+      }
       const h = document.createElement('div')
       h.className = 'hr-pal-sec'
       h.textContent = s.title
@@ -168,15 +183,28 @@ export function showPalette(root: ShadowRoot, sections: PaletteSection[]) {
   function outside(e: Event) {
     // See showContextMenu: shadow retargeting makes contains(target)
     // always false at document level; use the composed path.
-    if (!e.composedPath().includes(wrap)) {dismiss()}
+    if (!e.composedPath().includes(wrap)) {
+      dismiss()
+    }
   }
 
   input.addEventListener('input', () => render(input.value))
-  wrap.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {dismiss()}
-    else if (e.key === 'ArrowDown') {e.preventDefault(); sel = Math.min(flat.length - 1, sel + 1); paint()}
-    else if (e.key === 'ArrowUp') {e.preventDefault(); sel = Math.max(0, sel - 1); paint()}
-    else if (e.key === 'Enter' && flat[sel]) {e.preventDefault(); dismiss(); flat[sel]!.it.run?.()}
+  wrap.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      dismiss()
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      sel = Math.min(flat.length - 1, sel + 1)
+      paint()
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      sel = Math.max(0, sel - 1)
+      paint()
+    } else if (e.key === 'Enter' && flat[sel]) {
+      e.preventDefault()
+      dismiss()
+      flat[sel]!.it.run?.()
+    }
   })
 
   root.appendChild(wrap)

@@ -61,9 +61,13 @@ export function getRapport(profileKey: string): BotRapport {
 export type RapportTier = 'new' | 'trusted' | 'seasoned'
 
 export function rapportTier(score: number): RapportTier {
-  if (score >= 70) {return 'seasoned'}
+  if (score >= 70) {
+    return 'seasoned'
+  }
 
-  if (score >= 40) {return 'trusted'}
+  if (score >= 40) {
+    return 'trusted'
+  }
 
   return 'new'
 }
@@ -129,7 +133,9 @@ export function applyRapportDecay(): void {
     }
   }
 
-  if (changed) {$botRapport.set(next)}
+  if (changed) {
+    $botRapport.set(next)
+  }
 }
 
 /** Live per-bot rapport map for the UI. */

@@ -1,12 +1,7 @@
 import { useState } from 'react'
 
 import { cn } from '@/lib/utils'
-import {
-  applyRolePreset,
-  BOT_ROLE_PRESETS,
-  type ColonyBot,
-  setBotCharacter,
-} from '@/store/bot-character'
+import { applyRolePreset, BOT_ROLE_PRESETS, type ColonyBot, setBotCharacter } from '@/store/bot-character'
 
 // Bot character card — name, visual identity, tone, strengths, quirks.
 // Shown on hover/long-press over a roster avatar. Editable: name, role preset,
@@ -23,7 +18,10 @@ export function BotCard({ bot }: { bot: ColonyBot }) {
     setBotCharacter(bot.profileKey, {
       name: name.trim() || char.name,
       tone: tone.trim() || char.tone,
-      quirks: quirks.split(',').map(q => q.trim()).filter(Boolean),
+      quirks: quirks
+        .split(',')
+        .map(q => q.trim())
+        .filter(Boolean)
     })
     setEditing(false)
   }
@@ -54,7 +52,9 @@ export function BotCard({ bot }: { bot: ColonyBot }) {
               value={char.role}
             >
               {BOT_ROLE_PRESETS.map(p => (
-                <option key={p.role} value={p.role}>{p.label}</option>
+                <option key={p.role} value={p.role}>
+                  {p.label}
+                </option>
               ))}
               <option value="custom">Custom</option>
             </select>
@@ -130,9 +130,7 @@ export function BotCard({ bot }: { bot: ColonyBot }) {
             </div>
           )}
           {char.quirks.length > 0 && (
-            <p className="text-[0.625rem] italic text-(--ui-text-tertiary)">
-              Quirks: {char.quirks.join(' · ')}
-            </p>
+            <p className="text-[0.625rem] italic text-(--ui-text-tertiary)">Quirks: {char.quirks.join(' · ')}</p>
           )}
           <p className="border-t border-(--ui-edge-border) pt-1.5 text-[0.625rem] text-(--ui-text-quaternary)">
             Same brain, different character — identity is presentation only.

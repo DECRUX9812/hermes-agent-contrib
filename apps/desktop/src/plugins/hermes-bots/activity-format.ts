@@ -16,10 +16,7 @@ const SUBJECT_MAX = 60
 /** Cut `text` to `max` chars on a WORD boundary, so a row never ends
  *  mid-word. First line only: a subject is one line or it isn't a subject. */
 export function clipWords(text: string, max = SUBJECT_MAX): string {
-  const line = text
-    .split('\n', 1)[0]
-    .replace(/\s+/g, ' ')
-    .trim()
+  const line = text.split('\n', 1)[0].replace(/\s+/g, ' ').trim()
 
   if (line.length <= max) {
     return line

@@ -20,7 +20,10 @@ export interface SimHandle {
   stop(): void
 }
 
-export function startSim(cast: CastMember[], opts: { speed?: number; autoAnswer?: number; onBeat?: (name: string, i: number) => void } = {}): SimHandle {
+export function startSim(
+  cast: CastMember[],
+  opts: { speed?: number; autoAnswer?: number; onBeat?: (name: string, i: number) => void } = {}
+): SimHandle {
   const store: SimStore = new Store(cast)
   const d = new SimDirector(store)
   d.speed = opts.speed ?? 1.6
@@ -45,9 +48,11 @@ export function startSim(cast: CastMember[], opts: { speed?: number; autoAnswer?
 
       // release any pending decision waiters so the loop can exit
       for (const [key, dec] of store.decisions) {
-        if (dec.status === 'open') {store.answerDecision(key, { option: dec.options[0] })}
+        if (dec.status === 'open') {
+          store.answerDecision(key, { option: dec.options[0] })
+        }
       }
-    },
+    }
   }
 
   handle.promise = (async () => {
@@ -60,7 +65,9 @@ export function startSim(cast: CastMember[], opts: { speed?: number; autoAnswer?
         await BEATS[i].run(d)
       } catch (err) {
         // a stopped sim rejects sleeps; only surface real errors
-        if (!handle.running) {break}
+        if (!handle.running) {
+          break
+        }
         console.error(`[agentcraft sim] beat ${BEATS[i].name} failed:`, err)
         d.log('marlow', 'error', `sim beat ${BEATS[i].name} failed: ${String(err)}`)
       }

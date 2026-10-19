@@ -298,11 +298,7 @@ const UserBubbleActions: FC<UserBubbleActionsProps> = ({
         <Tip label={copy.revertFilesTip}>
           <button
             aria-label={copy.revertFilesTip}
-            className={cn(
-              'pointer-events-auto',
-              touch ? 'size-11' : 'size-6',
-              USER_ACTION_ICON_BUTTON_CLASS
-            )}
+            className={cn('pointer-events-auto', touch ? 'size-11' : 'size-6', USER_ACTION_ICON_BUTTON_CLASS)}
             onClick={event => {
               event.preventDefault()
               event.stopPropagation()

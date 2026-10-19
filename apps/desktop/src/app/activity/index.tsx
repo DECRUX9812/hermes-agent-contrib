@@ -44,9 +44,7 @@ export function ActivityView({ onClose }: { onClose: () => void }) {
         <div className="flex shrink-0 flex-col gap-2 px-5 pt-[calc(var(--titlebar-height)+0.875rem)] pb-1">
           <div className="flex items-baseline justify-between">
             <h1 className="text-[1.0625rem] font-semibold text-foreground">Activity</h1>
-            <span className="text-[0.6875rem] font-medium text-(--ui-text-tertiary)">
-              Live from this machine
-            </span>
+            <span className="text-[0.6875rem] font-medium text-(--ui-text-tertiary)">Live from this machine</span>
           </div>
           <AgentPresence />
           <ColonyRoster />

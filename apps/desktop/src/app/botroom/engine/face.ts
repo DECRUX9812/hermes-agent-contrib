@@ -9,12 +9,12 @@ const BRAND_FACES: Record<string, string> = {
   Grok: 'grok',
   Grokbot: 'grok',
   Muse: 'muse',
-  Scout: 'openai',
+  Scout: 'openai'
 }
 
 async function loadImage(src: string): Promise<HTMLImageElement> {
   const img = new Image()
-  await new Promise<void>((resolve) => {
+  await new Promise<void>(resolve => {
     img.onload = () => resolve()
     img.onerror = () => resolve()
     img.src = src
@@ -29,7 +29,9 @@ export async function faceCanvas(name: string, size = 256): Promise<HTMLCanvasEl
   const key = `${name}:${size}`
   const hit = textureCache.get(key)
 
-  if (hit) {return hit}
+  if (hit) {
+    return hit
+  }
 
   const brand = BRAND_FACES[name]
 

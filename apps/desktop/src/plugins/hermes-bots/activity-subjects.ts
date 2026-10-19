@@ -218,7 +218,11 @@ export function subjectPrompt(requests: readonly string[]): { input: string; ins
     ...requests.flatMap((request, index) => {
       const language = requestLanguage(request)
 
-      return language ? [`Request ${index + 1} is written in ${LANGUAGE_NAME[language]}: write its subject in ${LANGUAGE_NAME[language]}.`] : []
+      return language
+        ? [
+            `Request ${index + 1} is written in ${LANGUAGE_NAME[language]}: write its subject in ${LANGUAGE_NAME[language]}.`
+          ]
+        : []
     })
   ].join('\n')
 

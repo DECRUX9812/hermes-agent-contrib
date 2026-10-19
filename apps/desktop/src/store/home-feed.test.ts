@@ -15,11 +15,7 @@ import {
 
 const BASE_TIME = 1_700_000_000_000 // Fixed epoch ms for deterministic tests
 
-function makeAttentionItem(
-  kind: AttentionItem['kind'],
-  id: string,
-  overrides?: Partial<AttentionItem>
-): AttentionItem {
+function makeAttentionItem(kind: AttentionItem['kind'], id: string, overrides?: Partial<AttentionItem>): AttentionItem {
   return {
     id,
     kind,
@@ -29,10 +25,7 @@ function makeAttentionItem(
   }
 }
 
-function makeCronJob(
-  id: string,
-  overrides?: Partial<CronJob>
-): CronJob {
+function makeCronJob(id: string, overrides?: Partial<CronJob>): CronJob {
   return {
     enabled: true,
     id,
@@ -195,19 +188,11 @@ describe('home-feed store & collector', () => {
       // 5. cronOverdue (rank 4)
       // (dueSoonJob would be 6th and capped off by max 5)
       expect(feed).toHaveLength(5)
-      expect(feed.map(f => f.kind)).toEqual([
-        'approval',
-        'clarify',
-        'secret',
-        'error',
-        'cronOverdue'
-      ])
+      expect(feed.map(f => f.kind)).toEqual(['approval', 'clarify', 'secret', 'error', 'cronOverdue'])
     })
 
     it('caps results at 5 items', () => {
-      const approvals = Array.from({ length: 8 }, (_, i) =>
-        makeAttentionItem('approval', `app-${i}`)
-      )
+      const approvals = Array.from({ length: 8 }, (_, i) => makeAttentionItem('approval', `app-${i}`))
 
       const feed = collectHomeFeed({
         attentionItems: approvals,
@@ -219,10 +204,7 @@ describe('home-feed store & collector', () => {
     })
 
     it('filters out dismissed items by item id or cron job id', () => {
-      const items = [
-        makeAttentionItem('approval', 'app-1'),
-        makeAttentionItem('approval', 'app-2')
-      ]
+      const items = [makeAttentionItem('approval', 'app-1'), makeAttentionItem('approval', 'app-2')]
 
       const cronJobs = [
         makeCronJob('job-1', { next_run_at: new Date(BASE_TIME + 2 * 60 * 1000).toISOString() }),
@@ -269,9 +251,7 @@ describe('home-feed store & collector', () => {
     })
 
     it('falls back to session title when attention item detail is missing', () => {
-      const items = [
-        makeAttentionItem('clarify', 'cla-1', { detail: undefined, sessionId: 'rt-session-1' })
-      ]
+      const items = [makeAttentionItem('clarify', 'cla-1', { detail: undefined, sessionId: 'rt-session-1' })]
 
       const sessions: SessionInfo[] = [
         {

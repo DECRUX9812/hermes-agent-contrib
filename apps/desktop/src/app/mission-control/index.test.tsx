@@ -81,9 +81,7 @@ describe('MissionControlView', () => {
     const onClose = vi.fn()
     const onOpenSession = vi.fn()
 
-    $sessions.set([
-      { id: 'stored-1', title: 'Agent Build Mission' } as SessionInfo
-    ])
+    $sessions.set([{ id: 'stored-1', title: 'Agent Build Mission' } as SessionInfo])
     $sessionStates.set({
       'rt-1': {
         busy: true,
@@ -111,9 +109,7 @@ describe('MissionControlView', () => {
     const onClose = vi.fn()
     const onOpenSession = vi.fn()
 
-    $sessions.set([
-      { id: 'rt-2', title: 'Orphaned Task' } as SessionInfo
-    ])
+    $sessions.set([{ id: 'rt-2', title: 'Orphaned Task' } as SessionInfo])
     // rt-2 has no state in $sessionStates
     $workingSessionIdsMock.set(['rt-2'])
 
@@ -128,9 +124,7 @@ describe('MissionControlView', () => {
     const onOpenSession = vi.fn()
     const onStop = vi.fn().mockImplementation(() => new Promise<void>(() => {})) // pending promise
 
-    $sessions.set([
-      { id: 'stored-1', title: 'Long Running Job' } as SessionInfo
-    ])
+    $sessions.set([{ id: 'stored-1', title: 'Long Running Job' } as SessionInfo])
     $sessionStates.set({
       'rt-1': {
         busy: true,
@@ -156,9 +150,7 @@ describe('MissionControlView', () => {
     const onOpenSession = vi.fn()
     const onStop = vi.fn().mockRejectedValue(new Error('Gateway timeout'))
 
-    $sessions.set([
-      { id: 'stored-1', title: 'Failing Job' } as SessionInfo
-    ])
+    $sessions.set([{ id: 'stored-1', title: 'Failing Job' } as SessionInfo])
     $sessionStates.set({
       'rt-1': {
         busy: true,

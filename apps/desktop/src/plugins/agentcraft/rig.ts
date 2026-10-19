@@ -8,18 +8,7 @@
 import * as THREE from 'three'
 
 export type Posture =
-  | 'idle'
-  | 'walk'
-  | 'sit'
-  | 'sit_type'
-  | 'type'
-  | 'think'
-  | 'read'
-  | 'talk'
-  | 'relax'
-  | 'wait'
-  | 'error'
-  | 'celebrate'
+  'idle' | 'walk' | 'sit' | 'sit_type' | 'type' | 'think' | 'read' | 'talk' | 'relax' | 'wait' | 'error' | 'celebrate'
 
 export interface RigParts {
   root: THREE.Group
@@ -40,7 +29,14 @@ const TEX = 64
  * `w,h,d` in pixels; `u,v` region origin in the skin; overlay pulls the region
  * from the second layer (inflated by `infl` px).
  */
-function part(w: number, h: number, d: number, u: number, v: number, overlay?: { u: number; v: number; infl: number }): THREE.Group {
+function part(
+  w: number,
+  h: number,
+  d: number,
+  u: number,
+  v: number,
+  overlay?: { u: number; v: number; infl: number }
+): THREE.Group {
   const g = new THREE.Group()
   const base = boxWithSkin(w, h, d, u, v, 0)
   g.add(base)
@@ -70,7 +66,7 @@ function boxWithSkin(w: number, h: number, d: number, u: number, v: number, _inf
     /* +y  top   */ [u + d, v, w, d],
     /* -y  bot   */ [u + d + w, v, w, d],
     /* +z  front */ [u + d, v + d, w, h],
-    /* -z  back  */ [u + 2 * d + w, v + d, w, h],
+    /* -z  back  */ [u + 2 * d + w, v + d, w, h]
   ]
 
   const uv = geo.attributes.uv as THREE.BufferAttribute
@@ -129,38 +125,50 @@ export function buildRig(skin: THREE.Texture, slim: boolean): Rig {
   headPivot.position.set(0, 24 * PX, 0)
   head.position.set(0, 0, 0)
 
-  for (const c of head.children) {(c as THREE.Mesh).position.set(0, 4 * PX, 0)}
+  for (const c of head.children) {
+    ;(c as THREE.Mesh).position.set(0, 4 * PX, 0)
+  }
   headPivot.add(head)
   body.add(headPivot)
 
   const torso = part(8, 12, 4, 16, 16, { u: 16, v: 32, infl: 0.25 })
   torso.position.set(0, 12 * PX, 0)
 
-  for (const c of torso.children) {(c as THREE.Mesh).position.set(0, 6 * PX, 0)}
+  for (const c of torso.children) {
+    ;(c as THREE.Mesh).position.set(0, 6 * PX, 0)
+  }
   body.add(torso)
 
   const armR = part(armW, 12, 4, 40, 16, { u: 40, v: 32, infl: 0.25 })
   armR.position.set(-(4 + armW / 2) * PX, 22 * PX, 0)
 
-  for (const c of armR.children) {(c as THREE.Mesh).position.set(0, -5 * PX, 0)}
+  for (const c of armR.children) {
+    ;(c as THREE.Mesh).position.set(0, -5 * PX, 0)
+  }
   body.add(armR)
 
   const armL = part(armW, 12, 4, 32, 48, { u: 48, v: 48, infl: 0.25 })
   armL.position.set((4 + armW / 2) * PX, 22 * PX, 0)
 
-  for (const c of armL.children) {(c as THREE.Mesh).position.set(0, -5 * PX, 0)}
+  for (const c of armL.children) {
+    ;(c as THREE.Mesh).position.set(0, -5 * PX, 0)
+  }
   body.add(armL)
 
   const legR = part(4, 12, 4, 0, 16, { u: 0, v: 32, infl: 0.25 })
   legR.position.set(-2 * PX, 12 * PX, 0)
 
-  for (const c of legR.children) {(c as THREE.Mesh).position.set(0, -6 * PX, 0)}
+  for (const c of legR.children) {
+    ;(c as THREE.Mesh).position.set(0, -6 * PX, 0)
+  }
   body.add(legR)
 
   const legL = part(4, 12, 4, 16, 48, { u: 0, v: 48, infl: 0.25 })
   legL.position.set(2 * PX, 12 * PX, 0)
 
-  for (const c of legL.children) {(c as THREE.Mesh).position.set(0, -6 * PX, 0)}
+  for (const c of legL.children) {
+    ;(c as THREE.Mesh).position.set(0, -6 * PX, 0)
+  }
   body.add(legL)
 
   root.traverse(o => {
@@ -174,13 +182,17 @@ export function buildRig(skin: THREE.Texture, slim: boolean): Rig {
   const overlays: THREE.Mesh[] = []
 
   for (const grp of [head, torso, armL, armR, legL, legR]) {
-    if (grp.children[1]) {overlays.push(grp.children[1] as THREE.Mesh)}
+    if (grp.children[1]) {
+      overlays.push(grp.children[1] as THREE.Mesh)
+    }
   }
 
   overlays.forEach(m => (m.material = matOverlay))
   const bases: THREE.Mesh[] = []
 
-  for (const grp of [head, torso, armL, armR, legL, legR]) {bases.push(grp.children[0] as THREE.Mesh)}
+  for (const grp of [head, torso, armL, armR, legL, legR]) {
+    bases.push(grp.children[0] as THREE.Mesh)
+  }
   bases.forEach(m => (m.material = mat))
 
   const rig: Rig = {
@@ -193,7 +205,7 @@ export function buildRig(skin: THREE.Texture, slim: boolean): Rig {
     },
     update(t, dt) {
       applyPosture(rig, t, dt)
-    },
+    }
   }
 
   rig.root.scale.setScalar(0.9)
@@ -226,7 +238,7 @@ function applyPosture(rig: Rig, t: number, dt: number): void {
     bodyY: 0,
     bodyRx: 0,
     legLy: 0,
-    legRy: 0,
+    legRy: 0
   }
 
   switch (rig.posture) {

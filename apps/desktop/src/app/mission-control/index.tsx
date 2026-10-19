@@ -30,11 +30,7 @@ function formatActionLine(action: LiveAction): string {
   return action.tool
 }
 
-export function MissionControlView({
-  onClose,
-  onOpenSession,
-  onStop
-}: MissionControlViewProps) {
+export function MissionControlView({ onClose, onOpenSession, onStop }: MissionControlViewProps) {
   const workingSessionIds = useStore($workingSessionIds)
   const sessions = useStore($sessions)
   const sessionStates = useStore($sessionStates)
@@ -56,9 +52,7 @@ export function MissionControlView({
 
   // Sessions that can be tiled: other working sessions not currently in main and not already tiled
   const tileableOtherSessions = useMemo(() => {
-    return cards.filter(
-      card => card.storedSessionId !== selectedStoredSessionId && !tiledIds.has(card.storedSessionId)
-    )
+    return cards.filter(card => card.storedSessionId !== selectedStoredSessionId && !tiledIds.has(card.storedSessionId))
   }, [cards, selectedStoredSessionId, tiledIds])
 
   const canTileSideBySide = cards.length > 1 && tileableOtherSessions.length > 0
@@ -140,12 +134,7 @@ export function MissionControlView({
               </span>
             )}
           </div>
-          <Button
-            disabled={!canTileSideBySide}
-            onClick={handleOpenSideBySide}
-            size="xs"
-            variant="secondary"
-          >
+          <Button disabled={!canTileSideBySide} onClick={handleOpenSideBySide} size="xs" variant="secondary">
             Open side by side
           </Button>
         </div>
@@ -215,11 +204,7 @@ export function MissionControlView({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-1.5">
-                      <Button
-                        onClick={() => handleOpen(card.storedSessionId)}
-                        size="xs"
-                        variant="secondary"
-                      >
+                      <Button onClick={() => handleOpen(card.storedSessionId)} size="xs" variant="secondary">
                         Open
                       </Button>
                       <Button
