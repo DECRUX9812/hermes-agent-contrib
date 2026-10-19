@@ -1,0 +1,43 @@
+name: loopguard
+repo: https://github.com/DECRUX9812/hermes-loopguard
+sha: ca06198e94304a1dc4fec4acad65817e15d7cb6a
+subdir: ""
+version: "0.1.0"
+title: LoopGuard
+description: >-
+  Stops cron and kanban automations from paying a big model to look at unchanged state. A zero-token
+  change gate skips unchanged polls, a cheap typed semantic gate (TypeSafe Jev, any OpenAI-compatible
+  model, the Hermes auxiliary task or local heuristics) triages new items, and a tool gate, completion
+  check and spend caps stop runaway loops. Optional computer-use gates and a jev_computer tool put
+  screenshot checks on cheap typed calls. Settings are in Settings > Plugins.
+  Disclosure: network calls only to the backends you configure (TypeSafe when a key is set, your
+  OpenAI-compatible endpoint, the Hermes aux model); no telemetry. Runs the watcher source commands
+  and GOAL.md checks you write (argument lists, no shell), hermes cron/kanban create, and the
+  cua-driver CLI for computer use (off by default). Data and config stay under HERMES_HOME; the
+  TypeSafe key is a config_schema secret read through Hermes. No background processes.
+maintainer: DECRUX9812
+tier: community
+category: automation
+docs_url: https://github.com/DECRUX9812/hermes-loopguard#readme
+image: https://raw.githubusercontent.com/DECRUX9812/hermes-loopguard/ca06198e94304a1dc4fec4acad65817e15d7cb6a/docs/media/banner.png
+screenshots:
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-loopguard/ca06198e94304a1dc4fec4acad65817e15d7cb6a/examples/demo/dashboard.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-loopguard/ca06198e94304a1dc4fec4acad65817e15d7cb6a/examples/demo/dashboard-cu.png
+platforms: []
+capabilities:
+  provides_tools:
+    - jev_computer
+    - loopguard_cu_status
+  provides_hooks:
+    - post_api_request
+    - post_llm_call
+    - on_session_end
+    - kanban_task_claimed
+    - kanban_task_completed
+    - kanban_task_blocked
+    - on_kanban_worker_exited
+    - pre_tool_call
+    - transform_tool_result
+    - pre_verify
+  provides_middleware: []
+  requires_env: []
