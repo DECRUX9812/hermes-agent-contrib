@@ -74,6 +74,13 @@ import { $sessionColorOverrides, setSessionColorOverride } from '@/store/session
 import { $mutedSessionIds, isSessionMuted, toggleSessionMuted } from '@/store/session-mute'
 import { $sessionStates, $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
 import { $sessionTags, addSessionTag, removeSessionTag, sessionTagKey } from '@/store/session-tags'
+import { ambientRequestFor } from '@/store/session-gone-latch'
+import {
+  $sessionStates,
+  $sessionTiles,
+  closeAllOpenSessionTiles,
+  requestForOwnedSession
+} from '@/store/session-states'
 import { ackStoredSessionId } from '@/store/session-unread'
 import { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } from '@/store/session-watch'
 import { isolateSessionToWorktree, mergeSessionWorktree, sessionWorktreeInfo } from '@/store/session-worktree'
@@ -147,10 +154,14 @@ export async function renameSessionPreferringRpc(
 
   if (title && runtimeId && gateway) {
     try {
-      const result = await gateway.request<SessionTitleResponse>('session.title', {
-        session_id: runtimeId,
-        title
-      })
+      // The runtime lives on its owner's backend; the ambient socket would
+      // refuse a secondary profile's session and drop us to REST.
+      const result = await requestForOwnedSession<SessionTitleResponse>(
+        runtimeId,
+        ambientRequestFor(gateway),
+        'session.title',
+        { session_id: runtimeId, title }
+      )
 
       return { title: result?.title ?? title }
     } catch (err) {

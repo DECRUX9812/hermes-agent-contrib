@@ -39,15 +39,22 @@ import {
 } from '@hermes/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 
-import { avatarColor, botAppearance, BotFace } from './avatar'
+import { avatarColor, blobatarSvg, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import { AvatarPicker } from './avatar-picker'
-import { importBot } from './bot-export'
-import type { BotDraft } from './bot-starters'
 import { $selectedBot } from './bot-state'
-import { BOT_TEMPLATE_IDS, BOT_TEMPLATES, disabledSkillNames, stagedSkillsForTemplate } from './bot-templates'
-import type { BotTemplateId } from './bot-templates'
 import { createCanonicalChat } from './canonical-chat'
+import {
+  groupCreationSource,
+  groupExecutionMode,
+  seatableGroupBots,
+  useGroupCapability
+} from './canonical-group-capabilities'
+import type { GroupCapabilityState } from './canonical-group-capabilities'
+import { registerCanonicalGroup } from './canonical-group-registry'
+import type { CanonicalGroupOrigin } from './canonical-group-registry'
+import { canonicalGroupRequest, createCanonicalGroup } from './canonical-groups'
+import type { CanonicalGroupRoute } from './canonical-groups'
 import { $botMeta, botHandle, botRosterKey, filterBots, ROSTER_KEY, saveBotMeta } from './data'
 import { labeled, ResizableFrame } from './dialog-parts'
 import { GROUP_CHAT_MAX_MEMBERS, mintGroupRoomId, uniqueGroupChatName, updateGroupChat } from './group-chat'
@@ -119,25 +126,164 @@ interface CreateAgentDialogProps {
   /** Opens the editor for a just-created local bot whose model is not ready. */
   onConfigureModel?: (bot: RosterRow) => void
   open: boolean
-  /** A Hire-gallery pick (a starter card or a described bot, see
-   *  bot-starters.ts): the form arrives pre-filled — name, role, persona,
-   *  face, first-prompt starters — and its C1 preset curates skills/model.
-   *  The caller remounts this dialog per open, so it is read once, on mount. */
-  draft?: BotDraft | null
   roster: RosterRow[]
 }
 
-export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, roster }: CreateAgentDialogProps) {
+type CapabilityPicks = Pick<ProfileConfigurePayload, 'disabled_skills' | 'enabled_mcp_servers' | 'enabled_toolsets'>
+
+/** The `profiles.configure` fields for the Advanced-tab picks the user changed. */
+function capabilityPayload(
+  caps: CapabilityCatalog | null,
+  dirty: { mcp: boolean; skills: boolean; toolsets: boolean }
+): CapabilityPicks {
+  const payload: CapabilityPicks = {}
+
+  if (!caps) {
+    return payload
+  }
+
+  if (dirty.skills) {
+    payload.disabled_skills = caps.skills.filter(s => !s.enabled).map(s => s.name)
+  }
+
+  if (dirty.toolsets) {
+    const en = caps.toolsets.filter(t => t.enabled)
+    payload.enabled_toolsets = en.length === caps.toolsets.length || en.length === 0 ? [] : en.map(t => t.name)
+  }
+
+  if (dirty.mcp) {
+    payload.enabled_mcp_servers = caps.mcp.filter(m => m.enabled).map(m => m.name)
+  }
+
+  return payload
+}
+
+/** Gateway RPC on a create target: `target` is a registry connection id (its
+ *  default backend, no gateway switch) or '' for the active gateway. */
+function requestOnTarget<T>(target: string, method: string, params: Record<string, unknown> = {}): Promise<T> {
+  return target
+    ? host.requestProfile({ connectionId: target, mode: 'remote', profile: 'default', targetProfile: 'default' }, method, params)
+    : host.request(method, params)
+}
+
+/** Delete a draft profile the New Agent dialog minted, on the `target` it was
+ *  created on: a remote connection (`cli.exec`) or '' for local. Fire-and-forget
+ *  with a toast. A cancel while profiles.create is still in flight is caught by
+ *  that flight itself (the dialog's draftGenRef), since the draft is only
+ *  recorded once the RPC returns (#141623). */
+function discardDraftProfile(draft: string, target: string) {
+  const discard = target
+    ? requestOnTarget(target, 'cli.exec', { argv: ['profile', 'delete', draft, '--yes'] })
+    : deleteBot({ name: draft })
+
+  void Promise.resolve(discard)
+    .then(() => host.notify({ kind: 'success', message: `Draft agent "${draft}" discarded` }))
+    .catch(err => host.notifyError(err, `Could not clean up draft profile "${draft}"`))
+}
+
+/** The live Capabilities surface needs a real profile. Materialize it whenever
+ *  the tab is showing a valid, untaken name that has no draft yet, not only on
+ *  the tab click: a user who opens the tab first and names the bot after (or
+ *  renames it) otherwise sat on a spinner forever. Debounced so typing a name
+ *  does not mint a draft per keystroke. */
+function useCapabilitiesDraft(ready: boolean, slug: string, draft: null | string, materialize: () => void) {
+  // The timer is keyed on the name, but must run the LATEST callback: a title
+  // or description typed during the wait belongs in the created profile.
+  const latest = useRef(materialize)
+  latest.current = materialize
+
+  useEffect(() => {
+    if (!ready || draft === slug) {
+      return
+    }
+
+    const timer = window.setTimeout(() => latest.current(), 800)
+
+    return () => window.clearTimeout(timer)
+  }, [ready, slug, draft])
+}
+
+/** New Bot's live Capabilities tab: a hint until the name is usable, a spinner
+ *  until its draft profile exists, then the real surface pinned to that draft. */
+function CapabilitiesTab({ connection, draft, hint }: { connection?: string; draft: null | string; hint: null | string }) {
+  const b = useBots()
+  const note = 'px-2 py-3 text-center text-xs text-(--ui-text-tertiary)'
+
+  if (hint) {
+    return <div className={note}>{hint}</div>
+  }
+
+  if (!draft) {
+    return (
+      <div className="flex justify-center py-4">
+        <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
+      </div>
+    )
+  }
+
+  // The tab list is gated on the same export, so this is only reachable via
+  // persisted tab state on a build that lacks it — a message rather than
+  // rendering `undefined` as a component, which throws.
+  if (!CapabilitiesView) {
+    return <div className={note}>{b.editor.newerDesktop}</div>
+  }
+
+  return (
+    <ResizableFrame>
+      <CapabilitiesView embedded fixedProfile={draft} {...(connection ? { fixedConnection: connection } : {})} />
+    </ResizableFrame>
+  )
+}
+
+/** Is `slug` already a bot on the create target (`target`: a remote connection
+ *  id, or '' for local)? The dialog's own materialized draft never counts. */
+function slugTaken(roster: RosterRow[], slug: string, target: string, draft: null | string): boolean {
+  return roster.some(
+    b =>
+      b.name === slug &&
+      b.name !== draft &&
+      (target ? Boolean(b.remoteSource) && b.connectionId === target : !b.remoteSource)
+  )
+}
+
+/** Draft-profile ledger for the New Agent dialog. Opening Capabilities (or MCP
+ *  setup) materializes a DRAFT profile so the live config surfaces have a
+ *  backend; discarding deletes it on the machine it was CREATED on
+ *  (`draftTargetRef`, recorded with it): the "Create on" picker may point
+ *  elsewhere by then, and a same-named bot there is not the draft. Each discard,
+ *  and the dialog unmounting, bumps `draftGenRef` so an in-flight create
+ *  deletes its own draft and configures nothing. */
+function useDraftProfile(
+  createdRef: { current: null | string },
+  flightRef: { current: Promise<null | string> | null }
+) {
+  const draftGenRef = useRef(0)
+  const draftTargetRef = useRef('')
+
+  const discardDraft = () => {
+    const draft = createdRef.current
+    draftGenRef.current += 1
+    createdRef.current = flightRef.current = null
+
+    if (draft) {
+      discardDraftProfile(draft, draftTargetRef.current)
+    }
+  }
+
+  useEffect(
+    () => () => {
+      draftGenRef.current += 1
+    },
+    []
+  )
+
+  return { discardDraft, draftGenRef, draftTargetRef }
+}
+
+export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: CreateAgentDialogProps) {
   const { t } = useI18n()
   const b = useBots()
-  const initialDraft = draft ?? null
-  const [name, setName] = useState(initialDraft?.name || '')
-  // Persona + starters + template id ride along silently: a gallery pick fills
-  // them, the form never shows them (the persona lands in the SOUL the form's
-  // Advanced editor can still override wholesale).
-  const [persona, setPersona] = useState(initialDraft?.persona || '')
-  const [starters, setStarters] = useState<null | string[]>(initialDraft?.starters || null)
-  const [templateId, setTemplateId] = useState<null | string>(initialDraft?.templateId || null)
+  const [name, setName] = useState('')
   // Create mode: the profile is created LAZILY. Capability toggles are staged in
   // component state; the profile is materialized either on Create (submit) or on
   // the first MCP credential setup (ensureAgentCreated), whichever comes first —
@@ -147,12 +293,12 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
   // button + MCP setup buttons). Distinct from createdRef on purpose:
   // createdRef must stay a slug string for its sibling consumers.
   const flightRef = useRef<Promise<null | string> | null>(null)
-  const [title, setTitle] = useState(initialDraft?.title || '')
-  const [description, setDescription] = useState(initialDraft?.description || '')
+  const { discardDraft, draftGenRef, draftTargetRef } = useDraftProfile(createdRef, flightRef)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   // Default shapes mode: deterministic blob face drawn from the agent's name
-  // (falls back to the legacy shape vocabulary on older SDKs). A preset's
-  // pinned silhouette still follows the name — its seed segment stays empty.
-  const [shape, setShape] = useState(initialDraft?.shape || 'bop')
+  // (falls back to the legacy shape vocabulary on older SDKs).
+  const [shape, setShape] = useState(blobatarSvg ? 'blobatar' : 'circle')
   const [color, setColor] = useState<null | string>(null)
   const [image, setImage] = useState<null | string>(null)
   const [advanced, setAdvanced] = useState(false)
@@ -160,12 +306,6 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
   const [model, setModel] = useState('')
   const [provider, setProvider] = useState('')
   const [soul, setSoul] = useState('')
-  // C1 preset picker: 'custom' is the blank slate (the historical default).
-  // The ref mirror keeps async catalog callbacks reading the CURRENT preset —
-  // a template picked while ensureCaps is in flight must still curate the
-  // catalog that lands.
-  const [template, setTemplate] = useState<BotTemplateId>('custom')
-  const templateRef = useRef<BotTemplateId>('custom')
   const [noSkills, setNoSkills] = useState(false)
   const [shareAuth, setShareAuth] = useState(true)
   const [advTab, setAdvTab] = useState('general')
@@ -204,22 +344,14 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
     ? (connections || []).find(c => c.id === targetConnection)?.label || targetConnection
     : ''
 
-  /** Route descriptor for the create target — the picked connection's default
-   *  backend for remote targets (also handed to MCP setup so its RPCs reach
-   *  the same machine). */
-  const targetRoute = remoteTarget
-    ? ({
-        connectionId: targetConnection,
-        mode: 'remote',
-        profile: 'default',
-        targetProfile: 'default'
-      } as const)
-    : null
+  /** Where the profile is created right now: the picked connection id for a
+   *  remote target, '' for the active gateway. */
+  const createTarget = remoteTarget ? targetConnection : ''
 
   /** Gateway RPC on the create target: the picked connection's default
    *  backend for remote targets, the active gateway otherwise. */
   const requestForTarget = <T,>(method: string, params: Record<string, unknown> = {}): Promise<T> =>
-    targetRoute ? host.requestProfile(targetRoute, method, params) : host.request(method, params)
+    requestOnTarget<T>(createTarget, method, params)
 
   // Set once ensureAgentCreated() materializes the profile for the live
   // Capabilities tab (CapabilitiesView needs a real backend to point at). State —
@@ -246,54 +378,13 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
   // A remote-target create is gated by the TARGET machine's roster: a local
   // name clash is fine there, and the remote's own duplicate check rejects
   // real collisions at profiles.create time.
-  const taken = remoteTarget
-    ? roster.some(
-        b => b.remoteSource && b.connectionId === targetConnection && b.name === slug && b.name !== createdRef.current
-      )
-    : roster.some(b => !b.remoteSource && b.name === slug && b.name !== createdRef.current)
-
-  // Draft semantics for the lazily-created profile: opening the Capabilities
-  // tab (or running MCP setup) materializes the profile so the LIVE config
-  // surfaces have a real backend to write to — but until the user hits
-  // Create Agent it is a DRAFT. Cancelling the dialog deletes it, so
-  // preconfigure-then-back-out leaves zero residue. Best-effort and
-  // fire-and-forget: a failed cleanup surfaces a toast, never blocks close.
-  const discardDraft = () => {
-    const draft = createdRef.current
-
-    if (!draft) {
-      return
-    }
-
-    createdRef.current = null
-    flightRef.current = null
-
-    const discard = remoteTarget
-      ? requestForTarget('cli.exec', {
-          argv: ['profile', 'delete', draft, '--yes']
-        })
-      : deleteBot({
-          name: draft
-        })
-
-    void Promise.resolve(discard)
-      .then(() =>
-        host.notify({
-          kind: 'success',
-          message: `Draft agent "${draft}" discarded`
-        })
-      )
-      .catch(err => host.notifyError(err, `Could not clean up draft profile "${draft}"`))
-  }
+  const taken = slugTaken(roster, slug, createTarget, createdRef.current)
 
   const reset = () => {
-    setPersona('')
-    setStarters(null)
-    setTemplateId(null)
     setName('')
     setTitle('')
     setDescription('')
-    setShape('bop')
+    setShape(blobatarSvg ? 'blobatar' : 'circle')
     setColor(null)
     setImage(null)
     setAdvanced(false)
@@ -304,8 +395,6 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
     setModel('')
     setProvider('')
     setSoul('')
-    setTemplate('custom')
-    templateRef.current = 'custom'
     setNoSkills(false)
     setShareAuth(true)
     setAdvTab('general')
@@ -332,6 +421,13 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
   // switched must not key the preview (or the describe call) either.
   const capSource = cloneFrom === '__none__' || remoteTarget ? 'default' : cloneFrom
 
+  const materializeForCaps = () =>
+    void ensureAgentCreated()
+      .then(created => created && setCreatedForCaps(created))
+      .catch(err => host.notifyError(err, b.bot.createFailed))
+
+  useCapabilitiesDraft(advTab === 'capabilities' && valid && !taken, slug, createdForCaps, materializeForCaps)
+
   const ensureCaps = () => {
     if ((caps && caps.source === capSource) || capsFailed) {
       return
@@ -349,18 +445,9 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
         const configured = res.mcp_servers || []
         const have = new Set(configured.map(m => m.name))
         const catalog = ((cat && cat.servers) || []).filter(s => !have.has(s.name))
-        // A preset picked before the capabilities tab loaded still curates
-        // the staged list — the checkboxes are what the create writes.
-        const rawSkills = res.skills || []
-        const curatedSkills = stagedSkillsForTemplate(rawSkills, BOT_TEMPLATES[templateRef.current])
-
-        if (curatedSkills !== rawSkills) {
-          setDirtyCaps(prev => (prev.skills ? prev : { ...prev, skills: true }))
-        }
-
         setCaps({
           source: capSource,
-          skills: curatedSkills,
+          skills: res.skills || [],
           toolsets: res.toolsets || [],
           mcp: [
             ...configured,
@@ -401,82 +488,11 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
     )
   }
 
-  // C1: pick a preset — it seeds title/description/soul/model and curates the
-  // staged skills. 'custom' is the blank slate: it clears only fields still
-  // carrying a preset's seed, never text the user typed over one.
-  const applyTemplate = (id: BotTemplateId) => {
-    setTemplate(id)
-    templateRef.current = id
-    const spec = BOT_TEMPLATES[id]
-
-    if (id === 'custom') {
-      for (const other of BOT_TEMPLATE_IDS) {
-        if (other === 'custom') {
-          continue
-        }
-
-        const otherSpec = BOT_TEMPLATES[other]
-        const otherSeed = b.editor.templates[other]
-
-        if (title === otherSeed.title) {
-          setTitle('')
-        }
-
-        if (description === otherSeed.description) {
-          setDescription('')
-        }
-
-        if (soul === otherSpec.soul) {
-          setSoul('')
-        }
-
-        if (model === otherSpec.model && provider === otherSpec.provider) {
-          setModel('')
-          setProvider('')
-        }
-      }
-
-      return
-    }
-
-    const seed = b.editor.templates[id]
-
-    setTitle(seed.title)
-    setDescription(seed.description)
-    setSoul(spec.soul)
-    setModel(spec.model)
-    setProvider(spec.provider)
-
-    if (spec.skills.length) {
-      // Caps may not have loaded yet (the Advanced tab fetches lazily) — the
-      // submit path's profiles.describe fallback covers that case.
-      setCaps(prev => (prev ? { ...prev, skills: stagedSkillsForTemplate(prev.skills, spec) } : prev))
-      setDirtyCaps(prev => ({ ...prev, skills: true }))
-    }
-  }
-
-  // A gallery starter hires through its C1 preset for skills + model only:
-  // its own role line, mission and persona already filled the form, and the
-  // preset's SOUL stub would shadow that persona (composeSoul prefers a
-  // custom soul), so the stub and seeds are put back to the starter's.
-  useEffect(() => {
-    if (!open || !initialDraft || initialDraft.preset === 'custom') {
-      return
-    }
-
-    applyTemplate(initialDraft.preset)
-    setTitle(initialDraft.title)
-    setDescription(initialDraft.description)
-    setSoul('')
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- read once per mount; the caller remounts per open.
-  }, [open])
-
   // Materialize the profile exactly once. createdRef stores the finished slug
   // (its consumers — the taken check, draft discard on cancel, the MCP setup
   // button's profile param — all read a string); flightRef shares the
   // in-flight creation promise so simultaneous MCP setup / Create clicks fire
-  // ONE profiles.create. A settled flight clears its slot: failures retry,
-  // and a null result (form invalid at flight time) isn't sticky.
+  // ONE profiles.create. A failed flight clears its slot so a retry can run.
   const ensureAgentCreated = (): Promise<null | string> => {
     // Renamed since the draft materialized? The old draft is orphaned —
     // discard it and create fresh under the new slug.
@@ -489,11 +505,17 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
       return Promise.resolve(createdRef.current)
     }
 
-    const flight = singleFlight(flightRef, async () => {
-      if (!valid || taken) {
-        return null
-      }
+    // Never start a flight for an unusable name: singleFlight only clears its
+    // slot on failure, so a null result would be returned to every later
+    // caller and the draft could never be created once a name is typed.
+    if (!valid || taken) {
+      return Promise.resolve(null)
+    }
 
+    const generation = draftGenRef.current
+    const target = createTarget
+
+    const flight = singleFlight(flightRef, async () => {
       await requestForTarget('profiles.create', {
         name: slug,
         description: descriptionText,
@@ -511,7 +533,6 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
           name: slug,
           title: botTitle,
           description,
-          persona,
           roster,
           customSoul: soul
         }),
@@ -522,43 +543,21 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
             }
           : {})
       })
+
+      // Discarded mid-create: delete the profile this flight minted, configure nothing.
+      if (generation !== draftGenRef.current) {
+        discardDraftProfile(slug, target)
+
+        return null
+      }
+
       createdRef.current = slug
+      draftTargetRef.current = target
 
       // Apply capability picks from the Advanced tabs (best-effort; the
       // profile exists either way and Edit Profile can finish the job).
       try {
-        const capPayload: Pick<
-          ProfileConfigurePayload,
-          'disabled_skills' | 'enabled_mcp_servers' | 'enabled_toolsets'
-        > = {}
-
-        if (dirtyCaps.skills && caps) {
-          capPayload.disabled_skills = caps.skills.filter(s => !s.enabled).map(s => s.name)
-        } else if (BOT_TEMPLATES[templateRef.current].skills.length) {
-          // A preset curating skills while the capabilities tab never opened:
-          // diff against the NEW profile's installed list (the clone source's
-          // catalog is only a proxy for it).
-          const described = await requestForTarget<ProfileDescribeResponse>('profiles.describe', {
-            name: slug
-          }).catch(() => null)
-
-          const disabled = described?.skills
-            ? disabledSkillNames(described.skills, BOT_TEMPLATES[templateRef.current])
-            : null
-
-          if (disabled) {
-            capPayload.disabled_skills = disabled
-          }
-        }
-
-        if (dirtyCaps.toolsets && caps) {
-          const en = caps.toolsets.filter(t => t.enabled)
-          capPayload.enabled_toolsets = en.length === caps.toolsets.length || en.length === 0 ? [] : en.map(t => t.name)
-        }
-
-        if (dirtyCaps.mcp && caps) {
-          capPayload.enabled_mcp_servers = caps.mcp.filter(m => m.enabled).map(m => m.name)
-        }
+        const capPayload = capabilityPayload(caps, dirtyCaps)
 
         if (Object.keys(capPayload).length) {
           await requestForTarget('profiles.configure', {
@@ -568,6 +567,12 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
         }
       } catch {
         /* capability application is best-effort */
+      }
+
+      // Cancelled while configure ran: the discard already deleted the draft,
+      // so it gets no bot meta and is not adopted.
+      if (generation !== draftGenRef.current) {
+        return null
       }
 
       if (remoteTarget) {
@@ -581,8 +586,6 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
           image,
           imageKind: image ? 'photo' : 'shape',
           title: botTitle,
-          ...(templateId ? { template: templateId } : {}),
-          ...(starters?.length ? { starters } : {}),
           created: Date.now()
         }
 
@@ -611,8 +614,6 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
           image,
           imageKind: image ? 'photo' : 'shape',
           title: botTitle,
-          template: templateId ?? undefined,
-          starters: starters ?? undefined,
           created: Date.now()
         })
       }
@@ -754,22 +755,6 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
           <DialogDescription>{b.editor.newDescription}</DialogDescription>
         </DialogHeader>
         <div className="grid gap-3.5">
-          {/* C1: template presets seed the form; Custom is the blank slate. */}
-          {labeled(
-            b.editor.templates.label,
-            <div className="flex flex-col gap-1.5">
-              <SegmentedControl
-                onChange={applyTemplate}
-                options={BOT_TEMPLATE_IDS.map(id => ({ id, label: b.editor.templates[id].name }))}
-                value={template}
-              />
-              {template !== 'custom' ? (
-                <div className="text-[0.6875rem] text-(--ui-text-tertiary)">
-                  {b.editor.templates[template].description}
-                </div>
-              ) : null}
-            </div>
-          )}
           <div className="flex justify-center py-1">
             <BotFace
               color={avatarColor(color, slug || 'agent')}
@@ -794,18 +779,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
           />
           {labeled(
             b.editor.name,
-            <>
-              <Input
-                aria-label="Bot name"
-                autoFocus
-                onChange={event => setName(event.target.value)}
-                placeholder="Sage"
-                value={name}
-              />
-              {slug ? (
-                <div className="pt-1 text-[0.65rem] text-(--ui-text-quaternary)">{b.editor.savedAs(slug)}</div>
-              ) : null}
-            </>
+            <Input autoFocus onChange={event => setName(event.target.value)} placeholder="inbox-triage" value={name} />
           )}
           {taken ? (
             <div className="text-xs text-(--ui-accent)">
@@ -820,6 +794,9 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
                 b.editor.createOn,
                 <Select
                   onValueChange={value => {
+                    // A draft minted on the old home is not this bot anymore.
+                    discardDraft()
+                    setCreatedForCaps(null)
                     setTargetConnection(value === (activeConnectionId || 'local') ? '' : value)
                     // The capability catalog and clone list belong to the
                     // target backend — refetch for the new home. The live
@@ -851,7 +828,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
           ) : null}
           {labeled(
             b.editor.title,
-            <Input onChange={event => setTitle(event.target.value)} placeholder="Research assistant" value={title} />
+            <Input onChange={event => setTitle(event.target.value)} placeholder="Inbox Triage" value={title} />
           )}
           {labeled(
             b.editor.description,
@@ -887,12 +864,9 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
                   setCapFilter('')
 
                   if (id === 'capabilities') {
-                    // The live surface needs a real profile —
-                    // materialize it now (same lazy-create door
-                    // the MCP setup buttons use).
-                    void ensureAgentCreated()
-                      .then(created => created && setCreatedForCaps(created))
-                      .catch(err => host.notifyError(err, b.bot.createFailed))
+                    // The live surface needs a real profile; a name typed later
+                    // is picked up by useCapabilitiesDraft.
+                    materializeForCaps()
                   } else if (id !== 'general') {
                     ensureCaps()
                   }
@@ -978,33 +952,11 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
                   </label>
                 </div>
               ) : advTab === 'capabilities' ? (
-                !valid || taken ? (
-                  <div className="px-2 py-3 text-center text-xs text-(--ui-text-tertiary)">
-                    {taken ? b.editor.nameTakenHint : b.editor.nameFirstHint}
-                  </div>
-                ) : !createdForCaps ? (
-                  <div className="flex justify-center py-4">
-                    <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
-                  </div>
-                ) : CapabilitiesView ? (
-                  <ResizableFrame height={440} minHeight={280}>
-                    <CapabilitiesView
-                      embedded
-                      fixedProfile={createdForCaps}
-                      {...(remoteTarget
-                        ? {
-                            fixedConnection: targetConnection
-                          }
-                        : {})}
-                    />
-                  </ResizableFrame>
-                ) : (
-                  // The tab list is gated on the same export, so this is only
-                  // reachable via persisted tab state on a build that lacks it
-                  // — a message rather than rendering `undefined` as a
-                  // component, which throws.
-                  <div className="px-2 py-3 text-center text-xs text-(--ui-text-tertiary)">{b.editor.newerDesktop}</div>
-                )
+                <CapabilitiesTab
+                  connection={remoteTarget ? targetConnection : undefined}
+                  draft={createdForCaps === slug ? createdForCaps : null}
+                  hint={!valid ? b.editor.nameFirstHint : taken ? b.editor.nameTakenHint : null}
+                />
               ) : capsFailed ? (
                 <div className="px-2 py-3 text-center text-xs text-(--ui-text-tertiary)">{b.editor.newerGateway}</div>
               ) : !caps ? (
@@ -1141,7 +1093,6 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
                                     }))
                                   }}
                                   profile={createdRef.current}
-                                  route={targetRoute}
                                 />
                               ) : null}
                               {m.description ? (
@@ -1167,25 +1118,6 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, draft, rost
           ) : null}
         </div>
         <DialogFooter>
-          {/* C5: bring a shared bot bundle in — imports the profile (skills,
-              toolsets, MCP, SOUL, ui_meta bot pack) and lands it on the
-              roster. Disabled while a create is mid-flight. */}
-          <Button
-            className="mr-auto"
-            disabled={busy}
-            onClick={() =>
-              void importBot().then(name => {
-                if (name) {
-                  discardDraft()
-                  reset()
-                  onClose()
-                }
-              })
-            }
-            variant="ghost"
-          >
-            {b.bot.importBot}
-          </Button>
           <Button
             disabled={busy}
             onClick={() => {
@@ -1308,19 +1240,48 @@ export function GroupDialog({ bot, onClose }: GroupDialogProps) {
 
 interface CreateGroupChatDialogProps {
   onClose: () => void
-  onCreated?: (group: string) => void
+  onCreated?: (group: string, origin: CanonicalGroupOrigin) => void
   open: boolean
   roster: RosterRow[]
 }
 
-/** Discord-style group chat creation: pick 2+ bots via checkboxes (with
- *  search), name the group, create. Assignment appends to each local bot's
- *  group membership list, so the room appears in the roster and syncs
- *  cross-machine via ui_meta without replacing its other groups. */
+async function revalidateGroupCreationMode(
+  route: CanonicalGroupRoute,
+  capability: GroupCapabilityState | null,
+  source: string,
+  unavailableMessage: string
+) {
+  const sourceCurrent = groupCreationSource(route, capability?.activationEpoch ?? -1)
+
+  if (!capability || capability.source !== source || !sourceCurrent()) {
+    throw new Error(unavailableMessage)
+  }
+
+  const mode = capability.mode
+
+  if (mode !== 'canonical' && mode !== 'legacy') {
+    throw new Error(unavailableMessage)
+  }
+
+  const freshMode = groupExecutionMode(await canonicalGroupRequest<unknown>(route, 'groups.capabilities'))
+
+  if (!sourceCurrent() || freshMode !== mode) {
+    throw new Error(unavailableMessage)
+  }
+
+  return { mode, sourceCurrent }
+}
+
+/** Discord-style group chat creation: pick 2+ routable bots via checkboxes
+ *  (with search), name the group, create. Legacy assignments append to each
+ *  local bot's group membership list and sync through ui_meta; canonical groups
+ *  keep members on their authority connection. */
 export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: CreateGroupChatDialogProps) {
   const { t } = useI18n()
   const b = useBots()
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
+  const { capability, connectionId, mode, observedRoute, seatable, source } = useGroupCapability(open)
+
   const [query, setQuery] = useState('')
   const [checked, setChecked] = useState<Record<string, boolean>>({})
   const [name, setName] = useState('')
@@ -1336,9 +1297,9 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
     }
   }, [open])
 
-  // An outage placeholder preserves one selected owner's identity in the
-  // sidebar, but it is not a routable room member. Never offer it here.
-  const selectableRoster = roster.filter(bot => !bot?.ghost)
+  // An outage placeholder or a bot the authority will not seat is never offered.
+  const selectableRoster = seatableGroupBots(roster, { connectionId, mode, seatable })
+
   const selected = selectableRoster.filter(bot => checked[botRosterKey(bot)])
   const visible: RosterRow[] = filterBots(selectableRoster, allMeta, query)
   const atCap = selected.length >= GROUP_CHAT_MAX_MEMBERS
@@ -1347,12 +1308,47 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
     ? selected.map(bot => displayName(bot, botRosterMeta(bot, allMeta))).join(', ')
     : b.group.nameLabel
 
-  const canCreate = selected.length >= 2 && Boolean(name.trim() || selected.length)
+  const canCreate = selected.length >= 2 && Boolean(name.trim() || selected.length) &&
+    (mode === 'canonical' || mode === 'legacy')
 
-  const create = () => {
+  const creating = useRef(false)
+
+  const create = async () => {
+    if (creating.current) {return}
+    creating.current = true
+
+    try {
     const base = (name.trim() || placeholder).slice(0, 64)
 
     if (selected.length < 2 || !base) {
+      return
+    }
+
+    const route = observedRoute
+
+    if (!route) {
+      throw new Error(b.canonical.driverUnavailable)
+    }
+
+    const { mode: currentMode, sourceCurrent } = await revalidateGroupCreationMode(route, capability, source, b.canonical.driverUnavailable)
+
+    if (!sourceCurrent()) {
+      throw new Error(b.canonical.driverUnavailable)
+    }
+
+    if (currentMode === 'canonical') {
+      if (!sourceCurrent()) {
+        throw new Error(b.canonical.driverUnavailable)
+      }
+
+      const created = await createCanonicalGroup(route, base, durableGroupChatMembers(selected))
+
+      // Creation already succeeded; leave it on its owner without adopting a stale result.
+      if (!sourceCurrent()) {return}
+      const key = registerCanonicalGroup(route, created.room)
+      onClose()
+      onCreated?.(key, 'key')
+
       return
     }
 
@@ -1374,6 +1370,10 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
 
     const groupName = uniqueGroupChatName(base, taken)
     const roomId = mintGroupRoomId()
+
+    if (!sourceCurrent()) {
+      throw new Error(b.canonical.driverUnavailable)
+    }
 
     for (const bot of selected) {
       void saveBotMeta(bot, groupMembershipPatch(botRosterMeta(bot, allMeta), groupName, true))
@@ -1398,7 +1398,10 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
       message: `“${groupName}” created with ${selected.length} bots`
     })
     onClose()
-    onCreated?.(groupName)
+    onCreated?.(groupName, 'name')
+    } catch (error) {
+      host.notify({ kind: 'error', message: error instanceof Error ? error.message : String(error) })
+    } finally { creating.current = false }
   }
 
   return (
@@ -1415,9 +1418,12 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
           <DialogTitle>{b.group.newTitle}</DialogTitle>
           <DialogDescription>{`Pick 2–${GROUP_CHAT_MAX_MEMBERS} bots. Local memberships sync through each Bot profile; cross-machine members stay scoped to this room.`}</DialogDescription>
         </DialogHeader>
+        {mode === 'unavailable' && <p role="status">{b.canonical.driverUnavailable}</p>}
+        {/* TODO(bot-mode-types): this search box never takes focus when the dialog
+            opens — SearchField accepts no `autoFocus` prop and forwards no extra
+            props, so the `autoFocus` that used to sit here was inert. */}
         <SearchField
           aria-label={b.group.searchToAdd}
-          autoFocus
           containerClassName="w-full"
           inputClassName="w-full"
           onChange={setQuery}
