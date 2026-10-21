@@ -611,4 +611,50 @@ describe('BillingSettings', () => {
     expect(screen.queryByText('Payment method')).toBeNull()
     expect(screen.queryByText('Usage')).toBeNull()
   })
+
+  it('renders spend analytics section with toggle that reveals spend breakdown', async () => {
+    const { $costAnalyticsEnabled } = await import('./cost-analytics-enabled')
+    const { $sessionProfilesUsage, $sessions } = await import('@/store/session')
+
+    $costAnalyticsEnabled.set(false)
+    $sessionProfilesUsage.set({
+      default: { cost_usd: 12.5, tokens: 45000 },
+      secondary: { cost_usd: 1.25, tokens: 5000 }
+    })
+    $sessions.set([
+      {
+        actual_cost_usd: 8.5,
+        connection_id: 'local',
+        ended_at: null,
+        id: 'sess-1',
+        input_tokens: 1000,
+        is_active: false,
+        last_active: 1000,
+        message_count: 5,
+        model: 'hermes',
+        output_tokens: 500,
+        profile: 'default',
+        started_at: 900,
+        title: 'Expensive Chat'
+      } as any
+    ])
+
+    renderBilling()
+
+    expect(await screen.findByText('Spend analytics')).toBeTruthy()
+    expect(screen.getByText('Cost analytics')).toBeTruthy()
+    // Disabled by default
+    expect(screen.queryByText('Per-profile spend')).toBeNull()
+    expect(screen.queryByText('Expensive Chat')).toBeNull()
+
+    // Turn toggle on
+    const toggle = screen.getByRole('switch', { name: 'Cost analytics' })
+    fireEvent.click(toggle)
+
+    expect($costAnalyticsEnabled.get()).toBe(true)
+    expect(await screen.findByText('Per profile')).toBeTruthy()
+    expect(screen.getByText('Top sessions')).toBeTruthy()
+    expect(screen.getByText('Expensive Chat')).toBeTruthy()
+    expect(screen.getByText('$8.50')).toBeTruthy()
+  })
 })

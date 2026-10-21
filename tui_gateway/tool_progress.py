@@ -316,6 +316,11 @@ def _prepare_tool_result_metadata(sid: str, tool_call_id: str, name: str, args: 
         rendered: list[str] = []
         if render_edit_diff_with_delta(name, result, function_args=args, snapshot=snapshot, print_fn=rendered.append):
             metadata["inline_diff"] = "\n".join(rendered)
+    with contextlib.suppress(Exception):
+        # MCP Apps: the Desktop mounts the tool's own UI inline (history rehydrates it from here).
+        from tools.mcp_apps import app_for_tool_call
+        if app := app_for_tool_call(name, args):
+            metadata["mcp_app"] = app
     if session is not None:
         session.setdefault("tool_result_metadata", {})[tool_call_id] = metadata
     return {"tool_result_metadata": metadata} if metadata else {}
@@ -482,7 +487,8 @@ def _progress_subagent(sid: str, name: str, preview, kw, event_type):
     # that home. A parent record already gone (close / WS orphan reap mid-turn) cannot be attributed
     # to a profile — bind nothing rather than fold the run into the launch profile.
     if (parent := _sessions.get(sid)) is not None:
-        _mirror_subagent_to_child(event_type, payload, parent.get("profile_home"))
+        _mirror_subagent_to_child(
+            event_type, payload, parent.get("profile_home"), parent.get("profile_incarnation") or None)
 
 
 # event_type -> (handler, requires): `requires` names the arg that must be truthy for the row to be

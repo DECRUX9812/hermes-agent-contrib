@@ -6,6 +6,7 @@ describe('hidesFixedTitlebarClusters', () => {
   it('hides clusters on contributed full pages and overlays', () => {
     expect(hidesFixedTitlebarClusters('extension')).toBe(true)
     expect(hidesFixedTitlebarClusters('settings')).toBe(true)
+    expect(hidesFixedTitlebarClusters('mission-control')).toBe(true)
   })
 
   it('keeps clusters on chat and first-party workspace pages', () => {

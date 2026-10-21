@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes Desktop — Hire a teammate (target)</title>
+<link rel="stylesheet" href="real-tokens.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="app.css">
+</head><body>
+<script src="app.js"></script>
+<script>
+  const T = [
+    ['atlas', 'Atlas', 'Engineer', 'Writes, reviews and debugs code. Works in a git worktree so your branch stays clean.', ['git', 'code review', 'CI triage'], 1],
+    ['scout', 'Scout', 'Researcher', 'Reads the web and your files, compares options, and cites what it used.', ['web search', 'notes'], 0],
+    ['sage', 'Sage', 'Writer', 'Drafts posts, emails and docs in your voice and asks before publishing.', ['drafting', 'editing'], 0],
+    ['juno', 'Juno', 'Planner', 'Keeps your calendar, tasks and Monday brief in order.', ['calendar', 'tasks'], 0],
+    ['nova', 'Nova', 'Ops', 'Watches inboxes and dashboards and texts you only when something needs a decision.', ['email', 'alerts'], 0],
+    ['hermes', 'Echo', 'Support', 'Answers customer questions from your docs and hands off the hard ones.', ['docs', 'tickets'], 0]
+  ]
+  const card = t => `<div class="tcard ${t[5] ? 'sel' : ''}"><div class="h">${face(t[0], 40, '', 'on-widget')}<div><b>${t[1]}</b><br><span>${t[2]}</span></div></div><p>${t[3]}</p><div class="chips">${t[4].map(c => `<span class="badge muted">${c}</span>`).join('')}</div></div>`
+  const pack = (n, m, who) => `<div class="tcard" style="grid-template-columns:auto 1fr;align-items:center;gap:0.625rem"><span style="display:flex">${who.map((w, i) => `<span style="margin-left:${i ? '-8px' : '0'}">${face(w, 28, '', 'on-widget')}</span>`).join('')}</span><div><b style="font-size:var(--type-ui)">${n}</b><br><span style="color:var(--ui-text-tertiary);font-size:var(--type-meta)">${m}</span></div></div>`
+  mount(`${simpleApp()}<div class="scrim"></div>
+  <div class="panel">
+    <div class="phead"><b>Hire a teammate</b><span>Team</span><span class="grow"></span>
+      <div class="field" style="width:13rem">${ic('search', 12)}<span class="ph2 grow">Search teammates</span></div><button class="icon-btn" aria-label="Close">${ic('x', 14)}</button></div>
+    <div class="pbody" style="grid-template-columns:12.5rem 1fr 21.5rem">
+      <nav style="padding:0.625rem 0.5rem;box-shadow:inset -1px 0 0 var(--ui-stroke-tertiary);display:grid;align-content:start;gap:1px">
+        <div class="navitem on">Featured</div><div class="navitem">Coding<span class="n">4</span></div><div class="navitem">Research<span class="n">3</span></div><div class="navitem">Writing<span class="n">3</span></div><div class="navitem">Personal<span class="n">5</span></div><div class="navitem">Operations<span class="n">4</span></div>
+        <div class="h6" style="padding-left:0.5rem">Team packs</div><div class="navitem">${ic('users', 13)}Startup kit</div><div class="navitem">${ic('users', 13)}Personal ops</div>
+        <div class="h6" style="padding-left:0.5rem">Yours</div><div class="navitem">${ic('download', 13)}Import a pack…</div></nav>
+      <section style="padding:0.75rem 1rem;overflow:hidden;display:grid;align-content:start;gap:0.625rem">
+        <div class="h6" style="padding-top:0">Team packs — hire several at once</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">${pack('Startup kit', 'Atlas · Scout · Sage', ['atlas', 'scout', 'sage'])}${pack('Personal ops', 'Juno · Nova', ['juno', 'nova'])}</div>
+        <div class="h6">Teammates</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">${T.map(card).join('')}</div>
+      </section>
+      <aside style="padding:0.875rem 1rem;box-shadow:inset 1px 0 0 var(--ui-stroke-tertiary);display:flex;flex-direction:column;gap:0.25rem">
+        <div class="tm-head" style="padding:0">${face('atlas', 44, '', 'on-widget')}<div><h3>Atlas</h3><div class="sub">Engineer</div></div></div>
+        <div class="h6">Name</div><div class="field"><span class="grow">Atlas</span>${ic('edit', 12)}</div>
+        <div class="h6">Brain</div>
+        <div class="lrow" style="padding:0.125rem 0"><div class="l">Your default<small>GLM 5.2 · Nous free</small></div><button class="btn btn-text xs">Change</button></div>
+        <div class="h6">Where it lives</div><div class="field"><span class="grow">${ic('monitor', 12)} This Mac</span>${ic('chevron', 11)}</div>
+        <div class="h6">How much should it ask first?</div><div class="seg" style="width:fit-content"><span>Careful</span><span class="on">Balanced</span><span>Trusting</span></div>
+        <div class="grow"></div>
+        <button class="btn btn-default wide" style="padding:0.5rem">Hire Atlas</button>
+        <button class="btn btn-text xs" style="align-self:center">Customize instructions, skills and tools…</button>
+      </aside>
+    </div>
+  </div>`)
+</script></body></html>

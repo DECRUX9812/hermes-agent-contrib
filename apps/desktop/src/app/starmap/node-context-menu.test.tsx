@@ -8,11 +8,21 @@ vi.mock('@/app/learning/archive-skill-confirm-dialog', () => ({
   fireOptimistic: vi.fn()
 }))
 vi.mock('@/components/chat/code-editor', () => ({ CodeEditor: () => null }))
-vi.mock('@/hermes', () => ({
-  deleteLearningNode: vi.fn(),
-  editLearningNode: vi.fn(),
-  getLearningNode: vi.fn()
-}))
+vi.mock('react-router', async importOriginal => {
+  const mod = await importOriginal<Record<string, unknown>>()
+
+  return { ...mod, useNavigate: () => vi.fn() }
+})
+vi.mock('@/hermes', async importOriginal => {
+  const mod = await importOriginal<Record<string, unknown>>()
+
+  return {
+    ...mod,
+    deleteLearningNode: vi.fn(),
+    editLearningNode: vi.fn(),
+    getLearningNode: vi.fn()
+  }
+})
 vi.mock('@/store/notifications', () => ({ notifyError: vi.fn() }))
 vi.mock('@/store/starmap', () => ({ evictStarmapNode: vi.fn(), loadStarmapGraph: vi.fn() }))
 vi.mock('../hooks/use-on-profile-switch', () => ({ useOnProfileSwitch: vi.fn() }))

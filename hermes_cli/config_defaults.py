@@ -76,6 +76,16 @@ DEFAULT_CONFIG = {
         # Turn cap. null = unlimited (default; caps caused silent mid-task truncation). Positive int
         # caps; "none"/"unlimited"/"inf"/0/-1 also mean unlimited (resolve_turn_limit).
         "max_turns": None,
+        # Turn policies (agent/policies.py): caps that stop the loop without
+        # babysitting — resolved once per session, evaluated between iterations.
+        # max_cost_usd: hard cap on the session's estimated spend; null = off.
+        # retry_loop_detector: stop when one (name, args) tool call repeats
+        # retry_loop_max_identical times inside the trailing call window.
+        "policies": {
+            "max_cost_usd": None,
+            "retry_loop_detector": True,
+            "retry_loop_max_identical": 6,
+        },
         # Optional one-time model-visible checkpoint warning before a finite turn cap is exhausted.
         # null = off; set a ratio strictly between 0 and 1 (for example, 0.75).
         "budget_warning_ratio": None,
@@ -801,6 +811,9 @@ DEFAULT_CONFIG = {
             "language": "",
         },
         "memory_query_rewrite": _aux(8, reasoning_effort=False),
+        # Composer predictions (tui_gateway/methods_session_predict.py): one small call per settled
+        # turn drafts the user's likely next message as Tab-to-accept ghost text. Opt-in: it costs a call.
+        "composer_prediction": _aux(15, enabled=False),
         "tts_audio_tags": _aux(30),
         "voice_chat": {**_aux(120), "reasoning_effort": "none"},  # agent/voice_turn_route.py; off = lowest valid
         # Kanban: triage_specifier expands a Triage one-liner into a spec (cheap model OK);
@@ -2631,6 +2644,12 @@ DEFAULT_CONFIG = {
         # of the active theme's own sans stack so missing glyphs still fall through. Empty = the
         # theme's face. The terminal pane is terminal.font_family.
         "font_family": "",
+        # The profile's Desktop/Webapp appearance, so a pick follows the profile to every client.
+        # theme: a Desktop theme name (not a CLI skin — that is display.skin); theme_mode:
+        # light | dark | system (system follows each device's OS setting). Empty = never picked:
+        # each client keeps its own local choice.
+        "theme": "",
+        "theme_mode": "",
         # Git repo discovery for the Projects sidebar. Empty roots are a safe
         # no-op; users must explicitly configure roots for filesystem scanning.
         # Session-derived projects remain available.

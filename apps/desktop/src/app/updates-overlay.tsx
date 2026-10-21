@@ -7,7 +7,7 @@ import { settingsSearchTargetQuery } from '@/app/settings/settings-search'
 import { BrandMark } from '@/components/brand-mark'
 import { SyncStatusCard } from '@/components/sync-status-card'
 import { Button } from '@/components/ui/button'
-import { CopyButton, writeClipboardText } from '@/components/ui/copy-button'
+import { CopyButton } from '@/components/ui/copy-button'
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dialog'
 import { ErrorIcon, ErrorState } from '@/components/ui/error-state'
 import { Loader } from '@/components/ui/loader'
+import { LogView } from '@/components/ui/log-view'
 import { Progress } from '@/components/ui/progress'
 import { UpdateStatusCard, VersionHero } from '@/components/update-status'
 import { VersionDetails } from '@/components/version-details'
@@ -28,6 +29,7 @@ import type {
   UpdaterMechanismClient
 } from '@/global'
 import { useI18n } from '@/i18n'
+import { writeClipboardText } from '@/lib/clipboard'
 import { buildCommitChangelog, type CommitGroup, formatFullChangelogText } from '@/lib/commit-changelog'
 import { AlertCircle, Check, Copy, ExternalLink, Terminal } from '@/lib/icons'
 import { resolveUpdateCopy, rollbackRelease, type UpdateTarget } from '@/lib/update-copy'
@@ -631,13 +633,13 @@ function ApplyingView({
       />
 
       {recentLog.length > 1 ? (
-        <div className="max-h-24 overflow-hidden rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-left font-mono text-[11px] leading-4 text-muted-foreground">
+        <LogView className="max-h-24">
           {recentLog.map((entry, index) => (
             <div className="truncate" key={`${entry.at}-${index}`}>
               {entry.message}
             </div>
           ))}
-        </div>
+        </LogView>
       ) : null}
 
       <p className="text-center text-xs text-muted-foreground">{u.applyingClose}</p>

@@ -4,10 +4,38 @@ export interface ToolResultMetadata {
   duration_s?: number
   error?: string | boolean
   inline_diff?: string
+  /** The MCP App behind this tool (tools/mcp_apps.py) — the row mounts its UI. */
+  mcp_app?: McpAppRef
   message?: string
   preview?: string
   summary?: string
   todos?: unknown
+}
+
+/** Which MCP server/tool an app-bearing tool call belongs to and its `ui://` document. */
+export interface McpAppRef {
+  resourceUri: string
+  server: string
+  title?: string
+  tool: string
+}
+
+/** A well-formed app ref from untrusted event/stored JSON, else undefined. */
+export function mcpAppRef(value: unknown): McpAppRef | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+
+  const { resourceUri, server, title, tool } = value as Record<string, unknown>
+
+  return typeof resourceUri === 'string' &&
+    resourceUri.startsWith('ui://') &&
+    typeof server === 'string' &&
+    server &&
+    typeof tool === 'string' &&
+    tool
+    ? { resourceUri, server, tool, ...(typeof title === 'string' ? { title } : {}) }
+    : undefined
 }
 
 export interface ToolResultSource {

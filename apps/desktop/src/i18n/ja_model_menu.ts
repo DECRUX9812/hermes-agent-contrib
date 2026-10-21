@@ -1,5 +1,4 @@
 export const jaModelMenu = {
-  pickDeferred: (model: string) => `${model} は次のメッセージから適用されます`,
   search: 'モデルを検索',
   noModels: 'モデルが見つかりません',
   editModels: 'モデルを編集…',

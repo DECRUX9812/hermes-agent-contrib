@@ -15,9 +15,10 @@ import {
   DialogTitle,
   preventCloseButtonAutoFocus
 } from '@/components/ui/dialog'
+import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { getGlobalModelOptions } from '@/hermes'
 import { type Translations, useI18n } from '@/i18n'
-import { CheckCircle2, Loader2 } from '@/lib/icons'
+import { CheckCircle2 } from '@/lib/icons'
 import {
   $freeTierStatus,
   FREE_TIER_MODEL,
@@ -339,7 +340,7 @@ function Spinner({ children }: { children: ReactNode }) {
       className="flex items-center gap-2 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)"
       role="status"
     >
-      <Loader2 className="size-3 animate-spin" />
+      <GlyphSpinner ariaLabel="Loading" className="text-xs" />
       {children}
     </span>
   )

@@ -30,7 +30,12 @@ import { composerFocusKeysAllowed, isComposerFocusSoftCombo, typeToFocusChar } f
 import { registerBuiltinActionRunner } from '@/lib/keybinds/plugin-actions'
 import { stepReasoningEffort, writeSessionReasoningEffort } from '@/lib/reasoning-step'
 import { openWorktreeDialog } from '@/store/coding-status'
-import { $commandPaletteOpen, openCommandPalettePage, toggleCommandPalette } from '@/store/command-palette'
+import {
+  $commandPaletteOpen,
+  closeCommandPalette,
+  openCommandPalettePage,
+  toggleCommandPalette
+} from '@/store/command-palette'
 import { recordAction, recordDislike } from '@/store/desktop-metrics'
 import {
   $findInPage,
@@ -62,6 +67,7 @@ import {
 } from '@/store/profile'
 import { toggleProfileRailVisible } from '@/store/profile-rail-prefs'
 import { openFolderAsProject } from '@/store/projects'
+import { toggleQuickOpen } from '@/store/quick-open'
 import { toggleReview } from '@/store/review'
 import {
   $activeSessionId,
@@ -110,7 +116,9 @@ import {
   NEW_CHAT_ROUTE,
   PROFILES_ROUTE,
   sessionRoute,
-  SETTINGS_ROUTE
+  SETTINGS_ROUTE,
+  STARMAP_ROUTE,
+  WEBHOOKS_ROUTE
 } from '../routes'
 
 export interface KeybindRuntimeDeps {
@@ -307,6 +315,8 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'nav.artifacts': () => navigateToWorkspacePage(navigate, ARTIFACTS_ROUTE),
     'nav.cron': () => navigate(CRON_ROUTE),
     'nav.agents': () => navigate(AGENTS_ROUTE),
+    'nav.starmap': () => navigate(STARMAP_ROUTE),
+    'nav.webhooks': () => navigate(WEBHOOKS_ROUTE),
 
     'session.new': () => {
       // Match the sidebar New Session button. A plain keyboard new chat should
@@ -336,6 +346,10 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     // ⌘O: native folder picker → open the folder as a project (upsert) with a
     // fresh session anchored there.
     'workspace.openFolder': () => void openFolderAsProject(),
+    'nav.quickOpen': () => {
+      closeCommandPalette()
+      toggleQuickOpen()
+    },
 
     // Narrow-viewport reveal is handled inside the store toggles now.
     'view.toggleSidebar': toggleSidebarOpen,
@@ -471,6 +485,19 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     })
 
     return () => stopF12Shortcut?.()
+  }, [])
+
+  // The native menu's door items carry no accelerators (the chords are
+  // rebindable), so a click sends the action id instead — it lands in the
+  // same handler table a keypress would have hit.
+  useEffect(() => {
+    const unsubscribe = window.hermesDesktop?.onMenuActionRequested?.(actionId => {
+      const handler = handlersRef.current[actionId] ?? contributedKeybindHandler(actionId)
+
+      handler?.()
+    })
+
+    return () => unsubscribe?.()
   }, [])
 
   useEffect(() => {

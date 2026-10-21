@@ -126,16 +126,33 @@ export interface DraftProviderContext {
 
 export type DraftProvider = (context: DraftProviderContext) => Promise<ComposerSuggestion[]>
 
+export interface DraftProviderOptions {
+  /** Run even when the draft is under the 3-char sample gate — for providers
+   *  whose offer is about WHERE the draft sits (an empty new-session box),
+   *  not what it says. The provider's own guard decides when to stand down. */
+  includeShortDraft?: boolean
+}
+
 const draftProviders = new Map<string, DraftProvider>()
+const shortDraftProviders = new Map<string, DraftProvider>()
 
 /** Register a provider that derives suggestions from the draft. Runs inside
  *  the composer's debounced sampler; results replace that provider's previous
  *  offerings for the session. Returns an unregister fn (HMR hygiene). */
-export function registerDraftProvider(name: string, provider: DraftProvider): () => void {
+export function registerDraftProvider(
+  name: string,
+  provider: DraftProvider,
+  options?: DraftProviderOptions
+): () => void {
   draftProviders.set(name, provider)
+
+  if (options?.includeShortDraft) {
+    shortDraftProviders.set(name, provider)
+  }
 
   return () => {
     draftProviders.delete(name)
+    shortDraftProviders.delete(name)
   }
 }
 
@@ -266,10 +283,31 @@ export function sampleComposerDraft(sessionId: string | null | undefined, text: 
   const generation = (sampleGenerations.get(key) ?? 0) + 1
   sampleGenerations.set(key, generation)
 
-  // Too short to mean anything — clear draft offerings without running providers.
+  // Too short to mean anything to a keyword matcher — but providers that
+  // opted into includeShortDraft still run (their trigger is the draft's
+  // context, not its contents). Nothing registered that way: keep the old
+  // clear-and-publish fast path.
   if (text.trim().length < 3) {
-    draftOfferings.delete(key)
-    publish(sessionId ?? null)
+    if (shortDraftProviders.size === 0) {
+      draftOfferings.delete(key)
+      publish(sessionId ?? null)
+
+      return
+    }
+
+    void Promise.all(
+      [...shortDraftProviders.values()].map(provider =>
+        provider({ sessionId: sessionId ?? null, text }).catch((): ComposerSuggestion[] => [])
+      )
+    ).then(results => {
+      // A newer sample for THIS session superseded this one mid-flight.
+      if (generation !== sampleGenerations.get(key)) {
+        return
+      }
+
+      draftOfferings.set(key, results.flat())
+      publish(sessionId ?? null)
+    })
 
     return
   }

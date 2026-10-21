@@ -7,7 +7,13 @@
  * (or its tests) may not import.
  */
 
+import { AUTOPILOT_LOCALES } from './autopilot-i18n'
 import { BOTS_LOCALES } from './i18n'
+import { SHARE_LOCALES } from './share-i18n'
+
+/** Add-on bundles registered beside Bot Mode's own under the same plugin id;
+ *  English is their only locale, so every locale falls back to it here too. */
+const ADDON_EN = { ...AUTOPILOT_LOCALES.en, ...SHARE_LOCALES.en }
 
 /** The same resolver against another shipped locale, for a test that has to
  *  tell a catalog string from an English literal that happens to match `en`. */
@@ -17,7 +23,7 @@ export function translateBotsIn(locale: keyof typeof BOTS_LOCALES) {
       .split('.')
       .reduce<unknown>(
         (node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined),
-        BOTS_LOCALES[locale]
+        { ...ADDON_EN, ...BOTS_LOCALES[locale] }
       )
 
     if (typeof value === 'function') {

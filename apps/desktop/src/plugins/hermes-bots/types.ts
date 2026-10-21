@@ -84,11 +84,20 @@ export interface BotMeta {
   imageKind?: 'photo' | 'shape'
   /** Legacy single-group scalar, projected alongside `groups`. */
   group?: null | string
+  /** G3 — the 'role' one-liner under the bot's name ("Head of Research"),
+   *  shown in the roster row and the canonical chat header. Absent it, the
+   *  subtitle derives from the description's first sentence (`botRole`). */
+  role?: string
   pinned?: boolean
   /** Raise this bot's Screen tab when it starts driving its desktop (`screen-autoraise.ts`). Opt-in per bot. */
   screenAutoOpen?: boolean
   shape?: string
   title?: string
+  /** Starter-template id the bot was created from (bot-templates.ts), so the
+   *  empty chat can offer its first-prompt suggestions again. */
+  template?: string
+  /** Clickable first-message suggestions shown in the empty chat. */
+  starters?: string[]
   /** Creation timestamp in ms. Deliberately not copied when duplicating a bot. */
   created?: number
 }
@@ -110,11 +119,17 @@ export interface RosterRow {
    *  / `connectionLabel`, which are THIS Desktop's names for the connection. */
   installId?: string
   last_session?: SessionPreview | null
+  /** The profile's configured model pin ('' = inherits the launch model). */
+  model?: string
+  /** The profile's configured provider slug. */
+  provider?: string
+  /** Installed skills on the profile — the gateway's last known count. */
+  skill_count?: number
   remoteSource?: boolean
   /** Kept from an earlier paint because its source did not answer this
    *  fetch: shown, but never evidence of what the backend holds now. */
   retained?: boolean
-  route?: ProfileRoute
+  route?: ProfileRoute | null
   sourceError?: null | string
   sourceMissing?: boolean
   sourceReachable?: boolean | null
@@ -195,10 +210,33 @@ export interface GroupHold {
   noted?: boolean
 }
 
+export interface GroupChatLimits {
+  /** Follow-up rounds granted to members another member @-cited and never
+   *  answered — the axis that bounds back-and-forth handoffs. */
+  continuations?: number | 'off'
+  /** Member messages one drive may publish before the cap ends it. */
+  messages?: number | 'off'
+  /** Round-robin rounds one user message may drive. */
+  rounds?: number | 'off'
+}
+
 export interface GroupChat {
+  /** The room's stated objective (Bot Mode D2) — set from group settings,
+   *  shown under the room title, and what a completed round's summary card is
+   *  measuring contributions against. */
+  goal?: string
   /** Whether user text may create sticky member holds. Defaults to true for
    *  rooms written by older builds; the room settings switch can disable it. */
   holdDetection?: boolean
+  /** Per-axis drive budget overrides (a number clamps to the hard ceiling,
+   *  'off' rides the ceiling itself — the runaway brake still binds). An
+   *  absent axis inherits the config.yaml `group_chat` block, else default. */
+  limits?: GroupChatLimits
+  /** Who hears a plain (un-@mentioned) user turn: unset = auto (the bot team's
+   *  lead when the room is one team, else everyone), 'everyone' = fan-out, or
+   *  one member's key — that bot alone listens and the rest wake on @mention
+   *  or its delegation. */
+  listener?: string
   /** Bumped to abandon in-flight member turns from a previous round. */
   epoch?: number
   /** Room-entry ids consumed while a member was held, replayed into that
@@ -265,7 +303,7 @@ interface GroupPromptBase {
   sessionId?: null | string
   /** The thread the blocking question belongs to — part of the mirror key,
    *  since a member can be blocked in two threads at once. */
-  thread?: string
+  thread: string
 }
 
 interface GroupApprovalPrompt extends GroupPromptBase {
@@ -291,6 +329,7 @@ export type GroupActivityKind =
   | 'passed'
   | 'queued'
   | 'replied'
+  | 'safety'
   | 'settled'
   | 'stopped'
   | 'timed-out'
@@ -306,6 +345,9 @@ export interface GroupActivityEvent {
    *  `slot_wait_timeout`, or the error's redacted first line (#117366);
    *  absent on non-failures. */
   reason?: string
+  /** Which budget axis ran out on a 'capped'/'safety' exit — the feed can
+   *  name the knob the user would raise ('rounds'/'messages'/'continuations'). */
+  detail?: string
 }
 
 /**
@@ -366,7 +408,7 @@ export interface AvatarAppearance {
    *  always been nullable in practice; `avatarColor` is what resolves it. */
   color: null | string
   image: null | string
-  /** Free-form: a bare shape, `sigil-<n>`, a platonic solid, or `blobatar:<seed>:<kind>`. */
+  /** Free-form: a bare shape, `sigil-<n>`, a platonic solid, `blobatar:<seed>:<kind>`, or `bop[:<seed>]`. */
   shape: string
 }
 

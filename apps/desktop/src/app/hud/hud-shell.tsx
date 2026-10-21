@@ -15,6 +15,7 @@ import { useHudGameOverlay } from './game-overlay'
 import { useHudGlass } from './glass'
 import { useHudGoto, useReportHudSession } from './handoff'
 import { hudResizeDirections, useHudResizeHandle } from './resize-handle'
+import { HudRunCards } from './run-cards'
 import { useHudThreadFocus } from './thread-focus'
 import { useHudTranscriptBand } from './transcript-band'
 
@@ -349,6 +350,12 @@ export function HudShell() {
       <div aria-hidden data-hud-glass />
 
       <WiredPane part="chatRoutes" />
+
+      {/* Compact cards for the OTHER live runs — every session working or
+          waiting on you, readable at a glance and one click from the full
+          window. Absolute over the band's faded top zone; empty renders
+          nothing, so idle HUD mode stays just the bar. */}
+      <HudRunCards />
 
       {/* CanvasTTY-style resize frame. Windows/macOS/X11 get every edge and
           corner; native Wayland gets the right/bottom handles it can honour

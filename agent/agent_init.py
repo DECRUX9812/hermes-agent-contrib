@@ -1435,6 +1435,9 @@ def _apply_agent_section(agent, _agent_cfg):
 
     # "Bot Chat" gate hint for hosts that defer the DB title write past the first prompt build.
     agent._session_title_hint = None
+    # Same pre-row window for a bot topic: set by the gateway attach path when the
+    # session record carries the durable bot_topic marker.
+    agent._bot_topic = False
 
     # platform_hints: <platform>: {append|replace}, stored verbatim (agent/system_prompt.py).
     agent._platform_hint_overrides = _cfg_dict(_agent_cfg, "platform_hints")
@@ -2262,9 +2265,11 @@ def init_agent(
     thinking_callback: Callable[..., Any] | None = None, reasoning_callback: Callable[..., Any] | None = None,
     clarify_callback: Callable[..., Any] | None = None, read_terminal_callback: Callable[..., Any] | None = None,
     read_preview_callback: Callable[..., Any] | None = None, drive_preview_callback: Callable[..., Any] | None = None,
+    verify_preview_callback: Callable[..., Any] | None = None,
     read_window_below_callback: Callable[..., Any] | None = None, connection_callback: Callable[..., Any] | None = None,
     tour_callback: Callable[..., Any] | None = None, theme_callback: Callable[..., Any] | None = None,
     setup_beat_callback: Callable[..., Any] | None = None,
+    setup_choose_callback: Callable[..., Any] | None = None,  # SYNC-REVIEW: fork callback kept beside upstream setup_beat
     step_callback: Callable[..., Any] | None = None,
     stream_delta_callback: Callable[..., Any] | None = None, interim_assistant_callback: Callable[..., Any] | None = None,
     tool_gen_callback: Callable[..., Any] | None = None, status_callback: Callable[..., Any] | None = None,

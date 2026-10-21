@@ -12,7 +12,8 @@ import type * as React from 'react'
 import type { MenuKit } from '@/components/ui/actions-menu'
 import type { Contribution } from '@/contrib/types'
 
-import type { GroupNode, LayoutNode } from '../model'
+import type { PanePlacementHint } from '../grid-to-tree'
+import type { DropPosition, GroupNode, LayoutNode } from '../model'
 import { allPaneIds } from '../model'
 
 import type { FloatingAnchor } from './floating-rect'
@@ -43,8 +44,34 @@ export interface PaneSizing {
   maxHeight?: string
 }
 
-/** Chrome behavior flags a pane contributes. Read via `paneChrome`. */
-interface PaneChrome extends PaneSizing {
+/** A dock gesture riding on the pane's `data` — the declarative form of
+ *  dragging the pane onto another pane's drop chip. Applied ONCE when the
+ *  pane is adopted into the tree; the user's own rearrangement wins after
+ *  that (unless `enforce` keeps re-homing it at every boot). */
+export interface PaneDockHint {
+  /** Anchor pane id (`workspace` is the main thread; also `sessions`,
+   *  `terminal`, `files`, `review`, `logs`, or any contributed pane id). */
+  pane: string
+  /** Which edge of the anchor to dock on; `'center'` stacks as a tab. */
+  pos: DropPosition
+  /** Center docks: stack BEFORE this pane id (the strip divider's slot). */
+  before?: null | string
+  /** Enforced dock invariant: the pane is re-homed onto this hint's anchor
+   *  on EVERY boot when it isn't already in the declared relationship —
+   *  no one-time token, and user placement does not exempt it. Once per
+   *  adoption lifetime (per boot), so an intra-session drag sticks until the
+   *  next boot. See `enforceDockedPanes`. */
+  enforce?: boolean
+}
+
+/** The `data` payload of a `panes` contribution — chrome behavior flags a
+ *  pane contributes. This IS the public pane contract third-party plugins
+ *  author against (SDK export `PaneContribution`); read via `paneChrome`. */
+export interface PaneContribution extends PaneSizing {
+  /** One-time dock gesture — where the pane lands on first adoption.
+   *  Pair `placement` (the tiling role it stacks with) with `dock` (the
+   *  concrete edge) when the role alone lands somewhere wrong. */
+  dock?: PaneDockHint
   /** Leaves the grid on narrow viewports; revealed as an edge overlay. */
   collapsible?: boolean
   /** Arrive minimized — a rail tab rather than an open zone. For a pane that
@@ -59,7 +86,7 @@ interface PaneChrome extends PaneSizing {
    *  the pane is excluded from the tree entirely and rendered as a fixed card
    *  above it (see renderer/floating-panes.tsx). A floating pane takes no
    *  space from any zone, has no tab, and can't be docked or split. */
-  placement?: string
+  placement?: PanePlacementHint | 'floating'
   /** Spawn corner for `placement: 'floating'` (default `'top-right'`). The
    *  pane also TRACKS that corner's edges when the window resizes. */
   anchor?: FloatingAnchor
@@ -102,6 +129,21 @@ interface PaneChrome extends PaneSizing {
    *  the tab and the sidebar row render status/color from the ONE primitive
    *  (self-subscribing — it updates without the strip re-registering). */
   tabLead?: () => React.ReactNode
+  /** A trail NODE for this pane's TAB, rendered after the label — per-tab live
+   *  status shown on EVERY tab in the strip (a session's elapsed time + current
+   *  tool), unlike `stripTrail`, which only the zone's active pane gets.
+   *  Self-subscribing like `tabLead`; absent/empty renders nothing. Hidden on
+   *  vertical rails — the rail has no room for text next to the label. */
+  tabTrail?: () => React.ReactNode
+  /** The TAB LABEL is user content (a conversation's title), not chrome: it
+   *  renders in its own case at reading size instead of the 9px uppercase
+   *  chrome label, which turned a chat title into an unreadable shout. */
+  contentTitle?: boolean
+  /** A node the ACTIVE pane contributes to its zone strip's pinned trailing
+   *  edge — a per-pane affordance that answers "what is this surface" at a
+   *  glance (a session's skill chip). Read only for the zone's active pane,
+   *  self-subscribing like `tabLead`; absent/empty renders nothing. */
+  stripTrail?: () => React.ReactNode
   /** Mint another tab of THIS pane's kind — the strip's "+" while this pane is
    *  active. A Browser tab makes another Browser tab; a pane that is one of a
    *  kind (a file peek) leaves it absent and the strip falls back to the chat
@@ -122,7 +164,7 @@ interface PaneChrome extends PaneSizing {
   tabTitleText?: () => string
 }
 
-export const paneChrome = (c: Contribution | undefined) => (c?.data ?? {}) as PaneChrome
+export const paneChrome = (c: Contribution | undefined) => (c?.data ?? {}) as PaneContribution
 
 /** Resolve a computed style length ("237px" / "none" / "auto") to px. */
 export function computedPx(value: string, fallback: number): number {

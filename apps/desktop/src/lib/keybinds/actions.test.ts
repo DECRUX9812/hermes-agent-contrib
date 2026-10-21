@@ -46,6 +46,23 @@ describe('KEYBIND_ACTIONS', () => {
     expect(KEYBIND_ACTIONS.filter(candidate => candidate.id === 'composer.dictate')).toHaveLength(1)
   })
 
+  it('keeps the theme toggle rebindable but unbound by default', () => {
+    const action = keybindAction('appearance.toggleMode')
+
+    expect(action).toMatchObject({ category: 'view', defaults: [] })
+    expect(defaultBindings()['appearance.toggleMode']).toEqual([])
+    expect(en.keybinds.actions['appearance.toggleMode']).toBeTruthy()
+  })
+
+  it('registers starmap and webhooks as navigable, rebindable destinations like their siblings', () => {
+    for (const id of ['nav.starmap', 'nav.webhooks']) {
+      const action = keybindAction(id)
+
+      expect(action).toMatchObject({ category: 'navigation', defaults: [] })
+      expect(en.keybinds.actions[id]).toBeTruthy()
+    }
+  })
+
   // #71627: reasoning level up/down ship unbound (users pick their own chord)
   // and opt into firing from an editable target on MODIFIED combos only.
   it('registers reasoning level actions unbound, editable on modified combos only', () => {

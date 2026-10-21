@@ -1,3 +1,4 @@
+import { useActionBarReload } from '@assistant-ui/core/react'
 import {
   ActionBarPrimitive,
   BranchPickerPrimitive,
@@ -36,9 +37,12 @@ import { isApprovalActivity, isCurrentTurnMessage } from '@/components/assistant
 import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button'
 import { formatElapsed } from '@/components/chat/activity-timer'
 import { PreviewAttachment } from '@/components/chat/preview-attachment'
+import { ActionsMenu, renderActionItem } from '@/components/ui/actions-menu'
+import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { CopyButton } from '@/components/ui/copy-button'
 import { useI18n } from '@/i18n'
+import { writeClipboardText } from '@/lib/clipboard'
 import {
   errorRecoveryPlan,
   type ErrorSurface,
@@ -53,16 +57,18 @@ import { errorCardText } from '@/lib/error-surface-copy'
 import { triggerHaptic } from '@/lib/haptics'
 import {
   AudioLines,
+  FileText,
   GitForkIcon,
   KeyRound,
   Loader2Icon,
+  MoreHorizontal,
   RefreshCwIcon,
   SmilePlusIcon,
   Upload,
-  VolumeXIcon,
-  XIcon
+  VolumeXIcon
 } from '@/lib/icons'
 import { extractPreviewTargets } from '@/lib/preview-targets'
+import { contentToMarkdown, markdownLabels } from '@/lib/session-markdown'
 import { markAssistantIdSpoken } from '@/lib/spoken-reply'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
@@ -102,6 +108,10 @@ interface MessageActionProps {
    *  explicit full-response copy/read-aloud scope (#118864). Identical to
    *  `getMessageText` on a solo reply. */
   getFullResponseText: () => string
+  /** Lazy accessor for this message rendered as Markdown — same live-read
+   *  contract as {@link MessageActionProps.getMessageText}; tool-call parts
+   *  collapse into `<details>` blocks (roadmap #8). */
+  getMessageMarkdown: () => string
   /** True when the response group carries more than one text-bearing reply, so
    *  the current-reply and full-response scopes actually differ. */
   fullResponseAvailable: boolean
@@ -269,6 +279,12 @@ const AssistantMessageBody: FC<AssistantMessageProps & { collapsedNotice?: null 
     [messageRuntime, responseIds, threadRuntime]
   )
 
+  // Labels resolve at click time so the copied doc follows the live locale.
+  const getMessageMarkdown = useCallback(
+    () => contentToMarkdown(messageRuntime.getState().content, markdownLabels()),
+    [messageRuntime]
+  )
+
   const fullResponseAvailable = responseIds.length > 1
 
   // useEnterAnimation consults `enabled` ONLY when its callback ref fires,
@@ -328,7 +344,7 @@ const AssistantMessageBody: FC<AssistantMessageProps & { collapsedNotice?: null 
                       side="top"
                       tooltip={t.assistant.thread.dismissError}
                     >
-                      <XIcon className="size-3.5" />
+                      <Codicon name="close" size="0.875rem" />
                     </TooltipIconButton>
                   )}
                 </div>
@@ -349,6 +365,7 @@ const AssistantMessageBody: FC<AssistantMessageProps & { collapsedNotice?: null 
                 durationS={turnDurationS}
                 fullResponseAvailable={fullResponseAvailable}
                 getFullResponseText={getFullResponseText}
+                getMessageMarkdown={getMessageMarkdown}
                 getMessageText={getMessageText}
                 messageId={messageId}
                 onBranchInNewChat={onBranchInNewChat}
@@ -1010,19 +1027,117 @@ const ErrorRecoveryActions: FC = () => {
   )
 }
 
+interface ReadAloudActionState {
+  disabled: boolean
+  isPreparing: boolean
+  isSpeaking: boolean
+  menuLabel: string
+  onActivate: (event?: { shiftKey?: boolean }) => void
+  tooltip: string
+}
+
+function useReadAloudAction({
+  fullResponseAvailable,
+  getFullText,
+  getText,
+  messageId
+}: {
+  fullResponseAvailable: boolean
+  getFullText: () => string
+  getText: () => string
+  messageId: string
+}): ReadAloudActionState {
+  const { t } = useI18n()
+  const copy = t.assistant.thread
+  const voicePlayback = useStore($voicePlayback)
+  const view = useSessionView()
+  const sessionId = useStore(view.$runtimeId)
+  // A Bot chat's session owns its own (connection, profile) → its own TTS voice.
+  const { connectionId, profile } = useComposerScope()
+
+  const readAloudStatus =
+    voicePlayback.source === 'read-aloud' && voicePlayback.messageId === messageId ? voicePlayback.status : 'idle'
+
+  const isPreparing = readAloudStatus === 'preparing'
+  const isSpeaking = readAloudStatus === 'speaking'
+  const anyPlaybackActive = voicePlayback.status !== 'idle'
+
+  // Default reads the current reply only; Shift-click reads the whole response
+  // group — the read-aloud mirror of the two copy scopes (#118864).
+  const read = useCallback(
+    async (full: boolean) => {
+      const text = full ? getFullText() : getText()
+
+      if (!text || $voicePlayback.get().status !== 'idle') {
+        return
+      }
+
+      try {
+        await playSpeechText(text, { connectionId, messageId, profile, source: 'read-aloud' })
+        markAssistantIdSpoken(sessionId, view.$messages.get(), messageId)
+      } catch (error) {
+        notifyError(error, copy.readAloudFailed)
+      }
+    },
+    [connectionId, copy.readAloudFailed, getFullText, getText, messageId, profile, sessionId, view.$messages]
+  )
+
+  const onActivate = useCallback(
+    (event?: { shiftKey?: boolean }) => {
+      triggerHaptic('selection')
+      void (isSpeaking ? stopVoicePlayback() : read(Boolean(event?.shiftKey)))
+    },
+    [isSpeaking, read]
+  )
+
+  return {
+    disabled: isPreparing || (!isSpeaking && anyPlaybackActive),
+    isPreparing,
+    isSpeaking,
+    menuLabel: isSpeaking ? copy.stopReading : copy.readAloud,
+    onActivate,
+    tooltip: isPreparing
+      ? copy.preparingAudio
+      : isSpeaking
+        ? copy.stopReading
+        : fullResponseAvailable
+          ? `${copy.readAloud} (${copy.readAloudFullResponseHint})`
+          : copy.readAloud
+  }
+}
+
 const AssistantActionBar: FC<MessageActionProps & { durationS?: number }> = ({
   durationS,
   fullResponseAvailable,
   getFullResponseText,
+  getMessageMarkdown,
   messageId,
   getMessageText,
   onBranchInNewChat
 }) => {
   const { t } = useI18n()
   const copy = t.assistant.thread
+  const { reload: reloadMessage, disabled: reloadDisabled } = useActionBarReload()
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const { enabled: reactionsEnabled, react, reactions: shownReactions } = useMessageReactions(messageId, 'assistant')
+
+  const readAloud = useReadAloudAction({
+    fullResponseAvailable,
+    getFullText: getFullResponseText,
+    getText: getMessageText,
+    messageId
+  })
+
+  const reload = useCallback(() => {
+    if (reloadDisabled) {
+      return
+    }
+
+    triggerHaptic('submit')
+    recordAction(DESKTOP_BUTTON_ACTIONS.messageRetry, 'click')
+    reloadMessage()
+  }, [reloadDisabled, reloadMessage])
 
   const pickEmoji = useCallback(
     (emoji: null | string) => {
@@ -1031,6 +1146,15 @@ const AssistantActionBar: FC<MessageActionProps & { durationS?: number }> = ({
     },
     [react]
   )
+
+  const copyMarkdown = useCallback(async () => {
+    try {
+      await writeClipboardText(getMessageMarkdown())
+      triggerHaptic('selection')
+    } catch (error) {
+      notifyError(error, t.common.copyFailed)
+    }
+  }, [getMessageMarkdown, t.common.copyFailed])
 
   return (
     <div className="relative flex w-full shrink-0 items-center justify-end gap-1.5">
@@ -1056,45 +1180,98 @@ const AssistantActionBar: FC<MessageActionProps & { durationS?: number }> = ({
         }
         data-slot="aui_msg-actions"
       >
-        <MessageHoverTime className="mr-1 px-0.5" />
-        {onBranchInNewChat && (
-          <TooltipIconButton
-            onClick={() => {
-              triggerHaptic('selection')
-              onBranchInNewChat(messageId)
-            }}
-            tooltip={copy.branchNewChat}
-          >
-            <GitForkIcon className="size-3.5" />
+        <div className="aui-message-actions-desktop flex items-center justify-end gap-1.5">
+          <MessageHoverTime className="mr-1 px-0.5" />
+          {onBranchInNewChat && (
+            <TooltipIconButton
+              onClick={() => {
+                triggerHaptic('selection')
+                onBranchInNewChat(messageId)
+              }}
+              tooltip={copy.branchNewChat}
+            >
+              <GitForkIcon className="size-3.5" />
+            </TooltipIconButton>
+          )}
+          <CopyButton
+            appearance="icon"
+            buttonSize="icon"
+            label={copy.copy}
+            onCopied={() => recordAction(DESKTOP_BUTTON_ACTIONS.messageCopy, 'click')}
+            text={getMessageText}
+          />
+          {fullResponseAvailable && (
+            <CopyButton appearance="icon" buttonSize="icon" label={copy.copyFullResponse} text={getFullResponseText} />
+          )}
+          <TooltipIconButton onClick={() => void copyMarkdown()} tooltip={copy.copyMarkdown}>
+            <FileText className="size-3.5" />
           </TooltipIconButton>
-        )}
-        <CopyButton
-          appearance="icon"
-          buttonSize="icon"
-          label={copy.copy}
-          onCopied={() => recordAction(DESKTOP_BUTTON_ACTIONS.messageCopy, 'click')}
-          text={getMessageText}
-        />
-        {fullResponseAvailable && (
-          <CopyButton appearance="icon" buttonSize="icon" label={copy.copyFullResponse} text={getFullResponseText} />
-        )}
-        <ReadAloudButton
-          fullResponseAvailable={fullResponseAvailable}
-          getFullText={getFullResponseText}
-          getText={getMessageText}
-          messageId={messageId}
-        />
-        <ActionBarPrimitive.Reload asChild>
-          <TooltipIconButton
-            onClick={() => {
-              triggerHaptic('submit')
-              recordAction(DESKTOP_BUTTON_ACTIONS.messageRetry, 'click')
-            }}
-            tooltip={copy.refresh}
-          >
+          <ReadAloudButton action={readAloud} />
+          <TooltipIconButton disabled={reloadDisabled} onClick={reload} tooltip={copy.refresh}>
+
             <RefreshCwIcon className="size-3.5" />
           </TooltipIconButton>
-        </ActionBarPrimitive.Reload>
+        </div>
+        <div
+          className="aui-message-actions-touch items-center justify-end gap-1"
+          data-testid="aui-touch-message-actions"
+        >
+          <CopyButton
+            appearance="icon"
+            buttonSize="icon"
+            label={copy.copy}
+            onCopied={() => recordAction(DESKTOP_BUTTON_ACTIONS.messageCopy, 'click')}
+            text={getMessageText}
+          />
+          <ActionsMenu
+            ariaLabel={copy.moreActions}
+            items={kit => (
+              <>
+                {onBranchInNewChat &&
+                  renderActionItem(kit, {
+                    icon: 'git-branch',
+                    key: 'branch',
+                    label: copy.branchNewChat,
+                    onSelect: () => {
+                      triggerHaptic('selection')
+                      onBranchInNewChat(messageId)
+                    }
+                  })}
+                {fullResponseAvailable && (
+                  <CopyButton
+                    appearance={kit.copyAppearance}
+                    label={copy.copyFullResponse}
+                    text={getFullResponseText}
+                  />
+                )}
+                {renderActionItem(kit, {
+                  iconNode: <AudioLines className="size-3.5" />,
+                  key: 'read-aloud',
+                  label: readAloud.menuLabel,
+                  onSelect: () => readAloud.onActivate(),
+                  disabled: readAloud.disabled
+                })}
+                {renderActionItem(kit, {
+                  iconNode: <RefreshCwIcon className="size-3.5" />,
+                  key: 'refresh',
+                  label: copy.refresh,
+                  disabled: reloadDisabled,
+                  onSelect: reload
+                })}
+              </>
+            )}
+          >
+            <Button
+              aria-label={copy.moreActions}
+              data-testid="aui-touch-more-actions"
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <MoreHorizontal className="size-3.5" />
+            </Button>
+          </ActionsMenu>
+        </div>
       </ActionBarPrimitive.Root>
       {/* ONE slot, Slack-style: the picker trigger and the landed reaction are
           the same element, so reacting never shifts layout. Empty → ☺, hidden
@@ -1136,66 +1313,12 @@ const AssistantActionBar: FC<MessageActionProps & { durationS?: number }> = ({
   )
 }
 
-const ReadAloudButton: FC<{
-  fullResponseAvailable: boolean
-  getFullText: () => string
-  getText: () => string
-  messageId: string
-}> = ({ fullResponseAvailable, getFullText, getText, messageId }) => {
-  const { t } = useI18n()
-  const copy = t.assistant.thread
-  const voicePlayback = useStore($voicePlayback)
-  const view = useSessionView()
-  const sessionId = useStore(view.$runtimeId)
-  // A Bot chat's session owns its own (connection, profile) → its own TTS voice.
-  const { connectionId, profile } = useComposerScope()
-
-  const readAloudStatus =
-    voicePlayback.source === 'read-aloud' && voicePlayback.messageId === messageId ? voicePlayback.status : 'idle'
-
-  const isPreparing = readAloudStatus === 'preparing'
-  const isSpeaking = readAloudStatus === 'speaking'
-  const anyPlaybackActive = voicePlayback.status !== 'idle'
-  const Icon = isPreparing ? Loader2Icon : isSpeaking ? VolumeXIcon : AudioLines
-
-  const tooltip = isPreparing
-    ? copy.preparingAudio
-    : isSpeaking
-      ? copy.stopReading
-      : fullResponseAvailable
-        ? `${copy.readAloud} (${copy.readAloudFullResponseHint})`
-        : copy.readAloud
-
-  // Default reads the current reply only; Shift-click reads the whole response
-  // group — the read-aloud mirror of the two copy scopes (#118864).
-  const read = useCallback(
-    async (full: boolean) => {
-      const text = full ? getFullText() : getText()
-
-      if (!text || $voicePlayback.get().status !== 'idle') {
-        return
-      }
-
-      try {
-        await playSpeechText(text, { connectionId, messageId, profile, source: 'read-aloud' })
-        markAssistantIdSpoken(sessionId, view.$messages.get(), messageId)
-      } catch (error) {
-        notifyError(error, copy.readAloudFailed)
-      }
-    },
-    [connectionId, copy.readAloudFailed, getFullText, getText, messageId, profile, sessionId, view.$messages]
-  )
+const ReadAloudButton: FC<{ action: ReadAloudActionState }> = ({ action }) => {
+  const Icon = action.isPreparing ? Loader2Icon : action.isSpeaking ? VolumeXIcon : AudioLines
 
   return (
-    <TooltipIconButton
-      disabled={isPreparing || (!isSpeaking && anyPlaybackActive)}
-      onClick={event => {
-        triggerHaptic('selection')
-        void (isSpeaking ? stopVoicePlayback() : read(event.shiftKey))
-      }}
-      tooltip={tooltip}
-    >
-      <Icon className={cn('size-3.5', isPreparing && 'animate-spin')} />
+    <TooltipIconButton disabled={action.disabled} onClick={action.onActivate} tooltip={action.tooltip}>
+      <Icon className={cn('size-3.5', action.isPreparing && 'animate-spin')} />
     </TooltipIconButton>
   )
 }

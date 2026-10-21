@@ -1,0 +1,104 @@
+.review-app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  color: var(--ui-text-primary);
+  background: var(--ui-chat-bubble-background);
+}
+.review-toolbar {
+  min-height: 64px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--ui-stroke-secondary);
+}
+.review-toolbar strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.review-toolbar span {
+  display: block;
+  font-size: 12px;
+  color: var(--ui-text-tertiary);
+  margin-top: 4px;
+}
+.review-workspace {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr) 320px;
+  flex: 1;
+  min-height: 0;
+}
+.review-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 16px;
+  overflow-y: auto;
+}
+.review-roster h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.review-roster h2 span {
+  font-weight: 400;
+  color: var(--ui-text-tertiary);
+}
+.review-team {
+  min-width: 0;
+  min-height: 0;
+  border-inline: 1px solid var(--ui-stroke-secondary);
+}
+.review-rail {
+  min-width: 0;
+  min-height: 0;
+}
+@media (max-width: 1100px) {
+  .review-workspace {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .review-roster {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--ui-stroke-secondary);
+  }
+  .review-roster h2 {
+    min-width: 80px;
+  }
+  .review-roster article {
+    min-width: 200px;
+    max-width: 240px;
+  }
+}
+@media (max-width: 640px) {
+  .review-app {
+    height: 100dvh;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .review-workspace {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+  }
+  .review-roster {
+    padding: 16px;
+    flex: none;
+  }
+  .review-team {
+    height: 700px;
+    flex: none;
+    border-inline: 0;
+  }
+  .review-rail {
+    min-height: 500px;
+    border-top: 1px solid var(--ui-stroke-secondary);
+  }
+}

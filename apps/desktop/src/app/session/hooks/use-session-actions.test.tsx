@@ -62,7 +62,6 @@ import {
   $selectedStoredSessionId,
   $sessions,
   $sessionStartedAt,
-  $turnStartedAt,
   _resetSessionOwnerHintsForTests,
   getSessionOwnerHint,
   knownSessionOwner,
@@ -89,7 +88,6 @@ import {
   setSessionOwnerHint,
   setSessions,
   setSessionStartedAt,
-  setTurnStartedAt,
   setUnlistedSessionOwnerRows
 } from '@/store/session'
 import { assertSessionOwnerResolved } from '@/store/session-owner-resolution'
@@ -109,7 +107,6 @@ import { $subagentsBySession, type SubagentProgress } from '@/store/subagents'
 import { $retainedTodosBySession, $todosBySession, clearSessionTodos } from '@/store/todos'
 import { loadTranscriptTail, saveTranscriptTail } from '@/store/transcript-tail-cache'
 
-import sessionResumeActiveTurn from '../../../../../../tests/fixtures/session-resume-active-turn.json'
 import { deferred } from '../../../test/deferred'
 import { NEW_CHAT_ROUTE, sessionRoute } from '../../routes'
 import type { ClientSessionState } from '../../types'
@@ -1797,53 +1794,6 @@ function ResumeHarness({
   return null
 }
 
-function ResumeTimerHarness({
-  onReady,
-  requestGateway
-}: {
-  onReady: (resume: (storedSessionId: string, replaceRoute?: boolean) => Promise<unknown>) => void
-  requestGateway: <T>(method: string, params?: Record<string, unknown>) => Promise<T>
-}) {
-  const activeSessionId = useStore($activeSessionId)
-  const busyRef = useRef(false)
-
-  const cache = useSessionStateCache({
-    activeSessionId,
-    busyRef,
-    selectedStoredSessionId: null,
-    setAwaitingResponse,
-    setBusy,
-    setMessages
-  })
-
-  const actions = useSessionActions({
-    activeSessionId,
-    activeSessionIdRef: cache.activeSessionIdRef,
-    busyRef,
-    creatingSessionRef: useRef(false),
-    ensureSessionState: cache.ensureSessionState,
-    getRouteToken: () => 'timer-contract',
-    navigate: vi.fn() as never,
-    requestGateway,
-    resetViewSync: cache.resetViewSync,
-    runtimeIdByStoredSessionIdRef: cache.runtimeIdByStoredSessionIdRef,
-    selectedStoredSessionId: null,
-    selectedStoredSessionIdRef: cache.selectedStoredSessionIdRef,
-    sessionStateByRuntimeIdRef: cache.sessionStateByRuntimeIdRef,
-    holdSessionTranscriptView: cache.holdSessionTranscriptView,
-    syncSessionStateToView: cache.syncSessionStateToView,
-    getRoutedStoredSessionId: () => null,
-    routedSessionId: null,
-    updateSessionState: cache.updateSessionState
-  })
-
-  useEffect(() => {
-    onReady(actions.resumeSession)
-  }, [actions.resumeSession, onReady])
-
-  return null
-}
-
 describe('resumeSession failure recovery', () => {
   afterEach(() => {
     cleanup()
@@ -2624,6 +2574,7 @@ describe('resumeSession failure recovery', () => {
             pendingBranchGroup: null,
             personality: '',
             provider: '',
+            skills: {},
             reasoningEffort: '',
             runtimeStartedAt: 0,
             sawAssistantPayload: false,
@@ -2845,78 +2796,6 @@ describe('resumeSession failure recovery', () => {
     await runResume(requestGateway)
 
     expect(getSessionOwnerHint('stored-1')).toBeUndefined()
-  })
-})
-
-describe('session.resume turn timer contract', () => {
-  beforeEach(() => {
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback: FrameRequestCallback) => {
-      callback(0)
-
-      return null as unknown as number
-    })
-    setActiveSessionId(null)
-    setAwaitingResponse(false)
-    setBusy(false)
-    setMessages([])
-    setSessions([])
-    setTurnStartedAt(null)
-  })
-
-  afterEach(() => {
-    cleanup()
-    setActiveSessionId(null)
-    setAwaitingResponse(false)
-    setBusy(false)
-    setMessages([])
-    setSessions([])
-    setTurnStartedAt(null)
-    vi.restoreAllMocks()
-  })
-
-  async function resumeFrom(response: unknown): Promise<void> {
-    const requestGateway = vi.fn(async (method: string) => {
-      if (method === 'session.resume') {
-        // Model the JSON-RPC serialization/deserialization boundary. The shared
-        // fixture is asserted against the real gateway response in Python.
-        return JSON.parse(JSON.stringify(response)) as never
-      }
-
-      return {} as never
-    })
-
-    vi.mocked(getAllSessionMessages).mockResolvedValue({ messages: [], session_id: 'stored-running' } as never)
-
-    let resume: ((storedSessionId: string, replaceRoute?: boolean) => Promise<unknown>) | null = null
-    render(<ResumeTimerHarness onReady={ready => (resume = ready)} requestGateway={requestGateway} />)
-    await waitFor(() => expect(resume).not.toBeNull())
-    await act(async () => {
-      await resume!('stored-running', true)
-    })
-  }
-
-  it('restores the canonical gateway turn timestamp in milliseconds', async () => {
-    await resumeFrom(sessionResumeActiveTurn)
-
-    expect($turnStartedAt.get()).toBe(sessionResumeActiveTurn.turn_started_at * 1000)
-  })
-
-  it('clears a stale timer when the gateway response is not running', async () => {
-    setTurnStartedAt(1_600_000_000_000)
-
-    await resumeFrom({ ...sessionResumeActiveTurn, running: false })
-
-    expect($turnStartedAt.get()).toBeNull()
-  })
-
-  it('clears a stale timer when the running gateway response omits its timestamp', async () => {
-    const missingTimestamp: Record<string, unknown> = JSON.parse(JSON.stringify(sessionResumeActiveTurn))
-    delete missingTimestamp.turn_started_at
-    setTurnStartedAt(1_600_000_000_000)
-
-    await resumeFrom(missingTimestamp)
-
-    expect($turnStartedAt.get()).toBeNull()
   })
 })
 
@@ -5880,7 +5759,7 @@ describe('resumeSession warm-cache mapping integrity', () => {
     expect(streamingAssistantRows?.[0].id).toBe('assistant-stream-live-123')
   })
 
-  it('does not duplicate an in-flight user prompt already present in the persisted suffix', async () => {
+  it('keeps an attached in-flight prompt anchored before a persisted background notice', async () => {
     const runtimeIdByStoredSessionIdRef: MutableRefObject<Map<string, string>> = {
       current: new Map([['stored-A', 'rt-A']])
     }
@@ -5900,7 +5779,8 @@ describe('resumeSession warm-cache mapping integrity', () => {
       {
         id: 'user-optimistic',
         role: 'user',
-        parts: [{ type: 'text', text: 'current prompt' }]
+        parts: [{ type: 'text', text: 'current prompt' }],
+        attachmentRefs: ['@image:/tmp/screenshot.png']
       },
       {
         id: 'assistant-stream-rt-A',
@@ -5923,7 +5803,13 @@ describe('resumeSession warm-cache mapping integrity', () => {
       { content: 'older prompt removed by compression', role: 'user', timestamp: -1 },
       { content: 'older answer removed by compression', role: 'assistant', timestamp: 0 },
       ...compressedRuntimeMessages,
-      { content: 'current prompt', role: 'user', timestamp: 3 }
+      { content: 'current prompt\n@image:/tmp/screenshot.png', role: 'user', timestamp: 3 },
+      { content: 'partial tool activity', role: 'assistant', timestamp: 4 },
+      {
+        content: '[IMPORTANT: Background process proc_123 completed normally with exit code 0.]',
+        role: 'user',
+        timestamp: 5
+      }
     ]
 
     vi.mocked(getLatestSessionMessages).mockResolvedValue({
@@ -5938,8 +5824,10 @@ describe('resumeSession warm-cache mapping integrity', () => {
           session_key: 'stored-A',
           resumed: 'stored-A',
           message_count: compressedRuntimeMessages.length,
-          messages: compressedRuntimeMessages,
+          messages: [],
+          messages_omitted: true,
           running: true,
+          turn_started_at: 3,
           inflight: {
             user: 'current prompt',
             assistant: 'partial answer',
@@ -5972,6 +5860,8 @@ describe('resumeSession warm-cache mapping integrity', () => {
     )
 
     expect(currentPromptRows).toHaveLength(1)
+    expect(currentPromptRows[0]).toMatchObject({ attachmentRefs: ['@image:/tmp/screenshot.png'] })
+    expect(currentPromptRows[0].id).not.toContain('inflight')
     expect(JSON.stringify(resumedState?.messages)).toContain('partial answer')
   })
 

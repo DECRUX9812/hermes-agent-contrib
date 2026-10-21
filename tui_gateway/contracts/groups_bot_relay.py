@@ -1,10 +1,12 @@
-"""Hosted Group Chat rooms (``groups.*``), cross-connection bot relay (``bot_relay.*``) and the
-dashboard browser controller (``browser.controller.*``).
+"""Hosted Group Chat rooms (``groups.*``), cross-connection bot relay (``bot_relay.*``), the
+agent mailbox (``bots_mailbox.*``, #48) and the dashboard browser controller
+(``browser.controller.*``).
 
 Handlers: ``tui_gateway/methods_groups.py``, ``tui_gateway/methods_bot_relay.py``,
-``tui_gateway/methods_browser_control.py``. Room / event / page shapes are produced by
-``gateway/hosted_rooms.py`` (``_room_from_row`` / ``_event_from_row`` / ``read_events``) and
-``gateway/hosted_room_replicas.py``; the RoomLink catalog by ``gateway/hosted_room_peer.py``.
+``tui_gateway/methods_bot_mailbox.py``, ``tui_gateway/methods_browser_control.py``. Room /
+event / page shapes are produced by ``gateway/hosted_rooms.py`` (``_room_from_row`` /
+``_event_from_row`` / ``read_events``) and ``gateway/hosted_room_replicas.py``; the RoomLink
+catalog by ``gateway/hosted_room_peer.py``.
 """
 
 from __future__ import annotations
@@ -522,7 +524,8 @@ class BotRelayOutboxDrainParams(ProfileParams):
 
 
 class RelayEnvelope(OpenModel):
-    """``tools/bot_relay.py::enqueue_envelope``."""
+    """``tools/bot_relay.py::enqueue_envelope``. ``note`` rides along when the DM is a
+    task hand-off (#48) — ``bot_relay.deliver`` files it into the target's mailbox."""
 
     id: str
     created_at: int | float
@@ -532,6 +535,7 @@ class RelayEnvelope(OpenModel):
     target_profile: str
     target_handle: str
     message: str
+    note: dict[str, JsonValue] | None = None
 
 
 class BotRelayOutboxDrainResult(Result):
@@ -543,13 +547,16 @@ method("bot_relay.outbox.drain", params=BotRelayOutboxDrainParams, result=BotRel
 
 
 class BotRelayDeliverParams(Params):
-    """``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds)."""
+    """``profile`` here is the TARGET profile on this gateway (also what the desktop route wrapper adds).
+    ``note`` is an optional mailbox task hand-off (``{id, title, body, payload?}``) filed on
+    this install before delivery."""
 
     profile: str
     message: str
     from_profile: str | None = None
     from_handle: str | None = None
     from_connection: str | None = None
+    note: dict[str, JsonValue] | None = None
 
 
 class BotRelayDeliverResult(Result):
@@ -569,6 +576,82 @@ class BotRelayReplyParams(ProfileParams):
 
 method("bot_relay.reply", params=BotRelayReplyParams, result=OkResult,
        doc="Write a relayed reply and/or typed error for an envelope so the sender-side waiter resolves.")
+
+
+# ── agent mailbox (#48) ──────────────────────────────────────────────────────────────────────
+
+
+class BotMailboxParty(OpenModel):
+    """One end of a note — ``tools/bot_mailbox.py::_normalize_party``. ``kind`` is 'bot' or
+    'user'; ``connection`` is the sender-side connection id (display only)."""
+
+    kind: str | None = None
+    profile: str | None = None
+    handle: str | None = None
+    name: str | None = None
+    connection: str | None = None
+
+
+class BotMailboxNote(OpenModel):
+    """A stored mailbox note — ``tools/bot_mailbox.py::append_note``."""
+
+    id: str
+    kind: str
+    to: BotMailboxParty
+    sender: BotMailboxParty
+    title: str
+    body: str
+    payload: dict[str, JsonValue] | None = None
+    status: str
+    reply: str
+    created_at: int
+    updated_at: int
+    room: str | None = None
+
+
+class BotsMailboxListParams(ProfileParams):
+    handle: str | None = None
+
+
+class BotsMailboxListResult(Result):
+    notes: list[BotMailboxNote]
+
+
+method("bots_mailbox.list", params=BotsMailboxListParams, result=BotsMailboxListResult,
+       doc="List this install's agent-mailbox notes, newest first; 'handle' narrows to one bot.")
+
+
+class BotsMailboxSendParams(ProfileParams):
+    to: str
+    title: str
+    body: str | None = None
+    payload: dict[str, JsonValue] | None = None
+
+
+class BotsMailboxSendResult(Result):
+    note: BotMailboxNote
+    reply: str | None = None
+    queued: bool | None = None
+    delivery_error: str | None = None
+
+
+method("bots_mailbox.send", params=BotsMailboxSendParams, result=BotsMailboxSendResult,
+       doc="File a user-authored task note and deliver it into the target's Bot Chat "
+           "(local: blocking turn via bot_relay.deliver; remote: queued for the Desktop relay).")
+
+
+class BotsMailboxUpdateParams(ProfileParams):
+    id: str
+    status: str
+    reply: str | None = None
+
+
+class BotsMailboxUpdateResult(Result):
+    note: BotMailboxNote
+
+
+method("bots_mailbox.update", params=BotsMailboxUpdateParams, result=BotsMailboxUpdateResult,
+       doc="Flip a mailbox note's status (open→accepted/declined/done); live sender bots get a one-line ping.")
 
 
 # ── browser controller ────────────────────────────────────────────────────────────────────────

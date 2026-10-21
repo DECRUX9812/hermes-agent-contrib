@@ -1,27 +1,51 @@
 import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { defineLocale, type TranslationOverrides } from './define-locale'
+import { frAuxTasks } from './fr_aux_tasks'
 import { frBoot } from './fr_boot'
-import { frClarify } from './fr_clarify'
-import { frConnectorAccounts } from './fr_connector_accounts'
-import { frConnectorCard } from './fr_connector_card'
-import { frFirstRun } from './fr_first_run'
 import { frLocalModels } from './fr_local_models'
 import { frModelMenu } from './fr_model_menu'
-import { frModelSettings } from './fr_model_settings'
 import { frNotices } from './fr_notices'
 import { frOnboarding } from './fr_onboarding'
 import { frProjects } from './fr_projects'
 import { frSharedMetrics } from './fr_shared_metrics'
-import { frThemePicker } from './fr_theme_picker'
-import { frUpdateChannel } from './fr_update_channel'
 import { introFr } from './intro-fr'
 
 export const frOverrides = {
   sharedMetrics: frSharedMetrics,
-  firstRun: frFirstRun,
   intro: introFr,
-  connectors: frConnectorCard,
+  connectors: {
+    title: 'Connectez vos applications',
+    connect: 'Connecter',
+    skip: 'Pas maintenant',
+    cancel: "Arrêter l'attente",
+    retry: 'Réessayer',
+    grant: 'Reconnecter',
+    connected: 'Connecté',
+    checking: 'Vérification de vos applications…',
+    notConnected: 'Non connecté',
+    skipped: 'Ignoré',
+    disabled: 'Indisponible',
+    failed: 'Connexion impossible',
+    needsAuth: 'Accès expiré',
+    opening: 'Ouverture de la connexion…',
+    waiting: 'Terminez la connexion dans votre navigateur…',
+    timeout: "Toujours en attente de l'autorisation.",
+    refresh: "Actualiser l'état",
+    connectError: "Impossible de démarrer l'autorisation. Réessayez.",
+    connectErrorFor: app => `Impossible de démarrer l'autorisation pour ${app}.`,
+    unavailable: 'Les connecteurs ne sont pas disponibles pour cette session.',
+    ownerMissing: 'Rouvrez cette conversation pour gérer ses connexions.',
+    search: 'Rechercher une application',
+    empty: 'Aucune application correspondante',
+    disclaimer: "La connexion est facultative. N'autorisez que les applications que vous voulez confier à Hermes.",
+    execution: 'Outils des connecteurs',
+    setup: server => `Configurer ${server}`,
+    openInBrowser: 'Ouvrir dans le navigateur',
+    setupCancel: 'Annuler',
+    authorizedToolsUnavailable: 'Autorisé. Outils indisponibles.',
+    required: 'Obligatoire'
+  },
   connectorsPage: {
     title: 'Connecteurs',
     searchPlaceholder: (count: number) => `Rechercher parmi ${count} applications`,
@@ -178,9 +202,6 @@ export const frOverrides = {
       advanced: 'Avancé',
       advancedHint: "l'entrée mcp.json et les journaux"
     },
-
-    accounts: frConnectorAccounts,
-
     tools: {
       title: 'Outils',
       notInstalledBody: "Installez-le sur cet appareil pour voir les outils qu'il apporte.",
@@ -328,7 +349,13 @@ export const frOverrides = {
     importError: "Impossible d'importer cette conversation."
   },
   common: {
+    answerFailed: 'Impossible de répondre à la demande',
+    dismiss: 'Ignorer',
+    open: 'Ouvrir',
+    runFailed: 'Impossible d’exécuter la tâche',
+    runNow: 'Exécuter maintenant',
     apply: 'Appliquer',
+    approve: 'Approuver',
     back: 'Retour',
     save: 'Enregistrer',
     saving: 'Enregistrement…',
@@ -347,6 +374,7 @@ export const frOverrides = {
     copy: 'Copier',
     copyFailed: 'Échec de la copie',
     delete: 'Supprimer',
+    deny: 'Refuser',
     docs: 'Documentation',
     done: 'Terminé',
     error: 'Erreur',
@@ -366,6 +394,7 @@ export const frOverrides = {
     skip: 'Ignorer',
     update: 'Mettre à jour',
     tryHint: term => `Essayez « ${term} »`,
+    undo: 'Annuler',
     on: 'Activé',
     off: 'Désactivé'
   },
@@ -374,6 +403,7 @@ export const frOverrides = {
     revealExplorer: "Afficher dans l'Explorateur de fichiers",
     revealFileManager: 'Ouvrir le dossier parent',
     revealInSidebar: "Afficher dans l'arborescence",
+    openInEditor: name => `Ouvrir dans ${name}`,
     copyPath: 'Copier le chemin',
     copyRelativePath: 'Copier le chemin relatif',
     download: 'Télécharger',
@@ -442,6 +472,10 @@ export const frOverrides = {
         "Ce backend exécute encore l'ancien code après une mise à jour. Redémarrez-le pour charger le nouveau code.",
       rpcOutOfSync: "L'application et le backend ne sont pas sur la même version. Mettez-les tous les deux à jour.",
       restartHermesFailed: 'Impossible de redémarrer Hermes'
+    },
+    digest: {
+      title: count => `Récapitulatif Hermes — ${count} notifications`,
+      line: (count, label) => `${count} × ${label}`
     },
     actions: {
       restartHermes: 'Redémarrer Hermes',
@@ -563,6 +597,7 @@ export const frOverrides = {
     actions: {
       'keybinds.openPanel': 'Ouvrir les raccourcis clavier',
       'nav.commandPalette': 'Ouvrir la palette de commandes',
+      'nav.quickOpen': 'Ouverture rapide de fichier',
       'nav.commandCenter': 'Ouvrir le centre de commandes',
       'nav.settings': 'Ouvrir les paramètres',
       'nav.profiles': 'Ouvrir les profils',
@@ -571,6 +606,8 @@ export const frOverrides = {
       'nav.artifacts': 'Ouvrir les artefacts',
       'nav.cron': 'Ouvrir les tâches planifiées',
       'nav.agents': 'Ouvrir les agents',
+      'nav.starmap': 'Ouvrir le graphique de mémoire',
+      'nav.webhooks': 'Ouvrir les webhooks',
       'session.new': 'Nouvelle session',
       'session.newTab': 'Nouvel onglet de session',
       'session.newWindow': 'Nouvelle fenêtre',
@@ -668,7 +705,9 @@ export const frOverrides = {
   },
   findInPage: {
     next: 'Correspondance suivante',
-    previous: 'Correspondance précédente'
+    previous: 'Correspondance précédente',
+    searchAll: 'Rechercher dans tout l’historique',
+    searchAllShort: 'Historique'
   },
   language: {
     label: 'Langue',
@@ -831,17 +870,7 @@ export const frOverrides = {
           "Hermes n'attend plus le résultat de l'installation, mais le plugin est peut-être encore en cours d'installation. Fermez cette fenêtre et actualisez la liste des plugins avant de relancer l'installation.",
         desktopFailed: "Échec de l'installation du plugin Desktop",
         missingEnv: (name, vars) =>
-          `${name} est installé, mais a besoin d'une clé pour fonctionner : ${vars}. Ajoutez-la maintenant, sinon les outils du plugin échoueront.`,
-        verified: 'Vérifié',
-        unverified: 'Non vérifié',
-        reviewedByNous: 'Examiné par Nous.',
-        installsAndEnables: profile => `S’installe pour ${profile} et s’active tout de suite.`,
-        installsOnly: profile => `S’installe pour ${profile}.`,
-        advanced: 'Avancé',
-        versionLabel: 'Version',
-        reviewedPin: sha => (sha ? `Pin examiné ${sha}` : 'Pin examiné'),
-        latestCommit: 'Dernier commit',
-        nothingToInstall: 'Ce paquet n’a rien à installer ici.'
+          `${name} est installé, mais a besoin d'une clé pour fonctionner : ${vars}. Ajoutez-la maintenant, sinon les outils du plugin échoueront.`
       }
     },
     vault: {
@@ -974,7 +1003,21 @@ export const frOverrides = {
       testUnsupported: 'Ce système ne prend pas en charge les notifications natives.',
       completionSoundTitle: 'Son de fin',
       completionSoundDesc: "Se joue à la fin d'un tour d'agent. Choisissez un préréglage et prévisualisez-le ici.",
-      completionSoundPreview: 'Aperçu'
+      completionSoundPreview: 'Aperçu',
+      quietHoursTitle: 'Heures calmes',
+      quietHoursDesc:
+        'Retient les notifications courantes pendant une plage quotidienne ; elles arrivent dans un récapitulatif à la fin. Approbations, questions et erreurs passent toujours.',
+      quietHoursWindowTitle: 'Plage calme',
+      quietHoursWindowDesc:
+        "Les notifications sont silencieuses de l'heure de début à l'heure de fin — un début après la fin couvre la nuit.",
+      quietHoursFrom: 'De',
+      quietHoursTo: 'À',
+      digestTitle: 'Récapitulatif horaire',
+      digestDesc:
+        'Regroupe les notifications courantes en un seul récapitulatif par heure au lieu de les envoyer une par une.',
+      sessionOverridesTitle: 'Exceptions par session',
+      sessionOverridesDesc: 'Discussions masquées depuis le menu de session de la barre latérale. Réactivez-les ici.',
+      sessionOverridesEmpty: 'Aucune session masquée. Masquez une discussion depuis son menu latéral pour la voir ici.'
     },
     sections: {
       model: 'Modèle',
@@ -1028,13 +1071,17 @@ export const frOverrides = {
       reasoningCollapsedTitle: 'Réduire le raisonnement par défaut',
       reasoningCollapsedDesc:
         "Conserver le raisonnement diffusé en continu sans le développer tant que vous ne l'ouvrez pas.",
+      lookTitle: 'Apparence',
+      lookDesc: 'Doux : arrondi et aéré, libellés discrets. Classique : l’interface nette et carrée d’origine.',
+      lookSoft: 'Doux',
+      lookClassic: 'Classique',
       uiScaleTitle: "Échelle de l'interface",
       uiScaleDesc: (percent: number) =>
         `Redimensionne le texte et les contrôles dans toute l'application. Cmd/Ctrl avec +, - et 0 fonctionne aussi. Actuel : ${percent}%.`,
       sessionDensityTitle: 'Densité de la liste des sessions',
-      sessionDensityDesc:
-        'Choisissez la quantité de contexte affichée sous les titres de session dans la barre latérale.',
+      sessionDensityDesc: 'Choisissez combien chaque ligne de session affiche dans la barre latérale.',
       sessionDensityCompact: 'Compacte',
+      sessionDensityCondensed: 'Condensée',
       sessionDensityComfortable: 'Confortable',
       sessionDensityDetailed: 'Détaillée',
       tabStripTitle: "Barre d'onglets",
@@ -1082,7 +1129,28 @@ export const frOverrides = {
         sidebar: 'Barre latérale uniquement'
       },
       backdropTitle: 'Arrière-plan de la conversation',
-      backdropDesc: "L'image de statue discrète derrière la conversation.",
+      backdropDesc:
+        'Une ambiance derrière la conversation, ou votre propre image. Le texte reste toujours au premier plan.',
+      backdropScenes: {
+        off: 'Aucun',
+        aurora: 'Aurore',
+        dusk: 'Crépuscule',
+        ocean: 'Océan',
+        meadow: 'Prairie',
+        cyanotype: 'Cyanotype',
+        ink: 'Encre',
+        grid: 'Points',
+        statue: 'Statue',
+        custom: 'Votre image'
+      },
+      backdropUpload: 'Choisir une image…',
+      backdropRemoveImage: "Retirer l'image",
+      backdropStrengths: {
+        subtle: 'Discret',
+        balanced: 'Équilibré',
+        vivid: 'Intense'
+      },
+      backdropImageError: 'Impossible de lire cette image.',
       userBubbleTitle: 'Bulle des messages',
       userBubbleDesc: 'Transparence de vos messages : fond opaque à 0 ; seul le contour reste visible à 100.',
       textDirectionTitle: 'Sens du texte',
@@ -1107,6 +1175,14 @@ export const frOverrides = {
       composerPopoutTitle: 'Détacher la zone de saisie',
       composerPopoutDesc:
         'Permet de faire glisser la zone de saisie hors de son emplacement. Désactivé, elle reste ancrée en bas.',
+      autoOpenFilesTitle: 'Afficher les fichiers à l’ouverture d’un projet',
+      autoOpenFilesDesc: 'Ouvrir un dossier ou commencer dans un projet affiche l’arborescence à côté du chat.',
+      activityRailTitle: 'Barre d’icônes',
+      activityRailDesc:
+        'Une fine colonne d’icônes au bord gauche : sessions, bots et chaque page à un clic, même barre latérale repliée.',
+      openInEditorTitle: 'Ouvrir les fichiers dans',
+      openInEditorDesc:
+        'L’éditeur utilisé par « Ouvrir dans… » depuis l’arborescence. Fonctionne aussi avec les backends SSH.',
       fileBrowserTitle: 'Navigateur de fichiers',
       fileBrowserDesc:
         "Affiche le navigateur de fichiers à côté du chat lorsqu'un espace de travail est ouvert. Le bouton de la barre de titre modifie aussi ce réglage.",
@@ -1219,7 +1295,9 @@ export const frOverrides = {
         maxLines: 'Limite de pagination de fichier',
         maxLineLength: 'Limite de longueur de ligne'
       },
-      codeExecution: { mode: "Mode d'exécution du code" },
+      codeExecution: {
+        mode: "Mode d'exécution du code"
+      },
       approvals: {
         mode: "Mode d'approbation",
         timeout: "Délai d'expiration de l'approbation",
@@ -1492,6 +1570,12 @@ export const frOverrides = {
         }
       }
     },
+    poolLimits: {
+      warmBotBackendsAria: 'Backends de bots maintenus actifs',
+      warmBotBackendsTitle: 'Backends de bots actifs',
+      backendIdleTimeoutAria: "Délai d'inactivité du backend en millisecondes",
+      backendIdleTimeoutTitle: "Délai d'inactivité du backend"
+    },
     customEndpoints: {
       active: 'Actif',
       apiKeySet: 'Clé API définie',
@@ -1539,13 +1623,20 @@ export const frOverrides = {
       screenRecording: "Enregistrement de l'écran",
       driverHealth: 'État du pilote'
     },
-    about: { updates: 'Mises à jour', channel: frUpdateChannel },
+    about: {
+      updates: 'Mises à jour'
+    },
     config: {
       minimizeToTrayTitle: 'Réduire dans la barre d’état',
       minimizeToTrayDesc:
         'Réduire les fenêtres ou fermer la fenêtre principale les masque dans la zone de notification (barre des menus sur macOS) et Hermes continue de s’exécuter. Utilisez Quitter Hermes dans le menu de la zone de notification ou Cmd+Q pour quitter. Désactivé par défaut ; s’applique uniquement à cet appareil.',
       minimizeToTrayUnavailable:
         'La zone de notification est indisponible. Les fenêtres seront réduites et fermées normalement. Désactivez puis réactivez cette option pour réessayer.',
+      menuBarStatusTitle: 'Statut dans la barre de menus',
+      menuBarStatusDesc:
+        "Affiche une icône Hermes dans la barre de menus macOS (zone de notification sous Windows/Linux) avec un badge d'état, les sessions récentes et des actions rapides. Désactivé par défaut ; s'applique uniquement à cet appareil.",
+      menuBarStatusUnavailable:
+        'La zone de notification est indisponible sur cette plateforme. Désactivez puis réactivez cette option pour réessayer.',
       none: 'Aucun',
       noneParen: '(aucun)',
       builtinOnly: 'Intégré uniquement',
@@ -1569,6 +1660,9 @@ export const frOverrides = {
       keepAwakeOff: 'Désactivé',
       keepAwakeWhileWorking: 'Pendant le travail',
       keepAwakeAlways: 'Toujours',
+      proactiveNudgesTitle: 'Suggestions proactives',
+      proactiveNudgesDesc:
+        "À la fin d'un tour, propose des puces d'étapes suivantes au-dessus du compositeur — ouvrir une PR, planifier un suivi. Elles ne rédigent que des brouillons ; rien ne part tout seul.",
       disableF12Title: 'Désactiver les outils de développement avec F12',
       disableF12Desc:
         "Empêcher F12 d'ouvrir les outils de développement. Ctrl+Maj+I (ou Cmd+Option+I sur Mac) continue de fonctionner.",
@@ -1577,7 +1671,7 @@ export const frOverrides = {
         "Taille maximale d'un fichier local que Desktop chargera pour les aperçus et les pièces jointes image, en Mo. La valeur par défaut est 16. Les pièces jointes distantes non-image utilisent une limite distincte de 256 Mo. Une valeur très élevée charge le fichier entier en mémoire et peut figer ou planter l'application.",
       attachmentSizeUnit: 'Mo',
       attachmentSizeLabel: 'Taille maximale de chargement des aperçus / images en mégaoctets',
-      showOptions: 'Afficher les options'
+      showOptions: 'Afficher les options',
     },
     hudModifier: {
       title: 'Toucher pour afficher le HUD',
@@ -1946,7 +2040,71 @@ export const frOverrides = {
       deepLinkErrorUrl: 'Seules les URL de serveur http:// et https:// sont autorisées.',
       deepLinkErrorTooLarge: 'La configuration dépasse la limite de 32 Ko.'
     },
-    model: frModelSettings,
+    model: {
+      setupProviderFallback: 'fournisseur',
+      setUpProvider: name => `Configurer ${name}`,
+      staleAuxBefore: (count, names) =>
+        count > 1
+          ? `${count} tâches auxiliaires (${names}) s'exécutent encore sur `
+          : `${count} tâche auxiliaire (${names}) s'exécute encore sur `,
+      staleAuxAfter: ', et non sur votre modèle principal.',
+      staleAuxOtherProviders: "d'autres fournisseurs",
+      moaEnabled: 'Activé',
+      moaSetDefault: 'Définir par défaut',
+      moaNewPresetPlaceholder: 'nouveau préréglage',
+      moaAddPreset: 'Ajouter un préréglage',
+      customModel: 'Modèle personnalisé…',
+      customModelPlaceholder: 'ID du modèle',
+      chooseFromList: 'Choisir dans la liste',
+      moaDefault: 'Par défaut :',
+      moaReferenceToggle: (enabled, index) => `${enabled ? 'Désactiver' : 'Activer'} la référence ${index}`,
+      moaReferenceTitle: index => `Référence ${index}`,
+      moaAddReference: 'Ajouter un modèle de référence',
+      loading: 'Chargement de la configuration du modèle...',
+      appliesDesc:
+        "S'applique aux nouvelles sessions. Utilisez le sélecteur de modèle dans le compositeur pour changer à chaud la conversation active.",
+      provider: 'Fournisseur',
+      model: 'Modèle',
+      applying: 'Application...',
+      mainAppliedTitle: 'Modèle principal mis à jour',
+      mainAppliedMessage: model => `Les nouvelles sessions utiliseront ${model}.`,
+      defaultsLabel: 'Par défaut',
+      reasoning: 'Raisonnement',
+      reasoningOff: 'Désactivé',
+      speed: 'Vitesse',
+      speedStandard: 'Standard',
+      defaultsFailed: "Échec de l'enregistrement des modèles par défaut",
+      loadFailed: 'Impossible de charger les modèles',
+      restartRequired:
+        "Ce backend exécute encore l'ancien code après une mise à jour. Redémarrez-le pour charger le nouveau code.",
+      restartBackend: 'Redémarrer le backend',
+      restartingBackend: 'Redémarrage du backend...',
+      restartFailed: 'Impossible de redémarrer le backend',
+      auxiliaryTitle: 'Modèles auxiliaires',
+      resetAllToMain: 'Tout réinitialiser au principal',
+      staleAuxDismiss: 'Ne plus afficher',
+      auxiliaryDesc:
+        "Les tâches d'assistance s'exécutent sur le modèle principal par défaut. Attribuez un modèle dédié à toute tâche pour remplacer.",
+      setToMain: 'Définir comme principal',
+      change: 'Modifier',
+      autoUseMain: 'auto · utiliser le modèle principal',
+      inheritMainEffort: 'hériter · effort du modèle principal',
+      inheritsFrom: task => `hérite de ${task}`,
+      followTask: task => `Suivre ${task}`,
+      providerDefault: '(par défaut du fournisseur)',
+      fallbackAdd: 'Ajouter un secours',
+      fallbackEmpty: "Aucun modèle de secours — le modèle par défaut est utilisé sauf en cas d'échec.",
+      notInCatalog:
+        "n'est pas dans la liste des modèles de ce fournisseur — les appels peuvent basculer sur un secours.",
+      moaTitle: "Mélange d'agents",
+      moaPreset: 'Préréglage',
+      moaDescription:
+        "Configurez des préréglages nommés qui apparaissent comme modèles chez le fournisseur Mélange d'agents. L'agrégateur est le modèle actif : il exécute chaque étape de la boucle d'outils et son fournisseur facture presque tout le coût de l'exécution. Par défaut, les modèles de référence ne donnent qu'un avis par tour utilisateur.",
+      moaAggregator: 'Agrégateur',
+      moaAggregatorBilled: "modèle actif · facturé pour l'exécution",
+      moaReferenceHint: 'donne un avis une fois par tour par défaut',
+      tasks: frAuxTasks
+    },
     localModels: frLocalModels,
     billing: {
       perMonth: (amount: string) => `${amount}/mois`,
@@ -2655,7 +2813,11 @@ export const frOverrides = {
     importEmpty: 'Collez un code de carte pour le charger.',
     importSuccess: nodes => `Carte chargée avec ${nodes} ${nodes === 1 ? 'nœud' : 'nœuds'}.`,
     importedBadge: 'carte importée',
-    resetToMine: 'Retour à ma carte'
+    resetToMine: 'Retour à ma carte',
+    live: 'Live',
+    liveHint: "Suivre en direct : les skills pulsent tant qu'une session les utilise et flashent à la fin",
+    liveOff: 'Arrêter le direct',
+    openSession: 'Ouvrir la session'
   },
   agents: {
     extendedTranscript: 'Transcription étendue',
@@ -2697,6 +2859,51 @@ export const frOverrides = {
     durationSeconds: seconds => `${seconds}s`,
     durationMinutes: (minutes, seconds) => `${minutes}m ${seconds}s`,
     tokens: value => `${value} tok`
+  },
+  roster: {
+    title: 'Exécutions actives',
+    subtitle: 'Chaque exécution en cours sur tous les profils et gateways.',
+    emptyTitle: 'Aucune exécution active',
+    emptyDesc: 'Quand une session travaille — sur n’importe quel profil ou gateway — elle apparaît ici.',
+    untitledRun: 'Exécution sans titre',
+    railPill: count => (count === 1 ? '1 exécution' : `${count} exécutions`),
+    close: 'Fermer',
+    fanOut: 'Diffuser',
+    fanOutTitle: 'Envoyer un prompt aux agents choisis',
+    fanOutPlaceholder: 'Un prompt, chaque agent choisi…',
+    fanOutNoAgents: 'Aucun agent joignable à choisir',
+    fanOutClose: 'Replier',
+    fanOutSend: count => (count === 1 ? 'Envoyer à 1 agent' : `Envoyer à ${count} agents`),
+    fanOutFailed: 'Impossible de créer une session pour l’un des agents choisis'
+  },
+
+  hud: {
+    needsYou: 'Vous attend',
+    openRunInApp: title => `Ouvrir ${title} dans la fenêtre de l'app`
+  },
+  attentionInbox: {
+    title: 'Nécessite une action',
+    empty: 'Rien n’attend votre réponse.',
+    count: count => `${count} en attente`,
+    appScope: 'Application',
+    unknownSession: 'Session',
+    kinds: {
+      approval: 'Approbation d’outil',
+      clarify: 'Question de clarification',
+      error: 'Erreur',
+      secret: 'Demande de secret',
+      sudo: 'Demande sudo',
+      vaultCode: 'Code du coffre',
+      vaultSave: 'Identifiants du coffre',
+      vaultUnlock: 'Déverrouillage du coffre'
+    },
+    pullRequest: (number, title) => `PR #${number} : ${title}`,
+    prChecks: {
+      failure: 'Vérifications en échec',
+      none: 'PR ouverte',
+      pending: 'Vérifications en cours',
+      success: 'Vérifications réussies'
+    }
   },
   commandCenter: {
     close: 'Fermer le centre de commandes',
@@ -2779,9 +2986,24 @@ export const frOverrides = {
     archivedChats: 'Conversations archivées',
     sections: {
       maintenance: 'Maintenance',
+      notices: 'Notifications',
       sessions: 'Sessions',
       system: 'Système',
       usage: 'Utilisation'
+    },
+    sectionDescriptions: {
+      maintenance: 'Diagnostiques, sauvegardes, curateur et données de mémoire',
+      notices: 'Notifications et alertes récentes',
+      sessions: 'Rechercher et gérer les sessions',
+      system: 'État, journaux et actions système',
+      usage: 'Activité des jetons, coûts et skills au fil du temps'
+    },
+    notices: {
+      empty: 'Aucune notification pour l’instant — les alertes s’affichent ici au fur et à mesure.',
+      clear: 'Effacer',
+      mutedTag: 'En sourdine',
+      destCenter: 'Toast centré',
+      destCorner: 'Toast en coin'
     },
     nav: {
       newChat: {
@@ -2867,6 +3089,14 @@ export const frOverrides = {
     topSkills: 'Principaux skills',
     noSkillActivity: 'Aucune activité de skill pour le moment.',
     actions: count => `${count} actions`,
+    costAnalytics: 'Analyse des coûts',
+    costAnalyticsHint: 'Agrégés sur cet appareil uniquement — les données de coût ne sont jamais envoyées.',
+    dailySpend: 'Dépenses par jour',
+    estimatedCost: 'estimé',
+    perProfile: 'Par profil',
+    topSessions: 'Sessions les plus coûteuses',
+    loadedSessionsHint: 'sessions chargées',
+    noSpend: 'Aucune dépense enregistrée',
     logFile: 'Fichier journal',
     logLevel: 'Niveau',
     logSearchPlaceholder: 'Rechercher dans les journaux…',
@@ -3035,6 +3265,23 @@ export const frOverrides = {
       stillWaiting: detail => `Toujours en attente de Telegram. Nouvelle tentative après : ${detail}`,
       savedRestarting: 'Telegram enregistré ; redémarrage du gateway…',
       savedRestartFailed: detail => `Telegram enregistré ; le redémarrage du gateway a échoué${detail}`
+    },
+    phoneParity: {
+      title: 'Continuer sur votre téléphone',
+      presence: 'Présence de la passerelle',
+      scanHint: 'Scannez avec votre téléphone ou ouvrez le lien sur cet appareil.',
+      linkPending: "Le lien direct apparaîtra ici une fois l'adaptateur connecté.",
+      openLink: 'Ouvrir le lien',
+      copyLink: 'Copier le lien',
+      copyFailed: 'Impossible de copier le lien'
+    },
+    reach: {
+      title: (name: string) => `Joindre ${name} partout`,
+      scan: (name: string) => `Scannez pour discuter avec ${name} depuis votre téléphone, ou partagez le lien.`,
+      empty: (name: string) =>
+        `Donnez à ${name} sa propre adresse Telegram ou Slack pour discuter depuis votre téléphone.`,
+      connect: 'Connecter',
+      manage: 'Gérer'
     },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
@@ -3225,9 +3472,49 @@ export const frOverrides = {
       slack: 'Slack',
       email: 'E-mail',
       github_comment: 'Commentaire GitHub'
+    },
+    mobile: {
+      title: 'Compagnon mobile',
+      hint: 'Pilotez ce backend depuis un téléphone : statut, approbations, réponses rapides.',
+      pairButton: 'Jumeler un téléphone',
+      dialogTitle: 'Jumeler un téléphone',
+      dialogDesc:
+        'Créez un code de jumelage à usage unique, puis ouvrez la page compagnon sur votre téléphone et saisissez le code. La page peut lire le statut des sessions, répondre aux approbations en attente et envoyer des réponses rapides sur ce backend.',
+      backendUrl: 'URL du backend',
+      backendUrlHint: 'Une adresse joignable par le téléphone (LAN, tunnel ou connexion distante).',
+      create: 'Créer un code de jumelage',
+      creating: 'Création…',
+      createFailed: (detail: string) => `Impossible de créer le code de jumelage${detail ? ` : ${detail}` : ''}`,
+      codeLabel: 'Code de jumelage',
+      openHint: (url: string) => `Ouvrez ${url} sur votre téléphone et saisissez le code.`,
+      expires: (minutes: number) => `Usage unique · expire dans ${minutes} min.`,
+      copy: 'Copier',
+      done: 'Terminé'
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `Quand ${name} doit-il vous demander ?`,
+      modes: {
+        manual: {
+          label: 'Demander d’abord',
+          description: (name: string) => `${name} s’arrête et demande avant toute action risquée.`
+        },
+        smart: {
+          label: 'À son jugement',
+          description: (name: string) => `${name} gère le travail courant et demande quand quelque chose semble risqué.`
+        },
+        off: {
+          label: 'Faire sans demander',
+          description: (name: string) => `${name} n’attend jamais. Les commandes bloquées restent bloquées.`
+        }
+      },
+      rulesLabel: 'Règles maison',
+      rulesPlaceholder: 'Vos règles, avec vos mots. Ex. : toujours demander avant d’envoyer un e-mail ou de dépenser.',
+      save: 'Enregistrer',
+      discard: 'Annuler',
+      failed: 'Échec de l’enregistrement. Vos règles précédentes restent actives.'
+    },
     close: 'Fermer les profils',
     nameHint: 'Lettres minuscules, chiffres, tirets et underscores. Doit commencer par une lettre ou un chiffre.',
     title: 'Profils',
@@ -3567,7 +3854,9 @@ export const frOverrides = {
     kindLink: 'lien',
     chat: 'Conversation',
     copyUrl: "Copier l'URL",
-    copyPath: 'Copier le chemin'
+    copyPath: 'Copier le chemin',
+    buildWithPlan: 'Construire avec ce plan',
+    buildWithPlanDraft: 'Implémente ce plan :'
   },
   artifactCard: {
     kind: {
@@ -3591,6 +3880,77 @@ export const frOverrides = {
     missingTitle: 'Artefact indisponible',
     missingBody: 'Cet artefact ne figure plus dans le registre local.'
   },
+  panels: {
+    button: 'Panneaux',
+    title: 'À côté du chat',
+    subtitle: 'Activez ce dont vous avez besoin. Chaque panneau s’ouvre à côté de la conversation.',
+    needsProject: 'Ouvrez un dossier pour l’utiliser',
+    openFolder: 'Ouvrir un dossier…',
+    arrange: 'Organiser…',
+    arrangements: { focus: 'Focus', review: 'Relire', watch: 'Suivre', build: 'Construire' },
+    items: {
+      files: { label: 'Fichiers', description: 'Parcourir et prévisualiser le projet' },
+      changes: { label: 'Modifications', description: 'Relire ce que l’agent a modifié' },
+      browser: { label: 'Navigateur', description: 'Ouvrir des pages à côté du chat' },
+      terminal: { label: 'Terminal', description: 'Lancer des commandes vous-même' },
+      live: { label: 'Activité en direct', description: 'Chaque commande de l’agent, en temps réel' },
+      artifacts: { label: 'Artefacts', description: 'Ce que ce chat a produit' },
+      canvas: { label: 'Canevas', description: 'Esquissez sur un tableau où l’agent dessine aussi' }
+    }
+  },
+  quickOpen: {
+    title: 'Ouverture rapide',
+    placeholder: project => `Rechercher des fichiers dans ${project}…`,
+    noProject: 'Ouvrez un dossier pour chercher ses fichiers',
+    noProjectBody: 'L’ouverture rapide cherche dans les fichiers du projet en cours.',
+    openFolder: 'Ouvrir un dossier…',
+    noMatch: query => `Aucun fichier ne correspond à « ${query} »`,
+    recent: 'Ouverts à côté du chat',
+    hint: 'Tapez un nom de fichier. Ajoutez :42 pour aller à une ligne.',
+    line: line => `ligne ${line}`,
+    openHint: 'ouvrir',
+    attachHint: 'ajouter au message',
+    lineHint: 'nom:42 va à une ligne'
+  },
+  recentProjects: { title: 'Vos projets', openFolder: 'Ouvrir un dossier…' },
+  todayBrief: {
+    greeting: { morning: 'Bonjour', afternoon: 'Bon après-midi', evening: 'Bonsoir', night: 'Encore au travail ?' },
+    needsYou: 'Vous attend',
+    running: 'En cours',
+    finished: 'Terminé pendant votre absence',
+    scheduled: 'Prévu aujourd’hui',
+    recent: 'Reprendre là où vous vous étiez arrêté',
+    tasks: 'Tâches récentes',
+    taskWorking: age => `En cours depuis ${age}`,
+    taskNew: 'Nouvelle réponse'
+  },
+
+  live: {
+    title: 'Direct',
+    noSession: 'Aucune session sélectionnée',
+    emptyTitle: "Rien ne s'est encore exécuté",
+    emptyBody:
+      "Chaque commande, lecture de fichier et appel d'outil apparaît ici dès son démarrage, avec sa sortie complète. Rien n'est résumé.",
+    count: total => `${total} ${total === 1 ? 'action' : 'actions'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'action' : 'actions'} · ${running} en cours`,
+    follow: 'Suivre',
+    followHint: "Aller à l'action la plus récente et la garder visible",
+    copy: 'Copier la commande et la sortie',
+    exitCode: code => `sortie ${code}`,
+    runningFor: elapsed => `en cours depuis ${elapsed}`,
+    waitingForOutput: 'En cours — la sortie apparaît à la fin',
+    noOutput: 'Aucune sortie',
+    openLive: 'Direct'
+  },
+
+  artifactRail: {
+    empty: "Aucun artefact dans cette session pour l'instant",
+    noSession: 'Aucune session sélectionnée',
+    open: 'Ouvrir',
+    openFailed: "Impossible d'ouvrir l'artefact",
+    saveFailed: "Impossible d'enregistrer l'artefact",
+    saveToFile: 'Enregistrer dans un fichier'
+  },
   sidebar: {
     filter: {
       grouping: 'Regroupement',
@@ -3599,6 +3959,7 @@ export const frOverrides = {
       filters: 'Filtres',
       status: 'État',
       pullRequest: 'Pull request',
+      tags: 'Étiquettes',
       profile: 'Profil',
       project: 'Projet',
       archived: 'Archivées',
@@ -3623,6 +3984,17 @@ export const frOverrides = {
       closed: 'Fermée',
       noPR: 'Aucune PR'
     },
+    archive: {
+      finished: 'Archiver les sessions terminées',
+      olderThan: 'Archiver les sessions de plus de…',
+      days: (days: number) => `${days} jours`,
+      confirmTitle: (count: number) => `Archiver ${count} session${count === 1 ? '' : 's'} ?`,
+      confirmBody:
+        'Les discussions épinglées ne sont jamais archivées et rien n’est supprimé — les sessions archivées passent dans la vue Archivées.',
+      confirmAction: 'Archiver',
+      done: (count: number) => `${count} session${count === 1 ? '' : 's'} archivée${count === 1 ? '' : 's'}`,
+      none: 'Aucune session à archiver'
+    },
     gatewayGroups: {
       grouping: 'Gateway et profil',
       rename: 'Renommer le groupe',
@@ -3640,19 +4012,31 @@ export const frOverrides = {
       capabilities: 'Capacités',
       messaging: 'Messagerie',
       artifacts: 'Artefacts',
-      cron: 'Tâches planifiées'
+      cron: 'Tâches planifiées',
+      browse: 'Explorer'
     },
     searchAria: 'Rechercher des sessions',
+    railAria: 'Navigation de l’app',
     searchPlaceholder: 'Rechercher des sessions…',
     clearSearch: 'Effacer la recherche',
     noMatch: query => `Aucune session ne correspond à « ${query} ».`,
     results: 'Résultats',
     pinned: 'Épinglées',
+    needsAttention: 'Attention requise',
+    delegationReports: {
+      done: 'Terminé',
+      needsDecision: 'Décision requise',
+      failed: 'Échec',
+      openSubagent: 'Ouvrir le sous-agent',
+      dismiss: 'Ignorer le rapport',
+      tasks: (count, completed) => `${completed} sur ${count} tâches terminées`
+    },
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Fichiers',
     review: 'Revue',
     logs: 'Journaux',
+    artifacts: 'Artefacts',
     cronJobs: 'Tâches cron',
     groupAriaGrouped: 'Afficher les sessions en une seule liste',
     groupAriaUngrouped: 'Grouper les sessions par espace de travail',
@@ -3687,9 +4071,18 @@ export const frOverrides = {
       unpin: 'Désépingler',
       markUnread: 'Marquer comme non lue',
       markRead: 'Marquer comme lue',
+      muteNotifications: 'Couper les notifications',
+      unmuteNotifications: 'Réactiver les notifications',
+      mutedTooltip: 'Notifications en sourdine pour cette session',
+      watch: 'Suivre',
+      stopWatching: 'Ne plus suivre',
       unreadFailed: "Impossible de mettre à jour l'état de lecture",
       copyId: "Copier l'ID",
       export: 'Exporter',
+      exportMarkdown: 'Exporter en Markdown',
+      exportDeliverable: 'Exporter le rapport de livraison',
+      copyMarkdown: 'Copier en Markdown',
+      artifacts: 'Artefacts',
       branchFrom: 'Branche',
       rename: 'Renommer',
       archive: 'Archiver',
@@ -3707,6 +4100,24 @@ export const frOverrides = {
       finishedUnread: 'Terminée — non lue',
       backgroundRunning: 'Tâche en arrière-plan en cours',
       draftSession: 'Brouillon — aucun message envoyé',
+      continueOnPhone: 'Continuer sur le téléphone',
+      openOnDevice: 'Ouvrir sur un autre appareil',
+      openDeviceTitle: 'Ouvrir sur un autre appareil',
+      openDeviceDesc: home =>
+        `Scannez le code ou envoyez le lien vers un autre appareil Hermes dont les connexions atteignent ${home}. La session reste en place — seule la vue se déplace.`,
+      openDeviceHomeFallback: 'son backend d’origine',
+      openDeviceIncomingTitle: 'Ouvrir la session sur cet appareil ?',
+      openDeviceIncomingDesc: (title, label) =>
+        `« ${title} » réside sur ${label}. L’ouvrir bascule cette fenêtre sur cette connexion — la session ne quitte pas son emplacement.`,
+      openDeviceSwitchAndOpen: 'Basculer et ouvrir',
+      openDeviceSwitching: 'Bascule…',
+      openDeviceIncomingMissingTitle: 'Connexion introuvable',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `« ${id} » réside sur ${endpoint}, qui n’est pas une connexion enregistrée sur cet appareil. Ajoutez-la dans Réglages → Gateways, puis rouvrez le lien.`
+          : `« ${id} » réside sur un backend inaccessible à cet appareil. Enregistrez cette connexion dans Réglages → Gateways, puis rouvrez le lien.`,
+      openDeviceOpenConnections: 'Ouvrir Gateways',
+      handoffNone: "Aucune plateforme de messagerie n'est prête pour le transfert",
       handoffOrigin: platform => `Transférée depuis ${platform}`,
       continuationOrigin: 'Continuation automatique — cette conversation a été compressée puis poursuivie',
       ownedByProfile: profile => `Profil : ${profile}`,
@@ -3715,6 +4126,25 @@ export const frOverrides = {
       renameTitle: 'Renommer la session',
       renameDesc: 'Laissez vide pour effacer.',
       untitledPlaceholder: 'Session sans titre',
+      tags: 'Étiquettes',
+      tagsDialogTitle: 'Étiquettes de la session',
+      tagsDialogDesc: 'Attribuez des étiquettes colorées à cette session pour la barre latérale et les filtres.',
+      tagsAddPlaceholder: 'Nouvelle étiquette',
+      tagsAdd: 'Ajouter',
+      tagsRemoveLabel: label => `Retirer l’étiquette ${label}`,
+      askAbout: 'Poser une question sur cette session',
+      ask: {
+        clear: 'Effacer le fil',
+        dialogDesc: title =>
+          `Les questions sur ${title} sont répondues à partir de sa transcription enregistrée — jamais depuis la conversation en cours.`,
+        dialogTitle: 'Poser une question sur cette session',
+        empty: 'Posez une question sur ce que cette session a fait, décidé ou écrit.',
+        failed: 'Impossible d’obtenir une réponse',
+        placeholder: 'Question sur cette session…',
+        send: 'Envoyer',
+        thinking: 'Lecture de la transcription…',
+        truncatedNote: 'Réponse issue du début et de la fin d’une longue transcription.'
+      },
       deleteTitle: 'Supprimer la session ?',
       deleteDesc: title => `« ${title} » sera définitivement supprimée. Cette action est irréversible.`,
       deleting: 'Suppression…',
@@ -3722,10 +4152,50 @@ export const frOverrides = {
       untitledChat: id => `Conversation ${id}`,
       messageCount: count => `${count} message${count === 1 ? '' : 's'}`,
       todoProgress: 'Tâches terminées',
+      attachmentCount: count => `${count} joint${count === 1 ? '' : 's'}`,
+      isolateWorktree: 'Isoler dans un worktree',
+      isolateWorktreeDone: name => `Isolé dans le worktree ${name}`,
+      mergeWorktree: 'Fusionner le worktree',
+      mergeWorktreeTitle: 'Fusionner le worktree',
+      mergeWorktreeDesc: (branch, repo) =>
+        `Fusionner la branche ${branch} dans la copie de ${repo} ? Elle doit être propre.`,
+      mergingWorktree: 'Fusion en cours…',
+      mergedWorktree: into => `Fusionné dans ${into}`,
+      mergeWorktreeFailed: 'Échec de la fusion du worktree',
+      worktreeTag: branch => `Worktree isolé · ${branch}`,
+      worktreeUnavailable: 'Les worktrees git ne sont pas disponibles ici',
+      digest: {
+        agents: count => (count === 1 ? 'Un agent en cours' : `${count} agents en cours`),
+        approve: command => `Approuver : ${command}`,
+        compacting: 'Résumé de la conversation',
+        replying: "Rédaction d'une réponse",
+        stalled: 'Toujours en cours — silencieuse depuis un moment',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
+      prCiPassing: 'CI au vert',
+      prCiFailing: 'CI en échec',
+      prCiPending: 'CI en cours',
       ageNow: 'maintenant',
       ageDay: 'j',
       ageHour: 'h',
       ageMin: 'm'
+    },
+    watch: {
+      strip: 'Sessions suivies',
+      stop: 'Ne plus suivre'
+    },
+    selection: {
+      ariaLabel: 'Sessions sélectionnées',
+      count: (count: number) => `${count} sélectionnées`,
+      pin: 'Épingler',
+      unpin: 'Désépingler',
+      mute: 'Masquer',
+      unmute: 'Rétablir',
+      tag: 'Étiqueter',
+      archive: 'Archiver',
+      clear: 'Effacer la sélection',
+      tagDialogTitle: (count: number) => (count === 1 ? 'Étiqueter 1 session' : `Étiqueter ${count} sessions`),
+      tagDialogDesc: 'Ajoute l’étiquette à chaque session sélectionnée.'
     },
     dateDivider: {
       today: "Aujourd'hui",
@@ -3737,6 +4207,22 @@ export const frOverrides = {
     statusDivider: {
       working: 'En cours',
       done: 'Terminées'
+    },
+    peek: {
+      idle: 'Inactif',
+      archived: 'Archivé',
+      workspace: 'Espace de travail',
+      branch: 'Branche',
+      model: 'Modèle',
+      stats: 'Statistiques',
+      tokens: count => `${count} tokens`,
+      agents: 'Agents délégués',
+      agentsSummary: count => `${count} ${count === 1 ? 'agent' : 'agents'}`,
+      agentsRunning: count => `${count} en cours`,
+      profile: 'Profil',
+      source: 'Source',
+      started: 'Démarré',
+      updated: 'Mis à jour'
     },
     markAllRead: 'Tout marquer comme lu'
   },
@@ -3753,7 +4239,7 @@ export const frOverrides = {
       'Décrivez ce dont vous avez besoin',
       "Qu'est-ce qu'on attaque ?",
       "Posez n'importe quelle question",
-      'Commencez par un objectif'
+      'Énoncez le résultat voulu'
     ],
     followUpPlaceholders: [
       'Envoyez un suivi',
@@ -3767,8 +4253,9 @@ export const frOverrides = {
     startVoice: 'Démarrer la conversation vocale',
     openDirective: 'Ouvrir',
     queueMessage: "Mettre le message en file d'attente",
+    queueWithAttachments: 'Mettre en file avec pièces jointes',
     steer: "Diriger l'exécution en cours",
-    redirect: "Rediriger l'exécution en cours",
+    steerTurn: 'Diriger le tour',
     stop: 'Arrêter',
     send: 'Envoyer',
     speaking: 'Parle',
@@ -3891,6 +4378,7 @@ export const frOverrides = {
       'composer.help': 'aide rapide (effacer pour fermer)',
       'composer.sendNewline': 'envoyer · Shift+Entrée pour un retour à la ligne',
       'composer.sendQueued': "envoyer le prochain tour en file d'attente",
+      'composer.modelPicker': 'sélecteur de modèle',
       'keybinds.openPanel': 'tous les raccourcis clavier',
       'composer.cancel': "fermer le popover · annuler l'exécution",
       'composer.history': 'parcourir le popover / historique'
@@ -3911,20 +4399,17 @@ export const frOverrides = {
     restoredDraftNotice: 'Votre message non envoyé a été restauré',
     restoredDraftUndo: 'Annuler',
     queueEdit: 'Modifier',
+    queueMoveUp: 'Monter',
+    queueMoveDown: 'Descendre',
     queueExpand: 'Déplier',
     queueCollapse: 'Replier',
     queueSendNext: 'Suivant',
     queueSteer: 'Diriger — réorienter maintenant le tour en cours',
+    queueRemoved: 'Retiré de la file',
     queueSend: 'Envoyer',
     queueDelete: 'Supprimer',
     queueResume: 'Reprendre',
     queueResumeTip: "Mis en pause par Arrêter — reprendre l'envoi des tours en file d'attente",
-    queueLostNote: 'Tour perdu pendant le redémarrage',
-    restoreImageDraft: "Restaurer le brouillon d'image",
-    queueCancelFailed: "Impossible de retirer le tour en file d'attente",
-    queueLostDiscard: 'Ignorer',
-    queueLostDiscardTip:
-      "La passerelle a redémarré en plein tour et ne peut pas le terminer. Ignorez-le pour que les tours en file d'attente derrière lui s'exécutent.",
     queueStuckTitle: "Message en file d'attente non envoyé",
     queueStuckBody:
       "Un tour en file d'attente a continué à échouer lors de l'envoi. Il est toujours en file d'attente — essayez de l'envoyer à nouveau.",
@@ -3948,8 +4433,10 @@ export const frOverrides = {
     folder: 'Dossier…',
     images: 'Images…',
     pasteImage: 'Coller une image',
+    captureRegion: 'Capturer une zone de l’écran…',
     url: 'URL…',
     promptSnippets: "Extraits d'invite…",
+    slashCommands: 'Commandes slash…',
     tipPre: 'Conseil : tapez ',
     tipPost: ' pour référencer des fichiers en ligne.',
     snippetsTitle: "Extraits d'invite",
@@ -3970,6 +4457,16 @@ export const frOverrides = {
       tip: skill => `Vous avez mentionné « ${skill} » — cliquez pour commencer avec ce skill`,
       done: skill => `/${skill} ajouté`,
       doneTip: "Le skill se charge lors de l'envoi"
+    },
+    goalChips: {
+      planLabel: 'Planifier d’abord',
+      planTip: 'Transforme en /plan — un plan pas à pas écrit dans .hermes/plans/ avant tout travail',
+      planDone: 'Plan prêt',
+      planDoneTip: 'Le plan s’exécute à l’envoi',
+      goalLabel: 'En faire un objectif',
+      goalTip: 'Transforme en /goal — un résultat durable vers lequel Hermes travaille',
+      goalDone: 'Objectif prêt',
+      goalDoneTip: 'L’objectif s’applique à l’envoi'
     },
     githubSuggestions: {
       label: 'Configurer GitHub',
@@ -3993,6 +4490,19 @@ export const frOverrides = {
       done: 'Marqué pour planification',
       doneTip: "Envoyez-le pour que l'agent crée la tâche"
     },
+    nudges: {
+      prLabel: 'Ouvrir une PR',
+      prTip: 'La dernière réponse ressemble à du travail de code terminé — rédiger la demande',
+      prDraft: 'Ouvre une pull request pour les changements qu’on vient de faire.',
+      prDone: 'Demande de PR rédigée',
+      prDoneTip: 'Relisez le brouillon puis envoyez-le pour que l’agent ouvre la PR',
+      followupLabel: 'Planifier un suivi',
+      followupTip: 'Programme un point sur ce travail — rédige la demande pour vous',
+      followupDraft:
+        'Configure ça comme une tâche planifiée : reviens sur ce travail dans une heure et dis-moi ce qui a changé.',
+      followupDone: 'Suivi rédigé',
+      followupDoneTip: 'Ajustez l’horaire dans le brouillon puis envoyez-le'
+    },
     snippets: {
       codeReview: {
         label: 'Revue de code',
@@ -4012,6 +4522,29 @@ export const frOverrides = {
       }
     }
   },
+  regionCapture: {
+    attach: 'Joindre',
+    cancel: 'Annuler',
+    captureFailed: 'Impossible de capturer l’écran.',
+    capturing: 'Capture en cours…',
+    clear: 'Recommencer',
+    notePlaceholder: 'Note pour l’agent (facultatif)…',
+    permissionDenied:
+      'L’enregistrement d’écran est désactivé — activez-le dans Réglages → Confidentialité et sécurité → Enregistrement d’écran.',
+    selectHint: 'Glissez pour choisir une zone · Échap pour annuler',
+    toolTips: { arrow: 'Flèche', pen: 'Dessiner', rect: 'Rectangle' },
+    unavailable: 'La capture d’écran n’est pas disponible ici.',
+    undo: 'Annuler'
+  },
+  voiceStatus: {
+    idle: 'Hermes est au repos — rien n’est en cours.',
+    working: 'Hermes y travaille encore.',
+    workingOn: detail => `Hermes travaille — en ce moment sur ${detail}.`,
+    stalled: 'Hermes semble bloqué — c’est silencieux depuis un moment.',
+    needsInput: 'Hermes attend ta réponse.',
+    finished: 'Le dernier tour est terminé — la réponse t’attend.',
+    progress: (done, total) => `${done} tâches sur ${total} terminées.`
+  },
   statusStack: {
     hideStack: 'Masquer la pile d’état',
     showStack: 'Afficher la pile d’état',
@@ -4029,6 +4562,10 @@ export const frOverrides = {
     stop: 'Arrêter',
     dismiss: 'Rejeter',
     exit: code => `sortie ${code}`,
+    verifyChecking: 'Vérification de l’aperçu…',
+    verifyFailed: count => `Vérification échouée — ${count} ${count === 1 ? 'erreur' : 'erreurs'} de console`,
+    verifyOpenConsole: 'Ouvrir la console',
+    verifyPassed: 'Vérification de l’aperçu réussie',
     control: {
       goalActiveTurns: (turn, maxTurns) => `Tour ${turn}/${maxTurns}`,
       goalDoneTurns: turns => `${turns} tour${turns === 1 ? '' : 's'}`,
@@ -4099,7 +4636,6 @@ export const frOverrides = {
       heartbeatEveryHours: hours => `toutes les ${hours} h`,
       heartbeatEverySeconds: seconds => `toutes les ${seconds} s`,
       heartbeatNext: time => `prochain : ${time}`,
-      dueWaitingForIdle: 'échu — en attente de disponibilité',
       heartbeatActions: 'Actions du suivi périodique',
       pauseHeartbeat: 'Mettre le suivi en pause',
       resumeHeartbeat: 'Reprendre le suivi',
@@ -4147,6 +4683,8 @@ export const frOverrides = {
       notRepo: 'Pas un dépôt git',
       noDiff: 'Aucune différence à afficher',
       scopeUncommitted: 'Non validé',
+      scopeSession: 'Session',
+      sessionEmpty: 'Aucun changement de session',
       scopeBranch: 'Branche',
       scopeLastTurn: 'Dernier tour',
       commit: 'Valider',
@@ -4161,6 +4699,23 @@ export const frOverrides = {
       agentShipUnavailable: "La conversation à l'origine de ces modifications n'est pas affichée.",
       agentShipPrompt:
         'Passez en revue les modifications actuelles, validez-les avec un message de validation conventionnel clair, poussez la branche, puis ouvrez une pull request.',
+      agentReview: 'Faire relire par un agent',
+      agentReviewPick: 'Relire avec',
+      agentReviewNoProfiles: 'Aucun profil trouvé',
+      agentReviewPrompt:
+        'Relisez le diff du fichier joint. Signalez les problèmes concrets — bugs, régressions, cas non gérés — avant les remarques de style.',
+      agentReviewAttachment: 'Diff de l’arbre de travail',
+      agentReviewUnavailable: 'Rien à relire : aucun dépôt ou aucun diff en attente.',
+      agentReviewReportTitle: (reviewer: string) => `Relecture par ${reviewer}`,
+      selfReview: 'Relire les changements',
+      selfReviewRunning: 'Relecture des changements…',
+      selfReviewClean: 'Aucun problème détecté',
+      selfReviewClear: 'Effacer les commentaires de relecture',
+      selfReviewComments: count => `${count} commentaire${count === 1 ? '' : 's'}`,
+      commentOnLine: line => `Commenter la ligne ${line}`,
+      diffCommentPlaceholder: 'Commentaire sur cette ligne…',
+      diffCommentSend: 'Ajouter un commentaire',
+      commentSeeded: 'Ajouté au composer comme brouillon',
       newBranch: 'Nouvelle branche',
       branchOffFrom: base => `Nouvelle branche à partir de ${base}`,
       switchTo: branch => `Basculer vers ${branch}`,
@@ -4587,6 +5142,10 @@ export const frOverrides = {
       branch: branch => `branche ${branch}`,
       closeCommandCenter: 'Fermer le centre de commandes',
       openCommandCenter: 'Ouvrir le centre de commandes',
+      toggleNotices: 'Notifications',
+      noticesTitle: 'Notifications récentes',
+      toggleAttentionInbox: 'Boîte d’attention',
+      attentionInboxTitle: 'Approbations et questions en attente',
       showTerminal: 'Afficher le terminal',
       hideTerminal: 'Masquer le terminal',
       gateway: 'Gateway',
@@ -4671,6 +5230,19 @@ export const frOverrides = {
     }
   },
   rightSidebar: {
+    agentTouched: 'Modifié dans ce chat',
+    newFile: 'Nouveau fichier',
+    newFolder: 'Nouveau dossier',
+    filterFiles: 'Filtrer les fichiers',
+    newFileIn: label => `Nouveau fichier dans ${label}`,
+    newFolderIn: label => `Nouveau dossier dans ${label}`,
+    newFilePlaceholder: 'nom.ts — les barres créent des dossiers',
+    newFolderPlaceholder: 'nom-du-dossier',
+    newFileFailed: 'Impossible de créer le fichier',
+    newFolderFailed: 'Impossible de créer le dossier',
+    filterPlaceholder: 'Filtrer les fichiers…',
+    filterHint: 'Tapez une partie d’un nom. Cherche dans tout le projet, pas seulement les dossiers ouverts.',
+    filterNoMatch: 'Aucun fichier ne correspond',
     aria: 'Barre latérale droite',
     panelsAria: 'Panneaux de la barre latérale droite',
     files: 'Système de fichiers',
@@ -4731,6 +5303,10 @@ export const frOverrides = {
     sourceLineTitle: 'Clic pour sélectionner · shift-clic pour étendre · glisser vers le compositeur',
     source: 'SOURCE',
     renderedPreview: 'APERÇU',
+    table: 'TABLEAU',
+    tableTruncated: (rows: number) =>
+      `${rows.toLocaleString()} premières lignes affichées. La source contient tout le fichier.`,
+    canvas: 'CANEVAS',
     diff: 'DIFF',
     unknownSize: 'taille inconnue',
     binaryTitle: 'Cela ressemble à un fichier binaire',
@@ -4824,7 +5400,27 @@ export const frOverrides = {
       commentPlaceholder: 'Ajouter un commentaire...',
       commentTitle: n => `Commentaire ${n}`,
       saveComment: 'Enregistrer',
-      cancelComment: 'Annuler le commentaire'
+      cancelComment: 'Annuler le commentaire',
+      record: 'Enregistrer une tâche',
+      recordStop: 'Arrêter l’enregistrement',
+      recording: count => `Enregistrement · ${count}`,
+      recordNeedPage: 'Ouvrez d’abord une page dans le navigateur intégré.',
+      recordFailed: 'Impossible de démarrer l’enregistrement sur cette page.',
+      recordTitle: 'Enregistrer comme compétence',
+      recordDesc:
+        'Vérifiez les étapes capturées, nommez la compétence puis enregistrez le brouillon. L’agent pourra ensuite la rejouer depuis vos compétences.',
+      recordName: 'Nom',
+      recordNamePlaceholder: 'Faire les courses',
+      recordNameHint: slug => `Sera enregistré sous « ${slug} » dans ~/.hermes/skills/`,
+      recordDescLabel: 'Description (facultative)',
+      recordDescPlaceholder: 'Quand utiliser ce flux…',
+      recordDescHint: 'Une phrase, 60 caractères au maximum.',
+      recordSteps: count => `Étapes enregistrées (${count})`,
+      recordEmpty: 'Aucune étape capturée — l’enregistrement était vide.',
+      recordSave: 'Enregistrer',
+      recordSaving: 'Enregistrement…',
+      recordSaved: name => `« ${name} » a été enregistré dans vos compétences.`,
+      recordSaveFailed: 'Impossible d’enregistrer la compétence.'
     }
   },
   interfaceMode: {
@@ -4832,6 +5428,8 @@ export const frOverrides = {
     hint: 'Modifie ce qui est affiché, pas ce que Hermes peut faire.',
     sessionNote:
       'Défini par le mode Simple. Une modification ici dure le temps de cette session ; passez en mode Avancé pour la conserver.',
+    simpleNotice: 'Mode Simple — les panneaux et les outils supplémentaires sont masqués.',
+    showAdvanced: 'Afficher le mode Avancé',
     simple: {
       label: 'Simple',
       description:
@@ -4918,9 +5516,16 @@ export const frOverrides = {
     }
   },
   assistant: {
+    sessionRecap: {
+      title: 'Reprise ici',
+      dismiss: 'Fermer',
+      turns: count => `${count} ${count === 1 ? 'tour' : 'tours'}`,
+      todo: progress => `plan ${progress}`
+    },
     thread: {
       loadingSession: 'Chargement de la session',
       showEarlier: 'Afficher les messages précédents',
+      timelineScrubber: 'Minicarte de la transcription',
       loadingResponse: 'Hermes charge une réponse',
       loadingLocalModel: model => `Chargement de ${model} en mémoire`,
       processingPrompt: "Traitement de l'invite",
@@ -5149,6 +5754,7 @@ export const frOverrides = {
       stopReading: 'Arrêter la lecture',
       readAloud: 'Lire à voix haute',
       copyFullResponse: 'Copier la réponse complète',
+      copyMarkdown: 'Copier en Markdown',
       readAloudFullResponseHint: 'Maj+clic : lire la réponse complète',
       editMessage: 'Modifier le message',
       expandMessage: 'Développer le message',
@@ -5162,6 +5768,12 @@ export const frOverrides = {
         "Tout ce qui suit cette invite est retiré de la conversation, puis l'invite est relancée à partir d'ici.",
       restoreConfirm: 'Restaurer et relancer',
       restoreNext: 'Restaurer le point de contrôle suivant',
+      revertFilesTip: 'Restaurer les fichiers à leur état avant ce message',
+      revertFilesTitle: 'Restaurer les fichiers ?',
+      revertFilesBody:
+        "Les fichiers modifiés par Hermes dans ce tour retrouvent leur état antérieur — tout ce que vous avez édité à la main est conservé. La conversation n'est pas touchée.",
+      revertFilesConfirm: 'Restaurer les fichiers',
+      revertFilesFailed: 'Impossible de restaurer les fichiers',
       goForward: 'Avancer',
       sendEdited: 'Envoyer le message modifié',
       attachingFile: 'Ajout en cours…'
@@ -5185,8 +5797,24 @@ export const frOverrides = {
         `Cela ajoute le motif « ${pattern} » à votre liste d'autorisation permanente (~/.hermes/config.yaml). Hermes ne redemandera plus pour ce type de commande — que ce soit dans cette session ou dans une session future.`,
       alwaysAllow: 'Toujours autoriser'
     },
-    clarify: frClarify,
-    themePicker: frThemePicker,
+    clarify: {
+      notReady: "La demande de clarification n'est pas encore prête",
+      gatewayDisconnected: "La Gateway Hermes n'est pas connectée",
+      sendFailed: "Impossible d'envoyer la réponse de clarification",
+      loadingQuestion: 'Chargement de la question…',
+      other: 'Autre (saisissez votre réponse)',
+      placeholder: 'Saisissez votre réponse…',
+      skip: 'Passer',
+      skipped: 'Ignoré',
+      noAnswer: 'Pas de réponse',
+      confirmAndContinueLabel: 'Confirmer et continuer',
+      singleSelectHint: 'Choisir une réponse',
+      multiSelectHint: 'Choisir toutes les réponses qui s’appliquent',
+      oneQuestion: '1 question',
+      questionProgress: (answered, total) => `${answered} réponse${answered === 1 ? '' : 's'} sur ${total}`,
+      notDelivered:
+        "Cette question n'a pas atteint l'app, elle ne peut donc pas être répondue ici. Appuyez sur Arrêter pour terminer le tour, puis répondez dans le chat."
+    },
     catalogInstall: {
       preparing: 'Préparation de l’installation…',
       install: 'Installer',
@@ -5203,12 +5831,14 @@ export const frOverrides = {
         plugin: 'plugin',
         skill: 'skill'
       },
-      tier: { official: 'officiel', verified: 'vérifié', community: 'communauté' },
+      tier: {
+        official: 'officiel',
+        community: 'communauté'
+      },
       targetProfile: (profile: string) => `S’installe dans votre profil ${profile}`,
       sendFailed: 'Impossible d’envoyer votre réponse. Réessayez.',
       commitLabel: 'Commit',
       subdirLabel: 'Dossier',
-      securityHeading: 'Sécurité',
       scan: {
         passed: 'Analyse réussie',
         warnings: 'L’analyse a relevé des avertissements',
@@ -5433,6 +6063,10 @@ export const frOverrides = {
     secretTitle: 'Secret requis',
     secretDesc: "Hermes a besoin d'un identifiant pour continuer.",
     secretPlaceholder: 'valeur du secret',
+    secretCardSkip: 'Ignorer',
+    secretCardSave: 'Enregistrer',
+    secretCardFootnote:
+      "Enregistrée dans les secrets de ce profil — la valeur part directement vers le backend et n'entre jamais dans la conversation.",
     vaultUnlockSendFailed: "Impossible d'envoyer le mot de passe principal",
     vaultUnlockTitle: name => `Déverrouiller ${name}`,
     vaultUnlockDesc: name =>
@@ -5525,6 +6159,19 @@ export const frOverrides = {
     hydrationSyncing: (profile: string) => `Synchronisation de ${profile}…`,
     sessionExported: 'Session exportée',
     sessionExportFailed: "Impossible d'exporter la session",
+    markdownUser: 'Utilisateur',
+    markdownAssistant: 'Assistant',
+    markdownSystem: 'Système',
+    markdownReasoning: 'Raisonnement',
+    markdownToolCall: "Appel d'outil",
+    markdownToolResult: "Résultat d'outil",
+    deliverableArtifacts: 'Artefacts',
+    deliverableChanges: 'Modifications',
+    deliverableFilesLine: (files, added, removed) => `${files} fichiers modifiés · +${added} / −${removed}`,
+    deliverableNoSummary: 'Aucune réponse de l’assistant enregistrée',
+    deliverablePullRequest: 'Pull request',
+    deliverableSession: 'Session',
+    deliverableSummary: 'Résumé',
     imageSaved: 'Image enregistrée',
     downloadStarted: 'Téléchargement démarré',
     restartToUseSaveImage: "Redémarrez Hermes Desktop pour utiliser Enregistrer l'image.",
@@ -5537,6 +6184,7 @@ export const frOverrides = {
     imageAttach: 'Image jointe',
     imageWriteFailed: "Échec de l'écriture de l'image sur le disque.",
     imageAttachFailed: "Échec de l'ajout de l'image",
+    pastedAsFile: 'Collé comme fichier',
     pastedContent: 'Contenu collé',
     pasteAttachFailed: 'Impossible de joindre le texte collé',
     attachImages: 'Joindre des images',
@@ -5546,6 +6194,8 @@ export const frOverrides = {
     dropFiles: 'Déposer des fichiers',
     handoff: {
       pickPlatform: 'Choisissez une destination',
+      queued: (platform, home) => `Transfert vers ${platform} (${home})…`,
+      sessionUnavailable: "Cette conversation n'est pas active sur la passerelle pour le moment.",
       success: platform => `Transféré vers ${platform}. Reprenez ici à tout moment.`,
       systemNote: platform => `↻ Transféré vers ${platform} — reprenez ici à tout moment.`,
       failed: error => `Échec du transfert : ${error}`,
@@ -5553,6 +6203,21 @@ export const frOverrides = {
       startMessaging: 'Démarrer la messagerie'
     }
   },
+  menuBar: {
+    newSession: 'Nouvelle session',
+    quickEntry: 'Saisie rapide',
+    quit: 'Quitter Hermes',
+    recentSessions: 'Sessions récentes',
+    show: 'Afficher Hermes',
+    statusIdle: 'Hermes — inactif',
+    statusActive: (runs: number, needsYou: number) => `${runs} en cours · ${needsYou} attend votre attention`
+  },
+
+  quickEntry: {
+    contextLabel: 'Contexte',
+    contextRemove: 'Retirer le contexte'
+  },
+
   tips: {
     close: 'Ne plus afficher cette astuce',
     items: {
@@ -5596,6 +6261,10 @@ export const frOverrides = {
       'right-pane': {
         title: 'Le volet de travail',
         text: "Les fichiers, le terminal, la revue et le navigateur intégré partagent le côté droit de l'application."
+      },
+      'advanced-mode': {
+        title: 'Plus de choses derrière le mode Avancé',
+        text: 'Les panneaux, les tâches planifiées, les capacités et la barre d’état restent en mode Avancé — Paramètres › Apparence › Fenêtre et disposition change de mode.'
       }
     }
   },

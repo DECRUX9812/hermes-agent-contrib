@@ -70,7 +70,8 @@ describe('ReviewPane header gating', () => {
   it('renders the three scope tabs and switches scope on selection', () => {
     renderPane()
 
-    expect(screen.getByRole('button', { name: 'Uncommitted', pressed: true })).toBeTruthy()
+    // 'Uncommitted' labels both scope controls (diff scope + file-set mode).
+    expect(screen.getAllByRole('button', { name: 'Uncommitted', pressed: true }).length).toBe(2)
     expect(screen.getByRole('button', { name: 'Last turn', pressed: false })).toBeTruthy()
 
     fireEvent.click(screen.getByRole('button', { name: 'Branch', pressed: false }))

@@ -24,4 +24,14 @@ PUBLIC_API_PATHS: frozenset[str] = frozenset({
     # Chronos managed-cron fire webhook (NAS -> agent). NOT cookie-gated: it
     # carries its own short-lived NAS-minted JWT (purpose=cron_fire), which the
     # handler verifies — the JWT, not this allowlist, is the security boundary.
-    "/api/cron/fire"})
+    "/api/cron/fire",
+    # Mobile companion pairing exchange (roadmap #45). Self-secured like
+    # /api/cron/fire: a phone has no credential until it redeems a short-lived,
+    # single-use, rate-limited code minted by an authenticated operator. Every
+    # other /api/mobile/* route stays gated.
+    "/api/mobile/pair",
+    # Session share-link transcript read (web_routers/share.py). Self-secured:
+    # the ?t= capability token resolves to one (profile, session) grant minted
+    # by an authenticated owner and reads only that session's sanitized
+    # transcript. Owner operations (create/revoke/list) stay gated.
+    "/api/share/view"})

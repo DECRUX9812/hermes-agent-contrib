@@ -1111,7 +1111,13 @@ def _(rid, params: dict) -> dict:
             return _db_unavailable_error(rid, code=5017)
         cutoff = time.time() - days * 86400
         rows = [s for s in db.list_sessions_rich(limit=500, compact_rows=True) if (s.get("started_at") or 0) >= cutoff]
-    return _ok(rid, {"days": days, "sessions": len(rows), "messages": sum(s.get("message_count", 0) for s in rows)})
+        payload = {"days": days, "sessions": len(rows), "messages": sum(s.get("message_count", 0) for s in rows)}
+        # ``report`` adds the /insights token + cost breakdown (overview, per model) for desktop surfaces.
+        if params.get("report"):
+            from agent.insights import InsightsEngine
+            report = InsightsEngine(db).generate(days=days)
+            payload["report"] = {k: report.get(k) for k in ("empty", "overview", "models")}
+    return _ok(rid, payload)
 
 
 @_rpc("rollback.list", live_session=True, fail_code=5020)
@@ -1120,8 +1126,13 @@ def _(rid, params: dict, session) -> dict:
         if not mgr.enabled:
             return _ok(rid, {"enabled": False, "checkpoints": []})
         # The TUI renders ``message``; the manager calls it ``reason``.
-        rows = [{"hash": c.get("hash", ""), "timestamp": c.get("timestamp", ""), "message": c.get("reason", "")}
-                for c in mgr.list_checkpoints(cwd)]
+        rows = []
+        for c in mgr.list_checkpoints(cwd):
+            row = {"hash": c.get("hash", ""), "timestamp": c.get("timestamp", ""), "message": c.get("reason", "")}
+            for tagged in ("turn", "sid", "user_row_id"):
+                if c.get(tagged) is not None:
+                    row[tagged] = c[tagged]
+            rows.append(row)
         return _ok(rid, {"enabled": True, "checkpoints": rows})
     return _with_checkpoints(session, go)
 
@@ -1136,8 +1147,13 @@ def _(rid, params: dict, session) -> dict:
                     data={"reason": "invalid_params", "field": "all", "detail": "must be a boolean"})
     # Full-history rollback mutates session history → rejected mid-turn (prompt.submit
     # would drop the agent's output or clobber it). File-scoped only touches disk.
+    # ``files_only`` reverts the tree without rewinding the transcript (the
+    # per-message "revert files" affordance), but still refuses mid-turn.
     if not file_path and session.get("running"):
         return _err(rid, 4009, busy_message("rollback restore", bool(session.get("_manual_compress_active"))))
+
+    files_only = bool(params.get("files_only"))
+    safe = bool(params.get("safe"))
 
     def go(mgr, cwd):
         if reason := _container_checkpoint_refusal(session, mgr, cwd):
@@ -1259,37 +1275,45 @@ def _(rid, params: dict) -> dict:
             return err
     # The client sends session_id, not profile; the live session is authoritative.
     home = (session or {}).get("profile_home")
+    incarnation = (session or {}).get("profile_incarnation")
     scopes = _bind_build_profile_scopes(home)
     try:
-        return _configure_session_tools(rid, params, sid, session)
+        return _configure_session_tools(rid, params, sid, session, home, incarnation)
     finally:
         _release_build_profile_scopes(scopes)
 
 
-def _configure_session_tools(rid, params: dict, sid: str, session) -> dict:
+def _configure_session_tools(rid, params: dict, sid: str, session, home, incarnation) -> dict:
     action = str(params.get("action", "") or "").strip().lower()
     targets = [str(name).strip() for name in params.get("names", []) or [] if str(name).strip()]
     if action not in {"disable", "enable"}:
         return _err(rid, 4017, f"unknown tools action: {action}")
     if not targets:
         return _err(rid, 4018, "names required")
-    hc, tc = _tools_mod("hermes_cli.config"), _tools_mod("hermes_cli.tools_config")
-    cfg = hc.load_config()
-    valid_toolsets = {ts_key for ts_key, _, _ in tc.CONFIGURABLE_TOOLSETS} | tc._get_plugin_toolset_keys()
-    mcp_targets = [name for name in targets if ":" in name]
-    unknown = [name for name in targets if ":" not in name and name not in valid_toolsets]
-    toolset_targets = [name for name in targets if ":" not in name and name in valid_toolsets]
-    if toolset_targets:
-        tc._apply_toolset_change(cfg, "cli", toolset_targets, action)
-    plugins = _mcp_server_rows()[1]
-    for target in mcp_targets:
-        server_name = target.split(":", 1)[0]
-        if err := _mcp_plugin_write_error(rid, server_name, plugins):
-            return err
-    missing_servers = tc._apply_mcp_change(cfg, mcp_targets, action) if mcp_targets else set()
-    hc.save_config(cfg)
+    # Lease the read/modify/write, not the potentially slow agent build below.
+    with _profile_home_lease(home, incarnation) if session is not None else contextlib.nullcontext():
+        with _sessions_lock:
+            if session is not None and (
+                    _sessions.get(sid) is not session or session.get("_closing")
+                    or not _session_profile_identity_matches(session, home, incarnation)):
+                return _err(rid, 4001, "session changed during tools.configure")
+        hc, tc = _tools_mod("hermes_cli.config"), _tools_mod("hermes_cli.tools_config")
+        cfg = hc.load_config()
+        valid_toolsets = {ts_key for ts_key, _, _ in tc.CONFIGURABLE_TOOLSETS} | tc._get_plugin_toolset_keys()
+        mcp_targets = [name for name in targets if ":" in name]
+        unknown = [name for name in targets if ":" not in name and name not in valid_toolsets]
+        toolset_targets = [name for name in targets if ":" not in name and name in valid_toolsets]
+        if toolset_targets:
+            tc._apply_toolset_change(cfg, "cli", toolset_targets, action)
+        plugins = _mcp_server_rows()[1]
+        for target in mcp_targets:
+            server_name = target.split(":", 1)[0]
+            if err := _mcp_plugin_write_error(rid, server_name, plugins):
+                return err
+        missing_servers = tc._apply_mcp_change(cfg, mcp_targets, action) if mcp_targets else set()
+        hc.save_config(cfg)
+        enabled = sorted(tc._get_platform_tools(hc.load_config(), "cli", include_default_mcp_servers=False))
     info = _reset_session_agent(sid, session) if session else None
-    enabled = sorted(tc._get_platform_tools(hc.load_config(), "cli", include_default_mcp_servers=False))
     changed = [
         name for name in targets
         if name not in unknown and (":" not in name or name.split(":", 1)[0] not in missing_servers)]

@@ -229,7 +229,10 @@ function SecretDialog({ sessionId }: { sessionId: string | null }) {
     [send, value]
   )
 
-  if (!request) {
+  // Session-bound asks render as the masked input row at the transcript tail
+  // (PendingSecretCard) — the modal would double-prompt over it. The dialog
+  // remains the surface for sessionless asks (raised outside any chat).
+  if (!request || request.sessionId) {
     return null
   }
 

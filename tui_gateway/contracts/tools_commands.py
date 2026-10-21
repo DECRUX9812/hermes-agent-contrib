@@ -330,16 +330,19 @@ method("slash.exec", params=SlashExecParams, result=SlashExecResult,
 class InsightsGetParams(Params):
     days: int | None = None
     profile: str | None = None
+    report: bool | None = None
 
 
 class InsightsGetResult(Result):
     days: int
     sessions: int
     messages: int
+    report: dict[str, JsonValue] | None = None
 
 
 method("insights.get", params=InsightsGetParams, result=InsightsGetResult,
-       doc="Session/message counts over the last ``days`` for the (optionally scoped) profile store.")
+       doc="Session/message counts over the last ``days`` for the (optionally scoped) profile store; "
+           "``report`` adds the /insights token + cost breakdown (``empty``, ``overview``, ``models``).")
 
 
 class ConfigShowParams(Params):
@@ -373,6 +376,11 @@ class RollbackCheckpoint(Result):
     hash: str = ""
     timestamp: str = ""
     message: str = ""
+    # User-turn trailers stamped at snapshot time (see tools/checkpoint_manager
+    # Hermes-* trailers): absent on checkpoints taken before tagging existed.
+    turn: int | None = None
+    sid: str | None = None
+    user_row_id: int | None = None
 
 
 class RollbackListResult(Result):
@@ -381,13 +389,17 @@ class RollbackListResult(Result):
 
 
 method("rollback.list", params=RollbackListParams, result=RollbackListResult,
-       doc="Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off.")
+       doc="Checkpoints for the session's cwd; ``enabled: false`` when checkpointing is off. "
+           "Entries may carry ``sid``/``turn``/``user_row_id`` identifying the user prompt "
+           "the snapshot precedes.")
 
 
 class RollbackRestoreParams(Params):
     session_id: str
     hash: str
     file_path: str | None = None
+    files_only: bool = False
+    safe: bool = False
     profile: str | None = None
     # A whole-tree restore keeps the user's hand-edits (``CheckpointManager.restore(safe=True)``, as the
     # gateway text command and the in-process CLI do); ``all`` reverts them too (main's ``--all``).

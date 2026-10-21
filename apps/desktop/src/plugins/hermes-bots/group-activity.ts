@@ -142,8 +142,16 @@ export function groupActivityLabel(event: GroupActivityEntry, group?: null | str
   const kind = event?.kind
   const base = GROUP_ACTIVITY_LABELS[kind] || kind || 'did something'
 
-  if (kind === 'cancelled' || kind === 'settled' || kind === 'capped') {
+  if (kind === 'cancelled' || kind === 'settled' || kind === 'safety') {
     return base
+  }
+
+  if (kind === 'capped') {
+    const axis = GROUP_ACTIVITY_AXIS_LABELS[String(event?.detail || '').trim()]
+
+    // A cap that names its axis is a budget the user can raise; without one
+    // it is just "the drive stopped".
+    return axis ? `paused at the ${axis} cap — send a message to keep going` : base
   }
 
   const who = event?.member === 'You' ? 'You' : groupSpeakerLabel(event?.member || 'A bot', group)
@@ -165,10 +173,19 @@ const GROUP_ACTIVITY_LABELS: Record<GroupActivityKind, string> = {
   failed: 'hit an error',
   cancelled: 'turn interrupted by a newer message',
   settled: 'turn settled',
-  capped: 'turn stopped at the round/message cap',
+  capped: 'paused at the turn cap — send a message to keep going',
+  safety: 'safety brake stopped a runaway turn',
   delivered: 'delivered a late reply',
   held: 'is held (stopped by you) — @mention it or say resume to release',
   stopped: 'stopped the room — remaining turns are held until resumed'
+}
+
+/** Which drive-budget axis ran out, when the drive named one — the feed can
+ *  point the user at the exact knob that would raise it. */
+const GROUP_ACTIVITY_AXIS_LABELS: Record<string, string> = {
+  continuations: 'mention follow-up',
+  messages: 'message',
+  rounds: 'round'
 }
 
 export const GROUP_ACTIVITY_GLYPHS: Record<GroupActivityKind, string> = {
@@ -181,6 +198,7 @@ export const GROUP_ACTIVITY_GLYPHS: Record<GroupActivityKind, string> = {
   cancelled: 'close',
   settled: 'check-all',
   capped: 'debug-step-over',
+  safety: 'debug-stop',
   delivered: 'mail-read',
   held: 'debug-pause',
   stopped: 'debug-stop'

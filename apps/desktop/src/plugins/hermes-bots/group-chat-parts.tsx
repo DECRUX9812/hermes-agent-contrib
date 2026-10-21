@@ -161,6 +161,9 @@ interface GroupMentionInputProps {
   className?: string
   members: GroupMember[]
   onChange: (value: string) => void
+  /** Escape with the popover already closed — the room uses it to close the
+   *  open reply box. Drafts are the caller's to keep; Escape never clears. */
+  onEscape?: () => void
   onPaste?: (event: ClipboardEvent<HTMLTextAreaElement>) => void
   onSubmitDraft?: () => void
   placeholder?: string
@@ -173,8 +176,9 @@ interface GroupMentionInputProps {
  *  quick picks plus each seated member's handle. Insertion produces exactly
  *  the strings parseGroupChatMentions resolves. Keyboard: Up/Down navigate,
  *  Enter/Tab insert (Enter falls through to submit when the popover is
- *  closed), Escape dismisses. */
-export function GroupMentionInput({ members, onChange, onSubmitDraft, value, ...inputProps }: GroupMentionInputProps) {
+ *  closed), Escape dismisses — then hands Escape to the room when the
+ *  popover was already closed. */
+export function GroupMentionInput({ members, onChange, onEscape, onSubmitDraft, value, ...inputProps }: GroupMentionInputProps) {
   const b = useBots()
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
@@ -273,7 +277,7 @@ export function GroupMentionInput({ members, onChange, onSubmitDraft, value, ...
               onMouseEnter={() => setSelected(index)}
             >
               <span className="font-medium">{`@${option.handle}`}</span>
-              <span className="truncate text-[0.65rem] text-(--ui-text-quaternary)">{option.meta}</span>
+              <span className="truncate text-[0.625rem] text-(--ui-text-quaternary)">{option.meta}</span>
             </RowButton>
           ))}
         </div>
@@ -336,6 +340,14 @@ export function GroupMentionInput({ members, onChange, onSubmitDraft, value, ...
             }
           }
 
+          // Escape with no popover: the room owns the fallthrough (closing
+          // the open reply box). One key, two layers, no double handling.
+          if (event.key === 'Escape') {
+            onEscape?.()
+
+            return
+          }
+
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault()
             onSubmitDraft?.()
@@ -350,13 +362,7 @@ export function GroupMentionInput({ members, onChange, onSubmitDraft, value, ...
 }
 
 /** A pending prompt as the room renders it. */
-export type GroupRoomPrompt = GroupPrompt & {
-  /** TODO(bot-mode-types): nothing ever sets this — syncGroupClarify builds
-   *  every entry without a thread — so the answer GroupClarifyCard echoes back
-   *  into the room always lands in the 'legacy' thread instead of the thread
-   *  the member asked from. */
-  thread?: string
-}
+export type GroupRoomPrompt = GroupPrompt
 
 /** A sub-question normalized for rendering: one card row, one answer. */
 interface GroupClarifyQuestion {
@@ -457,10 +463,10 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
         summary,
         entry.thread || 'legacy'
       )
-    } catch (err: any) {
+    } catch (err: unknown) {
       host.notify({
         kind: 'error',
-        message: b.group.answerFailed(botHandle(entry.member, member), String(err?.message || err))
+        message: b.group.answerFailed(botHandle(entry.member, member), String((err as Error)?.message || err))
       })
     } finally {
       setSending(false)
@@ -476,7 +482,7 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
           : b.group.asks(botHandle(entry.member, member))}
       </div>
       {isApproval && entry.command ? (
-        <code className="block overflow-x-auto rounded bg-(--ui-bg-secondary,rgba(0,0,0,0.25)) px-2 py-1 font-mono text-[0.7rem] whitespace-pre-wrap break-all">
+        <code className="block overflow-x-auto rounded bg-(--ui-bg-secondary,rgba(0,0,0,0.25)) px-2 py-1 font-mono text-[0.6875rem] whitespace-pre-wrap break-all">
           {entry.command}
         </code>
       ) : null}
@@ -491,7 +497,7 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
                 return (
                   <Button
                     className={cn(
-                      'h-6 px-2 text-[0.7rem]',
+                      'h-6 px-2 text-[0.75rem]',
                       isApproval && choice === 'deny' && !chosen && 'text-destructive'
                     )}
                     disabled={sending || !member}

@@ -8,11 +8,11 @@
  */
 
 import type * as HermesSdk from '@hermes/plugin-sdk'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { translateBots } from './i18n-test-helper'
-import type { RoutineJob } from './types'
+import type { RosterRow, RoutineJob } from './types'
 
 // Radix calls these on open; jsdom doesn't implement them.
 beforeAll(() => {
@@ -21,12 +21,20 @@ beforeAll(() => {
   Element.prototype.releasePointerCapture = vi.fn()
 })
 
-const { request } = vi.hoisted(() => ({ request: vi.fn(async () => ({})) }))
+const { listCronJobRuns, openSession, request } = vi.hoisted(() => ({
+  listCronJobRuns: vi.fn(async (): Promise<Record<string, unknown>[]> => []),
+  openSession: vi.fn(),
+  request: vi.fn(async () => ({}))
+}))
 
 vi.mock('@hermes/plugin-sdk', async importOriginal => {
   const sdk = await importOriginal<typeof HermesSdk>()
 
-  return { ...sdk, usePluginI18n: () => translateBots, host: { ...sdk.host, request } }
+  return {
+    ...sdk,
+    host: { ...sdk.host, listCronJobRuns, openSession, request },
+    usePluginI18n: () => translateBots
+  }
 })
 
 const { RoutineDetailDialog, RoutineRow, routineDetailIssue, routineDetailRows } = await import('./cron')
@@ -175,7 +183,12 @@ describe('the row is reachable', () => {
 describe('the inspector', () => {
   it('renders the job\u2019s instruction and its failure', () => {
     render(
-      <RoutineDetailDialog job={{ ...activeJob, last_fire_error: 'model timeout' }} onClose={() => undefined} open />
+      <RoutineDetailDialog
+        job={{ ...activeJob, last_fire_error: 'model timeout' }}
+        onClose={() => undefined}
+        open
+        owner={null}
+      />
     )
 
     const dialog = screen.getByRole('dialog')
@@ -188,13 +201,53 @@ describe('the inspector', () => {
   })
 
   it('stays shut without a job to inspect', () => {
-    render(<RoutineDetailDialog job={null} onClose={() => undefined} open />)
+    render(<RoutineDetailDialog job={null} onClose={() => undefined} open owner={null} />)
 
     expect(screen.queryByRole('dialog')).toBeNull()
 
     cleanup()
-    render(<RoutineDetailDialog job={activeJob} onClose={() => undefined} open={false} />)
+    render(<RoutineDetailDialog job={activeJob} onClose={() => undefined} open={false} owner={null} />)
 
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+})
+
+describe('run history (B6)', () => {
+  const owner = { name: 'notetaker' } as RosterRow
+
+  it('lists past runs with status + duration, script-output docs inert, sessions openable', async () => {
+    listCronJobRuns.mockResolvedValue([
+      // A finished transcript session — clickable, carries a duration.
+      { ended_at: 300, id: 'sess-1', started_at: 240, title: 'Digest run' },
+      // A script-only run produces an output doc with no transcript to open.
+      { ended_at: 200, id: 'doc-1', source: 'cron_output', started_at: 160, title: 'Output digest.py' },
+      // In-flight — status reads Running, no open affordance needed to differ.
+      { id: 'sess-live', is_active: true, started_at: 320, title: 'Digest live' }
+    ])
+
+    render(<RoutineDetailDialog job={activeJob} onClose={() => undefined} open owner={owner} />)
+
+    const dialog = screen.getByRole('dialog')
+
+    expect(await within(dialog).findByText('Run history')).toBeTruthy()
+    expect(await within(dialog).findByText('Digest run')).toBeTruthy()
+    expect(within(dialog).getByText('60s')).toBeTruthy()
+    expect(within(dialog).getByLabelText('Finished')).toBeTruthy()
+    expect(within(dialog).getByLabelText('Running')).toBeTruthy()
+    // Script output renders as a plain row — no transcript session to open.
+    expect(within(dialog).getByText('Output digest.py')).toBeTruthy()
+    expect(within(dialog).getByLabelText('Script output')).toBeTruthy()
+    expect(within(dialog).queryByRole('button', { name: 'Output digest.py' })).toBeNull()
+
+    fireEvent.click(within(dialog).getByText('Digest run'))
+    expect(openSession).toHaveBeenCalledWith('sess-1', expect.objectContaining({ intent: 'tab' }))
+  })
+
+  it('an empty history says so instead of rendering ghost rows', async () => {
+    listCronJobRuns.mockResolvedValue([])
+
+    render(<RoutineDetailDialog job={activeJob} onClose={() => undefined} open owner={owner} />)
+
+    expect(await screen.findByText('No runs yet.')).toBeTruthy()
   })
 })

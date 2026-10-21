@@ -17,6 +17,7 @@ describe('QuickEntryApp', () => {
     window.hermesDesktop = {
       quickEntry: {
         dismiss: vi.fn(),
+        onContext: vi.fn(() => vi.fn()),
         onShown: vi.fn(() => vi.fn()),
         onState: vi.fn(callback => {
           pushState = callback

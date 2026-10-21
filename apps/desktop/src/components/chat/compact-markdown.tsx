@@ -1,5 +1,5 @@
-import type { ComponentProps, ElementType, FC } from 'react'
-import { memo } from 'react'
+import type { ComponentProps, FC, HTMLAttributes } from 'react'
+import { createElement, memo } from 'react'
 import { Streamdown } from 'streamdown'
 
 import { ExternalLink } from '@/lib/external-link'
@@ -27,12 +27,14 @@ const TAG_CLASSES = {
   ul: 'mb-2 list-disc pl-5 last:mb-0'
 } as const
 
-function tagged<T extends keyof typeof TAG_CLASSES>(Tag: T) {
-  const Component = (({ className, ...rest }: ComponentProps<T>) => {
-    const Element = Tag as ElementType
-
-    return <Element className={cn(TAG_CLASSES[Tag], className)} {...rest} />
-  }) as FC<ComponentProps<T>>
+function tagged(Tag: keyof typeof TAG_CLASSES) {
+  const base = TAG_CLASSES[Tag]
+  // Tag is a concrete intrinsic tag at every call site; createElement can't
+  // infer props through a generic tag union (it collapses to never via the
+  // react-three/fiber JSX.IntrinsicElements augmentation), so type the
+  // wrapper explicitly instead.
+  const Component: FC<HTMLAttributes<HTMLElement>> = ({ className, ...rest }) =>
+    createElement(Tag as 'div', { className: cn(base, className), ...rest })
 
   Component.displayName = `Md.${Tag}`
 

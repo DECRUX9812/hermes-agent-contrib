@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from hermes_cli.update_inventory import _SERVE_KINDS
 from hermes_constants import get_hermes_home
 
 logger = logging.getLogger(__name__)
@@ -138,7 +139,7 @@ def warn_pending_manual_serves(*, startup: bool = False, pending_manual: list[di
             print("    Ask its owner to relaunch `hermes serve` / `hermes dashboard`; check reminder storage permissions and free space.", file=stream)
         else:
             # No usable creation time means identity, not storage, blocked the durable reminder.
-            print("    This host could not read the process creation time, so no durable reminder could be filed; ask its owner to relaunch `hermes serve` / `hermes dashboard`, and the warning clears once the pid is confirmed gone.", file=stream)
+            print("    This host could not read the process creation time, so no durable reminder could be filed; ask its owner to relaunch `hermes serve` / `hermes dashboard` / `hermes webapp`, and the warning clears once the pid is confirmed gone.", file=stream)
     directory = get_hermes_home() / "serve_restart_pending"
     for path in sorted(directory.glob("*.json")):
         try:
@@ -152,7 +153,7 @@ def warn_pending_manual_serves(*, startup: bool = False, pending_manual: list[di
                 print(f"    Restart its unit: {_format_restart_commands(restart)}", file=stream)
                 continue
             print(f"  ⚠ {row['kind']} [{row['profile']}] pid {row['pid']}: manual restart still pending; this process may still serve pre-update code.", file=stream)
-            print("    Ask its owner to relaunch `hermes serve` / `hermes dashboard` (reconnect Desktop for an SSH backend).", file=stream)
+            print("    Ask its owner to relaunch `hermes serve` / `hermes dashboard` / `hermes webapp` (reconnect Desktop for an SSH backend).", file=stream)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             logger.debug("Could not reconcile manual serve obligation %s: %s", path, exc)
             print(f"  ⚠ Manual serve restart reminder could not be verified: {path.name}", file=stream)

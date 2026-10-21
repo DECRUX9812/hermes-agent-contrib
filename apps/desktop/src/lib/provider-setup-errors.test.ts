@@ -12,6 +12,14 @@ describe('isProviderSetupErrorMessage', () => {
     expect(isProviderSetupErrorMessage('set an API key (OPENROUTER_API_KEY) in ~/.hermes/.env')).toBe(true)
   })
 
+  it("matches the backend's CLI-worded not-connected message", () => {
+    expect(
+      isProviderSetupErrorMessage(
+        'Hermes is not connected to any AI provider yet. Run `hermes model` to pick one (the free Nous tier needs no API key).'
+      )
+    ).toBe(true)
+  })
+
   it('matches what agent init actually says on a blank install', () => {
     // tui_gateway/user_messages.py::agent_init_failed_message wrapping agent/agent_init.py's raise.
     expect(

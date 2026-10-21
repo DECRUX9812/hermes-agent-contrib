@@ -91,9 +91,11 @@ with contextlib.suppress(Exception):
 
     prefetch_update_check()
 
+from tui_gateway.profile_lifecycle import ProfileLifecycleFence
 from tui_gateway.render import make_stream_renderer, render_diff, render_message
 
 _sessions: dict[str, dict] = {}
+_profile_lifecycle = ProfileLifecycleFence()
 _methods: dict[str, callable] = {}
 _db = None
 _db_error: str | None = None
@@ -481,14 +483,16 @@ def _transfer_db_to_agent(agent, db) -> bool:
     return False
 
 
-def _open_profile_session_db(profile_home):
+def _open_profile_session_db(profile_home, expected_profile_incarnation=None):
     """Open a DEDICATED handle on ``profile_home``'s ``state.db`` — FAIL CLOSED: a silent fallback to the
     launch ``state.db`` would bleed rows into the wrong profile's store exactly when the profile store is
     briefly unopenable (locked, mid-restore); callers let the error abort the build (→ ``agent_error``)."""
     from hermes_state_registry import acquire
     db_path = Path(profile_home) / "state.db"
     try:
-        return acquire(db_path)
+        return acquire(db_path, expected_profile_incarnation=expected_profile_incarnation)
+    except FileNotFoundError:
+        raise
     except Exception as exc:
         raise RuntimeError(f"profile session store unavailable: {db_path}: {exc}") from exc
 
@@ -522,13 +526,17 @@ def _profile_db(params: dict | None = None, *, writer: bool = False):
         db, owns = _get_db(), False
     else:
         try:
+            profile_incarnation = _capture_profile_incarnation(profile_home)
             if writer:
                 from hermes_state_registry import acquire
-                db = acquire(Path(profile_home) / "state.db")
+                db = acquire(Path(profile_home) / "state.db",
+                             expected_profile_incarnation=profile_incarnation)
             else:
                 from hermes_cli.web_server_sessions import _open_session_db_at_path
                 _bootstrap_served_profile_store(Path(profile_home) / "state.db")
                 db = _open_session_db_at_path(Path(profile_home) / "state.db", read_only=True)
+                with _profile_home_lease(profile_home, profile_incarnation):
+                    db = _open_session_db_at_path(Path(profile_home) / "state.db", read_only=True)
             owns = True
         except Exception as exc:
             logger.warning("TUI profile session store unavailable for %s: %s", profile, exc)
@@ -550,21 +558,30 @@ def _canonical_profile_request(name: str) -> str:
     """
     if name.casefold() in {".hermes", "hermes"}:
         from hermes_cli import profiles as profiles_mod
-        # Check the profiles root directly: get_profile_dir rejects "hermes" as a
-        # reserved name, but a pre-reserved-list install may still carry that dir.
-        if not (profiles_mod._get_profiles_root() / profiles_mod.normalize_profile_name(name)).is_dir():
+        # The legacy '.hermes' alias is not a valid named-profile id.
+        home = profiles_mod._get_profiles_root() / profiles_mod.normalize_profile_name(name)
+        if not home.is_dir():
+            # A deleted named profile keeps its tombstone until a successor is
+            # published, so it is never a legacy alias for the default home.
+            if profiles_mod.profile_home_is_tombstoned(home):
+                return name
             return "default"
     return name
 
 
 def _response_profile_name(profile: str | None = None) -> str:
-    """Profile name for session.* payloads: the requested real non-launch profile, else the launch one."""
+    """Profile name to report on session.* payloads.
+
+    Prefer the RPC's requested profile when it is a real non-launch profile;
+    otherwise the process launch profile.
+    """
     name = _canonical_profile_request((profile or "").strip())
     if not name:
         return _current_profile_name()
     try:
         return name if _profile_home(name) is not None else _current_profile_name()
     except ProfileUnavailableError:
+        # A retired profile must not turn response decoration into a second failure.
         return _current_profile_name()
 
 
@@ -588,17 +605,33 @@ class ProfileUnavailableError(FileNotFoundError):
 
 def _profile_home(profile: str | None) -> Path | None:
     """Resolve a named profile's home on THIS host, or None for the launch profile."""
-    if not (name := _canonical_profile_request((profile or "").strip())):
+    name = _canonical_profile_request((profile or "").strip())
+    if not name:
         return None
-    from hermes_cli import profiles as profiles_mod
     try:
-        home = Path(profiles_mod.get_profile_dir(name))
-    except ValueError:
-        home = None
-    if home is None or not home.is_dir():
-        raise ProfileUnavailableError(f"Profile '{name}' does not exist.")
+        from hermes_cli import profiles as profiles_mod
+
+        canon = profiles_mod.normalize_profile_name(name)
+        # Resolve existing safe basenames; reserved names only restrict creation.
+        home = Path(profiles_mod.get_profile_dir(canon))
+    except (TypeError, ValueError) as exc:
+        raise ProfileUnavailableError(f"Profile '{name}' is invalid.") from exc
+    missing = f"Profile '{canon}' is missing or being deleted."
+    if not home.is_dir():
+        raise ProfileUnavailableError(missing)
+    # Already the launch profile? No override needed.
     if home.resolve() == Path(_hermes_home).resolve():
-        return None  # already the launch profile (no override needed)
+        if _profile_home_rejected(home):
+            raise ProfileUnavailableError(missing)
+        return None
+    if profiles_mod.profile_home_is_tombstoned(home) or not profiles_mod.profile_exists(canon):
+        raise ProfileUnavailableError(missing)
+    try:
+        profile_incarnation = _capture_profile_incarnation(home)
+    except FileNotFoundError as exc:
+        raise ProfileUnavailableError(missing) from exc
+    if _profile_home_rejected(home, profile_incarnation, require_incarnation=True):
+        raise ProfileUnavailableError(missing)
     if home not in _served_profile_homes:
         # This process now hosts a second profile home: freeze the launch env as the launch
         # profile's own and flip get_secret() to fail closed, so an unscoped read for a
@@ -694,6 +727,24 @@ def _default_session_cwd() -> str:
     return _launch_configured_cwd() or os.getenv("TERMINAL_CWD") or os.getcwd()
 
 
+def _headless_server_log_frame(obj: dict) -> dict:
+    """Return a log-safe copy of a headless server's fallback frame."""
+    if not os.getenv("HERMES_SERVE_HEADLESS") or obj.get("method") != "event":
+        return obj
+    params = obj.get("params")
+    if not isinstance(params, dict) or params.get("type") != "session.info":
+        return obj
+    payload = params.get("payload")
+    if not isinstance(payload, dict) or "system_prompt" not in payload:
+        return obj
+
+    safe_payload = dict(payload)
+    safe_payload["system_prompt"] = "[redacted from hermes serve log]"
+    safe_params = dict(params)
+    safe_params["payload"] = safe_payload
+    return {**obj, "params": safe_params}
+
+
 def write_json(obj: dict) -> bool:
     """Emit one JSON frame via the most-specific transport: (1) event frames with a session id → that
     session's transport (async events reach the owner even from threads with no contextvar binding);
@@ -711,7 +762,11 @@ def write_json(obj: dict) -> bool:
         sid = ((params or {}).get("session_id")) if isinstance(params, dict) else ""
         if sid and (t := (_sessions.get(sid) or {}).get("transport")) is not None:
             return t.write(obj)
-    return (current_transport() or _stdio_transport).write(obj)
+    if (transport := current_transport()) is not None:
+        return transport.write(obj)
+    # Under the headless `serve` command, stdio is a server log sink (systemd persists it in journald), not the
+    # authenticated client transport. Keep the frame intact for WS clients; make this last-resort path log-safe.
+    return _stdio_transport.write(_headless_server_log_frame(obj))
 
 
 def _event_frame(event: str, sid: str, payload: dict | None = None) -> dict:
@@ -1326,6 +1381,9 @@ def _append_model_switch_marker(session: dict | None, *, model: str, provider: s
                 # switches leave N active rows that all replay on resume (#65891 kept it in memory only).
                 db.deactivate_messages_by_display_kind(target, "model_switch")
                 from agent.message_metadata import stamp_message_uid
+                # Same stale-key hazard as the submit row: this durable pivot must land in the session the
+                # live agent writes to, or a model switch between turns on a rotated session files the notice
+                # under a parent the conversation no longer reads from (#123545).
                 entry["_row_id"] = db.append_message(
                     session_id=target, role="user", content=marker, display_kind="model_switch",
                     message_uid=stamp_message_uid(entry))
@@ -1621,8 +1679,7 @@ def _session_info(agent, session: dict | None = None) -> dict:
                 name = t["function"]["name"]
                 info["tools"].setdefault(get_toolset_for_tool(name) or "other", []).append(name)
         with contextlib.suppress(Exception):
-            from hermes_cli.banner import get_available_skills
-            info["skills"] = get_available_skills()
+            info["skills"] = _session_skills(session_key, sess)
     info["mcp_servers"] = []
     with contextlib.suppress(Exception):
         from tools.mcp_tool_discovery import get_mcp_status
@@ -1640,6 +1697,40 @@ def _session_info(agent, session: dict | None = None) -> dict:
     if live_agent and (warn := _probe_credentials(agent)):
         info["credential_warning"] = warn
     return info
+
+
+# Per-session memo TTL for the skills map, mirroring tools.skills_tool._SKILLS_CACHE_TTL_SECONDS:
+# _find_all_skills' single signature slot thrashes between multiplexed sessions, so without a
+# per-session memo each broadcast would pay a full tree walk.
+_SESSION_SKILLS_TTL_SECONDS = 30.0
+
+
+def _session_skills(session_key: str, session: dict) -> dict:
+    """The session's skill set grouped by category, resolved under THIS session's cwd + profile
+    home — the same pin the agent build and _persist_live_session_system_prompt apply — so
+    broadcast/off-turn callers never leak the caller's context onto another session (#114359
+    pinned the same context for commands.catalog / complete.slash / skills.reload). Memoized on
+    the session record.
+
+    Scans _find_all_skills directly rather than banner.get_available_skills: the banner memo is
+    per-process, so under the launch profile the first session's (or the startup prefetch's)
+    result would answer every session — project skills would never differ by cwd."""
+    now = time.monotonic()
+    cached = session.get("_skills_info_cache")
+    if isinstance(cached, tuple) and now - cached[0] < _SESSION_SKILLS_TTL_SECONDS:
+        return dict(cached[1])
+    tokens = _set_session_context(session_key, cwd=_session_cwd(session))
+    try:
+        with _session_profile_runtime_scope(session, hydrate_secrets=False):
+            from tools.skills_tool import _find_all_skills
+            skills: dict = {}
+            for skill in _find_all_skills():
+                skills.setdefault(skill.get("category") or "general", []).append(skill["name"])
+    finally:
+        _clear_session_context(tokens)
+    if session:
+        session["_skills_info_cache"] = (now, skills)
+    return dict(skills)
 
 
 def _tool_ctx(name: str, args: dict) -> str:
@@ -1709,15 +1800,17 @@ class _RuntimeFallbackResolution(NamedTuple):
 
 
 
-def _hydrate_session_cwd(sid: str, key: str, session_db, profile_home: str | None) -> None:
+def _hydrate_session_cwd(sid: str, key: str, session_db, profile_home: str | None, profile_incarnation: str | None = None) -> None:
     """Adopt the stored row's cwd and fill missing Git metadata, or persist a fresh cwd."""
     owns_db, db = False, session_db
     if db is None and not profile_home:
         db = _get_db()
     elif db is None:
         try:
-            db = _open_profile_session_db(profile_home)
+            db = _open_profile_session_db(profile_home, expected_profile_incarnation=profile_incarnation)
             owns_db = True
+        except FileNotFoundError:
+            raise
         except Exception:
             # FAIL CLOSED (as the deferred-build bind): a named-profile session must never touch the launch
             # state.db — skip hydration (the row lands on the agent's own lazy-create once the store recovers).
@@ -2157,12 +2250,16 @@ from . import (
     session_lifecycle as _session_lifecycle, session_reaper as _session_reaper,
     session_transports as _session_transports, prompt_turn as _prompt_turn, billing_view as _billing_view,
     methods_browser_control as _methods_browser_control, methods_bot_relay as _methods_bot_relay,
+    methods_bot_mailbox as _methods_bot_mailbox, methods_bot_team as _methods_bot_team,
     methods_complete as _methods_complete, methods_config as _methods_config,
     methods_config_set as _methods_config_set, methods_images as _methods_images,
     methods_profiles as _methods_profiles, methods_prompt as _methods_prompt, methods_session as _methods_session,
     methods_tools as _methods_tools, methods_tools_plugin_servers as _methods_tools_plugin_servers,
     methods_projects as _methods_projects, methods_session_foreign as _methods_session_foreign,
     methods_session_control as _methods_session_control, methods_subagents as _methods_subagents,
+    methods_delegation_reports as _methods_delegation_reports,
+    methods_session_ask as _methods_session_ask,
+    methods_session_predict as _methods_session_predict,
     methods_vault as _methods_vault, methods_free_tier as _methods_free_tier,
     methods_connectors as _methods_connectors, methods_connectors_account as _methods_connectors_account,
     methods_display as _methods_display, methods_display_watch as _methods_display_watch,

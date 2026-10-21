@@ -1,5 +1,4 @@
 export const frModelMenu = {
-  pickDeferred: (model: string) => `${model} s’applique à partir de votre prochain message`,
   search: 'Rechercher des modèles',
   noModels: 'Aucun modèle trouvé',
   editModels: 'Modifier les modèles…',

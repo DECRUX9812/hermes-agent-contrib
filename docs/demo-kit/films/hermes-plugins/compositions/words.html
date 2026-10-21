@@ -1,0 +1,40 @@
+<!doctype html>
+<html><head><meta charset="UTF-8" /></head><body><template>
+      <style>
+        #words-root { position: absolute; inset: 0; pointer-events: none; font-family: Montserrat, sans-serif; }
+        .w-block { position: absolute; left: 96px; top: 0; width: 420px; height: 1080px; display: flex; flex-direction: column; justify-content: center; }
+        .w-line { display: block; font-size: 74px; font-weight: 900; letter-spacing: -0.045em; line-height: 1.02; color: #f3ecdc; opacity: 0; }
+        .w-gold { color: #f2b53b; }
+      </style>
+      <div id="words-root" data-composition-id="words" data-width="1920" data-height="1080">
+        <div class="w-block" id="w-open"><span class="w-line" data-layout-allow-occlusion>Hermes builds</span><span class="w-line w-gold" data-layout-allow-occlusion>its own plugins.</span></div>
+        <div class="w-block" id="w-ask"><span class="w-line w-gold" data-layout-allow-occlusion>Ask.</span></div>
+        <div class="w-block" id="w-live"><span class="w-line" data-layout-allow-occlusion>It's</span><span class="w-line w-gold" data-layout-allow-occlusion>live.</span></div>
+        <div class="w-block" id="w-think"><span class="w-line" data-layout-allow-occlusion>Watch it</span><span class="w-line w-gold" data-layout-allow-occlusion>think.</span></div>
+        <div class="w-block" id="w-chart"><span class="w-line" data-layout-allow-occlusion>Right in</span><span class="w-line w-gold" data-layout-allow-occlusion>the chat.</span></div>
+        <div class="w-block" id="w-yours"><span class="w-line" data-layout-allow-occlusion>Make it</span><span class="w-line w-gold" data-layout-allow-occlusion>yours.</span></div>
+        <div class="w-block" id="w-file"><span class="w-line" data-layout-allow-occlusion>One file</span><span class="w-line w-gold" data-layout-allow-occlusion>each.</span></div>
+      </div>
+      <script>
+        (() => {
+          const tl = gsap.timeline({ paused: true })
+          // Each statement rises in line by line on the beat and leaves before the next one lands.
+          const say = (id, at, out) => {
+            const lines = document.getElementById(id).querySelectorAll('.w-line')
+            lines.forEach((line, i) => {
+              tl.fromTo(line, { y: 60, opacity: 0, filter: 'blur(10px)' },
+                { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.45, ease: 'expo.out', immediateRender: false }, at + i * 0.18)
+            })
+            tl.to(lines, { y: -30, opacity: 0, filter: 'blur(8px)', duration: 0.3, ease: 'power2.in' }, out)
+          }
+          say('w-open', 2.6, 4.75)
+          say('w-ask', 5.2, 6.75)
+          say('w-live', 7.6, 10.85)
+          say('w-think', 12.45, 15.95)
+          say('w-chart', 18.75, 22.05)
+          say('w-yours', 24.05, 28.15)
+          say('w-file', 29.6, 31.2)
+          window.__timelines['words'] = tl
+        })()
+      </script>
+</template></body></html>

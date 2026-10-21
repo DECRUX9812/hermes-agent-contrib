@@ -21,8 +21,8 @@
 import { atom, computed, type ReadableAtom } from 'nanostores'
 import type { ReactNode } from 'react'
 
-import { capabilityScoped, getApiRequestConnection } from '@/api/client'
-import { mutateSessionFenced } from '@/api/sessions'
+import { capabilityScoped } from '@/api/client'
+import { loadArtifactsForSessions } from '@/app/artifacts/artifact-utils'
 import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
 import { openSession, type OpenSessionIntent } from '@/app/open-session'
 import { syncWorkspaceRoute } from '@/app/routes'
@@ -47,19 +47,37 @@ import {
 import { onGatewayEvent } from '@/contrib/events'
 import { registry } from '@/contrib/registry'
 import type { WorkspaceMode } from '@/contrib/types'
-import { deleteProfile, getLogs, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { deleteProfile, getLogs, getSessionMessages, getStatus, hermesApi, type HermesGateway } from '@/hermes'
+import { type ActivityTask, deriveActivityTasks } from '@/lib/activity-tasks'
+import type { ChatMessage } from '@/lib/chat-messages/types'
+import { selectDesktopPaths } from '@/lib/desktop-fs'
 import { traceIdentityChange } from '@/lib/identity-trace'
 import { completeMcpDesktopOAuth } from '@/lib/mcp-dashboard-oauth'
+
+/** Pane, status bar and titlebar slots; see `./areas` for the mount rules. */
+export { PANES_AREA, STATUSBAR_AREAS, TITLEBAR_AREAS } from './areas'
+/** The plugin authoring contract (`HermesPlugin`, `PluginContext`, `ctx.*` door types). */
+export type * from './plugin-contract'
+import { mergeRailArtifacts, type RailArtifactItem, registryArtifactsForSessions } from '@/store/artifact-rail'
+import { $artifactRegistry } from '@/store/artifacts'
+import { $attentionItems, type AttentionItem } from '@/store/attention-inbox'
+import { $attentionCountsByOwner } from '@/store/attention-owner-counts'
+import { $statusItemsBySession, type ComposerStatusItem } from '@/store/composer-status'
+import { $cronJobs } from '@/store/cron'
 import {
   $gateway,
   activeGatewayConnectionId,
   openGatewayForAgent,
   openGatewayForProfile,
   requestGatewayForAgent,
+  requestGatewayForProfile,
   retainGatewayForAgent,
   retainGatewayForRelay,
-  retireLocalProfileGateways
+  retireLocalProfileGateways,
+  type SpawnPriority
 } from '@/store/gateway'
+import { $showsAdvancedChrome } from '@/store/interface-mode'
+import { $sidebarSearchQuery } from '@/store/layout'
 import { notify, notifyError } from '@/store/notifications'
 import {
   $activeGatewayProfile,
@@ -77,6 +95,8 @@ import {
   setActiveProfile,
   setShowAllProfiles
 } from '@/store/profile'
+import { exportProfileBundle, importProfileBundle } from '@/store/profile-share'
+import { $projectTree, projectRootCwd } from '@/store/projects'
 import {
   $activeSessionId,
   $connection,
@@ -87,48 +107,54 @@ import {
   $selectedStoredSessionId,
   $sessions,
   getSessionOwnerHints,
+  ownerLookupSessionRows,
   rememberedSessionProfile,
   requestSessionResume,
   sessionMatchesStoredId,
   setResumeExhaustedSessionId,
   setSessionOwnerHint
 } from '@/store/session'
+import { $sessionDotStateById, type SessionDotState } from '@/store/session-dot-state'
 import { $focusedStoredSessionId } from '@/store/session-focus'
+import { isSessionOwnerRoute, type SessionOwnerRoute } from '@/store/session-request-router'
 import {
   $focusedRuntimeId,
   $focusedSessionState,
   $sessionStates,
   $sessionTiles,
+  $sessionWorkspaceScopes,
   dropTilesForProfile,
   focusWorkspaceOwnerSessionTile,
   sessionTileDelegate
 } from '@/store/session-states'
+import { knownOwnerForSession } from '@/store/session-states-routing'
 import { runGatewayRestart } from '@/store/system-actions'
-import type { PaginatedSessions, UsageStats } from '@/types/hermes'
-
-import type { SessionMutationSnapshot } from '../../../shared/src/session-http-mutations'
+import type { CronJob, PaginatedSessions, SessionInfo, UsageStats } from '@/types/hermes'
 
 import { pluginDecisions, profiles, skills, toolsets } from './bridge'
 import { composerHost } from './composer'
 import { i18nHost } from './i18n'
 import { planPluginOpenSession } from './plugin-open-session-plan'
-import {
-  type PluginProfileRequestOptions,
-  type PluginProfileRoute,
-  pluginRouteStillRegistered,
-  requestPluginProfile
-} from './profile-request'
 import { sessionsHost } from './sessions'
 import { desktopSettings } from './settings'
 
-/** Pane, status bar and titlebar slots; see `./areas` for the mount rules. */
-export { PANES_AREA, STATUSBAR_AREAS, TITLEBAR_AREAS } from './areas'
-/** The plugin authoring contract (`HermesPlugin`, `PluginContext`, `ctx.*` door types). */
-export type * from './plugin-contract'
+export type { DesktopSettingKey, DesktopSettingValues } from './settings'
 
 // -- state: readonly views over the app's live atoms -------------------------
 
 const readonlyAtom = <T>(atomLike: ReadableAtom<T>): ReadableAtom<T> => atomLike
+
+const $pluginProjects = computed($projectTree, tree =>
+  tree
+    .filter(project => !project.archived && !project.isNoProject)
+    .map(project => ({
+      color: project.color ?? null,
+      cwd: projectRootCwd(project),
+      id: project.id,
+      label: project.label
+    }))
+    .filter(project => project.cwd)
+)
 
 /**
  * Turn flag for the FOCUSED chat — same semantics as the statusbar's busy
@@ -149,6 +175,18 @@ const focusedTurnFlag = (
 
 const $focusedBusy = focusedTurnFlag(state => state.busy, PRIMARY_SESSION_VIEW.$busy)
 
+/** The focused chat read as tasks (one per request, its tool calls as steps)
+ *  — the Activity view's data. Busy keeps the newest task running between calls. */
+const $focusedActivity = computed([$focusedSessionState, $focusedBusy], (state, busy) =>
+  deriveActivityTasks(state?.messages, { busy })
+)
+
+const NO_MESSAGES: readonly ChatMessage[] = []
+
+/** The focused chat's messages, for readouts that derive from the transcript
+ *  (a bot's approved plan and its progress). */
+const $focusedMessages = computed($focusedSessionState, state => state?.messages ?? NO_MESSAGES)
+
 const $focusedAwaitingResponse = focusedTurnFlag(
   state => state.awaitingResponse,
   PRIMARY_SESSION_VIEW.$awaitingResponse
@@ -157,6 +195,13 @@ const $focusedAwaitingResponse = focusedTurnFlag(
 export interface PluginFocusedSessionOwner {
   connectionId: string
   profile: string
+}
+
+/** A session's proven owner — `focusedSessionOwner` plus the backend profile
+ *  an aliased remote route serves (`targetProfile`, when it differs). A bare
+ *  (`connectionId: ''`) owner is the primary/ambient socket. */
+export interface PluginSessionOwner extends PluginFocusedSessionOwner {
+  targetProfile?: string
 }
 
 /**
@@ -218,6 +263,29 @@ const $focusedSessionProfile = computed(
     owner?.profile || rememberedSessionProfile(sessions, focused, activeProfile)
 )
 
+export interface PluginProfileRoute {
+  connectionId: string
+  mode: 'local' | 'remote'
+  /** Electron's authoritative registry primary. Absent on older shells. */
+  primary?: true
+  /** Desktop profile used to select the connection route. */
+  profile: string
+  /** Backend Hermes profile served by that route. */
+  targetProfile: string
+}
+
+/** The workspace bucket a session was opened under — the tile record for a
+ *  tiled session, the remembered main-surface scope otherwise. Absent fields
+ *  mean a plain 'sessions' working chat; 'bots' chats always name their
+ *  owner (`workspaceOwnerKey`, `bot:<roster key>`). */
+export interface PluginSessionWorkspaceScope {
+  ownerProfile?: string
+  ownerRoute?: SessionOwnerRoute
+  workspaceMode?: WorkspaceMode
+  workspaceOwnerKey?: string
+  workspaceTabTitle?: string
+}
+
 /** Window geometry + the app's responsive posture, one readonly rect. */
 export interface ViewportRect {
   width: number
@@ -243,7 +311,113 @@ const $busyBySession = computed($sessionStates, states => {
   return map
 })
 
+/** Runtime session id → its stored (durable) id. The inverse of what
+ *  `busyBySession` callers need: status streams key by runtime id, while
+ *  durable surfaces (rosters, badges, lists) key by stored id. */
+const $storedSessionByRuntimeId = computed($sessionStates, states => {
+  const map: Record<string, string> = {}
+
+  for (const [id, state] of Object.entries(states)) {
+    if (state.storedSessionId) {
+      map[id] = state.storedSessionId
+    }
+  }
+
+  return map
+})
+
 const $viewport = atom<ViewportRect>(readViewport())
+
+/** Options a plugin may attach to one `host.requestProfile` call. */
+export interface PluginProfileRequestOptions {
+  /** Tag the dial that may cold-spawn this route's backend. Default
+   *  'background'; an explicit user action passes 'foreground' so its spawn
+   *  takes the pool's reserved interactive slot (#102281 primitive). */
+  spawnPriority?: SpawnPriority
+}
+
+async function requestPluginProfile<T>(
+  route: PluginProfileRoute | string,
+  method: string,
+  params: Record<string, unknown>,
+  timeoutMs?: number,
+  options?: PluginProfileRequestOptions
+): Promise<T> {
+  const spawnPriority = options?.spawnPriority
+
+  // Preserve the exact call arity the pool tests pin: pass the deadline and the
+  // dial options only when the caller set them, so a plain routed RPC keeps its
+  // four-argument shape and a timeout-only caller its five-argument shape.
+  const dialProfile = (profile: string): Promise<T> =>
+    spawnPriority
+      ? requestGatewayForProfile<T>(profile, method, params, timeoutMs, undefined, { spawnPriority })
+      : timeoutMs === undefined
+        ? requestGatewayForProfile<T>(profile, method, params)
+        : requestGatewayForProfile<T>(profile, method, params, timeoutMs)
+
+  if (typeof route !== 'string') {
+    if (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim()) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    if (spawnPriority) {
+      return requestGatewayForAgent<T>(route.connectionId, route.profile, method, params, timeoutMs, undefined, {
+        spawnPriority
+      })
+    }
+
+    return timeoutMs === undefined
+      ? requestGatewayForAgent<T>(route.connectionId, route.profile, method, params)
+      : requestGatewayForAgent<T>(route.connectionId, route.profile, method, params, timeoutMs)
+  }
+
+  const getAgentRoster = window.hermesDesktop?.getAgentRoster
+
+  if (!getAgentRoster) {
+    return dialProfile(route)
+  }
+
+  const roster = await getAgentRoster()
+  const profile = route.trim() || 'default'
+  const soleLocalSource = roster.sources.length === 1 && roster.sources[0]?.kind === 'local'
+
+  // The string overload is compatibility-only. A sole local registry is the
+  // one topology where a profile name is intrinsically unambiguous, even when
+  // its live enumeration transiently failed. Any additional source requires a
+  // descriptor because an undialed/unreachable source may expose the same name.
+  if (soleLocalSource) {
+    return dialProfile(profile)
+  }
+
+  throw new Error(
+    `Profile "${profile}" requires a route descriptor from host.profileRoutes(); profile-only routing is limited to legacy/local profiles.`
+  )
+}
+
+/** Re-read Electron's current registry before retrying an exact-owner wake.
+ *  A route that was removed or replaced while the first hydration wait ran is
+ *  no longer authority to touch that backend, even when its labels still look
+ *  identical. */
+async function pluginRouteStillRegistered(route: PluginProfileRoute): Promise<boolean> {
+  const getProfileRoutes = window.hermesDesktop?.getProfileRoutes
+
+  if (!getProfileRoutes) {
+    return false
+  }
+
+  try {
+    const routes = await getProfileRoutes($profiles.get().map(profile => profile.name))
+
+    return routes.some(
+      candidate =>
+        candidate.connectionId === route.connectionId &&
+        candidate.profile === route.profile &&
+        candidate.targetProfile === route.targetProfile
+    )
+  } catch {
+    return false
+  }
+}
 
 if (typeof window !== 'undefined') {
   const refresh = () => $viewport.set(readViewport())
@@ -331,8 +505,20 @@ export interface PluginOpenSessionOptions {
 }
 
 export interface PluginNewChatOptions {
+  /** Folder the chat runs in (a bot topic started in a project). Bots
+   *  workspace only; other chats follow the project scope. */
+  cwd?: string
   workspaceMode?: WorkspaceMode
   workspaceOwnerKey?: string
+}
+
+/** A project the user can point a chat at — the sidebar's project list,
+ *  archived and the synthetic Home bucket excluded. */
+export interface PluginProject {
+  color: null | string
+  cwd: string
+  id: string
+  label: string
 }
 
 // Raise the "Syncing…" affordance for a paint-first wake (#89843) and tear it
@@ -578,6 +764,16 @@ export const host = {
   state: {
     /** Runtime id of the active chat session (null on a fresh draft). */
     activeSessionId: readonlyAtom<null | string>($activeSessionId),
+    /** Attention-inbox items plus unread/needs-input session dots, rolled up
+     *  under the session's PROVEN owner — scope keys are `conn:<id>::<profile>`
+     *  for connection-tagged owners and the bare profile for connection-free
+     *  ones. An item never attributes on ambient-gateway guesses, so a
+     *  same-named profile on another connection inherits nothing. */
+    attentionCountsByOwner: readonlyAtom<Record<string, number>>($attentionCountsByOwner),
+    /** The attention inbox itself — every open approval/clarify/error/secret/
+     *  sudo/vault ask, each carrying its runtime session id (null = app-level,
+     *  never attributable to a session owner). */
+    attentionItems: readonlyAtom<readonly AttentionItem[]>($attentionItems),
     /** True from send until the first assistant payload on the focused chat. */
     awaitingResponse: readonlyAtom<boolean>($focusedAwaitingResponse),
     /**
@@ -591,8 +787,24 @@ export const host = {
     busyBySession: readonlyAtom<Record<string, boolean>>($busyBySession),
     /** Registry source that owns the active gateway, when source-scoped. */
     connectionId: readonlyAtom<null | string>($activeConnectionId),
+    /** Cron/routine jobs for the current sidebar profile scope — includes
+     *  `state` ('running' for an in-flight run) and the `[bot:<slug>]` name
+     *  tag Bot Mode stamps, so a roster can tell which bot owns a running
+     *  job. Empty when the scope has no jobs or hasn't loaded. */
+    cronJobs: readonlyAtom<readonly CronJob[]>($cronJobs),
     /** Active workspace cwd ('' when detached). */
     cwd: readonlyAtom<string>($currentCwd),
+    /** Stored session id → the state `SessionStatusDot` would paint
+     *  ('draft' | 'idle' | 'background' | 'working' | 'stalled' |
+     *  'needs-input' | 'unread'). Claims fan out over compression lineages,
+     *  so any alias of a conversation resolves — the backend need not report
+     *  a turn for the key to exist. */
+    dotStateBySession: readonlyAtom<Record<string, SessionDotState>>($sessionDotStateById),
+    /** The focused chat as tasks: each request with the tool calls that
+     *  answered it, status, timing and the reply's opening sentence. */
+    focusedActivity: readonlyAtom<readonly ActivityTask[]>($focusedActivity),
+    /** The focused chat's messages (read-only). */
+    focusedMessages: readonlyAtom<readonly ChatMessage[]>($focusedMessages),
     /** Runtime id of the FOCUSED chat session — the interacted tile, else the
      *  primary. Prefer this over `activeSessionId` for any readout that
      *  should follow the user between tiles (context, tokens, cost). */
@@ -619,6 +831,28 @@ export const host = {
     model: readonlyAtom<string>($currentModel),
     /** Profile the live gateway is routed to. */
     profile: readonlyAtom<string>($activeGatewayProfile),
+    /** The sessions rail's live search text ('' when idle). A `sidebar.listTop`
+     *  contribution marked `searchable` filters its own rows by this. */
+    sidebarSearchQuery: readonlyAtom<string>($sidebarSearchQuery),
+    /** Stored session id → the workspace scope it was last opened under — a
+     *  tile's own record when tiled, the remembered main-surface scope
+     *  otherwise. The single read for "is this chat inside a workspace":
+     *  `workspaceMode: 'bots'` chats carry their owner key; working sessions
+     *  carry 'sessions' or nothing. */
+    sessionWorkspaceScopes: readonlyAtom<Record<string, PluginSessionWorkspaceScope>>($sessionWorkspaceScopes),
+    /** Projects a chat can be started in (`newChat({ cwd })`). */
+    projects: readonlyAtom<PluginProject[]>($pluginProjects),
+    /** True in Advanced mode (the developer surface). Simple mode hides the
+     *  audit trail, raw ids and policy switches — a plugin gates its own tiers on this
+     *  rather than reading the core mode store. */
+    showsAdvancedChrome: readonlyAtom<boolean>($showsAdvancedChrome),
+    /** Runtime session id → live composer work items (todo / background /
+     *  subagent / goal) — `currentTool` names the tool a running item is
+     *  executing. Empty for a session with no live turn machinery. */
+    statusItemsBySession: readonlyAtom<Record<string, ComposerStatusItem[]>>($statusItemsBySession),
+    /** Runtime session id → its stored (durable) id — translate a status
+     *  stream's key into the identity durable surfaces key by. */
+    storedSessionByRuntimeId: readonlyAtom<Record<string, string>>($storedSessionByRuntimeId),
     /** Window geometry ({ width, height, narrow }). */
     viewport: readonlyAtom<ViewportRect>($viewport)
   },
@@ -796,6 +1030,30 @@ export const host = {
    *  active gateway is a registered remote. Re-read per use — it changes on
    *  profile/agent swaps. */
   activeConnectionId: (): null | string => activeGatewayConnectionId(),
+
+  /** The connection-qualified owner a session id PROVED itself under — the
+   *  title stamp, a resume hint, a tile binding, or the runtime scope it
+   *  streamed events under, in that order. Both stored and runtime ids are
+   *  accepted; resolves to null when the ladder cannot attribute it (never a
+   *  guess on the ambient gateway, so same-named profiles on different
+   *  connections can't bleed into each other). */
+  sessionOwner: (sessionId: null | string | undefined): PluginSessionOwner | null => {
+    const owner = knownOwnerForSession(sessionId)
+
+    if (isSessionOwnerRoute(owner)) {
+      return {
+        connectionId: owner.connectionId,
+        profile: normalizeProfileKey(owner.profile),
+        ...(owner.targetProfile ? { targetProfile: normalizeProfileKey(owner.targetProfile) } : {})
+      }
+    }
+
+    if (typeof owner === 'string' && owner.trim()) {
+      return { connectionId: '', profile: normalizeProfileKey(owner) }
+    }
+
+    return null
+  },
 
   /** The registered connection list (labels, kinds, primary) — token bytes
    *  never included. Rejects on Desktop builds without the registry. */
@@ -1295,7 +1553,7 @@ export const host = {
         return
       }
 
-      openTab()
+      openTab(options.cwd ? { cwd: options.cwd } : undefined)
 
       return
     }
@@ -1426,11 +1684,11 @@ export const host = {
     options?: PluginProfileRequestOptions
   ): Promise<T> => requestPluginProfile<T>(route, method, params, timeoutMs, options),
 
-  /** Pin a route's gateway socket open across repeated `requestProfile`
+  /** Pin a route's pooled gateway socket open across repeated `requestProfile`
    *  calls (#93594: the bot-relay drain loop was dialing and tearing down a
    *  fresh WebSocket per registered connection per tick). Returns a once-only
-   *  release. Local routes are exempt (no-op release): the host gateway's
-   *  lifetime does not depend on renderer pins. Feature-detect on older desktops
+   *  release. Local routes are exempt (no-op release) so the idle reaper can
+   *  still reclaim spawned local backends. Feature-detect on older desktops
    *  (`typeof host.retainProfileSocket === 'function'`). */
   retainProfileSocket: (route: PluginProfileRoute | string): (() => void) => {
     if (typeof route === 'string' || !route) {
@@ -1515,26 +1773,178 @@ export const host = {
       throw new Error('Persisted session updates require a profile and session id')
     }
 
-    // Null keeps the window's v1 route (a remote primary stays remote).
-    const scope = { connectionId: route?.connectionId || getApiRequestConnection() }
-    const path = `/api/sessions/${encodeURIComponent(options.sessionId)}`
-    const payload = { hidden: options.hidden, profile }
+    return hermesApi<{ ok: boolean; hidden: boolean }>({
+      ...(route ? { connectionId: route.connectionId } : {}),
+      path: `/api/sessions/${encodeURIComponent(options.sessionId)}`,
+      method: 'PATCH',
+      body: { hidden: options.hidden, profile }
+    })
+  },
 
-    return mutateSessionFenced(
-      JSON.stringify([scope, options.sessionId, payload]),
-      () =>
-        hermesApi<SessionMutationSnapshot>({
-          ...scope,
-          path: `${path}/mutation-snapshot?profile=${encodeURIComponent(profile)}`
-        }),
-      identity =>
-        hermesApi<{ ok: boolean; hidden: boolean }>({
-          ...scope,
-          path,
-          method: 'PATCH',
-          body: { ...payload, ...identity }
-        })
+  /** Run history for one cron job — agent sessions AND script-only output
+   *  docs, newest first (GET /api/cron/jobs/{id}/runs). `profile` is the
+   *  owner hint the endpoint validates against (a same-named job on another
+   *  profile must not leak its runs); omit to let the backend resolve the
+   *  owner itself. Read-only. */
+  listCronJobRuns: async (
+    route: PluginProfileRoute | null,
+    options: { jobId: string; limit?: number; profile?: string }
+  ): Promise<SessionInfo[]> => {
+    if (route && (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim())) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    const jobId = options.jobId.trim()
+
+    if (!jobId) {
+      throw new Error('Cron run reads require a job id')
+    }
+
+    const limit = Math.min(100, Math.max(1, options.limit ?? 20))
+
+    const query = new URLSearchParams({ limit: String(limit) })
+    const profile = (options.profile ?? route?.targetProfile ?? '').trim()
+
+    if (profile) {
+      query.set('profile', profile)
+    }
+
+    const { runs } = await hermesApi<{ runs?: SessionInfo[] }>({
+      ...(route ? { connectionId: route.connectionId } : {}),
+      path: `/api/cron/jobs/${encodeURIComponent(jobId)}/runs?${query.toString()}`,
+      timeoutMs: 60_000
+    })
+
+    return runs ?? []
+  },
+
+  /** The artifact-rail derivation across EVERY persisted session a profile
+   *  owns — canonical chat, side-chats, cron-run sessions alike. Registry
+   *  records are unioned over each session's compression-lineage aliases;
+   *  transcript artifacts are scraped for the `transcriptLimit` most recently
+   *  active sessions only (each scrape is a full paged transcript read, so a
+   *  huge profile must not pay N transcripts for one pane). Read-only —
+   *  nothing is promoted, registered, or written. */
+  listProfileArtifacts: async (
+    route: PluginProfileRoute | null,
+    options: { profile: string; sessionLimit?: number; transcriptLimit?: number }
+  ): Promise<{ failures: number; items: RailArtifactItem[]; sessions: SessionInfo[] }> => {
+    if (route && (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim())) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    const profile = options.profile.trim()
+
+    if (!profile) {
+      throw new Error('Profile artifact reads require a profile')
+    }
+
+    const { sessions } = await host.listPersistedSessions(route, { profile, limit: options.sessionLimit ?? 200 })
+
+    // The lookup rows widen the lineage alias map beyond the recent window
+    // (unlisted owner stubs ride along), so alias expansion still resolves
+    // registry keys stamped under an older compression tip.
+    const lookupRows = [...ownerLookupSessionRows(), ...sessions]
+
+    const registry = registryArtifactsForSessions(
+      sessions.map(session => session.id),
+      $artifactRegistry.get(),
+      lookupRows
     )
+
+    const transcriptLimit = Math.min(50, Math.max(0, options.transcriptLimit ?? 12))
+
+    const recentFirst = [...sessions].sort(
+      (a, b) => Math.max(b.last_active ?? 0, b.started_at ?? 0) - Math.max(a.last_active ?? 0, a.started_at ?? 0)
+    )
+
+    const { artifacts: transcript, failures } = await loadArtifactsForSessions(
+      recentFirst.slice(0, transcriptLimit),
+      (session, page) =>
+        getSessionMessages(
+          session.id,
+          { connectionId: route?.connectionId, profile },
+          { ...page, includeCompacted: true, order: 'oldest' }
+        )
+    )
+
+    return { failures: failures.length, items: mergeRailArtifacts(registry, transcript), sessions }
+  },
+
+  /** Native save-path dialog (title/filters/defaultPath); null on cancel, and
+   *  null when the shell bridge is absent. The path names a file on the
+   *  filesystem the backend sees — for a remote connection that is the remote
+   *  host, so pair it with a route-scoped export/import call, not a local fs
+   *  read. */
+  pickSavePath: async (
+    options: {
+      defaultPath?: string
+      filters?: Array<{ extensions: string[]; name: string }>
+      title?: string
+    } = {}
+  ): Promise<null | string> => window.hermesDesktop?.selectSavePath?.(options) ?? null,
+
+  /** Open-path dialog (files or directories), remote-aware via the remote
+   *  picker for directory selections. Returns the chosen paths (empty on
+   *  cancel). */
+  pickOpenPaths: async (options?: {
+    directories?: boolean
+    filters?: Array<{ extensions: string[]; name: string }>
+    multiple?: boolean
+    title?: string
+  }): Promise<string[]> => selectDesktopPaths(options),
+
+  /** Export a profile as a shareable archive (profile dir — config, skills,
+   *  SOUL.md, ui_meta, assets — plus the desktop appearance overlay), via the
+   *  backend's own export, which excludes credentials, .env, session DBs, and
+   *  runtime dirs. `extraFiles` stages extra root-level files (a manifest) into
+   *  the archive. `options.output` is a path on the BACKEND's filesystem — for
+   *  a remote route that is the remote host. */
+  exportProfileBundle: async (
+    route: PluginProfileRoute | null,
+    options: { extraFiles?: Record<string, string>; output?: string; profile: string }
+  ): Promise<string> => {
+    if (route && (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim())) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    const profile = options.profile.trim()
+
+    if (!profile) {
+      throw new Error('Profile export requires a profile')
+    }
+
+    return exportProfileBundle(profile, {
+      extraFiles: options.extraFiles,
+      output: options.output,
+      scope: { connectionId: route?.connectionId, profile: route?.targetProfile ?? profile }
+    })
+  },
+
+  /** Import a profile archive (a path on the backend's filesystem) as a new
+   *  profile and apply its bundled appearance overlay. Returns the created
+   *  profile name. Does NOT switch the active profile — the caller decides
+   *  what an import means for its surface. */
+  importProfileBundle: async (
+    route: PluginProfileRoute | null,
+    options: { archive: string; name?: string }
+  ): Promise<{ name: string }> => {
+    if (route && (!route.connectionId.trim() || !route.profile.trim() || !route.targetProfile.trim())) {
+      throw new Error('Profile route must include connectionId, profile, and targetProfile')
+    }
+
+    const archive = options.archive.trim()
+
+    if (!archive) {
+      throw new Error('Profile import requires an archive path')
+    }
+
+    const name = await importProfileBundle(archive, options.name, {
+      connectionId: route?.connectionId,
+      profile: route?.targetProfile
+    })
+
+    return { name }
   },
 
   /** Gateway JSON-RPC — sessions, config, skills, cron, kanban, everything
@@ -1572,11 +1982,6 @@ export const host = {
 
 // -- react bridge -------------------------------------------------------------
 
-export type { PluginProfileRequestOptions, PluginProfileRoute } from './profile-request'
-
-// -- ui: the design language --------------------------------------------------
-
-export type { DesktopSettingKey, DesktopSettingValues } from './settings'
 /** THE whole Capabilities surface (Skills / Tools / MCP tabs, installed
  *  lists, full-skill detail pane, embedded hub picker with one-click
  *  installs). For plugin dialogs pass `embedded` (tab state stays local —
@@ -1593,6 +1998,7 @@ export { CapabilitiesView } from '@/app/capabilities'
  *  dialog); pass a live `gateway` (see `host.getGateway()`) and the `profile`
  *  to scope it to one bot. */
 export { ConnectorsTab } from '@/app/capabilities/connectors/connectors-tab'
+
 // Every contribution surface, plugin-reachable: register keybinds, palette
 // commands, routes, themes, panes, composer extensions, and bar items with
 // the same area ids + payload types core uses.
@@ -1613,11 +2019,19 @@ export {
  *  circle beside it — a plugin's own dot inverts core's color vocabulary the
  *  moment either side moves. */
 export { SessionStatusDot, type SessionStatusDotProps } from '@/app/chat/session-status-dot'
+/** The session view a component renders inside — main chat defaults to
+ *  `PRIMARY_SESSION_VIEW` with no provider, panes/tiles mount under their own
+ *  `SessionViewProvider`. Read `view.$storedId` / `view.$runtimeId` /
+ *  `view.$messages` atoms (with `useValue`) to scope a contribution to the
+ *  transcript it is mounted in — never the focused-session atoms, which always
+ *  follow the main pane and would leak one chat's UI into another's. */
+export { type SessionView, useSessionView } from '@/app/chat/session-view'
 /** The sidebar row's leading cell — the fixed box a dot, icon or handle sits in.
  *  Reserve it and your label starts on the same left edge as every session row
  *  above you; spell the classes yourself and the row drifts. The session row is
  *  canonical; `row-geometry.ts` explains what each measurement belongs to. */
 export { SidebarRowLead } from '@/app/chat/sidebar/chrome'
+export { SidebarSectionMeta } from '@/app/chat/sidebar/chrome'
 /** One glyph per gateway kind — device, cloud, terminal, network. The statusbar
  *  switcher, the fleet profile rail and any plugin rail listing gateways share
  *  it, so a connection looks the same wherever it is named. */
@@ -1634,7 +2048,9 @@ export { WorkspacePageHeaderControl } from '@/app/contrib/workspace-page-header'
  *  sits past the scheduler grace and the job is expected to fire. Every surface
  *  that prints a next run switches its label on this (`t.cron.next` →
  *  `t.cron.overdueSince`) so a dead scheduler never reads as "Next: 7 hr ago". */
-export { nextRunOverdueMs } from '@/app/cron/job-state'
+export { jobState, nextRunOverdueMs } from '@/app/cron/job-state'
+export { fetchReachTargets, ReachCard, type ReachTarget, reachTargets } from '@/app/messaging/reach-card'
+export { renderQr } from '@/app/messaging/telegram-qr-setup'
 /** THE master-detail toolkit core uses for list+inspector surfaces (Scheduled
  *  jobs, Kanban, …): a dense left `PanelList` of `PanelListRow`s beside a
  *  scrolling `PanelDetail` of `PanelSectionLabel` / `PanelMeta` / `PanelBlock`.
@@ -1661,14 +2077,16 @@ export {
   PanelRowMenu,
   PanelSectionLabel
 } from '@/app/overlays/panel'
-
+export { AskRulesCard } from '@/app/profiles/ask-rules-card'
 export {
   type ProfileGroupHeaderContribution,
   type ProfileGroupRoute,
   type RouteContribution,
   ROUTES_AREA,
+  SIDEBAR_LIST_TOP_AREA,
   SIDEBAR_NAV_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
+  type SidebarListTopContribution,
   type SidebarNavContribution,
   WORKSPACE_PAGE_HEADER_AREA
 } from '@/app/routes'
@@ -1683,6 +2101,7 @@ export { APPEARANCE_AREAS } from '@/app/settings/appearance-contrib'
  *  never an Off/On pill pair. Use them for preference rows in plugin panes and
  *  dialogs so they line up with core Settings. */
 export { ListRow, ToggleRow } from '@/app/settings/primitives'
+
 /** THE full per-toolset config panel core Settings renders — provider picker,
  *  env vars / API keys, model catalog picker, and post-setup runners. Route-
  *  decoupled (the "manage keys" deep link is a no-op outside the router); pass
@@ -1711,6 +2130,11 @@ export {
   type ModelMenuRowContribution,
   type ModelMenuRowDecoration
 } from '@/app/shell/model-menu-row-decorations'
+/** The sessions column's section chrome: the dither-dot uppercase label every
+ *  section (Pinned, Sessions, a contributed `sidebar.listTop` section) carries,
+ *  and the muted meta slot beside it. Spelling them yourself drifts the rail's
+ *  type scale apart. */
+export { SidebarPanelLabel } from '@/app/shell/sidebar-label'
 export type { StatusbarItem } from '@/app/shell/statusbar-controls'
 export type { TitlebarTool } from '@/app/shell/titlebar-controls'
 /** Canonical raw message renderer: applies Desktop message transforms (including
@@ -1720,12 +2144,22 @@ export { MessageTextContent } from '@/components/assistant-ui/markdown-text'
 /** The oversized Collapse lettering an empty chat is titled with — core writes
  *  "HERMES AGENT" with it, a `chat.empty` contribution writes its own name. */
 export { Wordmark } from '@/components/chat/wordmark'
+export type { PanePlacementHint } from '@/components/pane-shell/tree/grid-to-tree'
+export type { LayoutNode } from '@/components/pane-shell/tree/model'
+/** The `layouts` area (`data` is a `LayoutNode` tree): a plugin ships a named
+ *  workspace preset the layout picker can apply. */
+export { LAYOUTS_AREA } from '@/components/pane-shell/tree/presets'
 /** Pane placement roles. `'floating'` is the one NON-tiling value: the pane is
  *  excluded from the layout tree and rendered as a fixed, draggable card above
  *  it — it takes no width from any zone, has no tab, and can't be docked.
  *  Pair it with `anchor` (spawn corner, default `'top-right'`) plus
  *  `width`/`height`. */
 export type { FloatingAnchor } from '@/components/pane-shell/tree/renderer/floating-rect'
+/** The typed `data` contract of a `panes` contribution — chrome behavior the
+ *  layout tree honors (placement role, dock gesture, tab chrome, sizing).
+ *  Author with `data: {…} satisfies PaneContribution` so a misspelled flag is
+ *  a compile error, not a silently ignored hint. */
+export type { PaneContribution, PaneDockHint, PaneSizing } from '@/components/pane-shell/tree/renderer/track-model'
 export { StatusDot, type StatusTone } from '@/components/status-dot'
 export { Badge } from '@/components/ui/badge'
 export { Button } from '@/components/ui/button'
@@ -1767,9 +2201,14 @@ export {
 export { DisclosureCaret } from '@/components/ui/disclosure-caret'
 export {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 export { EmptyState } from '@/components/ui/empty-state'
@@ -1808,15 +2247,15 @@ export type { GatewayEventListener } from '@/contrib/events'
  *  `ctx.register` stays the door for permanent contributions. Namespace the
  *  id with your plugin slug (`kanban:board-switcher`). */
 export { Contribute, type ContributeProps } from '@/contrib/react/contribute'
-
-// -- contracts ----------------------------------------------------------------
-
 /** Settings ▸ Plugins entries (`ctx.registerSettingsPage`); `pluginSettingsHref` deep-links one. */
 export { pluginSettingsHref, SETTINGS_PLUGINS_AREA } from '@/contrib/settings-pages'
 export type { Contribution } from '@/contrib/types'
 /** The live gateway instance type — for typing the `gateway` prop `ConnectorsTab`
  *  takes; obtain the instance from `host.getGateway()`. */
 export type { HermesGateway } from '@/hermes'
+
+// -- contracts ----------------------------------------------------------------
+
 /** Grab-to-pan for overflow containers (boards, timelines, wide tables) —
  *  the shared scrub primitive; don't hand-roll drag-to-scroll. */
 export { type GrabScroll, useGrabScroll } from '@/hooks/use-grab-scroll'
@@ -1844,6 +2283,16 @@ export {
   useI18n,
   usePluginI18n
 } from '@/i18n'
+/** Activity tasks: the types behind `host.state.focusedActivity`, plus the
+ *  verb a step maps to and the step a list row should name. */
+export {
+  type ActivityStatus,
+  type ActivityStep,
+  type ActivityTask,
+  type ActivityVerb,
+  activityVerb,
+  currentStep
+} from '@/lib/activity-tasks'
 /** THE way to run a decorative rAF animation (avatars, shimmer, sprites):
  *  fps budget + hidden/minimized/unfocused pause + idle dormancy + teardown.
  *  Plugins must route animation clocks through this instead of raw rAF loops
@@ -1852,6 +2301,20 @@ export { type BudgetedLoop, type BudgetedLoopOptions, createBudgetedLoop } from 
 /** The blank transcript as a contribution area: claim the sessions you own and
  *  render what stands in the gap. Core's own splash keeps a fresh draft. */
 export { CHAT_EMPTY_AREA, type ChatEmptyContribution, type ChatEmptyProps } from '@/lib/chat-empty'
+/** Chat-header decoration slot: register a `data` contribution with a
+ *  `render` for `CHAT_HEADER_AREAS.title` to decorate the header's title row
+ *  (the props carry the durable session id, owning profile, and shown title;
+ *  render `null` for headers the plugin doesn't own). */
+export { CHAT_HEADER_AREAS, type ChatHeaderSlotContribution, type ChatHeaderSlotProps } from '@/lib/chat-header-slots'
+/** `chatMessageText` flattens a message's text parts to a string — the shared
+ *  read the transcript-derivation helpers (and every plugin that scans a
+ *  conversation) build on. `answeredAfter` tells whether any visible user
+ *  message follows a given assistant message, the "was this card replied to"
+ *  check transcript cards share. */
+export { answeredAfter, chatMessageText } from '@/lib/chat-messages/parts'
+export type { ChatMessage } from '@/lib/chat-messages/types'
+export { FILE_VIEWERS_AREA, type FileViewerContribution, type FileViewerProps } from '@/lib/file-viewers'
+export { isMissingRpcMethod } from '@/lib/gateway-rpc'
 /** THE confirm flow for guarded model switches — when a gateway model-switch
  *  RPC answers `confirm_required` (data-policy / expensive-model guard),
  *  route it through this shared applier instead of forking a per-surface
@@ -1872,6 +2335,7 @@ export * as icons from '@/lib/icons'
  *  text field whose bare Enter performs an action. */
 export { isSubmitEnter } from '@/lib/ime'
 export { type KeybindContribution, KEYBINDS_AREA, PLUGIN_APP_ACTIONS } from '@/lib/keybinds/actions'
+
 export { formatModifierToken } from '@/lib/keybinds/combo'
 /** A `Map` with a ceiling, for the module-level caches a plugin keeps across
  *  a renderer that stays open for days. Only for values that can be
@@ -1882,6 +2346,7 @@ export { captureGatewayFileDownload } from '@/lib/media'
 /** True when a saved provider id names this `model.options` row: its slug,
  *  display name, or a custom-provider alias (`custom:<key>` vs the bare key). */
 export { catalogProviderMatches } from '@/lib/model-options'
+
 /** The app's deterministic identity color for a name (profiles, assignees,
  *  authors), its translucent tag fill, and the curated picker swatches — so
  *  plugin-rendered identities read the same hue as everywhere else. The
@@ -1893,15 +2358,14 @@ export { PROFILE_SWATCHES, profileColor, profileColorSoft } from '@/lib/profile-
  *  `ctx.socket` frame invalidating a query). Inside components keep using
  *  `useQueryClient`. */
 export { queryClient } from '@/lib/query-client'
-
 /** Compact labels for the reasoning levels exported from @hermes/shared, so a
  *  plugin surfacing a thinking depth uses the same spelling as the app. */
 export { reasoningEffortLabel } from '@/lib/reasoning-effort'
-
 /** The app's own gateway-readiness evaluation (setup.status +
  *  setup.runtime_check, reconciled) — pass `host.request`. Don't hand-roll
  *  readiness from raw RPC shapes. */
 export { evaluateRuntimeReadiness, type RuntimeReadinessResult } from '@/lib/runtime-readiness'
+
 /** Row-decoration slots: register a `data` contribution with a `render` for
  *  `SESSION_ROW_AREAS.leading` / `.trailing` to decorate sidebar session rows
  *  (the props carry the row's stored session id). */
@@ -1924,7 +2388,25 @@ export {
   type TranscriptDirectiveProps
 } from '@/lib/transcript-directives'
 export { cn } from '@/lib/utils'
+export type { RailArtifactItem } from '@/store/artifact-rail'
+export type { AttentionItem } from '@/store/attention-inbox'
+export type { ComposerStatusItem } from '@/store/composer-status'
+export { confirm, type ConfirmRequest } from '@/store/confirm'
+/** The gateway generation counter: a plugin fences a late result to the source it
+ *  read by capturing this and comparing on return. */
 export { gatewayActivationEpoch } from '@/store/gateway'
+export type { SessionDotState } from '@/store/session-dot-state'
+/** Per-owner (bot) notification modes — `'muted'` silences every session the
+ *  profile owns (canonical chat, side-chats, cron runs); `'quiet'` holds them
+ *  into the digest while the global quiet-hours window is open. Keys are
+ *  `connectionId::profile` via `ownerNotifyKey`; persisted per profile. */
+export {
+  $ownerNotifyModes,
+  ownerNotifyKey,
+  ownerNotifyMode,
+  type OwnerNotifyMode,
+  setOwnerNotifyMode
+} from '@/store/session-mute'
 /** THE unread store behind `SessionStatusDot`'s emerald dot. A plugin that
  *  learns out-of-band that a session produced something the user hasn't seen
  *  (a roster poll's activity watermark, say) writes HERE rather than keeping
@@ -1938,12 +2420,27 @@ export { gatewayActivationEpoch } from '@/store/gateway'
  *  is gone. Pass the owning profile — a hidden session has no row to read it
  *  from, and the persisted half is bucketed per profile. */
 export { ackStoredSessionId, forgetSessionUnread, markSessionUnreadFinished } from '@/store/session-unread'
+/** THE watch-chip store behind the Sessions rail's watch strip. Call
+ *  `toggleSessionWatched` with any id for the conversation (stored, live, or
+ *  lineage tip — the store resolves the durable pin id itself); it returns the
+ *  resulting watched state. `isWatchedSessionId` is the matching read and
+ *  `$watchedSessionKeys` the live map for list surfaces that need to repaint
+ *  on change. Watching pins a chip and routes the session's attention signals
+ *  the same way the session-row Watch menu item does — don't keep a parallel
+ *  watched set. */
+export { $watchedSessionKeys, isWatchedSessionId, toggleSessionWatched } from '@/store/session-watch'
 /** `sidebarNav.prefs`: hide / re-order the sidebar's nav rows by CONTRIBUTING a
  *  preference (union of hides, `capabilities` never hidden; the first order
  *  in registry area order — lowest `order`, then registration — wins). A
  *  contribution, not a `host.sidebar` verb, so it is attributed and dropped
  *  on disable. */
 export { SIDEBAR_NAV_PREFS_AREA, type SidebarNavPrefsContribution } from '@/store/sidebar-nav'
+/** Arms a transcript-span replay on the stored session id: whichever transcript
+ *  surface next binds that id consumes the jump and scrolls to the row covering
+ *  `atMs` (epoch ms). Arm BEFORE `host.openSession` so the surface finds the
+ *  pending jump on hydration; a session already open consumes it on the next
+ *  microtask. */
+export { armTranscriptReplayJump } from '@/store/transcript-find'
 /** Live accent override — set a hex and the ACTIVE theme repaints with its
  *  accent family re-seeded from it (see `retintTheme`); `null` restores the
  *  authored palette. Deliberately not persisted: it is an authoring knob, not
@@ -1975,7 +2472,7 @@ export { requestTheme } from '@/themes/request'
 export { retintTheme, themeHue } from '@/themes/retint'
 export type { DesktopTheme, DesktopThemeColors } from '@/themes/types'
 export { THEMES_AREA } from '@/themes/user-themes'
-export type { StatusResponse } from '@/types/hermes'
+export type { CronJob, SessionInfo, StatusResponse } from '@/types/hermes'
 /** Public SDK name for the shared gateway wire event; kept stable for plugins. */
 export type { GatewayEvent as RpcEvent } from '@hermes/shared'
 /** Bot Screen wire shapes, generated from `tui_gateway/contracts/display.py`. */
@@ -1997,6 +2494,8 @@ export {
   REASONING_EFFORTS,
   type ReasoningEffort
 } from '@hermes/shared'
+/** The staff mascot — the same bops face the Bot Room extension draws. */
+export { bopMascotMarkup } from '@hermes/shared/bops-mascot'
 /** WCAG contrast, from the sRGB primitives shared with the TUI (`null` for
  *  an unparseable colour, never a fake 0). */
 export { contrastRatio } from '@hermes/shared/color'

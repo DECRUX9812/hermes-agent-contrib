@@ -2,7 +2,7 @@ import type { ThreadMessageLike } from '@assistant-ui/react'
 import { type BillingBlock, type MessageCompletePayload, type PersistedTurn, type ToolLabel } from '@hermes/shared'
 
 import type { ErrorSurface } from '@/lib/error-surface'
-import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
+import type { McpAppRef, ToolResultMetadata } from '@/lib/tool-result-metadata'
 import type { MessageReaction, SessionMessage, UsageStats } from '@/types/hermes'
 
 export interface TimelinePartMetadata {
@@ -31,6 +31,12 @@ export type ChatMessagePart = Exclude<ThreadMessageLike['content'], string>[numb
 export type ChatMessage = {
   id: string
   role: SessionMessage['role']
+  /** Authoritative backend provenance. Missing means use the legacy fallback;
+   * false marks a visible runtime notice, without changing its display role. */
+  userOriginated?: boolean
+  /** Runtime-turn identity from the backend, in seconds. Compare only for
+   * equality with another runtime identity, never with the renderer clock. */
+  runtimeTurnStartedAt?: number
   parts: ChatMessagePart[]
   /** Result body only; the system text remains the compact completion label. */
   asyncResult?: string
@@ -105,6 +111,8 @@ export type GatewayEventPayload = {
   // Absent on older gateways; consumers must fall back to string heuristics.
   error_surface?: unknown
   inline_diff?: string
+  /** Validated where it is projected (`mcpAppRef`). */
+  mcp_app?: McpAppRef
   duration_s?: number
   todos?: unknown
   revision?: number
@@ -124,6 +132,9 @@ export type GatewayEventPayload = {
   credential_warning?: string
   install_warning?: string
   personality?: string
+  /** session.info: the session's skills grouped by category (flat list on
+   *  older backends). Metadata for the header chip — never prompt content. */
+  skills?: Record<string, string[]> | string[]
   usage?: Partial<UsageStats>
   // Canonical session.usage ticks carry cumulative counters at the payload top level; older ticker frames nest the desktop Usage shape above.
   api_calls?: number | null

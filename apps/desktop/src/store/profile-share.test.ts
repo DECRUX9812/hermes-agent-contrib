@@ -114,7 +114,7 @@ describe('exportProfileBundle', () => {
   it('stages desktop.json into the archive through extra_files', async () => {
     skinPref.assign('glam', 'mono')
 
-    const archive = await exportProfileBundle('glam', '/tmp/glam.tar.gz')
+    const archive = await exportProfileBundle('glam', { output: '/tmp/glam.tar.gz' })
 
     expect(archive).toBe('/tmp/out.tar.gz')
     const call = vi.mocked(exportProfileArchive).mock.calls[0]

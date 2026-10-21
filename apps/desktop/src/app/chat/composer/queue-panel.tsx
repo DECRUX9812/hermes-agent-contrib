@@ -19,6 +19,8 @@ interface QueuePanelProps {
    *  the queued turns behind it flow again. Absent on non-canonical hosts. */
   onDiscardLost?: (id: string) => void
   onEdit: (entry: QueuedPromptEntry) => void
+  /** Move an entry one slot toward the head (-1) or the tail (+1). */
+  onMove?: (id: string, direction: -1 | 1) => void
   /** Lift a park (explicit Stop/Esc halt) and let the queue flow again. */
   onResume: () => void
   onSendNow: (id: string) => void

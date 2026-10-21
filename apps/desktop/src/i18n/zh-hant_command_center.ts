@@ -74,7 +74,20 @@ export const zhHantCommandCenter = {
     settingsFields: '設定欄位',
     mcpServers: 'MCP 伺服器',
     archivedChats: '已封存聊天',
-    sections: { sessions: '工作階段', system: '系統', usage: '使用量' },
+    sections: { notices: '通知', sessions: '工作階段', system: '系統', usage: '使用量' },
+    sectionDescriptions: {
+      notices: '最近的通知與提醒',
+      sessions: '搜尋和管理工作階段',
+      system: '狀態、記錄和系統動作',
+      usage: '一段時間內的詞元、費用和技能活動'
+    },
+    notices: {
+      empty: '尚無通知——出現的提示與提醒會記錄在這裡。',
+      clear: '清除',
+      mutedTag: '已靜音',
+      destCenter: '置中提示',
+      destCorner: '角落提示'
+    },
     nav: {
       newChat: { title: '新工作階段', detail: '開始新的工作階段' },
       settings: { title: '設定', detail: '設定 Hermes 桌面端' },

@@ -35,6 +35,15 @@ def skin_payload(config: dict) -> dict:
         return {}
 
 
+def _skin_changed_payload() -> dict:
+    """``resolve_skin()`` tagged with the profile whose config it resolved from. ``skin.changed`` fans out
+    to every transport of a process that may serve several profiles, and Desktop now persists an applied
+    skin into the profile's ``desktop.theme`` — so a client on another profile must be able to tell the
+    change is not its own. ``_watcher_home()`` is the bound override (a ``config.set`` for that profile)
+    or the launch home (the watcher thread)."""
+    return {**resolve_skin(), "profile": profile_name_for_home(_watcher_home()) or "default"}
+
+
 # (name, user-file mtime) of the last skin broadcast: ``skin.changed`` fires on a name
 # switch OR a live color edit of the active skin, and nothing else.
 _last_skin_sig: tuple[str, float | None] | None = None
@@ -111,8 +120,13 @@ def _under_home(home: str, fn):
 
 
 def _note_skin_broadcast() -> None:
-    """Sync the baseline after the /skin RPC emits so the watcher doesn't re-broadcast it."""
+    """Sync the baseline after the /skin RPC emits so the watcher doesn't re-broadcast it. The baseline is
+    the home the watcher thread polls (the launch home): a /skin scoped to another profile this process
+    serves must leave it alone, or the next tick re-announces the launch profile's unchanged skin as a
+    change — which a client on the launch profile applies over its own pick."""
     global _last_skin_sig
+    if _watcher_home() != Path(_hermes_home):
+        return
     with contextlib.suppress(Exception):
         if home := _skin_home_for(get_hermes_home_override()):
             _skin_sig_by_home[home] = _skin_sig()

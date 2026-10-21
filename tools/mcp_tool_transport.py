@@ -176,6 +176,12 @@ class MCPServerTransportMixin:
             kwargs["message_handler"] = self._make_message_handler()
         if _core._MCP_LOGGING_CALLBACK_SUPPORTED:
             kwargs["logging_callback"] = self._make_logging_callback()
+        if _core._client_session_accepts("extensions"):
+            # MCP Apps: the Desktop renders ui:// apps (tools/mcp_apps.py). Connections are per
+            # profile, not per client, so text-only clients advertise it too — harmless, since an
+            # Apps tool must still return usable text (SEP-2133 graceful degradation).
+            from tools.mcp_apps import CLIENT_EXTENSIONS
+            kwargs["extensions"] = CLIENT_EXTENSIONS
         return kwargs
 
     async def _negotiate_session(self, session, connect_timeout: float):

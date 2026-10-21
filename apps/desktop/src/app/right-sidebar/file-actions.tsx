@@ -11,9 +11,11 @@ import {
 } from '@/components/ui/context-menu'
 import { translateNow, useI18n } from '@/i18n'
 import { isDesktopFsRemoteMode } from '@/lib/desktop-fs'
+import { editorLabel } from '@/lib/editor-handoff'
 import { isSubmitEnter } from '@/lib/ime'
 import { IS_MAC } from '@/lib/keybinds/combo'
 import { cn } from '@/lib/utils'
+import { $preferredEditor, canOpenInEditor, openInEditor } from '@/store/editor-handoff'
 import {
   $fileActionDialog,
   beginInlineRename,
@@ -66,6 +68,8 @@ export function FileEntryContextMenu({ children, isDirectory, name, path, relati
   const remoteDownload = shouldOfferRemoteFileDownload(isDirectory)
   const target: FileActionTarget = { isDirectory, name, path }
   const revealLabel = pickRevealLabel(m.revealFinder, m.revealExplorer, m.revealFileManager)
+  const preferredEditor = useStore($preferredEditor)
+  const editorReachable = canOpenInEditor()
 
   return (
     <ContextMenu>
@@ -73,6 +77,14 @@ export function FileEntryContextMenu({ children, isDirectory, name, path, relati
       {/* Don't restore focus to the row on close: "Rename" mounts an autofocused
           inline input, and the default focus-return would blur it immediately. */}
       <ContextMenuContent onCloseAutoFocus={event => event.preventDefault()}>
+        {editorReachable && (
+          <>
+            <ContextMenuItem onSelect={() => void openInEditor(path)}>
+              {m.openInEditor(editorLabel(preferredEditor))}
+            </ContextMenuItem>
+            {!localFs && <ContextMenuSeparator />}
+          </>
+        )}
         {localFs && (
           <>
             <ContextMenuItem onSelect={() => void revealFile(path)}>{revealLabel}</ContextMenuItem>

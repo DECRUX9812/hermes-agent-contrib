@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Hermes Agent — Teknium Special</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #050607; }
+      #main { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: 'Space Mono', ui-monospace, monospace; color: #e7e9ea; }
+      /* Faint terminal grid behind everything. */
+      #grid { position: absolute; inset: 0; opacity: 0.5;
+        background-image: linear-gradient(rgba(74, 242, 161, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(74, 242, 161, 0.05) 1px, transparent 1px);
+        background-size: 48px 48px; }
+      /* Boot: a shell line types itself, then the title resolves out of noise. */
+      #boot { position: absolute; left: 160px; top: 300px; width: 1600px; }
+      #cmd { font-size: 40px; color: #9aa3a8; white-space: pre; }
+      #cmd b { color: #4af2a1; font-weight: 400; }
+      #title { margin-top: 40px; font-size: 150px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: #4af2a1; white-space: pre;
+        text-shadow: 0 0 24px rgba(74, 242, 161, 0.45); }
+      #sub { margin-top: 28px; font-size: 34px; color: #e7e9ea; opacity: 0; white-space: pre; }
+      .caret { display: inline-block; width: 0.6em; height: 1em; margin-left: 4px; vertical-align: -0.12em; background: #4af2a1; }
+      /* The real app, in a hard-edged frame with a terminal-style tab. */
+      #frame { position: absolute; left: 240px; top: 40px; width: 1440px; height: 900px; overflow: hidden; opacity: 0;
+        border: 1px solid rgba(74, 242, 161, 0.55); background: #fff; box-shadow: 0 0 0 6px rgba(74, 242, 161, 0.06), 0 40px 120px rgba(0, 0, 0, 0.7); }
+      #tab { position: absolute; left: 240px; top: 8px; height: 32px; padding: 0 14px; font-size: 18px; line-height: 32px; color: #050607; background: #4af2a1; opacity: 0; white-space: pre; }
+      #cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1200px; transform-origin: 0 0; }
+      #cam video { position: absolute; left: 0; top: 0; width: 1920px; height: 1200px; }
+      #caption { position: absolute; left: 240px; top: 968px; width: 1440px; font-size: 40px; white-space: pre; }
+      #caption .p { color: #4af2a1; }
+      #wipe { position: absolute; inset: 0; background: #4af2a1; transform-origin: 0 50%; }
+      #scan { position: absolute; inset: 0; pointer-events: none; opacity: 0.18;
+        background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0 1px, transparent 1px 3px); }
+      #vig { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 80% 75% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.7) 100%); }
+      /* Lockup. */
+      #end { position: absolute; left: 0; right: 0; top: 340px; text-align: center; opacity: 0; }
+      #end-title { font-size: 150px; font-weight: 700; color: #4af2a1; letter-spacing: -0.02em; text-shadow: 0 0 28px rgba(74, 242, 161, 0.5); white-space: pre; }
+      #end-sub { margin-top: 30px; font-size: 38px; color: #e7e9ea; white-space: pre; }
+      #end-url { margin-top: 70px; font-size: 26px; color: #9aa3a8; white-space: pre; }
+    </style>
+  </head>
+  <body>
+    <div id="main" data-composition-id="main" data-start="0" data-duration="28.475" data-width="1920" data-height="1080">
+      <div id="grid"></div>
+
+      <div id="boot" data-layout-allow-occlusion>
+        <div id="cmd"><b>~/launch-site</b> $ <span id="cmd-text"></span><span class="caret" id="caret1"></span></div>
+        <div id="title"></div>
+        <div id="sub">chat · VS Code · Hermes CLI — one window</div>
+      </div>
+
+      <div id="tab" data-layout-allow-occlusion>hermes desktop — launch-site</div>
+      <div id="frame" data-layout-allow-overflow>
+        <div id="cam">
+          <!-- Real Hermes Desktop footage: Code layout → VS Code on the project → Hermes edits → chat handed to Hermes CLI. -->
+          <video id="va" src="assets/app.mp4" data-start="4.068" data-duration="4.068" data-media-start="4.6" data-playback-rate="1.2" data-track-index="1" muted playsinline></video>
+          <video id="vb" src="assets/app.mp4" data-start="8.136" data-duration="4.068" data-media-start="15.4" data-playback-rate="0.42" data-track-index="1" muted playsinline></video>
+          <video id="vc" src="assets/app.mp4" data-start="12.203" data-duration="6.102" data-media-start="19.0" data-playback-rate="1.2" data-track-index="1" muted playsinline></video>
+          <video id="vd" src="assets/app.mp4" data-start="18.305" data-duration="6.102" data-media-start="29.3" data-playback-rate="2.75" data-track-index="1" muted playsinline></video>
+        </div>
+      </div>
+      <div id="caption" data-layout-allow-occlusion><span class="p" data-layout-allow-occlusion>&gt; </span><span id="cap-text" data-layout-allow-occlusion></span></div>
+
+      <div id="end" data-layout-allow-occlusion>
+        <div id="end-title"></div>
+        <div id="end-sub">hermes desktop × vs code × cli</div>
+        <div id="end-url">open source · github.com/DECRUX9812/hermes-agent-contrib</div>
+      </div>
+
+      <div id="wipe"></div>
+      <div id="scan" data-layout-allow-occlusion></div>
+      <div id="vig" data-layout-allow-occlusion></div>
+
+      <audio id="score" src="assets/score.wav" data-start="0" data-duration="28.475" data-track-index="2" data-volume="1"></audio>
+    </div>
+
+    <script>
+      (() => {
+        const BAR = 4 * 60 / 118
+        const W = 1440, H = 900, K = W / 1920
+        const cam = (z, px = 960, py = 600) => {
+          const s = K * z
+          const clamp = (v, lo) => Math.min(0, Math.max(lo, v))
+          return { scale: s, x: clamp(W / 2 - px * s, W - 1920 * s), y: clamp(H / 2 - py * s, H - 1200 * s) }
+        }
+        const tl = gsap.timeline({ paused: true })
+        const GLYPHS = '#$%&*+=<>/\\|{}[]01'
+
+        // Text that types itself: the tween value IS the rendered length, so any seek is exact.
+        const type = (el, text, at, dur) => {
+          const o = { n: 0 }
+          tl.fromTo(o, { n: 0 }, { n: text.length, duration: dur, ease: 'none', immediateRender: false,
+            onUpdate: () => { el.textContent = text.slice(0, Math.round(o.n)) } }, at)
+          tl.call(() => { el.textContent = text }, null, at + dur)
+        }
+        // Text that resolves out of noise left to right; noise is a pure function of position and progress.
+        const scramble = (el, text, at, dur) => {
+          const o = { p: 0 }
+          const render = () => {
+            const done = Math.floor(o.p * text.length)
+            const tick = Math.floor(o.p * 40)
+            el.textContent = [...text].map((ch, i) => i < done || ch === ' ' ? ch : GLYPHS[(i * 7 + tick * 13) % GLYPHS.length]).join('')
+          }
+          tl.fromTo(o, { p: 0 }, { p: 1, duration: dur, ease: 'power1.inOut', immediateRender: false, onUpdate: render }, at)
+          tl.call(() => { el.textContent = text }, null, at + dur)
+        }
+        const caption = (text, at, out) => {
+          const el = document.getElementById('cap-text')
+          tl.call(() => { el.textContent = '' }, null, at)
+          type(el, text, at + 0.15, Math.min(1.1, text.length * 0.03))
+          if (out) tl.call(() => { el.textContent = '' }, null, out)
+        }
+
+        // ── Boot (0 → 2 bars): a command, then the title out of noise ──
+        tl.set('#wipe', { scaleX: 0 }, 0)
+        tl.set('#title', { textContent: '' }, 0)
+        tl.fromTo('#caret1', { opacity: 1 }, { keyframes: { opacity: [1, 0, 1, 0, 1, 0, 1] }, duration: 1.4, ease: 'steps(1)', immediateRender: false }, 0)
+        type(document.getElementById('cmd-text'), 'hermes desktop --with vscode --with cli', 0.35, 1.25)
+        scramble(document.getElementById('title'), 'TEKNIUM SPECIAL', 1.75, 1.0)
+        tl.fromTo('#sub', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: 'expo.out', immediateRender: false }, 2.85)
+        // A green wipe sweeps the boot away on the drop.
+        tl.fromTo('#wipe', { scaleX: 0, transformOrigin: '0% 50%' }, { scaleX: 1, duration: 0.22, ease: 'power3.in', immediateRender: false }, 2 * BAR - 0.22)
+        tl.set('#boot', { opacity: 0 }, 2 * BAR)
+        tl.set('#caption', { opacity: 0 }, 0)
+        tl.set(['#frame', '#tab', '#caption'], { opacity: 1 }, 2 * BAR)
+        tl.to('#wipe', { scaleX: 0, transformOrigin: '100% 50%', duration: 0.25, ease: 'power3.out' }, 2 * BAR)
+
+        // ── A: one click, VS Code + terminal beside the chat ──
+        tl.set('#cam', cam(1), 2 * BAR)
+        tl.to('#cam', { ...cam(1.08, 1200, 400), duration: 2 * BAR, ease: 'none' }, 2 * BAR)
+        caption('one click → VS Code + terminal, beside the chat', 2 * BAR, 4 * BAR - 0.05)
+
+        // ── B: their own VS Code, on this project ──
+        tl.set('#cam', cam(1.35, 1380, 420), 4 * BAR)
+        tl.to('#cam', { ...cam(1.55, 1330, 360), duration: 2 * BAR, ease: 'none' }, 4 * BAR)
+        caption('your VS Code · your extensions · this project', 4 * BAR, 6 * BAR - 0.05)
+
+        // ── C: Hermes writes it, the editor sees it ──
+        tl.set('#cam', cam(1.2, 900, 560), 6 * BAR)
+        tl.to('#cam', { ...cam(1.75, 1260, 280), duration: 1.4, ease: 'expo.inOut' }, 6 * BAR + 3.6)
+        caption('hermes writes theme.js → it lands in your editor', 6 * BAR, 9 * BAR - 0.05)
+
+        // ── D: same chat, handed to Hermes CLI ──
+        tl.fromTo('#wipe', { scaleX: 0, transformOrigin: '0% 50%' }, { scaleX: 1, duration: 0.16, ease: 'power3.in', immediateRender: false }, 9 * BAR - 0.16)
+        tl.to('#wipe', { scaleX: 0, transformOrigin: '100% 50%', duration: 0.2, ease: 'power3.out' }, 9 * BAR)
+        tl.set('#cam', cam(1.9, 1500, 1070), 9 * BAR)
+        tl.to('#cam', { ...cam(2.05, 1500, 1080), duration: 3 * BAR, ease: 'none' }, 9 * BAR)
+        caption('same chat, handed to Hermes CLI', 9 * BAR, 12 * BAR - 0.05)
+
+        // ── Lockup ──
+        tl.fromTo('#wipe', { scaleX: 0, transformOrigin: '0% 50%' }, { scaleX: 1, duration: 0.2, ease: 'power3.in', immediateRender: false }, 12 * BAR - 0.2)
+        tl.set(['#frame', '#tab', '#caption'], { opacity: 0 }, 12 * BAR)
+        tl.set('#end', { opacity: 1 }, 12 * BAR)
+        tl.to('#wipe', { scaleX: 0, transformOrigin: '100% 50%', duration: 0.25, ease: 'power3.out' }, 12 * BAR)
+        tl.set('#end-title', { textContent: '' }, 0)
+        scramble(document.getElementById('end-title'), 'TEKNIUM SPECIAL', 12 * BAR + 0.1, 0.9)
+        tl.fromTo(['#end-sub', '#end-url'], { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.25, ease: 'expo.out', immediateRender: false }, 12 * BAR + 1.0)
+
+        window.__timelines['main'] = tl
+      })()
+    </script>
+  </body>
+</html>

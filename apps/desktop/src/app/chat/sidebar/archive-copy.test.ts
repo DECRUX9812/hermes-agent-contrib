@@ -16,8 +16,7 @@ describe('archived-session instructions', () => {
         metaKey: /⌘/.test(intro)
       }
 
-      expect(resolveSessionRowClick(modifiers, { canOpenWindow: true }), locale).toBe('archive')
-      expect(resolveSessionRowClick(modifiers, { canOpenWindow: false }), locale).toBe('archive')
+      expect(resolveSessionRowClick(modifiers), locale).toBe('archive')
     }
   })
 })

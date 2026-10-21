@@ -57,6 +57,7 @@ The install also ships `hermes-agent`, a minimal runner that sends one query and
 | `hermes setup` | Interactive setup wizard for all or part of the configuration. |
 | `hermes whatsapp` | Configure and pair the WhatsApp bridge. |
 | `hermes whatsapp-cloud` | Configure the official Meta WhatsApp Business Cloud API adapter (Business account + public webhook required). Distinct from `hermes whatsapp` (Baileys personal-account bridge). |
+| `hermes bots` | Create Bot Mode bots and organize them into teams (the agent's door; see the `bot-team-builder` skill). |
 | `hermes slack` | Slack helpers (currently: generate the app manifest with every command as a native slash). |
 | `hermes auth` | Manage credentials — add, list, remove, reset, status, logout. Handles OAuth flows for Codex/Nous/Anthropic. |
 | `hermes login` / `logout` | **Deprecated** — use `hermes auth` instead. |
@@ -105,6 +106,7 @@ The install also ships `hermes-agent`, a minimal runner that sends one query and
 | `hermes claw` | OpenClaw migration helpers. |
 | `hermes import-agent` | Import a Claude Code (`~/.claude`) or Codex CLI (`~/.codex`) setup. |
 | `hermes dashboard` | Launch the web dashboard for managing config, API keys, and sessions. |
+| `hermes webapp` | Launch the Desktop workspace in a normal browser against this host. |
 | `hermes serve` | Start the Hermes backend server (headless; powers the desktop app and remote backends). |
 | `hermes desktop` (alias `gui`) | Build and launch the native Electron desktop app. |
 | `hermes profile` | Manage profiles — multiple isolated Hermes instances. |
@@ -528,6 +530,34 @@ hermes send --list telegram         # filter by platform
 ```
 
 
+
+## `hermes bots`
+
+```bash
+hermes bots list [--json]
+hermes bots create <name> [--title Scout] [--role "Researcher"] [--persona "Cite every claim."] [--color "#35d49a"] [--from <profile>]
+hermes bots team create <Team> [--mission "..."]
+hermes bots team add <Team> <bot> [--lead] [--title "..."] [--reports-to <bot>]
+hermes bots team show <Team>
+hermes bots team list
+hermes bots lesson add <bot> "<lesson>"          # or: --team <Team> "<lesson>"
+hermes bots lesson list <bot>                    # or: --team <Team>
+hermes bots lesson remove <bot> <number>
+```
+
+Create bots and teams without the Desktop. A bot is a profile carrying the Bot Mode
+marker; `create` clones the active (or `--from`) profile's config and keys, so the bot
+answers on the same model from its first message. A team's `--lead` is the one bot that
+listens in the team's group chats; the rest wake when @mentioned or delegated to. The
+main bot uses these commands through the bundled `bot-team-builder` skill when you ask
+it to set up a team.
+
+`lesson` keeps what a bot has learned in that bot's own memory (`MEMORY.md`), marked as
+approved by you. It takes effect from the bot's next chat (memory is a snapshot taken when a
+chat starts, so an open chat is never re-prompted). `--team` writes the lesson to every bot
+seated on the team; `list` numbers them and `remove` takes one back. The bundled
+`bot-team-retro` skill runs a short retro: it reads what your bots recently did, proposes a
+few lessons with evidence, and writes only the ones you approve.
 
 ## `hermes peer`
 
@@ -1872,6 +1902,56 @@ Import a **Claude Code** (`~/.claude`) or **OpenAI Codex CLI** (`~/.codex`) setu
 | `--sync` | Re-import every previously imported source whose files changed since the last import. Prompt-free; combine with `--dry-run` to preview. |
 
 Every successful import registers its source in `~/.hermes/import-sync.json`; `hermes import-agent --sync` then re-imports any registered source whose files changed (a cron-friendly way to keep an imported Claude Code / Codex setup current). See the **[import guide](../user-guide/import-from-other-agents.md)** for the full mapping tables.
+
+## `hermes webapp`
+
+```bash
+hermes webapp [options]
+```
+
+Build and launch the current Hermes Desktop workspace in a normal browser. It
+uses the same hardened FastAPI server and authentication gate as
+`hermes dashboard`, but serves the Desktop renderer instead of the dashboard
+admin UI. See [Desktop App → Use the Desktop workspace from a browser](../user-guide/desktop.md#use-the-desktop-workspace-from-a-browser).
+
+For a loopback launch, use the **private launch link** printed by the command
+(including with `--no-open`). Its fragment carries the existing session token
+for privileged APIs, including host files, command execution and the terminal.
+The Webapp never includes this credential in public HTML. Do not share the
+link or publish captured CLI output. The browser removes the fragment and
+keeps the token in tab-local `sessionStorage`, so reload/reconnect works.
+
+A fresh tab needs the original launch link; a bare URL shows instructions
+instead of granting access. To manage a named profile on an existing server,
+open its `?profile=<name>` URL in an already authorized tab, or add that query
+**before** the original launch link's `#` fragment. If you lost the link, restart
+that Webapp to print a new one. Restarting invalidates old links. Authenticated
+remote Webapps continue to use OAuth cookies and single-use WebSocket tickets.
+Automatic local browser launch never hands the secret URL to the OS browser
+launcher (whose command line other local users may read). It opens a one-use
+launch URL instead, valid for 60 seconds, which the browser exchanges for the
+session; on Linux only a connection owned by your own OS user can redeem it. A
+second use shows instructions instead of granting access.
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--port` | `9119` | Port to run the web server on (`0` asks the OS to assign one) |
+| `--host` | `127.0.0.1` | Bind address; non-loopback binds always require an auth provider |
+| `--no-open` | — | Don't open a browser automatically |
+| `--skip-build` | off | Reuse `apps/desktop/dist-webapp` without building |
+| `--force-build` | off | Rebuild even when the renderer's build receipt is current |
+| `--build-only` | off | Build the renderer but do not start the server |
+| `--isolated` | off | Keep a named-profile launch scoped to that profile instead of routing to the machine server |
+| `--stop` | — | Stop browser-hosted Desktop Webapp processes and exit (native Desktop `serve` backends are not touched) |
+| `--status` | — | List browser-hosted Desktop Webapp processes and exit |
+
+```bash
+# Local browser
+hermes webapp
+
+# Reach it through a trusted LAN/VPN; auth is mandatory
+hermes webapp --host 0.0.0.0 --no-open
+```
 
 ## `hermes serve`
 

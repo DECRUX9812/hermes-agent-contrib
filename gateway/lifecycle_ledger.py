@@ -245,6 +245,8 @@ def check_state_db_integrity(home: Optional[Path] = None, *, deadline_s: Optiona
     return ``"check-incomplete: exceeded <N>s"``.  ``deadline_s=None`` (default) is the
     historic unbounded behaviour -- the progress handler never aborts the PRAGMA.
     """
+    from hermes_cli.sqlite_safe_read import connect_tracked
+
     path = _home_path(home, "state.db")
     if not path.exists():
         return "absent"

@@ -14,6 +14,7 @@ const c = en.settings.config
 interface Status {
   enabled: boolean
   available: boolean
+  statusEnabled: boolean
 }
 
 function bridge(initial: Status) {
@@ -22,7 +23,7 @@ function bridge(initial: Status) {
   const api = {
     get: vi.fn(async () => initial),
     set: vi.fn(async (enabled: boolean) => {
-      const next = { enabled, available: enabled }
+      const next = { enabled, available: enabled, statusEnabled: false }
       listeners.forEach(listener => listener(next))
 
       return next
@@ -48,7 +49,7 @@ afterEach(() => {
 })
 
 test('native truth drives both mounted settings rows and survives remount without renderer writes', async () => {
-  const { api, listeners } = bridge({ enabled: false, available: false })
+  const { api, listeners } = bridge({ enabled: false, available: false, statusEnabled: false })
 
   const view = render(
     <>
@@ -63,18 +64,18 @@ test('native truth drives both mounted settings rows and survives remount withou
   fireEvent.click(toggles[0])
   await waitFor(() => expect(toggles.every(toggle => toggle.getAttribute('aria-checked') === 'true')).toBe(true))
   expect(api.set).toHaveBeenCalledWith(true)
-  act(() => listeners.forEach(listener => listener({ enabled: true, available: false })))
+  act(() => listeners.forEach(listener => listener({ enabled: true, available: false, statusEnabled: false })))
   expect(screen.getAllByText(c.minimizeToTrayUnavailable)).toHaveLength(2)
   view.unmount()
   expect(listeners.size).toBe(0)
-  api.get.mockResolvedValue({ enabled: true, available: true })
+  api.get.mockResolvedValue({ enabled: true, available: true, statusEnabled: false })
   render(<MinimizeToTraySetting />)
   await waitFor(() => expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true'))
   expect(api.set).toHaveBeenCalledTimes(1)
 })
 
 test('failed writes roll back visibly, and an older initial read cannot overwrite a peer update', async () => {
-  const { api, listeners } = bridge({ enabled: false, available: false })
+  const { api, listeners } = bridge({ enabled: false, available: false, statusEnabled: false })
   let finishRead!: (status: Status) => void
   api.get.mockImplementation(
     () =>
@@ -83,8 +84,8 @@ test('failed writes roll back visibly, and an older initial read cannot overwrit
       })
   )
   render(<MinimizeToTraySetting />)
-  act(() => listeners.forEach(listener => listener({ enabled: true, available: true })))
-  await act(async () => finishRead({ enabled: false, available: false }))
+  act(() => listeners.forEach(listener => listener({ enabled: true, available: true, statusEnabled: false })))
+  await act(async () => finishRead({ enabled: false, available: false, statusEnabled: false }))
   const toggle = screen.getByRole('switch')
   expect(toggle.getAttribute('aria-checked')).toBe('true')
   const failure = new Error('Disk write failed')

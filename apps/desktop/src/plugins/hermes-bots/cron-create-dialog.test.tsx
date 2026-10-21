@@ -137,3 +137,25 @@ describe('where the run\u2019s output lands', () => {
     await waitFor(() => expect(controlUnder('Send results to').textContent).toBe('Run history only'))
   })
 })
+
+describe('an autopilot pick prefills the dialog', () => {
+  it('schedules exactly the preset it was opened with once confirmed', async () => {
+    const preset = {
+      deliverToChat: true,
+      instruction: 'Brief me for the day.',
+      schedule: { freq: 'weekdays' as const, time: '8:0' },
+      title: 'Morning brief'
+    }
+
+    render(<CreateRoutineDialog bot={{ name: 'ops' }} onClose={() => undefined} open preset={preset} />)
+
+    expect(screen.getByDisplayValue('Morning brief')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /^create/i }))
+
+    await waitFor(() => expect(request).toHaveBeenCalled())
+    const [, params] = request.mock.calls.find(([method]) => method === 'cron.manage')!
+
+    expect(params).toMatchObject({ action: 'add', deliver: 'bot-chat', schedule: '0 8 * * 1-5' })
+    expect(String(params.prompt)).toContain('Brief me for the day.')
+  })
+})

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hermes Desktop — Advanced mode (target)</title>
+<link rel="stylesheet" href="real-tokens.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="app.css">
+</head><body>
+<script src="app.js"></script>
+<script>
+  mount(`<div class="app adv" data-ui="advanced">
+    ${sidebar({ mode: 'advanced' })}
+    <main class="center">
+      ${tabstrip([{ t: 'Atlas', on: true, face: face('atlas', 14, 'working', 'on-chrome') + '&nbsp;' }, { t: 'Untitled session' }, { t: 'Atlas · Screen' }],
+        `<span class="badge muted">${ic('bolt', 10)}4 skills</span><span class="badge default">${ic('pr', 10)}#482</span>`)}
+      <div class="thread"><div class="thread-in">${story()}</div></div>
+      ${dock({ mode: 'advanced' })}
+    </main>
+    <aside class="right">${rightStrip('Now')}${nowPane()}<span class="rail-tab" style="top:auto;bottom:4rem">${ic('box', 12)}&nbsp;Artifacts</span></aside>
+    ${statusbar()}
+  </div>`)
+</script></body></html>

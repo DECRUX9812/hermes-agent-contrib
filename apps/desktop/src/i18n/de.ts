@@ -1,27 +1,51 @@
 import { defineFieldCopy } from '@/app/settings/field-copy'
 
+import { deAuxTasks } from './de_aux_tasks'
 import { deBoot } from './de_boot'
-import { deClarify } from './de_clarify'
-import { deConnectorAccounts } from './de_connector_accounts'
-import { deConnectorCard } from './de_connector_card'
-import { deFirstRun } from './de_first_run'
 import { deLocalModels } from './de_local_models'
 import { deModelMenu } from './de_model_menu'
-import { deModelSettings } from './de_model_settings'
 import { deNotices } from './de_notices'
 import { deOnboarding } from './de_onboarding'
 import { deProjects } from './de_projects'
 import { deSharedMetrics } from './de_shared_metrics'
-import { deThemePicker } from './de_theme_picker'
-import { deUpdateChannel } from './de_update_channel'
 import { defineLocale, type TranslationOverrides } from './define-locale'
 import { introDe } from './intro-de'
 
 export const deOverrides = {
   sharedMetrics: deSharedMetrics,
-  firstRun: deFirstRun,
   intro: introDe,
-  connectors: deConnectorCard,
+  connectors: {
+    title: 'Verbinden Sie Ihre Apps',
+    connect: 'Verbinden',
+    skip: 'Nicht jetzt',
+    cancel: 'Warten beenden',
+    retry: 'Erneut versuchen',
+    grant: 'Neu verbinden',
+    connected: 'Verbunden',
+    checking: 'Ihre Apps werden geprüft…',
+    notConnected: 'Verbindung fehlgeschlagen',
+    skipped: 'Übersprungen',
+    disabled: 'Nicht verfügbar',
+    failed: 'Verbindung fehlgeschlagen',
+    needsAuth: 'Zugriff abgelaufen',
+    opening: 'Anmeldung wird geöffnet…',
+    waiting: 'Schließen Sie die Verbindung im Browser ab…',
+    timeout: 'Freigabe steht noch aus.',
+    refresh: 'Status aktualisieren',
+    connectError: 'Freigabe konnte nicht gestartet werden. Versuchen Sie es erneut.',
+    connectErrorFor: app => `Die Freigabe für ${app} konnte nicht gestartet werden.`,
+    unavailable: 'Verbindungen sind für diese Session nicht verfügbar.',
+    ownerMissing: 'Öffnen Sie diese Konversation erneut, um ihre Verbindungen zu verwalten.',
+    search: 'App finden',
+    empty: 'Keine passende App',
+    disclaimer: 'Das Verbinden ist freiwillig. Geben Sie nur den Apps Zugriff, die Hermes verwenden soll.',
+    execution: 'Verbindungs-Tools',
+    setup: server => `${server} einrichten`,
+    openInBrowser: 'Im Browser öffnen',
+    setupCancel: 'Abbrechen',
+    authorizedToolsUnavailable: 'Autorisiert. Tools nicht verfügbar.',
+    required: 'Erforderlich'
+  },
   connectorsPage: {
     title: 'Konnektoren',
     searchPlaceholder: (count: number) => `${count} Apps durchsuchen`,
@@ -178,9 +202,6 @@ export const deOverrides = {
       advanced: 'Erweitert',
       advancedHint: 'der mcp.json-Eintrag und die Logs'
     },
-
-    accounts: deConnectorAccounts,
-
     tools: {
       title: 'Tools',
       notInstalledBody: 'Installieren Sie ihn auf diesem Gerät, um seine Tools zu sehen.',
@@ -327,7 +348,13 @@ export const deOverrides = {
     importError: 'Diese Konversation konnte nicht importiert werden.'
   },
   common: {
+    answerFailed: 'Anfrage konnte nicht beantwortet werden',
+    dismiss: 'Ausblenden',
+    open: 'Öffnen',
+    runFailed: 'Job konnte nicht ausgeführt werden',
+    runNow: 'Jetzt ausführen',
     apply: 'Übernehmen',
+    approve: 'Genehmigen',
     back: 'Zurück',
     save: 'Speichern',
     saving: 'Speichern…',
@@ -346,6 +373,7 @@ export const deOverrides = {
     copy: 'Kopieren',
     copyFailed: 'Kopieren fehlgeschlagen',
     delete: 'Löschen',
+    deny: 'Ablehnen',
     docs: 'Doku',
     done: 'Fertig',
     error: 'Fehler',
@@ -365,6 +393,7 @@ export const deOverrides = {
     skip: 'Überspringen',
     update: 'Aktualisieren',
     tryHint: term => `Versuchen Sie „${term}“`,
+    undo: 'Rückgängig',
     on: 'An',
     off: 'Aus'
   },
@@ -373,6 +402,7 @@ export const deOverrides = {
     revealExplorer: 'Im Datei-Explorer anzeigen',
     revealFileManager: 'Enthaltenden Ordner öffnen',
     revealInSidebar: 'In Dateibaum anzeigen',
+    openInEditor: name => `In ${name} öffnen`,
     copyPath: 'Pfad kopieren',
     copyRelativePath: 'Relativen Pfad kopieren',
     download: 'Herunterladen',
@@ -442,6 +472,10 @@ export const deOverrides = {
         'Dieses Backend läuft nach einem Update mit altem Code. Starten Sie es neu, um den neuen Code zu laden.',
       rpcOutOfSync: 'App und Backend laufen in unterschiedlichen Versionen. Aktualisieren Sie beide.',
       restartHermesFailed: 'Hermes konnte nicht neu gestartet werden'
+    },
+    digest: {
+      title: count => `Hermes-Zusammenfassung — ${count} Meldungen`,
+      line: (count, label) => `${count} × ${label}`
     },
     actions: {
       restartHermes: 'Hermes neu starten',
@@ -563,6 +597,7 @@ export const deOverrides = {
     actions: {
       'keybinds.openPanel': 'Tastaturkürzel öffnen',
       'nav.commandPalette': 'Befehlspalette öffnen',
+      'nav.quickOpen': 'Datei schnell öffnen',
       'nav.commandCenter': 'Befehlszentrum öffnen',
       'nav.settings': 'Einstellungen öffnen',
       'nav.profiles': 'Profile öffnen',
@@ -571,6 +606,8 @@ export const deOverrides = {
       'nav.artifacts': 'Artefakte öffnen',
       'nav.cron': 'Geplante Jobs öffnen',
       'nav.agents': 'Agenten öffnen',
+      'nav.starmap': 'Memory-Graph öffnen',
+      'nav.webhooks': 'Webhooks öffnen',
       'session.new': 'Neue Session',
       'session.newTab': 'Neuer Session-Tab',
       'session.newWindow': 'Neues Fenster',
@@ -668,7 +705,9 @@ export const deOverrides = {
   },
   findInPage: {
     next: 'Nächster Treffer',
-    previous: 'Vorheriger Treffer'
+    previous: 'Vorheriger Treffer',
+    searchAll: 'Gesamten Verlauf durchsuchen',
+    searchAllShort: 'Verlauf'
   },
   language: {
     label: 'Sprache',
@@ -829,17 +868,7 @@ export const deOverrides = {
           'Hermes wartet nicht mehr auf das Installationsergebnis, aber das Plugin wird möglicherweise noch installiert. Schließe dieses Fenster und aktualisiere die Pluginliste, bevor du die Installation erneut startest.',
         desktopFailed: 'Installation des Desktop-Plugins fehlgeschlagen',
         missingEnv: (name, vars) =>
-          `${name} ist installiert, benötigt aber einen Schlüssel, um zu funktionieren: ${vars}. Fügen Sie ihn jetzt hinzu, sonst schlagen die Tools des Plugins fehl.`,
-        verified: 'Verifiziert',
-        unverified: 'Nicht verifiziert',
-        reviewedByNous: 'Von Nous geprüft.',
-        installsAndEnables: profile => `Wird für ${profile} installiert und sofort eingeschaltet.`,
-        installsOnly: profile => `Wird für ${profile} installiert.`,
-        advanced: 'Erweitert',
-        versionLabel: 'Version',
-        reviewedPin: sha => (sha ? `Geprüfter Pin ${sha}` : 'Geprüfter Pin'),
-        latestCommit: 'Neuester Commit',
-        nothingToInstall: 'Dieses Paket hat hier nichts zu installieren.'
+          `${name} ist installiert, benötigt aber einen Schlüssel, um zu funktionieren: ${vars}. Fügen Sie ihn jetzt hinzu, sonst schlagen die Tools des Plugins fehl.`
       }
     },
     vault: {
@@ -973,7 +1002,23 @@ export const deOverrides = {
       completionSoundTitle: 'Abschluss-Sound',
       completionSoundDesc:
         'Wird abgespielt, wenn ein Agent-Turn endet. Wählen Sie eine Vorlage aus und hören Sie sie hier an.',
-      completionSoundPreview: 'Vorschau'
+      completionSoundPreview: 'Vorschau',
+      quietHoursTitle: 'Ruhezeiten',
+      quietHoursDesc:
+        'Hält alltägliche Benachrichtigungen in einem täglichen Zeitfenster zurück; sie gehen am Ende als Zusammenfassung ein. Freigaben, Rückfragen und Fehler kommen trotzdem durch.',
+      quietHoursWindowTitle: 'Ruhefenster',
+      quietHoursWindowDesc:
+        'Benachrichtigungen sind von der Start- bis zur Endzeit stumm — liegt der Start nach dem Ende, gilt die Zeit über Nacht.',
+      quietHoursFrom: 'Von',
+      quietHoursTo: 'Bis',
+      digestTitle: 'Stündliche Zusammenfassung',
+      digestDesc:
+        'Fasst alltägliche Benachrichtigungen zu einer einzigen Zusammenfassung pro Stunde zusammen, statt jede einzeln zu senden.',
+      sessionOverridesTitle: 'Sitzungs-Ausnahmen',
+      sessionOverridesDesc:
+        'Chats, die Sie im Sitzungsmenü der Seitenleiste stummgeschaltet haben. Hier können Sie sie wieder aktivieren.',
+      sessionOverridesEmpty:
+        'Keine stummgeschalteten Sitzungen. Schalten Sie einen Chat über sein Seitenleisten-Menü stumm, um ihn hier aufzulisten.'
     },
     sections: {
       model: 'Modell',
@@ -1024,12 +1069,18 @@ export const deOverrides = {
       hideThreadTimelineDesc: 'Blendet die Navigationsbalken am rechten Rand jeder Unterhaltung aus.',
       reasoningCollapsedTitle: 'Gedanken standardmäßig einklappen',
       reasoningCollapsedDesc: 'Gestreamte Gedankengänge verfügbar halten, ohne sie aufzuklappen, bis Sie sie öffnen.',
+      lookTitle: 'Stil',
+      lookDesc:
+        'Weich ist abgerundet und luftig mit ruhigen Beschriftungen; Klassisch behält die ursprüngliche, kantige Oberfläche.',
+      lookSoft: 'Weich',
+      lookClassic: 'Klassisch',
       uiScaleTitle: 'UI-Skalierung',
       uiScaleDesc: (percent: number) =>
         `Skaliert Text und Bedienelemente in der gesamten App. Cmd/Ctrl mit +, - und 0 funktioniert ebenfalls. Aktuell: ${percent}%.`,
       sessionDensityTitle: 'Dichte der Session-Liste',
-      sessionDensityDesc: 'Wählen Sie, wie viel Kontext unter den Session-Titeln in der Seitenleiste erscheint.',
+      sessionDensityDesc: 'Wählen Sie, wie viel jede Session-Zeile in der Seitenleiste zeigt.',
       sessionDensityCompact: 'Kompakt',
+      sessionDensityCondensed: 'Verdichtet',
       sessionDensityComfortable: 'Komfortabel',
       sessionDensityDetailed: 'Detailreich',
       tabStripTitle: 'Tab-Leiste',
@@ -1078,7 +1129,27 @@ export const deOverrides = {
         sidebar: 'Nur Seitenleiste'
       },
       backdropTitle: 'Chat-Hintergrund',
-      backdropDesc: 'Das zarte Statuenbild hinter der Konversation.',
+      backdropDesc: 'Eine Szene hinter der Konversation oder Ihr eigenes Bild. Der Text bleibt immer im Vordergrund.',
+      backdropScenes: {
+        off: 'Aus',
+        aurora: 'Polarlicht',
+        dusk: 'Abendrot',
+        ocean: 'Ozean',
+        meadow: 'Wiese',
+        cyanotype: 'Cyanotypie',
+        ink: 'Tusche',
+        grid: 'Punkte',
+        statue: 'Statue',
+        custom: 'Eigenes Bild'
+      },
+      backdropUpload: 'Bild auswählen…',
+      backdropRemoveImage: 'Bild entfernen',
+      backdropStrengths: {
+        subtle: 'Dezent',
+        balanced: 'Ausgewogen',
+        vivid: 'Kräftig'
+      },
+      backdropImageError: 'Das Bild konnte nicht gelesen werden.',
       userBubbleTitle: 'Nachrichten-Blase',
       userBubbleDesc:
         'Wie durchsichtig Ihre eigenen Nachrichten sind. Bei 0 deckend; bei 100 bleibt nur die Kontur übrig.',
@@ -1103,6 +1174,13 @@ export const deOverrides = {
       composerPopoutTitle: 'Schwebender Composer',
       composerPopoutDesc:
         'Erlaubt, den Composer aus seiner Ablage herauszuziehen. Wenn aus, bleibt er unten angedockt.',
+      autoOpenFilesTitle: 'Dateien beim Öffnen eines Projekts zeigen',
+      autoOpenFilesDesc: 'Beim Öffnen eines Ordners oder Projekts erscheint der Dateibaum neben dem Chat.',
+      activityRailTitle: 'Symbolleiste links',
+      activityRailDesc:
+        'Eine schmale Symbolspalte am linken Rand – Sitzungen, Bots und alle Seiten mit einem Klick, auch bei eingeklappter Seitenleiste.',
+      openInEditorTitle: 'Dateien öffnen in',
+      openInEditorDesc: 'Wohin „Öffnen in …“ eine Datei aus dem Dateibaum schickt. Funktioniert auch mit SSH-Backends.',
       fileBrowserTitle: 'Dateibrowser',
       fileBrowserDesc:
         'Zeigt den Dateibrowser neben dem Chat, wenn ein Arbeitsbereich geöffnet ist. Der Schalter in der Titelleiste ändert diese Einstellung ebenfalls.',
@@ -1215,7 +1293,9 @@ export const deOverrides = {
         maxLines: 'Datei-Seitenlimit',
         maxLineLength: 'Zeilenlängenlimit'
       },
-      codeExecution: { mode: 'Code-Ausführungsmodus' },
+      codeExecution: {
+        mode: 'Code-Ausführungsmodus'
+      },
       approvals: {
         mode: 'Genehmigungsmodus',
         timeout: 'Genehmigungs-Timeout',
@@ -1486,6 +1566,12 @@ export const deOverrides = {
         }
       }
     },
+    poolLimits: {
+      warmBotBackendsAria: 'Bot-Backends vorwärmen',
+      warmBotBackendsTitle: 'Bot-Backends vorwärmen',
+      backendIdleTimeoutAria: 'Leerlauf-Timeout des Backends in Millisekunden',
+      backendIdleTimeoutTitle: 'Leerlauf-Timeout des Backends'
+    },
     customEndpoints: {
       active: 'Aktiv',
       apiKeySet: 'API-Schlüssel gesetzt',
@@ -1532,13 +1618,20 @@ export const deOverrides = {
       screenRecording: 'Bildschirmaufnahme',
       driverHealth: 'Treiberstatus'
     },
-    about: { updates: 'Updates', channel: deUpdateChannel },
+    about: {
+      updates: 'Updates'
+    },
     config: {
       minimizeToTrayTitle: 'In den Infobereich minimieren',
       minimizeToTrayDesc:
         'Beim Minimieren von Fenstern oder Schließen des Hauptfensters werden diese im Infobereich (Menüleiste unter macOS) ausgeblendet und Hermes läuft weiter. Beenden Sie über „Hermes beenden“ im Infobereich-Menü oder mit Cmd+Q. Standardmäßig aus; gilt nur für dieses Gerät.',
       minimizeToTrayUnavailable:
         'Der Infobereich ist nicht verfügbar. Fenster werden normal minimiert und geschlossen. Schalten Sie die Option aus und wieder ein, um es erneut zu versuchen.',
+      menuBarStatusTitle: 'Menüleisten-Status',
+      menuBarStatusDesc:
+        'Zeigt ein Hermes-Symbol in der macOS-Menüleiste (Infobereich unter Windows/Linux) mit Status-Badge, letzten Sitzungen und Schnellaktionen. Standardmäßig aus; gilt nur für dieses Gerät.',
+      menuBarStatusUnavailable:
+        'Der Infobereich ist auf dieser Plattform nicht verfügbar. Schalten Sie die Option aus und wieder ein, um es erneut zu versuchen.',
       none: 'Keine',
       noneParen: '(keine)',
       builtinOnly: 'Nur eingebaut',
@@ -1562,6 +1655,9 @@ export const deOverrides = {
       keepAwakeOff: 'Aus',
       keepAwakeWhileWorking: 'Während der Arbeit',
       keepAwakeAlways: 'Immer',
+      proactiveNudgesTitle: 'Proaktive Hinweise',
+      proactiveNudgesDesc:
+        'Bietet nach Abschluss einer Runde nächste Schritte als Chips über dem Composer an — etwa einen PR öffnen oder eine Nachverfolgung einplanen. Sie schreiben nur Entwürfe; nichts wird automatisch gesendet.',
       disableF12Title: 'F12-DevTools deaktivieren',
       disableF12Desc:
         'Verhindert, dass F12 die Entwicklertools öffnet. Strg+Umschalt+I (bzw. Cmd+Opt+I auf dem Mac) funktioniert weiterhin.',
@@ -1570,7 +1666,7 @@ export const deOverrides = {
         'Wie groß eine lokale Datei sein darf, die Desktop für Vorschauen und Bildanhänge lädt, in MB. Standard ist 16. Remote-Anhänge ohne Bild verwenden ein eigenes Limit von 256 MB. Ein sehr hoher Wert lädt die gesamte Datei in den Speicher, was die App einfrieren oder abstürzen lassen kann.',
       attachmentSizeUnit: 'MB',
       attachmentSizeLabel: 'Maximale Vorschau-/Bildladegröße in Megabyte',
-      showOptions: 'Optionen anzeigen'
+      showOptions: 'Optionen anzeigen',
     },
     hudModifier: {
       title: 'Tippen, um das HUD aufzurufen',
@@ -1942,7 +2038,69 @@ export const deOverrides = {
       deepLinkErrorUrl: 'Nur http:// und https:// Server-URLs sind erlaubt.',
       deepLinkErrorTooLarge: 'Die Config-Payload überschreitet das 32-KB-Limit.'
     },
-    model: deModelSettings,
+    model: {
+      setupProviderFallback: 'Anbieter',
+      setUpProvider: name => `${name} einrichten`,
+      staleAuxBefore: (count, names) =>
+        `${count} Hilfsaufgabe${count === 1 ? '' : 'n'} (${names}) ${count === 1 ? 'läuft' : 'laufen'} noch auf `,
+      staleAuxAfter: ', nicht auf Ihrem Hauptmodell.',
+      staleAuxOtherProviders: 'anderen Anbietern',
+      moaEnabled: 'Aktiviert',
+      moaSetDefault: 'Als Standard festlegen',
+      moaNewPresetPlaceholder: 'neue Vorlage',
+      moaAddPreset: 'Vorlage hinzufügen',
+      customModel: 'Eigenes Modell…',
+      customModelPlaceholder: 'Modell-ID',
+      chooseFromList: 'Aus Liste wählen',
+      moaDefault: 'Standard:',
+      moaReferenceToggle: (enabled, index) => `Referenz ${index} ${enabled ? 'deaktivieren' : 'aktivieren'}`,
+      moaReferenceTitle: index => `Referenz ${index}`,
+      moaAddReference: 'Referenzmodell hinzufügen',
+      loading: 'Modellkonfiguration wird geladen…',
+      appliesDesc:
+        'Gilt für neue Sessions. Verwenden Sie die Modellauswahl im Composer, um im aktiven Chat schnell zu wechseln.',
+      provider: 'Anbieter',
+      model: 'Modell',
+      applying: 'Wird angewendet…',
+      mainAppliedTitle: 'Hauptmodell aktualisiert',
+      mainAppliedMessage: model => `Neue Sitzungen verwenden ${model}.`,
+      defaultsLabel: 'Voreinstellungen',
+      reasoning: 'Denken',
+      reasoningOff: 'Aus',
+      speed: 'Geschwindigkeit',
+      speedStandard: 'Standard',
+      defaultsFailed: 'Voreinstellungen des Modells konnten nicht gespeichert werden',
+      loadFailed: 'Modelle konnten nicht geladen werden',
+      restartRequired:
+        'Dieses Backend führt nach einem Update alten Code aus. Starten Sie es neu, um den neuen Code zu laden.',
+      restartBackend: 'Backend neu starten',
+      restartingBackend: 'Backend wird neu gestartet…',
+      restartFailed: 'Das Backend konnte nicht neu gestartet werden',
+      auxiliaryTitle: 'Hilfsmodelle',
+      resetAllToMain: 'Alle auf Hauptmodell zurücksetzen',
+      staleAuxDismiss: 'Nicht erneut anzeigen',
+      auxiliaryDesc:
+        'Hilfsaufgaben laufen standardmäßig auf dem Hauptmodell. Weise einer Aufgabe ein eigenes Modell zu, um das zu überschreiben.',
+      setToMain: 'Auf Hauptmodell setzen',
+      change: 'Ändern',
+      autoUseMain: 'automatisch · Hauptmodell verwenden',
+      inheritMainEffort: 'übernehmen · Aufwand des Hauptmodells',
+      inheritsFrom: task => `erbt von ${task}`,
+      followTask: task => `${task} folgen`,
+      providerDefault: '(Anbietervorgabe)',
+      fallbackAdd: 'Fallback hinzufügen',
+      fallbackEmpty: 'Keine Fallback-Modelle — es wird das Standardmodell verwendet, außer es schlägt fehl.',
+      notInCatalog:
+        'ist nicht in der Modellliste dieses Anbieters enthalten — Aufrufe können auf ein Backup ausweichen.',
+      moaTitle: 'Mixture of Agents',
+      moaPreset: 'Voreinstellung',
+      moaDescription:
+        'Konfigurieren Sie benannte Vorlagen, die als Modelle unter dem Anbieter „Mixture of Agents“ erscheinen. Der Aggregator ist das handelnde Modell – er führt jeden Schritt der Tool-Schleife aus, und fast alle Kosten des Laufs werden seinem Anbieter berechnet. Referenzen beraten standardmäßig nur einmal pro Benutzer-Turn.',
+      moaAggregator: 'Aggregator',
+      moaAggregatorBilled: 'handelndes Modell · wird für den Lauf berechnet',
+      moaReferenceHint: 'berät standardmäßig einmal pro Turn',
+      tasks: deAuxTasks
+    },
     localModels: deLocalModels,
     billing: {
       perMonth: (amount: string) => `${amount}/Monat`,
@@ -2647,7 +2805,11 @@ export const deOverrides = {
     importEmpty: 'Fügen Sie einen Map-Code ein, um ihn zu laden.',
     importSuccess: nodes => `Eine Map mit ${nodes} ${nodes === 1 ? 'Knoten' : 'Knoten'} geladen.`,
     importedBadge: 'importierte Map',
-    resetToMine: 'Zurück zu meiner Map'
+    resetToMine: 'Zurück zu meiner Map',
+    live: 'Live',
+    liveHint: 'Live ansehen: Skills pulsieren, solange eine Session sie nutzt, und blitzen beim Abschluss',
+    liveOff: 'Live-Updates stoppen',
+    openSession: 'Session öffnen'
   },
   agents: {
     extendedTranscript: 'Extended Transcript',
@@ -2689,6 +2851,51 @@ export const deOverrides = {
     durationSeconds: seconds => `${seconds}s`,
     durationMinutes: (minutes, seconds) => `${minutes}m ${seconds}s`,
     tokens: value => `${value} Tok`
+  },
+  roster: {
+    title: 'Aktive Läufe',
+    subtitle: 'Jeder Lauf über alle Profile und Gateways hinweg.',
+    emptyTitle: 'Keine aktiven Läufe',
+    emptyDesc: 'Sobald eine Sitzung arbeitet — in einem beliebigen Profil oder Gateway — erscheint sie hier.',
+    untitledRun: 'Unbenannter Lauf',
+    railPill: count => (count === 1 ? '1 Lauf' : `${count} Läufe`),
+    close: 'Schließen',
+    fanOut: 'Auffächern',
+    fanOutTitle: 'Einen Prompt an die ausgewählten Agenten senden',
+    fanOutPlaceholder: 'Ein Prompt, jeder ausgewählte Agent…',
+    fanOutNoAgents: 'Keine erreichbaren Agenten zur Auswahl',
+    fanOutClose: 'Einklappen',
+    fanOutSend: count => (count === 1 ? 'An 1 Agenten senden' : `An ${count} Agenten senden`),
+    fanOutFailed: 'Für einen der ausgewählten Agenten konnte keine Sitzung erstellt werden'
+  },
+
+  hud: {
+    needsYou: 'Wartet auf dich',
+    openRunInApp: title => `${title} im App-Fenster öffnen`
+  },
+  attentionInbox: {
+    title: 'Benötigt Aufmerksamkeit',
+    empty: 'Nichts wartet auf dich.',
+    count: count => `${count} ausstehend`,
+    appScope: 'Anwendung',
+    unknownSession: 'Sitzung',
+    kinds: {
+      approval: 'Tool-Freigabe',
+      clarify: 'Rückfrage',
+      error: 'Fehler',
+      secret: 'Secret-Anfrage',
+      sudo: 'Sudo-Anfrage',
+      vaultCode: 'Tresor-Code',
+      vaultSave: 'Tresor-Login',
+      vaultUnlock: 'Tresor entsperren'
+    },
+    pullRequest: (number, title) => `PR #${number}: ${title}`,
+    prChecks: {
+      failure: 'Checks schlagen fehl',
+      none: 'Offener PR',
+      pending: 'Checks laufen',
+      success: 'Checks bestanden'
+    }
   },
   commandCenter: {
     close: 'Command Center schließen',
@@ -2771,9 +2978,24 @@ export const deOverrides = {
     archivedChats: 'Archivierte Chats',
     sections: {
       maintenance: 'Wartung',
+      notices: 'Benachrichtigungen',
       sessions: 'Sessions',
       system: 'System',
       usage: 'Nutzung'
+    },
+    sectionDescriptions: {
+      maintenance: 'Diagnose, Backups, Curator und Memory-Daten',
+      notices: 'Letzte Benachrichtigungen und Hinweise',
+      sessions: 'Sessions durchsuchen und verwalten',
+      system: 'Status, Logs und Systemaktionen',
+      usage: 'Token-, Kosten- und Skill-Aktivität im Zeitverlauf'
+    },
+    notices: {
+      empty: 'Noch keine Benachrichtigungen — Hinweise und Toasts erscheinen hier.',
+      clear: 'Löschen',
+      mutedTag: 'Stumm',
+      destCenter: 'Mittlerer Toast',
+      destCorner: 'Eck-Toast'
     },
     nav: {
       newChat: {
@@ -2859,6 +3081,14 @@ export const deOverrides = {
     topSkills: 'Top-Skills',
     noSkillActivity: 'Noch keine Skill-Aktivität.',
     actions: count => `${count} Aktionen`,
+    costAnalytics: 'Kostenanalyse',
+    costAnalyticsHint: 'Nur lokal aggregiert — Ausgabendaten verlassen dieses Gerät nie.',
+    dailySpend: 'Ausgaben pro Tag',
+    estimatedCost: 'geschätzt',
+    perProfile: 'Pro Profil',
+    topSessions: 'Top-Sessions',
+    loadedSessionsHint: 'geladene Sessions',
+    noSpend: 'Keine erfassten Ausgaben',
     logFile: 'Logdatei',
     logLevel: 'Stufe',
     logSearchPlaceholder: 'Logs durchsuchen…',
@@ -3028,6 +3258,22 @@ export const deOverrides = {
       stillWaiting: detail => `Noch keine Antwort von Telegram. Neuer Versuch nach: ${detail}`,
       savedRestarting: 'Telegram gespeichert; Gateway wird neu gestartet…',
       savedRestartFailed: detail => `Telegram gespeichert; Gateway-Neustart fehlgeschlagen${detail}`
+    },
+    phoneParity: {
+      title: 'Auf dem Handy fortsetzen',
+      presence: 'Gateway-Status',
+      scanHint: 'Mit dem Handy scannen oder den Link auf diesem Gerät öffnen.',
+      linkPending: 'Der direkte Link erscheint hier, sobald der Adapter verbunden ist.',
+      openLink: 'Link öffnen',
+      copyLink: 'Link kopieren',
+      copyFailed: 'Der Link konnte nicht kopiert werden'
+    },
+    reach: {
+      title: (name: string) => `${name} überall erreichen`,
+      scan: (name: string) => `Scannen, um vom Handy aus mit ${name} zu chatten, oder den Link teilen.`,
+      empty: (name: string) => `Gib ${name} eine eigene Telegram- oder Slack-Adresse, um vom Handy aus zu chatten.`,
+      connect: 'Verbinden',
+      manage: 'Verwalten'
     },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
@@ -3219,9 +3465,50 @@ export const deOverrides = {
       slack: 'Slack',
       email: 'E-Mail',
       github_comment: 'GitHub-Kommentar'
+    },
+    mobile: {
+      title: 'Mobiler Begleiter',
+      hint: 'Dieses Backend vom Telefon aus steuern — Status, Freigaben, Kurzantworten.',
+      pairButton: 'Telefon koppeln',
+      dialogTitle: 'Telefon koppeln',
+      dialogDesc:
+        'Erstelle einen einmaligen Kopplungscode, öffne dann die Begleitseite auf deinem Telefon und gib den Code ein. Die Seite kann den Sitzungsstatus lesen, ausstehende Freigaben beantworten und Kurzantworten an dieses Backend senden.',
+      backendUrl: 'Backend-URL',
+      backendUrlHint: 'Eine Adresse, die dein Telefon erreichen kann (LAN, Tunnel oder Remote-Verbindung).',
+      create: 'Kopplungscode erstellen',
+      creating: 'Wird erstellt…',
+      createFailed: (detail: string) => `Kopplungscode konnte nicht erstellt werden${detail ? `: ${detail}` : ''}`,
+      codeLabel: 'Kopplungscode',
+      openHint: (url: string) => `Öffne ${url} auf deinem Telefon und gib den Code ein.`,
+      expires: (minutes: number) => `Einmalig · läuft in ${minutes} Min. ab.`,
+      copy: 'Kopieren',
+      done: 'Fertig'
     }
   },
   profiles: {
+    askRules: {
+      title: (name: string) => `Wann soll ${name} dich fragen?`,
+      modes: {
+        manual: {
+          label: 'Erst fragen',
+          description: (name: string) => `${name} hält an und fragt vor allem Riskanten.`
+        },
+        smart: {
+          label: 'Nach Ermessen',
+          description: (name: string) => `${name} erledigt Routine selbst und fragt, wenn etwas riskant wirkt.`
+        },
+        off: {
+          label: 'Einfach machen',
+          description: (name: string) => `${name} wartet nie auf dich. Gesperrte Befehle bleiben gesperrt.`
+        }
+      },
+      rulesLabel: 'Hausregeln',
+      rulesPlaceholder:
+        'Deine Regeln in deinen Worten, z. B.: Immer fragen, bevor E-Mails gesendet oder Geld ausgegeben wird.',
+      save: 'Regeln speichern',
+      discard: 'Verwerfen',
+      failed: 'Speichern fehlgeschlagen. Deine bisherigen Regeln gelten weiter.'
+    },
     close: 'Profile schließen',
     nameHint:
       'Kleinbuchstaben, Ziffern, Bindestriche und Unterstriche. Muss mit einem Buchstaben oder einer Ziffer beginnen.',
@@ -3560,7 +3847,9 @@ export const deOverrides = {
     kindLink: 'Link',
     chat: 'Chat',
     copyUrl: 'URL kopieren',
-    copyPath: 'Pfad kopieren'
+    copyPath: 'Pfad kopieren',
+    buildWithPlan: 'Mit diesem Plan bauen',
+    buildWithPlanDraft: 'Diesen Plan umsetzen:'
   },
   artifactCard: {
     kind: {
@@ -3584,6 +3873,77 @@ export const deOverrides = {
     missingTitle: 'Artifact nicht verfügbar',
     missingBody: 'Dieses Artifact ist nicht mehr in der lokalen Registry.'
   },
+  panels: {
+    button: 'Bereiche',
+    title: 'Neben dem Chat',
+    subtitle: 'Schalte ein, was du brauchst. Jeder Bereich öffnet sich neben der Unterhaltung.',
+    needsProject: 'Öffne einen Ordner, um das zu nutzen',
+    openFolder: 'Ordner öffnen…',
+    arrange: 'Anordnen…',
+    arrangements: { focus: 'Fokus', review: 'Prüfen', watch: 'Beobachten', build: 'Bauen' },
+    items: {
+      files: { label: 'Dateien', description: 'Projekt durchsuchen und ansehen' },
+      changes: { label: 'Änderungen', description: 'Prüfen, was der Agent geändert hat' },
+      browser: { label: 'Browser', description: 'Seiten direkt neben dem Chat öffnen' },
+      terminal: { label: 'Terminal', description: 'Befehle selbst ausführen' },
+      live: { label: 'Live-Aktivität', description: 'Jeder Befehl des Agenten, während er läuft' },
+      artifacts: { label: 'Artefakte', description: 'Was dieser Chat erstellt hat' },
+      canvas: { label: 'Leinwand', description: 'Skizziere auf einer Tafel, auf der auch der Agent zeichnet' }
+    }
+  },
+  quickOpen: {
+    title: 'Schnell öffnen',
+    placeholder: project => `Dateien in ${project} suchen…`,
+    noProject: 'Öffne einen Ordner, um seine Dateien zu durchsuchen',
+    noProjectBody: 'Schnell öffnen durchsucht die Dateien des aktuellen Projekts.',
+    openFolder: 'Ordner öffnen…',
+    noMatch: query => `Keine Datei passt zu „${query}“`,
+    recent: 'Neben dem Chat geöffnet',
+    hint: 'Tippe einen Dateinamen. Mit :42 springst du zu einer Zeile.',
+    line: line => `Zeile ${line}`,
+    openHint: 'öffnen',
+    attachHint: 'zur Nachricht hinzufügen',
+    lineHint: 'name:42 springt zur Zeile'
+  },
+  recentProjects: { title: 'Deine Projekte', openFolder: 'Ordner öffnen…' },
+  todayBrief: {
+    greeting: { morning: 'Guten Morgen', afternoon: 'Guten Tag', evening: 'Guten Abend', night: 'Noch wach?' },
+    needsYou: 'Wartet auf dich',
+    running: 'Läuft gerade',
+    finished: 'Fertig, während du weg warst',
+    scheduled: 'Heute geplant',
+    recent: 'Weitermachen, wo du aufgehört hast',
+    tasks: 'Letzte Aufgaben',
+    taskWorking: age => `Läuft seit ${age}`,
+    taskNew: 'Neue Antwort'
+  },
+
+  live: {
+    title: 'Live',
+    noSession: 'Keine Sitzung ausgewählt',
+    emptyTitle: 'Noch nichts ausgeführt',
+    emptyBody:
+      'Jeder Befehl, jeder Dateizugriff und jeder Tool-Aufruf erscheint hier, sobald er startet – mit der vollständigen Ausgabe. Nichts wird zusammengefasst.',
+    count: total => `${total} ${total === 1 ? 'Aktion' : 'Aktionen'}`,
+    countRunning: (total, running) => `${total} ${total === 1 ? 'Aktion' : 'Aktionen'} · ${running} laufen`,
+    follow: 'Folgen',
+    followHint: 'Zur neuesten Aktion springen und sie im Blick behalten',
+    copy: 'Befehl und Ausgabe kopieren',
+    exitCode: code => `Exit ${code}`,
+    runningFor: elapsed => `läuft seit ${elapsed}`,
+    waitingForOutput: 'Läuft – die Ausgabe erscheint am Ende',
+    noOutput: 'Keine Ausgabe',
+    openLive: 'Live'
+  },
+
+  artifactRail: {
+    empty: 'Noch keine Artefakte in dieser Session',
+    noSession: 'Keine Session ausgewählt',
+    open: 'Öffnen',
+    openFailed: 'Artefakt konnte nicht geöffnet werden',
+    saveFailed: 'Artefakt konnte nicht gespeichert werden',
+    saveToFile: 'In Datei speichern'
+  },
   sidebar: {
     filter: {
       grouping: 'Gruppierung',
@@ -3592,6 +3952,7 @@ export const deOverrides = {
       filters: 'Filter',
       status: 'Status',
       pullRequest: 'Pull Request',
+      tags: 'Tags',
       profile: 'Profil',
       project: 'Projekt',
       archived: 'Archiviert',
@@ -3616,6 +3977,17 @@ export const deOverrides = {
       closed: 'Geschlossen',
       noPR: 'Kein PR'
     },
+    archive: {
+      finished: 'Abgeschlossene Sessions archivieren',
+      olderThan: 'Sessions archivieren, die älter sind als…',
+      days: (days: number) => `${days} Tage`,
+      confirmTitle: (count: number) => `${count} ${count === 1 ? 'Session' : 'Sessions'} archivieren?`,
+      confirmBody:
+        'Angeheftete Chats werden nie archiviert und nichts wird gelöscht — archivierte Sessions wandern in die Ansicht „Archiviert“.',
+      confirmAction: 'Archivieren',
+      done: (count: number) => `${count} ${count === 1 ? 'Session' : 'Sessions'} archiviert`,
+      none: 'Keine Sessions zum Archivieren'
+    },
     gatewayGroups: {
       grouping: 'Gateway & Profil',
       rename: 'Gruppe umbenennen',
@@ -3633,19 +4005,31 @@ export const deOverrides = {
       capabilities: 'Fähigkeiten',
       messaging: 'Messaging',
       artifacts: 'Artefakte',
-      cron: 'Geplante Jobs'
+      cron: 'Geplante Jobs',
+      browse: 'Durchsuchen'
     },
     searchAria: 'Sessions durchsuchen',
+    railAria: 'App-Navigation',
     searchPlaceholder: 'Sessions durchsuchen…',
     clearSearch: 'Suche löschen',
     noMatch: query => `Keine Sessions passen zu “${query}”.`,
     results: 'Ergebnisse',
     pinned: 'Angepinnt',
+    needsAttention: 'Handlungsbedarf',
+    delegationReports: {
+      done: 'Fertig',
+      needsDecision: 'Entscheidung nötig',
+      failed: 'Fehlgeschlagen',
+      openSubagent: 'Subagent öffnen',
+      dismiss: 'Meldung verwerfen',
+      tasks: (count, completed) => `${completed} von ${count} Aufgaben abgeschlossen`
+    },
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Dateien',
     review: 'Review',
     logs: 'Logs',
+    artifacts: 'Artefakte',
     cronJobs: 'Cron-Jobs',
     groupAriaGrouped: 'Sessions als einzelne Liste anzeigen',
     groupAriaUngrouped: 'Sessions nach Workspace gruppieren',
@@ -3681,9 +4065,18 @@ export const deOverrides = {
       unpin: 'Lösen',
       markUnread: 'Als ungelesen markieren',
       markRead: 'Als gelesen markieren',
+      muteNotifications: 'Benachrichtigungen stummschalten',
+      unmuteNotifications: 'Stummschaltung aufheben',
+      mutedTooltip: 'Benachrichtigungen für diese Sitzung stummgeschaltet',
+      watch: 'Beobachten',
+      stopWatching: 'Nicht mehr beobachten',
       unreadFailed: 'Ungelesen-Status konnte nicht aktualisiert werden',
       copyId: 'ID kopieren',
       export: 'Exportieren',
+      exportMarkdown: 'Als Markdown exportieren',
+      exportDeliverable: 'Ergebnisbericht exportieren',
+      copyMarkdown: 'Als Markdown kopieren',
+      artifacts: 'Artefakte',
       branchFrom: 'Branch',
       rename: 'Umbenennen…',
       archive: 'Archivieren',
@@ -3701,6 +4094,24 @@ export const deOverrides = {
       finishedUnread: 'Abgeschlossen – ungelesen',
       backgroundRunning: 'Hintergrundaufgabe läuft',
       draftSession: 'Entwurf – noch nichts gesendet',
+      continueOnPhone: 'Auf dem Handy fortfahren',
+      openOnDevice: 'Auf anderem Gerät öffnen',
+      openDeviceTitle: 'Auf anderem Gerät öffnen',
+      openDeviceDesc: home =>
+        `Scanne den Code oder sende den Link an ein anderes Hermes-Gerät, dessen Verbindungen ${home} erreichen. Die Sitzung bleibt, wo sie ist — nur die Ansicht wechselt.`,
+      openDeviceHomeFallback: 'ihrem Ursprungs-Backend',
+      openDeviceIncomingTitle: 'Sitzung auf diesem Gerät öffnen?',
+      openDeviceIncomingDesc: (title, label) =>
+        `„${title}“ liegt auf ${label}. Beim Öffnen wechselt dieses Fenster zu dieser Verbindung — der Sitzungsort bleibt unverändert.`,
+      openDeviceSwitchAndOpen: 'Wechseln und öffnen',
+      openDeviceSwitching: 'Wechsle…',
+      openDeviceIncomingMissingTitle: 'Verbindung nicht gefunden',
+      openDeviceIncomingMissingDesc: (id, endpoint) =>
+        endpoint
+          ? `„${id}“ liegt auf ${endpoint}, das auf diesem Gerät keine registrierte Verbindung ist. Füge sie unter Einstellungen → Gateways hinzu und öffne den Link erneut.`
+          : `„${id}“ liegt auf einem Backend, das dieses Gerät nicht erreicht. Registriere die Verbindung unter Einstellungen → Gateways und öffne den Link erneut.`,
+      openDeviceOpenConnections: 'Gateways öffnen',
+      handoffNone: 'Keine Messaging-Plattform ist für eine Übergabe bereit',
       handoffOrigin: platform => `Übergeben von ${platform}`,
       continuationOrigin: 'Automatische Fortsetzung — dieser Chat wurde komprimiert und fortgesetzt',
       ownedByProfile: profile => `Profil: ${profile}`,
@@ -3709,6 +4120,25 @@ export const deOverrides = {
       renameTitle: 'Session umbenennen',
       renameDesc: 'Leer lassen, um zu löschen.',
       untitledPlaceholder: 'Unbenannte Session',
+      tags: 'Tags',
+      tagsDialogTitle: 'Session-Tags',
+      tagsDialogDesc: 'Vergebe Farbmarkierungen für diese Session in der Seitenleiste und in Filtern.',
+      tagsAddPlaceholder: 'Neues Tag-Label',
+      tagsAdd: 'Hinzufügen',
+      tagsRemoveLabel: label => `Tag ${label} entfernen`,
+      askAbout: 'Zu dieser Session fragen',
+      ask: {
+        clear: 'Verlauf löschen',
+        dialogDesc: title =>
+          `Fragen zu ${title} werden aus dem gespeicherten Transkript beantwortet — niemals aus der laufenden Unterhaltung.`,
+        dialogTitle: 'Zu dieser Session fragen',
+        empty: 'Stelle eine Frage dazu, was diese Session getan, entschieden oder geschrieben hat.',
+        failed: 'Antwort konnte nicht abgerufen werden',
+        placeholder: 'Frage zu dieser Session…',
+        send: 'Fragen',
+        thinking: 'Transkript wird gelesen…',
+        truncatedNote: 'Beantwortet aus Anfang und Ende eines langen Transkripts.'
+      },
       deleteTitle: 'Session löschen?',
       deleteDesc: title => `Das löscht “${title}” dauerhaft. Das kann nicht rückgängig gemacht werden.`,
       deleting: 'Wird gelöscht…',
@@ -3716,10 +4146,50 @@ export const deOverrides = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'Nachricht' : 'Nachrichten'}`,
       todoProgress: 'Aufgaben abgeschlossen',
+      attachmentCount: count => `${count} angehängt`,
+      isolateWorktree: 'In Worktree isolieren',
+      isolateWorktreeDone: name => `In Worktree ${name} isoliert`,
+      mergeWorktree: 'Worktree zurückmergen',
+      mergeWorktreeTitle: 'Worktree zurückmergen',
+      mergeWorktreeDesc: (branch, repo) =>
+        `Branch ${branch} zurück in den ${repo}-Checkout mergen? Er muss sauber sein.`,
+      mergingWorktree: 'Merge läuft…',
+      mergedWorktree: into => `Nach ${into} gemergt`,
+      mergeWorktreeFailed: 'Worktree konnte nicht gemergt werden',
+      worktreeTag: branch => `Isolierter Worktree · ${branch}`,
+      worktreeUnavailable: 'Git-Worktrees sind hier nicht verfügbar',
+      digest: {
+        agents: count => (count === 1 ? 'Ein Agent läuft' : `${count} Agents laufen`),
+        approve: command => `Genehmigen: ${command}`,
+        compacting: 'Konversation wird zusammengefasst',
+        replying: 'Antwort wird geschrieben',
+        stalled: 'Läuft noch — seit einer Weile ruhig',
+        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
+      },
+      prCiPassing: 'CI erfolgreich',
+      prCiFailing: 'CI fehlgeschlagen',
+      prCiPending: 'CI läuft',
       ageNow: 'jetzt',
       ageDay: 'T',
       ageHour: 'h',
       ageMin: 'Min'
+    },
+    watch: {
+      strip: 'Beobachtete Sitzungen',
+      stop: 'Nicht mehr beobachten'
+    },
+    selection: {
+      ariaLabel: 'Ausgewählte Sitzungen',
+      count: (count: number) => `${count} ausgewählt`,
+      pin: 'Anheften',
+      unpin: 'Lösen',
+      mute: 'Stummschalten',
+      unmute: 'Stummschaltung aufheben',
+      tag: 'Tag',
+      archive: 'Archivieren',
+      clear: 'Auswahl aufheben',
+      tagDialogTitle: (count: number) => (count === 1 ? '1 Sitzung taggen' : `${count} Sitzungen taggen`),
+      tagDialogDesc: 'Fügt den Tag jeder ausgewählten Sitzung hinzu.'
     },
     dateDivider: {
       today: 'Heute früher',
@@ -3731,6 +4201,22 @@ export const deOverrides = {
     statusDivider: {
       working: 'In Arbeit',
       done: 'Erledigt'
+    },
+    peek: {
+      idle: 'Leerlauf',
+      archived: 'Archiviert',
+      workspace: 'Arbeitsbereich',
+      branch: 'Branch',
+      model: 'Modell',
+      stats: 'Statistik',
+      tokens: count => `${count} Tokens`,
+      agents: 'Delegierte Agenten',
+      agentsSummary: count => `${count} ${count === 1 ? 'Agent' : 'Agenten'}`,
+      agentsRunning: count => `${count} aktiv`,
+      profile: 'Profil',
+      source: 'Quelle',
+      started: 'Gestartet',
+      updated: 'Aktualisiert'
     },
     markAllRead: 'Alle als gelesen markieren'
   },
@@ -3747,7 +4233,7 @@ export const deOverrides = {
       'Beschreiben Sie, was Sie brauchen',
       'Was sollen wir angehen?',
       'Fragen Sie irgendetwas',
-      'Beginnen Sie mit einem Ziel'
+      'Nennen Sie das gewünschte Ergebnis'
     ],
     followUpPlaceholders: [
       'Folge senden',
@@ -3761,8 +4247,9 @@ export const deOverrides = {
     startVoice: 'Sprachkonversation starten',
     openDirective: 'Öffnen',
     queueMessage: 'Nachricht einreihen',
+    queueWithAttachments: 'Mit Anhängen einreihen',
     steer: 'Laufenden Lauf steuern',
-    redirect: 'Laufenden Lauf umleiten',
+    steerTurn: 'Turn steuern',
     stop: 'Stopp',
     send: 'Senden',
     speaking: 'Spricht',
@@ -3883,6 +4370,7 @@ export const deOverrides = {
       'composer.help': 'diese Schnellhilfe (Löschen zum Schließen)',
       'composer.sendNewline': 'senden · Shift+Enter für neue Zeile',
       'composer.sendQueued': 'nächsten eingereihten Turn senden',
+      'composer.modelPicker': 'Modellauswahl öffnen',
       'keybinds.openPanel': 'alle Tastaturkürzel',
       'composer.cancel': 'Popover schließen · Lauf abbrechen',
       'composer.history': 'Popover / Verlauf durchblättern'
@@ -3903,20 +4391,17 @@ export const deOverrides = {
     restoredDraftNotice: 'Ihre nicht gesendete Nachricht wurde wiederhergestellt',
     restoredDraftUndo: 'Rückgängig',
     queueEdit: 'Bearbeiten',
+    queueMoveUp: 'Nach vorne',
+    queueMoveDown: 'Nach hinten',
     queueExpand: 'Ausklappen',
     queueCollapse: 'Einklappen',
     queueSendNext: 'Weiter',
     queueSteer: 'Steuern — laufenden Turn jetzt umleiten',
+    queueRemoved: 'Aus der Warteschlange entfernt',
     queueSend: 'Senden',
     queueDelete: 'Löschen',
     queueResume: 'Fortsetzen',
     queueResumeTip: 'Durch Stopp pausiert — fortsetzen, um die eingereihten Turns zu senden',
-    queueLostNote: 'Turn beim Neustart verloren',
-    restoreImageDraft: 'Bildentwurf wiederherstellen',
-    queueCancelFailed: 'Der wartende Zug konnte nicht entfernt werden',
-    queueLostDiscard: 'Verwerfen',
-    queueLostDiscardTip:
-      'Das Gateway wurde mitten im Turn neu gestartet und kann ihn nicht abschließen. Verwirf ihn, damit die eingereihten Turns dahinter laufen.',
     queueStuckTitle: 'Eingereihte Nachricht nicht gesendet',
     queueStuckBody:
       'Ein eingereihter Turn konnte nicht gesendet werden. Er ist noch in der Warteschlange — versuchen Sie, ihn erneut zu senden.',
@@ -3940,8 +4425,10 @@ export const deOverrides = {
     folder: 'Ordner…',
     images: 'Bilder…',
     pasteImage: 'Bild einfügen',
+    captureRegion: 'Bildschirmbereich aufnehmen…',
     url: 'URL…',
     promptSnippets: 'Prompt-Schnipsel…',
+    slashCommands: 'Slash-Befehle…',
     tipPre: 'Tipp: Geben Sie ',
     tipPost: ' ein, um Dateien inline zu referenzieren.',
     snippetsTitle: 'Prompt-Schnipsel',
@@ -3962,6 +4449,16 @@ export const deOverrides = {
       tip: skill => `Sie haben „${skill}“ erwähnt – klicken, um mit diesem Skill zu beginnen`,
       done: skill => `/skill hinzugefügt: ${skill}`,
       doneTip: 'Die Fähigkeit wird beim Senden geladen'
+    },
+    goalChips: {
+      planLabel: 'Erst planen',
+      planTip: 'Macht daraus /plan — ein Schritt-für-Schritt-Plan in .hermes/plans/, bevor etwas ausgeführt wird',
+      planDone: 'Plan bereit',
+      planDoneTip: 'Der Plan läuft beim Senden',
+      goalLabel: 'Als Ziel setzen',
+      goalTip: 'Macht daraus /goal — ein dauerhaftes Ergebnis, auf das Hermes hinarbeitet',
+      goalDone: 'Ziel bereit',
+      goalDoneTip: 'Das Ziel greift beim Senden'
     },
     githubSuggestions: {
       label: 'GitHub einrichten',
@@ -3985,6 +4482,19 @@ export const deOverrides = {
       done: 'Für Planung markiert',
       doneTip: 'Senden Sie die Nachricht, und der Agent erstellt den Job'
     },
+    nudges: {
+      prLabel: 'PR öffnen',
+      prTip: 'Die letzte Antwort klingt nach fertiger Code-Arbeit — Anfrage entwerfen',
+      prDraft: 'Öffnen Sie einen Pull Request für die eben vorgenommenen Änderungen.',
+      prDone: 'PR-Anfrage entworfen',
+      prDoneTip: 'Prüfen Sie den Entwurf und senden Sie ihn, damit der Agent den PR öffnet',
+      followupLabel: 'Nachverfolgung einplanen',
+      followupTip: 'Einen Check-in für diese Arbeit einrichten — entwirft die Anfrage für Sie',
+      followupDraft:
+        'Als geplanten Job einrichten: Prüfen Sie diese Arbeit in einer Stunde nach und berichten Sie, was sich geändert hat.',
+      followupDone: 'Nachverfolgung entworfen',
+      followupDoneTip: 'Passen Sie den Zeitpunkt im Entwurf an und senden Sie ihn dann'
+    },
     snippets: {
       codeReview: {
         label: 'Code-Review',
@@ -4003,6 +4513,29 @@ export const deOverrides = {
       }
     }
   },
+  regionCapture: {
+    attach: 'Anhängen',
+    cancel: 'Abbrechen',
+    captureFailed: 'Der Bildschirm konnte nicht aufgenommen werden.',
+    capturing: 'Aufnahme läuft…',
+    clear: 'Neu beginnen',
+    notePlaceholder: 'Notiz für den Agenten (optional)…',
+    permissionDenied:
+      'Bildschirmaufnahme ist deaktiviert — in Systemeinstellungen → Datenschutz & Sicherheit → Bildschirmaufnahme erlauben.',
+    selectHint: 'Ziehen, um einen Bereich zu wählen · Esc zum Abbrechen',
+    toolTips: { arrow: 'Pfeil', pen: 'Zeichnen', rect: 'Rechteck' },
+    unavailable: 'Bildschirmaufnahme ist hier nicht verfügbar.',
+    undo: 'Rückgängig'
+  },
+  voiceStatus: {
+    idle: 'Hermes ist bereit — gerade läuft nichts.',
+    working: 'Hermes arbeitet noch daran.',
+    workingOn: detail => `Hermes arbeitet — gerade an ${detail}.`,
+    stalled: 'Hermes scheint zu hängen — es war schon eine Weile still.',
+    needsInput: 'Hermes wartet auf deine Eingabe.',
+    finished: 'Die letzte Runde ist fertig — die Antwort wartet auf dich.',
+    progress: (done, total) => `${done} von ${total} Aufgaben erledigt.`
+  },
   statusStack: {
     hideStack: 'Statusstapel ausblenden',
     showStack: 'Statusstapel anzeigen',
@@ -4020,6 +4553,10 @@ export const deOverrides = {
     stop: 'Stopp',
     dismiss: 'Verwerfen',
     exit: code => `exit ${code}`,
+    verifyChecking: 'Vorschau wird geprüft…',
+    verifyFailed: count => `Vorschau-Prüfung fehlgeschlagen — ${count} Konsolenfehler`,
+    verifyOpenConsole: 'Konsole öffnen',
+    verifyPassed: 'Vorschau-Prüfung bestanden',
     control: {
       goalActiveTurns: (turn, maxTurns) => `Runde ${turn}/${maxTurns}`,
       goalDoneTurns: turns => `${turns} Runde${turns === 1 ? '' : 'n'}`,
@@ -4090,7 +4627,6 @@ export const deOverrides = {
       heartbeatEveryHours: hours => `alle ${hours}h`,
       heartbeatEverySeconds: seconds => `alle ${seconds}s`,
       heartbeatNext: time => `nächstes ${time}`,
-      dueWaitingForIdle: 'fällig — wartet auf Ruhezustand',
       heartbeatActions: 'Heartbeat-Aktionen',
       pauseHeartbeat: 'Heartbeat pausieren',
       resumeHeartbeat: 'Heartbeat fortsetzen',
@@ -4138,6 +4674,8 @@ export const deOverrides = {
       notRepo: 'Kein git-Repository',
       noDiff: 'Kein Diff zum Anzeigen',
       scopeUncommitted: 'Nicht committet',
+      scopeSession: 'Sitzung',
+      sessionEmpty: 'Keine Sitzungsänderungen',
       scopeBranch: 'Branch',
       scopeLastTurn: 'Letzte Runde',
       commit: 'Commit',
@@ -4152,6 +4690,23 @@ export const deOverrides = {
       agentShipUnavailable: 'Der Chat, der diese Änderungen besitzt, ist nicht auf dem Bildschirm.',
       agentShipPrompt:
         'Überprüfe die aktuellen Änderungen, committe sie mit einer klaren Conventional-Commit-Message, pushe den Branch und öffne einen Pull Request.',
+      agentReview: 'Von einem Agenten prüfen lassen',
+      agentReviewPick: 'Prüfen mit',
+      agentReviewNoProfiles: 'Keine Profile gefunden',
+      agentReviewPrompt:
+        'Überprüfe den Diff in der angehängten Datei. Melde konkrete Probleme — Bugs, Regressionen, unbehandelte Fälle — vor Stil-Anmerkungen.',
+      agentReviewAttachment: 'Working-Tree-Diff',
+      agentReviewUnavailable: 'Nichts zu prüfen — kein Repository oder kein ausstehender Diff.',
+      agentReviewReportTitle: (reviewer: string) => `Review von ${reviewer}`,
+      selfReview: 'Änderungen prüfen',
+      selfReviewRunning: 'Änderungen werden geprüft…',
+      selfReviewClean: 'Keine Probleme gefunden',
+      selfReviewClear: 'Prüfkommentare löschen',
+      selfReviewComments: count => `${count} ${count === 1 ? 'Kommentar' : 'Kommentare'}`,
+      commentOnLine: line => `Zeile ${line} kommentieren`,
+      diffCommentPlaceholder: 'Feedback zu dieser Zeile…',
+      diffCommentSend: 'Kommentar hinzufügen',
+      commentSeeded: 'Als Entwurf zum Composer hinzugefügt',
       newBranch: 'Neuer Branch',
       branchOffFrom: base => `Neuer Branch von ${base}`,
       switchTo: branch => `Zu ${branch} wechseln`,
@@ -4579,6 +5134,10 @@ export const deOverrides = {
       branch: branch => `Branch ${branch}`,
       closeCommandCenter: 'Command Center schließen',
       openCommandCenter: 'Command Center öffnen',
+      toggleNotices: 'Benachrichtigungen',
+      noticesTitle: 'Letzte Benachrichtigungen',
+      toggleAttentionInbox: 'Eingang',
+      attentionInboxTitle: 'Ausstehende Freigaben und Fragen',
       showTerminal: 'Terminal anzeigen',
       hideTerminal: 'Terminal ausblenden',
       gateway: 'Gateway',
@@ -4663,6 +5222,19 @@ export const deOverrides = {
     }
   },
   rightSidebar: {
+    agentTouched: 'In diesem Chat bearbeitet',
+    newFile: 'Neue Datei',
+    newFolder: 'Neuer Ordner',
+    filterFiles: 'Dateien filtern',
+    newFileIn: label => `Neue Datei in ${label}`,
+    newFolderIn: label => `Neuer Ordner in ${label}`,
+    newFilePlaceholder: 'name.ts — Schrägstriche erzeugen Ordner',
+    newFolderPlaceholder: 'ordnername',
+    newFileFailed: 'Datei konnte nicht erstellt werden',
+    newFolderFailed: 'Ordner konnte nicht erstellt werden',
+    filterPlaceholder: 'Dateien filtern…',
+    filterHint: 'Tippe einen Teil eines Namens. Durchsucht das ganze Projekt, nicht nur geöffnete Ordner.',
+    filterNoMatch: 'Keine passenden Dateien',
     aria: 'Rechte Sidebar',
     panelsAria: 'Panels der rechten Sidebar',
     files: 'Dateisystem',
@@ -4723,6 +5295,9 @@ export const deOverrides = {
     sourceLineTitle: 'Zum Auswählen klicken · zum Erweitern Umschalt-Klick · zum Composer ziehen',
     source: 'QUELLE',
     renderedPreview: 'VORSCHAU',
+    table: 'TABELLE',
+    tableTruncated: (rows: number) => `Die ersten ${rows.toLocaleString()} Zeilen. Die Quelle enthält die ganze Datei.`,
+    canvas: 'LEINWAND',
     diff: 'DIFF',
     unknownSize: 'unbekannte Größe',
     binaryTitle: 'Das sieht wie eine Binärdatei aus',
@@ -4816,7 +5391,27 @@ export const deOverrides = {
       commentPlaceholder: 'Kommentar hinzufügen …',
       commentTitle: n => `Kommentar ${n}`,
       saveComment: 'Speichern',
-      cancelComment: 'Kommentar abbrechen'
+      cancelComment: 'Kommentar abbrechen',
+      record: 'Aufgabe aufzeichnen',
+      recordStop: 'Aufzeichnung stoppen',
+      recording: count => `Aufzeichnung · ${count}`,
+      recordNeedPage: 'Öffne zuerst eine Seite im In-App-Browser.',
+      recordFailed: 'Aufzeichnung konnte auf dieser Seite nicht gestartet werden.',
+      recordTitle: 'Aufzeichnung als Skill speichern',
+      recordDesc:
+        'Prüfe die aufgezeichneten Schritte, benenne den Skill und speichere ihn als Entwurf. Der Agent kann ihn dann aus deinen Skills wiedergeben.',
+      recordName: 'Name',
+      recordNamePlaceholder: 'Lebensmittel bestellen',
+      recordNameHint: slug => `Wird als „${slug}“ unter ~/.hermes/skills/ gespeichert`,
+      recordDescLabel: 'Beschreibung (optional)',
+      recordDescPlaceholder: 'Wann dieser Ablauf verwendet wird…',
+      recordDescHint: 'Ein Satz, höchstens 60 Zeichen.',
+      recordSteps: count => `Aufgezeichnete Schritte (${count})`,
+      recordEmpty: 'Keine Schritte erfasst — die Aufzeichnung war leer.',
+      recordSave: 'Skill speichern',
+      recordSaving: 'Wird gespeichert…',
+      recordSaved: name => `„${name}“ wurde in deinen Skills gespeichert.`,
+      recordSaveFailed: 'Skill konnte nicht gespeichert werden.'
     }
   },
   interfaceMode: {
@@ -4824,6 +5419,8 @@ export const deOverrides = {
     hint: 'Ändert, was angezeigt wird, nicht was Hermes kann.',
     sessionNote:
       'Vom einfachen Modus festgelegt. Eine Änderung hier gilt für diese Session; wechseln Sie zu „Erweitert“, um sie dauerhaft zu übernehmen.',
+    simpleNotice: 'Einfacher Modus — Bereiche und zusätzliche Werkzeuge sind ausgeblendet.',
+    showAdvanced: 'Erweitert anzeigen',
     simple: {
       label: 'Einfach',
       description: 'Zum Chatten mit Hermes. Seitenleiste und Chat; keine Terminal-, Datei- oder Diff-Bereiche.'
@@ -4907,9 +5504,16 @@ export const deOverrides = {
     }
   },
   assistant: {
+    sessionRecap: {
+      title: 'Hier ging es weiter',
+      dismiss: 'Schließen',
+      turns: count => `${count} ${count === 1 ? 'Runde' : 'Runden'}`,
+      todo: progress => `Plan ${progress}`
+    },
     thread: {
       loadingSession: 'Session wird geladen',
       showEarlier: 'Frühere Nachrichten anzeigen',
+      timelineScrubber: 'Transkript-Minimap',
       loadingResponse: 'Hermes lädt eine Antwort',
       loadingLocalModel: model => `${model} wird in den Speicher geladen`,
       processingPrompt: 'Verarbeite Prompt',
@@ -5143,6 +5747,7 @@ export const deOverrides = {
       stopReading: 'Vorlesen stoppen',
       readAloud: 'Vorlesen',
       copyFullResponse: 'Vollständige Antwort kopieren',
+      copyMarkdown: 'Als Markdown kopieren',
       readAloudFullResponseHint: 'Umschalt-Klick: vollständige Antwort vorlesen',
       editMessage: 'Nachricht bearbeiten',
       expandMessage: 'Nachricht aufklappen',
@@ -5155,6 +5760,12 @@ export const deOverrides = {
       restoreBody: 'Alles nach diesem Prompt wird aus der Konversation entfernt, und der Prompt läuft von hier erneut.',
       restoreConfirm: 'Wiederherstellen & erneut ausführen',
       restoreNext: 'Nächsten Checkpoint wiederherstellen',
+      revertFilesTip: 'Dateien auf den Stand vor diesem Prompt zurücksetzen',
+      revertFilesTitle: 'Dateien zurücksetzen?',
+      revertFilesBody:
+        'Dateien, die Hermes in diesem Schritt geändert hat, werden zurückgesetzt — von dir manuell bearbeitete Dateien bleiben erhalten. Die Konversation bleibt unverändert.',
+      revertFilesConfirm: 'Dateien zurücksetzen',
+      revertFilesFailed: 'Dateien konnten nicht zurückgesetzt werden',
       goForward: 'Vorwärts',
       sendEdited: 'Bearbeitete Nachricht senden',
       attachingFile: 'Hängt an…'
@@ -5178,8 +5789,24 @@ export const deOverrides = {
         `Dies fügt das Muster „${pattern}“ Ihrer dauerhaften Zulassungsliste hinzu (~/.hermes/config.yaml). Hermes fragt bei solchen Befehlen nicht mehr nach – weder in dieser noch in zukünftigen Sessions.`,
       alwaysAllow: 'Immer erlauben'
     },
-    clarify: deClarify,
-    themePicker: deThemePicker,
+    clarify: {
+      notReady: 'Klärungsanfrage ist noch nicht bereit',
+      gatewayDisconnected: 'Hermes-Gateway ist nicht verbunden',
+      sendFailed: 'Klärungsantwort konnte nicht gesendet werden',
+      loadingQuestion: 'Frage wird geladen…',
+      other: 'Anderes (Antwort eingeben)',
+      placeholder: 'Geben Sie Ihre Antwort ein…',
+      skip: 'Überspringen',
+      skipped: 'Übersprungen',
+      noAnswer: 'Keine Antwort',
+      confirmAndContinueLabel: 'Bestätigen und fortfahren',
+      singleSelectHint: 'Eines auswählen',
+      multiSelectHint: 'Alle Treffer auswählen',
+      oneQuestion: '1 Frage',
+      questionProgress: (answered, total) => `${answered} von ${total} beantwortet`,
+      notDelivered:
+        'Diese Frage hat die App nicht erreicht und kann hier nicht beantwortet werden. Klicken Sie auf Stopp, um den Durchgang zu beenden, und antworten Sie dann im Chat.'
+    },
     catalogInstall: {
       preparing: 'Installation wird vorbereitet…',
       install: 'Installieren',
@@ -5196,12 +5823,14 @@ export const deOverrides = {
         plugin: 'Plugin',
         skill: 'Skill'
       },
-      tier: { official: 'offiziell', verified: 'verifiziert', community: 'Community' },
+      tier: {
+        official: 'offiziell',
+        community: 'Community'
+      },
       targetProfile: (profile: string) => `Wird in Ihr Profil ${profile} installiert`,
       sendFailed: 'Ihre Antwort konnte nicht gesendet werden. Versuchen Sie es erneut.',
       commitLabel: 'Commit',
       subdirLabel: 'Ordner',
-      securityHeading: 'Sicherheit',
       scan: {
         passed: 'Scan bestanden',
         warnings: 'Scan hat Warnungen gefunden',
@@ -5426,6 +6055,10 @@ export const deOverrides = {
     secretTitle: 'Geheimnis erforderlich',
     secretDesc: 'Hermes benötigt eine Zugangsdaten, um fortzufahren.',
     secretPlaceholder: 'Geheimnis-Wert',
+    secretCardSkip: 'Überspringen',
+    secretCardSave: 'Speichern',
+    secretCardFootnote:
+      'Wird in den Secrets dieses Profils gespeichert — der Wert geht direkt an das Backend und landet nie in der Unterhaltung.',
     vaultUnlockSendFailed: 'Master-Passwort konnte nicht gesendet werden',
     vaultUnlockTitle: name => `${name} entsperren`,
     vaultUnlockDesc: name =>
@@ -5518,6 +6151,19 @@ export const deOverrides = {
     hydrationSyncing: (profile: string) => `Synchronisiert ${profile}…`,
     sessionExported: 'Session exportiert',
     sessionExportFailed: 'Session konnte nicht exportiert werden',
+    markdownUser: 'Benutzer',
+    markdownAssistant: 'Assistent',
+    markdownSystem: 'System',
+    markdownReasoning: 'Gedanken',
+    markdownToolCall: 'Tool-Aufruf',
+    markdownToolResult: 'Tool-Ergebnis',
+    deliverableArtifacts: 'Artefakte',
+    deliverableChanges: 'Änderungen',
+    deliverableFilesLine: (files, added, removed) => `${files} Dateien bearbeitet · +${added} / −${removed}`,
+    deliverableNoSummary: 'Keine Assistentenantwort aufgezeichnet',
+    deliverablePullRequest: 'Pull Request',
+    deliverableSession: 'Session',
+    deliverableSummary: 'Zusammenfassung',
     imageSaved: 'Bild gespeichert',
     downloadStarted: 'Download gestartet',
     restartToUseSaveImage: 'Starten Sie Hermes Desktop neu, um „Bild speichern“ zu verwenden.',
@@ -5530,6 +6176,7 @@ export const deOverrides = {
     imageAttach: 'Bild anhängen',
     imageWriteFailed: 'Bild konnte nicht auf die Festplatte geschrieben werden.',
     imageAttachFailed: 'Bild-Anhängen fehlgeschlagen',
+    pastedAsFile: 'Als Datei eingefügt',
     pastedContent: 'Eingefügter Inhalt',
     pasteAttachFailed: 'Eingefügter Text konnte nicht angehängt werden',
     attachImages: 'Bilder anhängen',
@@ -5539,6 +6186,8 @@ export const deOverrides = {
     dropFiles: 'Dateien ablegen',
     handoff: {
       pickPlatform: 'Ziel wählen',
+      queued: (platform, home) => `Übergabe an ${platform} (${home})…`,
+      sessionUnavailable: 'Dieser Chat ist gerade nicht live auf dem Gateway.',
       success: platform => `Übergeben an ${platform}. Jederzeit hier fortsetzen.`,
       systemNote: platform => `↻ Übergeben an ${platform} — jederzeit hier fortsetzen.`,
       failed: error => `Übergabe fehlgeschlagen: ${error}`,
@@ -5546,6 +6195,21 @@ export const deOverrides = {
       startMessaging: 'Messaging starten'
     }
   },
+  menuBar: {
+    newSession: 'Neue Sitzung',
+    quickEntry: 'Schnelleingabe',
+    quit: 'Hermes beenden',
+    recentSessions: 'Letzte Sitzungen',
+    show: 'Hermes anzeigen',
+    statusIdle: 'Hermes — bereit',
+    statusActive: (runs: number, needsYou: number) => `${runs} aktiv · ${needsYou} wartet auf Sie`
+  },
+
+  quickEntry: {
+    contextLabel: 'Kontext',
+    contextRemove: 'Kontext entfernen'
+  },
+
   tips: {
     close: 'Diesen Tip nicht mehr zeigen',
     items: {
@@ -5589,6 +6253,10 @@ export const deOverrides = {
       'right-pane': {
         title: 'Der Arbeitsbereich',
         text: 'Dateien, Terminal, Review und der In-App-Browser teilen sich die rechte Seite.'
+      },
+      'advanced-mode': {
+        title: 'Mehr hinter Erweitert',
+        text: 'Bereiche, Cron, Skills und die Statusleiste ruhen im Erweiterten Modus — Einstellungen › Darstellung › Fenster & Layout schaltet um.'
       }
     }
   },

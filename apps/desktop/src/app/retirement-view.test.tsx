@@ -30,6 +30,12 @@ test('discontinued retirement shows the uninstall notice and persists dismissal 
     stored.set(key, value)
   })
 
+  const openExternal = vi.fn().mockResolvedValue(undefined)
+  Object.defineProperty(window, 'hermesDesktop', {
+    configurable: true,
+    value: { openExternal }
+  })
+
   const retirement: NonNullable<DesktopUpdateStatus['retirement']> = {
     state: 'discontinued',
     destination: 'stable',
@@ -51,12 +57,17 @@ test('discontinued retirement shows the uninstall notice and persists dismissal 
     </I18nProvider>
   )
 
-  // The notice carries the "no longer supported — uninstall" copy, and offers
-  // no download or install action — only the dismissal.
+  // The notice carries the "no longer supported — uninstall" copy,
+  // offers an action to open the docs / download page, and offers dismissal.
   expect(screen.getByText(en.updates.discontinuedTitle)).toBeTruthy()
   expect(screen.getByText(en.updates.discontinuedBody)).toBeTruthy()
   expect(screen.queryByRole('button', { name: en.updates.updateNow })).toBeNull()
   expect(screen.queryByRole('checkbox')).toBeNull()
+
+  const primaryButton = screen.getByRole('button', { name: en.updates.openDownloadPage })
+  expect(primaryButton).toBeTruthy()
+  fireEvent.click(primaryButton)
+  expect(openExternal).toHaveBeenCalledWith('https://hermes-agent.nousresearch.com/docs')
 
   fireEvent.click(screen.getByRole('button', { name: en.updates.maybeLater }))
   await waitFor((): void => {

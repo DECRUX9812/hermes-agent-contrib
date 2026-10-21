@@ -38,7 +38,7 @@ const MEMBERS: GroupMember[] = [
 
 /** Render the composer the way a room does: value owned by the caller (the
  *  draft atom in production), popover scoped to the seated members. */
-async function mount(initial = '') {
+async function mount(initial = '', onEscape?: () => void) {
   const { GroupMentionInput } = await import('./group-chat-parts')
   const onChange = vi.fn()
   const onSubmitDraft = vi.fn()
@@ -54,6 +54,7 @@ async function mount(initial = '') {
           onChange(next)
           setValue(next)
         }}
+        onEscape={onEscape}
         onSubmitDraft={onSubmitDraft}
         value={value}
       />
@@ -207,6 +208,35 @@ describe('keyboard (#89884)', () => {
     fireEvent.keyDown(input, { key: 'Enter', keyCode: 229 })
 
     expect(onSubmitDraft).not.toHaveBeenCalled()
+  })
+
+  // Escape is two layers: first it dismisses the @-popover (the input's own
+  // concern), and only with no popover does it reach the room — which closes
+  // the open reply box. One Escape must never do both at once.
+  it('hands Escape to the room only when the mention popover is closed', async () => {
+    const onEscape = vi.fn()
+    const { input, onSubmitDraft } = await mount('', onEscape)
+
+    // Popover open: Escape dismisses it and stops — the room never hears it.
+    typeInto(input, 'hey @alp')
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(options()).toHaveLength(0)
+    expect(onEscape).not.toHaveBeenCalled()
+
+    // Popover closed: Escape reaches the room.
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(onEscape).toHaveBeenCalledTimes(1)
+    // Escape is not a submit, in either layer.
+    expect(onSubmitDraft).not.toHaveBeenCalled()
+  })
+
+  it('keeps the typed draft when Escape falls through — the room decides what closes', async () => {
+    const { input, onChange } = await mount('half a reply')
+
+    fireEvent.keyDown(input, { key: 'Escape' })
+
+    expect(onChange).not.toHaveBeenCalled()
+    expect((screen.getByLabelText('Message Core') as HTMLTextAreaElement).value).toBe('half a reply')
   })
 })
 

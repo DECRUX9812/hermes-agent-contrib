@@ -441,6 +441,66 @@ export const slateTheme: DesktopTheme = {
   }
 }
 
+/**
+ * Bops — the bops.bot "bots are staff" identity. Paper, ink and highlighter
+ * lime in Geist / Geist Mono: their UI renders ink-on-paper with lime used
+ * only as fills behind ink text, so the brand stroke (midground) is ink on
+ * light and lime on dark. First-party port of their published tokens.
+ */
+export const bopsTheme: DesktopTheme = {
+  name: 'bops',
+  label: 'Bops',
+  description: 'Paper white, ink black and highlighter lime — the bops.bot staff look',
+  ...THEME_PRESET_PALETTES.bops,
+  typography: {
+    fontSans: `"Geist", ${SYSTEM_SANS}`,
+    fontMono: `"Geist Mono", ${SYSTEM_MONO}`,
+    fontUrl:
+      'https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@500;600&display=swap'
+  },
+  terminal: {
+    foreground: '#0a0a0a',
+    cursor: '#0a0a0a',
+    black: '#0a0a0a',
+    red: '#f04438',
+    green: '#2d9e5f',
+    yellow: '#e59a0b',
+    blue: '#0b84fe',
+    magenta: '#a78bfa',
+    cyan: '#14a79a',
+    white: '#f7f7f5',
+    brightBlack: '#6b6b6b',
+    brightRed: '#f97066',
+    brightGreen: '#47c46b',
+    brightYellow: '#f2b84b',
+    brightBlue: '#4da3ff',
+    brightMagenta: '#c4b5fd',
+    brightCyan: '#2ec4b6',
+    brightWhite: '#ffffff'
+  },
+  darkTerminal: {
+    foreground: '#f7f7f5',
+    cursor: '#e9ff3b',
+    selectionBackground: 'rgba(233, 255, 59, 0.25)',
+    black: '#3a3a38',
+    red: '#f97066',
+    green: '#47c46b',
+    yellow: '#f2b84b',
+    blue: '#4da3ff',
+    magenta: '#c4b5fd',
+    cyan: '#2ec4b6',
+    white: '#e6e6e3',
+    brightBlack: '#6b6b6b',
+    brightRed: '#fda29b',
+    brightGreen: '#75e0a7',
+    brightYellow: '#ffd297',
+    brightBlue: '#84c2ff',
+    brightMagenta: '#ddd6fe',
+    brightCyan: '#5eead4',
+    brightWhite: '#ffffff'
+  }
+}
+
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   nous: nousTheme,
   github: githubTheme,
@@ -453,7 +513,8 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   ember: emberTheme,
   mono: monoTheme,
   slate: slateTheme,
-  cyberpunk: cyberpunkTheme
+  cyberpunk: cyberpunkTheme,
+  bops: bopsTheme
 }
 
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)

@@ -7,6 +7,7 @@ import type {
   HermesSelectPathsOptions
 } from '@/global'
 import { translateNow } from '@/i18n'
+import { isBrowserHostedDesktop } from '@/lib/platform'
 import { $connection } from '@/store/session'
 
 export interface DesktopFsRemotePicker {
@@ -44,7 +45,7 @@ export function desktopFsCacheKey(connection: HermesConnection | null = $connect
 }
 
 export function isDesktopFsRemoteMode() {
-  return $connection.get()?.mode === 'remote'
+  return $connection.get()?.mode === 'remote' || isBrowserHostedDesktop()
 }
 
 // Active profile for FS/git REST calls. Without it the Electron api bridge
@@ -149,6 +150,21 @@ export async function createRemoteDir(path: string): Promise<string> {
   const result = await remoteFsApi<{ path?: string }>('/api/files/mkdir', { path })
 
   return result.path || path
+}
+
+/** Create one folder, locally or on the connected backend (file tree "New folder"). */
+export async function createDesktopDir(path: string): Promise<string> {
+  if (isDesktopFsRemoteMode()) {
+    return createRemoteDir(path)
+  }
+
+  const desktop = bridge()
+
+  if (!desktop.makeDirectory) {
+    throw new Error('Creating folders is not available')
+  }
+
+  return (await desktop.makeDirectory(path)).path
 }
 
 export async function readDesktopFileDataUrl(path: string): Promise<string> {

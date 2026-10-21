@@ -112,5 +112,21 @@ export const jaLocalModels: TranslationOverride<Translations['settings']['localM
   deleteAction: 'モデルを削除',
   deleteConfirm: model => `${model} をディスクから削除しますか？`,
   deleted: model => `${model} を削除しました。`,
-  deleteFailed: '削除に失敗しました'
+  deleteFailed: '削除に失敗しました',
+  downloadEtaSeconds: count => `${count} 秒`,
+  downloadEtaMinutes: count => `${count} 分`,
+  downloadEtaHours: (hours, minutes) => (minutes ? `${hours} 時間 ${minutes} 分` : `${hours} 時間`),
+  quickstartTitle: 'このマシンでモデルを実行',
+  quickstartDetail: (model, size) =>
+    `ワンクリックでセットアップ完了：ローカルエンジン、${model}（${size} のダウンロード）、新規チャットの既定。何もこのコンピューターの外に出ません。`,
+  quickstartDetailReady: model =>
+    `ワンクリックで ${model} が新規チャットの既定になります。すべてこのマシンで実行されます。`,
+  quickstartAction: 'セットアップする',
+  quickstartDoneToast: model => `${model} のセットアップが完了 — 新規チャットはこのマシンで実行されます。`,
+  quickstartFailed: 'ローカルモデルのセットアップに失敗しました',
+  quickstartStageEngine: 'エンジン',
+  quickstartStageModel: 'モデル',
+  quickstartStageFinish: '完了',
+  downloadPauseFailed: model => `${model} のダウンロードを一時停止できませんでした`,
+  downloadResumeFailed: model => `${model} のダウンロードを再開できませんでした`
 }

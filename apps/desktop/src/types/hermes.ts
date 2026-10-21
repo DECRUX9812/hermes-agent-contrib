@@ -347,6 +347,18 @@ export interface MessagingHomeChannel {
   thread_id?: string
 }
 
+/** Adapter-published contact point for "continue on your phone" surfaces.
+ *  `deep_link` opens the vendor app directly (t.me/@bot, slack://user…);
+ *  `web_link` is the https fallback a phone camera can scan. */
+export interface MessagingPlatformIdentity {
+  bot_user_id?: string
+  deep_link?: string
+  label?: string
+  team_id?: string
+  username?: string
+  web_link?: string
+}
+
 export interface MessagingPlatformInfo {
   configured: boolean
   description: string
@@ -358,6 +370,9 @@ export interface MessagingPlatformInfo {
   gateway_running: boolean
   home_channel?: MessagingHomeChannel | null
   id: string
+  /** Set by adapters that know their own handle/workspace; only populated while
+   *  the gateway is running and the adapter has connected. */
+  identity?: MessagingPlatformIdentity | null
   /** Served secondary under a multiplexed gateway: the /p/<profile>/ URL on the shared listener
    *  the client (or vendor console) must call. Null for standalone and default-profile platforms. */
   ingress_url?: null | string
@@ -497,6 +512,8 @@ export interface HermesConfig {
   }
   desktop?: {
     font_family?: string
+    theme?: string
+    theme_mode?: string
     repo_scan_enabled?: boolean
     repo_scan_roots?: string[]
     repo_scan_exclude_paths?: string[]
@@ -701,6 +718,9 @@ export interface SessionMessage {
   content: unknown
   /** Backend-projected user-visible content when a physical row also carries internal model scaffolding. */
   display_content?: unknown
+  /** Backend canonical human-turn classification, before display unwrapping.
+   * Display-only; absent on older backends. False still renders the notice. */
+  user_originated?: boolean
   /** Sanitized, profile-authorized public commentary supplied by the history backend. Never recover this from raw replay. */
   display_commentary?: string[]
   /** Display-only reasoning after removing exact public commentary; stored reasoning remains unmodified. */
@@ -798,6 +818,8 @@ export interface SessionResumeResult {
     status?: string
     streaming?: boolean
     user?: string
+    /** Display-only classification of the original turn, shared with history. */
+    user_originated?: boolean
   }
   queued?: null | {
     user?: string

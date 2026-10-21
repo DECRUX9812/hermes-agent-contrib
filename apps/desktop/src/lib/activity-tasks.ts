@@ -1,0 +1,412 @@
+import type { ChatMessage } from '@/lib/chat-messages'
+import { type LiveAction, toLiveAction, type ToolCallPart } from '@/lib/live-actions'
+
+/**
+ * The Activity view's data: a session read as a list of TASKS instead of one
+ * long transcript. Each user request opens a task; the tool calls the agent
+ * made answering it are that task's steps, in order, each with the raw
+ * command/input/output the Live feed already shows. Derived from the parts
+ * the session holds, so nothing here needs a new RPC and a reload rebuilds
+ * the same list.
+ */
+
+/** What a step did, as one plain verb. The UI owns the wording. */
+export type ActivityVerb =
+  | 'asked'
+  | 'browsed'
+  | 'created'
+  | 'delegated'
+  | 'edited'
+  | 'looked'
+  | 'operated'
+  | 'planned'
+  | 'ran'
+  | 'read'
+  | 'remembered'
+  | 'scheduled'
+  | 'searched'
+  | 'tracked'
+  | 'used'
+
+export type ActivityStatus = 'done' | 'error' | 'running' | 'stopped'
+
+export interface ActivityStep {
+  id: string
+  verb: ActivityVerb
+  /** The thing acted on, short: a file name, a command's first line, a
+   *  query, a host. '' when the call has no single target. */
+  subject: string
+  action: LiveAction
+}
+
+export interface ActivityTask {
+  id: string
+  /** The request, first line, as the user wrote it. '' for work the agent
+   *  started on its own (an intro, a resumed turn with no request in view). */
+  title: string
+  status: ActivityStatus
+  /** Seconds since epoch. */
+  startedAt: number
+  completedAt: null | number
+  steps: ActivityStep[]
+  /** First sentence of the agent's final reply, '' until it has one. */
+  outcome: string
+  errorCount: number
+  /** The row's one-line subject: the request in as few words as carry it
+   *  (already run through {@link requestSubject}), '' for work the agent
+   *  started on its own — there the row names the work instead, which needs
+   *  the UI's wording (see `taskSubject` in the plugin's activity-format).
+   *  This is the slot the async model-subject upgrade writes into. */
+  subject: string
+  /** Where `subject` came from: 'derived' at derivation, 'model' once the
+   *  renderer's upgrade layer has merged a cached model-written subject in. */
+  subjectSource?: 'derived' | 'model'
+}
+
+const VERB_BY_TOOL: Readonly<Record<string, ActivityVerb>> = {
+  clarify: 'asked',
+  computer_use: 'operated',
+  cronjob_manage: 'scheduled',
+  delegate_task: 'delegated',
+  execute_code: 'ran',
+  image_generate: 'created',
+  memory: 'remembered',
+  patch: 'edited',
+  process: 'ran',
+  process_manage: 'ran',
+  read_file: 'read',
+  search_files: 'searched',
+  session_search: 'searched',
+  skill_manage: 'edited',
+  skill_view: 'read',
+  skills_list: 'searched',
+  terminal: 'ran',
+  text_to_speech: 'created',
+  todo_list: 'planned',
+  vision_analyze: 'looked',
+  web_extract: 'browsed',
+  web_search: 'searched',
+  write_file: 'edited',
+  x_search: 'searched'
+}
+
+/** Tool families named by prefix rather than one by one. */
+const VERB_BY_PREFIX: readonly (readonly [string, ActivityVerb])[] = [
+  ['browser_', 'browsed'],
+  ['kanban_', 'tracked']
+]
+
+export function activityVerb(tool: string): ActivityVerb {
+  const exact = VERB_BY_TOOL[tool]
+
+  if (exact) {
+    return exact
+  }
+
+  return VERB_BY_PREFIX.find(([prefix]) => tool.startsWith(prefix))?.[1] ?? 'used'
+}
+
+const SUBJECT_MAX = 80
+/** A row subject's cap: the line a glance reads first. */
+const REQUEST_MAX = 60
+
+function clip(text: string, max = SUBJECT_MAX): string {
+  const line = text.split('\n', 1)[0].trim()
+
+  if (line.length <= max) {
+    return line
+  }
+
+  // Cut on a word boundary: a row must never end mid-word ("…the Backdro").
+  const window = line.slice(0, max - 1)
+  const boundary = window.lastIndexOf(' ')
+
+  return `${(boundary > 0 ? window.slice(0, boundary) : window).trimEnd()}…`
+}
+
+/** One pleasantry that opens a message without carrying meaning, anchored to
+ *  a word boundary. Runs are stripped ONE AT A TIME (below) so the strip can
+ *  be re-checked at every step instead of stopping wherever the old `+` run
+ *  happened to end. */
+const LEAD_FILLER =
+  /^(?:hey|hi|hello|yo|sup|ok|okay|so|well|um|uh|please|pls|good (?:morning|afternoon|evening)|can you|could you|would you|will you|can we|i want you to|i need you to|i'?d like you to|i want|i need|help me|let'?s)\b[\s,.:;-]*/i
+
+/** A word that cannot head a subject — articles, prepositions, the
+ *  infinitive marker. Stripping a pleasantry may strand one ("Ok so I need
+ *  to deploy the plugin" → "to deploy the plugin"), so the strip carries on
+ *  through it and lands on the next PHRASE boundary instead.
+ *
+ *  Only consulted once a pleasantry has actually been stripped: a request
+ *  that opens with its own words ("the plugin catalog needs an entry") keeps
+ *  them, and nothing is ever stripped to nothing. */
+const STRANDED_HEAD =
+  /^(?:to|a|an|the|that|of|in|on|at|for|with|from|by|and|or|but)\b[\s,.:;-]+/i
+
+/** Trailing courtesies that add nothing to a subject. Each is a whole word
+ *  at the end of the message, so the tail strip is boundary-anchored too. */
+const TAIL_FILLER = /[\s,.:;-]*(?:thanks|thank you|thx|ty|cheers|please)[\s!.]*$/i
+
+/** Strip the pleasantries off a request. `trimmed` says whether the head of
+ *  the line changed — the caller capitalizes only then, so a subject that
+ *  was never stripped keeps its own casing. */
+function stripRequest(text: string): { body: string; trimmed: boolean } {
+  let out = text
+  let trimmed = false
+
+  for (;;) {
+    const filler = LEAD_FILLER.exec(out)
+
+    if (filler && filler[0].length && filler[0].length < out.length) {
+      out = out.slice(filler[0].length)
+      trimmed = true
+
+      continue
+    }
+
+    if (trimmed) {
+      const stranded = STRANDED_HEAD.exec(out)
+
+      if (stranded && stranded[0].length < out.length) {
+        out = out.slice(stranded[0].length)
+
+        continue
+      }
+    }
+
+    break
+  }
+
+  return { body: out.replace(TAIL_FILLER, '').trim(), trimmed }
+}
+
+/** A request's row subject: the ask in as few words as carry it.
+ *
+ *  This is deliberately deterministic and local — the Activity feed is derived
+ *  from the messages the session already holds, so it works offline, survives a
+ *  reload, and costs no tokens. It is NOT an abstractive summary: a model-written
+ *  one would need an RPC per request and would drift from the transcript it sits
+ *  next to. (The renderer's async upgrade layer may later REPLACE this with a
+ *  cached model subject; this stays the fallback it degrades to.) The job here
+ *  is to make a long message read short, not to invent wording the user never
+ *  used. */
+export function requestSubject(text: string): string {
+  const flat = text
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/[#>*_`]+/g, '')
+    .split('\n', 1)[0]
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!flat) {
+    return ''
+  }
+
+  const { body, trimmed } = stripRequest(flat)
+
+  // Never strip to nothing: a bare "Hey" was still a request.
+  const kept = body || flat
+  // The head moved, so the new head reads as a sentence: "try Again" → "Try Again".
+  const head = trimmed && kept ? kept[0].toUpperCase() + kept.slice(1) : kept
+
+  // Cap tighter than a step subject: this is the line a glance reads first.
+  return clip(head, REQUEST_MAX)
+}
+
+function basename(path: string): string {
+  const trimmed = path.replace(/[\\/]+$/, '')
+
+  return trimmed.slice(Math.max(trimmed.lastIndexOf('/'), trimmed.lastIndexOf('\\')) + 1) || trimmed
+}
+
+function host(url: string): string {
+  try {
+    return new URL(url).host || url
+  } catch {
+    return url
+  }
+}
+
+function subjectOf(verb: ActivityVerb, target: string): string {
+  if (!target) {
+    return ''
+  }
+
+  if (verb === 'read' || verb === 'edited') {
+    return clip(basename(target))
+  }
+
+  if (verb === 'browsed' && /^https?:\/\//i.test(target)) {
+    return clip(host(target))
+  }
+
+  return clip(target)
+}
+
+function textOf(message: ChatMessage): string {
+  return message.parts
+    .map(part => (part.type === 'text' ? part.text : ''))
+    .join('')
+    .trim()
+}
+
+/** The reply's opening sentence: what a glance at the list should say. */
+function firstSentence(text: string): string {
+  const firstLine =
+    text
+      .replace(/```[\s\S]*?```/g, ' ')
+      .split('\n')
+      .map(line => line.replace(/^\s*(?:[#>*-]|\d+\.)\s*/, '').trim())
+      .find(Boolean) ?? ''
+
+  const flat = firstLine.replace(/[*_`]+/g, '').replace(/\s+/g, ' ').trim()
+
+  const end = flat.search(/[.!?](\s|$)/)
+
+  return clip(end > 0 ? flat.slice(0, end + 1) : flat, 140)
+}
+
+function isRequest(message: ChatMessage): boolean {
+  return message.role === 'user' && message.userOriginated !== false
+}
+
+interface Draft {
+  task: ActivityTask
+  reply: string
+  ended: 'error' | 'stopped' | null
+}
+
+function openTask(id: string, title: string, startedAt: number): Draft {
+  return {
+    task: {
+      completedAt: null,
+      errorCount: 0,
+      id,
+      outcome: '',
+      startedAt,
+      status: 'done',
+      steps: [],
+      subject: '',
+      subjectSource: 'derived',
+      title
+    },
+    reply: '',
+    ended: null
+  }
+}
+
+function addMessage(draft: Draft, message: ChatMessage, seen: Map<string, ActivityStep>): void {
+  message.parts.forEach((part, index) => {
+    if (part.type !== 'tool-call') {
+      return
+    }
+
+    const id = part.toolCallId || `${message.id}:${index}`
+    const action = toLiveAction(part as ToolCallPart, id)
+    const known = seen.get(id)
+
+    if (known) {
+      // A replayed completion or resealed bubble: keep the call's latest state.
+      known.action = action
+
+      return
+    }
+
+    const verb = activityVerb(action.tool)
+    const step: ActivityStep = { action, id, subject: subjectOf(verb, action.target), verb }
+
+    seen.set(id, step)
+    draft.task.steps.push(step)
+  })
+
+  const text = textOf(message)
+
+  if (text) {
+    draft.reply = text
+  }
+
+  if (message.error) {
+    draft.ended = 'error'
+  } else if (message.interrupted) {
+    draft.ended = 'stopped'
+  }
+
+  const end = message.completedAt ?? message.timestamp
+
+  if (end) {
+    draft.task.completedAt = Math.max(draft.task.completedAt ?? 0, end)
+  }
+
+  if (!draft.task.startedAt && message.timestamp) {
+    draft.task.startedAt = message.timestamp
+  }
+}
+
+function seal(draft: Draft, live: boolean): ActivityTask {
+  const { task } = draft
+  const steps = task.steps
+  const anyRunning = steps.some(step => step.action.status === 'running')
+
+  task.errorCount = steps.filter(step => step.action.status === 'error').length
+  task.outcome = draft.reply ? firstSentence(draft.reply) : ''
+  // The request half of the row's subject chain, derived here so every
+  // consumer renders `subject` (or `taskSubject`'s step fallback) instead of
+  // re-deriving. '' for work the agent started on its own.
+  task.subject = requestSubject(task.title)
+  task.subjectSource = 'derived'
+
+  for (const step of steps) {
+    task.startedAt ||= step.action.startedAt
+    task.completedAt = Math.max(task.completedAt ?? 0, step.action.completedAt ?? 0) || task.completedAt
+  }
+
+  task.status = live || anyRunning ? 'running' : (draft.ended ?? 'done')
+
+  if (task.status === 'running') {
+    task.completedAt = null
+  }
+
+  return task
+}
+
+/** A session's messages as tasks, oldest first. `busy` marks the newest task
+ *  as still running (the turn is live even between tool calls). Tasks with
+ *  neither a request nor a step (a bare greeting) are left out: there was no
+ *  work to show. */
+export function deriveActivityTasks(
+  messages: readonly ChatMessage[] | undefined,
+  { busy = false }: { busy?: boolean } = {}
+): ActivityTask[] {
+  const drafts: Draft[] = []
+  const seen = new Map<string, ActivityStep>()
+
+  for (const message of messages ?? []) {
+    if (message.hidden && !isRequest(message)) {
+      continue
+    }
+
+    if (isRequest(message)) {
+      drafts.push(openTask(message.id, requestSubject(textOf(message)), message.timestamp ?? 0))
+
+      continue
+    }
+
+    if (message.role !== 'assistant') {
+      continue
+    }
+
+    if (!drafts.length) {
+      drafts.push(openTask(message.id, '', message.timestamp ?? 0))
+    }
+
+    addMessage(drafts[drafts.length - 1], message, seen)
+  }
+
+  return drafts
+    .map((draft, index) => seal(draft, busy && index === drafts.length - 1))
+    .filter(task => task.title || task.steps.length)
+}
+
+/** The step a list row should name: the one running, else the last. */
+export function currentStep(task: ActivityTask): ActivityStep | null {
+  return task.steps.find(step => step.action.status === 'running') ?? task.steps.at(-1) ?? null
+}

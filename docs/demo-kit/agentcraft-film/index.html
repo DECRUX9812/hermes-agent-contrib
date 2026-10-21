@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>AgentCraft Studio — Hermes Desktop</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: 'Silkscreen'; src: url(assets/silkscreen.woff2) format('woff2'); font-weight: 400; }
+      @font-face { font-family: 'Silkscreen'; src: url(assets/silkscreen-bold.woff2) format('woff2'); font-weight: 700; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #0b0810; }
+      #main { position: relative; width: 100%; height: 100%; overflow: hidden; font-family: 'Silkscreen', monospace; }
+      #stage { position: absolute; inset: 0; overflow: hidden; }
+      #cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 50% 50%; }
+      #cam video, #cam img { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+      #vig { position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse 70% 70% at 50% 50%, rgba(0,0,0,0) 62%, rgba(5,3,8,0.55) 100%); }
+      #flash { position: absolute; inset: 0; background: #f3e9c8; opacity: 0; pointer-events: none; }
+      .word { position: absolute; left: 96px; color: #f2b53b; font-weight: 700; letter-spacing: 2px;
+        background: rgba(11,8,16,0.45); padding: 20px 26px; border-left: 7px solid #f2b53b;
+        text-shadow: 0 6px 0 rgba(0,0,0,0.45), 0 0 42px rgba(242,181,59,0.25); opacity: 0; }
+      .word .sub { display: block; color: #ede5d7; font-weight: 400; }
+      #w1 { top: 400px; font-size: 104px; }
+      #w2 { top: 380px; font-size: 84px; }
+      #w3 { top: 360px; font-size: 84px; }
+      #w4 { top: 620px; left: auto; right: 120px; text-align: right; font-size: 76px; }
+      #w5 { top: 380px; font-size: 88px; }
+      .callout { position: absolute; color: #ede5d7; font-size: 34px; font-weight: 700;
+        border: 3px solid #f2b53b; padding: 10px 18px; background: rgba(11,8,16,0.72); opacity: 0; }
+      #c1 { left: 120px; top: 240px; }
+      #endcard { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+        justify-content: center; background: #0b0810; opacity: 0; }
+      #endcard .big { color: #f2b53b; font-size: 96px; font-weight: 700; letter-spacing: 3px;
+        text-shadow: 0 8px 0 rgba(0,0,0,0.5); }
+      #endcard .sm { color: #ede5d7; font-size: 36px; margin-top: 26px; opacity: 0.9; }
+      #endcard .block { display: inline-block; width: 34px; height: 34px; background: #f2b53b;
+        margin-right: 26px; vertical-align: -6px; box-shadow: inset -6px -6px 0 rgba(0,0,0,0.35), 0 6px 0 rgba(0,0,0,0.5); }
+    </style>
+  </head>
+  <body>
+    <div id="main" data-composition-id="main" data-start="0" data-duration="32" data-width="1920" data-height="1080">
+      <div id="stage" data-layout-allow-overflow>
+        <div id="cam" data-layout-allow-overflow>
+          <!-- Full-bleed studio footage. Every cut lands on the 120 BPM bar grid (2s). -->
+          <video id="v1" src="assets/t6-night.mp4" data-start="0" data-duration="2.0" data-media-start="3.0" data-track-index="1" muted playsinline></video>
+          <video id="v2" src="assets/t1-hero-day.mp4" data-start="2" data-duration="4.0" data-media-start="2.0" data-track-index="1" muted playsinline></video>
+          <video id="v3" src="assets/t2-interior.mp4" data-start="6" data-duration="4.0" data-media-start="2.7" data-track-index="1" muted playsinline></video>
+          <img id="f4" src="assets/freeze-hall.png" data-start="10" data-duration="2.0" data-track-index="1" alt="" />
+          <video id="v5" src="assets/t3-atrium.mp4" data-start="12" data-duration="2.0" data-media-start="8.0" data-track-index="1" muted playsinline></video>
+          <video id="v6" src="assets/t3-atrium.mp4" data-start="14" data-duration="2.0" data-media-start="13.0" data-track-index="1" muted playsinline></video>
+          <video id="v7" src="assets/t4-stations.mp4" data-start="16" data-duration="2.0" data-media-start="3.5" data-playback-rate="2" data-track-index="1" muted playsinline></video>
+          <video id="v8" src="assets/t7-follow.mp4" data-start="18" data-duration="4.0" data-media-start="3.0" data-track-index="1" muted playsinline></video>
+          <video id="v9" src="assets/t8-sweep.mp4" data-start="22" data-duration="4.0" data-media-start="5.5" data-track-index="1" muted playsinline></video>
+          <video id="v10" src="assets/t6-night.mp4" data-start="26" data-duration="4.0" data-media-start="6.0" data-track-index="1" muted playsinline></video>
+        </div>
+        <div id="vig"></div>
+      </div>
+      <div id="flash"></div>
+
+      <div id="w1" class="word">AGENTCRAFT<span class="sub" style="font-size:40px; margin-top:18px;">A VOXEL STUDIO FOR YOUR AGENT TEAM</span></div>
+      <div id="w2" class="word">SIX AGENTS.<span class="sub" style="font-size:84px;">ONE GOAL.</span></div>
+      <div id="w3" class="word">THEY ASK.<span class="sub" style="font-size:84px;">YOU DECIDE.</span></div>
+      <div id="w4" class="word">LIVE WORLD.<span class="sub" style="font-size:76px;">LIVE FEED.</span></div>
+      <div id="w5" class="word">IT NEVER<span class="sub" style="font-size:88px;">SLEEPS.</span></div>
+      <div id="c1" class="callout">six desks · task wall · merge station</div>
+
+      <div id="endcard">
+        <div class="big"><span class="block"></span>AGENTCRAFT STUDIO</div>
+        <div class="sm">inside hermes desktop — /studio</div>
+      </div>
+
+      <audio id="score" src="assets/score.wav" data-start="0" data-duration="32" data-track-index="5" data-volume="1"></audio>
+    </div>
+
+    <script>
+      (() => {
+        const tl = gsap.timeline({ paused: true })
+
+        // Slow push on every segment; whip-punch at each bar cut.
+        const cut = (at, punch = 1.05) => {
+          tl.fromTo('#flash', { opacity: 0.55 }, { opacity: 0, duration: 0.14, ease: 'power1.out', immediateRender: false }, at)
+          tl.fromTo('#cam', { scale: punch, rotation: -0.4 }, { scale: punch * 0.99 + 0.008, rotation: 0, duration: 0.38, ease: 'expo.out', immediateRender: false }, at)
+        }
+        const push = (at, dur, from = 1.0, to = 1.06) =>
+          tl.fromTo('#cam', { scale: from }, { scale: to, duration: dur, ease: 'none', immediateRender: false }, at)
+
+        // Words: pixel-title slam, hold one bar, out.
+        const word = (sel, at, hold = 3.6) => {
+          tl.fromTo(sel, { opacity: 0, scale: 1.35, y: 24 }, { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: 'expo.out', immediateRender: false }, at)
+          tl.to(sel, { opacity: 0, y: -18, duration: 0.28, ease: 'power2.in', immediateRender: false }, at + hold)
+        }
+
+        // 0–2: title over night exterior (dimmed by vignette), slam in.
+        tl.fromTo('#cam', { scale: 1.12 }, { scale: 1.04, duration: 2, ease: 'none' }, 0)
+        tl.fromTo('#w1', { opacity: 0, scale: 1.5, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: 'expo.out' }, 0.55)
+        tl.to('#w1', { opacity: 0, scale: 0.92, duration: 0.25, ease: 'power2.in' }, 1.75)
+
+        // 2–6: day exterior hero push.
+        cut(2, 1.08); push(2.1, 3.9, 1.0, 1.07)
+
+        // 6–10: interior hall — the money shot.
+        cut(6, 1.1); push(6.1, 3.9, 1.0, 1.08)
+        word('#w2', 6.3, 3.4)
+
+        // 10–12: freeze frame + callout bracket.
+        tl.set('#cam', { scale: 1.0, rotation: 0 }, 10)
+        tl.fromTo('#c1', { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.25, ease: 'power2.out', immediateRender: false }, 10.15)
+        tl.to('#c1', { opacity: 0, duration: 0.2 }, 11.7)
+        tl.fromTo('#cam', { scale: 1.0 }, { scale: 1.015, duration: 2, ease: 'none', immediateRender: false }, 10.05)
+
+        // 12–16: task wall → decision podium.
+        cut(12, 1.07); push(12.1, 1.9, 1.0, 1.05)
+        word('#w3', 12.3, 3.5)
+        cut(14, 1.07); push(14.1, 1.9, 1.0, 1.05)
+
+        // 16–18: stations whip (2x).
+        cut(16, 1.12); push(16.05, 1.95, 1.0, 1.1)
+
+        // 18–22: follow an agent on the floor.
+        cut(18, 1.08); push(18.1, 3.9, 1.0, 1.06)
+        word('#w4', 18.4, 3.4)
+
+        // 22–26: golden → night sweep.
+        cut(22, 1.08); push(22.1, 3.9, 1.0, 1.07)
+        word('#w5', 22.4, 3.4)
+
+        // 26–30: night hero pull-back, lamps glowing.
+        cut(26, 1.08)
+        tl.fromTo('#cam', { scale: 1.1 }, { scale: 1.0, duration: 3.9, ease: 'sine.out', immediateRender: false }, 26.1)
+
+        // 30–32: endcard.
+        tl.to('#cam', { scale: 1.06, duration: 2, ease: 'none' }, 30)
+        tl.fromTo('#endcard', { opacity: 0 }, { opacity: 1, duration: 0.4, ease: 'power1.out' }, 30.1)
+        tl.fromTo('#endcard .big', { scale: 0.8, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: 'back.out(1.6)' }, 30.25)
+        tl.fromTo('#endcard .sm', { opacity: 0, y: 14 }, { opacity: 0.9, y: 0, duration: 0.4, ease: 'power2.out' }, 30.55)
+
+        window.__timelines['main'] = tl
+      })()
+    </script>
+  </body>
+</html>

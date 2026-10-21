@@ -1,11 +1,15 @@
 import { compactNumber } from '@hermes/shared'
 import { useStore } from '@nanostores/react'
-import { memo } from 'react'
+import { memo, useCallback, useState } from 'react'
 import type * as React from 'react'
 
+import { type DroppedFile } from '@/app/chat/hooks/use-composer-actions'
+import { useFileDropZone } from '@/app/chat/hooks/use-file-drop-zone'
 import { PrTag } from '@/app/chat/pr-tag'
 import { ProfileTag } from '@/app/chat/profile-tag'
 import { startSessionDrag } from '@/app/chat/session-drag'
+import { stageDroppedFilesForSession } from '@/app/chat/session-drop-attach'
+import { SessionTagChips } from '@/app/chat/session-tag'
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
 import { openSession } from '@/app/open-session'
 import { formatMessageTimestamp } from '@/components/assistant-ui/thread/timestamp'
@@ -26,14 +30,23 @@ import { handoffOriginSource, sessionSourceLabel } from '@/lib/session-source'
 import { coarseElapsed } from '@/lib/time'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
+import { $draftAttachmentCounts, draftAttachmentCountIn } from '@/store/composer'
 import { $sidebarRowMeta } from '@/store/layout'
 import { normalizeProfileKey } from '@/store/profile'
 import { $projects } from '@/store/projects'
 import { $pullRequestsByBranch, sessionPrKey } from '@/store/pull-requests'
 import { sessionPinId } from '@/store/session'
+import { $sessionDigestById } from '@/store/session-digest'
 import { $sessionDotStateById, hasLiveTurn, showsRunningArc } from '@/store/session-dot-state'
 import { $sessionListDensity } from '@/store/session-list-density'
+import {
+  $selectedSessionKeys,
+  selectionKeyForSession,
+  selectOnlySession,
+  toggleSessionSelected
+} from '@/store/session-selection'
 import { $openStoredSessionIds } from '@/store/session-states'
+import { sessionWorktreeInfo } from '@/store/session-worktree'
 import { sessionCostUsd } from '@/store/sidebar-archive'
 import { $todoProgressBySession } from '@/store/todos'
 
@@ -51,6 +64,7 @@ import {
 } from './chrome'
 import { shellOwnsPress } from './reorderable-list'
 import { SessionActionsMenu, SessionContextMenu } from './session-actions-menu'
+import { SessionPeek } from './session-peek'
 import { sessionRowDetails } from './session-row-details'
 import { resolveSessionRowClick } from './session-row-gesture'
 import { SessionRowSlot } from './session-row-slots'
@@ -71,6 +85,9 @@ interface SidebarSessionRowProps extends React.ComponentProps<'div'> {
   /** Toggle the persisted read-state watermark. */
   onToggleUnread: () => void
   onResume: () => void
+  /** ⇧/⌘⇧-click needs the containing list's ordered row keys to size a
+   *  range — the row can't see its siblings, so the list supplies them. */
+  onSelectRange?: (additive: boolean) => void
   reorderable?: boolean
   dragging?: boolean
   dragHandleProps?: React.HTMLAttributes<HTMLElement>
@@ -137,6 +154,7 @@ function SidebarSessionRowImpl({
   onPin,
   onToggleUnread,
   onResume,
+  onSelectRange,
   reorderable = false,
   dragging = false,
   dragHandleProps,
@@ -149,9 +167,35 @@ function SidebarSessionRowImpl({
 }: SidebarSessionRowProps) {
   const { t } = useI18n()
   const r = t.sidebar.row
+  // While the peek card is open the row's own hover labels (title overflow,
+  // badge tips, the age tip) would land on top of it — they go quiet until it
+  // closes. Open state lives here so every tip in the row shares the answer.
+  const [peekOpen, setPeekOpen] = useState(false)
   const { cancelPrewarm, notePointerMove, startPrewarm } = useProfilePrewarm(session.profile)
+  // Dropping files on the row stages attachment chips into THIS session's
+  // composer draft — without opening it or moving focus; the attach count
+  // below is the badge. Row reorder/move drags are pointer gestures (never
+  // native DnD), so no arbitration against them is needed.
+  const pinKey = sessionPinId(session)
+
+  const onDropSessionFiles = useCallback(
+    (candidates: DroppedFile[]) => {
+      void stageDroppedFilesForSession(pinKey, candidates, session.cwd)
+    },
+    [pinKey, session.cwd]
+  )
+
+  const { dragKind: rowFileDrag, dropHandlers: fileDropHandlers } = useFileDropZone({
+    enabled: !dragging,
+    onDropFiles: onDropSessionFiles
+  })
+
   const title = sessionTitle(session)
   const density = useStore($sessionListDensity)
+  // Condensed is a one-line variant taken further: dot + title, nothing else.
+  // Everything the fuller densities paint (chips, badges, meta, age) folds
+  // into the title's tooltip so collapsing the row strands no information.
+  const condensed = !card && density === 'condensed'
   const fmt = t.sidebar
 
   const details = sessionRowDetails(session, {
@@ -184,6 +228,10 @@ function SidebarSessionRowImpl({
   // it reaches all four row render paths at once, the set only changes when a
   // tile opens or closes, and the boolean bails every unaffected row out.
   const openUnfocused = useStoreSelector($openStoredSessionIds, open => !isSelected && open.has(session.id))
+  // In the rail's ⌘/⇧ multi-select set. A keyed selector rather than a prop,
+  // same as openUnfocused: one click elsewhere shouldn't repaint every row.
+  const selectionKey = selectionKeyForSession(session)
+  const multiSelected = useStoreSelector($selectedSessionKeys, keys => keys.has(selectionKey))
   const totalTokens = session.input_tokens + session.output_tokens
   const cost = sessionCostUsd(session)
 
@@ -205,17 +253,89 @@ function SidebarSessionRowImpl({
   // to the left of the kebab's own column: never flush right, never swapping.
   const trailing: { key: string; node: React.ReactNode }[] = []
 
-  if ((showProfile || pinnedProfile) && hasProfileTag) {
+  if (!condensed && (showProfile || pinnedProfile) && hasProfileTag) {
     trailing.push({ key: 'profile', node: <ProfileTag profile={session.profile} /> })
   }
 
-  if (pr) {
+  if (!condensed && pr) {
     trailing.push({ key: 'pr', node: <PrTag pr={pr} /> })
   }
 
+  // Worktree-per-session (#47): a session parked under <repo>/.worktrees/
+  // carries its branch as a chip — the passive indicator. The verbs (isolate
+  // / merge back) live in the row's ⋯ menu.
+  if (!condensed) {
+    const worktree = sessionWorktreeInfo(session)
+
+    if (worktree) {
+      const worktreeBranch = worktree.branch || worktree.worktreePath.split('/').pop() || ''
+
+      trailing.push({
+        key: 'worktree',
+        node: (
+          <Tip label={peekOpen ? '' : r.worktreeTag(worktreeBranch)} side="top">
+            <span className="pointer-events-none inline-flex items-center gap-0.5 whitespace-nowrap tabular-nums text-[0.625rem] leading-none text-(--ui-text-tertiary)">
+              <Codicon name="git-branch" size="0.625rem" />
+              {worktreeBranch}
+            </span>
+          </Tip>
+        )
+      })
+    }
+  }
+
+  // User-assigned label chips ride the same trailing slot as the profile/PR
+  // identity chips — they key on the durable lineage id, so a compression
+  // (or a session-id rotation) never un-chips a row mid-list.
+  trailing.push({
+    key: 'tags',
+    node: <SessionTagChips profile={session.profile} sessionId={sessionPinId(session)} />
+  })
+
   const showAge = pinnedAge || card
 
-  if (figures.length || showAge) {
+  // Live plan progress ("3/7") — the footer figure on cards, a trailing chip
+  // on one-line rows. A selector keyed to this row: only rows whose own
+  // fraction changes repaint on todo events.
+  const todoProgress = useStoreSelector($todoProgressBySession, progress => progress[session.id])
+
+  // Chips staged into this session's composer via a file drop on the row —
+  // a paperclip count, offered next to the plan progress. Keyed on the pin id
+  // (the draft scope), so a compression lineage never un-counts a row.
+  const attachedCount = useStoreSelector($draftAttachmentCounts, counts => draftAttachmentCountIn(counts, pinKey))
+
+  if (!condensed && attachedCount > 0) {
+    trailing.push({
+      key: 'attached',
+      node: (
+        <Tip label={peekOpen ? '' : r.attachmentCount(attachedCount)} side="top">
+          <span className="inline-flex items-center gap-0.5 whitespace-nowrap tabular-nums text-[0.625rem] leading-none text-(--ui-text-tertiary)">
+            <Codicon name="attach" size="0.625rem" />
+            {attachedCount}
+          </span>
+        </Tip>
+      )
+    })
+  }
+
+  // The one-line row's progress chip sits in the trailing slot so a working
+  // row reads its plan without opening the chat. (todoProgress is only set
+  // while a plan exists, so it self-clears when the last item lands.)
+  if (!condensed && !card && todoProgress) {
+    trailing.push({
+      key: 'progress',
+      node: (
+        <span
+          className="pointer-events-none whitespace-nowrap tabular-nums text-[0.625rem] leading-none text-(--ui-text-tertiary)"
+          title={r.todoProgress}
+        >
+          {todoProgress}
+        </span>
+      )
+    })
+  }
+
+  if (!condensed && (figures.length || showAge)) {
     // The card's meta lines separate by spacing alone, so its header figures
     // match (non-breaking pair — plain spaces collapse to one); the one-line
     // row keeps the interpunct between joined figures.
@@ -231,7 +351,7 @@ function SidebarSessionRowImpl({
           <span className={cn('inline-block text-right', TAIL_HIDES)}>
             {head && sep}
             {showAge ? (
-              <Tip label={absoluteAge} side="top">
+              <Tip label={peekOpen ? '' : absoluteAge} side="top">
                 <time
                   aria-label={`${age}, ${absoluteAge}`}
                   className="pointer-events-auto focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-sidebar-ring"
@@ -262,6 +382,10 @@ function SidebarSessionRowImpl({
   // whenever any session's status changes, but a row only repaints on its own.
   const dotState = useStoreSelector($sessionDotStateById, states => states[session.id] ?? 'idle')
   const liveTurn = hasLiveTurn(dotState)
+  // The "what it's doing now" line — a selector so only the row whose own
+  // digest moved repaints on a stream tick. `null` for rows with nothing to
+  // say, which keep their usual metadata/preview line instead.
+  const digest = useStoreSelector($sessionDigestById, digests => digests[session.id] ?? null)
 
   // Card header line: the workspace this belongs to — the project when it
   // resolves (same function the session color reads, so name and tint agree;
@@ -282,9 +406,34 @@ function SidebarSessionRowImpl({
   // between them (HTML collapses runs of whitespace to one).
   const model = card && session.model ? displayModelName(session.model) : ''
   const size = card && session.message_count > 0 ? r.messageCount(session.message_count) : ''
-  // Live plan progress ("3/7"), far right of the footer. A selector keyed to
-  // this row: only rows whose own fraction changes repaint on todo events.
-  const todoProgress = useStoreSelector($todoProgressBySession, progress => (card ? progress[session.id] : undefined))
+
+  // The condensed row hides every badge and meta line; this tooltip is where
+  // they still reach. Same inputs the fuller rows paint, as text lines.
+  const condensedMeta = condensed
+    ? ([
+        details.metadata || null,
+        details.preview,
+        (showProfile || pinnedProfile) && hasProfileTag ? session.profile : null,
+        pr ? `#${pr.number} ${pr.title}` : null,
+        handoffLabel ? r.handoffOrigin(handoffLabel) : null,
+        session.continuation_kind === 'compression' ? r.continuationOrigin : null,
+        todoProgress ? `${r.todoProgress}: ${todoProgress}` : null,
+        attachedCount > 0 ? r.attachmentCount(attachedCount) : null,
+        ...figures,
+        showAge ? absoluteAge : null
+      ].filter(Boolean) as string[])
+    : []
+
+  const condensedTip = (
+    <>
+      <span className="block">{title}</span>
+      {condensedMeta.map(line => (
+        <span className="block text-(--ui-text-tertiary)" key={line}>
+          {line}
+        </span>
+      ))}
+    </>
+  )
 
   // An archived session has no live status to paint, so the archive glyph takes
   // the lead slot the dot would occupy instead of adding a column of its own.
@@ -375,10 +524,15 @@ function SidebarSessionRowImpl({
           'group row-hover relative',
           card && SIDEBAR_ROW_CARD_MIN_H,
           // Density-aware minimum heights for the inline (non-card) row: the
-          // metadata / preview lines below need the extra rows (#68119).
-          !card && density !== 'compact' && 'min-h-[2.75rem]',
+          // metadata / preview lines below need the extra rows (#68119), and
+          // condensed pulls the row tighter than the shared shell minimum.
+          !card && (density === 'comfortable' || density === 'detailed') && 'min-h-[2.75rem]',
           !card && density === 'detailed' && 'min-h-[3.875rem]',
+          !card && condensed && 'min-h-[1.375rem]',
           isSelected && 'bg-(--ui-row-active-background)',
+          // In the multi-select set: the "lit but not the focused one" band
+          // rows already use for open-in-another-pane.
+          multiSelected && !isSelected && 'bg-(--ui-row-open-background)',
           // Open in another pane: the SAME band, just weaker. Its own mixed
           // token rather than row opacity — dimming the whole row would take
           // the title and the status dot down with it.
@@ -388,6 +542,7 @@ function SidebarSessionRowImpl({
           // it (translucency let the rows below bleed through). data-glass-opaque
           // keeps that true when window glass thins the field.
           dragging && 'z-10 cursor-grabbing bg-(--ui-sidebar-surface-background)',
+          rowFileDrag === 'files' && 'bg-(--ui-row-active-background) shadow-[inset_0_0_0_1px_var(--dt-composer-ring)]',
           className
         )}
         data-glass-opaque={dragging ? '' : undefined}
@@ -428,141 +583,228 @@ function SidebarSessionRowImpl({
         onPointerMove={notePointerMove}
         ref={ref}
         style={style}
+        {...fileDropHandlers}
         {...rest}
       >
         {showsRunningArc(dotState) && <span aria-hidden="true" className="arc-border arc-row" />}
-        {/* #38072 finding 3: the row's body is a DIV, not a button — the
-            reorder grabber (dnd-kit role="button" + tabIndex, kept for
-            keyboard reorder, #83617) and the ⋯ trigger must be SIBLINGS of
-            the row's primary action, never nested inside it (axe
-            nested-interactive). The title below is the row's real button:
-            its click bubbles to this div's handlers, so pointer users keep
-            click-anywhere-on-the-row, and keyboard users get one clean tab
-            stop per row instead of an ambiguous nested one. */}
-        <SidebarRowCluster
-          // Every trailing figure lives in the actions slot, which the row
-          // measures — so the title needs a gap from it and nothing else. Hover
-          // changes what you can see in that slot, never how wide it is. The
-          // card has no such column to clear (its cluster is INSIDE the body,
-          // ending at the shell's own trailing inset), and keeping the gap
-          // would pull the header in past every line below it.
-          className={cn(
-            // cursor-pointer: the body is a div now (see #38072 note above);
-            // buttons earn this from the base layer's interactive-control
-            // rule, a div doesn't.
-            'z-0 w-full cursor-pointer',
-            card && 'pr-0',
-            branchStem && 'pl-3.5',
-            // The card is a grid with ONE spacing knob: --card-gap. Every row
-            // gap is gap-y-(--card-gap); the title/preview group opts out
-            // with its own tighter internal flex gap.
-            card && 'flex-col items-stretch justify-center py-1.5 [--card-gap:0.4rem] gap-(--card-gap)'
-          )}
-          // Middle-click = open in a new tab (browser muscle memory).
-          {...middleClickHandlers(() => {
-            triggerHaptic('selection')
-            openSession(session.id, () => undefined, 'tab')
-          })}
-          onClick={event => {
-            // Modifier-click gestures on a row (see `resolveSessionRowClick`):
-            //   ⇧          → pin / unpin
-            //   ⌘/⌃        → open in a new tab (stack into main)
-            //   ⌘/⌃ + ⇧    → pop into its own window (needs standalone windows)
-            //   ⌥ + ⇧      → archive
-            // A plain click resumes. Archive also lives in the row's ⋯ and
-            // right-click menus and as a rebindable hotkey (`session.archive`).
-            // `openSession`'s 'window' intent already falls back to 'tab' when
-            // the bridge lacks standalone windows, so the resolver can always
-            // offer the window action here.
-            const action = resolveSessionRowClick(event, { canOpenWindow: true })
-
-            if (action === 'resume') {
-              onResume()
-
-              return
-            }
-
-            event.preventDefault()
-            event.stopPropagation()
-            triggerHaptic('selection')
-
-            if (action === 'archive') {
-              onArchive()
-            } else if (action === 'pin') {
-              onPin()
-            } else if (action === 'newTab') {
+        <SessionPeek onOpenChange={setPeekOpen} session={session}>
+          {/* #38072 finding 3: the row's body is a DIV, not a button — the
+              reorder grabber (dnd-kit role="button" + tabIndex, kept for
+              keyboard reorder, #83617) and the ⋯ trigger must be SIBLINGS of
+              the row's primary action, never nested inside it (axe
+              nested-interactive). The title below is the row's real button:
+              its click bubbles to this div's handlers, so pointer users keep
+              click-anywhere-on-the-row, and keyboard users get one clean tab
+              stop per row instead of an ambiguous nested one. */}
+          <SidebarRowCluster
+            // Every trailing figure lives in the actions slot, which the row
+            // measures — so the title needs a gap from it and nothing else. Hover
+            // changes what you can see in that slot, never how wide it is. The
+            // card has no such column to clear (its cluster is INSIDE the body,
+            // ending at the shell's own trailing inset), and keeping the gap
+            // would pull the header in past every line below it.
+            className={cn(
+              // cursor-pointer: the body is a div now (see #38072 note above);
+              // buttons earn this from the base layer's interactive-control
+              // rule, a div doesn't.
+              'z-0 w-full cursor-pointer',
+              card && 'pr-0',
+              branchStem && 'pl-3.5',
+              // The card is a grid with ONE spacing knob: --card-gap. Every row
+              // gap is gap-y-(--card-gap); the title/preview group opts out
+              // with its own tighter internal flex gap.
+              card && 'flex-col items-stretch justify-center py-1.5 [--card-gap:0.4rem] gap-(--card-gap)'
+            )}
+            // Middle-click = open in a new tab (browser muscle memory).
+            {...middleClickHandlers(() => {
+              triggerHaptic('selection')
               openSession(session.id, () => undefined, 'tab')
-            } else {
-              openSession(session.id, () => undefined, 'window')
-            }
-          }}
-        >
-          {(() => {
-            const leadNode = reorderable ? (
-              <SidebarRowGrab ariaLabel={handleLabel} dragging={dragging} dragHandleProps={dragHandleProps}>
-                {lead ?? (
-                  <SessionStatusDot
-                    branchStem={branchStem}
-                    className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
-                    session={session}
-                    storedSessionId={session.id}
-                  />
-                )}
-              </SidebarRowGrab>
-            ) : (
-              <SidebarRowLead className="overflow-hidden">
-                {lead ?? <SessionStatusDot branchStem={branchStem} session={session} storedSessionId={session.id} />}
-              </SidebarRowLead>
-            )
+            })}
+            onClick={event => {
+              // Modifier-click gestures on a row (see `resolveSessionRowClick`):
+              //   ⌘/⌃        → toggle in/out of the multi-select set
+              //   ⇧          → range-select from the last clicked row
+              //   ⌘/⌃ + ⇧    → add that range to the selection
+              //   ⌥ + ⇧      → archive
+              // A plain click resumes (and collapses the selection to that
+              // row — Finder's rule). New tab/window moved to middle-click and
+              // the row's menus; archive also lives there and on a hotkey.
+              const action = resolveSessionRowClick(event)
 
-            const handoffBadge =
-              handoffSource && handoffLabel ? (
-                <Tip label={r.handoffOrigin(handoffLabel)}>
-                  <PlatformAvatar
-                    className="-mt-px size-4 shrink-0 rounded-[4px] text-[0.5rem] [&_svg]:size-2.5"
-                    platformId={handoffSource}
-                    platformName={handoffLabel}
-                  />
-                </Tip>
-              ) : null
+              if (action === 'resume') {
+                selectOnlySession(session)
+                onResume()
 
-            // A projected continuation renders as a plain top-level row, which
-            // reads as a brand-new conversation that "appeared by itself" — and
-            // the sealed predecessor it replaced once nested like a branch
-            // users deleted as accidents (#121148). Label the provenance so an
-            // automatic rotation is legible as one.
-            const continuationBadge =
-              session.continuation_kind === 'compression' ? (
-                <Tip label={r.continuationOrigin}>
-                  <Codicon
-                    aria-hidden="true"
-                    className="size-3.5 shrink-0 text-(--ui-text-quaternary)"
-                    name="layers"
-                    size="0.75rem"
-                  />
-                </Tip>
-              ) : null
+                return
+              }
 
-            if (!card) {
+              event.preventDefault()
+              event.stopPropagation()
+              triggerHaptic('selection')
+
+              if (action === 'archive') {
+                onArchive()
+              } else if (action === 'selectToggle') {
+                toggleSessionSelected(session)
+              } else {
+                onSelectRange?.(action === 'selectRangeAdditive')
+              }
+            }}
+          >
+            {(() => {
+              const leadNode = reorderable ? (
+                <SidebarRowGrab ariaLabel={handleLabel} dragging={dragging} dragHandleProps={dragHandleProps}>
+                  {lead ?? (
+                    <SessionStatusDot
+                      branchStem={branchStem}
+                      className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
+                      session={session}
+                      storedSessionId={session.id}
+                    />
+                  )}
+                </SidebarRowGrab>
+              ) : (
+                <SidebarRowLead className="overflow-hidden">
+                  {lead ?? <SessionStatusDot branchStem={branchStem} session={session} storedSessionId={session.id} />}
+                </SidebarRowLead>
+              )
+
+              const handoffBadge =
+                handoffSource && handoffLabel ? (
+                  <Tip label={peekOpen ? '' : r.handoffOrigin(handoffLabel)}>
+                    <PlatformAvatar
+                      className="-mt-px size-4 shrink-0 rounded-[4px] text-[0.5rem] [&_svg]:size-2.5"
+                      platformId={handoffSource}
+                      platformName={handoffLabel}
+                    />
+                  </Tip>
+                ) : null
+
+              // A projected continuation renders as a plain top-level row, which
+              // reads as a brand-new conversation that "appeared by itself" — and
+              // the sealed predecessor it replaced once nested like a branch
+              // users deleted as accidents (#121148). Label the provenance so an
+              // automatic rotation is legible as one.
+              const continuationBadge =
+                session.continuation_kind === 'compression' ? (
+                  <Tip label={peekOpen ? '' : r.continuationOrigin}>
+                    <Codicon
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0 text-(--ui-text-quaternary)"
+                      name="layers"
+                      size="0.75rem"
+                    />
+                  </Tip>
+                ) : null
+
+              if (!card) {
+                const titleLabel = (
+                  <SidebarRowLabel
+                    className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
+                    onPointerEnter={armMarquee}
+                    onPointerLeave={disarmMarquee}
+                  >
+                    <span className="hover-marquee-inner">{title}</span>
+                  </SidebarRowLabel>
+                )
+
+                return (
+                  <>
+                    {leadNode}
+                    <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
+                    {!condensed && handoffBadge}
+                    {!condensed && continuationBadge}
+                    <span className="min-w-0 flex-1 self-center">
+                      {/* The row's primary action (#38072 finding 3): the title
+                          is the session row's real button — the grabber and ⋯
+                          sit beside it as siblings, never inside it. No onClick
+                          of its own: the click bubbles to the body div's
+                          resolver, so modifier-clicks and plain clicks behave
+                          exactly as they did on the old full-row button. */}
+                      <RowButton className="block w-full text-left">
+                        {condensed && condensedMeta.length > 0 ? (
+                          // Always-on tip: in condensed the title may not
+                          // overflow yet the folded-in meta still needs a door.
+                          <Tip label={condensedTip} placement="row">
+                            {titleLabel}
+                          </Tip>
+                        ) : (
+                          // Remount while the peek is open: OverflowTip's `open` is
+                          // internal state that would otherwise restore itself.
+                          <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
+                            {titleLabel}
+                          </OverflowTip>
+                        )}
+                      </RowButton>
+                      {/* Session-list density (#68119): comfortable adds one
+                        deterministic metadata line; detailed adds the initial
+                        request preview. Compact keeps today's one-line row,
+                        condensed goes further — the meta lives on the title's
+                        tooltip instead. The live digest claims the line under
+                        the title while the session has something to say — the
+                        static text returns the moment it doesn't. */}
+                      {(density === 'comfortable' || density === 'detailed') && (digest ?? details.metadata) && (
+                        <span
+                          className={cn(
+                            'mt-0.5 block truncate text-[0.625rem] text-(--ui-text-tertiary)',
+                            SIDEBAR_TRUNCATED_LEADING
+                          )}
+                        >
+                          {digest ?? details.metadata}
+                        </span>
+                      )}
+                      {density === 'detailed' && details.preview && (
+                        <span
+                          className={cn(
+                            'mt-1 block truncate text-[0.625rem] text-(--ui-text-quaternary)',
+                            SIDEBAR_TRUNCATED_LEADING
+                          )}
+                        >
+                          {details.preview}
+                        </span>
+                      )}
+                    </span>
+                    <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
+                  </>
+                )
+              }
+
               return (
                 <>
-                  {leadNode}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
-                  {handoffBadge}
-                  {continuationBadge}
-                  <span className="min-w-0 flex-1 self-center">
-                    {/* The row's primary action (#38072 finding 3): the title
-                        is the session row's real button — the grabber and ⋯
-                        sit beside it as siblings, never inside it. No onClick
-                        of its own: the click bubbles to the body div's
-                        resolver, so modifier-clicks and plain clicks behave
-                        exactly as they did on the old full-row button. The
-                        OverflowTip stays on the truncating label so its
-                        scrollWidth measurement is unchanged. */}
+                  {/* Header row — ONE div: dot, context, then the age/kebab
+                    cluster in flow at its right edge. Keeping the cluster
+                    inside this line (instead of the shell's full-height side
+                    column) means title/preview/meta below span the card's
+                    entire width — nothing truncates against the kebab. */}
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    {leadNode}
+                    <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
+                    <span
+                      className={cn(
+                        'min-w-0 flex-1 truncate text-[0.6875rem] text-(--ui-text-tertiary)',
+                        SIDEBAR_TRUNCATED_LEADING
+                      )}
+                    >
+                      {context}
+                    </span>
+                    {handoffBadge}
+                    {continuationBadge}
+                    <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
+                    {actionsNode}
+                  </div>
+                  {/* Title + preview: ONE grouped cell with its own tight
+                    internal gap — it does not inherit the card's rhythm. */}
+                  <div className="flex min-w-0 flex-col gap-[0.15rem]">
+                    {/* #38072 finding 3: the card's title line is the row's real
+                        button (same contract as the flat row: no onClick of its
+                        own — the click bubbles to the body div's resolver). */}
                     <RowButton className="block w-full text-left">
-                      <OverflowTip label={title} placement="row">
+                      <OverflowTip key={peekOpen ? 'peek' : 'title'} label={peekOpen ? '' : title} placement="row">
                         <SidebarRowLabel
-                          className="hover-marquee block font-normal group-hover:text-foreground group-data-[working=true]:text-foreground/90"
+                          className={cn(
+                            'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
+                            SIDEBAR_TRUNCATED_LEADING
+                          )}
                           onPointerEnter={armMarquee}
                           onPointerLeave={disarmMarquee}
                         >
@@ -570,109 +812,38 @@ function SidebarSessionRowImpl({
                         </SidebarRowLabel>
                       </OverflowTip>
                     </RowButton>
-                    {/* Session-list density (#68119): comfortable adds one
-                        deterministic metadata line; detailed adds the initial
-                        request preview. Compact keeps today's one-line row. */}
-                    {density !== 'compact' && details.metadata && (
+                    {rowMeta.includes('preview') && (digest ?? session.preview) ? (
                       <span
                         className={cn(
-                          'mt-0.5 block truncate text-[0.625rem] text-(--ui-text-tertiary)',
+                          'min-w-0 truncate text-[0.625rem] text-(--ui-text-quaternary)',
                           SIDEBAR_TRUNCATED_LEADING
                         )}
                       >
-                        {details.metadata}
+                        {digest ?? session.preview}
                       </span>
-                    )}
-                    {density === 'detailed' && details.preview && (
-                      <span
-                        className={cn(
-                          'mt-1 block truncate text-[0.625rem] text-(--ui-text-quaternary)',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                      >
-                        {details.preview}
-                      </span>
-                    )}
-                  </span>
-                  <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
-                </>
-              )
-            }
-
-            return (
-              <>
-                {/* Header row — ONE div: dot, context, then the age/kebab
-                    cluster in flow at its right edge. Keeping the cluster
-                    inside this line (instead of the shell's full-height side
-                    column) means title/preview/meta below span the card's
-                    entire width — nothing truncates against the kebab. */}
-                <div className="flex min-w-0 items-center gap-1.5">
-                  {leadNode}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
-                  <span
-                    className={cn(
-                      'min-w-0 flex-1 truncate text-[0.6875rem] text-(--ui-text-tertiary)',
-                      SIDEBAR_TRUNCATED_LEADING
-                    )}
-                  >
-                    {context}
-                  </span>
-                  {handoffBadge}
-                  {continuationBadge}
-                  <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
-                  {actionsNode}
-                </div>
-                {/* Title + preview: ONE grouped cell with its own tight
-                    internal gap — it does not inherit the card's rhythm. */}
-                <div className="flex min-w-0 flex-col gap-[0.15rem]">
-                  {/* #38072 finding 3: the card's title line is the row's real
-                      button (same contract as the flat row: no onClick of its
-                      own — the click bubbles to the body div's resolver). */}
-                  <RowButton className="block w-full text-left">
-                    <OverflowTip label={title} placement="row">
-                      <SidebarRowLabel
-                        className={cn(
-                          'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                        onPointerEnter={armMarquee}
-                        onPointerLeave={disarmMarquee}
-                      >
-                        <span className="hover-marquee-inner">{title}</span>
-                      </SidebarRowLabel>
-                    </OverflowTip>
-                  </RowButton>
-                  {session.preview && rowMeta.includes('preview') ? (
+                    ) : null}
+                  </div>
+                  {model || size || todoProgress ? (
                     <span
                       className={cn(
-                        'min-w-0 truncate text-[0.625rem] text-(--ui-text-quaternary)',
+                        'flex min-w-0 items-baseline gap-2 text-[0.625rem] text-(--ui-text-tertiary)',
                         SIDEBAR_TRUNCATED_LEADING
                       )}
                     >
-                      {session.preview}
+                      {model ? <span className="min-w-0 truncate">{model}</span> : null}
+                      {size ? <span className="shrink-0 tabular-nums">{size}</span> : null}
+                      {todoProgress ? (
+                        <span className="ml-auto shrink-0 tabular-nums" title={r.todoProgress}>
+                          {todoProgress}
+                        </span>
+                      ) : null}
                     </span>
                   ) : null}
-                </div>
-                {model || size || todoProgress ? (
-                  <span
-                    className={cn(
-                      'flex min-w-0 items-baseline gap-2 text-[0.625rem] text-(--ui-text-tertiary)',
-                      SIDEBAR_TRUNCATED_LEADING
-                    )}
-                  >
-                    {model ? <span className="min-w-0 truncate">{model}</span> : null}
-                    {size ? <span className="shrink-0 tabular-nums">{size}</span> : null}
-                    {todoProgress ? (
-                      <span className="ml-auto shrink-0 tabular-nums" title={r.todoProgress}>
-                        {todoProgress}
-                      </span>
-                    ) : null}
-                  </span>
-                ) : null}
-              </>
-            )
-          })()}
-        </SidebarRowCluster>
+                </>
+              )
+            })()}
+          </SidebarRowCluster>
+        </SessionPeek>
       </SidebarRowShell>
     </SessionContextMenu>
   )

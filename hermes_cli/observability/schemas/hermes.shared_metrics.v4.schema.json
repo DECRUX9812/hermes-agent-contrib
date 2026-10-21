@@ -3626,6 +3626,7 @@
                 "feishu_doc",
                 "feishu_drive",
                 "file",
+                "git",
                 "hermes-acp",
                 "hermes-api-server",
                 "hermes-bluebubbles",

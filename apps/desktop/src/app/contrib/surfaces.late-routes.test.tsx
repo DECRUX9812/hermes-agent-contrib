@@ -19,7 +19,10 @@ import type { WiringActions } from './types'
 
 vi.mock('@/store/connections', () => ({ $activeConnectionId: atom('local') }))
 vi.mock('@/store/gateway', () => ({ $gateway: atom<unknown>(null) }))
-vi.mock('@/store/profile', () => ({ $activeGatewayProfile: atom('default') }))
+vi.mock('@/store/profile', () => ({
+  $activeGatewayProfile: atom('default'),
+  normalizeProfileKey: (name: null | string | undefined) => (name ?? '').trim() || 'default'
+}))
 vi.mock('@/store/session', () => ({
   $freshDraftReady: atom(false),
   $gatewayState: atom('open')
@@ -36,6 +39,9 @@ vi.mock('./latest-actions', () => ({ latestChatActions: () => ({}), latestSideba
 vi.mock('./panes', () => ({ setStatusbarItemGroup: vi.fn(), useStatusbarContributions: () => [] }))
 vi.mock('../shell/model-menu-panel', () => ({ ModelMenuPanel: () => null }))
 vi.mock('../shell/reasoning-menu-panel', () => ({ ReasoningMenuPanel: () => null }))
+// The rail's import chain (BrandMark → themes → stores) is outside these suites'
+// scope — stub it like the other chrome surfaces above.
+vi.mock('../shell/activity-rail', () => ({ ActivityRail: () => null }))
 
 afterEach(() => {
   cleanup()

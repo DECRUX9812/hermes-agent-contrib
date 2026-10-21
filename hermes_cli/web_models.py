@@ -102,6 +102,13 @@ class ManagedFileDelete(BaseModel):
     path: str
     recursive: bool = False
 
+class FileTicketRequest(BaseModel):
+    """POST /api/files/ticket — the exact query the ticketed download/stream URL carries."""
+    route: Literal["download", "stream"]
+    path: str
+    profile: Optional[str] = None
+    session_id: Optional[str] = None
+
 class ModelAssignment(BaseModel):
     """POST /api/model/set — assign a provider/model to a slot.
 
@@ -209,6 +216,15 @@ class GitWorktreeRemoveBody(BaseModel):
     path: str
     worktreePath: str
     force: bool = False
+
+class GitWorktreeMergeBody(BaseModel):
+    path: str
+    worktreePath: str
+
+class GitWorktreeEnsureBody(BaseModel):
+    path: str
+    worktreePath: str
+    branch: Optional[str] = None
 
 class GitBranchSwitchBody(BaseModel):
     path: str
@@ -552,3 +568,26 @@ class _PluginProvidersPutBody(BaseModel):
 class _PluginVisibilityBody(BaseModel):
     hidden: bool
 
+
+class MobilePairExchange(BaseModel):
+    # Defaulted, not required: the route is public, so a body with no code must
+    # take the same counted 403 path as a wrong code, never a 422 that skips the
+    # failure limiter.
+    code: str = ""
+
+class MobileRespond(BaseModel):
+    request_id: str
+    result: dict
+
+class MobileReply(BaseModel):
+    session_id: str
+    text: str
+
+class ShareCreateBody(BaseModel):
+    session_id: str
+    profile: Optional[str] = None
+    ttl_seconds: Optional[float] = Field(default=None, ge=60)
+
+class ShareRevokeBody(BaseModel):
+    token: str
+    profile: Optional[str] = None

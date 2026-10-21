@@ -14,6 +14,7 @@ import { type CSSProperties, Fragment, type ReactNode, type RefObject, useEffect
 
 import { ShellMenuItems } from '@/app/context-menu/shell-menu-items'
 import { TITLEBAR_DRAG_HANDLE_WIDTH, TITLEBAR_HEIGHT } from '@/app/shell/titlebar'
+import { useTouchTitlebar } from '@/app/shell/use-touch-titlebar'
 import { ActionsContextMenu, type MenuKit, renderActionItem } from '@/components/ui/actions-menu'
 import { Codicon } from '@/components/ui/codicon'
 import { DecodeText } from '@/components/ui/decode-text'
@@ -84,6 +85,7 @@ import {
   toggleTabSelected
 } from '../tab-selection'
 
+import { CompactTabPicker } from './compact-tab-picker'
 import { startPaneDrag } from './drag-session'
 import { KeepAlivePaneSlot, useStablePaneHosts } from './keep-alive-panes'
 import { PaneBody } from './pane-body'
@@ -91,6 +93,9 @@ import { usePanelTitlebar } from './panel-titlebar'
 import { tabStripVisibleForZone } from './strip-visibility'
 import { useActiveTabVisible } from './tab-strip-scroll'
 import { paneChrome } from './track-model'
+
+/** Session tabs carry a conversation title (see PaneChrome.contentTitle). */
+const CONTENT_TAB_LABEL = 'normal-case tracking-normal text-[length:max(var(--tab-label-size),0.6875rem)]'
 
 /** Right-click zone menu: the tab verbs (close this / others / to the right /
  *  all) plus the strip's own chrome toggles. Same items and icons as a session
@@ -253,6 +258,8 @@ export function TreeGroup({
 }) {
   const { t } = useI18n()
   const ref = useRef<HTMLDivElement>(null)
+  const touchTitlebar = useTouchTitlebar()
+  const titlebarHeight = touchTitlebar ? 44 : TITLEBAR_HEIGHT
   const stripRef = useRef<HTMLDivElement>(null)
   // The scrolling tab list inside the header (the strip also holds the
   // minimize chevron, which must not scroll away).
@@ -307,11 +314,18 @@ export function TreeGroup({
     : (resolveRememberedActivePane(memoryKey, shown) ?? shown[0] ?? '')
 
   const active = paneFor(activeId)
+  const compactTabs = touchTitlebar && narrow && shown.some(isSessionStripPane)
+  const tabStripHeight = compactTabs ? 44 : 28
   const isEmpty = shown.length === 0
   const sidebarGroup = !node.panes.some(id => id === 'workspace' || paneChrome(paneFor(id)).placement === 'main')
-  const tabsBelowControls = topEdge && (sidebarGroup || measuredBelowControls)
+  // The compact picker needs a full touch row: the titlebar's fit threshold
+  // also has to accommodate the drag handle and the separate new-tab target.
+  const tabsBelowControls = topEdge && (compactTabs || sidebarGroup || measuredBelowControls)
   const tabsInTitlebar = topEdge && !tabsBelowControls
   const pageHeader = paneChrome(active).headerContent
+  // The active pane's strip-trailing affordance (a session's skill chip) —
+  // pinned right of the tab list, never scrolled away.
+  const stripTrail = paneChrome(active).stripTrail
 
   // What the strip's "+" makes. The pane you are LOOKING AT answers first (a
   // Browser tab makes another Browser, even stacked into the chat strip), then
@@ -327,7 +341,7 @@ export function TreeGroup({
   const newTab =
     ownNewTab(activeId) ??
     (shown.some(isSessionStripPane) && newSessionTabAction
-      ? { label: t.zones.newSessionTab, onSelect: newSessionTabAction }
+      ? { label: t.zones.newSessionTab, onSelect: () => newSessionTabAction() }
       : null) ??
     shown.map(ownNewTab).find(Boolean) ??
     null
@@ -413,7 +427,7 @@ export function TreeGroup({
   // the strip's scroll window. Opening a tab past the right edge otherwise
   // left both the new tab and the button that made it out of view.
   useActiveTabVisible(tabsRef, activeId, {
-    enabled: headerVisible,
+    enabled: headerVisible && !compactTabs,
     last: shown[shown.length - 1] === activeId,
     tabCount: shown.length
   })
@@ -501,7 +515,7 @@ export function TreeGroup({
         wcOverlap
           ? { paddingTop: wcOverlap.y + wcOverlap.height }
           : topEdge && verticalCollapse
-            ? { paddingTop: TITLEBAR_HEIGHT }
+            ? { paddingTop: titlebarHeight }
             : undefined
       }
     >
@@ -565,7 +579,7 @@ export function TreeGroup({
         <div
           className="relative flex min-w-0 shrink-0 bg-(--ui-sidebar-surface-background)"
           data-panel-header=""
-          style={topEdge ? { height: TITLEBAR_HEIGHT + (tabsBelowControls && headerVisible ? 28 : 0) } : undefined}
+          style={topEdge ? { height: titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0) } : undefined}
         >
           {topEdge && (
             <div aria-hidden="true" className="shrink-0" style={{ width: 'var(--panel-titlebar-left, 100%)' }} />
@@ -579,6 +593,25 @@ export function TreeGroup({
               data-panel-page-header=""
             >
               <PaneTab active>{pageHeader()}</PaneTab>
+            </div>
+          ) : headerVisible && compactTabs ? (
+            <div
+              className={cn('flex min-w-0 flex-1', tabsBelowControls && 'absolute inset-x-0 bottom-0')}
+              data-zone-tabstrip={node.id}
+              onPointerDownCapture={() => noteActiveTreeGroup(node.id)}
+            >
+              <CompactTabPicker
+                activeId={activeId}
+                newTab={node.minimized ? null : newTab}
+                onClose={closeableTab(activeId) ? () => closeTab(activeId) : undefined}
+                onSelect={paneId => {
+                  clearTabSelection()
+
+                  if (node.minimized) { restoreTreePane(paneId) }
+                  activateTreePane(node.id, paneId)
+                }}
+                tabs={shown.map(id => ({ id, title: tabText(id), label: tabLabel(id) }))}
+              />
             </div>
           ) : headerVisible ? (
             <ZoneMenu {...zoneMenu}>
@@ -604,6 +637,16 @@ export function TreeGroup({
                 titlebar={tabsInTitlebar}
                 trailing={
                   <>
+                    {stripTrail && (
+                      // Pointerdown is claimed so the chip's click can't also
+                      // activate/drag a tab or move the window behind the strip.
+                      <span
+                        className="flex shrink-0 items-center self-center [-webkit-app-region:no-drag]"
+                        onPointerDown={event => event.stopPropagation()}
+                      >
+                        {stripTrail()}
+                      </span>
+                    )}
                     {minimizable && (
                       <button
                         aria-label={node.minimized ? t.zones.restore : minimizeLabel}
@@ -724,7 +767,17 @@ export function TreeGroup({
                           </TabKeyHint>
                         </span>
                       ) : null}
-                      <PaneTabLabel>{tabLabel(paneId)}</PaneTabLabel>
+                      <PaneTabLabel className={chrome.contentTitle ? CONTENT_TAB_LABEL : undefined}>
+                        {tabLabel(paneId)}
+                      </PaneTabLabel>
+                      {chrome.tabTrail ? (
+                        // Per-tab live status (a session tile's elapsed +
+                        // current tool) — every tab carries it, so it yields
+                        // space to the label and hides on the vertical rail.
+                        <span className="-ml-1 mr-2 flex min-w-0 items-center group-data-[vertical]/tab:hidden">
+                          {chrome.tabTrail()}
+                        </span>
+                      ) : null}
                     </PaneTab>
                   )
 
@@ -773,7 +826,7 @@ export function TreeGroup({
               )}
               data-window-drag-handle=""
               style={{
-                height: TITLEBAR_HEIGHT,
+                height: titlebarHeight,
                 width: headerVisible && tabsInTitlebar ? TITLEBAR_DRAG_HANDLE_WIDTH : undefined
               }}
             />
@@ -890,7 +943,7 @@ export function TreeGroup({
             className="absolute inset-x-0 bottom-0 z-50 flex cursor-grab items-center justify-center outline-1 -outline-offset-2 outline-dashed backdrop-blur-[2px]"
             onPointerDown={e => startPaneDrag(activeId, e, undefined, undefined, tabText(activeId))}
             style={{
-              top: topEdge ? TITLEBAR_HEIGHT + (tabsBelowControls && headerVisible ? 28 : 0) : headerVisible ? 28 : 0,
+              top: topEdge ? titlebarHeight + (tabsBelowControls && headerVisible ? tabStripHeight : 0) : headerVisible ? tabStripHeight : 0,
               background:
                 'color-mix(in srgb, var(--ui-accent) 6%, color-mix(in srgb, var(--ui-bg-chrome) 55%, transparent))',
               outlineColor: 'color-mix(in srgb, var(--ui-accent) 55%, transparent)'

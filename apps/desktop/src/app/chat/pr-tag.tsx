@@ -1,6 +1,7 @@
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
 import type { HermesBranchPullRequest } from '@/global'
+import { type Translations, useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { pullRequestBucket } from '@/store/pull-requests'
 
@@ -12,6 +13,27 @@ const PR_STYLE: Record<string, { className: string; icon: string }> = {
   draft: { className: 'text-(--ui-text-quaternary)', icon: 'git-pull-request-draft' },
   merged: { className: 'text-(--ui-purple)', icon: 'git-merge' },
   open: { className: 'text-(--ui-green)', icon: 'git-pull-request' }
+}
+
+// The head commit's check rollup — a second glyph beside the number, again in
+// GitHub's language: pass is green, fail red, pending amber.
+const CI_STYLE: Record<NonNullable<HermesBranchPullRequest['checks']>, { className: string; icon: string }> = {
+  failure: { className: 'text-(--ui-red)', icon: 'error' },
+  pending: { className: 'text-(--ui-yellow)', icon: 'sync' },
+  success: { className: 'text-(--ui-green)', icon: 'pass' }
+}
+
+export function prTipLabel(pr: HermesBranchPullRequest, t: Translations): string {
+  const ci =
+    pr.checks === 'success'
+      ? t.sidebar.row.prCiPassing
+      : pr.checks === 'failure'
+        ? t.sidebar.row.prCiFailing
+        : pr.checks === 'pending'
+          ? t.sidebar.row.prCiPending
+          : null
+
+  return ci ? `#${pr.number} ${pr.title} · ${ci}` : `#${pr.number} ${pr.title}`
 }
 
 export function openPullRequest(pr: HermesBranchPullRequest): void {
@@ -34,10 +56,12 @@ export function PrTag({
   pr: HermesBranchPullRequest
   showIcon?: boolean
 }) {
+  const { t } = useI18n()
   const style = PR_STYLE[pullRequestBucket(pr)] ?? PR_STYLE.open
+  const ci = pr.checks ? CI_STYLE[pr.checks] : undefined
 
   return (
-    <Tip label={`#${pr.number} ${pr.title}`}>
+    <Tip label={prTipLabel(pr, t)}>
       <button
         aria-label={`Open pull request #${pr.number}`}
         // A flex box doesn't pass text-decoration down to its items, so the
@@ -64,6 +88,7 @@ export function PrTag({
         {showIcon && <Codicon name={style.icon} size="0.75rem" />}
         {/* Without the glyph the number needs the `#` to still read as a PR. */}
         <span className="underline-offset-1 group-hover/pr:underline">{showIcon ? pr.number : `#${pr.number}`}</span>
+        {ci && <Codicon className={ci.className} name={ci.icon} size="0.625rem" />}
       </button>
     </Tip>
   )

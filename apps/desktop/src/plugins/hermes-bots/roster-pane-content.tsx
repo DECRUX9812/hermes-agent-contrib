@@ -1,9 +1,14 @@
-import { Button, Codicon, DisclosureCaret, GlyphSpinner, PanelEmpty, RowButton } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, DisclosureCaret, GlyphSpinner, PanelEmpty, RowButton } from '@hermes/plugin-sdk'
 import type { ReactNode, RefObject } from 'react'
 
+import { avatarColor, blobShapeString, BotFace } from './avatar'
+import { type BotStarter, QUICK_STARTERS } from './bot-starters'
+import { BotsHowItWorks } from './bots-explainer'
 import type { useRoster } from './data'
 import { $showHiddenBots } from './hidden-bots'
 import type { useBots } from './i18n'
+import type { MailboxNote } from './mailbox'
+import { RosterMailboxSection } from './mailbox-parts'
 import type { deriveRosterPresentation, deriveRosterRows } from './roster-pane-derivation'
 import type { rosterSectionRenderers } from './roster-pane-sections'
 import type { rosterGatewayOptions } from './roster-sections'
@@ -11,6 +16,11 @@ import type { RosterRow } from './types'
 
 interface RosterContentProps {
   b: ReturnType<typeof useBots>
+  /** Opens the quick-create dialog — bare for "New bot"; a starter pick
+   *  creates immediately (one click, no form). */
+  onNewBot: (starter?: BotStarter) => void
+  /** Starter whose one-click create is in flight — the chips disable under it. */
+  creatingStarter: null | string
   staleNotice: string | number | null
   isLoading: boolean
   initialRosterLoading: boolean
@@ -33,6 +43,13 @@ interface RosterContentProps {
   hiddenBots: RosterRow[]
   showHiddenRows: boolean
   hiddenGatewaySections: ReturnType<typeof deriveRosterPresentation>['hiddenGatewaySections']
+  /** The union mailbox's non-terminal notes (#48) — the Tasks section renders
+   *  them inside the scroll area; an empty list mounts nothing. */
+  mailboxNotes: MailboxNote[]
+  mailboxCollapsed: boolean
+  toggleMailboxSection: () => void
+  /** G10 — card-grid layout for bot rows (group/hidden structure unchanged). */
+  cardMode: boolean
   renderBotRow: (bot: RosterRow, keyPrefix?: string) => ReactNode
   renderGroupChatSection: ReturnType<typeof rosterSectionRenderers>['renderGroupChatSection']
   renderGatewaySection: ReturnType<typeof rosterSectionRenderers>['renderGatewaySection']
@@ -42,6 +59,8 @@ interface RosterContentProps {
 
 export function renderRosterContent({
   b,
+  onNewBot,
+  creatingStarter,
   staleNotice,
   isLoading,
   initialRosterLoading,
@@ -64,6 +83,10 @@ export function renderRosterContent({
   hiddenBots,
   showHiddenRows,
   hiddenGatewaySections,
+  mailboxNotes,
+  mailboxCollapsed,
+  toggleMailboxSection,
+  cardMode,
   renderBotRow,
   renderGroupChatSection,
   renderGatewaySection,
@@ -93,7 +116,50 @@ export function renderRosterContent({
           </Button>
         </div>
       ) : roster.length === 0 ? (
-        <PanelEmpty description={b.roster.emptyDesc} icon="hubot" title={b.roster.emptyTitle} />
+        <PanelEmpty
+          action={
+            <div className="flex flex-col items-center gap-2.5">
+              <Button onClick={() => onNewBot()} size="sm">
+                <Codicon className="mr-1 text-[0.75rem]" name="add" />
+                {b.bot.newTitle}
+              </Button>
+              {/* One-click starters: the general cards that carry a real
+                  preset, so an empty roster becomes a working bot in a
+                  single click — no form at all. */}
+              <div className="flex flex-wrap items-center justify-center gap-1">
+                {QUICK_STARTERS.map(template => (
+                  <RowButton
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-full border border-(--ui-stroke-secondary) px-2 py-1 text-[0.6875rem] text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground',
+                      creatingStarter && 'pointer-events-none opacity-60'
+                    )}
+                    key={template.id}
+                    onClick={() => onNewBot(template)}
+                  >
+                    {creatingStarter === template.id ? (
+                      <GlyphSpinner className="text-[0.75rem]" spinner="breathe" />
+                    ) : (
+                      <BotFace
+                        color={avatarColor(null, template.name)}
+                        name={template.name}
+                        shape={blobShapeString('', template.blob)}
+                        size={14}
+                      />
+                    )}
+                    {template.name}
+                  </RowButton>
+                ))}
+              </div>
+              {/* The mental model, taught at first contact: Bot Chat is the
+                  inbox, New topic keeps context clean, @mentions summon
+                  teammates, a bot is a profile with an identity. */}
+              <BotsHowItWorks />
+            </div>
+          }
+          description={b.roster.emptyDesc}
+          icon="hubot"
+          title={b.roster.emptyTitle}
+        />
       ) : allBotsHidden && !hiddenExpanded ? (
         <div className="grid content-start gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)">
           <div className="flex items-center gap-1.5 font-medium text-(--ui-text-secondary)">
@@ -134,6 +200,12 @@ export function renderRosterContent({
                   ...gatewaySections.sections.map(renderGatewaySection)
                 ].filter(Boolean)
               : renderUserSections(rosterRows)}
+            <RosterMailboxSection
+              collapsed={mailboxCollapsed}
+              notes={mailboxNotes}
+              onToggle={toggleMailboxSection}
+              roster={roster}
+            />
             {showHiddenSection ? (
               <div
                 className="mt-1 border-t border-(--ui-stroke-tertiary) pt-1"
@@ -161,6 +233,10 @@ export function renderRosterContent({
                   matchingHiddenBots.length ? (
                     hiddenGatewaySections.sectioned ? (
                       hiddenGatewaySections.sections.map(renderHiddenGatewaySection)
+                    ) : cardMode ? (
+                      <div className="grid min-w-0 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5 px-1.5 py-1">
+                        {matchingHiddenBots.map((bot: RosterRow) => renderBotRow(bot, 'hidden:'))}
+                      </div>
                     ) : (
                       matchingHiddenBots.map((bot: RosterRow) => renderBotRow(bot, 'hidden:'))
                     )

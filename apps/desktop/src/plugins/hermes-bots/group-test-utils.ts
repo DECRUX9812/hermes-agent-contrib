@@ -31,7 +31,12 @@ export interface ScriptedMessage {
 }
 
 export interface ScriptedSession {
-  contracts?: { follow_profile_config: boolean; room_plumbing: boolean }
+  contracts?: {
+    follow_profile_config: boolean
+    room_plumbing: boolean
+    team_room?: boolean
+    team_room_lead?: string
+  }
   messages: ScriptedMessage[]
   profile: string
   runtime: string
@@ -99,6 +104,13 @@ export interface GatewayOptions {
   failAttach?: Record<string, unknown>
   /** Reject every prompt.submit with this — a fatal, non-recoverable failure. */
   failEverySubmitWith?: unknown
+  /** The `bots_team.room_lead` answer: the resolved org-tree lead. Omit for a
+   *  gateway that predates the RPC (rejects, the room falls back to fan-out);
+   *  `null` = known RPC, no covering team (also fan-out). */
+  teamLead?: { lead: string; lead_title?: string; team_id?: string; team_name?: string } | null
+  /** Fail `bots_team.room_lead` with a transport error on these calls (1-based)
+   *  — the socket reconnecting under a profile switch. */
+  teamLeadDropsOn?: number[]
   /** Reject only the FIRST prompt.submit — the 4001 reap the retry recovers. */
   failFirstSubmitWith?: unknown
   /** Fired on each post-submit poll, so a test can land a stop mid-turn. */
@@ -161,6 +173,7 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
   const uiMeta: Record<string, unknown> = {}
   const uiMetaRevisions: Record<string, number> = {}
   let sequence = 0
+  let teamLeadCalls = 0
   let submits = 0
   let polls = 0
   let refcount = 0
@@ -176,58 +189,7 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
     return stored ? sessions.get(stored) || null : null
   }
 
-  // `profiles.configure`: CAS-checked ui_meta writes, with an optional one-shot conflict.
-  const configureProfiles = (params: Record<string, unknown>) => {
-    if (options.conflictOnce && !conflicted) {
-      conflicted = true
-      const { key, value } = options.conflictOnce
-      uiMeta[key] = value
-      uiMetaRevisions[key] = (uiMetaRevisions[key] || 0) + 1
-
-      return {
-        applied: {
-          ui_meta: false,
-          ui_meta_conflicts: { [key]: { actual: uiMetaRevisions[key], expected: uiMetaRevisions[key] - 1 } },
-          ui_meta_revisions: { ...uiMetaRevisions }
-        }
-      }
-    }
-
-    const expected = params.ui_meta_expected_revisions as Record<string, number> | undefined
-    const incoming = (params.ui_meta || {}) as Record<string, unknown>
-
-    if (expected) {
-      for (const key of Object.keys(incoming)) {
-        if ((uiMetaRevisions[key] || 0) !== expected[key]) {
-          return {
-            applied: {
-              ui_meta: false,
-              ui_meta_conflicts: { [key]: { actual: uiMetaRevisions[key] || 0, expected: expected[key] } }
-            }
-          }
-        }
-      }
-    }
-
-    for (const [key, value] of Object.entries(incoming)) {
-      if (value === null) {
-        delete uiMeta[key]
-      } else {
-        uiMeta[key] = value
-      }
-
-      uiMetaRevisions[key] = (uiMetaRevisions[key] || 0) + 1
-    }
-
-    return { applied: { ui_meta: true, ui_meta_revisions: { ...uiMetaRevisions } } }
-  }
-
   const handle = async (method: string, params: Record<string, unknown>): Promise<unknown> => {
-    // A legacy Desktop room: no hosted-room driver, nonpersistent owner.
-    if (method === 'groups.capabilities') {
-      return { driver: false, persistent_process: false }
-    }
-
     if (method === 'profiles.list') {
       return {
         profiles: [{ name: 'default', ui_meta: { ...uiMeta }, ui_meta_revisions: { ...uiMetaRevisions } }]
@@ -235,7 +197,72 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
     }
 
     if (method === 'profiles.configure') {
-      return configureProfiles(params)
+      if (options.conflictOnce && !conflicted) {
+        conflicted = true
+        const { key, value } = options.conflictOnce
+        uiMeta[key] = value
+        uiMetaRevisions[key] = (uiMetaRevisions[key] || 0) + 1
+
+        return {
+          applied: {
+            ui_meta: false,
+            ui_meta_conflicts: { [key]: { actual: uiMetaRevisions[key], expected: uiMetaRevisions[key] - 1 } },
+            ui_meta_revisions: { ...uiMetaRevisions }
+          }
+        }
+      }
+
+      const expected = params.ui_meta_expected_revisions as Record<string, number> | undefined
+      const incoming = (params.ui_meta || {}) as Record<string, unknown>
+
+      if (expected) {
+        for (const key of Object.keys(incoming)) {
+          if ((uiMetaRevisions[key] || 0) !== expected[key]) {
+            return {
+              applied: {
+                ui_meta: false,
+                ui_meta_conflicts: { [key]: { actual: uiMetaRevisions[key] || 0, expected: expected[key] } }
+              }
+            }
+          }
+        }
+      }
+
+      for (const [key, value] of Object.entries(incoming)) {
+        if (value === null) {
+          delete uiMeta[key]
+        } else {
+          uiMeta[key] = value
+        }
+
+        uiMetaRevisions[key] = (uiMetaRevisions[key] || 0) + 1
+      }
+
+      return { applied: { ui_meta: true, ui_meta_revisions: { ...uiMetaRevisions } } }
+    }
+
+    if (method === 'bots_team.room_lead') {
+      teamLeadCalls += 1
+
+      if (options.teamLeadDropsOn?.includes(teamLeadCalls)) {
+        throw new Error('gateway socket closed')
+      }
+
+      if (!Object.hasOwn(options, 'teamLead')) {
+        throw gatewayError('Method not found', -32601)
+      }
+
+      const resolved = options.teamLead
+
+      return resolved
+        ? {
+            lead: resolved.lead,
+            lead_slot: '',
+            lead_title: resolved.lead_title || '',
+            team_id: resolved.team_id || null,
+            team_name: resolved.team_name || ''
+          }
+        : { lead: null, lead_slot: '', lead_title: '', team_id: null, team_name: '' }
     }
 
     if (method === 'session.create') {
@@ -246,7 +273,8 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
       const session: ScriptedSession = {
         contracts: {
           follow_profile_config: params.follow_profile_config === true,
-          room_plumbing: params.room_plumbing === true
+          room_plumbing: params.room_plumbing === true,
+          ...(params.team_room === true ? { team_room: true, team_room_lead: String(params.team_room_lead ?? '') } : {})
         },
         messages: [],
         profile,
@@ -428,7 +456,12 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
     state: {
       connectionId: { get: () => 'local', listen: () => () => undefined },
       gateway: { get: () => 'open', listen: () => () => undefined },
-      profile: { get: () => 'default', listen: () => () => undefined }
+      profile: { get: () => 'default', listen: () => () => undefined },
+      // The roster's live-status signals (the room's squad reads them): quiet.
+      cronJobs: { get: () => [], listen: () => () => undefined },
+      dotStateBySession: { get: () => ({}), listen: () => () => undefined },
+      statusItemsBySession: { get: () => ({}), listen: () => () => undefined },
+      storedSessionByRuntimeId: { get: () => ({}), listen: () => () => undefined }
     }
   }
 
@@ -455,24 +488,34 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
  *  the `vi.mock` factory rather than hoisted alongside it. */
 export async function pluginSdkMock(host: Record<string, unknown>) {
   const nanostores = await import('nanostores')
-  const { Textarea } = await import('@/components/ui/textarea')
+  // relay.ts builds an LruCache at module scope, and group modules reach it
+  // transitively (e.g. through mailbox.ts) — the real class keeps the mock honest.
+  const { LruCache } = await import('../../lib/lru-cache')
+  // Real value too: avatar.tsx's `botAppearance` consults it for the
+  // name-derived hue; the room header's face pile now reaches it on every
+  // render with members, so the color has to resolve in tests.
+  const { profileColor } = await import('../../lib/profile-color')
 
   return {
-    Textarea,
     // Real value: approval.respond forwards it as its client deadline (#60654).
     APPROVAL_RESPOND_TIMEOUT_MS: 300_000,
     atom: nanostores.atom,
+    LruCache,
     // Feature-detected SDK members: the modules read them off the namespace
     // and fall back when absent, but vitest rejects a namespace access with
     // no matching export at all — so they have to be present and undefined.
     BOT_CHAT_SESSION_HYDRATION_TIMEOUT_MS: undefined,
+    $watchedSessionKeys: nanostores.atom({}),
+    armTranscriptReplayJump: undefined,
     blobatarSvg: undefined,
     computed: nanostores.computed,
     createBudgetedLoop: undefined,
-    gatewayActivationEpoch: () => 0,
     host,
+    isWatchedSessionId: undefined,
+    toggleSessionWatched: undefined,
     CapabilitiesView: undefined,
     MessageTextContent: undefined,
+    profileColor,
     Streamdown: undefined,
     queryClient: { invalidateQueries: () => undefined },
     useQuery: () => ({ data: [], isLoading: false }),

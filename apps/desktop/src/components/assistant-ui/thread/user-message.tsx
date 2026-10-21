@@ -1,5 +1,6 @@
 import { ActionBarPrimitive, BranchPickerPrimitive, MessagePrimitive, useAuiState } from '@assistant-ui/react'
-import { type FC, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { useStore } from '@nanostores/react'
+import { type FC, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { DirectiveContent } from '@/components/assistant-ui/directive-text'
 import { isAttachmentRef } from '@/components/assistant-ui/reference-kinds'
@@ -8,6 +9,7 @@ import {
   messageContentText,
   PROCESS_NOTIFICATION_RE
 } from '@/components/assistant-ui/thread/content'
+import { ThreadEditContext } from '@/components/assistant-ui/thread/edit-context'
 import { MessageHoverTime } from '@/components/assistant-ui/thread/message-hover-time'
 import { ReactionBadge, ReactionPicker } from '@/components/assistant-ui/thread/message-reactions'
 import { BackgroundResult } from '@/components/assistant-ui/thread/system-message'
@@ -16,14 +18,18 @@ import { MessageTimelineTimestamp } from '@/components/assistant-ui/thread/timel
 import { type RestoreMessageTarget } from '@/components/assistant-ui/thread/types'
 import { useMessageReactions } from '@/components/assistant-ui/thread/use-message-reactions'
 import { UserMessageText } from '@/components/assistant-ui/thread/user-message-text'
+import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip } from '@/components/ui/tooltip'
+import { useMediaQuery } from '@/hooks/use-media-query'
 import { useResizeObserver } from '@/hooks/use-resize-observer'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { StopFilled } from '@/lib/icons'
 import { LruCache } from '@/lib/lru-cache'
+import { TOUCH_POINTER_QUERY } from '@/lib/touch-interaction'
 import { cn } from '@/lib/utils'
+import { $checkpointForUserRow, ensureSessionCheckpoints } from '@/store/checkpoints'
 import { $gateway } from '@/store/gateway'
 import { notifyThreadEditOpen } from '@/store/thread-scroll'
 import { isWatchWindow } from '@/store/windows'
@@ -33,6 +39,17 @@ export function hasTextSelection(): boolean {
   const selection = window.getSelection()
 
   return Boolean(selection && !selection.isCollapsed && selection.toString().length > 0)
+}
+
+/** Keep the platform's long-press menu on touch surfaces. Desktop right-click
+ * remains the intentional reaction-picker gesture, while iOS/Android own
+ * selection handles, Copy, and text actions after a long press. */
+export function preservesNativeTouchContextMenu(): boolean {
+  return Boolean(
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: none), (pointer: coarse)').matches
+  )
 }
 
 export function StickyHumanMessageContainer({
@@ -251,9 +268,12 @@ interface UserBubbleActionsProps {
   messageId: string
   onCancel?: () => Promise<void> | void
   onRequestRestoreConfirm?: (messageId: string, target: RestoreMessageTarget) => void
+  onRequestRevertConfirm?: (checkpointHash: string) => void
+  revertHash?: string
   runtimeUserOrdinal: RestoreMessageTarget['userOrdinal']
   showRestore: boolean
   showStop: boolean
+  touch: boolean
 }
 
 const UserBubbleActions: FC<UserBubbleActionsProps> = ({
@@ -261,19 +281,47 @@ const UserBubbleActions: FC<UserBubbleActionsProps> = ({
   messageId,
   onCancel,
   onRequestRestoreConfirm,
+  onRequestRevertConfirm,
+  revertHash,
   runtimeUserOrdinal,
   showRestore,
-  showStop
+  showStop,
+  touch
 }) => {
   const copy = useI18n().t.assistant.thread
 
   return (
     <>
-      <MessageHoverTime className={cn(!showStop && !showRestore && 'pr-0.5')} />
+      {!touch && <MessageHoverTime className={cn(!showStop && !showRestore && 'pr-0.5')} />}
+      {!showStop && revertHash && onRequestRevertConfirm ? (
+        <Tip label={copy.revertFilesTip}>
+          <button
+            aria-label={copy.revertFilesTip}
+            className={cn(
+              'pointer-events-auto',
+              touch ? 'size-11' : 'size-6',
+              USER_ACTION_ICON_BUTTON_CLASS
+            )}
+            onClick={event => {
+              event.preventDefault()
+              event.stopPropagation()
+              triggerHaptic('selection')
+              onRequestRevertConfirm(revertHash)
+            }}
+            onPointerDown={event => {
+              event.preventDefault()
+              event.stopPropagation()
+            }}
+            type="button"
+          >
+            <Codicon name="revert" size="0.875rem" />
+          </button>
+        </Tip>
+      ) : null}
       {showStop ? (
         <button
           aria-label={copy.stop}
-          className={cn('pointer-events-auto size-5', USER_ACTION_ICON_BUTTON_CLASS)}
+          className={cn('pointer-events-auto', touch ? 'size-11' : 'size-5', USER_ACTION_ICON_BUTTON_CLASS)}
           onClick={event => {
             event.preventDefault()
             event.stopPropagation()
@@ -287,7 +335,7 @@ const UserBubbleActions: FC<UserBubbleActionsProps> = ({
         <Tip label={copy.restoreFromHere}>
           <button
             aria-label={copy.restoreCheckpoint}
-            className={cn('pointer-events-auto size-6', USER_ACTION_ICON_BUTTON_CLASS)}
+            className={cn('pointer-events-auto', touch ? 'size-11' : 'size-6', USER_ACTION_ICON_BUTTON_CLASS)}
             onClick={event => {
               event.preventDefault()
               event.stopPropagation()
@@ -314,13 +362,34 @@ const UserBubbleActions: FC<UserBubbleActionsProps> = ({
 export const UserMessage: FC<{
   onCancel?: () => Promise<void> | void
   onRequestRestoreConfirm?: (messageId: string, target: RestoreMessageTarget) => void
-}> = ({ onCancel, onRequestRestoreConfirm }) => {
+  onRequestRevertConfirm?: (checkpointHash: string) => void
+}> = ({ onCancel, onRequestRestoreConfirm, onRequestRevertConfirm }) => {
   const { t } = useI18n()
   const copy = t.assistant.thread
+  const touch = useMediaQuery(TOUCH_POINTER_QUERY)
   const messageId = useAuiState(s => s.message.id)
   const content = useAuiState(s => s.message.content)
   const messageText = messageContentText(content)
   const threadRunning = useAuiState(s => s.thread.isRunning)
+  const { sessionId } = useContext(ThreadEditContext)
+
+  const rowId = useAuiState(s => {
+    const custom = (s.message.metadata?.custom ?? {}) as { rowId?: unknown }
+
+    return typeof custom.rowId === 'number' && Number.isInteger(custom.rowId) ? custom.rowId : undefined
+  })
+
+  // The checkpoint that preceded this prompt, if the backend stamped one —
+  // feeds the "revert files" affordance (roadmap #31).
+  const revertTarget = useStore(useMemo(() => $checkpointForUserRow(sessionId, rowId), [sessionId, rowId]))
+
+  // Mount and each settled edge refetch (a turn may have written new
+  // checkpoints); while running the cached list is fine (TTL still applies).
+  useEffect(() => {
+    if (!threadRunning) {
+      ensureSessionCheckpoints(sessionId, true)
+    }
+  }, [sessionId, threadRunning])
 
   const latestUserId = useAuiState(s => {
     for (let i = s.thread.messages.length - 1; i >= 0; i--) {
@@ -368,7 +437,7 @@ export const UserMessage: FC<{
   // toggles the 2-line clamp so long prompts are still fully readable.
   const readOnly = isWatchWindow()
   const [expanded, setExpanded] = useState(false)
-  const clampActive = !(readOnly && expanded)
+  const clampActive = !touch && !(readOnly && expanded)
 
   const measureClamp = useCallback((entries: readonly ResizeObserverEntry[]) => {
     const inner = clampInnerRef.current
@@ -439,11 +508,12 @@ export const UserMessage: FC<{
   // isn't — including mid-stream on older prompts, since the action interrupts
   // the live turn before rewinding.
   const showRestore = !readOnly && !showStop && Boolean(onRequestRestoreConfirm) && hasBody
+  const revertHash = !readOnly && onRequestRevertConfirm ? revertTarget?.hash : undefined
 
   const bubbleClassName = cn(
     USER_BUBBLE_BASE_CLASS,
     'cursor-pointer pr-9 text-[length:var(--conversation-text-font-size)] leading-(--dt-line-height) text-foreground/95 transition-colors',
-    'border-(--ui-stroke-tertiary) hover:border-(--ui-stroke-secondary)'
+    'border-(--dt-user-bubble-border) hover:border-(--ui-stroke-secondary)'
   )
 
   const bubbleContent = hasBody ? (
@@ -504,14 +574,15 @@ export const UserMessage: FC<{
                 // link/image/selection inside the bubble still gets the app
                 // menu, and this handler's selection guard keeps ⌘C flows.
                 data-context-menu-skip=""
+                data-slot="aui_user-bubble-frame"
                 onContextMenu={
-                  // Right-click is the desktop stand-in for iOS touch-and-hold —
-                  // but only when there's nothing selected. A live highlight
-                  // keeps the native Copy menu (and ⌘C) instead of the picker.
+                  // Right-click is the desktop reaction gesture. Touch surfaces
+                  // leave long-press entirely to the platform so selection
+                  // handles and Copy are never replaced by the picker.
                   readOnly || !reactionsEnabled
                     ? undefined
                     : event => {
-                        if (hasTextSelection()) {
+                        if (hasTextSelection() || preservesNativeTouchContextMenu()) {
                           return
                         }
 
@@ -520,7 +591,28 @@ export const UserMessage: FC<{
                       }
                 }
               >
-                {readOnly ? (
+                {touch ? (
+                  <>
+                    <div className={cn(bubbleClassName, 'cursor-text')} data-selectable-text="true">
+                      {bubbleContent}
+                    </div>
+                    <div className={cn('flex justify-end', (showStop || showRestore) && 'pr-11')}>
+                      {!readOnly && (
+                        <ActionBarPrimitive.Edit asChild>
+                          <Button
+                            aria-label={copy.editMessage}
+                            data-slot="aui_user-touch-edit"
+                            onClick={notifyThreadEditOpen}
+                            size="icon"
+                            variant="ghost"
+                          >
+                            <Codicon name="edit" />
+                          </Button>
+                        </ActionBarPrimitive.Edit>
+                      )}
+                    </div>
+                  </>
+                ) : readOnly ? (
                   // Spectator transcript: clicking only toggles the clamp so the
                   // full prompt is readable — never opens an edit composer.
                   <button
@@ -573,18 +665,31 @@ export const UserMessage: FC<{
                   </ActionBarPrimitive.Edit>
                 )}
                 {/* Hover cluster, bottom-right: when it was sent, then Stop or
-                    Restore. Its fill masks the last line's tail while shown. */}
-                <div className="pointer-events-none absolute right-2 bottom-2 z-10 flex items-center gap-1 rounded-md bg-(--dt-user-bubble) pl-1 opacity-0 transition-opacity group-hover/user-message:opacity-100 group-hover/user-message:transition-none group-focus-within/user-message:opacity-100">
-                  <UserBubbleActions
-                    fullText={messageText}
-                    messageId={messageId}
-                    onCancel={onCancel}
-                    onRequestRestoreConfirm={onRequestRestoreConfirm}
-                    runtimeUserOrdinal={runtimeUserOrdinal}
-                    showRestore={showRestore}
-                    showStop={showStop}
-                  />
-                </div>
+                    Restore. Its fill masks the last line's tail while shown. On
+                    touch surfaces the cluster is always visible instead. */}
+                {(!touch || showStop || showRestore || revertHash) && (
+                  <div
+                    className={cn(
+                      'pointer-events-none absolute right-2 bottom-2 z-10 flex items-center gap-1 rounded-md bg-(--dt-user-bubble) pl-1 transition-opacity',
+                      touch
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover/user-message:opacity-100 group-hover/user-message:transition-none group-focus-within/user-message:opacity-100'
+                    )}
+                  >
+                    <UserBubbleActions
+                      fullText={messageText}
+                      messageId={messageId}
+                      onCancel={onCancel}
+                      onRequestRestoreConfirm={onRequestRestoreConfirm}
+                      onRequestRevertConfirm={onRequestRevertConfirm}
+                      revertHash={revertHash}
+                      runtimeUserOrdinal={runtimeUserOrdinal}
+                      showRestore={showRestore}
+                      showStop={showStop}
+                      touch={touch}
+                    />
+                  </div>
+                )}
               </div>
             </ReactionPicker>
             {/* Below the bubble, same register as the assistant action row:

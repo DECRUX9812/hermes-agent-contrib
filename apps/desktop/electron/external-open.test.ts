@@ -243,3 +243,22 @@ test('guard: a non-missing stat failure is logged and classified as proceed-to-O
   assert.equal(logged.length, 4)
   assert.ok(logged.every(line => line.includes('[file] pre-open stat failed')))
 })
+
+test('opens editor hand-off URLs only in their open-a-file shapes', async () => {
+  const { deps, calls } = makeDeps()
+
+  for (const url of [
+    'vscode://file/work/app.ts:12',
+    'cursor://vscode-remote/ssh-remote+dev%40box/srv/app.ts',
+    'zed://ssh/dev@box/srv/app.ts'
+  ]) {
+    assert.deepEqual(await openExternalUrl(url, deps), { ok: true })
+  }
+
+  // Extension URI handlers and settings deep links ride the same schemes.
+  for (const url of ['vscode://ms-vscode.remote-server/run', 'cursor://settings/', 'zed://extension/x']) {
+    assert.deepEqual(await openExternalUrl(url, deps), { ok: false, reason: 'invalid' })
+  }
+
+  assert.equal(calls.opened.length, 3)
+})

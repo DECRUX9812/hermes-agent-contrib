@@ -80,10 +80,12 @@ import { paneMirror } from './pane-mirror'
 import { SessionDraftTitle } from './session-draft-title'
 import { startSessionDrag } from './session-drag'
 import { SessionStatusDot } from './session-status-dot'
+import { SessionTabStatus } from './session-tab-status'
 import { useSessionTileActions } from './session-tile-actions'
 import { tileOwnerRoute } from './session-tile-owner'
 import { reasoningEffortPending, type SessionView, SessionViewProvider } from './session-view'
 import { SessionContextMenu } from './sidebar/session-actions-menu'
+import { SkillTag } from './skill-tag'
 import { lastVisibleMessageIsUser } from './thread-loading'
 
 import { ChatView } from '.'
@@ -983,6 +985,13 @@ export const watchSessionTiles = paneMirror<SessionTile>({
       <SessionDraftTitle scope={storedSessionId} />
     ),
   render: storedSessionId => <SessionTilePane storedSessionId={storedSessionId} />,
+  // The session's live status on the tab itself (elapsed + what it's doing),
+  // so every tile reads live — not just the zone's active pane.
+  tabTrail: storedSessionId => <SessionTabStatus storedSessionId={storedSessionId} />,
+  contentTitle: true,
+  // The focused conversation's skill count, in the zone strip's trailing
+  // edge — the tab strip is a session pane's header in the pane-shell layout.
+  stripTrail: storedSessionId => <SkillTag storedSessionId={storedSessionId} />,
   tabWrap: (storedSessionId, tab) => (
     <SessionTabMenu
       onClose={() => requestCloseSessionTile(storedSessionId)}

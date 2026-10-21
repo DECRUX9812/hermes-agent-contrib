@@ -10,14 +10,17 @@ import { Slider } from '@/components/ui/slider'
 import type { DesktopMarketplaceSearchItem } from '@/global'
 import { saveHermesConfig } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { EDITORS } from '@/lib/editor-handoff'
 import { triggerHaptic } from '@/lib/haptics'
 import { Check, Download, Loader2, Palette, Trash2 } from '@/lib/icons'
+import { isBrowserHostedDesktop } from '@/lib/platform'
 import { selectableCardClass } from '@/lib/selectable-card'
 import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
-import { $backdrop, setBackdrop } from '@/store/backdrop'
 import { $chatTextScale, CHAT_TEXT_SCALE_PRESETS, setChatTextScale } from '@/store/chat-text-scale'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
+import { confirm } from '@/store/confirm'
+import { $preferredEditor } from '@/store/editor-handoff'
 import { $embedAllowed, $embedMode, clearEmbedAllowed, type EmbedMode, setEmbedMode } from '@/store/embed-consent'
 import {
   $interfaceMode,
@@ -27,7 +30,7 @@ import {
   setInterfaceMode
 } from '@/store/interface-mode'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
-import { $fileBrowserOpen, setFileBrowserOpen } from '@/store/layout'
+import { $activityRailVisible, $autoOpenFilesOnProject, $fileBrowserOpen, setFileBrowserOpen } from '@/store/layout'
 import { $showModelPricing, setShowModelPricing } from '@/store/model-pricing'
 import { notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, $profiles, normalizeProfileKey } from '@/store/profile'
@@ -66,6 +69,7 @@ import {
   TRANSLUCENCY_STEP,
   TRANSLUCENCY_SUPPORTED
 } from '@/store/translucency'
+import { $uiLook, setUiLook, UI_LOOKS, type UiLook } from '@/store/ui-look'
 import { $userBubbleTransparency, setUserBubbleTransparency } from '@/store/user-bubble-transparency'
 import { $vibeHeartsEnabled, setVibeHeartsEnabled } from '@/store/vibe-hearts-enabled'
 import { $zoomPercent, setZoomPercent } from '@/store/zoom'
@@ -78,9 +82,11 @@ import { setHermesConfigCache, useHermesConfigRecord } from '../hooks/use-config
 
 import { AppearanceExtraSlot } from './appearance-contrib'
 import type { AppearanceSubpageId } from './appearance-subpages'
+import { BackdropSceneGrid, BackdropStrengthControl } from './backdrop-setting'
 import { ChatFontSetting } from './chat-font-setting'
 import { MODE_OPTIONS } from './constants'
 import { setNested } from './helpers'
+import { MenuBarStatusSetting } from './menu-bar-status-setting'
 import { MinimizeToTraySetting } from './minimize-to-tray-setting'
 import { PetSettings } from './pet-settings'
 import { ListRow, RowFootnoteAction, SectionHeading, SettingsContent, ToggleRow } from './primitives'
@@ -430,6 +436,9 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const embedAllowed = useStore($embedAllowed)
   const composerPopoutGesturesEnabled = useStore($composerPopoutGesturesEnabled)
   const fileBrowserOpen = useStore($fileBrowserOpen)
+  const preferredEditor = useStore($preferredEditor)
+  const autoOpenFiles = useStore($autoOpenFilesOnProject)
+  const activityRail = useStore($activityRailVisible)
   const fileBrowserShadowed = useStore($modeShadowed('fileBrowserOpen'))
   const translucency = useStore($translucency)
   const glassMode = translucency.mode === 'glass' && GLASS_SUPPORTED
@@ -440,12 +449,12 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   const toursEnabled = useStore($toursEnabled)
   const spentTips = useStore($spentTipCount)
   const vibeHeartsEnabled = useStore($vibeHeartsEnabled)
-  const backdrop = useStore($backdrop)
   const introSplash = useStore($introSplash)
   const showModelPricing = useStore($showModelPricing)
   const installs = useStore($marketplaceInstalls)
   const profiles = useStore($profiles)
   const activeProfileKey = normalizeProfileKey(useStore($activeGatewayProfile))
+  const browserHosted = isBrowserHostedDesktop()
   const a = t.settings.appearance
 
   // A pointer held on the intensity slider when this overlay closes (Escape
@@ -504,10 +513,18 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
   ] as const
 
   const sessionDensityOptions = [
+    { id: 'condensed', label: a.sessionDensityCondensed },
     { id: 'compact', label: a.sessionDensityCompact },
     { id: 'comfortable', label: a.sessionDensityComfortable },
     { id: 'detailed', label: a.sessionDensityDetailed }
   ] as const satisfies readonly { id: SessionListDensity; label: string }[]
+
+  const uiLook = useStore($uiLook)
+
+  const lookOptions = UI_LOOKS.map(id => ({
+    id,
+    label: id === 'soft' ? a.lookSoft : a.lookClassic
+  })) satisfies readonly { id: UiLook; label: string }[]
 
   const interfaceModeOptions = INTERFACE_MODES.map(id => ({
     id,
@@ -575,6 +592,24 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
               action={
                 <SegmentedControl
                   onChange={id => {
+                    triggerHaptic('selection')
+                    setUiLook(id)
+                  }}
+                  options={lookOptions}
+                  value={uiLook}
+                />
+              }
+              description={a.lookDesc}
+              id={settingElementId(ids.look)}
+              title={a.lookTitle}
+            />
+          )}
+
+          {show('theme') && (
+            <ListRow
+              action={
+                <SegmentedControl
+                  onChange={id => {
                     triggerHaptic('crisp')
                     setMode(id)
                   }}
@@ -634,13 +669,21 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
                                   aria-label={a.removeTheme}
                                   className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-md bg-(--ui-bg-elevated)/80 text-(--ui-text-tertiary) opacity-0 backdrop-blur-sm transition hover:text-(--ui-red) focus-visible:opacity-100 group-hover:opacity-100"
                                   onClick={() => {
-                                    triggerHaptic('crisp')
-                                    removeUserTheme(theme.name)
+                                    void confirm({
+                                      confirmLabel: t.common.delete,
+                                      description: theme.label,
+                                      destructive: true,
+                                      onConfirm: async () => {
+                                        triggerHaptic('crisp')
+                                        removeUserTheme(theme.name)
 
-                                    // Re-normalize off the now-missing skin → default.
-                                    if (active) {
-                                      setTheme(theme.name)
-                                    }
+                                        // Re-normalize off the now-missing skin → default.
+                                        if (active) {
+                                          setTheme(theme.name)
+                                        }
+                                      },
+                                      title: a.removeTheme
+                                    })
                                   }}
                                   type="button"
                                 >
@@ -790,9 +833,15 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
             </div>
           )}
 
+          {show('window-layout') && (
+            <div id={settingElementId(ids.menuBarStatus)}>
+              <MenuBarStatusSetting />
+            </div>
+          )}
+
           {/* Linux has neither half of this setting (see TRANSLUCENCY_SUPPORTED),
               so the row is absent there rather than offering a dead lever. */}
-          {show('window-layout') && TRANSLUCENCY_SUPPORTED && (
+          {show('window-layout') && TRANSLUCENCY_SUPPORTED && !browserHosted && (
             <ListRow
               action={
                 <div
@@ -913,12 +962,13 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
           )}
 
           {show('window-layout') && (
-            <ToggleRow
-              checked={backdrop}
+            <ListRow
+              action={<BackdropStrengthControl />}
+              below={<BackdropSceneGrid />}
               description={a.backdropDesc}
               id={settingElementId(ids.backdrop)}
-              label={a.backdropTitle}
-              onChange={setBackdrop}
+              title={a.backdropTitle}
+              wide
             />
           )}
 
@@ -962,6 +1012,44 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
               id={settingElementId(ids.fileBrowser)}
               label={a.fileBrowserTitle}
               onChange={setFileBrowserOpen}
+            />
+          )}
+
+          {show('window-layout') && (
+            <ToggleRow
+              checked={activityRail}
+              description={a.activityRailDesc}
+              id={settingElementId(ids.activityRail)}
+              label={a.activityRailTitle}
+              onChange={value => $activityRailVisible.set(value)}
+            />
+          )}
+
+          {show('window-layout') && (
+            <ToggleRow
+              checked={autoOpenFiles}
+              description={a.autoOpenFilesDesc}
+              id={settingElementId(ids.autoOpenFiles)}
+              label={a.autoOpenFilesTitle}
+              onChange={value => $autoOpenFilesOnProject.set(value)}
+            />
+          )}
+
+          {show('window-layout') && (
+            <ListRow
+              action={
+                <SegmentedControl
+                  onChange={id => {
+                    triggerHaptic('selection')
+                    $preferredEditor.set(id)
+                  }}
+                  options={EDITORS.map(editor => ({ id: editor.id, label: editor.label }))}
+                  value={preferredEditor}
+                />
+              }
+              description={a.openInEditorDesc}
+              id={settingElementId(ids.openInEditor)}
+              title={a.openInEditorTitle}
             />
           )}
 
@@ -1096,8 +1184,10 @@ export function AppearanceSettings({ subpage }: AppearanceSettingsProps = {}) {
       {/* Plugin-provided appearance controls — the sanctioned seam for a
           plugin that used to inject nodes into this page. Top-level page only:
           a deep-link subpage shows one built-in section, and a plugin card is
-          not that section. */}
-      {subpage === undefined && <AppearanceExtraSlot />}
+          not that section. The overview render (subpage === undefined) is
+          unreachable while every view resolves a subpage, so extras also mount
+          on 'general' — the landing subpage the Appearance nav opens. */}
+      {(subpage === undefined || subpage === 'general') && <AppearanceExtraSlot />}
     </SettingsContent>
   )
 }

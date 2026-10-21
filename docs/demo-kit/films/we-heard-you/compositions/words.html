@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta charset="UTF-8" /></head><body><template>
+      <style>
+        #words-root { position: absolute; inset: 0; pointer-events: none; font-family: Montserrat, sans-serif; }
+        .w-block { position: absolute; left: 80px; top: 0; width: 440px; height: 1080px; display: flex; flex-direction: column; justify-content: center; }
+        .w-line { display: block; font-size: 64px; font-weight: 900; letter-spacing: -0.045em; line-height: 1.04; color: #f3ecdc; opacity: 0; }
+        .w-gold { color: #f2b53b; }
+      </style>
+      <div id="words-root" data-composition-id="words" data-width="1920" data-height="1080">
+        <div class="w-block" id="w-vibe"><span class="w-line" data-layout-allow-occlusion>One ask.</span><span class="w-line w-gold" data-layout-allow-occlusion>New world.</span></div>
+        <div class="w-block" id="w-timer"><span class="w-line" data-layout-allow-occlusion>Just that</span><span class="w-line w-gold" data-layout-allow-occlusion>one thing.</span></div>
+        <div class="w-block" id="w-remix"><span class="w-line" data-layout-allow-occlusion>No API.</span><span class="w-line w-gold" data-layout-allow-occlusion>Just say it.</span></div>
+        <div class="w-block" id="w-flow"><span class="w-line" data-layout-allow-occlusion>Grab it.</span><span class="w-line w-gold" data-layout-allow-occlusion>Change it.</span></div>
+        <div class="w-block" id="w-spend"><span class="w-line" data-layout-allow-occlusion>Every token,</span><span class="w-line w-gold" data-layout-allow-occlusion>counted.</span></div>
+        <div class="w-block" id="w-mission"><span class="w-line" data-layout-allow-occlusion>Every agent,</span><span class="w-line w-gold" data-layout-allow-occlusion>in sight.</span></div>
+      </div>
+      <script>
+        (() => {
+          const BAR = 4 * 60 / 118
+          const tl = gsap.timeline({ paused: true })
+          // The answer rises in once the prompt is sent and leaves before the next complaint lands.
+          const say = (id, at, out) => {
+            const lines = document.getElementById(id).querySelectorAll('.w-line')
+            lines.forEach((line, i) => {
+              tl.fromTo(line, { y: 60, opacity: 0, filter: 'blur(10px)' },
+                { y: 0, opacity: 1, filter: 'blur(0px)', duration: 0.45, ease: 'expo.out', immediateRender: false }, at + i * 0.18)
+            })
+            tl.to(lines, { y: -30, opacity: 0, filter: 'blur(8px)', duration: 0.3, ease: 'power2.in' }, out)
+          }
+          // [id, start bar, bars]
+          const SCENES = [['w-vibe', 4, 3], ['w-timer', 7, 3], ['w-remix', 10, 2], ['w-flow', 12, 3], ['w-spend', 15, 3], ['w-mission', 18, 4]]
+          SCENES.forEach(([id, bar, bars]) => say(id, bar * BAR + 2.3, (bar + bars) * BAR - 0.35))
+          window.__timelines['words'] = tl
+        })()
+      </script>
+</template></body></html>

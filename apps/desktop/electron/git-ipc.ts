@@ -24,9 +24,11 @@ import {
 } from './git-review-ops'
 import {
   addWorktree,
+  ensureWorktree,
   listBaseBranches,
   listBranches,
   listWorktrees,
+  mergeWorktreeBack,
   removeWorktree,
   switchBranch
 } from './git-worktree-ops'
@@ -47,6 +49,16 @@ export function registerGitIpc({ resolveGitBinary, resolveGhBinary }: GitIpcDeps
 
   ipcMain.handle('hermes:git:worktreeRemove', async (_event, repoPath, worktreePath, options) =>
     removeWorktree(repoPath, worktreePath, options || {}, resolveGitBinary())
+  )
+
+  // Session-worktree affordances (roadmap #47): recreate a missing worktree dir
+  // on session open, merge its branch back into the main checkout.
+  ipcMain.handle('hermes:git:worktreeEnsure', async (_event, repoPath, worktreePath, branch) =>
+    ensureWorktree(repoPath, worktreePath, branch || '', resolveGitBinary())
+  )
+
+  ipcMain.handle('hermes:git:worktreeMerge', async (_event, repoPath, worktreePath) =>
+    mergeWorktreeBack(repoPath, worktreePath, resolveGitBinary())
   )
 
   ipcMain.handle('hermes:git:branchSwitch', async (_event, repoPath, branch) =>

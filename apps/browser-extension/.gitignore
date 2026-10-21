@@ -1,0 +1,4 @@
+# esbuild outputs (regenerate with `npm run build` before loading unpacked)
+/background.js
+/content.js
+/options.js

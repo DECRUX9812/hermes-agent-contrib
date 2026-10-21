@@ -61,7 +61,28 @@ vi.mock('@/hermes', async importOriginal => {
 
   return { ...actual, renameSession: vi.fn() }
 })
+
+// The live digest line (store/session-digest.ts) resolves its labels through
+// module-level `translateNow`, outside useI18n.
+const digestStrings = vi.hoisted((): Record<string, string | ((...args: unknown[]) => string)> => ({
+  'sidebar.row.backgroundRunning': 'Running in background',
+  'sidebar.row.digest.agents': count => `${count} agents running`,
+  'sidebar.row.digest.approve': command => `Approve: ${command}`,
+  'sidebar.row.digest.compacting': 'Summarizing thread',
+  'sidebar.row.digest.replying': 'Writing a reply',
+  'sidebar.row.digest.stalled': 'Still running — quiet for a while',
+  'sidebar.row.digest.todo': (done, total, task) => `${done}/${total} · ${task}`,
+  'sidebar.row.finishedUnread': 'Finished',
+  'sidebar.row.sessionRunning': 'Running',
+  'sidebar.row.waitingForAnswer': 'Waiting for answer'
+}))
+
 vi.mock('@/i18n', () => ({
+  translateNow: (key: string, ...args: unknown[]) => {
+    const value = digestStrings[key]
+
+    return typeof value === 'function' ? value(...args) : String(value ?? key)
+  },
   useI18n: () => ({
     t: {
       assistant: {
@@ -81,6 +102,22 @@ vi.mock('@/i18n', () => ({
       },
       errors: { genericFailure: 'Something went wrong' },
       sidebar: {
+        peek: {
+          agents: 'Delegated agents',
+          agentsRunning: (count: number) => `${count} running`,
+          agentsSummary: (count: number) => `${count} agents`,
+          archived: 'Archived',
+          branch: 'Branch',
+          idle: 'Idle',
+          model: 'Model',
+          profile: 'Profile',
+          source: 'Source',
+          started: 'Started',
+          stats: 'Stats',
+          tokens: (count: string) => `${count} tokens`,
+          updated: 'Updated',
+          workspace: 'Workspace'
+        },
         messageCount: (count: number) => `${count} messages`,
         projects: {
           home: 'Home',
@@ -95,6 +132,24 @@ vi.mock('@/i18n', () => ({
           ageMin: 'm',
           ageNow: 'now',
           archive: 'Archive',
+          ask: {
+            clear: 'Clear thread',
+            dialogDesc: (title: string) => `About ${title}`,
+            dialogTitle: 'Ask about this session',
+            empty: 'Ask a question about what this session did, decided, or wrote.',
+            failed: 'Could not get an answer',
+            placeholder: 'Ask about this session…',
+            send: 'Ask',
+            thinking: 'Reading the transcript…',
+            truncatedNote: 'Answered from the beginning and end of a long transcript.'
+          },
+          askAbout: 'Ask about this session',
+          continueOnPhone: 'Continue on phone',
+          handoffNone: 'No messaging platform is ready for a handoff',
+          openDeviceDesc: (home: string) => `Scan the code or send the link to ${home}.`,
+          openDeviceHomeFallback: 'its home backend',
+          openDeviceTitle: 'Open on another device',
+          openOnDevice: 'Open on another device',
           backgroundRunning: 'Running in background',
           branchFrom: 'Branch from here',
           copyId: 'Copy ID',

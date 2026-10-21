@@ -6,7 +6,6 @@ import { PageLoader } from '@/components/page-loader'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { CopyButton } from '@/components/ui/copy-button'
 import {
   Dialog,
   DialogContent,
@@ -31,7 +30,6 @@ import {
 } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { AlertTriangle, Globe, Plus, RefreshCw } from '@/lib/icons'
-import { cn } from '@/lib/utils'
 import { notify, notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import { runGatewayRestart } from '@/store/system-actions'
@@ -51,6 +49,7 @@ import {
   PanelPill,
   PanelSectionLabel
 } from '../overlays/panel'
+import { CopyValueRow } from '../settings/mobile-companion'
 import { ListRow } from '../settings/primitives'
 
 const DELIVER_OPTIONS: readonly string[] = ['log', 'telegram', 'discord', 'slack', 'email', 'github_comment']
@@ -58,19 +57,6 @@ const DELIVER_OPTIONS: readonly string[] = ['log', 'telegram', 'discord', 'slack
 interface CreatedWebhook {
   secret: string
   url: string
-}
-
-// One affordance for "value + CopyButton": flat, token-backed (no border, no
-// raw literals). DESIGN.md Principle 1 (flat, not boxed) + 4 (tokens, not
-// literals). Reused by the detail URL row and the create-result URL/secret so
-// there is a single copyable-value chrome in this file.
-function CopyValueRow({ copyLabel, mono = true, value }: { copyLabel: string; mono?: boolean; value: string }) {
-  return (
-    <div className="flex items-center gap-1 rounded bg-foreground/5 px-2.5 py-1.5 text-[0.7rem]">
-      <span className={cn('min-w-0 flex-1 truncate text-foreground/80', mono && 'font-mono')}>{value}</span>
-      <CopyButton appearance="icon" buttonSize="icon-sm" label={copyLabel} text={value} />
-    </div>
-  )
 }
 
 interface WebhooksViewProps {

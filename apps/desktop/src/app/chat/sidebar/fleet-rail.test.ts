@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
+import type { ClientSessionState } from '@/app/types'
 import type { DesktopAgentRoster, DesktopRegistryConnection } from '@/global'
+import { createClientSessionState } from '@/lib/chat-runtime'
+import type { SessionDotState } from '@/store/session-dot-state'
+import type { SessionInfo } from '@/types/hermes'
 
-import { buildRestGroups, countRestAgents } from './fleet-rail'
+import { buildFleetRuns, buildRestGroups, countRestAgents } from './fleet-rail'
 
 const connections: DesktopRegistryConnection[] = [
   { id: 'pandora', kind: 'remote', label: 'Pandora', url: 'https://pandora.example' },
@@ -138,5 +142,155 @@ describe('buildRestGroups', () => {
 
     // local: default + omer; vps: default
     expect(countRestAgents(groups)).toBe(3)
+  })
+})
+
+const sessionRow = (extra: Partial<SessionInfo>): SessionInfo =>
+  ({
+    id: 'row-1',
+    is_active: false,
+    last_active: 100,
+    message_count: 1,
+    source: 'cli',
+    started_at: 90,
+    title: 'Row title',
+    ...extra
+  }) as SessionInfo
+
+const runningState = (storedSessionId: string | null, text = 'Ship the thing'): ClientSessionState => {
+  const state = createClientSessionState(storedSessionId)
+
+  state.messages = [{ role: 'user', parts: [{ type: 'text', text }] } as never]
+  state.turnStartedAt = 5000
+  state.busy = true
+
+  return state
+}
+
+describe('buildFleetRuns', () => {
+  const emptyDots: Record<string, SessionDotState> = {}
+
+  it('marks a backend-active row with no live runtime as working, tagged with its profile and gateway', () => {
+    const runs = buildFleetRuns({
+      connections,
+      digests: {},
+      dotStates: emptyDots,
+      sessions: [
+        sessionRow({ id: 'run-a', connection_id: 'pandora', is_active: true, last_active: 200, profile: 'scout' })
+      ],
+      states: {}
+    })
+
+    expect(runs).toHaveLength(1)
+    expect(runs[0]).toMatchObject({
+      connectionId: 'pandora',
+      connectionLabel: 'Pandora',
+      dot: 'working',
+      profile: 'scout',
+      sessionId: 'run-a',
+      startedMs: 200 * 1000,
+      title: 'Row title'
+    })
+  })
+
+  it('keeps quiet dots and idle rows off the roster', () => {
+    const runs = buildFleetRuns({
+      connections,
+      digests: {},
+      dotStates: { 'row-idle': 'idle', 'row-unread': 'unread', 'row-draft': 'draft' },
+      sessions: [
+        sessionRow({ id: 'row-idle' }),
+        sessionRow({ id: 'row-unread' }),
+        sessionRow({ id: 'row-draft' }),
+        sessionRow({ id: 'row-quiet' })
+      ],
+      states: {}
+    })
+
+    expect(runs).toHaveLength(0)
+  })
+
+  it('uses the live dot over the row flag and ranks attention first, background last, oldest first in tier', () => {
+    const runs = buildFleetRuns({
+      connections: [],
+      digests: {},
+      dotStates: { 'run-bg': 'background', 'run-work': 'working', 'run-input': 'needs-input' },
+      sessions: [
+        sessionRow({ id: 'run-work', last_active: 400 }),
+        sessionRow({ id: 'run-input', last_active: 300 }),
+        sessionRow({ id: 'run-bg', last_active: 100 })
+      ],
+      states: {}
+    })
+
+    expect(runs.map(run => run.sessionId)).toEqual(['run-input', 'run-work', 'run-bg'])
+  })
+
+  it('carries the first user line when the row has no title yet, and feeds the timer from turnStartedAt', () => {
+    const state = runningState('run-live')
+
+    const runs = buildFleetRuns({
+      connections: [],
+      digests: { 'run-live': 'Editing app.py' },
+      dotStates: { 'run-live': 'working' },
+      sessions: [sessionRow({ id: 'run-live', is_active: true, title: '' })],
+      states: { 'runtime-1': state }
+    })
+
+    expect(runs[0]).toMatchObject({
+      detail: 'Editing app.py',
+      sessionId: 'run-live',
+      startedMs: 5000,
+      title: 'Ship the thing'
+    })
+  })
+
+  it('rosters a live runtime whose stored row has not arrived, tagged by its socket owner', () => {
+    const state = runningState(null)
+
+    const runs = buildFleetRuns({
+      connections,
+      digests: {},
+      dotStates: { 'runtime-9': 'working' },
+      ownerForRuntimeId: () => ({ connectionId: 'vps', profile: 'scout', targetProfile: 'scout' }),
+      sessions: [],
+      states: { 'runtime-9': state }
+    })
+
+    expect(runs).toHaveLength(1)
+    expect(runs[0]).toMatchObject({
+      connectionId: 'vps',
+      connectionLabel: 'VPS',
+      profile: 'scout',
+      sessionId: null,
+      title: 'Ship the thing'
+    })
+  })
+
+  it('dedupes lineage-alias claims on the same stored session', () => {
+    const runs = buildFleetRuns({
+      connections: [],
+      digests: {},
+      dotStates: { 'run-x': 'working', 'run-x-parent': 'working' },
+      sessions: [sessionRow({ _lineage_ids: ['run-x', 'run-x-parent'], id: 'run-x' })],
+      states: {
+        'runtime-x': { ...runningState('run-x'), storedSessionId: 'run-x' },
+        'runtime-xp': { ...runningState('run-x'), storedSessionId: 'run-x' }
+      }
+    })
+
+    expect(runs).toHaveLength(1)
+  })
+
+  it('skips archived rows', () => {
+    const runs = buildFleetRuns({
+      connections: [],
+      digests: {},
+      dotStates: {},
+      sessions: [sessionRow({ archived: true, id: 'run-dead', is_active: true })],
+      states: {}
+    })
+
+    expect(runs).toHaveLength(0)
   })
 })

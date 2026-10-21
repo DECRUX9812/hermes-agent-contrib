@@ -3863,6 +3863,9 @@ export interface RollbackCheckpoint {
   hash?: string
   timestamp?: string
   message?: string
+  turn?: number | null
+  sid?: string | null
+  user_row_id?: number | null
 }
 export interface RollbackRestoreParams {
   session_id: string

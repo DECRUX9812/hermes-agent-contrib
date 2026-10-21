@@ -68,6 +68,7 @@ export const arCommon = {
     set: 'ضبط',
     skip: 'تخطي',
     update: 'تحديث',
+    undo: 'تراجع',
     on: 'مفعل',
     off: 'معطل'
   },
@@ -92,5 +93,5 @@ export const arCommon = {
       description: 'تنقل التطبيق',
       toggle: open => `${open ? 'إظهار' : 'إخفاء'} الشريط الجانبي`
     }
-  }
+  },
 } satisfies Pick<TranslationOverrides, 'sharedMetrics' | 'common' | 'ui'>

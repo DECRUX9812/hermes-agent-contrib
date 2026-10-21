@@ -26,14 +26,20 @@ const revealOnMount = (el: HTMLDivElement | null) => el?.scrollIntoView?.({ bloc
  *  the Skills Hub picker stacked under it (a fixed few hundred pixels left the
  *  list a sliver), with the native vertical resize handle. Scrolled into view
  *  on mount, since it opens below the dialog's identity fields. */
-export function ResizableFrame({ children }: { children: ReactNode }) {
+interface ResizableFrameProps {
+  children: ReactNode
+  height?: number | string
+  minHeight?: number | string
+}
+
+export function ResizableFrame({ children, height = 'min(85vh, 960px)', minHeight = 360 }: ResizableFrameProps) {
   return (
     <div
       className="resize-y overflow-auto rounded-md border border-(--ui-stroke-secondary)"
       ref={revealOnMount}
       style={{
-        height: 'min(85vh, 960px)',
-        minHeight: 360
+        height,
+        minHeight
       }}
     >
       {children}

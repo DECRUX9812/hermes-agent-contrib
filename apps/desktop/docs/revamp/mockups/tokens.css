@@ -1,0 +1,35 @@
+/* v2 DELTAS — the only NEW tokens Wave V adds. Everything else is the real pipeline in real-tokens.css.
+ *
+ * Rule: every new token is an ALIAS of an existing one, so built-in skins, dark mode, user themes,
+ * VS Code imports and per-profile themes carry through with no extra work. There is deliberately no
+ * parallel palette. Ship these in src/styles.css next to the tokens they alias; update DESIGN.md's
+ * "Stroke & color tokens" table in the same PR. */
+:root {
+  /* Run-state ramp — ONE meaning per hue, read by avatar rings, dots, pills, rows, tray and HUD.
+     Aliases of the semantic palette (--ui-* has a dark override already). */
+  --state-working: var(--ui-accent);
+  --state-needs: var(--ui-yellow);   /* amber = waiting on you; red stays for failure */
+  --state-done: var(--ui-green);
+  --state-failed: var(--ui-red);
+  --state-unknown: var(--ui-purple);
+  --state-idle: var(--ui-text-quaternary);
+
+  /* Type floor. The app's real sizes stay (transcript 13px/18px, tools 11px, captions 12px, tabs 11px);
+     v2 only sets a floor and retires ALL-CAPS micro labels in favour of sentence case. */
+  --type-floor: 0.6875rem;   /* 11px — nothing smaller ships */
+  --type-meta: 0.75rem;      /* 12px — timestamps, captions, secondary rows */
+  --type-ui: 0.8125rem;      /* 13px — rows, titles (== --conversation-text-font-size) */
+  --type-title: 0.9375rem;   /* 15px — card + page titles */
+
+  /* Teammate face sizes (the existing BotFace, larger on primary lists) */
+  --face-row: 2rem;          /* 32px — sidebar + roster rows (today ~20px) */
+  --face-hero: 6rem;         /* 96px — chat empty state (already FACE_SIZE) */
+
+  /* Work-object lift: WIDGET_SHELL_CLASS fill + a hairline + a whisper of shadow. One level only. */
+  --work-object-ring: 0 0 0 0.0625rem var(--ui-stroke-tertiary);
+  --work-object-shadow: var(--work-object-ring), var(--shadow-xs);
+
+  /* Ambient state bands (sidebar "Needs you" group etc.) */
+  --band-needs: color-mix(in srgb, var(--state-needs) 9%, transparent);
+  --band-working: color-mix(in srgb, var(--state-working) 7%, transparent);
+}

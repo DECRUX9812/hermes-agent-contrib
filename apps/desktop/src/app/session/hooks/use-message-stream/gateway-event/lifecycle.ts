@@ -67,6 +67,9 @@ export function handleLifecycleEvent(ctx: GatewayEventContext): boolean {
   if (event.type === 'skin.changed') {
     // A runtime skin switch (Hermes activating an authored skin, or `/skin`
     // on another surface). Only the active source+profile's change repaints.
+    // One process may serve several profiles and broadcasts to every socket,
+    // so the socket's stamp alone can't tell whose config moved; the backend
+    // tags it. An untagged event (older backend) keeps the source check alone.
     if (fromActiveSource()) {
       ingestBackendSkin(payload as HermesSkin | undefined, { apply: true })
     }

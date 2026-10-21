@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { NEW_CHAT_ROUTE, primaryRouteSelectedSessionId, sessionRoute, SETTINGS_ROUTE } from './routes'
+import { MISSION_ROUTE, NEW_CHAT_ROUTE, primaryRouteSelectedSessionId, sessionRoute, SETTINGS_ROUTE } from './routes'
 
 const SESS_A = 'sess-a'
 const SESS_B = 'sess-b'
@@ -18,5 +18,6 @@ describe('primaryRouteSelectedSessionId', () => {
 
   it('falls back to the store selection on a non-chat route (settings, overlays)', () => {
     expect(primaryRouteSelectedSessionId(SETTINGS_ROUTE, SESS_A)).toBe(SESS_A)
+    expect(primaryRouteSelectedSessionId(MISSION_ROUTE, SESS_A)).toBe(SESS_A)
   })
 })

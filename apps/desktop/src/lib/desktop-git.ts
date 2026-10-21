@@ -56,6 +56,11 @@ const remoteGit: GitBridge = {
   worktreeRemove: (repoPath, worktreePath, options) =>
     gitPost('worktree/remove', { force: options?.force ?? false, path: repoPath, worktreePath }),
 
+  worktreeEnsure: (repoPath, worktreePath, branch) =>
+    gitPost('worktree/ensure', { branch, path: repoPath, worktreePath }),
+
+  worktreeMerge: (repoPath, worktreePath) => gitPost('worktree/merge', { path: repoPath, worktreePath }),
+
   branchSwitch: (repoPath, branch) => gitPost('branch/switch', { branch, path: repoPath }),
 
   branchList: async repoPath =>
@@ -77,11 +82,11 @@ const remoteGit: GitBridge = {
       (await gitGet<{ diff: string }>('review/diff', { base: baseRef, file: filePath, path: repoPath, scope, staged }))
         .diff,
 
-    stage: (repoPath, filePath) => gitPost('review/stage', { file: filePath ?? null, path: repoPath }),
+    stage: (repoPath, filePath) => gitPost('review/stage', { file: filePath || null, path: repoPath }),
 
-    unstage: (repoPath, filePath) => gitPost('review/unstage', { file: filePath ?? null, path: repoPath }),
+    unstage: (repoPath, filePath) => gitPost('review/unstage', { file: filePath || null, path: repoPath }),
 
-    revert: (repoPath, filePath) => gitPost('review/revert', { file: filePath ?? null, path: repoPath }),
+    revert: (repoPath, filePath) => gitPost('review/revert', { file: filePath || null, path: repoPath }),
 
     revParse: async (repoPath, ref) =>
       (await gitGet<{ sha: null | string }>('review/rev-parse', { path: repoPath, ref })).sha,

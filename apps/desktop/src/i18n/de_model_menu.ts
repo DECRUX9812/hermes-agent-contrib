@@ -1,5 +1,4 @@
 export const deModelMenu = {
-  pickDeferred: (model: string) => `${model} gilt ab deiner nächsten Nachricht`,
   search: 'Modelle durchsuchen',
   noModels: 'Keine Modelle gefunden',
   editModels: 'Modelle bearbeiten…',

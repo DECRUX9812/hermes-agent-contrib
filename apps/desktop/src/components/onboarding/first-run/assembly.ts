@@ -108,6 +108,8 @@ function restorePreviousLayout() {
   }
 }
 
+/** Re-picks must reset persisted dismissals, docks, and sidebar visibility:
+ *  swapping only the tree left Advanced's terminal dismissed after Simple. */
 function reconcileLayout(id: string, tree: LayoutNode): void {
   applyLayoutPreset(id, tree)
 
@@ -131,6 +133,8 @@ function reconcileLayout(id: string, tree: LayoutNode): void {
   resetEnforcedDocks()
   adoptContributedPanes()
 
+  // Showing the sidebar can register more plugin panes synchronously. Dismiss last so those panes are dismissed as
+  // well; Simple otherwise gained an empty Cronjobs column.
   dismissUndeclared()
 }
 

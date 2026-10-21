@@ -538,6 +538,7 @@ def _read_process_cmdline(pid: int) -> Optional[str]:
     return None
 
 
+
 def _gateway_command_subcommand(command: str | None) -> str | None:
     """Hermes gateway lifecycle subcommand from a command line, or None. No loose substring matches
     (``"gateway" in cmdline`` also matched ``gateway status`` / ``python -m tui_gateway``): needs a
@@ -767,7 +768,27 @@ def _record_matches_live_gateway_pid(
         return False
     if expected_home is not None and _host_gateway_serves_home(pid, expected_home):
         return True
-    return expected_home is None or _command_line_belongs_to_profile(live_cmdline, expected_home)
+    if expected_home is None or _command_line_belongs_to_profile(live_cmdline, expected_home):
+        return True
+    try:
+        tokens = [token.strip("\"'").lower() for token in shlex.split(live_cmdline, posix=False)]
+    except ValueError:
+        return False
+    if any(token in {"-p", "--profile"} or token.startswith(("-p=", "--profile=", "hermes_home=")) for token in tokens):
+        return False
+    # Environment and sticky-profile launches can have bare OS argv. Their
+    # recorded home is usable only while the exact process fingerprint survives.
+    home = record.get("hermes_home")
+    started = record.get("start_time")
+    if (
+        not isinstance(home, str) or not home.strip()
+        or not isinstance(started, (int, float)) or isinstance(started, bool)
+        or not math.isfinite(started) or started <= 0
+        or started != _get_process_start_time(pid)
+        or not _record_looks_like_gateway(record)
+    ):
+        return False
+    return _same_hermes_home(home, expected_home)
 
 
 def _record_argv() -> list[str]:
@@ -814,13 +835,16 @@ def _get_code_identity_fields() -> dict[str, Any]:
         return {}
 
 
-def _pid_record_belongs_to_current_profile(record: Optional[dict[str, Any]]) -> bool:
+def _pid_record_belongs_to_current_profile(
+    record: Optional[dict[str, Any]], *, expected_home: Optional[Path | str] = None
+) -> bool:
     """True when the record's ``hermes_home`` matches the current process (legacy records: True);
     another HERMES_HOME's record must be ignored or the default gateway assumes its identity."""
     if not isinstance(record, dict):
         return False
     record_home = record.get("hermes_home")
-    return not record_home or _same_hermes_home(record_home, _get_process_hermes_home())
+    target_home = expected_home if expected_home is not None else _get_process_hermes_home()
+    return not record_home or _same_hermes_home(record_home, target_home)
 
 
 def _build_runtime_status_record() -> dict[str, Any]:
@@ -1093,6 +1117,7 @@ def _prepare_runtime_status_update(
     retrying_since: Any = _UNSET, served_profiles: Any = _UNSET, session_store: Any = _UNSET,
     parked_profiles: Any = _UNSET, multiplex_standalone_reason: Any = _UNSET,
     platform_metrics: Any = _UNSET,
+    platform_identity: Any = _UNSET,
     ingress_url: Any = _UNSET, listener_base: Any = _UNSET, clear_profile_platforms: bool = False,
     drop_profile_platforms: Optional[str] = None,
     load_existing: bool = True, reload_existing: bool = False,
@@ -1147,6 +1172,9 @@ def _prepare_runtime_status_update(
                 ("needs_attention", needs_attention, bool),
                 ("retrying_since", retrying_since, None),
                 ("metrics", platform_metrics, None),
+                # Who the user reaches on their phone (bot handle / workspace + deep link),
+                # published by adapters that know their own identity.
+                ("identity", platform_identity, None),
                 ("ingress_url", ingress_url, None),
                 ("listener_base", listener_base, None),
             ))

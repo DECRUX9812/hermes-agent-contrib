@@ -7,7 +7,7 @@ import {
   useMessagePartText
 } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, type FC, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ComponentProps, type FC, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useSessionView } from '@/app/chat/session-view'
 import { CatalogInstallTool } from '@/components/assistant-ui/catalog-install-tool'
@@ -21,12 +21,13 @@ import { ThemeTool } from '@/components/assistant-ui/theme-picker/theme-tool'
 import { AgentDeliveryNotice, deliveryTargetFromCommand } from '@/components/assistant-ui/thread/agent-delivery'
 import { TimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
 import { DelegateTool } from '@/components/assistant-ui/tool/delegate'
-import { ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
+import { ActivityPillExpandedContext, ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
 import { parseMaybeObject, toolCallFailed } from '@/components/assistant-ui/tool/fallback-model'
 import { formatElapsed, useElapsedSeconds, useMeasuredDuration } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { GeneratedImage } from '@/components/chat/generated-image-result'
 import { SCAFFOLD_LABEL_CLASS, SCAFFOLD_META_CLASS, ScaffoldRow } from '@/components/chat/scaffold-row'
+import { VisualizationCard } from '@/components/chat/visualization-card'
 import { useI18n } from '@/i18n'
 import { mcpTargets, toolLabels } from '@/lib/connector-tools'
 import { generatedImageFromResult } from '@/lib/generated-images'
@@ -35,6 +36,7 @@ import { isTodoToolName } from '@/lib/todos'
 import { type CardToolName, isCardTool, isCardToolName } from '@/lib/tool-render-class'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
+import { visualizationFromResult } from '@/lib/visualizations'
 import { onboardingChatStore } from '@/store/onboarding-session'
 import { $reasoningCollapsedByDefault, $showReasoning } from '@/store/reasoning-disclosure'
 import { useForcedTextDirection } from '@/store/text-direction'
@@ -62,6 +64,23 @@ const ImageGenerateTool: FC<TimelineToolCallProps> = props => {
     <div className="mt-1.5">
       <TimelineTimestamp className="mb-0.5 block" completedAt={completedAt} timestamp={timestamp} />
       <GeneratedImage aspectRatio={aspectRatio} result={result} />
+    </div>
+  )
+}
+
+const VisualizationToolPart: FC<TimelineToolCallProps> = props => {
+  const { completedAt, result, timestamp } = props
+
+  // Failed or malformed results fall back to the normal tool row so the
+  // error stays visible and debuggable instead of silently dropping.
+  if (settledWithoutResult(props) || (result !== undefined && !visualizationFromResult(result))) {
+    return <ToolFallback {...props} />
+  }
+
+  return (
+    <div className="mt-1.5">
+      <TimelineTimestamp className="mb-0.5 block" completedAt={completedAt} timestamp={timestamp} />
+      <VisualizationCard result={result} />
     </div>
   )
 }
@@ -123,6 +142,7 @@ const ConnectionsToolPart: FC<TimelineToolCallProps> = props =>
 
 const TOOL_CARDS: Record<CardToolName, FC<TimelineToolCallProps>> = {
   clarify: ClarifyToolPart,
+  create_visualization: VisualizationToolPart,
   delegate_task: DelegateToolPart,
   image_generate: ImageGenerateTool,
   manage_catalog: CatalogInstallTool,
@@ -135,7 +155,7 @@ const TOOL_CARDS: Record<CardToolName, FC<TimelineToolCallProps>> = {
 // failure inside `result`, never as the top-level error that sets isError, so
 // this reads the body like the run summary does. A non-zero exit_code counts
 // too, matching the gateway's _tool_result_needs_user, which forwards terminal
-// {output, exit_code: 1, error: null} even with display.tool_progress off.
+// {output, exit_code: 1, error: null} in answer-only mode.
 const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
   const exitCode = parseMaybeObject(part.result).exit_code
 
@@ -144,6 +164,11 @@ const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
 
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   const showToolActivity = useStore($showToolActivity)
+  // Inside a bot-chat activity pill (G2) quiet rows follow the pill: hidden
+  // until it is expanded, even when tool activity is on. Everywhere else
+  // answer-only applies unchanged.
+  const pillExpanded = useContext(ActivityPillExpandedContext)
+  const quietRowHidden = pillExpanded === null ? !showToolActivity : !pillExpanded
 
   // todo parts are hoisted to a dedicated panel above the message content.
   if (isTodoToolName(props.toolName)) {
@@ -187,7 +212,7 @@ const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   // The tool feed (reads, searches, commands) follows display.tool_progress,
   // never show_reasoning. Cards, approvals, and failed calls the user must act
   // on remain regardless.
-  if (!showToolActivity && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
+  if (quietRowHidden && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
     return null
   }
 

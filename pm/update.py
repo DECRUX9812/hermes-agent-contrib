@@ -324,7 +324,7 @@ def llama_app_bucket_versions() -> list[str]:
     return [str(v) for v in versions]
 
 
-def github_release_tags(repo: str, *, strip_prefix: str = "") -> list[str]:
+def github_release_tags(repo: str, *, strip_prefix: str = "", allow_prereleases: bool = False) -> list[str]:
     """Newest-first release tag names for a GitHub repo (releases, not all
     tags — no drafts/prereleases, and a rolling 'latest' pseudo-release is
     skipped). ``strip_prefix`` removes a tag prefix (e.g. 'v', 'b'). Only
@@ -337,7 +337,9 @@ def github_release_tags(repo: str, *, strip_prefix: str = "") -> list[str]:
         if not data:
             break
         for release in data:
-            if release.get("draft") or release.get("prerelease"):
+            if release.get("draft"):
+                continue
+            if release.get("prerelease") and not allow_prereleases:
                 continue
             tag = release.get("tag_name", "")
             if tag == "latest":

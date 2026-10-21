@@ -70,6 +70,13 @@ function connect(request = vi.fn()) {
   return request
 }
 
+// All-profiles mode is hidden while fewer than two profiles exist, so a test
+// that wants the cross-profile tree has to load a second one.
+function viewAllProfiles(on = true) {
+  $profiles.set(on ? [{ is_default: true, name: 'default' } as never, { is_default: false, name: 'work' } as never] : [])
+  setShowAllProfiles(on)
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   $activeGatewayProfile.set('default')
@@ -121,7 +128,7 @@ describe('project session connection provenance', () => {
 
       connect(request)
       vi.mocked(hermesApi).mockImplementation(request as never)
-      setShowAllProfiles(surface === 'all-profiles')
+      viewAllProfiles(surface === 'all-profiles')
 
       const result = surface === 'hydrated' ? fetchProjectSessions('project') : refreshProjectTree()
       await started.promise
@@ -143,7 +150,7 @@ describe('project session connection provenance', () => {
     project.previewSessions![0].profile = 'coder'
     vi.mocked(hermesApi).mockResolvedValue({ projects: [project], scoped_session_ids: [] })
     selectConnection('local')
-    setShowAllProfiles(true)
+    viewAllProfiles()
 
     await refreshProjectTree()
 
@@ -175,7 +182,7 @@ describe('project session connection provenance', () => {
 
     vi.mocked(hermesApi).mockResolvedValue({ projects: [project], scoped_session_ids: [] })
     selectConnection(active)
-    setShowAllProfiles(true)
+    viewAllProfiles()
 
     await refreshProjectTree()
 

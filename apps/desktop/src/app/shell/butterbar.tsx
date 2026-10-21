@@ -1,22 +1,19 @@
 import './butterbar.css'
 
 import { useStore } from '@nanostores/react'
-import { type CSSProperties, useEffect, useState } from 'react'
+import { type CSSProperties, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { useI18n } from '@/i18n'
 import { $butterbarItems, type ButterbarItem, dismissButterbar, isButterbarCloseable } from '@/store/butterbar'
 
-const DEFAULT_DWELL_MS = 3000
-
 /** Full-width notice strip above the statusbar. Reads the butterbar store, so
  *  any module can put a notice here with `registerButterbar` — no props. One
- *  item shows bare; several rotate with dots and pause while hovered. */
+ *  item shows bare; several show with dots, paged by hand. */
 export function Butterbar() {
   const items = useStore($butterbarItems)
   const [activeId, setActiveId] = useState<null | string>(null)
-  const [paused, setPaused] = useState(false)
 
   const index = Math.max(
     0,
@@ -25,19 +22,6 @@ export function Butterbar() {
 
   const item = items[index]
   const multiple = items.length > 1
-
-  useEffect(() => {
-    if (!multiple || paused || !item) {
-      return
-    }
-
-    const timer = window.setTimeout(
-      () => setActiveId(items[(index + 1) % items.length].id),
-      item.durationMs ?? DEFAULT_DWELL_MS
-    )
-
-    return () => window.clearTimeout(timer)
-  }, [index, item, items, multiple, paused])
 
   if (!item) {
     return null
@@ -49,10 +33,6 @@ export function Butterbar() {
       data-slot="butterbar"
       data-tone={item.tone ?? 'accent'}
       data-variant={item.variant ?? 'soft'}
-      onBlur={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onPointerEnter={() => setPaused(true)}
-      onPointerLeave={() => setPaused(false)}
       role="region"
       style={item.color ? ({ '--bb-tint': item.color } as CSSProperties) : undefined}
     >

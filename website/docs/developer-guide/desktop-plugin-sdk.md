@@ -276,6 +276,37 @@ data: {
 `'top' | 'bottom' | 'left' | 'right' | 'center'`. Declare a `width`/`height` so
 the pane doesn't claim half the zone.
 
+The whole `data` payload is typed as **`PaneContribution`** (dock hints are
+`PaneDockHint`, placements `PanePlacementHint`) — in TypeScript, author it with
+`satisfies` so a misspelled flag is a compile error instead of a silently
+ignored hint:
+
+```typescript
+import { PANES_AREA, type PaneContribution } from '@hermes/plugin-sdk'
+
+ctx.register({
+  id: 'pane',
+  area: PANES_AREA,
+  title: 'my pane',
+  data: {
+    placement: 'right',
+    width: '260px',
+    collapsible: true, // leaves the grid on narrow viewports (edge overlay)
+    hideOnly: true, // no ✕/Close verb — Show/Hide instead (standing chrome)
+    tabTitle: () => jsx(MyTabLabel, {}), // live label, beats `title`
+    tabTitleText: () => 'my pane', // string form for menus/drag ghost
+    dock: { pane: 'sessions', pos: 'center', enforce: true }
+  } satisfies PaneContribution,
+  render: () => jsx(MyPane, {})
+})
+```
+
+`PaneContribution` also covers `lifecycleKeepAlive` (stay mounted while hidden),
+`headerVeto` + `headerContent` (page-owned chrome), `tabLead`/`tabTrail`/
+`stripTrail`/`newTab`/`tabWrap`/`tabMenuPrefix`/`tabDrag` (tab + strip
+behavior), `revealAliases`, floating `anchor`, and the `PaneSizing` fields
+(`width`/`height`/`minWidth`/`maxWidth`/`minHeight`/`maxHeight`).
+
 Closing the only pane contributed by a plugin disables that plugin, which can
 be re-enabled from **Capabilities → Plugins**. When a plugin contributes multiple
 panes, closing one dismisses only that pane and leaves the plugin's other panes,
@@ -705,60 +736,6 @@ register(ctx) {
 The reasoning-pill visibility CSS the plugin also injected has no hook; it is
 only needed if the app ever hides that label at narrow widths.
 
-#### Model menu row decorations
-
-`MODEL_MENU_ROW_AREA` puts a per-model mark inside the native model menu — the
-one the composer's pill opens, and every other surface that renders
-`ModelCatalogMenu`. A contribution supplies `decorate(row)`; core paints what it
-returns in two fixed slots of the row: a **leading icon** before the model name
-and a **trailing badge** after core's own chips. The row's markup, name,
-star, submenu and click stay core's.
-
-```ts
-import { MODEL_MENU_ROW_AREA, type ModelMenuRowContribution } from '@hermes/plugin-sdk'
-
-interface ModelMenuRowContext {
-  provider: string  // provider slug: 'anthropic', 'openrouter', …
-  model: string     // the model id the row commits
-  label: string     // the display name core paints on the row
-}
-interface ModelMenuRowDecoration {
-  icon?: ReactNode  // element (<img>, <svg>, a component) or short text, drawn in a 1rem box
-  badge?: string    // plain text chip
-}
-
-ctx.register({
-  area: MODEL_MENU_ROW_AREA,
-  id: 'provider-marks',
-  data: {
-    decorate: ({ provider }) => {
-      const src = PROVIDER_ICONS[provider]   // data: URL of an SVG mark
-      return src ? { icon: <img alt="" src={src} /> } : null
-    }
-  } satisfies ModelMenuRowContribution
-})
-```
-
-**Arbitration.** Decorators run in registry order, **per slot**: the first one
-that returns a usable `icon` fills the icon slot, the first usable `badge` the
-badge slot, so an icon plugin and a pricing-badge plugin compose on the same
-row. `null` (or nothing usable) declines. Only a React element or a non-empty
-string is an icon and only a non-empty string is a badge; anything else is
-ignored rather than rendered. A decorator that **throws** declines too, and an
-icon component that throws while rendering blanks only its own slot (it sits
-in its own error boundary) — a broken plugin can never take the menu down.
-`decorate()` re-runs only when the registry or the row's provider/model/label
-changes, so keep it a pure lookup.
-
-**Teardown.** An ordinary data contribution: the `ctx.register` disposer (and
-plugin disable/reload) removes it and the rows repaint bare.
-
-**Migrating t3-code-theme.** Its provider marks were painted into the open menu
-by a `MutationObserver` that located the rows in the menu's DOM and wrote mask
-images onto them. The same marks come from `decorate({ provider })` returning
-`{ icon: <img alt="" src={providerSvgDataUrl(provider)} /> }` — no DOM reads,
-and the row keeps working when the menu's markup changes.
-
 ### Appearance settings
 
 `APPEARANCE_AREAS.extra` renders contributions at the end of **Settings →
@@ -1069,6 +1046,7 @@ host.state.activeSessionId  // ReadableAtom<string | null>
 host.state.awaitingResponse // ReadableAtom<boolean>  true until the first assistant payload
 host.state.busy             // ReadableAtom<boolean>  focused chat is working after a send
 host.state.busyBySession    // ReadableAtom<Record<string, boolean>>  runtime id → mid-turn
+host.state.focusedActivity  // ReadableAtom<readonly ActivityTask[]>  (the focused chat as tasks: one per request, its tool calls as steps, status + timing + reply's first sentence)
 host.state.focusedSessionId // ReadableAtom<string | null>  (runtime id of the FOCUSED session — tile-aware; prefer for session.* RPC)
 host.state.focusedSessionProfile // ReadableAtom<string>  (owner profile of the focused chat — prefer over `profile` for per-bot/profile readouts)
 host.state.focusedStoredSessionId // ReadableAtom<string | null>  (durable id — navigation / session-list matching)
@@ -1077,6 +1055,7 @@ host.state.cwd              // ReadableAtom<string>
 host.state.gateway          // ReadableAtom<string>  socket state ('idle' | 'connecting' | 'open' | …)
 host.state.model            // ReadableAtom<string>
 host.state.profile          // ReadableAtom<string>
+host.state.showsAdvancedChrome // ReadableAtom<boolean>  true in Advanced mode — gate developer-only tiers on this, not a core import
 host.state.viewport         // ReadableAtom<{ width, height, narrow }>
 ```
 
@@ -1407,7 +1386,10 @@ wins (no plugin "owns" the value afterwards, nothing to tear down for `set`).
 ```ts
 type DesktopSettingValues = {
   'backdrop.v1': boolean
-  chatTextScale: 90 | 100 | 110 | 125 | 150 | 175 // percent; Appearance → Chat Text Size
+chatTextScale: 90 | 100 | 110 | 125 | 150 | 175 // percent; Appearance → Chat Text Size
+'backdrop.scene': BackdropScene    // 'off' | 'aurora' | 'dusk' | 'ocean' | 'meadow' | 'cyanotype' | 'ink' | 'grid' | 'statue' | 'custom'
+  'backdrop.strength': 'subtle' | 'balanced' | 'vivid'
+  'backdrop.image': null | string  // the 'custom' scene's art — data URL or image URL; null clears it
   'composerPopout.gesturesEnabled': boolean
   'intro-splash.v1': boolean
   'reasoning.collapsedByDefault': boolean
@@ -1417,6 +1399,19 @@ type DesktopSettingValues = {
 host.settings.get<K extends DesktopSettingKey>(key: K): DesktopSettingValues[K]
 host.settings.set<K extends DesktopSettingKey>(key: K, value: DesktopSettingValues[K]): void
 host.settings.subscribe<K extends DesktopSettingKey>(key: K, fn: (value: DesktopSettingValues[K]) => void): () => void
+```
+
+The `backdrop.*` keys drive the same Chat Background the Appearance page
+offers: `'backdrop.scene'` selects a scene (`'off'` paints nothing),
+`'backdrop.image'` stores the art the `'custom'` scene paints — a data URL or
+any reachable image URL — and setting a non-null image switches the scene to
+`'custom'` (setting `null` switches it back off), exactly like the native
+upload tile. A plugin that ships gallery art therefore needs no backdrop
+machinery of its own:
+
+```ts
+// Hang your own photo behind the conversation, blended at the picked strength.
+host.settings.set('backdrop.image', 'https://example.com/my-wall.jpg')
 ```
 
 ```ts
@@ -2003,12 +1998,13 @@ pipeline as a trust boundary.
 | Category | Exports |
 |----------|---------|
 | Host | `host` (`.state.*`, `.settings`, `.notify`, `.notifyError`, `.navigate`, `.onEvent`, `.logs`, `.status`, `.restartGateway`, `.request`, `.composer`, `.sessions`, `.skills`, `.toolsets`, `.profiles`, `.pluginDecisions`) |
-| Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginPet`, `PetSayOptions`, `PetMessageTone`, `PluginAppActionId`, `PluginAppActionInfo`, `PluginRunActionResult`, `PLUGIN_APP_ACTIONS`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `HermesOpenTarget`, `Contribution` |
-| Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `COMPOSER_AREAS`, `MODEL_MENU_ROW_AREA`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS`, `SETTINGS_PLUGINS_AREA` |
-| Area payloads | `PluginSettingsPage`, `PluginSettingsSubpage` (+ `pluginSettingsHref`), `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution` |
+| Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginPet`, `PetSayOptions`, `PetMessageTone`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `HermesOpenTarget`, `Contribution` |
+| Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `LAYOUTS_AREA`, `COMPOSER_AREAS`, `MODEL_MENU_ROW_AREA`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS`, `SETTINGS_PLUGINS_AREA` |
+| Area payloads | `PluginSettingsPage`, `PluginSettingsSubpage` (+ `pluginSettingsHref`), `PaneContribution` (+ `PaneDockHint`, `PanePlacementHint`, `PaneSizing`), `LayoutNode`, `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `ComposerModelPillProvider`, `ChatEmptyContribution`, `TranscriptDirectiveContribution`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution`, `ProfileGroupHeaderContribution`, `SidebarListTopContribution` |
 | React / state | `useValue`, `atom`, `computed`, `useQuery`, `useMutation`, `useQueryClient`, `queryClient`, `Contribute`, `WorkspacePageHeaderControl` |
 | Theming | `useTheme`, `requestTheme`, `setAccentOverride`, `$accentOverride`, `retintTheme`, `themeHue`, `DesktopTheme`, `DesktopThemeColors`, plus OKLCH math (`hexToOklch`, `oklchToHex`, `oklchToSrgb255`, `mixOklab`, `maxChroma`, `hueDelta`, `normalizeHex`) and sRGB measures (`contrastRatio` — `number | null`, null for unparseable input — `readableOn`) |
 | UI kit | `Button`, `Input`, `Textarea`, `Select*`, `Switch`, `Checkbox`, `SegmentedControl`, `Tabs*`, `Dialog*`, `ConfirmDialog`, `DropdownMenu*`, `ContextMenu*`, `Popover*`, `Tip`/`Tooltip*`, `Badge`, `Kbd`/`KbdGroup`, `SearchField`, `ScrollArea`, `Separator`, `Skeleton`, `GlyphSpinner`, `Loader`, `EmptyState`, `ErrorState`, `CopyButton`, `StatusDot`, `LogView`, `Codicon`, `DecodeText`, `SandboxedFrame` |
+| Activity | `ActivityTask`, `ActivityStep`, `ActivityStatus`, `ActivityVerb`, `activityVerb`, `currentStep` (the shapes behind `host.state.focusedActivity`) |
 | Helpers | `cn`, `icons`, `haptic`, `useI18n`, `profileColor`, `profileColorSoft`, `relativeTime`, `fmtDateTime`, `fmtDayTime`, `coarseElapsed`, `evaluateRuntimeReadiness`, `catalogProviderMatches` |
 
 The canonical, always-current export list is `apps/desktop/src/sdk/index.ts`.

@@ -16,12 +16,14 @@ import { pendingClarifyToolPayload } from '@/app/session/hooks/use-session-actio
 import { translateNow } from '@/i18n'
 import { restorePendingClarifyToolCall } from '@/lib/chat-messages'
 import type { PreviewActAction } from '@/lib/preview-act/act-in-page'
+import { verifyActivePreview } from '@/lib/preview-verify'
 import type { TourAction, TourStep } from '@/lib/tour'
 import { type AppearanceValues, applyAppearance, THEME_MODES } from '@/store/appearance-apply'
 import { type ClarifyRequest, normalizeQuestions, setClarifyRequest } from '@/store/clarify'
 import type { ScopedServerRequest } from '@/store/gateway'
 import { dispatchNativeNotification } from '@/store/native-notifications'
 import type { PreviewOwner } from '@/store/preview-ownership'
+import { recordPreviewVerifyResult, recordPreviewVerifyRunning } from '@/store/preview-verify'
 import {
   receiveApprovalRequest,
   setSecretRequest,
@@ -110,6 +112,7 @@ type PreviewSessionRoute = 'ignore' | 'retry' | 'run'
 const WINDOW_OWNED_REQUESTS = new Set([
   'preview.act',
   'preview.read',
+  'preview.verify',
   'terminal.read',
   'theme.apply',
   'window.read',
@@ -692,6 +695,29 @@ const tour: Handler = ({ deps, isActiveSession, request, sessionId }) => {
   )
 }
 
+const previewVerify: Handler = ({ request, sessionId }) => {
+  // verify_preview tool: settle, then answer pass/fail from the resolved
+  // preview's console log. Read-only like preview.read — the owning window
+  // answers and the same verdict posts a status card on the session.
+  if (sessionId) {
+    recordPreviewVerifyRunning(sessionId)
+  }
+
+  void verifyActivePreview({ settleMs: num(request.params.settle_ms) }).then(outcome => {
+    if (sessionId) {
+      recordPreviewVerifyResult(sessionId, {
+        errorCount: 'error' in outcome ? 0 : outcome.errorCount,
+        firstError: 'error' in outcome ? outcome.error : outcome.errors[0]?.message,
+        ok: outcome.ok,
+        tabId: 'error' in outcome ? undefined : outcome.tabId,
+        url: 'error' in outcome ? undefined : outcome.url
+      })
+    }
+
+    answerValue(request, outcome)
+  })
+}
+
 // ── set_theme ───────────────────────────────────────────────────────────────
 
 const appearanceValues = ({ params }: ScopedServerRequest): AppearanceValues => {
@@ -772,6 +798,7 @@ export const SERVER_REQUEST_HANDLERS: Record<string, Handler> = {
   'display.install.sudo': displayInstallSudo,
   'preview.act': previewAct,
   'preview.read': previewRead,
+  'preview.verify': previewVerify,
   secret,
   setup_beat: setupBeat,
   sudo,

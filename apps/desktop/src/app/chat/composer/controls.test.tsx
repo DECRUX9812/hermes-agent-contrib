@@ -115,6 +115,13 @@ describe('HUD mode', () => {
 // folds into the same menu the HUD uses, then the model pill drops. Send is
 // the last thing standing.
 describe('narrow tiles', () => {
+  it('lets Queue and Send wrap independently at the smallest pane width', () => {
+    renderControls({ busy: true, busyAction: 'queue', minimal: true })
+    const send = screen.getByLabelText('Send')
+    const queue = screen.getByLabelText('Queue message')
+    expect(send.parentElement).toBe(queue.parentElement)
+    expect(getComputedStyle(send.parentElement!).flexWrap).toBe('wrap')
+  })
   it('folds the voice controls into one menu without entering HUD mode', () => {
     renderControls({ foldVoice: true })
 
@@ -141,10 +148,10 @@ describe('narrow tiles', () => {
 })
 
 describe('ComposerControls shortcut tooltips', () => {
-  it('labels busy Send with the effective configured action', async () => {
+  it('labels the send control Steer turn while a turn is running if there is a payload', async () => {
     renderControls({ busy: true, busyAction: 'steer' })
 
-    await expectShortcutTooltip('Steer the current run', '↵')
+    await expectShortcutTooltip('Steer turn', '↵')
   })
 
   it('shows Stop only when the composer is empty mid-turn', async () => {
@@ -153,24 +160,24 @@ describe('ComposerControls shortcut tooltips', () => {
     await expectShortcutTooltip('Stop', '↵')
   })
 
-  it('answers a waiting card with Send when the draft has text, and offers no Queue', () => {
-    renderControls({ busy: true, busyAction: 'queue', cardWaiting: true, hasComposerPayload: true })
-
-    expect(screen.getByLabelText('Send')).toBeTruthy()
-    expect(screen.queryByLabelText('Stop')).toBeNull()
-    expect(screen.queryByLabelText('Queue message')).toBeNull()
-  })
-
-  it('keeps Stop enabled while a card waits and the draft is empty', () => {
-    renderControls({ busy: true, busyAction: 'stop', canSubmit: true, cardWaiting: true, hasComposerPayload: false })
-
-    expect(screen.getByLabelText('Stop').hasAttribute('disabled')).toBe(false)
-  })
-
   it('shows Ctrl+Enter for Queue as the secondary mid-turn action', async () => {
-    renderControls({ busy: true, busyAction: 'interrupt' })
+    renderControls({ busy: true, busyAction: 'queue' })
 
     await expectShortcutTooltip('Queue message', 'Ctrl+↵')
+  })
+
+  it('names the queue path when steer is blocked only by attachments', async () => {
+    const onQueue = vi.fn()
+    renderControls({ busy: true, busyAction: 'queue', onQueue, queueWithAttachments: true })
+
+    const button = screen.getByRole('button', { name: 'Queue with attachments' })
+    expect(button.textContent).toContain('Queue with attachments')
+    expect(screen.queryByLabelText('Queue message')).toBeNull()
+
+    fireEvent.click(button)
+    expect(onQueue).toHaveBeenCalledTimes(1)
+
+    await expectShortcutTooltip('Queue with attachments', 'Ctrl+↵')
   })
 
   it('hides Queue while idle even if the composer has a payload', () => {

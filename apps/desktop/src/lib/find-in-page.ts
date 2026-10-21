@@ -20,7 +20,12 @@ import { isImeComposing } from './ime'
  * Electron for the frame between issuing a search and the first match being
  * selected, so the ordinal is clamped into `[0, count]` rather than trusted.
  */
-export function formatMatchLabel(query: string, activeMatchOrdinal: number, matchCount: number): string {
+export function formatMatchLabel(
+  query: string,
+  activeMatchOrdinal: number,
+  matchCount: number,
+  capped = false
+): string {
   if (!query) {
     return ''
   }
@@ -34,7 +39,7 @@ export function formatMatchLabel(query: string, activeMatchOrdinal: number, matc
   const raw = Number.isFinite(activeMatchOrdinal) ? Math.floor(activeMatchOrdinal) : 0
   const ordinal = Math.min(Math.max(raw, 0), count)
 
-  return `${ordinal}/${count}`
+  return `${ordinal}/${count}${capped ? '+' : ''}`
 }
 
 /** What a keypress means to an open find bar. `null` = not ours, let it through. */

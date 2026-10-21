@@ -71,10 +71,10 @@ export async function compressGroupMemberHistory(
       })) as { session_id?: string }
 
       runtime = resumed?.session_id || null
-    } catch (error: any) {
+    } catch (error: unknown) {
       // 4007 = the gateway genuinely has no such session; anything else is a
       // real failure the caller should see.
-      if (error?.code !== 4007) {
+      if ((error as { code?: number })?.code !== 4007) {
         throw error
       }
     }

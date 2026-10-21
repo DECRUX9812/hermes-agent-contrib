@@ -3,6 +3,7 @@ import { atom, batch, computed } from 'nanostores'
 
 import type { HermesConnection } from '@/global'
 import { getProfiles, hermesApi, setApiRequestProfile, STARTUP_REQUEST_TIMEOUT_MS } from '@/hermes'
+import { isBrowserHostedDesktop } from '@/lib/platform'
 import { sortByProfileOrder as sortProfilesByOrder } from '@/lib/profile-order'
 import { invalidateProfileScopedQueries } from '@/lib/query-client'
 import {
@@ -15,6 +16,7 @@ import {
   storedStringRecord
 } from '@/lib/storage'
 import { withTimeout } from '@/lib/with-timeout'
+import { registerComposerNewDraftProfileResolver } from '@/store/composer'
 import { registryConnectionKind } from '@/store/connection-registry-state'
 import {
   $gateway,
@@ -425,6 +427,15 @@ export function resolveNewChatOwnerRoute(forProfile?: string): AgentProfileRoute
     profile: normalizeProfileKey(intentProfile || $activeGatewayProfile.get())
   }
 }
+
+// The composer's pre-session draft bucket keys on the profile the fresh chat
+// would be created on — route, intent, else the live gateway — matching the
+// session.create owner chain so one profile's unsent text can't surface in
+// another's composer. Registered here, not imported by store/composer.ts,
+// which stays leaf-level to keep the store graph acyclic.
+registerComposerNewDraftProfileResolver(
+  () => resolveNewChatOwnerRoute()?.profile || $newChatProfile.get() || normalizeProfileKey($activeGatewayProfile.get())
+)
 
 /**
  * The owner route for a surface anchored to a profile the ACTIVE source is
@@ -991,13 +1002,9 @@ export function selectProfile(name: string): void {
   //
   // The profile rail is a live workspace switch, so it must not call
   // profile.set() and reload the window. Once activation succeeds, remember
-  // the selection for the next Desktop launch through the persistence-only
-  // IPC instead (#79886). Registry-source picks name ANOTHER source's
-  // profiles, so only a primary-backend activation updates the startup
-  // preference.
-  const onPrimary = activeGatewayConnectionId() == null
-
-  const shouldRememberStartupProfile = onPrimary ? isLocalDesktopProfile(target) : Promise.resolve(false)
+  // the selection for the next launch through the persistence-only bridge
+  // call instead (#79886). Decided now: the source is the one picked from.
+  const shouldRememberStartupProfile = remembersProfilePick(target)
 
   void Promise.all([activateOnCurrentSource(target), shouldRememberStartupProfile])
     .then(([, shouldRemember]) => {
@@ -1012,6 +1019,22 @@ export function selectProfile(name: string): void {
         notifyError(error, `Failed to switch to profile "${target}"`)
       }
     })
+}
+
+// Whether a pick becomes the profile this window starts in next time.
+// Electron: only a primary-backend pick of a local profile. Registry-source
+// picks name ANOTHER source's profiles, and a per-profile ssh/remote/cloud
+// override must never replace the local Desktop startup profile.
+// Webapp: every pick. A browser tab has one source, the serving origin — its
+// descriptor always reads `remote`, and a default-route boot names it `local`
+// — and its startup profile is the tab's own `?profile=`, which `remember`
+// rewrites in place. The per-origin default and other tabs are untouched.
+function remembersProfilePick(target: string): Promise<boolean> {
+  if (isBrowserHostedDesktop()) {
+    return Promise.resolve(true)
+  }
+
+  return activeGatewayConnectionId() == null ? isLocalDesktopProfile(target) : Promise.resolve(false)
 }
 
 // Resolve persistence from the saved per-profile Desktop route, rather than the

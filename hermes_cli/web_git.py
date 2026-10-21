@@ -490,7 +490,23 @@ def review_ship_info(cwd: str) -> dict:
 # page. Aliases carry many branches per request; 50 stays inside GitHub's node budget.
 _PR_QUERY_BRANCH_CHUNK = 50
 _PR_QUERY_BRANCH_CAP = 300
-_PR_NODE_FIELDS = "number state isDraft isCrossRepository title url headRefName"
+_PR_NODE_FIELDS = ("number state isDraft isCrossRepository title url headRefName "
+                   "commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }")
+
+
+def _pr_check_state(pr: dict) -> str | None:
+    """GitHub folds a commit's checks into one rollup state; keep the three
+    buckets a row chip can show and omit the field when the head commit has no
+    checks at all."""
+    nodes = ((pr.get("commits") or {}).get("nodes") or [])
+    rollup = ((nodes[0].get("commit") or {}).get("statusCheckRollup") or {}).get("state") if nodes else None
+    if rollup == "SUCCESS":
+        return "success"
+    if rollup in ("FAILURE", "ERROR"):
+        return "failure"
+    if rollup in ("EXPECTED", "PENDING"):
+        return "pending"
+    return None
 
 
 def _pr_query(owner: str, name: str, branches: list[str], numbers: list[int]) -> str:
@@ -508,9 +524,13 @@ def _pr_query(owner: str, name: str, branches: list[str], numbers: list[int]) ->
 
 
 def _pr_payload(pr: dict) -> dict:
-    return {"branch": str(pr.get("headRefName")), "draft": bool(pr.get("isDraft")),
-            "number": int(pr.get("number") or 0), "state": str(pr.get("state") or "").lower(),
-            "title": str(pr.get("title") or ""), "url": str(pr.get("url") or "")}
+    payload = {"branch": str(pr.get("headRefName")), "draft": bool(pr.get("isDraft")),
+               "number": int(pr.get("number") or 0), "state": str(pr.get("state") or "").lower(),
+               "title": str(pr.get("title") or ""), "url": str(pr.get("url") or "")}
+    checks = _pr_check_state(pr)
+    if checks:
+        payload["checks"] = checks
+    return payload
 
 
 def _own_pr(key: str, field: dict) -> dict | None:
@@ -571,6 +591,141 @@ def review_create_pr(cwd: str) -> dict:
         raise RuntimeError(f"gh pr create failed: {detail}")
     url = next((line for line in reversed(out.strip().splitlines()) if line.strip()), "")
     return {"url": url}
+
+
+# ── agent ship flow (git_ship / open_pr tools) ──────────────────────────────
+# Same audited subprocess layer the review pane's REST routes use; the agent
+# surface returns richer payloads (sha, stats, upstream) instead of {"ok": true}.
+
+
+def _changed_paths(cwd: str) -> list[str]:
+    """Paths the next commit would touch: staged-or-dirty tracked plus untracked."""
+    code, raw = _status_z(cwd)
+    if code != 0:
+        return []
+    return [path for _tag, _xy, path in _walk_entries(raw)]
+
+
+def _conventional_fallback_message(cwd: str) -> str:
+    """Deterministic conventional-commit fallback when the caller gave no message.
+
+    The model almost always passes an explicit message; this exists so a bare
+    'ship it' still lands a readable subject rather than failing.
+    """
+    paths = _changed_paths(cwd)
+    lowered = [p.lower() for p in paths]
+    if paths and all(
+        p.endswith((".md", ".rst")) or "/docs/" in f"/{p}" or p.startswith(("docs/", "website/docs/"))
+        for p in lowered
+    ):
+        prefix = "docs"
+    elif paths and all("test" in p for p in lowered):
+        prefix = "test"
+    elif any(p.startswith(("tools/", "agent/", "gateway/", "hermes_cli/", "tui_gateway/", "apps/")) for p in lowered):
+        prefix = "feat"
+    else:
+        prefix = "chore"
+    scope = ""
+    if paths:
+        top = paths[0].split("/")[0]
+        if all(p.split("/")[0] == top for p in paths) and top != paths[0]:
+            scope = f"({top})"
+    count = len(paths) or 1
+    return f"{prefix}{scope}: ship {count} changed file{'s' if count != 1 else ''}"
+
+
+def ship_commit(cwd: str, message: str | None, branch: str | None,
+                files: list[str] | None, push: bool) -> dict:
+    """Stage → (optionally) branch → commit → (optionally) push. Returns the
+    committed sha, branch and change stats; raises RuntimeError on failure."""
+    if not _is_dir(cwd):
+        raise RuntimeError("not a git repository")
+
+    if branch:
+        # An existing branch name is refused rather than silently switched to —
+        # "ship onto a new branch" should never silently hijack someone's branch.
+        if _ref_exists(cwd, f"refs/heads/{branch}"):
+            raise RuntimeError(f"branch {branch!r} already exists")
+        _git_ok(cwd, ["switch", "-c", branch])
+
+    if files:
+        _git_ok(cwd, ["add", "--", *files])
+    elif not _has_staged(_status_z(cwd)[1]):
+        _git_ok(cwd, ["add", "-A"])
+
+    if not _has_staged(_status_z(cwd)[1]):
+        raise RuntimeError("nothing to commit — working tree is clean")
+
+    _git_ok(cwd, ["commit", "-m", message or _conventional_fallback_message(cwd)])
+
+    pushed = False
+    upstream = ""
+    if push:
+        _review_push(cwd)
+        pushed = True
+        upstream = _git_line(cwd, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+
+    stats = _git_out(cwd, ["show", "--numstat", "--format=", "HEAD"])
+    insertions = deletions = 0
+    for line in stats.splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3 and parts[0].isdigit():
+            insertions += int(parts[0])
+            deletions += int(parts[1])
+
+    return {
+        "ok": True,
+        "sha": _git_line(cwd, ["rev-parse", "HEAD"]),
+        "branch": _git_line(cwd, ["rev-parse", "--abbrev-ref", "HEAD"]),
+        "files": max(len(stats.splitlines()), 0) if stats.strip() else 0,
+        "insertions": insertions,
+        "deletions": deletions,
+        "pushed": pushed,
+        "upstream": upstream,
+        "subject": _git_line(cwd, ["log", "-1", "--pretty=format:%s"]),
+    }
+
+
+def open_pr(cwd: str, title: str | None, body: str | None,
+            base: str | None, draft: bool) -> dict:
+    """Push (best-effort) then ``gh pr create``. Generated title/body via
+    ``--fill`` unless the caller supplies them."""
+    if not _is_dir(cwd):
+        raise RuntimeError("not a git repository")
+    if not review_ship_info(cwd).get("ghReady"):
+        raise RuntimeError("gh is not installed or not authenticated (gh auth status failed)")
+
+    try:
+        _review_push(cwd)
+    except RuntimeError:
+        pass  # a PR can still be opened from already-pushed commits
+
+    args = ["pr", "create"]
+    if title or body:
+        if not title:
+            # gh refuses --body without --title; the head commit's subject is
+            # the same thing --fill would have picked.
+            title = _git_line(cwd, ["log", "-1", "--pretty=format:%s"]) or "Update"
+        args += ["--title", title]
+        if body:
+            args += ["--body", body]
+    else:
+        args += ["--fill"]
+    if base:
+        args += ["--base", base]
+    if draft:
+        args += ["--draft"]
+
+    created, out, err = _gh(cwd, args)
+    if not created:
+        detail = err.strip()[-_GH_ERR_TAIL_CHARS:] or "is gh installed and authenticated?"
+        raise RuntimeError(f"gh pr create failed: {detail}")
+    url = next((line for line in reversed(out.strip().splitlines()) if line.strip()), "")
+    number = None
+    match = re.search(r"/pull/(\d+)", url)
+    if match:
+        number = int(match[1])
+    return {"ok": True, "url": url, "number": number, "draft": draft}
 
 
 # ── worktrees & branches ─────────────────────────────────────────────────────
@@ -756,6 +911,45 @@ def worktree_add(cwd: str, options: dict) -> dict:
 def worktree_remove(cwd: str, worktree_path: str, force: bool) -> dict:
     _git_ok(_main_root(cwd), ["worktree", "remove", *(["--force"] if force else []), worktree_path])
     return {"removed": worktree_path}
+
+
+def worktree_ensure(cwd: str, worktree_path: str, branch: str) -> dict:
+    """Recreate a session worktree whose directory is gone (roadmap #47:
+    "restore recreates missing worktrees"). Idempotent — an existing dir is a
+    no-op. `git worktree prune` clears the stale registration a deleted dir
+    leaves behind; a branch that itself was deleted re-seeds at the same path
+    from HEAD so the session's cwd exists again either way.
+    """
+    root = _main_root(cwd)
+    if _is_dir(worktree_path):
+        return {"path": worktree_path, "branch": branch, "repoRoot": root, "restored": False}
+    _git(root, ["worktree", "prune"])
+    name = _sanitize_branch(branch) or _slugify(os.path.basename(worktree_path))
+    if not name:
+        raise RuntimeError("worktree path has no usable branch name")
+    code, _, _ = _git(root, ["worktree", "add", worktree_path, name])
+    if code != 0:
+        # The branch ref is gone (deleted after the worktree was) — recreate it
+        # from the repo's HEAD so the directory (and the session's cwd) is
+        # restored rather than erroring the open.
+        _git_ok(root, ["worktree", "add", "-b", name, worktree_path])
+    return {"path": worktree_path, "branch": name, "repoRoot": root, "restored": True}
+
+
+def worktree_merge(cwd: str, worktree_path: str) -> dict:
+    """Merge a session worktree's branch back into the repo's MAIN checkout
+    (roadmap #47 "merge back"). Asks git for the worktree's live branch — the
+    stored session value can be stale if the user switched inside it. A dirty
+    main checkout fails the merge exactly as `git merge` does; the error text
+    reaches the desktop toast unchanged.
+    """
+    root = _main_root(cwd)
+    branch = _git_line(worktree_path, ["rev-parse", "--abbrev-ref", "HEAD"])
+    if not branch or branch == "HEAD":
+        raise RuntimeError(f"no branch checked out in {worktree_path}")
+    into = _git_line(root, ["rev-parse", "--abbrev-ref", "HEAD"])
+    _git_ok(root, ["merge", "--no-edit", branch])
+    return {"merged": True, "branch": branch, "into": into, "repoRoot": root}
 
 
 def _ref_names(cwd: str, *patterns: str, fmt: str = "%(refname:short)") -> list[str]:

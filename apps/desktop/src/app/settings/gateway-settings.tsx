@@ -47,6 +47,7 @@ import { cloudTeamChanged, reconnectMovedCloudAgent } from './cloud-team-change'
 import { ConnectionsRegistrySection } from './connections-registry'
 import { CONTROL_TEXT } from './constants'
 import { ManagedUpdatesSection } from './managed-updates-section'
+import { MobileCompanion } from './mobile-companion'
 import { EmptyState, ListRow, Pill, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { SETTING_IDS, settingElementId } from './settings-manifest'
 import { enrichSelectedSshHost, selectSshHost } from './ssh-host-selection'
@@ -254,6 +255,11 @@ function GatewayManagedUpdates() {
 function GatewayConnectionSettings({ embedded, standalone }: { embedded: boolean; standalone: boolean }) {
   const { t } = useI18n()
   const g = t.settings.gateway
+
+  const canConfigureSecretStorageEncryption =
+    typeof window.hermesDesktop?.getSecretStorageEncryption === 'function' &&
+    typeof window.hermesDesktop?.setSecretStorageEncryption === 'function'
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
@@ -310,12 +316,18 @@ function GatewayConnectionSettings({ embedded, standalone }: { embedded: boolean
   }, [])
 
   const setKeychainEncryption = async (on: boolean) => {
+    const setEncryption = window.hermesDesktop?.setSecretStorageEncryption
+
+    if (!setEncryption) {
+      return
+    }
+
     setKeychainEncryptionBusy(true)
     // Optimistic paint; the IPC result (or a failure rollback) gets the last word.
     setKeychainEncryptionState(on)
 
     try {
-      const res = await window.hermesDesktop.setSecretStorageEncryption(on)
+      const res = await setEncryption(on)
 
       setKeychainEncryptionState(res?.on === true)
     } catch (err) {
@@ -447,7 +459,9 @@ function GatewayConnectionSettings({ embedded, standalone }: { embedded: boolean
 
       // Cloud registry URLs are the persisted agent dashboardUrl. Keep saved
       // rows usable without discovery, but never run the cascade against ''.
-      if (!desktop?.cloud || !dashboardUrl) {
+      // The browser bridge has no native registry: its logout would sign out
+      // the current Webapp host instead of this saved Cloud gateway.
+      if (!desktop?.cloud || !desktop.connections || !dashboardUrl) {
         throw error
       }
 
@@ -1320,6 +1334,9 @@ function GatewayConnectionSettings({ embedded, standalone }: { embedded: boolean
               <div>{g.plainTextStoredDesc}</div>
             </div>
           ) : null}
+          <div className="mt-4">
+            <MobileCompanion />
+          </div>
         </div>
       ) : null}
 
@@ -1412,6 +1429,7 @@ function GatewayConnectionSettings({ embedded, standalone }: { embedded: boolean
               <Input
                 className={cn('h-8 font-mono', CONTROL_TEXT)}
                 onChange={event => setState(current => ({ ...current, sshKeyPath: event.target.value }))}
+                placeholder={g.sshKeyPlaceholder}
                 value={state.sshKeyPath}
               />
             }
@@ -1482,14 +1500,16 @@ function GatewayConnectionSettings({ embedded, standalone }: { embedded: boolean
 
       {embedded ? null : (
         <div className="mt-6 grid gap-1">
-          <ToggleRow
-            checked={keychainEncryption}
-            description={g.keychainEncryptionDesc}
-            disabled={keychainEncryptionBusy}
-            id={settingElementId(SETTING_IDS.gateway.keychainEncryption)}
-            label={g.keychainEncryptionTitle}
-            onChange={on => void setKeychainEncryption(on)}
-          />
+          {canConfigureSecretStorageEncryption ? (
+            <ToggleRow
+              checked={keychainEncryption}
+              description={g.keychainEncryptionDesc}
+              disabled={keychainEncryptionBusy}
+              id={settingElementId(SETTING_IDS.gateway.keychainEncryption)}
+              label={g.keychainEncryptionTitle}
+              onChange={on => void setKeychainEncryption(on)}
+            />
+          ) : null}
           <ListRow
             action={
               <Button onClick={() => void window.hermesDesktop?.revealLogs()} size="sm" variant="textStrong">

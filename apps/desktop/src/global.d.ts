@@ -2,17 +2,23 @@ import type { GatewayWsUrlResult } from '@hermes/shared'
 import type { HermesSkin } from '@hermes/shared/skin'
 import type { TranslucencyState } from '@hermes/shared/translucency'
 
+import type { PoolLimits } from '@/store/pool-limits'
+
 import type { ChallengeOutcome } from '../electron/challenge-window'
 import type { ScreenshotApi } from '../electron/command-screenshot-types'
 import type { HudModifierApi } from '../electron/hud-modifier-types'
 import type { MachineProfile } from '../electron/machine-profile'
 import type { HermesNotification } from '../electron/notification-types'
 import type { KeepAwakeMode } from '../electron/power-save'
+import type { RegionCaptureApi } from '../electron/region-capture-types'
+import type { TrayStatusPush } from '../electron/tray-status'
 import type { UpdateHoldWire } from '../electron/update-hold-types'
 import type { UpdateRunReport } from '../electron/updater/update-metrics'
 import type { WindowSizeMode } from '../electron/window-size-types'
 
+import type { AvatarId, DemoScript, NotifyRequest, PageContext, PaneControl, PaneState } from './app/pane3d/protocol'
 import type { WakeIndicatorState } from './lib/wake-indicator'
+import type { BotRoomControl, BotRoomStatePayload } from './store/botroom'
 import type {
   PetOverlayBounds,
   PetOverlayControl,
@@ -20,6 +26,7 @@ import type {
   PetOverlayStatePayload
 } from './store/pet-overlay'
 import type {
+  QuickEntryContext,
   QuickEntryStatePush,
   QuickEntryStatus,
   QuickEntrySubmitPayload,
@@ -36,13 +43,20 @@ declare global {
       // Resolve a backend connection. Omit `profile` (or pass the primary) for
       // the window's backend; pass a named profile to dial/reuse that profile's
       // cached gateway descriptor.
-      getConnection: (profile?: string | null) => Promise<HermesConnection>
+      getConnection: (profile?: string | null, opts?: { priority?: string }) => Promise<HermesConnection>
       // Registry-scoped backend resolution: dial (connectionId, profile). An
       // empty/local connectionId delegates to the legacy getConnection path.
       getConnectionFor?: (payload: {
         connectionId?: null | string
         profile?: null | string
+        priority?: string
       }) => Promise<HermesConnection>
+      touchBackend?: (scope: string, opts?: { activeTurn?: boolean }) => Promise<void | { ok: boolean }>
+      getPoolLimits?: () => Promise<PoolLimits>
+      setPoolLimits?: (limits: { maxBackends?: number; idleMs?: number }) => Promise<{
+        ok: boolean
+        limits: PoolLimits
+      }>
       // Registry-scoped fresh WS URL (same result contract as getGatewayWsUrl).
       getGatewayWsUrlFor?: (payload: {
         connectionId?: null | string
@@ -83,12 +97,24 @@ declare global {
         sessionId: string,
         opts?: { connectionId?: null | string; profile?: null | string; watch?: boolean }
       ) => Promise<{ ok: boolean; error?: string }>
-      // Resume this session in the user's own terminal emulator (`hermes --tui
-      // --resume <id>`) — the external terminal, not the in-app pane.
-      openSessionInTerminal: (
+      // Resume this session in the TUI (`hermes --tui --resume <id>`): in the
+      // user's own terminal emulator, or with target 'pane' a `run` line for the
+      // in-app terminal to type. Optional: the browser-hosted bridge does not
+      // implement it.
+      openSessionInTerminal?: (
         sessionId: string,
-        opts?: { cwd?: string; profile?: string }
-      ) => Promise<{ ok: boolean; error?: string }>
+        opts?: { cwd?: string; profile?: string; target?: 'external' | 'pane' }
+      ) => Promise<{ ok: boolean; error?: string; run?: string }>
+      // Serve the user's VS Code (code serve-web / openvscode-server) on
+      // loopback for the Code pane; the URL opens `folder` and carries the
+      // server's one-run token. Optional: the browser-hosted bridge does not
+      // implement it.
+      openVsCode?: (
+        folder?: string
+      ) => Promise<
+        | { ok: true; kind: 'code' | 'code-insiders' | 'openvscode-server'; url: string }
+        | { ok: false; error: 'failed' | 'not-installed'; detail?: string }
+      >
       // Open a new full-chrome app window — a peer instance of the primary that
       // renders the complete app on an explicit connection/profile, or inherits
       // the calling window's route when no options are supplied.
@@ -96,7 +122,7 @@ declare global {
       // Pop the in-app Browser (webview + address bar) into its own OS window.
       // `tabId` is the `$previewTabs` id; closing the window fires
       // `onBrowserPopoutClosed` so the caller can dock the tab again.
-      openBrowserWindow: (tabId: string) => Promise<{ ok: boolean; error?: string }>
+      openBrowserWindow?: (tabId: string) => Promise<{ ok: boolean; error?: string }>
       // Cross-window renderer relay (pop-out Browser ↔ chat windows). Electron
       // main relays opaque payloads to the other Hermes renderer windows;
       // renderer code keeps the destination exact and rejects anything not
@@ -105,7 +131,7 @@ declare global {
         send: (payload: unknown) => void
         onMessage: (callback: (payload: unknown) => void) => () => void
       }
-      onBrowserPopoutClosed: (callback: (tabId: string) => void) => () => void
+      onBrowserPopoutClosed?: (callback: (tabId: string) => void) => () => void
       // Claim a one-shot cross-window ambient cue (turn-end sound / spoken
       // reply). Resolves true for the first window to claim a key, false for
       // peers — so N open windows don't all fire the same cue.
@@ -129,7 +155,7 @@ declare global {
       // The pop-out pet overlay: a transparent always-on-top window hosting only
       // the mascot. The main renderer drives it (open/close/drag + state push);
       // the overlay sends control messages back (pop-in, composer submit).
-      petOverlay: {
+      petOverlay?: {
         open: (request: PetOverlayOpenRequest) => Promise<{ ok: boolean; bounds?: PetOverlayBounds }>
         close: () => Promise<{ ok: boolean }>
         setBounds: (bounds: PetOverlayBounds) => void
@@ -139,6 +165,44 @@ declare global {
         control: (payload: PetOverlayControl) => void
         onState: (callback: (payload: PetOverlayStatePayload) => void) => () => void
         onControl: (callback: (payload: PetOverlayControl) => void) => () => void
+      }
+      // The 3D Pane: a transparent, always-on-top window (`?win=pane3d`) hosting
+      // the avatar scene. The main renderer opens it and hands notifications to
+      // the real AvatarDirector entry point; the pane window itself reports
+      // control messages up and receives state down.
+      pane3d: {
+        open: () => Promise<{ ok: boolean }>
+        close: () => Promise<{ ok: boolean }>
+        isOpen: () => Promise<boolean>
+        playDemo: (script?: DemoScript) => Promise<{ ok: boolean }>
+        notify: (request: NotifyRequest) => Promise<{ id: string; ok: boolean }>
+        summon: (avatar: AvatarId) => Promise<{ ok: boolean }>
+        dismiss: (avatar: AvatarId) => Promise<{ ok: boolean }>
+        captureContext: () => Promise<PageContext>
+        control: (message: PaneControl) => void
+        onState: (callback: (state: PaneState) => void) => () => void
+        onControl: (callback: (control: PaneControl) => void) => () => void
+      }
+      // Bot Room: the full-screen transparent overlay where bot mascots live
+      // on the desktop. Same puppet contract as petOverlay — the main renderer
+      // owns roster/status/rooms; the overlay renders and reports control.
+      botroom: {
+        open: () => Promise<{ ok: boolean }>
+        close: () => Promise<{ ok: boolean }>
+        setIgnoreMouse: (ignore: boolean) => void
+        setFocusable: (focusable: boolean) => void
+        pushState: (payload: BotRoomStatePayload) => void
+        control: (payload: BotRoomControl) => void
+        onState: (callback: (payload: BotRoomStatePayload) => void) => () => void
+        onControl: (callback: (payload: BotRoomControl) => void) => () => void
+      }
+      // Bot Room mascot/pill windows: one small always-on-top panel per bot.
+      // They receive their roster row on a dedicated channel and speak the
+      // shared BotRoomControl protocol through `botroom.control`.
+      botroomMascot?: {
+        onState: (callback: (bot: BotRoomBot) => void) => () => void
+        onAction: (callback: (payload: { botId: string; action: string }) => void) => () => void
+        drag: (payload: { botId: string; phase: 'start' | 'move' | 'end'; x: number; y: number }) => void
       }
       // HUD mode: the chrome-free floating chat. A FULL app renderer with its
       // own gateway (like an instance window), sized and skinned as a floating
@@ -171,12 +235,15 @@ declare global {
       }
       // macOS native screenshot gesture; absent on other platforms.
       screenshot?: ScreenshotApi
+      /** Full-frame capture of the display under the window, for the
+       *  region-capture + markup overlay (roadmap #34). All platforms. */
+      regionCapture?: RegionCaptureApi
       hudModifier?: HudModifierApi
       // Quick Entry: a global-hotkey mini composer window. Main owns the OS
       // shortcut registration + the persisted preference (it must restore the
       // shortcut on a cold launch without the renderer visiting Settings), so
       // the renderer reads/writes it here and adopts the authoritative reply.
-      quickEntry: {
+      quickEntry?: {
         getSettings: () => Promise<QuickEntryStatus>
         // Returns the resulting state — including `registered: false` +
         // `error: 'taken'` when another app already owns the chord, so a failed
@@ -202,6 +269,9 @@ declare global {
         // Quick window subscribes to "you were just summoned" so it can reset
         // its draft and re-focus the input on every open.
         onShown: (callback: () => void) => () => void
+        // Main → quick window: the frontmost-app context captured at summon
+        // time; null when the platform cannot answer (no chip then).
+        onContext: (callback: (context: QuickEntryContext | null) => void) => () => void
         // Quick window subscribes to the outcome of a submit whose relay timed
         // out (delivery is unknown until this arrives).
         onLateResult: (
@@ -216,11 +286,11 @@ declare global {
       // Opt-in OS-keychain encryption for stored gateway secrets (default
       // off). `get` never touches the OS keychain; `set` re-encodes stored
       // secrets and can throw when the keychain is unusable.
-      getSecretStorageEncryption: () => Promise<{ on: boolean }>
-      setSecretStorageEncryption: (on: boolean) => Promise<{ on: boolean }>
+      getSecretStorageEncryption?: () => Promise<{ on: boolean }>
+      setSecretStorageEncryption?: (on: boolean) => Promise<{ on: boolean }>
       // v2 multi-connection registry: named agent sources, all persisted
       // together (local + any number of remote/cloud/ssh instances).
-      connections: {
+      connections?: {
         list: () => Promise<DesktopConnectionsRegistry>
         save: (
           payload: DesktopRegistryConnectionInput
@@ -337,6 +407,12 @@ declare global {
         path?: string
         saved: boolean
       }>
+      /** Browser media elements need an authenticated HTTP source, not Electron's custom protocol. */
+      getGatewayFileStreamUrl?: (payload: {
+        connectionId?: null | string
+        path: string
+        profile?: null | string
+      }) => Promise<string>
       saveImageFromUrl: (url: string) => Promise<boolean>
       /** Edit verb against the window's focused element (the custom context
        *  menu's Cut/Copy/Paste/Select all). */
@@ -364,6 +440,13 @@ declare global {
       savePastedText: (text: string) => Promise<string>
       saveClipboardImage: () => Promise<string>
       getPathForFile: (file: File) => string
+      /** Browser-hosted drag/drop stages File bytes in authenticated,
+       *  profile-scoped host storage. Native shells already expose real paths. */
+      stageFileForAttach?: (file: File) => Promise<string>
+      /** Source ownership returned when this browser stages a file on its host. */
+      getStagedFileForAttach?: (path: string) => HermesStagedUpload | undefined
+      /** Browser-picked display name; never replaces the host path or source identity. */
+      getStagedFileDisplayName?: (path: string) => string | undefined
       normalizePreviewTarget: (target: string, baseDir?: string) => Promise<HermesPreviewTarget | null>
       /** Resolves to `HermesReadFileErrorResult` when the watched file was
        *  already gone at call time (a restored tab probing a deleted path) —
@@ -391,9 +474,22 @@ declare global {
       setKeepAwake?: (mode: KeepAwakeMode) => void
       onKeepAwakeOffer?: (callback: () => void) => () => void
       minimizeToTray?: {
-        get: () => Promise<{ enabled: boolean; available: boolean }>
-        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean }>
-        onChanged: (callback: (status: { enabled: boolean; available: boolean }) => void) => () => void
+        get: () => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        onChanged: (
+          callback: (status: { enabled: boolean; available: boolean; statusEnabled: boolean }) => void
+        ) => () => void
+      }
+      /** Menu-bar status surface (#38): renderer pushes live session status for
+       *  the tray menu/badge; `onNewSession` is the tray's new-chat action. */
+      menuBarStatus?: {
+        get: () => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        set: (on: boolean) => Promise<{ enabled: boolean; available: boolean; statusEnabled: boolean }>
+        push: (payload: TrayStatusPush) => void
+        onChanged: (
+          callback: (status: { enabled: boolean; available: boolean; statusEnabled: boolean }) => void
+        ) => () => void
+        onNewSession: (callback: () => void) => () => void
       }
       setDisableF12?: (blocked: boolean) => void
       setF12ShortcutActive?: (active: boolean) => void
@@ -500,6 +596,7 @@ declare global {
       renamePath?: (path: string, newName: string) => Promise<{ path: string }>
       // Write a small UTF-8 text file (hardened path, parent must exist).
       writeTextFile?: (path: string, content: string) => Promise<{ path: string }>
+      makeDirectory?: (path: string) => Promise<{ path: string }>
       // Move a file/folder to the OS trash (recoverable).
       trashPath?: (path: string) => Promise<boolean>
       // Git-driven worktree management for the "Start work" flow.
@@ -514,6 +611,18 @@ declare global {
           worktreePath: string,
           options?: { force?: boolean }
         ) => Promise<{ removed: string }>
+        // Session-worktree affordances (roadmap #47): recreate a missing
+        // worktree dir on session open, merge its branch back into the main
+        // checkout.
+        worktreeEnsure: (
+          repoPath: string,
+          worktreePath: string,
+          branch: string
+        ) => Promise<{ branch: string; path: string; repoRoot: string; restored: boolean }>
+        worktreeMerge: (
+          repoPath: string,
+          worktreePath: string
+        ) => Promise<{ branch: string; into: string; merged: boolean; repoRoot: string }>
         branchSwitch: (repoPath: string, branch: string) => Promise<{ branch: string }>
         // The local branches, plus the remote-tracking refs that have no local
         // branch, for the "convert a branch into a worktree" picker.
@@ -567,11 +676,22 @@ declare global {
          *  only; null on Windows or when unavailable). Used to reopen a tab
          *  where the user last `cd`'d. */
         cwd: (id: string) => Promise<string | null>
+        /** Explicit close: terminate the shell, including a disconnected attachment. */
         dispose: (id: string) => Promise<boolean>
-        onData: (id: string, callback: (payload: string) => void) => () => void
+        /** Browser cleanup releases the viewer without terminating its shell. */
+        detach?: (id: string) => Promise<boolean>
+        closeSaved?: (restoreKey: string) => Promise<boolean>
+        onState?: (id: string, callback: (state: HermesTerminalState) => void) => () => void
+        onData: (id: string, callback: (payload: string, options?: { replay: boolean }) => void) => () => void
         onExit: (id: string, callback: (payload: HermesTerminalExit) => void) => () => void
         resize: (id: string, size: { cols: number; rows: number }) => Promise<boolean>
-        start: (options?: { cols?: number; cwd?: string; rows?: number }) => Promise<HermesTerminalSession>
+        start: (options?: {
+          cols?: number
+          cwd?: string
+          rows?: number
+          restoreKey?: string
+          resumeOnly?: boolean
+        }) => Promise<HermesTerminalSession>
         write: (id: string, data: string) => Promise<boolean>
       }
       reachPreviewUrl?: (url: string) => Promise<string>
@@ -586,6 +706,9 @@ declare global {
       onPreviewNav?: (callback: (command: 'back' | 'forward' | 'reload') => void) => () => void
       onOpenFolderRequested?: (callback: () => void) => () => void
       onOpenUpdatesRequested?: (callback: () => void) => () => void
+      /** Native-menu door items send the keybind action id; the renderer
+       *  dispatches it through the same handler a keypress would use. */
+      onMenuActionRequested?: (callback: (actionId: string) => void) => () => void
       onDeepLink?: (
         callback: (payload: { kind: string; name: string; params: Record<string, string> }) => void
       ) => () => void
@@ -692,7 +815,7 @@ declare global {
       // Main-process `before-input-event` forwards Ctrl/Cmd+F here so the
       // renderer can still open the FindBar when the OS compositor has
       // already grabbed the chord (#81727, e.g. Pop!_OS / GNOME).
-      onOpenFindBarRequested: (callback: () => void) => () => void
+      onOpenFindBarRequested?: (callback: () => void) => () => void
     }
   }
 }
@@ -719,10 +842,14 @@ export interface DesktopMarketplaceThemeResult {
   themes: DesktopMarketplaceThemeFile[]
 }
 
+export type HermesTerminalState = 'open' | 'reconnecting' | 'disconnected'
+
 export interface HermesTerminalSession {
   cwd: string
   id: string
   shell: string
+  /** Server-owned process and replay; do not restore renderer scrollback. */
+  persistent?: boolean
 }
 
 export interface HermesTerminalExit {
@@ -1231,6 +1358,9 @@ export interface DesktopRosterAgent {
 
 export interface DesktopAgentRoster {
   agents: DesktopRosterAgent[]
+  /** Registry source whose agents are already represented by the active
+   * gateway's rich profiles.list rows; mergers annotate instead of duplicate. */
+  primaryConnectionId?: string
   sources: {
     connectionId: string
     label: string
@@ -1694,6 +1824,9 @@ export interface HermesReviewPr {
 // opened from — how a session row finds its own PR.
 export interface HermesBranchPullRequest {
   branch: string
+  /** Head commit's check rollup folded to `failure` | `pending` | `success`;
+   *  absent on pre-checks backends and on PRs whose head has no checks. */
+  checks?: 'failure' | 'pending' | 'success'
   draft: boolean
   number: number
   /** `open` | `closed` | `merged`, lowercased from gh. */
@@ -1729,6 +1862,14 @@ export interface HermesPreviewFileChanged {
   id: string
   path: string
   url: string
+}
+
+/** Backend-provided source identity, not an authorization token. */
+export interface HermesStagedUpload {
+  install_id: string
+  path: string
+  profile_home: string
+  profile_incarnation: string | null
 }
 
 export interface HermesSelectPathsOptions {

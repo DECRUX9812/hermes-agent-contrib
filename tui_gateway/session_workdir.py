@@ -496,9 +496,12 @@ def _workdir_row_model_config(session: dict) -> tuple[str, dict]:
         model_config["_branched_from"] = parent_session_id
     # Room plumbing always follows the member profile. Canonical Bot Chats do too until the composer records an
     # explicit chat-scoped pick plus the profile model it diverged from (see _stored_session_runtime_overrides).
-    for flag in ("room_plumbing", "follow_profile_config"):
+    # ``team_room`` marks a member session of a team-orchestrated room; the lead is who hears the user.
+    for flag in ("room_plumbing", "follow_profile_config", "bot_topic", "team_room"):
         if session.get(flag):
             model_config[flag] = True
+    if session.get("team_room") and (team_room_lead := str(session.get("team_room_lead") or "").strip()):
+        model_config["team_room_lead"] = team_room_lead
     if isinstance(composer_profile := session.get("composer_override_profile"), dict):
         model_config["composer_override_profile"] = composer_profile
     from tools.approval_yolo import with_session_yolo  # a /yolo toggled before the row existed
@@ -766,7 +769,11 @@ def _workdir_owner_db(session: dict, fail_log: str):
     if profile_home := session.get("profile_home"):
         try:
             from hermes_state_registry import acquire
-            db, close_db = acquire(Path(profile_home) / "state.db"), True
+            if _profile_home_rejected(profile_home, session.get("profile_incarnation"), require_incarnation=True):
+                raise FileNotFoundError(f"Profile incarnation is stale or home is unavailable: {profile_home}")
+            db, close_db = acquire(
+                Path(profile_home) / "state.db",
+                expected_profile_incarnation=session.get("profile_incarnation")), True
         except Exception:
             logger.debug(fail_log, exc_info=True)
             db = _WORKDIR_DB_OPEN_FAILED
@@ -848,7 +855,8 @@ def _persist_session_git_meta(session: dict, cwd: str, generation: int) -> None:
     if not session_key or not cwd or not _workdir_valid_generation(generation):
         return
     # Snapshot routing fields; the live session dict may be gone when the thread runs.
-    db_session = {"session_key": session_key, "profile_home": session.get("profile_home")}
+    db_session = {"session_key": session_key, "profile_home": session.get("profile_home"),
+                  "profile_incarnation": session.get("profile_incarnation")}
 
     def _run() -> None:
         try:

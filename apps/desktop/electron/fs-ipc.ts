@@ -231,6 +231,31 @@ export function registerFsIpc({
     return { path: resolved }
   })
 
+  // Create ONE folder (the file tree's "New folder"). Same hardening as
+  // writeText: an allowed-root path, an existing parent, and never an
+  // existing entry — it cannot build directory trees or clobber anything.
+  ipcMain.handle('hermes:fs:mkdir', async (_event, dirPath) => {
+    const raw = String(dirPath || '').trim()
+
+    if (!raw) {
+      throw new Error('Invalid path')
+    }
+
+    const resolved = resolveRequestedPathForIpc(expandUserPath(raw), { purpose: 'Create folder' })
+
+    if (!directoryExists(path.dirname(resolved))) {
+      throw new Error('Parent directory does not exist')
+    }
+
+    if (fs.existsSync(resolved)) {
+      throw new Error(`"${path.basename(resolved)}" already exists`)
+    }
+
+    await fs.promises.mkdir(resolved)
+
+    return { path: resolved }
+  })
+
   // Move a file/folder to the OS trash (recoverable) — the VS Code "Delete"
   // default. `shell.trashItem` routes to Finder/Explorer/Files trash per platform.
   ipcMain.handle('hermes:fs:trash', async (_event, targetPath) => {

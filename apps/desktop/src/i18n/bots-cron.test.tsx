@@ -112,6 +112,7 @@ it('localizes inspector chrome and known states while preserving job data and un
       }}
       onClose={() => undefined}
       open
+      owner={null}
     />
   )
   const zh = translateBotsIn('zh')

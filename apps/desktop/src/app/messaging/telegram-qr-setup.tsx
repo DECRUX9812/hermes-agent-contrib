@@ -44,7 +44,7 @@ export function formatExpiry(expiresAt: string, now = Date.now()): null | string
   return `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, '0')}`
 }
 
-async function renderQr(payload: string): Promise<string> {
+export async function renderQr(payload: string): Promise<string> {
   // Lazy: the QR encoder is only needed while a pairing is on screen.
   const QRCode = await import('qrcode')
 

@@ -54,6 +54,7 @@ export const zhHantDiagnostics = {
       microphoneFailed: '麥克風發生錯誤',
       microphoneInUse: '麥克風正被其他應用程式使用中。',
       microphonePermissionDenied: '麥克風權限被拒絕。',
+      microphoneSecureContextRequired: '麥克風錄音需要 HTTPS、localhost 或原生桌面應用程式。',
       microphoneStartFailed: '無法開始麥克風錄音。',
       microphoneUnsupported: '目前執行環境不支援麥克風錄音。',
       noMicrophone: '找不到麥克風。',
@@ -112,5 +113,6 @@ export const zhHantDiagnostics = {
     boundaryDesc: '此檢視遇到意外錯誤。您的聊天和設定是安全的。',
     reloadWindow: '重新載入視窗',
     openLogs: '開啟記錄'
-  }
+  },
+
 } satisfies Pick<TranslationOverrides, 'notifications' | 'sendDiagnostics' | 'errors'>

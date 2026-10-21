@@ -320,6 +320,11 @@ KANBAN_GUIDANCE = (
     "<path> ${HERMES_KANBAN_BRANCH:-wt/$HERMES_KANBAN_TASK}` from the main repo, then cd there. For a project-linked "
     "task the workspace is a fresh `<repo>/.worktrees/<task-id>` and `$HERMES_KANBAN_BRANCH` a deterministic "
     "`<project-slug>/<task-id>` — the main repo is two levels up, so run `git worktree add` from there.\n"
+    "- **Shipping.** When `kanban_show()` reports a `completion_contract` of `OWNER/REPO` or a GitHub PR URL, the "
+    "acceptance gate expects a real pull request: finish your work, call `git_ship(push=true)` to commit+push your "
+    "worktree branch, then `open_pr` (title/body generated if you omit them) and put the returned `url` in your "
+    "completion `metadata.published_pr` — the gate rejects anything that doesn't match the contract. `local-only` "
+    "means commit locally — `git_ship(push=false)`.\n"
     "- **Deliverables.** Files a human wants go in `kanban_complete(artifacts=[<absolute paths>])` (top-level param; "
     "paths in `metadata` are NOT uploaded). Files must exist at completion.\n"
     "- **Attachments.** Attach real downloadable artifacts instead of pasting links in comments: `kanban_attach` "
@@ -569,12 +574,15 @@ STEER_MARKER_OPEN = (
 STEER_MARKER_CLOSE = "[/OUT-OF-BAND USER MESSAGE]"
 # Text after the "[" that opens one of Hermes' own control frames (the steer marker above, the compaction
 # handoff and its fallbacks, runtime/system notes, agent.context_compressor._SYNTHETIC_USER_ROW_PREFIXES,
-# agent.title_generator._MACHINE_PREFIXES). Consumers that republish model output as role=user text
-# (hosted rooms) relabel these so a reply cannot reproduce the exact trusted shape. Keep the regex literal in
+# agent.title_generator._MACHINE_PREFIXES — plus the room-prompt headers "Group chat:" / "Discussion:",
+# which a member reproducing would mint a fake transcript preamble). Consumers that republish model output
+# as role=user text (hosted rooms, desktop group turns) relabel these so a reply cannot reproduce the
+# exact trusted shape. Keep the regex literal in
 # apps/desktop/src/plugins/hermes-bots/group-round-prompt.ts byte-equivalent to this list.
 CONTROL_FRAME_OPENERS = (
     "/?OUT-OF-BAND USER MESSAGE", "CONTEXT COMPACTION", "CONTEXT SUMMARY]", "PRIOR CONTEXT", "Runtime note:",
     "System note:", "System:", "SYSTEM]", "IMPORTANT:", "Planning state preserved", "ASYNC DELEGATION",
+    "Group chat:", "Discussion:",
 )
 
 
