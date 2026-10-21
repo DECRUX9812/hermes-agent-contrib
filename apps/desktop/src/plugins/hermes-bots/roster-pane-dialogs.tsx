@@ -1,3 +1,5 @@
+import type { Dispatch, SetStateAction } from 'react'
+
 import { ConfirmDialog, host } from '@hermes/plugin-sdk'
 import type { useI18n } from '@hermes/plugin-sdk'
 
@@ -5,6 +7,7 @@ import { CreateAgentDialog, CreateGroupChatDialog, GroupDialog } from './create-
 import type { useRoster } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { disbandGroupChat, openGroupChat } from './group-chat-view'
+import type { BotDraft } from './bot-starters'
 import type { useBots } from './i18n'
 import { deleteBot } from './profile-ops'
 import type { GroupMember, RosterRow } from './types'
@@ -16,6 +19,8 @@ interface renderRosterDialogsProps {
   t: ReturnType<typeof useI18n>['t']
   createOpen: boolean
   setCreateOpen: (value: boolean) => void
+  createDraft?: BotDraft | null
+  setCreateDraft?: Dispatch<SetStateAction<BotDraft | null>>
   groupCreateOpen: boolean
   setGroupCreateOpen: (value: boolean) => void
   editing: RosterRow | null

@@ -72,7 +72,6 @@ import {
 } from '@/store/session'
 import { $sessionColorOverrides, setSessionColorOverride } from '@/store/session-color'
 import { $mutedSessionIds, isSessionMuted, toggleSessionMuted } from '@/store/session-mute'
-import { $sessionStates, $sessionTiles, closeAllOpenSessionTiles } from '@/store/session-states'
 import { $sessionTags, addSessionTag, removeSessionTag, sessionTagKey } from '@/store/session-tags'
 import { ambientRequestFor } from '@/store/session-gone-latch'
 import {

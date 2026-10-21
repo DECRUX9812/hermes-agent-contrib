@@ -417,6 +417,12 @@ it.each([
       setQuery: vi.fn(),
       setRowKindFilter: vi.fn(),
       setSectionDialog: vi.fn(),
+      setSortMode: vi.fn(),
+      sortMode: 'recent',
+      setBroadcastOpen: vi.fn(),
+      setCalendarOpen: vi.fn(),
+      setViewMode: vi.fn(),
+      viewMode: 'list',
       showRosterFilters: false,
       showRosterSearch: false,
       showRosterTools: false
