@@ -16,7 +16,7 @@ from hermes_cli.profile_incarnation import (
 )
 from hermes_constants import (
     named_profile_home_is_unavailable,
-    profile_deletion_marker_path,
+    named_profile_home,
 )
 
 
@@ -98,7 +98,7 @@ class ProfileLifecycleFence:
         if self._is_retired(profile_home, expected_incarnation):
             return True
         try:
-            named_marker = profile_deletion_marker_path(profile_home)
+            named_marker = named_profile_home(profile_home)
             if named_profile_home_is_unavailable(profile_home):
                 return True
         except Exception:

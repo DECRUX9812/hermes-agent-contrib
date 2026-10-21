@@ -27,10 +27,10 @@ from pathlib import Path
 from hermes_dir_acl import make_user_dir
 
 from hermes_constants import (
-    assert_named_profile_home_available,
+    assert_named_profile_home_live,
     get_hermes_home,
     mkdir_under_hermes_home,
-    profile_deletion_marker_path,
+    named_profile_home,
 )
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
 
@@ -659,7 +659,7 @@ class SessionDB(
 
         # Named profiles are explicit lifecycle objects. Path reuse after
         # DELETE must not let a delayed opener attach to the replacement.
-        named_profile_marker = profile_deletion_marker_path(self.db_path.parent)
+        named_profile_marker = named_profile_home(self.db_path.parent)
         profile_lifecycle_stack = contextlib.ExitStack()
 
         try:
@@ -864,9 +864,9 @@ class SessionDB(
         return conn
 
     def _assert_named_profile_available(self) -> None:
-        if profile_deletion_marker_path(self.db_path.parent) is None:
+        if named_profile_home(self.db_path.parent) is None:
             return
-        assert_named_profile_home_available(self.db_path.parent)
+        assert_named_profile_home_live(self.db_path.parent)
         from hermes_cli.profile_incarnation import assert_profile_incarnation_current
         assert_profile_incarnation_current(self.db_path.parent, self.expected_profile_incarnation)
 

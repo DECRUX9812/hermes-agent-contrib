@@ -25,7 +25,7 @@ import threading
 import time
 from typing import Callable, Iterable, Iterator
 
-from hermes_constants import get_default_hermes_root, profile_deletion_marker_path
+from hermes_constants import get_default_hermes_root, named_profile_home, profile_tombstone_path
 from pm.filesystem import lock_fd
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ def _profile_lifecycle_modes(profiles_root: Path | None = None) -> tuple[int, in
 
 
 def _profile_lock_path(profile_home: Path | str) -> Path | None:
-    marker = profile_deletion_marker_path(Path(profile_home))
+    marker = named_profile_home(Path(profile_home))
     if marker is None:
         return None
     # Resolve the parent, not the reusable profile directory (which can move).
@@ -181,10 +181,9 @@ def serialized_profile_mutation(*path_parameters: str):
 
 def profile_deletion_marker(profile_dir: Path | str) -> Path:
     """Return the durable tombstone path for a named profile home."""
-    marker = profile_deletion_marker_path(Path(profile_dir))
-    if marker is None:
+    if named_profile_home(Path(profile_dir)) is None:
         raise ValueError(f"Not a named profile home: {profile_dir}")
-    return marker
+    return profile_tombstone_path(Path(profile_dir))
 
 
 def mark_profile_deleting(
@@ -234,8 +233,9 @@ def clear_profile_deletion_marker(profile_dir: Path | str) -> None:
 
 def profile_home_is_tombstoned(profile_dir: Path | str) -> bool:
     """Return whether profile deletion has been committed for this home."""
-    marker = profile_deletion_marker_path(Path(profile_dir))
-    return marker is not None and marker.is_file()
+    if named_profile_home(Path(profile_dir)) is None:
+        return False
+    return profile_tombstone_path(Path(profile_dir)).is_file()
 
 
 def retire_in_process_profile_resources(

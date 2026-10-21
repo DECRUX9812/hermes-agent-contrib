@@ -23,6 +23,13 @@ INDICATOR_STYLES: tuple[str, ...] = ("ascii", "emoji", "kaomoji", "unicode")
 DEFAULT_INDICATOR_STYLE: str = "kaomoji"
 
 
+# Browser-hosted attachments are staged on the Hermes host and then read back
+# as a base64 data URL for the normal remote attachment RPC. Keep the upload
+# and read-back boundaries identical so a successful picker/drop can always be
+# attached afterward.
+WEBAPP_ATTACHMENT_MAX_BYTES: int = 16 * 1024 * 1024
+
+
 def set_hermes_home_override(path: str | Path | None) -> Token:
     """Set a context-local Hermes home override and return its reset token.
 
@@ -384,6 +391,17 @@ def profile_tombstone_path(profile_home: Path) -> Path:
 
 def named_profile_is_deleted(profile_home: str | Path) -> bool:
     return profile_tombstone_path(Path(profile_home)).exists()
+
+
+def named_profile_home_is_unavailable(profile_home: str | Path) -> bool:
+    """A named profile home that is gone or tombstoned.
+
+    Resource admission (a socket, a state.db handle, an upload target) refuses these:
+    a tombstoned home is a deleted profile whose path may already belong to a
+    replacement, and a missing one cannot be written to.
+    """
+    home = Path(profile_home)
+    return named_profile_is_deleted(home) or not home.is_dir()
 
 
 # A directory under profiles/ is a profile only when something identifies it as one.

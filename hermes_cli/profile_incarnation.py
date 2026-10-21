@@ -18,8 +18,9 @@ from pathlib import Path
 from typing import Iterator
 
 from hermes_constants import (
+    named_profile_home,
     named_profile_home_is_unavailable,
-    profile_deletion_marker_path,
+    profile_tombstone_path,
 )
 from hermes_cli.profile_lifecycle import (
     profile_lifecycle_lease as _profile_mutation_lease,
@@ -78,9 +79,9 @@ def read_profile_deletion_incarnation(profile_home: Path | str) -> str | None:
     A tokenless fence authorizes deletion retry, never incarnation backfill or
     resource admission. Other invalid contents remain corruption errors.
     """
-    marker = profile_deletion_marker_path(Path(profile_home))
-    if marker is None:
+    if named_profile_home(Path(profile_home)) is None:
         raise ValueError(f"Not a named profile home: {profile_home}")
+    marker = profile_tombstone_path(Path(profile_home))
     value = marker.read_text(encoding="utf-8-sig")
     if value in ("", "deleted\n"):
         return None
@@ -90,7 +91,7 @@ def read_profile_deletion_incarnation(profile_home: Path | str) -> str | None:
 def read_profile_incarnation(profile_home: Path | str) -> str | None:
     """Read a named profile's persisted incarnation, or None if not initialized."""
     home = Path(profile_home)
-    if profile_deletion_marker_path(home) is None:
+    if named_profile_home(home) is None:
         return None
     return read_incarnation_marker(_incarnation_path(home))
 
@@ -109,7 +110,7 @@ def profile_incarnation_lease(
     missing/retired generation raises FileNotFoundError.
     """
     home = Path(profile_home)
-    if profile_deletion_marker_path(home) is None:
+    if named_profile_home(home) is None:
         yield home
         return
 
@@ -156,7 +157,7 @@ def ensure_profile_incarnation(profile_home: Path | str) -> str | None:
     never turns into authority to revive a retired home.
     """
     home = Path(profile_home)
-    if profile_deletion_marker_path(home) is None:
+    if named_profile_home(home) is None:
         return None
     with profile_incarnation_lease(home):
         current = read_profile_incarnation(home)

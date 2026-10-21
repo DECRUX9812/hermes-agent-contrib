@@ -595,9 +595,9 @@ def ensure_hermes_home():
 
     # Named profiles must be created explicitly. Check tombstones BEFORE the memo so a stale
     # empty shell cannot skip the deleted-profile guard.
-    from hermes_constants import assert_named_profile_home_available, profile_deletion_marker_path
-    named_profile = profile_deletion_marker_path(home) is not None
-    assert_named_profile_home_available(home)
+    from hermes_constants import assert_named_profile_home_live, named_profile_home
+    named_profile = named_profile_home(home) is not None
+    assert_named_profile_home_live(home)
     current_identity = _hermes_home_identity(home, named_profile=named_profile)
     if current_identity is not None and _HERMES_HOME_ENSURED.get(key) == current_identity:
         return

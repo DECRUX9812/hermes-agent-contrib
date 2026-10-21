@@ -75,7 +75,7 @@ def test_named_home_link_modes_survive_resolution_and_recreation(
     tmp_path, monkeypatch, with_marker, linked, busy_profile_lease,
 ):
     from hermes_cli import profile_incarnation
-    from hermes_constants import profile_deletion_marker_path
+    from hermes_constants import named_profile_home
 
     root = tmp_path / ".hermes"
     home = root / "profiles" / "worker"
@@ -88,8 +88,8 @@ def test_named_home_link_modes_survive_resolution_and_recreation(
     monkeypatch.setenv("HERMES_HOME", str(home))
     monkeypatch.setattr(config, "is_managed", lambda: False)
     monkeypatch.setattr(config, "_HERMES_HOME_ENSURED", {})
-    assert profile_deletion_marker_path(home) is not None
-    assert profile_deletion_marker_path(home.resolve()) is not None
+    assert named_profile_home(home) is not None
+    assert named_profile_home(home.resolve()) is not None
 
     def unexpected_lease(*args, **kwargs):
         pytest.fail("Config initialization must not wait on a busy lifecycle lease")

@@ -886,7 +886,7 @@ def test_named_profile_sessiondb_never_mkdir_after_validation_race(
 
     monkeypatch.setattr(
         hermes_state,
-        "assert_named_profile_home_available",
+        "assert_named_profile_home_live",
         remove_after_validation,
     )
 

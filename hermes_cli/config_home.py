@@ -93,9 +93,9 @@ def initialize_home(
     home: Path, subdirs: tuple[str, ...], ensured: dict[str, tuple[int, int, str | None]],
 ) -> None:
     from hermes_cli.config import _ensure_default_soul_md, _hermes_home_identity, is_managed
-    from hermes_constants import assert_named_profile_home_available, profile_deletion_marker_path
+    from hermes_constants import assert_named_profile_home_live, named_profile_home
 
-    named_profile = profile_deletion_marker_path(home) is not None
+    named_profile = named_profile_home(home) is not None
     if named_profile and not home.is_dir():
         raise FileNotFoundError(f"Named profile home disappeared during initialization: {home}")
     if named_profile and _hermes_home_identity(home, named_profile=True) is None:
@@ -103,7 +103,7 @@ def initialize_home(
     aliases = (home, home.resolve())
     initial_identities = {
         alias: _hermes_home_identity(alias, named_profile=True)
-        for alias in aliases if profile_deletion_marker_path(alias) is not None
+        for alias in aliases if named_profile_home(alias) is not None
     }
     directory_home = _home_directory_path(home)
     managed = is_managed()
@@ -113,11 +113,11 @@ def initialize_home(
         required = ("cron", "sessions", "logs", "memories") if managed else subdirs
         for subdir in required:
             if named_profile:
-                assert_named_profile_home_available(home)
+                assert_named_profile_home_live(home)
             _ensure_directory(directory_home / subdir, create=not managed, secure=not managed, home=directory_home)
         if managed:
             if named_profile:
-                assert_named_profile_home_available(home)
+                assert_named_profile_home_live(home)
             _ensure_directory(directory_home / "logs" / "curator", create=True, secure=False, home=directory_home)
         try:
             _ensure_default_soul_md(directory_home)
@@ -131,7 +131,7 @@ def initialize_home(
             os.umask(old_umask)
     identities = {
         alias: _hermes_home_identity(
-            alias, named_profile=profile_deletion_marker_path(alias) is not None,
+            alias, named_profile=named_profile_home(alias) is not None,
         )
         for alias in aliases
     }

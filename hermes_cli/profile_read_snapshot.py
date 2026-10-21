@@ -2,7 +2,7 @@
 from contextlib import contextmanager
 from pathlib import Path
 
-from hermes_constants import assert_named_profile_home_available, profile_deletion_marker_path
+from hermes_constants import assert_named_profile_home_live, named_profile_home
 from hermes_cli.profile_incarnation import read_profile_incarnation
 
 
@@ -15,12 +15,12 @@ def profile_read_snapshot(home: Path, expected_incarnation: str | None):
     handle escapes. Directory identity also fences legacy profiles without a
     marker; inspection must never backfill one.
     """
-    if profile_deletion_marker_path(home) is None:
+    if named_profile_home(home) is None:
         yield expected_incarnation
         return
 
     def snapshot():
-        assert_named_profile_home_available(home)
+        assert_named_profile_home_live(home)
         before = home.stat()
         token = read_profile_incarnation(home)
         after = home.stat()

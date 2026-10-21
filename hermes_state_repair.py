@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from hermes_constants import (
-    assert_named_profile_home_available, assert_named_profile_home_live, get_hermes_home, mkdir_under_hermes_home,
+    assert_named_profile_home_live, assert_named_profile_home_live, get_hermes_home, mkdir_under_hermes_home,
 )
 from hermes_startup_watchdog import report_startup_progress
 from hermes_state_holders import read_only_db_uri
@@ -199,7 +199,7 @@ def _cross_process_repair_lock(db_path: Path):
                            "surgery in this process to avoid racing the repairer. Recorded holder: %s.",
                            lock_path, _REPAIR_LOCK_TIMEOUT_SECONDS,
                            _describe_lock_holder(None if _IS_WINDOWS else _read_lock_holder_record(handle)))
-        assert_named_profile_home_available(db_path.parent)
+        assert_named_profile_home_live(db_path.parent)
         yield acquired
     finally:
         if acquired:
