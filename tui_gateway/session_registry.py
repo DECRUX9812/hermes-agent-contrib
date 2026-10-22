@@ -690,14 +690,18 @@ def _session_lookup_key(session: dict, *, fallback: str = "") -> str:
     return str(getattr(session.get("agent"), "session_id", None) or session.get("session_key") or fallback or "")
 
 
-def _find_live_session_by_key(session_key: str, profile_home=_ANY_PROFILE) -> tuple[str, dict] | None:
+def _find_live_session_by_key(
+    session_key: str, profile_home=_ANY_PROFILE, profile_incarnation: str | None = None,
+) -> tuple[str, dict] | None:
     # Timestamp-based stored ids can exist in several profiles' stores; a bare-id match would hand
     # profile B's resume profile A's runtime, so profile-aware callers match on (profile_home, key).
     # Profile-aware callers pass the home they resolved; the match must then be on (profile_home,
     # session_key). See #100029.
     for sid, session in list(_sessions.items()):
         if (not session.get("_finalized") and _session_lookup_key(session, fallback=sid) == session_key
-                and _live_profile_matches(session, profile_home)):
+                and _live_profile_matches(session, profile_home)
+                # A runtime from an older generation of a recreated profile is not this profile's session.
+                and (profile_incarnation is None or session.get("profile_incarnation") in (None, profile_incarnation))):
             return sid, session
     return None
 
