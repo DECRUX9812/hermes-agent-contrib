@@ -29,10 +29,11 @@ def _unlink_pty_markers(app: FastAPI) -> None:
 async def standalone_lifespan(app: "FastAPI"):
     from hermes_cli.web_server import (
         _eager_reconcile_own_session_db, _warm_gateway_module,
-        _start_desktop_cron_ticker, _dashboard_selftest_loop,
+        _dashboard_selftest_loop,
         _auto_archive_ticker_loop, _terminate_desktop_managed_gateway, _probe_install_before_state_db,
     )
     from hermes_cli.web_server_chat import PTY_REGISTRY
+    from hermes_cli.web_server_lifespan import _start_desktop_cron_ticker
 
     app.state.event_channels = {}  # dict[str, set]
     app.state.event_lock = asyncio.Lock()
