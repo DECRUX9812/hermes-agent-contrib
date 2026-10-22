@@ -437,11 +437,15 @@ class CLIInitMixin:
             from hermes_state_user_copy import describe_storage_failure, storage_failure_details
             from agent.i18n import t
             failure = describe_storage_failure(e)
+            # Bind the exception outside the except block: Python unbinds ``e`` when the
+            # handler exits, so the deferred warning closure raised NameError instead of
+            # telling the user persistence was off (ruff F821 caught it).
+            exc = e
             def _present_store_warning():
                 try:
                     Console(stderr=True).print(t(
                         "cli.session_store.unavailable_rich",
-                        reason=failure.gloss, action=failure.action, details=storage_failure_details(e)))
+                        reason=failure.gloss, action=failure.action, details=storage_failure_details(exc)))
                 except Exception:
                     print(t("cli.session_store.unavailable_plain", reason=failure.gloss, action=failure.action))
             # Same automatic diagnostic the gateway gates for its home channel (run_notifications).

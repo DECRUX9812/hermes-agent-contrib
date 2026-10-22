@@ -267,6 +267,8 @@ def _restore_db_pages(src: Path, dst: Path) -> bool:
     Callers go through ``_safe_restore_db``, which validates *src* and holds
     the maintenance reservation and epoch floor around this publication.
     """
+    from hermes_cli.sqlite_safe_read import connect_tracked
+
     dst_conn: Optional[sqlite3.Connection] = None
     try:
         dst_conn = connect_tracked(dst)

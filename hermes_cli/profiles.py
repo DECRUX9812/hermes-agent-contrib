@@ -10,6 +10,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
@@ -37,7 +38,8 @@ from hermes_cli.profile_lifecycle import (
 from hermes_cli.home_data_layout import PM_RUNTIME_ROOT_DIRS
 from hermes_cli.profiles_remove import _rmtree_make_writable, _rmtree_with_retry, wait_profile_unowned
 from hermes_constants import (
-    LOCAL_RUNTIME_ROOT_DIRS, PROFILE_ID_RE, named_profile_has_identity,
+    LOCAL_RUNTIME_ROOT_DIRS, PROFILE_ID_RE, clear_named_profile_deleted,
+    mark_named_profile_deleted, named_profile_has_identity,
     named_profile_home_is_unavailable, named_profile_is_deleted, named_profile_is_live,
 )
 

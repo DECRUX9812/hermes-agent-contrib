@@ -29,16 +29,30 @@ from hermes_cli import web_server_file_tickets as file_tickets
 from hermes_cli._subprocess_compat import windows_hide_flags
 from hermes_cli.profile_incarnation import profile_incarnation_lease
 from hermes_cli.sqlite_safe_read import LiveConnectionError, offline_file_access
-from hermes_cli.web_routers.uploads import _removed_on_failure, _resolve_upload_generation
 from hermes_cli.web_deps import late
-from hermes_cli.web_server_files import (
-    SANDBOX_NOT_FOUND, _agent_fs_path, _fs_path, _hosted_fs_read_guard, _is_unmapped_container_path,
-    _managed_file_entry, _managed_response_meta, _resolve_managed_path,
-)
 from hermes_cli.web_models import (
-    ChatImageUpload, FileTicketRequest, FsWriteText, ManagedDirectoryCreate, ManagedFileDelete,
+    ChatImageUpload,
+    FileTicketRequest,
+    FsWriteText,
+    ManagedDirectoryCreate,
+    ManagedFileDelete,
     ManagedFileUpload,
 )
+from hermes_cli.web_routers.uploads import (
+    _removed_on_failure,
+    _resolve_upload_generation,
+)
+from hermes_cli.web_server_files import (
+    SANDBOX_NOT_FOUND,
+    _agent_fs_path,
+    _fs_path,
+    _hosted_fs_read_guard,
+    _is_unmapped_container_path,
+    _managed_file_entry,
+    _managed_response_meta,
+    _resolve_managed_path,
+)
+from hermes_constants import mkdir_under_hermes_home, named_profile_home_is_unavailable
 
 router = APIRouter()
 

@@ -721,11 +721,29 @@ def _bounded_task_delta(messages: Sequence[_ValidatedEvent], *, watermark: int,
     return selected, attachments
 
 
+def _round_zero_responders(
+    text: str, members: Sequence[DiscussionMember], lead: DiscussionMember | None
+) -> list[DiscussionMember]:
+    """Who a fresh user turn wakes. Orchestrated rooms (a team lead seated, ``lead`` set): the
+    lead always hears the user; teammates wake only when the message explicitly @mentions them
+    (or @everyone/@all — a broadcast beats the gate). Unled rooms keep fan-out listening, where
+    an unaddressed send wakes the whole roster."""
+    mentioned = resolve_mentions((text,), members, default_all=lead is None)
+    if lead is None:
+        return mentioned
+    return [lead, *[m for m in mentioned if m.member_id != lead.member_id]]
+
+
 def plan_next_task(
     room_value: Any, events: Sequence[Mapping[str, Any]], *, local_profiles: Iterable[str],
     initial_watermarks: Mapping[tuple[str, str], int] | None = None,
+    lead_profile: str | None = None,
     freeze_input_context: bool = False) -> DiscussionDecision:
-    """Replay the complete room log and return at most one next member task."""
+    """Replay the complete room log and return at most one next member task.
+
+    ``lead_profile`` names the team's org-tree lead when the room is orchestrated (resolved by
+    the caller per send — ``tools/bot_team.room_lead``): only it and explicitly @mentioned
+    members run on an unaddressed user turn."""
     room = validate_room(room_value, local_profiles=local_profiles)
     lead = next(
         (m for m in room.members
