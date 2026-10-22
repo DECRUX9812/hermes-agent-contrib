@@ -59,7 +59,7 @@ export function ActivityTab() {
         label: sessionTitle(s),
         detail: 'Conversation',
         status: 'success' as RailTaskStatus,
-        updatedAt: s.last_active ?? 0
+        updatedAt: (s.last_active ?? 0) * 1000
       }))
 
     return [...actions, ...recentSessions]
