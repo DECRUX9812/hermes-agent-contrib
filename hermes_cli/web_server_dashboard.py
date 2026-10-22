@@ -136,7 +136,7 @@ def mount_spa(application: FastAPI):
             # gate is off: on a gated serve the token must never be readable without auth.
             # See #94227, #95575.
             gated = bool(getattr(application.state, "auth_required", False))
-            withheld = gated or bool(getattr(app.state, "withhold_session_token", False))
+            withheld = gated or bool(getattr(application.state, "withhold_session_token", False))
             if full_path == "" and not withheld:
                 return HTMLResponse(
                     "<!doctype html><html><head><script>"
@@ -196,7 +196,7 @@ def mount_spa(application: FastAPI):
             f'window.__HERMES_BASE_PATH__="{prefix}";'
             f"window.__HERMES_AUTH_REQUIRED__={'true' if gated else 'false'};"
             f"window.__HERMES_INITIAL_PROFILE__={initial_profile_js};"
-            f"window.__HERMES_UI_SURFACE__={json.dumps(surface)};"
+            f"window.__HERMES_UI_SURFACE__={json.dumps(getattr(application.state, "ui_surface", "dashboard"))};"
             f"window.__HERMES_DASHBOARD_PROFILE__={serving_profile_js};"
             f"</script>"
         )
