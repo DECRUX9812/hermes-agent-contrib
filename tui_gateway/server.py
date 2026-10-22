@@ -1734,9 +1734,9 @@ def _session_skills(session_key: str, session: dict) -> dict:
     tokens = _set_session_context(session_key, cwd=_session_cwd(session))
     try:
         with _session_profile_runtime_scope(session, hydrate_secrets=False):
-            from tools.skills_tool import _find_all_skills
+            from tools.skills_tool import find_all_skills
             skills: dict = {}
-            for skill in _find_all_skills():
+            for skill in find_all_skills():
                 skills.setdefault(skill.get("category") or "general", []).append(skill["name"])
     finally:
         _clear_session_context(tokens)

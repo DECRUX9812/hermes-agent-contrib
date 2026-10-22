@@ -105,7 +105,7 @@ from agent.auxiliary_client import resolve_provider_client
 try:
     from agent.client_lifecycle import _swap_fallback_clients
 except ImportError:
-    from agent.chat_completion_helpers import _swap_fallback_clients
+    from agent.client_lifecycle import _swap_fallback_clients
 from openai import OpenAI
 from types import SimpleNamespace
 
