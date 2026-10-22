@@ -582,7 +582,6 @@ interface GroupChatWorkspaceProps {
   members: GroupMember[]
   onBack?: () => void
   visible?: boolean
-  origin?: string
 }
 
 export function GroupChatWorkspace(props: GroupChatWorkspaceProps) {
