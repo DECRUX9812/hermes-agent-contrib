@@ -23,9 +23,9 @@
  *    English where it is WRITTEN (`group-chat-parts.tsx`, `group-rounds.ts`);
  *    the places that RENDER the reader's own lines use `group.you` instead.
  *
- * Locales follow kanban: `en` / `ja` / `zh` / `zh-hant`. Arabic falls through
- * the resolution chain (active locale → this plugin's `en` → the key) the
- * same way a missing string in any locale does. Nouns match core: ボット /
+ * Legacy Bot Mode copy covers `en` / `ja` / `zh` / `zh-hant`; canonical hosted
+ * groups additionally cover Arabic and Russian. Missing legacy keys still
+ * resolve through this plugin's English bundle. Nouns match core: ボット /
  * 机器人 / 機器人, プロファイル / 配置档案 / 設定檔, ゲートウェイ / 网关 / 閘道.
  */
 
@@ -42,9 +42,11 @@ import {
   DELIVERABLES_ZH_HANT,
   type DeliverablesMessages
 } from './deliverables-i18n'
+import { bind, type Bound } from './i18n-bind'
+import { type BotsMessages as UpstreamBotsMessages } from './i18n-messages'
 import { getPluginCtx } from './shared'
 
-type BotsMessages = {
+type ForkMessages = {
   canonical: { [K in keyof CanonicalGroupMessages]: string }
   /** Left rail: the bot + group-chat roster. */
   editor: {
@@ -953,6 +955,11 @@ type BotsMessages = {
   }
 }
 
+/** Upstream moved the message shape to ./i18n-messages; the fork intersects its own
+ *  additions (Command Room, consensus voting, home feed, Activity pane, VS Code
+ *  pane, bot teams, mailbox handoff, needs-you cards, …) on top of it. */
+type BotsMessages = UpstreamBotsMessages & ForkMessages
+
 const en: BotsMessages = {
   canonical: CANONICAL_GROUP_LOCALES.en,
   editor: {
@@ -1506,9 +1513,6 @@ const en: BotsMessages = {
     noMcpServers: 'No MCP servers configured or in the catalog.'
   },
   screen: {
-    managedNotIncludedTitle: 'Screen isn’t included on this bot',
-    managedNotIncludedBody:
-      'Hermes Cloud includes Screen on bots with 8 GB of memory or more. It can’t be installed on a smaller bot.',
     title: 'Screen',
     menu: 'Open Screen',
     unsupportedTitle: 'No bot screen on this host',
@@ -1550,6 +1554,9 @@ const en: BotsMessages = {
     portalUnsupported: 'Not available on this host',
     portalUnavailable: 'Update the bot’s Hermes to use Screen',
     portalUnavailableManaged: 'Screen is not available on this managed Hermes release yet',
+    managedNotIncludedTitle: 'Screen isn’t included on this bot',
+    managedNotIncludedBody:
+      'Hermes Cloud includes Screen on bots with 8 GB of memory or more. It can’t be installed on a smaller bot.',
     unavailableTitle: 'Screen needs a newer Hermes',
     autoOpenMenu: 'Open Screen when the bot uses it',
     autoOpenOnToast: name => `${name}’s Screen opens when it starts using its desktop`,
@@ -2385,9 +2392,6 @@ const ja: BotsMessages = {
     noMcpServers: '設定済みまたはカタログ内の MCP サーバーはありません。'
   },
   screen: {
-    managedNotIncludedTitle: 'このボットには Screen が含まれていません',
-    managedNotIncludedBody:
-      'Hermes Cloud では、メモリが 8 GB 以上のボットに Screen が含まれます。これより小さいボットにはインストールできません。',
     title: '画面',
     menu: '画面を開く',
     unsupportedTitle: 'このホストにはボット画面がありません',
@@ -2432,6 +2436,9 @@ const ja: BotsMessages = {
     portalUnsupported: 'このホストでは利用できません',
     portalUnavailable: 'Screen を使うにはボットの Hermes を更新してください',
     portalUnavailableManaged: 'この管理された Hermes リリースではまだ Screen を利用できません',
+    managedNotIncludedTitle: 'このボットには Screen が含まれていません',
+    managedNotIncludedBody:
+      'Hermes Cloud では、メモリが 8 GB 以上のボットに Screen が含まれます。これより小さいボットにはインストールできません。',
     unavailableTitle: 'Screen には新しい Hermes が必要です',
     autoOpenMenu: 'ボットが画面を使い始めたら Screen を開く',
     autoOpenOnToast: name => `${name} がデスクトップを使い始めると Screen が開きます`,
@@ -3253,8 +3260,6 @@ const zh: BotsMessages = {
     noMcpServers: '未配置 MCP 服务器，目录中也没有。'
   },
   screen: {
-    managedNotIncludedTitle: '此机器人不包含屏幕',
-    managedNotIncludedBody: 'Hermes Cloud 为内存 8 GB 及以上的机器人提供屏幕，较小的机器人无法安装。',
     title: '屏幕',
     menu: '打开屏幕',
     unsupportedTitle: '此主机没有机器人屏幕',
@@ -3296,6 +3301,8 @@ const zh: BotsMessages = {
     portalUnsupported: '此主机不可用',
     portalUnavailable: '更新机器人的 Hermes 以使用屏幕',
     portalUnavailableManaged: '此托管 Hermes 版本尚不支持屏幕',
+    managedNotIncludedTitle: '此机器人不包含屏幕',
+    managedNotIncludedBody: 'Hermes Cloud 为内存 8 GB 及以上的机器人提供屏幕，较小的机器人无法安装。',
     unavailableTitle: '屏幕需要更新版的 Hermes',
     autoOpenMenu: '机器人使用屏幕时自动打开',
     autoOpenOnToast: name => `${name} 开始使用桌面时会自动打开屏幕`,
@@ -4116,8 +4123,6 @@ const zhHant: BotsMessages = {
     noMcpServers: '未設定 MCP 伺服器，目錄中也沒有。'
   },
   screen: {
-    managedNotIncludedTitle: '此機器人不包含螢幕',
-    managedNotIncludedBody: 'Hermes Cloud 為記憶體 8 GB 以上的機器人提供螢幕，較小的機器人無法安裝。',
     title: '螢幕',
     menu: '開啟螢幕',
     unsupportedTitle: '此主機沒有機器人螢幕',
@@ -4159,6 +4164,8 @@ const zhHant: BotsMessages = {
     portalUnsupported: '此主機不可用',
     portalUnavailable: '更新機器人的 Hermes 以使用螢幕',
     portalUnavailableManaged: '此託管 Hermes 版本尚不支援螢幕',
+    managedNotIncludedTitle: '此機器人不包含螢幕',
+    managedNotIncludedBody: 'Hermes Cloud 為記憶體 8 GB 以上的機器人提供螢幕，較小的機器人無法安裝。',
     unavailableTitle: '螢幕需要較新版的 Hermes',
     autoOpenMenu: '機器人使用螢幕時自動開啟',
     autoOpenOnToast: name => `${name} 開始使用桌面時會自動開啟螢幕`,
@@ -4446,32 +4453,16 @@ const zhHant: BotsMessages = {
 }
 
 /** Registered via `ctx.i18n.register` at plugin load (disposer tracked). */
-export const BOTS_LOCALES: PluginLocaleBundles = { en, ja, zh, 'zh-hant': zhHant }
-
-// Bind the message SHAPE to a plugin translator: string leaves resolve now,
-// function leaves forward their args through t(path, …).
-type Bound<T> = {
-  [K in keyof T]: T[K] extends (...args: infer A) => string
-    ? (...args: A) => string
-    : T[K] extends object
-      ? Bound<T[K]>
-      : string
-}
-
-function bind<T extends object>(t: PluginTranslate, template: T, prefix = ''): Bound<T> {
-  const out = {} as Record<string, unknown>
-
-  for (const [key, value] of Object.entries(template)) {
-    const path = prefix ? `${prefix}.${key}` : key
-    out[key] =
-      typeof value === 'function'
-        ? (...args: unknown[]) => t(path, ...args)
-        : value && typeof value === 'object'
-          ? bind(t, value as object, path)
-          : t(path)
-  }
-
-  return out as Bound<T>
+export const BOTS_LOCALES: PluginLocaleBundles = {
+  en,
+  ja,
+  zh,
+  'zh-hant': zhHant,
+  ar: { canonical: CANONICAL_GROUP_LOCALES.ar },
+  ru: { canonical: CANONICAL_GROUP_LOCALES.ru },
+  fr: { canonical: CANONICAL_GROUP_LOCALES.fr },
+  de: { canonical: CANONICAL_GROUP_LOCALES.de },
+  es: { canonical: CANONICAL_GROUP_LOCALES.es }
 }
 
 export type BotsText = Bound<BotsMessages>

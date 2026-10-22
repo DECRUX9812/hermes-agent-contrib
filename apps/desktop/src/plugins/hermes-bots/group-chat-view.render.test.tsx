@@ -1,5 +1,5 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import type { ReactElement, ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
 import { translateBots } from './i18n-test-helper'
@@ -9,7 +9,20 @@ import { translateBots } from './i18n-test-helper'
 // room handed it so the test asserts the wiring, not the renderer's output.
 vi.mock('@hermes/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
-  const base = await pluginSdkMock(createGroupGateway().host)
+  const gateway = createGroupGateway()
+  const base = await pluginSdkMock(gateway.host)
+
+  // Upstream's GroupExecutionGate probes the gateway's execution mode with an
+  // async groups.capabilities request before it paints any room; the scripted
+  // gateway predates that RPC (it throws Method not found), so answer the
+  // probe here with the legacy-room capability these tests exercise.
+  const scriptedRequestProfile = gateway.host.requestProfile as
+    (...args: unknown[]) => Promise<unknown>
+
+  gateway.host.requestProfile = async (...args: unknown[]) =>
+    args[1] === 'groups.capabilities'
+      ? { driver: false, persistent_process: false }
+      : scriptedRequestProfile(...args)
 
   const Button = ({
     'aria-label': ariaLabel,
@@ -42,6 +55,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
 
   return {
     ...base,
+    gatewayActivationEpoch: () => 1,
     Button,
     RowButton: Button,
     cn: (...values: unknown[]) => values.filter(Boolean).join(' '),
@@ -102,6 +116,15 @@ vi.mock('./group-chat-parts', () => ({
 }))
 afterEach(cleanup)
 
+// The room paints once the async group-driver gate resolves to the legacy
+// workspace. Every test below waits that gate out before it asserts.
+async function renderRoom(ui: ReactElement) {
+  const view = render(ui)
+  await waitFor(() => expect(screen.queryByText('Checking group driver…')).toBeNull())
+
+  return view
+}
+
 it('renders member replies through the shell message renderer, resolving media only for members on this gateway', async () => {
   Element.prototype.scrollIntoView = vi.fn()
   const { $groupChats } = await import('./group-chat')
@@ -126,6 +149,8 @@ it('renders member replies through the shell message renderer, resolving media o
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
   const { getAllByTestId } = render(<GroupChatWorkspace group="Room" members={members} />)
+  // The room paints once the async group-driver gate resolves to the legacy workspace.
+  await waitFor(() => expect(getAllByTestId('message-text-content')).toHaveLength(3))
   const bodies = getAllByTestId('message-text-content').map(el => [el.textContent, el.dataset.media])
 
   expect(bodies).toEqual([
@@ -149,7 +174,7 @@ it('groups consecutive same-speaker entries under one header, breaking on thread
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
+  await renderRoom(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
 
   const names = (want: string) =>
     screen.getAllByRole('button').filter(el => (el.textContent || '').trim().toLowerCase() === want)
@@ -176,7 +201,7 @@ it('marks each bot run start with a colored speaker dot, not on continuation lin
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
+  await renderRoom(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
 
   const dots = screen.getAllByTestId('group-speaker-dot')
   expect(dots).toHaveLength(2)
@@ -213,6 +238,8 @@ it('removes Stop controls from historical working rows after the room settles', 
   activity.recordGroupActivity('Settled', { kind: 'settled', member: null })
 
   render(<GroupChatWorkspace group="Settled" members={[{ name: 'builder' }]} />)
+  // The room paints once the async group-driver gate resolves to the legacy workspace.
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Activity/ })).toBeTruthy())
   fireEvent.click(screen.getByRole('button', { name: /^Activity/ }))
 
   expect(screen.getByText('builder is working…')).toBeTruthy()
@@ -251,7 +278,7 @@ it('separates calendar days in the room log with a hairline Today/Yesterday row'
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
 
-  const { container, getAllByTestId } = render(
+  const { container, getAllByTestId } = await renderRoom(
     <GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />
   )
 
@@ -275,7 +302,7 @@ it('keeps the room header to navigation and settings — no one-click delete bes
   const { GroupChatWorkspace } = await import('./group-chat-view')
 
   $groupChats.set({ Room: { log: [], watermarks: {}, sessions: {} } })
-  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+  await renderRoom(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
   // Icon-only controls still answer to their names (screen readers, tests).
   expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy()
@@ -294,7 +321,7 @@ it('leaves a reader in history when a reply lands, and offers a jump back with t
 
   const first = { id: 'u1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'go', at: 1 }
   $groupChats.set({ Room: { log: [first], watermarks: {}, sessions: {} } })
-  const { rerender } = render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+  const { rerender } = await renderRoom(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
   // The reader scrolls 500px up from the bottom of the log.
   const scroller = screen.getByTestId('group-room-log')
@@ -325,7 +352,7 @@ it('shows each voice’s role and lights the face of whoever is working right no
   const log = [{ id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'on it', at: 1 }]
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {}, running: true, turn: { name: 'builder' } } } as never)
 
-  const { container } = render(
+  const { container } = await renderRoom(
     <GroupChatWorkspace
       group="Room"
       members={[{ name: 'builder', title: 'Frontend engineer' }, { name: 'reviewer' }] as never}
@@ -353,7 +380,7 @@ it('runs the room as threads: the rail focuses one, its header says where it sta
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+  await renderRoom(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
   // The team panel sits beside the room with the squad in it.
   expect(screen.getByTestId('group-room-panel')).toBeTruthy()
@@ -392,7 +419,7 @@ it('nudges only what arrived while you were elsewhere: a rail badge for a grown 
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+  await renderRoom(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
   // Only the thread they were NOT in nudges — one badge, count one.
   const rail = screen.getByTestId('group-thread-rail')
@@ -429,7 +456,7 @@ it('Escape leaves the thread but keeps the typed reply', async () => {
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+  await renderRoom(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
 
   // Open the thread: the ONE bottom composer now replies in it.
   fireEvent.click(screen.getByRole('button', { name: /Open this thread/ }))
@@ -467,7 +494,7 @@ it('focus mode dims history but keeps the final run and hover-reachable', async 
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
 
-  const { container } = render(
+  const { container } = await renderRoom(
     <GroupChatWorkspace group="Room" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />
   )
 
@@ -521,7 +548,7 @@ it('runs the Command Room: handoff cards, a stalled handoff escalated with a wor
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  render(
+  await renderRoom(
     <GroupChatWorkspace
       group="Room"
       members={[{ name: 'builder' }, { name: 'reviewer' }, { name: 'plugin' }] as never}
@@ -593,7 +620,7 @@ it('catches the CEO up, moves by keyboard, counts handoff clocks down, and alert
   $groupChats.set({ Room: room })
   // The user last opened the room 15 minutes ago.
   $groupVisitAnchor.set({ [groupChatRoomKey('Room', room as never)]: now - 15 * min })
-  const { rerender } = render(<GroupChatWorkspace group="Room" members={members} />)
+  const { rerender } = await renderRoom(<GroupChatWorkspace group="Room" members={members} />)
 
   // While you were away: only thread b moved since the visit.
   const catchUp = screen.getByTestId('group-catchup-card')
@@ -658,7 +685,7 @@ it('lets the CEO search, pin and snooze threads, and remembers where they left o
   $roomPrefs.set({ desktopAlerts: false, lastOpened: { [key]: 20 }, pins: {}, snoozes: {} })
   markGroupOpened('Room')
   const view = <GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />
-  const { rerender } = render(view)
+  const { rerender } = await renderRoom(view)
   expect(screen.getByTestId('group-catchup-card').textContent).toContain('theme plugin')
   // The SDK mock's useValue is a plain read: repaint after a preference moves.
   const repaint = () => rerender(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
@@ -722,7 +749,7 @@ it('renders team decision cards with live consensus and records the user call', 
   ]
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
-  render(
+  await renderRoom(
     <GroupChatWorkspace
       group="Room"
       members={[{ name: 'builder' }, { name: 'reviewer' }, { name: 'plugin' }] as never}

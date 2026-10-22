@@ -110,7 +110,7 @@ export function renderComposerQueueSlot({
       }}
       onDiscardLost={
         gateway
-          ? (id: string) => {
+          ? id => {
               // Server-owned row: the authority's pending fanout retires it
               // from the queue once the acknowledgement commits. Canonical
               // local sessions key the queue by their own session id, so the

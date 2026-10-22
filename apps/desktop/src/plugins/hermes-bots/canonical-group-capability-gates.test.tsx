@@ -1,5 +1,6 @@
 import type * as HermesSdk from '@hermes/plugin-sdk'
 import { host } from '@hermes/plugin-sdk'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { WritableAtom } from 'nanostores'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -122,6 +123,9 @@ function answer(capabilities: unknown) {
   request.mockImplementation(async (_route, method, params) => {
     if (method === 'groups.capabilities') {return capabilities}
 
+    // The workspace's team-lead query (bot teams) fans out on an empty lead.
+    if (method === 'bots_team.room_lead') {return { lead: null }}
+
     if (method === 'groups.create') {return { room: { room_id: params.room_id, name: params.name, members: params.members } }}
 
     if (method === 'profiles.configure') {return {}}
@@ -189,7 +193,16 @@ it.each(refused)('classifies %j as unavailable on both surfaces: no legacy rende
 
 it('keeps positive classifications working: legacy renders and creates locally, canonical creates a gateway room', async () => {
   answer(legacy)
-  await act(async () => { render(<GroupChatWorkspace group="Existing" members={roster} />) })
+  // The workspace's team-lead lookup is a react-query query; the mounted room
+  // needs a client or the whole render throws before the legacy chat appears.
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  await act(async () => {
+    render(
+      <QueryClientProvider client={client}>
+        <GroupChatWorkspace group="Existing" members={roster} />
+      </QueryClientProvider>
+    )
+  })
   expect(screen.getByRole('textbox')).toBeTruthy()
   cleanup()
   expect((await submitDialog()).onCreated).toHaveBeenCalledOnce()
