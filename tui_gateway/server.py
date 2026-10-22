@@ -96,6 +96,16 @@ from tui_gateway.render import make_stream_renderer, render_diff, render_message
 
 _sessions: dict[str, dict] = {}
 _profile_lifecycle = ProfileLifecycleFence()
+
+
+def _capture_profile_incarnation(profile_home):
+    return _profile_lifecycle.capture(profile_home)
+
+
+def _profile_home_rejected(profile_home, expected_incarnation=None, *, require_incarnation=False):
+    return _profile_lifecycle.rejected(
+        profile_home, expected_incarnation, require_incarnation=require_incarnation)
+
 _methods: dict[str, callable] = {}
 _db = None
 _db_error: str | None = None
