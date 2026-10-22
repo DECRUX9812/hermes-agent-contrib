@@ -1355,8 +1355,16 @@ def _pytest_owns_live_checkout(root: Path) -> bool:
     """Keep lifecycle tests from repairing the checkout that runs the suite.
 
     Copied installations in tmp_path remain eligible for real recovery tests.
+
+    ``PYTEST_CURRENT_TEST`` only exists while a test is *executing*, so it is absent
+    during collection and at import time — exactly when a module-level bootstrap
+    (``import gateway.run``) runs its install-state work. Checking ``sys.modules``
+    as well covers that window; without it the bootstrap repaired the live checkout
+    under a scoped ``HERMES_HOME`` and wrote the install manifest into the real
+    ``~/.hermes``, which the home-IO guard (rightly) failed across 100+ test files.
     """
-    return "PYTEST_CURRENT_TEST" in os.environ and root == Path(__file__).resolve().parent.parent
+    under_pytest = "PYTEST_CURRENT_TEST" in os.environ or "pytest" in sys.modules
+    return under_pytest and root == Path(__file__).resolve().parent.parent
 
 
 def _missing_environment(root: Path) -> bool:

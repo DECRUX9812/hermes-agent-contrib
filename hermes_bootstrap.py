@@ -609,8 +609,14 @@ if not _pm_repair:
               "running with the previous dependencies — run `hermes update` to finish it",
               file=sys.stderr)
     try:
-        recover_if_needed(_root)
-        activate_dependencies(_root)
+        from hermes_cli._early_recovery import _pytest_owns_live_checkout
+
+        # A test process that owns this checkout must not run install-state work:
+        # recovery writes the install manifest under the recorded home, which under
+        # a scoped HERMES_HOME is not the home the test pinned.
+        if not _pytest_owns_live_checkout(_root):
+            recover_if_needed(_root)
+            activate_dependencies(_root)
     except (RuntimeError, OSError) as exc:
         if isinstance(exc, PermissionError) and (message := install_state_permission_message(_root, exc)):
             print(f"hermes: {message}", file=sys.stderr)

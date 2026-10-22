@@ -104,6 +104,16 @@ class HomeIOGuard:
             # probe) reads no state; only its contents are guarded.
             if metadata and absolute in roots:
                 return
+            # pm.environments._payload_manifest probes a sealed payload's
+            # "<install>/manifest.json" beside EVERY install root, so a source
+            # checkout that lives directly inside the home (the default install at
+            # ~/.hermes/hermes-agent) probes <home>/manifest.json. That is payload
+            # discovery of one fixed filename at the root, not Hermes state — and it
+            # cannot be avoided by isolating HERMES_HOME, because the path comes from
+            # where the checkout sits. Everything else under the root stays guarded.
+            if os.path.basename(absolute) == "manifest.json" and any(
+                    os.path.dirname(absolute) == root for root in roots):
+                return
             # ``shutil.which`` stats/accesses ``<PATH entry>/<name>``, and command resolution
             # realpath()s the entry itself (is it a Hermes-managed bin dir?), which lstats each of
             # its ancestors. A developer shell puts PM's tool store (~/.hermes/tools/...) on PATH;
