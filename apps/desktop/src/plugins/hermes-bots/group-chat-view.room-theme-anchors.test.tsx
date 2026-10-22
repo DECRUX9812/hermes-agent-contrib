@@ -139,7 +139,7 @@ it('every selector room-theme scopes with matches the rendered room', async () =
     opened.push(id)
     return () => {}
   }
-  openGroupChat('Hermes, Coder, Plugin, Nous Art')
+  openGroupChat('Hermes, Coder, Plugin, Nous Art', 'name')
   // slugifyProfileName lowercases — room-theme anchors on the PREFIX only,
   // so a lowercased slug still matches its `[data-pane-host^=...]` scope.
   expect(opened).toEqual(['hermes-bots:group:hermes-coder-plugin-nous-art'])

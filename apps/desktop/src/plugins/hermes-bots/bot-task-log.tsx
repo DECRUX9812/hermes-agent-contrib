@@ -134,7 +134,7 @@ export function useBotRunsFeed(
 
   const open = (run: BotRun) => {
     if (run.kind === 'group' && run.group) {
-      openGroupChat(run.group)
+      openGroupChat(run.group, 'name')
     } else if (run.kind === 'routine' && run.jobId) {
       onOpenRoutine(run.jobId)
     } else {

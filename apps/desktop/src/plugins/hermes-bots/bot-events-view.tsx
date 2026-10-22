@@ -103,7 +103,7 @@ export function BotInboundCards() {
 
   const open = (event: BotInboundEvent) => {
     if (event.action === 'group' && event.room) {
-      openGroupChat(event.room)
+      openGroupChat(event.room, 'name')
     } else if (event.action === 'routines') {
       void host.revealPane(`${ID}:routines`)
     }
