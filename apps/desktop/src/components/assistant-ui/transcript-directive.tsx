@@ -91,28 +91,6 @@ export const TranscriptDirectiveLeaf: FC<{ text: string; streaming?: boolean; me
     [contributions, segments]
   )
 
-  const match = entries[0]?.match
-  const parsed = entries[0]?.parsed
-  // SAFETY: claimFor resolved this entry from the directive area by its registered name.
-  const render = (match?.data as TranscriptDirectiveContribution | undefined)?.render
-
-  // Stable component identity for ContribRender (which mounts this AS a
-  // component): a fresh closure per render would remount the widget on
-  // every parent render.
-  const renderLeaf = useMemo(
-    () =>
-      render && parsed
-        ? () =>
-            render({
-              attrs: parsed.attrs,
-              source: parsed.source,
-              streaming: streaming ?? false,
-              messageText
-            })
-        : null,
-    [render, parsed, streaming, messageText]
-  )
-
   if (entries.length === 0) {
     return null
   }

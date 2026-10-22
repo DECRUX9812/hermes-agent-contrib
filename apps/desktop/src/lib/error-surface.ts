@@ -55,8 +55,6 @@ export const ERROR_CODE_KEYS = [
   'cron_session_read_only',
   // The owner did not confirm a forwarded send in time; it may already be queued: no Retry.
   'SESSION_OWNER_UNCONFIRMED',
-  // A scheduled job's chat is read-only: the message was not run. Start a new chat.
-  'cron_session_read_only',
   'disk_full',
   // Raised by the desktop, never by the backend: the backend reported a turn
   // over after its events stopped, and no reply reached this window.

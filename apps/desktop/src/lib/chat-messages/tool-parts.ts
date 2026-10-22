@@ -830,17 +830,11 @@ export function toolPartFromStoredCall(
 function storedToolResultMetadata(toolMessage: SessionMessage): ToolResultMetadata | undefined {
   const display = parseMaybeJsonObject(toolMessage.display_metadata)
   const metadata = parseMaybeJsonObject(display.tool_result_metadata)
-  const retried = parseMaybeJsonObject(display.retried).result
 
-  if (typeof metadata.inline_diff !== 'string' && retried === undefined && !mcpAppRef(metadata.mcp_app)) {
-    return undefined
-  }
+  const mcpApp = mcpAppRef(metadata.mcp_app)
+  const inlineDiff = typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : undefined
 
-  return {
-    ...(typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : {}),
-    ...(mcpAppRef(metadata.mcp_app) ? { mcp_app: mcpAppRef(metadata.mcp_app) } : {}),
-    ...(retried === undefined ? {} : { retried })
-  }
+  return inlineDiff || mcpApp ? { ...inlineDiff, ...(mcpApp ? { mcp_app: mcpApp } : {}) } : undefined
 }
 
 export function applyStoredToolResult(messages: ChatMessage[], toolMessage: SessionMessage): boolean {
