@@ -63,7 +63,17 @@ export const ruPluginSettings = {
       toolsConnected: n => `Подключено инструментов: ${n}`,
       skillsReady: names => (names.length === 1 ? `навык ${names[0]} готов` : `готово навыков: ${names.length}`),
       nextChat: 'остальные инструменты появятся в следующем чате',
-      serverNotConnected: (server, reason) => `MCP-сервер ${server} не подключён${reason ? `: ${reason}` : '.'}`
+      serverNotConnected: (server, reason) => `MCP-сервер ${server} не подключён${reason ? `: ${reason}` : '.'}`,
+      verified: 'Проверен',
+      unverified: 'Не проверен',
+      reviewedByNous: 'Проверен Nous.',
+      installsAndEnables: profile => `Устанавливается для ${profile} и сразу включается.`,
+      installsOnly: profile => `Устанавливается для ${profile}.`,
+      advanced: 'Дополнительно',
+      versionLabel: 'Версия',
+      reviewedPin: sha => (sha ? `Проверенный пин ${sha}` : 'Проверенный пин'),
+      latestCommit: 'Последний коммит',
+      nothingToInstall: 'В этом пакете нечего устанавливать здесь.'
     }
   }
 } satisfies Pick<SettingsOverrides, 'pluginPages' | 'plugins'>
