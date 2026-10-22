@@ -7,7 +7,7 @@
  * are the anchors it depends on; if one of these fails, room-theme's rules
  * stopped matching and the plugin is quietly dead.
  */
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
@@ -112,7 +112,8 @@ it('every selector room-theme scopes with matches the rendered room', async () =
 
   // [data-testid="group-speaker-dot"] — one per bot run start (builder,
   // reviewer), never on continuation lines.
-  expect(all('[data-testid="group-speaker-dot"]')).toHaveLength(2)
+  // The room renders behind upstream's async group-driver capability gate.
+  await waitFor(() => expect(all('[data-testid="group-speaker-dot"]')).toHaveLength(2))
 
   // [class*="text-(--speaker-color)"] — the run name, exactly one per dot.
   expect(all('[class*="text-(--speaker-color)"]')).toHaveLength(2)

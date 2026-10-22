@@ -123,7 +123,7 @@ async function openPicker(options: {
 
   $groupChats.set({ Build: { log: [], watermarks: {}, sessions: {} } })
   render(<GroupChatWorkspace group="Build" members={[{ name: 'builder' }, { name: 'reviewer' }] as never} />)
-  fireEvent.click(screen.getByLabelText('Group settings for Build'))
+  fireEvent.click(await screen.findByLabelText('Group settings for Build'))
 
   return await waitFor(() => {
     const select = document.getElementById('group-listener-select') as HTMLSelectElement | null
