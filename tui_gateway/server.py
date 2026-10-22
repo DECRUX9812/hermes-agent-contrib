@@ -103,6 +103,8 @@ def _capture_profile_incarnation(profile_home):
 
 
 def _profile_home_rejected(profile_home, expected_incarnation=None, *, require_incarnation=False):
+    if profile_home is None:  # launch profile: no named home to fence
+        return False
     return _profile_lifecycle.rejected(
         profile_home, expected_incarnation, require_incarnation=require_incarnation)
 
