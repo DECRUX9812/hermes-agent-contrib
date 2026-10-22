@@ -97,6 +97,9 @@ def _source_channels_resolve_locally(request, monkeypatch):
         return ChannelResolution(record, record, None)
 
     monkeypatch.setattr(source_releases, "_resolve_channel", resolve)
+    # stable reads GitHub releases directly; keep it off the network the same way.
+    monkeypatch.setattr(source_releases, "_resolve_stable", lambda repository, *_: source_releases.SourceTarget(
+        "stable", "stable", repository, branch="stable"))
 
 
 @pytest.fixture(autouse=True)
@@ -175,32 +178,3 @@ def probe_root(tmp_path):
     """
     (tmp_path / "hermes_bootstrap.py").write_text("", encoding="utf-8")
     return tmp_path
-
-
-@pytest.fixture
-def busy_profile_lease():
-    """Hold profile lifecycle leases on another thread, as an in-flight profile mutation does."""
-    import threading
-
-    from hermes_cli.profile_lifecycle import profile_lifecycle_lease
-
-    release = threading.Event()
-    holders = []
-
-    def hold(*homes):
-        held = threading.Event()
-
-        def run():
-            with profile_lifecycle_lease(*homes):
-                held.set()
-                release.wait(30)
-
-        holder = threading.Thread(target=run, daemon=True)
-        holder.start()
-        holders.append(holder)
-        assert held.wait(10)
-
-    yield hold
-    release.set()
-    for holder in holders:
-        holder.join(10)

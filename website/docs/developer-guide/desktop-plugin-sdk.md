@@ -276,37 +276,6 @@ data: {
 `'top' | 'bottom' | 'left' | 'right' | 'center'`. Declare a `width`/`height` so
 the pane doesn't claim half the zone.
 
-The whole `data` payload is typed as **`PaneContribution`** (dock hints are
-`PaneDockHint`, placements `PanePlacementHint`) — in TypeScript, author it with
-`satisfies` so a misspelled flag is a compile error instead of a silently
-ignored hint:
-
-```typescript
-import { PANES_AREA, type PaneContribution } from '@hermes/plugin-sdk'
-
-ctx.register({
-  id: 'pane',
-  area: PANES_AREA,
-  title: 'my pane',
-  data: {
-    placement: 'right',
-    width: '260px',
-    collapsible: true, // leaves the grid on narrow viewports (edge overlay)
-    hideOnly: true, // no ✕/Close verb — Show/Hide instead (standing chrome)
-    tabTitle: () => jsx(MyTabLabel, {}), // live label, beats `title`
-    tabTitleText: () => 'my pane', // string form for menus/drag ghost
-    dock: { pane: 'sessions', pos: 'center', enforce: true }
-  } satisfies PaneContribution,
-  render: () => jsx(MyPane, {})
-})
-```
-
-`PaneContribution` also covers `lifecycleKeepAlive` (stay mounted while hidden),
-`headerVeto` + `headerContent` (page-owned chrome), `tabLead`/`tabTrail`/
-`stripTrail`/`newTab`/`tabWrap`/`tabMenuPrefix`/`tabDrag` (tab + strip
-behavior), `revealAliases`, floating `anchor`, and the `PaneSizing` fields
-(`width`/`height`/`minWidth`/`maxWidth`/`minHeight`/`maxHeight`).
-
 Closing the only pane contributed by a plugin disables that plugin, which can
 be re-enabled from **Capabilities → Plugins**. When a plugin contributes multiple
 panes, closing one dismisses only that pane and leaves the plugin's other panes,
@@ -407,6 +376,11 @@ ctx.registerMany([
 
 Keybinds are user-rebindable in settings; `defaults` is just the initial binding.
 
+To trigger one of the app's **own** actions (toggle the browser panel, open
+Settings, focus the composer), never dispatch a synthetic `KeyboardEvent` for its
+shortcut — the user may have rebound it. Call
+[`ctx.runAction(id)`](#run-app-actions) instead.
+
 ### Themes
 
 A theme contribution ships a full `DesktopTheme` as its `data` (name, label,
@@ -454,8 +428,8 @@ host.onEvent('gateway.ready', () => {
 
 Both doors persist per profile, so a plugin-driven switch sticks exactly like a
 manual pick. To tint the *active* theme rather than replace it, use
-`setAccentOverride(hex)` and clear it in `ctx.onDispose` — the standalone
-[Accent Picker](https://github.com/NousResearch/hermes-desktop-accent-picker)
+`setAccentOverride(hex)` and clear it in `ctx.onDispose` — the official
+[Accent Picker](https://github.com/NousResearch/hermes-official-plugins/tree/main/accent-picker)
 plugin is the worked example (it is also a complete, installable disk plugin).
 
 #### Styling the chat switch — `data-session-switching`
@@ -587,6 +561,7 @@ and its siblings; the pet-wallet row uses the [pet bubble](#pet-bubble) door):
 | memory-review (#115966) | `host.request('slash.exec', { session_id, command })` for `/memory …` — already SDK-only | optional: `host.composer.insertText(sid, '/memory pending', { mode: 'prefix' })` to seat the command for the user instead of executing it |
 | intelligent-tool-break (#115964) | "Message" button only toasts "type /break" (no composer write) | `host.composer.setDraft(host.state.focusedSessionId.get(), '/break ')` then `host.composer.focus(null)` restores the intended behaviour |
 | pet-wallet (#135178) | `document.querySelector('canvas[aria-label$=" pet"]')` to find the core pet, a `position:fixed; z-index:9999` overlay on `document.body` that follows it every frame, document-wide capture-phase pointer listeners | `ctx.pet.say(text, { id: 'balance', tone?, ttlMs? })` — the core bubble shows it over the pet, in-window and popped out, labelled with the plugin name; `ctx.pet.visible` tells you when there is no pet so you can fall back to your status-bar chip |
+| browser-toggle | `document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'L', ctrlKey: true, shiftKey: true, … }))` to fake the built-in browser-panel shortcut; silently stops working when the user rebinds or unbinds it | `ctx.runAction('view.showBrowser')` — runs the same handler as the shortcut and the palette entry, whatever the binding ([run app actions](#run-app-actions)) |
 
 `sessionId` in the table is the id the plugin's UI is bound to; for a composer
 slot render it is `host.state.focusedSessionId.get()`.
@@ -729,6 +704,60 @@ register(ctx) {
 
 The reasoning-pill visibility CSS the plugin also injected has no hook; it is
 only needed if the app ever hides that label at narrow widths.
+
+#### Model menu row decorations
+
+`MODEL_MENU_ROW_AREA` puts a per-model mark inside the native model menu — the
+one the composer's pill opens, and every other surface that renders
+`ModelCatalogMenu`. A contribution supplies `decorate(row)`; core paints what it
+returns in two fixed slots of the row: a **leading icon** before the model name
+and a **trailing badge** after core's own chips. The row's markup, name,
+star, submenu and click stay core's.
+
+```ts
+import { MODEL_MENU_ROW_AREA, type ModelMenuRowContribution } from '@hermes/plugin-sdk'
+
+interface ModelMenuRowContext {
+  provider: string  // provider slug: 'anthropic', 'openrouter', …
+  model: string     // the model id the row commits
+  label: string     // the display name core paints on the row
+}
+interface ModelMenuRowDecoration {
+  icon?: ReactNode  // element (<img>, <svg>, a component) or short text, drawn in a 1rem box
+  badge?: string    // plain text chip
+}
+
+ctx.register({
+  area: MODEL_MENU_ROW_AREA,
+  id: 'provider-marks',
+  data: {
+    decorate: ({ provider }) => {
+      const src = PROVIDER_ICONS[provider]   // data: URL of an SVG mark
+      return src ? { icon: <img alt="" src={src} /> } : null
+    }
+  } satisfies ModelMenuRowContribution
+})
+```
+
+**Arbitration.** Decorators run in registry order, **per slot**: the first one
+that returns a usable `icon` fills the icon slot, the first usable `badge` the
+badge slot, so an icon plugin and a pricing-badge plugin compose on the same
+row. `null` (or nothing usable) declines. Only a React element or a non-empty
+string is an icon and only a non-empty string is a badge; anything else is
+ignored rather than rendered. A decorator that **throws** declines too, and an
+icon component that throws while rendering blanks only its own slot (it sits
+in its own error boundary) — a broken plugin can never take the menu down.
+`decorate()` re-runs only when the registry or the row's provider/model/label
+changes, so keep it a pure lookup.
+
+**Teardown.** An ordinary data contribution: the `ctx.register` disposer (and
+plugin disable/reload) removes it and the rows repaint bare.
+
+**Migrating t3-code-theme.** Its provider marks were painted into the open menu
+by a `MutationObserver` that located the rows in the menu's DOM and wrote mask
+images onto them. The same marks come from `decorate({ provider })` returning
+`{ icon: <img alt="" src={providerSvgDataUrl(provider)} /> }` — no DOM reads,
+and the row keeps working when the menu's markup changes.
 
 ### Appearance settings
 
@@ -1040,7 +1069,6 @@ host.state.activeSessionId  // ReadableAtom<string | null>
 host.state.awaitingResponse // ReadableAtom<boolean>  true until the first assistant payload
 host.state.busy             // ReadableAtom<boolean>  focused chat is working after a send
 host.state.busyBySession    // ReadableAtom<Record<string, boolean>>  runtime id → mid-turn
-host.state.focusedActivity  // ReadableAtom<readonly ActivityTask[]>  (the focused chat as tasks: one per request, its tool calls as steps, status + timing + reply's first sentence)
 host.state.focusedSessionId // ReadableAtom<string | null>  (runtime id of the FOCUSED session — tile-aware; prefer for session.* RPC)
 host.state.focusedSessionProfile // ReadableAtom<string>  (owner profile of the focused chat — prefer over `profile` for per-bot/profile readouts)
 host.state.focusedStoredSessionId // ReadableAtom<string | null>  (durable id — navigation / session-list matching)
@@ -1049,9 +1077,15 @@ host.state.cwd              // ReadableAtom<string>
 host.state.gateway          // ReadableAtom<string>  socket state ('idle' | 'connecting' | 'open' | …)
 host.state.model            // ReadableAtom<string>
 host.state.profile          // ReadableAtom<string>
-host.state.showsAdvancedChrome // ReadableAtom<boolean>  true in Advanced mode — gate developer-only tiers on this, not a core import
 host.state.viewport         // ReadableAtom<{ width, height, narrow }>
 ```
+
+`gatewayActivationEpoch` is a named SDK export: `import { gatewayActivationEpoch } from '@hermes/plugin-sdk'`.
+It reads the canonical activation counter, which changes on every active route
+selection, including same-profile source swaps. Capture `const epoch = gatewayActivationEpoch()`
+alongside the route before asynchronous work, then check both the captured route
+and `gatewayActivationEpoch() === epoch` before mutation or UI publication. This
+read-only counter is not a credential, permission grant, or durable gateway/session identity.
 
 `host.state.gateway` is the WebSocket connection, not whether a chat turn is
 running. A session can be mid-turn while the socket is `open`; another session
@@ -1071,6 +1105,8 @@ ctx.os.writeClipboard(text)                // system clipboard → Promise<boole
 ctx.pet.say(text, { id?, tone?, ttlMs? })   // line in the core pet's speech bubble → disposer
 ctx.pet.clear(id?)                         // drop one line (or all of yours)
 ctx.pet.visible                            // ReadableAtom<boolean> — is a pet on screen?
+ctx.runAction('view.showBrowser')          // run a built-in app action → { ok: true } | { ok: false, reason, error }
+ctx.listActions()                          // [{ id, label, category }] — the ids runAction accepts
 host.navigate('/route')                    // hash-route navigation
 host.openSession(id, { profile?, intent? }) // open a stored session core-style;
                                            //   profile: soft-swap to that profile's backend first
@@ -1113,12 +1149,13 @@ profile without changing the active chat or gateway. The profile-only overload i
 retained only for the sole-local/legacy topology; registry-aware plugins should pass
 the descriptor so two sources exposing the same profile name cannot collide.
 
-A call that may cold-start a pooled profile backend dials at background priority by
-default, and background dials never get the slot the pool keeps free for user actions.
-When the call IS a user action (a save, a button press, a dialog opening), pass
-`host.requestProfile(route, method, params, undefined, { spawnPriority: 'foreground' })`;
-otherwise, with the pool full of warm backends, it waits out the 30-second slot timeout
-and fails. Keep the background default for polling and roster warming.
+A call that has to open a connection to another profile dials at background priority
+by default. After a failed dial to that profile, background calls fail fast while the
+reconnect backoff runs (`Backend for "<profile>" is reconnecting; retry after it settles.`)
+instead of redialing on every tick. When the call IS a user action (a save,
+a button press, a dialog opening), pass
+`host.requestProfile(route, method, params, undefined, { spawnPriority: 'foreground' })`
+so it dials at once. Keep the background default for polling and roster warming.
 
 `host.openWorkspace(id, { render, title?, minWidth?, onClose? })` docks a
 plugin-rendered view into the **main workspace zone** — the same center area
@@ -1288,6 +1325,76 @@ Pointer input on the pet (drag, shift-click pop-out, overlay click) belongs to
 the host and has no plugin hook. Use a palette command, a status-bar item, or
 your own pane for actions.
 
+### Run app actions — `ctx.runAction` {#run-app-actions}
+
+The app's own commands — the ones behind keyboard shortcuts and the command
+palette — can be run by id. The plugin gets exactly the handler the shortcut
+runs, so the user rebinding (or unbinding) that shortcut in Settings ▸ Keyboard
+Shortcuts changes nothing for you:
+
+```ts
+import { TITLEBAR_AREAS } from '@hermes/plugin-sdk'
+import { jsx } from 'react/jsx-runtime'
+
+register(ctx) {
+  ctx.register({
+    id: 'browser',
+    area: TITLEBAR_AREAS.right,
+    render: () => jsx('button', { onClick: () => ctx.runAction('view.showBrowser'), children: 'Browser' })
+  })
+
+  // Results are values, never exceptions.
+  const result = ctx.runAction('nav.settings')
+  if (!result.ok) console.log(result.reason, result.error)
+
+  // Discover what is allowed (labels are localized, same as the shortcuts panel).
+  for (const { id, label } of ctx.listActions()) console.log(id, label)
+}
+```
+
+```ts
+interface PluginContext {
+  runAction(id: PluginAppActionId): PluginRunActionResult
+  listActions(): Array<{ id: PluginAppActionId; label: string; category: string }>
+}
+
+type PluginRunActionResult =
+  | { ok: true }
+  | { ok: false; reason: 'unknown' | 'denied' | 'unavailable'; error: string }
+```
+
+Only view and navigation actions are allowed. `PluginAppActionId` is the typed
+union; `PLUGIN_APP_ACTIONS` is the same list at runtime:
+
+| Id | What it does |
+|---|---|
+| `view.showBrowser` | Toggle the browser panel |
+| `view.showFiles` | Show the file browser |
+| `view.toggleSidebar` | Toggle the left sidebar |
+| `view.toggleRightSidebar` | Toggle the right side |
+| `view.toggleReview` | Toggle the review (git) pane |
+| `view.toggleStatusbar` | Toggle the status bar |
+| `view.findInPage` | Open find-in-page |
+| `composer.focus` | Focus the composer |
+| `session.new` | Start a new chat |
+| `session.focusSearch` | Focus session search |
+| `conversation.scrollPageUp` / `conversation.scrollPageDown` | Scroll the transcript a page |
+| `nav.commandPalette` | Toggle the command palette |
+| `nav.settings`, `nav.profiles`, `nav.capabilities`, `nav.messaging`, `nav.artifacts`, `nav.cron`, `nav.agents` | Open that page |
+| `keybinds.openPanel` | Open Settings ▸ Keyboard Shortcuts |
+
+Anything else is refused: `{ ok: false, reason: 'denied' }` for a real app
+action that is not on the list (archive, pin, profile / model / reasoning
+switches, terminals, new window, open folder, HUD, close tab, …),
+`reason: 'unknown'` for an id that does not exist. Either way nothing runs and a
+`[plugin:<id>] runAction: …` warning is logged. `reason: 'unavailable'` means the
+app shell that owns the handlers is not mounted yet (very early startup); retry
+from a user action. Destructive and privileged operations (deleting sessions,
+signing out, approvals, model/provider changes, updates, quitting) are not app
+actions a plugin can run.
+
+Feature-detect on older hosts: `ctx.runAction?.('view.showBrowser')`.
+
 ### Desktop appearance settings — `host.settings`
 
 `host.settings` is the supported door for the small set of Desktop-local
@@ -1300,10 +1407,7 @@ wins (no plugin "owns" the value afterwards, nothing to tear down for `set`).
 ```ts
 type DesktopSettingValues = {
   'backdrop.v1': boolean
-chatTextScale: 90 | 100 | 110 | 125 | 150 | 175 // percent; Appearance → Chat Text Size
-'backdrop.scene': BackdropScene    // 'off' | 'aurora' | 'dusk' | 'ocean' | 'meadow' | 'cyanotype' | 'ink' | 'grid' | 'statue' | 'custom'
-  'backdrop.strength': 'subtle' | 'balanced' | 'vivid'
-  'backdrop.image': null | string  // the 'custom' scene's art — data URL or image URL; null clears it
+  chatTextScale: 90 | 100 | 110 | 125 | 150 | 175 // percent; Appearance → Chat Text Size
   'composerPopout.gesturesEnabled': boolean
   'intro-splash.v1': boolean
   'reasoning.collapsedByDefault': boolean
@@ -1313,19 +1417,6 @@ chatTextScale: 90 | 100 | 110 | 125 | 150 | 175 // percent; Appearance → Chat 
 host.settings.get<K extends DesktopSettingKey>(key: K): DesktopSettingValues[K]
 host.settings.set<K extends DesktopSettingKey>(key: K, value: DesktopSettingValues[K]): void
 host.settings.subscribe<K extends DesktopSettingKey>(key: K, fn: (value: DesktopSettingValues[K]) => void): () => void
-```
-
-The `backdrop.*` keys drive the same Chat Background the Appearance page
-offers: `'backdrop.scene'` selects a scene (`'off'` paints nothing),
-`'backdrop.image'` stores the art the `'custom'` scene paints — a data URL or
-any reachable image URL — and setting a non-null image switches the scene to
-`'custom'` (setting `null` switches it back off), exactly like the native
-upload tile. A plugin that ships gallery art therefore needs no backdrop
-machinery of its own:
-
-```ts
-// Hang your own photo behind the conversation, blended at the picked strength.
-host.settings.set('backdrop.image', 'https://example.com/my-wall.jpg')
 ```
 
 ```ts
@@ -1743,10 +1834,10 @@ your handler). Where it lands depends on the process the call runs in:
 
 | Caller runs in | Reaches |
 |---|---|
-| `hermes serve` (the Desktop backend): `plugin_api.py` routers, plugin slash commands, tools and hooks in the agent turn | every connected Desktop window |
-| the `dashboard.turn_isolation` compute-host child (tools/hooks of an isolated turn) | relayed over the host pipe to `hermes serve`, then every window |
+| the process Desktop is connected to — the host gateway a local Desktop attaches to, or a remote `hermes serve`: `plugin_api.py` routers, plugin slash commands, tools and hooks in the agent turn | every Desktop window connected to that process |
+| the `dashboard.turn_isolation` compute-host child (tools/hooks of an isolated turn) | relayed over the host pipe to its parent process, then every connected window |
 | the stdio TUI (`hermes` in a terminal) | that terminal's client |
-| `hermes gateway run` (messaging platforms), `hermes chat`, cron, `hermes plugins validate` | nobody — no Desktop client is attached to that process; the call is a logged no-op |
+| `hermes chat`, cron, `hermes plugins validate`, or a gateway with no Desktop window connected | nobody — no Desktop client is attached to that process; the call is a logged no-op |
 
 Use this instead of importing `tui_gateway.server` internals; for plugin-scoped frames
 with a payload tailored per connection, `ctx.socket('/events')` remains the
@@ -1781,6 +1872,32 @@ address another plugin's API or a core route through it. `PluginRestOptions` is
 on OAuth remotes** (single-use WS tickets are core-managed) — treat the socket as
 an accelerator over polling, never a replacement. Every consumer needs a polling
 fallback anyway, since any socket can drop.
+
+How it authenticates depends on the backend: a token-mode remote gets the same
+`?token=` query credential the app's own sockets use; a **local gateway** (no
+static token) authenticates with the native grant your `ctx.rest` calls carry.
+Desktop's main process mints it for the active profile and attaches it as a
+header to that one dial, so it never appears in a URL your code sees. The grant
+is bound to your plugin's namespace and that profile; the gateway refuses the
+upgrade if the plugin is disabled for that profile (the launch profile's setting
+does not apply). A secondary profile's plugin that runs in its plugin host gets
+HTTP 501 instead, because the host does not carry websockets yet.
+
+When the socket gives up (your polling fallback is then the only feed):
+
+- **Keeps retrying**, with jittered backoff capped at 30 s, while Desktop can't
+  resolve the gateway connection or mint the grant yet, or dials fail to open.
+  The client can't tell a refused upgrade from a gateway that is restarting,
+  draining or being re-ensured, so the socket keeps retrying through a restart
+  of any length and reconnects once the gateway answers again.
+- **Stops after 5 in a row** of refusals that don't clear by themselves: Desktop
+  refusing to mint the grant for a permission reason (an unsafe gateway control
+  path or profile home), or your backend accepting the socket and closing it at
+  once. A socket that stays open resets the count.
+- **Starts again** when the active connection or profile changes, with a fresh
+  count, or when the view remounts. A profile switch also moves a live socket:
+  Desktop closes the one bound to the old profile, drops a grant still being
+  minted for it, and dials for the new profile.
 
 For gateway-wide data (not your own namespace), use `host.request` (JSON-RPC) and
 `host.onEvent` (the gateway event stream) instead.
@@ -1886,13 +2003,12 @@ pipeline as a trust boundary.
 | Category | Exports |
 |----------|---------|
 | Host | `host` (`.state.*`, `.settings`, `.notify`, `.notifyError`, `.navigate`, `.onEvent`, `.logs`, `.status`, `.restartGateway`, `.request`, `.composer`, `.sessions`, `.skills`, `.toolsets`, `.profiles`, `.pluginDecisions`) |
-| Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginPet`, `PetSayOptions`, `PetMessageTone`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `HermesOpenTarget`, `Contribution` |
-| Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `LAYOUTS_AREA`, `COMPOSER_AREAS`, `MODEL_MENU_ROW_AREA`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS`, `SETTINGS_PLUGINS_AREA` |
-| Area payloads | `PluginSettingsPage`, `PluginSettingsSubpage` (+ `pluginSettingsHref`), `PaneContribution` (+ `PaneDockHint`, `PanePlacementHint`, `PaneSizing`), `LayoutNode`, `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `ComposerModelPillProvider`, `ChatEmptyContribution`, `TranscriptDirectiveContribution`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution`, `ProfileGroupHeaderContribution`, `SidebarListTopContribution` |
+| Plugin contract | `HermesPlugin`, `PluginContext`, `PluginContribution`, `PluginStorage`, `PluginOs`, `PluginPet`, `PetSayOptions`, `PetMessageTone`, `PluginAppActionId`, `PluginAppActionInfo`, `PluginRunActionResult`, `PLUGIN_APP_ACTIONS`, `PluginRestOptions`, `PluginNativeNotificationInput`, `PluginNotificationAction`, `HermesOpenTarget`, `Contribution` |
+| Area constants | `PANES_AREA`, `ROUTES_AREA`, `SIDEBAR_NAV_AREA`, `STATUSBAR_AREAS`, `TITLEBAR_AREAS`, `WORKSPACE_PAGE_HEADER_AREA`, `PALETTE_AREA`, `KEYBINDS_AREA`, `THEMES_AREA`, `COMPOSER_AREAS`, `MODEL_MENU_ROW_AREA`, `SESSION_ROW_AREAS`, `SIDEBAR_NAV_PREFS_AREA`, `APPEARANCE_AREAS`, `SETTINGS_PLUGINS_AREA` |
+| Area payloads | `PluginSettingsPage`, `PluginSettingsSubpage` (+ `pluginSettingsHref`), `RouteContribution`, `SidebarNavContribution`, `StatusbarItem`, `TitlebarTool`, `PaletteContribution`, `KeybindContribution`, `ComposerMiddleware`, `ComposerAttachmentProvider`, `SessionRowSlotContribution`, `SidebarNavPrefsContribution` |
 | React / state | `useValue`, `atom`, `computed`, `useQuery`, `useMutation`, `useQueryClient`, `queryClient`, `Contribute`, `WorkspacePageHeaderControl` |
 | Theming | `useTheme`, `requestTheme`, `setAccentOverride`, `$accentOverride`, `retintTheme`, `themeHue`, `DesktopTheme`, `DesktopThemeColors`, plus OKLCH math (`hexToOklch`, `oklchToHex`, `oklchToSrgb255`, `mixOklab`, `maxChroma`, `hueDelta`, `normalizeHex`) and sRGB measures (`contrastRatio` — `number | null`, null for unparseable input — `readableOn`) |
 | UI kit | `Button`, `Input`, `Textarea`, `Select*`, `Switch`, `Checkbox`, `SegmentedControl`, `Tabs*`, `Dialog*`, `ConfirmDialog`, `DropdownMenu*`, `ContextMenu*`, `Popover*`, `Tip`/`Tooltip*`, `Badge`, `Kbd`/`KbdGroup`, `SearchField`, `ScrollArea`, `Separator`, `Skeleton`, `GlyphSpinner`, `Loader`, `EmptyState`, `ErrorState`, `CopyButton`, `StatusDot`, `LogView`, `Codicon`, `DecodeText`, `SandboxedFrame` |
-| Activity | `ActivityTask`, `ActivityStep`, `ActivityStatus`, `ActivityVerb`, `activityVerb`, `currentStep` (the shapes behind `host.state.focusedActivity`) |
 | Helpers | `cn`, `icons`, `haptic`, `useI18n`, `profileColor`, `profileColorSoft`, `relativeTime`, `fmtDateTime`, `fmtDayTime`, `coarseElapsed`, `evaluateRuntimeReadiness`, `catalogProviderMatches` |
 
 The canonical, always-current export list is `apps/desktop/src/sdk/index.ts`.

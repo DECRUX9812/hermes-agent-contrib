@@ -15,10 +15,8 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 
 import { $registryVersion } from '@/contrib/registry'
 import { matchesQuery, useMediaQuery } from '@/hooks/use-media-query'
-import { translateNow } from '@/i18n'
 import { persistString, persistStringRecord, storedString, storedStringRecord } from '@/lib/storage'
 import { recordFeatureUse } from '@/store/desktop-metrics'
-import { notifyError } from '@/store/notifications'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import { $connection } from '@/store/session'
 import { setAppearance } from '@/store/translucency'
@@ -32,18 +30,10 @@ import {
   localDisplaySkinProfile
 } from './backend-sync'
 import { $chatFontFamily, resolveChatFontFamily } from './chat-font'
-import { harmonize, readableInk } from './color'
+import { harmonize, normalizeHex, readableInk } from './color'
 import { BUILTIN_THEME_LIST, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme, RETIRED_SKINS } from './presets'
-import {
-  $profileAppearance,
-  appearanceIsCurrent,
-  markLocalAppearanceChange,
-  profileAppearanceOwner,
-  type ProfileAppearancePatch,
-  saveProfileAppearance
-} from './profile-appearance'
+import { $pendingModeApply } from './request'
 import { retintTheme } from './retint'
-import { textMixKnobs } from './text-ramp'
 import type { DesktopTheme, DesktopThemeColors, DesktopThemeTypography } from './types'
 import { $userThemes, listAllThemes, resolveTheme } from './user-themes'
 
@@ -107,39 +97,22 @@ const promoteUnanimousLegacy = (record: string, legacy: string): void => {
   }
 }
 
-// This is the local cache of the profile's config.yaml appearance
-// (./profile-appearance): the boot paint reads it before any fetch.
 const profilePref = <T extends string>(record: string, legacy: string, normalize: (v: string | null) => T) => {
-  /** The profile's OWN pick — never the global value an unassigned profile inherits. */
-  const own = (profile: string): string | null =>
-    storedStringRecord(record)[profile] ?? (profile === 'default' ? storedString(legacy) : null)
-
   const stored = (profile: string): string | null => {
     promoteUnanimousLegacy(record, legacy)
 
-    return own(profile) ?? storedString(legacy)
-  }
-
-  /** Write a raw pick, or drop the profile's own entry (`null`). */
-  const put = (profile: string, value: null | string): void => {
-    const { [profile]: _dropped, ...rest } = storedStringRecord(record)
-    persistStringRecord(record, value === null ? rest : { ...rest, [profile]: value })
-
-    if (profile === 'default') {
-      persistString(legacy, value)
-    }
+    return storedStringRecord(record)[profile] ?? storedString(legacy)
   }
 
   return {
     /** The pick as written, un-normalized. */
     stored,
-    own,
-    put,
     resolve: (profile: string): T => normalize(stored(profile)),
     assign: (profile: string, value: T): void => {
-      put(profile, value)
-
-      if (profile !== 'default') {
+      if (profile === 'default') {
+        persistString(legacy, value)
+      } else {
+        persistStringRecord(record, { ...storedStringRecord(record), [profile]: value })
         persistString(legacy, value)
       }
     }
@@ -162,122 +135,14 @@ const storedSkin = (profile: string): string =>
   skinPref.stored(profile) ??
   (profile === BOOT_PROFILE_KEY ? (localDisplaySkinName ?? DEFAULT_SKIN_NAME) : DEFAULT_SKIN_NAME)
 
+/** The live profile's committed theme: what the ThemeProvider paints without a preview. */
+export const committedTheme = (): DesktopTheme =>
+  resolveTheme(normalizeSkin(storedSkin(normalizeProfileKey($activeGatewayProfile.get())))) ?? nousTheme
+
 /** Everything a peer window could change that this one has to repaint for. */
 const APPEARANCE_KEYS = new Set([SKIN_KEY, PROFILE_SKINS_KEY, MODE_KEY, PROFILE_MODES_KEY])
 
 const rememberActiveProfileKey = (profile: string) => persistString(LAST_PROFILE_KEY, profile)
-
-type AppearanceField = keyof ProfileAppearancePatch
-
-const APPEARANCE_PREFS: Record<AppearanceField, Pick<ReturnType<typeof profilePref>, 'own' | 'put'>> = {
-  theme: skinPref,
-  theme_mode: modePref
-}
-
-// The boot cache keeps its existing per-profile format. Only the pick that
-// still owns a cache slot may roll it back: adopting another gateway's
-// config (even the same value) supersedes that pick.
-interface PendingPicks {
-  owner: string
-  profile: string
-  field: AppearanceField
-  latest: symbol
-  confirmed: string | null
-}
-const latestPick = new Map<string, PendingPicks>()
-const appearanceCacheKey = (profile: string, field: AppearanceField) => `${profile}\0${field}`
-
-/**
- * Cache a pick and write it to the profile's config.yaml. A failed write puts
- * the last confirmed pick back (unless a newer owner replaced it)
- * and says so, like every config-backed setting — otherwise the next config
- * load would silently undo it.
- */
-function commitPick(profile: string, field: AppearanceField, value: string, onRollback: () => void): void {
-  const pref = APPEARANCE_PREFS[field]
-  const key = appearanceCacheKey(profile, field)
-  const pick = Symbol()
-  const owner = profileAppearanceOwner(profile)
-  const pending = latestPick.get(key)
-  const picks = pending?.owner === owner ? pending : { owner, profile, field, latest: pick, confirmed: pref.own(profile) }
-
-  picks.latest = pick
-  latestPick.set(key, picks)
-  pref.put(profile, value)
-
-  saveProfileAppearance(profile, { [field]: value }).then(() => {
-    if (latestPick.get(key) !== picks) { return }
-    // Writes settle in FIFO order; an earlier success is the durable fallback
-    // even while the cache optimistically shows a later pick.
-    picks.confirmed = value
-
-    if (picks.latest === pick) { latestPick.delete(key) }
-  }).catch(error => {
-    if (latestPick.get(key) !== picks || picks.latest !== pick) {
-      return
-    }
-
-    pref.put(profile, picks.confirmed)
-    latestPick.delete(key)
-
-    if (profileAppearanceOwner(profile) === owner) {
-      onRollback()
-    }
-
-    notifyError(error, translateNow('settings.config.autosaveFailed'))
-  })
-}
-
-/** Storage events carry the whole named-profile map, including inactive profiles. */
-function changedAppearanceProfiles(event: StorageEvent): string[] {
-  const record = (raw: string | null): Record<string, string> => {
-    try {
-      const parsed: unknown = JSON.parse(raw || 'null')
-
-      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-        ? Object.fromEntries(Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
-        : {}
-    } catch { return {} }
-  }
-
-  const before = record(event.oldValue)
-  const after = record(event.newValue)
-
-  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
-    .filter(profile => profile !== 'default' && before[profile] !== after[profile])
-}
-
-// Profiles whose config was already checked for a local pick to upload.
-const seededProfiles = new Set<string>()
-
-/**
- * Existing installs kept their picks only in this origin's localStorage. The
- * first config load that finds the profile's appearance unset uploads the
- * profile's OWN pick once, so the Webapp and other clients inherit it. The
- * global value an unassigned named profile inherits was never chosen for it,
- * so it stays local.
- */
-function seedFromLocalPick(appearance: { profile: string; theme: string; mode: string }): void {
-  const { profile } = appearance
-
-  if (seededProfiles.has(profile)) {
-    return
-  }
-
-  seededProfiles.add(profile)
-
-  const skin = appearance.theme ? null : skinPref.own(profile)
-  const mode = appearance.mode ? null : modePref.own(profile)
-
-  const patch: ProfileAppearancePatch = {
-    ...(skin && !RETIRED_SKINS.has(skin) ? { theme: skin } : {}),
-    ...(mode === 'light' || mode === 'dark' || mode === 'system' ? { theme_mode: mode } : {})
-  }
-
-  if (Object.keys(patch).length) {
-    void saveProfileAppearance(profile, patch).catch(() => undefined)
-  }
-}
 
 // ─── Color math (for synthesised light variants of dark-only skins) ────────
 // mix / ensureContrast live in @hermes/shared/color (shared with the TUI);
@@ -321,8 +186,10 @@ function synthLightColors(seed: DesktopTheme): DesktopThemeColors {
 
 /** Returns the seed palette for a given skin + mode (no overrides applied). */
 export function getBaseColors(skinName: string, mode: 'light' | 'dark'): DesktopThemeColors {
-  const seed = resolveTheme(skinName) ?? nousTheme
+  return paletteFor(resolveTheme(skinName) ?? nousTheme, mode)
+}
 
+function paletteFor(seed: DesktopTheme, mode: 'light' | 'dark'): DesktopThemeColors {
   if (mode === 'dark') {
     return seed.darkColors ?? seed.colors
   }
@@ -330,20 +197,54 @@ export function getBaseColors(skinName: string, mode: 'light' | 'dark'): Desktop
   return seed.darkColors ? seed.colors : synthLightColors(seed)
 }
 
-function deriveTheme(skinName: string, mode: 'light' | 'dark'): DesktopTheme {
-  const seed = resolveTheme(skinName) ?? nousTheme
+// A backend skin named `default`/`mono`/… keeps the desktop's own palette
+// (never shadowed — see ingestBackendSkin), but its customCSS is carried
+// separately in $backendCustomCSS. The seed's own customCSS (non-built-in
+// backend skins) wins when both exist.
+const customCSSOf = (seed: DesktopTheme): string | undefined => seed.customCSS ?? $backendCustomCSS.get()[seed.name]
 
+function deriveFrom(seed: DesktopTheme, mode: 'light' | 'dark'): DesktopTheme {
   return {
     ...seed,
-    name: `${skinName}-${mode}`,
+    name: `${seed.name}-${mode}`,
     label: `${seed.label} ${mode === 'light' ? 'Light' : 'Dark'}`,
     description: `${seed.label} ${mode} palette`,
-    colors: getBaseColors(skinName, mode),
-    // A backend skin named `default`/`mono`/… keeps the desktop's own palette
-    // (never shadowed — see ingestBackendSkin), but its customCSS is carried
-    // separately in $backendCustomCSS. The seed's own customCSS (non-built-in
-    // backend skins) wins when both exist.
-    customCSS: seed.customCSS ?? $backendCustomCSS.get()[skinName]
+    colors: paletteFor(seed, mode),
+    customCSS: customCSSOf(seed)
+  }
+}
+
+const deriveTheme = (skinName: string, mode: 'light' | 'dark'): DesktopTheme =>
+  deriveFrom({ ...(resolveTheme(skinName) ?? nousTheme), name: skinName }, mode)
+
+/** The theme a saved accent was retinted from; any other theme is its own base. */
+export const accentBase = (theme: DesktopTheme): DesktopTheme =>
+  (theme.accentOf && resolveTheme(theme.accentOf)) || theme
+
+/**
+ * `theme` with only its accent moved to `accent`, both modes painted exactly as the live accent preview
+ * paints them. Every other colour and the CSS stay the base's. One `<base>-accent-<hex>` copy per base and
+ * colour: user themes are shared by every profile, so a copy per base alone let one profile's accent
+ * overwrite another's. The base's own accent returns the base itself.
+ */
+export function accentedTheme(theme: DesktopTheme, accent: string): DesktopTheme {
+  const base = accentBase(theme)
+  const hex = normalizeHex(accent)
+
+  if (!hex || hex === normalizeHex(base.colors.primary)) {
+    return base
+  }
+
+  const tint = (mode: 'light' | 'dark') => retintTheme({ ...base, colors: paletteFor(base, mode) }, hex).colors
+
+  return {
+    ...base,
+    name: `${base.name}-accent-${hex.slice(1)}`,
+    label: `${base.label} · ${hex}`,
+    accentOf: base.name,
+    colors: tint('light'),
+    darkColors: tint('dark'),
+    customCSS: customCSSOf(base)
   }
 }
 
@@ -484,16 +385,7 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
     '--noise-opacity-mul': isDark ? 'calc(0.04 / 0.21)' : 'calc(0.34 / 0.21)'
   }
 
-  // Muted-text share is resolved per skin so its faint tiers clear their contrast floors
-  // (themes/text-ramp.ts) — a low-contrast palette gets exactly the lift it needs.
-  const textSurfaces = [c.background, c.sidebarBackground].filter((s): s is string => Boolean(s))
-
-  for (const [k, v] of Object.entries({
-    ...seeds,
-    ...mixesFor(isDark),
-    ...textMixKnobs(c.foreground, textSurfaces, isDark),
-    ...palette
-  })) {
+  for (const [k, v] of Object.entries({ ...seeds, ...mixesFor(isDark), ...palette })) {
     root.style.setProperty(k, v)
   }
 
@@ -656,80 +548,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setModeState(modePref.resolve(profileKey))
   }, [profileKey])
 
-  // Adopt the profile's config.yaml appearance: it is the authority, and the
-  // local cache follows it so the next boot paints it before any fetch. Never
-  // written back. An unset value leaves the local pick painted (and may seed
-  // the config from it once).
-  const configAppearance = useStore($profileAppearance)
-  const appearanceOwner = profileAppearanceOwner(profileKey)
-
-  useEffect(() => {
-    if (!configAppearance || configAppearance.owner !== appearanceOwner || !appearanceIsCurrent(configAppearance)) {
-      return
-    }
-
-    const { mode: configMode, theme } = configAppearance
-
-    if (theme) {
-      latestPick.delete(appearanceCacheKey(profileKey, 'theme'))
-
-      if (skinPref.own(profileKey) !== theme) {
-        skinPref.put(profileKey, theme)
-      }
-
-      setThemeNameState(theme)
-    }
-
-    if (configMode) {
-      latestPick.delete(appearanceCacheKey(profileKey, 'theme_mode'))
-
-      if (modePref.own(profileKey) !== configMode) {
-        modePref.put(profileKey, configMode)
-      }
-
-      setModeState(configMode)
-    }
-
-    seedFromLocalPick(configAppearance)
-  }, [appearanceOwner, configAppearance, profileKey])
-
   // Appearance is per-profile localStorage, and every desktop window is another
   // renderer on the same origin — so a switch made in the HUD (or any peer
   // window) only ever repainted the window it was made in. `storage` fires in
   // the OTHER windows, which is exactly the set that needs to catch up.
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if ((event.storageArea && event.storageArea !== window.localStorage) || (event.key !== null && !APPEARANCE_KEYS.has(event.key))) {
+      if (event.key && !APPEARANCE_KEYS.has(event.key)) {
         return
       }
 
       const live = normalizeProfileKey($activeGatewayProfile.get())
-
-      const adopt = (profile: string, field: AppearanceField) => {
-        const key = appearanceCacheKey(profile, field)
-        const pending = latestPick.get(key)
-
-        // The shared cache is per profile, but a pending request still belongs
-        // to the connection captured when it began, even after navigation.
-        if (pending) { markLocalAppearanceChange(profile, pending.owner) }
-        latestPick.delete(key)
-        markLocalAppearanceChange(profile)
-      }
-
-      if (event.key === null) {
-        for (const pending of latestPick.values()) { adopt(pending.profile, pending.field) }
-        markLocalAppearanceChange(live)
-      } else if (event.key === PROFILE_SKINS_KEY || event.key === PROFILE_MODES_KEY) {
-        const field = event.key === PROFILE_SKINS_KEY ? 'theme' : 'theme_mode'
-
-        for (const profile of changedAppearanceProfiles(event)) { adopt(profile, field) }
-      } else {
-        const field = event.key === SKIN_KEY ? 'theme' : 'theme_mode'
-        adopt('default', field)
-
-        // Unassigned named profiles inherit the legacy/default slot.
-        if (APPEARANCE_PREFS[field].own(live) === null) { markLocalAppearanceChange(live) }
-      }
 
       setThemeNameState(storedSkin(live))
       setModeState(modePref.resolve(live))
@@ -770,14 +599,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     [paintedName, paintedMode, userThemes, backendThemes, backendCustomCSS, registryVersion]
   )
 
-  // Dev-only accent retint. `null` (always, in production) returns the theme
-  // untouched, and retintTheme is an identity when the seed already matches —
-  // so the picker costs nothing until it's actually moved off the default.
+  // Unsaved accent preview (dev picker, onboarding accent card). `null` returns
+  // the theme untouched.
   const accentOverride = useStore($accentOverride)
 
+  // Painted from the same theme persistAccent saves, so committing the accent changes nothing on screen.
   const paintedTheme = useMemo(
-    () => (accentOverride === null ? activeTheme : retintTheme(activeTheme, accentOverride)),
-    [activeTheme, accentOverride]
+    () =>
+      accentOverride === null
+        ? activeTheme
+        : deriveFrom(accentedTheme(resolveTheme(paintedName) ?? nousTheme, accentOverride), paintedMode),
+    [activeTheme, accentOverride, paintedName, paintedMode]
   )
 
   // What actually gets painted (matches the `.dark` class applyTheme toggles).
@@ -800,26 +632,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setTheme = useCallback((name: string) => {
     const next = normalizeSkin(name)
     recordFeatureUse('skins')
-    const profile = liveProfile()
     setPreview(null)
     setThemeNameState(next)
-    commitPick(profile, 'theme', next, () => {
-      if (liveProfile() === profile) {
-        setThemeNameState(storedSkin(profile))
-      }
-    })
+    skinPref.assign(liveProfile(), next)
   }, [])
 
   const setMode = useCallback((next: ThemeMode) => {
     recordFeatureUse('skins')
-    const profile = liveProfile()
     setPreview(null)
     setModeState(next)
-    commitPick(profile, 'theme_mode', next, () => {
-      if (liveProfile() === profile) {
-        setModeState(modePref.resolve(profile))
-      }
-    })
+    modePref.assign(liveProfile(), next)
   }, [])
 
   const previewTheme = useCallback((name: string, previewMode: 'light' | 'dark') => {
@@ -829,9 +651,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const clearThemePreview = useCallback(() => setPreview(null), [])
 
   // Drain a backend-driven skin switch (Hermes authoring/activating a skin from a
-  // prompt, or `/skin` on another surface). setTheme persists it to the profile's
-  // config like any manual pick — which is why lifecycle.ts only lets through a
-  // skin.changed tagged for the active profile.
+  // prompt, or `/skin` on another surface). setTheme persists it per profile, so
+  // the choice sticks like any manual pick.
   const pendingSkin = useStore($pendingSkinApply)
 
   useEffect(() => {
@@ -840,6 +661,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       $pendingSkinApply.set(null)
     }
   }, [pendingSkin, setTheme])
+
+  // Same door for light/dark/system (set_theme from the agent).
+  const pendingMode = useStore($pendingModeApply)
+
+  useEffect(() => {
+    if (pendingMode) {
+      setMode(pendingMode)
+      $pendingModeApply.set(null)
+    }
+  }, [pendingMode, setMode])
 
   // The light/dark toggle (Shift+X by default) is owned by the keybind runtime
   // (`appearance.toggleMode`) so it shows up in the hotkey map and is rebindable.

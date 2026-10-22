@@ -13,11 +13,9 @@ import {
 
 import { botSourceStatus } from './data'
 import type { useBots } from './i18n'
-import type { RosterSortMode } from './live-status'
 import { setActivityToasts } from './roster-actions'
 import { GatewayKindGlyph } from './roster-sections'
 import type { rosterGatewayOptions } from './roster-sections'
-import type { RosterViewMode } from './roster-view'
 import type { RosterActivityFilter, RosterKindFilter, RosterRow } from './types'
 
 interface renderRosterToolbarProps {
@@ -45,15 +43,6 @@ interface renderRosterToolbarProps {
   setActivityFilter: (value: RosterActivityFilter) => void
   gatewayFilter: string
   setGatewayFilter: (value: string) => void
-  /** A2 — the roster sort: 'recent' (default) or 'attention' first. */
-  sortMode: RosterSortMode
-  setSortMode: (value: RosterSortMode) => void
-  /** D1/D3 — fleet surfaces open from the toolbar. */
-  setBroadcastOpen: (value: boolean) => void
-  setCalendarOpen: (value: boolean) => void
-  /** G10 — the roster view: 'list' (default) or the 'cards' grid. */
-  viewMode: RosterViewMode
-  setViewMode: (value: RosterViewMode) => void
 }
 
 export function renderRosterToolbar({
@@ -76,34 +65,15 @@ export function renderRosterToolbar({
   activityFilter,
   setActivityFilter,
   gatewayFilter,
-  setGatewayFilter,
-  sortMode,
-  setSortMode,
-  setBroadcastOpen,
-  setCalendarOpen,
-  viewMode,
-  setViewMode
+  setGatewayFilter
 }: renderRosterToolbarProps) {
   return (
     <>
       <div className="flex items-center justify-between gap-2 px-2.5 pt-2.5 pb-1.5">
-        <span className="ui-section-label">Bots</span>
+        <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)">
+          Bots
+        </span>
         <div className="flex items-center gap-0.5">
-          <Tip label={viewMode === 'cards' ? b.roster.listView : b.roster.cardView}>
-            <Button
-              aria-label={viewMode === 'cards' ? b.roster.listView : b.roster.cardView}
-              aria-pressed={viewMode === 'cards'}
-              className={cn(
-                'rounded-md hover:text-foreground',
-                viewMode === 'cards' ? 'text-(--ui-text-secondary)' : 'text-(--ui-text-tertiary)'
-              )}
-              onClick={() => setViewMode(viewMode === 'cards' ? 'list' : 'cards')}
-              size="icon-xs"
-              variant="ghost"
-            >
-              <Codicon name={viewMode === 'cards' ? 'list-flat' : 'layout'} />
-            </Button>
-          </Tip>
           <Tip
             label={activityToasts ? 'Activity toasts on — click to silence' : 'Activity toasts off — click to enable'}
           >
@@ -114,21 +84,6 @@ export function renderRosterToolbar({
               variant="ghost"
             >
               <Codicon name={activityToasts ? 'bell' : 'bell-slash'} />
-            </Button>
-          </Tip>
-          {/* Bot Room — the mascots-on-your-desktop overlay (`?win=botroom`).
-              Goes through the typed bridge (not the store) so the plugin
-              boundary stays clean; the store self-wires control + roster feed
-              when the overlay signals ready. */}
-          <Tip label="Bot Room on desktop">
-            <Button
-              aria-label="Bot Room on desktop"
-              className="rounded-md text-(--ui-text-tertiary) hover:text-foreground"
-              onClick={() => void window.hermesDesktop.botroom.open()}
-              size="icon-xs"
-              variant="ghost"
-            >
-              <Codicon name="device-desktop" />
             </Button>
           </Tip>
           <DropdownMenu>
@@ -162,36 +117,6 @@ export function renderRosterToolbar({
               <DropdownMenuItem onSelect={() => setSectionDialog({ mode: 'create' })}>
                 <Codicon className="mr-1.5" name="new-folder" />
                 {b.sections.newSection}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <Tip label={b.broadcast.title}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-label={b.broadcast.title}
-                  className="rounded-md text-(--ui-text-tertiary) hover:text-foreground"
-                  size="icon-xs"
-                  variant="ghost"
-                >
-                  <Codicon name="broadcast" />
-                </Button>
-              </DropdownMenuTrigger>
-            </Tip>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                disabled={!roster.filter(bot => !bot?.ghost).length}
-                onSelect={() => setBroadcastOpen(true)}
-              >
-                <Codicon className="mr-1.5" name="broadcast" />
-                {b.broadcast.menuItem}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!roster.filter(bot => !bot?.ghost).length}
-                onSelect={() => setCalendarOpen(true)}
-              >
-                <Codicon className="mr-1.5" name="calendar" />
-                {b.calendar.menuItem}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -254,19 +179,6 @@ export function renderRosterToolbar({
                   <DropdownMenuItem key={`activity:${value}`} onSelect={() => setActivityFilter(value)}>
                     <span className="min-w-0 flex-1">{label}</span>
                     {activityFilter === value ? <Codicon name="check" /> : null}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                {(
-                  [
-                    ['recent', b.roster.sortRecent],
-                    ['attention', b.roster.sortAttention],
-                    ['alpha', b.roster.sortAlpha]
-                  ] as [RosterSortMode, string][]
-                ).map(([value, label]) => (
-                  <DropdownMenuItem key={`sort:${value}`} onSelect={() => setSortMode(value)}>
-                    <span className="min-w-0 flex-1">{label}</span>
-                    {sortMode === value ? <Codicon name="check" /> : null}
                   </DropdownMenuItem>
                 ))}
                 {gatewayOptions.length > 1 ? <DropdownMenuSeparator /> : null}

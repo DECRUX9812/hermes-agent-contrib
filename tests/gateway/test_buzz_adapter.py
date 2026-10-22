@@ -24,7 +24,6 @@ hex_to_npub = _buzz_mod.hex_to_npub
 npub_to_hex = _buzz_mod.npub_to_hex
 _normalize_user_ref = _buzz_mod._normalize_user_ref
 _cli_error_message = _buzz_mod._cli_error_message
-_cli_failure_retryable = _buzz_mod._cli_failure_retryable
 _MAX_CLI_MESSAGE_CHARS = _buzz_mod._MAX_CLI_MESSAGE_CHARS
 _resolve_private_key = _buzz_mod._resolve_private_key
 _resolve_auth_tag = _buzz_mod._resolve_auth_tag
@@ -2423,7 +2422,7 @@ class TestInboundMediaLocalisation:
                     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk"
                     "+A8AAQUBAScY42YAAAAASUVORK5CYII="
                 )
-            with open(output_path, "wb") as handle:
+            with open(output_path, "wb") as handle:  # noqa: ASYNC230 -- test fake writes a tiny fixture file; a local open() is non-blocking in practice
                 handle.write(payload)
             return 0, "", ""
 
@@ -2592,7 +2591,7 @@ class TestInboundMediaLocalisation:
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk"
                 "+A8AAQUBAScY42YAAAAASUVORK5CYII="
             )
-            with open(output_path, "wb") as handle:
+            with open(output_path, "wb") as handle:  # noqa: ASYNC230 -- test fake writes a tiny fixture file; a local open() is non-blocking in practice
                 handle.write(payload)
             return 0, "", ""
 
@@ -2874,11 +2873,11 @@ class TestBuzzAdapterLifecycle:
     @pytest.mark.asyncio
     async def test_disconnect_releases_scoped_lock(self, monkeypatch):
         """The identity lock taken in connect() must be released on disconnect."""
-        import gateway.status as gateway_status
+        import gateway.status_scoped_locks as scoped_locks
 
         released = []
         monkeypatch.setattr(
-            gateway_status,
+            scoped_locks,
             "release_scoped_lock",
             lambda platform, key: released.append((platform, key)),
         )
@@ -2915,37 +2914,6 @@ class TestBuzzAdapterLifecycle:
         assert adapter._platform_lock_identity == "https://test.relay:" + SELF_PUBKEY
         # channels list must never run: the conflict branch short-circuits connect()
         assert not any(call[0][:2] == ["channels", "list"] for call in cli.calls)
-
-    @pytest.mark.asyncio
-    async def test_connect_relay_membership_auth_failure_stays_retryable(self, monkeypatch):
-        """A remote auth rejection (403 relay_membership_required) is relay-side state the
-        operator can change while the gateway runs, so connect() must classify it
-        retryable: non-retryable at startup with nothing else connected routes into the
-        fatal path and exits the WHOLE gateway with EX_CONFIG (78) — which under
-        RestartPreventExitStatus=78 never restarts, killing every other platform."""
-        adapter = _make_adapter()
-        adapter.cli_path = "/fake/buzz"
-        monkeypatch.setattr(_buzz_mod, "_resolve_private_key", lambda extra=None: "nsec1test")
-        adapter._run_cli = AsyncMock(return_value=(
-            3, "",
-            json.dumps({"error": "auth_error", "message": "relay error 403: relay_membership_required"}),
-        ))
-
-        assert await adapter.connect() is False
-        assert adapter.has_fatal_error
-        assert adapter.fatal_error_code == "connect_failed"
-        assert "relay_membership_required" in adapter.fatal_error_message
-        assert adapter.fatal_error_retryable is True
-
-    def test_cli_failure_retryable_classification(self):
-        """Exit 2 (network) and a remote auth_error stay retryable; local/config-class
-        failures without those stay non-retryable."""
-        auth_json = json.dumps({"error": "auth_error", "message": "relay error 403: relay_membership_required"})
-        assert _cli_failure_retryable(2, "") is True
-        assert _cli_failure_retryable(2, "garbage without json") is True
-        assert _cli_failure_retryable(3, auth_json) is True
-        assert _cli_failure_retryable(1, json.dumps({"error": "config_missing", "message": "nope"})) is False
-        assert _cli_failure_retryable(1, "") is False
 
 # ── Credentials / requirements ────────────────────────────────────────────
 

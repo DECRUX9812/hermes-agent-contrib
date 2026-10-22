@@ -19,15 +19,11 @@ const TAB =
 
 // Full height: with the strip's rule removed there is no last-pixel row to
 // leave uncovered, so tabs fill the bar and no sliver of gutter shows through.
-// Tabs SHRINK like browser tabs when the zone narrows: a fixed-width tab was
-// clipped mid-word by the scrolling strip (and slid under the strip's trailing
-// chips) instead of ellipsizing its title.
-const TAB_HORIZONTAL =
-  'h-full min-w-0 shrink max-w-(--pane-tab-max-width) not-first:border-l not-first:border-l-(--ui-stroke-quaternary)'
+const TAB_HORIZONTAL = 'h-full min-w-0 max-w-48 not-first:border-l not-first:border-l-(--ui-stroke-quaternary)'
 
-// A closeable tab's floor keeps a few characters left of the close button, so
-// a squeezed strip still reads as tabs rather than a row of ×s.
-const TAB_CLOSEABLE = 'min-w-18'
+// A closeable tab's floor keeps short labels left of the close button.
+// A floor, not padding — a tab already wider than it pays nothing.
+const TAB_CLOSEABLE = 'min-w-13'
 
 const TAB_VERTICAL =
   'w-full max-h-48 justify-center not-first:border-t not-first:border-t-(--ui-stroke-quaternary) [writing-mode:vertical-rl]'
@@ -217,36 +213,23 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
   { as = 'span', className, children, ...props },
   ref
 ) {
-  const inner = (
-    <span
-      className={cn(
-        'ui-tab-label block min-w-0 truncate font-medium group-data-[closeable]/tab:text-clip',
-        className
-      )}
-    >
-      {children}
-    </span>
-  )
-  const cls =
-    'flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2'
-  // `as` is a closed 'button' | 'span' union — render each branch concretely so
-  // JSX infers real props instead of collapsing through ElementType to never
-  // (react-three/fiber augments JSX.IntrinsicElements).
-  if (as === 'button') {
-    return (
-      <button className={cls} ref={ref as React.Ref<HTMLButtonElement>} {...props}>
-        {inner}
-      </button>
-    )
-  }
+  const Comp = as as React.ElementType
+
   return (
-    <span
-      className={cls}
-      ref={ref as React.Ref<HTMLSpanElement>}
-      {...(props as React.HTMLAttributes<HTMLSpanElement>)}
+    <Comp
+      className="flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2"
+      ref={ref}
+      {...props}
     >
-      {inner}
-    </span>
+      <span
+        className={cn(
+          'block min-w-0 truncate font-medium tracking-wide uppercase group-data-[closeable]/tab:text-clip',
+          className
+        )}
+      >
+        {children}
+      </span>
+    </Comp>
   )
 })
 

@@ -20,7 +20,7 @@ vi.mock('@/hermes', () => ({
   setApiRequestProfile: vi.fn()
 }))
 vi.mock('@/lib/query-client', () => ({ invalidateProfileScopedQueries: vi.fn() }))
-vi.mock('@/store/starmap', () => ({ resetStarmapGraph: vi.fn() }))
+vi.mock('@/store/starmap', () => ({ reloadOpenStarmapGraph: vi.fn(), resetStarmapGraph: vi.fn() }))
 
 const { applyDesktopOverlay, buildDesktopOverlay, exportProfileBundle } = await import('./profile-share')
 const { $profileColors, setProfileColor } = await import('./profile')
@@ -114,7 +114,7 @@ describe('exportProfileBundle', () => {
   it('stages desktop.json into the archive through extra_files', async () => {
     skinPref.assign('glam', 'mono')
 
-    const archive = await exportProfileBundle('glam', { output: '/tmp/glam.tar.gz' })
+    const archive = await exportProfileBundle('glam', '/tmp/glam.tar.gz')
 
     expect(archive).toBe('/tmp/out.tar.gz')
     const call = vi.mocked(exportProfileArchive).mock.calls[0]

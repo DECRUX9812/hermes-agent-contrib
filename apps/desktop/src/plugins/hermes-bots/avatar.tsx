@@ -7,7 +7,7 @@
  */
 
 import * as sdk from '@hermes/plugin-sdk'
-import { bopMascotMarkup, profileColor } from '@hermes/plugin-sdk'
+import { profileColor } from '@hermes/plugin-sdk'
 
 import type { AvatarAppearance, AvatarShape, BotMeta, FaceMood } from './types'
 
@@ -187,33 +187,6 @@ export function blobShapeString(seedPart: string, kind: string) {
   }
 
   return seedPart ? `blobatar:${seedPart}` : 'blobatar'
-}
-
-// ── bop shapes (the staff mascot: plush blob + headphones) ──────────────────
-// 'bop' — the face follows the bot's NAME; 'bop:<seed>' — seed locked.
-// The body takes the bot's accent colour; eyes open while it works and vibe
-// shut at idle, like the bops mascots these are ported from.
-
-export function isBopShape(shape: null | string | undefined) {
-  return shape === 'bop' || (typeof shape === 'string' && shape.startsWith('bop:'))
-}
-
-/** The seed actually rendered — the pinned one, else the bot's name. */
-export function bopSeed(shape: null | string | undefined, name: string | undefined) {
-  const parts = typeof shape === 'string' ? shape.split(':') : []
-
-  return parts[1] || name || 'agent'
-}
-
-function bopMarkup(shape: null | string | undefined, name: string, color: string, mood: FaceMood, size: number) {
-  const inner = bopMascotMarkup(bopSeed(shape, name), color, {
-    mood: mood === 'idle' ? 'idle' : 'awake'
-  })
-
-  return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="${size}" height="${size}"` +
-    ` data-bot-face=${JSON.stringify(name)}>${inner}</svg>`
-  )
 }
 
 /** Static SVG markup for a blob face, tagged data-bot-face so the roster's
@@ -678,38 +651,6 @@ interface NumericAttrNode {
   setAttribute(name: string, value: number | string): void
 }
 
-/** Last pointer position, for faces that look at you (`follow`). Fed by one
- *  passive window listener the clock installs; stale after a few seconds so
- *  a face left alone drifts back to its own idle pose. */
-const facePointer = { at: -Infinity, x: 0, y: 0 }
-const FOLLOW_STALE_MS = 6000
-const faceFollow = new WeakMap<SVGSVGElement, { x: number; y: number }>()
-
-const clampUnit = (value: number) => Math.max(-1, Math.min(1, value))
-
-/** Where a following face should look, in unit offsets toward the pointer,
- *  eased per frame so the head turns rather than snaps. Zero when the pointer
- *  went quiet or the user asked for reduced motion. */
-function followOffset(svg: SVGSVGElement, now: number): { x: number; y: number } {
-  const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-  let target = { x: 0, y: 0 }
-
-  if (!reduce && now - facePointer.at < FOLLOW_STALE_MS) {
-    const rect = svg.getBoundingClientRect()
-    const reach = Math.max(240, rect.width * 3)
-    target = {
-      x: clampUnit((facePointer.x - (rect.left + rect.width / 2)) / reach),
-      y: clampUnit((facePointer.y - (rect.top + rect.height / 2)) / reach)
-    }
-  }
-
-  const last = faceFollow.get(svg) ?? { x: 0, y: 0 }
-  const next = { x: last.x + (target.x - last.x) * 0.22, y: last.y + (target.y - last.y) * 0.22 }
-  faceFollow.set(svg, next)
-
-  return next
-}
-
 const faceTransitions = new WeakMap<SVGSVGElement, { mood: string; pose: FacePose; from: FacePose; since: number }>()
 
 /** Blend from the last painted pose in elapsed time, even after a paused clock. */
@@ -745,15 +686,6 @@ function paintMathFace(svg: SVGSVGElement, t: number) {
   const mood = svg.getAttribute('data-hb-mood') || 'idle'
   const shape = svg.getAttribute('data-hb-shape') || 'circle'
   const pose = settlePose(svg, mood, facePose(mood, t), t)
-
-  if (svg.hasAttribute('data-hb-follow')) {
-    const look = followOffset(svg, performance.now())
-    pose.turn += look.x * 16
-    pose.tilt -= look.y * 10
-    pose.gazeX += look.x * 2.4
-    pose.gazeY += look.y * 1.8
-  }
-
   const body = svg.querySelector('[data-hb-body]')
   const open = svg.querySelector('[data-hb-open]')
   const shut = svg.querySelector('[data-hb-shut]')
@@ -862,17 +794,6 @@ export function startFaceClock() {
   }
 
   const t0 = performance.now()
-
-  window.addEventListener(
-    'pointermove',
-    event => {
-      facePointer.x = event.clientX
-      facePointer.y = event.clientY
-      facePointer.at = performance.now()
-    },
-    { passive: true }
-  )
-
   // A large roster can mount hundreds of faces. Observe the cached nodes so
   // off-screen cards do not consume a full animation frame by themselves.
   let faces: SVGSVGElement[] = []
@@ -948,7 +869,12 @@ export function startFaceClock() {
 
   // Nothing worth animating: no faces mounted (BotFace wakes us on the next
   // mount) or none visible (the observer wakes us when one scrolls in).
-  const idle = () => faces.length === 0 || (observer !== null && visibleFaces.size === 0)
+  // TODO(bot-mode-types): with faces mounted and IntersectionObserver absent
+  // this returns the null observer rather than false — `observer &&`
+  // short-circuits to the observer itself. createBudgetedLoop declares
+  // idleWhen as `() => boolean`; null is falsy so the loop keeps running as
+  // intended today. Hence the assertion at the idleWhen call below.
+  const idle = () => faces.length === 0 || (observer && visibleFaces.size === 0)
 
   const teardownCaches = () => {
     if (observer) {
@@ -967,7 +893,7 @@ export function startFaceClock() {
   if (typeof createBudgetedLoop === 'function' && createBudgetedLoop) {
     const loop = createBudgetedLoop(paint, {
       fps: 15,
-      idleWhen: idle
+      idleWhen: idle as () => boolean
     })
 
     window.__hbFaceClock = {
@@ -1054,8 +980,6 @@ export function stopFaceClock() {
 
 interface BotFaceProps {
   color: string
-  /** Eyes and head follow the pointer (a hero face, not a roster row). */
-  follow?: boolean
   image?: null | string
   mood?: FaceMood
   name?: string
@@ -1069,15 +993,7 @@ interface BotFaceProps {
  * Live math face. Photos still use <img>. Shape avatars stay SVG so
  * the clock can move them (a baked PNG cannot).
  */
-export function BotFace({
-  shape,
-  color,
-  follow = false,
-  image,
-  size = 36,
-  name = 'agent',
-  mood = 'idle'
-}: BotFaceProps) {
+export function BotFace({ shape, color, image, size = 36, name = 'agent', mood = 'idle' }: BotFaceProps) {
   startFaceClock()
 
   if (image) {
@@ -1112,9 +1028,6 @@ export function BotFace({
           dangerouslySetInnerHTML={{
             __html: markup
           }}
-          // The legacy math face carried mood on the svg; keep the attribute
-          // on the static-shape wrappers so it stays observable.
-          data-hb-mood={mood}
           style={{
             width: size,
             height: size,
@@ -1127,26 +1040,6 @@ export function BotFace({
 
     // Older SDK without blobatar: legacy deterministic shape from the name.
     shape = defaultShapeFor(name)
-  }
-
-  // The staff mascot — same static inline-SVG path as blobatar (the roster
-  // PNG backfill finds it through data-bot-face; the math clock ignores it).
-  if (isBopShape(shape)) {
-    return (
-      <span
-        aria-hidden
-        dangerouslySetInnerHTML={{
-          __html: bopMarkup(shape, name, color, mood, size)
-        }}
-        data-hb-mood={mood}
-        style={{
-          width: size,
-          height: size,
-          display: 'block',
-          lineHeight: 0
-        }}
-      />
-    )
   }
 
   // Sigils are line art (no filled body) — the math clock rebuilds filled
@@ -1187,7 +1080,6 @@ export function BotFace({
       aria-hidden
       className="block overflow-visible"
       data-bot-face={name}
-      data-hb-follow={follow ? '' : undefined}
       data-hb-math="1"
       data-hb-mood={mood}
       data-hb-shape={shape || 'circle'}
@@ -1239,15 +1131,6 @@ export function avatarColor(color: null | string | undefined, name: string): str
   return color || profileColor(name) || PRIMARY_AVATAR_COLOR
 }
 
-/** G3 — the persona accent: exactly the avatar's own resolved color — the
- *  picked color when set (the AvatarPicker's choice IS the Edit Profile
- *  override), else the name-derived deterministic hue (with botAppearance's
- *  primary-profile violet), else the primary fallback. One color means the
- *  roster ring, the card tint, and the avatar can never disagree. */
-export function botAccentColor(bot: { name?: string }, meta: BotMeta | null | undefined): string {
-  return avatarColor(botAppearance(bot.name || '', meta).color, bot.name || '')
-}
-
 export function botAppearance(name: string, meta: BotMeta | null | undefined): AvatarAppearance {
   // The primary profile is literally named "default"; the SDK's profileColor
   // can hand it a near-black that renders as an ugly black square, and any
@@ -1260,10 +1143,8 @@ export function botAppearance(name: string, meta: BotMeta | null | undefined): A
 
   if (isPrimary && !userCustomized) {
     return {
-      // The chief-of-staff bop: ink body, highlighter headphones — the
-      // workspace's main bot in the bops staff language.
-      shape: 'bop',
-      color: '#0a0a0a',
+      shape: 'squircle',
+      color: PRIMARY_AVATAR_COLOR,
       image: meta?.image || null
     }
   }

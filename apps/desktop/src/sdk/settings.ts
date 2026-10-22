@@ -1,12 +1,6 @@
 import type { ReadableAtom } from 'nanostores'
 
-import {
-  type BackdropScene,
-  type BackdropStrength,
-  isBackdropScene,
-  isBackdropStrength
-} from '@/lib/backdrop-scenes'
-import { $backdrop, $backdropImage, $backdropScene, $backdropStrength, setBackdrop, setBackdropImage, setBackdropScene, setBackdropStrength } from '@/store/backdrop'
+import { $backdrop, setBackdrop } from '@/store/backdrop'
 import { $chatTextScale, CHAT_TEXT_SCALE_PRESETS, type ChatTextScale, setChatTextScale } from '@/store/chat-text-scale'
 import { $composerPopoutGesturesEnabled, setComposerPopoutGesturesEnabled } from '@/store/composer-popout'
 import { $introSplash, setIntroSplash } from '@/store/intro-splash'
@@ -17,10 +11,6 @@ import { $tabStripDefault, setTabStripDefault, type TabStripDefault } from '@/st
 export interface DesktopSettingValues {
   'backdrop.v1': boolean
   chatTextScale: ChatTextScale
-  'backdrop.scene': BackdropScene
-  'backdrop.strength': BackdropStrength
-  /** The user's own backdrop art — a data URL or image URL; null clears it. */
-  'backdrop.image': null | string
   'composerPopout.gesturesEnabled': boolean
   'intro-splash.v1': boolean
   'reasoning.collapsedByDefault': boolean
@@ -56,19 +46,14 @@ const isChatTextScale = (value: unknown): value is ChatTextScale =>
   CHAT_TEXT_SCALE_PRESETS.some(preset => preset === value)
 
 const isSessionListDensity = (value: unknown): value is SessionListDensity =>
-  value === 'compact' || value === 'condensed' || value === 'comfortable' || value === 'detailed'
+  value === 'compact' || value === 'comfortable' || value === 'detailed'
 
 const isTabStripDefault = (value: unknown): value is TabStripDefault =>
   value === 'auto' || value === 'always' || value === 'never'
 
-const isBackdropImage = (value: unknown): value is null | string => value === null || typeof value === 'string'
-
 const settingBindings = {
   'backdrop.v1': bindSetting($backdrop, setBackdrop, isBoolean),
   chatTextScale: bindSetting($chatTextScale, setChatTextScale, isChatTextScale),
-  'backdrop.scene': bindSetting($backdropScene, setBackdropScene, isBackdropScene),
-  'backdrop.strength': bindSetting($backdropStrength, setBackdropStrength, isBackdropStrength),
-  'backdrop.image': bindSetting($backdropImage, setBackdropImage, isBackdropImage),
   'composerPopout.gesturesEnabled': bindSetting(
     $composerPopoutGesturesEnabled,
     setComposerPopoutGesturesEnabled,

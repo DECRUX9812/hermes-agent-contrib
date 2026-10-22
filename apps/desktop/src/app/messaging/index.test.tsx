@@ -58,7 +58,7 @@ vi.mock('@/store/gateway', () => ({
   openGatewayForProfile: vi.fn(async () => undefined)
 }))
 vi.mock('@/lib/query-client', () => ({ invalidateProfileScopedQueries: vi.fn() }))
-vi.mock('@/store/starmap', () => ({ resetStarmapGraph: vi.fn() }))
+vi.mock('@/store/starmap', () => ({ reloadOpenStarmapGraph: vi.fn(), resetStarmapGraph: vi.fn() }))
 
 vi.mock('@/lib/external-link', () => ({
   openExternalLink: (href: string) => openExternalLink(href)
@@ -138,26 +138,6 @@ describe('MessagingView profile scope', () => {
     // rather than left to the ambient fallback.
     await waitFor(() => expect(getMessagingPlatforms).toHaveBeenCalledWith('default'))
     expect(getPairing).toHaveBeenCalledWith('default')
-  })
-
-  it('renders an ErrorState with a retry button on load failure and recovers on retry', async () => {
-    getMessagingPlatforms.mockRejectedValueOnce(new Error('Gateway down'))
-
-    await renderMessaging()
-
-    expect(await screen.findByText('Messaging platforms failed to load')).toBeTruthy()
-    expect(screen.getByText('Gateway down')).toBeTruthy()
-
-    const retryBtn = screen.getByRole('button', { name: 'Retry' })
-    expect(retryBtn).toBeTruthy()
-
-    getMessagingPlatforms.mockResolvedValueOnce({ platforms: [platform({ id: 'teams', name: 'Microsoft Teams' })] })
-
-    await act(async () => {
-      fireEvent.click(retryBtn)
-    })
-
-    expect((await screen.findAllByText('Microsoft Teams')).length).toBeGreaterThan(0)
   })
 })
 

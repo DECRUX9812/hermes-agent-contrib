@@ -20,9 +20,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from hermes_constants import (
-    assert_named_profile_home_available, assert_named_profile_home_live, get_hermes_home, mkdir_under_hermes_home,
-)
+from hermes_constants import get_hermes_home
 from hermes_startup_watchdog import report_startup_progress
 from hermes_state_holders import read_only_db_uri
 from hermes_state_common import (
@@ -106,11 +104,10 @@ def _claim_repair_attempt(db_path: Path) -> bool:
 
 
 def _open_lock_file(db_path: Path, suffix: str, what: str, tail: str):
-    """Open ``<db>.<suffix>`` for locking; on failure warn and return None (a deleted profile raises)."""
+    """Open ``<db>.<suffix>`` for locking; on failure warn and return None."""
     lock_path = db_path.with_name(db_path.name + suffix)
-    assert_named_profile_home_live(lock_path.parent)
     try:
-        mkdir_under_hermes_home(lock_path.parent)
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
         return lock_path, lock_path.open("a+b")
     except OSError as exc:
         logger.warning(f"Could not open state.db {what} lock %s (%s) — {tail}", lock_path, exc)
@@ -199,7 +196,6 @@ def _cross_process_repair_lock(db_path: Path):
                            "surgery in this process to avoid racing the repairer. Recorded holder: %s.",
                            lock_path, _REPAIR_LOCK_TIMEOUT_SECONDS,
                            _describe_lock_holder(None if _IS_WINDOWS else _read_lock_holder_record(handle)))
-        assert_named_profile_home_available(db_path.parent)
         yield acquired
     finally:
         if acquired:
@@ -538,7 +534,7 @@ def _backup_db_file(db_path: Path) -> tuple[Optional[Path], Optional[str]]:
         return None, f"backup copy failed: {exc}"
 
 
-def preflight_db_writability(db_path: Path, *, db_label: str = "state.db") -> None:
+def preflight_db_writability(db_path: Path, *, db_label: str = "state.db", directory_only: bool = False) -> None:
     """Refuse-or-repair read-only DB files BEFORE the first connection opens.
 
     A stray read-only ``state.db`` / ``-wal`` / ``-shm`` (sudo run, restored backup, copied dotfiles) otherwise
@@ -557,7 +553,8 @@ def preflight_db_writability(db_path: Path, *, db_label: str = "state.db") -> No
         home = Path(get_hermes_home()).resolve()
     # SQLite needs a writable directory in every journal mode (WAL/SHM sidecars, or the DELETE-mode journal).
     sidecars = (db_path.with_name(db_path.name + "-wal"), db_path.with_name(db_path.name + "-shm"))
-    for p, is_dir in [(db_path.parent, True), *((p, False) for p in (db_path, *sidecars) if p.is_file())]:
+    files = () if directory_only else tuple((p, False) for p in (db_path, *sidecars) if p.is_file())
+    for p, is_dir in [(db_path.parent, True), *files]:
         if (is_dir and not p.is_dir()) or os.access(p, os.R_OK | os.W_OK):
             continue
         x = "x" if is_dir else ""
@@ -739,10 +736,8 @@ def state_db_has_structural_damage(db_path: Path) -> bool:
     reporting (a torn page under the walk) is structural too: no FTS-only fixture does that
     while ``messages``/``sessions`` read cleanly, and the FTS rebuild ladder cannot help.
     Cannot-open / locked stays False so the caller keeps the FTS path."""
-    from hermes_cli.sqlite_safe_read import connect_tracked
-
     try:
-        conn = connect_tracked(read_only_db_uri(db_path), uri=True, timeout=1.0)
+        conn = sqlite3.connect(read_only_db_uri(db_path), uri=True, timeout=1.0)
     except sqlite3.Error:
         return False
     try:

@@ -26,18 +26,7 @@ export const composerSurfaceGlass = cn(
 )
 
 const composerDockEdge = (edge: 'bottom' | 'top') =>
-  cn(composerEdgeRing, edge === 'top' ? 'rounded-t-2xl border-b-0' : 'rounded-b-2xl border-t-0')
-
-/** The composer surface's own outline colour.
- *
- *  `[data-slot='composer-surface']` is forced to `--ui-stroke-secondary` by an
- *  `!important` rule in styles.css, so THAT is what a user actually sees on the
- *  composer — the ring-mix class it also carries never paints. Every surface
- *  fused to the composer must paint this same token: the docked status/queue
- *  card used a plain `border-border/65` (a different, accent-tinted stroke at
- *  65% alpha), which is why the background/subagent stack showed a second rim
- *  against the composer instead of continuing one outline. */
-export const composerEdgeRing = 'border border-(--ui-stroke-secondary)'
+  cn('border border-border/65', edge === 'top' ? 'rounded-t-2xl border-b-0' : 'rounded-b-2xl border-t-0')
 
 /** Glassy docked card — the status stack / queue. Paints the SAME
  *  `--composer-fill` as the surface, so rest / scrolled / focused / drawer-open

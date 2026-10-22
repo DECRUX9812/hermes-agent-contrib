@@ -1,7 +1,4 @@
 import './styles.css'
-// Install the loopback browser host before any store/App modules evaluate.
-// Electron preload remains authoritative when its bridge already exists.
-import './lib/browser-desktop-bridge-install'
 // Side-effect: reports in-flight turns to the main process for the quit guard.
 import './store/active-work'
 // Side-effect: mirrors the machine's AC/battery state for poll demotion.
@@ -10,13 +7,11 @@ import './store/power'
 import './store/translucency'
 // Side-effect: applies the persisted user-bubble transparency on load.
 import './store/user-bubble-transparency'
-// Side-effect: paints the look (Soft / Classic) and interface mode on <html>.
-import './store/ui-look'
 // Side-effect: restores chat typography before the first conversation paints.
 import './store/chat-text-scale'
-// Bot Room controller — self-wires the overlay's IPC control channel in the
-// main window (skipped for `?win=` kinds by the store itself).
-import './store/botroom'
+// Side-effect: mirrors the keep-awake mode to main and listens for main's
+// one-time keep-awake offer. Settings loads lazily, too late for the offer.
+import './store/keep-awake'
 // Dev-only render/state churn counters. MUST precede the `react-dom` import
 // below: react-dom captures the devtools hook at module init, so bippy has to
 // install during THIS import's evaluation or every commit goes unseen
@@ -66,16 +61,7 @@ if (winParam === 'hud') {
 // window) and `browser` are ordinary opaque windows and are deliberately not
 // in here. index.html's pre-paint script skips exactly this list — keep the
 // two in step.
-const TRANSPARENT_WINDOWS = new Set([
-  'hud',
-  'overlay',
-  'pane3d',
-  'quick',
-  'wake',
-  'botroom',
-  'botroom-mascot',
-  'botroom-pill'
-])
+const TRANSPARENT_WINDOWS = new Set(['hud', 'overlay', 'quick', 'wake'])
 
 // Each transparent root used to force its host layers see-through when it
 // MOUNTED. That is far too late: `styles.css` above paints the theme's opaque
@@ -93,20 +79,6 @@ if (winParam && TRANSPARENT_WINDOWS.has(winParam)) {
 
 if (winParam === 'overlay') {
   void import('./app/pet-overlay/overlay-root').then(({ mountPetOverlay }) => mountPetOverlay())
-} else if (winParam === 'pane3d') {
-  // Lazy so no three.js/@react-three module reaches the main window bundle
-  // (VAL-PANE-007).
-  void import('./app/pane3d/pane3d-root').then(({ mountPane3d }) => mountPane3d())
-} else if (winParam === 'botroom') {
-  void import('./app/botroom/botroom-root').then(({ mountBotRoomWindow }) => mountBotRoomWindow())
-} else if (winParam === 'botroom-mascot') {
-  void import('./app/botroom/mascot-root').then(({ mountBotRoomMascotWindow }) => {
-    mountBotRoomMascotWindow(document.getElementById('root') ?? document.body)
-  })
-} else if (winParam === 'botroom-pill') {
-  void import('./app/botroom/pill-root').then(({ mountBotRoomPillWindow }) => {
-    mountBotRoomPillWindow(document.getElementById('root') ?? document.body)
-  })
 } else if (winParam === 'quick') {
   void import('./app/quick-entry/quick-entry-root').then(({ mountQuickEntry }) => mountQuickEntry())
 } else if (winParam === 'wake') {

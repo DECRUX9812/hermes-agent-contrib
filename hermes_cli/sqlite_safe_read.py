@@ -23,9 +23,6 @@ logger = logging.getLogger(__name__)
 _live_lock = threading.RLock()
 # canonical path -> number of live connections opened by this process
 _live_connections: dict[str, int] = {}
-# Tracked opens so far. Header-probe release scans descriptors outside _live_lock and
-# rescans under it when this moved: a connection opened meanwhile may be missing from the scan.
-_tracked_opens = 0
 
 
 class UntrackableConnectionError(RuntimeError):
@@ -73,12 +70,10 @@ def _track_key(key: str, delta: int = 1) -> None:
         _live_connections.pop(key, None)
 
 
-def untrack_connection(path: Path | str) -> bool:
-    """Record that one connection to *path* has been closed; True when none remain."""
+def untrack_connection(path: Path | str) -> None:
+    """Record that one connection to *path* has been closed."""
     with _live_lock:
-        key = _key(path)
-        _track_key(key, -1)
-        return key not in _live_connections
+        _track_key(_key(path), -1)
 
 
 def _live_main_key(key: str) -> Optional[str]:
@@ -113,8 +108,6 @@ class _TrackingMixin:
     """
 
     _hermes_tracked_path: str | None = None
-    # (st_dev, st_ino) the path named at open: the inode whose header probe the last close may release.
-    _hermes_tracked_identity: tuple[int, int] | None = None
 
     def close(self) -> None:  # type: ignore[misc]
         with _live_lock:
@@ -123,16 +116,9 @@ class _TrackingMixin:
             # close (e.g. cross-thread ProgrammingError) leaves the FD open while the byte-probe guard
             # thinks nothing is live — see #75629.
             super().close()  # type: ignore[misc]
-            if path is None:
-                return
-            self._hermes_tracked_path = None
-            if not untrack_connection(path) or self._hermes_tracked_identity is None:
-                return
-        # Outside _live_lock: releasing the probe enumerates every descriptor, and tracked
-        # opens must not queue behind that (it takes the lock itself for the close).
-        from hermes_state_dbfile import _retire_unused_header_probes
-
-        _retire_unused_header_probes(self._hermes_tracked_identity)
+            if path is not None:
+                self._hermes_tracked_path = None
+                untrack_connection(path)
 
 
 class TrackedConnection(_TrackingMixin, sqlite3.Connection):
@@ -163,18 +149,13 @@ def connect_tracked(
 ) -> sqlite3.Connection:
     """``sqlite3.connect`` that registers the connection for the lifetime of the fd (released on
     ``close()``). Use for any database that might be byte-probed (``state.db``, ``kanban.db``).
-    Readers must participate too: even a read-only schema query owns SQLite locks.
-    Open and registration happen together under ``_live_lock`` so raw reads cannot
-    cancel a new connection's locks, and the open bumps ``_tracked_opens`` so a
-    header-probe release whose descriptor inventory predates it rescans before
-    closing anything. An inventory alone cannot exclude a concurrent opener."""
-    global _tracked_opens
+    Open and registration happen together under ``_live_lock`` so a concurrent
+    :func:`read_header_bytes_preopen` cannot slip between them and cancel this connection's locks."""
     opener = connect_fn if connect_fn is not None else sqlite3.connect
     kwargs["factory"] = _tracking_factory(kwargs.get("factory", sqlite3.Connection))
 
     with _live_lock:
         conn = opener(str(path), **kwargs)
-        _tracked_opens += 1
         try:
             resolved = _key(tracking_path) if tracking_path is not None else _canonical_db_path(conn)
             if resolved is None:
@@ -185,9 +166,6 @@ def connect_tracked(
                 # still releases the registry entry rather than silently losing probe safety.
                 conn = _retrofit_tracking(conn, resolved)
             conn._hermes_tracked_path = resolved
-            with contextlib.suppress(OSError):
-                st = os.stat(resolved)
-                conn._hermes_tracked_identity = (st.st_dev, st.st_ino)
             _track_key(resolved)
             return conn
         except Exception:

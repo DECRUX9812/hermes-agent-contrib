@@ -40,7 +40,6 @@ export const zhHantCommon = {
     skip: '略過',
     update: '更新',
     tryHint: term => `試試「${term}」`,
-    undo: '復原',
     on: '開啟',
     off: '關閉'
   },
@@ -75,5 +74,5 @@ export const zhHantCommon = {
       description: '顯示行動裝置側邊欄。',
       toggle: open => `${open ? '顯示' : '隱藏'}側邊欄`
     }
-  },
+  }
 } satisfies Pick<TranslationOverrides, 'common' | 'billingBlock' | 'ui'>

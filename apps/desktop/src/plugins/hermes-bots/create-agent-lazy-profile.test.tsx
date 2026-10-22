@@ -113,7 +113,7 @@ async function renderDialog(hasCapabilitiesView: boolean, onConfigureModel?: (bo
     )
   )
 
-  fireEvent.change(screen.getByLabelText('Bot name'), { target: { value: 'inbox-triage' } })
+  fireEvent.change(screen.getByPlaceholderText('inbox-triage'), { target: { value: 'inbox-triage' } })
   fireEvent.click(screen.getByRole('button', { name: /Advanced/ }))
 
   return view
@@ -172,7 +172,7 @@ describe('materializing the draft profile', () => {
   ])('creates %s with an ASCII profile id and retains the display name', async (enteredName, profileName) => {
     await renderDialog(true)
 
-    fireEvent.change(screen.getByLabelText('Bot name'), {
+    fireEvent.change(screen.getByPlaceholderText('inbox-triage'), {
       target: { value: enteredName }
     })
 
@@ -205,6 +205,23 @@ describe('materializing the draft profile', () => {
 
     await waitFor(() => expect(mocks.createCanonicalChat).toHaveBeenCalledWith('inbox-triage', { kickoff: true }))
     expect(createCalls()).toHaveLength(1)
+  })
+
+  it('creates it once a name is typed AFTER the Capabilities tab was opened nameless', async () => {
+    await renderDialog(true)
+    fireEvent.change(screen.getByPlaceholderText('inbox-triage'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Capabilities' }))
+    await screen.findByText(/Name the bot first/)
+
+    // Mid-word keystrokes must not each mint (and orphan) a draft.
+    fireEvent.change(screen.getByPlaceholderText('inbox-triage'), { target: { value: 'late' } })
+    fireEvent.change(screen.getByPlaceholderText('inbox-triage'), { target: { value: 'late-name' } })
+    // Edited during the debounce: the draft must carry it, not the value from the last name change.
+    fireEvent.change(screen.getByPlaceholderText('Inbox Triage'), { target: { value: 'Late Title' } })
+
+    await waitFor(() => expect(mocks.skillsView.at(-1)).toMatchObject({ fixedProfile: 'late-name' }), { timeout: 3000 })
+    expect(createCalls().map(([, params]) => params.name)).toEqual(['late-name'])
+    expect(createCalls()[0][1].description).toBe('Late Title')
   })
 
   it('pins a remote-target draft to the TARGET machine, not the active gateway', async () => {

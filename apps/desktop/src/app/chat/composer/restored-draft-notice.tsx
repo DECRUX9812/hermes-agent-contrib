@@ -1,7 +1,6 @@
 import { useStore } from '@nanostores/react'
 
 import { Button } from '@/components/ui/button'
-import { Codicon } from '@/components/ui/codicon'
 import { useI18n } from '@/i18n'
 import { $restoredDraftNotice, dismissRestoredDraftNotice, undoRestoredDraft } from '@/store/composer'
 
@@ -56,7 +55,7 @@ export function RestoredDraftNotice({ freshDraft, onUndone, readLiveText }: Rest
           type="button"
           variant="ghost"
         >
-          <Codicon name="close" size="0.68rem" />
+          ×
         </Button>
       </div>
     </div>

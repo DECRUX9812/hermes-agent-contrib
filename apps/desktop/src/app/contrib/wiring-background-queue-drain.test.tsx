@@ -102,7 +102,6 @@ vi.mock('../updates-overlay', () => ({ UpdatesOverlay: () => null }))
 vi.mock('./mcp-install-deeplink-dialog', () => ({ McpInstallDeepLinkDialog: () => null }))
 vi.mock('./surfaces', () => ({
   ChatRoutesSurface: () => null,
-  RailSurface: () => null,
   SidebarSurface: () => null,
   StatusbarSurface: () => null,
   TerminalSurface: () => null
@@ -225,7 +224,9 @@ describe('ContribWiring background queue: independent remote owner', () => {
       attachments: [],
       fromQueue: true,
       sessionId: 'rt-remote',
-      storedSessionId: 'stored-remote'
+      storedSessionId: 'stored-remote',
+      // The queued row's id rides every drain so the gateway admits it at most once.
+      submission_id: expect.any(String)
     })
     expect.soft(fixture.remoteRequest).toHaveBeenCalledExactlyOnceWith('remote-healthy', 'worker', 'prompt.submit', {
       session_id: 'rt-remote',

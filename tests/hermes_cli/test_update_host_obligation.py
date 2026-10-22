@@ -77,51 +77,6 @@ def test_obligation_armed_by_one_profile_is_owed_by_every_other(two_profiles, no
     assert fleet._pending_fleet_restart_needed() is False
 
 
-@pytest.mark.parametrize("kind", ["serve", "dashboard", "webapp"])
-@pytest.mark.parametrize("condition", ["gone", "alive", "unknown", "unidentified", "write-error", "supervised", "unclassified"])
-def test_backend_obligation_keeps_its_owner_across_profiles(
-    two_profiles, no_live_fleet, monkeypatch, kind, condition
-):
-    """Backend debt is discharged or durably handed off, never mistaken for gateway debt."""
-    from hermes_cli import process_identity
-
-    runtime = {
-        "kind": kind, "profile": "coder", "pid": 4242,
-        "supervisor": "manual-serve", "restart_via": "respawn-argv",
-        "detail": {"create_time": 1000.0},
-    }
-    alive = {"gone": False, "unknown": None}.get(condition, True)
-    monkeypatch.setattr(process_identity, "_pid_alive_matches", lambda *a: alive)
-    if condition == "unidentified":
-        runtime["detail"].clear()
-    elif condition == "supervised":
-        runtime.update(supervisor="launchd", restart_via="launchd")
-    elif condition == "unclassified":
-        runtime.update(supervisor="manual", restart_via="manual")
-    if condition == "write-error":
-        for home in two_profiles.values():
-            (home / "serve_restart_pending").write_text("not a directory", encoding="utf-8")
-
-    _enter(monkeypatch, two_profiles["coder"])
-    fleet._write_fleet_restart_pending_marker(expected_sha=SHA, runtimes=[runtime])
-    assert host_obligation.host_obligation_present()
-
-    _enter(monkeypatch, two_profiles["writer"])
-    pending = condition in ("unidentified", "write-error", "unclassified")
-    assert fleet._pending_fleet_restart_needed(receipt={}, pending_manual=[]) is pending
-    assert host_obligation.host_obligation_present() is pending
-    reminders = list((two_profiles["writer"] / "serve_restart_pending").glob("*.json"))
-    if condition in ("alive", "unknown"):
-        assert len(reminders) == 1
-        row = json.loads(reminders[0].read_text(encoding="utf-8"))
-        assert (row["kind"], row["profile"], row["pid"], row["create_time"]) == (kind, "coder", 4242, 1000.0)
-    else:
-        assert reminders == []
-
-    _enter(monkeypatch, two_profiles["coder"])
-    assert fleet._pending_fleet_restart_needed(receipt={}, pending_manual=[]) is pending
-
-
 def test_legacy_per_home_marker_is_still_read_and_cleared(two_profiles, no_live_fleet, monkeypatch):
     """An obligation armed by the pre-host-scope code must still be discharged after the upgrade."""
     _enter(monkeypatch, two_profiles["coder"])
@@ -274,7 +229,7 @@ def test_one_installs_completed_restart_never_erases_another_installs_debt(tmp_p
     from pathlib import Path
 
     source = Path(__file__).resolve().parents[2]
-    files = ("hermes_constants.py", "hermes_cli/__init__.py", "hermes_cli/update_host_obligation.py",
+    files = ("hermes_constants.py", "hermes_dir_acl.py", "hermes_cli/__init__.py", "hermes_cli/update_host_obligation.py",
              "hermes_cli/update_restart_recovery.py", "hermes_cli/update_lock.py")
     roots = {}
     for name in ("install-a", "install-b"):
@@ -288,7 +243,7 @@ def test_one_installs_completed_restart_never_erases_another_installs_debt(tmp_p
         code = (f"import sys\nsys.path.insert(0, {str(roots[install])!r})\n"
                 "from hermes_cli.update_host_obligation import *\n" + body)
         child = subprocess.run([sys.executable, "-I", "-S", "-B", "-c", code], env=env, capture_output=True,
-                               text=True, encoding="utf-8", stdin=subprocess.DEVNULL, timeout=60)
+                               text=True, encoding="utf-8", stdin=subprocess.DEVNULL, timeout=60, check=False)
         assert child.returncode == 0, child.stdout + child.stderr
         return child.stdout.strip()
 

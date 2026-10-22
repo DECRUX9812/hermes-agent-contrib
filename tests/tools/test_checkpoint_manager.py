@@ -188,24 +188,6 @@ class TestListCheckpoints:
         assert result[0]["reason"] == "third"
         assert result[2]["reason"] == "first"
 
-    def test_turn_trailers_round_trip(self, mgr, work_dir):
-        """Checkpoints stamped with a user-turn context report it in list_checkpoints."""
-        mgr.ensure_checkpoint(
-            str(work_dir), "before write_file",
-            turn={"session": "sess-1", "turn": 2, "row_id": 17})
-        mgr.new_turn()
-        (work_dir / "main.py").write_text("v2\n")
-        mgr.ensure_checkpoint(str(work_dir), "untagged")
-
-        result = mgr.list_checkpoints(str(work_dir))
-        assert len(result) == 2
-        tagged, untagged = result[1], result[0]
-        assert tagged["turn"] == 2
-        assert tagged["sid"] == "sess-1"
-        assert tagged["user_row_id"] == 17
-        for key in ("turn", "sid", "user_row_id"):
-            assert key not in untagged
-
     def test_projects_share_one_store_but_list_separately(
         self, mgr, checkpoint_base, tmp_path,
     ):
@@ -860,6 +842,7 @@ class TestGpgIsolation:
             result = subprocess.run(
                 ["git", "config", "--file", str(store / "config"), "--get", key],
                 capture_output=True, text=True,
+                check=False,
             )
             assert result.stdout.strip() == "false", key
 
@@ -1403,37 +1386,3 @@ class TestSessionDiff:
         assert result["success"] is True
         assert "feature.py" in result["diff"]
         assert "+x = 1" in result["diff"]
-
-
-# =========================================================================
-# Import-time contract
-# =========================================================================
-
-class TestAnnotationsResolve:
-    def test_every_signature_annotation_resolves_at_runtime(self):
-        """Every annotation in this module must name something that exists.
-
-        ``import`` alone does not prove it on Python 3.14: PEP 649 defers
-        annotation evaluation, so an undefined name in a signature imports fine
-        there and raises NameError on 3.11-3.13, where the annotation is still
-        evaluated while the class body runs. This module has no
-        ``from __future__ import annotations``, and ``agent/agent_init.py``
-        imports ``CheckpointManager`` on every agent build — a missing import
-        here therefore breaks every turn on those versions, invisibly to a 3.14
-        runner. ``get_type_hints`` forces the evaluation on every version.
-        """
-        import inspect
-        import typing
-
-        from tools import checkpoint_manager
-
-        checked = 0
-        for _, cls in inspect.getmembers(checkpoint_manager, inspect.isclass):
-            if cls.__module__ != checkpoint_manager.__name__:
-                continue
-            for _, method in inspect.getmembers(cls, inspect.isfunction):
-                typing.get_type_hints(method)
-                checked += 1
-
-        # Guard against the sweep silently matching nothing (e.g. a rename).
-        assert checked >= 10

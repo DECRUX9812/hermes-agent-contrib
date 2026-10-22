@@ -25,7 +25,7 @@ import {
   ensureActiveGatewayOpen,
   isActivePrimary
 } from '@/store/gateway'
-import { $sidebarShowAllSessions, revealFilesForNewWork, setSidebarAgentsGrouped } from '@/store/layout'
+import { $sidebarShowAllSessions, setSidebarAgentsGrouped } from '@/store/layout'
 import { notify } from '@/store/notifications'
 import {
   $activeGatewayProfile,
@@ -56,7 +56,6 @@ import {
 import type { ProjectInfo, ProjectsPayload } from '@/types/hermes'
 
 import { recordFeatureUse } from './desktop-metrics'
-import { noteProjectOpened } from './recent-projects'
 
 // First-class, per-profile Projects (named, multi-folder workspaces). State is
 // served by the live gateway's `projects.*` JSON-RPC methods, which wrap the
@@ -109,10 +108,6 @@ export const $reposScanning = atom(false)
 export function enterProject(id: string): void {
   $projectScope.set(id)
   recordFeatureUse('projects')
-
-  if (id !== NO_PROJECT_ID && id !== ALL_PROJECTS) {
-    noteProjectOpened(id)
-  }
 
   // Only explicit, persisted projects (ids are `p_<hex>`) become active. Auto
   // projects (ids are filesystem paths) and the Home bucket have no durable row
@@ -804,10 +799,15 @@ export async function moveSessionToProject(
     throw new Error(translateNow('sidebar.projects.moveNoFolder'))
   }
 
+  // The shared owner refuses a move while a turn runs (its frozen policy would change under it).
   const res = await gatewayRequest<WorkspaceMovePayload>('session.workspace.move', {
     cwd,
     session_key: sessionId,
     ...(profile ? { profile } : {})
+  }).catch((err: unknown) => {
+    throw (err as { data?: { reason?: string } })?.data?.reason === 'session_busy'
+      ? new Error(translateNow('sidebar.projects.moveBusy'))
+      : err
   })
 
   const moved = res.cwd || cwd
@@ -1534,8 +1534,6 @@ export interface StartWorkSessionRequest {
   /** Stack the fresh session as a tab when main already holds a chat (palette/⌘O opens-from-nowhere). */
   openTab?: boolean
   path: string
-  /** `@kind:value` inline refs inserted as chips after `draft` (plan→build handoff). */
-  refs?: string[]
   token: number
 }
 
@@ -1587,11 +1585,7 @@ export function closeWorktreeDialog(): void {
 
 let startWorkToken = 0
 
-export function requestStartWorkSession(
-  path: string,
-  draft?: string,
-  options?: { openTab?: boolean; refs?: string[] }
-): void {
+export function requestStartWorkSession(path: string, draft?: string, options?: { openTab?: boolean }): void {
   const target = path.trim()
 
   if (!target) {
@@ -1599,12 +1593,10 @@ export function requestStartWorkSession(
   }
 
   startWorkToken += 1
-  revealFilesForNewWork()
   $startWorkSessionRequest.set({
     draft: draft?.trim() || undefined,
     openTab: options?.openTab || undefined,
     path: target,
-    refs: options?.refs?.length ? options.refs : undefined,
     token: startWorkToken
   })
 }

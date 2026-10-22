@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/ui/tooltip'
 import { Check, CheckCircle2, Cpu, Download, Eject, Loader2, Trash2 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { confirm } from '@/store/confirm'
 import { runningDownloadFor } from '@/store/local-runtime-jobs'
 import type { LocalCatalogModel, LocalModelPlacement, LocalModelsStatus, LocalRuntimeJob } from '@/types/hermes'
 
@@ -101,28 +100,25 @@ function DeleteModelButton({ modelId }: ModelIdProps): ReactElement {
   const scope: LocalModelsActionScope = useLocalModelsActionScope()
   const [deleting, setDeleting] = useState<boolean>(false)
 
-  function handleDelete(): void {
-    void confirm({
-      confirmLabel: scope.copy.deleteAction,
-      destructive: true,
-      onConfirm: async () => {
-        setDeleting(true)
+  async function handleDelete(): Promise<void> {
+    if (!window.confirm(scope.copy.deleteConfirm(modelId))) {
+      return
+    }
 
-        try {
-          await deleteModel(scope, modelId)
-        } finally {
-          setDeleting(false)
-        }
-      },
-      title: scope.copy.deleteConfirm(modelId)
-    })
+    setDeleting(true)
+
+    try {
+      await deleteModel(scope, modelId)
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
     <Tip label={scope.copy.deleteAction}>
       <Button
         className={cn(deleting && '[&_svg]:animate-spin')}
-        onClick={handleDelete}
+        onClick={() => void handleDelete()}
         size="icon"
         variant="ghost"
       >

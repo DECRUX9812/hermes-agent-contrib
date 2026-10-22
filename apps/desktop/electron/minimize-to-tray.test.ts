@@ -16,10 +16,7 @@ const native = vi.hoisted(() => ({
 
 vi.mock('electron', () => ({
   app: native.app,
-  ipcMain: {
-    handle: (name: string, fn: (...args: any[]) => any) => native.ipc.set(name, fn),
-    on: (name: string, fn: (...args: any[]) => any) => native.ipc.set(`on:${name}`, fn)
-  },
+  ipcMain: { handle: (name: string, fn: (...args: any[]) => any) => native.ipc.set(name, fn) },
   BrowserWindow: { getAllWindows: () => native.windows },
   Menu: { buildFromTemplate: (items: unknown[]) => items },
   nativeImage: { createFromPath: () => ({ isEmpty: () => false, resize: () => ({}) }) },
@@ -36,7 +33,6 @@ vi.mock('electron', () => ({
       native.trays.push(this)
     }
     setToolTip() {}
-    setTitle() {}
     setContextMenu(menu: any[]) {
       this.menu = menu
     }
@@ -51,7 +47,6 @@ vi.mock('electron', () => ({
 vi.mock('./tray-host', () => ({ watchLinuxTrayHost: async () => () => {} }))
 
 import { createMinimizeToTray } from './minimize-to-tray'
-import { DEFAULT_TRAY_STATUS_STRINGS } from './tray-status'
 
 class Window extends EventEmitter {
   visible = true
@@ -124,12 +119,6 @@ beforeEach(() => {
 })
 afterEach(() => fs.rmSync(home, { recursive: true, force: true }))
 
-// MenuItemConstructorOptions.click wants the native (item, window, event) triple;
-// menu handlers ignore it, so tests invoke through this cast instead.
-function clickItem(item: { click?: unknown } | undefined) {
-  ;(item?.click as (() => void) | undefined)?.()
-}
-
 function setup() {
   const main = new Window()
   const peer = new Window()
@@ -141,11 +130,7 @@ function setup() {
     getIconPath: () => 'icon.png',
     restoreMainWindow: () => main.showInactive(),
     isQuittingForHandoff: () => handoff,
-    log: vi.fn(),
-    focusSession: () => {},
-    newSession: () => {},
-    quickEntryEnabled: () => false,
-    summonQuickEntry: () => {}
+    log: vi.fn()
   })
 
   controller.registerWindow(main as unknown as BrowserWindow, { closeToTray: true })
@@ -296,16 +281,12 @@ test('a restore before the deferred hide fires cancels the stale hide', async ()
 
 test('opt-in minimize and primary Close preserve windows while explicit Quit still exits', async () => {
   const { controller, main, peer } = setup()
-  expect(await controller.start()).toEqual({ enabled: false, available: false, statusEnabled: false })
+  expect(await controller.start()).toEqual({ enabled: false, available: false })
   main.minimize()
   expect(main.visible).toBe(true)
   main.restore()
   await native.ipc.get('hermes:minimize-to-tray:set')!(null, true)
-  expect(native.ipc.get('hermes:minimize-to-tray:get')!()).toEqual({
-    enabled: true,
-    available: true,
-    statusEnabled: false
-  })
+  expect(native.ipc.get('hermes:minimize-to-tray:get')!()).toEqual({ enabled: true, available: true })
   main.minimize()
   await flushDeferredHide()
   expect(main.destroyed).toBe(false)
@@ -328,14 +309,14 @@ test('opt-in minimize and primary Close preserve windows while explicit Quit sti
     expect(main.skipped && peer.skipped).toBe(true)
   }
 
-  clickItem(native.trays[0].menu.find((item: { label?: string }) => item.label === 'Show Hermes'))
+  native.trays[0].menu[0].click()
   expect(main.visible && peer.visible).toBe(true)
   expect(main.minimized || peer.minimized).toBe(false)
   expect(main.skipped || peer.skipped).toBe(false)
   peer.close()
   expect(peer.destroyed).toBe(true)
   main.minimize()
-  clickItem(native.trays[0].menu.find((item: { label?: string }) => item.label === 'Quit Hermes'))
+  native.trays[0].menu[2].click()
   expect(native.app.quit).toHaveBeenCalledOnce()
   // A cancelled guard doesn't call beginQuit; hide remains enabled.
   controller.restore()
@@ -348,7 +329,7 @@ test('opt-in minimize and primary Close preserve windows while explicit Quit sti
   expect(main.destroyed).toBe(false)
   expect(main.visible).toBe(false)
   expect(native.trays[0].destroyed).toBe(false)
-  clickItem(native.trays[0].menu.find((item: { label?: string }) => item.label === 'Show Hermes'))
+  native.trays[0].menu[0].click()
   expect(main.visible).toBe(true)
   controller.beginQuit()
   expect(main.close().preventDefault).not.toHaveBeenCalled()
@@ -380,8 +361,7 @@ test('linux reuses one tray when minimize-to-tray is toggled off and on (#126353
     main.minimize()
     await flushDeferredHide()
     expect(main.visible).toBe(false)
-    // Item 0 is the disabled status line; find the show action by its label.
-    native.trays[0].menu.find(item => item.label === DEFAULT_TRAY_STATUS_STRINGS.show).click()
+    native.trays[0].menu[0].click()
     expect(main.visible).toBe(true)
   } finally {
     restorePlatform()
@@ -399,20 +379,20 @@ test('persistence, disabling, failed tray creation, and handoff never strand hid
   expect(native.trays[0].destroyed).toBe(process.platform !== 'linux')
   await first.controller.setEnabled(true)
   const restarted = setup()
-  expect(await restarted.controller.start()).toEqual({ enabled: true, available: true, statusEnabled: false })
+  expect(await restarted.controller.start()).toEqual({ enabled: true, available: true })
   restarted.handoff()
   restarted.main.close()
   expect(restarted.main.destroyed).toBe(true)
   const failed = setup()
   native.fail = true
-  expect(await failed.controller.start()).toEqual({ enabled: true, available: false, statusEnabled: false })
+  expect(await failed.controller.start()).toEqual({ enabled: true, available: false })
   failed.main.minimize()
   expect(failed.main.visible).toBe(true)
   failed.main.close()
   expect(failed.main.destroyed).toBe(true)
   fs.writeFileSync(path.join(home, 'minimize-to-tray.json'), 'bad json')
   const disabled = setup()
-  expect(await disabled.controller.start()).toEqual({ enabled: false, available: false, statusEnabled: false })
+  expect(await disabled.controller.start()).toEqual({ enabled: false, available: false })
   disabled.main.close()
   expect(disabled.main.destroyed).toBe(true)
 })

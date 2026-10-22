@@ -5,7 +5,7 @@ import { Codicon } from '@/components/ui/codicon'
 import { FanMenu, type FanMenuItem } from '@/components/ui/fan-menu'
 import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
-import { AudioLines, Ear, EarOff, iconSize, Loader2, Square, Volume2, VolumeX } from '@/lib/icons'
+import { Ear, EarOff, iconSize, Loader2, Square, Volume2, VolumeX } from '@/lib/icons'
 import { cn } from '@/lib/utils'
 import { $wakeWord, toggleWakeWord } from '@/store/wake-word'
 
@@ -14,21 +14,17 @@ import type { ChatBarState, VoiceStatus } from './types'
 
 export interface VoiceFanProps {
   autoSpeak: boolean
-  /** A turn is running — the primary start-voice button yields to Send/Stop,
-   *  so mid-session voice start lives here in the fan. */
-  busy: boolean
   disabled: boolean
   state: ChatBarState
   voiceStatus: VoiceStatus
   onDictate: () => void
-  onStartConversation: () => void
   onToggleAutoSpeak: () => void
 }
 
 /**
  * The voice toggles behind one hub. The mic is the button in the row; hovering
- * it fans the others — spoken replies, the wake word, and (mid-turn, when the
- * primary button has yielded to Send/Stop) start-conversation — out of it.
+ * it fans the other two — spoken replies and the wake word — out of it.
+ * Starting a conversation stays on the primary button beside it.
  *
  * The hub is the mic and reports dictation only (recording, transcribing);
  * each disc carries its own on-state.
@@ -36,16 +32,7 @@ export interface VoiceFanProps {
  * Items are memoized on the handful of state bits they read, so the fan only
  * re-renders when a toggle actually flips — not on every composer keystroke.
  */
-export function VoiceFan({
-  autoSpeak,
-  busy,
-  disabled,
-  state,
-  voiceStatus,
-  onDictate,
-  onStartConversation,
-  onToggleAutoSpeak
-}: VoiceFanProps) {
+export function VoiceFan({ autoSpeak, disabled, state, voiceStatus, onDictate, onToggleAutoSpeak }: VoiceFanProps) {
   const { t } = useI18n()
   const c = t.composer
   const wake = useStore($wakeWord)
@@ -93,22 +80,6 @@ export function VoiceFan({
 
   const items = useMemo<FanMenuItem[]>(
     () => [
-      // Mid-session the primary button is Send/Stop, so the only way to start
-      // a voice conversation while a turn runs is this disc.
-      ...(busy
-        ? [
-            {
-              disabled,
-              icon: <AudioLines className={iconSize.sm} />,
-              id: 'conversation',
-              label: c.startVoice,
-              onSelect: () => {
-                triggerHaptic('open')
-                onStartConversation()
-              }
-            } satisfies FanMenuItem
-          ]
-        : []),
       {
         id: 'speak',
         active: autoSpeak,
@@ -132,7 +103,7 @@ export function VoiceFan({
         }
       }
     ],
-    [autoSpeak, busy, c, disabled, onStartConversation, onToggleAutoSpeak, phrase, wakeListening, wakePending]
+    [autoSpeak, c, disabled, onToggleAutoSpeak, phrase, wakeListening, wakePending]
   )
 
   return <FanMenu direction="vertical" hub={hub} items={items} label={c.voiceControls} />

@@ -316,11 +316,6 @@ def _prepare_tool_result_metadata(sid: str, tool_call_id: str, name: str, args: 
         rendered: list[str] = []
         if render_edit_diff_with_delta(name, result, function_args=args, snapshot=snapshot, print_fn=rendered.append):
             metadata["inline_diff"] = "\n".join(rendered)
-    with contextlib.suppress(Exception):
-        # MCP Apps: the Desktop mounts the tool's own UI inline (history rehydrates it from here).
-        from tools.mcp_apps import app_for_tool_call
-        if app := app_for_tool_call(name, args):
-            metadata["mcp_app"] = app
     if session is not None:
         session.setdefault("tool_result_metadata", {})[tool_call_id] = metadata
     return {"tool_result_metadata": metadata} if metadata else {}
@@ -369,6 +364,10 @@ def _on_tool_complete(sid: str, tool_call_id: str, name: str, args: dict, result
     # every client reconcile without parsing tool args.
     if todo_state is not None:
         _emit("todo.updated", sid, todo_state)
+    # A tool (a plugin adding goal criteria, parking the goal) can move automation state mid-turn: repaint
+    # the cards now, not at turn end. Revision-gated, so an ordinary tool emits nothing.
+    if session is not None:
+        _publish_session_control_snapshot(sid, session, only_if_changed=True)
 
 
 # ── _on_tool_progress dispatch: each handler takes (sid, name, preview, kw) ─────────────────────
@@ -455,7 +454,7 @@ _SUBAGENT_FIELDS = (
 )
 
 
-def _progress_subagent(sid: str, name: str, preview, kw, event_type):
+def _subagent_payload(event_type: str, name: str | None, preview, kw: dict, *, show_reasoning: bool) -> dict:
     payload = {"goal": str(kw.get("goal") or ""), "task_count": int(kw.get("task_count") or 1), "task_index": int(kw.get("task_index") or 0)}
     source = {**kw, "tool_name": name, "text": preview}
     for key, present, coerce in _SUBAGENT_FIELDS:
@@ -465,11 +464,16 @@ def _progress_subagent(sid: str, name: str, preview, kw, event_type):
                 payload[key] = val
     # subagent.thinking's text is the child's chain of thought: with reasoning hidden the
     # delegate card must not leak it, same policy as the child-mirror's reasoning.delta.
-    if event_type == "subagent.thinking" and not _session_show_reasoning(sid):
+    if event_type == "subagent.thinking" and not show_reasoning:
         payload.pop("text", None)
     if preview and event_type == "subagent.tool":
         payload["tool_preview"] = str(preview)
         payload["text"] = str(preview)
+    return payload
+
+
+def _progress_subagent(sid: str, name: str, preview, kw, event_type):
+    payload = _subagent_payload(event_type, name, preview, kw, show_reasoning=bool(_session_show_reasoning(sid)))
     # subagent.text is the child's per-token reply, relayed solely to feed a watch window's live mirror
     # (keyed off the child sid); on the parent it's hundreds of ignored frames, so skip it.
     if event_type != "subagent.text":
@@ -478,8 +482,7 @@ def _progress_subagent(sid: str, name: str, preview, kw, event_type):
     # that home. A parent record already gone (close / WS orphan reap mid-turn) cannot be attributed
     # to a profile — bind nothing rather than fold the run into the launch profile.
     if (parent := _sessions.get(sid)) is not None:
-        _mirror_subagent_to_child(
-            event_type, payload, parent.get("profile_home"), parent.get("profile_incarnation") or None)
+        _mirror_subagent_to_child(event_type, payload, parent.get("profile_home"))
 
 
 # event_type -> (handler, requires): `requires` names the arg that must be truthy for the row to be

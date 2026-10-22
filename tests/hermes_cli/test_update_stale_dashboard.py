@@ -110,13 +110,24 @@ def test_update_cleanup_spares_backend_owned_by_valid_ssh_lock(tmp_path, monkeyp
         assert pid in exclude_pids
         return []
 
-    with patch(
+    # ``restart_managed`` first probes for a managed hermes-dashboard unit; unstubbed, that
+    # probe found the developer's real unit and restarted it.
+    calls: list[list[str]] = []
+
+    def fake_run(args, *a, **kw):
+        calls.append(list(args))
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with patch("subprocess.run", side_effect=fake_run), patch(
         "hermes_cli.main_dashboard._find_stale_dashboard_pids",
         side_effect=assert_owned_pid_is_excluded,
     ):
         result = _kill_stale_dashboard_processes(restart_managed=True)
 
     assert result == {"matched": [], "killed": [], "failed": []}
+    assert all(call[:1] == ["systemctl"] and "list-unit-files" in call for call in calls)
+    # Windows has no systemd: the managed-unit probe returns before running anything.
+    assert bool(calls) == (sys.platform != "win32")
 
 
 def test_explicit_stop_does_not_spare_backend_owned_by_valid_ssh_lock(
@@ -136,44 +147,6 @@ def test_explicit_stop_does_not_spare_backend_owned_by_valid_ssh_lock(
         result = _kill_stale_dashboard_processes(restart_managed=False)
 
     assert result == {"matched": [], "killed": [], "failed": []}
-
-
-@pytest.mark.platforms("posix")
-def test_process_scan_reads_live_argv_only_for_rows_that_can_be_hermes(monkeypatch):
-    """ps flattens argv, so a row is re-read losslessly through psutil (a spaced interpreter
-    path parses only from structured argv). That read is a /proc or KERN_PROCARGS2 call per
-    process, so rows that cannot be Hermes never pay it, while every web server is found."""
-    from types import SimpleNamespace
-
-    from hermes_cli import update_cmd_windows
-
-    hermes = {
-        5_000_001: ["/Users/me/Python Home/bin/python3", "/opt/Hermes App/hermes", "webapp", "--port", "9120"],
-        5_000_002: ["/usr/bin/python3.11", "-m", "hermes_cli.main", "serve", "--port", "9119"],
-        5_000_003: ["/home/me/.local/bin/hermes", "--profile", "work", "dashboard"],
-    }
-    others = {5_100_000 + i: argv for i, argv in enumerate(
-        [["/usr/bin/python3", "-m", "http.server", str(8000 + n)] for n in range(300)]
-        + [["/bin/bash", "-l"], ["[kworker/0:1-events]"], ["/usr/lib/firefox/firefox", "-contentproc"]] * 100)}
-    table = {**hermes, **others}
-    constructed: list[int] = []
-
-    class _Process:
-        def __init__(self, pid):
-            constructed.append(pid)
-            self._argv = table[pid]
-
-        def cmdline(self):
-            return self._argv
-
-    monkeypatch.setattr(update_cmd_windows, "_psutil", lambda: SimpleNamespace(Process=_Process))
-    monkeypatch.setattr(dashboard_procs, "_ledger_web_server_processes", lambda: {})
-    ps_out = "\n".join(_ps_line(pid, " ".join(argv)) for pid, argv in table.items()) + "\n"
-    with patch("subprocess.run", side_effect=_ps_runner(ps_out)):
-        found = dict(dashboard_procs._scan_dashboard_processes())
-
-    assert set(found) == set(hermes)
-    assert set(constructed) <= set(hermes)
 
 
 class TestFindStaleDashboardPids:
@@ -492,50 +465,6 @@ class TestManualBackendRespawn:
 
         respawn.assert_called_once_with([argv])
         assert "when you're ready" not in capsys.readouterr().out
-
-    @pytest.mark.platforms("posix")
-    def test_webapp_is_stopped_but_never_respawned_while_its_profile_dashboard_is(
-            self, tmp_path, monkeypatch, capsys):
-        """A respawned Webapp mints a new host-access launch link and prints it into the persistent
-        restart log, and every open tab loses its session regardless. The update stops it, is never
-        the one to start it again, and hands the operator the command instead; a dashboard of the same
-        profile still comes back (the Webapp does not take the one-per-profile respawn slot)."""
-        home = tmp_path / ".hermes"
-        monkeypatch.setenv("HERMES_HOME", str(home))
-        webapp = ["/venv/bin/python", "/venv/bin/hermes", "webapp", "--port", "9120"]
-        dashboard = ["/venv/bin/python", "/venv/bin/hermes", "dashboard", "--port", "9119"]
-        argv_by_pid = {6101: webapp, 6102: dashboard}
-        spawned: list[list[str]] = []
-
-        class _FakePopen:
-            def __init__(self, cmd, **kwargs):
-                spawned.append(list(cmd))
-
-            def poll(self):
-                return None
-
-        def fake_kill(pid, sig):
-            if sig == 0:
-                raise ProcessLookupError
-
-        with patch.object(main_dashboard, "_restart_managed_dashboard_service", return_value=False), \
-             patch.object(main_dashboard, "_find_stale_dashboard_pids", return_value=list(argv_by_pid)), \
-             patch.object(main_dashboard, "_get_pid_cgroup_path", return_value=None), \
-             patch.object(main_dashboard, "_get_systemd_service_for_pid", return_value=None), \
-             patch.object(main_dashboard, "_dashboard_cmdline_for_pid", side_effect=argv_by_pid.get), \
-             patch.object(dashboard_procs, "_hermes_home_for_pid", return_value=str(home)), \
-             patch.object(dashboard_procs, "_posix_descendants", return_value={}), \
-             patch.object(main_dashboard.subprocess, "Popen", _FakePopen), \
-             patch("os.kill", side_effect=fake_kill), \
-             patch("time.sleep"):
-            result = _kill_stale_dashboard_processes(restart_managed=True)
-            # Respawns relaunch through the current install's entry point.
-            expected = main_dashboard._respawnable_command_for_current_install(dashboard)
-
-        assert sorted(result["killed"]) == [6101, 6102]
-        assert spawned == [[*expected, "--no-open"]]
-        assert result["unrecovered"] == []
-        assert "hermes webapp --port 9120" in capsys.readouterr().out
 
     @pytest.mark.skipif(sys.platform == "win32", reason="POSIX cmdline capture + respawn")
     def test_port_zero_serves_killed_without_respawn(self, capsys):

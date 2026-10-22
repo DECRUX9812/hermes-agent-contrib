@@ -23,9 +23,9 @@ import { FreeTierSignInDialog } from '@/components/free-tier/sign-in-dialog'
 import { GatewayConnectingOverlay } from '@/components/gateway-connecting-overlay'
 import { NotificationStack } from '@/components/notifications'
 import { DesktopOnboardingOverlay } from '@/components/onboarding'
-import { OnboardingChatGate } from '@/components/onboarding-chat/gate'
-import { PageLoader } from '@/components/page-loader'
-import { $newSessionTabAction, type NewSessionTabOptions, registerPaneCloser } from '@/components/pane-shell/tree/store'
+import { firstRunIntro } from '@/components/onboarding/first-run/kickoff'
+import { OnboardingEnd } from '@/components/onboarding/onboarding-end'
+import { $newSessionTabAction, registerPaneCloser } from '@/components/pane-shell/tree/store'
 import {
   $workspaceMode,
   $workspaceNewSessionTarget,
@@ -53,7 +53,13 @@ import { reconnectGateway } from '@/store/gateway-reconnect'
 import { $interfaceMode, shownInMode } from '@/store/interface-mode'
 import { $pinnedSessionIds, pinSession, restoreWorktree, unpinSession } from '@/store/layout'
 import { notifyError } from '@/store/notifications'
-import { $poolLimitsSettingsRequest } from '@/store/pool-limits'
+import { markOnboardingDecided } from '@/store/onboarding-presence'
+import {
+  $onboardingChatOpener,
+  decideOnboarding,
+  type OnboardingRequest,
+  type OnboardingResume
+} from '@/store/onboarding-run'
 import { $previewTarget } from '@/store/preview'
 import {
   $activeGatewayProfile,
@@ -87,7 +93,6 @@ import {
   setBusy,
   setMessages
 } from '@/store/session'
-import { sessionTileDelegate } from '@/store/session-states'
 import { reportPendingUpdateRun } from '@/store/shared-metrics'
 import { $archivedSessions } from '@/store/sidebar-archive'
 import { $titlebarAppActionsSide, titlebarAppActionsClusterCounts } from '@/store/titlebar-app-actions'
@@ -97,7 +102,7 @@ import { useSkinCommand } from '@/themes/use-skin-command'
 import type { SessionInfo } from '@/types/hermes'
 
 import { closeWorkspaceTab } from '../chat/close-tab'
-import { requestComposerInsert, requestComposerInsertRefs } from '../chat/composer/focus'
+import { requestComposerInsert } from '../chat/composer/focus'
 import { useComposerActions } from '../chat/hooks/use-composer-actions'
 import { CommandPalette } from '../command-palette'
 import { triggerAndRefreshCronJobs } from '../cron/cron-actions'
@@ -110,13 +115,11 @@ import { ModelPickerOverlay } from '../model-picker-overlay'
 import { ModelVisibilityOverlay } from '../model-visibility-overlay'
 import { mainChatOccupied, openSession, openSessionFromPicker } from '../open-session'
 import { PetGenerateOverlay } from '../pet-generate/pet-generate-overlay'
-import { QuickOpen } from '../quick-open'
 import { FileActionDialogs } from '../right-sidebar/file-actions'
 import { RemoteFolderPicker } from '../right-sidebar/files/remote-picker'
 import { resetProjectTreeState } from '../right-sidebar/files/use-project-tree'
 import { PersistentTerminal } from '../right-sidebar/terminal/persistent'
 import { closeAllTerminals } from '../right-sidebar/terminal/terminals'
-import type { FanOutTarget } from '../roster/fan-out-model'
 import {
   CRON_ROUTE,
   navigateToWorkspacePage,
@@ -141,7 +144,6 @@ import { useSessionActions } from '../session/hooks/use-session-actions'
 import { useSessionListActions } from '../session/hooks/use-session-list-actions'
 import { useSessionStateCache } from '../session/hooks/use-session-state-cache'
 import { useTranscriptPeerSync } from '../session/hooks/use-transcript-peer-sync'
-import { SessionOpenDialog } from '../session/session-open-dialog'
 import { startWorkspaceSession } from '../session/workspace-session-target'
 import { PluginInstallModal } from '../settings/plugin-install-modal'
 import { useOverlayRouting } from '../shell/hooks/use-overlay-routing'
@@ -154,11 +156,9 @@ import {
   titlebarToolsWidthCss
 } from '../shell/titlebar'
 import { TitlebarControls } from '../shell/titlebar-controls'
-import { useTouchTitlebar } from '../shell/use-touch-titlebar'
 import { WslgWindowControls } from '../shell/wslg-window-controls'
 import { UpdatesOverlay } from '../updates-overlay'
 
-import { CloseOnlyOverlays } from './close-only-overlays'
 import { ContribWiringContext } from './context'
 import {
   hydrateStoredSessionTranscript,
@@ -169,15 +169,13 @@ import {
 } from './hooks/use-background-sync'
 import { useDesktopIntegrations } from './hooks/use-desktop-integrations'
 import { useDesktopMetrics } from './hooks/use-desktop-metrics'
-import { useMenuBarStatus } from './hooks/use-menu-bar-status'
 import { usePetBridge } from './hooks/use-pet-bridge'
 import { useQuickEntryBridge } from './hooks/use-quick-entry-bridge'
 import { useSessionTileDelegate } from './hooks/use-session-tile-delegate'
 import { McpInstallDeepLinkDialog } from './mcp-install-deeplink-dialog'
-import { type KickoffSlashCommand, useOnboardingKickoff } from './onboarding-kickoff'
 import { useTitlebarToolContributions } from './panes'
 import { type AmbientGatewayRequest, createSessionRpcDispatcher } from './session-rpc-dispatcher'
-import { ChatRoutesSurface, RailSurface, SidebarSurface, StatusbarSurface, TerminalSurface } from './surfaces'
+import { ChatRoutesSurface, SidebarSurface, StatusbarSurface, TerminalSurface } from './surfaces'
 import type { WiringActions, WiringApi } from './types'
 import {
   useCreditsNoticeDemo,
@@ -186,22 +184,17 @@ import {
   useOpenKeybindsListener,
   usePublishRestartPreviewServer
 } from './wiring-effects'
-import { POOL_LIMITS_SETTINGS_ROUTE } from './wiring-routing'
 
 // Overlay views the controller mounts over the shell — lazy, load on demand.
 // The workspace-route full-page views (skills/messaging/artifacts) are the
 // ChatRoutesSurface's and live in ./surfaces.
 const AgentsView = lazy(async () => ({ default: (await import('../agents')).AgentsView }))
-const AttentionInboxView = lazy(async () => ({ default: (await import('../attention-inbox')).AttentionInboxView }))
-const MissionControlView = lazy(async () => ({ default: (await import('../mission-control')).MissionControlView }))
 const CommandCenterView = lazy(async () => ({ default: (await import('../command-center')).CommandCenterView }))
 const CronView = lazy(async () => ({ default: (await import('../cron')).CronView }))
 const WebhooksView = lazy(async () => ({ default: (await import('../webhooks')).WebhooksView }))
 const ProfilesView = lazy(async () => ({ default: (await import('../profiles')).ProfilesView }))
 const SettingsView = lazy(async () => ({ default: (await import('../settings')).SettingsView }))
 const StarmapView = lazy(async () => ({ default: (await import('../starmap')).StarmapView }))
-const ActivityView = lazy(async () => ({ default: (await import('../activity')).ActivityView }))
-const RosterView = lazy(async () => ({ default: (await import('../roster')).RosterView }))
 
 // Surfaces (the four wired panes), the render context + WiredPane, and the
 // WiringActions/WiringApi contracts all live in sibling modules — this file is
@@ -225,18 +218,39 @@ function useRouteRequestNavigation(navigate: ReturnType<typeof useNavigate>): vo
   }, [navigate, routeRequest])
 }
 
-// Recovery actions raised by toast buttons (Restart Hermes, Open Billing, pool
-// caps, cron review) fire from stores with no router context. Each counter is
+// The main window asks the backend whether first-run onboarding is due and opens it with main's
+// intro around it; every other window never runs it, so its first-run surfaces are free at once.
+// Settings' Run onboarding again opens its chat through the same opener.
+function useFirstRunOnboarding(request: OnboardingRequest, open: OnboardingResume, gatewayOpen: boolean): void {
+  useEffect(() => {
+    if (!isMainWindow()) {
+      markOnboardingDecided()
+    } else if (gatewayOpen) {
+      void decideOnboarding(request, open, { intro: firstRunIntro() })
+    }
+  }, [gatewayOpen, open, request])
+
+  useEffect(() => {
+    if (!isMainWindow()) {
+      return
+    }
+
+    $onboardingChatOpener.set(open)
+
+    return () => $onboardingChatOpener.set(null)
+  }, [open])
+}
+
+// Recovery actions raised by toast buttons (Restart Hermes, Open Billing, cron
+// review) fire from stores with no router context. Each counter is
 // consumed here: the ref skips the initial mount value, and only a fresh
 // request navigates or recycles the backend.
 function useRecoveryRequestToasts(): void {
   const navigate = useNavigate()
   const billingSettingsRequest = useStore($billingSettingsRequest)
-  const poolLimitsSettingsRequest = useStore($poolLimitsSettingsRequest)
   const backendRestartRequest = useStore($backendRestartRequest)
   const cronReviewRequest = useStore($cronReviewRequest)
   const billingSettingsSeenRef = useRef(0)
-  const poolLimitsSettingsSeenRef = useRef(0)
   const backendRestartSeenRef = useRef(0)
   const cronReviewSeenRef = useRef(0)
 
@@ -274,22 +288,6 @@ function useRecoveryRequestToasts(): void {
     }
   }, [billingSettingsRequest, navigate])
 
-  // Pool-cap recovery is fired by the notification action, which has no router
-  // context. Keep navigation user-initiated: the counter changes only when the
-  // user clicks "Open Advanced Settings" on a pool-slot failure.
-  // eslint-disable-next-line no-restricted-syntax -- one-shot request-seen sentinel, not an atom mirror
-  useEffect(() => {
-    if (poolLimitsSettingsRequest === poolLimitsSettingsSeenRef.current) {
-      return
-    }
-
-    poolLimitsSettingsSeenRef.current = poolLimitsSettingsRequest
-
-    if (poolLimitsSettingsRequest > 0) {
-      navigate(POOL_LIMITS_SETTINGS_ROUTE)
-    }
-  }, [navigate, poolLimitsSettingsRequest])
-
   // eslint-disable-next-line no-restricted-syntax -- one-shot request-seen sentinel, not an atom mirror
   useEffect(() => {
     if (cronReviewRequest === cronReviewSeenRef.current) {
@@ -302,15 +300,6 @@ function useRecoveryRequestToasts(): void {
       navigate(CRON_ROUTE)
     }
   }, [cronReviewRequest, navigate])
-}
-
-function OverlayFallback() {
-  return (
-    <PageLoader
-      aria-label={translateNow('common.loading')}
-      className="fixed inset-0 z-50 bg-black/22 backdrop-blur-[0.125rem]"
-    />
-  )
 }
 
 export function ContribWiring({ children }: { children: ReactNode }) {
@@ -373,18 +362,14 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     chatOpen,
     closeOverlayToPreviousRoute,
     commandCenterInitialSection,
-    activityOpen,
     commandCenterOpen,
     cronOpen,
     currentView,
-    inboxOpen,
-    missionOpen,
     openAgents,
     openCommandCenterSection,
     openStarmap,
     profilesOpen,
     resetOverlayReturnRoute,
-    rosterOpen,
     settingsOpen,
     starmapOpen,
     toggleCommandCenter,
@@ -439,26 +424,13 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const { loadMoreMessagingForPlatform, loadMoreSessions, refreshCronJobs, refreshMessagingSessions, refreshSessions } =
     useSessionListActions({ profileScope })
 
-  const updateActiveSessionRuntimeInfo = useCallback(
-    (info: { branch?: string; cwd?: string }) => {
-      const sessionId = activeSessionIdRef.current
-
-      if (!sessionId) {
-        return
-      }
-
-      updateSessionState(sessionId, state => ({
-        ...state,
-        branch: info.branch ?? state.branch,
-        cwd: info.cwd ?? state.cwd
-      }))
-    },
-    [activeSessionIdRef, updateSessionState]
-  )
-
-  const { refreshProjectBranch } = useCwdActions({
+  const { changeSessionCwd, refreshProjectBranch } = useCwdActions({
     activeSessionIdRef,
-    onSessionRuntimeInfo: updateActiveSessionRuntimeInfo,
+    onSessionRuntimeInfo: useCallback(
+      (sessionId: string, { branch, cwd }: { branch?: string; cwd?: string }) =>
+        updateSessionState(sessionId, state => ({ ...state, branch: branch ?? state.branch, cwd: cwd ?? state.cwd })),
+      [updateSessionState]
+    ),
     requestGateway
   })
 
@@ -635,14 +607,10 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     if (startWorkSessionRequest.draft) {
       requestComposerInsert(startWorkSessionRequest.draft, { target: 'main' })
     }
-
-    // Both inserts ride the deferred bus in dispatch order, so seeded chips
-    // (plan→build handoff) land after the draft text on the fresh composer.
-    if (startWorkSessionRequest.refs?.length) {
-      requestComposerInsertRefs(startWorkSessionRequest.refs, { target: 'main' })
-    }
   }, [startSessionInWorkspace, startWorkSessionRequest])
 
+  // Opens a stored chat on screen: resume it, then route to it (resume alone selects it, the route
+  // stays where it was). Throws when the chat did not become the selected one.
   const adoptSessionRoute = useCallback(
     async (storedSessionId: string) => {
       creatingSessionRef.current = true
@@ -650,9 +618,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       try {
         await resumeSession(storedSessionId, true)
 
-        if ($selectedStoredSessionId.get() === storedSessionId) {
-          navigate(sessionRoute(storedSessionId), { replace: true })
+        if ($selectedStoredSessionId.get() !== storedSessionId) {
+          throw new Error('The onboarding chat could not be opened.')
         }
+
+        navigate(sessionRoute(storedSessionId), { replace: true })
       } finally {
         window.setTimeout(() => {
           creatingSessionRef.current = false
@@ -661,6 +631,8 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     },
     [navigate, resumeSession]
   )
+
+  useFirstRunOnboarding(requestGateway, adoptSessionRoute, gatewayState === 'open')
 
   // "New project" DRAG completion: the dialog created a project that was
   // dropped onto a chat zone (tab-strip slot / pane edge / pane center). Open
@@ -736,17 +708,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     updateSessionState
   })
 
-  const runKickoffSlash = useCallback<KickoffSlashCommand>(
-    (command, options) => executeSlashCommand(command, { ...options, typed: false }),
-    [executeSlashCommand]
-  )
-
-  const kickoffFirstChat = useOnboardingKickoff({
-    requestGateway: ambientRequestGateway,
-    resumeSession: adoptSessionRoute,
-    runSlashCommand: runKickoffSlash
-  })
-
   // Runs outside the selected ChatBar so queues belonging to background
   // sessions continue once those sessions are idle. The session dispatcher
   // routes each send to its owner; a disconnected foreground is not a global gate.
@@ -778,10 +739,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // SAME submit machinery the normal composer uses (current chat / picked
   // session / new session), and it hears gateway truth from this window.
   useQuickEntryBridge({ submitText, submitTextToNewSession })
-
-  // Menu-bar status (#38): push the session dot-state truth out to the tray
-  // menu/badge so the menu bar mirrors what the sidebar paints.
-  useMenuBarStatus()
 
   // Leaving HUD mode hands this window the session back (see hud/handoff).
   useHudHandoff({ navigate, resumeSession })
@@ -1029,59 +986,26 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   // falls THROUGH to the ordinary session rather than refusing: the main strip
   // carries plain session tabs alongside bot chats, so a "+" there must never
   // be dead just because the sidebar's current selection has nowhere to route.
-  const openNewSessionTab = useCallback(
-    (options?: NewSessionTabOptions) => {
-      const workspaceOwnerKey = $workspaceOwnerKey.get()
-      const workspaceNewSessionTarget = $workspaceNewSessionTarget.get()
-      const cwd = options?.cwd?.trim() ? { cwd: options.cwd.trim() } : {}
+  const openNewSessionTab = useCallback(() => {
+    const workspaceOwnerKey = $workspaceOwnerKey.get()
+    const workspaceNewSessionTarget = $workspaceNewSessionTarget.get()
 
-      if ($workspaceMode.get() === 'bots' && workspaceNewSessionTarget?.kind === 'route' && workspaceOwnerKey) {
-        void openNewSessionTile('center', {
-          ...cwd,
-          listed: false,
-          route: workspaceNewSessionTarget.route,
-          workspaceScope: {
-            ownerRoute: workspaceNewSessionTarget.route,
-            workspaceMode: 'bots',
-            workspaceOwnerKey
-          }
-        })
-
-        return
-      }
-
-      void openNewSessionTile('center', { ...cwd, listed: false })
-    },
-    [openNewSessionTile]
-  )
-
-  // Roadmap #21 — parallel fan-out: one prompt mints a sibling session tile
-  // on EVERY explicitly-picked profile/bot. Each create rides the pick's own
-  // exact owner route (also stamped as the tile's ownerRoute so its socket
-  // stays pinned), so islands stay islands — nothing routes implicitly.
-  // Sequential creates keep tab order matching the pick list and isolate a
-  // single failure to one toast instead of failing the whole send.
-  const fanOutPrompt = useCallback(
-    (targets: FanOutTarget[], text: string) => {
-      void (async () => {
-        for (const target of targets) {
-          try {
-            const created = await openNewSessionTile('center', {
-              route: target.route,
-              workspaceScope: { ownerRoute: target.route, workspaceMode: 'sessions' }
-            })
-
-            if (created?.runtimeId) {
-              await sessionTileDelegate()?.submitToSession(created.runtimeId, text)
-            }
-          } catch (error) {
-            notifyError(error, translateNow('roster.fanOutFailed'))
-          }
+    if ($workspaceMode.get() === 'bots' && workspaceNewSessionTarget?.kind === 'route' && workspaceOwnerKey) {
+      void openNewSessionTile('center', {
+        listed: false,
+        route: workspaceNewSessionTarget.route,
+        workspaceScope: {
+          ownerRoute: workspaceNewSessionTarget.route,
+          workspaceMode: 'bots',
+          workspaceOwnerKey
         }
-      })()
-    },
-    [openNewSessionTile]
-  )
+      })
+
+      return
+    }
+
+    void openNewSessionTile('center', { listed: false })
+  }, [openNewSessionTile])
 
   // Archive the selected session (rebindable `session.archive` hotkey).
   const archiveSelectedSession = useCallback(() => {
@@ -1226,6 +1150,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         .then(() => undefined)
         .catch(() => undefined),
     followDefaultModel,
+    changeSessionCwd,
     getGateway: () => gatewayRef.current,
     openAgents,
     openCommandCenterSection,
@@ -1252,8 +1177,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     [actions, currentView]
   )
 
-  const railNode = useMemo(() => <RailSurface actions={actions} currentView={currentView} />, [actions, currentView])
-
   const terminalNode = useMemo(() => <TerminalSurface />, [])
 
   const statusbarNode = useMemo(
@@ -1278,12 +1201,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const api = useMemo<WiringApi>(
     () => ({
       chatRoutes: chatRoutesNode,
-      rail: railNode,
       sidebar: sidebarNode,
       statusbar: statusbarNode,
       terminal: terminalNode
     }),
-    [chatRoutesNode, railNode, sidebarNode, statusbarNode, terminalNode]
+    [chatRoutesNode, sidebarNode, statusbarNode, terminalNode]
   )
 
   // The REAL titlebar tool clusters (sidebar/flip toggles, haptics, keybinds,
@@ -1294,7 +1216,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
   const rightTitlebarTools = useTitlebarToolContributions('right')
   const connection = useStore($connection)
   const controlsPos = titlebarControlsPosition(connection?.windowButtonPosition, Boolean(connection?.isFullscreen))
-  const touchTitlebar = useTouchTitlebar()
   // Windows/WSLg reserve native min/max/close on the right (AppShell parity:
   // prefer the live WCO measurement, fall back to the static reservation).
   const measuredOverlayWidth = useWindowControlsOverlayWidth()
@@ -1335,8 +1256,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         style={
           {
             '--titlebar-controls-left': `${controlsPos.left}px`,
-            '--titlebar-controls-top': `${touchTitlebar ? 0 : controlsPos.top}px`,
-            ...(touchTitlebar ? { '--titlebar-control-size': '44px', '--titlebar-control-height': '44px' } : {}),
+            '--titlebar-controls-top': `${controlsPos.top}px`,
             '--titlebar-controls-width': leftToolsWidth,
             '--titlebar-controls-y-nudge': titlebarControlsYNudge(titlebarChrome),
             '--titlebar-tools-right': titlebarToolsRight,
@@ -1368,14 +1288,6 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       <RemoteDisplayBanner />
       {!isAuxiliaryWindow() && <DesktopInstallOverlay />}
       {!isAuxiliaryWindow() && (
-        <OnboardingChatGate
-          enabled={gatewayState === 'open'}
-          onKickoff={kickoffFirstChat}
-          requestGateway={ambientRequestGateway}
-          runsIntro={isMainWindow()}
-        />
-      )}
-      {!isAuxiliaryWindow() && (
         <DesktopOnboardingOverlay
           enabled={gatewayState === 'open'}
           onCompleted={() => {
@@ -1387,6 +1299,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
           requestGateway={requestGateway}
         />
       )}
+      {!isAuxiliaryWindow() && <OnboardingEnd />}
       {!isAuxiliaryWindow() && (
         <SharedMetricsConsentDialog
           enabled={gatewayState === 'open'}
@@ -1417,9 +1330,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       <BootFailureOverlay />
       <UpdateHoldOverlay />
       <CommandPalette />
-      <QuickOpen />
       <PluginInstallModal />
-      <SessionOpenDialog navigate={navigate} />
       <PetGenerateOverlay />
       <SessionSwitcher />
       <FileActionDialogs />
@@ -1428,7 +1339,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       <FindBar />
 
       {settingsOpen && (
-        <Suspense fallback={<OverlayFallback />}>
+        <Suspense fallback={null}>
           <SettingsView
             gateway={gateway}
             onClose={closeOverlayToPreviousRoute}
@@ -1459,7 +1370,7 @@ export function ContribWiring({ children }: { children: ReactNode }) {
       )}
 
       {commandCenterOpen && (
-        <Suspense fallback={<OverlayFallback />}>
+        <Suspense fallback={null}>
           <CommandCenterView
             initialSection={commandCenterInitialSection}
             onClose={closeOverlayToPreviousRoute}
@@ -1471,51 +1382,33 @@ export function ContribWiring({ children }: { children: ReactNode }) {
         </Suspense>
       )}
 
-      {inboxOpen && (
-        <Suspense fallback={<OverlayFallback />}>
-          <AttentionInboxView
-            onClose={closeOverlayToPreviousRoute}
-            onOpenSession={sessionId => openSession(sessionId, navigate)}
-          />
+      {agentsOpen && (
+        <Suspense fallback={null}>
+          <AgentsView onClose={closeOverlayToPreviousRoute} />
         </Suspense>
       )}
-
-      {/* Mission Control: every mid-turn session as a watchable card with a
-          Stop, plus one-tap side-by-side tiling. Same close/return contract
-          as the inbox — it's a short task over the chat, not a destination. */}
-      {missionOpen && (
-        <Suspense fallback={<OverlayFallback />}>
-          <MissionControlView
-            onClose={closeOverlayToPreviousRoute}
-            onOpenSession={sessionId => openSession(sessionId, navigate)}
-          />
-        </Suspense>
-      )}
-
-      <CloseOnlyOverlays
-        onClose={closeOverlayToPreviousRoute}
-        overlays={[{ id: 'agents', open: agentsOpen, View: AgentsView }]}
-      />
 
       {cronOpen && (
-        <Suspense fallback={<OverlayFallback />}>
+        <Suspense fallback={null}>
           <CronView onClose={closeOverlayToPreviousRoute} onOpenSession={openStoredSession} />
         </Suspense>
       )}
 
-      <CloseOnlyOverlays
-        onClose={closeOverlayToPreviousRoute}
-        overlays={[
-          { id: 'webhooks', open: webhooksOpen, View: WebhooksView },
-          { id: 'profiles', open: profilesOpen, View: ProfilesView },
-          { id: 'starmap', open: starmapOpen, View: StarmapView },
-          { id: 'activity', open: activityOpen, View: ActivityView }
-        ]}
-      />
+      {webhooksOpen && (
+        <Suspense fallback={null}>
+          <WebhooksView onClose={closeOverlayToPreviousRoute} />
+        </Suspense>
+      )}
 
-      {rosterOpen && (
-        <Suspense fallback={<OverlayFallback />}>
-          <RosterView onClose={closeOverlayToPreviousRoute} onFanOut={fanOutPrompt} />
+      {profilesOpen && (
+        <Suspense fallback={null}>
+          <ProfilesView onClose={closeOverlayToPreviousRoute} />
+        </Suspense>
+      )}
+
+      {starmapOpen && (
+        <Suspense fallback={null}>
+          <StarmapView onClose={closeOverlayToPreviousRoute} />
         </Suspense>
       )}
 

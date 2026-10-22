@@ -92,9 +92,7 @@ def default_db_path() -> Path:
 
 
 def _connect_readonly(db_path: Path) -> sqlite3.Connection:
-    from hermes_cli.sqlite_safe_read import connect_tracked
-
-    return connect_tracked(f"file:{db_path}?mode=ro", uri=True)
+    return sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
 
 
 def _fetch_rows(cur) -> Iterator[tuple]:

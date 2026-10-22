@@ -98,10 +98,8 @@ def _first_session_started_at(home: Path | None = None) -> float | None:
     database = home / "state.db"
     if not database.exists():
         return time.time()
-    from hermes_cli.sqlite_safe_read import connect_tracked
-
     with contextlib.closing(
-        connect_tracked(database.resolve().as_uri() + "?mode=ro", uri=True, timeout=1)
+        sqlite3.connect(f"file:{database}?mode=ro", uri=True, timeout=1)
     ) as connection:
         row = connection.execute("SELECT MIN(started_at) FROM sessions").fetchone()
     if not row or row[0] is None:

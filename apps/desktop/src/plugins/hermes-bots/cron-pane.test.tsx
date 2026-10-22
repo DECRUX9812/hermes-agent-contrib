@@ -55,8 +55,7 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
 const { host } = await import('@hermes/plugin-sdk')
 const { $lastRoster } = await import('./data')
 const { $selectedBot } = await import('./bot-state')
-const { MissionRail } = await import('./mission-rail')
-const { setRailTab } = await import('./rail-state')
+const { RoutinesPane } = await import('./cron')
 
 /** The SDK store the pane's owner ladder reads. */
 const $focused = host.state.focusedSessionOwner as unknown as ReturnType<typeof atom>
@@ -64,13 +63,11 @@ const $focused = host.state.focusedSessionOwner as unknown as ReturnType<typeof 
 const job: RoutineJob = { enabled: true, job_id: 'j-1', name: 'Report', schedule: 'every 1h', state: 'scheduled' }
 
 function renderPane() {
-  // Routines live under the rail's Scheduled tab.
-  setRailTab('scheduled')
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   return render(
     <QueryClientProvider client={client}>
-      <MissionRail />
+      <RoutinesPane />
     </QueryClientProvider>
   )
 }
@@ -111,13 +108,12 @@ describe('the pane follows the roster hydrating after mount', () => {
 
     // The reported "create silently no-ops" symptom starts here: while the
     // owner is stuck unresolved the pane never offers any create control.
-    // Both doors: the header action and the empty state's own call to action
-    // (the autopilot card, whose "write your own" opens a blank routine).
-    const custom = await screen.findByRole('button', { name: 'Write your own…' })
+    expect(await screen.findByText('No scheduled jobs yet')).toBeTruthy()
+
+    // Both doors: the header action and the empty state's own call to action.
     const create = screen.getAllByRole('button', { name: 'New cron' })
 
-    expect(create).toHaveLength(1)
-    expect(custom).toBeTruthy()
+    expect(create).toHaveLength(2)
 
     act(() => create[0].click())
 

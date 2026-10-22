@@ -2,7 +2,6 @@ import { flushSync } from 'react-dom'
 
 import { $activeTreeGroup, $hoveredTreeGroup, noteActiveTreeGroup } from '@/components/pane-shell/tree/store'
 import { isEditableTarget, OVERLAY_SURFACE } from '@/lib/keybinds/combo'
-import { isTouchInteraction } from '@/lib/touch-interaction'
 import { $composerPopout } from '@/store/composer-popout'
 
 import { $floatingComposerOwner, type FloatingComposerOwner } from './floating-state'
@@ -31,10 +30,7 @@ const inInlineEdit = (el: Element | null) => Boolean(el?.closest(EDIT_COMPOSER_R
  * element's focusin visible to React. Composer editors are excluded, so
  * hover-switching between panes keeps behaving as before (#114245). */
 const keepsOwnFocus = (el: Element | null) =>
-  inInlineEdit(el) ||
-  // Native audio/video controls own focus while their overflow menu is open.
-  el instanceof HTMLMediaElement ||
-  (isEditableTarget(el) && !el?.closest('[data-slot="composer-rich-input"]'))
+  inInlineEdit(el) || (isEditableTarget(el) && !el?.closest('[data-slot="composer-rich-input"]'))
 
 /** Focus inside an open floating layer — a popover, menu, listbox or dialog
  * portaled over the transcript — is the user's own as well. Radix moves focus
@@ -82,7 +78,7 @@ function selectionOutsideComposer(): boolean {
 function focusSelectedComposer() {
   const owner = $floatingComposerOwner.get()
 
-  if (!owner || isTouchInteraction() || selectionOutsideComposer() || inFloatingLayer(document.activeElement)) {
+  if (!owner || selectionOutsideComposer() || inFloatingLayer(document.activeElement)) {
     return
   }
 
@@ -182,7 +178,7 @@ function trackPointer(event: PointerEvent) {
     active.dataset.slot === 'composer-rich-input' &&
     active.closest<HTMLElement>('[data-composer-owner]')?.dataset.composerOwner === id
 
-  if (event.type === 'pointermove' && !isTouchInteraction(event) && !alreadyTyping && !keepsOwnFocus(active)) {
+  if (event.type === 'pointermove' && !alreadyTyping && !keepsOwnFocus(active)) {
     focusSelectedComposer()
   }
 }
@@ -213,7 +209,7 @@ function trackFocus(event: FocusEvent) {
   // A delayed focus/restore isn't a navigation gesture. A clicked control,
   // keyboard Tab, or the inline edit opened by a bubble click still keeps its
   // normal focus, without redirecting to the input.
-  if (isTouchInteraction() || keyboardNavigation || keepsOwnFocus(target) || (pointerDownTarget && target.contains(pointerDownTarget))) {
+  if (keyboardNavigation || keepsOwnFocus(target) || (pointerDownTarget && target.contains(pointerDownTarget))) {
     flushSync(() => selectSurface(id))
   } else {
     // A refused redirect leaves focus where it landed: that element's focusin

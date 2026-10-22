@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from pydantic import BaseModel, Field, SecretStr, StrictBool, field_validator
+from pydantic import BaseModel, Field, SecretStr, StrictBool, StrictInt, field_validator
 
 
 class ConfigUpdate(BaseModel):
@@ -101,13 +101,6 @@ class ManagedDirectoryCreate(BaseModel):
 class ManagedFileDelete(BaseModel):
     path: str
     recursive: bool = False
-
-class FileTicketRequest(BaseModel):
-    """POST /api/files/ticket — the exact query the ticketed download/stream URL carries."""
-    route: Literal["download", "stream"]
-    path: str
-    profile: Optional[str] = None
-    session_id: Optional[str] = None
 
 class ModelAssignment(BaseModel):
     """POST /api/model/set — assign a provider/model to a slot.
@@ -217,15 +210,6 @@ class GitWorktreeRemoveBody(BaseModel):
     worktreePath: str
     force: bool = False
 
-class GitWorktreeMergeBody(BaseModel):
-    path: str
-    worktreePath: str
-
-class GitWorktreeEnsureBody(BaseModel):
-    path: str
-    worktreePath: str
-    branch: Optional[str] = None
-
 class GitBranchSwitchBody(BaseModel):
     path: str
     branch: str
@@ -278,16 +262,21 @@ class BulkDeleteSessions(BaseModel):
     profile: Optional[str] = None
 
 class SessionImport(BaseModel):
+    request_id: Optional[str] = None
+    expected_revision: Optional[StrictInt] = Field(None, ge=0)
     sessions: list[dict[str, Any]]
     profile: Optional[str] = None
 
 class SessionRename(BaseModel):
+    request_id: Optional[str] = None
+    expected_revision: Optional[StrictInt] = Field(None, ge=0)
+    expected_generation: Optional[StrictInt] = Field(None, ge=0)
     title: Optional[str] = None
-    archived: Optional[bool] = None
-    hidden: Optional[bool] = None  # also used by cross-profile reconciliation
-    pinned: Optional[bool] = None  # durable "keep" (Desktop pins); exempt from auto_archive
+    archived: Optional[StrictBool] = None
+    hidden: Optional[StrictBool] = None  # also used by cross-profile reconciliation
+    pinned: Optional[StrictBool] = None  # durable "keep" (Desktop pins); exempt from auto_archive
     # Read-state watermark (sessions.last_read_at): True = unread, False = read now, None = leave.
-    unread: Optional[bool] = None
+    unread: Optional[StrictBool] = None
     profile: Optional[str] = None  # session owned by another profile (opens its state.db)
 
 class SessionOwnerBackfill(BaseModel):
@@ -449,6 +438,7 @@ class SkillsUpdateRequest(BaseModel):
 
 class ProfileCreate(BaseModel):
     name: str
+    soul: Optional[str] = None
     clone_from: Optional[str] = None
     clone_from_default: bool = False  # legacy clients; new ones send clone_from explicitly
     clone_all: bool = False
@@ -562,26 +552,3 @@ class _PluginProvidersPutBody(BaseModel):
 class _PluginVisibilityBody(BaseModel):
     hidden: bool
 
-
-class MobilePairExchange(BaseModel):
-    # Defaulted, not required: the route is public, so a body with no code must
-    # take the same counted 403 path as a wrong code, never a 422 that skips the
-    # failure limiter.
-    code: str = ""
-
-class MobileRespond(BaseModel):
-    request_id: str
-    result: dict
-
-class MobileReply(BaseModel):
-    session_id: str
-    text: str
-
-class ShareCreateBody(BaseModel):
-    session_id: str
-    profile: Optional[str] = None
-    ttl_seconds: Optional[float] = Field(default=None, ge=60)
-
-class ShareRevokeBody(BaseModel):
-    token: str
-    profile: Optional[str] = None

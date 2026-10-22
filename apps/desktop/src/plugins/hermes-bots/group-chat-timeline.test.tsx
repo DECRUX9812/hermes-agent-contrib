@@ -1,4 +1,4 @@
-import { cleanup, render } from '@testing-library/react'
+import { cleanup, render, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
@@ -59,11 +59,8 @@ it('keeps every public member reply readable in room arrival order across interl
 
   $groupChats.set({ Room: { log, watermarks: {}, sessions: {} } })
   const { container } = render(<GroupChatWorkspace group="Room" members={[]} />)
-  // The round summary card intentionally re-prints each member's one-liner —
-  // the unreadability invariant this test guards lives in the message log.
-  container.querySelector('[data-testid="group-round-summary"]')?.remove()
-  // The thread rail re-prints each thread's ask as its title; read the log.
-  const text = container.querySelector('[data-testid="group-room-log"]')?.textContent || ''
+  await waitFor(() => expect(container.textContent).toContain('Build request'))
+  const text = container.textContent || ''
   let previous = -1
 
   for (const entry of log) {

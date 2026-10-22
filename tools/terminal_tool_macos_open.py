@@ -190,3 +190,5 @@ def _transform_macos_open_command(command: str | None, system: str | None = None
 
     ladder = _build_macos_open_raise_ladder(app, file)
     return f"{command}; {ladder}"
+
+

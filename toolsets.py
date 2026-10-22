@@ -18,7 +18,7 @@ _HERMES_CORE_TOOLS = [
     "browser_type", "browser_scroll", "browser_back",
     "browser_press", "browser_get_images",
     "browser_vision", "browser_console", "browser_cdp", "browser_dialog",
-    "browser_vault_list", "browser_vault_unlock", "browser_vault_fill", "browser_vault_save_login", "browser_vault_enter_code",  # ride with the browser
+    "browser_vault",  # rides with the browser; deferred by default (tools.tool_search.defer)
     "browser_exec",  # replaces the other browser tools when browser.backend is "browser-use"
     "text_to_speech",
     "todo_list", "memory",
@@ -40,7 +40,6 @@ _HERMES_CORE_TOOLS = [
 
 # Webhook payloads are untrusted third-party content: no file/system execution.
 _HERMES_WEBHOOK_SAFE_TOOLS = ["web_search", "web_extract", "vision_analyze", "clarify"]
-_HA_TOOLS = ["ha_list_entities", "ha_get_state", "ha_list_services", "ha_call_service"]
 _FEISHU_TOOLS = [
     "feishu_doc_read", "feishu_drive_list_comments", "feishu_drive_list_comment_replies",
     "feishu_drive_reply_comment", "feishu_drive_add_comment",
@@ -64,14 +63,12 @@ def _core_without(*excluded, kanban=True):
 
 
 # Coding posture: everything you reach for while pairing on code; drops messaging,
-# tts, image_gen, home-assistant, cron, kanban and computer-use. git_ship/open_pr
-# live in the named `git` toolset for platform expansion and are named here so
-# the collapsed coding posture keeps the ship flow too.
-_CODING_TOOLS = _core_without("image_generate", "text_to_speech", "cronjob_manage", "computer_use", *_HA_TOOLS, kanban=False) + ["git_ship", "open_pr"]
+# tts, image_gen, cron, kanban and computer-use.
+_CODING_TOOLS = _core_without("image_generate", "text_to_speech", "cronjob_manage", "computer_use", kanban=False)
 
 # Toolsets a CLIENT adds to its own sessions (tui_gateway/server.py::_gui_surface_toolsets), never
 # config: another surface lacking them made no configuration choice.
-CLIENT_SURFACE_TOOLSETS = frozenset({"project", "desktop_ui", "visualization", "catalog"})
+CLIENT_SURFACE_TOOLSETS = frozenset({"project", "desktop_ui", "catalog"})
 
 # Core toolset definitions: individual tools or references to other toolsets.
 TOOLSETS = {
@@ -103,10 +100,6 @@ TOOLSETS = {
         ["computer_use"],
     ),
     "terminal": _ts("Terminal/command execution and process management tools", ["terminal", "process_manage"]),
-    "git": _ts(
-        "Git ship tools — stage/commit/push the session repo and open a GitHub PR via gh",
-        ["git_ship", "open_pr"],
-    ),
     "skills": _ts(
         "Access, create, edit, and manage skill documents with specialized "
         "instructions and knowledge",
@@ -145,15 +138,13 @@ TOOLSETS = {
     # process env var, which is blind to a desktop client on a remote backend.
     "desktop_ui": _ts(
         "Desktop GUI affordances — in-app terminal/browser panes, pane focus, "
-        "reactions (GUI sessions only)",
+        "reactions, appearance (GUI sessions only)",
         ["read_terminal", "close_terminal", "desktop_preview", "drive_preview",
          "annotate_preview", "read_window_below", "focus_pane", "react_to_message",
-         "gui_tour", "show_tip", "verify_preview"],
+         "gui_tour", "show_tip", "set_theme"],
     ),
-    "setup": _ts("Onboarding-only surface for the setup profile: question and picker cards", ["setup_choose"],
-                 platforms=frozenset({"desktop"})),
-    "start_chat": _ts("Start a new visible desktop chat that runs a task in a chosen profile", ["start_chat"],
-                      platforms=frozenset({"desktop"})),
+    "onboarding": _ts("First-run onboarding cards; folded in only for the onboarding chat (tui_gateway/methods_onboarding.py)",
+                      ["setup_beat"], platforms=frozenset({"desktop"})),
     # ``platforms``: the session platforms this toolset exists for (TOOLSET_SESSION_PLATFORMS).
     "catalog": _ts(
         "Desktop catalog plugin/skill install requests through the approval card (GUI sessions only)",

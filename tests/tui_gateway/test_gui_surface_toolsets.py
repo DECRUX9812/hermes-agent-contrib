@@ -90,7 +90,6 @@ class TestResolverPlumbing:
             "coding",
             "desktop_ui",
             "project",
-            "visualization",
         ]
         assert server._load_enabled_toolsets("tui") == ["coding", "project"]
 

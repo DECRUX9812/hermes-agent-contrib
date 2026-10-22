@@ -5,7 +5,7 @@ import threading
 from tui_gateway import server
 
 
-def _session(profile_home=None, profile_incarnation=None):
+def _session(profile_home=None):
     row = {
         "session_key": "status-row",
         "history": [],
@@ -17,7 +17,6 @@ def _session(profile_home=None, profile_incarnation=None):
     }
     if profile_home is not None:
         row["profile_home"] = str(profile_home)
-        row["profile_incarnation"] = profile_incarnation
     return row
 
 
@@ -42,10 +41,7 @@ def test_session_status_path_uses_owning_profile_home(monkeypatch, tmp_path):
         def close(self):
             pass
 
-    # A session bound to a named profile carries the generation it was created in.
-    from hermes_cli.profile_incarnation import ensure_profile_incarnation
-
-    server._sessions["status-profile-home"] = _session(profile_home, ensure_profile_incarnation(profile_home))
+    server._sessions["status-profile-home"] = _session(profile_home)
     monkeypatch.setattr(server, "_get_db", lambda: LaunchDB())
     monkeypatch.setattr("hermes_state_registry.acquire", ProfileDB)
     try:

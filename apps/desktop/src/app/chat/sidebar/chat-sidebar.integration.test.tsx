@@ -8,12 +8,7 @@ import { $layoutTree, noteActiveTreeGroup } from '@/components/pane-shell/tree/s
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { registry } from '@/contrib/registry'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
-import {
-  $activityRailVisible,
-  $sidebarMessagingOpenIds,
-  setSidebarAgentsGrouped,
-  setSidebarGrouping
-} from '@/store/layout'
+import { $sidebarMessagingOpenIds, setSidebarAgentsGrouped, setSidebarGrouping } from '@/store/layout'
 import { $activeGatewayProfile, $profiles, setShowAllProfiles } from '@/store/profile'
 import { $projectScope, ALL_PROJECTS } from '@/store/project-scope'
 import { $projectTree } from '@/store/projects'
@@ -94,9 +89,6 @@ describe('ChatSidebar navigation activity', () => {
   let disposeContributions: () => void
 
   beforeEach(() => {
-    // These cases exercise the sidebar's own nav rows; the icon rail carries
-    // them instead while it is on, so the Browse fold only renders with it off.
-    $activityRailVisible.set(false)
     disposeContributions = registry.registerMany([
       { area: ROUTES_AREA, id: 'kanban-page', data: { path: '/kanban' }, render: () => null },
       { area: ROUTES_AREA, id: 'reports-page', data: { path: '/reports' }, render: () => null },
@@ -119,7 +111,6 @@ describe('ChatSidebar navigation activity', () => {
   afterEach(() => {
     cleanup()
     disposeContributions()
-    $activityRailVisible.set(true)
     $selectedStoredSessionId.set(null)
     $sessions.set([])
     $removedSessionIds.set(new Set())

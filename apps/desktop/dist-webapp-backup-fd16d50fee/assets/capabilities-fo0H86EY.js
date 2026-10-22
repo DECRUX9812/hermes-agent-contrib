@@ -1,0 +1,1 @@
+import{Vt as e}from"./sdk-BIBkCs2v.js";export{e as CapabilitiesView};

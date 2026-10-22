@@ -15,8 +15,7 @@
   "messages": [
     {
       "role": "user",
-      "text": "earlier prompt",
-      "user_originated": true
+      "text": "earlier prompt"
     }
   ],
   "messages_omitted": false,

@@ -2,7 +2,7 @@ import type { ThreadMessageLike } from '@assistant-ui/react'
 import { type BillingBlock, type MessageCompletePayload, type PersistedTurn, type ToolLabel } from '@hermes/shared'
 
 import type { ErrorSurface } from '@/lib/error-surface'
-import type { McpAppRef, ToolResultMetadata } from '@/lib/tool-result-metadata'
+import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
 import type { MessageReaction, SessionMessage, UsageStats } from '@/types/hermes'
 
 export interface TimelinePartMetadata {
@@ -31,12 +31,6 @@ export type ChatMessagePart = Exclude<ThreadMessageLike['content'], string>[numb
 export type ChatMessage = {
   id: string
   role: SessionMessage['role']
-  /** Authoritative backend provenance. Missing means use the legacy fallback;
-   * false marks a visible runtime notice, without changing its display role. */
-  userOriginated?: boolean
-  /** Runtime-turn identity from the backend, in seconds. Compare only for
-   * equality with another runtime identity, never with the renderer clock. */
-  runtimeTurnStartedAt?: number
   parts: ChatMessagePart[]
   /** Result body only; the system text remains the compact completion label. */
   asyncResult?: string
@@ -111,8 +105,6 @@ export type GatewayEventPayload = {
   // Absent on older gateways; consumers must fall back to string heuristics.
   error_surface?: unknown
   inline_diff?: string
-  /** Validated where it is projected (`mcpAppRef`). */
-  mcp_app?: McpAppRef
   duration_s?: number
   todos?: unknown
   revision?: number
@@ -132,10 +124,20 @@ export type GatewayEventPayload = {
   credential_warning?: string
   install_warning?: string
   personality?: string
-  /** session.info: the session's skills grouped by category (flat list on
-   *  older backends). Metadata for the header chip — never prompt content. */
-  skills?: Record<string, string[]> | string[]
   usage?: Partial<UsageStats>
+  // Canonical session.usage ticks carry cumulative counters at the payload top level; older ticker frames nest the desktop Usage shape above.
+  api_calls?: number | null
+  cache_read_tokens?: number | null
+  completion_tokens?: number | null
+  compression_count?: number | null
+  context_length?: number | null
+  context_source?: string | null
+  input_tokens?: number | null
+  last_prompt_tokens?: number | null
+  output_tokens?: number | null
+  prompt_tokens?: number | null
+  tokens_per_s?: number | null
+  total_tokens?: number | null
   // agent.terminal.output — live chunk for a read-only agent terminal tab
   process_id?: string
   chunk?: string
@@ -176,8 +178,6 @@ export type GatewayEventPayload = {
   kind?: string
   // pane.reveal (agent focusing a desktop pane via the focus_pane tool)
   pane?: string
-  // layout.apply (agent applying a layout preset via the apply_layout tool)
-  preset?: string
   // tour.request (tour tool — agent-guided driver.js walkthrough). `action`
   // and `steps` name the tour verb and step list; `surface` picks the app's
   // own DOM vs the preview pane's guest page. tip.show (tip tool — one accent

@@ -217,8 +217,6 @@
     --theme-neutral-chrome: #f3f3f3;
     --theme-neutral-sidebar: #f3f3f3;
     --theme-neutral-card: #fcfcfc;
-    --theme-mix-text-tertiary: 64%;
-    --theme-mix-text-quaternary: 50%;
     --theme-mix-chrome: 92%;
     --theme-mix-sidebar: 100%;
     --theme-mix-card: 22%;
@@ -365,10 +363,8 @@
     );
     --ui-text-primary: color-mix(in srgb, var(--ui-base) 94%, transparent);
     --ui-text-secondary: color-mix(in srgb, var(--ui-base) 74%, transparent);
-    /* Muted tiers: share of the foreground, resolved per skin by applyTheme (themes/text-ramp.ts)
-       so faint text clears its contrast floor. Light needs more ink than dark. */
-    --ui-text-tertiary: color-mix(in srgb, var(--ui-base) var(--theme-mix-text-tertiary), transparent);
-    --ui-text-quaternary: color-mix(in srgb, var(--ui-base) var(--theme-mix-text-quaternary), transparent);
+    --ui-text-tertiary: color-mix(in srgb, var(--ui-base) 54%, transparent);
+    --ui-text-quaternary: color-mix(in srgb, var(--ui-base) 36%, transparent);
     /* Transcript scaffolding — thinking headers, settled tool runs, the live
        activity ticker. One colour for all of them (see `ScaffoldRow`), pitched
        between the secondary and tertiary greys those lines used to pick
@@ -504,26 +500,6 @@
        to the value the app actually renders at. */
     --radius-scalar: 0.2;
 
-    /* LOOK TOKENS — shape and label treatment, keyed off <html data-look>
-       (store/ui-look.ts). These defaults are the Classic look (the original
-       crisp, square chrome); the Soft block below re-points them. Components
-       read the tokens and never branch on the look. */
-    --control-radius: 2.5px;
-    --control-icon-radius: 4px;
-    --label-size: 0.64rem;
-    --label-weight: 600;
-    --label-transform: uppercase;
-    --label-tracking: 0.16em;
-    --label-color: var(--theme-primary);
-    --label-glyph-display: inline-block;
-    --tab-label-size: 9px;
-    --tab-label-transform: uppercase;
-    --tab-label-tracking: 0.025em;
-    /* Idle status dots hold a row's left edge in Classic; Soft lets an idle
-       row rest (a dot appears only when there is something to say). */
-    --status-idle-opacity: 1;
-    --pane-tab-max-width: 12rem;
-
     /* Space under last message vs overlay composer — driven by the measured composer DOCK height (see
        composer/index.tsx), which covers the micro-action strip, the status stack, the composer, and the
        underside strip in one number.
@@ -563,14 +539,9 @@
     --sticky-human-top: 0.23rem;
     --file-tree-row-height: 1.375rem;
 
-    /* Reading measure for the transcript and composer (one token, so they
-       share an edge). Full-bleed lines on a wide window ran past 200 characters
-       and made tables span the screen; the revamp target (docs/revamp/mockups)
-       reads at 46rem. Custom CSS can set it back to 100%. */
-    --composer-width: 46rem;
+    --composer-width: 100%;
     --composer-control-size: 1.5rem;
     --composer-control-primary-size: 1.625rem;
-    --composer-voice-menu-size: 1.25rem;
     --composer-control-gap: 0.25rem;
     --composer-row-gap: 0.25rem;
     --composer-ring-strength: 1;
@@ -629,8 +600,6 @@
 
   :root.dark {
     /* Per-mode mix knobs — overridden inline by `applyTheme()` per skin. */
-    --theme-mix-text-tertiary: 54%;
-    --theme-mix-text-quaternary: 36%;
     --theme-mix-chrome: 74%;
     --theme-mix-card: 38%;
     --theme-mix-elevated: 46%;
@@ -875,18 +844,6 @@
   }
 }
 
-/* Touch surfaces need a real finger-sized control lane. Keep desktop's
-   compact 24/26px rhythm, but promote the same composer actions to the 44px
-   minimum recommended for coarse pointers without adding a second
-   mobile-only component. */
-@media (hover: none), (pointer: coarse) {
-  :root {
-    --composer-control-size: 2.75rem;
-    --composer-control-primary-size: 2.75rem;
-    --composer-voice-menu-size: var(--composer-control-size);
-  }
-}
-
 .dither {
   background: repeating-conic-gradient(currentColor 0% 25%, transparent 0% 50%) 0 0 / 0.125rem 0.125rem;
 }
@@ -1085,30 +1042,6 @@
   user-select: none;
 }
 
-/* Composer prediction (store/composer-prediction.ts): the ghost text is a draft
-   in the user's own voice, so it reads a touch stronger than a hint and wears
-   the key that takes it. */
-[data-slot='composer-rich-input'][data-prediction]:is(:empty, [data-empty])::before {
-  padding-right: 3rem;
-  color: color-mix(in srgb, var(--muted-foreground) 82%, transparent);
-}
-
-[data-slot='composer-rich-input'][data-prediction]:is(:empty, [data-empty])::after {
-  content: 'Tab';
-  position: absolute;
-  top: 50%;
-  right: 0.25rem;
-  transform: translateY(-50%);
-  padding: 0 0.375rem;
-  border: 1px solid var(--ui-stroke-secondary);
-  border-radius: 0.3rem;
-  font-size: 0.625rem;
-  line-height: 1.1rem;
-  color: var(--ui-text-tertiary);
-  pointer-events: none;
-  user-select: none;
-}
-
 /* Primitive-level pointer cursor for every interactive control (buttons,
    selects, menu items, switches, tabs, summaries). Keeps individual
    components from having to hardcode `cursor-pointer`; explicit cursor
@@ -1167,14 +1100,6 @@
     background-color: var(--ui-row-hover-background);
     transition: none;
   }
-}
-
-/* The rail's roving keyboard set — one visible focus ring for every row type
-   that joins via data-sidebar-row (sessions, bots, cron). Inset so the ring
-   survives rows flush to the container edge. */
-[data-sidebar-row]:focus-visible {
-  outline: none;
-  box-shadow: inset 0 0 0 1.5px var(--sidebar-ring);
 }
 
 /* Pure-CSS edge fade for a scroller (FadeScroll). From each edge inward the
@@ -1441,27 +1366,6 @@
 .decode-cursor-blink {
   animation: decode-cursor 1s step-end infinite;
 }
-/* Chat background scenes drift like weather — slow enough to never pull the eye. */
-@keyframes backdrop-drift {
-  0% {
-    transform: translate3d(-3%, -2%, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(3%, 2%, 0) scale(1.06);
-  }
-  100% {
-    transform: translate3d(-2%, 3%, 0) scale(1.02);
-  }
-}
-.backdrop-drift {
-  animation: backdrop-drift 48s ease-in-out infinite alternate;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .backdrop-drift {
-    animation: none;
-  }
-}
 /* 0.001 start mirrors ZonesOverlay::GetAnimationAlpha's clamp(t / 200ms, 0.001, 1). */
 @keyframes hermes-zone-fade {
   from {
@@ -1469,23 +1373,6 @@
   }
   to {
     opacity: 1;
-  }
-}
-/* Icon rail: the glyph of the entry you land on gives one small spring. */
-@keyframes rail-pop {
-  0% {
-    transform: scale(0.8);
-  }
-  55% {
-    transform: scale(1.12);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-@media (prefers-reduced-motion: no-preference) {
-  [data-slot='activity-rail'] [data-active='true'] > .rail-glyph {
-    animation: rail-pop 340ms cubic-bezier(0.34, 1.4, 0.64, 1);
   }
 }
 @keyframes starmap-twinkle {
@@ -1533,6 +1420,17 @@ button {
   -webkit-backdrop-filter: blur(0.75rem) saturate(1.08);
 }
 
+/* Invisible dialog shells (the image lightbox). The rule above paints the
+   shell so a zoomed/panned image that moves inside it exposes a stray box of
+   shell paint; the variant opts out entirely — no background, no shadow, no
+   backdrop blur. */
+[data-slot='dialog-content'][data-variant='media-lightbox'] {
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 [data-slot='dropdown-menu-item']:focus,
 [data-slot='dropdown-menu-checkbox-item']:focus,
 [data-slot='dropdown-menu-radio-item']:focus {
@@ -1545,9 +1443,6 @@ textarea,
 [contenteditable]:not([contenteditable='false']),
 [data-slot='aui_user-message-root'],
 [data-slot='aui_assistant-message-content'],
-[data-slot='aui_assistant-message-content'] p,
-[data-slot='aui_assistant-message-content'] pre,
-[data-slot='aui_assistant-message-content'] code,
 [data-slot='aui_system-message-root'],
 [data-selectable-text='true'],
 [data-selectable-text='true'] * {
@@ -1568,13 +1463,6 @@ button,
 [data-slot='aui_user-message-root'] [role='button'] {
   -webkit-user-select: text;
   user-select: text;
-}
-
-[data-slot='aui_user-message-root'] [data-slot='aui_user-touch-edit'] {
-  -webkit-user-select: none;
-  user-select: none;
-  min-width: 44px;
-  min-height: 44px;
 }
 
 img,
@@ -2040,20 +1928,6 @@ body.guest-pointer-lock :is(webview, iframe) {
   max-width: var(--composer-width);
 }
 
-/* The empty canvas hosts the live composer in-flow (one prompt surface), so
-   its dock must stop anchoring to the pane bottom and drop the dock clearance —
-   otherwise the chips and recent rows render under the composer. */
-[data-slot='aui_intro']:has([data-slot='composer-dock']) {
-  padding-bottom: 0;
-}
-
-[data-slot='aui_intro'] [data-slot='composer-dock']:not([data-popped-out]) {
-  position: relative;
-  inset: auto;
-  width: 100%;
-  translate: none;
-}
-
 [data-slot='aui_intro'] p:last-child {
   max-width: 34rem;
   margin-inline: auto;
@@ -2123,12 +1997,9 @@ body.guest-pointer-lock :is(webview, iframe) {
 
 /* The dock column owns the composer's width; the composer keeps the 5px
    transparent grab margin that the peel-out drag needs. +10px width compensates
-   that padding so the visible surface keeps its exact width/position.
-   The visible surface shares the transcript's TEXT edges (thread content is
-   the same measure minus its 1.5rem inline padding), so messages, tables and
-   the composer line up on one column at every window width. */
+   that padding so the visible surface keeps its exact width/position. */
 [data-slot='composer-dock'] {
-  width: calc(min(var(--composer-width), 100%) - 3rem + 10px);
+  width: calc(min(var(--composer-width), calc(100% - 2rem)) + 10px);
   padding-bottom: var(--composer-shell-pad-block-end);
 }
 
@@ -2214,28 +2085,6 @@ body.guest-pointer-lock :is(webview, iframe) {
 
 [data-slot='composer-surface'] {
   border-color: var(--ui-stroke-secondary) !important;
-}
-
-/* A docked stack (background tasks, subagents, queue, todos) sits directly on
-   the composer. Square the composer's top edge while it is there so its outline
-   CONTINUES the stack's: rounded top corners under a square-bottomed card is
-   what read as two disconnected boxes. The stack's own bottom border stays
-   transparent, so the composer's top border remains the single shared divider. */
-[data-slot='composer-root'][data-status-stack] [data-slot='composer-surface'],
-[data-slot='composer-root'][data-status-stack] .composer-fallback-surface {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-}
-
-/* Animate the junction so a section going live settles instead of snapping.
-   Repeats the surface's own opacity transition (COMPOSER_DROP_FADE_CLASS) —
-   this attribute selector outranks the utility class, so it must carry both. */
-[data-slot='composer-surface'],
-.composer-fallback-surface {
-  transition:
-    opacity 150ms ease-out,
-    border-top-left-radius 180ms ease-out,
-    border-top-right-radius 180ms ease-out;
 }
 
 [data-slot='composer-fade'] {
@@ -2676,45 +2525,6 @@ button[data-slot='aui_msg-reactions']:focus-visible {
 button[data-slot='aui_msg-reactions'] svg {
   width: 0.875rem;
   height: 0.875rem;
-}
-
-/* Hover reveals are useful on desktop, but a coarse pointer needs a stable
-   action lane. Keep the rich desktop row intact and expose a compact Copy +
-   More pair on touch surfaces; the buttons themselves get the 44px hit box
-   while the glyphs retain the existing quiet 14px scale. */
-.aui-message-actions-touch {
-  display: none;
-}
-
-@media (hover: none), (pointer: coarse) {
-  [data-slot='aui_msg-actions'] {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  [data-slot='aui_msg-actions'] .aui-message-actions-desktop {
-    display: none;
-  }
-
-  [data-slot='aui_msg-actions'] .aui-message-actions-touch {
-    display: flex;
-  }
-
-  [data-slot='aui_msg-actions'] .aui-message-actions-touch button {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-  }
-
-  button[data-slot='aui_msg-reactions'] {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-    opacity: 0.5;
-    pointer-events: auto;
-  }
-
-  button[data-slot='aui_msg-reactions'][data-reacted] {
-    opacity: 1;
-  }
 }
 
 /* Re-declare the clearance calc on every chat surface. `:root` computes it
@@ -3408,75 +3218,6 @@ button[data-slot='aui_msg-reactions'] svg {
   pointer-events: auto;
 }
 
-/* Run cards — every OTHER session still working (or waiting on you), parked
-   just inside the band's top edge: the fade ramp is where transcript text is
-   weakest, so the cards sit where nothing worth reading lives. Glanceable at
-   rest, full ink once the shell is engaged — the same three-state grammar the
-   band uses. The container answers no clicks; only the cards do, so the gaps
-   between them still fall through to the app behind. */
-[data-hud-shell] [data-hud-runs] {
-  position: absolute;
-  right: var(--hud-band-inset);
-  bottom: calc(var(--hud-bar-height, var(--composer-fallback-height)) + 0.375rem);
-  left: var(--hud-band-inset);
-  z-index: 1;
-  display: grid;
-  gap: 0.125rem;
-  max-height: 7.5rem;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  pointer-events: none;
-  /* The band's ink law applies here too: light-on-dark over someone else's
-     window, unconditionally — a card's legibility cannot depend on a state. */
-  color: var(--hud-overlay-ink, #fff);
-  font-size: 0.6875rem;
-  line-height: 1.25;
-  text-shadow:
-    0 1px 2px rgb(0 0 0 / 0.9),
-    0 0 6px rgb(0 0 0 / 0.55);
-  opacity: 0.78;
-  transition: opacity var(--hud-dim) var(--hud-ease-enter);
-}
-
-[data-hud-shell][data-hud-edge='top'] [data-hud-runs] {
-  top: calc(var(--hud-bar-height, var(--composer-fallback-height)) + 0.375rem);
-  bottom: auto;
-}
-
-[data-hud-shell][data-hud-typing] [data-hud-runs],
-[data-hud-shell][data-hud-held] [data-hud-runs],
-[data-hud-shell] [data-hud-runs]:hover,
-[data-hud-shell] [data-hud-runs]:focus-within {
-  opacity: 1;
-}
-
-/* Each card opts in — the strip's gaps stay transparent to the pointer so
-   they keep falling through to whatever sits behind the window. */
-[data-hud-shell] [data-hud-run-card] {
-  pointer-events: auto;
-  border-radius: 0.375rem;
-  background: rgb(12 14 18 / 0.55);
-}
-
-[data-hud-shell] [data-hud-run-card]:hover,
-[data-hud-shell] [data-hud-run-card]:focus-visible {
-  background: rgb(12 14 18 / 0.72);
-}
-
-/* The "needs you" pill — the amber cue a blocking question earns elsewhere,
-   kept legible over the overlay's white ink. */
-[data-hud-shell] [data-hud-run-needs] {
-  flex: none;
-  border-radius: 999px;
-  padding: 0.0625rem 0.375rem;
-  background: rgb(245 158 11 / 0.22);
-  color: #fbbf24;
-  font-size: 0.5625rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
 /* Three states, not two. A turn landing brings the transcript up, but only part
    way — it is there to be glanced at over whatever you are actually doing, and
    full-strength text over another app reads as the HUD demanding attention it
@@ -4135,22 +3876,6 @@ html[data-hud-window] [data-slot='popover-content'] {
   display: none;
 }
 
-/* CSS zoom scales viewport units too; browser shells must fit their parent. */
-html[data-hermes-desktop-host='browser'] #root[data-browser-viewport] {
-  position: relative;
-  top: var(--browser-viewport-top);
-  height: var(--browser-viewport-height);
-}
-
-html[data-hermes-desktop-host='browser'] [data-contrib-shell] {
-  width: 100%;
-  height: 100%;
-}
-
-html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
-  height: 100%;
-}
-
 /* Keep-alive hidden panes (see pane-visibility.ts) hide with `visibility:
    hidden` so the layout box — and with it scroll positions — survives a tab
    round-trip. But `visibility` is inherited-and-overridable: third-party
@@ -4160,191 +3885,4 @@ html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
    author `!important` rule beats the widget's inline non-important style. */
 [data-pane-hidden] * {
   visibility: inherit !important;
-}
-
-/* Look-driven text primitives. One class each so core components and bundled
-   plugins (which cannot import core) paint section labels and tab titles the
-   same way; the tokens above decide Classic caps vs Soft sentence case. */
-@layer components {
-  .ui-section-label {
-    font-size: var(--label-size);
-    font-weight: var(--label-weight);
-    text-transform: var(--label-transform);
-    letter-spacing: var(--label-tracking);
-    color: var(--label-color);
-  }
-
-  .ui-section-label-glyph {
-    display: var(--label-glyph-display);
-  }
-
-  .ui-tab-label {
-    font-size: var(--tab-label-size);
-    text-transform: var(--tab-label-transform);
-    letter-spacing: var(--tab-label-tracking);
-  }
-}
-
-/* ── Soft look (default) ─────────────────────────────────────────────────────
-   Rounded, roomy, calm: concentric radii (the composer is a 24px capsule, the
-   user bubble 16px, rows and controls 8–10px), sentence-case section labels in
-   a quiet grey instead of uppercase accent caps, readable tab titles, idle
-   dots that rest, and a size up in Simple mode. Every value is a token the
-   Classic defaults above also define — flip data-look and both hold. */
-:root[data-look='soft'] {
-  --radius-scalar: 1;
-  --control-radius: 0.5rem;
-  --control-icon-radius: 0.5rem;
-  --label-size: 0.75rem;
-  --label-weight: 500;
-  --label-transform: none;
-  --label-tracking: 0;
-  --label-color: var(--ui-text-tertiary);
-  --label-glyph-display: none;
-  --tab-label-size: 0.75rem;
-  --tab-label-transform: none;
-  --tab-label-tracking: 0;
-  --status-idle-opacity: 0;
-  --pane-tab-max-width: 15rem;
-  --conversation-text-font-size: 0.875rem;
-  --composer-surface-pad-x: 0.75rem;
-  --composer-surface-pad-y: 0.5rem;
-  --composer-input-min-height: 2rem;
-  --composer-control-size: 1.75rem;
-  --composer-control-primary-size: 1.875rem;
-}
-
-/* Your turns read as replies you sent, not banners: in Soft the bubble hugs
-   its text and sits on the right (OpenClaw's transcript, iMessage, Claude).
-   The sticky header behaviour and the edit composer are unchanged — only the
-   frame's width. */
-:root[data-look='soft'] [data-slot='aui_user-bubble-frame'] {
-  width: fit-content;
-  max-width: min(85%, 38rem);
-  margin-inline-start: auto;
-}
-
-:root[data-look='soft'] [data-slot='aui_user-bubble-frame'] .composer-human-message {
-  border-radius: 1.125rem;
-}
-
-/* The working pulse: Classic's dithered square is a terminal motif; Soft
-   draws a small accent orb that breathes (StatusPulse still drives the beat). */
-:root[data-look='soft'] [data-slot='aui_turn-activity'] .dither {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 9999px;
-  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--ui-accent) 55%, white), var(--ui-accent));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-accent) 18%, transparent);
-}
-
-/* A bot's chat opens on the bot itself: Soft scales the live face up onto a
-   soft floor shadow and swaps the lettered name for a plain one with a
-   "role · status" line (chat-empty.tsx, BotHero). SVG scales crisply. */
-:root[data-look='soft'] [data-slot='bot-hero-face'] {
-  position: relative;
-  margin-block: 1.75rem 2.75rem !important;
-  transform: scale(1.45);
-}
-
-:root[data-look='soft'] [data-slot='bot-hero-face']::after {
-  content: '';
-  position: absolute;
-  inset-inline: 18%;
-  bottom: -0.7rem;
-  height: 0.55rem;
-  border-radius: 9999px;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, var(--ui-text-primary, #000) 16%, transparent),
-    transparent
-  );
-  filter: blur(1px);
-}
-
-:root[data-look='soft'] [data-slot='bot-hero-wordmark'] {
-  display: none;
-}
-
-:root[data-look='soft'] [data-slot='bot-hero-name'] {
-  display: flex;
-  margin-bottom: 0.5rem;
-}
-
-/* Pill tabs (Devin/Arc): in Soft a zone's horizontal tabs are rounded pills
-   floating in the strip — the active one filled, the rest quiet — instead of
-   flat cells with a 2px underline and hairline separators. Keyed on
-   `data-tree-tab` (tree tabs only; `data-slot` can be overwritten by the
-   context-menu trigger that wraps session tabs). */
-:root[data-look='soft'] [data-tree-tab]:not([data-vertical]) {
-  height: calc(100% - 0.5rem);
-  margin-block: 0.25rem;
-  margin-inline: 0.125rem;
-  border-left-color: transparent !important;
-  border-radius: 9999px;
-  --tab-bg: transparent;
-  transition:
-    background-color 150ms ease,
-    color 150ms ease;
-}
-
-:root[data-look='soft'] [data-tree-tab][data-active='true']:not([data-vertical]) {
-  --tab-bg: color-mix(in srgb, var(--ui-accent) 11%, var(--ui-editor-surface-background));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-accent) 22%, transparent);
-}
-
-:root[data-look='soft'] [data-tree-tab][data-active='false']:not([data-vertical]):hover {
-  --tab-bg: var(--ui-control-hover-background);
-  box-shadow: none;
-}
-
-/* Pills float, so the strip needs a gutter: without it the first pill sat
-   flush against the window edge. 0.5rem + the pill's own px-2 puts its label
-   on the same x as the sidebar rows' text below. */
-:root[data-look='soft'] [data-zone-tabstrip] > [role='tablist'] {
-  padding-inline: 0.375rem;
-}
-
-/* Simple mode reads a size up: people there came to talk, not to scan logs. */
-:root[data-look='soft'][data-interface-mode='simple'] {
-  --conversation-text-font-size: 0.9375rem;
-  --dt-line-height: 1.6;
-  --paragraph-gap: 0.85rem;
-}
-
-/* A capped list that has more below fades its last rows out instead of
-   slicing one mid-line. Scroll-driven: the fade shrinks to nothing as you
-   reach the end, and a list that doesn't scroll has no timeline, so it never
-   fades at all. */
-@property --scroll-fade-end {
-  syntax: '<length>';
-  inherits: false;
-  initial-value: 0px;
-}
-
-@keyframes scroll-edge-fade {
-  0%,
-  85% {
-    --scroll-fade-end: 1.75rem;
-  }
-
-  100% {
-    --scroll-fade-end: 0px;
-  }
-}
-
-.scroll-edge-fade {
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scroll-fade-end)), transparent);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scroll-fade-end)), transparent);
-  animation: scroll-edge-fade linear both;
-  animation-timeline: scroll(self);
-}
-
-/* Same, across: a sideways strip fades its trailing edge while more is
-   hidden to the right. */
-.scroll-edge-fade-x {
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-fade-end)), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - var(--scroll-fade-end)), transparent);
-  animation: scroll-edge-fade linear both;
-  animation-timeline: scroll(self inline);
 }

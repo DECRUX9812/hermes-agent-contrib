@@ -7,10 +7,9 @@
  * drives the two doors, startBotRelay / stopBotRelay.
  */
 
-import { atom, host, LruCache } from '@hermes/plugin-sdk'
+import { host, LruCache } from '@hermes/plugin-sdk'
 
-import { attentionReasonFromError, botHandle, clearBotAttention, noteBotAttention } from './data'
-import { clearNeedsYou, recordNeedsYouEvent } from './needs-you'
+import { botHandle, clearBotAttention, noteBotAttention } from './data'
 import { RELAY_DELIVER_TIMEOUT_MS } from './relay-budget'
 import { ID } from './shared'
 import type { ProfileRoute, RosterRow } from './types'
@@ -84,6 +83,17 @@ const relay: RelayLifecycle = {
 // leases. Local routes get a no-op release inside the host (idle-reaper
 // exemption). stopBotRelay releases everything.
 const relayRouteRetentions = new Map<string, () => void>()
+// Claimed envelopes remain pinned to their sender until terminal reply ACK.
+// The sender's durable claimed directory restores these after renderer restart.
+const pendingRelays = new Map<string, Map<string, RelayEnvelope>>()
+
+function pendingRelaysFor(sender: RelayConnection): Map<string, RelayEnvelope> {
+  const senderKey = JSON.stringify(sender.route)
+  const pending = pendingRelays.get(senderKey) || new Map<string, RelayEnvelope>()
+  pendingRelays.set(senderKey, pending)
+
+  return pending
+}
 
 // Routes whose gateway has signaled `bot_relay.outbox.pending` since the last
 // drain pass. `*` means the event carried no connection id (local/legacy
@@ -189,9 +199,7 @@ function relayEligibleRoutes(routes: ProfileRoute[]): ProfileRoute[] {
   return routes.filter(route => route.connectionId !== localId)
 }
 
-/** A queued cross-connection message drained from a gateway's outbox.
- *  `note` rides the envelope when the DM is a mailbox task hand-off (#48) —
- *  forwarded to `bot_relay.deliver`, which files it on the target install. */
+/** A queued cross-connection message drained from a gateway's outbox. */
 interface RelayEnvelope {
   id?: string
   message?: string
@@ -199,7 +207,6 @@ interface RelayEnvelope {
   from_handle?: string
   target_connection?: string
   target_profile?: string
-  note?: Record<string, unknown>
 }
 
 /** Reconcile retention with the CURRENT connection set: pin new connections,
@@ -209,7 +216,7 @@ function syncRelayRetention(connections: RelayConnection[]) {
     return
   }
 
-  const live = new Set(connections.map(connection => connection.id))
+  const live = new Set(connections.map(connection => JSON.stringify(connection.route)))
 
   for (const [id, release] of [...relayRouteRetentions]) {
     if (!live.has(id)) {
@@ -228,8 +235,8 @@ function syncRelayRetention(connections: RelayConnection[]) {
   }
 
   for (const connection of connections) {
-    if (!relayRouteRetentions.has(connection.id)) {
-      relayRouteRetentions.set(connection.id, host.retainProfileSocket(connection.route))
+    if (!relayRouteRetentions.has(JSON.stringify(connection.route))) {
+      relayRouteRetentions.set(JSON.stringify(connection.route), host.retainProfileSocket(connection.route))
     }
   }
 }
@@ -247,7 +254,9 @@ function releaseRelayRetention() {
   relayRouteRetentions.clear()
 }
 
-/** One representative route per reachable connection id. */
+/** Every relay-eligible profile route, once each. The canonical gateway keeps a
+ *  roster and an outbox per profile home, so drain/roster/pins are per ROUTE;
+ *  the peer set (is there anything to relay between?) is per connection id. */
 async function relayConnections(): Promise<RelayConnection[]> {
   if (typeof host.profileRoutes !== 'function' || typeof host.requestProfile !== 'function') {
     return []
@@ -261,18 +270,25 @@ async function relayConnections(): Promise<RelayConnection[]> {
     for (const route of routes) {
       const id = String(route?.connectionId || '')
 
-      if (id && !byConnection.has(id)) {
-        byConnection.set(id, route)
+      const key = JSON.stringify(route)
+
+      if (id && !byConnection.has(key)) {
+        byConnection.set(key, route)
       }
     }
 
-    return [...byConnection.entries()].map(([id, route]) => ({
-      id,
+    return [...byConnection.values()].map(route => ({
+      id: route.connectionId,
       route
     }))
   } catch {
     return []
   }
+}
+
+/** Distinct connections among the relay routes: profiles of one connection are not peers. */
+function peerCount(connections: RelayConnection[]): number {
+  return new Set(connections.map(connection => connection.id)).size
 }
 
 /** Human label per connection id, from the registry — the only place that has one.
@@ -398,14 +414,14 @@ async function syncRelayRosters() {
       return
     }
 
-    if (connections.length < 2) {
+    if (peerCount(connections) < 2) {
       // Nothing to relay — but the gateways that remain still hold the last
       // pushed roster, so a departed machine's agents would stay in every
       // bot's prompt (and as message_agent targets) until a second connection
       // reappears. Push the now-empty roster once per sole connection so it
       // forgets it — a replacement sole connection has never been told. An
       // empty route list (registry not loaded yet) must not spend the clear.
-      if (connections.length === 1 && connections[0].id !== relay.rosterClearedFor) {
+      if (peerCount(connections) === 1 && connections[0].id !== relay.rosterClearedFor) {
         const cleared = await Promise.all(
           connections.map(async connection => {
             if (!isCurrent()) {
@@ -437,8 +453,10 @@ async function syncRelayRosters() {
     relay.rosterClearedFor = null
 
     const agentsByConnection = new Map<string, RelayAgentRow[]>()
+    // One profiles.list per connection: its routes share a socket and answer one profile set.
+    const firstRoutes = connections.filter((connection, index) => connections.findIndex(other => other.id === connection.id) === index)
     await Promise.all(
-      connections.map(async connection => {
+      firstRoutes.map(async connection => {
         const agents = await relayAgentsOn(connection, labels)
 
         if (!isCurrent()) {
@@ -526,9 +544,9 @@ async function drainRelayOutboxes() {
 
     // Retention follows the relay-eligible set: with fewer than two
     // connections there is nothing to relay, so nothing stays pinned.
-    syncRelayRetention(connections.length >= 2 ? connections : [])
+    syncRelayRetention(peerCount(connections) >= 2 ? connections : [])
 
-    if (connections.length < 2) {
+    if (peerCount(connections) < 2) {
       return
     }
 
@@ -562,7 +580,16 @@ async function drainRelayOutboxes() {
           {}
         )
 
+        const pending = pendingRelaysFor(sender)
+
         for (const envelope of Array.isArray(res?.envelopes) ? res.envelopes : []) {
+          if (envelope.id && !pending.has(envelope.id)) {pending.set(envelope.id, structuredClone(envelope))}
+        }
+
+        // Every claimed-but-unACKed envelope rides again: a delivery that
+        // settled without an exact identity, or whose ACK was lost, retries
+        // from the sender's pin instead of being silently dropped.
+        for (const envelope of pending.values()) {
           queued.push({ envelope, sender })
         }
       } catch {
@@ -604,29 +631,6 @@ interface RelayQueuedEnvelope {
 // settles so an idle target holds no state.
 const relayLanes = new Map<string, Promise<void>>()
 
-/** Lane keys with a delivery queued or in flight (E3 surface) — the row's
- *  "delivery in flight" hint reads it. Mirrors relayLanes' key set but is an
- *  atom so roster rows re-render when a lane opens or settles. */
-export const $relayInflight = atom<ReadonlySet<string>>(new Set())
-
-function noteRelayLane(key: string, live: boolean) {
-  const next = new Set($relayInflight.get())
-
-  if (live) {
-    next.add(key)
-  } else {
-    next.delete(key)
-  }
-
-  $relayInflight.set(next)
-}
-
-/** The lane key a bot row asks about: the bot's own `conn::profile` as the
- *  delivery TARGET (same key `deliverRelayEnvelope` computes). */
-export function relayLaneKey(connectionId: string, profile: string): string {
-  return `${connectionId}::${profile}`
-}
-
 /** Queue one claimed envelope behind the deliveries already running for the
  *  same target profile; other targets are untouched. */
 function enqueueRelayDelivery(sender: RelayConnection, envelope: RelayEnvelope, byId: Map<string, RelayConnection>) {
@@ -637,12 +641,67 @@ function enqueueRelayDelivery(sender: RelayConnection, envelope: RelayEnvelope, 
   )
 
   relayLanes.set(key, tail)
-  noteRelayLane(key, true)
   void tail.finally(() => {
     if (relayLanes.get(key) === tail) {
       relayLanes.delete(key)
-      noteRelayLane(key, false)
     }
+  })
+}
+
+function relayDeliverParams(sender: RelayConnection, envelope: RelayEnvelope, envelopeId: string) {
+  return {
+    id: envelopeId,
+    profile: String(envelope?.target_profile || ''),
+    message: String(envelope?.message || ''),
+    from_profile: String(envelope?.from_profile || ''),
+    from_handle: String(envelope?.from_handle || ''),
+    from_connection: String(sender.id)
+  }
+}
+
+type RelayDeliverResult = {
+  status?: string
+  delivery_id?: string
+  admission_id?: string | null
+  refused?: true | null
+  reply?: string
+  error?: string
+  reason?: string
+}
+
+/** Act on a `bot_relay.deliver` answer: only a settled/failed receipt for THIS
+ *  envelope posts back; anything else stays retained for recovery. A receipt
+ *  names its admission, or is `refused` (terminal `failed`, nothing admitted). */
+async function settleRelayDelivery(
+  res: RelayDeliverResult,
+  envelopeId: string,
+  attentionKey: string,
+  postReply: (payload: { error?: string; reason?: string; reply?: string }) => Promise<void>
+) {
+  const refused = res.refused === true && res.status === 'failed'
+
+  if (res.delivery_id !== envelopeId || !(res.admission_id || refused)) {
+    noteBotAttention(attentionKey, 'Delivery identity unavailable; retained for recovery')
+
+    return
+  }
+
+  if (res.status !== 'settled' && res.status !== 'failed') {
+    if (res.status === 'ambiguous') {noteBotAttention(attentionKey, 'unknown_execution')}
+
+    return
+  }
+
+  if (res.status === 'failed') {
+    noteBotAttention(attentionKey, res.reason || res.error || 'delivery failed')
+    await postReply({ error: res.error || res.reply || 'delivery failed', reason: res.reason })
+
+    return
+  }
+
+  clearBotAttention(attentionKey)
+  await postReply({
+    reply: String(res?.reply || '')
   })
 }
 
@@ -655,6 +714,13 @@ async function deliverRelayEnvelope(
 ) {
   const envelopeId = String(envelope?.id || '')
   const target = byId.get(String(envelope?.target_connection || ''))
+  const pending = pendingRelaysFor(sender)
+
+  // A later drain re-queues every pinned envelope; the lane serialises them, so
+  // one already ACKed by an earlier delivery in this lane must not ride twice.
+  if (!envelopeId || !pending.has(envelopeId)) {
+    return
+  }
 
   const postReply = async (payload: { error?: string; reason?: string; reply?: string }) => {
     try {
@@ -662,13 +728,10 @@ async function deliverRelayEnvelope(
         id: envelopeId,
         ...payload
       })
+      pending.delete(envelopeId)
     } catch {
       // Sender gateway unreachable — its waiter times out with guidance.
     }
-  }
-
-  if (!envelopeId) {
-    return
   }
 
   if (!target) {
@@ -684,56 +747,27 @@ async function deliverRelayEnvelope(
   const attentionKey = `${target.id}::${String(envelope?.target_profile || '')}`
 
   try {
-    const res = await host.requestProfile<{ reply?: string }>(
-      target.route,
+    const res = await host.requestProfile<RelayDeliverResult>(
+      { ...target.route, profile: String(envelope.target_profile), targetProfile: String(envelope.target_profile) },
       'bot_relay.deliver',
-      {
-        profile: String(envelope?.target_profile || ''),
-        message: String(envelope?.message || ''),
-        from_profile: String(envelope?.from_profile || ''),
-        from_handle: String(envelope?.from_handle || ''),
-        from_connection: String(sender.id),
-        ...(envelope?.note && typeof envelope.note === 'object' ? { note: envelope.note } : {})
-      },
+      relayDeliverParams(sender, envelope, envelopeId),
       RELAY_DELIVER_TIMEOUT_MS
     )
 
-    clearBotAttention(attentionKey)
-    // A delivery that lands clears the failed-handoff card for that lane too —
-    // same lifecycle as the badge it rides beside.
-    clearNeedsYou(attentionKey, 'handoff-failed')
-    await postReply({
-      reply: String(res?.reply || '')
-    })
-  } catch (error: unknown) {
+    await settleRelayDelivery(res, envelopeId, attentionKey, postReply)
+  } catch (error: any) {
     // #93091: bot_relay.deliver classifies the failed turn and ships the
-    // typed code in the JSON-RPC error's `data.reason`; forward it into the
-    // sender-side reply file so the waiter (and the sending agent) get the
-    // machine-readable cause, and prefer it for the badge —
+    // typed code in the JSON-RPC error's `data.reason`; forward it into
+    // the sender-side reply file so the waiter (and the sending agent)
+    // get the machine-readable cause, and prefer it for the badge —
     // classified codes beat free-text re-parsing.
-    const reason = String((error as { data?: { reason?: string } })?.data?.reason || '').trim()
-    const raw = reason || (error instanceof Error ? error.message : String(error))
-    noteBotAttention(attentionKey, raw)
-    // Team OS slice 5: when the envelope carried a mailbox task hand-off
-    // (its `note`, #48), a bounce there is a FAILED HANDOFF — an explicit
-    // Needs You card, classified from the same reason code the badge uses.
-    // Content-free by construction: the category, the classified code and
-    // the note id, never the message that failed to travel.
-    const handoffNote = envelope.note && typeof envelope.note === 'object' ? envelope.note : null
+    const reason = String(error?.data?.reason || '').trim()
+    noteBotAttention(attentionKey, reason || error?.message || error)
 
-    if (handoffNote) {
-      recordNeedsYouEvent({
-        at: Date.now(),
-        bot: attentionKey,
-        category: 'handoff-failed',
-        id: `handoff:${envelopeId}`,
-        reason: attentionReasonFromError(raw) || 'delivery_failed',
-        ref: String(handoffNote.id || envelopeId || '')
-      })
-    }
-
+    // A transport exception can follow a committed admission; never settle it as failure.
+    if (!reason || reason === 'runtime_unavailable') {return}
     await postReply({
-      error: String((error instanceof Error ? error.message : (error as { message?: string })?.message) || error || 'delivery failed'),
+      error: String(error?.message || error || 'delivery failed'),
       ...(reason
         ? {
             reason
@@ -758,21 +792,6 @@ function scheduleRelayPushDrain() {
     relay.pushDebounceTimer = null
     void drainRelayOutboxes()
   }, RELAY_PUSH_DEBOUNCE_MS)
-}
-
-/** Manual outbox retry (E3): the run card's "retry now" door. Marks every
- *  route as having outbox work and runs one drain pass now, so pending
- *  envelopes are claimed and claimed-but-unanswered ones get re-offered —
- *  the same doors the push event drives, without waiting the poll interval
- *  or the gateway's reoffer clock. A stopped relay stays stopped: the drain
- *  guards on `relay.disposed` itself. */
-export function retryRelayOutbox() {
-  if (relay.disposed) {
-    return
-  }
-
-  routesWithOutboxWork.add(RELAY_OUTBOX_ANY)
-  void drainRelayOutboxes()
 }
 
 export function startBotRelay() {
@@ -819,7 +838,6 @@ export function stopBotRelay() {
   // Queued deliveries check `disposed` before they run; forget the lane tails
   // so a restart starts every target fresh instead of behind stale chains.
   relayLanes.clear()
-  $relayInflight.set(new Set())
   // Unpin every relay-retained socket (#93594): with the relay stopped the
   // pooled entries return to dispose-at-refcount-0 semantics.
   releaseRelayRetention()

@@ -18,7 +18,6 @@ import { TranscriptVideo } from '@/components/chat/transcript-video'
 import { ZoomableImage } from '@/components/chat/zoomable-image'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { useMediaImage } from '@/hooks/use-media-image'
-import { useMediaPlaybackSrc } from '@/hooks/use-media-playback-src'
 import { detectArtifact } from '@/lib/artifact-detect'
 import { renderMediaTags } from '@/lib/chat-messages/parts'
 import { normalizeExternalUrl, openExternalLink, PrettyLink } from '@/lib/external-link'
@@ -34,12 +33,12 @@ import {
   mediaKind,
   mediaName,
   mediaPathFromMarkdownHref,
+  resolveMediaPlaybackSrc,
   validImageDimensions
 } from '@/lib/media'
 import { previewTargetFromMarkdownHref } from '@/lib/preview-targets'
 import { remarkSoftBreaks } from '@/lib/remark-soft-breaks'
 import { sessionRefFromMarkdownHref } from '@/lib/session-refs'
-import { usePacedText } from '@/lib/use-paced-text'
 import { cn } from '@/lib/utils'
 import { useForcedTextDirection } from '@/store/text-direction'
 
@@ -160,22 +159,59 @@ function MediaAttachment({ path }: { path: string }) {
 }
 
 function MediaPlaybackAttachment({ path }: { path: string }) {
-  const { failed, kind, onError, onLoadedMetadata, src } = useMediaPlaybackSrc(path)
+  const [src, setSrc] = useState('')
+  const [failed, setFailed] = useState(false)
   const { open, openFailed } = useOpenMediaFile(path)
+  const kind = mediaKind(path)
   const name = mediaName(path)
+
+  useEffect(() => {
+    let cancelled = false
+    let objectUrl = ''
+
+    setFailed(false)
+    setSrc('')
+
+    if (kind === 'file') {
+      setFailed(true)
+
+      return () => {
+        cancelled = true
+      }
+    }
+
+    void resolveMediaPlaybackSrc(path)
+      .then(value => {
+        if (value.startsWith('blob:')) {
+          objectUrl = value
+        }
+
+        if (!cancelled) {
+          setSrc(value)
+        } else if (objectUrl) {
+          URL.revokeObjectURL(objectUrl)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFailed(true)
+        }
+      })
+
+    return () => {
+      cancelled = true
+
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl)
+      }
+    }
+  }, [kind, path])
 
   if (kind === 'audio' && src) {
     return (
       <span className="my-3 block max-w-md rounded-xl border border-(--ui-stroke-tertiary) bg-muted/35 p-3">
         <span className="mb-2 block truncate text-xs font-medium text-muted-foreground">{name}</span>
-        <audio
-          className="block w-full"
-          controls
-          onError={onError}
-          onLoadedMetadata={onLoadedMetadata}
-          preload="metadata"
-          src={src}
-        />
+        <audio className="block w-full" controls onError={() => setFailed(true)} preload="metadata" src={src} />
         {failed && <OpenMediaButton kind="audio" path={path} />}
       </span>
     )
@@ -188,8 +224,7 @@ function MediaPlaybackAttachment({ path }: { path: string }) {
         <TranscriptVideo
           className="block max-h-112 w-full rounded-lg bg-black"
           controls
-          onError={onError}
-          onLoadedMetadata={onLoadedMetadata}
+          onError={() => setFailed(true)}
           src={src}
         />
         {failed && <OpenMediaButton kind="video" path={path} />}
@@ -539,11 +574,6 @@ function MarkdownParagraph({
 }: ComponentProps<'p'> & { scratchpad?: boolean; streaming?: boolean }) {
   const plain = paragraphPlainText(children)
   const resolved = useResolvedParagraph(scratchpad ? null : plain)
-  // Marker-style directives (`::botplan`, a plan card) read the whole reply —
-  // this paragraph is only ever the marker's own line. Only called inside a
-  // TextMessagePartProvider (MarkdownTextSurface), so the part text is always
-  // available here.
-  const { text: partText } = useMessagePartText()
 
   // Vertical rhythm is owned by styles.css (`--paragraph-gap`), which must
   // out-specify Tailwind Typography's `prose` margins — so no `my-*` here.
@@ -556,7 +586,7 @@ function MarkdownParagraph({
       <>
         {resolved.map((segment, index) =>
           segment.kind === 'directive' ? (
-            <TranscriptDirectiveLeaf key={index} messageText={partText} streaming={streaming} text={segment.source} />
+            <TranscriptDirectiveLeaf key={index} streaming={streaming} text={segment.source} />
           ) : (
             <p className={paragraphClass} key={index} {...props}>
               {segment.text.trim()}
@@ -815,17 +845,8 @@ export function MarkdownTextContent({ isRunning, text, ...surfaceProps }: Markdo
 
 const MarkdownTextImpl = () => {
   const textDirection = useForcedTextDirection()
-  const { status, text } = useMessagePartText()
-  const running = status.type === 'running'
-  // Codex-style pacing: bursts from the network ease in at a steady cadence
-  // (lib/stream-pacing.ts). Settled text passes through untouched.
-  const paced = usePacedText(text, running)
 
-  return (
-    <TextMessagePartProvider isRunning={running} text={paced}>
-      <MarkdownTextSurface defer textDirection={textDirection} />
-    </TextMessagePartProvider>
-  )
+  return <MarkdownTextSurface defer textDirection={textDirection} />
 }
 
 export const MarkdownText = memo(MarkdownTextImpl)

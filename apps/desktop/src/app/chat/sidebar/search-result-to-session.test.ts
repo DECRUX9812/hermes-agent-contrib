@@ -6,7 +6,7 @@
 // (tool JSON, shell commands) as the session name.
 import { describe, expect, it } from 'vitest'
 
-import { searchResultToSession } from './sidebar-search'
+import { searchResultToSession } from './index'
 
 describe('searchResultToSession', () => {
   it('uses the backend-provided title for the synthesized row', () => {

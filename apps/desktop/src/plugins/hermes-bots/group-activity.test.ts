@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as data from './data'
 import type { GroupActivityEntry } from './group-activity'
@@ -68,6 +68,10 @@ function feed(room: Room, group: string): ActivityRow[] {
 
 beforeEach(() => {
   runTimersInline()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('turn arc', () => {
@@ -218,6 +222,19 @@ describe('turn arc', () => {
 
 describe('epoch scoping', () => {
   it('queues follow-ups without cancelling the active turn or losing its reply delta', async () => {
+    // A frozen clock with ever-SMALLER entry ids: every row lands in the same
+    // millisecond and the gateway mirror merge (sort by `at`, then by id)
+    // would order each new row before the last. A busy CI runner reached
+    // this by chance (same-ms appends, random UUIDs) and the reordered log
+    // fed the member its follow-up twice.
+    let uuid = 0xffff
+
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
+    vi.spyOn(globalThis.crypto, 'randomUUID').mockImplementation(
+      () =>
+        `${(uuid--).toString(16).padStart(8, '0')}-0000-4000-8000-000000000000` as `${string}-${string}-${string}-${string}-${string}`
+    )
+
     let release!: (reply: string) => void
 
     const first = new Promise<string>(resolve => {
@@ -227,14 +244,10 @@ describe('epoch scoping', () => {
     const room = await loadRoom({ turn: ({ n }) => (n === 1 ? first : '(pass)') })
     const member: GroupMember[] = [{ name: 'research', title: '' }]
     const thread = room.rounds.sendToGroupChat('Busy', member, 'first ask')!
-    // Default drain limit: the first-dispatch chain is ~dozens of awaits and
-    // a tight cap was the flake — it could return before the turn landed.
-    await drain(() => room.gateway.calls.length < 1)
+    await drain(() => room.gateway.calls.length < 1, 50)
     const epoch = room.chat.$groupChats.get().Busy.epoch
     room.rounds.sendToGroupChat('Busy', member, 'follow-up', thread)
-    // Wait for a real condition — the follow-up's 'queued' marker — instead of
-    // a bare flush, so the assertions below never race the enqueue.
-    await drain(() => feed(room, 'Busy').filter(event => event.kind === 'queued').length < 2)
+    await drain(() => false)
     expect(room.gateway.calls).toHaveLength(1)
     expect(room.chat.$groupChats.get().Busy.epoch).toBe(epoch)
     release('first reply')

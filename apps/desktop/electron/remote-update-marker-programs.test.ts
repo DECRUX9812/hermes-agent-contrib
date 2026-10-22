@@ -56,10 +56,6 @@ const powershell = ['pwsh', 'powershell'].find(
   shell => spawnSync(shell, ['-NoProfile', '-Command', 'exit 0']).status === 0
 )
 
-// Both replays shell out to an interpreter and replay the whole 40+ case corpus,
-// so their budget tracks process startup, not logic: the PowerShell one measured
-// ~5 s of the 5 s default on a loaded CI runner (run 37544500288) while passing
-// upstream, and it is the only test in this project that starts a shell.
 test.skipIf(!powershell)(
   'the Windows remote marker judge agrees with every corpus judge case',
   async () => {
@@ -107,7 +103,7 @@ test.skipIf(!powershell)(
     }
     // pwsh cold start alone can take seconds on a loaded runner; same budget as the other subprocess tests.
   },
-  30_000
+  20_000
 )
 
 // A dead claim whose checkout lock is still flocked (a killed updater's completion

@@ -27,14 +27,10 @@ import {
 import { handleApprovalKey, releaseApprovalKey } from '@/lib/keybinds/approval-keys'
 import { actionAllowedInInput, comboFromEvent, IS_MAC, isEditableTarget, isFocusWithin } from '@/lib/keybinds/combo'
 import { composerFocusKeysAllowed, isComposerFocusSoftCombo, typeToFocusChar } from '@/lib/keybinds/composer-focus-keys'
+import { registerBuiltinActionRunner } from '@/lib/keybinds/plugin-actions'
 import { stepReasoningEffort, writeSessionReasoningEffort } from '@/lib/reasoning-step'
 import { openWorktreeDialog } from '@/store/coding-status'
-import {
-  $commandPaletteOpen,
-  closeCommandPalette,
-  openCommandPalettePage,
-  toggleCommandPalette
-} from '@/store/command-palette'
+import { $commandPaletteOpen, openCommandPalettePage, toggleCommandPalette } from '@/store/command-palette'
 import { recordAction, recordDislike } from '@/store/desktop-metrics'
 import {
   $findInPage,
@@ -66,7 +62,6 @@ import {
 } from '@/store/profile'
 import { toggleProfileRailVisible } from '@/store/profile-rail-prefs'
 import { openFolderAsProject } from '@/store/projects'
-import { toggleQuickOpen } from '@/store/quick-open'
 import { toggleReview } from '@/store/review'
 import {
   $activeSessionId,
@@ -115,9 +110,7 @@ import {
   NEW_CHAT_ROUTE,
   PROFILES_ROUTE,
   sessionRoute,
-  SETTINGS_ROUTE,
-  STARMAP_ROUTE,
-  WEBHOOKS_ROUTE
+  SETTINGS_ROUTE
 } from '../routes'
 
 export interface KeybindRuntimeDeps {
@@ -314,8 +307,6 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'nav.artifacts': () => navigateToWorkspacePage(navigate, ARTIFACTS_ROUTE),
     'nav.cron': () => navigate(CRON_ROUTE),
     'nav.agents': () => navigate(AGENTS_ROUTE),
-    'nav.starmap': () => navigate(STARMAP_ROUTE),
-    'nav.webhooks': () => navigate(WEBHOOKS_ROUTE),
 
     'session.new': () => {
       // Match the sidebar New Session button. A plain keyboard new chat should
@@ -345,10 +336,6 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     // ⌘O: native folder picker → open the folder as a project (upsert) with a
     // fresh session anchored there.
     'workspace.openFolder': () => void openFolderAsProject(),
-    'nav.quickOpen': () => {
-      closeCommandPalette()
-      toggleQuickOpen()
-    },
 
     // Narrow-viewport reveal is handled inside the store toggles now.
     'view.toggleSidebar': toggleSidebarOpen,
@@ -412,6 +399,25 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     'profile.create': requestProfileCreate
   }
 
+  // Plugins run built-in actions by id (`ctx.runAction`) through this same
+  // table, read at call time, so a plugin run and a keypress share one handler
+  // and rebinding the chord never changes what the plugin gets.
+  useEffect(
+    () =>
+      registerBuiltinActionRunner(actionId => {
+        const handler = handlersRef.current[actionId]
+
+        if (!handler) {
+          return false
+        }
+
+        handler()
+
+        return true
+      }),
+    []
+  )
+
   // A keyboard-driven overlay closing hands typing back to the composer: Radix
   // restores focus to the trigger (a toolbar button for the model pill), so
   // without this the Enter that committed a model also eats the next keystroke.
@@ -465,19 +471,6 @@ export function useKeybinds(deps: KeybindRuntimeDeps): void {
     })
 
     return () => stopF12Shortcut?.()
-  }, [])
-
-  // The native menu's door items carry no accelerators (the chords are
-  // rebindable), so a click sends the action id instead — it lands in the
-  // same handler table a keypress would have hit.
-  useEffect(() => {
-    const unsubscribe = window.hermesDesktop?.onMenuActionRequested?.(actionId => {
-      const handler = handlersRef.current[actionId] ?? contributedKeybindHandler(actionId)
-
-      handler?.()
-    })
-
-    return () => unsubscribe?.()
   }, [])
 
   useEffect(() => {

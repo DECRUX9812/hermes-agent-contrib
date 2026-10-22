@@ -137,10 +137,7 @@ export function SidebarDateDivider({
     </span>
   )
 
-  // A caption, no trailing rule: the hover-only caret and "+" hold their space
-  // while invisible, so a flex rule started and ended at a different x under
-  // every label. The spacer keeps the action pinned right.
-  const rule = <span aria-hidden="true" className="min-w-0 flex-1" />
+  const rule = <span aria-hidden="true" className="h-px min-w-4 flex-1 bg-(--ui-stroke-tertiary)" />
 
   return (
     // group/workspace: a divider heads a group the same way a repo header does,
@@ -209,20 +206,9 @@ export function SidebarRowCluster({ className, ...props }: React.ComponentProps<
   return <div className={cn(SIDEBAR_ROW_INSET, className)} {...props} />
 }
 
-/** Session row main tap target. `data-sidebar-row` joins the rail's roving
- *  keyboard set — arrows walk it via the sidebar's container keydown; `tabIndex
- *  -1` keeps hundreds of rows out of the Tab order (the last-focused row is
- *  promoted back to 0 by the container's focusin listener, so Tab returns to
- *  where you left the list). */
+/** Session row main tap target. */
 export function SidebarRowBody({ className, ...props }: React.ComponentProps<'button'>) {
-  return (
-    <RowButton
-      className={cn(SIDEBAR_ROW_INSET, 'bg-transparent text-left', className)}
-      data-sidebar-row=""
-      tabIndex={-1}
-      {...props}
-    />
-  )
+  return <RowButton className={cn(SIDEBAR_ROW_INSET, 'bg-transparent text-left', className)} {...props} />
 }
 
 /** Tappable label — underline/truncate live on the inner span, not the button. */

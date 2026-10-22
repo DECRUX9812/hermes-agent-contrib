@@ -21,14 +21,6 @@ export async function reconnectMovedCloudAgent(
   org: string,
   isCurrent: () => boolean
 ): Promise<boolean> {
-  const connections = desktop.connections
-
-  // Browser-hosted Desktop has no native registry. Do not log it out while
-  // attempting a reconnect whose new ownership cannot be saved.
-  if (!connections) {
-    return false
-  }
-
   const { url } = connection
   await desktop.oauthLogoutConnectionConfig(url)
 
@@ -42,7 +34,7 @@ export async function reconnectMovedCloudAgent(
     return false
   }
 
-  await connections.save({
+  await desktop.connections.save({
     id: connection.id,
     kind: 'cloud',
     label: connection.label,

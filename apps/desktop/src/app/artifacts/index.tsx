@@ -3,13 +3,10 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { TitlebarIcon } from '@/app/shell/titlebar-icon'
-import { formatRefValue } from '@/components/assistant-ui/directive-text'
 import { ZoomableImage } from '@/components/chat/zoomable-image'
 import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/ui/copy-button'
-import { EmptyState } from '@/components/ui/empty-state'
-import { ErrorState } from '@/components/ui/error-state'
 import {
   Pagination,
   PaginationButton,
@@ -32,13 +29,12 @@ import {
   urlSlugTitleLabel,
   useLinkTitle
 } from '@/lib/external-link'
-import { FileImage, FileText, FolderOpen, Link2, Wrench } from '@/lib/icons'
+import { FileImage, FileText, FolderOpen, Link2 } from '@/lib/icons'
 import { downloadGatewayMediaFile, isArtifactFilePath, isRemoteGateway } from '@/lib/media'
 import { normalize } from '@/lib/text'
 import { fmtDayTime } from '@/lib/time'
 import { cn } from '@/lib/utils'
 import { notify, notifyError } from '@/store/notifications'
-import { requestStartWorkSession } from '@/store/projects'
 
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
 import { useRouteEnumParam } from '../hooks/use-route-enum-param'
@@ -53,7 +49,6 @@ import {
   type ArtifactRecord,
   loadArtifactsForSessions
 } from './artifact-utils'
-import { planWorkspace } from './plan-artifacts'
 
 function formatArtifactTime(timestamp: number): string {
   return fmtDayTime.format(new Date(timestamp))
@@ -97,10 +92,8 @@ function paginationItems(page: number, pageCount: number): Array<number | 'ellip
 }
 
 type CellCtx = {
-  onBuildPlan: (artifact: ArtifactRecord) => void
   onOpen: (artifact: ArtifactRecord) => void | Promise<void>
   onOpenChat: (sessionId: string) => void
-  sessionCwdFor: (sessionId: string) => string | undefined
 }
 
 interface ArtifactColumn {
@@ -123,13 +116,11 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
   const a = t.artifacts
   const navigate = useNavigate()
   const [artifacts, setArtifacts] = useState<ArtifactRecord[] | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
   const [kindFilter, setKindFilter] = useRouteEnumParam('tab', ARTIFACT_FILTERS, 'all')
 
   const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set())
-  const [sessionCwdById, setSessionCwdById] = useState<Record<string, string | undefined>>({})
   const [imagePage, setImagePage] = useState(1)
   const [filePage, setFilePage] = useState(1)
 
@@ -146,10 +137,6 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
 
     try {
       const sessions = (await listAllProfileSessions(30, 1)).sessions
-
-      // Plan→build handoff anchors a fresh session to the plan's workspace; a
-      // cwd-relative plan path resolves against the session that wrote it.
-      setSessionCwdById(Object.fromEntries(sessions.map(session => [session.id, session.cwd ?? undefined])))
 
       const { artifacts: nextArtifacts, failures } = await loadArtifactsForSessions(sessions, (session, page) =>
         getSessionMessages(session.id, session.profile, {
@@ -184,10 +171,9 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
       }
 
       setArtifacts(nextArtifacts.sort((left, right) => right.timestamp - left.timestamp))
-      setLoadError(null)
     } catch (err) {
       notifyError(err, a.failedLoad)
-      setLoadError(err instanceof Error ? err.message : String(err))
+      setArtifacts([])
     } finally {
       refreshInFlightRef.current = false
       setRefreshing(false)
@@ -325,39 +311,12 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
     })
   }, [])
 
-  // #22: a plan artifact hands off to a NEW session anchored on the plan's
-  // workspace, carrying the plan as a `@file:` context chip — fresh cache,
-  // never a mid-conversation mutation of the session that produced it.
-  const buildWithPlan = useCallback(
-    (artifact: ArtifactRecord) => {
-      const plan = planWorkspace(artifact, sessionCwdById[artifact.sessionId])
-
-      if (plan) {
-        requestStartWorkSession(plan.workspace, a.buildWithPlanDraft, {
-          refs: [`@file:${formatRefValue(plan.relPath)}`]
-        })
-      }
-    },
-    [a, sessionCwdById]
-  )
-
-  const sessionCwdFor = useCallback((sessionId: string) => sessionCwdById[sessionId], [sessionCwdById])
-
   // Stable ctx: recreating it (or its onOpenChat closure) every render made
   // every artifact cell re-render whenever the page did — and a link cell's
   // async title fetch re-rendered the page repeatedly. openArtifact is already
   // a useCallback; navigate is stable, so onOpenChat can be too.
   const openChat = useCallback((sessionId: string) => openSessionFromPicker(sessionId, navigate), [navigate])
-
-  const cellCtx: CellCtx = useMemo(
-    () => ({
-      onBuildPlan: buildWithPlan,
-      onOpen: openArtifact,
-      onOpenChat: openChat,
-      sessionCwdFor
-    }),
-    [buildWithPlan, openArtifact, openChat, sessionCwdFor]
-  )
+  const cellCtx: CellCtx = useMemo(() => ({ onOpen: openArtifact, onOpenChat: openChat }), [openArtifact, openChat])
 
   return (
     <PageSearchShell
@@ -391,25 +350,14 @@ export function ArtifactsView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
       ]}
     >
       {!artifacts ? (
-        loadError ? (
-          <div className="grid h-full place-items-center p-6">
-            <ErrorState description={loadError} title={a.failedLoad}>
-              <Button
-                className="justify-self-center"
-                disabled={refreshing}
-                onClick={() => void refreshArtifacts()}
-                size="sm"
-                variant="secondary"
-              >
-                {t.common.retry}
-              </Button>
-            </ErrorState>
-          </div>
-        ) : (
-          <PageLoader label={a.indexing} />
-        )
+        <PageLoader label={a.indexing} />
       ) : visibleArtifacts.length === 0 ? (
-        <EmptyState className="h-full px-6" description={a.noArtifactsDesc} title={a.noArtifactsTitle} />
+        <div className="grid h-full place-items-center px-6 text-center">
+          <div>
+            <div className="text-sm font-medium">{a.noArtifactsTitle}</div>
+            <div className="mt-1 text-xs text-muted-foreground">{a.noArtifactsDesc}</div>
+          </div>
+        </div>
       ) : (
         <div className="h-full overflow-y-auto [scrollbar-gutter:stable]">
           <div className="flex flex-col gap-3 px-3 pb-2">
@@ -663,12 +611,11 @@ const PrimaryCell = memo(function PrimaryCell({ artifact, ctx }: { artifact: Art
   )
 })
 
-const LocationCell = memo(function LocationCell({ artifact, ctx }: { artifact: ArtifactRecord; ctx: CellCtx }) {
+const LocationCell = memo(function LocationCell({ artifact }: { artifact: ArtifactRecord; ctx: CellCtx }) {
   const { t } = useI18n()
   const isLink = artifact.kind === 'link'
   const value = isLink ? hostPathLabel(artifact.value) : artifact.value
   const copyLabel = isLink ? t.artifacts.copyUrl : t.artifacts.copyPath
-  const isPlan = planWorkspace(artifact, ctx.sessionCwdFor(artifact.sessionId)) !== null
 
   return (
     <div className="group/location flex min-w-0 items-center gap-1.5">
@@ -682,19 +629,6 @@ const LocationCell = memo(function LocationCell({ artifact, ctx }: { artifact: A
           {value}
         </div>
       </Tip>
-      {isPlan && (
-        <Tip label={t.artifacts.buildWithPlan}>
-          <Button
-            aria-label={t.artifacts.buildWithPlan}
-            className="shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover/location:opacity-100"
-            onClick={() => ctx.onBuildPlan(artifact)}
-            size="icon-xs"
-            variant="ghost"
-          >
-            <Wrench className="size-3.5" />
-          </Button>
-        </Tip>
-      )}
       <CopyButton
         appearance="icon"
         buttonSize="icon-xs"

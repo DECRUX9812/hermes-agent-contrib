@@ -47,10 +47,10 @@ function boundedModelOptionsFetch<T>(fetch: Promise<T>, settleMs = MODEL_OPTIONS
     return fetch
   }
 
-  // The timer id is assigned synchronously by the executor below, but
+  // `any`: the timer id is assigned synchronously by the executor below, but
   // it is still `null` on the declaration TypeScript sees from the closure,
   // and clearTimeout's signature takes `number | undefined`.
-  let timerId: number | undefined = undefined
+  let timerId: any = null
 
   const deadline = new Promise<never>((_, reject) => {
     timerId = scope.setTimeout(() => {
@@ -63,23 +63,17 @@ function boundedModelOptionsFetch<T>(fetch: Promise<T>, settleMs = MODEL_OPTIONS
 
 /** One provider row of the gateway's `model.options` inventory. Entries in
  *  `models` are bare slugs on current gateways and objects on older ones. */
-export interface ModelProviderOption {
+interface ModelProviderOption {
   aliases?: null | string[]
   models?: Array<string | { id?: string; name?: string }>
   name?: string
   slug: string
 }
-export interface ModelOptionsResult {
+interface ModelOptionsResult {
   providers?: ModelProviderOption[]
 }
 
-/** Model ids on one provider row — bare slugs on current gateways, objects on
- *  older ones. Shared by ModelPicker and the row's Model submenu. */
-export function providerModelIds(provider: ModelProviderOption | null | undefined): string[] {
-  return (provider?.models || []).map(m => (typeof m === 'string' ? m : m.id || m.name || '')).filter(Boolean)
-}
-
-export function useModelOptions(bot: null | RosterRow = null) {
+function useModelOptions(bot: null | RosterRow = null) {
   // Hook body runs during render: an orphaned row must paint the picker
   // disabled/erroring, not throw into the pane's error boundary.
   const resolved = bot ? resolveBotConnectionRoute(bot) : null
@@ -234,7 +228,9 @@ export function ModelPicker({ bot = null, value, onChange, placeholderModel }: M
 
   const activeProvider = providers.find(p => catalogProviderMatches(p, value.provider)) || null
 
-  const models = providerModelIds(activeProvider)
+  const models = activeProvider
+    ? (activeProvider.models || []).map(m => (typeof m === 'string' ? m : m.id || m.name || ''))
+    : []
 
   return (
     <div className="grid grid-cols-[1fr_1.4fr] gap-2.5">
@@ -251,7 +247,7 @@ export function ModelPicker({ bot = null, value, onChange, placeholderModel }: M
               setManualEntry(true)
             } else {
               const prov = providers.find(p => p.slug === v)
-              const provModels = providerModelIds(prov)
+              const provModels = (prov?.models || []).map(m => (typeof m === 'string' ? m : m.id || m.name || ''))
               const first = provModels[0] || ''
               onChange({
                 provider: v,

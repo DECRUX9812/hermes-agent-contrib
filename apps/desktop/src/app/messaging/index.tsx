@@ -1,7 +1,6 @@
 import { useStore } from '@nanostores/react'
 import type * as React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router'
 
 import { PageLoader } from '@/components/page-loader'
 import { StatusDot, type StatusTone } from '@/components/status-dot'
@@ -9,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { DisclosureCaret } from '@/components/ui/disclosure-caret'
-import { ErrorBanner, ErrorState } from '@/components/ui/error-state'
+import { ErrorBanner } from '@/components/ui/error-state'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { ResponsiveTabs } from '@/components/ui/tab-dropdown'
@@ -34,7 +33,7 @@ import { normalize } from '@/lib/text'
 import { cn } from '@/lib/utils'
 import { $changeEventsAvailable, $pairingChangeTick, $platformsChangeTick } from '@/store/live-sync'
 import { notify, notifyError } from '@/store/notifications'
-import { $settingsRequestProfile, setSettingsScope } from '@/store/settings-scope'
+import { $settingsRequestProfile } from '@/store/settings-scope'
 import { $gatewayRestarting, runGatewayRestart, watchGatewayRestartOutcome } from '@/store/system-actions'
 
 import { useRefreshHotkey } from '../hooks/use-refresh-hotkey'
@@ -48,7 +47,6 @@ import { SettingsProfileScope } from '../settings/profile-scope'
 import type { SetStatusbarItemGroup } from '../shell/statusbar-controls'
 
 import { AllowlistField } from './allowlist-field'
-import { hasPhoneParity, PhoneParityCard } from './phone-parity'
 import { PlatformAvatar } from './platform-icon'
 import { TelegramQrSetup } from './telegram-qr-setup'
 
@@ -154,27 +152,7 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
   // Shared settings "Applies to" scope, request-shaped (undefined → follow
   // the active profile; the API helpers treat null as "target primary").
   const scopeProfile = useStore($settingsRequestProfile)
-  // "?profile=<name>" — a deep link (e.g. a bot row's "Continue on phone")
-  // scopes the page to that profile, then drops the param so the URL doesn't
-  // fight a later manual scope change.
-  const { hash, pathname, search } = useLocation()
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    const requested = new URLSearchParams(search).get('profile')
-
-    if (!requested) {
-      return
-    }
-
-    setSettingsScope(requested)
-    const params = new URLSearchParams(search)
-    params.delete('profile')
-    const qs = params.toString()
-    navigate({ hash, pathname, search: qs ? `?${qs}` : '' }, { replace: true })
-  }, [hash, navigate, pathname, search])
   const [platforms, setPlatforms] = useState<MessagingPlatformInfo[] | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
   // A saved credential/toggle only takes effect on the next gateway start, so a
   // vanishing toast is not enough: the page keeps a banner up until a restart
   // actually happens (dashboard parity). Cleared on a completed restart.
@@ -238,12 +216,8 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
 
         if (scopeRef.current === scopeProfile) {
           setPlatforms(result.platforms)
-          setLoadError(null)
         }
       } catch (err) {
-        if (scopeRef.current === scopeProfile) {
-          setLoadError(err instanceof Error ? err.message : String(err))
-        }
         if (!silent) {
           notifyError(err, m.loadFailed)
         }
@@ -306,7 +280,6 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
   if (prevScope !== scopeProfile) {
     setPrevScope(scopeProfile)
     setPlatforms(null)
-    setLoadError(null)
     setPairing({ approved: [], pending: [] })
     setEdits({})
   }
@@ -597,23 +570,7 @@ export function MessagingView({ setStatusbarItemGroup: _setStatusbarItemGroup, .
       searchValue={query}
     >
       {!platforms ? (
-        loadError ? (
-          <div className="grid h-full place-items-center p-6">
-            <ErrorState description={loadError} title={m.loadFailed}>
-              <Button
-                className="justify-self-center"
-                disabled={refreshing}
-                onClick={() => void refreshAll()}
-                size="sm"
-                variant="secondary"
-              >
-                {t.common.retry}
-              </Button>
-            </ErrorState>
-          </div>
-        ) : (
-          <PageLoader label={m.loading} />
-        )
+        <PageLoader label={m.loading} />
       ) : (
         <div className="flex h-full min-h-0 flex-col">
           {/* Which profile's gateway this page configures (hidden for
@@ -884,17 +841,6 @@ function PlatformDetail({
           <div className="mt-3">
             <TelegramQrSetup onApplied={onTelegramApplied} platform={platform} scopeProfile={scopeProfile} />
           </div>
-        </section>
-      )}
-
-      {hasPhoneParity(platform) && (
-        <section>
-          <SectionTitle>{m.phoneParity.title}</SectionTitle>
-          <PhoneParityCard
-            platform={platform}
-            stateLabel={stateLabel(platform.state, m)}
-            tone={platformStatusTone(platform)}
-          />
         </section>
       )}
 

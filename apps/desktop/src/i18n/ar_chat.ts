@@ -12,9 +12,7 @@ export const arChat = {
     startVoice: 'بدء الصوت',
     openDirective: 'فتح',
     queueMessage: 'إضافة الرسالة للطابور',
-    queueWithAttachments: 'إضافة إلى الطابور مع المرفقات',
     steer: 'توجيه',
-    steerTurn: 'توجيه الدور',
     stop: 'إيقاف',
     send: 'إرسال',
     speaking: 'يتحدث',
@@ -118,7 +116,6 @@ export const arChat = {
       'composer.help': 'هذه المساعدة السريعة (احذف للإخفاء)',
       'composer.sendNewline': 'إرسال · Shift+Enter لسطر جديد',
       'composer.sendQueued': 'إرسال الدور التالي في قائمة الانتظار',
-      'composer.modelPicker': 'منتقي النموذج',
       'keybinds.openPanel': 'كل اختصارات لوحة المفاتيح',
       'composer.cancel': 'إغلاق النافذة المنبثقة · إلغاء التشغيل',
       'composer.history': 'التنقل في النافذة المنبثقة / السجل'
@@ -141,7 +138,6 @@ export const arChat = {
     queueCollapse: 'طي',
     queueSendNext: 'إرسالها تاليا',
     queueSteer: 'توجيه — تصحيح الدور الجاري فورا',
-    queueRemoved: 'أزيلت من قائمة الانتظار',
     queueSend: 'إرسالها الآن',
     queueDelete: 'حذف من الطابور',
     queueStuckTitle: 'لم تُرسل الرسالة في قائمة الانتظار',
@@ -173,8 +169,6 @@ export const arChat = {
     pasteImage: 'لصق صورة',
     url: 'رابط',
     promptSnippets: 'مقتطفات جاهزة',
-    scheduleJob: 'التشغيل وفق جدول...',
-    slashCommands: 'أوامر سلاش…',
     tipPre: 'نصيحة: اكتب ',
     tipPost: ' للإشارة إلى الملفات ضمن النص.',
     snippetsTitle: 'مقتطفات الموجّهات',
@@ -471,7 +465,6 @@ export const arChat = {
     imageAttach: 'إرفاق الصورة',
     imageWriteFailed: 'فشل كتابة الصورة',
     imageAttachFailed: 'فشل إرفاق الصورة',
-    pastedAsFile: 'لصق كملف',
     pastedContent: 'محتوى ملصق',
     pasteAttachFailed: 'تعذر إرفاق النص الملصق',
     attachImages: 'إرفاق الصور',
@@ -530,10 +523,6 @@ export const arChat = {
       'right-pane': {
         title: 'لوحة العمل',
         text: 'الملفات والطرفية والمراجعة والمتصفح المدمج تتشارك اللوحة الجانبية.'
-      },
-      'advanced-mode': {
-        title: 'المزيد خلف الوضع المتقدم',
-        text: 'اللوحات وcron والإمكانات وشريط الحالة موجودة في الوضع المتقدم — الإعدادات › المظهر › النافذة والتخطيط يبدّل الوضع.'
       }
     }
   }

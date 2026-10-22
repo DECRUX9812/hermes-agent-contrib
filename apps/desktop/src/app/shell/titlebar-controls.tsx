@@ -4,10 +4,7 @@ import { type ComponentProps, type MouseEvent, type ReactNode, useEffect, useSta
 import { useLocation, useNavigate } from 'react-router'
 
 import { hudTargetSessionId } from '@/app/hud/handoff'
-import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
-import { $narrowOverlayPaneIds } from '@/components/pane-shell/narrow-overlay-state'
-import { $narrowViewport } from '@/components/pane-shell/tree/store'
 import { resetLayoutTree } from '@/components/pane-shell/tree/store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,25 +16,21 @@ import { triggerHaptic } from '@/lib/haptics'
 import { formatModifierToken } from '@/lib/keybinds/combo'
 import { cn } from '@/lib/utils'
 import { recordAction } from '@/store/desktop-metrics'
-import { canUseHud, toggleHud } from '@/store/hud'
+import { toggleHud } from '@/store/hud'
 import { $interfaceMode, shownInMode, type Tiered } from '@/store/interface-mode'
 import {
   $fileBrowserOpen,
   $leftSideOpen,
   $panesFlipped,
-  CHAT_SIDEBAR_PANE_ID,
-  FILE_BROWSER_PANE_ID,
   toggleLeftSide,
   togglePanesFlipped,
   toggleRightSide
 } from '@/store/layout'
-import { REVIEW_PANE_ID } from '@/store/review'
 import { $unreadSessionCount } from '@/store/session-dot-state'
 import { $titlebarAppActionsSide, TITLEBAR_FIXED_TOOLS } from '@/store/titlebar-app-actions'
 
 import { appViewForPath, hidesFixedTitlebarClusters, isOverlayView } from '../routes'
 
-import { $panelLauncherOpen, PanelLauncher, togglePanelLauncher } from './panel-launcher'
 import {
   TITLEBAR_CHROME_CHANGED_EVENT,
   TITLEBAR_ICON_BADGE_SCALE,
@@ -51,7 +44,6 @@ export interface TitlebarTool extends Tiered {
   id: string
   label: string
   active?: boolean
-  expanded?: boolean
   className?: string
   disabled?: boolean
   hidden?: boolean
@@ -149,13 +141,10 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   const modHeld = useModifierHeld()
   const fileBrowserOpen = useStore($fileBrowserOpen)
   const leftSideOpen = useStore($leftSideOpen)
-  const narrow = useStore($narrowViewport)
-  const overlayPanes = useStore($narrowOverlayPaneIds)
   const panesFlipped = useStore($panesFlipped)
   const unreadCount = useStore($unreadSessionCount)
   const appActionsSide = useStore($titlebarAppActionsSide)
   const interfaceMode = useStore($interfaceMode)
-  const panelLauncherOpen = useStore($panelLauncherOpen)
   const unreadBadge = unreadCount > 0 ? unreadCount : undefined
   const unreadHint = unreadBadge ? ` · ${t.titlebar.unreadSessions(unreadBadge)}` : ''
   // One filter for every cluster: a tool's own `hidden`, then the mode's tier.
@@ -175,22 +164,10 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   // from the live tree (see toggleLeftSide / toggleRightSide) — the browser
   // column, the sessions column, whatever is physically left / right. Never an
   // active highlight — plain show/hide affordances.
-  const leftEdge = { open: narrow ? overlayPanes.has(CHAT_SIDEBAR_PANE_ID) : leftSideOpen, toggle: toggleLeftSide }
-  const rightOverlayId = overlayPanes.has(REVIEW_PANE_ID) ? REVIEW_PANE_ID : FILE_BROWSER_PANE_ID
-  const rightEdge = { open: narrow ? overlayPanes.has(rightOverlayId) : fileBrowserOpen, toggle: toggleRightSide }
+  const leftEdge = { open: leftSideOpen, toggle: toggleLeftSide }
+  const rightEdge = { open: fileBrowserOpen, toggle: toggleRightSide }
   const leftLabel = leftEdge.open ? t.titlebar.hideSidebar : t.titlebar.showSidebar
   const rightLabel = rightEdge.open ? t.titlebar.hideRightSidebar : t.titlebar.showRightSidebar
-
-  // A visible hover reveal is not pinned: generic toggle would pin it rather
-  // than perform the labelled Hide action. Titlebar verbs are explicit;
-  // keyboard toggles retain their hover-to-pin behavior.
-  const toggleEdge = (id: string, open: boolean, toggleDocked: () => void) => {
-    if (narrow) {
-      window.dispatchEvent(new CustomEvent(PANE_TOGGLE_REVEAL_EVENT, { detail: { id, mode: open ? 'close' : 'open' } }))
-    } else {
-      toggleDocked()
-    }
-  }
 
   const sidebarTool: TitlebarTool = {
     ...TITLEBAR_FIXED_TOOLS.sidebar,
@@ -198,11 +175,10 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     badge: panesFlipped ? undefined : unreadBadge,
     icon: <TitlebarIcon name="layout-sidebar-left" />,
     id: 'sidebar',
-    expanded: leftEdge.open,
     label: `${leftLabel}${panesFlipped ? '' : unreadHint}`,
     onSelect: () => {
       triggerHaptic('tap')
-      toggleEdge(CHAT_SIDEBAR_PANE_ID, leftEdge.open, leftEdge.toggle)
+      leftEdge.toggle()
     }
   }
 
@@ -224,26 +200,12 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     badge: panesFlipped ? unreadBadge : undefined,
     icon: <TitlebarIcon name="layout-sidebar-right" />,
     id: 'right-sidebar',
-    expanded: rightEdge.open,
     label: `${rightLabel}${panesFlipped ? unreadHint : ''}`,
     onSelect: () => {
       triggerHaptic('tap')
-      toggleEdge(rightOverlayId, rightEdge.open, rightEdge.toggle)
+      rightEdge.toggle()
     },
     tour: 'right-pane-toggle'
-  }
-
-  const panelsTool: TitlebarTool = {
-    ...TITLEBAR_FIXED_TOOLS.panels,
-    active: panelLauncherOpen,
-    icon: <TitlebarIcon name="multiple-windows" />,
-    id: 'panels',
-    label: t.panels.button,
-    onSelect: () => {
-      triggerHaptic('tap')
-      togglePanelLauncher()
-    },
-    tour: 'titlebar-panels'
   }
 
   // Static system tools — always pinned to the screen's right edge so the
@@ -258,8 +220,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       onSelect: () => {
         triggerHaptic('open')
         onOpenSettings()
-      },
-      tour: 'titlebar-settings'
+      }
     },
     {
       ...TITLEBAR_FIXED_TOOLS.layout,
@@ -280,8 +241,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         triggerHaptic('open')
         toggleLayoutEditMode()
       },
-      title: t.titlebar.layoutEditorTitle(formatModifierToken('mod')),
-      tour: 'titlebar-layout'
+      title: t.titlebar.layoutEditorTitle(formatModifierToken('mod'))
     },
     {
       ...TITLEBAR_FIXED_TOOLS.hud,
@@ -290,8 +250,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
       // crowds the ⌘⇧H hint off the tooltip. Label only — the hint is appended
       // from the action registry, same as every other tool here.
       actionId: 'view.toggleHud',
-      hidden: !canUseHud(),
-      icon: <TitlebarIcon name="empty-window" />,
+      icon: <TitlebarIcon name="comment-discussion" />,
       id: 'hud',
       label: t.titlebar.enterHud,
       onSelect: () => {
@@ -354,7 +313,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
 
   const visibleSystemTools = appActionsSide === 'right' ? systemTools.filter(visibleTool) : []
   const visiblePaneTools = tools.filter(visibleTool)
-  const visibleRightFixedTools = [flipTool, panelsTool, rightSidebarTool].filter(visibleTool)
+  const visibleRightFixedTools = [flipTool, rightSidebarTool].filter(visibleTool)
 
   return (
     <>
@@ -393,7 +352,6 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         ))}
         <Slot area="titleBar.right" />
       </div>
-      <PanelLauncher />
     </>
   )
 }
@@ -432,7 +390,6 @@ function TitlebarToolButton({ navigate, tool }: { navigate: ReturnType<typeof us
   return (
     <Tip label={tooltipLabel} placement="toolbar">
       <Button
-        aria-expanded={tool.expanded}
         aria-label={tool.label}
         aria-pressed={tool.active ?? undefined}
         className={className}

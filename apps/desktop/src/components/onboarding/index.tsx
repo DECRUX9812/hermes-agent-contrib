@@ -244,13 +244,13 @@ export function DesktopOnboardingOverlay({
     const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
     if (reduce) {
-      confirmOnboardingModel(ctx)
+      void confirmOnboardingModel(ctx)
 
       return
     }
 
     setLeaving(true)
-    window.setTimeout(() => confirmOnboardingModel(ctx), ONBOARDING_EXIT_MS)
+    window.setTimeout(() => void confirmOnboardingModel(ctx), ONBOARDING_EXIT_MS)
   }
 
   // The free-tier intro's three doors share one exit: consume the notice, play
@@ -678,7 +678,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
 
   return (
     <div className="grid gap-2">
-      <div className="scroll-edge-fade grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
+      <div className="grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
         {featured ? <FeaturedProviderRow onSelect={select} provider={featured} /> : null}
         {/* The no-account path: everything runs on this machine. Shipped
             behind the --local launch flag. (Fireworks moved into the
@@ -871,7 +871,7 @@ export function ApiKeyForm({
         </Button>
       ) : null}
 
-      <div className="scroll-edge-fade grid max-h-[42dvh] gap-2 overflow-y-auto p-1 sm:grid-cols-2">
+      <div className="grid max-h-[42dvh] gap-2 overflow-y-auto p-1 sm:grid-cols-2">
         {options.map(o => (
           <button
             className={cn(

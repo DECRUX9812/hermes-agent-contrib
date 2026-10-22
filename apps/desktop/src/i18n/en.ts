@@ -1,17 +1,24 @@
 import { FIELD_DESCRIPTIONS, FIELD_LABELS } from '@/app/settings/constants'
 
-import { enAppTour, enHandoffTour } from './en_app_tour'
-import { enAuxTasks } from './en_aux_tasks'
+import { enAppTour } from './en_app_tour'
 import { enBilling } from './en_billing'
 import { enBoot } from './en_boot'
 import { enCatalogInstall } from './en_catalog_install'
+import { enClarify } from './en_clarify'
+import { enConnectorAccounts } from './en_connector_accounts'
+import { enConnectorCard } from './en_connector_card'
+import { enGatewayGroupOpen, enSkillDeepLink } from './en_deep_links'
+import { enFirstRun } from './en_first_run'
 import { enLocalModels } from './en_local_models'
 import { enModelMenu } from './en_model_menu'
+import { enModelSettings } from './en_model_settings'
 import { enNotices } from './en_notices'
 import { enOnboarding } from './en_onboarding'
 import { enProjects } from './en_projects'
 import { enSharedMetrics } from './en_shared_metrics'
+import { enThemePicker } from './en_theme_picker'
 import { enUninstallSection } from './en_uninstall_section'
+import { enUpdateChannel } from './en_update_channel'
 import type { Translations } from './types'
 
 export const en: Translations = {
@@ -27,99 +34,10 @@ export const en: Translations = {
   },
   sharedMetrics: enSharedMetrics,
   appTour: enAppTour,
+  firstRun: enFirstRun,
   // English editorial copy stays in the shipped JSONL; other locales override it.
-  intro: { stock: {}, custom: () => [], recentSessions: 'Pick up where you left off' },
-  catalog: {
-    add: 'Add',
-    added: 'Added',
-    discover: 'Discover',
-    featured: 'Featured',
-    explorePlugins: 'Explore plugins',
-    exploreSkills: 'Explore skills',
-    mostStarred: 'Most starred',
-    newest: 'Newest',
-    recentlyUpdated: 'Recently updated',
-    alphabetical: 'Name',
-    sortBy: 'Sort by',
-    seeAll: 'See all',
-    related: 'More like this',
-    tags: 'Tags',
-    screenshots: 'Screenshots',
-    listView: 'List view',
-    cardView: 'Card view',
-    installTitle: (name: string) => `Install “${name}”?`,
-    installDescription: 'This skill will be available in new sessions. Only install sources you trust.',
-    installTo: 'Install to',
-    thisComputer: 'This computer',
-    installing: 'Installing…',
-    installComplete: (name: string) => `“${name}” installed`,
-    destinationChanged: 'The destination changed. Close this dialog and open the install link again.',
-    installed: 'Installed',
-    searchSkills: 'Search skills',
-    searchPlugins: 'Search plugins',
-    allSources: 'All sources',
-    allCategories: 'All categories',
-    about: 'About',
-    author: 'Author',
-    source: 'Source',
-    category: 'Category',
-    version: 'Version',
-    platforms: 'Platforms',
-    requires: 'Requires',
-    tools: 'Tools',
-    hooks: 'Hooks',
-    middleware: 'Middleware',
-    commands: 'Commands',
-    license: 'License',
-    addedDate: 'Added',
-    updatedDate: 'Updated',
-    repository: 'Repository',
-    documentation: 'Documentation',
-    noResults: 'No matches',
-    tryAnother: 'Try another search or clear your filters.',
-    clearFilters: 'Clear filters',
-    filters: 'Filters',
-    loadFailed: 'Could not load the catalog',
-    retry: 'Try again',
-    more: 'Show more',
-    pinned: 'Reviewed commit',
-    snapshotHint: 'From the Hermes catalog. Browsing never contacts source repositories.',
-    installHint: 'Review the source before installing. Changes apply to new sessions.',
-    results: (count: number) => `${count.toLocaleString()} result${count === 1 ? '' : 's'}`,
-    back: 'Back to results'
-  },
-  connectors: {
-    title: 'Connect your apps',
-    connect: 'Connect',
-    skip: 'Not now',
-    cancel: 'Stop waiting',
-    retry: 'Try again',
-    grant: 'Reconnect',
-    connected: 'Connected',
-    checking: 'Checking your apps…',
-    notConnected: 'Not connected',
-    skipped: 'Skipped',
-    disabled: 'Unavailable',
-    failed: 'Could not connect',
-    needsAuth: 'Access expired',
-    opening: 'Opening sign-in…',
-    waiting: 'Waiting for your browser…',
-    timeout: 'Still waiting for authorization.',
-    refresh: 'Refresh status',
-    connectError: 'Could not start authorization. Try again.',
-    connectErrorFor: (app: string) => `Could not start authorization for ${app}.`,
-    unavailable: 'Connectors are unavailable for this session.',
-    ownerMissing: 'Reopen this conversation to manage its connections.',
-    search: 'Find an app',
-    empty: 'No matching apps',
-    disclaimer: 'Connecting is optional. Only authorize the apps you want Hermes to use.',
-    execution: 'Connector tools',
-    setup: server => `Set up ${server}`,
-    openInBrowser: 'Open in browser',
-    setupCancel: 'Cancel',
-    authorizedToolsUnavailable: 'Authorized. Tools unavailable.',
-    required: 'Required'
-  },
+  intro: { stock: {}, custom: () => [] },
+  connectors: enConnectorCard,
 
   // `connectors.*` above stays the onboarding and chat vocabulary; these are the page's own, and the two are not shared.
   connectorsPage: {
@@ -285,6 +203,8 @@ export const en: Translations = {
       advancedHint: 'the mcp.json entry and logs'
     },
 
+    accounts: enConnectorAccounts,
+
     tools: {
       title: 'Tools',
       notInstalledBody: 'Install it on this device to see the tools it brings.',
@@ -399,13 +319,7 @@ export const en: Translations = {
     importError: 'Could not import this conversation.'
   },
   common: {
-    answerFailed: 'Could not answer the request',
-    dismiss: 'Dismiss',
-    open: 'Open',
-    runFailed: 'Could not run the job',
-    runNow: 'Run now',
     apply: 'Apply',
-    approve: 'Approve',
     back: 'Back',
     save: 'Save',
     saving: 'Saving…',
@@ -424,7 +338,6 @@ export const en: Translations = {
     copy: 'Copy',
     copyFailed: 'Copy failed',
     delete: 'Delete',
-    deny: 'Deny',
     docs: 'Docs',
     done: 'Done',
     error: 'Error',
@@ -444,7 +357,6 @@ export const en: Translations = {
     skip: 'Skip',
     update: 'Update',
     tryHint: term => `Try “${term}”`,
-    undo: 'Undo',
     on: 'On',
     off: 'Off'
   },
@@ -454,7 +366,6 @@ export const en: Translations = {
     revealExplorer: 'Reveal in File Explorer',
     revealFileManager: 'Open containing folder',
     revealInSidebar: 'Reveal in filetree',
-    openInEditor: name => `Open in ${name}`,
     copyPath: 'Copy path',
     copyRelativePath: 'Copy relative path',
     download: 'Download',
@@ -528,10 +439,6 @@ export const en: Translations = {
       rpcOutOfSync: 'The app and the backend are on different versions. Update both.',
       restartHermesFailed: "Couldn't restart Hermes"
     },
-    digest: {
-      title: count => `Hermes digest — ${count} updates`,
-      line: (count, label) => `${count} × ${label}`
-    },
     actions: {
       restartHermes: 'Restart Hermes',
       openKeys: 'Open Keys',
@@ -546,7 +453,6 @@ export const en: Translations = {
       microphoneFailed: 'Microphone failed',
       microphoneInUse: 'Microphone is already in use by another app.',
       microphonePermissionDenied: 'Microphone permission was denied.',
-      microphoneSecureContextRequired: 'Microphone recording requires HTTPS, localhost, or the native desktop app.',
       microphoneStartFailed: 'Could not start microphone recording.',
       microphoneUnsupported: 'This runtime does not support microphone recording.',
       noMicrophone: 'No microphone was found.',
@@ -651,7 +557,6 @@ export const en: Translations = {
     actions: {
       'keybinds.openPanel': 'Open keyboard shortcuts',
       'nav.commandPalette': 'Open command palette',
-      'nav.quickOpen': 'Quick open file',
       'nav.commandCenter': 'Open command center',
       'nav.settings': 'Open settings',
       'nav.profiles': 'Open profiles',
@@ -660,8 +565,6 @@ export const en: Translations = {
       'nav.artifacts': 'Open artifacts',
       'nav.cron': 'Open scheduled jobs',
       'nav.agents': 'Open agents',
-      'nav.starmap': 'Open memory graph',
-      'nav.webhooks': 'Open webhooks',
       'session.new': 'New session',
       'session.newTab': 'New session tab',
       'session.newWindow': 'New window',
@@ -763,9 +666,7 @@ export const en: Translations = {
 
   findInPage: {
     next: 'Next match',
-    previous: 'Previous match',
-    searchAll: 'Search all history',
-    searchAllShort: 'History'
+    previous: 'Previous match'
   },
 
   language: {
@@ -879,17 +780,22 @@ export const en: Translations = {
         title: 'Install plugin',
         description: 'Review what this repository contains before installing anything.',
         repoLabel: 'Repository',
+        verified: 'Verified',
+        unverified: 'Unverified',
+        reviewedByNous: 'Reviewed by Nous.',
+        installsAndEnables: profile => `Installs for ${profile} and turns on right away.`,
+        installsOnly: profile => `Installs for ${profile}.`,
+        advanced: 'Advanced',
+        versionLabel: 'Version',
+        reviewedPin: sha => (sha ? `Reviewed pin ${sha}` : 'Reviewed pin'),
+        latestCommit: 'Latest commit',
+        nothingToInstall: 'This package has nothing to install here.',
         includesHeading: 'This package includes',
         agentLabel: 'Agent plugin',
         desktopLabel: 'Desktop UI',
         profileLabel: 'Install for profile',
         agentTargetLocal: (profile, dir) => `Installs into the ${profile} backend (${dir})`,
         agentTargetRemote: profile => `Installs into the connected ${profile} backend`,
-        catalogPinned: (name, sha) =>
-          `Hermes catalog entry "${name}" — the agent component installs at the reviewed pin${sha ? ` ${sha}` : ''}, not the branch tip.`,
-        reviewedHeading: 'Reviewed catalog entry',
-        reviewedIntro:
-          'This entry was human-reviewed at its pinned commit. You can still inspect the exact code below.',
         toolsConnected: n => (n === 1 ? '1 tool connected' : `${n} tools connected`),
         skillsReady: names => (names.length === 1 ? `skill ${names[0]} ready` : `${names.length} skills ready`),
         nextChat: 'more tools available in your next chat',
@@ -900,13 +806,11 @@ export const en: Translations = {
         desktopTargetFromPackage: 'Loaded into this app from the package above — same for every profile',
         desktopOnlyNote: 'Desktop-only packages do not install a backend agent plugin.',
         insecureWarning: 'This URL uses an insecure or local scheme. Prefer https:// or git@ for production installs.',
-        securityHeading: 'Before you install',
         securityIntro:
           'Install only from sources you trust — review the repository below if you want to see what will be added.',
         sourceHeading: 'Source code',
         viewRepository: 'View repository',
         viewPluginFiles: 'View plugin files',
-        gitCloneLabel: 'Git clone URL',
         enableAgent: 'Enable agent plugin after install',
         forceReinstall: 'Force reinstall (replace if already installed)',
         pinToCommit: 'Pin to commit (optional)',
@@ -1048,20 +952,7 @@ export const en: Translations = {
       testUnsupported: 'This system does not support native notifications.',
       completionSoundTitle: 'Completion Sound',
       completionSoundDesc: 'Plays when an agent turn finishes. Pick a preset and preview it here.',
-      completionSoundPreview: 'Preview',
-      quietHoursTitle: 'Quiet hours',
-      quietHoursDesc:
-        'Holds routine notifications during a daily window; they arrive in a digest when it ends. Approvals, questions, and errors still break through.',
-      quietHoursWindowTitle: 'Quiet window',
-      quietHoursWindowDesc:
-        'Notifications stay quiet from the start time to the end time — a start after the end means overnight.',
-      quietHoursFrom: 'From',
-      quietHoursTo: 'To',
-      digestTitle: 'Hourly digest',
-      digestDesc: 'Batches routine notifications into one summary each hour instead of firing each on its own.',
-      sessionOverridesTitle: 'Per-session overrides',
-      sessionOverridesDesc: 'Chats you muted from the sidebar session menu. Unmute any of them here.',
-      sessionOverridesEmpty: 'No muted sessions. Mute a chat from its sidebar menu and it appears here.'
+      completionSoundPreview: 'Preview'
     },
     sections: {
       model: 'Model',
@@ -1092,9 +983,6 @@ export const en: Translations = {
         'Scales conversation text and the message editor relative to UI Scale. Sidebars and controls stay the same size.',
       title: 'Appearance',
       intro: 'Desktop-only. Mode is brightness; theme is palette and chat chrome.',
-      simpleModeTitle: 'Simple mode',
-      simpleModeDesc:
-        'A cleaner, chat-first interface: hides advanced panes, tools, and status items. Everything stays reachable from Settings and ⌘K — switch back any time.',
       colorMode: 'Color Mode',
       colorModeDesc: 'Pick a fixed mode or let Hermes follow your system setting.',
       toolViewTitle: 'Tool Call Display',
@@ -1105,17 +993,12 @@ export const en: Translations = {
       hideThreadTimelineDesc: 'Hide the navigation bars along the right edge of each conversation.',
       reasoningCollapsedTitle: 'Collapse thinking by default',
       reasoningCollapsedDesc: 'Keep streamed reasoning available without expanding it until you open it.',
-      lookTitle: 'Look',
-      lookDesc: 'Soft is rounded and roomy with quiet labels; Classic keeps the original crisp, square chrome.',
-      lookSoft: 'Soft',
-      lookClassic: 'Classic',
       uiScaleTitle: 'UI Scale',
       uiScaleDesc: (percent: number) =>
         `Scales text and controls across the whole app. Cmd/Ctrl with +, - and 0 also works. Current: ${percent}%.`,
       sessionDensityTitle: 'Session List Density',
-      sessionDensityDesc: 'Choose how much each session row shows in the sidebar.',
+      sessionDensityDesc: 'Choose how much context appears beneath session titles in the sidebar.',
       sessionDensityCompact: 'Compact',
-      sessionDensityCondensed: 'Condensed',
       sessionDensityComfortable: 'Comfortable',
       sessionDensityDetailed: 'Detailed',
       tabStripTitle: 'Tab Strip',
@@ -1161,28 +1044,8 @@ export const en: Translations = {
         window: 'Whole window',
         sidebar: 'Sidebar only'
       },
-      backdropTitle: 'Chat Background',
-      backdropDesc: 'A scene behind the conversation, or your own image. Text always stays on top.',
-      backdropScenes: {
-        off: 'Off',
-        aurora: 'Aurora',
-        dusk: 'Dusk',
-        ocean: 'Ocean',
-        meadow: 'Meadow',
-        cyanotype: 'Cyanotype',
-        ink: 'Ink',
-        grid: 'Dots',
-        statue: 'Statue',
-        custom: 'Your image'
-      },
-      backdropUpload: 'Choose image…',
-      backdropRemoveImage: 'Remove image',
-      backdropStrengths: {
-        subtle: 'Subtle',
-        balanced: 'Balanced',
-        vivid: 'Vivid'
-      },
-      backdropImageError: "That image couldn't be read.",
+      backdropTitle: 'Chat Backdrop',
+      backdropDesc: 'The faint statue image behind the conversation.',
       userBubbleTitle: 'Message Bubble',
       userBubbleDesc: 'How see-through your own messages are. Solid at 0; only the outline remains at 100.',
       textDirectionTitle: 'Text direction',
@@ -1204,13 +1067,6 @@ export const en: Translations = {
         'Let Hermes spotlight each step as it guides you through the app. Turns off automatically after your first 30 days; you can turn it back on.',
       composerPopoutTitle: 'Floating Composer',
       composerPopoutDesc: 'Allow dragging the composer out of its dock. When off, it stays docked at the bottom.',
-      autoOpenFilesTitle: 'Show files when opening a project',
-      autoOpenFilesDesc: 'Opening a folder or starting work in a project opens the file tree beside the chat.',
-      activityRailTitle: 'Icon rail',
-      activityRailDesc:
-        'A slim column of icons at the left edge — sessions, bots and every page one click away, even with the sidebar folded.',
-      openInEditorTitle: 'Open files in',
-      openInEditorDesc: 'Where “Open in …” sends a file from the file tree. Works for SSH backends too.',
       fileBrowserTitle: 'File Browser',
       fileBrowserDesc:
         'Show the file browser beside the chat when a workspace is open. The titlebar toggle changes this too.',
@@ -1286,12 +1142,6 @@ export const en: Translations = {
     fieldLabels: FIELD_LABELS,
     fieldDescriptions: FIELD_DESCRIPTIONS,
     uninstallSection: enUninstallSection,
-    poolLimits: {
-      warmBotBackendsAria: 'Warm bot backends',
-      warmBotBackendsTitle: 'Warm Bot Backends',
-      backendIdleTimeoutAria: 'Backend idle timeout in milliseconds',
-      backendIdleTimeoutTitle: 'Backend Idle Timeout'
-    },
     customEndpoints: {
       active: 'Active',
       apiKeySet: 'API key set',
@@ -1338,19 +1188,13 @@ export const en: Translations = {
       screenRecording: 'Screen Recording',
       driverHealth: 'Driver health'
     },
-    about: {
-      updates: 'Updates'
-    },
+    about: { updates: 'Updates', channel: enUpdateChannel },
     config: {
       minimizeToTrayTitle: 'Minimize to tray',
       minimizeToTrayDesc:
         'Minimize windows or close the main window to hide them in the system tray (menu bar on macOS) and keep Hermes running. Use Quit Hermes from the tray menu or Cmd+Q to exit. Off by default; applies only to this device.',
       minimizeToTrayUnavailable:
         'The system tray is unavailable. Windows will minimize and close normally. Turn this off and on to retry.',
-      menuBarStatusTitle: 'Menu-bar status',
-      menuBarStatusDesc:
-        'Show a Hermes icon in the macOS menu bar (system tray on Windows/Linux) with a live status badge, recent sessions, and quick actions. Off by default; applies only to this device.',
-      menuBarStatusUnavailable: 'The system tray is unavailable on this platform. Turn this off and on to retry.',
       none: 'None',
       noneParen: '(none)',
       builtinOnly: 'Built-in only',
@@ -1374,20 +1218,11 @@ export const en: Translations = {
       keepAwakeOff: 'Off',
       keepAwakeWhileWorking: 'While working',
       keepAwakeAlways: 'Always',
-      proactiveNudgesTitle: 'Proactive nudges',
-      proactiveNudgesDesc:
-        'When a chat finishes a turn, offer next-step chips above the composer — open a PR, schedule a follow-up. They only draft text; nothing sends itself.',
       disableF12Title: 'Disable F12 DevTools',
       disableF12Desc: 'Block F12 from opening Developer Tools. Ctrl+Shift+I (or Cmd+Opt+I on Mac) still works.',
       alwaysExternalLinksTitle: 'Always open links in external browser',
       alwaysExternalLinksDesc:
         'Open every link you click in your system browser instead of the in-app browser. "Open in in-app browser" in the right-click menu still works.',
-      developerTitle: 'Developer',
-      resetOnboardingTitle: 'Reset onboarding',
-      resetOnboardingDesc:
-        'Delete the setup chats, rebuild the setup profile and run the first-run setup again. Your own profiles, chats and plugins stay.',
-      resetOnboardingAction: 'Reset',
-      resetOnboardingFailed: 'Could not reset onboarding',
       attachmentSizeTitle: 'Max preview / image load size',
       attachmentSizeDesc:
         'How big a local file Desktop will load for previews and image attach, in MB. Default is 16. Remote non-image attach uses a separate 256 MB cap. Setting this very high loads the whole file into memory and can freeze or crash the app.',
@@ -1673,7 +1508,6 @@ export const en: Translations = {
       sshPortDesc: 'Blank = 22 or the ~/.ssh/config port.',
       sshKeyTitle: 'Identity file',
       sshKeyDesc: 'Private key path. Blank = ssh-agent or ~/.ssh/config.',
-      sshKeyPlaceholder: 'from ssh-agent or ~/.ssh/config',
       sshHermesPathTitle: 'Hermes path (optional)',
       sshHermesPathDesc: 'Full path to the remote hermes binary. Blank = auto-detect.',
       sshHermesPathPlaceholder: 'auto-detect',
@@ -1754,64 +1588,7 @@ export const en: Translations = {
       deepLinkErrorUrl: 'Only http:// and https:// server URLs are allowed.',
       deepLinkErrorTooLarge: 'The config payload exceeds the 32KB limit.'
     },
-    model: {
-      setupProviderFallback: 'provider',
-      setUpProvider: name => `Set up ${name}`,
-      staleAuxBefore: (count, names) => `${count} auxiliary task${count === 1 ? '' : 's'} (${names}) still run on `,
-      staleAuxAfter: ', not your main model.',
-      staleAuxOtherProviders: 'other providers',
-      moaEnabled: 'Enabled',
-      moaSetDefault: 'Set default',
-      moaNewPresetPlaceholder: 'new preset',
-      moaAddPreset: 'Add preset',
-      customModel: 'Custom model…',
-      customModelPlaceholder: 'Model id',
-      chooseFromList: 'Choose from list',
-      moaDefault: 'Default:',
-      moaReferenceToggle: (enabled, index) => `${enabled ? 'Disable' : 'Enable'} reference ${index}`,
-      moaReferenceTitle: index => `Reference ${index}`,
-      moaAddReference: 'Add reference model',
-      loading: 'Loading model configuration...',
-      appliesDesc: 'Applies to new sessions. Use the model picker in the composer to hot-swap the active chat.',
-      provider: 'Provider',
-      model: 'Model',
-      applying: 'Applying...',
-      mainAppliedTitle: 'Main model updated',
-      mainAppliedMessage: model => `New sessions will use ${model}.`,
-      defaultsLabel: 'Defaults',
-      reasoning: 'Reasoning',
-      reasoningOff: 'Off',
-      speed: 'Speed',
-      speedStandard: 'Standard',
-      defaultsFailed: 'Failed to save model defaults',
-      loadFailed: 'Could not load models',
-      restartRequired: 'This backend is running old code after an update. Restart it to load the new code.',
-      restartBackend: 'Restart backend',
-      restartingBackend: 'Restarting backend...',
-      restartFailed: 'Could not restart the backend',
-      auxiliaryTitle: 'Auxiliary models',
-      resetAllToMain: 'Reset all to main',
-      staleAuxDismiss: "Don't show again",
-      auxiliaryDesc: 'Helper tasks run on the main model by default. Assign a dedicated model to any task to override.',
-      setToMain: 'Set to main',
-      change: 'Change',
-      autoUseMain: 'auto · use main model',
-      inheritMainEffort: 'inherit · main model effort',
-      inheritsFrom: task => `inherits ${task}`,
-      followTask: task => `Follow ${task}`,
-      providerDefault: '(provider default)',
-      fallbackAdd: 'Add fallback',
-      fallbackEmpty: 'No fallback models — the default model is used unless it fails.',
-      notInCatalog: "isn't in this provider's model list — calls may fall back to a backup.",
-      moaTitle: 'Mixture of Agents',
-      moaPreset: 'Preset',
-      moaDescription:
-        'Configure named presets that appear as models under the Mixture of Agents provider. The aggregator is the acting model — it runs every step of the tool loop, and almost all of the run’s cost is billed to its provider. References only advise once per user turn by default.',
-      moaAggregator: 'Aggregator',
-      moaAggregatorBilled: 'acting model · billed for the run',
-      moaReferenceHint: 'advises once per turn by default',
-      tasks: enAuxTasks
-    },
+    model: enModelSettings,
     localModels: enLocalModels,
     billing: {
       perMonth: amount => `${amount}/mo`,
@@ -2268,17 +2045,7 @@ export const en: Translations = {
     }
   },
 
-  skillDeepLink: {
-    installTitle: (name: string) => `Install “${name}”?`,
-    installDescription: 'This skill will be available in new sessions. Only install sources you trust.',
-    installTo: 'Install to',
-    thisComputer: 'This computer',
-    installing: 'Installing…',
-    installComplete: (name: string) => `“${name}” installed`,
-    destinationChanged: 'The destination changed. Close this dialog and open the install link again.',
-    installed: 'Installed',
-    source: 'Source'
-  },
+  skillDeepLink: enSkillDeepLink,
   skills: {
     tabSkills: 'Skills',
     tabToolsets: 'Tools',
@@ -2391,8 +2158,6 @@ export const en: Translations = {
       pinnedProvenance: (sha: string) =>
         `Pinned to commit ${sha}. Updates are refused until it is reinstalled with a new pin.`,
       pinnedBadge: (sha: string) => `pinned @ ${sha}`,
-      tierOfficial: 'official',
-      tierCommunity: 'community',
       updateToPin: (sha: string) => `Update to ${sha}`,
       updateFailed: (name: string) => `Could not update ${name}`,
       updated: (name: string) => `${name} updated to the current catalog pin. Restart the gateway to apply.`,
@@ -2516,12 +2281,9 @@ export const en: Translations = {
     importEmpty: 'Paste a map code to load it.',
     importSuccess: nodes => `Loaded a map with ${nodes} ${nodes === 1 ? 'node' : 'nodes'}.`,
     importedBadge: 'imported map',
-    resetToMine: 'Back to my map',
-    live: 'Live',
-    liveHint: 'Watch live: skills pulse while a session uses them, and flash when it settles',
-    liveOff: 'Stop live updates',
-    openSession: 'Open session'
+    resetToMine: 'Back to my map'
   },
+  gatewayGroupOpen: enGatewayGroupOpen,
   agents: {
     extendedTranscript: 'Extended transcript',
     transcriptTruncated: 'Showing the latest 16 KiB',
@@ -2563,53 +2325,6 @@ export const en: Translations = {
     durationSeconds: seconds => `${seconds}s`,
     durationMinutes: (minutes, seconds) => `${minutes}m ${seconds}s`,
     tokens: value => `${value} tok`
-  },
-
-  roster: {
-    title: 'Active runs',
-    subtitle: 'Every run in flight across profiles and gateways.',
-    emptyTitle: 'No active runs',
-    emptyDesc: 'When a session starts working — on any profile or gateway — it shows up here.',
-    untitledRun: 'Untitled run',
-    railPill: count => (count === 1 ? '1 run' : `${count} runs`),
-    close: 'Close',
-    fanOut: 'Fan out',
-    fanOutTitle: 'Send one prompt to the picked agents',
-    fanOutPlaceholder: 'One prompt, every picked agent…',
-    fanOutNoAgents: 'No reachable agents to pick',
-    fanOutClose: 'Collapse',
-    fanOutSend: count => (count === 1 ? 'Send to 1 agent' : `Send to ${count} agents`),
-    fanOutFailed: 'Couldn’t create a session for one of the picked agents'
-  },
-
-  hud: {
-    needsYou: 'Needs you',
-    openRunInApp: title => `Open ${title} in the app window`
-  },
-
-  attentionInbox: {
-    title: 'Needs attention',
-    empty: 'Nothing is waiting on you.',
-    count: count => `${count} waiting`,
-    appScope: 'Application',
-    unknownSession: 'Session',
-    kinds: {
-      approval: 'Tool approval',
-      clarify: 'Clarifying question',
-      error: 'Error',
-      secret: 'Secret request',
-      sudo: 'Sudo request',
-      vaultCode: 'Vault code',
-      vaultSave: 'Vault login',
-      vaultUnlock: 'Vault unlock'
-    },
-    pullRequest: (number, title) => `PR #${number}: ${title}`,
-    prChecks: {
-      failure: 'Checks failing',
-      none: 'Open PR',
-      pending: 'Checks running',
-      success: 'Checks passing'
-    }
   },
 
   commandCenter: {
@@ -2691,27 +2406,7 @@ export const en: Translations = {
     settingsFields: 'Settings fields',
     mcpServers: 'MCP servers',
     archivedChats: 'Archived chats',
-    sections: {
-      maintenance: 'Maintenance',
-      notices: 'Notices',
-      sessions: 'Sessions',
-      system: 'System',
-      usage: 'Usage'
-    },
-    sectionDescriptions: {
-      maintenance: 'Diagnostics, backups, curator, and memory data',
-      notices: 'Recent notifications and alerts',
-      sessions: 'Search and manage sessions',
-      system: 'Status, logs, and system actions',
-      usage: 'Token, cost, and skill activity over time'
-    },
-    notices: {
-      empty: 'No notices yet — toasts and alerts land here as they happen.',
-      clear: 'Clear',
-      mutedTag: 'Muted',
-      destCenter: 'Center toast',
-      destCorner: 'Corner toast'
-    },
+    sections: { maintenance: 'Maintenance', sessions: 'Sessions', system: 'System', usage: 'Usage' },
     nav: {
       newChat: { title: 'New session', detail: 'Start a fresh session' },
       settings: { title: 'Settings', detail: 'Configure Hermes desktop' },
@@ -2772,14 +2467,6 @@ export const en: Translations = {
     topSkills: 'Top skills',
     noSkillActivity: 'No skill activity yet.',
     actions: count => `${count} actions`,
-    costAnalytics: 'Cost analytics',
-    costAnalyticsHint: 'Aggregated on this device only — spend data is never sent anywhere.',
-    dailySpend: 'Daily spend',
-    estimatedCost: 'estimated',
-    perProfile: 'Per profile',
-    topSessions: 'Top sessions',
-    loadedSessionsHint: 'loaded sessions',
-    noSpend: 'No recorded spend',
     logFile: 'Log file',
     logLevel: 'Level',
     logSearchPlaceholder: 'Search log lines...',
@@ -2944,22 +2631,6 @@ export const en: Translations = {
       savedRestarting: 'Telegram saved; gateway restarting…',
       savedRestartFailed: detail => `Telegram saved; gateway restart failed${detail}`
     },
-    phoneParity: {
-      title: 'Continue on your phone',
-      presence: 'Gateway presence',
-      scanHint: 'Scan with your phone, or open the link on this device.',
-      linkPending: 'The direct link appears here once the adapter is connected.',
-      openLink: 'Open link',
-      copyLink: 'Copy link',
-      copyFailed: 'Could not copy the link'
-    },
-    reach: {
-      title: (name: string) => `Reach ${name} anywhere`,
-      scan: (name: string) => `Scan to chat with ${name} from your phone, or share the link.`,
-      empty: (name: string) => `Give ${name} its own Telegram or Slack address to chat from your phone.`,
-      connect: 'Connect',
-      manage: 'Manage'
-    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Bot token',
@@ -3108,50 +2779,10 @@ export const en: Translations = {
       slack: 'Slack',
       email: 'Email',
       github_comment: 'GitHub comment'
-    },
-    mobile: {
-      title: 'Mobile companion',
-      hint: 'Steer this backend from a phone — status, approvals, quick replies.',
-      pairButton: 'Pair a phone',
-      dialogTitle: 'Pair a phone',
-      dialogDesc:
-        'Create a one-time pairing code, then open the companion page on your phone and enter it. The page can read session status, answer pending approvals, and send quick replies on this backend.',
-      backendUrl: 'Backend URL',
-      backendUrlHint: 'An address your phone can reach (LAN, tunnel, or remote connection).',
-      create: 'Create pairing code',
-      creating: 'Creating…',
-      createFailed: (detail: string) => `Could not create a pairing code${detail ? `: ${detail}` : ''}`,
-      codeLabel: 'Pairing code',
-      openHint: (url: string) => `Open ${url} on your phone and enter the code.`,
-      expires: (minutes: number) => `Single-use · expires in ${minutes} min.`,
-      copy: 'Copy',
-      done: 'Done'
     }
   },
 
   profiles: {
-    askRules: {
-      title: (name: string) => `When should ${name} ask you?`,
-      modes: {
-        manual: {
-          label: 'Ask me first',
-          description: (name: string) => `${name} stops and asks before anything risky.`
-        },
-        smart: {
-          label: 'Use judgment',
-          description: (name: string) => `${name} handles routine work and asks when something looks risky.`
-        },
-        off: {
-          label: 'Just do it',
-          description: (name: string) => `${name} never waits for you. Blocked commands still stay blocked.`
-        }
-      },
-      rulesLabel: 'House rules',
-      rulesPlaceholder: 'House rules, in your words. e.g. Always ask before sending email or spending money.',
-      save: 'Save rules',
-      discard: 'Discard',
-      failed: "Couldn't save. Your previous rules are still in effect."
-    },
     close: 'Close profiles',
     nameHint: 'Lowercase letters, digits, hyphens, and underscores. Must start with a letter or digit.',
     title: 'Profiles',
@@ -3385,8 +3016,7 @@ export const en: Translations = {
     // Replaces `next` when the stored next_run_at is already past the scheduler grace (#114309).
     overdueSince: 'Overdue since:',
     noRuns: 'No runs yet',
-    // Queued trigger feedback in Run History: the backend accepted the trigger
-    // but has not materialized the run session yet (#70826).
+    // Queued trigger feedback in Run History: the backend accepted the trigger but has not materialized the run session yet (#70826).
     queuedRun: 'Queued run',
     manage: 'Manage',
     showRuns: 'Show runs',
@@ -3491,9 +3121,7 @@ export const en: Translations = {
     kindLink: 'link',
     chat: 'Chat',
     copyUrl: 'Copy URL',
-    copyPath: 'Copy path',
-    buildWithPlan: 'Build with this plan',
-    buildWithPlanDraft: 'Build this plan:'
+    copyPath: 'Copy path'
   },
 
   artifactCard: {
@@ -3516,99 +3144,6 @@ export const en: Translations = {
     missingBody: 'This artifact is no longer in the local registry.'
   },
 
-  panels: {
-    button: 'Panels',
-    title: 'Beside the chat',
-    subtitle: 'Turn on what you need. Each opens next to the conversation.',
-    needsProject: 'Open a folder to use this',
-    openFolder: 'Open a folder…',
-    arrange: 'Arrange…',
-    arrangements: { focus: 'Focus', review: 'Review', watch: 'Watch', build: 'Build', code: 'Code' },
-    items: {
-      files: { label: 'Files', description: 'Browse and preview your project' },
-      changes: { label: 'Changes', description: 'Review what the agent changed' },
-      browser: { label: 'Browser', description: 'Open pages right beside the chat' },
-      terminal: { label: 'Terminal', description: 'Run commands yourself' },
-      live: { label: 'Live activity', description: 'Every command the agent runs, as it runs' },
-      artifacts: { label: 'Artifacts', description: 'Things this chat has made' },
-      canvas: { label: 'Canvas', description: 'Sketch on a board the agent can draw on too' },
-      code: { label: 'VS Code', description: 'Your editor on this project, beside the chat' },
-      cli: { label: 'Hermes CLI', description: 'Continue this chat in the terminal' }
-    }
-  },
-  codePane: {
-    title: 'VS Code',
-    cli: 'Hermes CLI',
-    cliHint: 'Continue this chat in Hermes CLI, in the terminal below',
-    reload: 'Reload editor',
-    starting: 'Starting VS Code…',
-    startingBody: 'Serving your own VS Code on this computer. The first start can take a moment.',
-    noProject: 'No project yet',
-    noProjectBody: 'Open a folder and VS Code opens on it here.',
-    missingTitle: 'VS Code not found',
-    missingBody:
-      'Install VS Code and its `code` command (Command Palette → "Shell Command: Install \'code\' command in PATH"), or openvscode-server, then try again.',
-    failedTitle: 'VS Code did not start',
-    failedBody: 'The editor server stopped before it was ready.',
-    remoteTitle: 'Runs on this computer',
-    remoteBody:
-      "This chat's project lives on the remote host, and this editor runs on your computer. Open VS Code on that host instead.",
-    retry: 'Try again'
-  },
-  quickOpen: {
-    title: 'Quick open',
-    placeholder: project => `Search files in ${project}…`,
-    noProject: 'Open a folder to search its files',
-    noProjectBody: 'Quick open searches the files of the project you are in.',
-    openFolder: 'Open a folder…',
-    noMatch: query => `No file matches “${query}”`,
-    recent: 'Open beside the chat',
-    hint: 'Type a file name. Add :42 to jump to a line.',
-    line: line => `line ${line}`,
-    openHint: 'open',
-    attachHint: 'add to message',
-    lineHint: 'name:42 goes to a line'
-  },
-  recentProjects: { title: 'Your projects', openFolder: 'Open folder…' },
-  todayBrief: {
-    greeting: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', night: 'Working late?' },
-    needsYou: 'Needs you',
-    running: 'Running now',
-    finished: 'Finished while you were away',
-    scheduled: 'Coming up today',
-    recent: 'Pick up where you left off',
-    tasks: 'Recent tasks',
-    taskWorking: age => `Working for ${age}`,
-    taskNew: 'New reply'
-  },
-
-  live: {
-    title: 'Live',
-    noSession: 'No session selected',
-    emptyTitle: 'Nothing has run yet',
-    emptyBody:
-      'Every command, file read and tool call shows up here the moment it starts, with its full output. Nothing is summarized.',
-    count: total => `${total} ${total === 1 ? 'action' : 'actions'}`,
-    countRunning: (total, running) => `${total} ${total === 1 ? 'action' : 'actions'} · ${running} running`,
-    follow: 'Follow',
-    followHint: 'Jump to the newest action and keep it in view',
-    copy: 'Copy command and output',
-    exitCode: code => `exit ${code}`,
-    runningFor: elapsed => `running ${elapsed}`,
-    waitingForOutput: 'Running — output appears when it finishes',
-    noOutput: 'No output',
-    openLive: 'Live'
-  },
-
-  artifactRail: {
-    empty: 'No artifacts in this session yet',
-    noSession: 'No session selected',
-    open: 'Open',
-    openFailed: 'Could not open artifact',
-    saveFailed: 'Could not save artifact',
-    saveToFile: 'Save to file'
-  },
-
   sidebar: {
     filter: {
       grouping: 'Grouping',
@@ -3617,7 +3152,6 @@ export const en: Translations = {
       filters: 'Filters',
       status: 'Status',
       pullRequest: 'Pull request',
-      tags: 'Tags',
       profile: 'Profile',
       project: 'Project',
       archived: 'Archived',
@@ -3642,17 +3176,6 @@ export const en: Translations = {
       closed: 'Closed',
       noPR: 'No PR'
     },
-    archive: {
-      finished: 'Archive finished sessions',
-      olderThan: 'Archive sessions older than…',
-      days: (days: number) => `${days} days`,
-      confirmTitle: (count: number) => `Archive ${count} session${count === 1 ? '' : 's'}?`,
-      confirmBody:
-        'Pinned chats are never archived, and nothing is deleted — archived sessions move to the Archived view.',
-      confirmAction: 'Archive',
-      done: (count: number) => `Archived ${count} session${count === 1 ? '' : 's'}`,
-      none: 'No sessions to archive'
-    },
     gatewayGroups: {
       grouping: 'Gateway & profile',
       rename: 'Rename group',
@@ -3670,38 +3193,19 @@ export const en: Translations = {
       capabilities: 'Capabilities',
       messaging: 'Messaging',
       artifacts: 'Artifacts',
-      cron: 'Scheduled jobs',
-      browse: 'Browse'
-    },
-    interfaceMode: {
-      label: 'Interface',
-      simple: 'Simple',
-      full: 'Full',
-      toFull: 'Simple mode hides advanced panes and controls. Click for the full interface.',
-      toSimple: 'Back to the clean, chat-first interface.'
+      cron: 'Scheduled jobs'
     },
     searchAria: 'Search sessions',
-    railAria: 'App navigation',
     searchPlaceholder: 'Search sessions…',
     clearSearch: 'Clear search',
     noMatch: query => `No sessions match “${query}”.`,
     results: 'Results',
     pinned: 'Pinned',
-    needsAttention: 'Needs attention',
-    delegationReports: {
-      done: 'Done',
-      needsDecision: 'Needs decision',
-      failed: 'Failed',
-      openSubagent: 'Open subagent',
-      dismiss: 'Dismiss report',
-      tasks: (count, completed) => `${completed} of ${count} tasks finished`
-    },
     sessions: 'Sessions',
     terminal: 'Terminal',
     files: 'Files',
     review: 'Review',
     logs: 'Logs',
-    artifacts: 'Artifacts',
     cronJobs: 'Cron jobs',
     groupAriaGrouped: 'Show sessions as a single list',
     groupAriaUngrouped: 'Group sessions by workspace',
@@ -3736,26 +3240,15 @@ export const en: Translations = {
       unpin: 'Unpin',
       markUnread: 'Mark as unread',
       markRead: 'Mark as read',
-      muteNotifications: 'Mute notifications',
-      unmuteNotifications: 'Unmute notifications',
-      mutedTooltip: 'Notifications muted for this session',
-      watch: 'Watch',
-      stopWatching: 'Stop watching',
       unreadFailed: 'Could not update unread state',
       copyId: 'Copy ID',
       export: 'Export',
-      exportMarkdown: 'Export as Markdown',
-      shareLink: 'Copy share link',
-      exportDeliverable: 'Export deliverable',
-      copyMarkdown: 'Copy as Markdown',
-      artifacts: 'Artifacts',
       branchFrom: 'Branch',
       rename: 'Rename…',
       archive: 'Archive',
       unarchive: 'Unarchive',
       newWindow: 'New window',
       openInTerminal: 'Open in terminal',
-      continueInCli: 'Continue in Hermes CLI',
       hideTabBar: 'Hide tab bar',
       openInNewTab: 'Open in new tab',
       openInSplit: 'Open in split',
@@ -3767,24 +3260,6 @@ export const en: Translations = {
       finishedUnread: 'Finished — unread',
       backgroundRunning: 'Background task running',
       draftSession: 'Draft — nothing sent yet',
-      continueOnPhone: 'Continue on phone',
-      openOnDevice: 'Open on another device',
-      openDeviceTitle: 'Open on another device',
-      openDeviceDesc: home =>
-        `Scan the code or send the link to another Hermes device whose connections reach ${home}. The session stays where it is — only the view moves.`,
-      openDeviceHomeFallback: 'its home backend',
-      openDeviceIncomingTitle: 'Open session on this device?',
-      openDeviceIncomingDesc: (title, label) =>
-        `“${title}” lives on ${label}. Opening it switches this window to that connection — the session's home doesn't move.`,
-      openDeviceSwitchAndOpen: 'Switch and open',
-      openDeviceSwitching: 'Switching…',
-      openDeviceIncomingMissingTitle: 'Connection not found',
-      openDeviceIncomingMissingDesc: (id, endpoint) =>
-        endpoint
-          ? `“${id}” lives on ${endpoint}, which isn't one of this device's registered connections. Add it under Settings → Gateways, then open the link again.`
-          : `“${id}” lives on a backend this device can't reach. Register that connection under Settings → Gateways, then open the link again.`,
-      openDeviceOpenConnections: 'Open Gateways',
-      handoffNone: 'No messaging platform is ready for a handoff',
       handoffOrigin: platform => `Handed off from ${platform}`,
       continuationOrigin: 'Automatic continuation — this conversation was compressed and continued',
       ownedByProfile: profile => `Profile: ${profile}`,
@@ -3793,25 +3268,6 @@ export const en: Translations = {
       renameTitle: 'Rename session',
       renameDesc: 'Leave empty to clear.',
       untitledPlaceholder: 'Untitled session',
-      tags: 'Tags',
-      tagsDialogTitle: 'Session tags',
-      tagsDialogDesc: 'Color-label this session for the sidebar and filters.',
-      tagsAddPlaceholder: 'New tag label',
-      tagsAdd: 'Add',
-      tagsRemoveLabel: label => `Remove tag ${label}`,
-      askAbout: 'Ask about this session',
-      ask: {
-        clear: 'Clear thread',
-        dialogDesc: title =>
-          `Questions about ${title} are answered from its stored transcript — never the live conversation.`,
-        dialogTitle: 'Ask about this session',
-        empty: 'Ask a question about what this session did, decided, or wrote.',
-        failed: 'Could not get an answer',
-        placeholder: 'Ask about this session…',
-        send: 'Ask',
-        thinking: 'Reading the transcript…',
-        truncatedNote: 'Answered from the beginning and end of a long transcript.'
-      },
       deleteTitle: 'Delete session?',
       deleteDesc: title => `This will permanently delete “${title}”. This cannot be undone.`,
       deleting: 'Deleting…',
@@ -3819,49 +3275,10 @@ export const en: Translations = {
       untitledChat: id => `Chat ${id}`,
       messageCount: count => `${count} ${count === 1 ? 'message' : 'messages'}`,
       todoProgress: 'Tasks completed',
-      attachmentCount: count => `${count} attached`,
-      isolateWorktree: 'Isolate in worktree',
-      isolateWorktreeDone: name => `Isolated in worktree ${name}`,
-      mergeWorktree: 'Merge worktree back',
-      mergeWorktreeTitle: 'Merge worktree back',
-      mergeWorktreeDesc: (branch, repo) => `Merge branch ${branch} back into the ${repo} checkout? It must be clean.`,
-      mergingWorktree: 'Merging…',
-      mergedWorktree: into => `Merged into ${into}`,
-      mergeWorktreeFailed: "Couldn't merge the worktree",
-      worktreeTag: branch => `Isolated worktree · ${branch}`,
-      worktreeUnavailable: 'Git worktrees are not available here',
-      digest: {
-        agents: count => (count === 1 ? 'An agent is running' : `${count} agents running`),
-        approve: command => `Approve: ${command}`,
-        compacting: 'Summarizing thread',
-        replying: 'Writing a reply',
-        stalled: 'Still running — quiet for a while',
-        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
-      },
-      prCiPassing: 'CI passing',
-      prCiFailing: 'CI failing',
-      prCiPending: 'CI running',
       ageNow: 'now',
       ageDay: 'd',
       ageHour: 'h',
       ageMin: 'm'
-    },
-    watch: {
-      strip: 'Watched sessions',
-      stop: 'Stop watching'
-    },
-    selection: {
-      ariaLabel: 'Selected sessions',
-      count: (count: number) => `${count} selected`,
-      pin: 'Pin',
-      unpin: 'Unpin',
-      mute: 'Mute',
-      unmute: 'Unmute',
-      tag: 'Tag',
-      archive: 'Archive',
-      clear: 'Clear selection',
-      tagDialogTitle: (count: number) => `Tag ${count} session${count === 1 ? '' : 's'}`,
-      tagDialogDesc: 'Adds the tag to every selected session.'
     },
     dateDivider: {
       today: 'Earlier today',
@@ -3873,22 +3290,6 @@ export const en: Translations = {
     statusDivider: {
       working: 'Working',
       done: 'Done'
-    },
-    peek: {
-      idle: 'Idle',
-      archived: 'Archived',
-      workspace: 'Workspace',
-      branch: 'Branch',
-      model: 'Model',
-      stats: 'Stats',
-      tokens: count => `${count} tokens`,
-      agents: 'Delegated agents',
-      agentsSummary: count => `${count} ${count === 1 ? 'agent' : 'agents'}`,
-      agentsRunning: count => `${count} running`,
-      profile: 'Profile',
-      source: 'Source',
-      started: 'Started',
-      updated: 'Updated'
     },
     markAllRead: 'Mark all as read'
   },
@@ -3906,7 +3307,7 @@ export const en: Translations = {
       'Describe what you need',
       'What should we tackle?',
       'Ask anything',
-      'State the outcome you want'
+      'Start with a goal'
     ],
     followUpPlaceholders: [
       'Send a follow-up',
@@ -3920,9 +3321,8 @@ export const en: Translations = {
     startVoice: 'Start voice conversation',
     openDirective: 'Open',
     queueMessage: 'Queue message',
-    queueWithAttachments: 'Queue with attachments',
     steer: 'Steer the current run',
-    steerTurn: 'Steer turn',
+    redirect: 'Redirect the current run',
     stop: 'Stop',
     send: 'Send',
     speaking: 'Speaking',
@@ -4040,7 +3440,6 @@ export const en: Translations = {
       'composer.help': 'this quick help (delete to dismiss)',
       'composer.sendNewline': 'send · Shift+Enter for newline',
       'composer.sendQueued': 'send next queued turn',
-      'composer.modelPicker': 'model picker',
       'keybinds.openPanel': 'all keyboard shortcuts',
       'composer.cancel': 'close popover · cancel run',
       'composer.history': 'cycle popover / history'
@@ -4061,15 +3460,18 @@ export const en: Translations = {
     restoredDraftNotice: 'Restored your unsent message',
     restoredDraftUndo: 'Undo',
     queueEdit: 'Edit',
-    queueMoveUp: 'Move earlier',
-    queueMoveDown: 'Move later',
     queueExpand: 'Expand',
     queueCollapse: 'Collapse',
     queueSendNext: 'Next',
     queueSteer: 'Steer — redirect the live turn now',
-    queueRemoved: 'Removed from queue',
     queueSend: 'Send',
     queueDelete: 'Delete',
+    queueLostNote: 'Turn lost during restart',
+    restoreImageDraft: 'Restore image draft',
+    queueCancelFailed: "Couldn't remove the queued turn",
+    queueLostDiscard: 'Discard',
+    queueLostDiscardTip:
+      'The gateway restarted mid-turn and cannot finish this one. Discard it so the queued turns behind it run.',
     queueResume: 'Resume',
     queueResumeTip: 'Paused by Stop — resume sending the queued turns',
     queueStuckTitle: 'Queued message not sent',
@@ -4099,11 +3501,8 @@ export const en: Translations = {
     folder: 'Folder…',
     images: 'Images…',
     pasteImage: 'Paste image',
-    captureRegion: 'Screenshot region…',
     url: 'URL…',
     promptSnippets: 'Prompt snippets…',
-    scheduleJob: 'Run on a schedule…',
-    slashCommands: 'Slash commands…',
     tipPre: 'Tip: type ',
     tipPost: ' to reference files inline.',
     snippetsTitle: 'Prompt snippets',
@@ -4124,16 +3523,6 @@ export const en: Translations = {
       tip: skill => `You mentioned “${skill}” — click to lead with that skill`,
       done: skill => `Added /${skill}`,
       doneTip: 'The skill loads when you send'
-    },
-    goalChips: {
-      planLabel: 'Plan it first',
-      planTip: 'Turns this into /plan — a step-by-step plan written to .hermes/plans/ before any work starts',
-      planDone: 'Plan ready',
-      planDoneTip: 'The plan runs when you send',
-      goalLabel: 'Make it a goal',
-      goalTip: 'Turns this into /goal — a standing outcome Hermes works toward until achieved',
-      goalDone: 'Goal ready',
-      goalDoneTip: 'The goal takes effect when you send'
     },
     githubSuggestions: {
       label: 'Set up GitHub',
@@ -4157,18 +3546,6 @@ export const en: Translations = {
       done: 'Marked for scheduling',
       doneTip: 'Send it and the agent creates the job'
     },
-    nudges: {
-      prLabel: 'Open a PR',
-      prTip: 'The last reply reads like finished code work — draft the request',
-      prDraft: 'Open a pull request for the changes we just made.',
-      prDone: 'PR request drafted',
-      prDoneTip: 'Review the draft and send it to have the agent open the PR',
-      followupLabel: 'Schedule a follow-up',
-      followupTip: 'Set a check-in on this work — drafts the request for you',
-      followupDraft: 'Set this up as a scheduled job: check back on this work in an hour and tell me what changed.',
-      followupDone: 'Follow-up drafted',
-      followupDoneTip: 'Adjust the timing in the draft, then send it'
-    },
     snippets: {
       codeReview: {
         label: 'Code review',
@@ -4188,29 +3565,6 @@ export const en: Translations = {
     }
   },
 
-  regionCapture: {
-    attach: 'Attach',
-    cancel: 'Cancel',
-    captureFailed: 'Couldn’t capture the screen.',
-    capturing: 'Capturing…',
-    clear: 'Start over',
-    notePlaceholder: 'Note for the agent (optional)…',
-    permissionDenied:
-      'Screen recording permission is off — enable it in System Settings → Privacy & Security → Screen Recording.',
-    selectHint: 'Drag to pick a region · Esc to cancel',
-    toolTips: { arrow: 'Arrow', pen: 'Draw', rect: 'Rectangle' },
-    unavailable: 'Screen capture isn’t available here.',
-    undo: 'Undo'
-  },
-  voiceStatus: {
-    idle: 'Hermes is idle — nothing is running.',
-    working: 'Hermes is still working on it.',
-    workingOn: detail => `Hermes is working — right now it's ${detail}.`,
-    stalled: 'Hermes seems stalled — it has been quiet for a while.',
-    needsInput: 'Hermes is waiting for your input.',
-    finished: 'The last turn finished — the reply is waiting for you.',
-    progress: (done, total) => `${done} of ${total} tasks done.`
-  },
   statusStack: {
     hideStack: 'Hide status stack',
     showStack: 'Show status stack',
@@ -4228,10 +3582,6 @@ export const en: Translations = {
     stop: 'Stop',
     dismiss: 'Dismiss',
     exit: code => `exit ${code}`,
-    verifyChecking: 'Checking the preview…',
-    verifyFailed: count => `Preview check failed — ${count} console ${count === 1 ? 'error' : 'errors'}`,
-    verifyOpenConsole: 'Open the console',
-    verifyPassed: 'Preview check passed',
     control: {
       goalActiveTurns: (turn, maxTurns) => `Turn ${turn}/${maxTurns}`,
       goalDoneTurns: turns => `${turns} turn${turns === 1 ? '' : 's'}`,
@@ -4302,7 +3652,7 @@ export const en: Translations = {
       heartbeatEveryHours: hours => `every ${hours}h`,
       heartbeatEverySeconds: seconds => `every ${seconds}s`,
       heartbeatNext: time => `next ${time}`,
-      heartbeatDueWaitingForIdle: 'due — waiting for idle',
+      dueWaitingForIdle: 'due — waiting for idle',
       heartbeatActions: 'Heartbeat actions',
       pauseHeartbeat: 'Pause heartbeat',
       resumeHeartbeat: 'Resume heartbeat',
@@ -4347,8 +3697,6 @@ export const en: Translations = {
       notRepo: 'Not a git repository',
       noDiff: 'No diff to show',
       scopeUncommitted: 'Uncommitted',
-      scopeSession: 'Session',
-      sessionEmpty: 'No session changes',
       scopeBranch: 'Branch',
       scopeLastTurn: 'Last turn',
       readOnlyScope: 'Read-only view — stage, revert, and commit apply to Uncommitted',
@@ -4364,23 +3712,6 @@ export const en: Translations = {
       agentShipUnavailable: "The chat that owns these changes isn't on screen.",
       agentShipPrompt:
         'Review the current changes, commit them with a clear conventional-commit message, push the branch, and open a pull request.',
-      agentReview: 'Have an agent review',
-      agentReviewPick: 'Review with',
-      agentReviewNoProfiles: 'No profiles found',
-      agentReviewPrompt:
-        'Review the diff in the attached file. Report concrete issues — bugs, regressions, unhandled cases — before style nits.',
-      agentReviewAttachment: 'Working-tree diff',
-      agentReviewUnavailable: 'Nothing to review — no repo or no pending diff.',
-      agentReviewReportTitle: (reviewer: string) => `Review by ${reviewer}`,
-      selfReview: 'Review changes',
-      selfReviewRunning: 'Reviewing changes…',
-      selfReviewClean: 'No issues found',
-      selfReviewClear: 'Clear review comments',
-      selfReviewComments: count => `${count} comment${count === 1 ? '' : 's'}`,
-      commentOnLine: line => `Comment on line ${line}`,
-      diffCommentPlaceholder: 'Feedback on this line…',
-      diffCommentSend: 'Add comment',
-      commentSeeded: 'Added to the composer as a draft',
       newBranch: 'New branch',
       branchOffFrom: base => `New branch from ${base}`,
       switchTo: branch => `Switch to ${branch}`,
@@ -4547,7 +3878,6 @@ export const en: Translations = {
     versionDetailsUncommittedChanges: 'uncommitted changes'
   },
 
-  handoffTour: enHandoffTour,
   install: {
     stageStates: {
       pending: 'Pending',
@@ -4840,10 +4170,6 @@ export const en: Translations = {
       toggleTokensPerSecond: 'Tokens per second',
       toggleVersion: 'Version & updates',
       toggleFreeTier: 'Free tier',
-      toggleNotices: 'Notices',
-      noticesTitle: 'Recent notices',
-      toggleAttentionInbox: 'Attention inbox',
-      attentionInboxTitle: 'Pending approvals and questions',
       toggleWorkspace: 'Workspace',
       cacheHitRateTitle: 'Prompt cache hit rate this session — cached tokens cost less, so higher is cheaper',
       tokensPerSecondTitle: 'Output tokens per second, averaged over the last 10 model calls',
@@ -4859,11 +4185,6 @@ export const en: Translations = {
       openWebhooks: 'Open webhooks',
       starmap: 'Memory Graph',
       openStarmap: 'Open memory graph',
-      artifacts: 'Artifacts',
-      artifactsTitle: 'Deliverables generated in this chat — pick one to open it beside the thread',
-      artifactsCount: count => `${count} artifact${count === 1 ? '' : 's'}`,
-      browseAllArtifacts: 'Browse all artifacts',
-      toggleArtifacts: 'Artifacts',
       turnRunning: 'Running',
       contextUsage: 'Context usage',
       compressions: count => `Compressions: ${count}`,
@@ -4908,19 +4229,6 @@ export const en: Translations = {
   },
 
   rightSidebar: {
-    agentTouched: 'Edited in this chat',
-    newFile: 'New file',
-    newFolder: 'New folder',
-    filterFiles: 'Filter files',
-    newFileIn: label => `New file in ${label}`,
-    newFolderIn: label => `New folder in ${label}`,
-    newFilePlaceholder: 'name.ts — slashes make folders',
-    newFolderPlaceholder: 'folder-name',
-    newFileFailed: 'Could not create the file',
-    newFolderFailed: 'Could not create the folder',
-    filterPlaceholder: 'Filter files…',
-    filterHint: 'Type part of a file or folder name. Matches the whole project, not just open folders.',
-    filterNoMatch: 'No files match',
     terminalReadOnly: 'Read-only output',
     terminalReadOnlyHelp:
       'To answer prompts, stop the background command and run it in a new terminal. The new terminal opens a separate shell; it does not connect to this process.',
@@ -4990,9 +4298,6 @@ export const en: Translations = {
     sourceLineTitle: 'Click to select · shift-click to extend · drag to composer',
     source: 'SOURCE',
     renderedPreview: 'PREVIEW',
-    table: 'TABLE',
-    tableTruncated: (rows: number) => `Showing the first ${rows.toLocaleString()} rows. Source has the whole file.`,
-    canvas: 'CANVAS',
     diff: 'DIFF',
     unknownSize: 'unknown size',
     binaryTitle: 'This looks like a binary file',
@@ -5034,7 +4339,6 @@ export const en: Translations = {
       sentMessage: count => `${count} log entr${count === 1 ? 'y' : 'ies'} added to composer`
     },
     web: {
-      embeddedPreviewHint: 'Some sites block embedded previews. Open the original page in a browser tab.',
       appFailedToBoot: 'Preview app failed to boot',
       serverNotFound: 'Server not found',
       remoteLoopback:
@@ -5086,27 +4390,7 @@ export const en: Translations = {
       commentPlaceholder: 'Add a comment...',
       commentTitle: n => `Comment ${n}`,
       saveComment: 'Save',
-      cancelComment: 'Cancel comment',
-      record: 'Record task',
-      recordStop: 'Stop recording',
-      recording: count => `Recording · ${count}`,
-      recordNeedPage: 'Open a page in the in-app browser first.',
-      recordFailed: 'Could not start recording on this page.',
-      recordTitle: 'Save recording as a skill',
-      recordDesc:
-        'Review the captured steps, name the skill, and save it as a draft. The agent can then replay it from your skills.',
-      recordName: 'Name',
-      recordNamePlaceholder: 'Order groceries',
-      recordNameHint: slug => `Saved as “${slug}” under ~/.hermes/skills/`,
-      recordDescLabel: 'Description (optional)',
-      recordDescPlaceholder: 'When to use this workflow…',
-      recordDescHint: 'One sentence, 60 characters at most.',
-      recordSteps: count => `Recorded steps (${count})`,
-      recordEmpty: 'No steps were captured — the recording was empty.',
-      recordSave: 'Save skill',
-      recordSaving: 'Saving…',
-      recordSaved: name => `Saved “${name}” to your skills.`,
-      recordSaveFailed: 'Could not save the skill.'
+      cancelComment: 'Cancel comment'
     }
   },
 
@@ -5114,8 +4398,6 @@ export const en: Translations = {
     title: 'Interface mode',
     hint: 'Changes what is shown, not what Hermes can do.',
     sessionNote: 'Set by Simple mode. A change here lasts for this session; switch to Advanced to make it yours.',
-    simpleNotice: 'Simple mode — panes and extra tools are hidden.',
-    showAdvanced: 'Show Advanced',
     simple: {
       label: 'Simple',
       description: 'For talking to Hermes. Sidebar and chat; no terminal, file or diff panes.'
@@ -5173,7 +4455,7 @@ export const en: Translations = {
     saveApply: 'Save & apply',
     notExpressible: 'this arrangement interlocks (pinwheel) — not expressible as nested splits yet',
     zoneCount: count => `${count} zones`,
-    tabCount: count => `${count} tab${count === 1 ? '' : 's'}`
+    tabCount: count => `${count} tabs`
   },
 
   contextMenu: {
@@ -5201,16 +4483,9 @@ export const en: Translations = {
   },
 
   assistant: {
-    sessionRecap: {
-      title: 'Where it left off',
-      dismiss: 'Dismiss',
-      turns: count => `${count} ${count === 1 ? 'turn' : 'turns'}`,
-      todo: progress => `plan ${progress}`
-    },
     thread: {
       loadingSession: 'Loading session',
       showEarlier: 'Show earlier messages',
-      timelineScrubber: 'Transcript minimap',
       loadingResponse: 'Hermes is loading a response',
       loadingLocalModel: model => `Loading ${model} into memory`,
       processingPrompt: 'Processing prompt',
@@ -5354,6 +4629,14 @@ export const en: Translations = {
           title: 'Hermes got stuck in a loop',
           body: 'The reply kept repeating the same steps, so Hermes stopped it. Retry, or start a new chat if it happens again.'
         },
+        SESSION_OWNER_BUSY: {
+          title: 'Hermes is busy in this chat',
+          body: 'Another turn is running here and your message could not join its queue. Nothing was sent. Retry once that turn ends.'
+        },
+        SESSION_OWNER_UNCONFIRMED: {
+          title: 'Your message may already be queued',
+          body: 'The gateway did not confirm your message in time. If it was queued, it runs once the earlier turn finishes or is resolved. Check the chat before sending it again.'
+        },
         SESSION_NOT_OWNED: {
           title: 'This chat is open somewhere else',
           body: 'This chat is currently open in another Hermes window or terminal. Close it there and send your message again, or start a new chat here.'
@@ -5434,7 +4717,6 @@ export const en: Translations = {
       stopReading: 'Stop reading',
       readAloud: 'Read aloud',
       copyFullResponse: 'Copy full response',
-      copyMarkdown: 'Copy as Markdown',
       readAloudFullResponseHint: 'Shift-click: read the full response',
       editMessage: 'Edit message',
       expandMessage: 'Expand message',
@@ -5448,12 +4730,6 @@ export const en: Translations = {
         'Everything after this prompt is removed from the conversation, and the prompt runs again from here.',
       restoreConfirm: 'Restore & rerun',
       restoreNext: 'Restore next checkpoint',
-      revertFilesTip: 'Revert files to before this prompt',
-      revertFilesTitle: 'Revert files?',
-      revertFilesBody:
-        'Files Hermes changed in that turn go back to how they were — anything you edited by hand is kept. The conversation is untouched.',
-      revertFilesConfirm: 'Revert files',
-      revertFilesFailed: 'Could not revert files',
       goForward: 'Go forward',
       sendEdited: 'Send edited message',
       attachingFile: 'Attaching…'
@@ -5479,49 +4755,8 @@ export const en: Translations = {
         `This adds the “${pattern}” pattern to your permanent allowlist (~/.hermes/config.yaml). Hermes won’t ask again for commands like this — in this session or any future one.`,
       alwaysAllow: 'Always allow'
     },
-    clarify: {
-      notReady: 'Clarify request is not ready yet',
-      gatewayDisconnected: 'Hermes is offline right now. Reconnect, then send it again.',
-      sendFailed: 'Could not send clarify response',
-      loadingQuestion: 'Loading question…',
-      other: 'Other (type your answer)',
-      placeholder: 'Type your answer…',
-      skip: 'Skip',
-      skipped: 'Skipped',
-      noAnswer: 'No answer',
-      confirmAndContinueLabel: 'Confirm and continue',
-      singleSelectHint: 'Pick one',
-      multiSelectHint: 'Select all that apply',
-      oneQuestion: '1 question',
-      questionProgress: (answered, total) => `${answered} of ${total} answered`,
-      notDelivered:
-        "This question didn't reach the app, so it can't be answered here. Press Stop to end the turn, then reply in chat."
-    },
-    setupChoose: {
-      kinds: {
-        accent: 'Accent color',
-        connectors: 'Apps',
-        layout: 'Layout',
-        plugins: 'Plugins',
-        theme: 'Appearance'
-      },
-      loading: 'Loading options…',
-      unavailable: "This list isn't available right now. Reply in chat instead.",
-      findApp: 'Find an app',
-      customColor: 'Custom color',
-      plugin: 'Plugin',
-      startsLater: "We'll set these up when you start."
-    },
-    startChat: {
-      starting: title => `Starting “${title}”…`,
-      startingUntitled: 'Starting a chat…',
-      untitled: 'New chat',
-      notStarted: "Couldn't start that chat.",
-      retry: 'Retry',
-      inProfile: profile => `In ${profile}`,
-      open: 'Open',
-      openFailed: "Couldn't open the chat"
-    },
+    clarify: enClarify,
+    themePicker: enThemePicker,
     catalogInstall: enCatalogInstall,
     mcpSetup: {
       installTitle: 'Add MCP servers',
@@ -5633,8 +4868,6 @@ export const en: Translations = {
           pending: 'Searching session history',
           pendingAction: 'Searching'
         },
-        setup_choose: { done: 'Asked a setup question', pending: 'Asking a setup question', pendingAction: 'Asking' },
-        start_chat: { done: 'Started a chat', pending: 'Starting a chat', pendingAction: 'Starting' },
         terminal: { done: 'Ran command', pending: 'Running command', pendingAction: 'Running' },
         todo: { done: 'Updated todos', pending: 'Updating todos', pendingAction: 'Updating' },
         vision_analyze: { done: 'Analyzed image', pending: 'Analyzing image', pendingAction: 'Analyzing' },
@@ -5661,10 +4894,6 @@ export const en: Translations = {
     secretTitle: 'Secret required',
     secretDesc: 'Hermes needs a credential to continue.',
     secretPlaceholder: 'secret value',
-    secretCardSkip: 'Skip',
-    secretCardSave: 'Save',
-    secretCardFootnote:
-      "Stored in this profile's secrets — the value is sent straight to the backend and never enters the conversation.",
     vaultUnlockSendFailed: 'Could not send master password',
     vaultUnlockTitle: name => `Unlock ${name}`,
     vaultUnlockDesc: name =>
@@ -5759,21 +4988,6 @@ export const en: Translations = {
     hydrationSyncing: (profile: string) => `Syncing ${profile}\u2026`,
     sessionExported: 'Session exported',
     sessionExportFailed: 'Could not export session',
-    shareLinkCopied: 'Share link copied',
-    shareLinkFailed: 'Could not create share link',
-    markdownUser: 'User',
-    markdownAssistant: 'Assistant',
-    markdownSystem: 'System',
-    markdownReasoning: 'Reasoning',
-    markdownToolCall: 'Tool call',
-    markdownToolResult: 'Tool result',
-    deliverableArtifacts: 'Artifacts',
-    deliverableChanges: 'Changes',
-    deliverableFilesLine: (files, added, removed) => `${files} files touched · +${added} / −${removed}`,
-    deliverableNoSummary: 'No assistant reply recorded',
-    deliverablePullRequest: 'Pull request',
-    deliverableSession: 'Session',
-    deliverableSummary: 'Summary',
     imageSaved: 'Image saved',
     downloadStarted: 'Download started',
     restartToUseSaveImage: 'Restart Hermes Desktop to use Save Image.',
@@ -5789,7 +5003,6 @@ export const en: Translations = {
     imageAttach: 'Image attach',
     imageWriteFailed: 'Failed to write image to disk.',
     imageAttachFailed: 'Image attach failed',
-    pastedAsFile: 'Pasted as file',
     pastedContent: 'Pasted content',
     pasteAttachFailed: 'Could not attach pasted text',
     attachImages: 'Attach images',
@@ -5799,8 +5012,6 @@ export const en: Translations = {
     dropFiles: 'Drop files',
     handoff: {
       pickPlatform: 'Choose a destination',
-      queued: (platform, home) => `Handing off to ${platform} (${home})…`,
-      sessionUnavailable: 'This chat is not live on the gateway right now.',
       success: platform => `Handed off to ${platform}. Resume here anytime.`,
       systemNote: platform => `↻ Handed off to ${platform} — resume here anytime.`,
       failed: error => `Handoff failed: ${error}`,
@@ -5808,21 +5019,6 @@ export const en: Translations = {
         "Hermes couldn't reach your messaging connection. Start it from Settings → Messaging, then try the handoff again.",
       startMessaging: 'Start messaging'
     }
-  },
-
-  menuBar: {
-    newSession: 'New Session',
-    quickEntry: 'Quick Entry',
-    quit: 'Quit Hermes',
-    recentSessions: 'Recent Sessions',
-    show: 'Show Hermes',
-    statusIdle: 'Hermes — idle',
-    statusActive: (runs: number, needsYou: number) => `${runs} running · ${needsYou} needs you`
-  },
-
-  quickEntry: {
-    contextLabel: 'Context',
-    contextRemove: 'Remove context'
   },
 
   tips: {
@@ -5868,10 +5064,6 @@ export const en: Translations = {
       'right-pane': {
         title: 'The working pane',
         text: 'Files, terminal, review and the in-app browser share the right side.'
-      },
-      'advanced-mode': {
-        title: 'More behind Advanced',
-        text: 'Panes, cron, capabilities and the statusbar rest in Advanced mode — Settings › Appearance › Window layout switches.'
       }
     }
   },

@@ -129,9 +129,7 @@ export interface VaultUnlockRequest extends KeyedPrompt {
 }
 
 const EMPTY_APPROVALS: ApprovalRequest[] = []
-// Exported read-only for the attention inbox's aggregate view — writes stay
-// behind the `approval` controller below.
-export const $approvalQueues = atom<Record<string, ApprovalRequest[]>>({})
+const $approvalQueues = atom<Record<string, ApprovalRequest[]>>({})
 const $approvalStackSizes = atom<Record<string, number>>({})
 // A replay started before a response/reset cannot resurrect the answered card.
 let approvalRevision = 0
@@ -474,10 +472,10 @@ export const $activeSessionAwaitingInput = computed(
 )
 
 /** True when `sessionId` is parked on a blocking prompt that typing cannot
- *  answer (approval / sudo / secret). Clarify is deliberately excluded: typing
- *  a real message IS an answer to a clarify ("none of these" — the composer
- *  skips it and routes the words), but no message text can approve a command
- *  or supply a password. Imperative read — the composer checks this on Enter,
+ *  answer (approval / sudo / secret). Clarify is deliberately excluded: typed
+ *  text answers a clarify's next question (the composer locks it through
+ *  `answerParkedCard`), but no message text can approve a command or supply a
+ *  password. Imperative read — the composer checks this on Enter,
  *  not on every render. */
 export const hasBlockingPromptRequest = (sessionId: string | null | undefined): boolean => {
   const key = keyFor(sessionId)

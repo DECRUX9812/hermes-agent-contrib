@@ -20,24 +20,11 @@ _ASSET_MAGIC = {"png": [(0, 8, b"\x89PNG\r\n\x1a\n")], "jpg": [(0, 3, b"\xff\xd8
                 "webp": [(0, 4, b"RIFF"), (8, 12, b"WEBP")]}
 
 
-def _profile_handler(name: str, code: int, *, mutating: bool = False):
+def _profile_handler(name: str, code: int):
     """``@method(name)`` whose body's uncaught exception becomes ``_err(rid, code, str(e))``."""
     def deco(fn):
         def handler(rid, params: dict) -> dict:
             try:
-                if mutating and str(params.get("name") or "").strip():
-                    from hermes_cli.profiles import get_profile_dir
-                    from hermes_cli.profile_incarnation import profile_incarnation_lease
-
-                    # Resolve and publish in one admission. The short editor
-                    # transaction (including clear and <=2MB decode) cannot
-                    # outlive its generation or target a reused profile path.
-                    try:
-                        home = get_profile_dir(str(params["name"]).strip())
-                        with profile_incarnation_lease(home):
-                            return fn(rid, params)
-                    except (ValueError, FileNotFoundError):
-                        return _err(rid, 4064, f"profile '{params['name']}' not found")
                 return fn(rid, params)
             except Exception as e:
                 return _err(rid, code, str(e))
@@ -51,8 +38,9 @@ def _lazy(module, name):
     return getattr(__import__(module, fromlist=[name]), name)
 
 
-def _pin_profile_model(profile_dir, provider, model) -> None:
-    _lazy("hermes_cli.web_routers.profiles", "_write_profile_model")(profile_dir, provider, model)
+def _pin_profile_model(profile_dir, provider, model, base_url="") -> None:
+    _lazy("hermes_cli.web_routers.profiles", "_write_profile_model")(
+        profile_dir, provider, model, base_url=base_url)
 
 
 def _model_provider_params(params) -> tuple:
@@ -87,12 +75,12 @@ def _resolve_profile(rid, params):
     name = str(params.get("name") or "").strip()
     if not name:
         return name, None, _err(rid, 4063, "name required")
-    from hermes_cli.profiles import get_profile_dir, profile_home_is_tombstoned
+    from hermes_cli.profiles import get_profile_dir
     try:
         profile_dir = Path(get_profile_dir(name))
     except ValueError:
         return name, None, _err(rid, 4064, f"profile '{name}' not found")
-    if not profile_dir.is_dir() or profile_home_is_tombstoned(profile_dir):
+    if not profile_dir.is_dir():
         return name, None, _err(rid, 4064, f"profile '{name}' not found")
     return name, profile_dir, None
 
@@ -245,27 +233,11 @@ def _profile_session_fields(row, profile_path):
     """Attach last_session / worker_session / canonical_session to a roster row. The DB is a
     read-only attach (a writable ``SessionDB()`` waits up to 20s for the write lock + runs DDL
     and stalled the 5s roster poll); no/unreadable DB -> every field None (the readers swallow)."""
-    from hermes_constants import named_profile_home_is_unavailable
-    from hermes_cli.profile_incarnation import read_profile_incarnation
-    from tui_gateway.profile_roster_cache import cached_session_fields, invalidate
-
-    profile_dir = Path(profile_path)
-    empty = dict(last_session=None, worker_session=None, canonical_session=None)
-    # A retired profile must not return a warm cache entry for its old store.
-    if named_profile_home_is_unavailable(profile_dir):
-        invalidate(profile_path)
-        row.update(empty)
-        return
-
-    incarnation = _try(lambda: read_profile_incarnation(profile_dir), None)
-
     def _read() -> dict:
-        db_path = profile_dir / "state.db"
-        if named_profile_home_is_unavailable(profile_dir) or not db_path.exists():
-            raise FileNotFoundError(f"Profile store is unavailable: {db_path}")
-        # Let a failed open escape the cache computation: an unavailable read
-        # is not a successful empty store and must be retried on the next poll.
-        db = _lazy("hermes_state", "SessionDB")(db_path=db_path, read_only=True)
+        db_path = Path(profile_path) / "state.db"
+        db = None
+        if _try(db_path.exists, False):
+            db = _try(lambda: _lazy("hermes_state", "SessionDB")(db_path=db_path, read_only=True), None)
         try:
             last, worker = _latest_profile_session_rows(db)
             # Resolved server-side on every listing so no client carries a session pointer.
@@ -277,14 +249,9 @@ def _profile_session_fields(row, profile_path):
 
     # These three are a pure function of the profile's session store, and the roster re-asks every
     # 5s per connection — so they are reused while that store has not moved (#117257).
-    fields = _try(lambda: cached_session_fields(profile_path, _read), None)
-    # A warm hit performs no SessionDB admission. Recheck at publication so a
-    # retirement or replacement during lookup cannot publish the old answer.
-    if (fields is None or named_profile_home_is_unavailable(profile_dir)
-            or _try(lambda: read_profile_incarnation(profile_dir), None) != incarnation):
-        invalidate(profile_path)
-        fields = empty
-    row.update(fields)
+    from tui_gateway.profile_roster_cache import cached_session_fields
+
+    row.update(cached_session_fields(profile_path, _read))
 
 
 def _profile_ui_meta_fields(row: dict, profile_dir) -> None:
@@ -416,7 +383,7 @@ def _(rid, params: dict) -> dict:
             "toolsets_pinned": pinned_set is not None, "mcp_servers": mcp_out})
 
 
-@_profile_handler("profiles.configure", 5064, mutating=True)
+@_profile_handler("profiles.configure", 5064)
 def _(rid, params: dict) -> dict:
     """Editor Save: ``name`` plus any of ``ui_meta`` (+ ``ui_meta_expected_revisions``), ``soul``,
     ``description``, ``model`` + ``provider`` (+ ``confirm_expensive_model``), ``disabled_skills``,
@@ -442,7 +409,7 @@ def _(rid, params: dict) -> dict:
                         if confirm_message is not None else {})})
 
 
-@_profile_handler("profiles.set_asset", 5065, mutating=True)
+@_profile_handler("profiles.set_asset", 5065)
 def _(rid, params: dict) -> dict:
     """Store ``assets/<asset>.<ext>`` atomically. Params: ``name``, ``asset`` (``"avatar"`` only),
     ``data`` (data URL or base64; PNG/JPEG/WebP ≤2MB, format sniffed) or ``clear: true``."""
@@ -472,11 +439,7 @@ def _(rid, params: dict) -> dict:
     ext = next((e for e, magic in _ASSET_MAGIC.items() if all(blob[a:b] == m for a, b, m in magic)), None)
     if ext is None:
         return _err(rid, 4070, "unsupported image format (PNG/JPEG/WebP only)")
-    from hermes_cli.profiles import profile_home_is_tombstoned
-    from hermes_constants import mkdir_under_hermes_home
-    if profile_home_is_tombstoned(profile_dir):
-        return _err(rid, 4064, f"profile '{_name}' not found")
-    mkdir_under_hermes_home(assets_dir)
+    assets_dir.mkdir(parents=True, exist_ok=True)
     _unlink_asset_files(assets_dir, asset)  # one canonical file per asset
     tmp = assets_dir / f"{asset}.{ext}.tmp"
     tmp.write_bytes(blob)
@@ -556,18 +519,29 @@ def _inherit_launch_model(path) -> bool:
     model_cfg = launch_cfg.get("model") or {}
     if not (model_cfg.get("provider") and model_cfg.get("default")):
         return False
-    # A custom `providers:` gateway travels with the model it backs (same seed as the CLI path). It is
+    # A custom endpoint travels with the model it backs (same seed as the CLI path). It is
     # written BEFORE the pin: the pin validates the pick inside the new profile, and an empty profile
     # rejects a provider it has not been told about ("Unknown provider").
     # Seeded from the RAW launch file so a ${VAR} api_key travels as the ref, not its value.
-    custom = _lazy("hermes_cli.profiles", "launch_model_seed")(read_user_config_raw()).get("providers")
-    if custom:
-        from hermes_cli.config import load_config, save_config
+    seed = _lazy("hermes_cli.profile_model_seed", "launch_model_seed")(read_user_config_raw())
+    if seed.get("providers") or seed.get("custom_providers"):
+        from hermes_cli.config import save_config
+        merge = _lazy("hermes_cli.profile_model_seed", "merge_endpoint_seed")
         with _hermes_home_scope(path):
-            cfg = load_config()
-            cfg["providers"] = {**(cfg.get("providers") if isinstance(cfg.get("providers"), dict) else {}), **custom}
-            save_config(cfg)
-    _pin_profile_model(path, str(model_cfg["provider"]), str(model_cfg["default"]))
+            save_config(merge(read_user_config_raw(), seed))
+    # Bare ``custom``/``local`` carries its endpoint into validation (the new profile's config names
+    # none); other providers ignore it. Validation needs the expanded URL, the profile keeps the
+    # launch file's spelling so a ${VAR} URL stays a ref.
+    _pin_profile_model(path, str(model_cfg["provider"]), str(model_cfg["default"]),
+                       str(model_cfg.get("base_url") or ""))
+    raw_url = ((read_user_config_raw() or {}).get("model") or {}).get("base_url")
+    if isinstance(raw_url, str) and "${" in raw_url:
+        from hermes_cli.config import save_config
+        with _hermes_home_scope(path):
+            cfg = read_user_config_raw() or {}
+            if isinstance(cfg.get("model"), dict) and cfg["model"].get("base_url") == model_cfg.get("base_url"):
+                cfg["model"]["base_url"] = raw_url
+                save_config(cfg)
     return True
 
 
@@ -629,31 +603,55 @@ def _bots_title(ui_meta: dict):
 
 
 def _configure_ui_meta(profile_dir, params, applied) -> None:
-    """Merge ``params["ui_meta"]`` key-wise into profile.yaml (``hermes_cli/profile_ui_meta.py``:
-    None deletes, 64KB cap, per-key CAS via ``ui_meta_expected_revisions``)."""
+    """Merge ``params["ui_meta"]`` key-wise into profile.yaml (None deletes). 64KB cap (rides
+    every roster paint). ``ui_meta_expected_revisions``: per-key CAS, any mismatch rejects the
+    whole write; revisions survive deletion so a stale client cannot recreate a removed key."""
     applied["ui_meta"] = False
     try:
-        from hermes_cli.profile_ui_meta import merge_ui_meta
         incoming = params["ui_meta"]
-        watch = isinstance(incoming, dict) and "hermes-bots" in incoming
+        if len(json.dumps(incoming)) > 65536:
+            return
+        expected = params.get("ui_meta_expected_revisions")
+        if expected is not None and not isinstance(expected, dict):
+            raise ValueError("ui_meta_expected_revisions must be an object")
         with _profile_ui_meta_lock:
-            old_title = _bots_title((_read_profile_yaml(profile_dir) or {}).get("ui_meta") or {}) if watch else None
-            outcome = merge_ui_meta(profile_dir, incoming, params.get("ui_meta_expected_revisions"))
-            if watch and outcome.get("applied") and "conflicts" not in outcome:
-                new_title = _bots_title((_read_profile_yaml(profile_dir) or {}).get("ui_meta") or {})
-                if new_title != old_title:
-                    # A client writing another machine's bot title lands here; the Desktop's
-                    # `[bot-meta win=…]` desktop.log line at the same time names the window.
-                    logging.getLogger(__name__).info(
-                        "ui_meta hermes-bots title for profile %s: %r -> %r (revision %s)",
-                        params.get("name") or profile_dir.name, old_title, new_title,
-                        (outcome.get("revisions") or {}).get("hermes-bots"))
-        if "conflicts" in outcome:
-            applied["ui_meta_conflicts"] = outcome["conflicts"]
-            applied["ui_meta_revisions"] = outcome["revisions"]
-        elif outcome["applied"]:
+            existing = _read_profile_yaml(profile_dir)
+            raw_revisions = existing.get("_ui_meta_revisions")
+            revisions = _clean_revisions(raw_revisions if isinstance(raw_revisions, dict) else {})
+            conflicts = {}
+            for key in incoming if isinstance(expected, dict) else ():
+                wanted, actual = expected.get(key), revisions.get(key, 0)
+                if not isinstance(wanted, int) or isinstance(wanted, bool) or wanted < 0 or wanted != actual:
+                    conflicts[key] = {"expected": wanted, "actual": actual}
+            if conflicts:
+                applied["ui_meta_conflicts"] = conflicts
+                applied["ui_meta_revisions"] = {key: revisions.get(key, 0) for key in incoming}
+                return
+            current = existing.get("ui_meta")
+            current = current if isinstance(current, dict) else {}
+            old_title = _bots_title(current)
+            for key, value in incoming.items():
+                if value is None:
+                    current.pop(key, None)
+                else:
+                    current[key] = value
+                revisions[key] = revisions.get(key, 0) + 1
+            if current:
+                existing["ui_meta"] = current
+            else:
+                existing.pop("ui_meta", None)
+            existing["_ui_meta_revisions"] = revisions
+            from utils import atomic_yaml_write
+            atomic_yaml_write(profile_dir / "profile.yaml", existing, sort_keys=False)
             applied["ui_meta"] = True
-            applied["ui_meta_revisions"] = outcome["revisions"]
+            applied["ui_meta_revisions"] = {key: revisions[key] for key in incoming}
+            if _bots_title(current) != old_title:
+                # A client writing another machine's bot title lands here; the Desktop's
+                # `[bot-meta win=…]` desktop.log line at the same time names the window.
+                logging.getLogger(__name__).info(
+                    "ui_meta hermes-bots title for profile %s: %r -> %r (revision %s)",
+                    params.get("name") or profile_dir.name, old_title, _bots_title(current),
+                    revisions.get("hermes-bots"))
     except Exception:
         applied["ui_meta"] = False
 

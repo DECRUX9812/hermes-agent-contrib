@@ -1,3 +1,4 @@
+# health: allow FILE_LINES -- platform-tables refactor: core's _PLATFORM_DEFAULTS row for this platform moved onto its register() call as display_tier; the growth is only that kwarg
 """Buzz platform adapter (Block's Nostr-based human+agent community relay).
 
 Outbound and polling go through the ``buzz`` CLI ("JSON in, JSON out", never a shell);
@@ -218,22 +219,26 @@ def _replace_media_refs(text: str, replacements: list[tuple[int, int, str]]) -> 
     return re.sub(r"\n{3,}", "\n\n", re.sub(r"[ \t]+\n", "\n", text)).strip()
 
 
-def _load_nostr_auth():
-    """Import sibling nostr_auth loader-agnostically (the test loader imports this file as a bare module)."""
+def _load_sibling(name: str):
+    """Import a sibling module loader-agnostically (the test loader imports this file as a bare module)."""
+    import importlib
     try:
-        from . import nostr_auth  # type: ignore[no-redef]
-        return nostr_auth
+        return importlib.import_module(f".{name}", __package__) if __package__ else _load_sibling_file(name)
     except ImportError:
-        import importlib.util
-        path = Path(__file__).with_name("nostr_auth.py")
-        spec = importlib.util.spec_from_file_location("plugin_adapter_buzz_nostr_auth", path)
-        assert spec is not None and spec.loader is not None
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
+        return _load_sibling_file(name)
 
 
-_nostr_auth = _load_nostr_auth()
+def _load_sibling_file(name: str):
+    import importlib.util
+    path = Path(__file__).with_name(f"{name}.py")
+    spec = importlib.util.spec_from_file_location(f"plugin_adapter_buzz_{name}", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+_nostr_auth = _load_sibling("nostr_auth")
 
 # bech32 (BIP-173) npub <-> hex so mention detection and allow-lists accept either form.
 from gateway.authz_mixin import (
@@ -438,25 +443,6 @@ def _cli_error_message(stderr: str, returncode: int, *, redact_path: Optional[Pa
     return _bounded_cli_message(text or f"buzz CLI failed with exit code {returncode}", redact_path)
 
 
-def _cli_failure_retryable(returncode: int, stderr: str = "") -> bool:
-    """Whether a failed buzz CLI call must be queued for reconnect retry.
-
-    Exit 2 is the CLI's transient/network class. A remote ``auth_error`` — the relay's
-    ``403 relay_membership_required`` being the observed case — is relay-side state that
-    can change while the gateway runs (membership granted, relay policy restored), so it
-    has to stay queued instead of parking the platform fatal: at startup a non-retryable
-    failure with nothing else connected routes into the fatal path and exits the WHOLE
-    gateway with EX_CONFIG (78), which under RestartPreventExitStatus=78 leaves every
-    other platform and session dead until a human restarts it. Local config problems
-    (missing URL / key / binary) are decided before any CLI call runs and remain
-    non-retryable there.
-    """
-    if returncode == 2:
-        return True
-    data = _json_or((stderr or "").strip(), None)
-    return isinstance(data, dict) and str(data.get("error") or "").strip().lower() == "auth_error"
-
-
 def _parse_send_receipt(stdout: str) -> tuple[Optional[str], Optional[str]]:
     """Validate the buzz-cli success receipt and return ``(event_id, error)``."""
     data = _json_or(stdout, None)
@@ -650,7 +636,7 @@ class BuzzAdapter(BasePlatformAdapter):
             message = _cli_error_message(err, code)
             return self._connect_failed(
                 "connect_failed", message, "Buzz: failed to fetch own profile from %s — %s",
-                self.relay_url, message, retryable=_cli_failure_retryable(code, err),
+                self.relay_url, message, retryable=code == 2,
             )
         profiles = _parse_json_list(out)
         if not profiles or not profiles[0].get("pubkey"):
@@ -670,8 +656,7 @@ class BuzzAdapter(BasePlatformAdapter):
         if code != 0:
             message = _cli_error_message(err, code)
             return self._connect_failed(
-                "connect_failed", message, "Buzz: failed to list channels — %s", message,
-                retryable=_cli_failure_retryable(code, err)
+                "connect_failed", message, "Buzz: failed to list channels — %s", message, retryable=code == 2
             )
         self._channel_names = {}
         for ch in _parse_json_list(out):
@@ -1910,7 +1895,6 @@ def _apply_yaml_config(yaml_cfg: dict, buzz_cfg: dict) -> Optional[dict]:
     return _apply_yaml_bridge(extra, _YAML_BRIDGE)
 
 
-
 def _env_enablement() -> Optional[dict]:
     """``env_enablement_fn``: seed ``PlatformConfig.extra`` from the owning profile's env so env-only setups
     show in gateway status; None if unconfigured. Reads go through the profile scope: a served secondary sees
@@ -1925,7 +1909,6 @@ def _env_enablement() -> Optional[dict]:
     ))
     home = _seed_extra_from_env((), home_env="BUZZ_HOME_CHANNEL", home_default=(seed.get("channels") or [""])[0])
     return {"relay_url": relay, **seed, **home}
-
 
 
 async def _standalone_send(
@@ -2025,6 +2008,7 @@ def interactive_setup() -> None:
 def register(ctx):
     """Plugin entry point: called by the Hermes plugin system."""
     ctx.register_platform(
+        **_load_sibling("send_targets").SEND_ENTRY_KWARGS,  # send_message target syntax + routing
         name="buzz", label="Buzz", adapter_factory=lambda cfg: BuzzAdapter(cfg), check_fn=check_requirements,
         validate_config=validate_config, is_connected=is_connected, required_env=["BUZZ_RELAY_URL", "BUZZ_PRIVATE_KEY"],
         install_hint="Requires the buzz CLI binary (https://github.com/block/buzz) on PATH or at BUZZ_CLI_PATH",
@@ -2039,4 +2023,6 @@ def register(ctx):
             "by @-mentioning your name or npub in channels; direct messages "
             "reach you without a mention. Keep responses conversational."
         ),
+        # Nostr: edits in place but channels are shared community spaces.
+        display_tier="medium",
     )

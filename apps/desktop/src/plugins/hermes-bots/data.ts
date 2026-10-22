@@ -80,10 +80,8 @@ export function botAttentionHint(reason: string): string {
 
 /** Map an error (a #93091 reason code or raw error text) to an attention
  *  class, or null when the failure is transient (rate limit, server error,
- *  timeout) — transient classes must NEVER badge. Pure; tested directly.
- *  Exported for the relay's failed-handoff card (Team OS slice 5): the card
- *  carries this CLASSIFIED code, never the raw error text. */
-export function attentionReasonFromError(errorTextOrReason: unknown) {
+ *  timeout) — transient classes must NEVER badge. Pure; tested directly. */
+function attentionReasonFromError(errorTextOrReason: unknown) {
   const raw = String(errorTextOrReason || '').trim()
 
   if (!raw) {
@@ -1296,9 +1294,7 @@ export function isDefaultBot(bot: Partial<RosterRow> | null | undefined): boolea
   )
 }
 
-/** Open a fresh bot topic. `cwd` starts it in a project folder (local bots
- *  only — the path is this machine's). */
-export function newBotChat(bot: RosterRow, options: { cwd?: string } = {}) {
+export function newBotChat(bot: RosterRow) {
   if (typeof host.newChat !== 'function') {
     host.notify?.({
       kind: 'error',
@@ -1324,7 +1320,6 @@ export function newBotChat(bot: RosterRow, options: { cwd?: string } = {}) {
   const ownerKey = botWorkspaceOwnerKey(bot)
   setBotsWorkspaceOwner(ownerKey, bot)
   host.newChat(route, {
-    ...(options.cwd ? { cwd: options.cwd } : {}),
     workspaceMode: 'bots',
     workspaceOwnerKey: ownerKey
   })

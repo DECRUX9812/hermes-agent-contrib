@@ -75,16 +75,15 @@ const DOT_VARIANTS: Record<SessionDotState, DotVariant> = {
   // has yet to do anything at all.
   draft: {
     ariaLabel: r => r.draftSession,
-    className: `${DOT_BASE} border border-(--ui-text-quaternary) opacity-(--status-idle-opacity)`,
+    className: `${DOT_BASE} border border-(--ui-text-quaternary)`,
     title: r => r.draftSession
   },
   // Settled: the project color when there is one, else the faintest filled
-  // grey. Classic shows SOME mark on every session — a row with nothing in
-  // the lead slot read as broken next to its neighbours there. The Soft look
-  // lets the grey (and the draft ring) rest via --status-idle-opacity: a dot
-  // appears when there is something to say; a project color always shows.
+  // grey. Every session shows SOME mark — a row with nothing in the lead slot
+  // reads as broken next to its neighbours, so "no color" falls back to the
+  // quietest ink rather than to an invisible dot.
   idle: {
-    className: 'size-1 rounded-full bg-(--ui-text-quaternary) [&:not([style])]:opacity-(--status-idle-opacity)'
+    className: 'size-1 rounded-full bg-(--ui-text-quaternary)'
   }
 }
 

@@ -38,7 +38,7 @@ def test_desktop_serve_arms_mcp_discovery_only_after_ready_sentinel(monkeypatch)
     _stub_uvicorn_run(monkeypatch)
 
     web_server.start_server(
-        host="127.0.0.1", port=0, open_browser=False, ui_surface="serve",
+        host="127.0.0.1", port=0, open_browser=False, headless=True,
         start_mcp_discovery_after_bind=True,
     )
     # A headless `serve` announces BOTH ready tokens — neutral first, legacy
@@ -57,7 +57,7 @@ def test_desktop_serve_arms_mcp_discovery_only_after_ready_sentinel(monkeypatch)
     # dual-token announcement is headless-wide, not discovery-specific.
     order.clear()
     _reset_discovery_state(monkeypatch)
-    web_server.start_server(host="127.0.0.1", port=0, open_browser=False, ui_surface="serve")
+    web_server.start_server(host="127.0.0.1", port=0, open_browser=False, headless=True)
     assert order == ["sentinel", "sentinel"] and mcp_startup._mcp_discovery_deferred is None
 
 
@@ -101,7 +101,7 @@ def test_standalone_dashboard_boot_arms_discovery_without_starting_it(monkeypatc
         mcp_startup, "start_background_mcp_discovery", lambda *, logger, thread_name: calls.append(thread_name)
     )
 
-    after_bind = main_mod._dashboard_prepare_runtime(types.SimpleNamespace(skip_build=True, ui_surface="dashboard"))
+    after_bind = main_mod._dashboard_prepare_runtime(types.SimpleNamespace(skip_build=True), False)
 
     assert after_bind is False and calls == []
     # armed, not started: firing on demand runs it exactly once
@@ -124,8 +124,7 @@ def test_first_gateway_ws_client_starts_the_armed_discovery_once(monkeypatch):
     )
     assert calls == []
 
-    async def _allowed(ws, *, allow_internal=False):
-        assert allow_internal is True
+    async def _allowed(ws):
         return True
 
     async def _handle_ws(ws, **kwargs):
@@ -133,8 +132,10 @@ def test_first_gateway_ws_client_starts_the_armed_discovery_once(monkeypatch):
 
     monkeypatch.setattr(chat_ws, "_close_unless_sidecar_allowed", _allowed)
     monkeypatch.setattr("tui_gateway.ws.handle_ws", _handle_ws)
-    asyncio.run(chat_ws.gateway_ws(object()))
-    asyncio.run(chat_ws.gateway_ws(object()))
+    # The handler reads the app's session authority off the socket, as a real WebSocket carries it.
+    ws = types.SimpleNamespace(app=types.SimpleNamespace(state=types.SimpleNamespace()))
+    asyncio.run(chat_ws.gateway_ws(ws))
+    asyncio.run(chat_ws.gateway_ws(ws))
 
     assert calls == ["dashboard-mcp-discovery"]
     assert mcp_startup._mcp_discovery_deferred is None

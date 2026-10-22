@@ -11,7 +11,6 @@ const SOURCE_LABELS: Record<string, string> = {
   email: 'Email',
   gateway: 'Gateway',
   kanban: 'Kanban',
-  line: 'LINE',
   local: 'Local',
   matrix: 'Matrix',
   mattermost: 'Mattermost',
@@ -83,8 +82,7 @@ export const MESSAGING_SESSION_SOURCE_IDS = [
   'qqbot',
   'yuanbao',
   'dingtalk',
-  'feishu',
-  'line'
+  'feishu'
 ]
 const MESSAGING_SOURCE_IDS = new Set(MESSAGING_SESSION_SOURCE_IDS)
 

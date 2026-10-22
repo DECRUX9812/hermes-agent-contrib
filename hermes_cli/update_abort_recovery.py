@@ -11,8 +11,6 @@ import shutil
 import subprocess
 import sys
 
-from hermes_cli.update_inventory import _SERVE_KINDS
-
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +20,7 @@ def _serve_unit_recovery_available() -> bool:
 
 
 def _surviving_pre_update_serve_runtimes(plan) -> list[dict]:
-    """Pre-update serve/dashboard/webapp runtimes that are STILL the same process — i.e. live on the
+    """Pre-update serve/dashboard runtimes that are STILL the same process — i.e. live on the
     pre-update code generation. Identity is the incarnation ``(pid, create_time)``, never the PID
     alone: ``ledger_entries()`` prunes dead entries, but a correctly restarted serve can come back
     on the same number. Fail closed on missing evidence (unreadable ledger, no incarnation on either
@@ -30,17 +28,22 @@ def _surviving_pre_update_serve_runtimes(plan) -> list[dict]:
     planned: dict[int, dict] = {}
     try:
         for runtime in getattr(plan, "runtimes", ()) or ():
-            if getattr(runtime, "kind", None) not in _SERVE_KINDS:
+            if getattr(runtime, "kind", None) not in ("serve", "dashboard"):
                 continue
             pid = getattr(runtime, "pid", None)
             if not isinstance(pid, int) or pid <= 0:
                 continue
             detail = getattr(runtime, "detail", None)
+            detail = detail if isinstance(detail, dict) else {}
             planned[pid] = {
                 "pid": pid, "kind": str(getattr(runtime, "kind", "")),
                 "profile": str(getattr(runtime, "profile", "")),
                 "supervisor": str(getattr(runtime, "supervisor", "")),
-                "_create_time": _numeric(detail.get("create_time") if isinstance(detail, dict) else None)}
+                "_create_time": _numeric(detail.get("create_time"))}
+            if detail.get("systemd_unit"):
+                # The owning unit and scope name the exact restart command (#141021).
+                planned[pid]["systemd_unit"] = str(detail["systemd_unit"])
+                planned[pid]["systemd_scope"] = detail.get("systemd_scope")
     except Exception as exc:
         logger.debug("Could not read planned serve runtimes: %s", exc)
         return []
@@ -51,7 +54,7 @@ def _surviving_pre_update_serve_runtimes(plan) -> list[dict]:
         live: dict[int, float | None] = {
             entry["pid"]: _numeric(entry.get("create_time"))
             for entry in ledger_entries()
-            if entry.get("purpose") in _SERVE_KINDS and isinstance(entry.get("pid"), int)}
+            if entry.get("purpose") in ("serve", "dashboard") and isinstance(entry.get("pid"), int)}
     except Exception as exc:
         logger.debug("Serve/dashboard survivor probe failed: %s", exc)
         live = None
@@ -117,7 +120,7 @@ def _run_fresh_recovery_process(
             "profiles": profiles, "supervisors": candidates,
             "serve_units": {"recover": recover_serve, "skip": _qualified_serve_skips(skip_units)}}),
         "capture_output": True, "text": True, "encoding": "utf-8", "errors": "replace",
-        "check": False, "env": env,
+        "env": env,
         # Gateway profiles run sequentially at up to 90s each, plus the serve pass's own
         # restart + settle budget — don't kill a recovery that was working.
         "timeout": max(180, 30 + 90 * len(profiles) + (150 if recover_serve else 0))}
@@ -127,7 +130,7 @@ def _run_fresh_recovery_process(
     else:
         kwargs["start_new_session"] = True
     try:
-        return subprocess.run(command, **kwargs)
+        return subprocess.run(command, **kwargs, check=False)
     except (OSError, subprocess.TimeoutExpired) as exc:
         logger.warning("Fresh gateway restart recovery failed: %s", exc)
         return None
@@ -236,9 +239,16 @@ def _warn_stale_serve_runtimes(rows) -> None:
         print(
             f"      pid {row.get('pid')} — {row.get('kind')}"
             f" (profile {row.get('profile') or 'default'}, {row.get('supervisor') or 'unknown'})")
-    print("    Ask their owner to relaunch `hermes serve` / `hermes dashboard`, or reconnect Desktop for an SSH backend.")
-    if sys.platform == "linux" and any(row.get("supervisor") == "systemd" for row in rows):
-        print("    For unit-managed backends: `systemctl --user restart hermes-serve.service`.")
+    unit_rows = [row for row in rows if row.get("supervisor") == "systemd"]
+    if len(unit_rows) < len(rows):
+        print("    Ask their owner to relaunch `hermes serve` / `hermes dashboard`, or reconnect Desktop for an SSH backend.")
+    # A unit-managed backend restarts through its own unit and scope — never "ask the owner to
+    # relaunch", and never a hardcoded user-scope hermes-serve (#141021).
+    from hermes_cli.main_dashboard import _format_restart_commands, _systemd_restart_commands
+
+    for row in unit_rows:
+        commands = _systemd_restart_commands(row.get("systemd_unit") or "<unit>", row.get("systemd_scope"))
+        print(f"    pid {row.get('pid')} is managed by systemd: {_format_restart_commands(commands)}")
     if sys.platform == "darwin" and any(row.get("supervisor") == "launchd" for row in rows):
         print("    For launchd-managed backends: `launchctl kickstart -k gui/$UID/<label>`.")
 

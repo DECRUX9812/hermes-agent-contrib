@@ -90,9 +90,9 @@ describe('composerFocusBlockedBySurface', () => {
     expect(composerFocusBlockedBySurface()).toBe(false)
   })
 
-  it.each(['data-terminal', 'data-keyboard-surface'])('blocks when focus is inside a %s owner', attr => {
+  it('blocks when focus is inside a terminal', () => {
     const term = document.createElement('div')
-    term.setAttribute(attr, '')
+    term.setAttribute('data-terminal', '')
     const inner = document.createElement('div')
     term.append(inner)
     document.body.append(term)

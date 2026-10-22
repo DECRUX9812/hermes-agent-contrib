@@ -267,13 +267,11 @@ export async function openNewWindow(route?: { connectionId: null | string; profi
 /** Pop the in-app Browser into its own OS window. Returns whether the
  *  window opened so the caller can dock the tab again on failure. */
 export async function openBrowserInNewWindow(tabId: string): Promise<boolean> {
-  const openBrowserWindow = window.hermesDesktop?.openBrowserWindow
-
-  if (!tabId || typeof openBrowserWindow !== 'function') {
+  if (!tabId || !canOpenBrowserWindow()) {
     return false
   }
 
-  return runWindowOpen(() => openBrowserWindow(tabId), 'Could not pop out browser')
+  return runWindowOpen(() => window.hermesDesktop.openBrowserWindow(tabId), 'Could not pop out browser')
 }
 
 // Resume a session in the user's own terminal emulator, running the TUI there.
@@ -283,14 +281,12 @@ export async function openSessionInTerminal(
   sessionId: string,
   opts?: { cwd?: string; profile?: string }
 ): Promise<void> {
-  const openInTerminal = typeof window !== 'undefined' ? window.hermesDesktop?.openSessionInTerminal : undefined
-
-  if (!sessionId || typeof openInTerminal !== 'function') {
+  if (!sessionId || !canOpenSessionInTerminal()) {
     return
   }
 
   await runWindowOpen(
-    () => openInTerminal(sessionId, opts),
+    () => window.hermesDesktop.openSessionInTerminal(sessionId, opts),
     'Could not open chat in a terminal'
   )
 }

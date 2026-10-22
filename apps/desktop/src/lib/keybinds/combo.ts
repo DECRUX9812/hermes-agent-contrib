@@ -274,7 +274,6 @@ const INPUT_SAFE_ACTIONS = new Set([
   'composer.dictate',
   'keybinds.openPanel',
   'nav.commandPalette',
-  'nav.quickOpen',
   'session.next',
   'session.prev',
   'view.findInPage'

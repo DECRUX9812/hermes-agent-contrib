@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from agent.delegation_context import owned_kanban_task
 from agent.prompt_builder import (
-    ASYNC_HANDOFF_GUIDANCE, DEFAULT_AGENT_IDENTITY, EXECUTION_GUIDANCE_MODELS, GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
+    DEFAULT_AGENT_IDENTITY, EXECUTION_GUIDANCE_MODELS, GOOGLE_MODEL_OPERATIONAL_GUIDANCE,
     HERMES_AGENT_HELP_GUIDANCE, HERMES_AGENT_HELP_GUIDANCE_NO_SKILLS, KANBAN_GUIDANCE,
     PARALLEL_TOOL_CALL_GUIDANCE, PLATFORM_HINTS, SESSION_SEARCH_GUIDANCE,
     SKILLS_GUIDANCE, STEER_CHANNEL_NOTE, TASK_COMPLETION_GUIDANCE, TELEGRAM_RICH_MESSAGES_HINT,
@@ -342,13 +342,18 @@ def _auto_load_parts(agent: Any) -> list[str]:
 
 
 def _bot_mode_parts(agent: Any) -> list[str]:
-    """Bot Mode teammate protocol — in a bot's canonical "Bot Chat" or a marked bot
-    topic. Marks the prompt timeless (the volatile date line is dropped) since a birth
+    """Bot Mode teammate protocol — only in a bot's canonical "Bot Chat" session.
+    Marks the prompt timeless (the volatile date line is dropped) since a birth
     date pinned in a months-long session is misinformation."""
     parts: list[str] = []
     try:
-        from tools.bot_mode_probe import bot_powered_session, epoch_line, get_bot_mode_protocol_section
-        _bot_section = get_bot_mode_protocol_section(_agent_home(agent)) if bot_powered_session(agent) else None
+        from tools.bot_mode_probe import BOT_CHAT_TITLE, epoch_line, get_bot_mode_protocol_section
+        _title = str(getattr(agent, "_session_title_hint", "") or "").strip()
+        if not _title:
+            _sdb = getattr(agent, "_session_db", None)
+            _sid = getattr(agent, "session_id", None)
+            _title = str((_sdb.get_session_title(_sid) if (_sdb and _sid) else None) or "").strip()
+        _bot_section = get_bot_mode_protocol_section(_agent_home(agent)) if _title == BOT_CHAT_TITLE else None
         if _bot_section:
             parts.append(_bot_section)
             # Capability epoch lets the restore path rebuild ONCE per
@@ -358,38 +363,6 @@ def _bot_mode_parts(agent: Any) -> list[str]:
     except Exception:
         pass
     return parts
-
-
-def _team_parts(agent: Any) -> list[str]:
-    """Team context (role, boss, mission, teammates, top lessons) for a profile that holds a seat
-    on a team (tools/bot_team.py). Any surface — Desktop, Slack, CLI — since the seat belongs to
-    the profile, not the chat. Part of the session-start prompt only, like every other block here,
-    so it never touches the cache mid-conversation; Bot Chat's epoch refreshes it on change."""
-    try:
-        from tools.bot_mode_probe import _hermes_root, _profile_name, _resolve_home
-        from tools.bot_team import prompt_section
-
-        home = _resolve_home(_agent_home(agent))
-        section = prompt_section(_hermes_root(home), _profile_name(home))
-        return [section] if section else []
-    except Exception:
-        return []
-
-
-def _team_room_parts(agent: Any) -> list[str]:
-    """The orchestrated-team-room rule for a member session minted inside one (``team_room``
-    marker — tools/bot_mode_probe.py). Tells the lead it alone hears the user and must delegate,
-    and tells everyone else it woke only because it was addressed."""
-    try:
-        from tools.bot_mode_probe import (
-            _profile_name, _resolve_home, team_room_lead, team_room_section, team_room_session)
-
-        if not team_room_session(agent):
-            return []
-        section = team_room_section(team_room_lead(agent), _profile_name(_resolve_home(_agent_home(agent))))
-        return [section] if section else []
-    except Exception:
-        return []
 
 
 def _ambient_file_safety_profile_name() -> str:
@@ -444,6 +417,12 @@ def _default_platform_hint(platform_key: str) -> str:
         try:
             from gateway.platform_registry import platform_registry
             _entry = platform_registry.get(platform_key)
+            if _entry is None:
+                # A prompt can be built before anything ran plugin discovery (direct builders,
+                # one-shot callers); the hint lives on the plugin's entry, so discover (idempotent).
+                from hermes_cli.plugins import discover_plugins
+                discover_plugins()
+                _entry = platform_registry.get(platform_key)
             hint = (_entry and _entry.platform_hint) or ""
         except Exception:
             pass
@@ -555,7 +534,7 @@ def _memory_parts(agent: Any) -> list[str]:
     # configuration has already gated off (#81014).
     if agent._memory_manager:
         try:
-            from agent.memory_manager import memory_provider_tools_exposed as _mem_exposed
+            from agent.memory_manager_tools import memory_provider_tools_exposed as _mem_exposed
         except Exception:
             _mem_exposed = None
         if _mem_exposed is None or _mem_exposed(agent):
@@ -603,10 +582,6 @@ def _guidance_parts(agent: Any) -> list[str]:
     if _model_gate(getattr(agent, "_execution_guidance", "auto"), agent.model, EXECUTION_GUIDANCE_MODELS):
         from agent.prompt_builder import execution_guidance_text
         parts.append(execution_guidance_text(agent.valid_tool_names))
-    # delegate_task background delivery is intentionally between turns. Put this after the generic persistence
-    # blocks so their "keep working" rule cannot turn the required yield into no-op/polling activity.
-    if "delegate_task" in agent.valid_tool_names:
-        parts.append(ASYNC_HANDOFF_GUIDANCE)
     return parts
 
 
@@ -733,8 +708,6 @@ def _post_workspace_parts(agent: Any) -> list[str]:
             pass  # Probe failure must never block prompt build.
     if getattr(agent, "_bot_mode_protocol", True):
         parts.extend(_bot_mode_parts(agent))
-        parts.extend(_team_parts(agent))
-        parts.extend(_team_room_parts(agent))
     parts.append(platform_hint(agent))
     return parts
 

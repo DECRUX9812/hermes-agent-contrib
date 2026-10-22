@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { makeSessionInfo } from '@/test/session-info'
 import type { SessionInfo, SessionSearchResult } from '@/types/hermes'
 
-import { mergeSearchResults } from './sidebar-search'
+import { mergeSearchResults } from './index'
 
 const TARGET_ID = '20260914_183005_3738d0'
 

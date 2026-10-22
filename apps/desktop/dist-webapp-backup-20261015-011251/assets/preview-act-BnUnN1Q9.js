@@ -1,0 +1,1 @@
+import{t as e}from"./preview-act-BSiUJrqB.js";export{e as actOnActivePreview};

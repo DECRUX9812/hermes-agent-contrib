@@ -145,6 +145,7 @@ def check_legacy_desktop_checkout() -> None:
             return subprocess.run(
                 ["git", "-C", str(checkout), *args],
                 capture_output=True, text=True, encoding="utf-8", timeout=10,
+                check=False,
             )
         except (OSError, subprocess.SubprocessError):
             return None
@@ -262,6 +263,9 @@ def _check_scratch_dir(hermes_home: Path, _DHH: str) -> None:
     scratch = get_scratch_dir(hermes_home, prune=False)
     size = _human_bytes(scratch_dir_usage_bytes(scratch))
     check_ok(f"{_DHH}/cache/scratch/ is the scratch dir (TMPDIR; {size}, entries pruned after {SCRATCH_MAX_IDLE_HOURS}h idle)")
+    from hermes_constants_scratch_stuck import removal_hint, stuck_entries
+    for entry in stuck_entries(scratch):
+        check_warn(f"{_DHH}/cache/scratch/{entry.name}/ holds files you may not delete, so the prune skips it — {removal_hint(entry)}")
     for name, nbytes in unpruned_cache_hogs(hermes_home):
         check_warn(
             f"{_DHH}/cache/{name}/ is {_human_bytes(nbytes)} and outside every pruner "
@@ -274,9 +278,9 @@ def _check_scratch_dir(hermes_home: Path, _DHH: str) -> None:
 
 
 def _session_count(state_db_path: Path):
-    from hermes_cli.sqlite_safe_read import connect_tracked
+    import sqlite3
     # mode=ro: doctor is a reader; a writable open of a gateway-held WAL DB is the second-writer class (#103339).
-    conn = connect_tracked(read_only_db_uri(state_db_path), uri=True)
+    conn = sqlite3.connect(read_only_db_uri(state_db_path), uri=True)
     try:
         return conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0]
     finally:
@@ -292,7 +296,6 @@ def _write_health_reason(state_db_path: Path, *, should_fix: bool):
     that probe is the second-writer class (#103339), so probe a read-only snapshot instead; a quiet
     store is probed in place. Returns the failure reason, or None when healthy or skipped."""
     from hermes_state_repair import _db_opens_cleanly, _live_writer_holds_db
-    from hermes_cli.sqlite_safe_read import connect_tracked
     if not _live_writer_holds_db(state_db_path):
         return _db_opens_cleanly(state_db_path)
     if not should_fix and state_db_path.stat().st_size > _WRITE_PROBE_SNAPSHOT_MAX_BYTES:
@@ -303,7 +306,7 @@ def _write_health_reason(state_db_path: Path, *, should_fix: bool):
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
         snapshot = Path(tmp) / "state.db"
-        src = connect_tracked(read_only_db_uri(state_db_path), uri=True, timeout=1.0)
+        src = sqlite3.connect(read_only_db_uri(state_db_path), uri=True, timeout=1.0)
         try:
             dest = sqlite3.connect(str(snapshot))
             try:
@@ -567,7 +570,7 @@ def _gh_authenticated() -> bool:
     if not _safe_which("gh"):
         return False
     try:
-        result = subprocess.run(["gh", "auth", "status"], capture_output=True, timeout=10)
+        result = subprocess.run(["gh", "auth", "status"], capture_output=True, timeout=10, check=False)
         return result.returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return False
@@ -638,7 +641,8 @@ def _check_memory_provider(should_fix: bool, f: Finding) -> None:
 
 @doctor_check("")  # best-effort: profile enumeration must never break doctor
 def _check_profiles(should_fix: bool, f: Finding) -> None:
-    from hermes_cli.profiles import list_profiles, _get_wrapper_dir, profile_exists
+    from hermes_constants import PROFILE_ID_RE
+    from hermes_cli.profiles import _wrapper_path, list_profiles, _get_wrapper_dir, profile_exists
     import re as _re
     named_profiles = [p for p in list_profiles() if not p.is_default]
     if not named_profiles:
@@ -650,7 +654,7 @@ def _check_profiles(should_fix: bool, f: Finding) -> None:
         parts = [text for cond, text in (
             (p.gateway_running, "gateway running"), (p.model, (p.model or "")[:30]),
             (not (p.path / "config.yaml").exists(), "⚠ missing config"), (not (p.path / ".env").exists(), "no .env"),
-            (not (wrapper_dir / p.name).exists(), "no alias")) if cond]
+            (p.alias_path is None, "no alias")) if cond]
         check_ok(f"  {p.name}: {', '.join(parts) if parts else 'configured'}")
     # Orphan wrappers
     if wrapper_dir.is_dir():
@@ -660,7 +664,9 @@ def _check_profiles(should_fix: bool, f: Finding) -> None:
             with warn_on_error(""):
                 _m = _re.search(r"hermes -p (\S+)", wrapper.read_text(encoding="utf-8-sig"))
                 if _m and not profile_exists(_m.group(1)):
-                    check_warn(f"Orphan alias: {wrapper.name} → profile '{_m.group(1)}' no longer exists")
+                    alias = wrapper.stem if _wrapper_path(wrapper.stem) == wrapper else wrapper.name
+                    fix = f"hermes profile alias {alias} --remove" if PROFILE_ID_RE.match(alias) else f"delete {wrapper}"
+                    check_warn(f"Orphan alias: {alias} → profile '{_m.group(1)}' no longer exists", f"(remove with: {fix})")
     # Same helper as the multiplex migration preflight, so doctor names the duplicates that make
     # `hermes gateway migrate --multiplex` refuse (and made pre-multiplex standalone gateways race).
     from hermes_cli.gateway_migrate import duplicate_credential_findings

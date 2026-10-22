@@ -78,7 +78,6 @@ vi.mock('./group-chat', async () => {
     assignLegacyThreads: (log: unknown[]) => log,
     handleSessionsGatewayTransition: vi.fn(),
     pullGroupChatServerState: async () => false,
-    refreshGroupChatLimits: vi.fn(async () => undefined),
     scheduleGroupChatServerSync: vi.fn(),
     setGroupChatSyncDisposed: vi.fn(),
     stopGroupChatServerSync: vi.fn(),

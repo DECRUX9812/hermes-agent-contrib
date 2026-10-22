@@ -174,7 +174,7 @@ class TestConnectCleanup:
              patch.object(Path, "exists", autospec=True, side_effect=_path_exists), \
              patch("subprocess.run", return_value=install_result), \
              patch("gateway.status.acquire_scoped_lock", return_value=(True, None)), \
-             patch("gateway.status.release_scoped_lock") as mock_release:
+             patch("gateway.status_scoped_locks.release_scoped_lock") as mock_release:
             result = await adapter.connect()
 
         assert result is False
@@ -466,9 +466,8 @@ class TestHttpSessionLifecycle:
              patch("plugins.platforms.whatsapp.adapter.asyncio.sleep", new_callable=AsyncMock):
             await adapter.disconnect()
 
-        # ``adapter.subprocess`` is the process-wide subprocess module; an unrelated
-        # daemon git probe can land on this mock, so look for the taskkill among the calls.
-        assert ["taskkill", "/PID", "12345", "/T"] in [call.args[0] for call in mock_run.call_args_list]
+        mock_run.assert_called_once()
+        assert mock_run.call_args.args[0] == ["taskkill", "/PID", "12345", "/T"]
         mock_proc.terminate.assert_not_called()
         mock_proc.kill.assert_not_called()
 

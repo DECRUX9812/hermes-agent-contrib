@@ -31,11 +31,7 @@ async function run() {
       primary.focus()
     },
     isQuittingForHandoff: () => false,
-    log: console.log,
-    focusSession: () => {},
-    newSession: () => {},
-    quickEntryEnabled: () => false,
-    summonQuickEntry: () => {}
+    log: console.log
   })
 
   controller.registerWindow(primary, { closeToTray: true })

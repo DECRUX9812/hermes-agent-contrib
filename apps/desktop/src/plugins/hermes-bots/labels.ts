@@ -127,24 +127,6 @@ export function botProfileIdentity(name: string, title: string) {
   }
 }
 
-/** G3 — the 'role' one-liner under a bot's name. An explicit `meta.role` wins;
- *  absent it, the subtitle derives from the description's first sentence (the
- *  title already IS the display name, so it can't subtitle itself). Empty
- *  string when nothing says what the bot is for — callers render no line. */
-export function botRole(bot: Partial<RosterRow>, meta?: BotMeta | null): string {
-  const explicit = meta?.role?.trim()
-
-  if (explicit) {
-    return explicit
-  }
-
-  const first = stripPreviewMarkdown(meta?.description || bot?.description || '')
-    .split(/[.!?]\s|\n/)[0]
-    ?.trim()
-
-  return (first || '').slice(0, 60)
-}
-
 /** Flatten markdown syntax out of a one-line roster preview so rows read
  *  like Discord's — no raw **bold**, `code`, > quotes, or [link](url)
  *  characters in the preview line. */
@@ -159,27 +141,6 @@ export function stripPreviewMarkdown(text: unknown) {
     .replace(/~~(.*?)~~/g, '$1')
     .replace(/^\s{0,3}#{1,6}\s+/gm, '')
     .replace(/^\s{0,3}>\s?/gm, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-/** One clean roster-preview line for the list: stripPreviewMarkdown already
- *  handles per-line markdown (headings/quotes anchored to line starts) and
- *  collapses the result, but a preview the backend ALREADY flattened to one
- *  line keeps its heading markers mid-sentence ("… the whole thing. ## The
- *  overlay bug"). This pass removes those leftovers plus a leading list
- *  bullet, so every row reads as plain prose — content only; speaker prefixes
- *  belong in the caller's hover title, not the line. */
-export function cleanPreviewLine(text: unknown) {
-  return stripPreviewMarkdown(text)
-    .replace(/(^|\s)#{1,6}\s+/g, '$1')
-    .replace(/^\s*[-*•]\s+/, '')
-    // A message cut mid-code-span/mid-bold leaves ONE delimiter behind
-    // ("…root cause `gro…") — paired markers are already gone, so any that
-    // remain are unmatched noise. Backticks are never prose; `**` never is
-    // either once its pair fell outside the preview window.
-    .replace(/`/g, '')
-    .replace(/\*\*/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 }

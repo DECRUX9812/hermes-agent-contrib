@@ -3,7 +3,7 @@ import type { ToolLabel } from '@hermes/shared'
 import { TOOL_LABELS_ARG } from '@/lib/connector-tools'
 import { firstStringField, normalize } from '@/lib/text'
 import { isTodoToolName, parseTodos } from '@/lib/todos'
-import { mcpAppRef, type ToolResultMetadata } from '@/lib/tool-result-metadata'
+import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
 import type { SessionMessage, StoredToolCallLabels } from '@/types/hermes'
 
 import type { ChatMessage, ChatMessagePart, GatewayEventPayload } from './types'
@@ -12,7 +12,7 @@ function toolId(payload: GatewayEventPayload | undefined): string {
   return payload?.tool_id || payload?.tool_call_id || payload?.id || ''
 }
 
-export const QUESTION_CARD_TOOLS = new Set(['clarify', 'setup_choose'])
+export const QUESTION_CARD_TOOLS = new Set(['clarify'])
 
 const REQUEST_BACKED_TOOLS = new Set([...QUESTION_CARD_TOOLS, 'setup_mcp'])
 
@@ -318,7 +318,6 @@ function toolResultMetadata(
   return {
     ...previous,
     ...(payload?.inline_diff !== undefined ? { inline_diff: payload.inline_diff } : {}),
-    ...(mcpAppRef(payload?.mcp_app) ? { mcp_app: mcpAppRef(payload?.mcp_app) } : {}),
     ...(payload?.summary !== undefined ? { summary: payload.summary } : {}),
     ...(payload?.message !== undefined ? { message: payload.message } : {}),
     ...(payload?.preview !== undefined ? { preview: payload.preview } : {}),
@@ -412,6 +411,10 @@ export interface SettledClarifyProjection {
   messages: ChatMessage[]
   streamId: string | null
 }
+
+/** A tool call that neither returned nor was sealed: it is still running. */
+export const hasUnresolvedToolCall = (message: ChatMessage) =>
+  message.parts.some(part => part.type === 'tool-call' && part.result === undefined && part.completedAt === undefined)
 
 /**
  * Find the message that owns a tool call, by its stable call id, anywhere in
@@ -826,17 +829,8 @@ export function toolPartFromStoredCall(
 function storedToolResultMetadata(toolMessage: SessionMessage): ToolResultMetadata | undefined {
   const display = parseMaybeJsonObject(toolMessage.display_metadata)
   const metadata = parseMaybeJsonObject(display.tool_result_metadata)
-  const retried = parseMaybeJsonObject(display.retried).result
 
-  if (typeof metadata.inline_diff !== 'string' && retried === undefined && !mcpAppRef(metadata.mcp_app)) {
-    return undefined
-  }
-
-  return {
-    ...(typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : {}),
-    ...(mcpAppRef(metadata.mcp_app) ? { mcp_app: mcpAppRef(metadata.mcp_app) } : {}),
-    ...(retried === undefined ? {} : { retried })
-  }
+  return typeof metadata.inline_diff === 'string' ? { inline_diff: metadata.inline_diff } : undefined
 }
 
 export function applyStoredToolResult(messages: ChatMessage[], toolMessage: SessionMessage): boolean {

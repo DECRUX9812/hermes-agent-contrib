@@ -37,7 +37,7 @@ const BLOB_MIME_EXTENSION: Record<string, string> = {
   'image/x-icon': '.ico'
 }
 
-export function blobExtension(blob: Blob): string {
+function blobExtension(blob: Blob): string {
   const mime = normalize(blob.type.split(';')[0])
 
   return BLOB_MIME_EXTENSION[mime] || '.png'
@@ -107,25 +107,6 @@ export interface DroppedFile {
   lineEnd?: number
   /** A link dragged out of a browser (`text/uri-list`). Path-less; becomes an `@url:` chip. */
   url?: string
-}
-
-/** Resolve a native drop to a host-visible path, staging browser File bytes
- * when the shell cannot expose a native filesystem path. Shared by both the
- * main composer and message-edit composer so neither silently drops files. */
-export async function stageDroppedFilePath(candidate: DroppedFile): Promise<string> {
-  if (candidate.path) {
-    return candidate.path
-  }
-
-  if (!candidate.file || !window.hermesDesktop?.stageFileForAttach) {
-    return ''
-  }
-
-  try {
-    return await window.hermesDesktop.stageFileForAttach(candidate.file)
-  } catch {
-    return ''
-  }
 }
 
 /** MIME emitted by in-app drag sources (project tree, gutter line numbers).
@@ -433,16 +414,7 @@ export function useComposerActions({
    *  attach paths funnel through here. */
   const attachToMain = useCallback(
     (attachment: ComposerAttachment) => {
-      const stagedUpload = attachment.kind === 'file' && attachment.path
-        ? window.hermesDesktop?.getStagedFileForAttach?.(attachment.path)
-        : undefined
-
-      const displayName = attachment.kind === 'file' && attachment.path
-        && attachment.label === pathLabel(attachment.path)
-        ? window.hermesDesktop?.getStagedFileDisplayName?.(attachment.path)
-        : undefined
-
-      scope.add({ ...attachment, ...(stagedUpload ? { stagedUpload } : {}), ...(displayName ? { label: displayName } : {}) })
+      scope.add(attachment)
       requestComposerFocus(scope.target)
     },
     [scope]
@@ -726,7 +698,7 @@ export function useComposerActions({
           id: attachmentId('file', savedPath),
           kind: 'file',
           label: `${copy.pastedContent} (${pasteSizeLabel(text)})`,
-          detail: copy.pastedAsFile,
+          detail: contextPath(savedPath, currentCwd),
           refText: `@file:${formatRefValue(savedPath)}`,
           path: savedPath,
           titlePreview: text.slice(0, LARGE_PASTE_TITLE_PREVIEW_CHARS)
@@ -739,7 +711,7 @@ export function useComposerActions({
         return false
       }
     },
-    [attachToMain, copy.pasteAttachFailed, copy.pastedAsFile, copy.pastedContent]
+    [attachToMain, copy.pasteAttachFailed, copy.pastedContent, currentCwd]
   )
 
   const attachContextFolderPath = useCallback(
@@ -816,7 +788,7 @@ export function useComposerActions({
         const fallbackPath =
           !knownPath && window.hermesDesktop?.getPathForFile ? window.hermesDesktop.getPathForFile(file) : ''
 
-        let filePath = knownPath || fallbackPath || ''
+        const filePath = knownPath || fallbackPath || ''
         const isImage = file.type.startsWith('image/') || isImagePath(file.name) || (filePath && isImagePath(filePath))
 
         if (isImage) {
@@ -837,10 +809,6 @@ export function useComposerActions({
           lastFailure = `Could not attach ${file.name || 'image'}`
 
           continue
-        }
-
-        if (!filePath) {
-          filePath = await stageDroppedFilePath(candidate)
         }
 
         if (filePath && attachContextFilePath(filePath)) {

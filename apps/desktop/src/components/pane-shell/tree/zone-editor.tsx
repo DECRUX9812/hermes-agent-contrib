@@ -46,10 +46,9 @@ import {
   MULTIPLIER,
   splitZone
 } from './grid-model'
-import { gridIsTreeExpressible, gridToTree } from './grid-to-tree'
+import { gridIsTreeExpressible, gridToTree, type PanePlacementHint } from './grid-to-tree'
 import { allPaneIds } from './model'
 import { applyLayoutPreset, saveLayoutPresetTree } from './presets'
-import { paneChrome } from './renderer/track-model'
 import { $layoutTree } from './store'
 
 export const $zoneEditorOpen = atom(false)
@@ -371,11 +370,11 @@ export function ZoneEditor() {
     // zones are assigned by ROLE (main/left/right/bottom), not index order.
     const contributions = registry.getArea('panes')
 
-    const placed = paneIds.map(id => {
-      const { placement } = paneChrome(contributions.find(c => c.id === id))
-
-      return { id, placement: placement === 'floating' ? undefined : placement }
-    })
+    const placed = paneIds.map(id => ({
+      id,
+      placement: (contributions.find(c => c.id === id)?.data as { placement?: PanePlacementHint } | undefined)
+        ?.placement
+    }))
 
     const tree = gridToTree(model, placed)
 

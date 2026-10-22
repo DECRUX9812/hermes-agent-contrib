@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { IS_MAC } from '@/lib/keybinds/combo'
 import { setAlwaysExternalLinks } from '@/store/external-links'
 import { $previewTabs, closeRightRail } from '@/store/preview'
-import { $connection } from '@/store/session'
 
 import {
   __resetLinkTitleCache,
@@ -43,8 +42,6 @@ function installTitleBridge(title: string) {
 afterEach(() => {
   __resetLinkTitleCache()
   closeRightRail()
-  $connection.set(null)
-  globalThis.document.documentElement.removeAttribute('data-hermes-desktop-host')
   setAlwaysExternalLinks(false)
   vi.restoreAllMocks()
   cleanup()
@@ -124,9 +121,9 @@ describe('external link helpers', () => {
     expect(bridge).toHaveBeenCalledTimes(1)
   })
 
-  // Electron's browser stays the default even against a remote gateway.
-  it.each(['local', 'remote'] as const)('opens an Electron web link in-app with a %s connection', async mode => {
-    $connection.set({ mode } as never)
+  // A web link belongs in the in-app browser now; the OS browser is the
+  // ⌘/Ctrl-click escape hatch.
+  it('opens a web link in the in-app browser', async () => {
     const openExternal = vi.fn().mockResolvedValue(undefined)
     installDesktopBridge({ openExternal: openExternal as unknown as Window['hermesDesktop']['openExternal'] })
 
@@ -137,23 +134,6 @@ describe('external link helpers', () => {
     expect(openExternal).not.toHaveBeenCalled()
     await waitFor(() => expect($previewTabs.get().at(-1)?.target.url).toBe('https://example.com/path/to/resource'))
   })
-
-  it.each([false, true])(
-    'opens a Webapp web link synchronously without adding a preview when always external is %s',
-    alwaysExternal => {
-      globalThis.document.documentElement.dataset.hermesDesktopHost = 'browser'
-      setAlwaysExternalLinks(alwaysExternal)
-      const openExternal = vi.fn().mockResolvedValue(undefined)
-      installDesktopBridge({ openExternal })
-
-      render(<ExternalLink href="https://example.com/path/to/resource">Example link</ExternalLink>)
-
-      fireEvent.click(screen.getByRole('link', { name: 'Example link' }))
-
-      expect(openExternal).toHaveBeenCalledExactlyOnceWith('https://example.com/path/to/resource')
-      expect($previewTabs.get()).toHaveLength(0)
-    }
-  )
 
   // Platform-specific on purpose (same rule as terminal links / middle-click):
   // ⌘ on macOS, Ctrl elsewhere. The suite runs as non-mac.
@@ -169,22 +149,18 @@ describe('external link helpers', () => {
     expect($previewTabs.get()).toHaveLength(0)
   })
 
-  it.each(['local', 'remote'] as const)(
-    'sends an Electron plain click to the OS browser when always external is on with a %s connection',
-    mode => {
-      $connection.set({ mode } as never)
-      const openExternal = vi.fn().mockResolvedValue(undefined)
-      installDesktopBridge({ openExternal: openExternal as unknown as Window['hermesDesktop']['openExternal'] })
-      setAlwaysExternalLinks(true)
+  it('sends a plain click to the OS browser when "always external" is on', () => {
+    const openExternal = vi.fn().mockResolvedValue(undefined)
+    installDesktopBridge({ openExternal: openExternal as unknown as Window['hermesDesktop']['openExternal'] })
+    setAlwaysExternalLinks(true)
 
-      render(<ExternalLink href="https://example.com/path/to/resource">Example link</ExternalLink>)
+    render(<ExternalLink href="https://example.com/path/to/resource">Example link</ExternalLink>)
 
-      fireEvent.click(screen.getByRole('link', { name: 'Example link' }))
+    fireEvent.click(screen.getByRole('link', { name: 'Example link' }))
 
-      expect(openExternal).toHaveBeenCalledExactlyOnceWith('https://example.com/path/to/resource')
-      expect($previewTabs.get()).toHaveLength(0)
-    }
-  )
+    expect(openExternal).toHaveBeenCalledWith('https://example.com/path/to/resource')
+    expect($previewTabs.get()).toHaveLength(0)
+  })
 
   it('treats only the HUD renderer as a native-link surface', () => {
     expect(hudForcesNativeLinks('')).toBe(false)

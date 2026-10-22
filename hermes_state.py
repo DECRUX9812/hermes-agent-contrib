@@ -7,7 +7,6 @@ splits sessions via parent_session_id chains; sessions are source-tagged
 
 import asyncio
 import atexit
-import contextlib
 import hashlib
 import json
 import logging
@@ -24,13 +23,9 @@ import uuid
 from collections import deque
 from contextlib import contextmanager, suppress
 from pathlib import Path
+from hermes_dir_acl import make_user_dir
 
-from hermes_constants import (
-    assert_named_profile_home_available,
-    get_hermes_home,
-    mkdir_under_hermes_home,
-    profile_deletion_marker_path,
-)
+from hermes_constants import get_hermes_home, mkdir_under_hermes_home
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, TypeVar, cast
 
 from hermes_state_common import (
@@ -72,6 +67,8 @@ from hermes_state_dbfile import (
     RetiredGenerationCaptureError, capture_retired_wal_generation, refuse_deleted_wal_generation,
 )
 from hermes_state_messages import SessionMessagesMixin
+from hermes_state_prune_rewrite import SessionPruneRewriteMixin
+from hermes_state_api_content import SessionApiContentMixin
 from hermes_state_coverage import SessionCoverageMixin
 from hermes_state_rewind import SessionRewindMixin
 from hermes_state_wal import (
@@ -79,7 +76,6 @@ from hermes_state_wal import (
 )
 from hermes_state_repair import _claim_repair_attempt, preflight_db_writability, repair_state_db_schema
 from hermes_state_titles import SessionTitlesMixin
-from hermes_state_tool_retries import SessionToolRetriesMixin
 from hermes_state_usage import SessionUsageMixin
 from hermes_state_maintenance import SessionMaintenanceMixin
 from hermes_state_gateway import SessionGatewayMixin
@@ -441,7 +437,7 @@ def divert_session_transcript_jsonl(session_id: str, messages) -> Optional[Path]
     if not sid or not messages:
         return None
     sessions_dir = get_hermes_home() / "sessions"
-    sessions_dir.mkdir(parents=True, exist_ok=True)
+    make_user_dir(sessions_dir, parents=True, exist_ok=True)
     path = sessions_dir / f"{sid}.jsonl"
     with path.open("a", encoding="utf-8") as handle:
         for msg in messages:
@@ -468,7 +464,7 @@ class SessionDB(
     SessionSessionsMixin, SessionFtsSetupMixin, SessionSearchMixin, SessionSchemaMixin,
     SessionPortabilityMixin, SessionTelegramTopicsMixin, SessionCompressionMixin,
     SessionGatewayMixin, SessionMaintenanceMixin, SessionUsageMixin, SessionTitlesMixin,
-    SessionMessagesMixin, SessionCoverageMixin, SessionRewindMixin, SessionProfileRepairMixin, SessionToolRetriesMixin,
+    SessionMessagesMixin, SessionPruneRewriteMixin, SessionApiContentMixin, SessionCoverageMixin, SessionRewindMixin, SessionProfileRepairMixin,
 ):
     """SQLite-backed session storage with FTS5 search; many reader threads, one writer (WAL)."""
 
@@ -583,12 +579,10 @@ class SessionDB(
         except Exception as exc:
             logger.warning("%s close failed for %s: %s", label, self.db_path, exc)
 
-    def __init__(self, db_path: Path | None = None, read_only: bool = False,
-                 expected_profile_incarnation: str | None = None):
+    def __init__(self, db_path: Path | None = None, read_only: bool = False):
         self.db_path = db_path or _default_db_path()
         _ensure_test_isolation(self.db_path)  # before any connection/pragma/mkdir
         self.read_only = read_only
-        self.expected_profile_incarnation = expected_profile_incarnation
         # Keep only the opening call site, never a frame (which pins caller locals).
         self._creation_site = "unknown"
         caller = None
@@ -654,34 +648,7 @@ class SessionDB(
         # registry (not individual callers) controls the connection lifecycle (#90837).
         self._shared_registry_owned = False
         initialization_complete = False
-
-        # Named profiles are explicit lifecycle objects. Path reuse after
-        # DELETE must not let a delayed opener attach to the replacement.
-        named_profile_marker = profile_deletion_marker_path(self.db_path.parent)
-        profile_lifecycle_stack = contextlib.ExitStack()
-
         try:
-            if named_profile_marker is not None and read_only:
-                from hermes_cli.profile_read_snapshot import profile_read_snapshot
-
-                self.expected_profile_incarnation = profile_lifecycle_stack.enter_context(
-                    profile_read_snapshot(self.db_path.parent, expected_profile_incarnation)
-                )
-            elif named_profile_marker is not None:
-                from hermes_cli.profile_incarnation import profile_incarnation_lease
-
-                # Keep profile create/delete/rename out until every path-based
-                # preflight, connect, PRAGMA, and schema-init operation has
-                # bound this handle to the checked generation. After that the
-                # tracked SQLite connection itself prevents removal/recreate
-                # until close(), without holding a lifecycle lock for the
-                # SessionDB object's full lifetime.
-                profile_lifecycle_stack.enter_context(
-                    profile_incarnation_lease(
-                        self.db_path.parent,
-                        expected_profile_incarnation,
-                    )
-                )
             if read_only:
                 self._open_read_only()
             else:
@@ -692,9 +659,6 @@ class SessionDB(
                     self._retire_connection = _prepare_connection_retirement()
                 self._open_writer()
             self._record_db_file_identity()
-            # Read-only snapshot validation must finish before publishing the
-            # handle; a raced replacement follows the same close-on-error path.
-            profile_lifecycle_stack.close()
             initialization_complete = True
         except Exception as exc:
             # Surface WHY via /resume and friends; callers keep their ``_session_db = None`` path.
@@ -711,31 +675,36 @@ class SessionDB(
                 # Test-isolation runs only (gated inside the helper): register
                 # for the suite-level leak sweep in tests/conftest.py.
                 _register_test_instance(self)
-            profile_lifecycle_stack.close()
 
     def _open_writer(self) -> None:
         """Writable open: preflight, zero-byte quarantine, connect + schema (one in-place repair of a
         malformed sqlite_master), generation stamp."""
-        self._assert_named_profile_available()
         # Never materialize a deleted/archived named profile's home: a multiplexer or Desktop backend
         # still holding the profile's route would otherwise re-scaffold it on the next turn (#94590).
         mkdir_under_hermes_home(self.db_path.parent)
-        # Read-only file/sidecar preflight BEFORE the first connection: an actionable message
-        # instead of an opaque "attempt to write a readonly database" from inside _init_schema.
-        preflight_db_writability(self.db_path, db_label="state.db")
         try:
             # Serialize zero-byte check, quarantine, connect and schema commit so concurrent
             # openers don't race the absent-path -> schema-commit window.
             if not self.db_path.exists() or has_invalid_sqlite_header_preopen(self.db_path):
+                # The directory must be writable before the lock file can be created in it; the
+                # directory never vanishes mid-quarantine, so checking it unlocked is race-free.
+                preflight_db_writability(self.db_path, db_label="state.db", directory_only=True)
                 with quarantine_cross_process_lock(self.db_path) as lock_acquired:
                     if not lock_acquired:
                         logger.warning(
                             "startup quarantine lock for %s not acquired within 5s; proceeding",
                             self.db_path,
                         )
+                    # Preflight under the lock: unlocked, it can list state.db just before a
+                    # concurrent opener renames it aside, and os.access on the vanished path
+                    # then reports a writable DB as "read-only for this user".
+                    preflight_db_writability(self.db_path, db_label="state.db")
                     self._handle_quarantine_if_invalid(already_locked=lock_acquired)
                     self._connect_and_init_with_lock_patience()
             else:
+                # Read-only file/sidecar preflight BEFORE the first connection: an actionable message
+                # instead of an opaque "attempt to write a readonly database" from inside _init_schema.
+                preflight_db_writability(self.db_path, db_label="state.db")
                 self._handle_quarantine_if_invalid(already_locked=False)
                 self._connect_and_init_with_lock_patience()
         except sqlite3.DatabaseError as exc:
@@ -767,10 +736,8 @@ class SessionDB(
         leaked tracked connection cannot block the forensic backup the writable heal takes next."""
         for attempt in range(_READ_ONLY_IOERR_RETRY_ATTEMPTS + 1):
             try:
-                self._assert_named_profile_available()
                 self._conn = conn = self._connect_read_only(timeout=_READ_BUSY_TIMEOUT_S)
                 try:
-                    self._assert_named_profile_available()
                     apply_database_pragmas(conn, db_label="state.db")
                     cursor = conn.cursor()
                     self._fts_enabled = self._fts_table_probe(cursor, "messages_fts") is True
@@ -835,7 +802,6 @@ class SessionDB(
             str(self.db_path), check_same_thread=False, timeout=1.0, isolation_level=None,
         )
         try:
-            self._assert_named_profile_available()
             conn.row_factory = sqlite3.Row
             mode = apply_wal_with_fallback(conn, db_label="state.db")
             # "wal" is also the *assumed* mode when the on-disk probe was blocked by a concurrent opener
@@ -854,15 +820,7 @@ class SessionDB(
             raise
         return conn
 
-    def _assert_named_profile_available(self) -> None:
-        if profile_deletion_marker_path(self.db_path.parent) is None:
-            return
-        assert_named_profile_home_available(self.db_path.parent)
-        from hermes_cli.profile_incarnation import assert_profile_incarnation_current
-        assert_profile_incarnation_current(self.db_path.parent, self.expected_profile_incarnation)
-
     def _connect_and_init(self) -> None:
-        self._assert_named_profile_available()
         # Refuse before sqlite3.connect (under the startup lock) so we cannot mint
         # a replacement WAL while a live writer still holds a deleted sidecar inode.
         refuse_deleted_wal_generation(self.db_path)
@@ -970,11 +928,13 @@ class SessionDB(
             return self._get_read_conn()
 
     @contextmanager
-    def _read_ctx(self) -> Iterator[sqlite3.Connection]:
+    def _read_ctx(self, *, reopen: bool = True) -> Iterator[sqlite3.Connection]:
         """Yield a connection for read-only statements: a pooled read-only
         connection with NO lock under WAL; otherwise (non-WAL, open failure,
         ceiling reached) the writer connection under self._lock — deliberate
-        degradation: slower beats EMFILE, which the supervisor cannot see."""
+        degradation: slower beats EMFILE, which the supervisor cannot see.
+        ``reopen=False``: a read after ``close()`` raises instead of reopening the
+        writer (an optional reader must not hold a home that is being deleted)."""
         conn = self._checkout_read_conn()
         if conn is not None:
             try:
@@ -995,6 +955,8 @@ class SessionDB(
             return
         with self._lock:
             if self._conn is None:  # close() raced a still-unwinding reader
+                if not reopen:
+                    raise sqlite3.ProgrammingError(f"SessionDB for {self.db_path} is closed")
                 self._reopen_after_close_locked(context="read")
             conn = cast(sqlite3.Connection, self._conn)
             if self._wal_active or self.read_only:  # WAL: no SHARED-lock wait; ro: opened with the read budget

@@ -68,10 +68,6 @@ def _maybe_schedule_auto_continue(sid: str, session: dict, session_key: str) -> 
         return None
     if not marker.get("auto_continue", True):
         return None  # The mailbox owns recovery and receipt identity for imported turns.
-    from agent.initiate_setup_prompt import intro_resends
-    if intro_resends(marker["prompt"], _session_source(session)):
-        clear_turn_marker(home, session_key)  # the desktop intro sends /initiate-setup again itself
-        return None
     # Ownership, not forensics: a sibling backend sharing this HERMES_HOME can be mid-turn on this very session, so
     # its live marker says "someone is working on it", never "someone crashed". Leave the marker for its writer —
     # clearing it would cancel the live turn's own account of itself. See #94778.
@@ -538,9 +534,6 @@ def _inflight_snapshot(session: dict) -> dict | None:
     if not (user or assistant or streaming or error):
         return None
     snapshot = {"assistant": assistant, "streaming": streaming, "user": user}
-    # Legacy in-memory turns omit provenance; newer snapshots match history's classification.
-    if isinstance(turn.get("user_originated"), bool):
-        snapshot["user_originated"] = turn["user_originated"]
     if isinstance(display_kind := turn.get("display_kind"), str) and display_kind:
         snapshot["display_kind"] = display_kind
     if isinstance(display_metadata := turn.get("display_metadata"), dict):

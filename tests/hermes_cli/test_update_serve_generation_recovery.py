@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -240,17 +241,16 @@ def test_restarted_serve_leaves_no_survivor(monkeypatch):
 
 
 
-@pytest.mark.parametrize("kind", ["dashboard", "webapp"])
-def test_dashboard_survivors_count_too(monkeypatch, kind):
+def test_dashboard_survivors_count_too(monkeypatch):
     monkeypatch.setattr(
         _identity_module(),
         "ledger_entries",
-        lambda *a, **k: [{"pid": 77, "purpose": kind}],
+        lambda *a, **k: [{"pid": 77, "purpose": "dashboard"}],
     )
     rows = update_cmd._surviving_pre_update_serve_runtimes(
-        _plan(_runtime(kind, "default", "manual-serve", 77))
+        _plan(_runtime("dashboard", "default", "manual-serve", 77))
     )
-    assert [row["kind"] for row in rows] == [kind]
+    assert [row["kind"] for row in rows] == ["dashboard"]
 
 
 def test_unreadable_ledger_fails_closed(monkeypatch):
@@ -876,8 +876,58 @@ def test_no_survivors_prints_nothing(capsys):
 # ---------------------------------------------------------------------------
 
 
-def test_recovery_module_reports_serve_units_in_a_real_process():
+def _fake_systemctl_path(tmp_path):
+    """A ``PATH`` whose first ``systemctl`` is a recording fake, plus its argv log.
+
+    The child interpreter is outside the in-process live-system guard and resolves
+    ``systemctl`` through ``shutil.which``; without this it restarted the developer's
+    real hermes-serve / hermes-dashboard units. The fake lists one active user-scope
+    ``hermes-serve.service`` whose ``MainPID`` changes once it is restarted.
+    """
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    log = tmp_path / "systemctl.log"
+    marker = tmp_path / "restarted"
+    fake = bin_dir / "systemctl"
+    fake.write_text(
+        "#!/bin/sh\n"
+        f"printf '%s\\n' \"$*\" >> '{log}'\n"
+        'case " $* " in\n'
+        '  *" --user list-units hermes-serve* "*) echo "hermes-serve.service loaded active running Hermes" ;;\n'
+        '  *" is-active "*) echo active ;;\n'
+        f"  *\" show \"*) if [ -e '{marker}' ]; then echo 200; else echo 100; fi ;;\n"
+        f"  *\" restart \"*) : > '{marker}' ;;\n"
+        "esac\n"
+    )
+    fake.chmod(0o755)
+    return f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}", log
+
+
+@pytest.mark.platforms("linux")
+def test_recovery_module_reports_serve_units_in_a_real_process(tmp_path):
     """The protocol survives a genuine subprocess round-trip."""
+    path, log = _fake_systemctl_path(tmp_path)
+    result = subprocess.run(
+        [sys.executable, "-m", "hermes_cli.update_restart_recovery", "--stdin"],
+        input=json.dumps(
+            {"profiles": [], "serve_units": {"recover": True, "skip": []}}
+        ),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+        env={**os.environ, "PATH": path},
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["serve_units"] == {"verified": ["user/hermes-serve"], "failed": []}
+    restarts = [line for line in log.read_text().splitlines() if " restart " in f" {line} "]
+    assert restarts == ["--user --no-ask-password restart hermes-serve.service"]
+
+
+@pytest.mark.platforms("not linux")
+def test_recovery_module_reports_empty_serve_coverage_off_linux_in_a_real_process():
+    """Off Linux there is no systemd serve pass, but the protocol still round-trips."""
     result = subprocess.run(
         [sys.executable, "-m", "hermes_cli.update_restart_recovery", "--stdin"],
         input=json.dumps(
@@ -890,7 +940,7 @@ def test_recovery_module_reports_serve_units_in_a_real_process():
     )
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert set(payload["serve_units"]) == {"verified", "failed"}
+    assert payload["serve_units"] == {"verified": [], "failed": []}
 
 
 # ---------------------------------------------------------------------------

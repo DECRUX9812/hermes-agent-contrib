@@ -29,7 +29,6 @@ import {
 } from '@/store/layout'
 import { sessionPinId } from '@/store/session'
 import { $sessionDotStateById, hasLiveTurn } from '@/store/session-dot-state'
-import { applySessionRange, listRowSelectionKeys, selectionKeyForSession } from '@/store/session-selection'
 
 import { SidebarDateDivider, SidebarSectionMeta } from './chrome'
 import { GatewayProfileGroups } from './gateway-groups'
@@ -91,15 +90,8 @@ function SidebarSectionHeader({
           type="button"
         >
           {labelBody}
-          {/* A closed disclosure always shows its caret — otherwise the fold
-              reads as a static label; an open one may wait for hover/focus. */}
           <DisclosureCaret
-            className={cn(
-              'text-(--ui-text-tertiary) transition',
-              open
-                ? 'opacity-0 group-hover/section-label:opacity-100 group-focus-visible/section-label:opacity-100'
-                : 'opacity-100'
-            )}
+            className="text-(--ui-text-tertiary) opacity-0 transition group-hover/section-label:opacity-100"
             open={open}
           />
         </button>
@@ -283,11 +275,8 @@ export function SidebarSessionsSection({
     [sessions, preserveOrder]
   )
 
-  // ⇧-click ranges are measured over the VISIBLE order of the list the row
-  // sits in — flat recents, a group body, or a project lane each supply their
-  // own ordered selection keys (divider rows don't count).
   const renderRow = useCallback(
-    (session: SessionInfo, draggable: boolean, branchStem?: string, selectionKeys?: readonly string[]) => {
+    (session: SessionInfo, draggable: boolean, branchStem?: string) => {
       const rowProps = {
         branchStem,
         card,
@@ -297,9 +286,6 @@ export function SidebarSessionsSection({
         onBranch: onBranchSession ? () => onBranchSession(session.id, session.profile) : undefined,
         onDelete: () => onDeleteSession(session.id),
         onPin: () => onTogglePin(sessionPinId(session)),
-        onSelectRange: selectionKeys
-          ? (additive: boolean) => applySessionRange(selectionKeys, session, additive)
-          : undefined,
         onToggleUnread: () => onToggleUnread(session.id),
         onResume: () => onResumeSession(session.id, session),
         reorderable: draggable && !branchStem,
@@ -369,9 +355,9 @@ export function SidebarSessionsSection({
 
   // A single flat/virtual/lane list row — either a divider or a session.
   const renderListRow = useCallback(
-    (row: SidebarListRow, draggable: boolean, action?: React.ReactNode, selectionKeys?: readonly string[]) => {
+    (row: SidebarListRow, draggable: boolean, action?: React.ReactNode) => {
       if (row.kind === 'session') {
-        return renderRow(row.entry.session, draggable, row.entry.branchStem, selectionKeys)
+        return renderRow(row.entry.session, draggable, row.entry.branchStem)
       }
 
       const label = 'label' in row ? row.label : sessionBucketLabel(row.bucket, dividerLabels)
@@ -395,12 +381,8 @@ export function SidebarSessionsSection({
 
   // Sessions inside repos/worktrees are date-ordered and static.
   const renderRows = useCallback(
-    (items: SessionInfo[]) => {
-      const entries = flattenSessionsWithBranches(items)
-      const keys = entries.map(entry => selectionKeyForSession(entry.session))
-
-      return entries.map(({ branchStem, session }) => renderRow(session, false, branchStem, keys))
-    },
+    (items: SessionInfo[]) =>
+      flattenSessionsWithBranches(items).map(({ branchStem, session }) => renderRow(session, false, branchStem)),
     [renderRow]
   )
 
@@ -416,10 +398,8 @@ export function SidebarSessionsSection({
       ).map(row => (row.kind === 'divider' ? { ...row, key: `project:${projectId}:${row.key}` } : row))
 
       const ordered = manualOrderIds?.length ? orderRowsWithinGroups(rows, manualOrderIds) : rows
-      const laneRows = hideCollapsedGroupRows(ordered, isListGroupOpen)
-      const laneKeys = listRowSelectionKeys(laneRows)
 
-      return laneRows.map(row => renderListRow(row, false, undefined, laneKeys))
+      return hideCollapsedGroupRows(ordered, isListGroupOpen).map(row => renderListRow(row, false))
     },
     [isListGroupOpen, manualOrderIds, renderListRow, showAllSessions]
   )
@@ -432,10 +412,8 @@ export function SidebarSessionsSection({
       const entries = flattenSessionsWithBranches(items)
 
       const rows = grouping === 'date' ? groupEntriesByRecency(entries) : toSessionRows(entries)
-      const laneRows = hideCollapsedGroupRows(rows, isListGroupOpen)
-      const laneKeys = listRowSelectionKeys(laneRows)
 
-      return laneRows.map(row => renderListRow(row, false, undefined, laneKeys))
+      return hideCollapsedGroupRows(rows, isListGroupOpen).map(row => renderListRow(row, false))
     },
     [grouping, isListGroupOpen, renderListRow]
   )
@@ -463,10 +441,6 @@ export function SidebarSessionsSection({
   // it. Same array when nothing is collapsed so the virtualizer's rows ref
   // stays stable across parent re-renders.
   const visibleRows = useMemo(() => hideCollapsedGroupRows(flatRows, isListGroupOpen), [flatRows, isListGroupOpen])
-
-  // ⇧-click ranges for flat rows measure over exactly what the rail renders —
-  // collapsed buckets contribute their divider, not the hidden sessions.
-  const flatSelectionKeys = useMemo(() => listRowSelectionKeys(visibleRows), [visibleRows])
 
   // dnd-kit must see exactly the ids it renders, in render order: the sortable
   // set is derived from the rows, not from `sessions`. Feeding it the unrendered
@@ -636,11 +610,11 @@ export function SidebarSessionsSection({
   } else if (sessionsDraggable) {
     inner = (
       <ReorderableList ids={sortableRowIds} onReorder={persistSessionOrder} sensors={dndSensors}>
-        {visibleRows.map(row => renderListRow(row, true, dividerAction, flatSelectionKeys))}
+        {visibleRows.map(row => renderListRow(row, true, dividerAction))}
       </ReorderableList>
     )
   } else {
-    inner = visibleRows.map(row => renderListRow(row, false, dividerAction, flatSelectionKeys))
+    inner = visibleRows.map(row => renderListRow(row, false, dividerAction))
   }
 
   // The virtualizer owns its own scroller, so suppress the wrapper's overflow
@@ -680,7 +654,6 @@ interface SortableSessionRowProps {
   onPin: () => void
   onToggleUnread: () => void
   onResume: () => void
-  onSelectRange?: (additive: boolean) => void
 }
 
 function SortableSidebarSessionRow(props: SortableSessionRowProps) {

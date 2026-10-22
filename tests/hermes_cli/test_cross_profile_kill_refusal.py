@@ -20,12 +20,10 @@ from pathlib import Path
 
 import pytest
 
-from gateway.status import is_gateway_runtime_lock_active, recorded_gateway_home_conflicts
+from gateway.status import recorded_gateway_home_conflicts
 
 
-def _spawn_gateway_lookalike(
-    bin_dir: Path, lock_path: Path, owner_home: Path
-) -> subprocess.Popen:
+def _spawn_gateway_lookalike(bin_dir: Path, lock_path: Path) -> subprocess.Popen:
     """Real child process whose argv matches the gateway runtime matcher."""
     bin_dir.mkdir(parents=True, exist_ok=True)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
@@ -42,38 +40,27 @@ def _spawn_gateway_lookalike(
     script.write_text(f"#!{sys.executable}\n{body}", encoding="utf-8")
     if sys.platform != "win32":
         script.chmod(0o755)
-        cmd = [str(script)]
+        cmd = [str(script), "gateway", "run"]
     else:
-        cmd = [sys.executable, str(script)]
-    # Scoped PID validation checks the live argv as well as the recorded home.
-    if owner_home.parent.name == "profiles":
-        cmd.extend(["--profile", owner_home.name])
-    cmd.extend(["gateway", "run"])
+        cmd = [sys.executable, str(script), "gateway", "run"]
     proc = subprocess.Popen(
-        cmd,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        env={**os.environ, "HERMES_HOME": str(owner_home)},
+        cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     deadline = time.monotonic() + 10.0
-    while time.monotonic() < deadline:
+    while time.monotonic() < deadline and not lock_path.exists():
         if proc.poll() is not None:
             raise RuntimeError("gateway lookalike died at startup")
-        if is_gateway_runtime_lock_active(lock_path):
-            return proc
         time.sleep(0.05)
-    proc.kill()
-    proc.wait(timeout=10)
-    raise TimeoutError("gateway lookalike did not acquire its runtime lock")
+    return proc
 
 
-def _pid_record(proc: subprocess.Popen, owner_home: Path) -> dict:
+def _pid_record(proc: subprocess.Popen, script: Path, owner_home: Path) -> dict:
     from gateway.status import get_process_start_time
 
     return {
         "pid": proc.pid,
         "kind": "hermes-gateway",
-        "argv": list(proc.args),
+        "argv": [str(script), "gateway", "run"],
         "start_time": get_process_start_time(proc.pid),
         "hermes_home": str(owner_home),
     }
@@ -131,10 +118,10 @@ class TestCrossProfileStopRefusal:
         monkeypatch.setenv("HERMES_HOME", str(tim_home))
 
         proc = _spawn_gateway_lookalike(
-            tmp_path / "bin", tim_home / "gateway.lock", root_home
+            tmp_path / "bin", tim_home / "gateway.lock"
         )
         try:
-            record = _pid_record(proc, root_home)
+            record = _pid_record(proc, tmp_path / "bin" / "hermes", root_home)
             (tim_home / "gateway.pid").write_text(json.dumps(record))
 
             from hermes_cli import gateway as gateway_cli
@@ -160,10 +147,10 @@ class TestCrossProfileStopRefusal:
         monkeypatch.setenv("HERMES_HOME", str(tim_home))
 
         proc = _spawn_gateway_lookalike(
-            tmp_path / "bin", tim_home / "gateway.lock", tim_home
+            tmp_path / "bin", tim_home / "gateway.lock"
         )
         try:
-            record = _pid_record(proc, tim_home)
+            record = _pid_record(proc, tmp_path / "bin" / "hermes", tim_home)
             (tim_home / "gateway.pid").write_text(json.dumps(record))
 
             from hermes_cli import gateway as gateway_cli
@@ -191,10 +178,10 @@ class TestProfileDeleteStopRefusal:
         tim_home.mkdir(parents=True)
 
         proc = _spawn_gateway_lookalike(
-            tmp_path / "bin", tim_home / "gateway.lock", root_home
+            tmp_path / "bin", tim_home / "gateway.lock"
         )
         try:
-            record = _pid_record(proc, root_home)
+            record = _pid_record(proc, tmp_path / "bin" / "hermes", root_home)
             (tim_home / "gateway.pid").write_text(json.dumps(record))
 
             from hermes_cli.profiles import _stop_gateway_process
@@ -215,10 +202,10 @@ class TestProfileDeleteStopRefusal:
         tim_home.mkdir(parents=True)
 
         proc = _spawn_gateway_lookalike(
-            tmp_path / "bin", tim_home / "gateway.lock", tim_home
+            tmp_path / "bin", tim_home / "gateway.lock"
         )
         try:
-            record = _pid_record(proc, tim_home)
+            record = _pid_record(proc, tmp_path / "bin" / "hermes", tim_home)
             (tim_home / "gateway.pid").write_text(json.dumps(record))
 
             from hermes_cli.profiles import _stop_gateway_process

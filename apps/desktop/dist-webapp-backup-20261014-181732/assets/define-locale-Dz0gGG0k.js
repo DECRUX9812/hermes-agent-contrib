@@ -1,0 +1,1 @@
+import{Q as e,t}from"./en-DX_6b5FE.js";var n=n=>e(t,n);export{n as t};

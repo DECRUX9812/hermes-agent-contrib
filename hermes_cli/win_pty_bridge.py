@@ -109,11 +109,8 @@ class WinPtyBridge:
             return False
         return True
 
-    async def write(self, data: bytes, *, timeout: float = 10.0, fence=None) -> bool:
+    async def write(self, data: bytes, *, timeout: float = 10.0) -> bool:
         """Write off-loop and tear down ConPTY when its input pipe wedges.
-
-        ``fence`` (see ``PtyBridge.write``) wraps the whole blocking write, which
-        the timeout below bounds.
 
         ``wait_for(to_thread(...))`` alone only cancels the asyncio wrapper;
         the worker remains blocked inside pywinpty. Keep the worker future,
@@ -129,9 +126,7 @@ class WinPtyBridge:
         if not data:
             return True
         loop = asyncio.get_running_loop()
-        write = self._write_blocking if fence is None else (
-            lambda chunk: fence(lambda: self._write_blocking(chunk)))
-        write_future = loop.run_in_executor(None, write, data)
+        write_future = loop.run_in_executor(None, self._write_blocking, data)
         try:
             return await asyncio.wait_for(
                 asyncio.shield(write_future),

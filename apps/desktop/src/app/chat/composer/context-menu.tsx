@@ -15,24 +15,11 @@ import {
 import { Kbd } from '@/components/ui/kbd'
 import { Tip } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
-import {
-  Clipboard,
-  Clock,
-  Command,
-  Crop,
-  FileText,
-  FolderOpen,
-  type IconComponent,
-  ImageIcon,
-  Link,
-  MessageSquareText
-} from '@/lib/icons'
+import { Clipboard, FileText, FolderOpen, type IconComponent, ImageIcon, Link, MessageSquareText } from '@/lib/icons'
 import { cn } from '@/lib/utils'
-import { startRegionCapture } from '@/store/region-capture'
 
 import { useComposerAttachmentProviders } from './contrib'
 import { GHOST_ICON_BTN } from './controls'
-import { requestComposerFocus, requestComposerInsert } from './focus'
 import type { ChatBarState } from './types'
 
 const SNIPPET_KEYS = ['codeReview', 'implementationPlan', 'explainThis']
@@ -44,8 +31,7 @@ export function ContextMenu({
   onPasteClipboardImage,
   onPickFiles,
   onPickFolders,
-  onPickImages,
-  onScheduleDraft
+  onPickImages
 }: ContextMenuProps) {
   const { t } = useI18n()
   const c = t.composer
@@ -101,30 +87,11 @@ export function ContextMenu({
           <ContextMenuItem icon={Link} onSelect={onOpenUrlDialog}>
             {c.url}
           </ContextMenuItem>
-          {/* Region capture (#34) — only real under Electron; web/other shells
-              don't expose the bridge and keep the row hidden. */}
-          {window.hermesDesktop?.regionCapture && (
-            <ContextMenuItem icon={Crop} onSelect={() => void startRegionCapture()}>
-              {c.captureRegion}
-            </ContextMenuItem>
-          )}
 
           <DropdownMenuSeparator />
 
           <ContextMenuItem icon={MessageSquareText} onSelect={() => setSnippetsOpen(true)}>
             {c.promptSnippets}
-          </ContextMenuItem>
-          <ContextMenuItem icon={Clock} onSelect={onScheduleDraft}>
-            {c.scheduleJob}
-          </ContextMenuItem>
-          <ContextMenuItem
-            icon={Command}
-            onSelect={() => {
-              requestComposerInsert('/')
-              requestComposerFocus()
-            }}
-          >
-            {c.slashCommands}
           </ContextMenuItem>
 
           {attachmentProviders.length > 0 && <DropdownMenuSeparator />}
@@ -220,8 +187,6 @@ interface ContextMenuItemProps {
 interface ContextMenuProps {
   onInsertText: (text: string) => void
   onOpenUrlDialog: () => void
-  /** Seeds a cron create-draft from the composer's current text, then routes to /cron. */
-  onScheduleDraft?: () => void
   onPasteClipboardImage?: (opts?: { silent?: boolean }) => Promise<boolean> | void
   onPickFiles?: () => void
   onPickFolders?: () => void

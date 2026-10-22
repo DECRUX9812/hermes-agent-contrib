@@ -58,21 +58,6 @@ export { $pendingBotOpen } from './shared'
  *  from render. */
 export const $botChatFocused = atom(false)
 
-/** Sessions-rail Agents section open/closed. Default open — the section is
- *  how most clicks reach a bot once the roster folds into the one nav rail.
- *  Persisted via ctx.storage under 'agents-section-open'. */
-export const $agentsSectionOpen = atom(true)
-
-export function setAgentsSectionOpen(open: boolean) {
-  $agentsSectionOpen.set(open)
-
-  try {
-    Promise.resolve(getPluginCtx()?.storage?.set?.('agents-section-open', open)).catch(() => undefined)
-  } catch {
-    /* storage unavailable — fold holds for this window only */
-  }
-}
-
 export function saveSelectedRosterBot(bot: RosterRow) {
   const key = botRosterKey(bot)
   $selectedBot.set(botSelectionKey(bot))
@@ -177,10 +162,15 @@ export function focusedRosterOwner(
   owner: {
     authoritative?: boolean
     connectionId?: string
+    name?: string
     profile?: string
   } | null
 ) {
-  const name = String(owner?.profile || '').trim()
+  // TODO(bot-mode-types): `owner.name` cannot exist. Every caller passes
+  // $focusedBotOwner, whose two shapes (host.state.focusedSessionOwner and
+  // fallbackFocusedBotOwner) both key the profile as `profile`, so the
+  // `owner?.name` arm is unreachable and a name-only owner would be dropped.
+  const name = String(owner?.profile || owner?.name || '').trim()
 
   if (!owner || !name) {
     return null

@@ -55,8 +55,7 @@ import {
   extractDroppedFiles,
   HERMES_PATHS_MIME,
   isImagePath,
-  partitionDroppedFiles,
-  stageDroppedFilePath
+  partitionDroppedFiles
 } from '@/app/chat/hooks/use-composer-actions'
 import { uploadComposerAttachment } from '@/app/session/hooks/use-prompt-actions'
 import { hermesDirectiveFormatter } from '@/components/assistant-ui/directive-text'
@@ -469,7 +468,7 @@ export const UserEditComposer: FC<UserEditComposerProps> = ({ cwd, gateway, sess
       const refs: InlineRefInput[] = []
 
       for (const candidate of osDrops) {
-        const path = await stageDroppedFilePath(candidate)
+        const path = candidate.path || ''
 
         if (!path) {
           continue

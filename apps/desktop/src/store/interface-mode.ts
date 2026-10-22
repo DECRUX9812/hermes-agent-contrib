@@ -1,10 +1,8 @@
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores'
 
-import { translateNow } from '@/i18n'
 import { createLayoutPersistence } from '@/lib/layout-persistence'
 import { type Codec, persistentAtom } from '@/lib/persisted'
 import type { SidebarRowMeta } from '@/store/layout'
-import { notify } from '@/store/notifications'
 import type { ToolViewMode } from '@/store/tool-view'
 import { isBrowserWindow, isHudWindow, isSecondaryWindow } from '@/store/windows'
 
@@ -64,20 +62,7 @@ export const modeLayout = createLayoutPersistence(
 )
 
 export function setInterfaceMode(mode: InterfaceMode) {
-  const wasSimple = $interfaceMode.get() === 'simple'
-
   modeLayout.change(mode, () => $interfaceMode.set(mode))
-
-  // The switch hides panes and tools all at once — say where they went, with
-  // the door back. A reaction to the user's own action, so it stays a toast.
-  if (mode === 'simple' && !wasSimple) {
-    notify({
-      action: { label: translateNow('interfaceMode.showAdvanced'), onClick: () => setInterfaceMode('advanced') },
-      durationMs: 8_000,
-      message: translateNow('interfaceMode.simpleNotice'),
-      placement: 'bottom-right'
-    })
-  }
 }
 
 /** The ⌘K row and the rebindable `view.toggleSimpleMode` action. */
@@ -95,11 +80,12 @@ export interface ModeContext {
   /** A signed-out free-tier user with no setup in progress: the statusbar's
    *  Sign in chip is their standing way to sign in. */
   freeTierSignInOpen: boolean
+  /** The first-run onboarding is open; its account and download progress live in the statusbar. */
+  onboardingOpen: boolean
   profileCount: number
 }
 
 export interface ModePolicy {
-  artifactsOpen: boolean
   fileBrowserOpen: boolean
   hideCodeDiffs: boolean
   profileRailVisible: boolean
@@ -119,7 +105,6 @@ type PolicyTable = { readonly [K in ModePolicyKey]?: PolicyEntry<K> }
 
 const SIMPLE_POLICY: PolicyTable = {
   // Hide-style panes rest closed; their keybinds and the agent still reveal them.
-  artifactsOpen: false,
   fileBrowserOpen: false,
   // Inline diffs are the review pane's job; the changed-files summary stays.
   hideCodeDiffs: true,
@@ -132,8 +117,8 @@ const SIMPLE_POLICY: PolicyTable = {
   // What was said and when — cost, tokens, PR and profile chips are readouts.
   sidebarRowMeta: ['preview', 'updated'],
   // The bar carries the free tier's Sign in chip, the one standing way in to a
-  // sign-in. It rests hidden for everyone else and goes away once they sign in.
-  statusbarVisible: context => context.freeTierSignInOpen,
+  // sign-in, and onboarding's account progress. It rests hidden otherwise.
+  statusbarVisible: context => context.freeTierSignInOpen || context.onboardingOpen,
   terminalOpen: false,
   // Product summaries; the technical payload view is the instrumentation itself.
   toolViewMode: 'product'
@@ -155,6 +140,7 @@ const shadows = (key: ModePolicyKey, mode: InterfaceMode) => key in POLICY[mode]
 export const $modeContext = atom<ModeContext>({
   connectionCount: 1,
   freeTierSignInOpen: false,
+  onboardingOpen: false,
   profileCount: 1
 })
 

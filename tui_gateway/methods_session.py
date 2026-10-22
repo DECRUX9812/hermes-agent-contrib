@@ -84,12 +84,11 @@ def _make_agent_in_context(sid: str, key: str, **kwargs):
         _clear_session_context(tokens)
 
 
-def _profile_session_db(profile_home, expected_profile_incarnation=None):
+def _profile_session_db(profile_home):
     """``(db, owns)``: a DEDICATED handle on ``profile_home``'s state.db, else the shared launch db."""
     if profile_home:
         from hermes_state_registry import acquire
-        return acquire(Path(profile_home) / "state.db",
-                       expected_profile_incarnation=expected_profile_incarnation), True
+        return acquire(Path(profile_home) / "state.db"), True
     return _get_db(), False
 
 
@@ -97,14 +96,6 @@ def _release_db(db) -> None:
     with contextlib.suppress(Exception):
         from hermes_state_registry import release_or_close
         release_or_close(db)
-
-
-def _branch_title(db, parent_key: str) -> str:
-    """Next title in the parent's lineage (mirrors the TUI /branch naming)."""
-    current = db.get_session_title(parent_key) or "branch"
-    if hasattr(db, "get_next_title_in_lineage"):
-        return db.get_next_title_in_lineage(current)
-    return f"{current} (branch)"
 
 
 def _cwd_info(session: dict, cwd: str, branch=None) -> dict:
@@ -283,7 +274,7 @@ def _persist_branch(db, new_key: str, parent_key: str, title: str, history: list
         from hermes_state_errors import is_disk_full_error
         if compensate and not is_disk_full_error(exc):
             try:
-                db.delete_session(new_key)
+                db.discard_unadmitted_session(new_key)
             except Exception:
                 logger.debug("branch seed compensation delete failed for %s", new_key, exc_info=True)
         raise
@@ -325,7 +316,7 @@ def _seed_row(record: dict) -> None:
     if not record.get("_branch_seed_persisted"):
         with contextlib.suppress(Exception), _session_db(record) as db:
             if db is not None:
-                db.delete_session(key)
+                db.discard_unadmitted_session(key)
         return
     try:
         if title := record.get("pending_title"):
@@ -361,9 +352,7 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
             if existing is not None:
                 existing_sid, _ = existing
                 session = _sessions.get(existing_sid)
-                if session is not None and not _profile_home_rejected(
-                    session.get("profile_home"), session.get("profile_incarnation"), require_incarnation=True,
-                ):
+                if session is not None:
                     # Refresh the TTL so back-to-back retries don't age out mid-flight.
                     _idempotency_keys[idem_key] = (existing_sid, now_for_gc)
                     history = session["history"]
@@ -382,7 +371,7 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
                                  "project": _project_info_for_cwd(session["cwd"]), "lazy": True,
                                  "desktop_contract": DESKTOP_BACKEND_CONTRACT,
                                  "profile_name": _response_profile_name(profile)}})
-                # Closed or replaced-profile runtimes cannot satisfy a retry —
+                # The session was closed between the original create and the retry —
                 # fall through and create a fresh one under the same key.
                 _idempotency_keys.pop(idem_key, None)
     (sid, source), key = _new_runtime_ids(params), _new_session_key()
@@ -409,7 +398,6 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
     # (#108205: the desktop arm lets the client vouch for a host-invisible path, #52589 provenance).
     explicit_cwd, session_cwd, remote_cwd = _resolve_create_cwd(params, source, profile_home)
     _enable_gateway_prompts()
-    profile_incarnation = _capture_profile_incarnation(profile_home)
     from .methods_session_model_guard import create_overrides
     try:
         session_model_override, create_reasoning_override, create_service_tier_override = create_overrides(params)
@@ -424,11 +412,6 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
         composer_override_profile = {"model": profile_model, "provider": profile_provider}
     now = time.time()
     with _sessions_lock:
-        if _profile_home_rejected(profile_home, profile_incarnation, require_incarnation=True):
-            raise FileNotFoundError(
-                "Profile incarnation is stale or home is missing or being deleted: "
-                f"{profile_home or _hermes_home}"
-            )
         _sessions[sid] = {
             "agent": None, "agent_error": None, "agent_ready": threading.Event(), "attached_images": [],
             "close_on_disconnect": _flag(params, "close_on_disconnect"),
@@ -445,11 +428,7 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
             "parent_session_id": parent_session_id, "pending_title": _str_param(params, "title") or None,
             "pending_hidden": _flag(params, "hidden"), "room_plumbing": _flag(params, "room_plumbing"),
             "follow_profile_config": _flag(params, "follow_profile_config"),
-            "bot_topic": _flag(params, "bot_topic"),
-            "team_room": _flag(params, "team_room"),
-            "team_room_lead": _str_param(params, "team_room_lead") or None,
             "profile_home": str(profile_home) if profile_home is not None else None,
-            "profile_incarnation": profile_incarnation,
             "running": False, "session_key": key, "show_reasoning": _load_show_reasoning(), "source": source,
             "slash_worker": None, "tool_progress_mode": _load_tool_progress_mode(), "tool_started_at": {},
             "transport": current_transport() or _stdio_transport,
@@ -643,7 +622,6 @@ class _Resume:
         # ``profile`` (app-global remote mode): resume from another local profile's state.db.
         self.profile = (params.get("profile") or "").strip() or None
         self.profile_home = _profile_home(self.profile)
-        self.profile_incarnation = _capture_profile_incarnation(self.profile_home)
         self.lazy, self.defer_history = _flag(params, "lazy"), _flag(params, "defer_history")
         # Desktop hydrates over REST; suppress the duplicate WS copy only when asked.
         self.omit_messages, self.eager_build = _flag(params, "omit_messages"), _flag(params, "eager_build")
@@ -660,31 +638,26 @@ class _Resume:
     def record(self, source: str, cwd: str, history: list, overrides: dict | None = None, **extra) -> dict:
         """``_deferred_session_record`` with this resume's common fields (lease claimed lazily on turn 1);
         ``overrides`` restores the stored model/provider/reasoning/tier so the deferred build matches eager."""
-        model_config = _parse_model_config((self.found or {}).get("model_config"), quiet=True)
-        follows_profile = False
         if overrides is not None:
             extra.update(model_override=overrides.get("model_override"), resume_runtime_overrides=overrides or None)
+            model_config = _parse_model_config((self.found or {}).get("model_config"), quiet=True)
             follows_profile = _row_follows_profile(self.found)
+        else:
+            model_config, follows_profile = {}, False
         record = _deferred_session_record(
             self.target, cols=self.cols, cwd=cwd, history=history, lease=None, source=source,
             close_on_disconnect=_flag(self.params, "close_on_disconnect"),
             profile_home=self.profile_home, explicit_cwd=bool(self.profile_resume_cwd), **extra)
         if follows_profile:
-            record.update(
-                follow_profile_config=True,
-                composer_override_profile=(model_config.get("composer_override_profile")
-                                           if overrides and overrides.get("model_override") else None),
-            )
-        if model_config.get("bot_topic"):
-            record["bot_topic"] = True
-        if model_config.get("team_room"):
-            record["team_room"] = True
-            record["team_room_lead"] = model_config.get("team_room_lead") or None
+            record.update(follow_profile_config=True, composer_override_profile=(
+                model_config.get("composer_override_profile") if overrides and overrides.get("model_override") else None))
         return record
 
     def claim(self, sid: str, record: dict) -> dict | None:
-        """Register ``record`` live under the resume lock, or reuse a concurrent winner's session."""
-        live = _claim_or_reuse_live(sid, self.target, record, None)
+        """Register ``record`` live under the resume lock, or reuse a concurrent winner's session; then repair a
+        named profile's ROW like the eager build's ``_init_session`` (#87584) — listings and later resumes read it."""
+        if (live := _claim_or_reuse_live(sid, self.target, record, None)) is None and self.profile_home and not self.lazy:
+            _hydrate_session_cwd(sid, self.target, self.db, self.profile_home)
         return None if live is None else _resume_reuse_live(self, *live)
 
     def restore(self):
@@ -728,11 +701,12 @@ class _Resume:
         return [] if self.omit_messages else self.db.get_ancestor_display_prefix(self.target)
 
 
-def _find_live_unpersisted(needle: str, home, profile_incarnation) -> str:
+def _find_live_unpersisted(needle: str, home) -> str:
     """Runtime sid of a live, not-yet-persisted session matched by stored key or pending title."""
+    want_home = str(home) if home is not None else None
     return next((
         live_sid for live_sid, record in list(_sessions.items())
-        if isinstance(record, dict) and _session_profile_identity_matches(record, home, profile_incarnation)
+        if isinstance(record, dict) and (record.get("profile_home") or None) == want_home
         and (str(record.get("session_key") or "") == needle or (record.get("pending_title") or "") == needle)), "")
 
 
@@ -830,12 +804,12 @@ def _resume_locate(ctx: _Resume) -> dict | None:
     if ctx.found:
         ctx.target = ctx.found["id"]
         return None
-    if ctx.lazy and _child_run_active(ctx.target, ctx.profile_home, ctx.profile_incarnation):
+    if ctx.lazy and _child_run_active(ctx.target, ctx.profile_home):
         # Fresh subagent watch window: `subagent.start` relays BEFORE the child's first DB flush. Proceed lazily
         # with empty history — the live mirror streams the turn and the row exists by upgrade time.
         ctx.found = {}
         return None
-    live_sid = _find_live_unpersisted(ctx.target, ctx.profile_home, ctx.profile_incarnation)
+    live_sid = _find_live_unpersisted(ctx.target, ctx.profile_home)
     if (live := _sessions.get(live_sid) if live_sid else None) is not None:
         return _resume_live_unpersisted(ctx, live_sid, live)
     if ctx.owns_db:
@@ -912,7 +886,7 @@ def _resume_reuse_live_locked(ctx: _Resume, sid: str, session: dict) -> dict:
         payload.update(messages=[], hydrating=bool(session.get("resume_hydrating")),
                        message_count=int(session.get("resume_message_count") or payload["message_count"]))
     # A lazy watch session never owns a run loop — overlay the child-run registry.
-    if session.get("agent") is None and _child_run_active(ctx.target, ctx.profile_home, ctx.profile_incarnation):
+    if session.get("agent") is None and _child_run_active(ctx.target, ctx.profile_home):
         payload.update(running=True, status="streaming")
     return _ok(ctx.rid, payload)
 
@@ -956,7 +930,7 @@ def _resume_lazy(ctx: _Resume) -> dict:
     if (reused := ctx.claim(sid, record)) is not None:
         return reused
     # A child mid-run emits no session events — liveness comes from the relay registry.
-    running = _child_run_active(ctx.target, ctx.profile_home, ctx.profile_incarnation)
+    running = _child_run_active(ctx.target, ctx.profile_home)
     # Display uses the VERBATIM child-only projection so model-invisible rows survive; repaired ``history``
     # still feeds live replay.
     display = history
@@ -1029,16 +1003,15 @@ def _resume_eager(ctx: _Resume) -> dict:
         except Exception as e:
             return _err(ctx.rid, 5000, resume_failed_message(e))
     with _session_resume_lock:
-        live = _find_live_session_by_key(ctx.target, ctx.profile_home, ctx.profile_incarnation)
+        live = _find_live_session_by_key(ctx.target, ctx.profile_home)
         if live is not None:
-            _discard_agent(agent)
+            with contextlib.suppress(Exception):
+                agent.close()
             return _resume_reuse_live_locked(ctx, *live)
         try:
             with _profile_build_scope(ctx.profile_home):
-                _init_session(sid, ctx.target, agent, history, cols=ctx.cols, cwd=ctx.profile_resume_cwd,
-                              session_db=ctx.db, source=source, explicit_cwd=bool(ctx.profile_resume_cwd),
-                              profile_home=str(ctx.profile_home) if ctx.profile_home is not None else None,
-                              profile_incarnation=ctx.profile_incarnation)
+                _init_session(sid, ctx.target, agent, history, cols=ctx.cols, cwd=ctx.profile_resume_cwd, session_db=ctx.db,
+                              source=source, profile_home=ctx.profile_home, explicit_cwd=bool(ctx.profile_resume_cwd))
                 # Ownership TRANSFER: the agent holds the handle for life (AIAgent.close() releases it). The
                 # owns_db drop is UNCONDITIONAL — the session is registered against the handle, so the finally
                 # must not close it even if the transfer was refused (a leak beats "closed database" every
@@ -1055,15 +1028,6 @@ def _resume_eager(ctx: _Resume) -> dict:
                     session["composer_override_profile"] = (
                         model_config.get("composer_override_profile")
                         if stored_runtime_overrides.get("model_override") else None)
-                if model_config.get("bot_topic"):
-                    session["bot_topic"] = True
-                    agent._bot_topic = True
-                if model_config.get("team_room"):
-                    session["team_room"] = True
-                    session["team_room_lead"] = model_config.get("team_room_lead") or None
-                    # The agent was already built above — stamp the same hint _attach_built_agent applies.
-                    agent._team_room = True
-                    agent._team_room_lead = session["team_room_lead"]
                 # Each turn re-binds HERMES_HOME (mid-turn memory/skills reads); lease claimed lazily on turn 1.
                 if ctx.profile_home is not None:
                     session["profile_home"] = str(ctx.profile_home)
@@ -1088,7 +1052,7 @@ def _(rid, params: dict) -> dict:
         return _err(rid, 4006, "session_id required")
     ctx = _Resume(rid, params, target)
     # Profile scope: a DEDICATED handle we own until the agent takes it; else the shared launch db.
-    ctx.db, ctx.owns_db = _profile_session_db(ctx.profile_home, ctx.profile_incarnation)
+    ctx.db, ctx.owns_db = _profile_session_db(ctx.profile_home)
     try:
         if ctx.db is None:
             return _db_unavailable_error(rid, code=5000)
@@ -1098,10 +1062,9 @@ def _(rid, params: dict) -> dict:
         if (resp := _resume_guard(ctx)) is not None:
             return resp
         ctx.profile_resume_cwd = (_resumable_stored_cwd(_str_param(ctx.found, "cwd"), ctx.profile_home)
-                                  or _profile_workspace_cwd(ctx.profile_home))
-        # Fast path: reuse a session live IN THIS PROFILE (never another profile's runtime).
-        with _session_resume_lock:
-            live = _find_live_session_by_key(ctx.target, ctx.profile_home, ctx.profile_incarnation)
+                                  or _profile_default_cwd(ctx.profile_home))
+        with _session_resume_lock:  # fast path: reuse a session live IN THIS PROFILE, never another's
+            live = _find_live_session_by_key(ctx.target, ctx.profile_home)
         if live is not None:
             return _resume_reuse_live(ctx, *live)
         from hermes_state import SessionDB
@@ -1206,10 +1169,10 @@ def _(rid, params: dict, session: dict) -> dict:
         sid, session, touch=True, omit_messages=is_truthy_value(params.get("omit_messages", False))))
 
 
-
 @method("session.delete")
 def _(rid, params: dict) -> dict:
     """Delete a stored session + transcripts; refused while live here (FK trips on the agent's next flush)."""
+    from agent.onboarding_record import delete_chat
     from hermes_state_errors import SessionActiveWriteGuardError  # body runs on server.py globals
 
     if not (target := params.get("session_id", "")):
@@ -1225,7 +1188,8 @@ def _(rid, params: dict) -> dict:
             return _db_unavailable_error(rid, code=5036)
         try:
             home = Path(profile_home) if profile_home is not None else get_hermes_home()
-            deleted = db.delete_session(target, sessions_dir=home / "sessions", exclude_active_write_guards=True)
+            deleted = delete_chat(db, target, lambda: db.delete_session(
+                target, sessions_dir=home / "sessions", exclude_active_write_guards=True))
         except SessionActiveWriteGuardError:
             return _err(rid, 4023, "cannot delete an active session")
         except Exception as e:
@@ -1491,25 +1455,7 @@ def _(rid, params: dict, session: dict) -> dict:
         from agent.account_usage import nous_credits_lines
         if credits := nous_credits_lines():
             usage["credits_lines"] = credits
-    # Provider account limits (e.g. Codex quota windows) — the same block the CLI and gateway /usage
-    # render, so the Desktop usage feed is not the one surface that omits them. Fail-open.
-    with contextlib.suppress(Exception):
-        if account := _account_usage_lines(session):
-            usage["account_lines"] = account
     return _ok(rid, usage)
-
-
-def _account_usage_lines(session: dict) -> list[str]:
-    """Rendered account-limit lines for the session's route: the live agent's provider/endpoint when
-    built, else the configured ``model.provider`` (on-disk credentials suffice, e.g. Codex OAuth)."""
-    from agent.account_usage import fetch_account_usage, render_account_usage_lines
-    agent = session.get("agent")
-    provider = getattr(agent, "provider", None) or _config_model_target()[1]
-    if not provider:
-        return []
-    snapshot = fetch_account_usage(
-        provider, base_url=getattr(agent, "base_url", None), api_key=getattr(agent, "api_key", None))
-    return render_account_usage_lines(snapshot)
 
 
 @_session_method("session.context_breakdown")
@@ -2307,7 +2253,7 @@ def _legacy_spawn_tree_entry(p, session_dir_name: str) -> dict | None:
         return None
     raw = {}
     with contextlib.suppress(Exception):
-        raw = json.loads(p.read_text(encoding="utf-8-sig"))
+        raw = json.loads(p.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raw = {}
     subagents = raw.get("subagents") or []
@@ -2345,7 +2291,7 @@ def _(rid, params: dict) -> dict:
     except (ValueError, OSError) as exc:
         return _err(rid, 4030, f"path outside spawn-trees root: {exc}")
     try:
-        payload = json.loads(resolved.read_text(encoding="utf-8-sig"))
+        payload = json.loads(resolved.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return _err(rid, 5000, f"spawn_tree.load failed: {exc}")
     if not isinstance(payload, dict):

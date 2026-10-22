@@ -9,7 +9,9 @@ import { toggleTerminalPane } from '@/app/right-sidebar/terminal/reveal-focus'
 import { useApprovalModeStatusbarItem } from '@/app/shell/approval-mode-menu'
 import { ContextMeterDetail, ContextUsagePanel } from '@/app/shell/context-usage-panel'
 import { GatewayMenuPanel } from '@/app/shell/gateway-menu-panel'
+import { useChangeWorkspaceItem } from '@/app/shell/hooks/use-change-workspace'
 import { useContextBreakdown } from '@/app/shell/hooks/use-context-breakdown'
+import { useFocusedSessionRow } from '@/app/shell/hooks/use-focused-session-row'
 import { useSystemResourcesStatusbarItem } from '@/app/shell/system-resources-statusbar'
 import { $paneVisible } from '@/components/pane-shell/tree/store'
 import { Badge } from '@/components/ui/badge'
@@ -21,30 +23,24 @@ import { statusBarGatewayHealth } from '@/lib/gateway-health-pill'
 import {
   Activity,
   AlertCircle,
-  Bell,
   Clock,
   Command,
   FolderOpen,
   Globe,
   Hash,
-  Inbox,
   Layers3,
   Loader2,
-  MonitorPlay,
-  Package,
   Terminal,
   Zap
 } from '@/lib/icons'
 import { type RuntimeReadinessResult } from '@/lib/runtime-readiness'
 import { resolveSessionTimerSince } from '@/lib/session-timer-since'
 import { cacheHitLabel, contextBarLabel, LiveDuration, tokensPerSecondLabel, usageContextLabel } from '@/lib/statusbar'
+import { rollbackSentence } from '@/lib/update-copy'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { resolveVersionStatus } from '@/lib/version-status'
-import { $activeWork } from '@/store/active-work'
 import type { ApprovalModeRequester } from '@/store/approval-mode'
-import { $artifactRegistry, type ArtifactRecord, openArtifact } from '@/store/artifacts'
-import { $attentionItemCount } from '@/store/attention-inbox'
 import { copyFilePath, revealFile, shouldOfferLocalReveal } from '@/store/file-actions'
 import { $freeTierSignInOpen, $freeTierStatus, FREE_TIER_MODEL } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
@@ -53,7 +49,6 @@ import { revealFileInTree } from '@/store/layout'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $profileRailVisible } from '@/store/profile-rail-prefs'
 import { $projectTree, projectNameForCwd } from '@/store/projects'
-import { openRouteTile } from '@/store/route-tiles'
 import {
   $activeSessionId,
   $busy,
@@ -65,8 +60,7 @@ import {
   $sessionStartedAt,
   $tileSessionFocusStartedAt,
   $turnStartedAt,
-  idsShareLineage,
-  sessionMatchesStoredId
+  idsShareLineage
 } from '@/store/session'
 import { $focusedStoredSessionId } from '@/store/session-focus'
 import { $focusedRuntimeId, $focusedSessionState, $sessionTiles, isSessionRemote } from '@/store/session-states'
@@ -83,15 +77,14 @@ import {
 } from '@/store/updates'
 import type { StatusResponse, UsageStats } from '@/types/hermes'
 
-import { ARTIFACTS_ROUTE, CRON_ROUTE, INBOX_ROUTE, MISSION_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
+import { CRON_ROUTE, SETTINGS_ROUTE, WEBHOOKS_ROUTE } from '../../routes'
 import type { StatusbarItem } from '../statusbar-controls'
 
 const EMPTY_USAGE: UsageStats = { calls: 0, input: 0, output: 0, total: 0 }
 
-const NO_ARTIFACTS: readonly ArtifactRecord[] = []
-
 interface StatusbarItemsOptions {
   agentsOpen: boolean
+  changeSessionCwd: (cwd: string, sessionId?: string) => Promise<void>
   chatOpen: boolean
   commandCenterOpen: boolean
   extraLeftItems: readonly StatusbarItem[]
@@ -106,8 +99,32 @@ interface StatusbarItemsOptions {
   toggleCommandCenter: () => void
 }
 
+/** The statusbar row for one update target: the client, or the connected backend. */
+function versionItem(
+  target: 'backend' | 'client',
+  status: ReturnType<typeof resolveVersionStatus>,
+  applying: boolean,
+  toggleLabel: string
+): StatusbarItem {
+  return {
+    className: status.hasUpdate ? 'text-primary hover:text-primary' : undefined,
+    hidden: status.unknown,
+    icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
+    id: `version-${target}`,
+    label: status.label,
+    // Update state is not a preference: hiding it is how a user misses that
+    // they are behind. Listed in the menu, but locked on.
+    lockedVisible: true,
+    onSelect: () => openUpdateOverlayFor(target),
+    title: status.tooltip,
+    toggleLabel,
+    variant: 'action'
+  }
+}
+
 export function useStatusbarItems({
   agentsOpen,
+  changeSessionCwd,
   chatOpen,
   commandCenterOpen,
   extraLeftItems,
@@ -178,9 +195,6 @@ export function useStatusbarItems({
   const backendUpdateApply = useStore($backendUpdateApply)
   const desktopVersion = useStore($desktopVersion)
   const connection = useStore($connection)
-  const attentionCount = useStore($attentionItemCount)
-  // Mission Control's door: how many sessions are mid-turn right now.
-  const activeWork = useStore($activeWork)
 
   // The FOCUSED session (interacted tile, else the primary — the same
   // derivation the titlebar title follows): every session-scoped readout
@@ -227,34 +241,8 @@ export function useStatusbarItems({
 
   const turnStartedAt = primaryFocused ? primaryTurnStartedAt : focusedTurnStartedAt
 
-  // A tile's stored row supplies the cold/fallback session-start and cwd when
-  // no focused runtime value is available. Only these scalars are read off
-  // `$sessions`, so select them — a whole-list `useStore` re-ran this hook on
-  // every session-list write (title updates, poll refreshes, archives).
-  const focusedRowStartedAt = useStoreSelector($sessions, sessions =>
-    focusedStoredSessionId
-      ? (sessions.find(s => sessionMatchesStoredId(s, focusedStoredSessionId))?.started_at ?? null)
-      : null
-  )
-
-  const focusedRowCwd = useStoreSelector($sessions, sessions => {
-    if (!focusedStoredSessionId) {
-      return ''
-    }
-
-    const row = sessions.find(s => sessionMatchesStoredId(s, focusedStoredSessionId))
-
-    return row?.cwd?.trim() || ''
-  })
-
-  // Which backend the focused row runs on: a Connections-tagged row names its
-  // gateway; an untagged one is the window's primary. Decides whether the OS
-  // file manager on this computer can show its workspace at all.
-  const focusedRowConnectionId = useStoreSelector($sessions, sessions =>
-    focusedStoredSessionId
-      ? sessions.find(s => sessionMatchesStoredId(s, focusedStoredSessionId))?.connection_id?.trim() || ''
-      : ''
-  )
+  // A tile's stored row: cold/fallback start and cwd, and which backend it runs on.
+  const { focusedRowConnectionId, focusedRowCwd, focusedRowStartedAt } = useFocusedSessionRow(focusedStoredSessionId)
 
   const offerLocalReveal = shouldOfferLocalReveal(focusedRowConnectionId, connection?.mode === 'remote')
 
@@ -283,16 +271,6 @@ export function useStatusbarItems({
       focusedStateStoredId === focusedStoredSessionId ||
       liveCwdSharesFocusLineage)
 
-  // Registry is keyed by the same id artifact cards register under
-  // (stored id, falling back to the live runtime id on drafts). The atom's
-  // per-session array is referentially stable between writes, so the selector
-  // only re-renders when THIS session's artifacts actually change.
-  const artifactSessionId = focusedStoredSessionId || focusedRuntimeId || ''
-
-  const sessionArtifacts = useStoreSelector($artifactRegistry, registry =>
-    artifactSessionId ? (registry[artifactSessionId] ?? NO_ARTIFACTS) : NO_ARTIFACTS
-  )
-
   const currentCwd = (
     (liveCwdBelongsToFocus ? focusedStateCwd : '') ||
     focusedRowCwd ||
@@ -306,6 +284,12 @@ export function useStatusbarItems({
   // the tree changes; null (no named project) falls back to the cwd leaf below.
   const projectTree = useStore($projectTree)
   const projectName = useMemo(() => projectNameForCwd(currentCwd), [currentCwd, projectTree])
+
+  const changeWorkspaceItem = useChangeWorkspaceItem(changeSessionCwd, currentCwd, busy, {
+    focusedRowConnectionId,
+    focusedRuntimeId,
+    primaryFocused
+  })
 
   const sessionStartedAt = resolveSessionTimerSince({
     focusedStoredSessionId,
@@ -417,6 +401,8 @@ export function useStatusbarItems({
       ? 'text-amber-600 hover:text-amber-600'
       : 'text-destructive hover:text-destructive'
 
+  const rollbackBody = t.settings.about.channel.rollbackBody
+
   const clientVersionItem = useMemo<StatusbarItem>(() => {
     const applying = updateApply.applying || updateApply.stage === 'restart'
 
@@ -425,29 +411,19 @@ export function useStatusbarItems({
       applyMessage: updateApply.message,
       behind: updateStatus?.behind ?? 0,
       branch: updateStatus?.branch,
+      channel: updateStatus?.channel === 'stable' ? 'stable' : 'main',
       copy,
+      latestTag: updateStatus?.latestTag,
       remote: connection?.mode === 'remote',
       restarting: updateApply.stage === 'restart',
+      rollback: rollbackSentence(updateStatus, rollbackBody),
       sha: updateStatus?.currentSha?.slice(0, 7) ?? null,
       target: 'client',
       updateAvailable: updateStatus?.updateAvailable,
       version: desktopVersion?.appVersion
     })
 
-    return {
-      className: status.hasUpdate ? 'text-primary hover:text-primary' : undefined,
-      hidden: status.unknown,
-      icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
-      id: 'version-client',
-      label: status.label,
-      // Update state is not a preference: hiding it is how a user misses that
-      // their client is behind. Listed in the menu, but locked on.
-      lockedVisible: true,
-      onSelect: () => openUpdateOverlayFor('client'),
-      title: status.tooltip,
-      toggleLabel: copy.toggleVersion,
-      variant: 'action'
-    }
+    return versionItem('client', status, applying, copy.toggleVersion)
   }, [
     desktopVersion?.appVersion,
     connection?.mode,
@@ -455,10 +431,8 @@ export function useStatusbarItems({
     updateApply.applying,
     updateApply.message,
     updateApply.stage,
-    updateStatus?.behind,
-    updateStatus?.branch,
-    updateStatus?.currentSha,
-    updateStatus?.updateAvailable
+    updateStatus,
+    rollbackBody
   ])
 
   const backendVersionItem = useMemo<StatusbarItem | null>(() => {
@@ -475,28 +449,18 @@ export function useStatusbarItems({
       copy,
       remote: true,
       restarting: backendUpdateApply.stage === 'restart',
+      rollback: rollbackSentence(backendUpdateStatus, rollbackBody),
       target: 'backend',
       updateAvailable: backendUpdateStatus?.updateAvailable,
       version: statusSnapshot?.version
     })
 
-    return {
-      className: status.hasUpdate ? 'text-primary hover:text-primary' : undefined,
-      hidden: status.unknown,
-      icon: applying ? <Loader2 className="size-3 animate-spin" /> : <Hash className="size-3" />,
-      id: 'version-backend',
-      label: status.label,
-      lockedVisible: true,
-      onSelect: () => openUpdateOverlayFor('backend'),
-      title: status.tooltip,
-      toggleLabel: copy.toggleBackendVersion,
-      variant: 'action'
-    }
+    return versionItem('backend', status, applying, copy.toggleBackendVersion)
   }, [
     connection?.mode,
     statusSnapshot?.version,
-    backendUpdateStatus?.behind,
-    backendUpdateStatus?.updateAvailable,
+    backendUpdateStatus,
+    rollbackBody,
     backendUpdateApply.applying,
     backendUpdateApply.message,
     backendUpdateApply.stage,
@@ -515,47 +479,6 @@ export function useStatusbarItems({
         onSelect: toggleCommandCenter,
         title: commandCenterOpen ? copy.closeCommandCenter : copy.openCommandCenter,
         toggleLabel: copy.toggleCommandCenter,
-        variant: 'action'
-      },
-      {
-        // The pull surface for toast history — hidden by default like the
-        // other route shortcuts; the right-click menu (or ⌘K) brings it on.
-        className: 'w-7 justify-center px-0',
-        icon: <Bell className="size-3.5" />,
-        id: 'notices',
-        onSelect: () => openCommandCenterSection('notices'),
-        title: copy.noticesTitle,
-        toggleLabel: copy.toggleNotices,
-        variant: 'action'
-      },
-      {
-        // The attention inbox's door (roadmap #16): every pending approval,
-        // clarify, and error across sessions in one overlay. Surfaces on its
-        // own only while something is actually waiting; the right-click menu
-        // can pin it on permanently.
-        className: 'w-7 justify-center px-0',
-        detail: attentionCount > 0 ? attentionCount : undefined,
-        hidden: attentionCount === 0,
-        icon: <Inbox className="size-3.5" />,
-        id: 'attention-inbox',
-        to: INBOX_ROUTE,
-        title: copy.attentionInboxTitle,
-        toggleLabel: copy.toggleAttentionInbox,
-        variant: 'action'
-      },
-      {
-        // Mission Control's door: watchable work. Only exists while a turn is
-        // actually in flight — same self-surfacing rule as the inbox above.
-        // TODO(i18n): title/toggleLabel are hardcoded English (no new catalog
-        // keys in this change) — move to copy.* with the rest of the feed copy.
-        className: 'w-7 justify-center px-0',
-        detail: activeWork.count > 0 ? activeWork.count : undefined,
-        hidden: activeWork.count === 0,
-        icon: <MonitorPlay className="size-3.5" />,
-        id: 'mission-control',
-        to: MISSION_ROUTE,
-        title: 'Mission Control',
-        toggleLabel: 'Toggle Mission Control',
         variant: 'action'
       },
       {
@@ -630,6 +553,7 @@ export function useStatusbarItems({
         label: projectName || (currentCwd ? pathLeaf(currentCwd) : undefined),
         menuItems: currentCwd
           ? [
+              changeWorkspaceItem,
               {
                 id: 'copy-workspace-path',
                 label: fileMenu.copyPath,
@@ -703,45 +627,12 @@ export function useStatusbarItems({
         to: WEBHOOKS_ROUTE,
         toggleLabel: copy.webhooks,
         variant: 'action'
-      },
-      {
-        detail: sessionArtifacts.length > 0 ? copy.artifactsCount(sessionArtifacts.length) : undefined,
-        hidden: sessionArtifacts.length === 0,
-        icon: <Package className="size-3" />,
-        id: 'artifacts',
-        label: copy.artifacts,
-        menuItems: [
-          // Newest first — the artifact the user just watched generate is the
-          // one they reach for. More than the cap → the full list is one
-          // click away in the docked artifacts page.
-          ...[...sessionArtifacts]
-            .reverse()
-            .slice(0, 8)
-            .map(artifact => ({
-              id: `artifact-${artifact.id}`,
-              label: artifact.title,
-              onSelect: () => openArtifact(artifact.id),
-              title:
-                artifact.versions.length > 1
-                  ? `${t.artifactCard.kind[artifact.kind]} · ${t.artifactCard.versionBadge(artifact.versions.length)}`
-                  : t.artifactCard.kind[artifact.kind]
-            })),
-          {
-            id: 'artifacts-browse-all',
-            label: copy.browseAllArtifacts,
-            onSelect: () => openRouteTile(ARTIFACTS_ROUTE)
-          }
-        ],
-        title: copy.artifactsTitle,
-        toggleLabel: copy.toggleArtifacts,
-        variant: 'menu'
       }
     ],
     [
-      activeWork,
       agentsOpen,
-      attentionCount,
       botsShowing,
+      changeWorkspaceItem,
       commandCenterOpen,
       copy,
       currentCwd,
@@ -760,14 +651,11 @@ export function useStatusbarItems({
       inferenceReady,
       inferenceStatus?.reason,
       openAgents,
-      openCommandCenterSection,
       profileRailVisible,
       projectName,
       sessionsShowing,
-      sessionArtifacts,
       subagentsFailed,
       subagentsRunning,
-      t,
       toggleCommandCenter
     ]
   )

@@ -536,7 +536,32 @@ Full-text search across message content. Query parameter: `q`. Returns matching 
 
 ### DELETE /api/sessions/\{session_id\}
 
-Deletes a session and its message history. Returns `409 Conflict` if the session has an active turn lease or compression lock.
+Deletes a session and its message history. The request must carry the mutation identity
+the client read from `GET /api/sessions/{id}/mutation-snapshot` (`request_id`,
+`expected_revision`, and `expected_generation`); a partial identity is answered `409
+mutation_identity_required`, and a request with none of it (Desktop 0.22.2 and older) `409
+client_upgrade_required` — the backend never applies an edit without the revision fence. The delete is executed by the profile's gateway, so a
+session with a running or queued turn is refused with `409 session_busy` and one whose
+last turn was lost across a gateway restart with `409 unknown_execution` — nothing is
+removed in either case. Deleting a session that has executed turns leaves small
+terminal-receipt tombstones in the `state_meta` table (admission and worker identities
+with the user text and history stripped); they let an exact retry of the same delete —
+or of an API run that targeted the deleted session — return the same answer instead of
+recreating the session, and stop the deleted ID from being re-imported. They are kept
+indefinitely (a few hundred bytes per executed turn).
+
+### Bulk maintenance while a gateway owns the store
+
+`POST /api/sessions/bulk-delete`, `DELETE /api/sessions/empty`, `POST /api/sessions/prune`
+(non-dry-run) and `POST /api/sessions/owner-backfill` rewrite many rows at once and
+bypass the per-session revision fence, so they are **offline maintenance**: they take the
+profile's exclusive `gateway.lock`. While that profile's gateway is running they return
+`409` with `Exclusive maintenance refused: Gateway runtime already owns profile <home>.
+Drain and stop the gateway, then retry.` and change nothing. Stop the gateway
+(`hermes gateway stop`), run the maintenance call, then start it again. `dry_run` prune
+and every read endpoint keep working against a live gateway. The Desktop's one-shot legacy
+owner backfill treats this `409` as the steady state of an attached gateway (like a backend
+without the route) and does not retry it on every sidebar refresh.
 
 ### GET /api/logs
 
@@ -983,13 +1008,6 @@ browser-facing hostname while forwarding to a dashboard bound to
 `127.0.0.1`. Wildcards and suffix matches are not allowed, so an attacker host
 such as `dashboard.example.com.evil.test` remains rejected by the DNS-rebinding
 guard.
-
-Cookie-authenticated writes (`POST`, `PUT`, `PATCH`, `DELETE`) must come from
-the dashboard's own origin. Current browsers prove that with the
-`Sec-Fetch-Site: same-origin` header, which works behind any proxy. For a
-browser that does not send it, the dashboard compares `Origin` with
-`public_url` (or, when unset, the scheme and Host it received), so set
-`public_url` when the proxy terminates TLS or rewrites `Host`.
 
 Declaring a non-loopback `public_url` always engages the dashboard auth gate,
 even when the backend binds to loopback. Configure a password or OAuth provider

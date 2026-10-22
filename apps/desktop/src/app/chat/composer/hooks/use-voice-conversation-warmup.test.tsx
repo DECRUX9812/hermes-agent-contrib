@@ -1,9 +1,6 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as HermesApi from '@/hermes'
-import type * as VoiceStopWord from '@/lib/voice-stop-word'
-
 import type { MicRecording } from './use-mic-recorder'
 import { useVoiceConversation } from './use-voice-conversation'
 
@@ -58,10 +55,7 @@ vi.mock('@/lib/speech-text', () => ({
   }
 }))
 
-vi.mock('@/lib/voice-stop-word', async importOriginal => ({
-  ...(await importOriginal<typeof VoiceStopWord>()),
-  isVoiceStopCommand: () => false
-}))
+vi.mock('@/lib/voice-stop-word', () => ({ isVoiceStopCommand: () => false }))
 vi.mock('@/lib/voice-tts-echo', () => ({ isTtsEcho: () => false }))
 
 vi.mock('@/store/notifications', () => ({
@@ -111,8 +105,7 @@ vi.mock('../scope', () => ({
 // The ambient selection resolveOwnerNow reads; tests flip it mid-conversation.
 const ambient = { connectionId: 'gateway-a' as null | string, profile: 'worker_alpha' as null | string }
 
-vi.mock('@/hermes', async importOriginal => ({
-  ...(await importOriginal<typeof HermesApi>()),
+vi.mock('@/hermes', () => ({
   resolveOwnerNow: (owner?: { connectionId?: string; profile?: string }) => ({
     connectionId: owner?.connectionId || ambient.connectionId,
     profile: owner?.profile || ambient.profile

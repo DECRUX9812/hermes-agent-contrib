@@ -1,0 +1,1 @@
+import{t as e}from"./preview-act-BlVTgng_.js";export{e as actOnActivePreview};

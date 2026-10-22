@@ -141,9 +141,7 @@ export function clarifyCardOwnsKey(event: KeyboardEvent): boolean {
 }
 
 /**
- * Dialogs, menus, terminal, keyboard surfaces (`[data-keyboard-surface]`: a
- * canvas whose single-key tools are its shortcuts), full pages, session
- * switcher, and any open overlay —
+ * Dialogs, menus, terminal, full pages, session switcher, and any open overlay —
  * they keep their keys, so type-to-focus / soft `/` / Enter stand down rather
  * than stealing keystrokes those surfaces own (or leaking them into the composer
  * mounted behind an overlay). A live clarify card is handled per-key by
@@ -153,7 +151,7 @@ export function composerFocusBlockedBySurface(): boolean {
   return (
     switcherActive() ||
     $workspaceIsPage.get() ||
-    isFocusWithin('[data-terminal], [data-keyboard-surface]') ||
+    isFocusWithin('[data-terminal]') ||
     Boolean(document.querySelector(OVERLAY_SURFACE))
   )
 }

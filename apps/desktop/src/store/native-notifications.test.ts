@@ -19,7 +19,6 @@ import { __resetNativeNotifyBaselineForTests, markNativeNotifyBaseline } from '.
 import { $approvalRequest, APPROVAL_RESPOND_REQUEST_TIMEOUT_MS, clearAllPrompts, setApprovalRequest } from './prompts'
 import { markSessionGone, resetBackgroundPollingGuard } from './runtime-gone'
 import { setActiveSessionId } from './session'
-import { $mutedSessionIds, toggleSessionMuted } from './session-mute'
 import { dropSessionState, publishSessionState } from './session-states'
 
 const desktopWindow = window as unknown as { hermesDesktop?: Window['hermesDesktop'] }
@@ -53,7 +52,6 @@ beforeEach(() => {
 
   setActiveSessionId(null)
   resetBackgroundPollingGuard()
-  $mutedSessionIds.set([])
   setWindowState({ focused: false, hidden: true })
   __resetNativeNotifyBaselineForTests()
 })
@@ -138,18 +136,6 @@ describe('dispatchNativeNotification focus gating', () => {
     setWindowState({ focused: true, hidden: false })
     setActiveSessionId(null)
     dispatchNativeNotification({ global: true, kind: 'backgroundDone', title: 'Your pet hatched' })
-    expect(notify).not.toHaveBeenCalled()
-  })
-
-  it('suppresses every kind for a muted session, even while away', () => {
-    const sessionId = freshSession()
-    toggleSessionMuted(sessionId)
-    setActiveSessionId(sessionId)
-
-    dispatchNativeNotification({ kind: 'turnDone', sessionId, title: 'done' })
-    dispatchNativeNotification({ kind: 'backgroundDone', sessionId, title: 'bg' })
-    dispatchNativeNotification({ kind: 'approval', sessionId, title: 'approve' })
-
     expect(notify).not.toHaveBeenCalled()
   })
 })

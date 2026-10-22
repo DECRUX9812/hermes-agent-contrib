@@ -8,17 +8,23 @@
 import type { ErrorCodeKey } from '@/lib/error-surface'
 import type { TipId } from '@/lib/tips/catalog'
 
-import type { AppTourTranslations, HandoffTourTranslations } from './types_app_tour'
-import type { AuxTaskCopyMap } from './types_aux_tasks'
+import type { AppTourTranslations } from './types_app_tour'
 import type { BillingTranslations } from './types_billing'
 import type { BootTranslations } from './types_boot'
 import type { CatalogInstallTranslations } from './types_catalog_install'
+import type { ClarifyCopy } from './types_clarify'
+import type { ConnectorAccountsTranslations, ConnectorCardTranslations } from './types_connectors'
+import type { GatewayGroupOpenCopy, SkillDeepLinkCopy } from './types_deep_links'
+import type { FirstRunCopy } from './types_first_run'
 import type { ModelMenuTranslations } from './types_model_menu'
+import type { ModelSettingsTranslations } from './types_model_settings'
 import type { NoticeTranslations } from './types_notices'
 import type { OnboardingTranslations } from './types_onboarding'
 import type { SidebarProjectsTranslations } from './types_projects'
 import type { SharedMetricsTranslations } from './types_shared_metrics'
+import type { ThemePickerCopy } from './types_theme_picker'
 import type { UninstallSectionTranslations } from './types_uninstall_section'
+import type { UpdateChannelCopy } from './types_update_channel'
 
 /** The locales compiled into the app (`TRANSLATIONS`). */
 export type BundledLocale = 'en' | 'zh' | 'zh-hant' | 'ja' | 'ar' | 'ru' | 'fr' | 'de' | 'es'
@@ -54,8 +60,6 @@ export type ToolTitleKey =
   | 'read_file'
   | 'search_files'
   | 'session_search_recall'
-  | 'setup_choose'
-  | 'start_chat'
   | 'terminal'
   | 'todo'
   | 'vision_analyze'
@@ -78,6 +82,7 @@ export interface Translations extends NoticeTranslations {
   /** Shared-metrics consent: first-run dialog + Settings › Safety toggles. */
   sharedMetrics: SharedMetricsTranslations
   appTour: AppTourTranslations
+  firstRun: FirstRunCopy
   externalOpenFailed: {
     title: string
     message: string
@@ -91,99 +96,8 @@ export interface Translations extends NoticeTranslations {
   intro: {
     stock: Record<string, string[]>
     custom: (label: string) => string[]
-    recentSessions: string
   }
-  catalog: {
-    add: string
-    added: string
-    discover: string
-    featured: string
-    explorePlugins: string
-    exploreSkills: string
-    mostStarred: string
-    newest: string
-    recentlyUpdated: string
-    alphabetical: string
-    sortBy: string
-    seeAll: string
-    related: string
-    tags: string
-    screenshots: string
-    listView: string
-    cardView: string
-    installTitle: (name: string) => string
-    installDescription: string
-    installTo: string
-    thisComputer: string
-    installing: string
-    installComplete: (name: string) => string
-    destinationChanged: string
-    installed: string
-    searchSkills: string
-    searchPlugins: string
-    allSources: string
-    allCategories: string
-    about: string
-    author: string
-    source: string
-    category: string
-    version: string
-    platforms: string
-    requires: string
-    tools: string
-    hooks: string
-    middleware: string
-    commands: string
-    license: string
-    addedDate: string
-    updatedDate: string
-    repository: string
-    documentation: string
-    noResults: string
-    tryAnother: string
-    clearFilters: string
-    filters: string
-    loadFailed: string
-    retry: string
-    more: string
-    pinned: string
-    snapshotHint: string
-    installHint: string
-    results: (count: number) => string
-    back: string
-  }
-  connectors: {
-    title: string
-    connect: string
-    skip: string
-    cancel: string
-    retry: string
-    grant: string
-    connected: string
-    checking: string
-    notConnected: string
-    skipped: string
-    disabled: string
-    failed: string
-    needsAuth: string
-    opening: string
-    waiting: string
-    timeout: string
-    refresh: string
-    connectError: string
-    connectErrorFor: (app: string) => string
-    unavailable: string
-    ownerMissing: string
-    search: string
-    empty: string
-    disclaimer: string
-    execution: string
-    setup: (server: string) => string
-    openInBrowser: string
-    setupCancel: string
-    authorizedToolsUnavailable: string
-    required: string
-  }
+  connectors: ConnectorCardTranslations
   connectorsPage: {
     title: string
     searchPlaceholder: (count: number) => string
@@ -337,6 +251,7 @@ export interface Translations extends NoticeTranslations {
       advanced: string
       advancedHint: string
     }
+    accounts: ConnectorAccountsTranslations
     tools: {
       title: string
       notInstalledBody: string
@@ -439,13 +354,7 @@ export interface Translations extends NoticeTranslations {
     importError: string
   }
   common: {
-    answerFailed: string
-    dismiss: string
-    open: string
-    runFailed: string
-    runNow: string
     apply: string
-    approve: string
     back: string
     save: string
     saving: string
@@ -464,7 +373,6 @@ export interface Translations extends NoticeTranslations {
     copy: string
     copyFailed: string
     delete: string
-    deny: string
     docs: string
     done: string
     error: string
@@ -484,7 +392,6 @@ export interface Translations extends NoticeTranslations {
     skip: string
     update: string
     tryHint: (term: string) => string
-    undo: string
     on: string
     off: string
   }
@@ -494,7 +401,6 @@ export interface Translations extends NoticeTranslations {
     revealExplorer: string
     revealFileManager: string
     revealInSidebar: string
-    openInEditor: (name: string) => string
     copyPath: string
     copyRelativePath: string
     download: string
@@ -562,12 +468,6 @@ export interface Translations extends NoticeTranslations {
       rpcOutOfSync: string
       restartHermesFailed: string
     }
-    digest: {
-      /** OS notification title for the batched summary (rule #39). */
-      title: (count: number) => string
-      /** One per-kind count line inside the digest body ("2 × Response ready"). */
-      line: (count: number, label: string) => string
-    }
     actions: {
       restartHermes: string
       openKeys: string
@@ -582,7 +482,6 @@ export interface Translations extends NoticeTranslations {
       microphoneFailed: string
       microphoneInUse: string
       microphonePermissionDenied: string
-      microphoneSecureContextRequired: string
       microphoneStartFailed: string
       microphoneUnsupported: string
       noMicrophone: string
@@ -682,10 +581,6 @@ export interface Translations extends NoticeTranslations {
   findInPage: {
     next: string
     previous: string
-    /** Transcript-scoped mode toggle: tooltip/aria description. */
-    searchAll: string
-    /** Transcript-scoped mode toggle: the compact chip label in the bar. */
-    searchAllShort: string
   }
 
   language: {
@@ -744,15 +639,22 @@ export interface Translations extends NoticeTranslations {
         title: string
         description: string
         repoLabel: string
+        verified: string
+        unverified: string
+        reviewedByNous: string
+        installsAndEnables: (profile: string) => string
+        installsOnly: (profile: string) => string
+        advanced: string
+        versionLabel: string
+        reviewedPin: (sha: string) => string
+        latestCommit: string
+        nothingToInstall: string
         includesHeading: string
         agentLabel: string
         desktopLabel: string
         profileLabel: string
         agentTargetLocal: (profile: string, dir: string) => string
         agentTargetRemote: (profile: string) => string
-        catalogPinned: (name: string, sha: string) => string
-        reviewedHeading: string
-        reviewedIntro: string
         toolsConnected: (n: number) => string
         skillsReady: (names: string[]) => string
         nextChat: string
@@ -763,12 +665,10 @@ export interface Translations extends NoticeTranslations {
         desktopTargetFromPackage: string
         desktopOnlyNote: string
         insecureWarning: string
-        securityHeading: string
         securityIntro: string
         sourceHeading: string
         viewRepository: string
         viewPluginFiles: string
-        gitCloneLabel: string
         enableAgent: string
         forceReinstall: string
         pinToCommit: string
@@ -877,17 +777,6 @@ export interface Translations extends NoticeTranslations {
       completionSoundTitle: string
       completionSoundDesc: string
       completionSoundPreview: string
-      quietHoursTitle: string
-      quietHoursDesc: string
-      quietHoursWindowTitle: string
-      quietHoursWindowDesc: string
-      quietHoursFrom: string
-      quietHoursTo: string
-      digestTitle: string
-      digestDesc: string
-      sessionOverridesTitle: string
-      sessionOverridesDesc: string
-      sessionOverridesEmpty: string
     }
     sections: Record<string, string>
     searchPlaceholder: Record<'about' | 'config' | 'gateway' | 'keys' | 'mcp' | 'sessions', string>
@@ -895,8 +784,6 @@ export interface Translations extends NoticeTranslations {
     appearance: {
       title: string
       intro: string
-      simpleModeTitle: string
-      simpleModeDesc: string
       colorMode: string
       colorModeDesc: string
       toolViewTitle: string
@@ -907,10 +794,6 @@ export interface Translations extends NoticeTranslations {
       hideThreadTimelineDesc: string
       reasoningCollapsedTitle: string
       reasoningCollapsedDesc: string
-      lookTitle: string
-      lookDesc: string
-      lookSoft: string
-      lookClassic: string
       chatTextScaleTitle: string
       chatTextScaleDesc: string
       uiScaleTitle: string
@@ -918,7 +801,6 @@ export interface Translations extends NoticeTranslations {
       sessionDensityTitle: string
       sessionDensityDesc: string
       sessionDensityCompact: string
-      sessionDensityCondensed: string
       sessionDensityComfortable: string
       sessionDensityDetailed: string
       tabStripTitle: string
@@ -962,26 +844,6 @@ export interface Translations extends NoticeTranslations {
       }
       backdropTitle: string
       backdropDesc: string
-      backdropScenes: {
-        off: string
-        aurora: string
-        dusk: string
-        ocean: string
-        meadow: string
-        cyanotype: string
-        ink: string
-        grid: string
-        statue: string
-        custom: string
-      }
-      backdropUpload: string
-      backdropRemoveImage: string
-      backdropStrengths: {
-        subtle: string
-        balanced: string
-        vivid: string
-      }
-      backdropImageError: string
       userBubbleTitle: string
       userBubbleDesc: string
       textDirectionTitle: string
@@ -1000,12 +862,6 @@ export interface Translations extends NoticeTranslations {
       toursDesc: string
       composerPopoutTitle: string
       composerPopoutDesc: string
-      autoOpenFilesTitle: string
-      autoOpenFilesDesc: string
-      activityRailTitle: string
-      activityRailDesc: string
-      openInEditorTitle: string
-      openInEditorDesc: string
       fileBrowserTitle: string
       fileBrowserDesc: string
       vibeHeartsTitle: string
@@ -1074,12 +930,6 @@ export interface Translations extends NoticeTranslations {
     fieldLabels: Record<string, string>
     fieldDescriptions: Record<string, string>
     uninstallSection: UninstallSectionTranslations
-    poolLimits: {
-      warmBotBackendsAria: string
-      warmBotBackendsTitle: string
-      backendIdleTimeoutAria: string
-      backendIdleTimeoutTitle: string
-    }
     customEndpoints: {
       active: string
       apiKeySet: string
@@ -1126,16 +976,11 @@ export interface Translations extends NoticeTranslations {
       screenRecording: string
       driverHealth: string
     }
-    about: {
-      updates: string
-    }
+    about: { updates: string; channel: UpdateChannelCopy }
     config: {
       minimizeToTrayTitle: string
       minimizeToTrayDesc: string
       minimizeToTrayUnavailable: string
-      menuBarStatusTitle: string
-      menuBarStatusDesc: string
-      menuBarStatusUnavailable: string
       none: string
       noneParen: string
       builtinOnly: string
@@ -1157,17 +1002,10 @@ export interface Translations extends NoticeTranslations {
       keepAwakeOff: string
       keepAwakeWhileWorking: string
       keepAwakeAlways: string
-      proactiveNudgesTitle: string
-      proactiveNudgesDesc: string
       disableF12Title: string
       disableF12Desc: string
       alwaysExternalLinksTitle: string
       alwaysExternalLinksDesc: string
-      developerTitle: string
-      resetOnboardingTitle: string
-      resetOnboardingDesc: string
-      resetOnboardingAction: string
-      resetOnboardingFailed: string
       attachmentSizeTitle: string
       attachmentSizeDesc: string
       attachmentSizeUnit: string
@@ -1423,7 +1261,6 @@ export interface Translations extends NoticeTranslations {
       sshPortDesc: string
       sshKeyTitle: string
       sshKeyDesc: string
-      sshKeyPlaceholder: string
       sshHermesPathTitle: string
       sshHermesPathDesc: string
       sshHermesPathPlaceholder: string
@@ -1496,63 +1333,7 @@ export interface Translations extends NoticeTranslations {
       deepLinkErrorUrl: string
       deepLinkErrorTooLarge: string
     }
-    model: {
-      setupProviderFallback: string
-      setUpProvider: (name: string) => string
-      staleAuxBefore: (count: number, names: string) => string
-      staleAuxAfter: string
-      staleAuxOtherProviders: string
-      moaEnabled: string
-      moaSetDefault: string
-      moaNewPresetPlaceholder: string
-      moaAddPreset: string
-      customModel: string
-      customModelPlaceholder: string
-      chooseFromList: string
-      moaDefault: string
-      moaReferenceToggle: (enabled: boolean, index: number) => string
-      moaReferenceTitle: (index: number) => string
-      moaAddReference: string
-      loading: string
-      appliesDesc: string
-      provider: string
-      model: string
-      applying: string
-      mainAppliedTitle: string
-      mainAppliedMessage: (model: string) => string
-      defaultsLabel: string
-      reasoning: string
-      reasoningOff: string
-      speed: string
-      speedStandard: string
-      defaultsFailed: string
-      loadFailed: string
-      restartRequired: string
-      restartBackend: string
-      restartingBackend: string
-      restartFailed: string
-      auxiliaryTitle: string
-      resetAllToMain: string
-      staleAuxDismiss: string
-      auxiliaryDesc: string
-      setToMain: string
-      change: string
-      autoUseMain: string
-      inheritMainEffort: string
-      inheritsFrom: (task: string) => string
-      followTask: (task: string) => string
-      providerDefault: string
-      fallbackAdd: string
-      fallbackEmpty: string
-      notInCatalog: string
-      moaTitle: string
-      moaPreset: string
-      moaDescription: string
-      moaAggregator: string
-      moaAggregatorBilled: string
-      moaReferenceHint: string
-      tasks: AuxTaskCopyMap
-    }
+    model: ModelSettingsTranslations
     localModels: {
       connectionChanged: string
       title: string
@@ -2049,17 +1830,7 @@ export interface Translations extends NoticeTranslations {
     }
   }
 
-  skillDeepLink: {
-    installTitle: (name: string) => string
-    installDescription: string
-    installTo: string
-    thisComputer: string
-    installing: string
-    installComplete: (name: string) => string
-    destinationChanged: string
-    installed: string
-    source: string
-  }
+  skillDeepLink: SkillDeepLinkCopy
   skills: {
     tabSkills: string
     tabToolsets: string
@@ -2159,8 +1930,6 @@ export interface Translations extends NoticeTranslations {
       catalogProvenance: (sha: string) => string
       pinnedProvenance: (sha: string) => string
       pinnedBadge: (sha: string) => string
-      tierOfficial: string
-      tierCommunity: string
       updateToPin: (sha: string) => string
       updateFailed: (name: string) => string
       updated: (name: string) => string
@@ -2272,11 +2041,8 @@ export interface Translations extends NoticeTranslations {
     importSuccess: (nodes: number) => string
     importedBadge: string
     resetToMine: string
-    live: string
-    liveHint: string
-    liveOff: string
-    openSession: string
   }
+  gatewayGroupOpen: GatewayGroupOpenCopy
   agents: {
     extendedTranscript: string
     transcriptTruncated: string
@@ -2317,55 +2083,6 @@ export interface Translations extends NoticeTranslations {
     durationSeconds: (seconds: string) => string
     durationMinutes: (minutes: number, seconds: number) => string
     tokens: (value: number | string) => string
-  }
-
-  roster: {
-    title: string
-    subtitle: string
-    emptyTitle: string
-    emptyDesc: string
-    untitledRun: string
-    railPill: (count: number) => string
-    close: string
-    fanOut: string
-    fanOutTitle: string
-    fanOutPlaceholder: string
-    fanOutNoAgents: string
-    fanOutClose: string
-    fanOutSend: (count: number) => string
-    fanOutFailed: string
-  }
-
-  hud: {
-    /** The "needs you" pill on a HUD run card whose session is blocked on input. */
-    needsYou: string
-    /** Aria label for a run card's click-through (hands the session to the app window). */
-    openRunInApp: (title: string) => string
-  }
-
-  attentionInbox: {
-    title: string
-    empty: string
-    count: (count: number) => string
-    appScope: string
-    unknownSession: string
-    kinds: {
-      approval: string
-      clarify: string
-      error: string
-      secret: string
-      sudo: string
-      vaultCode: string
-      vaultSave: string
-      vaultUnlock: string
-    }
-    pullRequest: (number: number, title: string) => string
-    prChecks: {
-      failure: string
-      none: string
-      pending: string
-      success: string
-    }
   }
 
   commandCenter: {
@@ -2446,15 +2163,7 @@ export interface Translations extends NoticeTranslations {
     settingsFields: string
     mcpServers: string
     archivedChats: string
-    sections: Record<'maintenance' | 'notices' | 'sessions' | 'system' | 'usage', string>
-    sectionDescriptions: Record<'maintenance' | 'notices' | 'sessions' | 'system' | 'usage', string>
-    notices: {
-      empty: string
-      clear: string
-      mutedTag: string
-      destCenter: string
-      destCorner: string
-    }
+    sections: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
     nav: Record<'newChat' | 'settings' | 'capabilities' | 'messaging' | 'artifacts', { title: string; detail: string }>
     sectionEntries: Record<'sessions' | 'system' | 'usage', { title: string; detail: string }>
     providerNavigate: string
@@ -2505,15 +2214,6 @@ export interface Translations extends NoticeTranslations {
     topSkills: string
     noSkillActivity: string
     actions: (count: string) => string
-    /** Opt-in toggle that reveals the spend rows (local aggregation only). */
-    costAnalytics: string
-    costAnalyticsHint: string
-    dailySpend: string
-    estimatedCost: string
-    perProfile: string
-    topSessions: string
-    loadedSessionsHint: string
-    noSpend: string
     logFile: string
     logLevel: string
     logSearchPlaceholder: string
@@ -2660,24 +2360,6 @@ export interface Translations extends NoticeTranslations {
       savedRestarting: string
       savedRestartFailed: (detail: string) => string
     }
-    /** "Continue on your phone" card on a platform detail — QR + deep link +
-     *  gateway presence, fed by the adapter-published `identity` field (#40). */
-    phoneParity: {
-      title: string
-      presence: string
-      scanHint: string
-      linkPending: string
-      openLink: string
-      copyLink: string
-      copyFailed: string
-    }
-    reach: {
-      title: (name: string) => string
-      scan: (name: string) => string
-      empty: (name: string) => string
-      connect: string
-      manage: string
-    }
     fieldCopy: Record<string, { label?: string; help?: string; placeholder?: string }>
     platformIntro: Record<string, string>
   }
@@ -2738,35 +2420,9 @@ export interface Translations extends NoticeTranslations {
     createFailed: (detail: string) => string
     copy: string
     deliverOptions: Record<string, string>
-    mobile: {
-      title: string
-      hint: string
-      pairButton: string
-      dialogTitle: string
-      dialogDesc: string
-      backendUrl: string
-      backendUrlHint: string
-      create: string
-      creating: string
-      createFailed: (detail: string) => string
-      codeLabel: string
-      openHint: (url: string) => string
-      expires: (minutes: number) => string
-      copy: string
-      done: string
-    }
   }
 
   profiles: {
-    askRules: {
-      title: (name: string) => string
-      modes: Record<'manual' | 'smart' | 'off', { label: string; description: (name: string) => string }>
-      rulesLabel: string
-      rulesPlaceholder: string
-      save: string
-      discard: string
-      failed: string
-    }
     close: string
     nameHint: string
     title: string
@@ -3059,10 +2715,6 @@ export interface Translations extends NoticeTranslations {
     chat: string
     copyUrl: string
     copyPath: string
-    /** Plan→build handoff (#22): hover action on a plan artifact row. */
-    buildWithPlan: string
-    /** Composer draft seeded into the fresh build session. */
-    buildWithPlanDraft: string
   }
 
   artifactCard: {
@@ -3085,100 +2737,7 @@ export interface Translations extends NoticeTranslations {
     missingBody: string
   }
 
-  panels: {
-    button: string
-    title: string
-    subtitle: string
-    needsProject: string
-    openFolder: string
-    arrange: string
-    arrangements: Record<'build' | 'code' | 'focus' | 'review' | 'watch', string>
-    items: Record<
-      'artifacts' | 'browser' | 'canvas' | 'changes' | 'cli' | 'code' | 'files' | 'live' | 'terminal',
-      { label: string; description: string }
-    >
-  }
-  codePane: {
-    title: string
-    cli: string
-    cliHint: string
-    reload: string
-    starting: string
-    startingBody: string
-    noProject: string
-    noProjectBody: string
-    missingTitle: string
-    missingBody: string
-    failedTitle: string
-    failedBody: string
-    remoteTitle: string
-    remoteBody: string
-    retry: string
-  }
-  quickOpen: {
-    title: string
-    placeholder: (project: string) => string
-    noProject: string
-    noProjectBody: string
-    openFolder: string
-    noMatch: (query: string) => string
-    recent: string
-    hint: string
-    line: (line: number) => string
-    openHint: string
-    attachHint: string
-    lineHint: string
-  }
-  recentProjects: { title: string; openFolder: string }
-  todayBrief: {
-    greeting: { morning: string; afternoon: string; evening: string; night: string }
-    needsYou: string
-    running: string
-    finished: string
-    scheduled: string
-    recent: string
-    tasks: string
-    taskWorking: (age: string) => string
-    taskNew: string
-  }
-
-  live: {
-    title: string
-    noSession: string
-    emptyTitle: string
-    emptyBody: string
-    count: (total: number) => string
-    countRunning: (total: number, running: number) => string
-    follow: string
-    followHint: string
-    copy: string
-    exitCode: (code: number) => string
-    runningFor: (elapsed: string) => string
-    waitingForOutput: string
-    noOutput: string
-    openLive: string
-  }
-
-  artifactRail: {
-    empty: string
-    noSession: string
-    open: string
-    openFailed: string
-    saveFailed: string
-    saveToFile: string
-  }
-
   sidebar: {
-    archive: {
-      finished: string
-      olderThan: string
-      days: (days: number) => string
-      confirmTitle: (count: number) => string
-      confirmBody: string
-      confirmAction: string
-      done: (count: number) => string
-      none: string
-    }
     filter: {
       grouping: string
       ordering: string
@@ -3186,7 +2745,6 @@ export interface Translations extends NoticeTranslations {
       filters: string
       status: string
       pullRequest: string
-      tags: string
       profile: string
       project: string
       archived: string
@@ -3224,35 +2782,17 @@ export interface Translations extends NoticeTranslations {
     }
     profileRail: string
     nav: Record<string, string>
-    interfaceMode: {
-      label: string
-      simple: string
-      full: string
-      toFull: string
-      toSimple: string
-    }
     searchAria: string
-    railAria: string
     searchPlaceholder: string
     clearSearch: string
     noMatch: (query: string) => string
     results: string
     pinned: string
-    needsAttention: string
-    delegationReports: {
-      done: string
-      needsDecision: string
-      failed: string
-      openSubagent: string
-      dismiss: string
-      tasks: (count: number, completed: number) => string
-    }
     sessions: string
     terminal: string
     files: string
     review: string
     logs: string
-    artifacts: string
     cronJobs: string
     groupAriaGrouped: string
     groupAriaUngrouped: string
@@ -3286,26 +2826,15 @@ export interface Translations extends NoticeTranslations {
       unpin: string
       markUnread: string
       markRead: string
-      muteNotifications: string
-      unmuteNotifications: string
-      mutedTooltip: string
-      watch: string
-      stopWatching: string
       unreadFailed: string
       copyId: string
       export: string
-      exportMarkdown: string
-      shareLink: string
-      exportDeliverable: string
-      copyMarkdown: string
-      artifacts: string
       branchFrom: string
       rename: string
       archive: string
       unarchive: string
       newWindow: string
       openInTerminal: string
-      continueInCli: string
       hideTabBar: string
       openInNewTab: string
       openInSplit: string
@@ -3317,34 +2846,6 @@ export interface Translations extends NoticeTranslations {
       finishedUnread: string
       backgroundRunning: string
       draftSession: string
-      /** "Continue on phone" submenu — hand this session off to a messaging
-       *  platform (Telegram/Slack) via handoff.request; the phone-parity card
-       *  in Messaging carries the link/QR. */
-      continueOnPhone: string
-      /** "Open on another device" (#50) — emit a `hermes://session/open` deep
-       *  link / QR that re-homes a session VIEW to another Hermes device whose
-       *  connections reach the session's home backend. The session never moves. */
-      openOnDevice: string
-      openDeviceTitle: string
-      /** @param home — "<label> (<endpoint>)" of the session's home connection. */
-      openDeviceDesc: (home: string) => string
-      /** Home description fallback when the connection can't be resolved. */
-      openDeviceHomeFallback: string
-      /** Inbound link on a known-but-inactive connection: whole-window switch
-       *  confirm. @param title — the session's title; @param label — the
-       *  target connection label (suffixed with the profile when non-default). */
-      openDeviceIncomingTitle: string
-      openDeviceIncomingDesc: (title: string, label: string) => string
-      openDeviceSwitchAndOpen: string
-      openDeviceSwitching: string
-      /** Inbound link whose home backend matches no registered connection. */
-      openDeviceIncomingMissingTitle: string
-      /** @param id — session title or id; @param endpoint — the link's claimed
-       *  endpoint (may be empty). */
-      openDeviceIncomingMissingDesc: (id: string, endpoint: string) => string
-      openDeviceOpenConnections: string
-      /** Empty state inside the submenu when no platform can take a handoff. */
-      handoffNone: string
       handoffOrigin: (platform: string) => string
       continuationOrigin: string
       ownedByProfile: (profile: string) => string
@@ -3353,24 +2854,6 @@ export interface Translations extends NoticeTranslations {
       renameTitle: string
       renameDesc: string
       untitledPlaceholder: string
-      tags: string
-      tagsDialogTitle: string
-      tagsDialogDesc: string
-      tagsAddPlaceholder: string
-      tagsAdd: string
-      tagsRemoveLabel: (label: string) => string
-      askAbout: string
-      ask: {
-        clear: string
-        dialogDesc: (title: string) => string
-        dialogTitle: string
-        empty: string
-        failed: string
-        placeholder: string
-        send: string
-        thinking: string
-        truncatedNote: string
-      }
       deleteTitle: string
       deleteDesc: (title: string) => string
       deleting: string
@@ -3378,55 +2861,10 @@ export interface Translations extends NoticeTranslations {
       untitledChat: (id: string) => string
       messageCount: (count: number) => string
       todoProgress: string
-      attachmentCount: (count: number) => string
-      /** #47 worktree-per-session: the row's worktree chip plus the ⋯ menu
-       *  verbs — opt-in isolate, merge-back (with its confirm dialog). */
-      isolateWorktree: string
-      isolateWorktreeDone: (name: string) => string
-      mergeWorktree: string
-      mergeWorktreeTitle: string
-      mergeWorktreeDesc: (branch: string, repo: string) => string
-      mergingWorktree: string
-      mergedWorktree: (into: string) => string
-      mergeWorktreeFailed: string
-      worktreeTag: (branch: string) => string
-      worktreeUnavailable: string
-      digest: {
-        agents: (count: number) => string
-        approve: (command: string) => string
-        compacting: string
-        replying: string
-        stalled: string
-        todo: (done: number, total: number, task: string) => string
-      }
-      prCiPassing: string
-      prCiFailing: string
-      prCiPending: string
       ageNow: string
       ageDay: string
       ageHour: string
       ageMin: string
-    }
-    /** The watch strip: compact live chips for watched sessions, pinned at
-     *  the top of the sessions column. */
-    watch: {
-      strip: string
-      stop: string
-    }
-    /** ⌘/⇧-click multi-select: the floating bulk-action bar at the bottom of
-     *  the sessions column and its tag dialog. */
-    selection: {
-      ariaLabel: string
-      count: (count: number) => string
-      pin: string
-      unpin: string
-      mute: string
-      unmute: string
-      tag: string
-      archive: string
-      clear: string
-      tagDialogTitle: (count: number) => string
-      tagDialogDesc: string
     }
     dateDivider: {
       today: string
@@ -3438,24 +2876,6 @@ export interface Translations extends NoticeTranslations {
     statusDivider: {
       working: string
       done: string
-    }
-    /** The session hovercard ("peek") — inspect a row's full context without
-     *  resuming it. Labels for the card's detail rows. */
-    peek: {
-      idle: string
-      archived: string
-      workspace: string
-      branch: string
-      model: string
-      stats: string
-      tokens: (count: string) => string
-      agents: string
-      agentsSummary: (count: number) => string
-      agentsRunning: (count: number) => string
-      profile: string
-      source: string
-      started: string
-      updated: string
     }
     markAllRead: string
   }
@@ -3471,9 +2891,8 @@ export interface Translations extends NoticeTranslations {
     startVoice: string
     openDirective: string
     queueMessage: string
-    queueWithAttachments: string
     steer: string
-    steerTurn: string
+    redirect: string
     stop: string
     send: string
     speaking: string
@@ -3530,15 +2949,17 @@ export interface Translations extends NoticeTranslations {
     restoredDraftUndo: string
     /** The local-setup offer above the input after the first finished task. */
     queueEdit: string
-    queueMoveUp: string
-    queueMoveDown: string
     queueExpand: string
     queueCollapse: string
     queueSendNext: string
     queueSend: string
     queueSteer: string
-    queueRemoved: string
     queueDelete: string
+    queueLostNote: string
+    restoreImageDraft: string
+    queueCancelFailed: string
+    queueLostDiscard: string
+    queueLostDiscardTip: string
     queueResume: string
     queueResumeTip: string
     queueStuckTitle: string
@@ -3565,11 +2986,8 @@ export interface Translations extends NoticeTranslations {
     folder: string
     images: string
     pasteImage: string
-    captureRegion: string
     url: string
     promptSnippets: string
-    scheduleJob: string
-    slashCommands: string
     tipPre: string
     tipPost: string
     snippetsTitle: string
@@ -3591,16 +3009,6 @@ export interface Translations extends NoticeTranslations {
       tip: (skill: string) => string
       done: (skill: string) => string
       doneTip: string
-    }
-    goalChips: {
-      planLabel: string
-      planTip: string
-      planDone: string
-      planDoneTip: string
-      goalLabel: string
-      goalTip: string
-      goalDone: string
-      goalDoneTip: string
     }
     githubSuggestions: {
       label: string
@@ -3624,53 +3032,8 @@ export interface Translations extends NoticeTranslations {
       done: string
       doneTip: string
     }
-    /** Proactive next-step chips offered on session settle (#43, opt-in).
-     *  `*Draft` is the text inserted into the composer — never auto-sent. */
-    nudges: {
-      prLabel: string
-      prTip: string
-      prDraft: string
-      prDone: string
-      prDoneTip: string
-      followupLabel: string
-      followupTip: string
-      followupDraft: string
-      followupDone: string
-      followupDoneTip: string
-    }
   }
 
-  regionCapture: {
-    attach: string
-    cancel: string
-    captureFailed: string
-    capturing: string
-    clear: string
-    notePlaceholder: string
-    permissionDenied: string
-    selectHint: string
-    toolTips: { arrow: string; pen: string; rect: string }
-    unavailable: string
-    undo: string
-  }
-  /** Spoken "what's it doing?" replies — composed from the session stores, no
-   *  model call. Concatenated by `composeSessionStatusSpeech`. */
-  voiceStatus: {
-    /** No turn is running. */
-    idle: string
-    /** A turn or background job is running, nothing worth naming. */
-    working: string
-    /** A turn is running; `detail` names the in-progress todo or running tool. */
-    workingOn: (detail: string) => string
-    /** A turn is running but has been quiet a while. */
-    stalled: string
-    /** A blocking prompt needs the user's answer. */
-    needsInput: string
-    /** The last turn finished and the reply is unread. */
-    finished: string
-    /** Task progress tail: "{done} of {total} tasks done." */
-    progress: (done: number, total: number) => string
-  }
   statusStack: {
     hideStack: string
     showStack: string
@@ -3688,10 +3051,6 @@ export interface Translations extends NoticeTranslations {
     stop: string
     dismiss: string
     exit: (code: number) => string
-    verifyChecking: string
-    verifyFailed: (count: number) => string
-    verifyOpenConsole: string
-    verifyPassed: string
     control: {
       goalActiveTurns: (turn: number, maxTurns: number) => string
       goalDoneTurns: (turns: number) => string
@@ -3762,7 +3121,7 @@ export interface Translations extends NoticeTranslations {
       heartbeatEveryHours: (hours: number) => string
       heartbeatEverySeconds: (seconds: number) => string
       heartbeatNext: (time: string) => string
-      heartbeatDueWaitingForIdle: string
+      dueWaitingForIdle: string
       heartbeatActions: string
       pauseHeartbeat: string
       resumeHeartbeat: string
@@ -3807,9 +3166,6 @@ export interface Translations extends NoticeTranslations {
       notRepo: string
       noDiff: string
       scopeUncommitted: string
-      scopeSession: string
-      /** Session-scope empty state: the session named no file-edit paths. */
-      sessionEmpty: string
       scopeBranch: string
       scopeLastTurn: string
       readOnlyScope: string
@@ -3824,23 +3180,6 @@ export interface Translations extends NoticeTranslations {
       agentShip: string
       agentShipUnavailable: string
       agentShipPrompt: string
-      agentReview: string
-      agentReviewPick: string
-      agentReviewNoProfiles: string
-      agentReviewPrompt: string
-      agentReviewAttachment: string
-      agentReviewUnavailable: string
-      agentReviewReportTitle: (reviewer: string) => string
-      selfReview: string
-      selfReviewRunning: string
-      selfReviewClean: string
-      selfReviewClear: string
-      selfReviewComments: (count: number) => string
-      commentOnLine: (line: number) => string
-      diffCommentPlaceholder: string
-      diffCommentSend: string
-      /** Toast after a diff comment lands in the composer as a draft. */
-      commentSeeded: string
       newBranch: string
       branchOffFrom: (base: string) => string
       switchTo: (branch: string) => string
@@ -3985,7 +3324,6 @@ export interface Translations extends NoticeTranslations {
     versionDetailsUncommittedChanges: string
   }
 
-  handoffTour: HandoffTourTranslations
   install: {
     stageStates: Record<string, string>
     oneTimeTitle: string
@@ -4271,10 +3609,6 @@ export interface Translations extends NoticeTranslations {
       toggleTokensPerSecond: string
       toggleVersion: string
       toggleFreeTier: string
-      toggleNotices: string
-      noticesTitle: string
-      toggleAttentionInbox: string
-      attentionInboxTitle: string
       toggleWorkspace: string
       cacheHitRateTitle: string
       tokensPerSecondTitle: string
@@ -4290,11 +3624,6 @@ export interface Translations extends NoticeTranslations {
       openWebhooks: string
       starmap: string
       openStarmap: string
-      artifacts: string
-      artifactsTitle: string
-      artifactsCount: (count: number) => string
-      browseAllArtifacts: string
-      toggleArtifacts: string
       turnRunning: string
       contextUsage: string
       compressions: (count: number) => string
@@ -4339,19 +3668,6 @@ export interface Translations extends NoticeTranslations {
   }
 
   rightSidebar: {
-    agentTouched: string
-    newFile: string
-    newFolder: string
-    filterFiles: string
-    newFileIn: (label: string) => string
-    newFolderIn: (label: string) => string
-    newFilePlaceholder: string
-    newFolderPlaceholder: string
-    newFileFailed: string
-    newFolderFailed: string
-    filterPlaceholder: string
-    filterHint: string
-    filterNoMatch: string
     aria: string
     panelsAria: string
     files: string
@@ -4419,9 +3735,6 @@ export interface Translations extends NoticeTranslations {
     sourceLineTitle: string
     source: string
     renderedPreview: string
-    table: string
-    tableTruncated: (rows: number) => string
-    canvas: string
     diff: string
     unknownSize: string
     binaryTitle: string
@@ -4462,7 +3775,6 @@ export interface Translations extends NoticeTranslations {
       sentMessage: (count: number) => string
     }
     web: {
-      embeddedPreviewHint: string
       appFailedToBoot: string
       serverNotFound: string
       remoteLoopback: string
@@ -4512,25 +3824,6 @@ export interface Translations extends NoticeTranslations {
       commentTitle: (n: number) => string
       saveComment: string
       cancelComment: string
-      record: string
-      recordStop: string
-      recording: (count: number) => string
-      recordNeedPage: string
-      recordFailed: string
-      recordTitle: string
-      recordDesc: string
-      recordName: string
-      recordNamePlaceholder: string
-      recordNameHint: (slug: string) => string
-      recordDescLabel: string
-      recordDescPlaceholder: string
-      recordDescHint: string
-      recordSteps: (count: number) => string
-      recordEmpty: string
-      recordSave: string
-      recordSaving: string
-      recordSaved: (name: string) => string
-      recordSaveFailed: string
     }
   }
 
@@ -4538,10 +3831,6 @@ export interface Translations extends NoticeTranslations {
     title: string
     hint: string
     sessionNote: string
-    /** Toast shown right after the interface switches to Simple — where the
-     *  panes went plus the door back. */
-    simpleNotice: string
-    showAdvanced: string
     simple: { label: string; description: string }
     advanced: { label: string; description: string }
   }
@@ -4620,17 +3909,9 @@ export interface Translations extends NoticeTranslations {
   }
 
   assistant: {
-    /** "Where it left off" strip on a settled stored-session transcript (#13). */
-    sessionRecap: {
-      title: string
-      dismiss: string
-      turns: (count: number) => string
-      todo: (progress: string) => string
-    }
     thread: {
       loadingSession: string
       showEarlier: string
-      timelineScrubber: string
       loadingResponse: string
       loadingLocalModel: (model: string) => string
       processingPrompt: string
@@ -4724,7 +4005,6 @@ export interface Translations extends NoticeTranslations {
       stopReading: string
       readAloud: string
       copyFullResponse: string
-      copyMarkdown: string
       readAloudFullResponseHint: string
       editMessage: string
       expandMessage: string
@@ -4737,13 +4017,6 @@ export interface Translations extends NoticeTranslations {
       restoreBody: string
       restoreConfirm: string
       restoreNext: string
-      /** Per-user-message affordance: revert workspace files to the checkpoint
-       *  taken before that prompt (transcript untouched). */
-      revertFilesTip: string
-      revertFilesTitle: string
-      revertFilesBody: string
-      revertFilesConfirm: string
-      revertFilesFailed: string
       goForward: string
       sendEdited: string
       attachingFile: string
@@ -4766,42 +4039,8 @@ export interface Translations extends NoticeTranslations {
       alwaysDescription: (pattern: string) => string
       alwaysAllow: string
     }
-    clarify: {
-      notReady: string
-      gatewayDisconnected: string
-      sendFailed: string
-      loadingQuestion: string
-      other: string
-      placeholder: string
-      skip: string
-      skipped: string
-      noAnswer: string
-      confirmAndContinueLabel: string
-      singleSelectHint: string
-      multiSelectHint: string
-      oneQuestion: string
-      questionProgress: (answered: number, total: number) => string
-      notDelivered: string
-    }
-    setupChoose: {
-      kinds: Record<'accent' | 'connectors' | 'layout' | 'plugins' | 'theme', string>
-      loading: string
-      unavailable: string
-      findApp: string
-      customColor: string
-      plugin: string
-      startsLater: string
-    }
-    startChat: {
-      starting: (title: string) => string
-      startingUntitled: string
-      untitled: string
-      notStarted: string
-      retry: string
-      inProfile: (profile: string) => string
-      open: string
-      openFailed: string
-    }
+    clarify: ClarifyCopy
+    themePicker: ThemePickerCopy
     catalogInstall: CatalogInstallTranslations
     mcpSetup: {
       installTitle: string
@@ -4901,9 +4140,6 @@ export interface Translations extends NoticeTranslations {
     secretTitle: string
     secretDesc: string
     secretPlaceholder: string
-    secretCardSkip: string
-    secretCardSave: string
-    secretCardFootnote: string
     vaultUnlockSendFailed: string
     vaultUnlockTitle: (name: string) => string
     vaultUnlockDesc: (name: string) => string
@@ -4989,21 +4225,6 @@ export interface Translations extends NoticeTranslations {
     hydrationSyncing: (profile: string) => string
     sessionExported: string
     sessionExportFailed: string
-    shareLinkCopied: string
-    shareLinkFailed: string
-    markdownUser: string
-    markdownAssistant: string
-    markdownSystem: string
-    markdownReasoning: string
-    markdownToolCall: string
-    markdownToolResult: string
-    deliverableArtifacts: string
-    deliverableChanges: string
-    deliverableFilesLine: (files: number, added: number, removed: number) => string
-    deliverableNoSummary: string
-    deliverablePullRequest: string
-    deliverableSession: string
-    deliverableSummary: string
     imageSaved: string
     downloadStarted: string
     restartToUseSaveImage: string
@@ -5019,7 +4240,6 @@ export interface Translations extends NoticeTranslations {
     imageAttach: string
     imageWriteFailed: string
     imageAttachFailed: string
-    pastedAsFile: string
     pastedContent: string
     pasteAttachFailed: string
     attachImages: string
@@ -5029,43 +4249,12 @@ export interface Translations extends NoticeTranslations {
     dropFiles: string
     handoff: {
       pickPlatform: string
-      /** Immediate feedback when the session menu queues a handoff — the
-       *  composer flow stays silent until completion. */
-      queued: (platform: string, home: string) => string
-      /** The active session has no live runtime the gateway can move. */
-      sessionUnavailable: string
       success: (platform: string) => string
       systemNote: (platform: string) => string
       failed: (error: string) => string
       timedOut: string
       startMessaging: string
     }
-  }
-
-  /** The standalone quick-entry composer window (global shortcut). It runs
-   *  without an i18n provider of its own — the primary renderer resolves these
-   *  and pushes them to the window as part of its state payload. */
-  menuBar: {
-    /** Tray quick action starting a fresh chat (#38). */
-    newSession: string
-    /** Tray item summoning the quick-entry window (shown only when it's on). */
-    quickEntry: string
-    quit: string
-    /** Header over the recent-session rows in the tray menu. */
-    recentSessions: string
-    /** Tray item that restores and focuses the main window. */
-    show: string
-    /** Status line when nothing runs and nothing waits on the user. */
-    statusIdle: string
-    /** Status line with live counts — "2 running · 1 needs you". */
-    statusActive: (runs: number, needsYou: number) => string
-  }
-
-  quickEntry: {
-    /** Prefix on the frontmost-app context chip ("Context — Safari · …"). */
-    contextLabel: string
-    /** A11y label for the control that drops the chip before submitting. */
-    contextRemove: string
   }
 
   tips: {

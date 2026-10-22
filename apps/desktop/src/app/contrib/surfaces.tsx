@@ -15,7 +15,6 @@ import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { $activeConnectionId } from '@/store/connections'
 import { $gateway } from '@/store/gateway'
-import { $guideOpening } from '@/store/onboarding-gate'
 import { $chatOnboardingSolo } from '@/store/onboarding-intro'
 import { $activeGatewayProfile } from '@/store/profile'
 import { $freshDraftReady, $gatewayState } from '@/store/session'
@@ -24,7 +23,6 @@ import { ChatView } from '../chat'
 import { ChatSidebar } from '../chat/sidebar'
 import { TerminalPaneChrome } from '../right-sidebar/terminal/chrome'
 import { contributedRoutes, NEW_CHAT_ROUTE, ROUTES_AREA, sessionRoute } from '../routes'
-import { ActivityRail } from '../shell/activity-rail'
 import { useStatusSnapshot } from '../shell/hooks/use-status-snapshot'
 import { useStatusbarItems } from '../shell/hooks/use-statusbar-items'
 import { ModelMenuPanel } from '../shell/model-menu-panel'
@@ -60,18 +58,6 @@ export const SidebarSurface = memo(function SidebarSurface({
   return <ChatSidebar currentView={currentView} {...latestActions} />
 })
 
-export const RailSurface = memo(function RailSurface({
-  actions,
-  currentView
-}: {
-  actions: SidebarActions
-  currentView: ComponentProps<typeof ActivityRail>['currentView']
-}) {
-  const latestActions = useMemo(() => latestSidebarActions(actions), [actions])
-
-  return <ActivityRail currentView={currentView} onNavigate={latestActions.onNavigate} />
-})
-
 export const TerminalSurface = memo(function TerminalSurface() {
   return (
     <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-(--ui-terminal-surface-background)">
@@ -97,7 +83,6 @@ export const StatusbarSurface = memo(function StatusbarSurface({
   const activeConnectionId = useStore($activeConnectionId)
   const activeGatewayProfile = useStore($activeGatewayProfile)
   const gatewayState = useStore($gatewayState)
-  const guideOpening = useStore($guideOpening)
   const demoLayout = useStore($chatOnboardingSolo)
   const freshDraftReady = useStore($freshDraftReady)
   const gatewayScope = `${activeConnectionId ?? ''}\0${activeGatewayProfile}`
@@ -107,6 +92,7 @@ export const StatusbarSurface = memo(function StatusbarSurface({
 
   const { leftStatusbarItems, statusbarItems } = useStatusbarItems({
     agentsOpen,
+    changeSessionCwd: actions.changeSessionCwd,
     chatOpen,
     commandCenterOpen,
     extraLeftItems,
@@ -122,7 +108,7 @@ export const StatusbarSurface = memo(function StatusbarSurface({
   })
 
   // The demo layout (first-run intro) has no status bar.
-  return guideOpening || demoLayout ? null : <StatusbarControls items={statusbarItems} leftItems={leftStatusbarItems} />
+  return demoLayout ? null : <StatusbarControls items={statusbarItems} leftItems={leftStatusbarItems} />
 })
 
 /** The workspace pane: the real route table (chat + full-page views + plugin

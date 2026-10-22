@@ -15,10 +15,9 @@ import {
   DialogTitle,
   preventCloseButtonAutoFocus
 } from '@/components/ui/dialog'
-import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { getGlobalModelOptions } from '@/hermes'
 import { type Translations, useI18n } from '@/i18n'
-import { CheckCircle2 } from '@/lib/icons'
+import { CheckCircle2, Loader2 } from '@/lib/icons'
 import {
   $freeTierStatus,
   FREE_TIER_MODEL,
@@ -41,9 +40,9 @@ import {
   stopFreeTierOffer,
   syncFreeTierOffer
 } from '@/store/free-tier-sign-in'
+import { $localModelOfferPending } from '@/store/local-model-offer'
 import { refreshOnboardingProviders } from '@/store/onboarding'
-import { $onboardingGate } from '@/store/onboarding-gate'
-import { $onboardingSurfaces } from '@/store/onboarding-presence'
+import { $onboardingSurfaceClear } from '@/store/onboarding-presence'
 import { $currentModel, setModelPickerOpen } from '@/store/session'
 
 interface FreeTierSignInDialogProps {
@@ -85,7 +84,7 @@ export function FreeTierSignInDialog({ onSelectModel }: FreeTierSignInDialogProp
     }
   }, [owned, requestGateway, state.status])
 
-  // The sign-in offer rides every status read, and retries once guided
+  // The sign-in offer rides every status read, and retries once the first-run
   // onboarding leaves the screen. A completed free-tier turn re-reads the
   // status, since that is when the backend arms the next offer. Only the
   // owner (main windows) times it.
@@ -98,8 +97,8 @@ export function FreeTierSignInDialog({ onSelectModel }: FreeTierSignInDialogProp
 
     const stops = [
       $freeTierStatus.listen(sync),
-      $onboardingGate.listen(sync),
-      $onboardingSurfaces.listen(sync),
+      $onboardingSurfaceClear.listen(sync),
+      $localModelOfferPending.listen(sync),
       $freeTierTurnCompleted.listen(() => void refreshFreeTierStatus(requestGateway, sameGatewayRoute()))
     ]
 
@@ -340,7 +339,7 @@ function Spinner({ children }: { children: ReactNode }) {
       className="flex items-center gap-2 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)"
       role="status"
     >
-      <GlyphSpinner ariaLabel="Loading" className="text-xs" />
+      <Loader2 className="size-3 animate-spin" />
       {children}
     </span>
   )

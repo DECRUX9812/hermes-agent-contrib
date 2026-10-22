@@ -1,13 +1,19 @@
 import { defineFieldCopy } from '@/app/settings/field-copy'
 
 import { defineLocale, type TranslationOverrides } from './define-locale'
-import { ruAuxTasks } from './ru_aux_tasks'
+import { ruBoot } from './ru_boot'
+import { ruClarify } from './ru_clarify'
+import { ruConnectors } from './ru_connectors'
+import { ruFirstRun } from './ru_first_run'
 import { ruModelMenu } from './ru_model_menu'
+import { ruModelSettings } from './ru_model_settings'
 import { ruNotices } from './ru_notices'
 import { ruOnboarding } from './ru_onboarding'
 import { ruPluginSettings } from './ru_plugins'
 import { ruProjects } from './ru_projects'
 import { ruSharedMetrics } from './ru_shared_metrics'
+import { ruThemePicker } from './ru_theme_picker'
+import { ruUpdateChannel } from './ru_update_channel'
 
 // RU_PLURAL: (count, one, few, many) — русские формы сущ. падежа
 // RU_NOUN: (count, one, few, many) — формы род. множественного
@@ -31,41 +37,10 @@ const RU_NOUN = (count: number | string, one: string, few: string, many: string)
 }
 
 export const ruOverrides = {
+  connectors: ruConnectors.connectors,
   sharedMetrics: ruSharedMetrics,
-  sessionImport: {
-    title: 'Продолжить из другого приложения',
-    subtitle: 'Перенесите разговор в Hermes и продолжите с того места, где остановились.',
-    action: 'Импортировать сессию',
-    readingFrom: 'Читаем с',
-    connectedComputer: 'подключённого компьютера',
-    destination: 'Импорт в',
-    all: 'Все',
-    search: 'Поиск по загруженным сессиям',
-    scanning: 'Поиск разговоров',
-    scanError: 'Не удалось найти сессии',
-    scanHelp: 'Проверьте подключение к серверу и повторите попытку. Старому серверу может требоваться обновление.',
-    empty: 'Разговоров пока нет',
-    emptyHelp: 'Здесь появятся сессии Claude Code и Codex с этого сервера.',
-    noMatches: 'Совпадений нет',
-    searchHelp: 'Попробуйте другой заголовок или папку либо загрузите ещё сессии.',
-    skipped: 'Некоторые журналы пусты, недоступны или слишком велики для просмотра.',
-    more: 'Загрузить ещё сессии',
-    messages: 'сообщений',
-    choose: 'Разговор, который стоит продолжить',
-    chooseHelp: 'Выберите сессию, чтобы прочитать историю перед импортом в Hermes.',
-    previewLoading: 'Открываем просмотр',
-    previewError: 'Просмотр недоступен',
-    previewHelp: 'Исходный файл мог переместиться или измениться. Обновите список и повторите попытку.',
-    previewLimit: 'Просмотр сокращён для удобства чтения. Импортируется весь разговор.',
-    you: 'Вы',
-    snapshot: 'Этот разговор уже есть в Hermes. Откройте существующую копию, чтобы продолжить.',
-    copyNotice:
-      'Копируется текст разговора. Исходные файлы не меняются. Вывод инструментов и рассуждения не переносятся.',
-    importing: 'Импорт…',
-    open: 'Открыть в Hermes',
-    continue: 'Продолжить в Hermes',
-    importError: 'Не удалось импортировать разговор.'
-  },
+  firstRun: ruFirstRun,
+  sessionImport: ruConnectors.sessionImport,
   common: {
     apply: 'Применить',
     back: 'Назад',
@@ -105,7 +80,6 @@ export const ruOverrides = {
     skip: 'Пропустить',
     update: 'Обновить',
     tryHint: term => `Попробуйте «${term}»`,
-    undo: 'Отменить',
     on: 'Вкл',
     off: 'Выкл'
   },
@@ -114,7 +88,6 @@ export const ruOverrides = {
     revealExplorer: 'Показать в Проводнике',
     revealFileManager: 'Открыть содержащую папку',
     revealInSidebar: 'Показать в дереве файлов',
-    openInEditor: name => `Открыть в ${name}`,
     copyPath: 'Копировать путь',
     copyRelativePath: 'Копировать относительный путь',
     download: 'Скачать',
@@ -129,56 +102,7 @@ export const ruOverrides = {
     pathCopied: 'Путь скопирован',
     revealMissing: 'Этой папки нет на этом компьютере'
   },
-  boot: {
-    ready: 'Hermes Desktop готов',
-    desktopBootFailedWithMessage: message => `Не удалось запустить приложение: ${message}`,
-    steps: {
-      connectingGateway: 'Подключение к шлюзу',
-      loadingSettings: 'Загрузка настроек Hermes',
-      loadingSessions: 'Загрузка последних сеансов',
-      retryingRemoteBackend: 'Переподключение к удалённому бэкенду Hermes…',
-      startingDesktopConnection: 'Запуск подключения приложения',
-      startingHermesDesktop: 'Запуск Hermes Desktop…'
-    },
-    errors: {
-      backgroundExited: 'Фоновый процесс Hermes завершён.',
-      backgroundExitedDuringStartup: 'Фоновый процесс Hermes завершился при запуске.',
-      backendStopped: 'Бэкенд остановлен',
-      desktopBootFailed: 'Не удалось запустить приложение',
-      gatewayConnectionLost: 'Соединение с шлюзом потеряно',
-      gatewaySignInRequired: 'Требуется вход в шлюз',
-      ipcBridgeUnavailable: 'IPC-мост приложения недоступен.'
-    },
-    failure: {
-      title: 'Hermes не удалось запустить',
-      description:
-        'Фоновый шлюз не запустился. Попробуйте один из шагов восстановления ниже. Ничто из этого не удаляет ваши чаты и настройки.',
-      remoteTitle: 'Требуется вход в удалённый шлюз',
-      remoteDescription:
-        'Сессия удалённого шлюза истекла. Войдите снова, чтобы переподключиться. Ничто из этого не удаляет ваши чаты и настройки.',
-      retry: 'Повторить',
-      repairInstall: 'Восстановить установку',
-      useLocalGateway: 'Использовать локальный шлюз',
-      gatewaySettings: 'Настройки шлюза',
-      back: 'Назад',
-      openLogs: 'Открыть журналы',
-      repairHint: 'Восстановление перезапускает установщик — на чистой машине это может занять несколько минут.',
-      remoteSignInHint: signInLabel =>
-        `Выход из сохранённой сессии удалённого браузера, затем открытие ${signInLabel}. Чтобы перейти на встроенный бэкенд, используйте локальный шлюз.`,
-      signOutAndSignIn: 'Выйти и войти',
-      remoteFailureHint: 'Проверьте URL шлюза и вход в настройках шлюза или переключитесь на локальный шлюз.',
-      hideRecentLogs: 'Скрыть недавние журналы',
-      showRecentLogs: 'Показать недавние журналы',
-      signedInTitle: 'Вы вошли в систему',
-      signedInMessage: 'Переподключение к удалённому шлюзу…',
-      signInIncompleteTitle: 'Вход не завершён',
-      signInIncompleteMessage: 'Окно входа закрылось до завершения аутентификации.',
-      signInFailed: 'Не удалось войти',
-      signInToRemoteGateway: 'Войти в удалённый шлюз',
-      signInWithProvider: provider => `Войти через ${provider}`,
-      identityProvider: 'вашему провайдеру аутентификации'
-    }
-  },
+  boot: ruBoot.boot,
   notifications: {
     sharedProfileWarning:
       'Другая установка Hermes использует этот профиль. Обе установки используют общие настройки и данные, поэтому изменения могут конфликтовать. Можно продолжить работу или закрыть другую установку перед внесением изменений.',
@@ -227,10 +151,6 @@ export const ruOverrides = {
       microphonePermission: 'Доступ к микрофону запрещён.',
       openaiRejectedApiKey: 'OpenAI отклонил API-ключ.',
       openaiTtsNeedsKey: 'Для TTS OpenAI нужен VOICE_TOOLS_OPENAI_KEY или OPENAI_API_KEY.'
-    },
-    digest: {
-      title: count => `Сводка Hermes — ${count} уведомлений`,
-      line: (count, label) => `${count} × ${label}`
     },
     voice: {
       configureSpeechToText: 'Настройте распознавание речи, чтобы использовать голосовой режим.',
@@ -320,7 +240,6 @@ export const ruOverrides = {
     actions: {
       'keybinds.openPanel': 'Открыть горячие клавиши',
       'nav.commandPalette': 'Открыть палитру команд',
-      'nav.quickOpen': 'Быстро открыть файл',
       'nav.commandCenter': 'Открыть центр команд',
       'nav.settings': 'Открыть настройки',
       'nav.profiles': 'Открыть профили',
@@ -329,8 +248,6 @@ export const ruOverrides = {
       'nav.artifacts': 'Открыть артефакты',
       'nav.cron': 'Открыть запланированные задачи',
       'nav.agents': 'Открыть агенты',
-      'nav.starmap': 'Открыть граф памяти',
-      'nav.webhooks': 'Открыть вебхуки',
       'session.new': 'Новый сеанс',
       'session.newTab': 'Новая вкладка сеанса',
       'session.newWindow': 'Новое окно',
@@ -421,9 +338,7 @@ export const ruOverrides = {
   },
   findInPage: {
     next: 'Следующее вхождение',
-    previous: 'Предыдущее вхождение',
-    searchAll: 'Искать по всей истории',
-    searchAllShort: 'История'
+    previous: 'Предыдущее вхождение'
   },
 
   language: {
@@ -558,21 +473,7 @@ export const ruOverrides = {
       testUnsupported: 'Эта система не поддерживает системные уведомления.',
       completionSoundTitle: 'Звук завершения',
       completionSoundDesc: 'Воспроизводится, когда ход агента завершён. Выберите пресет и прослушайте здесь.',
-      completionSoundPreview: 'Прослушать',
-      quietHoursTitle: 'Тихие часы',
-      quietHoursDesc:
-        'Удерживает обычные уведомления в течение заданного окна; по его окончании они приходят сводкой. Запросы на подтверждение, вопросы и ошибки проходят всегда.',
-      quietHoursWindowTitle: 'Окно тишины',
-      quietHoursWindowDesc:
-        'Уведомления отключены от времени начала до времени конца — если начало позже конца, окно захватывает ночь.',
-      quietHoursFrom: 'С',
-      quietHoursTo: 'До',
-      digestTitle: 'Сводка раз в час',
-      digestDesc: 'Объединяет обычные уведомления в одну сводку раз в час вместо отдельных показов.',
-      sessionOverridesTitle: 'Исключения для сессий',
-      sessionOverridesDesc: 'Чаты, отключённые вами в меню сессии боковой панели. Включите их обратно здесь.',
-      sessionOverridesEmpty:
-        'Нет отключённых сессий. Отключите уведомления чата из его меню в боковой панели, чтобы он появился здесь.'
+      completionSoundPreview: 'Прослушать'
     },
     sections: {
       model: 'Модель',
@@ -603,9 +504,6 @@ export const ruOverrides = {
         'Масштабирует текст беседы и поле ввода относительно масштаба интерфейса. Размер боковых панелей и элементов управления не меняется.',
       title: 'Внешний вид',
       intro: 'Только для приложения. Режим — это яркость, тема — палитра и оформление чата.',
-      simpleModeTitle: 'Простой режим',
-      simpleModeDesc:
-        'Более чистый интерфейс с упором на чат: скрывает расширенные панели, инструменты и элементы статуса. Всё остаётся доступным из настроек и по ⌘K — вернуться можно в любой момент.',
       colorMode: 'Цветовой режим',
       colorModeDesc: 'Выберите фиксированный режим или позвольте Hermes следовать настройкам системы.',
       toolViewTitle: 'Отображение вызовов инструментов',
@@ -618,17 +516,12 @@ export const ruOverrides = {
       reasoningCollapsedTitle: 'Сворачивать «мышление» по умолчанию',
       reasoningCollapsedDesc:
         'Стриминговое рассуждение остаётся доступным, но не разворачивается, пока вы его не откроете.',
-      lookTitle: 'Стиль',
-      lookDesc: 'Мягкий — скругления, простор и спокойные подписи; Классический — прежний чёткий угловатый интерфейс.',
-      lookSoft: 'Мягкий',
-      lookClassic: 'Классический',
       uiScaleTitle: 'Масштаб интерфейса',
       uiScaleDesc: percent =>
         `Масштабирует текст и элементы управления во всём приложении. Также работает Cmd/Ctrl с +, − и 0. Сейчас: ${percent}%.`,
       sessionDensityTitle: 'Плотность списка сеансов',
-      sessionDensityDesc: 'Выберите, сколько показывает каждая строка сеанса в боковой панели.',
+      sessionDensityDesc: 'Выберите, сколько контекста показывать под заголовками сеансов в боковой панели.',
       sessionDensityCompact: 'Компактно',
-      sessionDensityCondensed: 'Сжато',
       sessionDensityComfortable: 'Комфортно',
       sessionDensityDetailed: 'Подробно',
       tabStripTitle: 'Панель вкладок',
@@ -676,7 +569,7 @@ export const ruOverrides = {
         sidebar: 'Только боковая панель'
       },
       backdropTitle: 'Фон чата',
-      backdropDesc: 'Сцена позади диалога или ваше изображение. Текст всегда остаётся поверх.',
+      backdropDesc: 'Блёклый силуэт позади диалога.',
       userBubbleTitle: 'Пузырь сообщения',
       userBubbleDesc: 'Насколько прозрачны ваши сообщения. 0 — сплошная заливка, 100 — остаётся только контур.',
       textDirectionTitle: 'Направление текста',
@@ -692,13 +585,6 @@ export const ruOverrides = {
       composerPopoutTitle: 'Плавающий композер',
       composerPopoutDesc:
         'Позволяет вытягивать композер из его док-зоны. Когда выключено, он остаётся закреплённым внизу.',
-      autoOpenFilesTitle: 'Показывать файлы при открытии проекта',
-      autoOpenFilesDesc: 'При открытии папки или проекта рядом с чатом открывается дерево файлов.',
-      activityRailTitle: 'Панель значков',
-      activityRailDesc:
-        'Узкая колонка значков у левого края — сессии, боты и все страницы в один клик, даже при свёрнутой боковой панели.',
-      openInEditorTitle: 'Открывать файлы в',
-      openInEditorDesc: 'Куда «Открыть в…» отправляет файл из дерева. Работает и с SSH-бэкендами.',
       fileBrowserTitle: 'Файловый браузер',
       fileBrowserDesc:
         'Показывает файловый браузер рядом с чатом, когда открыто рабочее пространство. Кнопка в заголовке окна меняет эту настройку.',
@@ -1031,20 +917,13 @@ export const ruOverrides = {
           'Когда Hermes обновляет себя из приложения (без запроса в терминале), сохранять локальные правки исходников (stash) или выбрасывать (discard). Обновления из терминала всегда спрашивают.'
       }
     }),
-    about: {
-      updates: 'Обновления'
-    },
+    about: { updates: 'Обновления', channel: ruUpdateChannel },
     config: {
       minimizeToTrayTitle: 'Сворачивать в трей',
       minimizeToTrayDesc:
         'Сворачивание окон или закрытие главного окна скрывает их в системном трее (строке меню macOS), оставляя Hermes работать. Для выхода выберите «Выйти из Hermes» в меню трея или нажмите Cmd+Q. По умолчанию выключено; действует только на этом устройстве.',
       minimizeToTrayUnavailable:
         'Системный трей недоступен. Окна будут сворачиваться и закрываться как обычно. Выключите и снова включите настройку, чтобы повторить попытку.',
-      menuBarStatusTitle: 'Статус в строке меню',
-      menuBarStatusDesc:
-        'Показывает значок Hermes в строке меню macOS (системном трее в Windows/Linux) со значком статуса, недавними сессиями и быстрыми действиями. По умолчанию выключено; действует только на этом устройстве.',
-      menuBarStatusUnavailable:
-        'Системный трей недоступен на этой платформе. Выключите и снова включите настройку, чтобы повторить попытку.',
       none: 'Нет',
       noneParen: '(нет)',
       builtinOnly: 'Только встроенные',
@@ -1068,9 +947,6 @@ export const ruOverrides = {
       keepAwakeOff: 'Выкл',
       keepAwakeWhileWorking: 'Во время работы',
       keepAwakeAlways: 'Всегда',
-      proactiveNudgesTitle: 'Проактивные подсказки',
-      proactiveNudgesDesc:
-        'После завершения хода предлагает чипы следующих шагов над полем ввода — открыть PR, запланировать проверку. Они лишь пишут черновик; ничего не отправляется само.',
       disableF12Title: 'Отключить F12 DevTools',
       disableF12Desc:
         'Блокирует открытие Developer Tools по F12. Ctrl+Shift+I (на Mac — Cmd+Opt+I) продолжает работать.',
@@ -1084,13 +960,7 @@ export const ruOverrides = {
       attachmentSizeLabel: 'Макс. размер превью / загрузки изображений в мегабайтах',
       voiceShortcutHintTitle: 'Горячая клавиша записи голоса',
       voiceShortcutHintDesc:
-        'Настройте горячую клавишу записи голоса в разделе «Настройки → Горячие клавиши» («Начать / остановить голосовой диалог»). Параметр voice.record_key действует только в CLI и TUI.',
-      developerTitle: 'Для разработчиков',
-      resetOnboardingTitle: 'Сбросить первоначальную настройку',
-      resetOnboardingDesc:
-        'Удалить чаты настройки, пересоздать профиль настройки и снова запустить первоначальную настройку. Ваши профили, чаты и плагины сохранятся.',
-      resetOnboardingAction: 'Сбросить',
-      resetOnboardingFailed: 'Не удалось сбросить первоначальную настройку'
+        'Настройте горячую клавишу записи голоса в разделе «Настройки → Горячие клавиши» («Начать / остановить голосовой диалог»). Параметр voice.record_key действует только в CLI и TUI.'
     },
     hudModifier: {
       title: 'Вызов HUD коротким нажатием',
@@ -1431,59 +1301,7 @@ export const ruOverrides = {
       deepLinkErrorUrl: 'Разрешены только URL серверов http:// и https://.',
       deepLinkErrorTooLarge: 'Пакет конфигурации превышает лимит 32 КБ.'
     },
-    model: {
-      moaPreset: 'Пресет',
-      moaDescription:
-        'Настройте именованные пресеты, которые появятся как модели провайдера Mixture of Agents. Модель-агрегатор выполняет каждый шаг цикла инструментов; почти вся стоимость запуска списывается у её провайдера. По умолчанию референсные модели дают совет один раз на сообщение пользователя.',
-      moaAggregator: 'Модель-агрегатор',
-      moaAggregatorBilled: 'исполняющая модель · на неё приходится стоимость запуска',
-      moaReferenceHint: 'по умолчанию советует один раз за ход',
-      setupProviderFallback: 'провайдер',
-      setUpProvider: name => `Настроить ${name}`,
-      staleAuxBefore: (count, names) => `Вспомогательные задачи (${count}: ${names}) по-прежнему используют `,
-      staleAuxAfter: ', а не основную модель.',
-      staleAuxOtherProviders: 'других провайдеров',
-      moaEnabled: 'Включено',
-      moaSetDefault: 'Сделать основным',
-      moaNewPresetPlaceholder: 'новый пресет',
-      moaAddPreset: 'Добавить пресет',
-      customModel: 'Своя модель…',
-      customModelPlaceholder: 'ID модели',
-      chooseFromList: 'Выбрать из списка',
-      moaDefault: 'По умолчанию:',
-      moaReferenceToggle: (enabled, index) => `${enabled ? 'Отключить' : 'Включить'} референс ${index}`,
-      moaReferenceTitle: index => `Референс ${index}`,
-      moaAddReference: 'Добавить референсную модель',
-      loading: 'Загрузка конфигурации модели…',
-      appliesDesc:
-        'Применяется к новым сеансам. Для горячей смены модели в активном чате используйте выборщик модели в композере.',
-      provider: 'Провайдер',
-      model: 'Модель',
-      applying: 'Применение…',
-      defaultsLabel: 'По умолчанию',
-      reasoning: 'Рассуждения',
-      reasoningOff: 'Выкл',
-      speed: 'Скорость',
-      speedStandard: 'Стандартная',
-      defaultsFailed: 'Не удалось сохранить модель по умолчанию',
-      auxiliaryTitle: 'Вспомогательные модели',
-      resetAllToMain: 'Сбросить всё на основную',
-      staleAuxDismiss: 'Больше не показывать',
-      auxiliaryDesc:
-        'Вспомогательные задачи по умолчанию выполняются основной моделью. Назначьте отдельную модель любой задаче, чтобы переопределить.',
-      setToMain: 'На основную',
-      change: 'Изменить',
-      autoUseMain: 'авто · использовать основную модель',
-      inheritMainEffort: 'наследовать · усилие основной модели',
-      inheritsFrom: task => `наследует ${task}`,
-      followTask: task => `Как ${task}`,
-      providerDefault: '(по умолчанию провайдера)',
-      fallbackAdd: 'Добавить запасную',
-      fallbackEmpty: 'Запасных моделей нет — используется модель по умолчанию, если она не падает.',
-      notInCatalog: 'нет в списке моделей этого провайдера — вызовы могут уходить на запасную.',
-      moaTitle: 'Смесь агентов',
-      tasks: ruAuxTasks
-    },
+    model: ruModelSettings,
     providers: {
       connectAccount: 'Подключить аккаунт',
       haveApiKey: 'Ввести API-ключ вместо этого?',
@@ -1785,11 +1603,7 @@ export const ruOverrides = {
     importEmpty: 'Вставьте код карты для загрузки.',
     importSuccess: nodes => `Загружена карта с ${nodes} ${RU_NOUN(nodes, 'узлом', 'узла', 'узлов')}.`,
     importedBadge: 'импортированная карта',
-    resetToMine: 'Вернуться к моей карте',
-    live: 'Live',
-    liveHint: 'Следить вживую: навыки пульсируют, пока сессия их использует, и вспыхивают при завершении',
-    liveOff: 'Остановить live-обновления',
-    openSession: 'Открыть сессию'
+    resetToMine: 'Вернуться к моей карте'
   },
   agents: {
     extendedTranscript: 'Подробный журнал',
@@ -1832,51 +1646,6 @@ export const ruOverrides = {
     durationSeconds: seconds => `${seconds}с`,
     durationMinutes: (minutes, seconds) => `${minutes}м ${seconds}с`,
     tokens: value => `${value} ток`
-  },
-  roster: {
-    title: 'Активные запуски',
-    subtitle: 'Все запуски в работе по всем профилям и шлюзам.',
-    emptyTitle: 'Нет активных запусков',
-    emptyDesc: 'Когда сессия начинает работу — в любом профиле или шлюзе — она появляется здесь.',
-    untitledRun: 'Запуск без названия',
-    railPill: count => `${count} ${RU_PLURAL(count, 'запуск', 'запуска', 'запусков')}`,
-    close: 'Закрыть',
-    fanOut: 'Разослать',
-    fanOutTitle: 'Отправить один промпт выбранным агентам',
-    fanOutPlaceholder: 'Один промпт для каждого выбранного агента…',
-    fanOutNoAgents: 'Нет доступных агентов для выбора',
-    fanOutClose: 'Свернуть',
-    fanOutSend: count => `Отправить ${count} ${RU_PLURAL(count, 'агенту', 'агентам', 'агентам')}`,
-    fanOutFailed: 'Не удалось создать сессию для одного из выбранных агентов'
-  },
-
-  hud: {
-    needsYou: 'Ждёт вас',
-    openRunInApp: title => `Открыть «${title}» в окне приложения`
-  },
-  attentionInbox: {
-    title: 'Требует внимания',
-    empty: 'Ничего не ждёт вашего ответа.',
-    count: count => `Ожидает: ${count}`,
-    appScope: 'Приложение',
-    unknownSession: 'Сессия',
-    kinds: {
-      approval: 'Одобрение инструмента',
-      clarify: 'Уточняющий вопрос',
-      error: 'Ошибка',
-      secret: 'Запрос секрета',
-      sudo: 'Запрос sudo',
-      vaultCode: 'Код хранилища',
-      vaultSave: 'Вход в хранилище',
-      vaultUnlock: 'Разблокировка хранилища'
-    },
-    pullRequest: (number, title) => `PR #${number}: ${title}`,
-    prChecks: {
-      failure: 'Проверки не прошли',
-      none: 'Открытый PR',
-      pending: 'Проверки идут',
-      success: 'Проверки пройдены'
-    }
   },
   commandCenter: {
     close: 'Закрыть командный центр',
@@ -1957,27 +1726,7 @@ export const ruOverrides = {
     settingsFields: 'Поля настроек',
     mcpServers: 'MCP-серверы',
     archivedChats: 'Архивные чаты',
-    sections: {
-      maintenance: 'Обслуживание',
-      notices: 'Уведомления',
-      sessions: 'Сеансы',
-      system: 'Система',
-      usage: 'Использование'
-    },
-    sectionDescriptions: {
-      maintenance: 'Диагностика, резервные копии, курир и данные памяти',
-      notices: 'Последние уведомления и оповещения',
-      sessions: 'Поиск и управление сеансами',
-      system: 'Статус, журналы и системные действия',
-      usage: 'Токены, стоимость и активность навыков со временем'
-    },
-    notices: {
-      empty: 'Уведомлений пока нет — всплывающие подсказки будут записываться здесь.',
-      clear: 'Очистить',
-      mutedTag: 'Отключено',
-      destCenter: 'Тост по центру',
-      destCorner: 'Тост в углу'
-    },
+    sections: { maintenance: 'Обслуживание', sessions: 'Сеансы', system: 'Система', usage: 'Использование' },
     nav: {
       newChat: { title: 'Новый сеанс', detail: 'Начать новый сеанс' },
       settings: { title: 'Настройки', detail: 'Настройка Hermes desktop' },
@@ -2038,14 +1787,6 @@ export const ruOverrides = {
     topSkills: 'Топ навыков',
     noSkillActivity: 'Активности навыков пока нет.',
     actions: count => `${count} ${RU_NOUN(count, 'действие', 'действия', 'действий')}`,
-    costAnalytics: 'Аналитика расходов',
-    costAnalyticsHint: 'Агрегируется только на этом устройстве — данные о расходах никуда не отправляются.',
-    dailySpend: 'Расходы по дням',
-    estimatedCost: 'оценка',
-    perProfile: 'По профилям',
-    topSessions: 'Самые дорогие сессии',
-    loadedSessionsHint: 'загруженные сессии',
-    noSpend: 'Расходы не зафиксированы',
     logFile: 'Файл журнала',
     logLevel: 'Уровень',
     logSearchPlaceholder: 'Поиск по строкам журнала...',
@@ -2208,22 +1949,6 @@ export const ruOverrides = {
       savedRestarting: 'Telegram сохранён; шлюз перезапускается…',
       savedRestartFailed: detail => `Telegram сохранён; перезапуск шлюза не удался${detail}`
     },
-    phoneParity: {
-      title: 'Продолжить на телефоне',
-      presence: 'Статус шлюза',
-      scanHint: 'Отсканируйте телефоном или откройте ссылку на этом устройстве.',
-      linkPending: 'Прямая ссылка появится здесь после подключения адаптера.',
-      openLink: 'Открыть ссылку',
-      copyLink: 'Копировать ссылку',
-      copyFailed: 'Не удалось скопировать ссылку'
-    },
-    reach: {
-      title: (name: string) => `${name} на связи везде`,
-      scan: (name: string) => `Отсканируйте, чтобы писать ${name} с телефона, или поделитесь ссылкой.`,
-      empty: (name: string) => `Дайте ${name} свой адрес в Telegram или Slack, чтобы писать с телефона.`,
-      connect: 'Подключить',
-      manage: 'Управлять'
-    },
     fieldCopy: {
       TELEGRAM_BOT_TOKEN: {
         label: 'Токен бота',
@@ -2377,50 +2102,9 @@ export const ruOverrides = {
       slack: 'Slack',
       email: 'Email',
       github_comment: 'Комментарий GitHub'
-    },
-    mobile: {
-      title: 'Мобильный компаньон',
-      hint: 'Управляйте этим бэкендом с телефона: статус, одобрения, быстрые ответы.',
-      pairButton: 'Связать телефон',
-      dialogTitle: 'Связать телефон',
-      dialogDesc:
-        'Создайте одноразовый код привязки, откройте страницу компаньона на телефоне и введите код. Страница показывает статус сессий, отвечает на ожидающие одобрения и отправляет быстрые ответы на этом бэкенде.',
-      backendUrl: 'URL бэкенда',
-      backendUrlHint: 'Адрес, доступный с телефона (LAN, туннель или удалённое подключение).',
-      create: 'Создать код привязки',
-      creating: 'Создание…',
-      createFailed: (detail: string) => `Не удалось создать код привязки${detail ? `: ${detail}` : ''}`,
-      codeLabel: 'Код привязки',
-      openHint: (url: string) => `Откройте ${url} на телефоне и введите код.`,
-      expires: (minutes: number) => `Одноразовый · истекает через ${minutes} мин.`,
-      copy: 'Копировать',
-      done: 'Готово'
     }
   },
   profiles: {
-    askRules: {
-      title: (name: string) => `Когда ${name} должен спрашивать вас?`,
-      modes: {
-        manual: {
-          label: 'Сначала спросить',
-          description: (name: string) => `${name} останавливается и спрашивает перед рискованными действиями.`
-        },
-        smart: {
-          label: 'По ситуации',
-          description: (name: string) => `${name} делает рутину сам и спрашивает, если что-то выглядит рискованно.`
-        },
-        off: {
-          label: 'Просто делать',
-          description: (name: string) => `${name} никогда не ждёт вас. Запрещённые команды остаются запрещены.`
-        }
-      },
-      rulesLabel: 'Правила',
-      rulesPlaceholder:
-        'Ваши правила своими словами. Например: всегда спрашивай перед отправкой писем или тратой денег.',
-      save: 'Сохранить',
-      discard: 'Отменить',
-      failed: 'Не удалось сохранить. Действуют прежние правила.'
-    },
     close: 'Закрыть профили',
     nameHint: 'Строчные буквы, цифры, дефисы и подчёркивания. Должно начинаться с буквы или цифры.',
     title: 'Профили',
@@ -2704,9 +2388,7 @@ export const ruOverrides = {
     kindLink: 'ссылка',
     chat: 'Чат',
     copyUrl: 'Копировать URL',
-    copyPath: 'Копировать путь',
-    buildWithPlan: 'Собрать по этому плану',
-    buildWithPlanDraft: 'Реализуй этот план:'
+    copyPath: 'Копировать путь'
   },
 
   artifactCard: {
@@ -2728,82 +2410,6 @@ export const ruOverrides = {
     missingTitle: 'Артефакт недоступен',
     missingBody: 'Этот артефакт больше нет в локальном реестре.'
   },
-  panels: {
-    button: 'Панели',
-    title: 'Рядом с чатом',
-    subtitle: 'Включите то, что нужно. Каждая панель открывается рядом с разговором.',
-    needsProject: 'Откройте папку, чтобы использовать',
-    openFolder: 'Открыть папку…',
-    arrange: 'Расположить…',
-    arrangements: { focus: 'Фокус', review: 'Проверка', watch: 'Наблюдать', build: 'Сборка' },
-    items: {
-      files: { label: 'Файлы', description: 'Просмотр файлов проекта' },
-      changes: { label: 'Изменения', description: 'Что изменил агент' },
-      browser: { label: 'Браузер', description: 'Страницы прямо рядом с чатом' },
-      terminal: { label: 'Терминал', description: 'Выполняйте команды сами' },
-      live: { label: 'Активность', description: 'Каждая команда агента в реальном времени' },
-      artifacts: { label: 'Артефакты', description: 'Что создал этот чат' },
-      canvas: { label: 'Холст', description: 'Рисуйте на доске вместе с агентом' }
-    }
-  },
-  quickOpen: {
-    title: 'Быстрое открытие',
-    placeholder: project => `Поиск файлов в ${project}…`,
-    noProject: 'Откройте папку, чтобы искать в её файлах',
-    noProjectBody: 'Быстрое открытие ищет по файлам текущего проекта.',
-    openFolder: 'Открыть папку…',
-    noMatch: query => `Нет файлов, подходящих под «${query}»`,
-    recent: 'Открыты рядом с чатом',
-    hint: 'Введите имя файла. Добавьте :42, чтобы перейти к строке.',
-    line: line => `строка ${line}`,
-    openHint: 'открыть',
-    attachHint: 'добавить в сообщение',
-    lineHint: 'имя:42 — переход к строке'
-  },
-  recentProjects: { title: 'Ваши проекты', openFolder: 'Открыть папку…' },
-  todayBrief: {
-    greeting: {
-      morning: 'Доброе утро',
-      afternoon: 'Добрый день',
-      evening: 'Добрый вечер',
-      night: 'Работаете допоздна?'
-    },
-    needsYou: 'Ждёт вас',
-    running: 'Выполняется',
-    finished: 'Готово, пока вас не было',
-    scheduled: 'Сегодня по плану',
-    recent: 'Продолжить с того места',
-    tasks: 'Недавние задачи',
-    taskWorking: age => `В работе ${age}`,
-    taskNew: 'Новый ответ'
-  },
-
-  live: {
-    title: 'Лайв',
-    noSession: 'Сеанс не выбран',
-    emptyTitle: 'Пока ничего не запускалось',
-    emptyBody:
-      'Каждая команда, чтение файла и вызов инструмента появляются здесь сразу при запуске — с полным выводом. Ничего не сокращается.',
-    count: total => `${total} ${total === 1 ? 'действие' : 'действий'}`,
-    countRunning: (total, running) => `${total} ${total === 1 ? 'действие' : 'действий'} · ${running} выполняется`,
-    follow: 'Следить',
-    followHint: 'Перейти к последнему действию и держать его на виду',
-    copy: 'Копировать команду и вывод',
-    exitCode: code => `код ${code}`,
-    runningFor: elapsed => `выполняется ${elapsed}`,
-    waitingForOutput: 'Выполняется — вывод появится по завершении',
-    noOutput: 'Нет вывода',
-    openLive: 'Лайв'
-  },
-
-  artifactRail: {
-    empty: 'В этом сеансе пока нет артефактов',
-    noSession: 'Сеанс не выбран',
-    open: 'Открыть',
-    openFailed: 'Не удалось открыть артефакт',
-    saveFailed: 'Не удалось сохранить артефакт',
-    saveToFile: 'Сохранить в файл'
-  },
   sidebar: {
     profileRail: 'Панель профилей',
     filter: {
@@ -2813,7 +2419,6 @@ export const ruOverrides = {
       inboxStyle: 'Стиль «Входящие»',
       status: 'Статус',
       pullRequest: 'Запрос на слияние',
-      tags: 'Метки',
       profile: 'Профиль',
       project: 'Проект',
       archived: 'Архивные',
@@ -2838,17 +2443,6 @@ export const ruOverrides = {
       resetToDefaults: 'Сбросить настройки',
       noPR: 'Без PR'
     },
-    archive: {
-      finished: 'Архивировать завершённые сеансы',
-      olderThan: 'Архивировать сеансы старше…',
-      days: (days: number) => `${days} дн.`,
-      confirmTitle: (count: number) => `Архивировать сеансов: ${count}?`,
-      confirmBody:
-        'Закреплённые чаты никогда не архивируются, и ничего не удаляется — архивированные сеансы переносятся в представление «Архивные».',
-      confirmAction: 'Архивировать',
-      done: (count: number) => `Архивировано сеансов: ${count}`,
-      none: 'Нет сеансов для архивирования'
-    },
     gatewayGroups: {
       grouping: 'Шлюз и профиль',
       rename: 'Переименовать группу',
@@ -2865,39 +2459,19 @@ export const ruOverrides = {
       capabilities: 'Возможности',
       messaging: 'Сообщения',
       artifacts: 'Артефакты',
-      cron: 'Запланированные задачи',
-      browse: 'Обзор'
-    },
-    interfaceMode: {
-      label: 'Интерфейс',
-      simple: 'Простой',
-      full: 'Полный',
-      toFull:
-        'Простой режим скрывает расширенные панели и элементы управления. Нажмите, чтобы вернуть полный интерфейс.',
-      toSimple: 'Вернуться к простому интерфейсу с упором на чат.'
+      cron: 'Запланированные задачи'
     },
     searchAria: 'Поиск сеансов',
-    railAria: 'Навигация приложения',
     searchPlaceholder: 'Поиск сеансов…',
     clearSearch: 'Очистить поиск',
     noMatch: query => `Нет сеансов по запросу «${query}».`,
     results: 'Результаты',
     pinned: 'Закреплённые',
-    needsAttention: 'Требует внимания',
-    delegationReports: {
-      done: 'Готово',
-      needsDecision: 'Требуется решение',
-      failed: 'Ошибка',
-      openSubagent: 'Открыть субагента',
-      dismiss: 'Скрыть отчёт',
-      tasks: (count, completed) => `Завершено ${completed} из ${count} задач`
-    },
     sessions: 'Сеансы',
     terminal: 'Терминал',
     files: 'Файлы',
     review: 'Проверка',
     logs: 'Журналы',
-    artifacts: 'Артефакты',
     cronJobs: 'Cron-задачи',
     groupAriaGrouped: 'Показать сеансы одним списком',
     groupAriaUngrouped: 'Сгруппировать сеансы по рабочим пространствам',
@@ -2926,18 +2500,9 @@ export const ruOverrides = {
       unpin: 'Открепить',
       markUnread: 'Отметить как непрочитанное',
       markRead: 'Отметить как прочитанное',
-      muteNotifications: 'Отключить уведомления',
-      unmuteNotifications: 'Включить уведомления',
-      mutedTooltip: 'Уведомления для этого сеанса отключены',
-      watch: 'Наблюдать',
-      stopWatching: 'Перестать наблюдать',
       unreadFailed: 'Не удалось обновить состояние непрочитанных',
       copyId: 'Копировать ID',
       export: 'Экспорт',
-      exportMarkdown: 'Экспортировать как Markdown',
-      exportDeliverable: 'Экспортировать отчёт',
-      copyMarkdown: 'Копировать как Markdown',
-      artifacts: 'Артефакты',
       branchFrom: 'Ветка',
       rename: 'Переименовать',
       archive: 'В архив',
@@ -2955,24 +2520,6 @@ export const ruOverrides = {
       finishedUnread: 'Завершён — не прочитан',
       backgroundRunning: 'Фоновая задача выполняется',
       draftSession: 'Черновик — ещё ничего не отправлено',
-      continueOnPhone: 'Продолжить на телефоне',
-      openOnDevice: 'Открыть на другом устройстве',
-      openDeviceTitle: 'Открыть на другом устройстве',
-      openDeviceDesc: home =>
-        `Отсканируйте код или отправьте ссылку на другое устройство Hermes, чьи подключения достигают ${home}. Сессия остаётся на месте — переносится только представление.`,
-      openDeviceHomeFallback: 'её домашний бэкенд',
-      openDeviceIncomingTitle: 'Открыть сессию на этом устройстве?',
-      openDeviceIncomingDesc: (title, label) =>
-        `«${title}» находится на ${label}. При открытии это окно переключится на это подключение — дом сессии не меняется.`,
-      openDeviceSwitchAndOpen: 'Переключить и открыть',
-      openDeviceSwitching: 'Переключение…',
-      openDeviceIncomingMissingTitle: 'Подключение не найдено',
-      openDeviceIncomingMissingDesc: (id, endpoint) =>
-        endpoint
-          ? `«${id}» находится на ${endpoint}, который не зарегистрирован как подключение на этом устройстве. Добавьте его в Настройки → Шлюзы и откройте ссылку снова.`
-          : `«${id}» находится на бэкенде, недоступном с этого устройства. Зарегистрируйте подключение в Настройки → Шлюзы и откройте ссылку снова.`,
-      openDeviceOpenConnections: 'Открыть шлюзы',
-      handoffNone: 'Ни одна платформа сообщений не готова к передаче',
       handoffOrigin: platform => `Передано из ${platform}`,
       ownedByProfile: profile => `Профиль: ${profile}`,
       renamed: 'Переименовано',
@@ -2980,25 +2527,6 @@ export const ruOverrides = {
       renameTitle: 'Переименовать сеанс',
       renameDesc: 'Оставьте пустым, чтобы очистить.',
       untitledPlaceholder: 'Сеанс без названия',
-      tags: 'Метки',
-      tagsDialogTitle: 'Метки сеанса',
-      tagsDialogDesc: 'Назначьте этому сеансу цветные метки для боковой панели и фильтров.',
-      tagsAddPlaceholder: 'Новая метка',
-      tagsAdd: 'Добавить',
-      tagsRemoveLabel: label => `Удалить метку ${label}`,
-      askAbout: 'Спросить об этом сеансе',
-      ask: {
-        clear: 'Очистить ветку',
-        dialogDesc: title =>
-          `Ответы на вопросы о ${title} берутся из сохранённой транскрипции — никогда из активного диалога.`,
-        dialogTitle: 'Спросить об этом сеансе',
-        empty: 'Спросите, что этот сеанс сделал, решил или записал.',
-        failed: 'Не удалось получить ответ',
-        placeholder: 'Вопрос об этом сеансе…',
-        send: 'Спросить',
-        thinking: 'Чтение транскрипции…',
-        truncatedNote: 'Ответ основан на начале и конце длинной транскрипции.'
-      },
       deleteTitle: 'Удалить сеанс?',
       deleteDesc: title => `Это навсегда удалит «${title}». Это действие необратимо.`,
       deleting: 'Удаление…',
@@ -3006,50 +2534,10 @@ export const ruOverrides = {
       untitledChat: id => `Чат ${id}`,
       messageCount: count => `${count} ${RU_PLURAL(count, 'сообщение', 'сообщения', 'сообщений')}`,
       todoProgress: 'Задачи выполнены',
-      attachmentCount: count => `Вложено: ${count}`,
-      isolateWorktree: 'Изолировать в worktree',
-      isolateWorktreeDone: name => `Изолировано в worktree ${name}`,
-      mergeWorktree: 'Слить worktree обратно',
-      mergeWorktreeTitle: 'Слить worktree обратно',
-      mergeWorktreeDesc: (branch, repo) => `Слить ветку ${branch} обратно в копию ${repo}? Она должна быть чистой.`,
-      mergingWorktree: 'Слияние…',
-      mergedWorktree: into => `Слито в ${into}`,
-      mergeWorktreeFailed: 'Не удалось слить worktree',
-      worktreeTag: branch => `Изолированный worktree · ${branch}`,
-      worktreeUnavailable: 'Git worktree здесь недоступны',
-      digest: {
-        agents: count => `Запущено агентов: ${count}`,
-        approve: command => `Подтвердить: ${command}`,
-        compacting: 'Сжатие диалога',
-        replying: 'Пишет ответ',
-        stalled: 'Всё ещё выполняется — давно нет активности',
-        todo: (done, total, task) => (task ? `${done}/${total} · ${task}` : `${done}/${total}`)
-      },
-      prCiPassing: 'CI проходит',
-      prCiFailing: 'CI падает',
-      prCiPending: 'CI выполняется',
       ageNow: 'сейчас',
       ageDay: 'д',
       ageHour: 'ч',
       ageMin: 'м'
-    },
-    watch: {
-      strip: 'Отслеживаемые сеансы',
-      stop: 'Перестать наблюдать'
-    },
-    selection: {
-      ariaLabel: 'Выбранные сеансы',
-      count: (count: number) => `Выбрано: ${count}`,
-      pin: 'Закрепить',
-      unpin: 'Открепить',
-      mute: 'Отключить уведомления',
-      unmute: 'Включить уведомления',
-      tag: 'Добавить метку',
-      archive: 'В архив',
-      clear: 'Снять выделение',
-      tagDialogTitle: (count: number) =>
-        `Добавить метку: ${count} ${count === 1 ? 'сеанс' : count < 5 ? 'сеанса' : 'сеансов'}`,
-      tagDialogDesc: 'Метка будет добавлена ко всем выбранным сеансам.'
     },
     dateDivider: {
       today: 'Ранее сегодня',
@@ -3062,101 +2550,7 @@ export const ruOverrides = {
       working: 'Работает',
       done: 'Готово'
     },
-    peek: {
-      idle: 'Ожидание',
-      archived: 'В архиве',
-      workspace: 'Рабочая папка',
-      branch: 'Ветка',
-      model: 'Модель',
-      stats: 'Статистика',
-      tokens: count => `${count} токенов`,
-      agents: 'Делегированные агенты',
-      agentsSummary: count => `агентов: ${count}`,
-      agentsRunning: count => `выполняется: ${count}`,
-      profile: 'Профиль',
-      source: 'Источник',
-      started: 'Запущен',
-      updated: 'Обновлён'
-    },
     markAllRead: 'Отметить все как прочитанные'
-  },
-  intro: {
-    recentSessions: 'Продолжите с того места, где остановились'
-  },
-  catalog: {
-    add: 'Добавить',
-    added: 'Добавлено',
-    discover: 'Открывайте новое',
-    featured: 'Рекомендуемые',
-    explorePlugins: 'Обзор плагинов',
-    exploreSkills: 'Обзор навыков',
-    mostStarred: 'Больше всего звёзд',
-    newest: 'Новинки',
-    recentlyUpdated: 'Недавно обновлённые',
-    alphabetical: 'Название',
-    sortBy: 'Сортировать по',
-    seeAll: 'Показать все',
-    related: 'Похожие',
-    tags: 'Теги',
-    screenshots: 'Снимки экрана',
-    listView: 'Список',
-    cardView: 'Карточки',
-    installTitle: (name: string) => `Установить «${name}»?`,
-    installDescription: 'Навык будет доступен в новых сессиях. Устанавливайте только из источников, которым доверяете.',
-    installTo: 'Установить в',
-    thisComputer: 'Этот компьютер',
-    installing: 'Установка…',
-    installComplete: (name: string) => `«${name}» установлен`,
-    destinationChanged: 'Место установки изменилось. Закройте диалог и снова откройте ссылку установки.',
-    installed: 'Установленные',
-    searchSkills: 'Поиск навыков',
-    searchPlugins: 'Поиск плагинов',
-    allSources: 'Все источники',
-    allCategories: 'Все категории',
-    about: 'Описание',
-    author: 'Автор',
-    source: 'Источник',
-    category: 'Категория',
-    version: 'Версия',
-    platforms: 'Платформы',
-    requires: 'Требования',
-    tools: 'Инструменты',
-    hooks: 'Хуки',
-    middleware: 'Промежуточное ПО',
-    commands: 'Команды',
-    license: 'Лицензия',
-    addedDate: 'Добавлено',
-    updatedDate: 'Обновлено',
-    repository: 'Репозиторий',
-    documentation: 'Документация',
-    noResults: 'Совпадений нет',
-    tryAnother: 'Попробуйте другой запрос или сбросьте фильтры.',
-    clearFilters: 'Сбросить фильтры',
-    filters: 'Фильтры',
-    loadFailed: 'Не удалось загрузить каталог',
-    retry: 'Попробовать снова',
-    more: 'Показать ещё',
-    pinned: 'Проверенный коммит',
-    snapshotHint: 'Из каталога Hermes. При просмотре нет обращений к исходным репозиториям.',
-    installHint: 'Проверьте исходный код перед установкой. Изменения применяются к новым сессиям.',
-    results: (count: number) =>
-      `${count.toLocaleString('ru')} ${RU_PLURAL(count, 'результат', 'результата', 'результатов')}`,
-    back: 'Назад к результатам'
-  },
-
-  handoffTour: {
-    profileTitle: 'Первая задача выполняется в профиле по умолчанию',
-    profileText:
-      'Эта панель переключает профили. Сейчас подсвечен default — там сессия задачи. Другой — профиль настройки, там приветственный чат.',
-    sessionsTitle: 'У каждого профиля свои сессии',
-    sessionsText:
-      'Этот список относится к профилю default. «Новая сессия» создаёт её в выбранном профиле. Переключите профиль на панели — и список сменится.',
-    stayTitle: 'Hermes в одном клике',
-    stayText:
-      'Переключитесь на профиль настройки и откройте «Добро пожаловать в Hermes», когда понадобится помощь. Он остаётся там.',
-    localTitle: 'Этот компьютер может запускать модели локально',
-    localText: (model: string) =>
-      `${model} подходит для вашего оборудования. Работает бесплатно, а чаты не покидают ваш компьютер. Выберите её здесь, в меню моделей, когда захотите.`
   },
   composer: {
     message: 'Сообщение',
@@ -3171,7 +2565,7 @@ export const ruOverrides = {
       'Опишите, что нужно',
       'Что обсудим?',
       'Спросите о чём угодно',
-      'Назовите нужный результат'
+      'Начните с цели'
     ],
     followUpPlaceholders: [
       'Отправьте продолжение',
@@ -3185,9 +2579,8 @@ export const ruOverrides = {
     startVoice: 'Начать голосовой разговор',
     openDirective: 'Открыть',
     queueMessage: 'Вставить сообщение в очередь',
-    queueWithAttachments: 'В очередь с вложениями',
     steer: 'Направить текущий запуск',
-    steerTurn: 'Направить ход',
+    redirect: 'Перенаправить текущий запуск',
     stop: 'Стоп',
     send: 'Отправить',
     speaking: 'Говорит',
@@ -3297,7 +2690,6 @@ export const ruOverrides = {
       'composer.help': 'эта быстрая справка (удалите, чтобы закрыть)',
       'composer.sendNewline': 'отправить · Shift+Enter — новая строка',
       'composer.sendQueued': 'отправить следующий ход в очереди',
-      'composer.modelPicker': 'выбор модели',
       'keybinds.openPanel': 'все горячие клавиши',
       'composer.cancel': 'закрыть поповер · отменить запуск',
       'composer.history': 'переключать поповер / историю'
@@ -3317,15 +2709,18 @@ export const ruOverrides = {
     restoredDraftNotice: 'Восстановлено ваше неотправленное сообщение',
     restoredDraftUndo: 'Отменить',
     queueEdit: 'Изменить',
-    queueMoveUp: 'Выше в очереди',
-    queueMoveDown: 'Ниже в очереди',
     queueExpand: 'Раскрыть',
     queueCollapse: 'Свернуть',
     queueSendNext: 'Дальше',
     queueSteer: 'Направить — изменить текущий ход сейчас',
-    queueRemoved: 'Удалено из очереди',
     queueSend: 'Отправить',
     queueDelete: 'Удалить',
+    queueLostNote: 'Ход потерян при перезапуске',
+    restoreImageDraft: 'Восстановить черновик с изображением',
+    queueCancelFailed: 'Не удалось удалить ход из очереди',
+    queueLostDiscard: 'Отбросить',
+    queueLostDiscardTip:
+      'Шлюз перезапустился посреди хода и не может его завершить. Отбросьте его, чтобы очередь продолжилась.',
     queueResume: 'Продолжить',
     queueResumeTip: 'Приостановлено стопом — продолжить отправку ходов из очереди',
     queueStuckTitle: 'Сообщение из очереди не отправлено',
@@ -3351,11 +2746,8 @@ export const ruOverrides = {
     folder: 'Папка…',
     images: 'Изображения…',
     pasteImage: 'Вставить изображение',
-    captureRegion: 'Снимок области экрана…',
     url: 'URL…',
     promptSnippets: 'Фрагменты промптов…',
-    scheduleJob: 'Запускать по расписанию…',
-    slashCommands: 'Слэш-команды…',
     tipPre: 'Подсказка: введите ',
     tipPost: ' чтобы ссылаться на файлы inline.',
     snippetsTitle: 'Фрагменты промптов',
@@ -3376,16 +2768,6 @@ export const ruOverrides = {
       tip: skill => `Вы упомянули «${skill}» — нажмите, чтобы начать с этого навыка`,
       done: skill => `Добавлено /${skill}`,
       doneTip: 'Навык загрузится при отправке'
-    },
-    goalChips: {
-      planLabel: 'Сначала план',
-      planTip: 'Превращает в /plan — пошаговый план в .hermes/plans/ до начала работы',
-      planDone: 'План готов',
-      planDoneTip: 'План выполняется при отправке',
-      goalLabel: 'Сделать целью',
-      goalTip: 'Превращает в /goal — постоянный результат, к которому Hermes идёт',
-      goalDone: 'Цель готова',
-      goalDoneTip: 'Цель вступит в силу при отправке'
     },
     githubSuggestions: {
       label: 'Настроить GitHub',
@@ -3409,19 +2791,6 @@ export const ruOverrides = {
       done: 'Отмечено для планирования',
       doneTip: 'Отправьте, и агент создаст задачу'
     },
-    nudges: {
-      prLabel: 'Открыть PR',
-      prTip: 'Последний ответ похож на завершённую работу с кодом — набросать запрос',
-      prDraft: 'Открой pull request для только что внесённых изменений.',
-      prDone: 'Запрос на PR набросан',
-      prDoneTip: 'Проверьте черновик и отправьте, чтобы агент открыл PR',
-      followupLabel: 'Запланировать проверку',
-      followupTip: 'Назначить повторную проверку этой работы — набросает запрос за вас',
-      followupDraft:
-        'Настрой это как запланированную задачу: вернись к этой работе через час и расскажи, что изменилось.',
-      followupDone: 'Проверка набросана',
-      followupDoneTip: 'Скорректируйте время в черновике и отправьте'
-    },
     snippets: {
       codeReview: {
         label: 'Рецензия кода',
@@ -3440,29 +2809,6 @@ export const ruOverrides = {
       }
     }
   },
-  regionCapture: {
-    attach: 'Прикрепить',
-    cancel: 'Отмена',
-    captureFailed: 'Не удалось снять экран.',
-    capturing: 'Снимаю…',
-    clear: 'Начать заново',
-    notePlaceholder: 'Заметка для агента (необязательно)…',
-    permissionDenied:
-      'Запись экрана выключена — включите в Настройках → Конфиденциальность и безопасность → Запись экрана.',
-    selectHint: 'Тяните, чтобы выбрать область · Esc — отмена',
-    toolTips: { arrow: 'Стрелка', pen: 'Рисовать', rect: 'Прямоугольник' },
-    unavailable: 'Снимок экрана здесь недоступен.',
-    undo: 'Отменить'
-  },
-  voiceStatus: {
-    idle: 'Hermes простаивает — ничего не выполняется.',
-    working: 'Hermes ещё работает над этим.',
-    workingOn: detail => `Hermes работает — сейчас над ${detail}.`,
-    stalled: 'Hermes, похоже, завис — уже давно ничего не выдаёт.',
-    needsInput: 'Hermes ждёт твоего ответа.',
-    finished: 'Последний ход завершён — ответ ждёт тебя.',
-    progress: (done, total) => `Выполнено ${done} ${RU_PLURAL(done, 'задача', 'задачи', 'задач')} из ${total}.`
-  },
   statusStack: {
     hideStack: 'Скрыть панель состояния',
     showStack: 'Показать панель состояния',
@@ -3480,10 +2826,6 @@ export const ruOverrides = {
     stop: 'Стоп',
     dismiss: 'Скрыть',
     exit: code => `exit ${code}`,
-    verifyChecking: 'Проверяю предпросмотр…',
-    verifyFailed: count => `Проверка не прошла — ${count} ${RU_PLURAL(count, 'ошибка', 'ошибки', 'ошибок')} консоли`,
-    verifyOpenConsole: 'Открыть консоль',
-    verifyPassed: 'Проверка предпросмотра пройдена',
     control: {
       goalActiveTurns: (turn, maxTurns) => `Ход ${turn}/${maxTurns}`,
       goalDoneTurns: turns => `${turns} ходов`,
@@ -3554,7 +2896,7 @@ export const ruOverrides = {
       heartbeatEveryHours: hours => `каждые ${hours}ч`,
       heartbeatEverySeconds: seconds => `каждые ${seconds}с`,
       heartbeatNext: time => `следующий ${time}`,
-      heartbeatDueWaitingForIdle: 'пора — ожидание простоя',
+      dueWaitingForIdle: 'пора — ожидание простоя',
       heartbeatActions: 'Действия пульса',
       pauseHeartbeat: 'Приостановить пульс',
       resumeHeartbeat: 'Возобновить пульс',
@@ -3601,8 +2943,6 @@ export const ruOverrides = {
       notRepo: 'Не git-репозиторий',
       noDiff: 'Нет diff для показа',
       scopeUncommitted: 'Незакоммиченные',
-      scopeSession: 'Сессия',
-      sessionEmpty: 'Нет изменений сессии',
       scopeBranch: 'Ветка',
       scopeLastTurn: 'Последний ход',
       commit: 'Коммит',
@@ -3617,23 +2957,6 @@ export const ruOverrides = {
       agentShipUnavailable: 'Чат, которому принадлежат эти изменения, не на экране.',
       agentShipPrompt:
         'Проверьте текущие изменения, закоммитьте их с ясным conventional-commit сообщением, запушьте ветку и создайте pull request.',
-      agentReview: 'Попросить агента проверить',
-      agentReviewPick: 'Проверить с',
-      agentReviewNoProfiles: 'Профили не найдены',
-      agentReviewPrompt:
-        'Проверьте diff во вложенном файле. Сообщите о конкретных проблемах — ошибках, регрессиях, необработанных случаях — прежде чем о стиле.',
-      agentReviewAttachment: 'Diff рабочего дерева',
-      agentReviewUnavailable: 'Нечего проверять: нет репозитория или нет ожидающего diff.',
-      agentReviewReportTitle: (reviewer: string) => `Проверка: ${reviewer}`,
-      selfReview: 'Проверить изменения',
-      selfReviewRunning: 'Проверка изменений…',
-      selfReviewClean: 'Проблем не найдено',
-      selfReviewClear: 'Очистить комментарии проверки',
-      selfReviewComments: count => `${count} ${RU_PLURAL(count, 'комментарий', 'комментария', 'комментариев')}`,
-      commentOnLine: line => `Комментарий к строке ${line}`,
-      diffCommentPlaceholder: 'Комментарий к этой строке…',
-      diffCommentSend: 'Добавить комментарий',
-      commentSeeded: 'Добавлено в редактор как черновик',
       newBranch: 'Новая ветка',
       branchOffFrom: base => `Новая ветка от ${base}`,
       switchTo: branch => `Переключиться на ${branch}`,
@@ -3945,10 +3268,6 @@ export const ruOverrides = {
       branch: branch => `ветка ${branch}`,
       closeCommandCenter: 'Закрыть командный центр',
       openCommandCenter: 'Открыть командный центр',
-      toggleNotices: 'Уведомления',
-      noticesTitle: 'Последние уведомления',
-      toggleAttentionInbox: 'Очередь внимания',
-      attentionInboxTitle: 'Ожидающие одобрения и вопросы',
       showTerminal: 'Показать терминал',
       hideTerminal: 'Скрыть терминал',
       gateway: 'Шлюз',
@@ -3990,11 +3309,6 @@ export const ruOverrides = {
       openWebhooks: 'Открыть вебхуки',
       starmap: 'Граф памяти',
       openStarmap: 'Открыть граф памяти',
-      artifacts: 'Артефакты',
-      artifactsTitle: 'Материалы, созданные в этом чате — выберите, чтобы открыть рядом с диалогом',
-      artifactsCount: count => `${count} ${RU_NOUN(count, 'артефакт', 'артефакта', 'артефактов')}`,
-      browseAllArtifacts: 'Все артефакты',
-      toggleArtifacts: 'Артефакты',
       turnRunning: 'Выполняется',
       contextUsage: 'Использование контекста',
       compressions: count => `Сжатий: ${count}`,
@@ -4029,19 +3343,6 @@ export const ruOverrides = {
     }
   },
   rightSidebar: {
-    agentTouched: 'Изменён в этом чате',
-    newFile: 'Новый файл',
-    newFolder: 'Новая папка',
-    filterFiles: 'Фильтр файлов',
-    newFileIn: label => `Новый файл в ${label}`,
-    newFolderIn: label => `Новая папка в ${label}`,
-    newFilePlaceholder: 'имя.ts — слэши создают папки',
-    newFolderPlaceholder: 'имя-папки',
-    newFileFailed: 'Не удалось создать файл',
-    newFolderFailed: 'Не удалось создать папку',
-    filterPlaceholder: 'Фильтр файлов…',
-    filterHint: 'Введите часть имени. Поиск по всему проекту, а не только по открытым папкам.',
-    filterNoMatch: 'Нет подходящих файлов',
     terminalReadOnly: 'Вывод только для чтения',
     terminalReadOnlyHelp:
       'Чтобы ответить на запрос, остановите фоновую команду и запустите её в новом терминале. Он откроет отдельную оболочку и не подключится к этому процессу.',
@@ -4145,8 +3446,6 @@ export const ruOverrides = {
         `${count} ${RU_NOUN(count, 'запись лога', 'записи лога', 'записей лога')} добавлено в композер`
     },
     web: {
-      embeddedPreviewHint:
-        'Некоторые сайты блокируют встроенный предпросмотр. Откройте исходную страницу во вкладке браузера.',
       appFailedToBoot: 'Приложение предпросмотра не запустилось',
       serverNotFound: 'Сервер не найден',
       remoteLoopback:
@@ -4189,27 +3488,7 @@ export const ruOverrides = {
       loadFailedConsole: (code, message) => `Не удалось загрузить${code ? ` (${code})` : ''}: ${message}`,
       unreachableDescription: 'Страница предпросмотра недоступна.',
       openTarget: url => `Открыть ${url}`,
-      fallbackTitle: 'Предпросмотр',
-      record: 'Записать задачу',
-      recordStop: 'Остановить запись',
-      recording: count => `Запись · ${count}`,
-      recordNeedPage: 'Сначала откройте страницу во встроенном браузере.',
-      recordFailed: 'Не удалось начать запись на этой странице.',
-      recordTitle: 'Сохранить запись как навык',
-      recordDesc:
-        'Проверьте записанные шаги, назовите навык и сохраните черновик. Агент сможет воспроизвести его из ваших навыков.',
-      recordName: 'Название',
-      recordNamePlaceholder: 'Заказать продукты',
-      recordNameHint: slug => `Будет сохранено как «${slug}» в ~/.hermes/skills/`,
-      recordDescLabel: 'Описание (необязательно)',
-      recordDescPlaceholder: 'Когда использовать этот сценарий…',
-      recordDescHint: 'Одно предложение, не более 60 символов.',
-      recordSteps: count => `Записанные шаги (${count})`,
-      recordEmpty: 'Шаги не записаны — запись была пустой.',
-      recordSave: 'Сохранить навык',
-      recordSaving: 'Сохранение…',
-      recordSaved: name => `«${name}» сохранён в ваши навыки.`,
-      recordSaveFailed: 'Не удалось сохранить навык.'
+      fallbackTitle: 'Предпросмотр'
     }
   },
   interfaceMode: {
@@ -4217,8 +3496,6 @@ export const ruOverrides = {
     hint: 'Меняет то, что показано, а не то, что умеет Hermes.',
     sessionNote:
       'Задано простым режимом. Изменение здесь действует до конца сеанса; переключитесь в расширенный, чтобы сделать его своим.',
-    simpleNotice: 'Простой режим — панели и дополнительные инструменты скрыты.',
-    showAdvanced: 'Показать расширенный',
     simple: {
       label: 'Простой',
       description: 'Для общения с Hermes. Боковая панель и чат; без терминала, файлов и панелей diff.'
@@ -4302,16 +3579,9 @@ export const ruOverrides = {
     }
   },
   assistant: {
-    sessionRecap: {
-      title: 'Где всё остановилось',
-      dismiss: 'Скрыть',
-      turns: count => `Реплик: ${count}`,
-      todo: progress => `План: ${progress}`
-    },
     thread: {
       loadingSession: 'Загрузка сеанса',
       showEarlier: 'Показать ранние сообщения',
-      timelineScrubber: 'Миникарта транскрипта',
       loadingResponse: 'Hermes загружает ответ',
       resumeWhenBackgroundDone: count =>
         count === 1
@@ -4337,7 +3607,6 @@ export const ruOverrides = {
       stopReading: 'Остановить чтение',
       readAloud: 'Зачитать вслух',
       copyFullResponse: 'Копировать весь ответ',
-      copyMarkdown: 'Копировать как Markdown',
       readAloudFullResponseHint: 'Shift+клик: прочитать весь ответ',
       editMessage: 'Изменить сообщение',
       expandMessage: 'Развернуть сообщение',
@@ -4350,12 +3619,6 @@ export const ruOverrides = {
       restoreBody: 'Всё, что было после этого промпта, будет удалено из разговора, и промпт запустится снова отсюда.',
       restoreConfirm: 'Восстановить и запустить',
       restoreNext: 'Восстановить следующий чекпоинт',
-      revertFilesTip: 'Откатить файлы к состоянию до этого запроса',
-      revertFilesTitle: 'Откатить файлы?',
-      revertFilesBody:
-        'Файлы, изменённые Hermes в этом ходе, вернутся к прежнему состоянию — всё, что вы редактировали вручную, сохранится. Диалог не затрагивается.',
-      revertFilesConfirm: 'Откатить файлы',
-      revertFilesFailed: 'Не удалось откатить файлы',
       goForward: 'Двигаться вперёд',
       sendEdited: 'Отправить изменённое сообщение',
       attachingFile: 'Прикрепление…'
@@ -4375,49 +3638,8 @@ export const ruOverrides = {
         `Это добавит паттерн «${pattern}» в ваш постоянный список разрешений (~/.hermes/config.yaml). Hermes больше не будет спрашивать о подобных командах — ни в этом сеансе, ни в будущем.`,
       alwaysAllow: 'Всегда разрешать'
     },
-    clarify: {
-      notReady: 'Запрос уточнения ещё не готов',
-      gatewayDisconnected: 'Шлюз Hermes не подключён',
-      sendFailed: 'Не удалось отправить ответ на уточнение',
-      loadingQuestion: 'Загрузка вопроса…',
-      other: 'Другое (введите ответ)',
-      placeholder: 'Введите ваш ответ…',
-      skip: 'Пропустить',
-      skipped: 'Пропущено',
-      noAnswer: 'Нет ответа',
-      confirmAndContinueLabel: 'Подтвердить и продолжить',
-      singleSelectHint: 'Выберите один',
-      multiSelectHint: 'Выберите все подходящие',
-      oneQuestion: '1 вопрос',
-      questionProgress: (answered, total) => `Ответ дан на ${answered} из ${total}`,
-      notDelivered:
-        'Этот вопрос не дошёл до приложения, поэтому ответить здесь нельзя. Нажмите «Стоп», чтобы завершить ход, и ответьте в чате.'
-    },
-    setupChoose: {
-      kinds: {
-        accent: 'Акцентный цвет',
-        connectors: 'Приложения',
-        layout: 'Раскладка',
-        plugins: 'Плагины',
-        theme: 'Оформление'
-      },
-      loading: 'Загружаю варианты…',
-      unavailable: 'Этот список сейчас недоступен. Ответьте в чате.',
-      findApp: 'Найти приложение',
-      customColor: 'Свой цвет',
-      plugin: 'Плагин',
-      startsLater: 'Мы настроим это, когда вы начнёте.'
-    },
-    startChat: {
-      starting: title => `Запускаю «${title}»…`,
-      startingUntitled: 'Запускаю чат…',
-      untitled: 'Новый чат',
-      notStarted: 'Чат не запустился',
-      retry: 'Повторить',
-      inProfile: profile => `В ${profile}`,
-      open: 'Открыть',
-      openFailed: 'Не удалось открыть чат'
-    },
+    clarify: ruClarify,
+    themePicker: ruThemePicker,
     catalogInstall: {
       preparing: 'Готовим установку…',
       install: 'Установить',
@@ -4431,7 +3653,7 @@ export const ruOverrides = {
       hideNames: 'скрыть имена',
       skill: name => `навык ${name}`,
       kind: { plugin: 'плагин', skill: 'навык' },
-      tier: { official: 'официальный', community: 'сообщество' },
+      tier: { official: 'официальный', verified: 'проверенный', community: 'сообщество' },
       targetProfile: profile => `Установка в ваш профиль ${profile}`,
       sendFailed: 'Не удалось отправить ответ. Попробуйте ещё раз.',
       commitLabel: 'Коммит',
@@ -4560,12 +3782,6 @@ export const ruOverrides = {
           pending: 'Ищу в истории сеансов',
           pendingAction: 'Ищу'
         },
-        setup_choose: {
-          done: 'Задан вопрос о настройке',
-          pending: 'Задаю вопрос о настройке',
-          pendingAction: 'Спрашиваю'
-        },
-        start_chat: { done: 'Чат запущен', pending: 'Запускаю чат', pendingAction: 'Запускаю' },
         terminal: { done: 'Команда выполнена', pending: 'Выполняю команду', pendingAction: 'Выполняю' },
         todo: { done: 'Todo обновлены', pending: 'Обновляю todo', pendingAction: 'Обновляю' },
         vision_analyze: {
@@ -4592,11 +3808,7 @@ export const ruOverrides = {
     sudoPlaceholder: 'пароль sudo',
     secretTitle: 'Требуется секрет',
     secretDesc: 'Hermes нужны учётные данные, чтобы продолжить.',
-    secretPlaceholder: 'значение секрета',
-    secretCardSkip: 'Пропустить',
-    secretCardSave: 'Сохранить',
-    secretCardFootnote:
-      'Сохраняется в секретах этого профиля — значение уходит прямо в backend и никогда не попадает в переписку.'
+    secretPlaceholder: 'значение секрета'
   },
   desktop: {
     audioReadFailed: 'Не удалось прочитать записанное аудио',
@@ -4657,19 +3869,6 @@ export const ruOverrides = {
     modelSwitchStaleNotice: 'Выбор изменился — смена модели не применена.',
     sessionExported: 'Сеанс экспортирован',
     sessionExportFailed: 'Не удалось экспортировать сеанс',
-    markdownUser: 'Пользователь',
-    markdownAssistant: 'Ассистент',
-    markdownSystem: 'Система',
-    markdownReasoning: 'Рассуждения',
-    markdownToolCall: 'Вызов инструмента',
-    markdownToolResult: 'Результат инструмента',
-    deliverableArtifacts: 'Артефакты',
-    deliverableChanges: 'Изменения',
-    deliverableFilesLine: (files, added, removed) => `Затронуто файлов: ${files} · +${added} / −${removed}`,
-    deliverableNoSummary: 'Ответ ассистента не записан',
-    deliverablePullRequest: 'Pull request',
-    deliverableSession: 'Сеанс',
-    deliverableSummary: 'Итог',
     imageSaved: 'Изображение сохранено',
     downloadStarted: 'Загрузка началась',
     restartToUseSaveImage: 'Перезапустите Hermes Desktop, чтобы использовать «Сохранить изображение».',
@@ -4682,7 +3881,6 @@ export const ruOverrides = {
     imageAttach: 'Прикрепление изображения',
     imageWriteFailed: 'Не удалось записать изображение на диск.',
     imageAttachFailed: 'Прикрепление изображения не удалось',
-    pastedAsFile: 'Вставлено как файл',
     attachImages: 'Прикрепить изображения',
     clipboard: 'Буфер обмена',
     noClipboardImage: 'Изображение в буфере обмена не найдено',
@@ -4690,38 +3888,12 @@ export const ruOverrides = {
     dropFiles: 'Перетащите файлы',
     handoff: {
       pickPlatform: 'Выберите назначение',
-      queued: (platform, home) => `Передача в ${platform} (${home})…`,
-      sessionUnavailable: 'Сейчас этот чат не активен на шлюзе.',
       success: platform => `Передаём в ${platform}. Возобновите здесь в любой момент.`,
       systemNote: platform => `↻ Передано в ${platform} — возобновите здесь в любой момент.`,
       failed: error => `Передача не удалась: ${error}`,
       timedOut: 'Превышено время ожидания шлюза. Выполняется ли `hermes gateway`?'
     }
   },
-  menuBar: {
-    newSession: 'Новая сессия',
-    quickEntry: 'Быстрый ввод',
-    quit: 'Выйти из Hermes',
-    recentSessions: 'Недавние сессии',
-    show: 'Показать Hermes',
-    statusIdle: 'Hermes — простаивает',
-    statusActive: (runs: number, needsYou: number) => `${runs} выполняется · ${needsYou} ждёт вас`
-  },
-
-  quickEntry: {
-    contextLabel: 'Контекст',
-    contextRemove: 'Убрать контекст'
-  },
-
-  tips: {
-    items: {
-      'advanced-mode': {
-        title: 'Больше в расширенном режиме',
-        text: 'Панели, cron, возможности и строка состояния живут в расширенном режиме — Настройки › Внешний вид › Окно и расположение переключает режим.'
-      }
-    }
-  },
-
   errors: {
     genericFailure: 'Что-то пошло не так',
     boundaryTitle: 'Что-то сломалось в интерфейсе',

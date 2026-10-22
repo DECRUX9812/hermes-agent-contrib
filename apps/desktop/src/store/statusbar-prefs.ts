@@ -42,7 +42,6 @@ export const STATUSBAR_HIDDEN_BY_DEFAULT: readonly string[] = [
   'cache-hit-rate',
   'context-usage',
   'cron',
-  'notices',
   'running-timer',
   'session-timer',
   'system-resources',

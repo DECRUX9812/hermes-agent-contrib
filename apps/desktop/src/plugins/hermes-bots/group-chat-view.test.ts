@@ -61,6 +61,28 @@ beforeEach(() => {
 })
 
 describe('opening a room', () => {
+  it('uses the canonical room name for the main tab instead of its registry key', async () => {
+    const room = await loadRoom()
+    const { registerCanonicalGroup } = await import('./canonical-group-registry')
+
+    const group = registerCanonicalGroup(
+      { connectionId: 'local', profile: 'default' },
+      { room_id: 'room-id', name: 'Incident response', members: [] }
+    )
+
+    let title = ''
+
+    host.openWorkspace = (_id: string, options: { title: string }) => {
+      title = options.title
+
+      return () => undefined
+    }
+
+    room.view.openGroupChat(group, 'key')
+
+    expect(title).toBe('Incident response')
+  })
+
   it('follows the main-window tab open and close', async () => {
     const room = await loadRoom()
     let onClose: () => void = () => undefined
@@ -71,7 +93,7 @@ describe('opening a room', () => {
       return () => onClose()
     }
 
-    room.view.openGroupChat('Core')
+    room.view.openGroupChat('Core', 'name')
 
     expect(room.chat.$groupChatWorkspace.get()).toBe('Core')
     // #89788: the main tab owns the room, so the pane keeps its roster.
@@ -86,7 +108,7 @@ describe('opening a room', () => {
   it('keeps the in-pane fallback on older hosts and when the door throws', async () => {
     const older = await loadRoom()
 
-    older.view.openGroupChat('Core')
+    older.view.openGroupChat('Core', 'name')
 
     expect(older.chat.$groupChatWorkspace.get()).toBe('Core')
     expect(older.panes.shouldRenderGroupChatInPane('Core')).toBe(true)
@@ -97,7 +119,7 @@ describe('opening a room', () => {
       throw new Error('workspace unavailable')
     }
 
-    failed.view.openGroupChat('Ops')
+    failed.view.openGroupChat('Ops', 'name')
 
     expect(failed.chat.$groupChatWorkspace.get()).toBe('Ops')
     expect(failed.panes.shouldRenderGroupChatInPane('Ops')).toBe(true)
@@ -119,7 +141,7 @@ describe('opening a room', () => {
 
     host.openWorkspace = () => () => undefined
 
-    room.view.openGroupChat('Core')
+    room.view.openGroupChat('Core', 'name')
     unsubscribe()
 
     expect(gateAtSelection).toBe(false)
@@ -129,8 +151,8 @@ describe('opening a room', () => {
     const room = await loadRoom()
     host.openWorkspace = () => () => undefined
 
-    room.view.openGroupChat('Core')
-    room.view.openGroupChat('Ops')
+    room.view.openGroupChat('Core', 'name')
+    room.view.openGroupChat('Ops', 'name')
     room.panes.closeGroupChatMainTab('Core')
 
     expect(room.chat.$groupChatWorkspace.get()).toBe('Ops')
@@ -155,7 +177,7 @@ describe('disband', () => {
     room.chat.$groupChatWorkspace.set('Gone')
     room.chat.$groupNeedsYou.set({ Gone: true, Keep: true })
 
-    await (await import('./group-room-lifecycle')).disbandGroupChat('Gone', [{ name: 'builder' }])
+    await room.view.disbandGroupChat('Gone', [{ name: 'builder' }])
 
     // Room state: gone from the atom (no running drive, so no tombstone).
     expect(room.chat.$groupChats.get().Gone).toBeUndefined()
@@ -180,7 +202,7 @@ describe('disband', () => {
       Remote: { log: [], members: [], running: false, sessions: {}, watermarks: {} }
     } as unknown as Record<string, GroupChat>)
 
-    await (await import('./group-room-lifecycle')).disbandGroupChat('Remote', [])
+    await room.view.disbandGroupChat('Remote', [])
 
     expect(room.chat.$groupChats.get().Remote).toBeUndefined()
     expect(room.data.$botMeta.get().builder.groups).toEqual([])
@@ -210,7 +232,7 @@ describe('disband', () => {
       Remote: { log: [], members: [], running: false, sessions: {}, watermarks: {} }
     } as unknown as Record<string, GroupChat>)
 
-    await (await import('./group-room-lifecycle')).disbandGroupChat('Remote', [])
+    await room.view.disbandGroupChat('Remote', [])
 
     expect(room.data.$botMeta.get()['remote-1::builder'].groups).toEqual([])
     expect(room.data.$botMeta.get()['remote-1::builder'].group).toBeNull()
@@ -223,7 +245,7 @@ describe('disband', () => {
     const room = await loadRoom()
     room.data.$botMeta.set({ builder: { group: 'Keep', groups: ['Keep'] } })
 
-    await (await import('./group-room-lifecycle')).disbandGroupChat('Remote', [
+    await room.view.disbandGroupChat('Remote', [
       { connectionId: 'remote-1', name: 'builder', remoteSource: true, sourceScoped: true }
     ])
 
@@ -243,7 +265,7 @@ describe('disband', () => {
       }
     } as unknown as Record<string, GroupChat>)
 
-    await (await import('./group-room-lifecycle')).disbandGroupChat('Live', [{ name: 'research' }])
+    await room.view.disbandGroupChat('Live', [{ name: 'research' }])
 
     const tomb = room.chat.$groupChats.get().Live
 
@@ -277,7 +299,7 @@ describe('disband', () => {
       Gone: { log: [{ at: 1, from: { kind: 'user', name: 'You' }, id: 'g1', text: 'bye' }], watermarks: {} }
     } as unknown as Record<string, GroupChat>)
 
-    await (await import('./group-room-lifecycle')).disbandGroupChat('Gone', [])
+    await room.view.disbandGroupChat('Gone', [])
     await drain(() => room.gateway.rpcFor('profiles.configure').length < 1, 50)
 
     const configure = room.gateway.rpcFor('profiles.configure').at(-1)
@@ -300,7 +322,7 @@ describe('disband', () => {
       }
     } as unknown as Record<string, GroupChat>)
 
-    await (await import('./group-room-lifecycle')).disbandGroupChat('Build', [])
+    await room.view.disbandGroupChat('Build', [])
 
     // The disband is remembered durably, not only in the in-flight sync job.
     expect(room.gateway.storage.get('group-chat-tombstones')).toEqual({ 'id:room-1': 5 })

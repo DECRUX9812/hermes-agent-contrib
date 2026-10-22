@@ -51,14 +51,11 @@ def inline_source_flag_index(tokens: list[str]) -> int | None:
             return None
         # Clustered short options (``-uc``, ``-IsB``). An operand-taking letter consumes the rest of
         # the cluster as its attached value, or the following token when the cluster ends there --
-        # so ``-Xc`` is ``-X c``, NOT an inline-source ``-c``. ``-m`` ends the option block with the
-        # module name, so the ``c`` in ``-mhermes_cli.main`` is not an inline-source flag either.
+        # so ``-Xc`` is ``-X c``, NOT an inline-source ``-c``.
         cluster = token[1:]
         for position, letter in enumerate(cluster):
             if letter == "c":
                 return index
-            if letter == "m":
-                return None
             if letter in _PYTHON_SHORT_OPTIONS_WITH_OPERANDS:
                 index += 1 if cluster[position + 1 :] else 2
                 break
@@ -92,6 +89,13 @@ _BOOTSTRAPS = (
     ("exec", re.compile(r"import sys, runpy; sys\.path\.insert\(.*?;\s*exec\((?P<target>.+)\)", re.DOTALL)),
     # hermes_cli._launchers._launcher_script (the published POSIX shell / Windows .cmd launcher)
     ("entry", re.compile(r"import os, re, sys\s.*\bfrom\s+(?P<target>[\w.]+)\s+import\s+(?P<func>\w+)\b.*\bsys\.exit\(\s*(?P=func)\(\)\s*\)", re.DOTALL)),
+    # scripts/build/launchers.py::posix_launcher (the bundled/Docker payload's bin/hermes). Spelled out
+    # statement by statement: a ``.*`` would span a carrier's source plus the launcher argv it carries.
+    # Only the ``hermes`` entry: the same shape importing any other module is someone else's program.
+    ("module", re.compile(
+        rf"import os, site, sys;\s*sys\.argv\[0\]\s*=\s*{_Q}[\w.-]+{_Q};\s*"
+        rf"site\.addsitedir\(os\.environ\[{_Q}HERMES_SITE{_Q}\]\);"
+        r"\s*from\s+(?P<target>hermes_cli\.main)\s+import\s+main\s*;\s*sys\.exit\(\s*main\(\)\s*\)")),
     # hermes_cli._launchers._write_cmd_launcher: the launcher script, base64-encoded
     ("base64", re.compile(rf"import base64; exec\(base64\.b64decode\({_Q}(?P<target>[A-Za-z0-9+/=]+){_Q}\)\)")),
 )

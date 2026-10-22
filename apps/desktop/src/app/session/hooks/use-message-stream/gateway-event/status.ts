@@ -75,8 +75,7 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
           durationMs: 5_000,
           id: `session-compress:${sessionId}`,
           kind: 'success',
-          message: completionText,
-          sessionId
+          message: completionText
         })
       }
 
@@ -349,8 +348,7 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
         id: `gateway-error:${errorMessage}`,
         kind: 'error',
         message: toastMessage,
-        title: translateNow('assistant.thread.errorToastTitle'),
-        sessionId
+        title: translateNow('assistant.thread.errorToastTitle')
       })
     }
 

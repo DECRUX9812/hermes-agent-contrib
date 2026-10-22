@@ -5,10 +5,8 @@
  * through `ctx.rest` (namespace-scoped to `/api/plugins/kanban`). No new
  * backend, no core edits.
  *
- * On by default (`defaultEnabled: true`): the workboard is a first-class
- * desktop page — a nav row under Browse and a `/kanban` route, nothing more.
- * Offer, don't hijack: it never auto-opens, and Capabilities ▸ Plugins can
- * still switch it off.
+ * Ships OFF by default (`defaultEnabled: false`): it inventories in
+ * Capabilities ▸ Plugins and registers nothing until the user flips the switch.
  */
 
 import './kanban.css'
@@ -84,7 +82,7 @@ const plugin: HermesPlugin = {
   id: 'kanban',
   name: 'Kanban',
   description: 'Multi-agent task board — board page, sidebar entry, and a live in-flight count in the status bar.',
-  defaultEnabled: true,
+  defaultEnabled: false,
   register(ctx) {
     ctx.i18n.register(KANBAN_LOCALES)
     ctx.onDispose(bindApi(ctx.rest, ctx.storage, ctx.socket, { os: ctx.os, t: ctx.i18n.t }))

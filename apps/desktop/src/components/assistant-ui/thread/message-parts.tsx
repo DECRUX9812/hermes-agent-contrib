@@ -7,25 +7,26 @@ import {
   useMessagePartText
 } from '@assistant-ui/react'
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, type FC, type ReactNode, useContext, useEffect, useRef, useState } from 'react'
+import { type ComponentProps, type FC, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
+import { useSessionView } from '@/app/chat/session-view'
 import { CatalogInstallTool } from '@/components/assistant-ui/catalog-install-tool'
 import { ClarifyTool } from '@/components/assistant-ui/clarify'
 import { ConnectorExecution, ConnectorTool } from '@/components/assistant-ui/connector-tool'
 import { MarkdownText, MarkdownTextContent } from '@/components/assistant-ui/markdown-text'
 import { McpSetupTool } from '@/components/assistant-ui/mcp-setup-tool'
-import { StartChatTool } from '@/components/assistant-ui/start-chat-tool'
+import { SetupBeatTool } from '@/components/assistant-ui/setup-beat/setup-beat-tool'
+import { setThemeCall } from '@/components/assistant-ui/theme-picker/args'
+import { ThemeTool } from '@/components/assistant-ui/theme-picker/theme-tool'
 import { AgentDeliveryNotice, deliveryTargetFromCommand } from '@/components/assistant-ui/thread/agent-delivery'
 import { TimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
 import { DelegateTool } from '@/components/assistant-ui/tool/delegate'
-import { ActivityPillExpandedContext, ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
+import { ToolFallback, ToolGroupSlot } from '@/components/assistant-ui/tool/fallback'
 import { parseMaybeObject, toolCallFailed } from '@/components/assistant-ui/tool/fallback-model'
 import { formatElapsed, useElapsedSeconds, useMeasuredDuration } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { GeneratedImage } from '@/components/chat/generated-image-result'
 import { SCAFFOLD_LABEL_CLASS, SCAFFOLD_META_CLASS, ScaffoldRow } from '@/components/chat/scaffold-row'
-import { VisualizationCard } from '@/components/chat/visualization-card'
-import { useOnboardingChatActive } from '@/components/onboarding-chat/assembly'
 import { useI18n } from '@/i18n'
 import { mcpTargets, toolLabels } from '@/lib/connector-tools'
 import { generatedImageFromResult } from '@/lib/generated-images'
@@ -34,7 +35,7 @@ import { isTodoToolName } from '@/lib/todos'
 import { type CardToolName, isCardTool, isCardToolName } from '@/lib/tool-render-class'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { cn } from '@/lib/utils'
-import { visualizationFromResult } from '@/lib/visualizations'
+import { onboardingChatStore } from '@/store/onboarding-session'
 import { $reasoningCollapsedByDefault, $showReasoning } from '@/store/reasoning-disclosure'
 import { useForcedTextDirection } from '@/store/text-direction'
 import { $showToolActivity } from '@/store/tool-activity'
@@ -61,23 +62,6 @@ const ImageGenerateTool: FC<TimelineToolCallProps> = props => {
     <div className="mt-1.5">
       <TimelineTimestamp className="mb-0.5 block" completedAt={completedAt} timestamp={timestamp} />
       <GeneratedImage aspectRatio={aspectRatio} result={result} />
-    </div>
-  )
-}
-
-const VisualizationToolPart: FC<TimelineToolCallProps> = props => {
-  const { completedAt, result, timestamp } = props
-
-  // Failed or malformed results fall back to the normal tool row so the
-  // error stays visible and debuggable instead of silently dropping.
-  if (settledWithoutResult(props) || (result !== undefined && !visualizationFromResult(result))) {
-    return <ToolFallback {...props} />
-  }
-
-  return (
-    <div className="mt-1.5">
-      <TimelineTimestamp className="mb-0.5 block" completedAt={completedAt} timestamp={timestamp} />
-      <VisualizationCard result={result} />
     </div>
   )
 }
@@ -113,17 +97,25 @@ const ClarifyToolPart: FC<TimelineToolCallProps> = props => {
   )
 }
 
-const StartChatToolPart: FC<TimelineToolCallProps> = props => {
-  if (props.isError || settledWithoutResult(props)) {
+const ThemeToolPart: FC<TimelineToolCallProps> = props => {
+  if (settledWithoutResult(props)) {
     return <ToolFallback {...props} />
   }
 
   return (
     <>
       <TimelineTimestamp className="mb-0.5 block" completedAt={props.completedAt} timestamp={props.timestamp} />
-      <StartChatTool {...props} />
+      <ThemeTool {...props} />
     </>
   )
+}
+
+const SetupBeatToolPart: FC<TimelineToolCallProps> = props => {
+  if (settledWithoutResult(props)) {
+    return <ToolFallback {...props} />
+  }
+
+  return <SetupBeatTool {...props} />
 }
 
 const ConnectionsToolPart: FC<TimelineToolCallProps> = props =>
@@ -131,20 +123,19 @@ const ConnectionsToolPart: FC<TimelineToolCallProps> = props =>
 
 const TOOL_CARDS: Record<CardToolName, FC<TimelineToolCallProps>> = {
   clarify: ClarifyToolPart,
-  create_visualization: VisualizationToolPart,
   delegate_task: DelegateToolPart,
   image_generate: ImageGenerateTool,
   manage_catalog: CatalogInstallTool,
   manage_connections: ConnectionsToolPart,
-  setup_choose: ClarifyToolPart,
-  start_chat: StartChatToolPart
+  set_theme: ThemeToolPart,
+  setup_beat: SetupBeatToolPart
 }
 
 // A failure the user still has to see. The gateway's tool.complete carries the
 // failure inside `result`, never as the top-level error that sets isError, so
 // this reads the body like the run summary does. A non-zero exit_code counts
 // too, matching the gateway's _tool_result_needs_user, which forwards terminal
-// {output, exit_code: 1, error: null} in answer-only mode.
+// {output, exit_code: 1, error: null} even with display.tool_progress off.
 const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
   const exitCode = parseMaybeObject(part.result).exit_code
 
@@ -153,11 +144,6 @@ const failedCallNeedsUser = (part: TimelineToolCallProps): boolean => {
 
 const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   const showToolActivity = useStore($showToolActivity)
-  // Inside a bot-chat activity pill (G2) quiet rows follow the pill: hidden
-  // until it is expanded, even when tool activity is on. Everywhere else
-  // answer-only applies unchanged.
-  const pillExpanded = useContext(ActivityPillExpandedContext)
-  const quietRowHidden = pillExpanded === null ? !showToolActivity : !pillExpanded
 
   // todo parts are hoisted to a dedicated panel above the message content.
   if (isTodoToolName(props.toolName)) {
@@ -189,6 +175,11 @@ const ChainToolFallback: FC<TimelineToolCallProps> = props => {
     return <ToolCard {...props} />
   }
 
+  // A reloaded transcript holds the model's own call: set_theme reached through the tool_call bridge.
+  if (setThemeCall(props.toolName, props.args)) {
+    return <ThemeToolPart {...props} />
+  }
+
   if (toolLabels(props.args).length > 0) {
     return <ConnectorExecution {...props} />
   }
@@ -196,7 +187,7 @@ const ChainToolFallback: FC<TimelineToolCallProps> = props => {
   // The tool feed (reads, searches, commands) follows display.tool_progress,
   // never show_reasoning. Cards, approvals, and failed calls the user must act
   // on remain regardless.
-  if (quietRowHidden && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
+  if (!showToolActivity && !failedCallNeedsUser(props) && !isCardTool(props.toolName)) {
     return null
   }
 
@@ -236,7 +227,10 @@ const ThinkingDisclosure: FC<{
   timerKey: string
 }> = ({ children, completedAt, messageRunning = false, pending = false, timestamp, timerKey }) => {
   const { t } = useI18n()
-  const reasoningCollapsedByDefault = useStore($reasoningCollapsedByDefault)
+  const sessionId = useStore(useSessionView().$runtimeId)
+  const onboardingChat = useStore(useMemo(() => onboardingChatStore(sessionId), [sessionId]))
+  // The first-run chat rests reasoning collapsed: its cards and short replies carry the run.
+  const reasoningCollapsedByDefault = useStore($reasoningCollapsedByDefault) || onboardingChat
   // `null` = no explicit user toggle yet. Live reasoning remains visible by
   // default, unless the user opts into the low-jitter collapsed presentation.
   const [userOpen, setUserOpen] = useState<boolean | null>(null)
@@ -251,7 +245,8 @@ const ThinkingDisclosure: FC<{
   // a still-running turn) never latch, so they stay collapsed.
   const [sawLivePreview, setSawLivePreview] = useState(false)
 
-  if (pending && !sawLivePreview) {
+  // Not while collapsed: a block that never showed a preview must not open when the preference lifts.
+  if (pending && !sawLivePreview && !reasoningCollapsedByDefault) {
     setSawLivePreview(true)
   }
 
@@ -378,10 +373,6 @@ const ReasoningAccordionGroup: FC<{ children?: ReactNode; endIndex: number; star
   const showReasoning = useStore($showReasoning)
   const messageId = useAuiState(s => s.message.id)
   const messageRunning = useAuiState(s => s.message.status?.type === 'running')
-  // The guide's reasoning is it reading its own runbook ("Now step 4: offer
-  // the layout picker"), and a first-time user reading that alongside the
-  // greeting breaks the one conversation the guide is trying to have.
-  const guidedChat = useOnboardingChatActive()
 
   const pending = useAuiState(
     s =>
@@ -420,7 +411,7 @@ const ReasoningAccordionGroup: FC<{ children?: ReactNode; endIndex: number; star
     }, undefined)
   )
 
-  if (!hasContent || guidedChat || !showReasoning) {
+  if (!hasContent || !showReasoning) {
     return null
   }
 

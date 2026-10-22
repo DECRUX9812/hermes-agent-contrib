@@ -323,7 +323,6 @@ async def check_hermes_update(force: bool = False, profile: Optional[str] = None
 
     # source_check.check_for_updates() handles git / nix-revision paths through the GitHub API and
     # caches the result for 24h. ``force`` busts the cache so "Check now" reflects reality.
-    status = None
     try:
         from hermes_cli.source_check import check_for_updates
 
@@ -336,16 +335,22 @@ async def check_hermes_update(force: bool = False, profile: Optional[str] = None
 
     payload["behind"] = behind
     if behind is None:
-        detail_msg = status.get("message") if isinstance(status, dict) else None
-        payload["message"] = detail_msg or "Couldn't reach the update source — try again later."
+        payload["message"] = "Couldn't reach the update source — try again later."
     elif behind == 0:
         payload["message"] = "You're on the latest version."
     else:
         payload["update_available"] = True
+        if status.get("rollback"):
+            # A stable release this build already contains: applying it moves back.
+            payload.update(rollback_to=status.get("sourceVersion"),
+                           message=f"This build is newer than stable release v{status.get('sourceVersion')}. "
+                                   "Updating moves it back to that release.")
         # "What's changed" for the desktop's remote update overlay; best-effort
-        # (empty list on any failure).
+        # (empty list on any failure). Channel + release name pick its notes source.
+        payload.update(channel=status.get("channel"), branch=status.get("branch"),
+                       source_version=status.get("sourceVersion"))
         payload["commits"] = [{**row, "sha": row["sha"][:7], "at": row["at"] // 1000}
-                              for row in (status or {}).get("commits", [])[:20]]
+                              for row in status.get("commits", [])[:20]]
     return payload
 
 

@@ -61,7 +61,7 @@ from pathlib import Path, PurePosixPath
 from hermes_constants import get_hermes_home
 from hermes_cli._subprocess_compat import selected_git_env, windows_hide_flags
 from hermes_cli.gitlock import clear_stale_tmp_packs
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from utils import env_int, rmtree_readonly
 
@@ -165,12 +165,6 @@ _MAX_FILES = 50_000
 
 # Valid git commit hash pattern: 4–40 hex chars (short or full SHA-1/SHA-256).
 _COMMIT_HASH_RE = re.compile(r'^[0-9a-fA-F]{4,64}$')
-
-# Git-trailer keys linking a checkpoint to the user turn that preceded it
-# (written by ``_take`` when the executor supplies a turn context).
-_TRAILER_SESSION = "Hermes-Session"
-_TRAILER_TURN = "Hermes-Turn"
-_TRAILER_USER_ROW = "Hermes-User-Row"
 
 
 # ---------------------------------------------------------------------------
@@ -409,6 +403,7 @@ def _run_git(
             # console-less desktop/gateway backend; suppress the per-call
             # conhost flash on Windows (no-op on POSIX).
             creationflags=windows_hide_flags(),
+            check=False,
         )
         ok = result.returncode == 0
         stdout = os.fsdecode(result.stdout) if "-z" in args else result.stdout.strip()
@@ -558,6 +553,7 @@ def _init_store(store: Path, working_dir: str) -> Optional[str]:
             env=init_env, timeout=_GIT_TIMEOUT,
             stdin=subprocess.DEVNULL,
             creationflags=windows_hide_flags(),
+            check=False,
         )
         if result.returncode != 0:
             return f"Shadow store init failed: {result.stderr.strip()}"
@@ -921,17 +917,8 @@ class CheckpointManager:
                 skipped.append(rel)
         return {"success": True, "restore": restore, "skipped": skipped}
 
-    def ensure_checkpoint(
-        self,
-        working_dir: str,
-        reason: str = "auto",
-        turn: Optional[dict[str, Any]] = None,
-    ) -> bool:
+    def ensure_checkpoint(self, working_dir: str, reason: str = "auto") -> bool:
         """Take a checkpoint if enabled and not already done this turn.
-
-        ``turn`` optionally carries ``{"session", "turn", "row_id"}`` identifying the
-        user prompt this snapshot precedes; it is recorded as git trailers so
-        clients can offer "revert to before this prompt" per message.
 
         Returns True if a checkpoint was taken, False otherwise.
         Never raises — all errors are silently logged.
@@ -955,7 +942,7 @@ class CheckpointManager:
             from tools.checkpoint_pruning import store_lock
 
             with store_lock(_resolve_checkpoint_base()):
-                return self._take(abs_dir, reason, turn=turn)
+                return self._take(abs_dir, reason)
         except Exception as e:
             logger.debug("Checkpoint failed (non-fatal): %s", e)
             return False
@@ -969,12 +956,8 @@ class CheckpointManager:
             return []
 
         ref = _ref_name(_project_hash(abs_dir))
-        # %x1e (record sep) delimits the body: %b can hold the trailer
-        # paragraph's newlines, and a "|" inside the subject stays harmless
-        # because the subject is the last "|"-field before the separator.
-        fmt = "%H|%h|%aI|%s%x1e%b%x1e"
         ok, stdout, _ = _run_git(
-            ["log", ref, f"--format={fmt}", "-n", str(self.max_snapshots)],
+            ["log", ref, "--format=%H|%h|%aI|%s", "-n", str(self.max_snapshots)],
             store, abs_dir,
             allowed_returncodes={128, 129},
         )
@@ -983,45 +966,26 @@ class CheckpointManager:
             return []
 
         results: list[dict] = []
-        # Records come back [meta, body] pairs after splitting on \x1e; the
-        # last commit's body can carry no trailing separator, leaving a lone
-        # trailing meta — pair it with an empty body.
-        records = stdout.split("\x1e")
-        for meta_i in range(0, len(records), 2):
-            meta = records[meta_i].strip("\n")
-            body = records[meta_i + 1] if meta_i + 1 < len(records) else ""
-            parts = meta.split("|", 3)
-            if len(parts) != 4 or not parts[0]:
-                continue
-            entry = {
-                "hash": parts[0],
-                "short_hash": parts[1],
-                "timestamp": parts[2],
-                "reason": parts[3],
-                "files_changed": 0,
-                "insertions": 0,
-                "deletions": 0,
-            }
-            trailers = {
-                key.strip(): value.strip()
-                for line in body.splitlines()
-                if (kv := line.split(":", 1)) and len(kv) == 2
-                for key, value in (kv,)
-            }
-            if trailers.get(_TRAILER_TURN, "").isdigit():
-                entry["turn"] = int(trailers[_TRAILER_TURN])
-            if trailers.get(_TRAILER_SESSION):
-                entry["sid"] = trailers[_TRAILER_SESSION]
-            if trailers.get(_TRAILER_USER_ROW, "").isdigit():
-                entry["user_row_id"] = int(trailers[_TRAILER_USER_ROW])
-            stat_ok, stat_out, _ = _run_git(
-                ["diff", "--shortstat", f"{parts[0]}~1", parts[0]],
-                store, abs_dir,
-                allowed_returncodes={128, 129},
-            )
-            if stat_ok and stat_out:
-                self._parse_shortstat(stat_out, entry)
-            results.append(entry)
+        for line in stdout.splitlines():
+            parts = line.split("|", 3)
+            if len(parts) == 4:
+                entry = {
+                    "hash": parts[0],
+                    "short_hash": parts[1],
+                    "timestamp": parts[2],
+                    "reason": parts[3],
+                    "files_changed": 0,
+                    "insertions": 0,
+                    "deletions": 0,
+                }
+                stat_ok, stat_out, _ = _run_git(
+                    ["diff", "--shortstat", f"{parts[0]}~1", parts[0]],
+                    store, abs_dir,
+                    allowed_returncodes={128, 129},
+                )
+                if stat_ok and stat_out:
+                    self._parse_shortstat(stat_out, entry)
+                results.append(entry)
         return results
 
     def list_all_checkpoints(self) -> list[dict]:
@@ -1451,14 +1415,7 @@ class CheckpointManager:
     # Internal
     # ------------------------------------------------------------------
 
-    def _take(
-        self,
-        working_dir: str,
-        reason: str,
-        *,
-        prune: bool = True,
-        turn: Optional[dict[str, Any]] = None,
-    ) -> bool:
+    def _take(self, working_dir: str, reason: str, *, prune: bool = True) -> bool:
         """Take a snapshot.  Returns True on success."""
         store = _store_path()
 
@@ -1573,21 +1530,10 @@ class CheckpointManager:
                 line.strip() for line in reason.splitlines() if line.strip()
             ) + _uncaptured_note(nested_repos)
 
-        # Build commit (parent = current ref tip, if any).  A user-turn
-        # context rides as git trailers in a second paragraph so
-        # list_checkpoints can answer "which prompt does this precede?".
-        commit_args = ["commit-tree", tree_sha]
+        # Build commit (parent = current ref tip, if any).
+        commit_args = ["commit-tree", tree_sha, "-m", reason, "--no-gpg-sign"]
         if has_ref:
-            commit_args += ["-p", ref_commit]
-        commit_args += ["-m", reason]
-        if turn:
-            trailers = [f"{_TRAILER_SESSION}: {turn.get('session', '')}",
-                        f"{_TRAILER_TURN}: {turn.get('turn', '')}"]
-            row_id = turn.get("row_id")
-            if isinstance(row_id, int) and row_id > 0:
-                trailers.append(f"{_TRAILER_USER_ROW}: {row_id}")
-            commit_args += ["-m", "\n".join(trailers)]
-        commit_args.append("--no-gpg-sign")
+            commit_args = ["commit-tree", tree_sha, "-p", ref_commit, "-m", reason, "--no-gpg-sign"]
         ok_commit, new_sha, err = _run_git(
             commit_args, store, working_dir,
             index_file=index_file,

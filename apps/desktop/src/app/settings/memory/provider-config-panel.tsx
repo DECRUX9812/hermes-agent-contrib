@@ -4,7 +4,6 @@ import { PageLoader } from '@/components/page-loader'
 import { Button } from '@/components/ui/button'
 import { DisclosureCaret } from '@/components/ui/disclosure-caret'
 import { getMemoryProviderConfig, saveMemoryProviderConfig } from '@/hermes'
-import { useI18n } from '@/i18n'
 import { SlidersHorizontal } from '@/lib/icons'
 import { notifyError } from '@/store/notifications'
 import type { MemoryProviderConfig, MemoryProviderField } from '@/types/hermes'
@@ -22,7 +21,6 @@ function seedValues(config: MemoryProviderConfig): Record<string, string> {
 }
 
 export function ProviderConfigPanel({ profile, provider }: { profile?: string; provider: string }) {
-  const { t } = useI18n()
   const [config, setConfig] = useState<MemoryProviderConfig | null>(null)
   const [loadError, setLoadError] = useState<null | string>(null)
   const [values, setValues] = useState<Record<string, string>>({})
@@ -98,7 +96,7 @@ export function ProviderConfigPanel({ profile, provider }: { profile?: string; p
       )
     }
 
-    return <PageLoader className="min-h-24" label={t.settings.providers.loading} />
+    return <PageLoader className="min-h-24" label="Loading memory provider settings..." />
   }
 
   const inlineFields = config.fields.filter(field => field.inline)

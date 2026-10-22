@@ -5,24 +5,21 @@ import type * as React from 'react'
 import { memo, Suspense, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
-import { ChatHeaderSlot } from '@/app/chat/chat-header-slot'
-import { RegionCaptureOverlay } from '@/app/region-capture/overlay'
 import type { SubmitTextOptions } from '@/app/session/hooks/use-prompt-actions/utils'
 import { sessionShouldHaveTranscript } from '@/app/session/hooks/use-session-actions/utils'
 import { Thread } from '@/components/assistant-ui/thread'
 import { TranscriptWindowProvider } from '@/components/assistant-ui/thread/transcript-window'
 import { Backdrop } from '@/components/Backdrop'
 import { COMPOSER_HEART_CONFIG, HeartField } from '@/components/chat/vibe-hearts'
-import { useSetupChatView } from '@/components/onboarding-chat/assembly'
-import { $introHoldsThread } from '@/components/onboarding-chat/intro'
-import { IntroCopy } from '@/components/onboarding-chat/intro-copy'
+import { useSetupChatView } from '@/components/onboarding/first-run/assembly'
+import { $introHoldsThread } from '@/components/onboarding/first-run/intro'
+import { IntroCopy } from '@/components/onboarding/first-run/intro-copy'
 import { usePaneGroup, usePaneVisible } from '@/components/pane-shell/pane-visibility'
 import { $hoveredTreeGroup, $sessionTileDragging, $sessionTileEdgeHover } from '@/components/pane-shell/tree/store'
 import { PromptOverlays } from '@/components/prompt-overlays'
 import { TitleMenuTrigger } from '@/components/ui/title-menu-trigger'
 import { type HermesGateway, type ResolvedOwner } from '@/hermes'
 import { useI18n } from '@/i18n'
-import { CHAT_HEADER_AREAS } from '@/lib/chat-header-slots'
 import type { ChatMessage } from '@/lib/chat-messages'
 import { NEW_SESSION_TITLE, sessionTitle } from '@/lib/chat-runtime'
 import { useIncrementalExternalStoreRuntime } from '@/lib/incremental-external-store-runtime'
@@ -30,10 +27,9 @@ import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { migrateSessionDraft } from '@/store/composer'
 import { migrateQueuedPrompts, parkQueuedPrompts } from '@/store/composer-queue'
-import { $homeFeedItems } from '@/store/home-feed'
 import { $introSplash } from '@/store/intro-splash'
 import { $pinnedSessionIds } from '@/store/layout'
-import { $guideOpening, $onboardingGate } from '@/store/onboarding-gate'
+import { $introView } from '@/store/onboarding-intro'
 import { $petActive } from '@/store/pet'
 import { $petOverlayActive } from '@/store/pet-overlay'
 import { $activeGatewayProfile, $gatewaySwapTarget, $hydrationSyncProfile, $profiles } from '@/store/profile'
@@ -75,7 +71,6 @@ import {
   useComposerSurfaceId
 } from './composer/scope'
 import { useHistoryWindow } from './history-window'
-import { HomeFeed } from './home-feed'
 import { type DroppedFile, partitionDroppedFiles } from './hooks/use-composer-actions'
 import { useFileDropZone } from './hooks/use-file-drop-zone'
 import { shouldShowIntro } from './intro-visibility'
@@ -84,7 +79,6 @@ import { ResumeExhaustedOverlay } from './resume-exhausted-overlay'
 import { isRouteSessionMismatch } from './route-session-state'
 import { useRuntimeMessageRepository } from './runtime-repository'
 import { ScrollToBottomButton } from './scroll-to-bottom-button'
-import { SessionRecapCard } from './session-recap'
 import { useSessionView } from './session-view'
 import { SessionActionsMenu } from './sidebar/session-actions-menu'
 import { routedSessionIsLoading, threadLoadingState } from './thread-loading'
@@ -119,7 +113,7 @@ interface ChatViewProps extends Omit<React.ComponentProps<'div'>, 'onSubmit'> {
   onPickFolders: () => void
   onPickImages: () => void
   onRemoveAttachment: (id: string) => void
-  onSteer: (text: string) => Promise<boolean> | boolean
+  onSteer: (text: string, mode?: 'interrupt' | 'steer') => Promise<boolean> | boolean
   onSteerHidden?: (text: string) => Promise<boolean> | boolean
   onSubmit: (text: string, options?: SubmitTextOptions) => Promise<boolean> | boolean
   onThreadMessagesChange: (messages: readonly ThreadMessage[]) => void
@@ -200,14 +194,6 @@ function ChatHeader({
         >
           <TitleMenuTrigger>{title}</TitleMenuTrigger>
         </SessionActionsMenu>
-        {activeStoredSession ? (
-          <ChatHeaderSlot
-            area={CHAT_HEADER_AREAS.title}
-            profile={activeStoredSession.profile ?? null}
-            sessionId={sessionPinId(activeStoredSession)}
-            title={title}
-          />
-        ) : null}
       </div>
     </header>
   )
@@ -535,9 +521,8 @@ const ChatViewContent = memo(function ChatViewContent({
   const composerScope = useComposerScope()
   const composerSurfaceId = useComposerSurfaceId()
   const isPrimary = view.kind === 'primary'
-  const guideOpening = useStore($guideOpening) && isPrimary
   const introHoldsThread = useStore($introHoldsThread) && isPrimary && isMainWindow()
-  const guideStarted = useStoreSelector($onboardingGate, gate => gate.guideKickoff === 'started')
+  const guideStarted = useStoreSelector($introView, introView => introView === 'intro' || introView === 'ended')
   const activeSessionId = useStore(view.$runtimeId)
 
   const transcriptStoredSessionId = useStoreSelector($sessionStates, states =>
@@ -664,21 +649,6 @@ const ChatViewContent = memo(function ChatViewContent({
     selectedSessionId
   })
 
-  // Proactive home feed: on the empty chat surface in the main window before
-  // the user asks anything, render flat action cards sourced from pending
-  // approvals, prompts, errors, and due cron jobs. Gated off while showIntro is
-  // active (to avoid colliding with the intro hero splash) and when no items exist.
-  const homeFeedItems = useStore($homeFeedItems)
-
-  const showHomeFeed =
-    messagesEmpty &&
-    isPrimary &&
-    isMainWindow() &&
-    !activeSessionId &&
-    !selectedSessionId &&
-    !showIntro &&
-    homeFeedItems.length > 0
-
   // Session is still loading if the route references a session we haven't
   // resumed yet. Brand-new routed drafts are empty on purpose once a runtime
   // is bound. A session the list already knows has history must keep the
@@ -710,7 +680,6 @@ const ChatViewContent = memo(function ChatViewContent({
   const threadLoading = threadLoadingState(loadingSession, busy, awaitingResponse, lastVisibleIsUser)
 
   const showChatBar = useShowChatBar({
-    guideOpening,
     loadingSession,
     resumeExhausted,
     routedSessionId,
@@ -774,45 +743,6 @@ const ChatViewContent = memo(function ChatViewContent({
 
   const overlayKind = dropOverlayKind(dragKind, sessionDragging, sessionEdgeHover)
 
-  // One prompt surface on the empty canvas: while the intro is up the real
-  // composer renders inside the intro column and the dock below stays empty, so
-  // the landing has a single input that carries the composer's own controls
-  // (model, attachments, approval mode, schedule) instead of a look-alike.
-  const composerDock = (
-    <FloatingComposerSurface>
-      <Suspense fallback={<ChatBarFallback />}>
-        <ChatBar
-          busy={busy}
-          cwd={currentCwd}
-          disabled={!gatewayOpen}
-          focusKey={activeSessionId}
-          freshDraftKey={freshDraftKey}
-          gateway={gateway}
-          maxRecordingSeconds={maxVoiceRecordingSeconds}
-          onAddContextRef={onAddContextRef}
-          onAddUrl={onAddUrl}
-          onAttachDroppedItems={onAttachDroppedItems}
-          onAttachImageBlob={onAttachImageBlob}
-          onAttachPastedText={onAttachPastedText}
-          onCancel={onCancel}
-          onPasteClipboardImage={onPasteClipboardImage}
-          onPickFiles={onPickFiles}
-          onPickFolders={onPickFolders}
-          onPickImages={onPickImages}
-          onRemoveAttachment={onRemoveAttachment}
-          onSteer={onSteer}
-          onSteerHidden={onSteerHidden}
-          onSubmit={onSubmit}
-          onTranscribeAudio={onTranscribeAudio}
-          profile={modelOptionsProfile || activeGatewayProfile}
-          queueSessionKey={queueSessionKey}
-          sessionId={activeSessionId}
-          state={chatBarState}
-        />
-      </Suspense>
-    </FloatingComposerSurface>
-  )
-
   return (
     <div
       className={cn(
@@ -859,34 +789,20 @@ const ChatViewContent = memo(function ChatViewContent({
           data-slot="composer-bounds"
           {...dropHandlers}
         >
-          {!guideOpening && (
-            <Thread
-              clampToComposer={showChatBar}
-              cwd={currentCwd}
-              gateway={gateway}
-              intro={showIntro ? { composer: composerDock, personality: introPersonality, seed: introSeed } : undefined}
-              loading={threadLoading}
-              onBranchInNewChat={onBranchInNewChat}
-              onCancel={haltRun}
-              onDismissError={onDismissError}
-              onRestoreToMessage={onRestoreToMessage}
-              scrollProfile={modelOptionsProfile || activeGatewayProfile}
-              sessionId={activeSessionId}
-              sessionKey={threadKey}
-            />
-          )}
-          {/* "Where it left off" recap (#13) — only once the transcript is
-              settled: gating on loadingSession/routeSessionMismatch/
-              resumeExhausted/messagesEmpty keeps it dark through resume and
-              hydration flicker; SessionRecapCard reads view.$messages
-              one-shot at mount (the atom is far too hot to subscribe here). */}
-          {!guideOpening &&
-            !loadingSession &&
-            !routeSessionMismatch &&
-            !resumeExhausted &&
-            !messagesEmpty &&
-            storedId && <SessionRecapCard storedSessionId={storedId} />}
-
+          <Thread
+            clampToComposer={showChatBar}
+            cwd={currentCwd}
+            gateway={gateway}
+            intro={showIntro ? { personality: introPersonality, seed: introSeed } : undefined}
+            loading={threadLoading}
+            onBranchInNewChat={onBranchInNewChat}
+            onCancel={haltRun}
+            onDismissError={onDismissError}
+            onRestoreToMessage={onRestoreToMessage}
+            scrollProfile={modelOptionsProfile || activeGatewayProfile}
+            sessionId={activeSessionId}
+            sessionKey={threadKey}
+          />
           {isPrimary && isMainWindow() && <IntroCopy />}
           {resumeExhausted && routedSessionId && (
             <ResumeExhaustedOverlay onRetryResume={onRetryResume} sessionId={routedSessionId} />
@@ -908,18 +824,46 @@ const ChatViewContent = memo(function ChatViewContent({
               target; the link overlay shows only for the center region. */}
           <ChatDropOverlay kind={overlayKind} />
           <ChatSwapOverlay profile={gatewaySwapTarget} />
-          {/* Region capture (#34): in-app select + markup overlay; stores its
-              frame on $regionCapture and lands on whichever composer was
-              active when the menu kicked it. */}
-          <RegionCaptureOverlay />
           {/* Paint-first wake (#89843): transcript is live, profile gate still
               settling in the background — subtle badge, not an overlay. */}
           {isPrimary && !gatewaySwapTarget && <ChatSyncBadge profile={hydrationSyncProfile} />}
-          {showHomeFeed && <HomeFeed items={homeFeedItems} />}
         </div>
         {/* Docked composers overlay their pane; the shared float escapes pane
             clipping through a stable portal host without remounting its editor. */}
-        {showChatBar && !showIntro && composerDock}
+        {showChatBar && (
+          <FloatingComposerSurface>
+            <Suspense fallback={<ChatBarFallback />}>
+              <ChatBar
+                busy={busy}
+                cwd={currentCwd}
+                disabled={!gatewayOpen}
+                focusKey={activeSessionId}
+                freshDraftKey={freshDraftKey}
+                gateway={gateway}
+                maxRecordingSeconds={maxVoiceRecordingSeconds}
+                onAddContextRef={onAddContextRef}
+                onAddUrl={onAddUrl}
+                onAttachDroppedItems={onAttachDroppedItems}
+                onAttachImageBlob={onAttachImageBlob}
+                onAttachPastedText={onAttachPastedText}
+                onCancel={onCancel}
+                onPasteClipboardImage={onPasteClipboardImage}
+                onPickFiles={onPickFiles}
+                onPickFolders={onPickFolders}
+                onPickImages={onPickImages}
+                onRemoveAttachment={onRemoveAttachment}
+                onSteer={onSteer}
+                onSteerHidden={onSteerHidden}
+                onSubmit={onSubmit}
+                onTranscribeAudio={onTranscribeAudio}
+                profile={modelOptionsProfile || activeGatewayProfile}
+                queueSessionKey={queueSessionKey}
+                sessionId={activeSessionId}
+                state={chatBarState}
+              />
+            </Suspense>
+          </FloatingComposerSurface>
+        )}
       </ChatRuntimeBoundary>
     </div>
   )

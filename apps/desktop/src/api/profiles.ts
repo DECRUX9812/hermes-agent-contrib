@@ -16,8 +16,8 @@ export function getProfiles(scope?: ProfileScope): Promise<ProfilesResponse> {
   })
 }
 
-export function createProfile(body: ProfileCreatePayload): Promise<{ name: string; ok: boolean; path: string }> {
-  return hermesApi<{ name: string; ok: boolean; path: string }>({
+export function createProfile(body: ProfileCreatePayload): Promise<{ name: string; ok: boolean; path: string; soul_set?: boolean }> {
+  return hermesApi<{ name: string; ok: boolean; path: string; soul_set?: boolean }>({
     path: '/api/profiles',
     method: 'POST',
     body
@@ -92,10 +92,9 @@ export function getProfileSetupCommand(name: string): Promise<ProfileSetupComman
  *  interface overlay) into the archive alongside the profile's own artifacts. */
 export function exportProfileArchive(
   name: string,
-  opts: { extraFiles?: Record<string, string>; output?: string; scope?: ProfileScope } = {}
+  opts: { extraFiles?: Record<string, string>; output?: string } = {}
 ): Promise<{ archive: string; ok: boolean }> {
   return hermesApi<{ archive: string; ok: boolean }>({
-    ...profileOwnerScoped(opts.scope),
     path: `/api/profiles/${encodeURIComponent(name)}/export`,
     method: 'POST',
     body: { extra_files: opts.extraFiles ?? {}, output: opts.output ?? '' },
@@ -108,11 +107,9 @@ export function exportProfileArchive(
  *  apply theme/layout without another round-trip. */
 export function importProfileArchive(
   archive: string,
-  name?: string,
-  scope?: ProfileScope
+  name?: string
 ): Promise<{ desktop: null | ProfileDesktopOverlay; name: string; ok: boolean; path: string }> {
   return hermesApi<{ desktop: null | ProfileDesktopOverlay; name: string; ok: boolean; path: string }>({
-    ...profileOwnerScoped(scope),
     path: '/api/profiles/import',
     method: 'POST',
     body: { archive, name: name || null },

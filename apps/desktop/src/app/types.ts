@@ -95,6 +95,8 @@ export interface SessionSteerResponse {
 export interface SessionRedirectResponse {
   status?: 'redirected' | 'queued' | 'rejected'
   text?: string
+  /** TUI-26: the text was a bare stop phrase that ended the LOCAL voice chat; no turn saw it. */
+  voice_stopped?: boolean
 }
 
 export interface SessionTitleResponse {
@@ -169,10 +171,6 @@ export interface ClientSessionState {
   fast: boolean
   yolo: boolean
   personality: string
-  /** Skills the session reports grouped by category (`session.info` and the
-   *  `info` field of session.create/resume/activate/branch carry it); the chat
-   *  header skill chip reads it. Empty until the runtime answers. */
-  skills: Record<string, string[]>
   busy: boolean
   awaitingResponse: boolean
   streamId: string | null

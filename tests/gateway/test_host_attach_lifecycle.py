@@ -51,11 +51,15 @@ def owner_pid(tmp_path, monkeypatch):
     try:
         yield child.pid
     finally:
+        hr.release_host_lock(hr.ROLE_GATEWAY)
         child.terminate()
         child.wait(timeout=10)
 
 
 def _publish(pid: int, home: Path, profiles: tuple[str, ...]) -> None:
+    # A live owner holds the host lock for its lifetime; a record without that flock is a corpse.
+    outcome, _ = hr.claim_host_lock(hr.ROLE_GATEWAY)
+    assert outcome is hr.HostLockOutcome.ACQUIRED
     payload = {
         "role": hr.ROLE_GATEWAY,
         "home": str(home),
@@ -116,33 +120,6 @@ def test_attach_needs_a_live_identify_answer(tmp_path, monkeypatch, owner_pid):
     monkeypatch.setattr(gateway_run, "_start_gateway_replace_existing_instance", _never)
 
     assert asyncio.run(gateway_run._host_attach_or_none(replace=False)) is True
-
-
-@pytest.mark.parametrize("served", [None, ["default"], ["default", "other"]])
-def test_scoped_pid_query_uses_live_served_set_before_argv_fallback(
-    tmp_path, monkeypatch, owner_pid, served,
-):
-    from gateway import status
-
-    owner_home = tmp_path / "root"
-    target_home = owner_home / "profiles" / "other"
-    _publish(owner_pid, owner_home, ("default", "other"))
-    if served is None:
-        monkeypatch.setattr("gateway.control_socket.identify_gateway", lambda *a, **kw: None)
-    else:
-        _answer_identify(monkeypatch, owner_pid, owner_home, served)
-    # A named launch can serve another home: the verified live served set wins
-    # over argv, but a record alone must not override explicit profile evidence.
-    monkeypatch.setattr(status, "_read_process_cmdline",
-                        lambda pid: "hermes --profile default gateway run")
-    record = {"pid": owner_pid, "kind": "hermes-gateway",
-              "argv": ["hermes", "gateway", "run"],
-              "start_time": status._get_process_start_time(owner_pid),
-              "hermes_home": str(target_home)}
-
-    assert status._record_matches_live_gateway_pid(
-        record, owner_pid, expected_home=target_home,
-    ) is (served is not None and "other" in served)
 
 
 def test_run_for_an_unserved_profile_rescans_then_attaches(tmp_path, monkeypatch, owner_pid):

@@ -16,7 +16,6 @@ from typing import Any, Union
 from urllib.parse import urlparse
 
 import hermes_yaml as yaml
-from pm.filesystem import hard_link_refused
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +47,17 @@ def file_signature(st: os.stat_result) -> tuple[int, int, int, int]:
     an in-place rewrite, so the key degrades to mtime + size there rather than misfiring.
     """
     return (st.st_mtime_ns, st.st_size, st.st_ino, st.st_ctime_ns)
+
+
+# Filesystem timestamps tick coarsely (~4 ms; whole seconds on some filesystems), so a write in the
+# same tick as a stat leaves the signature unchanged. A signature this fresh is "racily clean" (as in
+# git's index) and must not be trusted as "nothing changed since".
+RACY_MTIME_WINDOW_NS = 2_000_000_000
+
+
+def mtime_is_racy(mtime_ns: int) -> bool:
+    """True while ``mtime_ns`` is too recent to rule out a same-tick write after the stat."""
+    return time.time_ns() - mtime_ns < RACY_MTIME_WINDOW_NS
 
 
 def _preserve_file_mode(path: Path) -> int | None:
@@ -206,29 +216,6 @@ def atomic_replace(tmp_path: str | Path, target: str | Path) -> str:
         # The rewrite re-raises its own error, so an ACL denial is reported as such, not as contention.
         (_rewrite_in_place if contended else _copy_fallback)(tmp_str, real_path)
     return real_path
-
-
-def publish_no_clobber(tmp_path: str | Path, target: str | Path) -> None:
-    """Publish the complete file *tmp_path* at *target*; ``FileExistsError`` if *target* exists.
-
-    A hard link is atomic and never replaces a concurrent winner. Where the filesystem refuses
-    hard links, an ``O_EXCL`` reservation keeps the no-clobber contract and :func:`atomic_replace`
-    then moves the complete bytes over it, consuming *tmp_path*; until then a racing reader sees
-    an empty file.
-    """
-    try:
-        os.link(tmp_path, target)
-        return
-    except OSError as exc:
-        if not hard_link_refused(exc):
-            raise
-    os.close(os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600))
-    try:
-        atomic_replace(tmp_path, target)
-    except BaseException:
-        with suppress(OSError):
-            os.unlink(target)
-        raise
 
 
 def _publish_path(target_str: str) -> str:

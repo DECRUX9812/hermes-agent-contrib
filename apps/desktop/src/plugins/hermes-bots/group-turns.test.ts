@@ -821,7 +821,7 @@ describe('clarify and approvals (#90694)', () => {
         await polled
 
         if (disband) {
-          await (await import('./group-room-lifecycle')).disbandGroupChat('Core', [])
+          await view.disbandGroupChat('Core', [])
           release()
           await drive
           expect(Object.values(room.chat.$groupClarify.get())).toHaveLength(0)
@@ -914,7 +914,7 @@ describe('clarify and approvals (#90694)', () => {
 
         const drive = room.rounds.runGroupChatRounds('Core', members, 'thread')
         await entered
-        await (await import('./group-room-lifecycle')).disbandGroupChat('Core', [])
+        await view.disbandGroupChat('Core', [])
         room.chat.updateGroupChat('Core', current => ({
           ...current,
           roomId: 'replacement-rejection-room',
@@ -982,7 +982,7 @@ describe('clarify and approvals (#90694)', () => {
 
       const turn = room.turns.runGroupChatMemberTurn('Core', member, 'check', 'thread', [])
       await polled
-      await (await import('./group-room-lifecycle')).disbandGroupChat('Core', [])
+      await view.disbandGroupChat('Core', [])
 
       if (recreate) {
         room.chat.updateGroupChat('Core', current => ({ ...current, roomId: 'replacement-room' }))
@@ -1057,7 +1057,7 @@ describe('clarify and approvals (#90694)', () => {
     background = true
     tick()
     await polled
-    await (await import('./group-room-lifecycle')).disbandGroupChat('Core', [])
+    await view.disbandGroupChat('Core', [])
     const { setImmediate } = await import('node:timers/promises')
     await setImmediate()
     room.chat.updateGroupChat('Core', current => ({

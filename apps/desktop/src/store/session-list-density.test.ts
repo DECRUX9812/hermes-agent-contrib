@@ -22,15 +22,6 @@ describe('session list density preference', () => {
     expect((await loadStore()).$sessionListDensity.get()).toBe('detailed')
   })
 
-  it('round-trips the condensed density', async () => {
-    const first = await loadStore()
-
-    first.setSessionListDensity('condensed')
-
-    expect(window.localStorage.getItem('hermes.desktop.sessionListDensity')).toBe('condensed')
-    expect((await loadStore()).$sessionListDensity.get()).toBe('condensed')
-  })
-
   it('falls back to compact for an unknown stored value', async () => {
     window.localStorage.setItem('hermes.desktop.sessionListDensity', 'tiny')
 

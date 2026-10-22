@@ -26,10 +26,6 @@ vi.mock('@/components/assistant-ui/thread/timeline', () => ({
   ThreadTimeline: () => null
 }))
 
-vi.mock('@/components/assistant-ui/thread/thread-scrubber', () => ({
-  ThreadScrubber: () => null
-}))
-
 vi.mock('@/components/assistant-ui/thread/status', () => ({
   BackgroundResumeNotice: () => null,
   CenteredThreadSpinner: () => null

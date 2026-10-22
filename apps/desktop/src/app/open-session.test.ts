@@ -27,9 +27,6 @@ vi.mock('@/store/session-states', () => ({
 
 vi.mock('@/store/windows', () => ({
   canOpenSessionWindow: () => canOpenSessionWindow(),
-  isBrowserWindow: () => false,
-  isHudWindow: () => false,
-  isSecondaryWindow: () => false,
   openSessionInNewWindow: (...args: unknown[]) => openSessionInNewWindow(...args)
 }))
 

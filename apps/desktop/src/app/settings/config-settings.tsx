@@ -12,6 +12,7 @@ import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { isSubmitEnter } from '@/lib/ime'
 import { confirm } from '@/store/confirm'
+import { $activeConnectionId } from '@/store/connections'
 import {
   $dataUrlReadMaxMb,
   clampDataUrlReadMaxMb,
@@ -29,7 +30,6 @@ import { notify, notifyError } from '@/store/notifications'
 import { normalizeProfileKey } from '@/store/profile'
 import { repoDiscoveryPolicyFromConfig, repoDiscoveryPolicySignature, scanAndRecordRepos } from '@/store/projects'
 import { $settingsRequestProfile } from '@/store/settings-scope'
-import { $proactiveNudgesEnabled, setProactiveNudgesEnabled } from '@/store/suggestion-providers/nudges'
 import type { ConfigFieldSchema, HermesConfigRecord } from '@/types/hermes'
 
 import { hermesConfigCacheWriter, useHermesConfigRecord } from '../hooks/use-config-record'
@@ -38,21 +38,22 @@ import { PanelEmpty } from '../overlays/panel'
 
 import { ConfigField } from './config-field'
 import { configSubpageForField } from './config-subpages'
-import { DeveloperSettings } from './developer-settings'
+import { DELEGATION_ROUTE_COMPANION_KEY, DelegationRouteRow } from './delegation-route-row'
 import {
   clearsEnabledToolsets,
+  configFieldValue,
   diffConfig,
   enumOptionsFor,
   getNested,
   isExternalMemoryProvider,
   sectionFieldEntries,
-  setNested,
+  setConfigField,
   voiceFieldVisible
 } from './helpers'
 import { MemoryConnect } from './memory/connect'
 import { ProviderConfigPanel } from './memory/provider-config-panel'
 import { ModelSettings, ModelSettingsSkeleton } from './model-settings'
-import { PoolLimitsSetting } from './pool-limits-setting'
+import { OnboardingSettings } from './onboarding-settings'
 import { EmptyState, ListRow, SettingsContent, SettingsSkeleton, ToggleRow } from './primitives'
 import { SettingsProfileScope } from './profile-scope'
 import { QuickEntrySettings } from './quick-entry-settings'
@@ -72,12 +73,13 @@ export function ConfigSettings({
   // when the target profile changes — the same guarantee useOnProfileSwitch
   // provides for app-wide switches, without hand-clearing each piece.
   const scopeProfile = useStore($settingsRequestProfile)
+  const connectionId = useStore($activeConnectionId)
 
   return (
     <ConfigSettingsInner
       activeSectionId={activeSectionId}
       importInputRef={importInputRef}
-      key={scopeProfile ?? '__active__'}
+      key={JSON.stringify([connectionId, scopeProfile ?? '__active__'])}
       onConfigSaved={onConfigSaved}
       onMainModelChanged={onMainModelChanged}
       scopeProfile={scopeProfile}
@@ -105,7 +107,6 @@ function ConfigSettingsInner({
 }: ConfigSettingsProps & { scopeProfile: string | undefined }) {
   const { t } = useI18n()
   const c = t.settings.config
-  const proactiveNudges = useStore($proactiveNudgesEnabled)
   const keepAwakeMode = useStore($keepAwakeMode)
 
   const keepAwakeOptions = [
@@ -315,7 +316,6 @@ function ConfigSettingsInner({
     activeSectionId === 'model' && (subpage === undefined || ['main', 'auxiliary', 'moa'].includes(subpage))
 
   const showDesktopSettings = activeSectionId === 'advanced' && (subpage === undefined || subpage === 'desktop')
-  const showBehavior = activeSectionId === 'chat' && (subpage === undefined || subpage === 'behavior')
   const showAttachments = activeSectionId === 'chat' && (subpage === undefined || subpage === 'attachments')
   const showSharedMetrics = activeSectionId === 'safety' && subpage === 'privacy'
 
@@ -331,7 +331,9 @@ function ConfigSettingsInner({
       return
     }
 
-    const element = document.getElementById(`setting-field-${targetField}`)
+    const element = document.getElementById(
+      `setting-field-${targetField === DELEGATION_ROUTE_COMPANION_KEY ? 'delegation.model' : targetField}`
+    )
 
     if (!element) {
       return
@@ -444,13 +446,15 @@ function ConfigSettingsInner({
     return <SettingsSkeleton sections={[{ rows: 6 }]} />
   }
 
-  const visibleFields = activeSectionId === 'voice' ? fields.filter(([key]) => voiceFieldVisible(key, config)) : fields
+  const visibleFields = (
+    activeSectionId === 'voice' ? fields.filter(([key]) => voiceFieldVisible(key, config)) : fields
+  ).filter(([key]) => key !== DELEGATION_ROUTE_COMPANION_KEY)
 
   const showEmptyState =
     visibleFields.length === 0 &&
     (subpage === undefined
       ? activeSectionId !== 'chat'
-      : !showModelSettings && !showDesktopSettings && !showBehavior && !showAttachments && !showSharedMetrics)
+      : !showModelSettings && !showDesktopSettings && !showAttachments && !showSharedMetrics)
 
   return renderPage(
     <>
@@ -487,21 +491,9 @@ function ConfigSettingsInner({
             label={c.alwaysExternalLinksTitle}
             onChange={setAlwaysExternalLinks}
           />
-          <PoolLimitsSetting />
           <QuickEntrySettings />
-          <DeveloperSettings />
+          <OnboardingSettings />
         </>
-      )}
-      {/* Proactive nudges (roadmap #43, opt-in): device-local pref — settled
-          sessions offer next-step draft chips above the composer. */}
-      {showBehavior && (
-        <ToggleRow
-          checked={proactiveNudges}
-          description={c.proactiveNudgesDesc}
-          id={settingElementId(SETTING_IDS.chat.proactiveNudges)}
-          label={c.proactiveNudgesTitle}
-          onChange={setProactiveNudgesEnabled}
-        />
       )}
       {/* Device-local attach/preview byte cap (main-process IPC guard). Chat is
           where image-attachment behavior already lives, so this sits above the
@@ -519,23 +511,27 @@ function ConfigSettingsInner({
         <div className="grid gap-1">
           {visibleFields.map(([key, field]) => (
             <div className="scroll-mt-6 rounded-lg" id={`setting-field-${key}`} key={key}>
-              <ConfigField
-                descriptionExtra={
-                  key === 'memory.provider' && isExternalMemoryProvider(getNested(config, key)) ? (
-                    <MemoryConnect profile={scopeProfile} provider={String(getNested(config, key))} />
-                  ) : undefined
-                }
-                enumOptions={
-                  key === 'tts.elevenlabs.voice_id'
-                    ? enumOptionsFor(key, getNested(config, key), config, elevenLabsVoiceOptions ?? undefined)
-                    : enumOptionsFor(key, getNested(config, key), config)
-                }
-                onChange={value => updateConfig(setNested(config, key, value))}
-                optionLabels={key === 'tts.elevenlabs.voice_id' ? elevenLabsVoiceLabels : undefined}
-                schema={field}
-                schemaKey={key}
-                value={getNested(config, key)}
-              />
+              {key === 'delegation.model' ? (
+                <DelegationRouteRow config={config} onConfigChange={updateConfig} scope={writeScope ?? scopeProfile} />
+              ) : (
+                <ConfigField
+                  descriptionExtra={
+                    key === 'memory.provider' && isExternalMemoryProvider(getNested(config, key)) ? (
+                      <MemoryConnect profile={scopeProfile} provider={String(getNested(config, key))} />
+                    ) : undefined
+                  }
+                  enumOptions={
+                    key === 'tts.elevenlabs.voice_id'
+                      ? enumOptionsFor(key, getNested(config, key), config, elevenLabsVoiceOptions ?? undefined)
+                      : enumOptionsFor(key, getNested(config, key), config)
+                  }
+                  onChange={value => updateConfig(setConfigField(config, key, value))}
+                  optionLabels={key === 'tts.elevenlabs.voice_id' ? elevenLabsVoiceLabels : undefined}
+                  schema={field}
+                  schemaKey={key}
+                  value={configFieldValue(config, key)}
+                />
+              )}
               {key === 'memory.provider' && isExternalMemoryProvider(getNested(config, key)) ? (
                 <ProviderConfigPanel
                   key={String(getNested(config, key))}

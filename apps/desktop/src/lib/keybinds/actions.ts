@@ -144,9 +144,7 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   { id: 'workspace.openFolder', category: 'session', defaults: ['mod+o'] },
 
   // ── Navigation ───────────────────────────────────────────────────────────
-  { id: 'nav.commandPalette', category: 'navigation', defaults: ['mod+k'] },
-  // ⌘P — Quick Open, the editor-standard file finder (VS Code, Zed, Cursor).
-  { id: 'nav.quickOpen', category: 'navigation', defaults: ['mod+p'] },
+  { id: 'nav.commandPalette', category: 'navigation', defaults: ['mod+k', 'mod+p'] },
   { id: 'nav.commandCenter', category: 'navigation', defaults: ['mod+.'] },
   { id: 'nav.settings', category: 'navigation', defaults: ['mod+,'] },
   { id: 'nav.profiles', category: 'navigation', defaults: [] },
@@ -155,8 +153,6 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   { id: 'nav.artifacts', category: 'navigation', defaults: [] },
   { id: 'nav.cron', category: 'navigation', defaults: [] },
   { id: 'nav.agents', category: 'navigation', defaults: [] },
-  { id: 'nav.starmap', category: 'navigation', defaults: [] },
-  { id: 'nav.webhooks', category: 'navigation', defaults: [] },
 
   // ── View (layout + appearance + the shortcuts panel itself) ───────────────
   { id: 'view.toggleSidebar', category: 'view', defaults: ['mod+b'] },
@@ -225,13 +221,44 @@ export const KEYBIND_ACTIONS: readonly KeybindActionMeta[] = [
   // and a user who prefers a dedicated chord can bind one.
   { id: 'view.findNext', category: 'view', defaults: [] },
   { id: 'view.findPrevious', category: 'view', defaults: [] },
-  // Unbound (#76185's class again): a bare shifted letter can't be pressed
-  // deliberately — this one flipped the whole theme. Still rebindable.
-  { id: 'appearance.toggleMode', category: 'view', defaults: [] },
+  { id: 'appearance.toggleMode', category: 'view', defaults: ['shift+x'] },
   { id: 'keybinds.openPanel', category: 'view', defaults: ['mod+/'] }
 ]
 
 export const KEYBIND_ACTION_IDS: readonly string[] = KEYBIND_ACTIONS.map(action => action.id)
+
+// The built-in actions a plugin may run by id (`ctx.runAction`, see
+// plugin-actions.ts): view / navigation only. Nothing destructive, nothing
+// that switches profile / model, spawns a shell, or opens native dialogs.
+export const PLUGIN_APP_ACTIONS = [
+  // Panels and layout
+  'view.showBrowser',
+  'view.showFiles',
+  'view.toggleSidebar',
+  'view.toggleRightSidebar',
+  'view.toggleReview',
+  'view.toggleStatusbar',
+  'view.findInPage',
+  // Composer and chat
+  'composer.focus',
+  'session.new',
+  'session.focusSearch',
+  'conversation.scrollPageUp',
+  'conversation.scrollPageDown',
+  // Navigation
+  'nav.commandPalette',
+  'nav.settings',
+  'nav.profiles',
+  'nav.capabilities',
+  'nav.messaging',
+  'nav.artifacts',
+  'nav.cron',
+  'nav.agents',
+  'keybinds.openPanel'
+] as const
+
+/** An app action id a plugin may run with `ctx.runAction`. */
+export type PluginAppActionId = (typeof PLUGIN_APP_ACTIONS)[number]
 
 const ACTION_BY_ID = new Map(KEYBIND_ACTIONS.map(action => [action.id, action]))
 

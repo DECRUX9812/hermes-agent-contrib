@@ -10,6 +10,14 @@ from .method_ctx import HandlerRegistry, bind_module
 _registry = HandlerRegistry()
 
 # ── session.branch ───────────────────────────────────────────────────
+def _branch_title(db, parent_key: str) -> str:
+    """Next title in the parent's lineage (mirrors the TUI /branch naming)."""
+    current = db.get_session_title(parent_key) or "branch"
+    if hasattr(db, "get_next_title_in_lineage"):
+        return db.get_next_title_in_lineage(current)
+    return f"{current} (branch)"
+
+
 def _visible_branch_history(messages) -> list:
     """user/assistant rows with visible text, as FULL copies (reasoning + timeline-marker tags survive)."""
     return [dict(message) for message in messages or []
@@ -21,11 +29,8 @@ def _build_branch_agent(session: dict, new_sid: str, new_key: str, history: list
     """Build + register the branched agent in the parent's profile; the DEDICATED db handle is ours until
     ``_transfer_db_to_agent`` (released here on failure)."""
     parent_home = session.get("profile_home")
-    parent_incarnation = session.get("profile_incarnation")
-    if _profile_home_rejected(parent_home, parent_incarnation, require_incarnation=True):
-        raise FileNotFoundError("Parent session belongs to a stale profile incarnation")
     parent_user_id = _session_auth_user_id(session)
-    branch_db, branch_owns_db = _profile_session_db(parent_home, parent_incarnation) if parent_home else (None, False)
+    branch_db, branch_owns_db = _profile_session_db(parent_home) if parent_home else (None, False)
     try:
         with _profile_build_scope(parent_home):
             agent = _make_agent_in_context(new_sid, new_key, session_db=branch_db, platform_override=source,
@@ -34,7 +39,7 @@ def _build_branch_agent(session: dict, new_sid: str, new_key: str, history: list
                                            auth_user_id=parent_user_id)
             _init_session(new_sid, new_key, agent, list(history), cols=session.get("cols", 80),
                           cwd=_session_cwd(session), session_db=branch_db, source=source, profile_home=parent_home,
-                          explicit_cwd=bool(session.get("explicit_cwd")), profile_incarnation=parent_incarnation)
+                          explicit_cwd=bool(session.get("explicit_cwd")))
             _transfer_db_to_agent(agent, branch_db)
             branch_owns_db = False
         if new_sid in _sessions:
@@ -84,17 +89,13 @@ def _branch_live(rid, params: dict, session: dict, *, omit_messages: bool = Fals
         with _sessions_lock:
             now_gc = time.time()
             existing_sid, ts = _idempotency_keys.get(idem_key, (None, 0.0))
-            existing_session = _sessions.get(existing_sid)
-            if existing_session is not None:
-                if now_gc - ts <= _IDEMPOTENCY_KEY_TTL and not _profile_home_rejected(
-                    existing_session.get("profile_home"), existing_session.get("profile_incarnation"),
-                    require_incarnation=True,
-                ):
+            if existing_sid is not None and existing_sid in _sessions:
+                if now_gc - ts <= _IDEMPOTENCY_KEY_TTL:
                     # Refresh the TTL so back-to-back retries don't age out mid-flight.
                     _idempotency_keys[idem_key] = (existing_sid, now_gc)
-                    return _ok(rid, _branch_idempotent_hit(existing_sid, existing_session, omit_messages))
+                    return _ok(rid, _branch_idempotent_hit(existing_sid, _sessions[existing_sid], omit_messages))
                 _idempotency_keys.pop(idem_key, None)
-            # Stale key (child closed/profile replaced) or first attempt: fall through to a fresh
+            # Stale key (child closed) or first attempt: fall through to a fresh
             # branch, which re-registers the key below.
     # Write into the parent's profile-scoped state.db; the launch handle would orphan rows.
     with _session_db(session) as db:

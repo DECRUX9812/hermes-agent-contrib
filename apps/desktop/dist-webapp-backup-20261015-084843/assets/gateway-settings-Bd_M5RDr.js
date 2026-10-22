@@ -1,0 +1,1 @@
+import{t as e}from"./gateway-settings-CkGOUDON.js";export{e as GatewaySettings};

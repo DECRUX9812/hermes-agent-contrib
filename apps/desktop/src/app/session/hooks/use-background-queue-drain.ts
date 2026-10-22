@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react'
 import { type MutableRefObject, useCallback, useEffect, useRef, useState } from 'react'
 
 import { useI18n } from '@/i18n'
+import { isFreshDraftScope } from '@/store/composer'
 import { resetBrowseState } from '@/store/composer-input-history'
 import {
   $parkedQueueSessions,
@@ -140,8 +141,7 @@ export function useBackgroundQueueDrain({
               id: `composer-background-queue-stuck-${sessionKey}`,
               kind: 'info',
               title: t.composer.queueDroppedTitle,
-              message: t.composer.queueDroppedBody,
-              sessionId: sessionKey
+              message: t.composer.queueDroppedBody
             })
 
             return
@@ -157,8 +157,7 @@ export function useBackgroundQueueDrain({
             id: `composer-background-queue-stuck-${sessionKey}`,
             kind: 'info',
             title: t.composer.queueStuckTitle,
-            message: t.composer.queueStuckBody,
-            sessionId: sessionKey
+            message: t.composer.queueStuckBody
           })
 
           return
@@ -170,7 +169,8 @@ export function useBackgroundQueueDrain({
       void withQueueDrainClaim(sessionKey, async queue => {
         const liveEntry = queue.find(candidate => candidate.id === entry.id)
 
-        if (!liveEntry) {
+        // Server-owned rows are already admitted to the gateway FIFO.
+        if (!liveEntry || liveEntry.serverStatus) {
           return true
         }
 
@@ -194,12 +194,13 @@ export function useBackgroundQueueDrain({
             attachments: liveEntry.attachments,
             ...(resolved.displayText ? { displayText: resolved.displayText } : {}),
             fromQueue: true,
+            submission_id: liveEntry.id,
             sessionId: runtimeSessionId,
             storedSessionId: sessionKey
           })
         )
 
-        if (accepted === false) {
+        if (accepted !== true) {
           return false
         }
 
@@ -238,6 +239,13 @@ export function useBackgroundQueueDrain({
     const working = [...workingSessionIds]
 
     for (const [sessionKey, entries] of Object.entries(queuedPromptsBySession)) {
+      // A fresh draft key has no session yet: its follow-ups wait for the
+      // creation handoff to re-key them onto the stored id. Draining here
+      // would exhaust the budget and drop them as a gone session.
+      if (isFreshDraftScope(sessionKey)) {
+        continue
+      }
+
       const isSelected =
         Boolean(selectedStoredSessionId) && idsShareLineage(sessionKey, selectedStoredSessionId!, sessions)
 
@@ -255,7 +263,7 @@ export function useBackgroundQueueDrain({
         continue
       }
 
-      const entry = entries[0]
+      const entry = entries.find(candidate => !candidate.serverStatus)
 
       if (!entry || (drainFailuresRef.current.get(entry.id) ?? entry.drainFailures ?? 0) >= MAX_AUTO_DRAIN_ATTEMPTS) {
         continue

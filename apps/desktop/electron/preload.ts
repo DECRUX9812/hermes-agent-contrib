@@ -1,7 +1,5 @@
 import { contextBridge, ipcRenderer, webFrame, webUtils } from 'electron'
 
-import type { AvatarId, DemoScript, NotifyRequest, PaneControl, PaneState } from '../src/app/pane3d/protocol'
-
 import type { DesktopProfileRoute } from './desktop-profile'
 import type { HudModifierApi, HudModifierStatus } from './hud-modifier-types'
 import { customWindowControlsEnabled } from './window-controls'
@@ -17,7 +15,7 @@ const translucencySupport = ipcRenderer.sendSync('hermes:translucency:support')
 const hudWindowing = ipcRenderer.sendSync('hermes:hud:windowing')
 const hudNativeDrag = hudWindowing?.nativeDrag === true
 
-const launchFlags: { localModels?: boolean; guestOnboarding?: boolean } | undefined =
+const launchFlags: { localModels?: boolean; assumeFreshInstall?: boolean } | undefined =
   ipcRenderer.sendSync('hermes:feature-flags')
 
 // Local, sanitized skin payload for the first renderer theme paint. This does
@@ -33,10 +31,9 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   // Launch-flag fact: the app was started with --local, so the renderer may
   // show the local-models surfaces. Static for the window's lifetime.
   localModelsEnabled: launchFlags?.localModels === true,
-  // Launch-flag fact: the Nous free tier is on for this launch
-  // (HERMES_GUEST_ONBOARDING=1 or --guest-onboarding). Read-only; the same
-  // decision is stamped onto every backend the app spawns.
-  guestOnboardingEnabled: launchFlags?.guestOnboarding === true,
+  // Dev-only launch fact: an unpackaged app started with --fresh-install, so
+  // onboarding treats this launch as a fresh install. Always false when packaged.
+  assumeFreshInstall: launchFlags?.assumeFreshInstall === true,
   localSkin: localSkin && typeof localSkin === 'object' ? localSkin : null,
   getConnection: (profile, opts) => ipcRenderer.invoke('hermes:connection', profile, opts),
   // Loopback origin that hosts YouTube's player for the file:// renderer.
@@ -45,18 +42,16 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   getConnectionFor: payload => ipcRenderer.invoke('hermes:connection:for', payload),
   getProfileRoutes: profiles => ipcRenderer.invoke('hermes:plugin-profile-routes', profiles),
   revalidateConnection: () => ipcRenderer.invoke('hermes:connection:revalidate'),
-  touchBackend: (profile, options) => ipcRenderer.invoke('hermes:backend:touch', profile, options),
-  getPoolLimits: () => ipcRenderer.invoke('hermes:pool-limits:get'),
-  setPoolLimits: limits => ipcRenderer.invoke('hermes:pool-limits:set', limits),
   getGatewayWsUrl: profile => ipcRenderer.invoke('hermes:gateway:ws-url', profile),
   // Registry-scoped fresh WS URL: { connectionId, profile } → result shape of
   // getGatewayWsUrl, minted against that connection's backend.
   getGatewayWsUrlFor: payload => ipcRenderer.invoke('hermes:gateway:ws-url-for', payload),
+  // { connectionId, profile, pluginId, path } → one-use local plugin socket URL, null, or { refused: 'permission' }.
+  getPluginWsUrl: payload => ipcRenderer.invoke('hermes:plugin:ws-url', payload),
   // Union agent roster across every registered connection.
   getAgentRoster: () => ipcRenderer.invoke('hermes:agents:roster'),
   openSessionWindow: (sessionId, opts) => ipcRenderer.invoke('hermes:window:openSession', sessionId, opts),
   openSessionInTerminal: (sessionId, opts) => ipcRenderer.invoke('hermes:window:openInTerminal', sessionId, opts),
-  openVsCode: folder => ipcRenderer.invoke('hermes:vscode:open', folder),
   openWindow: (options?: DesktopProfileRoute) => ipcRenderer.invoke('hermes:window:openInstance', options),
   openBrowserWindow: tabId => ipcRenderer.invoke('hermes:window:openBrowser', tabId),
   windowRelay: {
@@ -121,85 +116,6 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
 
       return () => ipcRenderer.removeListener('hermes:pet-overlay:control', listener)
     }
-  },
-  // The 3D Pane: a transparent, always-on-top window hosting the avatar scene
-  // (`?win=pane3d`). The main renderer opens it and sends notifications; the
-  // pane window itself reports control messages up and receives state down.
-  pane3d: {
-    open: () => ipcRenderer.invoke('hermes:pane3d:open'),
-    close: () => ipcRenderer.invoke('hermes:pane3d:close'),
-    isOpen: () => ipcRenderer.invoke('hermes:pane3d:is-open'),
-    playDemo: (script?: DemoScript) => ipcRenderer.invoke('hermes:pane3d:play-demo', script),
-    notify: (request: NotifyRequest) => ipcRenderer.invoke('hermes:pane3d:notify', request),
-    summon: (avatar: AvatarId) => ipcRenderer.invoke('hermes:pane3d:summon', avatar),
-    dismiss: (avatar: AvatarId) => ipcRenderer.invoke('hermes:pane3d:dismiss', avatar),
-    captureContext: () => ipcRenderer.invoke('hermes:pane3d:capture-context'),
-    // Pane → main: hit regions, focus, click-through, close and notify actions.
-    control: (message: PaneControl) => ipcRenderer.send('hermes:pane3d:panel', message),
-    // Main → pane: init/anchor/notify/demo/summon/dismiss.
-    onState: (callback: (state: PaneState) => void) => {
-      const listener = (_event, state) => callback(state)
-      ipcRenderer.on('hermes:pane3d:state', listener)
-
-      return () => ipcRenderer.removeListener('hermes:pane3d:state', listener)
-    },
-    // Main → host renderer: forwarded notify action / dismissed / close.
-    onControl: (callback: (control: PaneControl) => void) => {
-      const listener = (_event, control) => callback(control)
-      ipcRenderer.on('hermes:pane3d:control', listener)
-
-      return () => ipcRenderer.removeListener('hermes:pane3d:control', listener)
-    }
-  },
-  // Bot Room: the full-screen transparent overlay where bot mascots live on
-  // the desktop itself. Same puppet contract as petOverlay, one level up —
-  // the main renderer owns the state, the overlay renders it.
-  botroom: {
-    open: () => ipcRenderer.invoke('hermes:botroom:open'),
-    close: () => ipcRenderer.invoke('hermes:botroom:close'),
-    setIgnoreMouse: ignore => ipcRenderer.send('hermes:botroom:ignore-mouse', ignore),
-    // Flip the overlay focusable while a panel/composer holds text focus.
-    setFocusable: focusable => ipcRenderer.send('hermes:botroom:set-focusable', focusable),
-    // Main renderer → overlay: roster/status/rooms the overlay renders.
-    pushState: payload => ipcRenderer.send('hermes:botroom:state', payload),
-    // Overlay → main renderer: tasks, room ops, mascot moves, app control.
-    control: payload => ipcRenderer.send('hermes:botroom:control', payload),
-    onState: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('hermes:botroom:state', listener)
-
-      return () => ipcRenderer.removeListener('hermes:botroom:state', listener)
-    },
-    onControl: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('hermes:botroom:control', listener)
-
-      return () => ipcRenderer.removeListener('hermes:botroom:control', listener)
-    }
-  },
-  // Bot Room mascot/pill windows: the small always-on-top panels that put one
-  // bot on the desktop itself. They receive their bot row on
-  // 'hermes:botroom-mascot:state' and speak the same BotRoomControl protocol
-  // through the shared 'hermes:botroom:control' channel.
-  botroomMascot: {
-    onState: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('hermes:botroom-mascot:state', listener)
-
-      return () => ipcRenderer.removeListener('hermes:botroom-mascot:state', listener)
-    },
-    // 'bot.action' pushes land here as {botId, action} — the window plays
-    // the named performance on its own scene.
-    onAction: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('hermes:botroom-mascot:action', listener)
-
-      return () => ipcRenderer.removeListener('hermes:botroom-mascot:action', listener)
-    },
-    // Renderer-driven window drag: streams {botId, phase, x, y} in screen
-    // coordinates; main repositions the window (app-region drag can't engage
-    // on a non-activating panel).
-    drag: payload => ipcRenderer.send('hermes:botroom-mascot:drag', payload)
   },
   // HUD mode: the chrome-free floating chat. A full app renderer (own gateway)
   // sized as a floating bar, so it mounts the real composer. Main owns the
@@ -306,11 +222,6 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
           }
         }
       : undefined,
-  // Region capture: one-shot full-frame grab of the window's display for the
-  // markup overlay (roadmap #34); the overlay does crop + markup itself.
-  regionCapture: {
-    capture: () => ipcRenderer.invoke('hermes:region-capture:capture')
-  },
   // Quick Entry: the global-hotkey mini composer window. Main owns the OS
   // shortcut + the persisted preference; the quick window only captures text
   // and hands it back, and the primary renderer submits it through the normal
@@ -347,14 +258,6 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.on('hermes:quick-entry:shown', listener)
 
       return () => ipcRenderer.removeListener('hermes:quick-entry:shown', listener)
-    },
-    // Main → quick window: the frontmost-app context captured at summon time
-    // (null when the platform can't answer — Wayland, missing xprop, …).
-    onContext: callback => {
-      const listener = (_event, payload) => callback(payload)
-      ipcRenderer.on('hermes:quick-entry:context', listener)
-
-      return () => ipcRenderer.removeListener('hermes:quick-entry:context', listener)
     },
     // Main → quick window: the outcome of a submit whose relay already timed
     // out. Delivery is now KNOWN — reconcile the unknown state instead of
@@ -448,6 +351,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   readPluginSource: (filePath: string) => ipcRenderer.invoke('hermes:readPluginSource', filePath),
   selectPaths: options => ipcRenderer.invoke('hermes:selectPaths', options),
   selectSavePath: options => ipcRenderer.invoke('hermes:selectSavePath', options),
+  saveTextFileAs: request => ipcRenderer.invoke('hermes:saveTextFileAs', request),
   writeClipboard: text => ipcRenderer.invoke('hermes:writeClipboard', text),
   readClipboard: () => ipcRenderer.invoke('hermes:readClipboard'),
   saveGatewayFile: payload => ipcRenderer.invoke('hermes:saveGatewayFile', payload),
@@ -482,6 +386,13 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   setNativeTheme: mode => ipcRenderer.send('hermes:native-theme', mode),
   setTranslucency: payload => ipcRenderer.send('hermes:translucency', payload),
   setKeepAwake: mode => ipcRenderer.send('hermes:keep-awake', mode),
+  // Once per computer, after a timed sleep interrupted a turn with keep-awake off.
+  onKeepAwakeOffer: callback => {
+    const listener = () => callback()
+    ipcRenderer.on('hermes:keep-awake-offer', listener)
+
+    return () => ipcRenderer.removeListener('hermes:keep-awake-offer', listener)
+  },
   minimizeToTray: {
     get: () => ipcRenderer.invoke('hermes:minimize-to-tray:get'),
     set: on => ipcRenderer.invoke('hermes:minimize-to-tray:set', on),
@@ -490,25 +401,6 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
       ipcRenderer.on('hermes:minimize-to-tray:changed', listener)
 
       return () => ipcRenderer.removeListener('hermes:minimize-to-tray:changed', listener)
-    }
-  },
-  // Menu-bar status (#38): the renderer pushes live session status into main
-  // for the tray menu/badge, and receives the New Session quick action back.
-  menuBarStatus: {
-    get: () => ipcRenderer.invoke('hermes:menu-bar-status:get'),
-    set: on => ipcRenderer.invoke('hermes:menu-bar-status:set', on),
-    push: payload => ipcRenderer.send('hermes:menu-bar-status:push', payload),
-    onChanged: callback => {
-      const listener = (_event, status) => callback(status)
-      ipcRenderer.on('hermes:minimize-to-tray:changed', listener)
-
-      return () => ipcRenderer.removeListener('hermes:minimize-to-tray:changed', listener)
-    },
-    onNewSession: callback => {
-      const listener = () => callback()
-      ipcRenderer.on('hermes:menu-bar:new-session', listener)
-
-      return () => ipcRenderer.removeListener('hermes:menu-bar:new-session', listener)
     }
   },
   setDisableF12: blocked => ipcRenderer.send('hermes:devtools:disable-f12', blocked),
@@ -547,6 +439,12 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     setDefaultProjectDir: dir => ipcRenderer.invoke('hermes:setting:defaultProjectDir:set', dir),
     pickDefaultProjectDir: () => ipcRenderer.invoke('hermes:setting:defaultProjectDir:pick')
   },
+  preparedSubmissions: {
+    read: () => ipcRenderer.invoke('hermes:prepared-submissions:read'),
+    update: (key, entry) => ipcRenderer.invoke('hermes:prepared-submissions:update', key, entry),
+    compareAndSet: (key, expected, entry) =>
+      ipcRenderer.invoke('hermes:prepared-submissions:compare-and-set', key, expected, entry)
+  },
   zoom: {
     // Current zoom of this window, as { level, percent }.
     get: () => ipcRenderer.invoke('hermes:zoom:get'),
@@ -578,16 +476,12 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   logsRoot: (profile?: string) => ipcRenderer.invoke('hermes:fs:logsRoot', profile),
   renamePath: (targetPath, newName) => ipcRenderer.invoke('hermes:fs:rename', targetPath, newName),
   writeTextFile: (filePath, content) => ipcRenderer.invoke('hermes:fs:writeText', filePath, content),
-  makeDirectory: dirPath => ipcRenderer.invoke('hermes:fs:mkdir', dirPath),
   trashPath: targetPath => ipcRenderer.invoke('hermes:fs:trash', targetPath),
   git: {
     worktreeList: repoPath => ipcRenderer.invoke('hermes:git:worktreeList', repoPath),
     worktreeAdd: (repoPath, options) => ipcRenderer.invoke('hermes:git:worktreeAdd', repoPath, options),
     worktreeRemove: (repoPath, worktreePath, options) =>
       ipcRenderer.invoke('hermes:git:worktreeRemove', repoPath, worktreePath, options),
-    worktreeEnsure: (repoPath, worktreePath, branch) =>
-      ipcRenderer.invoke('hermes:git:worktreeEnsure', repoPath, worktreePath, branch),
-    worktreeMerge: (repoPath, worktreePath) => ipcRenderer.invoke('hermes:git:worktreeMerge', repoPath, worktreePath),
     branchSwitch: (repoPath, branch) => ipcRenderer.invoke('hermes:git:branchSwitch', repoPath, branch),
     branchList: repoPath => ipcRenderer.invoke('hermes:git:branchList', repoPath),
     baseBranchList: repoPath => ipcRenderer.invoke('hermes:git:baseBranchList', repoPath),
@@ -657,12 +551,6 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
 
     return () => ipcRenderer.removeListener('hermes:open-updates', listener)
   },
-  onMenuActionRequested: callback => {
-    const listener = (_event, actionId) => callback(actionId)
-    ipcRenderer.on('hermes:menu-action', listener)
-
-    return () => ipcRenderer.removeListener('hermes:menu-action', listener)
-  },
   onDeepLink: callback => {
     const listener = (_event, payload) => callback(payload)
     ipcRenderer.on('hermes:deep-link', listener)
@@ -714,15 +602,6 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     ipcRenderer.on('hermes:backend-exit', listener)
 
     return () => ipcRenderer.removeListener('hermes:backend-exit', listener)
-  },
-  // Cooperative pool retirement (main → renderer): the pooled backend under
-  // `poolKey` is being stopped for a foreground open. Park that scope; do not
-  // redial into the slot it vacated.
-  onPoolBackendRetiring: callback => {
-    const listener = (_event, payload) => callback(payload)
-    ipcRenderer.on('hermes:pool:retiring', listener)
-
-    return () => ipcRenderer.removeListener('hermes:pool:retiring', listener)
   },
   // Soft gateway-mode apply finished tearing down the primary backend. Renderer
   // should wipe session lists + re-dial without a window reload.
@@ -788,8 +667,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   updates: {
     check: opts => ipcRenderer.invoke('hermes:updates:check', opts),
     apply: opts => ipcRenderer.invoke('hermes:updates:apply', opts),
-    getBranch: () => ipcRenderer.invoke('hermes:updates:branch:get'),
-    setBranch: name => ipcRenderer.invoke('hermes:updates:branch:set', name),
+    setChannel: name => ipcRenderer.invoke('hermes:updates:channel:set', name),
     onProgress: callback => {
       const listener = (_event, payload) => callback(payload)
       ipcRenderer.on('hermes:updates:progress', listener)

@@ -1,0 +1,1 @@
+import{br as e}from"./sdk-Ddcfp-uj.js";export{e as CapabilitiesView};

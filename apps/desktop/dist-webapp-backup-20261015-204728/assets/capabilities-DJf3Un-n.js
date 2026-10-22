@@ -1,0 +1,1 @@
+import{pr as e}from"./sdk-C--5lwF7.js";export{e as CapabilitiesView};

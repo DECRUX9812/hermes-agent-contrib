@@ -16,7 +16,6 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Iterator, Optional
 
-from hermes_cli.sqlite_safe_read import connect_tracked
 from hermes_cli.timefmt import EPOCH_MAX, EPOCH_MIN
 from hermes_state import SessionDB
 from hermes_state_common import FTS_STORAGE_VERSION, SCHEMA_VERSION
@@ -44,7 +43,14 @@ _AUXILIARY_TABLE_SCHEMAS: dict[str, Callable[[sqlite3.Connection], None]] = {
     "delivery_obligations": _init_delivery_ledger_schema,
 }
 _AUXILIARY_TABLES = tuple(_AUXILIARY_TABLE_SCHEMAS)
-_INVENTORY_TABLES = (*_CANONICAL_TABLES, "state_meta", *_TOPIC_TABLES, *_AUXILIARY_TABLES)
+# Salvage is a transcript output, not a runnable clone of accepted work. Copying
+# only part of this ledger could replay already-started effects or adopt workers
+# from another owner. Inventory and report the exclusions rather than losing them
+# silently. Activation under exclusive ownership creates a fresh runtime epoch;
+# ordinary full backup/restore instead preserves the complete ledger for startup
+# reconciliation (started -> unknown; never blindly replay started work).
+_RUNTIME_TABLES = ("runtime_epoch", "session_admissions", "worker_executions", "worker_receipts")
+_INVENTORY_TABLES = (*_CANONICAL_TABLES, "state_meta", *_TOPIC_TABLES, *_AUXILIARY_TABLES, *_RUNTIME_TABLES)
 
 # Derived-index / optional-schema markers: a fresh destination regenerates these, never copies them.
 _GENERATED_META_KEYS = frozenset({
@@ -217,11 +223,8 @@ def _count_rows(conn: sqlite3.Connection, table: str) -> int:
 
 
 def _connect(path: Path) -> sqlite3.Connection:
-    """Autocommit connection with a short busy timeout (source snapshot or fresh output).
-
-    Tracked because SessionDB initialized the output: releasing its cached header probe must be
-    able to see this connection, or the probe's close() would cancel this connection's locks."""
-    return connect_tracked(path, isolation_level=None, timeout=1.0)
+    """Autocommit connection with a short busy timeout (source snapshot or fresh output)."""
+    return sqlite3.connect(str(path), isolation_level=None, timeout=1.0)
 
 
 @contextmanager
@@ -906,7 +909,7 @@ def _verify_recovered_database(
     verification["opens_cleanly"] = open_error is None
     if open_error is not None:
         verification["errors"].append(f"database health probe: {open_error}")
-    conn = _connect(output)
+    conn = sqlite3.connect(str(output), isolation_level=None)
     try:
         _verify_structure(conn, verification)
         _verify_row_counts(
@@ -1130,7 +1133,7 @@ def _recover_via_lost_and_found(
     # Structural checks cannot see a positional mis-mapping: every row still inserts, so integrity/FK/FTS
     # stay green. A systematic timestamp violation is the semantic tell — never report such a salvage as verified.
     # See #101409.
-    plausibility_conn = _connect(output)
+    plausibility_conn = sqlite3.connect(str(output), isolation_level=None)
     try:
         plausibility_errors = _lost_and_found_plausibility_errors(plausibility_conn)
     finally:
@@ -1186,10 +1189,38 @@ def _recovery_report(
         "partial": bool(verification.get("loss_detected")),
         "verified": bool(verification.get("healthy") and source_unchanged),
         "installed": False,
+        "runtime_state": {
+            "policy": "transcript-only; runtime ledger excluded; fresh epoch on activation",
+            "excluded_tables": {table: inspection["tables"].get(table, {}) for table in _RUNTIME_TABLES},
+        },
     }
 
 
 def recover_session_database(
+    source_path: Path, output_path: Path, *, work_dir: Optional[Path] = None, chunk_size: int = 1_000,
+    progress_cb: Optional[ProgressCallback] = None, allow_partial: bool = False,
+) -> dict[str, Any]:
+    """Separate-output salvage is allowed; a canonical output requires offline ownership."""
+    from gateway.runtime_ownership import OwnershipConflict, exclusive_maintenance
+    from contextlib import nullcontext
+    # Validate before creating any lock or output. Reserve only a canonical
+    # destination, not the live source or an unrelated requested output file.
+    _, output, _ = _validate_paths(source_path, output_path=output_path, work_dir=work_dir)
+    assert output is not None
+    guard = exclusive_maintenance([output.parent]) if output.name == 'state.db' else nullcontext()
+    try:
+        with guard:
+            # Repeat the no-overwrite validation under the reservation: startup
+            # may have created state.db between the first check and lock claim.
+            return _recover_session_database_output(
+                source_path, output_path, work_dir=work_dir, chunk_size=chunk_size,
+                progress_cb=progress_cb, allow_partial=allow_partial,
+            )
+    except OwnershipConflict as exc:
+        raise SessionRecoverySafetyError(str(exc)) from exc
+
+
+def _recover_session_database_output(
     source_path: Path, output_path: Path, *, work_dir: Optional[Path] = None, chunk_size: int = 1_000,
     progress_cb: Optional[ProgressCallback] = None, allow_partial: bool = False,
 ) -> dict[str, Any]:

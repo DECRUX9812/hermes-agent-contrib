@@ -15,8 +15,6 @@
 
 import type { ChildProcess, SpawnOptions } from 'node:child_process'
 
-import { externalUrlTarget } from '../../shared/src/external-url'
-
 import { absolutizeProtocolRelativeUrl, looksLikeLocalFilesystemPath } from './local-filesystem-path'
 
 export type ExternalOpenResult =
@@ -70,29 +68,7 @@ export interface ExternalOpenDeps {
   log: (line: string) => void
 }
 
-const EDITOR_SCHEMES = new Set(['vscode:', 'cursor:', 'windsurf:', 'zed:'])
-
-/**
- * "Open in VS Code / Cursor / Windsurf / Zed" (src/lib/editor-handoff.ts).
- * Only the open-a-file shapes pass: `<scheme>://file/…`, the VS Code-family
- * remote-SSH route, and Zed's `zed://ssh/…`. Anything else on these schemes
- * (an extension URI handler, a settings deep link) is not ours to open.
- */
-export function isEditorHandoffUrl(parsed: URL): boolean {
-  if (!EDITOR_SCHEMES.has(parsed.protocol)) {
-    return false
-  }
-
-  if (parsed.host === 'file') {
-    return parsed.pathname.length > 1
-  }
-
-  if (parsed.protocol === 'zed:') {
-    return parsed.host === 'ssh'
-  }
-
-  return parsed.host === 'vscode-remote' && parsed.pathname.startsWith('/ssh-remote+')
-}
+const SUPPORTED_WEB = ['http:', 'https:', 'mailto:']
 
 export function externalOpenErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
@@ -134,38 +110,29 @@ export async function openExternalUrl(rawUrl: string, deps: ExternalOpenDeps): P
     return { ok: true }
   }
 
-  const target = externalUrlTarget(raw)
+  let parsed: URL
 
-  let url: string
+  try {
+    parsed = new URL(raw)
+  } catch {
+    return { ok: false, reason: 'invalid' }
+  }
 
-  if (!target) {
-    // "Open in editor" deep links (src/lib/editor-handoff.ts) are a
-    // desktop-only route the shared web classifier refuses: re-parse and admit
-    // only the open-a-file shapes, which shell.openExternal sends to the editor.
-    let parsed: URL
-
+  if (parsed.protocol === 'file:') {
     try {
-      parsed = new URL(raw)
-    } catch {
-      return { ok: false, reason: 'invalid' }
-    }
-
-    if (!isEditorHandoffUrl(parsed)) {
-      return { ok: false, reason: 'invalid' }
-    }
-
-    url = parsed.toString()
-  } else if (target.kind === 'file') {
-    try {
-      await deps.openFile(target.url)
+      await deps.openFile(raw)
     } catch {
       // main's openFile handles its own fallback; never surfaced here
     }
 
     return { ok: true }
-  } else {
-    url = target.url
   }
+
+  if (!SUPPORTED_WEB.includes(parsed.protocol)) {
+    return { ok: false, reason: 'invalid' }
+  }
+
+  const url = parsed.toString()
 
   if (deps.isWsl) {
     return openViaWsl(url, deps)

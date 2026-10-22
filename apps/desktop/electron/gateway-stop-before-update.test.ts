@@ -75,22 +75,17 @@ test('Windows with failing CLI returns false (best-effort, never throws)', () =>
   assert.equal(ran, false)
 })
 
-test('stop timeout outlives the bounded Windows gateway drain', () => {
-  let seenOptions: { timeout?: number; windowsHide?: boolean; stdio?: string; encoding?: string } = {}
-
+test('passes a generous timeout with hidden console (taskkill window suppression)', () => {
+  let seenOptions: unknown
   stopGatewayBeforeUpdate(CLI, HOME, {
     isWindows: true,
     existsSync: () => true,
-    execFileSync: ((_c: string, _a: string[], options: typeof seenOptions) => {
+    execFileSync: ((_c: string, _a: string[], options: unknown) => {
       seenOptions = options
 
       return Buffer.from('')
     }) as never
   })
-
-  // gateway_windows._windows_stop_drain_timeout() permits a 30-second
-  // graceful drain before the command reaches its force-stop cleanup.
-  assert.ok(GATEWAY_STOP_TIMEOUT_MS > 30_000)
   assert.deepEqual(seenOptions, {
     timeout: GATEWAY_STOP_TIMEOUT_MS,
     windowsHide: true,

@@ -171,8 +171,7 @@ class TestKillStaleDashboardProcesses:
 
 # The POSIX kill path (the Windows class above is host-gated on taskkill).
 @pytest.mark.platforms("posix")
-@pytest.mark.parametrize("include_pids", [None, {12345, 12346, 12347}, {12346, 12347}, set()])
-def test_stop_only_targets_the_invoking_hermes_home(monkeypatch, include_pids):
+def test_stop_only_targets_the_invoking_hermes_home(monkeypatch):
     """An argv match from another profile is never a ``--stop`` target."""
     own_home = "/tmp/hermes-own"
     foreign_home = "/tmp/hermes-foreign"
@@ -191,17 +190,11 @@ def test_stop_only_targets_the_invoking_hermes_home(monkeypatch, include_pids):
     ), mock.patch.object(
         dashboard_procs, "_kill_pids_posix"
     ) as kill:
-        result = dashboard_procs._kill_stale_dashboard_processes(
-            scope_home=own_home, include_pids=include_pids,
-        )
+        result = dashboard_procs._kill_stale_dashboard_processes(scope_home=own_home)
 
-    if include_pids is None or 12345 in include_pids:
-        kill.assert_called_once()
-        assert kill.call_args.args[0] == [12345]
-        assert result["matched"] == [12345]
-    else:
-        kill.assert_not_called()
-        assert result["matched"] == []
+    kill.assert_called_once()
+    assert kill.call_args.args[0] == [12345]
+    assert result["matched"] == [12345]
 
 
 class TestHermesHomeForPid:

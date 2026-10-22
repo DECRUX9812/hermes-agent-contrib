@@ -127,10 +127,9 @@ describe('PromptOverlays', () => {
     $activeSessionId.set('s1')
     $gateway.set({ request } as never)
     rememberServerRequest({ fail: vi.fn(), id: 'secret-1', method: 'secret', params: {}, respond })
-    // Session-bound asks render as the inline masked row (#25); the modal owns sessionless asks.
-    setSecretRequest({ envVar: 'TEST_SECRET', prompt: 'Paste a secret', requestId: 'secret-1', sessionId: null })
+    setSecretRequest({ envVar: 'TEST_SECRET', prompt: 'Paste a secret', requestId: 'secret-1', sessionId: 's1' })
 
-    renderPrompts(null)
+    renderPrompts()
 
     expect(screen.getByText('TEST_SECRET')).toBeTruthy()
 
@@ -148,9 +147,9 @@ describe('PromptOverlays', () => {
 
     $activeSessionId.set('s1')
     $gateway.set({ request } as never)
-    setSecretRequest({ envVar: 'TEST_SECRET', prompt: 'Paste a secret', requestId: 'secret-1', sessionId: null })
+    setSecretRequest({ envVar: 'TEST_SECRET', prompt: 'Paste a secret', requestId: 'secret-1', sessionId: 's1' })
 
-    renderPrompts(null)
+    renderPrompts()
 
     expect(screen.getByText('TEST_SECRET')).toBeTruthy()
 

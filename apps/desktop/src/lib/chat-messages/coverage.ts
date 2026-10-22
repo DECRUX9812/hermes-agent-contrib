@@ -3,8 +3,7 @@ import type { ChatMessage, ChatMessagePart } from './types'
 
 function sameOccurrencePart(stored: ChatMessagePart, local: ChatMessagePart): boolean {
   if (stored.type === 'tool-call' && local.type === 'tool-call') {
-    return Boolean(stored.toolCallId) && stored.toolCallId === local.toolCallId &&
-      (local.result === undefined || stored.result !== undefined)
+    return Boolean(stored.toolCallId) && stored.toolCallId === local.toolCallId
   }
 
   if ((stored.type === 'text' || stored.type === 'reasoning') && local.type === stored.type) {

@@ -1,5 +1,5 @@
 .DS_Store
-/venv
+/venv/
 /venv.old/
 /venv.stale.runtime-*/
 /bin/
@@ -47,6 +47,9 @@ tmp/
 temp_vision_images/
 hermes-*/*
 examples/
+# Skills ship worked examples as support files; the bare pattern above is for dataset dumps.
+!optional-skills/**/examples/
+!skills/**/examples/
 tests/quick_test_dataset.jsonl
 tests/sample_dataset.jsonl
 run_datagen_kimik2-thinking.sh
@@ -91,9 +94,6 @@ hermes_cli/web_dist/
 .web_ui_build.lock
 apps/desktop/build/
 apps/desktop/dist/
-apps/desktop/dist-webapp/
-apps/desktop/dist-review/
-.dist-webapp-build-*
 
 # tsc-emitted artifacts (a stray `tsc -b` compiles into src/, and vite then
 # resolves the stale .js OVER the .tsx — never track these)
@@ -325,8 +325,3 @@ native/fts5_cjk/*.so
 /pm/.lock.json.lock
 
 apps/desktop/.dist-build*
-
-# Devin demo-kit render outputs (regenerate via docs/demo-kit/*/render)
-renders/
-
-.expo/

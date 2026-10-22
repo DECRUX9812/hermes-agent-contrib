@@ -55,12 +55,7 @@ vi.mock('@/lib/wake-indicator', () => ({
 
 vi.mock('@/store/composer', () => ({
   $voiceConversationStartRequest: { get: () => null },
-  registerComposerNewDraftProfileResolver: vi.fn(),
   takeVoiceConversationStart: vi.fn(() => false)
-}))
-
-vi.mock('@/lib/voice-status', () => ({
-  composeSessionStatusSpeech: vi.fn(() => '')
 }))
 
 vi.mock('@/store/composer-input-history', () => ({

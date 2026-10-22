@@ -4,11 +4,13 @@ import {
   $groupChats,
   appendGroupChatEntry,
   GROUP_CHAT_HISTORY_LIMIT,
+  GROUP_CHAT_MAX_CONTINUATIONS,
+  GROUP_CHAT_MAX_MESSAGES,
   groupThreadOf,
   shouldCommitMemberTurn,
   updateGroupChat
 } from './group-chat'
-import type { GroupChatRoom, ResolvedGroupChatLimits } from './group-chat'
+import type { GroupChatRoom } from './group-chat'
 import { groupMemberAuthor, groupMemberKey } from './group-membership'
 import {
   buildGroupChatTurnPrompt,
@@ -21,18 +23,12 @@ import type { Attachment, GroupMember, GroupMessage } from './types'
 
 export interface GroupRoundMemberContext {
   group: string
-  /** The drive's budget, snapshotted once by runGroupChatRounds — a per-room
-   *  override, else the config.yaml `group_chat` block, else the defaults. */
-  limits: ResolvedGroupChatLimits
   members: GroupMember[]
   thread: string
   startEpoch: number
   binding: { isLive(): boolean }
   isCurrent(): boolean
   failedMembers?: Set<string>
-  /** The orchestrating lead's profile when this room is a team chat — every
-   *  member session born this drive carries it as the `team_room` marker. */
-  teamRoomLead?: null | string
   /** #129443: member keys the driving user send explicitly addressed
    *  (@everyone / @mention). An addressed member's "(pass)" gets one bounded
    *  nudge; a second "(pass)" is recorded as explicit noncompliance — never
@@ -161,7 +157,7 @@ async function runVisibleMemberTurn(
   updateGroupChat(context.group, (room: GroupChatRoom) => ({ ...room, turn }), { sync: false })
 
   try {
-    return await runGroupChatMemberTurn(context.group, member, prompt, context.thread, images, context.teamRoomLead)
+    return await runGroupChatMemberTurn(context.group, member, prompt, context.thread, images)
   } finally {
     if (context.binding.isLive() && $groupChats.get()[context.group]?.turn === turn) {
       updateGroupChat(context.group, (room: GroupChatRoom) => ({ ...room, turn: null }), { sync: false })
@@ -216,7 +212,7 @@ export async function runGroupRoundMember(
     if (reply !== null) {
       clearBotAttention(groupMemberKey(member))
     }
-  } catch (error: unknown) {
+  } catch (error: any) {
     if (!binding.isLive()) {
       return null
     }
@@ -232,7 +228,7 @@ export async function runGroupRoundMember(
           }
         : {})
     })
-    noteBotAttention(groupMemberKey(member), reason || (error instanceof Error ? error.message : String(error)))
+    noteBotAttention(groupMemberKey(member), reason || error?.message || error)
     context.failedMembers?.add(groupMemberKey(member))
     reply = null // a failed turn is a pass, never a room error
   }
@@ -358,15 +354,13 @@ export async function runGroupContinuationMembers(
   continuations: number,
   posted: number
 ): Promise<number | null> {
-  const { limits, members, isCurrent } = context
-  const maxContinuations = limits.continuations
-  const maxMessages = limits.messages
+  const { members, isCurrent } = context
   let spokeThisRound = 0
 
-  if (pendingKeys.length && continuations <= maxContinuations) {
+  if (pendingKeys.length && continuations <= GROUP_CHAT_MAX_CONTINUATIONS) {
     const citedMembers = members.filter((member: GroupMember) => pendingKeys.includes(groupMemberKey(member)))
 
-    if (citedMembers.length && posted < maxMessages) {
+    if (citedMembers.length && posted < GROUP_CHAT_MAX_MESSAGES) {
       const strandedNow = ($groupChats.get()[context.group] || {}).stranded || {}
 
       const continuationResponders = citedMembers.filter(
@@ -374,7 +368,7 @@ export async function runGroupContinuationMembers(
       )
 
       for (const member of continuationResponders) {
-        if (!isCurrent() || posted >= maxMessages || continuations > maxContinuations) {
+        if (!isCurrent() || posted >= GROUP_CHAT_MAX_MESSAGES || continuations > GROUP_CHAT_MAX_CONTINUATIONS) {
           break
         }
 

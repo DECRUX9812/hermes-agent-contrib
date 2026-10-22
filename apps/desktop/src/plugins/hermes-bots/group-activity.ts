@@ -76,9 +76,9 @@ export function currentGroupActivity(group: string) {
  *  must keep classifying it as transient (never a roster badge). */
 export const GROUP_SLOT_WAIT_REASON = 'slot_wait_timeout'
 
-/** Stable coordinator phrase (`pool-spawn-coordinator.ts`), the
- *  cross-process discriminator — same shape as `isLocalBackendSlotWaitTimeout`
- *  in `store/pool-limits.ts`, kept local because the plugin fence cannot
+/** Stable phrase older Desktop hosts' local backend pool raised on a slot-wait
+ *  timeout (a renderer can still be served by one across an upgrade); same
+ *  shape as the store's classifier, kept local because the plugin fence cannot
  *  import the store. Match narrowly so other backend failures keep their path. */
 export function isGroupSlotWaitTimeoutText(text: unknown): boolean {
   return typeof text === 'string' && text.includes('timed out while waiting for a free slot')
@@ -142,16 +142,8 @@ export function groupActivityLabel(event: GroupActivityEntry, group?: null | str
   const kind = event?.kind
   const base = GROUP_ACTIVITY_LABELS[kind] || kind || 'did something'
 
-  if (kind === 'cancelled' || kind === 'settled' || kind === 'safety') {
+  if (kind === 'cancelled' || kind === 'settled' || kind === 'capped') {
     return base
-  }
-
-  if (kind === 'capped') {
-    const axis = GROUP_ACTIVITY_AXIS_LABELS[String(event?.detail || '').trim()]
-
-    // A cap that names its axis is a budget the user can raise; without one
-    // it is just "the drive stopped".
-    return axis ? `paused at the ${axis} cap — send a message to keep going` : base
   }
 
   const who = event?.member === 'You' ? 'You' : groupSpeakerLabel(event?.member || 'A bot', group)
@@ -173,19 +165,10 @@ const GROUP_ACTIVITY_LABELS: Record<GroupActivityKind, string> = {
   failed: 'hit an error',
   cancelled: 'turn interrupted by a newer message',
   settled: 'turn settled',
-  capped: 'paused at the turn cap — send a message to keep going',
-  safety: 'safety brake stopped a runaway turn',
+  capped: 'turn stopped at the round/message cap',
   delivered: 'delivered a late reply',
   held: 'is held (stopped by you) — @mention it or say resume to release',
   stopped: 'stopped the room — remaining turns are held until resumed'
-}
-
-/** Which drive-budget axis ran out, when the drive named one — the feed can
- *  point the user at the exact knob that would raise it. */
-const GROUP_ACTIVITY_AXIS_LABELS: Record<string, string> = {
-  continuations: 'mention follow-up',
-  messages: 'message',
-  rounds: 'round'
 }
 
 export const GROUP_ACTIVITY_GLYPHS: Record<GroupActivityKind, string> = {
@@ -198,7 +181,6 @@ export const GROUP_ACTIVITY_GLYPHS: Record<GroupActivityKind, string> = {
   cancelled: 'close',
   settled: 'check-all',
   capped: 'debug-step-over',
-  safety: 'debug-stop',
   delivered: 'mail-read',
   held: 'debug-pause',
   stopped: 'debug-stop'

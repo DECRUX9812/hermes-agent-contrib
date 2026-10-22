@@ -11,9 +11,9 @@
 
 > **Intel Macs:** the `Hermes-Setup.dmg` bootstrap installer is built for
 > Apple Silicon (arm64) only, so on an Intel Mac it reports "not supported on
-> this Mac". The desktop release pipeline also builds a native `darwin-x64`
-> bundle (signed, notarized, with its own update feed); use that build, or
-> install the [CLI](../../README.md) and run `hermes desktop`. See
+> this Mac". Stable releases build the native `darwin-x64` bundle only when
+> cut with `--with macos-intel`; otherwise install the
+> [CLI](../../README.md) and run `hermes desktop`. See
 > [Platform Support](../../website/docs/getting-started/platform-support.md#build-targets-and-support-priority).
 
 <table>
@@ -99,12 +99,6 @@ HERMES_DESKTOP_HERMES_ROOT=/path/to/clone npm run dev
 HERMES_HOME=$HOME/.hermes/cache/scratch/throwaway npm run dev
 npm run dev:fake-boot   # exercise the startup overlay with deterministic delays
 ```
-
-Microphone capture runs in the renderer and follows Chromium's secure-context
-rules. A remote `HERMES_DESKTOP_DEV_SERVER` URL must use HTTPS or be reached
-through localhost (for example, with an SSH port forward); plain HTTP on a LAN
-or Tailscale address does not expose `getUserMedia`. The packaged native app is
-not affected.
 
 ### Building installers
 

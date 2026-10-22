@@ -1,0 +1,1 @@
+var e=`local`;function t(e,t){let n=String(t??``).trim()||`default`,r=String(e??``).trim();return!r||r===`local`?n:`conn:${r}::${n}`}function n(e,t){let n=String(t??``).trim()||`default`,r=String(e??``).trim();return r?`conn:${r}::${n}`:n}export{t as n,n as r,e as t};

@@ -9,7 +9,7 @@ import re
 import shutil
 import stat
 import sys
-from collections.abc import MutableMapping
+from collections.abc import Callable, Mapping, MutableMapping
 from contextvars import ContextVar, Token
 from pathlib import Path
 
@@ -21,12 +21,6 @@ _HERMES_HOME_OVERRIDE: ContextVar[str | object] = ContextVar("_HERMES_HOME_OVERR
 # Keep in sync with INDICATOR_STYLES / DEFAULT_INDICATOR_STYLE in ui-tui/src/app/interfaces.ts.
 INDICATOR_STYLES: tuple[str, ...] = ("ascii", "emoji", "kaomoji", "unicode")
 DEFAULT_INDICATOR_STYLE: str = "kaomoji"
-
-# Browser-hosted attachments are staged on the Hermes host and then read back
-# as a base64 data URL for the normal remote attachment RPC. Keep the upload
-# and read-back boundaries identical so a successful picker/drop can always be
-# attached afterward.
-WEBAPP_ATTACHMENT_MAX_BYTES: int = 16 * 1024 * 1024
 
 
 def set_hermes_home_override(path: str | Path | None) -> Token:
@@ -54,14 +48,64 @@ def _expand_hermes_home(path: str) -> Path:
     return Path(os.path.expanduser(os.path.expandvars(path)))
 
 
+def _platform_default_hermes_home(environ: Mapping[str, str], user_home: Callable[[], Path]) -> Path:
+    """The platform default that *environ* names, with the literal data-directory suffix."""
+    suffix = environ.get("HERMES_DATA_DIR_SUFFIX", "")
+    if sys.platform == "win32":
+        local_appdata = environ.get("LOCALAPPDATA", "").strip()
+        base = Path(local_appdata) if local_appdata else user_home() / "AppData" / "Local"
+        return base / ("hermes" + suffix)
+    return user_home() / (".hermes" + suffix)
+
+
 def _get_platform_default_hermes_home() -> Path:
     """Return the platform default with the literal data-directory suffix."""
-    suffix = os.environ.get("HERMES_DATA_DIR_SUFFIX", "")
-    if sys.platform == "win32":
-        local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
-        base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / ("hermes" + suffix)
-    return Path.home() / (".hermes" + suffix)
+    return _platform_default_hermes_home(os.environ, Path.home)
+
+
+def _hermes_root_of(native_home: Path, env_path: Path | None) -> Path:
+    """The root that holds *env_path*: the native home, a custom root, or *env_path* itself."""
+    if env_path is None:
+        return native_home
+    try:
+        env_path.resolve().relative_to(native_home.resolve())  # under ~/.hermes (normal or profile mode)
+    except ValueError:  # Docker/custom root: <root>/profiles/<name> -> <root>, else HERMES_HOME itself
+        return env_path.parent.parent if env_path.parent.name == "profiles" else env_path
+    return native_home
+
+
+_ENV_REFERENCE = re.compile(r"%([^%]+)%|\$\{([^}]+)\}|\$([A-Za-z0-9_-]+)")
+
+
+def hermes_root_for_environment(environ: Mapping[str, str]) -> Path | None:
+    """The Hermes root that a process started with *environ* resolves, or None.
+
+    Applies the root rules of ``get_default_hermes_root`` to another process's
+    environment. ``%NAME%``, ``${NAME}`` and ``$NAME`` references and a leading
+    ``~`` expand from *environ* alone, never from this process. Returns None
+    when the answer depends on anything outside *environ*: a relative
+    HERMES_HOME, an undefined variable, or a missing user profile folder.
+    """
+    names = {key.upper(): value for key, value in environ.items()}
+    profile = names.get("USERPROFILE" if sys.platform == "win32" else "HOME", "").strip()
+
+    def user_home() -> Path:
+        if not profile:
+            raise LookupError("no user profile folder")
+        return Path(profile)
+
+    raw = names.get("HERMES_HOME", "").strip()
+    try:
+        native_home = _platform_default_hermes_home(names, user_home)
+        if not raw:
+            return native_home
+        expanded = _ENV_REFERENCE.sub(lambda match: names[match.group(match.lastindex).upper()], raw)
+        if expanded == "~" or expanded.startswith(("~/", "~\\")):
+            expanded = str(user_home()) + expanded[1:]
+    except LookupError:
+        return None
+    env_path = Path(expanded)
+    return _hermes_root_of(native_home, env_path) if env_path.is_absolute() else None
 
 
 def sudo_invoker_default_home() -> Path | None:
@@ -214,6 +258,9 @@ def get_routing_process_hermes_home() -> Path:
 # default profile) so the two lists cannot drift apart.
 LOCAL_RUNTIME_ROOT_DIRS: frozenset[str] = frozenset({"models", "runtimes", "node"})
 
+# Where connector tool results save the files they return, under each profile's home.
+CONNECTOR_DOWNLOADS_SUBDIR = Path("downloads", "connectors")
+
 # get_default_hermes_root() memo keyed on (native home, expanded HERMES_HOME) so it stays
 # fresh when a test or plugin mutates either input; saves ~80us/call at 31+ sites.
 _default_hermes_root_memo: tuple[str, str, Path] | None = None
@@ -229,12 +276,7 @@ def get_default_hermes_root(*, home: str | Path | None = None) -> Path:
     memo = _default_hermes_root_memo
     if memo is not None and memo[:2] == memo_key:
         return memo[2]
-    result = native_home
-    if env_path is not None:
-        try:
-            env_path.resolve().relative_to(native_home.resolve())  # under ~/.hermes (normal or profile mode)
-        except ValueError:  # Docker/custom root: <root>/profiles/<name> -> <root>, else HERMES_HOME itself
-            result = env_path.parent.parent if env_path.parent.name == "profiles" else env_path
+    result = _hermes_root_of(native_home, env_path)
     _default_hermes_root_memo = (*memo_key, result)
     return result
 
@@ -373,74 +415,26 @@ def clear_named_profile_deleted(profile_home: str | Path) -> None:
     profile_tombstone_path(Path(profile_home)).unlink(missing_ok=True)
 
 
-def _named_profile_spelling(path: Path) -> Path:
-    """*path* resolved when that lands in a named profile home, else as given.
-
-    A symlink/junction alias of a home (or of a path inside it) then shares the home's
-    tombstone and lifecycle lock instead of escaping the fence under another name. A named
-    entry that itself links outside every Hermes root keeps its own lexical fence.
-    """
-    try:
-        resolved = path.resolve(strict=False)
-    except (OSError, RuntimeError):
-        return path
-    return resolved if named_profile_home(resolved) is not None else path
-
-
 def assert_named_profile_home_live(path: str | Path) -> None:
-    """Refuse a *path* inside a missing or tombstoned named profile home."""
-    home = named_profile_home(_named_profile_spelling(Path(path)))
-    if home is not None:
-        assert_named_profile_home_available(home)
+    """Refuse missing or tombstoned named profile homes."""
+    home = named_profile_home(path)
+    if home is not None and (named_profile_is_deleted(home) or not home.exists()):
+        raise FileNotFoundError(
+            f"Named profile home does not exist: {home}. "
+            "Create the profile explicitly before using it."
+        )
 
 
 def mkdir_under_hermes_home(path: str | Path) -> Path:
-    """Create *path*, but never materialize a deleted/missing named profile.
-
-    Inside a named profile only the segments below the home are created, one at a time: a home
-    deleted after the liveness check makes the first ``mkdir`` fail where ``parents=True`` would
-    recreate it. The second check catches a delete that tombstoned the home mid-call.
-    """
+    """Create *path*, but never materialize a deleted/missing named profile."""
     target = Path(path)
-    spelled = _named_profile_spelling(target)
-    home = named_profile_home(spelled)
-    if home is None:
-        target.mkdir(parents=True, exist_ok=True)
-        return target
-    assert_named_profile_home_available(home)
-    current = home
-    for part in spelled.relative_to(home).parts:
-        current = current / part
-        current.mkdir(exist_ok=True)
-    assert_named_profile_home_available(home)
+    assert_named_profile_home_live(target)
+    # Lazy so this module still imports alone; hermes_dir_acl (stdlib only) ships beside it in every
+    # closure that creates home dirs, and a missing copy fails loudly instead of silently skipping the
+    # elevated grant (tests/pm/test_bootstrap_import_closure.py).
+    from hermes_dir_acl import make_user_dir
+    make_user_dir(target, parents=True, exist_ok=True)
     return target
-
-
-def profile_deletion_marker_path(profile_home: Path | str) -> Path | None:
-    """Return the canonical deletion marker for a named profile home (see ``_named_profile_spelling``)."""
-    home = _named_profile_spelling(Path(profile_home))
-    named_home = named_profile_home(home)
-    if named_home is None or named_home != home:
-        return None
-    return profile_tombstone_path(named_home)
-
-
-def named_profile_home_is_unavailable(profile_home: Path | str) -> bool:
-    """True when a named profile is absent or durably marked for deletion."""
-    home = Path(profile_home)
-    marker = profile_deletion_marker_path(home)
-    return marker is not None and (not home.is_dir() or marker.is_file())
-
-
-def assert_named_profile_home_available(profile_home: Path | str) -> None:
-    """Raise when :func:`named_profile_home_is_unavailable`.
-
-    Exact-home scope; :func:`assert_named_profile_home_live` guards any path under a home.
-    """
-    if named_profile_home_is_unavailable(profile_home):
-        raise FileNotFoundError(
-            f"Named profile home does not exist because it is missing or being deleted: {profile_home}. "
-            "Create the profile explicitly before using it.")
 
 
 def _packaged_dir(env_var: str, default: Path | None, subdir: str) -> Path:
@@ -506,8 +500,9 @@ def _run_version_probe(argv: list[str], **kwargs):
     import subprocess
     try:
         from hermes_cli._subprocess_compat import windows_hide_flags
-        return subprocess.run(
-            argv, capture_output=True, timeout=10, creationflags=windows_hide_flags(), **kwargs
+        return subprocess.run(  # noqa: PLW1510 -- forwarding wrapper: callers pass subprocess kwargs via **kwargs (check may arrive through it); an explicit check=False would raise TypeError
+            argv, capture_output=True, timeout=10, creationflags=windows_hide_flags(), **kwargs,
+        
         )
     except (OSError, subprocess.TimeoutExpired, ValueError):
         return None
@@ -906,12 +901,6 @@ def _chown_to_hermes_uid(path) -> None:
     if uid is None and gid is None:
         return
     try:
-        current = os.stat(path)
-    except OSError:
-        current = None
-    if current is not None and (uid is None or current.st_uid == uid) and (gid is None or current.st_gid == gid):
-        return
-    try:
         os.chown(path, uid if uid is not None else -1, gid if gid is not None else -1)
     except (OSError, AttributeError, NotImplementedError):
         pass
@@ -946,15 +935,8 @@ def apply_secure_dir_policy(path, *, home: str | Path | None = None) -> None:
         mode = int(explicit_mode or "700", 8)
     except ValueError:
         mode = 0o700
-    # Tokenless profile homes must revalidate on every read. Avoid changing
-    # metadata when the current directory already satisfies the policy.
     try:
-        current_mode = stat.S_IMODE(os.stat(path).st_mode)
-    except OSError:
-        current_mode = None
-    try:
-        if current_mode != mode:
-            os.chmod(path, mode)
+        os.chmod(path, mode)
     except (OSError, NotImplementedError):
         pass
     _chown_to_hermes_uid(path)
@@ -989,8 +971,9 @@ def get_scratch_dir(home: str | Path | None = None, *, prune: bool = True) -> Pa
 def prune_scratch_dir(scratch: Path | None = None, max_idle_hours: float = SCRATCH_MAX_IDLE_HOURS) -> int:
     """Delete top-level scratch entries with no write anywhere in their subtree for
     *max_idle_hours*, reaping processes and git worktree registrations rooted in them
-    first (``hermes_constants_scratch``); return the count removed. Each removal and kill is
-    recorded in ``<home>/logs/scratch-prune.log`` (*scratch* is ``<home>/cache/scratch``)."""
+    first (``hermes_constants_scratch``); return the count removed. Each removal, each
+    kill and each entry rescued mid-prune is recorded in ``<home>/logs/scratch-prune.log``
+    (*scratch* is ``<home>/cache/scratch``)."""
     from hermes_constants_scratch import prune_idle_entries
 
     root = scratch if scratch is not None else get_scratch_dir(prune=False)

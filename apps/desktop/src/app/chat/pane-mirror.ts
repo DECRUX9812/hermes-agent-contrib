@@ -49,28 +49,20 @@ export interface PaneMirror<T> {
   tabLead?: (key: string) => ReactNode
   /** Custom label NODE for the tile's tab, self-subscribing for the same reason
    *  as `tabLead` — a name that moves faster than re-registration (see
-   *  PaneContribution.tabTitle). Falls back to `title`. */
+   *  PaneChrome.tabTitle). Falls back to `title`. */
   tabTitle?: (key: string) => ReactNode
-  /** Node the tile's TAB shows after its label on every tab (see
-   *  PaneContribution.tabTrail) — e.g. a session's elapsed time + current tool. */
-  tabTrail?: (key: string) => ReactNode
-  /** The tab label is a conversation title (see PaneChrome.contentTitle). */
-  contentTitle?: boolean
-  /** Node the tile contributes to its zone strip's trailing edge while it is
-   *  the ACTIVE pane (see PaneContribution.stripTrail) — e.g. a session's skill chip. */
-  stripTrail?: (key: string) => ReactNode
-  /** Mint another tile of this kind — the strip's "+" (see PaneContribution.newTab).
+  /** Mint another tile of this kind — the strip's "+" (see PaneChrome.newTab).
    *  Per tile so a mirror can offer it for some of its tabs and not others. */
   newTab?: (key: string) => (() => void) | undefined
   render: (key: string) => ReactNode
   /** Stateful resources must survive the zone's inactive-tab cache eviction. */
   lifecycleKeepAlive?: (key: string) => boolean
-  /** Extra rows at the top of the zone tab menu (see PaneContribution.tabMenuPrefix). */
+  /** Extra rows at the top of the zone tab menu (see PaneChrome.tabMenuPrefix). */
   tabMenuPrefix?: (key: string) => ((kit: MenuKit) => ReactNode) | undefined
   /** Wrap the tile's TAB (domain context menu — session verbs). */
   tabWrap?: (key: string, tab: ReactElement) => ReactNode
   /** Override the tile's TAB drag (session drop language: stack/split/link).
-   *  Returns whether it took the drag (see PaneContribution.tabDrag). */
+   *  Returns whether it took the drag (see PaneChrome.tabDrag). */
   tabDrag?: (key: string, event: ReactPointerEvent<HTMLElement>, onTap: () => void) => boolean
   /** Wired as the pane's closer (tab Close). */
   close: (key: string) => void
@@ -142,9 +134,6 @@ export function paneMirror<T>(cfg: PaneMirror<T>): () => void {
           tabTitle: cfg.tabTitle ? () => cfg.tabTitle!(key) : undefined,
           dock,
           lifecycleKeepAlive: cfg.lifecycleKeepAlive?.(key),
-          tabTrail: cfg.tabTrail ? () => cfg.tabTrail!(key) : undefined,
-          contentTitle: cfg.contentTitle,
-          stripTrail: cfg.stripTrail ? () => cfg.stripTrail!(key) : undefined,
           minWidth: cfg.minWidth,
           newTab: cfg.newTab?.(key),
           // Every mirrored tile is a full workspace surface docked beside main —
@@ -153,7 +142,7 @@ export function paneMirror<T>(cfg: PaneMirror<T>): () => void {
           placement: 'main',
           tabDrag: cfg.tabDrag
             ? (event: ReactPointerEvent<HTMLElement>, onTap: () => void) => cfg.tabDrag!(key, event, onTap)
-            : undefined, // returns boolean (handled) — see PaneContribution.tabDrag
+            : undefined, // returns boolean (handled) — see PaneChrome.tabDrag
           tabMenuPrefix: cfg.tabMenuPrefix?.(key),
           tabWrap: cfg.tabWrap ? (tab: ReactElement) => cfg.tabWrap!(key, tab) : undefined
         },

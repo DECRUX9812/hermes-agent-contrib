@@ -3,33 +3,27 @@ import { useLocation, useNavigate } from 'react-router'
 
 import { type CommandCenterSection } from '@/app/command-center'
 import {
-  ACTIVITY_ROUTE,
   AGENTS_ROUTE,
   appViewForPath,
   COMMAND_CENTER_ROUTE,
   isOverlayView,
   NEW_CHAT_ROUTE,
-  ROSTER_ROUTE,
   STARMAP_ROUTE
 } from '@/app/routes'
 
-const SECTIONS = ['system', 'maintenance', 'notices'] as const satisfies readonly CommandCenterSection[]
+const SECTIONS = ['sessions', 'system', 'usage'] as const
 
 export function useOverlayRouting() {
   const location = useLocation()
   const navigate = useNavigate()
 
   const currentView = appViewForPath(location.pathname)
-  const activityOpen = currentView === 'activity'
   const settingsOpen = currentView === 'settings'
   const commandCenterOpen = currentView === 'command-center'
-  const inboxOpen = currentView === 'inbox'
-  const missionOpen = currentView === 'mission-control'
   const agentsOpen = currentView === 'agents'
   const starmapOpen = currentView === 'starmap'
   const cronOpen = currentView === 'cron'
   const profilesOpen = currentView === 'profiles'
-  const rosterOpen = currentView === 'roster'
   const webhooksOpen = currentView === 'webhooks'
   const chatOpen = currentView === 'chat'
   const overlayOpen = isOverlayView(currentView)
@@ -72,13 +66,10 @@ export function useOverlayRouting() {
     }
   }, [closeOverlayToPreviousRoute, commandCenterOpen, navigate])
 
-  const openActivity = useCallback(() => navigate(ACTIVITY_ROUTE), [navigate])
   const openAgents = useCallback(() => navigate(AGENTS_ROUTE), [navigate])
-  const openRoster = useCallback(() => navigate(ROSTER_ROUTE), [navigate])
   const openStarmap = useCallback(() => navigate(STARMAP_ROUTE), [navigate])
 
   return {
-    activityOpen,
     agentsOpen,
     chatOpen,
     closeOverlayToPreviousRoute,
@@ -86,15 +77,10 @@ export function useOverlayRouting() {
     commandCenterOpen,
     cronOpen,
     currentView,
-    inboxOpen,
-    missionOpen,
-    openActivity,
     openAgents,
     openCommandCenterSection,
-    openRoster,
     openStarmap,
     profilesOpen,
-    rosterOpen,
     resetOverlayReturnRoute,
     settingsOpen,
     starmapOpen,

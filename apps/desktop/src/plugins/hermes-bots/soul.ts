@@ -153,18 +153,14 @@ interface ComposeSoulOptions {
   customSoul?: null | string
   description?: null | string
   name: string
-  /** Extra persona text — a starter template's "## Style" section. */
-  persona?: null | string
   roster?: RosterRow[] | null
   title?: null | string
 }
 
-export function composeSoul({ name, title, description, roster, customSoul, persona }: ComposeSoulOptions): string {
+export function composeSoul({ name, title, description, roster, customSoul }: ComposeSoulOptions): string {
   if (customSoul && customSoul.trim()) {
     return ensureMessagingProtocol(customSoul, name, roster)
   }
-
-  const style = (persona || '').trim()
 
   const lines = [
     `# ${displayName({
@@ -174,7 +170,6 @@ export function composeSoul({ name, title, description, roster, customSoul, pers
     '',
     title ? `**Role:** ${title}` : null,
     description ? `**Mission:** ${description}` : null,
-    style ? `\n## Style\n${style}` : null,
     '',
     `You are ${displayName({
       name,

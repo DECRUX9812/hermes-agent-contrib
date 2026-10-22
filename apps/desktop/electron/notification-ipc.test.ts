@@ -12,7 +12,6 @@ const host = vi.hoisted(() => ({
 }))
 
 vi.mock('electron', () => ({
-  app: { getName: () => 'Hermes' },
   BrowserWindow: { fromWebContents: host.fromWebContents },
   ipcMain: { handle: host.handle },
   Notification: class extends EventEmitter {

@@ -34,7 +34,6 @@ import {
 import { $freeTierRoute, $freeTierStatus, freeTierStripPending } from '@/store/free-tier'
 import { $interfaceMode, shownInMode, type Tiered } from '@/store/interface-mode'
 import { $previewStatusBySession, dismissPreviewArtifact } from '@/store/preview-status'
-import { $previewVerifyBySession, dismissPreviewVerify } from '@/store/preview-verify'
 import { $sessionControlBySession, refreshSessionControl } from '@/store/session-control'
 import { $sharedMetricsConsent, sharedMetricsOfferPending } from '@/store/shared-metrics'
 import { $threadScrolledUpBySession } from '@/store/thread-scroll'
@@ -47,7 +46,6 @@ import { useSessionValue } from './session-control-utils'
 import { StatusItemRow } from './status-row'
 import { SubagentSection } from './subagent-section'
 import { useSubagentSnapshot } from './use-subagent-snapshot'
-import { PreviewVerifyRow } from './verify-row'
 
 // Slow safety-net poll for silent exits (processes without notify_on_complete
 // emit no event when they die). Only armed while a running row is on screen.
@@ -130,7 +128,6 @@ export function ComposerStatusStack({ onSubmit, queue, sessionId }: ComposerStat
   const retainedTodos = useSessionSlice($retainedTodosBySession, sessionId)
   const busy = useStore(useSessionView().$busy)
   const previews = useSessionSlice($previewStatusBySession, sessionId)
-  const previewVerify = useSessionValue($previewVerifyBySession, sessionId)
   const controlEntry = useSessionValue($sessionControlBySession, sessionId)
 
   const surfaceId = useComposerSurfaceId()
@@ -352,19 +349,6 @@ export function ComposerStatusStack({ onSubmit, queue, sessionId }: ComposerStat
     sections.push({ key: 'preview', node: <div className="status-artifacts">{previewRows}</div> })
   }
 
-  // verify_preview's verdict rides the artifact lane: latest check per session,
-  // dismissible, click-through to the tab's console.
-  if (previewVerify && sessionId) {
-    sections.push({
-      key: 'preview-verify',
-      node: (
-        <div className="status-artifacts">
-          <PreviewVerifyRow item={previewVerify} onDismiss={() => dismissPreviewVerify(sessionId)} />
-        </div>
-      )
-    })
-  }
-
   // Micro actions are the TOP-MOST thing in the whole overlay lane — above the
   // status card, above the billing wall, above everything. They're the only
   // rows up here you press instead of read, so nothing may ever stack on top
@@ -398,11 +382,9 @@ export function ComposerStatusStack({ onSubmit, queue, sessionId }: ComposerStat
         <div
           className={cn(
             composerDockCard('top'),
-            // 5px, not the composer root's own 8px inset (mx-2): the composer
-            // root carries `padding-inline: 5px`, so the SURFACE the user sees
-            // starts 5px in. Any other inset steps the stack's outline in or out
-            // at the junction — the "disconnected box" look.
-            'mx-[5px] flex min-h-0 max-h-[inherit] shrink flex-col overflow-hidden rounded-b-none border-b border-b-transparent'
+            // Inset (mx-2) so the stack reads slightly narrower than the composer
+            // surface below it — the original look.
+            'mx-2 flex min-h-0 max-h-[inherit] shrink flex-col overflow-hidden rounded-b-none border-b border-b-transparent'
           )}
         >
           <div className="min-h-0 overflow-y-auto overscroll-y-contain" data-slot="status-stack-scroll">

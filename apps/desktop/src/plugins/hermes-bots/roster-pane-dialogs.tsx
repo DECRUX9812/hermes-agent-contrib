@@ -1,12 +1,10 @@
 import { ConfirmDialog, host } from '@hermes/plugin-sdk'
 import type { useI18n } from '@hermes/plugin-sdk'
 
-import type { BotDraft } from './bot-starters'
 import { CreateAgentDialog, CreateGroupChatDialog, GroupDialog } from './create-dialog'
 import type { useRoster } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
-import { openGroupChat } from './group-chat-view'
-import { disbandGroupChat } from './group-room-lifecycle'
+import { disbandGroupChat, openGroupChat } from './group-chat-view'
 import type { useBots } from './i18n'
 import { deleteBot } from './profile-ops'
 import type { GroupMember, RosterRow } from './types'
@@ -18,9 +16,6 @@ interface renderRosterDialogsProps {
   t: ReturnType<typeof useI18n>['t']
   createOpen: boolean
   setCreateOpen: (value: boolean) => void
-  /** Hire-gallery pick the dialog should open pre-filled with, and its reset. */
-  createDraft: BotDraft | null
-  setCreateDraft: (value: BotDraft | null) => void
   groupCreateOpen: boolean
   setGroupCreateOpen: (value: boolean) => void
   editing: RosterRow | null
@@ -43,8 +38,6 @@ export function renderRosterDialogs({
   t,
   createOpen,
   setCreateOpen,
-  createDraft,
-  setCreateDraft,
   groupCreateOpen,
   setGroupCreateOpen,
   editing,
@@ -64,13 +57,8 @@ export function renderRosterDialogs({
   return (
     <>
       <CreateAgentDialog
-        draft={createDraft}
-        // Remount per open (and per pick): every form field initializes
-        // fresh, so a cancelled draft can never leak into the next "New bot".
-        key={createOpen ? `open:${createDraft?.templateId || createDraft?.name || ''}` : 'closed'}
         onClose={() => {
           setCreateOpen(false)
-          setCreateDraft(null)
           void refetch()
         }}
         onConfigureModel={setEditing}
@@ -79,7 +67,7 @@ export function renderRosterDialogs({
       />
       <CreateGroupChatDialog
         onClose={() => setGroupCreateOpen(false)}
-        onCreated={groupName => openGroupChat(groupName)}
+        onCreated={(group, origin) => openGroupChat(group, origin)}
         open={groupCreateOpen} // Full multi-source roster: group chats can seat bots from other
         // registered connections — their turns route to their own machines.
         roster={roster}

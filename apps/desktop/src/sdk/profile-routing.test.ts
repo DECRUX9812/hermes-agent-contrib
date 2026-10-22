@@ -8,13 +8,12 @@ vi.mock('@/app/chat/session-view', async () => {
   return { PRIMARY_SESSION_VIEW: { $awaitingResponse: atom(false), $busy: atom(false) } }
 })
 vi.mock('@/app/open-session', () => ({ openSession: vi.fn() }))
-vi.mock('@/components/pane-shell/tree/store', async importOriginal => {
+vi.mock('@/components/pane-shell/tree/store', async () => {
   const { atom } = await import('nanostores')
 
   // session-focus.ts (reached via the preview store) and the layout store
   // read these at import time; a mock without them crashes before any test.
   return {
-    ...(await importOriginal<Record<string, unknown>>()),
     $activeTreeGroup: atom(null),
     $collapsedTreeSides: atom(new Set()),
     $hiddenTreePanes: atom(new Set()),
@@ -24,11 +23,7 @@ vi.mock('@/components/pane-shell/tree/store', async importOriginal => {
 })
 vi.mock('@/contrib/events', () => ({ onGatewayEvent: vi.fn() }))
 vi.mock('@/hermes', () => ({ deleteProfile: vi.fn(), getLogs: vi.fn(), getStatus: vi.fn(), hermesApi: vi.fn() }))
-vi.mock('@/store/notifications', async () => {
-  const { atom } = await import('nanostores')
-
-  return { $notificationHistory: atom([]), notify: vi.fn(), notifyError: vi.fn() }
-})
+vi.mock('@/store/notifications', () => ({ notify: vi.fn(), notifyError: vi.fn() }))
 vi.mock('@/store/system-actions', () => ({ runGatewayRestart: vi.fn() }))
 vi.mock('@/store/session', async () => {
   const { atom } = await import('nanostores')
@@ -37,7 +32,6 @@ vi.mock('@/store/session', async () => {
 
   return {
     $activeSessionId: atom(null),
-    $busy: atom(false),
     $connection: atom(null),
     $cronSessions: atom([]),
     $currentCwd: atom(''),
@@ -48,12 +42,7 @@ vi.mock('@/store/session', async () => {
     $selectedStoredSessionId: atom(null),
     $sessions: atom([]),
     $unreadFinishedSessionIds: atom([]),
-    $unlistedSessionOwnerRows: atom([]),
-    $workspaceCwdOwner: atom(null),
-    getSessionOwnerHint: vi.fn(() => undefined),
-    knownSessionOwner: vi.fn(() => null),
     lineageAliases: (storedId: string) => [storedId],
-    ownerLookupSessionRows: vi.fn(() => []),
     rememberedSessionProfile: (_sessions: unknown, _sessionId: null | string, activeProfile: null | string) =>
       (activeProfile ?? '').trim() || 'default',
     requestSessionResume: vi.fn(),
@@ -78,15 +67,12 @@ vi.mock('@/store/session-states', async () => {
     $attentionSessionIds: atom([]),
     $draftSessionIds: atom([]),
     $focusedRuntimeId: atom(null),
-    $focusedStoredSessionId: atom(null),
     $focusedSessionState: atom(null),
     $sessionTiles: atom([]),
-    $sessionWorkspaceScopes: atom({}),
     $sessionStates: atom({}),
     $stalledSessionIds: atom([]),
     $workingSessionIds: atom([]),
     dropTilesForProfile: vi.fn(),
-    isSessionInForeground: vi.fn(() => true),
     sessionTileDelegate: vi.fn(() => null)
   }
 })
@@ -340,6 +326,7 @@ describe('connection-aware plugin host APIs', () => {
 
     vi.mocked(hermesApi)
       .mockResolvedValueOnce({ sessions: [{ id: 'bot-chat', profile: 'backend-worker', title: 'Bot Chat' }] })
+      .mockResolvedValueOnce({ exists: true, runtime_revision: 31, runtime_generation: 5 })
       .mockResolvedValueOnce({ ok: true, hidden: true })
 
     await expect(host.listPersistedSessions(route, { profile: 'backend-worker', limit: 200 })).resolves.toMatchObject({
@@ -357,14 +344,28 @@ describe('connection-aware plugin host APIs', () => {
       })
     )
     expect(hermesApi).toHaveBeenNthCalledWith(2, {
+      connectionId: 'source-a', path: '/api/sessions/bot-chat/mutation-snapshot?profile=backend-worker'
+    })
+    expect(hermesApi).toHaveBeenNthCalledWith(3, {
       connectionId: 'source-a',
       path: '/api/sessions/bot-chat',
       method: 'PATCH',
-      body: { hidden: true, profile: 'backend-worker' }
+      body: { hidden: true, profile: 'backend-worker', expected_revision: 31,
+        expected_generation: 5, request_id: expect.any(String) }
     })
     expect(vi.mocked(hermesApi).mock.calls.every(([request]) => !('profile' in request))).toBe(true)
     expect(requestGatewayForAgent).not.toHaveBeenCalled()
     expect(requestGatewayForProfile).not.toHaveBeenCalled()
+  })
+
+  it('keeps an unrouted persisted-session edit on the window primary instead of pinning it to this device', async () => {
+    vi.mocked(hermesApi)
+      .mockResolvedValueOnce({ exists: true, runtime_revision: 2, runtime_generation: 1 })
+      .mockResolvedValueOnce({ ok: true, hidden: true })
+
+    await host.setPersistedSessionHidden(null, { sessionId: 'remote-chat', profile: 'default', hidden: true })
+
+    expect(vi.mocked(hermesApi).mock.calls.map(([request]) => request.connectionId)).toEqual([null, null])
   })
 
   it('forwards an explicit timeout so long-running methods outlive the generic deadline', async () => {

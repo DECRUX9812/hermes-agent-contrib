@@ -1,0 +1,1 @@
+import{w as e}from"./en-BJjxuplW.js";var t=e(`outline`,`chevron-down`,`ChevronDown`,[[`path`,{d:`M6 9l6 6l6 -6`,key:`svg-0`}]]);export{t};

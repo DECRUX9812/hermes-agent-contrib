@@ -1,0 +1,1 @@
+import{x as e}from"./vendor-md-DAe5ygxp.js";import{t}from"./bundle-mjs-CGEkkbPF.js";var n=t({extend:{theme:{radius:[`control`,`row`,`card`,`panel`,`dialog`,`pill`],shadow:[`e1`,`e2`,`e3`],text:[`ui-2xs`,`ui-xs`,`ui-sm`,`ui-base`,`ui-md`,`ui-lg`,`ui-xl`,`ui-2xl`,`ui-display`]}}});function r(...t){return n(e(t))}export{r as t};
