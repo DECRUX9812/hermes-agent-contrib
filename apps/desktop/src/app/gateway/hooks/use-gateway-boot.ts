@@ -1402,7 +1402,6 @@ export function useGatewayBoot({
     const offActiveSession = $activeSessionId.subscribe(() => recomputeKeptGateways())
     const offSessionTiles = $sessionTiles.subscribe(() => recomputeKeptGateways())
     const offActiveProfile = $activeGatewayProfile.subscribe(() => recomputeKeptGateways())
-    const offTiles = $sessionTiles.subscribe(() => recomputeKeptGateways())
     const offSelectedSession = $selectedStoredSessionId.subscribe(() => recomputeKeptGateways())
     const offSessionOwnerHolds = $sessionOwnerHoldRevision.subscribe(() => recomputeKeptGateways())
 
@@ -1704,7 +1703,6 @@ export function useGatewayBoot({
       offActiveSession()
       offSessionTiles()
       offActiveProfile()
-      offTiles()
       offSelectedSession()
       offSessionOwnerHolds()
       window.removeEventListener('online', onOnline)
