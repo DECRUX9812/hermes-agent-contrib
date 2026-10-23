@@ -47,7 +47,10 @@ export function CatalogFeaturedSlider({ slides }: { slides: ReactNode[] }) {
     }, SLIDE_MS)
 
     return () => window.clearInterval(timer)
-  })
+    // Re-arm only when the slide or hold state changes; without deps every
+    // parent re-render restarted the countdown and the hero never advanced.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `go` only reads count/index and the track ref
+  }, [count, held, index])
 
   if (count < 2) {return <>{slides[0]}</>}
 
