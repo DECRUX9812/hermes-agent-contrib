@@ -181,7 +181,7 @@ export const PROVIDER_GROUPS: ProviderPrefix[] = [
     prefix: 'LM_',
     name: 'LM Studio',
     description: 'Local LM Studio server (OpenAI-compatible)',
-    docsUrl: 'https://lmstudio.ai/docs/local-server',
+    docsUrl: 'https://lmstudio.ai/docs/developer/core/server',
     priority: 17
   },
   {
